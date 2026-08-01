@@ -238,8 +238,8 @@
       "stereoAfterDeclared": 0,
       "stereoAfterViolations": 0,
       "forceFieldRequested": "mmff94_with_uff_fallback",
-      "forceFieldActual": "uff_only",
-      "hasFallback": true,
+      "forceFieldActual": "mmff94_bond_angle_strict",
+      "hasFallback": false,
       "sound": true
     }
   ]

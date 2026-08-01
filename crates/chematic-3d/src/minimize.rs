@@ -2780,12 +2780,18 @@ mod policy_bridge_tests {
     fn bridge_bond_type_matches_chematic_ff_lookup_behavior() {
         // (type_i, type_j, order, expect_some)
         let cases: &[(u8, u8, BondOrder, bool)] = &[
-            (1, 1, BondOrder::Single, true),     // C(sp3)-C(sp3): covered
-            (1, 5, BondOrder::Single, true),     // C(sp3)-H: covered
-            (1, 11, BondOrder::Single, true),    // C(sp3)-F: covered
-            (1, 12, BondOrder::Single, true),    // C(sp3)-Cl: covered
-            (1, 13, BondOrder::Single, true),    // C(sp3)-Br: covered
-            (63, 63, BondOrder::Aromatic, true), // aromatic C-C (benzene): bt resolves to 1
+            (1, 1, BondOrder::Single, true),  // C(sp3)-C(sp3): covered
+            (1, 5, BondOrder::Single, true),  // C(sp3)-H: covered
+            (1, 11, BondOrder::Single, true), // C(sp3)-F: covered
+            (1, 12, BondOrder::Single, true), // C(sp3)-Cl: covered
+            (1, 13, BondOrder::Single, true), // C(sp3)-Br: covered
+            // Aromatic C-C (benzene, real type post-issue-#227-Phase-1B-0 is
+            // 37 = CB, not the old wrong 63): `BondOrder::Aromatic` forces
+            // bt=0 unconditionally (like Double/Triple), matching RDKit's
+            // own (bondType=0, r0=1.374) for this exact bond -- verified
+            // against a live RDKit oracle, see mmff94_minimizer.rs's
+            // `benzene_ring_bonds_type_37_resolve_to_the_rdkit_verified_row`.
+            (37, 37, BondOrder::Aromatic, true),
             // Cα(sp3)-C(carbonyl) SINGLE bond: bt=0 (type 1 isn't in MLTB_TYPES,
             // so the AND-gate fails) -> real (0,1,3) row -> covered.
             (1, 3, BondOrder::Single, true),
@@ -2983,7 +2989,21 @@ mod policy_bridge_tests {
     /// this test's rescue lives entirely in `run_uff_bridge`, not in
     /// chematic-ff, so that fixture remains correct and unchanged.
     #[test]
-    fn mmff94_with_uff_fallback_reports_typed_failure_when_fallback_itself_is_unsound() {
+    fn naphthalene_now_succeeds_directly_via_mmff94_strict_post_227_fix() {
+        // Issue #227 Phase 1B-0: this test used to pin naphthalene as a
+        // case where MMFF94 coverage was "genuinely incomplete" (both rings
+        // all-carbon fused-aromatic, mistyped as 63/64 pre-fix) and had to
+        // fall back to UFF, exercising the separate #185/#188
+        // catastrophic-clash-rescue path (`UffStartingGeometry::
+        // ReplacedWithDistanceGeometryV2`). After the atom-typing fix
+        // (naphthalene's ring carbons now correctly type as 37, CB, matching
+        // both rings being 6-membered), naphthalene's MMFF94 coverage is
+        // complete and it succeeds directly -- no UFF fallback, no rescue
+        // path exercised at all. This is a real positive outcome of the fix,
+        // not a loosened assertion. The #185/#188 rescue-path behavior this
+        // test used to cover needs a different fixture molecule that still
+        // genuinely requires UFF fallback post-fix if that coverage matters
+        // going forward -- not re-derived here (out of this PR's scope).
         let mol = parse("c1ccc2ccccc2c1").expect("naphthalene");
         let coords = generate_coords(&mol);
         let config = MinimizeConfig::default();
@@ -2994,28 +3014,20 @@ mod policy_bridge_tests {
             ForceFieldPolicy::Mmff94WithUffFallback,
             &config,
         )
-        .unwrap_or_else(|e| {
-            panic!(
-                "naphthalene's UFF fallback from generate_coords is catastrophically clashed, \
-                 but embed_distance_geometry_v2 rescues it -- expected Ok after the #185/#188 \
-                 fix, got {e:?}"
-            )
-        });
-        assert_eq!(result.actual_force_field_used, ForceFieldPolicy::UffOnly);
-        assert!(
-            result.fallback_reason.is_some(),
-            "MMFF94 coverage is genuinely incomplete for naphthalene -- a fallback to UFF must \
-             still be recorded as having occurred"
-        );
+        .expect("naphthalene must succeed post-#227-fix");
         assert_eq!(
-            result.starting_geometry,
-            Some(UffStartingGeometry::ReplacedWithDistanceGeometryV2),
-            "expected the rescue to have fired and to be disclosed, not silent"
+            result.actual_force_field_used,
+            ForceFieldPolicy::Mmff94BondAngleStrict,
+            "naphthalene should now have complete MMFF94 coverage and need no UFF fallback"
+        );
+        assert!(
+            result.fallback_reason.is_none(),
+            "no fallback should have occurred"
         );
         let worst = worst_bond_length_vec(&mol, &coords_to_vec(&result.coords, mol.atom_count()));
         assert!(
             worst <= MAX_SANE_BOND_LENGTH,
-            "expected a sound rescued geometry, got worst bond {worst:.2} Å"
+            "expected a sound geometry, got worst bond {worst:.2} Å"
         );
     }
 

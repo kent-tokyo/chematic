@@ -942,19 +942,31 @@ fn atoms_share_ring_of_size(rings: &[Vec<AtomIdx>], atoms: &[usize], size: usize
 
 /// Determine the MMFF94 bond-type index (Halgren 1996 bond-type index BT).
 ///
-/// BT=1 only for a formally SINGLE (or aromatic) bond directly linking two
+/// BT=1 only for a formally SINGLE, *non-aromatic* bond directly linking two
 /// atoms that are BOTH independently "conjugation-capable" ([`MLTB_TYPES`]) —
-/// the sbmb special case. A real double/triple bond always gets BT=0 (its
-/// atom types already encode the multiply-bonded hybridization; the `(1,
-/// ...)` table rows are the single-bond exception, not an alternate
-/// double-bond row), and a bond where either atom is a plain non-conjugating
-/// type (e.g. sp3 CR) also always gets BT=0 — confirmed empirically: zero
-/// `(1, 1, x, ...)` rows exist in the 493-row bond table for sp3 carbon type
-/// 1 with any partner.
+/// the sbmb special case (e.g. biphenyl's inter-ring bond, r0=1.436 Å).
+/// `BondOrder::Aromatic` gets BT=0 unconditionally, same as a real
+/// double/triple bond — confirmed against a live RDKit oracle (issue #227
+/// Phase 1B-0): benzene's own ring bond (types 37-37, `BondOrder::Aromatic`)
+/// resolves to RDKit's `(bondType=0, kb=5.573, r0=1.374)`, not `(1, 5.178,
+/// 1.436)` — i.e. the aromatic ring bond and biphenyl's non-aromatic
+/// inter-ring bond between the *same two atom types* get *different* BT
+/// values, which only the bond order (not the MLTB_TYPES membership alone)
+/// can distinguish. A prior version of this function treated `Aromatic`
+/// bonds the same as `Single` here and was never checked against a real
+/// oracle for that specific claim — the `(1, 63, 63, ...)` row it was
+/// "confirmed" against belonged to the *pre-fix*, wrong (63, not 37) atom
+/// typing, so the match was coincidental, not a correctness check. A real
+/// double/triple bond always gets BT=0 too (its atom types already encode
+/// the multiply-bonded hybridization; the `(1, ...)` table rows are the
+/// single-bond exception, not an alternate double-bond row), and a bond
+/// where either atom is a plain non-conjugating type (e.g. sp3 CR) also
+/// always gets BT=0 — confirmed empirically: zero `(1, 1, x, ...)` rows
+/// exist in the 493-row bond table for sp3 carbon type 1 with any partner.
 pub fn bond_type_for(ti: u8, tj: u8, order: BondOrder) -> u8 {
     if matches!(
         order,
-        BondOrder::Double | BondOrder::Triple | BondOrder::Quadruple
+        BondOrder::Double | BondOrder::Triple | BondOrder::Quadruple | BondOrder::Aromatic
     ) {
         return 0;
     }
@@ -1261,39 +1273,91 @@ mod tests {
     }
 
     #[test]
-    fn benzene_ring_bonds_all_resolve_and_are_typed_1_pending_atom_typer_fix() {
-        // Issue #173's own "latent third case" note: this crate's atom typer
-        // currently assigns aromatic 6-ring carbons type 63 (not the MMFF94
-        // spec's type 37), and no (0,63,63) row exists in the bond table --
-        // only (1,63,63) -- so every benzene ring bond MUST classify as
-        // bond_type=1 today, or the bond term silently zeroes for all 6
-        // bonds. `BondOrder::Aromatic` deliberately does NOT hit the
-        // double/triple early-return in `bond_type_for`, precisely so this
-        // stays true. The regression this guards against: if the atom typer
-        // is ever corrected to emit type 37 instead of 63 (the spec-correct
-        // value), the *real* MMFF94 answer for a type-37 aromatic ring bond
-        // is bond_type=0 (row (0,37,37), r0=1.374) -- whoever makes that
-        // atom-typer change must revisit this AND-of-MLTB_TYPES branch too,
-        // since type 37 is also in MLTB_TYPES and would otherwise silently
-        // keep resolving to the wrong (1,37,37) row (r0=1.436).
+    fn benzene_ring_bonds_type_37_resolve_to_the_rdkit_verified_row() {
+        // Issue #227 Phase 1B-0: atom typing fixed to the real Halgren/RDKit
+        // numbering (type 37 = CB, not the old wrong 63 = C5A), AND
+        // `bond_type_for` fixed to treat `BondOrder::Aromatic` like
+        // double/triple (BT=0 unconditionally), not like `Single` run
+        // through the MLTB_TYPES-AND check. Both fixes were required
+        // together -- fixing only the atom typer would have made every
+        // benzene ring bond resolve to the WRONG (1, 37, 37, kb=5.178,
+        // r0=1.436) row (biphenyl's *non-aromatic* inter-ring bond value)
+        // instead of the correct (0, 37, 37, kb=5.573, r0=1.374) row --
+        // still "coverage success," still silently wrong, the same failure
+        // shape as the `furan` finding this whole PR exists to close.
+        // Cross-checked directly against a live RDKit oracle
+        // (`props.GetMMFFBondStretchParams`), not assumed:
+        // `AllChem.MMFFGetMoleculeProperties` on benzene returns exactly
+        // `(bondType=0, kb=5.573, r0=1.374)` for every ring bond.
         let mol = chematic_smiles::parse("c1ccccc1").unwrap();
         let types = assign_mmff94_numeric_types(&mol).unwrap();
         assert_eq!(mol.bonds().count(), 6);
         for (_, bond) in mol.bonds() {
             let ti = types[bond.atom1.0 as usize];
             let tj = types[bond.atom2.0 as usize];
-            assert_eq!(ti, 63, "benzene carbon should currently type as 63, not 37");
-            assert_eq!(tj, 63);
+            assert_eq!(
+                ti, 37,
+                "benzene carbon must type as 37 (CB), matching RDKit"
+            );
+            assert_eq!(tj, 37);
             assert_eq!(bond.order, BondOrder::Aromatic);
             let bt = bond_type_for(ti, tj, bond.order);
             assert_eq!(
-                bt, 1,
-                "type-63 aromatic ring bond must resolve to bond_type=1 today"
+                bt, 0,
+                "aromatic ring bond between two type-37 atoms must resolve to bond_type=0, \
+                 matching RDKit's GetMMFFBondStretchParams for benzene"
+            );
+            let params = mmff94_bond_energy(bt, ti, tj)
+                .expect("every benzene ring bond must resolve to a real row, not silently miss");
+            assert!(
+                (params.r0 - 1.374).abs() < 1e-6,
+                "benzene bond r0 must match RDKit's 1.374 A, got {}",
+                params.r0
             );
             assert!(
-                mmff94_bond_energy(bt, ti, tj).is_some(),
-                "every benzene ring bond must resolve to a real row, not silently miss"
+                (params.kb - 5.573).abs() < 1e-6,
+                "benzene bond kb must match RDKit's 5.573, got {}",
+                params.kb
             );
+        }
+    }
+
+    #[test]
+    fn furan_c_c_bond_no_longer_collides_with_a_nitrogen_row() {
+        // The exact regression this whole Phase 1B-0 PR exists to close
+        // (issue #227's audit PR #235): before the fix, furan's ring
+        // carbons were mistyped as 38/37 (real 38 = NPYD, pyridine-type
+        // NITROGEN) and its C-C bond silently resolved to
+        // `Some(BondEnergyParams { kb: 5.002, r0: 1.246 })` -- a real table
+        // row, but one that belongs to a nitrogen-involved bond, not a
+        // furan C-C bond. Pinning the old wrong value here so a future
+        // reader can see exactly what this test prevents. After the fix,
+        // furan's ring carbons must type as 63/64 (C5A/C5B, both carbon),
+        // and their mutual bond must resolve to a genuinely carbon-carbon
+        // row (or, honestly, `None` -- anything but a repeat of the old
+        // nitrogen-row collision).
+        let mol = chematic_smiles::parse("c1ccoc1").unwrap();
+        let types = assign_mmff94_numeric_types(&mol).unwrap();
+        for (_, bond) in mol.bonds() {
+            let a1 = mol.atom(bond.atom1);
+            let a2 = mol.atom(bond.atom2);
+            if a1.element != chematic_core::Element::C || a2.element != chematic_core::Element::C {
+                continue;
+            }
+            let ti = types[bond.atom1.0 as usize];
+            let tj = types[bond.atom2.0 as usize];
+            assert_ne!(
+                (ti, tj),
+                (38, 37),
+                "must not regress to the old wrong furan C-C typing"
+            );
+            if let Some(params) = mmff94_bond_energy(bond_type_for(ti, tj, bond.order), ti, tj) {
+                assert!(
+                    (params.r0 - 1.246).abs() > 1e-6,
+                    "furan C-C bond must not resolve to the old nitrogen-row r0=1.246, \
+                     types=({ti},{tj})"
+                );
+            }
         }
     }
 
