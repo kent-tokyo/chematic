@@ -4,6 +4,32 @@ Documented evidence that chematic's descriptors agree with industry-standard too
 
 ## Corpora
 
+### pipeline v2 vs RDKit ETKDGv3 independent 3D benchmark (Wave 1, 265-mol corpus)
+
+Independent, measurement-only comparison of `chematic_3d::pipeline_v2::embed_pipeline_v2`
+(5 force-field-policy arms) + the legacy `etkdg` entry point, against RDKit ETKDGv3
+(raw/+UFF/+MMFF94/best-of-10), across a 65-molecule curated stress corpus (Tier A,
+reusing the existing `pipeline_v2_integration_gate.rs` corpus) and a 200-molecule
+deterministic ChEMBL subset (Tier B). Chematic side calls `embed_pipeline_v2` directly
+from a Rust example (no Python binding overhead in the measurement); RDKit side is an
+independent Python oracle reading the same corpus manifests -- neither feeds the other.
+Atom mapping verified for 265/265 molecules (heavy-atom element-sequence match, not
+assumed). No pipeline v2/force-field algorithm code was changed to produce these numbers;
+historical numbers from earlier legacy-`etkdg`-only diagnoses are not reused as current.
+
+- **Files:** `validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_{a,b}.json` (corpus
+  manifests, with source/license/selection-rule/hash provenance), `validation/results/
+  pipeline_v2_vs_rdkit_{chematic,rdkit}_rows.jsonl` (1591 + 1060 per-row results,
+  nothing silently dropped), `pipeline_v2_vs_rdkit_aggregate.json`, `*_config_snapshot.log`
+- **Reference tool:** RDKit 2026.03.3 (`AllChem.ETKDGv3`)
+- **How to regenerate:** `python scripts/gen_pipeline_v2_vs_rdkit_tier_a_manifest.py` +
+  `python scripts/gen_pipeline_v2_vs_rdkit_tier_b_manifest.py` + `cargo run --release -p
+  chematic-3d --example pipeline_v2_vs_rdkit_dump` + `python scripts/
+  pipeline_v2_vs_rdkit_oracle.py` + `python scripts/gen_pipeline_v2_vs_rdkit_report.py`
+  (see each script's docstring for exact invocation)
+- **Full report:** `docs/pipeline_v2_vs_rdkit_etkdgv3_benchmark.md` (per-class/per-metric
+  conclusions -- no single overall win/loss claim)
+
 ### 175-mol drug-like corpus
 
 A curated set of 175 drug-like molecules covering common scaffolds (benzoic acid derivatives,

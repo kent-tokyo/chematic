@@ -1,0 +1,912 @@
+{
+  "baseline": {
+    "note": "Freshly generated this run against the SHAs/config below -- not carried over from any prior/historical benchmark run."
+  },
+  "corpus": {
+    "tier_a_count": 65,
+    "tier_b_count": 200,
+    "total_count": 265,
+    "tier_a_sha256": "8d4f3f3a70b8ae00c56cdbea81e398093ef25d896f4f252e46448632632166b8",
+    "tier_b_sha256": "1a1698f5444c1b6e32da4eaa896cc347c7f051fdf71044bf53b6a644f0b9af77"
+  },
+  "atom_mapping": {
+    "n_checked": 265,
+    "n_verified": 265,
+    "n_unavailable": 0,
+    "unavailable_molecules": []
+  },
+  "unclassified_row_count": 0,
+  "unclassified_rows_sample": [],
+  "coverage": {
+    "chematic": {
+      "chematic_pipeline_v2_no_ff": {
+        "n_rows": 265,
+        "buckets": {
+          "success": 254,
+          "typed_failure": 11
+        }
+      },
+      "chematic_pipeline_v2_dreiding": {
+        "n_rows": 265,
+        "buckets": {
+          "success": 254,
+          "typed_failure": 11
+        }
+      },
+      "chematic_pipeline_v2_uff_only": {
+        "n_rows": 265,
+        "buckets": {
+          "success": 250,
+          "typed_failure": 15
+        }
+      },
+      "chematic_pipeline_v2_mmff94_strict": {
+        "n_rows": 265,
+        "buckets": {
+          "unsupported_chemistry": 216,
+          "success": 38,
+          "typed_failure": 11
+        }
+      },
+      "chematic_pipeline_v2_mmff94_with_uff_fallback": {
+        "n_rows": 265,
+        "buckets": {
+          "success": 250,
+          "typed_failure": 15
+        }
+      },
+      "chematic_legacy_etkdg": {
+        "n_rows": 265,
+        "buckets": {
+          "success": 265
+        }
+      }
+    },
+    "rdkit": {
+      "rdkit_etkdgv3_raw": {
+        "n_rows": 265,
+        "buckets": {
+          "success": 264,
+          "internal_error": 1
+        }
+      },
+      "rdkit_etkdgv3_uff": {
+        "n_rows": 265,
+        "buckets": {
+          "success": 264,
+          "internal_error": 1
+        }
+      },
+      "rdkit_etkdgv3_mmff94": {
+        "n_rows": 265,
+        "buckets": {
+          "success": 264,
+          "internal_error": 1
+        }
+      },
+      "rdkit_etkdgv3_best_of_n": {
+        "n_rows": 265,
+        "buckets": {
+          "success": 264,
+          "internal_error": 1
+        }
+      }
+    }
+  },
+  "coverage_by_class": {
+    "chematic": {
+      "chematic_pipeline_v2_no_ff": {
+        "rigid_ring": {
+          "success": 9
+        },
+        "fused_aromatic": {
+          "success": 7
+        },
+        "flexible_chain": {
+          "success": 6
+        },
+        "macrocycle": {
+          "success": 3
+        },
+        "stereocenter_implicit_h": {
+          "success": 10
+        },
+        "stereocenter_quaternary": {
+          "success": 6
+        },
+        "alkene_ez": {
+          "success": 8
+        },
+        "druglike": {
+          "success": 7
+        },
+        "druglike_rigid": {
+          "success": 1
+        },
+        "druglike_stress": {
+          "success": 2
+        },
+        "small_ring_boundary": {
+          "success": 1
+        },
+        "macrocycle_boundary": {
+          "success": 1
+        },
+        "hindered_biaryl": {
+          "success": 1
+        },
+        "macrocycle_amide": {
+          "success": 1
+        },
+        "known_fail_closed_case": {
+          "success": 1
+        },
+        "force_field_unsupported": {
+          "success": 1
+        },
+        "drug_like": {
+          "success": 189,
+          "typed_failure": 11
+        }
+      },
+      "chematic_pipeline_v2_dreiding": {
+        "rigid_ring": {
+          "success": 9
+        },
+        "fused_aromatic": {
+          "success": 7
+        },
+        "flexible_chain": {
+          "success": 6
+        },
+        "macrocycle": {
+          "success": 3
+        },
+        "stereocenter_implicit_h": {
+          "success": 10
+        },
+        "stereocenter_quaternary": {
+          "success": 6
+        },
+        "alkene_ez": {
+          "success": 8
+        },
+        "druglike": {
+          "success": 7
+        },
+        "druglike_rigid": {
+          "success": 1
+        },
+        "druglike_stress": {
+          "success": 2
+        },
+        "small_ring_boundary": {
+          "success": 1
+        },
+        "macrocycle_boundary": {
+          "success": 1
+        },
+        "hindered_biaryl": {
+          "success": 1
+        },
+        "macrocycle_amide": {
+          "success": 1
+        },
+        "known_fail_closed_case": {
+          "success": 1
+        },
+        "force_field_unsupported": {
+          "success": 1
+        },
+        "drug_like": {
+          "success": 189,
+          "typed_failure": 11
+        }
+      },
+      "chematic_pipeline_v2_uff_only": {
+        "rigid_ring": {
+          "success": 9
+        },
+        "fused_aromatic": {
+          "success": 7
+        },
+        "flexible_chain": {
+          "success": 6
+        },
+        "macrocycle": {
+          "success": 3
+        },
+        "stereocenter_implicit_h": {
+          "success": 10
+        },
+        "stereocenter_quaternary": {
+          "success": 6
+        },
+        "alkene_ez": {
+          "success": 8
+        },
+        "druglike": {
+          "success": 7
+        },
+        "druglike_rigid": {
+          "success": 1
+        },
+        "druglike_stress": {
+          "success": 2
+        },
+        "small_ring_boundary": {
+          "success": 1
+        },
+        "macrocycle_boundary": {
+          "success": 1
+        },
+        "hindered_biaryl": {
+          "success": 1
+        },
+        "macrocycle_amide": {
+          "success": 1
+        },
+        "known_fail_closed_case": {
+          "success": 1
+        },
+        "force_field_unsupported": {
+          "success": 1
+        },
+        "drug_like": {
+          "success": 185,
+          "typed_failure": 15
+        }
+      },
+      "chematic_pipeline_v2_mmff94_strict": {
+        "rigid_ring": {
+          "unsupported_chemistry": 3,
+          "success": 6
+        },
+        "fused_aromatic": {
+          "unsupported_chemistry": 7
+        },
+        "flexible_chain": {
+          "success": 6
+        },
+        "macrocycle": {
+          "success": 3
+        },
+        "stereocenter_implicit_h": {
+          "success": 8,
+          "unsupported_chemistry": 2
+        },
+        "stereocenter_quaternary": {
+          "unsupported_chemistry": 6
+        },
+        "alkene_ez": {
+          "success": 6,
+          "unsupported_chemistry": 2
+        },
+        "druglike": {
+          "unsupported_chemistry": 5,
+          "success": 2
+        },
+        "druglike_rigid": {
+          "success": 1
+        },
+        "druglike_stress": {
+          "success": 1,
+          "unsupported_chemistry": 1
+        },
+        "small_ring_boundary": {
+          "success": 1
+        },
+        "macrocycle_boundary": {
+          "success": 1
+        },
+        "hindered_biaryl": {
+          "unsupported_chemistry": 1
+        },
+        "macrocycle_amide": {
+          "success": 1
+        },
+        "known_fail_closed_case": {
+          "success": 1
+        },
+        "force_field_unsupported": {
+          "unsupported_chemistry": 1
+        },
+        "drug_like": {
+          "unsupported_chemistry": 188,
+          "typed_failure": 11,
+          "success": 1
+        }
+      },
+      "chematic_pipeline_v2_mmff94_with_uff_fallback": {
+        "rigid_ring": {
+          "success": 9
+        },
+        "fused_aromatic": {
+          "success": 7
+        },
+        "flexible_chain": {
+          "success": 6
+        },
+        "macrocycle": {
+          "success": 3
+        },
+        "stereocenter_implicit_h": {
+          "success": 10
+        },
+        "stereocenter_quaternary": {
+          "success": 6
+        },
+        "alkene_ez": {
+          "success": 8
+        },
+        "druglike": {
+          "success": 7
+        },
+        "druglike_rigid": {
+          "success": 1
+        },
+        "druglike_stress": {
+          "success": 2
+        },
+        "small_ring_boundary": {
+          "success": 1
+        },
+        "macrocycle_boundary": {
+          "success": 1
+        },
+        "hindered_biaryl": {
+          "success": 1
+        },
+        "macrocycle_amide": {
+          "success": 1
+        },
+        "known_fail_closed_case": {
+          "success": 1
+        },
+        "force_field_unsupported": {
+          "success": 1
+        },
+        "drug_like": {
+          "success": 185,
+          "typed_failure": 15
+        }
+      },
+      "chematic_legacy_etkdg": {
+        "rigid_ring": {
+          "success": 9
+        },
+        "fused_aromatic": {
+          "success": 7
+        },
+        "flexible_chain": {
+          "success": 6
+        },
+        "macrocycle": {
+          "success": 3
+        },
+        "stereocenter_implicit_h": {
+          "success": 10
+        },
+        "stereocenter_quaternary": {
+          "success": 6
+        },
+        "alkene_ez": {
+          "success": 8
+        },
+        "druglike": {
+          "success": 7
+        },
+        "druglike_rigid": {
+          "success": 1
+        },
+        "druglike_stress": {
+          "success": 2
+        },
+        "small_ring_boundary": {
+          "success": 1
+        },
+        "macrocycle_boundary": {
+          "success": 1
+        },
+        "hindered_biaryl": {
+          "success": 1
+        },
+        "macrocycle_amide": {
+          "success": 1
+        },
+        "known_fail_closed_case": {
+          "success": 1
+        },
+        "force_field_unsupported": {
+          "success": 1
+        },
+        "drug_like": {
+          "success": 200
+        }
+      }
+    },
+    "rdkit": {
+      "rdkit_etkdgv3_raw": {
+        "rigid_ring": {
+          "success": 8,
+          "internal_error": 1
+        },
+        "fused_aromatic": {
+          "success": 7
+        },
+        "flexible_chain": {
+          "success": 6
+        },
+        "macrocycle": {
+          "success": 3
+        },
+        "stereocenter_implicit_h": {
+          "success": 10
+        },
+        "stereocenter_quaternary": {
+          "success": 6
+        },
+        "alkene_ez": {
+          "success": 8
+        },
+        "druglike": {
+          "success": 7
+        },
+        "druglike_rigid": {
+          "success": 1
+        },
+        "druglike_stress": {
+          "success": 2
+        },
+        "small_ring_boundary": {
+          "success": 1
+        },
+        "macrocycle_boundary": {
+          "success": 1
+        },
+        "hindered_biaryl": {
+          "success": 1
+        },
+        "macrocycle_amide": {
+          "success": 1
+        },
+        "known_fail_closed_case": {
+          "success": 1
+        },
+        "force_field_unsupported": {
+          "success": 1
+        },
+        "drug_like": {
+          "success": 200
+        }
+      },
+      "rdkit_etkdgv3_uff": {
+        "rigid_ring": {
+          "success": 8,
+          "internal_error": 1
+        },
+        "fused_aromatic": {
+          "success": 7
+        },
+        "flexible_chain": {
+          "success": 6
+        },
+        "macrocycle": {
+          "success": 3
+        },
+        "stereocenter_implicit_h": {
+          "success": 10
+        },
+        "stereocenter_quaternary": {
+          "success": 6
+        },
+        "alkene_ez": {
+          "success": 8
+        },
+        "druglike": {
+          "success": 7
+        },
+        "druglike_rigid": {
+          "success": 1
+        },
+        "druglike_stress": {
+          "success": 2
+        },
+        "small_ring_boundary": {
+          "success": 1
+        },
+        "macrocycle_boundary": {
+          "success": 1
+        },
+        "hindered_biaryl": {
+          "success": 1
+        },
+        "macrocycle_amide": {
+          "success": 1
+        },
+        "known_fail_closed_case": {
+          "success": 1
+        },
+        "force_field_unsupported": {
+          "success": 1
+        },
+        "drug_like": {
+          "success": 200
+        }
+      },
+      "rdkit_etkdgv3_mmff94": {
+        "rigid_ring": {
+          "success": 8,
+          "internal_error": 1
+        },
+        "fused_aromatic": {
+          "success": 7
+        },
+        "flexible_chain": {
+          "success": 6
+        },
+        "macrocycle": {
+          "success": 3
+        },
+        "stereocenter_implicit_h": {
+          "success": 10
+        },
+        "stereocenter_quaternary": {
+          "success": 6
+        },
+        "alkene_ez": {
+          "success": 8
+        },
+        "druglike": {
+          "success": 7
+        },
+        "druglike_rigid": {
+          "success": 1
+        },
+        "druglike_stress": {
+          "success": 2
+        },
+        "small_ring_boundary": {
+          "success": 1
+        },
+        "macrocycle_boundary": {
+          "success": 1
+        },
+        "hindered_biaryl": {
+          "success": 1
+        },
+        "macrocycle_amide": {
+          "success": 1
+        },
+        "known_fail_closed_case": {
+          "success": 1
+        },
+        "force_field_unsupported": {
+          "success": 1
+        },
+        "drug_like": {
+          "success": 200
+        }
+      },
+      "rdkit_etkdgv3_best_of_n": {
+        "rigid_ring": {
+          "success": 8,
+          "internal_error": 1
+        },
+        "fused_aromatic": {
+          "success": 7
+        },
+        "flexible_chain": {
+          "success": 6
+        },
+        "macrocycle": {
+          "success": 3
+        },
+        "stereocenter_implicit_h": {
+          "success": 10
+        },
+        "stereocenter_quaternary": {
+          "success": 6
+        },
+        "alkene_ez": {
+          "success": 8
+        },
+        "druglike": {
+          "success": 7
+        },
+        "druglike_rigid": {
+          "success": 1
+        },
+        "druglike_stress": {
+          "success": 2
+        },
+        "small_ring_boundary": {
+          "success": 1
+        },
+        "macrocycle_boundary": {
+          "success": 1
+        },
+        "hindered_biaryl": {
+          "success": 1
+        },
+        "macrocycle_amide": {
+          "success": 1
+        },
+        "known_fail_closed_case": {
+          "success": 1
+        },
+        "force_field_unsupported": {
+          "success": 1
+        },
+        "drug_like": {
+          "success": 200
+        }
+      }
+    }
+  },
+  "geometry_validity": {
+    "chematic": {
+      "chematic_pipeline_v2_no_ff": {
+        "n_success": 254,
+        "all_finite_rate": 1.0,
+        "sound_rate": 1.0,
+        "mean_bond_violation_rate_15pct": 0.12621331386495888,
+        "mean_bond_violation_rate_50pct": 0.0,
+        "mean_gross_clash_count": 0.027559055118110236,
+        "molecules_with_any_clash": 3
+      },
+      "chematic_pipeline_v2_dreiding": {
+        "n_success": 254,
+        "all_finite_rate": 1.0,
+        "sound_rate": 1.0,
+        "mean_bond_violation_rate_15pct": 0.009362980093395484,
+        "mean_bond_violation_rate_50pct": 0.0,
+        "mean_gross_clash_count": 0.0,
+        "molecules_with_any_clash": 0
+      },
+      "chematic_pipeline_v2_uff_only": {
+        "n_success": 250,
+        "all_finite_rate": 1.0,
+        "sound_rate": 1.0,
+        "mean_bond_violation_rate_15pct": 9.302325581395348e-05,
+        "mean_bond_violation_rate_50pct": 0.0,
+        "mean_gross_clash_count": 0.0,
+        "molecules_with_any_clash": 0
+      },
+      "chematic_pipeline_v2_mmff94_strict": {
+        "n_success": 38,
+        "all_finite_rate": 1.0,
+        "sound_rate": 1.0,
+        "mean_bond_violation_rate_15pct": 0.0,
+        "mean_bond_violation_rate_50pct": 0.0,
+        "mean_gross_clash_count": 0.0,
+        "molecules_with_any_clash": 0
+      },
+      "chematic_pipeline_v2_mmff94_with_uff_fallback": {
+        "n_success": 250,
+        "all_finite_rate": 1.0,
+        "sound_rate": 1.0,
+        "mean_bond_violation_rate_15pct": 9.302325581395348e-05,
+        "mean_bond_violation_rate_50pct": 0.0,
+        "mean_gross_clash_count": 0.0,
+        "molecules_with_any_clash": 0
+      },
+      "chematic_legacy_etkdg": {
+        "n_success": 265,
+        "all_finite_rate": 1.0,
+        "sound_rate": 1.0,
+        "mean_bond_violation_rate_15pct": 0.4979294017354166,
+        "mean_bond_violation_rate_50pct": 0.15481659461395278,
+        "mean_gross_clash_count": 26.928301886792454,
+        "molecules_with_any_clash": 236
+      }
+    }
+  },
+  "stereo": {
+    "chematic": {
+      "chematic_pipeline_v2_no_ff": {
+        "n_molecules_with_declared_stereo": 83,
+        "mean_declared": 1.7590361445783131,
+        "mean_final_satisfied": 0.9879518072289156,
+        "mean_final_violations": 0.7710843373493976,
+        "mean_final_unevaluable": 0.0,
+        "total_repaired": 0,
+        "total_repair_failed": 0
+      },
+      "chematic_pipeline_v2_dreiding": {
+        "n_molecules_with_declared_stereo": 83,
+        "mean_declared": 1.7590361445783131,
+        "mean_final_satisfied": 1.072289156626506,
+        "mean_final_violations": 0.6867469879518072,
+        "mean_final_unevaluable": 0.0,
+        "total_repaired": 0,
+        "total_repair_failed": 0
+      },
+      "chematic_pipeline_v2_uff_only": {
+        "n_molecules_with_declared_stereo": 80,
+        "mean_declared": 1.75,
+        "mean_final_satisfied": 1.1,
+        "mean_final_violations": 0.65,
+        "mean_final_unevaluable": 0.0,
+        "total_repaired": 0,
+        "total_repair_failed": 0
+      },
+      "chematic_pipeline_v2_mmff94_strict": {
+        "n_molecules_with_declared_stereo": 19,
+        "mean_declared": 1.894736842105263,
+        "mean_final_satisfied": 0.8947368421052632,
+        "mean_final_violations": 1.0,
+        "mean_final_unevaluable": 0.0,
+        "total_repaired": 0,
+        "total_repair_failed": 0
+      },
+      "chematic_pipeline_v2_mmff94_with_uff_fallback": {
+        "n_molecules_with_declared_stereo": 80,
+        "mean_declared": 1.75,
+        "mean_final_satisfied": 1.1,
+        "mean_final_violations": 0.65,
+        "mean_final_unevaluable": 0.0,
+        "total_repaired": 0,
+        "total_repair_failed": 0
+      },
+      "chematic_legacy_etkdg": null
+    }
+  },
+  "force_field_coverage": {
+    "chematic": {
+      "chematic_pipeline_v2_mmff94_with_uff_fallback": {
+        "n_success": 250,
+        "fallback_rate": 0.848,
+        "converged_rate": 0.14
+      },
+      "chematic_pipeline_v2_mmff94_strict": {
+        "n_success": 38,
+        "fallback_rate": 0.0,
+        "converged_rate": 0.6578947368421053
+      }
+    }
+  },
+  "performance": {
+    "chematic": {
+      "chematic_pipeline_v2_no_ff": {
+        "n": 265,
+        "p50": 9.0,
+        "p95": 55.79999999999998,
+        "p99": 93.32000000000016,
+        "max": 119,
+        "methodology": "in-process wall-clock per call, NOT process-isolated; see report's Performance Methodology section"
+      },
+      "chematic_pipeline_v2_dreiding": {
+        "n": 265,
+        "p50": 306.0,
+        "p95": 2063.2,
+        "p99": 2701.2400000000007,
+        "max": 3040,
+        "methodology": "in-process wall-clock per call, NOT process-isolated; see report's Performance Methodology section"
+      },
+      "chematic_pipeline_v2_uff_only": {
+        "n": 265,
+        "p50": 523.0,
+        "p95": 3436.799999999998,
+        "p99": 4753.960000000002,
+        "max": 7937,
+        "methodology": "in-process wall-clock per call, NOT process-isolated; see report's Performance Methodology section"
+      },
+      "chematic_pipeline_v2_mmff94_strict": {
+        "n": 265,
+        "p50": 18.0,
+        "p95": 157.39999999999986,
+        "p99": 1196.720000000009,
+        "max": 4140,
+        "methodology": "in-process wall-clock per call, NOT process-isolated; see report's Performance Methodology section"
+      },
+      "chematic_pipeline_v2_mmff94_with_uff_fallback": {
+        "n": 265,
+        "p50": 591.0,
+        "p95": 3283.399999999999,
+        "p99": 4548.680000000004,
+        "max": 7146,
+        "methodology": "in-process wall-clock per call, NOT process-isolated; see report's Performance Methodology section"
+      },
+      "chematic_legacy_etkdg": {
+        "n": 265,
+        "p50": 2.0,
+        "p95": 9.0,
+        "p99": 14.0,
+        "max": 17,
+        "methodology": "in-process wall-clock per call, NOT process-isolated; see report's Performance Methodology section"
+      }
+    },
+    "rdkit": {
+      "rdkit_etkdgv3_raw": {
+        "n": 265,
+        "p50": 25.0,
+        "p95": 210.59999999999997,
+        "p99": 371.6000000000008,
+        "max": 803,
+        "methodology": "in-process wall-clock per call, NOT process-isolated; see report's Performance Methodology section"
+      },
+      "rdkit_etkdgv3_uff": {
+        "n": 265,
+        "p50": 48.0,
+        "p95": 291.99999999999966,
+        "p99": 495.44000000000005,
+        "max": 977,
+        "methodology": "in-process wall-clock per call, NOT process-isolated; see report's Performance Methodology section"
+      },
+      "rdkit_etkdgv3_mmff94": {
+        "n": 265,
+        "p50": 54.0,
+        "p95": 323.39999999999986,
+        "p99": 559.0800000000014,
+        "max": 1024,
+        "methodology": "in-process wall-clock per call, NOT process-isolated; see report's Performance Methodology section"
+      },
+      "rdkit_etkdgv3_best_of_n": {
+        "n": 265,
+        "p50": 489.0,
+        "p95": 2729.9999999999995,
+        "p99": 5059.800000000022,
+        "max": 7327,
+        "methodology": "in-process wall-clock per call, NOT process-isolated; see report's Performance Methodology section"
+      }
+    },
+    "methodology_note": "In-process wall-clock timing per (molecule, arm) call within a single long-running process -- NOT separate-process-isolated. p50/p95/p99/max reported per arm; process-level variance (repeated whole-process runs) was NOT measured this round."
+  },
+  "ring_torsion_failclosed_probe": {
+    "n_rows": 1,
+    "rows": [
+      {
+        "arm": "chematic_pipeline_v2_ring_torsion_failclosed_probe",
+        "elapsed_ms": 6,
+        "failure_cause": "RingTorsionApplicationUnsupported",
+        "failure_stage": "TorsionOptimization",
+        "has_last_known_coords": true,
+        "heavy_atom_elements": [
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C",
+          "C"
+        ],
+        "name": "ring_torsion_fail_closed",
+        "primary_category": "known_fail_closed_case",
+        "smiles": "C1CCCCC1CCCCCCCCCCCC",
+        "status": "typed_failure",
+        "tier": "A",
+        "_bucket": "unsupported_chemistry"
+      }
+    ]
+  },
+  "reference_geometry_subset": {
+    "n_molecules_with_reference_geometry": 0,
+    "status": "insufficient_evidence",
+    "note": "No experimentally-determined reference conformers were available for this benchmark round. RMSD-vs-reference, best-of-N RMSD, torsion fingerprint deviation, and duplicate-conformer-rate metrics are NOT computed here -- reported as insufficient evidence, not fabricated against a synthetic or absent reference."
+  },
+  "generated_by": [
+    "scripts/gen_pipeline_v2_vs_rdkit_tier_a_manifest.py",
+    "scripts/gen_pipeline_v2_vs_rdkit_tier_b_manifest.py",
+    "crates/chematic-3d/examples/pipeline_v2_vs_rdkit_dump.rs",
+    "scripts/pipeline_v2_vs_rdkit_oracle.py",
+    "scripts/gen_pipeline_v2_vs_rdkit_report.py"
+  ],
+  "input_file_hashes": {
+    "chematic_rows_sha256": "585889615aae9002c11046d342157ba3e18e8d0e74cb56bbab7e6e7390d88373",
+    "rdkit_rows_sha256": "ba24a7c64df1c350c60f0ff62e6ec56f68ffff83d684a821d10491fa65286199",
+    "tier_a_manifest_sha256": "6a478ea0f5d4ef067a4d1739e77a7209e8f76ecaa837e3f487c723dd6f465d6b",
+    "tier_b_manifest_sha256": "b3cde3fedcc68391ba3d3cbae228acd3057cadea6e6fc17499592b23bdc7550a"
+  }
+}
