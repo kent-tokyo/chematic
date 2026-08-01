@@ -142,6 +142,27 @@ Status: **Diagnosis complete. No production behavior change.**
 > mechanism behind them needs its own scoped fix with its own blast-radius
 > measurement before `compute_stereo_alkene_ends` itself changes.
 
+> **Update (Wave 2C, audit-only, `Refs #149` not `Fixes #149`):** tested the
+> ring-endocyclic hypothesis above empirically, per fixture (never pooled)
+> and against the full 5,000-molecule corpus, cross-checked against a live
+> RDKit oracle. Confirmed for all 8 residuals individually (each has a
+> coupled end whose own double bond is endocyclic in a 5- or 6-ring and
+> RDKit independently reports `STEREONONE`/absent from
+> `FindPotentialStereo`), but found the hypothesis is **necessary, not
+> sufficient**: the identical shape is also present in 5 of the 10
+> `EZ_SHARED_CARRIER_FULLY_RESOLVED` fixtures, which still fully converge —
+> an unidentified second factor governs the resolved-vs-residual split
+> within that shared shape. The recommended concrete predicate ("double bond
+> endocyclic AND smallest such ring < 8 atoms") has 0/1,387 row-level
+> disagreements with RDKit's own independent stereo-possibility judgment
+> across the full corpus, but excludes 6 of the corpus's own 62 coupled ends
+> (only 3 of 31 coupling components) — the ring-endocyclic mechanism does
+> not explain most of the corpus's general shared-carrier coupling
+> population, only these 8 pinned fixtures. Verdict: **CONDITIONAL GO** for
+> a follow-up implementation PR (not started, no production code changed
+> here) — see `docs/ez_ring_constrained_residual_audit.md` for the full
+> per-fixture classification, blast-radius table, and reasoning.
+
 > **Update (C1a):** Root Cause 1 (the dominant, E/Z-marker-carrier cluster
 > described below) has a safe, verified **partial** fix — branch
 > `fix/canonical-ez-carrier-normalization`, PR #148. 264/282 of the

@@ -1,0 +1,2078 @@
+{
+  "corpus": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.claude/worktrees/agent-a80fed5c64dd5a70b/scripts/descriptor_census_corpus.smi",
+  "n_fixture_rows": 72,
+  "n_corpus_rows": 1387,
+  "n_corpus_molecules_with_ends": 995,
+  "n_corpus_coupled_ends": 62,
+  "chematic_correspondence_failures_corpus": 6,
+  "rdkit_index_correspondence_failures_corpus": 0,
+  "fixture_classification": [
+    {
+      "smiles": "CCCCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+      "label": "fully_resolved",
+      "n_stereo_alkene_ends": 2,
+      "n_coupled_ends": 2,
+      "coupled_ends": [
+        {
+          "end_atom_idx": 6,
+          "end_element": "C",
+          "partner_atom_idx": 5,
+          "partner_element": "N",
+          "component_other_members": [
+            11
+          ],
+          "double_bond_endocyclic": false,
+          "double_bond_endocyclic_ring_sizes": [],
+          "end_atom_ring_sizes": [
+            4
+          ],
+          "marker_placed": false,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": true,
+          "rdkit_specified": "Specified",
+          "rdkit_bond_stereo": "STEREOZ"
+        },
+        {
+          "end_atom_idx": 11,
+          "end_element": "C",
+          "partner_atom_idx": 12,
+          "partner_element": "N",
+          "component_other_members": [
+            6
+          ],
+          "double_bond_endocyclic": false,
+          "double_bond_endocyclic_ring_sizes": [],
+          "end_atom_ring_sizes": [
+            4
+          ],
+          "marker_placed": false,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": true,
+          "rdkit_specified": "Specified",
+          "rdkit_bond_stereo": "STEREOZ"
+        }
+      ],
+      "hypothesis_holds": false
+    },
+    {
+      "smiles": "O=C(Nc1ccc(C[C@H](/N=c2\\c(O)c(O)\\c2=N/Cc2ccccc2)C(=O)O)cc1)c1c(Cl)cncc1Cl",
+      "label": "fully_resolved",
+      "n_stereo_alkene_ends": 2,
+      "n_coupled_ends": 2,
+      "coupled_ends": [
+        {
+          "end_atom_idx": 10,
+          "end_element": "C",
+          "partner_atom_idx": 9,
+          "partner_element": "N",
+          "component_other_members": [
+            15
+          ],
+          "double_bond_endocyclic": false,
+          "double_bond_endocyclic_ring_sizes": [],
+          "end_atom_ring_sizes": [
+            4
+          ],
+          "marker_placed": false,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": true,
+          "rdkit_specified": "Specified",
+          "rdkit_bond_stereo": "STEREOZ"
+        },
+        {
+          "end_atom_idx": 15,
+          "end_element": "C",
+          "partner_atom_idx": 16,
+          "partner_element": "N",
+          "component_other_members": [
+            10
+          ],
+          "double_bond_endocyclic": false,
+          "double_bond_endocyclic_ring_sizes": [],
+          "end_atom_ring_sizes": [
+            4
+          ],
+          "marker_placed": false,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": true,
+          "rdkit_specified": "Specified",
+          "rdkit_bond_stereo": "STEREOZ"
+        }
+      ],
+      "hypothesis_holds": false
+    },
+    {
+      "smiles": "CCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+      "label": "fully_resolved",
+      "n_stereo_alkene_ends": 2,
+      "n_coupled_ends": 2,
+      "coupled_ends": [
+        {
+          "end_atom_idx": 4,
+          "end_element": "C",
+          "partner_atom_idx": 3,
+          "partner_element": "N",
+          "component_other_members": [
+            9
+          ],
+          "double_bond_endocyclic": false,
+          "double_bond_endocyclic_ring_sizes": [],
+          "end_atom_ring_sizes": [
+            4
+          ],
+          "marker_placed": false,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": true,
+          "rdkit_specified": "Specified",
+          "rdkit_bond_stereo": "STEREOZ"
+        },
+        {
+          "end_atom_idx": 9,
+          "end_element": "C",
+          "partner_atom_idx": 10,
+          "partner_element": "N",
+          "component_other_members": [
+            4
+          ],
+          "double_bond_endocyclic": false,
+          "double_bond_endocyclic_ring_sizes": [],
+          "end_atom_ring_sizes": [
+            4
+          ],
+          "marker_placed": false,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": true,
+          "rdkit_specified": "Specified",
+          "rdkit_bond_stereo": "STEREOZ"
+        }
+      ],
+      "hypothesis_holds": false
+    },
+    {
+      "smiles": "O=C(Nc1ccc(C[C@H](/N=c2\\c(O)c(O)\\c2=N/c2ccccc2)C(=O)O)cc1)c1c(Cl)cncc1Cl",
+      "label": "fully_resolved",
+      "n_stereo_alkene_ends": 2,
+      "n_coupled_ends": 2,
+      "coupled_ends": [
+        {
+          "end_atom_idx": 10,
+          "end_element": "C",
+          "partner_atom_idx": 9,
+          "partner_element": "N",
+          "component_other_members": [
+            15
+          ],
+          "double_bond_endocyclic": false,
+          "double_bond_endocyclic_ring_sizes": [],
+          "end_atom_ring_sizes": [
+            4
+          ],
+          "marker_placed": false,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": true,
+          "rdkit_specified": "Specified",
+          "rdkit_bond_stereo": "STEREOZ"
+        },
+        {
+          "end_atom_idx": 15,
+          "end_element": "C",
+          "partner_atom_idx": 16,
+          "partner_element": "N",
+          "component_other_members": [
+            10
+          ],
+          "double_bond_endocyclic": false,
+          "double_bond_endocyclic_ring_sizes": [],
+          "end_atom_ring_sizes": [
+            4
+          ],
+          "marker_placed": false,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": true,
+          "rdkit_specified": "Specified",
+          "rdkit_bond_stereo": "STEREOZ"
+        }
+      ],
+      "hypothesis_holds": false
+    },
+    {
+      "smiles": "CC(C)(C)/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+      "label": "fully_resolved",
+      "n_stereo_alkene_ends": 2,
+      "n_coupled_ends": 2,
+      "coupled_ends": [
+        {
+          "end_atom_idx": 5,
+          "end_element": "C",
+          "partner_atom_idx": 4,
+          "partner_element": "N",
+          "component_other_members": [
+            10
+          ],
+          "double_bond_endocyclic": false,
+          "double_bond_endocyclic_ring_sizes": [],
+          "end_atom_ring_sizes": [
+            4
+          ],
+          "marker_placed": false,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": true,
+          "rdkit_specified": "Specified",
+          "rdkit_bond_stereo": "STEREOZ"
+        },
+        {
+          "end_atom_idx": 10,
+          "end_element": "C",
+          "partner_atom_idx": 11,
+          "partner_element": "N",
+          "component_other_members": [
+            5
+          ],
+          "double_bond_endocyclic": false,
+          "double_bond_endocyclic_ring_sizes": [],
+          "end_atom_ring_sizes": [
+            4
+          ],
+          "marker_placed": false,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": true,
+          "rdkit_specified": "Specified",
+          "rdkit_bond_stereo": "STEREOZ"
+        }
+      ],
+      "hypothesis_holds": false
+    },
+    {
+      "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(I)c1",
+      "label": "fully_resolved",
+      "n_stereo_alkene_ends": 5,
+      "n_coupled_ends": 2,
+      "coupled_ends": [
+        {
+          "end_atom_idx": 9,
+          "end_element": "C",
+          "partner_atom_idx": 8,
+          "partner_element": "N",
+          "component_other_members": [
+            11
+          ],
+          "double_bond_endocyclic": true,
+          "double_bond_endocyclic_ring_sizes": [
+            6
+          ],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": false,
+          "rdkit_specified": null,
+          "rdkit_bond_stereo": "STEREONONE"
+        },
+        {
+          "end_atom_idx": 11,
+          "end_element": "C",
+          "partner_atom_idx": 12,
+          "partner_element": "C",
+          "component_other_members": [
+            9
+          ],
+          "double_bond_endocyclic": false,
+          "double_bond_endocyclic_ring_sizes": [],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": true,
+          "rdkit_specified": "Specified",
+          "rdkit_bond_stereo": "STEREOZ"
+        }
+      ],
+      "hypothesis_holds": true
+    },
+    {
+      "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccccc1C(F)(F)F",
+      "label": "fully_resolved",
+      "n_stereo_alkene_ends": 5,
+      "n_coupled_ends": 2,
+      "coupled_ends": [
+        {
+          "end_atom_idx": 5,
+          "end_element": "C",
+          "partner_atom_idx": 3,
+          "partner_element": "C",
+          "component_other_members": [
+            6
+          ],
+          "double_bond_endocyclic": false,
+          "double_bond_endocyclic_ring_sizes": [],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": true,
+          "rdkit_specified": "Specified",
+          "rdkit_bond_stereo": "STEREOZ"
+        },
+        {
+          "end_atom_idx": 6,
+          "end_element": "C",
+          "partner_atom_idx": 8,
+          "partner_element": "N",
+          "component_other_members": [
+            5
+          ],
+          "double_bond_endocyclic": true,
+          "double_bond_endocyclic_ring_sizes": [
+            6
+          ],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": false,
+          "rdkit_specified": null,
+          "rdkit_bond_stereo": "STEREONONE"
+        }
+      ],
+      "hypothesis_holds": true
+    },
+    {
+      "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccccc1OC",
+      "label": "fully_resolved",
+      "n_stereo_alkene_ends": 5,
+      "n_coupled_ends": 2,
+      "coupled_ends": [
+        {
+          "end_atom_idx": 9,
+          "end_element": "C",
+          "partner_atom_idx": 8,
+          "partner_element": "N",
+          "component_other_members": [
+            11
+          ],
+          "double_bond_endocyclic": true,
+          "double_bond_endocyclic_ring_sizes": [
+            6
+          ],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": false,
+          "rdkit_specified": null,
+          "rdkit_bond_stereo": "STEREONONE"
+        },
+        {
+          "end_atom_idx": 11,
+          "end_element": "C",
+          "partner_atom_idx": 12,
+          "partner_element": "C",
+          "component_other_members": [
+            9
+          ],
+          "double_bond_endocyclic": false,
+          "double_bond_endocyclic_ring_sizes": [],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": true,
+          "rdkit_specified": "Specified",
+          "rdkit_bond_stereo": "STEREOZ"
+        }
+      ],
+      "hypothesis_holds": true
+    },
+    {
+      "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccc([N+](=O)[O-])cc1",
+      "label": "fully_resolved",
+      "n_stereo_alkene_ends": 5,
+      "n_coupled_ends": 2,
+      "coupled_ends": [
+        {
+          "end_atom_idx": 5,
+          "end_element": "C",
+          "partner_atom_idx": 3,
+          "partner_element": "C",
+          "component_other_members": [
+            6
+          ],
+          "double_bond_endocyclic": false,
+          "double_bond_endocyclic_ring_sizes": [],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": true,
+          "rdkit_specified": "Specified",
+          "rdkit_bond_stereo": "STEREOZ"
+        },
+        {
+          "end_atom_idx": 6,
+          "end_element": "C",
+          "partner_atom_idx": 8,
+          "partner_element": "N",
+          "component_other_members": [
+            5
+          ],
+          "double_bond_endocyclic": true,
+          "double_bond_endocyclic_ring_sizes": [
+            6
+          ],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": false,
+          "rdkit_specified": null,
+          "rdkit_bond_stereo": "STEREONONE"
+        }
+      ],
+      "hypothesis_holds": true
+    },
+    {
+      "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1cccc(C(F)(F)F)c1",
+      "label": "fully_resolved",
+      "n_stereo_alkene_ends": 5,
+      "n_coupled_ends": 2,
+      "coupled_ends": [
+        {
+          "end_atom_idx": 5,
+          "end_element": "C",
+          "partner_atom_idx": 3,
+          "partner_element": "C",
+          "component_other_members": [
+            6
+          ],
+          "double_bond_endocyclic": false,
+          "double_bond_endocyclic_ring_sizes": [],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": true,
+          "rdkit_specified": "Specified",
+          "rdkit_bond_stereo": "STEREOZ"
+        },
+        {
+          "end_atom_idx": 6,
+          "end_element": "C",
+          "partner_atom_idx": 8,
+          "partner_element": "N",
+          "component_other_members": [
+            5
+          ],
+          "double_bond_endocyclic": true,
+          "double_bond_endocyclic_ring_sizes": [
+            6
+          ],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": false,
+          "rdkit_specified": null,
+          "rdkit_bond_stereo": "STEREONONE"
+        }
+      ],
+      "hypothesis_holds": true
+    },
+    {
+      "smiles": "CC1=C2CC[C@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\\N=C(N)N",
+      "label": "ring_constrained_residual",
+      "n_stereo_alkene_ends": 5,
+      "n_coupled_ends": 2,
+      "coupled_ends": [
+        {
+          "end_atom_idx": 1,
+          "end_element": "C",
+          "partner_atom_idx": 2,
+          "partner_element": "C",
+          "component_other_members": [
+            16
+          ],
+          "double_bond_endocyclic": true,
+          "double_bond_endocyclic_ring_sizes": [
+            6
+          ],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": false,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": false,
+          "rdkit_specified": null,
+          "rdkit_bond_stereo": "STEREONONE"
+        },
+        {
+          "end_atom_idx": 16,
+          "end_element": "C",
+          "partner_atom_idx": 17,
+          "partner_element": "N",
+          "component_other_members": [
+            1
+          ],
+          "double_bond_endocyclic": false,
+          "double_bond_endocyclic_ring_sizes": [],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": true,
+          "rdkit_specified": "Specified",
+          "rdkit_bond_stereo": "STEREOE"
+        }
+      ],
+      "hypothesis_holds": true
+    },
+    {
+      "smiles": "CC1=C2CC[C@@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\\N=C(N)N",
+      "label": "ring_constrained_residual",
+      "n_stereo_alkene_ends": 5,
+      "n_coupled_ends": 2,
+      "coupled_ends": [
+        {
+          "end_atom_idx": 1,
+          "end_element": "C",
+          "partner_atom_idx": 2,
+          "partner_element": "C",
+          "component_other_members": [
+            16
+          ],
+          "double_bond_endocyclic": true,
+          "double_bond_endocyclic_ring_sizes": [
+            6
+          ],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": false,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": false,
+          "rdkit_specified": null,
+          "rdkit_bond_stereo": "STEREONONE"
+        },
+        {
+          "end_atom_idx": 16,
+          "end_element": "C",
+          "partner_atom_idx": 17,
+          "partner_element": "N",
+          "component_other_members": [
+            1
+          ],
+          "double_bond_endocyclic": false,
+          "double_bond_endocyclic_ring_sizes": [],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": true,
+          "rdkit_specified": "Specified",
+          "rdkit_bond_stereo": "STEREOE"
+        }
+      ],
+      "hypothesis_holds": true
+    },
+    {
+      "smiles": "COC(=O)/C=C/[C@H]1CCC2=C(C)/C(=N/N=C(N)N)CC[C@@]21C",
+      "label": "ring_constrained_residual",
+      "n_stereo_alkene_ends": 4,
+      "n_coupled_ends": 2,
+      "coupled_ends": [
+        {
+          "end_atom_idx": 10,
+          "end_element": "C",
+          "partner_atom_idx": 9,
+          "partner_element": "C",
+          "component_other_members": [
+            12
+          ],
+          "double_bond_endocyclic": true,
+          "double_bond_endocyclic_ring_sizes": [
+            6
+          ],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": false,
+          "rdkit_specified": null,
+          "rdkit_bond_stereo": "STEREONONE"
+        },
+        {
+          "end_atom_idx": 12,
+          "end_element": "C",
+          "partner_atom_idx": 13,
+          "partner_element": "N",
+          "component_other_members": [
+            10
+          ],
+          "double_bond_endocyclic": false,
+          "double_bond_endocyclic_ring_sizes": [],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": true,
+          "rdkit_specified": "Specified",
+          "rdkit_bond_stereo": "STEREOE"
+        }
+      ],
+      "hypothesis_holds": true
+    },
+    {
+      "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccc(I)cc1",
+      "label": "ring_constrained_residual",
+      "n_stereo_alkene_ends": 5,
+      "n_coupled_ends": 2,
+      "coupled_ends": [
+        {
+          "end_atom_idx": 9,
+          "end_element": "C",
+          "partner_atom_idx": 8,
+          "partner_element": "N",
+          "component_other_members": [
+            11
+          ],
+          "double_bond_endocyclic": true,
+          "double_bond_endocyclic_ring_sizes": [
+            6
+          ],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": false,
+          "rdkit_specified": null,
+          "rdkit_bond_stereo": "STEREONONE"
+        },
+        {
+          "end_atom_idx": 11,
+          "end_element": "C",
+          "partner_atom_idx": 12,
+          "partner_element": "C",
+          "component_other_members": [
+            9
+          ],
+          "double_bond_endocyclic": false,
+          "double_bond_endocyclic_ring_sizes": [],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": true,
+          "rdkit_specified": "Specified",
+          "rdkit_bond_stereo": "STEREOZ"
+        }
+      ],
+      "hypothesis_holds": true
+    },
+    {
+      "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccccc1[N+](=O)[O-]",
+      "label": "ring_constrained_residual",
+      "n_stereo_alkene_ends": 5,
+      "n_coupled_ends": 2,
+      "coupled_ends": [
+        {
+          "end_atom_idx": 5,
+          "end_element": "C",
+          "partner_atom_idx": 3,
+          "partner_element": "C",
+          "component_other_members": [
+            6
+          ],
+          "double_bond_endocyclic": false,
+          "double_bond_endocyclic_ring_sizes": [],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": true,
+          "rdkit_specified": "Specified",
+          "rdkit_bond_stereo": "STEREOZ"
+        },
+        {
+          "end_atom_idx": 6,
+          "end_element": "C",
+          "partner_atom_idx": 8,
+          "partner_element": "N",
+          "component_other_members": [
+            5
+          ],
+          "double_bond_endocyclic": true,
+          "double_bond_endocyclic_ring_sizes": [
+            6
+          ],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": false,
+          "rdkit_specified": null,
+          "rdkit_bond_stereo": "STEREONONE"
+        }
+      ],
+      "hypothesis_holds": true
+    },
+    {
+      "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(C)c1",
+      "label": "ring_constrained_residual",
+      "n_stereo_alkene_ends": 5,
+      "n_coupled_ends": 2,
+      "coupled_ends": [
+        {
+          "end_atom_idx": 9,
+          "end_element": "C",
+          "partner_atom_idx": 8,
+          "partner_element": "N",
+          "component_other_members": [
+            11
+          ],
+          "double_bond_endocyclic": true,
+          "double_bond_endocyclic_ring_sizes": [
+            6
+          ],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": false,
+          "rdkit_specified": null,
+          "rdkit_bond_stereo": "STEREONONE"
+        },
+        {
+          "end_atom_idx": 11,
+          "end_element": "C",
+          "partner_atom_idx": 12,
+          "partner_element": "C",
+          "component_other_members": [
+            9
+          ],
+          "double_bond_endocyclic": false,
+          "double_bond_endocyclic_ring_sizes": [],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": true,
+          "rdkit_specified": "Specified",
+          "rdkit_bond_stereo": "STEREOZ"
+        }
+      ],
+      "hypothesis_holds": true
+    },
+    {
+      "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(OC)c1",
+      "label": "ring_constrained_residual",
+      "n_stereo_alkene_ends": 5,
+      "n_coupled_ends": 2,
+      "coupled_ends": [
+        {
+          "end_atom_idx": 9,
+          "end_element": "C",
+          "partner_atom_idx": 8,
+          "partner_element": "N",
+          "component_other_members": [
+            11
+          ],
+          "double_bond_endocyclic": true,
+          "double_bond_endocyclic_ring_sizes": [
+            6
+          ],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": false,
+          "rdkit_specified": null,
+          "rdkit_bond_stereo": "STEREONONE"
+        },
+        {
+          "end_atom_idx": 11,
+          "end_element": "C",
+          "partner_atom_idx": 12,
+          "partner_element": "C",
+          "component_other_members": [
+            9
+          ],
+          "double_bond_endocyclic": false,
+          "double_bond_endocyclic_ring_sizes": [],
+          "end_atom_ring_sizes": [
+            6
+          ],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": true,
+          "rdkit_specified": "Specified",
+          "rdkit_bond_stereo": "STEREOZ"
+        }
+      ],
+      "hypothesis_holds": true
+    },
+    {
+      "smiles": "CCO/C(O)=C(\\C1=NCCN1)c1nnc(N)s1",
+      "label": "ring_constrained_residual",
+      "n_stereo_alkene_ends": 3,
+      "n_coupled_ends": 2,
+      "coupled_ends": [
+        {
+          "end_atom_idx": 5,
+          "end_element": "C",
+          "partner_atom_idx": 3,
+          "partner_element": "C",
+          "component_other_members": [
+            6
+          ],
+          "double_bond_endocyclic": false,
+          "double_bond_endocyclic_ring_sizes": [],
+          "end_atom_ring_sizes": [],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": true,
+          "rdkit_specified": "Specified",
+          "rdkit_bond_stereo": "STEREOE"
+        },
+        {
+          "end_atom_idx": 6,
+          "end_element": "C",
+          "partner_atom_idx": 7,
+          "partner_element": "N",
+          "component_other_members": [
+            5
+          ],
+          "double_bond_endocyclic": true,
+          "double_bond_endocyclic_ring_sizes": [
+            5
+          ],
+          "end_atom_ring_sizes": [
+            5
+          ],
+          "marker_placed": true,
+          "rdkit_index_correspondence_ok": true,
+          "rdkit_potential_stereo": false,
+          "rdkit_specified": null,
+          "rdkit_bond_stereo": "STEREONONE"
+        }
+      ],
+      "hypothesis_holds": true
+    }
+  ],
+  "blast_radius": {
+    "a_atom_in_ring_lt7": {
+      "total_ends": 1387,
+      "unmeasurable_ends": 0,
+      "ends_excluded": 901,
+      "ends_excluded_pct_of_measurable": 64.96,
+      "excluded_and_currently_marked_UPPER_BOUND_on_output_change": 62,
+      "excluded_and_coupled": 52,
+      "distinct_molecules_with_excluded_end": 660,
+      "distinct_molecules_with_excluded_and_marked_end": 62
+    },
+    "a_atom_in_ring_lt8": {
+      "total_ends": 1387,
+      "unmeasurable_ends": 0,
+      "ends_excluded": 959,
+      "ends_excluded_pct_of_measurable": 69.14,
+      "excluded_and_currently_marked_UPPER_BOUND_on_output_change": 62,
+      "excluded_and_coupled": 52,
+      "distinct_molecules_with_excluded_end": 709,
+      "distinct_molecules_with_excluded_and_marked_end": 62
+    },
+    "a_bond_endocyclic_lt7": {
+      "total_ends": 1387,
+      "unmeasurable_ends": 0,
+      "ends_excluded": 783,
+      "ends_excluded_pct_of_measurable": 56.45,
+      "excluded_and_currently_marked_UPPER_BOUND_on_output_change": 10,
+      "excluded_and_coupled": 6,
+      "distinct_molecules_with_excluded_end": 580,
+      "distinct_molecules_with_excluded_and_marked_end": 10
+    },
+    "a_bond_endocyclic_lt8": {
+      "total_ends": 1387,
+      "unmeasurable_ends": 0,
+      "ends_excluded": 837,
+      "ends_excluded_pct_of_measurable": 60.35,
+      "excluded_and_currently_marked_UPPER_BOUND_on_output_change": 10,
+      "excluded_and_coupled": 6,
+      "distinct_molecules_with_excluded_end": 625,
+      "distinct_molecules_with_excluded_and_marked_end": 10
+    },
+    "b_rdkit_not_potential_stereo": {
+      "total_ends": 1387,
+      "unmeasurable_ends": 0,
+      "ends_excluded": 933,
+      "ends_excluded_pct_of_measurable": 67.27,
+      "excluded_and_currently_marked_UPPER_BOUND_on_output_change": 10,
+      "excluded_and_coupled": 6,
+      "distinct_molecules_with_excluded_end": 672,
+      "distinct_molecules_with_excluded_and_marked_end": 10
+    },
+    "c_ring_topology_impossible": {
+      "total_ends": 1387,
+      "unmeasurable_ends": 0,
+      "ends_excluded": 837,
+      "ends_excluded_pct_of_measurable": 60.35,
+      "excluded_and_currently_marked_UPPER_BOUND_on_output_change": 10,
+      "excluded_and_coupled": 6,
+      "distinct_molecules_with_excluded_end": 625,
+      "distinct_molecules_with_excluded_and_marked_end": 10
+    }
+  },
+  "blast_radius_per_fixture_effect": {
+    "a_atom_in_ring_lt7": {
+      "fully_resolved": [
+        {
+          "smiles": "CCCCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+          "n_ends": 2,
+          "n_excluded": 2,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": [
+            6,
+            11
+          ]
+        },
+        {
+          "smiles": "O=C(Nc1ccc(C[C@H](/N=c2\\c(O)c(O)\\c2=N/Cc2ccccc2)C(=O)O)cc1)c1c(Cl)cncc1Cl",
+          "n_ends": 2,
+          "n_excluded": 2,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": [
+            10,
+            15
+          ]
+        },
+        {
+          "smiles": "CCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+          "n_ends": 2,
+          "n_excluded": 2,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": [
+            4,
+            9
+          ]
+        },
+        {
+          "smiles": "O=C(Nc1ccc(C[C@H](/N=c2\\c(O)c(O)\\c2=N/c2ccccc2)C(=O)O)cc1)c1c(Cl)cncc1Cl",
+          "n_ends": 2,
+          "n_excluded": 2,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": [
+            10,
+            15
+          ]
+        },
+        {
+          "smiles": "CC(C)(C)/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+          "n_ends": 2,
+          "n_excluded": 2,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": [
+            5,
+            10
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(I)c1",
+          "n_ends": 5,
+          "n_excluded": 4,
+          "n_excluded_and_marked": 2,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccccc1C(F)(F)F",
+          "n_ends": 5,
+          "n_excluded": 4,
+          "n_excluded_and_marked": 2,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccccc1OC",
+          "n_ends": 5,
+          "n_excluded": 4,
+          "n_excluded_and_marked": 2,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccc([N+](=O)[O-])cc1",
+          "n_ends": 5,
+          "n_excluded": 4,
+          "n_excluded_and_marked": 2,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1cccc(C(F)(F)F)c1",
+          "n_ends": 5,
+          "n_excluded": 4,
+          "n_excluded_and_marked": 2,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9,
+            11
+          ]
+        }
+      ],
+      "ring_constrained_residual": [
+        {
+          "smiles": "CC1=C2CC[C@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\\N=C(N)N",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            1,
+            2,
+            16
+          ]
+        },
+        {
+          "smiles": "CC1=C2CC[C@@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\\N=C(N)N",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            1,
+            2,
+            16
+          ]
+        },
+        {
+          "smiles": "COC(=O)/C=C/[C@H]1CCC2=C(C)/C(=N/N=C(N)N)CC[C@@]21C",
+          "n_ends": 4,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 2,
+          "excluded_end_atom_idxs": [
+            9,
+            10,
+            12
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccc(I)cc1",
+          "n_ends": 5,
+          "n_excluded": 4,
+          "n_excluded_and_marked": 2,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccccc1[N+](=O)[O-]",
+          "n_ends": 5,
+          "n_excluded": 4,
+          "n_excluded_and_marked": 2,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(C)c1",
+          "n_ends": 5,
+          "n_excluded": 4,
+          "n_excluded_and_marked": 2,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(OC)c1",
+          "n_ends": 5,
+          "n_excluded": 4,
+          "n_excluded_and_marked": 2,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C(\\C1=NCCN1)c1nnc(N)s1",
+          "n_ends": 3,
+          "n_excluded": 1,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            6
+          ]
+        }
+      ]
+    },
+    "a_atom_in_ring_lt8": {
+      "fully_resolved": [
+        {
+          "smiles": "CCCCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+          "n_ends": 2,
+          "n_excluded": 2,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": [
+            6,
+            11
+          ]
+        },
+        {
+          "smiles": "O=C(Nc1ccc(C[C@H](/N=c2\\c(O)c(O)\\c2=N/Cc2ccccc2)C(=O)O)cc1)c1c(Cl)cncc1Cl",
+          "n_ends": 2,
+          "n_excluded": 2,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": [
+            10,
+            15
+          ]
+        },
+        {
+          "smiles": "CCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+          "n_ends": 2,
+          "n_excluded": 2,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": [
+            4,
+            9
+          ]
+        },
+        {
+          "smiles": "O=C(Nc1ccc(C[C@H](/N=c2\\c(O)c(O)\\c2=N/c2ccccc2)C(=O)O)cc1)c1c(Cl)cncc1Cl",
+          "n_ends": 2,
+          "n_excluded": 2,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": [
+            10,
+            15
+          ]
+        },
+        {
+          "smiles": "CC(C)(C)/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+          "n_ends": 2,
+          "n_excluded": 2,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": [
+            5,
+            10
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(I)c1",
+          "n_ends": 5,
+          "n_excluded": 4,
+          "n_excluded_and_marked": 2,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccccc1C(F)(F)F",
+          "n_ends": 5,
+          "n_excluded": 4,
+          "n_excluded_and_marked": 2,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccccc1OC",
+          "n_ends": 5,
+          "n_excluded": 4,
+          "n_excluded_and_marked": 2,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccc([N+](=O)[O-])cc1",
+          "n_ends": 5,
+          "n_excluded": 4,
+          "n_excluded_and_marked": 2,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1cccc(C(F)(F)F)c1",
+          "n_ends": 5,
+          "n_excluded": 4,
+          "n_excluded_and_marked": 2,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9,
+            11
+          ]
+        }
+      ],
+      "ring_constrained_residual": [
+        {
+          "smiles": "CC1=C2CC[C@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\\N=C(N)N",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            1,
+            2,
+            16
+          ]
+        },
+        {
+          "smiles": "CC1=C2CC[C@@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\\N=C(N)N",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            1,
+            2,
+            16
+          ]
+        },
+        {
+          "smiles": "COC(=O)/C=C/[C@H]1CCC2=C(C)/C(=N/N=C(N)N)CC[C@@]21C",
+          "n_ends": 4,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 2,
+          "excluded_end_atom_idxs": [
+            9,
+            10,
+            12
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccc(I)cc1",
+          "n_ends": 5,
+          "n_excluded": 4,
+          "n_excluded_and_marked": 2,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccccc1[N+](=O)[O-]",
+          "n_ends": 5,
+          "n_excluded": 4,
+          "n_excluded_and_marked": 2,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(C)c1",
+          "n_ends": 5,
+          "n_excluded": 4,
+          "n_excluded_and_marked": 2,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(OC)c1",
+          "n_ends": 5,
+          "n_excluded": 4,
+          "n_excluded_and_marked": 2,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C(\\C1=NCCN1)c1nnc(N)s1",
+          "n_ends": 3,
+          "n_excluded": 1,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            6
+          ]
+        }
+      ]
+    },
+    "a_bond_endocyclic_lt7": {
+      "fully_resolved": [
+        {
+          "smiles": "CCCCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+          "n_ends": 2,
+          "n_excluded": 0,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": []
+        },
+        {
+          "smiles": "O=C(Nc1ccc(C[C@H](/N=c2\\c(O)c(O)\\c2=N/Cc2ccccc2)C(=O)O)cc1)c1c(Cl)cncc1Cl",
+          "n_ends": 2,
+          "n_excluded": 0,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": []
+        },
+        {
+          "smiles": "CCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+          "n_ends": 2,
+          "n_excluded": 0,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": []
+        },
+        {
+          "smiles": "O=C(Nc1ccc(C[C@H](/N=c2\\c(O)c(O)\\c2=N/c2ccccc2)C(=O)O)cc1)c1c(Cl)cncc1Cl",
+          "n_ends": 2,
+          "n_excluded": 0,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": []
+        },
+        {
+          "smiles": "CC(C)(C)/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+          "n_ends": 2,
+          "n_excluded": 0,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": []
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(I)c1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccccc1C(F)(F)F",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccccc1OC",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccc([N+](=O)[O-])cc1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1cccc(C(F)(F)F)c1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            6,
+            9,
+            11
+          ]
+        }
+      ],
+      "ring_constrained_residual": [
+        {
+          "smiles": "CC1=C2CC[C@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\\N=C(N)N",
+          "n_ends": 5,
+          "n_excluded": 2,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": [
+            1,
+            2
+          ]
+        },
+        {
+          "smiles": "CC1=C2CC[C@@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\\N=C(N)N",
+          "n_ends": 5,
+          "n_excluded": 2,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": [
+            1,
+            2
+          ]
+        },
+        {
+          "smiles": "COC(=O)/C=C/[C@H]1CCC2=C(C)/C(=N/N=C(N)N)CC[C@@]21C",
+          "n_ends": 4,
+          "n_excluded": 2,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            9,
+            10
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccc(I)cc1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccccc1[N+](=O)[O-]",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(C)c1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(OC)c1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C(\\C1=NCCN1)c1nnc(N)s1",
+          "n_ends": 3,
+          "n_excluded": 1,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            6
+          ]
+        }
+      ]
+    },
+    "a_bond_endocyclic_lt8": {
+      "fully_resolved": [
+        {
+          "smiles": "CCCCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+          "n_ends": 2,
+          "n_excluded": 0,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": []
+        },
+        {
+          "smiles": "O=C(Nc1ccc(C[C@H](/N=c2\\c(O)c(O)\\c2=N/Cc2ccccc2)C(=O)O)cc1)c1c(Cl)cncc1Cl",
+          "n_ends": 2,
+          "n_excluded": 0,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": []
+        },
+        {
+          "smiles": "CCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+          "n_ends": 2,
+          "n_excluded": 0,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": []
+        },
+        {
+          "smiles": "O=C(Nc1ccc(C[C@H](/N=c2\\c(O)c(O)\\c2=N/c2ccccc2)C(=O)O)cc1)c1c(Cl)cncc1Cl",
+          "n_ends": 2,
+          "n_excluded": 0,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": []
+        },
+        {
+          "smiles": "CC(C)(C)/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+          "n_ends": 2,
+          "n_excluded": 0,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": []
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(I)c1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccccc1C(F)(F)F",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccccc1OC",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccc([N+](=O)[O-])cc1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1cccc(C(F)(F)F)c1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            6,
+            9,
+            11
+          ]
+        }
+      ],
+      "ring_constrained_residual": [
+        {
+          "smiles": "CC1=C2CC[C@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\\N=C(N)N",
+          "n_ends": 5,
+          "n_excluded": 2,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": [
+            1,
+            2
+          ]
+        },
+        {
+          "smiles": "CC1=C2CC[C@@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\\N=C(N)N",
+          "n_ends": 5,
+          "n_excluded": 2,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": [
+            1,
+            2
+          ]
+        },
+        {
+          "smiles": "COC(=O)/C=C/[C@H]1CCC2=C(C)/C(=N/N=C(N)N)CC[C@@]21C",
+          "n_ends": 4,
+          "n_excluded": 2,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            9,
+            10
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccc(I)cc1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccccc1[N+](=O)[O-]",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(C)c1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(OC)c1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C(\\C1=NCCN1)c1nnc(N)s1",
+          "n_ends": 3,
+          "n_excluded": 1,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            6
+          ]
+        }
+      ]
+    },
+    "b_rdkit_not_potential_stereo": {
+      "fully_resolved": [
+        {
+          "smiles": "CCCCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+          "n_ends": 2,
+          "n_excluded": 0,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": []
+        },
+        {
+          "smiles": "O=C(Nc1ccc(C[C@H](/N=c2\\c(O)c(O)\\c2=N/Cc2ccccc2)C(=O)O)cc1)c1c(Cl)cncc1Cl",
+          "n_ends": 2,
+          "n_excluded": 0,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": []
+        },
+        {
+          "smiles": "CCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+          "n_ends": 2,
+          "n_excluded": 0,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": []
+        },
+        {
+          "smiles": "O=C(Nc1ccc(C[C@H](/N=c2\\c(O)c(O)\\c2=N/c2ccccc2)C(=O)O)cc1)c1c(Cl)cncc1Cl",
+          "n_ends": 2,
+          "n_excluded": 0,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": []
+        },
+        {
+          "smiles": "CC(C)(C)/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+          "n_ends": 2,
+          "n_excluded": 0,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": []
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(I)c1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccccc1C(F)(F)F",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccccc1OC",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccc([N+](=O)[O-])cc1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1cccc(C(F)(F)F)c1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            6,
+            9,
+            11
+          ]
+        }
+      ],
+      "ring_constrained_residual": [
+        {
+          "smiles": "CC1=C2CC[C@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\\N=C(N)N",
+          "n_ends": 5,
+          "n_excluded": 4,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": [
+            1,
+            2,
+            9,
+            19
+          ]
+        },
+        {
+          "smiles": "CC1=C2CC[C@@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\\N=C(N)N",
+          "n_ends": 5,
+          "n_excluded": 4,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": [
+            1,
+            2,
+            9,
+            19
+          ]
+        },
+        {
+          "smiles": "COC(=O)/C=C/[C@H]1CCC2=C(C)/C(=N/N=C(N)N)CC[C@@]21C",
+          "n_ends": 4,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            9,
+            10,
+            15
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccc(I)cc1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccccc1[N+](=O)[O-]",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(C)c1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(OC)c1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C(\\C1=NCCN1)c1nnc(N)s1",
+          "n_ends": 3,
+          "n_excluded": 1,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            6
+          ]
+        }
+      ]
+    },
+    "c_ring_topology_impossible": {
+      "fully_resolved": [
+        {
+          "smiles": "CCCCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+          "n_ends": 2,
+          "n_excluded": 0,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": []
+        },
+        {
+          "smiles": "O=C(Nc1ccc(C[C@H](/N=c2\\c(O)c(O)\\c2=N/Cc2ccccc2)C(=O)O)cc1)c1c(Cl)cncc1Cl",
+          "n_ends": 2,
+          "n_excluded": 0,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": []
+        },
+        {
+          "smiles": "CCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+          "n_ends": 2,
+          "n_excluded": 0,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": []
+        },
+        {
+          "smiles": "O=C(Nc1ccc(C[C@H](/N=c2\\c(O)c(O)\\c2=N/c2ccccc2)C(=O)O)cc1)c1c(Cl)cncc1Cl",
+          "n_ends": 2,
+          "n_excluded": 0,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": []
+        },
+        {
+          "smiles": "CC(C)(C)/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+          "n_ends": 2,
+          "n_excluded": 0,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": []
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(I)c1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccccc1C(F)(F)F",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccccc1OC",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccc([N+](=O)[O-])cc1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1cccc(C(F)(F)F)c1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            6,
+            9,
+            11
+          ]
+        }
+      ],
+      "ring_constrained_residual": [
+        {
+          "smiles": "CC1=C2CC[C@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\\N=C(N)N",
+          "n_ends": 5,
+          "n_excluded": 2,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": [
+            1,
+            2
+          ]
+        },
+        {
+          "smiles": "CC1=C2CC[C@@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\\N=C(N)N",
+          "n_ends": 5,
+          "n_excluded": 2,
+          "n_excluded_and_marked": 0,
+          "excluded_end_atom_idxs": [
+            1,
+            2
+          ]
+        },
+        {
+          "smiles": "COC(=O)/C=C/[C@H]1CCC2=C(C)/C(=N/N=C(N)N)CC[C@@]21C",
+          "n_ends": 4,
+          "n_excluded": 2,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            9,
+            10
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccc(I)cc1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C1\\C(C)=NC(C)=C(C(=O)OC)C1c1ccccc1[N+](=O)[O-]",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            6,
+            9,
+            11
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(C)c1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9
+          ]
+        },
+        {
+          "smiles": "CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(OC)c1",
+          "n_ends": 5,
+          "n_excluded": 3,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            5,
+            6,
+            9
+          ]
+        },
+        {
+          "smiles": "CCO/C(O)=C(\\C1=NCCN1)c1nnc(N)s1",
+          "n_ends": 3,
+          "n_excluded": 1,
+          "n_excluded_and_marked": 1,
+          "excluded_end_atom_idxs": [
+            6
+          ]
+        }
+      ]
+    }
+  }
+}
