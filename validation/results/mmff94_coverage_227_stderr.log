@@ -1,0 +1,25 @@
+    Finished `release` profile [optimized] target(s) in 0.06s
+     Running `target/release/examples/mmff94_term_coverage_audit`
+corpus size: 265
+=== summary: total=265 bond+angle-gate-would-fail=221 bonds_missing=808 angles_missing=5782 torsions_missing=7322 oop_missing=67 stbn_missing(never gated)=6900 ===
+distinct missing angle (type,i,j,k) patterns: 175
+  (2, 63, 63, 63): 2464
+  (1, 6, 63, 63): 371
+  (1, 63, 63, 6): 315
+  (2, 3, 63, 63): 210
+  (2, 67, 63, 63): 196
+  (2, 63, 67, 63): 192
+  (2, 63, 63, 67): 188
+  (1, 1, 63, 63): 175
+  (1, 8, 63, 63): 87
+  (0, 63, 8, 1): 83
+  (1, 63, 63, 1): 66
+  (2, 67, 63, 67): 66
+  (1, 67, 63, 7): 62
+  (2, 67, 67, 63): 62
+  (1, 67, 63, 8): 57
+  (2, 63, 63, 3): 53
+  (1, 63, 63, 11): 51
+  (0, 1, 18, 7): 50
+  (1, 1, 67, 63): 47
+  (1, 63, 63, 7): 46
