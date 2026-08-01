@@ -9,7 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_Nothing yet — everything below `[0.9.0]` has shipped._
+### Fixed — `chematic-mol`
+
+- **MRV reader now perceives 2D wedge/hash tetrahedral and E/Z stereo**
+  (issue #202): `parse_mrv` wires `chematic_perception::
+  apply_local_parity_from_wedges`/`apply_ez_directions_from_2d` into the
+  2D-coordinate path, mirroring the wiring `mol2000.rs`/`cdxml.rs` already
+  had. Previously, wedge/dash bonds and 2D coordinates were read into
+  `coords_2d` but never converted into `Atom.chirality` or a bond's
+  E/Z direction — `parse_mrv` silently dropped stereochemistry that was
+  present in the file.
 
 ## [0.9.0] — 2026-08-01
 
