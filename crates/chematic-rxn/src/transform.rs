@@ -76,29 +76,122 @@ fn run_reactants_impl(
     carry_substituents: bool,
 ) -> Result<Vec<Vec<Molecule>>, TransformError> {
     crate::perf_counters::record_run_reactants_call();
-    crate::perf_counters::record_reaction_parse_call();
-    let rxn = parse_reaction(smirks)?;
+    let prepared = prepare_reaction(smirks)?;
+    let matches = find_matches_impl(&prepared, reactants)?;
+    Ok(matches
+        .iter()
+        .filter_map(|m| apply_match_impl(&prepared, reactants, m, carry_substituents))
+        .collect())
+}
 
-    let n_templates = rxn.reactants.len();
+/// One accepted match of `smirks`'s reactant-side pattern(s) against a set of
+/// input molecules — one map per reactant-template slot, keyed by the query
+/// atom index (position within that reactant template) to the matched
+/// [`AtomIdx`] in the corresponding input molecule. This is exactly the
+/// per-combination mapping [`run_reactants_impl`] already builds internally,
+/// given a name and a public seam between "enumerate matches" and
+/// "apply one match" (issue #225).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReactionMatch {
+    pub per_reactant: Vec<FxHashMap<usize, AtomIdx>>,
+}
+
+impl ReactionMatch {
+    /// `atom_map` number → (reactant slot index, matched `AtomIdx`),
+    /// resolved against `smirks`'s own atom-map annotations — so a caller
+    /// can look up "where did mapped atom N end up in my input molecules"
+    /// without re-deriving the reactant templates' atom maps itself.
+    pub fn atom_map_positions(
+        &self,
+        smirks: &str,
+    ) -> Result<FxHashMap<u16, (usize, AtomIdx)>, TransformError> {
+        let rxn = parse_reaction(smirks)?;
+        let n_templates = rxn.reactants.len();
+        if self.per_reactant.len() != n_templates {
+            return Err(TransformError::ReactantCountMismatch {
+                expected: n_templates,
+                got: self.per_reactant.len(),
+            });
+        }
+        Ok(global_map_of(
+            &self.per_reactant,
+            &template_atom_maps_of(&rxn),
+        ))
+    }
+}
+
+/// Enumerate every match of `smirks`'s reactant-side pattern(s) against
+/// `reactants`, without applying the transformation or building any
+/// product. One entry per combination that passes the existing
+/// chirality/E-Z stereo post-checks — i.e. exactly the matches
+/// [`run_reactants`] would go on to build products for (issue #225).
+pub fn find_reaction_matches(
+    smirks: &str,
+    reactants: &[&Molecule],
+) -> Result<Vec<ReactionMatch>, TransformError> {
+    let prepared = prepare_reaction(smirks)?;
+    find_matches_impl(&prepared, reactants)
+}
+
+/// Apply the reaction for exactly one match (as returned by
+/// [`find_reaction_matches`]), producing the product set for that match
+/// alone. `Ok(None)` means this match's product set failed the existing
+/// valence filter — the same case [`run_reactants`] silently drops today
+/// (issue #225).
+///
+/// Does not re-run the chirality/E-Z stereo post-checks that
+/// [`find_reaction_matches`] already applied — `m` is expected to be one
+/// of the matches it returned (or otherwise already known to satisfy
+/// them). Re-parses `smirks`, matching [`run_reactants`]'s own existing
+/// per-call behavior.
+pub fn apply_reaction_match(
+    smirks: &str,
+    reactants: &[&Molecule],
+    m: &ReactionMatch,
+    carry_substituents: bool,
+) -> Result<Option<Vec<Molecule>>, TransformError> {
+    let prepared = prepare_reaction(smirks)?;
+    let n_templates = prepared.rxn.reactants.len();
     if reactants.len() != n_templates {
         return Err(TransformError::ReactantCountMismatch {
             expected: n_templates,
             got: reactants.len(),
         });
     }
+    if m.per_reactant.len() != n_templates {
+        return Err(TransformError::ReactantCountMismatch {
+            expected: n_templates,
+            got: m.per_reactant.len(),
+        });
+    }
+    Ok(apply_match_impl(
+        &prepared,
+        reactants,
+        m,
+        carry_substituents,
+    ))
+}
+
+/// Parsed SMIRKS plus everything derived from it that matching needs —
+/// shared by [`run_reactants_impl`], [`find_reaction_matches`], and
+/// [`apply_reaction_match`] so the three can never compute it
+/// inconsistently.
+struct PreparedReaction {
+    rxn: crate::reaction::Reaction,
+    queries: Vec<QueryMolecule>,
+    template_atom_maps: Vec<Vec<Option<u16>>>,
+    has_stereo: bool,
+    has_ez_stereo: bool,
+}
+
+fn prepare_reaction(smirks: &str) -> Result<PreparedReaction, TransformError> {
+    crate::perf_counters::record_reaction_parse_call();
+    let rxn = parse_reaction(smirks)?;
 
     // Build a QueryMolecule from each reactant template, and record the
     // atom-map number for each query atom index.
     let queries: Vec<QueryMolecule> = rxn.reactants.iter().map(mol_to_query).collect();
-    let template_atom_maps: Vec<Vec<Option<u16>>> = rxn
-        .reactants
-        .iter()
-        .map(|tmpl| {
-            (0..tmpl.atom_count())
-                .map(|i| tmpl.atom(AtomIdx(i as u32)).atom_map)
-                .collect()
-        })
-        .collect();
+    let template_atom_maps = template_atom_maps_of(&rxn);
 
     // Detect whether any reactant template carries @/@@ stereo, so we can apply
     // the parity-aware post-check after VF2 completes.  Chirality is NOT encoded
@@ -116,8 +209,64 @@ fn run_reactants_impl(
             .any(|(_, b)| matches!(b.order, BondOrder::Up | BondOrder::Down))
     });
 
+    Ok(PreparedReaction {
+        rxn,
+        queries,
+        template_atom_maps,
+        has_stereo,
+        has_ez_stereo,
+    })
+}
+
+fn template_atom_maps_of(rxn: &crate::reaction::Reaction) -> Vec<Vec<Option<u16>>> {
+    rxn.reactants
+        .iter()
+        .map(|tmpl| {
+            (0..tmpl.atom_count())
+                .map(|i| tmpl.atom(AtomIdx(i as u32)).atom_map)
+                .collect()
+        })
+        .collect()
+}
+
+/// `atom_map` number → (reactant slot index, matched `AtomIdx`), built from
+/// one match's per-reactant maps and the reactant templates' own atom-map
+/// annotations. Shared by [`ReactionMatch::atom_map_positions`] and
+/// [`apply_match_impl`].
+fn global_map_of(
+    per_reactant: &[FxHashMap<usize, AtomIdx>],
+    template_atom_maps: &[Vec<Option<u16>>],
+) -> FxHashMap<u16, (usize, AtomIdx)> {
+    let mut global_map: FxHashMap<u16, (usize, AtomIdx)> = FxHashMap::default();
+    for (ri, match_map) in per_reactant.iter().enumerate() {
+        for (&qi, &t_idx) in match_map {
+            if let Some(am) = template_atom_maps[ri][qi] {
+                global_map.insert(am, (ri, t_idx));
+            }
+        }
+    }
+    global_map
+}
+
+/// Steps 1–2 of the original `run_reactants_impl`: VF2-match every reactant
+/// template against its input molecule, take the cartesian product across
+/// template slots, and keep only combinations that survive the
+/// chirality/E-Z stereo post-checks. Does not build any product.
+fn find_matches_impl(
+    prepared: &PreparedReaction,
+    reactants: &[&Molecule],
+) -> Result<Vec<ReactionMatch>, TransformError> {
+    let n_templates = prepared.rxn.reactants.len();
+    if reactants.len() != n_templates {
+        return Err(TransformError::ReactantCountMismatch {
+            expected: n_templates,
+            got: reactants.len(),
+        });
+    }
+
     // VF2 match: for each (template_query, input_mol) pair.
-    let all_match_sets: Vec<Vec<FxHashMap<usize, AtomIdx>>> = queries
+    let all_match_sets: Vec<Vec<FxHashMap<usize, AtomIdx>>> = prepared
+        .queries
         .iter()
         .zip(reactants.iter())
         .map(|(q, mol)| {
@@ -127,81 +276,94 @@ fn run_reactants_impl(
         })
         .collect();
 
-    // No products when any template has no match.
+    // No matches when any template has no match.
     if all_match_sets.iter().any(|ms| ms.is_empty()) {
         return Ok(vec![]);
     }
 
-    let mut results: Vec<Vec<Molecule>> = Vec::new();
+    let mut matches: Vec<ReactionMatch> = Vec::new();
 
     for combo in cartesian_product(&all_match_sets) {
         crate::perf_counters::record_match_combination();
-        // global_map: atom_map_number → (reactant_mol_idx, matched_AtomIdx)
-        let mut global_map: FxHashMap<u16, (usize, AtomIdx)> = FxHashMap::default();
-        for (ri, match_map) in combo.iter().enumerate() {
-            for (&qi, &t_idx) in match_map {
-                if let Some(am) = template_atom_maps[ri][qi] {
-                    global_map.insert(am, (ri, t_idx));
-                }
-            }
-        }
-
-        // all_template_atoms: every (mol_idx, AtomIdx) matched by any reactant template atom.
-        // Used as BFS walls to prevent substituent collection from crossing into the
-        // template region, and to identify bonds that the product template replaces.
-        let mut all_template_atoms: FxHashSet<(usize, AtomIdx)> = FxHashSet::default();
-        for (ri, match_map) in combo.iter().enumerate() {
-            for &t_idx in match_map.values() {
-                all_template_atoms.insert((ri, t_idx));
-            }
-        }
 
         // Parity-aware chirality post-check.  Runs only when the SMIRKS has @/@@.
         // This must happen after the complete VF2 mapping is known, because
         // correct chirality comparison requires the full neighbor permutation.
-        if has_stereo {
-            let ok = (0..rxn.reactants.len())
-                .all(|ri| smirks_chirality_ok(&rxn.reactants[ri], reactants[ri], &combo[ri]));
+        if prepared.has_stereo {
+            let ok = (0..prepared.rxn.reactants.len()).all(|ri| {
+                smirks_chirality_ok(&prepared.rxn.reactants[ri], reactants[ri], &combo[ri])
+            });
             if !ok {
                 continue;
             }
         }
         // E/Z double-bond stereo post-check.  Runs only when the SMIRKS has /\.
-        if has_ez_stereo {
-            let ok = (0..rxn.reactants.len())
-                .all(|ri| smirks_ez_stereo_ok(&rxn.reactants[ri], reactants[ri], &combo[ri]));
+        if prepared.has_ez_stereo {
+            let ok = (0..prepared.rxn.reactants.len()).all(|ri| {
+                smirks_ez_stereo_ok(&prepared.rxn.reactants[ri], reactants[ri], &combo[ri])
+            });
             if !ok {
                 continue;
             }
         }
 
-        let products: Vec<Molecule> = rxn
-            .products
-            .iter()
-            .map(|pt| {
-                let product = build_product(
-                    pt,
-                    &global_map,
-                    reactants,
-                    &all_template_atoms,
-                    carry_substituents,
-                );
-                crate::perf_counters::record_build_product_call(
-                    product.atom_count(),
-                    product.bond_count(),
-                );
-                product
-            })
-            .collect();
+        matches.push(ReactionMatch {
+            per_reactant: combo,
+        });
+    }
 
-        // Skip product sets that contain any over-valenced atom.
-        if products.iter().all(|p| validate_valence(p).is_empty()) {
-            crate::perf_counters::record_product_set();
-            results.push(products);
+    Ok(matches)
+}
+
+/// Step 3 of the original `run_reactants_impl`: build the product set for
+/// one already-accepted match and apply the valence filter. `None` means
+/// the product set contained an over-valenced atom.
+fn apply_match_impl(
+    prepared: &PreparedReaction,
+    reactants: &[&Molecule],
+    m: &ReactionMatch,
+    carry_substituents: bool,
+) -> Option<Vec<Molecule>> {
+    // global_map: atom_map_number → (reactant_mol_idx, matched_AtomIdx)
+    let global_map = global_map_of(&m.per_reactant, &prepared.template_atom_maps);
+
+    // all_template_atoms: every (mol_idx, AtomIdx) matched by any reactant template atom.
+    // Used as BFS walls to prevent substituent collection from crossing into the
+    // template region, and to identify bonds that the product template replaces.
+    let mut all_template_atoms: FxHashSet<(usize, AtomIdx)> = FxHashSet::default();
+    for (ri, match_map) in m.per_reactant.iter().enumerate() {
+        for &t_idx in match_map.values() {
+            all_template_atoms.insert((ri, t_idx));
         }
     }
 
-    Ok(results)
+    let products: Vec<Molecule> = prepared
+        .rxn
+        .products
+        .iter()
+        .map(|pt| {
+            let product = build_product(
+                pt,
+                &global_map,
+                reactants,
+                &all_template_atoms,
+                carry_substituents,
+            );
+            crate::perf_counters::record_build_product_call(
+                product.atom_count(),
+                product.bond_count(),
+            );
+            product
+        })
+        .collect();
+
+    // Skip product sets that contain any over-valenced atom.
+    if products.iter().all(|p| validate_valence(p).is_empty()) {
+        crate::perf_counters::record_product_set();
+        Some(products)
+    } else {
+        None
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1489,5 +1651,250 @@ mod tests {
         let canon = chematic_smiles::canonical_smiles(&results[0][0]);
         let reparsed = parse(&canon).unwrap();
         assert_eq!(reparsed.atom_count(), mol.atom_count() + 1); // +1 methyl carbon
+    }
+
+    // -------------------------------------------------------------------
+    // Match-level reaction application (issue #225)
+    // -------------------------------------------------------------------
+
+    /// `run_reactants(smirks, reactants)` must equal
+    /// `find_reaction_matches(...).filter_map(|m| apply_reaction_match(...))`
+    /// -- the exact equivalence issue #225's proposed API is built on.
+    /// Checked against several existing SMIRKS/reactant pairs already used
+    /// elsewhere in this file, not just one.
+    #[test]
+    fn find_and_apply_match_equals_run_reactants() {
+        let cases: Vec<(&str, Vec<chematic_core::Molecule>)> = vec![
+            ("[N:1]>>[N:1]", vec![parse("NCCN").unwrap()]),
+            (
+                "[N:1].[C:2]>>[N:1][C:2]",
+                vec![parse("N").unwrap(), parse("C").unwrap()],
+            ),
+            ("[C:1][C:2]>>[C:1].[C:2]", vec![parse("CC").unwrap()]),
+            (
+                "[OH:1]-[C:2]=[O:3]>>C-[O:1]-[C:2]=[O:3]",
+                vec![parse("CC(=O)OC1=CC=CC=C1C(=O)O").unwrap()],
+            ),
+        ];
+
+        for (smirks, mols) in &cases {
+            let reactants: Vec<&Molecule> = mols.iter().collect();
+            let direct = run_reactants(smirks, &reactants).unwrap();
+
+            let matches = find_reaction_matches(smirks, &reactants).unwrap();
+            let via_matches: Vec<Vec<Molecule>> = matches
+                .iter()
+                .filter_map(|m| apply_reaction_match(smirks, &reactants, m, true).unwrap())
+                .collect();
+
+            assert_eq!(
+                direct.len(),
+                via_matches.len(),
+                "{smirks}: product-set count must match"
+            );
+            for (d, v) in direct.iter().zip(via_matches.iter()) {
+                assert_eq!(
+                    d.len(),
+                    v.len(),
+                    "{smirks}: product count per set must match"
+                );
+                for (dp, vp) in d.iter().zip(v.iter()) {
+                    assert_eq!(
+                        chematic_smiles::canonical_smiles(dp),
+                        chematic_smiles::canonical_smiles(vp),
+                        "{smirks}: product molecule must match run_reactants exactly"
+                    );
+                }
+            }
+        }
+    }
+
+    /// `run_reactants_strict` (carry_substituents=false) must also compose
+    /// the same way as the `carry_substituents=true` case above.
+    #[test]
+    fn find_and_apply_match_equals_run_reactants_strict() {
+        let mol = parse("CC(=O)OC1=CC=CC=C1C(=O)O").unwrap();
+        let reactants = [&mol];
+        let smirks = "[OH:1]-[C:2]=[O:3]>>C-[O:1]-[C:2]=[O:3]";
+
+        let direct = run_reactants_strict(smirks, &reactants).unwrap();
+        let matches = find_reaction_matches(smirks, &reactants).unwrap();
+        let via_matches: Vec<Vec<Molecule>> = matches
+            .iter()
+            .filter_map(|m| apply_reaction_match(smirks, &reactants, m, false).unwrap())
+            .collect();
+
+        assert_eq!(direct.len(), via_matches.len());
+        for (d, v) in direct.iter().zip(via_matches.iter()) {
+            for (dp, vp) in d.iter().zip(v.iter()) {
+                assert_eq!(
+                    chematic_smiles::canonical_smiles(dp),
+                    chematic_smiles::canonical_smiles(vp)
+                );
+            }
+        }
+    }
+
+    /// The core motivating use case from issue #225: enumerate matches
+    /// independently of applying them, reject some based on a property of
+    /// the match itself, and apply only the accepted ones -- without
+    /// discarding the legitimate matches along with the rejected one.
+    #[test]
+    fn selective_match_application() {
+        let mol = parse("NCCN").unwrap();
+        let reactants = [&mol];
+        let smirks = "[N:1]>>[N:1]";
+
+        let matches = find_reaction_matches(smirks, &reactants).unwrap();
+        assert_eq!(matches.len(), 2, "two N atoms in NCCN → two matches");
+
+        // Reject the match touching the higher-numbered atom (arbitrary
+        // match-specific policy standing in for RENKIN's real ring-bond
+        // rejection rule), keep the other.
+        let positions: Vec<_> = matches
+            .iter()
+            .map(|m| m.atom_map_positions(smirks).unwrap()[&1])
+            .collect();
+        let keep_idx = if positions[0].1.0 < positions[1].1.0 {
+            0
+        } else {
+            1
+        };
+
+        let applied = apply_reaction_match(smirks, &reactants, &matches[keep_idx], true).unwrap();
+        assert!(applied.is_some(), "the accepted match must still apply");
+
+        // Applying only one match must yield exactly one of the two
+        // products `run_reactants` would have returned for the whole call,
+        // not both and not neither.
+        let full = run_reactants(smirks, &reactants).unwrap();
+        assert_eq!(full.len(), 2);
+        let applied_canon = chematic_smiles::canonical_smiles(&applied.unwrap()[0]);
+        assert!(
+            full.iter()
+                .any(|ps| chematic_smiles::canonical_smiles(&ps[0]) == applied_canon),
+            "the selectively-applied product must be one of run_reactants's own outputs"
+        );
+    }
+
+    /// `ReactionMatch::atom_map_positions` must resolve atom_map:1 to the
+    /// actual matched N atom, for each of the two NCCN matches separately.
+    #[test]
+    fn atom_map_positions_resolves_matched_atom() {
+        let mol = parse("NCCN").unwrap();
+        let reactants = [&mol];
+        let smirks = "[N:1]>>[N:1]";
+
+        let matches = find_reaction_matches(smirks, &reactants).unwrap();
+        let mut matched_atoms: Vec<AtomIdx> = matches
+            .iter()
+            .map(|m| {
+                let positions = m.atom_map_positions(smirks).unwrap();
+                let (reactant_slot, atom_idx) = positions[&1];
+                assert_eq!(reactant_slot, 0, "single-reactant SMIRKS: slot must be 0");
+                assert_eq!(mol.atom(atom_idx).element.symbol(), "N");
+                atom_idx
+            })
+            .collect();
+        matched_atoms.sort_by_key(|a| a.0);
+        assert_eq!(
+            matched_atoms,
+            vec![AtomIdx(0), AtomIdx(3)],
+            "NCCN's two N atoms are at index 0 and 3"
+        );
+    }
+
+    /// `apply_reaction_match` must return `Ok(None)` -- not an error and not
+    /// a product -- for a match whose product set fails the existing
+    /// valence filter, matching the case [`run_reactants`] silently drops
+    /// (`overvalent_product_filtered_oxygen` above).
+    #[test]
+    fn apply_reaction_match_none_on_valence_violation() {
+        let ethanol = parse("CCO").unwrap();
+        let reactants = [&ethanol];
+        let smirks = "[O:1]>>[O:1](C)C";
+
+        let matches = find_reaction_matches(smirks, &reactants).unwrap();
+        assert_eq!(matches.len(), 1, "exactly one O in ethanol");
+
+        let applied = apply_reaction_match(smirks, &reactants, &matches[0], true).unwrap();
+        assert!(
+            applied.is_none(),
+            "over-valenced product must come back as Ok(None), not Some(..) or Err(..)"
+        );
+    }
+
+    /// `find_reaction_matches` and `apply_reaction_match` must propagate
+    /// the same `ReactantCountMismatch` error `run_reactants` does when the
+    /// number of input molecules doesn't match the SMIRKS's reactant-slot
+    /// count.
+    #[test]
+    fn find_and_apply_match_reactant_count_mismatch_errors() {
+        let mol = parse("C").unwrap();
+        let smirks = "[N:1].[C:2]>>[N:1][C:2]";
+
+        let find_err = find_reaction_matches(smirks, &[&mol]);
+        assert!(matches!(
+            find_err,
+            Err(TransformError::ReactantCountMismatch {
+                expected: 2,
+                got: 1
+            })
+        ));
+
+        let dummy_match = ReactionMatch {
+            per_reactant: vec![FxHashMap::default()],
+        };
+        let apply_err = apply_reaction_match(smirks, &[&mol], &dummy_match, true);
+        assert!(matches!(
+            apply_err,
+            Err(TransformError::ReactantCountMismatch {
+                expected: 2,
+                got: 1
+            })
+        ));
+    }
+
+    /// `apply_reaction_match` must also reject a `ReactionMatch` whose own
+    /// `per_reactant` shape doesn't match the SMIRKS being applied against
+    /// (e.g. a match obtained from a different SMIRKS), rather than
+    /// panicking on an out-of-bounds index into `template_atom_maps`.
+    #[test]
+    fn apply_reaction_match_rejects_mismatched_match_shape() {
+        let n_mol = parse("N").unwrap();
+        let c_mol = parse("C").unwrap();
+        let reactants = [&n_mol, &c_mol];
+        let smirks = "[N:1].[C:2]>>[N:1][C:2]";
+
+        // A match shaped for a single-reactant SMIRKS, applied against a
+        // two-reactant one.
+        let mismatched_match = ReactionMatch {
+            per_reactant: vec![FxHashMap::default()],
+        };
+        let err = apply_reaction_match(smirks, &reactants, &mismatched_match, true);
+        assert!(matches!(
+            err,
+            Err(TransformError::ReactantCountMismatch {
+                expected: 2,
+                got: 1
+            })
+        ));
+    }
+
+    /// `ReactionMatch::atom_map_positions` must likewise reject a
+    /// shape mismatch rather than panicking.
+    #[test]
+    fn atom_map_positions_rejects_mismatched_match_shape() {
+        let mismatched_match = ReactionMatch {
+            per_reactant: vec![FxHashMap::default()],
+        };
+        let err = mismatched_match.atom_map_positions("[N:1].[C:2]>>[N:1][C:2]");
+        assert!(matches!(
+            err,
+            Err(TransformError::ReactantCountMismatch {
+                expected: 2,
+                got: 1
+            })
+        ));
     }
 }
