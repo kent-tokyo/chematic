@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_Nothing yet — everything below `[0.10.0]` has shipped._
+
+## [0.10.0] — 2026-08-01
+
 ### Added — `chematic-rxn`
 
 - **`find_reaction_matches`/`apply_reaction_match`** (issue #225): a public
@@ -34,6 +38,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `coords_2d` but never converted into `Atom.chirality` or a bond's
   E/Z direction — `parse_mrv` silently dropped stereochemistry that was
   present in the file.
+
+### Fixed — `chematic-smiles`
+
+- **Shared E/Z carrier bonds: joint component solver** (issue #149) —
+  replaces the old single-end abstain guard in `resolve_ez_markers` with
+  `resolve_component_jointly`, which resolves coupled stereo-alkene ends
+  (two double bonds sharing one marker-carrier bond) together instead of
+  independently. **10 of the 18 issue #149 fixtures become fully
+  permutation-invariant** (idempotent under re-canonicalization, stable
+  under relabeling/reordering, RDKit-verified 0 stereo loss/corruption);
+  the other 8 remain a documented, semantically-safe residual
+  (`EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS`) — every one of the 8
+  is a coupled component containing an endocyclic double bond in a 5- or
+  6-membered ring, where marker choice has no free degree left; RDKit
+  re-parse confirms every divergent spelling is stereochemically
+  identical, never corrupted. Full-corpus random-relabeling-only Check-2
+  failures: 18 → 8. **Issue #149 stays open** — the ring-constrained
+  residual's root cause (`compute_stereo_alkene_ends` has no ring-size
+  gate) is characterized in a follow-up audit
+  (`docs/ez_ring_constrained_residual_audit.md`) but not yet fixed.
+
+### Migration notes
+
+- **`parse_mrv` (issue #202) now returns stereochemistry it previously
+  silently discarded.** An MRV file that carries wedge/hash bonds or
+  double-bond 2D geometry will parse to a `Molecule` with `Atom.chirality`
+  set and/or E/Z bond direction set where it previously parsed to a flat
+  (stereo-unset) molecule at the same input. If downstream code compares
+  MRV-derived molecules against a cached/precomputed canonical SMILES,
+  InChI, or fingerprint that was computed from the old (stereo-dropped)
+  parse, that comparison can now diverge — the new value is the more
+  correct one. No change to any other reader (`mol2000.rs`/`cdxml.rs`
+  already perceived this).
+- **A small number of `canonical_smiles()` outputs change** as a
+  consequence of the issue #149 joint component solver — measured at
+  exactly 6 changed lines across a 5,000-molecule corpus, all within the
+  18 pinned issue #149 fixtures (10 newly converge; 8 remain the
+  documented residual, unchanged from `[0.9.0]` and earlier). Same class
+  of change as the `[0.8.1]` explicit/implicit-hydrogen migration note
+  below — if you hardcode/cache canonical SMILES strings, a rare input
+  may now produce a different (but RDKit-verified semantically identical)
+  string.
+- No change to CIP, ECFP4, or the RDKit benchmark in this release.
 
 ## [0.9.0] — 2026-08-01
 

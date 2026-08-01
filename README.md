@@ -180,7 +180,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.9.0
+# chematic v0.10.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -401,7 +401,7 @@ See the [full WASM API reference](https://kent-tokyo.github.io/chematic/) for al
 | `chematic-rxn`        | Reaction SMILES/SMIRKS, `run_reactants`/`run_reactants_strict`; **`retro_disconnect()`** — 60 retro-SMIRKS templates (AmideBond/Ester/Ether/CNBond/CCBond/CSBond) + SA Score ranking; **parity-aware `@`/`@@` SMIRKS stereo filtering**; **E/Z double-bond stereo filtering** in `run_reactants` (`ez_stereo_outward`, `smirks_ez_stereo_ok`) | 137    |
 | `chematic-inchi`      | InChI/InChIKey: pure-Rust approximation (WASM) **+ IUPAC-standard** via `native-inchi` feature (vendored C lib 1.07.5, bit-exact); **parse_inchi** reader; **verified canonical-SMILES dedup** (`dedup::{group_candidates, deduplicate_verified}`, fail-closed on legacy-CIP-unresolved specified tetrahedral stereo); **accurate-CIP dedup preflight** (issue #161) recovering verified-comparison capability on legacy-CIP-unresolved stereocentres; **indexed graph relation API** (`compare_indexed_graph_relation`, orthogonal `GraphStrictness`/`AtomMapPolicy` axes) | 108 (+16*)    |
 | `chematic-cip`        | Opt-in accurate CIP engine (`assign_cip_accurate_experimental`, hierarchical digraph, Rules 1a/1b/2/4b/5, RDKit-compatible MANCUDE fractional atomic numbers) — the default `assign_cip()`/`CipMode::LegacyFast` is unchanged | —     |
-| `chematic-wasm`       | **131+ WASM exports** — npm: `@kent-tokyo/chematic` (published `0.7.0`, in sync with crates.io/PyPI); pKa/ADMET/BBB/Caco-2/hERG/CYP3A4; `smiles_to_pdbqt`, `minimize_uff_json`, **`retro_disconnect_json`** (issue #91) | 223   |
+| `chematic-wasm`       | **131+ WASM exports** — npm: `@kent-tokyo/chematic` (published in lockstep with crates.io/PyPI); pKa/ADMET/BBB/Caco-2/hERG/CYP3A4; `smiles_to_pdbqt`, `minimize_uff_json`, **`retro_disconnect_json`** (issue #91) | 223   |
 | `chematic-iupac`      | Local IUPAC name generation — **25+ compound classes**: alkanes, cycloalkanes, alkenes/alkynes, alcohols, amines, halides, aldehydes, ketones, acids, esters, amides, **piperidine, morpholine, piperazine, naphthalene, sulfides** | 47    |
 | `chematic-mcp`        | **MCP (Model Context Protocol) server** — AI agent integration; **20 tools**: parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, name_to_smiles, retrosynthesis, smiles_to_moljson, moljson_to_smiles, representation_router, **molecule_context_pack**; dual-era protocol (legacy `2024-11-05` + modern `2026-07-28` stateless dialect), `structuredContent`/`outputSchema` on all 20 tools | 82    |
 | `chematic-py`         | PyO3 Python bindings (`pip install chematic`); 300+ API endpoints: `from_smiles()`, `Mol.descriptors()`, `Mol.minimize_dreiding()`, `from_cxsmiles()`, `from_rxn_file()`/`to_rxn_file()`, `parse_sdf_with_coords()`, `Mol.ring_families()`, `tanimoto_matrix()`, `iter_sdf()`, `SimilarityIndex`; **`mol.to_pdf()`/`mol.to_eps()`** (depict); **`from_cjson()`/`mol.to_cjson()`** (ChemicalJSON); **`mol.schultz_mti`, `mol.gutman_mti`, `mol.vabc`, `mol.gravitational_index`**; **`bulk.substructure_match(smarts, mols)`** (parallel VF2 on pre-parsed Mol objects); **`mol.describe()`** (LLM/MCP-ready natural-language summary); **`mol.diff(other)`** (element + descriptor diff); Sprint 18–27 coverage | 300+  |
@@ -409,13 +409,19 @@ See the [full WASM API reference](https://kent-tokyo.github.io/chematic/) for al
 | `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`, `inchi`)                              | 1     |
 
 ```
-cargo test --workspace --lib --quiet                                          # 3,207 tests, all passing (2026-08-01)
+cargo test --workspace --lib --quiet                                          # 3,223 tests, all passing (2026-08-01)
 cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +16 IUPAC-exact InChI tests
 ```
 
 ---
 
 ## Recent Development
+
+**v0.10.0** (2026-08-01): **Match-level SMIRKS reaction application, MRV 2D stereo, shared E/Z carrier bond fix**
+- `chematic-rxn`: `find_reaction_matches`/`apply_reaction_match` (issue #225) — a public seam between enumerating a SMIRKS's matches against reactant molecules and applying one of them, for callers that need to accept some matches and reject others (e.g. based on whether the matched bond is a ring bond) without discarding the whole `run_reactants` call. `run_reactants`/`run_reactants_strict` are now implemented in terms of these two functions, unchanged in cost (still one SMIRKS parse + one VF2 match pass per call)
+- `chematic-mol`: MRV reader now perceives 2D wedge/hash tetrahedral and E/Z stereo (issue #202) — `parse_mrv` previously read wedge/dash bonds and 2D coordinates into `coords_2d` but never converted them into `Atom.chirality`/bond E/Z direction, silently dropping stereochemistry present in the file
+- `chematic-smiles`: shared E/Z carrier bonds now resolved via a joint component solver (issue #149) — 10 of 18 previously-abstained fixtures become fully permutation-invariant; the remaining 8 are a documented, RDKit-verified semantically-safe residual (endocyclic double bonds in 5-/6-membered rings, where marker choice has no free degree). Issue #149 stays open pending a scoped fix for the ring-constrained residual
+- Full details in `CHANGELOG.md`'s `[0.10.0]` section
 
 **v0.9.0** (2026-08-01): **Opt-in 3D embedding pipeline v2 in Python + WASM, WASM-portable monotonic clock**
 - `chematic-py`: `Mol.embed_pipeline_v2(config)` — Python binding for the Rust-only `pipeline_v2::embed_pipeline_v2` (torsion-knowledge-aware distance geometry + stereo verification/repair + policy-gated force field), returning full per-stage evidence (never just final coordinates) and a typed `PipelineV2Error` with structured, diagnostic-only partial evidence on failure. Applies directly to the caller's own atom order — no canonicalize/reparse. Additive; no existing default 3D API changed
@@ -600,7 +606,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.9.0)
+├── Cargo.toml                    workspace root (v0.10.0)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -653,7 +659,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.9.0},
+  version   = {0.10.0},
   year      = {2026},
 }
 ```
