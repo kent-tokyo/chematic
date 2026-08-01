@@ -1,0 +1,110 @@
+rdkit_version=2026.03.3
+[09:33:58] 
+
+****
+Invariant Violation
+bad direction in linearSearch
+Violation occurred on line 224 in file /Users/runner/work/rdkit-pypi/rdkit-pypi/build/temp.macosx-11.0-arm64-cpython-313/rdkit/Code/Numerics/Optimizer/BFGSOpt.h
+Failed Expression: status >= 0
+****
+
+[09:33:58] 
+
+****
+Invariant Violation
+bad direction in linearSearch
+Violation occurred on line 224 in file /Users/runner/work/rdkit-pypi/rdkit-pypi/build/temp.macosx-11.0-arm64-cpython-313/rdkit/Code/Numerics/Optimizer/BFGSOpt.h
+Failed Expression: status >= 0
+****
+
+[09:33:58] 
+
+****
+Invariant Violation
+bad direction in linearSearch
+Violation occurred on line 224 in file /Users/runner/work/rdkit-pypi/rdkit-pypi/build/temp.macosx-11.0-arm64-cpython-313/rdkit/Code/Numerics/Optimizer/BFGSOpt.h
+Failed Expression: status >= 0
+****
+
+[09:33:58] 
+
+****
+Invariant Violation
+bad direction in linearSearch
+Violation occurred on line 224 in file /Users/runner/work/rdkit-pypi/rdkit-pypi/build/temp.macosx-11.0-arm64-cpython-313/rdkit/Code/Numerics/Optimizer/BFGSOpt.h
+Failed Expression: status >= 0
+****
+
+[09:33:58] 
+
+****
+Invariant Violation
+bad direction in linearSearch
+Violation occurred on line 224 in file /Users/runner/work/rdkit-pypi/rdkit-pypi/build/temp.macosx-11.0-arm64-cpython-313/rdkit/Code/Numerics/Optimizer/BFGSOpt.h
+Failed Expression: status >= 0
+****
+
+[09:33:58] 
+
+****
+Invariant Violation
+bad direction in linearSearch
+Violation occurred on line 224 in file /Users/runner/work/rdkit-pypi/rdkit-pypi/build/temp.macosx-11.0-arm64-cpython-313/rdkit/Code/Numerics/Optimizer/BFGSOpt.h
+Failed Expression: status >= 0
+****
+
+[09:33:58] 
+
+****
+Invariant Violation
+bad direction in linearSearch
+Violation occurred on line 224 in file /Users/runner/work/rdkit-pypi/rdkit-pypi/build/temp.macosx-11.0-arm64-cpython-313/rdkit/Code/Numerics/Optimizer/BFGSOpt.h
+Failed Expression: status >= 0
+****
+
+[09:33:58] 
+
+****
+Invariant Violation
+bad direction in linearSearch
+Violation occurred on line 224 in file /Users/runner/work/rdkit-pypi/rdkit-pypi/build/temp.macosx-11.0-arm64-cpython-313/rdkit/Code/Numerics/Optimizer/BFGSOpt.h
+Failed Expression: status >= 0
+****
+
+[09:33:58] 
+
+****
+Invariant Violation
+bad direction in linearSearch
+Violation occurred on line 224 in file /Users/runner/work/rdkit-pypi/rdkit-pypi/build/temp.macosx-11.0-arm64-cpython-313/rdkit/Code/Numerics/Optimizer/BFGSOpt.h
+Failed Expression: status >= 0
+****
+
+[09:33:58] 
+
+****
+Invariant Violation
+bad direction in linearSearch
+Violation occurred on line 224 in file /Users/runner/work/rdkit-pypi/rdkit-pypi/build/temp.macosx-11.0-arm64-cpython-313/rdkit/Code/Numerics/Optimizer/BFGSOpt.h
+Failed Expression: status >= 0
+****
+
+[09:33:58] 
+
+****
+Invariant Violation
+bad direction in linearSearch
+Violation occurred on line 224 in file /Users/runner/work/rdkit-pypi/rdkit-pypi/build/temp.macosx-11.0-arm64-cpython-313/rdkit/Code/Numerics/Optimizer/BFGSOpt.h
+Failed Expression: status >= 0
+****
+
+[09:33:58] 
+
+****
+Invariant Violation
+bad direction in linearSearch
+Violation occurred on line 224 in file /Users/runner/work/rdkit-pypi/rdkit-pypi/build/temp.macosx-11.0-arm64-cpython-313/rdkit/Code/Numerics/Optimizer/BFGSOpt.h
+Failed Expression: status >= 0
+****
+
+SUMMARY: {"classification": "nondefault_small_ring_torsion_only", "n_total_trials": 60, "n_crashes": 12, "crash_configs": ["(True, False)", "(True, True)"], "crash_seeds": [4, 20260801], "default_config_crashes": 0}

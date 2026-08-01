@@ -1,0 +1,1 @@
+config_snapshot rdkit_version=2026.03.3 random_seed=20260801 max_attempts=8 best_of_n=10 add_hs=True enforce_chirality=True use_small_ring_torsions=True use_macrocycle_torsions=True use_macrocycle14config=True force_field_max_iterations=200
