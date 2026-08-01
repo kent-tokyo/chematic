@@ -21,12 +21,13 @@
 //! coupling to resolve) plus, per component, whether it is a path/cycle and
 //! whether any interior node has zero "private" (non-shared) substituents.
 //!
-//! Run against the 18 pinned residual fixtures (no argument) or the full
-//! corpus (`~/Downloads/SMILES.csv` or any one-SMILES-per-line file):
+//! Run against the 18 pinned residual fixtures (no argument) or a full
+//! corpus (any one-SMILES-per-line file -- `scripts/descriptor_census_
+//! corpus.smi`, committed to this repo, needs no external download):
 //!
 //! ```text
 //! cargo run -p chematic-smiles --release --example ez_shared_carrier_component_audit
-//! cargo run -p chematic-smiles --release --example ez_shared_carrier_component_audit -- ~/Downloads/SMILES.csv
+//! cargo run -p chematic-smiles --release --example ez_shared_carrier_component_audit -- scripts/descriptor_census_corpus.smi
 //! ```
 
 use std::collections::{HashMap, HashSet};
