@@ -260,7 +260,12 @@ this module can't literally replay RDKit's search, only its filter.
 
 **Measured, full corpus (5,000-molecule `~/Downloads/SMILES.csv` + 21 hand-built
 fused/bridged/spiro/cage structures, 30 patterns, 155,651 molecule×pattern cells — see
-provenance in the PR body)**:
+provenance in the PR body)**. Produced by
+`cargo run -p chematic-smarts --release --example rdkit_parity_dump -- <SMILES.csv> >
+validation/results/rdkit_ring_parity_dump.jsonl` (dumps chematic's default AND opt-in
+match sets) followed by `python scripts/rdkit_ring_parity_diagnosis.py` (independently
+recomputes RDKit's own match set per cell and buckets every mismatch by mechanism,
+fail-closed on any unrecognized bucket):
 
 | Metric | Value |
 |---|---|
