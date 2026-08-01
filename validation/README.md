@@ -699,4 +699,7 @@ python scripts/rdkit_benchmark.py
 # Large-scale agreement on 5k ChEMBL subset
 python scripts/bench5k.py ~/Downloads/SMILES.csv
 python scripts/bench5k.py ~/Downloads/SMILES.csv --detail   # show mismatches
+
+# Per-molecule LogP (Crippen) mismatch breakdown, beyond bench5k's aggregate number
+python scripts/analyze_logp_mismatches.py ~/Downloads/SMILES.csv --tolerance 0.01
 ```

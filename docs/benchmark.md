@@ -85,6 +85,11 @@ mols = [Chem.MolFromSmiles(s) for s in smiles_list]
 python scripts/bench_smiles_parse.py --n 5000 --rdkit
 ```
 
+**Related micro-benchmarks** (same corpus-tiering convention, not folded into the table
+above): `python scripts/bench_canonical.py --rdkit` measures canonical SMILES generation
+throughput; `python scripts/bench_smarts.py --rdkit` measures SMARTS substructure-match
+throughput (pairs with `scripts/rdkit_benchmark.py`'s `bench_smarts_match`).
+
 ---
 
 ## 3. Speed — ECFP4 Fingerprint Generation (batch)
