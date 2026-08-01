@@ -669,6 +669,32 @@ reports parse throughput over a directory of individual `.mrv` files rather than
   `python scripts/mrv_io_parity.py --self-test` and `python
   scripts/mrv_kekulize_stereo_check.py --self-test`.
 
+### Wave 2C: ring-constrained E/Z residuals (issue #149, 5,000-mol corpus + 18 pinned fixtures)
+
+Audit-only follow-up to PR #229 (Wave 2B), which split the 18 pinned
+`EZ_SHARED_CANDIDATE_BOND_RESIDUALS` fixtures (`crates/chematic-smiles/src/
+canonical.rs`) into 10 fully-resolved and 8 still-residual. Tests the
+hypothesis that every residual's coupled component includes an alkene end
+whose own double bond is endocyclic in a small ring -- confirmed
+individually for all 8 (never pooled) via a live RDKit oracle, but found
+necessary-not-sufficient (the same shape occurs in 5 of the 10 resolved
+fixtures too). Measures the corpus-wide blast radius of 3 candidate
+production gating rules, each independently, never combined. No production
+code changed.
+
+- **Files:** `validation/results/ez_ring_constrained_residual_audit.jsonl`
+  (1,387 per-end rows, full corpus), `ez_ring_constrained_residual_audit_
+  summary.json` (fixture classification + blast-radius table)
+- **Reference tool:** RDKit 2026.03.3 (`Chem.FindPotentialStereo`,
+  `Chem.AssignStereochemistry`)
+- **How to regenerate:** `cargo run -p chematic-smiles --release --example
+  ez_ring_constrained_residual_audit -- scripts/descriptor_census_corpus.smi`
+  + `python scripts/ez_ring_constrained_residual_diagnosis.py`. Self-test:
+  `python scripts/ez_ring_constrained_residual_diagnosis.py --self-test`.
+- **Full report:** `docs/ez_ring_constrained_residual_audit.md` (per-fixture
+  classification, blast-radius table, recommended predicate,
+  CONDITIONAL GO verdict)
+
 ## Summary results
 
 See [rdkit/README.md](rdkit/README.md) for per-descriptor breakdowns.
