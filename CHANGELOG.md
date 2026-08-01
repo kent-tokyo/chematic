@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `chematic-rxn`
+
+- **`find_reaction_matches`/`apply_reaction_match`** (issue #225): a public
+  seam between enumerating a SMIRKS's matches against reactant molecules and
+  applying one of them, for callers that need to accept some matches and
+  reject others (e.g. based on whether the matched bond is a ring bond)
+  without discarding the whole `run_reactants` call. `find_reaction_matches`
+  returns a `Vec<ReactionMatch>` — one per accepted match — and
+  `apply_reaction_match` builds the product set for exactly one chosen
+  match. `ReactionMatch::atom_map_positions` resolves a SMIRKS atom-map
+  number to the matched atom without re-deriving it. `run_reactants`/
+  `run_reactants_strict` are now implemented in terms of these two
+  functions (behavior- and performance-preserving: still one SMIRKS parse
+  and one VF2 match pass per call, unchanged from before).
+
 ### Fixed — `chematic-mol`
 
 - **MRV reader now perceives 2D wedge/hash tetrahedral and E/Z stereo**
