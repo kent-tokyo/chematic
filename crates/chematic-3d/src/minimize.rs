@@ -3652,4 +3652,65 @@ mod policy_bridge_tests {
              here), only a sound bond length",
         );
     }
+
+    /// Issue #227 Phase 0.1: a molecule `chematic_core::kekulize` cannot
+    /// Kekulize (here: an odd-membered, all-carbon, neutral aromatic ring --
+    /// unmatchable by simple parity, guaranteed `Err` regardless of which of
+    /// `kekulize`'s four internal passes runs) must fail closed all the way
+    /// through this crate's own policy bridge, structurally classified as
+    /// `ForceFieldBridgeError::UnsupportedAtomType` by `chematic_ff`'s
+    /// `NumericTypeError` -> this crate's `From` impl -- never by matching on
+    /// the error's message text, and never silently minimized using an
+    /// un-re-perceived molecule as a stand-in MMFF view.
+    #[test]
+    fn kekulization_failure_fails_closed_through_the_policy_bridge_not_silently() {
+        let mut b = chematic_core::MoleculeBuilder::new();
+        let atoms: Vec<_> = (0..5)
+            .map(|_| b.add_atom(chematic_core::Atom::aromatic(chematic_core::Element::C)))
+            .collect();
+        for i in 0..5 {
+            b.add_bond(atoms[i], atoms[(i + 1) % 5], BondOrder::Aromatic)
+                .unwrap();
+        }
+        let mol = b.build();
+        assert!(
+            chematic_core::kekulize(&mol).is_err(),
+            "test fixture must be genuinely unkekulizable"
+        );
+
+        let coords = generate_coords(&mol);
+        let config = MinimizeConfig::default();
+
+        let result = minimize_with_policy(
+            &mol,
+            coords,
+            ForceFieldPolicy::Mmff94BondAngleStrict,
+            &config,
+        );
+        match result {
+            Err(ForceFieldBridgeError::UnsupportedAtomType(msg)) => {
+                assert!(
+                    msg.contains("Kekulization"),
+                    "error must name the Kekulization stage, got: {msg}"
+                );
+            }
+            other => panic!(
+                "expected Err(UnsupportedAtomType(_)) for an unkekulizable molecule, got {other:?}"
+            ),
+        }
+
+        // Determinism: repeated calls produce the same classification, not a
+        // flaky/order-dependent result.
+        let coords2 = generate_coords(&mol);
+        let result2 = minimize_with_policy(
+            &mol,
+            coords2,
+            ForceFieldPolicy::Mmff94BondAngleStrict,
+            &config,
+        );
+        assert!(
+            matches!(result2, Err(ForceFieldBridgeError::UnsupportedAtomType(_))),
+            "Kekulization failure must deterministically classify as UnsupportedAtomType"
+        );
+    }
 }

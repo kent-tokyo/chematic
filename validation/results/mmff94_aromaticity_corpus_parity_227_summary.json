@@ -1,0 +1,14 @@
+{
+  "molecules_compared": 265,
+  "molecules_oracle_unavailable": 0,
+  "atom_aromatic_parity": {
+    "total": 6698,
+    "match": 6666,
+    "pct": 99.5222
+  },
+  "bond_aromatic_parity": {
+    "total": 7221,
+    "match": 7181,
+    "pct": 99.4461
+  }
+}
