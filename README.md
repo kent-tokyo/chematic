@@ -180,7 +180,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.10.0
+# chematic v0.10.1
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -248,10 +248,12 @@ call overhead hidden inside a `_sys` crate.
 
 ### Safe
 
-chematic's own ~15,000 lines of Rust contain **~6 `unsafe` blocks**, all confined to the
-optional `native-inchi` FFI layer (below). No C++ heap corruptions. No segfaults from
-malformed SMILES input. No platform-specific build failures from `-sys` crates. The
-compiler enforces memory safety at every call site chematic itself wrote.
+chematic's own ~149,000 lines of Rust (tokei-measured code lines, all 18 crates,
+2026-08-02) contain **zero `unsafe` blocks outside one file**: 9 `unsafe {}` blocks
+plus 1 `unsafe extern "C"` FFI declaration, all in the optional `native-inchi` layer
+(below). No C++ heap corruptions. No segfaults from malformed SMILES input. No
+platform-specific build failures from `-sys` crates. The compiler enforces memory
+safety at every call site chematic itself wrote.
 
 > The `native-inchi` feature is the single opt-in exception — it vendors the IUPAC InChI
 > C library (v1.07.5) for bit-exact standard InChI. All other chematic crates stay
@@ -345,7 +347,7 @@ Full history → [benchmarks/](benchmarks/) · Methodology → [validation/](val
 
 † Default build only. The optional `native-inchi` feature adds a C-compiler dependency for the vendored IUPAC InChI C library (v1.07.5). This is about C/C++ FFI specifically — the `depict` feature below pulls in pure-Rust rendering crates, so it doesn't add a C compiler dependency even though it isn't unsafe-free (see ‡).
 
-‡ chematic's own ~15,000 lines of Rust: unsafe-free outside `native-inchi`'s ~6 FFI blocks (see "Safe" above) — a real, verifiable claim about code chematic wrote, and categorically different from RDKit/OpenBabel's *C++ FFI* unsafe (uncheckable by any compiler at that boundary) even where the raw count is comparable. It is **not** true of the full dependency tree: the optional `depict` feature (SVG/PDF/EPS rendering) pulls in resvg/usvg/rustybuzz/tiny-skia/zune-jpeg, pure-Rust crates that are themselves not unsafe-free — measured directly (`unsafe fn`/`impl`/`trait`/`{` openings): tiny-skia 151, zune-jpeg 79, rustybuzz 14, image 8, fontdb 3, tiny-skia-path 3 (258 total in this set alone). `chematic-py` (`pip install chematic`) and the npm package both depend on `chematic-depict` directly, so this applies to both real-world install paths, not just an edge case.
+‡ chematic's own ~149,000 lines of Rust (tokei-measured): unsafe-free outside `native-inchi`'s 9 FFI blocks (see "Safe" above) — a real, verifiable claim about code chematic wrote, and categorically different from RDKit/OpenBabel's *C++ FFI* unsafe (uncheckable by any compiler at that boundary) even where the raw count is comparable. It is **not** true of the full dependency tree: the optional `depict` feature (SVG/PDF/EPS rendering) pulls in resvg/usvg/rustybuzz/tiny-skia/zune-jpeg, pure-Rust crates that are themselves not unsafe-free — measured directly (`unsafe fn`/`impl`/`trait`/`{` openings): tiny-skia 151, zune-jpeg 79, rustybuzz 14, image 8, fontdb 3, tiny-skia-path 3 (258 total in this set alone). `chematic-py` (`pip install chematic`) and the npm package both depend on `chematic-depict` directly, so this applies to both real-world install paths, not just an edge case.
 
 ---
 
@@ -380,7 +382,7 @@ const isomers = JSON.parse(enumerate_stereo_isomers_json(parse_smiles('C(F)(Cl)B
 const picks = JSON.parse(maxmin_picks_ecfp4_json('["CC","c1ccccc1","CCO","CCCC"]', 2));
 ```
 
-131+ exported functions cover descriptors, fingerprints, 3D geometry, reactions (incl. `retro_disconnect_json` — single-step retrosynthetic disconnection), diversity picking, and SDF round-trips.
+130+ exported functions cover descriptors, fingerprints, 3D geometry, reactions (incl. `retro_disconnect_json` — single-step retrosynthetic disconnection), diversity picking, and SDF round-trips.
 See the [full WASM API reference](https://kent-tokyo.github.io/chematic/) for all exports.
 ---
 
@@ -409,13 +411,18 @@ See the [full WASM API reference](https://kent-tokyo.github.io/chematic/) for al
 | `chematic`            | Umbrella crate with feature flags (all sub-crates, incl. `iupac`, `inchi`)                              | 1     |
 
 ```
-cargo test --workspace --lib --quiet                                          # 3,223 tests, all passing (2026-08-01)
+cargo test --workspace --lib --quiet                                          # 3,235 tests, all passing (2026-08-02)
 cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +16 IUPAC-exact InChI tests
 ```
 
 ---
 
 ## Recent Development
+
+**v0.10.1** (2026-08-02): **MMFF94 numeric-typing correctness hotfix**
+- `chematic-ff`: fixed a class of bug where MMFF94 could silently resolve an atom against a parameter row belonging to a different element and report the resulting physically-wrong energy as success (issue #227's "furan collision") — the aromatic atom typer never implemented RDKit's real 5-/6-ring alpha/beta-heteroatom classification. Ported from a pinned RDKit source with a new provenance-cited numeric-type registry, plus a construction-time semantic-compatibility invariant that makes this bug class fail closed (`NumericTypeError`) instead of silently wrong, going forward. That invariant caught two more instances of the identical bug: a protonated amine N and an anionic O were each being typed as the *other* element's parameter row. Measured on the 265-molecule Wave 1 corpus (production API): 44 → 102 successful MMFF94 minimizations, 0 cross-element type mismatches across 6693 comparable atoms vs. a pinned RDKit oracle (91.83% exact match)
+- This is a correctness hotfix, not a coverage-completion release — issue #227 stays open (140 `MissingParameters` and 22 `MinimizationFailed` cases remain, stretch-bend is not yet gated, no full-corpus energy/gradient parity harness exists yet). See Migration notes in `CHANGELOG.md`'s `[0.10.1]` section if you cache MMFF94 results
+- Full details in `CHANGELOG.md`'s `[0.10.1]` section
 
 **v0.10.0** (2026-08-01): **Match-level SMIRKS reaction application, MRV 2D stereo, shared E/Z carrier bond fix**
 - `chematic-rxn`: `find_reaction_matches`/`apply_reaction_match` (issue #225) — a public seam between enumerating a SMIRKS's matches against reactant molecules and applying one of them, for callers that need to accept some matches and reject others (e.g. based on whether the matched bond is a ring bond) without discarding the whole `run_reactants` call. `run_reactants`/`run_reactants_strict` are now implemented in terms of these two functions, unchanged in cost (still one SMIRKS parse + one VF2 match pass per call)
@@ -431,128 +438,16 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 - Full details in `CHANGELOG.md`'s `[0.9.0]` section
 
 **v0.8.1** (2026-07-30): **`canonical_smiles()` explicit/implicit hydrogen-count correctness fix**
-- `chematic-smiles`/`chematic-core`: two representations of the same molecule that differ only in whether an atom's H count came from bracket notation (`[Cl]`) or organic-subset notation (`Cl`) — when the explicit value merely repeats what valence inference gives anyway — now canonicalize identically; `initial_invariant`'s Morgan-rank seed and the canonical writer's bracket-necessity check previously read the raw `hydrogen_count` field directly instead of the crate's own `implicit_hcount()` unifier. Isotope, charge, real stereochemistry, and any genuinely disambiguating explicit H count remain fully distinguishing — only the redundant case is unified. Found via [kent-tokyo/renkin PR #65](https://github.com/kent-tokyo/renkin/pull/65) (a `run_reactants` product from a bracket-notation SMIRKS template diverging from a directly user-typed SMILES of the identical compound). Some canonical SMILES output strings for existing inputs will change as a direct, intended consequence — see `CHANGELOG.md`'s `[0.8.1]` Migration notes if you depend on exact string stability across versions
+- `chematic-smiles`/`chematic-core`: two representations of the same molecule that differ only in whether an atom's H count came from bracket notation (`[Cl]`) or organic-subset notation (`Cl`) — when the explicit value merely repeats what valence inference gives anyway — now canonicalize identically. Some canonical SMILES output strings for existing inputs will change as a direct, intended consequence — see `CHANGELOG.md`'s `[0.8.1]` Migration notes if you depend on exact string stability across versions
 - Full details in `CHANGELOG.md`'s `[0.8.1]` section
 
 **v0.8.0** (2026-07-29): **Opt-in fail-closed 3D embedding pipeline, canonical-SMILES automorphism-orbit pruning**
-- `chematic-3d`: new opt-in `pipeline_v2::embed_pipeline_v2` integrates stochastic distance geometry, macrocycle 1-4 distance-bound adjustments, validated ETKDG-style torsion knowledge, chiral-volume/E-Z stereo verification and repair, and typed force-field minimization into one 12-stage pipeline, with a fail-closed stereo re-check *after* force-field minimization (measured: UFF/DREIDING can reintroduce a stereo violation repair had just fixed). `RingTorsionApplicationPolicy::FailClosed` (default) rejects mechanically applying ring/macrocycle torsion potentials the current optimizer can only score, not apply — `DiagnosticOnly` is an explicit, non-default opt-in. Existing default behavior (Rust/Python/WASM/MCP) is unchanged
-- `chematic-smiles`: fixed the `canonical_smiles()` performance regression reported by RENKIN — canonicalization search now prunes branches via exact, independently-verified colored-graph automorphism checks, never rank/hash equality alone. Measured (audited, conservative figures): approximately 5x geomean speedup on high-symmetry molecules (search-leaf count 6625 → 13), approximately 1.1–1.2x geomean speedup on low-symmetry negative controls with no regression, approximately 1.09–1.10x per-molecule geomean speedup on a 5,000-molecule external corpus (approximately 5x total-elapsed improvement there, tail-dominated by a few high-symmetry molecules, not representative of typical per-molecule cost), 0 correctness mismatches. `canonical_smiles(&Molecule) -> String`'s public signature is unchanged; new fallible `canonical_smiles_with_limits` added alongside it. Also fixes a Dative-bond round-trip bug (issue #194): the writer was silently truncating `->` to a plain single bond, and — a deeper, separate root cause — the parser could not distinguish `->` from `<-` at all, silently collapsing both to the same donor/acceptor assignment; both are now correctly direction-aware
+- `chematic-3d`: new opt-in `pipeline_v2::embed_pipeline_v2` — stochastic distance geometry + torsion knowledge + stereo verification/repair + typed force-field minimization in one 12-stage pipeline, with a fail-closed stereo re-check *after* minimization. Existing default behavior is unchanged
+- `chematic-smiles`: fixed the `canonical_smiles()` performance regression reported by RENKIN (~5x geomean speedup on high-symmetry molecules); also fixes a Dative-bond round-trip bug (issue #194)
 - Full details, benchmark numbers, and known limitations in `CHANGELOG.md`
 
-**v0.7.1** (2026-07-27): **`run_reactants`/`canonical_smiles()` performance fix**
-- `chematic-smiles`: fixed `canonical_smiles()` calling `CanonicalWriter::write_all()` a second, fully redundant time on every call (the winner was already written once while resolving individualize-refine ties, then thrown away and rewritten) — a real regression introduced by `c219ee7`, first shipped in 0.4.30 (`be5dbb1`, previously misattributed as the origin, is a correctness fix for combinatorial enumeration and is not the commit that introduced the double write — corrected via independent audit), most visible on highly symmetric molecules (plain rings, cages, `CF3`/`tBu`-style substituents: 45-48x slower `canonical_smiles()` in isolation on chematic 0.4.30 vs 0.4.25, reported via an external consumer's `run_reactants`/`apply_retro` regression). Pure refactor — output is byte-identical (verified against all existing tests, including the issue #50 E/Z regression suite). New `chematic-rxn` `perf-instrumentation` feature + `reaction_transform_perf_report` example benchmark added alongside. Full bisect and remaining known gap (genuine automorphism-orbit pruning, not attempted) in `docs/reaction_transform_perf.md`
-- Full details in `CHANGELOG.md`'s `[0.7.1]` section
-
-**v0.7.0** (2026-07-26): **2D wedge/hash + E/Z stereo now perceived automatically from MOL/SDF, verified canonical-SMILES dedup, CIP Rule-5 phosphorus fix, native InChI explicit-H/isotope fix**
-- `chematic-mol`/`chematic-perception`: MOL V2000/V3000/SDF readers now perceive both tetrahedral wedge/hash parity (PR #154) and E/Z double-bond direction (PR #162) automatically on read, CIP-independent, via `read_mol_with_diagnostics`/`read_mol_v3000_with_diagnostics` — typed opt-in diagnostics (`StereoDiagnostic`/`EzDirectionDiagnostic`) never guess on malformed/ambiguous input. Broad-corpus validation (4,999 molecules vs. RDKit 2026.03.3): E/Z — 622 RDKit-resolved double bonds, 0 semantic inversions, 0 false positives. Also fixed a V2000 MDL-code-4 bug, two V3000 `CFG` bugs, and a V2000 writer bug found while building this. PR #162's own corpus reconciliation surfaced a **new, not-yet-fixed** gap: `canonical_smiles()` can drop an already-correctly-`write()`-encoded E/Z marker for some molecules (aromaticity-unaware carrier grouping) — not yet filed as an issue
-- `chematic-inchi`: new verified canonical-SMILES dedup (`dedup` module) — fast canonical-SMILES candidate bucketing reconciled against native-InChI verified identity; fails closed (`VerificationUnavailable`) rather than risk a false merge whenever a specified stereocenter's legacy-CIP ranking is unresolved (closes a real false-`VerifiedDuplicate` found via live 5,000-molecule corpus verification). Follow-up tracked as [#161](https://github.com/kent-tokyo/chematic/issues/161) (an accurate-CIP preflight could recover most of the conservative cases)
-- `chematic-cip`: CIP Rule-5 pseudoasymmetric r/s phosphorus fix
-- `chematic-inchi`: native InChI (`native-inchi` feature) explicit-hydrogen/isotope conversion fix
-- Full details in `CHANGELOG.md`'s `[Unreleased]` section
-
-**v0.6.0** (2026-07-25): **RDKit-bit-exact ECFP4 cross-language stable API, canonical SMILES E/Z marker consistency, opt-in authoritative aromaticity demotion**
-- `chematic-fp`/Python/WASM: promoted the RDKit-bit-exact Morgan/ECFP4 path to a documented, cross-language opt-in API (`Mol.rdkit_ecfp4()` in Python, `rdkit_ecfp4_bitvec()` in WASM), generalized to an independently oracle-verified `(radius, fpSize)` matrix (4×5 = 20 cells, closed enums so an unsupported combination can't be constructed). Rust/Python/WASM verified byte-identical by actually building and running all three, not "identical by construction." `ecfp4()`'s default behavior is unchanged
-- `chematic-smiles`: fixed canonical output placing an E/Z direction marker on a different substituent bond depending on input atom order — permutation invariance for marker placement **93.0% → 98.1%** (264/282 known-divergent molecules now converge; 18 residual cases deliberately left unresolved to avoid corrupting a shared-carrier-bond edge case, tracked as [#149](https://github.com/kent-tokyo/chematic/issues/149)). Also investigated and **ruled out** a previously-suspected bridged-bicyclic canonicalization bug — the two SMILES in question turned out to be genuinely different molecules per independent RDKit InChI verification, not a chematic defect
-- `chematic-perception`: new opt-in `apply_aromaticity_authoritative_experimental` — makes aromatic-flag promotion/demotion fully authoritative to the Hückel model's actual verdict in both directions (the default `apply_aromaticity`/`apply_aromaticity_ex` are unchanged, verified byte-identical). Fixed a ring-fusion-bond misclassification affecting fused diazines (quinazoline/quinoxaline/purine-shaped rings) as part of this work, with a beneficial side effect of also resolving 32 pre-existing false-positive regression pins
-- Full details and known limitations in `CHANGELOG.md`
-
-**v0.5.0** (2026-07-23): **CIP-independent 2D wedge parity, charge-aware kekulization (6 previously-hard-failing molecule classes), non-silent PAINS/Brenk budget matching**
-- `chematic-perception`: new `local_parity_from_wedges`/`apply_local_parity_from_wedges` — computes `Atom.chirality`/`stereo_neighbor_order` directly from wedge/hash bonds and 2D coordinates without any CIP ranking, so a CIP tie can't erase a known local parity; sign convention measured against RDKit's raw chiral tag, not derived by analogy. Not yet wired into any reader's default parse path
-- `chematic-core`: `kekulize()`'s atom-matching rules were charge-blind and missing Tellurium — tropylium, imidazolium, pyridinium, pyrylium, tellurophene, and phosphole now kekulize successfully, bond-for-bond identical to RDKit, with zero regressions; `Element::normal_valences()` gained a source-verified Tellurium entry, fixing a resulting ECFP4 aromaticity mismatch
-- `chematic-perception`: charge-aware Hückel π-electron counting — tropylium, imidazolium, pyridinium, and pyrylium now match RDKit's aromatic atom/bond flags exactly (tellurophene/phosphole and a broader authoritative-flag-demotion fix remain open, tracked separately)
-- `chematic-smiles`: fixed two writer bugs — bracket-forced atoms (isotope/charge/atom-map) were silently dropping implicit hydrogens (`[NH4+]` → `[N+]`), and standalone wedge bonds with no adjacent double bond were written as meaningless SMILES `/`/`\` tokens
-- `chematic-smarts`/`chematic-chem`: PAINS/Brenk substructure matching could hang for minutes on symmetric targets; VF2 now takes an explicit visit budget with a genuine three-way outcome (`Found`/`NotFound`/`BudgetExhausted`) that's never silently folded into a false negative — see [#139](https://github.com/kent-tokyo/chematic/issues/139) for the follow-up (symmetry-aware candidate ordering) that would let the shipped budget resolve some now-conservatively-flagged cases correctly instead of just safely
-- Full details, corpus-level before/after numbers, and known limitations in `CHANGELOG.md`
-
-**v0.4.30** (2026-07-17): **`chematic-cip` opt-in wired to every surface, SMARTS `[rN]` fix, new RDKit-parity aromaticity engine, 5 stereo-metadata bug fixes**
-- `chematic-smarts`: fixed `[rN]` (ring-size SMARTS, e.g. `[r5]`/`[r6]`) being wrongly aliased to `[kN]`'s any-ring semantics — RDKit's real `[rN]` means "this atom's *smallest* ring is exactly size N", a materially different predicate (confirmed empirically: on a fusion atom shared between a 5-ring and 6-ring, RDKit's `[k6]` matches but `[r6]` doesn't). No ring-model change — `[rN]` now has its own `MinRingSize` primitive computed from chematic's existing SSSR. SMARTS match-set agreement vs RDKit **96.9% → 99.93%** on a 5,000-molecule corpus, 0 regressions; see `docs/rdkit_compat.md`'s "SMARTS-R0"/"SMARTS-R1" entries
-- Milestone 5A: opt-in access to the accurate engine from every public surface — `chematic_chem::assign_cip_with_mode(mol, CipMode::Accurate)` (Rust), `Mol.cip_stereo(mode="accurate")` + `Mol.cip_stereo_unresolved()` (Python), `cip_assignments_accurate_json`/`cip_unresolved_json` (WASM). Every default (`assign_cip()`, `cip_stereo()`, the un-suffixed WASM functions) is unchanged — this is additive only, not a default switch; see `docs/cip_accurate_rfc.md`'s Milestone 5A entry for the merge semantics (accurate tetrahedral R/S + legacy E/Z, since the accurate engine doesn't compute bond stereo) and the "never guess" contract (ties/budget-outs surface explicitly, never silently backfilled)
-- Milestone 4 gate closed: 99.64% oracle-stable agreement (raw 99.38%, 4160/4186) on a full-corpus, representation-stability-stratified score — the last residual (11 phosphorus cyclophosphazene rows) turned out to be an oracle instability (RDKit's own labels change under a chemically-neutral Kekulé respelling of the identical molecule), not a chematic defect; the 15-row Rule 5 cage family remains deferred, unaffected by this gate
-- The accurate engine (a provenance-carrying, sphere-by-sphere digraph comparator — Rules 1a/1b/2 — plus RDKit-compatible MANCUDE fractional atomic numbers for aromatic ring stereocenters) is available through the opt-in APIs above but is not yet the default implementation behind `assign_cip()`
-- Found and fixed a real ~10-14x perf regression (SSSR misused for a boolean ring-bond check, replaced with an O(V+E) bridge-edge DFS); CI Criterion-gate bootstrap fix; a Criterion-gate reliability finding (pseudo-replication, [#70](https://github.com/kent-tokyo/chematic/issues/70)) — process-level redesign (independent process-run observations, two-stage screening, same-binary null control) landed. Follow-up ([#117](https://github.com/kent-tokyo/chematic/pull/117)) fixed two further, more specific bugs found via real CI runs: Stage 1's 3-block sign-test could structurally never fail (replaced with a pure magnitude-routing screen, threshold chosen from an offline evaluation against 28 historical no-op runs) and Stage 2's sign-test was independently magnitude-blind to small build/codegen variance (fixed with a combined sign-test + practical-effect-threshold gate). The gate stays non-required; the same-binary null control's blind spot to cross-binary codegen variance is a known, reported, not-yet-fixed gap
-- Milestone 4A: `CipCode::LowerR`/`LowerS` — Rule 5 (pseudoasymmetry), scoped to 2 verified-independent rows; a three-armed symmetric-cage family (15 rows) was found to be provably unreachable by this pairwise architecture and deferred as Milestone 4A-2 (needs symmetry/automorphism detection)
-- Milestone 4A-0: re-froze the residual fresh at 34 rows and mechanically classified 100% of it (0 unexplained) — 15 Rule 5/pseudoasymmetry (the 4A-2 cage family), 8 Rule 4 candidate (positively confirmed via a structural-identity check, not inferred), 11 phosphorus (9 comparator-bug "wrong" + 2 genuinely-tied)
-- `chematic-perception`: new opt-in `assign_aromaticity_rdkit_parity_experimental`/`apply_aromaticity_rdkit_parity_experimental` — a source-verified port of RDKit's actual aromaticity algorithm, **100.0000% atom/bond agreement** with real RDKit on 4,999/5,000 comparable molecules. Not wired into the default path (`RdkitLike`/`Huckel` unchanged); default-promotion is blocked on a pre-existing, unrelated canonical-SMILES-writer sensitivity, not this engine
-- Fixed 5 instances of the same missing-metadata-copy bug (a `MoleculeBuilder` rebuild not calling `copy_stereo_groups_from`/`copy_stereo_from`/`copy_bond_directions_from`), each silently dropping `stereo_neighbor_order` or worse: `apply_kekule` (P0), `enumerate_stereoisomers` (could silently flip a newly-assigned stereocenter's CIP code), `transfer_hydrogen_aromatic`/`clone_mol` (now deleted, replaced by `Molecule::clone`), `transfer_hydrogen`, and `invert_stereocenter` (which turned out to be a functional no-op on plain `@`/`@@` SMILES input, a separate and more severe bug)
-- `chematic-smiles`: consolidated aromatic bond-direction stashing across all 3 parser bond-creation paths (chain-edge/ring-closure/branch-attachment) into one shared helper — fixes a canonical-round-trip representation instability (4,994/5,000 → 5,000/5,000 stable); does not fix `assign_ez`'s pre-existing blindness to this side channel (tracked as follow-up)
-- Full-corpus accuracy on the experimental CIP engine 96.68% → 99.38% raw / 99.64% oracle-stable vs modern RDKit `rdCIPLabeler` (0 regressions) — see `docs/cip_accurate_rfc.md` for the full milestone history
-- Benchmarks refreshed (`benchmarks/2026-07-17.md`, Apple M4): the previous ECFP4 throughput headline (3.6 µs/mol, 5–14× vs RDKit) does not reproduce on a clean remeasurement — updated to today's measured numbers (~78 µs/mol / 2–3× on a diverse corpus) throughout this README and `docs/`; descriptor accuracy numbers reproduce cleanly
-
-**v0.4.29** (2026-07-10): **Kabsch rotation bug fix + SDF V3000/CDXML write, Avalon FP, O3A**
-- `chematic-3d`: fixed `align_coords`'s Kabsch rotation computed in the wrong direction — was giving grossly inflated RMSD for any non-pure-translation alignment (live on v0.4.28 across crates.io/PyPI/npm before this patch); `correspondence_search` for O3A atom correspondence
-- `chematic-mol`: SDF V3000 write wiring; CDXML write
-- `chematic-fp`: Avalon fingerprint
-
-**v0.4.28** (2026-07-09): **SMARTS perf, registry re-sync**
-- `chematic-smarts`: existence-check short-circuit — `bulk.substructure_search` 2.2× faster than RDKit
-- No git tag had been pushed for v0.4.23–v0.4.27 (crates.io stayed current via manual `cargo publish`, but PyPI/npm/GitHub Releases fell behind) — this release re-syncs all three registries
-
-**v0.4.27** (2026-07-04): **Descriptor fixes, RWMol/FCFP, veridict CI gates**
-- `chematic-chem`: `kappa1-3`, `balaban_j`, `labute_asa`, `bcut2d`, `hall_kier_alpha` descriptor fixes
-- `chematic-fp`: `useFeatures=True` FCFP
-- `chematic-mol`: RWMol in-place editing
-- CI: veridict-based performance/Criterion/accuracy-drift regression gates; integration-test CI coverage gap fix
-
-**v0.4.26** (2026-06-29): **E/Z stereo transfer in reactions + validation Sprint 6/7**
-- `chematic-rxn`: reaction products now preserve `/`/`\` double-bond geometry from reactants in `run_reactants()` (previously lost on transformation)
-- Validation: canonical SMILES differential validation vs RDKit (Sprint 6); SMARTS/aromaticity differential tests + I/O compatibility (rdkit_compat Sprint 7); root-caused remaining RDKit canonical divergence to aromaticity round-trip, not Morgan ranks
-
-**v0.4.25** (2026-06-29): **`chematic.rdkit_compat` layer**
-- `chematic-py`: RDKit API compatibility surface (Sprints 1–5) — Morgan `bitInfo`, Fingerprint/Mol/Atom/Bond/RingInfo compatibility, differential tests against RDKit; streaming `SDMolSupplier`/`SDWriter`/`Mol.GetProp`
-- `chematic-perception`: `AromaticityAlgorithm::RdkitLike` — Se/Te chalcogen aromaticity matching RDKit's model
-
-**v0.4.24** (2026-06-29): **CIP Rule 5, bridgehead/rotatable-bonds/TPSA/MR to 100%, HDF fingerprints**
-- `chematic-chem`: CIP Rule 5 stereo tie-breaking (stereocenters 99.8% → 99.98% vs RDKit); bridgehead detection 98.5% → 100%; rotatable bonds 99.1% → 100%; TPSA 100%; molar refractivity 97.5% → 100% (3-ring XOR augmentation) — all on the 5,000-mol ChEMBL corpus
-- `chematic-py`: `bulk.descriptors_array()` columnar numpy output; true-streaming SDF (`SdfFileReader`/`iter_sdf_batched`); `screen()` compound-filter workflow
-- LLM/RAG: representation router (`to_llm_text`, `best_representation`), molecule context pack, **Hyper-Dimensional Fingerprints (HDF)** — training-free dense molecular vectors
-
-**v0.4.23** (2026-06-26): **LogP 96.5% → 99.7%**
-- `chematic-chem`: `crippen_anchor_sets` fixed to use `uniquify: false`, so symmetric triple bonds (internal alkynes) yield both VF2 match orientations instead of one falling back to the generic `[#6]` value
-
-**v0.4.22** (2026-06-26): **CITATION.cff + `chematic.doctor()`**
-- `chematic-py`: `doctor()` self-diagnostic; Reliability-by-Feature matrix added to README
-
-**v0.4.21** (2026-06-25): **HTML/Markdown reporting for LLM/Jupyter**
-- `chematic-py`: `chematic.report()` self-contained HTML compound grid, `chematic.compare()`, `mol.review()` Markdown analysis
-- Docs: `benchmarks/`/`validation/` reproducible accuracy history
-
-**v0.4.20** (2026-06-25): **ETKDG torsion KB 44 → 80 rules, `mol.describe()`/`diff()`**
-- `chematic-3d`: chair/envelope ring conformations for 6/5-membered aliphatic rings; SMARTS-based torsion rules as a high-precision pre-check layer
-- `chematic-py`: `mol.describe()`/`mol.diff(other)` for LLM/MCP agents; `bulk.generate_3d`/`tanimoto_matrix`/`standardize`
-
-**v0.4.19** (2026-06-23): **PDF/EPS output, ChemicalJSON, new descriptors, WASM −38.5%**
-- `chematic-depict`: `depict_pdf()` / `depict_eps()` — PDF and EPS output; pure Rust, no external tools
-- `chematic-mol`: **ChemicalJSON** — `parse_cjson()` / `write_cjson()` for Avogadro2 / MolSSI interop
-- `chematic-chem`: 4 new descriptors — `schultz_mti()`, `gutman_mti()`, `vabc()` (Bondi vdW volume), `gravitational_index()`
-- `chematic-3d`: **Spectrophores** 3D fingerprints (pharmacophore shell encoding)
-- `chematic-py`: `mol.to_pdf()`, `mol.to_eps()`, `mol.to_cjson()`, `from_cjson()`; `bulk.substructure_match(smarts, mols)` parallel VF2; `estate_all()` and `ring_bundle` in bulk
-- **WASM bundle: 819 → 504 KB gzip (−38.5%)** — `tiny_skia` made optional, inline SHA-256, `opt-level="z" lto=true codegen-units=1`
-
-**v0.4.18** (2026-06-23): **Python API expansion + benchmark docs**
-- `chematic-py`: **Jupyter auto-display** — writing `mol` in a cell renders 2D structure via `_repr_svg_()`; `mol.has_substructure(smarts)`, `mol.find_matches(smarts)`; `from_smiles_list()`, `descriptors_df()`
-- `chematic-chem`: `chi_all()` — all 10 Hall-Kier connectivity indices in a single pass; `cns_mpo_from_parts()`; `pains_passes_and_matches()` / `brenk_passes_and_matches()` — combined pass/match in one scan
-- Docs: benchmark page added (ECFP4 5–14× vs RDKit, 100% descriptor accuracy on 4,999-mol ChEMBL corpus)
-
-**v0.4.16–v0.4.17** (2026-06-22–23): **SSSR sharing performance sprint**
-- `chematic-smarts`: `find_matches_with_rings()` — share a pre-computed `RingSet` across all patterns in a batch
-- `chematic-chem`: Crippen 117 SSSR → 1 per `logp_crippen` call; PAINS ~480 → 1; QED 113 → 1; pKa 42 → 1; new `logp_and_mr()`, `logd_from_logp()`, `pka_both()` to avoid redundant passes
-- `chematic-fp`: MHFP incremental BFS — 3N → N BFS operations per molecule at radius=2
-
-**v0.4.15** (2026-06-21): **TPSA calibration + E/Z stereo in reactions**
-- `chematic-chem`: TPSA ±0.1 Å² calibration sprint — **HBA 100%, HBD 100%, aromatic ring count 100%** on 4,999-mol ChEMBL subset; TPSA 86.7% → 93.3% (4,999-mol), 100% on 175-mol drug-like set
-- `chematic-rxn`: E/Z double-bond stereo filtering in `run_reactants` — SMIRKS `/`/`\` geometry matching via `smirks_ez_stereo_ok()` / `ez_stereo_outward()`
-
-**v0.4.14** (2026-06-21): **Topological descriptors + stereo correctness**
-- `chematic-chem`: 8 topological descriptors — `petitjean_index()`, `graph_eccentricities()`, `graph_diameter()`, `graph_radius()`, `eccentric_connectivity_index()`, `hosoya_index()`, `moran_autocorr()`, `geary_autocorr()`
-- `chematic-3d`: GETAWAY HATS-matrix (19-dim); `whim_getaway_combined()` now 29-dim
-- `chematic-smiles`: allene cumulated stereo `C=C=C` `@`/`@@` — round-trip stable
-- `chematic-smarts`: `[kN]` ring-size primitive; VF2 early-exit when query > target atom count
-- `chematic-rxn`: parity-aware SMIRKS chirality matching; product bracket cleanup (`[O:1]` → `O`)
-- `chematic-perception`: zero-order/dative bonds excluded from SSSR; `count_aromatic_rings()` handles Kekulé input
-
-Earlier v0.4.x work (template retrosynthesis, AutoDock/UFF, Kekulization blossom
-algorithm, PyO3 bindings, native-inchi) and the full v0.1–v0.3 history:
-[CHANGELOG.md](CHANGELOG.md)
+Full version history back to v0.1 — every release, corpus-level before/after
+numbers, root causes, and migration notes — is in [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -606,7 +501,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.10.0)
+├── Cargo.toml                    workspace root (v0.10.1)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -643,7 +538,7 @@ chematic/
 
 ```bash
 cargo build --workspace                                                   # build all crates
-cargo test --workspace --lib --quiet                                      # 2,812 lib tests
+cargo test --workspace --lib --quiet                                      # 3,235 lib tests
 cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +16 InChI tests
 cargo clippy --workspace -- -D warnings                                   # lints (zero warnings)
 ```
@@ -659,7 +554,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.10.0},
+  version   = {0.10.1},
   year      = {2026},
 }
 ```

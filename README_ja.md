@@ -106,7 +106,7 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.10.0
+# chematic v0.10.1
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-06, v0.4.22 vs RDKit 2026.03.3 --
@@ -161,7 +161,8 @@ RDKit Python API の 2〜3× 高速（全 CPU コアで Rayon 並列化）。GIL
 
 ### 安全
 
-chematic 自身の約 15,000 行の Rust コードには **`unsafe` ブロックが約 6 個**のみで、
+chematic 自身の約 149,000 行の Rust コード(tokei計測、全18クレート、2026-08-02時点)には
+`unsafe` ブロックが1ファイルの外では**ゼロ**個 — `unsafe {}` 9個 + `unsafe extern "C"` 宣言1個のみで、
 すべて opt-in の `native-inchi` FFI 層に限定されています(下記参照)。
 C++ のヒープ破壊なし。不正な SMILES 入力によるセグメンテーション違反なし。
 `-sys` クレートによるプラットフォーム固有のビルド失敗なし。
@@ -214,7 +215,7 @@ npm パッケージ `@kent-tokyo/chematic` は **719 KB gzip** — RDKit.js の�
 
 † デフォルトビルドのみ。`native-inchi` feature は opt-in で C コンパイラが必要（IUPAC InChI C ライブラリ v1.07.5 の vendoring）。これは C/C++ FFI 固有の話 — 下記の `depict` feature は純 Rust の描画クレートを引き込むため、unsafe フリーではなくても C コンパイラ依存は追加しません（‡参照）。
 
-‡ chematic 自身の約 15,000 行の Rust コード: `native-inchi` の約6個の FFI ブロックを除き unsafe フリー（上記「安全」参照）— chematic 自身が書いたコードについての実測済みの主張であり、コンパイラによるチェックが一切効かない RDKit/OpenBabel の C++ FFI unsafe とは、たとえ個数が同程度でも種類が根本的に異なります。**依存ツリー全体については成り立ちません**: opt-in の `depict` feature（SVG/PDF/EPS 描画）は resvg/usvg/rustybuzz/tiny-skia/zune-jpeg を引き込み、これらは純 Rust ですが unsafe フリーではありません — 実測（`unsafe fn`/`impl`/`trait`/`{` の出現数）: tiny-skia 151、zune-jpeg 79、rustybuzz 14、image 8、fontdb 3、tiny-skia-path 3(この範囲だけで合計 258)。`chematic-py`（`pip install chematic`）と npm パッケージはどちらも `chematic-depict` に直接依存するため、これは実際の2つのインストール経路の両方に当てはまります。
+‡ chematic 自身の約 149,000 行の Rust コード(tokei計測): `native-inchi` の9個の FFI ブロックを除き unsafe フリー（上記「安全」参照）— chematic 自身が書いたコードについての実測済みの主張であり、コンパイラによるチェックが一切効かない RDKit/OpenBabel の C++ FFI unsafe とは、たとえ個数が同程度でも種類が根本的に異なります。**依存ツリー全体については成り立ちません**: opt-in の `depict` feature（SVG/PDF/EPS 描画）は resvg/usvg/rustybuzz/tiny-skia/zune-jpeg を引き込み、これらは純 Rust ですが unsafe フリーではありません — 実測（`unsafe fn`/`impl`/`trait`/`{` の出現数）: tiny-skia 151、zune-jpeg 79、rustybuzz 14、image 8、fontdb 3、tiny-skia-path 3(この範囲だけで合計 258)。`chematic-py`（`pip install chematic`）と npm パッケージはどちらも `chematic-depict` に直接依存するため、これは実際の2つのインストール経路の両方に当てはまります。
 
 
 </details>
@@ -274,13 +275,35 @@ const picks = JSON.parse(maxmin_picks_ecfp4_json('["CC","c1ccccc1","CCO","CCCC"]
 | `chematic`             | フィーチャーフラグ付きアンブレラクレート（統合クレート）                                                                                                  | 1       |
 
 ```
-cargo test --workspace --lib --quiet                                               # 2,812 ライブラリテスト、全パス（2026-07-27 時点）
+cargo test --workspace --lib --quiet                                               # 3,235 ライブラリテスト、全パス（2026-08-02 時点）
 cargo test -p chematic-inchi --features native-inchi --test standard_inchi         # +16 IUPAC 標準 InChI 統合テスト
 ```
 
 ---
 
 ## 最近の開発
+
+**v0.10.1**（2026-08-02）: **MMFF94数値atom typing修正（正当性ホットフィックス）**
+- `chematic-ff`: MMFF94が誤ったelementのparameter行へ衝突し、その結果の物理的に誤ったenergyを成功として返し得るバグ（issue #227「furan collision」）を修正 — 芳香族atom typerがRDKit実装の5員環/6員環alpha/beta-heteroatom分類を実装していなかったのが根本原因。pinしたRDKitソースから移植し、provenance付きnumeric-typeレジストリと、このバグの再発を構造的に不可能にするconstruction-time semantic-compatibility invariant（不整合はfail closed = `NumericTypeError`）を追加。このinvariantが同種のバグをさらに2件検出: protonated amine Nとanionic Oが互いのelementのparameter行として誤typeされていた。265分子コーパス（本番API）で測定: MMFF94最小化成功 44 → 102、pin済みRDKitオラクル比較で6693原子中cross-element型不一致 0件（91.83%完全一致）
+- coverage完成リリースではなく正当性ホットフィックス — issue #227は未完了のまま（`MissingParameters` 140件、`MinimizationFailed` 22件が残存、stretch-bendは未gating、full-corpus energy/gradient parityも未実施）。MMFF94結果をキャッシュしている場合は`CHANGELOG.md`の`[0.10.1]` Migration notesを参照
+- 詳細は`CHANGELOG.md`の`[0.10.1]`セクション参照
+
+**v0.10.0**（2026-08-01）: **match-level SMIRKS reaction適用、MRVの2Dステレオ認識、shared E/Z carrier bond修正**
+- `chematic-rxn`: `find_reaction_matches`/`apply_reaction_match`（issue #225）— SMIRKSのマッチ列挙と個々の適用を分離する公開API
+- `chematic-mol`: MRVリーダーが2Dウェッジ/ハッシュtetrahedralとE/Zステレオを自動認識するように（issue #202）
+- `chematic-smiles`: shared E/Z carrier bondをjoint component solverで解決（issue #149）— 18件中10件が完全にpermutation-invariantに
+- 詳細は`CHANGELOG.md`の`[0.10.0]`セクション参照
+
+**v0.9.0**（2026-08-01）: **Python/WASM向けopt-in 3D embedding pipeline v2、WASM対応monotonic clock**
+- `chematic-py`/`chematic-wasm`: `embed_pipeline_v2` — torsion知識付き距離幾何 + stereo検証/repair + policy-gated force fieldを1本化、全stage分のevidenceを返す。既定の3D APIは無変更
+- `chematic-3d`/`chematic-smarts`: `wasm32-unknown-unknown`実環境で`Instant::now()`が無条件panicするバグを修正（issue #219, #221）
+- 詳細は`CHANGELOG.md`の`[0.9.0]`セクション参照
+
+それ以前の全バージョン履歴（v0.1〜v0.8.1を含む、各リリースのコーパス単位before/after数値・根本原因・migration notesまで）は
+[CHANGELOG.md](CHANGELOG.md)を参照。
+
+<details>
+<summary>v0.7.1以前の開発履歴（旧形式、参考用）</summary>
 
 **v0.7.1**（2026-07-27）: **`run_reactants`/`canonical_smiles()` パフォーマンス修正**
 - `chematic-smiles`: `canonical_smiles()` が毎回 `CanonicalWriter::write_all()` を無駄にもう一度呼んでいたバグを修正（individualize-refineのタイブレーク解決時に勝者は既に一度書き込まれていたが、それを捨てて再度書き直していた）。`be5dbb1`（0.4.26）の正しさ修正で生じた本物の性能回帰で、対称性の高い分子（単純な環、ケージ構造、`CF3`/`tBu`系置換基）で最も顕著（外部利用者の`run_reactants`/`apply_retro`回帰報告経由で発覚、chematic 0.4.30 vs 0.4.25で単体`canonical_smiles()`が45-48倍遅い）。純粋なリファクタリングで出力はバイト単位で同一（`be5dbb1`自身のgolden-stringテスト、issue #50のE/Z回帰スイートを含む既存テスト全てで検証済み）。あわせて`chematic-rxn`に`perf-instrumentation`機能と`reaction_transform_perf_report`ベンチマーク例を追加。詳細な二分探索と既知の残課題（真の自己同型オービット枝刈り、未着手）は`docs/reaction_transform_perf.md`参照
@@ -381,6 +404,8 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 それ以前の v0.4.x の開発（テンプレート逆合成、AutoDock/UFF、ケクレ化 blossom
 アルゴリズム、PyO3 バインディング、native-inchi）と v0.1〜v0.3 の全履歴:
 [CHANGELOG.md](CHANGELOG.md)
+
+</details>
 
 ---
 
