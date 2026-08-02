@@ -696,22 +696,33 @@ pub fn assign_mmff94_numeric_types(mol: &Molecule) -> Result<Vec<u8>, NumericTyp
     let n = mol.atom_count();
     let mut types = vec![0u8; n];
     let rings = chematic_perception::find_sssr(mol).rings().to_vec();
+    // MMFF94 has its own, stricter, Kekule-based aromaticity perception
+    // (RDKit's `setMMFFAromaticity`), distinct from chematic's own general
+    // Huckel model -- most visibly for "mancude" ring systems where a ring
+    // atom carries a genuine exocyclic multiple bond (e.g. caffeine's
+    // carbonyl carbons, which chematic's own model still treats as
+    // aromatic). All typing below reads aromaticity/bond-order state from
+    // this re-perceived view, never from `mol` directly, so every
+    // `assign_*_type`/`aromatic_*_type` function's existing `atom.aromatic`
+    // and `BondOrder::Aromatic` checks stay correct for MMFF94 purposes
+    // without needing their own signatures changed.
+    let mmff_mol = compute_mmff94_aromatic_view(mol, &rings);
 
     for (i, ty) in types.iter_mut().enumerate().take(n) {
         let idx = AtomIdx(i as u32);
-        let atom = mol.atom(idx);
+        let atom = mmff_mol.atom(idx);
         let t = match atom.element {
-            Element::C => assign_c_type(mol, &rings, idx)?,
-            Element::N => assign_n_type(mol, &rings, idx)?,
-            Element::O => assign_o_type(mol, &rings, idx)?,
-            Element::S => assign_s_type(mol, idx)?,
-            Element::P => assign_p_type(mol, idx)?,
+            Element::C => assign_c_type(&mmff_mol, &rings, idx)?,
+            Element::N => assign_n_type(&mmff_mol, &rings, idx)?,
+            Element::O => assign_o_type(&mmff_mol, &rings, idx)?,
+            Element::S => assign_s_type(&mmff_mol, idx)?,
+            Element::P => assign_p_type(&mmff_mol, idx)?,
             Element::SI => 19,
             Element::F => 11,
             Element::CL => 12,
             Element::BR => 13,
             Element::I => 14,
-            Element::H => assign_h_type(mol, idx)?,
+            Element::H => assign_h_type(&mmff_mol, idx)?,
             _ => {
                 return Err(NumericTypeError(format!(
                     "unsupported element {:?} at atom {i}",
@@ -839,6 +850,13 @@ fn atom_in_aromatic_ring_of_size(
         .any(|r| r.len() == size && r.contains(&atom) && ring_is_fully_aromatic(mol, r))
 }
 
+/// RDKit's `RingInfo::isAtomInRingOfSize` -- plain ring membership, no
+/// aromaticity requirement (used for CR3R/CR4R strained-aliphatic-ring
+/// typing, unlike `atom_in_aromatic_ring_of_size` above).
+fn atom_in_ring_of_size(rings: &[Vec<AtomIdx>], atom: AtomIdx, size: usize) -> bool {
+    rings.iter().any(|r| r.len() == size && r.contains(&atom))
+}
+
 fn atoms_share_aromatic_ring_of_size(
     mol: &Molecule,
     rings: &[Vec<AtomIdx>],
@@ -855,6 +873,217 @@ fn atoms_share_aromatic_ring_of_size(
 /// hydrogens.
 fn total_degree(mol: &Molecule, idx: AtomIdx) -> usize {
     bonds_of(mol, idx).len() + implicit_hcount(mol, idx) as usize
+}
+
+/// Sum of Kekule bond orders plus implicit H count -- RDKit's
+/// `getValence(Atom::ValenceType::EXPLICIT) + getNumImplicitHs()`. Requires
+/// real (non-`Aromatic`) bond orders on `mol`.
+fn total_valence(mol: &Molecule, idx: AtomIdx) -> u32 {
+    let explicit: u32 = bonds_of(mol, idx)
+        .iter()
+        .map(|b| b.order.order_int() as u32)
+        .sum();
+    explicit + implicit_hcount(mol, idx) as u32
+}
+
+/// Faithful port of RDKit's `MolOps::setMMFFAromaticity`
+/// (`Code/GraphMol/Aromaticity.cpp`, pinned commit -- see
+/// `scripts/mmff94_provenance/PROVENANCE.md`).
+///
+/// This is a **separate, stricter** aromaticity model than chematic's own
+/// general Huckel engine (`chematic_perception::apply_aromaticity`) --
+/// confirmed empirically, not assumed (issue #227 Priority 1A): re-kekulizing
+/// caffeine and re-running chematic's own Huckel model on the result still
+/// marks its two carbonyl-bearing ring carbons aromatic (matching general
+/// chemistry convention, and RDKit's own *default* aromaticity model), but
+/// RDKit's MMFF94-specific perception does not. The reason is the
+/// `is_nos_in_ring && !exo_double_bond` rule below: a ring's heteroatom
+/// lone-pair pi bonus is withheld from the *entire ring* whenever any ring
+/// atom carries a genuine exocyclic multiple bond, which chematic's general
+/// model instead treats as a legitimate 0-pi-contributing ring member (still
+/// part of the aromatic system, just contributing no electrons) -- a
+/// different, also-legitimate aromaticity convention, but not MMFF94's own.
+/// This can't be solved by reusing the existing general aromaticity engine;
+/// it needs its own pass.
+///
+/// Operates on a freshly-Kekulized copy of `mol` (needs real Single/Double
+/// bond orders, not `BondOrder::Aromatic`). `rings` is the caller's SSSR --
+/// atom indices are unaffected by Kekulization, only bond orders change, so
+/// the same ring atom-index lists remain valid. Returns a per-atom-index
+/// bool, true where MMFF94 considers the atom aromatic.
+///
+/// Not ported: `getHybridization() != Atom::SP2` (RDKit's real hybridization
+/// perception). Approximated as `total_degree(atom) > 3` for ring C/N atoms
+/// -- a saturated (4-connected) ring atom can't be SP2, which is the
+/// real-world failure mode this RDKit gate exists to catch; a full
+/// hybridization inference engine doesn't otherwise exist in chematic.
+///
+/// Returns a **re-perceived molecule**, not just a bool vector: Kekulized
+/// bond orders everywhere, except that bonds belonging to an MMFF-aromatic
+/// ring are promoted to `BondOrder::Aromatic` and their atoms' `.aromatic`
+/// flag is set true (every other atom's `.aromatic` flag is explicitly
+/// false, overriding whatever the input molecule's own aromaticity model
+/// said). This lets every existing `atom.aromatic`/`atom_in_aromatic_ring_
+/// of_size`/`bonds_of`-double-bond-counting helper below keep working
+/// completely unchanged -- they just operate on this view instead of the
+/// caller's original molecule for the MMFF-aromaticity-sensitive decisions.
+/// Known limitation shared with the rest of this module's ring handling:
+/// inherits whatever `rings` (the caller's SSSR) contains, including its
+/// existing fused-ring envelope-vs-component-ring behavior (see
+/// `chematic_perception::augmented_ring_set`'s doc comment) -- not a new
+/// limitation introduced here.
+fn compute_mmff94_aromatic_view(mol: &Molecule, rings: &[Vec<AtomIdx>]) -> Molecule {
+    let n = mol.atom_count();
+    if rings.is_empty() {
+        return mol.clone();
+    }
+    let kmol = match chematic_core::kekulize(mol) {
+        Ok(kek) if kek.is_empty() => mol.clone(),
+        Ok(kek) => chematic_core::apply_kekule(mol, &kek),
+        Err(_) => return mol.clone(),
+    };
+
+    let atom_in_any_ring = |a: AtomIdx| -> bool { rings.iter().any(|r| r.contains(&a)) };
+
+    let mut resolved = vec![false; n]; // aromBitVect
+    let mut is_arom = vec![false; n];
+
+    let mut old_n_resolved: i64 = -1;
+    let mut n_resolved: i64 = 0;
+    let max_passes = rings.len() + 2; // defensive bound; progress is monotonic
+
+    for _pass in 0..max_passes {
+        if n_resolved <= old_n_resolved {
+            break;
+        }
+        old_n_resolved = n_resolved;
+
+        for ring in rings {
+            let len = ring.len();
+            let mut pi_e: i32 = 0;
+            let mut move_to_next_ring = false;
+            let mut is_nos_in_ring = false;
+            let mut exo_double_bond = false;
+
+            for (j, &atom_idx) in ring.iter().enumerate() {
+                if move_to_next_ring {
+                    break;
+                }
+                let atom = kmol.atom(atom_idx);
+                let is_divalent_s =
+                    atom.element == Element::S && total_degree(&kmol, atom_idx) == 2;
+                if atom.element == Element::N || atom.element == Element::O || is_divalent_s {
+                    is_nos_in_ring = true;
+                }
+
+                let next_idx = ring[(j + 1) % len];
+                let ring_bond_order = kmol
+                    .bond_between(atom_idx, next_idx)
+                    .map(|(_, b)| b.order)
+                    .unwrap_or(BondOrder::Single);
+
+                if ring_bond_order == BondOrder::Double {
+                    pi_e += 2;
+                    continue;
+                }
+
+                let is_candidate = atom.element == Element::C
+                    || (atom.element == Element::N && total_valence(&kmol, atom_idx) == 4);
+                if !is_candidate {
+                    continue;
+                }
+
+                for nb in bonds_of(&kmol, atom_idx) {
+                    if ring.contains(&nb.neighbor) {
+                        continue; // looking for exocyclic neighbors only
+                    }
+                    if nb.order == BondOrder::Single {
+                        continue;
+                    }
+                    if atom_in_any_ring(nb.neighbor) && !resolved[nb.neighbor.0 as usize] {
+                        move_to_next_ring = true;
+                        break;
+                    }
+                    if nb.order == BondOrder::Double {
+                        if is_arom[nb.neighbor.0 as usize] {
+                            pi_e += 1;
+                        } else {
+                            exo_double_bond = true;
+                        }
+                    }
+                }
+            }
+
+            if move_to_next_ring {
+                continue;
+            }
+
+            let mut can_be_aromatic = true;
+            for &atom_idx in ring {
+                resolved[atom_idx.0 as usize] = true;
+                let atom = kmol.atom(atom_idx);
+                if matches!(atom.element, Element::C | Element::N)
+                    && total_degree(&kmol, atom_idx) > 3
+                {
+                    can_be_aromatic = false;
+                }
+            }
+            if !can_be_aromatic {
+                continue;
+            }
+
+            if is_nos_in_ring && !exo_double_bond && (len % 2 == 1) {
+                pi_e += 2;
+            }
+
+            if pi_e > 2 && (pi_e - 2) % 4 == 0 {
+                for &atom_idx in ring {
+                    is_arom[atom_idx.0 as usize] = true;
+                }
+            }
+        }
+
+        n_resolved = rings
+            .iter()
+            .map(|r| r.iter().filter(|&&a| resolved[a.0 as usize]).count() as i64)
+            .sum();
+    }
+
+    // A ring's bonds are MMFF-aromatic iff every one of its atoms ended up
+    // aromatic -- `is_arom` is only ever set for a whole ring's atoms
+    // together (never partially), so this recovers exactly the ring set
+    // that passed the Huckel check above without needing a second state
+    // vector threaded through the loop.
+    let mut aromatic_bonds: std::collections::HashSet<(AtomIdx, AtomIdx)> =
+        std::collections::HashSet::new();
+    for ring in rings {
+        if ring.iter().all(|&a| is_arom[a.0 as usize]) {
+            let len = ring.len();
+            for (j, &a) in ring.iter().enumerate() {
+                let b = ring[(j + 1) % len];
+                aromatic_bonds.insert((a.min(b), a.max(b)));
+            }
+        }
+    }
+
+    let mut builder = chematic_core::MoleculeBuilder::new();
+    for (idx, atom) in kmol.atoms() {
+        let mut atom = atom.clone();
+        atom.aromatic = is_arom[idx.0 as usize];
+        builder.add_atom(atom);
+    }
+    for (_, bond) in kmol.bonds() {
+        let key = (bond.atom1.min(bond.atom2), bond.atom1.max(bond.atom2));
+        let order = if aromatic_bonds.contains(&key) {
+            BondOrder::Aromatic
+        } else {
+            bond.order
+        };
+        builder
+            .add_bond(bond.atom1, bond.atom2, order)
+            .expect("duplicate bond during MMFF94 aromaticity re-perception");
+    }
+    builder.build()
 }
 
 /// RDKit's `isAtomNOxide`: a >=3-connected nitrogen with a terminal
@@ -986,7 +1215,18 @@ fn assign_c_type(
         return Ok(2); // C=C vinylic
     }
 
-    // sp3
+    // sp3: small-ring strain context (RDKit AtomTyper.cpp aliphatic-carbon
+    // block, `getTotalDegree() == 4` gate -- 3-membered ring checked before
+    // 4-membered, matching RDKit's own if/if (not if/else if) order, though
+    // a carbon can't be in both a 3- and 4-ring simultaneously in practice).
+    if total_degree(mol, idx) == 4 {
+        if atom_in_ring_of_size(rings, idx, 3) {
+            return Ok(22); // CR3R
+        }
+        if atom_in_ring_of_size(rings, idx, 4) {
+            return Ok(20); // CR4R
+        }
+    }
     Ok(1) // CR alkyl carbon
 }
 
@@ -1499,6 +1739,77 @@ mod tests {
             }
         }
         assert!(saw_anionic_o, "test fixture must contain an anionic oxygen");
+    }
+
+    #[test]
+    fn caffeine_matches_rdkit_mmff_aromaticity_per_atom() {
+        // Regression for issue #227 Priority 1A: caffeine's SMILES writes
+        // its whole fused purine-dione system in lowercase aromatic
+        // notation, including the two carbonyl-bearing ring carbons. This
+        // is legitimate under chematic's own general Huckel model (which
+        // still treats a ring carbon with an exocyclic C=O as a valid,
+        // 0-pi-contributing aromatic-ring member), but RDKit's separate,
+        // stricter MMFF94-specific aromaticity perception is not: the
+        // exocyclic double bond blocks that ring's heteroatom lone-pair pi
+        // bonus, so the whole 6-membered pyrimidinedione ring fails 4n+2 --
+        // while the fused 5-membered imidazole ring (whose own atoms carry
+        // no exocyclic multiple bonds) independently still passes. Expected
+        // values below are copied verbatim from a live RDKit oracle query
+        // (`validation/results/mmff94_rdkit_type_oracle.jsonl`, molecule
+        // "caffeine"), not derived from this fix's own output.
+        let m = mol("Cn1cnc2c1c(=O)n(C)c(=O)n2C");
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        let expected = [
+            (0, 1),   // C, methyl
+            (1, 39),  // N, NPYL -- imidazole ring, aromatic
+            (2, 63),  // C, C5A  -- imidazole ring, aromatic
+            (3, 66),  // N, N5B  -- imidazole ring, aromatic
+            (4, 64),  // C, C5B  -- fused atom, aromatic via imidazole ring only
+            (5, 63),  // C, C5A  -- fused atom, aromatic via imidazole ring only
+            (6, 3),   // C, C=O  -- pyrimidinedione ring, NOT aromatic
+            (7, 7),   // O, O=C
+            (8, 10),  // N, NC=O -- pyrimidinedione ring, NOT aromatic
+            (9, 1),   // C, methyl
+            (10, 3),  // C, C=O  -- pyrimidinedione ring, NOT aromatic
+            (11, 7),  // O, O=C
+            (12, 10), // N, NC=O -- pyrimidinedione ring, NOT aromatic
+            (13, 1),  // C, methyl
+        ];
+        for (i, expected_type) in expected {
+            assert_eq!(
+                types[i], expected_type,
+                "caffeine atom {i}: expected MMFF94 type {expected_type} (RDKit oracle), got {}",
+                types[i]
+            );
+        }
+    }
+
+    #[test]
+    fn small_ring_sp3_carbons_are_cr3r_and_cr4r() {
+        // Regression for issue #227 Priority 1A: RDKit AtomTyper.cpp types
+        // any 4-total-degree ring carbon in a 3- or 4-membered ring as
+        // CR3R/CR4R, not the generic aliphatic CR -- previously chematic
+        // always fell through to type 1 regardless of ring size.
+        let cyclopropane = mol("C1CC1");
+        let types = assign_mmff94_numeric_types(&cyclopropane).unwrap();
+        for i in 0..cyclopropane.atom_count() {
+            assert_eq!(types[i], 22, "cyclopropane carbon {i} should be CR3R (22)");
+        }
+
+        let cyclobutane = mol("C1CCC1");
+        let types = assign_mmff94_numeric_types(&cyclobutane).unwrap();
+        for i in 0..cyclobutane.atom_count() {
+            assert_eq!(types[i], 20, "cyclobutane carbon {i} should be CR4R (20)");
+        }
+
+        let cyclohexane = mol("C1CCCCC1");
+        let types = assign_mmff94_numeric_types(&cyclohexane).unwrap();
+        for i in 0..cyclohexane.atom_count() {
+            assert_eq!(
+                types[i], 1,
+                "cyclohexane carbon {i} (6-ring, not 3- or 4-) should stay generic CR (1)"
+            );
+        }
     }
 
     #[test]
