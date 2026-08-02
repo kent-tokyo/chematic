@@ -1282,13 +1282,26 @@ fn assign_c_type(
 
     // sp2 carbon
     if double_bonds > 0 {
-        // C=O, C=S → type 3 (carbonyl/thioamide family)
+        // Issue #227 Priority 1A-2: RDKit's real type-3 "C=O" row is an
+        // umbrella covering a 3-connected carbon double-bonded to N, O, P,
+        // *or* S (`AtomTyper.cpp` lines 907-943 at the pinned commit,
+        // `doubleBondedElement ∈ {7,8,15,16}`), not literal C=O alone --
+        // it also names C=N (imine), C=P, and thio- variants explicitly in
+        // its own symbol list. Previously only O/S were checked here, so a
+        // carbon double-bonded to nitrogen (e.g. the ring carbon of a
+        // cyclic hydrazide/dione tautomer, or an amidine carbon) fell
+        // through to the generic vinylic type below -- verified this was
+        // the single root cause of a 39-atom residual (chematic: C=C(2),
+        // RDKit: C=O(3)) via a live RDKit oracle re-measurement, not
+        // assumed.
         if is_bonded_to(mol, idx, Element::O, BondOrder::Double)
             || is_bonded_to(mol, idx, Element::S, BondOrder::Double)
+            || is_bonded_to(mol, idx, Element::N, BondOrder::Double)
+            || is_bonded_to(mol, idx, Element::P, BondOrder::Double)
         {
-            return Ok(3); // C=O (general carbonyl)
+            return Ok(3); // C=O / C=N / C=P / C=S family (generic carbonyl-like)
         }
-        // C=N or C=C → type 2
+        // Otherwise generic sp2/vinylic carbon (C=C).
         return Ok(2); // C=C vinylic
     }
 
@@ -1360,6 +1373,150 @@ fn aromatic_c_type(mol: &Molecule, rings: &[Vec<AtomIdx>], idx: AtomIdx) -> Opti
 
 // ── N type assignment ────────────────────────────────────────────────────────
 
+/// Per-nitrogen-atom aggregate of the structural facts RDKit's `case 7:`
+/// 3-connected branch (`AtomTyper.cpp` lines 1093-1325 at the pinned
+/// commit) computes across all of a nitrogen's carbon neighbors, used to
+/// pick NC=C (40) vs NC=O (10) vs plain NR (8).
+struct N3CarbonContext {
+    has_carbon_neighbor: bool,
+    /// `isNCOorNCS`: at least one carbon neighbor carries its own real
+    /// (non-aromatic) double bond to O or S.
+    is_carbonyl_like: bool,
+    /// The `elementTripleBondedToC == 7` contribution to
+    /// `isNSO2orNSO3orNCN`: at least one carbon neighbor is triple-bonded
+    /// to a nitrogen (cyano). The sulfonamide (P/S-with->=2-terminal-O)
+    /// contribution to the same RDKit flag is a separate, ipso-N-level
+    /// check this port does not implement (type 43, a distinct tiny
+    /// residual bucket -- see `mmff94_hybridization_gate_gap_227_report.py`-
+    /// style audit tooling for issue #227 Priority 1A-2).
+    is_cyano_like: bool,
+    /// True if *any* carbon neighbor independently qualifies for the
+    /// NC=C-family trigger (see [`nc_eq_c_carbon_neighbor_qualifies`]).
+    any_carbon_qualifies_nc_eq_c: bool,
+}
+
+/// Faithful port of RDKit's `case 7:` 3-connected-nitrogen carbon-neighbor
+/// scan (`AtomTyper.cpp` lines 1093-1325 at the pinned commit -- see
+/// `scripts/mmff94_provenance/PROVENANCE.md`), used by `assign_n_type` to
+/// pick NC=C (type 40: enamine/aniline/amidine/N-C%C nitrogen with a
+/// delocalized lone pair) over generic NR (8) or NC=O (10).
+///
+/// For each carbon neighbor of the ipso nitrogen, RDKit checks (per
+/// [`nc_eq_c_carbon_neighbor_qualifies`]) whether that carbon: carries its
+/// own real C=O/C=S double bond (excludes NC=C, routes toward NC=O
+/// instead); is triple-bonded to another nitrogen (cyano, excludes both);
+/// or otherwise qualifies via being an aromatic 6-ring carbon with no
+/// attached aromatic O/S, or via its own genuine double bond to
+/// carbon/nitrogen/phosphorus (an *aromatic* bond to a plain carbon, or to
+/// a nitrogen in exactly one ring, also counts per RDKit's own rule at
+/// lines 1124-1130), or via its own triple bond to carbon.
+///
+/// Not ported: the charged amidinium (`NCN+`, type 55) / guanidinium
+/// (`NGD+`, type 56) sub-cases (lines 1197-1206, 1273-1284) -- moot for
+/// `assign_n_type`'s actual callers, since every positively-charged
+/// nitrogen is already routed to type 34 before reaching this function at
+/// all (issue #227's construction-time semantic-compatibility work);
+/// verified 0/129 corpus atoms in the NR-vs-NC=C residual this port closes
+/// carry a charge, so this omission is not a silent gap for this fix's
+/// actual target population.
+///
+/// Known divergence from RDKit's literal C++ (not a simplification of the
+/// underlying chemistry, a difference in how a nitrogen with *several*
+/// differently-behaved carbon neighbors is resolved): RDKit's loop uses
+/// shared mutable variables for `elementDoubleBondedToC`/`isNbrBenzeneC`
+/// that are never reset between carbon-neighbor iterations, so the C++
+/// code's outcome for such a nitrogen can depend on adjacency-list
+/// iteration order over that specific molecule -- an implementation
+/// incidental, not an intentional MMFF rule, and not something chematic's
+/// own neighbor iteration order is guaranteed to reproduce anyway. This
+/// port instead evaluates each carbon neighbor independently and triggers
+/// NC=C if *any one* qualifies (after the shared carbonyl/cyano exclusion
+/// gates, which genuinely are OR-accumulated across all neighbors in
+/// RDKit's own code too, and are ported as such below) -- well-defined and
+/// order-independent, and identical to RDKit whenever a nitrogen has only
+/// one structurally-relevant carbon neighbor, which is the overwhelming
+/// majority of real molecules.
+fn classify_n_c3_carbon_context(
+    mol: &Molecule,
+    rings: &[Vec<AtomIdx>],
+    idx: AtomIdx,
+) -> N3CarbonContext {
+    let mut ctx = N3CarbonContext {
+        has_carbon_neighbor: false,
+        is_carbonyl_like: false,
+        is_cyano_like: false,
+        any_carbon_qualifies_nc_eq_c: false,
+    };
+    for nb in bonds_of(mol, idx) {
+        if mol.atom(nb.neighbor).element != Element::C {
+            continue;
+        }
+        ctx.has_carbon_neighbor = true;
+        let (carbonyl, cyano, qualifies) =
+            nc_eq_c_carbon_neighbor_qualifies(mol, rings, nb.neighbor);
+        ctx.is_carbonyl_like |= carbonyl;
+        ctx.is_cyano_like |= cyano;
+        ctx.any_carbon_qualifies_nc_eq_c |= qualifies;
+    }
+    ctx
+}
+
+/// Evaluates a single carbon neighbor of a 3-connected nitrogen against
+/// RDKit's per-carbon structural tests (`AtomTyper.cpp` lines 1093-1188,
+/// 1266-1298 at the pinned commit). Returns
+/// `(has_own_carbonyl_or_thiocarbonyl, is_cyano_carbon,
+/// qualifies_for_nc_eq_c)`. See [`classify_n_c3_carbon_context`]'s doc for
+/// how the three are combined and this function's role in that port.
+fn nc_eq_c_carbon_neighbor_qualifies(
+    mol: &Molecule,
+    rings: &[Vec<AtomIdx>],
+    c_idx: AtomIdx,
+) -> (bool, bool, bool) {
+    let is_benzene_c = mol.atom(c_idx).aromatic && atom_in_ring_of_size(rings, c_idx, 6);
+    let mut has_own_carbonyl_or_thiocarbonyl = false;
+    let mut is_cyano_carbon = false;
+    let mut has_aromatic_o_or_s_neighbor = false;
+    let mut double_bonded_c_n_or_p = false;
+    let mut triple_bonded_c = false;
+
+    for nb in bonds_of(mol, c_idx) {
+        let nbr_elem = mol.atom(nb.neighbor).element;
+        match nb.order {
+            BondOrder::Double => match nbr_elem {
+                Element::O | Element::S => has_own_carbonyl_or_thiocarbonyl = true,
+                Element::C | Element::N | Element::P => double_bonded_c_n_or_p = true,
+                _ => {}
+            },
+            BondOrder::Triple => {
+                if nbr_elem == Element::N {
+                    is_cyano_carbon = true;
+                }
+                if nbr_elem == Element::C {
+                    triple_bonded_c = true;
+                }
+            }
+            BondOrder::Aromatic => {
+                let counts_as_double = nbr_elem == Element::C
+                    || (nbr_elem == Element::N
+                        && rings.iter().filter(|r| r.contains(&nb.neighbor)).count() == 1);
+                if counts_as_double {
+                    double_bonded_c_n_or_p = true;
+                }
+            }
+            _ => {}
+        }
+        if mol.atom(nb.neighbor).aromatic && matches!(nbr_elem, Element::O | Element::S) {
+            has_aromatic_o_or_s_neighbor = true;
+        }
+    }
+
+    let qualifies = (is_benzene_c && !has_aromatic_o_or_s_neighbor)
+        || double_bonded_c_n_or_p
+        || triple_bonded_c;
+
+    (has_own_carbonyl_or_thiocarbonyl, is_cyano_carbon, qualifies)
+}
+
 fn assign_n_type(
     mol: &Molecule,
     rings: &[Vec<AtomIdx>],
@@ -1398,7 +1555,30 @@ fn assign_n_type(
         return Ok(9); // N=C imine
     }
 
-    // sp3 N — check if amide (bonded to carbonyl C)
+    // sp3 N, 3-connected: enamine/aniline (NC=C) vs amide (NC=O) vs plain
+    // (NR). Faithful port of RDKit's `case 7:` 3-connected branch
+    // (`AtomTyper.cpp` lines 1093-1325 at the pinned commit) -- see
+    // `classify_n_c3_carbon_context`'s doc for the exact condition and its
+    // one documented, principled divergence from RDKit's literal C++.
+    if total_degree(mol, idx) == 3 {
+        let ctx = classify_n_c3_carbon_context(mol, rings, idx);
+        if ctx.has_carbon_neighbor {
+            if !ctx.is_carbonyl_like && !ctx.is_cyano_like && ctx.any_carbon_qualifies_nc_eq_c {
+                return Ok(40); // NC=C / NC=N / NC=P / NC%C: deloc. lone pair
+            }
+            if !ctx.is_cyano_like && ctx.is_carbonyl_like {
+                return Ok(10); // NC=O / NC=S amide/thioamide nitrogen
+            }
+            // ctx.is_cyano_like (NSO2/NC%N family, type 43) or neither
+            // condition matched: not yet ported (a separate, tiny,
+            // pre-existing residual, unaffected by this change) -- falls
+            // through to the generic sp3 checks below, same as before.
+        }
+    }
+
+    // sp3 N — check if amide (bonded to carbonyl C). Fallback for N atoms
+    // not covered by the 3-connected-with-carbon-neighbor branch above
+    // (e.g. degree != 3, or a degree-3 N with no carbon neighbor at all).
     let is_amide = nbrs.iter().any(|b| {
         let nbr = mol.atom(b.neighbor);
         nbr.element == Element::C && {
@@ -1816,6 +1996,75 @@ mod tests {
             }
         }
         assert!(saw_anionic_o, "test fixture must contain an anionic oxygen");
+    }
+
+    #[test]
+    fn imine_carbon_is_type_3_not_generic_vinylic() {
+        // Issue #227 Priority 1A-2: closes a 39-atom residual (chematic:
+        // C=C(2), RDKit: C=O(3)) -- RDKit's type-3 row is a "generic
+        // carbonyl-like" umbrella for a 3-connected carbon double-bonded
+        // to N, O, P, *or* S, not literal C=O alone. Expected values
+        // copied verbatim from a live RDKit oracle.
+        let ketimine = mol("CC(C)=NC"); // N-isopropylidene methylamine
+        let types = assign_mmff94_numeric_types(&ketimine).unwrap();
+        assert_eq!(
+            types[1], 3,
+            "imine carbon (C=N) should be type 3 (C=O family)"
+        );
+
+        // Negative control: plain alkene carbon (C=C) must stay type 2.
+        let propene = mol("CC=C");
+        let types = assign_mmff94_numeric_types(&propene).unwrap();
+        assert_eq!(types[1], 2, "alkene carbon should stay type 2 (C=C)");
+        assert_eq!(types[2], 2, "alkene carbon should stay type 2 (C=C)");
+    }
+
+    #[test]
+    fn enamine_and_aniline_nitrogens_are_type_40_not_generic_nr() {
+        // Issue #227 Priority 1A-2: closes the 129-atom NR(8)-vs-NC=C(40)
+        // residual from Priority 1A. All expected values below are copied
+        // verbatim from a live RDKit oracle query
+        // (`AllChem.MMFFGetMoleculeProperties`), not derived from this
+        // fix's own output.
+
+        // Aniline: N attached to a benzene-ring carbon with no aromatic
+        // O/S neighbor of its own -- the "isNbrBenzeneC" case.
+        let aniline = mol("Nc1ccccc1");
+        let types = assign_mmff94_numeric_types(&aniline).unwrap();
+        assert_eq!(types[0], 40, "aniline N should be type 40 (NC=C)");
+
+        // N-methyl vinylamine (enamine): N attached to a carbon genuinely
+        // double-bonded to another carbon -- the "elementDoubleBondedToC
+        // == 6" case.
+        let enamine = mol("C=CNC");
+        let types = assign_mmff94_numeric_types(&enamine).unwrap();
+        assert_eq!(types[2], 40, "enamine N should be type 40 (NC=C)");
+
+        // N-methylformamidine's exocyclic NH2: attached to a carbon
+        // double-bonded to *another nitrogen* -- the "elementDoubleBondedToC
+        // == 7" (amidine-like, non-charged) case.
+        let amidine_like = mol("C(=NC)N");
+        let types = assign_mmff94_numeric_types(&amidine_like).unwrap();
+        assert_eq!(
+            types[3], 40,
+            "amidine-like exocyclic NH2 should be type 40 (NC=N)"
+        );
+
+        // Negative control: plain aliphatic amine, no qualifying carbon
+        // neighbor at all -- must stay generic NR (8), not regress to 40.
+        let propylamine = mol("CCCN");
+        let types = assign_mmff94_numeric_types(&propylamine).unwrap();
+        assert_eq!(
+            types[3], 8,
+            "plain aliphatic amine N should stay type 8 (NR)"
+        );
+
+        // Negative control: amide N (carbon neighbor has its own real
+        // C=O) must still resolve to NC=O (10), never NC=C (40) -- the
+        // carbonyl exclusion gate must fire correctly.
+        let amide = mol("CC(=O)NC");
+        let types = assign_mmff94_numeric_types(&amide).unwrap();
+        assert_eq!(types[3], 10, "amide N should stay type 10 (NC=O)");
     }
 
     #[test]
