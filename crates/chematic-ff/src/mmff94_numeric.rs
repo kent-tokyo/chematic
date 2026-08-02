@@ -696,22 +696,33 @@ pub fn assign_mmff94_numeric_types(mol: &Molecule) -> Result<Vec<u8>, NumericTyp
     let n = mol.atom_count();
     let mut types = vec![0u8; n];
     let rings = chematic_perception::find_sssr(mol).rings().to_vec();
+    // MMFF94 has its own, stricter, Kekule-based aromaticity perception
+    // (RDKit's `setMMFFAromaticity`), distinct from chematic's own general
+    // Huckel model -- most visibly for "mancude" ring systems where a ring
+    // atom carries a genuine exocyclic multiple bond (e.g. caffeine's
+    // carbonyl carbons, which chematic's own model still treats as
+    // aromatic). All typing below reads aromaticity/bond-order state from
+    // this re-perceived view, never from `mol` directly, so every
+    // `assign_*_type`/`aromatic_*_type` function's existing `atom.aromatic`
+    // and `BondOrder::Aromatic` checks stay correct for MMFF94 purposes
+    // without needing their own signatures changed.
+    let mmff_mol = compute_mmff94_aromatic_view(mol, &rings)?;
 
     for (i, ty) in types.iter_mut().enumerate().take(n) {
         let idx = AtomIdx(i as u32);
-        let atom = mol.atom(idx);
+        let atom = mmff_mol.atom(idx);
         let t = match atom.element {
-            Element::C => assign_c_type(mol, &rings, idx)?,
-            Element::N => assign_n_type(mol, &rings, idx)?,
-            Element::O => assign_o_type(mol, &rings, idx)?,
-            Element::S => assign_s_type(mol, idx)?,
-            Element::P => assign_p_type(mol, idx)?,
+            Element::C => assign_c_type(&mmff_mol, &rings, idx)?,
+            Element::N => assign_n_type(&mmff_mol, &rings, idx)?,
+            Element::O => assign_o_type(&mmff_mol, &rings, idx)?,
+            Element::S => assign_s_type(&mmff_mol, idx)?,
+            Element::P => assign_p_type(&mmff_mol, idx)?,
             Element::SI => 19,
             Element::F => 11,
             Element::CL => 12,
             Element::BR => 13,
             Element::I => 14,
-            Element::H => assign_h_type(mol, idx)?,
+            Element::H => assign_h_type(&mmff_mol, idx)?,
             _ => {
                 return Err(NumericTypeError(format!(
                     "unsupported element {:?} at atom {i}",
@@ -839,6 +850,13 @@ fn atom_in_aromatic_ring_of_size(
         .any(|r| r.len() == size && r.contains(&atom) && ring_is_fully_aromatic(mol, r))
 }
 
+/// RDKit's `RingInfo::isAtomInRingOfSize` -- plain ring membership, no
+/// aromaticity requirement (used for CR3R/CR4R strained-aliphatic-ring
+/// typing, unlike `atom_in_aromatic_ring_of_size` above).
+fn atom_in_ring_of_size(rings: &[Vec<AtomIdx>], atom: AtomIdx, size: usize) -> bool {
+    rings.iter().any(|r| r.len() == size && r.contains(&atom))
+}
+
 fn atoms_share_aromatic_ring_of_size(
     mol: &Molecule,
     rings: &[Vec<AtomIdx>],
@@ -855,6 +873,294 @@ fn atoms_share_aromatic_ring_of_size(
 /// hydrogens.
 fn total_degree(mol: &Molecule, idx: AtomIdx) -> usize {
     bonds_of(mol, idx).len() + implicit_hcount(mol, idx) as usize
+}
+
+/// Sum of Kekule bond orders plus implicit H count -- RDKit's
+/// `getValence(Atom::ValenceType::EXPLICIT) + getNumImplicitHs()`. Requires
+/// real (non-`Aromatic`) bond orders on `mol`.
+fn total_valence(mol: &Molecule, idx: AtomIdx) -> u32 {
+    let explicit: u32 = bonds_of(mol, idx)
+        .iter()
+        .map(|b| b.order.order_int() as u32)
+        .sum();
+    explicit + implicit_hcount(mol, idx) as u32
+}
+
+/// Partial, behaviorally-calibrated port of RDKit's `MolOps::
+/// setMMFFAromaticity` (`Code/GraphMol/Aromaticity.cpp`, pinned commit --
+/// see `scripts/mmff94_provenance/PROVENANCE.md`). "Partial" specifically
+/// because one gate (the hybridization check just below) is approximated
+/// rather than ported; every other rule (ring-by-ring pi-electron counting,
+/// the exocyclic-double-bond and NOS lone-pair-bonus rules, the multi-pass
+/// resolution loop) is a direct, line-cited port, not a re-derivation.
+///
+/// This is a **separate, stricter** aromaticity model than chematic's own
+/// general Huckel engine (`chematic_perception::apply_aromaticity`) --
+/// confirmed empirically, not assumed (issue #227 Priority 1A): re-kekulizing
+/// caffeine and re-running chematic's own Huckel model on the result still
+/// marks its two carbonyl-bearing ring carbons aromatic (matching general
+/// chemistry convention, and RDKit's own *default* aromaticity model), but
+/// RDKit's MMFF94-specific perception does not. The reason is the
+/// `is_nos_in_ring && !exo_double_bond` rule below: a ring's heteroatom
+/// lone-pair pi bonus is withheld from the *entire ring* whenever any ring
+/// atom carries a genuine exocyclic multiple bond, which chematic's general
+/// model instead treats as a legitimate 0-pi-contributing ring member (still
+/// part of the aromatic system, just contributing no electrons) -- a
+/// different, also-legitimate aromaticity convention, but not MMFF94's own.
+/// This can't be solved by reusing the existing general aromaticity engine;
+/// it needs its own pass.
+///
+/// Operates on a freshly-Kekulized copy of `mol` (needs real Single/Double
+/// bond orders, not `BondOrder::Aromatic`). `rings` is the caller's SSSR --
+/// atom indices are unaffected by Kekulization, only bond orders change, so
+/// the same ring atom-index lists remain valid. Returns a per-atom-index
+/// bool, true where MMFF94 considers the atom aromatic.
+///
+/// Not ported: `getHybridization() != Atom::SP2` (`Aromaticity.cpp` line
+/// 1023 -- RDKit's real, general hybridization perception, computed during
+/// standard sanitization, not itself MMFF-specific). Approximated as
+/// `total_degree(atom) > 3` for ring C/N atoms -- a saturated (4-connected)
+/// ring atom can't be SP2, which is the real-world failure mode this RDKit
+/// gate exists to catch; a full hybridization inference engine doesn't
+/// otherwise exist in chematic to port this faithfully.
+///
+/// Measured gap (issue #227 Phase 0.3, not assumed): on the 265-molecule
+/// Wave 1 corpus, 4,172 ring C/N heavy atoms are subject to this gate.
+/// `scripts/mmff94_hybridization_gate_gap_227_report.py` (ground truth:
+/// RDKit's real `atom.GetHybridization()` per atom, joined against
+/// chematic's own `total_degree` dump) classifies all 4,172 into four
+/// exclusive buckets, 0 unclassified:
+///   - same_decision: 4,128 (98.9%).
+///   - rdkit_rejects_chematic_accepts: 44. All degree-3 ring nitrogens RDKit
+///     resolves as pyramidal SP3 (e.g. an N-substituted amine nitrogen
+///     fused into a ring) that this approximation's threshold does not
+///     catch, since a 3-connected atom can legitimately be either SP2 or
+///     SP3 and only real hybridization perception can tell them apart --
+///     the approximation under-triggers in exactly this one direction,
+///     never the other.
+///   - rdkit_accepts_chematic_rejects: 0. The approximation never wrongly
+///     rejects a genuinely SP2 ring atom on this corpus.
+///   - oracle_unavailable: 0.
+///
+/// See `validation/results/mmff94_hybridization_gate_gap_227_report.txt`
+/// for the full data and example atoms.
+///
+/// Returns a **re-perceived molecule**, not just a bool vector: Kekulized
+/// bond orders everywhere, except that bonds belonging to an MMFF-aromatic
+/// ring are promoted to `BondOrder::Aromatic` and their atoms' `.aromatic`
+/// flag is set true (every other atom's `.aromatic` flag is explicitly
+/// false, overriding whatever the input molecule's own aromaticity model
+/// said). This lets every existing `atom.aromatic`/`atom_in_aromatic_ring_
+/// of_size`/`bonds_of`-double-bond-counting helper below keep working
+/// completely unchanged -- they just operate on this view instead of the
+/// caller's original molecule for the MMFF-aromaticity-sensitive decisions.
+/// Known limitation shared with the rest of this module's ring handling:
+/// inherits whatever `rings` (the caller's SSSR) contains, including its
+/// existing fused-ring envelope-vs-component-ring behavior (see
+/// `chematic_perception::augmented_ring_set`'s doc comment) -- not a new
+/// limitation introduced here.
+///
+/// Fail-closed on Kekulization failure (issue #227 Priority 1A-1, Phase
+/// 0.1): this re-perception fundamentally requires real Single/Double bond
+/// orders (see above), so a molecule chematic cannot Kekulize has no valid
+/// MMFF view to compute -- returning `Err` here, never silently reusing
+/// `mol` itself as a stand-in "MMFF view" (that molecule's atoms/bonds still
+/// carry whatever *general* aromaticity perception produced them, which is
+/// exactly the model this function exists to NOT use for MMFF94 typing, per
+/// the doc above). The caller (`assign_mmff94_numeric_types`) propagates
+/// this as a typed `NumericTypeError`, which `chematic-3d`'s
+/// `From<NumericTypeError> for ForceFieldBridgeError` already converts
+/// structurally (every `NumericTypeError` variant, regardless of message
+/// content) to `UnsupportedAtomType` -- never by matching on the error
+/// string.
+///
+/// `pub` (not part of the crate's primary typing API, which only ever needs
+/// numeric types) specifically so issue #227's corpus-wide MMFF-aromaticity
+/// parity audits (`crates/chematic-3d/examples/
+/// mmff94_aromaticity_corpus_parity_dump_227.rs`) can dump this
+/// intermediate view's atom/bond flags directly against a live RDKit
+/// oracle, rather than only being able to check the final numeric types
+/// this view feeds into.
+pub fn compute_mmff94_aromatic_view(
+    mol: &Molecule,
+    rings: &[Vec<AtomIdx>],
+) -> Result<Molecule, NumericTypeError> {
+    let n = mol.atom_count();
+    if rings.is_empty() {
+        return Ok(mol.clone());
+    }
+    let kmol = match chematic_core::kekulize(mol) {
+        Ok(kek) if kek.is_empty() => mol.clone(),
+        Ok(kek) => chematic_core::apply_kekule(mol, &kek),
+        Err(e) => {
+            return Err(NumericTypeError(format!(
+                "MMFF94 aromaticity re-perception failed at the Kekulization stage: {} \
+                 -- refusing to type-assign this molecule rather than silently reusing its \
+                 pre-Kekulization (possibly-aromatic-perceived) form as the MMFF view",
+                e.detail
+            )));
+        }
+    };
+
+    let atom_in_any_ring = |a: AtomIdx| -> bool { rings.iter().any(|r| r.contains(&a)) };
+
+    let mut resolved = vec![false; n]; // aromBitVect
+    let mut is_arom = vec![false; n];
+    // Directly records which *rings* (by index into `rings`) themselves
+    // passed the Huckel check below -- issue #227 Phase 0.2. Bond promotion
+    // must read this, never be reverse-derived from `is_arom` (see the
+    // fused-ring correctness note at its use site further down): in a fused
+    // system a ring R can fail its own Huckel check yet have every one of
+    // its atoms independently marked aromatic via *other*, unrelated
+    // accepted rings that happen to share those atoms -- `is_arom` alone
+    // cannot distinguish "this ring passed" from "this ring's atoms all
+    // happen to belong to other rings that passed."
+    let mut ring_accepted = vec![false; rings.len()];
+
+    let mut old_n_resolved: i64 = -1;
+    let mut n_resolved: i64 = 0;
+    let max_passes = rings.len() + 2; // defensive bound; progress is monotonic
+
+    for _pass in 0..max_passes {
+        if n_resolved <= old_n_resolved {
+            break;
+        }
+        old_n_resolved = n_resolved;
+
+        for (ring_idx, ring) in rings.iter().enumerate() {
+            let len = ring.len();
+            let mut pi_e: i32 = 0;
+            let mut move_to_next_ring = false;
+            let mut is_nos_in_ring = false;
+            let mut exo_double_bond = false;
+
+            for (j, &atom_idx) in ring.iter().enumerate() {
+                if move_to_next_ring {
+                    break;
+                }
+                let atom = kmol.atom(atom_idx);
+                let is_divalent_s =
+                    atom.element == Element::S && total_degree(&kmol, atom_idx) == 2;
+                if atom.element == Element::N || atom.element == Element::O || is_divalent_s {
+                    is_nos_in_ring = true;
+                }
+
+                let next_idx = ring[(j + 1) % len];
+                let ring_bond_order = kmol
+                    .bond_between(atom_idx, next_idx)
+                    .map(|(_, b)| b.order)
+                    .unwrap_or(BondOrder::Single);
+
+                if ring_bond_order == BondOrder::Double {
+                    pi_e += 2;
+                    continue;
+                }
+
+                let is_candidate = atom.element == Element::C
+                    || (atom.element == Element::N && total_valence(&kmol, atom_idx) == 4);
+                if !is_candidate {
+                    continue;
+                }
+
+                for nb in bonds_of(&kmol, atom_idx) {
+                    if ring.contains(&nb.neighbor) {
+                        continue; // looking for exocyclic neighbors only
+                    }
+                    if nb.order == BondOrder::Single {
+                        continue;
+                    }
+                    if atom_in_any_ring(nb.neighbor) && !resolved[nb.neighbor.0 as usize] {
+                        move_to_next_ring = true;
+                        break;
+                    }
+                    if nb.order == BondOrder::Double {
+                        if is_arom[nb.neighbor.0 as usize] {
+                            pi_e += 1;
+                        } else {
+                            exo_double_bond = true;
+                        }
+                    }
+                }
+            }
+
+            if move_to_next_ring {
+                continue;
+            }
+
+            let mut can_be_aromatic = true;
+            for &atom_idx in ring {
+                resolved[atom_idx.0 as usize] = true;
+                let atom = kmol.atom(atom_idx);
+                if matches!(atom.element, Element::C | Element::N)
+                    && total_degree(&kmol, atom_idx) > 3
+                {
+                    can_be_aromatic = false;
+                }
+            }
+            if !can_be_aromatic {
+                continue;
+            }
+
+            if is_nos_in_ring && !exo_double_bond && (len % 2 == 1) {
+                pi_e += 2;
+            }
+
+            if pi_e > 2 && (pi_e - 2) % 4 == 0 {
+                ring_accepted[ring_idx] = true;
+                for &atom_idx in ring {
+                    is_arom[atom_idx.0 as usize] = true;
+                }
+            }
+        }
+
+        n_resolved = rings
+            .iter()
+            .map(|r| r.iter().filter(|&&a| resolved[a.0 as usize]).count() as i64)
+            .sum();
+    }
+
+    // A ring's bonds are MMFF-aromatic iff *that ring itself* passed the
+    // Huckel check above (`ring_accepted`) -- issue #227 Phase 0.2. This
+    // must NOT be reconstructed by checking whether every atom in the ring
+    // independently carries `is_arom == true`: in a fused/polycyclic
+    // system, a non-aromatic ring's atoms can each separately belong to a
+    // different accepted aromatic ring, which would make the ring look
+    // "all atoms aromatic" without that ring ever having passed its own
+    // Huckel check -- wrongly promoting that non-aromatic ring's own bonds
+    // to `BondOrder::Aromatic`. Reading `ring_accepted` (set at the exact
+    // moment each ring's own check passed, above) makes this structurally
+    // impossible instead of relying on a derived invariant that fused rings
+    // can break.
+    let mut aromatic_bonds: std::collections::HashSet<(AtomIdx, AtomIdx)> =
+        std::collections::HashSet::new();
+    for (ring_idx, ring) in rings.iter().enumerate() {
+        if ring_accepted[ring_idx] {
+            let len = ring.len();
+            for (j, &a) in ring.iter().enumerate() {
+                let b = ring[(j + 1) % len];
+                aromatic_bonds.insert((a.min(b), a.max(b)));
+            }
+        }
+    }
+
+    let mut builder = chematic_core::MoleculeBuilder::new();
+    for (idx, atom) in kmol.atoms() {
+        let mut atom = atom.clone();
+        atom.aromatic = is_arom[idx.0 as usize];
+        builder.add_atom(atom);
+    }
+    for (_, bond) in kmol.bonds() {
+        let key = (bond.atom1.min(bond.atom2), bond.atom1.max(bond.atom2));
+        let order = if aromatic_bonds.contains(&key) {
+            BondOrder::Aromatic
+        } else {
+            bond.order
+        };
+        builder
+            .add_bond(bond.atom1, bond.atom2, order)
+            .expect("duplicate bond during MMFF94 aromaticity re-perception");
+    }
+    Ok(builder.build())
 }
 
 /// RDKit's `isAtomNOxide`: a >=3-connected nitrogen with a terminal
@@ -986,7 +1292,18 @@ fn assign_c_type(
         return Ok(2); // C=C vinylic
     }
 
-    // sp3
+    // sp3: small-ring strain context (RDKit AtomTyper.cpp aliphatic-carbon
+    // block, `getTotalDegree() == 4` gate -- 3-membered ring checked before
+    // 4-membered, matching RDKit's own if/if (not if/else if) order, though
+    // a carbon can't be in both a 3- and 4-ring simultaneously in practice).
+    if total_degree(mol, idx) == 4 {
+        if atom_in_ring_of_size(rings, idx, 3) {
+            return Ok(22); // CR3R
+        }
+        if atom_in_ring_of_size(rings, idx, 4) {
+            return Ok(20); // CR4R
+        }
+    }
     Ok(1) // CR alkyl carbon
 }
 
@@ -1502,6 +1819,77 @@ mod tests {
     }
 
     #[test]
+    fn caffeine_matches_rdkit_mmff_aromaticity_per_atom() {
+        // Regression for issue #227 Priority 1A: caffeine's SMILES writes
+        // its whole fused purine-dione system in lowercase aromatic
+        // notation, including the two carbonyl-bearing ring carbons. This
+        // is legitimate under chematic's own general Huckel model (which
+        // still treats a ring carbon with an exocyclic C=O as a valid,
+        // 0-pi-contributing aromatic-ring member), but RDKit's separate,
+        // stricter MMFF94-specific aromaticity perception is not: the
+        // exocyclic double bond blocks that ring's heteroatom lone-pair pi
+        // bonus, so the whole 6-membered pyrimidinedione ring fails 4n+2 --
+        // while the fused 5-membered imidazole ring (whose own atoms carry
+        // no exocyclic multiple bonds) independently still passes. Expected
+        // values below are copied verbatim from a live RDKit oracle query
+        // (`validation/results/mmff94_rdkit_type_oracle.jsonl`, molecule
+        // "caffeine"), not derived from this fix's own output.
+        let m = mol("Cn1cnc2c1c(=O)n(C)c(=O)n2C");
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        let expected = [
+            (0, 1),   // C, methyl
+            (1, 39),  // N, NPYL -- imidazole ring, aromatic
+            (2, 63),  // C, C5A  -- imidazole ring, aromatic
+            (3, 66),  // N, N5B  -- imidazole ring, aromatic
+            (4, 64),  // C, C5B  -- fused atom, aromatic via imidazole ring only
+            (5, 63),  // C, C5A  -- fused atom, aromatic via imidazole ring only
+            (6, 3),   // C, C=O  -- pyrimidinedione ring, NOT aromatic
+            (7, 7),   // O, O=C
+            (8, 10),  // N, NC=O -- pyrimidinedione ring, NOT aromatic
+            (9, 1),   // C, methyl
+            (10, 3),  // C, C=O  -- pyrimidinedione ring, NOT aromatic
+            (11, 7),  // O, O=C
+            (12, 10), // N, NC=O -- pyrimidinedione ring, NOT aromatic
+            (13, 1),  // C, methyl
+        ];
+        for (i, expected_type) in expected {
+            assert_eq!(
+                types[i], expected_type,
+                "caffeine atom {i}: expected MMFF94 type {expected_type} (RDKit oracle), got {}",
+                types[i]
+            );
+        }
+    }
+
+    #[test]
+    fn small_ring_sp3_carbons_are_cr3r_and_cr4r() {
+        // Regression for issue #227 Priority 1A: RDKit AtomTyper.cpp types
+        // any 4-total-degree ring carbon in a 3- or 4-membered ring as
+        // CR3R/CR4R, not the generic aliphatic CR -- previously chematic
+        // always fell through to type 1 regardless of ring size.
+        let cyclopropane = mol("C1CC1");
+        let types = assign_mmff94_numeric_types(&cyclopropane).unwrap();
+        for i in 0..cyclopropane.atom_count() {
+            assert_eq!(types[i], 22, "cyclopropane carbon {i} should be CR3R (22)");
+        }
+
+        let cyclobutane = mol("C1CCC1");
+        let types = assign_mmff94_numeric_types(&cyclobutane).unwrap();
+        for i in 0..cyclobutane.atom_count() {
+            assert_eq!(types[i], 20, "cyclobutane carbon {i} should be CR4R (20)");
+        }
+
+        let cyclohexane = mol("C1CCCCC1");
+        let types = assign_mmff94_numeric_types(&cyclohexane).unwrap();
+        for i in 0..cyclohexane.atom_count() {
+            assert_eq!(
+                types[i], 1,
+                "cyclohexane carbon {i} (6-ring, not 3- or 4-) should stay generic CR (1)"
+            );
+        }
+    }
+
+    #[test]
     fn furan_ring_carbons_are_type_63_and_64() {
         let m = mol("c1ccoc1");
         let types = assign_mmff94_numeric_types(&m).unwrap();
@@ -1736,5 +2124,628 @@ mod tests {
                 assert_eq!(types[i], 59, "furan O should be type 59 (OFUR)");
             }
         }
+    }
+
+    // ── Phase 0.1 (issue #227, Priority 1A pre-merge fix): Kekulization
+    // failure must fail closed, never silently reuse `mol` as a stand-in
+    // MMFF view ──────────────────────────────────────────────────────────
+
+    /// Odd-membered, all-carbon, neutral aromatic ring: every atom is a
+    /// `atom_must_be_matched` carbon (no lone pair, no exocyclic multiple
+    /// bond), so a perfect matching over 5 atoms is impossible by simple
+    /// parity -- guaranteed `Err` from `chematic_core::kekulize` regardless
+    /// of which of its four matching passes runs, not a flaky/order-
+    /// dependent failure.
+    fn unkekulizable_five_ring() -> Molecule {
+        let mut b = chematic_core::MoleculeBuilder::new();
+        let atoms: Vec<_> = (0..5)
+            .map(|_| b.add_atom(chematic_core::Atom::aromatic(Element::C)))
+            .collect();
+        for i in 0..5 {
+            b.add_bond(atoms[i], atoms[(i + 1) % 5], BondOrder::Aromatic)
+                .unwrap();
+        }
+        b.build()
+    }
+
+    /// A different failure mechanism from the parity case above, and one
+    /// that specifically exercises a real SSSR-detected ring (unlike a bare
+    /// 2-atom edge, which `find_sssr` correctly reports as ring-free and
+    /// which would make `compute_mmff94_aromatic_view` take its
+    /// no-rings-to-reperceive early-return instead of ever reaching
+    /// Kekulization -- not the code path this test targets): a 3-membered
+    /// all-aromatic-notation ring, C-O-O, where the lone must-match atom
+    /// (C: no lone pair, no exocyclic multiple bond) has only lone-pair-
+    /// donating heteroatom neighbors (both O), so it has zero eligible
+    /// double-bond partners in the matching graph -- unmatchable regardless
+    /// of which of the four matching passes runs, not a parity artifact.
+    /// Models a malformed valence/aromatic-notation combination (an
+    /// aromatic ring notation whose bonding pattern cannot support any
+    /// consistent Kekule structure).
+    fn unkekulizable_isolated_must_match_carbon() -> Molecule {
+        let mut b = chematic_core::MoleculeBuilder::new();
+        let c = b.add_atom(chematic_core::Atom::aromatic(Element::C));
+        let o1 = b.add_atom(chematic_core::Atom::aromatic(Element::O));
+        let o2 = b.add_atom(chematic_core::Atom::aromatic(Element::O));
+        b.add_bond(c, o1, BondOrder::Aromatic).unwrap();
+        b.add_bond(o1, o2, BondOrder::Aromatic).unwrap();
+        b.add_bond(o2, c, BondOrder::Aromatic).unwrap();
+        b.build()
+    }
+
+    #[test]
+    fn kekulization_impossible_molecule_fails_closed_not_silently_reused() {
+        for m in [
+            unkekulizable_five_ring(),
+            unkekulizable_isolated_must_match_carbon(),
+        ] {
+            // Sanity: confirm the fixture actually exercises the failure
+            // path this test targets, not some unrelated typing error.
+            assert!(
+                chematic_core::kekulize(&m).is_err(),
+                "test fixture must be genuinely unkekulizable"
+            );
+
+            let result = assign_mmff94_numeric_types(&m);
+            let err = result.expect_err(
+                "a molecule chematic cannot Kekulize must fail MMFF94 typing, \
+                 never silently proceed using the un-re-perceived molecule",
+            );
+
+            // The failure must name the Kekulization stage and carry the
+            // underlying cause, not be an opaque/generic message -- so a
+            // caller (and `chematic-3d`'s typed `ForceFieldBridgeError`
+            // conversion) can tell this apart from a different typing
+            // failure by more than string content alone if it ever needs
+            // to.
+            assert!(
+                err.0.contains("Kekulization"),
+                "error must name the Kekulization stage, got: {}",
+                err.0
+            );
+            assert!(
+                err.0.contains("cannot be assigned a double bond"),
+                "error must carry the underlying KekuleError cause, got: {}",
+                err.0
+            );
+
+            // Determinism: repeated calls on the same input produce the
+            // identical typed error, not a flaky/order-dependent result.
+            let err2 = assign_mmff94_numeric_types(&m).expect_err("must fail deterministically");
+            assert_eq!(err, err2, "Kekulization failure must be deterministic");
+
+            // Never a wrong type: there is no `Ok` branch here at all --
+            // the only way this test could regress into "returns a wrong
+            // type" is by silently succeeding, which the above already
+            // rules out.
+        }
+    }
+
+    // ── Phase 0.2 (issue #227, Priority 1A pre-merge fix): a ring's bonds
+    // must only be promoted to `BondOrder::Aromatic` when that ring itself
+    // passed the Huckel check -- never reconstructed from whether every
+    // atom in the ring happens to be aromatic via *other* accepted rings
+    // ──────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn pyracylene_peri_fused_artifact_ring_bonds_are_not_wrongly_promoted() {
+        // Empirically confirmed hazard case (not theoretical): pyracylene's
+        // SSSR contains a genuine 4-membered "envelope" ring, atoms
+        // {6,7,8,13}, that is neither of the molecule's two real
+        // (RDKit-agreeing) accepted aromatic rings -- verified identical on
+        // both engines' own SSSR, not assumed. Every one of its 4 atoms is
+        // independently aromatic via the two real accepted rings it
+        // straddles, so the pre-fix reconstruction
+        // (`ring.iter().all(|a| is_arom[a])`) would have wrongly promoted
+        // this artifact ring's own bonds to `BondOrder::Aromatic` too.
+        // RDKit ground truth (`Chem.SetAromaticity(mol,
+        // Chem.AROMATICITY_MMFF94)` on `c1cc2cccc3c2c2c1cccc23`, this PR's
+        // audit): all 14 atoms aromatic, but this specific 4-ring's own
+        // bonds are NOT (its own Huckel check never independently passes:
+        // an all-carbon 4-membered ring has no heteroatom lone-pair bonus
+        // available and can supply at most 2 ring-double-bond pi electrons
+        // either way, never satisfying `pi_e > 2 && (pi_e-2)%4==0`).
+        let m = mol("c1cc2cccc3c2c2c1cccc23");
+        let rings = chematic_perception::find_sssr(&m).rings().to_vec();
+        let artifact_ring = rings
+            .iter()
+            .find(|r| {
+                let mut set: Vec<u32> = r.iter().map(|a| a.0).collect();
+                set.sort_unstable();
+                set == [6, 7, 8, 13]
+            })
+            .expect("pyracylene's SSSR must contain the {6,7,8,13} artifact ring");
+        assert_eq!(
+            artifact_ring.len(),
+            4,
+            "sanity: the artifact ring must be the 4-membered one"
+        );
+
+        let view = compute_mmff94_aromatic_view(&m, &rings)
+            .expect("pyracylene kekulizes and re-perceives successfully");
+
+        let real_rings: Vec<&Vec<AtomIdx>> = rings
+            .iter()
+            .filter(|r| {
+                let mut set: Vec<u32> = r.iter().map(|a| a.0).collect();
+                set.sort_unstable();
+                set != [6, 7, 8, 13]
+            })
+            .collect();
+        assert_eq!(real_rings.len(), 3, "pyracylene has 4 SSSR rings total");
+
+        // Two of the artifact ring's four edges (7-8, 8-13) are *also*
+        // edges of one of the two real accepted 6-rings, so they are
+        // legitimately aromatic for that unrelated reason -- not evidence
+        // either way about the artifact ring itself. Only the two edges
+        // exclusive to the artifact ring (6-7, 6-13) isolate the bug: they
+        // must NOT be aromatic, since no real accepted ring ever claims
+        // them.
+        let is_edge_of_a_real_ring = |a: AtomIdx, b: AtomIdx| -> bool {
+            real_rings.iter().any(|r| {
+                let len = r.len();
+                (0..len).any(|j| {
+                    let (x, y) = (r[j], r[(j + 1) % len]);
+                    (x == a && y == b) || (x == b && y == a)
+                })
+            })
+        };
+
+        let len = artifact_ring.len();
+        let mut checked_exclusive_edge = false;
+        for (j, &a) in artifact_ring.iter().enumerate() {
+            let b = artifact_ring[(j + 1) % len];
+            if is_edge_of_a_real_ring(a, b) {
+                continue; // shared edge -- aromatic for an unrelated, legitimate reason
+            }
+            checked_exclusive_edge = true;
+            let (_, bond) = view
+                .bond_between(a, b)
+                .unwrap_or_else(|| panic!("bond {}-{} must exist", a.0, b.0));
+            assert_ne!(
+                bond.order,
+                BondOrder::Aromatic,
+                "artifact-ring-exclusive bond {}-{} must NOT be promoted to aromatic -- this \
+                 ring never independently passed the Huckel check, even though all 4 of its \
+                 atoms are aromatic via the two other, real accepted rings",
+                a.0,
+                b.0
+            );
+        }
+        assert!(
+            checked_exclusive_edge,
+            "sanity: the artifact ring must have at least one edge not shared with a real ring"
+        );
+
+        // Positive control in the same molecule: the real rings must still
+        // be correctly promoted, proving this isn't just "nothing gets
+        // promoted" degenerate behavior.
+        let mut any_promoted = false;
+        for ring in &real_rings {
+            let len = ring.len();
+            for (j, &a) in ring.iter().enumerate() {
+                let b = ring[(j + 1) % len];
+                if let Some((_, bond)) = view.bond_between(a, b)
+                    && bond.order == BondOrder::Aromatic
+                {
+                    any_promoted = true;
+                }
+            }
+        }
+        assert!(
+            any_promoted,
+            "at least one of pyracylene's real rings must still be promoted aromatic"
+        );
+    }
+
+    #[test]
+    fn mmff94_aromaticity_fixture_matrix_matches_rdkit_atom_and_bond_flags() {
+        // Issue #227 Phase 0.2: 12-fixture matrix, atom-level AND bond-level
+        // MMFF aromaticity parity against a live RDKit oracle
+        // (`Chem.SetAromaticity(mol, Chem.AROMATICITY_MMFF94)` on a
+        // freshly-Kekulized copy -- RDKit's real `setMMFFAromaticity`,
+        // independent of `MMFFGetMoleculeProperties`'s own internal usage of
+        // it; verified on caffeine against the already-established pattern
+        // (see `caffeine_matches_rdkit_mmff_aromaticity_per_atom` above) before
+        // trusting it for the other 11. Values copied verbatim from
+        // `validation/results/mmff94_aromaticity_bond_parity_227_oracle.json`
+        // (generator: `scripts/mmff94_aromaticity_bond_parity_227.py`), not
+        // derived from this fix's own output. Fixtures chosen to stress the
+        // exact fused-ring bond-promotion hazard Phase 0.2 fixes: tetralin
+        // (fused aromatic+non-aromatic), a spiro system, and a bridged
+        // system are included specifically because a naive
+        // reconstruct-from-atom-flags approach could wrongly promote their
+        // non-aromatic ring's bonds. Bond-type comparison is not separately
+        // re-derived here: `bond_type_for` is a pure function of exactly
+        // (atom type, bond order), both already verified per-fixture below.
+        struct Fixture {
+            name: &'static str,
+            smiles: &'static str,
+            atom_aromatic: &'static [bool],
+            bond_aromatic: &'static [(u32, u32, bool)],
+            atom_types: &'static [u8],
+        }
+
+        // --- benzene ---
+        const BENZENE_ATOM_AROM: [bool; 6] = [true, true, true, true, true, true];
+        const BENZENE_BOND_AROM: [(u32, u32, bool); 6] = [
+            (0, 1, true),
+            (0, 5, true),
+            (1, 2, true),
+            (2, 3, true),
+            (3, 4, true),
+            (4, 5, true),
+        ];
+        const BENZENE_ATOM_TYPES: [u8; 6] = [37, 37, 37, 37, 37, 37];
+
+        // --- naphthalene ---
+        const NAPHTHALENE_ATOM_AROM: [bool; 10] =
+            [true, true, true, true, true, true, true, true, true, true];
+        const NAPHTHALENE_BOND_AROM: [(u32, u32, bool); 11] = [
+            (0, 1, true),
+            (0, 9, true),
+            (1, 2, true),
+            (2, 3, true),
+            (3, 4, true),
+            (3, 8, true),
+            (4, 5, true),
+            (5, 6, true),
+            (6, 7, true),
+            (7, 8, true),
+            (8, 9, true),
+        ];
+        const NAPHTHALENE_ATOM_TYPES: [u8; 10] = [37, 37, 37, 37, 37, 37, 37, 37, 37, 37];
+
+        // --- anthracene ---
+        const ANTHRACENE_ATOM_AROM: [bool; 14] = [
+            true, true, true, true, true, true, true, true, true, true, true, true, true, true,
+        ];
+        const ANTHRACENE_BOND_AROM: [(u32, u32, bool); 16] = [
+            (0, 1, true),
+            (0, 13, true),
+            (1, 2, true),
+            (2, 3, true),
+            (3, 4, true),
+            (3, 12, true),
+            (4, 5, true),
+            (5, 6, true),
+            (5, 10, true),
+            (6, 7, true),
+            (7, 8, true),
+            (8, 9, true),
+            (9, 10, true),
+            (10, 11, true),
+            (11, 12, true),
+            (12, 13, true),
+        ];
+        const ANTHRACENE_ATOM_TYPES: [u8; 14] =
+            [37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37];
+
+        // --- indole ---
+        const INDOLE_ATOM_AROM: [bool; 9] = [true, true, true, true, true, true, true, true, true];
+        const INDOLE_BOND_AROM: [(u32, u32, bool); 10] = [
+            (0, 1, true),
+            (0, 8, true),
+            (1, 2, true),
+            (2, 3, true),
+            (3, 4, true),
+            (3, 7, true),
+            (4, 5, true),
+            (5, 6, true),
+            (6, 7, true),
+            (7, 8, true),
+        ];
+        const INDOLE_ATOM_TYPES: [u8; 9] = [37, 37, 37, 63, 39, 63, 64, 64, 37];
+
+        // --- quinoline ---
+        const QUINOLINE_ATOM_AROM: [bool; 10] =
+            [true, true, true, true, true, true, true, true, true, true];
+        const QUINOLINE_BOND_AROM: [(u32, u32, bool); 11] = [
+            (0, 1, true),
+            (0, 9, true),
+            (1, 2, true),
+            (2, 3, true),
+            (3, 4, true),
+            (3, 8, true),
+            (4, 5, true),
+            (5, 6, true),
+            (6, 7, true),
+            (7, 8, true),
+            (8, 9, true),
+        ];
+        const QUINOLINE_ATOM_TYPES: [u8; 10] = [37, 37, 37, 37, 38, 37, 37, 37, 37, 37];
+
+        // --- purine ---
+        const PURINE_ATOM_AROM: [bool; 9] = [true, true, true, true, true, true, true, true, true];
+        const PURINE_BOND_AROM: [(u32, u32, bool); 10] = [
+            (0, 1, true),
+            (0, 8, true),
+            (1, 2, true),
+            (2, 3, true),
+            (2, 6, true),
+            (3, 4, true),
+            (4, 5, true),
+            (5, 6, true),
+            (6, 7, true),
+            (7, 8, true),
+        ];
+        const PURINE_ATOM_TYPES: [u8; 9] = [37, 38, 63, 39, 63, 66, 64, 37, 38];
+
+        // --- caffeine ---
+        const CAFFEINE_ATOM_AROM: [bool; 14] = [
+            false, true, true, true, true, true, false, false, false, false, false, false, false,
+            false,
+        ];
+        const CAFFEINE_BOND_AROM: [(u32, u32, bool); 15] = [
+            (0, 1, false),
+            (1, 2, true),
+            (1, 5, true),
+            (2, 3, true),
+            (3, 4, true),
+            (4, 5, true),
+            (4, 12, false),
+            (5, 6, false),
+            (6, 7, false),
+            (6, 8, false),
+            (8, 9, false),
+            (8, 10, false),
+            (10, 11, false),
+            (10, 12, false),
+            (12, 13, false),
+        ];
+        const CAFFEINE_ATOM_TYPES: [u8; 14] = [1, 39, 63, 66, 64, 63, 3, 7, 10, 1, 3, 7, 10, 1];
+
+        // --- azulene ---
+        const AZULENE_ATOM_AROM: [bool; 10] = [
+            false, false, false, false, false, false, false, false, false, false,
+        ];
+        const AZULENE_BOND_AROM: [(u32, u32, bool); 11] = [
+            (0, 1, false),
+            (0, 9, false),
+            (1, 2, false),
+            (2, 3, false),
+            (3, 4, false),
+            (3, 9, false),
+            (4, 5, false),
+            (5, 6, false),
+            (6, 7, false),
+            (7, 8, false),
+            (8, 9, false),
+        ];
+        const AZULENE_ATOM_TYPES: [u8; 10] = [2, 2, 2, 2, 2, 2, 2, 2, 2, 2];
+
+        // --- tetralin_fused_nonaromatic ---
+        const TETRALIN_FUSED_NONAROMATIC_ATOM_AROM: [bool; 10] = [
+            true, true, true, true, true, true, false, false, false, false,
+        ];
+        const TETRALIN_FUSED_NONAROMATIC_BOND_AROM: [(u32, u32, bool); 11] = [
+            (0, 1, true),
+            (0, 5, true),
+            (1, 2, true),
+            (2, 3, true),
+            (3, 4, true),
+            (3, 9, false),
+            (4, 5, true),
+            (4, 6, false),
+            (6, 7, false),
+            (7, 8, false),
+            (8, 9, false),
+        ];
+        const TETRALIN_FUSED_NONAROMATIC_ATOM_TYPES: [u8; 10] =
+            [37, 37, 37, 37, 37, 37, 1, 1, 1, 1];
+
+        // --- carbostyril_exocyclic_carbonyl ---
+        const CARBOSTYRIL_EXOCYCLIC_CARBONYL_ATOM_AROM: [bool; 11] = [
+            false, false, false, false, true, true, true, true, true, true, false,
+        ];
+        const CARBOSTYRIL_EXOCYCLIC_CARBONYL_BOND_AROM: [(u32, u32, bool); 12] = [
+            (0, 1, false),
+            (1, 2, false),
+            (1, 10, false),
+            (2, 3, false),
+            (3, 4, false),
+            (4, 5, true),
+            (4, 9, true),
+            (5, 6, true),
+            (6, 7, true),
+            (7, 8, true),
+            (8, 9, true),
+            (9, 10, false),
+        ];
+        const CARBOSTYRIL_EXOCYCLIC_CARBONYL_ATOM_TYPES: [u8; 11] =
+            [7, 3, 2, 2, 37, 37, 37, 37, 37, 37, 10];
+
+        // --- spiro_indane_cyclohexane ---
+        const SPIRO_INDANE_CYCLOHEXANE_ATOM_AROM: [bool; 14] = [
+            true, true, true, true, true, true, false, false, false, false, false, false, false,
+            false,
+        ];
+        const SPIRO_INDANE_CYCLOHEXANE_BOND_AROM: [(u32, u32, bool); 16] = [
+            (0, 1, true),
+            (0, 5, true),
+            (1, 2, true),
+            (2, 3, true),
+            (3, 4, true),
+            (3, 13, false),
+            (4, 5, true),
+            (4, 6, false),
+            (6, 7, false),
+            (7, 8, false),
+            (7, 12, false),
+            (7, 13, false),
+            (8, 9, false),
+            (9, 10, false),
+            (10, 11, false),
+            (11, 12, false),
+        ];
+        const SPIRO_INDANE_CYCLOHEXANE_ATOM_TYPES: [u8; 14] =
+            [37, 37, 37, 37, 37, 37, 1, 1, 1, 1, 1, 1, 1, 1];
+
+        // --- norbornane_bridged ---
+        const NORBORNANE_BRIDGED_ATOM_AROM: [bool; 7] =
+            [false, false, false, false, false, false, false];
+        const NORBORNANE_BRIDGED_BOND_AROM: [(u32, u32, bool); 8] = [
+            (0, 1, false),
+            (0, 5, false),
+            (1, 2, false),
+            (2, 3, false),
+            (2, 6, false),
+            (3, 4, false),
+            (4, 5, false),
+            (5, 6, false),
+        ];
+        const NORBORNANE_BRIDGED_ATOM_TYPES: [u8; 7] = [1, 1, 1, 1, 1, 1, 1];
+
+        let fixtures: Vec<Fixture> = vec![
+            Fixture {
+                name: "benzene",
+                smiles: "c1ccccc1",
+                atom_aromatic: &BENZENE_ATOM_AROM,
+                bond_aromatic: &BENZENE_BOND_AROM,
+                atom_types: &BENZENE_ATOM_TYPES,
+            },
+            Fixture {
+                name: "naphthalene",
+                smiles: "c1ccc2ccccc2c1",
+                atom_aromatic: &NAPHTHALENE_ATOM_AROM,
+                bond_aromatic: &NAPHTHALENE_BOND_AROM,
+                atom_types: &NAPHTHALENE_ATOM_TYPES,
+            },
+            Fixture {
+                name: "anthracene",
+                smiles: "c1ccc2cc3ccccc3cc2c1",
+                atom_aromatic: &ANTHRACENE_ATOM_AROM,
+                bond_aromatic: &ANTHRACENE_BOND_AROM,
+                atom_types: &ANTHRACENE_ATOM_TYPES,
+            },
+            Fixture {
+                name: "indole",
+                smiles: "c1ccc2[nH]ccc2c1",
+                atom_aromatic: &INDOLE_ATOM_AROM,
+                bond_aromatic: &INDOLE_BOND_AROM,
+                atom_types: &INDOLE_ATOM_TYPES,
+            },
+            Fixture {
+                name: "quinoline",
+                smiles: "c1ccc2ncccc2c1",
+                atom_aromatic: &QUINOLINE_ATOM_AROM,
+                bond_aromatic: &QUINOLINE_BOND_AROM,
+                atom_types: &QUINOLINE_ATOM_TYPES,
+            },
+            Fixture {
+                name: "purine",
+                smiles: "c1nc2[nH]cnc2cn1",
+                atom_aromatic: &PURINE_ATOM_AROM,
+                bond_aromatic: &PURINE_BOND_AROM,
+                atom_types: &PURINE_ATOM_TYPES,
+            },
+            Fixture {
+                name: "caffeine",
+                smiles: "Cn1cnc2c1c(=O)n(C)c(=O)n2C",
+                atom_aromatic: &CAFFEINE_ATOM_AROM,
+                bond_aromatic: &CAFFEINE_BOND_AROM,
+                atom_types: &CAFFEINE_ATOM_TYPES,
+            },
+            Fixture {
+                name: "azulene",
+                smiles: "c1ccc2cccccc12",
+                atom_aromatic: &AZULENE_ATOM_AROM,
+                bond_aromatic: &AZULENE_BOND_AROM,
+                atom_types: &AZULENE_ATOM_TYPES,
+            },
+            Fixture {
+                name: "tetralin_fused_nonaromatic",
+                smiles: "c1ccc2c(c1)CCCC2",
+                atom_aromatic: &TETRALIN_FUSED_NONAROMATIC_ATOM_AROM,
+                bond_aromatic: &TETRALIN_FUSED_NONAROMATIC_BOND_AROM,
+                atom_types: &TETRALIN_FUSED_NONAROMATIC_ATOM_TYPES,
+            },
+            Fixture {
+                name: "carbostyril_exocyclic_carbonyl",
+                smiles: "O=c1ccc2ccccc2[nH]1",
+                atom_aromatic: &CARBOSTYRIL_EXOCYCLIC_CARBONYL_ATOM_AROM,
+                bond_aromatic: &CARBOSTYRIL_EXOCYCLIC_CARBONYL_BOND_AROM,
+                atom_types: &CARBOSTYRIL_EXOCYCLIC_CARBONYL_ATOM_TYPES,
+            },
+            Fixture {
+                name: "spiro_indane_cyclohexane",
+                smiles: "c1ccc2c(c1)CC3(CCCCC3)C2",
+                atom_aromatic: &SPIRO_INDANE_CYCLOHEXANE_ATOM_AROM,
+                bond_aromatic: &SPIRO_INDANE_CYCLOHEXANE_BOND_AROM,
+                atom_types: &SPIRO_INDANE_CYCLOHEXANE_ATOM_TYPES,
+            },
+            Fixture {
+                name: "norbornane_bridged",
+                smiles: "C1CC2CCC1C2",
+                atom_aromatic: &NORBORNANE_BRIDGED_ATOM_AROM,
+                bond_aromatic: &NORBORNANE_BRIDGED_BOND_AROM,
+                atom_types: &NORBORNANE_BRIDGED_ATOM_TYPES,
+            },
+        ];
+
+        for fx in &fixtures {
+            let m = mol(fx.smiles);
+            assert_eq!(
+                m.atom_count(),
+                fx.atom_aromatic.len(),
+                "{}: atom count / element-sequence alignment sanity",
+                fx.name
+            );
+            let rings = chematic_perception::find_sssr(&m).rings().to_vec();
+            let view = compute_mmff94_aromatic_view(&m, &rings)
+                .unwrap_or_else(|e| panic!("{}: re-perception failed: {e}", fx.name));
+
+            for i in 0..m.atom_count() {
+                let idx = AtomIdx(i as u32);
+                assert_eq!(
+                    view.atom(idx).aromatic,
+                    fx.atom_aromatic[i],
+                    "{}: atom {i} aromatic-flag mismatch vs RDKit oracle",
+                    fx.name
+                );
+            }
+
+            for &(a, b, expected_arom) in fx.bond_aromatic {
+                let (_, bond) = view
+                    .bond_between(AtomIdx(a), AtomIdx(b))
+                    .unwrap_or_else(|| panic!("{}: bond {a}-{b} must exist", fx.name));
+                let is_arom = bond.order == BondOrder::Aromatic;
+                assert_eq!(
+                    is_arom, expected_arom,
+                    "{}: bond {a}-{b} aromatic-flag mismatch vs RDKit oracle (got {is_arom}, want {expected_arom})",
+                    fx.name
+                );
+            }
+
+            if !fx.atom_types.is_empty() {
+                let types = assign_mmff94_numeric_types(&m)
+                    .unwrap_or_else(|e| panic!("{}: numeric typing failed: {e}", fx.name));
+                assert_eq!(
+                    types, fx.atom_types,
+                    "{}: numeric atom types mismatch vs RDKit oracle",
+                    fx.name
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn kekulization_failure_never_reaches_the_uff_or_mmff94_minimizer_bridge() {
+        // Phase 0.1's "must not proceed to parameter lookup" requirement,
+        // verified at this crate's own public boundary: every
+        // `assign_mmff94_numeric_types` caller in this crate (e.g.
+        // `crates/chematic-ff/src/mmff94_minimizer.rs`) uses `?` on this
+        // call before ever touching a bond/angle/torsion/oop parameter
+        // table, so a `NumericTypeError` here structurally cannot be
+        // followed by a parameter-lookup attempt on the same call. This
+        // test pins that `?`-propagation contract at the numeric-typing
+        // boundary itself, independent of any specific downstream caller.
+        let m = unkekulizable_five_ring();
+        let types_result = assign_mmff94_numeric_types(&m);
+        assert!(types_result.is_err());
+        // If this were `Ok`, a caller doing `let types = ...?;` would
+        // proceed to index `types` for parameter lookup; confirming `Err`
+        // here is exactly what makes that `?` short-circuit for every
+        // caller, without needing to duplicate every caller's own test.
     }
 }

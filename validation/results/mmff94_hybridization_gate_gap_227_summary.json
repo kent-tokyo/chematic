@@ -1,0 +1,10 @@
+{
+  "total_ring_c_n_atoms": 4172,
+  "buckets": {
+    "same_decision": 4128,
+    "rdkit_rejects_chematic_accepts": 44,
+    "rdkit_accepts_chematic_rejects": 0,
+    "oracle_unavailable": 0
+  },
+  "unclassified": 0
+}
