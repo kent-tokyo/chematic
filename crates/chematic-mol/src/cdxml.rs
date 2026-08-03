@@ -94,8 +94,13 @@ pub fn parse_cdxml(input: &str) -> Result<(Molecule, Vec<(f64, f64)>), CdxmlErro
 /// # Stereochemistry
 ///
 /// Wedge bonds are derived from the `Display` attribute of `<b>` elements:
-/// `"WedgeBegin"` / `"WedgedHashBegin"` → [`BondOrder::Up`];
+/// `"WedgeBegin"` / `"WedgedHashBegin"` / `"Bold"` → [`BondOrder::Up`];
 /// `"Hash"` / `"Dash"` / `"WedgeEnd"` / `"WedgedHashEnd"` → [`BondOrder::Down`].
+/// `"Bold"` is ChemDraw's simplified, non-directional "coming toward viewer"
+/// convention (a plain thick line, used by some chemists in place of a real
+/// wedge) -- it carries no begin/end distinction of its own, so it's
+/// interpreted the same bond-direction-from-B-to-E way `"Hash"`/`"Dash"`
+/// already are, not via a new direction-inference mechanism.
 /// Accumulator for a single CDXML `<fragment>` being parsed.
 #[derive(Default)]
 struct FragAccum {
@@ -259,7 +264,7 @@ pub fn parse_cdxml_all(input: &str) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, 
             };
             let order = if base == BondOrder::Single {
                 match attrs.get("Display").map(String::as_str) {
-                    Some("WedgeBegin") | Some("WedgedHashBegin") => BondOrder::Up,
+                    Some("WedgeBegin") | Some("WedgedHashBegin") | Some("Bold") => BondOrder::Up,
                     Some("Hash") | Some("Dash") | Some("WedgeEnd") | Some("WedgedHashEnd") => {
                         BondOrder::Down
                     }
@@ -618,6 +623,92 @@ mod tests {
         let (mol2, _) = parse_cdxml(&written).unwrap();
         let bond2 = mol2.bond(chematic_core::BondIdx(0));
         assert_eq!(bond2.order, BondOrder::Up);
+    }
+
+    /// Issue found while surveying RDKit's open issues (analogous to RDKit
+    /// #9359, "CDXML reading doesn't use Bold or undirectional hash bonds
+    /// for stereochemistry"): ChemDraw's simplified non-directional "Bold"
+    /// bond display (a plain thick line, used by some chemists in place of
+    /// a real wedge) must be interpreted as stereo, same as this reader
+    /// already does for bare "Hash".
+    #[test]
+    fn parse_cdxml_bold_bond_is_wedge_up() {
+        let cdxml = r#"<CDXML><fragment>
+<n id="1" Element="6" p="0 0"/>
+<n id="2" Element="6" p="10 0"/>
+<b B="1" E="2" Order="1" Display="Bold"/>
+</fragment></CDXML>"#;
+        let (mol, _) = parse_cdxml(cdxml).unwrap();
+        let bond = mol.bond(chematic_core::BondIdx(0));
+        assert_eq!(
+            bond.order,
+            BondOrder::Up,
+            "Display=\"Bold\" must be read as a wedge-up stereo bond, not silently \
+             dropped to a plain single bond"
+        );
+    }
+
+    /// "Bold" and "WedgeBegin" both encode the same "coming toward viewer"
+    /// stereo relative to a bond's B->E atom order -- for identical
+    /// connectivity/geometry, both display attributes must parse to the
+    /// same BondOrder.
+    #[test]
+    fn parse_cdxml_bold_bond_matches_wedge_begin() {
+        let bold = r#"<CDXML><fragment>
+<n id="1" Element="6" p="0 0"/>
+<n id="2" Element="6" p="10 0"/>
+<b B="1" E="2" Order="1" Display="Bold"/>
+</fragment></CDXML>"#;
+        let wedge = r#"<CDXML><fragment>
+<n id="1" Element="6" p="0 0"/>
+<n id="2" Element="6" p="10 0"/>
+<b B="1" E="2" Order="1" Display="WedgeBegin"/>
+</fragment></CDXML>"#;
+        let (mol_bold, _) = parse_cdxml(bold).unwrap();
+        let (mol_wedge, _) = parse_cdxml(wedge).unwrap();
+        assert_eq!(
+            mol_bold.bond(chematic_core::BondIdx(0)).order,
+            mol_wedge.bond(chematic_core::BondIdx(0)).order,
+        );
+    }
+
+    /// Negative control: bare "Hash"/"Dash" (already-handled non-directional
+    /// stereo) and a plain undecorated bond must be unaffected by adding
+    /// the "Bold" arm -- confirms no accidental widening of the match.
+    #[test]
+    fn parse_cdxml_bold_addition_does_not_change_other_display_values() {
+        for (display, expected) in [
+            ("Hash", BondOrder::Down),
+            ("Dash", BondOrder::Down),
+            ("WedgeEnd", BondOrder::Down),
+            ("WedgedHashEnd", BondOrder::Down),
+            ("WedgedHashBegin", BondOrder::Up),
+        ] {
+            let cdxml = format!(
+                r#"<CDXML><fragment>
+<n id="1" Element="6" p="0 0"/>
+<n id="2" Element="6" p="10 0"/>
+<b B="1" E="2" Order="1" Display="{display}"/>
+</fragment></CDXML>"#
+            );
+            let (mol, _) = parse_cdxml(&cdxml).unwrap();
+            assert_eq!(
+                mol.bond(chematic_core::BondIdx(0)).order,
+                expected,
+                "Display=\"{display}\" regressed"
+            );
+        }
+        let plain = r#"<CDXML><fragment>
+<n id="1" Element="6" p="0 0"/>
+<n id="2" Element="6" p="10 0"/>
+<b B="1" E="2" Order="1"/>
+</fragment></CDXML>"#;
+        let (mol, _) = parse_cdxml(plain).unwrap();
+        assert_eq!(
+            mol.bond(chematic_core::BondIdx(0)).order,
+            BondOrder::Single,
+            "a bond with no Display attribute at all must stay plain Single"
+        );
     }
 
     #[test]
