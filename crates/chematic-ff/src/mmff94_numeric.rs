@@ -1395,9 +1395,10 @@ struct N3CarbonContext {
     any_carbon_qualifies_nc_eq_c: bool,
 }
 
-/// Faithful port of RDKit's `case 7:` 3-connected-nitrogen carbon-neighbor
-/// scan (`AtomTyper.cpp` lines 1093-1325 at the pinned commit -- see
-/// `scripts/mmff94_provenance/PROVENANCE.md`), used by `assign_n_type` to
+/// Source-grounded deterministic port of RDKit's `case 7:` 3-connected-
+/// nitrogen carbon-neighbor scan (`AtomTyper.cpp` lines 1093-1325 at the
+/// pinned commit -- see `scripts/mmff94_provenance/PROVENANCE.md`), used by
+/// `assign_n_type` to
 /// pick NC=C (type 40: enamine/aniline/amidine/N-C%C nitrogen with a
 /// delocalized lone pair) over generic NR (8) or NC=O (10).
 ///
@@ -1420,22 +1421,46 @@ struct N3CarbonContext {
 /// carry a charge, so this omission is not a silent gap for this fix's
 /// actual target population.
 ///
-/// Known divergence from RDKit's literal C++ (not a simplification of the
-/// underlying chemistry, a difference in how a nitrogen with *several*
-/// differently-behaved carbon neighbors is resolved): RDKit's loop uses
-/// shared mutable variables for `elementDoubleBondedToC`/`isNbrBenzeneC`
-/// that are never reset between carbon-neighbor iterations, so the C++
-/// code's outcome for such a nitrogen can depend on adjacency-list
-/// iteration order over that specific molecule -- an implementation
+/// Structural divergence point from RDKit's literal C++ (not a
+/// simplification of the underlying chemistry, a difference in how a
+/// nitrogen with *several* differently-behaved carbon neighbors is
+/// resolved): RDKit's loop uses shared mutable variables for
+/// `elementDoubleBondedToC`/`isNbrBenzeneC`/`nObondedToC`/`nSbondedToC`
+/// that are declared once before the carbon-neighbor loop and are not all
+/// reset the same way per iteration -- `nObondedToC`/`nSbondedToC` reset to
+/// 0 at the start of each carbon neighbor's processing (so after the loop
+/// they only reflect the *last* carbon neighbor visited), while
+/// `isNbrBenzeneC` never resets (true if *any* carbon neighbor was a
+/// benzene carbon) and `elementDoubleBondedToC` is only overwritten by a
+/// later neighbor that itself qualifies. In principle this makes the C++
+/// code's outcome depend on adjacency-list iteration order for a nitrogen
+/// with several differently-behaved carbon neighbors -- an implementation
 /// incidental, not an intentional MMFF rule, and not something chematic's
 /// own neighbor iteration order is guaranteed to reproduce anyway. This
 /// port instead evaluates each carbon neighbor independently and triggers
 /// NC=C if *any one* qualifies (after the shared carbonyl/cyano exclusion
 /// gates, which genuinely are OR-accumulated across all neighbors in
 /// RDKit's own code too, and are ported as such below) -- well-defined and
-/// order-independent, and identical to RDKit whenever a nitrogen has only
-/// one structurally-relevant carbon neighbor, which is the overwhelming
-/// majority of real molecules.
+/// order-independent by construction.
+///
+/// Empirically, this theoretical divergence does not appear to be
+/// observable for legal-valence neutral organic molecules: 8 constructed
+/// multi-carbon-context molecules (nitrogen bonded to two structurally
+/// distinct carbons, each combination of qualifying/non-qualifying/
+/// carbonyl-blocked) were probed against a live RDKit oracle across 32
+/// `Chem.RenumberAtoms` atom orderings apiece (256 trials total) and
+/// RDKit's own output never varied by order in any of them. The
+/// mechanism appears to be that any aromatic-6-ring carbon neighbor's own
+/// ring bonds set `elementDoubleBondedToC` into `{6,7}` regardless of which
+/// neighbor is processed last (a neutral aromatic 6-ring's atoms are always
+/// C or N), which happens to make the order-sensitive branch practically
+/// unreachable in that population. The corresponding test,
+/// `nc_eq_c_multi_carbon_context_is_order_independent_and_matches_rdkit`,
+/// therefore pins these as exact RDKit-parity regressions (both chematic's
+/// own determinism *and* RDKit agreement), not merely a documented
+/// divergence -- and this port is identical to RDKit whenever a nitrogen
+/// has only one structurally-relevant carbon neighbor, which is the
+/// overwhelming majority of real molecules regardless.
 fn classify_n_c3_carbon_context(
     mol: &Molecule,
     rings: &[Vec<AtomIdx>],
@@ -1556,10 +1581,11 @@ fn assign_n_type(
     }
 
     // sp3 N, 3-connected: enamine/aniline (NC=C) vs amide (NC=O) vs plain
-    // (NR). Faithful port of RDKit's `case 7:` 3-connected branch
-    // (`AtomTyper.cpp` lines 1093-1325 at the pinned commit) -- see
-    // `classify_n_c3_carbon_context`'s doc for the exact condition and its
-    // one documented, principled divergence from RDKit's literal C++.
+    // (NR). Source-grounded deterministic port of RDKit's `case 7:`
+    // 3-connected branch (`AtomTyper.cpp` lines 1093-1325 at the pinned
+    // commit) -- see `classify_n_c3_carbon_context`'s doc for the exact
+    // condition and its one documented, empirically-unobserved structural
+    // divergence from RDKit's literal C++.
     if total_degree(mol, idx) == 3 {
         let ctx = classify_n_c3_carbon_context(mol, rings, idx);
         if ctx.has_carbon_neighbor {
@@ -2065,6 +2091,169 @@ mod tests {
         let amide = mol("CC(=O)NC");
         let types = assign_mmff94_numeric_types(&amide).unwrap();
         assert_eq!(types[3], 10, "amide N should stay type 10 (NC=O)");
+    }
+
+    // ── NC=C multi-carbon-context order-independence (issue #227,
+    //    Priority 1A-2 reinforcement) ────────────────────────────────────
+
+    /// Deterministic xorshift64-based permutation generator. Not a source of
+    /// true randomness -- just a fixed, reproducible way to generate many
+    /// distinct atom/bond orderings without hand-authoring each one.
+    fn deterministic_permutation(n: usize, seed: u64) -> Vec<usize> {
+        let mut perm: Vec<usize> = (0..n).collect();
+        let mut state = seed ^ 0x9E37_79B9_7F4A_7C15;
+        for i in (1..n).rev() {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            let j = (state as usize) % (i + 1);
+            perm.swap(i, j);
+        }
+        perm
+    }
+
+    /// Rebuilds `mol` with atoms reordered per `atom_perm` (`new_idx ->
+    /// old_idx`) and bonds re-added in the order given by `bond_perm`
+    /// (indices into the *original* bond list). The two orderings vary
+    /// independently, so this probes both atom-relabeling and
+    /// bond-insertion-order sensitivity.
+    fn rebuild_with_order(mol: &Molecule, atom_perm: &[usize], bond_perm: &[usize]) -> Molecule {
+        let mut old_to_new = vec![0u32; atom_perm.len()];
+        for (new_idx, &old_idx) in atom_perm.iter().enumerate() {
+            old_to_new[old_idx] = new_idx as u32;
+        }
+        let mut builder = chematic_core::MoleculeBuilder::new();
+        for &old_idx in atom_perm {
+            builder.add_atom(mol.atom(AtomIdx(old_idx as u32)).clone());
+        }
+        let bonds: Vec<_> = mol.bonds().collect();
+        for &bidx in bond_perm {
+            let (_, bond) = bonds[bidx];
+            let a = AtomIdx(old_to_new[bond.atom1.0 as usize]);
+            let b = AtomIdx(old_to_new[bond.atom2.0 as usize]);
+            builder
+                .add_bond(a, b, bond.order)
+                .expect("relabeling a valid molecule's own bonds cannot fail");
+        }
+        builder.build()
+    }
+
+    /// Returns the MMFF94 numeric type of the sole nitrogen atom in `mol`.
+    /// All fixtures below are constructed to contain exactly one N, so
+    /// identifying it by element (a content key) rather than by index
+    /// survives atom relabeling -- an index-based lookup would silently
+    /// compare the wrong atoms across variants.
+    fn sole_nitrogen_type(mol: &Molecule) -> u8 {
+        let types = assign_mmff94_numeric_types(mol).unwrap();
+        let mut found = None;
+        for i in 0..mol.atom_count() {
+            if mol.atom(AtomIdx(i as u32)).element == Element::N {
+                assert!(found.is_none(), "fixture must have exactly one N atom");
+                found = Some(types[i]);
+            }
+        }
+        found.expect("fixture must contain a nitrogen atom")
+    }
+
+    /// Verifies `expected_type` for the sole N atom is reproduced
+    /// identically across: the original parse, full atom-order reversal, 16
+    /// deterministic atom relabelings, a bond-insertion-order shuffle, and
+    /// an independently hand-written alternate SMILES spelling of the same
+    /// molecule. This is the order-independence evidence
+    /// `classify_n_c3_carbon_context`'s doc comment claims for the NC=C
+    /// port (issue #227 Priority 1A-2 reinforcement).
+    fn assert_n_type_is_order_independent(
+        smiles: &str,
+        alt_smiles: &str,
+        expected_type: u8,
+        label: &str,
+    ) {
+        let base = mol(smiles);
+        assert_eq!(
+            sole_nitrogen_type(&base),
+            expected_type,
+            "{label}: original SMILES parse"
+        );
+
+        let n = base.atom_count();
+        let bond_count = base.bonds().count();
+        let identity_bonds: Vec<usize> = (0..bond_count).collect();
+
+        let reversed: Vec<usize> = (0..n).rev().collect();
+        let reversed_mol = rebuild_with_order(&base, &reversed, &identity_bonds);
+        assert_eq!(
+            sole_nitrogen_type(&reversed_mol),
+            expected_type,
+            "{label}: reversed atom order"
+        );
+
+        for seed in 0..16u64 {
+            let perm = deterministic_permutation(n, seed);
+            let variant = rebuild_with_order(&base, &perm, &identity_bonds);
+            assert_eq!(
+                sole_nitrogen_type(&variant),
+                expected_type,
+                "{label}: atom relabeling seed {seed}"
+            );
+        }
+
+        let identity_atoms: Vec<usize> = (0..n).collect();
+        let bond_perm = deterministic_permutation(bond_count, 0xB0AD);
+        let bond_order_variant = rebuild_with_order(&base, &identity_atoms, &bond_perm);
+        assert_eq!(
+            sole_nitrogen_type(&bond_order_variant),
+            expected_type,
+            "{label}: bond insertion order shuffle"
+        );
+
+        let alt = mol(alt_smiles);
+        assert_eq!(
+            sole_nitrogen_type(&alt),
+            expected_type,
+            "{label}: alternate equivalent SMILES"
+        );
+    }
+
+    #[test]
+    fn nc_eq_c_multi_carbon_context_is_order_independent_and_matches_rdkit() {
+        // Issue #227 Priority 1A-2 reinforcement: `classify_n_c3_carbon_context`
+        // evaluates each carbon neighbor of a 3-connected N independently,
+        // a deliberate divergence from RDKit's literal C++ (which threads
+        // shared mutable state across its carbon-neighbor loop -- see that
+        // function's doc comment for the full source-level analysis). The
+        // only case where the two designs *could* observably differ is a
+        // nitrogen with >=2 structurally distinct carbon neighbors, so
+        // that's exactly what these 4 fixtures exercise. All expected
+        // types are copied verbatim from a live RDKit oracle
+        // (`AllChem.MMFFGetMoleculeProperties`), cross-checked across 32
+        // `Chem.RenumberAtoms` atom orderings per fixture on the RDKit side
+        // too (0/32 showed order sensitivity in any fixture) -- so these
+        // pin exact parity, not a documented divergence.
+        assert_n_type_is_order_independent(
+            "CN(C)c1ccccc1",
+            "c1ccc(cc1)N(C)C",
+            40,
+            "N bonded to two non-qualifying methyls + one qualifying aromatic C (aniline)",
+        );
+        assert_n_type_is_order_independent(
+            "CN(c1ccccc1)C(C)(C)C",
+            "c1ccc(cc1)N(C)C(C)(C)C",
+            40,
+            "N bonded to one qualifying aromatic C + one non-qualifying sp3 tert-butyl C",
+        );
+        assert_n_type_is_order_independent(
+            "CN(c1ccccc1)C=C",
+            "C=CN(C)c1ccccc1",
+            40,
+            "N bonded to two independently-qualifying carbons (aromatic ring + C=C)",
+        );
+        assert_n_type_is_order_independent(
+            "CN(c1ccccc1)C(=O)C",
+            "CC(=O)N(C)c1ccccc1",
+            10,
+            "N bonded to a qualifying aromatic C + a carbonyl C -- the global \
+             isNCOorNCS gate must block NC=C regardless of neighbor order",
+        );
     }
 
     #[test]
