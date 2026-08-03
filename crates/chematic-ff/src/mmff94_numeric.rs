@@ -1681,6 +1681,173 @@ fn aromatic_n_type(mol: &Molecule, rings: &[Vec<AtomIdx>], idx: AtomIdx) -> Opti
 
 // ── O type assignment ────────────────────────────────────────────────────────
 
+/// A genuinely terminal oxygen in RDKit's sense (`AtomTyper.cpp`'s
+/// `atom->getDegree() <= 1` gate at the pinned commit's line 1554, reached
+/// only after the 3- and (total-degree-)2-neighbor branches have already
+/// been ruled out): at most one heavy neighbor *and* no implicit H. This
+/// excludes -OH (1 heavy neighbor + 1 implicit H, `getTotalDegree()==2`)
+/// and bridging ether/ester -O- (2 heavy neighbors) alike, leaving only
+/// =O / -O⁻-style oxygens whose valence is already fully satisfied by
+/// their one explicit bond.
+fn is_terminal_o(mol: &Molecule, idx: AtomIdx) -> bool {
+    mol.atom(idx).element == Element::O
+        && bonds_of(mol, idx).len() <= 1
+        && implicit_hcount(mol, idx) == 0
+}
+
+/// RDKit's `nObondedToCorNorS`, O contribution: count of terminal oxygens
+/// bonded to `central` (`AtomTyper.cpp` lines 1597-1600). Note this counts
+/// `central`'s terminal-O neighbors generally, so when called with
+/// `central` = the ipso oxygen's own neighbor, it naturally includes the
+/// ipso oxygen itself alongside any sibling terminal oxygens -- exactly as
+/// RDKit's loop does (it never excludes the atom it was reached from).
+fn count_terminal_o_neighbors(mol: &Molecule, central: AtomIdx) -> usize {
+    bonds_of(mol, central)
+        .iter()
+        .filter(|b| is_terminal_o(mol, b.neighbor))
+        .count()
+}
+
+/// RDKit's `nNbondedToCorNorS`: count of degree-2 (`getTotalDegree()==2`)
+/// nitrogens bonded to `central` (`AtomTyper.cpp` lines 1593-1596).
+fn count_deg2_n_neighbors(mol: &Molecule, central: AtomIdx) -> usize {
+    bonds_of(mol, central)
+        .iter()
+        .filter(|b| {
+            mol.atom(b.neighbor).element == Element::N && total_degree(mol, b.neighbor) == 2
+        })
+        .count()
+}
+
+/// RDKit's `nSbondedToCorNorS`: count of terminal (`getTotalDegree()==1`)
+/// sulfurs bonded to `central` (`AtomTyper.cpp` lines 1601-1604).
+fn count_terminal_s_neighbors(mol: &Molecule, central: AtomIdx) -> usize {
+    bonds_of(mol, central)
+        .iter()
+        .filter(|b| {
+            mol.atom(b.neighbor).element == Element::S && total_degree(mol, b.neighbor) == 1
+        })
+        .count()
+}
+
+/// Source-grounded deterministic port of RDKit's `case 8:` degree-≤1
+/// ("terminal") oxygen branch (`AtomTyper.cpp` lines 1554-1737 at the
+/// pinned commit -- issue #227 Priority 1A-3). Distinguishes OM (35, oxide
+/// oxygen on an unremarkable sp3 C/N or bonded to literal H), O2CM (32, the
+/// carboxylate / nitro-nitrate / genuine N-oxide / thiosulfinate /
+/// sulfate-sulfonate-sulfonamide-sulfone / phosphate-phosphonate-
+/// phosphine-oxide / perchlorate terminal-oxygen union), and O=C (7,
+/// generic carbonyl/nitroso/sulfoxide oxygen) for a genuinely terminal
+/// oxygen. Returns `None` if `idx` is not terminal or if none of RDKit's
+/// conditions fire (falls back to `assign_o_type`'s pre-existing generic
+/// handling below).
+///
+/// This is not a "central element implies type" shortcut: routing depends
+/// on this bond's order and on the formal degree/valence of the *central*
+/// atom and how many *other* terminal O/S atoms (or degree-2 N atoms) share
+/// it, exactly as RDKit computes it -- e.g. a carboxylic acid's neutral
+/// C=O is *not* O2CM (its carbon has only one terminal oxygen), only a
+/// carboxylate *anion*'s two terminal oxygens are (both share a carbon
+/// with two terminal oxygens), matching real MMFF94/RDKit output.
+///
+/// One RDKit quirk ported faithfully, not smoothed over: for a phosphorus
+/// or chlorine central atom, `isPhosphateOrPerchlorateO` really is
+/// unconditional in RDKit's own source (`atomicNum==15 || atomicNum==17`,
+/// no bond-order or valence check at all) -- this is RDKit's own
+/// documented behavior (its type-32 symbol list explicitly names "OP,
+/// Oxygen in phosphine oxide"), not a chematic simplification, so a
+/// neutral phosphine oxide's O also becomes O2CM here, same as RDKit.
+fn classify_terminal_o(mol: &Molecule, idx: AtomIdx) -> Option<u8> {
+    let central_bond = bonds_of(mol, idx).into_iter().next()?;
+    let central = central_bond.neighbor;
+    let bond_order = central_bond.order;
+    let central_elem = mol.atom(central).element;
+
+    let n_o = count_terminal_o_neighbors(mol, central);
+    let n_n = count_deg2_n_neighbors(mol, central);
+    let n_s = count_terminal_s_neighbors(mol, central);
+
+    let mut is_oxide_on_c_or_n = false;
+    let mut is_o2cm = false;
+    let mut is_carbonyl_like = false;
+
+    match central_elem {
+        Element::C => {
+            if n_o == 2 {
+                is_o2cm = true; // isCarboxylateO
+            }
+            if bond_order == BondOrder::Double {
+                is_carbonyl_like = true; // isCarbonylO
+            } else if bond_order == BondOrder::Single && n_o == 1 {
+                is_oxide_on_c_or_n = true; // isOxideOBondedToC
+            }
+        }
+        Element::N => {
+            if n_o >= 2 {
+                is_o2cm = true; // isNitroO (nitro/nitrate)
+            }
+            if bond_order == BondOrder::Double {
+                is_carbonyl_like = true; // isNitrosoO
+            } else if bond_order == BondOrder::Single && n_o == 1 {
+                // RDKit distinguishes a genuine N-oxide (isNOxideO, ipso
+                // -> O2CM) from a plain oxide oxygen on an otherwise-normal
+                // trivalent nitrogen (isOxideOBondedToN, ipso -> OM) by
+                // whether the *central* N's real bond-order-sum valence is
+                // 4 vs 2-or-3. Summing bond orders directly is unsafe here:
+                // `central` may be a ring atom whose bonds are still
+                // `BondOrder::Aromatic` in this post-`compute_mmff94_aromatic_view`
+                // molecule (order_int()==1, undercounting a ring bond that's
+                // really a Kekule double bond -- e.g. pyridine N-oxide's
+                // ring N would wrongly read total_valence==3, not 4). Formal
+                // charge is a bond-order-representation-independent proxy
+                // that holds for every standard, RDKit-sanitizable N-oxide
+                // depiction (charge-separated N+/O-, the only form RDKit
+                // itself produces/accepts): a genuinely oxidized nitrogen
+                // carries a +1 formal charge; a merely-oxide-substituted
+                // normal trivalent nitrogen does not. A non-charge-separated
+                // "neutral pentavalent N=O" spelling, if it parses at all,
+                // is out of scope for this port (RDKit's own sanitizer does
+                // not produce or expect that form).
+                if mol.atom(central).charge > 0 {
+                    is_o2cm = true; // isNOxideO: genuine N-oxide
+                } else {
+                    is_oxide_on_c_or_n = true; // isOxideOBondedToN
+                }
+            }
+        }
+        Element::S => {
+            if n_s == 1 {
+                is_o2cm = true; // isThioSulfinateO
+            }
+            if bond_order == BondOrder::Single
+                || (bond_order == BondOrder::Double && (n_o + n_n) > 1)
+            {
+                is_o2cm = true; // isSulfateO: sulfate/sulfonate/sulfonamide/sulfone
+            } else if bond_order == BondOrder::Double && (n_o + n_n) == 1 {
+                is_carbonyl_like = true; // isSulfoxideO
+            }
+        }
+        Element::P | Element::CL => {
+            is_o2cm = true; // isPhosphateOrPerchlorateO -- unconditional, see doc above
+        }
+        Element::H => {
+            is_oxide_on_c_or_n = true; // isOxideOBondedToH
+        }
+        _ => return None,
+    }
+
+    if is_oxide_on_c_or_n {
+        return Some(35); // OM
+    }
+    if is_o2cm {
+        return Some(32); // O2CM
+    }
+    if is_carbonyl_like {
+        return Some(7); // O=C / O=N / O=S generic
+    }
+    None
+}
+
 fn assign_o_type(
     mol: &Molecule,
     rings: &[Vec<AtomIdx>],
@@ -1693,12 +1860,23 @@ fn assign_o_type(
         return Ok(59); // OFUR
     }
 
+    // Terminal oxygen (=O, -O⁻, ...): issue #227 Priority 1A-3's OM(35) vs
+    // O2CM(32) vs O=C(7) disambiguation. Falls through to the generic
+    // handling below for non-terminal O (ether/ester/alcohol) or the rare
+    // terminal O whose central atom isn't C/N/S/P/Cl/H.
+    if is_terminal_o(mol, idx)
+        && let Some(t) = classify_terminal_o(mol, idx)
+    {
+        return Ok(t);
+    }
+
     // Double bond to C or N → carbonyl/similar oxygen (type 7)
     if count_bond_order(mol, idx, BondOrder::Double) > 0 {
         return Ok(7); // O=C
     }
 
-    // Anionic O (formal charge -1): carboxylate/phenoxide.
+    // Anionic O (formal charge -1) not resolved above: phenoxide and
+    // similar oxide oxygens on an unremarkable carbon/nitrogen.
     // Registry-verified: type 35 is OM (OXIDE OXYGEN ON SP3 C); type 34
     // is NR+, a nitrogen-only type -- the previous `34` here was the
     // same class of silent element collision fixed in `assign_n_type`
@@ -2006,22 +2184,55 @@ mod tests {
     }
 
     #[test]
-    fn carboxylate_anionic_o_is_type_35_not_the_nr_plus_nitrogen_row() {
-        // Mirror-image bug found alongside the one above: `assign_o_type`'s
-        // anionic-oxygen branch used to return `34` (NR+, a NITROGEN
-        // type) for a negatively-charged oxygen. Must resolve to type 35
-        // (OM), the registry's only oxygen entry among {32, 34, 35}.
+    fn carboxylate_anionic_o_is_type_32_not_the_nr_plus_nitrogen_row() {
+        // Issue #227 Priority 1A-3 correction: this test used to pin
+        // acetate's anionic O to 35 (OM), which was itself an instance of
+        // the very O2CM residual this Priority closes -- a carboxylate
+        // anion's carbon has *two* terminal oxygen neighbors, so
+        // `classify_terminal_o`'s `isCarboxylateO` condition fires and both
+        // oxygens resolve to O2CM (32), confirmed against a live RDKit
+        // oracle. The original mirror-image bug this test was written to
+        // guard against still applies and is re-asserted below:
+        // `assign_o_type`'s anionic-oxygen branch used to return `34`
+        // (NR+, a NITROGEN type) for a negatively-charged oxygen.
         let m = mol("CC(=O)[O-]");
         let types = assign_mmff94_numeric_types(&m).unwrap();
         let mut saw_anionic_o = false;
         for i in 0..m.atom_count() {
             let a = m.atom(AtomIdx(i as u32));
             if a.element == Element::O && a.charge < 0 {
-                assert_eq!(types[i], 35, "anionic O should be type 35 (OM)");
+                assert_eq!(
+                    types[i], 32,
+                    "carboxylate anion's O should be type 32 (O2CM)"
+                );
+                assert_ne!(
+                    types[i], 34,
+                    "must never collide with NR+, a nitrogen-only type"
+                );
                 saw_anionic_o = true;
             }
         }
         assert!(saw_anionic_o, "test fixture must contain an anionic oxygen");
+
+        // Negative control: a simple oxide oxygen on an unremarkable
+        // aromatic carbon (that carbon has only ONE terminal oxygen, so
+        // the carboxylate condition does not fire) must still resolve to
+        // plain OM (35), not O2CM -- confirms the fix didn't just make
+        // every anionic oxygen 32.
+        let phenoxide = mol("c1ccccc1[O-]");
+        let types = assign_mmff94_numeric_types(&phenoxide).unwrap();
+        let mut saw_phenoxide_o = false;
+        for i in 0..phenoxide.atom_count() {
+            let a = phenoxide.atom(AtomIdx(i as u32));
+            if a.element == Element::O {
+                assert_eq!(
+                    types[i], 35,
+                    "phenoxide O (no sibling terminal O) should stay type 35 (OM)"
+                );
+                saw_phenoxide_o = true;
+            }
+        }
+        assert!(saw_phenoxide_o, "test fixture must contain the phenoxide O");
     }
 
     #[test]
@@ -2561,6 +2772,71 @@ mod tests {
             if m.atom(AtomIdx(i as u32)).element == Element::O {
                 assert_eq!(types[i], 59, "furan O should be type 59 (OFUR)");
             }
+        }
+    }
+
+    #[test]
+    fn o2cm_terminal_oxygen_fixture_matrix_matches_rdkit() {
+        // Issue #227 Priority 1A-3: closes the 37-atom
+        // `terminal_oxygen_o2cm_umbrella_gap` residual left after PR #239
+        // (`classify_terminal_o`, ported from `AtomTyper.cpp` `case 8:`,
+        // lines 1554-1737 at the pinned commit). All expected O types below
+        // are copied verbatim from a live RDKit oracle
+        // (`AllChem.MMFFGetMoleculeProperties`), covering every disjunct of
+        // the real O2CM union plus the OM(35)/O=C(7) alternatives it must
+        // not swallow.
+        let fixtures: &[(&str, &str, &[u8])] = &[
+            // Anionic carboxylate: both O's -> O2CM (its C has 2 terminal O).
+            ("acetate", "CC(=O)[O-]", &[32, 32]),
+            // Neutral carboxylic acid: =O generic carbonyl, -OH stays OR (6)
+            // -- the carboxylate condition must NOT fire (only 1 terminal O
+            // on that carbon; -OH has an implicit H so isn't terminal at
+            // all).
+            ("acetic_acid", "CC(=O)O", &[7, 6]),
+            // Ester: carbonyl =O stays 7, bridging -O- (non-terminal) stays 6.
+            ("ester", "CC(=O)OC", &[7, 6]),
+            // Nitro: central N has 2 terminal O -> both O2CM, regardless of
+            // which O is drawn with the formal negative charge.
+            ("nitrobenzene", "c1ccc(cc1)[N+](=O)[O-]", &[32, 32]),
+            // Genuine (charge-separated) N-oxide -> O2CM, not OM -- this is
+            // the fixture that exercises the aromatic-ring-N charge-based
+            // discriminator (see `classify_terminal_o`'s N branch doc).
+            ("pyridine_n_oxide", "c1ccc[n+]([O-])c1", &[32]),
+            // Sulfoxide: exactly 1 terminal O on S -> generic O=S (7), not
+            // O2CM -- must not be swept in by the sulfone/sulfonate rule.
+            ("dmso", "CS(=O)C", &[7]),
+            // Sulfone: 2 terminal O's on S -> both O2CM.
+            ("dimethyl_sulfone", "CS(=O)(=O)C", &[32, 32]),
+            ("sulfonamide", "CS(=O)(=O)N", &[32, 32]),
+            ("sulfonate", "CS(=O)(=O)[O-]", &[32, 32, 32]),
+            // Sulfate ester: the 2 terminal =O -> O2CM; the 2 bridging
+            // -O-C ester oxygens (non-terminal) stay OR (6).
+            ("sulfate", "COS(=O)(=O)OC", &[6, 32, 32, 6]),
+            // Phosphate ester: terminal =O -> O2CM unconditionally (RDKit's
+            // own quirk, ported faithfully); bridging -O-C esters stay 6.
+            ("phosphate", "COP(=O)(OC)OC", &[6, 32, 6, 6]),
+            ("phosphonate", "CP(=O)(O)O", &[32, 6, 6]),
+            // Perchlorate anion: all 4 O's on Cl -> O2CM unconditionally.
+            ("perchlorate", "[O-]Cl(=O)(=O)=O", &[32, 32, 32, 32]),
+            // Non-terminal / unrelated O's: unaffected negative controls.
+            ("ether", "COC", &[6]),
+            ("alcohol", "CO", &[6]),
+            ("ketone", "CC(=O)C", &[7]),
+            ("amide_carbonyl", "CC(=O)NC", &[7]),
+        ];
+
+        for (name, smiles, expected) in fixtures {
+            let m = mol(smiles);
+            let types = assign_mmff94_numeric_types(&m)
+                .unwrap_or_else(|e| panic!("{name} ({smiles}) failed to type: {e}"));
+            let actual: Vec<u8> = (0..m.atom_count())
+                .filter(|&i| m.atom(AtomIdx(i as u32)).element == Element::O)
+                .map(|i| types[i])
+                .collect();
+            assert_eq!(
+                &actual, expected,
+                "{name} ({smiles}): expected O types {expected:?}, got {actual:?}"
+            );
         }
     }
 
