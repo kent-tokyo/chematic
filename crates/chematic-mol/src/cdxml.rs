@@ -151,9 +151,15 @@ pub fn parse_cdxml_with_options(
 /// `"Hash"` / `"Dash"` / `"WedgeEnd"` / `"WedgedHashEnd"` → [`BondOrder::Down`].
 /// `"Bold"` is ChemDraw's simplified, non-directional "coming toward viewer"
 /// convention (a plain thick line, used by some chemists in place of a real
-/// wedge) -- it carries no begin/end distinction of its own, so it's
-/// interpreted the same bond-direction-from-B-to-E way `"Hash"`/`"Dash"`
-/// already are, not via a new direction-inference mechanism.
+/// wedge), mapped to the same `BondOrder` bucket as `"WedgeBegin"` for
+/// round-trip/structural purposes. `"Bold"`/`"Hash"`/`"Dash"` have no
+/// Begin/End reference convention, unlike `"WedgeBegin"`/`"WedgeEnd"`.
+/// When non-directional stereo inference is enabled
+/// ([`CdxmlParseOptions::infer_nondirectional_stereo`]), the parser
+/// identifies a unique stereocenter-candidate endpoint and normalizes a
+/// temporary perception view so the result is invariant to CDXML B/E
+/// ordering; if the reference endpoint is ambiguous (or there isn't one),
+/// chirality perception abstains rather than guessing.
 ///
 /// These wedge bonds, combined with 2D coordinates, are what actually
 /// perceives `Atom.chirality` (see the module-level doc for the full
