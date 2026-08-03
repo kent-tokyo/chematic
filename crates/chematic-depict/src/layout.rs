@@ -14,7 +14,7 @@
 //! The algorithm prioritizes clarity (minimal crossing) over perfect physics simulation.
 //! Bond angles follow tetrahedral/trigonal rules where possible.
 
-use std::collections::{BTreeMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
 use chematic_core::{AtomIdx, BondIdx, Molecule};
 use chematic_perception::find_sssr;
@@ -133,19 +133,62 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
             .cloned()
             .collect();
 
-        // Determine which atoms are in at least one ring.
-        let in_ring: HashSet<AtomIdx> = rings.iter().flat_map(|r| r.iter().copied()).collect();
-
         // Group rings into ring systems (connected sets of rings sharing >= 1 atom).
         let ring_systems = group_ring_systems(&rings);
 
-        // Place each ring system.
-        for system in &ring_systems {
-            place_ring_system(mol, system, &mut placed);
+        let mut atom_to_system: HashMap<AtomIdx, usize> = HashMap::new();
+        for (sys_idx, system) in ring_systems.iter().enumerate() {
+            for &a in system.iter().flatten() {
+                atom_to_system.insert(a, sys_idx);
+            }
+        }
+        let mut system_placed: Vec<bool> = vec![false; ring_systems.len()];
+
+        // Seed: the ring system that anchors this component's whole
+        // coordinate frame (see `seed_ring_system_index`'s doc). Every
+        // other ring system gets discovered and anchored to its real
+        // attachment point as the layout grows outward -- placing every
+        // ring system blind at the origin (the pre-fix behavior) makes
+        // unrelated ring systems of the same size collide exactly.
+        if let Some(seed_idx) = seed_ring_system_index(&ring_systems) {
+            place_ring_system(&ring_systems[seed_idx], None, &mut placed);
+            system_placed[seed_idx] = true;
         }
 
-        // Place chain atoms (DFS zigzag from placed ring atoms or from scratch).
-        place_chains(mol, &component_set, &in_ring, &mut placed);
+        // If this component has no rings at all, seed a terminal chain atom
+        // so the growth pass below has a starting point.
+        seed_isolated_chain_start(mol, &component_set, &mut placed);
+
+        // Grow everything else outward: chain atoms via DFS zigzag, newly
+        // discovered ring systems anchored to their real attachment point.
+        grow_layout(
+            mol,
+            &component_set,
+            &ring_systems,
+            &atom_to_system,
+            &mut system_placed,
+            &mut placed,
+        );
+
+        // Defensive fallbacks -- should not fire for any connected
+        // component, since grow_layout's worklist reaches every atom
+        // reachable from the seed via the molecule graph.
+        for (sys_idx, system) in ring_systems.iter().enumerate() {
+            if !system_placed[sys_idx] {
+                place_ring_system(system, None, &mut placed);
+            }
+        }
+        let mut still_unplaced: Vec<AtomIdx> = component_set
+            .iter()
+            .copied()
+            .filter(|a| placed[a.0 as usize].is_none())
+            .collect();
+        still_unplaced.sort_unstable();
+        let mut x = 0.0;
+        for atom in still_unplaced {
+            x += BOND_LEN;
+            placed[atom.0 as usize] = Some(Point::new(x, 0.0));
+        }
 
         // Offset this component to the right of the previous one.
         let x_offset = if fragment_max_x == 0.0 {
@@ -272,17 +315,50 @@ fn group_ring_systems(rings: &[Vec<AtomIdx>]) -> Vec<Vec<Vec<AtomIdx>>> {
 // ---------------------------------------------------------------------------
 
 /// Place all atoms of a ring system (a connected group of rings).
-fn place_ring_system(_mol: &Molecule, system: &[Vec<AtomIdx>], placed: &mut [Option<Point>]) {
+///
+/// `anchor`, when `Some((entry_atom, entry_pos, dir))`, anchors the ring
+/// containing `entry_atom` to `entry_pos` and extends it outward in
+/// direction `dir` via [`place_first_ring_anchored`], instead of placing it
+/// blind at the origin via [`place_regular_ring`]. Only the seed ring
+/// system of a molecule (the one that establishes the whole layout's
+/// coordinate frame) should ever pass `None` -- every other ring system
+/// must be anchored to whatever already-placed atom it's attached to, or it
+/// collides with unrelated geometry (see `place_regular_ring`'s doc for the
+/// bug this replaces).
+fn place_ring_system(
+    system: &[Vec<AtomIdx>],
+    anchor: Option<(AtomIdx, Point, f64)>,
+    placed: &mut [Option<Point>],
+) {
     if system.is_empty() {
         return;
     }
 
-    // Place the first ring as a regular polygon.
-    place_regular_ring(&system[0], placed);
+    // The anchored ring isn't necessarily system[0] -- find whichever ring
+    // in this system actually contains entry_atom.
+    let first_ring_idx = match anchor {
+        Some((entry_atom, ..)) => system
+            .iter()
+            .position(|ring| ring.contains(&entry_atom))
+            .unwrap_or(0),
+        None => 0,
+    };
+
+    match anchor {
+        Some((entry_atom, entry_pos, dir)) => {
+            place_first_ring_anchored(&system[first_ring_idx], entry_atom, entry_pos, dir, placed)
+        }
+        None => place_regular_ring(&system[first_ring_idx], placed),
+    }
 
     // For subsequent rings: find two atoms already placed (the shared edge),
     // then reflect unplaced atoms over that shared edge.
-    let mut remaining: Vec<&Vec<AtomIdx>> = system[1..].iter().collect();
+    let mut remaining: Vec<&Vec<AtomIdx>> = system
+        .iter()
+        .enumerate()
+        .filter(|&(i, _)| i != first_ring_idx)
+        .map(|(_, ring)| ring)
+        .collect();
     let mut iterations = 0;
 
     while !remaining.is_empty() && iterations < remaining.len() * 2 {
@@ -297,8 +373,25 @@ fn place_ring_system(_mol: &Molecule, system: &[Vec<AtomIdx>], placed: &mut [Opt
                 .filter(|&a| placed[a.0 as usize].is_some())
                 .collect();
 
-            if already_placed.len() < 2 {
+            if already_placed.is_empty() {
                 return true; // Not ready yet.
+            }
+
+            if already_placed.len() == 1 {
+                // Spiro junction: exactly one atom shared with an
+                // already-placed ring. Anchor a fresh regular polygon at
+                // that atom, extending away from everything placed so far
+                // -- the same collision this whole function's `anchor`
+                // parameter exists to avoid, reached via a different path
+                // (a shared *atom* rather than a shared *edge*).
+                let entry_atom = already_placed[0];
+                let Some(entry_pos) = placed[entry_atom.0 as usize] else {
+                    return true; // Not ready (shouldn't happen).
+                };
+                let dir = direction_away_from_centroid(entry_pos, placed);
+                place_first_ring_anchored(ring, entry_atom, entry_pos, dir, placed);
+                progressed = true;
+                return false;
             }
 
             // Find the shared edge: two consecutive atoms in the ring that are both placed.
@@ -327,6 +420,8 @@ fn place_ring_system(_mol: &Molecule, system: &[Vec<AtomIdx>], placed: &mut [Opt
     }
 
     // Any still-unplaced atoms in remaining rings: force-place them.
+    // Should not fire for any ring system reachable from a shared atom or
+    // edge; kept as a defensive fallback only.
     for ring in &remaining {
         place_regular_ring(ring, placed);
     }
@@ -411,17 +506,7 @@ fn place_ring_anchored(
     // midpoint) — equidistant from both `cand1`/`cand2` by construction, so
     // that comparison degenerates into an arbitrary tie instead of actually
     // picking the side away from the existing ring system.
-    let existing_center = {
-        let pts: Vec<Point> = placed.iter().filter_map(|p| *p).collect();
-        if pts.is_empty() {
-            // No placed atoms to compare against: use the midpoint as fallback.
-            mid
-        } else {
-            let cx = pts.iter().map(|p| p.x).sum::<f64>() / pts.len() as f64;
-            let cy = pts.iter().map(|p| p.y).sum::<f64>() / pts.len() as f64;
-            Point::new(cx, cy)
-        }
-    };
+    let existing_center = centroid_of_placed(placed).unwrap_or(mid);
 
     // Choose the candidate center farther from the existing ring centroid.
     let cand1 = Point::new(mid.x + perp_x * apothem, mid.y + perp_y * apothem);
@@ -481,6 +566,95 @@ fn place_ring_anchored(
     }
 }
 
+/// Place `ring` as a regular polygon with `entry_atom` on its circumference
+/// at `entry_pos` (set there if not already placed), extending outward in
+/// direction `dir` -- i.e. the ring's center sits one radius from
+/// `entry_pos` in direction `dir`. Used to anchor a ring system to a real
+/// attachment point (an already-placed atom for a spiro junction, or a
+/// freshly-placed one bond length from a chain/exocyclic parent) instead of
+/// [`place_regular_ring`]'s unconditional-origin placement.
+fn place_first_ring_anchored(
+    ring: &[AtomIdx],
+    entry_atom: AtomIdx,
+    entry_pos: Point,
+    dir: f64,
+    placed: &mut [Option<Point>],
+) {
+    let n = ring.len();
+    if n == 0 {
+        return;
+    }
+    if placed[entry_atom.0 as usize].is_none() {
+        placed[entry_atom.0 as usize] = Some(entry_pos);
+    }
+
+    let radius = ring_radius(n);
+    let center = Point::new(
+        entry_pos.x + radius * dir.cos(),
+        entry_pos.y + radius * dir.sin(),
+    );
+    let idx0 = ring.iter().position(|&a| a == entry_atom).unwrap_or(0);
+    let angle_to_entry = (entry_pos.y - center.y).atan2(entry_pos.x - center.x);
+    // Clockwise, matching place_regular_ring's convention.
+    let angle_step = -2.0 * std::f64::consts::PI / n as f64;
+
+    for step in 0..n {
+        let ring_idx = (idx0 + step) % n;
+        let atom = ring[ring_idx];
+        if placed[atom.0 as usize].is_some() {
+            continue;
+        }
+        let angle = angle_to_entry + step as f64 * angle_step;
+        let x = center.x + radius * angle.cos();
+        let y = center.y + radius * angle.sin();
+        placed[atom.0 as usize] = Some(Point::new(x, y));
+    }
+}
+
+/// Centroid of every currently-placed atom (across the whole molecule, not
+/// just one ring/component). `None` if nothing is placed yet.
+fn centroid_of_placed(placed: &[Option<Point>]) -> Option<Point> {
+    let pts: Vec<Point> = placed.iter().filter_map(|p| *p).collect();
+    if pts.is_empty() {
+        return None;
+    }
+    let cx = pts.iter().map(|p| p.x).sum::<f64>() / pts.len() as f64;
+    let cy = pts.iter().map(|p| p.y).sum::<f64>() / pts.len() as f64;
+    Some(Point::new(cx, cy))
+}
+
+/// Direction from the centroid of everything placed so far, through
+/// `entry_pos`, continued outward -- the natural "grow away from what's
+/// already there" direction for a spiro-anchored ring, which (unlike a
+/// chain/exocyclic attachment) has no incoming bond direction to continue.
+fn direction_away_from_centroid(entry_pos: Point, placed: &[Option<Point>]) -> f64 {
+    match centroid_of_placed(placed) {
+        Some(c) if c.dist(&entry_pos) > 1e-9 => (entry_pos.y - c.y).atan2(entry_pos.x - c.x),
+        _ => 0.0,
+    }
+}
+
+/// Pick the ring system that should anchor a component's whole coordinate
+/// frame: most rings, then most atoms, then lowest minimum `AtomIdx`
+/// (deterministic, and prefers a fused/bridged/spiro core over a peripheral
+/// single ring). Every other ring system is anchored relative to this one
+/// as the layout grows outward.
+fn seed_ring_system_index(ring_systems: &[Vec<Vec<AtomIdx>>]) -> Option<usize> {
+    ring_systems
+        .iter()
+        .enumerate()
+        .max_by_key(|(_, system)| {
+            let n_rings = system.len();
+            let mut atoms: Vec<u32> = system.iter().flatten().map(|a| a.0).collect();
+            atoms.sort_unstable();
+            atoms.dedup();
+            let n_atoms = atoms.len();
+            let min_atom = atoms.first().copied().unwrap_or(u32::MAX);
+            (n_rings, n_atoms, std::cmp::Reverse(min_atom))
+        })
+        .map(|(i, _)| i)
+}
+
 /// Compute the circumradius for a regular n-gon with the given BOND_LEN.
 fn ring_radius(n: usize) -> f64 {
     if n < 3 {
@@ -493,96 +667,90 @@ fn ring_radius(n: usize) -> f64 {
 // Chain placement (DFS zigzag)
 // ---------------------------------------------------------------------------
 
-/// Place all atoms not yet placed (chain atoms) using DFS zigzag.
-///
-/// Starts from placed ring atoms that have unplaced neighbors, then
-/// handles any still-unplaced atoms (isolated chains with no ring).
-fn place_chains(
+/// If nothing in `component` is placed yet (no ring system exists to seed
+/// from), place a terminal atom (degree ≤1, or an arbitrary atom if none)
+/// at the origin so [`grow_layout`] has a starting point.
+fn seed_isolated_chain_start(
     mol: &Molecule,
     component: &HashSet<AtomIdx>,
-    in_ring: &HashSet<AtomIdx>,
     placed: &mut [Option<Point>],
 ) {
-    // Step 1: extend chains from ring attachment points.
-    // We process ring atoms that have unplaced neighbors.
-    let mut ring_atoms: Vec<AtomIdx> = component
-        .iter()
-        .copied()
-        .filter(|a| in_ring.contains(a) && placed[a.0 as usize].is_some())
-        .collect();
-    ring_atoms.sort_unstable();
+    if component.iter().any(|a| placed[a.0 as usize].is_some()) {
+        return; // Already has a seed (a ring system was placed).
+    }
 
-    for start in &ring_atoms {
-        let unplaced_neighbors: Vec<AtomIdx> = mol
-            .neighbors(*start)
+    let mut unplaced: Vec<AtomIdx> = component.iter().copied().collect();
+    unplaced.sort_unstable();
+    let Some(&start) = unplaced
+        .iter()
+        .find(|&&a| mol.degree(a) <= 1)
+        .or(unplaced.first())
+    else {
+        return; // Empty component (shouldn't happen).
+    };
+
+    placed[start.0 as usize] = Some(Point::new(0.0, 0.0));
+}
+
+/// Grow the layout outward from whatever's already placed (the seed ring
+/// system, or the isolated chain start seeded by
+/// [`seed_isolated_chain_start`]): place chain atoms via [`dfs_zigzag`], and
+/// anchor any newly discovered ring system to its real attachment point via
+/// [`place_ring_system`] instead of leaving it for a blind, colliding
+/// placement (see `place_regular_ring`'s doc for the bug this replaces).
+fn grow_layout(
+    mol: &Molecule,
+    component: &HashSet<AtomIdx>,
+    ring_systems: &[Vec<Vec<AtomIdx>>],
+    atom_to_system: &HashMap<AtomIdx, usize>,
+    system_placed: &mut [bool],
+    placed: &mut [Option<Point>],
+) {
+    let mut worklist: VecDeque<AtomIdx> = {
+        let mut seeded: Vec<AtomIdx> = component
+            .iter()
+            .copied()
+            .filter(|a| placed[a.0 as usize].is_some())
+            .collect();
+        seeded.sort_unstable();
+        seeded.into()
+    };
+
+    while let Some(start) = worklist.pop_front() {
+        if placed[start.0 as usize].is_none() {
+            continue;
+        }
+
+        let mut unplaced_neighbors: Vec<AtomIdx> = mol
+            .neighbors(start)
             .map(|(nb, _)| nb)
             .filter(|nb| component.contains(nb) && placed[nb.0 as usize].is_none())
             .collect();
+        unplaced_neighbors.sort_unstable();
 
         for nb in unplaced_neighbors {
             if placed[nb.0 as usize].is_some() {
-                continue;
+                continue; // Placed by an earlier neighbor this same pass (e.g. a shared spiro/fused atom).
             }
-            // Determine outgoing direction from the ring atom.
+            // Determine outgoing direction from the already-placed atom.
             // Use a direction that avoids existing neighbors.
-            let dir = best_outgoing_direction(*start, placed, mol, component);
-            dfs_zigzag(mol, nb, *start, dir, placed, component);
+            let dir = best_outgoing_direction(start, placed, mol, component);
+            let mut newly_ring_placed = Vec::new();
+            dfs_zigzag(
+                mol,
+                nb,
+                start,
+                dir,
+                placed,
+                component,
+                ring_systems,
+                atom_to_system,
+                system_placed,
+                &mut newly_ring_placed,
+            );
+            newly_ring_placed.sort_unstable();
+            worklist.extend(newly_ring_placed);
         }
-    }
-
-    // Step 2: handle pure chain components (no ring atoms yet placed).
-    // Find a terminal atom (degree 1 or degree 0) as the starting point.
-    let mut unplaced: Vec<AtomIdx> = component
-        .iter()
-        .copied()
-        .filter(|a| placed[a.0 as usize].is_none())
-        .collect();
-    unplaced.sort_unstable();
-
-    if unplaced.is_empty() {
-        return;
-    }
-
-    // Find a terminal atom in this component to start DFS.
-    let start = unplaced
-        .iter()
-        .copied()
-        .find(|&a| mol.degree(a) <= 1)
-        .unwrap_or(unplaced[0]);
-
-    placed[start.0 as usize] = Some(Point::new(0.0, 0.0));
-
-    // DFS rightward at 0 degrees.
-    let init_dir = 0.0_f64;
-    let neighbors: Vec<AtomIdx> = mol
-        .neighbors(start)
-        .map(|(nb, _)| nb)
-        .filter(|nb| component.contains(nb) && placed[nb.0 as usize].is_none())
-        .collect();
-
-    for (i, nb) in neighbors.into_iter().enumerate() {
-        if placed[nb.0 as usize].is_some() {
-            continue;
-        }
-        let dir = if i == 0 {
-            init_dir
-        } else {
-            init_dir + std::f64::consts::PI
-        };
-        dfs_zigzag(mol, nb, start, dir, placed, component);
-    }
-
-    // Any remaining unplaced atoms: place them in a line.
-    let still_unplaced: Vec<AtomIdx> = component
-        .iter()
-        .copied()
-        .filter(|a| placed[a.0 as usize].is_none())
-        .collect();
-
-    let mut x = 0.0;
-    for atom in still_unplaced {
-        x += BOND_LEN;
-        placed[atom.0 as usize] = Some(Point::new(x, 0.0));
     }
 }
 
@@ -642,6 +810,16 @@ fn min_angle_separation(angle: f64, used: &[f64]) -> f64 {
 
 /// Iterative zigzag placement: place `start_atom` at `BOND_LEN` from `start_parent`
 /// in direction `start_dir`, then expand unplaced neighbors with alternating ±30° deflection.
+///
+/// If a popped atom belongs to a not-yet-placed ring system (`atom_to_system`),
+/// this anchors that whole system via [`place_ring_system`]/
+/// [`place_first_ring_anchored`] instead of placing just that one atom, and
+/// records every atom of the newly-placed system into `newly_ring_placed`
+/// (its own neighbors, and the direction to grow from them, are the
+/// caller's job -- [`grow_layout`]'s outer worklist -- not this DFS stack's,
+/// since further ring growth needs `best_outgoing_direction`, not zigzag
+/// deflection).
+#[allow(clippy::too_many_arguments)]
 fn dfs_zigzag(
     mol: &Molecule,
     start_atom: AtomIdx,
@@ -649,6 +827,10 @@ fn dfs_zigzag(
     start_dir: f64,
     placed: &mut [Option<Point>],
     component: &HashSet<AtomIdx>,
+    ring_systems: &[Vec<Vec<AtomIdx>>],
+    atom_to_system: &HashMap<AtomIdx, usize>,
+    system_placed: &mut [bool],
+    newly_ring_placed: &mut Vec<AtomIdx>,
 ) {
     let deflections = [-std::f64::consts::PI / 6.0, std::f64::consts::PI / 6.0];
     let mut stack: Vec<(AtomIdx, AtomIdx, f64)> = vec![(start_atom, start_parent, start_dir)];
@@ -661,6 +843,17 @@ fn dfs_zigzag(
             Some(p) => p,
             None => continue,
         };
+
+        if let Some(&sys_idx) = atom_to_system.get(&atom) {
+            let entry_pos = Point::new(
+                parent_pos.x + BOND_LEN * dir.cos(),
+                parent_pos.y + BOND_LEN * dir.sin(),
+            );
+            place_ring_system(&ring_systems[sys_idx], Some((atom, entry_pos, dir)), placed);
+            system_placed[sys_idx] = true;
+            newly_ring_placed.extend(ring_systems[sys_idx].iter().flatten().copied());
+            continue; // Further growth from this ring's atoms is grow_layout's job.
+        }
 
         let x = parent_pos.x + BOND_LEN * dir.cos();
         let y = parent_pos.y + BOND_LEN * dir.sin();
@@ -834,6 +1027,123 @@ mod tests {
                 "compute_layout produced different coordinates for the same molecule \
                  across repeated calls in one process"
             );
+        }
+    }
+
+    // --- Ring-system-coincidence regression tests -----------------------
+    //
+    // Root cause: `place_regular_ring` always centered a new ring at the
+    // literal origin with no awareness of already-placed geometry, and was
+    // invoked unconditionally for every ring system -- so any two ring
+    // systems not fused/bridged into the same connected group (a chain- or
+    // bond-mediated substituent, or a spiro junction) landed on
+    // bit-for-bit identical coordinates. Fixed via `place_first_ring_anchored`
+    // plus a connectivity-driven growth pass (`grow_layout`) that discovers
+    // and anchors every ring system to its real attachment point.
+
+    /// (min non-bonded pairwise distance, min bonded distance, max bonded
+    /// distance) across every atom pair in `mol`'s `layout`.
+    fn layout_distance_summary(mol: &Molecule, layout: &Layout) -> (f64, f64, f64) {
+        let n = mol.atom_count();
+        let mut min_non_bonded = f64::MAX;
+        let mut min_bonded = f64::MAX;
+        let mut max_bonded = f64::MIN;
+        for i in 0..n {
+            for j in (i + 1)..n {
+                let a = AtomIdx(i as u32);
+                let b = AtomIdx(j as u32);
+                let d = layout.get(a).dist(&layout.get(b));
+                if mol.bond_between(a, b).is_some() {
+                    min_bonded = min_bonded.min(d);
+                    max_bonded = max_bonded.max(d);
+                } else {
+                    min_non_bonded = min_non_bonded.min(d);
+                }
+            }
+        }
+        (min_non_bonded, min_bonded, max_bonded)
+    }
+
+    /// Asserts no exact/near coincidence (Tier A/B) and exact bond-length
+    /// fidelity (Tier C) -- the full set, for fixtures with no pre-existing
+    /// unrelated geometry bug to work around.
+    fn assert_layout_clean(smiles: &str) {
+        use chematic_smiles::parse;
+        let mol = parse(smiles).unwrap();
+        let layout = compute_layout(&mol);
+        let (min_non_bonded, min_bonded, max_bonded) = layout_distance_summary(&mol, &layout);
+        assert!(
+            min_non_bonded > BOND_LEN / 2.0,
+            "{smiles}: non-bonded atoms too close (near-collision), min_non_bonded={min_non_bonded}"
+        );
+        assert!(
+            (min_bonded - BOND_LEN).abs() < 1e-6,
+            "{smiles}: bonded distance should equal BOND_LEN, min_bonded={min_bonded}"
+        );
+        assert!(
+            (max_bonded - BOND_LEN).abs() < 1e-6,
+            "{smiles}: bonded distance should equal BOND_LEN, max_bonded={max_bonded}"
+        );
+    }
+
+    #[test]
+    fn ring_systems_joined_by_chain_do_not_collide() {
+        // Simplest isolation of the bug: two benzene rings joined by a
+        // plain chain, no shared atom, no direct bond. This SMILES is also
+        // the determinism-test fixture above, which only ever checked
+        // repeat-call stability -- it passed on top of the broken layout
+        // for a long time.
+        assert_layout_clean("c1ccccc1CCCCCc1ccccc1");
+    }
+
+    #[test]
+    fn ring_systems_joined_directly_do_not_collide() {
+        // Direct-bond-mediated attachment (no intervening chain atoms) --
+        // exercises the outer-worklist ring-discovery path in
+        // `grow_layout`, distinct from the mid-chain discovery inside
+        // `dfs_zigzag` the previous test exercises.
+        assert_layout_clean("c1ccc(cc1)-c1ccccc1CC");
+    }
+
+    #[test]
+    fn three_substituent_rings_on_bridged_core_do_not_collide() {
+        // The originally reported molecule: three separate phenyl-ring
+        // substituents on a bridged bicyclic core, all landing on exactly
+        // the same coordinates pre-fix (18 of 27 near-neighbor pairs at
+        // distance 0.0). Tier A only (no exact/near coincidence) -- the
+        // bridged core's OWN internal bond lengths have a separate,
+        // pre-existing bug (`find_shared_edge` only handles a 2-atom
+        // shared edge, not the 3-atom-shared case a true bridge produces),
+        // out of scope for this fix, so Tier B/C are not asserted here.
+        use chematic_smiles::parse;
+        let mol = parse("C1CC2CN(CC1N2c1ccccc1)c1cccc(c1)-c1ccccc1").unwrap();
+        let layout = compute_layout(&mol);
+        let (min_non_bonded, _min_bonded, _max_bonded) = layout_distance_summary(&mol, &layout);
+        assert!(
+            min_non_bonded > 1e-6,
+            "no two atoms of unrelated ring systems should land on identical coordinates: \
+             min_non_bonded={min_non_bonded}"
+        );
+    }
+
+    #[test]
+    fn pure_chain_layout_unaffected() {
+        assert_layout_clean("CCCCCCCC");
+    }
+
+    #[test]
+    fn single_ring_layout_unaffected() {
+        assert_layout_clean("c1ccccc1");
+    }
+
+    #[test]
+    fn fused_and_spiro_ring_systems_unaffected() {
+        // Spiro exercises `place_ring_system`'s `already_placed.len() == 1`
+        // fix directly; naphthalene/decalin (fused/bridged, 2-atom shared
+        // edge) confirm `place_ring_anchored`'s existing, untouched path
+        // still works after `place_ring_system`'s anchor-selection refactor.
+        for smiles in ["C1CCC2(CC1)CCCCC2", "c1ccc2ccccc2c1", "C1CCC2CCCCC2C1"] {
+            assert_layout_clean(smiles);
         }
     }
 
