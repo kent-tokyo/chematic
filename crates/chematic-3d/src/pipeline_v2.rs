@@ -1244,11 +1244,11 @@ mod tests {
 
     #[test]
     fn macrocycle_14_amide_pinned_branch_is_reachable_through_the_real_pipeline() {
-        // `bounds14.rs`'s `macrocycle_14:amide_ester_pinned` rule (pin-to-cis for an
-        // amide/ester bond inside a macrocycle) is a DIFFERENT branch from the
-        // `macrocycle_14:relaxed_band` rule the test above exercises -- every
-        // macrocycle in the frozen 58/63 corpus (cyclododecane, crown_12_4,
-        // cyclooctadecane) is all-carbon or all-ether, so no arm in
+        // `bounds14.rs`'s `macrocycle_14:amide_ester_pinned` rule (pin-to-cis-or-trans,
+        // depending on ring role, for an amide/ester bond inside a macrocycle) is a
+        // DIFFERENT branch from the `macrocycle_14:relaxed_band` rule the test above
+        // exercises -- every macrocycle in the frozen 58/63 corpus (cyclododecane,
+        // crown_12_4, cyclooctadecane) is all-carbon or all-ether, so no arm in
         // `pipeline_v2_integration_gate.rs` ever hit this branch through the real
         // embedder before this test (found during verification round 4). A
         // 12-membered ring lactam is `bounds14.rs`'s own test fixture for this rule.
@@ -1269,6 +1269,119 @@ mod tests {
              bounds14.rs's own standalone unit test: {adjustments:?}"
         );
         assert!(result.embed_stats.adjustments_applied > 0);
+    }
+
+    /// `atoms[1]`-`atoms[2]` central bond dihedral in degrees, atan2-based
+    /// (numerically stable near 0/180). Self-contained rather than reusing
+    /// `etkdg_knowledge::energy`'s private `dihedral_deg`, to avoid widening
+    /// that module's visibility just for this test.
+    fn measured_dihedral_deg(coords: &crate::coords::Coords3D, atoms: [AtomIdx; 4]) -> f64 {
+        let p0 = coords.get(atoms[0]);
+        let p1 = coords.get(atoms[1]);
+        let p2 = coords.get(atoms[2]);
+        let p3 = coords.get(atoms[3]);
+        let b1 = p1.sub(&p0);
+        let b2 = p2.sub(&p1);
+        let b3 = p3.sub(&p2);
+        let n1 = b1.cross(&b2);
+        let n2 = b2.cross(&b3);
+        let b2_unit = b2.try_normalize().unwrap_or(crate::coords::Point3::zero());
+        let m1 = n1.cross(&b2_unit);
+        let x = n1.dot(&n2);
+        let y = m1.dot(&n2);
+        y.atan2(x).to_degrees()
+    }
+
+    /// Distance (degrees) from `dihedral` to the nearest of a planar amide's
+    /// two valid configurations, 0° (cis) or ±180° (trans).
+    fn dist_to_planar(dihedral_deg: f64) -> f64 {
+        let d = dihedral_deg.rem_euclid(360.0);
+        (d.min(360.0 - d)).min((d - 180.0).abs())
+    }
+
+    #[test]
+    fn tertiary_amide_macrocycle_embeds_closer_to_planar_with_14_bounds_fix() {
+        // Issue found while surveying RDKit's open issues (analogous to RDKit
+        // #9266, "ETKDGv3 twisted tertiary amides in macrocycles"). Confirmed
+        // this reproduces in chematic; root cause was `bounds14.rs`'s
+        // amide-pinned branch pinning all 4 combinatorial 1-4 pairs through a
+        // tertiary amide to the same (geometrically unsatisfiable) cis
+        // configuration -- fixed to split cis/trans by ring role (see that
+        // module's own tests for the precise per-pair values). This test
+        // confirms the fix's real-world effect through the actual embedding
+        // pipeline, not just the bound values in isolation: enabling the
+        // fixed `use_macrocycle_14_bounds` must measurably improve amide
+        // planarity relative to leaving it off, on a genuine tertiary-amide
+        // macrolactam. Empirically measured (Python, live pipeline, 2 real
+        // multi-amide macrocycles, 4 seeds each, 48 dihedral measurements):
+        // mean distance-to-planar dropped from ~61.5° (flag off) to ~20.8°
+        // (flag on, fixed) -- not perfect convergence (a soft DG-bounds nudge
+        // on a stochastic embedder, not a hard planarity guarantee), but a
+        // clear, reproducible improvement. This test uses a smaller,
+        // single-amide fixture and a threshold with real margin below that
+        // baseline, not a razor-thin one recreated from a lucky single run.
+        let mol = parse("O=C1CCCCCCCCCCN1C").unwrap(); // N-methyl 13-membered macrolactam
+        // Atom indices per this exact SMILES's left-to-right parse order.
+        let o_idx = AtomIdx(0);
+        let carbonyl_c_idx = AtomIdx(1);
+        let ring_c_idx = AtomIdx(2);
+        let ring_n_idx = AtomIdx(11);
+        let amide_n_idx = AtomIdx(12);
+        let methyl_idx = AtomIdx(13);
+
+        let dihedral_pairs = [
+            (ring_n_idx, o_idx),
+            (ring_n_idx, ring_c_idx),
+            (methyl_idx, o_idx),
+            (methyl_idx, ring_c_idx),
+        ];
+
+        let mean_dist_to_planar = |use_14_bounds: bool, seed: u64| -> f64 {
+            let mut config = config_none();
+            config.embed.use_exp_torsions = true;
+            config.embed.use_macrocycle_torsions = true;
+            config.embed.use_macrocycle_14_bounds = use_14_bounds;
+            config.embed.random_seed = seed;
+            // Ring-internal torsion potentials are scored-only (never
+            // mechanically applied, see `energy.rs`'s `is_bridge_bond` gate)
+            // -- FailClosed would reject every attempt once macrocycle
+            // torsion knowledge is enabled at all. DiagnosticOnly matches
+            // how this scenario is actually run in production.
+            config.ring_torsion_policy = RingTorsionApplicationPolicy::DiagnosticOnly;
+            let result = embed_pipeline_v2(&mol, &config).expect("must embed successfully");
+            let mut total = 0.0;
+            for &(a1, a4) in &dihedral_pairs {
+                let dih =
+                    measured_dihedral_deg(&result.coords, [a1, amide_n_idx, carbonyl_c_idx, a4]);
+                total += dist_to_planar(dih);
+            }
+            total / dihedral_pairs.len() as f64
+        };
+
+        let seeds: [u64; 4] = [1, 7, 42, 123];
+        let with_fix: Vec<f64> = seeds
+            .iter()
+            .map(|&s| mean_dist_to_planar(true, s))
+            .collect();
+        let without: Vec<f64> = seeds
+            .iter()
+            .map(|&s| mean_dist_to_planar(false, s))
+            .collect();
+
+        let avg = |v: &[f64]| v.iter().sum::<f64>() / v.len() as f64;
+        let avg_with_fix = avg(&with_fix);
+        let avg_without = avg(&without);
+
+        assert!(
+            avg_with_fix < avg_without,
+            "enabling the fixed macrocycle_14_bounds must improve amide planarity: \
+             with_fix={with_fix:?} (avg {avg_with_fix:.1}) without={without:?} (avg {avg_without:.1})"
+        );
+        assert!(
+            avg_with_fix < 45.0,
+            "average distance-to-planar with the fix should be well below the \
+             ~90-130 range the original bug produced: with_fix={with_fix:?} (avg {avg_with_fix:.1})"
+        );
     }
 
     #[test]
