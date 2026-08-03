@@ -833,7 +833,41 @@ fn bug_b_topology_unchanged(
         }
     }
 
-    (prod_elems.is_empty() || prod_elems == rxn_elems) && prod_mapped == rxn_mapped
+    // NOTE: `prod_elems.is_empty()` is deliberately NOT special-cased here.
+    // An empty `prod_elems` legitimately means "product-template atom has no
+    // unmapped neighbours" -- which is also true when the reactant's
+    // template-matched unmapped substituents (F/Cl/Br etc., matched by the
+    // reactant SMARTS itself, not carried-through remote substituents --
+    // those never enter `rxn_elems` at all, since `rxn_elems` only counts
+    // neighbours inside `all_template_atoms`) were silently DELETED by the
+    // product template. `prod_elems == rxn_elems` alone correctly requires
+    // both to be empty together, or both to hold the same multiset --
+    // exactly what "unchanged" means; special-casing empty-on-one-side
+    // would let a genuine deletion through undetected.
+    prod_elems == rxn_elems && prod_mapped == rxn_mapped
+}
+
+/// Map a REACTANT-space stereo order (atom indices into
+/// `input_mols[mol_idx]`) into product-index space via `src_to_new`.
+/// [`STEREO_H_SENTINEL`] passes through unchanged. `None` if any real
+/// (non-sentinel) reactant neighbour never made it into the product (e.g. it
+/// was part of a leaving group the reaction consumed) -- the correspondence
+/// is not derivable, so the caller must fail closed rather than guess.
+fn remap_reactant_stereo_order(
+    order: &[u32],
+    mol_idx: usize,
+    src_to_new: &FxHashMap<(usize, AtomIdx), AtomIdx>,
+) -> Option<Vec<u32>> {
+    order
+        .iter()
+        .map(|&t| {
+            if t == STEREO_H_SENTINEL {
+                Some(STEREO_H_SENTINEL)
+            } else {
+                src_to_new.get(&(mol_idx, AtomIdx(t))).map(|a| a.0)
+            }
+        })
+        .collect()
 }
 
 /// Post-build chirality correction. Must run after `build_product`'s Steps
@@ -848,6 +882,7 @@ fn correct_product_stereo(
     global_map: &FxHashMap<u16, (usize, AtomIdx)>,
     all_template_atoms: &FxHashSet<(usize, AtomIdx)>,
     input_mols: &[&Molecule],
+    src_to_new: &FxHashMap<(usize, AtomIdx), AtomIdx>,
 ) -> Molecule {
     let atom_to_map: FxHashMap<(usize, AtomIdx), u16> =
         global_map.iter().map(|(&am, &k)| (k, am)).collect();
@@ -880,29 +915,47 @@ fn correct_product_stereo(
         {
             // Matched core atom, no explicit template chirality: keep the
             // flag `src_atom.clone()` gave it in Step 1 only if it's
-            // actually usable and provably still valid.
+            // actually usable and provably still valid. Three-way rule,
+            // all conditions required:
+            //   1. bug_b_topology_unchanged: the TEMPLATE-level neighbour
+            //      composition (unmapped element multiset + mapped atom-map
+            //      set) is unchanged reactant-template -> product-template.
+            //   2. remap_reactant_stereo_order succeeds: every atom the
+            //      reactant's own recorded order references is uniquely
+            //      identifiable in the product (via src_to_new) -- fails
+            //      closed (None) for a leaving-group neighbour the reaction
+            //      consumed, where no correspondence is derivable at all.
+            //   3. order_matches_final_topology: the remapped order's real
+            //      entries are EXACTLY this atom's real final adjacency in
+            //      the built product molecule -- catches a neighbour that
+            //      survived into the product (so (2) succeeds) but whose
+            //      specific BOND to this atom did not (e.g. reattached
+            //      elsewhere by the reaction), which a template-level
+            //      heuristic alone cannot see.
+            // Never keep a raw flag without a validated order alongside it.
             let src_atom = input_mols[mol_idx].atom(src_idx);
             if src_atom.chirality != Chirality::None {
-                let keep = input_mols[mol_idx].stereo_neighbor_order(src_idx).is_some()
-                    && bug_b_topology_unchanged(
-                        product_template,
-                        ti,
-                        input_mols[mol_idx],
-                        src_idx,
-                        all_template_atoms,
-                        mol_idx,
-                        &atom_to_map,
-                    );
-                if !keep {
-                    product.set_chirality(new_idx, Chirality::None);
+                let topology_unchanged = bug_b_topology_unchanged(
+                    product_template,
+                    ti,
+                    input_mols[mol_idx],
+                    src_idx,
+                    all_template_atoms,
+                    mol_idx,
+                    &atom_to_map,
+                );
+                let remapped_order = topology_unchanged
+                    .then(|| input_mols[mol_idx].stereo_neighbor_order(src_idx))
+                    .flatten()
+                    .and_then(|order| remap_reactant_stereo_order(order, mol_idx, src_to_new))
+                    .filter(|order| order_matches_final_topology(&product, new_idx, order));
+                match remapped_order {
+                    Some(order) => {
+                        product.set_chirality(new_idx, src_atom.chirality);
+                        product.set_stereo_neighbor_order(new_idx, order);
+                    }
+                    None => product.set_chirality(new_idx, Chirality::None),
                 }
-                // else: leave the inherited flag as-is. stereo_neighbor_order
-                // stays unset -- there is no derivable per-neighbour
-                // reactant<->product correspondence for template-literal
-                // substituents, so "trust the flag, no order" is the most
-                // honest achievable answer (matching what downstream
-                // consumers already do for any atom with no recorded
-                // order).
             }
         }
         // else: no template chirality, and not a matched core atom --
@@ -1064,6 +1117,7 @@ fn build_product(
         global_map,
         all_template_atoms,
         input_mols,
+        &src_to_new,
     );
 
     // Clear any Up/Down stereo markers left on bonds that are no longer adjacent
@@ -1308,20 +1362,240 @@ mod tests {
     // ── Stereo SMIRKS tests ───────────────────────────────────────────────────
 
     #[test]
-    fn stereo_preserved_when_template_has_no_spec() {
-        // Product template [C:1] has no chirality → source @@ is preserved via clone.
+    fn stereo_cleared_when_all_neighbors_are_unmapped_template_literals() {
+        // Product template [C:1] has no chirality, and all three substituents
+        // (F, Cl, Br) are unmapped literal atoms in BOTH templates -- SMIRKS
+        // gives no per-atom reactant<->product correspondence for an unmapped
+        // atom (only `:n` atom-map numbers establish identity), so there is no
+        // derivable stereo_neighbor_order to carry the inherited flag with.
+        // Fail-closed: clear rather than keep a flag with an undefined order
+        // (chematic-cip already treats order-less chirality as unassigned, so
+        // keeping the raw flag here was never actually meaningful downstream).
         let mol = parse("[C@@H](F)(Cl)Br").unwrap();
         let results = run_reactants("[C@@H:1](F)(Cl)Br>>[C:1](F)(Cl)Br", &[&mol]).unwrap();
         assert!(!results.is_empty(), "should match and produce a product");
         let prod = &results[0][0];
         // The core C atom is first in the builder (index 0).
         let core_chirality = prod.atom(AtomIdx(0)).chirality;
-        // Template has None → source Clockwise (@@ in SMILES = Clockwise) is preserved.
+        assert_eq!(
+            core_chirality,
+            Chirality::None,
+            "no derivable stereo_neighbor_order for an all-unmapped-substituent \
+             inherited flag must clear chirality, not keep an order-less flag"
+        );
+    }
+
+    #[test]
+    fn stereo_preserved_when_all_neighbors_are_mapped_and_remappable() {
+        // Every substituent around the stereocenter is atom-mapped, so each
+        // has a real, unique reactant->product correspondence via src_to_new.
+        // This is the case the remap mechanism *can* and must handle: keep
+        // both the flag and a validated, remapped stereo_neighbor_order.
+        let mol = parse("[C@@H](F)(Cl)Br").unwrap();
+        let results = run_reactants(
+            "[C@@H:1]([F:2])([Cl:3])[Br:4]>>[C:1]([F:2])([Cl:3])[Br:4]",
+            &[&mol],
+        )
+        .unwrap();
+        assert!(!results.is_empty(), "should match and produce a product");
+        let prod = &results[0][0];
+        let core_chirality = prod.atom(AtomIdx(0)).chirality;
         assert_eq!(
             core_chirality,
             Chirality::Clockwise,
-            "source @@ chirality must be preserved when template has no stereo spec"
+            "source @@ chirality must be preserved when every neighbor is \
+             mapped and remappable, with an identity-order template"
         );
+        assert!(
+            prod.stereo_neighbor_order(AtomIdx(0)).is_some(),
+            "a kept inherited flag must always carry a validated stereo_neighbor_order"
+        );
+    }
+
+    #[test]
+    fn stereo_unmapped_leaving_groups_fully_removed_clears_chirality() {
+        // Blocker #1 from review: the reactant's literal unmapped
+        // substituents (F, Cl, Br) are removed entirely by the product
+        // template (bare [C:1], zero neighbours) -- bug_b_topology_unchanged
+        // must not special-case an empty product-side unmapped set as
+        // "unchanged" when the reactant side was non-empty. In the current
+        // architecture this is enforced twice over: the topology gate itself
+        // (fixed here) AND independently by remap_reactant_stereo_order,
+        // since a literal/unmapped reactant-template neighbour never has a
+        // src_to_new entry regardless of what the product does with it. The
+        // observable behavior this test pins is the one the reviewer asked
+        // for either way: chirality must clear, not survive.
+        let mol = parse("[C@@H](F)(Cl)Br").unwrap();
+        let results = run_reactants("[C@@H:1](F)(Cl)Br>>[C:1]", &[&mol]).unwrap();
+        assert!(!results.is_empty(), "should match and produce a product");
+        let prod = &results[0][0];
+        assert_eq!(
+            prod.atom(AtomIdx(0)).chirality,
+            Chirality::None,
+            "deleting all of the stereocenter's unmapped substituents must clear chirality"
+        );
+    }
+
+    #[test]
+    fn stereo_remote_reaction_preserves_stereocenter() {
+        // The bond change (Br leaving, N arriving) happens two bonds away
+        // from the stereocenter, through a mapped, unchanged carrier chain
+        // (F, Cl, C4 all keep the same atom-map numbers and the same
+        // relative template order on both sides) -- the stereocenter's own
+        // immediate neighbor set and order are completely untouched by the
+        // remote reaction. Configuration must survive.
+        let mol = parse("[C@@H](F)(Cl)CCBr").unwrap();
+        let amine = parse("N").unwrap();
+        let results = run_reactants(
+            "[C@@H:1]([F:2])([Cl:3])[C:4][C:5][Br:6].[N:7]\
+             >>[C:1]([F:2])([Cl:3])[C:4][C:5][N:7]",
+            &[&mol, &amine],
+        )
+        .unwrap();
+        assert!(!results.is_empty(), "should match and produce a product");
+        let prod = &results[0][0];
+        assert_eq!(
+            prod.atom(AtomIdx(0)).chirality,
+            Chirality::Clockwise,
+            "a remote bond change 2 bonds away must not disturb the \
+             stereocenter's own unchanged, fully-mapped neighbor set"
+        );
+        assert!(
+            prod.stereo_neighbor_order(AtomIdx(0)).is_some(),
+            "preserved chirality must carry a validated stereo_neighbor_order"
+        );
+    }
+
+    #[test]
+    fn stereo_survives_16_plus_atom_map_relabelings_smiles_and_cip_invariant() {
+        // The chemistry must not depend on which integers a SMIRKS author
+        // picks for `:n` map numbers -- only the correspondence they encode.
+        // Re-run the same reaction with 20 distinct map-number assignments
+        // (same template text shape and order each time, only the four
+        // integers change) and assert canonical SMILES and accurate CIP
+        // agree with the first run every time.
+        let mol = parse("[C@@H](F)(Cl)Br").unwrap();
+        // Central atom is fixed at map `:1`; offset the other three ranges
+        // so none of them ever collides with it or each other.
+        let labelings: Vec<[u32; 3]> = (2..=21).map(|i| [i, i + 100, i + 200]).collect();
+        assert!(labelings.len() >= 16, "need at least 16 relabelings");
+
+        let mut baseline_smiles: Option<String> = None;
+        let mut baseline_cip: Option<Option<chematic_core::CipCode>> = None;
+        for [b, c, d] in labelings {
+            let smirks =
+                format!("[C@@H:1]([F:{b}])([Cl:{c}])[Br:{d}]>>[C:1]([F:{b}])([Cl:{c}])[Br:{d}]");
+            let results = run_reactants(&smirks, &[&mol]).unwrap();
+            assert!(!results.is_empty(), "labeling {b},{c},{d} must still match");
+            let prod = &results[0][0];
+            let smi = canonical(prod);
+            let cip = chematic_chem::assign_cip_with_mode(prod, chematic_chem::CipMode::Accurate)
+                .unwrap()
+                .get(AtomIdx(0));
+
+            match (&baseline_smiles, &baseline_cip) {
+                (None, None) => {
+                    baseline_smiles = Some(smi);
+                    baseline_cip = Some(cip);
+                }
+                (Some(base_smi), Some(base_cip)) => {
+                    assert_eq!(
+                        &smi, base_smi,
+                        "canonical SMILES must be invariant to atom-map relabeling \
+                         (labeling {b},{c},{d})"
+                    );
+                    assert_eq!(
+                        &cip, base_cip,
+                        "accurate CIP code must be invariant to atom-map relabeling \
+                         (labeling {b},{c},{d})"
+                    );
+                }
+                _ => unreachable!(),
+            }
+        }
+    }
+
+    #[test]
+    fn stereo_chirality_implies_valid_stereo_neighbor_order_invariant() {
+        // Cross-cutting invariant the reviewer required: whenever an atom
+        // carries a non-None chirality flag, it must always have a valid
+        // stereo_neighbor_order alongside it -- never a raw flag with no
+        // order (which chematic-cip and the SMILES writer cannot interpret
+        // meaningfully). Checked across every atom of a representative
+        // spread of already-covered product-generating scenarios.
+        let assert_invariant_holds = |mol: &Molecule, label: &str| {
+            for i in 0..mol.atom_count() {
+                let idx = AtomIdx(i as u32);
+                if mol.atom(idx).chirality != Chirality::None {
+                    assert!(
+                        mol.stereo_neighbor_order(idx).is_some(),
+                        "{label}: atom {i} has chirality {:?} but no stereo_neighbor_order",
+                        mol.atom(idx).chirality
+                    );
+                }
+            }
+        };
+
+        let mol = parse("[C@@H](F)(Cl)Br").unwrap();
+        let chain_mol = parse("[C@@H](F)(Cl)CCBr").unwrap();
+        let amine = parse("N").unwrap();
+
+        let scenarios: Vec<(&str, Vec<Molecule>)> = vec![
+            (
+                "identity template order",
+                vec![
+                    run_reactants("[C@@H:1](F)(Cl)Br>>[C@@H:1](F)(Cl)Br", &[&mol]).unwrap()[0][0]
+                        .clone(),
+                ],
+            ),
+            (
+                "reordered template inverts",
+                vec![
+                    run_reactants("[C@@H:1](F)(Cl)Br>>[C@@H:1](Cl)(F)Br", &[&mol]).unwrap()[0][0]
+                        .clone(),
+                ],
+            ),
+            (
+                "all neighbors mapped and remappable",
+                vec![
+                    run_reactants(
+                        "[C@@H:1]([F:2])([Cl:3])[Br:4]>>[C:1]([F:2])([Cl:3])[Br:4]",
+                        &[&mol],
+                    )
+                    .unwrap()[0][0]
+                        .clone(),
+                ],
+            ),
+            (
+                "all unmapped substituents deleted",
+                vec![run_reactants("[C@@H:1](F)(Cl)Br>>[C:1]", &[&mol]).unwrap()[0][0].clone()],
+            ),
+            (
+                "substituent replacement",
+                vec![
+                    run_reactants("[C@@H:1](F)(Cl)Br>>[C:1](F)(Cl)I", &[&mol]).unwrap()[0][0]
+                        .clone(),
+                ],
+            ),
+            (
+                "remote reaction",
+                vec![
+                    run_reactants(
+                        "[C@@H:1]([F:2])([Cl:3])[C:4][C:5][Br:6].[N:7]\
+                         >>[C:1]([F:2])([Cl:3])[C:4][C:5][N:7]",
+                        &[&chain_mol, &amine],
+                    )
+                    .unwrap()[0][0]
+                        .clone(),
+                ],
+            ),
+        ];
+
+        for (label, products) in &scenarios {
+            for prod in products {
+                assert_invariant_holds(prod, label);
+            }
+        }
     }
 
     #[test]
