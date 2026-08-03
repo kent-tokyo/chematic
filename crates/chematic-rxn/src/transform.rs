@@ -704,6 +704,215 @@ fn clear_orphaned_stereo_bonds(mol: Molecule) -> Molecule {
     result
 }
 
+// ---------------------------------------------------------------------------
+// Product-side chirality correction (parity-aware)
+// ---------------------------------------------------------------------------
+//
+// `build_product`'s Step 1 leaves every mapped core atom's chirality as
+// whatever `src_atom.clone()` produced -- the reactant's own flag, if any.
+// Two things can make that flag wrong or meaningless by the time the
+// product molecule's bonds are fully built (Steps 3-4):
+//
+//   - An EXPLICIT product-template flag (`[C@:1]`/`[C@@:1]`) describes an
+//     absolute configuration relative to the TEMPLATE's own neighbour
+//     write-order, not the reactant's. Naively copying the symbol without
+//     accounting for a reordered template ignores exactly the kind of
+//     reorder that inverts configuration (mirroring the parity math
+//     `smirks_chirality_ok`/`permutation_parity` already does for
+//     REACTANT-side match validation, just never applied to the product).
+//   - An INHERITED flag (no explicit template chirality) can survive on an
+//     atom whose real bonding topology changed within the reaction's own
+//     mapped/core region (e.g. a ring bond broken by the reaction) --
+//     `build_product`'s old invalidation heuristic only ever compared
+//     *unmapped* substituent element sets, never mapped-neighbour identity.
+//
+// Both are handled here, in a single post-build pass (run after all of
+// `build_product`'s bonds exist, since validating either case requires the
+// atom's REAL final neighbour set): an explicit template flag is
+// transcribed together with its own neighbour order (validated against the
+// atom's real adjacency, not re-derived); an inherited flag is kept only if
+// both an order exists to trust it by and the core neighbourhood provably
+// didn't change, and cleared otherwise. Two mechanisms, not one unified
+// permutation-parity re-expression, because an unmapped/template-literal
+// substituent has no reactant identity to map an order back to at all.
+
+/// Map a template-space stereo order into product-index space via
+/// `template_idx_to_new`. [`STEREO_H_SENTINEL`] passes through unchanged.
+/// `None` if any real (non-sentinel) template atom didn't make it into the
+/// product (shouldn't happen for a well-formed template, but fails closed).
+fn map_stereo_order(order: &[u32], template_idx_to_new: &[Option<AtomIdx>]) -> Option<Vec<u32>> {
+    order
+        .iter()
+        .map(|&t| {
+            if t == STEREO_H_SENTINEL {
+                Some(STEREO_H_SENTINEL)
+            } else {
+                template_idx_to_new
+                    .get(t as usize)
+                    .copied()
+                    .flatten()
+                    .map(|a| a.0)
+            }
+        })
+        .collect()
+}
+
+/// True when `order` (already in product-index space) matches `new_idx`'s
+/// REAL final neighbour set in `product`: at most one H-sentinel, no
+/// duplicate real entries, right length, and the real entries are exactly
+/// `new_idx`'s actual adjacency. Deliberately a set/degree check, not a
+/// permutation-parity one -- `order` is stored verbatim once validated;
+/// `corrected_chirality` (the SMILES writer) and `chematic-cip` already do
+/// the write-order-independent parity math whenever they consume it.
+fn order_matches_final_topology(product: &Molecule, new_idx: AtomIdx, order: &[u32]) -> bool {
+    let sentinels = order.iter().filter(|&&x| x == STEREO_H_SENTINEL).count();
+    if sentinels > 1 {
+        return false;
+    }
+    let real: Vec<u32> = order
+        .iter()
+        .copied()
+        .filter(|&x| x != STEREO_H_SENTINEL)
+        .collect();
+    let real_set: FxHashSet<u32> = real.iter().copied().collect();
+    if real.len() != real_set.len() {
+        return false; // Duplicate entry -- malformed order.
+    }
+    if order.len() != product.degree(new_idx) + sentinels {
+        return false;
+    }
+    let actual: FxHashSet<u32> = product.neighbors(new_idx).map(|(nb, _)| nb.0).collect();
+    real_set == actual
+}
+
+/// Bug-B validity gate for an atom that inherited its chirality flag from
+/// the reactant (no explicit product-template chirality): the original
+/// unmapped-substituent element-multiset comparison, PLUS a symmetric
+/// mapped-neighbour atom-map-number-set comparison -- closing the gap where
+/// a core/mapped neighbour's topology changes (e.g. a ring bond broken by
+/// the reaction) invisibly to the element-multiset-only check.
+fn bug_b_topology_unchanged(
+    product_template: &Molecule,
+    ti: AtomIdx,
+    reactant: &Molecule,
+    src_idx: AtomIdx,
+    all_template_atoms: &FxHashSet<(usize, AtomIdx)>,
+    mol_idx: usize,
+    atom_to_map: &FxHashMap<(usize, AtomIdx), u16>,
+) -> bool {
+    let mut prod_elems: FxHashMap<u8, usize> = FxHashMap::default();
+    let mut prod_mapped: FxHashSet<u16> = FxHashSet::default();
+    for (nb, _) in product_template.neighbors(ti) {
+        match product_template.atom(nb).atom_map {
+            None => {
+                *prod_elems
+                    .entry(product_template.atom(nb).element.atomic_number())
+                    .or_insert(0) += 1;
+            }
+            Some(am) => {
+                prod_mapped.insert(am);
+            }
+        }
+    }
+
+    let mut rxn_elems: FxHashMap<u8, usize> = FxHashMap::default();
+    let mut rxn_mapped: FxHashSet<u16> = FxHashSet::default();
+    for (nb, _) in reactant.neighbors(src_idx) {
+        if !all_template_atoms.contains(&(mol_idx, nb)) {
+            continue;
+        }
+        match atom_to_map.get(&(mol_idx, nb)) {
+            Some(&am) => {
+                rxn_mapped.insert(am);
+            }
+            None => {
+                *rxn_elems
+                    .entry(reactant.atom(nb).element.atomic_number())
+                    .or_insert(0) += 1;
+            }
+        }
+    }
+
+    (prod_elems.is_empty() || prod_elems == rxn_elems) && prod_mapped == rxn_mapped
+}
+
+/// Post-build chirality correction. Must run after `build_product`'s Steps
+/// 3-4 (all bonds added), since validation needs each atom's real final
+/// degree/neighbour set. See the module-level doc above for why this is two
+/// mechanisms (transcribe-and-validate for an explicit template flag,
+/// gate-and-preserve-or-clear for an inherited one), not one.
+fn correct_product_stereo(
+    mut product: Molecule,
+    product_template: &Molecule,
+    template_idx_to_new: &[Option<AtomIdx>],
+    global_map: &FxHashMap<u16, (usize, AtomIdx)>,
+    all_template_atoms: &FxHashSet<(usize, AtomIdx)>,
+    input_mols: &[&Molecule],
+) -> Molecule {
+    let atom_to_map: FxHashMap<(usize, AtomIdx), u16> =
+        global_map.iter().map(|(&am, &k)| (k, am)).collect();
+
+    for i in 0..product_template.atom_count() {
+        let ti = AtomIdx(i as u32);
+        let Some(new_idx) = template_idx_to_new[i] else {
+            continue;
+        };
+        let tmpl_atom = product_template.atom(ti);
+
+        if tmpl_atom.chirality != Chirality::None {
+            // Explicit product-template chirality: the template is the sole
+            // source of truth here regardless of whether this atom is a
+            // matched core atom, an unmatched map number, or fully new --
+            // no global_map lookup needed on this branch.
+            let resolved = product_template
+                .stereo_neighbor_order(ti)
+                .and_then(|order| map_stereo_order(order, template_idx_to_new))
+                .filter(|order| order_matches_final_topology(&product, new_idx, order));
+            match resolved {
+                Some(order) => {
+                    product.set_chirality(new_idx, tmpl_atom.chirality);
+                    product.set_stereo_neighbor_order(new_idx, order);
+                }
+                None => product.set_chirality(new_idx, Chirality::None),
+            }
+        } else if let Some(am) = tmpl_atom.atom_map
+            && let Some(&(mol_idx, src_idx)) = global_map.get(&am)
+        {
+            // Matched core atom, no explicit template chirality: keep the
+            // flag `src_atom.clone()` gave it in Step 1 only if it's
+            // actually usable and provably still valid.
+            let src_atom = input_mols[mol_idx].atom(src_idx);
+            if src_atom.chirality != Chirality::None {
+                let keep = input_mols[mol_idx].stereo_neighbor_order(src_idx).is_some()
+                    && bug_b_topology_unchanged(
+                        product_template,
+                        ti,
+                        input_mols[mol_idx],
+                        src_idx,
+                        all_template_atoms,
+                        mol_idx,
+                        &atom_to_map,
+                    );
+                if !keep {
+                    product.set_chirality(new_idx, Chirality::None);
+                }
+                // else: leave the inherited flag as-is. stereo_neighbor_order
+                // stays unset -- there is no derivable per-neighbour
+                // reactant<->product correspondence for template-literal
+                // substituents, so "trust the flag, no order" is the most
+                // honest achievable answer (matching what downstream
+                // consumers already do for any atom with no recorded
+                // order).
+            }
+        }
+        // else: no template chirality, and not a matched core atom --
+        // new_atom.chirality is already Chirality::None from Step 1's clone
+        // of a template-literal atom.
+    }
+
+    product
+}
+
 /// Build one product molecule applying full SMIRKS semantics.
 ///
 /// 1. Atom-mapped product atoms: copy source atom + override aromatic/charge/H from template.
@@ -754,44 +963,12 @@ fn build_product(
                 // means "unspecified" in a product context — clear it so implicit
                 // valence rules determine H count (fixes issue #18).
                 new_atom.hydrogen_count = tmpl_atom.hydrogen_count.filter(|&h| h > 0);
-                // Apply product-template chirality when explicitly specified (@/@@).
-                // When the template has Chirality::None:
-                //   • If the non-mapped substituents written into the product template
-                //     have a DIFFERENT element composition from what the reactant
-                //     template matched (substituent replacement, e.g. Br→I), the
-                //     neighbour topology changes and the source stereo is invalid.
-                //   • If the substituent element sets are identical (pass-through,
-                //     e.g. [C:1](F)(Cl)Br >> [C:1](F)(Cl)Br)) preserve the source
-                //     chirality — the common case for remote-reaction SMIRKS.
-                if tmpl_atom.chirality != Chirality::None {
-                    new_atom.chirality = tmpl_atom.chirality;
-                } else {
-                    // Element multiset of non-mapped atoms in the product template
-                    // adjacent to this core atom.
-                    let mut prod_elems: FxHashMap<u8, usize> = FxHashMap::default();
-                    for (nb, _) in product_template.neighbors(AtomIdx(i as u32)) {
-                        if product_template.atom(nb).atom_map.is_none() {
-                            *prod_elems
-                                .entry(product_template.atom(nb).element.atomic_number())
-                                .or_insert(0) += 1;
-                        }
-                    }
-                    if !prod_elems.is_empty() {
-                        // Element multiset of this core atom's neighbours that were
-                        // matched by the reactant template (heavy atoms only).
-                        let mut rxn_elems: FxHashMap<u8, usize> = FxHashMap::default();
-                        for (nb, _) in input_mols[mol_idx].neighbors(src_idx) {
-                            if all_template_atoms.contains(&(mol_idx, nb)) {
-                                *rxn_elems
-                                    .entry(input_mols[mol_idx].atom(nb).element.atomic_number())
-                                    .or_insert(0) += 1;
-                            }
-                        }
-                        if prod_elems != rxn_elems {
-                            new_atom.chirality = Chirality::None;
-                        }
-                    }
-                }
+                // Chirality is intentionally left as whatever src_atom.clone()
+                // produced above (i.e. the reactant's own flag, if any) --
+                // correct_product_stereo, run after all bonds are added
+                // below, is the sole authority on the final chirality/order
+                // for every atom, whether it inherits from the reactant or
+                // carries an explicit product-template @/@@.
                 new_atom.atom_map = None;
                 let idx = builder.add_atom(new_atom);
                 src_to_new.insert((mol_idx, src_idx), idx);
@@ -877,9 +1054,21 @@ fn build_product(
         }
     }
 
+    // Parity-aware atom chirality correction (see the doc above
+    // correct_product_stereo) -- must run after all bonds above are added,
+    // since it validates against each atom's real final neighbour set.
+    let product = correct_product_stereo(
+        builder.build(),
+        product_template,
+        &template_idx_to_new,
+        global_map,
+        all_template_atoms,
+        input_mols,
+    );
+
     // Clear any Up/Down stereo markers left on bonds that are no longer adjacent
     // to a double bond (e.g. after C=C → C=O conversion via SMIRKS).
-    clear_orphaned_stereo_bonds(builder.build())
+    clear_orphaned_stereo_bonds(product)
 }
 
 /// Standard Cartesian product: given `sets[0], sets[1], …`, return all
@@ -905,6 +1094,10 @@ fn cartesian_product<T: Clone>(sets: &[Vec<T>]) -> Vec<Vec<T>> {
 mod tests {
     use super::*;
     use chematic_smiles::parse;
+
+    fn canonical(mol: &Molecule) -> String {
+        chematic_smiles::canonical_smiles(mol)
+    }
 
     #[test]
     fn identity_single_atom() {
@@ -1143,6 +1336,148 @@ mod tests {
             core_chirality,
             Chirality::CounterClockwise,
             "product template @ must override source @@ → CounterClockwise"
+        );
+    }
+
+    #[test]
+    fn stereo_identity_template_order_preserves_configuration() {
+        // Product template repeats the exact same neighbour order as the
+        // reactant template (F, Cl, Br) with an explicit @@ -- the simplest
+        // "nothing changed" case for the parity-aware correction.
+        let mol = parse("[C@@H](F)(Cl)Br").unwrap();
+        let results = run_reactants("[C@@H:1](F)(Cl)Br>>[C@@H:1](F)(Cl)Br", &[&mol]).unwrap();
+        let prod = &results[0][0];
+        let smi = canonical(prod);
+        let input_smi = canonical(&mol);
+        assert_eq!(
+            smi, input_smi,
+            "identity template order should reproduce the input unchanged"
+        );
+    }
+
+    #[test]
+    fn stereo_reordered_template_inverts_absolute_configuration() {
+        // Issue found while surveying RDKit's open issues (analogous to
+        // RDKit #9257): reordering two substituents in the product template
+        // while keeping the SAME @@ symbol must invert the absolute
+        // configuration -- the symbol describes an order-relative sense,
+        // not an absolute one. Cross-checked against a live RDKit oracle
+        // (`rdkit.Chem.rdChemReactions`): RDKit's `reordered` output equals
+        // its own `inverted` output, both differing from `identity`.
+        let mol = parse("[C@@H](F)(Cl)Br").unwrap();
+        let identity = canonical(
+            &run_reactants("[C@@H:1](F)(Cl)Br>>[C@@H:1](F)(Cl)Br", &[&mol]).unwrap()[0][0],
+        );
+        let reordered = canonical(
+            &run_reactants("[C@@H:1](F)(Cl)Br>>[C@@H:1](Cl)(F)Br", &[&mol]).unwrap()[0][0],
+        );
+        let explicit_invert = canonical(
+            &run_reactants("[C@@H:1](F)(Cl)Br>>[C@H:1](F)(Cl)Br", &[&mol]).unwrap()[0][0],
+        );
+        assert_ne!(
+            reordered, identity,
+            "reordering two substituents under the same @@ symbol must change \
+             the absolute configuration"
+        );
+        assert_eq!(
+            reordered, explicit_invert,
+            "reordering two substituents under @@ must match the explicit-@ \
+             (same order, opposite symbol) result -- both express the same \
+             inverted configuration"
+        );
+    }
+
+    #[test]
+    fn stereo_substituent_replacement_clears_chirality() {
+        // Neighbour SET changes (Br -> I): the old flag can no longer mean
+        // anything -- must clear to Chirality::None, not carry a stale @@
+        // onto a differently-substituted center. Pre-existing behavior,
+        // now driven by correct_product_stereo's Bug-B gate instead of the
+        // deleted ad hoc heuristic; must not regress.
+        let mol = parse("[C@@H](F)(Cl)Br").unwrap();
+        let results = run_reactants("[C@@H:1](F)(Cl)Br>>[C:1](F)(Cl)I", &[&mol]).unwrap();
+        let prod = &results[0][0];
+        let core_chirality = prod.atom(AtomIdx(0)).chirality;
+        assert_eq!(
+            core_chirality,
+            Chirality::None,
+            "substituent replacement (Br->I) must clear chirality, not preserve a stale flag"
+        );
+    }
+
+    #[test]
+    fn stereo_lost_mapped_neighbor_clears_spurious_chirality() {
+        // Issue found while surveying RDKit's open issues: a mapped/core
+        // neighbour (N) is dropped by the product template, while the
+        // template's own C:1 atom carries no explicit chirality. The old
+        // invalidation heuristic only ever compared *unmapped* substituent
+        // element sets (both empty here, since every neighbour of C:1 is
+        // mapped) and missed this case entirely, producing a spurious
+        // chirality tag on a carbon with 3 identical implicit hydrogens.
+        let mol = parse("[C@H](N)(O)Cl").unwrap();
+        let results = run_reactants("[C@H:1]([N:2])([O:3])Cl>>[C:1][O:3]", &[&mol]).unwrap();
+        let prod = &results[0][0];
+        let smi = canonical(prod);
+        assert!(
+            !smi.contains('@'),
+            "carbon losing its N neighbour is no longer a stereocenter (3 identical \
+             implicit H's) -- product must carry no chirality symbol, got {smi}"
+        );
+    }
+
+    #[test]
+    fn stereo_polyol_ring_contraction_no_spurious_ch2oh_chirality() {
+        // The originally reported repro (analogous to RDKit #9257), minimized
+        // versions of which are the two tests directly above. A pyranose ->
+        // furanose ring contraction where one ring carbon (mapped :2) loses
+        // its own explicit chirality in the product template and becomes a
+        // plain CH2OH (degree 2, bonded to a degree-1 O) -- pre-fix this
+        // atom kept a spurious inherited chirality tag ([C@H2], a carbon
+        // with 3 identical implicit hydrogens). Does NOT assert a specific
+        // sign at the two atoms whose absolute configuration this fix does
+        // not by itself resolve either way (mapped :11, unchanged reactant->
+        // product template and therefore architecturally untouched by this
+        // fix; and :15, the debated center in the original RDKit report) --
+        // only that the reaction produces exactly 4 real stereocenters, not
+        // 5, and that the correct atom (the one that structurally lost its
+        // stereocenter) is the one that lost its tag.
+        let smirks = "[O:1][C@H:2]1[O:3][C@H:4]([C:5][C:6])[C@@H:11]([O:12])[C@H:13]([O:14])\
+                       [C@H:15]1[O:16]>>[O:1][C:2][C@:15]([O:16])1[O:3][C@H:4]([C:5][C:6])\
+                       [C@@H:11]([O:12])[C@H:13]1[O:14]";
+        let mol = parse("CC[C@H]1O[C@H](O)[C@H](O)[C@@H](O)[C@@H]1O").unwrap();
+        let results = run_reactants(smirks, &[&mol]).unwrap();
+        let prod = &results[0][0];
+
+        let n = prod.atom_count();
+        let chiral_atoms: Vec<AtomIdx> = (0..n)
+            .map(|i| AtomIdx(i as u32))
+            .filter(|&a| prod.atom(a).chirality != Chirality::None)
+            .collect();
+        assert_eq!(
+            chiral_atoms.len(),
+            4,
+            "expected exactly 4 real stereocenters in the product, got {}: {:?}",
+            chiral_atoms.len(),
+            chiral_atoms
+        );
+
+        // Structurally identify the CH2OH carbon: degree 2, bonded to a
+        // degree-1 oxygen -- not by a hardcoded index, since atom order
+        // depends on build_product's own construction order.
+        let ch2oh = (0..n).map(|i| AtomIdx(i as u32)).find(|&a| {
+            let atom = prod.atom(a);
+            atom.element == chematic_core::Element::C
+                && prod.degree(a) == 2
+                && prod.neighbors(a).any(|(nb, _)| {
+                    prod.atom(nb).element == chematic_core::Element::O && prod.degree(nb) == 1
+                })
+        });
+        let ch2oh = ch2oh.expect("product must contain a CH2OH carbon");
+        assert_eq!(
+            prod.atom(ch2oh).chirality,
+            Chirality::None,
+            "the CH2OH carbon (lost its own chirality in the product template, degree 2, \
+             no longer has 4 distinct substituents) must not carry a stereo tag"
         );
     }
 
