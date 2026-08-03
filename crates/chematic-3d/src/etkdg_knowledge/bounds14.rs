@@ -38,11 +38,22 @@
 //! (non-macrocycle) 1-4 rule commits to one computed value rather than a
 //! band. "New" bounds are this module's proposed macrocycle-aware
 //! adjustment: for amide/ester-like central bonds, still pinned to a single
-//! configuration but the **cis** one (matching real amide-bond rigidity,
-//! `_setMacrocycleTwoInSameRing14Bounds`'s amide/ester branch); for every
-//! other 1-4 pair, relaxed to the full `[min(cis,trans), max(cis,trans)]`
-//! band ("assume anything is possible", RDKit's own inline comment in the
-//! generic branch of `_setMacrocycleAllInSameRing14Bounds`).
+//! configuration, but WHICH one (cis or trans) depends on whether atom1 and
+//! atom4 play the "same role" relative to the ring -- both continue the
+//! macrocycle, or both are exocyclic substituents (TRANS, the dominant
+//! trans-amide macrolactam conformation) -- or "different roles" -- one
+//! continues the ring, the other is exocyclic (CIS, forced by the same
+//! planar amide geometry). Verified against a live RDKit oracle (issue
+//! found while surveying RDKit's open issues, analogous to RDKit #9266):
+//! unconditionally pinning every combinatorial 1-4 pair through a
+//! *tertiary* amide/ester bond to cis (this module's original behavior) is
+//! a geometrically unsatisfiable constraint set whenever there's more than
+//! one atom1/atom4 combination, since the real planar geometry always
+//! splits the combinations into 2 cis + 2 trans, never 4-cis; for every
+//! other (non-amide-like) 1-4 pair, relaxed to the full
+//! `[min(cis,trans), max(cis,trans)]` band ("assume anything is possible",
+//! RDKit's own inline comment in the generic branch of
+//! `_setMacrocycleAllInSameRing14Bounds`).
 
 use chematic_core::{AtomIdx, Molecule};
 
@@ -165,12 +176,49 @@ pub fn macrocycle_14_bound_adjustments(
                 let old_upper = d_trans + PIN_TOLERANCE_ANGSTROM;
 
                 let (new_lower, new_upper, rule_id, reason) = if bc.amide_like {
+                    // For a tertiary amide/ester central bond, atom1 and
+                    // atom4 each have (up to) two candidates: one continues
+                    // the macrocycle ring, the other is an exocyclic
+                    // substituent (e.g. an N-methyl, or the carbonyl =O
+                    // itself, which is exocyclic relative to the ring).
+                    // Verified against a live RDKit oracle (embedded
+                    // conformers across 20 seeds, plus RDKit's own
+                    // `_checkMacrocycleAllInSameRingAmideEster14` /
+                    // `BoundsMatrixBuilder.cpp`): the two ring-continuation
+                    // atoms are TRANS to each other (the dominant
+                    // trans-amide macrolactam conformation, which keeps the
+                    // macrocycle extended), and by the same planar-amide
+                    // geometry, the two EXOCYCLIC atoms are also TRANS to
+                    // each other -- only a ring-continuation/exocyclic
+                    // CROSS pair is CIS. A single "same role -> trans,
+                    // different role -> cis" rule, not four independently
+                    // memorized cases: pinning all four combinations to cis
+                    // (the previous, unconditional behavior) was a
+                    // geometrically unsatisfiable constraint set for any
+                    // tertiary amide/ester, which is exactly why the DG
+                    // embedder converged to a twisted ~90-100° compromise
+                    // instead of the intended planar geometry.
+                    let atom1_continues_ring = !ring_index.ring_sizes_for(atom2, atom1).is_empty();
+                    let atom4_continues_ring = !ring_index.ring_sizes_for(atom3, atom4).is_empty();
+                    let same_role = atom1_continues_ring == atom4_continues_ring;
+                    let (d, config_name) = if same_role {
+                        (d_trans, "trans")
+                    } else {
+                        (d_cis, "cis")
+                    };
                     (
-                        d_cis - PIN_TOLERANCE_ANGSTROM,
-                        d_cis + PIN_TOLERANCE_ANGSTROM,
+                        d - PIN_TOLERANCE_ANGSTROM,
+                        d + PIN_TOLERANCE_ANGSTROM,
                         "macrocycle_14:amide_ester_pinned",
                         format!(
-                            "amide/ester-like central bond in a {ring_size}-membered ring: 1-4 pair pinned to the single cis configuration ({d_cis:.3} Å +/- {PIN_TOLERANCE_ANGSTROM}), not relaxed to a band"
+                            "amide/ester-like central bond in a {ring_size}-membered ring: 1-4 pair pinned to the single {config_name} configuration ({d:.3} Å +/- {PIN_TOLERANCE_ANGSTROM}) -- {} ring-continuation ({}/{}), not relaxed to a band",
+                            if same_role {
+                                "both atoms share the same"
+                            } else {
+                                "atoms differ in"
+                            },
+                            atom1_continues_ring,
+                            atom4_continues_ring,
                         ),
                     )
                 } else {
@@ -276,5 +324,136 @@ mod tests {
                 .any(|a| a.rule_id == "macrocycle_14:amide_ester_pinned"),
             "{out:?}"
         );
+    }
+
+    /// Issue found while surveying RDKit's open issues (analogous to RDKit
+    /// #9266, macrocyclic tertiary amides embedding twisted): a TERTIARY
+    /// amide/ester central bond has up to 4 combinatorial (atom1, atom4)
+    /// 1-4 pairs (2 candidates per side). Pinning all 4 to the same cis
+    /// configuration (the previous, unconditional behavior) is geometrically
+    /// unsatisfiable -- verified against a live RDKit oracle (embedded
+    /// conformers across 20 seeds, converged unambiguously): the real planar
+    /// amide geometry always splits the 4 combinations 2-cis + 2-trans,
+    /// specifically along "does this atom continue the macrocycle ring, or
+    /// is it an exocyclic substituent" -- same role (both ring-continuation,
+    /// or both exocyclic) -> trans; different role -> cis.
+    #[test]
+    fn tertiary_amide_1_4_pairs_split_cis_and_trans_by_ring_role() {
+        // N-methyl 13-membered macrolactam: amide N has a ring-continuation
+        // neighbor (the preceding ring carbon) and an exocyclic neighbor
+        // (the N-methyl); the carbonyl C has a ring-continuation neighbor
+        // (the following ring carbon) and an exocyclic neighbor (=O).
+        let mol = parse("O=C1CCCCCCCCCCN1C").unwrap();
+        // Atom indices per this exact SMILES's left-to-right parse order:
+        // 0=O, 1=C(carbonyl), 2..11=ring CH2 x10, 12=N, 13=C(methyl).
+        let o_idx = AtomIdx(0);
+        let carbonyl_c_idx = AtomIdx(1);
+        let ring_c_idx = AtomIdx(2); // carbonyl C's ring-continuation neighbor
+        let ring_n_idx = AtomIdx(11); // amide N's ring-continuation neighbor
+        let amide_n_idx = AtomIdx(12);
+        let methyl_idx = AtomIdx(13); // amide N's exocyclic neighbor
+
+        let config = TorsionKnowledgeConfig {
+            use_macrocycle_14_bounds: true,
+            ..TorsionKnowledgeConfig::default()
+        };
+        let out = macrocycle_14_bound_adjustments(&mol, &config).unwrap();
+
+        let bl2 = ideal_bond_length(&mol, amide_n_idx, carbonyl_c_idx);
+        let ba_n = ideal_bond_angle(&mol, amide_n_idx);
+        let ba_c = ideal_bond_angle(&mol, carbonyl_c_idx);
+        let expected_config_for = |a1: AtomIdx, a4: AtomIdx, same_role: bool| {
+            let bl1 = ideal_bond_length(&mol, a1, amide_n_idx);
+            let bl3 = ideal_bond_length(&mol, carbonyl_c_idx, a4);
+            if same_role {
+                dist14_trans(bl1, bl2, bl3, ba_n, ba_c)
+            } else {
+                dist14_cis(bl1, bl2, bl3, ba_n, ba_c)
+            }
+        };
+
+        // (ring, ring) -> same role -> trans.
+        let ring_ring = expected_bound(&out, ring_n_idx, ring_c_idx);
+        assert_close(
+            ring_ring,
+            expected_config_for(ring_n_idx, ring_c_idx, true),
+            "ring_N--ring_C (both ring-continuation) must be pinned TRANS",
+        );
+
+        // (exocyclic, exocyclic) -> same role -> trans.
+        let methyl_o = expected_bound(&out, methyl_idx, o_idx);
+        assert_close(
+            methyl_o,
+            expected_config_for(methyl_idx, o_idx, true),
+            "methyl_N--O (both exocyclic) must be pinned TRANS",
+        );
+
+        // (ring, exocyclic) -> different role -> cis.
+        let ring_o = expected_bound(&out, ring_n_idx, o_idx);
+        assert_close(
+            ring_o,
+            expected_config_for(ring_n_idx, o_idx, false),
+            "ring_N--O (ring-continuation vs exocyclic) must be pinned CIS",
+        );
+
+        // (exocyclic, ring) -> different role -> cis.
+        let methyl_ring_c = expected_bound(&out, methyl_idx, ring_c_idx);
+        assert_close(
+            methyl_ring_c,
+            expected_config_for(methyl_idx, ring_c_idx, false),
+            "methyl_N--ring_C (exocyclic vs ring-continuation) must be pinned CIS",
+        );
+
+        // The two same-role pairs and the two different-role pairs must NOT
+        // collapse to the same pinned distance -- this is the literal
+        // defect being fixed (previously all 4 pinned to the same cis
+        // value).
+        assert!(
+            (ring_ring - ring_o).abs() > 2.0 * PIN_TOLERANCE_ANGSTROM,
+            "trans-pinned and cis-pinned distances must be clearly distinct: \
+             ring_ring={ring_ring:.3} ring_o={ring_o:.3}"
+        );
+    }
+
+    /// Helper for the test above: find the pinned midpoint distance
+    /// `(new_lower + new_upper) / 2` for a given unordered atom pair.
+    fn expected_bound(out: &[PairBoundAdjustment], a: AtomIdx, b: AtomIdx) -> f64 {
+        let adj = out
+            .iter()
+            .find(|adj| {
+                let (x, y) = adj.atom_pair;
+                (x == a && y == b) || (x == b && y == a)
+            })
+            .unwrap_or_else(|| panic!("no adjustment found for pair ({a:?}, {b:?}): {out:?}"));
+        assert_eq!(
+            adj.rule_id, "macrocycle_14:amide_ester_pinned",
+            "expected the amide-pinned rule for {a:?}--{b:?}: {adj:?}"
+        );
+        (adj.new_lower + adj.new_upper) / 2.0
+    }
+
+    fn assert_close(actual: f64, expected: f64, msg: &str) {
+        assert!(
+            (actual - expected).abs() < 1e-6,
+            "{msg}: actual={actual:.4} expected={expected:.4}"
+        );
+    }
+
+    #[test]
+    fn cyclododecane_adjustments_unaffected_by_amide_role_logic() {
+        // No amide/ester bond at all -- the ring-role diagonal-split logic
+        // must never be reached, so every adjustment must still be the
+        // plain relaxed_band rule with its original [min(cis,trans),
+        // max(cis,trans)] bounds, unchanged by this fix.
+        let mol = parse("C1CCCCCCCCCCC1").unwrap();
+        let config = TorsionKnowledgeConfig {
+            use_macrocycle_14_bounds: true,
+            ..TorsionKnowledgeConfig::default()
+        };
+        let out = macrocycle_14_bound_adjustments(&mol, &config).unwrap();
+        assert!(!out.is_empty());
+        for adj in &out {
+            assert_eq!(adj.rule_id, "macrocycle_14:relaxed_band", "{adj:?}");
+        }
     }
 }
