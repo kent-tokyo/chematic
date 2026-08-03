@@ -26,17 +26,20 @@
 //!   [`chematic_perception::apply_local_parity_from_wedges`] -- the same
 //!   CIP-independent mechanism the MOL/MRV readers use, so it abstains
 //!   (leaves `Chirality::None`) rather than guessing on contradictory
-//!   wedges, missing coordinates, or degenerate/coplanar geometry. A
-//!   non-directional `Display` (`Bold`/`Hash`/`Dash`, which has no
-//!   narrow/wide end telling you which atom it actually describes) is
-//!   additionally downgraded to a plain single bond before perception runs
-//!   if BOTH of its endpoints independently qualify as stereocenter
-//!   candidates -- one such bond cannot mean "toward the viewer" from both
-//!   ends of the same bond at once, so both abstain rather than each
-//!   guessing from contradictory height assignments. A directional wedge
-//!   (`WedgeBegin`/`WedgeEnd`) between two such candidates is NOT ambiguous
+//!   wedges, missing coordinates, or degenerate/coplanar geometry.
+//!   Directional wedges (`WedgeBegin`/`WedgeEnd`/`WedgedHashBegin`/
+//!   `WedgedHashEnd`) are always perceived. Non-directional ones
+//!   (`Bold`/`Hash`/`Dash` -- a plain thick or dashed line, no narrow/wide
+//!   end) are perceived only when [`CdxmlParseOptions::infer_nondirectional_stereo`]
+//!   is explicitly opted in (`parse_cdxml_with_options`/
+//!   `parse_cdxml_all_with_options`), since `Bold` in particular is
+//!   sometimes drawn for visual emphasis rather than stereo intent. When
+//!   opted in, a non-directional bond whose BOTH endpoints independently
+//!   qualify as stereocenter candidates (3-4 neighbours) still abstains --
+//!   one such bond cannot mean "toward the viewer" from both ends at once
+//!   -- while a directional wedge in the same situation is not ambiguous
 //!   (the Begin atom is the reference by CDXML's own convention) and is
-//!   unaffected by this check.
+//!   unaffected either way.
 //! - E/Z double-bond stereo is derived from 2D coordinates via `assign_ez_from_2d`.
 //! - Presentation-only nodes (text boxes, arrows, etc.) are silently skipped.
 
@@ -84,23 +87,58 @@ impl std::error::Error for CdxmlError {}
 // Parser
 // ---------------------------------------------------------------------------
 
+/// Options controlling optional/heuristic CDXML parsing behavior.
+///
+/// Currently just the one knob (kept as a struct, not a bare `bool`
+/// parameter, so a future option doesn't force every call site to change
+/// signature again).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct CdxmlParseOptions {
+    /// When `true`, also perceive tetrahedral chirality from
+    /// **non-directional** wedge displays (`Bold`/`Hash`/`Dash` -- a plain
+    /// thick or dashed line, no narrow/wide end). Default **`false`**:
+    /// `Bold` in particular is sometimes used by chemists as a plain thick
+    /// line for visual emphasis, not stereo intent, so treating it as
+    /// stereo unconditionally would manufacture false positives (RDKit
+    /// issue #9359's own discussion leans the same way -- inferring stereo
+    /// from these should be opt-in, not silently default).
+    ///
+    /// This flag has no effect on **directional** wedges
+    /// (`WedgeBegin`/`WedgeEnd`/`WedgedHashBegin`/`WedgedHashEnd`), which
+    /// are unambiguous stereo intent and are always perceived regardless.
+    pub infer_nondirectional_stereo: bool,
+}
+
 /// Parse a CDXML document and return the first molecular fragment.
 ///
-/// Convenience wrapper around [`parse_cdxml_all`].
-/// Parse a ChemDraw CDXML string into a molecule and 2D coordinates.
+/// Convenience wrapper around [`parse_cdxml_all`], using
+/// [`CdxmlParseOptions::default`]. Use [`parse_cdxml_with_options`] to
+/// perceive chirality from non-directional (`Bold`/`Hash`/`Dash`) wedges
+/// too.
 ///
 /// **Coordinate system:** The returned `coords` use **ChemDraw Y-down convention**
 /// (Y increases downward, matching screen/SVG pixel space). No Y-axis conversion is required
 /// for SVG rendering; coordinates can be used directly in [`crate::svg::render_svg`] or similar.
 pub fn parse_cdxml(input: &str) -> Result<(Molecule, Vec<(f64, f64)>), CdxmlError> {
-    let mut all = parse_cdxml_all(input)?;
+    parse_cdxml_with_options(input, &CdxmlParseOptions::default())
+}
+
+/// Same as [`parse_cdxml`], with explicit [`CdxmlParseOptions`].
+pub fn parse_cdxml_with_options(
+    input: &str,
+    options: &CdxmlParseOptions,
+) -> Result<(Molecule, Vec<(f64, f64)>), CdxmlError> {
+    let mut all = parse_cdxml_all_with_options(input, options)?;
     if all.is_empty() {
         return Ok((MoleculeBuilder::new().build(), vec![]));
     }
     Ok(all.remove(0))
 }
 
-/// Parse all molecular fragments from a CDXML document.
+/// Parse all molecular fragments from a CDXML document, using
+/// [`CdxmlParseOptions::default`]. Use [`parse_cdxml_all_with_options`] to
+/// perceive chirality from non-directional (`Bold`/`Hash`/`Dash`) wedges
+/// too.
 ///
 /// Each `<fragment>` element in the document is parsed as a separate
 /// molecule.  Returns a `Vec` of `(Molecule, 2D-coords)` pairs in document
@@ -119,7 +157,13 @@ pub fn parse_cdxml(input: &str) -> Result<(Molecule, Vec<(f64, f64)>), CdxmlErro
 ///
 /// These wedge bonds, combined with 2D coordinates, are what actually
 /// perceives `Atom.chirality` (see the module-level doc for the full
-/// abstain-on-ambiguity behavior).
+/// abstain-on-ambiguity behavior, and [`CdxmlParseOptions`] for the
+/// non-directional opt-in).
+#[allow(clippy::type_complexity)]
+pub fn parse_cdxml_all(input: &str) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, CdxmlError> {
+    parse_cdxml_all_with_options(input, &CdxmlParseOptions::default())
+}
+
 /// Accumulator for a single CDXML `<fragment>` being parsed.
 #[derive(Default)]
 struct FragAccum {
@@ -147,7 +191,11 @@ impl FragAccum {
         self.atom_ids.is_empty() && self.bond_bs.is_empty()
     }
 
-    fn flush(&mut self, results: &mut Vec<(Molecule, Vec<(f64, f64)>)>) -> Result<(), CdxmlError> {
+    fn flush(
+        &mut self,
+        results: &mut Vec<(Molecule, Vec<(f64, f64)>)>,
+        options: &CdxmlParseOptions,
+    ) -> Result<(), CdxmlError> {
         if self.is_empty() {
             return Ok(());
         }
@@ -174,32 +222,6 @@ impl FragAccum {
             bond_pos.push((pos_b, pos_e));
         }
 
-        // Non-directional wedge displays (a plain thick/dashed line, no
-        // narrow/wide end) carry no convention for which endpoint is "the"
-        // stereocenter -- unlike WedgeBegin/WedgeEnd, whose Begin atom is
-        // the narrow end by CDXML's own drawing convention. If BOTH
-        // endpoints independently qualify as stereocenter candidates (3-4
-        // neighbours, [`chematic_perception`]'s own gate), a single such
-        // bond cannot mean "toward the viewer" from both ends at once --
-        // downgrade it to a plain single bond before parity perception runs
-        // so neither endpoint gets a chirality assignment it can't justify.
-        // A directional wedge between two such candidates is NOT ambiguous
-        // (the Begin atom is unambiguously the reference) and must keep
-        // working, so only the non-directional set is checked here.
-        for (k, &(pos_b, pos_e)) in bond_pos.iter().enumerate() {
-            let is_nondirectional_wedge = matches!(
-                self.bond_display[k].as_deref(),
-                Some("Bold") | Some("Hash") | Some("Dash")
-            );
-            if !is_nondirectional_wedge {
-                continue;
-            }
-            let eligible = |d: usize| (3..=4).contains(&d);
-            if eligible(degree[pos_b]) && eligible(degree[pos_e]) {
-                self.bond_ords[k] = BondOrder::Single;
-            }
-        }
-
         let mut builder = MoleculeBuilder::new();
         let mut idx_map: HashMap<usize, AtomIdx> = HashMap::new();
         let mut coords: Vec<(f64, f64)> = Vec::new();
@@ -214,6 +236,11 @@ impl FragAccum {
             coords.push((self.atom_xs[i], self.atom_ys[i]));
         }
 
+        // The REAL molecule keeps every wedge bond's Display-derived
+        // BondOrder::Up/Down and its original B/E atom order exactly as
+        // parsed, for ANY Display value -- structural/round-trip fidelity
+        // is unconditional, independent of whether that bond ends up
+        // feeding chirality perception below.
         for (k, &(pos_b, pos_e)) in bond_pos.iter().enumerate() {
             let a1 = idx_map[&pos_b];
             let a2 = idx_map[&pos_e];
@@ -223,19 +250,115 @@ impl FragAccum {
         }
 
         let mut mol = builder.build();
-        // Tetrahedral parity first (raw wedge/hash still fully intact on
-        // bond.order), THEN E/Z direction -- same ordering rationale as
-        // mol2000.rs/mol3000.rs/mrv.rs: E/Z writes to a separate side
-        // channel (cip_code here) and never touches bond.order, so it can't
-        // disturb the wedge/hash data parity perception just consumed.
-        // RDKit issue #9359: CDXML reading never perceived tetrahedral
-        // chirality from wedge/hash bonds at all, for ANY Display value
-        // (WedgeBegin included) -- this closes that gap using the same
-        // shared, CIP-independent local-parity mechanism the MOL/MRV
-        // readers already use, so CDXML gets the same abstain-don't-guess
-        // guarantees (contradictory wedges, missing coordinates,
-        // degenerate/coplanar geometry) for free.
-        apply_local_parity_from_wedges(&mut mol, &coords);
+
+        // Non-directional wedge displays (`Bold`/`Hash`/`Dash` -- a plain
+        // thick or dashed line, no narrow/wide end) carry NO Begin/End
+        // convention at all in the CDXML spec, unlike `WedgeBegin`/
+        // `WedgeEnd`/`WedgedHashBegin`/`WedgedHashEnd`. Which atom a `<b>`
+        // element happens to list first as `B` is an arbitrary artifact of
+        // however the file was written -- it is not a "narrow end" signal,
+        // so `chematic_perception::wedge_z`'s `bond.atom1` == the tip/
+        // reference-atom convention (correct for a directional wedge, whose
+        // Begin atom genuinely IS the tip) must not be applied naively to
+        // these using the raw B/E order. Concretely: swapping which atom a
+        // CDXML author lists as B vs E for the identical drawing must NOT
+        // change the perceived configuration for `Bold`/`Hash`/`Dash`,
+        // while it correctly DOES for a real `WedgeBegin`/`WedgeEnd` pair
+        // (the Begin atom is genuinely a different physical reference).
+        //
+        // Resolved by perceiving parity on a throwaway VIEW of the
+        // molecule, not the real one -- so the real molecule's own bond
+        // orders/atom order are never touched by any of this -- with each
+        // non-directional bond's contribution to that view decided as:
+        //   - `options.infer_nondirectional_stereo` is `false` (the
+        //     default): downgraded to `Single` in the view unconditionally.
+        //     `Bold` in particular is sometimes drawn for visual emphasis,
+        //     not stereo intent, so this reader does not manufacture
+        //     stereo from it unless explicitly asked to.
+        //   - `true`, exactly one endpoint qualifies as a stereocenter
+        //     candidate (3-4 neighbours, matching
+        //     [`chematic_perception`]'s own gate): reordered in the view so
+        //     that endpoint is atom1 -- then `wedge_z`'s existing
+        //     atom1-is-the-reference convention becomes correct by
+        //     construction, independent of the original B/E order.
+        //   - `true`, both endpoints qualify: one non-directional bond
+        //     cannot mean "toward the viewer" from both ends of the same
+        //     bond at once -- downgraded to `Single` in the view so neither
+        //     gets a chirality it can't justify (a directional wedge in the
+        //     same situation is NOT ambiguous, since the Begin atom is
+        //     unambiguously the reference, and is never altered here).
+        //   - `true`, neither qualifies: no-op (the shared perception gate
+        //     already skips both regardless).
+        // Directional wedges are never altered in the view either way.
+        let any_nondirectional_wedge = self
+            .bond_display
+            .iter()
+            .any(|d| matches!(d.as_deref(), Some("Bold") | Some("Hash") | Some("Dash")));
+        if !any_nondirectional_wedge {
+            apply_local_parity_from_wedges(&mut mol, &coords);
+        } else {
+            let mut view = mol.clone();
+            for (k, &(pos_b, pos_e)) in bond_pos.iter().enumerate() {
+                let is_nondirectional_wedge = matches!(
+                    self.bond_display[k].as_deref(),
+                    Some("Bold") | Some("Hash") | Some("Dash")
+                );
+                if !is_nondirectional_wedge {
+                    continue;
+                }
+                let (a1, a2) = (idx_map[&pos_b], idx_map[&pos_e]);
+                let Some((bond_idx, _)) = view.bond_between(a1, a2) else {
+                    continue;
+                };
+                if !options.infer_nondirectional_stereo {
+                    view.set_bond_order(bond_idx, BondOrder::Single);
+                    continue;
+                }
+                let eligible = |d: usize| (3..=4).contains(&d);
+                let (b_elig, e_elig) = (eligible(degree[pos_b]), eligible(degree[pos_e]));
+                if b_elig && e_elig {
+                    view.set_bond_order(bond_idx, BondOrder::Single);
+                } else if e_elig && !b_elig {
+                    // The candidate (stereocenter) is E, not B. `wedge_z`
+                    // reads `bond.atom1` as the reference atom -- flip
+                    // Up<->Down (equivalent to "as seen from E instead of
+                    // B") rather than swapping atom1/atom2 in place: a
+                    // swap would require remove_bond+add_bond, which
+                    // perturbs `neighbors()` iteration order for BOTH
+                    // endpoints (adjacency is rebuilt from the bond list's
+                    // new order), silently changing which neighbor
+                    // `chematic_perception` picks as tetrahedral apex --
+                    // confirmed empirically: an earlier swap-based version
+                    // of this fix produced a real, non-obvious B/E-order
+                    // dependence via exactly this side channel. Flipping
+                    // just the order field has no such effect (checked in
+                    // `set_bond_order`'s own doc).
+                    let flipped = match view.bond(bond_idx).order {
+                        BondOrder::Up => BondOrder::Down,
+                        BondOrder::Down => BondOrder::Up,
+                        other => other,
+                    };
+                    view.set_bond_order(bond_idx, flipped);
+                }
+            }
+            apply_local_parity_from_wedges(&mut view, &coords);
+            for i in 0..self.atom_ids.len() {
+                let idx = idx_map[&i];
+                let chirality = view.atom(idx).chirality;
+                if chirality != chematic_core::Chirality::None {
+                    mol.set_chirality(idx, chirality);
+                    if let Some(order) = view.stereo_neighbor_order(idx) {
+                        mol.set_stereo_neighbor_order(idx, order.to_vec());
+                    }
+                }
+            }
+        }
+
+        // Tetrahedral parity (above) runs before E/Z direction (below) --
+        // same ordering rationale as mol2000.rs/mol3000.rs/mrv.rs: E/Z
+        // writes to a separate side channel (cip_code here) and never
+        // touches bond.order, so it can't disturb the wedge/hash data
+        // parity perception just consumed.
         // Derive E/Z stereo from 2D atom positions (RDKit issue #9356: CDXML loses E/Z).
         assign_ez_from_2d(&mut mol, &coords);
         results.push((mol, coords));
@@ -247,8 +370,12 @@ impl FragAccum {
 /// Maximum atoms allowed in a single CDXML fragment (DoS guard).
 pub const CDXML_MAX_ATOMS: usize = 10_000;
 
+/// Same as [`parse_cdxml_all`], with explicit [`CdxmlParseOptions`].
 #[allow(clippy::type_complexity)]
-pub fn parse_cdxml_all(input: &str) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, CdxmlError> {
+pub fn parse_cdxml_all_with_options(
+    input: &str,
+    options: &CdxmlParseOptions,
+) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, CdxmlError> {
     let mut acc = FragAccum::default();
     let mut results: Vec<(Molecule, Vec<(f64, f64)>)> = Vec::new();
 
@@ -264,7 +391,7 @@ pub fn parse_cdxml_all(input: &str) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, 
         }
 
         if line.starts_with("</fragment>") {
-            acc.flush(&mut results)?;
+            acc.flush(&mut results, options)?;
             continue;
         }
 
@@ -357,7 +484,7 @@ pub fn parse_cdxml_all(input: &str) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, 
     }
 
     // Handle documents without explicit </fragment> closing tags.
-    acc.flush(&mut results)?;
+    acc.flush(&mut results, options)?;
 
     Ok(results)
 }
@@ -836,32 +963,105 @@ mod tests {
 
     const RDKIT_9359_CENTER: chematic_core::AtomIdx = chematic_core::AtomIdx(0);
 
-    #[test]
-    fn rdkit_9359_no_display_has_no_chirality() {
-        // Flat drawing, no wedge at all -- must NOT invent stereo.
-        let (mol, _) = parse_cdxml(&rdkit_9359_cdxml(None)).unwrap();
-        assert_eq!(mol.atom(RDKIT_9359_CENTER).chirality, Chirality::None);
+    /// Parses with [`CdxmlParseOptions::infer_nondirectional_stereo`] on --
+    /// the opt-in path, used by tests specifically exercising Bold/Hash
+    /// chirality perception (which is off by default, see the
+    /// default-behavior tests below).
+    fn parse_infer(cdxml: &str) -> (Molecule, Vec<(f64, f64)>) {
+        parse_cdxml_with_options(
+            cdxml,
+            &CdxmlParseOptions {
+                infer_nondirectional_stereo: true,
+            },
+        )
+        .unwrap()
     }
 
     #[test]
-    fn rdkit_9359_bold_perceives_chirality() {
+    fn rdkit_9359_no_display_has_no_chirality() {
+        // Flat drawing, no wedge at all -- must NOT invent stereo, with or
+        // without the opt-in (nothing to infer from either way).
+        let (mol, _) = parse_cdxml(&rdkit_9359_cdxml(None)).unwrap();
+        assert_eq!(mol.atom(RDKIT_9359_CENTER).chirality, Chirality::None);
+        let (mol, _) = parse_infer(&rdkit_9359_cdxml(None));
+        assert_eq!(mol.atom(RDKIT_9359_CENTER).chirality, Chirality::None);
+    }
+
+    // ── Default behavior: Bold/Hash do NOT perceive chirality unopted ─────
+    //
+    // `Bold` in particular is sometimes drawn by chemists as a plain thick
+    // line for visual emphasis, not stereo intent (RDKit #9359's own
+    // discussion leans toward this being opt-in, not silently default) --
+    // so `parse_cdxml`/`parse_cdxml_all` (no explicit options) must NOT
+    // manufacture a chirality from it. `bond.order` still faithfully
+    // records `BondOrder::Up`/`Down` either way (structural fidelity is
+    // unconditional) -- only chirality PERCEPTION is gated.
+
+    #[test]
+    fn rdkit_9359_bold_default_does_not_perceive_chirality() {
         let (mol, _) = parse_cdxml(&rdkit_9359_cdxml(Some("Bold"))).unwrap();
+        assert_eq!(
+            mol.atom(RDKIT_9359_CENTER).chirality,
+            Chirality::None,
+            "Bold must NOT perceive chirality by default (opt-in required)"
+        );
+        assert_eq!(
+            mol.bond(chematic_core::BondIdx(0)).order,
+            BondOrder::Up,
+            "the bond's own order must still faithfully record Up regardless \
+             of whether chirality perception is opted in"
+        );
+    }
+
+    #[test]
+    fn rdkit_9359_hash_default_does_not_perceive_chirality() {
+        let (mol, _) = parse_cdxml(&rdkit_9359_cdxml(Some("Hash"))).unwrap();
+        assert_eq!(
+            mol.atom(RDKIT_9359_CENTER).chirality,
+            Chirality::None,
+            "Hash must NOT perceive chirality by default (opt-in required)"
+        );
+        assert_eq!(mol.bond(chematic_core::BondIdx(0)).order, BondOrder::Down);
+    }
+
+    /// Directional wedges are NOT gated by the opt-in -- they're
+    /// unambiguous stereo intent (a real tapered wedge), so the default
+    /// (no options) already perceives chirality from them, matching the
+    /// RDKit #9359 expectation (`center_atom(mol).GetChiralTag() !=
+    /// CHI_UNSPECIFIED`) out of the box.
+    #[test]
+    fn rdkit_9359_wedge_begin_default_perceives_chirality() {
+        let (mol, _) = parse_cdxml(&rdkit_9359_cdxml(Some("WedgeBegin"))).unwrap();
         assert_ne!(
             mol.atom(RDKIT_9359_CENTER).chirality,
             Chirality::None,
-            "RDKit #9359: Display=\"Bold\" must perceive a real chirality, \
-             matching center_atom(mol).GetChiralTag() != CHI_UNSPECIFIED"
+            "a real directional wedge must perceive chirality without any opt-in"
+        );
+        assert!(mol.stereo_neighbor_order(RDKIT_9359_CENTER).is_some());
+    }
+
+    // ── Opt-in behavior (`infer_nondirectional_stereo: true`) ─────────────
+
+    #[test]
+    fn rdkit_9359_bold_perceives_chirality_when_opted_in() {
+        let (mol, _) = parse_infer(&rdkit_9359_cdxml(Some("Bold")));
+        assert_ne!(
+            mol.atom(RDKIT_9359_CENTER).chirality,
+            Chirality::None,
+            "RDKit #9359: Display=\"Bold\" must perceive a real chirality when \
+             opted in, matching center_atom(mol).GetChiralTag() != CHI_UNSPECIFIED"
         );
         assert!(mol.stereo_neighbor_order(RDKIT_9359_CENTER).is_some());
     }
 
     #[test]
-    fn rdkit_9359_hash_perceives_chirality() {
-        let (mol, _) = parse_cdxml(&rdkit_9359_cdxml(Some("Hash"))).unwrap();
+    fn rdkit_9359_hash_perceives_chirality_when_opted_in() {
+        let (mol, _) = parse_infer(&rdkit_9359_cdxml(Some("Hash")));
         assert_ne!(
             mol.atom(RDKIT_9359_CENTER).chirality,
             Chirality::None,
-            "RDKit #9359: Display=\"Hash\" (undirectional) must also perceive chirality"
+            "RDKit #9359: Display=\"Hash\" (undirectional) must also perceive \
+             chirality when opted in"
         );
     }
 
@@ -872,8 +1072,8 @@ mod tests {
     /// alone invert consistently.
     #[test]
     fn rdkit_9359_bold_and_hash_are_opposite_configurations() {
-        let (mol_bold, _) = parse_cdxml(&rdkit_9359_cdxml(Some("Bold"))).unwrap();
-        let (mol_hash, _) = parse_cdxml(&rdkit_9359_cdxml(Some("Hash"))).unwrap();
+        let (mol_bold, _) = parse_infer(&rdkit_9359_cdxml(Some("Bold")));
+        let (mol_hash, _) = parse_infer(&rdkit_9359_cdxml(Some("Hash")));
         let bold_chirality = mol_bold.atom(RDKIT_9359_CENTER).chirality;
         let hash_chirality = mol_hash.atom(RDKIT_9359_CENTER).chirality;
         assert_ne!(bold_chirality, Chirality::None);
@@ -904,7 +1104,7 @@ mod tests {
     /// chirality, not just both-non-None independently.
     #[test]
     fn rdkit_9359_bold_matches_wedge_begin_configuration() {
-        let (mol_bold, _) = parse_cdxml(&rdkit_9359_cdxml(Some("Bold"))).unwrap();
+        let (mol_bold, _) = parse_infer(&rdkit_9359_cdxml(Some("Bold")));
         let (mol_wedge, _) = parse_cdxml(&rdkit_9359_cdxml(Some("WedgeBegin"))).unwrap();
         assert_eq!(
             mol_bold.atom(RDKIT_9359_CENTER).chirality,
@@ -912,26 +1112,73 @@ mod tests {
         );
     }
 
-    /// B/E-reversed variant (required by review): swapping which atom is
-    /// stored as B vs E for the SAME Display value must invert the
-    /// perceived configuration -- the wedge-direction convention is
-    /// anchored to the bond's own B->E order, not to "whichever atom turns
-    /// out to be the real stereocenter."
+    /// B/E-reversed variant, non-directional (required by review, and the
+    /// review's own required *expected value* corrected from an earlier,
+    /// wrong assumption): `Bold`/`Hash`/`Dash` have NO Begin/End
+    /// convention in the CDXML spec at all -- unlike `WedgeBegin`/
+    /// `WedgeEnd`, whose Begin atom is a real, drawn narrow end. Which
+    /// atom a `<b>` element happens to list first as `B` for a `Bold`
+    /// bond is an arbitrary artifact of how the file was written, not a
+    /// stereo-relevant signal -- so swapping B/E for the SAME `Bold`
+    /// drawing must PRESERVE the perceived configuration, not invert it.
     #[test]
-    fn rdkit_9359_bold_be_reversed_inverts_configuration() {
-        let (mol_forward, _) = parse_cdxml(&rdkit_9359_cdxml(Some("Bold"))).unwrap();
+    fn rdkit_9359_bold_be_reversed_preserves_configuration() {
+        let (mol_forward, _) = parse_infer(&rdkit_9359_cdxml(Some("Bold")));
         let reversed = rdkit_9359_cdxml(Some("Bold")).replace(
             r#"<b id="101" B="1" E="2" Display="Bold"/>"#,
             r#"<b id="101" B="2" E="1" Display="Bold"/>"#,
         );
-        let (mol_reversed, _) = parse_cdxml(&reversed).unwrap();
+        let (mol_reversed, _) = parse_infer(&reversed);
         let forward = mol_forward.atom(RDKIT_9359_CENTER).chirality;
         let rev = mol_reversed.atom(RDKIT_9359_CENTER).chirality;
         assert_ne!(forward, Chirality::None);
-        assert_ne!(rev, Chirality::None);
-        assert_ne!(
+        assert_eq!(
             forward, rev,
-            "reversing B/E for the same Display must invert the perceived configuration"
+            "Bold has no Begin/End convention -- reversing B/E for the identical \
+             drawing must NOT change the perceived configuration"
+        );
+    }
+
+    /// Same B/E-reversal check for `Hash` (the other non-directional
+    /// display), independently -- not inferred from the Bold case alone.
+    #[test]
+    fn rdkit_9359_hash_be_reversed_preserves_configuration() {
+        let (mol_forward, _) = parse_infer(&rdkit_9359_cdxml(Some("Hash")));
+        let reversed = rdkit_9359_cdxml(Some("Hash")).replace(
+            r#"<b id="101" B="1" E="2" Display="Hash"/>"#,
+            r#"<b id="101" B="2" E="1" Display="Hash"/>"#,
+        );
+        let (mol_reversed, _) = parse_infer(&reversed);
+        let forward = mol_forward.atom(RDKIT_9359_CENTER).chirality;
+        let rev = mol_reversed.atom(RDKIT_9359_CENTER).chirality;
+        assert_ne!(forward, Chirality::None);
+        assert_eq!(
+            forward, rev,
+            "Hash has no Begin/End convention -- reversing B/E for the identical \
+             drawing must NOT change the perceived configuration"
+        );
+    }
+
+    /// Negative control, directional: `WedgeBegin` DOES have a real
+    /// Begin/End convention (the Begin atom is the drawn narrow end), so
+    /// switching to `WedgeEnd` for the SAME B/E atom order must genuinely
+    /// invert the configuration (the reference atom flips) -- proves the
+    /// preserve-under-swap behavior above is specific to the
+    /// non-directional set, not a blanket "wedges don't encode direction"
+    /// regression. Uses the default parser (no opt-in needed, directional
+    /// wedges are unaffected by the flag either way).
+    #[test]
+    fn rdkit_9359_wedge_begin_vs_wedge_end_inverts_configuration() {
+        let (mol_begin, _) = parse_cdxml(&rdkit_9359_cdxml(Some("WedgeBegin"))).unwrap();
+        let (mol_end, _) = parse_cdxml(&rdkit_9359_cdxml(Some("WedgeEnd"))).unwrap();
+        let begin = mol_begin.atom(RDKIT_9359_CENTER).chirality;
+        let end = mol_end.atom(RDKIT_9359_CENTER).chirality;
+        assert_ne!(begin, Chirality::None);
+        assert_ne!(end, Chirality::None);
+        assert_ne!(
+            begin, end,
+            "WedgeBegin vs WedgeEnd (same B/E order) must invert -- the Begin \
+             atom is a real, drawn reference, unlike Bold/Hash"
         );
     }
 
@@ -940,13 +1187,13 @@ mod tests {
     #[test]
     fn rdkit_9359_bold_reflection_inverts_rotation_translation_preserves() {
         let base = rdkit_9359_cdxml(Some("Bold"));
-        let (mol_base, coords_base) = parse_cdxml(&base).unwrap();
+        let (mol_base, coords_base) = parse_infer(&base);
         let base_chirality = mol_base.atom(RDKIT_9359_CENTER).chirality;
         assert_ne!(base_chirality, Chirality::None);
 
         // Reflection: negate Y for every atom's `p` attribute.
         let reflect_re = regex_lite_reflect_y(&base);
-        let (mol_reflected, _) = parse_cdxml(&reflect_re).unwrap();
+        let (mol_reflected, _) = parse_infer(&reflect_re);
         assert_eq!(
             mol_reflected.atom(RDKIT_9359_CENTER).chirality,
             invert(base_chirality),
@@ -1030,7 +1277,7 @@ mod tests {
 <b B="2" E="7"/>
 <b B="2" E="8"/>
 </fragment></CDXML>"#;
-        let (mol, _) = parse_cdxml(cdxml).unwrap();
+        let (mol, _) = parse_infer(cdxml);
         let a1 = chematic_core::AtomIdx(0);
         let a2 = chematic_core::AtomIdx(1);
         assert_eq!(mol.neighbors(a1).count(), 4);
@@ -1043,8 +1290,9 @@ mod tests {
         assert_eq!(mol.atom(a2).chirality, Chirality::None);
         assert_eq!(
             mol.bond(chematic_core::BondIdx(0)).order,
-            BondOrder::Single,
-            "the ambiguous bond itself must be downgraded before perception runs"
+            BondOrder::Up,
+            "the bond's own order still faithfully records Bold -> Up; only \
+             chirality PERCEPTION abstains, structural fidelity is unconditional"
         );
     }
 
