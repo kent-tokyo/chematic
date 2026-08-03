@@ -70,6 +70,11 @@ impl RingMembership {
 /// seen as 6-membered, not folded into one artificial larger ring.
 pub struct RingMembershipIndex {
     by_bond: HashMap<(u32, u32), Vec<usize>>,
+    /// Every ring INDEX (position into `rings`) the bond belongs to --
+    /// unlike `by_bond` (sizes), this preserves ring IDENTITY, so two
+    /// different same-sized rings are distinguishable. Pushed in the same
+    /// loop iteration as `by_bond` below, so the two can never desync.
+    by_bond_ring_ids: HashMap<(u32, u32), Vec<usize>>,
     /// The augmented ring set itself (atom sequences, not just sizes) --
     /// needed by the basic-chemical-knowledge flat-ring rule, which must
     /// walk a specific ring's atom order to build the A-B-C-D tetrad, not
@@ -82,7 +87,8 @@ impl RingMembershipIndex {
         let sssr = find_sssr(mol);
         let rings = augmented_ring_set(mol, sssr.rings());
         let mut by_bond: HashMap<(u32, u32), Vec<usize>> = HashMap::new();
-        for ring in &rings {
+        let mut by_bond_ring_ids: HashMap<(u32, u32), Vec<usize>> = HashMap::new();
+        for (ring_id, ring) in rings.iter().enumerate() {
             let n = ring.len();
             if n == 0 {
                 continue;
@@ -92,9 +98,14 @@ impl RingMembershipIndex {
                 let b = ring[(i + 1) % n].0;
                 let key = (a.min(b), a.max(b));
                 by_bond.entry(key).or_default().push(n);
+                by_bond_ring_ids.entry(key).or_default().push(ring_id);
             }
         }
-        Self { by_bond, rings }
+        Self {
+            by_bond,
+            by_bond_ring_ids,
+            rings,
+        }
     }
 
     /// All rings (atom sequences, in ring order) in this molecule's
@@ -108,6 +119,17 @@ impl RingMembershipIndex {
     /// bond is not in any ring.
     pub fn ring_sizes_for(&self, a: AtomIdx, b: AtomIdx) -> &[usize] {
         self.by_bond
+            .get(&(a.0.min(b.0), a.0.max(b.0)))
+            .map(|v| v.as_slice())
+            .unwrap_or(&[])
+    }
+
+    /// Every ring index (into [`Self::rings`]) the bond `(a,b)` belongs to.
+    /// Use this instead of [`Self::ring_sizes_for`] whenever "does this bond
+    /// continue the *same* ring as some other bond" matters -- ring size
+    /// alone cannot distinguish two different rings of the same size.
+    pub fn ring_ids_for(&self, a: AtomIdx, b: AtomIdx) -> &[usize] {
+        self.by_bond_ring_ids
             .get(&(a.0.min(b.0), a.0.max(b.0)))
             .map(|v| v.as_slice())
             .unwrap_or(&[])
