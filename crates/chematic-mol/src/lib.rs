@@ -38,7 +38,10 @@ pub mod tdt;
 // Convenient re-exports at crate root.
 pub use error::MolParseError;
 // Re-export MolParseError under the alias MolError as specified by the public API.
-pub use cdxml::{CdxmlError, parse_cdxml, parse_cdxml_all, write_cdxml};
+pub use cdxml::{
+    CdxmlError, CdxmlParseOptions, parse_cdxml, parse_cdxml_all, parse_cdxml_all_with_options,
+    parse_cdxml_with_options, write_cdxml,
+};
 pub use cif::{CifError, CifResult, UnitCell, parse_cif, write_cif};
 pub use cjson::{CjsonError, parse_cjson, write_cjson};
 pub use cml::{CmlError, parse_cml, write_cml};

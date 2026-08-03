@@ -753,6 +753,17 @@ impl Molecule {
         self.atoms[idx.0 as usize].chirality = chirality;
     }
 
+    /// Set the bond order of bond `idx` in-place. Endpoints (`atom1`/
+    /// `atom2`) and adjacency are untouched -- order alone doesn't affect
+    /// connectivity, so unlike [`Self::remove_bond`] + [`Self::add_bond`],
+    /// this never perturbs any atom's `neighbors()` iteration order (some
+    /// callers, e.g. 2D-wedge tetrahedral-parity perception, rely on that
+    /// order to pick an "apex" neighbor -- a remove+re-add would silently
+    /// change which neighbor that is).
+    pub fn set_bond_order(&mut self, idx: BondIdx, order: BondOrder) {
+        self.bonds[idx.0 as usize].order = order;
+    }
+
     /// Return the enhanced stereo groups attached to this molecule.
     pub fn stereo_groups(&self) -> &[StereoGroup] {
         &self.stereo_groups
