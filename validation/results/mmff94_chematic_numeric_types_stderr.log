@@ -1,0 +1,4 @@
+   Compiling chematic-ff v0.10.1 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-ff)
+   Compiling chematic-3d v0.10.1 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-3d)
+    Finished `release` profile [optimized] target(s) in 10.22s
+     Running `target/release/examples/mmff94_numeric_type_dump`

@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Issue #227 Priority 1A-2, Phase 1.1: exhaustive per-atom evidence for the
-79 atoms remaining in the Priority-1A residual after this PR's two
-production fixes (NC=C, 129 atoms; the C=C/C=O double-bond-partner
-umbrella, 39 atoms -- both closed to 0, verified by corpus re-measurement
-and Rust regression tests, and therefore not re-documented here on a
-per-atom basis). Classified into exclusive buckets, 0 unclassified.
+"""Issue #227 Priority 1A-2, Phase 1.1 (originally): exhaustive per-atom
+evidence for the residual left after each fix in the Priority-1A/1A-2/1A-3
+sequence. As of Priority 1A-3, the residual is 42 atoms (down from the
+1A-2-era 79): NC=C (129 atoms, PR #239), the C=C/C=O double-bond-partner
+umbrella (39 atoms, PR #239), and the O2CM terminal-oxygen umbrella (37
+atoms, Priority 1A-3) are all closed to 0 -- verified by corpus
+re-measurement and Rust regression tests, and therefore not re-documented
+here on a per-atom basis. Classified into exclusive buckets, 0 unclassified.
 
 Ground truth: `validation/results/mmff94_chematic_numeric_types.jsonl`
 (post-fix chematic dump) joined against
