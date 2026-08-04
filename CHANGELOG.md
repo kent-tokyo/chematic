@@ -9,7 +9,98 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_Nothing yet — everything below `[0.10.1]` has shipped._
+_Nothing yet — everything below `[0.11.0]` has shipped._
+
+## [0.11.0] — 2026-08-04
+
+Four independent fixes surfaced while surveying RDKit's open GitHub issues
+for applicability to chematic, plus one MMFF94 typing-coverage fix from the
+ongoing issue #227 program. No breaking API changes.
+
+### Fixed — `chematic-ff` (MMFF94 correctness and coverage)
+
+- **O2CM terminal-oxygen typing gap closed** (issue #227 Priority 1A-3,
+  PR #241). RDKit's `AtomTyper.cpp` `case 8` (aliphatic oxygen) terminal-atom
+  branch resolves a much broader set of conditions than the numeric-type
+  registry's "O2CM / OXYGEN, CARBOXYLATE ANION" name suggests; chematic's
+  typer only covered a subset, so any terminal oxygen outside it fell
+  through to the wrong row. Ported the real union of conditions from a
+  pinned RDKit source, cross-checked against a live RDKit oracle across 19
+  distinct molecules. Wrong-element parameter selection remains
+  structurally prohibited by the construction-time semantic-compatibility
+  invariant introduced in 0.10.1 — this fix closes a *coverage* gap, not a
+  cross-element-mismatch regression (that count stays 0).
+  - Measured on the 265-molecule Wave 1 corpus (6693 comparable atoms):
+    exact atom-type parity 98.82% → **99.37%** (6614 → 6651/6693);
+    oxygen-element parity 95.88% → **100.00%** (861 → 898/898); production
+    `minimize_with_policy(Mmff94BondAngleStrict)` success 123 → **130/265**;
+    cross-element mismatch 0 → 0 (unchanged); unclassified 0 → 0
+    (unchanged). All 42 remaining real mismatches are fully classified by
+    bucket, none unexplained. Issue #227 stays open — MMFF94 coverage is
+    measurably better, this release does not claim it is complete.
+
+### Fixed — `chematic-rxn`, `chematic-mol` (stereo and format correctness)
+
+- **SMIRKS product chirality made parity-aware** (PR #243). Reaction
+  templates that reorder mapped substituents (e.g.
+  `[C@@H:1](F)(Cl)Br >> [C@@H:1](Cl)(F)Br`) previously copied the template's
+  `@`/`@@` flag onto the product verbatim, ignoring that a reordered
+  neighbor-write-order changes the real configuration the flag encodes —
+  producing a silently un-inverted product. A product atom with an explicit
+  template chirality now has its mapped neighbor order validated against
+  the atom's real final topology before the flag is kept. A product atom
+  that only *inherits* a reactant's chirality (no explicit template flag)
+  is now kept only when a defined `stereo_neighbor_order` exists on the
+  reactant side and neither the unmapped-neighbor element set nor the
+  mapped-neighbor atom-map-number set changed across the template — closing
+  a gap where a stale flag from a topology change inside the mapped core
+  could survive. Both branches fail closed to `Chirality::None` on any
+  unresolvable case, matching this project's standing no-silent-wrong
+  policy.
+- **CDXML reader perceives tetrahedral stereo from directional wedges**
+  (RDKit issue #9359, PR #244). `parse_cdxml`/`parse_cdxml_all` previously
+  never ran tetrahedral-parity perception at all — `Atom.chirality` stayed
+  `Chirality::None` regardless of how a molecule was drawn. Wired into the
+  same shared `apply_local_parity_from_wedges` mechanism MOL V2000/V3000
+  and MRV already use. Non-directional displays (`Bold`/`Hash`/`Dash`, which
+  ChemDraw sometimes draws for plain visual emphasis rather than stereo
+  intent, and which have no Begin/End reference convention) are perceived
+  only opt-in, via the new `CdxmlParseOptions { infer_nondirectional_stereo:
+  bool }` (default `false`) and `parse_cdxml_with_options`/
+  `parse_cdxml_all_with_options`; directional wedges
+  (`WedgeBegin`/`WedgeEnd`/`WedgedHashBegin`/`WedgedHashEnd`) are always
+  perceived. When non-directional inference is enabled, the result is now
+  independent of which atom a `<b>` element happens to list first (`B` vs
+  `E`) — a bond-order-flip normalization (new `Molecule::set_bond_order`,
+  chematic-core) replaces an earlier endpoint-swap approach that was found
+  to silently perturb `neighbors()` iteration order and corrupt the very
+  parity calculation it fed. `bond.order` (`Up`/`Down`) is recorded
+  faithfully for any wedge display regardless of the flag; only chirality
+  *perception* is gated.
+
+### Fixed — `chematic-depict`, `chematic-3d` (2D/3D correctness)
+
+- **2D depiction no longer collides independent ring systems** (PR #242).
+  Ring systems with no shared/fused atoms (separate substituents on a
+  chain, or a spiro junction) were placed via a coordinate-blind
+  `place_regular_ring` fallback that always centers at the literal origin —
+  two unrelated same-sized rings could land at bit-for-bit identical
+  coordinates. Replaced the old two-phase "place all rings blind, then
+  place chains" layout with a single connectivity-driven growth pass that
+  anchors every newly-placed ring, including single-atom (spiro) junctions,
+  relative to already-placed geometry.
+- **ETKDG macrocyclic amide 1-4 distance bounds now split by true
+  cis/trans ring role** (PR #245). `macrocycle_14_bound_adjustments`
+  previously pinned all four combinatorial 1-4 atom pairs across a
+  tertiary/secondary amide bond to the same tight *cis* distance band — a
+  geometrically unsatisfiable constraint set (a planar amide's four
+  combinatorial pairs actually split 2 cis + 2 trans) whose least-bad
+  embedding compromise was an unphysical ~90-130° dihedral twist instead of
+  planar. Now computed from real ring-continuation role instead of a
+  blanket assumption. When a central amide bond belongs to two or more
+  eligible macrocycles at once (a theta-graph topology, where the correct
+  role assignment is genuinely ambiguous), the embedder abstains to a
+  relaxed band rather than guessing.
 
 ## [0.10.1] — 2026-08-02
 
