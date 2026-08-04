@@ -41,32 +41,50 @@ const MAX_ATTEMPTS: usize = 8;
 struct Arm {
     name: &'static str,
     force_field: ForceFieldPolicy,
+    stereo_policy: StereoPolicy,
 }
 
 const PIPELINE_ARMS: &[Arm] = &[
+    // Existing arms (Ignore StereoPolicy for backward compatibility with v0.10.0 baseline)
     Arm {
         name: "chematic_pipeline_v2_no_ff",
         force_field: ForceFieldPolicy::None,
+        stereo_policy: StereoPolicy::Ignore,
     },
     Arm {
         name: "chematic_pipeline_v2_dreiding",
         force_field: ForceFieldPolicy::Dreiding,
+        stereo_policy: StereoPolicy::Ignore,
     },
     Arm {
         name: "chematic_pipeline_v2_uff_only",
         force_field: ForceFieldPolicy::UffOnly,
+        stereo_policy: StereoPolicy::Ignore,
     },
     Arm {
         name: "chematic_pipeline_v2_mmff94_strict",
         force_field: ForceFieldPolicy::Mmff94BondAngleStrict,
+        stereo_policy: StereoPolicy::Ignore,
     },
     Arm {
         name: "chematic_pipeline_v2_mmff94_with_uff_fallback",
         force_field: ForceFieldPolicy::Mmff94WithUffFallback,
+        stereo_policy: StereoPolicy::Ignore,
+    },
+    // New arms for Priority 1 Wave 1 re-benchmark: RepairAndVerify variants
+    Arm {
+        name: "chematic_pipeline_v2_mmff94_strict_repair",
+        force_field: ForceFieldPolicy::Mmff94BondAngleStrict,
+        stereo_policy: StereoPolicy::RepairAndVerify,
+    },
+    Arm {
+        name: "chematic_pipeline_v2_mmff94_with_uff_fallback_repair",
+        force_field: ForceFieldPolicy::Mmff94WithUffFallback,
+        stereo_policy: StereoPolicy::RepairAndVerify,
     },
 ];
 
-fn base_config(force_field: ForceFieldPolicy) -> PipelineV2Config {
+fn base_config(force_field: ForceFieldPolicy, stereo_policy: StereoPolicy) -> PipelineV2Config {
     PipelineV2Config {
         embed: EmbedParameters {
             random_seed: EMBED_SEED,
@@ -85,7 +103,9 @@ fn base_config(force_field: ForceFieldPolicy) -> PipelineV2Config {
         // non-fabricated evidence (see StereoPolicy::Ignore's own doc comment)
         // -- keeps "coverage" (typed success/failure) and "stereo correctness"
         // as genuinely separate metrics rather than conflating them.
-        stereo_policy: StereoPolicy::Ignore,
+        // StereoPolicy::RepairAndVerify attempts to correct stereo mismatches
+        // after force-field minimization, and gates overall success on repair outcome.
+        stereo_policy,
         fail_on_unevaluable_stereo: false,
         force_field_policy: force_field,
         force_field_max_iterations: 200,
@@ -215,17 +235,18 @@ fn legacy_geometry_check(mol: &Molecule, coords: &Coords3D) -> LegacyGeometryChe
 /// arms' coverage numbers (see `base_config`'s own comment for why the main
 /// arms use `DiagnosticOnly` instead).
 fn run_fail_closed_probe(mol: &Molecule) -> Value {
-    let mut config = base_config(ForceFieldPolicy::Dreiding);
+    let mut config = base_config(ForceFieldPolicy::Dreiding, StereoPolicy::Ignore);
     config.ring_torsion_policy = RingTorsionApplicationPolicy::FailClosed;
     let arm = Arm {
         name: "chematic_pipeline_v2_ring_torsion_failclosed_probe",
         force_field: ForceFieldPolicy::Dreiding,
+        stereo_policy: StereoPolicy::Ignore,
     };
     run_pipeline_arm_with_config(mol, &arm, &config)
 }
 
 fn run_pipeline_arm(mol: &Molecule, arm: &Arm) -> Value {
-    let config = base_config(arm.force_field);
+    let config = base_config(arm.force_field, arm.stereo_policy);
     run_pipeline_arm_with_config(mol, arm, &config)
 }
 
@@ -301,6 +322,22 @@ fn run_pipeline_arm_with_config(mol: &Molecule, arm: &Arm, config: &PipelineV2Co
                 "failure_cause": cause_kind,
                 "failure_stage": stage_str(&f.stage),
                 "has_last_known_coords": f.last_known_coords.is_some(),
+                // PipelineV2Failure carries partial stereo evidence computed
+                // before the failure point (Some whenever that stage was
+                // reached, regardless of eventual pipeline outcome) --
+                // surfaced here so paired-arm RepairAndVerify analysis isn't
+                // silently blind to molecules that reached repair but failed
+                // at a later stage (e.g. force-field minimization).
+                "stereo_before_declared": f.stereo_before.as_ref().map(|s| s.n_declared()),
+                "stereo_before_satisfied": f.stereo_before.as_ref().map(|s| s.n_satisfied()),
+                "stereo_before_violations": f.stereo_before.as_ref().map(|s| s.n_violations()),
+                "stereo_before_unevaluable": f.stereo_before.as_ref().map(|s| s.n_unevaluable()),
+                "stereo_repaired_count": f.stereo_repair.as_ref().map(|s| s.repaired.len()),
+                "stereo_repair_failed_count": f.stereo_repair.as_ref().map(|s| s.failures.len()),
+                "final_stereo_declared": f.final_stereo.as_ref().map(|s| s.n_declared()),
+                "final_stereo_satisfied": f.final_stereo.as_ref().map(|s| s.n_satisfied()),
+                "final_stereo_violations": f.final_stereo.as_ref().map(|s| s.n_violations()),
+                "final_stereo_unevaluable": f.final_stereo.as_ref().map(|s| s.n_unevaluable()),
             })
         }
     }
@@ -361,7 +398,15 @@ fn main() {
 
     let config_snapshot: HashMap<&str, Value> = PIPELINE_ARMS
         .iter()
-        .map(|arm| (arm.name, json!(format!("{:?}", arm.force_field))))
+        .map(|arm| {
+            (
+                arm.name,
+                json!(format!(
+                    "ff={:?} stereo={:?}",
+                    arm.force_field, arm.stereo_policy
+                )),
+            )
+        })
         .collect();
     eprintln!(
         "config_snapshot embed_seed={EMBED_SEED} max_attempts={MAX_ATTEMPTS} arms={config_snapshot:?}"

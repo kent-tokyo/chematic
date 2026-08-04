@@ -1,0 +1,14 @@
+{
+  "benchmark_session": "priority1_wave1_v0.11.0_rerun",
+  "benchmark_commit": "93aaa9ef25dbd6b23d15d9460591abed060d43de",
+  "benchmark_commit_base": "v0.11.0 (93aaa9e)",
+  "benchmark_date": "2026-08-05",
+  "benchmark_branch": "bench/wave1-265-corpus-v0.11.0-rerun",
+  "common_scorer_blob_sha": "49a8854c0ff493e22b109f69d893d08662e45326",
+  "tier_a_manifest_sha256": "8d4f3f3a70b8ae00c56cdbea81e398093ef25d896f4f252e46448632632166b8",
+  "tier_b_manifest_sha256": "1a1698f5444c1b6e32da4eaa896cc347c7f051fdf71044bf53b6a644f0b9af77",
+  "rdkit_version": "2026.03.3",
+  "rust_version": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+  "python_version": "3.13.6",
+  "os_arch": "aarch64-apple-darwin"
+}

@@ -44,6 +44,16 @@ TIER_A_MANIFEST = ROOT / "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier
 TIER_B_MANIFEST = ROOT / "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_b.json"
 AGGREGATE_OUT = ROOT / "validation/results/pipeline_v2_vs_rdkit_aggregate.json"
 REPORT_OUT = ROOT / "docs/pipeline_v2_vs_rdkit_etkdgv3_benchmark.md"
+ENVIRONMENT_RECORD_PATH = ROOT / "validation/results/pipeline_v2_vs_rdkit_environment_record.json"
+
+
+def load_environment_record():
+    """Reproducibility record written by the benchmark run script (not by
+    this generator) -- see ENVIRONMENT_RECORD_PATH's producer. Missing file
+    is reported honestly, not silently skipped."""
+    if not ENVIRONMENT_RECORD_PATH.exists():
+        return {"status": "MISSING", "note": f"{ENVIRONMENT_RECORD_PATH} not found at report-generation time"}
+    return json.loads(ENVIRONMENT_RECORD_PATH.read_text())
 
 CHEMATIC_ARMS = [
     "chematic_pipeline_v2_no_ff",
@@ -51,7 +61,41 @@ CHEMATIC_ARMS = [
     "chematic_pipeline_v2_uff_only",
     "chematic_pipeline_v2_mmff94_strict",
     "chematic_pipeline_v2_mmff94_with_uff_fallback",
+    "chematic_pipeline_v2_mmff94_strict_repair",
+    "chematic_pipeline_v2_mmff94_with_uff_fallback_repair",
     "chematic_legacy_etkdg",
+]
+
+# Priority 1 (v0.11.0 re-benchmark) added the 2 RepairAndVerify arms above as
+# genuinely independent arms (StereoPolicy::RepairAndVerify instead of
+# Ignore) -- never as a config edit to the pre-existing 5 Ignore-policy arms,
+# which are untouched. Each repair arm pairs with an existing Ignore arm of
+# the same ForceFieldPolicy for the paired-arm comparisons below.
+REPAIR_ARM_PAIRS = [
+    ("chematic_pipeline_v2_mmff94_strict", "chematic_pipeline_v2_mmff94_strict_repair"),
+    (
+        "chematic_pipeline_v2_mmff94_with_uff_fallback",
+        "chematic_pipeline_v2_mmff94_with_uff_fallback_repair",
+    ),
+]
+
+# Real pipeline_v2 execution order (crates/chematic-3d/src/pipeline_v2.rs
+# `PipelineStage` enum + its actual call sequence) -- stereo repair happens
+# BEFORE force-field minimization, not after, so the funnel below follows
+# that order rather than an assumed "embed -> FF -> stereo" sequence.
+PIPELINE_STAGE_ORDER = [
+    "ValidateConfig",
+    "TorsionKnowledge",
+    "MacrocycleBoundAdjustment",
+    "DistanceGeometry",
+    "TorsionEnergyEvaluation",
+    "TorsionOptimization",
+    "StereoVerifyBefore",
+    "StereoRepair",
+    "StereoVerifyAfterRepair",
+    "ForceFieldMinimization",
+    "FinalStereoVerify",
+    "FinalGeometryValidationStage",
 ]
 RDKIT_ARMS = [
     "rdkit_etkdgv3_raw",
@@ -377,8 +421,154 @@ def main():
 
     chematic_ff = {
         arm: ff_summary(chematic_rows, arm)
-        for arm in ["chematic_pipeline_v2_mmff94_with_uff_fallback", "chematic_pipeline_v2_mmff94_strict"]
+        for arm in [
+            "chematic_pipeline_v2_mmff94_with_uff_fallback",
+            "chematic_pipeline_v2_mmff94_strict",
+            "chematic_pipeline_v2_mmff94_strict_repair",
+            "chematic_pipeline_v2_mmff94_with_uff_fallback_repair",
+        ]
     }
+
+    # --- Stage funnel (attempted -> reached each pipeline_v2 stage), per arm ---
+    # `attempted` is always the full corpus. A success row's cutoff_idx is
+    # len(PIPELINE_STAGE_ORDER) (passed everything); a typed_failure/timeout
+    # row's cutoff_idx is the index of its recorded `failure_stage` (the
+    # stage it failed AT, i.e. it reached that stage but did not pass it).
+    # "reached stage S" (attempted S) = cutoff_idx >= index(S).
+    # "passed stage S" (S succeeded)  = cutoff_idx >  index(S).
+    # parse_failure/internal_error rows never entered any arm's pipeline and
+    # get cutoff_idx = -1 (reached/passed nothing).
+    def stage_funnel(rows, arm):
+        arm_rows = [r for r in rows if r["arm"] == arm]
+        n = len(arm_rows)
+        idx = {stage: i for i, stage in enumerate(PIPELINE_STAGE_ORDER)}
+        n_stages = len(PIPELINE_STAGE_ORDER)
+
+        def cutoff_idx(r):
+            if r["_bucket"] == "success":
+                return n_stages
+            if "failure_stage" in r and r["failure_stage"] in idx:
+                return idx[r["failure_stage"]]
+            return -1
+
+        cutoffs = [cutoff_idx(r) for r in arm_rows]
+
+        def reached(stage):
+            return sum(1 for c in cutoffs if c >= idx[stage])
+
+        def passed(stage):
+            return sum(1 for c in cutoffs if c > idx[stage])
+
+        return {
+            "attempted": n,
+            "embed_succeeded": passed("DistanceGeometry"),
+            "stereo_repair_reached": reached("StereoRepair"),
+            "ff_attempted": reached("ForceFieldMinimization"),
+            "ff_succeeded": passed("ForceFieldMinimization"),
+            "final_stereo_verified": passed("FinalStereoVerify"),
+            "final_validation_passed": sum(1 for r in arm_rows if r["_bucket"] == "success"),
+        }
+
+    stage_funnels = {arm: stage_funnel(chematic_rows, arm) for arm in CHEMATIC_ARMS}
+
+    # --- RepairAndVerify effectiveness: paired-arm comparison against the
+    # matching Ignore-policy arm of the same ForceFieldPolicy. Repair time
+    # and geometry-degradation are NOT directly instrumented per-row -- both
+    # are derived as a per-molecule (repair arm - Ignore arm) difference,
+    # which is a paired comparison, not an isolated repair-stage timer.
+    #
+    # `PipelineV2Failure` carries partial stereo evidence (Some whenever
+    # that stage was reached, None otherwise), and `pipeline_v2_vs_rdkit_dump.rs`
+    # surfaces it on failure rows too (not success-only) -- so a molecule
+    # that reached repair but failed later (e.g. force-field minimization)
+    # still contributes real before/attempted/succeeded/after counts here,
+    # not a silent 0. `.get(k)` returns JSON `null` (Python `None`) when the
+    # underlying pipeline_v2 Option was None -- `_num(...)` below treats
+    # that as "field not applicable at this row's stage", not zero.
+    _stage_idx_stereo_verify_before = PIPELINE_STAGE_ORDER.index("StereoVerifyBefore")
+
+    def _reached_stereo_verify_before(row):
+        if row["_bucket"] == "success":
+            return True
+        stage = row.get("failure_stage")
+        return stage in PIPELINE_STAGE_ORDER and PIPELINE_STAGE_ORDER.index(stage) >= _stage_idx_stereo_verify_before
+
+    def _num(row, key):
+        v = row.get(key)
+        return v if isinstance(v, (int, float)) else None
+
+    def repair_effectiveness(ignore_arm, repair_arm):
+        ignore_by_key = {(r["tier"], r["name"]): r for r in chematic_rows if r["arm"] == ignore_arm}
+        repair_by_key = {(r["tier"], r["name"]): r for r in chematic_rows if r["arm"] == repair_arm}
+        all_keys = sorted(set(ignore_by_key) & set(repair_by_key))
+
+        comparable_keys = [
+            k
+            for k in all_keys
+            if _reached_stereo_verify_before(repair_by_key[k]) and _reached_stereo_verify_before(ignore_by_key[k])
+        ]
+        n_excluded = len(all_keys) - len(comparable_keys)
+
+        repair_before_mismatch = 0
+        repair_attempted = 0
+        repair_succeeded = 0
+        repair_after_mismatch = 0
+        n_repair_outcome_unavailable = 0
+        geometry_degraded = 0
+        geometry_pairs_compared = 0
+        time_deltas_ms = []
+
+        for key in comparable_keys:
+            rep = repair_by_key[key]
+            ign = ignore_by_key[key]
+            before_v = _num(rep, "stereo_before_violations")
+            if before_v is not None and before_v > 0:
+                repair_before_mismatch += 1
+            repaired_n = _num(rep, "stereo_repaired_count")
+            failed_n = _num(rep, "stereo_repair_failed_count")
+            if repaired_n is not None and failed_n is not None:
+                repair_attempted += repaired_n + failed_n
+                repair_succeeded += repaired_n
+            elif before_v is not None and before_v > 0:
+                # Reached StereoVerifyBefore with a real mismatch, but the
+                # row failed before StereoRepair recorded an outcome (Option
+                # was None at that point) -- outcome genuinely unknown, not 0.
+                n_repair_outcome_unavailable += 1
+            after_v = _num(rep, "final_stereo_violations")
+            if after_v is not None and after_v > 0:
+                repair_after_mismatch += 1
+            if rep["_bucket"] == "success" and ign["_bucket"] == "success":
+                geometry_pairs_compared += 1
+                if rep.get("sound") is False and ign.get("sound") is True:
+                    geometry_degraded += 1
+                if "elapsed_ms" in rep and "elapsed_ms" in ign:
+                    time_deltas_ms.append(rep["elapsed_ms"] - ign["elapsed_ms"])
+
+        return {
+            "ignore_arm": ignore_arm,
+            "repair_arm": repair_arm,
+            "n_molecules_compared": len(comparable_keys),
+            "n_excluded_incomparable": n_excluded,
+            "repair_before_mismatch": repair_before_mismatch,
+            "repair_attempted": repair_attempted,
+            "repair_succeeded": repair_succeeded,
+            "repair_after_mismatch": repair_after_mismatch,
+            "n_repair_outcome_unavailable": n_repair_outcome_unavailable,
+            "geometry_pairs_compared": geometry_pairs_compared,
+            "geometry_degraded_by_repair": geometry_degraded,
+            "repair_time_delta_median_ms": percentile(time_deltas_ms, 0.50),
+            "repair_time_delta_p95_ms": percentile(time_deltas_ms, 0.95),
+            "note": "repair_time_delta is (repair-arm elapsed_ms - Ignore-arm elapsed_ms) "
+            "per molecule, a paired-arm difference -- not a directly instrumented "
+            "repair-stage timer. n_excluded_incomparable = molecules where either arm "
+            "failed before reaching StereoVerifyBefore (excluded, not counted as 0). "
+            "n_repair_outcome_unavailable = molecules with a real before-mismatch where "
+            "the repair arm failed before recording a repair outcome (also not counted as 0).",
+        }
+
+    repair_effectiveness_results = [
+        repair_effectiveness(ignore_arm, repair_arm) for ignore_arm, repair_arm in REPAIR_ARM_PAIRS
+    ]
 
     # --- In-process performance (secondary; process-level is primary, see below) ---
     def summarize_timing(rows):
@@ -433,6 +623,9 @@ def main():
         "common_geometry_quality": common_geometry,
         "stereo_preservation_common_judge": stereo,
         "force_field_coverage": {"chematic": chematic_ff},
+        "stage_funnel": stage_funnels,
+        "repair_effectiveness": repair_effectiveness_results,
+        "environment_record": load_environment_record(),
         "performance_in_process": {
             "chematic": chematic_timing,
             "rdkit": rdkit_timing,
@@ -515,6 +708,29 @@ def write_markdown_report(agg):
     lines.append(f"- Checked: {agg['atom_mapping']['n_checked']}, verified matching: {agg['atom_mapping']['n_verified']}, unavailable/mismatched: {agg['atom_mapping']['n_unavailable']}")
     lines.append("")
 
+    lines.append("## Environment record (reproducibility)")
+    lines.append("")
+    env = agg.get("environment_record", {})
+    if env.get("status") == "MISSING":
+        lines.append(f"**MISSING**: {env.get('note', '')}")
+    else:
+        for key in [
+            "benchmark_session",
+            "benchmark_commit",
+            "benchmark_date",
+            "benchmark_branch",
+            "common_scorer_blob_sha",
+            "tier_a_manifest_sha256",
+            "tier_b_manifest_sha256",
+            "rdkit_version",
+            "rust_version",
+            "python_version",
+            "os_arch",
+        ]:
+            if key in env:
+                lines.append(f"- `{key}`: {env[key]}")
+    lines.append("")
+
     lines.append("## Coverage and usable geometry (explicit denominators)")
     lines.append("")
     lines.append(
@@ -544,8 +760,10 @@ def write_markdown_report(agg):
         f"independently sound, but only "
         f"{agg['coverage']['chematic']['chematic_pipeline_v2_mmff94_strict']['independently_sound_successes']}/"
         f"{agg['coverage']['chematic']['chematic_pipeline_v2_mmff94_strict']['n_rows']} of the *total corpus* "
-        "ends up as a usable geometry under this arm -- the rest is the 216-molecule MMFF94 "
-        "parameter coverage gap (issue #227), not a geometry-quality problem."
+        "ends up as a usable geometry under this arm -- the rest is the "
+        f"{agg['coverage']['chematic']['chematic_pipeline_v2_mmff94_strict']['n_rows'] - agg['coverage']['chematic']['chematic_pipeline_v2_mmff94_strict']['success']}-molecule "
+        "MMFF94 coverage gap (issue #227, ~6,900 stretch-bend terms still ungated by this "
+        "strict check -- see Priority 2/Stage 1B), not a geometry-quality problem."
     )
     lines.append("")
 
@@ -573,26 +791,38 @@ def write_markdown_report(agg):
                 f"{fmt_pct(g['independently_sound_rate'])} |"
             )
     lines.append("")
+    _legacy_geo = agg["common_geometry_quality"]["chematic"].get("chematic_legacy_etkdg")
+    _pv2_arms_geo = {
+        a: g for a, g in agg["common_geometry_quality"]["chematic"].items() if a != "chematic_legacy_etkdg" and g
+    }
+    _n_pv2_fully_sound = sum(1 for g in _pv2_arms_geo.values() if g["independently_sound_rate"] == 1.0)
     lines.append(
-        "Note (correction vs. the original Wave 1 report): the legacy `etkdg` arm was "
-        "previously reported as 100% sound. This common scorer additionally checks for "
-        "exactly-coincident atom pairs (distance < 1e-3 Å), which the original ad-hoc legacy "
-        "scorer did not -- 14/265 legacy outputs have ≥1 coincident atom pair and are NOT "
-        "independently sound under this stricter, shared check. All 5 pipeline_v2 arms remain "
-        "100% independently sound (matching their own internal `final_validation.sound`)."
+        "This common scorer checks for exactly-coincident atom pairs (distance < 1e-3 Å), "
+        "which the original ad-hoc legacy scorer did not -- "
+        f"{_legacy_geo['molecules_with_coincident_atoms'] if _legacy_geo else 'n/a'}/"
+        f"{_legacy_geo['n_scored'] if _legacy_geo else 'n/a'} legacy outputs have ≥1 coincident "
+        f"atom pair and are NOT independently sound under this stricter, shared check. "
+        f"{_n_pv2_fully_sound}/{len(_pv2_arms_geo)} pipeline_v2 arms are 100% independently sound "
+        "this run (matching their own internal `final_validation.sound`); see the table above "
+        "for any arm below 100%."
     )
     lines.append("")
 
     lines.append("## Stereo preservation (same judge -- chematic's own `verify_stereo` -- applied to both engines)")
     lines.append("")
     lines.append(
-        "**Methodology, read before the numbers**: chematic's arms below were benchmarked with "
-        "`StereoPolicy::Ignore` (deliberate Wave 1 choice, to keep coverage/geometry metrics "
-        "free of stereo-driven failures). `Ignore` never repairs a violated stereocenter -- so "
-        "these numbers reflect raw distance-geometry-embedding output, NOT chematic's best "
-        "achievable stereo correctness (`StereoPolicy::RepairAndVerify`, not exercised this "
-        "round). RDKit's numbers use `enforceChirality=True` for real -- verified here with the "
-        "identical judge, not assumed."
+        "**Methodology, read before the numbers**: the 5 `Ignore`-policy arms below reflect raw "
+        "distance-geometry-embedding output -- `Ignore` never repairs a violated stereocenter, so "
+        "those rows are NOT chematic's best achievable stereo correctness. Starting this round "
+        "(Priority 1, v0.11.0 re-benchmark), 2 additional `StereoPolicy::RepairAndVerify` arms "
+        "(`chematic_pipeline_v2_mmff94_strict_repair` / `..._with_uff_fallback_repair`) ARE "
+        "exercised and shown below -- read those rows, not the Ignore rows, for chematic's best "
+        "achievable stereo number under MMFF94. Their lower `declared`/`molecules w/ declared "
+        "stereo` counts vs. the matching Ignore arm reflect fewer molecules reaching success at "
+        "all under RepairAndVerify (see the RepairAndVerify effectiveness section below for the "
+        "paired-arm accounting), not a smaller stereo-bearing subset by construction. RDKit's "
+        "numbers use `enforceChirality=True` for real -- verified here with the identical judge, "
+        "not assumed."
     )
     lines.append("")
     lines.append("| Engine | Arm | molecules w/ declared stereo | declared | satisfied | violated | unevaluable | satisfaction rate |")
@@ -655,21 +885,35 @@ def write_markdown_report(agg):
             )
         lines.append("")
         ratio = perf_proc["chematic"]["median_seconds"] / perf_proc["rdkit"]["median_seconds"]
+        _chem_secs = perf_proc["chematic"]["all_seconds"]
+        _chem_max = max(_chem_secs)
+        _chem_rest_median = statistics.median(sorted(_chem_secs, reverse=True)[1:]) if len(_chem_secs) > 1 else _chem_max
+        _outlier_note = (
+            f" chematic's slowest run ({fmt_num(_chem_max, 1)}s) is "
+            f"{'a likely outlier relative to the rest' if _chem_rest_median and _chem_rest_median > 0 and _chem_max > 1.5 * _chem_rest_median else 'in line with the rest'} "
+            f"(remaining runs median {fmt_num(_chem_rest_median, 1)}s) -- reported as-measured, not "
+            "excluded, but flagged rather than silently averaged in as if typical."
+            if len(_chem_secs) > 1 and _chem_rest_median
+            else ""
+        )
         lines.append(
-            f"Whole-corpus median: chematic is ~{ratio:.1f}x slower than RDKit -- **substantially "
-            "smaller** than the ~11x seen on the force-field-heavy arms alone (see in-process table "
-            "below). This whole-corpus figure blends all 6 chematic arms (including the very fast "
-            "`no_ff`/`legacy` arms) with all 4 RDKit arms; it is not in conflict with the per-arm "
-            "figure, it answers a different question (\"run the whole benchmark once\" vs. \"run "
-            "this one force-field arm\"). chematic's first run (615.3s) is a likely system-"
-            "contention outlier relative to the other 4 (~304-320s, tight cluster) -- reported "
-            "as-measured, not excluded, but flagged rather than silently averaged in as if typical; "
-            "machine load average was already elevated (~6 on a 10-core machine) before this "
-            "measurement began, from other concurrent activity on the same machine."
+            f"Whole-corpus median: chematic is ~{ratio:.1f}x slower than RDKit -- compare against "
+            "the per-arm force-field-heavy figures in the in-process table below (this whole-corpus "
+            f"figure blends all {len(CHEMATIC_ARMS)} chematic arms, including the very fast "
+            "`no_ff`/`legacy` arms, with all 4 RDKit arms; it answers a different question -- \"run "
+            "the whole benchmark once\" vs. \"run this one force-field arm\")." + _outlier_note
         )
         lines.append("")
     else:
-        lines.append("### Process-level performance: NOT AVAILABLE this run (see aggregate JSON / re-run `scripts/pipeline_v2_vs_rdkit_process_level_perf.sh`)")
+        lines.append(
+            f"### Process-level performance: NOT RUN this round -- the chematic arm matrix grew "
+            f"from 6 to {len(CHEMATIC_ARMS)} (2 new RepairAndVerify arms), so the stored "
+            "`1bc1b63`-era process-level file would no longer be measuring the same binary and "
+            "was deliberately excluded rather than presented as if comparable. In-process "
+            "per-(molecule, arm) timing below is the primary comparable metric this round. "
+            "Re-run `scripts/pipeline_v2_vs_rdkit_process_level_perf.sh` in a follow-up if the "
+            "whole-corpus process-level figure is needed against the new arm matrix."
+        )
         lines.append("")
 
     lines.append("### In-process per-(molecule, arm) timing (secondary)")
@@ -730,12 +974,76 @@ def write_markdown_report(agg):
         lines.append(f"- {arm}: n={f['n_success']}, fallback_rate={fmt_pct(f['fallback_rate'])}, converged_rate={fmt_pct(f['converged_rate'])}")
     lines.append("")
 
+    lines.append("## Stage funnel (per-arm denominator hierarchy)")
+    lines.append("")
+    lines.append(
+        "Real `pipeline_v2` execution order (`crates/chematic-3d/src/pipeline_v2.rs` "
+        "`PipelineStage` enum + its actual call sequence): embed (`DistanceGeometry`) -> "
+        "torsion optimization -> **stereo verify/repair** -> force-field minimization -> "
+        "final stereo verify -> final geometry validation. Stereo repair happens *before* "
+        "force-field minimization, not after -- the columns below follow that real order, "
+        "not an assumed embed-then-FF-then-stereo sequence. A row reached a stage if its "
+        "`failure_stage` is strictly later than that stage, or if it succeeded outright. "
+        "Never collapsed into a single success rate -- see "
+        "`feedback_fallback_pooling_measurement_error`: `mmff94_strict` and "
+        "`mmff94_with_uff_fallback` are reported as fully separate rows, never blended."
+    )
+    lines.append("")
+    lines.append(
+        "| Arm | attempted | embed_succeeded | stereo_repair_reached | ff_attempted | "
+        "ff_succeeded | final_stereo_verified | final_validation_passed |"
+    )
+    lines.append("|---|---|---|---|---|---|---|---|")
+    for arm in CHEMATIC_ARMS:
+        sf = agg["stage_funnel"][arm]
+        lines.append(
+            f"| {arm} | {sf['attempted']} | {sf['embed_succeeded']} | {sf['stereo_repair_reached']} | "
+            f"{sf['ff_attempted']} | {sf['ff_succeeded']} | {sf['final_stereo_verified']} | "
+            f"{sf['final_validation_passed']} |"
+        )
+    lines.append("")
+    lines.append(
+        "Note: `chematic_legacy_etkdg` does not run through `pipeline_v2` at all (separate "
+        "`generate_coords_etkdg` entry point, no `PipelineStage` tracking) -- its row is "
+        "`attempted`/`final_validation_passed` only, intermediate columns are 0 by construction."
+    )
+    lines.append("")
+
+    lines.append("## RepairAndVerify effectiveness (paired-arm comparison, Priority 1 new arms)")
+    lines.append("")
+    lines.append(
+        "Each `StereoPolicy::RepairAndVerify` arm is a genuinely independent arm (not a "
+        "config edit to the pre-existing `Ignore`-policy arm of the same "
+        "`ForceFieldPolicy`), paired here per-molecule against its Ignore counterpart. "
+        "`repair_time_delta` is `(repair-arm elapsed_ms - Ignore-arm elapsed_ms)` per "
+        "molecule -- a paired-arm difference, not a directly instrumented repair-stage "
+        "timer (pipeline_v2 does not currently expose one)."
+    )
+    lines.append("")
+    lines.append(
+        "| Ignore arm | Repair arm | n compared | excluded (incomparable) | before-mismatch | "
+        "repair attempted | repair succeeded | outcome unavailable | after-mismatch | "
+        "geometry pairs | geometry degraded | time delta median (ms) | time delta p95 (ms) |"
+    )
+    lines.append("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
+    for r in agg["repair_effectiveness"]:
+        lines.append(
+            f"| {r['ignore_arm']} | {r['repair_arm']} | {r['n_molecules_compared']} | "
+            f"{r['n_excluded_incomparable']} | "
+            f"{r['repair_before_mismatch']} | {r['repair_attempted']} | {r['repair_succeeded']} | "
+            f"{r['n_repair_outcome_unavailable']} | "
+            f"{r['repair_after_mismatch']} | {r['geometry_pairs_compared']} | "
+            f"{r['geometry_degraded_by_repair']} | {fmt_num(r['repair_time_delta_median_ms'], 0)} | "
+            f"{fmt_num(r['repair_time_delta_p95_ms'], 0)} |"
+        )
+    lines.append("")
+
     lines.append("## Ring-torsion FailClosed probe")
     lines.append("")
     lines.append(
         f"{agg['ring_torsion_failclosed_probe']['n_rows']} row(s) -- demonstrates "
-        "`RingTorsionApplicationPolicy::FailClosed`'s documented behavior. Not folded into the "
-        "6 main arms' coverage numbers (those use `DiagnosticOnly`)."
+        "`RingTorsionApplicationPolicy::FailClosed`'s documented behavior. Not folded into any "
+        f"of the {len(CHEMATIC_ARMS)} main arms' coverage numbers (those use `DiagnosticOnly`)."
     )
     lines.append("")
 
@@ -746,7 +1054,12 @@ def write_markdown_report(agg):
 
     lines.append("## Known issues filed from this benchmark")
     lines.append("")
-    lines.append(f"- MMFF94 coverage gap (216/265 unsupported, incl. plain benzene): {agg['known_issues_filed']['mmff94_coverage_gap']}")
+    _mmff_strict_cov = agg["coverage"]["chematic"]["chematic_pipeline_v2_mmff94_strict"]
+    lines.append(
+        f"- MMFF94 coverage gap ({_mmff_strict_cov['n_rows'] - _mmff_strict_cov['success']}/{_mmff_strict_cov['n_rows']} "
+        f"not successful under mmff94_strict, PR #236/#238/#239/#241 fixes already reflected in this run): "
+        f"{agg['known_issues_filed']['mmff94_coverage_gap']}"
+    )
     lines.append("")
 
     lines.append("## Data integrity")
@@ -787,10 +1100,26 @@ def write_markdown_report(agg):
     stereo_c = agg["stereo_preservation_common_judge"]["chematic"]["chematic_pipeline_v2_uff_only"]
     stereo_r = agg["stereo_preservation_common_judge"]["rdkit"]["rdkit_etkdgv3_uff"]
     lines.append(
-        f"| Stereo preservation (same judge) | RDKit-favor, methodology caveat applies | "
+        f"| Stereo preservation (same judge, `Ignore`) | RDKit-favor | "
         f"RDKit {fmt_pct(stereo_r['satisfaction_rate']) if stereo_r else 'n/a'} satisfaction vs. chematic "
         f"{fmt_pct(stereo_c['satisfaction_rate']) if stereo_c else 'n/a'} under `StereoPolicy::Ignore` "
-        "(no repair attempted this round -- not chematic's best achievable number) |"
+        "-- not chematic's best achievable number, see next row |"
+    )
+    stereo_strict_repair = agg["stereo_preservation_common_judge"]["chematic"].get(
+        "chematic_pipeline_v2_mmff94_strict_repair"
+    )
+    stereo_fallback_repair = agg["stereo_preservation_common_judge"]["chematic"].get(
+        "chematic_pipeline_v2_mmff94_with_uff_fallback_repair"
+    )
+    lines.append(
+        "| Stereo preservation (same judge, `RepairAndVerify`, new this round) | Parity with RDKit "
+        "among successes, coverage gap remains the real cost | "
+        f"mmff94_strict_repair {fmt_pct(stereo_strict_repair['satisfaction_rate']) if stereo_strict_repair else 'n/a'}, "
+        f"mmff94_with_uff_fallback_repair {fmt_pct(stereo_fallback_repair['satisfaction_rate']) if stereo_fallback_repair else 'n/a'} "
+        "satisfaction among molecules that reached success under RepairAndVerify (both match RDKit's "
+        "100% on that subset) -- but RepairAndVerify also reduces the success *count* vs. the "
+        "matching Ignore arm (fewer molecules reach final success at all when repair is required to "
+        "pass); see the RepairAndVerify effectiveness section for the exact paired accounting |"
     )
     lines.append(
         f"| Force-field convergence rate | RDKit-favor | chematic mmff94_with_uff_fallback "
@@ -809,7 +1138,9 @@ def write_markdown_report(agg):
         f"cyclopentane crash classified `{abl['classification'] if abl else 'n/a'}` -- non-default config, seed-dependent, not RDKit's own default behavior |"
     )
     lines.append(
-        "| Unsupported chemistry | RDKit-favor | chematic mmff94_strict 216/265 unsupported (issue #227); RDKit's 4 arms show 0 unsupported_chemistry rows |"
+        f"| Unsupported chemistry | RDKit-favor | chematic mmff94_strict "
+        f"{mmff_strict['n_rows'] - mmff_strict['success']}/{mmff_strict['n_rows']} unsupported "
+        "(issue #227); RDKit's 4 arms show 0 unsupported_chemistry rows |"
     )
     lines.append(
         "| Reference-geometry accuracy / torsion fingerprint / conformer diversity | Insufficient evidence | not measured this round, not fabricated |"

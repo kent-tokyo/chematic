@@ -58,27 +58,52 @@
       "chematic_pipeline_v2_mmff94_strict": {
         "n_rows": 265,
         "buckets": {
-          "unsupported_chemistry": 216,
-          "success": 38,
-          "typed_failure": 11
+          "success": 149,
+          "unsupported_chemistry": 104,
+          "typed_failure": 12
         },
-        "success": 38,
-        "independently_sound_successes": 38,
+        "success": 149,
+        "independently_sound_successes": 149,
         "sound_given_success": 1.0,
-        "sound_overall": 0.14339622641509434,
-        "usable_coverage": 0.14339622641509434
+        "sound_overall": 0.5622641509433962,
+        "usable_coverage": 0.5622641509433962
       },
       "chematic_pipeline_v2_mmff94_with_uff_fallback": {
         "n_rows": 265,
         "buckets": {
-          "success": 250,
-          "typed_failure": 15
+          "success": 252,
+          "typed_failure": 13
         },
-        "success": 250,
-        "independently_sound_successes": 250,
+        "success": 252,
+        "independently_sound_successes": 252,
         "sound_given_success": 1.0,
-        "sound_overall": 0.9433962264150944,
-        "usable_coverage": 0.9433962264150944
+        "sound_overall": 0.9509433962264151,
+        "usable_coverage": 0.9509433962264151
+      },
+      "chematic_pipeline_v2_mmff94_strict_repair": {
+        "n_rows": 265,
+        "buckets": {
+          "success": 131,
+          "typed_failure": 33,
+          "unsupported_chemistry": 101
+        },
+        "success": 131,
+        "independently_sound_successes": 131,
+        "sound_given_success": 1.0,
+        "sound_overall": 0.49433962264150944,
+        "usable_coverage": 0.49433962264150944
+      },
+      "chematic_pipeline_v2_mmff94_with_uff_fallback_repair": {
+        "n_rows": 265,
+        "buckets": {
+          "success": 229,
+          "typed_failure": 36
+        },
+        "success": 229,
+        "independently_sound_successes": 229,
+        "sound_given_success": 1.0,
+        "sound_overall": 0.8641509433962264,
+        "usable_coverage": 0.8641509433962264
       },
       "chematic_legacy_etkdg": {
         "n_rows": 265,
@@ -309,11 +334,10 @@
       },
       "chematic_pipeline_v2_mmff94_strict": {
         "rigid_ring": {
-          "unsupported_chemistry": 3,
-          "success": 6
+          "success": 9
         },
         "fused_aromatic": {
-          "unsupported_chemistry": 7
+          "success": 7
         },
         "flexible_chain": {
           "success": 6
@@ -322,26 +346,23 @@
           "success": 3
         },
         "stereocenter_implicit_h": {
-          "success": 8,
-          "unsupported_chemistry": 2
+          "success": 10
         },
         "stereocenter_quaternary": {
           "unsupported_chemistry": 6
         },
         "alkene_ez": {
-          "success": 6,
-          "unsupported_chemistry": 2
+          "success": 8
         },
         "druglike": {
-          "unsupported_chemistry": 5,
-          "success": 2
+          "success": 6,
+          "unsupported_chemistry": 1
         },
         "druglike_rigid": {
           "success": 1
         },
         "druglike_stress": {
-          "success": 1,
-          "unsupported_chemistry": 1
+          "success": 2
         },
         "small_ring_boundary": {
           "success": 1
@@ -350,7 +371,7 @@
           "success": 1
         },
         "hindered_biaryl": {
-          "unsupported_chemistry": 1
+          "success": 1
         },
         "macrocycle_amide": {
           "success": 1
@@ -359,12 +380,12 @@
           "success": 1
         },
         "force_field_unsupported": {
-          "unsupported_chemistry": 1
+          "typed_failure": 1
         },
         "drug_like": {
-          "unsupported_chemistry": 188,
-          "typed_failure": 11,
-          "success": 1
+          "unsupported_chemistry": 97,
+          "success": 92,
+          "typed_failure": 11
         }
       },
       "chematic_pipeline_v2_mmff94_with_uff_fallback": {
@@ -417,8 +438,123 @@
           "success": 1
         },
         "drug_like": {
-          "success": 185,
-          "typed_failure": 15
+          "success": 187,
+          "typed_failure": 13
+        }
+      },
+      "chematic_pipeline_v2_mmff94_strict_repair": {
+        "rigid_ring": {
+          "success": 9
+        },
+        "fused_aromatic": {
+          "success": 7
+        },
+        "flexible_chain": {
+          "success": 6
+        },
+        "macrocycle": {
+          "success": 3
+        },
+        "stereocenter_implicit_h": {
+          "success": 8,
+          "typed_failure": 2
+        },
+        "stereocenter_quaternary": {
+          "unsupported_chemistry": 6
+        },
+        "alkene_ez": {
+          "success": 8
+        },
+        "druglike": {
+          "success": 5,
+          "unsupported_chemistry": 1,
+          "typed_failure": 1
+        },
+        "druglike_rigid": {
+          "typed_failure": 1
+        },
+        "druglike_stress": {
+          "typed_failure": 2
+        },
+        "small_ring_boundary": {
+          "success": 1
+        },
+        "macrocycle_boundary": {
+          "success": 1
+        },
+        "hindered_biaryl": {
+          "success": 1
+        },
+        "macrocycle_amide": {
+          "success": 1
+        },
+        "known_fail_closed_case": {
+          "success": 1
+        },
+        "force_field_unsupported": {
+          "typed_failure": 1
+        },
+        "drug_like": {
+          "unsupported_chemistry": 94,
+          "typed_failure": 26,
+          "success": 80
+        }
+      },
+      "chematic_pipeline_v2_mmff94_with_uff_fallback_repair": {
+        "rigid_ring": {
+          "success": 9
+        },
+        "fused_aromatic": {
+          "success": 7
+        },
+        "flexible_chain": {
+          "success": 6
+        },
+        "macrocycle": {
+          "success": 3
+        },
+        "stereocenter_implicit_h": {
+          "success": 8,
+          "typed_failure": 2
+        },
+        "stereocenter_quaternary": {
+          "success": 5,
+          "typed_failure": 1
+        },
+        "alkene_ez": {
+          "success": 8
+        },
+        "druglike": {
+          "success": 6,
+          "typed_failure": 1
+        },
+        "druglike_rigid": {
+          "typed_failure": 1
+        },
+        "druglike_stress": {
+          "typed_failure": 2
+        },
+        "small_ring_boundary": {
+          "success": 1
+        },
+        "macrocycle_boundary": {
+          "success": 1
+        },
+        "hindered_biaryl": {
+          "success": 1
+        },
+        "macrocycle_amide": {
+          "success": 1
+        },
+        "known_fail_closed_case": {
+          "success": 1
+        },
+        "force_field_unsupported": {
+          "success": 1
+        },
+        "drug_like": {
+          "success": 171,
+          "typed_failure": 29
         }
       },
       "chematic_legacy_etkdg": {
@@ -724,19 +860,37 @@
         "molecules_with_coincident_atoms": 0
       },
       "chematic_pipeline_v2_mmff94_strict": {
-        "n_scored": 38,
+        "n_scored": 149,
         "all_finite_rate": 1.0,
         "independently_sound_rate": 1.0,
-        "mean_bond_violation_rate_15pct": 0.006725146198830409,
+        "mean_bond_violation_rate_15pct": 0.007391461195809022,
         "mean_bond_violation_rate_50pct": 0.0,
         "molecules_with_any_clash": 0,
         "molecules_with_coincident_atoms": 0
       },
       "chematic_pipeline_v2_mmff94_with_uff_fallback": {
-        "n_scored": 250,
+        "n_scored": 252,
         "all_finite_rate": 1.0,
         "independently_sound_rate": 1.0,
-        "mean_bond_violation_rate_15pct": 0.006392256095748299,
+        "mean_bond_violation_rate_15pct": 0.006866849790501816,
+        "mean_bond_violation_rate_50pct": 0.0,
+        "molecules_with_any_clash": 0,
+        "molecules_with_coincident_atoms": 0
+      },
+      "chematic_pipeline_v2_mmff94_strict_repair": {
+        "n_scored": 131,
+        "all_finite_rate": 1.0,
+        "independently_sound_rate": 1.0,
+        "mean_bond_violation_rate_15pct": 0.004508870651419606,
+        "mean_bond_violation_rate_50pct": 0.0,
+        "molecules_with_any_clash": 0,
+        "molecules_with_coincident_atoms": 0
+      },
+      "chematic_pipeline_v2_mmff94_with_uff_fallback_repair": {
+        "n_scored": 229,
+        "all_finite_rate": 1.0,
+        "independently_sound_rate": 1.0,
+        "mean_bond_violation_rate_15pct": 0.004494778575941883,
         "mean_bond_violation_rate_50pct": 0.0,
         "molecules_with_any_clash": 0,
         "molecules_with_coincident_atoms": 0
@@ -817,20 +971,36 @@
         "satisfaction_rate": 0.6285714285714286
       },
       "chematic_pipeline_v2_mmff94_strict": {
-        "n_molecules_with_declared_stereo": 19,
-        "declared": 36,
-        "satisfied": 17,
-        "violated": 19,
+        "n_molecules_with_declared_stereo": 64,
+        "declared": 111,
+        "satisfied": 61,
+        "violated": 50,
         "unevaluable": 0,
-        "satisfaction_rate": 0.4722222222222222
+        "satisfaction_rate": 0.5495495495495496
       },
       "chematic_pipeline_v2_mmff94_with_uff_fallback": {
-        "n_molecules_with_declared_stereo": 80,
-        "declared": 140,
-        "satisfied": 88,
-        "violated": 52,
+        "n_molecules_with_declared_stereo": 82,
+        "declared": 143,
+        "satisfied": 81,
+        "violated": 62,
         "unevaluable": 0,
-        "satisfaction_rate": 0.6285714285714286
+        "satisfaction_rate": 0.5664335664335665
+      },
+      "chematic_pipeline_v2_mmff94_strict_repair": {
+        "n_molecules_with_declared_stereo": 46,
+        "declared": 64,
+        "satisfied": 64,
+        "violated": 0,
+        "unevaluable": 0,
+        "satisfaction_rate": 1.0
+      },
+      "chematic_pipeline_v2_mmff94_with_uff_fallback_repair": {
+        "n_molecules_with_declared_stereo": 59,
+        "declared": 85,
+        "satisfied": 85,
+        "violated": 0,
+        "unevaluable": 0,
+        "satisfaction_rate": 1.0
       },
       "chematic_legacy_etkdg": {
         "n_molecules_with_declared_stereo": 90,
@@ -879,135 +1049,253 @@
   "force_field_coverage": {
     "chematic": {
       "chematic_pipeline_v2_mmff94_with_uff_fallback": {
-        "n_success": 250,
-        "fallback_rate": 0.848,
-        "converged_rate": 0.14
+        "n_success": 252,
+        "fallback_rate": 0.4087301587301587,
+        "converged_rate": 0.17063492063492064
       },
       "chematic_pipeline_v2_mmff94_strict": {
-        "n_success": 38,
+        "n_success": 149,
         "fallback_rate": 0.0,
-        "converged_rate": 0.6578947368421053
+        "converged_rate": 0.24161073825503357
+      },
+      "chematic_pipeline_v2_mmff94_strict_repair": {
+        "n_success": 131,
+        "fallback_rate": 0.0,
+        "converged_rate": 0.2595419847328244
+      },
+      "chematic_pipeline_v2_mmff94_with_uff_fallback_repair": {
+        "n_success": 229,
+        "fallback_rate": 0.4279475982532751,
+        "converged_rate": 0.17467248908296942
       }
     }
+  },
+  "stage_funnel": {
+    "chematic_pipeline_v2_no_ff": {
+      "attempted": 265,
+      "embed_succeeded": 254,
+      "stereo_repair_reached": 254,
+      "ff_attempted": 254,
+      "ff_succeeded": 254,
+      "final_stereo_verified": 254,
+      "final_validation_passed": 254
+    },
+    "chematic_pipeline_v2_dreiding": {
+      "attempted": 265,
+      "embed_succeeded": 254,
+      "stereo_repair_reached": 254,
+      "ff_attempted": 254,
+      "ff_succeeded": 254,
+      "final_stereo_verified": 254,
+      "final_validation_passed": 254
+    },
+    "chematic_pipeline_v2_uff_only": {
+      "attempted": 265,
+      "embed_succeeded": 254,
+      "stereo_repair_reached": 254,
+      "ff_attempted": 254,
+      "ff_succeeded": 250,
+      "final_stereo_verified": 250,
+      "final_validation_passed": 250
+    },
+    "chematic_pipeline_v2_mmff94_strict": {
+      "attempted": 265,
+      "embed_succeeded": 254,
+      "stereo_repair_reached": 254,
+      "ff_attempted": 254,
+      "ff_succeeded": 149,
+      "final_stereo_verified": 149,
+      "final_validation_passed": 149
+    },
+    "chematic_pipeline_v2_mmff94_with_uff_fallback": {
+      "attempted": 265,
+      "embed_succeeded": 254,
+      "stereo_repair_reached": 254,
+      "ff_attempted": 254,
+      "ff_succeeded": 252,
+      "final_stereo_verified": 252,
+      "final_validation_passed": 252
+    },
+    "chematic_pipeline_v2_mmff94_strict_repair": {
+      "attempted": 265,
+      "embed_succeeded": 254,
+      "stereo_repair_reached": 254,
+      "ff_attempted": 244,
+      "ff_succeeded": 142,
+      "final_stereo_verified": 131,
+      "final_validation_passed": 131
+    },
+    "chematic_pipeline_v2_mmff94_with_uff_fallback_repair": {
+      "attempted": 265,
+      "embed_succeeded": 254,
+      "stereo_repair_reached": 254,
+      "ff_attempted": 244,
+      "ff_succeeded": 242,
+      "final_stereo_verified": 229,
+      "final_validation_passed": 229
+    },
+    "chematic_legacy_etkdg": {
+      "attempted": 265,
+      "embed_succeeded": 265,
+      "stereo_repair_reached": 265,
+      "ff_attempted": 265,
+      "ff_succeeded": 265,
+      "final_stereo_verified": 265,
+      "final_validation_passed": 265
+    }
+  },
+  "repair_effectiveness": [
+    {
+      "ignore_arm": "chematic_pipeline_v2_mmff94_strict",
+      "repair_arm": "chematic_pipeline_v2_mmff94_strict_repair",
+      "n_molecules_compared": 254,
+      "n_excluded_incomparable": 11,
+      "repair_before_mismatch": 46,
+      "repair_attempted": 64,
+      "repair_succeeded": 52,
+      "repair_after_mismatch": 11,
+      "n_repair_outcome_unavailable": 0,
+      "geometry_pairs_compared": 131,
+      "geometry_degraded_by_repair": 0,
+      "repair_time_delta_median_ms": 0.0,
+      "repair_time_delta_p95_ms": 17.5,
+      "note": "repair_time_delta is (repair-arm elapsed_ms - Ignore-arm elapsed_ms) per molecule, a paired-arm difference -- not a directly instrumented repair-stage timer. n_excluded_incomparable = molecules where either arm failed before reaching StereoVerifyBefore (excluded, not counted as 0). n_repair_outcome_unavailable = molecules with a real before-mismatch where the repair arm failed before recording a repair outcome (also not counted as 0)."
+    },
+    {
+      "ignore_arm": "chematic_pipeline_v2_mmff94_with_uff_fallback",
+      "repair_arm": "chematic_pipeline_v2_mmff94_with_uff_fallback_repair",
+      "n_molecules_compared": 254,
+      "n_excluded_incomparable": 11,
+      "repair_before_mismatch": 46,
+      "repair_attempted": 64,
+      "repair_succeeded": 52,
+      "repair_after_mismatch": 13,
+      "n_repair_outcome_unavailable": 0,
+      "geometry_pairs_compared": 229,
+      "geometry_degraded_by_repair": 0,
+      "repair_time_delta_median_ms": 0.0,
+      "repair_time_delta_p95_ms": 13.599999999999994,
+      "note": "repair_time_delta is (repair-arm elapsed_ms - Ignore-arm elapsed_ms) per molecule, a paired-arm difference -- not a directly instrumented repair-stage timer. n_excluded_incomparable = molecules where either arm failed before reaching StereoVerifyBefore (excluded, not counted as 0). n_repair_outcome_unavailable = molecules with a real before-mismatch where the repair arm failed before recording a repair outcome (also not counted as 0)."
+    }
+  ],
+  "environment_record": {
+    "benchmark_session": "priority1_wave1_v0.11.0_rerun",
+    "benchmark_commit": "93aaa9ef25dbd6b23d15d9460591abed060d43de",
+    "benchmark_commit_base": "v0.11.0 (93aaa9e)",
+    "benchmark_date": "2026-08-05",
+    "benchmark_branch": "bench/wave1-265-corpus-v0.11.0-rerun",
+    "common_scorer_blob_sha": "49a8854c0ff493e22b109f69d893d08662e45326",
+    "tier_a_manifest_sha256": "8d4f3f3a70b8ae00c56cdbea81e398093ef25d896f4f252e46448632632166b8",
+    "tier_b_manifest_sha256": "1a1698f5444c1b6e32da4eaa896cc347c7f051fdf71044bf53b6a644f0b9af77",
+    "rdkit_version": "2026.03.3",
+    "rust_version": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+    "python_version": "3.13.6",
+    "os_arch": "aarch64-apple-darwin"
   },
   "performance_in_process": {
     "chematic": {
       "chematic_pipeline_v2_no_ff": {
         "n": 265,
-        "p50": 9.0,
-        "p95": 55.79999999999998,
-        "p99": 93.32000000000016,
-        "max": 119
+        "p50": 4.0,
+        "p95": 23.0,
+        "p99": 35.360000000000014,
+        "max": 47
       },
       "chematic_pipeline_v2_dreiding": {
         "n": 265,
-        "p50": 306.0,
-        "p95": 2063.2,
-        "p99": 2701.2400000000007,
-        "max": 3040
+        "p50": 123.0,
+        "p95": 1000.9999999999999,
+        "p99": 1148.44,
+        "max": 1268
       },
       "chematic_pipeline_v2_uff_only": {
         "n": 265,
-        "p50": 523.0,
-        "p95": 3436.799999999998,
-        "p99": 4753.960000000002,
-        "max": 7937
+        "p50": 202.0,
+        "p95": 1384.0,
+        "p99": 2054.800000000004,
+        "max": 3468
       },
       "chematic_pipeline_v2_mmff94_strict": {
         "n": 265,
-        "p50": 18.0,
-        "p95": 157.39999999999986,
-        "p99": 1196.720000000009,
-        "max": 4140
+        "p50": 25.0,
+        "p95": 5414.799999999999,
+        "p99": 7637.680000000006,
+        "max": 10713
       },
       "chematic_pipeline_v2_mmff94_with_uff_fallback": {
         "n": 265,
-        "p50": 591.0,
-        "p95": 3283.399999999999,
-        "p99": 4548.680000000004,
-        "max": 7146
+        "p50": 431.0,
+        "p95": 5413.599999999999,
+        "p99": 7664.680000000006,
+        "max": 10736
+      },
+      "chematic_pipeline_v2_mmff94_strict_repair": {
+        "n": 265,
+        "p50": 15.0,
+        "p95": 5453.599999999999,
+        "p99": 7612.800000000007,
+        "max": 10641
+      },
+      "chematic_pipeline_v2_mmff94_with_uff_fallback_repair": {
+        "n": 265,
+        "p50": 368.0,
+        "p95": 5431.399999999999,
+        "p99": 7586.680000000007,
+        "max": 10647
       },
       "chematic_legacy_etkdg": {
         "n": 265,
-        "p50": 2.0,
-        "p95": 9.0,
-        "p99": 14.0,
-        "max": 17
+        "p50": 0.0,
+        "p95": 4.0,
+        "p99": 5.0,
+        "max": 7
       }
     },
     "rdkit": {
       "rdkit_etkdgv3_raw": {
         "n": 265,
-        "p50": 25.0,
-        "p95": 210.59999999999997,
-        "p99": 371.6000000000008,
-        "max": 803
+        "p50": 11.0,
+        "p95": 78.79999999999998,
+        "p99": 140.68000000000018,
+        "max": 332
       },
       "rdkit_etkdgv3_uff": {
         "n": 265,
-        "p50": 48.0,
-        "p95": 291.99999999999966,
-        "p99": 495.44000000000005,
-        "max": 977
+        "p50": 20.0,
+        "p95": 113.59999999999997,
+        "p99": 189.72000000000003,
+        "max": 409
       },
       "rdkit_etkdgv3_mmff94": {
         "n": 265,
-        "p50": 54.0,
-        "p95": 323.39999999999986,
-        "p99": 559.0800000000014,
-        "max": 1024
+        "p50": 22.0,
+        "p95": 121.0,
+        "p99": 196.72000000000003,
+        "max": 421
       },
       "rdkit_etkdgv3_best_of_n": {
         "n": 265,
-        "p50": 489.0,
-        "p95": 2729.9999999999995,
-        "p99": 5059.800000000022,
-        "max": 7327
+        "p50": 192.0,
+        "p95": 1080.3999999999999,
+        "p99": 2046.6400000000058,
+        "max": 3047
       }
     },
     "methodology_note": "In-process wall-clock per (molecule, arm) call within a single long-running process -- NOT process-isolated. Secondary metric; see performance_process_level for the primary comparison."
   },
-  "performance_process_level": {
-    "methodology": "Whole-corpus (265 molecules), separate-process wall-clock per run, sequential (never concurrent with another run or a build). Includes process startup (Rust binary startup / Python+RDKit import) -- not steady-state-only.",
-    "chematic": {
-      "runs": 5,
-      "all_seconds": [
-        615.3416383750155,
-        320.3182751670247,
-        308.07200354197994,
-        312.76034741604235,
-        303.731808624987
-      ],
-      "median_seconds": 312.76034741604235,
-      "min_seconds": 303.731808624987,
-      "max_seconds": 615.3416383750155,
-      "stdev_seconds": 136.14589117011127,
-      "coefficient_of_variation": 0.36593949389493563
-    },
-    "rdkit": {
-      "runs": 5,
-      "all_seconds": [
-        124.50751133396989,
-        130.4047055420233,
-        142.8794856669847,
-        180.1893469170318,
-        188.92541770800017
-      ],
-      "median_seconds": 142.8794856669847,
-      "min_seconds": 124.50751133396989,
-      "max_seconds": 188.92541770800017,
-      "stdev_seconds": 29.385214616571012,
-      "coefficient_of_variation": 0.19158278013408286
-    }
-  },
+  "performance_process_level": null,
   "ring_torsion_failclosed_probe": {
     "n_rows": 1,
     "rows": [
       {
         "arm": "chematic_pipeline_v2_ring_torsion_failclosed_probe",
-        "elapsed_ms": 6,
+        "elapsed_ms": 2,
         "failure_cause": "RingTorsionApplicationUnsupported",
         "failure_stage": "TorsionOptimization",
+        "final_stereo_declared": null,
+        "final_stereo_satisfied": null,
+        "final_stereo_unevaluable": null,
+        "final_stereo_violations": null,
         "has_last_known_coords": true,
         "heavy_atom_elements": [
           "C",
@@ -1033,6 +1321,12 @@
         "primary_category": "known_fail_closed_case",
         "smiles": "C1CCCCC1CCCCCCCCCCCC",
         "status": "typed_failure",
+        "stereo_before_declared": null,
+        "stereo_before_satisfied": null,
+        "stereo_before_unevaluable": null,
+        "stereo_before_violations": null,
+        "stereo_repair_failed_count": null,
+        "stereo_repaired_count": null,
         "tier": "A",
         "_bucket": "unsupported_chemistry"
       }
@@ -1068,8 +1362,8 @@
     "scripts/gen_pipeline_v2_vs_rdkit_report.py"
   ],
   "input_file_hashes": {
-    "chematic_rows_sha256": "585889615aae9002c11046d342157ba3e18e8d0e74cb56bbab7e6e7390d88373",
-    "rdkit_rows_sha256": "ba24a7c64df1c350c60f0ff62e6ec56f68ffff83d684a821d10491fa65286199",
+    "chematic_rows_sha256": "0f732762c7cf13c7e63f548e363532925117b668c5ad291ccf2a88a0477a8775",
+    "rdkit_rows_sha256": "6325a07151a10daec6608bef3c4fc55120fadc89b65d888029bc8f3eac3f06e0",
     "tier_a_manifest_sha256": "6a478ea0f5d4ef067a4d1739e77a7209e8f76ecaa837e3f487c723dd6f465d6b",
     "tier_b_manifest_sha256": "b3cde3fedcc68391ba3d3cbae228acd3057cadea6e6fc17499592b23bdc7550a"
   },
