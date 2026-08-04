@@ -16,7 +16,7 @@ documentation = "https://docs.rs/chematic-smiles"
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.10.1" }
+chematic-core = { path = "../chematic-core", version = "0.11.0" }
 
 [features]
 # Feature-gated internal work counters for the orbit-pruning canonical

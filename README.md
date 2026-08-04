@@ -180,7 +180,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.10.1
+# chematic v0.11.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -419,6 +419,14 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 ## Recent Development
 
+**v0.11.0** (2026-08-04): **MMFF94 O2CM typing coverage, SMIRKS/CDXML stereo correctness, 2D/3D layout fixes**
+- `chematic-ff`: closed the O2CM terminal-oxygen typing gap (issue #227 Priority 1A-3) — atom-type parity 98.82% → 99.37% on the 265-molecule Wave 1 corpus, oxygen-element parity 95.88% → 100%, strict-gate minimization success 123 → 130/265, 0 cross-element mismatches (unchanged). Issue #227 stays open
+- `chematic-rxn`: SMIRKS product chirality assignment made parity-aware — a reordered mapped template neighbor order now correctly inverts/validates the product's `@`/`@@` flag instead of copying it verbatim; inherited (non-template) chirality now fails closed to `Chirality::None` when its neighbor order or mapped topology can't be validated
+- `chematic-mol`: CDXML reader now perceives tetrahedral stereo from directional wedges (RDKit issue #9359), wired into the same shared mechanism MOL/MRV already use; non-directional `Bold`/`Hash`/`Dash` displays are opt-in via `CdxmlParseOptions` and, when enabled, invariant to CDXML's B/E bond-atom ordering
+- `chematic-depict`: independent (non-fused) ring systems no longer collide at identical/near-identical 2D coordinates
+- `chematic-3d`: ETKDG macrocyclic amide 1-4 distance bounds now split by true cis/trans ring-continuation role instead of blanket-pinning all four combinatorial pairs to cis; abstains to a relaxed band when a central amide bond is shared by multiple eligible macrocycles at once
+- Full details in `CHANGELOG.md`'s `[0.11.0]` section
+
 **v0.10.1** (2026-08-02): **MMFF94 numeric-typing correctness hotfix**
 - `chematic-ff`: fixed a class of bug where MMFF94 could silently resolve an atom against a parameter row belonging to a different element and report the resulting physically-wrong energy as success (issue #227's "furan collision") — the aromatic atom typer never implemented RDKit's real 5-/6-ring alpha/beta-heteroatom classification. Ported from a pinned RDKit source with a new provenance-cited numeric-type registry, plus a construction-time semantic-compatibility invariant that makes this bug class fail closed (`NumericTypeError`) instead of silently wrong, going forward. That invariant caught two more instances of the identical bug: a protonated amine N and an anionic O were each being typed as the *other* element's parameter row. Measured on the 265-molecule Wave 1 corpus (production API): 44 → 102 successful MMFF94 minimizations, 0 cross-element type mismatches across 6693 comparable atoms vs. a pinned RDKit oracle (91.83% exact match)
 - This is a correctness hotfix, not a coverage-completion release — issue #227 stays open (140 `MissingParameters` and 22 `MinimizationFailed` cases remain, stretch-bend is not yet gated, no full-corpus energy/gradient parity harness exists yet). See Migration notes in `CHANGELOG.md`'s `[0.10.1]` section if you cache MMFF94 results
@@ -501,7 +509,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.10.1)
+├── Cargo.toml                    workspace root (v0.11.0)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -554,7 +562,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.10.1},
+  version   = {0.11.0},
   year      = {2026},
 }
 ```
