@@ -1021,6 +1021,20 @@ def write_markdown_report(agg):
     )
     lines.append("")
     lines.append(
+        "**Why `before-mismatch`/`repair attempted`/`repair succeeded` are identical between "
+        "the two repair arms below**: verified directly (not assumed) -- "
+        "`stereo_before_violations` matches per-molecule, 1:1, across "
+        "`chematic_pipeline_v2_mmff94_strict_repair` and "
+        "`chematic_pipeline_v2_mmff94_with_uff_fallback_repair` for all 265 molecules. This is "
+        "structural, not a bug: stereo verify/repair runs BEFORE force-field minimization in "
+        "`pipeline_v2`'s real execution order (see the stage-funnel note above), so both arms "
+        "see the identical pre-FF geometry and make identical repair decisions -- the two "
+        "`ForceFieldPolicy` values can only diverge afterward. `after-mismatch` DOES differ "
+        "(11 vs. 13) because `final_stereo` is measured after FF minimization, where the two "
+        "force fields' behavior can differ."
+    )
+    lines.append("")
+    lines.append(
         "| Ignore arm | Repair arm | n compared | excluded (incomparable) | before-mismatch | "
         "repair attempted | repair succeeded | outcome unavailable | after-mismatch | "
         "geometry pairs | geometry degraded | time delta median (ms) | time delta p95 (ms) |"
@@ -1036,6 +1050,16 @@ def write_markdown_report(agg):
             f"{r['geometry_degraded_by_repair']} | {fmt_num(r['repair_time_delta_median_ms'], 0)} | "
             f"{fmt_num(r['repair_time_delta_p95_ms'], 0)} |"
         )
+    lines.append(
+        "\n_Note on reading `after-mismatch` next to the stereo-preservation table's \"100% "
+        "satisfaction\" figure below: they are measured over different populations. The 100% "
+        "satisfaction rate is computed only over the arm's *successful* rows (131/229); "
+        "`after-mismatch` here is computed over all 254 comparable rows, including ones that "
+        "failed after repair (e.g. in force-field minimization) -- so a non-zero after-mismatch "
+        "count and a 100%-among-successes satisfaction rate are not in conflict, they answer "
+        "different denominators. See the Stage funnel table above for the exact per-arm counts "
+        "at each stage._"
+    )
     lines.append("")
 
     lines.append("## Ring-torsion FailClosed probe")
@@ -1121,10 +1145,17 @@ def write_markdown_report(agg):
         "matching Ignore arm (fewer molecules reach final success at all when repair is required to "
         "pass); see the RepairAndVerify effectiveness section for the exact paired accounting |"
     )
+    _ff_fallback = agg["force_field_coverage"]["chematic"]["chematic_pipeline_v2_mmff94_with_uff_fallback"]
     lines.append(
-        f"| Force-field convergence rate | RDKit-favor | chematic mmff94_with_uff_fallback "
-        f"{fmt_pct(agg['force_field_coverage']['chematic']['chematic_pipeline_v2_mmff94_with_uff_fallback']['converged_rate'])} "
-        "converged within 200 iterations; corroborates open issues #185/#188 |"
+        f"| Force-field convergence rate | RDKit-favor, and an input to Priority 3 (Stage 1C) | "
+        f"chematic mmff94_with_uff_fallback {fmt_pct(_ff_fallback['converged_rate'])} converged "
+        f"within 200 iterations, yet {_ff_fallback['n_success']}/265 of that arm's runs pass "
+        "final validation regardless -- i.e. most successful outputs did NOT converge within "
+        "200 iterations and still passed geometry validation. Either `force_field_converged` is "
+        "narrower than \"produced a usable geometry\" (an iteration-budget artifact, not "
+        "necessarily a quality problem), or this is a real gap worth diagnosing -- Priority 3's "
+        "MinimizationFailed root-causing (CatastrophicBondBlowup vs. ExcessiveResidualForce) is "
+        "the next stage that should resolve which; corroborates open issues #185/#188 |"
     )
     if agg.get("performance_process_level"):
         pc = agg["performance_process_level"]["chematic"]["median_seconds"]
