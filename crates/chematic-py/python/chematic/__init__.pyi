@@ -2834,6 +2834,7 @@ class PipelineV2Config:
         force_field_policy: str,
         force_field_max_iterations: int,
         gate_mmff94_torsion_oop: bool,
+        gate_mmff94_stretch_bend: bool,
         ring_torsion_policy: str,
         total_timeout_ms: Optional[int],
     ) -> None: ...
@@ -2853,6 +2854,7 @@ class PipelineV2Config:
         include_legacy_torsion_heuristic: bool = False,
         force_field_max_iterations: int = 200,
         gate_mmff94_torsion_oop: bool = False,
+        gate_mmff94_stretch_bend: bool = False,
         total_timeout_ms: Optional[int] = None,
     ) -> "PipelineV2Config":
         """Convenience constructor.
@@ -2877,6 +2879,7 @@ class PipelineV2Config:
     force_field_policy: str
     force_field_max_iterations: int
     gate_mmff94_torsion_oop: bool
+    gate_mmff94_stretch_bend: bool
     ring_torsion_policy: str
     total_timeout_ms: Optional[int]
 

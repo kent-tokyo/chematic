@@ -881,6 +881,7 @@ mod tests {
             ForceFieldPolicy::UffOnly,
             &MinimizeConfig::default(),
             false,
+            false,
         )
         .expect("real UFF minimization of benzene should succeed");
         let differs_from_real_uff = (0..mol.atom_count() as u32).any(|i| {

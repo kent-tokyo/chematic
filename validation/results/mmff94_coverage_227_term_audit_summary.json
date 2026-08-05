@@ -1,0 +1,38 @@
+{
+  "generated_from": "crates/chematic-3d/examples/mmff94_term_coverage_audit.rs (fresh re-run, post-#236/#238/#239/#241 MMFF94 typing fixes -- supersedes the pre-fix numbers in docs/mmff94_coverage_gap_227_audit.md)",
+  "corpus": "265 molecules (validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_{a,b}.json)",
+  "note": "'routing_bug_candidate' = this exact atom-type tuple HAS a table row, just at a different classification/angle-type code than the one this molecule's context computed -- a candidate for a classification-derivation bug (angle_type_for/torsion_type_for/bond_type_for), not necessarily a genuine table gap. 'table_gap' = absent at EVERY classification code -- a genuine chematic-ff table gap under chematic's OWN existing fallback tiers. For Bond/Angle/Torsion/Oop, 'table_gap' is NOT further sub-classified this round (chematic-ff implements neither MMFF94 equivalence-class substitution nor empirical-rule estimation for these term kinds at all -- Mmff94NumericTypeInfo.equivalence_levels is parsed but has zero readers anywhere in the codebase, verified) -- deferred, not fabricated. For StretchBend specifically, 'table_gap' IS further sub-classified via 'stretch_bend_table_gap_breakdown' below: a diagnostic-only (never wired into production) port of RDKit's REAL stretch-bend fallback path, verified against the pinned RDKit commit (scripts/mmff94_provenance/PROVENANCE.md) -- confirmed RDKit's stretch-bend resolution is exactly (1) specific/generic MMFF-type lookup (matches chematic's existing mmff94_stbn chain) then (2) MMFFDfsbCollection's periodic-table-row default fallback (29-row table, ported here) -- NO equivalence-class step exists in RDKit's real stretch-bend path at all (eqLevel is used only by RDKit's angle/torsion/OOP fallback functions), so a stretch-bend 'equivalence_fallback_resolvable' bucket does not apply under RDKit's own algorithm, not just unmeasured here.",
+  "by_term_kind": {
+    "Bond": {
+      "total_missing_instances": 84,
+      "routing_bug_candidate": 79,
+      "table_gap": 5
+    },
+    "Angle": {
+      "total_missing_instances": 374,
+      "routing_bug_candidate": 277,
+      "table_gap": 97
+    },
+    "Torsion": {
+      "total_missing_instances": 1121,
+      "routing_bug_candidate": 1107,
+      "table_gap": 14
+    },
+    "Oop": {
+      "total_missing_instances": 0,
+      "routing_bug_candidate": 0,
+      "table_gap": 0
+    },
+    "StretchBend": {
+      "total_missing_instances": 2107,
+      "routing_bug_candidate": 427,
+      "table_gap": 1680
+    }
+  },
+  "stretch_bend_table_gap_breakdown": {
+    "table_gap_total": 1680,
+    "dfsb_default_resolvable": 1680,
+    "truly_unsupported_under_rdkits_own_algorithm": 0,
+    "note": "dfsb_default_resolvable = would RDKit's MMFFDfsbCollection::getMMFFDfsbParams periodic-table-row default resolve this triple. This is RDKit's actual, complete residual fallback for stretch-bend (verified: no further mechanism exists after Dfsb in RDKit's real code path) -- so 'truly_unsupported_under_rdkits_own_algorithm' is a real claim (RDKit itself would also lack this parameter), not a hedge."
+  }
+}

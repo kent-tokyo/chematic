@@ -264,6 +264,7 @@ fn main() {
             ForceFieldPolicy::Mmff94BondAngleStrict,
             &config,
             true,
+            false,
         ) {
             Ok(_) => n_strict_gated_ok += 1,
             Err(_) => n_strict_gated_missing += 1,

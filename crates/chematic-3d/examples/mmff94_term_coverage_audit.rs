@@ -22,6 +22,17 @@
 //! contribute 0.0 for any missing term, never erroring. That silent-skip
 //! behavior is itself an audit finding, not a bug being fixed here.
 //!
+//! Priority 2 (issue #227) addition: stretch-bend rows also carry
+//! `dfsb_default_resolvable` -- a diagnostic-only (never wired into
+//! production) port of RDKit's real `MMFFDfsbCollection::getMMFFDfsbParams`
+//! periodic-table-row default fallback, verified against the pinned RDKit
+//! commit (see `scripts/mmff94_provenance/PROVENANCE.md`). Answers "would
+//! RDKit's own resolution path close this specific gap", which a naive
+//! "chematic doesn't have this parameter" framing cannot -- confirmed no
+//! equivalence-class step exists in RDKit's stretch-bend path at all (that
+//! mechanism is angle/torsion/OOP-only), so this is the complete RDKit-side
+//! fallback story for stretch-bend, not a partial one.
+//!
 //! Run: `cargo run --release -p chematic-3d --example mmff94_term_coverage_audit \
 //!   > validation/results/mmff94_coverage_227_term_audit.jsonl 2> validation/results/mmff94_coverage_227_stderr.log`
 
@@ -151,6 +162,84 @@ fn bond_present_at_any_type(ti: u8, tj: u8) -> Option<u8> {
 
 fn stbn_present_at_any_type(ti: u8, tj: u8, tk: u8) -> Option<u8> {
     (0..=8u8).find(|&at| mmff94_stbn(at, ti, tj, tk).is_some())
+}
+
+// ── RDKit MMFFDfsb diagnostic-only port (Priority 2, issue #227) ────────────
+// Ported from the pinned RDKit commit's real stretch-bend resolution path --
+// see scripts/mmff94_provenance/PROVENANCE.md's "Stretch-bend" row for full
+// citations. Diagnostic-only: answers "would RDKit's own fallback resolve
+// this term", never wired into chematic-ff's production energy/gate path.
+//
+// `getPeriodicTableRow` (RDKit `AtomTyper.cpp:251-264`): atomic number 1-2 ->
+// row 0 (H/He), 3-10 -> row 1, 11-18 -> row 2, 19-36 -> row 3, 37-54 -> row 4,
+// anything heavier -> row 0 (RDKit's own default, not a chematic omission).
+fn rdkit_periodic_table_row(atomic_number: u8) -> u8 {
+    match atomic_number {
+        3..=10 => 1,
+        11..=18 => 2,
+        19..=36 => 3,
+        37..=54 => 4,
+        _ => 0,
+    }
+}
+
+// `defaultMMFFDfsb`, 29 rows, verbatim from `scripts/mmff94_provenance/rdkit_defaultMMFFDfsb.txt`
+// (programmatically extracted from the pinned RDKit commit, not hand-transcribed).
+// (row_i, row_j, row_k, f_ijk, f_kji) with row_i <= row_k, matching RDKit's
+// own canonicalization in `MMFFDfsbCollection::getMMFFDfsbParams`.
+const RDKIT_MMFF_DFSB: &[(u8, u8, u8, f64, f64)] = &[
+    (0, 1, 0, 0.15, 0.15),
+    (0, 1, 1, 0.10, 0.30),
+    (0, 1, 2, 0.05, 0.35),
+    (0, 1, 3, 0.05, 0.35),
+    (0, 1, 4, 0.05, 0.35),
+    (0, 2, 0, 0.00, 0.00),
+    (0, 2, 1, 0.00, 0.15),
+    (0, 2, 2, 0.00, 0.15),
+    (0, 2, 3, 0.00, 0.15),
+    (0, 2, 4, 0.00, 0.15),
+    (1, 1, 1, 0.30, 0.30),
+    (1, 1, 2, 0.30, 0.50),
+    (1, 1, 3, 0.30, 0.50),
+    (1, 1, 4, 0.30, 0.50),
+    (2, 1, 2, 0.50, 0.50),
+    (2, 1, 3, 0.50, 0.50),
+    (2, 1, 4, 0.50, 0.50),
+    (3, 1, 3, 0.50, 0.50),
+    (3, 1, 4, 0.50, 0.50),
+    (4, 1, 4, 0.50, 0.50),
+    (1, 2, 1, 0.30, 0.30),
+    (1, 2, 2, 0.25, 0.25),
+    (1, 2, 3, 0.25, 0.25),
+    (1, 2, 4, 0.25, 0.25),
+    (2, 2, 2, 0.25, 0.25),
+    (2, 2, 3, 0.25, 0.25),
+    (2, 2, 4, 0.25, 0.25),
+    (3, 2, 3, 0.25, 0.25),
+    (3, 2, 4, 0.25, 0.25),
+];
+
+/// Would RDKit's `MMFFDfsbCollection::getMMFFDfsbParams` resolve this
+/// stretch-bend triple? `atomic_numbers` are the raw (i, j, k) elements'
+/// atomic numbers (NOT MMFF numeric types -- Dfsb is periodic-row-keyed,
+/// a structurally different key space). RDKit's own `isDoubleZero(kbaIJK)
+/// && isDoubleZero(kbaKJI)` exclusion (a resolved-but-both-zero row still
+/// counts as "not resolved") is replicated here (matters for the `(0,2,0)`
+/// row, the only all-zero row in the table).
+fn dfsb_would_resolve(atomic_numbers: (u8, u8, u8)) -> bool {
+    let (ai, aj, ak) = atomic_numbers;
+    let (mut ri, rj, mut rk) = (
+        rdkit_periodic_table_row(ai),
+        rdkit_periodic_table_row(aj),
+        rdkit_periodic_table_row(ak),
+    );
+    if ri > rk {
+        std::mem::swap(&mut ri, &mut rk);
+    }
+    RDKIT_MMFF_DFSB
+        .iter()
+        .find(|&&(r1, r2, r3, ..)| r1 == ri && r2 == rj && r3 == rk)
+        .is_some_and(|&(.., f_ijk, f_kji)| f_ijk != 0.0 || f_kji != 0.0)
 }
 
 // ── Main audit -----------------------------------------------------------------
@@ -341,6 +430,19 @@ fn main() {
                     if stbn_hit.is_none() {
                         stbn_missing += 1;
                         let present_at = stbn_present_at_any_type(ta, tb, tc);
+                        // Only meaningful when present_at is None -- a
+                        // routing_bug_candidate (present_at is Some) would be
+                        // resolved by fixing classification, not by Dfsb, so
+                        // Dfsb is only the relevant question for genuine
+                        // table-gap candidates (matches RDKit's own order:
+                        // Dfsb is tried only after the specific/generic
+                        // MMFFStbnCollection lookup fails outright).
+                        let dfsb_resolvable = present_at.is_none()
+                            && dfsb_would_resolve((
+                                mol.atom(a).element.atomic_number(),
+                                mol.atom(b).element.atomic_number(),
+                                mol.atom(c).element.atomic_number(),
+                            ));
                         term_rows.push(json!({
                             "molecule_id": cm.name, "smiles": cm.smiles, "tier": cm.tier,
                             "term_kind": "StretchBend",
@@ -349,6 +451,7 @@ fn main() {
                             "lookup_key_before_normalization": [at, ta, tb, tc],
                             "final_lookup_result": "missing",
                             "present_at_different_classification": present_at,
+                            "dfsb_default_resolvable": dfsb_resolvable,
                             "note": "NEVER gated by ForceFieldPolicy::Mmff94BondAngleStrict's coverage check -- silently contributes 0.0 energy in stretch_bend_energy, does not cause a typed failure",
                         }));
                     }

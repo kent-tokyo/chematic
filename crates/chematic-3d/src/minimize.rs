@@ -11,7 +11,7 @@ use chematic_ff::{
     EnergyBreakdown, MinimizerError, NumericTypeError, OOP_SP2_TYPES, UffType, angle_type_for,
     assign_mmff94_numeric_types, assign_uff_types, bond_type_for, minimize_mmff94_lbfgs,
     minimize_uff as ff_minimize_uff, mmff94_angle_energy, mmff94_bond_energy,
-    mmff94_energy_breakdown, mmff94_oop, mmff94_torsion_energy, mmff94_total_energy,
+    mmff94_energy_breakdown, mmff94_oop, mmff94_stbn, mmff94_torsion_energy, mmff94_total_energy,
     torsion_type_for, uff_total_energy,
 };
 use chematic_ff::{
@@ -1016,8 +1016,9 @@ pub enum ForceFieldPolicy {
     /// trigger a refusal here. Renamed from a plain `Mmff94Strict` (found in
     /// independent review to be a scope/naming mismatch: the old name
     /// implied gating on every required MMFF94 term, but the gate only ever
-    /// checked bond+angle). Use `minimize_with_policy_gated(..., true)` to
-    /// also gate on torsion/out-of-plane.
+    /// checked bond+angle). Use `minimize_with_policy_gated(..., true, false)` to
+    /// also gate on torsion/out-of-plane, or `(..., false, true)` to also gate
+    /// on stretch-bend (Priority 2 / Stage 1B).
     ///
     /// Naming/scope note for Coordinator: post-chematic-ff-#183 (bond/angle/
     /// torsion classification fixes), the 58-molecule corpus example
@@ -1102,6 +1103,12 @@ pub enum Mmff94TermKind {
     Angle,
     Torsion,
     Oop,
+    /// Stretch-bend cross term (Halgren MMFF.V eq. 4), keyed on the same
+    /// (outer, center, outer) angle triple as [`Mmff94TermKind::Angle`].
+    /// Historically never a member of this enum at all -- see
+    /// `Mmff94CoverageReport::has_gate_failure`'s `include_stretch_bend`
+    /// parameter for why it is opt-in, not always-gated like bond/angle.
+    StretchBend,
 }
 
 /// One internal coordinate that chematic-ff's MMFF94 tables have no entry
@@ -1138,6 +1145,12 @@ pub struct Mmff94CoverageReport {
     pub torsions_missing: Vec<Mmff94MissingTerm>,
     pub oop_total: usize,
     pub oop_missing: Vec<Mmff94MissingTerm>,
+    /// Stretch-bend cross-term coverage (Priority 2 / Stage 1B, issue #227).
+    /// Never gated by default -- see `has_gate_failure`'s `include_stretch_bend`
+    /// parameter -- but always measured/reported here regardless, same as
+    /// torsion/oop.
+    pub stretch_bend_total: usize,
+    pub stretch_bend_missing: Vec<Mmff94MissingTerm>,
 }
 
 impl Mmff94CoverageReport {
@@ -1150,14 +1163,19 @@ impl Mmff94CoverageReport {
 
     /// Gate check used by `Mmff94BondAngleStrict`/`Mmff94WithUffFallback`.
     /// Bond/angle always participate; torsion/out-of-plane only do when
-    /// `include_torsion_oop` is set (see `minimize_with_policy_gated`).
-    pub fn has_gate_failure(&self, include_torsion_oop: bool) -> bool {
+    /// `include_torsion_oop` is set, and stretch-bend only when
+    /// `include_stretch_bend` is set (see `minimize_with_policy_gated`) --
+    /// each is its own independent opt-in, not bundled together, so a
+    /// caller can measure the stretch-bend-only effect in isolation (Priority
+    /// 2 / Stage 1B's "legacy vs. complete-term" comparison).
+    pub fn has_gate_failure(&self, include_torsion_oop: bool, include_stretch_bend: bool) -> bool {
         !self.bond_angle_fully_covered()
             || (include_torsion_oop
                 && (!self.torsions_missing.is_empty() || !self.oop_missing.is_empty()))
+            || (include_stretch_bend && !self.stretch_bend_missing.is_empty())
     }
 
-    /// Total count of missing internal coordinates across all 4 classes —
+    /// Total count of missing internal coordinates across all 5 classes —
     /// always meaningful regardless of gate scope, since nothing here is
     /// filtered by what the gate happens to check.
     pub fn total_missing(&self) -> usize {
@@ -1165,9 +1183,10 @@ impl Mmff94CoverageReport {
             + self.angles_missing.len()
             + self.torsions_missing.len()
             + self.oop_missing.len()
+            + self.stretch_bend_missing.len()
     }
 
-    /// Flattened list of every missing internal coordinate across all 4
+    /// Flattened list of every missing internal coordinate across all 5
     /// classes — the exact "which specific element/atom-type pairs lacked
     /// coverage" citation surfaced at the top level as
     /// [`PolicyMinimizeResult::missing_parameter_classes`].
@@ -1177,6 +1196,7 @@ impl Mmff94CoverageReport {
         v.extend(self.angles_missing.iter().cloned());
         v.extend(self.torsions_missing.iter().cloned());
         v.extend(self.oop_missing.iter().cloned());
+        v.extend(self.stretch_bend_missing.iter().cloned());
         v
     }
 }
@@ -1303,12 +1323,13 @@ impl std::fmt::Display for ForceFieldBridgeError {
             ForceFieldBridgeError::MissingParameters(r) => write!(
                 f,
                 "MMFF94 parameters missing for {} internal coordinate(s) \
-                 ({} bond, {} angle, {} torsion, {} oop)",
+                 ({} bond, {} angle, {} torsion, {} oop, {} stretch-bend)",
                 r.total_missing(),
                 r.bonds_missing.len(),
                 r.angles_missing.len(),
                 r.torsions_missing.len(),
                 r.oop_missing.len(),
+                r.stretch_bend_missing.len(),
             ),
             ForceFieldBridgeError::MinimizationFailed(d) => write!(
                 f,
@@ -1683,6 +1704,13 @@ fn canonicalize_term_atoms(kind: Mmff94TermKind, atoms: &[AtomIdx], types: &[u8]
         Mmff94TermKind::Oop => {
             v[1..].sort_by_key(|&a| ty(a));
         }
+        // Same [outer_a, center, outer_c] layout as Angle -- stretch-bend is
+        // keyed on the identical angle triple.
+        Mmff94TermKind::StretchBend => {
+            if ty(v[0]) > ty(v[2]) {
+                v.swap(0, 2);
+            }
+        }
     }
     v
 }
@@ -1707,11 +1735,12 @@ fn missing_term(
 }
 
 /// Independently measure MMFF94 parameter coverage for every bond, angle,
-/// torsion, and out-of-plane center that chematic-ff's own energy functions
-/// would evaluate for `mol`. Mirrors `chematic_ff::mmff94_minimizer`'s
-/// private energy-term enumeration loops exactly (including its lack of an
-/// `i == l` guard on 3-membered-ring torsions) so the totals match what
-/// chematic-ff will actually compute over, not an idealized recount.
+/// stretch-bend, torsion, and out-of-plane center that chematic-ff's own
+/// energy functions would evaluate for `mol`. Mirrors
+/// `chematic_ff::mmff94_minimizer`'s private energy-term enumeration loops
+/// exactly (including its lack of an `i == l` guard on 3-membered-ring
+/// torsions) so the totals match what chematic-ff will actually compute
+/// over, not an idealized recount.
 fn compute_mmff94_coverage(mol: &Molecule, types: &[u8]) -> Mmff94CoverageReport {
     let mut report = Mmff94CoverageReport::default();
     let rings = mmff94_rings(mol);
@@ -1737,6 +1766,7 @@ fn compute_mmff94_coverage(mol: &Molecule, types: &[u8]) -> Mmff94CoverageReport
         for i in 0..neighbors.len() {
             for j in (i + 1)..neighbors.len() {
                 report.angles_total += 1;
+                report.stretch_bend_total += 1;
                 let (a, c) = (neighbors[i], neighbors[j]);
                 let (ta, tc) = (types[a.0 as usize], types[c.0 as usize]);
                 let at = angle_type_for(mol, &rings, a.0 as usize, b_idx, c.0 as usize, types);
@@ -1745,6 +1775,17 @@ fn compute_mmff94_coverage(mol: &Molecule, types: &[u8]) -> Mmff94CoverageReport
                         mol,
                         types,
                         Mmff94TermKind::Angle,
+                        &[a, b, c],
+                    ));
+                }
+                // Same (a, b, c) triple/angle_type as the angle-bend check above --
+                // stretch_bend_energy (chematic-ff's mmff94_minimizer) iterates the
+                // identical neighbor-pair loop, so this mirrors it exactly.
+                if mmff94_stbn(at, ta, types[b_idx], tc).is_none() {
+                    report.stretch_bend_missing.push(missing_term(
+                        mol,
+                        types,
+                        Mmff94TermKind::StretchBend,
                         &[a, b, c],
                     ));
                 }
@@ -1838,11 +1879,12 @@ fn run_mmff94_bridge(
     coords: &Coords3D,
     max_iter: usize,
     include_torsion_oop_in_gate: bool,
+    include_stretch_bend_in_gate: bool,
 ) -> Result<Mmff94BridgeRun, ForceFieldBridgeError> {
     let n = mol.atom_count();
     let types = assign_mmff94_numeric_types(mol)?;
     let coverage = compute_mmff94_coverage(mol, &types);
-    if coverage.has_gate_failure(include_torsion_oop_in_gate) {
+    if coverage.has_gate_failure(include_torsion_oop_in_gate, include_stretch_bend_in_gate) {
         return Err(ForceFieldBridgeError::MissingParameters(Box::new(coverage)));
     }
 
@@ -2111,12 +2153,26 @@ fn finish_uff(
 /// — nearly identical — so widening the default is now a cheap, small
 /// follow-up rather than impractical, just not done in this PR (see
 /// [`ForceFieldPolicy::Mmff94BondAngleStrict`]'s doc for why not).
+///
+/// `include_stretch_bend_in_gate`: same opt-in shape, independent of
+/// `include_torsion_oop_in_gate` (Priority 2 / Stage 1B, issue #227) — when
+/// `true`, also refuses on a missing stretch-bend cross term. Stretch-bend
+/// was historically not even measured toward the gate (no field on
+/// `Mmff94CoverageReport` existed for it at all until this parameter was
+/// added); `stretch_bend_energy` (chematic-ff's `mmff94_minimizer`) silently
+/// contributes zero energy for an uncovered stretch-bend term regardless of
+/// this flag — this parameter only controls whether that silence is also a
+/// typed refusal up front, it does not change the energy function itself.
+/// [`minimize_with_policy`] passes `false`, matching its existing
+/// `include_torsion_oop_in_gate = false` default — no existing caller's
+/// behavior changes.
 pub fn minimize_with_policy_gated(
     mol: &Molecule,
     coords: Coords3D,
     policy: ForceFieldPolicy,
     config: &MinimizeConfig,
     include_torsion_oop_in_gate: bool,
+    include_stretch_bend_in_gate: bool,
 ) -> Result<PolicyMinimizeResult, ForceFieldBridgeError> {
     if mol.atom_count() <= 1 {
         return Ok(trivial_result(coords, policy));
@@ -2171,7 +2227,13 @@ pub fn minimize_with_policy_gated(
         }
 
         ForceFieldPolicy::Mmff94BondAngleStrict => {
-            let r = run_mmff94_bridge(mol, &coords, config.max_steps, include_torsion_oop_in_gate)?;
+            let r = run_mmff94_bridge(
+                mol,
+                &coords,
+                config.max_steps,
+                include_torsion_oop_in_gate,
+                include_stretch_bend_in_gate,
+            )?;
             Ok(finish_mmff94(
                 r,
                 ForceFieldPolicy::Mmff94BondAngleStrict,
@@ -2181,7 +2243,13 @@ pub fn minimize_with_policy_gated(
         }
 
         ForceFieldPolicy::Mmff94WithUffFallback => {
-            match run_mmff94_bridge(mol, &coords, config.max_steps, include_torsion_oop_in_gate) {
+            match run_mmff94_bridge(
+                mol,
+                &coords,
+                config.max_steps,
+                include_torsion_oop_in_gate,
+                include_stretch_bend_in_gate,
+            ) {
                 Ok(r) => Ok(finish_mmff94(
                     r,
                     ForceFieldPolicy::Mmff94WithUffFallback,
@@ -2222,16 +2290,17 @@ pub fn minimize_with_policy_gated(
 }
 
 /// Convenience wrapper over [`minimize_with_policy_gated`] with
-/// `include_torsion_oop_in_gate = false` (bond+angle only — mechanism-3's
-/// exact scope). Use `minimize_with_policy_gated` directly to widen the
-/// strict gate to torsion/out-of-plane as well.
+/// `include_torsion_oop_in_gate = false` and `include_stretch_bend_in_gate =
+/// false` (bond+angle only — mechanism-3's exact scope). Use
+/// `minimize_with_policy_gated` directly to widen the strict gate to
+/// torsion/out-of-plane and/or stretch-bend.
 pub fn minimize_with_policy(
     mol: &Molecule,
     coords: Coords3D,
     policy: ForceFieldPolicy,
     config: &MinimizeConfig,
 ) -> Result<PolicyMinimizeResult, ForceFieldBridgeError> {
-    minimize_with_policy_gated(mol, coords, policy, config, false)
+    minimize_with_policy_gated(mol, coords, policy, config, false, false)
 }
 
 // ---------------------------------------------------------------------------
@@ -2949,8 +3018,10 @@ mod policy_bridge_tests {
         ));
         assert_eq!(
             result.missing_parameter_classes.len(),
-            3,
-            "expected the 3 missing halogen-C-halogen angles cited at the top level, got {:?}",
+            6,
+            "expected the 3 missing halogen-C-halogen angles PLUS the same 3 triples' \
+             stretch-bend cross terms (same underlying table gap, no angle-bend row means no \
+             stretch-bend row either) cited at the top level, got {:?}",
             result.missing_parameter_classes
         );
         let coverage = result
@@ -2958,6 +3029,11 @@ mod policy_bridge_tests {
             .as_ref()
             .expect("coverage from the failed MMFF94 attempt must survive into the result");
         assert_eq!(coverage.angles_missing.len(), 3);
+        assert_eq!(
+            coverage.stretch_bend_missing.len(),
+            3,
+            "same 3 halogen-C-halogen triples should also lack stretch-bend parameters"
+        );
 
         // The actual mechanism-3 fix: UFF has full generic coverage, so the
         // fallback geometry must not blow up the way the old MMFF94 path did.

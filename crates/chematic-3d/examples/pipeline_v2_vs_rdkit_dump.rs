@@ -42,6 +42,8 @@ struct Arm {
     name: &'static str,
     force_field: ForceFieldPolicy,
     stereo_policy: StereoPolicy,
+    gate_stretch_bend: bool,
+    gate_torsion_oop: bool,
 }
 
 const PIPELINE_ARMS: &[Arm] = &[
@@ -50,41 +52,103 @@ const PIPELINE_ARMS: &[Arm] = &[
         name: "chematic_pipeline_v2_no_ff",
         force_field: ForceFieldPolicy::None,
         stereo_policy: StereoPolicy::Ignore,
+        gate_stretch_bend: false,
+        gate_torsion_oop: false,
     },
     Arm {
         name: "chematic_pipeline_v2_dreiding",
         force_field: ForceFieldPolicy::Dreiding,
         stereo_policy: StereoPolicy::Ignore,
+        gate_stretch_bend: false,
+        gate_torsion_oop: false,
     },
     Arm {
         name: "chematic_pipeline_v2_uff_only",
         force_field: ForceFieldPolicy::UffOnly,
         stereo_policy: StereoPolicy::Ignore,
+        gate_stretch_bend: false,
+        gate_torsion_oop: false,
     },
     Arm {
         name: "chematic_pipeline_v2_mmff94_strict",
         force_field: ForceFieldPolicy::Mmff94BondAngleStrict,
         stereo_policy: StereoPolicy::Ignore,
+        gate_stretch_bend: false,
+        gate_torsion_oop: false,
     },
     Arm {
         name: "chematic_pipeline_v2_mmff94_with_uff_fallback",
         force_field: ForceFieldPolicy::Mmff94WithUffFallback,
         stereo_policy: StereoPolicy::Ignore,
+        gate_stretch_bend: false,
+        gate_torsion_oop: false,
     },
     // New arms for Priority 1 Wave 1 re-benchmark: RepairAndVerify variants
     Arm {
         name: "chematic_pipeline_v2_mmff94_strict_repair",
         force_field: ForceFieldPolicy::Mmff94BondAngleStrict,
         stereo_policy: StereoPolicy::RepairAndVerify,
+        gate_stretch_bend: false,
+        gate_torsion_oop: false,
     },
     Arm {
         name: "chematic_pipeline_v2_mmff94_with_uff_fallback_repair",
         force_field: ForceFieldPolicy::Mmff94WithUffFallback,
         stereo_policy: StereoPolicy::RepairAndVerify,
+        gate_stretch_bend: false,
+        gate_torsion_oop: false,
+    },
+    // New arms for Priority 2 / Stage 1B (issue #227): "complete_term_strict_gate"
+    // side of the legacy-vs-complete-term comparison -- identical to
+    // chematic_pipeline_v2_mmff94_strict/..._with_uff_fallback (same
+    // ForceFieldPolicy, same StereoPolicy::Ignore) except stretch-bend
+    // coverage is also gated. Genuinely new, independent arms -- the
+    // existing "legacy_strict_gate" arms above are NOT edited, so the delta
+    // between a pair is attributable to exactly one variable.
+    Arm {
+        name: "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        force_field: ForceFieldPolicy::Mmff94BondAngleStrict,
+        stereo_policy: StereoPolicy::Ignore,
+        gate_stretch_bend: true,
+        gate_torsion_oop: false,
+    },
+    Arm {
+        name: "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated",
+        force_field: ForceFieldPolicy::Mmff94WithUffFallback,
+        stereo_policy: StereoPolicy::Ignore,
+        gate_stretch_bend: true,
+        gate_torsion_oop: false,
+    },
+    // Review-driven fix (Priority 2 blocker 1): the arms above only gate
+    // bond+angle+stretch-bend -- NOT torsion/OOP, even though the audit
+    // measures 1,121 missing torsion instances. These 2 new arms gate
+    // bond+angle+stretch-bend+torsion+OOP -- the actual "complete bonded
+    // term" coverage (still excludes vdW/charge, hence the name, not
+    // "complete_mmff94"). Forms a real 3-stage comparison with the arms
+    // above: legacy (bond+angle) -> stretch_bend_gated (+stretch-bend) ->
+    // complete_bonded_term_gated (+torsion+OOP too).
+    Arm {
+        name: "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        force_field: ForceFieldPolicy::Mmff94BondAngleStrict,
+        stereo_policy: StereoPolicy::Ignore,
+        gate_stretch_bend: true,
+        gate_torsion_oop: true,
+    },
+    Arm {
+        name: "chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated",
+        force_field: ForceFieldPolicy::Mmff94WithUffFallback,
+        stereo_policy: StereoPolicy::Ignore,
+        gate_stretch_bend: true,
+        gate_torsion_oop: true,
     },
 ];
 
-fn base_config(force_field: ForceFieldPolicy, stereo_policy: StereoPolicy) -> PipelineV2Config {
+fn base_config(
+    force_field: ForceFieldPolicy,
+    stereo_policy: StereoPolicy,
+    gate_stretch_bend: bool,
+    gate_torsion_oop: bool,
+) -> PipelineV2Config {
     PipelineV2Config {
         embed: EmbedParameters {
             random_seed: EMBED_SEED,
@@ -109,7 +173,8 @@ fn base_config(force_field: ForceFieldPolicy, stereo_policy: StereoPolicy) -> Pi
         fail_on_unevaluable_stereo: false,
         force_field_policy: force_field,
         force_field_max_iterations: 200,
-        gate_mmff94_torsion_oop: false,
+        gate_mmff94_torsion_oop: gate_torsion_oop,
+        gate_mmff94_stretch_bend: gate_stretch_bend,
         // DiagnosticOnly, not FailClosed: with use_small_ring_torsions/
         // use_macrocycle_torsions on, FailClosed rejects the whole pipeline
         // for nearly any ring-containing molecule (confirmed via a smoke
@@ -235,18 +300,30 @@ fn legacy_geometry_check(mol: &Molecule, coords: &Coords3D) -> LegacyGeometryChe
 /// arms' coverage numbers (see `base_config`'s own comment for why the main
 /// arms use `DiagnosticOnly` instead).
 fn run_fail_closed_probe(mol: &Molecule) -> Value {
-    let mut config = base_config(ForceFieldPolicy::Dreiding, StereoPolicy::Ignore);
+    let mut config = base_config(
+        ForceFieldPolicy::Dreiding,
+        StereoPolicy::Ignore,
+        false,
+        false,
+    );
     config.ring_torsion_policy = RingTorsionApplicationPolicy::FailClosed;
     let arm = Arm {
         name: "chematic_pipeline_v2_ring_torsion_failclosed_probe",
         force_field: ForceFieldPolicy::Dreiding,
         stereo_policy: StereoPolicy::Ignore,
+        gate_stretch_bend: false,
+        gate_torsion_oop: false,
     };
     run_pipeline_arm_with_config(mol, &arm, &config)
 }
 
 fn run_pipeline_arm(mol: &Molecule, arm: &Arm) -> Value {
-    let config = base_config(arm.force_field, arm.stereo_policy);
+    let config = base_config(
+        arm.force_field,
+        arm.stereo_policy,
+        arm.gate_stretch_bend,
+        arm.gate_torsion_oop,
+    );
     run_pipeline_arm_with_config(mol, arm, &config)
 }
 
@@ -296,8 +373,18 @@ fn run_pipeline_arm_with_config(mol: &Molecule, arm: &Arm, config: &PipelineV2Co
                 "force_field_requested": format!("{:?}", r.force_field.requested_force_field),
                 "force_field_actual": format!("{:?}", r.force_field.actual_force_field_used),
                 "force_field_fallback": r.force_field.fallback_reason.is_some(),
+                "force_field_fallback_reason": r.force_field.fallback_reason.as_ref().map(|e| format!("{e}")),
                 "force_field_converged": r.force_field.converged,
                 "force_field_iterations": r.force_field.iterations,
+                // Only ever Some on a Mmff94WithUffFallback success-via-UFF
+                // (the original failed MMFF94 attempt's coverage report
+                // survives into the successful result specifically so a
+                // paired-arm comparison can verify *why* the fallback fired,
+                // not just that it did -- see the Priority 2 report's
+                // timeout-rescue integrity check).
+                "stretch_bend_missing_count": r.force_field.coverage.as_ref().map(|c| c.stretch_bend_missing.len()),
+                "torsion_missing_count": r.force_field.coverage.as_ref().map(|c| c.torsions_missing.len()),
+                "oop_missing_count": r.force_field.coverage.as_ref().map(|c| c.oop_missing.len()),
                 "ring_torsion_potentials_total": r.ring_torsion_evidence.potentials.len(),
                 "ring_torsion_potentials_applied": r
                     .ring_torsion_evidence
@@ -402,8 +489,8 @@ fn main() {
             (
                 arm.name,
                 json!(format!(
-                    "ff={:?} stereo={:?}",
-                    arm.force_field, arm.stereo_policy
+                    "ff={:?} stereo={:?} gate_stretch_bend={} gate_torsion_oop={}",
+                    arm.force_field, arm.stereo_policy, arm.gate_stretch_bend, arm.gate_torsion_oop
                 )),
             )
         })

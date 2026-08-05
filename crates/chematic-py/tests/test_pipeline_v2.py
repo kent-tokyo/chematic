@@ -342,6 +342,7 @@ def test_explicit_constructor_requires_every_field():
         force_field_policy="dreiding",
         force_field_max_iterations=100,
         gate_mmff94_torsion_oop=False,
+        gate_mmff94_stretch_bend=False,
         ring_torsion_policy="diagnostic_only",
         total_timeout_ms=5000,
     )

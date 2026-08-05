@@ -62,6 +62,7 @@ def config_json_camel_case(kwargs: dict) -> dict:
         "forceFieldPolicy": kwargs["force_field"],
         "forceFieldMaxIterations": 200,
         "gateMmff94TorsionOop": False,
+        "gateMmff94StretchBend": kwargs.get("gate_mmff94_stretch_bend", False),
         "ringTorsionPolicy": kwargs["ring_torsion_policy"],
         "totalTimeoutMs": None,
     }
