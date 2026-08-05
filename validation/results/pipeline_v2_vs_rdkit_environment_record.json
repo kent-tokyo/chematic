@@ -1,7 +1,7 @@
 {
-  "benchmark_session": "priority2_stretch_bend_gate_227_rerun",
-  "benchmark_commit": "d4affea5558798598e07e5cd359c252302d3c6a5",
-  "benchmark_commit_base": "PR #248 tip (bench/wave1-265-corpus-v0.11.0-rerun, not yet merged) + this PR's chematic-3d/chematic-py/chematic-wasm changes",
+  "benchmark_session": "priority2_stretch_bend_gate_227_rerun_review_fixes",
+  "benchmark_commit": "1a1366b (+ this commit's review-driven blocker fixes: real complete-bonded-term arms, Dfsb sub-classification, strengthened timeout-rescue assertion, WASM/Python API compat)",
+  "benchmark_commit_base": "PR #248 (merged to main as of this run) + PR #249's own chematic-3d/chematic-wasm changes",
   "benchmark_date": "2026-08-05",
   "benchmark_branch": "fix/mmff94-stretch-bend-gate-227-priority2",
   "common_scorer_blob_sha": "49a8854c0ff493e22b109f69d893d08662e45326",

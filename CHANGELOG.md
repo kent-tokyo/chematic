@@ -9,7 +9,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_Nothing yet — everything below `[0.11.0]` has shipped._
+### Added — `chematic-ff`/`chematic-3d` (MMFF94 stretch-bend coverage gate, issue #227 Priority 2)
+
+- `gate_mmff94_stretch_bend` (`PipelineV2Config`) / `include_stretch_bend_in_gate`
+  (`minimize_with_policy_gated`): a new, independent opt-in — same shape as
+  the pre-existing `gate_mmff94_torsion_oop` — that also refuses
+  `Mmff94BondAngleStrict`/`Mmff94WithUffFallback` on a missing MMFF94
+  stretch-bend cross term, not just bond/angle. **Defaults to `false`
+  everywhere**, so no existing arm/policy's pass/fail *behavior* changes.
+
+### Migration notes (recommend a **minor**, not patch, version bump for this change)
+
+- **Diagnostic output changes even with the gate left at its default `false`.**
+  `Mmff94CoverageReport::{stretch_bend_total,stretch_bend_missing}` are new
+  fields, always populated now (mirroring the pre-existing torsion/OOP
+  measure-but-don't-gate pattern). `total_missing()`/`all_missing()`/
+  `missing_parameter_classes` (surfaced via `ForceFieldBridgeError::MissingParameters`
+  and `PolicyMinimizeResult`) now include stretch-bend evidence alongside
+  bond/angle/torsion/OOP — a caller matching on the *count* or *contents* of
+  these fields (not just success/failure) will see a change even without
+  opting into the new gate. (Caught by this PR's own test suite: `chematic-3d`'s
+  `mmff94_with_uff_fallback_falls_back_and_reports_why_on_chfclbr` needed
+  updating, `missing_parameter_classes.len()` 3 → 6.)
+- **Rust: adding fields to `Mmff94CoverageReport`/`PipelineV2Config` (both
+  `pub`, non-`#[non_exhaustive]`) is a breaking change for any external
+  crate constructing either via a struct literal** (not via
+  `PipelineV2Config::minimal()`/`Mmff94CoverageReport::default()`, which
+  remain source-compatible). No deprecation shim added — this repo's
+  stated policy is to change the code directly rather than carry
+  backwards-compatibility shims (see `CLAUDE.md`).
+- **Python (`chematic-py`) — mixed compatibility posture, deliberately not
+  symmetric with WASM:**
+  - `PipelineV2Config.safe(...)` (the documented convenience constructor)
+    gained `gate_mmff94_stretch_bend: bool = False` — existing callers
+    unaffected.
+  - `PipelineV2Config(...)` (the raw `#[new]` constructor) gained
+    `gate_mmff94_stretch_bend` as a **new required** positional/keyword
+    argument, **no default** — existing callers using positional args, or
+    keyword args that don't already name this field, will break. This is
+    an intentional consistency choice, not an oversight: `new()`'s own
+    docstring already states every field is deliberately required with "no
+    hidden default" (matching `gate_mmff94_torsion_oop`'s existing
+    precedent there), so adding an inconsistent default just for this one
+    new field would contradict that constructor's stated design rather
+    than preserve it. Callers who need default-preserving behavior should
+    use `.safe(...)`.
+- **WASM (`chematic-wasm`) — `embed_pipeline_v2_json`'s `gateMmff94StretchBend`
+  JSON field is `#[serde(default)]`**: omitting it from a config object
+  parses successfully as `false`, so existing 15-field JSON configs keep
+  working unmodified (regression-tested:
+  `pre_priority2_config_json_without_gate_stretch_bend_still_parses`).
+  Deliberately asymmetric with the Rust/Python posture above — WASM's JSON
+  boundary has no equivalent to "the struct literal already names every
+  field," so silently defaulting an *omitted* field here doesn't compromise
+  the `deny_unknown_fields` fail-closed guarantee for *unrecognized* fields.
 
 ## [0.11.0] — 2026-08-04
 

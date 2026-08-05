@@ -195,6 +195,14 @@ struct PipelineV2ConfigJson {
     force_field_policy: ForceFieldPolicyJson,
     force_field_max_iterations: usize,
     gate_mmff94_torsion_oop: bool,
+    // #[serde(default)]: added after the WASM binding's 15-field JSON config
+    // was already a documented external API (Priority 2, issue #227) --
+    // existing callers' configs must keep parsing (as `false`, matching
+    // production's own default and every existing arm's unchanged
+    // behavior), not start failing deny_unknown_fields' sibling check
+    // (a *missing* required field, not an *unknown* one, but the same
+    // "never silently break an external caller" principle applies).
+    #[serde(default)]
     gate_mmff94_stretch_bend: bool,
     ring_torsion_policy: RingTorsionPolicyJson,
     #[serde(deserialize_with = "deserialize_present")]
@@ -1166,16 +1174,20 @@ fn wasm_input_error_json(cause: FailureCauseJson) -> String {
 /// Run the opt-in v2 embedding pipeline, applied directly to `mol`'s own atom
 /// order (never canonicalizes/reparses -- see the module doc).
 ///
-/// `config_json` must be an object with exactly the 16 fields `PipelineV2Config`
-/// requires (camelCase keys: `embedSeed`, `maxAttempts`, `embedTimeoutMs`,
-/// `useExpTorsions`, `useSmallRingTorsions`, `useMacrocycleTorsions`,
-/// `useMacrocycle14Bounds`, `includeLegacyTorsionHeuristic`, `stereoPolicy`,
-/// `failOnUnevaluableStereo`, `forceFieldPolicy`, `forceFieldMaxIterations`,
-/// `gateMmff94TorsionOop`, `gateMmff94StretchBend`, `ringTorsionPolicy`,
-/// `totalTimeoutMs`) -- an unknown
-/// field, a missing field, an unknown `stereoPolicy`/`ringTorsionPolicy`/
-/// `forceFieldPolicy` string, or a wrong-typed/out-of-range integer all fail
-/// closed rather than silently defaulting.
+/// `config_json` must be an object with the 15 required fields
+/// `PipelineV2Config` requires (camelCase keys: `embedSeed`, `maxAttempts`,
+/// `embedTimeoutMs`, `useExpTorsions`, `useSmallRingTorsions`,
+/// `useMacrocycleTorsions`, `useMacrocycle14Bounds`,
+/// `includeLegacyTorsionHeuristic`, `stereoPolicy`, `failOnUnevaluableStereo`,
+/// `forceFieldPolicy`, `forceFieldMaxIterations`, `gateMmff94TorsionOop`,
+/// `ringTorsionPolicy`, `totalTimeoutMs`), plus one optional field added in
+/// Priority 2 (issue #227): `gateMmff94StretchBend` (`#[serde(default)]` ->
+/// `false` if omitted, so pre-Priority-2 caller configs keep working
+/// unmodified, matching `false`'s meaning of "existing/unchanged behavior"
+/// everywhere else in this codebase). An unknown field, a missing *required*
+/// field, an unknown `stereoPolicy`/`ringTorsionPolicy`/`forceFieldPolicy`
+/// string, or a wrong-typed/out-of-range integer all fail closed rather than
+/// silently defaulting.
 ///
 /// Never throws. Always returns a JSON string tagged with `schemaVersion: 1` and
 /// `ok: true`/`false` -- see the module doc for both shapes.
@@ -1361,6 +1373,30 @@ mod tests {
         let value: serde_json::Value = serde_json::from_str(&json).unwrap();
         assert_eq!(value["ok"], false);
         assert_eq!(value["error"]["cause"]["kind"], "invalid_config");
+    }
+
+    #[test]
+    fn pre_priority2_config_json_without_gate_stretch_bend_still_parses() {
+        // Backward-compat regression (Priority 2, issue #227): a caller's
+        // pre-existing 15-field config JSON (no `gateMmff94StretchBend` at
+        // all) must keep working exactly as before, defaulting to `false`
+        // -- not become a "missing required field" error just because a new
+        // gate dimension was added. Contrast with
+        // `missing_required_field_is_rejected` above: that one IS still a
+        // real required field.
+        let mol = parse_smiles("CC").expect("ethane");
+        let mut config: serde_json::Value =
+            serde_json::from_str(&safe_config_json("none", "ignore", "fail_closed")).unwrap();
+        config
+            .as_object_mut()
+            .unwrap()
+            .remove("gateMmff94StretchBend");
+        let json = embed_pipeline_v2_json(&mol, &config.to_string());
+        let value: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert_eq!(
+            value["ok"], true,
+            "old caller config without gateMmff94StretchBend must still succeed: {value:?}"
+        );
     }
 
     #[test]
