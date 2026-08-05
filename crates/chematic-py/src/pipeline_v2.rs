@@ -153,6 +153,7 @@ impl PyPipelineV2Config {
         force_field_policy: &str,
         force_field_max_iterations: usize,
         gate_mmff94_torsion_oop: bool,
+        gate_mmff94_stretch_bend: bool,
         ring_torsion_policy: &str,
         total_timeout_ms: Option<u64>,
     ) -> PyResult<Self> {
@@ -175,6 +176,7 @@ impl PyPipelineV2Config {
                 force_field_policy: parse_force_field_policy(force_field_policy)?,
                 force_field_max_iterations,
                 gate_mmff94_torsion_oop,
+                gate_mmff94_stretch_bend,
                 ring_torsion_policy: parse_ring_torsion_policy(ring_torsion_policy)?,
                 total_timeout_ms,
             },
@@ -202,6 +204,7 @@ impl PyPipelineV2Config {
         include_legacy_torsion_heuristic = false,
         force_field_max_iterations = 200,
         gate_mmff94_torsion_oop = false,
+        gate_mmff94_stretch_bend = false,
         total_timeout_ms = None,
     ))]
     #[allow(clippy::too_many_arguments)]
@@ -220,6 +223,7 @@ impl PyPipelineV2Config {
         include_legacy_torsion_heuristic: bool,
         force_field_max_iterations: usize,
         gate_mmff94_torsion_oop: bool,
+        gate_mmff94_stretch_bend: bool,
         total_timeout_ms: Option<u64>,
     ) -> PyResult<Self> {
         Self::new(
@@ -236,6 +240,7 @@ impl PyPipelineV2Config {
             force_field,
             force_field_max_iterations,
             gate_mmff94_torsion_oop,
+            gate_mmff94_stretch_bend,
             ring_torsion_policy,
             total_timeout_ms,
         )
@@ -292,6 +297,10 @@ impl PyPipelineV2Config {
     #[getter]
     fn gate_mmff94_torsion_oop(&self) -> bool {
         self.inner.gate_mmff94_torsion_oop
+    }
+    #[getter]
+    fn gate_mmff94_stretch_bend(&self) -> bool {
+        self.inner.gate_mmff94_stretch_bend
     }
     #[getter]
     fn ring_torsion_policy(&self) -> &'static str {
@@ -643,6 +652,14 @@ fn mmff94_coverage_dict<'py>(
     d.set_item(
         "oop_missing",
         r.oop_missing
+            .iter()
+            .map(|t| mmff94_missing_term_dict(py, t))
+            .collect::<PyResult<Vec<_>>>()?,
+    )?;
+    d.set_item("stretch_bend_total", r.stretch_bend_total)?;
+    d.set_item(
+        "stretch_bend_missing",
+        r.stretch_bend_missing
             .iter()
             .map(|t| mmff94_missing_term_dict(py, t))
             .collect::<PyResult<Vec<_>>>()?,

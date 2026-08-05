@@ -210,6 +210,12 @@ pub struct PipelineV2Config {
     pub force_field_policy: ForceFieldPolicy,
     pub force_field_max_iterations: usize,
     pub gate_mmff94_torsion_oop: bool,
+    /// Independent opt-in, same shape as `gate_mmff94_torsion_oop` (Priority
+    /// 2 / Stage 1B, issue #227): when `true`, `Mmff94BondAngleStrict`/
+    /// `Mmff94WithUffFallback` also refuse on a missing stretch-bend cross
+    /// term. `false` leaves existing arms' behavior unchanged — see
+    /// `minimize::minimize_with_policy_gated`'s doc for the full rationale.
+    pub gate_mmff94_stretch_bend: bool,
     pub ring_torsion_policy: RingTorsionApplicationPolicy,
     /// Wall-clock budget (milliseconds) for the whole call. `None` = no limit.
     /// Checked coarsely: once immediately after every one of the 12 stages
@@ -241,6 +247,7 @@ impl PipelineV2Config {
             force_field_policy,
             force_field_max_iterations: 200,
             gate_mmff94_torsion_oop: false,
+            gate_mmff94_stretch_bend: false,
             ring_torsion_policy: RingTorsionApplicationPolicy::FailClosed,
             total_timeout_ms: None,
         }
@@ -835,6 +842,7 @@ pub fn embed_pipeline_v2(
         config.force_field_policy,
         &ff_config,
         config.gate_mmff94_torsion_oop,
+        config.gate_mmff94_stretch_bend,
     ) {
         Ok(r) => r,
         Err(e) => {
@@ -1809,6 +1817,7 @@ mod tests {
             coords,
             ForceFieldPolicy::Mmff94WithUffFallback,
             &config,
+            false,
             false,
         )
         .expect("ethane should minimize fine under MMFF94");

@@ -17,6 +17,7 @@
         "forceFieldPolicy": "none",
         "forceFieldMaxIterations": 200,
         "gateMmff94TorsionOop": false,
+        "gateMmff94StretchBend": false,
         "ringTorsionPolicy": "fail_closed",
         "totalTimeoutMs": null
       },
@@ -48,6 +49,7 @@
         "forceFieldPolicy": "none",
         "forceFieldMaxIterations": 200,
         "gateMmff94TorsionOop": false,
+        "gateMmff94StretchBend": false,
         "ringTorsionPolicy": "fail_closed",
         "totalTimeoutMs": null
       },
@@ -79,6 +81,7 @@
         "forceFieldPolicy": "none",
         "forceFieldMaxIterations": 200,
         "gateMmff94TorsionOop": false,
+        "gateMmff94StretchBend": false,
         "ringTorsionPolicy": "fail_closed",
         "totalTimeoutMs": null
       },
@@ -110,6 +113,7 @@
         "forceFieldPolicy": "none",
         "forceFieldMaxIterations": 200,
         "gateMmff94TorsionOop": false,
+        "gateMmff94StretchBend": false,
         "ringTorsionPolicy": "fail_closed",
         "totalTimeoutMs": null
       },
@@ -141,6 +145,7 @@
         "forceFieldPolicy": "none",
         "forceFieldMaxIterations": 200,
         "gateMmff94TorsionOop": false,
+        "gateMmff94StretchBend": false,
         "ringTorsionPolicy": "fail_closed",
         "totalTimeoutMs": null
       },
@@ -172,6 +177,7 @@
         "forceFieldPolicy": "none",
         "forceFieldMaxIterations": 200,
         "gateMmff94TorsionOop": false,
+        "gateMmff94StretchBend": false,
         "ringTorsionPolicy": "fail_closed",
         "totalTimeoutMs": null
       },
@@ -203,6 +209,7 @@
         "forceFieldPolicy": "dreiding",
         "forceFieldMaxIterations": 200,
         "gateMmff94TorsionOop": false,
+        "gateMmff94StretchBend": false,
         "ringTorsionPolicy": "fail_closed",
         "totalTimeoutMs": null
       },
@@ -228,6 +235,7 @@
         "forceFieldPolicy": "mmff94_with_uff_fallback",
         "forceFieldMaxIterations": 200,
         "gateMmff94TorsionOop": false,
+        "gateMmff94StretchBend": false,
         "ringTorsionPolicy": "fail_closed",
         "totalTimeoutMs": null
       },

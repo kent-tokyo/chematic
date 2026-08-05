@@ -42,6 +42,7 @@ struct Arm {
     name: &'static str,
     force_field: ForceFieldPolicy,
     stereo_policy: StereoPolicy,
+    gate_stretch_bend: bool,
 }
 
 const PIPELINE_ARMS: &[Arm] = &[
@@ -50,41 +51,71 @@ const PIPELINE_ARMS: &[Arm] = &[
         name: "chematic_pipeline_v2_no_ff",
         force_field: ForceFieldPolicy::None,
         stereo_policy: StereoPolicy::Ignore,
+        gate_stretch_bend: false,
     },
     Arm {
         name: "chematic_pipeline_v2_dreiding",
         force_field: ForceFieldPolicy::Dreiding,
         stereo_policy: StereoPolicy::Ignore,
+        gate_stretch_bend: false,
     },
     Arm {
         name: "chematic_pipeline_v2_uff_only",
         force_field: ForceFieldPolicy::UffOnly,
         stereo_policy: StereoPolicy::Ignore,
+        gate_stretch_bend: false,
     },
     Arm {
         name: "chematic_pipeline_v2_mmff94_strict",
         force_field: ForceFieldPolicy::Mmff94BondAngleStrict,
         stereo_policy: StereoPolicy::Ignore,
+        gate_stretch_bend: false,
     },
     Arm {
         name: "chematic_pipeline_v2_mmff94_with_uff_fallback",
         force_field: ForceFieldPolicy::Mmff94WithUffFallback,
         stereo_policy: StereoPolicy::Ignore,
+        gate_stretch_bend: false,
     },
     // New arms for Priority 1 Wave 1 re-benchmark: RepairAndVerify variants
     Arm {
         name: "chematic_pipeline_v2_mmff94_strict_repair",
         force_field: ForceFieldPolicy::Mmff94BondAngleStrict,
         stereo_policy: StereoPolicy::RepairAndVerify,
+        gate_stretch_bend: false,
     },
     Arm {
         name: "chematic_pipeline_v2_mmff94_with_uff_fallback_repair",
         force_field: ForceFieldPolicy::Mmff94WithUffFallback,
         stereo_policy: StereoPolicy::RepairAndVerify,
+        gate_stretch_bend: false,
+    },
+    // New arms for Priority 2 / Stage 1B (issue #227): "complete_term_strict_gate"
+    // side of the legacy-vs-complete-term comparison -- identical to
+    // chematic_pipeline_v2_mmff94_strict/..._with_uff_fallback (same
+    // ForceFieldPolicy, same StereoPolicy::Ignore) except stretch-bend
+    // coverage is also gated. Genuinely new, independent arms -- the
+    // existing "legacy_strict_gate" arms above are NOT edited, so the delta
+    // between a pair is attributable to exactly one variable.
+    Arm {
+        name: "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        force_field: ForceFieldPolicy::Mmff94BondAngleStrict,
+        stereo_policy: StereoPolicy::Ignore,
+        gate_stretch_bend: true,
+    },
+    Arm {
+        name: "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated",
+        force_field: ForceFieldPolicy::Mmff94WithUffFallback,
+        stereo_policy: StereoPolicy::Ignore,
+        gate_stretch_bend: true,
     },
 ];
 
-fn base_config(force_field: ForceFieldPolicy, stereo_policy: StereoPolicy) -> PipelineV2Config {
+fn base_config(
+    force_field: ForceFieldPolicy,
+    stereo_policy: StereoPolicy,
+    gate_stretch_bend: bool,
+) -> PipelineV2Config {
     PipelineV2Config {
         embed: EmbedParameters {
             random_seed: EMBED_SEED,
@@ -110,6 +141,7 @@ fn base_config(force_field: ForceFieldPolicy, stereo_policy: StereoPolicy) -> Pi
         force_field_policy: force_field,
         force_field_max_iterations: 200,
         gate_mmff94_torsion_oop: false,
+        gate_mmff94_stretch_bend: gate_stretch_bend,
         // DiagnosticOnly, not FailClosed: with use_small_ring_torsions/
         // use_macrocycle_torsions on, FailClosed rejects the whole pipeline
         // for nearly any ring-containing molecule (confirmed via a smoke
@@ -235,18 +267,19 @@ fn legacy_geometry_check(mol: &Molecule, coords: &Coords3D) -> LegacyGeometryChe
 /// arms' coverage numbers (see `base_config`'s own comment for why the main
 /// arms use `DiagnosticOnly` instead).
 fn run_fail_closed_probe(mol: &Molecule) -> Value {
-    let mut config = base_config(ForceFieldPolicy::Dreiding, StereoPolicy::Ignore);
+    let mut config = base_config(ForceFieldPolicy::Dreiding, StereoPolicy::Ignore, false);
     config.ring_torsion_policy = RingTorsionApplicationPolicy::FailClosed;
     let arm = Arm {
         name: "chematic_pipeline_v2_ring_torsion_failclosed_probe",
         force_field: ForceFieldPolicy::Dreiding,
         stereo_policy: StereoPolicy::Ignore,
+        gate_stretch_bend: false,
     };
     run_pipeline_arm_with_config(mol, &arm, &config)
 }
 
 fn run_pipeline_arm(mol: &Molecule, arm: &Arm) -> Value {
-    let config = base_config(arm.force_field, arm.stereo_policy);
+    let config = base_config(arm.force_field, arm.stereo_policy, arm.gate_stretch_bend);
     run_pipeline_arm_with_config(mol, arm, &config)
 }
 
@@ -402,8 +435,8 @@ fn main() {
             (
                 arm.name,
                 json!(format!(
-                    "ff={:?} stereo={:?}",
-                    arm.force_field, arm.stereo_policy
+                    "ff={:?} stereo={:?} gate_stretch_bend={}",
+                    arm.force_field, arm.stereo_policy, arm.gate_stretch_bend
                 )),
             )
         })

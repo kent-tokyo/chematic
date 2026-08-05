@@ -1,0 +1,27 @@
+{
+  "generated_from": "crates/chematic-3d/examples/mmff94_term_coverage_audit.rs (fresh re-run, post-#236/#238/#239/#241 MMFF94 typing fixes -- supersedes the pre-fix numbers in docs/mmff94_coverage_gap_227_audit.md)",
+  "corpus": "265 molecules (validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_{a,b}.json)",
+  "note": "'routing_bug_candidate' = this exact atom-type tuple HAS a table row, just at a different classification/angle-type code than the one this molecule's context computed -- a candidate for a classification-derivation bug (angle_type_for/torsion_type_for/bond_type_for), not necessarily a genuine table gap. 'table_gap' = absent at EVERY classification code -- a genuine chematic-ff table gap; could in principle be closed by equivalence-class substitution, an empirical-rule estimate, or a literal missing table row, but chematic-ff implements NEITHER equivalence-class fallback NOR empirical-rule estimation at all (verified: Mmff94NumericTypeInfo.equivalence_levels is parsed but has zero readers anywhere in the codebase) -- distinguishing those 3 sub-cases requires building at least a diagnostic-only resolver for each, which is NOT done in this PR (scoped out, see PR body) -- so 'table_gap' is reported as one bucket, not the full 4-way exact-missing/equivalence-not-implemented/empirical-not-implemented/genuinely-unsupported split originally proposed.",
+  "by_term_kind": {
+    "Angle": {
+      "total_missing_instances": 374,
+      "routing_bug_candidate": 277,
+      "table_gap": 97
+    },
+    "Bond": {
+      "total_missing_instances": 84,
+      "routing_bug_candidate": 79,
+      "table_gap": 5
+    },
+    "StretchBend": {
+      "total_missing_instances": 2107,
+      "routing_bug_candidate": 427,
+      "table_gap": 1680
+    },
+    "Torsion": {
+      "total_missing_instances": 1121,
+      "routing_bug_candidate": 1107,
+      "table_gap": 14
+    }
+  }
+}

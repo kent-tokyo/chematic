@@ -45,6 +45,7 @@ TIER_B_MANIFEST = ROOT / "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier
 AGGREGATE_OUT = ROOT / "validation/results/pipeline_v2_vs_rdkit_aggregate.json"
 REPORT_OUT = ROOT / "docs/pipeline_v2_vs_rdkit_etkdgv3_benchmark.md"
 ENVIRONMENT_RECORD_PATH = ROOT / "validation/results/pipeline_v2_vs_rdkit_environment_record.json"
+MMFF94_TERM_AUDIT_SUMMARY_PATH = ROOT / "validation/results/mmff94_coverage_227_term_audit_summary.json"
 
 
 def load_environment_record():
@@ -63,6 +64,8 @@ CHEMATIC_ARMS = [
     "chematic_pipeline_v2_mmff94_with_uff_fallback",
     "chematic_pipeline_v2_mmff94_strict_repair",
     "chematic_pipeline_v2_mmff94_with_uff_fallback_repair",
+    "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+    "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated",
     "chematic_legacy_etkdg",
 ]
 
@@ -76,6 +79,23 @@ REPAIR_ARM_PAIRS = [
     (
         "chematic_pipeline_v2_mmff94_with_uff_fallback",
         "chematic_pipeline_v2_mmff94_with_uff_fallback_repair",
+    ),
+]
+
+# Priority 2 / Stage 1B (issue #227) added the 2 stretch-bend-gated arms above,
+# again as genuinely independent arms (gate_mmff94_stretch_bend=true instead of
+# false) -- the pre-existing mmff94_strict/mmff94_with_uff_fallback arms are
+# untouched ("legacy_strict_gate"). Each pair differs by exactly one variable
+# (stretch-bend coverage gating), so any success-count delta between a pair is
+# attributable to that alone.
+STRETCH_BEND_GATE_PAIRS = [
+    (
+        "chematic_pipeline_v2_mmff94_strict",
+        "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+    ),
+    (
+        "chematic_pipeline_v2_mmff94_with_uff_fallback",
+        "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated",
     ),
 ]
 
@@ -426,6 +446,8 @@ def main():
             "chematic_pipeline_v2_mmff94_strict",
             "chematic_pipeline_v2_mmff94_strict_repair",
             "chematic_pipeline_v2_mmff94_with_uff_fallback_repair",
+            "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+            "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated",
         ]
     }
 
@@ -593,6 +615,77 @@ def main():
         repair_effectiveness(ignore_arm, repair_arm) for ignore_arm, repair_arm in REPAIR_ARM_PAIRS
     ]
 
+    # --- Stretch-bend coverage gate: legacy vs. complete-term (Priority 2 / Stage 1B, issue #227) ---
+    # Each pair below is identical except gate_mmff94_stretch_bend (false vs. true). For a PURE
+    # gate policy (Mmff94BondAngleStrict, no fallback), widening the gate can only ever turn a
+    # prior success into a failure -- has_gate_failure() is monotonic in its bool args, so this is
+    # a real, hard invariant worth asserting. It is NOT a hard invariant for
+    # Mmff94WithUffFallback: that policy shares a wall-clock `total_timeout_ms` budget across the
+    # (doomed) MMFF94 attempt + the UFF fallback -- gating stretch-bend EARLIER can skip a doomed,
+    # slow MMFF94 minimization attempt entirely and leave enough budget for the UFF fallback to
+    # finish before the timeout, which the legacy (ungated) arm can miss. Verified against real
+    # data (chembl_tier_b_0166, this exact benchmark run): legacy arm elapsed_ms=21378,
+    # failure_cause=Timeout, failure_stage=ForceFieldMinimization (the wasted MMFF94 attempt ate
+    # the whole 20s budget); the stretch-bend-gated arm skipped straight to UFF, elapsed_ms=6775,
+    # sound=true. So for fallback-policy pairs, a newly-passing case is only accepted (not
+    # asserted away) if its legacy-arm row is independently confirmed to be exactly this
+    # mechanism (status=="timeout") -- any other legacy failure cause on a newly-passing molecule
+    # would be unexplained and IS still treated as a scoring bug.
+    def stretch_bend_gate_effectiveness(legacy_arm, complete_arm, policy_has_fallback):
+        legacy_by_key = {(r["tier"], r["name"]): r for r in chematic_rows if r["arm"] == legacy_arm}
+        complete_by_key = {(r["tier"], r["name"]): r for r in chematic_rows if r["arm"] == complete_arm}
+        all_keys = sorted(set(legacy_by_key) & set(complete_by_key))
+
+        legacy_success_keys = {k for k in all_keys if legacy_by_key[k]["_bucket"] == "success"}
+        complete_success_keys = {k for k in all_keys if complete_by_key[k]["_bucket"] == "success"}
+        newly_failing = sorted(legacy_success_keys - complete_success_keys)
+        newly_passing = sorted(complete_success_keys - legacy_success_keys)
+
+        newly_passing_explained = []
+        newly_passing_unexplained = []
+        for key in newly_passing:
+            legacy_row = legacy_by_key[key]
+            entry = {
+                "name": key[1],
+                "legacy_status": legacy_row.get("status"),
+                "legacy_failure_cause": legacy_row.get("failure_cause"),
+                "legacy_elapsed_ms": legacy_row.get("elapsed_ms"),
+                "complete_elapsed_ms": complete_by_key[key].get("elapsed_ms"),
+            }
+            if policy_has_fallback and legacy_row.get("status") == "timeout":
+                newly_passing_explained.append(entry)
+            else:
+                newly_passing_unexplained.append(entry)
+
+        return {
+            "legacy_arm": legacy_arm,
+            "complete_arm": complete_arm,
+            "n_molecules_compared": len(all_keys),
+            "legacy_success": len(legacy_success_keys),
+            "complete_term_success": len(complete_success_keys),
+            "newly_failing_under_complete_gate": len(newly_failing),
+            "newly_failing_names": [name for _tier, name in newly_failing],
+            "newly_passing_explained_timeout_rescue": newly_passing_explained,
+            "newly_passing_unexplained": newly_passing_unexplained,
+        }
+
+    stretch_bend_gate_results = [
+        stretch_bend_gate_effectiveness(
+            legacy_arm, complete_arm, policy_has_fallback="with_uff_fallback" in legacy_arm
+        )
+        for legacy_arm, complete_arm in STRETCH_BEND_GATE_PAIRS
+    ]
+    for r in stretch_bend_gate_results:
+        assert not r["newly_passing_unexplained"], (
+            f"{r['complete_arm']}: widening a coverage gate turned a failure into a success for "
+            f"{r['newly_passing_unexplained']} with no matching timeout-rescue explanation -- "
+            "this is a scoring bug, not a real result; do not report until fixed"
+        )
+
+    mmff94_term_audit_summary = None
+    if MMFF94_TERM_AUDIT_SUMMARY_PATH.exists():
+        mmff94_term_audit_summary = json.loads(MMFF94_TERM_AUDIT_SUMMARY_PATH.read_text())
+
     # --- In-process performance (secondary; process-level is primary, see below) ---
     def summarize_timing(rows):
         elapsed = [r["elapsed_ms"] for r in rows if "elapsed_ms" in r]
@@ -648,6 +741,8 @@ def main():
         "force_field_coverage": {"chematic": chematic_ff},
         "stage_funnel": stage_funnels,
         "repair_effectiveness": repair_effectiveness_results,
+        "stretch_bend_gate_effectiveness": stretch_bend_gate_results,
+        "mmff94_term_audit_summary": mmff94_term_audit_summary,
         "environment_record": load_environment_record(),
         "performance_in_process": {
             "chematic": chematic_timing,
@@ -833,11 +928,14 @@ def write_markdown_report(agg):
 
     lines.append("## Stereo preservation (same judge -- chematic's own `verify_stereo` -- applied to both engines)")
     lines.append("")
+    _n_ignore_policy_arms = len(CHEMATIC_ARMS) - len(REPAIR_ARM_PAIRS) - 1  # -1 for legacy_etkdg, no StereoPolicy at all
     lines.append(
-        "**Methodology, read before the numbers**: the 5 `Ignore`-policy arms below reflect raw "
-        "distance-geometry-embedding output -- `Ignore` never repairs a violated stereocenter, so "
-        "those rows are NOT chematic's best achievable stereo correctness. Starting this round "
-        "(Priority 1, v0.11.0 re-benchmark), 2 additional `StereoPolicy::RepairAndVerify` arms "
+        f"**Methodology, read before the numbers**: the {_n_ignore_policy_arms} `Ignore`-policy "
+        "arms below (including the 2 stretch-bend-gated arms added in Priority 2, which only "
+        "change the coverage gate's scope, not stereo policy) reflect raw distance-geometry-"
+        "embedding output -- `Ignore` never repairs a violated stereocenter, so those rows are "
+        "NOT chematic's best achievable stereo correctness. Starting Priority 1 (v0.11.0 "
+        "re-benchmark), 2 `StereoPolicy::RepairAndVerify` arms "
         "(`chematic_pipeline_v2_mmff94_strict_repair` / `..._with_uff_fallback_repair`) ARE "
         "exercised and shown below -- read those rows, not the Ignore rows, for chematic's best "
         "achievable stereo number under MMFF94. Their lower `declared`/`molecules w/ declared "
@@ -929,8 +1027,9 @@ def write_markdown_report(agg):
         lines.append("")
     else:
         lines.append(
-            f"### Process-level performance: NOT RUN this round -- the chematic arm matrix grew "
-            f"from 6 to {len(CHEMATIC_ARMS)} (2 new RepairAndVerify arms), so the stored "
+            f"### Process-level performance: NOT RUN this round -- the chematic arm matrix has "
+            f"grown from the `1bc1b63`-era 6 to {len(CHEMATIC_ARMS)} (2 RepairAndVerify arms added "
+            "in Priority 1, 2 stretch-bend-gated arms added in Priority 2), so the stored "
             "`1bc1b63`-era process-level file would no longer be measuring the same binary and "
             "was deliberately excluded rather than presented as if comparable. In-process "
             "per-(molecule, arm) timing below is the primary comparable metric this round. "
@@ -1096,6 +1195,133 @@ def write_markdown_report(agg):
     )
     lines.append("")
 
+    lines.append("## Stretch-bend coverage gate (Priority 2 / Stage 1B, issue #227)")
+    lines.append("")
+    lines.append(
+        "Stretch-bend cross terms (Halgren MMFF.V eq. 4) were historically never gated by "
+        "`Mmff94BondAngleStrict`/`Mmff94WithUffFallback` at all -- `Mmff94CoverageReport` had no "
+        "field for them, and `stretch_bend_energy` (chematic-ff's `mmff94_minimizer`) silently "
+        "contributes zero energy for an uncovered term instead of erroring. This PR adds "
+        "`gate_mmff94_stretch_bend` (`PipelineV2Config`/`minimize_with_policy_gated`), an "
+        "independent opt-in with the same shape as the pre-existing `gate_mmff94_torsion_oop` -- "
+        "and 2 new benchmark arms exercising it, identical to the existing `mmff94_strict`/"
+        "`mmff94_with_uff_fallback` arms except for this one flag."
+    )
+    lines.append("")
+    audit = agg.get("mmff94_term_audit_summary")
+    if audit:
+        lines.append(
+            "### Missing-term sub-classification (fresh re-run, `mmff94_term_coverage_audit.rs`)"
+        )
+        lines.append("")
+        lines.append(
+            "Per-term-instance classification across the 265-molecule corpus, superseding the "
+            "stale pre-#236/#238/#239/#241 numbers in `docs/mmff94_coverage_gap_227_audit.md` "
+            "(that document cited **~6,900** missing stretch-bend terms; the fresh count below is "
+            "**substantially lower**, most likely because the same typing fixes that closed the "
+            "bond/angle gap in Priority 1 also improved stretch-bend's shared angle-type "
+            "classification path). `routing_bug_candidate` = this exact atom-type tuple has a "
+            "table row at a *different* classification code than the one this molecule's context "
+            "computed -- a candidate for an `angle_type_for`/`torsion_type_for`/`bond_type_for` "
+            "classification bug, not necessarily a genuine table gap. `table_gap` = absent at "
+            "*every* classification code chematic-ff's tables define."
+        )
+        lines.append("")
+        lines.append("| Term kind | total missing instances | routing_bug_candidate | table_gap |")
+        lines.append("|---|---|---|---|")
+        for kind in ["Bond", "Angle", "Torsion", "StretchBend"]:
+            k = audit["by_term_kind"].get(kind)
+            if not k:
+                continue
+            total = k["total_missing_instances"]
+            rb = k["routing_bug_candidate"]
+            tg = k["table_gap"]
+            lines.append(
+                f"| {kind} | {total} | {rb} ({fmt_pct(rb / total) if total else 'n/a'}) | "
+                f"{tg} ({fmt_pct(tg / total) if total else 'n/a'}) |"
+            )
+        lines.append("")
+        lines.append(
+            "**This is NOT the full exact-missing/equivalence-fallback-not-implemented/"
+            "empirical-rule-not-implemented/genuinely-unsupported 4-way split originally scoped "
+            "for Priority 2.** chematic-ff implements neither MMFF94 equivalence-class "
+            "substitution nor empirical-rule (e.g. Badger's-rule bond) estimation at all -- "
+            "`Mmff94NumericTypeInfo.equivalence_levels` carries real MMFF94 equivalence data but "
+            "has zero readers anywhere in the codebase (verified, not assumed). Distinguishing "
+            "\"would be fixed by equivalence fallback\" from \"would be fixed by an empirical "
+            "rule\" from \"genuinely unsupported even under the full MMFF94 spec\" requires "
+            "building at least a diagnostic-only resolver for each mechanism first -- **not done "
+            "in this PR**, scoped out as follow-up work (see PR body). `table_gap` above is "
+            "reported as one honest bucket, not artificially split into three unverified ones."
+        )
+        lines.append("")
+        lines.append(
+            f"Largest bucket by volume: **StretchBend/table_gap ({audit['by_term_kind']['StretchBend']['table_gap']} "
+            "instances)** -- the MMFF94_STBN table itself is sparse by construction (Halgren's own "
+            "spec: the large majority of stretch-bend rows are generic type-0), so this is "
+            "primarily a genuine table-completeness gap, not a classification-routing bug, unlike "
+            "Bond/Angle/Torsion where routing_bug_candidate dominates. Per the plan's own "
+            "\"tackle the largest bucket first\" guidance, this is the concrete next-step "
+            "candidate this audit surfaces -- not resolved in this PR."
+        )
+        lines.append("")
+    lines.append("### Legacy vs. complete-term gate (paired-arm comparison, Priority 2 new arms)")
+    lines.append("")
+    lines.append(
+        "Each `gate_mmff94_stretch_bend=true` arm is a genuinely independent arm (not a config "
+        "edit to the pre-existing `gate_mmff94_stretch_bend=false` arm of the same "
+        "`ForceFieldPolicy`), paired here per-molecule against its legacy-gate counterpart. For "
+        "`mmff94_strict` (pure gate, no fallback), widening the gate can only ever turn a prior "
+        "success into a failure, never the reverse -- verified as a hard invariant at generation "
+        "time, not just a display column. This is NOT a hard invariant for "
+        "`mmff94_with_uff_fallback`: see the note below the table."
+    )
+    lines.append("")
+    lines.append(
+        "| Legacy arm | Complete-term arm | n compared | legacy success | complete-term success | "
+        "newly failing under complete gate |"
+    )
+    lines.append("|---|---|---|---|---|---|")
+    for r in agg["stretch_bend_gate_effectiveness"]:
+        lines.append(
+            f"| {r['legacy_arm']} | {r['complete_arm']} | {r['n_molecules_compared']} | "
+            f"{r['legacy_success']} | {r['complete_term_success']} | "
+            f"{r['newly_failing_under_complete_gate']} |"
+        )
+    lines.append("")
+    for r in agg["stretch_bend_gate_effectiveness"]:
+        if r["newly_failing_names"]:
+            lines.append(
+                f"`{r['complete_arm']}` newly-failing molecules ({len(r['newly_failing_names'])}): "
+                f"{', '.join(r['newly_failing_names'])}"
+            )
+            lines.append("")
+        if r["newly_passing_explained_timeout_rescue"]:
+            names = ", ".join(e["name"] for e in r["newly_passing_explained_timeout_rescue"])
+            lines.append(
+                f"`{r['complete_arm']}` **also has {len(r['newly_passing_explained_timeout_rescue'])} "
+                f"molecule(s) that flip the other way** (legacy fails, complete-term gate "
+                f"succeeds): {names}. This is a real, verified mechanism, not a scoring bug -- "
+                "`mmff94_with_uff_fallback` shares one `total_timeout_ms` wall-clock budget "
+                "across the MMFF94 attempt AND the UFF fallback. Gating stretch-bend earlier can "
+                "skip a doomed, slow MMFF94 minimization attempt entirely (uncovered "
+                "stretch-bend terms silently zero-contribute rather than erroring, which can "
+                "make that minimization oscillate/stall) and go straight to UFF with the full "
+                "time budget still available -- verified for every case listed here: the legacy "
+                "row's own `status` is independently confirmed `timeout` before this is reported "
+                "(any newly-passing case NOT matching that exact signature is treated as a "
+                "scoring bug and fails report generation, not silently accepted)."
+            )
+            lines.append("")
+    lines.append(
+        "Not adopted as the new default this round -- the legacy `gate_mmff94_torsion_oop=false, "
+        "gate_mmff94_stretch_bend=false` arms remain the primary `mmff94_strict`/"
+        "`mmff94_with_uff_fallback` numbers reported elsewhere in this document, per the plan's "
+        "explicit 2-stage instruction (measure the delta transparently before formalizing a new "
+        "gate default, not silently change the existing success count)."
+    )
+    lines.append("")
+
     lines.append("## Ring-torsion FailClosed probe")
     lines.append("")
     lines.append(
@@ -1179,6 +1405,16 @@ def write_markdown_report(agg):
         "matching Ignore arm (fewer molecules reach final success at all when repair is required to "
         "pass); see the RepairAndVerify effectiveness section for the exact paired accounting |"
     )
+    for r in agg["stretch_bend_gate_effectiveness"]:
+        pct_lost = fmt_pct(r["newly_failing_under_complete_gate"] / r["legacy_success"]) if r["legacy_success"] else "n/a"
+        lines.append(
+            f"| Stretch-bend coverage gate, {r['legacy_arm'].removeprefix('chematic_pipeline_v2_')} "
+            "(new this round) | Real coverage gap surfaced, widening the gate is a real cost | "
+            f"{r['legacy_success']} legacy successes -> {r['complete_term_success']} under the "
+            f"complete-term gate ({r['newly_failing_under_complete_gate']} newly fail, {pct_lost} "
+            "of legacy successes) -- see the Stretch-bend coverage gate section for the term-kind "
+            "sub-classification and full molecule list |"
+        )
     _ff_fallback = agg["force_field_coverage"]["chematic"]["chematic_pipeline_v2_mmff94_with_uff_fallback"]
     lines.append(
         f"| Force-field convergence rate | RDKit-favor, and an input to Priority 3 (Stage 1C) | "

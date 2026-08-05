@@ -7,7 +7,9 @@ Documented evidence that chematic's descriptors agree with industry-standard too
 ### pipeline v2 vs RDKit ETKDGv3 independent 3D benchmark (Wave 1, 265-mol corpus)
 
 Independent, measurement-only comparison of `chematic_3d::pipeline_v2::embed_pipeline_v2`
-(5 force-field-policy arms) + the legacy `etkdg` entry point, against RDKit ETKDGv3
+(9 force-field-policy/stereo-policy/gate-scope arms as of Priority 2's stretch-bend coverage
+gate -- see `docs/pipeline_v2_vs_rdkit_etkdgv3_benchmark.md` for the full current arm list)
++ the legacy `etkdg` entry point, against RDKit ETKDGv3
 (raw/+UFF/+MMFF94/best-of-10), across a 65-molecule curated stress corpus (Tier A,
 reusing the existing `pipeline_v2_integration_gate.rs` corpus) and a 200-molecule
 deterministic ChEMBL subset (Tier B). Chematic side calls `embed_pipeline_v2` directly
@@ -31,10 +33,12 @@ reported as a general RDKit failure.
 
 - **Files:** `validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_{a,b}.json` (corpus
   manifests, with source/license/selection-rule/hash provenance), `validation/results/
-  pipeline_v2_vs_rdkit_{chematic,rdkit}_rows.jsonl` (1591 + 1060 per-row results,
-  nothing silently dropped), `pipeline_v2_vs_rdkit_common_scored_rows.jsonl` (2367 rows,
-  independent geometry + stereo judgment for both engines), `pipeline_v2_vs_rdkit_aggregate.json`,
+  pipeline_v2_vs_rdkit_{chematic,rdkit}_rows.jsonl` (row counts grow with the arm matrix --
+  see `pipeline_v2_vs_rdkit_environment_record.json` for the exact run this reflects;
+  nothing silently dropped), `pipeline_v2_vs_rdkit_common_scored_rows.jsonl`
+  (independent geometry + stereo judgment for both engines), `pipeline_v2_vs_rdkit_aggregate.json`,
   `pipeline_v2_vs_rdkit_process_level_perf.json`, `pipeline_v2_vs_rdkit_cyclopentane_ablation.jsonl`,
+  `mmff94_coverage_227_term_audit{,_summary}.json(l)` (Priority 2 stretch-bend sub-classification),
   `*_config_snapshot.log`
 - **Reference tool:** RDKit 2026.03.3 (`AllChem.ETKDGv3`)
 - **How to regenerate:** `python scripts/gen_pipeline_v2_vs_rdkit_tier_a_manifest.py` +

@@ -195,6 +195,7 @@ struct PipelineV2ConfigJson {
     force_field_policy: ForceFieldPolicyJson,
     force_field_max_iterations: usize,
     gate_mmff94_torsion_oop: bool,
+    gate_mmff94_stretch_bend: bool,
     ring_torsion_policy: RingTorsionPolicyJson,
     #[serde(deserialize_with = "deserialize_present")]
     total_timeout_ms: Option<Option<u64>>,
@@ -226,6 +227,7 @@ impl PipelineV2ConfigJson {
             force_field_policy: self.force_field_policy.into(),
             force_field_max_iterations: self.force_field_max_iterations,
             gate_mmff94_torsion_oop: self.gate_mmff94_torsion_oop,
+            gate_mmff94_stretch_bend: self.gate_mmff94_stretch_bend,
             ring_torsion_policy: self.ring_torsion_policy.into(),
             total_timeout_ms,
         })
@@ -644,6 +646,8 @@ struct Mmff94CoverageJson {
     torsions_missing: Vec<Mmff94MissingTermJson>,
     oop_total: usize,
     oop_missing: Vec<Mmff94MissingTermJson>,
+    stretch_bend_total: usize,
+    stretch_bend_missing: Vec<Mmff94MissingTermJson>,
 }
 
 fn mmff94_coverage_json(r: &chematic_3d::minimize::Mmff94CoverageReport) -> Mmff94CoverageJson {
@@ -668,6 +672,12 @@ fn mmff94_coverage_json(r: &chematic_3d::minimize::Mmff94CoverageReport) -> Mmff
             .collect(),
         oop_total: r.oop_total,
         oop_missing: r.oop_missing.iter().map(mmff94_missing_term_json).collect(),
+        stretch_bend_total: r.stretch_bend_total,
+        stretch_bend_missing: r
+            .stretch_bend_missing
+            .iter()
+            .map(mmff94_missing_term_json)
+            .collect(),
     }
 }
 
@@ -1156,12 +1166,13 @@ fn wasm_input_error_json(cause: FailureCauseJson) -> String {
 /// Run the opt-in v2 embedding pipeline, applied directly to `mol`'s own atom
 /// order (never canonicalizes/reparses -- see the module doc).
 ///
-/// `config_json` must be an object with exactly the 15 fields `PipelineV2Config`
+/// `config_json` must be an object with exactly the 16 fields `PipelineV2Config`
 /// requires (camelCase keys: `embedSeed`, `maxAttempts`, `embedTimeoutMs`,
 /// `useExpTorsions`, `useSmallRingTorsions`, `useMacrocycleTorsions`,
 /// `useMacrocycle14Bounds`, `includeLegacyTorsionHeuristic`, `stereoPolicy`,
 /// `failOnUnevaluableStereo`, `forceFieldPolicy`, `forceFieldMaxIterations`,
-/// `gateMmff94TorsionOop`, `ringTorsionPolicy`, `totalTimeoutMs`) -- an unknown
+/// `gateMmff94TorsionOop`, `gateMmff94StretchBend`, `ringTorsionPolicy`,
+/// `totalTimeoutMs`) -- an unknown
 /// field, a missing field, an unknown `stereoPolicy`/`ringTorsionPolicy`/
 /// `forceFieldPolicy` string, or a wrong-typed/out-of-range integer all fail
 /// closed rather than silently defaulting.
@@ -1221,6 +1232,7 @@ mod tests {
                 "forceFieldPolicy": "{force_field}",
                 "forceFieldMaxIterations": 200,
                 "gateMmff94TorsionOop": false,
+                "gateMmff94StretchBend": false,
                 "ringTorsionPolicy": "{ring_torsion_policy}",
                 "totalTimeoutMs": null
             }}"#
@@ -1305,6 +1317,7 @@ mod tests {
             "forceFieldPolicy": "dreiding",
             "forceFieldMaxIterations": 200,
             "gateMmff94TorsionOop": false,
+            "gateMmff94StretchBend": false,
             "ringTorsionPolicy": "fail_closed",
             "totalTimeoutMs": null
         }"#;
@@ -1723,6 +1736,7 @@ mod tests {
                 force_field_max_iterations: cfg["forceFieldMaxIterations"].as_u64().unwrap()
                     as usize,
                 gate_mmff94_torsion_oop: cfg["gateMmff94TorsionOop"].as_bool().unwrap(),
+                gate_mmff94_stretch_bend: cfg["gateMmff94StretchBend"].as_bool().unwrap_or(false),
                 ring_torsion_policy,
                 total_timeout_ms: cfg["totalTimeoutMs"].as_u64(),
             };
