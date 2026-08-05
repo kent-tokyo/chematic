@@ -574,8 +574,15 @@ fn stretch_bend_energy(
         for (ii, &i) in neighbors.iter().enumerate() {
             for &k in &neighbors[ii + 1..] {
                 let at = angle_type_for(mol, rings, i, j_idx, k, types);
-                if let Some((kba_ijk, kba_kji)) = mmff94_stbn(at, types[i], types[j_idx], types[k])
-                {
+                if let Some((kba_ijk, kba_kji)) = mmff94_stbn(
+                    at,
+                    types[i],
+                    types[j_idx],
+                    types[k],
+                    mol.atom(AtomIdx(i as u32)).element.atomic_number(),
+                    mol.atom(AtomIdx(j_idx as u32)).element.atomic_number(),
+                    mol.atom(AtomIdx(k as u32)).element.atomic_number(),
+                ) {
                     // Δr_ij
                     let r_ij = dist(coords[i], coords[j_idx]);
                     let bt_ij =

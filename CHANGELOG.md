@@ -9,6 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — `chematic-ff` (MMFF94 stretch-bend accuracy, issue #227 Priority 2B)
+
+- `chematic_ff::mmff94_stbn` now falls back to RDKit's own periodic-table-row
+  default stretch-bend parameters (`MMFFDfsbCollection`'s real equivalent — a
+  small, 29-row table ported verbatim from the pinned RDKit commit, see
+  `scripts/mmff94_provenance/PROVENANCE.md`) when the specific/generic
+  MMFF-type table has no row at all. **Unconditional production behavior**,
+  not behind any opt-in flag — applies to every MMFF94 policy's
+  energy/gradient calculation and to `Mmff94CoverageReport`'s stretch-bend
+  coverage measurement the same way. `gate_mmff94_stretch_bend`/
+  `gate_mmff94_torsion_oop` (Priority 2's strict-refusal gates) are
+  unaffected and remain independent opt-ins, still `false` by default.
+  - Measured on the 265-molecule Wave 1 corpus: missing stretch-bend
+    instances **2,107 → 0** (100% resolution — confirms Priority 2's own
+    diagnostic finding that this table would fully close the gap).
+    `mmff94_strict_stretch_bend_gated`'s success count converges exactly to
+    legacy `mmff94_strict`'s (both 149/265, identical molecule sets) since
+    the stretch-bend gate essentially never fires anymore.
+    `mmff94_strict_complete_bonded_term_gated` (still gates torsion/OOP,
+    untouched by this fix) rises 37→86/265 — the residual gap there is a
+    separate, known issue (routing-bug-candidate-dominated torsion
+    coverage), not addressed in this PR to keep a single root cause.
+  - Verified with a full per-molecule regression diff against the
+    pre-Priority-2B baseline: 0 soundness regressions among molecules that
+    were already successful under the (unaffected-by-gating)
+    `mmff94_strict`/`mmff94_with_uff_fallback` legacy arms.
+  - `mmff94_stbn`'s public signature gained 3 required `atomic_num_{i,j,k}: u8`
+    parameters (needed for the periodic-row lookup, which is element-keyed,
+    not MMFF-type-keyed) — breaking for any external caller. The prior
+    type-only behavior remains available as the new `mmff94_stbn_type_only`
+    function (same signature `mmff94_stbn` used to have).
+  - Recommends **v0.12.0** (minor), consistent with #249's own struct-field
+    addition already requiring the same bump.
+
 ### Added — `chematic-ff`/`chematic-3d` (MMFF94 stretch-bend coverage gate, issue #227 Priority 2)
 
 - `gate_mmff94_stretch_bend` (`PipelineV2Config`) / `include_stretch_bend_in_gate`

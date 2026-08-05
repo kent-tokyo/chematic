@@ -67,7 +67,7 @@ mod vdw;
 
 pub use angle::{MMFF94_ANGLE_ENERGY, mmff94_angle_energy};
 pub use bond::{MMFF94_BOND_ENERGY, mmff94_bond_energy};
-pub use oop_stbn::{MMFF94_OOP, MMFF94_STBN, mmff94_oop, mmff94_stbn};
+pub use oop_stbn::{MMFF94_OOP, MMFF94_STBN, mmff94_oop, mmff94_stbn, mmff94_stbn_type_only};
 pub use torsion::{MMFF94_TORSION_ENERGY, mmff94_torsion_energy};
 pub use vdw::{MMFF94_VDW_ENERGY, mmff94_vdw_combined, mmff94_vdw_energy};
 
@@ -164,5 +164,103 @@ mod tests {
         // MMFF94 C(sp3)-C(sp3): r* ≈ 3.9 Å, eps ≈ 0.04 kcal/mol
         assert!(r_star > 2.0 && r_star < 6.0, "r_star={}", r_star);
         assert!(eps > 0.0, "eps={}", eps);
+    }
+
+    // --- mmff94_stbn's Dfsb periodic-row fallback (Priority 2B, issue #227) ---
+    // Parity fixture: each expected value below is traceable to a specific row
+    // in `scripts/mmff94_provenance/rdkit_defaultMMFFDfsb.txt` (the pinned
+    // RDKit commit's `defaultMMFFDfsb` table, programmatically extracted, not
+    // hand-transcribed -- see PROVENANCE.md's "Stretch-bend" row).
+
+    #[test]
+    fn stbn_type_table_hit_takes_priority_over_dfsb() {
+        // C(sp3)-C(sp3)-C(sp3): type table has (0,1,1,1)=(0.2060,0.2060)
+        // (see mmff94_stbn_type_only's own MMFF94_STBN row). Dfsb's own
+        // (row=1,row=1,row=1) row is (0.30,0.30) -- a DIFFERENT value, so
+        // this test would catch the Dfsb tier firing before/instead of a
+        // real type-table hit.
+        let carbon = 6u8;
+        let via_type_only = mmff94_stbn_type_only(0, 1, 1, 1).expect("C-C-C stbn (type table)");
+        let via_full = mmff94_stbn(0, 1, 1, 1, carbon, carbon, carbon).expect("C-C-C stbn (full)");
+        assert_eq!(via_full, via_type_only, "type-table hit must win over Dfsb");
+        assert!(
+            (via_full.0 - 0.2060).abs() < 1e-9 && (via_full.1 - 0.2060).abs() < 1e-9,
+            "got {:?}, expected the real (0.2060, 0.2060) type-table row, not Dfsb's (0.30, 0.30)",
+            via_full
+        );
+    }
+
+    #[test]
+    fn stbn_dfsb_fallback_resolves_when_type_table_misses() {
+        // F-C-Cl: no exact/generic MMFF94_STBN row exists for this triple
+        // (guaranteed by using MMFF type 200, which appears in no real table
+        // row, to isolate the Dfsb tier from the type-table entirely).
+        // Periodic rows: F=9->1, C=6->1(center), Cl=17->2 -> canonical
+        // (1,1,2) -> rdkit_defaultMMFFDfsb.txt row "1  1  2  0.30  0.50".
+        assert!(
+            mmff94_stbn_type_only(0, 200, 200, 200).is_none(),
+            "type 200 must not accidentally exist in MMFF94_STBN"
+        );
+        let (fluorine, carbon, chlorine) = (9u8, 6u8, 17u8);
+        let got = mmff94_stbn(0, 200, 200, 200, fluorine, carbon, chlorine)
+            .expect("F-C-Cl should resolve via Dfsb once the type table misses");
+        assert!(
+            (got.0 - 0.30).abs() < 1e-9 && (got.1 - 0.50).abs() < 1e-9,
+            "got {:?}, expected (0.30, 0.50) from rdkit_defaultMMFFDfsb.txt row (1,1,2)",
+            got
+        );
+    }
+
+    #[test]
+    fn stbn_dfsb_canonicalizes_row_order_and_swaps_the_result() {
+        // Same F-C-Cl chemistry as above but with i/k reversed at the call
+        // site (Cl first, F last) -- Dfsb must canonicalize row_i<=row_k
+        // internally (matching RDKit's own `MMFFDfsbCollection` swap logic)
+        // AND swap the returned (kba_ijk, kba_kji) pair to match the
+        // caller's actual atom order, not the table's internal one.
+        let (fluorine, carbon, chlorine) = (9u8, 6u8, 17u8);
+        let forward = mmff94_stbn(0, 200, 200, 200, fluorine, carbon, chlorine).unwrap();
+        let reversed = mmff94_stbn(0, 200, 200, 200, chlorine, carbon, fluorine).unwrap();
+        assert_eq!(
+            (forward.0, forward.1),
+            (reversed.1, reversed.0),
+            "reversing the outer atoms must swap kba_ijk/kba_kji, forward={:?} reversed={:?}",
+            forward,
+            reversed
+        );
+    }
+
+    #[test]
+    fn stbn_dfsb_all_zero_row_is_not_resolved() {
+        // H-S-H (or H-P-H): periodic rows H=1->0, S=16->2(center), H=1->0
+        // -> canonical (0,2,0) -- rdkit_defaultMMFFDfsb.txt's ONLY all-zero
+        // row ("0  2  0  0.00  0.00"). RDKit's own isDoubleZero(kbaIJK) &&
+        // isDoubleZero(kbaKJI) check treats this as unresolved, not a real
+        // (0.0, 0.0) hit -- replicated here.
+        let (hydrogen, sulfur) = (1u8, 16u8);
+        assert!(
+            mmff94_stbn_type_only(0, 200, 200, 200).is_none(),
+            "type 200 must not accidentally exist in MMFF94_STBN"
+        );
+        assert_eq!(
+            mmff94_stbn(0, 200, 200, 200, hydrogen, sulfur, hydrogen),
+            None,
+            "the Dfsb table's one all-zero row must not be reported as resolved"
+        );
+    }
+
+    #[test]
+    fn stbn_dfsb_out_of_table_combination_is_not_resolved() {
+        // No real angle center has periodic row 0 (H/He) in MMFF94 chemistry
+        // in practice, but as a structural check: row_j=0 never appears as
+        // the *second* column in any Dfsb row, so any triple canonicalizing
+        // to (_, 0, _) must stay unresolved rather than silently matching an
+        // unrelated row.
+        let hydrogen = 1u8;
+        assert_eq!(
+            mmff94_stbn(0, 200, 200, 200, hydrogen, hydrogen, hydrogen),
+            None,
+            "row_j=0 never appears in MMFF94_DFSB -- H-H-H must stay unresolved"
+        );
     }
 }
