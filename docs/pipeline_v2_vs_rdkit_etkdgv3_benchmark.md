@@ -144,7 +144,7 @@ In plain terms: this crash requires the non-default `useSmallRingTorsions=True`,
 
 ## Stage funnel (per-arm denominator hierarchy)
 
-Real `pipeline_v2` execution order (`crates/chematic-3d/src/pipeline_v2.rs` `PipelineStage` enum + its actual call sequence): embed (`DistanceGeometry`) -> torsion optimization -> **stereo verify/repair** -> force-field minimization -> final stereo verify -> final geometry validation. Stereo repair happens *before* force-field minimization, not after -- the columns below follow that real order, not an assumed embed-then-FF-then-stereo sequence. A row reached a stage if its `failure_stage` is strictly later than that stage, or if it succeeded outright. Never collapsed into a single success rate -- see `feedback_fallback_pooling_measurement_error`: `mmff94_strict` and `mmff94_with_uff_fallback` are reported as fully separate rows, never blended.
+Real `pipeline_v2` execution order (`crates/chematic-3d/src/pipeline_v2.rs` `PipelineStage` enum + its actual call sequence): embed (`DistanceGeometry`) -> torsion optimization -> **stereo verify/repair** -> force-field minimization -> final stereo verify -> final geometry validation. Stereo repair happens *before* force-field minimization, not after -- the columns below follow that real order, not an assumed embed-then-FF-then-stereo sequence. A row is counted under an `_attempted`/`_reached` column if its `failure_stage` is that stage or later (or it succeeded outright); under a `_succeeded`/`_verified` column only if `failure_stage` is strictly later than that stage (or it succeeded outright) -- a row that failed AT a stage reached it but did not pass it, so `ff_attempted` and `ff_succeeded` are genuinely different counts, not the same check twice. Never collapsed into a single success rate -- see `feedback_fallback_pooling_measurement_error`: `mmff94_strict` and `mmff94_with_uff_fallback` are reported as fully separate rows, never blended.
 
 | Arm | attempted | embed_succeeded | stereo_repair_reached | ff_attempted | ff_succeeded | final_stereo_verified | final_validation_passed |
 |---|---|---|---|---|---|---|---|
@@ -155,9 +155,9 @@ Real `pipeline_v2` execution order (`crates/chematic-3d/src/pipeline_v2.rs` `Pip
 | chematic_pipeline_v2_mmff94_with_uff_fallback | 265 | 254 | 254 | 254 | 252 | 252 | 252 |
 | chematic_pipeline_v2_mmff94_strict_repair | 265 | 254 | 254 | 244 | 142 | 131 | 131 |
 | chematic_pipeline_v2_mmff94_with_uff_fallback_repair | 265 | 254 | 254 | 244 | 242 | 229 | 229 |
-| chematic_legacy_etkdg | 265 | 265 | 265 | 265 | 265 | 265 | 265 |
+| chematic_legacy_etkdg | 265 | n/a | n/a | n/a | n/a | n/a | 265 |
 
-Note: `chematic_legacy_etkdg` does not run through `pipeline_v2` at all (separate `generate_coords_etkdg` entry point, no `PipelineStage` tracking) -- its row is `attempted`/`final_validation_passed` only, intermediate columns are 0 by construction.
+Note: `chematic_legacy_etkdg` does not run through `pipeline_v2` at all (separate `generate_coords_etkdg` entry point, no `PipelineStage` tracking) -- its row reports `attempted`/`final_validation_passed` only; the intermediate columns are `n/a` rather than a fabricated 0 or a misleading 265 (a naive reuse of the success-implies-passed-every-stage rule above would have printed 265 for every column here, which would misrepresent a code path that never runs those stages at all).
 
 ## RepairAndVerify effectiveness (paired-arm comparison, Priority 1 new arms)
 

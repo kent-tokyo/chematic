@@ -438,9 +438,32 @@ def main():
     # "passed stage S" (S succeeded)  = cutoff_idx >  index(S).
     # parse_failure/internal_error rows never entered any arm's pipeline and
     # get cutoff_idx = -1 (reached/passed nothing).
+    # `chematic_legacy_etkdg` runs through a separate `generate_coords_etkdg`
+    # entry point with no `PipelineStage` tracking at all -- a success row's
+    # cutoff_idx would trivially equal n_stages regardless, which would
+    # silently print every intermediate column as if that arm's rows had
+    # actually traversed DistanceGeometry/StereoRepair/ForceFieldMinimization
+    # (it never does). Excluded by name instead, matching the same hardcoded
+    # arm-name special-case already used for it elsewhere in this file (see
+    # `_legacy_geo` above).
+    LEGACY_ARMS_WITHOUT_PIPELINE_STAGE_TRACKING = {"chematic_legacy_etkdg"}
+
     def stage_funnel(rows, arm):
         arm_rows = [r for r in rows if r["arm"] == arm]
         n = len(arm_rows)
+        n_success = sum(1 for r in arm_rows if r["_bucket"] == "success")
+
+        if arm in LEGACY_ARMS_WITHOUT_PIPELINE_STAGE_TRACKING:
+            return {
+                "attempted": n,
+                "embed_succeeded": None,
+                "stereo_repair_reached": None,
+                "ff_attempted": None,
+                "ff_succeeded": None,
+                "final_stereo_verified": None,
+                "final_validation_passed": n_success,
+            }
+
         idx = {stage: i for i, stage in enumerate(PIPELINE_STAGE_ORDER)}
         n_stages = len(PIPELINE_STAGE_ORDER)
 
@@ -466,7 +489,7 @@ def main():
             "ff_attempted": reached("ForceFieldMinimization"),
             "ff_succeeded": passed("ForceFieldMinimization"),
             "final_stereo_verified": passed("FinalStereoVerify"),
-            "final_validation_passed": sum(1 for r in arm_rows if r["_bucket"] == "success"),
+            "final_validation_passed": n_success,
         }
 
     stage_funnels = {arm: stage_funnel(chematic_rows, arm) for arm in CHEMATIC_ARMS}
@@ -982,11 +1005,14 @@ def write_markdown_report(agg):
         "torsion optimization -> **stereo verify/repair** -> force-field minimization -> "
         "final stereo verify -> final geometry validation. Stereo repair happens *before* "
         "force-field minimization, not after -- the columns below follow that real order, "
-        "not an assumed embed-then-FF-then-stereo sequence. A row reached a stage if its "
-        "`failure_stage` is strictly later than that stage, or if it succeeded outright. "
-        "Never collapsed into a single success rate -- see "
-        "`feedback_fallback_pooling_measurement_error`: `mmff94_strict` and "
-        "`mmff94_with_uff_fallback` are reported as fully separate rows, never blended."
+        "not an assumed embed-then-FF-then-stereo sequence. A row is counted under an "
+        "`_attempted`/`_reached` column if its `failure_stage` is that stage or later (or it "
+        "succeeded outright); under a `_succeeded`/`_verified` column only if `failure_stage` "
+        "is strictly later than that stage (or it succeeded outright) -- a row that failed AT "
+        "a stage reached it but did not pass it, so `ff_attempted` and `ff_succeeded` are "
+        "genuinely different counts, not the same check twice. Never collapsed into a single "
+        "success rate -- see `feedback_fallback_pooling_measurement_error`: `mmff94_strict` "
+        "and `mmff94_with_uff_fallback` are reported as fully separate rows, never blended."
     )
     lines.append("")
     lines.append(
@@ -996,16 +1022,24 @@ def write_markdown_report(agg):
     lines.append("|---|---|---|---|---|---|---|---|")
     for arm in CHEMATIC_ARMS:
         sf = agg["stage_funnel"][arm]
+
+        def _cell(v):
+            return "n/a" if v is None else str(v)
+
         lines.append(
-            f"| {arm} | {sf['attempted']} | {sf['embed_succeeded']} | {sf['stereo_repair_reached']} | "
-            f"{sf['ff_attempted']} | {sf['ff_succeeded']} | {sf['final_stereo_verified']} | "
-            f"{sf['final_validation_passed']} |"
+            f"| {arm} | {_cell(sf['attempted'])} | {_cell(sf['embed_succeeded'])} | "
+            f"{_cell(sf['stereo_repair_reached'])} | {_cell(sf['ff_attempted'])} | "
+            f"{_cell(sf['ff_succeeded'])} | {_cell(sf['final_stereo_verified'])} | "
+            f"{_cell(sf['final_validation_passed'])} |"
         )
     lines.append("")
     lines.append(
         "Note: `chematic_legacy_etkdg` does not run through `pipeline_v2` at all (separate "
-        "`generate_coords_etkdg` entry point, no `PipelineStage` tracking) -- its row is "
-        "`attempted`/`final_validation_passed` only, intermediate columns are 0 by construction."
+        "`generate_coords_etkdg` entry point, no `PipelineStage` tracking) -- its row reports "
+        "`attempted`/`final_validation_passed` only; the intermediate columns are `n/a` rather "
+        "than a fabricated 0 or a misleading 265 (a naive reuse of the success-implies-passed-"
+        "every-stage rule above would have printed 265 for every column here, which would "
+        "misrepresent a code path that never runs those stages at all)."
     )
     lines.append("")
 

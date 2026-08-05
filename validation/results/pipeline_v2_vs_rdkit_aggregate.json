@@ -1136,11 +1136,11 @@
     },
     "chematic_legacy_etkdg": {
       "attempted": 265,
-      "embed_succeeded": 265,
-      "stereo_repair_reached": 265,
-      "ff_attempted": 265,
-      "ff_succeeded": 265,
-      "final_stereo_verified": 265,
+      "embed_succeeded": null,
+      "stereo_repair_reached": null,
+      "ff_attempted": null,
+      "ff_succeeded": null,
+      "final_stereo_verified": null,
       "final_validation_passed": 265
     }
   },
