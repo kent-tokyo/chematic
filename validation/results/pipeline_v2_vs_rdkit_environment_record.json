@@ -1,9 +1,8 @@
 {
-  "benchmark_session": "priority2_stretch_bend_gate_227_rerun_review_fixes",
-  "benchmark_commit": "1a1366b (+ this commit's review-driven blocker fixes: real complete-bonded-term arms, Dfsb sub-classification, strengthened timeout-rescue assertion, WASM/Python API compat)",
-  "benchmark_commit_base": "PR #248 (merged to main as of this run) + PR #249's own chematic-3d/chematic-wasm changes",
-  "benchmark_date": "2026-08-05",
-  "benchmark_branch": "fix/mmff94-stretch-bend-gate-227-priority2",
+  "benchmark_session": "priority2b_mmff94_stbn_dfsb_fallback_227",
+  "benchmark_commit_base": "main (c42627a, PR #248+#249 both merged) + this PR's chematic-ff/chematic-3d Dfsb production port",
+  "benchmark_date": "2026-08-06",
+  "benchmark_branch": "feat/mmff94-stbn-dfsb-fallback-227-priority2b",
   "common_scorer_blob_sha": "49a8854c0ff493e22b109f69d893d08662e45326",
   "tier_a_manifest_sha256": "8d4f3f3a70b8ae00c56cdbea81e398093ef25d896f4f252e46448632632166b8",
   "tier_b_manifest_sha256": "1a1698f5444c1b6e32da4eaa896cc347c7f051fdf71044bf53b6a644f0b9af77",

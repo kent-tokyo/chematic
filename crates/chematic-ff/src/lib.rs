@@ -26,8 +26,8 @@ pub use mmff94_advanced::{ElectrostaticMatrix, MMFF94BatchProperties};
 pub use mmff94_bci::{bci, mmff94_charges_bci, mmff94_formal_charge};
 pub use mmff94_energy::{
     AngleEnergyParams, BondEnergyParams, TorsionEnergyParams, VdwEnergyParams, mmff94_angle_energy,
-    mmff94_bond_energy, mmff94_oop, mmff94_stbn, mmff94_torsion_energy, mmff94_vdw_combined,
-    mmff94_vdw_energy,
+    mmff94_bond_energy, mmff94_oop, mmff94_stbn, mmff94_stbn_type_only, mmff94_torsion_energy,
+    mmff94_vdw_combined, mmff94_vdw_energy,
 };
 pub use mmff94_minimizer::{
     EnergyBreakdown, MLTB_TYPES, MinimizeResult, MinimizerError, OOP_SP2_TYPES, angle_type_for,

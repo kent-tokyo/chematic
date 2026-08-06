@@ -446,7 +446,8 @@ fn search_oop(type_j: u8, type_i: u8, type_k: u8, type_l: u8) -> Option<f64> {
         .map(|idx| MMFF94_OOP[idx].4)
 }
 
-/// Look up Stretch-Bend parameters for angle i-j-k.
+/// Look up Stretch-Bend parameters for angle i-j-k by MMFF *type* alone —
+/// no element/periodic-row fallback (see [`mmff94_stbn`] for that).
 ///
 /// Returns (kba_ijk, kba_kji). Both orderings (i,j,k) and (k,j,i) tried at
 /// the requested `angle_type`, then — if `angle_type` isn't 0 and no row
@@ -458,7 +459,18 @@ fn search_oop(type_j: u8, type_i: u8, type_k: u8, type_l: u8) -> Option<f64> {
 /// doesn't happen to cover would silently drop straight to the least
 /// specific fallback instead of the specific-triple type-0 row a hardcoded
 /// `angle_type=0` caller would have found.
-pub fn mmff94_stbn(angle_type: u8, type_i: u8, type_j: u8, type_k: u8) -> Option<(f64, f64)> {
+///
+/// `pub` (not just used internally) because diagnostic tooling
+/// (`mmff94_term_coverage_audit.rs`) specifically wants "does a *different
+/// classification code* have a row for this exact type triple" —
+/// independent of any element-based fallback, which [`mmff94_stbn`]'s
+/// Dfsb tier is not (it doesn't vary with `angle_type` at all).
+pub fn mmff94_stbn_type_only(
+    angle_type: u8,
+    type_i: u8,
+    type_j: u8,
+    type_k: u8,
+) -> Option<(f64, f64)> {
     let search = |at: u8, ti: u8, tj: u8, tk: u8| {
         MMFF94_STBN
             .binary_search_by_key(&(at, ti, tj, tk), |&(a, i, j, k, _, _)| (a, i, j, k))
@@ -476,4 +488,145 @@ pub fn mmff94_stbn(angle_type: u8, type_i: u8, type_j: u8, type_k: u8) -> Option
             }
         })
         .or_else(|| search(0, 0, type_j, 0))
+}
+
+/// RDKit's periodic-table-row default stretch-bend constants
+/// (`defaultMMFFDfsb`, `Code/ForceField/MMFF/Params.cpp`), RDKit's own
+/// residual fallback for stretch-bend once the specific/generic MMFF-type
+/// table (`MMFF94_STBN`) has no row at all. 29 rows, verbatim from
+/// `scripts/mmff94_provenance/rdkit_defaultMMFFDfsb.txt` (programmatically
+/// extracted from the pinned RDKit commit, not hand-transcribed — see
+/// `scripts/mmff94_provenance/PROVENANCE.md`'s "Stretch-bend" row).
+/// `(periodic_row_i, periodic_row_j, periodic_row_k, f_ijk, f_kji)` with
+/// `periodic_row_i <= periodic_row_k`, matching RDKit's own
+/// `MMFFDfsbCollection::getMMFFDfsbParams` canonicalization.
+static MMFF94_DFSB: &[(u8, u8, u8, f64, f64)] = &[
+    (0, 1, 0, 0.15, 0.15),
+    (0, 1, 1, 0.10, 0.30),
+    (0, 1, 2, 0.05, 0.35),
+    (0, 1, 3, 0.05, 0.35),
+    (0, 1, 4, 0.05, 0.35),
+    (0, 2, 0, 0.00, 0.00),
+    (0, 2, 1, 0.00, 0.15),
+    (0, 2, 2, 0.00, 0.15),
+    (0, 2, 3, 0.00, 0.15),
+    (0, 2, 4, 0.00, 0.15),
+    (1, 1, 1, 0.30, 0.30),
+    (1, 1, 2, 0.30, 0.50),
+    (1, 1, 3, 0.30, 0.50),
+    (1, 1, 4, 0.30, 0.50),
+    (2, 1, 2, 0.50, 0.50),
+    (2, 1, 3, 0.50, 0.50),
+    (2, 1, 4, 0.50, 0.50),
+    (3, 1, 3, 0.50, 0.50),
+    (3, 1, 4, 0.50, 0.50),
+    (4, 1, 4, 0.50, 0.50),
+    (1, 2, 1, 0.30, 0.30),
+    (1, 2, 2, 0.25, 0.25),
+    (1, 2, 3, 0.25, 0.25),
+    (1, 2, 4, 0.25, 0.25),
+    (2, 2, 2, 0.25, 0.25),
+    (2, 2, 3, 0.25, 0.25),
+    (2, 2, 4, 0.25, 0.25),
+    (3, 2, 3, 0.25, 0.25),
+    (3, 2, 4, 0.25, 0.25),
+];
+
+/// RDKit's periodic-table-row bucketing (`getPeriodicTableRow`,
+/// `Code/GraphMol/ForceFieldHelpers/MMFF/AtomTyper.cpp`, pinned commit —
+/// see `scripts/mmff94_provenance/PROVENANCE.md`): atomic number 1-2 (H,
+/// He) -> row 0, 3-10 -> row 1, 11-18 -> row 2, 19-36 -> row 3, 37-54 ->
+/// row 4, anything heavier -> row 0 (RDKit's own default, not a chematic
+/// omission — no row in `MMFF94_DFSB` is centered on an atom heavier than
+/// Xe anyway, since stretch-bend terms only arise for organic-chemistry
+/// central atoms in practice).
+fn mmff94_periodic_table_row(atomic_number: u8) -> u8 {
+    match atomic_number {
+        3..=10 => 1,
+        11..=18 => 2,
+        19..=36 => 3,
+        37..=54 => 4,
+        _ => 0,
+    }
+}
+
+/// RDKit's `MMFFDfsbCollection::getMMFFDfsbParams` — the periodic-row
+/// default stretch-bend fallback. Only meaningful once
+/// `mmff94_stbn_type_only` has already missed (matches RDKit's own order:
+/// `MMFFMolProperties::getMMFFStretchBendParams` tries the specific/generic
+/// MMFF-type lookup first, Dfsb only on failure). RDKit's own
+/// `isDoubleZero(kbaIJK) && isDoubleZero(kbaKJI)` exclusion (a resolved-but
+/// -both-zero row still counts as "not resolved") is replicated: the
+/// table's one all-zero row, `(0, 2, 0)`, returns `None` here, not
+/// `Some((0.0, 0.0))`.
+fn mmff94_dfsb_stbn(atomic_num_i: u8, atomic_num_j: u8, atomic_num_k: u8) -> Option<(f64, f64)> {
+    let (mut row_i, row_j, mut row_k) = (
+        mmff94_periodic_table_row(atomic_num_i),
+        mmff94_periodic_table_row(atomic_num_j),
+        mmff94_periodic_table_row(atomic_num_k),
+    );
+    let swapped = row_i > row_k;
+    if swapped {
+        std::mem::swap(&mut row_i, &mut row_k);
+    }
+    let (f_ijk, f_kji) = MMFF94_DFSB
+        .iter()
+        .find(|&&(r1, r2, r3, ..)| r1 == row_i && r2 == row_j && r3 == row_k)
+        .map(|&(.., f_ijk, f_kji)| (f_ijk, f_kji))?;
+    if f_ijk == 0.0 && f_kji == 0.0 {
+        return None;
+    }
+    Some(if swapped {
+        (f_kji, f_ijk)
+    } else {
+        (f_ijk, f_kji)
+    })
+}
+
+/// Look up Stretch-Bend parameters for angle i-j-k.
+///
+/// Returns (kba_ijk, kba_kji). Tries the type-based table first
+/// ([`mmff94_stbn_type_only`]); if that misses entirely, falls back to
+/// RDKit's own periodic-table-row default (Priority 2B, issue #227 — see
+/// `mmff94_dfsb_stbn`'s doc). Verified against the pinned RDKit commit's
+/// real `MMFFMolProperties::getMMFFStretchBendParams`: this is RDKit's
+/// *complete* residual fallback chain for stretch-bend — no
+/// equivalence-class step exists in RDKit's real stretch-bend path at all
+/// (that mechanism is angle/torsion/OOP-only in RDKit), so this function
+/// now matches RDKit's own coverage, not a partial subset of it.
+pub fn mmff94_stbn(
+    angle_type: u8,
+    type_i: u8,
+    type_j: u8,
+    type_k: u8,
+    atomic_num_i: u8,
+    atomic_num_j: u8,
+    atomic_num_k: u8,
+) -> Option<(f64, f64)> {
+    mmff94_stbn_type_only(angle_type, type_i, type_j, type_k)
+        .or_else(|| mmff94_dfsb_stbn(atomic_num_i, atomic_num_j, atomic_num_k))
+}
+
+#[cfg(test)]
+mod dfsb_tests {
+    use super::*;
+
+    #[test]
+    fn dfsb_table_has_29_rows() {
+        // Regression guard against accidental corruption of the ported
+        // table -- 29 is the exact row count of
+        // scripts/mmff94_provenance/rdkit_defaultMMFFDfsb.txt (verified at
+        // port time via a Python regex-extraction script, not hand-counted).
+        assert_eq!(MMFF94_DFSB.len(), 29);
+    }
+
+    #[test]
+    fn dfsb_table_rows_are_canonical_row_i_le_row_k() {
+        for &(row_i, _row_j, row_k, ..) in MMFF94_DFSB {
+            assert!(
+                row_i <= row_k,
+                "row ({row_i}, _, {row_k}) violates row_i <= row_k canonicalization"
+            );
+        }
+    }
 }

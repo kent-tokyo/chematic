@@ -1781,7 +1781,17 @@ fn compute_mmff94_coverage(mol: &Molecule, types: &[u8]) -> Mmff94CoverageReport
                 // Same (a, b, c) triple/angle_type as the angle-bend check above --
                 // stretch_bend_energy (chematic-ff's mmff94_minimizer) iterates the
                 // identical neighbor-pair loop, so this mirrors it exactly.
-                if mmff94_stbn(at, ta, types[b_idx], tc).is_none() {
+                if mmff94_stbn(
+                    at,
+                    ta,
+                    types[b_idx],
+                    tc,
+                    mol.atom(a).element.atomic_number(),
+                    mol.atom(b).element.atomic_number(),
+                    mol.atom(c).element.atomic_number(),
+                )
+                .is_none()
+                {
                     report.stretch_bend_missing.push(missing_term(
                         mol,
                         types,
@@ -3018,10 +3028,13 @@ mod policy_bridge_tests {
         ));
         assert_eq!(
             result.missing_parameter_classes.len(),
-            6,
-            "expected the 3 missing halogen-C-halogen angles PLUS the same 3 triples' \
-             stretch-bend cross terms (same underlying table gap, no angle-bend row means no \
-             stretch-bend row either) cited at the top level, got {:?}",
+            3,
+            "expected only the 3 missing halogen-C-halogen angles -- the same 3 triples' \
+             stretch-bend cross terms are resolved by chematic_ff::mmff94_stbn's RDKit-Dfsb \
+             periodic-row fallback (Priority 2B): F/Cl/Br/C are all within Dfsb's covered \
+             periodic rows (F,C row 1; Cl row 2; Br row 3), so all 3 canonicalized \
+             (row_i, row_j, row_k) triples ((1,1,2), (1,1,3), (2,1,3)) hit real, non-zero \
+             MMFF94_DFSB rows, got {:?}",
             result.missing_parameter_classes
         );
         let coverage = result
@@ -3031,8 +3044,9 @@ mod policy_bridge_tests {
         assert_eq!(coverage.angles_missing.len(), 3);
         assert_eq!(
             coverage.stretch_bend_missing.len(),
-            3,
-            "same 3 halogen-C-halogen triples should also lack stretch-bend parameters"
+            0,
+            "all 3 halogen-C-halogen triples should now resolve via the Dfsb periodic-row \
+             fallback -- if this regresses, the Dfsb port likely broke"
         );
 
         // The actual mechanism-3 fix: UFF has full generic coverage, so the

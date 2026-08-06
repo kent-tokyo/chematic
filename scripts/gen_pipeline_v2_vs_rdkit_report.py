@@ -931,17 +931,25 @@ def write_markdown_report(agg):
                 f"{b.get('timeout', 0)} | {b.get('internal_error', 0) + b.get('oracle_failure', 0)} |"
             )
     lines.append("")
-    _sb_missing_instances = (
-        agg.get("mmff94_term_audit_summary", {}).get("by_term_kind", {}).get("StretchBend", {}).get(
-            "total_missing_instances"
-        )
+    _sb_final_unresolved = (
+        agg.get("mmff94_term_audit_summary", {}).get("stretch_bend_dfsb_resolution", {}).get("final_unresolved")
     )
     _sb_clause = (
-        f"{_sb_missing_instances:,} stretch-bend terms still ungated by *this* arm (a new, "
-        "independent `gate_mmff94_stretch_bend=true` opt-in exists as of Priority 2/Stage 1B -- "
-        "see that section below -- but is not adopted as this arm's default)"
-        if _sb_missing_instances is not None
-        else "stretch-bend terms still ungated by this arm -- see Priority 2/Stage 1B below for the measured count"
+        "this arm's own bond+angle coverage gate (`mmff94_strict` never gated stretch-bend, even "
+        "before Priority 2B -- the Dfsb fallback's periodic-row default resolves every stretch-bend "
+        "term in production now, 0 final-unresolved measured this run, see the Bonded-term "
+        "coverage gate section below; NOT the same as this arm's *output* being unaffected -- Dfsb "
+        "changes energy/gradient unconditionally for every MMFF94 arm, which can shift "
+        "convergence/success outcomes even where gate eligibility doesn't move, see that section's "
+        "own note on the one verified status change this run)"
+        if _sb_final_unresolved == 0
+        else f"this arm's own bond+angle coverage gate, plus {_sb_final_unresolved:,} stretch-bend "
+        "terms still unresolved even after the Dfsb fallback (an independent "
+        "`gate_mmff94_stretch_bend=true` opt-in exists -- see the Bonded-term coverage gate section "
+        "below -- but is not adopted as this arm's default)"
+        if _sb_final_unresolved is not None
+        else "this arm's own bond+angle coverage gate -- see the Bonded-term coverage gate section "
+        "below for the stretch-bend count"
     )
     lines.append(
         "**mmff94_strict, spelled out per the fix request:** "
@@ -952,7 +960,7 @@ def write_markdown_report(agg):
         f"{agg['coverage']['chematic']['chematic_pipeline_v2_mmff94_strict']['n_rows']} of the *total corpus* "
         "ends up as a usable geometry under this arm -- the rest is the "
         f"{agg['coverage']['chematic']['chematic_pipeline_v2_mmff94_strict']['n_rows'] - agg['coverage']['chematic']['chematic_pipeline_v2_mmff94_strict']['success']}-molecule "
-        f"MMFF94 coverage gap (issue #227, {_sb_clause}), not a geometry-quality problem."
+        f"MMFF94 coverage gap (issue #227), governed by {_sb_clause}, not a geometry-quality problem."
     )
     lines.append("")
 
@@ -1266,45 +1274,92 @@ def write_markdown_report(agg):
     )
     lines.append("")
 
-    lines.append("## Bonded-term coverage gate (Priority 2 / Stage 1B, issue #227)")
+    lines.append("## Bonded-term coverage gate (Priority 2 / 2B / Stage 1B, issue #227)")
     lines.append("")
     lines.append(
-        "Stretch-bend cross terms (Halgren MMFF.V eq. 4) were historically never gated by "
-        "`Mmff94BondAngleStrict`/`Mmff94WithUffFallback` at all -- `Mmff94CoverageReport` had no "
-        "field for them, and `stretch_bend_energy` (chematic-ff's `mmff94_minimizer`) silently "
-        "contributes zero energy for an uncovered term instead of erroring. This PR adds "
-        "`gate_mmff94_stretch_bend` (`PipelineV2Config`/`minimize_with_policy_gated`), an "
-        "independent opt-in with the same shape as the pre-existing `gate_mmff94_torsion_oop` -- "
-        "and 4 new benchmark arms exercising a real 3-stage comparison (legacy -> "
-        "stretch-bend-gated -> complete-bonded-term-gated, for both `mmff94_strict` and "
-        "`mmff94_with_uff_fallback`). **Review-driven correction**: an earlier version of this PR "
-        "only added the stretch-bend-gated stage and mislabeled its result as \"true complete-term "
-        "coverage\" -- it left `gate_mmff94_torsion_oop` at its default `false`, so torsion/OOP "
-        "(1,121/0 missing instances respectively, measured below) were never actually gated. The "
-        "complete-bonded-term stage below fixes this by gating stretch-bend AND torsion AND OOP "
-        "together. Still not \"complete MMFF94\" -- vdW and partial-charge coverage are never "
-        "gated by any arm in this benchmark."
+        "**Priority 2** added `gate_mmff94_stretch_bend` (`PipelineV2Config`/"
+        "`minimize_with_policy_gated`) — an opt-in gate refusing "
+        "`Mmff94BondAngleStrict`/`Mmff94WithUffFallback` on a missing stretch-bend term — plus 4 "
+        "benchmark arms exercising a 3-stage comparison (legacy -> stretch-bend-gated -> "
+        "complete-bonded-term-gated, for both `mmff94_strict` and `mmff94_with_uff_fallback`; "
+        "\"complete-bonded-term\", not \"complete MMFF94\" -- vdW/partial-charge coverage are "
+        "never gated by any arm here). That round's own diagnostic audit found the single largest "
+        "missing-term bucket (StretchBend, 2,107 instances total: 1,680 genuine `table_gap` + 427 "
+        "`routing_bug_candidate`) was **100% coverable** by porting a small, "
+        "pinned-RDKit-commit-verified 29-row periodic-table-row fallback table "
+        "(`MMFFDfsbCollection`'s real RDKit equivalent) into production."
+    )
+    lines.append("")
+    lines.append(
+        "**Priority 2B (this round) ships that port.** `chematic_ff::mmff94_stbn` now tries the "
+        "existing specific/generic MMFF-type table first (unchanged, always wins if it has a row), "
+        "and on failure falls back to the ported Dfsb table — **unconditionally, not behind any "
+        "opt-in flag** (this is a production accuracy fix, not a diagnostic feature; it applies to "
+        "every MMFF94 policy's energy/gradient calculation, and to the coverage gate the same way). "
+        "The `gate_mmff94_stretch_bend`/`gate_mmff94_torsion_oop` *strict-refusal* gates from "
+        "Priority 2 are unaffected by this and remain independent opt-ins, still `false` by "
+        "default — Priority 2B only changes what counts as \"covered\" underneath those gates, not "
+        "whether the gates themselves are on."
     )
     lines.append("")
     audit = agg.get("mmff94_term_audit_summary")
     if audit:
+        sb = audit.get("stretch_bend_dfsb_resolution")
+        if sb:
+            masked, resolved, unresolved, total = (
+                sb["dfsb_resolved_routing_candidate"],
+                sb["dfsb_resolved_true_type_table_gap"],
+                sb["final_unresolved"],
+                sb["type_only_missing_total"],
+            )
+            lines.append(
+                f"**Coverage parity achieved (0/{total:,} final-unresolved), but this is NOT the "
+                "same as parameter-selection parity.** Two structurally different outcomes hide "
+                "behind the same \"resolved\" status:"
+            )
+            lines.append("")
+            lines.append(
+                f"- **{resolved:,} instances** were genuine table gaps (absent at *every* "
+                "classification code chematic-ff's tables define) -- Dfsb resolving these matches "
+                "RDKit's own real behavior exactly. This IS the case Dfsb was built to close."
+            )
+            lines.append(
+                f"- **{masked:,} instances** were routing-bug candidates (a real, correctly-typed "
+                "parameter already exists at a *different* classification code than the one this "
+                "molecule's context computed) that Dfsb *also* happens to resolve. Coverage is "
+                "achieved, but chematic is now using RDKit's generic periodic-row default instead "
+                "of the specific parameter a correctly-routed classification would have used -- "
+                "**masked, not fixed**. Before this fix, these instances were reported as "
+                "\"missing\"; after, they silently look identical to genuinely-resolved instances "
+                "unless this breakdown is consulted."
+            )
+            lines.append("")
+            lines.append(
+                "This distinction is preserved in `mmff94_term_coverage_audit.rs`'s own output "
+                "specifically so it doesn't disappear: the audit emits a row whenever the "
+                "TYPE-ONLY lookup misses, regardless of whether Dfsb then rescues it, with a "
+                "`dfsb_resolved` field and the original `present_at_different_classification` "
+                "discriminator both preserved on the same row. **Not fixed in this PR** (would "
+                "require investigating `angle_type_for`'s classification logic, a different root "
+                "cause than the Dfsb port -- tracked as follow-up work, not silently dropped)."
+            )
+            lines.append("")
         lines.append(
             "### Missing-term sub-classification (fresh re-run, `mmff94_term_coverage_audit.rs`)"
         )
         lines.append("")
         lines.append(
-            "Per-term-instance classification across the 265-molecule corpus, superseding the "
-            "stale pre-#236/#238/#239/#241 numbers in `docs/mmff94_coverage_gap_227_audit.md` "
-            "(that document cited **~6,900** missing stretch-bend terms; the fresh count below is "
-            "**substantially lower**, most likely because the same typing fixes that closed the "
-            "bond/angle gap in Priority 1 also improved stretch-bend's shared angle-type "
-            "classification path). `routing_bug_candidate` = this exact atom-type tuple has a "
+            "Per-term-instance classification across the 265-molecule corpus, using the TYPE-ONLY "
+            "lookup (`mmff94_stbn_type_only` for StretchBend) -- independent of whether production "
+            "`mmff94_stbn`'s Dfsb fallback ultimately resolves a given instance (see the "
+            "coverage-vs-parameter-selection-parity note above for StretchBend specifically). "
+            "`routing_bug_candidate` = this exact atom-type tuple has a "
             "table row at a *different* classification code than the one this molecule's context "
             "computed -- a candidate for an `angle_type_for`/`torsion_type_for`/`bond_type_for` "
             "classification bug, not necessarily a genuine table gap. `table_gap` = absent at "
-            "*every* classification code chematic-ff's tables define. `Oop` is listed explicitly "
-            "even at 0 -- omitting a measured-zero term kind would be indistinguishable from "
-            "\"not measured\", which it is not."
+            "*every* classification code chematic-ff's tables define. `Oop` is listed "
+            "explicitly even at 0 -- omitting a measured-zero term kind would be indistinguishable "
+            "from \"not measured\", which it is not."
         )
         lines.append("")
         lines.append("| Term kind | total missing instances | routing_bug_candidate | table_gap |")
@@ -1323,63 +1378,16 @@ def write_markdown_report(agg):
             )
         lines.append("")
         lines.append(
-            "For Bond/Angle/Torsion/Oop, `table_gap` is not further sub-classified this round -- "
+            "For Bond/Angle/Torsion/Oop, `table_gap` is not further sub-classified -- "
             "chematic-ff implements neither MMFF94 equivalence-class substitution nor "
             "empirical-rule (e.g. Badger's-rule bond) estimation at all for these term kinds "
             "(`Mmff94NumericTypeInfo.equivalence_levels` carries real MMFF94 equivalence data but "
             "has zero readers anywhere in the codebase, verified, not assumed) -- deferred, not "
-            "fabricated."
+            "fabricated. Per this round's explicit scope decision, this PR does not touch those "
+            "routing-bug candidates either (nor StretchBend's own 427 masked routing candidates "
+            "above), to keep a single root cause (Dfsb port only)."
         )
         lines.append("")
-        sb = audit.get("stretch_bend_table_gap_breakdown")
-        if sb:
-            dfsb_n = sb["dfsb_default_resolvable"]
-            gap_total = sb["table_gap_total"]
-            unsupported_n = sb["truly_unsupported_under_rdkits_own_algorithm"]
-            lines.append(
-                "**StretchBend's `table_gap` IS further sub-classified below** -- a diagnostic-only "
-                "(never wired into production chematic-ff) port of RDKit's REAL stretch-bend "
-                "resolution path, verified against the pinned RDKit commit "
-                "(`scripts/mmff94_provenance/PROVENANCE.md`): `MMFFMolProperties::getMMFFStretchBendParams` "
-                "tries the specific/generic MMFF-type lookup first (matches chematic's existing "
-                "`mmff94_stbn` chain structurally), and on failure falls back to "
-                "`MMFFDfsbCollection::getMMFFDfsbParams` -- a small (29-row), periodic-table-row-keyed "
-                "default table (`defaultMMFFDfsb`), ported verbatim here. **Confirmed: no "
-                "equivalence-class (`eqLevel`) step exists anywhere in RDKit's real stretch-bend "
-                "path** -- `eqLevel` is used only by RDKit's angle/torsion/OOP fallback functions -- "
-                "so this Dfsb port is RDKit's *complete* residual fallback story for stretch-bend, "
-                "not a partial one."
-            )
-            lines.append("")
-            lines.append(
-                f"| table_gap total | dfsb_default_resolvable | truly_unsupported (under RDKit's own algorithm) |"
-            )
-            lines.append("|---|---|---|")
-            lines.append(
-                f"| {gap_total} | {dfsb_n} ({fmt_pct(dfsb_n / gap_total) if gap_total else 'n/a'}) | "
-                f"{unsupported_n} ({fmt_pct(unsupported_n / gap_total) if gap_total else 'n/a'}) |"
-            )
-            lines.append("")
-            if dfsb_n == gap_total and gap_total > 0:
-                lines.append(
-                    f"**100% of the {gap_total}-instance StretchBend table_gap would be resolved by "
-                    "porting this 29-row Dfsb table into chematic-ff's production stretch-bend "
-                    "resolution** (verified with negative controls -- the port correctly returns "
-                    "`false` for out-of-table periodic-row combinations and for the table's one "
-                    "all-zero row, not a blanket `true`). This reframes the earlier \"primarily a "
-                    "genuine table-completeness gap, next step unclear\" conclusion: the largest "
-                    "missing-term bucket across all 5 term kinds is concretely, narrowly closable -- "
-                    "a small, well-defined, low-risk follow-up PR (port the table into production, "
-                    "not build new inference machinery), not resolved in *this* PR."
-                )
-            else:
-                lines.append(
-                    f"{dfsb_n}/{gap_total} of the StretchBend table_gap would be resolved by porting "
-                    "this Dfsb table into production; the remaining "
-                    f"{unsupported_n} are genuinely unsupported even under RDKit's own complete "
-                    "stretch-bend algorithm, not just under chematic's current, narrower one."
-                )
-            lines.append("")
     lines.append("### Legacy -> stretch-bend -> complete-bonded-term (3-stage paired comparison)")
     lines.append("")
     lines.append(
@@ -1431,40 +1439,56 @@ def write_markdown_report(agg):
                 "checks fails report generation instead of being silently accepted."
             )
             lines.append("")
+    _sb_to_complete = [
+        r for r in agg["stretch_bend_gate_effectiveness"] if "complete_bonded_term_gated" in r["later_arm"]
+    ]
+    if _sb_to_complete and all(r["newly_failing_under_later_gate"] == 0 for r in _sb_to_complete):
+        lines.append(
+            "**Stretch-bend-gated -> complete-bonded-term is 0 newly-failing for every policy this "
+            "round** -- every molecule that already survives the stretch-bend gate also has "
+            "complete torsion+OOP coverage in this specific 265-molecule corpus. This is empirical, "
+            "not structural (torsion has 1,121 missing instances measured above; they evidently "
+            "concentrate on molecules that already fail the stretch-bend gate, in this corpus) -- a "
+            "different, larger, or differently-composed corpus could show a non-zero delta at this "
+            "stage. Practical effect for this run: the stretch-bend-gated and "
+            "complete-bonded-term-gated success counts are numerically identical here, so the "
+            "corrected, narrower name (`..._stretch_bend_gated`, not \"true complete-term\") only "
+            "matters for what the number *means*, not for its value on this particular corpus."
+        )
+        lines.append("")
     lines.append(
-        "**Stretch-bend-gated -> complete-bonded-term is 0 newly-failing for both policies this "
-        "round** (37->37, 250->250) -- every molecule that already survives the stretch-bend gate "
-        "also has complete torsion+OOP coverage in this specific 265-molecule corpus. This is "
-        "empirical, not structural (torsion has 1,121 missing instances measured above; they "
-        "evidently concentrate on molecules that already fail the stretch-bend gate, in this "
-        "corpus) -- a different, larger, or differently-composed corpus could show a non-zero "
-        "delta at this stage. Practical effect for this run: the stretch-bend-gated and "
-        "complete-bonded-term-gated success counts are numerically identical here, so the "
-        "corrected, narrower name (`..._stretch_bend_gated`, not \"true complete-term\") only "
-        "matters for what the number *means*, not for its value on this particular corpus."
+        "**On the legacy `mmff94_strict`/`mmff94_with_uff_fallback` arms' success counts changing "
+        "at all (148->149, and a similar 1-2 molecule shift seen in earlier rounds): this is NOT "
+        "structurally guaranteed to be zero, and is not claimed to be.** `mmff94_strict` never "
+        "gated stretch-bend, before or after Priority 2B -- bond+angle *gate eligibility* is "
+        "unchanged -- but Priority 2B changes stretch-bend's contribution to every MMFF94 policy's "
+        "energy AND finite-difference gradient *unconditionally*, for every molecule that reaches "
+        "minimization under any policy. That can change minimizer convergence, iteration count, "
+        "final residual force, and therefore final soundness/success -- in principle for better or "
+        "worse, not just gate-count-preserving by construction. What this round actually measured, "
+        "with a real per-molecule diff against a baseline saved *before* re-running (not "
+        "reconstructed after the fact): 0 soundness regressions among molecules sound in both runs, "
+        "and exactly 1 status change on `mmff94_strict` -- `chembl_tier_b_0166` "
+        "(elapsed_ms 20530 -> 16221, status timeout -> success). `embed_seed` governs geometry/RNG "
+        "determinism but not real-time scheduling, so a molecule sitting near the "
+        "`total_timeout_ms=20000` boundary is a plausible site for this kind of flip regardless of "
+        "cause -- but a ~4.3s drop is a substantial, consistent-direction change, not obviously "
+        "pure machine-load noise, and is reported here as verified-but-not-fully-explained rather "
+        "than asserted to be \"known jitter\" without checking. The same molecule ID was *also* the "
+        "timeout-boundary case in Priority 2's own `mmff94_with_uff_fallback` measurement -- a "
+        "recurring boundary case across multiple rounds, consistent with a genuinely ~20s-class "
+        "molecule under this policy family, sensitive to any change in computation."
     )
     lines.append("")
     lines.append(
-        "**Run-to-run note on `mmff94_with_uff_fallback`'s legacy success count**: an earlier "
-        "draft of this measurement (same code, same seed, different wall-clock conditions) found "
-        "251/265 legacy successes with 1 timeout-rescue exception; this run finds 252/265 with "
-        "zero exceptions. Root-caused, not hand-waved: `chembl_tier_b_0166`'s legacy MMFF94 "
-        "attempt sits right at the `total_timeout_ms=20000` boundary (18710ms in this run vs. "
-        "21378ms in the earlier one) -- `embed_seed` governs geometry/RNG determinism but NOT "
-        "wall-clock scheduling, so a molecule this close to a real-time budget can legitimately "
-        "flip between timeout and success across runs depending on machine load, independent of "
-        "any code change. 252/265 also matches the legacy `mmff94_with_uff_fallback` count already "
-        "on `main` (this PR's parent, #248) -- this run, not the earlier draft, is the "
-        "representative one. Not a hidden source of non-determinism -- flagged here so a future "
-        "re-run landing on 251 or 253 isn't mistaken for a regression."
-    )
-    lines.append("")
-    lines.append(
-        "Not adopted as the new default this round -- the legacy `gate_mmff94_torsion_oop=false, "
-        "gate_mmff94_stretch_bend=false` arms remain the primary `mmff94_strict`/"
-        "`mmff94_with_uff_fallback` numbers reported elsewhere in this document, per the plan's "
-        "explicit staged-measurement instruction (measure each delta transparently before "
-        "formalizing a new gate default, not silently change the existing success count)."
+        "**Scope of \"adopted\" this round**: the Dfsb periodic-row fallback itself (Priority 2B) "
+        "IS now unconditional production behavior for every MMFF94 policy's energy/gradient "
+        "calculation and coverage measurement -- not gated, not opt-in. What remains opt-in and "
+        "`false` by default is the *strict-refusal* gate on top of that coverage "
+        "(`gate_mmff94_stretch_bend`/`gate_mmff94_torsion_oop`). This changes what energy/gradient "
+        "every MMFF94 arm computes, not just what a gate refuses -- see the paragraph above for why "
+        "that is a real, if empirically small this round, source of output change even for arms "
+        "whose gate eligibility never touches stretch-bend."
     )
     lines.append("")
 
