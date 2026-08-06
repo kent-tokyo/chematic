@@ -24,13 +24,22 @@
 //!
 //! Priority 2B (issue #227) update: RDKit's periodic-table-row stretch-bend
 //! default (`MMFFDfsbCollection::getMMFFDfsbParams`) is now wired into
-//! *production* `chematic_ff::mmff94_stbn` itself (no longer a
-//! diagnostic-only side-table here) -- so `stbn_missing` below already
-//! reflects it, and a "would Dfsb resolve this" field would be meaningless
-//! (there is no more hypothetical "would", it already does). The
-//! `present_at_different_classification` discriminator still uses the
-//! type-only lookup (`mmff94_stbn_type_only`), independent of Dfsb, since
-//! it specifically asks about classification-code routing bugs.
+//! *production* `chematic_ff::mmff94_stbn` itself. This audit deliberately
+//! keeps reporting the TYPE-ONLY diagnostic axis (`stbn_missing`,
+//! `present_at_different_classification`, using `mmff94_stbn_type_only`)
+//! *separately* from the final production resolution
+//! (`stbn_final_unresolved`, `dfsb_resolved` per-row) -- coverage parity
+//! (does *some* value get returned) and parameter-selection parity (is the
+//! *correct* value being used) are different questions. A row whose
+//! type-only lookup misses at its own classification code but hits at a
+//! *different* one (`present_at_different_classification` is `Some`) is a
+//! classification/routing-bug candidate regardless of whether Dfsb then
+//! rescues it -- if Dfsb rescues it, that candidate's real, correctly-typed
+//! parameter is now *masked* by RDKit's generic periodic-row default
+//! instead, not fixed. Collapsing both axes into "0 missing" (an earlier,
+//! incorrect version of this file did exactly that) would silently make
+//! the 427-instance routing-candidate population undiscoverable from this
+//! audit's own output.
 //!
 //! Run: `cargo run --release -p chematic-3d --example mmff94_term_coverage_audit \
 //!   > validation/results/mmff94_coverage_227_term_audit.jsonl 2> validation/results/mmff94_coverage_227_stderr.log`
@@ -183,6 +192,7 @@ struct MolAgg {
     oop_missing: usize,
     stbn_total: usize,
     stbn_missing: usize,
+    stbn_final_unresolved: usize,
     vdw_types_total: usize,
     vdw_types_missing: usize,
     charges_ok: bool,
@@ -219,6 +229,7 @@ fn main() {
                     oop_missing: 0,
                     stbn_total: 0,
                     stbn_missing: 0,
+                    stbn_final_unresolved: 0,
                     vdw_types_total: 0,
                     vdw_types_missing: 0,
                     charges_ok: false,
@@ -250,6 +261,7 @@ fn main() {
                     oop_missing: 0,
                     stbn_total: 0,
                     stbn_missing: 0,
+                    stbn_final_unresolved: 0,
                     vdw_types_total: 0,
                     vdw_types_missing: 0,
                     charges_ok: false,
@@ -274,6 +286,7 @@ fn main() {
         let mut oop_missing = 0usize;
         let mut stbn_total = 0usize;
         let mut stbn_missing = 0usize;
+        let mut stbn_final_unresolved = 0usize;
 
         // -- Bond --
         for (_, bond) in mol.bonds() {
@@ -347,33 +360,56 @@ fn main() {
                         }));
                     }
 
-                    // Priority 2B: mmff94_stbn now includes RDKit's Dfsb
-                    // periodic-row fallback in production, so a row only
-                    // appears here for a triple genuinely unresolved even
-                    // after that fallback (not merely "chematic's
-                    // specific/generic table misses" -- that population is
-                    // considerably smaller than pre-Priority-2B).
-                    let stbn_hit = mmff94_stbn(
-                        at,
-                        ta,
-                        tb,
-                        tc,
-                        mol.atom(a).element.atomic_number(),
-                        mol.atom(b).element.atomic_number(),
-                        mol.atom(c).element.atomic_number(),
-                    );
-                    if stbn_hit.is_none() {
+                    // Review-driven fix (Priority 2B follow-up): a row must
+                    // be emitted whenever the TYPE-ONLY lookup misses,
+                    // regardless of whether the Dfsb fallback then rescues
+                    // it -- rows are the only place `present_at_different_
+                    // classification` (a classification/routing-bug
+                    // candidate, independent of Dfsb) is visible at all. The
+                    // earlier version of this file only emitted a row when
+                    // the FINAL (Dfsb-inclusive) lookup missed, which
+                    // silently dropped the 427/2,107 type-routing
+                    // candidates that Dfsb happens to also rescue --
+                    // masking, not fixing, that population. See
+                    // `dfsb_resolved` below to distinguish "Dfsb rescued a
+                    // routing-bug candidate" (parameter-selection parity
+                    // still open, tracked separately) from "Dfsb rescued a
+                    // genuine table gap" (the only case actually closed).
+                    let type_only_hit = mmff94_stbn_type_only(at, ta, tb, tc);
+                    if type_only_hit.is_none() {
                         stbn_missing += 1;
                         let present_at = stbn_present_at_any_type(ta, tb, tc);
+                        let final_hit = mmff94_stbn(
+                            at,
+                            ta,
+                            tb,
+                            tc,
+                            mol.atom(a).element.atomic_number(),
+                            mol.atom(b).element.atomic_number(),
+                            mol.atom(c).element.atomic_number(),
+                        );
+                        let dfsb_resolved = final_hit.is_some();
+                        if !dfsb_resolved {
+                            stbn_final_unresolved += 1;
+                        }
                         term_rows.push(json!({
                             "molecule_id": cm.name, "smiles": cm.smiles, "tier": cm.tier,
                             "term_kind": "StretchBend",
                             "atoms": [ctx(a), ctx(b), ctx(c)],
                             "classified_type": at,
                             "lookup_key_before_normalization": [at, ta, tb, tc],
-                            "final_lookup_result": "missing",
+                            "final_lookup_result": if dfsb_resolved { "resolved_via_dfsb_fallback" } else { "missing" },
                             "present_at_different_classification": present_at,
-                            "note": "NEVER gated by ForceFieldPolicy::Mmff94BondAngleStrict's coverage check by default (gate_mmff94_stretch_bend=false) -- silently contributes 0.0 energy in stretch_bend_energy, does not cause a typed failure. Also unresolved by chematic_ff::mmff94_stbn's RDKit-Dfsb fallback (Priority 2B) -- a genuine residual gap under RDKit's own complete stretch-bend algorithm, not just chematic's.",
+                            "dfsb_resolved": dfsb_resolved,
+                            "note": if dfsb_resolved {
+                                if present_at.is_some() {
+                                    "Type-only lookup missed at this triple's own classification code, but a row EXISTS at a different code (present_at_different_classification) -- a classification/routing-bug candidate, NOT a genuine table gap. chematic_ff::mmff94_stbn's RDKit-Dfsb fallback (Priority 2B) resolved this triple anyway (coverage parity achieved) -- but that means it is using RDKit's GENERIC periodic-row default, not the SPECIFIC parameter a correctly-routed classification would have used (parameter-selection parity still open). Never gated by ForceFieldPolicy::Mmff94BondAngleStrict's coverage check by default (gate_mmff94_stretch_bend=false)."
+                                } else {
+                                    "Absent at every classification code (a genuine type-table gap, not a routing-bug candidate) -- resolved by chematic_ff::mmff94_stbn's RDKit-Dfsb fallback (Priority 2B), matching RDKit's own real behavior exactly (this is the case Dfsb was designed to close). Never gated by ForceFieldPolicy::Mmff94BondAngleStrict's coverage check by default (gate_mmff94_stretch_bend=false)."
+                                }
+                            } else {
+                                "NEVER gated by ForceFieldPolicy::Mmff94BondAngleStrict's coverage check by default (gate_mmff94_stretch_bend=false) -- silently contributes 0.0 energy in stretch_bend_energy, does not cause a typed failure. Also unresolved by chematic_ff::mmff94_stbn's RDKit-Dfsb fallback (Priority 2B) -- a genuine residual gap under RDKit's own complete stretch-bend algorithm, not just chematic's."
+                            },
                         }));
                     }
                 }
@@ -513,6 +549,7 @@ fn main() {
             oop_missing,
             stbn_total,
             stbn_missing,
+            stbn_final_unresolved,
             vdw_types_total,
             vdw_types_missing,
             charges_ok,
@@ -537,6 +574,7 @@ fn main() {
             "torsions_total": m.torsions_total, "torsions_missing": m.torsions_missing,
             "oop_total": m.oop_total, "oop_missing": m.oop_missing,
             "stbn_total": m.stbn_total, "stbn_missing": m.stbn_missing,
+            "stbn_final_unresolved": m.stbn_final_unresolved,
             "vdw_types_total": m.vdw_types_total, "vdw_types_missing": m.vdw_types_missing,
             "charges_ok": m.charges_ok,
             "strict_bond_angle_gate_would_fail": m.strict_gate_would_fail,
@@ -552,8 +590,9 @@ fn main() {
     let n_torsions_missing: usize = mol_aggs.iter().map(|m| m.torsions_missing).sum();
     let n_oop_missing: usize = mol_aggs.iter().map(|m| m.oop_missing).sum();
     let n_stbn_missing: usize = mol_aggs.iter().map(|m| m.stbn_missing).sum();
+    let n_stbn_final_unresolved: usize = mol_aggs.iter().map(|m| m.stbn_final_unresolved).sum();
     eprintln!(
-        "=== summary: total={n_total} bond+angle-gate-would-fail={n_fail} bonds_missing={n_bonds_missing} angles_missing={n_angles_missing} torsions_missing={n_torsions_missing} oop_missing={n_oop_missing} stbn_missing(never gated)={n_stbn_missing} ==="
+        "=== summary: total={n_total} bond+angle-gate-would-fail={n_fail} bonds_missing={n_bonds_missing} angles_missing={n_angles_missing} torsions_missing={n_torsions_missing} oop_missing={n_oop_missing} stbn_type_only_missing(never gated, incl. Dfsb-masked routing candidates)={n_stbn_missing} stbn_final_unresolved(after Dfsb fallback)={n_stbn_final_unresolved} ==="
     );
 
     // Distinct missing-tuple pattern counts (angle), to see concentration.

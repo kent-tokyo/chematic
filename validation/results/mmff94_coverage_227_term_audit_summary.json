@@ -1,11 +1,13 @@
 {
-  "generated_from": "crates/chematic-3d/examples/mmff94_term_coverage_audit.rs (fresh re-run, Priority 2B: RDKit's Dfsb periodic-row stretch-bend fallback ported into PRODUCTION chematic_ff::mmff94_stbn -- supersedes the Priority-2-era diagnostic-only 'would this resolve if ported' numbers)",
+  "generated_from": "crates/chematic-3d/examples/mmff94_term_coverage_audit.rs (fresh re-run, Priority 2B: RDKit's Dfsb periodic-row stretch-bend fallback ported into PRODUCTION chematic_ff::mmff94_stbn)",
   "corpus": "265 molecules (validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_{a,b}.json)",
-  "note": "'routing_bug_candidate' = this exact atom-type tuple has a table row at a *different* classification code -- a candidate for a classification-derivation bug, not necessarily a genuine table gap. 'table_gap' = absent at every classification code AND (for StretchBend specifically, since Priority 2B) unresolved by the production Dfsb fallback too -- i.e. a genuine residual gap under RDKit's own complete stretch-bend algorithm, not just chematic's. For Bond/Angle/Torsion/Oop, table_gap is still not further sub-classified (chematic-ff implements neither equivalence-class substitution nor empirical-rule estimation for those term kinds) -- deferred, not fabricated.",
-  "priority_2b_result": {
-    "stretch_bend_missing_before": 2107,
-    "stretch_bend_missing_after": 0,
-    "note": "Before = Priority 2's diagnostic-only measurement (this same 265-molecule corpus, pre-Priority-2B). After = production chematic_ff::mmff94_stbn (Dfsb fallback now always active, not gated). All 2,107 previously-missing instances now resolve."
+  "note": "Two SEPARATE axes, deliberately not collapsed into one (review-driven fix): (1) TYPE-ONLY diagnostic ('by_term_kind' below, using mmff94_stbn_type_only, independent of Dfsb) -- 'routing_bug_candidate' = a table row exists at a *different* classification code (classification-derivation bug candidate), 'table_gap' = absent at *every* code (genuine table gap). (2) FINAL PRODUCTION RESOLUTION ('stretch_bend_dfsb_resolution' below) -- coverage parity (does *some* value get returned) is NOT the same question as parameter-selection parity (is the *correct* value being used). A StretchBend routing_bug_candidate that Dfsb also resolves is MASKED, not fixed -- its real, correctly-typed parameter is hidden behind RDKit's generic periodic-row default instead. For Bond/Angle/Torsion/Oop, table_gap is not further sub-classified (chematic-ff implements neither equivalence-class substitution nor empirical-rule estimation for those term kinds) -- deferred, not fabricated.",
+  "stretch_bend_dfsb_resolution": {
+    "type_only_missing_total": 2107,
+    "dfsb_resolved_routing_candidate": 427,
+    "dfsb_resolved_true_type_table_gap": 1680,
+    "final_unresolved": 0,
+    "note": "dfsb_resolved_routing_candidate = a routing-bug candidate (real parameter exists at a different classification code) that Dfsb ALSO happens to resolve -- coverage achieved, but chematic is using RDKit's generic default instead of the correctly-routed specific parameter; NOT fixed, just no longer visible as 'missing'. dfsb_resolved_true_type_table_gap = a genuine table gap (absent at every classification code) that Dfsb resolves -- this IS the case Dfsb was built to close, matching RDKit's own real behavior exactly. final_unresolved = neither chematic's type table nor the Dfsb fallback resolves this -- 0 in this corpus."
   },
   "by_term_kind": {
     "Bond": {
@@ -29,9 +31,9 @@
       "table_gap": 0
     },
     "StretchBend": {
-      "total_missing_instances": 0,
-      "routing_bug_candidate": 0,
-      "table_gap": 0
+      "total_missing_instances": 2107,
+      "routing_bug_candidate": 427,
+      "table_gap": 1680
     }
   }
 }

@@ -19,22 +19,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   not behind any opt-in flag — applies to every MMFF94 policy's
   energy/gradient calculation and to `Mmff94CoverageReport`'s stretch-bend
   coverage measurement the same way. `gate_mmff94_stretch_bend`/
-  `gate_mmff94_torsion_oop` (Priority 2's strict-refusal gates) are
-  unaffected and remain independent opt-ins, still `false` by default.
+  `gate_mmff94_torsion_oop` (Priority 2's strict-refusal *gate configuration*)
+  are unaffected and remain independent opt-ins, still `false` by default —
+  but this only means the *gates themselves* didn't move; see the next two
+  bullets for what changing every MMFF94 arm's underlying energy/gradient
+  unconditionally can still do.
   - Measured on the 265-molecule Wave 1 corpus: missing stretch-bend
-    instances **2,107 → 0** (100% resolution — confirms Priority 2's own
-    diagnostic finding that this table would fully close the gap).
-    `mmff94_strict_stretch_bend_gated`'s success count converges exactly to
-    legacy `mmff94_strict`'s (both 149/265, identical molecule sets) since
-    the stretch-bend gate essentially never fires anymore.
+    instances **2,107 → 0 final-unresolved**. This 2,107 splits into two
+    structurally different populations, both now "resolved" by coverage but
+    NOT equally fixed: **1,680** were genuine table gaps (absent at every
+    MMFF classification code) — Dfsb closing these matches RDKit's own real
+    behavior exactly. The remaining **427** were routing-bug candidates (a
+    correctly-typed parameter already exists at a *different* classification
+    code) that Dfsb *also* happens to resolve — these are **masked, not
+    fixed**: chematic is now using RDKit's generic periodic-row default
+    instead of the specific parameter a correctly-routed classification
+    would use. `mmff94_term_coverage_audit.rs` was fixed to keep reporting
+    both populations separately (an earlier version of this fix collapsed
+    them into "0 missing", making the 427-instance masked population
+    invisible) — parameter-selection parity for those 427 is real follow-up
+    work, not addressed here, to keep this PR's root cause singular (the
+    Dfsb port itself, not `angle_type_for`'s classification logic).
+    `mmff94_strict_stretch_bend_gated`'s success count converges to legacy
+    `mmff94_strict`'s (149/265 both, identical molecule sets) since the
+    stretch-bend gate essentially never fires anymore.
     `mmff94_strict_complete_bonded_term_gated` (still gates torsion/OOP,
     untouched by this fix) rises 37→86/265 — the residual gap there is a
     separate, known issue (routing-bug-candidate-dominated torsion
-    coverage), not addressed in this PR to keep a single root cause.
-  - Verified with a full per-molecule regression diff against the
-    pre-Priority-2B baseline: 0 soundness regressions among molecules that
-    were already successful under the (unaffected-by-gating)
-    `mmff94_strict`/`mmff94_with_uff_fallback` legacy arms.
+    coverage), not addressed in this PR either.
+  - **This is a real production energy/gradient change, not just a coverage
+    gate change** — `mmff94_strict`/`mmff94_with_uff_fallback` never gated
+    stretch-bend, so their *gate eligibility* is unchanged, but Dfsb changes
+    what every MMFF94 policy's energy function computes for previously-
+    zero-contributing stretch-bend terms, which can shift minimizer
+    convergence and therefore success/failure — not just geometry, in
+    principle. Verified with a full per-molecule regression diff against a
+    pre-Priority-2B baseline saved *before* re-running: 0 soundness
+    regressions among molecules sound in both runs, and exactly one status
+    change on `mmff94_strict` (148→149) — `chembl_tier_b_0166`
+    (`elapsed_ms` 20530→16221, `status` timeout→success; the same molecule
+    ID was also the timeout-boundary case in Priority 2's own measurement —
+    a recurring ~20s-class molecule under this policy family, plausibly but
+    not conclusively explained by `total_timeout_ms` boundary sensitivity
+    rather than asserted as "known jitter" without checking).
   - `mmff94_stbn`'s public signature gained 3 required `atomic_num_{i,j,k}: u8`
     parameters (needed for the periodic-row lookup, which is element-keyed,
     not MMFF-type-keyed) — breaking for any external caller. The prior
