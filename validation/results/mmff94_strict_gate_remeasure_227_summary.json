@@ -1,0 +1,134 @@
+{
+  "purpose": "Pre-Priority-3 (issue #227) population re-determination: does the MinimizationFailed molecule set change after Priority 2B's Dfsb stretch-bend production port (PR #250, merged as c92e075)?",
+  "method": "ForceFieldPolicy::Mmff94BondAngleStrict via minimize_with_policy, deterministic (MinimizeConfig has no RNG/wall-clock component, max_steps=200 fixed budget) -- verified byte-identical across 2 back-to-back runs on both sides before comparing.",
+  "post_priority2b_commit": "c92e075",
+  "pre_priority2b_commit": "c42627a",
+  "pre_priority2b_baseline_provenance": "produced by copying the CURRENT committed script (crates/chematic-3d/examples/mmff94_strict_gate_remeasure_227.rs) into a `git worktree add` checkout of c42627a and building/running it there -- NOT reproducible by running today's script against today's main; frozen as mmff94_strict_gate_remeasure_227_pre_priority2b_baseline.jsonl for this comparison only.",
+  "corpus_total": 265,
+  "pre_priority2b_status_counts": {
+    "Ok": 130,
+    "MissingParameters": 106,
+    "MinimizationFailed": 28,
+    "UnsupportedAtomType": 1
+  },
+  "post_priority2b_status_counts": {
+    "Ok": 130,
+    "MissingParameters": 106,
+    "UnsupportedAtomType": 1,
+    "MinimizationFailed": 28
+  },
+  "missing_parameters_set_identical": true,
+  "unsupported_atom_type_set_identical": true,
+  "note_on_identical_sets": "MissingParameters (106) and UnsupportedAtomType (1) molecule sets are EXACTLY unchanged -- confirms Dfsb's production stretch-bend fallback does not gate under the legacy (non-gated) Mmff94BondAngleStrict policy; it only perturbs energy/gradient among the 158 molecules whose bond+angle parameters already fully resolve.",
+  "minimization_failed_churn": {
+    "total_changed": 14,
+    "net_count_change": 0,
+    "changed_molecules": [
+      {
+        "name": "atorvastatin_fragment",
+        "pre_priority2b_status": "MinimizationFailed",
+        "post_priority2b_status": "Ok"
+      },
+      {
+        "name": "chembl_tier_b_0047",
+        "pre_priority2b_status": "Ok",
+        "post_priority2b_status": "MinimizationFailed"
+      },
+      {
+        "name": "chembl_tier_b_0049",
+        "pre_priority2b_status": "MinimizationFailed",
+        "post_priority2b_status": "Ok"
+      },
+      {
+        "name": "chembl_tier_b_0083",
+        "pre_priority2b_status": "MinimizationFailed",
+        "post_priority2b_status": "Ok"
+      },
+      {
+        "name": "chembl_tier_b_0108",
+        "pre_priority2b_status": "Ok",
+        "post_priority2b_status": "MinimizationFailed"
+      },
+      {
+        "name": "chembl_tier_b_0113",
+        "pre_priority2b_status": "MinimizationFailed",
+        "post_priority2b_status": "Ok"
+      },
+      {
+        "name": "chembl_tier_b_0124",
+        "pre_priority2b_status": "MinimizationFailed",
+        "post_priority2b_status": "Ok"
+      },
+      {
+        "name": "chembl_tier_b_0125",
+        "pre_priority2b_status": "Ok",
+        "post_priority2b_status": "MinimizationFailed"
+      },
+      {
+        "name": "chembl_tier_b_0134",
+        "pre_priority2b_status": "Ok",
+        "post_priority2b_status": "MinimizationFailed"
+      },
+      {
+        "name": "chembl_tier_b_0136",
+        "pre_priority2b_status": "Ok",
+        "post_priority2b_status": "MinimizationFailed"
+      },
+      {
+        "name": "chembl_tier_b_0142",
+        "pre_priority2b_status": "MinimizationFailed",
+        "post_priority2b_status": "Ok"
+      },
+      {
+        "name": "chembl_tier_b_0150",
+        "pre_priority2b_status": "Ok",
+        "post_priority2b_status": "MinimizationFailed"
+      },
+      {
+        "name": "chembl_tier_b_0155",
+        "pre_priority2b_status": "MinimizationFailed",
+        "post_priority2b_status": "Ok"
+      },
+      {
+        "name": "chembl_tier_b_0167",
+        "pre_priority2b_status": "Ok",
+        "post_priority2b_status": "MinimizationFailed"
+      }
+    ],
+    "interpretation": "28 -> 28 is a COINCIDENCE, not stability: 14/28 (50%) of the MinimizationFailed population churned (7 newly resolved, 7 newly failing), verified deterministic (not wall-clock jitter) via the 2x-identical-run check on both sides. Priority 3 MUST diagnose the post-Priority-2B population below, not the historical pre-#241/pre-Priority-2B 28-molecule list."
+  },
+  "post_priority2b_minimization_failed_reason_breakdown": {
+    "ExcessiveResidualForce": 9,
+    "CatastrophicBondBlowup": 19
+  },
+  "post_priority2b_minimization_failed_molecules": [
+    "chembl_tier_b_0036",
+    "chembl_tier_b_0038",
+    "chembl_tier_b_0043",
+    "chembl_tier_b_0044",
+    "chembl_tier_b_0047",
+    "chembl_tier_b_0093",
+    "chembl_tier_b_0108",
+    "chembl_tier_b_0109",
+    "chembl_tier_b_0111",
+    "chembl_tier_b_0114",
+    "chembl_tier_b_0116",
+    "chembl_tier_b_0117",
+    "chembl_tier_b_0125",
+    "chembl_tier_b_0130",
+    "chembl_tier_b_0131",
+    "chembl_tier_b_0133",
+    "chembl_tier_b_0134",
+    "chembl_tier_b_0135",
+    "chembl_tier_b_0136",
+    "chembl_tier_b_0138",
+    "chembl_tier_b_0139",
+    "chembl_tier_b_0140",
+    "chembl_tier_b_0141",
+    "chembl_tier_b_0150",
+    "chembl_tier_b_0153",
+    "chembl_tier_b_0156",
+    "chembl_tier_b_0158",
+    "chembl_tier_b_0167"
+  ]
+}
