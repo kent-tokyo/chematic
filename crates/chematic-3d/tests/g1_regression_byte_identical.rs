@@ -22,6 +22,14 @@
 //! substituent -- these were byte-identical snapshots of a genuinely wrong
 //! geometry, not a neutral baseline. Re-verified sane post-fix (minimum
 //! pairwise interatomic distance 1.22 \u{c5}, no collisions) before repinning.
+//!
+//! A second, independent `dg::generate_coords` fix landed in the same PR
+//! (`place_rings`'s ring visiting order didn't match ring-fusion adjacency,
+//! silently superimposing unrelated rings in some multi-ring-fused systems
+//! -- see issue #185). Confirmed NOT to affect aspirin (single ring, so the
+//! multi-ring fusion-order logic never applies) -- this file's pinned
+//! values are unchanged by it, verified by running this test unmodified
+//! both before and after that second fix.
 
 use chematic_3d::dg::generate_coords;
 use chematic_3d::{
@@ -53,10 +61,12 @@ fn shape_descriptors_outputs_unchanged() {
     );
     assert_eq!(asphericity(&mol, &coords).to_bits(), 4643472035674254761);
     assert_eq!(eccentricity(&mol, &coords).to_bits(), 4605136510549718693);
-    assert_eq!(
-        plane_of_best_fit(&mol, &coords).to_bits(),
-        4605282189209689202
-    );
+    // Not bit-pinned like the rest: this value's summation order makes it
+    // sensitive to FMA/vectorization differences between the aarch64
+    // (local) and x86_64 (CI) targets -- observed 1-ULP drift across the
+    // two, confirmed via a real CI run, not assumed. An epsilon check still
+    // catches any real regression at far coarser precision than 1 ULP.
+    assert!((plane_of_best_fit(&mol, &coords) - 0.7890321356743597).abs() < 1e-9);
 }
 
 #[test]
@@ -73,7 +83,10 @@ fn descriptors_3d_outputs_unchanged() {
 
     let rdf = rdf_descriptors(&mol, &coords);
     assert_eq!(rdf.len(), 20);
-    assert_eq!(rdf[0].to_bits(), 4308752783383236201);
+    // Same aarch64/x86_64 FMA/summation-order drift as plane_of_best_fit
+    // above -- see that comment. Epsilon scaled to this value's own
+    // ~1e-20 magnitude rather than a flat tolerance.
+    assert!((rdf[0] - 1.1758914601851493e-20).abs() < 1e-27);
 
     let ac = autocorr_3d(&mol, &coords);
     assert_eq!(ac.len(), 8);
