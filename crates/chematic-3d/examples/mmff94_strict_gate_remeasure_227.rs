@@ -1,19 +1,38 @@
-//! Phase 1A audit for issue #227: faithful re-measurement of
+//! Phase 1A audit, originally written for issue #227: re-measures
 //! `ForceFieldPolicy::Mmff94BondAngleStrict` over the Wave 1 265-molecule
-//! corpus, using the exact same production entry point
-//! (`minimize::minimize_with_policy`) and starting geometry
-//! (`dg::generate_coords`) as PR #226's methodology -- NOT the simplified
-//! bond/angle-only `Some`/`None` check `mmff94_term_coverage_audit.rs` uses,
-//! so the "216 -> N" headline number is measured the same way the issue was
-//! originally filed, on today's main.
+//! corpus by calling the production minimization entry point
+//! (`minimize::minimize_with_policy`) directly on `dg::generate_coords`'s
+//! starting geometry -- NOT the simplified bond/angle-only `Some`/`None`
+//! check `mmff94_term_coverage_audit.rs` uses, and also NOT issue #227's own
+//! posted reproduction path (`pipeline_v2::embed_pipeline_v2`, which embeds
+//! via `distance_geometry_v2::embed_distance_geometry_v2_with_adjustments`
+//! before minimizing -- a different, better starting geometry; see issue
+//! #252). This is a low-level diagnostic harness that isolates the raw
+//! strict-minimization population directly on `generate_coords` output,
+//! independent of the full embedding pipeline -- useful for tracking how
+//! that specific population moves (e.g. across Priority 2B, see issue #227's
+//! roadmap), not a stand-in for `embed_pipeline_v2`'s own funnel.
 //!
-//! Run: `cargo run --release -p chematic-3d --example mmff94_strict_gate_remeasure_227`
+//! Per-molecule JSONL rows (stdout) additionally carry every field already on
+//! [`chematic_3d::minimize::MinimizationFailureDetail`] for `MinimizationFailed`
+//! rows (`reason` -- `CatastrophicBondBlowup`/`ExcessiveResidualForce`/
+//! `NonFiniteCoordinates` -- `converged`, `iterations`, `max_residual_force`,
+//! `worst_bond_length`, `distance_geometry_v2_retry_attempted`) so Priority 3's
+//! diagnosis reads directly off this file; no separate classifier needed, the
+//! production soundness check already computed and attached this evidence.
+//!
+//! Run:
+//! ```text
+//! cargo run --release -p chematic-3d --example mmff94_strict_gate_remeasure_227 \
+//!   > validation/results/mmff94_strict_gate_remeasure_227_rows.jsonl \
+//!   2> validation/results/mmff94_strict_gate_remeasure_227_stderr.log
+//! ```
 
 use chematic_3d::dg::generate_coords;
 use chematic_3d::minimize::{
     ForceFieldBridgeError, ForceFieldPolicy, MinimizeConfig, minimize_with_policy,
 };
-use serde_json::Value;
+use serde_json::{Value, json};
 
 fn load_manifest(path: &str) -> Value {
     let text =
@@ -30,7 +49,7 @@ fn main() {
     let mut n_minimization_failed = 0;
     let mut n_parse_or_other = 0;
 
-    for (_tier, path) in [
+    for (tier, path) in [
         (
             "A",
             "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_a.json",
@@ -42,28 +61,62 @@ fn main() {
     ] {
         let manifest = load_manifest(path);
         for m in manifest["molecules"].as_array().unwrap() {
+            let name = m["name"].as_str().unwrap_or("<unnamed>");
             let smiles = m["smiles"].as_str().unwrap();
             let mol = match chematic_smiles::parse(smiles) {
                 Ok(m) => m,
-                Err(_) => {
+                Err(e) => {
                     n_total += 1;
                     n_parse_or_other += 1;
+                    println!(
+                        "{}",
+                        json!({"tier": tier, "name": name, "smiles": smiles,
+                               "status": "ParseError", "detail": e.to_string()})
+                    );
                     continue;
                 }
             };
             n_total += 1;
             let coords = generate_coords(&mol);
-            match minimize_with_policy(
+            let row = match minimize_with_policy(
                 &mol,
                 coords,
                 ForceFieldPolicy::Mmff94BondAngleStrict,
                 &config,
             ) {
-                Ok(_) => n_ok += 1,
-                Err(ForceFieldBridgeError::MissingParameters(_)) => n_missing_params += 1,
-                Err(ForceFieldBridgeError::UnsupportedAtomType(_)) => n_unsupported_atom_type += 1,
-                Err(ForceFieldBridgeError::MinimizationFailed(_)) => n_minimization_failed += 1,
-            }
+                Ok(_) => {
+                    n_ok += 1;
+                    json!({"tier": tier, "name": name, "smiles": smiles, "status": "Ok"})
+                }
+                Err(ForceFieldBridgeError::MissingParameters(r)) => {
+                    n_missing_params += 1;
+                    json!({"tier": tier, "name": name, "smiles": smiles,
+                           "status": "MissingParameters",
+                           "bonds_missing": r.bonds_missing.len(),
+                           "angles_missing": r.angles_missing.len(),
+                           "torsions_missing": r.torsions_missing.len(),
+                           "oop_missing": r.oop_missing.len(),
+                           "stretch_bend_missing": r.stretch_bend_missing.len()})
+                }
+                Err(ForceFieldBridgeError::UnsupportedAtomType(e)) => {
+                    n_unsupported_atom_type += 1;
+                    json!({"tier": tier, "name": name, "smiles": smiles,
+                           "status": "UnsupportedAtomType", "detail": e.to_string()})
+                }
+                Err(ForceFieldBridgeError::MinimizationFailed(d)) => {
+                    n_minimization_failed += 1;
+                    json!({"tier": tier, "name": name, "smiles": smiles,
+                           "status": "MinimizationFailed",
+                           "reason": format!("{:?}", d.reason),
+                           "converged": d.converged,
+                           "iterations": d.iterations,
+                           "max_residual_force": d.max_residual_force,
+                           "worst_bond_length": d.worst_bond_length,
+                           "distance_geometry_v2_retry_attempted":
+                               d.distance_geometry_v2_retry_attempted})
+                }
+            };
+            println!("{row}");
         }
     }
 

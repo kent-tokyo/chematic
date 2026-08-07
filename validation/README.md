@@ -53,6 +53,52 @@ reported as a general RDKit failure.
 - **Known issue filed from this benchmark:** MMFF94 parameter coverage gap
   ([#227](https://github.com/kent-tokyo/chematic/issues/227), separate from #185/#188)
 
+### MMFF94 strict-gate raw funnel remeasurement (issue #227, Priority 3 population)
+
+A **low-level diagnostic harness**, not the production embedding entry point: calls
+`minimize::minimize_with_policy(ForceFieldPolicy::Mmff94BondAngleStrict, ...)` directly
+per molecule over the same 265-mol Tier A+B corpus, on top of `dg::generate_coords`
+starting geometry. This is deliberately **not** `embed_pipeline_v2` (the production
+entry point) and **not** issue #227's own posted reproduction path (which calls
+`embed_pipeline_v2`, embedding via `distance_geometry_v2::embed_distance_geometry_v2_with_adjustments`
+before minimizing -- a different, better starting geometry; see issue #252) -- and not
+`mmff94_term_coverage_audit.rs`'s simplified bond/angle-only `Some`/`None` check either.
+It exists to isolate the raw strict-minimization population directly on
+`generate_coords` output, so that population's movement (e.g. across Priority 2B) can
+be tracked in isolation from the full embedding pipeline. Fully deterministic
+(`MinimizeConfig` has no RNG or wall-clock component, fixed `max_steps=200`) --
+verified byte-identical across 2 back-to-back runs before being trusted for a
+before/after diff.
+
+Used to re-determine Priority 3's (Stage 1C, `MinimizationFailed` root-causing) target
+population after Priority 2B's Dfsb stretch-bend production port (PR #250, merged as
+`c92e075`). Finding: the pre/post-Priority-2B `MinimizationFailed` COUNT coincidentally
+stayed at 28, but the molecule SET did not -- 14/28 (50%) churned (7 newly resolved to
+`Ok`, 7 newly failing), confirmed deterministic via the byte-identical-rerun check on
+both sides, not wall-clock jitter. `MissingParameters` (106) and `UnsupportedAtomType`
+(1) sets are exactly unchanged, confirming Dfsb only perturbs energy/gradient among
+molecules whose bond+angle parameters already fully resolve, and does not gate under
+the legacy (non-gated) strict policy. Post-Priority-2B `MinimizationFailed` breaks down
+19 `CatastrophicBondBlowup` / 9 `ExcessiveResidualForce` -- see summary file. Follow-up
+diagnosis (issue #252) found this 28-molecule population is a `generate_coords`
+starting-geometry artifact with no production impact -- a DIFFERENT, smaller population
+than the 11-15 `typed_failure` molecules issue #227 itself flagged from the
+`embed_pipeline_v2` funnel; the two are not the same measurement and are not known to
+overlap.
+
+- **Files:** `validation/results/mmff94_strict_gate_remeasure_227_rows.jsonl` (current
+  main, one row per molecule, `MinimizationFailed` rows carry the full
+  `MinimizationFailureDetail` -- `reason`/`converged`/`iterations`/
+  `max_residual_force`/`worst_bond_length`/`distance_geometry_v2_retry_attempted`),
+  `mmff94_strict_gate_remeasure_227_pre_priority2b_baseline.jsonl` (frozen snapshot at
+  commit `c42627a`, NOT reproducible by running today's script against today's main --
+  see its provenance note in the summary file), `mmff94_strict_gate_remeasure_227_summary.json`
+  (churn analysis, set-identity checks, reason breakdown)
+- **How to regenerate (current-main side only; the pre-Priority-2B baseline is frozen):**
+  `cargo run --release -p chematic-3d --example mmff94_strict_gate_remeasure_227 >
+  validation/results/mmff94_strict_gate_remeasure_227_rows.jsonl 2>
+  validation/results/mmff94_strict_gate_remeasure_227_stderr.log`
+
 ### 175-mol drug-like corpus
 
 A curated set of 175 drug-like molecules covering common scaffolds (benzoic acid derivatives,
