@@ -30,6 +30,21 @@
 //! multi-ring fusion-order logic never applies) -- this file's pinned
 //! values are unchanged by it, verified by running this test unmodified
 //! both before and after that second fix.
+//!
+//! A third fix (same PR, review round 2) taught `place_rings` to anchor a
+//! fusion-disconnected ring island via a real bond to already-placed
+//! structure when one exists (biphenyl, terphenyl), rather than an
+//! arbitrary fixed offset that silently stretched that bond. Also
+//! confirmed NOT to affect aspirin (still just the one ring) -- unchanged
+//! before/after, same as the second fix.
+//!
+//! Two of this file's pinned values (`plane_of_best_fit`,
+//! `descriptors_3d_outputs_unchanged`'s `rdf[0]`) are asserted via
+//! `assert_close_ulp` rather than `to_bits()` equality: CI (x86_64) and
+//! local development (aarch64) compute them a few ULP apart --
+//! FMA/vectorization differences in their summation order, not a
+//! correctness regression (the other 17 values in this file match
+//! bit-for-bit across both targets).
 
 use chematic_3d::dg::generate_coords;
 use chematic_3d::{
@@ -42,6 +57,25 @@ fn aspirin_coords() -> (chematic_core::Molecule, chematic_3d::Coords3D) {
     let mol = parse("CC(=O)Oc1ccccc1C(=O)O").unwrap();
     let coords = generate_coords(&mol);
     (mol, coords)
+}
+
+/// Asserts `actual` is finite, positive, and within `max_ulp` of
+/// `expected_bits` (an `f64::to_bits()` snapshot) -- an ULP-scale
+/// tolerance rather than a magnitude-scaled absolute epsilon, so it stays
+/// exactly as tight regardless of the value's own magnitude. `to_bits()`
+/// is monotonic with value for same-signed floats, so a plain bit-pattern
+/// `abs_diff` is a correct ULP distance here (both callers below are
+/// positive).
+fn assert_close_ulp(actual: f64, expected_bits: u64, max_ulp: u64, label: &str) {
+    assert!(actual.is_finite(), "{label}: expected finite, got {actual}");
+    assert!(actual > 0.0, "{label}: expected positive, got {actual}");
+    let actual_bits = actual.to_bits();
+    let ulp_diff = actual_bits.abs_diff(expected_bits);
+    assert!(
+        ulp_diff <= max_ulp,
+        "{label}: {ulp_diff} ULP from expected (bits {actual_bits} vs {expected_bits}), \
+         allowed {max_ulp}"
+    );
 }
 
 #[test]
@@ -63,10 +97,17 @@ fn shape_descriptors_outputs_unchanged() {
     assert_eq!(eccentricity(&mol, &coords).to_bits(), 4605136510549718693);
     // Not bit-pinned like the rest: this value's summation order makes it
     // sensitive to FMA/vectorization differences between the aarch64
-    // (local) and x86_64 (CI) targets -- observed 1-ULP drift across the
-    // two, confirmed via a real CI run, not assumed. An epsilon check still
-    // catches any real regression at far coarser precision than 1 ULP.
-    assert!((plane_of_best_fit(&mol, &coords) - 0.7890321356743597).abs() < 1e-9);
+    // (local) and x86_64 (CI) targets -- observed exactly 1-ULP drift
+    // across the two (CI bits 4605282189209689201 vs local
+    // 4605282189209689202), confirmed via a real CI run, not assumed.
+    // 2 ULP gives slack above the observed 1 ULP without loosening this
+    // into a magnitude-blind absolute epsilon.
+    assert_close_ulp(
+        plane_of_best_fit(&mol, &coords),
+        4605282189209689201,
+        2,
+        "plane_of_best_fit",
+    );
 }
 
 #[test]
@@ -84,9 +125,13 @@ fn descriptors_3d_outputs_unchanged() {
     let rdf = rdf_descriptors(&mol, &coords);
     assert_eq!(rdf.len(), 20);
     // Same aarch64/x86_64 FMA/summation-order drift as plane_of_best_fit
-    // above -- see that comment. Epsilon scaled to this value's own
-    // ~1e-20 magnitude rather than a flat tolerance.
-    assert!((rdf[0] - 1.1758914601851493e-20).abs() < 1e-27);
+    // above -- see that comment (CI bits 4308752783383236313 vs local
+    // 4308752783383236201, a 112-ULP gap despite this value's tiny ~1e-20
+    // magnitude, which is exactly why a magnitude-scaled ULP check is used
+    // instead of a magnitude-scaled absolute epsilon: at this scale an
+    // absolute epsilon tight enough to mean anything is easy to get wrong
+    // in either direction).
+    assert_close_ulp(rdf[0], 4308752783383236313, 150, "rdf[0]");
 
     let ac = autocorr_3d(&mol, &coords);
     assert_eq!(ac.len(), 8);
