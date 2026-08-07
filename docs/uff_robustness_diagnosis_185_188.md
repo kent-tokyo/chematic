@@ -5,6 +5,59 @@ fixtures pinning the measurements below live in
 `crates/chematic-3d/src/minimize.rs`'s `mod tests` (search for "Issues #185 /
 #188 diagnosis").
 
+## Correction (2026-08-07): anthracene's numbers below were measured on a
+## collided geometry
+
+Every anthracene number in Findings 1–3 and the Conclusion below was
+measured against a `dg::generate_coords` output that silently superimposed
+two of anthracene's three rings on identical coordinates — a real,
+independent `dg.rs` bug (`place_rings` assumed SSSR's raw ring enumeration
+order always matches ring-fusion adjacency order; false for anthracene's
+`[terminal, terminal, middle]` SSSR order), fixed in PR #253. **Finding
+1's own metric could not see this**: it measures the worst *bonded*-pair
+distance, and anthracene's two superimposed terminal rings are not bonded
+to each other — the collision was real and total (two entire rings at
+distance 0) but invisible to a bonded-pairs-only check. Finding 1's
+naphthalene/hexane/quinoline numbers are unaffected (single-ring or
+non-fused, so `place_rings`'s fusion-order logic never applied to them)
+and still stand.
+
+Post-fix, re-measured directly (not re-derived from the old numbers):
+anthracene's raw starting UFF energy is **~1.27×10⁵ kcal/mol** and worst
+starting bond is **2.26 Å** — both now virtually identical to
+naphthalene's (~1.26×10⁵ kcal/mol, 2.26 Å), not the 5-orders-of-magnitude
+and "better raw geometry" story Findings 1–2 report below. Finding 3's
+claim that anthracene "converges comfortably inside the default budget"
+to a sound `worst_bond=1.4688 Å` is also an artifact of the same collided
+start; re-measured, anthracene's raw UFF minimization **never reaches a
+sound geometry**, plateauing at `worst_bond=3.3899 Å` (above
+`MAX_SANE_BOND_LENGTH`) from 10,000 steps through at least 200,000, with
+`minimize_uff`'s own RMS-gradient convergence check reporting
+`converged: true` on that unsound plateau. Finding 3's "none diverges
+permanently" claim is therefore **overturned for anthracene** — it is a
+genuine trapped-local-minimum case, not an under-provisioned-iteration
+case like naphthalene/hexane. Naphthalene's and hexane's own Finding 3
+trajectories are unaffected (re-verified) and the shared
+budget-insensitivity story still holds for those two.
+
+Net effect on the two issues' original questions: **#185's core report
+still stands** (naphthalene's raw UFF minimization is unsound at the
+default budget) — the correction is to the anthracene *comparison point*
+this document used as a control, not to the naphthalene finding itself.
+The "not a `dg.rs` ring-placement defect specific to fused aromatics"
+line in the original Conclusion is directly contradicted: this *was*
+partly a `dg.rs` ring-placement defect, now fixed, and it changes which
+molecule looks worse (anthracene, not naphthalene, is now the one that
+never recovers). **No production impact**: both molecules get complete
+MMFF94 coverage post-#227 and never reach `UffOnly`/`Mmff94WithUffFallback`'s
+UFF path in `embed_pipeline_v2`, confirmed via `minimize_with_policy`
+directly. See `crates/chematic-3d/src/minimize.rs`'s corrected comments
+near the `chematic_ff_own_uff_minimizer_blows_up_naphthalene_independent_of_this_bridge`
+test and the `#185`/`#188` diagnosis test block for the re-measured
+numbers in context. The rest of this document (below) is left as
+originally written, for its own historical record — read it with the
+above correction in mind rather than as current fact.
+
 ## Question
 
 Both issues report `ForceFieldPolicy::UffOnly` blowing the worst bond length
