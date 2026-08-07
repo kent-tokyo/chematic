@@ -2007,8 +2007,12 @@ fn run_uff_bridge(
 /// The rescue itself: `original_failure` is `coords`' own (already-computed)
 /// failure. Raw starting energy alone cannot decide in advance whether a
 /// given start needs this — measured (`docs/uff_robustness_diagnosis_185_188.md`):
-/// anthracene's raw `generate_coords` energy is ~5 orders of magnitude worse
-/// than naphthalene's, yet anthracene never needs this path — so the
+/// naphthalene and anthracene start from virtually identical raw
+/// `generate_coords` UFF energies (~1.256e5 vs ~1.267e5 kcal/mol) and
+/// worst starting bonds (2.26 Å, identical), yet naphthalene's raw UFF
+/// minimization reaches a sound geometry (worst bond 2.19 Å) while
+/// anthracene's plateaus permanently unsound (worst bond 3.39 Å, still
+/// above `MAX_SANE_BOND_LENGTH` even at 200,000 steps) — so the
 /// decision is made from the ACTUAL post-minimization outcome, never a
 /// pre-minimization heuristic guess.
 ///
@@ -3134,10 +3138,15 @@ mod policy_bridge_tests {
     /// unproven: `minimize_uff`'s naive steepest-descent-with-step-halving
     /// line search on a larger, more constrained fused-ring system) — not
     /// something this PR fixes (chematic-ff is out of this PR's
-    /// file-ownership scope) or definitively diagnoses. Non-monotonic in
-    /// ring count: anthracene (3 fused rings) does NOT blow up under the
-    /// same fallback path while naphthalene (2 fused rings) does, so "more
-    /// fused rings" is not itself the mechanism.
+    /// file-ownership scope) or definitively diagnoses. Not specific to
+    /// ring count either way: anthracene (3 fused rings) blows up under the
+    /// same isolated path too, and worse than naphthalene (2 fused
+    /// rings) — it never recovers a sound geometry even at 200,000 steps,
+    /// vs. naphthalene's ~10,000 (see issue #185's investigation notes; an
+    /// earlier reading of anthracene as "immune" was itself an artifact of
+    /// a since-fixed `dg::generate_coords` ring-placement bug that
+    /// silently superimposed two of its rings, corrupting that
+    /// measurement).
     #[test]
     fn chematic_ff_own_uff_minimizer_blows_up_naphthalene_independent_of_this_bridge() {
         let mol = parse("c1ccc2ccccc2c1").expect("naphthalene");
@@ -3419,23 +3428,33 @@ mod policy_bridge_tests {
     // the full write-up and measured numbers this pins.
     //
     // Measured finding (not assumed): `generate_coords` produces starting
-    // geometries with enormous UFF energies (naphthalene ~1.3e5, hexane
-    // ~1.5e7, anthracene ~2.7e10 kcal/mol -- dominated by unrelieved vdW
+    // geometries with enormous UFF energies (naphthalene ~1.3e5, anthracene
+    // ~1.3e5, hexane ~1.5e7 kcal/mol -- dominated by unrelieved vdW
     // overlap, not bond stretch) for essentially every molecule, not just
     // the ones that end up blowing up. `minimize_uff`'s plain fixed-step
     // steepest descent (no conjugate-gradient/quasi-Newton acceleration)
-    // *does* eventually relieve this and reach a sound, low-energy geometry
-    // for every molecule checked here -- given enough iterations. Whether a
-    // molecule's specific clash-relief trajectory happens to land inside
-    // `MinimizeConfig::default().max_steps` (200) is not predicted by worst
-    // starting bond length or starting energy: anthracene starts from a
-    // ~5-order-of-magnitude worse energy than naphthalene yet fully
-    // converges within budget, while naphthalene (needs ~4,500 steps) and
-    // hexane (needs >20,000, still not fully converged at 100,000) do not.
-    // This is a shared iteration-budget-vs-starting-energy mechanism across
-    // both issues, not two independent root causes -- and not a `dg.rs`
-    // ring-placement defect specific to fused aromatics (naphthalene's raw
-    // worst bond, 2.26 Å, is *better* than anthracene's, 3.73 Å).
+    // eventually relieves this and reaches a sound, low-energy geometry for
+    // *most* molecules checked here, given enough iterations -- but not
+    // all: naphthalene needs ~10,000 steps and hexane needs >20,000 (still
+    // not fully converged at 100,000), while anthracene never reaches a
+    // sound geometry at all, plateauing at worst bond 3.39 Å (still above
+    // `MAX_SANE_BOND_LENGTH`) from 10,000 steps all the way through
+    // 200,000, with `minimize_uff`'s own RMS-gradient convergence check
+    // reporting `converged: true` on that unsound plateau -- a real,
+    // distinct trapped-local-minimum failure mode, not just an
+    // under-provisioned iteration budget. Whether a molecule's specific
+    // clash-relief trajectory succeeds at all is not predicted by starting
+    // energy or worst starting bond length: naphthalene and anthracene
+    // start from virtually identical raw energy (~1.3e5 kcal/mol either
+    // way) and identical worst starting bond (2.26 Å) yet only one
+    // recovers. (An earlier version of this comment cited anthracene's raw
+    // worst bond as 3.73 Å and its energy as ~5 orders of magnitude worse
+    // than naphthalene's, concluding anthracene was *immune* to this
+    // failure class and using that as evidence against a `dg.rs`
+    // ring-placement explanation -- both the numbers and that conclusion
+    // were an artifact of a since-fixed `dg::generate_coords` bug that
+    // silently superimposed two of anthracene's three rings on identical
+    // coordinates, corrupting the measurement; see issue #185.)
     //
     // Not fixed by the diagnostic pass itself: per that phase's scope, it was
     // regression-fixture only. Fixed by a follow-up PR (`run_uff_bridge`'s

@@ -248,12 +248,57 @@ fn place_component(
 // Ring placement
 // ---------------------------------------------------------------------------
 
+/// Order `rings` (each a slice of `AtomIdx`) into fusion-consistent visiting
+/// order via BFS on the ring-adjacency graph (two rings are adjacent iff they
+/// share at least one atom). Returns each ring paired with whether it starts
+/// a new "island" (shares no atom with any ring already visited).
+///
+/// SSSR's own enumeration order does **not** guarantee that every ring after
+/// the first shares an atom with some already-visited ring -- confirmed on a
+/// 3-linearly-fused system (anthracene): SSSR can return `[terminal ring A,
+/// terminal ring C, middle ring B]`, where ring C shares zero atoms with ring
+/// A (only with the not-yet-visited ring B). Iterating SSSR's raw order and
+/// falling back to "keep the previous ring's center" whenever zero shared
+/// atoms are found (this function's caller used to do exactly that) silently
+/// superimposes two entire, unrelated rings on the same coordinates. BFS on
+/// the adjacency graph guarantees each ring is visited only after a ring it
+/// actually shares atoms with, whenever such a ring exists in the same
+/// component.
+fn order_rings_by_fusion_adjacency<'a>(
+    rings: &[&'a Vec<AtomIdx>],
+) -> Vec<(&'a Vec<AtomIdx>, bool)> {
+    let n = rings.len();
+    let mut visited = vec![false; n];
+    let mut result = Vec::with_capacity(n);
+    for start in 0..n {
+        if visited[start] {
+            continue;
+        }
+        visited[start] = true;
+        result.push((rings[start], true)); // starts a new island
+        let mut queue: VecDeque<usize> = VecDeque::new();
+        queue.push_back(start);
+        while let Some(i) = queue.pop_front() {
+            for j in 0..n {
+                if !visited[j] && rings[i].iter().any(|a| rings[j].contains(a)) {
+                    visited[j] = true;
+                    result.push((rings[j], false)); // fused to an already-visited ring
+                    queue.push_back(j);
+                }
+            }
+        }
+    }
+    result
+}
+
 /// Place ring atoms from SSSR onto regular polygon templates.
 ///
 /// Each ring that contains atoms from `component` is laid out in the XY plane.
-/// The first ring is centred at (`x_offset` + ring_radius, 0, 0).
-/// Subsequent rings within the same component are fused to the previous ring
-/// (sharing a bond edge) or offset if not fused.
+/// The first ring (and the first ring of each subsequent, fusion-disconnected
+/// "island" of rings within the same component, e.g. biphenyl's two separate
+/// phenyl rings) is centred at a fresh anchor beyond any already-placed atom.
+/// Every other ring fuses to a previously-placed ring atom (sharing a bond
+/// edge) via [`order_rings_by_fusion_adjacency`]'s visiting order.
 fn place_rings(
     mol: &Molecule,
     component: &[AtomIdx],
@@ -264,20 +309,22 @@ fn place_rings(
 ) {
     let component_set: std::collections::HashSet<AtomIdx> = component.iter().copied().collect();
 
+    let relevant_rings: Vec<&Vec<AtomIdx>> = ring_set
+        .rings()
+        .iter()
+        .filter(|ring| !ring.is_empty() && ring.iter().all(|a| component_set.contains(a)))
+        .collect();
+    if relevant_rings.is_empty() {
+        return;
+    }
+    let ordered_rings = order_rings_by_fusion_adjacency(&relevant_rings);
+
     let mut ring_cx = x_offset;
     let mut ring_cy = 0.0_f64;
-    let mut first_ring = true;
+    let mut any_placed_yet = false;
 
-    for ring in ring_set.rings() {
-        // Only process rings whose atoms all belong to this component.
-        if !ring.iter().all(|a| component_set.contains(a)) {
-            continue;
-        }
-
+    for (ring, is_new_island) in ordered_rings {
         let ring_size = ring.len();
-        if ring_size == 0 {
-            continue;
-        }
 
         // Use bond length between consecutive ring atoms for the polygon side.
         let bond_len = {
@@ -289,13 +336,25 @@ fn place_rings(
         // Circumradius of a regular polygon: r = bond_len / (2 * sin(PI / n)).
         let r = bond_len / (2.0 * (PI / ring_size as f64).sin());
 
-        if first_ring {
-            ring_cx = x_offset + r;
+        if is_new_island {
+            // Anchor beyond any atom already placed in this component, so a
+            // second (fusion-disconnected) ring island never collides with
+            // the first -- x_offset itself only for the very first ring.
+            let anchor_x = if any_placed_yet {
+                component
+                    .iter()
+                    .filter(|a| placed[a.0 as usize])
+                    .map(|&a| coords.get(a).x)
+                    .fold(f64::NEG_INFINITY, f64::max)
+                    + 5.0
+            } else {
+                x_offset
+            };
+            ring_cx = anchor_x + r;
             ring_cy = 0.0;
-            first_ring = false;
         } else {
-            // Try to fuse to a previously-placed ring atom. If two atoms of
-            // this ring are already placed, shift the centre to be consistent.
+            // Fuse to a previously-placed ring atom. If two atoms of this
+            // ring are already placed, shift the centre to be consistent.
             let already_placed: Vec<AtomIdx> = ring
                 .iter()
                 .copied()
@@ -313,7 +372,9 @@ fn place_rings(
                 ring_cx = p0.x + r;
                 ring_cy = p0.y;
             }
-            // else keep ring_cx/ring_cy (floating ring, shouldn't happen in SSSR)
+            // else: unreachable given `order_rings_by_fusion_adjacency`
+            // only marks a ring `is_new_island = false` when it shares an
+            // atom with some already-visited ring.
         }
 
         // Choose a ring conformation based on size and chemical environment.
@@ -395,6 +456,7 @@ fn place_rings(
             coords.set(atom_idx, Point3::new(x, y, z));
             placed[atom_idx.0 as usize] = true;
         }
+        any_placed_yet = true;
     }
 }
 
@@ -622,6 +684,55 @@ mod tests {
         let mol = parse("CC(C)Cc1ccc(cc1)C(C)C(=O)O").unwrap();
         let n = mol.atom_count();
         assert_eq!(n, 15, "ibuprofen has 15 heavy atoms");
+        let coords = generate_coords(&mol);
+        let min_d = min_pairwise_distance(&coords, n);
+        assert!(
+            min_d > 0.3,
+            "no two atoms should be nearly coincident, got min pairwise distance {min_d}"
+        );
+    }
+
+    #[test]
+    fn generate_coords_anthracene_terminal_rings_not_superimposed() {
+        // Regression test: `place_rings` used to iterate SSSR's raw ring
+        // order and fuse each ring to whichever ring was placed immediately
+        // before it. SSSR does NOT guarantee that order matches fusion
+        // adjacency: for anthracene, SSSR returns [terminal ring A, terminal
+        // ring C, middle ring B] -- ring C shares ZERO atoms with ring A
+        // (only with the not-yet-placed ring B), so the old code's "0
+        // already-placed atoms" branch silently reused ring A's exact
+        // center for ring C, superimposing two entire terminal rings (6
+        // atoms) on the same coordinates. This was independently discovered
+        // while investigating issue #185 (chematic-ff's UFF minimizer
+        // blowing up on naphthalene but reportedly not anthracene) --
+        // anthracene's apparent "safety" turned out to be this collision
+        // bug accidentally producing a degenerate-but-not-catastrophic
+        // starting point, not genuine minimizer robustness: after this fix,
+        // anthracene's `generate_coords` output blows up under
+        // `chematic_ff::minimize_uff` too, same as naphthalene (see
+        // `minimize.rs`'s `chematic_ff_own_uff_minimizer_blows_up_*` tests).
+        let mol = parse("c1ccc2cc3ccccc3cc2c1").unwrap();
+        let n = mol.atom_count();
+        assert_eq!(n, 14, "anthracene has 14 heavy atoms");
+        let coords = generate_coords(&mol);
+        let min_d = min_pairwise_distance(&coords, n);
+        assert!(
+            min_d > 0.3,
+            "no two atoms should be nearly coincident, got min pairwise distance {min_d}"
+        );
+    }
+
+    #[test]
+    fn generate_coords_biphenyl_disconnected_ring_islands_not_superimposed() {
+        // Regression test: two rings connected only via a non-ring bond
+        // (biphenyl) share zero atoms and are never fusion-adjacent -- a
+        // genuine "new island" case, not a fusion-order bug. Before this
+        // fix, a ring island beyond the very first reused whatever
+        // `ring_cx`/`ring_cy` the previous, unrelated ring left behind
+        // instead of anchoring fresh beyond it.
+        let mol = parse("c1ccc(cc1)-c1ccccc1").unwrap();
+        let n = mol.atom_count();
+        assert_eq!(n, 12, "biphenyl has 12 heavy atoms");
         let coords = generate_coords(&mol);
         let min_d = min_pairwise_distance(&coords, n);
         assert!(
