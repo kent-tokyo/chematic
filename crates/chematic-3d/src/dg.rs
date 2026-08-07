@@ -208,15 +208,40 @@ fn place_component(
     // First, lay out ring atoms onto polygon templates.
     place_rings(mol, component, ring_set, x_offset, coords, &mut placed);
 
-    // Then extend non-ring atoms via DFS from the component root.
-    let root = component[0];
-    if !placed[root.0 as usize] {
-        // No ring in this component — place root at x_offset.
+    // If no ring placed anything in this component, anchor the first atom at
+    // x_offset so there is at least one placed atom to extend from below.
+    //
+    // Placing this anchor unconditionally (rather than only when no ring
+    // exists) was the root cause of a real bug: `place_rings` centres its
+    // first ring at `x_offset + ring_radius`, which puts one ring vertex at
+    // x = x_offset too (the vertex diametrically opposite the k=0 vertex,
+    // since `ring_cx - ring_radius == x_offset`) -- so an unconditional
+    // anchor at `(x_offset, 0, 0)` collided with (or landed a
+    // floating-point epsilon from) that ring vertex on ANY molecule where
+    // `component[0]` is a non-ring atom directly bonded to that ring (e.g.
+    // plain toluene: the methyl carbon and the ring's ipso carbon ended up
+    // at the same point). Anchoring only when the ring layout placed
+    // nothing avoids ever competing with a ring-computed position.
+    if !component.iter().any(|&a| placed[a.0 as usize]) {
+        let root = component[0];
         coords.set(root, Point3::new(x_offset, 0.0, 0.0));
         placed[root.0 as usize] = true;
     }
 
-    dfs_place(mol, root, &mut placed, coords);
+    // Extend outward via DFS from every atom already placed (every ring
+    // atom, and/or the anchor above) -- not just a single root. `dfs_place`
+    // is a no-op for atoms whose neighbours are all already placed, so this
+    // is safe and cheap to call per seed; it is what makes a substituent
+    // attached to a *different* ring atom than the one nearest `component[0]`
+    // actually get walked and placed, rather than being left at
+    // `Coords3D::new_zeroed`'s (0, 0, 0) default forever (e.g. the second
+    // methyl on p-xylene, or ibuprofen's isobutyl/carboxyl tail hanging off
+    // a ring atom the original single-seed DFS never reached).
+    for &atom in component {
+        if placed[atom.0 as usize] {
+            dfs_place(mol, atom, &mut placed, coords);
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -531,6 +556,77 @@ mod tests {
         assert!(
             has_nonzero,
             "at least some atoms should be placed away from origin"
+        );
+    }
+
+    fn min_pairwise_distance(coords: &Coords3D, n: usize) -> f64 {
+        let mut min_d = f64::MAX;
+        for i in 0..n {
+            for j in (i + 1)..n {
+                let d = coords
+                    .get(AtomIdx(i as u32))
+                    .distance(&coords.get(AtomIdx(j as u32)));
+                min_d = min_d.min(d);
+            }
+        }
+        min_d
+    }
+
+    #[test]
+    fn generate_coords_toluene_methyl_and_ipso_carbon_not_coincident() {
+        // Regression test: `place_component` used to place a non-ring root
+        // atom directly bonded to a ring at the fixed anchor (x_offset, 0, 0)
+        // UNCONDITIONALLY, even when a ring had already been placed with its
+        // own atom landing at that exact point (`place_rings` centres its
+        // first ring at x_offset + ring_radius, putting the vertex
+        // diametrically opposite k=0 at x = x_offset too). On plain toluene
+        // this collided the methyl carbon with the ring's ipso carbon --
+        // two chemically bonded atoms at (approximately) the same 3D point.
+        let mol = parse("Cc1ccccc1").unwrap();
+        let n = mol.atom_count();
+        assert_eq!(n, 7, "toluene has 7 heavy atoms");
+        let coords = generate_coords(&mol);
+        let min_d = min_pairwise_distance(&coords, n);
+        assert!(
+            min_d > 0.5,
+            "no two atoms should be within 0.5 \u{c5} of each other, got {min_d}"
+        );
+    }
+
+    #[test]
+    fn generate_coords_para_disubstituted_ring_both_substituents_placed() {
+        // Regression test: `dfs_place` used to be seeded only once, from the
+        // component root -- once it reached an already-ring-placed atom it
+        // stopped, so a substituent hanging off a *different* ring atom
+        // than the one nearest the root was never visited and stayed at
+        // `Coords3D::new_zeroed`'s (0, 0, 0) default. p-xylene has two
+        // methyls on opposite ring atoms: only one was ever placed before
+        // the fix.
+        let mol = parse("Cc1ccc(C)cc1").unwrap();
+        let n = mol.atom_count();
+        assert_eq!(n, 8, "p-xylene has 8 heavy atoms");
+        let coords = generate_coords(&mol);
+        let min_d = min_pairwise_distance(&coords, n);
+        assert!(
+            min_d > 0.5,
+            "no two atoms should be within 0.5 \u{c5} of each other, got {min_d}"
+        );
+    }
+
+    #[test]
+    fn generate_coords_ring_with_tail_substituent_all_atoms_placed() {
+        // Regression test, ibuprofen-shaped: a multi-atom substituent chain
+        // (isopropyl + carboxyl) hanging off a ring atom that the initial
+        // single-seed DFS never reached used to be left entirely at the
+        // (0, 0, 0) default -- 5 atoms all exactly coincident.
+        let mol = parse("CC(C)Cc1ccc(cc1)C(C)C(=O)O").unwrap();
+        let n = mol.atom_count();
+        assert_eq!(n, 15, "ibuprofen has 15 heavy atoms");
+        let coords = generate_coords(&mol);
+        let min_d = min_pairwise_distance(&coords, n);
+        assert!(
+            min_d > 0.3,
+            "no two atoms should be nearly coincident, got min pairwise distance {min_d}"
         );
     }
 
