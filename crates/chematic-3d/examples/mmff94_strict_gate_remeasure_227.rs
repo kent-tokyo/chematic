@@ -1,11 +1,17 @@
-//! Phase 1A audit for issue #227: faithful re-measurement of
+//! Phase 1A audit, originally written for issue #227: re-measures
 //! `ForceFieldPolicy::Mmff94BondAngleStrict` over the Wave 1 265-molecule
-//! corpus, using the exact same production entry point
-//! (`minimize::minimize_with_policy`) and starting geometry
-//! (`dg::generate_coords`) as PR #226's methodology -- NOT the simplified
-//! bond/angle-only `Some`/`None` check `mmff94_term_coverage_audit.rs` uses,
-//! so the "216 -> N" headline number is measured the same way the issue was
-//! originally filed, on today's main.
+//! corpus by calling the production minimization entry point
+//! (`minimize::minimize_with_policy`) directly on `dg::generate_coords`'s
+//! starting geometry -- NOT the simplified bond/angle-only `Some`/`None`
+//! check `mmff94_term_coverage_audit.rs` uses, and also NOT issue #227's own
+//! posted reproduction path (`pipeline_v2::embed_pipeline_v2`, which embeds
+//! via `distance_geometry_v2::embed_distance_geometry_v2_with_adjustments`
+//! before minimizing -- a different, better starting geometry; see issue
+//! #252). This is a low-level diagnostic harness that isolates the raw
+//! strict-minimization population directly on `generate_coords` output,
+//! independent of the full embedding pipeline -- useful for tracking how
+//! that specific population moves (e.g. across Priority 2B, see issue #227's
+//! roadmap), not a stand-in for `embed_pipeline_v2`'s own funnel.
 //!
 //! Per-molecule JSONL rows (stdout) additionally carry every field already on
 //! [`chematic_3d::minimize::MinimizationFailureDetail`] for `MinimizationFailed`

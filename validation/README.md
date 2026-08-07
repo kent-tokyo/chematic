@@ -55,15 +55,20 @@ reported as a general RDKit failure.
 
 ### MMFF94 strict-gate raw funnel remeasurement (issue #227, Priority 3 population)
 
-Narrower companion measurement to the pipeline benchmark above: calls
+A **low-level diagnostic harness**, not the production embedding entry point: calls
 `minimize::minimize_with_policy(ForceFieldPolicy::Mmff94BondAngleStrict, ...)` directly
-per molecule over the same 265-mol Tier A+B corpus, with `dg::generate_coords` starting
-geometry -- the exact production entry point and methodology issue #227 was originally
-filed against (not `embed_pipeline_v2`'s fuller stereo/repair funnel, and not
-`mmff94_term_coverage_audit.rs`'s simplified bond/angle-only `Some`/`None` check). Fully
-deterministic (`MinimizeConfig` has no RNG or wall-clock component, fixed
-`max_steps=200`) -- verified byte-identical across 2 back-to-back runs before being
-trusted for a before/after diff.
+per molecule over the same 265-mol Tier A+B corpus, on top of `dg::generate_coords`
+starting geometry. This is deliberately **not** `embed_pipeline_v2` (the production
+entry point) and **not** issue #227's own posted reproduction path (which calls
+`embed_pipeline_v2`, embedding via `distance_geometry_v2::embed_distance_geometry_v2_with_adjustments`
+before minimizing -- a different, better starting geometry; see issue #252) -- and not
+`mmff94_term_coverage_audit.rs`'s simplified bond/angle-only `Some`/`None` check either.
+It exists to isolate the raw strict-minimization population directly on
+`generate_coords` output, so that population's movement (e.g. across Priority 2B) can
+be tracked in isolation from the full embedding pipeline. Fully deterministic
+(`MinimizeConfig` has no RNG or wall-clock component, fixed `max_steps=200`) --
+verified byte-identical across 2 back-to-back runs before being trusted for a
+before/after diff.
 
 Used to re-determine Priority 3's (Stage 1C, `MinimizationFailed` root-causing) target
 population after Priority 2B's Dfsb stretch-bend production port (PR #250, merged as
@@ -74,7 +79,12 @@ both sides, not wall-clock jitter. `MissingParameters` (106) and `UnsupportedAto
 (1) sets are exactly unchanged, confirming Dfsb only perturbs energy/gradient among
 molecules whose bond+angle parameters already fully resolve, and does not gate under
 the legacy (non-gated) strict policy. Post-Priority-2B `MinimizationFailed` breaks down
-19 `CatastrophicBondBlowup` / 9 `ExcessiveResidualForce` -- see summary file.
+19 `CatastrophicBondBlowup` / 9 `ExcessiveResidualForce` -- see summary file. Follow-up
+diagnosis (issue #252) found this 28-molecule population is a `generate_coords`
+starting-geometry artifact with no production impact -- a DIFFERENT, smaller population
+than the 11-15 `typed_failure` molecules issue #227 itself flagged from the
+`embed_pipeline_v2` funnel; the two are not the same measurement and are not known to
+overlap.
 
 - **Files:** `validation/results/mmff94_strict_gate_remeasure_227_rows.jsonl` (current
   main, one row per molecule, `MinimizationFailed` rows carry the full
