@@ -208,27 +208,126 @@ fn place_component(
     // First, lay out ring atoms onto polygon templates.
     place_rings(mol, component, ring_set, x_offset, coords, &mut placed);
 
-    // Then extend non-ring atoms via DFS from the component root.
-    let root = component[0];
-    if !placed[root.0 as usize] {
-        // No ring in this component — place root at x_offset.
+    // If no ring placed anything in this component, anchor the first atom at
+    // x_offset so there is at least one placed atom to extend from below.
+    //
+    // Placing this anchor unconditionally (rather than only when no ring
+    // exists) was the root cause of a real bug: `place_rings` centres its
+    // first ring at `x_offset + ring_radius`, which puts one ring vertex at
+    // x = x_offset too (the vertex diametrically opposite the k=0 vertex,
+    // since `ring_cx - ring_radius == x_offset`) -- so an unconditional
+    // anchor at `(x_offset, 0, 0)` collided with (or landed a
+    // floating-point epsilon from) that ring vertex on ANY molecule where
+    // `component[0]` is a non-ring atom directly bonded to that ring (e.g.
+    // plain toluene: the methyl carbon and the ring's ipso carbon ended up
+    // at the same point). Anchoring only when the ring layout placed
+    // nothing avoids ever competing with a ring-computed position.
+    if !component.iter().any(|&a| placed[a.0 as usize]) {
+        let root = component[0];
         coords.set(root, Point3::new(x_offset, 0.0, 0.0));
         placed[root.0 as usize] = true;
     }
 
-    dfs_place(mol, root, &mut placed, coords);
+    // Extend outward via DFS from every atom already placed (every ring
+    // atom, and/or the anchor above) -- not just a single root. `dfs_place`
+    // is a no-op for atoms whose neighbours are all already placed, so this
+    // is safe and cheap to call per seed; it is what makes a substituent
+    // attached to a *different* ring atom than the one nearest `component[0]`
+    // actually get walked and placed, rather than being left at
+    // `Coords3D::new_zeroed`'s (0, 0, 0) default forever (e.g. the second
+    // methyl on p-xylene, or ibuprofen's isobutyl/carboxyl tail hanging off
+    // a ring atom the original single-seed DFS never reached).
+    for &atom in component {
+        if placed[atom.0 as usize] {
+            dfs_place(mol, atom, &mut placed, coords);
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
 // Ring placement
 // ---------------------------------------------------------------------------
 
+/// Order `rings` into a visiting order via BFS on the ring-adjacency graph,
+/// where two rings are adjacent iff they share an atom (fused, e.g.
+/// naphthalene) OR have a direct bond between some atom in one and some
+/// atom in the other (e.g. biphenyl's two phenyls, bonded but sharing no
+/// atom). Whether a *specific* ring shares an atom with whatever is
+/// already placed by the time [`place_rings`] gets to it is re-checked
+/// there against live placement state, not decided here -- this function's
+/// only job is visiting order.
+///
+/// Neither adjacency alone is enough, and SSSR's own enumeration order
+/// guarantees neither kind of ordering on its own:
+/// - Atom-sharing only: confirmed on a 3-linearly-fused system (anthracene)
+///   -- SSSR can return `[terminal ring A, terminal ring C, middle ring
+///   B]`, where ring C shares zero atoms with ring A (only with the
+///   not-yet-visited ring B). Falling back to "keep the previous ring's
+///   center" whenever zero shared atoms are found (an earlier version of
+///   this function's caller did exactly that) silently superimposes two
+///   entire, unrelated rings on the same coordinates.
+/// - Bond adjacency also needed: confirmed on a 3-ring direct-bond chain
+///   (terphenyl, rings connected by single bonds, sharing no atoms at
+///   all) -- SSSR returned `[ring1, ring3, ring2]`, i.e. the ring bonded
+///   to NEITHER already-placed ring (ring3, only bonded to ring2) ahead of
+///   the ring that actually connects the chain together (ring2).
+///   Visiting ring3 before ring2 forces it onto an anchor with no relation
+///   to ring2's real position; when ring2 is later placed and (correctly)
+///   anchored via its real bond to ring3, its OTHER real bond (to ring1)
+///   comes out wrong (measured: 0.66 Å, vs. an ideal ~1.5 Å single bond)
+///   -- one real constraint satisfied while an earlier, arbitrarily placed
+///   ring made the other unsatisfiable.
+///
+/// BFS over the combined adjacency guarantees each ring is visited only
+/// after some ring it can be positioned relative to (by either means),
+/// whenever such a ring exists in the same component.
+fn order_rings_by_fusion_adjacency<'a>(
+    mol: &Molecule,
+    rings: &[&'a Vec<AtomIdx>],
+) -> Vec<&'a Vec<AtomIdx>> {
+    let n = rings.len();
+    let adjacent = |i: usize, j: usize| -> bool {
+        rings[i].iter().any(|a| rings[j].contains(a))
+            || rings[i]
+                .iter()
+                .any(|&a| mol.neighbors(a).any(|(nb, _)| rings[j].contains(&nb)))
+    };
+    let mut visited = vec![false; n];
+    let mut result = Vec::with_capacity(n);
+    for start in 0..n {
+        if visited[start] {
+            continue;
+        }
+        visited[start] = true;
+        result.push(rings[start]);
+        let mut queue: VecDeque<usize> = VecDeque::new();
+        queue.push_back(start);
+        while let Some(i) = queue.pop_front() {
+            for j in 0..n {
+                if !visited[j] && adjacent(i, j) {
+                    visited[j] = true;
+                    result.push(rings[j]);
+                    queue.push_back(j);
+                }
+            }
+        }
+    }
+    result
+}
+
 /// Place ring atoms from SSSR onto regular polygon templates.
 ///
-/// Each ring that contains atoms from `component` is laid out in the XY plane.
-/// The first ring is centred at (`x_offset` + ring_radius, 0, 0).
-/// Subsequent rings within the same component are fused to the previous ring
-/// (sharing a bond edge) or offset if not fused.
+/// Each ring that contains atoms from `component` is laid out in the XY
+/// plane, visited in [`order_rings_by_fusion_adjacency`]'s order. For each
+/// ring, in live placement order: if it shares an atom with something
+/// already placed, fuse to that shared atom (or the midpoint of two, if
+/// two are already placed). Otherwise, if it has a direct bond to an
+/// already-placed atom (e.g. biphenyl's two phenyls, connected but sharing
+/// no atom), anchor via that bond's real length, extending away from the
+/// connected atom's own ring. Otherwise (the very first ring in the
+/// component, or a ring reachable only through not-yet-placed chain atoms
+/// -- see the "no direct bond" branch below), anchor at a fresh position
+/// beyond any already-placed atom in the component.
 fn place_rings(
     mol: &Molecule,
     component: &[AtomIdx],
@@ -239,20 +338,23 @@ fn place_rings(
 ) {
     let component_set: std::collections::HashSet<AtomIdx> = component.iter().copied().collect();
 
-    let mut ring_cx = x_offset;
-    let mut ring_cy = 0.0_f64;
-    let mut first_ring = true;
+    let relevant_rings: Vec<&Vec<AtomIdx>> = ring_set
+        .rings()
+        .iter()
+        .filter(|ring| !ring.is_empty() && ring.iter().all(|a| component_set.contains(a)))
+        .collect();
+    if relevant_rings.is_empty() {
+        return;
+    }
+    let ordered_rings = order_rings_by_fusion_adjacency(mol, &relevant_rings);
 
-    for ring in ring_set.rings() {
-        // Only process rings whose atoms all belong to this component.
-        if !ring.iter().all(|a| component_set.contains(a)) {
-            continue;
-        }
+    let mut any_placed_yet = false;
 
+    for ring in ordered_rings {
         let ring_size = ring.len();
-        if ring_size == 0 {
-            continue;
-        }
+        // Always assigned in every branch below before being read.
+        let ring_cx: f64;
+        let ring_cy: f64;
 
         // Use bond length between consecutive ring atoms for the polygon side.
         let bond_len = {
@@ -264,31 +366,126 @@ fn place_rings(
         // Circumradius of a regular polygon: r = bond_len / (2 * sin(PI / n)).
         let r = bond_len / (2.0 * (PI / ring_size as f64).sin());
 
-        if first_ring {
-            ring_cx = x_offset + r;
-            ring_cy = 0.0;
-            first_ring = false;
-        } else {
-            // Try to fuse to a previously-placed ring atom. If two atoms of
-            // this ring are already placed, shift the centre to be consistent.
-            let already_placed: Vec<AtomIdx> = ring
-                .iter()
-                .copied()
-                .filter(|a| placed[a.0 as usize])
-                .collect();
+        // Placement strategy is decided from LIVE `placed` state here, not
+        // from `order_rings_by_fusion_adjacency`'s visiting order: that
+        // function only orders rings so that *some* already-placed
+        // neighbour (by either adjacency kind) exists by the time a ring
+        // is reached -- it does not, and should not, commit to which kind
+        // applies, since that can only be known once earlier rings in the
+        // same BFS traversal have actually been placed.
+        let shared_atoms: Vec<AtomIdx> = ring
+            .iter()
+            .copied()
+            .filter(|a| placed[a.0 as usize])
+            .collect();
 
-            if already_placed.len() >= 2 {
+        if shared_atoms.is_empty() {
+            // No shared ring atom -- may still have a real bond straight to
+            // an already-placed atom -- biphenyl's two phenyl rings share
+            // zero atoms but ARE directly bonded to each other. Anchoring
+            // blindly at a fixed offset ignored that bond entirely and
+            // left it stretched to whatever the offset was (measured:
+            // exactly 5.0 Å for biphenyl, vs. an ideal ~1.4 Å aromatic C-C
+            // single bond) -- both ring endpoints were already marked
+            // `placed`, so `dfs_place`'s chain walk (which only visits
+            // *unplaced* neighbours) never got a chance to correct it.
+            // Look for such a bond first and, if found, anchor via its
+            // real ideal length instead.
+            let direct_bond = ring.iter().find_map(|&ring_atom| {
+                mol.neighbors(ring_atom)
+                    .map(|(nb, _)| nb)
+                    .find(|nb| placed[nb.0 as usize])
+                    .map(|anchor_atom| (ring_atom, anchor_atom))
+            });
+
+            if let Some((ring_atom, anchor_atom)) = direct_bond {
+                let anchor_pos = coords.get(anchor_atom);
+                // Extend away from the centroid of `anchor_atom`'s OWN
+                // already-placed ring specifically, not blindly along +X
+                // and not the whole component's centroid either: +X only
+                // happens to work when the connecting atom sits on the
+                // "outer" side of its own ring (biphenyl's own para-like
+                // case), and a whole-component centroid still misleads a
+                // 3+-ring chain (terphenyl) once an earlier ring has
+                // already skewed the average away from the specific ring
+                // being extended from. `place_rings` runs before any
+                // `dfs_place` chain walk, so every already-placed atom here
+                // is necessarily a ring atom -- `anchor_atom` always
+                // belongs to exactly one prior entry in `relevant_rings`.
+                // Measured without this: 3-phenylpyridine collapsed to
+                // 0.14 Å min pairwise distance (whole-component-centroid
+                // version), terphenyl's third ring still did too even with
+                // it (component-wide average, not this ring's own centroid).
+                let centroid_xy = relevant_rings
+                    .iter()
+                    .find(|other_ring| other_ring.contains(&anchor_atom))
+                    .map(|other_ring| {
+                        let (sx, sy, n) =
+                            other_ring
+                                .iter()
+                                .fold((0.0, 0.0, 0.0_f64), |(sx, sy, n), &a| {
+                                    let p = coords.get(a);
+                                    (sx + p.x, sy + p.y, n + 1.0)
+                                });
+                        (sx / n, sy / n)
+                    })
+                    .unwrap_or((anchor_pos.x, anchor_pos.y));
+                let dx = anchor_pos.x - centroid_xy.0;
+                let dy = anchor_pos.y - centroid_xy.1;
+                let dist = (dx * dx + dy * dy).sqrt();
+                let (ux, uy) = if dist > 1e-6 {
+                    (dx / dist, dy / dist)
+                } else {
+                    (1.0, 0.0)
+                };
+                let bond_len_to_ring = ideal_bond_len(mol, ring_atom, anchor_atom);
+                let ring_atom_x = anchor_pos.x + ux * bond_len_to_ring;
+                let ring_atom_y = anchor_pos.y + uy * bond_len_to_ring;
+                let k = ring.iter().position(|&a| a == ring_atom).unwrap();
+                let angle = 2.0 * PI * k as f64 / ring_size as f64;
+                ring_cx = ring_atom_x - r * angle.cos();
+                ring_cy = ring_atom_y - r * angle.sin();
+            } else {
+                // No direct bond to any already-placed atom -- this ring is
+                // reachable, if at all within this component, only through
+                // atoms `place_rings` hasn't placed yet (chain-bridged ring
+                // islands, e.g. two phenyls linked by a -CH2CH2- bridge;
+                // `place_rings` places every ring before any chain atom is
+                // walked, so that bridge's own length can't be known here).
+                // Known limitation, not fixed by this anchor: the fixed
+                // +5 Å offset below only guarantees no collision, not a
+                // correct bond length at the eventual chain-to-ring
+                // junction.
+                let anchor_x = if any_placed_yet {
+                    component
+                        .iter()
+                        .filter(|a| placed[a.0 as usize])
+                        .map(|&a| coords.get(a).x)
+                        .fold(f64::NEG_INFINITY, f64::max)
+                        + 5.0
+                } else {
+                    x_offset
+                };
+                ring_cx = anchor_x + r;
+                ring_cy = 0.0;
+            }
+        } else {
+            // Fuse to a previously-placed ring atom (shares >=1 atom with
+            // something already placed). If two atoms of this ring are
+            // already placed, shift the centre to be consistent.
+            if shared_atoms.len() >= 2 {
                 // Use the midpoint of the two most recently placed ring atoms.
-                let p0 = coords.get(already_placed[0]);
-                let p1 = coords.get(already_placed[1]);
+                let p0 = coords.get(shared_atoms[0]);
+                let p1 = coords.get(shared_atoms[1]);
                 ring_cx = (p0.x + p1.x) / 2.0;
                 ring_cy = (p0.y + p1.y) / 2.0 + r;
-            } else if already_placed.len() == 1 {
-                let p0 = coords.get(already_placed[0]);
+            } else {
+                // shared_atoms.len() == 1, guaranteed nonempty by the
+                // `else` branch of `if shared_atoms.is_empty()` above.
+                let p0 = coords.get(shared_atoms[0]);
                 ring_cx = p0.x + r;
                 ring_cy = p0.y;
             }
-            // else keep ring_cx/ring_cy (floating ring, shouldn't happen in SSSR)
         }
 
         // Choose a ring conformation based on size and chemical environment.
@@ -370,6 +567,7 @@ fn place_rings(
             coords.set(atom_idx, Point3::new(x, y, z));
             placed[atom_idx.0 as usize] = true;
         }
+        any_placed_yet = true;
     }
 }
 
@@ -531,6 +729,282 @@ mod tests {
         assert!(
             has_nonzero,
             "at least some atoms should be placed away from origin"
+        );
+    }
+
+    fn min_pairwise_distance(coords: &Coords3D, n: usize) -> f64 {
+        let mut min_d = f64::MAX;
+        for i in 0..n {
+            for j in (i + 1)..n {
+                let d = coords
+                    .get(AtomIdx(i as u32))
+                    .distance(&coords.get(AtomIdx(j as u32)));
+                min_d = min_d.min(d);
+            }
+        }
+        min_d
+    }
+
+    /// Asserts every BONDED pair in `mol` is finite and within
+    /// `[min_len, max_len]` Å. Deliberately distinct from
+    /// `min_pairwise_distance`, which only checks the single closest pair
+    /// over ALL atoms (bonded or not) -- it can miss a specific bonded
+    /// pair landing too far apart (a stretch only ever *increases*
+    /// distances, so it can't move the global minimum) while some
+    /// unrelated, non-bonded pair happens to be close. Panics with the
+    /// offending atom indices and distance so a failure is directly
+    /// actionable.
+    fn assert_bonded_pairs_sane(mol: &Molecule, coords: &Coords3D, min_len: f64, max_len: f64) {
+        for (_, b) in mol.bonds() {
+            let p1 = coords.get(b.atom1);
+            let p2 = coords.get(b.atom2);
+            let d = p1.distance(&p2);
+            assert!(
+                d.is_finite() && d >= min_len && d <= max_len,
+                "bond {}-{} has length {d:.4} \u{c5}, expected finite and within [{min_len}, {max_len}] \u{c5}",
+                b.atom1.0,
+                b.atom2.0
+            );
+        }
+    }
+
+    #[test]
+    fn generate_coords_toluene_methyl_and_ipso_carbon_not_coincident() {
+        // Regression test: `place_component` used to place a non-ring root
+        // atom directly bonded to a ring at the fixed anchor (x_offset, 0, 0)
+        // UNCONDITIONALLY, even when a ring had already been placed with its
+        // own atom landing at that exact point (`place_rings` centres its
+        // first ring at x_offset + ring_radius, putting the vertex
+        // diametrically opposite k=0 at x = x_offset too). On plain toluene
+        // this collided the methyl carbon with the ring's ipso carbon --
+        // two chemically bonded atoms at (approximately) the same 3D point.
+        let mol = parse("Cc1ccccc1").unwrap();
+        let n = mol.atom_count();
+        assert_eq!(n, 7, "toluene has 7 heavy atoms");
+        let coords = generate_coords(&mol);
+        let min_d = min_pairwise_distance(&coords, n);
+        assert!(
+            min_d > 0.5,
+            "no two atoms should be within 0.5 \u{c5} of each other, got {min_d}"
+        );
+    }
+
+    #[test]
+    fn generate_coords_para_disubstituted_ring_both_substituents_placed() {
+        // Regression test: `dfs_place` used to be seeded only once, from the
+        // component root -- once it reached an already-ring-placed atom it
+        // stopped, so a substituent hanging off a *different* ring atom
+        // than the one nearest the root was never visited and stayed at
+        // `Coords3D::new_zeroed`'s (0, 0, 0) default. p-xylene has two
+        // methyls on opposite ring atoms: only one was ever placed before
+        // the fix.
+        let mol = parse("Cc1ccc(C)cc1").unwrap();
+        let n = mol.atom_count();
+        assert_eq!(n, 8, "p-xylene has 8 heavy atoms");
+        let coords = generate_coords(&mol);
+        let min_d = min_pairwise_distance(&coords, n);
+        assert!(
+            min_d > 0.5,
+            "no two atoms should be within 0.5 \u{c5} of each other, got {min_d}"
+        );
+    }
+
+    #[test]
+    fn generate_coords_ring_with_tail_substituent_all_atoms_placed() {
+        // Regression test, ibuprofen-shaped: a multi-atom substituent chain
+        // (isopropyl + carboxyl) hanging off a ring atom that the initial
+        // single-seed DFS never reached used to be left entirely at the
+        // (0, 0, 0) default -- 5 atoms all exactly coincident.
+        let mol = parse("CC(C)Cc1ccc(cc1)C(C)C(=O)O").unwrap();
+        let n = mol.atom_count();
+        assert_eq!(n, 15, "ibuprofen has 15 heavy atoms");
+        let coords = generate_coords(&mol);
+        let min_d = min_pairwise_distance(&coords, n);
+        assert!(
+            min_d > 0.3,
+            "no two atoms should be nearly coincident, got min pairwise distance {min_d}"
+        );
+    }
+
+    #[test]
+    fn generate_coords_anthracene_terminal_rings_not_superimposed() {
+        // Regression test: `place_rings` used to iterate SSSR's raw ring
+        // order and fuse each ring to whichever ring was placed immediately
+        // before it. SSSR does NOT guarantee that order matches fusion
+        // adjacency: for anthracene, SSSR returns [terminal ring A, terminal
+        // ring C, middle ring B] -- ring C shares ZERO atoms with ring A
+        // (only with the not-yet-placed ring B), so the old code's "0
+        // already-placed atoms" branch silently reused ring A's exact
+        // center for ring C, superimposing two entire terminal rings (6
+        // atoms) on the same coordinates. This was independently discovered
+        // while investigating issue #185 (chematic-ff's UFF minimizer
+        // blowing up on naphthalene but reportedly not anthracene) --
+        // anthracene's apparent "safety" turned out to be this collision
+        // bug accidentally producing a degenerate-but-not-catastrophic
+        // starting point, not genuine minimizer robustness: after this fix,
+        // anthracene's `generate_coords` output blows up under
+        // `chematic_ff::minimize_uff` too, same as naphthalene (see
+        // `minimize.rs`'s `chematic_ff_own_uff_minimizer_blows_up_*` tests).
+        let mol = parse("c1ccc2cc3ccccc3cc2c1").unwrap();
+        let n = mol.atom_count();
+        assert_eq!(n, 14, "anthracene has 14 heavy atoms");
+        let coords = generate_coords(&mol);
+        let min_d = min_pairwise_distance(&coords, n);
+        assert!(
+            min_d > 0.3,
+            "no two atoms should be nearly coincident, got min pairwise distance {min_d}"
+        );
+        // NOT extended with `assert_bonded_pairs_sane` like the
+        // biphenyl/terphenyl/meta-linked tests below: doing so here (during
+        // this PR's review) surfaced FOUR distorted bonds at this molecule's
+        // ring-fusion seams -- 0.8675 Å, 1.3163 Å, 2.0365 Å, 2.2644 Å,
+        // not just the single 2.2644 Å this file's own commit history
+        // previously (incorrectly) described as the only imperfection.
+        // Confirmed by direct comparison (temporarily disabling this PR's
+        // new bond-adjacency ordering edge and re-running) that these come
+        // from the PRE-EXISTING `shared_atoms.len() >= 2` fuse branch above
+        // -- its `ring_cy = (p0.y + p1.y) / 2.0 + r` always extends the new
+        // ring in +y from the fusion bond's midpoint, regardless of which
+        // direction is actually away from the rest of the structure. This
+        // predates this PR entirely (shipped in `d45f91b`, this test's own
+        // prior form never checked bond lengths, only
+        // `min_pairwise_distance`) and is a different code path from the
+        // "new island" direct-bond anchor this PR's biphenyl/terphenyl fix
+        // touches -- not fixed here, flagged for a separate decision.
+    }
+
+    #[test]
+    fn generate_coords_biphenyl_disconnected_ring_islands_not_superimposed() {
+        // Regression test: two rings connected only via a non-ring bond
+        // (biphenyl) share zero atoms and are never fusion-adjacent -- a
+        // genuine "new island" case, not a fusion-order bug. Before this
+        // fix, a ring island beyond the very first reused whatever
+        // `ring_cx`/`ring_cy` the previous, unrelated ring left behind
+        // instead of anchoring fresh beyond it.
+        //
+        // The FIRST fix for this (anchor the new island at a fixed offset
+        // beyond the rest of the component) traded that collision for a
+        // different bug: it ignored the real single bond directly
+        // connecting biphenyl's two rings entirely, stretching it to
+        // exactly that fixed offset (measured: 5.0 Å, vs. an ideal ~1.5 Å
+        // single bond) -- both endpoints were already `placed`, so
+        // `dfs_place`'s chain walk (unplaced-neighbours only) never got a
+        // chance to correct it. `min_pairwise_distance` alone could not
+        // have caught this: a stretch only increases distances, so it
+        // never becomes the global minimum. Fixed by detecting a direct
+        // bond to an already-placed atom before falling back to the
+        // fixed-offset anchor.
+        let mol = parse("c1ccc(cc1)-c1ccccc1").unwrap();
+        let n = mol.atom_count();
+        assert_eq!(n, 12, "biphenyl has 12 heavy atoms");
+        let coords = generate_coords(&mol);
+        let min_d = min_pairwise_distance(&coords, n);
+        assert!(
+            min_d > 0.3,
+            "no two atoms should be nearly coincident, got min pairwise distance {min_d}"
+        );
+        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
+    }
+
+    #[test]
+    fn generate_coords_terphenyl_chain_of_new_island_rings_bond_lengths_sane() {
+        // Regression test: a chain of 3+ rings, each directly bonded to the
+        // next with zero shared atoms (so every ring after the first is a
+        // "new island" per `order_rings_by_fusion_adjacency`), needs each
+        // new-island anchor to extend away from the SPECIFIC ring it is
+        // bonding to, not from the whole component's running centroid.
+        // Using the whole-component centroid still collapsed the third
+        // ring here (measured: 0.14 \u{c5} min pairwise distance) even after
+        // fixing biphenyl's simpler 2-ring case, because by the time the
+        // third ring is placed the average of rings 1+2 no longer points
+        // "outward" from ring 2's own extent. Fixed by finding the
+        // specific already-placed ring containing the connecting atom and
+        // using only its own centroid.
+        let mol = parse("c1ccc(cc1)-c1ccc(cc1)-c1ccccc1").unwrap();
+        let n = mol.atom_count();
+        assert_eq!(n, 18, "terphenyl has 18 heavy atoms");
+        let coords = generate_coords(&mol);
+        let min_d = min_pairwise_distance(&coords, n);
+        assert!(
+            min_d > 0.3,
+            "no two atoms should be nearly coincident, got min pairwise distance {min_d}"
+        );
+        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
+    }
+
+    #[test]
+    fn generate_coords_meta_linked_biaryl_bond_lengths_sane() {
+        // Regression test: when the connecting ring atom sits on the side
+        // of its ring FACING the already-placed structure (meta-linked,
+        // unlike biphenyl's own para-like case), a fixed +X extension
+        // direction points the new ring straight back into what's already
+        // placed. Measured without the centroid-outward fix: 0.14 \u{c5}
+        // min pairwise distance on this exact molecule.
+        let mol = parse("c1ccc(cc1)-c1cccnc1").unwrap();
+        let n = mol.atom_count();
+        assert_eq!(n, 12, "3-phenylpyridine has 12 heavy atoms");
+        let coords = generate_coords(&mol);
+        let min_d = min_pairwise_distance(&coords, n);
+        assert!(
+            min_d > 0.3,
+            "no two atoms should be nearly coincident, got min pairwise distance {min_d}"
+        );
+        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
+    }
+
+    #[test]
+    fn generate_coords_spiro_ring_adjacency_unaffected() {
+        // Positive control for the two fixes above: spiro rings share
+        // EXACTLY ONE atom, so `order_rings_by_fusion_adjacency` correctly
+        // marks the second ring `is_new_island = false` (fused, via the
+        // existing shared-atom branch this PR does not touch) -- confirms
+        // the new "new island direct-bond" logic never fires for spiro
+        // systems and doesn't regress them.
+        let mol = parse("C1CCC2(CC1)CCCCC2").unwrap();
+        let n = mol.atom_count();
+        assert_eq!(n, 11, "spiro[5.5]undecane has 11 heavy atoms");
+        let coords = generate_coords(&mol);
+        let min_d = min_pairwise_distance(&coords, n);
+        assert!(
+            min_d > 0.3,
+            "no two atoms should be nearly coincident, got min pairwise distance {min_d}"
+        );
+        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
+    }
+
+    #[test]
+    fn generate_coords_bibenzyl_chain_bridged_ring_islands_known_broken() {
+        // NOT a regression test for a fix -- pins a KNOWN, still-open
+        // limitation. `place_rings` places every ring in a component
+        // before `dfs_place` walks any chain atom, so a ring reachable
+        // from an already-placed ring only through a non-ring bridge (here
+        // the -CH2CH2- of bibenzyl, PhCH2CH2Ph) has no already-placed atom
+        // for the direct-bond anchor added in this PR to find -- it falls
+        // through to the fixed +5 \u{c5}-offset anchor, which guarantees no
+        // collision but not a correct bond length at the eventual
+        // chain-to-ring junction. Fixing this needs `place_component`
+        // restructured to interleave ring placement and chain DFS in true
+        // graph order, not a targeted fix within `place_rings` alone --
+        // out of scope here. This test exists so that future restructuring
+        // has a ready-made regression fixture: it currently pins the
+        // broken value so a fix is provable (this assertion should FAIL
+        // once the underlying limitation is actually fixed, at which point
+        // replace it with a `assert_bonded_pairs_sane` call instead of
+        // deleting it).
+        let mol = parse("c1ccccc1CCc1ccccc1").unwrap();
+        let n = mol.atom_count();
+        assert_eq!(n, 14, "bibenzyl has 14 heavy atoms");
+        let coords = generate_coords(&mol);
+        let worst = mol
+            .bonds()
+            .map(|(_, b)| coords.get(b.atom1).distance(&coords.get(b.atom2)))
+            .fold(0.0_f64, f64::max);
+        assert!(
+            worst > 5.0,
+            "expected this known-broken chain-bridged case to still have a grossly \
+             stretched bond (last measured 8.7358 \u{c5}); got worst bond {worst:.4} \u{c5} -- \
+             if this now passes, the chain-bridged ring-island limitation documented above \
+             was fixed and this test should be replaced with a sane-bond-length assertion"
         );
     }
 
