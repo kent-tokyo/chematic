@@ -99,6 +99,31 @@ overlap.
   validation/results/mmff94_strict_gate_remeasure_227_rows.jsonl 2>
   validation/results/mmff94_strict_gate_remeasure_227_stderr.log`
 
+#### Post-#253 re-measurement (issue #185/#252)
+
+Same harness, re-run after PR #253 (merged as `c370cb3`) fixed three
+`dg::generate_coords` atom-coincidence bugs (root/ring-vertex collision,
+ring-fusion-order mismatch, new-island direct-bond anchor). Baseline is
+`ada800d` (main's tip immediately before #253), frozen as
+`mmff94_strict_gate_remeasure_227_pre_253_baseline.jsonl` (distinct file
+from the pre-Priority-2B baseline above -- do not conflate the two).
+`mmff94_strict_gate_remeasure_227_rows.jsonl` now reflects the post-#253
+(candidate) side; `mmff94_strict_gate_remeasure_227_summary.json` was
+regenerated to compare baseline vs. candidate instead of
+pre/post-Priority-2B.
+
+Finding: all 28 `MinimizationFailed` molecules (19 `CatastrophicBondBlowup`
++ 9 `ExcessiveResidualForce`) resolved to `Ok`, 0 remaining, 0 new
+failures. `MissingParameters`/`UnsupportedAtomType` sets unchanged.
+Candidate side re-run twice, byte-identical, before trusting this
+comparison. None of the 28 resolved molecules contain a fused-polycyclic
+aromatic ring system (checked by SMILES inspection) -- the anthracene-class
+fused-ring-seam limitation found during PR #253's review (see issue
+tracker) is not implicated in this population. Does not establish which
+individual PR #253 sub-fix was causal per molecule (no ablation study
+run) -- only that the tracked population is fully resolved with no
+regression.
+
 ### 175-mol drug-like corpus
 
 A curated set of 175 drug-like molecules covering common scaffolds (benzoic acid derivatives,
