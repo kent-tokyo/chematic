@@ -240,6 +240,17 @@ fn vertex_color(
 pub(crate) struct CanonicalColoredGraph<'a> {
     mol: &'a Molecule,
     vcolor: Vec<VertexColor>,
+    /// See `new`/`new_topological`. Also gates `edge_color`: an `Up`/`Down`
+    /// bond order is itself an E/Z *direction* marker on what is
+    /// chemically a single bond (`bond_has_direction_info`'s doc comment),
+    /// so it is exactly as canonicalization-only as the vertex-side stereo
+    /// devices `vertex_color` documents -- omitted here for the same
+    /// reason. Caught empirically, not by inspection alone: an earlier
+    /// version of this PR left `edge_color` reading raw `Up`/`Down`
+    /// unconditionally, and `F/C=C\F` (cis-1,2-difluoroethene, a real
+    /// mirror-symmetric molecule -- swap the two `=CF` ends) came back as
+    /// 4 distinct singleton classes instead of the correct 2 merged pairs.
+    canonical_fidelity: bool,
 }
 
 impl<'a> CanonicalColoredGraph<'a> {
@@ -253,15 +264,17 @@ impl<'a> CanonicalColoredGraph<'a> {
     }
 
     /// Coloring for [`crate::topological_equivalence_classes`]: identical to
-    /// `new` except every canonicalization-only device `vertex_color`
-    /// documents is turned off (see `topological_equivalence_classes`'s doc
-    /// comment for the full reasoning -- the short version: `new`'s stereo
-    /// and raw-H-spelling handling exist to make canonical-SMILES
-    /// tie-breaking conservative/safe, a different goal from reporting real
-    /// topological symmetry; applying either here would wrongly split
-    /// atoms that a real symmetry query must merge -- a meso compound's two
-    /// mirror-equivalent stereocenters via stereo, or `[Cl]` vs `Cl` via raw
-    /// H-spelling).
+    /// `new` except every canonicalization-only device `vertex_color` (and
+    /// this struct's own `edge_color`) documents is turned off (see
+    /// `topological_equivalence_classes`'s doc comment for the full
+    /// reasoning -- the short version: `new`'s stereo and raw-H-spelling
+    /// handling exist to make canonical-SMILES tie-breaking
+    /// conservative/safe, a different goal from reporting real topological
+    /// symmetry; applying any of them here would wrongly split atoms that a
+    /// real symmetry query must merge -- a meso compound's two
+    /// mirror-equivalent stereocenters via stereo, `[Cl]` vs `Cl` via raw
+    /// H-spelling, or a cis-alkene's two mirror-equivalent ends via
+    /// `Up`/`Down` bond-direction markers).
     pub(crate) fn new_topological(mol: &'a Molecule) -> Self {
         Self::build(mol, false)
     }
@@ -278,7 +291,11 @@ impl<'a> CanonicalColoredGraph<'a> {
                 vertex_color(mol, idx, sensitive.contains(&idx), canonical_fidelity)
             })
             .collect();
-        Self { mol, vcolor }
+        Self {
+            mol,
+            vcolor,
+            canonical_fidelity,
+        }
     }
 
     pub(crate) fn mol(&self) -> &'a Molecule {
@@ -296,8 +313,17 @@ impl<'a> CanonicalColoredGraph<'a> {
     pub(crate) fn edge_color(&self, from: AtomIdx, bidx: BondIdx) -> EdgeColor {
         let bond = self.mol.bond(bidx);
         let from_is_donor = bond.order == BondOrder::Dative && bond.atom1 == from;
+        // `Up`/`Down` are E/Z direction markers on an otherwise-single
+        // bond; in topological mode they collapse to plain `Single`, same
+        // as every other stereo device this struct excludes there.
+        let order =
+            if !self.canonical_fidelity && matches!(bond.order, BondOrder::Up | BondOrder::Down) {
+                BondOrder::Single
+            } else {
+                bond.order
+            };
         EdgeColor {
-            order_class: order_class(bond.order),
+            order_class: order_class(order),
             from_is_donor,
         }
     }
@@ -476,8 +502,8 @@ pub(crate) fn exact_refine(graph: &CanonicalColoredGraph, mut partition: Partiti
 /// (`CanonicalColoredGraph::new`, used by canonical-SMILES generation) folds
 /// in devices that exist purely to make canonical-SMILES search pruning
 /// *safe*, not to describe real molecular symmetry -- see `vertex_color`'s
-/// doc comment for the full list. Three matter most:
-/// - **Stereo**: `new`'s coloring reads an atom's raw `@`/`@@` parity tag
+/// doc comment for the full list. Four matter most:
+/// - **Stereo (atom parity)**: `new`'s coloring reads an atom's raw `@`/`@@` parity tag
 ///   and pins every stereo-bearing atom (and its direct neighbors) globally
 ///   unique via `stereo_unique`, because verifying that a candidate mapping
 ///   *actually* preserves tetrahedral/E-Z parity (which depends on neighbor
@@ -512,13 +538,24 @@ pub(crate) fn exact_refine(graph: &CanonicalColoredGraph, mut partition: Partiti
 ///   canonicalization-fidelity coloring (map numbers must round-trip
 ///   through the writer) but the same class here (see
 ///   `atom_map_number_alone_does_not_split_the_class` below).
+/// - **Stereo (bond direction)**: `new`'s `edge_color` reads an `Up`/`Down`
+///   bond order literally -- the E/Z direction marker (`/`/`\`) on what is
+///   chemically a single bond -- as a distinct edge color from plain
+///   `Single`. Same category of device as atom parity above, same fix:
+///   `CanonicalColoredGraph::new_topological` collapses `Up`/`Down` to
+///   `Single` there. Verified empirically: `F/C=C\F` (cis-1,2-
+///   difluoroethene, real mirror symmetry across the two `=CF` ends) came
+///   back as 4 singleton classes before this collapse was added, 2 merged
+///   pairs after (see `ez_bond_direction_marker_alone_does_not_split_the_class`
+///   below).
 ///
-/// `CanonicalColoredGraph::new_topological` therefore omits all three,
+/// `CanonicalColoredGraph::new_topological` therefore omits all four,
 /// using the *effective* H count (`implicit_hcount`, matching
 /// `crate::canonical::initial_invariant`'s post-#205 choice), no atom-map
-/// signal, and no stereo signal at all -- matching `morgan_ranks`'s own
-/// long-standing `initial_invariant`, which has never read either
-/// `atom.chirality` or `atom.atom_map`.
+/// signal, and no stereo signal (atom parity or bond direction) at all --
+/// matching `morgan_ranks`'s own long-standing `initial_invariant`, which
+/// has never read `atom.chirality` or `atom.atom_map`, and whose own
+/// `bond_order_value` collapses `Up`/`Down` to the same value as `Single`.
 pub fn topological_equivalence_classes(mol: &Molecule) -> Vec<usize> {
     let n = mol.atom_count();
     if n == 0 {
@@ -699,6 +736,29 @@ mod tests {
         assert_eq!(classes[1], classes[7], "the two carboxyl carbons");
         assert_eq!(classes[2], classes[8], "the two carbonyl (=O) oxygens");
         assert_eq!(classes[4], classes[6], "the two stereocenter hydroxyls");
+    }
+
+    #[test]
+    fn ez_bond_direction_marker_alone_does_not_split_the_class() {
+        // cis-1,2-difluoroethene: F/C=C\F. atoms: 0=F, 1=C, 2=C, 3=F. Real
+        // mirror symmetry swaps the two =CF ends (0<->3, 1<->2), even
+        // though one C-F bond is marked Up and the other Down -- an E/Z
+        // direction marker on what is chemically a single bond, exactly as
+        // canonicalization-only as tetrahedral parity. Caught empirically:
+        // an earlier version of this function read raw Up/Down through
+        // `edge_color` unconditionally and returned 4 singleton classes
+        // here instead of 2 merged pairs.
+        let mol = parse(r"F/C=C\F").unwrap();
+        let classes = topological_equivalence_classes(&mol);
+        assert_eq!(classes.len(), 4);
+        assert_eq!(
+            classes[0], classes[3],
+            "the two mirror-equivalent F: {classes:?}"
+        );
+        assert_eq!(
+            classes[1], classes[2],
+            "the two mirror-equivalent C: {classes:?}"
+        );
     }
 
     #[test]
