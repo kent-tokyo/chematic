@@ -1,0 +1,1489 @@
+{
+  "purpose": "PR-A: full-pipeline (embed_pipeline_v2) 265-molecule 3-point paired comparison",
+  "method": "crates/chematic-3d/examples/pipeline_v2_vs_rdkit_dump.rs run unmodified at 3 historical commits; each commit carries its own contemporaneous arm matrix (arms added over time reported only where they exist at that point)",
+  "v0_11_0_commit": "ac52800",
+  "v0_11_0_commit_note": "v0.11.0 tag (93aaa9e) library code + PR #248-added RepairAndVerify arms; library-identical to the v0.11.0 tag, verified via `git diff v0.11.0 ac52800 --stat -- crates/` (only examples/ changed)",
+  "pre_2b_commit": "c42627a",
+  "pre_2b_commit_note": "PR #248+#249 merged (Priority 1 measurement-only + Priority 2 stretch-bend gate, gate defaults false everywhere); immediately before Priority 2B's Dfsb production port",
+  "candidate_commit": "33eb2c3",
+  "candidate_commit_note": "v0.12.0 tag, current release",
+  "rdkit_oracle_note": "scripts/pipeline_v2_vs_rdkit_oracle.py and both corpus manifests confirmed byte-identical (git diff) since the v0.11.0 tag; run once at RDKit 2026.03.3, reused as reference for all 3 points (not part of this paired diff, which compares chematic's own snapshots against each other)",
+  "corpus_total": 265,
+  "per_arm_summary": {
+    "v0.11.0": {
+      "chematic_legacy_etkdg": {
+        "total": 265,
+        "sound": 265,
+        "status_counts": {
+          "success": 265
+        }
+      },
+      "chematic_pipeline_v2_dreiding": {
+        "total": 265,
+        "sound": 254,
+        "status_counts": {
+          "success": 254,
+          "typed_failure": 11
+        }
+      },
+      "chematic_pipeline_v2_mmff94_strict": {
+        "total": 265,
+        "sound": 149,
+        "status_counts": {
+          "success": 149,
+          "typed_failure": 116
+        }
+      },
+      "chematic_pipeline_v2_mmff94_strict_repair": {
+        "total": 265,
+        "sound": 131,
+        "status_counts": {
+          "success": 131,
+          "typed_failure": 133,
+          "timeout": 1
+        }
+      },
+      "chematic_pipeline_v2_mmff94_with_uff_fallback": {
+        "total": 265,
+        "sound": 251,
+        "status_counts": {
+          "success": 251,
+          "timeout": 1,
+          "typed_failure": 13
+        }
+      },
+      "chematic_pipeline_v2_mmff94_with_uff_fallback_repair": {
+        "total": 265,
+        "sound": 227,
+        "status_counts": {
+          "success": 227,
+          "typed_failure": 34,
+          "timeout": 4
+        }
+      },
+      "chematic_pipeline_v2_no_ff": {
+        "total": 265,
+        "sound": 254,
+        "status_counts": {
+          "success": 254,
+          "typed_failure": 11
+        }
+      },
+      "chematic_pipeline_v2_uff_only": {
+        "total": 265,
+        "sound": 250,
+        "status_counts": {
+          "success": 250,
+          "typed_failure": 15
+        }
+      }
+    },
+    "pre-2B": {
+      "chematic_legacy_etkdg": {
+        "total": 265,
+        "sound": 265,
+        "status_counts": {
+          "success": 265
+        }
+      },
+      "chematic_pipeline_v2_dreiding": {
+        "total": 265,
+        "sound": 254,
+        "status_counts": {
+          "success": 254,
+          "typed_failure": 11
+        }
+      },
+      "chematic_pipeline_v2_mmff94_strict": {
+        "total": 265,
+        "sound": 149,
+        "status_counts": {
+          "success": 149,
+          "typed_failure": 116
+        }
+      },
+      "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated": {
+        "total": 265,
+        "sound": 37,
+        "status_counts": {
+          "success": 37,
+          "typed_failure": 228
+        }
+      },
+      "chematic_pipeline_v2_mmff94_strict_repair": {
+        "total": 265,
+        "sound": 131,
+        "status_counts": {
+          "success": 131,
+          "typed_failure": 134
+        }
+      },
+      "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated": {
+        "total": 265,
+        "sound": 37,
+        "status_counts": {
+          "success": 37,
+          "typed_failure": 228
+        }
+      },
+      "chematic_pipeline_v2_mmff94_with_uff_fallback": {
+        "total": 265,
+        "sound": 252,
+        "status_counts": {
+          "success": 252,
+          "typed_failure": 13
+        }
+      },
+      "chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated": {
+        "total": 265,
+        "sound": 250,
+        "status_counts": {
+          "success": 250,
+          "typed_failure": 15
+        }
+      },
+      "chematic_pipeline_v2_mmff94_with_uff_fallback_repair": {
+        "total": 265,
+        "sound": 229,
+        "status_counts": {
+          "success": 229,
+          "typed_failure": 35,
+          "timeout": 1
+        }
+      },
+      "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated": {
+        "total": 265,
+        "sound": 250,
+        "status_counts": {
+          "success": 250,
+          "typed_failure": 15
+        }
+      },
+      "chematic_pipeline_v2_no_ff": {
+        "total": 265,
+        "sound": 254,
+        "status_counts": {
+          "success": 254,
+          "typed_failure": 11
+        }
+      },
+      "chematic_pipeline_v2_uff_only": {
+        "total": 265,
+        "sound": 250,
+        "status_counts": {
+          "success": 250,
+          "typed_failure": 15
+        }
+      }
+    },
+    "v0.12.0": {
+      "chematic_legacy_etkdg": {
+        "total": 265,
+        "sound": 248,
+        "status_counts": {
+          "success": 265
+        }
+      },
+      "chematic_pipeline_v2_dreiding": {
+        "total": 265,
+        "sound": 254,
+        "status_counts": {
+          "success": 254,
+          "typed_failure": 11
+        }
+      },
+      "chematic_pipeline_v2_mmff94_strict": {
+        "total": 265,
+        "sound": 148,
+        "status_counts": {
+          "success": 148,
+          "typed_failure": 116,
+          "timeout": 1
+        }
+      },
+      "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated": {
+        "total": 265,
+        "sound": 85,
+        "status_counts": {
+          "success": 85,
+          "typed_failure": 179,
+          "timeout": 1
+        }
+      },
+      "chematic_pipeline_v2_mmff94_strict_repair": {
+        "total": 265,
+        "sound": 131,
+        "status_counts": {
+          "success": 131,
+          "typed_failure": 133,
+          "timeout": 1
+        }
+      },
+      "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated": {
+        "total": 265,
+        "sound": 148,
+        "status_counts": {
+          "success": 148,
+          "typed_failure": 116,
+          "timeout": 1
+        }
+      },
+      "chematic_pipeline_v2_mmff94_with_uff_fallback": {
+        "total": 265,
+        "sound": 251,
+        "status_counts": {
+          "success": 251,
+          "timeout": 1,
+          "typed_failure": 13
+        }
+      },
+      "chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated": {
+        "total": 265,
+        "sound": 250,
+        "status_counts": {
+          "success": 250,
+          "typed_failure": 15
+        }
+      },
+      "chematic_pipeline_v2_mmff94_with_uff_fallback_repair": {
+        "total": 265,
+        "sound": 228,
+        "status_counts": {
+          "success": 228,
+          "typed_failure": 35,
+          "timeout": 2
+        }
+      },
+      "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated": {
+        "total": 265,
+        "sound": 251,
+        "status_counts": {
+          "success": 251,
+          "typed_failure": 13,
+          "timeout": 1
+        }
+      },
+      "chematic_pipeline_v2_no_ff": {
+        "total": 265,
+        "sound": 254,
+        "status_counts": {
+          "success": 254,
+          "typed_failure": 11
+        }
+      },
+      "chematic_pipeline_v2_uff_only": {
+        "total": 265,
+        "sound": 250,
+        "status_counts": {
+          "success": 250,
+          "typed_failure": 15
+        }
+      }
+    }
+  },
+  "v0_11_0_to_pre_2b_diff": {
+    "common_rows": 2121,
+    "status_changes": 5,
+    "changes": [
+      {
+        "molecule": "atorvastatin_fragment",
+        "arm": "chematic_pipeline_v2_mmff94_with_uff_fallback_repair",
+        "from": "timeout",
+        "to": "typed_failure"
+      },
+      {
+        "molecule": "chembl_tier_b_0114",
+        "arm": "chematic_pipeline_v2_mmff94_with_uff_fallback_repair",
+        "from": "timeout",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0117",
+        "arm": "chematic_pipeline_v2_mmff94_with_uff_fallback_repair",
+        "from": "timeout",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0166",
+        "arm": "chematic_pipeline_v2_mmff94_strict_repair",
+        "from": "timeout",
+        "to": "typed_failure"
+      },
+      {
+        "molecule": "cholesterol",
+        "arm": "chematic_pipeline_v2_mmff94_with_uff_fallback",
+        "from": "timeout",
+        "to": "success"
+      }
+    ]
+  },
+  "pre_2b_to_v0_12_0_diff": {
+    "common_rows": 3181,
+    "status_changes": 168,
+    "changes": [
+      {
+        "molecule": "aspirin",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "atorvastatin_fragment",
+        "arm": "chematic_pipeline_v2_mmff94_strict",
+        "from": "success",
+        "to": "timeout"
+      },
+      {
+        "molecule": "atorvastatin_fragment",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "atorvastatin_fragment",
+        "arm": "chematic_pipeline_v2_mmff94_with_uff_fallback",
+        "from": "success",
+        "to": "timeout"
+      },
+      {
+        "molecule": "chembl_tier_b_0012",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0012",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0013",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0013",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0014",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0014",
+        "arm": "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0015",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0015",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0036",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0037",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0037",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0038",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0039",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0040",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0040",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0041",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0041",
+        "arm": "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0042",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0043",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0044",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0045",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0046",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0046",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0047",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0048",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0048",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0049",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0051",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0063",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0063",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0064",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0064",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0065",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0065",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0066",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0066",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0067",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0073",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0073",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0074",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0074",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0075",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0076",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0078",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0079",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0081",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0083",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0089",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0089",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0090",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0090",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0091",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0091",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0092",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0093",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0094",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0095",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0095",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0096",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0096",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0097",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0097",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0101",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0101",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0102",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0108",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0109",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0110",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0111",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0112",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0113",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0114",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0114",
+        "arm": "chematic_pipeline_v2_mmff94_with_uff_fallback_repair",
+        "from": "success",
+        "to": "timeout"
+      },
+      {
+        "molecule": "chembl_tier_b_0115",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0116",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0117",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0124",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0125",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0126",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0129",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0130",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0131",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0132",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0133",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0134",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0135",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0136",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0137",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0138",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0139",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0140",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0141",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0142",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0143",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0143",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0144",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0146",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0146",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0147",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0147",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0148",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0148",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0149",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0149",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0150",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0153",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0153",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0154",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0154",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0155",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0156",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0156",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0157",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0157",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0158",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0160",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0160",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0162",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0163",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0163",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0166",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "timeout"
+      },
+      {
+        "molecule": "chembl_tier_b_0166",
+        "arm": "chematic_pipeline_v2_mmff94_strict_repair",
+        "from": "typed_failure",
+        "to": "timeout"
+      },
+      {
+        "molecule": "chembl_tier_b_0166",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "timeout"
+      },
+      {
+        "molecule": "chembl_tier_b_0166",
+        "arm": "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated",
+        "from": "success",
+        "to": "timeout"
+      },
+      {
+        "molecule": "chembl_tier_b_0167",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0167",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0168",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0169",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0174",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0174",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0193",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chloropropene_E",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chloropropene_E",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chloropropene_Z",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "chloropropene_Z",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "cinnamic_acid_E",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "cinnamic_acid_Z",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "cubane",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "cubane",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "d_alanine",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "d_alanine",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "diphenhydramine",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "diphenhydramine",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "gly_ala_gly",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "gly_ala_gly",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "ibuprofen",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "ibuprofen",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "ibuprofen_S",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "ibuprofen_S",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "l_alanine",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "l_alanine",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "l_serine",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "l_serine",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "l_threonine",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "l_threonine",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "naproxen_S",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "naproxen_S",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "paracetamol",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "paracetamol",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "penicillin_core",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "penicillin_core",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "purine",
+        "arm": "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "purine",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      },
+      {
+        "molecule": "testosterone",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "from": "typed_failure",
+        "to": "success"
+      }
+    ]
+  },
+  "legacy_etkdg_soundness_diff_pre_2b_to_v0_12_0": {
+    "newly_sound": [],
+    "newly_unsound": [
+      "chembl_tier_b_0003",
+      "chembl_tier_b_0008",
+      "chembl_tier_b_0010",
+      "chembl_tier_b_0021",
+      "chembl_tier_b_0025",
+      "chembl_tier_b_0026",
+      "chembl_tier_b_0027",
+      "chembl_tier_b_0035",
+      "chembl_tier_b_0065",
+      "chembl_tier_b_0066",
+      "chembl_tier_b_0095",
+      "chembl_tier_b_0143",
+      "chembl_tier_b_0146",
+      "chembl_tier_b_0147",
+      "chembl_tier_b_0153",
+      "chembl_tier_b_0156",
+      "chembl_tier_b_0157"
+    ]
+  },
+  "finding_legacy_etkdg_regression": "chematic_legacy_etkdg (the ONLY arm in this benchmark that calls dg::generate_coords, and therefore the only arm PR #253's issue #185/#252 fix could affect) shows sound: 265->265->248 across v0.11.0->pre-2B->v0.12.0 -- a real, one-directional regression: 0 molecules newly sound, 17 newly unsound, introduced between pre-2B and v0.12.0. All 17 affected molecules already had high bond_violation_rate_15pct (0.57-0.91) and nonzero gross_clash_count at ALL THREE snapshots (i.e. these were already marginal/messy ETKDG-refined geometries, not clean ones that broke) -- PR #253 changed dg::generate_coords's starting geometry, which measurably shifted the ETKDG local-refinement outcome for these already-borderline molecules, net negative on this specific metric for this specific arm. This does NOT affect embed_pipeline_v2 (the production pipeline, which uses distance_geometry_v2, not dg::generate_coords) -- confirmed via source inspection (`grep generate_coords pipeline_v2.rs distance_geometry_v2.rs` finds no call). Scope is limited to the legacy `etkdg::generate_coords_etkdg` entry point and any direct caller of `dg::generate_coords`.",
+  "mmff_term_coverage_missing_totals": {
+    "note": "summed across all mmff94-involving arms present at each point; v0.11.0 shows 0/0/0 because these fields were not yet emitted by the dump script at that point (added later, not a real absence)",
+    "v0.11.0": {
+      "stretch_bend_missing": null,
+      "torsion_missing": null,
+      "oop_missing": null,
+      "caveat": "fields not present in this snapshot's schema"
+    },
+    "pre-2B": {
+      "stretch_bend_missing": 8601,
+      "torsion_missing": 5002,
+      "oop_missing": 0
+    },
+    "v0.12.0": {
+      "stretch_bend_missing": 0,
+      "torsion_missing": 5371,
+      "oop_missing": 0
+    }
+  },
+  "finding_torsion_missing_increase": "torsion_missing rose 5002->5371 (+369, +7.4%) pre-2B to v0.12.0 despite no torsion-classification code changing in this range (only dg.rs and MMFF94 stretch-bend/energy files changed). Plausible, NOT independently verified explanation: Dfsb's stretch-bend production port let more molecules proceed further into the pipeline (past what used to be an early stretch-bend failure) where their ALREADY-PRESENT torsion gaps are now reached and counted for the first time -- a counting-exposure effect, not a new torsion regression. Flagged as a hypothesis requiring molecule-level reconciliation before being stated as fact.",
+  "repair_arms_stereo_before_after": {
+    "chematic_pipeline_v2_mmff94_strict_repair": {
+      "v0.11.0": {
+        "before_violations": 64,
+        "after_violations": 10,
+        "repaired": 52,
+        "repair_failed": 12
+      },
+      "pre-2B": {
+        "before_violations": 64,
+        "after_violations": 11,
+        "repaired": 52,
+        "repair_failed": 12
+      },
+      "v0.12.0": {
+        "before_violations": 64,
+        "after_violations": 10,
+        "repaired": 52,
+        "repair_failed": 12
+      }
+    },
+    "chematic_pipeline_v2_mmff94_with_uff_fallback_repair": {
+      "v0.11.0": {
+        "before_violations": 64,
+        "after_violations": 11,
+        "repaired": 52,
+        "repair_failed": 12
+      },
+      "pre-2B": {
+        "before_violations": 64,
+        "after_violations": 12,
+        "repaired": 52,
+        "repair_failed": 12
+      },
+      "v0.12.0": {
+        "before_violations": 64,
+        "after_violations": 12,
+        "repaired": 52,
+        "repair_failed": 12
+      }
+    },
+    "note": "before_violations constant at 64 across all 3 points as expected (input-derived, policy-independent). after_violations/repaired/repair_failed fluctuate by 1-2 -- within the known timeout-boundary jitter pattern (see known_jitter_molecules), not evidence of a repair-quality regression."
+  },
+  "known_jitter_molecules": {
+    "note": "same small set of borderline-slow (~15-20s) molecules flip status (typically timeout<->success/typed_failure) across multiple snapshot transitions -- consistent with wall-clock timeout-boundary sensitivity, not real regressions. First identified in Priority 2B's own measurement (chembl_tier_b_0166).",
+    "recurring_molecules": [
+      "chembl_tier_b_0166",
+      "chembl_tier_b_0114",
+      "chembl_tier_b_0117",
+      "atorvastatin_fragment",
+      "cholesterol"
+    ]
+  },
+  "production_code_changed_in_measurement_pr": false,
+  "byte_identical_verification": {
+    "method": "v0.12.0 (candidate) point re-run twice from the same commit (33eb2c3), compared row-by-row (molecule, arm) excluding elapsed_ms",
+    "rows_compared": 3181,
+    "rows_identical": 3173,
+    "rows_differing": 8,
+    "differing_rows_are_all_known_timeout_boundary_molecules": true,
+    "differing_rows": [
+      {
+        "molecule": "atorvastatin_fragment",
+        "arm": "chematic_pipeline_v2_mmff94_strict",
+        "run1_status": "timeout",
+        "run2_status": "success"
+      },
+      {
+        "molecule": "atorvastatin_fragment",
+        "arm": "chematic_pipeline_v2_mmff94_with_uff_fallback",
+        "run1_status": "timeout",
+        "run2_status": "success"
+      },
+      {
+        "molecule": "chembl_tier_b_0114",
+        "arm": "chematic_pipeline_v2_mmff94_strict_repair",
+        "run1_status": "success",
+        "run2_status": "timeout"
+      },
+      {
+        "molecule": "chembl_tier_b_0114",
+        "arm": "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated",
+        "run1_status": "success",
+        "run2_status": "timeout"
+      },
+      {
+        "molecule": "chembl_tier_b_0114",
+        "arm": "chematic_pipeline_v2_mmff94_with_uff_fallback",
+        "run1_status": "success",
+        "run2_status": "timeout"
+      },
+      {
+        "molecule": "chembl_tier_b_0166",
+        "arm": "chematic_pipeline_v2_mmff94_strict",
+        "run1_status": "success",
+        "run2_status": "timeout"
+      },
+      {
+        "molecule": "chembl_tier_b_0166",
+        "arm": "chematic_pipeline_v2_mmff94_with_uff_fallback",
+        "run1_status": "success",
+        "run2_status": "timeout"
+      },
+      {
+        "molecule": "chembl_tier_b_0166",
+        "arm": "chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated",
+        "run1_status": "success",
+        "run2_status": "timeout"
+      }
+    ],
+    "note": "All 8 differing rows involve exactly the same 3 molecules already flagged elsewhere in this report as recurring wall-clock timeout-boundary cases (atorvastatin_fragment, chembl_tier_b_0114, chembl_tier_b_0166) -- the same molecule IDs that flipped status across the v0.11.0->pre-2B and pre-2B->v0.12.0 diffs above, and chembl_tier_b_0166 specifically was already documented as a recurring ~20s-boundary case in Priority 2B's own measurement. 3173/3181 rows (99.75%) are byte-identical excluding elapsed_ms. Not claimed as fully deterministic -- these 3 molecules' pass/fail is wall-clock-sensitive in this environment, consistent with (not contradicting) every other measurement in this report."
+  }
+}
