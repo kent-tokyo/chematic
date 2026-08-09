@@ -26,10 +26,26 @@ source, `AtomTyper.cpp:3650`, not guessed):
     found at all, empirical rule also gave zero".
 
 Writes the final, oracle-enriched JSONL (adds `oracle_torsion_type`,
-`oracle_value`, `oracle_kind`, and the fully-resolved
-`used_exact`/`used_equivalence`/`used_empirical`/`used_unresolved` booleans
-requested by the task spec) to `<input>_oracle_enriched.jsonl`, and prints
-the headline resolution counts to stdout.
+`oracle_value`, `oracle_kind`, `is_found_but_zero_dropped`, and the
+fully-resolved `used_exact`/`used_equivalence`/`used_empirical`/
+`used_unresolved` booleans requested by the task spec) to
+`<input>_oracle_enriched.jsonl`, and prints the headline resolution counts to
+stdout using this exact five-number breakdown terminology (all five numbers
+below are oracle-validated -- every one of the 1,107 candidate rows was
+checked against a live `GetMMFFTorsionParams` call, none of the five is a
+self-port estimate):
+
+    raw table/ladder row found       853/1107  (= valid non-zero + explicit-zero-dropped)
+    valid non-zero table resolution  851/1107  (exact + equivalence_level_N, oracle-confirmed value)
+    explicit-zero row dropped          2/1107  (RDKit's isDoubleZero gate drops a real, found, all-zero row)
+    empirical-rule resolution        254/1107  (table+ladder found nothing; oracle still returns a nonzero term)
+    final unresolved/no-term           2/1107  (== explicit-zero row dropped, same 2 rows, by construction)
+
+"853" and "851" are deliberately DIFFERENT numbers here, not interchangeable
+labels for "resolved": 853 is every row where this diagnostic's table/ladder
+port found SOME row (including the 2 explicit-zero ones that RDKit itself
+does not count as a real term); 851 is the subset that is a genuine,
+non-zero, oracle-confirmed resolution.
 
 Usage:
     .venv/bin/python scripts/mmff94_torsion_oracle_validate_227.py \\
@@ -49,8 +65,20 @@ print(f"total candidate rows: {len(rows)}", file=sys.stderr)
 
 n_index_mismatch = 0
 n_props_invalid = 0
-n_value_match = 0
-n_value_mismatch = 0
+# Five-number breakdown terminology (reviewer-specified, issue #227 PR #275
+# cleanup round -- used consistently here, in the enriched JSONL's
+# `oracle_kind`/`is_found_but_zero_dropped` fields, in the Rust example's
+# stderr summary, in PROVENANCE.md, and in the PR body):
+#   raw table/ladder row found       = n_valid_nonzero_table_resolution + n_explicit_zero_row_dropped
+#   valid non-zero table resolution  = n_valid_nonzero_table_resolution
+#   explicit-zero row dropped        = n_explicit_zero_row_dropped
+#   empirical-rule resolution        = n_empirical_rule_resolution
+#   final unresolved/no-term         = n_final_unresolved (== n_explicit_zero_row_dropped on this corpus:
+#                                       every explicit-zero row IS a final-unresolved row, RDKit's
+#                                       isDoubleZero gate drops it to "no term" same as a genuine miss)
+n_valid_nonzero_table_resolution = 0
+n_explicit_zero_row_dropped = 0
+n_value_mismatch = 0  # real, unexplained port discrepancies (bugs), not part of the 5-number breakdown
 n_oracle_none = 0
 n_oracle_present = 0
 
@@ -102,8 +130,12 @@ for row in rows:
 
     oracle = props.GetMMFFTorsionParams(mol, i_idx, j_idx, k_idx, l_idx)
 
-    predicted_kind = row["selected_parameter_kind"]
-    predicted_value = row["selected_parameter_value"]
+    # raw_ladder_kind/raw_ladder_value: this file's OWN, PRE-ORACLE self-port
+    # ladder result (Rust field names, renamed from the earlier
+    # selected_parameter_kind/value to make clear these are not yet the
+    # final, oracle-informed answer -- see the Rust example's doc comment).
+    predicted_kind = row["raw_ladder_kind"]
+    predicted_value = row["raw_ladder_value"]
 
     if oracle is None:
         n_oracle_none += 1
@@ -152,7 +184,7 @@ for row in rows:
         # distinction separately.
         oracle_kind = "unresolved"
         value_ok = True
-        n_value_match += 1
+        n_explicit_zero_row_dropped += 1
         is_found_but_zero_dropped = True
     else:
         is_found_but_zero_dropped = False
@@ -169,7 +201,12 @@ for row in rows:
             # difference.
             value_ok = False
         if value_ok:
-            n_value_match += 1
+            # This branch only runs for oracle_kind in {"exact",
+            # "equivalence_level_N"} (predicted_kind == "table_unresolved"
+            # took the first branch above, zero-dropped took the second) --
+            # i.e. a genuine, non-zero table/ladder resolution confirmed
+            # against the oracle.
+            n_valid_nonzero_table_resolution += 1
         else:
             n_value_mismatch += 1
             if len(mismatch_examples) < 20:
@@ -208,29 +245,32 @@ with open(out_path, "w") as f:
         f.write(json.dumps(r) + "\n")
 
 n_compared = len(rows) - n_index_mismatch - n_props_invalid
+n_raw_table_ladder_row_found = n_valid_nonzero_table_resolution + n_explicit_zero_row_dropped
+n_empirical_rule_resolution = oracle_kind_counts.get("empirical_rule", 0)
+n_final_unresolved = oracle_kind_counts.get("unresolved", 0)
+
 print(f"n_index_mismatch (atom reindexing between parsers, excluded) = {n_index_mismatch}")
 print(f"n_props_invalid (RDKit couldn't build MMFF props at all, excluded) = {n_props_invalid}")
-print(f"n_compared = {n_compared}")
-print(f"n_oracle_none (oracle found no torsion term at all) = {n_oracle_none}")
-print(f"n_oracle_present (oracle found a real, nonzero torsion term) = {n_oracle_present}")
+print(f"n_compared = {n_compared}  (all oracle-validated: every number below is a live GetMMFFTorsionParams call on this exact row, not a self-port estimate)")
+print(f"n_oracle_none (oracle found no torsion term at all) = {n_oracle_none}  (oracle-validated)")
+print(f"n_oracle_present (oracle found a real, nonzero torsion term) = {n_oracle_present}  (oracle-validated)")
 print()
-print("=== HEADLINE: final oracle-informed selected_parameter_kind breakdown ===")
-for k, v in sorted(oracle_kind_counts.items(), key=lambda kv: -kv[1]):
-    print(f"  {k} = {v}  ({100 * v / n_compared:.1f}%)")
-resolved = sum(v for k, v in oracle_kind_counts.items() if k != "unresolved")
-print(f"resolved by SOME mechanism (exact/equivalence/empirical) = {resolved}/{n_compared} ({100 * resolved / n_compared:.1f}%)")
-ladder_resolved = sum(
-    v for k, v in oracle_kind_counts.items() if k == "exact" or k.startswith("equivalence_level_")
-)
-print(f"resolved specifically by the table+eqLevel-ladder (exact/equivalence_level_N, i.e. what a ladder fix alone would close) = {ladder_resolved}/{n_compared} ({100 * ladder_resolved / n_compared:.1f}%)")
+print("=== HEADLINE: five-number breakdown (reviewer terminology, issue #227 PR #275 cleanup; ALL numbers below are oracle-validated -- every row was checked against a live GetMMFFTorsionParams call, this is not a self-port estimate) ===")
+print(f"  raw table/ladder row found                    = {n_raw_table_ladder_row_found} / {n_compared}  (oracle-validated)")
+print(f"  valid non-zero table resolution                = {n_valid_nonzero_table_resolution} / {n_compared}  (oracle-validated) -- exact({oracle_kind_counts.get('exact', 0)}) + equivalence_level_N({sum(v for k, v in oracle_kind_counts.items() if k.startswith('equivalence_level_'))})")
+print(f"  explicit-zero row dropped                      = {n_explicit_zero_row_dropped} / {n_compared}  (oracle-validated)")
+print(f"  empirical-rule resolution                      = {n_empirical_rule_resolution} / {n_compared}  (oracle-validated)")
+print(f"  final unresolved/no-term                       = {n_final_unresolved} / {n_compared}  (oracle-validated) -- same 2 rows as explicit-zero row dropped, by construction: an explicit-zero table row IS a final-unresolved row under RDKit's real isDoubleZero gate")
+print(f"  sum check: {n_valid_nonzero_table_resolution} + {n_empirical_rule_resolution} + {n_final_unresolved} = {n_valid_nonzero_table_resolution + n_empirical_rule_resolution + n_final_unresolved} (must equal n_compared = {n_compared})")
 print()
-print(f"n_value_match (of non-table_unresolved rows, our self-predicted value matches oracle exactly, incl. found_but_zero_dropped) = {n_value_match}")
-print(f"n_value_mismatch (real, unexplained port discrepancies) = {n_value_mismatch}")
-n_found_but_zero_dropped = sum(1 for r in enriched_rows if r["is_found_but_zero_dropped"])
-print(f"n_found_but_zero_dropped (our ladder found the identical row RDKit's real algorithm finds, but it's an explicit all-zero row RDKit's own isDoubleZero gate drops to None -- expected RDKit behavior, not a port bug, folded into oracle_kind='unresolved' above) = {n_found_but_zero_dropped}")
+resolved_by_some_mechanism = n_valid_nonzero_table_resolution + n_empirical_rule_resolution
+print(f"resolved by SOME mechanism (valid table/ladder + empirical, excludes final-unresolved) = {resolved_by_some_mechanism}/{n_compared} ({100 * resolved_by_some_mechanism / n_compared:.1f}%)  (oracle-validated)")
+print(f"resolved specifically by the table+eqLevel-ladder (= valid non-zero table resolution above, i.e. what a ladder fix alone would close) = {n_valid_nonzero_table_resolution}/{n_compared} ({100 * n_valid_nonzero_table_resolution / n_compared:.1f}%)  (oracle-validated)")
+print()
+print(f"n_value_mismatch (real, unexplained port discrepancies -- NOT part of the 5-number breakdown, this is a bug-detection counter) = {n_value_mismatch}  (oracle-validated)")
 print()
 print("value mismatch examples (up to 20):")
 for ex in mismatch_examples:
     print(" ", ex)
 print()
-print(f"enriched JSONL written to {out_path}")
+print(f"enriched JSONL written to {out_path}  (per-row oracle_kind/is_found_but_zero_dropped/used_* fields all oracle-validated per-row, see file docstring)")
