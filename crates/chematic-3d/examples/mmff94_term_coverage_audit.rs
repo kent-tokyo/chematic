@@ -6,13 +6,16 @@
 //! stretch-bend term, dumps a rich per-term JSONL row: atom-level chemistry
 //! context (element, aromaticity, formal charge, ring membership, smallest
 //! ring size), the exact classification code chematic-ff computed
-//! (bond_type/angle_type/torsion_type), the lookup key before/after
-//! chematic-ff's own internal normalization, whether the term was found via
-//! a direct hit or a documented fallback tier, and -- the key root-cause
-//! discriminator -- whether a row for the same atom-type tuple exists
-//! *anywhere* in the underlying table at a *different* classification code
-//! (a fixable classification/routing bug) or is absent at every code from
-//! 0..=8 (a genuine parameter-table data gap, not a lookup bug).
+//! (bond_type/angle_type/torsion_type/stretch_bend_type), the lookup key
+//! before/after chematic-ff's own internal normalization, whether the term
+//! was found via a direct hit or a documented fallback tier, and -- the key
+//! root-cause discriminator -- whether a row for the same atom-type tuple
+//! exists *anywhere* in the underlying table at a *different* classification
+//! code (a fixable classification/routing bug) or is absent at every code in
+//! the term kind's own code space (a genuine parameter-table data gap, not a
+//! lookup bug) -- 0..=8 for Bond/Angle/Torsion, 0..=11 for StretchBend
+//! (issue #227 Priority 2C: StretchBend's table key is the *stretch-bend
+//! type*, not the angle type — see `stretch_bend_type_for`'s doc).
 //!
 //! vdW and charge coverage are reported at molecule level (these are
 //! per-atom-type / whole-molecule lookups, not per n-tuple like the other
@@ -50,7 +53,7 @@ use chematic_core::{AtomIdx, BondOrder, Molecule};
 use chematic_ff::{
     OOP_SP2_TYPES, angle_type_for, assign_mmff94_numeric_types, bond_type_for, mmff94_angle_energy,
     mmff94_bond_energy, mmff94_charges_numeric, mmff94_oop, mmff94_stbn, mmff94_stbn_type_only,
-    mmff94_torsion_energy, mmff94_vdw_combined,
+    mmff94_torsion_energy, mmff94_vdw_combined, stretch_bend_type_for,
 };
 use chematic_perception::find_sssr;
 use serde_json::{Value, json};
@@ -153,8 +156,13 @@ fn atom_context(mol: &Molecule, rings: &[Vec<AtomIdx>], types: &[u8], a: AtomIdx
 // The key root-cause discriminator: does a row exist for this exact
 // atom-type tuple (either order) at *some* classification code the actual
 // classifier didn't produce? If yes -> classification/routing bug (fixable
-// without new parameters). If absent at every code 0..=8 -> genuine
-// parameter-table data gap (needs new, properly-sourced parameters).
+// without new parameters). If absent at every code 0..=8 (Angle/Torsion/
+// Bond) -> genuine parameter-table data gap (needs new, properly-sourced
+// parameters). StretchBend's own classification code space is 0..=11 (the
+// *stretch-bend type*, from `getMMFFStretchBendType` -- see
+// `stretch_bend_type_for`'s doc, issue #227 Priority 2C), NOT 0..=8 like the
+// other three term kinds -- Angle genuinely uses angle_type 0..=8 as its own
+// table key and is unaffected by this distinction.
 
 fn angle_present_at_any_type(ti: u8, tj: u8, tk: u8) -> Option<u8> {
     (0..=8u8).find(|&at| mmff94_angle_energy(at, ti, tj, tk).is_some())
@@ -169,7 +177,7 @@ fn bond_present_at_any_type(ti: u8, tj: u8) -> Option<u8> {
 }
 
 fn stbn_present_at_any_type(ti: u8, tj: u8, tk: u8) -> Option<u8> {
-    (0..=8u8).find(|&at| mmff94_stbn_type_only(at, ti, tj, tk).is_some())
+    (0..=11u8).find(|&sbt| mmff94_stbn_type_only(sbt, ti, tj, tk).is_some())
 }
 
 // ── Main audit -----------------------------------------------------------------
@@ -360,6 +368,19 @@ fn main() {
                         }));
                     }
 
+                    // Issue #227 Priority 2C: StretchBend's own table key is
+                    // the *stretch-bend type* (0-11, `getMMFFStretchBendType`),
+                    // not the angle type `at` used by the Angle check above --
+                    // compute it from `at` plus the two individual flanking
+                    // bond types before looking up MMFF94_STBN (matches the
+                    // now-fixed production `stretch_bend_energy` call site in
+                    // chematic-ff's mmff94_minimizer.rs exactly).
+                    let order_ab = mol.bond_between(a, b).expect("a-b angle bond").1.order;
+                    let order_cb = mol.bond_between(c, b).expect("c-b angle bond").1.order;
+                    let bt_ab = bond_type_for(ta, tb, order_ab);
+                    let bt_cb = bond_type_for(tc, tb, order_cb);
+                    let sbt = stretch_bend_type_for(at, ta, tc, bt_ab, bt_cb);
+
                     // Review-driven fix (Priority 2B follow-up): a row must
                     // be emitted whenever the TYPE-ONLY lookup misses,
                     // regardless of whether the Dfsb fallback then rescues
@@ -375,12 +396,12 @@ fn main() {
                     // routing-bug candidate" (parameter-selection parity
                     // still open, tracked separately) from "Dfsb rescued a
                     // genuine table gap" (the only case actually closed).
-                    let type_only_hit = mmff94_stbn_type_only(at, ta, tb, tc);
+                    let type_only_hit = mmff94_stbn_type_only(sbt, ta, tb, tc);
                     if type_only_hit.is_none() {
                         stbn_missing += 1;
                         let present_at = stbn_present_at_any_type(ta, tb, tc);
                         let final_hit = mmff94_stbn(
-                            at,
+                            sbt,
                             ta,
                             tb,
                             tc,
@@ -396,8 +417,9 @@ fn main() {
                             "molecule_id": cm.name, "smiles": cm.smiles, "tier": cm.tier,
                             "term_kind": "StretchBend",
                             "atoms": [ctx(a), ctx(b), ctx(c)],
-                            "classified_type": at,
-                            "lookup_key_before_normalization": [at, ta, tb, tc],
+                            "classified_type": sbt,
+                            "angle_type": at,
+                            "lookup_key_before_normalization": [sbt, ta, tb, tc],
                             "final_lookup_result": if dfsb_resolved { "resolved_via_dfsb_fallback" } else { "missing" },
                             "present_at_different_classification": present_at,
                             "dfsb_resolved": dfsb_resolved,

@@ -574,8 +574,13 @@ fn stretch_bend_energy(
         for (ii, &i) in neighbors.iter().enumerate() {
             for &k in &neighbors[ii + 1..] {
                 let at = angle_type_for(mol, rings, i, j_idx, k, types);
+                let bt_ij =
+                    bond_type_for(types[i], types[j_idx], bond_order_between(mol, i, j_idx));
+                let bt_kj =
+                    bond_type_for(types[k], types[j_idx], bond_order_between(mol, k, j_idx));
+                let sbt = stretch_bend_type_for(at, types[i], types[k], bt_ij, bt_kj);
                 if let Some((kba_ijk, kba_kji)) = mmff94_stbn(
-                    at,
+                    sbt,
                     types[i],
                     types[j_idx],
                     types[k],
@@ -585,8 +590,6 @@ fn stretch_bend_energy(
                 ) {
                     // Δr_ij
                     let r_ij = dist(coords[i], coords[j_idx]);
-                    let bt_ij =
-                        bond_type_for(types[i], types[j_idx], bond_order_between(mol, i, j_idx));
                     let dr_ij = if let Some(p) = mmff94_bond_energy(bt_ij, types[i], types[j_idx]) {
                         r_ij - p.r0
                     } else {
@@ -594,8 +597,6 @@ fn stretch_bend_energy(
                     };
                     // Δr_kj
                     let r_kj = dist(coords[k], coords[j_idx]);
-                    let bt_kj =
-                        bond_type_for(types[k], types[j_idx], bond_order_between(mol, k, j_idx));
                     let dr_kj = if let Some(p) = mmff94_bond_energy(bt_kj, types[k], types[j_idx]) {
                         r_kj - p.r0
                     } else {
@@ -993,8 +994,21 @@ pub fn bond_type_for(ti: u8, tj: u8, order: BondOrder) -> u8 {
 /// | ring   | bt_sum=0 | bt_sum=1 | bt_sum=2 |
 /// |--------|----------|----------|----------|
 /// | none   | 0        | 1        | 2        |
-/// | 3-ring | 3        | 5        | 8        |
-/// | 4-ring | 4        | 6        | 7        |
+/// | 3-ring | 3        | 5        | 6        |
+/// | 4-ring | 4        | 7        | 8        |
+///
+/// Matches RDKit's real `getMMFFAngleType` formula (`AtomTyper.cpp:2412-`
+/// `2447`, pinned commit — see `scripts/mmff94_provenance/PROVENANCE.md`'s
+/// "Stretch-bend" row, Priority 2C addendum): `angleType = ring_size; if
+/// bond_type_sum != 0 { angleType += bond_type_sum + ring_size - 2 }`. A
+/// prior version of this table gave 3-ring bt_sum=2 -> 8 and 4-ring
+/// bt_sum=1 -> 6 / bt_sum=2 -> 7, which disagreed with RDKit's formula —
+/// fixed here (issue #227). Measured LATENT on the 265-molecule Wave 1
+/// corpus (0/113 reachable ring-embedded angle triples hit these branches),
+/// but it is a real, independently-provable formula bug and a needed
+/// correct input to [`crate::mmff94_energy::mmff94_stbn`]'s stretch-bend
+/// type classification (a wrong angle_type feeds directly into
+/// `getMMFFStretchBendType`'s first argument).
 ///
 /// Confirmed empirically against the angle table: `(3, 22, 22, 22)`
 /// (all-CR3R, cyclopropane) has θ0≈60°; `(4, 6, 20, 20)` (4-ring) has
@@ -1015,17 +1029,86 @@ pub fn angle_type_for(
         return match bt_sum {
             0 => 3,
             1 => 5,
-            _ => 8,
+            _ => 6,
         };
     }
     if atoms_share_ring_of_size(rings, &[i, j, k], 4) {
         return match bt_sum {
             0 => 4,
-            1 => 6,
-            _ => 7,
+            1 => 7,
+            _ => 8,
         };
     }
     bt_sum
+}
+
+/// Determine the MMFF94 stretch-bend-type index (Halgren MMFF.V, types
+/// 0-11) for angle i-j-k.
+///
+/// Ported verbatim from RDKit's `getMMFFStretchBendType`
+/// (`AtomTyper.cpp:2480-2508`, pinned commit — see
+/// `scripts/mmff94_provenance/PROVENANCE.md`'s "Stretch-bend" row,
+/// Priority 2C addendum) and the diagnostic's own `resolve_rdkit` (issue
+/// #227, `mmff94_stbn_equivalence_diagnostic_227.rs`). Angle types 1, 5, 7
+/// each split into two distinct stretch-bend types depending on whether
+/// either flanking bond individually has MMFF bond type 1 — [`angle_type_for`]'s
+/// `bt_sum` only records the *sum*, discarding exactly the information this
+/// split needs, which is why stretch-bend cannot reuse `angle_type` directly
+/// as its own [`crate::mmff94_energy::MMFF94_STBN`] table key (issue #227
+/// root cause).
+///
+/// `ta`/`tc` are the outer atom MMFF types (i and k); `bond_type_ij`/
+/// `bond_type_jk` are the individual (unswapped) [`bond_type_for`] results
+/// for the i-j and j-k bonds. The two bond-type arguments fed into the
+/// classification match are canonicalized on `ta <= tc` — this is **not**
+/// the same swap rule as [`mmff94_stbn_type_only`](crate::mmff94_energy::mmff94_stbn_type_only)'s
+/// own i/k table-lookup canonicalization (that one additionally tie-breaks
+/// on bond type when `ta == tc`; see `AtomTyper.cpp:3598-3600`). Do not
+/// conflate the two swap rules.
+pub fn stretch_bend_type_for(
+    angle_type: u8,
+    ta: u8,
+    tc: u8,
+    bond_type_ij: u8,
+    bond_type_jk: u8,
+) -> u8 {
+    let (arg1, arg2) = if ta <= tc {
+        (
+            bond_type_ij,
+            if ta < tc { bond_type_jk } else { bond_type_ij },
+        )
+    } else {
+        (bond_type_jk, bond_type_ij)
+    };
+    match angle_type {
+        1 => {
+            if arg1 != 0 || arg1 == arg2 {
+                1
+            } else {
+                2
+            }
+        }
+        2 => 3,
+        4 => 4,
+        3 => 5,
+        5 => {
+            if arg1 != 0 || arg1 == arg2 {
+                6
+            } else {
+                7
+            }
+        }
+        6 => 8,
+        7 => {
+            if arg1 != 0 || arg1 == arg2 {
+                9
+            } else {
+                10
+            }
+        }
+        8 => 11,
+        _ => 0,
+    }
 }
 
 /// Determine the MMFF94 torsion-type index.
@@ -1067,6 +1150,7 @@ pub fn torsion_type_for(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::mmff94_energy::mmff94_stbn_type_only;
     use chematic_core::molecule::MoleculeBuilder;
     use chematic_core::{Atom, BondOrder, Element};
 
@@ -1484,6 +1568,160 @@ mod tests {
         assert_eq!(
             at, 4,
             "4-ring angle with two sp3 (bond_type 0) flanking bonds must be type 4"
+        );
+    }
+
+    // ── FF-2b: angle_type_for's corrected bt_sum=1/2 ring-offset formula
+    // (issue #227 Priority 2C) ─────────────────────────────────────────────
+    // RDKit's real `getMMFFAngleType`: 3-ring bt_sum=2 -> 6 (was wrongly 8);
+    // 4-ring bt_sum=1 -> 7 (was wrongly 6), bt_sum=2 -> 8 (was wrongly 7).
+    // Measured LATENT on the 265-molecule corpus (0/113 reachable), so these
+    // fixtures are constructed molecules, not corpus-derived.
+
+    #[test]
+    fn angle_type_for_radialene_cyclopropane_bt_sum_2_ring_angle_is_type_6_not_8() {
+        // [3]radialene (trimethylenecyclopropane): all three cyclopropane
+        // ring carbons carry an exocyclic =CH2, so every ring bond is a
+        // formal single bond between two MLTB (sp2, type 2) atoms ->
+        // bond_type 1 on both flanking bonds of any ring angle -> bt_sum=2.
+        let mol = chematic_smiles::parse("C1(=C)C(=C)C1=C").unwrap();
+        let types = assign_mmff94_numeric_types(&mol).unwrap();
+        let ring = first_ring_of_size(&mol, 3).expect("radialene core must have a 3-ring");
+        let (i, j, k) = (ring[0], ring[1], ring[2]);
+        let rings = find_sssr(&mol);
+        let bt_ij = bond_type_for(types[i], types[j], bond_order_between(&mol, i, j));
+        let bt_jk = bond_type_for(types[j], types[k], bond_order_between(&mol, j, k));
+        assert_eq!(
+            bt_ij + bt_jk,
+            2,
+            "both ring-flanking bonds must be bond_type 1"
+        );
+        let at = angle_type_for(&mol, rings.rings(), i, j, k, &types);
+        assert_eq!(
+            at, 6,
+            "3-ring angle with bt_sum=2 must be type 6 (RDKit formula), not the old wrong 8"
+        );
+    }
+
+    /// Real (molecule-adjacent, not just ring-list-adjacent) neighbors of
+    /// `j` that also belong to `ring` -- avoids treating a ring's diagonal
+    /// (non-bonded) atom pairs as flanking bonds.
+    fn ring_bonded_neighbors(mol: &Molecule, ring: &[usize], j: usize) -> Vec<usize> {
+        mol.neighbors(AtomIdx(j as u32))
+            .map(|(n, _)| n.0 as usize)
+            .filter(|n| ring.contains(n))
+            .collect()
+    }
+
+    #[test]
+    fn angle_type_for_4_ring_bt_sum_1_ring_angle_is_type_7_not_6() {
+        // Two adjacent ring carbons carry exocyclic =CH2 (MLTB), the other
+        // two are plain sp3 CH2 -- the ring angle centered on one
+        // MLTB-substituted carbon has exactly one MLTB-MLTB flanking bond
+        // (bond_type 1) and one MLTB-sp3 flanking bond (bond_type 0).
+        let mol = chematic_smiles::parse("C1(=C)C(=C)CC1").unwrap();
+        let types = assign_mmff94_numeric_types(&mol).unwrap();
+        let ring = first_ring_of_size(&mol, 4).expect("must have a 4-ring");
+        let rings = find_sssr(&mol);
+        let mut found = None;
+        for &j in &ring {
+            let ring_neighbors = ring_bonded_neighbors(&mol, &ring, j);
+            assert_eq!(
+                ring_neighbors.len(),
+                2,
+                "each 4-ring atom has exactly 2 ring neighbors"
+            );
+            let (i, k) = (ring_neighbors[0], ring_neighbors[1]);
+            if !atoms_share_ring_of_size(rings.rings(), &[i, j, k], 4) {
+                continue;
+            }
+            let bt_ij = bond_type_for(types[i], types[j], bond_order_between(&mol, i, j));
+            let bt_jk = bond_type_for(types[j], types[k], bond_order_between(&mol, j, k));
+            if bt_ij + bt_jk == 1 {
+                found = Some((i, j, k));
+                break;
+            }
+        }
+        let (i, j, k) = found.expect("must find a bt_sum=1 ring angle in this fixture");
+        let at = angle_type_for(&mol, rings.rings(), i, j, k, &types);
+        assert_eq!(
+            at, 7,
+            "4-ring angle with bt_sum=1 must be type 7 (RDKit formula), not the old wrong 6"
+        );
+    }
+
+    #[test]
+    fn angle_type_for_4_ring_bt_sum_2_ring_angle_is_type_8_not_7() {
+        // Three consecutive ring carbons all carry exocyclic =CH2 (MLTB);
+        // the angle centered on the middle one has both flanking ring bonds
+        // MLTB-MLTB (bond_type 1 each) -> bt_sum=2.
+        let mol = chematic_smiles::parse("C1(=C)C(=C)C(=C)C1").unwrap();
+        let types = assign_mmff94_numeric_types(&mol).unwrap();
+        let ring = first_ring_of_size(&mol, 4).expect("must have a 4-ring");
+        let rings = find_sssr(&mol);
+        let mut found = None;
+        for &j in &ring {
+            let ring_neighbors = ring_bonded_neighbors(&mol, &ring, j);
+            assert_eq!(
+                ring_neighbors.len(),
+                2,
+                "each 4-ring atom has exactly 2 ring neighbors"
+            );
+            let (i, k) = (ring_neighbors[0], ring_neighbors[1]);
+            if !atoms_share_ring_of_size(rings.rings(), &[i, j, k], 4) {
+                continue;
+            }
+            let bt_ij = bond_type_for(types[i], types[j], bond_order_between(&mol, i, j));
+            let bt_jk = bond_type_for(types[j], types[k], bond_order_between(&mol, j, k));
+            if bt_ij + bt_jk == 2 {
+                found = Some((i, j, k));
+                break;
+            }
+        }
+        let (i, j, k) = found.expect("must find a bt_sum=2 ring angle in this fixture");
+        let at = angle_type_for(&mol, rings.rings(), i, j, k, &types);
+        assert_eq!(
+            at, 8,
+            "4-ring angle with bt_sum=2 must be type 8 (RDKit formula), not the old wrong 7"
+        );
+    }
+
+    // ── FF-3: stretch_bend_type_for (issue #227 Priority 2C) ────────────────
+    // Reproduces the diagnostic's own self-consistency proof
+    // (`mmff94_stbn_equivalence_diagnostic_227.rs`'s top doc comment,
+    // ~lines 38-56): `MMFF94_STBN`'s frozen data has exactly one row keyed
+    // 5 -- an all-CR3R (type 22, cyclopropane ring carbon) triple -- and its
+    // 11 key-4 rows are all CR4R (type 20) triples. A 3-ring/bt_sum=0 angle
+    // is angle_type 3, never 5 under `angle_type_for`'s own table, so if the
+    // STBN key column really were `angle_type`, the key-5 row would be
+    // unreachable garbage. `getMMFFStretchBendType` resolves this: angle
+    // type 3 -> stretch-bend type 5 (not 3), and angle type 4 -> stretch-
+    // bend type 4 (the one case where the numeral is unchanged).
+
+    #[test]
+    fn stretch_bend_type_for_cyclopropane_all_cr3r_is_type_5_not_3() {
+        assert_eq!(
+            stretch_bend_type_for(3, 22, 22, 0, 0),
+            5,
+            "angle_type 3 (3-ring, bt_sum=0) must map to stretch-bend type 5"
+        );
+        // End-to-end: the resulting key 5 must actually resolve the real
+        // MMFF94_STBN row for the CR3R triple -- confirming the column
+        // really is stretch_bend_type, not angle_type.
+        let sbt = stretch_bend_type_for(3, 22, 22, 0, 0);
+        assert_eq!(
+            mmff94_stbn_type_only(sbt, 22, 22, 22),
+            Some((0.0, 0.0)),
+            "stretch-bend type 5 must resolve the (5,22,22,22,0.0,0.0) MMFF94_STBN row"
+        );
+    }
+
+    #[test]
+    fn stretch_bend_type_for_cr4r_4_ring_is_type_4() {
+        assert_eq!(
+            stretch_bend_type_for(4, 20, 20, 0, 0),
+            4,
+            "angle_type 4 (4-ring, bt_sum=0) must map to stretch-bend type 4 (unchanged numeral)"
         );
     }
 

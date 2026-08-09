@@ -9,6 +9,103 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — `chematic-ff` (MMFF94 stretch-bend classification-key bug, issue #227 Priority 2C, **breaking**)
+
+- **Root cause (the fix the user asked for): stretch-bend used the *angle
+  type* (0-8) directly as its own `MMFF94_STBN` lookup key.** RDKit computes
+  a distinct, finer-grained "stretch-bend type" (0-11) via
+  `getMMFFStretchBendType(angleType, bondType1, bondType2)`
+  (`AtomTyper.cpp:2480-2508`, pinned commit — see
+  `scripts/mmff94_provenance/PROVENANCE.md`'s "Stretch-bend" row) and uses
+  THAT as the table key instead — `MMFF94_STBN`'s own frozen data is keyed
+  by stretch-bend type, not angle type (self-consistency proof: the one
+  key-5 row is an all-CR3R triple, structurally unreachable as an angle type
+  under `angle_type_for`'s own table). A new `pub` `stretch_bend_type_for`
+  (`crates/chematic-ff/src/mmff94_minimizer.rs`) computes the correct key,
+  ported verbatim from the diagnostic's `getMMFFStretchBendType`/arg-
+  canonicalization port (`mmff94_stbn_equivalence_diagnostic_227.rs`,
+  already merged, diagnostic-only, untouched by this fix).
+  `stretch_bend_energy` (`mmff94_minimizer.rs`) and `chematic-3d`'s
+  `compute_mmff94_coverage` (`minimize.rs`) now compute this key before
+  calling `mmff94_stbn`/`mmff94_stbn_type_only`, instead of passing the
+  angle type straight through.
+  - Measured on the 265-molecule Wave 1 corpus, cross-validated two
+    independent ways (a live RDKit oracle re-run and a direct production-
+    code cross-check against the diagnostic's frozen per-row predictions,
+    zero mismatches either way): of the 427 StretchBend
+    `routing_bug_candidate` instances (a real, correctly-typed parameter
+    existed at a *different* classification code, masked behind RDKit's
+    generic Dfsb periodic-row default), **220 moved to the correct,
+    specific `MMFF94_STBN` parameter** (the headline result — real
+    parameter-selection parity, not just a coverage-count change, since
+    coverage was already 100% via Priority 2B's Dfsb port), **27 now
+    correctly contribute ZERO stretch-bend energy** (a real energy-level
+    fix: chematic previously injected a nonzero generic Dfsb value here;
+    `mmff94_stbn_type_only` now finds the real `(0.0, 0.0)` row directly and
+    returns `Some((0.0, 0.0))` — numerically equivalent to RDKit's own
+    `isDoubleZero`-gated drop, but not identical at the reporting layer:
+    RDKit's API returns `None` for these, so `Mmff94CoverageReport`'s
+    stretch-bend *coverage* counting now treats them as resolved hits where
+    RDKit would count them as absent — a coverage-accounting nuance, not an
+    energy discrepancy, left as-is since it doesn't affect any energy or
+    minimizer output), **8 correctly remain on the generic Dfsb fallback**
+    (RDKit's own real algorithm also falls through here — already
+    numerically right, now for the right reason), and **172 remain
+    unresolved for a separate, out-of-scope reason** (chematic's SMILES
+    aromaticity perception disagreeing with RDKit's sanitizer on certain
+    lowercase-aromatic ring inputs, already documented in the diagnostic —
+    not fixable by a classification-key fix alone). The
+    `routing_bug_candidate` *count* itself moves 427 → 180 (only the fully-
+    resolved 220+27 stop appearing as "missing"; the remaining 8+172 still
+    do, now correctly keyed by stretch-bend type); `table_gap` (1,680,
+    genuine absence at every classification code) is untouched, as expected
+    — this fix corrects routing, not data gaps.
+  - The 220/27/8 split was verified by a direct per-row join (not just
+    matching aggregate counts): zero of the 172 aromaticity-confounded rows
+    land in the 220 or 27 buckets. One coverage caveat, reported honestly
+    rather than silently assumed: `stretch_bend_type_for`'s `ta == tc`
+    branch (where the two outer atom types are equal, so the diagnostic's
+    ported argument-canonicalization forces `arg1 == arg2` and angle types
+    1/5/7 always take their first sub-code) is exercised 35/427 times in
+    this corpus, but never with `bond_type_ij != bond_type_jk` among those
+    35 — so the asymmetric-bond-type corner of that branch is carried over
+    unvalidated from the already-merged, oracle-cross-checked diagnostic,
+    not independently re-verified by this measurement.
+- **Compounding, independently-diagnosed bug fixed in the same PR (direct
+  dependency, not scope creep): `angle_type_for`'s ring-offset formula for
+  `bt_sum=2` (3-ring) and `bt_sum∈{1,2}` (4-ring) disagreed with RDKit's
+  real `getMMFFAngleType` formula** (`AtomTyper.cpp:2412-2447`:
+  `angleType = ring_size; if bond_type_sum != 0 { angleType += bond_type_sum
+  + ring_size - 2 }`). Corrected table: 3-ring bt_sum=2 now 6 (was 8);
+  4-ring bt_sum=1 now 7 (was 6), bt_sum=2 now 8 (was 7). This feeds directly
+  into `getMMFFStretchBendType`'s first argument, so it had to be fixed
+  alongside the stretch-bend key fix to give it a correct input — but it is
+  a real, independently-provable bug in its own right (angle_type_for's own
+  interface unchanged, only its internal match arms). Measured **LATENT** on
+  this 265-molecule corpus (0/113 reachable ring-embedded angle triples hit
+  the diverging branches) — reported honestly: it does not move any corpus
+  number by itself, only the stretch-bend key fix above does.
+- **Breaking change**: `mmff94_stbn`/`mmff94_stbn_type_only`'s leading `u8`
+  parameter is now `stretch_bend_type` (RDKit's `getMMFFStretchBendType`
+  output, 0-11), **not** `angle_type` (0-8) — same `u8` shape (not a
+  compile-time break), but a silent behavioral break for any caller still
+  passing a raw angle type: it will now compute the wrong stretch-bend
+  parameter without erroring. Migration: compute the stretch-bend type via
+  the new `stretch_bend_type_for(angle_type, ta, tc, bond_type_ij,
+  bond_type_jk)` (also newly `pub`, in `mmff94_minimizer.rs`) before calling
+  either function — see `stretch_bend_energy`
+  (`crates/chematic-ff/src/mmff94_minimizer.rs`) for the reference call
+  site. `MMFF94_STBN`'s own doc comment ("Format: (angle_type, ...)") is
+  corrected to "Format: (stretch_bend_type, ...)" — it was mislabeled from
+  the start, per the diagnostic's self-consistency proof.
+- `mmff94_term_coverage_audit.rs` (`crates/chematic-3d/examples/`) updated
+  to compute and use the stretch-bend type the same way (its own
+  `present_at_different_classification` scan range widened `0..=8` →
+  `0..=11` for StretchBend specifically; `Angle`'s own `0..=8` scan is
+  unaffected — angle type genuinely is Angle's own table key).
+- Recommends a **minor** version bump (breaking Rust signature semantics),
+  consistent with v0.12.0's own precedent for `mmff94_stbn`.
+
 ## [0.12.0] — 2026-08-09
 
 Two independent fixes from the ongoing issue #227 program: a production
