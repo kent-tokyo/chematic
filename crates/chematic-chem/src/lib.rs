@@ -47,8 +47,8 @@ pub mod workflow;
 pub mod xlogp3;
 
 pub use cip::{
-    CipAssignment, CipMode, CipModeAssignment, CipModeError, CipUnresolvedReason, assign_cip,
-    assign_cip_with_mode, tetrahedral_stereo_neighbors,
+    CipAssignment, CipMode, CipModeAssignment, CipModeError, CipUnresolvedReason, EzCompleteness,
+    assign_cip, assign_cip_with_mode, ez_completeness, tetrahedral_stereo_neighbors,
 };
 pub use descriptors::{
     Bcut2D, CarbonTypes, InformationContent, RingBundle, aromatic_ring_count, autocorr_2d,
