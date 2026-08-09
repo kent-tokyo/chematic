@@ -36,6 +36,7 @@ pub mod shape_descriptors;
 pub mod spectrophores;
 pub mod stereo3d;
 pub mod stereo_constraints;
+pub mod torsion_motif;
 pub mod usr;
 pub mod xyz;
 
@@ -89,6 +90,11 @@ pub use spectrophores::{
     SpectrophoresConfig, SpectrophoresNorm, spectrophores, tanimoto_spectrophores,
 };
 pub use stereo3d::{StereoAssignment3D, assign_stereo_from_3d};
+pub use torsion_motif::{
+    TorsionEnvironment, TorsionHistogram, TorsionMotif, TorsionProfileFit, VonMisesComponent,
+    extract_torsion_motifs, fit_von_mises_mixture, motif_angles_deg, torsion_profile_distance,
+    torsion_profile_to_json,
+};
 pub use usr::{shape_screen, usr_descriptors, usr_from_dg, usr_similarity};
 pub use xyz::{XyzError, parse_xyz, write_xyz};
 

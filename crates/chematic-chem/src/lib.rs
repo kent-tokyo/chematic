@@ -63,8 +63,8 @@ pub use descriptors::{
     num_ester_bonds, num_fluorines, num_heteroatoms, num_hydrogens, num_iodines, num_nitrogens,
     num_oxygens, num_phosphorus, num_saturated_heterocycles, num_saturated_rings, num_spiro_atoms,
     num_stereocenters, num_sulfurs, num_unspecified_stereocenters, pfizer_3_75_passes, reos_passes,
-    ring_bundle, ring_count, ring_system_count, ro3_passes, rotatable_bond_count, tpsa,
-    tpsa_per_atom, usrcat, veber_passes,
+    ring_bundle, ring_count, ring_system_count, ro3_passes, rotatable_bond_atom_pairs,
+    rotatable_bond_count, tpsa, tpsa_per_atom, usrcat, veber_passes,
 };
 pub use iupac_stereo::iupac_name_stereo;
 
