@@ -84,11 +84,16 @@ pub struct SuperimposedCodingConfig {
     /// this bounds the number of bits any single feature can contribute.
     pub repetitions: u32,
     /// Number of independently-hashed bit positions set per active layer.
-    /// `1` degenerates to one-bit-per-layer (structurally identical in
-    /// shape to [`count_simulation_fold`]); values `>1` are the actual
-    /// "superimposed coding" part — each layer becomes a sparse multi-bit
-    /// codeword OR'd into the shared vector, trading more set bits for
-    /// (hoped-for) collision robustness. Swept in the benchmark.
+    /// `1` degenerates to one-bit-per-layer — provably identical to
+    /// [`count_simulation_fold`] when `repetitions` matches that function's
+    /// `max_repeats` and both use the same `seed` (see the
+    /// `superimposed_with_codeword_weight_one_equals_count_simulation_fold`
+    /// test). Values `>1` are the actual "superimposed coding" part this
+    /// spike measures, and — per the module-doc proof above — cannot ever
+    /// beat `1` on Tanimoto fidelity, only match it (collision-free) or
+    /// underperform it (any real, finite `n_bits`). Swept in the benchmark;
+    /// kept configurable so the sweep is possible, not because `>1` is ever
+    /// recommended.
     pub codeword_weight: u32,
 }
 
@@ -98,7 +103,13 @@ impl Default for SuperimposedCodingConfig {
             n_bits: 2048,
             seed: 0,
             repetitions: 4,
-            codeword_weight: 3,
+            // ponytail: 1, not >1 -- the module-doc proof plus this spike's
+            // own benchmark (crates/chematic-fp/examples/
+            // superimposed_coding_spike_benchmark.rs) both show
+            // codeword_weight>1 can only match or underperform 1, never
+            // improve on it. Defaulting to the proven-best setting so
+            // nobody cargo-cults `::default()` into the worst arm.
+            codeword_weight: 1,
         }
     }
 }
