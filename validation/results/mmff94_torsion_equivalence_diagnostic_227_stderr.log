@@ -1,0 +1,23 @@
+   Compiling chematic-3d v0.12.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.claude/worktrees/agent-ad50458ccf0b9b4c2/crates/chematic-3d)
+    Finished `release` profile [optimized] target(s) in 3.90s
+     Running `target/release/examples/mmff94_torsion_equivalence_diagnostic_227`
+eqLevel table: 95 atom types loaded
+corpus size: 265
+=== mmff94_torsion_equivalence_diagnostic_227 summary ===
+torsions_total=13530 torsions_missing=1121 routing_bug_candidate rows examined: 1107 (audit's frozen/re-verified count: 1107)
+eq_level_fallback_count (atom type not found in def table, self-fallback used) = 0
+  selected_parameter_kind[equivalence_level_3] = 430
+  selected_parameter_kind[exact] = 423
+  selected_parameter_kind[table_unresolved] = 254
+classification_mismatch_primary (rdkit_classification != computed_classification) = 1107 / 1107
+ladder_resolves_same_code (eqLevel ladder resolves using CHEMATIC's OWN classification code -- pure ladder-gap fix, no classification fix needed) = 0
+ladder_resolves_only_via_rdkit_code (unresolved at chematic's own code, but RDKit's real classification code's ladder resolves it -- needs a classification fix, not just a ladder) = 853
+table_unresolved (neither classification's ladder finds anything under RDKit's real algorithm -- falls to empirical rule / genuinely unresolved) = 254
+forced_recheck_count (RDKit's type-5-with-secondary forced-override quirk actually fired) = 0
+existing_fallback_resolves_with_corrected_code (chematic's EXISTING, UNMODIFIED mmff94_torsion_energy fallback chain -- no eqLevel ladder port involved -- fed ONLY the corrected RDKit-real classification code) = 853 / 1107
+existing_fallback_value_matches_ladder (of those, the value matches this file's full eqLevel-ladder port exactly -- confirms whether the ladder is contributing ANYTHING incremental beyond a classification-only fix on this corpus) = 853
+--- full-population sweep (ALL 13530 torsion instances, not just the 1,107 candidates) ---
+all_torsions_mismatch (rdkit_classification != computed_classification, any hit/miss status) = 10325
+all_torsions_hit_with_mismatched_code (chematic's fallback-inclusive lookup currently returns SOME value despite a classification mismatch -- invisible to mmff94_term_coverage_audit.rs, which only logs misses) = 9216
+all_torsions_hit_with_mismatched_code_different_value (of those, this file's OWN table+ladder port CONFIRMS a different value than what RDKit's real classification would select -- self-port estimate, NOT oracle-validated for this full-population sweep, only the 1,107-candidate population above was oracle-checked) = 1792
+all_torsions_hit_with_mismatched_code_undetermined (of those, this file's own ladder ALSO comes up empty -- RDKit's real answer would need the empirical rule, this diagnostic cannot determine whether chematic's current value happens to agree or not) = 0
