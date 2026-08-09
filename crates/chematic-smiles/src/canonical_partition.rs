@@ -547,7 +547,12 @@ pub(crate) fn exact_refine(graph: &CanonicalColoredGraph, mut partition: Partiti
 ///   difluoroethene, real mirror symmetry across the two `=CF` ends) came
 ///   back as 4 singleton classes before this collapse was added, 2 merged
 ///   pairs after (see `ez_bond_direction_marker_alone_does_not_split_the_class`
-///   below).
+///   below). Note `edge_color` only ever reads `bond.order` -- the
+///   separately-stashed `Molecule::bond_direction` (`bond_has_direction_info`'s
+///   doc comment: used for a ring bond next to an exocyclic stereo double
+///   bond) is not part of `EdgeColor` in either mode, so there is nothing
+///   to exclude there today; if a future change ever folds it in, it needs
+///   the same `canonical_fidelity` gate.
 ///
 /// `CanonicalColoredGraph::new_topological` therefore omits all four,
 /// using the *effective* H count (`implicit_hcount`, matching
