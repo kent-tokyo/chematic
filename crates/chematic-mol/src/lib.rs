@@ -34,6 +34,7 @@ pub mod rxn;
 pub mod sdf;
 pub mod smiles_table;
 pub mod tdt;
+pub mod xyz;
 
 // Convenient re-exports at crate root.
 pub use error::MolParseError;
@@ -76,3 +77,6 @@ pub use smiles_table::{
     SmilesWriterOptions,
 };
 pub use tdt::{TdtError, TdtReaderOptions, TdtRecordReader, TdtRecordWriter, TdtWriterOptions};
+pub use xyz::{
+    XyzAtom, XyzError, XyzFrame, XyzReader, XyzWriter, parse_xyz, parse_xyz_all, write_xyz,
+};
