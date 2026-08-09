@@ -76,7 +76,7 @@
 //! (see below), the empirical-rule/unresolved split is determined
 //! *empirically from the oracle's own returned value*, not self-computed:
 //! when this file's OWN from-scratch table+ladder port finds nothing
-//! (`selected_parameter_kind = "table_unresolved"` in the raw JSONL below)
+//! (`raw_ladder_kind = "table_unresolved"` in the raw JSONL below)
 //! but the live oracle still returns a nonzero torsion term, that is direct
 //! evidence RDKit's empirical rule produced it; if the oracle ALSO returns
 //! `None`, that is a genuine residual gap even under RDKit's complete
@@ -102,97 +102,134 @@
 //! from the pinned commit; format documented in `PROVENANCE.md`), not
 //! hand-transcribed here.
 //!
-//! **Results (live RDKit oracle `rdkit==2026.3.3`, matching the pinned commit's
-//! release tag, ALL 1,107 candidates checked, not a sample)**:
-//! - `classification_mismatch_primary = 1107/1107 (100%)`: not a single one
-//!   of the 1,107 candidates has chematic's `torsion_type_for` output
-//!   matching RDKit's real primary classification code. This is the
-//!   dominant effect, confirmed structurally above, not a coincidence of
-//!   this particular slice: a corpus-wide sweep over ALL 13,530 torsion
-//!   instances (not just the 1,107 "missing" ones) finds
-//!   `all_torsions_mismatch = 10,325/13,530 (76.3%)` -- the classification
-//!   formula disagrees on the large majority of ALL torsions in this corpus,
-//!   most of which currently still resolve to SOME value via chematic's own
-//!   crude wildcard-to-0 fallback (`all_torsions_hit_with_mismatched_code =
-//!   9,216`), of which this file's own (non-oracle-validated for this
-//!   full-population sweep -- only the 1,107-candidate population below was
-//!   oracle-checked) table+ladder port CONFIRMS `1,792` also carry a
-//!   numerically different `(V1,V2,V3)` than what RDKit's real
-//!   classification+ladder selects (0 "undetermined" -- see
-//!   `all_torsions_hit_with_mismatched_code_undetermined` in the stderr
-//!   summary) -- a silent wrong-parameter population an order of magnitude
-//!   larger than the 1,107 "missing" instances this diagnostic was scoped
-//!   to, invisible to `mmff94_term_coverage_audit.rs` entirely (it only logs
-//!   misses).
-//! - `ladder_resolves_same_code = 0`: feeding chematic's OWN (wrong)
-//!   classification code through a fully-correct eqLevel ladder resolves
-//!   **none** of the 1,107 candidates -- confirming a ladder alone, bolted
-//!   onto the existing (buggy) classification, would fix nothing.
-//! - Using RDKit's REAL classification (primary + secondary) through the
-//!   same ladder: **851/1,107 (76.9%) resolve via the table + eqLevel
-//!   ladder** (423 at the exact/own-type level, 428 at ladder stage 3),
-//!   **254/1,107 (22.9%)** require RDKit's separate Halgren empirical-rule
-//!   fallback (which chematic has no equivalent of at all -- confirmed, not
-//!   guessed, by checking the oracle still returns a nonzero term where this
-//!   file's own table+ladder port finds nothing), and **2/1,107 (0.2%)**
-//!   land on a real, explicit all-zero `MMFF94_TORSION_ENERGY` row that
-//!   RDKit's own `isDoubleZero` gate drops to "no term" (matching the
-//!   sibling PR's `found_but_zero_dropped` pattern) -- genuinely zero
-//!   contribution under RDKit's real algorithm either way, not a residual gap.
-//! - **The eqLevel ladder measures as CONTRIBUTING NOTHING INCREMENTAL on
-//!   this corpus** (checked directly, not assumed from the 76.9% figure
-//!   above, which could equally be explained by a real ladder effect): ALL
-//!   428 stage-3 hits resolve to key `(tors_type, 0, tj, tk, 0)` --
-//!   `EQ_LEVEL5` is 0 for essentially every organic atom type (verified: 0
-//!   rows in `rdkit_defaultMMFFDef.txt` have `EQ_LEVEL2 != TYPE`, so stage 0
-//!   is always a literal exact match; separately, every stage-3 hit in this
-//!   population happens to be a full double-wildcard), which is EXACTLY
-//!   chematic's own EXISTING tier-4 `search(tors_type, 0, tj, tk, 0)` probe.
-//!   Stages 1 and 2 (genuine equivalence-class substitutions, not
-//!   wildcarding) never fire once in this population (`0` hits at either
-//!   level). Decisive check: `existing_fallback_resolves_with_corrected_code
-//!   = 853/1107` and `existing_fallback_value_matches_ladder = 853` --
-//!   chematic's `mmff94_torsion_energy`, completely UNMODIFIED, fed ONLY the
-//!   corrected classification code (no eqLevel ladder port involved at all),
-//!   already resolves every single one of the 853 candidates this file's
-//!   custom ladder resolves, to the IDENTICAL value. The eqLevel ladder is
-//!   real in RDKit's source (as `PROVENANCE.md` already documented) but
-//!   **measures as latent on this corpus** -- the same "real mechanism, 0
-//!   measured incremental effect" verdict the sibling stretch-bend PR
-//!   reached for `angle_type_for`'s ring-offset bug (0/113 reachable), just
-//!   for a different mechanism.
-//! - **853/853 (100%) of the self-predicted `(V1,V2,V3)` values for
-//!   non-empirical rows match the oracle exactly** (0 unexplained
-//!   discrepancies) once the 2 zero-dropped rows are accounted for --
-//!   validating both this file's `getMMFFTorsionType` port and its eqLevel
-//!   ladder port bit-for-bit against the real library, not just directionally.
+//! **Results.** Terminology and per-number labeling below follow the
+//! reviewer-specified five-number breakdown from the PR #275 cleanup round
+//! (`853` and `851` are DELIBERATELY DIFFERENT numbers, not interchangeable
+//! synonyms for "resolved" -- see the sum check). Every number is tagged
+//! immediately after it as either **(oracle-validated)** -- checked against
+//! a live RDKit `rdkit==2026.3.3` call, matching the pinned commit's release
+//! tag, for every one of the 1,107 candidates, not a sample -- or **(self-port
+//! estimate)** -- derived only from comparing this file's own RDKit-formula
+//! port against chematic's production code or against itself, with no live
+//! oracle call backing that specific number. A single end-of-paragraph
+//! disclaimer is not used anywhere below on purpose: it reads as if the
+//! whole paragraph shares one status, which is false here.
+//!
+//! Five-number breakdown, all 1,107 candidates, all **(oracle-validated)**:
+//! - raw table/ladder row found = **853/1,107** (oracle-validated)
+//! - valid non-zero table resolution = **851/1,107** (oracle-validated) --
+//!   423 at the exact/own-type ladder stage, 428 at ladder stage 3
+//! - explicit-zero row dropped = **2/1,107** (oracle-validated) -- a real,
+//!   found `MMFF94_TORSION_ENERGY` row whose V1=V2=V3=0.0, which RDKit's own
+//!   `isDoubleZero` gate drops to "no term" (matching the sibling PR's
+//!   `found_but_zero_dropped` pattern), NOT a port bug
+//! - empirical-rule resolution = **254/1,107** (oracle-validated) -- this
+//!   file's own table+ladder port finds nothing, but the live oracle still
+//!   returns a nonzero term, direct evidence RDKit's separate Halgren
+//!   empirical rule produced it (chematic has no equivalent of that rule at
+//!   all)
+//! - final unresolved/no-term = **2/1,107** (oracle-validated) -- identical
+//!   set of rows as "explicit-zero row dropped" above, by construction: an
+//!   explicit-zero table row IS a final-unresolved row under RDKit's real
+//!   `isDoubleZero` gate
+//! - sum check: 851 + 254 + 2 = 1,107 (oracle-validated); 853 = 851 + 2
+//!   (oracle-validated) -- "853" counts every row where the table/ladder
+//!   found *some* row (including the 2 that don't count as a real RDKit
+//!   term); "851" is the genuine non-zero resolution subset
+//! - self-predicted `(V1,V2,V3)` values match the oracle exactly on
+//!   **853/853** non-empirical rows (oracle-validated, 0 unexplained
+//!   discrepancies) -- validates this file's `getMMFFTorsionType` port and
+//!   its eqLevel ladder port bit-for-bit against the real library, not just
+//!   directionally
+//!
+//! Classification-mismatch findings (mostly **self-port estimate**, labeled
+//! individually):
+//! - `classification_mismatch_primary` = **1,107/1,107 (100%)** (self-port
+//!   comparison: chematic's `torsion_type_for` vs. this file's independently
+//!   -ported `getMMFFTorsionType` -- RDKit's Python API does not expose the
+//!   internal classification code directly, so this specific number is not
+//!   itself an oracle call; it is indirectly corroborated by the 853/853
+//!   oracle-validated value-match above, since a wrong classification port
+//!   would not coincidentally reproduce 853/853 correct energies)
+//! - `all_torsions_mismatch` = **10,325/13,530 (76.3%)** (self-port
+//!   estimate, not independently oracle-validated at this scale -- a
+//!   corpus-wide sweep over ALL torsion instances, not just the 1,107
+//!   candidates, comparing chematic's classification against this file's own
+//!   port only)
+//! - `all_torsions_hit_with_mismatched_code` = **9,216** (self-port estimate,
+//!   not oracle-validated -- derived from the 10,325 figure above: torsions
+//!   where chematic's crude fallback still returns some value despite the
+//!   classification mismatch)
+//! - `all_torsions_hit_with_mismatched_code_different_value` = **1,792**
+//!   (self-port estimate, not oracle-validated -- this file's OWN table+
+//!   ladder port confirms a different value than chematic's current output,
+//!   with 0 "undetermined" cases, but neither side of this specific
+//!   comparison was checked against the live oracle) -- a silent
+//!   wrong-parameter population an order of magnitude larger than the 1,107
+//!   "missing" instances this diagnostic was scoped to, invisible to
+//!   `mmff94_term_coverage_audit.rs` entirely (it only logs misses)
+//! - `ladder_resolves_same_code` = **0/1,107** (self-port estimate --
+//!   feeding chematic's OWN classification code through this file's ladder
+//!   port resolves none of the 1,107 candidates; not an oracle call, but a
+//!   negative result within this file's own port)
+//! - `existing_fallback_resolves_with_corrected_code` = **853/1,107** and
+//!   `existing_fallback_value_matches_ladder` = **853/853** (self-port
+//!   comparison between chematic's EXISTING, unmodified
+//!   `mmff94_torsion_energy` and this file's ladder port -- not itself a
+//!   live oracle call, but TRANSITIVELY oracle-confirmed: since the ladder
+//!   port's own 853 values are independently oracle-validated above, and
+//!   chematic's existing fallback reproduces all 853 of them exactly, this
+//!   also confirms chematic's existing-fallback-plus-corrected-classification
+//!   values against the oracle for the same 853 rows)
+//!
+//! **Decisive attribution, checked directly, not assumed from the 76.9%
+//! figure alone** (which could equally have been explained by a real ladder
+//! effect): ALL 428 stage-3 hits resolve to key `(tors_type, 0, tj, tk, 0)`
+//! -- `EQ_LEVEL5` is 0 for essentially every organic atom type (verified:
+//! `awk` over the full, not head-truncated, `rdkit_defaultMMFFDef.txt` finds
+//! 0 rows where `EQ_LEVEL2 != TYPE`, so ladder stage 0 is always a literal
+//! exact match), which is EXACTLY chematic's own EXISTING tier-4
+//! `search(tors_type, 0, tj, tk, 0)` probe. Ladder stages 1 and 2 (the only
+//! genuinely NEW equivalence-class substitutions, not wildcarding) never
+//! fire once in this population. Combined with
+//! `existing_fallback_resolves_with_corrected_code`/
+//! `existing_fallback_value_matches_ladder` above: chematic's EXISTING,
+//! UNMODIFIED `mmff94_torsion_energy`, fed ONLY the corrected classification
+//! code -- no eqLevel ladder port involved at all -- already resolves every
+//! one of the 853 candidates this file's custom ladder resolves, to the
+//! IDENTICAL value. The eqLevel ladder is real in RDKit's source (as
+//! `PROVENANCE.md` already documented) but **measures as latent on this
+//! corpus** -- the same "real mechanism, 0 measured incremental effect"
+//! verdict the sibling stretch-bend PR reached for `angle_type_for`'s
+//! ring-offset bug (0/113 reachable), just for a different mechanism.
 //!
 //! **Bottom line**: the task's starting hypothesis ("a missing eqLevel
-//! ladder is torsion's real mechanism, unlike stretch-bend") is only
-//! half right, in a way that matters for production scope. The ladder
-//! mechanism DOES genuinely exist in RDKit's source (unlike stretch-bend) --
-//! but it measures as contributing ZERO cases beyond what chematic's
-//! existing wildcard-to-0 fallback already reaches, once fed a correct
-//! classification code. The classification-formula bug (chematic's
-//! atom-type-membership-based `(MLTB(tj),MLTB(tk))` rule vs. RDKit's real
-//! j-k-bond-type-based `bondTypeJK` rule) is the ENTIRE fixable story for
-//! 851/1,107 (76.9%) of this population, and a distinct, much LARGER,
-//! corpus-wide bug on its own (76.3% of ALL 13,530 torsions, not just these
-//! 1,107). Recommendation for the next (production) step, narrower than
-//! originally hypothesized: (1) port `getMMFFTorsionType` faithfully into
-//! `torsion_type_for` -- a classification-only fix, no lookup/fallback-chain
-//! changes needed at all, closes 851/1,107 (76.9%) of this diagnostic's
-//! population using chematic's EXISTING `mmff94_torsion_energy` unmodified,
-//! plus an unmeasured (self-port-estimated at up to 1,792, not yet
-//! oracle-validated) share of the larger 9,216-instance silent-wrong-value
-//! population found by the full-corpus sweep; (2) do NOT additionally build
-//! an eqLevel ladder as part of this fix -- it is real in RDKit but measured
-//! as contributing nothing incremental here; revisit only if a future,
-//! larger, or differently-shaped corpus exercises stages 1/2 (never
-//! observed on this one); (3) separately scope Halgren's empirical rule as
-//! its own, larger follow-up (closes the remaining 254/1,107 = 22.9%, a
-//! real, non-trivial mechanism with no existing chematic-ff equivalent at
-//! all -- do not fold it into (1)'s estimate).
+//! ladder is torsion's real mechanism, unlike stretch-bend") is only half
+//! right, in a way that matters for production scope. The ladder mechanism
+//! DOES genuinely exist in RDKit's source (unlike stretch-bend) -- but it
+//! measures as contributing ZERO cases beyond what chematic's existing
+//! wildcard-to-0 fallback already reaches, once fed a correct classification
+//! code. The classification-formula bug (chematic's atom-type-membership
+//! -based `(MLTB(tj),MLTB(tk))` rule vs. RDKit's real j-k-bond-type-based
+//! `bondTypeJK` rule) is the ENTIRE fixable story for 851/1,107 (76.9%,
+//! oracle-validated) of this population, and a distinct, much LARGER,
+//! corpus-wide bug on its own (76.3% of ALL 13,530 torsions, self-port
+//! estimate, not just these 1,107). Recommendation for the next (production)
+//! step, narrower than originally hypothesized: (1) port `getMMFFTorsionType`
+//! faithfully into `torsion_type_for` -- a classification-only fix, no
+//! lookup/fallback-chain changes needed at all, closes 851/1,107 (76.9%,
+//! oracle-validated) of this diagnostic's population using chematic's
+//! EXISTING `mmff94_torsion_energy` unmodified, plus an unmeasured
+//! (self-port estimate, up to 1,792, not oracle-validated at that scale)
+//! share of the larger 9,216-instance (self-port estimate) silent-wrong
+//! -value population found by the full-corpus sweep; (2) do NOT additionally
+//! build an eqLevel ladder as part of this fix -- it is real in RDKit but
+//! measured as contributing nothing incremental here; revisit only if a
+//! future, larger, or differently-shaped corpus exercises ladder stages 1/2
+//! (never observed on this one); (3) separately scope Halgren's empirical
+//! rule as its own, larger follow-up (closes the remaining 254/1,107 =
+//! 22.9%, oracle-validated, a real, non-trivial mechanism with no existing
+//! chematic-ff equivalent at all -- do not fold it into (1)'s estimate).
 //!
 //! Run:
 //! ```text
@@ -749,9 +786,22 @@ fn main() {
                             "key": res_same_code.key,
                             "value": res_same_code.value,
                         },
-                        "selected_parameter_kind": res_rdkit_code.kind,
-                        "selected_parameter_key": res_rdkit_code.key,
-                        "selected_parameter_value": res_rdkit_code.value,
+                        // "raw_" prefix: this file's OWN self-port ladder
+                        // result, BEFORE the oracle-informed relabeling
+                        // scripts/mmff94_torsion_oracle_validate_227.py does
+                        // (which splits "raw_ladder_kind == exact/
+                        // equivalence_level_N" into the oracle-validated
+                        // "valid non-zero table resolution" (851) vs.
+                        // "explicit-zero row dropped" (2) buckets, and
+                        // relabels "table_unresolved" into "empirical_rule"
+                        // (254) vs. "unresolved" (0) -- see that script's own
+                        // docstring for the full five-number breakdown this
+                        // field feeds into. NOT itself "how many resolved":
+                        // that question can only be answered after the
+                        // oracle enrichment step.
+                        "raw_ladder_kind": res_rdkit_code.kind,
+                        "raw_ladder_key": res_rdkit_code.key,
+                        "raw_ladder_value": res_rdkit_code.value,
                         "forced_recheck_applied": res_rdkit_code.forced_recheck_applied,
                         "used_exact": used_exact,
                         "used_equivalence": used_equivalence,
@@ -780,44 +830,47 @@ fn main() {
     eprintln!(
         "eq_level_fallback_count (atom type not found in def table, self-fallback used) = {eq_level_fallback_count}"
     );
+    eprintln!(
+        "--- raw_ladder_kind counts (THIS FILE'S OWN, PRE-ORACLE self-port ladder result -- NOT the final five-number breakdown; run scripts/mmff94_torsion_oracle_validate_227.py for that, it splits raw_ladder_kind's exact/equivalence_level_N bucket into oracle-validated 'valid non-zero table resolution' (851) vs 'explicit-zero row dropped' (2), and table_unresolved into 'empirical-rule resolution' (254) vs 'final unresolved/no-term' (0)) ---"
+    );
     for (k, v) in &kind_counts {
-        eprintln!("  selected_parameter_kind[{k}] = {v}");
+        eprintln!("  raw_ladder_kind[{k}] = {v}  (self-port, pre-oracle)");
     }
     eprintln!(
-        "classification_mismatch_primary (rdkit_classification != computed_classification) = {classification_mismatch_primary} / {total}"
+        "classification_mismatch_primary (rdkit_classification != computed_classification) = {classification_mismatch_primary} / {total}  (self-port comparison, not itself an oracle call -- see the file doc comment for why this is indirectly corroborated by the oracle-validated value-match)"
     );
     eprintln!(
-        "ladder_resolves_same_code (eqLevel ladder resolves using CHEMATIC's OWN classification code -- pure ladder-gap fix, no classification fix needed) = {ladder_resolves_same_code}"
+        "ladder_resolves_same_code (eqLevel ladder resolves using CHEMATIC's OWN classification code -- pure ladder-gap fix, no classification fix needed) = {ladder_resolves_same_code}  (self-port estimate, not oracle-validated)"
     );
     eprintln!(
-        "ladder_resolves_only_via_rdkit_code (unresolved at chematic's own code, but RDKit's real classification code's ladder resolves it -- needs a classification fix, not just a ladder) = {ladder_resolves_only_via_rdkit_code}"
+        "ladder_resolves_only_via_rdkit_code (unresolved at chematic's own code, but RDKit's real classification code's ladder resolves it -- needs a classification fix, not just a ladder) = {ladder_resolves_only_via_rdkit_code}  (self-port estimate, not oracle-validated)"
     );
     eprintln!(
-        "table_unresolved (neither classification's ladder finds anything under RDKit's real algorithm -- falls to empirical rule / genuinely unresolved) = {}",
+        "table_unresolved (neither classification's ladder finds anything under this file's own table+ladder port -- BEFORE oracle enrichment splits this into empirical-rule-resolution vs. final-unresolved) = {}  (self-port, pre-oracle)",
         kind_counts.get("table_unresolved").copied().unwrap_or(0)
     );
     eprintln!(
-        "forced_recheck_count (RDKit's type-5-with-secondary forced-override quirk actually fired) = {forced_recheck_count}"
+        "forced_recheck_count (RDKit's type-5-with-secondary forced-override quirk actually fired) = {forced_recheck_count}  (self-port estimate, not oracle-validated)"
     );
     eprintln!(
-        "existing_fallback_resolves_with_corrected_code (chematic's EXISTING, UNMODIFIED mmff94_torsion_energy fallback chain -- no eqLevel ladder port involved -- fed ONLY the corrected RDKit-real classification code) = {existing_fallback_resolves_with_corrected_code} / {total}"
+        "existing_fallback_resolves_with_corrected_code (chematic's EXISTING, UNMODIFIED mmff94_torsion_energy fallback chain -- no eqLevel ladder port involved -- fed ONLY the corrected RDKit-real classification code) = {existing_fallback_resolves_with_corrected_code} / {total}  (self-port comparison, not itself an oracle call -- but transitively oracle-confirmed, see file doc comment: the ladder port's own 853 values it matches are independently oracle-validated)"
     );
     eprintln!(
-        "existing_fallback_value_matches_ladder (of those, the value matches this file's full eqLevel-ladder port exactly -- confirms whether the ladder is contributing ANYTHING incremental beyond a classification-only fix on this corpus) = {existing_fallback_value_matches_ladder}"
+        "existing_fallback_value_matches_ladder (of those, the value matches this file's full eqLevel-ladder port exactly -- confirms whether the ladder is contributing ANYTHING incremental beyond a classification-only fix on this corpus) = {existing_fallback_value_matches_ladder}  (self-port comparison, transitively oracle-confirmed, see above)"
     );
     eprintln!(
-        "--- full-population sweep (ALL {torsions_total} torsion instances, not just the 1,107 candidates) ---"
+        "--- full-population sweep (ALL {torsions_total} torsion instances, not just the 1,107 candidates -- ALL numbers below are self-port estimates, not oracle-validated at this scale; only the 1,107-candidate population above was checked against a live oracle) ---"
     );
     eprintln!(
-        "all_torsions_mismatch (rdkit_classification != computed_classification, any hit/miss status) = {all_torsions_mismatch}"
+        "all_torsions_mismatch (rdkit_classification != computed_classification, any hit/miss status) = {all_torsions_mismatch}  (self-port estimate, not oracle-validated)"
     );
     eprintln!(
-        "all_torsions_hit_with_mismatched_code (chematic's fallback-inclusive lookup currently returns SOME value despite a classification mismatch -- invisible to mmff94_term_coverage_audit.rs, which only logs misses) = {all_torsions_hit_with_mismatched_code}"
+        "all_torsions_hit_with_mismatched_code (chematic's fallback-inclusive lookup currently returns SOME value despite a classification mismatch -- invisible to mmff94_term_coverage_audit.rs, which only logs misses) = {all_torsions_hit_with_mismatched_code}  (self-port estimate, not oracle-validated)"
     );
     eprintln!(
-        "all_torsions_hit_with_mismatched_code_different_value (of those, this file's OWN table+ladder port CONFIRMS a different value than what RDKit's real classification would select -- self-port estimate, NOT oracle-validated for this full-population sweep, only the 1,107-candidate population above was oracle-checked) = {all_torsions_hit_with_mismatched_code_different_value}"
+        "all_torsions_hit_with_mismatched_code_different_value (of those, this file's OWN table+ladder port CONFIRMS a different value than what RDKit's real classification would select) = {all_torsions_hit_with_mismatched_code_different_value}  (self-port estimate, NOT oracle-validated for this full-population sweep, only the 1,107-candidate population above was oracle-checked)"
     );
     eprintln!(
-        "all_torsions_hit_with_mismatched_code_undetermined (of those, this file's own ladder ALSO comes up empty -- RDKit's real answer would need the empirical rule, this diagnostic cannot determine whether chematic's current value happens to agree or not) = {all_torsions_hit_with_mismatched_code_undetermined}"
+        "all_torsions_hit_with_mismatched_code_undetermined (of those, this file's own ladder ALSO comes up empty -- RDKit's real answer would need the empirical rule, this diagnostic cannot determine whether chematic's current value happens to agree or not) = {all_torsions_hit_with_mismatched_code_undetermined}  (self-port estimate, not oracle-validated)"
     );
 }
