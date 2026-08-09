@@ -19,14 +19,29 @@
 //! unit test) -- the *only* structural knob this spike's design adds over
 //! the RDKit-style baseline is `codeword_weight > 1` (multiple independently
 //! hashed bits per unary count-layer instead of one). The sweep exists to
-//! show, numerically, what that knob alone buys or costs.
+//! show, numerically, what that knob alone buys or costs. See
+//! `superimposed_coding`'s module docs for a short proof that
+//! `codeword_weight` is exactly Tanimoto-neutral in the collision-free
+//! limit, so any effect visible here is collision/saturation noise, never a
+//! genuine improvement.
 //!
-//! A separate pooled section at the end of each `n_bits` block draws
-//! `overlap_frac` uniformly at random per pair (instead of 5 fixed buckets)
-//! so ground truth varies continuously across the sample -- bucketed Pearson
-//! over 80 near-identical ground-truth values per bucket is dominated by
-//! noise, not signal; Pearson only means something once truth has real
-//! spread to correlate against.
+//! Every count/count_sim/superimposed arm clamps count at `max_repeats`, so
+//! their best-case output (even with zero hash collisions) is the exact
+//! Tanimoto of *clamped* counts, not the unclamped ground truth. A
+//! `ceiling(clamp@R)` row -- `exact_count_tanimoto` on both fingerprints'
+//! counts clamped to `max_repeats`, no hashing/folding at all -- is printed
+//! alongside every table so the clamp-bias contribution to each arm's MAE
+//! can be told apart from hashing/collision noise.
+//!
+//! Two regimes are covered per `n_bits`: bucketed fixed-overlap levels (MAE
+//! only -- Pearson over 80 near-identical ground-truth values per bucket is
+//! noise-dominated) and a pooled continuous-overlap sample (`overlap_frac ~
+//! Uniform[0.05, 0.95)` per pair, meaningful Pearson). A final section
+//! re-runs the pooled comparison in a smaller, clamp-free regime
+//! (`n_features=60`, `max_count=max_repeats`) closer to real ECFP4 fill
+//! levels (~5-10% of 2048 bits for drug-like molecules, vs. ~15-45% for the
+//! `n_features=400` headline numbers) to check whether the ordering
+//! observed at high, unrealistic fill survives at realistic fill.
 //!
 //! Usage:
 //! ```text
@@ -73,8 +88,11 @@ impl Rng {
 
 /// Generate a synthetic pair of count fingerprints sharing `overlap_frac` of
 /// a `n_features`-sized universe. Shared features get independent random
-/// counts in `A` and `B`; non-shared features are split evenly between the
-/// two so both fingerprints have private, non-overlapping content too.
+/// counts in `A` and `B` (a simplification: real similar molecules would
+/// have *correlated* counts on shared features, which would push ground
+/// truth higher at high overlap than this generator does); non-shared
+/// features are split evenly between the two so both fingerprints have
+/// private, non-overlapping content too.
 fn gen_pair(
     rng: &mut Rng,
     n_features: usize,
@@ -96,6 +114,13 @@ fn gen_pair(
         }
     }
     (a, b)
+}
+
+/// Clamp every count in `fp` to `cap` -- the best-case (zero-collision)
+/// output shape of any `count_sim`/`superimposed` arm with `max_repeats ==
+/// cap`.
+fn clamp_counts(fp: &[(u64, u32)], cap: u32) -> CountFp {
+    fp.iter().map(|&(f, c)| (f, c.min(cap))).collect()
 }
 
 fn pearson(xs: &[f64], ys: &[f64]) -> f64 {
@@ -229,6 +254,54 @@ struct ArmSample {
     fill: Vec<f64>,
 }
 
+struct BatchResult {
+    exact: Vec<f64>,
+    ceiling: Vec<f64>,
+    per_arm: Vec<ArmSample>,
+}
+
+/// Run `n_pairs` synthetic pairs through every arm plus the clamp-bias
+/// ceiling. `overlap_fn` supplies `overlap_frac` per pair (constant for a
+/// fixed-overlap bucket, random for the pooled sections).
+#[allow(clippy::too_many_arguments)]
+fn run_batch(
+    seed: u64,
+    n_features: usize,
+    max_count: u32,
+    max_repeats: u32,
+    n_bits: usize,
+    n_pairs: usize,
+    arm_defs: &[Arm],
+    mut overlap_fn: impl FnMut(&mut Rng) -> f64,
+) -> BatchResult {
+    let mut rng = Rng::new(seed);
+    let mut exact = Vec::with_capacity(n_pairs);
+    let mut ceiling = Vec::with_capacity(n_pairs);
+    let mut per_arm: Vec<ArmSample> = arm_defs.iter().map(|_| ArmSample::default()).collect();
+
+    for _ in 0..n_pairs {
+        let overlap = overlap_fn(&mut rng);
+        let (a, b) = gen_pair(&mut rng, n_features, overlap, max_count);
+        exact.push(exact_count_tanimoto(&a, &b));
+        ceiling.push(exact_count_tanimoto(
+            &clamp_counts(&a, max_repeats),
+            &clamp_counts(&b, max_repeats),
+        ));
+        for (arm, sample) in arm_defs.iter().zip(per_arm.iter_mut()) {
+            let (fa, fb) = (arm.fold)(&a, &b, n_bits);
+            sample.approx.push(fa.tanimoto(&fb));
+            sample
+                .fill
+                .push((fa.popcount() as f64 + fb.popcount() as f64) / (2.0 * n_bits as f64));
+        }
+    }
+    BatchResult {
+        exact,
+        ceiling,
+        per_arm,
+    }
+}
+
 fn print_header() {
     println!(
         "{:<20} {:>10} {:>10} {:>10} {:>10}",
@@ -236,15 +309,28 @@ fn print_header() {
     );
 }
 
-fn print_row(name: &str, exact: &[f64], sample: &ArmSample) {
+fn print_row(name: &str, exact: &[f64], approx: &[f64], fill: Option<&[f64]>) {
+    let fill_str = match fill {
+        Some(f) => format!("{:>9.1}%", mean(f) * 100.0),
+        None => format!("{:>10}", "n/a"),
+    };
     println!(
-        "{:<20} {:>10} {:>10.4} {:>10.4} {:>9.1}%",
+        "{:<20} {:>10} {:>10.4} {:>10.4} {fill_str}",
         name,
         exact.len(),
-        mae(exact, &sample.approx),
-        pearson(exact, &sample.approx),
-        mean(&sample.fill) * 100.0,
+        mae(exact, approx),
+        pearson(exact, approx),
     );
+}
+
+fn print_batch(label: &str, result: &BatchResult, arm_defs: &[Arm]) {
+    println!("{label}");
+    print_header();
+    print_row("ceiling(clamp@R)", &result.exact, &result.ceiling, None);
+    for (arm, sample) in arm_defs.iter().zip(result.per_arm.iter()) {
+        print_row(arm.name, &result.exact, &sample.approx, Some(&sample.fill));
+    }
+    println!();
 }
 
 fn main() {
@@ -262,65 +348,78 @@ fn main() {
     );
     println!(
         "Primary metric is MAE (mean absolute error vs exact count-Tanimoto). Bucketed-overlap\n\
-         Pearson is included for completeness but is noise-dominated (ground truth barely varies\n\
-         within one fixed overlap level); see the pooled random-overlap section for a meaningful\n\
-         correlation figure.\n"
+         Pearson is noise-dominated (ground truth barely varies within one fixed overlap level);\n\
+         see the pooled random-overlap sections for a meaningful correlation figure. The\n\
+         ceiling(clamp@R) row isolates clamp bias (count clamped to max_repeats, zero hashing)\n\
+         from hashing/collision noise in the arms below it.\n"
     );
 
     for &n_bits in &n_bits_values {
         println!("======================== n_bits = {n_bits} ========================");
-
-        // ---- bucketed overlap levels: MAE + fill per level ----
         let arm_defs = arms(seed_base, max_repeats);
 
         for &overlap in &overlap_levels {
-            let mut rng = Rng::new(seed_base ^ overlap.to_bits() ^ (n_bits as u64));
-            let mut exact = Vec::with_capacity(n_pairs_per_level);
-            let mut per_arm: Vec<ArmSample> =
-                arm_defs.iter().map(|_| ArmSample::default()).collect();
-
-            for _ in 0..n_pairs_per_level {
-                let (a, b) = gen_pair(&mut rng, n_features, overlap, max_count);
-                exact.push(exact_count_tanimoto(&a, &b));
-                for (arm, sample) in arm_defs.iter().zip(per_arm.iter_mut()) {
-                    let (fa, fb) = (arm.fold)(&a, &b, n_bits);
-                    sample.approx.push(fa.tanimoto(&fb));
-                    sample.fill.push(
-                        (fa.popcount() as f64 + fb.popcount() as f64) / (2.0 * n_bits as f64),
-                    );
-                }
-            }
-
-            println!("--- overlap = {overlap:.2} ---");
-            print_header();
-            for (arm, sample) in arm_defs.iter().zip(per_arm.iter()) {
-                print_row(arm.name, &exact, sample);
-            }
-            println!();
+            let result = run_batch(
+                seed_base ^ overlap.to_bits() ^ (n_bits as u64),
+                n_features,
+                max_count,
+                max_repeats,
+                n_bits,
+                n_pairs_per_level,
+                &arm_defs,
+                |_| overlap,
+            );
+            print_batch(
+                &format!("--- overlap = {overlap:.2} ---"),
+                &result,
+                &arm_defs,
+            );
         }
 
-        // ---- pooled continuous-overlap section: meaningful Pearson ----
-        let mut rng = Rng::new(seed_base ^ 0xC0FFEE ^ (n_bits as u64));
-        let mut exact_pooled = Vec::with_capacity(n_pooled_pairs);
-        let mut per_arm_pooled: Vec<ArmSample> =
-            arm_defs.iter().map(|_| ArmSample::default()).collect();
-        for _ in 0..n_pooled_pairs {
-            let overlap = 0.05 + rng.next_f64() * 0.9; // uniform in [0.05, 0.95)
-            let (a, b) = gen_pair(&mut rng, n_features, overlap, max_count);
-            exact_pooled.push(exact_count_tanimoto(&a, &b));
-            for (arm, sample) in arm_defs.iter().zip(per_arm_pooled.iter_mut()) {
-                let (fa, fb) = (arm.fold)(&a, &b, n_bits);
-                sample.approx.push(fa.tanimoto(&fb));
-                sample
-                    .fill
-                    .push((fa.popcount() as f64 + fb.popcount() as f64) / (2.0 * n_bits as f64));
-            }
-        }
-        println!("--- pooled, overlap_frac ~ Uniform[0.05, 0.95) per pair, n={n_pooled_pairs} ---");
-        print_header();
-        for (arm, sample) in arm_defs.iter().zip(per_arm_pooled.iter()) {
-            print_row(arm.name, &exact_pooled, sample);
-        }
-        println!();
+        let pooled = run_batch(
+            seed_base ^ 0xC0FFEE ^ (n_bits as u64),
+            n_features,
+            max_count,
+            max_repeats,
+            n_bits,
+            n_pooled_pairs,
+            &arm_defs,
+            |rng| 0.05 + rng.next_f64() * 0.9,
+        );
+        print_batch(
+            &format!(
+                "--- pooled, overlap_frac ~ Uniform[0.05, 0.95) per pair, n={n_pooled_pairs} ---"
+            ),
+            &pooled,
+            &arm_defs,
+        );
+    }
+
+    // ---- realistic-fill, clamp-free regime ----
+    // n_features=60 puts single-fingerprint popcount in the same ballpark as
+    // real ECFP4 (tens to ~100 active features), and max_count=max_repeats
+    // means no arm clamps, so the ceiling row above should read ~0 MAE here
+    // -- isolating pure hashing/collision effects from clamp bias.
+    println!("======================== realistic-fill, clamp-free regime ========================");
+    println!("n_features=60, max_count=max_repeats={max_repeats} (no clamping), pooled overlap\n");
+    let small_n_features = 60;
+    let matched_max_count = max_repeats;
+    for &n_bits in &n_bits_values {
+        let arm_defs = arms(seed_base, max_repeats);
+        let result = run_batch(
+            seed_base ^ 0xBEEF ^ (n_bits as u64),
+            small_n_features,
+            matched_max_count,
+            max_repeats,
+            n_bits,
+            n_pooled_pairs,
+            &arm_defs,
+            |rng| 0.05 + rng.next_f64() * 0.9,
+        );
+        print_batch(
+            &format!("--- n_bits = {n_bits}, n={n_pooled_pairs} ---"),
+            &result,
+            &arm_defs,
+        );
     }
 }

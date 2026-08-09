@@ -42,6 +42,29 @@
 //! Tanimoto similarity directly on the unfolded `&[(feature_hash, count)]`
 //! pairs — the ground truth the three folding strategies are compared
 //! against in `examples/superimposed_coding_spike_benchmark.rs`.
+//!
+//! **`codeword_weight` is provably Tanimoto-neutral in the collision-free
+//! limit — it cannot help, only risk collisions.** In the limit `n_bits →
+//! ∞` (no two distinct `(feature_hash, layer, slot)` triples ever hash to
+//! the same bit), a feature `f` with `L_f` active layers contributes
+//! exactly `codeword_weight` distinct bits per layer, so
+//! `|A| = codeword_weight · Σ_f L_f^A`. Two fingerprints only ever share a
+//! bit at address `coded_bit(f, l, slot, seed, n_bits)` when *both* have
+//! layer `l` active for the same `f` (the hash is a pure function of its
+//! inputs — nothing else can land there), and when that happens all
+//! `codeword_weight` slots of that layer collide identically on both
+//! sides. So `|A ∩ B| = codeword_weight · Σ_f min(L_f^A, L_f^B)` and,
+//! via `max = a + b - min`, `|A ∪ B| = codeword_weight · Σ_f max(L_f^A,
+//! L_f^B)`. The `codeword_weight` factor cancels in the ratio:
+//! `Tanimoto = Σ_f min(L_f^A, L_f^B) / Σ_f max(L_f^A, L_f^B)`, independent
+//! of `codeword_weight`. On any *finite* `n_bits`, `codeword_weight > 1`
+//! only adds more chances for unrelated `(feature, layer, slot)` triples to
+//! collide on the same bit, which can only inflate `|A ∩ B|` and `|A ∪ B|`
+//! spuriously relative to this ideal ratio — never improve on it. The
+//! benchmark's `codeword_weight` sweep confirms this empirically: MAE rises
+//! and Pearson correlation falls monotonically as `codeword_weight`
+//! increases, tracking rising mean bit-vector fill (saturation), at every
+//! `n_bits` tested.
 
 use rustc_hash::{FxHashMap, FxHashSet};
 
