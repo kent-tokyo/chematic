@@ -122,6 +122,25 @@ pub fn is_fused_ring_system(mol: &Molecule) -> bool {
     false
 }
 
+/// Return `true` if `ring` is a macrocycle (>= 9 atoms).
+///
+/// `9` matches RDKit's own `minMacrocycleRingSize` (the ring size at which
+/// RDKit's ETKDG embedder switches to macrocycle-specific torsion
+/// sampling). This is a pure ring-size classification over the atom list
+/// returned by [`find_sssr`]/[`ring_family::find_ring_families`] — it takes
+/// no bond/force-field context and lives here so callers don't need the
+/// full `chematic-3d` dependency chain just to ask "is this ring a
+/// macrocycle?" (see issue #266).
+///
+/// Note (pre-existing, not touched by this function): `chematic-3d`
+/// independently hardcodes this same threshold twice —
+/// `rdkit_shape_descriptors::MACROCYCLE_RING_THRESHOLD` and
+/// `etkdg_knowledge::classify::MACROCYCLE_MIN`, both `9`, neither shared
+/// with this function or with each other.
+pub fn is_macrocycle(ring: &[AtomIdx]) -> bool {
+    ring.len() >= 9
+}
+
 /// Apply aromaticity to `mol` in-place (wrapper for [`apply_aromaticity`]).
 pub fn aromatize(mol: &mut Molecule) {
     *mol = apply_aromaticity(mol);
@@ -231,6 +250,46 @@ mod tests {
         assert!(
             !is_fused_ring_system(&m),
             "spiro compound shares only 1 atom, not fused"
+        );
+    }
+
+    #[test]
+    fn test_is_macrocycle_boundary() {
+        // Exact >=9 boundary: 8-membered false, 9-membered true.
+        let ring8: Vec<AtomIdx> = (0..8).map(AtomIdx).collect();
+        let ring9: Vec<AtomIdx> = (0..9).map(AtomIdx).collect();
+        assert!(
+            !is_macrocycle(&ring8),
+            "8-membered ring is not a macrocycle"
+        );
+        assert!(is_macrocycle(&ring9), "9-membered ring is a macrocycle");
+    }
+
+    #[test]
+    fn test_is_macrocycle_cyclododecane() {
+        // Cyclododecane: 12-membered ring, well above the threshold.
+        let m = mol("C1CCCCCCCCCCC1");
+        let ring_set = find_sssr(&m);
+        let rings = ring_set.rings();
+        assert_eq!(rings.len(), 1);
+        assert!(is_macrocycle(&rings[0]), "cyclododecane is a macrocycle");
+    }
+
+    #[test]
+    fn test_is_macrocycle_small_rings() {
+        // Benzene (6) and cyclohexane (6) are well under the threshold.
+        let benzene = mol("c1ccccc1");
+        let rings = find_sssr(&benzene);
+        assert!(
+            !is_macrocycle(&rings.rings()[0]),
+            "benzene is not a macrocycle"
+        );
+
+        let cyclohexane = mol("C1CCCCC1");
+        let rings = find_sssr(&cyclohexane);
+        assert!(
+            !is_macrocycle(&rings.rings()[0]),
+            "cyclohexane is not a macrocycle"
         );
     }
 
