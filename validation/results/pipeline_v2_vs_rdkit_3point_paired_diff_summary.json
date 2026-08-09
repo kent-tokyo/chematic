@@ -1415,7 +1415,7 @@
         "repair_failed": 12
       }
     },
-    "note": "before_violations constant at 64 across all 3 points as expected (input-derived, policy-independent). after_violations/repaired/repair_failed fluctuate by 1-2 -- within the known timeout-boundary jitter pattern (see known_jitter_molecules), not evidence of a repair-quality regression."
+    "note": "before_violations constant at 64 across all 3 points as expected (input-derived, policy-independent). repaired (52) and repair_failed (12) are unchanged across all three points. The +/-1 variation in after_violations (final_stereo_violations) has not been causally attributed and is not evidence of a measured repair-success-rate change."
   },
   "known_jitter_molecules": {
     "note": "same small set of borderline-slow (~15-20s) molecules flip status (typically timeout<->success/typed_failure) across multiple snapshot transitions -- consistent with wall-clock timeout-boundary sensitivity, not real regressions. First identified in Priority 2B's own measurement (chembl_tier_b_0166).",

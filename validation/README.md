@@ -113,9 +113,10 @@ effect rather than a new torsion regression. Stated as a hypothesis, not a fact.
 
 **Repair arms** (`mmff94_strict_repair`/`mmff94_with_uff_fallback_repair`):
 `stereo_before_violations` constant at 64 across all three points as expected
-(input-derived, policy-independent). `final_stereo_violations`/`stereo_repaired_count`/
-`stereo_repair_failed_count` fluctuate by only 1-2 across points -- within the same
-known timeout-jitter pattern above, not evidence of a repair-quality change.
+(input-derived, policy-independent). `stereo_repaired_count` (52) and
+`stereo_repair_failed_count` (12) are unchanged across all three points. The +/-1
+variation in `final_stereo_violations` has not been causally attributed and is not
+evidence of a measured repair-success-rate change.
 
 - **Files:** `validation/results/pipeline_v2_vs_rdkit_v0_11_0_chematic_rows.jsonl`,
   `..._pre_2b_chematic_rows.jsonl`, `..._v0_12_0_chematic_rows.jsonl` (frozen per-point
