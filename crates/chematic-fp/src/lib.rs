@@ -37,6 +37,13 @@ mod rdkit_morgan_ecfp4;
 mod rdkit_morgan_hash;
 pub mod reaction_fp;
 pub mod search;
+/// Superimposed count-fingerprint coding — a research SPIKE, not a
+/// production fingerprint. Not re-exported at the crate root (unlike the
+/// production fingerprints above); reach it via
+/// `chematic_fp::superimposed_coding::*`. See the module docs for scope,
+/// provenance, and why it is kept structurally separate from `ecfp`/
+/// `rdkit_morgan_ecfp4`.
+pub mod superimposed_coding;
 pub mod topo_path;
 
 pub use atom_pair::{atom_pair_fp, torsion_fp};
