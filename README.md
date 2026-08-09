@@ -180,7 +180,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.11.0
+# chematic v0.12.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -419,6 +419,11 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 ## Recent Development
 
+**v0.12.0** (2026-08-09): **MMFF94 stretch-bend production fix (breaking), 3D starting-geometry fix for fused/multi-ring molecules**
+- `chematic-ff`: `mmff94_stbn` now falls back to RDKit's real 29-row periodic-table-row stretch-bend defaults when the specific/generic MMFF-type table has no row — unconditional production behavior for every MMFF94 policy, not behind an opt-in flag. Missing stretch-bend instances on the 265-molecule Wave 1 corpus: 2,107 → 0. **Breaking**: `mmff94_stbn` gained 3 required `atomic_num_{i,j,k}: u8` parameters (prior type-only behavior kept as new `mmff94_stbn_type_only`); Python's raw `PipelineV2Config(...)` constructor gained a new required `gate_mmff94_stretch_bend` argument (`.safe(...)` unaffected)
+- `chematic-3d`: `dg::generate_coords` no longer produces atom-coincident or wildly-stretched starting geometry for several multi-ring topologies (issue #185/#252) — root/ring-vertex collision, ring-fusion-order mismatch, and fixed-offset ring-island anchoring were all independent bugs, not a UFF minimizer defect as issue #185 originally suspected. All 28 `MinimizationFailed` cases on the 265-molecule corpus now resolve to `Ok`, 0 regressions. Two known, separately-tracked residual limitations remain unfixed: fused-ring seam orientation (issue #255) and chain-bridged ring islands (issue #256)
+- Full details in `CHANGELOG.md`'s `[0.12.0]` section
+
 **v0.11.0** (2026-08-04): **MMFF94 O2CM typing coverage, SMIRKS/CDXML stereo correctness, 2D/3D layout fixes**
 - `chematic-ff`: closed the O2CM terminal-oxygen typing gap (issue #227 Priority 1A-3) — atom-type parity 98.82% → 99.37% on the 265-molecule Wave 1 corpus, oxygen-element parity 95.88% → 100%, strict-gate minimization success 123 → 130/265, 0 cross-element mismatches (unchanged). Issue #227 stays open
 - `chematic-rxn`: SMIRKS product chirality assignment made parity-aware — a reordered mapped template neighbor order now correctly inverts/validates the product's `@`/`@@` flag instead of copying it verbatim; inherited (non-template) chirality now fails closed to `Chirality::None` when its neighbor order or mapped topology can't be validated
@@ -509,7 +514,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.11.0)
+├── Cargo.toml                    workspace root (v0.12.0)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -562,7 +567,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.11.0},
+  version   = {0.12.0},
   year      = {2026},
 }
 ```
