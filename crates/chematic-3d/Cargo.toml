@@ -16,12 +16,12 @@ documentation = "https://docs.rs/chematic-3d"
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-chematic-core       = { path = "../chematic-core",       version = "0.11.0" }
-chematic-perception = { path = "../chematic-perception", version = "0.11.0" }
-chematic-ff         = { path = "../chematic-ff",         version = "0.11.0" }
-chematic-chem       = { path = "../chematic-chem",       version = "0.11.0" }
-chematic-fp         = { path = "../chematic-fp",         version = "0.11.0" }
-chematic-smarts     = { path = "../chematic-smarts",     version = "0.11.0" }
+chematic-core       = { path = "../chematic-core",       version = "0.12.0" }
+chematic-perception = { path = "../chematic-perception", version = "0.12.0" }
+chematic-ff         = { path = "../chematic-ff",         version = "0.12.0" }
+chematic-chem       = { path = "../chematic-chem",       version = "0.12.0" }
+chematic-fp         = { path = "../chematic-fp",         version = "0.12.0" }
+chematic-smarts     = { path = "../chematic-smarts",     version = "0.12.0" }
 
 # std::time::Instant panics on wasm32-unknown-unknown (issue #219); web-time
 # is a drop-in Instant replacement backed by Performance.now() there, and

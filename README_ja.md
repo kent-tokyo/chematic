@@ -106,7 +106,7 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.11.0
+# chematic v0.12.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-06, v0.4.22 vs RDKit 2026.03.3 --
@@ -282,6 +282,19 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 ---
 
 ## 最近の開発
+
+**v0.12.0**（2026-08-09）: **MMFF94 stretch-bend本番修正（breaking）、fused/multi-ring分子の3D初期構造修正**
+- `chematic-ff`: `mmff94_stbn`がRDKit実装の29行周期表行stretch-bendデフォルトへfallbackするように — 265分子コーパスでstretch-bend欠落2,107→0。**Breaking**: `mmff94_stbn`に`atomic_num_{i,j,k}: u8`が必須引数として追加（旧動作は`mmff94_stbn_type_only`として維持）、Python生`PipelineV2Config(...)`コンストラクタに`gate_mmff94_stretch_bend`が新規必須引数として追加（`.safe(...)`は無変更）
+- `chematic-3d`: `dg::generate_coords`がfused/multi-ring分子で原子座標衝突・結合stretchを起こさなくなった（issue #185/#252）— UFF minimizer自体のバグではなく、生成された初期構造自体の問題と判明。265分子コーパスで`MinimizationFailed` 28件全てが解消、regression 0件。fused-ring seam方向（issue #255）とchain-bridged ring island配置（issue #256）は既知の未修正課題として別issue化
+- 詳細は`CHANGELOG.md`の`[0.12.0]`セクション参照
+
+**v0.11.0**（2026-08-04）: **MMFF94 O2CM typing coverage、SMIRKS/CDXMLステレオ正当性、2D/3Dレイアウト修正**
+- `chematic-ff`: O2CM末端酸素typing gapを解消（issue #227 Priority 1A-3）— 265分子Wave 1コーパスでatom-type一致率98.82%→99.37%、strict-gate最小化成功123→130/265
+- `chematic-rxn`: SMIRKS product chirality割り当てをparity-aware化 — reorderされたmapped neighbor順序に応じて`@`/`@@`flagを正しく反転/検証
+- `chematic-mol`: CDXMLリーダーがdirectional wedgeからtetrahedral stereoを認識するように（RDKit issue #9359）
+- `chematic-depict`: 独立した(非fused)環系が2D上で同一座標に衝突しなくなった
+- `chematic-3d`: ETKDG macrocyclic amideの1-4距離boundを真のcis/trans役割で分割
+- 詳細は`CHANGELOG.md`の`[0.11.0]`セクション参照
 
 **v0.10.1**（2026-08-02）: **MMFF94数値atom typing修正（正当性ホットフィックス）**
 - `chematic-ff`: MMFF94が誤ったelementのparameter行へ衝突し、その結果の物理的に誤ったenergyを成功として返し得るバグ（issue #227「furan collision」）を修正 — 芳香族atom typerがRDKit実装の5員環/6員環alpha/beta-heteroatom分類を実装していなかったのが根本原因。pinしたRDKitソースから移植し、provenance付きnumeric-typeレジストリと、このバグの再発を構造的に不可能にするconstruction-time semantic-compatibility invariant（不整合はfail closed = `NumericTypeError`）を追加。このinvariantが同種のバグをさらに2件検出: protonated amine Nとanionic Oが互いのelementのparameter行として誤typeされていた。265分子コーパス（本番API）で測定: MMFF94最小化成功 44 → 102、pin済みRDKitオラクル比較で6693原子中cross-element型不一致 0件（91.83%完全一致）

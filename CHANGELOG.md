@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] — 2026-08-09
+
+Two independent fixes from the ongoing issue #227 program: a production
+MMFF94 stretch-bend coverage fix (**breaking**, see migration notes below)
+and a `chematic-3d` starting-geometry correctness fix for fused/multi-ring
+molecules.
+
 ### Fixed — `chematic-ff` (MMFF94 stretch-bend accuracy, issue #227 Priority 2B)
 
 - `chematic_ff::mmff94_stbn` now falls back to RDKit's own periodic-table-row
@@ -124,6 +131,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   boundary has no equivalent to "the struct literal already names every
   field," so silently defaulting an *omitted* field here doesn't compromise
   the `deny_unknown_fields` fail-closed guarantee for *unrecognized* fields.
+
+### Fixed — `chematic-3d` (unsound starting geometry for fused/multi-ring molecules, issue #185/#252)
+
+- **`dg::generate_coords`'s rule-based ring placement (`place_rings`) no
+  longer produces atom-coincident or wildly-stretched starting geometries**
+  for several distinct multi-ring topologies. Issue #185 originally blamed
+  the UFF minimizer itself (reported as spuriously "converged" on unsound
+  anthracene-class geometry); re-diagnosis found the minimizer was doing
+  its job correctly on a bad *input* — three independent bugs in
+  `generate_coords`, not the minimizer:
+  - A non-ring root atom was placed unconditionally at a fixed
+    `(x_offset, 0, 0)`, colliding with a ring vertex `place_rings`
+    independently computed at that same point; `dfs_place` also only ever
+    seeded from a single root, silently leaving any substituent on a
+    *different* ring atom at the zeroed-coordinate default (e.g. aspirin's
+    two substituents on different ring atoms).
+  - Ring-visiting order could mismatch true ring-fusion adjacency (checked
+    only shared atoms, not direct bonds between rings), silently
+    superimposing unrelated rings in some multi-ring systems connected
+    purely by bonds (e.g. terphenyl).
+  - A fusion-disconnected "new island" ring (e.g. biphenyl's second ring)
+    was anchored via an arbitrary fixed offset rather than the real bond
+    connecting it to already-placed structure, stretching that bond up to
+    ~5 Å.
+  - Verified via a new bonded-pair-length test helper
+    (`assert_bonded_pairs_sane`, catches stretched bonds that a
+    closest-pair-only distance check structurally cannot) plus new
+    regression fixtures (terphenyl, a meta-linked biaryl, a spiro positive
+    control, and a bibenzyl fixture that pins a still-open limitation, see
+    below).
+  - Measured on the 265-molecule Wave 1 corpus: all 28
+    `MinimizationFailed` cases (19 `CatastrophicBondBlowup` + 9
+    `ExcessiveResidualForce`) now resolve to `Ok`, 0 regressions,
+    confirmed deterministic (byte-identical across repeated runs).
+  - Issue #185 has been retitled and corrected to reflect this root cause
+    (kept open, not closed — the minimizer's false-convergence *reporting*
+    on unsound geometry is a real, separate concern that remains
+    unaddressed); issue #252 (the 265-corpus population this fix resolves)
+    is closed as completed.
+  - **Known, NOT fixed here, tracked separately:** a fused-ring seam
+    orientation bug for genuine ring fusions (anthracene-class, distorted
+    bonds at the fusion seam — issue #255) and a chain-bridged ring-island
+    placement gap (bibenzyl-class, `place_rings` runs entirely before any
+    chain-atom DFS walk — issue #256). Neither is part of the resolved
+    28-molecule population above (verified: none of the 28 contain a fused
+    polycyclic aromatic ring system).
 
 ## [0.11.0] — 2026-08-04
 
