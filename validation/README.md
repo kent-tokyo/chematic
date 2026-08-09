@@ -53,6 +53,87 @@ reported as a general RDKit failure.
 - **Known issue filed from this benchmark:** MMFF94 parameter coverage gap
   ([#227](https://github.com/kent-tokyo/chematic/issues/227), separate from #185/#188)
 
+#### v0.11.0 / pre-2B / v0.12.0 three-point paired comparison
+
+Same harness (`pipeline_v2_vs_rdkit_dump.rs`), run unmodified at three historical
+commits to see how chematic's own full-pipeline output changed release to release,
+independent of RDKit: `ac52800` (v0.11.0 tag's library code, verified library-identical
+to the `v0.11.0` tag via `git diff v0.11.0 ac52800 --stat -- crates/` -- only the
+example script changed, adding RepairAndVerify arms), `c42627a` (PR #248+#249 merged,
+immediately before Priority 2B's Dfsb production port), and `33eb2c3` (`v0.12.0` tag,
+current release). Each commit is checked out wholesale (in an isolated `git worktree`
++ isolated `CARGO_TARGET_DIR` each, to avoid cross-contaminating build caches), so each
+snapshot's arm matrix is whatever existed contemporaneously at that point -- newer arms
+(the four stretch-bend/complete-bonded-term-gated arms, added in PR #249) are reported
+only where they exist, not fabricated for earlier points. `scripts/pipeline_v2_vs_rdkit_oracle.py`
+and both corpus manifests are confirmed byte-identical (via `git diff`) since the
+v0.11.0 tag, so the RDKit oracle side was run once (RDKit 2026.03.3) rather than three
+times -- this comparison is chematic-vs-itself across releases, not chematic-vs-RDKit
+(see the main benchmark section above for that).
+
+**v0.11.0 -> pre-2B**: 5/2121 common rows changed status, all `timeout<->success`/
+`timeout<->typed_failure` flips on borderline-slow (~15-20s) molecules, consistent with
+wall-clock timeout-boundary jitter already documented for this same molecule class in
+Priority 2B's own measurement (`chembl_tier_b_0166` recurs here). No other movement --
+matches expectation (PR #248 measurement-only, PR #249's gate defaults `false`
+everywhere, `dg.rs` untouched in this range).
+
+**pre-2B -> v0.12.0**: 168/3181 common rows changed status. The large majority are
+`typed_failure -> success` on the four stretch-bend/complete-bonded-term-gated arms
+(expected: Priority 2B's Dfsb production port resolved stretch-bend coverage from
+2,107 missing instances to 0, see the Priority 2B changelog entry). A handful more
+`timeout`-boundary flips on the same recurring borderline-slow molecule set as above
+(`chembl_tier_b_0166`, `chembl_tier_b_0114`, `atorvastatin_fragment`).
+
+**Finding, reported prominently rather than buried: `chematic_legacy_etkdg` regressed.**
+This is the *only* arm in this benchmark that calls `dg::generate_coords` (confirmed:
+`embed_pipeline_v2`/`distance_geometry_v2` never call it -- `grep generate_coords`
+across `pipeline_v2.rs`/`distance_geometry_v2.rs` finds no hit -- so PR #253's
+issue #185/#252 fix cannot and does not affect the production pipeline through this
+benchmark). `sound` count: 265 -> 265 -> **248** across the three points -- 0 molecules
+newly sound, 17 newly unsound, introduced entirely between pre-2B and v0.12.0 (i.e. by
+PR #253). All 17 affected molecules already had high `bond_violation_rate_15pct`
+(0.57-0.91) and nonzero `gross_clash_count` at *all three* snapshots -- these were
+already marginal, messy ETKDG-refined geometries, not clean ones that broke outright.
+PR #253 changed `dg::generate_coords`'s starting geometry (by design, to fix real
+ring-placement bugs), which measurably shifted the downstream ETKDG local-refinement
+outcome for these already-borderline molecules -- net negative on this specific metric
+for this specific, non-production-path arm. Not investigated further here (would
+require per-molecule geometry inspection, out of scope for a measurement-only PR) --
+flagged as a candidate follow-up.
+
+**MMFF term coverage** (missing-instance counts, summed across all mmff94-involving
+arms present at each point): `stretch_bend_missing` 8,601 (pre-2B) -> **0** (v0.12.0),
+matching the Priority 2B Dfsb port's own already-documented effect. `torsion_missing`
+5,002 -> 5,371 (+7.4%) -- plausible but *not independently verified* explanation:
+Dfsb resolving stretch-bend let more molecules proceed further into the pipeline (past
+what used to be an early stretch-bend-driven failure) where their already-present
+torsion gaps are now reached and counted for the first time, a counting-exposure
+effect rather than a new torsion regression. Stated as a hypothesis, not a fact.
+
+**Repair arms** (`mmff94_strict_repair`/`mmff94_with_uff_fallback_repair`):
+`stereo_before_violations` constant at 64 across all three points as expected
+(input-derived, policy-independent). `stereo_repaired_count` (52) and
+`stereo_repair_failed_count` (12) are unchanged across all three points. The +/-1
+variation in `final_stereo_violations` has not been causally attributed and is not
+evidence of a measured repair-success-rate change.
+
+- **Files:** `validation/results/pipeline_v2_vs_rdkit_v0_11_0_chematic_rows.jsonl`,
+  `..._pre_2b_chematic_rows.jsonl`, `..._v0_12_0_chematic_rows.jsonl` (frozen per-point
+  snapshots, distinct from the main benchmark's current-main-only rolling files above),
+  `pipeline_v2_vs_rdkit_3point_paired_diff_summary.json` (full per-arm breakdown,
+  status-change lists, the `chematic_legacy_etkdg` finding, MMFF coverage deltas)
+- **Reproducibility:** v0.12.0 (candidate) side re-run twice. 3,173/3,181 rows
+  (99.75%) byte-identical excluding `elapsed_ms`; the 8 differing rows all involve
+  exactly the same 3 already-flagged recurring timeout-boundary molecules
+  (`atorvastatin_fragment`, `chembl_tier_b_0114`, `chembl_tier_b_0166`) -- not claimed
+  as fully deterministic, these 3 molecules' pass/fail is wall-clock-sensitive in this
+  environment, consistent with every other timing-jitter observation in this report,
+  not contradicting the byte-identical claim for the other 99.75%.
+- **Known issue filed from this benchmark:** none yet -- the `chematic_legacy_etkdg`
+  regression is reported here as measurement evidence; whether to file a tracking issue
+  is a judgment call for the maintainer
+
 ### MMFF94 strict-gate raw funnel remeasurement (issue #227, Priority 3 population)
 
 A **low-level diagnostic harness**, not the production embedding entry point: calls
