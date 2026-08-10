@@ -249,7 +249,6 @@ use std::collections::BTreeMap;
 use chematic_core::{AtomIdx, Molecule};
 use chematic_ff::mmff94_energy::MMFF94_TORSION_ENERGY;
 use chematic_ff::{assign_mmff94_numeric_types, bond_type_for, mmff94_torsion_energy};
-use chematic_perception::find_sssr;
 use serde_json::{Value, json};
 
 // ── Corpus loading (same manifests as mmff94_term_coverage_audit.rs) ────────
@@ -602,8 +601,12 @@ fn main() {
             Ok(t) => t,
             Err(_) => continue,
         };
-        let ring_set = find_sssr(&mol);
-        let rings: Vec<Vec<AtomIdx>> = ring_set.rings().to_vec();
+        // 2026-08-10 production-fix addendum: this file's own
+        // `rdkit_torsion_type`/`rdkit_ring_size_4_or_5` and production's
+        // post-fix `torsion_type_for` are both purely local (`mol`-based,
+        // not SSSR-based) for the ring override, so the SSSR ring list this
+        // loop used to thread through to the old production call site is no
+        // longer needed here.
 
         for (_, bond) in mol.bonds() {
             let (j, k) = (bond.atom1, bond.atom2);
@@ -627,14 +630,34 @@ fn main() {
 
                     // Same classification chematic-ff's production code
                     // actually computes and feeds into the torsion lookup.
+                    //
+                    // 2026-08-10 production-fix addendum: `torsion_type_for`'s
+                    // signature changed (this diagnostic's own recommended
+                    // fix landed) -- call-site args updated mechanically ONLY
+                    // (mol/ti/tl added) so this file keeps compiling. The
+                    // DIAGNOSIS TEXT ABOVE, and every number in it
+                    // (`classification_mismatch_primary = 1107/1107`,
+                    // `all_torsions_mismatch = 10,325/13,530`, etc.), is
+                    // FROZEN, pre-fix history -- reproduced from
+                    // `validation/results/mmff94_torsion_equivalence_diagnostic_227*`,
+                    // not from re-running this file. Re-running this file
+                    // post-fix now measures `tt_chematic == rdkit_primary` by
+                    // construction (production IS this file's `rdkit_torsion_type`
+                    // port now), so `classification_mismatch_primary` and
+                    // `all_torsions_mismatch` will both print ~0 -- that is
+                    // the fix working, not evidence the original bug never
+                    // existed. See the production PR for the fixed corpus's
+                    // actual before/after numbers.
                     let tt_chematic = chematic_ff::torsion_type_for(
-                        &rings,
+                        &mol,
                         i.0 as usize,
                         j.0 as usize,
                         k.0 as usize,
                         l.0 as usize,
+                        ti,
                         tj,
                         tk,
+                        tl,
                     );
 
                     // Independently-derived RDKit real classification,

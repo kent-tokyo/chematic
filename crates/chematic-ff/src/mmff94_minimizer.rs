@@ -198,7 +198,7 @@ pub fn mmff94_energy_breakdown(
     let b = bond_energy(mol, coords, &types);
     let a = angle_energy(mol, coords, &types, rings);
     let sb = stretch_bend_energy(mol, coords, &types, rings);
-    let t = torsion_energy(mol, coords, &types, rings);
+    let t = torsion_energy(mol, coords, &types);
     let o = oop_energy(mol, coords, &types);
     let v = vdw_energy(mol, coords, &types);
     let e = elec_energy(mol, coords, &charges);
@@ -546,7 +546,7 @@ fn total_energy(
     bond_energy(mol, coords, types)
         + angle_energy(mol, coords, types, rings)
         + stretch_bend_energy(mol, coords, types, rings)
-        + torsion_energy(mol, coords, types, rings)
+        + torsion_energy(mol, coords, types)
         + oop_energy(mol, coords, types)
         + vdw_energy(mol, coords, types)
         + elec_energy(mol, coords, charges)
@@ -715,12 +715,7 @@ fn angle_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8], rings: &[Vec<
 
 /// Torsion: three-term Fourier (Halgren MMFF.IV)
 /// E = (v1/2)(1+cosφ) + (v2/2)(1-cos2φ) + (v3/2)(1+cos3φ)
-fn torsion_energy(
-    mol: &Molecule,
-    coords: &[[f64; 3]],
-    types: &[u8],
-    rings: &[Vec<AtomIdx>],
-) -> f64 {
+fn torsion_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
     let mut energy = 0.0;
     for (_, bond) in mol.bonds() {
         let j = bond.atom1.0 as usize;
@@ -741,7 +736,7 @@ fn torsion_energy(
                 if l == j {
                     continue;
                 }
-                let tt = torsion_type_for(rings, i, j, k, l, types[j], types[k]);
+                let tt = torsion_type_for(mol, i, j, k, l, types[i], types[j], types[k], types[l]);
                 if let Some(p) = mmff94_torsion_energy(tt, types[i], types[j], types[k], types[l]) {
                     let phi = dihedral(coords[i], coords[j], coords[k], coords[l]);
                     energy += 0.5 * p.v1 * (1.0 + phi.cos())
@@ -1111,38 +1106,102 @@ pub fn stretch_bend_type_for(
     }
 }
 
-/// Determine the MMFF94 torsion-type index.
+/// Port of RDKit's `isTorsionInRingOfSize4or5` (`AtomTyper.cpp:403-447`,
+/// pinned commit — see `scripts/mmff94_provenance/PROVENANCE.md`'s
+/// "Torsion" row) and the diagnostic's own `rdkit_ring_size_4_or_5` (issue
+/// #227, `mmff94_torsion_equivalence_diagnostic_227.rs`). Purely LOCAL
+/// bond-adjacency, NOT SSSR-based: 4-ring iff i-l are directly bonded;
+/// 5-ring iff i and l, excluding their ring neighbours j and k
+/// respectively, share a common neighbour. Returns 0 if neither.
+fn ring_size_4_or_5(mol: &Molecule, i: AtomIdx, j: AtomIdx, k: AtomIdx, l: AtomIdx) -> u8 {
+    if mol.bond_between(i, l).is_some() {
+        return 4;
+    }
+    let nbrs_i: Vec<AtomIdx> = mol
+        .neighbors(i)
+        .map(|(n, _)| n)
+        .filter(|&n| n != j)
+        .collect();
+    let has_common = mol
+        .neighbors(l)
+        .map(|(n, _)| n)
+        .filter(|&n| n != k)
+        .any(|n| nbrs_i.contains(&n));
+    if has_common { 5 } else { 0 }
+}
+
+/// Determine the MMFF94 torsion-type index (Halgren 1996, types 0-8).
 ///
-/// Ring-embedded torsions (all four of i,j,k,l in one common SSSR ring) get
-/// dedicated types 4 (4-membered ring) / 5 (5-membered ring), checked first
-/// — using all four atoms, not just the central j-k bond, so an exocyclic
-/// substituent torsion at a ring atom (i or l outside the ring) isn't
-/// misclassified as a ring torsion. Otherwise falls back to the base
-/// classification by how many of the two central atoms are
-/// sp2/aromatic/sp ([`MLTB_TYPES`]).
+/// Ported verbatim from RDKit's `getMMFFTorsionType` (`AtomTyper.cpp:2528-`
+/// `2571`, pinned commit — see `scripts/mmff94_provenance/PROVENANCE.md`'s
+/// "Torsion" row) and the diagnostic's own `rdkit_torsion_type` (issue #227,
+/// `mmff94_torsion_equivalence_diagnostic_227.rs`).
+///
+/// The base (non-ring) code is the j-k bond's OWN [`bond_type_for`] result —
+/// NOT atom-type ([`MLTB_TYPES`]) membership, which is what a prior version
+/// of this function used and which disagreed with RDKit's real
+/// classification on 100% of the diagnostic's 1,107 routing-bug candidates
+/// and 76.3% of ALL 13,530 torsion instances in the 265-molecule corpus (a
+/// double/triple/aromatic j-k bond always gets `bond_type_jk=0` from
+/// `bond_type_for` regardless of `tj`/`tk`'s own MLTB membership — the prior
+/// atom-type-membership formula couldn't see that at all). An
+/// empirically-required override bumps the base code to 2 when
+/// `bond_type_jk==0 && order_jk==Single && (bond_type_ij==1 ||
+/// bond_type_kl==1)` — MMFF.IV page 609's simple condition fails CYGUAN01 in
+/// RDKit's own test suite; this corrected condition is RDKit's real code,
+/// not derivable from Halgren's paper alone.
+///
+/// Ring-embedded torsions get dedicated types 4 (4-ring) / 5 (5-ring),
+/// determined by [`ring_size_4_or_5`] — a purely LOCAL bond-adjacency check,
+/// NOT SSSR-based, replacing this function's prior
+/// [`atoms_share_ring_of_size`]-based check entirely (the diagnostic's whole
+/// point is that the SSSR-based check was the wrong mechanism here). The
+/// 4-ring override additionally requires i-k and j-l to NOT be directly
+/// bonded (excludes degenerate/bridged cases); the 5-ring override
+/// additionally requires at least one of the four atoms to be MMFF numeric
+/// type 1 (`ti==1 || tj==1 || tk==1 || tl==1`) — a condition the prior
+/// SSSR-based check had no equivalent of at all.
+#[allow(clippy::too_many_arguments)]
 pub fn torsion_type_for(
-    rings: &[Vec<AtomIdx>],
+    mol: &Molecule,
     i: usize,
     j: usize,
     k: usize,
     l: usize,
+    ti: u8,
     tj: u8,
     tk: u8,
+    tl: u8,
 ) -> u8 {
-    if atoms_share_ring_of_size(rings, &[i, j, k, l], 4) {
-        return 4;
+    let order_ij = bond_order_between(mol, i, j);
+    let order_jk = bond_order_between(mol, j, k);
+    let order_kl = bond_order_between(mol, k, l);
+    let bond_type_ij = bond_type_for(ti, tj, order_ij);
+    let bond_type_jk = bond_type_for(tj, tk, order_jk);
+    let bond_type_kl = bond_type_for(tk, tl, order_kl);
+
+    let mut torsion_type = bond_type_jk;
+    if bond_type_jk == 0
+        && order_jk == BondOrder::Single
+        && (bond_type_ij == 1 || bond_type_kl == 1)
+    {
+        torsion_type = 2;
     }
-    if atoms_share_ring_of_size(rings, &[i, j, k, l], 5) {
-        return 5;
+
+    let (ai, aj, ak, al) = (
+        AtomIdx(i as u32),
+        AtomIdx(j as u32),
+        AtomIdx(k as u32),
+        AtomIdx(l as u32),
+    );
+    let ring_size = ring_size_4_or_5(mol, ai, aj, ak, al);
+    if ring_size == 4 && mol.bond_between(ai, ak).is_none() && mol.bond_between(aj, al).is_none() {
+        torsion_type = 4;
+    } else if ring_size == 5 && (ti == 1 || tj == 1 || tk == 1 || tl == 1) {
+        torsion_type = 5;
     }
-    match (
-        MLTB_TYPES.binary_search(&tj).is_ok(),
-        MLTB_TYPES.binary_search(&tk).is_ok(),
-    ) {
-        (false, false) => 0,                // sp3-sp3
-        (true, false) | (false, true) => 1, // sp3-sp2
-        (true, true) => 2,                  // sp2-sp2
-    }
+
+    torsion_type
 }
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
@@ -1213,9 +1272,8 @@ mod tests {
             [3.016, 0.0, 0.0],
             [4.524, 0.0, 0.0],
         ];
-        let rings = find_sssr(&mol);
-        let e_gauche = torsion_energy(&mol, &coords_gauche, &types, rings.rings());
-        let e_anti = torsion_energy(&mol, &coords_anti, &types, rings.rings());
+        let e_gauche = torsion_energy(&mol, &coords_gauche, &types);
+        let e_anti = torsion_energy(&mol, &coords_anti, &types);
         assert!(e_gauche.is_finite());
         assert!(e_anti.is_finite());
         assert!(
@@ -1460,8 +1518,7 @@ mod tests {
         let types = assign_mmff94_numeric_types(&mol).unwrap();
         let ring = first_ring_of_size(&mol, 5).expect("cyclopentane must have a 5-ring");
         let (i, j, k, l) = (ring[0], ring[1], ring[2], ring[3]);
-        let rings = find_sssr(&mol);
-        let tt = torsion_type_for(rings.rings(), i, j, k, l, types[j], types[k]);
+        let tt = torsion_type_for(&mol, i, j, k, l, types[i], types[j], types[k], types[l]);
         assert_eq!(
             tt, 5,
             "in-ring torsion of a 5-membered ring must classify as type 5"
@@ -1474,11 +1531,133 @@ mod tests {
         let types = assign_mmff94_numeric_types(&mol).unwrap();
         let ring = first_ring_of_size(&mol, 4).expect("cyclobutane must have a 4-ring");
         let (i, j, k, l) = (ring[0], ring[1], ring[2], ring[3]);
-        let rings = find_sssr(&mol);
-        let tt = torsion_type_for(rings.rings(), i, j, k, l, types[j], types[k]);
+        let tt = torsion_type_for(&mol, i, j, k, l, types[i], types[j], types[k], types[l]);
         assert_eq!(
             tt, 4,
             "in-ring torsion of a 4-membered ring must classify as type 4"
+        );
+    }
+
+    #[test]
+    fn torsion_type_for_ring5_override_requires_a_type_1_atom() {
+        // RDKit's real 5-ring override additionally requires at least one of
+        // the four torsion atoms to be MMFF numeric type 1 (`ti==1 || tj==1
+        // || tk==1 || tl==1`) -- a condition the prior SSSR-based ring check
+        // (which this fix replaced entirely) had no equivalent of at all.
+        // Same 5-ring topology as `torsion_type_for_cyclopentane_ring_is_type_5`
+        // above (where all four real chematic-assigned types happen to be 1,
+        // so the condition is trivially satisfied there) but with the four
+        // types forced away from 1 here -- purely local ring-adjacency
+        // geometry (`ring_size_4_or_5` returning 5) must NOT be sufficient on
+        // its own.
+        let mol = chematic_smiles::parse("C1CCCC1").unwrap();
+        let ring = first_ring_of_size(&mol, 5).expect("cyclopentane must have a 5-ring");
+        let (i, j, k, l) = (ring[0], ring[1], ring[2], ring[3]);
+        let tt = torsion_type_for(&mol, i, j, k, l, 20, 20, 20, 20);
+        assert_ne!(
+            tt, 5,
+            "5-ring override must not fire when none of the four atoms is MMFF type 1"
+        );
+    }
+
+    // ── issue #227: torsion_type_for's corrected bond-type-based base
+    // classification and empirically-required type-2 override ─────────────
+
+    #[test]
+    fn torsion_type_for_aromatic_jk_bond_is_type_0_despite_mltb_membership() {
+        // The core of issue #227's torsion bug: a prior version of this
+        // function classified the non-ring base case purely from atom-type
+        // MLTB_TYPES membership, `(MLTB(tj), MLTB(tk)) -> 0/1/2`, completely
+        // ignoring the j-k bond's own real MMFF bond order/type. Benzene's
+        // ring carbons are all type 37 (in MLTB_TYPES), so the prior formula
+        // would have classified any benzene torsion as type 2 (both
+        // "sp2-sp2") -- RDKit's real `getMMFFTorsionType` instead uses
+        // `bond_type_for`'s own result as the base code, and an aromatic
+        // bond always gets bond_type 0 (same as a real double/triple bond),
+        // regardless of the endpoints' own MLTB membership.
+        let mol = chematic_smiles::parse("c1ccccc1").unwrap();
+        let types = assign_mmff94_numeric_types(&mol).unwrap();
+        assert_eq!(types[0], 37, "benzene carbon should be type 37");
+        assert!(
+            MLTB_TYPES.binary_search(&37).is_ok(),
+            "type 37 is in MLTB_TYPES -- the prior atom-type-membership formula would wrongly see this as conjugated"
+        );
+        let tt = torsion_type_for(&mol, 0, 1, 2, 3, types[0], types[1], types[2], types[3]);
+        assert_eq!(
+            tt, 0,
+            "an aromatic j-k bond must classify as torsion type 0 via bond_type_for, not type 2 via MLTB membership"
+        );
+    }
+
+    #[test]
+    fn torsion_type_for_type_2_override_fires_when_flanking_bond_is_sbmb() {
+        // Synthetic 4-atom chain i-j-k-l, all single bonds (topology only
+        // matters for bond order / ring adjacency here -- the four MMFF
+        // types are passed explicitly to isolate the classification
+        // formula). ti=tj=2 (both in MLTB_TYPES) makes the i-j bond an sbmb
+        // bond (`bond_type_ij` = 1, a single bond directly linking two
+        // independently conjugation-capable atoms). tk=tl=1 (not in
+        // MLTB_TYPES) makes the j-k bond's own base code 0 (neither a
+        // multiple bond nor doubly-conjugated). RDKit's empirically-required
+        // override (`bond_type_jk==0 && order_jk==Single && (bond_type_ij==1
+        // || bond_type_kl==1)`, needed to pass RDKit's own CYGUAN01
+        // regression test, not derivable from Halgren's MMFF.IV page 609
+        // formula alone) must bump this to type 2.
+        let mut b = MoleculeBuilder::new();
+        let i = b.add_atom(Atom::new(Element::C));
+        let j = b.add_atom(Atom::new(Element::C));
+        let k = b.add_atom(Atom::new(Element::C));
+        let l = b.add_atom(Atom::new(Element::C));
+        b.add_bond(i, j, BondOrder::Single).unwrap();
+        b.add_bond(j, k, BondOrder::Single).unwrap();
+        b.add_bond(k, l, BondOrder::Single).unwrap();
+        let mol = b.build();
+        let tt = torsion_type_for(
+            &mol,
+            i.0 as usize,
+            j.0 as usize,
+            k.0 as usize,
+            l.0 as usize,
+            2,
+            2,
+            1,
+            1,
+        );
+        assert_eq!(
+            tt, 2,
+            "base type 0 at j-k with a flanking sbmb (bond_type=1) i-j bond must override to type 2"
+        );
+    }
+
+    #[test]
+    fn torsion_type_for_no_override_when_neither_flank_is_sbmb() {
+        // Same topology as the override test above, but with NEITHER flank
+        // an sbmb bond (ti=tl=1, not in MLTB_TYPES) -- the override's
+        // `bond_type_ij==1 || bond_type_kl==1` condition must not be
+        // satisfied trivially just because bond_type_jk==0.
+        let mut b = MoleculeBuilder::new();
+        let i = b.add_atom(Atom::new(Element::C));
+        let j = b.add_atom(Atom::new(Element::C));
+        let k = b.add_atom(Atom::new(Element::C));
+        let l = b.add_atom(Atom::new(Element::C));
+        b.add_bond(i, j, BondOrder::Single).unwrap();
+        b.add_bond(j, k, BondOrder::Single).unwrap();
+        b.add_bond(k, l, BondOrder::Single).unwrap();
+        let mol = b.build();
+        let tt = torsion_type_for(
+            &mol,
+            i.0 as usize,
+            j.0 as usize,
+            k.0 as usize,
+            l.0 as usize,
+            1,
+            2,
+            1,
+            1,
+        );
+        assert_eq!(
+            tt, 0,
+            "base type 0 must stand when neither flanking bond is an sbmb (bond_type=1) bond"
         );
     }
 
@@ -1490,7 +1669,6 @@ mod tests {
         // must NOT be misclassified as a ring torsion.
         let mol = chematic_smiles::parse("CC1CCCC1").unwrap();
         let types = assign_mmff94_numeric_types(&mol).unwrap();
-        let rings = find_sssr(&mol);
         // atom 0 = exocyclic methyl C, atom 1 = ring C bonded to atom 0.
         let ring = first_ring_of_size(&mol, 5).expect("methylcyclopentane must have a 5-ring");
         assert!(
@@ -1507,7 +1685,7 @@ mod tests {
             .iter()
             .find(|&&a| a != j && a != k && mol_bonded(&mol, k, a))
             .unwrap();
-        let tt = torsion_type_for(rings.rings(), i, j, k, l, types[j], types[k]);
+        let tt = torsion_type_for(&mol, i, j, k, l, types[i], types[j], types[k], types[l]);
         assert_ne!(
             tt, 5,
             "torsion with an exocyclic terminal atom must not be classified as a ring torsion"
@@ -2069,7 +2247,9 @@ mod tests {
                             continue;
                         }
                         c.torsion_total += 1;
-                        let tt = torsion_type_for(rings.rings(), i, j, k, l, types[j], types[k]);
+                        let tt = torsion_type_for(
+                            &mol, i, j, k, l, types[i], types[j], types[k], types[l],
+                        );
                         if mmff94_torsion_energy(tt, types[i], types[j], types[k], types[l])
                             .is_none()
                         {
@@ -2084,13 +2264,24 @@ mod tests {
 
     #[test]
     fn corpus_58_parameter_coverage_does_not_regress() {
-        // Pre-fix (original bond_type_for/angle_type_for/torsion_type_for):
-        //   bond 129/585 miss, angle 292/737 miss, torsion 305/841 miss
-        // Post-fix (measured on this test, this commit):
-        //   bond  16/585 miss, angle 279/737 miss, torsion 305/841 miss
-        // Torsion is unchanged by design: mmff94_torsion_energy already had a
-        // full type-0 fallback chain pre-fix, so TT4/5's benefit is more
-        // accurate parameters for rows it reaches, not new coverage.
+        // Numbers on THIS 58-molecule corpus (CORPUS_58, distinct from the
+        // 265-molecule Wave 1 corpus used elsewhere in issue #227) have
+        // drifted across several since-merged fixes; re-measured fresh
+        // rather than trusted from stale history:
+        //   original bond_type_for/angle_type_for/torsion_type_for:
+        //     bond 129/585 miss, angle 292/737 miss, torsion 305/841 miss
+        //   immediately pre-this-fix (post atom-type-parity + stretch-bend
+        //   fixes, i.e. this branch's parent commit):
+        //     bond   1/585 miss, angle  24/737 miss, torsion  22/841 miss
+        //   post this fix (issue #227 torsion classification: bond-type-jk-
+        //   based base case + local ring-4/5 override, replacing the old
+        //   atom-type-membership + SSSR-based formula):
+        //     bond   1/585 miss, angle  24/737 miss, torsion   4/841 miss
+        // Torsion coverage DOES improve now (unlike the original bond/angle-
+        // only fix this comment used to describe): the corrected
+        // classification routes several of this corpus's torsions to a
+        // table row chematic's own existing fallback chain can reach that
+        // the old, wrong classification code could not.
         let c = corpus_coverage();
         eprintln!(
             "bond: {}/{} miss, angle: {}/{} miss, torsion: {}/{} miss",
@@ -2111,8 +2302,8 @@ mod tests {
             c.angle_miss
         );
         assert!(
-            c.torsion_miss <= 320,
-            "torsion misses regressed: {}",
+            c.torsion_miss <= 20,
+            "torsion misses regressed toward pre-this-fix (22): {}",
             c.torsion_miss
         );
     }
