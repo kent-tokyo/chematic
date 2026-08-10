@@ -189,6 +189,49 @@ pub enum StereoElement {
     DoubleBond(BondIdx),
 }
 
+/// One declared tetrahedral stereocenter, turned into a constraint a future
+/// embedding-time consumer could check or enforce -- independent of any particular
+/// geometry (built from `mol` alone). See the "Constraint representation" section
+/// near [`build_stereo_constraints`] for how this differs from [`TetrahedralReport`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct TetrahedralConstraint {
+    pub atom: AtomIdx,
+    /// Declared SMILES chirality-neighbor order (see [`declared_neighbor_order`]);
+    /// one entry may be [`STEREO_H_SENTINEL`] for an implicit-H stereocenter. A
+    /// consumer resolving this against real coordinates must substitute a phantom
+    /// position for that slot the same way [`tetrahedral_positions`] does.
+    pub order: [u32; 4],
+    /// RDKit-calibrated (see this struct's constructor and the module's
+    /// `tetrahedral_matches_rdkit_*` tests): `true` means a satisfying geometry must
+    /// produce a NEGATIVE `signed_volume(order[1], order[2], order[3], order[0])`;
+    /// `false` means positive. Expressed as the sign directly, not as a `@`/`@@`/CCW
+    /// label, so a consumer never has to re-derive the CCW-to-sign mapping that this
+    /// module's own sign convention got backwards twice before being pinned against
+    /// an external RDKit oracle.
+    pub requires_negative_volume: bool,
+}
+
+/// One declared E/Z double bond, turned into a constraint a future embedding-time
+/// consumer could check or enforce -- independent of any particular geometry. See
+/// [`build_stereo_constraints`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct DoubleBondConstraint {
+    pub bond: BondIdx,
+    pub end1: AtomIdx,
+    pub end2: AtomIdx,
+    /// The specific direction-marked substituent on `end1`'s side (see
+    /// [`marked_substituent`]).
+    pub sub1: AtomIdx,
+    /// The specific direction-marked substituent on `end2`'s side.
+    pub sub2: AtomIdx,
+    /// `true` when a satisfying geometry must place `sub1` and `sub2` on the same
+    /// side of the `end1`-`end2` axis (dihedral magnitude < 90°, matching
+    /// [`verify_double_bond`]'s convention) -- not itself "cis"/"trans" or "Z"/"E",
+    /// since those labels depend on CIP priority, which this module deliberately
+    /// never resolves (see the module's "Design" doc section).
+    pub same_side: bool,
+}
+
 /// One tetrahedral center's verification result.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TetrahedralReport {
@@ -302,6 +345,98 @@ pub fn verify_stereo(mol: &Molecule, coords: &Coords3D) -> StereoVerification {
 }
 
 // ---------------------------------------------------------------------------
+// Constraint representation (declared stereo, independent of any geometry)
+// ---------------------------------------------------------------------------
+//
+// Everything above this point answers "does this geometry satisfy the declared
+// stereo?" -- it needs `coords`. `build_stereo_constraints` answers a different,
+// coords-free question: "what would a satisfying geometry have to look like?" --
+// i.e. it is the "SMILES stereo -> StereoConstraintSet" step of the
+// `SMILES stereo -> StereoConstraintSet -> bounds/chiral-volume/dihedral
+// constraints -> DG -> verify` pipeline described in `docs/etkdg_3d_gap_rfc.md`'s
+// Phase 3 (issues #285, #210, #291). It reuses `tetrahedral_constraint_for`/
+// `double_bond_constraint_for` -- the exact same declared-parity extraction
+// `verify_stereo` itself runs -- so the constraint set and the verifier can never
+// disagree about what's declared; see this module's `constraint_set_*_matches_rdkit_*`
+// tests for that property checked directly against the RDKit-confirmed fixtures
+// above, not just asserted.
+//
+// `pub(crate)` deliberately, not `pub`: nothing in this crate consumes this set as
+// an actual embedding constraint yet (that wiring -- into `dg_fft::build_bound_matrix`
+// or a new constraint-aware refinement stage -- is future, separately-scoped work).
+// Publishing a `StereoConstraintSet` type before anything acts on it would overclaim
+// what it does, the same shape of premature-publish this session already declined
+// for issue #272's `topological_equivalence_classes`. Promote to `pub` once an
+// embedder actually reads it.
+
+/// Every declared tetrahedral/E-Z constraint `mol` implies, independent of any
+/// particular geometry -- the coords-free counterpart to [`StereoVerification`].
+// ponytail: no production (non-test) caller yet -- this PR is deliberately scoped
+// to representation only (see the section doc above and the PR body). Matches
+// dg_fft.rs's own `#![allow(dead_code)]` precedent for the same "built, tested,
+// not yet wired in" situation. Remove this allow once a follow-up PR wires
+// build_stereo_constraints into the embedding path.
+#[allow(dead_code)]
+#[derive(Debug, Clone, Default)]
+pub(crate) struct StereoConstraintSet {
+    pub tetrahedral: Vec<TetrahedralConstraint>,
+    pub double_bond: Vec<DoubleBondConstraint>,
+    /// Declared stereo elements that could not be turned into a constraint, with
+    /// why -- kept in the set rather than silently dropped, since a consumer that
+    /// only reads `tetrahedral`/`double_bond` and treats an incomplete set as
+    /// exhaustive would silently under-constrain exactly the way issue #291
+    /// documents production under-constraining today. Only the three
+    /// [`StereoRejectionReason`] variants reachable without geometry can appear
+    /// here (`UnsupportedCoordination`, `TerminalOrCumulatedAlkene`,
+    /// `AmbiguousDirection`) -- `DegenerateGeometry`/`DegenerateImplicitHDirection`
+    /// are geometry-dependent and never produced by this function.
+    pub unsupported: Vec<(StereoElement, StereoRejectionReason)>,
+}
+
+#[allow(dead_code)]
+impl StereoConstraintSet {
+    pub fn n_constraints(&self) -> usize {
+        self.tetrahedral.len() + self.double_bond.len()
+    }
+}
+
+/// Build every declared stereo constraint in `mol`. Pure function of `mol` alone --
+/// no `Coords3D` involved, unlike [`verify_stereo`]. See the section doc above for
+/// what this is for and why it's `pub(crate)`.
+#[allow(dead_code)]
+pub(crate) fn build_stereo_constraints(mol: &Molecule) -> StereoConstraintSet {
+    let mut tetrahedral = Vec::new();
+    let mut unsupported = Vec::new();
+    for i in 0..mol.atom_count() {
+        let idx = AtomIdx(i as u32);
+        if mol.atom(idx).chirality == Chirality::None {
+            continue;
+        }
+        match tetrahedral_constraint_for(mol, idx) {
+            Ok(c) => tetrahedral.push(c),
+            Err(reason) => unsupported.push((StereoElement::Tetrahedral(idx), reason)),
+        }
+    }
+
+    let mut double_bond = Vec::new();
+    for j in 0..mol.bond_count() {
+        let bidx = BondIdx(j as u32);
+        if let Some(result) = double_bond_constraint_for(mol, bidx) {
+            match result {
+                Ok(c) => double_bond.push(c),
+                Err(reason) => unsupported.push((StereoElement::DoubleBond(bidx), reason)),
+            }
+        }
+    }
+
+    StereoConstraintSet {
+        tetrahedral,
+        double_bond,
+        unsupported,
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Tetrahedral verification internals
 // ---------------------------------------------------------------------------
 
@@ -389,14 +524,22 @@ fn tetrahedral_positions(
     Ok(out)
 }
 
-fn verify_tetrahedral_center(mol: &Molecule, coords: &Coords3D, idx: AtomIdx) -> StereoStatus {
+/// Declared-parity-only prefix of tetrahedral verification, needing no geometry --
+/// same gates, same order, as the coords-dependent code that used to precede the
+/// geometry check inline (kept behavior-identical on purpose: this is a pure
+/// extraction, see the PR that introduced [`TetrahedralConstraint`] for the
+/// before/after test evidence). Only a plain tetrahedral center (single/up/down
+/// bonds only) is in scope -- mirrors `stereo3d.rs`'s `assign_stereo_from_3d` gate,
+/// excluding e.g. allene central atoms (which declare axial chirality via bond
+/// directions, not `Atom::chirality`, and are handled by the double-bond path
+/// instead).
+fn tetrahedral_constraint_for(
+    mol: &Molecule,
+    idx: AtomIdx,
+) -> Result<TetrahedralConstraint, StereoRejectionReason> {
     let atom = mol.atom(idx);
     debug_assert!(atom.chirality != Chirality::None);
 
-    // Only a plain tetrahedral center (single/up/down bonds only) is in scope --
-    // mirrors stereo3d.rs's `assign_stereo_from_3d` gate, excluding e.g. allene
-    // central atoms (which declare axial chirality via bond directions, not
-    // `Atom::chirality`, and are handled by the double-bond path instead).
     let all_single_ish = mol.neighbors(idx).all(|(_, bidx)| {
         matches!(
             mol.bond(bidx).order,
@@ -404,45 +547,51 @@ fn verify_tetrahedral_center(mol: &Molecule, coords: &Coords3D, idx: AtomIdx) ->
         )
     });
     if !all_single_ish {
-        return StereoStatus::Unevaluable(StereoRejectionReason::UnsupportedCoordination);
+        return Err(StereoRejectionReason::UnsupportedCoordination);
     }
 
     let Some(order) = declared_neighbor_order(mol, idx) else {
-        return StereoStatus::Unevaluable(StereoRejectionReason::UnsupportedCoordination);
+        return Err(StereoRejectionReason::UnsupportedCoordination);
     };
     let n_sentinels = order.iter().filter(|&&n| n == STEREO_H_SENTINEL).count();
     if order.len() != 4 || n_sentinels > 1 {
-        return StereoStatus::Unevaluable(StereoRejectionReason::UnsupportedCoordination);
+        return Err(StereoRejectionReason::UnsupportedCoordination);
     }
     if n_sentinels == 1 && implicit_hcount(mol, idx) != 1 {
-        return StereoStatus::Unevaluable(StereoRejectionReason::UnsupportedCoordination);
+        return Err(StereoRejectionReason::UnsupportedCoordination);
     }
 
-    let positions = match tetrahedral_positions(coords, idx, &order) {
+    Ok(TetrahedralConstraint {
+        atom: idx,
+        order: [order[0], order[1], order[2], order[3]],
+        // RDKit-calibrated (see module docs and `tetrahedral_matches_rdkit_*`
+        // tests): declared `@` (`Chirality::CounterClockwise`) requires a NEGATIVE
+        // `signed_volume(order[1], order[2], order[3], order[0])`; `@@` requires
+        // positive. Not derived from an internal "CCW/CW when viewed from n0"
+        // mental model -- an earlier version of this predicate used that framing
+        // and got the sign backwards twice (see git history / PR discussion).
+        requires_negative_volume: atom.chirality == Chirality::CounterClockwise,
+    })
+}
+
+fn verify_tetrahedral_center(mol: &Molecule, coords: &Coords3D, idx: AtomIdx) -> StereoStatus {
+    let constraint = match tetrahedral_constraint_for(mol, idx) {
+        Ok(c) => c,
+        Err(reason) => return StereoStatus::Unevaluable(reason),
+    };
+
+    let positions = match tetrahedral_positions(coords, idx, &constraint.order) {
         Ok(p) => p,
         Err(reason) => return StereoStatus::Unevaluable(reason),
     };
 
-    // `signed_volume(n1, n2, n3, n0)` sign vs. the declared `@`/`@@` tag, calibrated
-    // against an external oracle (RDKit `AssignStereochemistryFrom3D`), not derived
-    // from an internal "CCW/CW when viewed from n0" mental model -- an earlier
-    // version of this function used that framing and got the sign backwards (see
-    // git history / PR discussion). Ground truth: RDKit-embedded, MMFF-optimized
-    // conformers for `[C@](Br)(Cl)(F)I`, `[C@@](Br)(Cl)(F)I`, `N[C@@H](C)C(=O)O`,
-    // `N[C@H](C)C(=O)O` were confirmed by RDKit's own `AssignStereochemistryFrom3D`
-    // to correctly reproduce each declared tag; feeding those exact coordinates
-    // through this function must read `Satisfied`. That is what fixes `@` (declared
-    // `Chirality::CounterClockwise`) to a NEGATIVE `signed_volume(n1,n2,n3,n0)`, and
-    // `@@` to a POSITIVE one -- see this file's `tetrahedral_matches_rdkit_*` tests
-    // for the exact reproduction (RDKit coordinates hardcoded, not hand-derived).
     let volume = signed_volume(positions[1], positions[2], positions[3], positions[0]);
     if volume.abs() < VOLUME_EPS {
         return StereoStatus::Unevaluable(StereoRejectionReason::DegenerateGeometry);
     }
-    let matches_declared_ccw = volume < 0.0;
-    let declared_ccw = atom.chirality == Chirality::CounterClockwise;
+    let actual_negative = volume < 0.0;
 
-    if matches_declared_ccw == declared_ccw {
+    if actual_negative == constraint.requires_negative_volume {
         StereoStatus::Satisfied
     } else {
         StereoStatus::Violated
@@ -504,15 +653,19 @@ fn has_real_substituent(mol: &Molecule, atom_idx: AtomIdx, other_end: AtomIdx) -
     mol.neighbors(atom_idx).any(|(nb, _)| nb != other_end)
 }
 
-/// `None` when `bond_idx` isn't a double bond, or has no declared direction marker
-/// anywhere on it (not part of "declared stereo" at all, so not reported). `Some`
-/// otherwise, including `Unevaluable` outcomes for a bond that clearly *is* meant to
-/// carry declared E/Z but can't be evaluated.
-fn verify_double_bond(
+/// Declared-parity-only prefix of double-bond verification, needing no geometry --
+/// same gates, same order, as the coords-dependent code that used to precede the
+/// dihedral check inline (kept behavior-identical on purpose: this is a pure
+/// extraction). `None` when `bond_idx` isn't a double bond, or has no declared
+/// direction marker anywhere on it (not part of "declared stereo" at all, so not
+/// reported -- callers must keep this outer `Option` distinct from the inner
+/// `Result`'s `Err`: "not declared" and "declared but unsupported" are different
+/// things everywhere else in this module). `Some(Err(..))` for a bond that clearly
+/// *is* meant to carry declared E/Z but can't be turned into a constraint.
+fn double_bond_constraint_for(
     mol: &Molecule,
-    coords: &Coords3D,
     bond_idx: BondIdx,
-) -> Option<StereoStatus> {
+) -> Option<Result<DoubleBondConstraint, StereoRejectionReason>> {
     let bond = mol.bond(bond_idx);
     if bond.order != BondOrder::Double {
         return None;
@@ -549,28 +702,45 @@ fn verify_double_bond(
     }
 
     if is_cumulated(mol, a1, bond_idx) || is_cumulated(mol, a2, bond_idx) {
-        return Some(StereoStatus::Unevaluable(
-            StereoRejectionReason::TerminalOrCumulatedAlkene,
-        ));
+        return Some(Err(StereoRejectionReason::TerminalOrCumulatedAlkene));
     }
 
     let Some((sub1, up1)) = marked_substituent(mol, a1, a2) else {
-        return Some(StereoStatus::Unevaluable(
-            StereoRejectionReason::AmbiguousDirection,
-        ));
+        return Some(Err(StereoRejectionReason::AmbiguousDirection));
     };
     let Some((sub2, up2)) = marked_substituent(mol, a2, a1) else {
-        return Some(StereoStatus::Unevaluable(
-            StereoRejectionReason::AmbiguousDirection,
-        ));
+        return Some(Err(StereoRejectionReason::AmbiguousDirection));
     };
 
-    let declared_same_side = up1 == up2;
+    Some(Ok(DoubleBondConstraint {
+        bond: bond_idx,
+        end1: a1,
+        end2: a2,
+        sub1,
+        sub2,
+        same_side: up1 == up2,
+    }))
+}
+
+/// `None` when `bond_idx` isn't a double bond, or has no declared direction marker
+/// anywhere on it (not part of "declared stereo" at all, so not reported). `Some`
+/// otherwise, including `Unevaluable` outcomes for a bond that clearly *is* meant to
+/// carry declared E/Z but can't be evaluated.
+fn verify_double_bond(
+    mol: &Molecule,
+    coords: &Coords3D,
+    bond_idx: BondIdx,
+) -> Option<StereoStatus> {
+    let constraint = match double_bond_constraint_for(mol, bond_idx)? {
+        Ok(c) => c,
+        Err(reason) => return Some(StereoStatus::Unevaluable(reason)),
+    };
+
     let Some(angle) = crate::stereo3d::dihedral(
-        coords.get(a1),
-        coords.get(a2),
-        coords.get(sub1),
-        coords.get(sub2),
+        coords.get(constraint.end1),
+        coords.get(constraint.end2),
+        coords.get(constraint.sub1),
+        coords.get(constraint.sub2),
     ) else {
         return Some(StereoStatus::Unevaluable(
             StereoRejectionReason::DegenerateGeometry,
@@ -578,7 +748,7 @@ fn verify_double_bond(
     };
     let actual_same_side = angle.abs() < std::f64::consts::FRAC_PI_2;
 
-    Some(if actual_same_side == declared_same_side {
+    Some(if actual_same_side == constraint.same_side {
         StereoStatus::Satisfied
     } else {
         StereoStatus::Violated
@@ -1516,5 +1686,253 @@ mod tests {
             result.unwrap(),
             [AtomIdx(0)].into_iter().collect::<HashSet<_>>()
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // build_stereo_constraints: drift guards against verify_stereo /
+    // RDKit-confirmed geometry -- the constraint set and the verifier must never
+    // disagree about what's declared, checked directly rather than assumed from
+    // both calling the same extraction functions.
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn constraint_set_tetrahedral_quaternary_ccw_matches_rdkit_geometry() {
+        let m = mol("[C@](Br)(Cl)(F)I");
+        let coords = rdkit_quaternary_ccw_coords(&m);
+        let set = build_stereo_constraints(&m);
+        assert_eq!(set.tetrahedral.len(), 1);
+        assert!(set.double_bond.is_empty());
+        assert!(set.unsupported.is_empty());
+        let c = &set.tetrahedral[0];
+        assert_eq!(c.atom, AtomIdx(0));
+
+        // Independently recompute the actual sign from the RDKit-confirmed
+        // geometry (not just trusting verify_stereo's verdict) and check it
+        // agrees with what the constraint requires.
+        let positions = tetrahedral_positions(&coords, c.atom, &c.order).unwrap();
+        let volume = signed_volume(positions[1], positions[2], positions[3], positions[0]);
+        assert!(volume < 0.0, "RDKit-confirmed @ geometry must be negative");
+        assert!(
+            c.requires_negative_volume,
+            "constraint for declared @ must require negative volume"
+        );
+        assert_eq!(
+            verify_stereo(&m, &coords).tetrahedral[0].status,
+            StereoStatus::Satisfied
+        );
+    }
+
+    #[test]
+    fn constraint_set_tetrahedral_quaternary_cw_matches_rdkit_geometry() {
+        let m = mol("[C@@](Br)(Cl)(F)I");
+        let coords = rdkit_quaternary_cw_coords(&m);
+        let set = build_stereo_constraints(&m);
+        let c = &set.tetrahedral[0];
+
+        let positions = tetrahedral_positions(&coords, c.atom, &c.order).unwrap();
+        let volume = signed_volume(positions[1], positions[2], positions[3], positions[0]);
+        assert!(volume > 0.0, "RDKit-confirmed @@ geometry must be positive");
+        assert!(
+            !c.requires_negative_volume,
+            "constraint for declared @@ must require positive (not negative) volume"
+        );
+        assert_eq!(
+            verify_stereo(&m, &coords).tetrahedral[0].status,
+            StereoStatus::Satisfied
+        );
+    }
+
+    #[test]
+    fn constraint_set_implicit_h_stereocenter_matches_rdkit_geometry() {
+        // L-alanine: N[C@@H](C)C(=O)O -- exercises the STEREO_H_SENTINEL slot.
+        let m = mol("N[C@@H](C)C(=O)O");
+        let idx = AtomIdx(1);
+        let mut coords = Coords3D::new_zeroed(m.atom_count());
+        coords.set(AtomIdx(0), Point3::new(-1.029655, -1.350290, 0.249121));
+        coords.set(idx, Point3::new(-0.278484, -0.251876, -0.400037));
+        coords.set(AtomIdx(2), Point3::new(-0.983462, 1.068581, -0.122130));
+        coords.set(AtomIdx(3), Point3::new(1.164492, -0.221382, 0.114110));
+        coords.set(AtomIdx(4), Point3::new(1.656783, -0.980050, 0.936364));
+        coords.set(AtomIdx(5), Point3::new(1.916290, 0.736776, -0.462302));
+
+        let set = build_stereo_constraints(&m);
+        let c = set
+            .tetrahedral
+            .iter()
+            .find(|c| c.atom == idx)
+            .expect("declared stereocenter must appear in the constraint set");
+        assert!(
+            c.order.contains(&STEREO_H_SENTINEL),
+            "implicit-H stereocenter's constraint order must carry the sentinel"
+        );
+
+        let positions = tetrahedral_positions(&coords, c.atom, &c.order).unwrap();
+        let volume = signed_volume(positions[1], positions[2], positions[3], positions[0]);
+        let actual_negative = volume < 0.0;
+        assert_eq!(
+            actual_negative, c.requires_negative_volume,
+            "constraint sign must agree with the RDKit-confirmed-Satisfied geometry"
+        );
+        assert_eq!(
+            verify_stereo(&m, &coords)
+                .tetrahedral
+                .iter()
+                .find(|r| r.atom == idx)
+                .unwrap()
+                .status,
+            StereoStatus::Satisfied
+        );
+    }
+
+    #[test]
+    fn constraint_set_ez_e_and_z_match_rdkit_geometry() {
+        let m_e = mol("C/C=C/C");
+        let mut c_e = Coords3D::new_zeroed(m_e.atom_count());
+        c_e.set(AtomIdx(0), Point3::new(1.949328, 0.033766, 0.369285));
+        c_e.set(AtomIdx(1), Point3::new(0.529189, -0.230326, 0.751313));
+        c_e.set(AtomIdx(2), Point3::new(-0.529189, 0.230328, 0.067504));
+        c_e.set(AtomIdx(3), Point3::new(-1.949328, -0.033765, 0.449532));
+
+        let set_e = build_stereo_constraints(&m_e);
+        assert_eq!(set_e.double_bond.len(), 1);
+        let ce = &set_e.double_bond[0];
+        let angle = crate::stereo3d::dihedral(
+            c_e.get(ce.end1),
+            c_e.get(ce.end2),
+            c_e.get(ce.sub1),
+            c_e.get(ce.sub2),
+        )
+        .unwrap();
+        let actual_same_side = angle.abs() < std::f64::consts::FRAC_PI_2;
+        assert_eq!(
+            actual_same_side, ce.same_side,
+            "constraint's same_side must agree with the RDKit-confirmed-E geometry"
+        );
+        assert_eq!(
+            verify_stereo(&m_e, &c_e).double_bond[0].status,
+            StereoStatus::Satisfied
+        );
+
+        let m_z = mol(r"C/C=C\C");
+        let mut c_z = Coords3D::new_zeroed(m_z.atom_count());
+        c_z.set(AtomIdx(0), Point3::new(1.550829, 0.471766, 0.248193));
+        c_z.set(AtomIdx(1), Point3::new(0.731718, -0.628075, -0.345406));
+        c_z.set(AtomIdx(2), Point3::new(-0.606159, -0.726762, -0.391896));
+        c_z.set(AtomIdx(3), Point3::new(-1.616617, 0.238123, 0.138127));
+
+        let set_z = build_stereo_constraints(&m_z);
+        let cz = &set_z.double_bond[0];
+        let angle_z = crate::stereo3d::dihedral(
+            c_z.get(cz.end1),
+            c_z.get(cz.end2),
+            c_z.get(cz.sub1),
+            c_z.get(cz.sub2),
+        )
+        .unwrap();
+        let actual_same_side_z = angle_z.abs() < std::f64::consts::FRAC_PI_2;
+        assert_eq!(
+            actual_same_side_z, cz.same_side,
+            "constraint's same_side must agree with the RDKit-confirmed-Z geometry"
+        );
+        // E and Z constraints for the two enantiomeric-direction molecules must
+        // disagree with each other -- proves same_side is discriminating, not a
+        // constant.
+        assert_ne!(ce.same_side, cz.same_side);
+    }
+
+    #[test]
+    fn constraint_set_ordering_regression_carbonyl_adjacent_to_marked_alkene() {
+        // Same molecule as the verify_stereo regression test above
+        // (`carbonyl_adjacent_to_marked_alkene_is_not_spuriously_reported`): the
+        // carbonyl C=O in cinnamic acid must produce NEITHER a constraint NOR an
+        // `unsupported` entry -- it must not appear in the set at all, preserving
+        // the same has_real_substituent-before-marker-scan check order that fix
+        // depends on.
+        let m = mol(r"OC(=O)/C=C/c1ccccc1");
+        let set = build_stereo_constraints(&m);
+        assert_eq!(
+            set.double_bond.len(),
+            1,
+            "only the real alkene should produce a constraint: {:?}",
+            set.double_bond
+        );
+        assert!(
+            set.unsupported.is_empty(),
+            "the carbonyl must not appear even as unsupported: {:?}",
+            set.unsupported
+        );
+    }
+
+    #[test]
+    fn constraint_set_unsupported_tetrahedral_is_named_not_dropped() {
+        // Same fixture as `unsupported_coordination_is_named_not_silently_dropped`:
+        // `[C@H](F)Cl` has only 3 total substituents (F, Cl, + 1 H = 3, not 4).
+        let m = mol("[C@H](F)Cl");
+        let set = build_stereo_constraints(&m);
+        assert!(set.tetrahedral.is_empty());
+        assert_eq!(set.n_constraints(), 0);
+        assert_eq!(
+            set.unsupported,
+            vec![(
+                StereoElement::Tetrahedral(AtomIdx(0)),
+                StereoRejectionReason::UnsupportedCoordination
+            )]
+        );
+    }
+
+    #[test]
+    fn constraint_set_cumulated_diene_is_named_not_dropped() {
+        // C/C=C=C/C: a substituted buta-1,2-diene (cumulated double bonds sharing
+        // atom 2). Both double bonds carry direction markers and real substituents,
+        // but neither is a simple isolated alkene -- must be reported as
+        // TerminalOrCumulatedAlkene for both, not silently skipped and not treated
+        // as a plain E/Z constraint (verified empirically against this exact
+        // fixture before writing this assertion, not assumed).
+        let m = mol("C/C=C=C/C");
+        let set = build_stereo_constraints(&m);
+        assert!(set.double_bond.is_empty());
+        assert_eq!(set.unsupported.len(), 2);
+        for (_, reason) in &set.unsupported {
+            assert_eq!(*reason, StereoRejectionReason::TerminalOrCumulatedAlkene);
+        }
+    }
+
+    #[test]
+    fn constraint_set_ambiguous_direction_is_named_not_dropped() {
+        // Only one alkene terminus carries a `/` marker; the other has two plain
+        // substituents with no direction marker at all -- AmbiguousDirection, not
+        // silently skipped (skipping is reserved for "no marker anywhere").
+        let m = mol("C/C=C(C)C");
+        let set = build_stereo_constraints(&m);
+        assert!(set.double_bond.is_empty());
+        assert_eq!(set.unsupported.len(), 1);
+        assert_eq!(
+            set.unsupported[0].1,
+            StereoRejectionReason::AmbiguousDirection
+        );
+    }
+
+    #[test]
+    fn constraint_set_no_declared_stereo_is_empty_not_unsupported() {
+        // Plain, fully unmarked molecule: must produce an empty set outright, not
+        // a set full of `unsupported` entries -- "not declared" and "declared but
+        // unsupported" must stay distinguishable everywhere in this module.
+        let m = mol("CCCC");
+        let set = build_stereo_constraints(&m);
+        assert_eq!(set.n_constraints(), 0);
+        assert!(set.unsupported.is_empty());
+    }
+
+    #[test]
+    fn constraint_set_is_pure_function_of_molecule_no_coords_needed() {
+        // Sanity check on the design itself: the same molecule always yields the
+        // same constraint set regardless of how many times it's called -- there is
+        // no hidden coordinate/geometry dependency anywhere in this code path.
+        let m = mol("N[C@@H](C)C(=O)O");
+        let set1 = build_stereo_constraints(&m);
+        let set2 = build_stereo_constraints(&m);
+        assert_eq!(set1.tetrahedral, set2.tetrahedral);
+        assert_eq!(set1.double_bond, set2.double_bond);
+        assert_eq!(set1.unsupported, set2.unsupported);
     }
 }
