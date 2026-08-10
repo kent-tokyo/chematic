@@ -525,6 +525,47 @@ molecules with declared stereochemistry, without needing `RepairAndVerify`'s
 post-hoc repair pass as a crutch — repair should become the rare exception,
 not the primary mechanism, for stereo satisfaction going forward.
 
+**Correction (2026-08-11) — the "injected into `build_bound_matrix`'s
+bounds" design above is mathematically impossible, do not attempt it as
+written.** A pairwise distance matrix is reflection-invariant: a molecule
+and its full mirror image have an *identical* distance matrix (every
+pairwise distance is preserved by a reflection). This is not an
+implementation gap, it's a property of Euclidean distance geometry itself —
+no amount of clever `DistanceBoundAdjustment`-style pairwise bound narrowing
+(the mechanism `pipeline_v2.rs` already uses for macrocycle 1-4 relaxation,
+`crates/chematic-3d/src/pipeline_v2.rs:629`) can encode which of the two
+mirror-image arrangements a bound-matrix-only embedder should produce,
+because the bounds themselves cannot distinguish them. Anyone re-deriving a
+design from the macrocycle-adjustment precedent will naturally reach for
+this approach and should stop here instead.
+
+The design space that actually works operates on **real 3D coordinates**,
+not just pairwise distances, since only actual coordinates (not a distance
+matrix) can carry a chirality sign at all:
+- **Check-and-repair after embedding**: what `stereo_constraints.rs`
+  (`verify_stereo`/`repair_stereo`) already does — reflect/rotate a
+  bridge-eligible substituent group post-embedding. Structurally cannot fix
+  ring-fused stereocenters (no bridge-eligible substituent to move without
+  corrupting the ring — issue #210's testosterone/cholesterol case).
+- **Check-and-retry with a new stochastic seed**: cheap to wire (the
+  existing `max_attempts` retry loop in `embed_distance_geometry_v2_with_
+  adjustments` already retries for other failure causes), but success
+  probability per attempt is roughly independent-per-stereocenter, so for a
+  molecule with *k* declared centers the naive per-attempt success rate is
+  roughly on the order of 2^-k — likely still near-zero within a handful of
+  attempts for a molecule like cholesterol (8 declared centers). Needs
+  measuring before being presented as a fix for the ring-fused case.
+- **A genuine chiral-volume/improper-torsion penalty term inside
+  `refine_coords`'s SHAKE-like iteration**: since this operates on real
+  coordinates each pass (not a static distance matrix), it *can* discriminate
+  mirror images the way a real force field's improper-torsion term does.
+  Not yet attempted; the harder but mathematically sound path for the
+  ring-fused case specifically.
+
+Which of these (or which combination) is the right next step is a policy/
+scope decision, not a pure implementation one — see `ROADMAP.md`'s S-tier
+item 1 status notes for the live decision state.
+
 ### Phase 4 — ring handling
 **Current**: `dg.rs` has hand-picked chair/envelope/crown templates by ring
 size (6/5/≥8), correctly tested for those cases in isolation, but Phase 0's
