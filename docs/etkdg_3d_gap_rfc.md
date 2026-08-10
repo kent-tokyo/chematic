@@ -447,6 +447,79 @@ this round's chirality metric shows >90% match-given-covered on both the
 4-heavy-neighbor and (once H are addressed) implicit-H rows, holding
 coverage at or above where it started.
 
+### Phase 3 status update (2026-08-11) — supersedes the "Proposed" text above for planning purposes; original left intact for history
+
+**What changed since this RFC was written (2026-07-22):** Phase 0-2's underlying
+technical goals were achieved, but through a different code path than this
+document originally envisioned. This RFC assumed wiring `dg_fft.rs`'s
+`build_bound_matrix`/`smooth_bounds` into the legacy `etkdg.rs`/
+`generate_coords_etkdg` pipeline (Phase 1's acceptance criterion literally
+says "has a caller inside `etkdg.rs`"). Instead, the Wave 2/3 program's
+"Agent C" work (`distance_geometry_v2.rs`, first scaffolded 2026-07-26, four
+days after this RFC) built a new module that became the actual production
+embedding path (`embed_pipeline_v2` in `pipeline_v2.rs`), and it *does* call
+`dg_fft::build_bound_matrix`/`smooth_bounds` directly (confirmed via grep,
+2026-08-11) — so those two functions have real production callers now, just
+not through `etkdg.rs` as this document assumed. Treat Phase 1/2's
+"Current"/"Acceptance" text above as historical, not a live gap: their
+technical substance is done, just via `distance_geometry_v2.rs` instead of
+`etkdg.rs`.
+
+**Phase 3 itself remains genuinely open**, confirmed independently by two
+separate 2026-08 investigations (issue #285, filed for a 2/265-corpus E/Z
+sign error; issue #210, re-investigated for a UFF-rescue stereo problem):
+`distance_geometry_v2.rs`'s `build_bound_matrix` has zero awareness of
+`Atom.chirality` or `BondOrder::Up/Down` — confirmed by direct code
+inspection, not just absence-of-evidence. The `stereo_constraints.rs` module
+(built in the Wave 2 program, after this RFC) is entirely post-hoc
+verify/repair — `verify_stereo`/`repair_stereo` — never a pre-embedding
+constraint generator. This RFC's original Phase 3 diagnosis ("does not exist
+in any form") is still accurate for the *embedding* side; it's just now also
+confirmed true of the production module specifically, not only the legacy
+one this RFC was scoped to.
+
+**Committed scope for this phase** (per `ROADMAP.md`'s v0.14.0 plan, S-tier
+item 1, added 2026-08-11 — a committed plan, not just a proposal): build
+`SMILES stereo -> StereoConstraintSet -> bounds/chiral-volume/dihedral
+constraints -> DG -> verify`, covering **both** E/Z and tetrahedral chirality
+in one constraint framework, not just the E/Z case #285 happened to surface
+first:
+- A `StereoConstraintSet` derived from declared stereochemistry
+  (`Atom.chirality`, `BondOrder::Up/Down`, and/or CIP data), materialized
+  *before* embedding, not after.
+- Chiral-volume sign constraints for tetrahedral centers, dihedral/improper-
+  torsion sign constraints for E/Z double bonds — injected into
+  `build_bound_matrix`'s bounds (or a new constraint stage between bounds
+  construction and `smooth_bounds`/refinement), not bolted on as a post-hoc
+  rejection filter the way `stereo_constraints.rs` currently is.
+- Must handle the implicit-H case this RFC's original Phase 3 flagged (0%
+  coverage for implicit-H stereocenters, §3 above) — `Coords3D` is
+  heavy-atom-only, so a stereocenter whose 4th substituent is an implicit H
+  needs either H materialization or an equivalent geometric proxy.
+- Directly reusable by issue #210's UFF-rescue path: 2 of #210's 4
+  reproducing molecules (acyclic-bridge substituents) are already fixable
+  today with the *existing* `stereo_constraints::repair_stereo` (empirically
+  confirmed, no new machinery needed); the other 2 (ring-fused stereocenters,
+  e.g. testosterone/cholesterol) have no acyclic bridge for that repair
+  strategy and need this new embedding-constraint machinery specifically.
+- Motivating evidence beyond #285/#210's own named cases: a 58-molecule sweep
+  of the **legacy** `generate_coords` first-attempt path (not production —
+  see caveat) found 13/58 (22%) silently stereo-wrong results with zero
+  disclosure. This is directional evidence the missing-constraint mechanism
+  causes real, sizeable harm when nothing catches it, not a
+  production-accurate rate — a same-shape measurement against
+  `embed_pipeline_v2` specifically was launched 2026-08-11 to get a
+  production number before this gets over-cited elsewhere.
+
+**Acceptance, more concrete than the original ">90% match-given-covered"**:
+re-running this RFC's chirality metric (`scripts/etkdg_vs_rdkit_gap.py` or
+the newer `pipeline_v2_vs_rdkit_*` harnesses, whichever is live at
+implementation time) shows the constraint-generation stage produces
+embeddings that satisfy `verify_stereo` on ≥99% of first-attempt embeds for
+molecules with declared stereochemistry, without needing `RepairAndVerify`'s
+post-hoc repair pass as a crutch — repair should become the rare exception,
+not the primary mechanism, for stereo satisfaction going forward.
+
 ### Phase 4 — ring handling
 **Current**: `dg.rs` has hand-picked chair/envelope/crown templates by ring
 size (6/5/≥8), correctly tested for those cases in isolation, but Phase 0's
