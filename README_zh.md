@@ -249,6 +249,57 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 
 ## 近期开发
 
+**v0.13.0**（2026-08-10）：**MMFF94 stretch-bend + 扭转参数选取一致性（均为破坏性变更）、逐原子立体中心 API、E/Z 完整性、大环检测、记法无关的阻转异构检测/判定、XYZ I/O**
+- `chematic-ff`：`mmff94_stbn`/`mmff94_stbn_type_only` 现在依据 RDKit 真实的、更细粒度的 "stretch-bend type"（`getMMFFStretchBendType`，0-11）来索引 `MMFF94_STBN` 表，取代此前用作替代的粗粒度 angle type（0-8）（issue #227）——265 分子 Wave 1 语料库上 427 个 stretch-bend 路由候选中的 220 个，从 RDKit 通用的 Dfsb 周期表行默认值改为正确的专用参数；`angle_type_for` 的环偏移公式也已修正，以匹配 RDKit 真实的 `getMMFFAngleType`。**破坏性变更**：`mmff94_stbn`/`mmff94_stbn_type_only` 的首个 `u8` 参数现在是 `stretch_bend_type`，而非 `angle_type`——形状不变，但要求的取值不同；使用新增的 `pub stretch_bend_type_for` 计算该值
+- `chematic-ff`：`torsion_type_for` 现在依据 j-k 键的真实 MMFF 键类型（复用 `bond_type_for`）加上 RDKit 真实的局部键邻接 4/5 元环覆盖规则进行分类，而非仅依赖原子类型归属——仅凭分类改动就修正了此前缺失的 1,107 个扭转实例中 76.9%；在整个语料库范围内，还修正了 13,530 个扭转实例中此前解析为*静默错误*参数值的 1,792 个（不仅是覆盖缺口）——修正值中 99.1% 已独立对照实时 RDKit oracle 确认无误，且没有新增丢失项。**破坏性变更**：`torsion_type_for` 的签名从 `(rings, i, j, k, l, tj, tk)` 改为 `(mol, i, j, k, l, ti, tj, tk, tl)`
+- `chematic-mol`：新增 XYZ / 多帧 XYZ 读写（`parse_xyz`/`write_xyz`、`XyzReader`/`XyzWriter`）——显式氢作为真实原子保留，不做连接性/键级推断，原子数不匹配或坐标非有限值时安全失败
+- `chematic-perception`：`stereo_centers(&Molecule) -> Vec<(AtomIdx, bool)>` 暴露逐原子的四面体立体中心分类结果（issue #263），此前仅能获得汇总计数；开发过程中修复了两个缺陷——共享 Morgan 排名辅助函数中负电荷原子导致的 `u64` 溢出（issue #267），以及隐式氢的 rank-0 哨兵值与真实原子归一化后的 rank 0 相冲突，导致静默丢弃真实的已指定立体中心
+- `chematic-chem`：`ez_completeness(&Molecule) -> EzCompleteness`（issue #264）报告已指定/未指定/总计的声明 E/Z 双键数，遵循 RDKit 自身的立体键资格规则（排除末端/对称键，通过 BFS 最短环而非仅 SSSR 排除 <8 原子的环键——可正确处理如降冰片烯（norbornene）之类的桥环双环情形）
+- `chematic-chem`：`detect_atropisomers`/`assign_atropisomer_chirality` 现已完全与记法无关（issues #262、#276）——检测改为基于 SSSR（分处两个不同环、均带邻位取代的两个芳香碳），而不再取决于 SMILES 是显式写出还是隐式省略环间键；手性判定自身冗余的键级门控现已与检测自身的分类对齐，不再重新推导另一套对记法敏感的检查
+- `chematic-perception`：`is_macrocycle(ring: &[AtomIdx]) -> bool`（issue #266）——单一共享的 ≥9 原子环判定谓词，取代 `chematic-3d` 中重复的硬编码阈值
+- **v0.13.0 发布关口说明**：265 分子 Wave 1 语料库中有 2 个分子（`chembl_tier_b_0126`/`0168`）出现 1 个立体中心满足度回归，根因定位为一个自 v0.12.0 起就存在的距离几何嵌入缺陷，此前被现已修复的扭转分类缺陷意外掩盖——已通过 RDKit 自身的 MMFF94、在给定相同起始坐标的情况下确认表现出相同行为。以显式豁免（issue #285）方式发布；并非本次 MMFF94 修复引入的新缺陷
+- 详见 `CHANGELOG.md` 的 `[0.13.0]` 部分
+
+**v0.12.0**（2026-08-09）：**MMFF94 stretch-bend 生产环境修复（破坏性变更）、稠环/多环分子的 3D 起始几何构型修复**
+- `chematic-ff`：当特定/通用 MMFF-type 表中没有对应行时，`mmff94_stbn` 现在会回退到 RDKit 真实的 29 行周期表行 stretch-bend 默认值——这是每种 MMFF94 策略下无条件的生产环境行为，不再挂在 opt-in 开关之后。265 分子 Wave 1 语料库中缺失的 stretch-bend 实例：2,107 → 0。**破坏性变更**：`mmff94_stbn` 新增 3 个必填的 `atomic_num_{i,j,k}: u8` 参数（原先仅按类型区分的行为保留为新增的 `mmff94_stbn_type_only`）；Python 原始的 `PipelineV2Config(...)` 构造函数新增一个必填的 `gate_mmff94_stretch_bend` 参数（`.safe(...)` 不受影响）
+- `chematic-3d`：`dg::generate_coords` 不再对多种多环拓扑结构（issue #185/#252）产生原子重合或严重拉伸的起始几何构型——根/环顶点碰撞、环并顺序不匹配、固定偏移量的环孤岛锚定，均为各自独立的缺陷，而非 issue #185 最初怀疑的 UFF 最小化器缺陷。265 分子语料库中全部 28 个 `MinimizationFailed` 案例现均解析为 `Ok`，零回归。仍有两项已知、单独追踪的残留限制未修复：稠环拼接取向（issue #255）与链桥接的环孤岛（issue #256）
+- 详见 `CHANGELOG.md` 的 `[0.12.0]` 部分
+
+**v0.11.0**（2026-08-04）：**MMFF94 O2CM 分型覆盖率提升、SMIRKS/CDXML 立体正确性、2D/3D 布局修复**
+- `chematic-ff`：补齐了 O2CM 末端氧原子分型缺口（issue #227 Priority 1A-3）——265 分子 Wave 1 语料库上原子类型一致率 98.82% → 99.37%，氧元素一致率 95.88% → 100%，strict-gate 最小化成功数 123 → 130/265，跨元素误配 0 例（不变）。issue #227 仍保持打开状态
+- `chematic-rxn`：SMIRKS 产物手性判定现已具备 parity 感知能力——重新排序的映射模板邻居顺序现在会正确反转/校验产物的 `@`/`@@` 标记，而不是原样复制；继承（非模板）手性在其邻居顺序或映射拓扑无法校验时，现在会安全失败为 `Chirality::None`
+- `chematic-mol`：CDXML 读取器现在能从方向性楔形键中识别四面体立体化学（RDKit issue #9359），接入了 MOL/MRV 已在使用的同一共享机制；非方向性的 `Bold`/`Hash`/`Dash` 显示通过 `CdxmlParseOptions` 以 opt-in 方式提供，启用后与 CDXML 的 B/E 键-原子顺序无关
+- `chematic-depict`：独立（非稠合）环系统不再在相同/近似相同的 2D 坐标上重叠
+- `chematic-3d`：ETKDG 大环酰胺的 1-4 距离边界现按真实的顺式/反式环延续角色区分，而非将全部四种组合配对一律钉死为顺式；当一个中心酰胺键同时被多个符合条件的大环共享时，改为放宽区间弃权处理
+- 详见 `CHANGELOG.md` 的 `[0.11.0]` 部分
+
+**v0.10.1**（2026-08-02）：**MMFF94 数值分型正确性热修复**
+- `chematic-ff`：修复了一类缺陷——MMFF94 此前可能静默地将某原子解析到属于*另一元素*的参数行上，并把由此得到的物理上错误的能量报告为成功（即 issue #227 所称的 "furan collision"）——芳香原子分型器此前从未实现 RDKit 真实的 5/6 元环 alpha/beta 杂原子分类逻辑。现已从一个已锁定版本的 RDKit 源码移植了一份带溯源引用的数值类型注册表，并新增一个构造期的语义兼容性不变量，使这一类缺陷此后安全失败（`NumericTypeError`）而非静默出错。该不变量又额外捕获了两例相同缺陷：一个质子化胺氮和一个阴离子氧，均被误分型为*另一元素*的参数行。在 265 分子 Wave 1 语料库（生产环境 API）上测得：MMFF94 最小化成功数 44 → 102，对照一个已锁定版本的 RDKit oracle，6693 个可比较原子中跨元素类型误配 0 例（精确匹配率 91.83%）
+- 本次是正确性热修复，而非覆盖率完善版本——issue #227 仍保持打开状态（仍有 140 例 `MissingParameters` 与 22 例 `MinimizationFailed`，stretch-bend 尚未接入门控，尚无全语料库能量/梯度一致性测试框架）。若您缓存了 MMFF94 结果，请参阅 `CHANGELOG.md` 的 `[0.10.1]` 部分中的迁移说明
+- 详见 `CHANGELOG.md` 的 `[0.10.1]` 部分
+
+**v0.10.0**（2026-08-01）：**匹配级 SMIRKS 反应应用、MRV 2D 立体化学、共享 E/Z carrier 键修复**
+- `chematic-rxn`：`find_reaction_matches`/`apply_reaction_match`（issue #225）——在"枚举 SMIRKS 对反应物分子的匹配结果"与"应用其中一个匹配"之间新增的公开接缝，供需要接受部分匹配、拒绝其余匹配（例如依据匹配键是否为环键）而不必放弃整次 `run_reactants` 调用的调用方使用。`run_reactants`/`run_reactants_strict` 现已基于这两个函数实现，开销不变（每次调用仍是一次 SMIRKS 解析 + 一次 VF2 匹配遍历）
+- `chematic-mol`：MRV 读取器现在能识别 2D 楔形/虚线四面体立体化学与 E/Z 立体化学（issue #202）——`parse_mrv` 此前仅将楔形/虚线键与 2D 坐标读入 `coords_2d`，却从未将其转换为 `Atom.chirality`/键的 E/Z 方向，静默丢弃了文件中存在的立体化学信息
+- `chematic-smiles`：共享的 E/Z carrier 键现在通过一个联合分量求解器解析（issue #149）——此前 18 个弃权 fixture 中的 10 个现已实现完全的置换不变性；剩余 8 个是一个已记录、经 RDKit 验证的语义安全残差（5/6 元环内的环内双键，标记选择没有自由度）。issue #149 仍保持打开状态，等待针对环约束残差的范围化修复
+- 详见 `CHANGELOG.md` 的 `[0.10.0]` 部分
+
+**v0.9.0**（2026-08-01）：**Python + WASM 的 opt-in 3D 嵌入 pipeline v2、WASM 可移植的单调时钟**
+- `chematic-py`：`Mol.embed_pipeline_v2(config)`——仅限 Rust 的 `pipeline_v2::embed_pipeline_v2`（具备扭转知识的距离几何 + 立体校验/修复 + 策略门控力场）的 Python 绑定，返回完整的逐阶段证据（而非仅最终坐标），失败时返回带结构化、仅供诊断用的部分证据的类型化 `PipelineV2Error`。直接作用于调用方自身的原子顺序——不做 canonicalize/重新解析。纯增量新增；不改变任何现有默认 3D API
+- `chematic-wasm`：`embed_pipeline_v2_json(mol, configJson)`——上述功能的 WASM 镜像，config/证据结构与之相同，以带标签联合体的 JSON 封装形式提供。新增 CI 任务同时构建两个 `wasm-pack` 目标（`nodejs`/`web`）并在每次 push/PR 时运行 Node 集成测试套件——本仓库此前完全没有 WASM 运行时 CI 覆盖
+- `chematic-3d`/`chematic-smarts`：修复了 `std::time::Instant::now()` 在真实 `wasm32-unknown-unknown` 环境下无条件 panic 的问题（issues #219、#221）——pipeline v2 绑定自身首次真实运行时才暴露出这个既有缺口。已在每个受影响 crate 内通过一个小型 crate 内部的 `clock` 模块修复（wasm32 上使用 `web_time::Instant`，其余平台使用 `std::time::Instant`）；化学/几何/扭转/力场或超时契约均无变化
+- `chematic-3d`：`generate_and_minimize_uff()` 已弃用（issue #204）——尽管名称如此，它实际上从未运行过 chematic-ff 真正的 UFF；予以保留，不删除、行为不变
+- 详见 `CHANGELOG.md` 的 `[0.9.0]` 部分
+
+**v0.8.1**（2026-07-30）：**`canonical_smiles()` 显式/隐式氢计数正确性修复**
+- `chematic-smiles`/`chematic-core`：同一分子的两种表示——仅在原子氢计数是来自 bracket 记法（`[Cl]`）还是 organic-subset 记法（`Cl`）上有差异，且该显式值恰好只是重复了价态推断本就会得出的结果——现在会 canonicalize 为完全相同的结果。对于现有输入，部分 canonical SMILES 输出字符串会因此直接、有意地发生变化——若您依赖跨版本的精确字符串稳定性，请参阅 `CHANGELOG.md` 的 `[0.8.1]` 部分中的迁移说明
+- 详见 `CHANGELOG.md` 的 `[0.8.1]` 部分
+
+**v0.8.0**（2026-07-29）：**opt-in 的 fail-closed 3D 嵌入 pipeline、canonical SMILES 自同构轨道剪枝**
+- `chematic-3d`：新增 opt-in 的 `pipeline_v2::embed_pipeline_v2`——将随机距离几何 + 扭转知识 + 立体校验/修复 + 类型化力场最小化整合进一个 12 阶段的 pipeline，并在最小化*之后*新增 fail-closed 立体复核。现有默认行为不变
+- `chematic-smiles`：修复了 RENKIN 报告的 `canonical_smiles()` 性能回归（高对称性分子上几何平均提速约 5 倍）；同时修复了一个 Dative 键往返缺陷（issue #194）
+- 完整细节、基准测试数据及已知限制见 `CHANGELOG.md`
+
 **v0.7.0**（2026-07-26）：**MOL/SDF 自动识别 2D 楔形/虚线 + E/Z 立体化学、带验证的 canonical SMILES 去重、CIP Rule-5 磷修复、native InChI 显式氢/同位素修复**
 - `chematic-mol`/`chematic-perception`：MOL V2000/V3000/SDF 读取器现在读取时自动识别四面体楔形/虚线 parity（PR #154）与 E/Z 双键方向（PR #162），与 CIP 无关。类型化 opt-in 诊断（`StereoDiagnostic`/`EzDirectionDiagnostic`）对畸形/歧义输入从不猜测。大规模语料验证（4,999 分子，对比 RDKit 2026.03.3）：E/Z — 622 个 RDKit 可解析双键，语义反转 0 例，误报 0 例。构建过程中还修复了 V2000 MDL 代码 4 缺陷、两处 V3000 `CFG` 缺陷及一处 V2000 写入器缺陷。PR #162 自身的语料核对发现了**尚未修复的新缺口**：部分分子的 `canonical_smiles()` 会丢失已经在 `write()` 中正确编码的 E/Z 标记（因 aromaticity 无关的 carrier 分组导致）— 尚未建立 issue
 - `chematic-inchi`：新增带验证的 canonical SMILES 去重（`dedup` 模块）— 快速 canonical SMILES 候选分桶，并与 native InChI 验证后的同一性进行核对。当指定立体中心的 legacy CIP 排序无法解析时安全失败（`VerificationUnavailable`），而非冒错误合并的风险（修复了在 5,000 分子语料验证中发现的真实 false `VerifiedDuplicate`）。后续追踪为 [#161](https://github.com/kent-tokyo/chematic/issues/161)（accurate CIP preflight 有望恢复大部分保守案例）
