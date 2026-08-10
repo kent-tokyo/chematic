@@ -50,7 +50,8 @@ pub mod diagnostics {
 }
 pub use sssr::{RingSet, find_sssr};
 pub use stereo_validation::{
-    StereoCompleteness, StereoError, StereoErrorKind, stereo_completeness, validate_stereo,
+    StereoCompleteness, StereoError, StereoErrorKind, stereo_centers, stereo_completeness,
+    validate_stereo,
 };
 pub use stereo2d::{
     StereoAssignment2D, apply_stereo_from_2d, assign_ez_from_2d, assign_stereo_from_2d,

@@ -225,14 +225,17 @@ pub fn validate_stereo(mol: &Molecule) -> Vec<StereoError> {
     errors
 }
 
-/// Summarise how many stereocenters in `mol` have been specified vs left open.
+/// Return the tetrahedral stereocenter candidates in `mol` that this
+/// classifier recognises: an sp3 atom with 4 distinct heavy-atom-or-
+/// implicit-H groups, paired with whether it carries an explicit `@`/`@@`
+/// chirality annotation (`true` = specified, `false` = a valid candidate
+/// left unannotated).
 ///
-/// A potential stereocenter is an sp3 atom with 4 distinct heavy-atom
-/// neighbours (counting one implicit H as a distinct group when present).
-pub fn stereo_completeness(mol: &Molecule) -> StereoCompleteness {
+/// This is the single source of truth for stereocenter classification;
+/// [`stereo_completeness`] is defined in terms of it.
+pub fn stereo_centers(mol: &Molecule) -> Vec<(AtomIdx, bool)> {
     let ranks = simple_morgan_ranks(mol);
-    let mut specified = 0usize;
-    let mut unspecified = 0usize;
+    let mut centers = Vec::new();
 
     for (idx, atom) in mol.atoms() {
         // Skip aromatics and obvious non-centers.
@@ -278,17 +281,28 @@ pub fn stereo_completeness(mol: &Molecule) -> StereoCompleteness {
             continue;
         } // symmetric neighbours — not a stereocenter
 
-        if atom.chirality != Chirality::None {
-            specified += 1;
-        } else {
-            unspecified += 1;
-        }
+        centers.push((idx, atom.chirality != Chirality::None));
     }
+
+    centers
+}
+
+/// Summarise how many stereocenters in `mol` have been specified vs left open.
+///
+/// A potential stereocenter is an sp3 atom with 4 distinct heavy-atom
+/// neighbours (counting one implicit H as a distinct group when present).
+pub fn stereo_completeness(mol: &Molecule) -> StereoCompleteness {
+    let centers = stereo_centers(mol);
+    let specified = centers
+        .iter()
+        .filter(|(_, is_specified)| *is_specified)
+        .count();
+    let unspecified = centers.len() - specified;
 
     StereoCompleteness {
         specified,
         unspecified,
-        total_centers: specified + unspecified,
+        total_centers: centers.len(),
     }
 }
 
@@ -455,6 +469,75 @@ mod tests {
             sc.total_centers, 2,
             "expected 2 stereocenters total (1 fixed + 1 pre-existing, bug-unrelated \
              unspecified center at the quaternary carbon): {sc:?}"
+        );
+    }
+
+    #[test]
+    fn test_stereo_centers_mixed_specified_and_unspecified() {
+        // Atom 0 ([C@]) carries an explicit chirality annotation and has 4
+        // distinct fully-explicit heavy neighbours (F, Cl, Br, atom 4) ->
+        // specified stereocenter.
+        // Atom 4 (C(I)(N)O) has no annotation but also has 4 distinct heavy
+        // neighbours (atom 0, I, N, O) -> unspecified candidate.
+        let mol = parse("[C@](F)(Cl)(Br)C(I)(N)O").unwrap();
+        let centers = stereo_centers(&mol);
+
+        assert_eq!(
+            centers.len(),
+            2,
+            "expected exactly 2 stereocenter candidates: {centers:?}"
+        );
+        assert!(
+            centers.contains(&(AtomIdx(0), true)),
+            "atom 0 should be a specified stereocenter: {centers:?}"
+        );
+        assert!(
+            centers.contains(&(AtomIdx(4), false)),
+            "atom 4 should be an unspecified stereocenter candidate: {centers:?}"
+        );
+
+        // stereo_completeness must agree exactly (single source of truth).
+        let sc = stereo_completeness(&mol);
+        assert_eq!(sc.specified, 1);
+        assert_eq!(sc.unspecified, 1);
+        assert_eq!(sc.total_centers, 2);
+    }
+
+    // Regression tests, on `stereo_centers` itself, for the two bugs fixed
+    // upstream of this PR's rebase onto `main` (issue #267 overflow fix,
+    // commit a99fc9b; implicit-H rank-0 sentinel collision fix, commit
+    // 5790bb0). Both were previously exercised only via `stereo_completeness`
+    // aggregate counts; these confirm the new `stereo_centers` API itself is
+    // correct now that it's the single source of truth both bugs lived in.
+
+    #[test]
+    fn test_stereo_centers_negative_formal_charge_no_panic() {
+        // Issue #267's exact repro: acetate's [O-] atom must not overflow
+        // u64 in simple_morgan_ranks (it used to sign-extend and panic in
+        // debug builds). No stereocenters expected -- just confirm
+        // stereo_centers runs to completion with a sensible, empty result.
+        let acetate = parse("CC(=O)[O-]").unwrap();
+        let centers = stereo_centers(&acetate);
+        assert!(
+            centers.is_empty(),
+            "acetate has no stereocenters: {centers:?}"
+        );
+    }
+
+    #[test]
+    fn test_stereo_centers_rank_zero_sentinel_collision_fixed() {
+        // This PR's own body cited this exact repro as a known, pre-existing
+        // limitation: atom 1 is a real, `@@`-annotated stereocenter that
+        // `stereo_centers` used to silently drop because its methyl
+        // neighbour (atom 0) normalises to Morgan rank 0, the same sentinel
+        // value `stereo_centers` used to stand in for the implicit H. Fixed
+        // upstream in commit 5790bb0; confirm atom 1 is now correctly
+        // reported as (AtomIdx(1), true) directly from stereo_centers.
+        let mol = parse("C[C@@H](Cl)C(Br)(F)I").unwrap();
+        let centers = stereo_centers(&mol);
+        assert!(
+            centers.contains(&(AtomIdx(1), true)),
+            "atom 1 must be reported as a specified stereocenter: {centers:?}"
         );
     }
 }
