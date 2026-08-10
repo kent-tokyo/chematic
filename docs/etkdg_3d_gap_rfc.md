@@ -502,14 +502,19 @@ first:
   confirmed, no new machinery needed); the other 2 (ring-fused stereocenters,
   e.g. testosterone/cholesterol) have no acyclic bridge for that repair
   strategy and need this new embedding-constraint machinery specifically.
-- Motivating evidence beyond #285/#210's own named cases: a 58-molecule sweep
-  of the **legacy** `generate_coords` first-attempt path (not production —
-  see caveat) found 13/58 (22%) silently stereo-wrong results with zero
-  disclosure. This is directional evidence the missing-constraint mechanism
-  causes real, sizeable harm when nothing catches it, not a
-  production-accurate rate — a same-shape measurement against
-  `embed_pipeline_v2` specifically was launched 2026-08-11 to get a
-  production number before this gets over-cited elsewhere.
+- Motivating evidence beyond #285/#210's own named cases, now measured on
+  **both** paths on the identical 58-molecule corpus (29 stereo-bearing,
+  re-measured 2026-08-11, filed as issue #291): the legacy `generate_coords`
+  first-attempt path is silently stereo-wrong on 13/29 (44.8%); production
+  `embed_pipeline_v2` (`UffOnly`+`Ignore`, same "no repair" policy) is
+  silently stereo-wrong on **18/29 (62.1%) — higher than legacy, not lower**.
+  All 58/58 molecules reported pipeline success either way; `verify_stereo`
+  never abstained. This is strong, production-measured (not just directional)
+  evidence the missing-constraint mechanism causes real, majority-of-cases
+  harm under this policy when nothing catches it — see issue #291 for the
+  full breakdown and caveats (single-seed measurement, policy-level not
+  variable-controlled comparison between the two structurally different
+  embedders).
 
 **Acceptance, more concrete than the original ">90% match-given-covered"**:
 re-running this RFC's chirality metric (`scripts/etkdg_vs_rdkit_gap.py` or
