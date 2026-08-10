@@ -443,9 +443,8 @@ mod tests {
         // Atom indices: 0=O 1=C(CH2, bonded to O) 2=C@@H(chiral) 3=N
         // 4=C(quaternary) 5=Br 6=F 7=I. Verified via `simple_morgan_ranks`:
         // ranks = [1, 0, 5, 3, 7, 6, 2, 4] -- here it's the chiral atom's
-        // *substituted* CH2-OH neighbour (atom 1, not a plain methyl and not
-        // the neighbour listed first in the SMILES branch order) that lands
-        // on rank 0 and collides with the implicit-H sentinel.
+        // *substituted* CH2-OH neighbour (atom 1, not a plain methyl) that
+        // lands on rank 0 and collides with the implicit-H sentinel.
         let mol = parse("OC[C@@H](N)C(Br)(F)I").unwrap();
         let sc = stereo_completeness(&mol);
         assert_eq!(
