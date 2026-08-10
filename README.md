@@ -180,7 +180,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.12.0
+# chematic v0.13.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -419,6 +419,17 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 ## Recent Development
 
+**v0.13.0** (2026-08-10): **MMFF94 stretch-bend + torsion parameter-selection parity (both breaking), per-atom stereocenter API, E/Z completeness, macrocycle detection, notation-invariant atropisomer detection/assignment, XYZ I/O**
+- `chematic-ff`: `mmff94_stbn`/`mmff94_stbn_type_only` now key the `MMFF94_STBN` table lookup on RDKit's real, finer-grained "stretch-bend type" (`getMMFFStretchBendType`, 0-11) instead of the coarser angle type (0-8) previously used as a stand-in (issue #227) — 220 of 427 stretch-bend routing candidates on the 265-molecule Wave 1 corpus move from RDKit's generic Dfsb periodic-row default to the correct, specific parameter; `angle_type_for`'s ring-offset formula also corrected to match RDKit's real `getMMFFAngleType`. **Breaking**: `mmff94_stbn`/`mmff94_stbn_type_only`'s leading `u8` parameter is now `stretch_bend_type`, not `angle_type` — same shape, different required value; use the new `pub stretch_bend_type_for` to compute it
+- `chematic-ff`: `torsion_type_for` now classifies from the real j-k bond's MMFF bond type (reusing `bond_type_for`) plus RDKit's real local-bond-adjacency ring-4/5 override, instead of atom-type-membership alone — corrects 76.9% of the 1,107 previously-missing torsion instances via classification alone, and, corpus-wide, corrects 1,792 of 13,530 torsion instances that resolved to a *silently wrong* parameter value before (not just missing coverage) — 99.1% of the corrected values independently confirmed against a live RDKit oracle, 0 newly lost. **Breaking**: `torsion_type_for`'s signature changed from `(rings, i, j, k, l, tj, tk)` to `(mol, i, j, k, l, ti, tj, tk, tl)`
+- `chematic-mol`: XYZ / multi-frame XYZ read-write (`parse_xyz`/`write_xyz`, `XyzReader`/`XyzWriter`) — explicit hydrogens kept as real atoms, no connectivity/bond-order inference, fails closed on atom-count mismatch or non-finite coordinates
+- `chematic-perception`: `stereo_centers(&Molecule) -> Vec<(AtomIdx, bool)>` exposes per-atom tetrahedral-stereocenter classification (issue #263), previously only available as an aggregate count; fixed two bugs found while adding it — a `u64` overflow for negatively-charged atoms in the shared Morgan-rank helper (issue #267), and an implicit-hydrogen rank-0 sentinel colliding with a real atom's normalized rank 0 that silently dropped genuine specified stereocenters
+- `chematic-chem`: `ez_completeness(&Molecule) -> EzCompleteness` (issue #264) reports specified/unspecified/total declared E/Z double bonds, matching RDKit's own stereo-bond-eligibility rules (terminal/symmetric bonds excluded, ring bonds <8 atoms excluded via BFS shortest-cycle, not SSSR alone — correctly handles bridged-bicyclic cases like norbornene)
+- `chematic-chem`: `detect_atropisomers`/`assign_atropisomer_chirality` are now fully notation-invariant (issues #262, #276) — detection is SSSR-based (two aromatic carbons in separate rings, both with ortho substitution) rather than keyed off whether the SMILES wrote the inter-ring bond explicitly or left it implicit; chirality assignment's own redundant bond-order gate is now aligned with detection's own classification instead of re-deriving a separate, notation-sensitive check
+- `chematic-perception`: `is_macrocycle(ring: &[AtomIdx]) -> bool` (issue #266) — a single shared ≥9-atom-ring predicate, replacing duplicated hardcoded thresholds in `chematic-3d`
+- **v0.13.0 release-gate note**: 2 of 265 Wave 1 corpus molecules (`chembl_tier_b_0126`/`0168`) show a 1-stereocenter-satisfaction regression, root-caused to a pre-existing distance-geometry embedding defect (present since v0.12.0) that used to be accidentally masked by the now-fixed torsion classification bug — confirmed via RDKit's own MMFF94, given identical starting coordinates, exhibiting the same behavior. Shipped under an explicit waiver (issue #285); not a new defect introduced by this release's MMFF94 fixes
+- Full details in `CHANGELOG.md`'s `[0.13.0]` section
+
 **v0.12.0** (2026-08-09): **MMFF94 stretch-bend production fix (breaking), 3D starting-geometry fix for fused/multi-ring molecules**
 - `chematic-ff`: `mmff94_stbn` now falls back to RDKit's real 29-row periodic-table-row stretch-bend defaults when the specific/generic MMFF-type table has no row — unconditional production behavior for every MMFF94 policy, not behind an opt-in flag. Missing stretch-bend instances on the 265-molecule Wave 1 corpus: 2,107 → 0. **Breaking**: `mmff94_stbn` gained 3 required `atomic_num_{i,j,k}: u8` parameters (prior type-only behavior kept as new `mmff94_stbn_type_only`); Python's raw `PipelineV2Config(...)` constructor gained a new required `gate_mmff94_stretch_bend` argument (`.safe(...)` unaffected)
 - `chematic-3d`: `dg::generate_coords` no longer produces atom-coincident or wildly-stretched starting geometry for several multi-ring topologies (issue #185/#252) — root/ring-vertex collision, ring-fusion-order mismatch, and fixed-offset ring-island anchoring were all independent bugs, not a UFF minimizer defect as issue #185 originally suspected. All 28 `MinimizationFailed` cases on the 265-molecule corpus now resolve to `Ok`, 0 regressions. Two known, separately-tracked residual limitations remain unfixed: fused-ring seam orientation (issue #255) and chain-bridged ring islands (issue #256)
@@ -514,7 +525,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.12.0)
+├── Cargo.toml                    workspace root (v0.13.0)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -567,7 +578,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.12.0},
+  version   = {0.13.0},
   year      = {2026},
 }
 ```
