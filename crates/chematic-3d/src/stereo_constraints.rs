@@ -357,7 +357,7 @@ pub fn verify_stereo(mol: &Molecule, coords: &Coords3D) -> StereoVerification {
 // Phase 3 (issues #285, #210, #291). It reuses `tetrahedral_constraint_for`/
 // `double_bond_constraint_for` -- the exact same declared-parity extraction
 // `verify_stereo` itself runs -- so the constraint set and the verifier can never
-// disagree about what's declared; see this module's `constraint_set_agrees_with_*`
+// disagree about what's declared; see this module's `constraint_set_*_matches_rdkit_*`
 // tests for that property checked directly against the RDKit-confirmed fixtures
 // above, not just asserted.
 //
