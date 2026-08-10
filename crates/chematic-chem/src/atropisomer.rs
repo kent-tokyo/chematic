@@ -156,9 +156,23 @@ pub fn assign_atropisomer_chirality(mol: &Molecule) -> Molecule {
     for (bidx, bond) in mol.bonds() {
         let mut new_bond_order = bond.order;
 
-        // Check if this bond is atropisomeric and apply stereochemistry
-        if let Some((_, _)) = atropisomers.iter().find(|(b, _)| b == &bidx)
-            && bond.order == BondOrder::Single
+        // Check if this bond is atropisomeric and apply stereochemistry.
+        // Gate on `AtropisomerType::Biaryl` (detect_atropisomers's own
+        // structural classification), not `bond.order == BondOrder::Single`:
+        // the biaryl inter-ring bond parses as `BondOrder::Aromatic` when
+        // the SMILES leaves it implicit (two aromatic-carbon atoms with no
+        // explicit bond symbol between them), so the old `Single`-only
+        // check silently skipped chirality assignment for that notation
+        // even though `detect_atropisomers` (fixed in #271) already
+        // correctly reports the bond as atropisomeric independent of
+        // `bond.order` (issue #276). Restricting to `Biaryl` here (rather
+        // than dropping the type check altogether) preserves the existing,
+        // separate no-op behavior for `AtropisomerType::Allene`, whose
+        // reported bond is the allene's own central *double* bond -- that
+        // one must never be overwritten with `Up`/`Down`, which would
+        // silently destroy the double bond.
+        if let Some((_, atrop_type)) = atropisomers.iter().find(|(b, _)| b == &bidx)
+            && *atrop_type == AtropisomerType::Biaryl
         {
             let a1_neighbors: Vec<_> = mol.neighbors(bond.atom1).collect();
             let a2_neighbors: Vec<_> = mol.neighbors(bond.atom2).collect();
@@ -357,6 +371,100 @@ mod tests {
             result.bond_count(),
             m.bond_count(),
             "bond count should match"
+        );
+    }
+
+    /// Returns the `BondOrder` `assign_atropisomer_chirality` wrote onto the
+    /// molecule's single `Biaryl` atropisomeric bond. Panics if there isn't
+    /// exactly one, since these tests need that premise to hold to mean
+    /// anything.
+    fn biaryl_result_order(smi: &str) -> BondOrder {
+        let m = mol(smi);
+        let atrops = detect_atropisomers(&m);
+        let biaryl: Vec<_> = atrops
+            .iter()
+            .filter(|(_, t)| *t == AtropisomerType::Biaryl)
+            .collect();
+        assert_eq!(
+            biaryl.len(),
+            1,
+            "'{smi}' should have exactly 1 biaryl atropisomeric bond, got {atrops:?}"
+        );
+        let (bidx, _) = biaryl[0];
+        // Bond indices are preserved 1:1 by assign_atropisomer_chirality's
+        // rebuild (it iterates `mol.bonds()` in order and appends to the
+        // builder in the same order), so `*bidx` still identifies the same
+        // bond in the rebuilt molecule.
+        assign_atropisomer_chirality(&m).bond(*bidx).order
+    }
+
+    #[test]
+    fn assign_atropisomer_chirality_notation_invariant() {
+        // issue #276: detect_atropisomers (fixed in #271) is notation-
+        // invariant, but assign_atropisomer_chirality had its own separate
+        // `bond.order == BondOrder::Single` gate that silently skipped
+        // chirality assignment for the same bond when the SMILES left the
+        // inter-ring bond implicit (which parses as `BondOrder::Aromatic`,
+        // not `Single` -- confirmed empirically, see PR description).
+        //
+        // A plain 2,2'-disubstituted biphenyl (e.g. `Cc1ccccc1-c1ccccc1C`)
+        // doesn't actually exercise this: this function's CIP-priority
+        // heuristic only compares the *immediate* ring neighbors of each
+        // ipso carbon, which are both plain aromatic carbons on either side
+        // of an all-carbocyclic biphenyl axis, so the comparison ties and
+        // no Up/Down is assigned either way (masking the bug rather than
+        // demonstrating it). Using a biaryl with a ring nitrogen ortho to
+        // one ipso carbon (2-methylpyridin-3-yl vs 2-methylphenyl) breaks
+        // the tie and produces a real, distinguishing assignment.
+        let explicit = "Cc1cccnc1-c1ccccc1C";
+        let implicit = "Cc1cccnc1c1ccccc1C";
+        let explicit_order = biaryl_result_order(explicit);
+        let implicit_order = biaryl_result_order(implicit);
+
+        assert!(
+            matches!(explicit_order, BondOrder::Up | BondOrder::Down),
+            "explicit-notation biaryl should get a real Up/Down chirality assignment, got {explicit_order:?}"
+        );
+        assert_eq!(
+            explicit_order, implicit_order,
+            "assign_atropisomer_chirality must give the same chirality assignment for the same \
+             real molecule regardless of whether the inter-ring bond is written explicitly or \
+             left implicit"
+        );
+    }
+
+    #[test]
+    fn assign_atropisomer_chirality_leaves_allene_double_bond_untouched() {
+        // Regression guard for the *other* way this fix could have gone
+        // wrong: naively deleting the old `bond.order == BondOrder::Single`
+        // check entirely (rather than replacing it with the
+        // `AtropisomerType::Biaryl` type gate) would have let this loop
+        // also try to stamp Up/Down onto whatever bond
+        // `detect_atropisomers` reports as `AtropisomerType::Allene` --
+        // which is the allene's own central *double* bond, not a single
+        // bond. Overwriting that would silently corrupt the bond order
+        // (Double -> Up/Down). The `Biaryl`-only gate this fix actually
+        // uses excludes `Allene` entries, preserving the pre-fix behavior
+        // that allene bonds are never rewritten here (this function's
+        // actual M/P assignment is only implemented for the biaryl case).
+        //
+        // Note: `detect_atropisomers`'s `Allene` branch, as currently
+        // written, only fires for a cumulated *triene* (4+ consecutive
+        // double bonds) and never for a plain 3-carbon allene (`C=C=C`) --
+        // a separate, pre-existing gap outside #276's scope (see PR
+        // description). `CC=C=C=CC` (a butatriene) is used here because it
+        // is the shortest input that actually produces an `Allene` entry
+        // to exercise this guard against.
+        let m = mol("CC=C=C=CC");
+        let atrops = detect_atropisomers(&m);
+        let (bidx, _) = atrops
+            .iter()
+            .find(|(_, t)| *t == AtropisomerType::Allene)
+            .expect("'CC=C=C=CC' should have an Allene atropisomer entry");
+        assert_eq!(
+            assign_atropisomer_chirality(&m).bond(*bidx).order,
+            BondOrder::Double,
+            "allene central double bond must not be overwritten with Up/Down"
         );
     }
 }
