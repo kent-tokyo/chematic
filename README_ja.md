@@ -106,7 +106,7 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.12.0
+# chematic v0.13.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-06, v0.4.22 vs RDKit 2026.03.3 --
@@ -282,6 +282,17 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 ---
 
 ## 最近の開発
+
+**v0.13.0**（2026-08-10）: **MMFF94 stretch-bend／torsionパラメータ選択パリティ（両方breaking）、per-atomステレオセンターAPI、E/Z完全性判定、macrocycle検出、notation非依存atropisomer検出・割り当て、XYZ入出力**
+- `chematic-ff`: `mmff94_stbn`/`mmff94_stbn_type_only`が`MMFF94_STBN`テーブルのlookup keyとして、これまで代用していた粗いangle type（0-8）ではなく、RDKit実装の本来の細かいstretch-bend type（`getMMFFStretchBendType`、0-11）を使うように（issue #227）— 265分子コーパスで427件のstretch-bend routing候補中220件が、RDKitの汎用Dfsb周期表デフォルト値から正しい専用パラメータへ移行。`angle_type_for`のring-offset式もRDKit実装の`getMMFFAngleType`に合わせて修正。**Breaking**: `mmff94_stbn`/`mmff94_stbn_type_only`の先頭`u8`引数は`stretch_bend_type`（`angle_type`ではない）— 新規`pub stretch_bend_type_for`で計算
+- `chematic-ff`: `torsion_type_for`が、atom-type membershipのみに頼る旧分類ではなく、j-k結合の実際のMMFF bond type（`bond_type_for`を再利用）とRDKit実装のlocal bond-adjacencyベースring 4/5-override判定を使うように — 1,107件の欠落torsion候補のうち76.9%が分類修正のみで解決、コーパス全体13,530件のtorsion中1,792件の「値はあるが誤ったパラメータ」だったsilent wrong-parameter populationも是正（99.1%をRDKit oracleで直接検証、新規消失0件）。**Breaking**: `torsion_type_for`のシグネチャが`(rings, i, j, k, l, tj, tk)`から`(mol, i, j, k, l, ti, tj, tk, tl)`へ変更
+- `chematic-mol`: XYZ／multi-frame XYZ読み書き（`parse_xyz`/`write_xyz`、`XyzReader`/`XyzWriter`）— 明示的水素は実atomとして保持、結合次数推定なし、原子数不一致・非有限座標はfail closed
+- `chematic-perception`: `stereo_centers(&Molecule) -> Vec<(AtomIdx, bool)>`がper-atomのtetrahedral stereocenter分類を公開（issue #263、従来は集計カウントのみ）— 追加時に2件のバグを発見・修正: 負電荷atomでのMorgan-rankヘルパーの`u64` overflow（issue #267）、implicit hydrogenのrank-0センチネルが実atomの正規化rank 0と衝突し正しく指定されたstereocenterを見落としていた問題
+- `chematic-chem`: `ez_completeness(&Molecule) -> EzCompleteness`（issue #264）が宣言済みE/Z二重結合の specified/unspecified/total を、RDKit実装のstereo-bond適格性ルール（末端・対称結合を除外、8員未満のring結合をBFS最短閉路で除外——SSSRのみでは検出できないbridged-bicyclic系（norbornene等）も正しく扱う）に沿って報告
+- `chematic-chem`: `detect_atropisomers`/`assign_atropisomer_chirality`が完全にnotation非依存に（issue #262、#276）— 検出はSSSRベース（別々の環に属する2つの芳香族炭素、両環ともortho置換あり）で、SMILESが環間結合を明示的に書くか暗黙にするかに依存しない。chirality割り当て側の冗長なbond-order判定も、検出側の分類と一致するよう修正
+- `chematic-perception`: `is_macrocycle(ring: &[AtomIdx]) -> bool`（issue #266）— `chematic-3d`側に重複していたハードコードされた閾値を単一の共有述語に統一
+- **v0.13.0リリースゲート注記**: 265分子Wave 1コーパス中2分子（`chembl_tier_b_0126`/`0168`）で立体中心充足数の1件退行を確認、根本原因はv0.12.0から存在するdistance-geometry埋め込み段階の既存バグ（今回修正したtorsion分類バグに偶然マスクされていた）と特定 — RDKit自身のMMFF94も同一の出発座標を与えると同じ挙動を示すことを確認済み。明示的waiverの下でリリース（issue #285）— 今回のMMFF94修正が新たに生んだ不具合ではない
+- 詳細は`CHANGELOG.md`の`[0.13.0]`セクション参照
 
 **v0.12.0**（2026-08-09）: **MMFF94 stretch-bend本番修正（breaking）、fused/multi-ring分子の3D初期構造修正**
 - `chematic-ff`: `mmff94_stbn`がRDKit実装の29行周期表行stretch-bendデフォルトへfallbackするように — 265分子コーパスでstretch-bend欠落2,107→0。**Breaking**: `mmff94_stbn`に`atomic_num_{i,j,k}: u8`が必須引数として追加（旧動作は`mmff94_stbn_type_only`として維持）、Python生`PipelineV2Config(...)`コンストラクタに`gate_mmff94_stretch_bend`が新規必須引数として追加（`.safe(...)`は無変更）

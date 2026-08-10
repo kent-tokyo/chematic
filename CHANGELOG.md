@@ -9,6 +9,94 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] — 2026-08-10
+
+### Added — `chematic-mol` (XYZ / multi-frame XYZ)
+
+- `parse_xyz`/`write_xyz`, `XyzFrame`/`XyzAtom`, `XyzReader` (multi-frame),
+  `parse_xyz_all`, `XyzWriter`, `XyzError`. Explicit hydrogens are kept as
+  real atoms, never folded into `implicit_hcount()`. No connectivity/bond-
+  order inference is performed, not even opt-in — XYZ carries coordinates
+  and elements only. Fails closed on atom-count mismatch, non-finite
+  coordinates, and unknown elements.
+
+### Added — `chematic-perception` (per-atom stereocenter candidates, issue #263)
+
+- `stereo_centers(&Molecule) -> Vec<(AtomIdx, bool)>` exposes the per-atom
+  tetrahedral-stereocenter classification (`(atom, specified)`) that
+  `stereo_completeness` already computed internally but only surfaced as
+  aggregate counts. `stereo_completeness` is now implemented in terms of
+  `stereo_centers`, so there is one source of truth for the classification
+  logic instead of two. Purely additive — `StereoCompleteness`'s public
+  field shape is unchanged.
+- Two real bugs in the shared `simple_morgan_ranks` helper (used by both
+  `stereo_centers` and `validate_stereo`) were found and fixed while adding
+  this API:
+  - **Negative formal charge caused a `u64` overflow (issue #267).** The
+    initial invariant computed `atom.charge as u64 * 1000` where
+    `atom.charge: i8` — a plain `as u64` cast sign-extends negative values
+    (`-1i8 as u64 == u64::MAX`), so the multiply overflowed unconditionally
+    for any negatively-charged atom: panicking in debug builds on any
+    ordinary anion (carboxylate, sulfonate, phosphate, ...), silently
+    wrapping to a corrupted invariant in release builds. Fixed by computing
+    the whole invariant in `i64` and casting to `u64` once at the end
+    (bit-for-bit identical to the old code for `charge >= 0`).
+  - **Implicit-hydrogen rank-0 sentinel collided with a real atom's
+    normalized rank 0.** `simple_morgan_ranks` normalizes each atom's
+    Morgan-refinement invariant to a consecutive ordinal starting at `0` —
+    so an ordinary heavy-atom neighbor can legitimately hold rank `0` (e.g.
+    a plain methyl carbon with the lowest invariant in the molecule).
+    `stereo_completeness`/`stereo_centers` used the literal value `0` as a
+    stand-in rank for an implicit hydrogen when checking whether a
+    candidate stereocenter's 4 groups were all distinct; when a real rank-0
+    neighbor and an implicit H coincided at the same center, `dedup()`
+    merged the two `0`s and the atom was silently dropped as "not a
+    stereocenter" — undercounting real, correctly `@`/`@@`-annotated
+    stereocenters (repro: `C[C@@H](Cl)C(Br)(F)I`, atom 1). Fixed by using
+    `mol.atom_count()` as the implicit-H sentinel instead of `0` (provably
+    unreachable as a real normalized rank, since the max is
+    `atom_count() - 1`).
+
+### Added — `chematic-chem` (E/Z double-bond stereo-completeness, issue #264)
+
+- `ez_completeness(&Molecule) -> EzCompleteness { specified, unspecified,
+  total }`. Excludes terminal/symmetric double bonds and bonds in rings
+  smaller than 8 atoms (matching RDKit's `isBondPotentialStereoBond`/
+  `MinBondRingSize` cutoff, oracle-verified), using a BFS shortest-cycle-
+  through-bond check (not SSSR alone, which would miss bridged-bicyclic
+  cases like norbornene) to determine ring membership correctly.
+
+### Added — `chematic-perception` (macrocycle predicate, issue #266)
+
+- `is_macrocycle(ring: &[AtomIdx]) -> bool { ring.len() >= 9 }` — a single
+  shared predicate matching the two hardcoded `9`s already duplicated in
+  `chematic-3d` (`MACROCYCLE_RING_THRESHOLD`,
+  `etkdg_knowledge::classify`'s `MACROCYCLE_MIN`). The duplication in
+  `chematic-3d` itself is not unified by this change.
+
+### Fixed — `chematic-chem` (atropisomer detection/assignment notation-invariance, issues #262, #276)
+
+- `detect_atropisomers` rewritten to use `chematic_perception::find_sssr`
+  structurally (independent of `BondOrder`) to confirm two aromatic carbons
+  belong to separate SSSR rings, then requires at least one substituted
+  ortho ring position on each ring — instead of the previous
+  `bond.order == BondOrder::Single` gate, which made the same real molecule
+  give different answers depending on whether the SMILES wrote the
+  inter-ring bond explicitly or left it implicit. Also fixes a false
+  positive on para-substituted biaryls (e.g. 4,4'-dimethylbiphenyl is no
+  longer flagged).
+- `assign_atropisomer_chirality` had its own, separate, redundant
+  `bond.order == BondOrder::Single` gate before annotating a detected
+  atropisomeric bond with `Up`/`Down` chirality — the same class of
+  notation-dependence issue #262 removed from `detect_atropisomers`, just
+  one function later: an implicit-notation biaryl bond that `detect_
+  atropisomers` correctly flagged as atropisomeric could still silently
+  get skipped for chirality assignment. Fixed by gating on `AtropisomerType
+  ::Biaryl` (matching `detect_atropisomers`'s own classification) instead
+  of the bond order — not a blanket deletion of the check, since a naive
+  deletion would have let the gate's incidental protection of
+  `AtropisomerType::Allene`'s central `Double` bond regress too.
+
 ### Fixed — `chematic-ff` (MMFF94 stretch-bend classification-key bug, issue #227 Priority 2C, **breaking**)
 
 - **Root cause (the fix the user asked for): stretch-bend used the *angle
@@ -188,6 +276,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the reference call site.
 - Recommends a **minor** version bump (breaking Rust signature semantics),
   consistent with v0.12.0's own precedent for `mmff94_stbn`.
+
+### Known issue — release-gate waiver (issue #285)
+
+- The combined v0.13.0 release-gate remeasurement (265-molecule Wave 1
+  corpus, both MMFF94 fixes above together) found 2 molecules
+  (`chembl_tier_b_0126`, `chembl_tier_b_0168`) regress by 1 declared-
+  stereocenter satisfaction each in the un-gated/stretch-bend-gated MMFF94
+  arms. Root-caused to a **pre-existing distance-geometry embedding defect**
+  (present since v0.12.0, not introduced by either fix above): the
+  declared alkene in both molecules is placed with the wrong E/Z sign at
+  the embedding stage itself, before force-field minimization ever runs.
+  What changed is that the *old*, mistyped torsion terms happened to pull
+  this dihedral back to the declared configuration during minimization —
+  an accidental rescue that the corrected torsion classification no longer
+  performs. Confirmed via RDKit's own MMFF94 (`MMFFGetMoleculeForceField`),
+  given the identical pre-minimization starting geometry chematic uses,
+  exhibiting the same failure to rescue — two independent MMFF94
+  implementations agree on identical coordinates, so the MMFF94 fixes
+  themselves are correct. `sound=True` in every case (this is a stereo-
+  correctness defect, not a geometry-sanity regression). Net corpus-wide
+  stereo satisfaction still improves (`mmff94_strict`: 49 → 48 declared-
+  stereocenter violations). Shipped under an explicit release waiver rather
+  than blocking v0.13.0 — see issue #285 for the fix, planned for a later
+  release.
 
 ## [0.12.0] — 2026-08-09
 
