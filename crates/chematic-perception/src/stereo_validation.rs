@@ -252,10 +252,23 @@ pub fn stereo_completeness(mol: &Molecule) -> StereoCompleteness {
             continue;
         } // only tetrahedral candidates
 
-        // Check all neighbours have distinct ranks (including implicit H as rank 0).
+        // Check all neighbours have distinct ranks (including implicit H as a
+        // sentinel rank). `simple_morgan_ranks` normalises to consecutive
+        // ordinals starting at 0 (see its tail: `partition_point(|&u| u <
+        // *r)`), so a real heavy-atom neighbour can legitimately carry rank
+        // 0 -- it's the ordinary "lowest invariant in the molecule" rank,
+        // not a reserved value. Using the literal `0` as the implicit-H
+        // sentinel therefore collided with real rank-0 neighbours (issue
+        // #267's follow-up bug): `dedup()` merged the two, `sorted.len()`
+        // dropped below 4, and a genuine 4-distinct-group stereocenter was
+        // silently skipped. The maximum normalised rank is (number of
+        // distinct invariants - 1), which is always <= atom_count() - 1, so
+        // `atom_count()` itself is never a reachable real rank and is safe
+        // to use as the sentinel here.
+        let implicit_h_rank_sentinel = mol.atom_count() as u64;
         let mut nb_ranks: Vec<u64> = heavy_nbs.iter().map(|nb| ranks[nb.0 as usize]).collect();
         if implicit_h > 0 {
-            nb_ranks.push(0);
+            nb_ranks.push(implicit_h_rank_sentinel);
         }
 
         let mut sorted = nb_ranks.clone();
@@ -387,5 +400,62 @@ mod tests {
         // Also exercise the other public entry point sharing the same helper.
         let errors = validate_stereo(&phosphate);
         assert!(errors.is_empty());
+    }
+
+    // Regression tests for the implicit-H rank-0 sentinel collision (issue
+    // #267 follow-up, distinct from the overflow bug above): `simple_morgan_ranks`
+    // normalises ranks to consecutive ordinals starting at 0, so an ordinary
+    // heavy-atom neighbour can legitimately carry rank 0. Using the literal
+    // `0` as the implicit-H stand-in collided with such a neighbour, `dedup()`
+    // merged them, and a genuine 4-distinct-group stereocenter was silently
+    // dropped (`specified` undercounted).
+
+    #[test]
+    fn test_stereo_completeness_rank_zero_collision_chain() {
+        // Atom indices: 0=C(methyl) 1=C@@H(chiral) 2=Cl 3=C(quaternary) 4=Br
+        // 5=F 6=I. Verified via `simple_morgan_ranks`: ranks = [0, 6, 2, 5, 4,
+        // 1, 3] -- the chiral atom's methyl neighbour (atom 0) is the
+        // lowest-invariant atom in the whole molecule and normalises to rank
+        // 0, colliding with the old implicit-H sentinel. Before the fix this
+        // atom was dropped entirely (specified=0, unspecified=1, total=1,
+        // counting only the separate, unrelated unspecified center at the
+        // quaternary carbon 3, whose 4 heavy neighbours -- 1, Br, F, I -- are
+        // trivially distinct and is not itself affected by this bug); after
+        // the fix both stereocenters are counted.
+        let mol = parse("C[C@@H](Cl)C(Br)(F)I").unwrap();
+        let sc = stereo_completeness(&mol);
+        assert_eq!(
+            sc.specified, 1,
+            "annotated chiral carbon must not be dropped by the rank-0 collision: {sc:?}"
+        );
+        assert_eq!(
+            sc.total_centers, 2,
+            "expected 2 stereocenters total (1 fixed + 1 pre-existing, bug-unrelated \
+             unspecified center at the quaternary carbon): {sc:?}"
+        );
+    }
+
+    #[test]
+    fn test_stereo_completeness_rank_zero_collision_different_neighbor() {
+        // Same collision class as the chain test above, but with a
+        // structurally different colliding neighbour to confirm the fix
+        // isn't specific to "a bare terminal methyl happens to be rank 0".
+        // Atom indices: 0=O 1=C(CH2, bonded to O) 2=C@@H(chiral) 3=N
+        // 4=C(quaternary) 5=Br 6=F 7=I. Verified via `simple_morgan_ranks`:
+        // ranks = [1, 0, 5, 3, 7, 6, 2, 4] -- here it's the chiral atom's
+        // *substituted* CH2-OH neighbour (atom 1, not a plain methyl and not
+        // the neighbour listed first in the SMILES branch order) that lands
+        // on rank 0 and collides with the implicit-H sentinel.
+        let mol = parse("OC[C@@H](N)C(Br)(F)I").unwrap();
+        let sc = stereo_completeness(&mol);
+        assert_eq!(
+            sc.specified, 1,
+            "annotated chiral carbon must not be dropped by the rank-0 collision: {sc:?}"
+        );
+        assert_eq!(
+            sc.total_centers, 2,
+            "expected 2 stereocenters total (1 fixed + 1 pre-existing, bug-unrelated \
+             unspecified center at the quaternary carbon): {sc:?}"
+        );
     }
 }
