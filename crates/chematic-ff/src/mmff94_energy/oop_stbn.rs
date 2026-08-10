@@ -125,8 +125,22 @@ pub static MMFF94_OOP: &[(u8, u8, u8, u8, f64)] = &[
 ];
 
 /// MMFF94 Stretch-Bend parameters (282 entries, Halgren MMFF.V)
-/// Format: (angle_type, type_i, type_j, type_k, kba_ijk, kba_kji)
+/// Format: (stretch_bend_type, type_i, type_j, type_k, kba_ijk, kba_kji)
 /// E_sb = 2.51210 × (kba_ijk × Δr_ij + kba_kji × Δr_kj) × Δθ (degrees)
+///
+/// The leading key column is RDKit's **stretch-bend type** (0-11, from
+/// `getMMFFStretchBendType` — see [`crate::mmff94_minimizer::stretch_bend_type_for`]),
+/// NOT the angle type (0-8, from [`crate::mmff94_minimizer::angle_type_for`]).
+/// A prior version of this doc comment (and of `mmff94_stbn`/
+/// `mmff94_stbn_type_only`'s own parameter) mislabeled this column as
+/// `angle_type`, which fed the wrong key straight into every lookup below —
+/// fixed here (issue #227 Priority 2C). Self-consistency proof (no oracle
+/// needed): the one key-5 row below, `(5, 22, 22, 22, ...)`, is an all-CR3R
+/// (cyclopropane ring carbon) triple; under `angle_type_for`'s own table a
+/// 3-ring with `bt_sum=0` is angle type 3, never 5 — a row keyed 5 would be
+/// unreachable garbage if this column really were `angle_type`. Under
+/// `getMMFFStretchBendType`, angle type 3 (3-ring, bt_sum=0) maps to
+/// stretch-bend type 5 — exactly this row.
 pub static MMFF94_STBN: &[(u8, u8, u8, u8, f64, f64)] = &[
     (0, 1, 1, 1, 0.2060, 0.2060),
     (0, 1, 1, 2, 0.1360, 0.1970),
@@ -450,37 +464,47 @@ fn search_oop(type_j: u8, type_i: u8, type_k: u8, type_l: u8) -> Option<f64> {
 /// no element/periodic-row fallback (see [`mmff94_stbn`] for that).
 ///
 /// Returns (kba_ijk, kba_kji). Both orderings (i,j,k) and (k,j,i) tried at
-/// the requested `angle_type`, then — if `angle_type` isn't 0 and no row
-/// exists there — the *specific* (ti,tj,tk) triple is retried at type 0
-/// before finally falling back to the fully generic `(0, 0, type_j, 0)`
-/// wildcard. `MMFF94_STBN` is overwhelmingly type-0 (246/282 rows; angle
-/// types 3, 6, 7, 8 have zero rows at all), so without this intermediate
-/// step, correctly classifying an angle as a non-zero type that this table
-/// doesn't happen to cover would silently drop straight to the least
-/// specific fallback instead of the specific-triple type-0 row a hardcoded
-/// `angle_type=0` caller would have found.
+/// the requested `stretch_bend_type`, then — if `stretch_bend_type` isn't 0
+/// and no row exists there — the *specific* (ti,tj,tk) triple is retried at
+/// type 0 before finally falling back to the fully generic `(0, 0, type_j, 0)`
+/// wildcard. `MMFF94_STBN` is overwhelmingly type-0 (246/282 rows), so
+/// without this intermediate step, correctly classifying a term as a
+/// non-zero type that this table doesn't happen to cover would silently
+/// drop straight to the least specific fallback instead of the
+/// specific-triple type-0 row a hardcoded `stretch_bend_type=0` caller would
+/// have found.
+///
+/// `stretch_bend_type` is RDKit's `getMMFFStretchBendType` output (0-11),
+/// computed via [`crate::mmff94_minimizer::stretch_bend_type_for`] — **not**
+/// the angle type (0-8, [`crate::mmff94_minimizer::angle_type_for`]). Issue
+/// #227 Priority 2C: this parameter used to be the angle type directly
+/// (mislabeled as `angle_type` here), which used the wrong lookup key —
+/// `MMFF94_STBN`'s own leading column is keyed by stretch-bend type, not
+/// angle type (see the table's own doc comment for the self-consistency
+/// proof). **Breaking change**: callers passing a raw angle type now get
+/// silently wrong results; see `CHANGELOG.md` migration notes.
 ///
 /// `pub` (not just used internally) because diagnostic tooling
 /// (`mmff94_term_coverage_audit.rs`) specifically wants "does a *different
 /// classification code* have a row for this exact type triple" —
 /// independent of any element-based fallback, which [`mmff94_stbn`]'s
-/// Dfsb tier is not (it doesn't vary with `angle_type` at all).
+/// Dfsb tier is not (it doesn't vary with `stretch_bend_type` at all).
 pub fn mmff94_stbn_type_only(
-    angle_type: u8,
+    stretch_bend_type: u8,
     type_i: u8,
     type_j: u8,
     type_k: u8,
 ) -> Option<(f64, f64)> {
-    let search = |at: u8, ti: u8, tj: u8, tk: u8| {
+    let search = |sbt: u8, ti: u8, tj: u8, tk: u8| {
         MMFF94_STBN
-            .binary_search_by_key(&(at, ti, tj, tk), |&(a, i, j, k, _, _)| (a, i, j, k))
+            .binary_search_by_key(&(sbt, ti, tj, tk), |&(a, i, j, k, _, _)| (a, i, j, k))
             .ok()
             .map(|idx| (MMFF94_STBN[idx].4, MMFF94_STBN[idx].5))
     };
-    search(angle_type, type_i, type_j, type_k)
-        .or_else(|| search(angle_type, type_k, type_j, type_i).map(|(a, b)| (b, a)))
+    search(stretch_bend_type, type_i, type_j, type_k)
+        .or_else(|| search(stretch_bend_type, type_k, type_j, type_i).map(|(a, b)| (b, a)))
         .or_else(|| {
-            if angle_type != 0 {
+            if stretch_bend_type != 0 {
                 search(0, type_i, type_j, type_k)
                     .or_else(|| search(0, type_k, type_j, type_i).map(|(a, b)| (b, a)))
             } else {
@@ -594,8 +618,18 @@ fn mmff94_dfsb_stbn(atomic_num_i: u8, atomic_num_j: u8, atomic_num_k: u8) -> Opt
 /// equivalence-class step exists in RDKit's real stretch-bend path at all
 /// (that mechanism is angle/torsion/OOP-only in RDKit), so this function
 /// now matches RDKit's own coverage, not a partial subset of it.
+///
+/// `stretch_bend_type` (0-11) is RDKit's `getMMFFStretchBendType` output —
+/// compute it via [`crate::mmff94_minimizer::stretch_bend_type_for`], **not**
+/// the angle type ([`crate::mmff94_minimizer::angle_type_for`], 0-8). Issue
+/// #227 Priority 2C: this parameter used to be the angle type directly
+/// (mislabeled `angle_type`), which fed the wrong key into `MMFF94_STBN` —
+/// see that table's own doc comment for the self-consistency proof this was
+/// a real bug. **Breaking change**: existing callers passing a raw angle
+/// type now get silently wrong parameters; see `CHANGELOG.md` migration
+/// notes for the required call-site update.
 pub fn mmff94_stbn(
-    angle_type: u8,
+    stretch_bend_type: u8,
     type_i: u8,
     type_j: u8,
     type_k: u8,
@@ -603,7 +637,7 @@ pub fn mmff94_stbn(
     atomic_num_j: u8,
     atomic_num_k: u8,
 ) -> Option<(f64, f64)> {
-    mmff94_stbn_type_only(angle_type, type_i, type_j, type_k)
+    mmff94_stbn_type_only(stretch_bend_type, type_i, type_j, type_k)
         .or_else(|| mmff94_dfsb_stbn(atomic_num_i, atomic_num_j, atomic_num_k))
 }
 

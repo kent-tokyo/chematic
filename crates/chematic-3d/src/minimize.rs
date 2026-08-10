@@ -12,7 +12,7 @@ use chematic_ff::{
     assign_mmff94_numeric_types, assign_uff_types, bond_type_for, minimize_mmff94_lbfgs,
     minimize_uff as ff_minimize_uff, mmff94_angle_energy, mmff94_bond_energy,
     mmff94_energy_breakdown, mmff94_oop, mmff94_stbn, mmff94_torsion_energy, mmff94_total_energy,
-    torsion_type_for, uff_total_energy,
+    stretch_bend_type_for, torsion_type_for, uff_total_energy,
 };
 use chematic_ff::{
     assign_dreiding_types, assign_mmff94_types, dreiding_angle, dreiding_bond_len, dreiding_vdw,
@@ -1780,9 +1780,17 @@ fn compute_mmff94_coverage(mol: &Molecule, types: &[u8]) -> Mmff94CoverageReport
                 }
                 // Same (a, b, c) triple/angle_type as the angle-bend check above --
                 // stretch_bend_energy (chematic-ff's mmff94_minimizer) iterates the
-                // identical neighbor-pair loop, so this mirrors it exactly.
+                // identical neighbor-pair loop, so this mirrors it exactly, including
+                // computing the stretch-bend-type lookup key from `at` (issue #227
+                // Priority 2C: the STBN table is keyed by stretch-bend type, not
+                // angle type -- see chematic_ff::stretch_bend_type_for's doc).
+                let order_ab = mol.bond_between(a, b).expect("a-b angle bond").1.order;
+                let order_cb = mol.bond_between(c, b).expect("c-b angle bond").1.order;
+                let bt_ab = bond_type_for(ta, types[b_idx], order_ab);
+                let bt_cb = bond_type_for(tc, types[b_idx], order_cb);
+                let sbt = stretch_bend_type_for(at, ta, tc, bt_ab, bt_cb);
                 if mmff94_stbn(
-                    at,
+                    sbt,
                     ta,
                     types[b_idx],
                     tc,
