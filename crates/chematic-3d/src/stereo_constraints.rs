@@ -189,6 +189,49 @@ pub enum StereoElement {
     DoubleBond(BondIdx),
 }
 
+/// One declared tetrahedral stereocenter, turned into a constraint a future
+/// embedding-time consumer could check or enforce -- independent of any particular
+/// geometry (built from `mol` alone). See the "Constraint representation" section
+/// near [`build_stereo_constraints`] for how this differs from [`TetrahedralReport`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct TetrahedralConstraint {
+    pub atom: AtomIdx,
+    /// Declared SMILES chirality-neighbor order (see [`declared_neighbor_order`]);
+    /// one entry may be [`STEREO_H_SENTINEL`] for an implicit-H stereocenter. A
+    /// consumer resolving this against real coordinates must substitute a phantom
+    /// position for that slot the same way [`tetrahedral_positions`] does.
+    pub order: [u32; 4],
+    /// RDKit-calibrated (see this struct's constructor and the module's
+    /// `tetrahedral_matches_rdkit_*` tests): `true` means a satisfying geometry must
+    /// produce a NEGATIVE `signed_volume(order[1], order[2], order[3], order[0])`;
+    /// `false` means positive. Expressed as the sign directly, not as a `@`/`@@`/CCW
+    /// label, so a consumer never has to re-derive the CCW-to-sign mapping that this
+    /// module's own sign convention got backwards twice before being pinned against
+    /// an external RDKit oracle.
+    pub requires_negative_volume: bool,
+}
+
+/// One declared E/Z double bond, turned into a constraint a future embedding-time
+/// consumer could check or enforce -- independent of any particular geometry. See
+/// [`build_stereo_constraints`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct DoubleBondConstraint {
+    pub bond: BondIdx,
+    pub end1: AtomIdx,
+    pub end2: AtomIdx,
+    /// The specific direction-marked substituent on `end1`'s side (see
+    /// [`marked_substituent`]).
+    pub sub1: AtomIdx,
+    /// The specific direction-marked substituent on `end2`'s side.
+    pub sub2: AtomIdx,
+    /// `true` when a satisfying geometry must place `sub1` and `sub2` on the same
+    /// side of the `end1`-`end2` axis (dihedral magnitude < 90°, matching
+    /// [`verify_double_bond`]'s convention) -- not itself "cis"/"trans" or "Z"/"E",
+    /// since those labels depend on CIP priority, which this module deliberately
+    /// never resolves (see the module's "Design" doc section).
+    pub same_side: bool,
+}
+
 /// One tetrahedral center's verification result.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TetrahedralReport {
@@ -389,14 +432,22 @@ fn tetrahedral_positions(
     Ok(out)
 }
 
-fn verify_tetrahedral_center(mol: &Molecule, coords: &Coords3D, idx: AtomIdx) -> StereoStatus {
+/// Declared-parity-only prefix of tetrahedral verification, needing no geometry --
+/// same gates, same order, as the coords-dependent code that used to precede the
+/// geometry check inline (kept behavior-identical on purpose: this is a pure
+/// extraction, see the PR that introduced [`TetrahedralConstraint`] for the
+/// before/after test evidence). Only a plain tetrahedral center (single/up/down
+/// bonds only) is in scope -- mirrors `stereo3d.rs`'s `assign_stereo_from_3d` gate,
+/// excluding e.g. allene central atoms (which declare axial chirality via bond
+/// directions, not `Atom::chirality`, and are handled by the double-bond path
+/// instead).
+fn tetrahedral_constraint_for(
+    mol: &Molecule,
+    idx: AtomIdx,
+) -> Result<TetrahedralConstraint, StereoRejectionReason> {
     let atom = mol.atom(idx);
     debug_assert!(atom.chirality != Chirality::None);
 
-    // Only a plain tetrahedral center (single/up/down bonds only) is in scope --
-    // mirrors stereo3d.rs's `assign_stereo_from_3d` gate, excluding e.g. allene
-    // central atoms (which declare axial chirality via bond directions, not
-    // `Atom::chirality`, and are handled by the double-bond path instead).
     let all_single_ish = mol.neighbors(idx).all(|(_, bidx)| {
         matches!(
             mol.bond(bidx).order,
@@ -404,45 +455,51 @@ fn verify_tetrahedral_center(mol: &Molecule, coords: &Coords3D, idx: AtomIdx) ->
         )
     });
     if !all_single_ish {
-        return StereoStatus::Unevaluable(StereoRejectionReason::UnsupportedCoordination);
+        return Err(StereoRejectionReason::UnsupportedCoordination);
     }
 
     let Some(order) = declared_neighbor_order(mol, idx) else {
-        return StereoStatus::Unevaluable(StereoRejectionReason::UnsupportedCoordination);
+        return Err(StereoRejectionReason::UnsupportedCoordination);
     };
     let n_sentinels = order.iter().filter(|&&n| n == STEREO_H_SENTINEL).count();
     if order.len() != 4 || n_sentinels > 1 {
-        return StereoStatus::Unevaluable(StereoRejectionReason::UnsupportedCoordination);
+        return Err(StereoRejectionReason::UnsupportedCoordination);
     }
     if n_sentinels == 1 && implicit_hcount(mol, idx) != 1 {
-        return StereoStatus::Unevaluable(StereoRejectionReason::UnsupportedCoordination);
+        return Err(StereoRejectionReason::UnsupportedCoordination);
     }
 
-    let positions = match tetrahedral_positions(coords, idx, &order) {
+    Ok(TetrahedralConstraint {
+        atom: idx,
+        order: [order[0], order[1], order[2], order[3]],
+        // RDKit-calibrated (see module docs and `tetrahedral_matches_rdkit_*`
+        // tests): declared `@` (`Chirality::CounterClockwise`) requires a NEGATIVE
+        // `signed_volume(order[1], order[2], order[3], order[0])`; `@@` requires
+        // positive. Not derived from an internal "CCW/CW when viewed from n0"
+        // mental model -- an earlier version of this predicate used that framing
+        // and got the sign backwards twice (see git history / PR discussion).
+        requires_negative_volume: atom.chirality == Chirality::CounterClockwise,
+    })
+}
+
+fn verify_tetrahedral_center(mol: &Molecule, coords: &Coords3D, idx: AtomIdx) -> StereoStatus {
+    let constraint = match tetrahedral_constraint_for(mol, idx) {
+        Ok(c) => c,
+        Err(reason) => return StereoStatus::Unevaluable(reason),
+    };
+
+    let positions = match tetrahedral_positions(coords, idx, &constraint.order) {
         Ok(p) => p,
         Err(reason) => return StereoStatus::Unevaluable(reason),
     };
 
-    // `signed_volume(n1, n2, n3, n0)` sign vs. the declared `@`/`@@` tag, calibrated
-    // against an external oracle (RDKit `AssignStereochemistryFrom3D`), not derived
-    // from an internal "CCW/CW when viewed from n0" mental model -- an earlier
-    // version of this function used that framing and got the sign backwards (see
-    // git history / PR discussion). Ground truth: RDKit-embedded, MMFF-optimized
-    // conformers for `[C@](Br)(Cl)(F)I`, `[C@@](Br)(Cl)(F)I`, `N[C@@H](C)C(=O)O`,
-    // `N[C@H](C)C(=O)O` were confirmed by RDKit's own `AssignStereochemistryFrom3D`
-    // to correctly reproduce each declared tag; feeding those exact coordinates
-    // through this function must read `Satisfied`. That is what fixes `@` (declared
-    // `Chirality::CounterClockwise`) to a NEGATIVE `signed_volume(n1,n2,n3,n0)`, and
-    // `@@` to a POSITIVE one -- see this file's `tetrahedral_matches_rdkit_*` tests
-    // for the exact reproduction (RDKit coordinates hardcoded, not hand-derived).
     let volume = signed_volume(positions[1], positions[2], positions[3], positions[0]);
     if volume.abs() < VOLUME_EPS {
         return StereoStatus::Unevaluable(StereoRejectionReason::DegenerateGeometry);
     }
-    let matches_declared_ccw = volume < 0.0;
-    let declared_ccw = atom.chirality == Chirality::CounterClockwise;
+    let actual_negative = volume < 0.0;
 
-    if matches_declared_ccw == declared_ccw {
+    if actual_negative == constraint.requires_negative_volume {
         StereoStatus::Satisfied
     } else {
         StereoStatus::Violated
@@ -504,15 +561,19 @@ fn has_real_substituent(mol: &Molecule, atom_idx: AtomIdx, other_end: AtomIdx) -
     mol.neighbors(atom_idx).any(|(nb, _)| nb != other_end)
 }
 
-/// `None` when `bond_idx` isn't a double bond, or has no declared direction marker
-/// anywhere on it (not part of "declared stereo" at all, so not reported). `Some`
-/// otherwise, including `Unevaluable` outcomes for a bond that clearly *is* meant to
-/// carry declared E/Z but can't be evaluated.
-fn verify_double_bond(
+/// Declared-parity-only prefix of double-bond verification, needing no geometry --
+/// same gates, same order, as the coords-dependent code that used to precede the
+/// dihedral check inline (kept behavior-identical on purpose: this is a pure
+/// extraction). `None` when `bond_idx` isn't a double bond, or has no declared
+/// direction marker anywhere on it (not part of "declared stereo" at all, so not
+/// reported -- callers must keep this outer `Option` distinct from the inner
+/// `Result`'s `Err`: "not declared" and "declared but unsupported" are different
+/// things everywhere else in this module). `Some(Err(..))` for a bond that clearly
+/// *is* meant to carry declared E/Z but can't be turned into a constraint.
+fn double_bond_constraint_for(
     mol: &Molecule,
-    coords: &Coords3D,
     bond_idx: BondIdx,
-) -> Option<StereoStatus> {
+) -> Option<Result<DoubleBondConstraint, StereoRejectionReason>> {
     let bond = mol.bond(bond_idx);
     if bond.order != BondOrder::Double {
         return None;
@@ -549,28 +610,45 @@ fn verify_double_bond(
     }
 
     if is_cumulated(mol, a1, bond_idx) || is_cumulated(mol, a2, bond_idx) {
-        return Some(StereoStatus::Unevaluable(
-            StereoRejectionReason::TerminalOrCumulatedAlkene,
-        ));
+        return Some(Err(StereoRejectionReason::TerminalOrCumulatedAlkene));
     }
 
     let Some((sub1, up1)) = marked_substituent(mol, a1, a2) else {
-        return Some(StereoStatus::Unevaluable(
-            StereoRejectionReason::AmbiguousDirection,
-        ));
+        return Some(Err(StereoRejectionReason::AmbiguousDirection));
     };
     let Some((sub2, up2)) = marked_substituent(mol, a2, a1) else {
-        return Some(StereoStatus::Unevaluable(
-            StereoRejectionReason::AmbiguousDirection,
-        ));
+        return Some(Err(StereoRejectionReason::AmbiguousDirection));
     };
 
-    let declared_same_side = up1 == up2;
+    Some(Ok(DoubleBondConstraint {
+        bond: bond_idx,
+        end1: a1,
+        end2: a2,
+        sub1,
+        sub2,
+        same_side: up1 == up2,
+    }))
+}
+
+/// `None` when `bond_idx` isn't a double bond, or has no declared direction marker
+/// anywhere on it (not part of "declared stereo" at all, so not reported). `Some`
+/// otherwise, including `Unevaluable` outcomes for a bond that clearly *is* meant to
+/// carry declared E/Z but can't be evaluated.
+fn verify_double_bond(
+    mol: &Molecule,
+    coords: &Coords3D,
+    bond_idx: BondIdx,
+) -> Option<StereoStatus> {
+    let constraint = match double_bond_constraint_for(mol, bond_idx)? {
+        Ok(c) => c,
+        Err(reason) => return Some(StereoStatus::Unevaluable(reason)),
+    };
+
     let Some(angle) = crate::stereo3d::dihedral(
-        coords.get(a1),
-        coords.get(a2),
-        coords.get(sub1),
-        coords.get(sub2),
+        coords.get(constraint.end1),
+        coords.get(constraint.end2),
+        coords.get(constraint.sub1),
+        coords.get(constraint.sub2),
     ) else {
         return Some(StereoStatus::Unevaluable(
             StereoRejectionReason::DegenerateGeometry,
@@ -578,7 +656,7 @@ fn verify_double_bond(
     };
     let actual_same_side = angle.abs() < std::f64::consts::FRAC_PI_2;
 
-    Some(if actual_same_side == declared_same_side {
+    Some(if actual_same_side == constraint.same_side {
         StereoStatus::Satisfied
     } else {
         StereoStatus::Violated
