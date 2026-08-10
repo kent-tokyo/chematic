@@ -1,0 +1,967 @@
+{
+  "purpose": "v0.13.0 combined remeasurement (issue #227): PR #281 (stretch-bend parameter-selection parity) + PR #282 (torsion classification parity), measured together for the first time, on the frozen v0.13.0 release-candidate SHA",
+  "measured_commit": "2b608d3bab677ce79205aaca3a56a0c71dc13ebc",
+  "measured_commit_note": "main tip at RC freeze; includes PR #281+#282 (the two MMFF94 fixes this measurement targets) plus PR #268 (per-atom stereocenter candidates) and PR #283 (atropisomer notation-invariance fix), neither of which touches chematic-ff/MMFF94 code (confirmed via git diff c57cf58..2b608d3 --stat)",
+  "baseline_commit_note": "validation/results/pipeline_v2_vs_rdkit_v0_12_0_chematic_rows.jsonl (frozen v0.12.0 tag snapshot, same baseline PR #281/#282 each used individually)",
+  "run1_is_measurement_of_record": true,
+  "run1_run2_policy": "run1 is the measurement of record for the v0.12.0-baseline paired diff; run2 exists only for the run-to-run reproducibility check and is never substituted into the paired diff, decided before either run completed",
+  "control_arms_checked": [
+    "chematic_legacy_etkdg",
+    "chematic_pipeline_v2_dreiding",
+    "chematic_pipeline_v2_no_ff",
+    "chematic_pipeline_v2_ring_torsion_failclosed_probe",
+    "chematic_pipeline_v2_uff_only"
+  ],
+  "control_arm_rows": 1061,
+  "control_arms_byte_identical_excl_elapsed_ms": true,
+  "common_row_count": 3181,
+  "success_to_failure_count": 0,
+  "sound_to_unsound_count": 0,
+  "nontimeout_to_timeout_count": 0,
+  "all_status_changes_count": 73,
+  "all_status_changes": [
+    {
+      "key": [
+        "aspirin",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "atorvastatin_fragment",
+        "chematic_pipeline_v2_mmff94_strict"
+      ],
+      "before": "timeout",
+      "after": "success"
+    },
+    {
+      "key": [
+        "atorvastatin_fragment",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "atorvastatin_fragment",
+        "chematic_pipeline_v2_mmff94_with_uff_fallback"
+      ],
+      "before": "timeout",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0014",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0014",
+        "chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0036",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0038",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0039",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0041",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0041",
+        "chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0042",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0043",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0044",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0045",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0047",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0049",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0051",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0067",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0075",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0076",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0078",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0079",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0081",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0083",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0092",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0093",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0094",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0102",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0108",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0109",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0110",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0111",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0112",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0113",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0114",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0114",
+        "chematic_pipeline_v2_mmff94_with_uff_fallback_repair"
+      ],
+      "before": "timeout",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0115",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0116",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0117",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0124",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0125",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0126",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0129",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0130",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0131",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0132",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0133",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0134",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0135",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0136",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0137",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0138",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0139",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0140",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0141",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0142",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0144",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0150",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0155",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0158",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0162",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0166",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "timeout",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0166",
+        "chematic_pipeline_v2_mmff94_strict_repair"
+      ],
+      "before": "timeout",
+      "after": "typed_failure"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0166",
+        "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated"
+      ],
+      "before": "timeout",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0166",
+        "chematic_pipeline_v2_mmff94_with_uff_fallback_repair"
+      ],
+      "before": "timeout",
+      "after": "typed_failure"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0166",
+        "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated"
+      ],
+      "before": "timeout",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0168",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0169",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "chembl_tier_b_0193",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "cinnamic_acid_E",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "cinnamic_acid_Z",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    },
+    {
+      "key": [
+        "testosterone",
+        "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated"
+      ],
+      "before": "typed_failure",
+      "after": "success"
+    }
+  ],
+  "per_arm_sound_before_after": {
+    "chematic_legacy_etkdg": {
+      "sound_before": 248,
+      "sound_after": 248
+    },
+    "chematic_pipeline_v2_dreiding": {
+      "sound_before": 254,
+      "sound_after": 254
+    },
+    "chematic_pipeline_v2_mmff94_strict": {
+      "sound_before": 148,
+      "sound_after": 149
+    },
+    "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated": {
+      "sound_before": 85,
+      "sound_after": 149
+    },
+    "chematic_pipeline_v2_mmff94_strict_repair": {
+      "sound_before": 131,
+      "sound_after": 131
+    },
+    "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated": {
+      "sound_before": 148,
+      "sound_after": 149
+    },
+    "chematic_pipeline_v2_mmff94_with_uff_fallback": {
+      "sound_before": 251,
+      "sound_after": 252
+    },
+    "chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated": {
+      "sound_before": 250,
+      "sound_after": 252
+    },
+    "chematic_pipeline_v2_mmff94_with_uff_fallback_repair": {
+      "sound_before": 228,
+      "sound_after": 229
+    },
+    "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated": {
+      "sound_before": 251,
+      "sound_after": 252
+    },
+    "chematic_pipeline_v2_no_ff": {
+      "sound_before": 254,
+      "sound_after": 254
+    },
+    "chematic_pipeline_v2_ring_torsion_failclosed_probe": {
+      "sound_before": 0,
+      "sound_after": 0
+    },
+    "chematic_pipeline_v2_uff_only": {
+      "sound_before": 250,
+      "sound_after": 250
+    }
+  },
+  "repair_arms": {
+    "chematic_pipeline_v2_mmff94_strict_repair": {
+      "paired_row_count": 254,
+      "raw_row_count_baseline": 254,
+      "raw_row_count_candidate": 254,
+      "paired_stereo_repaired_before": 52,
+      "paired_stereo_repaired_after": 52,
+      "paired_stereo_repair_failed_before": 12,
+      "paired_stereo_repair_failed_after": 12,
+      "paired_repair_success_rate_before": 0.8125,
+      "paired_repair_success_rate_after": 0.8125,
+      "raw_stereo_repaired_before": 52,
+      "raw_stereo_repaired_after": 52,
+      "raw_stereo_repair_failed_before": 12,
+      "raw_stereo_repair_failed_after": 12,
+      "paired_stereo_before_violations_before": 64,
+      "paired_stereo_before_violations_after": 64,
+      "paired_final_stereo_violations_before": 10,
+      "paired_final_stereo_violations_after": 11
+    },
+    "chematic_pipeline_v2_mmff94_with_uff_fallback_repair": {
+      "paired_row_count": 254,
+      "raw_row_count_baseline": 254,
+      "raw_row_count_candidate": 254,
+      "paired_stereo_repaired_before": 52,
+      "paired_stereo_repaired_after": 52,
+      "paired_stereo_repair_failed_before": 12,
+      "paired_stereo_repair_failed_after": 12,
+      "paired_repair_success_rate_before": 0.8125,
+      "paired_repair_success_rate_after": 0.8125,
+      "raw_stereo_repaired_before": 52,
+      "raw_stereo_repaired_after": 52,
+      "raw_stereo_repair_failed_before": 12,
+      "raw_stereo_repair_failed_after": 12,
+      "paired_stereo_before_violations_before": 64,
+      "paired_stereo_before_violations_after": 64,
+      "paired_final_stereo_violations_before": 12,
+      "paired_final_stereo_violations_after": 13
+    }
+  },
+  "stereo_final_by_arm": {
+    "chematic_pipeline_v2_dreiding": {
+      "paired_row_count": 254,
+      "final_stereo_violations_before": 57,
+      "final_stereo_violations_after": 57,
+      "rows_with_new_or_more_violations": []
+    },
+    "chematic_pipeline_v2_mmff94_strict": {
+      "paired_row_count": 148,
+      "final_stereo_violations_before": 49,
+      "final_stereo_violations_after": 48,
+      "rows_with_new_or_more_violations": [
+        [
+          "chembl_tier_b_0126",
+          "chematic_pipeline_v2_mmff94_strict"
+        ],
+        [
+          "chembl_tier_b_0168",
+          "chematic_pipeline_v2_mmff94_strict"
+        ]
+      ]
+    },
+    "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated": {
+      "paired_row_count": 85,
+      "final_stereo_violations_before": 23,
+      "final_stereo_violations_after": 23,
+      "rows_with_new_or_more_violations": []
+    },
+    "chematic_pipeline_v2_mmff94_strict_repair": {
+      "paired_row_count": 141,
+      "final_stereo_violations_before": 10,
+      "final_stereo_violations_after": 10,
+      "rows_with_new_or_more_violations": []
+    },
+    "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated": {
+      "paired_row_count": 148,
+      "final_stereo_violations_before": 48,
+      "final_stereo_violations_after": 47,
+      "rows_with_new_or_more_violations": [
+        [
+          "chembl_tier_b_0126",
+          "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated"
+        ],
+        [
+          "chembl_tier_b_0168",
+          "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated"
+        ]
+      ]
+    },
+    "chematic_pipeline_v2_mmff94_with_uff_fallback": {
+      "paired_row_count": 251,
+      "final_stereo_violations_before": 61,
+      "final_stereo_violations_after": 60,
+      "rows_with_new_or_more_violations": [
+        [
+          "chembl_tier_b_0126",
+          "chematic_pipeline_v2_mmff94_with_uff_fallback"
+        ],
+        [
+          "chembl_tier_b_0168",
+          "chematic_pipeline_v2_mmff94_with_uff_fallback"
+        ]
+      ]
+    },
+    "chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated": {
+      "paired_row_count": 250,
+      "final_stereo_violations_before": 53,
+      "final_stereo_violations_after": 58,
+      "rows_with_new_or_more_violations": [
+        [
+          "chembl_tier_b_0039",
+          "chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated"
+        ],
+        [
+          "chembl_tier_b_0045",
+          "chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated"
+        ],
+        [
+          "chembl_tier_b_0126",
+          "chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated"
+        ],
+        [
+          "chembl_tier_b_0168",
+          "chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated"
+        ],
+        [
+          "chembl_tier_b_0169",
+          "chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated"
+        ],
+        [
+          "chembl_tier_b_0193",
+          "chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated"
+        ]
+      ]
+    },
+    "chematic_pipeline_v2_mmff94_with_uff_fallback_repair": {
+      "paired_row_count": 240,
+      "final_stereo_violations_before": 12,
+      "final_stereo_violations_after": 12,
+      "rows_with_new_or_more_violations": []
+    },
+    "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated": {
+      "paired_row_count": 251,
+      "final_stereo_violations_before": 60,
+      "final_stereo_violations_after": 59,
+      "rows_with_new_or_more_violations": [
+        [
+          "chembl_tier_b_0126",
+          "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated"
+        ],
+        [
+          "chembl_tier_b_0168",
+          "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated"
+        ]
+      ]
+    },
+    "chematic_pipeline_v2_no_ff": {
+      "paired_row_count": 254,
+      "final_stereo_violations_before": 64,
+      "final_stereo_violations_after": 64,
+      "rows_with_new_or_more_violations": []
+    },
+    "chematic_pipeline_v2_uff_only": {
+      "paired_row_count": 250,
+      "final_stereo_violations_before": 52,
+      "final_stereo_violations_after": 52,
+      "rows_with_new_or_more_violations": []
+    }
+  },
+  "coverage_by_arm": {
+    "chematic_pipeline_v2_mmff94_strict": {
+      "paired_row_count": 148,
+      "raw_row_count_baseline": 148,
+      "raw_row_count_candidate": 149,
+      "paired_stretch_bend_missing_before": 0,
+      "paired_stretch_bend_missing_after": 0,
+      "paired_torsion_missing_before": 378,
+      "paired_torsion_missing_after": 0,
+      "raw_stretch_bend_missing_before": 0,
+      "raw_stretch_bend_missing_after": 0,
+      "raw_torsion_missing_before": 378,
+      "raw_torsion_missing_after": 0
+    },
+    "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated": {
+      "paired_row_count": 85,
+      "raw_row_count_baseline": 85,
+      "raw_row_count_candidate": 149,
+      "paired_stretch_bend_missing_before": 0,
+      "paired_stretch_bend_missing_after": 0,
+      "paired_torsion_missing_before": 0,
+      "paired_torsion_missing_after": 0,
+      "raw_stretch_bend_missing_before": 0,
+      "raw_stretch_bend_missing_after": 0,
+      "raw_torsion_missing_before": 0,
+      "raw_torsion_missing_after": 0
+    },
+    "chematic_pipeline_v2_mmff94_strict_repair": {
+      "paired_row_count": 131,
+      "raw_row_count_baseline": 131,
+      "raw_row_count_candidate": 131,
+      "paired_stretch_bend_missing_before": 0,
+      "paired_stretch_bend_missing_after": 0,
+      "paired_torsion_missing_before": 362,
+      "paired_torsion_missing_after": 0,
+      "raw_stretch_bend_missing_before": 0,
+      "raw_stretch_bend_missing_after": 0,
+      "raw_torsion_missing_before": 362,
+      "raw_torsion_missing_after": 0
+    },
+    "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated": {
+      "paired_row_count": 148,
+      "raw_row_count_baseline": 148,
+      "raw_row_count_candidate": 149,
+      "paired_stretch_bend_missing_before": 0,
+      "paired_stretch_bend_missing_after": 0,
+      "paired_torsion_missing_before": 382,
+      "paired_torsion_missing_after": 0,
+      "raw_stretch_bend_missing_before": 0,
+      "raw_stretch_bend_missing_after": 0,
+      "raw_torsion_missing_before": 382,
+      "raw_torsion_missing_after": 0
+    },
+    "chematic_pipeline_v2_mmff94_with_uff_fallback": {
+      "paired_row_count": 250,
+      "raw_row_count_baseline": 250,
+      "raw_row_count_candidate": 251,
+      "paired_stretch_bend_missing_before": 0,
+      "paired_stretch_bend_missing_after": 0,
+      "paired_torsion_missing_before": 1068,
+      "paired_torsion_missing_after": 248,
+      "raw_stretch_bend_missing_before": 0,
+      "raw_stretch_bend_missing_after": 0,
+      "raw_torsion_missing_before": 1068,
+      "raw_torsion_missing_after": 248
+    },
+    "chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated": {
+      "paired_row_count": 249,
+      "raw_row_count_baseline": 249,
+      "raw_row_count_candidate": 251,
+      "paired_stretch_bend_missing_before": 0,
+      "paired_stretch_bend_missing_after": 0,
+      "paired_torsion_missing_before": 1069,
+      "paired_torsion_missing_after": 248,
+      "raw_stretch_bend_missing_before": 0,
+      "raw_stretch_bend_missing_after": 0,
+      "raw_torsion_missing_before": 1069,
+      "raw_torsion_missing_after": 248
+    },
+    "chematic_pipeline_v2_mmff94_with_uff_fallback_repair": {
+      "paired_row_count": 227,
+      "raw_row_count_baseline": 227,
+      "raw_row_count_candidate": 228,
+      "paired_stretch_bend_missing_before": 0,
+      "paired_stretch_bend_missing_after": 0,
+      "paired_torsion_missing_before": 1040,
+      "paired_torsion_missing_after": 248,
+      "raw_stretch_bend_missing_before": 0,
+      "raw_stretch_bend_missing_after": 0,
+      "raw_torsion_missing_before": 1040,
+      "raw_torsion_missing_after": 248
+    },
+    "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated": {
+      "paired_row_count": 250,
+      "raw_row_count_baseline": 250,
+      "raw_row_count_candidate": 251,
+      "paired_stretch_bend_missing_before": 0,
+      "paired_stretch_bend_missing_after": 0,
+      "paired_torsion_missing_before": 1072,
+      "paired_torsion_missing_after": 248,
+      "raw_stretch_bend_missing_before": 0,
+      "raw_stretch_bend_missing_after": 0,
+      "raw_torsion_missing_before": 1072,
+      "raw_torsion_missing_after": 248
+    }
+  },
+  "reproducibility_run1_vs_run2": {
+    "common_row_count": 3181,
+    "byte_identical_count": 761,
+    "byte_identical_pct": 23.92,
+    "timing_only_diff_count": 2412,
+    "semantic_diff_count": 8,
+    "semantic_diffs_molecules": [
+      "chembl_tier_b_0166"
+    ],
+    "note": "all 8 semantic (non-timing) differences involve exactly one molecule, chembl_tier_b_0166, across its 8 MMFF94-involving arms, flipping from run1 success/typed_failure (near the 20s timeout boundary, ~19.1-19.3s per PR #282 isolation check) to run2 timeout -- the same already-documented recurring boundary-timeout molecule named in this repo (v0.12.0 CHANGELOG, PR #281, PR #282). Zero other molecules differ. 8/3181=0.25% matches the v0.12.0 three-point comparisons own reproducibility figure (99.75%) exactly."
+  },
+  "known_reproducible_stereo_finding": {
+    "description": "chembl_tier_b_0126 and chembl_tier_b_0168 (bicyclic beta-lactam sulfone epimers) each lose exactly 1 declared-stereocenter satisfaction (final_stereo_violations +1) vs the v0.12.0 baseline, reproducibly, in all 4 un-gated/stretch-bend-gated MMFF94 arms (mmff94_strict, mmff94_strict_stretch_bend_gated, mmff94_with_uff_fallback, mmff94_with_uff_fallback_stretch_bend_gated). sound stays True in every case (not a soundness regression). Reproduced identically across two independent commits measured in this session (c57cf58 and 2b608d3), which differ only in whether PR #268/#283 are present -- confirms this is caused by the stretch-bend+torsion classification fix (present in both), not by PR #268/#283 (present in 2b608d3 only). Arm-level totals still improve net (e.g. mmff94_strict final_stereo_violations corpus-wide: 49 -> 48) because other molecules gain satisfied stereocenters, outweighing this loss. This is the one item that does not cleanly clear a strict zero-per-molecule-regression reading of the E/Z/stereo gate condition, reported prominently rather than buried.",
+    "molecules": [
+      "chembl_tier_b_0126",
+      "chembl_tier_b_0168"
+    ],
+    "smiles": {
+      "chembl_tier_b_0126": "CC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@@H]12",
+      "chembl_tier_b_0168": "CC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@H]12"
+    }
+  },
+  "mmff94_term_coverage_audit": {
+    "measured_commit": "2b608d3bab677ce79205aaca3a56a0c71dc13ebc",
+    "stretch_bend_routing_bug_candidate": 180,
+    "stretch_bend_table_gap": 1680,
+    "torsion_routing_bug_candidate": 254,
+    "torsion_table_gap": 14,
+    "verdict": "exact match to PR #281 (StretchBend) and PR #282 (Torsion) individually-reported numbers -- zero interaction effect"
+  }
+}

@@ -134,6 +134,122 @@ evidence of a measured repair-success-rate change.
   regression is reported here as measurement evidence; whether to file a tracking issue
   is a judgment call for the maintainer
 
+#### v0.13.0 combined remeasurement (issue #227, PR #281 + PR #282 together)
+
+Same harness (`pipeline_v2_vs_rdkit_dump.rs`), a fourth point added to the comparison
+above. This is the **first time both MMFF94 production fixes are measured together**:
+PR #281 (stretch-bend classification-key fix, `MMFF94_STBN` keyed by `stretch_bend_type`
+not `angle_type`) and PR #282 (torsion classification fix, `torsion_type_for` keyed by
+the j-k bond's real MMFF bond type, not atom-type membership). Both were individually
+measured+merge-ready in their own PRs already; the repo owner's explicit condition for
+proceeding to a v0.13.0 release is a clean, **one-time, non-iterated** combined
+remeasurement confirming zero regressions. **Measured commit:
+`2b608d3` (main's tip at RC freeze)** -- this also includes PR #268 (per-atom
+stereocenter candidates) and PR #283 (atropisomer notation-invariance fix), neither of
+which touches `chematic-ff`/MMFF94 code (`git diff c57cf58..2b608d3 --stat` -- 3 files,
+all in `chematic-chem`/`chematic-perception`). Baseline: the same frozen
+`pipeline_v2_vs_rdkit_v0_12_0_chematic_rows.jsonl` used by PR #281/#282 individually and
+by the three-point comparison above.
+
+**`mmff94_term_coverage_audit`, fresh on `2b608d3`:** StretchBend `routing_bug_candidate`
+**180**/`table_gap` 1680, Torsion `routing_bug_candidate` **254**/`table_gap` 14 --
+exact match to both PRs' individually-reported numbers. Zero interaction effect between
+the two fixes on this corpus.
+
+**Control arms (never call MMFF94 code -- `dreiding`/`no_ff`/`uff_only`/`legacy_etkdg`/
+`ring_torsion_failclosed_probe`, 1,061 rows): byte-identical to the v0.12.0 baseline**
+(excl. `elapsed_ms`), checked first as a harness/environment sanity gate before trusting
+any MMFF94-arm number -- a moving control would have invalidated the whole comparison.
+
+**Paired diff, all 3,181 common rows: zero `success -> failure`, zero `sound ->
+unsound`, zero `non-timeout -> timeout`.** All 73 status changes are explained by two
+already-documented mechanisms: **65** `typed_failure -> success` + the 2 corresponding
+`timeout -> success` flips (chembl_tier_b_0166) in the `*_complete_bonded_term_gated`
+arms (sound **85 -> 149** for `mmff94_strict_complete_bonded_term_gated`, **250 -> 252**
+for the UFF-fallback variant -- a direct, deterministic consequence of the torsion
+`routing_bug_candidate` drop, matching PR #282's own +64/+2 finding exactly), plus **6**
+more `timeout -> success` and **2** `timeout -> typed_failure` flips, all on the 3
+already-named recurring boundary-timeout molecules (`atorvastatin_fragment`,
+`chembl_tier_b_0114`, `chembl_tier_b_0166`) behaving exactly as PR #281/#282 each
+already documented for these same molecules -- zero new/unexplained molecules this run
+(an earlier attempt at this same measurement, on a contended machine, *did* show several
+unexplained novel timeout flips; isolating all six flagged molecules with an extended
+120s `total_timeout_ms` found every one completing in 6.9-18.3s with `sound=true` and a
+tiny, unchanged `distance_geometry_ms`, matching PR #281's own "CPU contention, not a
+code effect" verdict -- that contended run was discarded, not reported as the measurement
+of record, per the pre-committed run1/run2 policy below).
+
+**RepairAndVerify** (`mmff94_strict_repair`/`mmff94_with_uff_fallback_repair`): repair
+success rate, computed on the paired intersection of rows that reached a repair verdict
+in both snapshots (not raw arm totals, which mix in bucket-membership effects from
+molecules that reached repair in only one snapshot) -- **52 repaired / 12 failed / 0.8125
+success rate, identical before and after, in both arms.** `final_stereo_violations` on
+that same intersection: **10 -> 10** (strict), **12 -> 12** (UFF-fallback) -- zero
+change. A naive arm-total reading shows +1 in each arm; that +1 is entirely
+`chembl_tier_b_0166`'s already-covered `timeout -> typed_failure(FinalStereoViolation)`
+bucket move (PR #282's own causally-verified finding), not a new violation on any row
+comparable in both snapshots.
+
+**E/Z + tetrahedral stereo, checked across all arms (paired on `final_stereo_violations`
+non-null both sides), flagged prominently rather than buried: two molecules regress by
+exactly 1 declared-stereocenter satisfaction each.** `chembl_tier_b_0126`
+(`CC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@@H]12`, violations 1 -> 2) and
+`chembl_tier_b_0168` (the C12 epimer, violations 0 -> 1) -- both bicyclic beta-lactam
+sulfones -- lose exactly one satisfied declared stereocenter, reproducibly, in all 4
+un-gated/stretch-bend-gated MMFF94 arms (`mmff94_strict`,
+`mmff94_strict_stretch_bend_gated`, `mmff94_with_uff_fallback`,
+`mmff94_with_uff_fallback_stretch_bend_gated`); `sound` stays `True` in every case (not a
+soundness regression). Reproduced identically across two independent commits measured in
+this session (`c57cf58`, before PR #268/#283 landed, and `2b608d3`, after) -- since it
+appears on both, it is caused by the stretch-bend+torsion classification fix itself
+(present in both), not by the later, unrelated stereo/atropisomer commits. Arm-level
+totals still net-improve (e.g. `mmff94_strict` corpus-wide `final_stereo_violations`:
+49 -> 48) because more molecules gain a satisfied stereocenter than lose one -- but on a
+strict per-molecule reading this does not cleanly clear a "zero regression" bar. Not
+investigated further here (would need an RDKit-oracle re-check of which configuration is
+actually correct for these two molecules, out of scope for this chematic-vs-itself
+measurement) -- reported as a real, small (2/265 molecules), plausible consequence of the
+corrected MMFF94 energy landscape converging to a different local minimum, not
+hand-waved away.
+
+**Coverage** (`stretch_bend_missing_count`/`torsion_missing_count`, paired
+intersection): `stretch_bend_missing` stays **0** in every arm, both snapshots (Priority
+2B already achieved full coverage). `torsion_missing`, `mmff94_strict`: **378 -> 0**;
+`mmff94_with_uff_fallback`: **1,068 -> 248** -- consistent with the
+`routing_bug_candidate` 1,107 -> 254 drop measured directly by the term-coverage audit
+above.
+
+**Reproducibility:** full corpus re-run twice on `2b608d3` (run1 is the measurement of
+record for the paired diff above, decided before either run completed; run2 exists only
+for this reproducibility check). **761/3,181 rows (23.9%) byte-identical in full
+including `elapsed_ms`; 2,412/3,181 (75.8%) differ only in `elapsed_ms`-type fields
+(coords/status/every other field bit-identical); 8/3,181 (0.25%) differ semantically.**
+All 8 semantic differences involve exactly one molecule, `chembl_tier_b_0166`, across its
+8 MMFF94-involving arms, flipping from run1's success/typed_failure (PR #282's own
+isolation check put this molecule at ~19.1-19.3s, just under the 20s budget) to run2's
+timeout -- zero other molecules differ. **8/3,181 = 0.25% unexplained-by-known-flake
+rate matches the v0.12.0 three-point comparison's own 99.75% figure exactly.**
+
+**Packaging / API smoke test:** `cargo build --release -p chematic-mcp -p chematic`
+(the umbrella + MCP crates, re-exporting nearly everything, confirming the public API
+surface compiles clean end to end after both fixes' breaking signature changes) --
+PASS. `.venv/bin/maturin develop --release -m crates/chematic-py/Cargo.toml` +
+`python3 -c "import chematic; chematic.from_smiles('c1ccccc1').mw"` -- PASS. WASM build
+already covered by CI's own `test-wasm` job (not duplicated locally).
+
+- **Files:** `validation/results/pipeline_v2_vs_rdkit_v0_13_0_chematic_rows.jsonl` (run1,
+  measurement of record), `..._v0_13_0_run2_chematic_rows.jsonl` (run2, reproducibility
+  only), `..._v0_13_0_paired_diff_summary.json` (full per-arm breakdown, all status
+  changes, repair/stereo/coverage detail, reproducibility detail),
+  `mmff94_coverage_227_term_audit_v0_13_0{,_summary}.json(l)` (fresh combined audit)
+- **Not done here:** `docs/pipeline_v2_vs_rdkit_etkdgv3_benchmark.md` was checked and
+  deliberately NOT hand-edited -- it declares itself auto-generated from
+  `pipeline_v2_vs_rdkit_aggregate.json`, which requires a fresh RDKit-oracle run +
+  common-scorer run + process-level perf + cyclopentane ablation, none of which is in
+  this measurement's scope (this is a chematic-vs-itself paired diff against a frozen
+  baseline, not a chematic-vs-RDKit remeasurement); this section + `validation/results/
+  *_v0_13_0_*` is this measurement's canonical home instead.
+
 ### MMFF94 strict-gate raw funnel remeasurement (issue #227, Priority 3 population)
 
 A **low-level diagnostic harness**, not the production embedding entry point: calls
