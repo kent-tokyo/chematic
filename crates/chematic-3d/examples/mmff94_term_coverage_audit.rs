@@ -459,13 +459,15 @@ fn main() {
                         types[l.0 as usize],
                     );
                     let tt = chematic_ff::torsion_type_for(
-                        &rings,
+                        &mol,
                         i.0 as usize,
                         j.0 as usize,
                         k.0 as usize,
                         l.0 as usize,
+                        ti_,
                         tj_,
                         tk_,
+                        tl_,
                     );
                     let hit = mmff94_torsion_energy(tt, ti_, tj_, tk_, tl_);
                     if hit.is_none() {

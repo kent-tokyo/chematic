@@ -106,6 +106,89 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Recommends a **minor** version bump (breaking Rust signature semantics),
   consistent with v0.12.0's own precedent for `mmff94_stbn`.
 
+### Fixed — `chematic-ff` (MMFF94 torsion classification-formula bug, issue #227 Priority 2C, **breaking**)
+
+- **Root cause: `torsion_type_for` classified the non-ring base case purely
+  from atom-type membership in the static `MLTB_TYPES` set
+  (`(MLTB(tj),MLTB(tk)) -> 0/1/2`), completely ignoring the j-k bond's own
+  real MMFF bond order/type.** RDKit's real `getMMFFTorsionType`
+  (`AtomTyper.cpp:2528-2571`, pinned commit — see
+  `scripts/mmff94_provenance/PROVENANCE.md`'s "Torsion" row) classifies from
+  the j-k bond's own `bond_type_for` result instead (`torsionType =
+  bondTypeJK`), with an empirically-required override to type 2 when
+  `bondTypeJK==0 && order_jk==Single && (bondTypeIJ==1 || bondTypeKL==1)` —
+  needed to pass RDKit's own CYGUAN01 regression test, not derivable from
+  Halgren's MMFF.IV page 609 formula alone. These are structurally different
+  formulas: a double/triple/aromatic j-k bond always gets `bond_type_jk=0`
+  under the real formula regardless of the endpoints' own MLTB membership,
+  which the old atom-type-membership rule could never see (e.g. benzene's
+  own ring torsions, all type 37 which IS in `MLTB_TYPES`, used to
+  classify as type 2 — now correctly type 0).
+  `torsion_type_for`'s ring-4/5 override is also replaced end to end: a new
+  private `ring_size_4_or_5` ports RDKit's real `isTorsionInRingOfSize4or5`
+  (`AtomTyper.cpp:403-447`) faithfully — local bond-adjacency, NOT
+  SSSR-based (4-ring iff i-l directly bonded; 5-ring iff i and l, excluding
+  ring neighbours j/k respectively, share a common neighbour) — and the
+  5-ring branch now additionally requires `ti==1 || tj==1 || tk==1 ||
+  tl==1`, a condition the old SSSR-based check had no equivalent of at all.
+  - Measured on the 265-molecule Wave 1 corpus, verified fresh against the
+    actual production code (not restated from the already-merged
+    diagnostic's self-port estimates): re-running `mmff94_term_coverage_audit`
+    post-fix moves Torsion `routing_bug_candidate` **1,107 → 254**
+    (`table_gap` unchanged at 14, genuine data gaps this fix doesn't touch;
+    `torsions_missing` 1,121 → 268). Of the original 1,107, **853** now
+    resolve to a raw table row via chematic's existing, UNMODIFIED
+    `mmff94_torsion_energy` fallback chain alone — no lookup/fallback-chain
+    change needed, exactly as the diagnostic predicted — split into **851
+    valid non-zero table resolutions** and **2 explicit-zero rows** (RDKit's
+    own `isDoubleZero` gate would also drop these to "no term"; not counted
+    as resolved). The remaining **254** need RDKit's separate Halgren
+    empirical-rule fallback (`getMMFFTorsionEmpiricalRuleParams`,
+    `AtomTyper.cpp:2874-3080`), which chematic has no equivalent of at all —
+    explicitly out of scope for this fix, a larger separate follow-up.
+  - **Beyond the 1,107 "missing" candidates, a corpus-wide before/after
+    sweep of ALL 13,530 torsion instances** (frozen copy of the old formula
+    vs. the new production code, same enumeration `torsion_energy` itself
+    uses) found: 10,617 unchanged, **1,792 changed to a numerically
+    different `(V1,V2,V3)`** — a silent-wrong-parameter population an order
+    of magnitude larger than the 1,107 "missing" instances, invisible to
+    `mmff94_term_coverage_audit.rs` (it only logs misses) — 853 newly
+    resolved (== the 853 above), and **0 newly lost** (no torsion that used
+    to resolve to a value now resolves to nothing). Oracle-validated against
+    live RDKit (`rdkit==2026.3.3`): **all 1,792** changed-value rows were
+    checked, not a sample — **1,776/1,792 (99.1%)** match the new, post-fix
+    value exactly, **0** match the OLD (pre-fix) value instead (zero cases
+    where this fix made a previously-correct value wrong), and the
+    remaining 16/1,792 (0.9%) trace to a pre-existing, out-of-scope MMFF94
+    aromaticity-perception gap for charged aromatic (pyridinium-type) rings,
+    unrelated to torsion classification itself (both sides agree the
+    torsion classification code is 0; only the underlying ring-carbon atom
+    TYPE differs upstream). The 853 newly-resolved rows were already
+    oracle-validated at 853/853 (100%) by the diagnostic itself.
+  - Also empirically characterized: chematic's torsion-enumeration loops
+    have no `i==l` guard (a 3-membered-ring degenerate torsion where the two
+    outer atoms coincide), which theoretically could make the new local-
+    adjacency ring check misfire for a substituted 3-ring. Measured 33 such
+    instances in this corpus, 0 of which trigger the ring override either
+    before or after this fix; a constructed methylcyclopropane check against
+    the live RDKit oracle confirms the port is faithful (RDKit's own real
+    algorithm computes the identical ring-size-5 local adjacency for this
+    case, but its own type-1 gate — using RDKit's correct CR3R=22
+    ring-carbon typing, which chematic also assigns correctly here —
+    prevents the override from firing, matching chematic's result exactly).
+- **Breaking change**: `torsion_type_for`'s signature changes from
+  `(rings: &[Vec<AtomIdx>], i, j, k, l, tj: u8, tk: u8)` to `(mol: &Molecule,
+  i, j, k, l, ti: u8, tj: u8, tk: u8, tl: u8)` — the correct formula needs
+  the actual j-k bond order (not just atom types) plus the i-j/k-l bond
+  orders and the outer `ti`/`tl` atom types for the override conditions; the
+  `rings` parameter is dropped entirely (the ring override is no longer
+  SSSR-based). Migration: pass `mol` (already in scope at every existing
+  call site) and all four atom types instead of just the two central ones —
+  see `torsion_energy` (`crates/chematic-ff/src/mmff94_minimizer.rs`) for
+  the reference call site.
+- Recommends a **minor** version bump (breaking Rust signature semantics),
+  consistent with v0.12.0's own precedent for `mmff94_stbn`.
+
 ## [0.12.0] — 2026-08-09
 
 Two independent fixes from the ongoing issue #227 program: a production

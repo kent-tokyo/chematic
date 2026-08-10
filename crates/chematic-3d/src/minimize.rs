@@ -1831,13 +1831,15 @@ fn compute_mmff94_coverage(mol: &Molecule, types: &[u8]) -> Mmff94CoverageReport
                     types[l.0 as usize],
                 );
                 let tt = torsion_type_for(
-                    &rings,
+                    mol,
                     i.0 as usize,
                     j.0 as usize,
                     k.0 as usize,
                     l.0 as usize,
+                    ti_,
                     tj_,
                     tk_,
+                    tl_,
                 );
                 if mmff94_torsion_energy(tt, ti_, tj_, tk_, tl_).is_none() {
                     report.torsions_missing.push(missing_term(
