@@ -1,0 +1,50 @@
+{
+  "generated_from": "crates/chematic-3d/examples/mmff94_term_coverage_audit.rs (v0.13.0 combined remeasurement: PR #281 stretch-bend-type fix + PR #282 torsion-type fix, measured on main @ 2b608d3, the frozen v0.13.0 RC SHA -- also includes PR #268 per-atom stereocenter candidates and PR #283 atropisomer notation-invariance fix, neither of which touches chematic-ff/mmff94 code)",
+  "corpus": "265 molecules (validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_{a,b}.json)",
+  "note": "Same two axes as the Priority 2B/2C summary this supersedes for the StretchBend+Torsion rows (Bond/Angle unchanged from either individual PR, reproduced here only for completeness). Purpose: first-time combined measurement of both #227 production fixes together, verifying the individually-reported numbers (StretchBend routing_bug_candidate=180/table_gap=1680 from PR #281; Torsion routing_bug_candidate=254/table_gap=14 from PR #282) hold unchanged when both land together (no interaction effect), and still hold on the actual frozen v0.13.0 RC tip (2b608d3), not just the earlier c57cf58 commit this measurement started from.",
+  "stretch_bend_dfsb_resolution": {
+    "type_only_missing_total": 1860,
+    "dfsb_resolved_routing_candidate": 180,
+    "dfsb_resolved_true_type_table_gap": 1680,
+    "final_unresolved": 0
+  },
+  "by_term_kind": {
+    "Bond": {
+      "total_missing_instances": 84,
+      "routing_bug_candidate": 79,
+      "table_gap": 5
+    },
+    "Angle": {
+      "total_missing_instances": 374,
+      "routing_bug_candidate": 277,
+      "table_gap": 97
+    },
+    "Torsion": {
+      "total_missing_instances": 268,
+      "routing_bug_candidate": 254,
+      "table_gap": 14
+    },
+    "Oop": {
+      "total_missing_instances": 0,
+      "routing_bug_candidate": 0,
+      "table_gap": 0
+    },
+    "StretchBend": {
+      "total_missing_instances": 1860,
+      "routing_bug_candidate": 180,
+      "table_gap": 1680
+    }
+  },
+  "comparison_to_individual_prs": {
+    "stretch_bend_routing_bug_candidate_pr281_reported": 180,
+    "stretch_bend_routing_bug_candidate_this_run": 180,
+    "stretch_bend_table_gap_pr281_reported": 1680,
+    "stretch_bend_table_gap_this_run": 1680,
+    "torsion_routing_bug_candidate_pr282_reported": 254,
+    "torsion_routing_bug_candidate_this_run": 254,
+    "torsion_table_gap_pr282_reported": 14,
+    "torsion_table_gap_this_run": 14,
+    "verdict": "exact match on all four numbers -- zero interaction effect between the stretch-bend and torsion classification fixes on this corpus, reconfirmed on the actual frozen v0.13.0 RC SHA (2b608d3), byte-identical to the earlier c57cf58 measurement (expected: PR #268/#283, the two commits between c57cf58 and 2b608d3, touch chematic-perception/stereo_validation.rs and chematic-chem/atropisomer.rs only, never chematic-ff or the MMFF94 tables/classification code)"
+  },
+  "measured_commit": "2b608d3bab677ce79205aaca3a56a0c71dc13ebc"
+}
