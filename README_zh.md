@@ -266,7 +266,7 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 - 详见 `CHANGELOG.md` 的 `[0.12.0]` 部分
 
 **v0.11.0**（2026-08-04）：**MMFF94 O2CM 分型覆盖率提升、SMIRKS/CDXML 立体正确性、2D/3D 布局修复**
-- `chematic-ff`：补齐了 O2CM 末端氧原子分型缺口（issue #227 Priority 1A-3）——265 分子 Wave 1 语料库上原子类型一致率 98.82% → 99.37%，氧元素一致率 95.88% → 100%，strict-gate 最小化成功率 123 → 130/265，跨元素误配 0 例（不变）。issue #227 仍保持打开状态
+- `chematic-ff`：补齐了 O2CM 末端氧原子分型缺口（issue #227 Priority 1A-3）——265 分子 Wave 1 语料库上原子类型一致率 98.82% → 99.37%，氧元素一致率 95.88% → 100%，strict-gate 最小化成功数 123 → 130/265，跨元素误配 0 例（不变）。issue #227 仍保持打开状态
 - `chematic-rxn`：SMIRKS 产物手性判定现已具备 parity 感知能力——重新排序的映射模板邻居顺序现在会正确反转/校验产物的 `@`/`@@` 标记，而不是原样复制；继承（非模板）手性在其邻居顺序或映射拓扑无法校验时，现在会安全失败为 `Chirality::None`
 - `chematic-mol`：CDXML 读取器现在能从方向性楔形键中识别四面体立体化学（RDKit issue #9359），接入了 MOL/MRV 已在使用的同一共享机制；非方向性的 `Bold`/`Hash`/`Dash` 显示通过 `CdxmlParseOptions` 以 opt-in 方式提供，启用后与 CDXML 的 B/E 键-原子顺序无关
 - `chematic-depict`：独立（非稠合）环系统不再在相同/近似相同的 2D 坐标上重叠
