@@ -71,15 +71,29 @@ pub struct StereoCompleteness {
 // ---------------------------------------------------------------------------
 
 /// Compute simple Morgan connectivity ranks for atoms in `mol`.
-/// Uses initial invariant = atomic_number * 1000 + degree.
+/// Uses initial invariant = atomic_number * 1_000_000 + charge_term * 1000 + degree.
 fn simple_morgan_ranks(mol: &Molecule) -> Vec<u64> {
     let n = mol.atom_count();
     let mut ranks: Vec<u64> = (0..n)
         .map(|i| {
             let idx = AtomIdx(i as u32);
             let atom = mol.atom(idx);
-            let deg = mol.neighbors(idx).count() as u64;
-            atom.element.atomic_number() as u64 * 1_000_000 + atom.charge as u64 * 1000 + deg
+            let deg = mol.neighbors(idx).count() as i64;
+            // `atom.charge` (i8) sign-extends on a plain `as u64` cast for
+            // negative values (e.g. -1i8 as u64 == u64::MAX), which made the
+            // old `atom.charge as u64 * 1000` overflow `u64` unconditionally
+            // for any negatively-charged atom (issue #267). Computing the
+            // whole invariant in i64 and reinterpreting as u64 only once, at
+            // the end, avoids that overflow while leaving the value
+            // bit-for-bit identical to before for the (already-correct)
+            // charge >= 0 case. `atomic_number()` is always >= 1 (never a
+            // 0/wildcard sentinel here), so `an * 1_000_000` always dominates
+            // even the most extreme i8 charge magnitude (128_000 at most),
+            // keeping the final sum non-negative for every realistic and
+            // every representable i8 charge.
+            let an = atom.element.atomic_number() as i64;
+            let charge = atom.charge as i64;
+            (an * 1_000_000 + charge * 1000 + deg) as u64
         })
         .collect();
 
@@ -331,5 +345,47 @@ mod tests {
         let mol = parse("c1ccccc1").unwrap();
         let sc = stereo_completeness(&mol);
         assert_eq!(sc.total_centers, 0);
+    }
+
+    // Regression tests for issue #267: `atom.charge as u64` sign-extends for
+    // negative i8 charges (e.g. -1i8 as u64 == u64::MAX), which made the
+    // Morgan-rank invariant's `* 1000` multiply overflow `u64` -- panicking
+    // in debug builds and silently corrupting the invariant in release.
+
+    #[test]
+    fn test_stereo_completeness_negative_charge_no_panic() {
+        // Acetate: the [O-] atom must not trigger an overflow panic.
+        let acetate = parse("CC(=O)[O-]").unwrap();
+        let sc = stereo_completeness(&acetate);
+        assert_eq!(sc.total_centers, 0);
+    }
+
+    #[test]
+    fn test_stereo_completeness_positive_charge_no_panic() {
+        // Small positive i8 charge never overflowed, but keep it as a
+        // regression fixture per the issue's exact repro.
+        let cation = parse("C[NH3+]").unwrap();
+        let sc = stereo_completeness(&cation);
+        assert_eq!(sc.total_centers, 0);
+    }
+
+    #[test]
+    fn test_stereo_completeness_mixed_salt_no_panic() {
+        // Disconnected salt combining both a negative and a positive charge.
+        let salt = parse("CC(=O)[O-].C[NH3+]").unwrap();
+        let sc = stereo_completeness(&salt);
+        assert_eq!(sc.total_centers, 0);
+    }
+
+    #[test]
+    fn test_stereo_completeness_doubly_negative_charge_no_panic() {
+        // A doubly-deprotonated phosphate: charge -2, more extreme than the
+        // issue's -1 repro, to make sure the fix isn't a -1-only special case.
+        let phosphate = parse("[O-]P(=O)([O-])OC").unwrap();
+        let sc = stereo_completeness(&phosphate);
+        assert_eq!(sc.total_centers, 0);
+        // Also exercise the other public entry point sharing the same helper.
+        let errors = validate_stereo(&phosphate);
+        assert!(errors.is_empty());
     }
 }
