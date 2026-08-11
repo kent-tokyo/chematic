@@ -156,6 +156,31 @@ bindings.
   `=value` (e.g. a standalone `constrained` token) parses as an implicit
   boolean flag (`"T"`), also matching ASE, rather than erroring.
 
+### Fixed — `chematic-rxn` (`DEFAULT_TEMPLATES` silent parse failures, issue #296, unrelated to the above)
+
+- **14 of `retro::DEFAULT_TEMPLATES`' 59 entries never parsed at all** —
+  `retro_disconnect`'s `Err(_) => continue` swallowed the `SmirksParse`
+  failure indistinguishably from "no match," so negishi coupling, reductive
+  amination, both Mitsunobu variants, aldol, Michael addition,
+  Friedel-Crafts alkylation, Mannich, trifluoromethylation, PMB ether, and
+  both C-H bromination/oxidative-addition templates had never fired for any
+  caller since inception. Three distinct root causes: SMARTS-only query
+  primitives (`X4`/`X3` connectivity, comma OR-lists, semicolon AND) this
+  crate's SMILES-based template parser can't express (10 templates,
+  rewritten to the supported subset with disclosed precision tradeoffs);
+  one malformed template (`pmb_ether`, unbalanced ring closure + an invalid
+  multi-atom token used as a single bracket atom); three templates using a
+  bare, unbracketed `H` (genuinely invalid SMILES outside brackets, not a
+  parser bug — fixed to `[H]`). New `all_default_templates_parse`
+  CI-gating test asserts every `DEFAULT_TEMPLATES` entry's SMIRKS parses,
+  so a future silently-broken built-in template fails the build instead of
+  going unnoticed indefinitely (the issue's own acceptance criterion). 18
+  new positive/negative/false-positive tests across the 14 fixed templates.
+  Merged (`fc7a42a`) after the `v0.14.0` tag but before the `v0.14.1` tag,
+  so this entry is placed here rather than under `[0.14.0]` or
+  `[Unreleased]` — it genuinely first shipped in `v0.14.1`, just via an
+  unrelated commit that happened to land in the same release window.
+
 ## [0.14.0] — 2026-08-11
 
 Stereo-aware distance geometry: declared E/Z (cis/trans) is now enforced as a
