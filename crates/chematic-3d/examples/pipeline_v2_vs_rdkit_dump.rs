@@ -44,6 +44,10 @@ struct Arm {
     stereo_policy: StereoPolicy,
     gate_stretch_bend: bool,
     gate_torsion_oop: bool,
+    /// `EmbedParameters.enforce_chirality` -- `false` for every pre-v0.14.0 arm
+    /// (unaffected by this field, byte-identical to before it existed). The one
+    /// `true` arm below is a v0.14.0 release-gate diagnostic, see its own comment.
+    enforce_chirality: bool,
 }
 
 const PIPELINE_ARMS: &[Arm] = &[
@@ -54,6 +58,7 @@ const PIPELINE_ARMS: &[Arm] = &[
         stereo_policy: StereoPolicy::Ignore,
         gate_stretch_bend: false,
         gate_torsion_oop: false,
+        enforce_chirality: false,
     },
     Arm {
         name: "chematic_pipeline_v2_dreiding",
@@ -61,6 +66,7 @@ const PIPELINE_ARMS: &[Arm] = &[
         stereo_policy: StereoPolicy::Ignore,
         gate_stretch_bend: false,
         gate_torsion_oop: false,
+        enforce_chirality: false,
     },
     Arm {
         name: "chematic_pipeline_v2_uff_only",
@@ -68,6 +74,7 @@ const PIPELINE_ARMS: &[Arm] = &[
         stereo_policy: StereoPolicy::Ignore,
         gate_stretch_bend: false,
         gate_torsion_oop: false,
+        enforce_chirality: false,
     },
     Arm {
         name: "chematic_pipeline_v2_mmff94_strict",
@@ -75,6 +82,7 @@ const PIPELINE_ARMS: &[Arm] = &[
         stereo_policy: StereoPolicy::Ignore,
         gate_stretch_bend: false,
         gate_torsion_oop: false,
+        enforce_chirality: false,
     },
     Arm {
         name: "chematic_pipeline_v2_mmff94_with_uff_fallback",
@@ -82,6 +90,7 @@ const PIPELINE_ARMS: &[Arm] = &[
         stereo_policy: StereoPolicy::Ignore,
         gate_stretch_bend: false,
         gate_torsion_oop: false,
+        enforce_chirality: false,
     },
     // New arms for Priority 1 Wave 1 re-benchmark: RepairAndVerify variants
     Arm {
@@ -90,6 +99,7 @@ const PIPELINE_ARMS: &[Arm] = &[
         stereo_policy: StereoPolicy::RepairAndVerify,
         gate_stretch_bend: false,
         gate_torsion_oop: false,
+        enforce_chirality: false,
     },
     Arm {
         name: "chematic_pipeline_v2_mmff94_with_uff_fallback_repair",
@@ -97,6 +107,7 @@ const PIPELINE_ARMS: &[Arm] = &[
         stereo_policy: StereoPolicy::RepairAndVerify,
         gate_stretch_bend: false,
         gate_torsion_oop: false,
+        enforce_chirality: false,
     },
     // New arms for Priority 2 / Stage 1B (issue #227): "complete_term_strict_gate"
     // side of the legacy-vs-complete-term comparison -- identical to
@@ -111,6 +122,7 @@ const PIPELINE_ARMS: &[Arm] = &[
         stereo_policy: StereoPolicy::Ignore,
         gate_stretch_bend: true,
         gate_torsion_oop: false,
+        enforce_chirality: false,
     },
     Arm {
         name: "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated",
@@ -118,6 +130,7 @@ const PIPELINE_ARMS: &[Arm] = &[
         stereo_policy: StereoPolicy::Ignore,
         gate_stretch_bend: true,
         gate_torsion_oop: false,
+        enforce_chirality: false,
     },
     // Review-driven fix (Priority 2 blocker 1): the arms above only gate
     // bond+angle+stretch-bend -- NOT torsion/OOP, even though the audit
@@ -133,6 +146,7 @@ const PIPELINE_ARMS: &[Arm] = &[
         stereo_policy: StereoPolicy::Ignore,
         gate_stretch_bend: true,
         gate_torsion_oop: true,
+        enforce_chirality: false,
     },
     Arm {
         name: "chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated",
@@ -140,6 +154,28 @@ const PIPELINE_ARMS: &[Arm] = &[
         stereo_policy: StereoPolicy::Ignore,
         gate_stretch_bend: true,
         gate_torsion_oop: true,
+        enforce_chirality: false,
+    },
+    // v0.14.0 release-gate diagnostic (issue #285): identical to
+    // chematic_pipeline_v2_mmff94_strict in every field EXCEPT
+    // enforce_chirality, isolating exactly one variable -- v0.14.0's new
+    // pre-embedding declared-E/Z 1-4 bound constraint
+    // (distance_geometry_v2.rs's `apply_declared_ez_bounds`). NOT a
+    // comparison against the *_repair (RepairAndVerify) arms above -- those
+    // use pipeline_v2's own post-hoc stage 7-11 stereo gate, a different,
+    // mutually-exclusive mechanism (enforce_chirality=true requires
+    // StereoPolicy::Ignore, see pipeline_v2.rs's InvalidConfiguration gate).
+    // This arm's sole purpose is measuring what the new constraint changes,
+    // end to end, through the actual production embed_pipeline_v2 entry
+    // point real callers (Mol.embed_pipeline_v2(), embed_pipeline_v2_json)
+    // use -- not a "which policy is better" comparison.
+    Arm {
+        name: "chematic_pipeline_v2_mmff94_strict_enforce_chirality",
+        force_field: ForceFieldPolicy::Mmff94BondAngleStrict,
+        stereo_policy: StereoPolicy::Ignore,
+        gate_stretch_bend: false,
+        gate_torsion_oop: false,
+        enforce_chirality: true,
     },
 ];
 
@@ -148,6 +184,7 @@ fn base_config(
     stereo_policy: StereoPolicy,
     gate_stretch_bend: bool,
     gate_torsion_oop: bool,
+    enforce_chirality: bool,
 ) -> PipelineV2Config {
     PipelineV2Config {
         embed: EmbedParameters {
@@ -158,6 +195,7 @@ fn base_config(
             use_macrocycle_torsions: true,
             use_macrocycle_14_bounds: true,
             track_failures: true,
+            enforce_chirality,
             ..EmbedParameters::default()
         },
         torsion_optimization: TorsionOptimizationConfig::default(),
@@ -305,6 +343,7 @@ fn run_fail_closed_probe(mol: &Molecule) -> Value {
         StereoPolicy::Ignore,
         false,
         false,
+        false,
     );
     config.ring_torsion_policy = RingTorsionApplicationPolicy::FailClosed;
     let arm = Arm {
@@ -313,6 +352,7 @@ fn run_fail_closed_probe(mol: &Molecule) -> Value {
         stereo_policy: StereoPolicy::Ignore,
         gate_stretch_bend: false,
         gate_torsion_oop: false,
+        enforce_chirality: false,
     };
     run_pipeline_arm_with_config(mol, &arm, &config)
 }
@@ -323,6 +363,7 @@ fn run_pipeline_arm(mol: &Molecule, arm: &Arm) -> Value {
         arm.stereo_policy,
         arm.gate_stretch_bend,
         arm.gate_torsion_oop,
+        arm.enforce_chirality,
     );
     run_pipeline_arm_with_config(mol, arm, &config)
 }

@@ -621,6 +621,100 @@ by this — reflection invariance's actual scope is signed *volume*
 (tetrahedral), not scalar *distance* (E/Z), and this correction narrows the
 claim to that scope rather than overturning it.
 
+**v0.14.0 release-gate evidence (2026-08-11) — 265-molecule corpus
+re-measurement through the production `embed_pipeline_v2` entry point, plus
+two follow-on fixes this measurement motivated.** PR #300 (the fix above)
+merged first; this section documents the release-gate re-measurement done
+afterward, and PR #301 (the two fixes it led to).
+
+*Method*: `pipeline_v2_vs_rdkit_dump.rs` gained one new diagnostic arm,
+`chematic_pipeline_v2_mmff94_strict_enforce_chirality` — identical to the
+pre-existing `chematic_pipeline_v2_mmff94_strict` arm in every field except
+`enforce_chirality: true`, isolating exactly one variable. Not a comparison
+against the `*_repair` (`StereoPolicy::RepairAndVerify`) arms — those use a
+different, mutually-exclusive stereo mechanism. Raw data:
+`validation/results/pipeline_v2_vs_rdkit_v0_14_0_chematic_rows.jsonl`
+(3,446 rows, 12 arms × 265 molecules + 1 probe). Analysis:
+`scripts/v0_14_0_ez_bound_release_gate_report.py`, output saved to
+`validation/results/v0_14_0_ez_bound_release_gate_report.txt`.
+
+*Declared-E/Z subset (39 of 265 molecules), new arm vs. baseline, same run*:
+
+```
+pipeline success:  32/39 -> 32/39 (unchanged)
+geometry sound:    32/39 -> 32/39 (unchanged)
+stereo satisfied:  22 -> 42
+stereo violated:   23 -> 3
+newly fixed:  18 molecules (but2ene_Z, chloropropene_Z, pent2ene_Z,
+  cinnamic_acid_E, and 14 chembl_tier_b_* drug-like molecules)
+newly broken: 2 molecules (chembl_tier_b_0076, chembl_tier_b_0083)
+```
+
+*The 2 "newly broken" molecules, root-caused, not left as an open
+regression*: both show `stereo_before` (populated before force-field
+minimization runs) fully satisfied, `final_stereo` (after minimization)
+violated. Re-running both with `ForceFieldPolicy::None` keeps `final_stereo`
+satisfied — isolating MMFF94 minimization (stage 10), not
+`apply_declared_ez_bounds`, as the cause: minimization has no notion of
+declared stereo and can walk a correctly-embedded E/Z bond back across its
+boundary. This directly falsified this doc's own Stage-1 composition
+reasoning above (`enforce_chirality` rejected for any non-`Ignore`
+`stereo_policy`, on the theory that the two stereo mechanisms were unrelated
+and composing them would be "confusing, not defense-in-depth") — they are in
+fact complementary: `enforce_chirality` protects embedding-time correctness,
+`StereoPolicy::VerifyOnly`'s stage 11 gate protects against post-minimization
+drift. PR #301 relaxed the gate to allow `enforce_chirality: true` with
+`StereoPolicy::VerifyOnly` (still rejects `RepairAndVerify` — composing that
+policy's own stage 8 repair with `enforce_chirality`'s repair-then-retry is a
+separate, not-yet-validated question) and added a fixture reproducing this
+exact failure mode. PR #301 also exposed `enforce_chirality` to Python
+(`PyPipelineV2Config`) and WASM (`PipelineV2ConfigJson`) — neither binding's
+config construction had ever threaded the field through, so it was `false`
+unconditionally regardless of caller intent; without this, none of the above
+would have been reachable outside Rust-internal callers.
+
+*Regression control (all pre-existing arms, new run vs. the last recorded
+v0.13.0 run)*: **ENVIRONMENTAL / WAIVED, not a clean PASS — and not the full
+27/27 either, see below.** 159 (molecule, arm) mismatches found, all
+`success` (v0.13.0) → `timeout` (this run), zero non-timeout differences —
+semantic mismatches = 0. All 159 land on the same 27 (of 265) molecules, a
+contiguous ChEMBL tier-B block of large/macrocycle-heavy structures already
+flagged in this file's own example code as borderline on the fixed 20s
+per-attempt timeout. Two independent lines of evidence attribute this to
+machine load during this specific run, not to the code change:
+1. Matched-success timing ratio (both runs succeeded, same molecule/arm):
+   median 1.5×, 43% more than 2× slower this run than the v0.13.0 baseline,
+   across 1,537 pairs — a session-wide slowdown affecting every arm
+   uniformly, not something scoped to the changed code path. (Contributing
+   cause identified during the session: an unrelated process from a
+   different project ran on the same machine for 130+ minutes at the same
+   time, confirmed via `ps aux`, independent of anything in this repo.)
+2. **Paired baseline/current re-check, interleaved per molecule** (baseline
+   = `8443791`, the commit immediately before PR #300; current = this run's
+   commit) on the 27 affected molecules × 11 pre-existing arms: task was
+   killed by the harness partway through, completing **9 of 27 molecules
+   (99 of 297 possible pairs)** before stopping — the remaining 18 were
+   deliberately not re-run (diminishing return: the 9-molecule sample
+   already gives a clear, bidirectional signal, and finishing would have
+   cost another 1-2 hours on a machine already under unrelated load). Raw
+   data: `validation/results/v0_14_0_ez_bound_paired_timeout_recheck_9of27.jsonl`.
+   Of 99 pairs, 88 matched and 11 mismatched — but the 11 mismatches split
+   **9 baseline-timeout/current-success vs. 2 the reverse**, i.e. the
+   *pre-fix* baseline timed out *more* often than the current code on this
+   sample. A real current-only performance regression would show the
+   opposite skew (current timing out more, baseline reliably matching its
+   own historical record); this pattern does not support that explanation.
+   Do not read "9/27" as "27/27 completed" in any future citation of this
+   evidence — it is a partial, accepted-as-sufficient sample, not an
+   exhaustive re-check.
+
+*Not done in this release (explicitly deferred, not forgotten)*: tetrahedral
+chiral-volume bounds for ring-fused stereocenters (`testosterone`,
+`cholesterol` — still fail 0/5 base seeds, unaffected by any of the above,
+unchanged since PR #300's own measurement); issue #296 (14/59
+`DEFAULT_TEMPLATES` parse failures, unrelated subsystem); issue #299
+(chemical-space fingerprint provenance export).
+
 ### Phase 4 — ring handling
 **Current**: `dg.rs` has hand-picked chair/envelope/crown templates by ring
 size (6/5/≥8), correctly tested for those cases in isolation, but Phase 0's
