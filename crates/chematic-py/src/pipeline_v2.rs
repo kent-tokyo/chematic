@@ -139,6 +139,25 @@ pub struct PyPipelineV2Config {
 impl PyPipelineV2Config {
     #[new]
     #[allow(clippy::too_many_arguments)]
+    #[pyo3(signature = (
+        embed_seed,
+        max_attempts,
+        embed_timeout_ms,
+        use_exp_torsions,
+        use_small_ring_torsions,
+        use_macrocycle_torsions,
+        use_macrocycle_14_bounds,
+        include_legacy_torsion_heuristic,
+        stereo_policy,
+        fail_on_unevaluable_stereo,
+        force_field_policy,
+        force_field_max_iterations,
+        gate_mmff94_torsion_oop,
+        gate_mmff94_stretch_bend,
+        ring_torsion_policy,
+        total_timeout_ms,
+        enforce_chirality = false,
+    ))]
     fn new(
         embed_seed: u64,
         max_attempts: usize,
@@ -156,6 +175,15 @@ impl PyPipelineV2Config {
         gate_mmff94_stretch_bend: bool,
         ring_torsion_policy: &str,
         total_timeout_ms: Option<u64>,
+        // Trailing, defaulted (`false`, matching `EmbedParameters::default()`) so
+        // existing callers' positional/keyword calls keep working unchanged --
+        // added after `enforce_chirality` (v0.14.0, issue #285's E/Z bound fix)
+        // gained a real production effect. See `distance_geometry_v2.rs`'s module
+        // doc for what it does; see `pipeline_v2.rs`'s for why it's compatible
+        // with `stereo_policy="ignore"`/`"verify_only"` but not
+        // `"repair_and_verify"` (raises `PipelineV2Error` at validate-config
+        // otherwise).
+        enforce_chirality: bool,
     ) -> PyResult<Self> {
         Ok(Self {
             inner: pv2::PipelineV2Config {
@@ -167,6 +195,7 @@ impl PyPipelineV2Config {
                     use_small_ring_torsions,
                     use_macrocycle_torsions,
                     use_macrocycle_14_bounds,
+                    enforce_chirality,
                     ..EmbedParameters::default()
                 },
                 torsion_optimization: TorsionOptimizationConfig::default(),
@@ -206,6 +235,7 @@ impl PyPipelineV2Config {
         gate_mmff94_torsion_oop = false,
         gate_mmff94_stretch_bend = false,
         total_timeout_ms = None,
+        enforce_chirality = false,
     ))]
     #[allow(clippy::too_many_arguments)]
     fn safe(
@@ -225,6 +255,7 @@ impl PyPipelineV2Config {
         gate_mmff94_torsion_oop: bool,
         gate_mmff94_stretch_bend: bool,
         total_timeout_ms: Option<u64>,
+        enforce_chirality: bool,
     ) -> PyResult<Self> {
         Self::new(
             embed_seed,
@@ -243,6 +274,7 @@ impl PyPipelineV2Config {
             gate_mmff94_stretch_bend,
             ring_torsion_policy,
             total_timeout_ms,
+            enforce_chirality,
         )
     }
 
@@ -309,6 +341,10 @@ impl PyPipelineV2Config {
     #[getter]
     fn total_timeout_ms(&self) -> Option<u64> {
         self.inner.total_timeout_ms
+    }
+    #[getter]
+    fn enforce_chirality(&self) -> bool {
+        self.inner.embed.enforce_chirality
     }
 
     fn __repr__(&self) -> String {

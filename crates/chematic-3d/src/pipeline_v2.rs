@@ -13,8 +13,13 @@
 //! [`generate_coords`](crate::generate_coords),
 //! [`generate_conformer_ensemble`](crate::generate_conformer_ensemble),
 //! [`generate_conformer_ensemble_with_config`](crate::generate_conformer_ensemble_with_config),
-//! and the Python/WASM/MCP surfaces are untouched by this PR — [`embed_pipeline_v2`]
-//! is a new, additive, Rust-only, opt-in entry point.
+//! remain untouched — those still use the older `dg.rs` embedder, unrelated to this
+//! module. **Correction (2026-08-11, stale since this PR's original text):**
+//! `embed_pipeline_v2` is no longer Rust-only — `Mol.embed_pipeline_v2()`
+//! (`chematic-py`) and `embed_pipeline_v2_json` (`chematic-wasm`) both call it
+//! directly, added by later PRs without this doc being updated. It remains opt-in
+//! (a caller must explicitly choose this entry point; nothing routes through it
+//! implicitly) and `chematic-mcp` still does not expose it.
 //!
 //! # The most important semantics — read this twice
 //!
@@ -75,15 +80,28 @@
 //!
 //! # Judgment calls made in this file (see PR body for the full account)
 //!
-//! - `embed.enforce_chirality = true` is rejected as [`PipelineV2FailureCause::InvalidConfiguration`]
-//!   at stage 1 whenever `stereo_policy != StereoPolicy::Ignore`: this pipeline's own
-//!   stages 7–11 are the stereo gate, and letting the raw embedder's *unrelated*
-//!   `enforce_chirality` mechanism (repair-then-retry per attempt inside
-//!   `distance_geometry_v2`, added 2026-08-11 — see that module's own doc) additionally
-//!   reject/repair the same molecule for a different, unrelated reason would be
-//!   confusing, not defense-in-depth — even now that it's a real mechanism rather
-//!   than the fail-closed stub it used to be. Whether the two stereo mechanisms
-//!   should ever be composed is an open question for a later PR, not decided here.
+//! - **Revised 2026-08-11 (v0.14.0 release gate)**: `embed.enforce_chirality = true`
+//!   was originally rejected as [`PipelineV2FailureCause::InvalidConfiguration`] at
+//!   stage 1 for every `stereo_policy != StereoPolicy::Ignore`, reasoning that this
+//!   pipeline's own stages 7–11 stereo gate and the raw embedder's `enforce_chirality`
+//!   mechanism were unrelated and composing them would be confusing, not defense-in-
+//!   depth. Direct 265-molecule-corpus measurement disproved that: `enforce_chirality`
+//!   protects embedding-time correctness only (verified via `stereo_before`, populated
+//!   before stage 10 runs), and stage 10's force-field minimization has no notion of
+//!   declared stereo and can walk a correctly-embedded E/Z bond back across its
+//!   boundary (`chembl_tier_b_0076`/`chembl_tier_b_0083`: `stereo_before` fully
+//!   satisfied under `enforce_chirality`, `final_stereo` violated after MMFF94
+//!   minimization; re-running with `ForceFieldPolicy::None` on the same molecules
+//!   keeps `final_stereo` satisfied, isolating minimization as the cause). The two
+//!   mechanisms are complementary stages of defense, not redundant: `enforce_chirality`
+//!   without a post-minimization gate can silently report `success` on a geometry
+//!   whose final declared stereo is wrong. `StereoPolicy::Ignore` and
+//!   `StereoPolicy::VerifyOnly` are now both allowed with `enforce_chirality: true`
+//!   (VerifyOnly's stage 11 "Violated => failure" gate is exactly the fail-closed
+//!   check that catches this class of drift). `StereoPolicy::RepairAndVerify` remains
+//!   rejected in this combination — composing `enforce_chirality`'s own repair-then-
+//!   retry with stage 8's repair pass is a separate, not-yet-validated question,
+//!   deliberately deferred rather than decided by omission.
 //! - The `use_small_ring_torsions`/`use_macrocycle_torsions` fail-closed gate (stage
 //!   6) is scoped exactly to `TorsionKnowledgeSource::SmallRingExperimental` /
 //!   `MacrocycleAdaptation` potentials — not to `BasicChemicalKnowledge`'s flat-ring
@@ -572,11 +590,24 @@ pub fn embed_pipeline_v2(
     // -----------------------------------------------------------------
     // Stage 1: validate config.
     // -----------------------------------------------------------------
-    if config.embed.enforce_chirality && config.stereo_policy != StereoPolicy::Ignore {
-        // See the module docs' judgment-call section: this pipeline's own stages
-        // 7-11 are the stereo gate; `embed.enforce_chirality` is a different,
-        // separate repair/retry mechanism inside the raw embedder, and letting
-        // both run would be confusing, not defense-in-depth.
+    if config.embed.enforce_chirality && config.stereo_policy == StereoPolicy::RepairAndVerify {
+        // See the module docs' judgment-call section (revised 2026-08-11, v0.14.0
+        // release gate): `embed.enforce_chirality` and this pipeline's own stage
+        // 7-11 stereo gate are complementary, not redundant -- `enforce_chirality`
+        // protects embedding-time correctness only, and stage 10's force-field
+        // minimization has no notion of declared stereo and can walk a correctly-
+        // embedded E/Z bond back across its boundary (measured directly on the
+        // 265-molecule corpus: `chembl_tier_b_0076`/`chembl_tier_b_0083` embed
+        // correctly under `enforce_chirality` but MMFF94 minimization flips them --
+        // confirmed by re-running with `ForceFieldPolicy::None`, which does not).
+        // `StereoPolicy::Ignore` and `StereoPolicy::VerifyOnly` are both allowed
+        // with `enforce_chirality: true` (VerifyOnly's stage 11 gate is exactly
+        // the fail-closed check needed to catch that kind of post-minimization
+        // drift). `StereoPolicy::RepairAndVerify` remains excluded here -- its
+        // stage 8 repair pass was designed and validated against embeddings that
+        // never ran `enforce_chirality`'s own repair-then-retry first, and
+        // composing the two repair mechanisms is a separate, not-yet-validated
+        // question (deliberately deferred, not decided by omission).
         timings.total_ms = overall_start.elapsed().as_millis() as u64;
         return Err(evidence.fail(
             PipelineV2FailureCause::InvalidConfiguration,
@@ -1133,11 +1164,15 @@ mod tests {
     // -----------------------------------------------------------------------
 
     #[test]
-    fn enforce_chirality_with_nonignore_stereo_policy_is_invalid_configuration() {
+    fn enforce_chirality_with_repair_and_verify_stereo_policy_is_invalid_configuration() {
+        // Revised 2026-08-11: enforce_chirality's InvalidConfiguration gate now only
+        // excludes RepairAndVerify (composing its stage-8 repair with
+        // enforce_chirality's own repair-then-retry is a separate, deliberately
+        // deferred question) -- see the module doc's revised judgment-call entry.
         let mol = parse("C[C@H](O)CC").unwrap();
         let mut config = config_none();
         config.embed.enforce_chirality = true;
-        config.stereo_policy = StereoPolicy::VerifyOnly;
+        config.stereo_policy = StereoPolicy::RepairAndVerify;
         let err = embed_pipeline_v2(&mol, &config).unwrap_err();
         assert!(matches!(
             err.cause,
@@ -1148,13 +1183,108 @@ mod tests {
 
     #[test]
     fn enforce_chirality_with_ignore_stereo_policy_is_allowed() {
-        // enforce_chirality only conflicts with THIS pipeline's own stereo gate when
-        // that gate is actually active (non-Ignore).
         let mol = parse("CCCC").unwrap(); // no declared stereo at all
         let mut config = config_none();
         config.embed.enforce_chirality = true;
         config.stereo_policy = StereoPolicy::Ignore;
         assert!(embed_pipeline_v2(&mol, &config).is_ok());
+    }
+
+    #[test]
+    fn enforce_chirality_with_verify_only_stereo_policy_is_allowed() {
+        // Revised 2026-08-11: previously InvalidConfiguration -- now allowed, since
+        // VerifyOnly's stage 11 gate is exactly what catches a force field
+        // undoing enforce_chirality's embedding-time correctness (see the module
+        // doc's revised judgment-call entry for the corpus evidence).
+        let mol = parse("C[C@H](O)CC").unwrap();
+        let mut config = config_none();
+        config.embed.enforce_chirality = true;
+        config.embed.max_attempts = 8;
+        config.stereo_policy = StereoPolicy::VerifyOnly;
+        let result = embed_pipeline_v2(&mol, &config);
+        if let Err(e) = &result {
+            assert!(
+                !matches!(e.cause, PipelineV2FailureCause::InvalidConfiguration),
+                "must not be rejected as InvalidConfiguration, got {e:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn enforce_chirality_with_verify_only_never_reports_success_with_violated_final_stereo() {
+        // Motivated by the corpus-measured chembl_tier_b_0076/0083 failure mode
+        // (265-molecule v0.14.0 release-gate re-measurement): enforce_chirality can
+        // deliver correct declared E/Z at embedding time (verified via
+        // `stereo_before`, populated before stage 10 runs) while MMFF94
+        // minimization -- which has no notion of declared stereo -- walks it back
+        // across the boundary afterward (confirmed separately for that exact
+        // molecule/seed: re-running with `ForceFieldPolicy::None` leaves
+        // `final_stereo` satisfied, isolating minimization as the cause -- see the
+        // module doc's revised judgment-call entry). Before this PR's gate
+        // relaxation, `StereoPolicy::Ignore` was the only option compatible with
+        // enforce_chirality, and Ignore never gates on stereo -- a caller could get
+        // a `success` result whose geometry silently violates its own declared E/Z.
+        //
+        // This test asserts the general invariant, not a specific outcome for this
+        // one molecule/seed: whether MMFF94 happens to revert the fix is itself
+        // non-deterministic across build profiles (verified while writing this test
+        // -- an unoptimized debug build converged differently than the release
+        // build the corpus measurement used, for the identical seed), so asserting
+        // "this exact call must fail" would make the test flaky by build profile.
+        // What must hold regardless: `enforce_chirality`'s own part of the contract
+        // (embedding-time correctness, `stereo_before`) always succeeds for this
+        // molecule, and `Ok` is never returned with a violated `final_stereo` --
+        // VerifyOnly's stage 11 gate must have caught it if minimization did revert
+        // the fix.
+        let mol = parse("COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(NC(=O)CBr)cc4)CC3)nc(N)c2cc1OC").unwrap(); // chembl_tier_b_0083
+        let mut config = config_none();
+        config.embed.random_seed = 20260801; // the corpus benchmark's exact seed
+        config.embed.enforce_chirality = true;
+        config.embed.max_attempts = 8;
+        config.embed.use_exp_torsions = true;
+        config.embed.use_small_ring_torsions = true;
+        config.embed.use_macrocycle_torsions = true;
+        config.embed.use_macrocycle_14_bounds = true;
+        config.stereo_policy = StereoPolicy::VerifyOnly;
+        config.force_field_policy = ForceFieldPolicy::Mmff94BondAngleStrict;
+        // Capped well below the 200-iteration production default: in an
+        // unoptimized debug build (what `cargo test` uses in CI), this specific
+        // 36-atom macrocycle-containing molecule's MMFF94 minimization is slow
+        // enough at 200 iterations to make the test take minutes -- 40 is still
+        // enough to exercise "did minimization move the geometry", the actual
+        // invariant under test, without that cost.
+        config.force_field_max_iterations = 40;
+        config.ring_torsion_policy = RingTorsionApplicationPolicy::DiagnosticOnly;
+        config.total_timeout_ms = Some(60_000);
+
+        match embed_pipeline_v2(&mol, &config) {
+            Ok(r) => {
+                assert!(
+                    r.stereo_before.is_fully_satisfied(),
+                    "enforce_chirality's embedding-time fix must be correct -- got {:?}",
+                    r.stereo_before
+                );
+                assert!(
+                    r.final_stereo.is_fully_satisfied(),
+                    "must never report success with a geometry violating declared stereo -- \
+                     got final_stereo {:?}",
+                    r.final_stereo
+                );
+            }
+            Err(e) => {
+                assert!(
+                    !matches!(e.cause, PipelineV2FailureCause::InvalidConfiguration),
+                    "must not be rejected as InvalidConfiguration: {e:?}"
+                );
+                assert!(
+                    e.stereo_before
+                        .as_ref()
+                        .is_some_and(StereoVerification::is_fully_satisfied),
+                    "enforce_chirality's embedding-time fix must be correct -- got {:?}",
+                    e.stereo_before
+                );
+            }
+        }
     }
 
     #[test]

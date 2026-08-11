@@ -207,6 +207,13 @@ struct PipelineV2ConfigJson {
     ring_torsion_policy: RingTorsionPolicyJson,
     #[serde(deserialize_with = "deserialize_present")]
     total_timeout_ms: Option<Option<u64>>,
+    // #[serde(default)]: same precedent as `gate_mmff94_stretch_bend` above --
+    // added after the JSON config was already a documented external API
+    // (v0.14.0, issue #285's E/Z bound fix). Existing callers' configs must
+    // keep parsing (as `false`, matching `EmbedParameters::default()` and
+    // every existing arm's unchanged behavior).
+    #[serde(default)]
+    enforce_chirality: bool,
 }
 
 impl PipelineV2ConfigJson {
@@ -226,6 +233,7 @@ impl PipelineV2ConfigJson {
                 use_small_ring_torsions: self.use_small_ring_torsions,
                 use_macrocycle_torsions: self.use_macrocycle_torsions,
                 use_macrocycle_14_bounds: self.use_macrocycle_14_bounds,
+                enforce_chirality: self.enforce_chirality,
                 ..EmbedParameters::default()
             },
             torsion_optimization: TorsionOptimizationConfig::default(),
@@ -1625,6 +1633,97 @@ mod tests {
     }
 
     // -----------------------------------------------------------------------
+    // enforce_chirality (v0.14.0, issue #285's E/Z bound fix) -- WASM parity
+    // -----------------------------------------------------------------------
+
+    fn enforce_chirality_config_json(stereo_policy: &str, enforce_chirality: bool) -> String {
+        format!(
+            r#"{{
+                "embedSeed": 0,
+                "maxAttempts": 1,
+                "embedTimeoutMs": null,
+                "useExpTorsions": false,
+                "useSmallRingTorsions": false,
+                "useMacrocycleTorsions": false,
+                "useMacrocycle14Bounds": false,
+                "includeLegacyTorsionHeuristic": false,
+                "stereoPolicy": "{stereo_policy}",
+                "failOnUnevaluableStereo": false,
+                "forceFieldPolicy": "none",
+                "forceFieldMaxIterations": 200,
+                "gateMmff94TorsionOop": false,
+                "gateMmff94StretchBend": false,
+                "ringTorsionPolicy": "fail_closed",
+                "totalTimeoutMs": null,
+                "enforceChirality": {enforce_chirality}
+            }}"#
+        )
+    }
+
+    #[test]
+    fn enforce_chirality_true_fixes_but2ene_z_raw_embed() {
+        // Direct WASM-level confirmation that `enforceChirality` in the JSON
+        // config reaches distance_geometry_v2.rs's apply_declared_ez_bounds
+        // (issue #285): but2ene_Z is the exact molecule that fix targets --
+        // raw embedding (no force field) must satisfy declared E/Z once
+        // enforceChirality is set, across multiple seeds, matching the
+        // Rust-level corpus measurement and the Python binding's parity test.
+        let mol = parse_smiles(r"C/C=C\C").expect("but2ene_Z");
+        for seed in 0..5u64 {
+            let config = format!(
+                r#"{{
+                    "embedSeed": {seed},
+                    "maxAttempts": 1,
+                    "embedTimeoutMs": null,
+                    "useExpTorsions": false,
+                    "useSmallRingTorsions": false,
+                    "useMacrocycleTorsions": false,
+                    "useMacrocycle14Bounds": false,
+                    "includeLegacyTorsionHeuristic": false,
+                    "stereoPolicy": "ignore",
+                    "failOnUnevaluableStereo": false,
+                    "forceFieldPolicy": "none",
+                    "forceFieldMaxIterations": 200,
+                    "gateMmff94TorsionOop": false,
+                    "gateMmff94StretchBend": false,
+                    "ringTorsionPolicy": "fail_closed",
+                    "totalTimeoutMs": null,
+                    "enforceChirality": true
+                }}"#
+            );
+            let json = embed_pipeline_v2_json(&mol, &config);
+            let value: serde_json::Value = serde_json::from_str(&json).unwrap();
+            assert_eq!(value["ok"], true, "seed {seed}: {json}");
+            assert_eq!(
+                value["result"]["finalStereo"]["isFullySatisfied"], true,
+                "seed {seed}: raw embed must already satisfy declared E/Z"
+            );
+        }
+    }
+
+    #[test]
+    fn enforce_chirality_defaults_false_missing_field_still_parses() {
+        // #[serde(default)] precedent (matches gateMmff94StretchBend): configs
+        // written before this field existed must keep parsing, as `false`.
+        let mol = parse_smiles("CCCCCCCCCC").expect("decane");
+        let config = safe_config_json("none", "ignore", "fail_closed"); // no enforceChirality key
+        let json = embed_pipeline_v2_json(&mol, &config);
+        let value: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert_eq!(value["ok"], true, "{json}");
+    }
+
+    #[test]
+    fn enforce_chirality_with_repair_and_verify_is_invalid_configuration() {
+        let mol = parse_smiles(r"C/C=C\C").expect("but2ene_Z");
+        let config = enforce_chirality_config_json("repair_and_verify", true);
+        let json = embed_pipeline_v2_json(&mol, &config);
+        let value: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert_eq!(value["ok"], false, "{json}");
+        assert_eq!(value["error"]["stage"], "validate_config");
+        assert_eq!(value["error"]["cause"]["kind"], "invalid_configuration");
+    }
+
+    // -----------------------------------------------------------------------
     // Cross-binding parity: validation/pipeline_v2_wasm_parity_fixtures.json
     //
     // Generated once by scripts/gen_pipeline_v2_wasm_parity_fixtures.py via the
@@ -1760,6 +1859,7 @@ mod tests {
                     use_small_ring_torsions: cfg["useSmallRingTorsions"].as_bool().unwrap(),
                     use_macrocycle_torsions: cfg["useMacrocycleTorsions"].as_bool().unwrap(),
                     use_macrocycle_14_bounds: cfg["useMacrocycle14Bounds"].as_bool().unwrap(),
+                    enforce_chirality: cfg["enforceChirality"].as_bool().unwrap_or(false),
                     ..EmbedParameters::default()
                 },
                 torsion_optimization: TorsionOptimizationConfig::default(),
