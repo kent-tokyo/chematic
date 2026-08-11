@@ -78,9 +78,12 @@
 //! - `embed.enforce_chirality = true` is rejected as [`PipelineV2FailureCause::InvalidConfiguration`]
 //!   at stage 1 whenever `stereo_policy != StereoPolicy::Ignore`: this pipeline's own
 //!   stages 7–11 are the stereo gate, and letting the raw embedder's *unrelated*
-//!   `enforce_chirality` fail-closed stub (which never actually verifies anything,
-//!   see `distance_geometry_v2`'s own doc) additionally reject the same molecule for
-//!   a different, unrelated reason would be confusing, not defense-in-depth.
+//!   `enforce_chirality` mechanism (repair-then-retry per attempt inside
+//!   `distance_geometry_v2`, added 2026-08-11 — see that module's own doc) additionally
+//!   reject/repair the same molecule for a different, unrelated reason would be
+//!   confusing, not defense-in-depth — even now that it's a real mechanism rather
+//!   than the fail-closed stub it used to be. Whether the two stereo mechanisms
+//!   should ever be composed is an open question for a later PR, not decided here.
 //! - The `use_small_ring_torsions`/`use_macrocycle_torsions` fail-closed gate (stage
 //!   6) is scoped exactly to `TorsionKnowledgeSource::SmallRingExperimental` /
 //!   `MacrocycleAdaptation` potentials — not to `BasicChemicalKnowledge`'s flat-ring
@@ -572,9 +575,8 @@ pub fn embed_pipeline_v2(
     if config.embed.enforce_chirality && config.stereo_policy != StereoPolicy::Ignore {
         // See the module docs' judgment-call section: this pipeline's own stages
         // 7-11 are the stereo gate; `embed.enforce_chirality` is a different,
-        // narrower fail-closed stub in the raw embedder that never actually
-        // verifies anything, and letting both run would be confusing, not
-        // defense-in-depth.
+        // separate repair/retry mechanism inside the raw embedder, and letting
+        // both run would be confusing, not defense-in-depth.
         timings.total_ms = overall_start.elapsed().as_millis() as u64;
         return Err(evidence.fail(
             PipelineV2FailureCause::InvalidConfiguration,
