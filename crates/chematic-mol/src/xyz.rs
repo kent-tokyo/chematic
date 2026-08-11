@@ -192,8 +192,10 @@ pub enum XyzError {
     /// surface (if at all) as `InvalidCountLine` when that next "count
     /// line" fails to parse as an integer.
     AtomCountMismatch { declared: usize, found: usize },
-    /// [`parse_extxyz`] only: a `key=value` token in the comment line has a
-    /// key but no `=value` part.
+    /// [`parse_extxyz`] only: a comment-line token has an empty key (a
+    /// stray `=` with nothing before it). A bare key with no `=value` at
+    /// all is *not* this error -- it is a valid implicit boolean flag,
+    /// defaulting to `"T"` (matches ASE's own convention).
     InvalidInfoField { line: usize, detail: String },
     /// [`parse_extxyz`] only: a quoted value (`key="..."`) in the comment
     /// line has no closing quote.
@@ -499,8 +501,14 @@ pub fn write_xyz(frame: &XyzFrame) -> String {
 // ---------------------------------------------------------------------------
 
 /// Tokenize an extxyz comment line into ordered `(key, value)` pairs.
-/// Quoted values (`key="a b c"`) may contain spaces; unquoted values run to
-/// the next whitespace. `lineno` only annotates errors.
+/// Quoted values (`key="a b c"`) may contain spaces; a backslash inside a
+/// quoted value escapes the following character verbatim (so `\"` is a
+/// literal quote, `\\` a literal backslash), matching ASE's own
+/// `key_val_str_to_dict` char-by-char escape handling. Unquoted values run
+/// to the next whitespace. A bare key with no `=value` at all defaults to
+/// value `"T"` (ASE's own convention for an implicit boolean flag -- e.g.
+/// `constrained` alone means `constrained=T`), rather than being an error.
+/// `lineno` only annotates errors.
 fn tokenize_info_line(line: &str, lineno: usize) -> Result<Vec<(String, String)>, XyzError> {
     let chars: Vec<char> = line.chars().collect();
     let n = chars.len();
@@ -519,25 +527,43 @@ fn tokenize_info_line(line: &str, lineno: usize) -> Result<Vec<(String, String)>
             i += 1;
         }
         let key: String = chars[key_start..i].iter().collect();
-        if i >= n || chars[i] != '=' {
+        if key.is_empty() {
+            // Only reachable via a stray '=' with nothing before it (e.g.
+            // "=foo" or "==bar") -- whitespace already advanced past above,
+            // so a real key never starts empty.
             return Err(XyzError::InvalidInfoField {
                 line: lineno,
-                detail: format!("key '{key}' has no '=value'"),
+                detail: "empty key before '='".to_string(),
             });
+        }
+        if i >= n || chars[i] != '=' {
+            pairs.push((key, "T".to_string()));
+            continue;
         }
         i += 1; // consume '='
 
         let value: String = if i < n && chars[i] == '"' {
             i += 1;
-            let val_start = i;
-            while i < n && chars[i] != '"' {
-                i += 1;
+            let mut v = String::new();
+            loop {
+                if i >= n {
+                    return Err(XyzError::UnterminatedQuote { line: lineno, key });
+                }
+                match chars[i] {
+                    '"' => {
+                        i += 1;
+                        break;
+                    }
+                    '\\' if i + 1 < n => {
+                        v.push(chars[i + 1]);
+                        i += 2;
+                    }
+                    c => {
+                        v.push(c);
+                        i += 1;
+                    }
+                }
             }
-            if i >= n {
-                return Err(XyzError::UnterminatedQuote { line: lineno, key });
-            }
-            let v = chars[val_start..i].iter().collect();
-            i += 1; // consume closing quote
             v
         } else {
             let val_start = i;
@@ -900,8 +926,19 @@ fn build_comment_line(frame: &XyzFrame) -> String {
     }
     parts.push(format!("Properties={props}"));
     for (k, v) in &frame.info {
-        if v.is_empty() || v.chars().any(char::is_whitespace) {
-            parts.push(format!("{k}=\"{v}\""));
+        if v.is_empty() || v.chars().any(char::is_whitespace) || v.contains('"') {
+            // Escape '"' and '\' so the quoted value reparses back to
+            // exactly `v` -- see `tokenize_info_line`'s matching escape
+            // handling, both modeled on ASE's own `key_val_str_to_dict`.
+            let escaped: String = v
+                .chars()
+                .flat_map(|c| match c {
+                    '"' => vec!['\\', '"'],
+                    '\\' => vec!['\\', '\\'],
+                    other => vec![other],
+                })
+                .collect();
+            parts.push(format!("{k}=\"{escaped}\""));
         } else {
             parts.push(format!("{k}={v}"));
         }
@@ -909,17 +946,28 @@ fn build_comment_line(frame: &XyzFrame) -> String {
     parts.join(" ")
 }
 
-/// Characters that would corrupt extxyz `key=value` comment-line syntax if
-/// they appear verbatim in a [`XyzFrame::info`] `key`/`value` or a
-/// [`XyzProperty::name`] (itself a `:`-delimited token inside
-/// `Properties=`). Returns `Err(detail)` naming the first offending field.
-/// Used by both [`write_extxyz`] and [`ExtxyzWriter::write_frame`], so
-/// neither entry point can silently emit a comment line that reparses into
-/// *different* data than what was written (e.g. an info value containing
-/// `"` -- writing it inside the quotes `build_comment_line` adds would
-/// terminate the quoted value early and fabricate a bogus extra key/value
-/// pair on reparse). ASE's extxyz spec defines no escaping scheme for these
-/// characters, so rejecting is the honest choice over guessing one.
+/// Rejects an [`XyzFrame`] that [`write_extxyz`]/[`ExtxyzWriter::write_frame`]
+/// cannot losslessly round-trip through extxyz `key=value` comment-line
+/// syntax. Returns `Err(detail)` naming the first offending field. Checks:
+/// - an [`XyzFrame::info`] key or a [`XyzProperty::name`] containing
+///   whitespace, `:`, `=`, or `"` (all syntactically significant to the
+///   tokenizer/column-spec grammar, and -- unlike values -- names/keys have
+///   no quoting or escaping to fall back on);
+/// - an info key literally `"Lattice"` or `"Properties"`, which
+///   [`parse_one_frame_ext`] always special-cases regardless of whether it
+///   came from [`XyzFrame::lattice`]/[`properties`](XyzFrame::properties) or
+///   a generic info entry, so a generic entry with either name would
+///   reparse as the *wrong* field (or fail as `InvalidLattice`/
+///   `InvalidProperties` if its value isn't in that field's own syntax);
+/// - an info value containing an embedded newline, which no amount of
+///   quoting/escaping can represent inside a single comment line;
+/// - a [`XyzProperty`] declaring `count == 0`, which `Properties=`' own
+///   grammar (parsed by [`parse_properties`]) requires to be at least 1.
+///
+/// Info values containing `"` or `\` are otherwise fine: `build_comment_line`
+/// escapes them the same way [`tokenize_info_line`] un-escapes them on read
+/// (both modeled on ASE's own `key_val_str_to_dict`), so they are not
+/// rejected here.
 fn validate_extxyz_writable(frame: &XyzFrame) -> Result<(), String> {
     for (k, v) in &frame.info {
         if k.is_empty() || k.chars().any(|c| c.is_whitespace() || c == '=' || c == '"') {
@@ -927,9 +975,16 @@ fn validate_extxyz_writable(frame: &XyzFrame) -> Result<(), String> {
                 "info key {k:?} cannot be written (must be non-empty and contain no whitespace, '=', or '\"')"
             ));
         }
-        if v.contains('"') {
+        if k == "Lattice" || k == "Properties" {
             return Err(format!(
-                "info['{k}'] value {v:?} cannot be written (contains '\"', which extxyz has no escaping for)"
+                "info key {k:?} is reserved by extxyz -- use `XyzFrame::lattice` or \
+                 `XyzFrame::properties` instead of a generic info entry"
+            ));
+        }
+        if v.contains('\n') || v.contains('\r') {
+            return Err(format!(
+                "info['{k}'] value {v:?} cannot be written (extxyz comment lines cannot \
+                 contain an embedded newline)"
             ));
         }
     }
@@ -941,6 +996,13 @@ fn validate_extxyz_writable(frame: &XyzFrame) -> Result<(), String> {
         {
             return Err(format!(
                 "property name {:?} cannot be written (must be non-empty and contain no whitespace, ':', '=', or '\"')",
+                p.name
+            ));
+        }
+        if p.count == 0 {
+            return Err(format!(
+                "property '{}' declares 0 components, which extxyz's Properties= grammar \
+                 cannot represent (minimum is 1)",
                 p.name
             ));
         }
@@ -1345,13 +1407,20 @@ mod tests {
     }
 
     #[test]
-    fn fails_closed_on_key_with_no_value() {
-        // The '=' in 'energy=1.0' commits the whole line to key=value
-        // parsing, so the trailing bare word 'bogus' (no '=') is an error
-        // -- unlike a comment with no '=' anywhere, which is legal free text.
-        let bad = "1\nenergy=1.0 bogus\nC 0.0 0.0 0.0\n";
-        let err = parse_extxyz(bad).unwrap_err();
-        assert!(matches!(err, XyzError::InvalidInfoField { .. }));
+    fn bare_info_key_defaults_to_true_flag() {
+        // A bare key with no '=value' (here, trailing 'bogus' after
+        // 'energy=1.0' already committed the line to key=value parsing) is
+        // an implicit boolean flag defaulting to "T", matching ASE's own
+        // `key_val_str_to_dict` ("len(kv_pair) == 1: default to True").
+        let s = "1\nenergy=1.0 bogus\nC 0.0 0.0 0.0\n";
+        let frame = parse_extxyz(s).unwrap();
+        assert_eq!(
+            frame.info,
+            vec![
+                ("energy".to_string(), "1.0".to_string()),
+                ("bogus".to_string(), "T".to_string()),
+            ]
+        );
     }
 
     #[test]
@@ -1400,7 +1469,10 @@ mod tests {
     }
 
     #[test]
-    fn write_extxyz_rejects_quote_in_info_value() {
+    fn write_extxyz_escapes_and_round_trips_quote_and_backslash_in_info_value() {
+        // Previously rejected outright; now escaped on write and
+        // un-escaped on read, matching ASE's own `key_val_str_to_dict`
+        // char-by-char escape handling.
         let frame = XyzFrame {
             atoms: vec![XyzAtom {
                 element: Element::C,
@@ -1411,10 +1483,84 @@ mod tests {
             comment: String::new(),
             lattice: None,
             properties: Vec::new(),
-            info: vec![("note".to_string(), "x\" y=\"z".to_string())],
+            info: vec![(
+                "note".to_string(),
+                "x\" y=\"z and a \\backslash".to_string(),
+            )],
+        };
+        let written = write_extxyz(&frame).unwrap();
+        let reparsed = parse_extxyz(&written).unwrap();
+        assert_eq!(reparsed.info, frame.info);
+    }
+
+    #[test]
+    fn write_extxyz_rejects_info_key_colliding_with_lattice_or_properties() {
+        // "Lattice"/"Properties" are always special-cased on read
+        // (`parse_one_frame_ext`) regardless of which field wrote them, so
+        // a generic info entry using either name would silently reparse as
+        // the wrong field rather than as itself.
+        for reserved in ["Lattice", "Properties"] {
+            let frame = XyzFrame {
+                atoms: vec![XyzAtom {
+                    element: Element::C,
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0,
+                }],
+                comment: String::new(),
+                lattice: None,
+                properties: Vec::new(),
+                info: vec![(reserved.to_string(), "1.0".to_string())],
+            };
+            let err = write_extxyz(&frame).unwrap_err();
+            assert!(
+                matches!(err, XyzError::UnwritableMetadata { .. }),
+                "reserved key '{reserved}' must be rejected, not silently misparsed on reread"
+            );
+        }
+    }
+
+    #[test]
+    fn write_extxyz_rejects_embedded_newline_in_info_value() {
+        let frame = XyzFrame {
+            atoms: vec![XyzAtom {
+                element: Element::C,
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            }],
+            comment: String::new(),
+            lattice: None,
+            properties: Vec::new(),
+            info: vec![("note".to_string(), "line1\nline2".to_string())],
         };
         let err = write_extxyz(&frame).unwrap_err();
         assert!(matches!(err, XyzError::UnwritableMetadata { .. }));
+    }
+
+    #[test]
+    fn write_extxyz_rejects_zero_count_property() {
+        let frame = XyzFrame {
+            atoms: Vec::new(),
+            comment: String::new(),
+            lattice: None,
+            properties: vec![XyzProperty {
+                name: "forces".to_string(),
+                kind: XyzPropertyKind::Real,
+                count: 0,
+                values: Vec::new(),
+            }],
+            info: Vec::new(),
+        };
+        let err = write_extxyz(&frame).unwrap_err();
+        assert!(matches!(err, XyzError::UnwritableMetadata { .. }));
+    }
+
+    #[test]
+    fn fails_closed_on_empty_info_key() {
+        let bad = "1\n=1.0\nC 0.0 0.0 0.0\n";
+        let err = parse_extxyz(bad).unwrap_err();
+        assert!(matches!(err, XyzError::InvalidInfoField { .. }));
     }
 
     #[test]

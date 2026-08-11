@@ -233,12 +233,37 @@ def test_to_extxyz_raises_on_coords_atom_count_mismatch():
         chematic.to_extxyz(result["mol"], result["coords"][:1])
 
 
-def test_to_extxyz_raises_on_unquotable_info_value():
-    # A '"' inside an info value would terminate build_comment_line's
-    # own quoting early and fabricate a bogus extra key on reparse --
-    # rejected instead of silently corrupting the output.
+def test_to_extxyz_escapes_and_roundtrips_quote_in_info_value():
+    # A '"' inside an info value is escaped on write and un-escaped on
+    # read (matching ASE's own key_val_str_to_dict), not rejected.
+    result = chematic.from_extxyz(PLAIN_XYZ_WATER)
+    written = chematic.to_extxyz(
+        result["mol"], result["coords"], info={"note": 'x" y="z'}
+    )
+    reparsed = chematic.from_extxyz(written)
+    assert reparsed["info"] == {"note": 'x" y="z'}
+
+
+def test_to_extxyz_raises_on_info_key_colliding_with_lattice():
+    # A generic info entry named "Lattice" would always be re-parsed as
+    # the dedicated lattice field on reread (see chematic_mol::xyz's
+    # `parse_one_frame_ext`), silently reinterpreting or corrupting an
+    # unrelated info value instead of round-tripping as itself.
     result = chematic.from_extxyz(PLAIN_XYZ_WATER)
     with pytest.raises(ValueError):
         chematic.to_extxyz(
-            result["mol"], result["coords"], info={"note": 'x" y="z'}
+            result["mol"], result["coords"], info={"Lattice": "not-9-numbers"}
+        )
+
+
+def test_to_extxyz_raises_on_zero_count_property():
+    # extxyz's Properties= grammar has no way to declare a 0-component
+    # column. Only reachable with a 0-atom molecule (a nonempty one would
+    # already fail the row-count-vs-atom-count check above) -- writing one
+    # anyway would produce a file this module's own reader rejects on
+    # reread.
+    empty = chematic.from_extxyz("0\nempty\n")
+    with pytest.raises(ValueError):
+        chematic.to_extxyz(
+            empty["mol"], empty["coords"], properties={"forces": []}
         )

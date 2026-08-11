@@ -125,11 +125,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   not a purely hypothetical/unreleased-so-far break.
 - **Fails closed on unwritable metadata, not just unparseable input**:
   `write_extxyz`/`ExtxyzWriter::write_frame` reject (rather than silently
-  emit corrupt output for) an `XyzFrame::info` key/value or
-  `XyzProperty::name` containing a character extxyz `key=value` syntax
-  can't represent (e.g. `"` inside a value that needs quoting) — ASE
-  defines no escaping scheme, so this can only happen with a hand-built
-  `XyzFrame`, reachable from the Python/WASM `to_extxyz` bindings.
+  emit corrupt output for) an `XyzFrame::info` key or `XyzProperty::name`
+  containing a character extxyz `key=value`/`Properties=` syntax can't
+  represent; an info key literally `"Lattice"` or `"Properties"` (always
+  re-parsed as the dedicated field, not as itself); an info value with an
+  embedded newline (unrepresentable in a single comment line); or a
+  `XyzProperty` declaring 0 components (`Properties=` requires at least 1).
+  All are reachable only from a hand-built `XyzFrame`, e.g. via the
+  Python/WASM `to_extxyz` bindings.
+- **Info values may contain `"` and `\` freely**: `"`/`\` inside a quoted
+  `key="..."` value are escaped on write and un-escaped on read (`\"`,
+  `\\`), matching ASE's own `key_val_str_to_dict`. A bare key with no
+  `=value` (e.g. a standalone `constrained` token) parses as an implicit
+  boolean flag (`"T"`), also matching ASE, rather than erroring.
 
 ## [0.14.0] — 2026-08-11
 
