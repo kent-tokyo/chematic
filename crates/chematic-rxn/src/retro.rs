@@ -277,8 +277,15 @@ pub static DEFAULT_TEMPLATES: &[RetroTemplate] = &[
     },
     // ── C–C bond ─────────────────────────────────────────────────────────────
     RetroTemplate {
+        // Explicit `-` (not the default implicit-aromatic bond two adjacent
+        // aromatic atoms get in this crate's SMILES-based template parser) is
+        // load-bearing: a real biaryl axis is *never* an aromatic bond (the two
+        // rings' own aromatic systems don't extend across it), only ordinary
+        // intra-ring aromatic bonds are. Without the `-`, `[c:1][c:2]` matched
+        // every intra-ring aromatic C-C bond and *zero* real biaryl bonds --
+        // the opposite of what was intended (issue #294).
         name: "suzuki_biaryl",
-        smirks: "[c:1][c:2]>>[c:1]Br.[c:2]B(O)O",
+        smirks: "[c:1]-[c:2]>>[c:1]Br.[c:2]B(O)O",
         reaction_class: RetroClass::CCBond,
     },
     RetroTemplate {
@@ -544,8 +551,46 @@ mod tests {
         // benzene has no breakable bonds for any template
         let m = mol("c1ccccc1");
         let results = retro_disconnect(&m, DEFAULT_TEMPLATES, 0);
-        // May still get trivial C-C or C-H hits — just check it doesn't panic
-        let _ = results;
+        assert!(
+            results.is_empty(),
+            "plain benzene has no real disconnection, got: {:?}",
+            results.iter().map(|r| &r.template_name).collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn test_suzuki_biaryl_does_not_match_intra_ring_bonds() {
+        // Issue #294: `[c:1][c:2]` with no ring-crossing constraint matched
+        // any aromatic C-C bond, including ordinary intra-ring ones.
+        for smiles in ["c1ccccc1", "c1ccc2ccccc2c1", "c1ccncc1"] {
+            let m = mol(smiles);
+            let results = retro_disconnect(&m, DEFAULT_TEMPLATES, 50);
+            assert!(
+                !results.iter().any(|r| r.template_name == "suzuki_biaryl"),
+                "{smiles}: suzuki_biaryl must not fire on a molecule with no biaryl bond"
+            );
+        }
+
+        // Two rings connected only by an ether oxygen -- no direct ring-to-ring
+        // C-C bond exists, so suzuki_biaryl must not fire (aryl_ether_ullmann
+        // is the correct match here).
+        let diphenyl_ether = mol("c1ccccc1Oc1ccccc1");
+        let results = retro_disconnect(&diphenyl_ether, DEFAULT_TEMPLATES, 50);
+        assert!(
+            !results.iter().any(|r| r.template_name == "suzuki_biaryl"),
+            "diphenyl ether has no biaryl C-C bond"
+        );
+    }
+
+    #[test]
+    fn test_suzuki_biaryl_matches_real_biaryl_bond() {
+        // biphenyl: the two rings ARE connected by a real (non-ring) C-C bond.
+        let biphenyl = mol("c1ccc(-c2ccccc2)cc1");
+        let results = retro_disconnect(&biphenyl, DEFAULT_TEMPLATES, 50);
+        assert!(
+            results.iter().any(|r| r.template_name == "suzuki_biaryl"),
+            "suzuki_biaryl must still fire on a genuine biaryl bond"
+        );
     }
 
     #[test]
