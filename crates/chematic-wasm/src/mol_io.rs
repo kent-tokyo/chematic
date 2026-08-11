@@ -556,6 +556,223 @@ pub fn to_xyz(mol: &MolHandle) -> String {
     chematic_3d::write_xyz(&mol.inner, &coords, "")
 }
 
+// ---------------------------------------------------------------------------
+// Extended XYZ (extxyz): ASE's Lattice=/Properties= superset of plain XYZ,
+// via `chematic_mol::xyz` (distinct from -- and unrelated to -- the plain
+// single-frame `chematic_3d::xyz` module `mol_from_xyz`/`to_xyz` above bind).
+// Only the first frame of a multi-frame trajectory is exposed here; use the
+// Python binding (`from_extxyz_all`) for full trajectory access.
+// ---------------------------------------------------------------------------
+
+fn extxyz_value_to_json(v: &chematic_mol::XyzValue) -> serde_json::Value {
+    match v {
+        chematic_mol::XyzValue::Real(x) => serde_json::json!(x),
+        chematic_mol::XyzValue::Integer(i) => serde_json::json!(i),
+        chematic_mol::XyzValue::Str(s) => serde_json::json!(s),
+        chematic_mol::XyzValue::Logical(b) => serde_json::json!(b),
+    }
+}
+
+fn extxyz_frame_to_json_value(frame: &chematic_mol::XyzFrame) -> serde_json::Value {
+    let coords: Vec<[f64; 3]> = frame.coords().iter().map(|&(x, y, z)| [x, y, z]).collect();
+    let mut properties = serde_json::Map::new();
+    for prop in &frame.properties {
+        let rows: Vec<serde_json::Value> = prop
+            .values
+            .iter()
+            .map(|row| serde_json::Value::Array(row.iter().map(extxyz_value_to_json).collect()))
+            .collect();
+        properties.insert(prop.name.clone(), serde_json::Value::Array(rows));
+    }
+    let mut info = serde_json::Map::new();
+    for (k, v) in &frame.info {
+        info.insert(k.clone(), serde_json::json!(v));
+    }
+    serde_json::json!({
+        "coords": coords,
+        "lattice": frame.lattice.map(|l| l.to_vec()),
+        "properties": properties,
+        "info": info,
+    })
+}
+
+/// Parse an Extended XYZ (extxyz) frame and return a `MolHandle` (topology +
+/// element/position only; use [`extxyz_frame_json`] to recover coordinates,
+/// cell, per-atom properties and frame metadata in the SAME atom order).
+///
+/// A plain XYZ file (free-form comment, no `Lattice=`/`Properties=`) parses
+/// too. Only the first frame of a multi-frame file is read.
+///
+/// Returns a JS error on parse failure or if the frame exceeds the WASM
+/// atom-count limit.
+#[wasm_bindgen]
+pub fn mol_from_extxyz(text: &str) -> Result<MolHandle, JsValue> {
+    if text.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str("extxyz input too large"));
+    }
+    let frame = chematic_mol::parse_extxyz(text).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if frame.atoms.len() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!(
+            "molecule too large (max {WASM_MAX_ATOMS} atoms)"
+        )));
+    }
+    Ok(MolHandle {
+        inner: std::rc::Rc::new(frame.to_molecule()),
+    })
+}
+
+/// Extract an extxyz frame's coordinates, cell, per-atom properties and
+/// frame metadata as JSON, in the SAME atom order [`mol_from_extxyz`]
+/// returns topology for (both read the identical frame via
+/// `chematic_mol::parse_extxyz`, so atom-index correspondence between the
+/// two calls is structural, not just conventional).
+///
+/// Returns JSON `{"coords":[[x,y,z],...],
+/// "lattice":[9 numbers]|null,
+/// "properties":{"name":[[...atom values...], ...], ...},
+/// "info":{"key":"value", ...}}`.
+///
+/// Returns a JS error on parse failure or if the frame exceeds the WASM
+/// atom-count limit.
+#[wasm_bindgen]
+pub fn extxyz_frame_json(text: &str) -> Result<String, JsValue> {
+    if text.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str("extxyz input too large"));
+    }
+    let frame = chematic_mol::parse_extxyz(text).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if frame.atoms.len() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!(
+            "molecule too large (max {WASM_MAX_ATOMS} atoms)"
+        )));
+    }
+    serde_json::to_string(&extxyz_frame_to_json_value(&frame))
+        .map_err(|e| JsValue::from_str(&e.to_string()))
+}
+
+/// Build the [`chematic_mol::XyzFrame`] for [`to_extxyz_json`] from its raw
+/// string arguments, with a plain `String` error -- kept separate from the
+/// `#[wasm_bindgen]` wrapper (which maps `Err` to `JsValue::from_str` at the
+/// boundary) so tests can exercise the error paths directly, matching
+/// `parse_pdb_molecule_and_coords`'s split: constructing a `JsValue` outside
+/// a real wasm/JS runtime aborts the native test process ("JsValue
+/// native-abort" -- see other tests in `tests.rs` for the same pattern).
+pub(crate) fn extxyz_frame_from_json_args(
+    mol: &chematic_core::Molecule,
+    coords_json: &str,
+    options_json: &str,
+) -> Result<chematic_mol::XyzFrame, String> {
+    if coords_json.len() > WASM_MAX_JSON_STRING_BYTES
+        || options_json.len() > WASM_MAX_JSON_STRING_BYTES
+    {
+        return Err("input JSON too large".to_string());
+    }
+    let coords: Vec<[f64; 3]> =
+        serde_json::from_str(coords_json).map_err(|e| format!("invalid coords_json: {e}"))?;
+    let n = mol.atom_count();
+    if coords.len() != n {
+        return Err(format!(
+            "coords_json has {} row(s), mol has {n} atom(s)",
+            coords.len()
+        ));
+    }
+    let atoms: Vec<chematic_mol::XyzAtom> = (0..n)
+        .map(|i| {
+            let element = mol.atom(chematic_core::AtomIdx(i as u32)).element;
+            let [x, y, z] = coords[i];
+            chematic_mol::XyzAtom { element, x, y, z }
+        })
+        .collect();
+
+    let options: serde_json::Value =
+        serde_json::from_str(options_json).map_err(|e| format!("invalid options_json: {e}"))?;
+    let lattice: Option<[f64; 9]> = match options.get("lattice") {
+        None | Some(serde_json::Value::Null) => None,
+        Some(v) => {
+            let nums: Vec<f64> =
+                serde_json::from_value(v.clone()).map_err(|e| format!("invalid lattice: {e}"))?;
+            let arr: [f64; 9] = nums.try_into().map_err(|nums: Vec<f64>| {
+                format!("lattice must have exactly 9 numbers, found {}", nums.len())
+            })?;
+            Some(arr)
+        }
+    };
+
+    let mut properties = Vec::new();
+    if let Some(serde_json::Value::Object(props)) = options.get("properties") {
+        for (name, value) in props {
+            let rows: Vec<Vec<f64>> = serde_json::from_value(value.clone())
+                .map_err(|e| format!("invalid properties['{name}']: {e}"))?;
+            if rows.len() != n {
+                return Err(format!(
+                    "properties['{name}'] has {} row(s), mol has {n} atom(s)",
+                    rows.len()
+                ));
+            }
+            let count = rows.first().map_or(0, |r| r.len());
+            if rows.iter().any(|r| r.len() != count) {
+                return Err(format!(
+                    "properties['{name}'] rows have inconsistent lengths"
+                ));
+            }
+            let values = rows
+                .into_iter()
+                .map(|r| r.into_iter().map(chematic_mol::XyzValue::Real).collect())
+                .collect();
+            properties.push(chematic_mol::XyzProperty {
+                name: name.clone(),
+                kind: chematic_mol::XyzPropertyKind::Real,
+                count,
+                values,
+            });
+        }
+    }
+
+    let mut info = Vec::new();
+    if let Some(serde_json::Value::Object(info_obj)) = options.get("info") {
+        for (key, value) in info_obj {
+            let s = value
+                .as_str()
+                .ok_or_else(|| format!("info['{key}'] must be a string"))?;
+            info.push((key.clone(), s.to_string()));
+        }
+    }
+
+    Ok(chematic_mol::XyzFrame {
+        atoms,
+        comment: String::new(),
+        lattice,
+        properties,
+        info,
+    })
+}
+
+/// Write a molecule + coordinates as an Extended XYZ (extxyz) frame.
+///
+/// `coords_json`: `[[x,y,z],...]` (Å), same order and length as `mol`'s
+/// atoms.
+///
+/// `options_json`: an optional JSON object,
+/// `{"lattice":[9 numbers]|null,"properties":{"name":[[...]],...},"info":{"key":"value",...}}`
+/// -- pass `"{}"` for a plain (non-extended) frame. Only real-valued
+/// per-atom `properties` columns are supported from this binding (matches
+/// the Python `to_extxyz` binding's scope); build a
+/// `chematic_mol::XyzProperty` directly from Rust for integer/string/logical
+/// columns.
+///
+/// Returns a JS error if `coords_json`/`options_json` are malformed, if
+/// `coords_json`'s length doesn't match `mol`'s atom count, or if a
+/// `properties` column's row count doesn't match it.
+#[wasm_bindgen]
+pub fn to_extxyz_json(
+    mol: &MolHandle,
+    coords_json: &str,
+    options_json: &str,
+) -> Result<String, JsValue> {
+    let frame = extxyz_frame_from_json_args(&mol.inner, coords_json, options_json)
+        .map_err(|e| JsValue::from_str(&e))?;
+    chematic_mol::write_extxyz(&frame).map_err(|e| JsValue::from_str(&e.to_string()))
+}
+
 /// Why a PDB block was rejected by [`parse_pdb_molecule_and_coords`].
 pub(crate) enum PdbInputError {
     TooLarge,

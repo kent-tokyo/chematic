@@ -37,12 +37,85 @@
 //! for exactly that, but `chematic-mol` does not (and should not) depend on
 //! `chematic-3d`, so wiring it in here is out of scope for this module.
 //!
-//! **Extended XYZ is out of scope.** The ASE-style extended-XYZ comment
-//! line (`Lattice="..." Properties=species:S:1:pos:R:3 ...`) is not parsed
-//! -- the comment line is always kept verbatim as one opaque `String` on
-//! [`XyzFrame::comment`].
+//! # Extended XYZ (extxyz)
+//!
+//! The functions above ([`parse_xyz`], [`XyzReader`], [`write_xyz`], ...)
+//! never interpret the comment line -- it is always kept verbatim as one
+//! opaque `String` on [`XyzFrame::comment`].
+//!
+//! [`parse_extxyz`] / [`ExtxyzReader`] / [`write_extxyz`] are a *separate*
+//! entry point over the same [`XyzFrame`] type that additionally
+//! understands the ASE-style extended-XYZ comment line: a sequence of
+//! `key=value` pairs (quoted values may contain spaces), where two keys are
+//! special-cased into typed fields:
+//!
+//! - `Lattice="ax ay az bx by bz cx cy cz"` -- a 3x3 cell matrix, row-major
+//!   -> [`XyzFrame::lattice`].
+//! - `Properties=species:S:1:pos:R:3[:name:type:count]*` -- the per-atom
+//!   column layout. `species`/`pos` always map onto
+//!   [`XyzAtom::element`]/`x,y,z` (this crate requires them first, in that
+//!   order, matching every ASE-written extxyz file); any further columns
+//!   (e.g. `forces:R:3`, `charge:R:1`) become [`XyzFrame::properties`].
+//!   When `Properties` is absent, the default `species:S:1:pos:R:3` applies
+//!   -- this is what makes an ordinary XYZ file parse as a valid,
+//!   zero-extra-property extxyz frame too.
+//!
+//! Every other `key=value` pair (`energy=...`, `pbc=...`, arbitrary
+//! metadata) is kept, in first-seen order, on [`XyzFrame::info`].
+//!
+//! A comment line containing no `=` at all is treated as an ordinary,
+//! unstructured comment (`lattice: None`, `properties: []`, `info: []`) --
+//! this is the case that keeps a plain XYZ file's comment line
+//! byte-identical through the extxyz reader/writer (see [`write_extxyz`]).
+//! Once any `=` is present, the whole line must parse as `key=value`
+//! tokens or [`parse_extxyz`] fails closed.
+
+use std::collections::HashSet;
 
 use chematic_core::{Atom, Element, Molecule, MoleculeBuilder};
+
+/// The declared type of an extended-XYZ `Properties=` column
+/// (`R`=real, `I`=integer, `S`=string, `L`=logical).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum XyzPropertyKind {
+    Real,
+    Integer,
+    String,
+    Logical,
+}
+
+/// A single per-atom scalar value in an extended-XYZ property column.
+#[derive(Debug, Clone, PartialEq)]
+pub enum XyzValue {
+    Real(f64),
+    Integer(i64),
+    /// Written as a single unquoted whitespace-delimited token (matching
+    /// how [`parse_extxyz`] reads an `S`-typed atom-row column): a value
+    /// containing whitespace round-trips through [`write_extxyz`] as *more
+    /// than one* atom-row token, desyncing every column after it on
+    /// reparse. `write_extxyz` does not check for this (only
+    /// [`XyzFrame::info`]/[`XyzProperty::name`] are validated, see
+    /// `validate_extxyz_writable`) -- avoid whitespace in `Str` property
+    /// values when hand-building a frame. Not reachable from the
+    /// Python/WASM `to_extxyz` bindings, which only accept real-valued
+    /// (`R`) properties.
+    Str(String),
+    Logical(bool),
+}
+
+/// One extended-XYZ per-atom property column beyond `species`/`pos`
+/// (e.g. `forces:R:3`, `charge:R:1`), as declared in the frame's
+/// `Properties=` key.
+#[derive(Debug, Clone, PartialEq)]
+pub struct XyzProperty {
+    pub name: String,
+    pub kind: XyzPropertyKind,
+    /// Number of scalar components per atom (e.g. 3 for `forces:R:3`).
+    pub count: usize,
+    /// `values[atom_index]` has length `count`, same atom order as
+    /// [`XyzFrame::atoms`].
+    pub values: Vec<Vec<XyzValue>>,
+}
 
 /// One atom row in an XYZ frame: element + Cartesian coordinates (Å).
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -59,8 +132,22 @@ pub struct XyzFrame {
     /// Atoms in file order.
     pub atoms: Vec<XyzAtom>,
     /// The frame's comment line (line 2 of the frame), verbatim. May be
-    /// empty. Extended-XYZ key=value content, if present, is not parsed.
+    /// empty. Always populated by [`parse_xyz`]/[`parse_extxyz`] alike.
+    /// [`write_extxyz`] uses this verbatim only when `lattice`, `properties`
+    /// and `info` are all empty -- see the module-level "Extended XYZ" docs.
     pub comment: String,
+    /// Extended-XYZ `Lattice=` cell matrix (row-major 3x3), if present.
+    /// Always `None` for frames from [`parse_xyz`]/[`XyzReader`].
+    pub lattice: Option<[f64; 9]>,
+    /// Extended-XYZ per-atom property columns beyond `species`/`pos` (which
+    /// map onto [`XyzAtom`] itself), e.g. `forces:R:3` or `charge:R:1`.
+    /// Always empty for frames from [`parse_xyz`]/[`XyzReader`].
+    pub properties: Vec<XyzProperty>,
+    /// Extended-XYZ frame-level `key=value` metadata other than
+    /// `Lattice`/`Properties` (e.g. `energy`, `pbc`, `config_type`), in
+    /// first-seen order. Always empty for frames from
+    /// [`parse_xyz`]/[`XyzReader`].
+    pub info: Vec<(String, String)>,
 }
 
 impl XyzFrame {
@@ -105,6 +192,42 @@ pub enum XyzError {
     /// surface (if at all) as `InvalidCountLine` when that next "count
     /// line" fails to parse as an integer.
     AtomCountMismatch { declared: usize, found: usize },
+    /// [`parse_extxyz`] only: a `key=value` token in the comment line has a
+    /// key but no `=value` part.
+    InvalidInfoField { line: usize, detail: String },
+    /// [`parse_extxyz`] only: a quoted value (`key="..."`) in the comment
+    /// line has no closing quote.
+    UnterminatedQuote { line: usize, key: String },
+    /// [`parse_extxyz`] only: the same key appears twice in the comment
+    /// line.
+    DuplicateInfoKey { line: usize, key: String },
+    /// [`parse_extxyz`] only: `Lattice=` does not contain exactly 9
+    /// whitespace-separated finite numbers.
+    InvalidLattice { line: usize, detail: String },
+    /// [`parse_extxyz`] only: `Properties=` is malformed, or does not start
+    /// with `species:S:1:pos:R:3`.
+    InvalidProperties { line: usize, detail: String },
+    /// [`parse_extxyz`] only: an atom row's whitespace-token count doesn't
+    /// match what the frame's `Properties` columns declare.
+    PropertyColumnMismatch {
+        line: usize,
+        expected: usize,
+        found: usize,
+    },
+    /// [`parse_extxyz`] only: a per-atom property value (beyond
+    /// `species`/`pos`) failed to parse as its declared type, or was
+    /// non-finite for an `R` column.
+    InvalidPropertyValue {
+        line: usize,
+        property: String,
+        raw: String,
+    },
+    /// [`write_extxyz`]/[`ExtxyzWriter::write_frame`] only: an
+    /// `XyzFrame::info` key/value or [`XyzProperty::name`] contains a
+    /// character extxyz `key=value` syntax cannot represent (see
+    /// [`validate_extxyz_writable`]) -- never produced by this module's own
+    /// parsers, only by writing a hand-built `XyzFrame`.
+    UnwritableMetadata { detail: String },
 }
 
 impl std::fmt::Display for XyzError {
@@ -128,6 +251,47 @@ impl std::fmt::Display for XyzError {
                     f,
                     "atom-count line declared {declared} atoms, found {found}"
                 )
+            }
+            Self::InvalidInfoField { line, detail } => {
+                write!(f, "invalid extxyz info field at line {line}: {detail}")
+            }
+            Self::UnterminatedQuote { line, key } => {
+                write!(
+                    f,
+                    "unterminated quoted value for key '{key}' at line {line}"
+                )
+            }
+            Self::DuplicateInfoKey { line, key } => {
+                write!(f, "duplicate extxyz info key '{key}' at line {line}")
+            }
+            Self::InvalidLattice { line, detail } => {
+                write!(f, "invalid Lattice at line {line}: {detail}")
+            }
+            Self::InvalidProperties { line, detail } => {
+                write!(f, "invalid Properties at line {line}: {detail}")
+            }
+            Self::PropertyColumnMismatch {
+                line,
+                expected,
+                found,
+            } => {
+                write!(
+                    f,
+                    "atom line {line}: Properties columns declare {expected} value(s), found {found}"
+                )
+            }
+            Self::InvalidPropertyValue {
+                line,
+                property,
+                raw,
+            } => {
+                write!(
+                    f,
+                    "invalid value '{raw}' for property '{property}' at line {line}"
+                )
+            }
+            Self::UnwritableMetadata { detail } => {
+                write!(f, "cannot write extxyz frame: {detail}")
             }
         }
     }
@@ -228,7 +392,16 @@ fn parse_one_frame(text: &str) -> Result<(XyzFrame, &str), XyzError> {
         });
     }
 
-    Ok((XyzFrame { atoms, comment }, rest))
+    Ok((
+        XyzFrame {
+            atoms,
+            comment,
+            lattice: None,
+            properties: Vec::new(),
+            info: Vec::new(),
+        },
+        rest,
+    ))
 }
 
 /// Iterator over frames in a multi-frame XYZ (trajectory) string.
@@ -319,6 +492,540 @@ pub fn write_xyz(frame: &XyzFrame) -> String {
         .write_frame(frame)
         .expect("writing to a Vec<u8> is infallible");
     String::from_utf8(buf).expect("XyzWriter only emits ASCII/UTF-8 text")
+}
+
+// ---------------------------------------------------------------------------
+// Extended XYZ (extxyz)
+// ---------------------------------------------------------------------------
+
+/// Tokenize an extxyz comment line into ordered `(key, value)` pairs.
+/// Quoted values (`key="a b c"`) may contain spaces; unquoted values run to
+/// the next whitespace. `lineno` only annotates errors.
+fn tokenize_info_line(line: &str, lineno: usize) -> Result<Vec<(String, String)>, XyzError> {
+    let chars: Vec<char> = line.chars().collect();
+    let n = chars.len();
+    let mut i = 0;
+    let mut pairs = Vec::new();
+
+    while i < n {
+        while i < n && chars[i].is_whitespace() {
+            i += 1;
+        }
+        if i >= n {
+            break;
+        }
+        let key_start = i;
+        while i < n && chars[i] != '=' && !chars[i].is_whitespace() {
+            i += 1;
+        }
+        let key: String = chars[key_start..i].iter().collect();
+        if i >= n || chars[i] != '=' {
+            return Err(XyzError::InvalidInfoField {
+                line: lineno,
+                detail: format!("key '{key}' has no '=value'"),
+            });
+        }
+        i += 1; // consume '='
+
+        let value: String = if i < n && chars[i] == '"' {
+            i += 1;
+            let val_start = i;
+            while i < n && chars[i] != '"' {
+                i += 1;
+            }
+            if i >= n {
+                return Err(XyzError::UnterminatedQuote { line: lineno, key });
+            }
+            let v = chars[val_start..i].iter().collect();
+            i += 1; // consume closing quote
+            v
+        } else {
+            let val_start = i;
+            while i < n && !chars[i].is_whitespace() {
+                i += 1;
+            }
+            chars[val_start..i].iter().collect()
+        };
+        pairs.push((key, value));
+    }
+    Ok(pairs)
+}
+
+/// Parse a `Lattice=` value: exactly 9 whitespace-separated finite numbers.
+fn parse_lattice(raw: &str, lineno: usize) -> Result<[f64; 9], XyzError> {
+    let parts: Vec<&str> = raw.split_whitespace().collect();
+    if parts.len() != 9 {
+        return Err(XyzError::InvalidLattice {
+            line: lineno,
+            detail: format!("expected 9 numbers, found {}", parts.len()),
+        });
+    }
+    let mut out = [0.0; 9];
+    for (i, p) in parts.iter().enumerate() {
+        let v: f64 = p.parse().map_err(|_| XyzError::InvalidLattice {
+            line: lineno,
+            detail: format!("cannot parse '{p}' as a number"),
+        })?;
+        if !v.is_finite() {
+            return Err(XyzError::InvalidLattice {
+                line: lineno,
+                detail: format!("non-finite value '{p}'"),
+            });
+        }
+        out[i] = v;
+    }
+    Ok(out)
+}
+
+/// One column parsed from a `Properties=` value: `(name, kind, count)`.
+type PropertyColumn = (String, XyzPropertyKind, usize);
+
+/// Parse a `Properties=` value into its column list. Requires the first two
+/// columns to be exactly `species:S:1` and `pos:R:3` (universal in
+/// ASE-written extxyz) -- any further columns become [`XyzFrame::properties`].
+fn parse_properties(raw: &str, lineno: usize) -> Result<Vec<PropertyColumn>, XyzError> {
+    let parts: Vec<&str> = raw.split(':').collect();
+    if parts.is_empty() || !parts.len().is_multiple_of(3) {
+        return Err(XyzError::InvalidProperties {
+            line: lineno,
+            detail: format!("'{raw}' is not a multiple-of-3 colon-separated list"),
+        });
+    }
+    let mut columns = Vec::with_capacity(parts.len() / 3);
+    for chunk in parts.chunks(3) {
+        let name = chunk[0].to_string();
+        let kind = match chunk[1] {
+            "R" => XyzPropertyKind::Real,
+            "I" => XyzPropertyKind::Integer,
+            "S" => XyzPropertyKind::String,
+            "L" => XyzPropertyKind::Logical,
+            other => {
+                return Err(XyzError::InvalidProperties {
+                    line: lineno,
+                    detail: format!("unknown column type '{other}' for '{name}'"),
+                });
+            }
+        };
+        let count: usize = chunk[2].parse().map_err(|_| XyzError::InvalidProperties {
+            line: lineno,
+            detail: format!("invalid column count '{}' for '{name}'", chunk[2]),
+        })?;
+        if count == 0 {
+            return Err(XyzError::InvalidProperties {
+                line: lineno,
+                detail: format!("column '{name}' declares 0 components"),
+            });
+        }
+        columns.push((name, kind, count));
+    }
+    let valid_prefix = columns.len() >= 2
+        && columns[0].0 == "species"
+        && columns[0].1 == XyzPropertyKind::String
+        && columns[0].2 == 1
+        && columns[1].0 == "pos"
+        && columns[1].1 == XyzPropertyKind::Real
+        && columns[1].2 == 3;
+    if !valid_prefix {
+        return Err(XyzError::InvalidProperties {
+            line: lineno,
+            detail: format!("'{raw}' must start with 'species:S:1:pos:R:3'"),
+        });
+    }
+    Ok(columns)
+}
+
+/// Parse one extxyz frame starting at `text`, returning the frame and the
+/// remaining unparsed input. Shared by [`parse_extxyz`] and [`ExtxyzReader`].
+fn parse_one_frame_ext(text: &str) -> Result<(XyzFrame, &str), XyzError> {
+    let (count_line, rest) = next_line(text).ok_or(XyzError::InvalidCountLine {
+        line: 1,
+        raw: String::new(),
+    })?;
+    let declared: usize = count_line
+        .trim()
+        .parse()
+        .map_err(|_| XyzError::InvalidCountLine {
+            line: 1,
+            raw: count_line.to_string(),
+        })?;
+
+    let (comment_line, mut rest) = next_line(rest).ok_or(XyzError::MissingCommentLine)?;
+    let comment = comment_line.to_string();
+
+    // A comment line with no '=' at all is an ordinary, unstructured
+    // comment, not extxyz metadata -- this is what makes a plain XYZ file
+    // parse (and round-trip) through this reader too. See module docs.
+    let (lattice, properties_columns, info) = if comment_line.contains('=') {
+        let pairs = tokenize_info_line(comment_line, 2)?;
+        let mut lattice = None;
+        let mut properties_columns: Option<Vec<PropertyColumn>> = None;
+        let mut info = Vec::new();
+        let mut seen: HashSet<String> = HashSet::new();
+        for (k, v) in pairs {
+            if !seen.insert(k.clone()) {
+                return Err(XyzError::DuplicateInfoKey { line: 2, key: k });
+            }
+            match k.as_str() {
+                "Lattice" => lattice = Some(parse_lattice(&v, 2)?),
+                "Properties" => properties_columns = Some(parse_properties(&v, 2)?),
+                _ => info.push((k, v)),
+            }
+        }
+        (lattice, properties_columns, info)
+    } else {
+        (None, None, Vec::new())
+    };
+    let columns = properties_columns.unwrap_or_else(|| {
+        vec![
+            ("species".to_string(), XyzPropertyKind::String, 1),
+            ("pos".to_string(), XyzPropertyKind::Real, 3),
+        ]
+    });
+    let extra_columns = &columns[2..];
+    let expected_tokens: usize = columns.iter().map(|(_, _, c)| c).sum();
+
+    let mut atoms = Vec::with_capacity(declared);
+    let mut extra_values: Vec<Vec<Vec<XyzValue>>> = vec![Vec::new(); extra_columns.len()];
+
+    for lineno in (3usize..).take(declared) {
+        let Some((raw_line, next_rest)) = next_line(rest) else {
+            break;
+        };
+        rest = next_rest;
+
+        let tokens: Vec<&str> = raw_line.split_whitespace().collect();
+        if tokens.len() != expected_tokens {
+            return Err(XyzError::PropertyColumnMismatch {
+                line: lineno,
+                expected: expected_tokens,
+                found: tokens.len(),
+            });
+        }
+
+        let element = Element::from_symbol(tokens[0]).ok_or_else(|| XyzError::UnknownElement {
+            symbol: tokens[0].to_string(),
+            line: lineno,
+        })?;
+        let parse_coord = |raw: &str, axis: &'static str| -> Result<f64, XyzError> {
+            let v: f64 = raw.parse().map_err(|_| XyzError::InvalidAtomLine {
+                line: lineno,
+                detail: format!("cannot parse {axis} coordinate '{raw}'"),
+            })?;
+            if !v.is_finite() {
+                return Err(XyzError::NonFiniteCoordinate {
+                    line: lineno,
+                    axis,
+                    raw: raw.to_string(),
+                });
+            }
+            Ok(v)
+        };
+        let x = parse_coord(tokens[1], "x")?;
+        let y = parse_coord(tokens[2], "y")?;
+        let z = parse_coord(tokens[3], "z")?;
+        atoms.push(XyzAtom { element, x, y, z });
+
+        let mut tok_idx = 4;
+        for (col_idx, (name, kind, count)) in extra_columns.iter().enumerate() {
+            let mut vals = Vec::with_capacity(*count);
+            for _ in 0..*count {
+                let raw = tokens[tok_idx];
+                tok_idx += 1;
+                let value = match kind {
+                    XyzPropertyKind::Real => {
+                        let v: f64 = raw.parse().map_err(|_| XyzError::InvalidPropertyValue {
+                            line: lineno,
+                            property: name.clone(),
+                            raw: raw.to_string(),
+                        })?;
+                        if !v.is_finite() {
+                            return Err(XyzError::InvalidPropertyValue {
+                                line: lineno,
+                                property: name.clone(),
+                                raw: raw.to_string(),
+                            });
+                        }
+                        XyzValue::Real(v)
+                    }
+                    XyzPropertyKind::Integer => {
+                        let v: i64 = raw.parse().map_err(|_| XyzError::InvalidPropertyValue {
+                            line: lineno,
+                            property: name.clone(),
+                            raw: raw.to_string(),
+                        })?;
+                        XyzValue::Integer(v)
+                    }
+                    XyzPropertyKind::String => XyzValue::Str(raw.to_string()),
+                    XyzPropertyKind::Logical => match raw {
+                        "T" | "True" | "true" | "1" => XyzValue::Logical(true),
+                        "F" | "False" | "false" | "0" => XyzValue::Logical(false),
+                        _ => {
+                            return Err(XyzError::InvalidPropertyValue {
+                                line: lineno,
+                                property: name.clone(),
+                                raw: raw.to_string(),
+                            });
+                        }
+                    },
+                };
+                vals.push(value);
+            }
+            extra_values[col_idx].push(vals);
+        }
+    }
+
+    if atoms.len() != declared {
+        return Err(XyzError::AtomCountMismatch {
+            declared,
+            found: atoms.len(),
+        });
+    }
+
+    let properties = extra_columns
+        .iter()
+        .zip(extra_values)
+        .map(|((name, kind, count), values)| XyzProperty {
+            name: name.clone(),
+            kind: *kind,
+            count: *count,
+            values,
+        })
+        .collect();
+
+    Ok((
+        XyzFrame {
+            atoms,
+            comment,
+            lattice,
+            properties,
+            info,
+        },
+        rest,
+    ))
+}
+
+/// Parse a single extended-XYZ (extxyz) frame from the start of `text`.
+/// Trailing content is ignored, same as [`parse_xyz`] -- use
+/// [`ExtxyzReader`] to iterate every frame in a multi-frame file. See the
+/// module-level "Extended XYZ" docs for what `Lattice=`/`Properties=`
+/// support covers.
+pub fn parse_extxyz(text: &str) -> Result<XyzFrame, XyzError> {
+    parse_one_frame_ext(text).map(|(frame, _rest)| frame)
+}
+
+/// Iterator over frames in a multi-frame extxyz (trajectory) string. Same
+/// stop-on-first-error behavior as [`XyzReader`].
+pub struct ExtxyzReader<'a> {
+    remaining: &'a str,
+}
+
+impl<'a> ExtxyzReader<'a> {
+    /// Create a new `ExtxyzReader` over the given multi-frame extxyz string.
+    pub fn new(input: &'a str) -> Self {
+        Self { remaining: input }
+    }
+}
+
+impl<'a> Iterator for ExtxyzReader<'a> {
+    type Item = Result<XyzFrame, XyzError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.remaining.trim().is_empty() {
+            return None;
+        }
+        let leading_blank =
+            self.remaining.len() - self.remaining.trim_start_matches(['\n', '\r']).len();
+        self.remaining = &self.remaining[leading_blank..];
+
+        match parse_one_frame_ext(self.remaining) {
+            Ok((frame, rest)) => {
+                self.remaining = rest;
+                Some(Ok(frame))
+            }
+            Err(e) => {
+                self.remaining = "";
+                Some(Err(e))
+            }
+        }
+    }
+}
+
+/// Parse every frame in a multi-frame extxyz string. Stops and returns an
+/// error on the first parse failure.
+pub fn parse_extxyz_all(input: &str) -> Result<Vec<XyzFrame>, XyzError> {
+    ExtxyzReader::new(input).collect()
+}
+
+fn format_xyz_value(v: &XyzValue) -> String {
+    match v {
+        XyzValue::Real(x) => x.to_string(),
+        XyzValue::Integer(i) => i.to_string(),
+        XyzValue::Str(s) => s.clone(),
+        XyzValue::Logical(b) => (if *b { "T" } else { "F" }).to_string(),
+    }
+}
+
+/// Build the extxyz comment line for `frame`. When `lattice`, `properties`
+/// and `info` are all empty, the original `comment` is used verbatim --
+/// this is what keeps a plain XYZ frame's comment line byte-identical
+/// through the extxyz writer (atom rows are always re-emitted through the
+/// generic species/pos formatter, so *those* are structurally, not
+/// byte-for-byte, unchanged -- same non-goal as [`write_xyz`] already has
+/// relative to hand-written input). Otherwise the comment line is rebuilt
+/// canonically as `Lattice=... Properties=... key=value ...` (in that
+/// order), which is not guaranteed to match a third-party file's original
+/// key ordering.
+fn build_comment_line(frame: &XyzFrame) -> String {
+    if frame.lattice.is_none() && frame.properties.is_empty() && frame.info.is_empty() {
+        return frame.comment.clone();
+    }
+    let mut parts = Vec::new();
+    if let Some(l) = frame.lattice {
+        let nums = l
+            .iter()
+            .map(|v| v.to_string())
+            .collect::<Vec<_>>()
+            .join(" ");
+        parts.push(format!("Lattice=\"{nums}\""));
+    }
+    let mut props = String::from("species:S:1:pos:R:3");
+    for p in &frame.properties {
+        let kind_char = match p.kind {
+            XyzPropertyKind::Real => 'R',
+            XyzPropertyKind::Integer => 'I',
+            XyzPropertyKind::String => 'S',
+            XyzPropertyKind::Logical => 'L',
+        };
+        props.push_str(&format!(":{}:{}:{}", p.name, kind_char, p.count));
+    }
+    parts.push(format!("Properties={props}"));
+    for (k, v) in &frame.info {
+        if v.is_empty() || v.chars().any(char::is_whitespace) {
+            parts.push(format!("{k}=\"{v}\""));
+        } else {
+            parts.push(format!("{k}={v}"));
+        }
+    }
+    parts.join(" ")
+}
+
+/// Characters that would corrupt extxyz `key=value` comment-line syntax if
+/// they appear verbatim in a [`XyzFrame::info`] `key`/`value` or a
+/// [`XyzProperty::name`] (itself a `:`-delimited token inside
+/// `Properties=`). Returns `Err(detail)` naming the first offending field.
+/// Used by both [`write_extxyz`] and [`ExtxyzWriter::write_frame`], so
+/// neither entry point can silently emit a comment line that reparses into
+/// *different* data than what was written (e.g. an info value containing
+/// `"` -- writing it inside the quotes `build_comment_line` adds would
+/// terminate the quoted value early and fabricate a bogus extra key/value
+/// pair on reparse). ASE's extxyz spec defines no escaping scheme for these
+/// characters, so rejecting is the honest choice over guessing one.
+fn validate_extxyz_writable(frame: &XyzFrame) -> Result<(), String> {
+    for (k, v) in &frame.info {
+        if k.is_empty() || k.chars().any(|c| c.is_whitespace() || c == '=' || c == '"') {
+            return Err(format!(
+                "info key {k:?} cannot be written (must be non-empty and contain no whitespace, '=', or '\"')"
+            ));
+        }
+        if v.contains('"') {
+            return Err(format!(
+                "info['{k}'] value {v:?} cannot be written (contains '\"', which extxyz has no escaping for)"
+            ));
+        }
+    }
+    for p in &frame.properties {
+        if p.name.is_empty()
+            || p.name
+                .chars()
+                .any(|c| c.is_whitespace() || c == ':' || c == '=' || c == '"')
+        {
+            return Err(format!(
+                "property name {:?} cannot be written (must be non-empty and contain no whitespace, ':', '=', or '\"')",
+                p.name
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// Streaming writer for a (possibly multi-frame) extxyz file.
+pub struct ExtxyzWriter<W: std::io::Write> {
+    writer: W,
+}
+
+impl<W: std::io::Write> ExtxyzWriter<W> {
+    pub fn new(writer: W) -> Self {
+        Self { writer }
+    }
+
+    /// Write one frame. Call repeatedly for a multi-frame trajectory.
+    ///
+    /// Returns an [`std::io::Error`] of kind [`std::io::ErrorKind::InvalidData`]
+    /// (not a sink failure) if `frame.info`/`frame.properties` contains a
+    /// key/value/name that cannot be represented in extxyz syntax -- see
+    /// [`validate_extxyz_writable`]. [`write_extxyz`] surfaces the same
+    /// check as a typed [`XyzError`] instead.
+    ///
+    /// # Panics
+    /// Panics if `frame.properties` is inconsistent with `frame.atoms`
+    /// (a `values` row missing for some atom, or a row whose length
+    /// doesn't match its column's declared `count`) -- this is a caller
+    /// contract on hand-built `XyzFrame` values, not something that can
+    /// happen from any of this module's own parsers.
+    pub fn write_frame(&mut self, frame: &XyzFrame) -> std::io::Result<()> {
+        if let Err(detail) = validate_extxyz_writable(frame) {
+            return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, detail));
+        }
+        writeln!(self.writer, "{}", frame.atoms.len())?;
+        writeln!(self.writer, "{}", build_comment_line(frame))?;
+        for (i, atom) in frame.atoms.iter().enumerate() {
+            write!(
+                self.writer,
+                "{} {} {} {}",
+                atom.element.symbol(),
+                atom.x,
+                atom.y,
+                atom.z
+            )?;
+            for prop in &frame.properties {
+                let values = &prop.values[i];
+                debug_assert_eq!(
+                    values.len(),
+                    prop.count,
+                    "XyzProperty '{}' declares count {} but atom {i} has {} value(s)",
+                    prop.name,
+                    prop.count,
+                    values.len()
+                );
+                for v in values {
+                    write!(self.writer, " {}", format_xyz_value(v))?;
+                }
+            }
+            writeln!(self.writer)?;
+        }
+        Ok(())
+    }
+}
+
+/// Write a single extxyz frame to a string.
+///
+/// Returns [`XyzError::UnwritableMetadata`] if `frame.info`/`frame.properties`
+/// contains a key/value/name that cannot be represented in extxyz syntax --
+/// see [`validate_extxyz_writable`]. A frame produced by [`parse_extxyz`]
+/// can never trigger this (the parser's own tokenizer already rejects those
+/// characters on read); it is reachable only from a hand-built `XyzFrame`,
+/// e.g. via the Python/WASM `to_extxyz` bindings.
+pub fn write_extxyz(frame: &XyzFrame) -> Result<String, XyzError> {
+    let mut buf = Vec::new();
+    ExtxyzWriter::new(&mut buf)
+        .write_frame(frame)
+        .map_err(|e| match e.kind() {
+            std::io::ErrorKind::InvalidData => XyzError::UnwritableMetadata {
+                detail: e.to_string(),
+            },
+            _ => unreachable!("writing to a Vec<u8> only fails with InvalidData (see write_frame)"),
+        })?;
+    Ok(String::from_utf8(buf).expect("ExtxyzWriter only emits ASCII/UTF-8 text"))
 }
 
 #[cfg(test)]
@@ -510,5 +1217,248 @@ mod tests {
         let s = "1\n\nC 0.0 0.0 0.0\n";
         let frame = parse_xyz(s).unwrap();
         assert_eq!(frame.comment, "");
+    }
+
+    // ---- Extended XYZ (extxyz) ----
+
+    const EXTXYZ_WATER: &str = "3\nLattice=\"10.0 0.0 0.0 0.0 10.0 0.0 0.0 0.0 10.0\" Properties=species:S:1:pos:R:3:forces:R:3:tag:I:1 energy=-76.4 pbc=\"T T T\"\nO 0.0 0.0 0.0 0.1 0.0 0.0 1\nH 0.75860000 0.0 0.50428400 0.0 0.1 0.0 2\nH 0.75860000 0.0 -0.50428400 0.0 -0.1 0.0 2\n";
+
+    #[test]
+    fn parses_lattice_properties_and_info() {
+        let frame = parse_extxyz(EXTXYZ_WATER).unwrap();
+        assert_eq!(frame.atoms.len(), 3);
+        assert_eq!(
+            frame.lattice,
+            Some([10.0, 0.0, 0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 10.0])
+        );
+        // Only Lattice/Properties are special-cased -- pbc lands in info too.
+        assert_eq!(
+            frame.info,
+            vec![
+                ("energy".to_string(), "-76.4".to_string()),
+                ("pbc".to_string(), "T T T".to_string()),
+            ]
+        );
+        assert_eq!(frame.properties.len(), 2);
+        assert_eq!(frame.properties[0].name, "forces");
+        assert_eq!(frame.properties[0].kind, XyzPropertyKind::Real);
+        assert_eq!(frame.properties[0].count, 3);
+        assert_eq!(
+            frame.properties[0].values[0],
+            vec![
+                XyzValue::Real(0.1),
+                XyzValue::Real(0.0),
+                XyzValue::Real(0.0)
+            ]
+        );
+        assert_eq!(frame.properties[1].name, "tag");
+        assert_eq!(frame.properties[1].kind, XyzPropertyKind::Integer);
+        assert_eq!(frame.properties[1].values[0], vec![XyzValue::Integer(1)]);
+        assert_eq!(frame.properties[1].values[1], vec![XyzValue::Integer(2)]);
+    }
+
+    #[test]
+    fn extxyz_roundtrip_preserves_lattice_properties_and_info() {
+        let frame = parse_extxyz(EXTXYZ_WATER).unwrap();
+        let written = write_extxyz(&frame).unwrap();
+        let reparsed = parse_extxyz(&written).unwrap();
+        assert_eq!(frame.atoms, reparsed.atoms);
+        assert_eq!(frame.lattice, reparsed.lattice);
+        assert_eq!(frame.properties, reparsed.properties);
+        assert_eq!(frame.info, reparsed.info);
+    }
+
+    #[test]
+    fn plain_xyz_roundtrips_unchanged_through_extxyz_path() {
+        // A free-form comment (no '=') must parse as an ordinary comment,
+        // not extxyz metadata, and the *comment line* the writer emits must
+        // be byte-identical to the original (no Lattice/Properties/info to
+        // reconstruct). Atom rows are always re-emitted through the
+        // generic species/pos writer, so they are structurally -- not
+        // byte-for-byte -- equal (same as write_xyz's own non-goal).
+        let frame = parse_extxyz(WATER_XYZ).unwrap();
+        assert_eq!(frame.comment, "water");
+        assert_eq!(frame.lattice, None);
+        assert!(frame.properties.is_empty());
+        assert!(frame.info.is_empty());
+
+        let written = write_extxyz(&frame).unwrap();
+        assert_eq!(written.lines().nth(1), Some("water"));
+
+        let reparsed = parse_extxyz(&written).unwrap();
+        assert_eq!(frame.atoms, reparsed.atoms);
+        assert_eq!(frame.comment, reparsed.comment);
+    }
+
+    #[test]
+    fn extxyz_defaults_properties_to_species_pos_when_absent() {
+        // Info keys present, but no explicit Properties= -- must still
+        // default to species:S:1:pos:R:3 (plain 'element x y z' rows).
+        let s = "1\nenergy=-1.0\nC 0.0 0.0 0.0\n";
+        let frame = parse_extxyz(s).unwrap();
+        assert!(frame.properties.is_empty());
+        assert_eq!(frame.info, vec![("energy".to_string(), "-1.0".to_string())]);
+        assert_eq!(frame.atoms[0].element, Element::C);
+    }
+
+    #[test]
+    fn extxyz_multi_frame_reader_matches_parse_extxyz_all() {
+        let traj = format!("{EXTXYZ_WATER}{WATER_XYZ}");
+        let via_reader: Vec<XyzFrame> = ExtxyzReader::new(&traj).collect::<Result<_, _>>().unwrap();
+        let via_all = parse_extxyz_all(&traj).unwrap();
+        assert_eq!(via_reader, via_all);
+        assert_eq!(via_reader.len(), 2);
+    }
+
+    #[test]
+    fn fails_closed_on_invalid_lattice_count() {
+        let bad = "1\nLattice=\"1.0 2.0 3.0\"\nC 0.0 0.0 0.0\n";
+        let err = parse_extxyz(bad).unwrap_err();
+        assert!(matches!(err, XyzError::InvalidLattice { .. }));
+    }
+
+    #[test]
+    fn fails_closed_on_properties_not_starting_with_species_pos() {
+        let bad = "1\nProperties=pos:R:3:species:S:1\n0.0 0.0 0.0 C\n";
+        let err = parse_extxyz(bad).unwrap_err();
+        assert!(matches!(err, XyzError::InvalidProperties { .. }));
+    }
+
+    #[test]
+    fn fails_closed_on_unterminated_quote() {
+        let bad = "1\nLattice=\"1.0 2.0 3.0\nC 0.0 0.0 0.0\n";
+        let err = parse_extxyz(bad).unwrap_err();
+        assert!(matches!(err, XyzError::UnterminatedQuote { .. }));
+    }
+
+    #[test]
+    fn fails_closed_on_duplicate_info_key() {
+        let bad = "1\nenergy=1.0 energy=2.0\nC 0.0 0.0 0.0\n";
+        let err = parse_extxyz(bad).unwrap_err();
+        assert_eq!(
+            err,
+            XyzError::DuplicateInfoKey {
+                line: 2,
+                key: "energy".to_string()
+            }
+        );
+    }
+
+    #[test]
+    fn fails_closed_on_key_with_no_value() {
+        // The '=' in 'energy=1.0' commits the whole line to key=value
+        // parsing, so the trailing bare word 'bogus' (no '=') is an error
+        // -- unlike a comment with no '=' anywhere, which is legal free text.
+        let bad = "1\nenergy=1.0 bogus\nC 0.0 0.0 0.0\n";
+        let err = parse_extxyz(bad).unwrap_err();
+        assert!(matches!(err, XyzError::InvalidInfoField { .. }));
+    }
+
+    #[test]
+    fn fails_closed_on_property_column_mismatch() {
+        // Properties declares an extra 'charge:R:1' column, but the atom
+        // row only has 'element x y z'.
+        let bad = "1\nProperties=species:S:1:pos:R:3:charge:R:1\nC 0.0 0.0 0.0\n";
+        let err = parse_extxyz(bad).unwrap_err();
+        assert_eq!(
+            err,
+            XyzError::PropertyColumnMismatch {
+                line: 3,
+                expected: 5,
+                found: 4,
+            }
+        );
+    }
+
+    #[test]
+    fn fails_closed_on_non_finite_property_value() {
+        let bad = "1\nProperties=species:S:1:pos:R:3:charge:R:1\nC 0.0 0.0 0.0 nan\n";
+        let err = parse_extxyz(bad).unwrap_err();
+        assert!(matches!(err, XyzError::InvalidPropertyValue { .. }));
+    }
+
+    #[test]
+    fn fails_closed_on_invalid_logical_value() {
+        let bad = "1\nProperties=species:S:1:pos:R:3:flag:L:1\nC 0.0 0.0 0.0 maybe\n";
+        let err = parse_extxyz(bad).unwrap_err();
+        assert!(matches!(err, XyzError::InvalidPropertyValue { .. }));
+    }
+
+    #[test]
+    fn parses_logical_property_values() {
+        let s = "1\nProperties=species:S:1:pos:R:3:flag:L:1\nC 0.0 0.0 0.0 T\n";
+        let frame = parse_extxyz(s).unwrap();
+        assert_eq!(frame.properties[0].values[0], vec![XyzValue::Logical(true)]);
+    }
+
+    #[test]
+    fn extxyz_zero_atom_frame_is_legal() {
+        let s = "0\nempty extxyz frame\n";
+        let frame = parse_extxyz(s).unwrap();
+        assert!(frame.atoms.is_empty());
+        assert_eq!(write_extxyz(&frame).unwrap(), s);
+    }
+
+    #[test]
+    fn write_extxyz_rejects_quote_in_info_value() {
+        let frame = XyzFrame {
+            atoms: vec![XyzAtom {
+                element: Element::C,
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            }],
+            comment: String::new(),
+            lattice: None,
+            properties: Vec::new(),
+            info: vec![("note".to_string(), "x\" y=\"z".to_string())],
+        };
+        let err = write_extxyz(&frame).unwrap_err();
+        assert!(matches!(err, XyzError::UnwritableMetadata { .. }));
+    }
+
+    #[test]
+    fn write_extxyz_rejects_colon_in_property_name() {
+        let frame = XyzFrame {
+            atoms: vec![XyzAtom {
+                element: Element::C,
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            }],
+            comment: String::new(),
+            lattice: None,
+            properties: vec![XyzProperty {
+                name: "bad:name".to_string(),
+                kind: XyzPropertyKind::Real,
+                count: 1,
+                values: vec![vec![XyzValue::Real(1.0)]],
+            }],
+            info: Vec::new(),
+        };
+        let err = write_extxyz(&frame).unwrap_err();
+        assert!(matches!(err, XyzError::UnwritableMetadata { .. }));
+    }
+
+    #[test]
+    fn write_extxyz_accepts_info_value_with_whitespace_but_no_quote() {
+        // The exact case that motivated the '"'-rejection check: a value
+        // needing quotes (has whitespace) but free of the one character
+        // that would corrupt the quoting itself.
+        let frame = XyzFrame {
+            atoms: vec![XyzAtom {
+                element: Element::C,
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            }],
+            comment: String::new(),
+            lattice: None,
+            properties: Vec::new(),
+            info: vec![("note".to_string(), "hello world".to_string())],
+        };
+        let written = write_extxyz(&frame).unwrap();
+        let reparsed = parse_extxyz(&written).unwrap();
+        assert_eq!(reparsed.info, frame.info);
     }
 }

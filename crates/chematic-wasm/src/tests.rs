@@ -2507,3 +2507,81 @@ fn test_mmff94_energy_breakdown_json_unchanged_semantics() {
     assert!(!json.contains("\"electrostatic\""), "got {json}");
     assert!(!json.contains("\"stretch_bend\""), "got {json}");
 }
+
+// --- Extended XYZ (extxyz) -------------------------------------------------
+
+const EXTXYZ_WATER_JSON_FIXTURE: &str = "3\nLattice=\"10.0 0.0 0.0 0.0 10.0 0.0 0.0 0.0 10.0\" Properties=species:S:1:pos:R:3:forces:R:3 energy=-76.4\nO 0.0 0.0 0.0 0.1 0.0 0.0\nH 0.7586 0.0 0.504284 0.0 0.1 0.0\nH 0.7586 0.0 -0.504284 0.0 -0.1 0.0\n";
+
+#[test]
+fn test_mol_from_extxyz_and_extxyz_frame_json_share_atom_order() {
+    let mol = mol_from_extxyz(EXTXYZ_WATER_JSON_FIXTURE).expect("mol_from_extxyz");
+    let json = extxyz_frame_json(EXTXYZ_WATER_JSON_FIXTURE).expect("extxyz_frame_json");
+    let v: serde_json::Value = serde_json::from_str(&json).expect("valid JSON");
+
+    let coords = v["coords"].as_array().unwrap();
+    assert_eq!(coords.len(), mol.atom_count());
+    assert_eq!(mol.atom_count(), 3);
+
+    let lattice = v["lattice"].as_array().unwrap();
+    assert_eq!(lattice.len(), 9);
+    assert_eq!(lattice[0].as_f64(), Some(10.0));
+
+    let forces = v["properties"]["forces"].as_array().unwrap();
+    assert_eq!(forces.len(), 3);
+    assert_eq!(forces[0][0].as_f64(), Some(0.1));
+
+    assert_eq!(v["info"]["energy"].as_str(), Some("-76.4"));
+}
+
+#[test]
+fn test_extxyz_frame_json_plain_xyz_has_null_lattice_and_empty_properties() {
+    let plain = "3\nwater\nO 0.0 0.0 0.0\nH 0.7586 0.0 0.504284\nH 0.7586 0.0 -0.504284\n";
+    let json = extxyz_frame_json(plain).expect("extxyz_frame_json");
+    let v: serde_json::Value = serde_json::from_str(&json).expect("valid JSON");
+    assert!(v["lattice"].is_null());
+    assert_eq!(v["properties"].as_object().unwrap().len(), 0);
+    assert_eq!(v["info"].as_object().unwrap().len(), 0);
+}
+
+#[test]
+fn test_mol_from_extxyz_rejects_malformed_input() {
+    // mol_from_extxyz/extxyz_frame_json are thin Result<_, JsValue> wrappers
+    // around chematic_mol::parse_extxyz -- tested via the underlying fn
+    // (JsValue native-abort, same pattern as mol_from_xyz_roundtrip_atom_count).
+    let bad = "1\nLattice=\"1.0 2.0 3.0\"\nC 0.0 0.0 0.0\n";
+    assert!(chematic_mol::parse_extxyz(bad).is_err());
+}
+
+#[test]
+fn test_to_extxyz_json_roundtrips_lattice_and_properties() {
+    let mol = mol_from_extxyz(EXTXYZ_WATER_JSON_FIXTURE).expect("mol_from_extxyz");
+    let frame_json = extxyz_frame_json(EXTXYZ_WATER_JSON_FIXTURE).expect("extxyz_frame_json");
+    let v: serde_json::Value = serde_json::from_str(&frame_json).unwrap();
+
+    let coords_json = v["coords"].to_string();
+    let options_json = serde_json::json!({
+        "lattice": v["lattice"],
+        "properties": v["properties"],
+        "info": v["info"],
+    })
+    .to_string();
+
+    let written = to_extxyz_json(&mol, &coords_json, &options_json).expect("to_extxyz_json");
+    let mol2 = mol_from_extxyz(&written).expect("mol_from_extxyz on written output");
+    let json2 = extxyz_frame_json(&written).expect("extxyz_frame_json on written output");
+    let v2: serde_json::Value = serde_json::from_str(&json2).unwrap();
+
+    assert_eq!(mol2.atom_count(), mol.atom_count());
+    assert_eq!(v2["lattice"], v["lattice"]);
+    assert_eq!(v2["properties"]["forces"], v["properties"]["forces"]);
+    assert_eq!(v2["info"], v["info"]);
+}
+
+#[test]
+fn test_to_extxyz_json_rejects_coords_atom_count_mismatch() {
+    // Tested via the underlying non-wasm helper -- JsValue native-abort
+    // (same pattern as parse_pdb_molecule_and_coords's PdbInputError).
+    let mol = mol_from_extxyz(EXTXYZ_WATER_JSON_FIXTURE).expect("mol_from_extxyz");
+    let err = extxyz_frame_from_json_args(&mol.inner, "[[0.0,0.0,0.0]]", "{}");
+    assert!(err.is_err(), "expected error for 1 coord row vs 3 atoms");
+}
