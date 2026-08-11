@@ -31,6 +31,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   currently canonicalize to the same identity; see the FEASIBILITY doc for
   why this is reported, not patched, this round).
 
+### Fixed — `chematic-core` (dative-bond implicit hydrogen count)
+
+- **`valence_inferred_hcount` treated a `BondOrder::Dative` bond's donor
+  side exactly like a covalent single bond when computing implicit
+  hydrogen count**, contradicting `BondOrder::Dative`'s own documented
+  donor→acceptor semantics and RDKit's identical treatment of the same
+  `->`/`<-` SMILES syntax: an un-bracketed dative donor like `N->[Pt]Cl`
+  computed as `NH2` instead of the chemically correct `NH3`, because the
+  donor's own lone-pair-sharing bond was (wrongly) subtracted from its
+  normal covalent valence. Flowed into `molecular_weight`, `exact_mass`,
+  and `chematic-smiles`'s canonical-writer atom invariant. Donor-side dative
+  bonds now contribute 0 to the valence sum instead of `order_int()`'s 1;
+  the acceptor side is unchanged (out of scope — no acceptor in the
+  motivating corpus is in the organic subset). Found via the platinum
+  coordination-chemistry benchmark; not platinum-specific (verified against
+  Fe/Co/Pd/Ru acceptors too). A pre-existing `chematic-smiles` test
+  (`dative_bond_direction.rs`) pinned an exact canonical-SMILES string that
+  depended on the old, wrong invariant; updated to the new correct value,
+  with a replacement case added so the arrow-flip-on-acceptor-first code
+  path it originally covered stays covered.
+- **Known, documented, not-fixed-this-round divergence:** `validate_valence`
+  (built on the separate, public `bond_order_sum`, also used by
+  `chematic-cip`/tautomer enumeration/`chematic-ff`) can still report a
+  false-positive `ValenceError` on a *bracketed* dative donor whose only
+  listed normal valence is exactly met by its own explicit H count (e.g.
+  `[OH2]->[Pt]`) — deliberately not widened, given the larger blast radius;
+  pinned by a new test rather than left undocumented.
+
+### Fixed — `chematic-mol` (MOL V2000/V3000 dative/coordinate bonds)
+
+- **MDL bond type 9 (dative/coordinate — the exact convention RDKit uses to
+  write `Bond::BondType.DATIVE`, V3000 only) silently mapped to
+  `BondOrder::Single`** in both the V2000 and V3000 readers' "unknown code"
+  catch-all, with no error or warning: reading an RDKit-generated V3000
+  molfile containing a dative Pt–N bond silently produced a different
+  molecule (connectivity intact, bond semantics quietly lost). Both readers
+  now map code 9 to `BondOrder::Dative`, preserving the file's donor/
+  acceptor atom order. `mol3000.rs`'s writer now emits code 9 for `Dative`
+  bonds instead of collapsing to plain single (`1`); V2000's writer still
+  collapses `Dative` to `1` on write, matching RDKit's own inability to
+  express a dative bond in V2000 at all. Both readers carry a committed
+  regression test built from the literal RDKit-generated molblock that
+  surfaced this finding.
+
 ## [0.14.0] — 2026-08-11
 
 Stereo-aware distance geometry: declared E/Z (cis/trans) is now enforced as a
