@@ -73,9 +73,22 @@ pub fn valence_inferred_hcount(mol: &Molecule, idx: AtomIdx) -> u8 {
     let mut aromatic_count: usize = 0;
     let mut non_aromatic_sum: i32 = 0;
     for (_, bidx) in mol.neighbors(idx) {
-        let order = mol.bond(bidx).order;
+        let bond = mol.bond(bidx);
+        let order = bond.order;
         if order == BondOrder::Aromatic {
             aromatic_count += 1;
+        } else if order == BondOrder::Dative && bond.atom1 == idx {
+            // Donor side of a dative (coordinate) bond: per `BondOrder::Dative`'s
+            // own documented `atom1 (donor) -> atom2 (acceptor)` convention, the
+            // donor shares a lone pair without spending any of its own normal
+            // covalent valence -- e.g. `N->[Pt]` must still imply NH3 (3 implicit
+            // H, valence fully intact), not NH2. Matches RDKit's identical
+            // treatment of the same SMILES dative-arrow syntax. Contributes 0,
+            // unlike a plain covalent bond of the same `order_int()==1`.
+            // The acceptor side (and any other atom for which `idx` is `atom2`)
+            // is intentionally left counted as before -- out of scope here,
+            // since every acceptor in the motivating corpus (Pt, Fe, Co, ...)
+            // is already outside the organic subset and short-circuits above.
         } else {
             non_aromatic_sum += order.order_int() as i32;
         }
@@ -586,6 +599,125 @@ mod tests {
         assert!(
             validate_valence(&mol).is_empty(),
             "Fe with 6 bonds must be skipped"
+        );
+    }
+
+    // -------------------------------------------------------------------
+    // Donor-side dative-bond implicit H -- regression tests for the
+    // platinum coordination-chemistry benchmark
+    // (validation/platinum/FEASIBILITY.md). A bare, un-bracketed donor
+    // atom's own normal covalent valence must not be spent by its own
+    // dative bond: `N->[Pt]` must still mean NH3, matching RDKit's
+    // identical treatment of the same `->` SMILES syntax. Before this fix,
+    // `order_int()`'s `1` for `Dative` was summed exactly like a real
+    // covalent bond, giving NH2 instead.
+    // -------------------------------------------------------------------
+
+    #[test]
+    fn test_dative_donor_n_keeps_full_valence() {
+        // N->Pt : N is the donor (atom1). Bare N, no other substituents.
+        let mol = two_atoms(Element::N, Element::PT, BondOrder::Dative);
+        assert_eq!(
+            implicit_hcount(&mol, AtomIdx(0)),
+            3,
+            "a dative donor's own lone pair, not one of its 3 normal covalent \
+             slots, is shared with the acceptor -- N->[Pt] must mean NH3"
+        );
+    }
+
+    #[test]
+    fn test_dative_donor_o_keeps_full_valence() {
+        // O->Fe : O is the donor. Matches the corpus's water/DMSO-oxygen
+        // style dative ligands (see cisplatin_diaqua_activation_product in
+        // pt_corpus.jsonl).
+        let mol = two_atoms(Element::O, Element::FE, BondOrder::Dative);
+        assert_eq!(
+            implicit_hcount(&mol, AtomIdx(0)),
+            2,
+            "O->[Fe] must mean H2O"
+        );
+    }
+
+    #[test]
+    fn test_dative_acceptor_side_unaffected() {
+        // Pt->N (reversed: Pt is the donor per this specific bond's stored
+        // direction, N is the acceptor) -- the fix is donor-side-only by
+        // design (see valence_inferred_hcount's doc comment), so N here
+        // gets no special treatment; this pins that scope boundary rather
+        // than leaving it implicit.
+        let mol = two_atoms(Element::PT, Element::N, BondOrder::Dative);
+        // N is atom2 (the acceptor) here: bond_sum=1 (unchanged, counted
+        // like a normal covalent bond), giving valence 3 - 1 = 2H, not 3.
+        assert_eq!(
+            implicit_hcount(&mol, AtomIdx(1)),
+            2,
+            "acceptor-side implicit H is intentionally untouched by this fix"
+        );
+    }
+
+    #[test]
+    fn test_generalization_not_platinum_specific() {
+        // Same fix, non-Pt acceptors (Fe, Co) -- confirms this is a general
+        // dative-bond fix, not special-cased to Pt (task's generalization
+        // gate, see FEASIBILITY.md section 16/6).
+        for acceptor in [Element::FE, Element::CO, Element::PD, Element::RU] {
+            let mol = two_atoms(Element::N, acceptor, BondOrder::Dative);
+            assert_eq!(
+                implicit_hcount(&mol, AtomIdx(0)),
+                3,
+                "N->{acceptor:?} must mean NH3 regardless of which metal accepts"
+            );
+        }
+    }
+
+    #[test]
+    fn test_known_divergence_bracketed_dative_donor_can_still_false_positive_in_validate_valence() {
+        // KNOWN, DOCUMENTED, NOT FIXED HERE (see FEASIBILITY.md's residual
+        // limitations): `validate_valence` uses `bond_order_sum`, a
+        // separate, PUBLIC function (also used by chematic-cip/tautomer/
+        // chematic-ff) that was deliberately left untouched -- widening it
+        // to exempt donor-side dative bonds too would change its meaning
+        // for those other consumers, a much larger blast radius than this
+        // benchmark measured or scoped. The practical consequence: a
+        // BRACKETED dative donor whose only listed normal valence is
+        // already exactly met by its own explicit H count (e.g. O, whose
+        // only valence is 2) still gets a spurious `ValenceError` from
+        // `validate_valence`, even though `implicit_hcount`/
+        // `valence_inferred_hcount` correctly agree the atom is valid.
+        // Nitrogen is NOT affected in practice ([NH3]->[Pt] does not
+        // trigger this) only because N's valence list [3, 5] happens to
+        // have a second, higher tier that absorbs the extra count -- an
+        // element-specific coincidence, not a general exemption. This
+        // corpus never hits this path (it uses bare, un-bracketed donor
+        // atoms throughout), which is why `pt_corpus.jsonl`'s
+        // `valence_errors` fields are all empty.
+        let mut b = MoleculeBuilder::new();
+        let o = b.add_atom(Atom::bracket(
+            Element::O,
+            None,
+            Default::default(),
+            2,
+            0,
+            None,
+        ));
+        let pt = b.add_atom(Atom::new(Element::PT));
+        b.add_bond(o, pt, BondOrder::Dative).unwrap();
+        let mol = b.build();
+
+        assert_eq!(
+            implicit_hcount(&mol, o),
+            2,
+            "bracket H is stored directly regardless of bond wiring"
+        );
+        assert_eq!(
+            validate_valence(&mol).len(),
+            1,
+            "known false positive: [OH2]->[Pt] is valid water-donor chemistry \
+             but validate_valence still flags it via bond_order_sum's \
+             unchanged (donor-side-inclusive) count -- if this assertion \
+             ever starts failing because it's empty, bond_order_sum was \
+             fixed too and this whole test (and its FEASIBILITY.md note) \
+             should be deleted, not \"corrected\" back to failing"
         );
     }
 }

@@ -161,25 +161,28 @@ fn writers_emit_the_full_two_character_token() {
     }
 }
 
-/// The critical case: two molecules that differ *only* in which endpoint of
-/// the dative bond is stored as `atom1`. Their canonical rank vectors are
-/// identical (same elements, same connectivity — nothing in the ranking is
-/// dative-direction-aware), so the canonical writer reaches the same atom
-/// first in both. It picks the iron; for `n_to_fe` that is the *acceptor*,
-/// so the arrow has to be written backwards relative to storage order.
+/// `n_to_fe`/`fe_to_n` differ *only* in which endpoint of the dative bond is
+/// stored as `atom1`, but their canonical rank vectors are no longer
+/// identical: the donor's implicit-H count is part of its ranking
+/// invariant (`initial_invariant` in `canonical.rs`), and a donor's
+/// implicit H count now correctly excludes the dative bond's own
+/// contribution (see `chematic_core::valence::valence_inferred_hcount` --
+/// found and fixed via the platinum coordination-chemistry benchmark,
+/// `validation/platinum/FEASIBILITY.md`: an un-bracketed dative donor like
+/// bare `N` must still mean NH3, not NH2). That changed N's invariant in
+/// `n_to_fe` (N is the donor there) but not in `fe_to_n` (N is the
+/// *acceptor* there, untouched by the donor-side-only fix) -- so `a`'s
+/// canonical form flipped which atom is written first, while `b`'s did not.
 ///
 /// Both expected strings are derived from `BondOrder::Dative`'s own
-/// definition rather than from what the writer happens to produce: reading
-/// `[Fe]<-N` left to right, the arrow points from N into Fe, i.e. N is the
-/// donor — which is `n_to_fe`, whose `atom1` is N even though it is written
-/// second.
+/// definition rather than from what the writer happens to produce.
 #[test]
-fn canonical_writer_flips_the_arrow_when_the_acceptor_is_written_first() {
+fn canonical_writer_orders_dative_endpoints_by_current_rank() {
     let a = canonical_smiles(&n_to_fe());
     let b = canonical_smiles(&fe_to_n());
 
-    assert_eq!(a, "[Fe]<-N", "acceptor written first ⇒ reversed arrow");
-    assert_eq!(b, "[Fe]->N", "donor written first ⇒ forward arrow");
+    assert_eq!(a, "N->[Fe]", "donor (N) now ranks first ⇒ forward arrow");
+    assert_eq!(b, "[Fe]->N", "donor (Fe) written first ⇒ forward arrow");
 
     // And each one still means what it meant before it was written.
     assert_eq!(
@@ -189,6 +192,29 @@ fn canonical_writer_flips_the_arrow_when_the_acceptor_is_written_first() {
     assert_eq!(
         dative_donor_acceptor(&parse(&b).unwrap()),
         (Element::FE, Element::N)
+    );
+}
+
+/// The arrow-flip-on-acceptor-first path (the actual code under test by the
+/// name of the test above, before O/N/Fe's specific ranks shifted it away
+/// from N/Fe) is still exercised here with an O donor instead: an oxygen
+/// donor's implicit-H count is *also* correctly donor-exempted by the same
+/// fix, but O still ranks below Fe, so Fe (the acceptor) is written first
+/// and the writer must still emit a reversed `<-` arrow to keep the
+/// donor/acceptor pair intact.
+#[test]
+fn canonical_writer_flips_the_arrow_when_the_acceptor_is_written_first() {
+    let mut b = MoleculeBuilder::new();
+    let o = b.add_atom(atom(Element::O));
+    let fe = b.add_atom(atom(Element::FE));
+    b.add_bond(o, fe, BondOrder::Dative).unwrap();
+    let mol = b.build();
+
+    let out = canonical_smiles(&mol);
+    assert_eq!(out, "[Fe]<-O", "acceptor written first ⇒ reversed arrow");
+    assert_eq!(
+        dative_donor_acceptor(&parse(&out).unwrap()),
+        (Element::O, Element::FE)
     );
 }
 

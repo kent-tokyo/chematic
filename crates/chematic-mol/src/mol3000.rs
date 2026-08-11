@@ -461,6 +461,16 @@ pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, Mol
                     6 => BondOrder::QuerySingleOrAromatic,
                     7 => BondOrder::QueryDoubleOrAromatic,
                     8 => BondOrder::QueryAny,
+                    // 9 = dative/coordinate bond. This is how RDKit itself
+                    // writes `Bond::BondType::DATIVE` in V3000 (it cannot
+                    // represent a dative bond in V2000 at all, so it upgrades
+                    // automatically) -- `a1`/`a2` are already in the same
+                    // donor/acceptor order the file encodes, matching
+                    // `BondOrder::Dative`'s documented atom1(donor) ->
+                    // atom2(acceptor) convention. Previously fell through to
+                    // `Single`, silently discarding coordination bonds from
+                    // any RDKit- (or other-tool-) generated V3000 molfile.
+                    9 => BondOrder::Dative,
                     _ => BondOrder::Single,
                 };
 
@@ -1022,6 +1032,54 @@ M  END
     }
 
     // -----------------------------------------------------------------------
+    // Test: MDL bond type 9 (dative/coordinate) round-trips, not silently
+    // corrupted to Single -- regression test for the platinum coordination-
+    // chemistry benchmark (validation/platinum/FEASIBILITY.md). The molblock
+    // below is not hand-crafted: it is exactly what RDKit 2026.03.3 writes
+    // for `Chem.MolFromSmiles` + `AddBond(n, pt, Chem.BondType.DATIVE)` +
+    // `Chem.MolToMolBlock(mol, forceV3000=True)` -- RDKit auto-upgrades to
+    // V3000 for any dative bond (it cannot express one in V2000 either).
+    // Before this fix, bond type 9 fell through the reader's `_ =>
+    // BondOrder::Single` catch-all with no error, no warning: a
+    // structurally valid file silently produced a different molecule.
+    // -----------------------------------------------------------------------
+    #[test]
+    fn test_dative_bond_type_9_round_trips() {
+        // NOT built with a `"\` line-continuation: the real molblock's second
+        // header line is blank-then-indented (RDKit writes no molecule name),
+        // and a leading `\`-continuation would silently swallow that blank
+        // line along with its indentation (rustc even warns "multiple lines
+        // skipped by escaped newline" if written that way) -- explicit `\n`
+        // keeps this byte-for-byte identical to RDKit's own output.
+        let mol_str = "\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 3 2 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 N 0.000000 0.000000 0.000000 0\nM  V30 2 Pt 1.299038 0.750000 0.000000 0 VAL=2\nM  V30 3 Cl 2.598076 1.500000 0.000000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 9 1 2\nM  V30 2 1 2 3\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n";
+        let (mol, meta) = parse_mol_v3000(mol_str).expect("parse RDKit dative molblock");
+        let bonds: Vec<_> = mol.bonds().collect();
+        assert_eq!(
+            bonds[0].1.order,
+            BondOrder::Dative,
+            "bond type 9 must read as Dative, not silently fall through to Single"
+        );
+        // atom1/atom2 preserve the file's donor/acceptor order (N -> Pt).
+        assert_eq!(mol.atom(bonds[0].1.atom1).element, Element::N);
+        assert_eq!(mol.atom(bonds[0].1.atom2).element, Element::PT);
+        assert_eq!(bonds[1].1.order, BondOrder::Single);
+
+        let written = write_mol_v3000(&mol, &meta, &[]);
+        assert!(
+            written.contains("M  V30 1 9 1 2"),
+            "Dative must write back out as bond type 9: {written}"
+        );
+
+        // Full round trip: re-parsing the freshly-written molblock still
+        // gives a Dative bond with the same donor/acceptor order.
+        let (rt_mol, _) = parse_mol_v3000(&written).expect("re-parse written molblock");
+        let rt_bonds: Vec<_> = rt_mol.bonds().collect();
+        assert_eq!(rt_bonds[0].1.order, BondOrder::Dative);
+        assert_eq!(rt_mol.atom(rt_bonds[0].1.atom1).element, Element::N);
+        assert_eq!(rt_mol.atom(rt_bonds[0].1.atom2).element, Element::PT);
+    }
+
+    // -----------------------------------------------------------------------
     // Test 15: atom-map number stored when nonzero
     // -----------------------------------------------------------------------
     #[test]
@@ -1103,7 +1161,7 @@ pub fn write_mol_v3000(mol: &Molecule, metadata: &MolMetadata, coords: &[(f64, f
         let a2 = bond.atom2.0 + 1;
         let order = match bond.order {
             BondOrder::Zero => 0,
-            BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative => 1,
+            BondOrder::Single | BondOrder::Up | BondOrder::Down => 1,
             BondOrder::Double => 2,
             BondOrder::Triple => 3,
             BondOrder::Aromatic => 4,
@@ -1111,6 +1169,14 @@ pub fn write_mol_v3000(mol: &Molecule, metadata: &MolMetadata, coords: &[(f64, f
             BondOrder::QuerySingleOrAromatic => 6,
             BondOrder::QueryDoubleOrAromatic => 7,
             BondOrder::QueryAny => 8,
+            // Matches RDKit's own V3000 convention for `Bond::BondType::DATIVE`
+            // (see the reader's matching case above); `atom1`/`atom2` are
+            // already in donor/acceptor order. V2000's writer (mol2000.rs)
+            // still collapses `Dative` to a plain single bond, since RDKit
+            // itself cannot express a dative bond in V2000 either -- full
+            // dative round-tripping through chematic's own MOL writer
+            // requires V3000, same as RDKit.
+            BondOrder::Dative => 9,
             BondOrder::Quadruple => 4,
         };
         let i = bidx.0 + 1;
@@ -1220,7 +1286,7 @@ pub fn write_mol_v3000_with_conformer(
         let a2 = bond.atom2.0 + 1;
         let order = match bond.order {
             BondOrder::Zero => 0,
-            BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Dative => 1,
+            BondOrder::Single | BondOrder::Up | BondOrder::Down => 1,
             BondOrder::Double => 2,
             BondOrder::Triple => 3,
             BondOrder::Aromatic => 4,
@@ -1228,6 +1294,14 @@ pub fn write_mol_v3000_with_conformer(
             BondOrder::QuerySingleOrAromatic => 6,
             BondOrder::QueryDoubleOrAromatic => 7,
             BondOrder::QueryAny => 8,
+            // Matches RDKit's own V3000 convention for `Bond::BondType::DATIVE`
+            // (see the reader's matching case above); `atom1`/`atom2` are
+            // already in donor/acceptor order. V2000's writer (mol2000.rs)
+            // still collapses `Dative` to a plain single bond, since RDKit
+            // itself cannot express a dative bond in V2000 either -- full
+            // dative round-tripping through chematic's own MOL writer
+            // requires V3000, same as RDKit.
+            BondOrder::Dative => 9,
             BondOrder::Quadruple => 4,
         };
         let i = bidx.0 + 1;

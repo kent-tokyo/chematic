@@ -607,6 +607,15 @@ pub fn read_mol_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseE
             6 => BondOrder::QuerySingleOrAromatic,
             7 => BondOrder::QueryDoubleOrAromatic,
             8 => BondOrder::QueryAny,
+            // 9 = dative/coordinate bond, a widely used (if formally
+            // non-standard) MDL extension -- RDKit emits it for
+            // `Bond::BondType::DATIVE` (V3000 only; see mol3000.rs), with
+            // atom1/atom2 in the same donor/acceptor order as
+            // `BondOrder::Dative` itself already documents. Previously fell
+            // through to `Single`, silently discarding the coordination-bond
+            // distinction (and, downstream, corrupting the donor atom's
+            // implicit hydrogen count) on read -- see valence.rs.
+            9 => BondOrder::Dative,
             _ => BondOrder::Single,
         };
 
@@ -1104,6 +1113,36 @@ M  END
         assert_eq!(bonds[1].1.order, BondOrder::Double);
         assert_eq!(bonds[2].1.order, BondOrder::Triple);
         assert_eq!(bonds[3].1.order, BondOrder::Aromatic);
+    }
+
+    /// MDL bond type 9 (dative/coordinate) must read as `BondOrder::Dative`,
+    /// not silently fall through to `Single` -- regression test for the
+    /// platinum coordination-chemistry benchmark
+    /// (`validation/platinum/FEASIBILITY.md`). See `mol3000.rs`'s
+    /// `test_dative_bond_type_9_round_trips` for the RDKit-generated V3000
+    /// version of the same finding (RDKit itself only ever writes bond type
+    /// 9 in V3000, never V2000 -- this V2000 case defensively covers any
+    /// other tool that does).
+    #[test]
+    fn test_parse_bond_type_9_is_dative() {
+        let mol_str = "\
+test
+  chematic
+
+  3  2  0  0  0  0  0  0  0  0  0 V2000
+    0.0000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
+    1.0000    0.0000    0.0000 Pt  0  0  0  0  0  0  0  0  0  0  0  0
+    2.0000    0.0000    0.0000 Cl  0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  9  0
+  2  3  1  0
+M  END
+";
+        let (mol, _) = parse_mol(mol_str).expect("parse should succeed");
+        let bonds: Vec<_> = mol.bonds().collect();
+        assert_eq!(bonds[0].1.order, BondOrder::Dative);
+        assert_eq!(mol.atom(bonds[0].1.atom1).element, Element::N);
+        assert_eq!(mol.atom(bonds[0].1.atom2).element, Element::PT);
+        assert_eq!(bonds[1].1.order, BondOrder::Single);
     }
 
     #[test]
