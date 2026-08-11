@@ -29,9 +29,8 @@
 //! MinimizationFailed}` are reserved variants this module never constructs (no force
 //! field or constraint-optimization step runs here at all — the acceptance gate for
 //! this PR is measured *before* any such step, see the master plan §4).
-//! `enforce_chirality` IS read (fail-closed: see below) even though no chirality
-//! *constraint* is implemented, because silently ignoring it would violate the
-//! no-silent-fallback rule.
+//! `enforce_chirality` is NOT one of these no-op placeholders — see the
+//! "`enforce_chirality`" section below for what it actually does.
 //!
 //! # Not wired into the live pipeline
 //!
@@ -39,6 +38,72 @@
 //! master plan §1b, that integration is an explicit Wave 2 Coordinator step performed
 //! only after this PR, Agent F's force-field bridge, and Agent E's torsion knowledge
 //! are all separately merged.
+//!
+//! # `enforce_chirality` (added 2026-08-11, issue #291/#293)
+//!
+//! **Important, not obvious from the name**: a pairwise distance matrix is
+//! reflection-invariant (a molecule and its mirror image have identical pairwise
+//! distances — see `docs/etkdg_3d_gap_rfc.md`'s Phase 3 "Correction" section), so
+//! nothing in `build_bound_matrix`/`smooth_bounds`/the MDS embedding step above can
+//! ever encode which chirality to prefer. `enforce_chirality` does NOT inject a
+//! constraint into that machinery. Instead, per attempt, after the raw MDS/random
+//! placement (which operates on real coordinates, unlike the bound matrix, and so
+//! *can* carry a chirality sign): apply [`stereo_constraints::repair_stereo`] to
+//! fix whatever it can (bridge-eligible substituents only — ring-fused
+//! stereocenters cannot be fixed this way, see that module's docs) BEFORE
+//! `refine_coords` runs, so the bounds-driven relaxation absorbs whatever bond-
+//! length distortion the repair's rigid-subtree translation introduced. Then,
+//! after `refine_coords`, independently re-verify the *actual returned* geometry
+//! (never trust that refinement preserved the repair) — if any declared element is
+//! still `Violated`, this attempt fails with [`EmbedFailureCause::
+//! StereoConstraintFailed`] and the existing per-attempt retry loop tries a new
+//! seed. Molecules with no declared stereo are unaffected (`repair_stereo`/
+//! `verify_stereo` are no-ops on them); `enforce_chirality: false` (the default)
+//! is byte-identical to before this change — opt-in only, see `ROADMAP.md`'s
+//! v0.14.0 S-tier item 1 for why the wider default-path decision (issue #291's
+//! `Ignore`-policy population) was deliberately deferred, not folded in here.
+//!
+//! For ring-fused stereocenters where `repair_stereo` cannot help, retrying with a
+//! new stochastic seed is the only mechanism this provides, and its odds are poor
+//! for molecules with several declared centers (each is close to an independent
+//! coin flip under a chirality-blind embedder, so naively the per-attempt success
+//! rate is on the order of 2^-k for k declared centers) — `max_attempts`
+//! exhaustion returning `StereoConstraintFailed` for such molecules is expected,
+//! correct, fail-closed behavior, not a bug to work around by raising the attempt
+//! count unboundedly.
+//!
+//! **Measured (2026-08-11, `max_attempts: 8`, the 29 stereo-bearing molecules of
+//! `scripts/etkdg_vs_rdkit_gap.py::CORPUS`, `random_seed` swept over 0..5, probed
+//! and then removed per this project's own measure-before-claiming convention — see
+//! the PR body for the raw per-seed runs). This measures the embedder alone (no UFF
+//! minimization, unlike issue #291's `embed_pipeline_v2`-level 18/29 figure — the
+//! two numbers are not directly comparable, see the PR body):** 25-27/29
+//! (86.2%-93.1%) succeed across the 5 base seeds tested — one draw is not a stable
+//! percentage, report the range, not a single decimal. Two failures recur at every
+//! base seed tested (5/5):
+//! - `testosterone`, `cholesterol` — expected: ring-fused declared stereocenters,
+//!   the documented `NoBridgeEligibleSubstituent` case above.
+//! - `but2ene_Z` (`C/C=C\C`, a plain acyclic Z-alkene, no ring at all, fails 4/5
+//!   base seeds tested) — NOT expected from the design above, and NOT a
+//!   retry-odds problem: at a fixed base seed, the *raw* (pre-repair,
+//!   `enforce_chirality: false`) embedding is already `Violated` for all of 10
+//!   tested derived seeds, deterministically, not ~50/50 as the "coin flip per
+//!   center" framing predicts. Isolated further: the raw *coordinates* do differ
+//!   substantially seed to seed (summed atom displacement vs. the previous seed's
+//!   geometry was several Å, not near-zero), yet the sign of the C0-C1=C2-C3
+//!   dihedral was identical across all 10 — ruling out "bounds too tight to vary
+//!   the geometry" as the mechanism. The likely cause is a fixed sign/orientation
+//!   convention somewhere in the MDS reconstruction chain (`mds_embed` /
+//!   `distance_to_gram_matrix` / `jacobi_eigendecompose`) that is independent of
+//!   the sampled distance matrix — not confirmed further, not this PR's scope to
+//!   fix. Either way, raising `max_attempts` cannot reliably help here, unlike the
+//!   bridge-eligible tetrahedral case. This is a distinct, disclosed gap from both
+//!   the ring-fused case and the general reflection-invariance point above; tracked
+//!   as a follow-up issue, not fixed in this PR. The remaining single-base-seed-only
+//!   failures (`atorvastatin_fragment` at one seed, `cinnamic_acid_E` at another)
+//!   match the expected `max_attempts`-retry-loop variance already documented above
+//!   (occasional exhaustion of 8 attempts for a molecule the mechanism *can* fix),
+//!   not a new distinct cause.
 
 use std::collections::HashMap;
 
@@ -52,6 +117,7 @@ use crate::dg_fft::{
     jacobi_eigendecompose, refine_coords, smooth_bounds,
 };
 use crate::prng::Prng;
+use crate::stereo_constraints::{repair_stereo, verify_stereo};
 
 /// Number of bounds-driven SHAKE-like refinement passes after the initial MDS/random
 /// placement. Higher than `dg_fft::generate_coords_dg`'s 300 because a stochastic
@@ -105,13 +171,18 @@ pub struct EmbedParameters {
     /// refinement pass. Mirrors ETKDG's own `useRandomCoords` fallback semantics.
     /// **Consumed.**
     pub use_random_coords: bool,
-    /// When true and the molecule has any declared tetrahedral (`@`/`@@`) or
-    /// double-bond (`/`/`\`) stereo, this call fails closed with
-    /// `EmbedFailureCause::StereoConstraintFailed` rather than silently returning a
-    /// geometry that never checked the declared stereo (Phase 3 stereo constraints,
-    /// per `docs/etkdg_3d_gap_rfc.md` §4, are not implemented by this module — that
-    /// is Agent D's territory). Molecules with **no** declared stereo are unaffected.
-    /// **Consumed** (as a fail-closed gate, not as an enforced constraint).
+    /// When true, every embedding attempt is checked against the molecule's
+    /// declared tetrahedral (`@`/`@@`) and double-bond (`/`/`\`) stereo after
+    /// refinement; violations are repaired where possible (bridge-eligible
+    /// substituents) before the check, and an attempt that still violates any
+    /// declared element after that is treated as failed, so the retry loop tries a
+    /// new seed. Exhausting `max_attempts` without a fully-satisfying geometry
+    /// returns `EmbedFailureCause::StereoConstraintFailed` (fail-closed — never
+    /// silently returns a geometry that violates declared stereo). See the module
+    /// doc's "`enforce_chirality`" section for why this can't be a bound-matrix
+    /// constraint and what it can/cannot fix. Molecules with **no** declared stereo
+    /// are unaffected (zero extra cost). `false` (default) is byte-identical to
+    /// this field's behavior before 2026-08-11. **Consumed.**
     pub enforce_chirality: bool,
     /// Reserved for Agent E's experimental-torsion-preference integration (Wave 2).
     /// **Not consumed** — accepted for forward API compatibility only.
@@ -183,9 +254,12 @@ pub enum EmbedFailureCause {
     EigenEmbeddingFailed,
     /// Reserved for Wave 2 force-field/constraint integration. Not constructed here.
     ConstraintOptimizationFailed,
-    /// `enforce_chirality` was requested on a molecule with declared stereo; this
-    /// module cannot verify or enforce it (Phase 3, not implemented here) and fails
-    /// closed rather than silently ignoring the request.
+    /// `enforce_chirality` was requested and, after genuinely trying every attempt
+    /// (repair where possible, retry with a new seed otherwise), no attempt
+    /// produced a geometry satisfying every declared tetrahedral/E-Z stereo
+    /// element. Expected, correct outcome for molecules whose declared stereo
+    /// includes at least one ring-fused center `repair_stereo` cannot fix — not
+    /// itself evidence of a bug.
     StereoConstraintFailed,
     /// Reserved for Wave 2 force-field integration (Agent F). Not constructed here —
     /// this module never runs a force field.
@@ -242,6 +316,11 @@ pub struct EmbedStats {
     /// Coordinator integration (`pipeline_v2.rs`'s
     /// `embed_distance_geometry_v2_with_adjustments`) ever sets this above 0.
     pub adjustments_applied: usize,
+    /// Whether `enforce_chirality`'s repair-before-refine step actually ran on the
+    /// attempt that produced the returned result (i.e. `enforce_chirality` was set
+    /// AND the molecule had declared stereo). `false` whenever `enforce_chirality`
+    /// is `false` or the molecule declares no stereo, regardless of `enforce_chirality`.
+    pub stereo_repair_attempted: bool,
 }
 
 fn record_failure(stats: &mut EmbedStats, params: &EmbedParameters, cause: EmbedFailureCause) {
@@ -380,16 +459,10 @@ pub(crate) fn embed_distance_geometry_v2_with_adjustments(
             stats,
         ));
     }
-    if params.enforce_chirality && mol_has_declared_stereo(mol) {
-        // Fail closed: Phase 3 (chiral-volume / improper-torsion stereo constraints)
-        // is not implemented in this module. Returning Ok() here would silently
-        // report success while never having checked the declared stereo -- exactly
-        // what the no-silent-fallback rule forbids.
-        return Err((
-            EmbedWithAdjustmentsFailure::Embed(EmbedFailureCause::StereoConstraintFailed),
-            stats,
-        ));
-    }
+    // `enforce_chirality`'s real check-repair-or-retry logic runs per attempt
+    // inside `try_embed_once` (see the module doc's "`enforce_chirality`" section)
+    // -- there is no upfront fail-closed refusal anymore, since this module now
+    // genuinely tries before giving up.
 
     if n > DG_MAX_ATOMS {
         return Err((
@@ -596,9 +669,37 @@ fn try_embed_once(
     };
 
     center_coordinates(&mut coords);
+
+    // Repair BEFORE refinement, not after: `repair_stereo`'s rigid-subtree
+    // translation preserves bond lengths *within* the moved substituent exactly,
+    // but can and does push its distances to the *rest* of the molecule outside
+    // their smoothed bounds (measured empirically while designing this: e.g.
+    // L-alanine's bounds_conformance violations went 1->4 when repair was applied
+    // AFTER refine_coords). Applying it here lets the bounds-driven relaxation
+    // below absorb that distortion the same way it absorbs everything else -- see
+    // the module doc's "`enforce_chirality`" section.
+    if params.enforce_chirality && mol_has_declared_stereo(mol) {
+        stats.stereo_repair_attempted = true;
+        coords = match repair_stereo(mol, &coords) {
+            Ok(outcome) => outcome.coords,
+            Err(failure) => failure.partial_coords,
+        };
+    }
+
     refine_coords(&mut coords, &lower, &upper, REFINE_ITERS);
 
     validate_final_coords(mol, &coords)?;
+
+    // Never trust that refinement preserved the repair above -- it's a bounds-
+    // driven relaxation with no chirality awareness of its own, so re-verify the
+    // *actual returned* geometry, not the pre-refinement one.
+    if params.enforce_chirality
+        && mol_has_declared_stereo(mol)
+        && !verify_stereo(mol, &coords).is_fully_satisfied()
+    {
+        return Err(EmbedFailureCause::StereoConstraintFailed);
+    }
+
     Ok(coords)
 }
 
@@ -931,21 +1032,87 @@ mod tests {
 
     #[test]
     fn track_failures_records_real_counts_on_forced_failure() {
-        // Force every attempt to fail via an impossible atom limit trick is not
-        // available directly, so instead verify the accumulator API itself: a
-        // molecule requesting enforce_chirality with declared stereo fails
-        // immediately (before any attempt), so attempts_used stays 0 and no
-        // per-attempt counts are recorded -- verifies the fail-closed path returns
-        // stats rather than silently discarding them.
-        let mol = parse("C[C@H](O)CC").unwrap(); // 2-butanol, declared stereo
+        // O=C1CC[C@H]2CCC[C@H]12: both declared stereocenters are ring-fused with no
+        // acyclic bridge substituent, so `repair_stereo` structurally cannot fix
+        // either one -- empirically confirmed to fail all of seeds 0..8 with
+        // max_attempts=1 (verified while writing this test, not assumed). Exercises
+        // the genuine per-attempt failure path: every attempt is actually made and
+        // recorded, unlike the old immediate-refusal behavior this replaced.
+        let mol = parse("O=C1CC[C@H]2CCC[C@H]12").unwrap();
         let params = EmbedParameters {
+            random_seed: 0,
+            max_attempts: 3,
             enforce_chirality: true,
             track_failures: true,
             ..EmbedParameters::default()
         };
         let err = embed_distance_geometry_v2_detail(&mol, &params).unwrap_err();
         assert_eq!(err.0, EmbedFailureCause::StereoConstraintFailed);
-        assert_eq!(err.1.attempts_used, 0);
+        assert_eq!(
+            err.1.attempts_used, 3,
+            "every attempt must be genuinely made, not skipped"
+        );
+        assert_eq!(
+            err.1
+                .failure_counts
+                .get(&EmbedFailureCause::StereoConstraintFailed),
+            Some(&3),
+            "each of the 3 attempts must be individually recorded"
+        );
+        assert!(err.1.stereo_repair_attempted);
+    }
+
+    #[test]
+    fn enforce_chirality_repairs_and_succeeds_for_a_bridge_eligible_stereocenter() {
+        // 2-butanol has one declared stereocenter with a plain acyclic substituent
+        // (the ethyl group), so `repair_stereo` can always fix a wrong raw embedding
+        // -- but `refine_coords`'s bounds-driven relaxation that runs after the
+        // repair has no chirality awareness of its own and can occasionally flip a
+        // correctly-repaired center back to `Violated` on a given attempt
+        // (empirically confirmed for this exact molecule at random_seed=2,
+        // max_attempts=1, while designing this: repair succeeds pre-refine, then
+        // POST-REFINE is Violated again). That is exactly what the per-attempt
+        // retry loop (`max_attempts`, distinct derived seed each try) exists to
+        // absorb -- see the module doc's "`enforce_chirality`" section -- so this
+        // asserts the retry loop delivers a satisfying geometry, not that any
+        // single attempt does.
+        let mol = parse("C[C@H](O)CC").unwrap();
+        for seed in 0..20u64 {
+            let params = EmbedParameters {
+                random_seed: seed,
+                max_attempts: 8,
+                enforce_chirality: true,
+                ..EmbedParameters::default()
+            };
+            let (coords, _stats) =
+                embed_distance_geometry_v2_detail(&mol, &params).unwrap_or_else(|e| {
+                    panic!("seed {seed} must succeed within 8 attempts, got {e:?}")
+                });
+            assert!(
+                verify_stereo(&mol, &coords).is_fully_satisfied(),
+                "seed {seed}: returned geometry must satisfy declared stereo"
+            );
+        }
+    }
+
+    #[test]
+    fn enforce_chirality_false_is_unaffected_by_declared_stereo() {
+        // Same molecule/seeds as the ring-fused failing case above, but with
+        // enforce_chirality left at its default (false) -- must always succeed
+        // (no stereo checking at all), proving the new logic is fully gated behind
+        // the flag and doesn't leak into the default path.
+        let mol = parse("O=C1CC[C@H]2CCC[C@H]12").unwrap();
+        for seed in 0..8u64 {
+            let params = EmbedParameters {
+                random_seed: seed,
+                max_attempts: 1,
+                enforce_chirality: false,
+                ..EmbedParameters::default()
+            };
+            let (_, stats) = embed_distance_geometry_v2_detail(&mol, &params)
+                .unwrap_or_else(|e| panic!("seed {seed} must succeed, got {e:?}"));
+            assert!(!stats.stereo_repair_attempted);
+        }
     }
 
     #[test]
@@ -955,7 +1122,8 @@ mod tests {
             enforce_chirality: true,
             ..EmbedParameters::default()
         };
-        assert!(embed_distance_geometry_v2(&mol, &params).is_ok());
+        let (_, stats) = embed_distance_geometry_v2_detail(&mol, &params).unwrap();
+        assert!(!stats.stereo_repair_attempted);
     }
 
     #[test]
