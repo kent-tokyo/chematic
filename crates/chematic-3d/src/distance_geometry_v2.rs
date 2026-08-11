@@ -88,18 +88,31 @@
 //!   retry-odds problem: at a fixed base seed, the *raw* (pre-repair,
 //!   `enforce_chirality: false`) embedding is already `Violated` for all of 10
 //!   tested derived seeds, deterministically, not ~50/50 as the "coin flip per
-//!   center" framing predicts. Isolated further: the raw *coordinates* do differ
-//!   substantially seed to seed (summed atom displacement vs. the previous seed's
-//!   geometry was several Å, not near-zero), yet the sign of the C0-C1=C2-C3
-//!   dihedral was identical across all 10 — ruling out "bounds too tight to vary
-//!   the geometry" as the mechanism. The likely cause is a fixed sign/orientation
-//!   convention somewhere in the MDS reconstruction chain (`mds_embed` /
-//!   `distance_to_gram_matrix` / `jacobi_eigendecompose`) that is independent of
-//!   the sampled distance matrix — not confirmed further, not this PR's scope to
-//!   fix. Either way, raising `max_attempts` cannot reliably help here, unlike the
-//!   bridge-eligible tetrahedral case. This is a distinct, disclosed gap from both
-//!   the ring-fused case and the general reflection-invariance point above; tracked
-//!   as a follow-up issue, not fixed in this PR. The remaining single-base-seed-only
+//!   center" framing predicts. Isolated further (2026-08-11, follow-up
+//!   diagnosis): the raw coordinates *do* vary seed to seed (in-plane spread
+//!   ~3.1-3.5 Å / ~1.3-1.5 Å, out-of-plane spread ~0.4-0.9 Å -- real 3D content,
+//!   not a planar collapse), yet the sign of the C0-C1=C2-C3 dihedral was
+//!   identical across all 10 draws. Contrasted directly against a larger,
+//!   more conformationally flexible molecule with the same simple 1-declared-
+//!   E/Z-bond shape (`cinnamic_acid_E`, `OC(=O)/C=C/c1ccccc1`, same probe, same
+//!   10 seeds): its raw dihedral sign split 5-positive/5-negative -- genuine
+//!   per-seed variability, exactly what the retry loop is designed to exploit.
+//!   **The measured fact is this contrast** (0/10 sign flips for the small/rigid
+//!   molecule vs. 5/10 for the larger/flexible one) -- the *mechanism* behind it
+//!   (why the small molecule's sampled distance matrices consistently reconstruct
+//!   to the same handedness) is not yet isolated; a plausible but unverified
+//!   candidate is that `jacobi_eigendecompose`'s eigenvector-sign outcome is a
+//!   deterministic, presumably-continuous function of the input Gram matrix, and
+//!   a tightly-bounded (low-conformational-freedom) molecule's sampled distance
+//!   matrices across different seeds stay too numerically close to one another
+//!   to cross whatever boundary would flip it -- not confirmed, do not treat as
+//!   established. **Operational consequence, which *is* established regardless
+//!   of mechanism**: for at least this molecule class, `max_attempts` retry is
+//!   structurally unable to help, because there is no real per-seed variability
+//!   to exploit -- this is a distinct, disclosed gap from both the ring-fused
+//!   case and the general reflection-invariance point above; tracked as a
+//!   follow-up (issue #285 comment), not fixed here. The remaining
+//!   single-base-seed-only
 //!   failures (`atorvastatin_fragment` at one seed, `cinnamic_acid_E` at another)
 //!   match the expected `max_attempts`-retry-loop variance already documented above
 //!   (occasional exhaustion of 8 attempts for a molecule the mechanism *can* fix),
