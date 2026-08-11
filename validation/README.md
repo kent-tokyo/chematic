@@ -4,6 +4,53 @@ Documented evidence that chematic's descriptors agree with industry-standard too
 
 ## Corpora
 
+### Platinum coordination-chemistry compatibility benchmark (18-compound corpus)
+
+Measurement-only survey of whether chematic can represent, parse,
+round-trip, and canonicalize anticancer platinum(II)/platinum(IV)
+coordination complexes (cisplatin, transplatin, carboplatin, oxaliplatin,
+nedaplatin, lobaplatin, picoplatin, dicycloplatin, satraplatin, iproplatin,
+tetraplatin, oxoplatin, plus charged/sulfur-donor/carbon-donor diversity
+cases and 2 non-platinum generalization-gate cases) without silently
+corrupting their coordination chemistry — **not** an anticancer-activity
+project; no IC50/resistance/toxicity/pharmacokinetics prediction is
+implemented or claimed anywhere in this benchmark. Not to be confused with
+the unrelated third-party "Platinum Diverse Dataset" referenced in
+`validation/manifests/dataset_provenance.json` (a drug-conformer dataset
+that happens to share the word "platinum" in its name, nothing to do with
+platinum coordination chemistry).
+
+- **Files:** `validation/platinum/pt_corpus.jsonl` (corpus, with
+  per-compound source/formula/charge/coordination-number/cis-trans
+  provenance), `validation/results/platinum_baseline_chematic.jsonl`
+  (unmodified-`main` baseline), `platinum_after_fix_chematic.jsonl`
+  (post-fix), `platinum_attribution_{valence,mass}_only.jsonl` (per-fix
+  isolated attribution runs), `platinum_rdkit_oracle.jsonl` (independent
+  RDKit oracle, same corpus)
+- **Reference tools:** RDKit 2026.03.3 (primary oracle), Open Babel 3.1.1
+  (secondary, narrower comparison — see the full report for what was and
+  wasn't checked)
+- **How to regenerate:** `cargo run --release -p chematic-mol --example
+  platinum_benchmark -- validation/results/platinum_after_fix_chematic.jsonl`
+  + `python scripts/platinum_rdkit_oracle.py
+  validation/results/platinum_rdkit_oracle.jsonl` + `python
+  scripts/platinum_compare_chematic_rdkit.py`
+- **Full report:** `validation/platinum/FEASIBILITY.md` — corpus
+  provenance (including two independently-confirmed internally-
+  inconsistent PubChem records), baseline, failure taxonomy, the
+  cisplatin/transplatin killer benchmark, what was fixed vs. explicitly not
+  fixed, before/after numbers with per-fix attribution, and the RDKit/Open
+  Babel comparison.
+- **Known findings from this benchmark, fixed:** dative-bond donor implicit
+  hydrogen count (`chematic-core`), MOL V2000/V3000 bond-type-9 silent
+  corruption (`chematic-mol`), periodic-table mass-data gap for every
+  element outside a ~24-element hardcoded list (`chematic-chem`) — see
+  `CHANGELOG.md`'s `[Unreleased]` section.
+- **Known finding from this benchmark, measured but explicitly NOT fixed
+  this round:** chematic has no square-planar stereo representation at all
+  — cisplatin and transplatin currently canonicalize to the same identity.
+  Reported as the top P0 gap for future work, not silently patched over.
+
 ### pipeline v2 vs RDKit ETKDGv3 independent 3D benchmark (Wave 1, 265-mol corpus)
 
 Independent, measurement-only comparison of `chematic_3d::pipeline_v2::embed_pipeline_v2`

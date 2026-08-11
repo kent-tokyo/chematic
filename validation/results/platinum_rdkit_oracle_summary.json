@@ -1,0 +1,16 @@
+{
+  "killer_benchmark": {
+    "cisplatin_canonical": "[NH3]->[Pt](<-[NH3])([Cl])[Cl]",
+    "transplatin_canonical": "[NH3]->[Pt](<-[NH3])([Cl])[Cl]",
+    "cis_trans_distinguished": false
+  },
+  "square_planar_stereo_check": {
+    "sp_variant_canonical_smiles": {
+      "SP1": "[NH2][Pt@SP1]([NH2])([Cl])[Cl]",
+      "SP2": "[NH2][Pt@SP2]([NH2])([Cl])[Cl]",
+      "SP3": "[NH2][Pt@SP3]([NH2])([Cl])[Cl]"
+    },
+    "distinct_canonical_forms": 3,
+    "rdkit_can_distinguish_with_explicit_tags": true
+  }
+}

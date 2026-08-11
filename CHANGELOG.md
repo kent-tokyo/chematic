@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — platinum coordination-chemistry compatibility benchmark
+
+- `validation/platinum/pt_corpus.jsonl` (18-entry hand-verified corpus of
+  anticancer Pt(II)/Pt(IV) coordination complexes — cisplatin, transplatin,
+  carboplatin, oxaliplatin, nedaplatin, lobaplatin, picoplatin,
+  dicycloplatin, satraplatin, iproplatin, tetraplatin, oxoplatin, plus
+  charged/S-donor/C-donor diversity cases and 2 non-Pt generalization-gate
+  cases), `crates/chematic-mol/examples/platinum_benchmark.rs`,
+  `scripts/platinum_rdkit_oracle.py`,
+  `scripts/platinum_compare_chematic_rdkit.py`, and
+  `validation/platinum/FEASIBILITY.md` — a measurement-only survey of
+  whether chematic can represent/parse/round-trip/canonicalize platinum
+  anticancer complexes without silently corrupting their coordination
+  chemistry (not an anticancer-activity project; no IC50/resistance/
+  toxicity/PK prediction). Found 2 general (not Pt-specific) production
+  defects, fixed in 2 follow-up PRs (see this file's `chematic-core`/
+  `chematic-mol`/`chematic-chem` `Fixed` entries once they land); measured
+  and explicitly did **not** fix a 3rd (square-planar cis/trans stereo has
+  no representation in chematic at all — cisplatin and transplatin
+  currently canonicalize to the same identity; see the FEASIBILITY doc for
+  why this is reported, not patched, this round).
+
 ## [0.14.0] — 2026-08-11
 
 Stereo-aware distance geometry: declared E/Z (cis/trans) is now enforced as a
