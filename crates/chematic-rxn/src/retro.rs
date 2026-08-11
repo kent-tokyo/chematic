@@ -194,10 +194,14 @@ pub static DEFAULT_TEMPLATES: &[RetroTemplate] = &[
         reaction_class: RetroClass::Ether,
     },
     RetroTemplate {
-        // Mitsunobu ether: inverted secondary alcohol (sp3 C) + phenol/alcohol.
-        // Restricted to sp3 C to avoid matching every O-C bond.
+        // Mitsunobu ether: inverted secondary alcohol + phenol/alcohol.
+        // #296: `CX4` (sp3-carbon connectivity query) is SMARTS syntax this
+        // crate's SMILES-based template parser cannot express (see
+        // `mol_to_query`'s doc) -- broadened to any non-aromatic carbon.
+        // Trades "restricted to sp3 C" for "actually parses and fires";
+        // documented, not silently dropped.
         name: "mitsunobu_ether",
-        smirks: "[O:1][CX4:2]>>[OH:1].[OH][C:2]",
+        smirks: "[O:1][C:2]>>[OH:1].[OH][C:2]",
         reaction_class: RetroClass::Ether,
     },
     RetroTemplate {
@@ -211,16 +215,24 @@ pub static DEFAULT_TEMPLATES: &[RetroTemplate] = &[
         reaction_class: RetroClass::Ether,
     },
     RetroTemplate {
+        // PMB (p-methoxybenzyl) ether. #296: the original SMIRKS was
+        // malformed (unbalanced ring-closure digit; `OCH2` used as if it
+        // were a single valid bracket-atom symbol, which it isn't) --
+        // rewritten as a real aryl-O-CH2-aryl(p-OMe) fragment, atom-map :2
+        // on the benzylic CH2 carbon that carries through to the PMB-Br
+        // product, matching every other ether template's shape.
         name: "pmb_ether",
-        smirks: "[c:1]([OCH2:2])ccc(OC)cc1>>[c:1][OH].[c]([CH2:2]Br)ccc(OC)cc1",
+        smirks: "[c:1]O[CH2:2]c1ccc(OC)cc1>>[c:1][OH].Br[CH2:2]c1ccc(OC)cc1",
         reaction_class: RetroClass::Ether,
     },
     // ── C–N bond ─────────────────────────────────────────────────────────────
     RetroTemplate {
-        // sp3 C–N only; amide N excluded by requiring non-carbonyl neighbour.
-        // [CX4] = 4-connected (sp3) C; [NX3] = trivalent N (not amide carbonyl).
+        // #296: `CX4`/`NX3` connectivity queries aren't expressible in this
+        // crate's SMILES-based template grammar -- broadened to any
+        // non-aromatic C/N. See mitsunobu_ether's comment for the same
+        // tradeoff.
         name: "reductive_amination",
-        smirks: "[CX4:1][NX3:2]>>[C:1]=O.[N:2]",
+        smirks: "[C:1][N:2]>>[C:1]=O.[N:2]",
         reaction_class: RetroClass::CNBond,
     },
     RetroTemplate {
@@ -239,15 +251,16 @@ pub static DEFAULT_TEMPLATES: &[RetroTemplate] = &[
         reaction_class: RetroClass::CNBond,
     },
     RetroTemplate {
-        // sp3 C halide alkylation of amine; excludes amide-like sp2 C.
+        // #296: `CX4` broadened to any non-aromatic C (see mitsunobu_ether).
         name: "n_alkylation",
-        smirks: "[CX4:1][N:2]>>[C:1]Br.[NH:2]",
+        smirks: "[C:1][N:2]>>[C:1]Br.[NH:2]",
         reaction_class: RetroClass::CNBond,
     },
     RetroTemplate {
-        // Mitsunobu N: inverted secondary alcohol + amine; N must not be amide.
+        // Mitsunobu N: inverted secondary alcohol + amine.
+        // #296: `CX4` broadened to any non-aromatic C (see mitsunobu_ether).
         name: "mitsunobu_n",
-        smirks: "[NH:1][CX4:2]>>[N:1].[OH][C:2]",
+        smirks: "[NH:1][C:2]>>[N:1].[OH][C:2]",
         reaction_class: RetroClass::CNBond,
     },
     RetroTemplate {
@@ -304,10 +317,12 @@ pub static DEFAULT_TEMPLATES: &[RetroTemplate] = &[
         reaction_class: RetroClass::CCBond,
     },
     RetroTemplate {
-        // Negishi coupling — aryl + primary/secondary alkyl zinc.
-        // sp3 C only to avoid matching biaryl bonds (covered by Suzuki).
+        // Negishi coupling — aryl + alkyl zinc.
+        // #296: `CX4` broadened to any non-aromatic C (see mitsunobu_ether)
+        // -- `[c:1][C:2]` still can't match a biaryl bond (that needs two
+        // aromatic atoms, `[c:1][c:2]`, covered separately by suzuki_biaryl).
         name: "negishi",
-        smirks: "[c:1][CX4:2]>>[c:1]Br.[C:2][Zn]Cl",
+        smirks: "[c:1][C:2]>>[c:1]Br.[C:2][Zn]Cl",
         reaction_class: RetroClass::CCBond,
     },
     RetroTemplate {
@@ -317,14 +332,28 @@ pub static DEFAULT_TEMPLATES: &[RetroTemplate] = &[
     },
     RetroTemplate {
         // Alpha carbon must bear at least one H (enolisable position).
+        // #296: `H1,H2,H3` (an H-count OR-list) isn't expressible -- a
+        // bracket atom's H-count is a single exact value, not a set, in
+        // this crate's SMILES-based template grammar. Narrowed to the
+        // smallest listed alternative (`H1`) rather than dropped entirely
+        // (dropping it would also match non-enolisable H0 alpha carbons,
+        // i.e. quaternary centers, which can never actually do an aldol --
+        // a real chemistry error, not just reduced coverage). Known,
+        // disclosed tradeoff: real CH2/CH3 alpha-carbon aldol precursors
+        // are now missed (false negatives), never falsely matched (no
+        // false positives).
         name: "aldol",
-        smirks: "[CH1,CH2,CH3:1][C:2](=[O:3])>>[C:1].[C:2](=[O:3])",
+        smirks: "[CH1:1][C:2](=[O:3])>>[C:1].[C:2](=[O:3])",
         reaction_class: RetroClass::CCBond,
     },
     RetroTemplate {
         // Michael addition: beta carbon must be sp3 with at least one H.
+        // #296: same `CX4` + H-count-OR-list issue as aldol above -- `CX4`
+        // dropped (see mitsunobu_ether), H-count narrowed to `H1` (see
+        // aldol's comment for the false-negative-over-false-positive
+        // reasoning).
         name: "michael_addition",
-        smirks: "[CX4;H1,H2:1][CX4:2][C:3](=[O:4])>>[C:1].[C:2]=[C:3]",
+        smirks: "[CH1:1][C:2][C:3](=[O:4])>>[C:1].[C:2]=[C:3]",
         reaction_class: RetroClass::CCBond,
     },
     RetroTemplate {
@@ -345,14 +374,20 @@ pub static DEFAULT_TEMPLATES: &[RetroTemplate] = &[
     RetroTemplate {
         // Friedel-Crafts alkylation — restrict to benzylic CH2 to avoid
         // matching every aryl–alkyl bond in the molecule.
+        // #296: the `;X4` (AND-combinator + connectivity query) suffix
+        // isn't expressible and is dropped -- `CH2` alone (an exact H
+        // -count, valid bracket-atom syntax) already does almost all of
+        // the intended restricting work here, `X4` was near-redundant
+        // given `CH2` on its own.
         name: "friedel_crafts_alkyl",
-        smirks: "[c:1][CH2;X4:2]>>[c:1].[CH2:2]Cl",
+        smirks: "[c:1][CH2:2]>>[c:1].[CH2:2]Cl",
         reaction_class: RetroClass::CCBond,
     },
     RetroTemplate {
         // Mannich: alpha-aminomethylation — alpha CH2 with enolisable H.
+        // #296: `CX4` broadened to any non-aromatic C (see mitsunobu_ether).
         name: "mannich",
-        smirks: "[CH2:1][CX4:2][N:3]>>[C:1]=O.[C:2].[N:3]",
+        smirks: "[CH2:1][C:2][N:3]>>[C:1]=O.[C:2].[N:3]",
         reaction_class: RetroClass::CCBond,
     },
     RetroTemplate {
@@ -387,18 +422,27 @@ pub static DEFAULT_TEMPLATES: &[RetroTemplate] = &[
         reaction_class: RetroClass::CSBond,
     },
     RetroTemplate {
+        // #296: a bare, unbracketed `H` is not valid SMILES -- `H` is not
+        // part of the organic subset this crate's SMILES parser accepts
+        // outside brackets (only B/C/N/O/P/S/F/Cl/Br/I), matching the
+        // SMILES spec (explicit terminal hydrogen must always be written
+        // `[H]`). Not a parser bug; the template's own SMIRKS was invalid
+        // SMILES from the start.
         name: "aryl_halide_oxidative_add",
-        smirks: "[c:1]Br>>[c:1]H",
+        smirks: "[c:1]Br>>[c:1][H]",
         reaction_class: RetroClass::CSBond,
     },
     RetroTemplate {
+        // #296: trailing bare `H` -> `[H]`, same issue as
+        // aryl_halide_oxidative_add above.
         name: "phosphonate",
-        smirks: "[C:1][P:2](=[O:3])([O:4])([O:5])>>[C:1]Br.[P:2](=[O:3])([O:4])([O:5])H",
+        smirks: "[C:1][P:2](=[O:3])([O:4])([O:5])>>[C:1]Br.[P:2](=[O:3])([O:4])([O:5])[H]",
         reaction_class: RetroClass::CSBond,
     },
     RetroTemplate {
+        // #296: bare `H` -> `[H]`, same issue as aryl_halide_oxidative_add.
         name: "sp3_ch_bromination",
-        smirks: "[C:1]Br>>[C:1]H",
+        smirks: "[C:1]Br>>[C:1][H]",
         reaction_class: RetroClass::CSBond,
     },
     RetroTemplate {
@@ -407,8 +451,11 @@ pub static DEFAULT_TEMPLATES: &[RetroTemplate] = &[
         reaction_class: RetroClass::CSBond,
     },
     RetroTemplate {
+        // #296: `[CF3]` was never valid bracket-atom syntax (a bracket atom
+        // is always exactly one atom; a trifluoromethyl group is four) --
+        // rewritten as the real 4-atom substructure `C(F)(F)F`.
         name: "trifluoromethyl",
-        smirks: "[C:1][CF3]>>[C:1]I",
+        smirks: "[C:1]C(F)(F)F>>[C:1]I",
         reaction_class: RetroClass::CSBond,
     },
 ];
@@ -659,6 +706,263 @@ mod tests {
         assert!(
             DEFAULT_TEMPLATES.len() >= 50,
             "library should have at least 50 templates"
+        );
+    }
+
+    /// Results from a specific named template only -- reduces boilerplate
+    /// in the #296 representative-correctness tests below, which each care
+    /// about one template firing (or not) on a specific probe molecule,
+    /// not the full cross-template `retro_disconnect` result set.
+    fn hits_for(m: &Molecule, template_name: &str) -> Vec<RetroResult> {
+        retro_disconnect(m, DEFAULT_TEMPLATES, 0)
+            .into_iter()
+            .filter(|r| r.template_name == template_name)
+            .collect()
+    }
+
+    // ── #296: representative positive/negative/false-positive tests for
+    // the 14 templates whose SMIRKS previously failed to parse (and so
+    // never matched anything, for any caller, ever -- see #296). Parsing
+    // successfully and matching chemically-sensibly are different claims;
+    // these are checked separately from `all_default_templates_parse`
+    // above, which only proves the SMIRKS parses.
+
+    #[test]
+    fn mitsunobu_ether_matches_dialkyl_ether() {
+        // methyl propyl ether: retro should give methanol + propanol.
+        let m = mol("COCCC");
+        let hits = hits_for(&m, "mitsunobu_ether");
+        assert!(!hits.is_empty(), "should disconnect an aliphatic ether");
+        let all_smiles: Vec<&str> = hits
+            .iter()
+            .flat_map(|r| r.precursor_smiles.iter().map(String::as_str))
+            .collect();
+        assert!(
+            all_smiles.iter().any(|s| s.contains('O')),
+            "precursors should be alcohols"
+        );
+    }
+
+    #[test]
+    fn mitsunobu_ether_does_not_fire_on_carbonyl_oxygen() {
+        // acetone: the carbonyl O has no single O-C bond in the position
+        // this template's [O:1][C:2] pattern needs (it's a C=O double
+        // bond, not the ether's single bond) -- confirms broadening CX4
+        // away didn't also start matching unrelated C=O oxygens.
+        let m = mol("CC(=O)C");
+        let hits = hits_for(&m, "mitsunobu_ether");
+        assert!(
+            hits.is_empty(),
+            "should not treat a ketone's C=O as an ether O-C bond"
+        );
+    }
+
+    #[test]
+    fn reductive_amination_matches_secondary_amine() {
+        // N-ethylpropan-1-amine: retro should give an aldehyde/imine-side
+        // and an amine fragment.
+        let m = mol("CCNCCC");
+        let hits = hits_for(&m, "reductive_amination");
+        assert!(
+            !hits.is_empty(),
+            "should disconnect a dialkylamine C-N bond"
+        );
+    }
+
+    #[test]
+    fn n_alkylation_matches_alkyl_amine() {
+        let m = mol("CCCNCC"); // N-ethylpropan-1-amine, same substrate, different template's own filter
+        let hits = hits_for(&m, "n_alkylation");
+        assert!(!hits.is_empty(), "should disconnect an N-alkyl bond");
+    }
+
+    #[test]
+    fn mitsunobu_n_matches_primary_amine_alkylation() {
+        let m = mol("CCCNCC");
+        let hits = hits_for(&m, "mitsunobu_n");
+        assert!(
+            !hits.is_empty(),
+            "should disconnect a secondary-amine C-N bond"
+        );
+    }
+
+    #[test]
+    fn negishi_matches_aryl_alkyl_bond() {
+        // propylbenzene: aryl-C(sp3) bond should disconnect via negishi.
+        let m = mol("c1ccccc1CCC");
+        let hits = hits_for(&m, "negishi");
+        assert!(!hits.is_empty(), "should disconnect an aryl-alkyl C-C bond");
+    }
+
+    #[test]
+    fn negishi_does_not_fire_on_biaryl_bond() {
+        // biphenyl: the aryl-aryl bond must stay suzuki_biaryl's territory
+        // (both atoms aromatic), not negishi's ([c:1][C:2] needs C:2
+        // non-aromatic).
+        let m = mol("c1ccc(-c2ccccc2)cc1");
+        let hits = hits_for(&m, "negishi");
+        assert!(
+            hits.is_empty(),
+            "negishi should not match an aryl-aryl bond"
+        );
+    }
+
+    #[test]
+    fn aldol_matches_ch1_alpha_carbon() {
+        // 3-methylpentan-2-one: the alpha carbon bonded to the carbonyl
+        // (CH(CH3)(CH2CH3)) has exactly 1 H -- matches the template's
+        // narrowed [CH1:1] (see aldol's own comment for why H1, not H2).
+        let m = mol("CC(=O)C(C)CC");
+        let hits = hits_for(&m, "aldol");
+        assert!(
+            !hits.is_empty(),
+            "should disconnect an enolisable alpha-CH1/C=O bond"
+        );
+    }
+
+    #[test]
+    fn aldol_does_not_fire_on_quaternary_alpha_carbon() {
+        // 2,2-dimethylpropan-1-one-like center: alpha carbon has zero H
+        // (fully substituted) -- chemically cannot enolise, must not match
+        // even though the narrowed [CH1:1] test is a stand-in for the
+        // original H1,H2,H3 OR-list.
+        let m = mol("CC(=O)C(C)(C)C"); // methyl tert-butyl ketone: alpha C (the quaternary one) has 0 H
+        let hits = hits_for(&m, "aldol");
+        // the *other* alpha carbon (the methyl, CH3) also isn't CH1, so
+        // this substrate has no CH1 alpha carbon at all -- correctly no match.
+        assert!(
+            hits.is_empty(),
+            "should not match when no alpha carbon has exactly 1 H"
+        );
+    }
+
+    #[test]
+    fn michael_addition_matches_beta_ch_carbon() {
+        // 4-methylpentan-2-one-like chain with a CH beta to carbonyl via an
+        // intervening carbon: build a simple enone-derived saturated
+        // analog with a CH1 beta carbon two bonds from the carbonyl.
+        let m = mol("CC(C)CC(=O)C");
+        let hits = hits_for(&m, "michael_addition");
+        assert!(
+            !hits.is_empty(),
+            "should disconnect a beta-CH/alpha-C/carbonyl chain"
+        );
+    }
+
+    #[test]
+    fn friedel_crafts_alkyl_matches_benzylic_ch2() {
+        let m = mol("c1ccccc1CCl"); // benzyl chloride's own C-C precursor shape: toluene-like CH2 substrate
+        let hits = hits_for(&m, "friedel_crafts_alkyl");
+        assert!(!hits.is_empty(), "should disconnect a benzylic CH2");
+    }
+
+    #[test]
+    fn mannich_matches_alpha_aminomethyl_chain() {
+        let m = mol("CC(N(C)C)CC"); // aminomethyl-flanked sp3 chain
+        let hits = hits_for(&m, "mannich");
+        assert!(
+            !hits.is_empty(),
+            "should disconnect a CH2-C-N Mannich-type chain"
+        );
+    }
+
+    #[test]
+    fn trifluoromethyl_matches_cf3_group() {
+        let m = mol("CC(F)(F)F"); // ethyl-CF3-like substrate (1,1,1-trifluoroethane)
+        let hits = hits_for(&m, "trifluoromethyl");
+        assert!(!hits.is_empty(), "should disconnect a C-CF3 bond");
+    }
+
+    #[test]
+    fn trifluoromethyl_does_not_fire_without_three_fluorines() {
+        let m = mol("CC(F)F"); // only 2 F -- not a CF3 group
+        let hits = hits_for(&m, "trifluoromethyl");
+        assert!(
+            hits.is_empty(),
+            "should require all three fluorines of a true CF3 group"
+        );
+    }
+
+    #[test]
+    fn pmb_ether_matches_pmb_protected_phenol() {
+        // Tests pmb_ether's own SMIRKS directly (`run_reactants`, not
+        // `retro_disconnect`'s DEFAULT_TEMPLATES sweep): a plain
+        // PMB-protected phenol also matches the pre-existing, already
+        // -parsing `benzyl_ether` template, which produces the identical
+        // canonical precursor set (4-methoxybenzyl bromide + phenol) --
+        // `retro_disconnect`'s deliberate cross-template dedup (see its
+        // own doc comment) then hides pmb_ether's result behind
+        // benzyl_ether's, which is correct, expected behavior of that
+        // dedup, not a pmb_ether defect. This test isolates pmb_ether's
+        // own matching behavior from that unrelated, already-tested dedup
+        // feature.
+        let m = mol("c1ccc(OCc2ccc(OC)cc2)cc1"); // phenol protected as its PMB ether
+        let pmb_ether_smirks = DEFAULT_TEMPLATES
+            .iter()
+            .find(|t| t.name == "pmb_ether")
+            .expect("pmb_ether template exists")
+            .smirks;
+        let results =
+            crate::run_reactants(pmb_ether_smirks, &[&m]).expect("pmb_ether should parse and run");
+        assert!(!results.is_empty(), "should disconnect a PMB ether");
+    }
+
+    #[test]
+    fn aryl_halide_oxidative_add_matches_aryl_bromide() {
+        let m = mol("c1ccccc1Br"); // bromobenzene
+        let hits = hits_for(&m, "aryl_halide_oxidative_add");
+        assert!(!hits.is_empty(), "should disconnect an aryl C-Br bond");
+    }
+
+    #[test]
+    fn sp3_ch_bromination_matches_alkyl_bromide() {
+        let m = mol("CCCBr"); // 1-bromopropane
+        let hits = hits_for(&m, "sp3_ch_bromination");
+        assert!(!hits.is_empty(), "should disconnect an sp3 C-Br bond");
+    }
+
+    #[test]
+    fn phosphonate_matches_dialkyl_phosphonate() {
+        let m = mol("CCP(=O)(OCC)OCC"); // diethyl ethylphosphonate
+        let hits = hits_for(&m, "phosphonate");
+        assert!(
+            !hits.is_empty(),
+            "should disconnect a C-P(=O) phosphonate bond"
+        );
+    }
+
+    /// Issue #296's acceptance criterion: every `DEFAULT_TEMPLATES` entry's
+    /// SMIRKS must parse successfully. `retro_disconnect`'s `Err(_) =>
+    /// continue` (this file, `retro_disconnect`) silently treats a parse
+    /// failure exactly like "no match" -- a template that never parses
+    /// simply never fires, for any caller, forever, with no signal. This
+    /// test is the CI gate: a future built-in template with unparseable
+    /// SMIRKS fails the build immediately instead of silently going dark
+    /// (which is exactly how the 14 templates fixed by this same commit
+    /// went unnoticed since inception -- see #296 for the full audit).
+    ///
+    /// Deliberately tests parsing only (`parse_reaction`), not matching
+    /// against a specific molecule: a template can legitimately return
+    /// `Ok(vec![])` for a probe molecule it doesn't happen to match (that's
+    /// correct behavior, not a bug), so a matching-based test would either
+    /// need a bespoke probe molecule per template (fragile, and this is
+    /// what the representative-molecule tests below are for) or risk
+    /// false negatives. Parsing success/failure is unambiguous and
+    /// molecule-independent, which is exactly what #296 needs gated.
+    #[test]
+    fn all_default_templates_parse() {
+        let mut failures = Vec::new();
+        for tmpl in DEFAULT_TEMPLATES {
+            if let Err(e) = crate::reaction::parse_reaction(tmpl.smirks) {
+                failures.push(format!("{} ({}): {e}", tmpl.name, tmpl.smirks));
+            }
+        }
+        assert!(
+            failures.is_empty(),
+            "{} of {} DEFAULT_TEMPLATES entries failed to parse:\n{}",
+            failures.len(),
+            DEFAULT_TEMPLATES.len(),
+            failures.join("\n")
         );
     }
 }
