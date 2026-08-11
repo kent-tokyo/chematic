@@ -9,6 +9,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] — 2026-08-11
+
+Stereo-aware distance geometry: declared E/Z (cis/trans) is now enforced as a
+genuine bound-matrix constraint at embedding time, not just checked after the
+fact, and the post-minimization gate that protects it is now composable with
+the mechanism that produces it. Resolves the issue #285 release-gate waiver
+from v0.13.0's entry below — the same two named molecules
+(`chembl_tier_b_0126`, `chembl_tier_b_0168`) are the ones this release fixes.
+
+Opt-in only (`enforce_chirality: false` remains the default everywhere); the
+default conformer path (`generate_coords_etkdg`/`Mol.conformer_ensemble()`)
+is untouched.
+
+### Fixed — `chematic-3d` (declared-E/Z distance-geometry embedding, issue #285)
+
+- **Root cause found and fixed**: `apply_vdw_bounds`'s generic non-bonded Van
+  der Waals lower bound (sum of radii — two carbons: 3.40 Å) was being
+  applied to a declared-E/Z alkene's own 1-4 substituent pair regardless of
+  which stereochemistry was declared, structurally excluding the correct cis
+  geometry (analytic ≈2.88 Å for `but2ene_Z`) from ever being sampled or
+  reconstructed. Not an eigendecomposition sign-convention artifact as an
+  earlier diagnosis speculated — that candidate mechanism was empirically
+  refuted before this one was confirmed.
+- New `apply_declared_ez_bounds` (`enforce_chirality`-only): for each
+  declared E/Z double bond, computes the analytic same-side/opposite-side
+  1-4 distance from the same bond-length/angle model `build_bond_angle_bounds`
+  already uses, and intersects it into the bond matrix *before* the generic
+  Van der Waals floor applies — the correct geometry becomes reachable by
+  construction, not by repair, retry, reflection, or perturbation after the
+  fact (all three considered and rejected — see `docs/etkdg_3d_gap_rfc.md`
+  for the full comparison).
+- Unlike tetrahedral chirality (`@`/`@@`), which a pairwise distance matrix
+  can never encode (a molecule and its mirror image have identical pairwise
+  distances), declared E/Z is genuinely distance-representable: cis and
+  trans are two different scalar separations for the same atom pair, not
+  mirror images. Ring-fused tetrahedral stereocenters (`testosterone`,
+  `cholesterol`) are unaffected by this fix and remain a known, separately-
+  scoped gap.
+- Measured on the 265-molecule corpus (declared-E/Z subset, 39 molecules,
+  through production `embed_pipeline_v2`): stereo-satisfied count 22 → 42,
+  violated 23 → 3, pipeline success/geometry-soundness unchanged (32/39 both
+  ways). 18 molecules newly fixed, 2 addressed by the fix below.
+
+### Added — `chematic-3d` (`enforce_chirality` + `StereoPolicy::VerifyOnly` composition)
+
+- `embed_pipeline_v2`'s config-validation gate previously rejected
+  `enforce_chirality: true` for any `stereo_policy` other than `Ignore`,
+  reasoning that the two stereo mechanisms were unrelated and composing them
+  would be confusing. Corpus measurement disproved this: `enforce_chirality`
+  protects embedding-time correctness only, and force-field minimization has
+  no notion of declared stereo and can walk a correctly-embedded E/Z bond
+  back across its boundary afterward (found on 2 real molecules,
+  `chembl_tier_b_0076`/`chembl_tier_b_0083` — confirmed by re-running with no
+  force field, which leaves them correct). `enforce_chirality: true` is now
+  also allowed with `StereoPolicy::VerifyOnly`, whose existing post-
+  minimization gate catches exactly this failure mode as a typed error
+  instead of silently returning a `success` result with wrong stereo.
+  `StereoPolicy::RepairAndVerify` remains rejected in this combination —
+  composing its own repair pass with `enforce_chirality`'s is a separate,
+  not-yet-validated question.
+
+### Added — `chematic-py`, `chematic-wasm` (`enforce_chirality` exposure)
+
+- `enforce_chirality` (default `false`, fully backward compatible) is now a
+  real, settable parameter on `PipelineV2Config`/`PipelineV2Config.safe()`
+  (Python) and the `enforceChirality` JSON field (WASM) — previously neither
+  binding's config construction threaded the field through at all, so it was
+  unconditionally `false` regardless of caller intent, making the fix above
+  unreachable from Python or WASM callers.
+
+### Fixed — `chematic-rxn` (`suzuki_biaryl` retro-template, issue #294)
+
+- `[c:1][c:2]>>[c:1]Br.[c:2]B(O)O` never matched a real biaryl bond at all:
+  two adjacent aromatic atoms with no explicit bond token default to an
+  aromatic bond in this crate's SMILES convention, so the template only ever
+  matched *intra-ring* aromatic bonds, not a genuine inter-ring biaryl
+  connection. Fixed to `[c:1]-[c:2]` (explicit single bond) — no ring-
+  topology check needed. Found while investigating this: 14 of 59
+  `DEFAULT_TEMPLATES` entries silently never parse at all (`retro_disconnect`
+  swallows the `SmirksParse` error) — filed as issue #296, not fixed here.
+
 ## [0.13.0] — 2026-08-10
 
 ### Added — `chematic-mol` (XYZ / multi-frame XYZ)
