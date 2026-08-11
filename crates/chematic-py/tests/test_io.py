@@ -152,3 +152,118 @@ def test_parse_sdf_with_coords_skips_malformed_records():
     sdf = f"{MOL_A}$$$$\n{MALFORMED_RECORD}$$$$\n{MOL_A}$$$$\n"
     records = chematic.parse_sdf_with_coords(sdf)
     assert len(records) == 2
+
+
+# --- Extended XYZ (extxyz) -------------------------------------------------
+
+EXTXYZ_WATER = (
+    '3\n'
+    'Lattice="10.0 0.0 0.0 0.0 10.0 0.0 0.0 0.0 10.0" '
+    'Properties=species:S:1:pos:R:3:forces:R:3:tag:I:1 energy=-76.4 pbc="T T T"\n'
+    'O 0.0 0.0 0.0 0.1 0.0 0.0 1\n'
+    'H 0.7586 0.0 0.504284 0.0 0.1 0.0 2\n'
+    'H 0.7586 0.0 -0.504284 0.0 -0.1 0.0 2\n'
+)
+
+PLAIN_XYZ_WATER = "3\nwater\nO 0.0 0.0 0.0\nH 0.7586 0.0 0.504284\nH 0.7586 0.0 -0.504284\n"
+
+
+def test_from_extxyz_parses_lattice_properties_and_info():
+    result = chematic.from_extxyz(EXTXYZ_WATER)
+    # H is kept as an explicit atom in extxyz (no implicit-H folding), so
+    # coords/mol both carry all 3 atoms -- see chematic_mol::xyz's module docs.
+    assert len(result["coords"]) == 3
+    assert result["lattice"] == [10.0, 0.0, 0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 10.0]
+    assert result["properties"]["forces"] == [
+        [0.1, 0.0, 0.0],
+        [0.0, 0.1, 0.0],
+        [0.0, -0.1, 0.0],
+    ]
+    assert result["properties"]["tag"] == [[1], [2], [2]]
+    assert result["info"] == {"energy": "-76.4", "pbc": "T T T"}
+
+
+def test_from_extxyz_plain_xyz_has_no_extended_metadata():
+    result = chematic.from_extxyz(PLAIN_XYZ_WATER)
+    assert result["lattice"] is None
+    assert result["properties"] == {}
+    assert result["info"] == {}
+    assert len(result["coords"]) == 3
+
+
+def test_from_extxyz_all_reads_every_frame():
+    frames = chematic.from_extxyz_all(EXTXYZ_WATER + PLAIN_XYZ_WATER)
+    assert len(frames) == 2
+    assert frames[0]["lattice"] is not None
+    assert frames[1]["lattice"] is None
+
+
+def test_from_extxyz_raises_on_malformed_lattice():
+    with pytest.raises(ValueError):
+        chematic.from_extxyz('1\nLattice="1.0 2.0 3.0"\nC 0.0 0.0 0.0\n')
+
+
+def test_to_extxyz_roundtrips_through_from_extxyz():
+    result = chematic.from_extxyz(EXTXYZ_WATER)
+    written = chematic.to_extxyz(
+        result["mol"],
+        result["coords"],
+        lattice=result["lattice"],
+        properties=result["properties"],
+        info=result["info"],
+    )
+    reparsed = chematic.from_extxyz(written)
+    assert reparsed["lattice"] == result["lattice"]
+    assert reparsed["properties"]["forces"] == result["properties"]["forces"]
+    assert reparsed["properties"]["tag"] == result["properties"]["tag"]
+    assert reparsed["info"] == result["info"]
+    assert reparsed["coords"] == result["coords"]
+
+
+def test_to_extxyz_plain_frame_has_no_lattice_or_properties_keyword():
+    result = chematic.from_extxyz(PLAIN_XYZ_WATER)
+    written = chematic.to_extxyz(result["mol"], result["coords"])
+    assert "Lattice=" not in written
+    assert "Properties=" not in written
+
+
+def test_to_extxyz_raises_on_coords_atom_count_mismatch():
+    result = chematic.from_extxyz(PLAIN_XYZ_WATER)
+    with pytest.raises(ValueError):
+        chematic.to_extxyz(result["mol"], result["coords"][:1])
+
+
+def test_to_extxyz_escapes_and_roundtrips_quote_in_info_value():
+    # A '"' inside an info value is escaped on write and un-escaped on
+    # read (matching ASE's own key_val_str_to_dict), not rejected.
+    result = chematic.from_extxyz(PLAIN_XYZ_WATER)
+    written = chematic.to_extxyz(
+        result["mol"], result["coords"], info={"note": 'x" y="z'}
+    )
+    reparsed = chematic.from_extxyz(written)
+    assert reparsed["info"] == {"note": 'x" y="z'}
+
+
+def test_to_extxyz_raises_on_info_key_colliding_with_lattice():
+    # A generic info entry named "Lattice" would always be re-parsed as
+    # the dedicated lattice field on reread (see chematic_mol::xyz's
+    # `parse_one_frame_ext`), silently reinterpreting or corrupting an
+    # unrelated info value instead of round-tripping as itself.
+    result = chematic.from_extxyz(PLAIN_XYZ_WATER)
+    with pytest.raises(ValueError):
+        chematic.to_extxyz(
+            result["mol"], result["coords"], info={"Lattice": "not-9-numbers"}
+        )
+
+
+def test_to_extxyz_raises_on_zero_count_property():
+    # extxyz's Properties= grammar has no way to declare a 0-component
+    # column. Only reachable with a 0-atom molecule (a nonempty one would
+    # already fail the row-count-vs-atom-count check above) -- writing one
+    # anyway would produce a file this module's own reader rejects on
+    # reread.
+    empty = chematic.from_extxyz("0\nempty\n")
+    with pytest.raises(ValueError):
+        chematic.to_extxyz(
+            empty["mol"], empty["coords"], properties={"forces": []}
+        )

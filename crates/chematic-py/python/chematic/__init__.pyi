@@ -2283,6 +2283,54 @@ def from_xyz(xyz_str: str) -> tuple[Mol, list[list[float]]]:
     """
     ...
 
+def from_extxyz(text: str) -> dict:
+    """Parse an Extended XYZ (extxyz) frame and return a dict describing it.
+
+    A plain XYZ file (free-form comment, no ``Lattice=``/``Properties=``)
+    parses too, with ``lattice=None`` and empty ``properties``/``info``.
+
+    Returns:
+        dict: ``{"mol": Mol, "coords": list[list[float]],
+        "lattice": list[float] | None, "properties": dict, "info": dict}``.
+
+    Raises:
+        ValueError: on malformed input.
+
+    Example::
+
+        result = chematic.from_extxyz(open("frame.xyz").read())
+        forces = result["properties"].get("forces")
+    """
+    ...
+
+def from_extxyz_all(text: str) -> list[dict]:
+    """Parse every frame of a multi-frame extxyz trajectory.
+
+    See :func:`from_extxyz` for the shape of each returned dict.
+
+    Raises:
+        ValueError: on the first parse failure.
+    """
+    ...
+
+def to_extxyz(
+    mol: Mol,
+    coords: list[list[float]],
+    lattice: Optional[list[float]] = None,
+    properties: Optional[dict] = None,
+    info: Optional[dict] = None,
+) -> str:
+    """Write a molecule + coordinates as an Extended XYZ (extxyz) frame.
+
+    ``properties`` is ``dict[str, list[list[float]]]`` (real-valued per-atom
+    columns only, e.g. ``{"forces": [[fx, fy, fz], ...]}``). ``info`` is
+    ``dict[str, str]`` of extra frame metadata (e.g. ``{"energy": "-76.4"}``).
+
+    Raises:
+        ValueError: if `coords`' length doesn't match `mol`'s atom count.
+    """
+    ...
+
 def tanimoto_map4(a: list[int], b: list[int]) -> float:
     """Estimate MAP4 Tanimoto similarity between two MAP4 fingerprints.
 

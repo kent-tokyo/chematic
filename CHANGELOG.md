@@ -93,6 +93,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   selenium, where the pre-existing value is the current IUPAC standard
   atomic weight and RDKit 2026.03.3 ships the superseded pre-2013 value.
 
+### Added — `chematic-mol` (Extended XYZ / extxyz)
+
+- `parse_extxyz`/`write_extxyz`, `ExtxyzReader`/`ExtxyzWriter`,
+  `parse_extxyz_all`, plus new `XyzFrame` fields `lattice`, `properties`,
+  `info`. Built as an extension of the existing multi-frame `XyzFrame` type
+  (not a separate format) — same `species:S:1:pos:R:3` atoms as plain XYZ,
+  plus ASE's `Lattice=` cell matrix, typed per-atom `Properties=` columns
+  (`forces:R:3`, `charge:R:1`, ...), and arbitrary `key=value` frame
+  metadata (`energy=`, `pbc=`, ...). A plain XYZ file (no `Lattice=`/
+  `Properties=` in its comment line) parses and round-trips through the
+  extxyz reader/writer unchanged — this is what makes extxyz a strict
+  superset, not a competing parser. Fails closed on malformed `Lattice=`/
+  `Properties=`, atom-row column-count mismatches, non-finite property
+  values, unterminated quotes, and duplicate info keys. `parse_xyz`/
+  `write_xyz`/`XyzReader`/`XyzWriter` (plain XYZ) behave identically to
+  before this change — same inputs produce the same `XyzFrame`s (with the
+  three new fields defaulted to `None`/empty) and the same output text.
+- Python: `from_extxyz`, `from_extxyz_all`, `to_extxyz` (new; the existing
+  `from_xyz`/`to_xyz` bind a separate, single-frame `chematic_3d::xyz`
+  module and are untouched). WASM: `mol_from_extxyz`, `extxyz_frame_json`,
+  `to_extxyz_json`.
+- **Breaking (Rust API only)**: `XyzFrame` gained three public fields
+  (`lattice`, `properties`, `info`) — breaks any external
+  `XyzFrame { atoms, comment }` struct literal. `XyzError` gained seven
+  variants — breaks an external exhaustive `match`. `write_extxyz` now
+  returns `Result<String, XyzError>` instead of `String` (see "fails closed
+  on unwritable metadata" below). **Note:** `XyzFrame`/`XyzError`'s
+  pre-this-PR shape is the actual v0.14.0 API already published to
+  crates.io (this branch's merge-base postdates the v0.14.0 tag) — this is
+  not a purely hypothetical/unreleased-so-far break.
+- **Fails closed on unwritable metadata, not just unparseable input**:
+  `write_extxyz`/`ExtxyzWriter::write_frame` reject (rather than silently
+  emit corrupt output for) an `XyzFrame::info` key or `XyzProperty::name`
+  containing a character extxyz `key=value`/`Properties=` syntax can't
+  represent; an info key literally `"Lattice"` or `"Properties"` (always
+  re-parsed as the dedicated field, not as itself); an info value with an
+  embedded newline (unrepresentable in a single comment line); or a
+  `XyzProperty` declaring 0 components (`Properties=` requires at least 1).
+  All are reachable only from a hand-built `XyzFrame`, e.g. via the
+  Python/WASM `to_extxyz` bindings.
+- **Info values may contain `"` and `\` freely**: `"`/`\` inside a quoted
+  `key="..."` value are escaped on write and un-escaped on read (`\"`,
+  `\\`), matching ASE's own `key_val_str_to_dict`. A bare key with no
+  `=value` (e.g. a standalone `constrained` token) parses as an implicit
+  boolean flag (`"T"`), also matching ASE, rather than erroring.
+
 ## [0.14.0] — 2026-08-11
 
 Stereo-aware distance geometry: declared E/Z (cis/trans) is now enforced as a

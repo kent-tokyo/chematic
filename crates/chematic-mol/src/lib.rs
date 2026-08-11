@@ -78,5 +78,7 @@ pub use smiles_table::{
 };
 pub use tdt::{TdtError, TdtReaderOptions, TdtRecordReader, TdtRecordWriter, TdtWriterOptions};
 pub use xyz::{
-    XyzAtom, XyzError, XyzFrame, XyzReader, XyzWriter, parse_xyz, parse_xyz_all, write_xyz,
+    ExtxyzReader, ExtxyzWriter, XyzAtom, XyzError, XyzFrame, XyzProperty, XyzPropertyKind,
+    XyzReader, XyzValue, XyzWriter, parse_extxyz, parse_extxyz_all, parse_xyz, parse_xyz_all,
+    write_extxyz, write_xyz,
 };
