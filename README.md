@@ -180,7 +180,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.13.0
+# chematic v0.14.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -419,6 +419,14 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 ## Recent Development
 
+**v0.14.0** (2026-08-11): **Stereo-aware distance geometry — declared E/Z enforced as a bound-matrix constraint, `enforce_chirality` composable with post-minimization stereo verification, Python/WASM exposure**
+- `chematic-3d`: root-caused and fixed the issue #285 release-gate waiver from v0.13.0 — `apply_vdw_bounds`'s generic non-bonded Van der Waals lower bound was being applied to a declared-E/Z alkene's own 1-4 substituent pair regardless of declared stereochemistry, structurally excluding the correct cis geometry from ever being sampled. New `apply_declared_ez_bounds` (`enforce_chirality`-only) intersects an analytic same-side/opposite-side 1-4 distance bound into the bond matrix *before* the generic Van der Waals floor applies, so the correct geometry is reachable by construction, not by post-hoc repair/retry/reflection. Unlike tetrahedral chirality (which a pairwise distance matrix can never encode — a molecule and its mirror image have identical pairwise distances), declared E/Z is genuinely distance-representable, since cis/trans are two different scalar separations, not mirror images. Measured on the 265-molecule corpus's declared-E/Z subset (39 molecules): stereo-satisfied 22 → 42, violated 23 → 3, pipeline success/soundness unchanged
+- `chematic-3d`: `embed_pipeline_v2`'s config-validation gate previously rejected `enforce_chirality: true` for any `stereo_policy` other than `Ignore`. Corpus measurement found this wrong — `enforce_chirality` protects embedding-time correctness only, and force-field minimization (which has no notion of declared stereo) can walk a correctly-embedded E/Z bond back across its boundary afterward (found on 2 real molecules, confirmed by re-running with no force field). `enforce_chirality: true` is now also allowed with `StereoPolicy::VerifyOnly`, whose existing post-minimization gate catches exactly this failure mode as a typed error instead of a silent wrong-stereo `success`
+- `chematic-py`, `chematic-wasm`: `enforce_chirality` (default `false`) is now a real, settable parameter/field on `PipelineV2Config`/`PipelineV2Config.safe()` (Python) and the `enforceChirality` JSON field (WASM) — neither binding had ever threaded the field through before, so the fix above was previously unreachable from Python or WASM callers
+- `chematic-rxn`: fixed `suzuki_biaryl`'s retro-template (issue #294) — `[c:1][c:2]` never matched a real biaryl bond, only intra-ring aromatic bonds, since two adjacent aromatic atoms with no explicit bond token default to aromatic in this crate's SMILES convention. Fixed to `[c:1]-[c:2]`. Found along the way: 14 of 59 `DEFAULT_TEMPLATES` entries silently never parse at all — filed as issue #296, not fixed here
+- Opt-in only — `enforce_chirality: false` remains the default everywhere; the default conformer path (`generate_coords_etkdg`/`Mol.conformer_ensemble()`) is untouched
+- Full details in `CHANGELOG.md`'s `[0.14.0]` section
+
 **v0.13.0** (2026-08-10): **MMFF94 stretch-bend + torsion parameter-selection parity (both breaking), per-atom stereocenter API, E/Z completeness, macrocycle detection, notation-invariant atropisomer detection/assignment, XYZ I/O**
 - `chematic-ff`: `mmff94_stbn`/`mmff94_stbn_type_only` now key the `MMFF94_STBN` table lookup on RDKit's real, finer-grained "stretch-bend type" (`getMMFFStretchBendType`, 0-11) instead of the coarser angle type (0-8) previously used as a stand-in (issue #227) — 220 of 427 stretch-bend routing candidates on the 265-molecule Wave 1 corpus move from RDKit's generic Dfsb periodic-row default to the correct, specific parameter; `angle_type_for`'s ring-offset formula also corrected to match RDKit's real `getMMFFAngleType`. **Breaking**: `mmff94_stbn`/`mmff94_stbn_type_only`'s leading `u8` parameter is now `stretch_bend_type`, not `angle_type` — same shape, different required value; use the new `pub stretch_bend_type_for` to compute it
 - `chematic-ff`: `torsion_type_for` now classifies from the real j-k bond's MMFF bond type (reusing `bond_type_for`) plus RDKit's real local-bond-adjacency ring-4/5 override, instead of atom-type-membership alone — corrects 76.9% of the 1,107 previously-missing torsion instances via classification alone, and, corpus-wide, corrects 1,792 of 13,530 torsion instances that resolved to a *silently wrong* parameter value before (not just missing coverage) — 99.1% of the corrected values independently confirmed against a live RDKit oracle, 0 newly lost. **Breaking**: `torsion_type_for`'s signature changed from `(rings, i, j, k, l, tj, tk)` to `(mol, i, j, k, l, ti, tj, tk, tl)`
@@ -525,7 +533,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.13.0)
+├── Cargo.toml                    workspace root (v0.14.0)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -578,7 +586,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.13.0},
+  version   = {0.14.0},
   year      = {2026},
 }
 ```
