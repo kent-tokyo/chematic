@@ -75,6 +75,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   regression test built from the literal RDKit-generated molblock that
   surfaced this finding.
 
+### Fixed — `chematic-chem` (periodic-table mass data gap, all elements)
+
+- **`avg_mass`/`mono_mass` (`molecular_weight`/`exact_mass`) covered only
+  ~24 light main-group elements and silently fell back to
+  `atomic_number as f64` for every other element** — meaning every
+  transition metal, lanthanide, actinide, and heavy post-transition element
+  (platinum: atomic number 78, real mass ~195 Da, returned as "78.0 Da";
+  same defect for Fe, Cu, Zn, Au, U, and 90 others) got a wildly wrong LOW
+  mass with no error. Not connected to coordination bonds at all — found
+  via the same platinum benchmark's mass check, but affects any molecule
+  containing an unlisted element, dative bonds or not. Both tables extended
+  to all 118 elements `chematic_core::Element` models, sourced from RDKit's
+  `PeriodicTable::getAtomicWeight`/`GetMostCommonIsotopeMass` (2026.03.3).
+  The ~24 previously-covered elements keep their pre-existing values
+  unchanged (checked element-by-element, not assumed) — most notably
+  selenium, where the pre-existing value is the current IUPAC standard
+  atomic weight and RDKit 2026.03.3 ships the superseded pre-2013 value.
+
 ## [0.14.0] — 2026-08-11
 
 Stereo-aware distance geometry: declared E/Z (cis/trans) is now enforced as a
