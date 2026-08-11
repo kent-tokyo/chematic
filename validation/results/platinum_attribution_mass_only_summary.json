@@ -1,0 +1,5 @@
+{
+  "cis_trans_distinguished": false,
+  "cisplatin_canonical": "[Pt](<-N)(Cl)(<-N)Cl",
+  "transplatin_canonical": "[Pt](<-N)(Cl)(<-N)Cl"
+}
