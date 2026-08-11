@@ -377,6 +377,77 @@ def test_safe_uses_conservative_defaults_for_everything_else():
     assert config.max_attempts == 8
     assert config.embed_timeout_ms is None
     assert config.total_timeout_ms is None
+    assert config.enforce_chirality is False
+
+
+# ---------------------------------------------------------------------------
+# enforce_chirality (v0.14.0, issue #285's E/Z bound fix) -- Python parity
+# ---------------------------------------------------------------------------
+
+
+def test_enforce_chirality_defaults_false_and_is_backward_compatible():
+    """Existing callers that never pass enforce_chirality must keep working
+    unchanged -- .safe() and the explicit constructor both default it False."""
+    config = _safe_config()
+    assert config.enforce_chirality is False
+
+    explicit = chematic.PipelineV2Config(
+        embed_seed=1,
+        max_attempts=4,
+        embed_timeout_ms=None,
+        use_exp_torsions=False,
+        use_small_ring_torsions=False,
+        use_macrocycle_torsions=False,
+        use_macrocycle_14_bounds=False,
+        include_legacy_torsion_heuristic=False,
+        stereo_policy="ignore",
+        fail_on_unevaluable_stereo=False,
+        force_field_policy="none",
+        force_field_max_iterations=100,
+        gate_mmff94_torsion_oop=False,
+        gate_mmff94_stretch_bend=False,
+        ring_torsion_policy="fail_closed",
+        total_timeout_ms=None,
+    )
+    assert explicit.enforce_chirality is False
+
+
+def test_enforce_chirality_true_fixes_but2ene_z_raw_embed():
+    """Direct Python-level confirmation that enforce_chirality reaches
+    distance_geometry_v2.rs's apply_declared_ez_bounds (issue #285): but2ene_Z
+    (C/C=C\\C) is the exact molecule that fix targets -- raw embedding (no
+    force field) must satisfy declared E/Z once enforce_chirality is set,
+    across multiple seeds, matching the Rust-level corpus measurement."""
+    mol = chematic.from_smiles(r"C/C=C\C")
+    for seed in range(5):
+        config = _safe_config(
+            force_field="none",
+            stereo_policy="ignore",
+            embed_seed=seed,
+            max_attempts=1,
+            enforce_chirality=True,
+        )
+        result = mol.embed_pipeline_v2(config)
+        assert result["final_stereo"]["is_fully_satisfied"] is True, (
+            f"seed {seed}: raw embed must already satisfy declared E/Z"
+        )
+
+
+def test_enforce_chirality_with_repair_and_verify_raises():
+    """Matches the Rust-level InvalidConfiguration gate: enforce_chirality is
+    incompatible with stereo_policy="repair_and_verify" (composing the two
+    repair mechanisms is a separate, not-yet-validated question -- see
+    pipeline_v2.rs's module doc)."""
+    mol = chematic.from_smiles(r"C/C=C\C")
+    config = _safe_config(
+        force_field="none",
+        stereo_policy="repair_and_verify",
+        enforce_chirality=True,
+    )
+    with pytest.raises(chematic.PipelineV2Error) as excinfo:
+        mol.embed_pipeline_v2(config)
+    assert excinfo.value.diagnostics["stage"] == "validate_config"
+    assert excinfo.value.diagnostics["cause"] == {"kind": "invalid_configuration"}
 
 
 # ---------------------------------------------------------------------------

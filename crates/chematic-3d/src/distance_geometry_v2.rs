@@ -32,12 +32,19 @@
 //! `enforce_chirality` is NOT one of these no-op placeholders — see the
 //! "`enforce_chirality`" section below for what it actually does.
 //!
-//! # Not wired into the live pipeline
+//! # Not wired into the default conformer path (stale note corrected 2026-08-11)
 //!
-//! Nothing in `etkdg.rs` or `Mol.conformer_ensemble()` calls this module. Per the
-//! master plan §1b, that integration is an explicit Wave 2 Coordinator step performed
-//! only after this PR, Agent F's force-field bridge, and Agent E's torsion knowledge
-//! are all separately merged.
+//! `etkdg.rs`'s `generate_coords_etkdg` and `Mol.conformer_ensemble()`
+//! (`generate_conformer_ensemble`/`generate_conformer_ensemble_with_config`) still
+//! use the older `dg.rs` deterministic-midpoint embedder, not this module, and this
+//! remains true today. What changed since this note was first written: `pipeline_v2.rs`
+//! (Wave 2 → Wave 3 Coordinator Integration 1) now calls into this module directly
+//! ([`embed_distance_geometry_v2_with_adjustments`]), and `pipeline_v2::embed_pipeline_v2`
+//! itself **is** reachable from outside Rust-internal code — `Mol.embed_pipeline_v2()`
+//! (chematic-py) and `embed_pipeline_v2_json` (chematic-wasm) both call it, an opt-in
+//! surface distinct from (and not yet routed through) the default conformer path above.
+//! `chematic-mcp` does not expose it. See `pipeline_v2.rs`'s own module doc for its
+//! stage order and the `enforce_chirality`/`StereoPolicy` interaction.
 //!
 //! # `enforce_chirality` (added 2026-08-11, issue #291/#293; E/Z bound fix
 //! 2026-08-11, issue #285)
