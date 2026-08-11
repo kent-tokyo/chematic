@@ -566,6 +566,31 @@ Which of these (or which combination) is the right next step is a policy/
 scope decision, not a pure implementation one — see `ROADMAP.md`'s S-tier
 item 1 status notes for the live decision state.
 
+**Update (2026-08-11) — check-and-repair's chirality-blind *process*, not
+just the static bound matrix, needs saying explicitly.** Implementing the
+first option above (`enforce_chirality`, PR #295) surfaced a sharper version
+of the reflection-invariance point: it isn't only the *static* pairwise
+bound matrix that can't encode a chirality sign — `refine_coords`'s
+iterative SHAKE-like bounds-satisfaction *process* is equally chirality-blind
+at every step, and given enough iterations it can walk a correctly-repaired
+geometry back across the achiral fence, undoing `repair_stereo`'s fix
+entirely (reproduced directly: repair a violated tetrahedral center, verify
+it's `Satisfied` pre-refinement, run the existing 800-iteration
+`refine_coords` pass, verify again — `Violated`, on a real molecule, not a
+contrived one). A single check-and-repair pass followed by refinement is
+therefore not sufficient by itself; PR #295 treats each post-refine
+reversion as an ordinary bad stochastic draw and relies on the existing
+`max_attempts` retry loop (full, untuned `REFINE_ITERS` every attempt, no
+new short-refine constant — an initial attempt to tune one was tried and
+abandoned, see that PR's body) to eventually land in a seed where the repair
+survives. Measured yield: 86.2%-93.1% (25-27/29) on the declared-stereo
+subset of `scripts/etkdg_vs_rdkit_gap.py::CORPUS`, embedder alone. This
+does not change which of the three options above is "the" fix for the
+ring-fused case (still unresolved, still needs the chiral-volume-penalty
+option or equivalent) — it only clarifies that option 1's *mechanism*, not
+just its ring-fused *scope limit*, is inherently probabilistic rather than
+deterministic-once-repaired.
+
 ### Phase 4 — ring handling
 **Current**: `dg.rs` has hand-picked chair/envelope/crown templates by ring
 size (6/5/≥8), correctly tested for those cases in isolation, but Phase 0's
