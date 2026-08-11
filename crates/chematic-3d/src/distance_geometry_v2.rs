@@ -39,29 +39,35 @@
 //! only after this PR, Agent F's force-field bridge, and Agent E's torsion knowledge
 //! are all separately merged.
 //!
-//! # `enforce_chirality` (added 2026-08-11, issue #291/#293)
+//! # `enforce_chirality` (added 2026-08-11, issue #291/#293; E/Z bound fix
+//! 2026-08-11, issue #285)
 //!
 //! **Important, not obvious from the name**: a pairwise distance matrix is
 //! reflection-invariant (a molecule and its mirror image have identical pairwise
 //! distances — see `docs/etkdg_3d_gap_rfc.md`'s Phase 3 "Correction" section), so
 //! nothing in `build_bound_matrix`/`smooth_bounds`/the MDS embedding step above can
-//! ever encode which chirality to prefer. `enforce_chirality` does NOT inject a
-//! constraint into that machinery. Instead, per attempt, after the raw MDS/random
-//! placement (which operates on real coordinates, unlike the bound matrix, and so
-//! *can* carry a chirality sign): apply [`stereo_constraints::repair_stereo`] to
-//! fix whatever it can (bridge-eligible substituents only — ring-fused
-//! stereocenters cannot be fixed this way, see that module's docs) BEFORE
-//! `refine_coords` runs, so the bounds-driven relaxation absorbs whatever bond-
-//! length distortion the repair's rigid-subtree translation introduced. Then,
-//! after `refine_coords`, independently re-verify the *actual returned* geometry
-//! (never trust that refinement preserved the repair) — if any declared element is
-//! still `Violated`, this attempt fails with [`EmbedFailureCause::
-//! StereoConstraintFailed`] and the existing per-attempt retry loop tries a new
-//! seed. Molecules with no declared stereo are unaffected (`repair_stereo`/
-//! `verify_stereo` are no-ops on them); `enforce_chirality: false` (the default)
-//! is byte-identical to before this change — opt-in only, see `ROADMAP.md`'s
-//! v0.14.0 S-tier item 1 for why the wider default-path decision (issue #291's
-//! `Ignore`-policy population) was deliberately deferred, not folded in here.
+//! ever encode which **tetrahedral** (`@`/`@@`) enantiomer to prefer. **This does
+//! NOT extend to declared E/Z**: cis and trans are not mirror images of each other,
+//! they are two different scalar 1-4 separations for the same substituent pair, so a
+//! distance bound *can* rule one out — see `apply_declared_ez_bounds` below, which
+//! does exactly that. For tetrahedral centers the limitation is real and this
+//! function doesn't touch it: `enforce_chirality` instead falls back to a repair-
+//! after-embed strategy for those. Per attempt, after the raw MDS/random placement
+//! (which operates on real coordinates, unlike the bound matrix, and so *can* carry a
+//! tetrahedral chirality sign): apply [`stereo_constraints::repair_stereo`] to fix
+//! whatever it can (bridge-eligible substituents only — ring-fused stereocenters
+//! cannot be fixed this way, see that module's docs) BEFORE `refine_coords` runs, so
+//! the bounds-driven relaxation absorbs whatever bond-length distortion the repair's
+//! rigid-subtree translation introduced. Then, after `refine_coords`, independently
+//! re-verify the *actual returned* geometry (never trust that refinement preserved
+//! the repair) — if any declared element is still `Violated`, this attempt fails with
+//! [`EmbedFailureCause::StereoConstraintFailed`] and the existing per-attempt retry
+//! loop tries a new seed. Molecules with no declared stereo are unaffected
+//! (`repair_stereo`/`verify_stereo` are no-ops on them); `enforce_chirality: false`
+//! (the default) is byte-identical to before this change — opt-in only, see
+//! `ROADMAP.md`'s v0.14.0 S-tier item 1 for why the wider default-path decision
+//! (issue #291's `Ignore`-policy population) was deliberately deferred, not folded
+//! in here.
 //!
 //! For ring-fused stereocenters where `repair_stereo` cannot help, retrying with a
 //! new stochastic seed is the only mechanism this provides, and its odds are poor
@@ -72,51 +78,71 @@
 //! correct, fail-closed behavior, not a bug to work around by raising the attempt
 //! count unboundedly.
 //!
+//! ## The `but2ene_Z` gap (issue #285), root-caused and fixed
+//!
+//! An earlier measurement (2026-08-11) found `but2ene_Z` (`C/C=C\C`, a plain acyclic
+//! Z-alkene, no ring) failing 4/5 base seeds — NOT a retry-odds problem: the *raw*
+//! (pre-repair) embedding was `Violated` for all of 10 tested derived seeds,
+//! deterministically, contrasted against a larger/flexible molecule with the same
+//! declared-E/Z shape (`cinnamic_acid_E`) whose raw sign genuinely split 5/10. The
+//! mechanism was isolated by stage-by-stage instrumentation (bounds → sampling →
+//! Gram matrix → eigendecomposition → MDS reconstruction → `refine_coords` →
+//! verifier) and an earlier candidate explanation -- that `jacobi_eigendecompose`'s
+//! eigenvector-sign outcome is a continuous function of the input Gram matrix that a
+//! tightly-bounded molecule's samples never cross -- was **empirically refuted**: the
+//! pre-refine scalar-triple-product sign genuinely varies seed to seed for
+//! `but2ene_Z`, same as for the flexible molecule.
+//!
+//! The actual mechanism: `apply_vdw_bounds`'s generic non-bonded lower bound (sum of
+//! Van der Waals radii; two carbons: 3.40 Å) was being applied to the declared-Z
+//! alkene's own 1-4 substituent pair, whose analytically-correct cis separation
+//! (using the exact `ideal_bond_length`/`ideal_bond_angle` model
+//! `build_bond_angle_bounds` already uses, extended one bond further — see
+//! `declared_1_4_distance`) is ≈2.88 Å for `but2ene_Z` — *below* that VDW floor. The
+//! smoothed bound `[3.400, 4.186]` this produced was identical for every tested
+//! molecule regardless of declared E/Z (VDW's contribution is generic, not
+//! stereo-aware), and structurally excluded the correct cis geometry from ever being
+//! sampled or reconstructed; `refine_coords`'s bounds-driven relaxation then pulled
+//! every seed's differently-signed starting point toward the same (wrong, ~3.4-3.7 Å)
+//! basin, which is what produced the *appearance* of deterministic sign-fixation. The
+//! analytic trans separation (≈3.93 Å) sat comfortably inside that same generic
+//! bound, which is why `but2ene_E` was unaffected (10/10 raw).
+//!
+//! Fixed by [`apply_declared_ez_bounds`]: for each declared E/Z double bond, compute
+//! the analytic same-side/opposite-side 1-4 distance for its
+//! [`stereo_constraints::build_stereo_constraints`]-normalized substituent pair, and
+//! intersect a ±0.1 Å window around it into the bound matrix *before* the VDW loop
+//! runs (not after — see that function's own doc for why the ordering matters: VDW's
+//! non-bonded assumption doesn't hold for a pair whose separation is fixed by nearer,
+//! more specific declared stereochemistry, the same exemption bonded/1-3 pairs
+//! already get). `enforce_chirality: false` never calls this function. Deterministic
+//! reflection injection (post-embed) was considered and rejected: reflection is a
+//! distance-preserving isometry, so it cannot fix a distance-*magnitude*
+//! infeasibility — it only flips the dihedral-sign classification `verify_double_bond`
+//! checks, which could make a still-wrong-distance geometry read as `Satisfied`. Gram-
+//! matrix perturbation was also rejected: the true cis geometry is provably outside
+//! the (pre-fix) feasible region, so no amount of noise samples it more often than
+//! chance — stereo assignment shouldn't depend on getting lucky.
+//!
 //! **Measured (2026-08-11, `max_attempts: 8`, the 29 stereo-bearing molecules of
-//! `scripts/etkdg_vs_rdkit_gap.py::CORPUS`, `random_seed` swept over 0..5, probed
-//! and then removed per this project's own measure-before-claiming convention — see
-//! the PR body for the raw per-seed runs). This measures the embedder alone (no UFF
-//! minimization, unlike issue #291's `embed_pipeline_v2`-level 18/29 figure — the
-//! two numbers are not directly comparable, see the PR body):** 25-27/29
-//! (86.2%-93.1%) succeed across the 5 base seeds tested — one draw is not a stable
-//! percentage, report the range, not a single decimal. Two failures recur at every
-//! base seed tested (5/5):
-//! - `testosterone`, `cholesterol` — expected: ring-fused declared stereocenters,
-//!   the documented `NoBridgeEligibleSubstituent` case above.
-//! - `but2ene_Z` (`C/C=C\C`, a plain acyclic Z-alkene, no ring at all, fails 4/5
-//!   base seeds tested) — NOT expected from the design above, and NOT a
-//!   retry-odds problem: at a fixed base seed, the *raw* (pre-repair,
-//!   `enforce_chirality: false`) embedding is already `Violated` for all of 10
-//!   tested derived seeds, deterministically, not ~50/50 as the "coin flip per
-//!   center" framing predicts. Isolated further (2026-08-11, follow-up
-//!   diagnosis): the raw coordinates *do* vary seed to seed (in-plane spread
-//!   ~3.1-3.5 Å / ~1.3-1.5 Å, out-of-plane spread ~0.4-0.9 Å -- real 3D content,
-//!   not a planar collapse), yet the sign of the C0-C1=C2-C3 dihedral was
-//!   identical across all 10 draws. Contrasted directly against a larger,
-//!   more conformationally flexible molecule with the same simple 1-declared-
-//!   E/Z-bond shape (`cinnamic_acid_E`, `OC(=O)/C=C/c1ccccc1`, same probe, same
-//!   10 seeds): its raw dihedral sign split 5-positive/5-negative -- genuine
-//!   per-seed variability, exactly what the retry loop is designed to exploit.
-//!   **The measured fact is this contrast** (0/10 sign flips for the small/rigid
-//!   molecule vs. 5/10 for the larger/flexible one) -- the *mechanism* behind it
-//!   (why the small molecule's sampled distance matrices consistently reconstruct
-//!   to the same handedness) is not yet isolated; a plausible but unverified
-//!   candidate is that `jacobi_eigendecompose`'s eigenvector-sign outcome is a
-//!   deterministic, presumably-continuous function of the input Gram matrix, and
-//!   a tightly-bounded (low-conformational-freedom) molecule's sampled distance
-//!   matrices across different seeds stay too numerically close to one another
-//!   to cross whatever boundary would flip it -- not confirmed, do not treat as
-//!   established. **Operational consequence, which *is* established regardless
-//!   of mechanism**: for at least this molecule class, `max_attempts` retry is
-//!   structurally unable to help, because there is no real per-seed variability
-//!   to exploit -- this is a distinct, disclosed gap from both the ring-fused
-//!   case and the general reflection-invariance point above; tracked as a
-//!   follow-up (issue #285 comment), not fixed here. The remaining
-//!   single-base-seed-only
-//!   failures (`atorvastatin_fragment` at one seed, `cinnamic_acid_E` at another)
-//!   match the expected `max_attempts`-retry-loop variance already documented above
-//!   (occasional exhaustion of 8 attempts for a molecule the mechanism *can* fix),
-//!   not a new distinct cause.
+//! `scripts/etkdg_vs_rdkit_gap.py::CORPUS`, `random_seed` swept over 0..5 — see
+//! `ez_bounds_29_corpus_regression_but2ene_z_fixed_nothing_else_broken` for the exact
+//! before/after sets, independently re-measured on unmodified `main` for the "before"
+//! side). This measures the embedder alone (no UFF minimization, unlike issue #291's
+//! `embed_pipeline_v2`-level 18/29 figure — the two numbers are not directly
+//! comparable):** 26/29 succeed across the 5 base seeds tested (up from 25/29 before
+//! this fix) — `but2ene_Z` now passes 5/5 (was 1/5), and every molecule that fully
+//! passed before this fix still fully passes after (zero newly-broken molecules,
+//! verified directly, not inferred). The only remaining recurring (5/5) failures:
+//! - `testosterone`, `cholesterol` — expected: ring-fused declared **tetrahedral**
+//!   stereocenters, the documented `NoBridgeEligibleSubstituent` case above,
+//!   unaffected by this fix (declared-scoped to E/Z only — see `apply_declared_ez_
+//!   bounds`'s doc; a tetrahedral chiral-volume-penalty approach is separately-scoped
+//!   future work, not this PR).
+//!
+//! `cinnamic_acid_E` continues to show the same pre-existing, unrelated flexible-
+//! molecule retry variance (4/5, same both before and after this fix) — expected, see
+//! `ez_bounds_cinnamic_acid_e_retry_loop_still_resolves_flexible_variance`.
 
 use std::collections::HashMap;
 
@@ -126,11 +152,12 @@ use chematic_core::{AtomIdx, BondOrder, Chirality, Molecule};
 
 use crate::coords::{Coords3D, Point3};
 use crate::dg_fft::{
-    DG_MAX_ATOMS, build_bound_matrix, center_coordinates, distance_to_gram_matrix,
+    DG_MAX_ATOMS, apply_vdw_bounds, build_bond_angle_bounds, build_bound_matrix,
+    center_coordinates, distance_to_gram_matrix, ideal_bond_angle, ideal_bond_length,
     jacobi_eigendecompose, refine_coords, smooth_bounds,
 };
 use crate::prng::Prng;
-use crate::stereo_constraints::{repair_stereo, verify_stereo};
+use crate::stereo_constraints::{build_stereo_constraints, repair_stereo, verify_stereo};
 
 /// Number of bounds-driven SHAKE-like refinement passes after the initial MDS/random
 /// placement. Higher than `dg_fft::generate_coords_dg`'s 300 because a stochastic
@@ -250,9 +277,14 @@ pub enum EmbedFailureCause {
     /// real element to derive bond lengths from, or has zero atoms where a non-empty
     /// embedding was expected.
     InvalidTopology,
-    /// A structurally inconsistent bound was produced for an actually-bonded pair
-    /// before smoothing even ran (e.g. `lower > upper`) — a bug in bounds
-    /// construction, not a smoothing or sampling issue.
+    /// A structurally inconsistent bound was produced before smoothing even ran (e.g.
+    /// `lower > upper`) — a bug in bounds construction, not a smoothing or sampling
+    /// issue. Two distinct sources: an actually-bonded pair (a `dg_fft::
+    /// build_bond_angle_bounds` defect), or -- `enforce_chirality` only -- a declared-
+    /// E/Z 1-4 pair whose stereo-derived window has no overlap with its existing
+    /// bond/angle bound (see `apply_declared_ez_bounds`'s doc; not expected for a
+    /// chemically sane molecule, but reported as this variant, not silently ignored,
+    /// if it happens).
     BoundsConstructionFailed,
     /// Triangle-inequality smoothing produced bounds that violate the invariants this
     /// module checks (loosened rather than tightened a bound, or produced
@@ -597,6 +629,117 @@ fn mol_has_declared_stereo(mol: &Molecule) -> bool {
         .any(|(_, bond)| matches!(bond.order, BondOrder::Up | BondOrder::Down))
 }
 
+/// Tolerance (Å) around the declared-E/Z analytic 1-4 distance, matching
+/// `dg_fft::build_bond_angle_bounds`'s own angle-derived (1-3) bound tolerance --
+/// this bound is one bond further out on the same generic bond-length/bond-angle
+/// model, not a different precision claim.
+const EZ_BOUND_TOLERANCE: f64 = 0.1;
+
+/// Analytic 1-4 distance between `sub1` (on `end1`'s side) and `sub2` (on `end2`'s
+/// side) of the planar `sub1-end1=end2-sub2` fragment, given whether they're declared
+/// same-side or opposite-side. Uses the exact same `ideal_bond_length`/
+/// `ideal_bond_angle` model `dg_fft::build_bond_angle_bounds` already uses for its
+/// 1-2/1-3 bounds -- this is that same law-of-cosines-chain construction extended one
+/// bond further, not a new geometric model.
+///
+/// Places `end1` at the origin and `end2` along +x (so the `end1`-`end2` bond has
+/// direction 0 rad); `sub1` sits at angle `ideal_bond_angle(mol, end1)`
+/// counterclockwise from the `end1`->`end2` ray (that angle's definition, measured at
+/// `end1`); `sub2` sits at `ideal_bond_angle(mol, end2)` from the `end2`->`end1` ray,
+/// on the same side as `sub1` (+y) if `same_side`, the opposite side (-y) otherwise.
+fn declared_1_4_distance(
+    mol: &Molecule,
+    end1: AtomIdx,
+    end2: AtomIdx,
+    sub1: AtomIdx,
+    sub2: AtomIdx,
+    same_side: bool,
+) -> f64 {
+    let d_sub1 = ideal_bond_length(mol, sub1, end1);
+    let d_ends = ideal_bond_length(mol, end1, end2);
+    let d_sub2 = ideal_bond_length(mol, end2, sub2);
+    let angle1 = ideal_bond_angle(mol, end1);
+    let angle2 = ideal_bond_angle(mol, end2);
+
+    let sub1_pos = (d_sub1 * angle1.cos(), d_sub1 * angle1.sin());
+    let sign = if same_side { 1.0 } else { -1.0 };
+    let sub2_pos = (d_ends - d_sub2 * angle2.cos(), sign * d_sub2 * angle2.sin());
+
+    ((sub1_pos.0 - sub2_pos.0).powi(2) + (sub1_pos.1 - sub2_pos.1).powi(2)).sqrt()
+}
+
+/// Add declared-E/Z-derived 1-4 distance bounds to the (bond/angle-only, pre-VDW)
+/// bound matrix, one pair per declared E/Z double bond, intersected with (never
+/// overwriting) whatever bound already exists for that pair. Only called from
+/// `try_embed_once` when `enforce_chirality` is set -- `enforce_chirality: false`
+/// never calls this, keeping that path byte-identical to before this function
+/// existed.
+///
+/// # Why this is sound for E/Z but not tetrahedral chirality
+///
+/// A pairwise distance matrix is reflection-invariant -- a molecule and its mirror
+/// image have identical pairwise distances -- so nothing here can ever encode which
+/// tetrahedral (`@`/`@@`) enantiomer to prefer (see the module doc's opening
+/// paragraph; that limitation is real and unaffected by this function). Declared E/Z
+/// is different in kind, not just degree: cis and trans are not mirror images of each
+/// other, they are two genuinely different scalar 1-4 separations for the same atom
+/// pair (empirically confirmed for `C/C=C\C`: analytic cis 1-4 ≈ 2.88 Å vs. analytic
+/// trans 1-4 ≈ 3.93 Å, using this exact function -- see the PR body). A distance bound
+/// *can* rule one of them out, so this function does that directly at the bound-
+/// construction stage, rather than repairing/retrying after the fact.
+///
+/// # Why this must run before the VDW loop, not after
+///
+/// `apply_vdw_bounds` unconditionally raises a non-bonded pair's lower bound to the
+/// sum of Van der Waals radii (e.g. two carbons: 3.40 Å) -- this is exactly what makes
+/// a declared-cis small alkene's raw embedding structurally unable to reach the
+/// correct ~2.88 Å geometry today (see the PR body's root-cause diagnosis). Calling
+/// this function on the bond/angle-only bounds (`build_bond_angle_bounds`'s output,
+/// before `apply_vdw_bounds` runs) lets `apply_vdw_bounds`'s own existing guard
+/// (`vdw_sum <= upper[i][j]`) correctly skip this pair once its declared-E/Z upper
+/// bound is already tighter than the generic VDW floor -- the same exemption pattern
+/// bonded and 1-3 pairs already get from that loop, just reached one pair further out.
+/// Intersecting *after* `apply_vdw_bounds` instead would make the VDW floor win for
+/// every declared-cis case (their true separation is routinely below it), producing an
+/// empty intersection and `BoundsConstructionFailed` on every one -- technically
+/// fail-closed, but never actually delivering the corrected geometry this exists for.
+///
+/// # Normalization
+///
+/// Reuses `build_stereo_constraints`'s already-normalized `DoubleBondConstraint`
+/// (`end1`/`end2`/`sub1`/`sub2`/`same_side`) rather than reading `/`/`\` markers
+/// directly -- the same central-double-bond + stereo-defining-substituent-pair +
+/// declared-relation shape `verify_double_bond`/`repair_double_bond` already use, so
+/// this can never disagree with what `enforce_chirality`'s own verify/repair step
+/// considers declared.
+fn apply_declared_ez_bounds(
+    mol: &Molecule,
+    lower: &mut [Vec<f64>],
+    upper: &mut [Vec<f64>],
+) -> Result<(), EmbedFailureCause> {
+    let constraints = build_stereo_constraints(mol);
+    for c in &constraints.double_bond {
+        let (i, j) = (c.sub1.0 as usize, c.sub2.0 as usize);
+        if i == j {
+            continue; // degenerate (shared substituent); not expected, nothing to bound
+        }
+        let dist = declared_1_4_distance(mol, c.end1, c.end2, c.sub1, c.sub2, c.same_side);
+        let stereo_lo = (dist - EZ_BOUND_TOLERANCE).max(0.0);
+        let stereo_hi = dist + EZ_BOUND_TOLERANCE;
+
+        let new_lo = lower[i][j].max(stereo_lo);
+        let new_hi = upper[i][j].min(stereo_hi);
+        if new_lo > new_hi + INVARIANT_EPS {
+            return Err(EmbedFailureCause::BoundsConstructionFailed);
+        }
+        lower[i][j] = new_lo;
+        lower[j][i] = new_lo;
+        upper[i][j] = new_hi;
+        upper[j][i] = new_hi;
+    }
+    Ok(())
+}
+
 /// Derive a per-attempt seed from the caller's base seed. Deterministic: the same
 /// `(base, attempt)` pair always produces the same derived seed, so a fixed
 /// `random_seed` reproduces the exact same sequence of attempts (and thus the exact
@@ -616,7 +759,19 @@ fn try_embed_once(
 ) -> Result<Coords3D, EmbedFailureCause> {
     let n = mol.atom_count();
 
-    let (mut lower0, mut upper0) = build_bound_matrix(mol);
+    // `enforce_chirality`-only: insert declared-E/Z 1-4 bounds between the bond/angle
+    // bounds and the VDW floor (see `apply_declared_ez_bounds`'s doc for why that
+    // ordering, not before-or-after as one call, matters). `enforce_chirality: false`
+    // takes the untouched `build_bound_matrix` path, byte-identical to before this
+    // function existed.
+    let (mut lower0, mut upper0) = if params.enforce_chirality {
+        let (mut lower0, mut upper0) = build_bond_angle_bounds(mol);
+        apply_declared_ez_bounds(mol, &mut lower0, &mut upper0)?;
+        apply_vdw_bounds(mol, &mut lower0, &mut upper0);
+        (lower0, upper0)
+    } else {
+        build_bound_matrix(mol)
+    };
 
     // Caller-supplied overrides (e.g. Agent E's macrocycle 1-4 relaxation), already
     // validated as well-formed by `embed_distance_geometry_v2_with_adjustments`
@@ -1251,6 +1406,294 @@ mod tests {
                 32,
                 "base seed {base:#x}: expected 32 distinct per-attempt seeds, got {}",
                 seeds.len()
+            );
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // `apply_declared_ez_bounds` (issue #285 but2ene_Z root-cause fix)
+    // -------------------------------------------------------------------------
+
+    /// Primary gate: the RAW (`max_attempts: 1`, no retry) embedding itself must land
+    /// in the declared-E/Z-compatible region, for every SMILES notation of the same
+    /// declared stereochemistry, across many seeds. Before this fix, but2ene_Z's raw
+    /// embedding was deterministically wrong-signed for all of 10 tested seeds (see
+    /// the PR body's root-cause diagnosis) -- `max_attempts` retry could not help,
+    /// because the bound matrix itself excluded the correct geometry. A test that only
+    /// checked "does `embed_distance_geometry_v2_detail` eventually succeed" (its
+    /// default `max_attempts: 8`) would not catch a regression back to that state, so
+    /// this asserts every individual raw attempt is already correct.
+    #[test]
+    fn ez_bounds_but2ene_all_notation_variants_raw_embed_all_seeds_satisfied() {
+        let cases: &[(&str, &str)] = &[
+            ("Z, C/C=C\\C", r"C/C=C\C"),
+            ("Z, C\\C=C/C", r"C\C=C/C"),
+            ("E, C/C=C/C", "C/C=C/C"),
+            ("E, C\\C=C\\C", r"C\C=C\C"),
+        ];
+        for (label, smiles) in cases.iter().copied() {
+            let mol = parse(smiles).unwrap();
+            for seed in 0..10u64 {
+                let params = EmbedParameters {
+                    random_seed: seed,
+                    max_attempts: 1,
+                    enforce_chirality: true,
+                    ..EmbedParameters::default()
+                };
+                let (coords, _stats) = embed_distance_geometry_v2_detail(&mol, &params)
+                    .unwrap_or_else(|e| {
+                        panic!("but2ene ({label}) seed {seed}: raw embed must succeed, got {e:?}")
+                    });
+                assert!(
+                    verify_stereo(&mol, &coords).is_fully_satisfied(),
+                    "but2ene ({label}) seed {seed}: raw embed must already satisfy declared E/Z"
+                );
+            }
+        }
+    }
+
+    /// Same raw-embed-all-seeds gate, generalized across the corpus's other small/
+    /// rigid declared-E/Z alkenes (`scripts/etkdg_vs_rdkit_gap.py::CORPUS`'s
+    /// `alkene_ez` group minus `cinnamic_acid_E`, see the next test) -- confirms the
+    /// fix isn't a but2ene-specific coincidence.
+    #[test]
+    fn ez_bounds_rigid_alkene_corpus_raw_embed_all_seeds_satisfied() {
+        let cases: &[(&str, &str)] = &[
+            ("but2ene_E", "C/C=C/C"),
+            ("but2ene_Z", r"C/C=C\C"),
+            ("chloropropene_E", "C(/C=C/C)Cl"),
+            ("chloropropene_Z", r"C(/C=C\C)Cl"),
+            ("cinnamic_acid_Z", r"OC(=O)/C=C\c1ccccc1"),
+            ("pent2ene_E", "CC/C=C/C"),
+            ("pent2ene_Z", r"CC/C=C\C"),
+        ];
+        for (name, smiles) in cases.iter().copied() {
+            let mol = parse(smiles).unwrap();
+            for seed in 0..10u64 {
+                let params = EmbedParameters {
+                    random_seed: seed,
+                    max_attempts: 1,
+                    enforce_chirality: true,
+                    ..EmbedParameters::default()
+                };
+                let (coords, _stats) = embed_distance_geometry_v2_detail(&mol, &params)
+                    .unwrap_or_else(|e| {
+                        panic!("{name} seed {seed}: raw embed must succeed, got {e:?}")
+                    });
+                assert!(
+                    verify_stereo(&mol, &coords).is_fully_satisfied(),
+                    "{name} seed {seed}: raw embed must already satisfy declared E/Z"
+                );
+            }
+        }
+    }
+
+    /// `cinnamic_acid_E` is the corpus's one alkene with genuine, pre-existing
+    /// per-seed conformational variability (measured before this fix, see the module
+    /// doc's original but2ene_Z diagnosis and the PR body: 3/10 raw sign-flip rate,
+    /// larger/flexible molecule, NOT the small-rigid-bound-infeasibility mechanism
+    /// this fix addresses) -- raw embedding is not expected to be all-seed-green for
+    /// it, and this fix does not change that (its declared configuration is E, whose
+    /// analytic 1-4 distance already sat inside the pre-existing VDW-derived bound).
+    /// What must still hold: the ordinary retry loop (`max_attempts: 8`, the default)
+    /// resolves it at the SAME rate as before this fix (independently measured on
+    /// unmodified `main`, seeds 0..5: `[true, true, true, false, true]`, 4/5) -- a
+    /// control against this PR accidentally making the flexible-molecule case worse
+    /// while fixing the rigid one. Asserting the exact pre-fix count, not just
+    /// "mostly succeeds", so a regression down to e.g. 3/5 or 2/5 is still caught.
+    #[test]
+    fn ez_bounds_cinnamic_acid_e_retry_loop_still_resolves_flexible_variance() {
+        let mol = parse("OC(=O)/C=C/c1ccccc1").unwrap();
+        let mut passes = 0usize;
+        for seed in 0..5u64 {
+            let params = EmbedParameters {
+                random_seed: seed,
+                max_attempts: 8,
+                enforce_chirality: true,
+                ..EmbedParameters::default()
+            };
+            if embed_distance_geometry_v2_detail(&mol, &params).is_ok() {
+                passes += 1;
+            }
+        }
+        assert_eq!(
+            passes, 4,
+            "cinnamic_acid_E: expected 4/5 seeds to resolve within 8 attempts (unchanged \
+             pre-existing flexible-molecule variance), got {passes}/5"
+        );
+    }
+
+    /// Issue #285's two named fixtures (`chembl_tier_b_0126`/`chembl_tier_b_0168`,
+    /// each with one declared E double bond alongside two declared tetrahedral
+    /// centers, one ring-fused): confirms this fix generalizes to a realistic
+    /// drug-like molecule, not just an isolated 4-atom toy alkene, and doesn't break
+    /// the standard retry loop's ability to resolve the (unrelated, unaffected by
+    /// this PR) tetrahedral-center variance those molecules still have. Exact counts
+    /// independently measured on unmodified `main`, seeds 0..5, `max_attempts: 8`:
+    /// `chembl_tier_b_0126` 5/5, `chembl_tier_b_0168` 4/5 (`[true, true, true, true,
+    /// false]`) -- asserted exactly, not just "mostly succeeds", so a regression is
+    /// still caught.
+    #[test]
+    fn ez_bounds_chembl_tier_b_0126_0168_retry_loop_succeeds() {
+        let cases: &[(&str, &str, usize)] = &[
+            (
+                "chembl_tier_b_0126",
+                "CC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@@H]12",
+                5,
+            ),
+            (
+                "chembl_tier_b_0168",
+                "CC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@H]12",
+                4,
+            ),
+        ];
+        for (name, smiles, expected_passes) in cases.iter().copied() {
+            let mol = parse(smiles).unwrap();
+            let mut passes = 0usize;
+            for seed in 0..5u64 {
+                let params = EmbedParameters {
+                    random_seed: seed,
+                    max_attempts: 8,
+                    enforce_chirality: true,
+                    ..EmbedParameters::default()
+                };
+                if embed_distance_geometry_v2_detail(&mol, &params).is_ok() {
+                    passes += 1;
+                }
+            }
+            assert_eq!(
+                passes, expected_passes,
+                "{name}: expected {expected_passes}/5 seeds to resolve within 8 attempts \
+                 (unchanged pre-existing tetrahedral-center variance), got {passes}/5"
+            );
+        }
+    }
+
+    /// Full re-measure of the 29 stereo-bearing molecules from
+    /// `scripts/etkdg_vs_rdkit_gap.py::CORPUS` (same protocol as the module doc's
+    /// original `enforce_chirality` measurement: 5 base seeds, `max_attempts: 8`),
+    /// checked against the exact before-this-fix pass/fail set (independently
+    /// re-measured on unmodified `main` while designing this fix, see the PR body) --
+    /// not a re-derived guess. Two things must both hold:
+    /// - `but2ene_Z` moves from failing (1/5 base seeds before) to fully passing
+    ///   (5/5) -- the fix actually fires on the corpus, not just the isolated test
+    ///   fixtures above.
+    /// - Every molecule that fully passed (5/5) *before* this fix still fully passes
+    ///   *after* -- zero newly-broken molecules. `testosterone`/`cholesterol` (ring-
+    ///   fused tetrahedral centers) and `cinnamic_acid_E` (flexible-molecule variance)
+    ///   are excluded from that "before" set on purpose: this PR is declared-scoped to
+    ///   E/Z bounds only (see the module doc), so their pre-existing, unrelated
+    ///   failure/partial-pass modes are expected to be unaffected, not fixed here.
+    #[test]
+    fn ez_bounds_29_corpus_regression_but2ene_z_fixed_nothing_else_broken() {
+        const CORPUS_29: &[(&str, &str)] = &[
+            ("l_alanine", "N[C@@H](C)C(=O)O"),
+            ("d_alanine", "N[C@H](C)C(=O)O"),
+            ("l_serine", "N[C@@H](CO)C(=O)O"),
+            ("l_threonine", "C[C@H](O)[C@@H](N)C(=O)O"),
+            ("2_butanol_R", "C[C@H](O)CC"),
+            ("2_butanol_S", "C[C@@H](O)CC"),
+            ("2_chlorobutane_R", "C[C@H](Cl)CC"),
+            ("ibuprofen_S", "CC(C)Cc1ccc(cc1)[C@H](C)C(=O)O"),
+            ("naproxen_S", "COc1ccc2cc([C@H](C)C(=O)O)ccc2c1"),
+            ("menthol", "C[C@@H]1CC[C@@H](C(C)C)C[C@H]1O"),
+            ("chfclbr_R", "[C@H](F)(Cl)Br"),
+            ("chfclbr_S", "[C@@H](F)(Cl)Br"),
+            ("quaternary_1_R", "[C@](F)(Cl)(Br)I"),
+            ("quaternary_1_S", "[C@@](F)(Cl)(Br)I"),
+            ("quaternary_2_R", "[C@](C)(N)(O)F"),
+            ("quaternary_2_S", "[C@@](C)(N)(O)F"),
+            ("but2ene_E", "C/C=C/C"),
+            ("but2ene_Z", r"C/C=C\C"),
+            ("chloropropene_E", "C(/C=C/C)Cl"),
+            ("chloropropene_Z", r"C(/C=C\C)Cl"),
+            ("cinnamic_acid_E", "OC(=O)/C=C/c1ccccc1"),
+            ("cinnamic_acid_Z", r"OC(=O)/C=C\c1ccccc1"),
+            ("pent2ene_E", "CC/C=C/C"),
+            ("pent2ene_Z", r"CC/C=C\C"),
+            (
+                "penicillin_core",
+                "CC1(C)S[C@@H]2[C@H](NC(=O)C)C(=O)N2[C@H]1C(=O)O",
+            ),
+            (
+                "testosterone",
+                "C[C@]12CC[C@H]3[C@@H](CC[C@H]4CCC(=O)C=C34)[C@@H]1CC[C@@H]2O",
+            ),
+            (
+                "cholesterol",
+                "C[C@H](CCCC(C)C)[C@H]1CC[C@H]2[C@@H]3CC=C4C[C@@H](O)CC[C@]4(C)[C@H]3CC[C@]12C",
+            ),
+            (
+                "atorvastatin_fragment",
+                "CC(C)c1c(C(=O)Nc2ccccc2)c(-c2ccccc2)c(-c2ccc(F)cc2)n1CC[C@@H](O)C[C@@H](O)CC(=O)O",
+            ),
+            ("gly_ala_gly", "NCC(=O)N[C@@H](C)C(=O)NCC(=O)O"),
+        ];
+
+        // Independently re-measured on unmodified `main` (before this fix) with the
+        // identical protocol below -- not a re-derived guess. Matches the module
+        // doc's documented 25-27/29 range (this run: 25/29).
+        const FULLY_PASSED_BEFORE_FIX: &[&str] = &[
+            "2_butanol_R",
+            "2_butanol_S",
+            "2_chlorobutane_R",
+            "atorvastatin_fragment",
+            "but2ene_E",
+            "chfclbr_R",
+            "chfclbr_S",
+            "chloropropene_E",
+            "chloropropene_Z",
+            "cinnamic_acid_Z",
+            "d_alanine",
+            "gly_ala_gly",
+            "ibuprofen_S",
+            "l_alanine",
+            "l_serine",
+            "l_threonine",
+            "menthol",
+            "naproxen_S",
+            "penicillin_core",
+            "pent2ene_E",
+            "pent2ene_Z",
+            "quaternary_1_R",
+            "quaternary_1_S",
+            "quaternary_2_R",
+            "quaternary_2_S",
+        ];
+
+        let mut fully_passed_after: Vec<&str> = Vec::new();
+        let mut but2ene_z_seeds_passed = 0usize;
+        for (name, smiles) in CORPUS_29.iter().copied() {
+            let mol = parse(smiles).unwrap();
+            let mut passes = 0usize;
+            for base_seed in 0..5u64 {
+                let params = EmbedParameters {
+                    random_seed: base_seed,
+                    max_attempts: 8,
+                    enforce_chirality: true,
+                    ..EmbedParameters::default()
+                };
+                if embed_distance_geometry_v2_detail(&mol, &params).is_ok() {
+                    passes += 1;
+                }
+            }
+            if name == "but2ene_Z" {
+                but2ene_z_seeds_passed = passes;
+            }
+            if passes == 5 {
+                fully_passed_after.push(name);
+            }
+        }
+
+        assert_eq!(
+            but2ene_z_seeds_passed, 5,
+            "but2ene_Z must now pass all 5 base seeds (was 1/5 before this fix)"
+        );
+        for &name in FULLY_PASSED_BEFORE_FIX {
+            assert!(
+                fully_passed_after.contains(&name),
+                "{name} fully passed before this fix and must still fully pass after -- \
+                 regression introduced by the declared-E/Z bound change"
             );
         }
     }

@@ -361,22 +361,24 @@ pub fn verify_stereo(mol: &Molecule, coords: &Coords3D) -> StereoVerification {
 // tests for that property checked directly against the RDKit-confirmed fixtures
 // above, not just asserted.
 //
-// `pub(crate)` deliberately, not `pub`: nothing in this crate consumes this set as
-// an actual embedding constraint yet (that wiring -- into `dg_fft::build_bound_matrix`
-// or a new constraint-aware refinement stage -- is future, separately-scoped work).
-// Publishing a `StereoConstraintSet` type before anything acts on it would overclaim
-// what it does, the same shape of premature-publish this session already declined
-// for issue #272's `topological_equivalence_classes`. Promote to `pub` once an
-// embedder actually reads it.
+// `pub(crate)` deliberately, not `pub`: `double_bond` now has a real embedding-time
+// consumer (`distance_geometry_v2.rs`'s `apply_declared_ez_bounds`, `enforce_
+// chirality`-only -- see that function's doc), but `tetrahedral` still doesn't
+// (tetrahedral chiral-volume/dihedral bounds remain future, separately-scoped work,
+// same reflection-invariance limitation `apply_declared_ez_bounds`'s own doc
+// explains). Publishing this type before that second half is wired in would still
+// overclaim what it does, the same shape of premature-publish this session already
+// declined for issue #272's `topological_equivalence_classes`. Promote to `pub` once
+// an embedder reads `tetrahedral` too.
 
 /// Every declared tetrahedral/E-Z constraint `mol` implies, independent of any
 /// particular geometry -- the coords-free counterpart to [`StereoVerification`].
-// ponytail: no production (non-test) caller yet -- this PR is deliberately scoped
-// to representation only (see the section doc above and the PR body). Matches
-// dg_fft.rs's own `#![allow(dead_code)]` precedent for the same "built, tested,
-// not yet wired in" situation. Remove this allow once a follow-up PR wires
-// build_stereo_constraints into the embedding path.
-#[allow(dead_code)]
+///
+/// `double_bond` has a real production consumer: `distance_geometry_v2.rs`'s
+/// `apply_declared_ez_bounds` (`enforce_chirality` path only). `tetrahedral` does
+/// not yet -- tetrahedral chiral-volume bounds are separately-scoped future work
+/// (see that function's doc), so [`TetrahedralConstraint`] keeps its own
+/// `#[allow(dead_code)]`.
 #[derive(Debug, Clone, Default)]
 pub(crate) struct StereoConstraintSet {
     pub tetrahedral: Vec<TetrahedralConstraint>,
@@ -390,6 +392,10 @@ pub(crate) struct StereoConstraintSet {
     /// here (`UnsupportedCoordination`, `TerminalOrCumulatedAlkene`,
     /// `AmbiguousDirection`) -- `DegenerateGeometry`/`DegenerateImplicitHDirection`
     /// are geometry-dependent and never produced by this function.
+    // `apply_declared_ez_bounds` only reads `double_bond` (an unsupported/ambiguous
+    // declared bond has nothing this bound-construction step could act on); no
+    // production consumer reads this field yet, hence the allow.
+    #[allow(dead_code)]
     pub unsupported: Vec<(StereoElement, StereoRejectionReason)>,
 }
 
@@ -403,7 +409,6 @@ impl StereoConstraintSet {
 /// Build every declared stereo constraint in `mol`. Pure function of `mol` alone --
 /// no `Coords3D` involved, unlike [`verify_stereo`]. See the section doc above for
 /// what this is for and why it's `pub(crate)`.
-#[allow(dead_code)]
 pub(crate) fn build_stereo_constraints(mol: &Molecule) -> StereoConstraintSet {
     let mut tetrahedral = Vec::new();
     let mut unsupported = Vec::new();

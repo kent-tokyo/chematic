@@ -591,6 +591,36 @@ option or equivalent) — it only clarifies that option 1's *mechanism*, not
 just its ring-fused *scope limit*, is inherently probabilistic rather than
 deterministic-once-repaired.
 
+**Correction (2026-08-11) — the reflection-invariance argument above (the
+"injected into `build_bound_matrix`'s bounds" design is mathematically
+impossible) is true for tetrahedral chirality and false for declared E/Z; do
+not apply it uniformly.** Reflection invariance rules out encoding *which
+mirror image* a bound matrix should produce, because a molecule and its
+mirror image have identical pairwise distances. Declared E/Z (cis/trans) is
+not a mirror-image relationship at all: cis and trans are two genuinely
+different scalar 1-4 substituent separations for the *same* atom pair (for
+`but2ene_Z`/`but2ene_E`: approx. 2.88 A vs. approx. 3.93 A, computed from
+this crate's own `ideal_bond_length`/`ideal_bond_angle` model). A distance
+bound *can* rule one of them out, and this was the actual root cause of the
+`but2ene_Z` gap issue #285 originally reported: `apply_vdw_bounds`'s generic
+non-bonded Van-der-Waals lower bound (two carbons: 3.40 A) was being applied
+to that same 1-4 pair regardless of declared stereochemistry, structurally
+excluding the correct approx. 2.88 A cis geometry from ever being sampled —
+not an eigendecomposition-sign-convention artifact as an earlier diagnosis
+(PR #298) speculated; that candidate mechanism was empirically refuted (the
+pre-refine sign was shown to vary seed to seed, same as a flexible molecule)
+before this one was confirmed. Fixed via `distance_geometry_v2.rs`'s
+`apply_declared_ez_bounds` (`enforce_chirality`-only): a genuine bound-
+matrix constraint, intersected with the existing bond/angle bounds before
+the VDW floor applies — no repair/retry/reflection/perturbation involved.
+Measured: `but2ene_Z` 1/5 to 5/5 base seeds on the 29-molecule declared-
+stereo corpus, zero other molecules newly broken (see
+`distance_geometry_v2.rs`'s updated `enforce_chirality` doc section for the
+full account). The ring-fused tetrahedral case above is genuinely unaffected
+by this — reflection invariance's actual scope is signed *volume*
+(tetrahedral), not scalar *distance* (E/Z), and this correction narrows the
+claim to that scope rather than overturning it.
+
 ### Phase 4 — ring handling
 **Current**: `dg.rs` has hand-picked chair/envelope/crown templates by ring
 size (6/5/≥8), correctly tested for those cases in isolation, but Phase 0's
