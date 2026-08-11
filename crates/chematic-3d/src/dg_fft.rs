@@ -31,7 +31,25 @@ use crate::coords::{Coords3D, Point3};
 /// - Bond lengths (from ideal values ± tolerance)
 /// - Angle constraints (from ideal angles)
 /// - Van der Waals (from VDW radii sum)
+///
+/// A thin wrapper over [`build_bond_angle_bounds`] + [`apply_vdw_bounds`], split apart
+/// so `distance_geometry_v2.rs`'s `enforce_chirality` path can insert declared-E/Z 1-4
+/// bounds *between* the two (before the generic VDW non-bonded floor would otherwise
+/// apply to that same pair -- see that module's `apply_declared_ez_bounds` doc for why
+/// the ordering matters). This function's own output is unchanged either way: it always
+/// runs both steps back to back, with nothing in between.
 pub(crate) fn build_bound_matrix(mol: &Molecule) -> (Vec<Vec<f64>>, Vec<Vec<f64>>) {
+    let (mut lower, mut upper) = build_bond_angle_bounds(mol);
+    apply_vdw_bounds(mol, &mut lower, &mut upper);
+    (lower, upper)
+}
+
+/// Bond-length (1-2) and angle-derived (1-3) distance bounds only -- no Van der Waals
+/// non-bonded floor yet, see [`apply_vdw_bounds`]. Exists as its own function so a
+/// caller can insert additional pair-specific constraints (e.g. declared-E/Z 1-4
+/// bounds) before the generic VDW floor is applied; [`build_bound_matrix`] is the
+/// composition most callers want.
+pub(crate) fn build_bond_angle_bounds(mol: &Molecule) -> (Vec<Vec<f64>>, Vec<Vec<f64>>) {
     let n = mol.atom_count();
     let mut lower = vec![vec![0.0; n]; n];
     let mut upper = vec![vec![f64::INFINITY; n]; n];
@@ -83,9 +101,19 @@ pub(crate) fn build_bound_matrix(mol: &Molecule) -> (Vec<Vec<f64>>, Vec<Vec<f64>
         }
     }
 
-    // Van der Waals bounds (non-bonded distance >= sum of VDW radii).
-    // Skip pairs where an angle constraint has already set a tighter (smaller)
-    // upper bound — applying VDW there would make lower > upper.
+    (lower, upper)
+}
+
+/// Van der Waals non-bonded lower bounds (distance >= sum of VDW radii), applied in
+/// place. Skips bonded pairs, and skips any pair where an existing tighter (smaller)
+/// upper bound has already been set (an angle constraint, or -- for `enforce_chirality`
+/// -- a declared-E/Z 1-4 bound) — applying VDW there would make lower > upper. This is
+/// the same exemption pattern bonded/1-3 pairs already get here, extended to whichever
+/// pair a caller tightened before this runs: VDW's generic non-bonded-sterics
+/// assumption doesn't hold for a pair whose separation is actually fixed by a nearer,
+/// more specific constraint.
+pub(crate) fn apply_vdw_bounds(mol: &Molecule, lower: &mut [Vec<f64>], upper: &mut [Vec<f64>]) {
+    let n = mol.atom_count();
     for i in 0..n {
         for j in (i + 1)..n {
             let a = AtomIdx(i as u32);
@@ -104,8 +132,6 @@ pub(crate) fn build_bound_matrix(mol: &Molecule) -> (Vec<Vec<f64>>, Vec<Vec<f64>
             }
         }
     }
-
-    (lower, upper)
 }
 
 /// Ideal bond length (Å) from atom pair and bond order.
