@@ -41,6 +41,7 @@ pub use canonical::are_atoms_equivalent;
 pub use canonical::{
     canonical_atom_order, canonical_smiles, equivalent_atom_classes, morgan_ranks,
 };
+pub use canonical_partition::topological_equivalence_classes;
 pub use canonical_search::{
     CanonicalSearchStats, CanonicalizationError, CanonicalizationLimits,
     canonical_smiles_with_limits, reset_search_stats, search_stats_snapshot,
