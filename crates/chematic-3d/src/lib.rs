@@ -41,7 +41,7 @@ pub mod usr;
 pub mod xyz;
 
 pub use align::{AlignResult, align_coords, apply_alignment, rmsd_no_align};
-pub use conformer::{ConformerEnsemble, ConformerError};
+pub use conformer::{ConformerEnsemble, ConformerError, rmsd_symmetric};
 pub use constraints::{
     AngleConstraint, BondConstraint, ConstraintSet, build_constraints, satisfy_constraints,
 };

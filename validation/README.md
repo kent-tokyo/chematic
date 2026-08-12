@@ -368,6 +368,42 @@ individual PR #253 sub-fix was causal per molecule (no ablation study
 run) -- only that the tracked population is fully resolved with no
 regression.
 
+### Symmetric RMSD oracle check (Priority 4 groundwork, `rmsd_symmetric`)
+
+`chematic_3d::conformer::rmsd_symmetric` (`crates/chematic-3d/src/conformer.rs`)
+is a port of RDKit's `GetBestRMS` (`Code/GraphMol/MolAlign/AlignMolecules.cpp`):
+symmetry-aware Kabsch RMSD via brute-force enumeration of the molecule's own
+graph automorphisms (VF2 self-match, `uniquify: false`), not a fixed
+atom-index correspondence. Needed before Priority 4's reference-conformer
+benchmark, since a plain fixed-index RMSD is wrong on any molecule with
+permutation-equivalent atoms (e.g. a terminal `-CF3`'s three fluorines).
+
+- **Dump:** `cargo run --release -p chematic-3d --example
+  rmsd_symmetric_oracle_dump > /tmp/rmsd_symmetric_oracle_dump.jsonl` -- 6
+  cases (propane control; `-CF3`, neopentane, and benzene testing
+  automorphism recovery on leaf atoms vs. ring atoms; acetate testing the
+  known gap below; ibuprofen as a no-symmetry drug-like control), each a
+  `dg::generate_coords` conformer paired with a fixed rigid
+  rotation+translation of itself with two atoms' positions additionally
+  swapped.
+- **Oracle:** `.venv/bin/python scripts/rmsd_symmetric_oracle_check.py
+  /tmp/rmsd_symmetric_oracle_dump.jsonl` -- independently recomputes each
+  pair's RMSD via RDKit's `rdMolAlign.GetBestRMS` on the same coordinates.
+- **Result:** 5/6 cases agree with RDKit to within 2e-6 Å (propane,
+  `-CF3`-ethane, neopentane, benzene, ibuprofen). Benzene's nonzero residual
+  (1.143095 Å, both engines) is correct, not noise: swapping two *para ring*
+  atoms' positions is not a graph automorphism of a plain hexagon (unlike
+  swapping two terminal leaf atoms on the same parent, as in `-CF3` or
+  neopentane's methyls), so no relabelling can recover 0 -- confirmed by
+  independent derivation, not just tool agreement.
+- **Known, documented gap:** acetate disagrees (chematic 0.356 Å vs. RDKit
+  0.0 Å). RDKit's `GetBestRMS` additionally runs
+  `symmetrizeConjugatedTerminalGroups` before matching, treating a
+  carboxylate's two oxygens as interchangeable despite their different
+  formal bond orders; `rmsd_symmetric` does not port that preprocessing step
+  (documented in its own doc comment). Expected, not a bug -- tracked as a
+  follow-up, not blocking Priority 4's benchmark groundwork.
+
 ### 175-mol drug-like corpus
 
 A curated set of 175 drug-like molecules covering common scaffolds (benzoic acid derivatives,

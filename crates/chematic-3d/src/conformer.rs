@@ -2,7 +2,11 @@
 
 use std::fmt;
 
-use chematic_core::{AtomIdx, Molecule};
+use chematic_core::{AtomIdx, BondOrder, Molecule};
+use chematic_smarts::{
+    AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, MatchConfig, QueryMolecule,
+    find_matches_with_config,
+};
 
 use crate::coords::Coords3D;
 use crate::shape_descriptors::jacobi3;
@@ -148,6 +152,21 @@ impl ConformerEnsemble {
         Some(kabsch_rmsd(ca, cb, n))
     }
 
+    /// Symmetry-aware Kabsch RMSD between conformers `a` and `b`: the minimum
+    /// [`conformer_rmsd`]-style RMSD over every way `b`'s atoms can be
+    /// relabelled onto `a`'s that is consistent with the molecule's own graph
+    /// symmetry (automorphisms), not just the identity relabelling.
+    ///
+    /// See [`rmsd_symmetric`] for the algorithm and its known limitation
+    /// (no `-COO⁻`/`-NO₂`-style terminal-group symmetrization).
+    ///
+    /// Returns `None` if either index is out of range.
+    pub fn conformer_rmsd_symmetric(&self, a: usize, b: usize) -> Option<f64> {
+        let ca = self.conformers.get(a)?;
+        let cb = self.conformers.get(b)?;
+        Some(rmsd_symmetric(&self.mol, ca, cb))
+    }
+
     /// Compute the 12 USR shape descriptors for conformer `idx`.
     ///
     /// Returns `None` if `idx` is out of range.
@@ -240,6 +259,104 @@ impl ConformerEnsemble {
             total / count as f64
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Symmetry-aware (automorphism-brute-force) RMSD
+// ---------------------------------------------------------------------------
+
+/// Symmetry-aware Kabsch RMSD between two conformers of the *same* molecule
+/// topology (same atom count, same connectivity), ported from RDKit's
+/// `GetBestRMS` (`Code/GraphMol/MolAlign/AlignMolecules.cpp`, pinned commit
+/// `e74e7b0a5a2fc4e7f77c04ec26a61d4b8edbf22f` — see
+/// `scripts/mmff94_provenance/PROVENANCE.md` for this project's pinning
+/// convention): enumerate every automorphism of `mol` (self-match with
+/// `uniquify: false`, matching RDKit's own `SubstructMatch(..., uniquify=false)`
+/// self-match step) via VF2, and return the minimum Kabsch-aligned RMSD over
+/// every automorphism-consistent relabelling of `coords_b` onto `coords_a`.
+/// Brute force over all matches, same as RDKit — no pruning, no Hungarian
+/// assignment.
+///
+/// A plain (non-symmetry-aware) RMSD is wrong on any molecule with
+/// permutation-equivalent atoms: e.g. a terminal `-CF3`'s three fluorines are
+/// interchangeable, so a conformer pair that differs only by which specific F
+/// atom sits in which position should score ~0, not a large fixed-index RMSD.
+///
+/// **Known limitation, not yet ported**: RDKit's `GetBestRMS` additionally
+/// runs `symmetrizeConjugatedTerminalGroups` before matching, which neutralizes
+/// resonance-equivalent terminal groups (carboxylate `-COO⁻`, nitro `-NO2`, …)
+/// so their two oxygens are treated as interchangeable even though a
+/// Kekulized/formal-charge representation gives them different bond orders.
+/// This function does NOT do that preprocessing, so on such molecules it will
+/// report a higher (worse) RMSD than RDKit's `GetBestRMS` for a case that is
+/// chemically equivalent but not topologically automorphic as drawn. See
+/// issue tracker for the follow-up.
+pub fn rmsd_symmetric(mol: &Molecule, coords_a: &Coords3D, coords_b: &Coords3D) -> f64 {
+    let n = mol.atom_count();
+    if n == 0 {
+        return 0.0;
+    }
+    let query = molecule_self_query(mol);
+    let config = MatchConfig {
+        uniquify: false,
+        ..MatchConfig::default()
+    };
+    let matches = find_matches_with_config(&query, mol, &config);
+    debug_assert!(
+        !matches.is_empty(),
+        "a molecule must always self-match at least via the identity mapping"
+    );
+
+    let mut best = f64::MAX;
+    for m in &matches {
+        let mut relabelled = Coords3D::new_zeroed(n);
+        for qi in 0..n {
+            // `m` maps this molecule's own atom indices (as the query) onto
+            // itself (as the target) under one automorphism; relabelling
+            // `coords_b` by that map produces one automorphism-consistent
+            // atom correspondence between `coords_a` and `coords_b`.
+            let target = m[&qi];
+            relabelled.set(AtomIdx(qi as u32), coords_b.get(target));
+        }
+        let rmsd = kabsch_rmsd(coords_a, &relabelled, n);
+        if rmsd < best {
+            best = rmsd;
+        }
+    }
+    best
+}
+
+/// Build a `QueryMolecule` that matches only `mol` itself: one query atom per
+/// heavy atom (atomic number + formal charge), one query bond per bond
+/// (exact bond-order primitive where the order is unambiguous, `Any` for the
+/// query/metadata bond kinds that carry no independent topological meaning
+/// for automorphism purposes — `Zero`/`Dative`/`Query*`/`Up`/`Down` are all
+/// mapped to `Any` since none of them changes which atoms are interchangeable).
+fn molecule_self_query(mol: &Molecule) -> QueryMolecule {
+    let mut q = QueryMolecule::new();
+    for i in 0..mol.atom_count() {
+        let atom = mol.atom(AtomIdx(i as u32));
+        let by_element =
+            AtomQuery::Primitive(AtomPrimitive::AtomicNum(atom.element.atomic_number()));
+        let by_charge = AtomQuery::Primitive(AtomPrimitive::Charge(atom.charge));
+        q.add_atom(AtomQuery::And(Box::new(by_element), Box::new(by_charge)));
+    }
+    for i in 0..mol.bond_count() {
+        let bond = mol.bond(chematic_core::BondIdx(i as u32));
+        let prim = match bond.order {
+            BondOrder::Single => BondPrimitive::Single,
+            BondOrder::Double => BondPrimitive::Double,
+            BondOrder::Triple => BondPrimitive::Triple,
+            BondOrder::Aromatic => BondPrimitive::Aromatic,
+            _ => BondPrimitive::Any,
+        };
+        q.add_bond(
+            bond.atom1.0 as usize,
+            bond.atom2.0 as usize,
+            BondQuery::Primitive(prim),
+        );
+    }
+    q
 }
 
 // ---------------------------------------------------------------------------
@@ -551,6 +668,100 @@ mod tests {
             rmsd < 1e-6,
             "pure-rotation Kabsch RMSD should be ~0, got {rmsd}"
         );
+    }
+
+    // --- rmsd_symmetric ------------------------------------------------------
+
+    #[test]
+    fn symmetric_rmsd_self_is_zero() {
+        let mol = parse("CCC").unwrap();
+        let c = generate_coords(&mol);
+        let rmsd = rmsd_symmetric(&mol, &c, &c);
+        assert!(rmsd.abs() < 1e-8, "self-RMSD should be 0, got {rmsd}");
+    }
+
+    #[test]
+    fn symmetric_rmsd_never_exceeds_fixed_index_rmsd() {
+        // The identity mapping is always one of the enumerated automorphisms,
+        // so the symmetric RMSD (a minimum over all of them) can never be
+        // larger than the plain fixed-index Kabsch RMSD.
+        let mol = parse("CCC").unwrap();
+        let n = mol.atom_count();
+        let c1 = generate_coords(&mol);
+        let mut c2 = Coords3D::new_zeroed(n);
+        for i in 0..n {
+            let p = c1.get(AtomIdx(i as u32));
+            c2.set(AtomIdx(i as u32), Point3::new(-p.x, p.y, p.z));
+        }
+        let fixed = kabsch_rmsd(&c1, &c2, n);
+        let symmetric = rmsd_symmetric(&mol, &c1, &c2);
+        assert!(
+            symmetric <= fixed + 1e-9,
+            "symmetric RMSD ({symmetric}) must not exceed fixed-index RMSD ({fixed})"
+        );
+    }
+
+    #[test]
+    fn symmetric_rmsd_recovers_zero_when_fixed_index_rmsd_is_wrong() {
+        // 1,1,1-trifluoroethane: the 3 fluorines on the CF3 carbon are
+        // topologically interchangeable (verified: 6 = 3! self-match
+        // automorphisms with `uniquify: false`). Swap two F atoms' positions
+        // between otherwise-identical conformers -- a real geometric
+        // difference under fixed-index comparison, but the SAME physical
+        // structure under symmetry-aware comparison.
+        let mol = parse("FC(F)(F)C").unwrap();
+        let n = mol.atom_count();
+        let base = generate_coords(&mol);
+
+        let fluorines: Vec<AtomIdx> = (0..n)
+            .map(|i| AtomIdx(i as u32))
+            .filter(|&idx| mol.atom(idx).element == chematic_core::Element::F)
+            .collect();
+        assert_eq!(fluorines.len(), 3, "CF3 should have exactly 3 fluorines");
+
+        let mut swapped = Coords3D::new_zeroed(n);
+        for i in 0..n {
+            swapped.set(AtomIdx(i as u32), base.get(AtomIdx(i as u32)));
+        }
+        let (f0, f1) = (fluorines[0], fluorines[1]);
+        let (p0, p1) = (base.get(f0), base.get(f1));
+        swapped.set(f0, p1);
+        swapped.set(f1, p0);
+
+        let fixed = kabsch_rmsd(&base, &swapped, n);
+        assert!(
+            fixed > 0.1,
+            "swapping two real F positions should give a clearly nonzero \
+             fixed-index RMSD, got {fixed}"
+        );
+
+        let symmetric = rmsd_symmetric(&mol, &base, &swapped);
+        assert!(
+            symmetric < 1e-6,
+            "symmetry-aware RMSD should recover ~0 for an automorphism-only \
+             difference, got {symmetric} (fixed-index was {fixed})"
+        );
+    }
+
+    #[test]
+    fn symmetric_rmsd_ensemble_method_matches_free_function() {
+        let mol = parse("CCC").unwrap();
+        let c1 = generate_coords(&mol);
+        let c2 = generate_coords(&mol);
+        let expected = rmsd_symmetric(&mol, &c1, &c2);
+        let mut ens = ConformerEnsemble::with_conformer(mol, c1).unwrap();
+        ens.add_conformer(c2).unwrap();
+        let got = ens.conformer_rmsd_symmetric(0, 1).unwrap();
+        assert!(
+            (got - expected).abs() < 1e-12,
+            "ensemble method should match the free function exactly"
+        );
+    }
+
+    #[test]
+    fn symmetric_rmsd_ensemble_method_out_of_range_returns_none() {
+        let ens = make_ensemble();
+        assert!(ens.conformer_rmsd_symmetric(0, 99).is_none());
     }
 
     #[test]
