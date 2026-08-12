@@ -61,14 +61,14 @@ pub fn canonical_atom_order(mol: &Molecule) -> Vec<usize> {
 /// that also wrote the winner again was paying for a fully redundant
 /// traversal on every single call (perf; issue found bisecting the
 /// `run_reactants`/`apply_retro` regression between chematic 0.4.25 and
-/// 0.4.30 -- see docs/reaction_transform_perf.md).
+/// 0.4.30 -- see docs/rfcs/reaction_transform_perf.md).
 ///
 /// As of this PR, the actual search is `canonical_search::
 /// winning_individualized_ranks_with_limits` (automorphism-orbit-pruned,
 /// streaming, called here with `CanonicalizationLimits::unbounded()`),
 /// which is provably equivalent to (a strict subset of the same candidate
 /// (ranks, string) pairs considered by) the legacy exhaustive enumeration
-/// below -- see `docs/canonical_automorphism_pruning.md`. The legacy
+/// below -- see `docs/rfcs/canonical_automorphism_pruning.md`. The legacy
 /// exhaustive path (`legacy_winning_individualized_ranks`) is kept as a
 /// last-resort fallback for the astronomically-rare case of an internal bug
 /// in the new engine (`CanonicalizationError::InvalidInternalMapping`): it
@@ -643,7 +643,7 @@ impl<'a> CanonicalWriter<'a> {
     /// one of them size exactly 2, 0 cycles. (An independent run against
     /// the larger, non-committed ChEMBL corpus used for this crate's own
     /// full-corpus residual measurements — see
-    /// `docs/canonical_smiles_residual_rfc.md` — found the same: every
+    /// `docs/rfcs/canonical_smiles_residual_rfc.md` — found the same: every
     /// component observed has been size exactly 2.) Every node has at most
     /// 2 candidate substituent bonds, so every component is a simple path
     /// or cycle, never a general graph. This cap gives an 8x margin over
@@ -2742,7 +2742,7 @@ mod tests {
     // `writer::tests`, applied to the canonical writer's own emission
     // sites) ──────────────────────────────────────────────────────────────
 
-    /// Minimal repro from docs/stereo2d_reader_integration_rfc.md §3: a
+    /// Minimal repro from docs/rfcs/stereo2d_reader_integration_rfc.md §3: a
     /// wedge bond with no adjacent double bond must not become `/`/`\`.
     #[test]
     fn canonical_standalone_solid_wedge_not_written_as_slash() {
@@ -2904,7 +2904,7 @@ mod tests {
     // sides). *Which* substituent gets the mark used to be whatever the
     // parser happened to read, so two RDKit-valid respellings of the same
     // molecule that mark different substituents produced two different
-    // canonical outputs (docs/canonical_smiles_residual_rfc.md, Root cause
+    // canonical outputs (docs/rfcs/canonical_smiles_residual_rfc.md, Root cause
     // 1). `resolve_ez_markers` picks the marker carrier deterministically
     // from canonical rank instead. Every case below is a real molecule from
     // the residual corpus (`validation/results/

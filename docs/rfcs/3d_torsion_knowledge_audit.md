@@ -181,7 +181,7 @@ new implementation does not attempt to resolve stereo conflicts either (that
 is Agent D's territory, already merged as PR #190's `stereo_constraints.rs`),
 but the new `TorsionKnowledgeDiagnostic` machinery is built so a future PR
 can wire in a stereo-cross-check without changing the public shape (see
-`docs/3d_torsion_knowledge_audit.md` §5 "known unsupported chemistry" in the
+`docs/rfcs/3d_torsion_knowledge_audit.md` §5 "known unsupported chemistry" in the
 PR body).
 
 ### 3.5 Bond-order blindness (misapplication to double/triple/aromatic-ring bonds)

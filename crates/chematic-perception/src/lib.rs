@@ -37,7 +37,7 @@ pub use ring_family::{RingFamily, RingSystemKind, find_ring_families, find_ring_
 
 /// Diagnostic-only APIs, not meant for production use — reference-engine
 /// internals kept for cross-checking and corpus benchmarking. Gated behind
-/// the `diagnostics` feature. See `docs/aromaticity_a1_rfc.md`.
+/// the `diagnostics` feature. See `docs/rfcs/aromaticity_a1_rfc.md`.
 ///
 /// The production-facing surface of the RDKit-parity engine is
 /// [`assign_aromaticity_rdkit_parity_experimental`] and

@@ -32,7 +32,7 @@
 //! dominating its cost entirely (tens of milliseconds on large multi-ring molecules like
 //! oligopeptides, vs microseconds for `kekulize` itself), 100% new cost relative to the
 //! pre-Milestone-3B-1b engine. Replaced with an O(V+E) DFS bridge search; see the
-//! Milestone 3B closeout entry in `docs/cip_accurate_rfc.md` for the measurement.
+//! Milestone 3B closeout entry in `docs/rfcs/cip_accurate_rfc.md` for the measurement.
 //!
 //! **The owner, not the represented atom, carries the fraction.** A
 //! [`crate::node::CipNodeKind::MultipleBondDuplicate`] node sitting in atom `i`'s own
@@ -40,7 +40,7 @@
 //! `fractional_atomic_number(i)` (the mean of `i`'s own same-part neighbors) already *is*
 //! the resonance-averaged answer to that question. So a duplicate's fractional value must
 //! be looked up by its `source_atom` (the owner), never `duplicated_atom` (the specific
-//! partner one particular Kekulé form happened to pick) -- see `docs/cip_accurate_rfc.md`'s
+//! partner one particular Kekulé form happened to pick) -- see `docs/rfcs/cip_accurate_rfc.md`'s
 //! Milestone 3B-1a entry for the full argument (cross-form Kekulé-invariance alone does
 //! *not* discriminate this from the wrong reading on every fixture tested; the guard is a
 //! concrete asserted value, e.g. quinoline's N-adjacent ring carbon must be exactly 13/2,

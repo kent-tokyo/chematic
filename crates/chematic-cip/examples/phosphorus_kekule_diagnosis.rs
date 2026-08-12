@@ -7,7 +7,7 @@
 //! script tests Kekule-respelling invariance: for each row, it flips every ring
 //! bond Single<->Double (a chemically neutral resonance-structure respelling of the
 //! *same* molecule -- verified externally via matching InChI in a companion Python
-//! check, see `docs/cip_accurate_rfc.md` M4C-0 section) and re-runs
+//! check, see `docs/rfcs/cip_accurate_rfc.md` M4C-0 section) and re-runs
 //! `assign_cip_accurate_experimental` on both forms.
 //!
 //! Result: chematic's answer is identical across both spellings for all 9 rows,

@@ -13,7 +13,7 @@ model, and does not touch `chematic-smiles`.
 
 ## Background
 
-PR #134's diagnosis (`docs/aromaticity_rdkit_parity_rfc.md`) found that
+PR #134's diagnosis (`docs/rfcs/aromaticity_rdkit_parity_rfc.md`) found that
 `chematic_core::kekulize()` hard-fails for 6 fixture classes — tropylium
 cation, imidazolium, pyridinium, pyrylium, tellurophene, phosphole — because
 `atom_must_be_matched`'s lone-pair-donor rules are charge-blind (and Te(52)

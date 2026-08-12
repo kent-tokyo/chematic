@@ -1,5 +1,5 @@
 //! Acceptance-gate measurement for `stereo_constraints::{verify_stereo, repair_stereo}`
-//! (3D Breakthrough Program, Wave 2, Agent D). See `docs/3d_breakthrough_master_plan.md`
+//! (3D Breakthrough Program, Wave 2, Agent D). See `docs/rfcs/3d_breakthrough_master_plan.md`
 //! §0/§3 and the module doc comment in `crates/chematic-3d/src/stereo_constraints.rs`.
 //!
 //! Mirrors the pattern Agent C's `distance_geometry_v2_gap_check.rs` established: a

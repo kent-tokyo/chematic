@@ -1,7 +1,7 @@
 //! Snapshot `assign_cip_accurate_experimental` (or its stable
 //! `..._without_mancude` reference point) across every stereocenter in a full SMILES
 //! corpus, for full-corpus regression/accuracy verification -- the methodology Milestone
-//! 3B-1b used ad hoc (see `docs/cip_accurate_rfc.md`), formalized here as a checked-in,
+//! 3B-1b used ad hoc (see `docs/rfcs/cip_accurate_rfc.md`), formalized here as a checked-in,
 //! reusable tool rather than a one-off scratchpad script, since every future full-corpus
 //! CIP gate (Milestone 4 included) needs the same rigor again.
 //!

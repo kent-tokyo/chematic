@@ -7,7 +7,7 @@ use pyo3::types::PyDict;
 use std::sync::Arc;
 
 /// Stable, typed reason string for a [`chematic_perception::StereoDiagnostic`]
-/// -- never a free-form message (see `docs/stereo2d_reader_integration_rfc.md`).
+/// -- never a free-form message (see `docs/rfcs/stereo2d_reader_integration_rfc.md`).
 pub(crate) fn stereo_reason_str(
     reason: chematic_perception::StereoRejectionReason,
 ) -> &'static str {

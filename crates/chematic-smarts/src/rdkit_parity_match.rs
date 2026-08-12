@@ -733,7 +733,7 @@ mod tests {
         // Bug reproduced: more than just the benzo ring (2-7) comes back
         // aromatic. This assertion documents the CURRENT (buggy) behavior,
         // not the desired one -- if `apply_aromaticity_ex` is ever fixed
-        // (tracked separately, `docs/aromaticity_a1_rfc.md`), this specific
+        // (tracked separately, `docs/rfcs/aromaticity_a1_rfc.md`), this specific
         // assertion should start failing and must be updated, not silenced.
         assert!(
             atoms.len() > 6,

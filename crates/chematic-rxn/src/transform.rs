@@ -2188,7 +2188,7 @@ mod tests {
 
     // -----------------------------------------------------------------------
     // Reaction-transform performance regression witnesses (see
-    // docs/reaction_transform_perf.md). Root cause: `chematic-smiles`'s
+    // docs/rfcs/reaction_transform_perf.md). Root cause: `chematic-smiles`'s
     // `canonical_smiles()` wrote the winning individualize-refine branch's
     // string, threw it away, and had `winning_individualized_ranks`'s caller
     // write it a *second* time -- one fully redundant DFS-and-format pass on

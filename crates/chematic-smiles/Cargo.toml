@@ -22,7 +22,7 @@ chematic-core = { path = "../chematic-core", version = "0.14.1" }
 # Feature-gated internal work counters for the orbit-pruning canonical
 # search (`src/canonical_search.rs`). Off by default -- every counter bump
 # compiles to nothing without this feature, matching the existing
-# `chematic-rxn`/`perf-instrumentation` pattern (`docs/reaction_transform_perf.md`).
+# `chematic-rxn`/`perf-instrumentation` pattern (`docs/rfcs/reaction_transform_perf.md`).
 canonical-search-instrumentation = []
 
 [dev-dependencies]

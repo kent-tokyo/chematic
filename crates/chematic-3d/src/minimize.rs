@@ -985,7 +985,7 @@ fn electrostatic_energy_mmff94(
 // chematic-ff's COMPLETE MMFF94 implementation (bond + angle + stretch-bend +
 // torsion + out-of-plane + vdW + electrostatic, real L-BFGS minimizer) and
 // its separate UFF module, instead of re-implementing a smaller, worse
-// subset of the same physics locally. See `docs/etkdg_3d_gap_rfc.md`
+// subset of the same physics locally. See `docs/rfcs/etkdg_3d_gap_rfc.md`
 // ("mechanism 3") for the bug this fixes: `bond_energy_mmff94`/
 // `angle_energy_mmff94` above use `if let Some(params) = mmff94_bond_params(...)
 // { ... }` — when a type pair isn't covered, that internal coordinate
@@ -2016,7 +2016,7 @@ fn run_uff_bridge(
 
 /// The rescue itself: `original_failure` is `coords`' own (already-computed)
 /// failure. Raw starting energy alone cannot decide in advance whether a
-/// given start needs this — measured (`docs/uff_robustness_diagnosis_185_188.md`):
+/// given start needs this — measured (`docs/rfcs/uff_robustness_diagnosis_185_188.md`):
 /// naphthalene and anthracene start from virtually identical raw
 /// `generate_coords` UFF energies (~1.256e5 vs ~1.267e5 kcal/mol) and
 /// worst starting bonds (2.26 Å, identical), yet naphthalene's raw UFF
@@ -3434,7 +3434,7 @@ mod policy_bridge_tests {
     // -----------------------------------------------------------------------
     // Issues #185 / #188 diagnosis: is `UffOnly` + `dg::generate_coords`'s
     // blow-up a bad-starting-geometry bug, a fundamentally broken minimizer,
-    // or something else? See `docs/uff_robustness_diagnosis_185_188.md` for
+    // or something else? See `docs/rfcs/uff_robustness_diagnosis_185_188.md` for
     // the full write-up and measured numbers this pins.
     //
     // Measured finding (not assumed): `generate_coords` produces starting
@@ -3471,7 +3471,7 @@ mod policy_bridge_tests {
     // rescue -- see `UffStartingGeometry`): raw starting energy alone cannot
     // predict which starts need help (see above), so rather than raising the
     // shared default budget (measured too costly/still-insufficient for the
-    // worst cases -- see `docs/uff_robustness_diagnosis_185_188.md`'s
+    // worst cases -- see `docs/rfcs/uff_robustness_diagnosis_185_188.md`'s
     // companion ablation) or touching `minimize_uff`'s algorithm at all, a
     // catastrophic bond blowup/non-finite result at the existing budget is
     // now retried once from `embed_distance_geometry_v2`'s geometry, with
@@ -3572,7 +3572,7 @@ mod policy_bridge_tests {
     /// trajectory (the `embed_distance_geometry_v2` geometry, before and after
     /// minimizing it) -- never the caller's abandoned original geometry paired
     /// with the retry's outcome. Hexane's `generate_coords` energy (~1.5e7
-    /// kcal/mol, per `docs/uff_robustness_diagnosis_185_188.md`) and its
+    /// kcal/mol, per `docs/rfcs/uff_robustness_diagnosis_185_188.md`) and its
     /// `embed_distance_geometry_v2` energy (~3.78 kcal/mol) differ by roughly 6
     /// orders of magnitude -- exactly the fixture needed to make a
     /// caller-geometry/retry-outcome mismatch impossible to miss. A buggy

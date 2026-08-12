@@ -99,7 +99,7 @@ NEGATIVE_CONTROL = [
     # (CarbonExocyclicHeteroatomDouble -> 0pi, the OTHER atom in the false-
     # positive scaffold's 6pi sum) match RDKit at all, or is it itself the
     # thing to fix? Advisor-flagged blocking check for A1-1a's fix-route
-    # decision -- confirmed against real RDKit (see docs/aromaticity_a1_rfc.md):
+    # decision -- confirmed against real RDKit (see docs/rfcs/aromaticity_a1_rfc.md):
     # RDKit marks the WHOLE ring (including the carbonyl carbon) aromatic in
     # all three, so this rule is correct and NOT the fix target.
     ("O=c1cccccc1", "tropone -- exocyclic-carbonyl-IN-RING rule, RDKit agrees, must stay aromatic"),

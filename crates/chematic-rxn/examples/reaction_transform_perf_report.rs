@@ -2,7 +2,7 @@
 //!
 //! Built while diagnosing the RENKIN-reported `run_reactants`/`apply_retro`
 //! performance regression between chematic 0.4.25 and 0.4.30 (see
-//! `docs/reaction_transform_perf.md`). A single-molecule/single-template
+//! `docs/rfcs/reaction_transform_perf.md`). A single-molecule/single-template
 //! microbenchmark already demonstrably failed to catch that regression (it
 //! is specific to *symmetric* intermediate molecules -- plain rings, cages,
 //! `CF3`/`tBu`-style substituents -- which a handful of drug-like root
@@ -93,7 +93,7 @@ impl CallStats {
 /// Mirror of RENKIN's `apply_retro` -> `split_fragments` pattern: apply one
 /// SMIRKS template to one molecule, then split every product on '.',
 /// re-parse, and standardize each fragment -- the exact call sequence that
-/// (per the bisect in docs/reaction_transform_perf.md) actually carries the
+/// (per the bisect in docs/rfcs/reaction_transform_perf.md) actually carries the
 /// regression, not `run_reactants` in isolation.
 ///
 /// Note: this does *not* reimplement RENKIN's own aromatic-atom-without-a-

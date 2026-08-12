@@ -12,7 +12,7 @@ This document, `validation/manifests/3d_breakthrough_baseline.json`, and
 
 ## 0. Wave 0 findings (read before touching anything)
 
-- `docs/etkdg_3d_gap_rfc.md`'s diagnosis was re-verified, not trusted on
+- `docs/rfcs/etkdg_3d_gap_rfc.md`'s diagnosis was re-verified, not trusted on
   faith: `scripts/etkdg_vs_rdkit_gap.py` was rerun as **5 independent fresh
   Python processes** against current HEAD (`9f9f459`, v0.7.0 — the RFC's own
   numbers were measured against an older 0.6.0-era build). All 5 runs
@@ -26,7 +26,7 @@ This document, `validation/manifests/3d_breakthrough_baseline.json`, and
   `validation/results/etkdg_baseline_history/etkdg_vs_rdkit_{summary,rows}.RFC-original.{json,jsonl}`
   before being overwritten by the rerun.
 - All 11 files/directories the task asked to confirm exist and were verified
-  by direct file check (not assumed): `docs/etkdg_3d_gap_rfc.md`,
+  by direct file check (not assumed): `docs/rfcs/etkdg_3d_gap_rfc.md`,
   `scripts/etkdg_vs_rdkit_gap.py`, `crates/chematic-3d/src/{dg_fft.rs,
   etkdg.rs, etkdg_knowledge.rs, conformer.rs, stereo3d.rs}`,
   `crates/chematic-ff/src/`, `crates/chematic-inchi/src/dedup.rs`,

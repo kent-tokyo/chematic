@@ -31,7 +31,7 @@ pub static MACROCYCLE_TORSION_RULES: &[MacrocycleTorsionRule] = &[
     // unbranched secondary macrolactam -- is genuinely ABSENT from RDKit's
     // own table (checked: not present anywhere else in the 380-line source
     // file). That is a real upstream coverage gap, reported in
-    // `docs/3d_torsion_knowledge_audit.md` and the PR body, not silently
+    // `docs/rfcs/3d_torsion_knowledge_audit.md` and the PR body, not silently
     // patched over with an invented 4th SMARTS.
     MacrocycleTorsionRule {
         rule_id: "macrocycle:lactam_amide_h0_c1",

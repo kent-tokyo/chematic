@@ -16,7 +16,7 @@
 //! Hückel machinery) is crate-private; the only way to reach it from
 //! outside the crate is through those two functions, or, for diagnostics,
 //! `diagnostics::rdkit_parity_aromaticity` behind the `diagnostics` feature.
-//! See `docs/aromaticity_a1_rfc.md`'s "A1-1b-0"/"A1-1b-1" sections for the
+//! See `docs/rfcs/aromaticity_a1_rfc.md`'s "A1-1b-0"/"A1-1b-1" sections for the
 //! full design writeup, the calibration battery, and the corpus gate.
 //!
 //! Ported from RDKit commit `e89c9f656a694fab4105139844cba88d2e013354`, an
@@ -1023,9 +1023,9 @@ mod tests {
     /// `rdkit_morgan_hash.rs`, full-corpus validation): pyridinium's protonated
     /// `[nH+]` used to make `chematic_core::kekulize()` hard-fail because
     /// `atom_must_be_matched`'s N-with-H lone-pair-donor rule was charge-blind
-    /// (docs/aromaticity_rdkit_parity_rfc.md §1, root cause A). Fixed by
+    /// (docs/rfcs/aromaticity_rdkit_parity_rfc.md §1, root cause A). Fixed by
     /// `fix/kekulize-charge-aware-k1` (see
-    /// docs/kekulize_charge_aware_rdkit_parity.md): the rule now requires
+    /// docs/rfcs/kekulize_charge_aware_rdkit_parity.md): the rule now requires
     /// `atom.charge <= 0`, so a protonated ring N routes back to "must be
     /// matched" -- same as neutral pyridine's bare N -- instead of being
     /// wrongly treated like neutral pyrrole's `[nH]`. Kept as a regression

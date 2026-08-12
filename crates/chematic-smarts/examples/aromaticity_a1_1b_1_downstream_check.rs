@@ -1,7 +1,7 @@
 //! Aromaticity-A1-1b-1: downstream sanity checks for molecules produced by
 //! `apply_aromaticity_rdkit_parity_experimental`/
 //! `assign_aromaticity_rdkit_parity_experimental` (the new opt-in
-//! production API, see `docs/aromaticity_a1_rfc.md`'s "A1-1b-1" section).
+//! production API, see `docs/rfcs/aromaticity_a1_rfc.md`'s "A1-1b-1" section).
 //!
 //! This crate (not `chematic-perception`) hosts the check because it
 //! depends on both `chematic-perception` (the new API) and SMARTS matching

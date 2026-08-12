@@ -3,7 +3,7 @@
 //! JSONL row per (molecule, atom) for RDKit-joining.
 //!
 //! Diagnostic only -- `rdkit_parity_aromaticity` is not wired into
-//! production. See `docs/aromaticity_a1_rfc.md`'s "A1-1b-0" section.
+//! production. See `docs/rfcs/aromaticity_a1_rfc.md`'s "A1-1b-0" section.
 //!
 //! Run (requires the `diagnostics` feature):
 //! ```text

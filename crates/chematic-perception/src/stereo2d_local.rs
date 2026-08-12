@@ -142,7 +142,7 @@ fn classify_local_parity(mol: &Molecule, coords: &[(f64, f64)], center: AtomIdx)
 ///   is valid notation (e.g. one substituent wedged forward, another hashed
 ///   back), but disagreement means the drawing itself doesn't describe one
 ///   tetrahedron. Measured against RDKit, not assumed: see
-///   `docs/stereo2d_local_parity_calibration.md`;
+///   `docs/rfcs/stereo2d_local_parity_calibration.md`;
 /// - the resulting signed volume is (near-)zero, i.e. the drawing is
 ///   coplanar/degenerate -- including the case where no bond is wedged at all.
 pub fn local_parity_from_wedges(
@@ -189,7 +189,7 @@ fn volume_sign(volume: f64) -> Option<bool> {
 /// "agree" with a real one.
 ///
 /// Measured against RDKit, not assumed (see
-/// `docs/stereo2d_local_parity_calibration.md`): RDKit either explicitly
+/// `docs/rfcs/stereo2d_local_parity_calibration.md`): RDKit either explicitly
 /// refuses a tag ("conflicting stereochemistry") or silently falls back to
 /// a dual-volume heuristic whose result doesn't reliably match its own tag
 /// once two wedges disagree in isolation -- neither is safe to reproduce, so
@@ -600,7 +600,7 @@ mod tests {
         // marked solid wedge, on quad_positions()'s first two slots) was
         // measured to give genuinely DISAGREEING per-wedge-alone parity, so
         // it stays a rejection case -- confirmed against RDKit directly
-        // (docs/stereo2d_local_parity_calibration.md), not assumed from the
+        // (docs/rfcs/stereo2d_local_parity_calibration.md), not assumed from the
         // "two wedges" shape alone.
         let mut b = MoleculeBuilder::new();
         let c = b.add_atom(Atom::new(Element::C));
@@ -644,7 +644,7 @@ mod tests {
     fn valid_dual_wedge_solid_and_hash_on_different_bonds_accepted() {
         // Ported verbatim (same shape) from PR #130's frozen RDKit-checked
         // fixtures tetrahedral_4neighbors_explicit_h / tetrahedral_4heavy_no_h
-        // (docs/stereo2d_reader_integration_rfc.md): a solid wedge to one
+        // (docs/rfcs/stereo2d_reader_integration_rfc.md): a solid wedge to one
         // substituent (Br) and a hash to a DIFFERENT substituent (I) on the
         // same center is standard, unambiguous notation, not contradictory --
         // confirmed against RDKit directly: it accepts with a clean,

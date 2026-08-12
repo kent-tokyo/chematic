@@ -23,7 +23,7 @@
 //!    label is -- Q3 (below) verifies this in-run and classifies nonzero counts by
 //!    final-label impact, rather than treating any nonzero count as invalidating this
 //!    split. See `examples/mancude_decision_diagnosis.rs` and
-//!    `docs/cip_accurate_rfc.md`'s MANCUDE-Decision-A0 entry for the full
+//!    `docs/rfcs/cip_accurate_rfc.md`'s MANCUDE-Decision-A0 entry for the full
 //!    classification methodology and result (D=36/E=0 on this corpus). Rule 4b and
 //!    Rule 5 are **not** split apart here (both `pub(crate)`, no Pass-1+4b-only public
 //!    entry point) -- reported together as `resolved_pass2_or_3`; a future run could
@@ -111,7 +111,7 @@ fn pct<T: Ord + Copy>(values: &[T], p: usize) -> T {
 
 /// The `SMILES.csv` this tool's own aggregate counts (99.3%/0.7% resolution split,
 /// comparator-size percentiles) were measured against and quoted in
-/// `docs/cip_accurate_rfc.md`'s MANCUDE-Decision-A0 entry -- see [`corpus_sha256`]'s
+/// `docs/rfcs/cip_accurate_rfc.md`'s MANCUDE-Decision-A0 entry -- see [`corpus_sha256`]'s
 /// call site in `main` for the runtime check against whatever corpus is actually
 /// passed in.
 const EXPECTED_CORPUS_SHA256: &str =
@@ -155,7 +155,7 @@ fn main() {
         println!(
             "*** WARNING: corpus_sha256 does NOT match the expected \
              {EXPECTED_CORPUS_SHA256} -- the aggregate counts below are NOT directly \
-             comparable to docs/cip_accurate_rfc.md's recorded closeout numbers. ***"
+             comparable to docs/rfcs/cip_accurate_rfc.md's recorded closeout numbers. ***"
         );
     }
     println!();
@@ -358,7 +358,7 @@ fn main() {
              resolved_pass2_or_3 split is wrong -- 'decision-involved' and 'changes the \
              resolved label' are different claims (see \
              examples/mancude_decision_diagnosis.rs and \
-             docs/cip_accurate_rfc.md's MANCUDE-Decision-A0 entry for the full, \
+             docs/rfcs/cip_accurate_rfc.md's MANCUDE-Decision-A0 entry for the full, \
              structure-isolated classification: on this corpus, 0 stereocenters have \
              their final label changed by the fraction)."
         }

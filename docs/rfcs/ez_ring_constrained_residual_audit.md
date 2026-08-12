@@ -6,7 +6,7 @@ This is a follow-up to PR #229 (Wave 2B), which replaced the single-end
 shared-bond abstain guard with a joint component solver
 (`resolve_component_jointly` in `crates/chematic-smiles/src/canonical.rs`)
 and split the 18 `EZ_SHARED_CANDIDATE_BOND_RESIDUALS` fixtures from
-`docs/canonical_smiles_residual_rfc.md` into 10
+`docs/rfcs/canonical_smiles_residual_rfc.md` into 10
 `EZ_SHARED_CARRIER_FULLY_RESOLVED` (fully permutation-invariant) and 8
 `EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS` (still not permutation-
 invariant, but confirmed semantically safe — 0 corruption either way).

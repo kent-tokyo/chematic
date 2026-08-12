@@ -9,7 +9,7 @@ dict keys (QED, SA score, Kappa/Chi/BertzCT/WienerIndex, VSA families,
 EState, pKa, ADMET, xlogp3/esol/logd) live in *other* files in the
 chematic-chem crate (qed.rs, sa_score.rs, topo_descriptors.rs, vsa.rs,
 estate.rs, pka.rs, admet.rs, xlogp3.rs, esol.rs, logd.rs) and are
-out of scope here — see docs/descriptor_census_rfc.md.
+out of scope here — see docs/rfcs/descriptor_census_rfc.md.
 
 Five descriptors.rs functions have NO Python/WASM/MCP binding at all
 (moran_autocorr, geary_autocorr, information_content, mde_carbon, and the
@@ -44,7 +44,7 @@ except ImportError:
 try:
     import chematic
 except ImportError:
-    sys.exit("chematic not installed (see docs/descriptor_census_rfc.md for the isolated-venv build steps)")
+    sys.exit("chematic not installed (see docs/rfcs/descriptor_census_rfc.md for the isolated-venv build steps)")
 
 
 # ---------------------------------------------------------------------------
@@ -517,7 +517,7 @@ def main():
         # score, PAINS, drug_score, ...), and on one pathological symmetric
         # macrocycle in this corpus, drug_score()'s PAINS/VF2 substructure
         # match takes several minutes (root-caused via `sample`+bisection --
-        # see docs/descriptor_census_rfc.md's VF2 performance finding).
+        # see docs/rfcs/descriptor_census_rfc.md's VF2 performance finding).
         # Every value below instead comes from the individual getter/method
         # that maps 1:1 to the descriptors.rs function under test, which
         # confirmed fast (<1s total) on the same pathological molecule.
@@ -749,7 +749,7 @@ def main():
         "generated_at": __import__("datetime").datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
         "chematic_version": getattr(chematic, "__version__", "unknown"),
         "rdkit_version": __import__("rdkit").__version__,
-        "scope": "crates/chematic-chem/src/descriptors.rs only (71 functions) -- see docs/descriptor_census_rfc.md",
+        "scope": "crates/chematic-chem/src/descriptors.rs only (71 functions) -- see docs/rfcs/descriptor_census_rfc.md",
         "corpus": {
             "source": args.corpus,
             "total_lines": len(smiles_list),

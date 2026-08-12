@@ -1,6 +1,6 @@
 //! One-off timing measurement for the Milestone 4A-2 PR: the 5 distinct
 //! three-armed-cage molecules are exactly this crate's own documented
-//! `needs_pass2_or_3` worst-case bucket (see `docs/cip_accurate_rfc.md`'s
+//! `needs_pass2_or_3` worst-case bucket (see `docs/rfcs/cip_accurate_rfc.md`'s
 //! MANCUDE-Decision-A0 entry, `36,198` comparisons on an adamantane-cage amide).
 //! Prints each molecule's wall-clock time for `assign_cip_accurate_experimental`,
 //! run 20x each and reporting the minimum (least noisy) time, so a before/after

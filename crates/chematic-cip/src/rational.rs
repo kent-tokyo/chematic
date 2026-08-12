@@ -5,7 +5,7 @@
 //! is not always an integer -- a heteroatom-adjacent position can land on a genuine
 //! fraction like 6⅓ or 6½. Representing that as `f64` would reintroduce the exact kind of
 //! determinism/order-dependence hazard this project has been repeatedly bitten by in other
-//! areas (see `docs/cip_accurate_rfc.md`'s earlier rounds) -- this type keeps the value as
+//! areas (see `docs/rfcs/cip_accurate_rfc.md`'s earlier rounds) -- this type keeps the value as
 //! an exact integer fraction instead, always stored in lowest terms so structural equality
 //! (`#[derive(Eq, PartialEq)]`) matches mathematical equality: `mean(&[6, 6])` and
 //! `integer(6)` both reduce to `6/1` and compare equal, not "equal in value but different

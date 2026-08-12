@@ -78,7 +78,7 @@ pub(crate) fn suppress_standalone_wedge(
 ///
 /// Mirrors `crate::canonical::CanonicalWriter::raw_input_direction` exactly
 /// -- both the plain and canonical writers must read the same effective
-/// direction (docs/stereo2d_reader_integration_rfc.md), so this crate keeps
+/// direction (docs/rfcs/stereo2d_reader_integration_rfc.md), so this crate keeps
 /// exactly one copy of the rule rather than two that could silently drift.
 pub(crate) fn raw_bond_direction(mol: &Molecule, bidx: BondIdx) -> Option<BondOrder> {
     let order = mol.bond(bidx).order;
@@ -611,8 +611,8 @@ mod tests {
     }
 
     // ── Standalone wedge/hash bond must not emit a meaningless SMILES
-    // directional token (docs/stereo2d_reader_integration_rfc.md §3/§7,
-    // docs/stereo2d_local_parity_calibration.md "Scope note") ────────────────
+    // directional token (docs/rfcs/stereo2d_reader_integration_rfc.md §3/§7,
+    // docs/rfcs/stereo2d_local_parity_calibration.md "Scope note") ────────────────
     //
     // `BondOrder::Up`/`Down` is overloaded for two unrelated concepts: 2D
     // wedge/hash depiction (set by MDL/CDXML/MRV/KET-style readers on a
@@ -850,7 +850,7 @@ mod tests {
     }
 
     // ── plain write() must read the bond_direction side channel too
-    // (previously canonical.rs-only; see docs/stereo2d_reader_integration_rfc.md
+    // (previously canonical.rs-only; see docs/rfcs/stereo2d_reader_integration_rfc.md
     // "both the non-canonical and canonical writer read the same effective
     // direction") ─────────────────────────────────────────────────────────
 

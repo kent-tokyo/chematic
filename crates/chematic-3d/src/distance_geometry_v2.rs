@@ -1,6 +1,6 @@
 //! Real (stochastic) distance-geometry conformer embedding — 3D Breakthrough Program,
-//! Wave 1, Agent C. See `docs/3d_breakthrough_master_plan.md` §1b/§4 and
-//! `docs/etkdg_3d_gap_rfc.md` for the diagnosis this module answers.
+//! Wave 1, Agent C. See `docs/rfcs/3d_breakthrough_master_plan.md` §1b/§4 and
+//! `docs/rfcs/etkdg_3d_gap_rfc.md` for the diagnosis this module answers.
 //!
 //! # What this is
 //!
@@ -51,7 +51,7 @@
 //!
 //! **Important, not obvious from the name**: a pairwise distance matrix is
 //! reflection-invariant (a molecule and its mirror image have identical pairwise
-//! distances — see `docs/etkdg_3d_gap_rfc.md`'s Phase 3 "Correction" section), so
+//! distances — see `docs/rfcs/etkdg_3d_gap_rfc.md`'s Phase 3 "Correction" section), so
 //! nothing in `build_bound_matrix`/`smooth_bounds`/the MDS embedding step above can
 //! ever encode which **tetrahedral** (`@`/`@@`) enantiomer to prefer. **This does
 //! NOT extend to declared E/Z**: cis and trans are not mirror images of each other,

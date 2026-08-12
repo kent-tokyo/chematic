@@ -15,7 +15,7 @@
 //! sibling branches; it never perturbs the rank vector of a branch it does
 //! explore. So any surviving branch is byte-for-byte identical to what
 //! unpruned enumeration would have produced for that same individualization
-//! sequence -- see `docs/canonical_automorphism_pruning.md`, "why pruning
+//! sequence -- see `docs/rfcs/canonical_automorphism_pruning.md`, "why pruning
 //! cannot change surviving output", for the full argument and its
 //! `canonical_smiles_exhaustive_oracle` cross-check.
 
@@ -30,7 +30,7 @@ use crate::canonical_partition::{
 mod stats {
     //! Feature-gated internal work counters, following the exact pattern
     //! established by `chematic-rxn`'s `perf_counters.rs`
-    //! (`docs/reaction_transform_perf.md`): process-global `AtomicUsize`s,
+    //! (`docs/rfcs/reaction_transform_perf.md`): process-global `AtomicUsize`s,
     //! zero cost (every bump compiles to an empty inline fn) unless the
     //! `canonical-search-instrumentation` feature is enabled.
     #[cfg(feature = "canonical-search-instrumentation")]
@@ -354,7 +354,7 @@ fn search_canonical(
 /// Judged not worth threading a parallel, hash-free individualization-state
 /// vector through the hot path to close (a bigger change than this PR's
 /// scope, defending against a risk already implicitly accepted crate-wide)
-/// -- documented here and in `docs/canonical_automorphism_pruning.md`
+/// -- documented here and in `docs/rfcs/canonical_automorphism_pruning.md`
 /// instead of silently left as an unqualified "structurally impossible"
 /// claim.
 fn exact_orbit_representatives(

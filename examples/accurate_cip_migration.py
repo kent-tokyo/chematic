@@ -7,14 +7,14 @@ returns *an* answer, never "I don't know".
 
 `Mol.cip_stereo(mode="accurate")` uses a hierarchical-digraph engine instead
 for tetrahedral R/S (~99.6% oracle-stable agreement -- see
-docs/cip_accurate_rfc.md), merged with legacy's E/Z and allene answers (the
+docs/rfcs/cip_accurate_rfc.md), merged with legacy's E/Z and allene answers (the
 accurate engine doesn't compute either). It is strictly opt-in: nothing about
 your existing code changes unless you pass mode="accurate" explicitly.
 
 The accurate engine is honest about what it doesn't know: a genuine CIP-rule
 tie or a computation-budget overrun surfaces via `cip_stereo_unresolved()`
 instead of a silently-guessed label. As of this writing that affects ~0.4% of
-stereocenters on a 5,000-molecule benchmark (see docs/cip_accurate_rfc.md's
+stereocenters on a 5,000-molecule benchmark (see docs/rfcs/cip_accurate_rfc.md's
 Milestone 5B entry) -- almost entirely a known, already-documented family of
 symmetric cage/adamantane-like stereocenters (Milestone 4A-2, needs
 symmetry/automorphism detection) plus 2 cyclophosphazene rows where no RDKit
@@ -28,7 +28,7 @@ EZ_AND_RS = "C/C=C/[C@H](N)C(=O)O"  # both a double bond and a stereocenter
 # A cyclophosphazene where the accurate engine ties (Milestone 4C-1) but legacy
 # still produces an answer -- legacy's answer isn't wrong here, it's simply
 # unverifiable: no RDKit oracle has a stable label for this molecule either
-# (see docs/cip_accurate_rfc.md), which is exactly the kind of case the
+# (see docs/rfcs/cip_accurate_rfc.md), which is exactly the kind of case the
 # accurate engine is designed to flag rather than silently resolve.
 TIED_WITH_LEGACY_FALLBACK = (
     "CNP1(NC)=N[P@](NC)(N2CC2)=NP(NC)(NC)=N[P@@](NC)(N2CC2)=N1"

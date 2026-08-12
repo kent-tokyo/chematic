@@ -1,5 +1,5 @@
 //! Acceptance-gate measurement for `distance_geometry_v2::embed_distance_geometry_v2`
-//! (3D Breakthrough Program, Wave 1, Agent C — see `docs/3d_breakthrough_master_plan.md`
+//! (3D Breakthrough Program, Wave 1, Agent C — see `docs/rfcs/3d_breakthrough_master_plan.md`
 //! §4 for the exact gate this answers).
 //!
 //! Measures the RAW embedder output (bounds construction → smoothing → Gram/

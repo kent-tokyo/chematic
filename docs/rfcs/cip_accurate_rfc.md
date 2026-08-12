@@ -744,7 +744,7 @@ discipline of checking a hypothesis before building for it):
   ring-closures terminate as childless `RingDuplicate` leaves). There is no cross-atom
   cycle to resolve: `crate::resolver::resolve_chirality`, memoized by `NodeId` (path
   identity, not atom identity) and already validated 72/72 for Rule 4b
-  (`docs/cip_accurate_rfc.md`'s Milestone 4B-2 entry, this same document), computes a
+  (`docs/rfcs/cip_accurate_rfc.md`'s Milestone 4B-2 entry, this same document), computes a
   correct-shaped auxiliary sign for every one of the 15 rows' embedded references with
   **zero modification** — confirmed directly, not assumed, before any production code
   changed.
@@ -832,7 +832,7 @@ discipline of checking a hypothesis before building for it):
   — self-consistency evidence, not external correctness evidence. The existing test
   asserting these 2 rows stay `unresolved` was updated to assert the new, disclosed
   behavior instead of silently going stale.
-- **Performance.** The cage molecules are exactly `docs/cip_accurate_rfc.md`'s own
+- **Performance.** The cage molecules are exactly `docs/rfcs/cip_accurate_rfc.md`'s own
   recorded worst-case `needs_pass2_or_3` bucket (already noted in the
   MANCUDE-Decision-A0 entry above: `36,198` comparisons on the worst adamantane-cage
   amide) — this fix does not add a new pass or new recursion, it only changes *where*

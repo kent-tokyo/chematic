@@ -1,6 +1,6 @@
 # CIP rank_children pairwise memoization: issue #107
 
-Companion to `docs/rank_children_heavy_tail_diagnosis_107.md` (diagnostic pass,
+Companion to `docs/rfcs/rank_children_heavy_tail_diagnosis_107.md` (diagnostic pass,
 PR #208): implements the optimization that diagnosis identified as most
 promising, with the richer cache key that diagnosis's own caveat called for.
 

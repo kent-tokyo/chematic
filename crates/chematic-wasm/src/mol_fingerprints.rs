@@ -617,7 +617,7 @@ pub fn tanimoto_row_json(query_smi: &str, db_smiles_json: &str) -> String {
 /// `"rdkit-exact ecfp4: aromaticity: ..."`) if RDKit-parity aromaticity preprocessing
 /// fails, never a silent fallback to `ecfp4_bitvec`'s Hückel-based engine -- the two
 /// engines are not bit-compatible, so a silent substitution would look successful
-/// while actually returning the wrong hash. See `docs/ecfp4_bitexact_api_rfc.md`.
+/// while actually returning the wrong hash. See `docs/rfcs/ecfp4_bitexact_api_rfc.md`.
 #[wasm_bindgen]
 pub fn rdkit_ecfp4_bitvec(mol: &MolHandle) -> Result<Vec<u8>, JsValue> {
     let result = chematic_fp::rdkit_morgan_ecfp4_experimental(&mol.inner)

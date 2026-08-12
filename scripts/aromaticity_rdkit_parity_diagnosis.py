@@ -92,7 +92,7 @@ EXPECTED_BUCKET_BY_ID = {
     "azulene": "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent",
     # K1 fix (fix/kekulize-charge-aware-k1, merged) unblocked kekulize() for
     # all 6 of tropylium/imidazolium/pyridinium/pyrylium/tellurophene/
-    # phosphole -- see docs/aromaticity_rdkit_parity_rfc.md §1 root causes
+    # phosphole -- see docs/rfcs/aromaticity_rdkit_parity_rfc.md §1 root causes
     # A-D. That alone moved all 6 into
     # "kekulize_succeeds_model_disagrees_atom_bond_flags_inconsistent"
     # (kekulize's bond-by-bond Kekule assignment verified byte-identical to

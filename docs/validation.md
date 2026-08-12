@@ -31,7 +31,7 @@ Summary of descriptor accuracy against RDKit on a ChEMBL-derived corpus.
 | [nH] SMARTS match | **100%** (4999/4999) | precision & recall | TP=467 TN=4532 FP=0 FN=0 |
 | Stereocenter count (legacy)  | **99.98%** (4998/4999) | exact† | *count* agreement only — vs `CalcNumAtomStereoCenters` |
 | Stereocenter count (new CIP) | 98.7% (4932/4999) | exact† | *count* agreement only — vs `FindPotentialStereo` |
-| CIP R/S label agreement | 96.30% (4031/4186 stereocenters) | exact | vs modern `rdCIPLabeler` (primary oracle); 96.83% (4031/4163) vs legacy `_CIPCode`. See `docs/cip_accurate_rfc.md`. |
+| CIP R/S label agreement | 96.30% (4031/4186 stereocenters) | exact | vs modern `rdCIPLabeler` (primary oracle); 96.83% (4031/4163) vs legacy `_CIPCode`. See `docs/rfcs/cip_accurate_rfc.md`. |
 
 19 of 19 tested metrics reach ≥98.0% on the 4,999-molecule ChEMBL corpus (count-agreement
 metrics only — CIP label agreement is a distinct, stricter check, see below).
@@ -42,7 +42,7 @@ flagged as a stereocenter and still be assigned the wrong R/S. That stricter che
 measured separately, per-stereocenter (not per-molecule) as "CIP R/S label agreement"
 above — 96.30% against RDKit's modern `rdCIPLabeler` oracle on a 5,000-molecule ChEMBL
 subset (4,186 total stereocenters found across those molecules). See
-`docs/cip_accurate_rfc.md` for the residual's root cause (a structural limitation in the
+`docs/rfcs/cip_accurate_rfc.md` for the residual's root cause (a structural limitation in the
 CIP comparator, not a series of independently-fixable rule gaps) and the remediation
 plan.
 
@@ -53,7 +53,7 @@ plan.
 This section is about *count* calibration only — does chematic flag the same atoms as
 stereogenic as RDKit does. It says nothing about whether an agreed-upon stereocenter's
 R/S label is correct; see "CIP R/S label agreement" in the table above and
-`docs/cip_accurate_rfc.md` for that separate, stricter check.
+`docs/rfcs/cip_accurate_rfc.md` for that separate, stricter check.
 
 chematic's stereocenter count is calibrated between two RDKit oracles:
 

@@ -12,7 +12,7 @@
 //! Structural Database) -- that claim was unverified and, on the evidence
 //! gathered, false: there is no CSD query, statistical fit, or citation
 //! anywhere in this module or its history.** See
-//! `docs/3d_torsion_knowledge_audit.md` for the full audit (every rule
+//! `docs/rfcs/3d_torsion_knowledge_audit.md` for the full audit (every rule
 //! individually reclassified as `verified_from_primary_source` /
 //! `supported_by_rdkit_oracle` / `reasonable_heuristic_only` /
 //! `incorrect_or_overgeneralized` / `ambiguous`; zero `dead_or_unreachable`).
@@ -24,7 +24,7 @@
 //! torsion-potential layer with explicit rule provenance, a 6-tier priority
 //! system, ring/bond classification, macrocycle 1-4 bounds, and a
 //! torsion-space energy/optimization API. See each submodule's own doc
-//! comment, `docs/3d_torsion_knowledge_audit.md`, and
+//! comment, `docs/rfcs/3d_torsion_knowledge_audit.md`, and
 //! `validation/manifests/etkdg_torsion_knowledge_sources.json` for the full
 //! design and sourcing. **Not wired into `distance_geometry_v2.rs` or
 //! `etkdg.rs`** -- this PR is a self-contained knowledge/potential/

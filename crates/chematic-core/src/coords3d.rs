@@ -3,7 +3,7 @@
 //! [`Coords3D`] holds one [`Point3`] per atom, indexed by atom insertion
 //! order (`AtomIdx.0` as `usize`). It carries no embedding, force-field, or
 //! alignment logic -- see the 3D Breakthrough Program's master plan
-//! (`docs/3d_breakthrough_master_plan.md`, decision 1a) for why this type
+//! (`docs/rfcs/3d_breakthrough_master_plan.md`, decision 1a) for why this type
 //! lives in `chematic-core` rather than `chematic-mol` importing
 //! `chematic_3d::coords::Coords3D` directly: `chematic-3d` pulls in
 //! `chematic-ff`/`chematic-chem`/`chematic-fp`/`chematic-smarts` transitively,

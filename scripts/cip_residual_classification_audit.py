@@ -4,7 +4,7 @@ Diag/accurate-cip-audit: mechanism classification of chematic's CIP-assignment
 residual against RDKit's rdCIPLabeler oracle, for BOTH engines separately --
 
   - LEGACY / default  (`chematic_chem::assign_cip`, `Mol.cip_stereo()`, the
-    shell-pooling comparator described in docs/cip_accurate_rfc.md)
+    shell-pooling comparator described in docs/rfcs/cip_accurate_rfc.md)
   - ACCURATE          (`chematic_cip::assign_cip_accurate_experimental`, the
     digraph-based engine, `Mol.cip_stereo(mode="accurate")`)
 
@@ -18,7 +18,7 @@ No mismatch is silently dropped -- every row lands in exactly one bucket via a
 single deterministic precedence order (see BUCKET_PRECEDENCE / classify_row()
 below), applied identically to both engines so the two numbers are directly
 comparable. This does not re-derive the accurate engine's own already-settled
-residual classification (docs/cip_accurate_rfc.md Milestones 4A-0/4B-0/4C-0/
+residual classification (docs/rfcs/cip_accurate_rfc.md Milestones 4A-0/4B-0/4C-0/
 4C-1) -- it re-verifies the numbers against a fresh oracle run and re-maps the
 existing, already-diagnosed rows onto this script's bucket taxonomy, using the
 same mechanical signals for the legacy engine's much larger, previously
@@ -56,7 +56,7 @@ Bucket precedence (first match wins, applied per mismatching atom):
                                  (Rule 4a/4c are structurally N/A for chematic
                                  -- `chematic_core::Chirality` has no
                                  unit-type/axial variant at all, established
-                                 directly in docs/cip_accurate_rfc.md Milestone
+                                 directly in docs/rfcs/cip_accurate_rfc.md Milestone
                                  4B-0 -- so any Rule-4-shaped candidate here is
                                  necessarily 4b, not re-derived per row.)
   7. rule3_candidate         -- same tied-pair signal as #6, but the

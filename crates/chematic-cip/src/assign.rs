@@ -34,7 +34,7 @@
 //! 4A-2, needs symmetry/automorphism-aware joint resolution, a different architecture."
 //!
 //! That framing turned out to overstate what was needed. Diagnosing the cage family
-//! directly (see `docs/cip_accurate_rfc.md`'s Milestone 4A-2 entry) found **no genuine
+//! directly (see `docs/rfcs/cip_accurate_rfc.md`'s Milestone 4A-2 entry) found **no genuine
 //! cross-atom cycle**: within one digraph rooted at the outer atom, every embedded
 //! reference is strictly deeper (Hanson's own bottom-up postulate above), so
 //! `crate::resolver::resolve_chirality` -- already built, and already validated 72/72 for
@@ -51,11 +51,11 @@
 //! auxiliary sign (both R or both S -- not a distinguishing mirror-image pair) does not
 //! attempt a deeper chain comparison the way Rule 4b's `break_tie_rule4b` does; no row in
 //! this project's validation corpus exercises that shape for Rule 5, so extending to it
-//! is deferred rather than guessed. See `docs/cip_accurate_rfc.md` for the full writeup.
+//! is deferred rather than guessed. See `docs/rfcs/cip_accurate_rfc.md` for the full writeup.
 //!
 //! **Element-level guard: phosphorus stays tied.** The same code-path fix above, as a
 //! side effect, also reaches 2 cyclophosphazene phosphorus stereocenters
-//! (`docs/cip_accurate_rfc.md` Milestone 4C-1) that were previously `SkipReason::Tied`
+//! (`docs/rfcs/cip_accurate_rfc.md` Milestone 4C-1) that were previously `SkipReason::Tied`
 //! for the identical chain-length-1 Rule 4b degeneracy the carbon cage family has.
 //! Unlike the 15 carbon rows, Milestone 4C-1 found **neither** RDKit CIP engine has a
 //! representation-stable answer for that phosphorus molecule -- both flip under a
@@ -71,7 +71,7 @@
 //! element the validation corpus happens to exercise here, so a broader "unverified for
 //! any non-carbon element" framing may be more honest than "unverified for phosphorus
 //! specifically"; that broader guard is *not* implemented here, only flagged (see
-//! `docs/cip_accurate_rfc.md`'s Milestone 4C-1 entry) -- narrowing to exactly the
+//! `docs/rfcs/cip_accurate_rfc.md`'s Milestone 4C-1 entry) -- narrowing to exactly the
 //! element asked about avoids expanding scope
 //! unilaterally.
 //!

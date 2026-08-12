@@ -121,7 +121,7 @@ mod tests {
                 (checked_matches_zero_budget_is_deterministic_budget_exhausted)."]
     fn drug_score_pathological_macrocycle_does_not_hang() {
         // Regression test for the exact repro molecule from PR #137's descriptor
-        // census RFC (`docs/descriptor_census_rfc.md` on `diag/descriptor-census`):
+        // census RFC (`docs/rfcs/descriptor_census_rfc.md` on `diag/descriptor-census`):
         // a symmetric bis-isoquinolinium macrocycle that, before this fix, drove
         // `drug_score` -> `alerts::pains_matches` -> `match_vf2::match_recursive`
         // into a multi-minute VF2 combinatorial blowup (confirmed via a stack

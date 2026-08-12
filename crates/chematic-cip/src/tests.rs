@@ -1,5 +1,5 @@
 //! Structural property tests for [`CipDigraph`] -- Milestone 1's own acceptance bar
-//! (see `docs/cip_accurate_rfc.md`): does the digraph build correctly, deterministically,
+//! (see `docs/rfcs/cip_accurate_rfc.md`): does the digraph build correctly, deterministically,
 //! and finitely. Whether it *ranks* substituents correctly is Milestone 2's concern and
 //! is deliberately not tested here (there is no ranking logic in this crate yet).
 

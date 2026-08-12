@@ -1,6 +1,6 @@
 //! Chiral-volume / improper-torsion stereo constraint verification and repair
 //! for already-embedded 3D geometries. 3D Breakthrough Program, Wave 2, Agent D
-//! -- see `docs/3d_breakthrough_master_plan.md` §0/§3 and `docs/etkdg_3d_gap_rfc.md`
+//! -- see `docs/rfcs/3d_breakthrough_master_plan.md` §0/§3 and `docs/rfcs/etkdg_3d_gap_rfc.md`
 //! Phase 3 for the diagnosis this module answers.
 //!
 //! # What this is
@@ -31,7 +31,7 @@
 //! == 4` for tetrahedral centers -- i.e. **zero coverage** for any stereocenter with an
 //! implicit hydrogen (one heavy neighbor short of 4), which is the majority case in
 //! real molecules (L-alanine, ibuprofen, naproxen, menthol, ...) since `Coords3D` is
-//! heavy-atom-only and never materializes H (`docs/etkdg_3d_gap_rfc.md` §3). Routing
+//! heavy-atom-only and never materializes H (`docs/rfcs/etkdg_3d_gap_rfc.md` §3). Routing
 //! this module's verifier through that function would silently make it a no-op on
 //! most of its own job.
 //!
@@ -353,7 +353,7 @@ pub fn verify_stereo(mol: &Molecule, coords: &Coords3D) -> StereoVerification {
 // coords-free question: "what would a satisfying geometry have to look like?" --
 // i.e. it is the "SMILES stereo -> StereoConstraintSet" step of the
 // `SMILES stereo -> StereoConstraintSet -> bounds/chiral-volume/dihedral
-// constraints -> DG -> verify` pipeline described in `docs/etkdg_3d_gap_rfc.md`'s
+// constraints -> DG -> verify` pipeline described in `docs/rfcs/etkdg_3d_gap_rfc.md`'s
 // Phase 3 (issues #285, #210, #291). It reuses `tetrahedral_constraint_for`/
 // `double_bond_constraint_for` -- the exact same declared-parity extraction
 // `verify_stereo` itself runs -- so the constraint set and the verifier can never

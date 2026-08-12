@@ -113,7 +113,7 @@ pub enum CipMode {
     /// infallible, silent on ties (always produces *an* answer, never "unresolved").
     LegacyFast,
     /// Tetrahedral R/S (incl. Rule 5 pseudoasymmetric `r`/`s`) from the hierarchical
-    /// digraph engine (~99.64% oracle-stable agreement, see `docs/cip_accurate_rfc.md`),
+    /// digraph engine (~99.64% oracle-stable agreement, see `docs/rfcs/cip_accurate_rfc.md`),
     /// merged with legacy's E/Z and allene answers. Atoms the accurate engine
     /// explicitly ties on or exceeds its budget on are never silently backfilled with
     /// legacy's (less rigorous) guess -- they surface via
@@ -1750,7 +1750,7 @@ mod tests {
     fn cip_mode_accurate_pseudoasymmetric_fix_stays_unresolved_for_phosphorus_ties() {
         // Milestone 4A-2's `assign_one_with_rule5` fix (resolving the carbon cage
         // family's pseudoasymmetric centers) reaches this *different*, previously-
-        // `SkipReason::Tied` molecule (docs/cip_accurate_rfc.md Milestone 4C-1) via the
+        // `SkipReason::Tied` molecule (docs/rfcs/cip_accurate_rfc.md Milestone 4C-1) via the
         // exact same code path: atoms 6/19 tie for the identical structural reason as
         // the carbon cage family (a chain-length-1-degenerate Rule 4b comparison whose
         // branches' auxiliary R/S signs genuinely differ). Left unguarded, the fix would

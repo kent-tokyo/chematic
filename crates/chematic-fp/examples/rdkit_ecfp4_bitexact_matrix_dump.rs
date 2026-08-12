@@ -1,6 +1,6 @@
 //! Diagnosis-only dump for the ECFP4 bit-exact API-design workstream
 //! (`diag/ecfp4-bitexact-api`). Not production code, not reused by any
-//! production path -- see `docs/ecfp4_bitexact_api_rfc.md`.
+//! production path -- see `docs/rfcs/ecfp4_bitexact_api_rfc.md`.
 //!
 //! For every fixture in `scripts/ecfp4_bitexact_matrix_fixtures.csv`, dumps:
 //! - The production, single-config path

@@ -6,7 +6,7 @@
 //! (`assign_cip_accurate_experimental_without_mancude` on the original, aromatic-form
 //! molecule) and the live production path -- see `compare.rs`'s
 //! `CompareContext::fractional_decisions` doc comment and
-//! `docs/cip_accurate_rfc.md`'s MANCUDE-Decision-A0 tripwire closeout entry. All three
+//! `docs/rfcs/cip_accurate_rfc.md`'s MANCUDE-Decision-A0 tripwire closeout entry. All three
 //! were confirmed to match both RDKit's modern (`rdCIPLabeler`) and legacy
 //! (`_CIPCode`) oracles at diagnosis time (`.venv/bin/python3`, RDKit 2026.03.3) --
 //! frozen here as fixture expectations, not re-verified live against RDKit on every
