@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.1] — 2026-08-12
+
+Anticancer platinum coordination-chemistry compatibility fixes, plus Extended
+XYZ (extxyz) read/write support. Patch release: all `chematic-core`/
+`chematic-mol`/`chematic-chem` changes are bug fixes to existing behavior
+(no new production capability gated behind a flag); the extxyz addition is
+new functionality but additive at the Python/WASM binding layer. Note: the
+Rust-only `XyzFrame`/`XyzError`/`write_extxyz` signature changes below are a
+real break to the v0.14.0 Rust API surface already published to crates.io,
+not merely a break to something unreleased — flagged here for anyone
+depending on `chematic-mol`'s Rust API directly rather than via SMILES/JSON
+bindings.
+
 ### Added — platinum coordination-chemistry compatibility benchmark
 
 - `validation/platinum/pt_corpus.jsonl` (18-entry hand-verified corpus of
@@ -92,6 +105,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   unchanged (checked element-by-element, not assumed) — most notably
   selenium, where the pre-existing value is the current IUPAC standard
   atomic weight and RDKit 2026.03.3 ships the superseded pre-2013 value.
+
+### Fixed — `chematic-chem` (`trained-solubility-mlp` feature, unrelated to the above)
+
+- **`mlp_solubility`'s embedded model weights (`W1_BYTES`/`B1_BYTES`) never actually compiled under the opt-in `trained-solubility-mlp` feature**: both `include_bytes!` paths had one `../` too many, resolving outside the repository entirely and failing to build with "No such file or directory" whenever the feature was enabled. Found while running this release's `cargo clippy --all-features` gate, the first time this feature has ever been exercised. Fixed to the correct 3-level-up path; a `needless_range_loop` clippy lint the fix then exposed in the same function was also fixed (semantics unchanged). Verified past compiling: with the feature enabled, `mlp_solubility` now actually loads the trained weights and produces plausible output where water is predicted more soluble than octane. `trained-solubility-mlp` is off by default, so this has no effect on any default build, and is unrelated to the platinum/extxyz work above.
 
 ### Added — `chematic-mol` (Extended XYZ / extxyz)
 

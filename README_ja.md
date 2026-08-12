@@ -106,7 +106,7 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.14.0
+# chematic v0.14.1
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-06, v0.4.22 vs RDKit 2026.03.3 --
@@ -282,6 +282,22 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 ---
 
 ## 最近の開発
+
+**v0.14.1**（2026-08-12）: **抗がん白金配位化学の互換性修正、Extended XYZ（extxyz）読み書き対応**
+- `chematic-core`: `valence_inferred_hcount`が`BondOrder::Dative`結合のdonor側を通常の共有結合と同じに扱っていたため、implicit水素数計算が誤っていた——`N->[Pt]Cl`のような括弧なしdative donorが`NH3`ではなく`NH2`と計算されていた。donor側dative結合はvalence合計に0を寄与するよう修正。白金配位化学ベンチマークで発見したが、Fe/Co/Pd/Ruのacceptorでも検証済みの一般的な修正（白金固有ではない）
+- `chematic-mol`: MDL bond type 9（dative/coordinate結合——RDKit実装が`Bond::BondType.DATIVE`をV3000で書く際に使う規約）が、V2000・V3000両readerで`BondOrder::Single`へ暗黙に丸められ、配位結合の意味情報が読み込み時に静かに失われていた。両readerともcode 9を`BondOrder::Dative`として解釈するよう修正、V3000のwriterもcode 9を出力するよう修正
+- `chematic-chem`: `avg_mass`/`mono_mass`が軽い主族元素約24種のみをカバーし、それ以外の全元素で`atomic_number as f64`へ静かにfallbackしていた——遷移金属・ランタノイド・アクチノイド・重い後周期元素は全てエラーなしで大きく誤った質量を返していた（白金：原子番号78、実際の質量約195Daのところ「78.0 Da」を返していた）。`Element`が持つ全118元素へ拡張、RDKitの周期表データを出典として使用。既存約24元素の値はそのまま維持（セレンなど、本プロジェクトの値が現行IUPAC標準でRDKit側が2013年以前の旧値を採用しているケースは既存値を優先）
+- `chematic-mol`: Extended XYZ（extxyz）形式の新規対応——`parse_extxyz`/`write_extxyz`、`ExtxyzReader`/`ExtxyzWriter`、`parse_extxyz_all`。既存のmulti-frame `XyzFrame`型の拡張として実装（ASEの`Lattice=`セル行列、型付きper-atom `Properties=`列、任意の`key=value`フレームメタデータ）。プレーンXYZファイルはextxyz readerを通しても無変更で往復する。Python: `from_extxyz`/`from_extxyz_all`/`to_extxyz`。WASM: `mol_from_extxyz`/`extxyz_frame_json`/`to_extxyz_json`。**Breaking（Rust APIのみ）**: `XyzFrame`に公開フィールド3つ追加、`XyzError`にvariant 7つ追加、`write_extxyz`の戻り値が`Result<String, XyzError>`に変更——これは既にcrates.io公開済みのv0.14.0 Rust APIに対する実際の破壊的変更であり、未リリースAPIへの変更ではない点に注意
+- 白金配位化学の立体化学（square-planar cis/trans、例：cisplatinとtransplatinの区別）は依然として表現不可能——今回のリリースでは測定のみ行い、意図的に未修正（`validation/platinum/FEASIBILITY.md`参照）
+- 詳細は`CHANGELOG.md`の`[0.14.1]`セクション参照
+
+**v0.14.0**（2026-08-11）: **立体化学を考慮したdistance geometry——宣言済みE/Zをbound-matrix制約として強制、`enforce_chirality`とpost-minimization stereo verificationの組み合わせ対応、Python/WASM公開**
+- `chematic-3d`: v0.13.0のissue #285 release-gate waiverの根本原因を特定・修正——`apply_vdw_bounds`の汎用non-bonded Van der Waals下限が、宣言されたE/Z立体化学に関わらず宣言済みE/Zアルケンの1-4置換基ペアに適用され、正しいcis配座が構造的にサンプリング対象から除外されていた。新規`apply_declared_ez_bounds`（`enforce_chirality`時のみ）が、汎用Van der Waals下限の適用より前に、same-side/opposite-sideの1-4距離の解析的境界をbond matrixへ交差させることで、post-hocな修復・retry・reflectionではなく構造的に正しい配座へ到達可能にした。四面体キラリティ（distance matrixでは原理的に表現不可能——分子とその鏡像はpairwise distanceが同一）と異なり、宣言済みE/Zはcis/transが異なるスカラー距離であるため、genuinely distance-representable。265分子コーパスの宣言済みE/Zサブセット（39分子）で測定：stereo-satisfied 22→42、violated 23→3、pipeline成功率・健全性は無変化
+- `chematic-3d`: `embed_pipeline_v2`のconfig検証ゲートが従来`stereo_policy`が`Ignore`以外なら`enforce_chirality: true`を拒否していたが、コーパス測定によりこれが誤りと判明——`enforce_chirality`はembedding時の正しさのみを保証し、force-field minimization（宣言済みstereoの概念を持たない）が正しくembedされたE/Z結合を事後的に境界の反対側へ動かしうる（実分子2件で確認、force field無しの再実行で検証）。`enforce_chirality: true`は`StereoPolicy::VerifyOnly`とも併用可能になり、既存のpost-minimizationゲートがこの失敗モードをsilentな誤stereo「成功」ではなく型付きエラーとして検出する
+- `chematic-py`、`chematic-wasm`: `enforce_chirality`（デフォルト`false`）が`PipelineV2Config`/`PipelineV2Config.safe()`（Python）および`enforceChirality` JSONフィールド（WASM）で実際に設定可能なパラメータ/フィールドに——どちらのbindingもこれまでこのフィールドを一切引き渡していなかったため、上記の修正はPython・WASM双方から到達不可能だった
+- `chematic-rxn`: `suzuki_biaryl`のretro-template修正（issue #294）——`[c:1][c:2]`は実際のbiaryl結合に一切マッチせず、環内芳香族結合のみにマッチしていた（このクレートのSMILES規約では、隣接する2つの芳香族原子間に明示的な結合トークンがない場合デフォルトで芳香族結合になるため）。`[c:1]-[c:2]`に修正。副次的発見：`DEFAULT_TEMPLATES`59件中14件が一切パースされていなかった——issue #296として記録、本修正では対応せず
+- opt-in限定——`enforce_chirality: false`が引き続き全箇所でデフォルト。デフォルトのconformer経路（`generate_coords_etkdg`/`Mol.conformer_ensemble()`）は無変更
+- 詳細は`CHANGELOG.md`の`[0.14.0]`セクション参照
 
 **v0.13.0**（2026-08-10）: **MMFF94 stretch-bend／torsionパラメータ選択パリティ（両方breaking）、per-atomステレオセンターAPI、E/Z完全性判定、macrocycle検出、notation非依存atropisomer検出・割り当て、XYZ入出力**
 - `chematic-ff`: `mmff94_stbn`/`mmff94_stbn_type_only`が`MMFF94_STBN`テーブルのlookup keyとして、これまで代用していた粗いangle type（0-8）ではなく、RDKit実装の本来の細かいstretch-bend type（`getMMFFStretchBendType`、0-11）を使うように（issue #227）— 265分子コーパスで427件のstretch-bend routing候補中220件が、RDKitの汎用Dfsb周期表デフォルト値から正しい専用パラメータへ移行。`angle_type_for`のring-offset式もRDKit実装の`getMMFFAngleType`に合わせて修正。**Breaking**: `mmff94_stbn`/`mmff94_stbn_type_only`の先頭`u8`引数は`stretch_bend_type`（`angle_type`ではない）— 新規`pub stretch_bend_type_for`で計算
