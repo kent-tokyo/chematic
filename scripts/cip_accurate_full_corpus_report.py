@@ -12,7 +12,7 @@ Consumes two TSV snapshots produced by
 (`smiles\tatom_idx\tvalue`, value is R/S/E/Z, `skip:*`, or `ERR\t<message>`).
 
 Prints exactly the accounting fields a numeric-discrepancy audit needs (see
-docs/cip_accurate_rfc.md's Milestone 3B closeout entry for how these resolved a genuine
+docs/rfcs/cip_accurate_rfc.md's Milestone 3B closeout entry for how these resolved a genuine
 4055-vs-4047 / 4188-vs-4186 gap between this session's quick verification and the project's
 canonical `cip_ground_truth.py`-based numbers): row counts at every filtering stage, both
 engines' correctness against a freshly-regenerated RDKit oracle, and **two independently
@@ -22,7 +22,7 @@ independently re-derives an oracle label for *every* row and counts baseline-cor
 candidate-incorrect from scratch, without assuming or reusing Method A's diff set at all.
 
 Optionally accepts a 4th argument, a path to an oracle-instability corpus (schema:
-`docs/cip_accurate_rfc.md` Milestone 4C-0 -- `validation/cip_oracle_instability.jsonl`
+`docs/rfcs/cip_accurate_rfc.md` Milestone 4C-0 -- `validation/cip_oracle_instability.jsonl`
 is the current one). Rows there with `oracle_status: representation_unstable` are
 excluded from both the correct and incorrect side of a second, "oracle-stable"
 agreement figure -- the raw figure above is never altered or hidden, both are printed

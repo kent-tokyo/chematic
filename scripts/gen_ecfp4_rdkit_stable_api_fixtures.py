@@ -2,7 +2,7 @@
 """Generates `validation/ecfp4_rdkit_stable_api_fixtures.json`: the single shared
 fixture+expectation corpus that chematic's Rust, Python, and WASM surfaces for the
 promoted `rdkit_morgan_ecfp4_experimental`/`rdkit_morgan_fingerprint` API all test
-against, byte-for-byte identically. See `docs/ecfp4_bitexact_api_rfc.md` for the
+against, byte-for-byte identically. See `docs/rfcs/ecfp4_bitexact_api_rfc.md` for the
 diagnosis this promotes and `crates/chematic-fp/src/rdkit_morgan_ecfp4.rs` /
 `crates/chematic-fp/src/rdkit_morgan_config.rs` for the production code.
 

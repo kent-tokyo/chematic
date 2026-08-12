@@ -79,7 +79,7 @@ fn stability_bridged_bicyclics() {
 /// exercised by `bridged_fused_spiro_permutation_invariance` — reported
 /// separately (per this project's convention: permutation invariance and
 /// idempotence are two distinct probes for the same underlying property,
-/// see `docs/canonical_smiles_residual_rfc.md`'s Method section).
+/// see `docs/rfcs/canonical_smiles_residual_rfc.md`'s Method section).
 #[test]
 fn stability_bridged_cage_and_heteroatom() {
     let cases = [
@@ -183,7 +183,7 @@ fn platform_independence_topology() {
 }
 
 /// Regression test for bridged/fused/spiro ring-closure ordering
-/// permutation-invariance (`docs/canonical_smiles_residual_rfc.md`'s
+/// permutation-invariance (`docs/rfcs/canonical_smiles_residual_rfc.md`'s
 /// "Update (C2)" correction).
 ///
 /// **History**: this test previously (`bridged_bicyclic_canonical_gap_documentation`)

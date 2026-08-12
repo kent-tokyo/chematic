@@ -2,7 +2,7 @@
 //! (no S>R, no reference inversion) against two corpora at once, with the discarded
 //! absolute rule kept alongside as a negative control -- per advisor guidance after the
 //! prior round's "8/8 both sets" turned out to be a hollow fit (see
-//! `docs/cip_accurate_rfc.md`'s reduction-proof section).
+//! `docs/rfcs/cip_accurate_rfc.md`'s reduction-proof section).
 //!
 //! Reference selection here is exactly "the branch's own nearest embedded stereocenter's
 //! auxiliary descriptor" (`chain[0]`) -- no majority-across-multiple-tied-siblings step

@@ -31,7 +31,7 @@ below is otherwise historical and unedited.
   dump, reproducible via the example above.
 - `validation/results/ecfp4_bitexact_matrix_summary.json` (new) — the diagnosis
   script's machine-readable output.
-- `docs/ecfp4_bitexact_api_rfc.md` (this file, new).
+- `docs/rfcs/ecfp4_bitexact_api_rfc.md` (this file, new).
 
 **Explicitly out of scope / not touched:** anything under `crates/*/src/**` (no
 production code modified, no re-implementation of `rdkit_morgan_ecfp4_experimental`

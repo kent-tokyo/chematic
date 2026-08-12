@@ -1,6 +1,6 @@
 //! Aromaticity-H0: build and persist the 94-molecule corpus of canonical
 //! round-trip idempotency instability found while validating A1-1b-1
-//! (`docs/aromaticity_a1_rfc.md`'s "A1-1b-1" section), bucketed by which
+//! (`docs/rfcs/aromaticity_a1_rfc.md`'s "A1-1b-1" section), bucketed by which
 //! aromaticity path(s) trigger it:
 //!
 //! - `experimental_only` (25): stable under `RdkitLike` (current default),

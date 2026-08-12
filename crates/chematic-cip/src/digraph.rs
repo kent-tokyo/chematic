@@ -2,7 +2,7 @@
 //!
 //! A [`CipDigraph`] is rooted at a candidate stereocenter and lazily expands into its
 //! substituent branches. Two structural rules do the real work, and are what this
-//! crate exists to get right (see `docs/cip_accurate_rfc.md`):
+//! crate exists to get right (see `docs/rfcs/cip_accurate_rfc.md`):
 //!
 //! - **Multiple-bond duplication**: a bond of order `k` between atoms `a` and `b`
 //!   contributes `k - 1` [`CipNodeKind::MultipleBondDuplicate`] leaves to *each* of
@@ -84,7 +84,7 @@ pub struct CipDigraph<'m> {
     /// nothing about whether the fraction ever *decided* a comparison (see
     /// `CompareContext::fractional_decisions` for that). Exists because Milestone 3B's
     /// fractional machinery was kept-but-measured-inert on the available corpus (see
-    /// `docs/cip_accurate_rfc.md`'s Milestone 3B closeout entry) -- "correct and never
+    /// `docs/rfcs/cip_accurate_rfc.md`'s Milestone 3B closeout entry) -- "correct and never
     /// fired" needs a test that can tell the difference from "correct and never even
     /// reached."
     fractional_nodes_emitted: u64,
@@ -532,7 +532,7 @@ impl<'m> CipDigraph<'m> {
 ///
 // ponytail: single implementor (`CipDigraph`) and no consumer yet -- this trait exists
 // only so Milestone 2's ranking comparator can depend on an interface instead of a
-// concrete type, per docs/cip_accurate_rfc.md. If that never materializes, fold this
+// concrete type, per docs/rfcs/cip_accurate_rfc.md. If that never materializes, fold this
 // back into an inherent method.
 pub trait DigraphExpander {
     fn children(&mut self, node: NodeId) -> Result<Vec<NodeId>, CipError>;
@@ -618,7 +618,7 @@ mod tests {
     }
 
     /// Firing test for Milestone 3B's kept-but-measured-inert fractional path (see
-    /// `docs/cip_accurate_rfc.md`'s Milestone 3B closeout entry): "correct and never
+    /// `docs/rfcs/cip_accurate_rfc.md`'s Milestone 3B closeout entry): "correct and never
     /// fired" needs a test that can tell the difference from "correct and never even
     /// reached." Uses a curated `aromatic_mancude`-bucket corpus molecule (atom 13 of
     /// `validation/cip_label_corpus.jsonl`'s first `aromatic_mancude` row) whose

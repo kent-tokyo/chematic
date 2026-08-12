@@ -61,7 +61,7 @@ pub fn flat_ring_applies(mol: &Molecule, ring_size: usize, atoms: [AtomIdx; 4]) 
 /// This crate's own structural rule (not translated from RDKit -- see
 /// module docs), reflecting the same VSEPR fact the legacy heuristic's
 /// L306/L719/L745/L751 branches encode (see
-/// `docs/3d_torsion_knowledge_audit.md`), reimplemented independently here
+/// `docs/rfcs/3d_torsion_knowledge_audit.md`), reimplemented independently here
 /// so the v2 architecture does not depend on the legacy cascade at all.
 pub fn is_linear_sp_center(mol: &Molecule, atom: AtomIdx) -> bool {
     let has_triple = mol.neighbors(atom).any(|(n, _)| {

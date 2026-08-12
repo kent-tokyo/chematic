@@ -1,6 +1,6 @@
 //! Milestone 4B-2 production port of the Rule 4b tiebreak from the validated
 //! reference engine (`examples/rule4b_bottom_up.rs`, 72/72 across 4 oracle corpora
-//! including mirrors -- see `docs/cip_accurate_rfc.md`). Mechanical port: algorithm
+//! including mirrors -- see `docs/rfcs/cip_accurate_rfc.md`). Mechanical port: algorithm
 //! unchanged from the example.
 
 use std::cmp::Ordering;

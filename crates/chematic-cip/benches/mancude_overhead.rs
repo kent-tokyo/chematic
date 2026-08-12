@@ -8,7 +8,7 @@
 //!
 //! Criterion's own statistical regression/no-change verdict (printed on every run once a
 //! `--save-baseline`/prior run exists to compare against) is the acceptance mechanism for
-//! this benchmark -- see `docs/cip_accurate_rfc.md`'s Milestone 3B closeout entry for why
+//! this benchmark -- see `docs/rfcs/cip_accurate_rfc.md`'s Milestone 3B closeout entry for why
 //! a bespoke p95 harness isn't needed here, and for the full-corpus (~5,000 molecule)
 //! measurement this in-repo 10-molecule set can't by itself substitute for.
 //!

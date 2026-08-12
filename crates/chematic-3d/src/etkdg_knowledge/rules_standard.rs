@@ -79,7 +79,7 @@ pub static STANDARD_TORSION_RULES: &[StandardTorsionRule] = &[
     },
     // Unsubstituted biphenyl (all-cH1 ortho positions): the REAL multi-term,
     // two-minima potential the legacy heuristic's single-45°-angle rule
-    // could not represent (see docs/3d_torsion_knowledge_audit.md's L202
+    // could not represent (see docs/rfcs/3d_torsion_knowledge_audit.md's L202
     // entry for the concrete contrast).
     StandardTorsionRule {
         rule_id: "standard:biphenyl_unsubstituted",

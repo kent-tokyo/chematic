@@ -171,7 +171,7 @@ builds MOL V2000 block text by hand, feeds the identical text to RDKit
 (`.venv/bin/python`, rdkit==2026.03.3) and to hand-derived arithmetic
 mirroring `signed_volume`/`wedge_z`, and compares. RDKit source referenced at
 commit `8afba32ec539dcb2369bc84549d802aca3f7eb39` (same pin used by
-`docs/stereo2d_reader_integration_rfc.md`), specifically
+`docs/rfcs/stereo2d_reader_integration_rfc.md`), specifically
 `Code/GraphMol/Chirality.cpp`'s `atomChiralTypeFromBondDirPseudo3D`.
 
 ## Scope note
@@ -179,7 +179,7 @@ commit `8afba32ec539dcb2369bc84549d802aca3f7eb39` (same pin used by
 This module never calls `chematic_perception::cip_priority` and never writes
 `Atom.cip_code`. It is not called from any reader yet, and the SMILES writer
 is unchanged — both are deliberately out of scope for this step (see
-`docs/stereo2d_reader_integration_rfc.md` for the full integration-boundary
+`docs/rfcs/stereo2d_reader_integration_rfc.md` for the full integration-boundary
 design and the reason the writer's existing standalone-wedge bug — it emits
 a meaningless `/`/`\` token for a wedge bond with no adjacent double bond,
 independently re-encountered while validating this module's output — must be

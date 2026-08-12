@@ -444,7 +444,7 @@ pub(crate) fn build_molecule_from_model(mol: &Molecule, model: &AromaticityModel
 
 /// Authoritative variant of [`build_molecule_from_model`]: the model is
 /// authoritative in BOTH directions -- promote AND demote -- instead of only
-/// ever promoting (see docs/aromaticity_rdkit_parity_rfc.md section 1b/6). A
+/// ever promoting (see docs/rfcs/aromaticity_rdkit_parity_rfc.md section 1b/6). A
 /// stale parser-set `aromatic: true` the model does not independently
 /// confirm does not survive.
 ///
@@ -1229,7 +1229,7 @@ fn ring_pi_electrons(
 // single source of truth for `assign_aromaticity_ex`'s actual decisions;
 // this is a parallel, read-only explanation layer for `component/atom/reason`
 // tracing, used by `aromaticity_a1_0_report` and the corpus diagnostics in
-// `validation/aromaticity_a1_0_corpus.jsonl`. See `docs/aromaticity_a1_rfc.md`.
+// `validation/aromaticity_a1_0_corpus.jsonl`. See `docs/rfcs/aromaticity_a1_rfc.md`.
 // ---------------------------------------------------------------------------
 
 /// Reason a ring atom contributes (or fails to contribute) pi electrons,
@@ -1415,7 +1415,7 @@ pub struct RingElectronTrace {
 /// Diagnostic twin of [`ring_pi_electrons`]: identical per-atom rules
 /// (delegating to [`evaluate_atom_pi_contribution`], the single source of
 /// truth for both this trace and any future experimental production path —
-/// see `docs/aromaticity_a1_rfc.md`'s A1-1a section), but returns a full
+/// see `docs/rfcs/aromaticity_a1_rfc.md`'s A1-1a section), but returns a full
 /// trace instead of a single early-exiting `Option<u32>`. Does not call,
 /// wrap, or change `ring_pi_electrons` itself — zero effect on
 /// `assign_aromaticity_ex`'s behavior. `trace_matches_ring_pi_electrons_on_corpus`
@@ -1620,7 +1620,7 @@ fn evaluate_atom_pi_contribution_inner(
 /// *legitimately shared* between two rings that are both otherwise valid vs.
 /// wrongly borrowed by one ring from another that's actually broken (e.g.
 /// by an sp3 atom) -- that is a distinct, harder, open question, deliberately
-/// left to Aromaticity-A1-1b (see `docs/aromaticity_a1_rfc.md`).
+/// left to Aromaticity-A1-1b (see `docs/rfcs/aromaticity_a1_rfc.md`).
 fn evaluate_atom_via_home_ring(
     mol: &Molecule,
     atom_idx: AtomIdx,
@@ -1802,7 +1802,7 @@ pub fn build_conjugated_components(
 /// `aromatic_context` bootstrapping at all (unlike `assign_aromaticity_ex`'s
 /// production Pass 1/Pass 2). Exists to cross-check hypotheses about which
 /// per-atom rule needs to change, per the MANCUDE-style bounded-enumeration
-/// precedent — see `docs/aromaticity_a1_rfc.md`'s A1-1a section.
+/// precedent — see `docs/rfcs/aromaticity_a1_rfc.md`'s A1-1a section.
 /// Deliberately simple/slow: O(rings + fused envelopes) candidates, no
 /// attempt at Pass-2-style iteration, memoization, or performance tuning.
 pub fn exhaustive_aromaticity_oracle(
@@ -2742,7 +2742,7 @@ mod tests {
     // comment: "may be kekulized... or may retain Aromatic bond orders from
     // the SMILES parser"). RDKit-verified: all four are aromatic cations,
     // all-atom/all-bond, per rdkit==2026.03.3 (see
-    // docs/aromaticity_rdkit_parity_rfc.md and the K2a PR description for
+    // docs/rfcs/aromaticity_rdkit_parity_rfc.md and the K2a PR description for
     // the full 40-fixture oracle re-run against a live RDKit).
     //
     // K1 (fix/kekulize-charge-aware-k1, already merged) made
@@ -2957,7 +2957,7 @@ mod tests {
     #[test]
     fn test_known_gap_azulene_nonalternant_odd_odd_split() {
         // c1ccc2cccc-2cc1 -- azulene itself (already the canonical example
-        // in this codebase and in docs/aromaticity_a1_rfc.md). RDKit: fully
+        // in this codebase and in docs/rfcs/aromaticity_a1_rfc.md). RDKit: fully
         // aromatic, all 10 atoms, 9/10 bonds (the explicit fusion bond the
         // SMILES itself writes non-aromatic, `-2`, stays a formal single
         // bond even in RDKit's own answer). chematic: 0/10 -- both the
@@ -2984,7 +2984,7 @@ mod tests {
             "KNOWN GAP: azulene's non-alternant whole-perimeter aromaticity is not \
              recognized by the per-ring Pass 1/Pass 2 model at all; RDKit says all \
              10 atoms are aromatic. Not fixed by K2a or K2b -- see \
-             docs/aromaticity_a1_rfc.md and the K2b PR description."
+             docs/rfcs/aromaticity_a1_rfc.md and the K2b PR description."
         );
     }
 
@@ -3477,7 +3477,7 @@ mod tests {
     // drift risk: nothing stops the two from silently diverging as either
     // one is edited. This test is the guard -- for every ring in every
     // molecule of the known false-positive/false-negative/negative-control
-    // corpus (the same molecules `docs/aromaticity_a1_rfc.md`'s diagnostic
+    // corpus (the same molecules `docs/rfcs/aromaticity_a1_rfc.md`'s diagnostic
     // corpus uses), both functions must agree exactly, in both an empty
     // context (Pass-1-equivalent) and the model's final converged context
     // (an upper-bound Pass-2-equivalent). This does not assert anything
@@ -3557,7 +3557,7 @@ mod tests {
     // These are cheap, structural sanity checks that the corpus buckets are
     // labeled the direction they claim -- not a re-measurement of the full
     // corpus (that's `aromaticity_a1_0_report` + the Python RDKit join, see
-    // `docs/aromaticity_a1_rfc.md`). Catches an accidental swap or a stale
+    // `docs/rfcs/aromaticity_a1_rfc.md`). Catches an accidental swap or a stale
     // pinned count silently going the other way.
     #[test]
     fn false_positive_corpus_over_counts_vs_rdkit() {

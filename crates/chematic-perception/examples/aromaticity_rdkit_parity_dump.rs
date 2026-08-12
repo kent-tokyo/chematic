@@ -36,7 +36,7 @@ use chematic_perception::{
 use serde_json::json;
 
 /// (id, category, description, smiles). Frozen -- see
-/// `docs/aromaticity_rdkit_parity_rfc.md` §4 for what each category is
+/// `docs/rfcs/aromaticity_rdkit_parity_rfc.md` §4 for what each category is
 /// deliberately targeting and why the specific molecule was chosen.
 const FIXTURES: &[(&str, &str, &str, &str)] = &[
     // --- baseline sanity ---

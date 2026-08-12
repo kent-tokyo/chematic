@@ -10,7 +10,7 @@ covered by ordinary Cargo license metadata.
 `crates/chematic-perception/src/rdkit_parity.rs` is a source-verified,
 line-level port of specific functions from RDKit's default aromaticity
 model implementation, built as a diagnostic reference engine (see
-`docs/aromaticity_a1_rfc.md`).
+`docs/rfcs/aromaticity_a1_rfc.md`).
 
 Derived from:
 

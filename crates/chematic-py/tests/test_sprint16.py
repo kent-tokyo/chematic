@@ -111,7 +111,7 @@ def test_cip_stereo_unresolved_empty_for_resolvable_molecule():
 
 def test_cip_stereo_unresolved_reports_genuine_ties():
     """The 2 phosphorus rows found to be genuine chematic ties (not merely
-    oracle-unstable, see docs/cip_accurate_rfc.md Milestone 4C-1) must come back in
+    oracle-unstable, see docs/rfcs/cip_accurate_rfc.md Milestone 4C-1) must come back in
     cip_stereo_unresolved(), never a silently-guessed label in cip_stereo()."""
     m = chematic.from_smiles(
         "CNP1(NC)=N[P@](NC)(N2CC2)=NP(NC)(NC)=N[P@@](NC)(N2CC2)=N1"

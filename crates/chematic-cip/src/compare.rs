@@ -7,7 +7,7 @@
 //! pools every atom at a given BFS depth into one sorted multiset and compares
 //! shell-by-shell -- discarding exactly the branch/provenance information a correct
 //! comparison needs (proven by a reverted triple-bond fix that went net negative on
-//! that engine, see `docs/cip_accurate_rfc.md`).
+//! that engine, see `docs/rfcs/cip_accurate_rfc.md`).
 //!
 //! # Sphere-by-sphere, not one branch to completion before the next
 //!
@@ -76,7 +76,7 @@
 //!
 //! Given a correct-but-inert implementation doubles `compare_ligands`'s cost for zero
 //! behavior change on this corpus, the Rule 1b pass was reverted rather than shipped --
-//! see `docs/cip_accurate_rfc.md`'s Milestone 3A entry for the finding in full. The
+//! see `docs/rfcs/cip_accurate_rfc.md`'s Milestone 3A entry for the finding in full. The
 //! `compare_by_level<K>` generic walk stays (this paragraph's `K`-parameterization is
 //! exactly what let Rule 1b be tried, measured, and cleanly removed without touching the
 //! Rule 1a/2 path). **Design note for Milestone 4's Rule 3/4/5**: don't repeat the
@@ -216,7 +216,7 @@ enum RuleMode {
 /// key field: a [`NodeId`] already uniquely identifies one exact, immutable digraph
 /// node for the digraph's whole lifetime, so keying on the literal `NodeId` (not a
 /// content-based structural signature -- issue #107's own diagnosis found that
-/// distinction load-bearing, see `docs/rank_children_heavy_tail_diagnosis_107.md`)
+/// distinction load-bearing, see `docs/rfcs/rank_children_heavy_tail_diagnosis_107.md`)
 /// already captures it: two different nodes that happen to *look* alike (same
 /// represented element, different closure/duplication provenance) get different
 /// `NodeId`s and therefore different, independently-cached entries.
@@ -282,7 +282,7 @@ pub struct CompareContext<'t> {
     /// measured at full-corpus scale. A later full-corpus diagnostic on the same
     /// corpus (SHA-256: `1c47371d...`) found the real value is 248, across 36
     /// stereocenters in 21 molecules (Milestone MANCUDE-Decision-A0; see
-    /// `docs/cip_accurate_rfc.md`'s tripwire closeout entry for the full breakdown).
+    /// `docs/rfcs/cip_accurate_rfc.md`'s tripwire closeout entry for the full breakdown).
     ///
     /// This is **not** a regression, and it does **not** contradict the byte-identical
     /// finding once fraction is properly isolated from Kekule-respelling structure (the

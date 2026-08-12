@@ -2,7 +2,7 @@
 //!
 //! `Point3`/`Coords3D` are now defined once in `chematic_core::coords3d` and
 //! re-exported here as a compatibility surface, per the 3D Breakthrough
-//! Program's Coords3D unification (`docs/3d_breakthrough_master_plan.md`,
+//! Program's Coords3D unification (`docs/rfcs/3d_breakthrough_master_plan.md`,
 //! decision 1a and the Wave 1->2 integration note in
 //! `chematic_core::coords3d`'s own doc comment). Every existing
 //! `crate::coords::{Point3, Coords3D}` / `chematic_3d::{Point3, Coords3D}`

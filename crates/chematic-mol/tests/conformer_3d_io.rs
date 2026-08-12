@@ -1,6 +1,6 @@
 //! Integration tests for 3D conformer support in the MOL/SDF readers and
 //! writers (3D Breakthrough Program, Agent A -- see
-//! `docs/3d_breakthrough_master_plan.md` section 1a/3).
+//! `docs/rfcs/3d_breakthrough_master_plan.md` section 1a/3).
 //!
 //! Every MOL-block fixture below is real RDKit `2026.03.3` output (pinned
 //! commit `8afba32ec539dcb2369bc84549d802aca3f7eb39`, same oracle this

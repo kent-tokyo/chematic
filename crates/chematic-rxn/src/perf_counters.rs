@@ -9,7 +9,7 @@
 //!
 //! Added while diagnosing the `run_reactants`/`apply_retro` performance
 //! regression between chematic 0.4.25 and 0.4.30 (see
-//! `docs/reaction_transform_perf.md`): distinguishing "doing more work" from
+//! `docs/rfcs/reaction_transform_perf.md`): distinguishing "doing more work" from
 //! "the same work costing more" was the whole point -- call/product/match
 //! *counts* turned out flat across versions, while per-call wall-clock time
 //! rose sharply, which is exactly the signature these counters are built to

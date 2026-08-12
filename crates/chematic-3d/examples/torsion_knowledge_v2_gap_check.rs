@@ -1,6 +1,6 @@
 //! Independent gate harness for the torsion-knowledge v2 layer (3D
 //! Breakthrough Program, Wave 2, Agent E -- see
-//! `docs/3d_torsion_knowledge_audit.md` and
+//! `docs/rfcs/3d_torsion_knowledge_audit.md` and
 //! `validation/manifests/etkdg_torsion_knowledge_sources.json`).
 //!
 //! Uses `embed_distance_geometry_v2`'s raw coordinates as input (Agent C's
@@ -217,7 +217,7 @@ const SMALL_RING_SET: &[(&str, &str)] = &[
 /// deliberately kept as the plain unbranched secondary-macrolactam form --
 /// it demonstrates a genuine gap in RDKit's own experimental table (the
 /// NX3H1+CX4H2 combination is absent there; see `rules_macrocycle.rs`'s
-/// module doc and `docs/3d_torsion_knowledge_audit.md`), reported as a known
+/// module doc and `docs/rfcs/3d_torsion_knowledge_audit.md`), reported as a known
 /// gap rather than papered over with an invented SMARTS.
 const MACROCYCLE_SET: &[(&str, &str)] = &[
     ("lactam_macrocycle", "O=C1CCCCCCCCCC(C)N1"),
@@ -995,7 +995,7 @@ fn disabled_flags_no_op_report() {
 //   the C++ source layout, which is exactly the kind of unverified claim
 //   this program's own standing practice exists to catch). `rdkit_torsion_
 //   family_dump` below emits the chematic side of that differential too; see
-//   `docs/3d_torsion_knowledge_audit.md` section 6 for the real, re-derived
+//   `docs/rfcs/3d_torsion_knowledge_audit.md` section 6 for the real, re-derived
 //   numbers.
 //
 // This function writes ONLY the chematic-side half of the comparison (a

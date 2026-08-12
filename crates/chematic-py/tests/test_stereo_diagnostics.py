@@ -2,7 +2,7 @@
 MOL/SDF readers (from_mol_block_with_diagnostics, from_mol_v3000_with_diagnostics,
 SdfRecord.stereo_diagnostics()).
 
-See docs/stereo2d_reader_integration_rfc.md for the design background and
+See docs/rfcs/stereo2d_reader_integration_rfc.md for the design background and
 crates/chematic-mol/tests/stereo_reader_integration.rs for the Rust-side
 equivalents of these same fixtures.
 """

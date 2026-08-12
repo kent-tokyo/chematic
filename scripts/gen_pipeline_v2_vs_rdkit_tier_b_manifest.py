@@ -5,7 +5,7 @@ vs RDKit ETKDGv3 benchmark (Wave 1 of the "RDKit alternative" program).
 Source: `scripts/descriptor_census_corpus.smi` -- a 5,000-molecule ChEMBL
 corpus already committed to this repo for reproducibility (downloaded via
 `scripts/download_chembl_smiles.py --count 5000`, documented in
-`docs/descriptor_census_rfc.md`). Deliberately reused rather than
+`docs/rfcs/descriptor_census_rfc.md`). Deliberately reused rather than
 re-downloaded: it is already committed (no `~/Downloads` dependency), already
 license-cleared, and its own provenance is already on record. This script
 draws its OWN, independently-defined 200-molecule subset from it (different
@@ -137,7 +137,7 @@ def main():
         "(https://www.ebi.ac.uk/about/terms-of-use); canonical SMILES only.",
         "source_acquisition": "scripts/download_chembl_smiles.py --count 5000 "
         "(already committed to this repo; not re-downloaded for this "
-        "benchmark -- see docs/descriptor_census_rfc.md)",
+        "benchmark -- see docs/rfcs/descriptor_census_rfc.md)",
         "generator": "scripts/gen_pipeline_v2_vs_rdkit_tier_b_manifest.py",
         "target_count": TARGET_COUNT,
         "selection_rule": [

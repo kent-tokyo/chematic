@@ -160,7 +160,7 @@ Status: **Diagnosis complete. No production behavior change.**
 > not explain most of the corpus's general shared-carrier coupling
 > population, only these 8 pinned fixtures. Verdict: **CONDITIONAL GO** for
 > a follow-up implementation PR (not started, no production code changed
-> here) — see `docs/ez_ring_constrained_residual_audit.md` for the full
+> here) — see `docs/rfcs/ez_ring_constrained_residual_audit.md` for the full
 > per-fixture classification, blast-radius table, and reasoning.
 
 > **Update (C1a):** Root Cause 1 (the dominant, E/Z-marker-carrier cluster
@@ -213,7 +213,7 @@ Branch: `diag/canonical-smiles-residual` (forked from `main`@`659baca221f71f135c
 
 ## Scope declaration
 
-- **Files created:** this doc (`docs/canonical_smiles_residual_rfc.md`),
+- **Files created:** this doc (`docs/rfcs/canonical_smiles_residual_rfc.md`),
   `scripts/canonical_residual_diagnosis.py`,
   `validation/canonical_residual_fixtures.jsonl`,
   `validation/results/canonical_residual_diagnosis.jsonl`,

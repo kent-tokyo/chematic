@@ -5,7 +5,7 @@ against a live RDKit oracle. Diagnosis only -- no production code touched.
 
 Companion Rust dump: `crates/chematic-fp/examples/rdkit_ecfp4_bitexact_matrix_dump.rs`
 Fixture corpus (single source of truth for both sides): `scripts/ecfp4_bitexact_matrix_fixtures.csv`
-RFC write-up: `docs/ecfp4_bitexact_api_rfc.md`
+RFC write-up: `docs/rfcs/ecfp4_bitexact_api_rfc.md`
 
 The production API exposes exactly ONE point in the full RDKit Morgan
 parameter space: radius=2, fpSize=2048, includeRedundantEnvironments=false,

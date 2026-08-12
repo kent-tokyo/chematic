@@ -6,7 +6,7 @@
 //! direction for the substituent bonds flanking a stereogenic double bond,
 //! straight from 2D geometry and topology -- mirroring RDKit's
 //! `MolOps::detectBondStereochemistry`/`setDoubleBondNeighborDirections`
-//! (see `docs/stereo2d_reader_integration_rfc.md`'s RDKit source audit).
+//! (see `docs/rfcs/stereo2d_reader_integration_rfc.md`'s RDKit source audit).
 //! [`crate::stereo2d::assign_ez_from_2d`] already computes a CIP E/Z
 //! *label* (`Atom.cip_code`) from the same kind of input, but a label is not
 //! a direction: nothing in `chematic_smiles::write`/`canonical_smiles` reads
@@ -26,7 +26,7 @@
 //! whose *own* `order` is already `Up`/`Down` (an existing wedge) is never
 //! usable as an E/Z carrier: see [`EzDirectionRejectionReason::CarrierConflict`].
 //!
-//! ## Scope limits (deliberate, see `docs/stereo2d_reader_integration_rfc.md`)
+//! ## Scope limits (deliberate, see `docs/rfcs/stereo2d_reader_integration_rfc.md`)
 //!
 //! - Joint canonical carrier resolution across independently-stereogenic
 //!   double bonds that share one physical candidate bond (issue #149) is out
@@ -166,7 +166,7 @@ pub fn apply_ez_directions_from_2d_with_diagnostics(
 /// (MDL V2000 double-bond stereo code 3 / V3000 bond `CFG=2`) -- information
 /// that exists only at parse time (there is no MOL/SDF-specific field on
 /// `Molecule` to carry it, and this PR does not add one; see
-/// `docs/stereo2d_reader_integration_rfc.md` for why a Molecule-level
+/// `docs/rfcs/stereo2d_reader_integration_rfc.md` for why a Molecule-level
 /// extension was avoided). A reader with no such bonds -- or a caller with
 /// no reader-level information at all -- passes an empty set, exactly what
 /// the two convenience entry points above do.

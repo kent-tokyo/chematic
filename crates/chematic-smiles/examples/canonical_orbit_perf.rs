@@ -1,7 +1,7 @@
 //! Automorphism-orbit-pruning performance report for `canonical_smiles`.
 //!
 //! Built while implementing `fix/canonical-automorphism-pruning` (see
-//! `docs/canonical_automorphism_pruning.md` and `docs/reaction_transform_perf.md`).
+//! `docs/rfcs/canonical_automorphism_pruning.md` and `docs/rfcs/reaction_transform_perf.md`).
 //! Compares the current orbit-pruned engine (`canonical_smiles`) against the
 //! exact pre-pruning exhaustive search
 //! (`chematic_smiles::canonical::legacy_canonical_smiles_for_benchmark`,
@@ -201,7 +201,7 @@ fn cubane_smiles() -> String {
 /// was warned about for "cubane" elsewhere in this repo. That pre-existing
 /// fixture's test coverage is still valid (it is a real, if differently
 /// sized, highly symmetric fused-ring molecule, and the idempotence fix it
-/// exercises is real -- see `docs/canonical_automorphism_pruning.md`), but
+/// exercises is real -- see `docs/rfcs/canonical_automorphism_pruning.md`), but
 /// this function builds an independently *verified* correctly-sized
 /// coronene from first principles (geometric construction, not a
 /// hand-typed/memorized SMILES string) for this task's own performance
@@ -598,7 +598,7 @@ fn print_report(r: &TierReport) {
 
 fn main() {
     println!("Canonical SMILES automorphism-orbit-pruning performance report");
-    println!("(see docs/canonical_automorphism_pruning.md)");
+    println!("(see docs/rfcs/canonical_automorphism_pruning.md)");
 
     let tier_a: Vec<(String, String)> = tier_a_high_symmetry()
         .into_iter()

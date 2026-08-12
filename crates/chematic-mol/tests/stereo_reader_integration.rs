@@ -1,6 +1,6 @@
 //! Integration tests for 2D wedge/hash stereo perception wired into the
 //! MOL V2000/V3000 readers and writers (see
-//! `docs/stereo2d_reader_integration_rfc.md` for the design background).
+//! `docs/rfcs/stereo2d_reader_integration_rfc.md` for the design background).
 //!
 //! Unit-level coverage of the parity math itself lives in
 //! `chematic-perception`'s `stereo2d_local` tests; these tests cover the

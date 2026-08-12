@@ -80,7 +80,7 @@ EXPECTED_RDKIT_VERSION = "2026.03.3"
 #     geometry, F and Cl) turn out to AGREE in isolation under the
 #     calibrated per-wedge consistency check (`wedges_agree_3` --
 #     "same direction" is not itself the discriminator, see
-#     docs/stereo2d_local_parity_calibration.md's "Multi-wedge consistency"
+#     docs/rfcs/stereo2d_local_parity_calibration.md's "Multi-wedge consistency"
 #     section) -- so this specific fixture was never a genuine contradiction,
 #     and chematic now correctly resolves a definite local parity for it
 #     instead of the old "no consistency check at all" bug. A geometry that

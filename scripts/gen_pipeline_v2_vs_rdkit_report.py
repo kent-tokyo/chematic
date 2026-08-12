@@ -23,7 +23,7 @@ than silently producing a report with drifted denominators.
 Run: `.venv/bin/python scripts/gen_pipeline_v2_vs_rdkit_report.py`
 Writes:
   - validation/results/pipeline_v2_vs_rdkit_aggregate.json
-  - docs/pipeline_v2_vs_rdkit_etkdgv3_benchmark.md
+  - docs/rfcs/pipeline_v2_vs_rdkit_etkdgv3_benchmark.md
 """
 
 import hashlib
@@ -43,7 +43,7 @@ ABLATION_PATH = ROOT / "validation/results/pipeline_v2_vs_rdkit_cyclopentane_abl
 TIER_A_MANIFEST = ROOT / "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_a.json"
 TIER_B_MANIFEST = ROOT / "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_b.json"
 AGGREGATE_OUT = ROOT / "validation/results/pipeline_v2_vs_rdkit_aggregate.json"
-REPORT_OUT = ROOT / "docs/pipeline_v2_vs_rdkit_etkdgv3_benchmark.md"
+REPORT_OUT = ROOT / "docs/rfcs/pipeline_v2_vs_rdkit_etkdgv3_benchmark.md"
 ENVIRONMENT_RECORD_PATH = ROOT / "validation/results/pipeline_v2_vs_rdkit_environment_record.json"
 MMFF94_TERM_AUDIT_SUMMARY_PATH = ROOT / "validation/results/mmff94_coverage_227_term_audit_summary.json"
 

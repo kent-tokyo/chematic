@@ -16,7 +16,7 @@ pub struct NodeId(pub u32);
 /// of a ring. Representing these as distinct, provenance-carrying nodes (rather than
 /// pooling atom keys into a shell multiset, as the existing fast/approximate engine in
 /// `chematic-chem` does) is the entire point of this crate -- see
-/// `docs/cip_accurate_rfc.md`. A duplicate node's provenance (which real atom it stands
+/// `docs/rfcs/cip_accurate_rfc.md`. A duplicate node's provenance (which real atom it stands
 /// in for, and via which bond) is exactly the information a shell-multiset comparison
 /// discards, and discarding it is what made a locally-correct per-bond-type duplication
 /// rule unsafe to add to that engine (proven: a reverted triple-bond fix went net

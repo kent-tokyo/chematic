@@ -223,7 +223,7 @@ mod tests {
     fn cf3_fluorines_are_automorphic() {
         // FC(F)(F)C -- the three fluorines of a CF3 group are a true-twin
         // orbit (identical neighbor set), the exact shape RENKIN's
-        // regression corpus hits repeatedly (docs/reaction_transform_perf.md).
+        // regression corpus hits repeatedly (docs/rfcs/reaction_transform_perf.md).
         let mol = parse("FC(F)(F)C").unwrap();
         let graph = CanonicalColoredGraph::new(&mol);
         let part = trivial_partition(&graph);

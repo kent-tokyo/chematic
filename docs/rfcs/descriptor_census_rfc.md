@@ -5,7 +5,7 @@
 **Branch:** `diag/descriptor-census` (forked from `main`@`659baca221f71f135ce0e1780e71245d8770f132`)
 
 **Files touched (all diagnosis tooling, none under `crates/*/src/**`):**
-- `docs/descriptor_census_rfc.md` (this file)
+- `docs/rfcs/descriptor_census_rfc.md` (this file)
 - `scripts/descriptor_census.py` (re-runnable Python census script)
 - `scripts/descriptor_census_corpus.smi` (5,000-molecule ChEMBL corpus, committed for reproducibility)
 - `crates/chematic-chem/examples/descriptor_census_unbound.rs` (new example, not `src/` — dumps the handful of `descriptors.rs` values unreachable from Python)

@@ -10,7 +10,7 @@
 //! see its doc comment: a well-formed MOL atom line always yields *some*
 //! (x, y) value, so `MissingCoordinate` is only reachable via direct API
 //! misuse, not a file shape, matching the precedent set by
-//! `docs/stereo2d_reader_integration_rfc.md`'s own fixture #14 for the
+//! `docs/rfcs/stereo2d_reader_integration_rfc.md`'s own fixture #14 for the
 //! tetrahedral case).
 //!
 //! MOL blocks are generated via `MoleculeBuilder` + the crate's own
@@ -696,7 +696,7 @@ fn negative_21_zero_length_double_bond() {
 /// real atom line always yields some (x, y), even a wrong one) -- reachable
 /// only via direct API misuse (a caller passing a `coords` slice shorter
 /// than the molecule's atom count to the standalone perception function),
-/// exactly mirroring `docs/stereo2d_reader_integration_rfc.md`'s own
+/// exactly mirroring `docs/rfcs/stereo2d_reader_integration_rfc.md`'s own
 /// fixture #14 for the tetrahedral case. Documented here rather than
 /// silently dropped.
 #[test]

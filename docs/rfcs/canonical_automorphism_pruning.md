@@ -7,7 +7,7 @@ Date: 2026-07-29. Branch: `fix/canonical-automorphism-pruning`. Trigger: RENKIN
 introduced by `be5dbb1` (2026-07-10). PR #189 (merged `97c87e3`) fixed a
 narrower, real bug (a redundant second `write_all()` call, ~13.4% measured
 improvement) but explicitly left the combinatorial branch explosion itself
-unfixed (`docs/reaction_transform_perf.md`, "Remaining gap"). This is that
+unfixed (`docs/rfcs/reaction_transform_perf.md`, "Remaining gap"). This is that
 follow-up.
 
 ## Root cause, precisely

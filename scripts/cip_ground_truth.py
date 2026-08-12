@@ -32,7 +32,7 @@ atoms at each BFS depth into one sorted multiset and compares shell-by-shell
 -- an approximation of, not the true recursive branch-by-branch, CIP
 hierarchical-digraph algorithm. Adding correct per-bond-type duplication
 rules to this approximate comparator is whack-a-mole. See
-docs/cip_accurate_rfc.md for the follow-on "Accurate CIP" engine design this
+docs/rfcs/cip_accurate_rfc.md for the follow-on "Accurate CIP" engine design this
 finding motivated.
 
 Two oracles, deliberately not conflated:
@@ -76,7 +76,7 @@ DEFAULT_FREEZE_PATH = "validation/cip_label_corpus.jsonl"
 
 def classify_bucket(rd, aidx):
     """Best-effort mechanism tag for known residual classes (informational,
-    not load-bearing -- see docs/cip_accurate_rfc.md Milestones 2-4)."""
+    not load-bearing -- see docs/rfcs/cip_accurate_rfc.md Milestones 2-4)."""
     atom = rd.GetAtomWithIdx(aidx)
     if atom.GetSymbol() == "P":
         return "phosphorus"

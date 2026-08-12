@@ -151,7 +151,7 @@ used, computing, per stereocenter:
   last digit) — reported as three rows for completeness against the trace
   output, not as three independent data points.
 - This diagnosis reuses CIP-Perf-A0's own corpus (`~/Downloads/SMILES.csv`,
-  5,000 molecules, same file referenced in `docs/cip_accurate_rfc.md`'s
+  5,000 molecules, same file referenced in `docs/rfcs/cip_accurate_rfc.md`'s
   MANCUDE-Decision-A0 entry) rather than a fresh draw, to keep this result
   directly comparable to the issue's own baseline numbers.
 

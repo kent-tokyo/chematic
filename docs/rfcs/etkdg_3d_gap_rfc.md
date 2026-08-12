@@ -10,7 +10,7 @@ ETKDGv3 (`AllChem.EmbedMolecule`/`EmbedMultipleConfs`), via the repo's
 
 ## Files touched by this round
 
-- `docs/etkdg_3d_gap_rfc.md` — this document (new).
+- `docs/rfcs/etkdg_3d_gap_rfc.md` — this document (new).
 - `scripts/etkdg_vs_rdkit_gap.py` — re-runnable comparison harness (new).
 - `validation/results/etkdg_vs_rdkit_summary.json` — aggregate measurements (new).
 - `validation/results/etkdg_vs_rdkit_rows.jsonl` — per-molecule raw rows, nothing
@@ -796,7 +796,7 @@ minimizer would now optimize the exact terms it's scored on.
   the assignment — flagged here for whoever owns `chematic-ff`'s parameter
   completeness).
 - No attempt to reconcile this RFC's chirality methodology with the separate,
-  already-tracked CIP-correctness workstream (`docs/cip_accurate_rfc.md` and
+  already-tracked CIP-correctness workstream (`docs/rfcs/cip_accurate_rfc.md` and
   the `cip_*` memory entries) — this round only measures "does the declared
   label survive 3D generation," never "is the declared label itself right."
 - No production benchmark gate wiring (this is a diagnosis script, not a CI

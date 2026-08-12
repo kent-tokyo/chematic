@@ -325,7 +325,7 @@ pub fn cip_assignments_json(mol: &MolHandle) -> String {
 /// CIP stereo assignments via the accurate hierarchical-digraph engine, as a JSON
 /// array of `{atomIdx, cipCode}` objects -- same shape as [`cip_assignments_json`],
 /// but merges the accurate engine's tetrahedral R/S (~99.6% oracle-stable agreement,
-/// see `docs/cip_accurate_rfc.md`) with legacy's E/Z and allene answers (the accurate
+/// see `docs/rfcs/cip_accurate_rfc.md`) with legacy's E/Z and allene answers (the accurate
 /// engine computes neither). Atoms it can't resolve are omitted here -- see
 /// [`cip_unresolved_json`] -- never a silently-guessed label. Returns `"null"` on an
 /// internal engine error (budget-independent computations should not normally hit this).

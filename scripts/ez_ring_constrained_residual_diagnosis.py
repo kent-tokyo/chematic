@@ -52,7 +52,7 @@ impossibility are three separate empirical questions):
       output at all (`cleanIt=False, flagPossible=True`) -- this RDKit
       version (2026.03.3) has no `NOT_POSSIBLE` value in `StereoSpecified`
       (only Unspecified/Specified/Unknown -- confirmed by direct enum dump,
-      see `docs/ez_ring_constrained_residual_audit.md`), so "absent from the
+      see `docs/rfcs/ez_ring_constrained_residual_audit.md`), so "absent from the
       list" is the operational equivalent, confirmed mechanistically:
       1,2-disubstituted cyclohexene is absent, 1,2-disubstituted cyclooctene
       (large enough for real trans) is present as Unspecified.

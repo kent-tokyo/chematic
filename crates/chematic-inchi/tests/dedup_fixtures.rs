@@ -516,7 +516,7 @@ fn live_corpus_diastereomer_pair_4663_4664_never_in_verified_group() {
 fn synthetic_collision_control_fails_closed() {
     // Real canonical-SMILES collisions between two DIFFERENT molecules are
     // not known to occur (0/4,992 in the corpus scan behind
-    // docs/canonical_smiles_residual_rfc.md), so this proves
+    // docs/rfcs/canonical_smiles_residual_rfc.md), so this proves
     // CanonicalCollision is reachable and fails closed by INJECTING an
     // identical candidate key for two genuinely different molecules
     // (benzene vs methanol), using the low-level `compare()` primitive

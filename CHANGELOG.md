@@ -210,7 +210,7 @@ is untouched.
   already uses, and intersects it into the bond matrix *before* the generic
   Van der Waals floor applies — the correct geometry becomes reachable by
   construction, not by repair, retry, reflection, or perturbation after the
-  fact (all three considered and rejected — see `docs/etkdg_3d_gap_rfc.md`
+  fact (all three considered and rejected — see `docs/rfcs/etkdg_3d_gap_rfc.md`
   for the full comparison).
 - Unlike tetrahedral chirality (`@`/`@@`), which a pairwise distance matrix
   can never encode (a molecule and its mirror image have identical pairwise
@@ -887,7 +887,7 @@ claim MMFF94 support is complete.
     (`validation/pipeline_v2_wasm_parity_fixtures.json`'s
     `force_field_fallback` fixture).
   - PR #235 (audit, merged `abd1d72b`) added
-    `docs/mmff94_coverage_gap_227_audit.md`, diagnosing the collision and
+    `docs/rfcs/mmff94_coverage_gap_227_audit.md`, diagnosing the collision and
     measuring the pre-fix baseline; PR #236 (this fix, merged `d75dc3f9`)
     is the production change.
   - **Not done in this release** (deferred, documented in PR #236):
@@ -968,7 +968,7 @@ claim MMFF94 support is complete.
   failures: 18 → 8. **Issue #149 stays open** — the ring-constrained
   residual's root cause (`compute_stereo_alkene_ends` has no ring-size
   gate) is characterized in a follow-up audit
-  (`docs/ez_ring_constrained_residual_audit.md`) but not yet fixed.
+  (`docs/rfcs/ez_ring_constrained_residual_audit.md`) but not yet fixed.
 
 ### Migration notes
 
@@ -1442,11 +1442,11 @@ _Nothing else yet — everything below `[0.8.1]` has shipped._
   positive on p95/p99/max; independently re-measured with symmetric
   instrumentation on both arms at ~13.4% total elapsed (p50 delta not
   resolvable from run-to-run noise at this sample size — treat the total/p50
-  figures in `docs/reaction_transform_perf.md` as directional, not precise).
+  figures in `docs/rfcs/reaction_transform_perf.md` as directional, not precise).
   Does **not** fix the larger, still-open cost on genuinely symmetric
   molecules, which needs automorphism-orbit-aware branch pruning —
   explicitly deferred as future work. Full bisect, methodology, and
-  before/after numbers in `docs/reaction_transform_perf.md`.
+  before/after numbers in `docs/rfcs/reaction_transform_perf.md`.
 
 ### Added — `chematic-rxn`
 
@@ -1470,7 +1470,7 @@ _Nothing else yet — everything below `[0.7.0]` has shipped._
 
 - **2D wedge/hash stereochemistry is now perceived automatically when reading MOL/SDF
   files** — the missing wiring step identified by the P1-A0 diagnosis
-  (`docs/stereo2d_reader_integration_rfc.md`): `chematic_perception::apply_local_parity_from_wedges`
+  (`docs/rfcs/stereo2d_reader_integration_rfc.md`): `chematic_perception::apply_local_parity_from_wedges`
   (shipped in v0.5.0, never called from a reader) is now invoked unconditionally by
   `chematic_mol::read_mol_with_diagnostics`/`read_mol_v3000_with_diagnostics` — the new
   parsing core for V2000/V3000 MOL text — immediately after a wedge/hash bond is read,
@@ -1685,7 +1685,7 @@ _Everything above this line is unreleased. Everything below `[0.6.0]` has shippe
   experimental-API conventions (`PyValueError` in Python, `Result<_, JsValue>` in
   WASM — same shape as `Mol.cip_stereo(mode="accurate")` and `ecfp_bitvec_custom`
   respectively). The exact config this promotes is unchanged from the diagnosis that
-  verified it (`docs/ecfp4_bitexact_api_rfc.md`): radius=2 (ECFP4), 2048 bits,
+  verified it (`docs/rfcs/ecfp4_bitexact_api_rfc.md`): radius=2 (ECFP4), 2048 bits,
   `useChirality=false`, `useBondTypes=true`, RDKit's default atom invariant. Does
   **not** change `ecfp4()`'s behavior or make the RDKit-exact path the default — the
   two engines use different hash functions and are never silently interchanged.
@@ -1729,7 +1729,7 @@ _Everything above this line is unreleased. Everything below `[0.6.0]` has shippe
 
 - **Canonical output could place an E/Z direction marker on a different substituent bond depending on input atom order/spelling** — the same alkene, written two semantically-identical ways, could canonicalize to two different (though individually valid) strings: permutation invariance held for the underlying stereo *assignment* but not for marker *placement*. Fixed via a new resolution pass (`resolve_ez_markers`) that deterministically picks the rank-lowest substituent as the canonical carrier for every double bond with stereo on both ends, covering trisubstituted/tetrasubstituted alkenes, the aromatic bond-direction stash, and ring-closure bonds. Two known, deliberately conservative exceptions remain unresolved rather than risk corruption: a double bond with a non-stereogenic end, and two independently-stereogenic double bonds that happen to share one physical candidate bond (18 molecules total) — resolving either case's carrier without the other visible can corrupt geometry, and there is no processing order avoiding a *different* order-dependence, so this case is left exactly as input-spelled. Tracked as [#149](https://github.com/kent-tokyo/chematic/issues/149) for a future joint-resolution design. Zero semantic corruption confirmed via two independent methods on every measured molecule.
 - Permutation invariance (measured on a 4,992-molecule proxy corpus, separately from idempotence per this project's convention): **92.99% → 98.08%** (264 of 282 known-divergent molecules now converge; the 18 residual cases above are the entire gap). Idempotence unaffected (98.44%, unchanged — its own residual is a separate, pre-existing aromaticity round-trip issue).
-- Investigated and **ruled out** a previously-diagnosed "bridged-bicyclic ring-closure ordering" permutation-invariance bug (`docs/canonical_smiles_residual_rfc.md`'s "Root Cause 2") — the two SMILES claimed to be "two spellings of the same molecule" turned out, per independent RDKit `MolToInchi` verification, to be genuinely different constitutional isomers; chematic's differing canonical output for them is correct, not a bug. An additional 22-molecule probe using RDKit-`RenumberAtoms`-generated genuine same-molecule respellings (bridged/spiro/fused/cage systems, including stereocenters and a heteroatom bridgehead) found zero convergence failures. No production code changed for this finding; the RFC and test suite were corrected instead.
+- Investigated and **ruled out** a previously-diagnosed "bridged-bicyclic ring-closure ordering" permutation-invariance bug (`docs/rfcs/canonical_smiles_residual_rfc.md`'s "Root Cause 2") — the two SMILES claimed to be "two spellings of the same molecule" turned out, per independent RDKit `MolToInchi` verification, to be genuinely different constitutional isomers; chematic's differing canonical output for them is correct, not a bug. An additional 22-molecule probe using RDKit-`RenumberAtoms`-generated genuine same-molecule respellings (bridged/spiro/fused/cage systems, including stereocenters and a heteroatom bridgehead) found zero convergence failures. No production code changed for this finding; the RFC and test suite were corrected instead.
 
 ### Fixed — `scripts`
 
@@ -1739,7 +1739,7 @@ _Everything above this line is unreleased. Everything below `[0.6.0]` has shippe
 
 ### Added — `chematic-perception`
 
-- **`local_parity_from_wedges(mol, coords, center)` / `apply_local_parity_from_wedges(mol, coords)`** ("P1-S1a-core") — CIP-independent tetrahedral parity from wedge/hash bonds and 2D coordinates, producing `Atom.chirality` + `Molecule::stereo_neighbor_order` directly. Never calls CIP ranking and never touches `Atom.cip_code` — a CIP tie must not prevent a molecule from having a known local parity. Sign convention measured against RDKit's raw `CHI_TETRAHEDRAL_CW`/`CCW` tag on frame-aligned fixtures (not derived by analogy); handles 3-heavy-plus-implicit-H (no synthetic H position, mirroring RDKit's own `atomChiralTypeFromBondDirPseudo3D`) and multiple simultaneous wedges on one center (each checked in isolation for a consistent parity before the combined volume is trusted — a wedge/hash drawing with two substituents pointing opposite ways is valid notation, not automatically contradictory). Full methodology in `docs/stereo2d_local_parity_calibration.md`. Not yet called from any reader's default parse path, and the SMILES writer's own wedge-token bug (below) had to be found and separately fixed first.
+- **`local_parity_from_wedges(mol, coords, center)` / `apply_local_parity_from_wedges(mol, coords)`** ("P1-S1a-core") — CIP-independent tetrahedral parity from wedge/hash bonds and 2D coordinates, producing `Atom.chirality` + `Molecule::stereo_neighbor_order` directly. Never calls CIP ranking and never touches `Atom.cip_code` — a CIP tie must not prevent a molecule from having a known local parity. Sign convention measured against RDKit's raw `CHI_TETRAHEDRAL_CW`/`CCW` tag on frame-aligned fixtures (not derived by analogy); handles 3-heavy-plus-implicit-H (no synthetic H position, mirroring RDKit's own `atomChiralTypeFromBondDirPseudo3D`) and multiple simultaneous wedges on one center (each checked in isolation for a consistent parity before the combined volume is trusted — a wedge/hash drawing with two substituents pointing opposite ways is valid notation, not automatically contradictory). Full methodology in `docs/rfcs/stereo2d_local_parity_calibration.md`. Not yet called from any reader's default parse path, and the SMILES writer's own wedge-token bug (below) had to be found and separately fixed first.
 - **Charge-aware Hückel π-electron counting** (`ring_pi_electrons` / `evaluate_atom_pi_contribution_inner`, "K2a") — protonated N/O and cationic C were previously scored as neutral; tropylium cation, imidazolium, pyridinium, and pyrylium now match RDKit's aromatic-atom/bond flags exactly, verified end-to-end and isolated from the (separately tracked, not yet shipped) authoritative-demotion change below.
 
 ### Fixed — `chematic-smiles`
@@ -1768,7 +1768,7 @@ _Everything above this line is unreleased. Everything below `[0.6.0]` has shippe
 
 ### Added — `chematic-cip` (new crate, experimental)
 
-- **Hierarchical-digraph CIP (Cahn-Ingold-Prelog) engine** — `assign_cip_accurate_experimental`, a from-scratch, provenance-carrying digraph replacement for the existing shell-pooling comparator in `chematic-chem`. Not yet wired into `chematic_chem::assign_cip()`; a separate, non-default, `publish = false` crate for now. See `docs/cip_accurate_rfc.md` for the full design and milestone history.
+- **Hierarchical-digraph CIP (Cahn-Ingold-Prelog) engine** — `assign_cip_accurate_experimental`, a from-scratch, provenance-carrying digraph replacement for the existing shell-pooling comparator in `chematic-chem`. Not yet wired into `chematic_chem::assign_cip()`; a separate, non-default, `publish = false` crate for now. See `docs/rfcs/cip_accurate_rfc.md` for the full design and milestone history.
 - Rules 1a (atomic number) / 1b (ring-duplicate handling) / 2 (isotope) comparator, genuinely sphere-by-sphere (breadth-first, not depth-first) — fixes a class of bug the old shell-pooling comparator couldn't (a shallow sibling difference must decide a comparison before a much deeper, irrelevant one is reached).
 - **MANCUDE (maximum non-cumulated double bonds) fractional atomic numbers** — `AtomicNumberKey`/`RationalAtomicNumber` give aromatic ring atoms (e.g. pyridine's N-adjacent carbons) a Kekulé-invariant fractional value instead of one arbitrary Kekulé form's integer, matching RDKit's own `calcFracAtomNums` formula (verified against RDKit source, not paraphrase).
 - **Full-corpus accuracy on this experimental engine: 96.68% → 99.19%** (4047/4186 → 4152/4186 vs modern RDKit `rdCIPLabeler`, net +105, 0 regressions confirmed by two independently-computed methods). Most of the gain is attributable to Kekulé-respelling structurally (aromatic bonds finally contributing real digraph duplicate nodes) — the fractional MANCUDE values themselves are implemented and RDKit-formula-verified but measured inert (0/4188 rows) on the available corpus, kept rather than reverted since there's no efficiency cost.
@@ -1780,7 +1780,7 @@ _Everything above this line is unreleased. Everything below `[0.6.0]` has shippe
 - **Milestone 4 gate closed: oracle-stable agreement 4160/4175 = 99.64%** (raw 4160/4186 = 99.38% unchanged), 0 regressions, 0 unexplained residuals — the remaining 15 rows are exactly the already-deferred Milestone 4A-2 symmetric-cage family (Rule 5, not a new gap).
 - **Milestone 5A — accurate CIP engine wired into every public surface, opt-in only, no default changes.** `chematic_chem::assign_cip_with_mode(mol, CipMode)` (Rust; new `CipMode`/`CipModeAssignment`/`CipUnresolvedReason`/`CipModeError` types, kept distinct from the pre-existing `CipAssignment`/`CipError`), `Mol.cip_stereo(mode="legacy"|"accurate")` + `Mol.cip_stereo_unresolved()` (Python, default mode unchanged), `cip_assignments_accurate_json` + `cip_unresolved_json` (WASM, existing `cip_assignments_json` unchanged). Because the accurate engine only computes tetrahedral R/S (no E/Z or allene handling), `CipMode::Accurate` **merges** the accurate engine's R/S with legacy's E/Z/allene answers rather than swapping engines outright — a naive swap would have silently dropped every E/Z/allene label. Ties/budget-outs are surfaced explicitly via `unresolved`, never silently backfilled with legacy's guess. Verified live (not just `cargo check`) through `maturin develop`+pytest and `wasm-pack`+Node, identical results across Rust/Python/WASM.
   - Structural note: `chematic-chem` now depends on `chematic-cip` as a normal (not dev-only) dependency, inverting the crate-layer diagram in `CLAUDE.md` — a deliberate, flagged exception. The dependency inversion is valid for local workspace builds, but requires `chematic-cip` to be published before `chematic-chem` for crates.io releases (see the "Release" entry below — `chematic-cip` was `publish = false` at the time this milestone landed, which blocked the next crates.io release until fixed).
-- **Milestone 5B — opt-in stabilization measurements** (no behavior change): Accurate mode is **~10× slower than legacy** (214–240µs vs 22–24µs per molecule, full 5,000-molecule corpus) — the one still-open item on the default-promotion checklist. Unresolved rate 0.392% (19/4849 stereocenters), **100% traced to the two already-known families** (17 Milestone 4A-2 cage carbons, 2 Milestone 4C-1 phosphorus atoms), zero unexplained causes. Cross-surface parity re-verified at 300 molecules (0 mismatches). Default-promotion gate criteria are listed with current status in `docs/cip_accurate_rfc.md`; promotion itself is not decided by this milestone.
+- **Milestone 5B — opt-in stabilization measurements** (no behavior change): Accurate mode is **~10× slower than legacy** (214–240µs vs 22–24µs per molecule, full 5,000-molecule corpus) — the one still-open item on the default-promotion checklist. Unresolved rate 0.392% (19/4849 stereocenters), **100% traced to the two already-known families** (17 Milestone 4A-2 cage carbons, 2 Milestone 4C-1 phosphorus atoms), zero unexplained causes. Cross-surface parity re-verified at 300 molecules (0 mismatches). Default-promotion gate criteria are listed with current status in `docs/rfcs/cip_accurate_rfc.md`; promotion itself is not decided by this milestone.
 
 ### Added — `chematic-perception`
 

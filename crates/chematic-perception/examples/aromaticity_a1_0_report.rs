@@ -102,7 +102,7 @@ fn main() {
         // exocyclic-to-heteroatom 0π carbon rule at all (it requires an
         // explicit `BondOrder::Double`, which aromatic-form parsing never
         // produces). This representation-dependence is itself a real A1-0
-        // finding, not a corpus bug -- see docs/aromaticity_a1_rfc.md.
+        // finding, not a corpus bug -- see docs/rfcs/aromaticity_a1_rfc.md.
         let mol = match chematic_smiles::parse(&smiles) {
             Ok(m) => m,
             Err(e) => {

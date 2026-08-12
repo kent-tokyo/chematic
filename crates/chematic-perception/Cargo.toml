@@ -17,7 +17,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
 # Diagnostic/reference-only APIs not meant for production use, e.g. the
-# RDKit-parity aromaticity reference engine (see docs/aromaticity_a1_rfc.md).
+# RDKit-parity aromaticity reference engine (see docs/rfcs/aromaticity_a1_rfc.md).
 diagnostics = []
 
 [dependencies]

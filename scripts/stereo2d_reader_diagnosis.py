@@ -7,7 +7,7 @@ into the V2000/V3000 MOL readers).
 Companion to, not a replacement for, `scripts/stereo2d_diagnosis.py` (the
 original P1-A0 diagnosis of the parity math itself, still frozen and
 accurate -- its sign convention was already calibrated against RDKit in
-docs/stereo2d_local_parity_calibration.md). This script instead validates
+docs/rfcs/stereo2d_local_parity_calibration.md). This script instead validates
 that wiring that math into the production reader path produces the right
 end-to-end results on the NEW fixture categories this integration adds:
 V2000/V3000 agreement, renumbering/reflection/rotation invariance,
@@ -62,7 +62,7 @@ EXPECTED_RDKIT_VERSION = "2026.03.3"
 #   volume check) while RDKit's own dual-volume fallback silently produces
 #   SOME tag/label with no warning -- measured, not assumed: this is the
 #   exact same divergence already characterized in
-#   docs/stereo2d_local_parity_calibration.md's "Multi-wedge consistency"
+#   docs/rfcs/stereo2d_local_parity_calibration.md's "Multi-wedge consistency"
 #   section (RDKit's fallback tag doesn't even agree with itself across
 #   similar disagreeing-wedge fixtures there, so it isn't a target to match).
 EXPECTED_LOCAL_PARITY_OUTCOME = {

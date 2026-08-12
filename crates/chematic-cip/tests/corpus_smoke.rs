@@ -1,5 +1,5 @@
 //! Residual-corpus smoke test (Milestone 1's structural bar, not an accuracy check --
-//! see `docs/cip_accurate_rfc.md`): every one of the 155 real molecules chematic's
+//! see `docs/rfcs/cip_accurate_rfc.md`): every one of the 155 real molecules chematic's
 //! existing engine gets wrong vs. RDKit's CIP oracle must still build a digraph without
 //! panicking. Milestone 1 has no ranking logic, so this can't check whether the
 //! *label* is right -- only that the *structure* is buildable (or, for a pathological

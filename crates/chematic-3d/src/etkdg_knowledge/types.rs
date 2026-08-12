@@ -3,13 +3,13 @@
 //!
 //! This is a **new, separate** type family, not an extension of the legacy
 //! `TorsionPreference` (single angle + linear penalty). See
-//! `docs/3d_torsion_knowledge_audit.md` §3.1/§3.3 for concrete evidence that
+//! `docs/rfcs/3d_torsion_knowledge_audit.md` §3.1/§3.3 for concrete evidence that
 //! a single-angle model cannot represent real torsion potentials (biphenyl's
 //! true multi-minima shape, the gauche effect's two symmetric minima).
 //!
 //! Not wired into `distance_geometry_v2.rs` or `etkdg.rs` by this PR --
 //! Coordinator integration is a later, separate PR (see this crate's
-//! `etkdg_knowledge.rs` module docs and `docs/3d_breakthrough_master_plan.md`).
+//! `etkdg_knowledge.rs` module docs and `docs/rfcs/3d_breakthrough_master_plan.md`).
 
 use chematic_core::AtomIdx;
 
@@ -19,7 +19,7 @@ use chematic_core::AtomIdx;
 
 /// Where a [`TorsionPotential`]'s parameters came from. Never conflate
 /// `LegacyHeuristic` with the others -- see
-/// `docs/3d_torsion_knowledge_audit.md` for why the pre-existing module's
+/// `docs/rfcs/3d_torsion_knowledge_audit.md` for why the pre-existing module's
 /// "experimental torsion angle preferences from CSD" header comment was an
 /// unverified (and, on the evidence gathered, false) label this enum exists
 /// to stop from recurring.
@@ -47,7 +47,7 @@ pub enum TorsionKnowledgeSource {
     BasicChemicalKnowledge,
     /// This crate's pre-existing, hand-authored, uncited heuristic layer
     /// (`get_torsion_preference` / `SMARTS_TORSION_RULES`), kept behaviorally
-    /// unchanged by this PR -- see `docs/3d_torsion_knowledge_audit.md` §2
+    /// unchanged by this PR -- see `docs/rfcs/3d_torsion_knowledge_audit.md` §2
     /// for the honest per-rule reclassification. Lowest priority tier,
     /// opt-in only.
     LegacyHeuristic,

@@ -1,6 +1,6 @@
 //! Milestone 4B-2 production port of the validated Rule 4b reference engine
 //! (`examples/rule4b_bottom_up.rs`, 72/72 across 4 oracle corpora including mirrors --
-//! see `docs/cip_accurate_rfc.md`). Mechanical port: [`resolve_chirality`] is
+//! see `docs/rfcs/cip_accurate_rfc.md`). Mechanical port: [`resolve_chirality`] is
 //! unchanged from the example. [`assign_one_with_rule4b`]/[`apply_rule4b_pass`] are
 //! new, fitting the validated algorithm into `assign.rs`'s existing pass-based
 //! architecture (mirroring [`crate::assign`]'s own `assign_one_with_rule5`/

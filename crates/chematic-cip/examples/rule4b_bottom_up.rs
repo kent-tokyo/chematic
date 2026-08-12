@@ -1,5 +1,5 @@
 //! Milestone 4B-2 (scope grown from "M4B-1.5 diagnostic" per the primary source, see
-//! `docs/cip_accurate_rfc.md`): a from-scratch, in-place auxiliary-descriptor engine
+//! `docs/rfcs/cip_accurate_rfc.md`): a from-scratch, in-place auxiliary-descriptor engine
 //! that replaces the per-atom `new_with_artificial_ancestor` re-rooting architecture
 //! with the one Hanson, Musacchio, Mayfield et al. 2018 (*J. Chem. Inf. Model.* 58(9),
 //! 1755-1765) actually specify:

@@ -1,6 +1,6 @@
 # UFF catastrophic-blowup fix: issues #185 and #188
 
-Companion to `docs/uff_robustness_diagnosis_185_188.md` (diagnostic pass,
+Companion to `docs/rfcs/uff_robustness_diagnosis_185_188.md` (diagnostic pass,
 no fix). This document covers the actual fix: what was tried, what was
 measured, what shipped, and what didn't.
 

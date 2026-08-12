@@ -1375,7 +1375,7 @@ impl Mol {
     /// heterocycles that cannot be kekulized under either engine). Never silently
     /// falls back to :meth:`ecfp4`'s Hückel-based engine on such input -- the two
     /// engines are not bit-compatible, so a silent substitution would look successful
-    /// while actually returning the wrong hash. See ``docs/ecfp4_bitexact_api_rfc.md``.
+    /// while actually returning the wrong hash. See ``docs/rfcs/ecfp4_bitexact_api_rfc.md``.
     fn rdkit_ecfp4(&self) -> PyResult<Vec<u8>> {
         let result = chematic_fp::rdkit_morgan_ecfp4_experimental(&self.inner)
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
@@ -2809,7 +2809,7 @@ impl Mol {
     ///   RDKit's modern ``rdCIPLabeler`` oracle. Unchanged from every prior release.
     /// - ``"accurate"`` — a hierarchical-digraph engine for tetrahedral R/S
     ///   (~99.6% oracle-agreement on the representation-stable subset; see
-    ///   ``docs/cip_accurate_rfc.md``), merged with legacy's E/Z and allene answers
+    ///   ``docs/rfcs/cip_accurate_rfc.md``), merged with legacy's E/Z and allene answers
     ///   (the accurate engine doesn't compute either). Atoms it explicitly can't
     ///   resolve (a genuine tie, or exceeding its computation budget) are omitted
     ///   here and reported instead via :meth:`cip_stereo_unresolved` — never a

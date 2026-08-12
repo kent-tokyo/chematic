@@ -55,7 +55,7 @@ platinum coordination chemistry).
 
 Independent, measurement-only comparison of `chematic_3d::pipeline_v2::embed_pipeline_v2`
 (9 force-field-policy/stereo-policy/gate-scope arms as of Priority 2's stretch-bend coverage
-gate -- see `docs/pipeline_v2_vs_rdkit_etkdgv3_benchmark.md` for the full current arm list)
+gate -- see `docs/rfcs/pipeline_v2_vs_rdkit_etkdgv3_benchmark.md` for the full current arm list)
 + the legacy `etkdg` entry point, against RDKit ETKDGv3
 (raw/+UFF/+MMFF94/best-of-10), across a 65-molecule curated stress corpus (Tier A,
 reusing the existing `pipeline_v2_integration_gate.rs` corpus) and a 200-molecule
@@ -95,7 +95,7 @@ reported as a general RDKit failure.
   pipeline_v2_vs_rdkit_common_scorer` + `bash scripts/pipeline_v2_vs_rdkit_process_level_perf.sh`
   + `python scripts/pipeline_v2_vs_rdkit_cyclopentane_crash_ablation.py` + `python
   scripts/gen_pipeline_v2_vs_rdkit_report.py` (see each script's docstring for exact invocation)
-- **Full report:** `docs/pipeline_v2_vs_rdkit_etkdgv3_benchmark.md` (per-class/per-metric
+- **Full report:** `docs/rfcs/pipeline_v2_vs_rdkit_etkdgv3_benchmark.md` (per-class/per-metric
   conclusions, auto-generated from the aggregate JSON -- no single overall win/loss claim)
 - **Known issue filed from this benchmark:** MMFF94 parameter coverage gap
   ([#227](https://github.com/kent-tokyo/chematic/issues/227), separate from #185/#188)
@@ -289,7 +289,7 @@ already covered by CI's own `test-wasm` job (not duplicated locally).
   only), `..._v0_13_0_paired_diff_summary.json` (full per-arm breakdown, all status
   changes, repair/stereo/coverage detail, reproducibility detail),
   `mmff94_coverage_227_term_audit_v0_13_0{,_summary}.json(l)` (fresh combined audit)
-- **Not done here:** `docs/pipeline_v2_vs_rdkit_etkdgv3_benchmark.md` was checked and
+- **Not done here:** `docs/rfcs/pipeline_v2_vs_rdkit_etkdgv3_benchmark.md` was checked and
   deliberately NOT hand-edited -- it declares itself auto-generated from
   `pipeline_v2_vs_rdkit_aggregate.json`, which requires a fresh RDKit-oracle run +
   common-scorer run + process-level perf + cyclopentane ablation, none of which is in
@@ -683,7 +683,7 @@ this file's scope).
   no individual Python getter), `descriptor_census.json` / `descriptor_census_unbound.jsonl`
   (`validation/results/`).
 - **Reference tool:** RDKit 2026.03.3.
-- **Full writeup:** [`docs/descriptor_census_rfc.md`](../docs/descriptor_census_rfc.md).
+- **Full writeup:** [`docs/rfcs/descriptor_census_rfc.md`](../docs/rfcs/descriptor_census_rfc.md).
 - **How to regenerate:**
   ```bash
   cargo run -p chematic-chem --release --example descriptor_census_unbound \
@@ -1010,7 +1010,7 @@ code changed.
   ez_ring_constrained_residual_audit -- scripts/descriptor_census_corpus.smi`
   + `python scripts/ez_ring_constrained_residual_diagnosis.py`. Self-test:
   `python scripts/ez_ring_constrained_residual_diagnosis.py --self-test`.
-- **Full report:** `docs/ez_ring_constrained_residual_audit.md` (per-fixture
+- **Full report:** `docs/rfcs/ez_ring_constrained_residual_audit.md` (per-fixture
   classification, blast-radius table, recommended predicate,
   CONDITIONAL GO verdict)
 

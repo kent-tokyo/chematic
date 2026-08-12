@@ -555,7 +555,7 @@ pub fn read_mol_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseE
     // oracle (B0 diagnosis): RDKit sets `Bond::STEREOANY` and never prints
     // `/`/`\`, even when raw coordinates would otherwise resolve to a
     // definite E or Z. There is no per-bond Molecule-level field for this
-    // (see `docs/stereo2d_reader_integration_rfc.md` for why one wasn't
+    // (see `docs/rfcs/stereo2d_reader_integration_rfc.md` for why one wasn't
     // added); it is threaded directly into
     // `apply_ez_directions_from_2d_ex` below instead.
     let mut explicitly_unspecified_ez: std::collections::HashSet<BondIdx> =
@@ -594,7 +594,7 @@ pub fn read_mol_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseE
             // stereocenter from a bond whose direction the file explicitly
             // declares unknown. Falls through to `Single`, i.e. "no defined
             // direction" -- a documented, accepted round-trip-lossy case
-            // (see `docs/stereo2d_reader_integration_rfc.md`).
+            // (see `docs/rfcs/stereo2d_reader_integration_rfc.md`).
             1 => match stereo_raw {
                 1 => BondOrder::Up,
                 6 => BondOrder::Down,
@@ -643,7 +643,7 @@ pub fn read_mol_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseE
     // `bond.order`), THEN E/Z direction -- the E/Z stage only ever writes to
     // the separate `bond_direction` side channel, never to `bond.order`, so
     // running it after can never disturb the wedge/hash the tetrahedral
-    // stage just read. See `docs/stereo2d_reader_integration_rfc.md`.
+    // stage just read. See `docs/rfcs/stereo2d_reader_integration_rfc.md`.
     let stereo_diagnostics = apply_local_parity_from_wedges_with_diagnostics(&mut mol, &coords);
     let ez_diagnostics =
         apply_ez_directions_from_2d_ex(&mut mol, &coords, &explicitly_unspecified_ez);

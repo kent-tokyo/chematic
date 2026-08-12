@@ -7,7 +7,7 @@
 //! **not** a proof of chemical identity: two valid respellings of the exact
 //! same molecule can occasionally produce different canonical strings (a
 //! characterized, molecule-preserving residual of the canonicalizer -- see
-//! `docs/canonical_smiles_residual_rfc.md`), and -- at least theoretically,
+//! `docs/rfcs/canonical_smiles_residual_rfc.md`), and -- at least theoretically,
 //! since this is unobserved on real corpora -- two different molecules could
 //! in principle collide onto the same canonical string. Neither failure mode
 //! is acceptable for a "high-confidence" dedup claim, so canonical SMILES is
@@ -22,7 +22,7 @@
 //! [`DedupRelation::VerificationUnavailable`] -- **never** silently treated
 //! as a match. This mirrors a failure mode this project has hit before:
 //! pooling a fallible/unverified path's results into a "verified" success
-//! rate. See `docs/canonical_smiles_residual_rfc.md` and this module's own
+//! rate. See `docs/rfcs/canonical_smiles_residual_rfc.md` and this module's own
 //! `README`-equivalent (the crate-level dedup section) for the full
 //! rationale.
 //!
@@ -349,7 +349,7 @@ fn verified_identity_key(inchi: &str, policy: IdentityPolicy) -> Result<String, 
 /// [`DedupRelation::CanonicalCollision`] is actually reachable and correctly
 /// fails closed, since real canonical-SMILES collisions are not known to
 /// occur in practice (0/4,992 observed in the 5,000-molecule corpus scan
-/// behind `docs/canonical_smiles_residual_rfc.md`). Most callers should use
+/// behind `docs/rfcs/canonical_smiles_residual_rfc.md`). Most callers should use
 /// [`compare_molecules`] instead.
 pub fn compare(
     key_a: &str,

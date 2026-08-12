@@ -7,7 +7,7 @@
 //! via `assign_cip_accurate_experimental`. Neither RDKit oracle has a stable answer for
 //! this molecule either: both modern `rdCIPLabeler` and legacy `_CIPCode` flip under
 //! the same Kekule respell that leaves chematic's tie unchanged (see
-//! `docs/cip_accurate_rfc.md` Milestone 4C-1 for the full writeup, including the
+//! `docs/rfcs/cip_accurate_rfc.md` Milestone 4C-1 for the full writeup, including the
 //! digraph trace of *why* chematic ties -- a chain-length-1 degenerate case for Rule
 //! 4b's Like/Unlike operator, not a 3+-way tie or a `nearest_embedded` ambiguity).
 //!
@@ -87,7 +87,7 @@ fn main() {
     }
     println!("\nchematic ties on both atoms, both spellings: {all_tied}");
     println!(
-        "(digraph trace -- see docs/cip_accurate_rfc.md Milestone 4C-1 -- shows this is a\n \
+        "(digraph trace -- see docs/rfcs/cip_accurate_rfc.md Milestone 4C-1 -- shows this is a\n \
          chain-length-1 degenerate case for Rule 4b's Like/Unlike operator: both tied\n \
          branches' nearest embedded stereocenter is the SAME underlying atom, reached via\n \
          two different ring paths, so there is no second chain element to compare)"

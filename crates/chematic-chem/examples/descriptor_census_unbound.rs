@@ -3,14 +3,14 @@
 //!
 //! 1. No Python/WASM/MCP binding at all (confirmed by grepping chematic-py/
 //!    chematic-mcp/chematic-wasm for their names — see
-//!    docs/descriptor_census_rfc.md): `moran_autocorr`, `geary_autocorr`,
+//!    docs/rfcs/descriptor_census_rfc.md): `moran_autocorr`, `geary_autocorr`,
 //!    `information_content`, `mde_carbon`, and the plain `mmff94_charges`
 //!    (shadowed in the Python API by `mmff94_charges_bci`).
 //! 2. Only reachable via the monolithic `Mol.descriptors()` dict, which
 //!    unconditionally computes ~130 other out-of-scope values too (QED, SA
 //!    score, PAINS, drug_score, ...) — and on one pathological symmetric
 //!    macrocycle in this census's corpus, `drug_score`'s PAINS/VF2
-//!    substructure match takes several minutes (see docs/descriptor_census_rfc.md's
+//!    substructure match takes several minutes (see docs/rfcs/descriptor_census_rfc.md's
 //!    "VF2 performance" finding). `bcut2d` and `carbon_types` have no
 //!    individual Python getter, so they are dumped here instead of paying
 //!    that cost on every molecule.
@@ -37,7 +37,7 @@ fn fmt_vec(v: &[f64]) -> String {
 /// Calls all 5 unbound functions, catching panics per-function so one
 /// crashing descriptor doesn't hide the others' results for the same
 /// molecule (diagnosis-only: a real panic found in `moran_autocorr` on this
-/// corpus, see docs/descriptor_census_rfc.md).
+/// corpus, see docs/rfcs/descriptor_census_rfc.md).
 fn safe_call<T>(f: impl FnOnce() -> T + panic::UnwindSafe) -> Result<T, String> {
     panic::catch_unwind(f).map_err(|e| {
         if let Some(s) = e.downcast_ref::<&str>() {

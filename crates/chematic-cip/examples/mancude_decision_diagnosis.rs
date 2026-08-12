@@ -1,7 +1,7 @@
 //! MANCUDE-Decision-A0: classify the nonzero `fractional_decisions` count found while
 //! running CIP-Perf-A0 (`cip_perf_diagnosis`) against the frozen `SMILES.csv` corpus
 //! (`corpus_sha256=1c47371d...`, confirmed identical to the corpus
-//! `docs/cip_accurate_rfc.md`'s Milestone 3B-1b closeout used for its "byte-identical,
+//! `docs/rfcs/cip_accurate_rfc.md`'s Milestone 3B-1b closeout used for its "byte-identical,
 //! fractional_decisions expected 0" claim -- see that file, and
 //! `compare.rs`'s own `CompareContext::fractional_decisions` doc comment, which names a
 //! future nonzero value as Milestone 3B-2's own resumption condition #1).
@@ -39,7 +39,7 @@
 //!   vs the live engine -- is also reported, labeled clearly as naive: it bundles
 //!   Kekule-respelling structure with the fraction, and an earlier version of this
 //!   tool used *only* the naive contrast, wrongly classifying 3 centers as E when
-//!   they're D (see `docs/cip_accurate_rfc.md`'s MANCUDE-Decision-A0 entry for the
+//!   they're D (see `docs/rfcs/cip_accurate_rfc.md`'s MANCUDE-Decision-A0 entry for the
 //!   full correction). Do not conclude E from the naive numbers alone.
 //!
 //! elapsed_us is corroborating only, not a gate (see CIP-Perf-A0's own note, and this
@@ -59,7 +59,7 @@ use chematic_cip::{
 use chematic_core::{AtomIdx, Chirality, CipCode};
 
 /// The `SMILES.csv` this tool's own aggregate counts (and
-/// `docs/cip_accurate_rfc.md`'s MANCUDE-Decision-A0 entry, which quotes them) were
+/// `docs/rfcs/cip_accurate_rfc.md`'s MANCUDE-Decision-A0 entry, which quotes them) were
 /// measured against -- see [`corpus_sha256`]'s call site in `main` for the runtime
 /// check against whatever corpus is actually passed in.
 const EXPECTED_CORPUS_SHA256: &str =
@@ -271,7 +271,7 @@ fn main() {
     if actual_sha256 == EXPECTED_CORPUS_SHA256 {
         println!(
             "classification A (corpus drift): RULED OUT -- corpus_sha256 matches \
-             docs/cip_accurate_rfc.md's recorded MANCUDE-Decision-A0/M3B-1b closeout \
+             docs/rfcs/cip_accurate_rfc.md's recorded MANCUDE-Decision-A0/M3B-1b closeout \
              value exactly."
         );
     } else {
@@ -279,7 +279,7 @@ fn main() {
             "*** WARNING: corpus_sha256 does NOT match the expected \
              {EXPECTED_CORPUS_SHA256} -- classification A (corpus drift) is LIVE for \
              this run. The aggregate counts below are NOT directly comparable to \
-             docs/cip_accurate_rfc.md's recorded MANCUDE-Decision-A0 closeout numbers. \
+             docs/rfcs/cip_accurate_rfc.md's recorded MANCUDE-Decision-A0 closeout numbers. \
              ***"
         );
     }
@@ -308,7 +308,7 @@ fn main() {
     println!(
         "naive_final_label_changed: {naive_final_label_changed}  (these differ from the un-Kekulized \
          baseline -- see the structure-isolated numbers below for why: Kekule-respelling \
-         structure, not the fraction, per docs/cip_accurate_rfc.md's MANCUDE-Decision-A0 entry)"
+         structure, not the fraction, per docs/rfcs/cip_accurate_rfc.md's MANCUDE-Decision-A0 entry)"
     );
     println!();
     println!("--- STRUCTURE-ISOLATED final-assignment impact (real classification D vs E) ---");

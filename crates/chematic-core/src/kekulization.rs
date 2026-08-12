@@ -571,7 +571,7 @@ fn blossom_mark_path(
 /// a candidate) but *lowers* it for a cationic carbon (a `+1` carbon's `dv` drops from
 /// 4 to 3, which its existing bonds already satisfy — not a candidate). Verified
 /// empirically against `rdkit==2026.03.3` (pinned to the same commit) for every case
-/// below; see `docs/kekulize_charge_aware_rdkit_parity.md`.
+/// below; see `docs/rfcs/kekulize_charge_aware_rdkit_parity.md`.
 ///
 /// An atom can be unmatched (a lone-pair donor) if:
 /// - O, S, Se, Te (furan/thiophene/selenophene/tellurophene-type chalcogen) — but only
@@ -1417,7 +1417,7 @@ mod tests {
 
     // -----------------------------------------------------------------
     // K1: charge-aware `atom_must_be_matched` -- fixtures from
-    // docs/aromaticity_rdkit_parity_rfc.md section 1a, previously hard
+    // docs/rfcs/aromaticity_rdkit_parity_rfc.md section 1a, previously hard
     // failures. Builders mirror `furan`/`pyrrole` above: an explicit-H
     // bracket atom is built via `Atom::aromatic` + a field override, matching
     // the SMILES bracket notation named in each doc comment.

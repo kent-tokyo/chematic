@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Diagnostic comparison: chematic-3d ETKDG-style conformer generation vs RDKit ETKDGv3.
 
-Research/diagnosis tool for docs/etkdg_3d_gap_rfc.md — NOT a regression gate.
+Research/diagnosis tool for docs/rfcs/etkdg_3d_gap_rfc.md — NOT a regression gate.
 Re-run with: .venv/bin/python scripts/etkdg_vs_rdkit_gap.py [--out validation/results/etkdg_vs_rdkit_summary.json]
 
 For every corpus molecule this measures, per molecule and aggregated:
@@ -21,7 +21,7 @@ For every corpus molecule this measures, per molecule and aggregated:
   - (flexible-molecule subset) ensemble diversity + duplicate rate for both
     engines' multi-conformer generation
 
-See docs/etkdg_3d_gap_rfc.md for interpretation and the phased roadmap.
+See docs/rfcs/etkdg_3d_gap_rfc.md for interpretation and the phased roadmap.
 """
 
 from __future__ import annotations
@@ -435,7 +435,7 @@ def evaluate_one(name: str, smiles: str, category: str) -> dict:
     # a silent drop: everything computed so far (incl. chirality) is kept in
     # the row, but this record is excluded from the "ok" RMSD/energy/ring
     # aggregates below since a torn molecule makes those numbers meaningless
-    # (see docs/etkdg_3d_gap_rfc.md).
+    # (see docs/rfcs/etkdg_3d_gap_rfc.md).
     geometry_clean = (
         rec["chematic_bond_violations"]["max_rel_error"] <= BOND_BLOWUP_REL_ERROR
         and rec["rdkit_bond_violations"]["max_rel_error"] <= BOND_BLOWUP_REL_ERROR
@@ -587,7 +587,7 @@ def aggregate(records: list[dict], ensemble_records: list[dict]) -> dict:
     # not just the subset lucky enough to avoid Phase-0's blow-up bug. A
     # SEPARATE clean-only rollup is also computed, since a signed-volume/
     # dihedral-sign match rate computed on a torn molecule conflates "no
-    # stereo enforcement" with "garbage geometry" -- see docs/etkdg_3d_gap_rfc.md.
+    # stereo enforcement" with "garbage geometry" -- see docs/rfcs/etkdg_3d_gap_rfc.md.
     def new_bucket():
         return {"declared": 0, "chematic_covered": 0, "chematic_match": 0, "rdkit_covered": 0, "rdkit_match": 0}
 
@@ -701,7 +701,7 @@ def aggregate(records: list[dict], ensemble_records: list[dict]) -> dict:
             **chirality_block(buckets_clean["tet_4"], buckets_clean["tet_lt4"], buckets_clean["ez"]),
             "note": "Same rollup restricted to status=='ok' rows only (no bond >50% "
                     "off the covalent-radius reference). Small n by construction -- "
-                    "Phase 0's blow-up bug (see docs/etkdg_3d_gap_rfc.md) removed most "
+                    "Phase 0's blow-up bug (see docs/rfcs/etkdg_3d_gap_rfc.md) removed most "
                     "of the tetrahedral-4-heavy and alkene rows from this subset -- but "
                     "this is the only match-rate signal not confounded by torn geometry.",
         },

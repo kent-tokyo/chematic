@@ -14,7 +14,7 @@
   chematic-side dump, reproducible via the example above.
 - `validation/results/aromaticity_rdkit_parity_diagnosis_summary.json` (new) — the
   diagnosis script's machine-readable output.
-- `docs/aromaticity_rdkit_parity_rfc.md` (this file, new).
+- `docs/rfcs/aromaticity_rdkit_parity_rfc.md` (this file, new).
 
 **Explicitly out of scope / not touched:** anything under `crates/*/src/**` (no
 production code modified — every finding below was confirmed via scratch `examples/`
@@ -212,7 +212,7 @@ perimeter split as 5+7 (odd/odd) across its two fused rings — neither ring's i
 count is even, so neither can pass Pass 1 alone, and Pass 2's propagation never seeds
 because seeding requires an adjacent ring to have already passed Pass 1 (confirmed via
 `assign_aromaticity_ex` directly: `aromatic_atom_count() == 0` under **both**
-`Huckel` and `RdkitLike`). This is not a new discovery — `docs/aromaticity_a1_rfc.md`
+`Huckel` and `RdkitLike`). This is not a new discovery — `docs/rfcs/aromaticity_a1_rfc.md`
 already lists azulene by name as one of the "known false-negative families." This
 diagnosis reproduces it **independently, via a different methodology** (direct
 atom/bond SMILES comparison against a live RDKit oracle, rather than the SMARTS corpus
