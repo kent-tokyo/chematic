@@ -180,7 +180,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.14.0
+# chematic v0.14.1
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -419,6 +419,14 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 ## Recent Development
 
+**v0.14.1** (2026-08-12): **Anticancer platinum coordination-chemistry compatibility fixes, Extended XYZ (extxyz) read/write**
+- `chematic-core`: `valence_inferred_hcount` treated a `BondOrder::Dative` bond's donor side exactly like a covalent single bond when computing implicit hydrogen count — an un-bracketed dative donor like `N->[Pt]Cl` computed as `NH2` instead of the chemically correct `NH3`. Donor-side dative bonds now contribute 0 to the valence sum; found via a platinum coordination-chemistry benchmark but general (verified against Fe/Co/Pd/Ru acceptors too), not platinum-specific
+- `chematic-mol`: MDL bond type 9 (dative/coordinate — RDKit's own V3000 convention for `Bond::BondType.DATIVE`) silently mapped to `BondOrder::Single` in both V2000 and V3000 readers, quietly discarding coordination-bond semantics on read. Both readers now map code 9 to `BondOrder::Dative`; V3000's writer now emits code 9 instead of collapsing to plain single
+- `chematic-chem`: `avg_mass`/`mono_mass` covered only ~24 light main-group elements and silently fell back to `atomic_number as f64` for every other element — every transition metal, lanthanide, actinide, and heavy post-transition element (platinum: atomic number 78, real mass ~195 Da, previously returned "78.0 Da") got a wildly wrong mass with no error. Extended to all 118 `Element` values, sourced from RDKit's periodic table data, with the ~24 previously-covered values kept as-is where they differ (selenium: this project's value is the current IUPAC standard, RDKit ships the superseded pre-2013 value)
+- `chematic-mol`: new Extended XYZ (extxyz) format support — `parse_extxyz`/`write_extxyz`, `ExtxyzReader`/`ExtxyzWriter`, `parse_extxyz_all`, built as an extension of the existing multi-frame `XyzFrame` type (ASE's `Lattice=` cell matrix, typed per-atom `Properties=` columns, arbitrary `key=value` frame metadata); a plain XYZ file round-trips through the extxyz reader/writer unchanged. Python: `from_extxyz`/`from_extxyz_all`/`to_extxyz`. WASM: `mol_from_extxyz`/`extxyz_frame_json`/`to_extxyz_json`. **Breaking (Rust API only)**: `XyzFrame` gained three public fields, `XyzError` gained seven variants, `write_extxyz` now returns `Result<String, XyzError>` — a real break to the `chematic-mol` v0.14.0 Rust API already published to crates.io, not merely an unreleased-API change
+- Platinum coordination-chemistry stereochemistry (square-planar cis/trans identity, e.g. cisplatin vs. transplatin) remains unrepresented — measured and explicitly not fixed this release, see `validation/platinum/FEASIBILITY.md`
+- Full details in `CHANGELOG.md`'s `[0.14.1]` section
+
 **v0.14.0** (2026-08-11): **Stereo-aware distance geometry — declared E/Z enforced as a bound-matrix constraint, `enforce_chirality` composable with post-minimization stereo verification, Python/WASM exposure**
 - `chematic-3d`: root-caused and fixed the issue #285 release-gate waiver from v0.13.0 — `apply_vdw_bounds`'s generic non-bonded Van der Waals lower bound was being applied to a declared-E/Z alkene's own 1-4 substituent pair regardless of declared stereochemistry, structurally excluding the correct cis geometry from ever being sampled. New `apply_declared_ez_bounds` (`enforce_chirality`-only) intersects an analytic same-side/opposite-side 1-4 distance bound into the bond matrix *before* the generic Van der Waals floor applies, so the correct geometry is reachable by construction, not by post-hoc repair/retry/reflection. Unlike tetrahedral chirality (which a pairwise distance matrix can never encode — a molecule and its mirror image have identical pairwise distances), declared E/Z is genuinely distance-representable, since cis/trans are two different scalar separations, not mirror images. Measured on the 265-molecule corpus's declared-E/Z subset (39 molecules): stereo-satisfied 22 → 42, violated 23 → 3, pipeline success/soundness unchanged
 - `chematic-3d`: `embed_pipeline_v2`'s config-validation gate previously rejected `enforce_chirality: true` for any `stereo_policy` other than `Ignore`. Corpus measurement found this wrong — `enforce_chirality` protects embedding-time correctness only, and force-field minimization (which has no notion of declared stereo) can walk a correctly-embedded E/Z bond back across its boundary afterward (found on 2 real molecules, confirmed by re-running with no force field). `enforce_chirality: true` is now also allowed with `StereoPolicy::VerifyOnly`, whose existing post-minimization gate catches exactly this failure mode as a typed error instead of a silent wrong-stereo `success`
@@ -533,7 +541,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.14.0)
+├── Cargo.toml                    workspace root (v0.14.1)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -586,7 +594,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.14.0},
+  version   = {0.14.1},
   year      = {2026},
 }
 ```

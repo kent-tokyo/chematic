@@ -52,9 +52,9 @@ pub const MLP_SOLUBILITY_TRAINED: bool = cfg!(feature = "trained-solubility-mlp"
 // The weights are conditionally compiled when data files are present.
 // If the files do not exist the fallback path (esol_solubility) is used.
 #[cfg(feature = "trained-solubility-mlp")]
-const W1_BYTES: &[u8] = include_bytes!("../../../../data/mlp_w1.bin");
+const W1_BYTES: &[u8] = include_bytes!("../../../data/mlp_w1.bin");
 #[cfg(feature = "trained-solubility-mlp")]
-const B1_BYTES: &[u8] = include_bytes!("../../../../data/mlp_b1.bin");
+const B1_BYTES: &[u8] = include_bytes!("../../../data/mlp_b1.bin");
 
 // Cache parsed weights so that repeated calls to `mlp_solubility` (e.g. in a
 // virtual-screening loop over 100 k molecules) pay the ~8 KB deserialization
@@ -88,9 +88,9 @@ pub fn mlp_solubility(mol: &Molecule) -> f64 {
         }
 
         let mut acc = b[0];
-        for i in 0..2048 {
+        for (i, wi) in w.iter().enumerate().take(2048) {
             if fp.get(i) {
-                acc += w[i];
+                acc += wi;
             }
         }
         acc as f64
