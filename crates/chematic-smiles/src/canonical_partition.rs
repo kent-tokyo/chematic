@@ -38,7 +38,9 @@
 
 use std::collections::HashSet;
 
-use chematic_core::{AtomIdx, BondIdx, BondOrder, Chirality, Molecule, implicit_hcount};
+use chematic_core::{
+    AtomIdx, BondIdx, BondOrder, Chirality, Molecule, SquarePlanarPermutation, implicit_hcount,
+};
 
 pub(crate) type CellId = u32;
 
@@ -226,6 +228,9 @@ fn vertex_color(
                 Chirality::None => 0,
                 Chirality::CounterClockwise => 1,
                 Chirality::Clockwise => 2,
+                Chirality::SquarePlanar(SquarePlanarPermutation::SP1) => 3,
+                Chirality::SquarePlanar(SquarePlanarPermutation::SP2) => 4,
+                Chirality::SquarePlanar(SquarePlanarPermutation::SP3) => 5,
             }
         } else {
             0

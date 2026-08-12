@@ -41,6 +41,9 @@ pub fn invert_stereocenter(mol: &Molecule, idx: AtomIdx) -> Molecule {
                     Chirality::Clockwise => Chirality::CounterClockwise,
                     Chirality::CounterClockwise => Chirality::Clockwise,
                     Chirality::None => Chirality::None,
+                    // cis/trans relabeling is a constitutional change, not a chiral
+                    // (mirror-image) inversion -- leave square-planar tags untouched.
+                    sp @ Chirality::SquarePlanar(_) => sp,
                 };
             }
             builder.add_atom(atom);

@@ -155,6 +155,17 @@ pub(crate) fn bond_token_from(
     }
 }
 
+/// SMILES text token for a square-planar permutation tag (`@SP1`/`@SP2`/`@SP3`,
+/// including the leading `@`).
+pub(crate) fn square_planar_token(p: chematic_core::SquarePlanarPermutation) -> &'static str {
+    use chematic_core::SquarePlanarPermutation::*;
+    match p {
+        SP1 => "@SP1",
+        SP2 => "@SP2",
+        SP3 => "@SP3",
+    }
+}
+
 /// Write a [`Molecule`] to a SMILES string.
 ///
 /// Disconnected fragments are joined with `.`.
@@ -426,6 +437,9 @@ impl<'a> SmilesWriter<'a> {
                 chematic_core::Chirality::CounterClockwise => self.out.push('@'),
                 chematic_core::Chirality::Clockwise => self.out.push_str("@@"),
                 chematic_core::Chirality::None => {}
+                chematic_core::Chirality::SquarePlanar(p) => {
+                    self.out.push_str(square_planar_token(p))
+                }
             }
 
             emit_bracket_hydrogens(&mut self.out, self.mol, idx);

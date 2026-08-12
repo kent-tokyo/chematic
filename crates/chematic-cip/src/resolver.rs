@@ -48,7 +48,7 @@ pub(crate) fn resolve_chirality(
             return Ok(None);
         }
     };
-    if mol.atom(atom_idx).chirality == Chirality::None {
+    if !mol.atom(atom_idx).chirality.is_tetrahedral() {
         cache.insert(node_id, None);
         return Ok(None);
     }

@@ -2,7 +2,40 @@
 
 use crate::element::Element;
 
-/// Tetrahedral chirality as specified in OpenSMILES.
+/// A `@SP1`/`@SP2`/`@SP3` square-planar stereo tag (OpenSMILES's extended
+/// chirality-class syntax, e.g. Pt(II)/Pd(II) complexes like cisplatin).
+///
+/// Each variant names which pair of the 4 explicit neighbor positions
+/// (0-indexed, in the order recorded by [`crate::Molecule::stereo_neighbor_order`])
+/// sit *trans* (~180°) to each other:
+///
+/// - `SP1`: positions (0,2) trans, (1,3) trans
+/// - `SP2`: positions (0,1) trans, (2,3) trans
+/// - `SP3`: positions (0,3) trans, (1,2) trans
+///
+/// Oracle-verified against RDKit 2026.03.3 (3D embedding bond angles, cross-checked
+/// against RDKit's own documented cisplatin/transplatin example) — see
+/// `docs/rfcs/square_planar_stereo_rfc.md`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SquarePlanarPermutation {
+    SP1,
+    SP2,
+    SP3,
+}
+
+impl SquarePlanarPermutation {
+    /// The two trans-pairs this permutation implies, as 0-indexed neighbor positions.
+    pub fn trans_pairs(self) -> [(u8, u8); 2] {
+        match self {
+            Self::SP1 => [(0, 2), (1, 3)],
+            Self::SP2 => [(0, 1), (2, 3)],
+            Self::SP3 => [(0, 3), (1, 2)],
+        }
+    }
+}
+
+/// Chirality as specified in OpenSMILES: tetrahedral (`@`/`@@`) or, since this
+/// crate also models coordination complexes, square-planar (`@SP1`/`@SP2`/`@SP3`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum Chirality {
     /// No chirality specified.
@@ -12,6 +45,19 @@ pub enum Chirality {
     CounterClockwise,
     /// `@@` — clockwise.
     Clockwise,
+    /// `@SP1`/`@SP2`/`@SP3` — square-planar (4-coordinate) stereo.
+    SquarePlanar(SquarePlanarPermutation),
+}
+
+impl Chirality {
+    /// `true` only for [`Self::CounterClockwise`]/[`Self::Clockwise`] — the classic
+    /// tetrahedral-parity forms every CIP/ECFP/dedup consumer written before
+    /// square-planar existed assumes. Consumers that mean "is this a real
+    /// tetrahedral stereocenter" must check this, not `!= Self::None`, now that a
+    /// second non-tetrahedral kind of "not None" chirality exists.
+    pub fn is_tetrahedral(&self) -> bool {
+        matches!(self, Self::CounterClockwise | Self::Clockwise)
+    }
 }
 
 /// Assigned CIP (Cahn–Ingold–Prelog) stereodescriptor.

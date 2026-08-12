@@ -232,10 +232,14 @@ pub(crate) fn initial_atom_id(
     let mut bytes = invariant_bytes(mol, idx, ring_set, mode);
     if use_chirality {
         use chematic_core::Chirality;
+        // Reads the raw stored tag, not any permutation-corrected form -- same
+        // reordering-sensitivity tetrahedral chirality already has here, not a new
+        // inconsistency introduced by adding SquarePlanar.
         let chirality_byte = match mol.atom(idx).chirality {
             Chirality::None => 0u8,
             Chirality::CounterClockwise => 1u8,
             Chirality::Clockwise => 2u8,
+            Chirality::SquarePlanar(p) => 3 + p as u8,
         };
         bytes.push(chirality_byte);
     }

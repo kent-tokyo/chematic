@@ -1467,7 +1467,7 @@ fn canonical_tetrahedral_parity(mol: &Molecule, idx: AtomIdx) -> Option<bool> {
     let chirality_is_even = match atom.chirality {
         Chirality::Clockwise => true,
         Chirality::CounterClockwise => false,
-        Chirality::None => return None,
+        Chirality::None | Chirality::SquarePlanar(_) => return None,
     };
     let order = mol.stereo_neighbor_order(idx)?;
     if order.len() != 4 {

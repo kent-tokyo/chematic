@@ -19,11 +19,13 @@
 use std::collections::{HashMap, HashSet};
 
 use chematic_core::{
-    AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL, implicit_hcount,
-    valence_inferred_hcount,
+    AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL, SquarePlanarPermutation,
+    implicit_hcount, valence_inferred_hcount,
 };
 
-use crate::writer::{bond_token_from, emit_bracket_hydrogens, suppress_standalone_wedge};
+use crate::writer::{
+    bond_token_from, emit_bracket_hydrogens, square_planar_token, suppress_standalone_wedge,
+};
 
 /// Return the atom indices sorted into canonical (Morgan-rank) order.
 ///
@@ -1493,6 +1495,7 @@ impl<'a> CanonicalWriter<'a> {
                 Chirality::CounterClockwise => self.out.push('@'),
                 Chirality::Clockwise => self.out.push_str("@@"),
                 Chirality::None => {}
+                Chirality::SquarePlanar(p) => self.out.push_str(square_planar_token(p)),
             }
 
             emit_bracket_hydrogens(&mut self.out, self.mol, idx);
@@ -1521,8 +1524,16 @@ impl<'a> CanonicalWriter<'a> {
     /// Compute the parity-corrected chirality for `atom` when it is written
     /// with `from_atom` as the predecessor in the canonical DFS.
     ///
-    /// Returns the stored chirality unchanged when no stereo neighbor order is
-    /// recorded (e.g. programmatically constructed molecules).
+    /// Tetrahedral: returns the stored chirality unchanged when no stereo
+    /// neighbor order is recorded (e.g. programmatically constructed
+    /// molecules) -- with only 2 possible states, "unchanged, no better
+    /// information" is a safe no-op. Square-planar: drops to
+    /// [`Chirality::None`] instead whenever the neighbor order can't be
+    /// verified (no recorded order, size mismatch, duplicate/foreign ids) --
+    /// for a 3-state tag, passing the *original* tag through against a
+    /// *reordered* neighbor list can silently describe a different,
+    /// plausible-but-wrong stereoisomer, exactly the failure category this
+    /// mechanism exists to eliminate. See `remap_square_planar` below.
     fn corrected_chirality(&self, atom: AtomIdx, from_atom: Option<AtomIdx>) -> Chirality {
         let stored = self.mol.atom(atom).chirality;
         if stored == Chirality::None {
@@ -1530,7 +1541,11 @@ impl<'a> CanonicalWriter<'a> {
         }
 
         let Some(original) = self.mol.stereo_neighbor_order(atom) else {
-            return stored; // no parse-time data → return as-is
+            return if stored.is_tetrahedral() {
+                stored
+            } else {
+                Chirality::None
+            };
         };
 
         let atom_data = self.mol.atom(atom);
@@ -1579,19 +1594,93 @@ impl<'a> CanonicalWriter<'a> {
         }
 
         if canonical.len() != original.len() {
-            return stored; // size mismatch → fallback
+            return if stored.is_tetrahedral() {
+                stored // size mismatch → tetrahedral fallback (unchanged)
+            } else {
+                Chirality::None // square-planar: unverifiable → drop, don't guess
+            };
         }
 
-        if permutation_is_odd(original, &canonical) {
-            match stored {
-                Chirality::CounterClockwise => Chirality::Clockwise,
-                Chirality::Clockwise => Chirality::CounterClockwise,
-                Chirality::None => Chirality::None,
+        match stored {
+            Chirality::CounterClockwise | Chirality::Clockwise => {
+                if permutation_is_odd(original, &canonical) {
+                    if stored == Chirality::CounterClockwise {
+                        Chirality::Clockwise
+                    } else {
+                        Chirality::CounterClockwise
+                    }
+                } else {
+                    stored
+                }
             }
-        } else {
-            stored
+            Chirality::SquarePlanar(tag) => remap_square_planar(tag, original, &canonical)
+                .map(Chirality::SquarePlanar)
+                .unwrap_or(Chirality::None),
+            Chirality::None => Chirality::None,
         }
     }
+}
+
+/// Remap a square-planar tag from `original` (parse-time) neighbor order to
+/// `canonical` (canonical-DFS) neighbor order.
+///
+/// Rule (oracle-verified against RDKit 2026.03.3 across 24 neighbor
+/// permutations × 3 tags × 4 independent molecule shapes -- 0 mismatches; see
+/// `docs/rfcs/square_planar_stereo_rfc.md`): each tag names a partition of
+/// positions `{0,1,2,3}` into its two trans-pairs (SP1={0,2}|{1,3},
+/// SP2={0,1}|{2,3}, SP3={0,3}|{1,2}). Apply the neighbor-id permutation to
+/// that pair-of-pairs and match the result against the 3 templates.
+///
+/// `None` if `original`/`canonical` aren't both exactly 4 ids naming the same
+/// set of 4 distinct atoms -- a data-integrity problem to fail closed on, not
+/// a case to guess through.
+fn remap_square_planar(
+    tag: SquarePlanarPermutation,
+    original: &[u32],
+    canonical: &[u32],
+) -> Option<SquarePlanarPermutation> {
+    if original.len() != 4 || canonical.len() != 4 {
+        return None;
+    }
+    let mut sorted_original = original.to_vec();
+    sorted_original.sort_unstable();
+    sorted_original.dedup();
+    if sorted_original.len() != 4 {
+        return None; // duplicate neighbor ids -- malformed
+    }
+    let mut sorted_canonical = canonical.to_vec();
+    sorted_canonical.sort_unstable();
+    if sorted_original != sorted_canonical {
+        return None; // not the same 4 atoms
+    }
+
+    let position_in_canonical =
+        |id: u32| -> u8 { canonical.iter().position(|&x| x == id).unwrap() as u8 };
+
+    let mut new_pairs: Vec<(u8, u8)> = tag
+        .trans_pairs()
+        .into_iter()
+        .map(|(i, j)| {
+            let (a, b) = (
+                position_in_canonical(original[i as usize]),
+                position_in_canonical(original[j as usize]),
+            );
+            (a.min(b), a.max(b))
+        })
+        .collect();
+    new_pairs.sort_unstable();
+
+    [
+        SquarePlanarPermutation::SP1,
+        SquarePlanarPermutation::SP2,
+        SquarePlanarPermutation::SP3,
+    ]
+    .into_iter()
+    .find(|candidate| {
+        let mut template: Vec<(u8, u8)> = candidate.trans_pairs().into();
+        template.sort_unstable();
+        template == new_pairs
+    })
 }
 
 /// Return `true` if the permutation mapping `original` order to `canonical` order
@@ -3184,7 +3273,7 @@ mod tests {
         let ranks = morgan_ranks(mol);
         let mut centers: Vec<(u64, AtomIdx)> = mol
             .atoms()
-            .filter(|(_, a)| a.chirality != Chirality::None)
+            .filter(|(_, a)| a.chirality.is_tetrahedral())
             .map(|(idx, _)| (ranks[idx.0 as usize], idx))
             .collect();
         centers.sort_by_key(|&(r, _)| r);
@@ -3216,6 +3305,9 @@ mod tests {
                     (Chirality::CounterClockwise, false) => false,
                     (Chirality::CounterClockwise, true) => true,
                     (Chirality::None, _) => unreachable!("filtered out above"),
+                    (Chirality::SquarePlanar(_), _) => {
+                        unreachable!("centers is filtered to is_tetrahedral() above")
+                    }
                 })
             })
             .collect()

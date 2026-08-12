@@ -1160,3 +1160,34 @@ fn rule5_phosphorus_ties_stay_tied_across_renumbering_worst_of_30() {
          (2 atoms x {PERMUTATIONS} permutations)"
     );
 }
+
+/// Regression for the square-planar-stereo PR's required CIP safety fix:
+/// `assign_all`'s per-atom loop gated on `chirality == Chirality::None`
+/// (equality), not an exhaustive match -- adding
+/// `chematic_core::Chirality::SquarePlanar` did NOT force a compile error
+/// there, so an `@SP1`-tagged 4-neighbor Pt center would have silently
+/// reached the tetrahedral digraph-comparator machinery and produced a
+/// bogus CIP code. Must be skipped (not assigned any code, tetrahedral or
+/// otherwise), same as any other non-tetrahedral atom.
+#[test]
+fn square_planar_center_is_skipped_not_assigned_a_bogus_cip_code() {
+    let mol = parse("N->[Pt@SP1](<-N)(Cl)Cl").unwrap();
+    let pt = (0..mol.atom_count())
+        .map(|i| AtomIdx(i as u32))
+        .find(|&i| mol.atom(i).element == chematic_core::Element::PT)
+        .expect("fixture has a Pt atom");
+    assert!(
+        matches!(
+            mol.atom(pt).chirality,
+            chematic_core::Chirality::SquarePlanar(_)
+        ),
+        "fixture must actually carry a SquarePlanar tag"
+    );
+
+    let result = assign_cip_accurate_experimental(&mol, CipBudget::default_budget()).unwrap();
+    assert!(
+        result.assignments.iter().all(|&(idx, _)| idx != pt),
+        "square-planar center must never appear in assignments: {:?}",
+        result.assignments
+    );
+}
