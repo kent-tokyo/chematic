@@ -24,7 +24,7 @@ pub mod stereo_group;
 pub mod valence;
 
 // Re-export the most commonly used types at crate root.
-pub use atom::{Atom, Chirality, CipCode};
+pub use atom::{Atom, Chirality, CipCode, SquarePlanarPermutation};
 pub use bond::{BondEntry, BondOrder};
 pub use coords3d::{Coords3D, Point3};
 pub use element::Element;

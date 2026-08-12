@@ -14,6 +14,7 @@ use std::collections::HashMap;
 
 use chematic_core::{
     Atom, AtomIdx, BondOrder, Chirality, Element, MoleculeBuilder, STEREO_H_SENTINEL,
+    SquarePlanarPermutation,
 };
 
 use crate::error::SmilesError;
@@ -594,7 +595,7 @@ impl<'a> Parser<'a> {
             pos,
         })?;
 
-        let chirality = self.parse_chirality();
+        let chirality = self.parse_chirality(false)?;
         let mut atom = Atom::organic(element);
         atom.chirality = chirality;
         Ok(atom)
@@ -620,7 +621,7 @@ impl<'a> Parser<'a> {
             pos,
         })?;
 
-        let chirality = self.parse_chirality();
+        let chirality = self.parse_chirality(false)?;
         let mut atom = Atom::aromatic(element);
         atom.chirality = chirality;
         Ok(atom)
@@ -643,7 +644,7 @@ impl<'a> Parser<'a> {
 
         // Handle wildcard [*] — return immediately with a dedicated wildcard atom.
         if symbol == "*" {
-            let chirality = self.parse_chirality();
+            let chirality = self.parse_chirality(true)?;
             let _hcount = self.parse_hcount();
             let _charge = self.parse_charge();
             if self.peek() == Some(b':') {
@@ -667,7 +668,7 @@ impl<'a> Parser<'a> {
             pos: start_pos,
         })?;
 
-        let chirality = self.parse_chirality();
+        let chirality = self.parse_chirality(true)?;
         let hcount = self.parse_hcount();
         let charge = self.parse_charge();
 
@@ -725,18 +726,58 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_chirality(&mut self) -> Chirality {
+    /// `extended`: whether `@`-followed-by-a-class-tag (`@SP1`, `@TB4`, ...) is
+    /// recognized at all. `true` only from bracket-atom contexts (`parse_bracket_atom`) --
+    /// organic-subset atoms (`C@SP1...`) keep today's behavior byte-for-byte: `@`
+    /// there is always plain tetrahedral, and a following `SP1` is left unconsumed
+    /// for whatever error the caller's own subsequent parsing produces. Without this
+    /// gating, `C@SP1(F)(Cl)Br` would silently become a "square-planar carbon" --
+    /// meaningless outside a bracket atom, and a real behavior regression.
+    fn parse_chirality(&mut self, extended: bool) -> Result<Chirality, SmilesError> {
+        if self.peek() != Some(b'@') {
+            return Ok(Chirality::None);
+        }
+        let at_pos = self.pos;
+        self.advance();
         if self.peek() == Some(b'@') {
             self.advance();
-            if self.peek() == Some(b'@') {
-                self.advance();
-                Chirality::Clockwise
-            } else {
-                Chirality::CounterClockwise
-            }
-        } else {
-            Chirality::None
+            return Ok(Chirality::Clockwise);
         }
+        if extended && let Some(class) = self.peek_chirality_class() {
+            // Consume the whole token (class + digits) even when rejecting, so the
+            // error points at this token instead of cascading into an unrelated
+            // "missing ']'" a few characters later.
+            let digits = self.parse_leading_digits_u16().unwrap_or(0);
+            return match (class, digits) {
+                ("SP", 1) => Ok(Chirality::SquarePlanar(SquarePlanarPermutation::SP1)),
+                ("SP", 2) => Ok(Chirality::SquarePlanar(SquarePlanarPermutation::SP2)),
+                ("SP", 3) => Ok(Chirality::SquarePlanar(SquarePlanarPermutation::SP3)),
+                _ => Err(SmilesError::UnsupportedChiralityClass {
+                    class: format!("{class}{digits}"),
+                    pos: at_pos,
+                }),
+            };
+        }
+        Ok(Chirality::CounterClockwise)
+    }
+
+    /// If the next 2 bytes are exactly one of the OpenSMILES extended chirality
+    /// class tags (`TH`/`AL`/`SP`/`TB`/`OH`), consumes them and returns the tag;
+    /// otherwise leaves the position untouched (so a bare `@H` hydrogen-count
+    /// marker, `@]`, `@+`, etc. are unaffected).
+    fn peek_chirality_class(&mut self) -> Option<&'static str> {
+        const CLASSES: [&str; 5] = ["TH", "AL", "SP", "TB", "OH"];
+        let a = self.peek()?;
+        let b = self.peek_at(1)?;
+        let candidate = [a, b];
+        for class in CLASSES {
+            if class.as_bytes() == candidate {
+                self.advance();
+                self.advance();
+                return Some(class);
+            }
+        }
+        None
     }
 
     fn parse_hcount(&mut self) -> u8 {

@@ -24,6 +24,11 @@ pub enum SmilesError {
     /// Trailing input after a structurally complete SMILES chain could not be
     /// parsed (e.g. an unrecognised atom symbol or stray punctuation).
     UnexpectedCharacter { pos: usize },
+    /// A recognized OpenSMILES extended chirality class (`@TH`/`@AL`/`@TB`/`@OH`) or
+    /// an out-of-range square-planar tag (e.g. `@SP4`) -- syntactically valid, but not
+    /// implemented. `class` is the tag text without the leading `@` (e.g. `"TB4"`).
+    /// Only `@SP1`/`@SP2`/`@SP3` are currently supported, alongside plain `@`/`@@`.
+    UnsupportedChiralityClass { class: String, pos: usize },
 }
 
 impl fmt::Display for SmilesError {
@@ -51,6 +56,10 @@ impl fmt::Display for SmilesError {
             Self::UnexpectedCharacter { pos } => {
                 write!(f, "unexpected character at position {pos}")
             }
+            Self::UnsupportedChiralityClass { class, pos } => write!(
+                f,
+                "unsupported chirality class '@{class}' at position {pos}: only tetrahedral (@/@@) and square-planar (@SP1/@SP2/@SP3) are currently supported"
+            ),
         }
     }
 }

@@ -192,7 +192,7 @@ fn assign_all(
     for i in 0..mol.atom_count() {
         let idx = AtomIdx(i as u32);
         let atom = mol.atom(idx);
-        if atom.chirality == Chirality::None {
+        if !atom.chirality.is_tetrahedral() {
             continue;
         }
 

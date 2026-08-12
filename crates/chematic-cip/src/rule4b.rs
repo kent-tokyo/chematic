@@ -18,6 +18,19 @@ use crate::resolver::resolve_chirality;
 /// chirality-bearing atom reachable from `start`'s children onward. `None` if 2+
 /// distinct atoms tie at the nearest level (ambiguous -- ties fall through to
 /// `SkipReason::Tied` at the call site, never guessed).
+///
+/// Known, documented, not-fixed residual: this check is `!= Chirality::None`, so a
+/// reachable `Chirality::SquarePlanar` atom (added for coordination complexes) can be
+/// "found" here even though it isn't a tetrahedral center. This is not a correctness
+/// bug -- [`crate::resolver::resolve_chirality`] (which every caller here eventually
+/// calls on the found node) gates on `is_tetrahedral()` and returns `None` for a
+/// square-planar atom, so the tiebreak fails closed to unresolved/`Tied` rather than
+/// emitting a wrong CIP code. The only cost is a conservative false-negative: a
+/// genuinely-resolvable tetrahedral Rule 4b tie one level further away than a
+/// square-planar atom would go unresolved instead of resolved. No fixture in this
+/// codebase currently reaches this path (it needs a tetrahedral Rule 4b tie and a
+/// reachable square-planar center in the same digraph), so it is documented rather
+/// than fixed.
 pub(crate) fn nearest_embedded(
     graph: &mut CipDigraph,
     mol: &Molecule,
