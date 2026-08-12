@@ -671,30 +671,66 @@ fn n_adjacent_to_pi_center(mol: &Molecule, idx: AtomIdx, ring_bonds: &FxHashSet<
 /// - It is not an amide bond (C–N where C has a C=O).
 /// - Neither endpoint carries a triple bond (excludes propargylic C–C in alkynes).
 /// - Neither endpoint is a cumulated-double-bond centre (excludes allene C=C=C bonds).
+fn is_rotatable_bond(
+    mol: &Molecule,
+    ring_bond_set: &FxHashSet<BondIdx>,
+    bidx: BondIdx,
+    atom1: AtomIdx,
+    atom2: AtomIdx,
+    order: BondOrder,
+) -> bool {
+    let is_single = matches!(order, BondOrder::Single | BondOrder::Up | BondOrder::Down);
+    is_single
+        && !ring_bond_set.contains(&bidx)
+        && mol.degree(atom1) > 1
+        && mol.degree(atom2) > 1
+        && !is_carbonyl_hetero_bond(mol, atom1, atom2)
+        && !is_diacyl_cc_bond(mol, atom1, atom2)
+        && !is_neopentyl_like(mol, atom1, atom2)
+        && !has_triple_bond(mol, atom1)
+        && !has_triple_bond(mol, atom2)
+        && !is_cumulated_double(mol, atom1)
+        && !is_cumulated_double(mol, atom2)
+}
+
 fn rotatable_bond_count_from_set(mol: &Molecule, ring_bond_set: &FxHashSet<BondIdx>) -> usize {
     mol.bonds()
         .filter(|(bidx, bond)| {
-            let is_single = matches!(
+            is_rotatable_bond(
+                mol,
+                ring_bond_set,
+                *bidx,
+                bond.atom1,
+                bond.atom2,
                 bond.order,
-                BondOrder::Single | BondOrder::Up | BondOrder::Down
-            );
-            is_single
-                && !ring_bond_set.contains(bidx)
-                && mol.degree(bond.atom1) > 1
-                && mol.degree(bond.atom2) > 1
-                && !is_carbonyl_hetero_bond(mol, bond.atom1, bond.atom2)
-                && !is_diacyl_cc_bond(mol, bond.atom1, bond.atom2)
-                && !is_neopentyl_like(mol, bond.atom1, bond.atom2)
-                && !has_triple_bond(mol, bond.atom1)
-                && !has_triple_bond(mol, bond.atom2)
-                && !is_cumulated_double(mol, bond.atom1)
-                && !is_cumulated_double(mol, bond.atom2)
+            )
         })
         .count()
 }
 
 pub fn rotatable_bond_count(mol: &Molecule) -> usize {
     rotatable_bond_count_from_set(mol, &ring_bond_indices(mol))
+}
+
+/// The atom-index pairs of every rotatable bond, same definition as
+/// [`rotatable_bond_count`] (RDKit-compatible strict definition: excludes
+/// ring/amide/allene/alkyne-adjacent bonds). Used by `chematic-3d`'s torsion
+/// motif extraction so the two crates never define "rotatable" differently.
+pub fn rotatable_bond_atom_pairs(mol: &Molecule) -> Vec<(AtomIdx, AtomIdx)> {
+    let ring_bond_set = ring_bond_indices(mol);
+    mol.bonds()
+        .filter(|(bidx, bond)| {
+            is_rotatable_bond(
+                mol,
+                &ring_bond_set,
+                *bidx,
+                bond.atom1,
+                bond.atom2,
+                bond.order,
+            )
+        })
+        .map(|(_, bond)| (bond.atom1, bond.atom2))
+        .collect()
 }
 
 /// True if atom `idx` has at least one triple bond.
