@@ -112,10 +112,7 @@ impl Lattice {
         let lengths = [norm3(matrix[0]), norm3(matrix[1]), norm3(matrix[2])];
         for (len, axis) in lengths.iter().zip(["a", "b", "c"]) {
             if *len <= Self::MIN_LENGTH {
-                return Err(CrystalError::NonPositiveLength {
-                    axis,
-                    value: *len,
-                });
+                return Err(CrystalError::NonPositiveLength { axis, value: *len });
             }
         }
 
@@ -180,10 +177,16 @@ impl Lattice {
                 return Err(CrystalError::NonPositiveLength { axis, value: len });
             }
         }
-        for (angle, name) in [alpha, beta, gamma].into_iter().zip(["alpha", "beta", "gamma"]) {
+        for (angle, name) in [alpha, beta, gamma]
+            .into_iter()
+            .zip(["alpha", "beta", "gamma"])
+        {
             require_finite(angle, name)?;
             if !(angle > 0.0 && angle < 180.0) {
-                return Err(CrystalError::InvalidAngle { angle: name, value: angle });
+                return Err(CrystalError::InvalidAngle {
+                    angle: name,
+                    value: angle,
+                });
             }
         }
 
@@ -212,7 +215,10 @@ impl Lattice {
     pub fn cubic(a: f64) -> Result<Self, CrystalError> {
         require_finite(a, "a")?;
         if a <= Self::MIN_LENGTH {
-            return Err(CrystalError::NonPositiveLength { axis: "a", value: a });
+            return Err(CrystalError::NonPositiveLength {
+                axis: "a",
+                value: a,
+            });
         }
         Self::from_matrix([[a, 0.0, 0.0], [0.0, a, 0.0], [0.0, 0.0, a]])
     }
@@ -311,6 +317,16 @@ impl Lattice {
             [inv[0][2], inv[1][2], inv[2][2]],
         ]
     }
+
+    /// Row norms `[|b1|, |b2|, |b3|]` of the reciprocal matrix. Used by the
+    /// exact bounded-search minimum-image algorithm ([`crate::periodic`])
+    /// and cutoff neighbor search ([`crate::neighbor`]) to derive a finite,
+    /// provably sufficient search box -- see
+    /// `docs/rfcs/chematic_crystal_foundation.md`.
+    pub(crate) fn reciprocal_row_norms(&self) -> [f64; 3] {
+        let recip = self.reciprocal_matrix();
+        [norm3(recip[0]), norm3(recip[1]), norm3(recip[2])]
+    }
 }
 
 /// Serializes/deserializes only `matrix` -- `inverse` is cached derived
@@ -343,7 +359,8 @@ mod serde_impl {
     impl<'de> Deserialize<'de> for Lattice {
         fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
             let data = LatticeData::deserialize(deserializer)?;
-            Lattice::from_matrix(data.matrix).map_err(|e: CrystalError| D::Error::custom(e.to_string()))
+            Lattice::from_matrix(data.matrix)
+                .map_err(|e: CrystalError| D::Error::custom(e.to_string()))
         }
     }
 }
@@ -384,8 +401,7 @@ mod tests {
             beta.to_radians().cos(),
             gamma.to_radians().cos(),
         );
-        let expected =
-            a * b * c * (1.0 - ca * ca - cb * cb - cg * cg + 2.0 * ca * cb * cg).sqrt();
+        let expected = a * b * c * (1.0 - ca * ca - cb * cb - cg * cg + 2.0 * ca * cb * cg).sqrt();
         assert_close(l.volume(), expected, 1e-6);
     }
 
@@ -489,11 +505,7 @@ mod tests {
 
     #[test]
     fn infinity_rejected() {
-        let m = [
-            [1.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [0.0, 0.0, f64::INFINITY],
-        ];
+        let m = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, f64::INFINITY]];
         assert!(matches!(
             Lattice::from_matrix(m),
             Err(CrystalError::NonFinite { .. })

@@ -375,8 +375,8 @@ mod tests {
 
     #[test]
     fn site_rejects_empty_species() {
-        let err = PeriodicSite::new(vec![], FractionalCoord::new([0.0, 0.0, 0.0]), None)
-            .unwrap_err();
+        let err =
+            PeriodicSite::new(vec![], FractionalCoord::new([0.0, 0.0, 0.0]), None).unwrap_err();
         assert_eq!(err, CrystalError::EmptySpeciesList);
     }
 
