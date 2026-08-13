@@ -19,9 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   minimum-image distance, cutoff neighbor enumeration, and diagonal
   supercells. Deliberately **not** an extension of `chematic_core::Molecule`
   -- see `docs/rfcs/chematic_crystal_foundation.md`. Optional `serde`
-  feature; optional `crystal` feature on the `chematic` facade (not yet
-  added to `full`, pending human confirmation). No symmetry, no CIF parser
-  changes, no Python/WASM/MCP bindings in this PR.
+  feature; optional `crystal` feature on the `chematic` facade, included
+  in `full` (does not change `default`, which stays empty). No symmetry,
+  no CIF parser changes, no Python/WASM/MCP bindings in this PR.
 
 ## [0.14.1] — 2026-08-12
 

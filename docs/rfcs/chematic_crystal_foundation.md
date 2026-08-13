@@ -219,24 +219,26 @@ out).
   (each describes a different center's neighbor shell), not duplicates of
   each other.
 
-## Facade feature: `crystal` added, but **not** to `full` (open question, not decided here)
+## Facade feature: `crystal` added, and included in `full` (decided)
 
 `crates/chematic/Cargo.toml` gains an optional `crystal =
 ["dep:chematic-crystal"]` feature and a `pub use chematic_crystal as
 crystal` re-export gated on it, following the exact shape every other
-facade feature already uses (`smiles`, `mol`, `chem`, ...). Whether
-`crystal` also joins the `full`
-aggregate feature (which today lists every other optional feature) is
-**not decided in this PR** -- left for explicit human confirmation. The
-precedent ("every feature is in `full`") argues for inclusion; the
-project's convention of not assuming when unclear ("不明確ならfullへ含めず
-stop-and-report") argues for leaving it out until a human confirms, since
-`crystal` is architecturally separate from every other facade feature (no
-`Molecule` dependency) in a way `full`'s existing members are not. Note
-that `--all-features` and docs.rs (which sets `all-features = true`) both
-build `crystal` regardless of `full` membership -- leaving it out of `full`
-only affects users who opt in via that one aggregate feature, not
-exhaustive-build tooling. This PR leaves `crystal` out of `full`.
+facade feature already uses (`smiles`, `mol`, `chem`, ...).
+
+Whether `crystal` also joins the `full` aggregate feature was initially
+left open in this PR pending explicit human confirmation -- the project
+owner has since decided **yes**: `full` is operated as the aggregate of
+*every* optional facade capability, not scoped to `Molecule`-only
+features, and a user who writes `features = ["full"]` expects everything,
+`crystal` included. `chematic-crystal`'s architectural independence from
+`Molecule` (see above) is why it's its own crate, not a reason to exclude
+it from `full`. This does **not** change the facade's `default` feature
+(still `[]`) -- only explicit `--features full` (or `--all-features`,
+which already built `crystal` regardless of `full` membership either way)
+users are affected. Convention going forward: a new optional facade
+feature should default to joining `full` too, unless there's a specific
+reason not to.
 
 ## WASM constraint
 

@@ -25,16 +25,16 @@ rxn         = ["smiles", "dep:chematic-rxn"]
 threed      = ["perception", "dep:chematic-3d"]
 inchi       = ["chem", "dep:chematic-inchi"]
 iupac       = ["dep:chematic-iupac"]
-# Deliberately NOT added to `full` in this PR -- see docs/rfcs/
-# chematic_crystal_foundation.md's facade-feature section. `--all-features`
-# and docs.rs (which sets `all-features = true` above) both build
-# `crystal` regardless of `full` membership, so leaving it out of `full`
-# only affects users who opt in via that one aggregate feature. Whether a
-# brand-new, architecturally separate (no Molecule dependency) crate
-# should join `full` is left for explicit human confirmation rather than
-# assumed from precedent.
 crystal     = ["dep:chematic-crystal"]
-full        = ["smiles", "perception", "mol", "depict", "fp", "chem", "smarts", "rxn", "threed", "inchi", "iupac"]
+# `full` is the aggregate of every optional facade capability (not scoped
+# to Molecule-only features) -- a user who writes `features = ["full"]`
+# expects everything, `crystal` included. `chematic-crystal`'s
+# architectural independence from `Molecule` is why it's its own crate,
+# not a reason to exclude it from this aggregate. New optional facade
+# features should default to joining `full` too unless there's a specific
+# reason not to (see docs/rfcs/chematic_crystal_foundation.md's
+# facade-feature section for the crystal-specific decision record).
+full        = ["smiles", "perception", "mol", "depict", "fp", "chem", "smarts", "rxn", "threed", "inchi", "iupac", "crystal"]
 
 [package.metadata.docs.rs]
 all-features = true
