@@ -193,10 +193,10 @@ CPU: Apple M4. rustc 1.97.0. Commit: `fa63822` (chematic-crystal Phase 4).
 | `make_supercell([2,2,2])` | cubic | 125 -> 1000 | -- | -- | criterion | 101.4 us |
 
 The O(n^2) scaling is expected and visible above (125 -> 1000 sites, an 8x
-increase, is roughly a 50-60x slowdown, consistent with a 64x pair-count
-increase (8^2) partly offset by a smaller per-pair search box at this fixed
-cutoff/density ratio); a spatial-partitioning neighbor list (cell lists /
-Verlet lists) is
+increase, is roughly a 50-65x slowdown -- cubic 49.5x, triclinic 64.9x --
+bracketing the 64x pair-count increase (8^2) expected from O(n^2) scaling
+at this fixed cutoff/density ratio); a spatial-partitioning neighbor list
+(cell lists / Verlet lists) is
 the natural next step if this becomes a bottleneck for a real workload, but
 is explicitly deferred past v0.1.
 
