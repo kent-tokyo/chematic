@@ -26,11 +26,13 @@ threed      = ["perception", "dep:chematic-3d"]
 inchi       = ["chem", "dep:chematic-inchi"]
 iupac       = ["dep:chematic-iupac"]
 # Deliberately NOT added to `full` in this PR -- see docs/rfcs/
-# chematic_crystal_foundation.md's facade-feature section and the task's
-# final report: `full` is what --all-features/docs.rs build, and whether
-# a brand-new, architecturally separate (no Molecule dependency) crate
-# should join that aggregate is left for explicit human confirmation
-# rather than assumed from precedent.
+# chematic_crystal_foundation.md's facade-feature section. `--all-features`
+# and docs.rs (which sets `all-features = true` above) both build
+# `crystal` regardless of `full` membership, so leaving it out of `full`
+# only affects users who opt in via that one aggregate feature. Whether a
+# brand-new, architecturally separate (no Molecule dependency) crate
+# should join `full` is left for explicit human confirmation rather than
+# assumed from precedent.
 crystal     = ["dep:chematic-crystal"]
 full        = ["smiles", "perception", "mol", "depict", "fp", "chem", "smarts", "rxn", "threed", "inchi", "iupac"]
 
