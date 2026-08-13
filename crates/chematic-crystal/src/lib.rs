@@ -26,13 +26,16 @@
 
 pub mod error;
 pub mod lattice;
+pub mod neighbor;
 pub mod periodic;
 pub mod site;
 pub mod structure;
+pub mod supercell;
 pub mod validation;
 
 pub use error::CrystalError;
 pub use lattice::Lattice;
+pub use neighbor::PeriodicNeighbor;
 pub use periodic::{PeriodicDisplacement, minimum_image};
 pub use site::{CartesianCoord, FractionalCoord, Occupancy, PeriodicSite, SiteSpecies};
 pub use structure::PeriodicStructure;

@@ -2,7 +2,9 @@
 
 use crate::error::CrystalError;
 use crate::lattice::Lattice;
+use crate::neighbor::{self, PeriodicNeighbor};
 use crate::site::{CartesianCoord, FractionalCoord, PeriodicSite};
+use crate::supercell;
 
 /// A periodic structure: a validated [`Lattice`] and an ordered list of
 /// [`PeriodicSite`]s.
@@ -95,6 +97,20 @@ impl PeriodicStructure {
             lattice: self.lattice.clone(),
             sites,
         }
+    }
+
+    /// Every periodic neighbor pair within `cutoff` Angstrom (inclusive).
+    /// See [`neighbor::neighbors_within`] for the full contract
+    /// (self-image handling, ordering, error conditions).
+    pub fn neighbors_within(&self, cutoff: f64) -> Result<Vec<PeriodicNeighbor>, CrystalError> {
+        neighbor::neighbors_within(self, cutoff)
+    }
+
+    /// Build a diagonal `[nx, ny, nz]` supercell. See
+    /// [`supercell::make_supercell`] for the full contract (site ordering,
+    /// error conditions).
+    pub fn make_supercell(&self, mult: [u32; 3]) -> Result<Self, CrystalError> {
+        supercell::make_supercell(self, mult)
     }
 }
 

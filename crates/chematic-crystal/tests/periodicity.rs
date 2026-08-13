@@ -17,15 +17,23 @@ fn brute_force_minimum_image(
     to: FractionalCoord,
     half: i32,
 ) -> (f64, [i32; 3]) {
+    // (to - from) + n, not "(to + n) - from" -- see the comment on the
+    // analogous oracle in tests/neighbor.rs for why the order matters at
+    // exact-distance boundaries.
+    let raw = [
+        to.0[0] - from.0[0],
+        to.0[1] - from.0[1],
+        to.0[2] - from.0[2],
+    ];
     let mut best_dist = f64::INFINITY;
     let mut best_image = [0i32; 3];
     for i in -half..=half {
         for j in -half..=half {
             for k in -half..=half {
                 let frac = [
-                    to.0[0] + f64::from(i) - from.0[0],
-                    to.0[1] + f64::from(j) - from.0[1],
-                    to.0[2] + f64::from(k) - from.0[2],
+                    raw[0] + f64::from(i),
+                    raw[1] + f64::from(j),
+                    raw[2] + f64::from(k),
                 ];
                 let cart = lattice.frac_to_cart(FractionalCoord::new(frac));
                 let dist = (cart.0[0].powi(2) + cart.0[1].powi(2) + cart.0[2].powi(2)).sqrt();
@@ -54,15 +62,20 @@ fn assert_matches_oracle(lattice: &Lattice, from: FractionalCoord, to: Fractiona
     // Multiple images can tie at the same minimal distance (e.g. a face
     // midpoint in a cubic cell); only assert the image matches when the
     // oracle's own best isn't tied with a neighboring candidate.
+    let raw = [
+        to.0[0] - from.0[0],
+        to.0[1] - from.0[1],
+        to.0[2] - from.0[2],
+    ];
     let tie_free = {
         let mut count = 0;
         for i in -half..=half {
             for j in -half..=half {
                 for k in -half..=half {
                     let frac = [
-                        to.0[0] + f64::from(i) - from.0[0],
-                        to.0[1] + f64::from(j) - from.0[1],
-                        to.0[2] + f64::from(k) - from.0[2],
+                        raw[0] + f64::from(i),
+                        raw[1] + f64::from(j),
+                        raw[2] + f64::from(k),
                     ];
                     let cart = lattice.frac_to_cart(FractionalCoord::new(frac));
                     let dist = (cart.0[0].powi(2) + cart.0[1].powi(2) + cart.0[2].powi(2)).sqrt();
