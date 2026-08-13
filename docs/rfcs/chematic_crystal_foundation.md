@@ -222,9 +222,10 @@ out).
 ## Facade feature: `crystal` added, but **not** to `full` (open question, not decided here)
 
 `crates/chematic/Cargo.toml` gains an optional `crystal =
-["dep:chematic-crystal"]` feature and a `pub mod crystal` re-export gated on
-it, following the exact shape every other facade feature already uses
-(`smiles`, `mol`, `chem`, ...). Whether `crystal` also joins the `full`
+["dep:chematic-crystal"]` feature and a `pub use chematic_crystal as
+crystal` re-export gated on it, following the exact shape every other
+facade feature already uses (`smiles`, `mol`, `chem`, ...). Whether
+`crystal` also joins the `full`
 aggregate feature (which today lists every other optional feature) is
 **not decided in this PR** -- left for explicit human confirmation. The
 precedent ("every feature is in `full`") argues for inclusion; the
