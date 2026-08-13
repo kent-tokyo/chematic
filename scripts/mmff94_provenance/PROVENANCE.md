@@ -90,6 +90,39 @@ the `eqLevel` equivalence ladder (9% of the Angle residual) and the
 eq.18-20 Bond-stretch/Angle-bend empirical rule (44%) remain unimplemented,
 tracked as this issue's next two stages.
 
+**Production fix (issue #227, 2026-08-13, Stage B): RDKit's `eqLevel`
+atom-type-equivalence ladder for Angle lookup.** Ported
+`MMFFAngleCollection::operator()`'s real 4-stage canonical-type-
+substitution ladder (`Code/ForceField/MMFF/Params.h` at the pinned commit)
+as `eq_level`/`MMFF94_EQ_LEVEL` in
+`crates/chematic-ff/src/mmff94_energy/angle.rs`: `angle_type` and the
+central atom type stay fixed; `type_i`/`type_k` are substituted through
+RDKit's real Level 2/3/4/5 equivalence classes (55-entry table, extracted
+from `defaultMMFFDef`) before falling through to chematic's pre-existing
+(non-RDKit, kept as a safety net) `angle_type=0` fallback. This is a
+genuinely different, independent axis from the `type_mismatch` fixes in
+Stage A: it also incidentally rescues many `routing_bug_candidate`
+instances (which the "97 table_gap" framing didn't originally count), not
+just the pure `table_gap` population. Effect was much larger than Stage A's
+own diagnostic predicted (~9% of the *table_gap-only* residual) precisely
+because of this: full 265-molecule corpus re-measurement moved
+`mmff94_strict`'s bond+angle gate from **103 → 84 failing molecules** (19
+more flip to pass, zero regressions), `angles_missing` 358→191. One
+pre-existing test (`angle_type_for_butadiene_sp2_single_bond_...`) had a
+stale assertion updated: it originally demonstrated "the old
+hardcoded-angle_type=0 bug was a clean miss, not just less-specific" — that
+premise no longer holds now that `eqLevel` makes angle_type=0 resolve too
+(to a genuinely *different*, less-specific value, 118.043° vs the correct
+121.55°) — updated to demonstrate the more precise point instead: getting
+`angle_type` wrong now silently returns a *different wrong* parameter, the
+same "silent wrong parameter" failure class as the #236 furan collision.
+Re-running `scripts/mmff94_angle_bond_gap_classify.py` post-fix: the
+Angle/Bond `table_gap` residual collapses to 8 + 1 unique tuples (from 27 +
+3), **100% `empirical_rule`** (0 remaining `type_mismatch`/
+`equivalence_table`) — Stage C (eq.18-20) is now the only remaining
+mechanism gap, and 7/8 of its unique tuples are already oracle-confirmed by
+this same diagnostic script.
+
 ## Halgren primary literature (secondary/theoretical cross-reference, not the implementation source)
 
 - T. A. Halgren, "Merck Molecular Force Field. I. Basis, Form, Scope,
