@@ -1905,12 +1905,18 @@ mod tests {
 
     #[test]
     fn angle_type_for_butadiene_sp2_single_bond_is_type_1_and_finds_dedicated_row() {
-        // Concrete non-ring demonstration that the fix is not inert: old
-        // code always used angle_type=0, but no (0,2,2,2) row exists at all
-        // (a genuine miss, not just a less-specific hit) — the flanking
-        // C1-C2 single bond between two vinylic (type 2) carbons is a real
-        // MMFF94 bond_type=1 (sbmb) bond, giving angle_type=1, which DOES
-        // have a dedicated (1,2,2,2) row.
+        // Concrete non-ring demonstration that the fix is not inert: the
+        // flanking C1-C2 single bond between two vinylic (type 2) carbons is
+        // a real MMFF94 bond_type=1 (sbmb) bond, giving angle_type=1, which
+        // has a dedicated (1,2,2,2) row (theta0=121.55) distinct from the
+        // old hardcoded angle_type=0's row for the same atom-type triple
+        // (theta0=118.043, reachable at angle_type=0 via issue #227 Stage
+        // B's eqLevel equivalence ladder -- type 2's own eqLevel table
+        // substitutes it to type 1 at Level 4, and a real (0,1,2,1) row
+        // exists). Getting `angle_type` wrong here is a silently-DIFFERENT
+        // wrong value, not a clean miss -- the same "silent wrong parameter"
+        // failure class as the #236 furan collision, which is exactly why
+        // `angle_type_for`'s own correctness (asserted below) matters.
         let mol = chematic_smiles::parse("C=CC=C").unwrap();
         let types = assign_mmff94_numeric_types(&mol).unwrap();
         assert_eq!(types[0], 2);
@@ -1919,14 +1925,17 @@ mod tests {
         let rings = find_sssr(&mol);
         let at = angle_type_for(&mol, rings.rings(), 0, 1, 2, &types);
         assert_eq!(at, 1, "C0=C1-C2 angle must classify as angle_type 1");
-        assert!(
-            mmff94_angle_energy(0, 2, 2, 2).is_none(),
-            "old hardcoded angle_type=0 must be a genuine miss for this triple"
-        );
+        let wrong = mmff94_angle_energy(0, 2, 2, 2).expect("angle_type=0 now resolves too");
         let p = mmff94_angle_energy(at, 2, 2, 2).expect("(1,2,2,2) row must exist");
         assert!(
             (p.theta0 - 121.55).abs() < 1e-6,
             "theta0={} should be 121.55",
+            p.theta0
+        );
+        assert!(
+            (p.theta0 - wrong.theta0).abs() > 1.0,
+            "angle_type=0's wrong theta0={} should differ meaningfully from the correct {}",
+            wrong.theta0,
             p.theta0
         );
     }

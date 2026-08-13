@@ -2251,16 +2251,98 @@ pub static MMFF94_ANGLE_ENERGY: &[(u8, u8, u8, u8, f64, f64)] = &[
     (8, 30, 30, 30, 1.2300, 93.7320),
 ];
 
+/// RDKit's atom-type canonical-equivalence-class ladder (`defaultMMFFDef`'s
+/// `eqLevel` columns, `Code/ForceField/MMFF/Params.cpp` at the pinned commit
+/// -- issue #227 Stage B). `[level2, level3, level4, level5]` per MMFF94
+/// numeric atom type; level1 is skipped, identical to level2 per MMFF.I note
+/// 68, page 519. 55 entries -- every numeric type this table doesn't list
+/// (rare/metal/exotic types outside chematic's supported corpus) is treated
+/// as its own identity substitution at every stage by [`eq_level`], matching
+/// what a real, valid MMFF94 molecule never needs to exercise in practice.
+static MMFF94_EQ_LEVEL: &[(u8, [u8; 4])] = &[
+    (1, [1, 1, 1, 0]),
+    (2, [2, 2, 1, 0]),
+    (3, [3, 3, 1, 0]),
+    (4, [4, 4, 1, 0]),
+    (5, [5, 5, 5, 0]),
+    (6, [6, 6, 6, 0]),
+    (7, [7, 7, 6, 0]),
+    (8, [8, 8, 8, 0]),
+    (9, [9, 9, 8, 0]),
+    (10, [10, 10, 8, 0]),
+    (11, [11, 11, 11, 0]),
+    (12, [12, 12, 12, 0]),
+    (13, [13, 13, 13, 0]),
+    (14, [14, 14, 14, 0]),
+    (15, [15, 15, 15, 0]),
+    (16, [16, 16, 15, 0]),
+    (17, [17, 17, 15, 0]),
+    (18, [18, 18, 15, 0]),
+    (19, [19, 19, 19, 0]),
+    (20, [20, 1, 1, 0]),
+    (21, [21, 21, 5, 0]),
+    (22, [22, 22, 1, 0]),
+    (23, [23, 23, 5, 0]),
+    (24, [24, 24, 5, 0]),
+    (25, [25, 25, 25, 0]),
+    (26, [26, 26, 25, 0]),
+    (27, [27, 28, 5, 0]),
+    (28, [28, 28, 5, 0]),
+    (29, [29, 29, 5, 0]),
+    (30, [30, 2, 1, 0]),
+    (31, [31, 31, 31, 0]),
+    (32, [32, 7, 6, 0]),
+    (33, [33, 21, 5, 0]),
+    (34, [34, 8, 8, 0]),
+    (35, [35, 6, 6, 0]),
+    (36, [36, 36, 5, 0]),
+    (37, [37, 2, 1, 0]),
+    (38, [38, 9, 8, 0]),
+    (39, [39, 10, 8, 0]),
+    (40, [40, 10, 8, 0]),
+    (41, [41, 3, 1, 0]),
+    (42, [42, 42, 8, 0]),
+    (43, [43, 10, 8, 0]),
+    (44, [44, 16, 15, 0]),
+    (45, [45, 10, 8, 0]),
+    (46, [46, 9, 8, 0]),
+    (47, [47, 42, 8, 0]),
+    (48, [48, 9, 8, 0]),
+    (49, [49, 6, 6, 0]),
+    (50, [50, 21, 5, 0]),
+    (51, [51, 7, 6, 0]),
+    (52, [52, 21, 5, 0]),
+    (53, [53, 42, 8, 0]),
+    (54, [54, 9, 8, 0]),
+    (55, [55, 10, 8, 0]),
+];
+
+/// `stage` in `0..4`, matching RDKit's Level 2/3/4/5. Falls back to `atom_type`
+/// itself (identity, i.e. equivalent to an exact-match retry) for any type
+/// not in [`MMFF94_EQ_LEVEL`] -- see that table's own doc for why this is safe.
+fn eq_level(atom_type: u8, stage: usize) -> u8 {
+    MMFF94_EQ_LEVEL
+        .binary_search_by_key(&atom_type, |&(t, _)| t)
+        .map(|idx| MMFF94_EQ_LEVEL[idx].1[stage])
+        .unwrap_or(atom_type)
+}
+
 /// Look up angle bending parameters by MMFF94 numeric atom types.
 ///
 /// `type_j` is the central atom. Both orderings (ti,tj,tk) and (tk,tj,ti) are
-/// tried. If `angle_type` is a ring/bond-type variant (1-8) and no row exists
-/// for this specific atom-type triple at that type, falls back to the
-/// generic `angle_type=0` row for the same triple — mirroring
-/// `mmff94_torsion_energy`'s own type-0 fallback chain. Without this, a
-/// *correct* ring/bond-type classification for a triple the (much smaller)
-/// specialized table doesn't happen to cover would silently drop the angle
-/// term entirely, which is worse than the un-classified behavior it replaces.
+/// tried at the exact atom types first, then via RDKit's real `eqLevel`
+/// canonical-type-substitution ladder (`MMFFAngleCollection::operator()`,
+/// `Code/ForceField/MMFF/Params.h` at the pinned commit -- issue #227 Stage
+/// B): `type_i`/`type_k` are substituted through 4 equivalence-class stages
+/// (`type_j` and `angle_type` stay fixed throughout -- RDKit's real
+/// algorithm never substitutes the center or changes the angle type). Only
+/// once the full eqLevel ladder is exhausted does this fall back to the
+/// generic `angle_type=0` row for the same triple — a chematic-specific
+/// safety net RDKit's own algorithm doesn't have, kept from before this
+/// change: without it, a *correct* ring/bond-type classification for a
+/// triple the (much smaller) specialized table doesn't happen to cover
+/// would silently drop the angle term entirely, which is worse than the
+/// un-classified behavior it replaces.
 pub fn mmff94_angle_energy(
     angle_type: u8,
     type_i: u8,
@@ -2276,8 +2358,16 @@ pub fn mmff94_angle_energy(
                 AngleEnergyParams { ka, theta0 }
             })
     };
+    let eq_level_search = |stage: usize| {
+        let (ci, ck) = (eq_level(type_i, stage), eq_level(type_k, stage));
+        let (lo, hi) = if ci <= ck { (ci, ck) } else { (ck, ci) };
+        search(angle_type, lo, hi)
+    };
     search(angle_type, type_i, type_k)
         .or_else(|| search(angle_type, type_k, type_i))
+        .or_else(|| eq_level_search(1))
+        .or_else(|| eq_level_search(2))
+        .or_else(|| eq_level_search(3))
         .or_else(|| {
             if angle_type != 0 {
                 search(0, type_i, type_k).or_else(|| search(0, type_k, type_i))
@@ -2285,4 +2375,40 @@ pub fn mmff94_angle_energy(
                 None
             }
         })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn eq_level_resolves_type_via_ladder_and_falls_back_to_identity() {
+        // Type 6's own eqLevel row: [6, 6, 6, 0] -- level4 (stage 2) is a
+        // real substitution to 6 (no-op here since it's already 6), level5
+        // (stage 3) is the universal wildcard 0.
+        assert_eq!(eq_level(6, 0), 6);
+        assert_eq!(eq_level(6, 3), 0);
+        // A type with no row in MMFF94_EQ_LEVEL (e.g. an exotic/rare type
+        // outside this 55-entry table) must fall back to identity at every
+        // stage, never panic.
+        assert_eq!(eq_level(99, 0), 99);
+        assert_eq!(eq_level(99, 3), 99);
+    }
+
+    #[test]
+    fn angle_energy_resolves_via_eq_level_ladder_when_exact_and_type0_both_miss() {
+        // Issue #227 Stage B: (angle_type=0, ti=6, tj=40, tk=37) has no
+        // exact-type row, but type 6's eqLevel table ([6, 6, 6, 0]) and
+        // type 37's ([37, 2, 1, 0]) meet at stage 1 (level3: 6 and 2) --
+        // live-RDKit-oracle-confirmed via
+        // `scripts/mmff94_angle_bond_gap_classify.py` against
+        // `chembl_tier_b_0164`'s real O-N(aromatic)-C(aromatic) triple.
+        let p = mmff94_angle_energy(0, 6, 40, 37).expect("eqLevel ladder must resolve this");
+        assert!((p.ka - 1.316).abs() < 1e-6, "ka={} should be 1.316", p.ka);
+        assert!(
+            (p.theta0 - 115.626).abs() < 1e-6,
+            "theta0={} should be 115.626",
+            p.theta0
+        );
+    }
 }
