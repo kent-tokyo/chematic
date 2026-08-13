@@ -123,6 +123,39 @@ Angle/Bond `table_gap` residual collapses to 8 + 1 unique tuples (from 27 +
 mechanism gap, and 7/8 of its unique tuples are already oracle-confirmed by
 this same diagnostic script.
 
+**Production fix (issue #227, 2026-08-13, Stage C1: wildcard theta0 table
+restoration).** Discovered while investigating why 7 of the 8 residual
+Angle `empirical_rule` tuples were classified `zero_ka_table_row` rather
+than `no_table_row`: RDKit's real `defaultMMFFAngleData` has 2,342 rows;
+chematic's first port (Stage A/B state) had only 2,245 — missing exactly
+the 97 rows where `type_i == type_k == 0`. These carry `ka == 0.0`
+(RDKit's `isDoubleZero` placeholder) and exist purely to supply a
+central-atom-type-only default `theta0`; RDKit's real
+`getMMFFAngleBendParams` (`AtomTyper.cpp` lines ~3538-3554) reuses that
+row's `theta0` verbatim when found (skipping the theta0 sub-rule
+entirely) and only derives `ka` empirically — the mechanism 7/8 of the
+residual tuples actually use. This PR restores only the missing table
+DATA and the minimal guard needed to keep using it safe: `MMFF94_ANGLE_ENERGY`
+2245→2342 rows (`mmff94_energy::tests::table_sizes` updated), and
+`mmff94_angle_energy`'s `search` closure changed from `.map` to `.and_then`
+so a `ka == 0.0` hit is never surfaced as a real parameter (a physically-
+invalid zero-force-constant `Some` would otherwise regress the function).
+This is **provably a no-op for every pre-existing input**: the old table
+had zero `ka == 0.0` rows, so the new filter has nothing to filter among
+them; only the 97 newly-visible wildcard rows are affected, and the
+filter is exactly what stops them from being misused. Verified two ways:
+(1) `cargo test --workspace` green, unchanged, before and after; (2) a
+full 265-molecule corpus re-measurement via
+`mmff94_strict_gate_remeasure_227` shows **zero status differences**
+across all 265 molecules (`Ok`/`MissingParameters`/`MinimizationFailed`/
+`UnsupportedAtomType` counts identical, per-molecule join confirmed, not
+just aggregate counts) — this PR deliberately does not yet make any of
+these 97 rows resolve to a real value; that is Stage C2's job. Split out
+from a combined Stage C implementation specifically so this data-
+completeness fix (small, mechanically verifiable, zero risk) could be
+reviewed and land independently of C2's substantive new empirical-rule
+logic.
+
 ## Halgren primary literature (secondary/theoretical cross-reference, not the implementation source)
 
 - T. A. Halgren, "Merck Molecular Force Field. I. Basis, Form, Scope,

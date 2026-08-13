@@ -2,8 +2,75 @@
 
 use super::AngleEnergyParams;
 
-/// 2245 angle bending entries (Halgren 1996 Table V). Sorted by (angle_type, type_i, type_j, type_k).
+/// 2342 angle bending entries (Halgren 1996 Table V). Sorted by (angle_type, type_i, type_j, type_k).
+///
+/// Includes 97 `type_i == 0 && type_k == 0` wildcard rows (issue #227,
+/// "wildcard theta0 table restoration") -- RDKit's real
+/// `defaultMMFFAngleData` uses these purely to carry a central-atom-type-
+/// only default `theta0` (their `ka` is always exactly `0.0`, RDKit's own
+/// `isDoubleZero` empirical-rule trigger, `getMMFFAngleBendParams` in
+/// `Code/GraphMol/ForceFieldHelpers/MMFF/AtomTyper.cpp` at the pinned
+/// commit); they were absent from the first 2245-row port. A hit on one of
+/// these rows is never surfaced as a real parameter by
+/// [`mmff94_angle_energy`] -- see its own doc for why restoring this data
+/// is provably a no-op for every input that reached a real row before this
+/// change.
 pub static MMFF94_ANGLE_ENERGY: &[(u8, u8, u8, u8, f64, f64)] = &[
+    (0, 0, 1, 0, 0.0000, 108.9000),
+    (0, 0, 2, 0, 0.0000, 119.4000),
+    (0, 0, 3, 0, 0.0000, 117.3000),
+    (0, 0, 4, 0, 0.0000, 180.0000),
+    (0, 0, 6, 0, 0.0000, 110.4000),
+    (0, 0, 8, 0, 0.0000, 110.4000),
+    (0, 0, 9, 0, 0.0000, 111.5000),
+    (0, 0, 10, 0, 0.0000, 117.5000),
+    (0, 0, 15, 0, 0.0000, 97.9000),
+    (0, 0, 17, 0, 0.0000, 99.4000),
+    (0, 0, 18, 0, 0.0000, 104.6000),
+    (0, 0, 19, 0, 0.0000, 108.7000),
+    (0, 0, 20, 0, 0.0000, 113.2000),
+    (0, 0, 22, 0, 0.0000, 116.1000),
+    (0, 0, 25, 0, 0.0000, 106.5000),
+    (0, 0, 26, 0, 0.0000, 98.1000),
+    (0, 0, 30, 0, 0.0000, 134.2000),
+    (0, 0, 34, 0, 0.0000, 109.4000),
+    (0, 0, 37, 0, 0.0000, 118.8000),
+    (0, 0, 38, 0, 0.0000, 113.8000),
+    (0, 0, 39, 0, 0.0000, 120.7000),
+    (0, 0, 40, 0, 0.0000, 115.0000),
+    (0, 0, 41, 0, 0.0000, 118.3000),
+    (0, 0, 43, 0, 0.0000, 113.3000),
+    (0, 0, 44, 0, 0.0000, 91.6000),
+    (0, 0, 45, 0, 0.0000, 116.7000),
+    (0, 0, 46, 0, 0.0000, 111.0000),
+    (0, 0, 48, 0, 0.0000, 118.4000),
+    (0, 0, 49, 0, 0.0000, 111.4000),
+    (0, 0, 51, 0, 0.0000, 111.4000),
+    (0, 0, 53, 0, 0.0000, 180.0000),
+    (0, 0, 54, 0, 0.0000, 119.5000),
+    (0, 0, 55, 0, 0.0000, 120.8000),
+    (0, 0, 56, 0, 0.0000, 119.1000),
+    (0, 0, 57, 0, 0.0000, 120.9000),
+    (0, 0, 58, 0, 0.0000, 119.0000),
+    (0, 0, 59, 0, 0.0000, 105.6000),
+    (0, 0, 61, 0, 0.0000, 180.0000),
+    (0, 0, 62, 0, 0.0000, 108.3000),
+    (0, 0, 63, 0, 0.0000, 123.3000),
+    (0, 0, 64, 0, 0.0000, 121.4000),
+    (0, 0, 65, 0, 0.0000, 104.5000),
+    (0, 0, 66, 0, 0.0000, 106.9000),
+    (0, 0, 67, 0, 0.0000, 119.9000),
+    (0, 0, 68, 0, 0.0000, 108.8000),
+    (0, 0, 69, 0, 0.0000, 120.3000),
+    (0, 0, 73, 0, 0.0000, 106.6000),
+    (0, 0, 74, 0, 0.0000, 113.0000),
+    (0, 0, 75, 0, 0.0000, 94.9000),
+    (0, 0, 76, 0, 0.0000, 107.6000),
+    (0, 0, 77, 0, 0.0000, 109.5000),
+    (0, 0, 78, 0, 0.0000, 121.9000),
+    (0, 0, 79, 0, 0.0000, 103.4000),
+    (0, 0, 80, 0, 0.0000, 121.9000),
+    (0, 0, 81, 0, 0.0000, 119.5000),
     (0, 1, 1, 1, 0.8510, 109.6080),
     (0, 1, 1, 2, 0.7360, 109.4450),
     (0, 1, 1, 3, 0.7770, 107.5170),
@@ -1787,6 +1854,21 @@ pub static MMFF94_ANGLE_ENERGY: &[(u8, u8, u8, u8, f64, f64)] = &[
     (0, 79, 79, 81, 1.6250, 104.8570),
     (0, 79, 81, 80, 1.3790, 107.9360),
     (0, 81, 80, 81, 1.2050, 108.6090),
+    (1, 0, 2, 0, 0.0000, 118.2000),
+    (1, 0, 3, 0, 0.0000, 115.8000),
+    (1, 0, 4, 0, 0.0000, 180.0000),
+    (1, 0, 9, 0, 0.0000, 109.1000),
+    (1, 0, 30, 0, 0.0000, 131.8000),
+    (1, 0, 37, 0, 0.0000, 115.9000),
+    (1, 0, 39, 0, 0.0000, 125.4000),
+    (1, 0, 54, 0, 0.0000, 115.7000),
+    (1, 0, 57, 0, 0.0000, 118.1000),
+    (1, 0, 58, 0, 0.0000, 119.9000),
+    (1, 0, 63, 0, 0.0000, 124.3000),
+    (1, 0, 64, 0, 0.0000, 121.7000),
+    (1, 0, 67, 0, 0.0000, 116.6000),
+    (1, 0, 78, 0, 0.0000, 126.1000),
+    (1, 0, 80, 0, 0.0000, 128.2000),
     (1, 1, 2, 2, 0.6840, 116.9290),
     (1, 1, 2, 3, 0.6980, 116.1040),
     (1, 1, 2, 4, 0.8460, 121.6130),
@@ -2117,6 +2199,7 @@ pub static MMFF94_ANGLE_ENERGY: &[(u8, u8, u8, u8, f64, f64)] = &[
     (1, 63, 63, 66, 0.9290, 124.6890),
     (1, 63, 64, 64, 0.8270, 124.5840),
     (1, 64, 64, 66, 1.0030, 118.0670),
+    (2, 0, 2, 0, 0.0000, 120.8000),
     (2, 2, 2, 2, 0.7960, 126.2840),
     (2, 2, 2, 3, 0.8930, 118.4560),
     (2, 2, 2, 4, 0.8890, 119.7940),
@@ -2154,6 +2237,13 @@ pub static MMFF94_ANGLE_ENERGY: &[(u8, u8, u8, u8, f64, f64)] = &[
     (2, 39, 3, 39, 1.2310, 112.5820),
     (2, 64, 2, 64, 0.8880, 120.3420),
     (2, 64, 3, 64, 0.9890, 113.2800),
+    (3, 0, 2, 0, 0.0000, 62.6000),
+    (3, 0, 6, 0, 0.0000, 57.9000),
+    (3, 0, 8, 0, 0.0000, 58.5000),
+    (3, 0, 10, 0, 0.0000, 58.9000),
+    (3, 0, 22, 0, 0.0000, 59.4000),
+    (3, 0, 37, 0, 0.0000, 64.7000),
+    (3, 0, 40, 0, 0.0000, 57.8000),
     (3, 2, 2, 22, 0.1490, 66.1650),
     (3, 2, 22, 2, 0.2630, 48.8200),
     (3, 2, 22, 22, 0.1660, 60.8450),
@@ -2175,6 +2265,21 @@ pub static MMFF94_ANGLE_ENERGY: &[(u8, u8, u8, u8, f64, f64)] = &[
     (3, 22, 40, 22, 0.2040, 57.7770),
     (3, 22, 43, 22, 0.2090, 57.0320),
     (3, 37, 22, 37, 0.2370, 51.0290),
+    (4, 0, 3, 0, 0.0000, 90.8000),
+    (4, 0, 6, 0, 0.0000, 90.2000),
+    (4, 0, 8, 0, 0.0000, 95.0000),
+    (4, 0, 10, 0, 0.0000, 92.9000),
+    (4, 0, 15, 0, 0.0000, 80.2000),
+    (4, 0, 17, 0, 0.0000, 78.4000),
+    (4, 0, 18, 0, 0.0000, 80.3000),
+    (4, 0, 19, 0, 0.0000, 89.9000),
+    (4, 0, 20, 0, 0.0000, 88.8000),
+    (4, 0, 22, 0, 0.0000, 91.6000),
+    (4, 0, 25, 0, 0.0000, 89.1000),
+    (4, 0, 26, 0, 0.0000, 83.6000),
+    (4, 0, 30, 0, 0.0000, 97.7000),
+    (4, 0, 34, 0, 0.0000, 89.4000),
+    (4, 0, 37, 0, 0.0000, 91.8000),
     (4, 3, 6, 20, 1.7480, 91.2160),
     (4, 3, 10, 8, 1.5270, 93.6080),
     (4, 3, 10, 20, 1.3710, 93.3490),
@@ -2237,8 +2342,11 @@ pub static MMFF94_ANGLE_ENERGY: &[(u8, u8, u8, u8, f64, f64)] = &[
     (4, 30, 15, 30, 1.7320, 79.5460),
     (4, 37, 37, 37, 1.3800, 90.1930),
     (5, 2, 2, 3, 0.1840, 59.1450),
+    (6, 0, 2, 0, 0.0000, 60.5000),
     (6, 2, 2, 2, 0.1730, 60.5490),
     (6, 2, 3, 2, 0.1570, 62.7920),
+    (7, 0, 3, 0, 0.0000, 91.1000),
+    (7, 0, 30, 0, 0.0000, 92.3000),
     (7, 3, 30, 20, 1.2800, 89.9570),
     (7, 3, 30, 30, 1.2600, 93.1020),
     (7, 3, 37, 37, 1.3200, 90.7840),
@@ -2246,6 +2354,7 @@ pub static MMFF94_ANGLE_ENERGY: &[(u8, u8, u8, u8, f64, f64)] = &[
     (7, 10, 3, 30, 1.4380, 90.5080),
     (7, 20, 3, 37, 1.2820, 89.7330),
     (7, 20, 30, 30, 1.1910, 93.9090),
+    (8, 0, 3, 0, 0.0000, 88.9000),
     (8, 3, 3, 3, 1.2800, 89.9650),
     (8, 3, 3, 30, 1.3530, 87.7890),
     (8, 30, 30, 30, 1.2300, 93.7320),
@@ -2343,6 +2452,18 @@ fn eq_level(atom_type: u8, stage: usize) -> u8 {
 /// triple the (much smaller) specialized table doesn't happen to cover
 /// would silently drop the angle term entirely, which is worse than the
 /// un-classified behavior it replaces.
+///
+/// A table row with `ka == 0.0` (RDKit's own `isDoubleZero` placeholder,
+/// see [`MMFF94_ANGLE_ENERGY`]'s doc) is never surfaced here as a usable
+/// parameter -- it is not one, on its own. This keeps this function's
+/// contract identical to before the 97 wildcard rows were restored to the
+/// table: every input that used to return `Some`/`None` still does (the
+/// pre-restoration table had zero `ka == 0.0` rows, so this filter was a
+/// no-op on all of them; only the newly-visible wildcard rows are affected,
+/// and this is exactly what stops them from regressing the function into
+/// returning a physically-invalid zero-force-constant `Some`). A future
+/// change may turn a `ka == 0.0` hit into a real value via Halgren's
+/// empirical rule (issue #227); this function deliberately does not.
 pub fn mmff94_angle_energy(
     angle_type: u8,
     type_i: u8,
@@ -2353,9 +2474,13 @@ pub fn mmff94_angle_energy(
         MMFF94_ANGLE_ENERGY
             .binary_search_by_key(&(at, ti, type_j, tk), |&(a0, a, b, c, _, _)| (a0, a, b, c))
             .ok()
-            .map(|idx| {
+            .and_then(|idx| {
                 let (_, _, _, _, ka, theta0) = MMFF94_ANGLE_ENERGY[idx];
-                AngleEnergyParams { ka, theta0 }
+                if ka == 0.0 {
+                    None
+                } else {
+                    Some(AngleEnergyParams { ka, theta0 })
+                }
             })
     };
     let eq_level_search = |stage: usize| {
@@ -2409,6 +2534,44 @@ mod tests {
             (p.theta0 - 115.626).abs() < 1e-6,
             "theta0={} should be 115.626",
             p.theta0
+        );
+    }
+
+    // ─── Issue #227: wildcard theta0 table restoration ────────────────────
+
+    #[test]
+    fn restored_wildcard_rows_are_present_in_the_table_but_never_surfaced() {
+        // (0, 0, 1, 0) is one of the 97 restored ti=0/tk=0 wildcard rows --
+        // confirm it's really there (ka=0.0, theta0=108.9, RDKit's real
+        // defaultMMFFAngleData value) via a direct binary search, then
+        // confirm mmff94_angle_energy never surfaces it (a ka==0.0 row is
+        // not a usable parameter on its own -- see this file's module doc).
+        let idx = MMFF94_ANGLE_ENERGY
+            .binary_search_by_key(&(0u8, 0u8, 1u8, 0u8), |&(a0, a, b, c, _, _)| (a0, a, b, c))
+            .expect("restored wildcard row (0,0,1,0) must exist in the table");
+        let (_, _, _, _, ka, theta0) = MMFF94_ANGLE_ENERGY[idx];
+        assert_eq!(ka, 0.0);
+        assert_eq!(theta0, 108.9);
+
+        // A real triple that reaches this wildcard row via the eqLevel
+        // ladder's level5 (0,0) substitution (type 11=F, type 1=C, type
+        // 12=Cl, both halogens eventually map to 0 -- issue #227's own
+        // classify script confirms this is exactly how the live RDKit
+        // oracle reaches this row) must still return None here: restoring
+        // the row must not regress this into a bogus Some(ka: 0.0, ..).
+        assert!(
+            mmff94_angle_energy(0, 11, 1, 12).is_none(),
+            "a ka==0.0 table hit must never be surfaced as a real parameter"
+        );
+    }
+
+    #[test]
+    fn table_size_matches_rdkits_real_defaultmmffangledata_row_count() {
+        assert_eq!(
+            MMFF94_ANGLE_ENERGY.len(),
+            2342,
+            "97 restored wildcard rows (2245 -> 2342), matching RDKit's real \
+             defaultMMFFAngleData exactly (issue #227)"
         );
     }
 }
