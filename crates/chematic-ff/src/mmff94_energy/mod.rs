@@ -78,7 +78,7 @@ mod tests {
     #[test]
     fn table_sizes() {
         assert_eq!(MMFF94_BOND_ENERGY.len(), 493);
-        assert_eq!(MMFF94_ANGLE_ENERGY.len(), 2245);
+        assert_eq!(MMFF94_ANGLE_ENERGY.len(), 2342);
         assert_eq!(MMFF94_TORSION_ENERGY.len(), 926);
         assert_eq!(MMFF94_VDW_ENERGY.len(), 95);
     }
