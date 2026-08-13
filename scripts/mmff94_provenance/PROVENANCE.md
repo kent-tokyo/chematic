@@ -45,6 +45,51 @@ Two findings, both checked directly rather than assumed from the stretch-bend PR
 | Charges (partial bond charge increments) | `Code/ForceField/MMFF/Params.cpp` | `defaultMMFFPBCI`, `defaultMMFFChg` | `defaultMMFFPBCI` is already the cited source for chematic's existing `pbci_for` table (pre-dates this PR). |
 | Aromaticity perception feeding MMFF typing | `Code/GraphMol/Aromaticity.cpp` | `setMMFFAromaticity` (module-level function, not a `MolOps` member despite earlier notes in this file placing it there) | Priority 1A (issue #227): ported as `compute_mmff94_aromatic_view` in `mmff94_numeric.rs` — a **partial, behaviorally-calibrated** port, not a full one: every rule is a direct, line-cited port (ring-by-ring pi-electron counting at lines ~955-1035, the exocyclic-double-bond/NOS lone-pair-bonus rules, the multi-pass resolution loop) except the hybridization gate at line 1023 (`atom->getHybridization() != Atom::SP2`), approximated as `total_degree(atom) > 3` since chematic has no general hybridization-inference engine to port this faithfully. Measured gap on the 265-molecule Wave 1 corpus (`scripts/mmff94_hybridization_gate_gap_227_report.py`): 4,128/4,172 (98.9%) ring C/N atoms same decision as RDKit, 44 where the approximation under-triggers (misses a real pyramidal-SP3 ring N), 0 where it over-triggers, 0 unclassified — see `validation/results/mmff94_hybridization_gate_gap_227_report.txt`. RDKit's own general aromaticity model (distinct from both this MMFF-specific one and from chematic's `chematic_perception::apply_aromaticity`) is not relevant to MMFF typing and is out of scope here. |
 
+**Production fix (issue #227, 2026-08-13): nitrile/sulfonamide/nitro/azide-N
+and charged-sulfoxide-S typing.** Root-caused via a new diagnostic,
+`scripts/mmff94_angle_bond_gap_classify.py`, that classifies each unique
+`mmff94_strict`-blocking Angle/Bond `table_gap` tuple (issue #227's 2026-08-10
+status comment: 97 Angle + 5 Bond instances, 27 + 3 unique atom-type tuples)
+against RDKit's real resolution path (table lookup incl. the `eqLevel`
+equivalence ladder, vs. the eq.18-20 empirical rule, vs. a chematic-side
+atom-type mismatch) by parsing RDKit's own source tables (`defaultMMFFDef`,
+`defaultMMFFAngleData`, `defaultMMFFBond`, `defaultMMFFBndk`,
+`defaultMMFFHerschbachLaurie`, `defaultMMFFCovRadPauEle`) directly and
+cross-checking against a live oracle. Result (instance-weighted): Angle 46%
+(45/97) `type_mismatch`, 44% (43/97) genuinely need the empirical rule
+(eq.18-20, tracked separately — see Torsion's own empirical-rule entry
+above for the same mechanism class), 9% (9/97) resolvable via the `eqLevel`
+ladder (also not yet ported); Bond 100% (5/5) `type_mismatch`. All 15 Angle
++ 3 Bond unique `type_mismatch` tuples traced to exactly the "5 small
+pre-existing gaps" already named in this file's Priority-1A-2 history
+(nitrile-N approximation, NSO2 sulfonamide/cyano-N, azide/diazo typing,
+charge-shortcut masking nitro-N, charged-sulfoxide-S) — zero new typing
+bugs found. Fixed in `assign_n_type`/`assign_s_type`
+(`crates/chematic-ff/src/mmff94_numeric.rs`), each condition a direct,
+line-cited port of RDKit's real `case 7`/`case 16` cascade
+(`AtomTyper.cpp` lines ~971-1481 for N, ~1815-1917 for S at the pinned
+commit): nitrile/isocyanide N (degree-1, triple-bonded) → type 42 (NSP);
+terminal azide/diazo N → type 47 (NAZT); central charged cumulated
+azide/diazo N → type 53 (`=N=`); nitro N → type 45 (NO2/NO3, was
+incorrectly returning 46 "N=O" nitroso before this fix, unreachable in
+practice because the pre-existing `charge > 0 -> 34` shortcut fired first
+for every real charge-separated nitro group); sulfonamide/sulfonate N
+(attached to a P/S bonded to ≥2 terminal oxygens) → type 43 (NSO2/NSO3,
+reusing `classify_n_c3_carbon_context`'s pre-existing but previously-unwired
+`is_cyano_like` field for the cyanamide half of the same RDKit flag);
+charged sulfoxide S (e.g. `[S+]([O-])`, MMFF94's only valid charge-separated
+spelling) → type 17 (S=O) — the old `assign_s_type` only counted *explicit
+double bonds* to O, missing every charge-separated form entirely.
+Re-measured on the full 265-molecule corpus: `mmff94_strict`'s own
+bond+angle coverage gate (`Mmff94CoverageReport::bond_angle_fully_covered`)
+moves from 107 to 103 failing molecules (4 flip to pass: `chembl_tier_b_0050`
+sulfonamide, `_0080` azide, `_0159` nitro, `_0192` nitrile; **zero**
+molecules regress from pass to fail), `bonds_missing` 84→80, `angles_missing`
+374→358. Full `cargo test --workspace` (all crates) green throughout. Next:
+the `eqLevel` equivalence ladder (9% of the Angle residual) and the
+eq.18-20 Bond-stretch/Angle-bend empirical rule (44%) remain unimplemented,
+tracked as this issue's next two stages.
+
 ## Halgren primary literature (secondary/theoretical cross-reference, not the implementation source)
 
 - T. A. Halgren, "Merck Molecular Force Field. I. Basis, Form, Scope,

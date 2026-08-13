@@ -1559,6 +1559,65 @@ fn assign_n_type(
     let double_bonds = count_bond_order(mol, idx, BondOrder::Double);
     let triple_bonds = count_bond_order(mol, idx, BondOrder::Triple);
     let nbrs = bonds_of(mol, idx);
+    let degree = total_degree(mol, idx);
+
+    // Terminal (degree-1) nitrogen: nitrile/isocyanide (NSP, type 42) or the
+    // terminal nitrogen of an azide/diazo group (NAZT, type 47).
+    // Source-grounded port of RDKit's degree-1 nitrogen branch
+    // (`AtomTyper.cpp` lines ~1454-1481 at the pinned commit, issue #227) --
+    // must run before the generic `triple_bonds > 0 -> 9` fallback below,
+    // which previously caught every real nitrile nitrogen (always degree-1
+    // in a legal structure) before this more specific check could fire.
+    if degree == 1
+        && let Some(nb) = nbrs.first()
+    {
+        if nb.order == BondOrder::Triple {
+            return Ok(42); // NSP: nitrile/isocyanide nitrogen
+        }
+        if mol.atom(nb.neighbor).element == Element::N && total_degree(mol, nb.neighbor) == 2 {
+            // ipso is bonded to a 2-connected nitrogen (the azide/diazo
+            // center) -- NAZT iff that center's OTHER neighbor is itself a
+            // 2-connected nitrogen or a 3-connected carbon.
+            let is_azt = bonds_of(mol, nb.neighbor).iter().any(|b2| {
+                b2.neighbor != idx
+                    && ((mol.atom(b2.neighbor).element == Element::N
+                        && total_degree(mol, b2.neighbor) == 2)
+                        || (mol.atom(b2.neighbor).element == Element::C
+                            && total_degree(mol, b2.neighbor) == 3))
+            });
+            if is_azt {
+                return Ok(47); // NAZT: terminal azide/diazo nitrogen
+            }
+        }
+    }
+
+    // Central, charged, 2-connected cumulated nitrogen (the "=N=" center of
+    // an azide/diazo group, type 53). Must run before the generic
+    // `charge > 0 -> 34` fallback below, which would otherwise mask it
+    // (issue #227's "azide/diazo typing" gap).
+    if atom.charge > 0
+        && degree == 2
+        && nbrs
+            .iter()
+            .all(|b| mol.atom(b.neighbor).element == Element::N)
+    {
+        return Ok(53); // =N=: central cumulated nitrogen (azide/diazo)
+    }
+
+    // Nitro nitrogen (NO2/NO3, type 45). Also must run before the generic
+    // `charge > 0 -> 34` fallback: a nitro N is only ever written
+    // charge-separated ([N+](=O)[O-]) by a sanitizable structure, so the
+    // generic charge check would otherwise mask it every time (issue #227's
+    // "charge-shortcut masking nitro-N" gap).
+    let terminal_o_count = nbrs
+        .iter()
+        .filter(|b| {
+            mol.atom(b.neighbor).element == Element::O && bonds_of(mol, b.neighbor).len() == 1
+        })
+        .count();
+    if atom.charge > 0 && terminal_o_count >= 2 {
+        return Ok(45); // NO2 / NO3
+    }
 
     // Formal charge: quaternary ammonium / protonated N.
     // Registry-verified: type 34 is NR+ (N+, QUATERNARY N); type 32 is
@@ -1570,7 +1629,24 @@ fn assign_n_type(
         return Ok(34); // NR+
     }
 
-    // Nitrile / isocyanide (N≡C)
+    // Sulfonamide/sulfonate/phosphonamide nitrogen (NSO2/NSO3, type 43):
+    // ipso attached to a P or S bonded to >=2 terminal oxygens. Source-
+    // grounded port of the S/P-neighbor half of RDKit's `isNSO2orNSO3orNCN`
+    // (`AtomTyper.cpp` lines ~985-1000 at the pinned commit, issue #227) --
+    // the cyanamide (N-C%N) half of the same RDKit flag is handled by
+    // `ctx.is_cyano_like` in the 3-connected branch below, which already
+    // existed but wasn't wired to return 43 until now.
+    if nbrs.iter().any(|b| {
+        let e = mol.atom(b.neighbor).element;
+        (e == Element::P || e == Element::S) && count_terminal_o_neighbors(mol, b.neighbor) >= 2
+    }) {
+        return Ok(43); // NSO2 / NSO3
+    }
+
+    // Nitrile / isocyanide (N≡C). Unreachable for any real (degree-1)
+    // nitrile now that the branch above handles it -- kept as a
+    // conservative fallback for a hypothetical non-degree-1 triple-bonded N
+    // this port hasn't observed in practice.
     if triple_bonds > 0 {
         return Ok(9); // N=C (close approximation for nitrile)
     }
@@ -1580,25 +1656,24 @@ fn assign_n_type(
         return Ok(9); // N=C imine
     }
 
-    // sp3 N, 3-connected: enamine/aniline (NC=C) vs amide (NC=O) vs plain
-    // (NR). Source-grounded deterministic port of RDKit's `case 7:`
-    // 3-connected branch (`AtomTyper.cpp` lines 1093-1325 at the pinned
-    // commit) -- see `classify_n_c3_carbon_context`'s doc for the exact
-    // condition and its one documented, empirically-unobserved structural
-    // divergence from RDKit's literal C++.
+    // sp3 N, 3-connected: enamine/aniline (NC=C) vs amide (NC=O) vs
+    // cyanamide (NC%N) vs plain (NR). Source-grounded deterministic port of
+    // RDKit's `case 7:` 3-connected branch (`AtomTyper.cpp` lines 1093-1325
+    // at the pinned commit) -- see `classify_n_c3_carbon_context`'s doc for
+    // the exact condition and its one documented, empirically-unobserved
+    // structural divergence from RDKit's literal C++.
     if total_degree(mol, idx) == 3 {
         let ctx = classify_n_c3_carbon_context(mol, rings, idx);
         if ctx.has_carbon_neighbor {
-            if !ctx.is_carbonyl_like && !ctx.is_cyano_like && ctx.any_carbon_qualifies_nc_eq_c {
+            if ctx.is_cyano_like {
+                return Ok(43); // NC%N: nitrogen attached to a cyano carbon
+            }
+            if !ctx.is_carbonyl_like && ctx.any_carbon_qualifies_nc_eq_c {
                 return Ok(40); // NC=C / NC=N / NC=P / NC%C: deloc. lone pair
             }
-            if !ctx.is_cyano_like && ctx.is_carbonyl_like {
+            if ctx.is_carbonyl_like {
                 return Ok(10); // NC=O / NC=S amide/thioamide nitrogen
             }
-            // ctx.is_cyano_like (NSO2/NC%N family, type 43) or neither
-            // condition matched: not yet ported (a separate, tiny,
-            // pre-existing residual, unaffected by this change) -- falls
-            // through to the generic sp3 checks below, same as before.
         }
     }
 
@@ -1617,15 +1692,6 @@ fn assign_n_type(
 
     if is_amide {
         return Ok(10); // NC=O amide nitrogen
-    }
-
-    // Nitro group (N with two =O bonds): check for N(=O)=O pattern
-    let double_o = bonds_of(mol, idx)
-        .iter()
-        .filter(|b| b.order == BondOrder::Double && mol.atom(b.neighbor).element == Element::O)
-        .count();
-    if double_o >= 2 {
-        return Ok(46); // NO2 nitro N
     }
 
     Ok(8) // NR plain amine
@@ -1892,28 +1958,83 @@ fn assign_o_type(
 
 // ── S type assignment ────────────────────────────────────────────────────────
 
+/// Source-grounded deterministic port of RDKit's `case 16:` (sulfur)
+/// degree-based branch (`AtomTyper.cpp` lines ~1815-1917 at the pinned
+/// commit, issue #227). The previous version only counted *explicit double
+/// bonds* to oxygen, which missed every charge-separated sulfoxide/sulfone
+/// spelling (e.g. `[S+]([O-])`, MMFF94's only valid form for a charged
+/// sulfinyl/sulfonyl sulfur) -- this port instead follows RDKit's own
+/// degree/terminal-neighbor-counting rule, which is bond-order-separation
+/// agnostic by construction (a terminal O counts whether it's reached via a
+/// double bond or a charge-separated single bond).
 fn assign_s_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
     let atom = mol.atom(idx);
     if atom.aromatic {
         return Ok(44); // S5 aromatic sulfur (thiophene)
     }
 
-    let double_o = bonds_of(mol, idx)
-        .iter()
-        .filter(|b| b.order == BondOrder::Double && mol.atom(b.neighbor).element == Element::O)
-        .count();
+    let degree = total_degree(mol, idx);
+    let nbrs = bonds_of(mol, idx);
 
-    match double_o {
-        2.. => Ok(18), // SO2 sulfone
-        1 => Ok(17),   // S=O sulfoxide
-        0 => {
-            // Check double bond to C
-            if count_bond_order(mol, idx, BondOrder::Double) > 0 {
-                return Ok(16); // S=C
-            }
-            Ok(15) // S thiol/sulfide
+    // 3- or 4-connected sulfur (sulfoxide/sulfone/thiosulfinate family).
+    if degree == 3 || degree == 4 {
+        let n_o_or_n_bonded = nbrs
+            .iter()
+            .filter(|b| {
+                (mol.atom(b.neighbor).element == Element::O && bonds_of(mol, b.neighbor).len() == 1)
+                    || (mol.atom(b.neighbor).element == Element::N
+                        && total_degree(mol, b.neighbor) == 2)
+            })
+            .count();
+        let n_s_bonded = nbrs
+            .iter()
+            .filter(|b| {
+                mol.atom(b.neighbor).element == Element::S && bonds_of(mol, b.neighbor).len() == 1
+            })
+            .count();
+        let c_double_bonded = nbrs
+            .iter()
+            .any(|b| b.order == BondOrder::Double && mol.atom(b.neighbor).element == Element::C);
+
+        if (degree == 3 && n_o_or_n_bonded == 2 && c_double_bonded) || degree == 4 {
+            return Ok(18); // SO2: sulfone sulfur
         }
+        if (n_o_or_n_bonded > 0 && n_s_bonded > 0) || (n_o_or_n_bonded == 2 && !c_double_bonded) {
+            return Ok(73); // SSOM: anionic thiosulfinate sulfur
+        }
+        return Ok(17); // S=O / >S=N: sulfoxide sulfur
     }
+
+    // 2-connected sulfur.
+    if degree == 2 {
+        let o_double_bonded = nbrs
+            .iter()
+            .any(|b| b.order == BondOrder::Double && mol.atom(b.neighbor).element == Element::O);
+        if o_double_bonded {
+            return Ok(74); // =S=O: sulfinyl sulfur (e.g. C=S=O)
+        }
+        return Ok(15); // S: thiol, sulfide, or disulfide
+    }
+
+    // 1-connected (terminal) sulfur.
+    if degree == 1
+        && let Some(nb) = nbrs.first()
+    {
+        let n_term_s_on_nbr = bonds_of(mol, nb.neighbor)
+            .iter()
+            .filter(|bb| {
+                mol.atom(bb.neighbor).element == Element::S && bonds_of(mol, bb.neighbor).len() == 1
+            })
+            .count();
+        let c_double_bonded =
+            nb.order == BondOrder::Double && mol.atom(nb.neighbor).element == Element::C;
+        if c_double_bonded && n_term_s_on_nbr != 2 {
+            return Ok(16); // S=C: sulfur doubly bonded to carbon
+        }
+        return Ok(72); // S-P / SM / SSMO: other terminal sulfur
+    }
+
+    Ok(15) // conservative fallback (degree 0, e.g. an isolated ion)
 }
 
 // ── P type assignment ────────────────────────────────────────────────────────
@@ -2648,6 +2769,81 @@ mod tests {
                 assert_eq!(types_s2[i], 18, "DMSO2 S should be type 18 (SO2)");
             }
         }
+    }
+
+    // ── Issue #227: nitrile/sulfonamide/nitro/azide/charged-sulfoxide
+    // typing gaps (5 small pre-existing gaps named in PR #239's own
+    // summary, root-caused via `scripts/mmff94_angle_bond_gap_classify.py`'s
+    // live-RDKit-oracle atom-type cross-check on the failing mmff94_strict
+    // corpus). All 5 expected types verified against a live RDKit 2026.03.3
+    // oracle (`AllChem.MMFFGetMoleculeProperties`), not hand-derived.
+
+    #[test]
+    fn nitrile_nitrogen_is_type_42_not_generic_imine() {
+        // Oracle: CC#N -> C(1), C(4), N(42).
+        let m = mol("CC#N");
+        assert_eq!(
+            sole_nitrogen_type(&m),
+            42,
+            "nitrile N should be type 42 (NSP)"
+        );
+    }
+
+    #[test]
+    fn sulfonamide_nitrogen_is_type_43() {
+        // Oracle: CS(=O)(=O)N -> C(1), S(18), O(32), O(32), N(43).
+        let m = mol("CS(=O)(=O)N");
+        assert_eq!(
+            sole_nitrogen_type(&m),
+            43,
+            "sulfonamide N should be type 43 (NSO2)"
+        );
+    }
+
+    #[test]
+    fn nitro_nitrogen_is_type_45_not_generic_charged() {
+        // Oracle: C[N+](=O)[O-] -> C(1), N(45), O(32), O(32).
+        let m = mol("C[N+](=O)[O-]");
+        assert_eq!(
+            sole_nitrogen_type(&m),
+            45,
+            "nitro N should be type 45 (NO2)"
+        );
+    }
+
+    #[test]
+    fn azide_terminal_and_central_nitrogens_are_type_47_and_53() {
+        // Oracle: CN=[N+]=[N-] -> C(1), N(9, attachment N, unaffected),
+        // N(53, central cumulated), N(47, terminal).
+        let m = mol("CN=[N+]=[N-]");
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        let mut n_types: Vec<u8> = m
+            .atoms()
+            .filter(|(_, a)| a.element == Element::N)
+            .map(|(i, _)| types[i.0 as usize])
+            .collect();
+        n_types.sort_unstable();
+        assert_eq!(
+            n_types,
+            vec![9, 47, 53],
+            "azide N's should be [9 (attachment), 47 (terminal, NAZT), 53 (central, =N=)]"
+        );
+    }
+
+    #[test]
+    fn charged_sulfoxide_sulfur_is_type_17_not_generic_thioether() {
+        // Oracle: C[S+](C)[O-] -> C(1), S(17), C(1), O(32). The charge-
+        // separated single-bond S-O spelling is MMFF94's only valid form
+        // for a charged sulfoxide/sulfonium-oxide; the previous
+        // `assign_s_type` only counted explicit double bonds to O and so
+        // fell through to the generic S (15) for this spelling.
+        let m = mol("C[S+](C)[O-]");
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        let (s_idx, _) = m.atoms().find(|(_, a)| a.element == Element::S).unwrap();
+        assert_eq!(
+            types[s_idx.0 as usize], 17,
+            "charge-separated sulfoxide S should be type 17 (S=O)"
+        );
     }
 
     // ── Charge calculation tests ─────────────────────────────────────────────
