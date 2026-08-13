@@ -27,8 +27,10 @@
 pub mod error;
 pub mod lattice;
 pub mod site;
+pub mod structure;
 pub mod validation;
 
 pub use error::CrystalError;
 pub use lattice::Lattice;
 pub use site::{CartesianCoord, FractionalCoord, Occupancy, PeriodicSite, SiteSpecies};
+pub use structure::PeriodicStructure;

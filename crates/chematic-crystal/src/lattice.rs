@@ -311,7 +311,41 @@ impl Lattice {
             [inv[0][2], inv[1][2], inv[2][2]],
         ]
     }
+}
 
+/// Serializes/deserializes only `matrix` -- `inverse` is cached derived
+/// state, not persisted (persisting it would let a hand-edited JSON file
+/// carry a `matrix`/`inverse` pair that no longer agree). Deserializing
+/// re-derives `inverse` and re-runs every constructor validation via
+/// [`Lattice::from_matrix`], so a deserialized `Lattice` has exactly the
+/// same guarantees as one built through the normal constructors.
+#[cfg(feature = "serde")]
+mod serde_impl {
+    use super::Lattice;
+    use crate::error::CrystalError;
+    use serde::de::Error as _;
+    use serde::ser::SerializeStruct;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    impl Serialize for Lattice {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            let mut state = serializer.serialize_struct("Lattice", 1)?;
+            state.serialize_field("matrix", &self.matrix)?;
+            state.end()
+        }
+    }
+
+    #[derive(Deserialize)]
+    struct LatticeData {
+        matrix: [[f64; 3]; 3],
+    }
+
+    impl<'de> Deserialize<'de> for Lattice {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            let data = LatticeData::deserialize(deserializer)?;
+            Lattice::from_matrix(data.matrix).map_err(|e: CrystalError| D::Error::custom(e.to_string()))
+        }
+    }
 }
 
 #[cfg(test)]
@@ -396,6 +430,10 @@ mod tests {
     // -- reciprocal relation ------------------------------------------------
 
     #[test]
+    // Cross-product of two independent 3x3 matrices' rows, keyed off both
+    // numeric indices for the `i == j` Kronecker-delta comparison -- not a
+    // single-array walk `enumerate()` would simplify.
+    #[allow(clippy::needless_range_loop)]
     fn reciprocal_relation_a_dot_b_is_kronecker_delta() {
         let l = Lattice::from_parameters(5.0, 6.0, 7.0, 80.0, 95.0, 110.0).unwrap();
         let m = l.matrix();
@@ -410,6 +448,8 @@ mod tests {
     }
 
     #[test]
+    // See the allow above: `recip[i][j]` vs `inv[j][i]` needs both indices.
+    #[allow(clippy::needless_range_loop)]
     fn reciprocal_matrix_is_inverse_transpose() {
         let l = Lattice::from_parameters(5.0, 6.0, 7.0, 80.0, 95.0, 110.0).unwrap();
         let inv = l.inverse_matrix();

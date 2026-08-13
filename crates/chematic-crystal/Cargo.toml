@@ -24,9 +24,19 @@ chematic-core = { path = "../chematic-core", version = "0.14.1" }
 serde         = { version = "1.0", features = ["derive"], optional = true }
 
 [dev-dependencies]
-serde_json = "1.0"
+# float_roundtrip: without it, serde_json's default float parser is not
+# guaranteed to be correctly-rounded -- observed directly (a 1-ULP mismatch
+# on a from_parameters-derived matrix entry, e.g. 3.453503973595536e-16
+# serialized then parsed back as 3.4535039735955363e-16) while writing this
+# crate's serde round-trip tests. Downstream consumers who need exact float
+# round-tripping via serde_json need the same feature; noted in the README.
+serde_json = { version = "1.0", features = ["float_roundtrip"] }
 criterion  = { version = "0.8", features = ["html_reports"] }
 
 [[bench]]
 name = "crystal_bench"
 harness = false
+
+[[test]]
+name = "serde_roundtrip"
+required-features = ["serde"]

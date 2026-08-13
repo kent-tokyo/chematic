@@ -200,6 +200,130 @@ impl PeriodicSite {
     }
 }
 
+/// Hand-written rather than derived throughout this module: every public
+/// type here (`FractionalCoord`, `CartesianCoord`, `Occupancy`,
+/// `SiteSpecies`, `PeriodicSite`) enforces an invariant at construction
+/// (finite components, non-negative occupancy, non-empty species,
+/// occupancy-sum tolerance), and a `#[derive(Deserialize)]` would silently
+/// skip all of them by assigning fields directly. `SiteSpecies` additionally
+/// can't derive at all: `chematic_core::Element` has no serde support (see
+/// `docs/rfcs/chematic_crystal_foundation.md`), so it round-trips through
+/// the element's existing `symbol()`/`from_symbol()` API as a string
+/// instead.
+#[cfg(feature = "serde")]
+mod serde_impl {
+    use super::{CartesianCoord, FractionalCoord, Occupancy, PeriodicSite, SiteSpecies};
+    use crate::error::CrystalError;
+    use chematic_core::Element;
+    use serde::de::Error as _;
+    use serde::ser::SerializeStruct;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    impl Serialize for FractionalCoord {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            self.0.serialize(serializer)
+        }
+    }
+
+    impl<'de> Deserialize<'de> for FractionalCoord {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            let value = <[f64; 3]>::deserialize(deserializer)?;
+            if value.iter().all(|c| c.is_finite()) {
+                Ok(FractionalCoord(value))
+            } else {
+                Err(D::Error::custom(
+                    "fractional coordinate components must be finite",
+                ))
+            }
+        }
+    }
+
+    impl Serialize for CartesianCoord {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            self.0.serialize(serializer)
+        }
+    }
+
+    impl<'de> Deserialize<'de> for CartesianCoord {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            let value = <[f64; 3]>::deserialize(deserializer)?;
+            if value.iter().all(|c| c.is_finite()) {
+                Ok(CartesianCoord(value))
+            } else {
+                Err(D::Error::custom(
+                    "Cartesian coordinate components must be finite",
+                ))
+            }
+        }
+    }
+
+    impl Serialize for Occupancy {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            self.0.serialize(serializer)
+        }
+    }
+
+    impl<'de> Deserialize<'de> for Occupancy {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            let value = f64::deserialize(deserializer)?;
+            Occupancy::new(value).map_err(|e: CrystalError| D::Error::custom(e.to_string()))
+        }
+    }
+
+    impl Serialize for SiteSpecies {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            let mut state = serializer.serialize_struct("SiteSpecies", 2)?;
+            state.serialize_field("element", self.element.symbol())?;
+            state.serialize_field("occupancy", &self.occupancy)?;
+            state.end()
+        }
+    }
+
+    #[derive(Deserialize)]
+    struct SiteSpeciesData {
+        element: String,
+        occupancy: Occupancy,
+    }
+
+    impl<'de> Deserialize<'de> for SiteSpecies {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            let data = SiteSpeciesData::deserialize(deserializer)?;
+            let element = Element::from_symbol(&data.element).ok_or_else(|| {
+                D::Error::custom(format!("unknown element symbol {:?}", data.element))
+            })?;
+            Ok(SiteSpecies {
+                element,
+                occupancy: data.occupancy,
+            })
+        }
+    }
+
+    impl Serialize for PeriodicSite {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            let mut state = serializer.serialize_struct("PeriodicSite", 3)?;
+            state.serialize_field("species", &self.species)?;
+            state.serialize_field("fractional", &self.fractional)?;
+            state.serialize_field("label", &self.label)?;
+            state.end()
+        }
+    }
+
+    #[derive(Deserialize)]
+    struct PeriodicSiteData {
+        species: Vec<SiteSpecies>,
+        fractional: FractionalCoord,
+        label: Option<String>,
+    }
+
+    impl<'de> Deserialize<'de> for PeriodicSite {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            let data = PeriodicSiteData::deserialize(deserializer)?;
+            PeriodicSite::new(data.species, data.fractional, data.label)
+                .map_err(|e: CrystalError| D::Error::custom(e.to_string()))
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
