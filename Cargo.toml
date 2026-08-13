@@ -13,6 +13,7 @@ members = [
     "crates/chematic-rxn",
     "crates/chematic-ff",
     "crates/chematic-ewald",
+    "crates/chematic-crystal",
     "crates/chematic-inchi",
     "crates/chematic-wasm",
     "crates/chematic",

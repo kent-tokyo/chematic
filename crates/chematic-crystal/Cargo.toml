@@ -1,0 +1,32 @@
+[package]
+name = "chematic-crystal"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Periodic crystal structure representation and geometry (lattice, fractional/Cartesian coordinates, PBC distance, periodic neighbors, supercells) for chematic -- pure Rust, WASM-compatible"
+keywords = ["crystal", "lattice", "periodic", "materials", "cheminformatics"]
+categories = ["science", "data-structures"]
+readme = "README.md"
+homepage.workspace = true
+documentation = "https://docs.rs/chematic-crystal"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+serde = ["dep:serde"]
+
+[dependencies]
+chematic-core = { path = "../chematic-core", version = "0.14.1" }
+serde         = { version = "1.0", features = ["derive"], optional = true }
+
+[dev-dependencies]
+serde_json = "1.0"
+criterion  = { version = "0.8", features = ["html_reports"] }
+
+[[bench]]
+name = "crystal_bench"
+harness = false
