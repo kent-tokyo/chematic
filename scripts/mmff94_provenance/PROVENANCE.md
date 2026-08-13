@@ -156,6 +156,158 @@ completeness fix (small, mechanically verifiable, zero risk) could be
 reviewed and land independently of C2's substantive new empirical-rule
 logic.
 
+**Production fix (issue #227, 2026-08-13, Stage C2: genuine empirical
+Bond/Angle rule).** Stacked on Stage C1. Ports RDKit's real
+`getMMFFBondStretchEmpiricalRuleParams`/`getMMFFAngleBendEmpiricalRuleParams`
+(`Code/GraphMol/ForceFieldHelpers/MMFF/AtomTyper.cpp` at the pinned
+commit) as `bond_empirical`/`mmff94_bond_energy_resolved`
+(`crates/chematic-ff/src/mmff94_energy/bond.rs`) and
+`angle_empirical_theta0`/`angle_empirical_ka`/`mmff94_angle_energy_resolved`
+(`.../angle.rs`), strictly *after* the existing exact-table/eqLevel-ladder
+chain in both cases — the empirical rule never overrides a real table
+hit. New source tables, transcribed verbatim from the pinned `Params.cpp`
+(cross-checked against `scripts/mmff94_angle_bond_gap_classify.py`'s own
+independently-fetched copies): `MMFF94_COV_RAD_PAU_ELE` (18 rows),
+`MMFF94_BNDK` (58 rows), `MMFF94_HERSCHBACH_LAURIE` (25 rows — the raw
+table's third numeric column, `dp_ij`, is confirmed genuinely unused by
+RDKit's own real `kb` formula by direct source read, so not stored), and
+`MMFF94_ANGLE_Z`/`MMFF94_ANGLE_C` (11/7 rows). Atomic numbers and the
+central atom's `crd`/`val`/`mltb`/`lin` come from the existing
+`mmff94_numeric_type_registry.rs`, not re-transcribed.
+
+**Resolution provenance.** Added `Mmff94Resolution`
+(`.../mmff94_energy/mod.rs`): `DirectTable` / `EquivalentType { level }` /
+`GenericAngleTypeFallback` (chematic's pre-existing, non-RDKit
+`angle_type=0` net) / `EmpiricalBond` / `EmpiricalAngle`. The plain
+`mmff94_bond_energy`/`mmff94_angle_energy` (unchanged since Stage A/B/C1)
+keep their bare `Option<Params>` signature; `mmff94_bond_energy_resolved`/
+`mmff94_angle_energy_resolved` are new, additive functions returning
+`Option<(Params, Mmff94Resolution)>` — needed because eqLevel substitution
+(Stage B) can land on a real row that is nonetheless the wrong parameter
+for the original triple's chemistry (the #236 furan-collision failure
+class), so `Some(...)` alone never proved correctness.
+
+**The one unconfirmable tuple, left fail-closed:**
+`(angle_type=0, type_i=43, type_j=18, type_k=63)`, `chembl_tier_b_0022`.
+Numeric type 63 (C5A) has no row in the 55-entry eqLevel table (types
+1-55 only). RDKit's real `MMFFDefCollection::operator()` returns
+`nullptr` for such a type under both build variants, and
+`MMFFAngleCollection::operator()`'s real eqLevel loop dereferences that
+unchecked — undefined behavior in RDKit's own C++, confirmed by direct
+source read. The live oracle nonetheless returns a finite, plausible
+value for this triple (`ka=1.281584861919745, theta0=104.6`), confirmed
+*stable* across 20 atom-index renumberings of the source molecule and
+across a second, structurally unrelated molecule with the same local
+(N43)-(S18)-(C63) pattern — a value deterministic in the atom types
+alone, not per-call noise. This is consistent with either a real,
+unidentified RDKit resolution path or RDKit deterministically reading
+the same out-of-bounds heap memory adjacent to its own 55-row static
+table on every call in the same process; the two are observationally
+identical from the Python binding, and no source-level mechanism was
+found that would make this a *defined* resolution. No direct/eqLevel
+table row exists for this tuple at any ordering (confirmed by a fresh
+scan of the parsed `defaultMMFFAngleData`). Per instruction, excluded
+from this PR's empirical-parity claim and left fail-closed:
+`mmff94_angle_energy_resolved` gates the empirical path on
+`has_eq_level_row(type_i) && has_eq_level_row(type_k)`
+(`TableSearch::UndefinedSubstitution`, distinct from a genuine
+`TableSearch::Exhausted`) — narrowly scoped to this specific condition,
+not disabling empirical resolution for any of the other 7 confirmed
+tuples, nor for `type_i`/`type_k` ≤ 55, nor for a type > 55 that hits the
+exact table directly. Regression-tested
+(`angle_empirical_fails_closed_for_undefined_eq_level_substitution`).
+
+**Ring-size-3-or-4 detection.** Ported `isAngleInRingOfSize3or4`
+(`AtomTyper.cpp` lines ~357-398) verbatim as
+`is_angle_in_ring_of_size_3_or_4` (`.../mmff94_minimizer.rs`, `pub` for
+reuse from chematic-3d) — local bond adjacency, NOT SSSR, deliberately
+distinct from the pre-existing SSSR-based `atoms_share_ring_of_size`
+used for angle-*type* classification. Direct source read
+(`AtomTyper.cpp` lines ~2746-2785) confirms the ring-size 60°/90°
+override applies only in the from-scratch theta0 branch, never in the
+`ka==0.0`-row theta0-reuse branch (Stage C1) — chematic's port preserves
+this asymmetry exactly (`angle_empirical_theta0` only runs for
+`TableSearch::Exhausted`, never `TableSearch::ZeroKa`).
+
+**Production wiring.** `mmff94_bond_energy_resolved`/
+`mmff94_angle_energy_resolved` now back chematic-ff's own
+`bond_energy`/`angle_energy`/`stretch_bend_energy`
+(`.../mmff94_minimizer.rs`) — the actual production energy/gradient
+functions, not just a coverage check — and chematic-3d's independent
+`compute_mmff94_coverage`, so the strict-gate's coverage decision and
+the minimizer's actual energy computation stay consistent. The two
+flanking bonds' `r0` are resolved once per angle triple and passed in by
+the caller, matching RDKit's real `getMMFFAngleBendParams` (which
+requires both flanking `getMMFFBondStretchParams` calls to succeed
+before even attempting the empirical path). `mmff94_term_coverage_audit.rs`
+gained `empirical_resolved` per-row fields and
+`bonds_final_unresolved`/`angles_final_unresolved` molecule-level counts,
+mirroring the pre-existing `stbn_final_unresolved`/`dfsb_resolved`
+type-only-vs-final-resolution split (Priority 2B) — the type-only
+`bonds_missing`/`angles_missing` axis is unaffected by this PR (80/191,
+unchanged), while `bonds_final_unresolved`/`angles_final_unresolved`
+drop to 0/25.
+
+**End-to-end confirmation via the real policy path.** Two pre-existing
+`chematic-3d` tests exercising `[C@H](F)(Cl)Br` under
+`minimize_with_policy` — `mmff94_strict_refuses_chfclbr_with_missing_angle_params`
+and `mmff94_with_uff_fallback_falls_back_and_reports_why_on_chfclbr` —
+asserted the *old* "no MMFF94 table entry, must fall back to UFF"
+behavior for this molecule's 3 halogen-C-halogen angles (exactly 3 of
+the 7 oracle-confirmed empirical tuples). Both now fail their old
+premise and are rewritten (`mmff94_strict_now_resolves_chfclbr_via_empirical_angle_rule`,
+`mmff94_with_uff_fallback_no_longer_needs_to_fall_back_on_chfclbr`) to
+assert the new, correct behavior: `Mmff94BondAngleStrict` now succeeds
+directly, with a real nonzero empirical angle energy before minimization
+and zero UFF fallback needed — direct, independent confirmation (a
+second code path, not just the unit tests above) that the empirical
+rule is genuinely wired into production, not just measured by a
+custom-built harness.
+
+**Corpus re-measurement (full 265-molecule Wave 1 corpus, production
+`minimize_with_policy` via `mmff94_strict_gate_remeasure_227`).**
+From the post-#314/#315-merge baseline (measured fresh on that exact
+commit, not assumed from an earlier session's number): 265 total,
+`Ok`=178, `MissingParameters`=83, `UnsupportedAtomType`=1,
+`MinimizationFailed`=3 (87 failing). Stage C1 alone: **zero status
+differences** across all 265 molecules (see C1's own entry above) — the
+data restoration has no behavioral effect by itself. Stage C2 (this
+PR): `Ok`=248, `MissingParameters`=13, `UnsupportedAtomType`=1,
+`MinimizationFailed`=3 (**17 failing, 87→17**). Verified by a full
+per-molecule join, not aggregate counts: **zero regressions** (no
+previously-`Ok` molecule became non-`Ok`); the `MinimizationFailed` set
+(`chembl_tier_b_0028`/`0029`/`0030`) and `UnsupportedAtomType` set
+(`force_field_unsupported_probe`) are byte-identical before/after — not
+newly caused, not masked. All 70 `Ok`-transitions are
+`MissingParameters` → `Ok` (83→13 exactly accounts for the 70). Of the
+13 molecules still `MissingParameters`, 12 have real, unrelated genuine
+`Exhausted`-path Angle gaps (caffeine + 11 `chembl_tier_b` molecules,
+25 angle instances total under the coverage audit's `angles_final_unresolved`)
+and 1 is `chembl_tier_b_0022`, the fail-closed tuple above — none of
+these were part of this PR's empirical-parity claim (the claim covers
+exactly the 7 oracle-confirmed tuples plus the 1 Bond tuple). This
+result was reproduced twice: once on a combined (pre-split) Stage C
+implementation, and again independently after the C1/C2 split — the
+split version's per-molecule results are byte-identical to the combined
+version's (0 mismatches), confirming the split preserved exact
+functional equivalence.
+
+**Empirical-rule application counts** (issue #227 acceptance-gate
+requirement: report term/molecule counts where empirical fired,
+separately from the strict-gate pass-count): the empirical Bond rule
+resolves 1 unique `(bond_type, ti, tj)` tuple; the empirical Angle rule
+resolves 7 of 8 unique table_gap tuples (1 left fail-closed). Applied
+across the 265-molecule corpus, this newly covers all Bond gaps
+(`bonds_final_unresolved` 1→0 at the type-diagnostic level) and reduces
+`angles_final_unresolved` from the type-only-diagnostic's 191 down to
+25 — the remaining 25 are governed by different, unrelated causes (12
+molecules, listed above) than what this PR's 7+1 confirmed tuples
+address.
+
+**Quality gates**: `cargo test --workspace` green (verified on both the
+C1-only and C1+C2 states), `cargo clippy --workspace --all-targets -- -D
+warnings` clean, `cargo fmt --all -- --check` clean.
+
 ## Halgren primary literature (secondary/theoretical cross-reference, not the implementation source)
 
 - T. A. Halgren, "Merck Molecular Force Field. I. Basis, Form, Scope,

@@ -1,6 +1,6 @@
 //! MMFF94 bond stretching parameters (Halgren 1996 Table IV).
 
-use super::BondEnergyParams;
+use super::{BondEnergyParams, Mmff94Resolution};
 
 /// 493 bond stretching entries (Halgren 1996 Table IV). Sorted by (bond_type, type_i, type_j).
 /// type_i ≤ type_j (pairs normalized for binary search).
@@ -517,4 +517,273 @@ pub fn mmff94_bond_energy(bond_type: u8, type_i: u8, type_j: u8) -> Option<BondE
             let (_, _, _, kb, r0) = MMFF94_BOND_ENERGY[idx];
             BondEnergyParams { kb, r0 }
         })
+}
+
+/// MMFFCovRadPauEle (Halgren 1996, MMFF.V page 625): per-element covalent
+/// radius (Å) and Pauling electronegativity, keyed by atomic number. 18
+/// entries -- every element chematic's supported corpus can produce a
+/// Bond-stretch empirical-rule lookup for.
+static MMFF94_COV_RAD_PAU_ELE: &[(u8, f64, f64)] = &[
+    (1, 0.33, 2.20),
+    (3, 1.34, 0.97),
+    (6, 0.77, 2.50),
+    (7, 0.73, 3.07),
+    (8, 0.72, 3.50),
+    (9, 0.74, 4.12),
+    (11, 1.54, 1.01),
+    (12, 1.30, 1.23),
+    (14, 1.15, 1.74),
+    (15, 1.09, 2.06),
+    (16, 1.03, 2.44),
+    (17, 1.01, 2.83),
+    (19, 1.96, 0.91),
+    (20, 1.74, 1.04),
+    (29, 1.38, 1.75),
+    (30, 1.31, 1.66),
+    (35, 1.15, 2.74),
+    (53, 1.33, 2.21),
+];
+
+/// MMFFBndk (Halgren 1996, MMFF.V page 625, eq. 19): specific atomic-number
+/// pair empirical bond force constants, `(atomic_number_lo, atomic_number_hi,
+/// r0, kb)`. Tried before [`MMFF94_HERSCHBACH_LAURIE`].
+static MMFF94_BNDK: &[(u8, u8, f64, f64)] = &[
+    (1, 6, 1.084, 5.15),
+    (1, 7, 1.001, 7.35),
+    (1, 8, 0.947, 9.10),
+    (1, 9, 0.920, 10.60),
+    (1, 14, 1.480, 2.30),
+    (1, 15, 1.415, 2.95),
+    (1, 16, 1.326, 4.30),
+    (1, 17, 1.280, 4.30),
+    (1, 35, 1.410, 4.20),
+    (1, 53, 1.600, 2.70),
+    (6, 6, 1.512, 3.80),
+    (6, 7, 1.439, 4.55),
+    (6, 8, 1.393, 5.40),
+    (6, 9, 1.353, 6.20),
+    (6, 14, 1.860, 2.60),
+    (6, 15, 1.840, 2.70),
+    (6, 16, 1.812, 2.85),
+    (6, 17, 1.781, 2.75),
+    (6, 35, 1.940, 2.60),
+    (6, 53, 2.160, 1.40),
+    (7, 7, 1.283, 6.00),
+    (7, 8, 1.333, 5.90),
+    (7, 9, 1.360, 5.90),
+    (7, 14, 1.740, 3.70),
+    (7, 15, 1.650, 4.80),
+    (7, 16, 1.674, 3.75),
+    (7, 17, 1.750, 3.50),
+    (7, 35, 1.900, 2.90),
+    (7, 53, 2.100, 1.60),
+    (8, 8, 1.480, 3.60),
+    (8, 9, 1.420, 4.60),
+    (8, 14, 1.630, 5.20),
+    (8, 15, 1.660, 4.70),
+    (8, 16, 1.470, 9.90),
+    (8, 17, 1.700, 4.10),
+    (8, 35, 1.850, 3.40),
+    (8, 53, 2.050, 1.60),
+    (9, 14, 1.570, 6.40),
+    (9, 15, 1.540, 7.10),
+    (9, 16, 1.550, 6.90),
+    (14, 14, 2.320, 1.30),
+    (14, 15, 2.250, 1.50),
+    (14, 16, 2.150, 2.00),
+    (14, 17, 2.020, 3.10),
+    (14, 35, 2.190, 2.10),
+    (14, 53, 2.440, 1.50),
+    (15, 15, 2.210, 1.70),
+    (15, 16, 2.100, 2.40),
+    (15, 17, 2.030, 3.00),
+    (15, 35, 2.210, 2.00),
+    (15, 53, 2.470, 1.40),
+    (16, 16, 2.052, 2.50),
+    (16, 17, 2.040, 2.90),
+    (16, 35, 2.240, 1.90),
+    (16, 53, 2.400, 1.70),
+    (17, 17, 1.990, 3.50),
+    (35, 35, 2.280, 2.40),
+    (53, 53, 2.670, 1.60),
+];
+
+/// MMFFHerschbachLaurie (Halgren 1996, MMFF.V page 627, eq. 19's fallback):
+/// Badger's-rule-like `(periodic_row_lo, periodic_row_hi, a_ij, d_ij)`.
+/// `dp_ij` (the raw table's third numeric column) is genuinely unused by
+/// RDKit's own real `kb` formula -- confirmed by direct source read
+/// (`AtomTyper.cpp`'s `getMMFFBondStretchEmpiricalRuleParams`) -- so it is
+/// not stored here.
+static MMFF94_HERSCHBACH_LAURIE: &[(u8, u8, f64, f64)] = &[
+    (0, 0, 1.26, 0.025),
+    (0, 1, 1.66, 0.30),
+    (0, 2, 1.84, 0.38),
+    (0, 3, 1.98, 0.49),
+    (0, 4, 2.03, 0.51),
+    (0, 5, 2.03, 0.25),
+    (0, 30, 1.85, 0.15),
+    (0, 40, 1.84, 0.61),
+    (0, 50, 1.78, 0.97),
+    (1, 1, 1.91, 0.68),
+    (1, 2, 2.28, 0.74),
+    (1, 3, 2.35, 0.85),
+    (1, 4, 2.33, 0.68),
+    (1, 5, 2.50, 0.97),
+    (1, 30, 2.08, 1.14),
+    (1, 40, 2.34, 1.17),
+    (2, 2, 2.41, 1.18),
+    (2, 3, 2.52, 1.02),
+    (2, 4, 2.61, 1.28),
+    (2, 5, 2.60, 0.84),
+    (3, 3, 2.58, 1.41),
+    (3, 4, 2.66, 0.86),
+    (3, 5, 2.75, 1.14),
+    (4, 4, 2.85, 1.62),
+    (4, 5, 2.76, 1.25),
+];
+
+fn cov_rad_pau_ele(atomic_number: u8) -> Option<(f64, f64)> {
+    MMFF94_COV_RAD_PAU_ELE
+        .binary_search_by_key(&atomic_number, |&(z, _, _)| z)
+        .ok()
+        .map(|idx| {
+            let (_, r0, chi) = MMFF94_COV_RAD_PAU_ELE[idx];
+            (r0, chi)
+        })
+}
+
+fn bndk(atomic_number_lo: u8, atomic_number_hi: u8) -> Option<(f64, f64)> {
+    MMFF94_BNDK
+        .binary_search_by_key(&(atomic_number_lo, atomic_number_hi), |&(a, b, _, _)| {
+            (a, b)
+        })
+        .ok()
+        .map(|idx| {
+            let (_, _, r0, kb) = MMFF94_BNDK[idx];
+            (r0, kb)
+        })
+}
+
+fn herschbach_laurie(row_lo: u8, row_hi: u8) -> Option<(f64, f64)> {
+    MMFF94_HERSCHBACH_LAURIE
+        .binary_search_by_key(&(row_lo, row_hi), |&(a, b, _, _)| (a, b))
+        .ok()
+        .map(|idx| {
+            let (_, _, a_ij, d_ij) = MMFF94_HERSCHBACH_LAURIE[idx];
+            (a_ij, d_ij)
+        })
+}
+
+/// `getPeriodicTableRowHL`, `AtomTyper.cpp`: buckets an atomic number into
+/// the row [`MMFF94_HERSCHBACH_LAURIE`] is keyed by (transition-metal rows
+/// 21-30/39-48 map to `10x` their main-group row, per RDKit's real source).
+fn periodic_table_row_hl(atomic_number: u8) -> u8 {
+    let mut row = match atomic_number {
+        2 => 1,
+        3..=10 => 2,
+        11..=18 => 3,
+        19..=36 => 4,
+        37..=54 => 5,
+        _ => 0,
+    };
+    if (21..=30).contains(&atomic_number) || (39..=48).contains(&atomic_number) {
+        row *= 10;
+    }
+    row
+}
+
+/// Halgren MMFF.V eq. 18-19 empirical bond-stretch rule (page 625). Returns
+/// `None` if [`MMFF94_COV_RAD_PAU_ELE`] has no entry for either element, or
+/// (only reachable when [`MMFF94_BNDK`] also misses) if
+/// [`MMFF94_HERSCHBACH_LAURIE`] has no row for the two elements' periodic
+/// rows -- RDKit would hit an unguarded null-pointer dereference in the
+/// latter case (its own `PRECONDITION` only covers the CovRadPauEle
+/// lookups); chematic fails closed instead.
+fn bond_empirical(atomic_number_i: u8, atomic_number_j: u8) -> Option<BondEnergyParams> {
+    let (r0_i, chi_i) = cov_rad_pau_ele(atomic_number_i)?;
+    let (r0_j, chi_j) = cov_rad_pau_ele(atomic_number_j)?;
+    let c = if atomic_number_i == 1 || atomic_number_j == 1 {
+        0.050
+    } else {
+        0.085
+    };
+    let n = 1.4;
+    let r0 = r0_i + r0_j - c * (chi_i - chi_j).abs().powf(n);
+
+    let (lo, hi) = if atomic_number_i <= atomic_number_j {
+        (atomic_number_i, atomic_number_j)
+    } else {
+        (atomic_number_j, atomic_number_i)
+    };
+    let kb = if let Some((bndk_r0, bndk_kb)) = bndk(lo, hi) {
+        bndk_kb * (bndk_r0 / r0).powi(6)
+    } else {
+        let (row_lo, row_hi) = {
+            let (a, b) = (
+                periodic_table_row_hl(atomic_number_i),
+                periodic_table_row_hl(atomic_number_j),
+            );
+            if a <= b { (a, b) } else { (b, a) }
+        };
+        let (a_ij, d_ij) = herschbach_laurie(row_lo, row_hi)?;
+        10f64.powf(-(r0 - a_ij) / d_ij)
+    };
+    Some(BondEnergyParams { kb, r0 })
+}
+
+/// Look up bond stretching parameters, falling back to Halgren's MMFF.V eq.
+/// 18-19 empirical rule when there is no exact table row, and reporting
+/// which mechanism actually produced the result (issue #227 Stage C). Bond
+/// has no `eqLevel` equivalence ladder at all (confirmed by direct source
+/// read of `MMFFBondCollection::operator()`), so the only two outcomes are
+/// an exact match or the empirical rule.
+///
+/// Returns `None` only if the empirical rule itself is unsupported for
+/// these atoms (see [`bond_empirical`]).
+pub fn mmff94_bond_energy_resolved(
+    bond_type: u8,
+    type_i: u8,
+    type_j: u8,
+) -> Option<(BondEnergyParams, Mmff94Resolution)> {
+    use crate::mmff94_numeric_type_registry::mmff94_numeric_type_info;
+
+    if let Some(params) = mmff94_bond_energy(bond_type, type_i, type_j) {
+        return Some((params, Mmff94Resolution::DirectTable));
+    }
+    let info_i = mmff94_numeric_type_info(type_i)?;
+    let info_j = mmff94_numeric_type_info(type_j)?;
+    let params = bond_empirical(info_i.atomic_number, info_j.atomic_number)?;
+    Some((params, Mmff94Resolution::EmpiricalBond))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bond_empirical_matches_oracle_for_charged_sulfoxide_o_pair() {
+        // Issue #227 Stage C: (bond_type=0, type_i=17 [sulfoxide S], type_j=32
+        // [carboxylate/oxide-like O]) has no direct table row -- RDKit falls
+        // to eq. 18-19 (no Bond eqLevel ladder exists at all, confirmed by
+        // direct source read of `MMFFBondCollection::operator()`).
+        // Oracle-confirmed via `scripts/mmff94_angle_bond_gap_classify.py`
+        // against a real charge-separated sulfoxide (S+/O-) molecule
+        // (`CON(C)C(=O)/C=C/CC1C(=O)N2[C@@H]1[S+]([O-])C(C)(C)[C@@H]2C(=O)O`).
+        assert!(
+            mmff94_bond_energy(0, 17, 32).is_none(),
+            "must be a genuine table miss"
+        );
+        let (p, kind) =
+            mmff94_bond_energy_resolved(0, 17, 32).expect("empirical rule must resolve S-O");
+        assert_eq!(kind, Mmff94Resolution::EmpiricalBond);
+        assert!((p.kb - 4.81265995948856).abs() < 1e-3, "kb={}", p.kb);
+        assert!((p.r0 - 1.6577753242273792).abs() < 1e-4, "r0={}", p.r0);
+    }
+
+    #[test]
+    fn bond_empirical_direct_table_hit_takes_priority_and_is_tagged_as_such() {
+        let (p, kind) = mmff94_bond_energy_resolved(0, 1, 1).expect("C-C sp3 must resolve");
+        assert_eq!(kind, Mmff94Resolution::DirectTable);
+        assert!((p.r0 - 1.508).abs() < 0.001);
+    }
 }

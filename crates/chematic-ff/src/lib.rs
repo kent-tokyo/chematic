@@ -25,14 +25,16 @@ pub use mmff94::{AssignError, MMFF94Type, assign_mmff94_types, mmff94_charges_3d
 pub use mmff94_advanced::{ElectrostaticMatrix, MMFF94BatchProperties};
 pub use mmff94_bci::{bci, mmff94_charges_bci, mmff94_formal_charge};
 pub use mmff94_energy::{
-    AngleEnergyParams, BondEnergyParams, TorsionEnergyParams, VdwEnergyParams, mmff94_angle_energy,
-    mmff94_bond_energy, mmff94_oop, mmff94_stbn, mmff94_stbn_type_only, mmff94_torsion_energy,
-    mmff94_vdw_combined, mmff94_vdw_energy,
+    AngleEnergyParams, BondEnergyParams, Mmff94Resolution, TorsionEnergyParams, VdwEnergyParams,
+    mmff94_angle_energy, mmff94_angle_energy_resolved, mmff94_bond_energy,
+    mmff94_bond_energy_resolved, mmff94_oop, mmff94_stbn, mmff94_stbn_type_only,
+    mmff94_torsion_energy, mmff94_vdw_combined, mmff94_vdw_energy,
 };
 pub use mmff94_minimizer::{
     EnergyBreakdown, MLTB_TYPES, MinimizeResult, MinimizerError, OOP_SP2_TYPES, angle_type_for,
-    bond_type_for, minimize_mmff94_full, minimize_mmff94_lbfgs, mmff94_energy_breakdown,
-    mmff94_torsion_scan, mmff94_total_energy, stretch_bend_type_for, torsion_type_for,
+    bond_type_for, is_angle_in_ring_of_size_3_or_4, minimize_mmff94_full, minimize_mmff94_lbfgs,
+    mmff94_energy_breakdown, mmff94_torsion_scan, mmff94_total_energy, stretch_bend_type_for,
+    torsion_type_for,
 };
 pub use mmff94_numeric::{
     NumericTypeError, assign_mmff94_numeric_types, mmff94_charges_numeric, pbci_for,

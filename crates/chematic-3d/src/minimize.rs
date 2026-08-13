@@ -9,10 +9,11 @@ use std::collections::HashSet;
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 use chematic_ff::{
     EnergyBreakdown, MinimizerError, NumericTypeError, OOP_SP2_TYPES, UffType, angle_type_for,
-    assign_mmff94_numeric_types, assign_uff_types, bond_type_for, minimize_mmff94_lbfgs,
-    minimize_uff as ff_minimize_uff, mmff94_angle_energy, mmff94_bond_energy,
-    mmff94_energy_breakdown, mmff94_oop, mmff94_stbn, mmff94_torsion_energy, mmff94_total_energy,
-    stretch_bend_type_for, torsion_type_for, uff_total_energy,
+    assign_mmff94_numeric_types, assign_uff_types, bond_type_for, is_angle_in_ring_of_size_3_or_4,
+    minimize_mmff94_lbfgs, minimize_uff as ff_minimize_uff, mmff94_angle_energy_resolved,
+    mmff94_bond_energy_resolved, mmff94_energy_breakdown, mmff94_oop, mmff94_stbn,
+    mmff94_torsion_energy, mmff94_total_energy, stretch_bend_type_for, torsion_type_for,
+    uff_total_energy,
 };
 use chematic_ff::{
     assign_dreiding_types, assign_mmff94_types, dreiding_angle, dreiding_bond_len, dreiding_vdw,
@@ -1750,7 +1751,7 @@ fn compute_mmff94_coverage(mol: &Molecule, types: &[u8]) -> Mmff94CoverageReport
         let (a1, a2) = (bond.atom1, bond.atom2);
         let (t1, t2) = (types[a1.0 as usize], types[a2.0 as usize]);
         let bt = bond_type_for(t1, t2, bond.order);
-        if mmff94_bond_energy(bt, t1, t2).is_none() {
+        if mmff94_bond_energy_resolved(bt, t1, t2).is_none() {
             report
                 .bonds_missing
                 .push(missing_term(mol, types, Mmff94TermKind::Bond, &[a1, a2]));
@@ -1770,7 +1771,44 @@ fn compute_mmff94_coverage(mol: &Molecule, types: &[u8]) -> Mmff94CoverageReport
                 let (a, c) = (neighbors[i], neighbors[j]);
                 let (ta, tc) = (types[a.0 as usize], types[c.0 as usize]);
                 let at = angle_type_for(mol, &rings, a.0 as usize, b_idx, c.0 as usize, types);
-                if mmff94_angle_energy(at, ta, types[b_idx], tc).is_none() {
+                // Shared by the angle-bend check below AND the stretch-bend
+                // check further down -- stretch_bend_energy (chematic-ff's
+                // mmff94_minimizer) iterates the identical neighbor-pair loop
+                // and needs the same flanking-bond types/order (issue #227
+                // Priority 2C: the STBN table is keyed by stretch-bend type,
+                // not angle type -- see chematic_ff::stretch_bend_type_for's
+                // doc).
+                let order_ab = mol.bond_between(a, b).expect("a-b angle bond").1.order;
+                let order_cb = mol.bond_between(c, b).expect("c-b angle bond").1.order;
+                let bt_ab = bond_type_for(ta, types[b_idx], order_ab);
+                let bt_cb = bond_type_for(tc, types[b_idx], order_cb);
+
+                // Issue #227 Stage C: the angle-bend term itself needs both
+                // flanking bonds' r0 (for the empirical rule, if the direct
+                // table/eqLevel ladder don't resolve) -- matches RDKit's real
+                // `getMMFFAngleBendParams`, which requires both
+                // `getMMFFBondStretchParams` calls to succeed before even
+                // attempting the empirical path (mirrors
+                // `chematic_ff::mmff94_minimizer`'s own `angle_energy`).
+                let bond_ab = mmff94_bond_energy_resolved(bt_ab, ta, types[b_idx]);
+                let bond_cb = mmff94_bond_energy_resolved(bt_cb, tc, types[b_idx]);
+                let angle_resolved = match (bond_ab, bond_cb) {
+                    (Some((bab, _)), Some((bcb, _))) => {
+                        let ring_size =
+                            is_angle_in_ring_of_size_3_or_4(mol, a.0 as usize, b_idx, c.0 as usize);
+                        mmff94_angle_energy_resolved(
+                            at,
+                            ta,
+                            types[b_idx],
+                            tc,
+                            bab.r0,
+                            bcb.r0,
+                            ring_size,
+                        )
+                    }
+                    _ => None,
+                };
+                if angle_resolved.is_none() {
                     report.angles_missing.push(missing_term(
                         mol,
                         types,
@@ -1778,16 +1816,6 @@ fn compute_mmff94_coverage(mol: &Molecule, types: &[u8]) -> Mmff94CoverageReport
                         &[a, b, c],
                     ));
                 }
-                // Same (a, b, c) triple/angle_type as the angle-bend check above --
-                // stretch_bend_energy (chematic-ff's mmff94_minimizer) iterates the
-                // identical neighbor-pair loop, so this mirrors it exactly, including
-                // computing the stretch-bend-type lookup key from `at` (issue #227
-                // Priority 2C: the STBN table is keyed by stretch-bend type, not
-                // angle type -- see chematic_ff::stretch_bend_type_for's doc).
-                let order_ab = mol.bond_between(a, b).expect("a-b angle bond").1.order;
-                let order_cb = mol.bond_between(c, b).expect("c-b angle bond").1.order;
-                let bt_ab = bond_type_for(ta, types[b_idx], order_ab);
-                let bt_cb = bond_type_for(tc, types[b_idx], order_cb);
                 let sbt = stretch_bend_type_for(at, ta, tc, bt_ab, bt_cb);
                 if mmff94_stbn(
                     sbt,
@@ -2752,6 +2780,7 @@ mod tests {
 mod policy_bridge_tests {
     use super::*;
     use crate::dg::generate_coords;
+    use chematic_ff::mmff94_bond_energy;
     use chematic_smiles::parse;
 
     // --- Coords3D <-> Vec<[f64; 3]> bridge plumbing -------------------------
@@ -2974,40 +3003,78 @@ mod policy_bridge_tests {
     }
 
     #[test]
-    fn mmff94_strict_refuses_chfclbr_with_missing_angle_params() {
+    fn mmff94_strict_now_resolves_chfclbr_via_empirical_angle_rule() {
+        // Issue #227 Stage C: chfclbr's 3 halogen-C-halogen angles (F-C-Cl,
+        // F-C-Br, Cl-C-Br -- MMFF94 types 11/1/12, 11/1/13, 12/1/13) used to
+        // have no MMFF94 table entry at all (see the superseded
+        // `mmff94_strict_refuses_chfclbr_with_missing_angle_params`,
+        // replaced here). All 3 now resolve via Halgren's eq. 20 empirical
+        // angle-bend rule -- theta0 reused verbatim from the restored
+        // `(0, 0, 1, 0)` wildcard row, ka derived empirically -- oracle-
+        // confirmed by
+        // `mmff94_energy::angle::tests::angle_empirical_reuses_wildcard_theta0_for_halogen_and_amine_c_substituents`
+        // against this exact molecule.
         let mol = chfclbr_mol();
         let coords = generate_coords(&mol);
         let config = MinimizeConfig::default();
 
-        let err = minimize_with_policy(
+        let result = minimize_with_policy(
             &mol,
             coords,
             ForceFieldPolicy::Mmff94BondAngleStrict,
             &config,
         )
-        .expect_err("chfclbr's 3 halogen-C-halogen angles have no MMFF94 table entry");
+        .expect("chfclbr's 3 halogen-C-halogen angles now resolve via the Stage C empirical rule");
 
-        match err {
-            ForceFieldBridgeError::MissingParameters(report) => {
+        assert_eq!(
+            result.requested_force_field,
+            ForceFieldPolicy::Mmff94BondAngleStrict
+        );
+        assert_eq!(
+            result.actual_force_field_used,
+            ForceFieldPolicy::Mmff94BondAngleStrict
+        );
+        assert!(
+            result.fallback_reason.is_none(),
+            "no fallback needed now that all bonds/angles resolve"
+        );
+
+        let coverage = result
+            .coverage
+            .as_ref()
+            .expect("strict policy always reports coverage");
+        assert!(coverage.bonds_missing.is_empty());
+        assert!(
+            coverage.angles_missing.is_empty(),
+            "all 3 halogen-C-halogen angles should now resolve via the empirical rule, got: {:?}",
+            coverage.angles_missing
+        );
+
+        // The empirical rule must contribute a REAL, nonzero angle energy
+        // before minimization -- not silently 0.0 (the same "never claim a
+        // term covered but compute 0 energy for it" principle this issue's
+        // whole Stage C is built on).
+        match &result.energy_before {
+            EnergyReport::Mmff94(b) => {
                 assert!(
-                    report.bonds_missing.is_empty(),
-                    "all 3 C-X bonds (C-F, C-Cl, C-Br) ARE covered by chematic-ff's bond table; \
-                     unexpected bond gap: {:?}",
-                    report.bonds_missing
-                );
-                assert_eq!(
-                    report.angles_missing.len(),
-                    3,
-                    "expected all 3 halogen-C-halogen angles (F-C-Cl, F-C-Br, Cl-C-Br) missing, got: {:?}",
-                    report.angles_missing
+                    b.angle > 0.0,
+                    "empirical angle-bend energy must be real and positive before minimization, got {}",
+                    b.angle
                 );
             }
-            other => panic!("expected MissingParameters, got {other:?}"),
+            other => panic!("expected Mmff94 energy report, got {other:?}"),
         }
+        assert!(result.converged);
     }
 
     #[test]
-    fn mmff94_with_uff_fallback_falls_back_and_reports_why_on_chfclbr() {
+    fn mmff94_with_uff_fallback_no_longer_needs_to_fall_back_on_chfclbr() {
+        // Issue #227 Stage C: companion to
+        // `mmff94_strict_now_resolves_chfclbr_via_empirical_angle_rule` --
+        // now that strict MMFF94 itself resolves chfclbr, the UFF-fallback
+        // policy must use MMFF94 directly rather than falling back (the
+        // superseded version of this test, `..._falls_back_and_reports_why_on_chfclbr`,
+        // asserted the opposite -- that fallback was required).
         let mol = chfclbr_mol();
         let coords = generate_coords(&mol);
         let config = MinimizeConfig::default();
@@ -3018,57 +3085,43 @@ mod policy_bridge_tests {
             ForceFieldPolicy::Mmff94WithUffFallback,
             &config,
         )
-        .expect(
-            "chfclbr's UFF fallback is geometrically sound here (worst bond ~1.9 Å, converged) \
-             -- Mmff94WithUffFallback is NOT unconditionally infallible in general (see its doc: \
-             a still-unsound UFF fallback returns Err(MinimizationFailed) too), just on this \
-             specific molecule",
-        );
+        .expect("chfclbr now succeeds directly under MMFF94, no fallback needed");
 
-        // The exact "no silent substitution" contract: requested != actual
-        // must be visible, and the reason must be typed, never blank.
         assert_eq!(
             result.requested_force_field,
             ForceFieldPolicy::Mmff94WithUffFallback
         );
-        assert_eq!(result.actual_force_field_used, ForceFieldPolicy::UffOnly);
-        assert!(
-            result.fallback_reason.is_some(),
-            "fallback must be reported, never silent"
-        );
-        assert!(matches!(
-            result.fallback_reason.as_ref().unwrap(),
-            ForceFieldBridgeError::MissingParameters(_)
-        ));
         assert_eq!(
-            result.missing_parameter_classes.len(),
-            3,
-            "expected only the 3 missing halogen-C-halogen angles -- the same 3 triples' \
-             stretch-bend cross terms are resolved by chematic_ff::mmff94_stbn's RDKit-Dfsb \
-             periodic-row fallback (Priority 2B): F/Cl/Br/C are all within Dfsb's covered \
-             periodic rows (F,C row 1; Cl row 2; Br row 3), so all 3 canonicalized \
-             (row_i, row_j, row_k) triples ((1,1,2), (1,1,3), (2,1,3)) hit real, non-zero \
-             MMFF94_DFSB rows, got {:?}",
-            result.missing_parameter_classes
+            result.actual_force_field_used,
+            ForceFieldPolicy::Mmff94BondAngleStrict,
+            "no fallback needed now that chfclbr's angles resolve via the empirical rule"
         );
+        assert!(
+            result.fallback_reason.is_none(),
+            "fallback must not fire when the strict policy already succeeds"
+        );
+        assert!(result.missing_parameter_classes.is_empty());
         let coverage = result
             .coverage
             .as_ref()
-            .expect("coverage from the failed MMFF94 attempt must survive into the result");
-        assert_eq!(coverage.angles_missing.len(), 3);
-        assert_eq!(
-            coverage.stretch_bend_missing.len(),
-            0,
-            "all 3 halogen-C-halogen triples should now resolve via the Dfsb periodic-row \
-             fallback -- if this regresses, the Dfsb port likely broke"
+            .expect("strict policy always reports coverage");
+        assert!(
+            coverage.angles_missing.is_empty(),
+            "all 3 halogen-C-halogen angles resolve via the Stage C empirical rule, got: {:?}",
+            coverage.angles_missing
+        );
+        assert!(
+            coverage.stretch_bend_missing.is_empty(),
+            "all 3 halogen-C-halogen triples resolve via the Dfsb periodic-row fallback \
+             (Priority 2B) -- if this regresses, the Dfsb port likely broke"
         );
 
-        // The actual mechanism-3 fix: UFF has full generic coverage, so the
-        // fallback geometry must not blow up the way the old MMFF94 path did.
+        // MMFF94 itself now produces a sane geometry -- no need for UFF's
+        // generic coverage to rescue this molecule anymore.
         let after = worst_bond(&mol, &result.coords);
         assert!(
             after < 3.0,
-            "expected a sane, non-blown-up geometry from the UFF fallback, got worst bond {after:.2} Å"
+            "expected a sane, non-blown-up geometry from MMFF94 directly, got worst bond {after:.2} Å"
         );
     }
 
