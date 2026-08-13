@@ -9,7 +9,7 @@
 //! independently can miss an image that is farther in fractional space but
 //! closer in Cartesian space. This module instead derives a finite,
 //! provably sufficient search box from the lattice's own reciprocal
-//! vectors (see [`axis_bound`]) and brute-force-checks every candidate
+//! vectors (see `axis_bound` below) and brute-force-checks every candidate
 //! inside it, which is exact for any lattice [`Lattice::from_matrix`]
 //! accepts (validated non-singular). See
 //! `docs/rfcs/chematic_crystal_foundation.md` for the full derivation and
@@ -75,6 +75,22 @@ pub(crate) fn padded_axis_range(lo: f64, hi: f64) -> (i32, i32) {
 /// broken deterministically by iteration order: the first candidate
 /// encountered while enumerating image-shift components in ascending order
 /// is kept.
+///
+/// # Examples
+///
+/// ```
+/// use chematic_crystal::{FractionalCoord, Lattice, minimum_image};
+///
+/// let lattice = Lattice::cubic(10.0)?;
+/// let from = FractionalCoord::new([0.05, 0.5, 0.5]);
+/// let to = FractionalCoord::new([0.95, 0.5, 0.5]);
+/// // Direct fractional difference is 0.9 (9.0 Angstrom); the periodic
+/// // image wraps around to 0.1 (1.0 Angstrom).
+/// let displacement = minimum_image(&lattice, from, to);
+/// assert!((displacement.distance - 1.0).abs() < 1e-9);
+/// assert_eq!(displacement.image, [-1, 0, 0]);
+/// # Ok::<(), chematic_crystal::CrystalError>(())
+/// ```
 pub fn minimum_image(
     lattice: &Lattice,
     from: FractionalCoord,

@@ -562,6 +562,7 @@ chematic/
 │   ├── chematic-wasm/            130+ WASM exports → npm @kent-tokyo/chematic
 │   ├── chematic-py/              PyO3 Python bindings → pip install chematic
 │   ├── chematic-ewald/           PME Ewald summation, B-spline interpolation
+│   ├── chematic-crystal/         Periodic crystal structures: lattice, PBC, neighbors, supercells (not Molecule)
 │   └── chematic/                 Umbrella crate with feature flags
 ├── demo/                         Interactive WASM playground (→ /playground/ on GitHub Pages)
 │   ├── index.html

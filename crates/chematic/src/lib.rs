@@ -69,7 +69,8 @@
 //! | `inchi` | InChI and InChIKey generation |
 //! | `threed` | 3D coordinates, UFF minimization, XYZ/PDB I/O |
 //! | `iupac` | IUPAC nomenclature for simple molecules |
-//! | `full` | All of the above |
+//! | `crystal` | Periodic crystal structures (lattice, PBC, neighbors, supercells) -- **not** included in `full`, see `chematic-crystal`'s README |
+//! | `full` | All of the above except `crystal` |
 
 #[cfg(feature = "threed")]
 pub use chematic_3d as threed;
@@ -77,6 +78,8 @@ pub use chematic_3d as threed;
 pub use chematic_chem as chem;
 #[cfg(feature = "smiles")]
 pub use chematic_core as core;
+#[cfg(feature = "crystal")]
+pub use chematic_crystal as crystal;
 #[cfg(feature = "depict")]
 pub use chematic_depict as depict;
 #[cfg(feature = "fp")]

@@ -163,6 +163,21 @@ impl Lattice {
     /// its Cartesian conversion from (a along x, b in the xy-plane, c
     /// completing the frame), so a CIF-parsed cell and a `from_parameters`
     /// cell built from the same six numbers agree on Cartesian output.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use chematic_crystal::Lattice;
+    ///
+    /// // Quartz-like triclinic-ish cell (illustrative numbers, not a
+    /// // real quartz refinement).
+    /// let lattice = Lattice::from_parameters(4.9, 4.9, 5.4, 90.0, 90.0, 120.0)?;
+    /// assert!(lattice.volume() > 0.0);
+    /// let [alpha, beta, gamma] = lattice.angles_degrees();
+    /// assert!((gamma - 120.0).abs() < 1e-6);
+    /// assert!((alpha - 90.0).abs() < 1e-6 && (beta - 90.0).abs() < 1e-6);
+    /// # Ok::<(), chematic_crystal::CrystalError>(())
+    /// ```
     pub fn from_parameters(
         a: f64,
         b: f64,
@@ -285,6 +300,17 @@ impl Lattice {
     }
 
     /// Fractional -> Cartesian: `cartesian = fractional . matrix`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use chematic_crystal::{FractionalCoord, Lattice};
+    ///
+    /// let lattice = Lattice::cubic(4.0)?;
+    /// let cart = lattice.frac_to_cart(FractionalCoord::new([0.5, 0.0, 0.0]));
+    /// assert!((cart.0[0] - 2.0).abs() < 1e-12);
+    /// # Ok::<(), chematic_crystal::CrystalError>(())
+    /// ```
     pub fn frac_to_cart(&self, frac: FractionalCoord) -> CartesianCoord {
         let f = frac.0;
         let m = self.matrix;

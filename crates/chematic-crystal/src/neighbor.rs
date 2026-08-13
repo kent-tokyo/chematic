@@ -1,6 +1,6 @@
 //! Cutoff-radius periodic neighbor enumeration.
 //!
-//! Reuses [`crate::periodic::axis_bound`]/[`crate::periodic::padded_axis_range`]
+//! Reuses `crate::periodic::axis_bound`/`crate::periodic::padded_axis_range`
 //! -- the same reciprocal-vector-derived search-box machinery
 //! [`crate::periodic::minimum_image`] uses, with the cutoff radius itself as
 //! the bound (no naive-round bootstrap candidate needed here, since the

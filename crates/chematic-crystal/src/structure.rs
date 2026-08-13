@@ -22,6 +22,35 @@ pub struct PeriodicStructure {
 impl PeriodicStructure {
     /// Construct and validate a structure: every site must independently
     /// pass [`PeriodicSite::validate`].
+    ///
+    /// # Examples
+    ///
+    /// CsCl-type structure (one cation + one anion per cubic cell, anion
+    /// at the body center -- e.g. CsCl, AlNi, beta-brass; illustrated here
+    /// with Na/Cl for familiarity, not a claim about real NaCl, which is
+    /// rock-salt-type and needs 8 sites in its conventional cubic cell):
+    ///
+    /// ```
+    /// use chematic_core::Element;
+    /// use chematic_crystal::{FractionalCoord, Lattice, PeriodicSite, PeriodicStructure, SiteSpecies};
+    ///
+    /// let lattice = Lattice::cubic(5.64)?;
+    /// let sites = vec![
+    ///     PeriodicSite::new(
+    ///         vec![SiteSpecies::full(Element::NA)],
+    ///         FractionalCoord::new([0.0, 0.0, 0.0]),
+    ///         Some("Na1".to_string()),
+    ///     )?,
+    ///     PeriodicSite::new(
+    ///         vec![SiteSpecies::full(Element::CL)],
+    ///         FractionalCoord::new([0.5, 0.5, 0.5]),
+    ///         Some("Cl1".to_string()),
+    ///     )?,
+    /// ];
+    /// let structure = PeriodicStructure::new(lattice, sites)?;
+    /// assert_eq!(structure.site_count(), 2);
+    /// # Ok::<(), chematic_crystal::CrystalError>(())
+    /// ```
     pub fn new(lattice: Lattice, sites: Vec<PeriodicSite>) -> Result<Self, CrystalError> {
         let structure = Self { lattice, sites };
         structure.validate()?;
@@ -102,6 +131,27 @@ impl PeriodicStructure {
     /// Every periodic neighbor pair within `cutoff` Angstrom (inclusive).
     /// See [`neighbor::neighbors_within`] for the full contract
     /// (self-image handling, ordering, error conditions).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use chematic_core::Element;
+    /// use chematic_crystal::{FractionalCoord, Lattice, PeriodicSite, PeriodicStructure, SiteSpecies};
+    ///
+    /// let lattice = Lattice::cubic(3.0)?;
+    /// let structure = PeriodicStructure::new(
+    ///     lattice,
+    ///     vec![PeriodicSite::new(
+    ///         vec![SiteSpecies::full(Element::AR)],
+    ///         FractionalCoord::new([0.0, 0.0, 0.0]),
+    ///         None,
+    ///     )?],
+    /// )?;
+    /// // 6 face-adjacent periodic self-images at exactly 3.0 Angstrom.
+    /// let neighbors = structure.neighbors_within(3.0)?;
+    /// assert_eq!(neighbors.len(), 6);
+    /// # Ok::<(), chematic_crystal::CrystalError>(())
+    /// ```
     pub fn neighbors_within(&self, cutoff: f64) -> Result<Vec<PeriodicNeighbor>, CrystalError> {
         neighbor::neighbors_within(self, cutoff)
     }
@@ -109,6 +159,27 @@ impl PeriodicStructure {
     /// Build a diagonal `[nx, ny, nz]` supercell. See
     /// [`supercell::make_supercell`] for the full contract (site ordering,
     /// error conditions).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use chematic_core::Element;
+    /// use chematic_crystal::{FractionalCoord, Lattice, PeriodicSite, PeriodicStructure, SiteSpecies};
+    ///
+    /// let lattice = Lattice::cubic(4.0)?;
+    /// let structure = PeriodicStructure::new(
+    ///     lattice,
+    ///     vec![PeriodicSite::new(
+    ///         vec![SiteSpecies::full(Element::C)],
+    ///         FractionalCoord::new([0.0, 0.0, 0.0]),
+    ///         None,
+    ///     )?],
+    /// )?;
+    /// let supercell = structure.make_supercell([2, 2, 2])?;
+    /// assert_eq!(supercell.site_count(), 8);
+    /// assert!((supercell.lattice().volume() - structure.lattice().volume() * 8.0).abs() < 1e-9);
+    /// # Ok::<(), chematic_crystal::CrystalError>(())
+    /// ```
     pub fn make_supercell(&self, mult: [u32; 3]) -> Result<Self, CrystalError> {
         supercell::make_supercell(self, mult)
     }

@@ -25,6 +25,13 @@ rxn         = ["smiles", "dep:chematic-rxn"]
 threed      = ["perception", "dep:chematic-3d"]
 inchi       = ["chem", "dep:chematic-inchi"]
 iupac       = ["dep:chematic-iupac"]
+# Deliberately NOT added to `full` in this PR -- see docs/rfcs/
+# chematic_crystal_foundation.md's facade-feature section and the task's
+# final report: `full` is what --all-features/docs.rs build, and whether
+# a brand-new, architecturally separate (no Molecule dependency) crate
+# should join that aggregate is left for explicit human confirmation
+# rather than assumed from precedent.
+crystal     = ["dep:chematic-crystal"]
 full        = ["smiles", "perception", "mol", "depict", "fp", "chem", "smarts", "rxn", "threed", "inchi", "iupac"]
 
 [package.metadata.docs.rs]
@@ -45,3 +52,4 @@ chematic-rxn        = { path = "../chematic-rxn",        version = "0.14.1", opt
 chematic-3d         = { path = "../chematic-3d",         version = "0.14.1", optional = true }
 chematic-inchi      = { path = "../chematic-inchi",      version = "0.14.1", optional = true }
 chematic-iupac      = { path = "../chematic-iupac",      version = "0.14.1", optional = true }
+chematic-crystal    = { path = "../chematic-crystal",    version = "0.14.1", optional = true }
