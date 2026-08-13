@@ -18,8 +18,8 @@ use chematic_core::{AtomIdx, BondOrder, Molecule};
 use chematic_perception::find_sssr;
 
 use crate::mmff94_energy::{
-    mmff94_angle_energy, mmff94_bond_energy, mmff94_oop, mmff94_stbn, mmff94_torsion_energy,
-    mmff94_vdw_combined,
+    mmff94_angle_energy_resolved, mmff94_bond_energy_resolved, mmff94_oop, mmff94_stbn,
+    mmff94_torsion_energy, mmff94_vdw_combined,
 };
 use crate::mmff94_numeric::{
     NumericTypeError, assign_mmff94_numeric_types, mmff94_charges_numeric,
@@ -588,25 +588,34 @@ fn stretch_bend_energy(
                     mol.atom(AtomIdx(j_idx as u32)).element.atomic_number(),
                     mol.atom(AtomIdx(k as u32)).element.atomic_number(),
                 ) {
+                    let bond_ij = mmff94_bond_energy_resolved(bt_ij, types[i], types[j_idx]);
+                    let bond_kj = mmff94_bond_energy_resolved(bt_kj, types[k], types[j_idx]);
                     // Δr_ij
                     let r_ij = dist(coords[i], coords[j_idx]);
-                    let dr_ij = if let Some(p) = mmff94_bond_energy(bt_ij, types[i], types[j_idx]) {
-                        r_ij - p.r0
-                    } else {
-                        0.0
-                    };
+                    let dr_ij = bond_ij.map(|(p, _)| r_ij - p.r0).unwrap_or(0.0);
                     // Δr_kj
                     let r_kj = dist(coords[k], coords[j_idx]);
-                    let dr_kj = if let Some(p) = mmff94_bond_energy(bt_kj, types[k], types[j_idx]) {
-                        r_kj - p.r0
-                    } else {
-                        0.0
-                    };
-                    // Δθ in degrees
+                    let dr_kj = bond_kj.map(|(p, _)| r_kj - p.r0).unwrap_or(0.0);
+                    // Δθ in degrees -- both flanking bonds must resolve to feed
+                    // r0_ij/r0_jk into the angle empirical rule if it's needed
+                    // (matches RDKit's real `getMMFFAngleBendParams`, which
+                    // requires both `getMMFFBondStretchParams` calls to succeed
+                    // before even attempting the empirical path).
                     let cos_t = cos_angle(coords[i], coords[j_idx], coords[k]);
-                    if let Some(ap) = mmff94_angle_energy(at, types[i], types[j_idx], types[k]) {
-                        let dtheta = cos_t.acos() * RAD_TO_DEG - ap.theta0;
-                        energy += CONV * (kba_ijk * dr_ij + kba_kji * dr_kj) * dtheta;
+                    if let (Some((rij, _)), Some((rkj, _))) = (bond_ij, bond_kj) {
+                        let ring_size = is_angle_in_ring_of_size_3_or_4(mol, i, j_idx, k);
+                        if let Some((ap, _)) = mmff94_angle_energy_resolved(
+                            at,
+                            types[i],
+                            types[j_idx],
+                            types[k],
+                            rij.r0,
+                            rkj.r0,
+                            ring_size,
+                        ) {
+                            let dtheta = cos_t.acos() * RAD_TO_DEG - ap.theta0;
+                            energy += CONV * (kba_ijk * dr_ij + kba_kji * dr_kj) * dtheta;
+                        }
                     }
                     let _ = (KB_CONV, CS); // suppress warnings
                 }
@@ -675,7 +684,7 @@ fn bond_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
         let i = bond.atom1.0 as usize;
         let j = bond.atom2.0 as usize;
         let bt = bond_type_for(types[i], types[j], bond.order);
-        if let Some(p) = mmff94_bond_energy(bt, types[i], types[j]) {
+        if let Some((p, _)) = mmff94_bond_energy_resolved(bt, types[i], types[j]) {
             let r = dist(coords[i], coords[j]);
             let dr = r - p.r0;
             let cubic = 1.0 - CS * dr + (7.0 / 12.0) * CS * CS * dr * dr;
@@ -700,7 +709,25 @@ fn angle_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8], rings: &[Vec<
         for (ii, &i) in neighbors.iter().enumerate() {
             for &k in &neighbors[ii + 1..] {
                 let at = angle_type_for(mol, rings, i, j_idx, k, types);
-                if let Some(p) = mmff94_angle_energy(at, types[i], types[j_idx], types[k]) {
+                let bt_ij =
+                    bond_type_for(types[i], types[j_idx], bond_order_between(mol, i, j_idx));
+                let bt_kj =
+                    bond_type_for(types[k], types[j_idx], bond_order_between(mol, k, j_idx));
+                let r0_ij = mmff94_bond_energy_resolved(bt_ij, types[i], types[j_idx]);
+                let r0_kj = mmff94_bond_energy_resolved(bt_kj, types[k], types[j_idx]);
+                let (Some((bond_ij, _)), Some((bond_kj, _))) = (r0_ij, r0_kj) else {
+                    continue;
+                };
+                let ring_size = is_angle_in_ring_of_size_3_or_4(mol, i, j_idx, k);
+                if let Some((p, _)) = mmff94_angle_energy_resolved(
+                    at,
+                    types[i],
+                    types[j_idx],
+                    types[k],
+                    bond_ij.r0,
+                    bond_kj.r0,
+                    ring_size,
+                ) {
                     let cos_t = cos_angle(coords[i], coords[j_idx], coords[k]);
                     let theta_deg = cos_t.acos() * RAD_TO_DEG;
                     let dt = theta_deg - p.theta0;
@@ -941,6 +968,41 @@ fn atoms_share_ring_of_size(rings: &[Vec<AtomIdx>], atoms: &[usize], size: usize
     rings
         .iter()
         .any(|ring| ring.len() == size && atoms.iter().all(|&a| ring.contains(&AtomIdx(a as u32))))
+}
+
+/// `isAngleInRingOfSize3or4` (`AtomTyper.cpp`, pinned commit): LOCAL bond
+/// adjacency, NOT SSSR-based -- deliberately distinct from
+/// [`atoms_share_ring_of_size`] above, which IS SSSR-based and feeds angle
+/// *type* classification. RDKit's real empirical-rule ring gate and its real
+/// angle-type ring gate are two different, independently-defined mechanisms
+/// (confirmed by direct source read, issue #227 Stage C). Returns 3 if `i`
+/// and `k` are directly bonded (i-j-k-i, a 3-ring), 4 if `i` and `k` share a
+/// common neighbor other than `j` (a 4-ring through that neighbor), else 0.
+/// `i`/`k` are assumed already bonded to `j` (true for every call site,
+/// which only ever iterates real `mol.neighbors(j)` pairs).
+///
+/// `pub` so downstream coverage-checkers (e.g. `chematic-3d`'s independent
+/// MMFF94 coverage measurement) can pass the same `ring_size` into
+/// [`crate::mmff94_energy::mmff94_angle_energy_resolved`] this module's own
+/// `angle_energy`/`stretch_bend_energy` use, instead of hand-copying this
+/// logic and risking drift (same rationale as [`OOP_SP2_TYPES`]).
+pub fn is_angle_in_ring_of_size_3_or_4(mol: &Molecule, i: usize, j: usize, k: usize) -> u8 {
+    if mol
+        .bond_between(AtomIdx(i as u32), AtomIdx(k as u32))
+        .is_some()
+    {
+        return 3;
+    }
+    let j = j as u32;
+    let i_neighbors: std::collections::HashSet<u32> = mol
+        .neighbors(AtomIdx(i as u32))
+        .map(|(nb, _)| nb.0)
+        .filter(|&n| n != j)
+        .collect();
+    let shares_neighbor = mol
+        .neighbors(AtomIdx(k as u32))
+        .any(|(nb, _)| nb.0 != j && i_neighbors.contains(&nb.0));
+    if shares_neighbor { 4 } else { 0 }
 }
 
 /// Determine the MMFF94 bond-type index (Halgren 1996 bond-type index BT).
@@ -1210,6 +1272,7 @@ pub fn torsion_type_for(
 mod tests {
     use super::*;
     use crate::mmff94_energy::mmff94_stbn_type_only;
+    use crate::mmff94_energy::{mmff94_angle_energy, mmff94_bond_energy};
     use chematic_core::molecule::MoleculeBuilder;
     use chematic_core::{Atom, BondOrder, Element};
 

@@ -59,14 +59,54 @@ pub struct VdwEnergyParams {
     pub da: u8,
 }
 
+/// Which mechanism resolved a Bond-stretch or Angle-bend parameter lookup.
+///
+/// Exposed for diagnostics/tests, not required by production physics: both
+/// `DirectTable`/`EquivalentType` and the `Empirical*` variants hand back a
+/// real, usable [`BondEnergyParams`]/[`AngleEnergyParams`]. It exists
+/// because a table hit alone does not prove correctness -- the Angle
+/// `eqLevel` equivalence ladder (issue #227 Stage B) can substitute atom
+/// types and land on a real row that is nonetheless the WRONG parameter for
+/// the original triple's chemistry, the same failure class as the #236
+/// furan collision. Only `mmff94_*_energy_resolved` (issue #227 Stage C)
+/// return this; the plain `mmff94_*_energy` functions keep their original
+/// `Option<Params>` signature unchanged.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Mmff94Resolution {
+    /// Exact `(type, ti, tj[, tk])` table row, no substitution.
+    DirectTable,
+    /// Angle only: RDKit's real `eqLevel` canonical-type-substitution ladder
+    /// (`Code/ForceField/MMFF/Params.h`), `level` in `{3, 4, 5}` (MMFF.I note
+    /// 68's Level 2 is always identity, already covered by `DirectTable`).
+    EquivalentType { level: u8 },
+    /// Angle only: chematic-specific safety net with no RDKit equivalent --
+    /// the same triple re-searched with `angle_type` forced to `0` after the
+    /// real eqLevel ladder is exhausted. Predates Stage B; kept so a
+    /// correctly-typed triple the specialized angle-type table doesn't cover
+    /// doesn't silently drop the term.
+    GenericAngleTypeFallback,
+    /// Halgren MMFF.V eq. 18-19 empirical bond-stretch rule -- no table row
+    /// found at any stage (Bond has no eqLevel ladder at all).
+    EmpiricalBond,
+    /// Halgren MMFF.V eq. 20 empirical angle-bend rule. Covers both of
+    /// RDKit's own sub-cases: no table row found anywhere (`ka`/`theta0`
+    /// both derived from scratch), and a table row found with `ka == 0.0`
+    /// (RDKit's `isDoubleZero` placeholder -- only `ka` is derived, `theta0`
+    /// is reused verbatim from that row, no ring-size override applied;
+    /// `getMMFFAngleBendEmpiricalRuleParams`, `AtomTyper.cpp`). Both are the
+    /// same RDKit function and the same "no usable ka in the table" case, so
+    /// they share this one variant.
+    EmpiricalAngle,
+}
+
 mod angle;
 mod bond;
 mod oop_stbn;
 mod torsion;
 mod vdw;
 
-pub use angle::{MMFF94_ANGLE_ENERGY, mmff94_angle_energy};
-pub use bond::{MMFF94_BOND_ENERGY, mmff94_bond_energy};
+pub use angle::{MMFF94_ANGLE_ENERGY, mmff94_angle_energy, mmff94_angle_energy_resolved};
+pub use bond::{MMFF94_BOND_ENERGY, mmff94_bond_energy, mmff94_bond_energy_resolved};
 pub use oop_stbn::{MMFF94_OOP, MMFF94_STBN, mmff94_oop, mmff94_stbn, mmff94_stbn_type_only};
 pub use torsion::{MMFF94_TORSION_ENERGY, mmff94_torsion_energy};
 pub use vdw::{MMFF94_VDW_ENERGY, mmff94_vdw_combined, mmff94_vdw_energy};

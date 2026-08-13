@@ -1,20 +1,16 @@
 //! MMFF94 angle bending parameters (Halgren 1996 Table V).
 
-use super::AngleEnergyParams;
+use super::{AngleEnergyParams, Mmff94Resolution};
 
 /// 2342 angle bending entries (Halgren 1996 Table V). Sorted by (angle_type, type_i, type_j, type_k).
 ///
-/// Includes 97 `type_i == 0 && type_k == 0` wildcard rows (issue #227,
-/// "wildcard theta0 table restoration") -- RDKit's real
-/// `defaultMMFFAngleData` uses these purely to carry a central-atom-type-
-/// only default `theta0` (their `ka` is always exactly `0.0`, RDKit's own
-/// `isDoubleZero` empirical-rule trigger, `getMMFFAngleBendParams` in
-/// `Code/GraphMol/ForceFieldHelpers/MMFF/AtomTyper.cpp` at the pinned
-/// commit); they were absent from the first 2245-row port. A hit on one of
-/// these rows is never surfaced as a real parameter by
-/// [`mmff94_angle_energy`] -- see its own doc for why restoring this data
-/// is provably a no-op for every input that reached a real row before this
-/// change.
+/// Includes 97 `type_i == 0 && type_k == 0` wildcard rows (issue #227 Stage
+/// C) -- RDKit's real `defaultMMFFAngleData` uses these purely to carry a
+/// central-atom-type-only default `theta0` (their `ka` is always exactly
+/// `0.0`, RDKit's own `isDoubleZero` empirical-rule trigger); they were
+/// absent from the first 2245-row port. A hit on one of these rows is never
+/// surfaced as a real parameter by [`mmff94_angle_energy`] -- see its own
+/// doc and `mmff94_angle_energy_resolved` for how `ka == 0.0` is handled.
 pub static MMFF94_ANGLE_ENERGY: &[(u8, u8, u8, u8, f64, f64)] = &[
     (0, 0, 1, 0, 0.0000, 108.9000),
     (0, 0, 2, 0, 0.0000, 119.4000),
@@ -2436,6 +2432,94 @@ fn eq_level(atom_type: u8, stage: usize) -> u8 {
         .unwrap_or(atom_type)
 }
 
+fn has_eq_level_row(atom_type: u8) -> bool {
+    MMFF94_EQ_LEVEL
+        .binary_search_by_key(&atom_type, |&(t, _)| t)
+        .is_ok()
+}
+
+/// Outcome of the full table search chain (RDKit's real eqLevel ladder plus
+/// chematic's own generic-`angle_type` net), before any empirical fallback.
+enum TableSearch {
+    /// A real, usable row (`ka != 0.0`).
+    Hit(AngleEnergyParams, Mmff94Resolution),
+    /// A row was found but `ka == 0.0` -- RDKit's `isDoubleZero` placeholder
+    /// (issue #227 Stage C: 97 `type_i == 0 && type_k == 0` rows restored to
+    /// [`MMFF94_ANGLE_ENERGY`], present in RDKit's real
+    /// `defaultMMFFAngleData` but absent from chematic's first port). Only
+    /// `theta0` is meaningful; `ka` must come from the empirical rule.
+    ZeroKa { theta0: f64 },
+    /// No row at any stage, and every stage that mattered used a
+    /// well-defined `eqLevel` substitution (or none at all).
+    Exhausted,
+    /// The ladder needed to substitute a numeric type absent from
+    /// [`MMFF94_EQ_LEVEL`] (`type_i`/`type_k` outside the 1-55 range) to
+    /// reach the point of giving up. RDKit's real
+    /// `MMFFDefCollection::operator()` returns `nullptr` for such a type and
+    /// `MMFFAngleCollection::operator()` dereferences it with no null
+    /// check -- undefined behavior in RDKit's own C++, confirmed by direct
+    /// source read at the pinned commit. There is no well-defined "real"
+    /// answer to reproduce here, so this is never treated as resolvable --
+    /// see `scripts/mmff94_provenance/PROVENANCE.md`'s Stage C entry for the
+    /// oracle investigation this is based on (the `(0, 43, 18, 63)` tuple).
+    UndefinedSubstitution,
+}
+
+fn search_table(angle_type: u8, type_i: u8, type_j: u8, type_k: u8) -> TableSearch {
+    let search = |at: u8, ti: u8, tk: u8, kind: Mmff94Resolution| {
+        MMFF94_ANGLE_ENERGY
+            .binary_search_by_key(&(at, ti, type_j, tk), |&(a0, a, b, c, _, _)| (a0, a, b, c))
+            .ok()
+            .map(|idx| {
+                let (_, _, _, _, ka, theta0) = MMFF94_ANGLE_ENERGY[idx];
+                (ka, theta0, kind)
+            })
+    };
+    let eq_level_search = |stage: usize, level: u8| {
+        let (ci, ck) = (eq_level(type_i, stage), eq_level(type_k, stage));
+        let (lo, hi) = if ci <= ck { (ci, ck) } else { (ck, ci) };
+        search(
+            angle_type,
+            lo,
+            hi,
+            Mmff94Resolution::EquivalentType { level },
+        )
+    };
+    let hit = search(angle_type, type_i, type_k, Mmff94Resolution::DirectTable)
+        .or_else(|| search(angle_type, type_k, type_i, Mmff94Resolution::DirectTable))
+        .or_else(|| eq_level_search(1, 3))
+        .or_else(|| eq_level_search(2, 4))
+        .or_else(|| eq_level_search(3, 5))
+        .or_else(|| {
+            if angle_type != 0 {
+                search(
+                    0,
+                    type_i,
+                    type_k,
+                    Mmff94Resolution::GenericAngleTypeFallback,
+                )
+                .or_else(|| {
+                    search(
+                        0,
+                        type_k,
+                        type_i,
+                        Mmff94Resolution::GenericAngleTypeFallback,
+                    )
+                })
+            } else {
+                None
+            }
+        });
+    match hit {
+        Some((ka, theta0, kind)) if ka != 0.0 => {
+            TableSearch::Hit(AngleEnergyParams { ka, theta0 }, kind)
+        }
+        Some((_, theta0, _)) => TableSearch::ZeroKa { theta0 },
+        None if has_eq_level_row(type_i) && has_eq_level_row(type_k) => TableSearch::Exhausted,
+        None => TableSearch::UndefinedSubstitution,
+    }
+}
+
 /// Look up angle bending parameters by MMFF94 numeric atom types.
 ///
 /// `type_j` is the central atom. Both orderings (ti,tj,tk) and (tk,tj,ti) are
@@ -2453,58 +2537,215 @@ fn eq_level(atom_type: u8, stage: usize) -> u8 {
 /// would silently drop the angle term entirely, which is worse than the
 /// un-classified behavior it replaces.
 ///
-/// A table row with `ka == 0.0` (RDKit's own `isDoubleZero` placeholder,
-/// see [`MMFF94_ANGLE_ENERGY`]'s doc) is never surfaced here as a usable
-/// parameter -- it is not one, on its own. This keeps this function's
-/// contract identical to before the 97 wildcard rows were restored to the
-/// table: every input that used to return `Some`/`None` still does (the
-/// pre-restoration table had zero `ka == 0.0` rows, so this filter was a
-/// no-op on all of them; only the newly-visible wildcard rows are affected,
-/// and this is exactly what stops them from regressing the function into
-/// returning a physically-invalid zero-force-constant `Some`). A future
-/// change may turn a `ka == 0.0` hit into a real value via Halgren's
-/// empirical rule (issue #227); this function deliberately does not.
+/// A `ka == 0.0` placeholder row (issue #227 Stage C, see [`TableSearch`])
+/// is never surfaced here -- it is not a usable parameter on its own, only
+/// [`mmff94_angle_energy_resolved`] can turn it into one via the empirical
+/// rule. This keeps this function's contract identical to before Stage C
+/// restored those rows to the table: every input that used to return
+/// `Some`/`None` still does.
 pub fn mmff94_angle_energy(
     angle_type: u8,
     type_i: u8,
     type_j: u8,
     type_k: u8,
 ) -> Option<AngleEnergyParams> {
-    let search = |at: u8, ti: u8, tk: u8| {
-        MMFF94_ANGLE_ENERGY
-            .binary_search_by_key(&(at, ti, type_j, tk), |&(a0, a, b, c, _, _)| (a0, a, b, c))
-            .ok()
-            .and_then(|idx| {
-                let (_, _, _, _, ka, theta0) = MMFF94_ANGLE_ENERGY[idx];
-                if ka == 0.0 {
-                    None
-                } else {
-                    Some(AngleEnergyParams { ka, theta0 })
-                }
-            })
-    };
-    let eq_level_search = |stage: usize| {
-        let (ci, ck) = (eq_level(type_i, stage), eq_level(type_k, stage));
-        let (lo, hi) = if ci <= ck { (ci, ck) } else { (ck, ci) };
-        search(angle_type, lo, hi)
-    };
-    search(angle_type, type_i, type_k)
-        .or_else(|| search(angle_type, type_k, type_i))
-        .or_else(|| eq_level_search(1))
-        .or_else(|| eq_level_search(2))
-        .or_else(|| eq_level_search(3))
-        .or_else(|| {
-            if angle_type != 0 {
-                search(0, type_i, type_k).or_else(|| search(0, type_k, type_i))
-            } else {
-                None
+    match search_table(angle_type, type_i, type_j, type_k) {
+        TableSearch::Hit(params, _) => Some(params),
+        TableSearch::ZeroKa { .. }
+        | TableSearch::Exhausted
+        | TableSearch::UndefinedSubstitution => None,
+    }
+}
+
+static MMFF94_ANGLE_Z: &[(u8, f64)] = &[
+    (1, 1.395),
+    (6, 2.494),
+    (7, 2.711),
+    (8, 3.045),
+    (9, 2.847),
+    (14, 2.350),
+    (15, 2.350),
+    (16, 2.980),
+    (17, 2.909),
+    (35, 3.017),
+    (53, 3.086),
+];
+
+static MMFF94_ANGLE_C: &[(u8, f64)] = &[
+    (6, 1.016),
+    (7, 1.113),
+    (8, 1.337),
+    (14, 0.811),
+    (15, 1.068),
+    (16, 1.249),
+    (17, 1.078),
+];
+
+fn angle_z(atomic_number: u8) -> Option<f64> {
+    MMFF94_ANGLE_Z
+        .binary_search_by_key(&atomic_number, |&(z, _)| z)
+        .ok()
+        .map(|idx| MMFF94_ANGLE_Z[idx].1)
+}
+
+fn angle_c(atomic_number: u8) -> Option<f64> {
+    MMFF94_ANGLE_C
+        .binary_search_by_key(&atomic_number, |&(z, _)| z)
+        .ok()
+        .map(|idx| MMFF94_ANGLE_C[idx].1)
+}
+
+/// Halgren MMFF.V eq. 20's `theta0` sub-rule (page 627-628, immediately
+/// above eq. 20 itself), run only for [`TableSearch::Exhausted`] -- when a
+/// `ka == 0.0` placeholder row IS found, its own `theta0` is reused verbatim
+/// instead and this sub-rule never runs at all
+/// (`getMMFFAngleBendEmpiricalRuleParams`, `AtomTyper.cpp`). The ring-size
+/// 60°/90° override below is specific to this from-scratch branch and is
+/// NOT applied in the reuse case -- confirmed by direct source read at the
+/// pinned commit (`AtomTyper.cpp` lines ~2746-2785: the override lives
+/// inside the `if (!oldMMFFAngleParams)` branch only).
+fn angle_empirical_theta0(
+    atomic_number_j: u8,
+    crd: u8,
+    val: u8,
+    mltb: u8,
+    linear: bool,
+    ring_size: u8,
+) -> f64 {
+    let mut theta0 = 120.0;
+    match crd {
+        4 => theta0 = 109.45,
+        2 => {
+            if atomic_number_j == 8 {
+                theta0 = 105.0;
+            } else if linear {
+                theta0 = 180.0;
             }
-        })
+        }
+        3 if val == 3 && mltb == 0 => {
+            theta0 = if atomic_number_j == 7 { 107.0 } else { 92.0 };
+        }
+        _ => {}
+    }
+    match ring_size {
+        3 => theta0 = 60.0,
+        4 => theta0 = 90.0,
+        _ => {}
+    }
+    theta0
+}
+
+/// Halgren MMFF.V eq. 20 empirical angle-bend force constant (page 628,
+/// Table VI's per-element `Z`/`C` constants). Returns `None` if any of the
+/// three atoms' element has no `Z`/`C` entry -- RDKit would silently use
+/// `0.0` there, a physically-invalid zero force constant; chematic fails
+/// closed instead (issue #227 Stage C acceptance gate).
+fn angle_empirical_ka(
+    atomic_number_i: u8,
+    atomic_number_j: u8,
+    atomic_number_k: u8,
+    r0_ij: f64,
+    r0_jk: f64,
+    ring_size: u8,
+    theta0: f64,
+) -> Option<f64> {
+    let zi = angle_z(atomic_number_i)?;
+    let zk = angle_z(atomic_number_k)?;
+    let cj = angle_c(atomic_number_j)?;
+    let mut beta = 1.75;
+    match ring_size {
+        4 => beta *= 0.85,
+        3 => beta *= 0.05,
+        _ => {}
+    }
+    let d = (r0_ij - r0_jk).powi(2) / (r0_ij + r0_jk).powi(2);
+    let theta0_rad = theta0.to_radians();
+    Some(beta * zi * cj * zk / ((r0_ij + r0_jk) * theta0_rad * theta0_rad * (2.0 * d).exp()))
+}
+
+/// Look up angle bending parameters, falling back to Halgren's MMFF.V eq. 20
+/// empirical rule when the table (including the eqLevel ladder) has no
+/// usable force constant, and reporting which mechanism actually produced
+/// the result (issue #227 Stage C).
+///
+/// `r0_ij`/`r0_jk` are the two flanking bonds' equilibrium lengths (Å),
+/// supplied by the caller rather than re-resolved here -- a caller that
+/// already computed them (e.g. for the adjacent stretch-bend term) does not
+/// pay for, or risk diverging from, a second bond resolution. `ring_size` is
+/// `3`/`4` if the triple is in a 3- or 4-membered ring
+/// (`isAngleInRingOfSize3or4`, local bond adjacency, NOT SSSR -- see
+/// `crate::mmff94_minimizer::is_angle_in_ring_of_size_3_or_4`), else `0`.
+///
+/// Returns `None` when the triple cannot be resolved at all: the eqLevel
+/// ladder needed an undefined substitution ([`TableSearch::UndefinedSubstitution`]),
+/// an outer/central atom type has no [`crate::mmff94_numeric_type_registry`]
+/// entry, or [`angle_empirical_ka`] has no `Z`/`C` constant for one of the
+/// three elements.
+pub fn mmff94_angle_energy_resolved(
+    angle_type: u8,
+    type_i: u8,
+    type_j: u8,
+    type_k: u8,
+    r0_ij: f64,
+    r0_jk: f64,
+    ring_size: u8,
+) -> Option<(AngleEnergyParams, Mmff94Resolution)> {
+    use crate::mmff94_numeric_type_registry::mmff94_numeric_type_info;
+
+    match search_table(angle_type, type_i, type_j, type_k) {
+        TableSearch::Hit(params, kind) => Some((params, kind)),
+        TableSearch::ZeroKa { theta0 } => {
+            let info_i = mmff94_numeric_type_info(type_i)?;
+            let info_j = mmff94_numeric_type_info(type_j)?;
+            let info_k = mmff94_numeric_type_info(type_k)?;
+            let ka = angle_empirical_ka(
+                info_i.atomic_number,
+                info_j.atomic_number,
+                info_k.atomic_number,
+                r0_ij,
+                r0_jk,
+                ring_size,
+                theta0,
+            )?;
+            Some((
+                AngleEnergyParams { ka, theta0 },
+                Mmff94Resolution::EmpiricalAngle,
+            ))
+        }
+        TableSearch::Exhausted => {
+            let info_i = mmff94_numeric_type_info(type_i)?;
+            let info_j = mmff94_numeric_type_info(type_j)?;
+            let info_k = mmff94_numeric_type_info(type_k)?;
+            let theta0 = angle_empirical_theta0(
+                info_j.atomic_number,
+                info_j.coordination,
+                info_j.valence,
+                info_j.multiple_bond_count,
+                info_j.linear,
+                ring_size,
+            );
+            let ka = angle_empirical_ka(
+                info_i.atomic_number,
+                info_j.atomic_number,
+                info_k.atomic_number,
+                r0_ij,
+                r0_jk,
+                ring_size,
+                theta0,
+            )?;
+            Some((
+                AngleEnergyParams { ka, theta0 },
+                Mmff94Resolution::EmpiricalAngle,
+            ))
+        }
+        TableSearch::UndefinedSubstitution => None,
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::mmff94_energy::mmff94_bond_energy;
 
     #[test]
     fn eq_level_resolves_type_via_ladder_and_falls_back_to_identity() {
@@ -2537,41 +2778,77 @@ mod tests {
         );
     }
 
-    // ─── Issue #227: wildcard theta0 table restoration ────────────────────
+    // ─── Issue #227 Stage C: empirical rule (eq. 20) ──────────────────────
 
     #[test]
-    fn restored_wildcard_rows_are_present_in_the_table_but_never_surfaced() {
-        // (0, 0, 1, 0) is one of the 97 restored ti=0/tk=0 wildcard rows --
-        // confirm it's really there (ka=0.0, theta0=108.9, RDKit's real
-        // defaultMMFFAngleData value) via a direct binary search, then
-        // confirm mmff94_angle_energy never surfaces it (a ka==0.0 row is
-        // not a usable parameter on its own -- see this file's module doc).
-        let idx = MMFF94_ANGLE_ENERGY
-            .binary_search_by_key(&(0u8, 0u8, 1u8, 0u8), |&(a0, a, b, c, _, _)| (a0, a, b, c))
-            .expect("restored wildcard row (0,0,1,0) must exist in the table");
-        let (_, _, _, _, ka, theta0) = MMFF94_ANGLE_ENERGY[idx];
-        assert_eq!(ka, 0.0);
-        assert_eq!(theta0, 108.9);
-
-        // A real triple that reaches this wildcard row via the eqLevel
-        // ladder's level5 (0,0) substitution (type 11=F, type 1=C, type
-        // 12=Cl, both halogens eventually map to 0 -- issue #227's own
-        // classify script confirms this is exactly how the live RDKit
-        // oracle reaches this row) must still return None here: restoring
-        // the row must not regress this into a bogus Some(ka: 0.0, ..).
-        assert!(
-            mmff94_angle_energy(0, 11, 1, 12).is_none(),
-            "a ka==0.0 table hit must never be surfaced as a real parameter"
-        );
+    fn angle_empirical_reuses_wildcard_theta0_for_halogen_and_amine_c_substituents() {
+        // angle_type=0, center=type1 (sp3 C, crd=4). All 7 confirmed against
+        // the live RDKit oracle by `scripts/mmff94_angle_bond_gap_classify.py`
+        // (issue #227 Stage C's own diagnosed table_gap residual). Each hits
+        // the eqLevel ladder's level5 (0,0) substitution and lands on the
+        // restored wildcard row `(0, 0, 1, 0)` -> theta0=108.9, ka=0.0
+        // (`TableSearch::ZeroKa`) -- so theta0 must come back REUSED
+        // verbatim, not recomputed by the from-scratch sub-rule (which would
+        // also give 109.45 here anyway, since crd=4 -- the two are
+        // numerically close for this central type, which is exactly why this
+        // reuse-vs-recompute distinction was easy to miss).
+        let cases: &[(u8, u8, f64)] = &[
+            (11, 12, 1.2566039721725888), // C(F)(Cl)
+            (11, 13, 1.199132258341949),  // C(F)(Br)
+            (12, 13, 1.1553717810569428), // C(Cl)(Br)
+            (11, 14, 1.146032669253874),  // C(F)(I)
+            (12, 14, 1.1284626065931707), // C(Cl)(I)
+            (13, 14, 1.1317750264511846), // C(Br)(I)
+            (8, 11, 1.348550207611195),   // C(N)(F)
+        ];
+        for &(ti, tk, expected_ka) in cases {
+            let r0_i = mmff94_bond_energy(0, 1, ti)
+                .unwrap_or_else(|| panic!("C-{ti} bond must be tabulated"))
+                .r0;
+            let r0_k = mmff94_bond_energy(0, 1, tk)
+                .unwrap_or_else(|| panic!("C-{tk} bond must be tabulated"))
+                .r0;
+            let (p, kind) = mmff94_angle_energy_resolved(0, ti, 1, tk, r0_i, r0_k, 0)
+                .unwrap_or_else(|| panic!("({ti},1,{tk}) must resolve via empirical reuse"));
+            assert_eq!(kind, Mmff94Resolution::EmpiricalAngle);
+            assert!(
+                (p.ka - expected_ka).abs() < 1e-3,
+                "ti={ti} tk={tk} ka={} expected {expected_ka}",
+                p.ka
+            );
+            assert!(
+                (p.theta0 - 108.9).abs() < 1e-9,
+                "theta0 must be the wildcard row's own value ({}), reused verbatim -- got {}",
+                108.9,
+                p.theta0
+            );
+            // The ka==0.0 filter's whole point: the plain function must
+            // never surface this placeholder row as a real parameter.
+            assert!(
+                mmff94_angle_energy(0, ti, 1, tk).is_none(),
+                "plain mmff94_angle_energy must stay None for a ka==0.0 row"
+            );
+        }
     }
 
     #[test]
-    fn table_size_matches_rdkits_real_defaultmmffangledata_row_count() {
-        assert_eq!(
-            MMFF94_ANGLE_ENERGY.len(),
-            2342,
-            "97 restored wildcard rows (2245 -> 2342), matching RDKit's real \
-             defaultMMFFAngleData exactly (issue #227)"
-        );
+    fn angle_empirical_fails_closed_for_undefined_eq_level_substitution() {
+        // (angle_type=0, ti=43, tj=18, tk=63): the one unconfirmed tuple in
+        // issue #227 Stage C's own classification. Type 63 has no
+        // MMFF94_EQ_LEVEL row -- RDKit's real MMFFDefCollection::operator()
+        // returns nullptr for it, and MMFFAngleCollection::operator()'s real
+        // eqLevel loop dereferences that unchecked (undefined behavior in
+        // RDKit's own C++, confirmed by direct source read at the pinned
+        // commit). The live oracle's returned value for this triple was
+        // independently confirmed stable across 20 atom renumberings and a
+        // second, structurally unrelated molecule -- i.e. a deterministic
+        // function of the atom types alone, not per-call noise -- but that
+        // is equally consistent with "a real RDKit resolution" and "RDKit
+        // always reading the same fixed out-of-bounds memory," so it does
+        // NOT resolve the ambiguity (see `scripts/mmff94_provenance/PROVENANCE.md`'s
+        // Stage C entry). Per instruction, left fail-closed rather than
+        // guessed -- chematic must not reproduce a value it cannot attribute
+        // to a well-defined mechanism.
+        assert!(mmff94_angle_energy_resolved(0, 43, 18, 63, 1.71, 1.749, 0).is_none());
     }
 }

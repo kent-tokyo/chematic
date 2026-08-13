@@ -51,9 +51,11 @@ use std::collections::BTreeMap;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 use chematic_ff::{
-    OOP_SP2_TYPES, angle_type_for, assign_mmff94_numeric_types, bond_type_for, mmff94_angle_energy,
-    mmff94_bond_energy, mmff94_charges_numeric, mmff94_oop, mmff94_stbn, mmff94_stbn_type_only,
-    mmff94_torsion_energy, mmff94_vdw_combined, stretch_bend_type_for,
+    OOP_SP2_TYPES, angle_type_for, assign_mmff94_numeric_types, bond_type_for,
+    is_angle_in_ring_of_size_3_or_4, mmff94_angle_energy, mmff94_angle_energy_resolved,
+    mmff94_bond_energy, mmff94_bond_energy_resolved, mmff94_charges_numeric, mmff94_oop,
+    mmff94_stbn, mmff94_stbn_type_only, mmff94_torsion_energy, mmff94_vdw_combined,
+    stretch_bend_type_for,
 };
 use chematic_perception::find_sssr;
 use serde_json::{Value, json};
@@ -192,8 +194,10 @@ struct MolAgg {
     typing_error: Option<String>,
     bonds_total: usize,
     bonds_missing: usize,
+    bonds_final_unresolved: usize,
     angles_total: usize,
     angles_missing: usize,
+    angles_final_unresolved: usize,
     torsions_total: usize,
     torsions_missing: usize,
     oop_total: usize,
@@ -229,8 +233,10 @@ fn main() {
                     typing_error: Some(format!("parse_failure: {e}")),
                     bonds_total: 0,
                     bonds_missing: 0,
+                    bonds_final_unresolved: 0,
                     angles_total: 0,
                     angles_missing: 0,
+                    angles_final_unresolved: 0,
                     torsions_total: 0,
                     torsions_missing: 0,
                     oop_total: 0,
@@ -261,8 +267,10 @@ fn main() {
                     typing_error: Some(e.to_string()),
                     bonds_total: 0,
                     bonds_missing: 0,
+                    bonds_final_unresolved: 0,
                     angles_total: 0,
                     angles_missing: 0,
+                    angles_final_unresolved: 0,
                     torsions_total: 0,
                     torsions_missing: 0,
                     oop_total: 0,
@@ -286,8 +294,10 @@ fn main() {
 
         let mut bonds_total = 0usize;
         let mut bonds_missing = 0usize;
+        let mut bonds_final_unresolved = 0usize;
         let mut angles_total = 0usize;
         let mut angles_missing = 0usize;
+        let mut angles_final_unresolved = 0usize;
         let mut torsions_total = 0usize;
         let mut torsions_missing = 0usize;
         let mut oop_total = 0usize;
@@ -307,6 +317,12 @@ fn main() {
             if hit.is_none() {
                 bonds_missing += 1;
                 let present_at = bond_present_at_any_type(t1, t2);
+                // Issue #227 Stage C: does the empirical rule (eq. 18-19)
+                // resolve what the type-only table lookup above did not?
+                let empirical_resolved = mmff94_bond_energy_resolved(bt, t1, t2).is_some();
+                if !empirical_resolved {
+                    bonds_final_unresolved += 1;
+                }
                 term_rows.push(json!({
                     "molecule_id": cm.name, "smiles": cm.smiles, "tier": cm.tier,
                     "term_kind": "Bond",
@@ -318,9 +334,10 @@ fn main() {
                     "direct_table_hit": false,
                     "fallback_available": false,
                     "fallback_hit": false,
-                    "final_lookup_result": "missing",
+                    "final_lookup_result": if empirical_resolved { "resolved_via_empirical_rule" } else { "missing" },
                     "present_at_different_classification": present_at,
-                    "note": "mmff94_bond_energy has NO wildcard/type-0 fallback at all -- any exact (bond_type,ti,tj) miss is unconditionally missing",
+                    "empirical_resolved": empirical_resolved,
+                    "note": "mmff94_bond_energy has NO wildcard/type-0 fallback at all -- any exact (bond_type,ti,tj) miss is unconditionally missing at the TYPE-ONLY level; empirical_resolved reports the Stage C eq.18-19 fallback's own, separate outcome",
                 }));
             }
         }
@@ -342,6 +359,20 @@ fn main() {
                     let at =
                         angle_type_for(&mol, &rings, a.0 as usize, b_idx, c.0 as usize, &types);
 
+                    // Shared with the Angle check below AND the StretchBend
+                    // check further down -- both need the two flanking bonds'
+                    // types (issue #227 Priority 2C: StretchBend's table key
+                    // is the *stretch-bend type*, not the angle type `at` --
+                    // see `stretch_bend_type_for`'s doc). Hoisted here so both
+                    // checks share one computation, matching the now-fixed
+                    // production call sites in chematic-ff's
+                    // mmff94_minimizer.rs / chematic-3d's own
+                    // `compute_mmff94_coverage` exactly.
+                    let order_ab = mol.bond_between(a, b).expect("a-b angle bond").1.order;
+                    let order_cb = mol.bond_between(c, b).expect("c-b angle bond").1.order;
+                    let bt_ab = bond_type_for(ta, tb, order_ab);
+                    let bt_cb = bond_type_for(tc, tb, order_cb);
+
                     let angle_hit = mmff94_angle_energy(at, ta, tb, tc);
                     if angle_hit.is_none() {
                         angles_missing += 1;
@@ -353,6 +384,36 @@ fn main() {
                         } else {
                             false
                         };
+                        // Issue #227 Stage C: does the empirical rule (eq.
+                        // 20) resolve what the type-only table lookup above
+                        // did not? Needs both flanking bonds' r0 -- if
+                        // either is itself unresolvable (extremely rare,
+                        // only for elements missing from
+                        // MMFF94_COV_RAD_PAU_ELE/MMFF94_HERSCHBACH_LAURIE),
+                        // the angle term is also left unresolved, matching
+                        // RDKit's own real `getMMFFAngleBendParams` (which
+                        // requires both flanking `getMMFFBondStretchParams`
+                        // calls to succeed before even attempting empirical).
+                        let bond_ab = mmff94_bond_energy_resolved(bt_ab, ta, tb);
+                        let bond_cb = mmff94_bond_energy_resolved(bt_cb, tc, tb);
+                        let empirical_resolved = match (bond_ab, bond_cb) {
+                            (Some((bab, _)), Some((bcb, _))) => {
+                                let ring_size = is_angle_in_ring_of_size_3_or_4(
+                                    &mol,
+                                    a.0 as usize,
+                                    b_idx,
+                                    c.0 as usize,
+                                );
+                                mmff94_angle_energy_resolved(
+                                    at, ta, tb, tc, bab.r0, bcb.r0, ring_size,
+                                )
+                                .is_some()
+                            }
+                            _ => false,
+                        };
+                        if !empirical_resolved {
+                            angles_final_unresolved += 1;
+                        }
                         term_rows.push(json!({
                             "molecule_id": cm.name, "smiles": cm.smiles, "tier": cm.tier,
                             "term_kind": "Angle",
@@ -363,22 +424,12 @@ fn main() {
                             "direct_table_hit": false,
                             "fallback_available": at != 0,
                             "fallback_hit": type0_hit,
-                            "final_lookup_result": "missing",
+                            "final_lookup_result": if empirical_resolved { "resolved_via_empirical_rule" } else { "missing" },
                             "present_at_different_classification": present_at,
+                            "empirical_resolved": empirical_resolved,
                         }));
                     }
 
-                    // Issue #227 Priority 2C: StretchBend's own table key is
-                    // the *stretch-bend type* (0-11, `getMMFFStretchBendType`),
-                    // not the angle type `at` used by the Angle check above --
-                    // compute it from `at` plus the two individual flanking
-                    // bond types before looking up MMFF94_STBN (matches the
-                    // now-fixed production `stretch_bend_energy` call site in
-                    // chematic-ff's mmff94_minimizer.rs exactly).
-                    let order_ab = mol.bond_between(a, b).expect("a-b angle bond").1.order;
-                    let order_cb = mol.bond_between(c, b).expect("c-b angle bond").1.order;
-                    let bt_ab = bond_type_for(ta, tb, order_ab);
-                    let bt_cb = bond_type_for(tc, tb, order_cb);
                     let sbt = stretch_bend_type_for(at, ta, tc, bt_ab, bt_cb);
 
                     // Review-driven fix (Priority 2B follow-up): a row must
@@ -553,7 +604,15 @@ fn main() {
             }));
         }
 
-        let strict_gate_would_fail = bonds_missing > 0 || angles_missing > 0;
+        // Issue #227 Stage C: the REAL strict gate (chematic-3d's
+        // `compute_mmff94_coverage`, and the actual minimizer) now resolves
+        // through the eq.18-20 empirical rule too -- so what actually
+        // predicts gate failure is the FINAL (post-empirical) unresolved
+        // count, not the type-only-table miss count. `bonds_missing`/
+        // `angles_missing` stay as the type-only diagnostic axis (same
+        // "coverage parity vs. parameter-selection parity" distinction this
+        // file already draws for StretchBend/Dfsb -- see the module doc).
+        let strict_gate_would_fail = bonds_final_unresolved > 0 || angles_final_unresolved > 0;
 
         mol_aggs.push(MolAgg {
             tier: cm.tier.clone(),
@@ -565,8 +624,10 @@ fn main() {
             typing_error: None,
             bonds_total,
             bonds_missing,
+            bonds_final_unresolved,
             angles_total,
             angles_missing,
+            angles_final_unresolved,
             torsions_total,
             torsions_missing,
             oop_total,
@@ -594,7 +655,9 @@ fn main() {
             "tier": m.tier, "molecule_id": m.name, "smiles": m.smiles, "category": m.category,
             "parse_ok": m.parse_ok, "typing_ok": m.typing_ok, "typing_error": m.typing_error,
             "bonds_total": m.bonds_total, "bonds_missing": m.bonds_missing,
+            "bonds_final_unresolved": m.bonds_final_unresolved,
             "angles_total": m.angles_total, "angles_missing": m.angles_missing,
+            "angles_final_unresolved": m.angles_final_unresolved,
             "torsions_total": m.torsions_total, "torsions_missing": m.torsions_missing,
             "oop_total": m.oop_total, "oop_missing": m.oop_missing,
             "stbn_total": m.stbn_total, "stbn_missing": m.stbn_missing,
@@ -610,13 +673,15 @@ fn main() {
     let n_total = mol_aggs.len();
     let n_fail = mol_aggs.iter().filter(|m| m.strict_gate_would_fail).count();
     let n_bonds_missing: usize = mol_aggs.iter().map(|m| m.bonds_missing).sum();
+    let n_bonds_final_unresolved: usize = mol_aggs.iter().map(|m| m.bonds_final_unresolved).sum();
     let n_angles_missing: usize = mol_aggs.iter().map(|m| m.angles_missing).sum();
+    let n_angles_final_unresolved: usize = mol_aggs.iter().map(|m| m.angles_final_unresolved).sum();
     let n_torsions_missing: usize = mol_aggs.iter().map(|m| m.torsions_missing).sum();
     let n_oop_missing: usize = mol_aggs.iter().map(|m| m.oop_missing).sum();
     let n_stbn_missing: usize = mol_aggs.iter().map(|m| m.stbn_missing).sum();
     let n_stbn_final_unresolved: usize = mol_aggs.iter().map(|m| m.stbn_final_unresolved).sum();
     eprintln!(
-        "=== summary: total={n_total} bond+angle-gate-would-fail={n_fail} bonds_missing={n_bonds_missing} angles_missing={n_angles_missing} torsions_missing={n_torsions_missing} oop_missing={n_oop_missing} stbn_type_only_missing(never gated, incl. Dfsb-masked routing candidates)={n_stbn_missing} stbn_final_unresolved(after Dfsb fallback)={n_stbn_final_unresolved} ==="
+        "=== summary: total={n_total} bond+angle-gate-would-fail={n_fail} bonds_missing(type-only)={n_bonds_missing} bonds_final_unresolved(after Stage C empirical)={n_bonds_final_unresolved} angles_missing(type-only)={n_angles_missing} angles_final_unresolved(after Stage C empirical)={n_angles_final_unresolved} torsions_missing={n_torsions_missing} oop_missing={n_oop_missing} stbn_type_only_missing(never gated, incl. Dfsb-masked routing candidates)={n_stbn_missing} stbn_final_unresolved(after Dfsb fallback)={n_stbn_final_unresolved} ==="
     );
 
     // Distinct missing-tuple pattern counts (angle), to see concentration.
