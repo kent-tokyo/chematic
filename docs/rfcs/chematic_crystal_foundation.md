@@ -226,12 +226,16 @@ out).
 it, following the exact shape every other facade feature already uses
 (`smiles`, `mol`, `chem`, ...). Whether `crystal` also joins the `full`
 aggregate feature (which today lists every other optional feature) is
-**not decided in this PR** -- see the Stop-and-report section of the final
-task report. The precedent ("every feature is in `full`") argues for
-inclusion; the spec's explicit instruction ("不明確ならfullへ含めず
+**not decided in this PR** -- left for explicit human confirmation. The
+precedent ("every feature is in `full`") argues for inclusion; the
+project's convention of not assuming when unclear ("不明確ならfullへ含めず
 stop-and-report") argues for leaving it out until a human confirms, since
-`full` is what `--all-features` and docs.rs builds exercise project-wide.
-This PR leaves `crystal` out of `full`.
+`crystal` is architecturally separate from every other facade feature (no
+`Molecule` dependency) in a way `full`'s existing members are not. Note
+that `--all-features` and docs.rs (which sets `all-features = true`) both
+build `crystal` regardless of `full` membership -- leaving it out of `full`
+only affects users who opt in via that one aggregate feature, not
+exhaustive-build tooling. This PR leaves `crystal` out of `full`.
 
 ## WASM constraint
 
