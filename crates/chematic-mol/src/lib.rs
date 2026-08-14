@@ -44,6 +44,11 @@ pub use cdxml::{
     parse_cdxml_with_options, write_cdxml,
 };
 pub use cif::{CifError, CifResult, UnitCell, parse_cif, write_cif};
+#[cfg(feature = "crystal")]
+pub use cif::{
+    CifPeriodicError, CifPeriodicResult, CifSymmetryStatus, parse_cif_periodic_structure,
+    write_cif_periodic_structure,
+};
 pub use cjson::{CjsonError, parse_cjson, write_cjson};
 pub use cml::{CmlError, parse_cml, write_cml};
 pub use error::MolParseError as MolError;
