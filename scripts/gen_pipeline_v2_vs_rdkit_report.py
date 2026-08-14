@@ -313,6 +313,20 @@ def main():
     probe_rows = [r for r in chematic_rows if r["arm"] == "chematic_pipeline_v2_ring_torsion_failclosed_probe"]
     n_probe_rows = len(probe_rows)
 
+    # `chematic_pipeline_v2_mmff94_strict_enforce_chirality` is a v0.14.0
+    # release-gate diagnostic arm (see its doc comment in
+    # pipeline_v2_vs_rdkit_dump.rs) -- deliberately never added to
+    # CHEMATIC_ARMS above, same "diagnostic, not part of the main 12-arm
+    # comparison" treatment as the ring-torsion probe row. Pulled out here so
+    # it doesn't inflate the expected-row-count integrity gate below; the
+    # rows themselves are preserved (not discarded) in a separate section of
+    # the aggregate output, same pattern as ring_torsion_failclosed_probe.
+    enforce_chirality_diagnostic_rows = [
+        r for r in chematic_rows if r["arm"] == "chematic_pipeline_v2_mmff94_strict_enforce_chirality"
+    ]
+    n_enforce_chirality_diagnostic_rows = len(enforce_chirality_diagnostic_rows)
+    chematic_rows = [r for r in chematic_rows if r["arm"] != "chematic_pipeline_v2_mmff94_strict_enforce_chirality"]
+
     # --- Atom mapping (heavy-atom element sequence match) ---
     chematic_elements_by_mol = {}
     for row in chematic_rows:
@@ -813,6 +827,14 @@ def main():
         },
         "performance_process_level": process_perf,
         "ring_torsion_failclosed_probe": {"n_rows": n_probe_rows, "rows": probe_rows},
+        "mmff94_strict_enforce_chirality_diagnostic": {
+            "note": "v0.14.0 release-gate diagnostic arm (see pipeline_v2_vs_rdkit_dump.rs), "
+            "deliberately excluded from CHEMATIC_ARMS/the main 12-arm comparison and from "
+            "the expected-row-count integrity gate -- same treatment as the ring-torsion "
+            "probe row above. Preserved here, not discarded.",
+            "n_rows": n_enforce_chirality_diagnostic_rows,
+            "rows": enforce_chirality_diagnostic_rows,
+        },
         "cyclopentane_crash_ablation": ablation_summary,
         "reference_geometry_subset": reference_geometry_subset,
         "generated_by": [

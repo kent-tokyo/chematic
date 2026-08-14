@@ -144,11 +144,29 @@ fn independent_geometry_check(mol: &Molecule, coords: &Coords3D) -> GeometryChec
 }
 
 fn stereo_to_json(v: &chematic_3d::stereo_constraints::StereoVerification) -> Value {
+    let tet_satisfied = v.tetrahedral.iter().filter(|r| r.status.is_satisfied()).count();
+    let tet_violated = v.tetrahedral.iter().filter(|r| r.status.is_violated()).count();
+    let tet_declared = v.tetrahedral.len();
+    let db_satisfied = v.double_bond.iter().filter(|r| r.status.is_satisfied()).count();
+    let db_violated = v.double_bond.iter().filter(|r| r.status.is_violated()).count();
+    let db_declared = v.double_bond.len();
     json!({
         "declared": v.n_declared(),
         "satisfied": v.n_satisfied(),
         "violated": v.n_violations(),
         "unevaluable": v.n_unevaluable(),
+        "tetrahedral": {
+            "declared": tet_declared,
+            "satisfied": tet_satisfied,
+            "violated": tet_violated,
+            "unevaluable": tet_declared - tet_satisfied - tet_violated,
+        },
+        "double_bond": {
+            "declared": db_declared,
+            "satisfied": db_satisfied,
+            "violated": db_violated,
+            "unevaluable": db_declared - db_satisfied - db_violated,
+        },
     })
 }
 
