@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `chematic-fp` (FPS fingerprint exchange format)
+
+- New `fps` module: streaming read/write for the FPS ("Fingerprint file
+  format") text-based fingerprint interchange format popularized by
+  chemfp/OpenBabel. `FpsReader<R: BufRead>`/`FpsWriter<W: Write>` iterate
+  one record at a time rather than materializing a whole file, and work
+  over any `BufRead`/`Write` sink (WASM-compatible, matching this crate's
+  existing `#![forbid(unsafe_code)]`/wasm32 constraints).
+- `FpsHeader` models `num_bits`/`type`/`software`/`source`/`comment`
+  explicitly and carries any other `#`-prefixed header line through
+  losslessly via `extra` (including the `#FPS1` version line, kept first
+  on write-back per spec). `FpsHeader::for_chematic` stamps
+  `software=chematic-fp/<version>` for fingerprints this crate itself
+  computed.
+- Hex bit-ordering verified against the real chemfp FPS spec
+  (<https://chemfp.com/fps_format/>): byte `k` = fingerprint bits
+  `[8k, 8k+8)`, LSB-first within the byte -- matches `BitVec2048`/
+  `BitVecN`'s own bit numbering directly, so no reordering is needed
+  between the two representations.
+- Reuses `BitVec2048`/`BitVecN` as the sole bit-vector representation; no
+  new fingerprint algorithms or binary formats.
+
 ## [0.15.0] — 2026-08-14
 
 New crate `chematic-crystal` (periodic/crystal structure foundation), plus
