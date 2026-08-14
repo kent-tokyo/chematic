@@ -53,7 +53,14 @@
 //!   itself matches them**: only the *first character* is significant,
 //!   case-insensitively (`C`/`c`/`K`/`k` -> Cartesian, anything else ->
 //!   Direct; `S`/`s` -> Selective dynamics on) -- confirmed against the VASP
-//!   wiki POSCAR page's own wording, not guessed.
+//!   wiki POSCAR page's own wording, not guessed. Per-atom selective-
+//!   dynamics flags use the same first-character rule (`T`/`t` -> `true`);
+//!   this one place does **not** fail closed on a malformed flag (e.g. `X`
+//!   or an unexpected token) -- it silently reads as `false`, deliberately
+//!   matching a real implementation's own leniency here (pymatgen's
+//!   `tok.upper()[0] == "T"`) rather than rejecting files real tools accept.
+//!   Every other field in this reader (coordinates, scale factor, atom
+//!   counts, ...) does fail closed on a malformed value.
 //! - **Write always emits `Direct` (fractional) coordinates.**
 //!   [`crate::structure::PeriodicStructure`] stores fractional coordinates
 //!   canonically; a Cartesian-mode POSCAR is converted to fractional on
@@ -471,6 +478,18 @@ pub fn parse_poscar(text: &str) -> Result<PoscarDocument, PoscarError> {
                 found: fractional.len(),
             });
         };
+        // A blank line here means the coordinate block ended early and what
+        // follows is (or was meant to be) a blank-line-separated trailing
+        // section (velocities/predictor-corrector) -- report the real
+        // problem (too few coordinate lines) rather than the confusing
+        // "coordinate line needs N fields, got ''" the empty-token check
+        // below would otherwise produce.
+        if line.trim().is_empty() {
+            return Err(PoscarError::AtomCountMismatch {
+                declared: n_sites,
+                found: fractional.len(),
+            });
+        }
         let toks: Vec<&str> = line.split_whitespace().collect();
         let need = if has_selective { 6 } else { 3 };
         if toks.len() < need {
@@ -1004,8 +1023,14 @@ Direct\n\
                 );
             }
         }
-        // Cross-check via lengths/angles too (row-scaling would give a
-        // different triple of both).
+        // Cross-check via lengths and angles too. The entry-by-entry matrix
+        // assertion above already fully pins down column-vs-row scaling on
+        // its own; lengths alone would not (a row-scale convention with
+        // these particular factors happens to produce different lengths
+        // too, just not by coincidence the *same* ones), so angles are the
+        // more targeted secondary check -- row-scaling would change the
+        // triangle each pair of (now differently-scaled) row vectors forms
+        // to a different degree than column-scaling does.
         let lengths = doc.structure.lattice().lengths();
         let expected_lengths = [
             (expected[0][0].powi(2) + expected[0][1].powi(2) + expected[0][2].powi(2)).sqrt(),
@@ -1014,6 +1039,28 @@ Direct\n\
         ];
         for i in 0..3 {
             assert!((lengths[i] - expected_lengths[i]).abs() < 1e-9);
+        }
+        let angles = doc.structure.lattice().angles_degrees();
+        let dot = |u: [f64; 3], v: [f64; 3]| u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
+        let norm = |u: [f64; 3]| dot(u, u).sqrt();
+        let angle_between = |u: [f64; 3], v: [f64; 3]| {
+            (dot(u, v) / (norm(u) * norm(v)))
+                .clamp(-1.0, 1.0)
+                .acos()
+                .to_degrees()
+        };
+        let expected_angles = [
+            angle_between(expected[1], expected[2]),
+            angle_between(expected[0], expected[2]),
+            angle_between(expected[0], expected[1]),
+        ];
+        for i in 0..3 {
+            assert!(
+                (angles[i] - expected_angles[i]).abs() < 1e-6,
+                "angle[{i}] = {}, expected {}",
+                angles[i],
+                expected_angles[i]
+            );
         }
     }
 
@@ -1188,6 +1235,25 @@ Direct\n\
     }
 
     #[test]
+    fn atom_count_mismatch_detected_when_trailing_section_follows() {
+        // Coordinate block is short by one, but (unlike the fixture above,
+        // which simply ends at EOF) a properly blank-line-separated
+        // trailing section follows -- must still report a clear
+        // AtomCountMismatch, not consume the trailing section's line as
+        // bogus coordinate data or surface a confusing "coordinate line
+        // needs 3 fields, got ''" error from the blank separator itself.
+        let text = "short-trailer\n1.0\n4.0 0.0 0.0\n0.0 4.0 0.0\n0.0 0.0 4.0\nC\n2\nDirect\n0.0 0.0 0.0\n\n0.1 0.2 0.3\n";
+        let err = parse_poscar(text).unwrap_err();
+        assert_eq!(
+            err,
+            PoscarError::AtomCountMismatch {
+                declared: 2,
+                found: 1
+            }
+        );
+    }
+
+    #[test]
     fn contcar_alias_matches_poscar_parse() {
         assert_eq!(
             parse_contcar(NACL_POSCAR).unwrap(),
@@ -1241,6 +1307,68 @@ Direct\n\
         for r in 0..3 {
             for c in 0..3 {
                 assert!((m0[r][c] - m1[r][c]).abs() < 1e-12);
+            }
+        }
+    }
+
+    #[test]
+    fn roundtrip_triclinic_cartesian_mode_fixture_text() {
+        // Same triclinic lattice as `roundtrip_triclinic_fixture_text`, but
+        // ion positions given in Cartesian mode -- this is the path
+        // write_poscar's "always emit Direct" decision actually transforms
+        // (cart_to_frac on read, never converted back), so it needs its own
+        // coverage rather than relying on the Direct-mode fixture, and a
+        // tolerance comparison rather than `==` since cart_to_frac's matrix
+        // solve introduces ordinary floating-point rounding.
+        let text = "triclinic cartesian fixture\n\
+1.0\n\
+5.0000000000000000 0.0000000000000000 0.0000000000000000\n\
+1.5529142706151024 5.7996130342078438 0.0000000000000000\n\
+-1.4790559332561876 1.4998727130474476 6.5850758980592793\n\
+O C\n\
+2 1\n\
+Cartesian\n\
+1.1 0.9 1.3\n\
+2.4 3.1 4.2\n\
+0.5 0.5 0.5\n";
+        let doc = parse_poscar(text).unwrap();
+        assert_eq!(doc.structure.site_count(), 3);
+
+        let written = write_poscar(&doc).unwrap();
+        let reparsed = parse_poscar(&written).unwrap();
+
+        assert_eq!(doc.structure.site_count(), reparsed.structure.site_count());
+        let (f0, f1) = (
+            doc.structure.fractional_positions(),
+            reparsed.structure.fractional_positions(),
+        );
+        for (a, b) in f0.iter().zip(f1.iter()) {
+            for k in 0..3 {
+                assert!(
+                    (a.0[k] - b.0[k]).abs() < 1e-9,
+                    "fractional coord mismatch: {a:?} vs {b:?}"
+                );
+            }
+        }
+        let (c0, c1) = (
+            doc.structure.cartesian_positions(),
+            reparsed.structure.cartesian_positions(),
+        );
+        for (a, b) in c0.iter().zip(c1.iter()) {
+            for k in 0..3 {
+                assert!(
+                    (a.0[k] - b.0[k]).abs() < 1e-9,
+                    "cartesian coord mismatch: {a:?} vs {b:?}"
+                );
+            }
+        }
+        let (m0, m1) = (
+            doc.structure.lattice().matrix(),
+            reparsed.structure.lattice().matrix(),
+        );
+        for r in 0..3 {
+            for c in 0..3 {
+                assert!((m0[r][c] - m1[r][c]).abs() < 1e-9);
             }
         }
     }
