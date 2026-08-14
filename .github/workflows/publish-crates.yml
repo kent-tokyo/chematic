@@ -1,0 +1,49 @@
+name: Publish to crates.io
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish crates to crates.io
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Verify publish graph
+        run: python3 scripts/check_publish_graph.py
+
+      - name: Publish crates in dependency order
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          set -e
+          CRATES=$(python3 scripts/check_publish_graph.py | awk '/Safe publish order:/{found=1; next} found {print $1}')
+          echo "Publish order:"
+          echo "$CRATES"
+          for crate in $CRATES; do
+            echo "=== Publishing $crate ==="
+            if OUTPUT=$(cargo publish -p "$crate" --locked 2>&1); then
+              echo "$OUTPUT"
+              echo "Published $crate"
+            elif echo "$OUTPUT" | grep -qi "already uploaded\|already exists"; then
+              echo "$OUTPUT"
+              echo "$crate already published at this version, skipping"
+            else
+              echo "$OUTPUT"
+              echo "::error::Failed to publish $crate"
+              exit 1
+            fi
+            # ponytail: fixed sleep so crates.io has indexed this crate before
+            # the next dependent tries to resolve it -- replace with a poll
+            # against the registry API if this starts flaking under load.
+            sleep 20
+          done
