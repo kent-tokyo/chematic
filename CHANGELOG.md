@@ -9,19 +9,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added — chematic-crystal (new crate, draft)
+## [0.15.0] — 2026-08-14
+
+New crate `chematic-crystal` (periodic/crystal structure foundation), plus
+a substantial MMFF94 Bond/Angle accuracy fix (issue #227): 265-molecule
+corpus strict-policy success 178/265 → 248/265, zero regressions. Purely
+additive at the Rust API level for existing crates -- no breaking changes.
+
+### Fixed — `chematic-ff` (MMFF94 Bond/Angle empirical-rule fallback, issue #227)
+
+- Ported Halgren's MMFF.V eq. 18-20 empirical Bond-stretch/Angle-bend rule
+  (`mmff94_bond_energy_resolved`/`mmff94_angle_energy_resolved`, new
+  additive functions -- the existing `mmff94_bond_energy`/
+  `mmff94_angle_energy` keep their original `Option<Params>` signatures
+  unchanged), tried strictly *after* the existing exact-table/`eqLevel`-
+  ladder lookup so it never overrides a real table hit. New
+  `Mmff94Resolution` enum (`DirectTable`/`EquivalentType`/
+  `GenericAngleTypeFallback`/`EmpiricalBond`/`EmpiricalAngle`) reports
+  which mechanism resolved a given lookup, for diagnostics/tests.
+- Along the way, discovered and fixed a real data gap in the Angle table
+  itself: 97 rows present in RDKit's real `defaultMMFFAngleData` (generic,
+  central-atom-type-only `theta0` defaults) were missing from chematic's
+  port (2245 → 2342 rows) -- restored with a guard so the existing
+  `mmff94_angle_energy` contract is provably unchanged for every
+  pre-existing input.
+- One triple, `(angle_type=0, N-type=43, S-type=18, C-type=63)`, is
+  deliberately left unresolved (fails closed) rather than guessed: the
+  outer atom type has no equivalence-class table entry, RDKit's own real
+  C++ dereferences that unchecked (undefined behavior), and the live
+  RDKit oracle's answer for it could not be attributed to any well-defined
+  resolution mechanism.
+- Also fixed 5 pre-existing MMFF94 atom-typing gaps (nitrile/isocyanide N,
+  sulfonamide/sulfonate N, nitro N, azide/diazo N, charged-sulfoxide S)
+  and ported RDKit's `eqLevel` atom-type-equivalence ladder for Angle
+  table lookup (both prerequisites for the empirical-rule work above).
+- **Net effect**, measured on the 265-molecule Wave 1 corpus via the
+  production minimization path: `ForceFieldPolicy::Mmff94BondAngleStrict`
+  now succeeds on 248/265 molecules, up from 178/265 before this work
+  (107 → 17 failing), with zero regressions (verified by a full
+  per-molecule comparison, not just aggregate counts).
+
+### Added — chematic-crystal (new crate)
 
 - `crates/chematic-crystal`: periodic (crystal) structure representation
   and geometry -- `Lattice` (triclinic-capable, validated matrix/inverse/
   reciprocal vectors), `FractionalCoord`/`CartesianCoord`, `PeriodicSite`/
   `SiteSpecies`/`Occupancy` (multi-species disorder-ready), and
   `PeriodicStructure` with exact (not `round()`-approximate) periodic
-  minimum-image distance, cutoff neighbor enumeration, and diagonal
-  supercells. Deliberately **not** an extension of `chematic_core::Molecule`
-  -- see `docs/rfcs/chematic_crystal_foundation.md`. Optional `serde`
-  feature; optional `crystal` feature on the `chematic` facade, included
-  in `full` (does not change `default`, which stays empty). No symmetry,
-  no CIF parser changes, no Python/WASM/MCP bindings in this PR.
+  minimum-image distance (deterministic tie-break: equidistant periodic
+  images resolve to the lexicographically smallest image), cutoff
+  neighbor enumeration, and diagonal supercells. Deliberately **not** an
+  extension of `chematic_core::Molecule` -- see
+  `docs/rfcs/chematic_crystal_foundation.md`. Optional `serde` feature;
+  optional `crystal` feature on the `chematic` facade, included in `full`
+  (does not change `default`, which stays empty). No symmetry, no CIF
+  parser changes, no Python/WASM/MCP bindings in this release.
 
 ## [0.14.1] — 2026-08-12
 

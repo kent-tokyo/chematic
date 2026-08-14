@@ -180,7 +180,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.14.1
+# chematic v0.15.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -419,6 +419,11 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 ## Recent Development
 
+**v0.15.0** (2026-08-14): **`chematic-crystal` — periodic (crystal) structure foundation crate, MMFF94 Bond/Angle empirical-rule fallback (issue #227)**
+- New crate `chematic-crystal`: periodic (crystal) structure representation and geometry — `Lattice` (triclinic-capable, validated matrix/inverse/reciprocal vectors), `FractionalCoord`/`CartesianCoord`, `PeriodicSite`/`SiteSpecies`/`Occupancy` (multi-species disorder-ready), and `PeriodicStructure` with exact (not `round()`-approximate) periodic minimum-image distance — equidistant periodic images resolve deterministically to the lexicographically smallest image — cutoff neighbor enumeration, and diagonal supercells. Deliberately **not** an extension of `chematic_core::Molecule` (a bond graph); see `docs/rfcs/chematic_crystal_foundation.md`. Optional `serde` feature; optional `crystal` feature on the `chematic` facade, included in `full` (does not change `default`, which stays empty). No symmetry, no CIF parser changes, no Python/WASM/MCP bindings yet
+- `chematic-ff`: ported Halgren's MMFF.V eq. 18-20 empirical Bond-stretch/Angle-bend rule (`mmff94_bond_energy_resolved`/`mmff94_angle_energy_resolved`, new additive functions — the existing `mmff94_bond_energy`/`mmff94_angle_energy` keep their original signatures), tried strictly after the existing exact-table/`eqLevel`-ladder lookup so it never overrides a real table hit. Along the way, found and fixed a real data gap: 97 rows present in RDKit's real Angle table (generic central-atom-type-only `theta0` defaults) were missing from chematic's port. One triple is deliberately left unresolved (fails closed) rather than guessed — the outer atom type has no equivalence-class entry and RDKit's own real code dereferences that unchecked (undefined behavior), so its live-oracle answer couldn't be attributed to any well-defined mechanism. Also fixed 5 pre-existing MMFF94 atom-typing gaps and ported RDKit's `eqLevel` atom-type-equivalence ladder for Angle lookup. Net effect on the 265-molecule Wave 1 corpus (production minimization path): `Mmff94BondAngleStrict` success 178/265 → 248/265 (107 → 17 failing), zero regressions
+- Full details in `CHANGELOG.md`'s `[0.15.0]` section
+
 **v0.14.1** (2026-08-12): **Anticancer platinum coordination-chemistry compatibility fixes, Extended XYZ (extxyz) read/write**
 - `chematic-core`: `valence_inferred_hcount` treated a `BondOrder::Dative` bond's donor side exactly like a covalent single bond when computing implicit hydrogen count — an un-bracketed dative donor like `N->[Pt]Cl` computed as `NH2` instead of the chemically correct `NH3`. Donor-side dative bonds now contribute 0 to the valence sum; found via a platinum coordination-chemistry benchmark but general (verified against Fe/Co/Pd/Ru acceptors too), not platinum-specific
 - `chematic-mol`: MDL bond type 9 (dative/coordinate — RDKit's own V3000 convention for `Bond::BondType.DATIVE`) silently mapped to `BondOrder::Single` in both V2000 and V3000 readers, quietly discarding coordination-bond semantics on read. Both readers now map code 9 to `BondOrder::Dative`; V3000's writer now emits code 9 instead of collapsing to plain single
@@ -541,7 +546,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.14.1)
+├── Cargo.toml                    workspace root (v0.15.0)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -595,7 +600,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.14.1},
+  version   = {0.15.0},
   year      = {2026},
 }
 ```

@@ -238,6 +238,7 @@ const picks = JSON.parse(maxmin_picks_ecfp4_json('["CC","c1ccccc1","CCO","CCCC"]
 | `chematic-wasm`       | **130+ WASM 导出** — npm：`@kent-tokyo/chematic`（已发布 `0.7.0`，与 crates.io/PyPI 同步）；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 211    |
 | `chematic-iupac`      | 本地 IUPAC 命名（纯 Rust·离线）— **25+ 化合物类**：烷烃、环烷烃、醇、胺、卤代烃、酮、酸、酯、酰胺、**哌啶、吗啉、哌嗪、萘、硫醚** | 47     |
 | `chematic-mcp`        | **MCP（模型上下文协议）服务器** — AI 代理集成；**20 个工具**：parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, name_to_smiles, retrosynthesis, smiles_to_moljson, moljson_to_smiles, representation_router, molecule_context_pack；dual-era 协议（旧版 `2024-11-05` + 现代 `2026-07-28` 无状态方言）、全部 20 个工具均支持 `structuredContent`/`outputSchema` | 82     |
+| `chematic-crystal`    | 周期（晶体）结构基础 crate——`Lattice`（三斜晶系）、`PeriodicSite`/`Occupancy`、精确周期最小像距离、近邻枚举、supercell；有意与 `chematic-core::Molecule`（键图）保持独立 | 92     |
 | `chematic`            | 带功能标志的伞形 crate                                                                                   | 1      |
 
 ```
@@ -248,6 +249,11 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 ---
 
 ## 近期开发
+
+**v0.15.0**（2026-08-14）：**新增 `chematic-crystal`——周期（晶体）结构基础 crate；MMFF94 Bond/Angle empirical rule 支持（issue #227）**
+- 新增 crate `chematic-crystal`：周期（晶体）结构表示与几何计算——`Lattice`（支持三斜晶系，矩阵/逆矩阵/倒易晶格矢量均经过校验）、`FractionalCoord`/`CartesianCoord`、`PeriodicSite`/`SiteSpecies`/`Occupancy`（支持多 species 占位、为无序结构预留设计空间）、`PeriodicStructure` 提供精确（而非 `round()` 近似）的周期最小像距离计算——等距的多个周期像会确定性地解析为字典序最小的 image——以及 cutoff 近邻枚举与对角 supercell。刻意**不**作为 `chematic_core::Molecule`（键图）的扩展，设计说明见 `docs/rfcs/chematic_crystal_foundation.md`。可选 `serde` feature；facade 的 `crystal` feature 已纳入 `full`（`default` 保持为空，未变更）。本次未包含对称性判定、CIF parser 改动、Python/WASM/MCP 绑定
+- `chematic-ff`：移植 Halgren MMFF.V eq. 18-20 经验 Bond-stretch/Angle-bend 规则（`mmff94_bond_energy_resolved`/`mmff94_angle_energy_resolved`，新增函数，不改变既有 `mmff94_bond_energy`/`mmff94_angle_energy` 的签名），仅在既有精确表/`eqLevel` 阶梯查找均未命中后才会触发，不会覆盖真实表数据的命中结果。过程中发现并修复了一个真实的数据缺口：RDKit 真实 Angle 表中 97 行（仅按中心原子类型给出通用 `theta0` 默认值的行）此前在 chematic 的移植版本中缺失。其中 1 个三元组被有意保留为未解析（fail-closed）而非猜测性填补——该三元组外侧原子类型没有等价类表条目，RDKit 自身真实 C++ 实现在此处存在未加 null 检查的解引用（未定义行为），其 live oracle 返回值无法归因于任何良定义的解析机制。同时修复了 5 个已知的 MMFF94 原子类型判定缺口，并移植了 RDKit 的 `eqLevel` 原子类型等价阶梯用于 Angle 表查找（均为本次 empirical rule 工作的前置条件）。在 265 分子 Wave 1 语料库上的实测（经生产环境最小化路径）：`Mmff94BondAngleStrict` 成功率从 178/265 提升到 248/265（失败数 107 → 17），零回归
+- 详见 `CHANGELOG.md` 的 `[0.15.0]` 部分
 
 **v0.13.0**（2026-08-10）：**MMFF94 stretch-bend + 扭转参数选取一致性（均为破坏性变更）、逐原子立体中心 API、E/Z 完整性、大环检测、记法无关的阻转异构检测/判定、XYZ I/O**
 - `chematic-ff`：`mmff94_stbn`/`mmff94_stbn_type_only` 现在依据 RDKit 真实的、更细粒度的 "stretch-bend type"（`getMMFFStretchBendType`，0-11）来索引 `MMFF94_STBN` 表，取代此前用作替代的粗粒度 angle type（0-8）（issue #227）——265 分子 Wave 1 语料库上 427 个 stretch-bend 路由候选中的 220 个，从 RDKit 通用的 Dfsb 周期表行默认值改为正确的专用参数；`angle_type_for` 的环偏移公式也已修正，以匹配 RDKit 真实的 `getMMFFAngleType`。**破坏性变更**：`mmff94_stbn`/`mmff94_stbn_type_only` 的首个 `u8` 参数现在是 `stretch_bend_type`，而非 `angle_type`——形状不变，但要求的取值不同；使用新增的 `pub stretch_bend_type_for` 计算该值
@@ -452,6 +458,7 @@ chematic/
 │   ├── chematic-smarts/     SMARTS 解析器 + VF2 子图同构，MCS
 │   ├── chematic-3d/         3D 坐标生成、ConformerEnsemble、PDB/XYZ 格式
 │   ├── chematic-rxn/        反应 SMILES/SMIRKS
+│   ├── chematic-crystal/    周期晶体结构：晶格、PBC、近邻、supercell（不依赖 Molecule）
 │   └── chematic/            带功能标志的伞形 crate
 ```
 
