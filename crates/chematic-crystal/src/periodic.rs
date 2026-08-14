@@ -74,7 +74,9 @@ pub(crate) fn padded_axis_range(lo: f64, hi: f64) -> (i32, i32) {
 /// distance, e.g. a perfectly cubic cell's face-centered midpoint) are
 /// broken deterministically by iteration order: the first candidate
 /// encountered while enumerating image-shift components in ascending order
-/// is kept.
+/// is kept. Since `image = image0 + m` and `m` is enumerated ascending per
+/// axis (`image0` a fixed per-call offset), this is equivalent to keeping
+/// the lexicographically smallest tied `image`.
 ///
 /// # Examples
 ///
@@ -118,12 +120,12 @@ pub fn minimum_image(
         ranges[axis] = padded_axis_range(lo, hi);
     }
 
-    let mut best = PeriodicDisplacement {
-        cartesian: cart0.0,
-        fractional: base,
-        image: image0,
-        distance: dist0,
-    };
+    // Not seeded with the naive candidate: ties must be broken by ascending
+    // search order (first-found wins), not by which candidate happened to
+    // be computed first. The naive candidate (m = [0, 0, 0]) is itself
+    // always inside `ranges` (its own distance is the `bound` the ranges
+    // were derived from), so it's still considered -- just not favored.
+    let mut best: Option<PeriodicDisplacement> = None;
 
     for m0 in ranges[0].0..=ranges[0].1 {
         for m1 in ranges[1].0..=ranges[1].1 {
@@ -135,19 +137,19 @@ pub fn minimum_image(
                 ];
                 let cart = lattice.frac_to_cart(FractionalCoord::new(frac));
                 let dist = norm3(cart.0);
-                if dist < best.distance {
-                    best = PeriodicDisplacement {
+                if best.as_ref().is_none_or(|current| dist < current.distance) {
+                    best = Some(PeriodicDisplacement {
                         cartesian: cart.0,
                         fractional: frac,
                         image: [image0[0] + m0, image0[1] + m1, image0[2] + m2],
                         distance: dist,
-                    };
+                    });
                 }
             }
         }
     }
 
-    best
+    best.expect("search ranges always contain at least one candidate (m = [0, 0, 0])")
 }
 
 #[cfg(test)]
@@ -209,5 +211,43 @@ mod tests {
             FractionalCoord::new([to.0[0] + shift[0], to.0[1] + shift[1], to.0[2] + shift[2]]);
         let shifted_dist = minimum_image(&l, from2, to2).distance;
         assert!((base_dist - shifted_dist).abs() < 1e-9);
+    }
+
+    /// Regression for a tie-break bug: `best` used to be seeded with the
+    /// naive `round()`-based candidate before the search loop, so a
+    /// later candidate at the *same* distance never replaced it even
+    /// when it was lexicographically smaller. Here `from = [0.5, 0, 0]`,
+    /// `to = [0, 0, 0]` in a cubic cell: `image = [0, 0, 0]` and
+    /// `image = [1, 0, 0]` are equidistant (2.0 Angstrom), and
+    /// `round(-0.5) == -1` makes `[1, 0, 0]` the naive candidate. The
+    /// correct, ascending-search-order tie-break picks `[0, 0, 0]`.
+    #[test]
+    fn cubic_half_cell_tie_uses_lexicographically_smallest_image() {
+        let lattice = Lattice::cubic(4.0).unwrap();
+        let from = FractionalCoord::new([0.5, 0.0, 0.0]);
+        let to = FractionalCoord::new([0.0, 0.0, 0.0]);
+
+        let result = minimum_image(&lattice, from, to);
+
+        assert!((result.distance - 2.0).abs() < 1e-12);
+        assert_eq!(result.image, [0, 0, 0]);
+    }
+
+    /// Same tie, `from`/`to` swapped. The invariant is "lexicographically
+    /// smallest image wins," not "mirror the forward case": swapping
+    /// `from`/`to` shifts which two images are tied (`image` is defined
+    /// relative to `to`), so here the tied pair is `[-1, 0, 0]` /
+    /// `[0, 0, 0]` and the smaller one, `[-1, 0, 0]`, wins -- still
+    /// confirming the distance is symmetric either way.
+    #[test]
+    fn cubic_half_cell_tie_reverse_direction_also_resolves_deterministically() {
+        let lattice = Lattice::cubic(4.0).unwrap();
+        let from = FractionalCoord::new([0.0, 0.0, 0.0]);
+        let to = FractionalCoord::new([0.5, 0.0, 0.0]);
+
+        let result = minimum_image(&lattice, from, to);
+
+        assert!((result.distance - 2.0).abs() < 1e-12);
+        assert_eq!(result.image, [-1, 0, 0]);
     }
 }
