@@ -106,7 +106,7 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.14.1
+# chematic v0.15.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-06, v0.4.22 vs RDKit 2026.03.3 --
@@ -282,6 +282,11 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 ---
 
 ## 最近の開発
+
+**v0.15.0**（2026-08-14）: **`chematic-crystal`——周期（結晶）構造の基盤crate新設、MMFF94 Bond/Angle empirical rule対応（issue #227）**
+- 新規crate `chematic-crystal`：周期（結晶）構造の表現とジオメトリ計算——`Lattice`（三斜晶系対応、行列/逆行列/逆格子ベクトルをvalidation済み）、`FractionalCoord`/`CartesianCoord`、`PeriodicSite`/`SiteSpecies`/`Occupancy`（disorder対応可能な複数species設計）、`PeriodicStructure`は近似（`round()`）ではなく厳密な周期最小像距離計算（等距離の周期像が複数ある場合は辞書順最小のimageへ決定論的に解決）、cutoff近傍探索、diagonal supercellを提供。`chematic_core::Molecule`（結合グラフ）の拡張ではなく意図的に独立した型——詳細は`docs/rfcs/chematic_crystal_foundation.md`参照。optionalな`serde` feature、facadeの`crystal` featureは`full`に含まれる（`default`は空のまま変更なし）。symmetry・CIF parser変更・Python/WASM/MCPバインディングは今回未対応
+- `chematic-ff`：HalgrenのMMFF.V eq. 18-20 empirical Bond-stretch/Angle-bend ruleを移植（`mmff94_bond_energy_resolved`/`mmff94_angle_energy_resolved`——既存の`mmff94_bond_energy`/`mmff94_angle_energy`のシグネチャは変更なし）。既存の完全一致テーブル/`eqLevel`ラダー探索の後にのみ試行するため、実データテーブルのヒットを上書きすることはない。この過程で、RDKit実データのAngleテーブルにある97行（中心原子タイプのみで決まる汎用`theta0`デフォルト値）がchematicの移植版に欠落していたことを発見・復元。1タプルのみ意図的に未解決（fail-closed）のまま——外側原子タイプに等価クラステーブルのエントリがなく、RDKit実装のC++コード自体が未定義動作（nullチェックなし参照）を起こす箇所であり、live oracleの返り値を明確な解決メカニズムに帰属させられなかったため。既存の5件のMMFF94原子タイプ判定ギャップも修正し、RDKitの`eqLevel`原子タイプ等価ラダーをAngleテーブル探索へ移植（いずれも今回のempirical rule対応の前提作業）。265分子Wave 1コーパスでの実測（本番の最小化パス経由）：`Mmff94BondAngleStrict`の成功数が178/265→248/265（失敗107→17）、regressionはゼロ
+- 詳細は`CHANGELOG.md`の`[0.15.0]`セクション参照
 
 **v0.14.1**（2026-08-12）: **抗がん白金配位化学の互換性修正、Extended XYZ（extxyz）読み書き対応**
 - `chematic-core`: `valence_inferred_hcount`が`BondOrder::Dative`結合のdonor側を通常の共有結合と同じに扱っていたため、implicit水素数計算が誤っていた——`N->[Pt]Cl`のような括弧なしdative donorが`NH3`ではなく`NH2`と計算されていた。donor側dative結合はvalence合計に0を寄与するよう修正。白金配位化学ベンチマークで発見したが、Fe/Co/Pd/Ruのacceptorでも検証済みの一般的な修正（白金固有ではない）
@@ -477,6 +482,7 @@ chematic/
 │   ├── chematic-smarts/     SMARTS パーサー + VF2 部分構造一致（再帰 SMARTS）
 │   ├── chematic-3d/         3D 座標生成、ConformerEnsemble、PDB/XYZ 形式
 │   ├── chematic-rxn/        反応 SMILES/SMIRKS
+│   ├── chematic-crystal/    周期結晶構造: 格子、PBC、近傍探索、supercell（Molecule非依存）
 │   └── chematic/            フィーチャーフラグ付きアンブレラクレート（統合クレート）
 ```
 
