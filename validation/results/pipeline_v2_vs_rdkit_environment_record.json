@@ -1,13 +1,44 @@
 {
-  "benchmark_session": "priority2b_mmff94_stbn_dfsb_fallback_227",
-  "benchmark_commit_base": "main (c42627a, PR #248+#249 both merged) + this PR's chematic-ff/chematic-3d Dfsb production port",
-  "benchmark_date": "2026-08-06",
-  "benchmark_branch": "feat/mmff94-stbn-dfsb-fallback-227-priority2b",
-  "common_scorer_blob_sha": "49a8854c0ff493e22b109f69d893d08662e45326",
-  "tier_a_manifest_sha256": "8d4f3f3a70b8ae00c56cdbea81e398093ef25d896f4f252e46448632632166b8",
-  "tier_b_manifest_sha256": "1a1698f5444c1b6e32da4eaa896cc347c7f051fdf71044bf53b6a644f0b9af77",
-  "rdkit_version": "2026.03.3",
+  "benchmark_session": "release_grade_remeasure_v0_15_0_494d634",
+  "benchmark_commit": "494d63437dfa6a5b840d669b7715367e0b7eb986",
+  "benchmark_commit_base": "main (494d634, PR #324 chematic-crystal-poscar merged -- pinned tip for this measurement)",
+  "benchmark_date": "2026-08-15",
+  "benchmark_branch": "docs/pipeline-v2-vs-rdkit-remeasure-494d634",
+  "measurement_history_note": "The row-level data in this benchmark comes from the SECOND chematic-side dump run, not the first. The first run (2026-08-14) completed (3446/3446 rows) but was measured while an unrelated, unrelated-project background process (a different repo's `renkin` route-finding benchmark, observed load average 13.62 against 10 physical cores, ~6 cores' worth of CPU) was concurrently competing for CPU on the same machine. That contention corrupted several wall-clock-timeout-boundary classifications in the first run -- confirmed via gen_pipeline_v2_vs_rdkit_report.py's own built-in gate-widening monotonicity integrity check failing on chembl_tier_b_0036, and via a manual per-molecule diff against the 2026-08-06 baseline showing 5 molecules / 11 arm-instances flip from baseline `success` (1.2-4.7s) to contaminated-run `timeout`/`typed_failure` (20.3-33.8s, mostly overshooting the 20s nominal budget) -- a pattern consistent with CPU starvation, not a real algorithmic regression. The contaminated run's data was discarded (not used in this file or in chematic_rows.jsonl/rdkit_rows.jsonl/common_scored_rows.jsonl). This second run was launched only after confirming the contending process had exited and the 1-minute load average had dropped below 4 (see benchmark_date above). No integrity-gate failures occurred on this second run.",
+  "common_scorer_blob_sha": "e7d33e9802cec01cc68814e977d410611e45b5b2",
+  "tier_a_manifest_sha256": "6a478ea0f5d4ef067a4d1739e77a7209e8f76ecaa837e3f487c723dd6f465d6b",
+  "tier_b_manifest_sha256": "b3cde3fedcc68391ba3d3cbae228acd3057cadea6e6fc17499592b23bdc7550a",
+  "tier_a_tier_b_manifest_note": "Manifest file content is byte-identical to the c92e0758 (2026-08-06) baseline (git diff c92e0758 -- these two files is empty). CORRECTION to an earlier note in this same field: the sha256 values recorded here (6a478ea0.../b3cde3fe...) are the manifest FILE's own byte-content hash (hashlib.sha256 over the raw file), which do NOT match the prior environment_record.json's stored hashes (8d4f3f3a.../1a1698f5...) or gen_pipeline_v2_vs_rdkit_report.py's own auto-generated 'Corpus' section -- but this is NOT a staleness bug as an earlier version of this note incorrectly claimed. The 8d4f3f3a.../1a1698f5... values are a DIFFERENT, also-legitimate hash: a `corpus_sha256` field embedded inside each manifest JSON itself (verified via direct read), describing the hash of whatever source data (e.g. the upstream SMILES corpus) the manifest GENERATOR consumed to build the manifest -- not the manifest file's own bytes. Both hashes are correct and unchanged since the 2026-08-06 baseline; they simply measure two different things. Recorded here for anyone cross-referencing either value.",
+  "rdkit_version": "2026.03.4",
+  "rdkit_version_isolation_control": "Ran scripts/pipeline_v2_vs_rdkit_oracle.py once at 2026.03.3 (the previously-installed version) and once at 2026.03.4 (this record's target), same corpus/seed, to isolate the RDKit patch bump from chematic-side changes. Result: status field identical across all 1060 rows (0 changes) -- coverage/success-rate numbers are NOT confounded by the version bump. failure_cause text differs on 4 rows, all the same known cyclopentane RDKit-internal BFGSOpt.h invariant-violation crash (RDKIT/BOOST version string + source line number differ in the message only, same underlying crash). Coordinates differ on 250/1060 rows -- most are floating-point-level noise (as low as 1e-13 Angstrom), but a real subset show materially different embeddings (max observed 9.08 Angstrom on chembl_tier_b_0086/rdkit_etkdgv3_best_of_n), consistent with RDKit's own internal algorithm/RNG-consumption changes between patch releases even at a fixed seed. Implication: RMSD/TFD-based metrics computed against this RDKit version are not directly, row-for-row comparable to the 2026-08-06 baseline's RDKit geometries for that ~24% subset -- treat cross-version geometry deltas on those rows as environment noise, not a chematic regression/improvement signal.",
   "rust_version": "rustc 1.97.0 (2d8144b78 2026-07-07)",
   "python_version": "3.13.6",
-  "os_arch": "aarch64-apple-darwin"
+  "os_arch": "aarch64-apple-darwin",
+  "cpu": "Apple M4",
+  "cpu_core_count": 10,
+  "thread_count": "1 (single-threaded on both sides). chematic's EmbedParameters.num_threads field defaults to 1 and is documented as accepted-but-not-consumed (see crates/chematic-3d/src/distance_geometry_v2.rs -- no rayon/std::thread usage found anywhere in the embed/minimize call path). RDKit oracle.py runs single-process, single-threaded, no explicit numThreads override to AllChem.EmbedMolecule (RDKit default numThreads=1).",
+  "random_seed": {
+    "chematic": "embed_seed=20260801, max_attempts=8 (each retry attempt uses seed + attempt_index internally)",
+    "rdkit": "random_seed=20260801, max_attempts=8, per-attempt randomSeed = RANDOM_SEED + attempt (mirrors chematic's own retry convention)"
+  },
+  "timeout": {
+    "chematic": "total_timeout_ms=20000 wall-clock budget per (molecule, arm), shared across the embed + minimize attempt loop (see pipeline_v2_vs_rdkit_dump.rs:236). No separate per-attempt timeout.",
+    "rdkit": "No explicit wall-clock timeout in the oracle script; force_field_max_iterations=200 bounds FF minimization iteration count, not wall time. A stuck/pathological case (e.g. cyclopentane's BFGSOpt.h invariant violation) surfaces as a typed RuntimeError, not a timeout."
+  },
+  "etkdg_parameters": {
+    "rdkit_active": "enforceChirality=True, useSmallRingTorsions=True, useMacrocycleTorsions=True, useMacrocycle14config=True, AddHs=True, force_field_max_iterations=200, best_of_n=10 (rdkit_etkdgv3_best_of_n arm only, lowest-UFF-energy of 10 kept)",
+    "chematic_active": "EmbedParameters fields actually consumed: random_seed, max_attempts, timeout_ms, use_random_coords, enforce_chirality.",
+    "chematic_reserved_not_consumed": "use_exp_torsions, use_small_ring_torsions, use_macrocycle_torsions, use_macrocycle_14_bounds, prune_rms_threshold, num_threads are accepted config fields but NOT wired into the actual embedding algorithm yet (documented in distance_geometry_v2.rs as reserved for forward compatibility).",
+    "asymmetry_note": "RDKit's useSmallRingTorsions/useMacrocycleTorsions/useMacrocycle14config ARE active; chematic's analogous fields are NOT. This is a known, real methodology asymmetry -- relevant when interpreting any macrocycle-subset or small-ring-subset performance gap between the two engines, since RDKit has ring-specific embedding refinements chematic's pipeline_v2 does not yet apply regardless of any measured outcome."
+  },
+  "mmff_variant": {
+    "chematic": "MMFF94 (Halgren 1996). One bond-charge-increment calibration table (crates/chematic-ff/src/mmff94_bci.rs) carries a source comment noting its values are calibrated to MMFF94s Table III -- an isolated calibration-source note, not a variant-wide MMFF94s switch; the rest of chematic-ff implements standard MMFF94.",
+    "rdkit": "AllChem.MMFFGetMoleculeProperties(mol) called with no mmffVariant override -> RDKit default 'MMFF94' (not 'MMFF94s')."
+  },
+  "corpus": "265 molecules (Tier A: 65 curated stress corpus + Tier B: 200 ChEMBL-derived drug-like), validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_a.json + ..._tier_b.json, unchanged since 2026-08-06 baseline (c92e0758).",
+  "baseline_for_transition_diff": {
+    "commit": "c92e0758",
+    "date": "2026-08-06",
+    "note": "Last commit to regenerate validation/results/pipeline_v2_vs_rdkit_{chematic,rdkit,common_scored}_rows.jsonl and the aggregate/RFC report prior to this remeasurement. RDKit version at that baseline was 2026.03.3 (see rdkit_version_isolation_control above for why the 2026.03.3->2026.03.4 bump does not confound status/coverage transitions, only a ~24% subset's exact RMSD/TFD geometry)."
+  }
 }
