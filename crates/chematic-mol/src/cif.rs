@@ -1115,6 +1115,8 @@ mod crystal_adapter {
             let disordered = &r.structure.sites()[0];
             assert_eq!(disordered.species.len(), 2);
             assert_eq!(disordered.label.as_deref(), Some("Fe1"));
+            assert_eq!(disordered.species[0].element, Element::FE);
+            assert_eq!(disordered.species[1].element, Element::NI);
             let occs: Vec<f64> = disordered
                 .species
                 .iter()
@@ -1124,6 +1126,7 @@ mod crystal_adapter {
             assert!((occs[1] - 0.4).abs() < 1e-9);
             let ordered = &r.structure.sites()[1];
             assert_eq!(ordered.species.len(), 1);
+            assert_eq!(ordered.species[0].element, Element::O);
             assert!((ordered.species[0].occupancy.value() - 1.0).abs() < 1e-9);
         }
 
