@@ -15,11 +15,20 @@ documentation = "https://docs.rs/chematic-mol"
 [package.metadata.docs.rs]
 rustdoc-args = ["--cfg", "docsrs"]
 
+[features]
+# Adapter connecting the existing CIF reader/writer to chematic-crystal's
+# PeriodicStructure. Off by default -- chematic-mol has no `[features]`
+# table until this crate; this is its first optional dependency. See
+# docs/rfcs/chematic_crystal_foundation.md's "CIF migration" section for
+# why this was deferred and the sketch this implements.
+crystal = ["dep:chematic-crystal"]
+
 [dependencies]
 chematic-core        = { path = "../chematic-core",        version = "0.15.0" }
 chematic-rxn         = { path = "../chematic-rxn",         version = "0.15.0" }
 chematic-perception  = { path = "../chematic-perception",  version = "0.15.0" }
 chematic-smiles      = { path = "../chematic-smiles",      version = "0.15.0" }
+chematic-crystal     = { path = "../chematic-crystal",     version = "0.15.0", optional = true }
 serde_json           = "1.0"
 
 [dev-dependencies]
