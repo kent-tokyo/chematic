@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `chematic-fp` (FPS fingerprint exchange format)
+
+- New `fps` module: streaming read/write for the FPS ("Fingerprint file
+  format") text-based fingerprint interchange format popularized by
+  chemfp/OpenBabel. `FpsReader<R: BufRead>`/`FpsWriter<W: Write>` iterate
+  one record at a time rather than materializing a whole file, and work
+  over any `BufRead`/`Write` sink (WASM-compatible, matching this crate's
+  existing `#![forbid(unsafe_code)]`/wasm32 constraints).
+- `FpsHeader` models `num_bits`/`type`/`software`/`source`/`comment`
+  explicitly and carries any other `#`-prefixed header line through
+  losslessly via `extra` (including the `#FPS1` version line, kept first
+  on write-back per spec). `FpsHeader::for_chematic` stamps
+  `software=chematic-fp/<version>` for fingerprints this crate itself
+  computed.
+- Hex bit-ordering verified against the real chemfp FPS spec
+  (<https://chemfp.com/fps_format/>): byte `k` = fingerprint bits
+  `[8k, 8k+8)`, LSB-first within the byte -- matches `BitVec2048`/
+  `BitVecN`'s own bit numbering directly, so no reordering is needed
+  between the two representations.
+- Reuses `BitVec2048`/`BitVecN` as the sole bit-vector representation; no
+  new fingerprint algorithms or binary formats.
+
 ### Added — `chematic-mol` (optional `crystal` feature: CIF ↔ `PeriodicStructure` adapter)
 
 - New optional `crystal` feature on `chematic-mol` (its first-ever
@@ -42,8 +64,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 New crate `chematic-crystal` (periodic/crystal structure foundation), plus
 a substantial MMFF94 Bond/Angle accuracy fix (issue #227): 265-molecule
-corpus strict-policy success 178/265 → 248/265, zero regressions. Purely
-additive at the Rust API level for existing crates -- no breaking changes.
+corpus strict-policy success 158/265 → 248/265 since v0.14.1, zero
+regressions. Purely additive at the Rust API level for existing crates --
+no breaking changes.
 
 ### Fixed — `chematic-ff` (MMFF94 Bond/Angle empirical-rule fallback, issue #227)
 
@@ -73,10 +96,25 @@ additive at the Rust API level for existing crates -- no breaking changes.
   and ported RDKit's `eqLevel` atom-type-equivalence ladder for Angle
   table lookup (both prerequisites for the empirical-rule work above).
 - **Net effect**, measured on the 265-molecule Wave 1 corpus via the
-  production minimization path: `ForceFieldPolicy::Mmff94BondAngleStrict`
-  now succeeds on 248/265 molecules, up from 178/265 before this work
-  (107 → 17 failing), with zero regressions (verified by a full
-  per-molecule comparison, not just aggregate counts).
+  production minimization path (`ForceFieldPolicy::Mmff94BondAngleStrict`),
+  reported as two separately-verified numbers so they aren't confused
+  (both via a full per-molecule join, not just aggregate counts, zero
+  regressions in either case):
+  - **Full v0.14.1 → v0.15.0 change** (this release's complete Bond/Angle
+    work: atom-typing fixes + `eqLevel` ladder + the empirical rule above):
+    **158/265 → 248/265 (107 → 17 failing)**.
+  - **The empirical-rule work specifically** (from just before this PR to
+    just after, isolating its own contribution from the atom-typing/
+    `eqLevel` prerequisites merged earlier in this same release):
+    **178/265 → 248/265 (87 → 17 failing)**.
+  - Of the 3 molecules still `MinimizationFailed` in the final state, all
+    3 were already-non-`Ok` (`MissingParameters`) in v0.14.1 -- the
+    atom-typing/`eqLevel` fixes gave them real MMFF94 parameters for the
+    first time, which then exposed a pre-existing geometry issue that
+    "no parameters at all" had been masking. This is a newly-*visible*
+    failure mode, not a regression from a previously-successful state
+    (confirmed: zero `Ok`→non-`Ok` transitions across the full v0.14.1 →
+    v0.15.0 span).
 
 ### Added — chematic-crystal (new crate)
 

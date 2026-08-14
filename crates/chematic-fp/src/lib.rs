@@ -10,6 +10,8 @@
 //! - **C-Series Reaction fingerprints**: Chemical transformation encoding (Phase 1)
 //! - **MHFP/SECFP**: MinHash fingerprints for fast approximate similarity searching (Phase 1)
 //! - **ERG**: Extended Reduced Graph fingerprints for functional group-based similarity (Phase 1)
+//! - **FPS**: streaming read/write for the chemfp/OpenBabel FPS fingerprint interchange format
+//!   ([`fps`])
 
 #![forbid(unsafe_code)]
 
@@ -21,6 +23,7 @@ pub mod ecfp;
 mod ecfp_diagnostics;
 pub mod erg;
 pub mod fcfp;
+pub mod fps;
 pub mod hdf;
 pub mod layered;
 pub mod lsh;
@@ -68,6 +71,7 @@ pub use erg::{
     erg_extended, erg_vec, erg_with_config, tanimoto_erg, tanimoto_erg_vec,
 };
 pub use fcfp::{fcfp, fcfp_with_bitinfo, fcfp4, fcfp6, tanimoto_fcfp4};
+pub use fps::{FpsError, FpsHeader, FpsReader, FpsRecord, FpsWriter};
 pub use hdf::{HdfConfig, HdfFp, cosine_hdf, hdf, hdf_default};
 pub use layered::{layered_fp, layered_fp_by_layer, tanimoto_layered};
 pub use lsh::MhfpLshIndex;
