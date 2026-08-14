@@ -25,7 +25,16 @@ rxn         = ["smiles", "dep:chematic-rxn"]
 threed      = ["perception", "dep:chematic-3d"]
 inchi       = ["chem", "dep:chematic-inchi"]
 iupac       = ["dep:chematic-iupac"]
-full        = ["smiles", "perception", "mol", "depict", "fp", "chem", "smarts", "rxn", "threed", "inchi", "iupac"]
+crystal     = ["dep:chematic-crystal"]
+# `full` is the aggregate of every optional facade capability (not scoped
+# to Molecule-only features) -- a user who writes `features = ["full"]`
+# expects everything, `crystal` included. `chematic-crystal`'s
+# architectural independence from `Molecule` is why it's its own crate,
+# not a reason to exclude it from this aggregate. New optional facade
+# features should default to joining `full` too unless there's a specific
+# reason not to (see docs/rfcs/chematic_crystal_foundation.md's
+# facade-feature section for the crystal-specific decision record).
+full        = ["smiles", "perception", "mol", "depict", "fp", "chem", "smarts", "rxn", "threed", "inchi", "iupac", "crystal"]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -45,3 +54,4 @@ chematic-rxn        = { path = "../chematic-rxn",        version = "0.14.1", opt
 chematic-3d         = { path = "../chematic-3d",         version = "0.14.1", optional = true }
 chematic-inchi      = { path = "../chematic-inchi",      version = "0.14.1", optional = true }
 chematic-iupac      = { path = "../chematic-iupac",      version = "0.14.1", optional = true }
+chematic-crystal    = { path = "../chematic-crystal",    version = "0.14.1", optional = true }
