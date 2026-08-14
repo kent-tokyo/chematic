@@ -47,6 +47,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   feature. See `crates/chematic-crystal/src/poscar.rs`'s module docs for
   the full list of format-fidelity decisions.
 
+### Added — `chematic-mol` (optional `crystal` feature: CIF ↔ `PeriodicStructure` adapter)
+
+- New optional `crystal` feature on `chematic-mol` (its first-ever
+  `[features]` table; off by default, no existing consumer affected) gates
+  an optional path dependency on `chematic-crystal` and two new functions:
+  `parse_cif_periodic_structure`/`write_cif_periodic_structure`. Bridges
+  the existing CIF reader/writer (`parse_cif`/`write_cif`/`UnitCell`,
+  unchanged) directly to `chematic_crystal::PeriodicStructure` — cell
+  parameters to `Lattice`, `_atom_site_occupancy` to `Occupancy` (not
+  previously read at all), and multiple `_atom_site_*` rows sharing a
+  fractional position merged into one `PeriodicSite`'s multi-species list
+  (positional/substitutional disorder). Implements the sketch from
+  `docs/rfcs/chematic_crystal_foundation.md`'s "CIF migration" section.
+- **Symmetry**: `chematic-mol`'s CIF reader has never expanded symmetry
+  operations (P1-equivalent only) — this adapter inherits that scope but
+  makes it explicit rather than silent: a new `CifSymmetryStatus` enum
+  (`P1` vs `UnexpandedSymmetry { space_group_name, operation_count }`) is
+  returned alongside the structure, driven by
+  `_symmetry_space_group_name_H-M`/`_space_group_name_H-M_alt`,
+  `_symmetry_Int_Tables_number`/`_space_group_IT_number`, and
+  `_space_group_symop_operation_xyz`/`_symmetry_equiv_pos_as_xyz` loop
+  detection, so a caller can distinguish "this file is genuinely P1" from
+  "this file declared symmetry that was not expanded — only the
+  asymmetric unit was returned." No symmetry expansion is implemented
+  (out of scope, matches `chematic-crystal`'s own non-goals).
+- `chematic-crystal` itself is untouched and remains independent of
+  `chematic-mol`/`chematic_core::Molecule` (dependency direction is
+  `chematic-crystal <- chematic-mol`, never the reverse).
+
 ## [0.15.0] — 2026-08-14
 
 New crate `chematic-crystal` (periodic/crystal structure foundation), plus
