@@ -69,7 +69,7 @@
 //! | `inchi` | InChI and InChIKey generation |
 //! | `threed` | 3D coordinates, UFF minimization, XYZ/PDB I/O |
 //! | `iupac` | IUPAC nomenclature for simple molecules |
-//! | `crystal` | Periodic crystal structures (lattice, PBC, neighbors, supercells) -- see `chematic-crystal`'s README |
+//! | `crystal` | Periodic crystal structures (lattice, PBC, neighbors, supercells, POSCAR/CONTCAR I/O) -- see `chematic-crystal`'s README |
 //! | `full` | All of the above |
 
 #[cfg(feature = "threed")]

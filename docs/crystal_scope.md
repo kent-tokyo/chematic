@@ -27,6 +27,14 @@ living in this crate.
 - Optional `serde` feature (JSON round-trip through validated constructors,
   not raw field derives).
 - `wasm32-unknown-unknown` build target.
+- POSCAR/CONTCAR (VASP structure file format) read/write (`src/poscar.rs`,
+  added after v0.1's initial scope) -- VASP 5 only (explicit species-name
+  line required, VASP 4's implicit POTCAR-derived ordering rejected with a
+  typed error), single- and 3-component scale factors, Direct/Cartesian
+  coordinate modes, selective dynamics, ion velocities, and CONTCAR's
+  verbatim-preserved predictor-corrector MD-restart data. No VASP
+  INCAR/KPOINTS/POTCAR parsing. See `crates/chematic-crystal/src/poscar.rs`'s
+  module docs for the full list of format-fidelity decisions.
 
 ## Out of scope (v0.1) -- do not assume these exist
 
@@ -37,7 +45,9 @@ living in this crate.
   UnitCell}` are untouched; a future `parse_cif_structure() ->
   PeriodicStructure` adapter is sketched (not implemented) in
   `docs/rfcs/chematic_crystal_foundation.md`.
-- No POSCAR/VASP I/O, no XRD simulation, no crystal fingerprinting.
+- No XRD simulation, no crystal fingerprinting.
+- No VASP INCAR/KPOINTS/POTCAR parsing (POSCAR/CONTCAR structure I/O is in
+  scope, see above).
 - No oxidation-state inference, no coordination-geometry classification.
 - No DFT, no formation-energy or phase-diagram computation, no band
   structure, no phonons.

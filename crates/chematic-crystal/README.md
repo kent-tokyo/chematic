@@ -4,8 +4,9 @@ Periodic crystal structure representation and geometry for the
 [chematic](https://github.com/kent-tokyo/chematic) ecosystem: lattices,
 fractional/Cartesian coordinates, periodic sites, periodic boundary
 conditions, exact minimum-image distance, periodic neighbor enumeration,
-and diagonal supercells. Pure Rust, `#![forbid(unsafe_code)]`,
-WASM-compatible, one required dependency (`chematic-core`, for `Element`).
+diagonal supercells, and POSCAR/CONTCAR (VASP structure file format)
+read/write. Pure Rust, `#![forbid(unsafe_code)]`, WASM-compatible, one
+required dependency (`chematic-core`, for `Element`).
 
 `v0.1` is a structural/geometric foundation, not a symmetry or materials-
 property library -- see "Out of scope" below and
@@ -146,13 +147,39 @@ site must not exceed `1.0 + Occupancy::SUM_TOLERANCE` (summing to less than
 chemistry (no averaged scattering, no partial-occupancy energetics) on top
 of it.
 
+### POSCAR/CONTCAR
+
+`poscar::{parse_poscar, parse_contcar, write_poscar}` and the
+`PoscarDocument`/`PoscarError`/`PredictorCorrector` types read and write
+VASP's plain-text structure format (`parse_contcar` is a thin alias --
+CONTCAR is the same format). VASP 5 only (an explicit species-name line is
+required; a VASP 4-style file with implicit POTCAR-derived ordering is
+rejected with `PoscarError::Vasp4NotSupported` rather than silently
+mis-parsed). Both scale-factor forms from the VASP wiki are supported on
+read (single value, including the negative "target cell volume" form, and
+the 3-component per-axis form); `write_poscar` always emits `1.0` with
+pre-scaled vectors and `Direct` (fractional) coordinates -- the simplest
+form that's always exactly correct, since `PeriodicStructure` stores
+fractional coordinates canonically. Selective dynamics and ion velocities
+round-trip; CONTCAR's predictor-corrector MD-restart section is preserved
+verbatim (its numeric layout is not documented by VASP itself, "cannot be
+entered by hand" per the wiki, so this reader doesn't attempt to interpret
+it) and refuses to be written back if doing so would require silently
+reordering that opaque data. POSCAR has no disorder/partial-occupancy
+concept, so every parsed site is a single, fully-occupied species, and
+`write_poscar` rejects a multi-species or partially-occupied site rather
+than dropping data. No per-atom labels (VASP has no field for one beyond
+the species symbol). Full format-fidelity decision list:
+`crates/chematic-crystal/src/poscar.rs`'s module docs.
+
 ## Out of scope (v0.1)
 
 No space-group determination, symmetry-operation search, Wyckoff
 positions, primitive/conventional cell conversion, Niggli reduction, or
 spglib (or any) FFI. No CIF parser rewrite (`chematic_mol::cif` is
 untouched; see `docs/rfcs/chematic_crystal_foundation.md` for a migration
-sketch). No POSCAR I/O, XRD, crystal fingerprinting, oxidation-state
+sketch). No VASP INCAR/KPOINTS/POTCAR parsing (POSCAR/CONTCAR structure I/O
+is in scope, see above). No XRD, crystal fingerprinting, oxidation-state
 inference, coordination-geometry classification, DFT, formation-energy or
 phase-diagram computation, band structure, phonons, defect generation, or
 surface/slab construction. No materials-ML models and **no prediction of
@@ -204,14 +231,16 @@ is explicitly deferred past v0.1.
 
 `cargo test -p chematic-crystal --all-features` runs unit tests (lattice
 construction/validation, coordinate wrapping, occupancy, structure
-validation), integration tests (`tests/periodicity.rs`,
-`tests/neighbor.rs`: brute-force-oracle comparisons on cubic/orthorhombic/
-triclinic cells, two pinned regression fixtures for skewed/near-singular
-triclinic minimum-image, a randomized fixed-seed property test,
-site-order-permutation invariance), and (with `--features serde`)
-`tests/serde_roundtrip.rs` (JSON round-trip, field-name stability, invalid-
-value rejection). `cargo test -p chematic-crystal --doc` runs the doc
-examples above.
+validation, POSCAR/CONTCAR read/write -- including a triclinic
+parse-write-parse round trip, both scale-factor forms, selective dynamics,
+velocities, and predictor-corrector verbatim round-tripping), integration
+tests (`tests/periodicity.rs`, `tests/neighbor.rs`: brute-force-oracle
+comparisons on cubic/orthorhombic/triclinic cells, two pinned regression
+fixtures for skewed/near-singular triclinic minimum-image, a randomized
+fixed-seed property test, site-order-permutation invariance), and (with
+`--features serde`) `tests/serde_roundtrip.rs` (JSON round-trip, field-name
+stability, invalid-value rejection). `cargo test -p chematic-crystal --doc`
+runs the doc examples above.
 
 ## Optional `serde` support
 

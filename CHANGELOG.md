@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `chematic-crystal` (POSCAR/CONTCAR read/write)
+
+- `poscar::{parse_poscar, parse_contcar, write_poscar}` and the
+  `PoscarDocument`/`PoscarError`/`PredictorCorrector` types: read/write
+  support for VASP's plain-text POSCAR/CONTCAR structure format. VASP 5
+  only (explicit species-name line; VASP 4's implicit POTCAR-derived
+  ordering is rejected with a typed error rather than mis-parsed); both
+  scale-factor forms from the VASP wiki (single value, including the
+  negative "target cell volume" form, and the 3-component per-axis form);
+  Direct/Cartesian coordinate modes; selective dynamics; ion velocities;
+  and CONTCAR's predictor-corrector MD-restart section, preserved
+  verbatim since VASP's own documentation does not specify its numeric
+  layout. Re-exported under the existing `chematic` facade's `crystal`
+  feature. See `crates/chematic-crystal/src/poscar.rs`'s module docs for
+  the full list of format-fidelity decisions.
+
 ## [0.15.0] — 2026-08-14
 
 New crate `chematic-crystal` (periodic/crystal structure foundation), plus
