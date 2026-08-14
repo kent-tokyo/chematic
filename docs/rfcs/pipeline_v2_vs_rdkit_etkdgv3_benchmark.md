@@ -1,6 +1,20 @@
 # pipeline v2 vs RDKit ETKDGv3 — Wave 1 independent 3D benchmark
 
-Measurement-only. No pipeline v2 or force-field algorithm code was changed to produce these numbers. Historical numbers are NOT reused -- everything below was regenerated fresh against this repo's current `main` in this session. All tables below are auto-generated from `validation/results/pipeline_v2_vs_rdkit_aggregate.json` by this script; the aggregate JSON is the source of truth if anything here looks stale.
+**STALE as of 2026-08-14 — re-run pending.** This benchmark's data is dated
+2026-08-06 (`benchmark_date` below), predating PRs #314-317 (issue #227's
+MMFF94 Bond/Angle empirical-rule fallback, released in v0.15.0) by over a
+week. In particular, `chematic_pipeline_v2_mmff94_strict` below shows
+**149/265** successes — this is the pre-#227-fix number; the current
+`Mmff94BondAngleStrict` production-policy success rate is **248/265** (see
+`CHANGELOG.md`'s `[0.15.0]` entry). The `no_ff`/`uff_only`/`mmff94_with_uff_fallback`
+arms and every RDKit-side row are also unrefreshed and may not reflect
+`chematic-crystal`'s addition or other v0.15.0 changes. Treat every number
+below as a historical snapshot, not a current claim, until this is
+regenerated. (Full pipeline re-measurement against v0.15.0 is planned as a
+separate, dedicated effort — this note exists so the doc doesn't keep
+asserting freshness it no longer has in the meantime.)
+
+Measurement-only. No pipeline v2 or force-field algorithm code was changed to produce these numbers. Historical numbers are NOT reused -- everything below was regenerated fresh against this repo's current `main` **as of the `benchmark_date` above, not the date you're reading this**. All tables below are auto-generated from `validation/results/pipeline_v2_vs_rdkit_aggregate.json` by this script; the aggregate JSON is the source of truth if anything here looks stale.
 
 ## Corpus
 
