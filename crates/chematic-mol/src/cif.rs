@@ -168,6 +168,117 @@ fn strip_cif_comment(line: &str) -> &str {
     line
 }
 
+/// Resolve an element from a raw `_atom_site_type_symbol` or
+/// `_atom_site_label` token, stripping trailing digits and oxidation-state
+/// signs (e.g. `"Na1"`, `"Cu2+"`, `"Fe3+"`, `"O2-"`).
+///
+/// Shared by [`parse_cif`]'s row loop and the `crystal`-feature adapter
+/// (`parse_cif_periodic_structure`) so both resolve elements identically.
+fn resolve_element(elem_raw: &str) -> Result<Element, CifError> {
+    let elem_str = elem_raw.trim_end_matches(|c: char| c.is_ascii_digit() || c == '+' || c == '-');
+    Element::from_symbol(elem_str).ok_or_else(|| CifError::UnknownElement(elem_str.to_string()))
+}
+
+/// Which of the six `_cell_length_*`/`_cell_angle_*` tags [`scan_cell`]
+/// actually saw while scanning.
+#[derive(Debug, Clone, Copy, Default)]
+struct CellFieldsSeen {
+    a: bool,
+    b: bool,
+    c: bool,
+    alpha: bool,
+    beta: bool,
+    gamma: bool,
+}
+
+impl CellFieldsSeen {
+    /// `true` only if every one of the six tags was present.
+    ///
+    /// Only consumed by the `crystal`-feature adapter today; allowed dead
+    /// otherwise rather than gating the whole method behind `#[cfg]`.
+    #[cfg_attr(not(feature = "crystal"), allow(dead_code))]
+    fn all(&self) -> bool {
+        self.a && self.b && self.c && self.alpha && self.beta && self.gamma
+    }
+}
+
+/// Scan `tokens` for `_cell_length_*`/`_cell_angle_*` tags, building a
+/// [`UnitCell`] from [`UnitCell::default`].
+///
+/// Returns `(cell, has_cell, seen)`. `has_cell` mirrors [`parse_cif`]'s
+/// original behavior exactly (`true` iff `_cell_length_a` specifically was
+/// seen -- a pre-existing quirk, not normalized here, so as not to change
+/// `parse_cif`'s behavior on a CIF with some but not all six tags present).
+/// `seen` is the honest per-tag signal: callers that need all six present
+/// (e.g. the `crystal` adapter, which cannot build a `Lattice` from a
+/// partially-defaulted cell) should check `seen.all()` instead of
+/// `has_cell`.
+fn scan_cell(tokens: &[String]) -> (UnitCell, bool, CellFieldsSeen) {
+    let mut cell = UnitCell::default();
+    let mut has_cell = false;
+    let mut seen = CellFieldsSeen::default();
+    let mut i = 0;
+    while i + 1 < tokens.len() {
+        match tokens[i].to_ascii_lowercase().as_str() {
+            "_cell_length_a" => {
+                cell.a = parse_esd(&tokens[i + 1]).unwrap_or(cell.a);
+                has_cell = true;
+                seen.a = true;
+            }
+            "_cell_length_b" => {
+                cell.b = parse_esd(&tokens[i + 1]).unwrap_or(cell.b);
+                seen.b = true;
+            }
+            "_cell_length_c" => {
+                cell.c = parse_esd(&tokens[i + 1]).unwrap_or(cell.c);
+                seen.c = true;
+            }
+            "_cell_angle_alpha" => {
+                cell.alpha = parse_esd(&tokens[i + 1]).unwrap_or(cell.alpha);
+                seen.alpha = true;
+            }
+            "_cell_angle_beta" => {
+                cell.beta = parse_esd(&tokens[i + 1]).unwrap_or(cell.beta);
+                seen.beta = true;
+            }
+            "_cell_angle_gamma" => {
+                cell.gamma = parse_esd(&tokens[i + 1]).unwrap_or(cell.gamma);
+                seen.gamma = true;
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+    (cell, has_cell, seen)
+}
+
+/// Find the first `loop_` block whose header tags include an
+/// `_atom_site_*` tag. Returns `(lowercased column headers, token index
+/// where the data rows begin)`.
+fn find_atom_site_loop(tokens: &[String]) -> Result<(Vec<String>, usize), CifError> {
+    let mut i = 0;
+    while i < tokens.len() {
+        if tokens[i].as_str() == "loop_" {
+            let mut j = i + 1;
+            let mut headers: Vec<String> = Vec::new();
+            while j < tokens.len() && tokens[j].starts_with('_') {
+                headers.push(tokens[j].to_ascii_lowercase());
+                j += 1;
+            }
+            if headers.iter().any(|h| h.starts_with("_atom_site_")) {
+                if headers.is_empty() {
+                    return Err(CifError::NoAtomSiteLoop);
+                }
+                return Ok((headers, j));
+            }
+            i = j;
+        } else {
+            i += 1;
+        }
+    }
+    Err(CifError::NoAtomSiteLoop)
+}
+
 pub fn parse_cif(input: &str) -> Result<CifResult, CifError> {
     // Strip CIF comments (# to end of line), but not '#' inside quoted strings.
     let clean: String = input
@@ -179,64 +290,11 @@ pub fn parse_cif(input: &str) -> Result<CifResult, CifError> {
     let tokens = tokenize_cif(&clean);
 
     // --- Extract cell parameters ---
-    let mut cell = UnitCell::default();
-    let mut has_cell = false;
-    let mut i = 0;
-    while i + 1 < tokens.len() {
-        match tokens[i].to_ascii_lowercase().as_str() {
-            "_cell_length_a" => {
-                cell.a = parse_esd(&tokens[i + 1]).unwrap_or(cell.a);
-                has_cell = true;
-            }
-            "_cell_length_b" => {
-                cell.b = parse_esd(&tokens[i + 1]).unwrap_or(cell.b);
-            }
-            "_cell_length_c" => {
-                cell.c = parse_esd(&tokens[i + 1]).unwrap_or(cell.c);
-            }
-            "_cell_angle_alpha" => {
-                cell.alpha = parse_esd(&tokens[i + 1]).unwrap_or(cell.alpha);
-            }
-            "_cell_angle_beta" => {
-                cell.beta = parse_esd(&tokens[i + 1]).unwrap_or(cell.beta);
-            }
-            "_cell_angle_gamma" => {
-                cell.gamma = parse_esd(&tokens[i + 1]).unwrap_or(cell.gamma);
-            }
-            _ => {}
-        }
-        i += 1;
-    }
+    let (cell, has_cell, _cell_fields_seen) = scan_cell(&tokens);
 
     // --- Find _atom_site loop ---
-    i = 0;
-    let mut atom_site_data_start: Option<usize> = None;
-    let mut col_headers: Vec<String> = Vec::new();
-
-    while i < tokens.len() {
-        if tokens[i].as_str() == "loop_" {
-            let mut j = i + 1;
-            let mut headers: Vec<String> = Vec::new();
-            while j < tokens.len() && tokens[j].starts_with('_') {
-                headers.push(tokens[j].to_ascii_lowercase());
-                j += 1;
-            }
-            if headers.iter().any(|h| h.starts_with("_atom_site_")) {
-                col_headers = headers;
-                atom_site_data_start = Some(j);
-                break;
-            }
-            i = j;
-        } else {
-            i += 1;
-        }
-    }
-
-    let data_start = atom_site_data_start.ok_or(CifError::NoAtomSiteLoop)?;
+    let (col_headers, data_start) = find_atom_site_loop(&tokens)?;
     let ncols = col_headers.len();
-    if ncols == 0 {
-        return Err(CifError::NoAtomSiteLoop);
-    }
 
     let col = |name: &str| -> Option<usize> { col_headers.iter().position(|h| h.as_str() == name) };
 
@@ -294,12 +352,7 @@ pub fn parse_cif(input: &str) -> Result<CifResult, CifError> {
             .map(|s| s.as_str())
             .or_else(|| col_label.and_then(|c| tok.get(c)).map(|s| s.as_str()))
             .unwrap_or("X");
-        // Strip trailing digits and oxidation-state signs from labels like
-        // "Na1", "Cu2+", "Fe3+", "O2-".
-        let elem_str =
-            elem_raw.trim_end_matches(|c: char| c.is_ascii_digit() || c == '+' || c == '-');
-        let elem = Element::from_symbol(elem_str)
-            .ok_or_else(|| CifError::UnknownElement(elem_str.to_string()))?;
+        let elem = resolve_element(elem_raw)?;
 
         let parse_coord = |s: &str| -> Result<f64, CifError> {
             strip_esd(s)
