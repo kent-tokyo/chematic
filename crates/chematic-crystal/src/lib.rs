@@ -28,6 +28,7 @@ pub mod error;
 pub mod lattice;
 pub mod neighbor;
 pub mod periodic;
+pub mod poscar;
 pub mod site;
 pub mod structure;
 pub mod supercell;
@@ -37,5 +38,8 @@ pub use error::CrystalError;
 pub use lattice::Lattice;
 pub use neighbor::PeriodicNeighbor;
 pub use periodic::{PeriodicDisplacement, minimum_image};
+pub use poscar::{
+    PoscarDocument, PoscarError, PredictorCorrector, parse_contcar, parse_poscar, write_poscar,
+};
 pub use site::{CartesianCoord, FractionalCoord, Occupancy, PeriodicSite, SiteSpecies};
 pub use structure::PeriodicStructure;
