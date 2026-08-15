@@ -204,10 +204,18 @@ fn atomic_result_energy_json() -> Value {
         "molecule": water_molecule_json("qcschema_molecule"),
         "driver": "energy",
         "model": {"method": "b3lyp", "basis": "6-31g"},
+        // Non-empty keywords/extras and an unrecognized top-level key here
+        // on purpose: `write_atomic_result` builds a throwaway `AtomicInput`
+        // internally to reuse `atomic_input_fields_to_map` (see its source
+        // comment) and re-inserts `unknown_fields` separately afterwards --
+        // this fixture is what proves that detour doesn't drop anything.
+        "keywords": {"scf_type": "df"},
+        "extras": {"qcvars": {"CURRENT ENERGY": -76.4}},
         "provenance": {"creator": "chematic-test-fixture", "version": "0.0", "routine": "energy"},
         "properties": {"return_energy": -76.4, "calcinfo_natom": 3},
         "return_result": -76.4,
-        "success": true
+        "success": true,
+        "my_vendor_tag": 42
     })
 }
 
@@ -223,6 +231,12 @@ fn roundtrip_atomic_result_success_energy() {
         matches!(parsed.return_result, Some(ReturnResult::Scalar(e)) if (e + 76.4).abs() < 1e-12)
     );
     assert_eq!(parsed.properties.get("calcinfo_natom"), Some(&json!(3)));
+    assert_eq!(parsed.keywords.get("scf_type"), Some(&json!("df")));
+    assert_eq!(
+        parsed.extras.get("qcvars"),
+        Some(&json!({"CURRENT ENERGY": -76.4}))
+    );
+    assert_eq!(parsed.unknown_fields.get("my_vendor_tag"), Some(&json!(42)));
 
     let out_text = write_atomic_result(&parsed);
     let out_value: Value = serde_json::from_str(&out_text).unwrap();
