@@ -564,5 +564,6 @@ See the PR body for the full command-by-command verification gate output
 (`cargo test --workspace --all-features`, `--no-default-features`,
 `cargo clippy --workspace --all-targets --all-features -- -D warnings`,
 `cargo fmt --all -- --check`, `cargo check --target wasm32-unknown-unknown
--p chematic-core`, `grep -rn vita` returning nothing, and the byte-identical
-fixture diff described in §12.1).
+-p chematic-core`, the zero-third-party-dependency grep described in §10
+returning nothing, and the byte-identical fixture diff described in
+§12.1).
