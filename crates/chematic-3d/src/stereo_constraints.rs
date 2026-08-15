@@ -543,7 +543,22 @@ fn tetrahedral_constraint_for(
     idx: AtomIdx,
 ) -> Result<TetrahedralConstraint, StereoRejectionReason> {
     let atom = mol.atom(idx);
-    debug_assert!(atom.chirality != Chirality::None);
+    // Only `CounterClockwise`/`Clockwise` are tetrahedral; `SquarePlanar` is
+    // also `!= Chirality::None` but must never be coerced into a
+    // chiral-volume check decided by `VOLUME_EPS` -- that tolerance is only
+    // meaningful for a real tetrahedral arrangement, and treating a
+    // square-planar center as "@@ tetrahedral" (the old
+    // `requires_negative_volume: atom.chirality == Chirality::CounterClockwise`
+    // silently did exactly this, since it's always `false` for
+    // `SquarePlanar`) can make `repair_stereo` corrupt a correctly-declared
+    // square-planar center. Reusing `UnsupportedCoordination`, the same
+    // variant this function already returns a few lines below for other
+    // "not a plain tetrahedral center" reasons, means every existing caller's
+    // `Unevaluable`-is-"unknown, not contradicted" handling (e.g.
+    // `repair_stereo`'s filter) applies for free.
+    if !atom.chirality.is_tetrahedral() {
+        return Err(StereoRejectionReason::UnsupportedCoordination);
+    }
 
     let all_single_ish = mol.neighbors(idx).all(|(_, bidx)| {
         matches!(
@@ -1383,6 +1398,145 @@ mod tests {
         assert_eq!(
             report.tetrahedral[0].status,
             StereoStatus::Unevaluable(StereoRejectionReason::UnsupportedCoordination)
+        );
+    }
+
+    /// Regression for the bug this PR fixes: a `SquarePlanar`-tagged center
+    /// must never be coerced into a tetrahedral chiral-volume check. Before
+    /// the fix, `tetrahedral_constraint_for`'s only guard was
+    /// `debug_assert!(atom.chirality != Chirality::None)` -- a release-mode
+    /// no-op that's also wrong even in debug, since `SquarePlanar` is also
+    /// `!= None`. `requires_negative_volume: atom.chirality ==
+    /// Chirality::CounterClockwise` is then always `false` for a
+    /// `SquarePlanar` atom, silently treating it as a declared `@@`
+    /// tetrahedral center and deciding Satisfied/Violated by
+    /// `VOLUME_EPS = 1e-6` noise -- reachable via ordinary (non-dative)
+    /// square-planar SMILES like `[Pt@SP1](Cl)(Cl)(N)N`, since plain SMILES
+    /// bonds parse as `BondOrder::Single` and pass this function's own
+    /// dative-bond exemption.
+    ///
+    /// Coordinates are deliberately puckered (z = +-0.05, not exactly
+    /// coplanar) so `|signed_volume|` clears `VOLUME_EPS` -- with perfectly
+    /// planar/zeroed coordinates the pre-fix code would degrade to
+    /// `DegenerateGeometry` anyway, which would make this test pass for the
+    /// wrong reason (never exercising the actual mis-coercion into a
+    /// confident tetrahedral verdict).
+    ///
+    /// This is the full assertion chain for the bug, not just the
+    /// `Unevaluable` verdict in isolation: (1) `tetrahedral_constraint_for`
+    /// itself -- the exact function that had the bug -- rejects the atom as
+    /// `UnsupportedCoordination`, i.e. it is not even a *candidate*
+    /// tetrahedral center, not just one that later fails a geometry check;
+    /// (2) `verify_stereo`'s public report reflects that same rejection,
+    /// never `Satisfied`/`Violated`; (3) `chematic_chem::assign_cip` (a
+    /// different crate, exercising a completely different code path)
+    /// independently agrees the atom gets no CIP code at all -- the same
+    /// property `chematic-chem/src/cip.rs`'s
+    /// `square_planar_center_never_gets_a_bogus_tetrahedral_cip_code` and
+    /// `chematic-cip/src/tests.rs`'s
+    /// `square_planar_center_is_skipped_not_assigned_a_bogus_cip_code`
+    /// already prove independently for the CIP layer specifically -- this
+    /// test cross-checks the same invariant from the 3D-stereo-verification
+    /// side; (4) the atom's stored `Chirality::SquarePlanar` value is
+    /// unchanged after all of the above -- true by construction, not just
+    /// by observation: `verify_stereo`, `repair_stereo`, and `assign_cip`
+    /// all take `mol: &Molecule` (an immutable reference), so none of them
+    /// can mutate `Chirality` even in principle: the borrow checker rules
+    /// it out at compile time, this assertion just makes that guarantee
+    /// visible in the test.
+    #[test]
+    fn square_planar_center_is_never_coerced_into_a_tetrahedral_chiral_volume_check() {
+        let m = mol("[Pt@SP1](Cl)(Cl)(N)N");
+        let pt = (0..m.atom_count())
+            .map(|i| AtomIdx(i as u32))
+            .find(|&i| m.atom(i).element == chematic_core::Element::PT)
+            .expect("fixture has a Pt atom");
+        let original_chirality = m.atom(pt).chirality;
+        assert!(
+            matches!(original_chirality, Chirality::SquarePlanar(_)),
+            "fixture must actually carry a SquarePlanar tag"
+        );
+
+        // (1) Not even a tetrahedral *candidate* -- the exact function this
+        // PR's guard was added to.
+        assert_eq!(
+            tetrahedral_constraint_for(&m, pt),
+            Err(StereoRejectionReason::UnsupportedCoordination),
+            "a square-planar center must be rejected as a tetrahedral candidate outright"
+        );
+
+        let mut coords = Coords3D::new_zeroed(m.atom_count());
+        coords.set(pt, Point3::new(0.0, 0.0, 0.0));
+        let order = m
+            .stereo_neighbor_order(pt)
+            .expect("square-planar center has a recorded neighbor order")
+            .to_vec();
+        // Deliberately asymmetric z-offsets (not a +/- mirror pattern) so
+        // the resulting signed volume can't accidentally cancel to exactly
+        // zero by symmetry -- verified directly below via the module's own
+        // `signed_volume`/`tetrahedral_positions`, not just assumed.
+        let puckered = [
+            Point3::new(1.0, 0.0, 0.05),
+            Point3::new(-1.0, 0.0, -0.03),
+            Point3::new(0.0, 1.0, 0.07),
+            Point3::new(0.0, -1.0, -0.02),
+        ];
+        for (&nb, &p) in order.iter().zip(puckered.iter()) {
+            coords.set(AtomIdx(nb), p);
+        }
+
+        // Confirm this geometry is genuinely non-degenerate for a
+        // tetrahedral-style volume check -- i.e. the pre-fix code, absent
+        // this PR's guard, would have reached a confident Satisfied/Violated
+        // verdict here, not fallen through to `DegenerateGeometry` for an
+        // unrelated reason. This is what makes the assertion below a real
+        // test of the guard, not a test of degenerate-geometry handling.
+        let order_arr: [u32; 4] = order.clone().try_into().unwrap();
+        let positions = tetrahedral_positions(&coords, pt, &order_arr).unwrap();
+        let volume = signed_volume(positions[1], positions[2], positions[3], positions[0]);
+        assert!(
+            volume.abs() > VOLUME_EPS,
+            "fixture must be non-degenerate (|volume|={} must exceed VOLUME_EPS={VOLUME_EPS}) \
+             for this to be a real test of the coercion guard",
+            volume.abs()
+        );
+
+        // (2) `verify_stereo`'s public report agrees.
+        let report = verify_stereo(&m, &coords);
+        let status = report
+            .tetrahedral
+            .iter()
+            .find(|r| r.atom == pt)
+            .expect("Pt center must still appear in the report")
+            .status;
+        assert_eq!(
+            status,
+            StereoStatus::Unevaluable(StereoRejectionReason::UnsupportedCoordination),
+            "a square-planar center must never be evaluated as tetrahedral, got {status:?}"
+        );
+        assert!(!status.is_satisfied() && !status.is_violated());
+
+        // (3) An independent crate/code path (chematic-chem's CIP engine,
+        // not this module) agrees: no CIP code at all for this atom. Same
+        // property `chematic-chem/src/cip.rs`'s
+        // `square_planar_center_never_gets_a_bogus_tetrahedral_cip_code`
+        // proves for the CIP layer in isolation; asserted again here so the
+        // 3D-stereo-verification side and the CIP side are checked against
+        // each other in one place, not just independently.
+        assert_eq!(
+            chematic_chem::assign_cip(&m).get(pt),
+            None,
+            "a square-planar center must never receive a tetrahedral CIP code"
+        );
+
+        // (4) The stored `Chirality` is byte-for-byte unchanged. Every
+        // function called above takes `&Molecule`, so this is guaranteed by
+        // the borrow checker, not just by these functions' current
+        // implementations -- this assertion exists to make that guarantee
+        // visible and regression-checked, not because it was ever in doubt.
+        assert_eq!(
+            m.atom(pt).chirality, original_chirality,
+            "a square-planar center's declared Chirality must never be mutated by verification"
         );
     }
 

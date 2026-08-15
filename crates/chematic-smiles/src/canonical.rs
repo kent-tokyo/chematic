@@ -20,7 +20,7 @@ use std::collections::{HashMap, HashSet};
 
 use chematic_core::{
     AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL, SquarePlanarPermutation,
-    implicit_hcount, valence_inferred_hcount,
+    implicit_hcount, remap_tetrahedral_parity, valence_inferred_hcount,
 };
 
 use crate::writer::{
@@ -1601,9 +1601,25 @@ impl<'a> CanonicalWriter<'a> {
             };
         }
 
+        // Square-planar centers are always genuinely 4-coordinate. Tetrahedral
+        // centers are 4-element in the common case, but an allene *end*
+        // carbon (sp2, one real double-bond partner standing in for the 4th
+        // tetrahedral-like position) legitimately has only 3 entries (e.g.
+        // `F[C@@H]=[C]=[C@H]Cl`'s F-bearing atom: [F, implicit-H sentinel,
+        // =C partner]) -- `chematic_core::StereoGeometry::Tetrahedral` is
+        // fixed at 4 slots and doesn't model that case, so it keeps using
+        // the length-generic `permutation_is_odd` fallback unchanged for
+        // any non-4 length.
+        let original_arr = <[u32; 4]>::try_from(original).ok();
+        let canonical_arr = <[u32; 4]>::try_from(canonical.as_slice()).ok();
+
         match stored {
             Chirality::CounterClockwise | Chirality::Clockwise => {
-                if permutation_is_odd(original, &canonical) {
+                let is_odd = match (original_arr, canonical_arr) {
+                    (Some(o), Some(c)) => remap_tetrahedral_parity(o, c).unwrap_or(false),
+                    _ => permutation_is_odd(original, &canonical),
+                };
+                if is_odd {
                     if stored == Chirality::CounterClockwise {
                         Chirality::Clockwise
                     } else {
@@ -1688,9 +1704,14 @@ fn remap_square_planar(
 ///
 /// Both slices must contain the same multiset of values (no duplicates —
 /// a repeated value would collide in the by-value index below). Generic
-/// over `T` so the same one implementation backs both `corrected_chirality`
-/// (raw `u32` `AtomIdx` values, always unique per atom) and the test-only
-/// rank-based tetrahedral fingerprint (`u64` canonical ranks).
+/// over `T` (any length) so it backs two different callers: `corrected_chirality`'s
+/// non-4-element fallback (an allene *end* carbon's 3-element
+/// `stereo_neighbor_order` -- see that function's comment; the common
+/// 4-element tetrahedral case goes through `chematic_core::remap_tetrahedral_parity`
+/// instead, the generalized stereo-geometry module,
+/// `docs/rfcs/generalized_stereo_geometry_rfc.md`) and the test-only
+/// rank-based tetrahedral fingerprint (`u64` canonical ranks, arbitrary
+/// length).
 fn permutation_is_odd<T: Eq + std::hash::Hash + Copy>(original: &[T], canonical: &[T]) -> bool {
     let n = original.len();
     let mut pos: HashMap<T, usize> = HashMap::with_capacity(n);
@@ -2484,6 +2505,66 @@ mod tests {
                 "allene stereo must be stable: {smi} -> {out} -> {out2}"
             );
         }
+    }
+
+    /// Pinned golden-value regression for the allene-end-carbon bug this PR
+    /// found and fixed: an allene end carbon (sp2, one real double-bond
+    /// partner standing in for the 4th tetrahedral-like position) has a
+    /// **3-element** `stereo_neighbor_order`, not 4 -- routing it through
+    /// `chematic_core::remap_tetrahedral_parity` (fixed at `[u32; 4]`) would
+    /// silently fall through to the "unchanged" fallback for the wrong
+    /// reason (array-conversion failure, not "no verifiable order"), which
+    /// produces a DIFFERENT valid-looking tag than the length-generic
+    /// `permutation_is_odd` correctly computes -- this was caught only by a
+    /// byte-identical before/after diff during development
+    /// (`allene_stereo_two_enantiomers_differ`/`allene_stereo_round_trip_stable`
+    /// above kept passing throughout, since neither checks an exact golden
+    /// value, only relative invariants -- see the RFC's §8/§12.1 for the
+    /// full incident writeup). `corrected_chirality`'s fallback dispatch
+    /// (`canonical.rs`, the `original_arr`/`canonical_arr` `<[u32; 4]>::try_from`
+    /// pair) explicitly falls back to `permutation_is_odd` whenever either
+    /// side isn't exactly 4 elements -- exercised here, not just described.
+    /// Pinned exact values so a future regression fails a normal
+    /// `cargo test`, not only a throwaway diff tool.
+    #[test]
+    fn allene_stereo_exact_canonical_value_is_pinned() {
+        assert_eq!(
+            canonical_smiles(&parse("F[C@@H]=[C]=[C@H]Cl").unwrap()),
+            "C(=[C@H]Cl)=[C@H]F"
+        );
+        assert_eq!(
+            canonical_smiles(&parse("F[C@H]=[C]=[C@@H]Cl").unwrap()),
+            "C(=[C@@H]Cl)=[C@@H]F"
+        );
+    }
+
+    /// Mirrors `square_planar_stereo.rs`'s own
+    /// `untagged_four_coordinate_pt_is_never_auto_promoted` for the
+    /// tetrahedral case: a plain, untagged 4-distinct-substituent carbon
+    /// must stay `Chirality::None` through parsing and canonicalization --
+    /// never auto-assigned a `@`/`@@` tag just because it happens to have 4
+    /// distinct substituents that *could* form a stereocenter. Guaranteed
+    /// structurally by `corrected_chirality`'s very first line (`if stored
+    /// == Chirality::None { return Chirality::None; }`, unchanged by this
+    /// PR): the new `stereo_geometry` module's `canonicalize_configuration`/
+    /// `remap_*` functions are never even called for an atom with no
+    /// declared chirality, so there is no code path in this PR that could
+    /// invent one.
+    #[test]
+    fn untagged_tetrahedral_center_is_never_auto_promoted() {
+        let mol = parse("C(F)(Cl)(Br)I").unwrap();
+        for (idx, atom) in mol.atoms() {
+            assert_eq!(
+                atom.chirality,
+                Chirality::None,
+                "atom {idx:?} unexpectedly carries stereo in an untagged fixture"
+            );
+        }
+        let smi = canonical_smiles(&mol);
+        assert!(
+            !smi.contains('@'),
+            "untagged input must never gain a stereo tag on write: {smi}"
+        );
     }
 
     // ── RDKit PR #8957: fused-ring stereo round-trip ────────────────────────
