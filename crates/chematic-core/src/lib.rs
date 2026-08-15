@@ -31,10 +31,14 @@ pub use coords3d::{Coords3D, Point3};
 pub use element::Element;
 pub use kekulization::{KekuleError, KekuleResult, apply_kekule, kekulize};
 pub use molecule::{AtomIdx, BondIdx, MolError, Molecule, MoleculeBuilder, STEREO_H_SENTINEL};
+// `StereoConfiguration`/`CanonicalStereoConfiguration`/`canonicalize_configuration`/
+// `equivalent_under_rotation` are deliberately `pub(crate)`, not re-exported
+// here: all four are hardcoded to `[u32; 4]`, which only fits today's two
+// 4-coordinate geometries. Only the two arity-fixed-by-their-own-tag-semantics
+// bridge functions are public; see `stereo_geometry.rs`'s own doc comments
+// (on `StereoConfiguration` and each bridge function) for the full reasoning.
 pub use stereo_geometry::{
-    CanonicalStereoConfiguration, StereoConfiguration, StereoGeometry, StereoGeometryError,
-    canonicalize_configuration, equivalent_under_rotation, remap_square_planar_tag,
-    remap_tetrahedral_parity,
+    StereoGeometry, StereoGeometryError, remap_square_planar_tag, remap_tetrahedral_parity,
 };
 pub use stereo_group::{StereoGroup, StereoGroupKind};
 #[allow(deprecated)]

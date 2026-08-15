@@ -88,18 +88,71 @@ impl StereoGeometry {
 /// treat chemically-identical-but-distinct-atom ligands specially (e.g.
 /// duplicate-ligand detection for CIP-style priority) must do so at a layer
 /// above this one; see the RFC's "duplicate ligands" section.
+///
+/// `pub(crate)`, not `pub`: this type, [`CanonicalStereoConfiguration`],
+/// [`canonicalize_configuration`], and [`equivalent_under_rotation`] are all
+/// hardcoded to `[u32; 4]`, which only fits the two 4-coordinate geometries
+/// this PR implements. Publishing them now would commit chematic-core's
+/// public API to "every geometry has exactly 4 slots" -- a claim
+/// [`StereoGeometry`]'s own `#[non_exhaustive]` explicitly declines to make,
+/// since trigonal-bipyramidal (5 slots) and octahedral (6 slots) are
+/// architected for (see the RFC's extension sketch). Only the two bridge
+/// functions actual callers need --
+/// [`remap_tetrahedral_parity`]/[`remap_square_planar_tag`], both already
+/// geometry-specific and arity-fixed by their own OpenSMILES tag semantics,
+/// not by an assumption this module bakes in -- are `pub`. Fields are
+/// private even at `pub(crate)` scope: the only way to build one is
+/// [`StereoConfiguration::new`], which runs the same duplicate check
+/// [`canonicalize_configuration`] does, so no code path inside this crate
+/// can construct an unvalidated configuration either.
+// No production caller constructs a `StereoConfiguration` today -- both
+// production bridge functions (`remap_tetrahedral_parity`/
+// `remap_square_planar_tag`) operate directly on raw `[u32; 4]` arrays via
+// `canonicalize_configuration`, not through this wrapper type. This type,
+// `new`, and `renumber` exist as tested, validated infrastructure per this
+// PR's required API (atom-renumbering transformation) ahead of a production
+// consumer -- same shape as `stereo_constraints.rs`'s own
+// `TetrahedralConstraint`/`StereoConstraintSet::unsupported`, which carry an
+// identical `#[allow(dead_code)]` for the same reason (see that module).
+// Promote by removing this `allow` once a real caller constructs one.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct StereoConfiguration {
-    pub geometry: StereoGeometry,
-    pub slots: [u32; 4],
+pub(crate) struct StereoConfiguration {
+    geometry: StereoGeometry,
+    slots: [u32; 4],
 }
 
+#[allow(dead_code)]
 impl StereoConfiguration {
+    /// Construct a configuration, rejecting a duplicate slot id up front --
+    /// the same check [`canonicalize_configuration`] runs, applied here too
+    /// so a `StereoConfiguration` can never exist in an already-invalid
+    /// state (struct-literal construction is unavailable outside this
+    /// module; private fields, no other constructor).
+    pub(crate) fn new(
+        geometry: StereoGeometry,
+        slots: [u32; 4],
+    ) -> Result<Self, StereoGeometryError> {
+        if let Some(dup) = find_duplicate(slots) {
+            return Err(StereoGeometryError::DuplicateSlotId(dup));
+        }
+        Ok(Self { geometry, slots })
+    }
+
     /// Remap every slot id through `id_map` (e.g. an atom-renumbering table),
-    /// preserving `geometry`. Fails closed with
-    /// [`StereoGeometryError::UnknownLigandId`] the moment any slot's id has
-    /// no answer in `id_map`, rather than silently dropping/zeroing it.
-    pub fn renumber(
+    /// preserving `geometry`. Fails closed two ways, both returning
+    /// [`StereoGeometryError`] rather than silently producing a bad
+    /// configuration: [`StereoGeometryError::UnknownLigandId`] the moment
+    /// any slot's id has no answer in `id_map`; and
+    /// [`StereoGeometryError::DuplicateSlotId`] if `id_map`, while total on
+    /// the input slots, is not *injective* on them -- e.g. mapping two
+    /// distinct input ids to the same output id -- which would otherwise
+    /// silently manufacture a duplicate that could never have been accepted
+    /// by [`Self::new`]/[`canonicalize_configuration`] directly. The input
+    /// itself is already known duplicate-free (a `StereoConfiguration` can
+    /// only exist via [`Self::new`]'s own check), so any duplicate detected
+    /// here was created BY the renumbering, not carried over from it.
+    pub(crate) fn renumber(
         &self,
         id_map: impl Fn(u32) -> Option<u32>,
     ) -> Result<StereoConfiguration, StereoGeometryError> {
@@ -107,10 +160,7 @@ impl StereoConfiguration {
         for (i, slot) in self.slots.iter().enumerate() {
             new_slots[i] = id_map(*slot).ok_or(StereoGeometryError::UnknownLigandId(*slot))?;
         }
-        Ok(StereoConfiguration {
-            geometry: self.geometry,
-            slots: new_slots,
-        })
+        StereoConfiguration::new(self.geometry, new_slots)
     }
 }
 
@@ -121,26 +171,23 @@ impl StereoConfiguration {
 /// [`equivalent_under_rotation`]). Fields are private: the only way to
 /// compare two configurations is through this type's own equality /
 /// [`equivalent_under_rotation`], never by peeking at which specific
-/// group-orbit member happened to sort first.
+/// group-orbit member happened to sort first. `pub(crate)`: see
+/// [`StereoConfiguration`]'s doc for why this whole family of types is not
+/// yet public.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct CanonicalStereoConfiguration {
+pub(crate) struct CanonicalStereoConfiguration {
     geometry: StereoGeometry,
     representative: [u32; 4],
 }
 
 impl CanonicalStereoConfiguration {
-    /// The geometry this canonical form belongs to.
-    pub fn geometry(&self) -> StereoGeometry {
-        self.geometry
-    }
-
     /// The lexicographically-smallest slot ordering in this configuration's
     /// rotation orbit. Exposed so callers can feed it back into
     /// [`canonicalize_configuration`] (e.g. to verify idempotence) or into
     /// [`StereoConfiguration::renumber`]; not meaningful as "the" canonical
     /// spelling of anything outside this module -- only equality between two
     /// [`CanonicalStereoConfiguration`] values is a meaningful comparison.
-    pub fn representative(&self) -> [u32; 4] {
+    pub(crate) fn representative(&self) -> [u32; 4] {
         self.representative
     }
 }
@@ -152,11 +199,28 @@ impl CanonicalStereoConfiguration {
 pub enum StereoGeometryError {
     /// The same raw ligand id appeared in two (or more) slots of a
     /// configuration -- a data-integrity problem, not a valid 4-distinct-
-    /// ligand arrangement.
+    /// ligand arrangement. Also returned by [`StereoConfiguration::renumber`]
+    /// when a non-injective `id_map` *creates* a duplicate that wasn't in
+    /// the original configuration -- reusing this variant rather than adding
+    /// a separate "renumbering created a duplicate" one, since the resulting
+    /// state is identical either way (two slots now share one id) and every
+    /// caller's fail-closed handling is the same regardless of which
+    /// operation produced it.
     DuplicateSlotId(u32),
     /// [`StereoConfiguration::renumber`]'s `id_map` had no answer for a
     /// slot's id.
     UnknownLigandId(u32),
+    /// [`remap_tetrahedral_parity`]'s `original` and `canonical` arrays
+    /// don't name the same 4 distinct ids (as a set) -- e.g. a foreign id
+    /// present in one but not the other. Computing a parity flip by
+    /// comparing canonical representatives is only meaningful when both
+    /// arrays are genuine permutations of the *same* 4 ids; without this
+    /// check, two arrays naming different id sets would (correctly, but
+    /// meaninglessly) canonicalize to unequal representatives, which the
+    /// parity computation would misread as "needs a flip" -- a
+    /// confident-looking wrong answer for malformed input, not the honest
+    /// "can't tell" this variant exists to report instead.
+    MismatchedLigandSet,
 }
 
 impl core::fmt::Display for StereoGeometryError {
@@ -167,6 +231,12 @@ impl core::fmt::Display for StereoGeometryError {
             }
             Self::UnknownLigandId(id) => {
                 write!(f, "no renumbering answer for ligand id {id}")
+            }
+            Self::MismatchedLigandSet => {
+                write!(
+                    f,
+                    "original and canonical orders do not name the same ligand ids"
+                )
             }
         }
     }
@@ -293,7 +363,11 @@ fn find_duplicate(slots: [u32; 4]) -> Option<u32> {
 /// raw id occupies two slots -- not a valid 4-distinct-ligand arrangement,
 /// and letting it through would make "lexicographically smallest" pick an
 /// arbitrary, meaningless tie-break among rotation-equivalent duplicates.
-pub fn canonicalize_configuration(
+///
+/// `pub(crate)`: see [`StereoConfiguration`]'s doc for why this isn't public
+/// yet (hardcoded `[u32; 4]` arity, deferred until a second geometry family
+/// forces the real generalization).
+pub(crate) fn canonicalize_configuration(
     geometry: StereoGeometry,
     ligand_order: [u32; 4],
 ) -> Result<CanonicalStereoConfiguration, StereoGeometryError> {
@@ -320,8 +394,8 @@ pub fn canonicalize_configuration(
 /// Currently just `a == b` (both fields, including the private
 /// `representative`, participate in equality), kept as a named function so
 /// call sites read as a geometric claim rather than an incidental struct
-/// comparison.
-pub fn equivalent_under_rotation(
+/// comparison. `pub(crate)`: see [`StereoConfiguration`]'s doc.
+pub(crate) fn equivalent_under_rotation(
     a: &CanonicalStereoConfiguration,
     b: &CanonicalStereoConfiguration,
 ) -> bool {
@@ -347,17 +421,49 @@ pub fn equivalent_under_rotation(
 /// test for a from-scratch cross-check.
 ///
 /// Fails closed with [`StereoGeometryError::DuplicateSlotId`] if either
-/// array has a repeated id (the caller -- `canonical.rs`'s
-/// `corrected_chirality` -- treats `Err` the same as its pre-existing "no
-/// verifiable order" pass-through-unchanged fallback, matching the
-/// documented safe-no-op behavior for a 2-state tag).
+/// array has a repeated id, or [`StereoGeometryError::MismatchedLigandSet`]
+/// if `original` and `canonical` don't name the same 4 ids as a set (the
+/// caller -- `canonical.rs`'s `corrected_chirality` -- treats any `Err` the
+/// same as its pre-existing "no verifiable order" pass-through-unchanged
+/// fallback, matching the documented safe-no-op behavior for a 2-state tag;
+/// see that call site's own comment for why this is the right fallback,
+/// not a workaround).
+///
+/// The mismatched-set check matters, not just for symmetry with
+/// [`remap_square_planar_tag`]'s analogous guard: without it, two arrays
+/// naming *different* id sets (e.g. `[1,2,3,4]` vs `[1,2,3,5]`) each
+/// canonicalize successfully (no duplicates in either one alone) to
+/// necessarily-*unequal* representatives -- purely because they contain
+/// different ids, not because one is an odd permutation of the other -- and
+/// the naive `orig.representative != canon.representative` test would
+/// misread that as "needs a parity flip," a confident-looking wrong answer
+/// for malformed input rather than the honest "can't tell."
 pub fn remap_tetrahedral_parity(
     original: [u32; 4],
     canonical: [u32; 4],
 ) -> Result<bool, StereoGeometryError> {
+    // Each array's OWN internal-duplicate check first, so a genuinely
+    // duplicated id is always reported as `DuplicateSlotId` (the more
+    // specific diagnosis) even when the two arrays also happen to differ as
+    // sets -- `MismatchedLigandSet` below is reserved for the case where
+    // *neither* array has an internal duplicate but they still don't name
+    // the same 4 ids.
+    if let Some(dup) = find_duplicate(original) {
+        return Err(StereoGeometryError::DuplicateSlotId(dup));
+    }
+    if let Some(dup) = find_duplicate(canonical) {
+        return Err(StereoGeometryError::DuplicateSlotId(dup));
+    }
+    let mut sorted_original = original;
+    sorted_original.sort_unstable();
+    let mut sorted_canonical = canonical;
+    sorted_canonical.sort_unstable();
+    if sorted_original != sorted_canonical {
+        return Err(StereoGeometryError::MismatchedLigandSet);
+    }
     let orig = canonicalize_configuration(StereoGeometry::Tetrahedral, original)?;
     let canon = canonicalize_configuration(StereoGeometry::Tetrahedral, canonical)?;
-    Ok(orig.representative != canon.representative)
+    Ok(orig.representative() != canon.representative())
 }
 
 /// Convert `(tag, order)` into the geometry's own base-convention slot
@@ -398,6 +504,15 @@ fn to_base_slots(tag: SquarePlanarPermutation, order: [u32; 4]) -> [u32; 4] {
 /// (`DuplicateSlotId`) or lands on a representative array containing ids
 /// [`original`] didn't have, which can never equal `original`'s own
 /// representative.
+///
+/// Unlike [`remap_tetrahedral_parity`], this function does NOT need an
+/// explicit mismatched-id-set guard: it compares via
+/// [`equivalent_under_rotation`] (full array equality, both `geometry` and
+/// `representative`), not a boolean not-equal test, so a candidate whose
+/// representative merely differs *for the wrong reason* (different id set,
+/// not a real rotation-inequivalence) still correctly fails the equality
+/// check and falls through to `None` rather than being misread as a match
+/// -- verified by `remap_square_planar_tag_none_on_mismatched_id_set` below.
 pub fn remap_square_planar_tag(
     tag: SquarePlanarPermutation,
     original: [u32; 4],
@@ -701,6 +816,28 @@ mod tests {
         );
     }
 
+    /// The bug an independent review caught: `original`/`canonical` naming
+    /// *different* id sets (neither internally duplicated) must fail closed
+    /// with `MismatchedLigandSet`, not silently return a confident-looking
+    /// `Ok(true)`/`Ok(false)`. Before this check existed,
+    /// `remap_tetrahedral_parity([1,2,3,4], [1,2,3,5])` returned `Ok(true)`:
+    /// the two arrays canonicalize to necessarily-unequal representatives
+    /// (they contain different ids), which the naive `!=` parity test
+    /// misread as "needs a flip" -- a wrong answer for malformed input, not
+    /// an honest "can't tell."
+    #[test]
+    fn remap_tetrahedral_parity_fails_closed_on_mismatched_ligand_set() {
+        assert_eq!(
+            remap_tetrahedral_parity([1, 2, 3, 4], [1, 2, 3, 5]).unwrap_err(),
+            StereoGeometryError::MismatchedLigandSet
+        );
+        // Same multiset, different order -- must NOT be flagged as
+        // mismatched (this is the ordinary, common case this function
+        // exists to compute a real parity answer for).
+        assert!(remap_tetrahedral_parity([1, 2, 3, 4], [1, 2, 3, 4]).is_ok());
+        assert!(remap_tetrahedral_parity([1, 2, 3, 4], [4, 3, 2, 1]).is_ok());
+    }
+
     // -------------------------------------------------------------------
     // remap_square_planar_tag
     // -------------------------------------------------------------------
@@ -719,32 +856,36 @@ mod tests {
         }
     }
 
-    /// Duplicate-*chemistry*, distinct-*ids* case, shaped exactly like
-    /// cisplatin/transplatin's real coordination chemistry: `2xCl + 2xNH3`.
-    /// This module only ever sees 4 raw slot ids -- it has no concept of
-    /// "these two are chemically the same ligand" at all (see the RFC's
+    /// Duplicate-*chemistry*, distinct-*ids* case, shaped like
+    /// cisplatin/transplatin's real coordination chemistry: `2xCl + 2xNH3`
+    /// ligand composition (whether this particular slot arrangement happens
+    /// to be the cis or trans isomer specifically depends on which of the
+    /// two identical-composition slots the caller places where, which this
+    /// test deliberately does not commit to -- see the note below). This
+    /// module only ever sees 4 raw slot ids -- it has no concept of "these
+    /// two are chemically the same ligand" at all (see the RFC's
     /// duplicate-ligand section) -- so two chemically-identical Cl ligands
     /// still get two distinct ids here (`CL1`/`CL2`), same for the two NH3
     /// nitrogens (`N1`/`N2`). Proves directly, at the geometry-module level
     /// (independent of `square_planar_stereo.rs`'s end-to-end
     /// `cisplatin_and_transplatin_have_distinct_canonical_identity`, which
     /// checks the same property through the full parser/writer instead):
-    /// SP1 (cis, the two Cl trans to the two N respectively) and SP2 (trans,
-    /// Cl trans to Cl) canonicalize to *different* representatives for the
-    /// identical 4-id slot assignment -- chemical-identity duplication never
-    /// collapses the two into one orbit.
+    /// SP1/SP2/SP3, applied to this one fixed 2xCl+2xN slot assignment,
+    /// canonicalize to *three different* representatives -- chemical-
+    /// identity duplication never collapses any of them into one orbit.
     #[test]
     fn duplicate_chemistry_distinct_ids_keeps_cisplatin_transplatin_shaped_tags_distinct() {
         const CL1: u32 = 101;
         const CL2: u32 = 102;
         const N1: u32 = 103;
         const N2: u32 = 104;
-        // Slot order matches SP1's own base convention: (CL1,CL2) at
-        // (0,2) means the two Cl ligands are trans (SP1 = cis-Pt(NH3)2Cl2,
-        // since with Cl/Cl trans, N/N is also trans, and adjacent slots
-        // 0-1/1-2/etc. are the cis relationships) -- the specific physical
-        // reading doesn't matter for this test, only that SP1 and SP2 must
-        // disagree on it.
+        // Deliberately not naming which of SP1/SP2/SP3 is "the cis one" or
+        // "the trans one" for this specific order -- that reading is a real
+        // but easy-to-get-backwards derived fact (which pair of positions a
+        // given tag makes trans depends on both the tag AND which ligand
+        // sits at which position), and getting it right or wrong doesn't
+        // change what this test actually checks: all 3 tags, applied to the
+        // SAME slot assignment, must land in 3 distinct orbits.
         let order: [u32; 4] = [CL1, N1, CL2, N2];
 
         let sp1 = canonicalize_configuration(
@@ -765,8 +906,8 @@ mod tests {
 
         assert!(
             !equivalent_under_rotation(&sp1, &sp2),
-            "cisplatin-shaped (SP1) and transplatin-shaped (SP2) must NOT collapse to one orbit \
-             even though both slot assignments repeat 2xCl+2xN chemistry"
+            "SP1-shaped and SP2-shaped configurations must NOT collapse to one orbit even \
+             though both slot assignments repeat 2xCl+2xN chemistry"
         );
         assert!(!equivalent_under_rotation(&sp1, &sp3));
         assert!(!equivalent_under_rotation(&sp2, &sp3));
@@ -845,15 +986,33 @@ mod tests {
     }
 
     // -------------------------------------------------------------------
+    // StereoConfiguration::new
+    // -------------------------------------------------------------------
+
+    #[test]
+    fn stereo_configuration_new_rejects_duplicate_slot_id() {
+        // Struct-literal construction is unavailable outside this module
+        // (private fields) -- `new` is the only way in, and it must run the
+        // same duplicate check `canonicalize_configuration` does, so no
+        // `StereoConfiguration` can ever exist in an already-invalid state.
+        assert_eq!(
+            StereoConfiguration::new(StereoGeometry::Tetrahedral, [1, 2, 1, 3]).unwrap_err(),
+            StereoGeometryError::DuplicateSlotId(1)
+        );
+    }
+
+    #[test]
+    fn stereo_configuration_new_accepts_distinct_ids() {
+        assert!(StereoConfiguration::new(StereoGeometry::Tetrahedral, [1, 2, 3, 4]).is_ok());
+    }
+
+    // -------------------------------------------------------------------
     // StereoConfiguration::renumber
     // -------------------------------------------------------------------
 
     #[test]
     fn renumber_remaps_every_slot() {
-        let cfg = StereoConfiguration {
-            geometry: StereoGeometry::Tetrahedral,
-            slots: [1, 2, 3, 4],
-        };
+        let cfg = StereoConfiguration::new(StereoGeometry::Tetrahedral, [1, 2, 3, 4]).unwrap();
         let renumbered = cfg
             .renumber(|id| Some(id * 10))
             .expect("total map succeeds");
@@ -863,14 +1022,28 @@ mod tests {
 
     #[test]
     fn renumber_fails_closed_on_unmapped_id() {
-        let cfg = StereoConfiguration {
-            geometry: StereoGeometry::Tetrahedral,
-            slots: [1, 2, 3, 4],
-        };
+        let cfg = StereoConfiguration::new(StereoGeometry::Tetrahedral, [1, 2, 3, 4]).unwrap();
         let err = cfg
             .renumber(|id| if id == 3 { None } else { Some(id) })
             .unwrap_err();
         assert_eq!(err, StereoGeometryError::UnknownLigandId(3));
+    }
+
+    /// The bug an independent review caught: a non-injective `id_map` --
+    /// total on every input slot, but mapping two *distinct* input ids to
+    /// the *same* output id -- must fail closed, not silently manufacture a
+    /// duplicate that could never have been accepted by
+    /// [`StereoConfiguration::new`] directly. Before this check existed,
+    /// mapping both `1` and `2` to `10` would succeed and return
+    /// `slots: [10, 10, 3, 4]`.
+    #[test]
+    fn renumber_rejects_id_map_that_creates_a_duplicate() {
+        let cfg = StereoConfiguration::new(StereoGeometry::Tetrahedral, [1, 2, 3, 4]).unwrap();
+        // Both 1 and 2 map to 10 (non-injective); 3 and 4 map to themselves.
+        let err = cfg
+            .renumber(|id| Some(if id == 1 || id == 2 { 10 } else { id }))
+            .unwrap_err();
+        assert_eq!(err, StereoGeometryError::DuplicateSlotId(10));
     }
 
     /// Renumbering invariance: if two configurations describe the same

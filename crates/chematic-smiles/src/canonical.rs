@@ -1620,6 +1620,37 @@ impl<'a> CanonicalWriter<'a> {
 
         match stored {
             Chirality::CounterClockwise | Chirality::Clockwise => {
+                // `unwrap_or(false)` -- i.e. "no parity flip, pass the
+                // stored tag through unchanged" -- is the deliberate,
+                // documented fallback for ANY `remap_tetrahedral_parity`
+                // error here (`DuplicateSlotId` or `MismatchedLigandSet`),
+                // not an oversight that swallows a newly-possible error
+                // class. This is the exact same "unchanged, no better
+                // information" fallback `corrected_chirality` already uses
+                // a few lines above for "no recorded order at all" and
+                // "size mismatch" -- consistent treatment for every flavor
+                // of "this tetrahedral parity computation couldn't be
+                // trusted," matching the 2-state-tag philosophy documented
+                // on this function: passing the ORIGINAL tag through
+                // against an unverified/malformed order is still a valid
+                // state for a 2-state tag, just not provably correct (see
+                // `docs/rfcs/square_planar_stereo_rfc.md`'s "fail-closed on
+                // data-integrity problems" section for why this reasoning
+                // does NOT extend to square-planar's 3-state tag, which
+                // drops to `Chirality::None` instead a few lines below).
+                // `MismatchedLigandSet` specifically is unreachable from any
+                // real parsed molecule (this function's `original`/
+                // `canonical` are always built from the same molecule's
+                // actual bonded-neighbor id set), so this fallback is inert
+                // in practice, not a compromise made for a real production
+                // case. `debug_assert!`/`unreachable!` were deliberately
+                // NOT used here instead: this exact PR's own `chematic-3d`
+                // fix replaced a `debug_assert!` that was a silent
+                // release-mode no-op, and reintroducing that anti-pattern
+                // here -- for an error class that, unlike that bug, this
+                // function itself already reports as a typed `Err` rather
+                // than silently miscomputing -- would be inconsistent with
+                // the lesson that fix encodes.
                 let is_odd = match (original_arr, canonical_arr) {
                     (Some(o), Some(c)) => remap_tetrahedral_parity(o, c).unwrap_or(false),
                     _ => permutation_is_odd(original, &canonical),

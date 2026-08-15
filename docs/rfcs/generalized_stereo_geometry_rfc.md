@@ -181,10 +181,24 @@ same 4 distinct ids differ by an even permutation (no `@`<->`@@` flip) iff
 they canonicalize to the same Tetrahedral representative -- true by
 construction, since `TETRAHEDRAL_ROTATIONS` (A4) *is* the even-permutation
 group. `remap_tetrahedral_parity(original, canonical)` is exactly
-`canonicalize(Tetrahedral, original).representative !=
-canonicalize(Tetrahedral, canonical).representative`. This is a *provable*
+`canonicalize(Tetrahedral, original).representative() !=
+canonicalize(Tetrahedral, canonical).representative()`. This is a *provable*
 restatement of classic cycle-counting parity, not a different rule (see the
-independent cross-check in §3.1).
+independent cross-check in §3.1) -- **but only once `original` and
+`canonical` are confirmed to name the same 4 ids**, checked explicitly
+before the representative comparison (added after an independent review
+caught the gap: without it,
+`remap_tetrahedral_parity([1,2,3,4],[1,2,3,5])` -- two arrays naming
+*different* id sets, neither internally duplicated -- returned `Ok(true)`,
+because the two representatives are necessarily unequal purely from
+containing different ids, which the bare `!=` test misread as "needs a
+flip." `StereoGeometryError::MismatchedLigandSet` reports this case
+honestly instead. `remap_square_planar_tag` does not need the analogous
+fix: it compares via `equivalent_under_rotation`, full struct equality
+including `representative`, so a mismatched-id-set candidate already
+correctly falls through to `None` rather than being misread as a match --
+`remap_square_planar_tag_none_on_mismatched_id_set` confirms this
+empirically, not just by this argument).
 
 **Square-planar bridge (`remap_square_planar_tag`).** `to_base_slots(tag,
 order)` converts `(tag, order)` into the fixed base convention (§2): given
@@ -229,10 +243,28 @@ orderings of `[0,1,2,3]` in `canonicalization_is_idempotent`.
 
 ## 6. Atom-renumbering transformation
 
+`StereoConfiguration` can only be constructed via
+`StereoConfiguration::new(geometry, slots) -> Result<Self,
+StereoGeometryError>` (fields are private) -- it runs the same
+`DuplicateSlotId` check `canonicalize_configuration` does, so no
+`StereoConfiguration` value can exist in an already-invalid state (added
+after an independent review noted the original design let callers construct
+one directly via public struct-literal syntax, bypassing validation
+entirely).
+
 `StereoConfiguration::renumber(&self, id_map: impl Fn(u32) -> Option<u32>)`
-remaps every slot id through `id_map`, failing closed with
+remaps every slot id through `id_map`, failing closed two ways:
 `StereoGeometryError::UnknownLigandId` the instant any slot has no answer,
-rather than silently dropping or zeroing it.
+rather than silently dropping or zeroing it; and `StereoGeometryError::
+DuplicateSlotId` if `id_map` -- while total on every input slot -- is not
+*injective* on them (e.g. mapping two distinct input ids to the same output
+id), which would otherwise silently manufacture a duplicate that `new`
+itself would never have accepted (also added after the same review: the
+original design ran the id-map and returned the result unchecked). Reuses
+`DuplicateSlotId` rather than adding a "renumbering created this duplicate"
+variant -- the resulting state (two slots sharing one id) is identical
+either way, and every caller's fail-closed handling is the same regardless
+of which operation produced it.
 
 **Renumbering invariance**, checked exhaustively
 (`renumber_preserves_rotation_equivalence`, both geometries, every rotation
@@ -268,9 +300,34 @@ bounded pairwise scan (no `HashSet`, no heap allocation, deterministic).
 
 ## 8. Unspecified/invalid handling (fail-closed)
 
-- `canonicalize_configuration`: `Err(DuplicateSlotId)` on a repeated slot id.
+- `canonicalize_configuration` / `StereoConfiguration::new`: `Err(DuplicateSlotId)`
+  on a repeated slot id. `new` is the *only* way to construct a
+  `StereoConfiguration` (private fields), so this check runs unconditionally
+  before any `StereoConfiguration` value can exist at all, not just when one
+  happens to flow through `canonicalize_configuration`.
 - `StereoConfiguration::renumber`: `Err(UnknownLigandId)` the moment
-  `id_map` has no answer for any slot.
+  `id_map` has no answer for any slot; `Err(DuplicateSlotId)` if `id_map`
+  (total on the input, but not necessarily *injective*) maps two distinct
+  input ids to the same output id -- the resulting `new_slots` is checked
+  the same way `new` checks any other slot array, so renumbering can never
+  produce an invalid `StereoConfiguration` even when the map itself doesn't
+  preserve distinctness.
+- `remap_tetrahedral_parity`: `Err(DuplicateSlotId)` if either array has a
+  repeated id; `Err(MismatchedLigandSet)` if `original` and `canonical`
+  (each individually duplicate-free) still don't name the same 4 ids as a
+  set -- without this second check, two arrays naming *different* id sets
+  would canonicalize to unequal representatives purely because they contain
+  different ids, which a bare inequality test would misread as "needs a
+  parity flip" (a confident-looking wrong answer, not the honest "can't
+  tell" this variant exists to report). At its `canonical.rs` call site,
+  every error from this function -- both variants -- is treated identically
+  to the pre-existing "no verifiable order" pass-through-unchanged fallback,
+  documented explicitly at that call site rather than left as an implicit
+  `unwrap_or`: safe for a 2-state tag (unlike square-planar's 3-state tag,
+  which fails closed to `None` instead), and `MismatchedLigandSet`
+  specifically is unreachable from any real parsed molecule in practice
+  (`original`/`canonical` are always built from the same molecule's actual
+  bonded-neighbor id set).
 - `remap_square_planar_tag`: `None` (not a guessed tag) whenever no
   candidate tag's canonical form matches -- which happens exactly when
   `original`/`canonical` don't name the same 4 distinct ids (mismatched
@@ -320,10 +377,30 @@ smoothed over:
 
 ## 9. Extending to TBP / Octahedral later (sketch, not implemented)
 
-`StereoGeometry` is `#[non_exhaustive]` specifically so this extension
-doesn't require a breaking change. Adding trigonal-bipyramidal (5 ligands,
-`@TB1`-`@TB20` in OpenSMILES) or octahedral (6 ligands, `@OH1`-`@OH30`)
-would need:
+### 9.0 API-surface consequence of "not implemented yet" (public API boundary)
+
+`StereoGeometry` is `#[non_exhaustive]` specifically so a future TBP/
+octahedral extension doesn't require a breaking change to *it*. But every
+other public item this module originally exposed --
+`StereoConfiguration`, `CanonicalStereoConfiguration`,
+`canonicalize_configuration`, `equivalent_under_rotation` -- was hardcoded to
+`[u32; 4]`, which would have committed chematic-core's *actual* public API
+to "every geometry has exactly 4 slots" regardless of what
+`#[non_exhaustive]` promised in principle (an independent review caught
+this inconsistency between the enum's stated extensibility and the rest of
+the module's fixed arity). Resolved by making all four `pub(crate)` instead
+of `pub`: only [`remap_tetrahedral_parity`] and [`remap_square_planar_tag`]
+-- the two functions actual callers (`canonical.rs`) need, and which are
+already geometry-specific and arity-fixed by their own OpenSMILES tag
+semantics rather than by an assumption this module bakes in -- stay public.
+This defers the real arity-generalization question (point 2 below) entirely
+rather than guessing at a resolution now: nothing public commits to 4-slot
+forever, and the const-generic-vs-enum-of-variants decision below can be
+made later, informed by whatever TBP/octahedral's actual bridge-function
+needs turn out to be, without today's choice constraining it.
+
+Adding trigonal-bipyramidal (5 ligands, `@TB1`-`@TB20` in OpenSMILES) or
+octahedral (6 ligands, `@OH1`-`@OH30`) would need:
 
 1. A new `StereoGeometry` variant.
 2. A slot-count generalization: `StereoConfiguration`/`CanonicalStereoConfiguration`
@@ -331,8 +408,13 @@ would need:
    two-geometries scope of this PR; a 5/6-slot geometry would need either a
    const-generic `[u32; N]` (cleanest, but touches every signature in this
    module) or a small fixed-capacity array type wide enough for the largest
-   supported geometry (e.g. `[u32; 6]` with a `len` discriminant) -- a real
-   design decision to make at that time, not decided here.
+   supported geometry (e.g. `[u32; 6]` with a `len` discriminant), or --
+   since these types are `pub(crate)` as of §9.0 -- a geometry-tagged enum
+   (`enum StereoConfiguration { Tetrahedral([u32;4]), SquarePlanar([u32;4]),
+   TrigonalBipyramidal([u32;5]), ... }`), which preserves fixed-array
+   performance per-variant and needs no const generics at all, at the cost
+   of callers matching on geometry to get at the slots. A real design
+   decision to make at that time, deliberately not decided here.
 3. A new rotation-group table, derived the same way §3 derives A4/D4. Both
    cross-checked below against the OpenSMILES tag count for that geometry
    (`5! / |group| = 20`, `6! / |group| = 30`) -- the same orbit-count

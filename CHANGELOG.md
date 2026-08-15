@@ -9,6 +9,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `chematic-core` (generalized stereo-configuration geometry)
+
+- New `stereo_geometry` module: a stereo configuration is now modeled as a
+  coordination geometry (`StereoGeometry::Tetrahedral`/`SquarePlanar`,
+  `#[non_exhaustive]` for future trigonal-bipyramidal/octahedral) plus the
+  equivalence class of ligand-slot permutations under that geometry's
+  *proper rotation group* -- A4 (order 12) for tetrahedral, the order-8
+  S4-stabilizer of a trans-pair partition (NOT the naive order-4
+  in-plane-only group, which would wrongly give 6 orbits instead of 3) for
+  square-planar. Replaces two previously independent, hand-written
+  stereo-remapping algorithms in `chematic-smiles` (tetrahedral parity via
+  cycle-counting; square-planar `@SPn` remapping via trans-pair-partition
+  matching) with one shared, exhaustively self-tested primitive.
+- Public API: `remap_tetrahedral_parity`/`remap_square_planar_tag` (the two
+  bridge functions `chematic-smiles` actually calls), `StereoGeometry`,
+  `StereoGeometryError`. `StereoConfiguration`/`CanonicalStereoConfiguration`/
+  `canonicalize_configuration`/`equivalent_under_rotation` are `pub(crate)`
+  rather than public -- all four are hardcoded to `[u32; 4]`, which only
+  fits today's two 4-coordinate geometries; keeping them crate-internal
+  defers the real arity-generalization question until a second geometry
+  family (5/6 slots) actually needs it, rather than committing chematic-core's
+  public API to "every geometry has 4 slots" today.
+- See `docs/rfcs/generalized_stereo_geometry_rfc.md` for the full
+  orbit-stabilizer derivation, oracle/regression provenance, and TBP/
+  octahedral extension sketch.
+
+### Fixed — `chematic-3d` (square-planar centers silently checked as tetrahedral)
+
+- `tetrahedral_constraint_for`'s only guard against non-tetrahedral
+  chirality was `debug_assert!(atom.chirality != Chirality::None)` -- a
+  release-mode no-op, and wrong even in debug since
+  `Chirality::SquarePlanar` is also `!= None`. A `SquarePlanar`-tagged atom
+  (e.g. ordinary, non-dative `[Pt@SP1](Cl)(Cl)(N)N`) could silently be
+  treated as a declared `@@` tetrahedral center and evaluated by
+  `verify_stereo`/`repair_stereo` against a `VOLUME_EPS = 1e-6`
+  chiral-volume tolerance meaningless for a square-planar arrangement.
+  Fixed with `if !atom.chirality.is_tetrahedral() { return
+  Err(UnsupportedCoordination); }`, reusing the rejection variant the
+  function already returns a few lines below for other reasons.
+
+### Fixed — `chematic-smiles` (allene-end-carbon stereo parity)
+
+- An allene *end* carbon (sp2, one real double-bond partner standing in for
+  the 4th tetrahedral-like position -- e.g. `F[C@@H]=[C]=[C@H]Cl`'s
+  F-bearing atom) has a 3-element `stereo_neighbor_order`, not 4. Found
+  during the `chematic-core` rewiring above (a byte-identical before/after
+  canonical-SMILES diff caught a transient regression the existing
+  relative-invariant tests did not); fixed by keeping the original,
+  unmodified, length-generic parity fallback for any non-4-length order,
+  routing only the common 4-element case through the new module. Pinned
+  with an exact golden-value regression test.
+
 ### Added — `chematic-fp` (FPS fingerprint exchange format)
 
 - New `fps` module: streaming read/write for the FPS ("Fingerprint file
