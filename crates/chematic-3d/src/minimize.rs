@@ -9,11 +9,11 @@ use std::collections::HashSet;
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 use chematic_ff::{
     EnergyBreakdown, MinimizerError, NumericTypeError, OOP_SP2_TYPES, UffType, angle_type_for,
-    assign_mmff94_numeric_types, assign_uff_types, bond_type_for, is_angle_in_ring_of_size_3_or_4,
-    minimize_mmff94_lbfgs, minimize_uff as ff_minimize_uff, mmff94_angle_energy_resolved,
-    mmff94_bond_energy_resolved, mmff94_energy_breakdown, mmff94_oop, mmff94_stbn,
-    mmff94_torsion_energy, mmff94_total_energy, stretch_bend_type_for, torsion_type_for,
-    uff_total_energy,
+    assign_mmff94_numeric_types_with_view, assign_uff_types, bond_type_for,
+    is_angle_in_ring_of_size_3_or_4, minimize_mmff94_lbfgs, minimize_uff as ff_minimize_uff,
+    mmff94_angle_energy_resolved, mmff94_bond_energy_resolved, mmff94_energy_breakdown, mmff94_oop,
+    mmff94_stbn, mmff94_torsion_energy, mmff94_total_energy, stretch_bend_type_for,
+    torsion_type_for, uff_total_energy,
 };
 use chematic_ff::{
     assign_dreiding_types, assign_mmff94_types, dreiding_angle, dreiding_bond_len, dreiding_vdw,
@@ -1930,8 +1930,13 @@ fn run_mmff94_bridge(
     include_stretch_bend_in_gate: bool,
 ) -> Result<Mmff94BridgeRun, ForceFieldBridgeError> {
     let n = mol.atom_count();
-    let types = assign_mmff94_numeric_types(mol)?;
-    let coverage = compute_mmff94_coverage(mol, &types);
+    // Must use the same MMFF-specific re-perceived bond orders chematic-ff's
+    // own production energy functions use internally (issue #227 Phase 1,
+    // torsion parameter gap root cause) -- otherwise this coverage gate and
+    // the energy/gradient functions it gates disagree on which classification
+    // code a bond/angle/torsion/stretch-bend term resolves to.
+    let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
+    let coverage = compute_mmff94_coverage(&mmff_mol, &types);
     if coverage.has_gate_failure(include_torsion_oop_in_gate, include_stretch_bend_in_gate) {
         return Err(ForceFieldBridgeError::MissingParameters(Box::new(coverage)));
     }
@@ -2363,6 +2368,7 @@ pub fn minimize_with_policy(
 mod tests {
     use super::*;
     use crate::dg::generate_coords;
+    use chematic_ff::assign_mmff94_numeric_types;
     use chematic_smiles::parse;
 
     fn all_pairs_min_dist(coords: &Coords3D, n: usize) -> f64 {
@@ -2780,7 +2786,7 @@ mod tests {
 mod policy_bridge_tests {
     use super::*;
     use crate::dg::generate_coords;
-    use chematic_ff::mmff94_bond_energy;
+    use chematic_ff::{assign_mmff94_numeric_types, mmff94_bond_energy};
     use chematic_smiles::parse;
 
     // --- Coords3D <-> Vec<[f64; 3]> bridge plumbing -------------------------

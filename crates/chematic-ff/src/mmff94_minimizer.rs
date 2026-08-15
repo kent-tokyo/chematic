@@ -22,7 +22,7 @@ use crate::mmff94_energy::{
     mmff94_torsion_energy, mmff94_vdw_combined,
 };
 use crate::mmff94_numeric::{
-    NumericTypeError, assign_mmff94_numeric_types, mmff94_charges_numeric,
+    NumericTypeError, assign_mmff94_numeric_types_with_view, mmff94_charges_numeric,
 };
 
 type CoordVec = Vec<[f64; 3]>;
@@ -85,11 +85,11 @@ pub struct EnergyBreakdown {
 /// Includes bond, angle, torsion, vdW, and electrostatic terms.
 /// Does not modify coordinates.
 pub fn mmff94_total_energy(mol: &Molecule, coords: &[[f64; 3]]) -> Result<f64, MinimizerError> {
-    let types = assign_mmff94_numeric_types(mol)?;
+    let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
     let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
     let ring_set = find_sssr(mol);
     Ok(total_energy(
-        mol,
+        &mmff_mol,
         coords,
         &types,
         &charges,
@@ -110,7 +110,7 @@ pub fn mmff94_torsion_scan(
     atom_l: usize,
     steps: usize,
 ) -> Result<Vec<(f64, f64)>, MinimizerError> {
-    let types = assign_mmff94_numeric_types(mol)?;
+    let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
     let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
     let ring_set = find_sssr(mol);
     let n = mol.atom_count();
@@ -179,7 +179,7 @@ pub fn mmff94_torsion_scan(
             }
         }
 
-        let energy = total_energy(mol, &work, &types, &charges, ring_set.rings());
+        let energy = total_energy(&mmff_mol, &work, &types, &charges, ring_set.rings());
         results.push((angle_deg, energy));
     }
 
@@ -191,17 +191,17 @@ pub fn mmff94_energy_breakdown(
     mol: &Molecule,
     coords: &[[f64; 3]],
 ) -> Result<EnergyBreakdown, MinimizerError> {
-    let types = assign_mmff94_numeric_types(mol)?;
+    let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
     let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
     let ring_set = find_sssr(mol);
     let rings = ring_set.rings();
-    let b = bond_energy(mol, coords, &types);
-    let a = angle_energy(mol, coords, &types, rings);
-    let sb = stretch_bend_energy(mol, coords, &types, rings);
-    let t = torsion_energy(mol, coords, &types);
-    let o = oop_energy(mol, coords, &types);
-    let v = vdw_energy(mol, coords, &types);
-    let e = elec_energy(mol, coords, &charges);
+    let b = bond_energy(&mmff_mol, coords, &types);
+    let a = angle_energy(&mmff_mol, coords, &types, rings);
+    let sb = stretch_bend_energy(&mmff_mol, coords, &types, rings);
+    let t = torsion_energy(&mmff_mol, coords, &types);
+    let o = oop_energy(&mmff_mol, coords, &types);
+    let v = vdw_energy(&mmff_mol, coords, &types);
+    let e = elec_energy(&mmff_mol, coords, &charges);
     Ok(EnergyBreakdown {
         bond: b,
         angle: a,
@@ -237,7 +237,7 @@ pub fn minimize_mmff94_full(
         });
     }
 
-    let types = assign_mmff94_numeric_types(mol)?;
+    let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
     let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
     // Ring membership is a topology fact, not a geometry one: compute SSSR
     // once per minimization run rather than once per finite-difference probe
@@ -256,7 +256,7 @@ pub fn minimize_mmff94_full(
 
     for _ in 0..max_iter {
         iters += 1;
-        let grad = compute_gradient(mol, coords, &types, &charges, rings, delta);
+        let grad = compute_gradient(&mmff_mol, coords, &types, &charges, rings, delta);
         let max_g = grad
             .iter()
             .flat_map(|v| v.iter())
@@ -276,7 +276,7 @@ pub fn minimize_mmff94_full(
         }
     }
 
-    let energy = total_energy(mol, coords, &types, &charges, rings);
+    let energy = total_energy(&mmff_mol, coords, &types, &charges, rings);
 
     let rmsd = {
         let sum: f64 = coords
@@ -327,7 +327,7 @@ pub fn minimize_mmff94_lbfgs(
         });
     }
 
-    let types = assign_mmff94_numeric_types(mol)?;
+    let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
     let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
     // See minimize_mmff94_full's comment: ring membership is topology-only,
     // computed once per run rather than once per FD probe.
@@ -340,8 +340,8 @@ pub fn minimize_mmff94_lbfgs(
     // Circular history buffer: (s_k = Δx, y_k = Δg, ρ_k = 1/(y·s))
     let mut history: LbfgsHistory = VecDeque::new();
 
-    let mut g = compute_gradient(mol, coords, &types, &charges, rings, DELTA);
-    let mut f0 = total_energy(mol, coords, &types, &charges, rings);
+    let mut g = compute_gradient(&mmff_mol, coords, &types, &charges, rings, DELTA);
+    let mut f0 = total_energy(&mmff_mol, coords, &types, &charges, rings);
 
     let mut iters = 0usize;
     let mut converged = false;
@@ -378,7 +378,7 @@ pub fn minimize_mmff94_lbfgs(
                     ]
                 })
                 .collect();
-            let f_trial = total_energy(mol, &trial, &types, &charges, rings);
+            let f_trial = total_energy(&mmff_mol, &trial, &types, &charges, rings);
             if f_trial <= f0 + C_ARMIJO * alpha * gp {
                 break trial;
             }
@@ -401,8 +401,8 @@ pub fn minimize_mmff94_lbfgs(
         };
 
         // Compute new gradient
-        let g_new = compute_gradient(mol, &new_coords, &types, &charges, rings, DELTA);
-        let f_new = total_energy(mol, &new_coords, &types, &charges, rings);
+        let g_new = compute_gradient(&mmff_mol, &new_coords, &types, &charges, rings, DELTA);
+        let f_new = total_energy(&mmff_mol, &new_coords, &types, &charges, rings);
 
         // Compute s = x_new - x, y = g_new - g
         let s: Vec<[f64; 3]> = new_coords
@@ -1273,6 +1273,7 @@ mod tests {
     use super::*;
     use crate::mmff94_energy::mmff94_stbn_type_only;
     use crate::mmff94_energy::{mmff94_angle_energy, mmff94_bond_energy};
+    use crate::mmff94_numeric::assign_mmff94_numeric_types;
     use chematic_core::molecule::MoleculeBuilder;
     use chematic_core::{Atom, BondOrder, Element};
 

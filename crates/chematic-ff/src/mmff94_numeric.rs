@@ -692,7 +692,64 @@ fn bond_type_for(order: BondOrder) -> u8 {
 ///
 /// This implements the core atom type perception rules for organic chemistry.
 /// For atoms not handled, returns `Err`.
+///
+/// Thin wrapper over [`assign_mmff94_numeric_types_with_view`] that discards
+/// the re-perceived molecule -- correct for callers that only need numeric
+/// types (charges, vdW, atom-level reporting). Any caller that ALSO does
+/// bond-order-dependent classification (`bond_type_for`/`angle_type_for`/
+/// `torsion_type_for`/`stretch_bend_type_for`, all of which read
+/// [`chematic_core::BondOrder`] directly) must call
+/// [`assign_mmff94_numeric_types_with_view`] instead and use its returned
+/// molecule for that purpose, not its own input `mol` -- see that function's
+/// doc for why (issue #227 Phase 1, torsion parameter gap root cause).
 pub fn assign_mmff94_numeric_types(mol: &Molecule) -> Result<Vec<u8>, NumericTypeError> {
+    assign_mmff94_numeric_types_with_view(mol).map(|(types, _)| types)
+}
+
+/// Like [`assign_mmff94_numeric_types`], but also returns the MMFF-specific
+/// re-perceived molecule ([`compute_mmff94_aromatic_view`]'s output, same
+/// atom count/bond topology as `mol`, only [`chematic_core::BondOrder`]
+/// values on ring bonds can differ) used to derive those types.
+///
+/// Root cause this exists to fix (issue #227 Phase 1, torsion parameter gap,
+/// 2026-08-15): `bond_type_for`'s "`BondOrder::Aromatic` forces
+/// `bond_type=0`" rule is itself correct (confirmed against a live RDKit
+/// oracle for benzene's own ring bond), but every one of chematic-ff's
+/// bond-order-dependent classification call sites
+/// (`bond_type_for`/`angle_type_for`/`torsion_type_for`/
+/// `stretch_bend_type_for`, both in production energy/gradient code and in
+/// coverage-gate diagnostics) was being fed the CALLER'S original `mol`, not
+/// this re-perceived view -- even though the numeric TYPES those same call
+/// sites use were already correctly derived from it. For a ring system where
+/// chematic's general/SMILES aromaticity perception and MMFF94's own
+/// stricter, Kekule-based perception (`setMMFFAromaticity`) disagree (e.g.
+/// caffeine's pyrimidinedione ring: chematic's general model treats the
+/// whole fused bicyclic system as one delocalized aromatic ring, RDKit's
+/// real sanitizer Kekulizes that ring to alternating single/double bonds
+/// while leaving only the fused imidazole ring aromatic -- oracle-confirmed
+/// via `MolFromSmiles(...).GetBondBetweenAtoms(5,6).GetIsAromatic() ==
+/// False`, and independently confirmed against chematic's own
+/// pre-existing, already-oracle-validated
+/// `validation/results/mmff94_aromaticity_bond_parity_227_oracle.json` dump,
+/// which already recorded `bond_aromatic["5-6"]: false` for caffeine before
+/// this fix), this meant the classification code was computed from the
+/// WRONG bond order, landing on a torsion/bond/angle-type code with no table
+/// row even though chematic's own, unmodified parameter table already
+/// carries the correct row at the code RDKit's real (Kekulized) bond type
+/// resolves to. Measured on the 265-molecule Wave 1 corpus: 254/254 of the
+/// `torsions_missing` instances with `present_at_different_classification =
+/// Some` (`crates/chematic-3d/examples/mmff94_term_coverage_audit.rs`) have
+/// this exact shape -- oracle-validated (all 254, not a sample) via a live
+/// `GetMMFFTorsionParams` cross-check: the oracle's returned value matches
+/// EXACTLY one of chematic's own pre-existing rows at a different
+/// classification code in 254/254 cases, and RDKit's real bond object is
+/// non-aromatic (`GetIsAromatic() == False`) in 254/254 cases. No Halgren
+/// empirical-rule implementation was needed for any of them (see
+/// `scripts/mmff94_provenance/PROVENANCE.md`'s Torsion entry for the two
+/// falsified alternative hypotheses this ruled out first).
+pub fn assign_mmff94_numeric_types_with_view(
+    mol: &Molecule,
+) -> Result<(Vec<u8>, Molecule), NumericTypeError> {
     let n = mol.atom_count();
     let mut types = vec![0u8; n];
     let rings = chematic_perception::find_sssr(mol).rings().to_vec();
@@ -766,7 +823,7 @@ pub fn assign_mmff94_numeric_types(mol: &Molecule) -> Result<Vec<u8>, NumericTyp
         }
     }
 
-    Ok(types)
+    Ok((types, mmff_mol))
 }
 
 fn chematic_ff_numeric_type_registry_lookup(

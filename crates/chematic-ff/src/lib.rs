@@ -37,7 +37,8 @@ pub use mmff94_minimizer::{
     torsion_type_for,
 };
 pub use mmff94_numeric::{
-    NumericTypeError, assign_mmff94_numeric_types, mmff94_charges_numeric, pbci_for,
+    NumericTypeError, assign_mmff94_numeric_types, assign_mmff94_numeric_types_with_view,
+    mmff94_charges_numeric, pbci_for,
 };
 pub use mmff94_numeric_type_registry::{Mmff94NumericTypeInfo, mmff94_numeric_type_info};
 pub use mmff94_params::{
