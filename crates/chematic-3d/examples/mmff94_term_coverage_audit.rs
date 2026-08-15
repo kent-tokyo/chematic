@@ -51,7 +51,7 @@ use std::collections::BTreeMap;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 use chematic_ff::{
-    OOP_SP2_TYPES, angle_type_for, assign_mmff94_numeric_types, bond_type_for,
+    OOP_SP2_TYPES, angle_type_for, assign_mmff94_numeric_types_with_view, bond_type_for,
     is_angle_in_ring_of_size_3_or_4, mmff94_angle_energy, mmff94_angle_energy_resolved,
     mmff94_bond_energy, mmff94_bond_energy_resolved, mmff94_charges_numeric, mmff94_oop,
     mmff94_stbn, mmff94_stbn_type_only, mmff94_torsion_energy, mmff94_vdw_combined,
@@ -253,8 +253,19 @@ fn main() {
             }
         };
 
-        let types = match assign_mmff94_numeric_types(&mol) {
-            Ok(t) => t,
+        let (types, mol) = match assign_mmff94_numeric_types_with_view(&mol) {
+            // Shadow `mol` with the MMFF-specific re-perceived view (issue
+            // #227 Phase 1, torsion parameter gap root cause): every
+            // classification call below (`bond_type_for`/`angle_type_for`/
+            // `torsion_type_for`/`stretch_bend_type_for`, all of which read
+            // `BondOrder` directly) must see the SAME bond orders the
+            // numeric types were derived from, not chematic's general/SMILES
+            // aromaticity perception -- see
+            // `assign_mmff94_numeric_types_with_view`'s doc for why. Same
+            // atom count/topology as the original `mol`, so every other use
+            // below (ring detection, atom iteration, `ctx`) is unaffected
+            // except where `BondOrder`/`atom.aromatic` is read.
+            Ok((t, view)) => (t, view),
             Err(e) => {
                 eprintln!("TYPING ERROR {}: {e}", cm.name);
                 mol_aggs.push(MolAgg {
