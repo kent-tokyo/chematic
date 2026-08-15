@@ -308,6 +308,211 @@ address.
 C1-only and C1+C2 states), `cargo clippy --workspace --all-targets -- -D
 warnings` clean, `cargo fmt --all -- --check` clean.
 
+**Production fix (issue #227 Phase 1, 2026-08-15): torsion parameter gap
+root-caused to a bond-order-source bug, NOT a missing Halgren empirical
+rule.** Fresh T0 audit on this exact commit (`mmff94_term_coverage_audit.rs`,
+before any Phase 1 change): `torsions_missing` **257** instances across
+**62/265** molecules (Tier A=1, Tier B=61) — every number below names its
+producing tool and denominator per the acceptance gate's own requirement, so
+none of these are interchangeable with the Bond/Angle counts elsewhere in
+this file. Of the 257: **254** have `present_at_different_classification =
+Some` (a real row exists in chematic's own, unmodified 926-row
+`MMFF94_TORSION_ENERGY` table at a *different* classification code); **3**
+are absent at every code 0..=8 (`table_gap`).
+
+**One molecule excluded from every count above and below**:
+`force_field_unsupported_probe` (SMILES `[P](C)(C)(C)=C`, `primary_category:
+"force_field_unsupported"` in its own manifest entry — a deliberate
+fail-closed probe fixture, confirmed by name/category, not investigated
+further) throws a typing error (`atom 0 (Element(15)) was assigned MMFF94
+numeric type 20 (CR4R), whose registry element is Element(6)`) before torsion
+enumeration ever runs. All corpus-wide counts in this section are therefore
+effectively over a 264/265 typing-succeeded population; this is stated
+explicitly here rather than silently narrowing the denominator. Left
+unfixed, per the Phase 1 directive's guidance not to touch atom typing
+mid-PR for a molecule whose whole point is to be unsupported.
+
+**Two hypotheses investigated and falsified, both against the live oracle,
+before the real cause was found** (see
+`crates/chematic-3d/examples/mmff94_torsion_empirical_diagnostic_227.rs` for
+the tooling; `rdkit==2026.03.4`, this session's actual installed version —
+not the 2026.03.3 pin earlier entries in this file used, see
+`validation/results/pipeline_v2_vs_rdkit_environment_record.json` for the
+prior, already-documented precedent that this exact version bump does not
+confound status/coverage transitions):
+
+1. *A from-scratch Halgren empirical torsion rule.* Structure derived from
+   OpenBabel's `forcefieldmmff94.cpp` (GPL-2.0, a DIFFERENT project from
+   RDKit — not copied from, hypothesized from its comments citing Halgren
+   Part V pp. 631-632 Table X by page/table number, since the primary paper
+   is paywalled and no other public source reproduces the formula; see the
+   session's own research notes for the full source survey). Rule (b)
+   ("aromatic b-c central bond", the branch that structurally matches
+   254/254 of these instances, all of which have `bond_order_jk ==
+   Aromatic`) predicts a UNIFORM `V1=0, V2=6.0, V3=0` for every case (β=6.0,
+   π_bc=0.5, U_C=2.0 for all-carbon central atoms — the formula has no
+   dependence on the terminal i/l atoms at all). **(oracle-validated, all
+   254, not a sample): 0/254 match.** Real oracle values cluster into 7
+   distinct `(V1,V2,V3)` tuples that vary with the terminal atoms — evidence
+   this is not a central-bond-only empirical formula at work, ruling out
+   rule (b) (and, by the same central-bond-only-input argument, every other
+   Halgren empirical-rule branch (c)/(d)/(g)/(h) considered).
+2. *RDKit's real eqLevel canonical-type-substitution ladder applied to the
+   torsion's terminal atoms.* Ported the SAME `MMFF94_EQ_LEVEL` table
+   Angle's Stage B already uses in production (`mmff94_energy/angle.rs`),
+   substituting `ti`/`tl` through stages 3/4/5 with `tj`/`tk`/`tors_type`
+   held fixed (mirroring Angle's real mechanism). **(oracle-validated
+   indirectly via chematic's own 926-row table, all 254): 0/254 additional
+   hits** beyond what the existing exact/wildcard chain already finds.
+
+**The real cause**: for all 254, `mmff94_torsion_energy` at a DIFFERENT
+classification code than the one `torsion_type_for` computed returns a value
+that matches the live oracle exactly — **(oracle-validated, all 254): 254/254
+row-level matches, zero exceptions**. `torsion_type_for`'s formula itself
+(fixed 2026-08-10, see the Torsion table row above) is correct given its
+input; the input was wrong. `assign_mmff94_numeric_types` already computes
+an MMFF-specific re-perceived molecule
+(`compute_mmff94_aromatic_view` — Kekulized, RDKit-`setMMFFAromaticity`-
+matching bond orders, ported in Priority 1A) to derive atom TYPES correctly,
+then discarded that molecule; every bond-order-dependent classification call
+(`bond_type_for`/`angle_type_for`/`torsion_type_for`/`stretch_bend_type_for`)
+kept reading `BondOrder` from the CALLER's original, un-reperceived molecule.
+For caffeine's own pyrimidinedione ring (already the worked example in this
+file's aromaticity-parity row above), chematic's general perception marks
+bond 5-6 `BondOrder::Aromatic`; RDKit's real sanitizer Kekulizes the same
+bond to `Single` — **(oracle-validated): confirmed 254/254 via
+`MolFromSmiles(...).GetBondBetweenAtoms(j,k).GetIsAromatic() == False`**, and
+independently corroborated by chematic's own pre-existing,
+already-oracle-validated
+`validation/results/mmff94_aromaticity_bond_parity_227_oracle.json` dump,
+which already recorded `bond_aromatic["5-6"]: false` for caffeine before
+this fix existed. `bond_type_for`'s own "`BondOrder::Aromatic` forces
+`bond_type=0`" rule is itself correct (re-confirmed here, not just assumed
+from the earlier benzene check) — it was simply being fed the wrong bond
+order.
+
+**Fix**: `assign_mmff94_numeric_types_with_view`
+(`crates/chematic-ff/src/mmff94_numeric.rs`) returns `(types, mmff_mol)`
+instead of discarding the re-perceived molecule; `assign_mmff94_numeric_types`
+is now a thin wrapper. Threaded through chematic-ff's 5 production
+energy/gradient entry points (`mmff94_total_energy`, `mmff94_torsion_scan`,
+`mmff94_energy_breakdown`, `minimize_mmff94_full`, `minimize_mmff94_lbfgs`)
+and chematic-3d's `compute_mmff94_coverage` (via `run_mmff94_bridge`, the
+production `Mmff94BondAngleStrict`/`Mmff94WithUffFallback` gate) — a
+classification/bond-order-source fix, not a new resolution tier. This is a
+BROADER fix than Torsion alone: `bond_type_for`/`angle_type_for`/
+`stretch_bend_type_for` share the same root cause, and all three improved as
+a direct, unavoidable consequence (reported as its own line item, not folded
+into the torsion numbers, same 265-molecule corpus, same audit tool):
+`bonds_missing` (type-only) 80→1, `angles_missing` (type-only) 191→46,
+`stbn_type_only_missing` (never gated by `Mmff94BondAngleStrict` at any
+policy, reported for completeness only) 1865→1694.
+
+**Known remaining inconsistency, explicitly not fixed here (follow-up, not
+silent)**: `mmff94_charges_numeric` (`mmff94_numeric.rs`) independently reads
+`bond.order` from the caller's original molecule for MMFF bond-charge-
+increment (BCI) contributions, the same root-cause shape as the fix above,
+unaddressed — electrostatics are out of scope for a torsion-parameter-gap
+PR. Not measured to move any number in this PR (charges are not part of the
+`Mmff94BondAngleStrict` coverage gate), flagged for whoever next touches
+MMFF94 electrostatics.
+
+**Renumbering-invariance, checked directly rather than assumed**:
+`compute_mmff94_aromatic_view`'s Kekulization
+(`chematic_core::kekulize`, the same blossom-matching solver canonical
+SMILES already depends on, not a new per-bond heuristic written for this
+fix) can in principle have genuine ties for a symmetric ring (e.g.
+benzene's own two equally-valid alternating patterns) — a real risk that
+the fix's re-perceived bond order could silently depend on atom traversal
+order. Checked empirically, not assumed: `caffeine_reperceived_bond_order_is_invariant_under_atom_renumbering`
+renumbers caffeine 32 ways (`deterministic_permutation`, the same
+xorshift64-based generator issue #227 Priority 1A-2's own order-independence
+tests already use) and re-identifies the C5A(63)-C=O(3) ring-fusion bond by
+its unique atom-TYPE-pair content signature (not by index) in each variant
+— **32/32 renumberings give the identical bond order**, no dependence
+found. `benzene_reperceived_ring_bond_orders_are_invariant_under_atom_renumbering`
+does the same for the textbook genuine-Kekule-tie case (two valid
+alternating patterns) and confirms all 6 ring bonds resolve uniformly to
+`Aromatic` (RDKit's real ring-level promotion for an accepted aromatic
+ring, not a residual single/double pattern) across all 32 renumberings too
+— whichever choice the Kekulizer's internal tie-break makes never leaks
+into the final classification input. No renumbering-dependence bug found;
+reported as a real, checked negative result, not assumed from the
+pre-existing atom-TYPE permutation-invariance tests (which test a different
+question — type assignment, not the bond ORDER this fix's classification
+path additionally depends on).
+
+**Second, contained addition**: `torsion_no_term_by_design`
+(`mmff94_minimizer.rs`) and `Mmff94Resolution::NoTermByDesign`
+(`mmff94_energy/mod.rs`). Halgren's real empirical-rule cascade omits the
+torsion term entirely whenever either central (j-k) atom has MMFF's `lin`
+flag (type 4 CSP, type 53 `=N=`, type 61) — rotating around a bond whose
+other end is a linear 180° center changes no real geometry. This is the
+complete, exact explanation for all 3 `table_gap` instances (2 in
+`chembl_tier_b_0001`, an aryl-nitrile Ar-Ar-C#N shape with central k=type 4;
+1 in `chembl_tier_b_0080`, an Ar-N=[N+]=[N-] cumulated-azide shape with
+central k=type 53) — **(oracle-validated, all 3): `GetMMFFTorsionParams`
+returns `None` for all 3, and each central atom's registered `linear` flag
+matches RDKit's own MMFF atom type at that atom exactly** (types also
+independently confirmed correct: chematic's assigned types match the
+oracle's `GetMMFFAtomType` exactly on all 4 atoms of all 3 instances).
+Wired into `compute_mmff94_coverage`'s torsion loop (a new
+`torsions_no_term_by_design: usize` field on `Mmff94CoverageReport`,
+included in `torsions_total`, excluded from `torsions_missing`) and into
+`mmff94_term_coverage_audit.rs` identically, so these 3 no longer trip
+`include_torsion_oop_in_gate` for their 2 molecules.
+
+**Post-fix T-final audit** (`mmff94_term_coverage_audit.rs`, same 265-molecule
+corpus, same denominators as T0 above): `torsions_missing` 257→**0**,
+`torsions_no_term_by_design`=**3** (a denominator correction, not a
+resolution — these never needed a parameter). `bonds_missing` (type-only)
+80→**1**; `angles_missing` (type-only) 191→**46**; bond+angle
+gate-would-fail 14→**13**.
+
+**Corpus re-measurement, two named, distinct entry points, per-molecule join
+(not aggregate arithmetic), zero regressions on both**:
+
+- `minimize_with_policy(..., Mmff94BondAngleStrict, ...)` via
+  `mmff94_strict_gate_remeasure_227.rs` (`generate_coords` starting geometry
+  — the same tool/policy shape as `pipeline_v2_mmff94_strict`'s force-field
+  arm, `include_torsion_oop_in_gate=false`, i.e. torsion coverage is NOT
+  gated here by design): `Ok` 248→249/265 (**+1**, `MissingParameters`
+  13→12, `UnsupportedAtomType`=1 unchanged, `MinimizationFailed`=3
+  unchanged). Small delta expected: this gate never checked torsion
+  coverage at all, so only the bond/angle side-effect of the fix (not the
+  torsion fix itself) can move it.
+- `minimize_with_policy_gated(..., Mmff94BondAngleStrict, ..., true, true)`
+  via `mmff94_strict_gate_remeasure_227.rs --complete-bonded-term-gate`
+  (matches the `chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated`
+  arm's gate shape): `Ok` 187→**249**/265 (**+62**, `MissingParameters`
+  74→**12**, `UnsupportedAtomType`=1 unchanged, `MinimizationFailed`=3
+  unchanged). This is the gate the torsion fix (both the bond-order-source
+  fix and the `NoTermByDesign` correction) actually targets. An intermediate
+  measurement with the bond-order-source fix alone (before
+  `torsion_no_term_by_design` was wired into `compute_mmff94_coverage`)
+  showed `Ok`=247, `MissingParameters`=14 — the remaining 2
+  (`chembl_tier_b_0001`, `chembl_tier_b_0080`) are exactly the 2 molecules
+  `NoTermByDesign` fixes, confirmed by name via the same per-molecule join.
+
+Both final re-measurements independently verified via a full per-molecule
+join against their own pre-fix baseline on the same commit (not assumed from
+the audit tool's aggregate numbers): **zero success→failure regressions on
+either gate**.
+
+**Recommendation and scope decision**: do NOT implement Halgren's empirical
+torsion rule. On this corpus, as of this exact codebase state, zero real
+instances need it — every apparent candidate was either a classification/
+bond-order-source bug (254) or a genuinely term-free case RDKit also has no
+parameter for (3). Shipping an empirical formula whose one falsifiable
+prediction already failed against the live oracle would be strictly worse
+than shipping none (per the Phase 1 directive's own "if you don't get an
+improvement, report that fact plainly"). If a future corpus expansion
+surfaces a genuine Torsion `table_gap` residual that is NOT explained by a
+linear central atom, re-open this investigation with a fresh oracle
+differential — do not assume this finding transfers without re-checking, the
+same discipline this entry itself applied to the pre-2026-08-10 diagnostic's
+now-superseded 254-instance empirical-rule hypothesis.
+
 ## Halgren primary literature (secondary/theoretical cross-reference, not the implementation source)
 
 - T. A. Halgren, "Merck Molecular Force Field. I. Basis, Form, Scope,

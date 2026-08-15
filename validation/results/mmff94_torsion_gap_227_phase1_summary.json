@@ -1,0 +1,83 @@
+{
+  "generated_from": "crates/chematic-3d/examples/mmff94_term_coverage_audit.rs and mmff94_strict_gate_remeasure_227.rs, issue #227 Phase 1 (torsion parameter gap), 2026-08-15",
+  "corpus": "265 molecules (validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_{a,b}.json)",
+  "corpus_commit_base": "c079926 (v0.16.0 release commit, main)",
+  "denominator_note": "1 molecule (force_field_unsupported_probe, SMILES [P](C)(C)(C)=C, a deliberate fail-closed probe fixture) fails MMFF94 numeric typing before torsion enumeration ever runs and is excluded from every count below -- an effective 264/265 typing-succeeded population. This molecule is unrelated to torsion parameterization and was not investigated further.",
+  "t0_audit": {
+    "tool": "mmff94_term_coverage_audit.rs, pre-Phase-1 state (commit c079926)",
+    "torsions_missing_instances": 257,
+    "torsions_missing_molecules": 62,
+    "torsions_missing_molecules_tier_a": 1,
+    "torsions_missing_molecules_tier_b": 61,
+    "present_at_different_classification_some": 254,
+    "present_at_different_classification_none_table_gap": 3,
+    "bonds_missing_type_only": 80,
+    "angles_missing_type_only": 191,
+    "stbn_type_only_missing": 1865,
+    "bond_angle_gate_would_fail_molecules": 14
+  },
+  "investigation": {
+    "hypothesis_1_halgren_empirical_rule": {
+      "description": "Rule (b) 'aromatic central bond', structure hypothesized from OpenBabel forcefieldmmff94.cpp comments citing Halgren Part V pp.631-632 Table X (primary paper paywalled). Predicts uniform V1=0,V2=6.0,V3=0 for all 254 aromatic-central-bond instances (formula has no dependence on terminal i/l atoms).",
+      "oracle_matches": 0,
+      "oracle_total_checked": 254,
+      "verdict": "falsified",
+      "evidence": "Real oracle values cluster into 7 distinct (V1,V2,V3) tuples that vary with the terminal atoms i/l, which a central-bond-only formula cannot produce."
+    },
+    "hypothesis_2_eq_level_ladder": {
+      "description": "RDKit's real eqLevel canonical-type-substitution ladder (same MMFF94_EQ_LEVEL table Angle's Stage B uses in production), applied to terminal atoms ti/tl, tj/tk/tors_type held fixed.",
+      "additional_hits_found": 0,
+      "total_checked": 254,
+      "verdict": "falsified",
+      "evidence": "0/254 additional table rows found beyond chematic's existing exact/wildcard chain."
+    },
+    "real_root_cause": {
+      "description": "torsion_type_for/bond_type_for/angle_type_for/stretch_bend_type_for were fed BondOrder from the caller's original, un-reperceived molecule, not the MMFF-specific re-perceived molecule (compute_mmff94_aromatic_view) that assign_mmff94_numeric_types already computed to derive atom TYPES correctly and then discarded.",
+      "oracle_confirmed_row_matches": 254,
+      "oracle_confirmed_row_matches_total": 254,
+      "oracle_confirmed_non_aromatic_bond": 254,
+      "oracle_confirmed_non_aromatic_bond_total": 254,
+      "fix": "assign_mmff94_numeric_types_with_view (crates/chematic-ff/src/mmff94_numeric.rs), threaded through 5 chematic-ff production entry points and chematic-3d's compute_mmff94_coverage.",
+      "halgren_empirical_rule_implemented": false,
+      "halgren_empirical_rule_implemented_reason": "Zero instances in this corpus need it after the bond-order-source fix; implementing an unexercised, already-falsified-on-its-one-testable-prediction formula would be worse than implementing none."
+    },
+    "table_gap_3_instances": {
+      "description": "All 3 explained by torsion_no_term_by_design: either central (j-k) atom has MMFF's `lin` flag (type 4 CSP, type 53 =N=). Halgren's real empirical-rule cascade omits the torsion term entirely in this case -- RDKit generates no term either.",
+      "oracle_confirmed_none": 3,
+      "oracle_confirmed_none_total": 3,
+      "instances": [
+        {"molecule": "chembl_tier_b_0001", "atoms": [19, 20, 21, 22], "types": [37, 37, 4, 42], "shape": "Ar-Ar-C#N (aryl nitrile), central k=type 4 CSP"},
+        {"molecule": "chembl_tier_b_0001", "atoms": [23, 20, 21, 22], "types": [37, 37, 4, 42], "shape": "same central bond, symmetric second aryl neighbor"},
+        {"molecule": "chembl_tier_b_0080", "atoms": [17, 18, 19, 20], "types": [37, 9, 53, 47], "shape": "Ar-N=[N+]=[N-] (cumulated azide), central k=type 53 =N="}
+      ]
+    }
+  },
+  "t_final_audit": {
+    "tool": "mmff94_term_coverage_audit.rs, post-Phase-1 state (this PR)",
+    "torsions_missing_instances": 0,
+    "torsions_no_term_by_design_instances": 3,
+    "bonds_missing_type_only": 1,
+    "angles_missing_type_only": 46,
+    "stbn_type_only_missing": 1694,
+    "bond_angle_gate_would_fail_molecules": 13
+  },
+  "corpus_remeasurement": {
+    "bond_angle_gate": {
+      "tool": "mmff94_strict_gate_remeasure_227.rs (no flag) == minimize_with_policy(Mmff94BondAngleStrict), generate_coords starting geometry, matches pipeline_v2_mmff94_strict's force-field-gate shape (include_torsion_oop_in_gate=false)",
+      "before": {"total": 265, "ok": 248, "missing_parameters": 13, "unsupported_atom_type": 1, "minimization_failed": 3},
+      "after": {"total": 265, "ok": 249, "missing_parameters": 12, "unsupported_atom_type": 1, "minimization_failed": 3},
+      "per_molecule_join_regressions": 0,
+      "per_molecule_join_improvements": 1,
+      "join_methodology": "before/after JSONL rows keyed by molecule `name` into a dict, regression = name present in both with before-status Ok and after-status != Ok, improvement = before-status != Ok and after-status == Ok -- a genuine per-molecule-ID join, not a before-count/after-count comparison (which could hide a swap where molecule A regresses while unrelated molecule B improves)."
+    },
+    "complete_bonded_term_gate": {
+      "tool": "mmff94_strict_gate_remeasure_227.rs --complete-bonded-term-gate == minimize_with_policy_gated(Mmff94BondAngleStrict, true, true), matches chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated's gate shape",
+      "before": {"total": 265, "ok": 187, "missing_parameters": 74, "unsupported_atom_type": 1, "minimization_failed": 3},
+      "after": {"total": 265, "ok": 249, "missing_parameters": 12, "unsupported_atom_type": 1, "minimization_failed": 3},
+      "per_molecule_join_regressions": 0,
+      "per_molecule_join_improvements": 62,
+      "join_methodology": "same per-molecule-ID join methodology as bond_angle_gate above, independently re-run against the final state (bond-order-source fix + torsion_no_term_by_design both applied).",
+      "note": "Intermediate measurement (bond-order-source fix only, before torsion_no_term_by_design was wired into compute_mmff94_coverage): ok=247, missing_parameters=14, 60 improvements, 0 regressions. Final numbers above supersede it -- the remaining 2 (74-62=12 vs the intermediate 14) are exactly chembl_tier_b_0001 and chembl_tier_b_0080, the 2 molecules NoTermByDesign fixes."
+    }
+  }
+}
