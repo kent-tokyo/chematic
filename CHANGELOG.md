@@ -7,7 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [0.16.0] — 2026-08-15
+
+Periodic-structure interoperability and generalized stereochemistry
+foundation. `chematic-crystal` gains CIF and POSCAR/CONTCAR interop
+(`chematic-mol`'s CIF reader/writer now bridges to `PeriodicStructure`
+via an optional `crystal` feature; the `chematic-crystal` crate itself
+gains native POSCAR/CONTCAR read/write); `chematic-fp` gains the FPS
+fingerprint exchange format; stereo configuration (tetrahedral +
+square-planar) is now represented as a coordination geometry plus the
+equivalence class of ligand permutations under that geometry's proper
+rotation group, replacing two previously-independent hand-written
+remapping algorithms and fixing a real bug where a square-planar center
+could be silently coerced into a tetrahedral chiral-volume check. Also
+includes a release-grade re-measurement of the `pipeline_v2` vs RDKit
+2026.03.4 benchmark (superseding the stale 2026-08-06 numbers) that
+surfaced a new finding: torsion parameter coverage, not bond/angle, is
+now the dominant remaining MMFF94 gap. Purely additive at the Rust API
+level for existing crates -- no breaking changes.
 
 ### Added — `chematic-core` (generalized stereo-configuration geometry)
 
