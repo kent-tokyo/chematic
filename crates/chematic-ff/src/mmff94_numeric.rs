@@ -2741,7 +2741,12 @@ mod tests {
     /// and friends above). Panics if the pair is not found or is ambiguous
     /// (more than one such bond) -- both would make this an unreliable
     /// identity key for the fixture it's called on.
-    fn bond_order_between_unique_type_pair(mol: &Molecule, types: &[u8], ta: u8, tb: u8) -> BondOrder {
+    fn bond_order_between_unique_type_pair(
+        mol: &Molecule,
+        types: &[u8],
+        ta: u8,
+        tb: u8,
+    ) -> BondOrder {
         let mut found: Option<BondOrder> = None;
         for (_, bond) in mol.bonds() {
             let (i, j) = (bond.atom1.0 as usize, bond.atom2.0 as usize);
