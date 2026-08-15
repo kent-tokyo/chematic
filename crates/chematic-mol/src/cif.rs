@@ -154,7 +154,11 @@ impl std::error::Error for CifError {}
 /// loop.
 /// Strip a CIF comment from one line, respecting single- and double-quoted
 /// strings (a `#` inside quotes is not a comment delimiter).
-fn strip_cif_comment(line: &str) -> &str {
+///
+/// `pub(crate)`: shared with [`crate::mmcif`], which reuses this crate's
+/// existing STAR/CIF tokenizing layer rather than re-implementing it --
+/// see that module's top-level docs.
+pub(crate) fn strip_cif_comment(line: &str) -> &str {
     let mut in_single = false;
     let mut in_double = false;
     for (i, c) in line.char_indices() {
@@ -174,7 +178,9 @@ fn strip_cif_comment(line: &str) -> &str {
 ///
 /// Shared by [`parse_cif`]'s row loop and the `crystal`-feature adapter
 /// (`parse_cif_periodic_structure`) so both resolve elements identically.
-fn resolve_element(elem_raw: &str) -> Result<Element, CifError> {
+///
+/// `pub(crate)`: also reused by [`crate::mmcif`] for `_atom_site.type_symbol`.
+pub(crate) fn resolve_element(elem_raw: &str) -> Result<Element, CifError> {
     let elem_str = elem_raw.trim_end_matches(|c: char| c.is_ascii_digit() || c == '+' || c == '-');
     Element::from_symbol(elem_str).ok_or_else(|| CifError::UnknownElement(elem_str.to_string()))
 }
@@ -450,7 +456,11 @@ fn cart_to_frac(cell: &UnitCell, x: f64, y: f64, z: f64) -> (f64, f64, f64) {
 // CIF tokenizer
 // ---------------------------------------------------------------------------
 
-fn tokenize_cif(input: &str) -> Vec<String> {
+/// `pub(crate)`: shared low-level STAR/CIF tokenizer, reused by
+/// [`crate::mmcif`] rather than re-implemented (mmCIF is the same
+/// underlying STAR syntax, just a different category-tag convention --
+/// `_atom_site.Cartn_x` vs. this module's `_atom_site_fract_x`).
+pub(crate) fn tokenize_cif(input: &str) -> Vec<String> {
     let mut tokens: Vec<String> = Vec::new();
     let chars: Vec<char> = input.chars().collect();
     let len = chars.len();
@@ -518,11 +528,13 @@ fn tokenize_cif(input: &str) -> Vec<String> {
     tokens
 }
 
-fn strip_esd(s: &str) -> &str {
+/// `pub(crate)`: shared with [`crate::mmcif`] (esd-suffix stripping is a
+/// general CIF numeric-literal rule, not specific to small-molecule tags).
+pub(crate) fn strip_esd(s: &str) -> &str {
     s.find('(').map_or(s, |pos| &s[..pos])
 }
 
-fn parse_esd(s: &str) -> Option<f64> {
+pub(crate) fn parse_esd(s: &str) -> Option<f64> {
     strip_esd(s).parse::<f64>().ok()
 }
 

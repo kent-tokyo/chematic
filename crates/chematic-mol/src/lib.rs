@@ -23,12 +23,16 @@ pub mod cml;
 pub mod error;
 pub mod gaussian;
 pub mod ket;
+pub mod mmcif;
 pub mod mol2000;
 pub mod mol2_tripos;
 pub mod mol3000;
 pub mod moljson;
 pub mod mrv;
+pub mod orca;
 pub mod pdbqt;
+pub mod pqr;
+pub mod qcschema;
 pub mod record;
 pub mod rxn;
 pub mod sdf;
@@ -54,6 +58,10 @@ pub use cml::{CmlError, parse_cml, write_cml};
 pub use error::MolParseError as MolError;
 pub use gaussian::{GaussianError, GaussianLogResult, parse_gaussian_log, parse_gjf, write_gjf};
 pub use ket::{KetError, parse_ket, parse_ket_3d, write_ket, write_ket_3d};
+pub use mmcif::{
+    MmcifAtomRecord, MmcifError, MmcifParseLimits, MmcifResult, parse_mmcif,
+    parse_mmcif_with_limits, write_mmcif,
+};
 pub use mol2_tripos::{Mol2Error, parse_mol2, write_mol2};
 pub use mol2000::{
     CoordinateDimension, GeometryRank, MolMetadata, MolReadReport, Stereo3DDiagnostic, parse_mol,
@@ -70,7 +78,22 @@ pub use moljson::{MolJsonError, parse_moljson, write_moljson};
 pub use mrv::{
     MrvError, MrvParseLimits, MrvWriteOptions, parse_mrv, parse_mrv_with_limits, write_mrv,
 };
+pub use orca::{
+    GeometryFrame, OrcaAtom, OrcaBlock, OrcaCoords, OrcaInput, OrcaInputError, OrcaOptConvergence,
+    OrcaOutput, OrcaOutputError, OrcaTermination, parse_orca_input, parse_orca_output,
+    write_orca_input,
+};
 pub use pdbqt::{PdbqtError, autodock_atom_type, parse_pdbqt, write_pdbqt};
+pub use pqr::{
+    PqrAtomRecord, PqrError, PqrParseLimits, PqrResult, infer_element, parse_pqr,
+    parse_pqr_with_limits, write_pqr,
+};
+pub use qcschema::{
+    AtomicInput, AtomicResult, Basis, ChematicMoleculeView, ComputeError, Driver, Provenance,
+    QcConvertError, QcModel, QcMolecule, QcSchemaError, ReturnResult, chematic_to_qc_molecule,
+    parse_atomic_input, parse_atomic_result, parse_qcschema_molecule, qc_molecule_to_chematic,
+    write_atomic_input, write_atomic_result, write_qcschema_molecule,
+};
 pub use record::MoleculeRecord;
 pub use rxn::{RxnParseError, parse_rxn_file, write_rxn_file};
 pub use sdf::{
