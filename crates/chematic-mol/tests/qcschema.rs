@@ -1,22 +1,8 @@
 //! Integration tests for `chematic-mol`'s QCSchema module
 //! (`crates/chematic-mol/src/qcschema.rs`).
-//!
-//! `qcschema.rs` is deliberately left unwired from `lib.rs` (see its
-//! module doc comment / the coordinator's file restrictions for this
-//! Wave-1 agent) -- a plain `#[cfg(test)] mod tests` inside it would
-//! therefore never run. This file pulls the module in directly via
-//! `#[path]` so `cargo test -p chematic-mol` actually compiles and
-//! executes it.
-//!
-//! **Coordinator TODO once `qcschema` is wired into `lib.rs`:** delete the
-//! `#[path]` shim below and replace it with `use chematic_mol::qcschema::*;`
-//! like every other integration test file in this directory.
-
-#[path = "../src/qcschema.rs"]
-mod qcschema;
 
 use chematic_core::{Atom, AtomIdx, BondOrder, Coords3D, Element, MoleculeBuilder, Point3};
-use qcschema::*;
+use chematic_mol::qcschema::*;
 use serde_json::{Value, json};
 
 // ─── Water molecule fixture ─────────────────────────────────────────────────

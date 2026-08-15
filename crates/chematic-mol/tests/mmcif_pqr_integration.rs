@@ -1,32 +1,9 @@
-//! Integration tests + compile shim for the (not-yet-lib.rs-wired)
-//! `mmcif`/`pqr` modules. Per the format-expansion-wave1 task brief, this
-//! crate's `lib.rs` is off-limits for this agent's changes -- a human
-//! coordinator wires `pub mod mmcif;`/`pub mod pqr;` into `lib.rs` in the
-//! integration pass. Until then, `#[path]` pulls the source files in
-//! directly so `cargo test -p chematic-mol` can compile and run both their
-//! internal `#[cfg(test)]` unit tests and the realistic multi-chain/
-//! multi-model/altloc fixture tests below.
-//!
-//! `cif` is included too because `mmcif` reuses its `pub(crate)`
-//! tokenizer/UnitCell via `crate::cif::...` -- within this shim, `crate`
-//! resolves to this test binary's own root, so `cif` must be a sibling
-//! module here for that path to resolve, exactly as it does inside the
-//! real `chematic_mol` lib crate once wired. Declared `pub mod` (matching
-//! `lib.rs`'s own `pub mod cif;`) rather than a private `mod` -- a private
-//! `mod cif` here would make `cif`'s `#[cfg(feature = "crystal")] pub use
-//! crystal_adapter::{...}` re-export unreachable-in-principle within this
-//! binary, tripping `unused_imports` under `--all-features` even though
-//! it's a pre-existing, correct re-export unrelated to this agent's work.
-#[path = "../src/cif.rs"]
-pub mod cif;
-#[path = "../src/mmcif.rs"]
-mod mmcif;
-#[path = "../src/pqr.rs"]
-mod pqr;
+//! Integration tests for `chematic-mol`'s `mmcif`/`pqr` modules.
 
 use chematic_core::Element;
-use mmcif::{parse_mmcif, write_mmcif};
-use pqr::{parse_pqr, write_pqr};
+use chematic_mol::cif;
+use chematic_mol::mmcif::{parse_mmcif, write_mmcif};
+use chematic_mol::pqr::{parse_pqr, write_pqr};
 
 /// A realistic multi-chain, multi-model (2 NMR-style models), altloc-
 /// bearing mmCIF fixture, hand-authored against the wwPDB mmCIF

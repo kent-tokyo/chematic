@@ -7,6 +7,82 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+Format-expansion Wave 1: `chematic-mol` gains bidirectional PDBx/mmCIF,
+PQR, QCSchema JSON (`Molecule`/`AtomicInput`/`AtomicResult`), and ORCA
+input/output support. Goal is depth over format count -- each format is
+implemented loss-aware (unrecognized fields are preserved or surfaced as
+a typed warning, never silently dropped) and, where the format supports
+it, round-trip verified (read -> write -> read reproduces the original
+data). LAMMPS data/dump and Gaussian Cube/OpenDX (a shared
+`VolumetricGrid` type) are scoped for a later Wave 2, not this PR.
+
+### Added — `chematic-mol` (PDBx/mmCIF)
+
+- New `mmcif` module: `parse_mmcif`/`parse_mmcif_with_limits`/`write_mmcif`.
+  Reads/writes the `_atom_site` loop (group_PDB, atom/comp/asym id in both
+  `label_*` and `auth_*` forms, altloc, entity id, insertion code,
+  Cartn_x/y/z, occupancy, B_iso_or_equiv, formal charge, NMR-style model
+  number) plus `_cell.*`/`_symmetry.space_group_name_H-M`. Reuses the
+  existing small-molecule-CIF tokenizer (`chematic-mol`'s `cif` module,
+  now exposing its tokenizer as `pub(crate)`) rather than a second parser.
+  No bond table (mmCIF carries none) and no bond perception. Unrecognized
+  `_atom_site` loop columns are surfaced via a typed `unhandled_columns`
+  list rather than silently dropped. `MmcifParseLimits` bounds input
+  size/atom count/line length; NaN/Infinity are rejected as typed errors.
+  Only the first `data_` block is read, matching the existing `cif`
+  module's own scope; no symmetry expansion in this crate (see
+  `chematic-crystal`'s CIF adapter, PR #323, for periodic/crystal CIF --
+  this module targets macromolecular mmCIF specifically). Open Babel's
+  own mmCIF support is read-only; this adds write too.
+- Open Babel/RDKit were used only as behavioral oracles during
+  development, never as a source for code, comments, or tables -- the
+  wwPDB PDBx/mmCIF dictionary is the implementation's primary source.
+
+### Added — `chematic-mol` (PQR)
+
+- New `pqr` module: `parse_pqr`/`parse_pqr_with_limits`/`write_pqr`,
+  handling both the 10-field (no chain) and 11-field (with chain) atom
+  line shapes real `pdb2pqr` output uses. `infer_element` resolves the
+  element PQR itself doesn't store (from atom name + residue name +
+  record type), documented as a deterministic heuristic, not
+  authoritative data recovery. Same size-limit and NaN/Infinity-rejection
+  discipline as `mmcif`.
+
+### Added — `chematic-mol` (QCSchema JSON)
+
+- New `qcschema` module: MolSSI QCSchema `QcMolecule`, `AtomicInput`,
+  `AtomicResult` (`parse_*`/`write_*` for each), hand-parsed against
+  `serde_json::Value` (no `serde` derive dependency added). Bidirectional
+  `qc_molecule_to_chematic`/`chematic_to_qc_molecule` conversion against
+  `chematic_core::Molecule`, with an explicit, documented Bohr<->Angstrom
+  conversion point (`BOHR_TO_ANGSTROM`, CODATA 2018) -- the reverse
+  direction divides rather than multiplying by a reciprocal, to avoid the
+  classic precision loss. Extensible/open QCSchema fields (`keywords`,
+  `extras`, `provenance`) are preserved as opaque JSON on round-trip
+  rather than dropped. NaN/Infinity rejected in all numeric fields.
+  `OptimizationInput`/`OptimizationResult` (trajectory-bearing) are out of
+  scope for this wave.
+
+### Added — `chematic-mol` (ORCA input/output)
+
+- New `orca` module: `parse_orca_input`/`write_orca_input` (round-trip;
+  unknown `%...end` blocks, including nested sub-blocks, are preserved
+  verbatim rather than dropped) and `parse_orca_output` (final geometry,
+  best-effort optimization trajectory, final single-point energy,
+  charge/multiplicity, vibrational frequencies when present, and two
+  independent typed statuses: termination -- `Normal`/`Error`/
+  `Incomplete` for a truncated/crashed log -- and optimization
+  convergence, since normal termination does not imply convergence).
+  Open Babel's own ORCA support is input-write-only/output-read-only;
+  this adds input-read and keeps output-read. Explicitly out of scope:
+  `$new_job` multi-job input files, the `%coords` block form, ghost/
+  dummy/point-charge atom designations, full normal-mode vectors, and
+  semantic (only verbatim) parsing of `* int` Z-matrix coordinate blocks.
+
+---
+
 ## [0.16.0] — 2026-08-15
 
 Periodic-structure interoperability and generalized stereochemistry
