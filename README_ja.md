@@ -106,7 +106,7 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.15.0
+# chematic v0.16.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-06, v0.4.22 vs RDKit 2026.03.3 --
@@ -282,6 +282,14 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 ---
 
 ## 最近の開発
+
+**v0.16.0**（2026-08-15）: **周期構造の相互運用性（CIF/POSCAR/FPS）と一般化立体化学基盤**
+- `chematic-mol`：新設のoptional `crystal` featureが既存のCIF reader/writerを`chematic_crystal::PeriodicStructure`へ橋渡し（`parse_cif_periodic_structure`/`write_cif_periodic_structure`）——セルパラメータを`Lattice`へ、`_atom_site_occupancy`を`Occupancy`へ、disorderを共有する複数の`_atom_site_*`行を1つの`PeriodicSite`の複数species listへ統合。新設の`CifSymmetryStatus`列挙型により、真にP1な CIFと、symmetryを宣言しているがこのparserが未展開のCIFを区別（後者を暗黙にP1扱いしない）。`chematic-crystal`自体は`chematic-mol`/`Molecule`から独立したまま（依存方向は`chematic-mol`→`chematic-crystal`のoptional依存のみ）
+- `chematic-crystal`：POSCAR/CONTCAR（VASP構造ファイル形式）のnative read/write——`parse_poscar`/`parse_contcar`/`write_poscar`、VASP 5のみ対応、2種類のscale-factor記法、Direct/Cartesian座標、selective dynamics、ion velocities、CONTCARのpredictor-corrector（MD再開用セクション）はそのまま保存（VASP公式ドキュメントも数値レイアウトを規定していないため）
+- `chematic-fp`：新規`fps`モジュール——chemfp/OpenBabelで普及しているテキストベースのフィンガープリント交換形式「FPS（Fingerprint file format）」のstreaming read/write。16進ビット順序はchemfp仕様と照合済み、bit-vector表現は既存の`BitVec2048`/`BitVecN`をそのまま流用
+- `chematic-core`：新規`stereo_geometry`モジュール——立体配置を、配位幾何（`Tetrahedral`/`SquarePlanar`、将来のTBP/octahedral拡張に備え`#[non_exhaustive]`）と、その幾何の回転対称群下でのリガンド順列の同値類として表現。tetrahedralはA4（位数12）、square-planarは素朴な位数4の面内回転のみの群ではなく、trans-pair分割のS4安定化群（位数8）。`chematic-smiles`内の2つの独立した手書きremappingアルゴリズムを置き換え、`@`/`@@`/`@SP1`/`@SP2`/`@SP3`の既存意味は完全維持（88件のfixtureでbyte-identicalなcanonical SMILES回帰確認済み）。開発中に見つかった実害バグも修正——square-planar中心が`chematic-3d`で誤ってtetrahedral判定に流れ込み、浮動小数点ノイズでSatisfied/Violatedが決まっていた問題。開発過程で一時的に発生したallene端立体中心のparity回帰も発見・修正し、golden-value testで固定。詳細は`docs/rfcs/generalized_stereo_geometry_rfc.md`参照
+- `pipeline_v2` vs RDKit 2026.03.4ベンチマークのrelease-grade再測定（2026-08-06時点の古い数値を置き換え）：`mmff94_strict`が149/265→239/265。新たな発見として、torsion parameter不足が現在のMMFF94の主要な残存ギャップであること（`complete_bonded_term_gated`失敗の71%がtorsion欠如起因、OOP・bond起因は0%）——次のMMFF94ロードマップ項目への直接的な根拠
+- 詳細は`CHANGELOG.md`の`[0.16.0]`section参照
 
 **v0.15.0**（2026-08-14）: **`chematic-crystal`——周期（結晶）構造の基盤crate新設、MMFF94 Bond/Angle empirical rule対応（issue #227）**
 - 新規crate `chematic-crystal`：周期（結晶）構造の表現とジオメトリ計算——`Lattice`（三斜晶系対応、行列/逆行列/逆格子ベクトルをvalidation済み）、`FractionalCoord`/`CartesianCoord`、`PeriodicSite`/`SiteSpecies`/`Occupancy`（disorder対応可能な複数species設計）、`PeriodicStructure`は近似（`round()`）ではなく厳密な周期最小像距離計算（等距離の周期像が複数ある場合は辞書順最小のimageへ決定論的に解決）、cutoff近傍探索、diagonal supercellを提供。`chematic_core::Molecule`（結合グラフ）の拡張ではなく意図的に独立した型——詳細は`docs/rfcs/chematic_crystal_foundation.md`参照。optionalな`serde` feature、facadeの`crystal` featureは`full`に含まれる（`default`は空のまま変更なし）。symmetry・CIF parser変更・Python/WASM/MCPバインディングは今回未対応

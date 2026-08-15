@@ -21,7 +21,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 diagnostics = []
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.15.0" }
+chematic-core = { path = "../chematic-core", version = "0.16.0" }
 rustc-hash = "2"
 
 [dev-dependencies]
