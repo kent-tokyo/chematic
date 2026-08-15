@@ -31,6 +31,7 @@
 use chematic_3d::dg::generate_coords;
 use chematic_3d::minimize::{
     ForceFieldBridgeError, ForceFieldPolicy, MinimizeConfig, minimize_with_policy,
+    minimize_with_policy_gated,
 };
 use serde_json::{Value, json};
 
@@ -41,6 +42,14 @@ fn load_manifest(path: &str) -> Value {
 }
 
 fn main() {
+    // Issue #227 Phase 1 (2026-08-15): `--complete-bonded-term-gate` also
+    // gates on torsion/OOP/stretch-bend coverage (`gate_mmff94_torsion_oop`/
+    // `gate_mmff94_stretch_bend` in pipeline_v2 terms), matching the
+    // `chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated` arm in
+    // `pipeline_v2_vs_rdkit_dump.rs` -- a DIFFERENT, stricter gate than the
+    // default bond+angle-only one this file has always measured. Default
+    // (no flag) behavior is byte-identical to before this flag existed.
+    let complete_bonded_term_gate = std::env::args().any(|a| a == "--complete-bonded-term-gate");
     let config = MinimizeConfig::default();
     let mut n_total = 0;
     let mut n_ok = 0;
@@ -78,12 +87,24 @@ fn main() {
             };
             n_total += 1;
             let coords = generate_coords(&mol);
-            let row = match minimize_with_policy(
-                &mol,
-                coords,
-                ForceFieldPolicy::Mmff94BondAngleStrict,
-                &config,
-            ) {
+            let result = if complete_bonded_term_gate {
+                minimize_with_policy_gated(
+                    &mol,
+                    coords,
+                    ForceFieldPolicy::Mmff94BondAngleStrict,
+                    &config,
+                    true,
+                    true,
+                )
+            } else {
+                minimize_with_policy(
+                    &mol,
+                    coords,
+                    ForceFieldPolicy::Mmff94BondAngleStrict,
+                    &config,
+                )
+            };
+            let row = match result {
                 Ok(_) => {
                     n_ok += 1;
                     json!({"tier": tier, "name": name, "smiles": smiles, "status": "Ok"})
@@ -120,7 +141,14 @@ fn main() {
         }
     }
 
-    eprintln!("=== issue #227 faithful re-measurement (production minimize_with_policy) ===");
+    eprintln!(
+        "=== issue #227 faithful re-measurement (production {}) ===",
+        if complete_bonded_term_gate {
+            "minimize_with_policy_gated(true,true) [complete_bonded_term_gate]"
+        } else {
+            "minimize_with_policy [pipeline_v2_mmff94_strict-equivalent bond+angle gate]"
+        }
+    );
     eprintln!("total: {n_total}");
     eprintln!("Ok (success): {n_ok}");
     eprintln!("Err(MissingParameters) [\"unsupported\" in the original issue]: {n_missing_params}");

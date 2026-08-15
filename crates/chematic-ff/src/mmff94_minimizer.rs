@@ -22,7 +22,7 @@ use crate::mmff94_energy::{
     mmff94_torsion_energy, mmff94_vdw_combined,
 };
 use crate::mmff94_numeric::{
-    NumericTypeError, assign_mmff94_numeric_types, mmff94_charges_numeric,
+    NumericTypeError, assign_mmff94_numeric_types_with_view, mmff94_charges_numeric,
 };
 
 type CoordVec = Vec<[f64; 3]>;
@@ -85,11 +85,11 @@ pub struct EnergyBreakdown {
 /// Includes bond, angle, torsion, vdW, and electrostatic terms.
 /// Does not modify coordinates.
 pub fn mmff94_total_energy(mol: &Molecule, coords: &[[f64; 3]]) -> Result<f64, MinimizerError> {
-    let types = assign_mmff94_numeric_types(mol)?;
+    let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
     let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
     let ring_set = find_sssr(mol);
     Ok(total_energy(
-        mol,
+        &mmff_mol,
         coords,
         &types,
         &charges,
@@ -110,7 +110,7 @@ pub fn mmff94_torsion_scan(
     atom_l: usize,
     steps: usize,
 ) -> Result<Vec<(f64, f64)>, MinimizerError> {
-    let types = assign_mmff94_numeric_types(mol)?;
+    let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
     let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
     let ring_set = find_sssr(mol);
     let n = mol.atom_count();
@@ -179,7 +179,7 @@ pub fn mmff94_torsion_scan(
             }
         }
 
-        let energy = total_energy(mol, &work, &types, &charges, ring_set.rings());
+        let energy = total_energy(&mmff_mol, &work, &types, &charges, ring_set.rings());
         results.push((angle_deg, energy));
     }
 
@@ -191,17 +191,17 @@ pub fn mmff94_energy_breakdown(
     mol: &Molecule,
     coords: &[[f64; 3]],
 ) -> Result<EnergyBreakdown, MinimizerError> {
-    let types = assign_mmff94_numeric_types(mol)?;
+    let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
     let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
     let ring_set = find_sssr(mol);
     let rings = ring_set.rings();
-    let b = bond_energy(mol, coords, &types);
-    let a = angle_energy(mol, coords, &types, rings);
-    let sb = stretch_bend_energy(mol, coords, &types, rings);
-    let t = torsion_energy(mol, coords, &types);
-    let o = oop_energy(mol, coords, &types);
-    let v = vdw_energy(mol, coords, &types);
-    let e = elec_energy(mol, coords, &charges);
+    let b = bond_energy(&mmff_mol, coords, &types);
+    let a = angle_energy(&mmff_mol, coords, &types, rings);
+    let sb = stretch_bend_energy(&mmff_mol, coords, &types, rings);
+    let t = torsion_energy(&mmff_mol, coords, &types);
+    let o = oop_energy(&mmff_mol, coords, &types);
+    let v = vdw_energy(&mmff_mol, coords, &types);
+    let e = elec_energy(&mmff_mol, coords, &charges);
     Ok(EnergyBreakdown {
         bond: b,
         angle: a,
@@ -237,7 +237,7 @@ pub fn minimize_mmff94_full(
         });
     }
 
-    let types = assign_mmff94_numeric_types(mol)?;
+    let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
     let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
     // Ring membership is a topology fact, not a geometry one: compute SSSR
     // once per minimization run rather than once per finite-difference probe
@@ -256,7 +256,7 @@ pub fn minimize_mmff94_full(
 
     for _ in 0..max_iter {
         iters += 1;
-        let grad = compute_gradient(mol, coords, &types, &charges, rings, delta);
+        let grad = compute_gradient(&mmff_mol, coords, &types, &charges, rings, delta);
         let max_g = grad
             .iter()
             .flat_map(|v| v.iter())
@@ -276,7 +276,7 @@ pub fn minimize_mmff94_full(
         }
     }
 
-    let energy = total_energy(mol, coords, &types, &charges, rings);
+    let energy = total_energy(&mmff_mol, coords, &types, &charges, rings);
 
     let rmsd = {
         let sum: f64 = coords
@@ -327,7 +327,7 @@ pub fn minimize_mmff94_lbfgs(
         });
     }
 
-    let types = assign_mmff94_numeric_types(mol)?;
+    let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
     let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
     // See minimize_mmff94_full's comment: ring membership is topology-only,
     // computed once per run rather than once per FD probe.
@@ -340,8 +340,8 @@ pub fn minimize_mmff94_lbfgs(
     // Circular history buffer: (s_k = Δx, y_k = Δg, ρ_k = 1/(y·s))
     let mut history: LbfgsHistory = VecDeque::new();
 
-    let mut g = compute_gradient(mol, coords, &types, &charges, rings, DELTA);
-    let mut f0 = total_energy(mol, coords, &types, &charges, rings);
+    let mut g = compute_gradient(&mmff_mol, coords, &types, &charges, rings, DELTA);
+    let mut f0 = total_energy(&mmff_mol, coords, &types, &charges, rings);
 
     let mut iters = 0usize;
     let mut converged = false;
@@ -378,7 +378,7 @@ pub fn minimize_mmff94_lbfgs(
                     ]
                 })
                 .collect();
-            let f_trial = total_energy(mol, &trial, &types, &charges, rings);
+            let f_trial = total_energy(&mmff_mol, &trial, &types, &charges, rings);
             if f_trial <= f0 + C_ARMIJO * alpha * gp {
                 break trial;
             }
@@ -401,8 +401,8 @@ pub fn minimize_mmff94_lbfgs(
         };
 
         // Compute new gradient
-        let g_new = compute_gradient(mol, &new_coords, &types, &charges, rings, DELTA);
-        let f_new = total_energy(mol, &new_coords, &types, &charges, rings);
+        let g_new = compute_gradient(&mmff_mol, &new_coords, &types, &charges, rings, DELTA);
+        let f_new = total_energy(&mmff_mol, &new_coords, &types, &charges, rings);
 
         // Compute s = x_new - x, y = g_new - g
         let s: Vec<[f64; 3]> = new_coords
@@ -1192,6 +1192,38 @@ fn ring_size_4_or_5(mol: &Molecule, i: AtomIdx, j: AtomIdx, k: AtomIdx, l: AtomI
     if has_common { 5 } else { 0 }
 }
 
+/// True when RDKit's real torsion resolution generates NO term at all for
+/// this i-j-k-l torsion, by design -- not a missing-parameter gap.
+///
+/// Halgren's empirical-rule cascade (`getMMFFTorsionEmpiricalRuleParams`,
+/// `AtomTyper.cpp`, rule (a) per the public transcription cited in
+/// `scripts/mmff94_provenance/PROVENANCE.md`'s Torsion entry) omits the
+/// torsion term entirely whenever either central atom (`type_j`/`type_k`,
+/// the j-k bond this torsion rotates around) has MMFF's `lin` flag
+/// ([`crate::mmff94_numeric_type_registry::Mmff94NumericTypeInfo::linear`],
+/// e.g. type 4 CSP/nitrile-or-acetylenic carbon, type 53 `=N=`/cumulated
+/// azide nitrogen): rotating around a bond whose other end is a linear
+/// (180°) center changes no real geometry, so there is nothing to
+/// parameterize. Issue #227 Phase 1: measured as the exact, complete
+/// explanation for the only 3 genuine `table_gap` Torsion instances left in
+/// the 265-molecule Wave 1 corpus after the classification fix below —
+/// oracle-confirmed (`GetMMFFTorsionParams` returns `None` for all 3, and
+/// each central atom's registered `linear` flag matches RDKit's own MMFF
+/// atom type exactly at that atom). A caller that already omits the term for
+/// an unresolved lookup (chematic-ff's own `torsion_energy`, which just adds
+/// nothing on `mmff94_torsion_energy(..) == None`) needs no code change for
+/// physics; this exists so coverage-reporting/diagnostic callers (the
+/// `Mmff94BondAngleStrict` gate under `include_torsion_oop_in_gate`, the
+/// Phase 1A audit) can tell "correctly no term" apart from "genuinely
+/// missing" instead of counting both as the same failure.
+pub fn torsion_no_term_by_design(type_j: u8, type_k: u8) -> bool {
+    let linear = |t: u8| {
+        crate::mmff94_numeric_type_registry::mmff94_numeric_type_info(t)
+            .is_some_and(|info| info.linear)
+    };
+    linear(type_j) || linear(type_k)
+}
+
 /// Determine the MMFF94 torsion-type index (Halgren 1996, types 0-8).
 ///
 /// Ported verbatim from RDKit's `getMMFFTorsionType` (`AtomTyper.cpp:2528-`
@@ -1273,6 +1305,9 @@ mod tests {
     use super::*;
     use crate::mmff94_energy::mmff94_stbn_type_only;
     use crate::mmff94_energy::{mmff94_angle_energy, mmff94_bond_energy};
+    use crate::mmff94_numeric::{
+        assign_mmff94_numeric_types, assign_mmff94_numeric_types_with_view,
+    };
     use chematic_core::molecule::MoleculeBuilder;
     use chematic_core::{Atom, BondOrder, Element};
 
@@ -1758,6 +1793,86 @@ mod tests {
     fn mol_bonded(mol: &Molecule, a: usize, b: usize) -> bool {
         mol.bond_between(AtomIdx(a as u32), AtomIdx(b as u32))
             .is_some()
+    }
+
+    // ── torsion_no_term_by_design / NoTermByDesign (issue #227 Phase 1) ─────
+
+    #[test]
+    fn torsion_no_term_by_design_true_for_linear_central_atom_either_side() {
+        // Type 4 (CSP, acetylenic/nitrile C) and 53 (=N=, cumulated
+        // azide/diazo N) are the two `linear: true` types this corpus
+        // exercises; type 61 is also linear per the registry but unreachable
+        // in this corpus.
+        assert!(torsion_no_term_by_design(4, 37), "linear on the j side");
+        assert!(torsion_no_term_by_design(37, 53), "linear on the k side");
+        assert!(torsion_no_term_by_design(4, 53), "linear on both sides");
+    }
+
+    #[test]
+    fn torsion_no_term_by_design_false_when_neither_central_atom_is_linear() {
+        assert!(!torsion_no_term_by_design(1, 1)); // sp3 C - sp3 C
+        assert!(!torsion_no_term_by_design(37, 3)); // aromatic C - C=O (caffeine's own case)
+    }
+
+    #[test]
+    fn torsion_no_term_by_design_unknown_type_fails_closed_to_false() {
+        // A type absent from the registry must never be treated as linear
+        // (would incorrectly suppress a real coverage-gap report).
+        assert!(!torsion_no_term_by_design(250, 1));
+    }
+
+    #[test]
+    fn nitrile_torsion_has_no_table_row_and_is_flagged_no_term_by_design() {
+        // The exact chembl_tier_b_0001 shape (issue #227's 2 real
+        // table_gap instances): Ar-Ar-C#N, central k = type 4 (CSP). Oracle-
+        // confirmed RDKit's own GetMMFFTorsionParams also returns None here
+        // (rdkit==2026.03.4) -- this is genuinely absent from the table on
+        // both sides, not a routing bug.
+        assert!(mmff94_torsion_energy(1, 37, 37, 4, 42).is_none());
+        assert!(torsion_no_term_by_design(37, 4));
+    }
+
+    #[test]
+    fn cumulated_azide_torsion_has_no_table_row_and_is_flagged_no_term_by_design() {
+        // chembl_tier_b_0080's real shape: Ar-N=[N+]=[N-], central k = type
+        // 53 (=N=). Oracle-confirmed None as above.
+        assert!(mmff94_torsion_energy(0, 37, 9, 53, 47).is_none());
+        assert!(torsion_no_term_by_design(9, 53));
+    }
+
+    #[test]
+    fn caffeine_dione_ring_torsion_resolves_end_to_end_via_the_reperceived_view() {
+        // Issue #227 Phase 1's actual root-cause fix, exercised through the
+        // real production call shape (assign_mmff94_numeric_types_with_view
+        // + torsion_type_for + mmff94_torsion_energy on the SAME reperceived
+        // molecule), not just the diagnostic tool. Expected value is the
+        // live RDKit oracle's own GetMMFFTorsionParams(mol,4,5,6,7) result
+        // for this exact molecule/atom-quadruple (rdkit==2026.03.4):
+        // (torsionType=1, 0.0, 2.5, 0.0).
+        let m = chematic_smiles::parse("Cn1cnc2c1c(=O)n(C)c(=O)n2C").unwrap();
+        let (types, view) = assign_mmff94_numeric_types_with_view(&m).unwrap();
+        let (i, j, k, l) = (4, 5, 6, 7);
+        let tt = torsion_type_for(&view, i, j, k, l, types[i], types[j], types[k], types[l]);
+        assert_eq!(tt, 1, "must classify as type 1, not type 0");
+        let params = mmff94_torsion_energy(tt, types[i], types[j], types[k], types[l])
+            .expect("a real table row must resolve once fed the correct bond order");
+        assert!((params.v1 - 0.0).abs() < 1e-9);
+        assert!((params.v2 - 2.5).abs() < 1e-9, "v2={}", params.v2);
+        assert!((params.v3 - 0.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn torsion_lookup_is_symmetric_under_reversal_for_the_caffeine_case() {
+        let m = chematic_smiles::parse("Cn1cnc2c1c(=O)n(C)c(=O)n2C").unwrap();
+        let (types, view) = assign_mmff94_numeric_types_with_view(&m).unwrap();
+        let (i, j, k, l) = (4usize, 5usize, 6usize, 7usize);
+        let fwd = torsion_type_for(&view, i, j, k, l, types[i], types[j], types[k], types[l]);
+        let rev = torsion_type_for(&view, l, k, j, i, types[l], types[k], types[j], types[i]);
+        let p_fwd = mmff94_torsion_energy(fwd, types[i], types[j], types[k], types[l]).unwrap();
+        let p_rev = mmff94_torsion_energy(rev, types[l], types[k], types[j], types[i]).unwrap();
+        assert!((p_fwd.v1 - p_rev.v1).abs() < 1e-12);
+        assert!((p_fwd.v2 - p_rev.v2).abs() < 1e-12);
+        assert!((p_fwd.v3 - p_rev.v3).abs() < 1e-12);
     }
 
     #[test]

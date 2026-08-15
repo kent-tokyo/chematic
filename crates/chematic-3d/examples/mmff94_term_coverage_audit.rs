@@ -51,7 +51,7 @@ use std::collections::BTreeMap;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 use chematic_ff::{
-    OOP_SP2_TYPES, angle_type_for, assign_mmff94_numeric_types, bond_type_for,
+    OOP_SP2_TYPES, angle_type_for, assign_mmff94_numeric_types_with_view, bond_type_for,
     is_angle_in_ring_of_size_3_or_4, mmff94_angle_energy, mmff94_angle_energy_resolved,
     mmff94_bond_energy, mmff94_bond_energy_resolved, mmff94_charges_numeric, mmff94_oop,
     mmff94_stbn, mmff94_stbn_type_only, mmff94_torsion_energy, mmff94_vdw_combined,
@@ -200,6 +200,11 @@ struct MolAgg {
     angles_final_unresolved: usize,
     torsions_total: usize,
     torsions_missing: usize,
+    /// Issue #227 Phase 1: torsions where RDKit itself generates no term at
+    /// all (linear central atom, `chematic_ff::torsion_no_term_by_design`)
+    /// -- not a coverage gap. Included in `torsions_total`, excluded from
+    /// `torsions_missing`.
+    torsions_no_term_by_design: usize,
     oop_total: usize,
     oop_missing: usize,
     stbn_total: usize,
@@ -239,6 +244,7 @@ fn main() {
                     angles_final_unresolved: 0,
                     torsions_total: 0,
                     torsions_missing: 0,
+                    torsions_no_term_by_design: 0,
                     oop_total: 0,
                     oop_missing: 0,
                     stbn_total: 0,
@@ -253,8 +259,19 @@ fn main() {
             }
         };
 
-        let types = match assign_mmff94_numeric_types(&mol) {
-            Ok(t) => t,
+        let (types, mol) = match assign_mmff94_numeric_types_with_view(&mol) {
+            // Shadow `mol` with the MMFF-specific re-perceived view (issue
+            // #227 Phase 1, torsion parameter gap root cause): every
+            // classification call below (`bond_type_for`/`angle_type_for`/
+            // `torsion_type_for`/`stretch_bend_type_for`, all of which read
+            // `BondOrder` directly) must see the SAME bond orders the
+            // numeric types were derived from, not chematic's general/SMILES
+            // aromaticity perception -- see
+            // `assign_mmff94_numeric_types_with_view`'s doc for why. Same
+            // atom count/topology as the original `mol`, so every other use
+            // below (ring detection, atom iteration, `ctx`) is unaffected
+            // except where `BondOrder`/`atom.aromatic` is read.
+            Ok((t, view)) => (t, view),
             Err(e) => {
                 eprintln!("TYPING ERROR {}: {e}", cm.name);
                 mol_aggs.push(MolAgg {
@@ -273,6 +290,7 @@ fn main() {
                     angles_final_unresolved: 0,
                     torsions_total: 0,
                     torsions_missing: 0,
+                    torsions_no_term_by_design: 0,
                     oop_total: 0,
                     oop_missing: 0,
                     stbn_total: 0,
@@ -300,6 +318,7 @@ fn main() {
         let mut angles_final_unresolved = 0usize;
         let mut torsions_total = 0usize;
         let mut torsions_missing = 0usize;
+        let mut torsions_no_term_by_design = 0usize;
         let mut oop_total = 0usize;
         let mut oop_missing = 0usize;
         let mut stbn_total = 0usize;
@@ -522,7 +541,17 @@ fn main() {
                     );
                     let hit = mmff94_torsion_energy(tt, ti_, tj_, tk_, tl_);
                     if hit.is_none() {
-                        torsions_missing += 1;
+                        // Issue #227 Phase 1: a linear central atom means
+                        // RDKit itself generates no torsion term here either
+                        // (chematic_ff::torsion_no_term_by_design) -- correct
+                        // behavior, not a coverage gap. Reported separately
+                        // so it never inflates torsions_missing.
+                        let no_term_by_design = chematic_ff::torsion_no_term_by_design(tj_, tk_);
+                        if no_term_by_design {
+                            torsions_no_term_by_design += 1;
+                        } else {
+                            torsions_missing += 1;
+                        }
                         let present_at = torsion_present_at_any_type(ti_, tj_, tk_, tl_);
                         term_rows.push(json!({
                             "molecule_id": cm.name, "smiles": cm.smiles, "tier": cm.tier,
@@ -533,7 +562,7 @@ fn main() {
                             "direct_table_hit": false,
                             "fallback_available": true,
                             "fallback_hit": false,
-                            "final_lookup_result": "missing",
+                            "final_lookup_result": if no_term_by_design { "no_term_by_design" } else { "missing" },
                             "present_at_different_classification": present_at,
                             "note": "mmff94_torsion_energy already tries exact+reverse+2 single-wildcards+double-wildcard+type0-generic (7 tiers) before returning None",
                         }));
@@ -630,6 +659,7 @@ fn main() {
             angles_final_unresolved,
             torsions_total,
             torsions_missing,
+            torsions_no_term_by_design,
             oop_total,
             oop_missing,
             stbn_total,
@@ -659,6 +689,7 @@ fn main() {
             "angles_total": m.angles_total, "angles_missing": m.angles_missing,
             "angles_final_unresolved": m.angles_final_unresolved,
             "torsions_total": m.torsions_total, "torsions_missing": m.torsions_missing,
+            "torsions_no_term_by_design": m.torsions_no_term_by_design,
             "oop_total": m.oop_total, "oop_missing": m.oop_missing,
             "stbn_total": m.stbn_total, "stbn_missing": m.stbn_missing,
             "stbn_final_unresolved": m.stbn_final_unresolved,
@@ -677,11 +708,13 @@ fn main() {
     let n_angles_missing: usize = mol_aggs.iter().map(|m| m.angles_missing).sum();
     let n_angles_final_unresolved: usize = mol_aggs.iter().map(|m| m.angles_final_unresolved).sum();
     let n_torsions_missing: usize = mol_aggs.iter().map(|m| m.torsions_missing).sum();
+    let n_torsions_no_term_by_design: usize =
+        mol_aggs.iter().map(|m| m.torsions_no_term_by_design).sum();
     let n_oop_missing: usize = mol_aggs.iter().map(|m| m.oop_missing).sum();
     let n_stbn_missing: usize = mol_aggs.iter().map(|m| m.stbn_missing).sum();
     let n_stbn_final_unresolved: usize = mol_aggs.iter().map(|m| m.stbn_final_unresolved).sum();
     eprintln!(
-        "=== summary: total={n_total} bond+angle-gate-would-fail={n_fail} bonds_missing(type-only)={n_bonds_missing} bonds_final_unresolved(after Stage C empirical)={n_bonds_final_unresolved} angles_missing(type-only)={n_angles_missing} angles_final_unresolved(after Stage C empirical)={n_angles_final_unresolved} torsions_missing={n_torsions_missing} oop_missing={n_oop_missing} stbn_type_only_missing(never gated, incl. Dfsb-masked routing candidates)={n_stbn_missing} stbn_final_unresolved(after Dfsb fallback)={n_stbn_final_unresolved} ==="
+        "=== summary: total={n_total} bond+angle-gate-would-fail={n_fail} bonds_missing(type-only)={n_bonds_missing} bonds_final_unresolved(after Stage C empirical)={n_bonds_final_unresolved} angles_missing(type-only)={n_angles_missing} angles_final_unresolved(after Stage C empirical)={n_angles_final_unresolved} torsions_missing={n_torsions_missing} torsions_no_term_by_design(linear central atom, RDKit also has none)={n_torsions_no_term_by_design} oop_missing={n_oop_missing} stbn_type_only_missing(never gated, incl. Dfsb-masked routing candidates)={n_stbn_missing} stbn_final_unresolved(after Dfsb fallback)={n_stbn_final_unresolved} ==="
     );
 
     // Distinct missing-tuple pattern counts (angle), to see concentration.

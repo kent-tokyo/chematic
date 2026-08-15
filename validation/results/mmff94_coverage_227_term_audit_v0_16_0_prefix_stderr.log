@@ -1,0 +1,3 @@
+corpus size: 265
+TYPING ERROR force_field_unsupported_probe: MMFF94 numeric type error: internal error: atom 0 (Element(15)) was assigned MMFF94 numeric type 20 (CR4R), whose registry element is Element(6) -- semantic-compatibility invariant violated
+=== summary: total=265 bond+angle-gate-would-fail=14 bonds_missing(type-only)=80 bonds_final_unresolved(after Stage C empirical)=0 angles_missing(type-only)=191 angles_final_unresolved(after Stage C empirical)=23 torsions_missing=257 oop_missing=0 stbn_type_only_missing(never gated, incl. Dfsb-masked routing candidates)=1865 stbn_final_unresolved(after Dfsb fallback)=0 ===

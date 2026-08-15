@@ -692,7 +692,64 @@ fn bond_type_for(order: BondOrder) -> u8 {
 ///
 /// This implements the core atom type perception rules for organic chemistry.
 /// For atoms not handled, returns `Err`.
+///
+/// Thin wrapper over [`assign_mmff94_numeric_types_with_view`] that discards
+/// the re-perceived molecule -- correct for callers that only need numeric
+/// types (charges, vdW, atom-level reporting). Any caller that ALSO does
+/// bond-order-dependent classification (`bond_type_for`/`angle_type_for`/
+/// `torsion_type_for`/`stretch_bend_type_for`, all of which read
+/// [`chematic_core::BondOrder`] directly) must call
+/// [`assign_mmff94_numeric_types_with_view`] instead and use its returned
+/// molecule for that purpose, not its own input `mol` -- see that function's
+/// doc for why (issue #227 Phase 1, torsion parameter gap root cause).
 pub fn assign_mmff94_numeric_types(mol: &Molecule) -> Result<Vec<u8>, NumericTypeError> {
+    assign_mmff94_numeric_types_with_view(mol).map(|(types, _)| types)
+}
+
+/// Like [`assign_mmff94_numeric_types`], but also returns the MMFF-specific
+/// re-perceived molecule ([`compute_mmff94_aromatic_view`]'s output, same
+/// atom count/bond topology as `mol`, only [`chematic_core::BondOrder`]
+/// values on ring bonds can differ) used to derive those types.
+///
+/// Root cause this exists to fix (issue #227 Phase 1, torsion parameter gap,
+/// 2026-08-15): `bond_type_for`'s "`BondOrder::Aromatic` forces
+/// `bond_type=0`" rule is itself correct (confirmed against a live RDKit
+/// oracle for benzene's own ring bond), but every one of chematic-ff's
+/// bond-order-dependent classification call sites
+/// (`bond_type_for`/`angle_type_for`/`torsion_type_for`/
+/// `stretch_bend_type_for`, both in production energy/gradient code and in
+/// coverage-gate diagnostics) was being fed the CALLER'S original `mol`, not
+/// this re-perceived view -- even though the numeric TYPES those same call
+/// sites use were already correctly derived from it. For a ring system where
+/// chematic's general/SMILES aromaticity perception and MMFF94's own
+/// stricter, Kekule-based perception (`setMMFFAromaticity`) disagree (e.g.
+/// caffeine's pyrimidinedione ring: chematic's general model treats the
+/// whole fused bicyclic system as one delocalized aromatic ring, RDKit's
+/// real sanitizer Kekulizes that ring to alternating single/double bonds
+/// while leaving only the fused imidazole ring aromatic -- oracle-confirmed
+/// via `MolFromSmiles(...).GetBondBetweenAtoms(5,6).GetIsAromatic() ==
+/// False`, and independently confirmed against chematic's own
+/// pre-existing, already-oracle-validated
+/// `validation/results/mmff94_aromaticity_bond_parity_227_oracle.json` dump,
+/// which already recorded `bond_aromatic["5-6"]: false` for caffeine before
+/// this fix), this meant the classification code was computed from the
+/// WRONG bond order, landing on a torsion/bond/angle-type code with no table
+/// row even though chematic's own, unmodified parameter table already
+/// carries the correct row at the code RDKit's real (Kekulized) bond type
+/// resolves to. Measured on the 265-molecule Wave 1 corpus: 254/254 of the
+/// `torsions_missing` instances with `present_at_different_classification =
+/// Some` (`crates/chematic-3d/examples/mmff94_term_coverage_audit.rs`) have
+/// this exact shape -- oracle-validated (all 254, not a sample) via a live
+/// `GetMMFFTorsionParams` cross-check: the oracle's returned value matches
+/// EXACTLY one of chematic's own pre-existing rows at a different
+/// classification code in 254/254 cases, and RDKit's real bond object is
+/// non-aromatic (`GetIsAromatic() == False`) in 254/254 cases. No Halgren
+/// empirical-rule implementation was needed for any of them (see
+/// `scripts/mmff94_provenance/PROVENANCE.md`'s Torsion entry for the two
+/// falsified alternative hypotheses this ruled out first).
+pub fn assign_mmff94_numeric_types_with_view(
+    mol: &Molecule,
+) -> Result<(Vec<u8>, Molecule), NumericTypeError> {
     let n = mol.atom_count();
     let mut types = vec![0u8; n];
     let rings = chematic_perception::find_sssr(mol).rings().to_vec();
@@ -766,7 +823,7 @@ pub fn assign_mmff94_numeric_types(mol: &Molecule) -> Result<Vec<u8>, NumericTyp
         }
     }
 
-    Ok(types)
+    Ok((types, mmff_mol))
 }
 
 fn chematic_ff_numeric_type_registry_lookup(
@@ -2628,6 +2685,165 @@ mod tests {
                 "caffeine atom {i}: expected MMFF94 type {expected_type} (RDKit oracle), got {}",
                 types[i]
             );
+        }
+    }
+
+    // ── assign_mmff94_numeric_types_with_view (issue #227 Phase 1) ──────────
+
+    #[test]
+    fn caffeine_reperceived_view_kekulizes_the_dione_ring_bond_to_single() {
+        // Root-cause regression: the SAME bond the aromaticity test above
+        // already showed gets non-aromatic (type 3/type 63, not two
+        // aromatic-designated types) numeric types must ALSO carry a
+        // non-Aromatic BondOrder in the returned view -- otherwise
+        // bond_type_for/torsion_type_for (which read BondOrder, not the
+        // numeric type's own registry `arom` flag) still see the wrong
+        // thing even though typing itself is correct. Oracle-confirmed via
+        // `MolFromSmiles(...).GetBondBetweenAtoms(5,6).GetIsAromatic() ==
+        // False` (Release 2026.03.4).
+        let m = mol("Cn1cnc2c1c(=O)n(C)c(=O)n2C");
+        let (types, view) = assign_mmff94_numeric_types_with_view(&m).unwrap();
+        assert_eq!(types[5], 63);
+        assert_eq!(types[6], 3);
+        let order = view
+            .bond_between(AtomIdx(5), AtomIdx(6))
+            .expect("atoms 5-6 must be bonded")
+            .1
+            .order;
+        assert_ne!(
+            order,
+            BondOrder::Aromatic,
+            "caffeine's ring-6 C5A-C=O bond must be Kekulized to a real \
+             Single/Double order in the MMFF view, not left Aromatic"
+        );
+        // Original `m` is untouched (`&Molecule`, never mutated) -- the two
+        // molecules may legitimately disagree.
+        assert_eq!(
+            m.bond_between(AtomIdx(5), AtomIdx(6)).unwrap().1.order,
+            BondOrder::Aromatic,
+            "the caller's original molecule must be left exactly as parsed"
+        );
+    }
+
+    #[test]
+    fn assign_mmff94_numeric_types_is_a_thin_wrapper_over_the_view_variant() {
+        let m = mol("Cn1cnc2c1c(=O)n(C)c(=O)n2C");
+        let types_only = assign_mmff94_numeric_types(&m).unwrap();
+        let (types_with_view, _) = assign_mmff94_numeric_types_with_view(&m).unwrap();
+        assert_eq!(types_only, types_with_view);
+    }
+
+    /// Finds the bond order (in the reperceived MMFF view) of the unique
+    /// bond between a type-`ta` atom and a type-`tb` atom -- a CONTENT-based
+    /// identification, not index-based, so it survives atom relabeling
+    /// (types themselves are already independently proven order-independent
+    /// by `nc_eq_c_multi_carbon_context_is_order_independent_and_matches_rdkit`
+    /// and friends above). Panics if the pair is not found or is ambiguous
+    /// (more than one such bond) -- both would make this an unreliable
+    /// identity key for the fixture it's called on.
+    fn bond_order_between_unique_type_pair(
+        mol: &Molecule,
+        types: &[u8],
+        ta: u8,
+        tb: u8,
+    ) -> BondOrder {
+        let mut found: Option<BondOrder> = None;
+        for (_, bond) in mol.bonds() {
+            let (i, j) = (bond.atom1.0 as usize, bond.atom2.0 as usize);
+            let matches = (types[i] == ta && types[j] == tb) || (types[i] == tb && types[j] == ta);
+            if matches {
+                assert!(
+                    found.is_none(),
+                    "type pair ({ta},{tb}) must identify a UNIQUE bond in this fixture"
+                );
+                found = Some(bond.order);
+            }
+        }
+        found.unwrap_or_else(|| panic!("no bond found between type {ta} and type {tb}"))
+    }
+
+    #[test]
+    fn caffeine_reperceived_bond_order_is_invariant_under_atom_renumbering() {
+        // Issue #227 Phase 1 reviewer follow-up: the deterministic-repeat
+        // test above only proves no hidden randomness on a FIXED atom
+        // order -- it says nothing about whether `chematic_core::kekulize`
+        // (a blossom-matching solver, which CAN have genuine ties between
+        // equally-valid Kekule structures for a symmetric ring) might pick
+        // a different-but-equally-valid alternating bond pattern depending
+        // on atom traversal order, and if so, whether that changes which
+        // classification code the C5A(63)-C=O(3) ring-fusion bond this
+        // whole fix depends on resolves to. Renumber caffeine's atoms 32
+        // ways (deterministic_permutation, already used elsewhere in this
+        // file for the same purpose on atom TYPES) and confirm the
+        // reperceived BOND ORDER for that specific bond -- identified by
+        // its unique (type 63, type 3) content signature, not by index, so
+        // relabeling can't fool the check -- is identical every time.
+        let base = mol("Cn1cnc2c1c(=O)n(C)c(=O)n2C");
+        let n = base.atom_count();
+        let identity_bonds: Vec<usize> = (0..base.bonds().count()).collect();
+
+        let (base_types, base_view) = assign_mmff94_numeric_types_with_view(&base).unwrap();
+        let reference = bond_order_between_unique_type_pair(&base_view, &base_types, 63, 3);
+        assert_ne!(
+            reference,
+            BondOrder::Aromatic,
+            "sanity: the reference value itself must be the fix's expected outcome"
+        );
+
+        for seed in 0..32u64 {
+            let perm = deterministic_permutation(n, seed);
+            let variant = rebuild_with_order(&base, &perm, &identity_bonds);
+            let (types, view) = assign_mmff94_numeric_types_with_view(&variant).unwrap();
+            let order = bond_order_between_unique_type_pair(&view, &types, 63, 3);
+            assert_eq!(
+                order, reference,
+                "seed {seed}: reperceived bond order for the C5A-C=O ring-fusion \
+                 bond must not depend on atom renumbering"
+            );
+        }
+    }
+
+    #[test]
+    fn benzene_reperceived_ring_bond_orders_are_invariant_under_atom_renumbering() {
+        // Companion to the caffeine test above, for the textbook case of a
+        // GENUINE Kekule tie (two equally-valid alternating single/double
+        // patterns related by a bond-order swap) rather than caffeine's
+        // substituent-constrained ring. Confirms that whichever choice
+        // `chematic_core::kekulize` makes, the OUTPUT is uniformly
+        // `Aromatic` on all 6 ring bonds (RDKit's real MMFF-aromaticity
+        // promotion for an accepted ring, not a residual single/double
+        // pattern) and that this holds identically across 32 renumberings --
+        // i.e. the Kekule tie, even if the solver's internal choice varies
+        // with traversal order, never leaks into the final classification
+        // input.
+        let base = mol("c1ccccc1");
+        let n = base.atom_count();
+        let identity_bonds: Vec<usize> = (0..base.bonds().count()).collect();
+
+        for seed in 0..32u64 {
+            let perm = deterministic_permutation(n, seed);
+            let variant = rebuild_with_order(&base, &perm, &identity_bonds);
+            let (_, view) = assign_mmff94_numeric_types_with_view(&variant).unwrap();
+            for (_, bond) in view.bonds() {
+                assert_eq!(
+                    bond.order,
+                    BondOrder::Aromatic,
+                    "seed {seed}: every benzene ring bond must resolve to Aromatic \
+                     regardless of atom renumbering or the Kekulizer's internal tie-break"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn assign_mmff94_numeric_types_with_view_is_deterministic() {
+        let m = mol("Cn1cnc2c1c(=O)n(C)c(=O)n2C");
+        let (types1, view1) = assign_mmff94_numeric_types_with_view(&m).unwrap();
+        let (types2, view2) = assign_mmff94_numeric_types_with_view(&m).unwrap();
+        assert_eq!(types1, types2);
+        for (_, b) in view1.bonds() {
+            let other = view2.bond_between(b.atom1, b.atom2).unwrap().1;
+            assert_eq!(b.order, other.order);
         }
     }
 
