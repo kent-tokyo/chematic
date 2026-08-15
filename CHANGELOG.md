@@ -9,6 +9,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Issue #227 Phase 2: MMFF94 BCI (bond-charge-increment) partial-charge bug,
+investigated per Phase 1's own flagged follow-up and fixed. Also adds a
+full `embed_pipeline_v2` 3-state quality re-measurement (State 1: v0.16.0
+pre-Phase-1; State 2: post-Phase-1 torsion fix; State 3: post-Phase-2 BCI
+fix) — see the PR body / `validation/results/` for the full report.
+
+### Fixed — `chematic-ff` (MMFF94 partial-charge BCI bond-type source)
+
+- **Root cause, a compound bug, not the single view-source bug Phase 1's
+  own note anticipated**: `mmff94_charges_numeric` used a private,
+  standalone `bond_type_for(order: BondOrder) -> u8` that mapped bond
+  *multiplicity* directly (`Double -> 1, Triple -> 2, Aromatic -> 4`) —
+  unrelated to RDKit's real `getMMFFBondType`, which returns 0 unless the
+  bond is formally SINGLE *and* both atom types are `sbmb`/`arom`-flagged,
+  and which RDKit's real `computeMMFFCharges` calls identically to its own
+  bond-stretch code (`AtomTyper.cpp:2457-2475,3462-3474`, pinned commit).
+  It also read bond order from the caller's original, un-reperceived
+  molecule rather than the MMFF-specific Kekulized view — the view-only
+  bug Phase 1 fixed for bond/angle/torsion/stretch-bend.
+- Fix: reuse the already-fixed, already-oracle-validated
+  `crate::mmff94_minimizer::bond_type_for(ti, tj, order)` (deleting the
+  wrong local function), fed `assign_mmff94_numeric_types_with_view`'s
+  reperceived bond order instead of the caller's `mol`.
+- Measured against a live RDKit oracle, all 264 typing-succeeded molecules
+  (not a sample): 1,687/6,693 heavy-atom charges (25.2%, 206/264
+  molecules) mismatched the oracle before the fix; 67/6,693 (1.0%, 11/264
+  molecules) after — a genuine per-atom join confirms **zero regressions**
+  (0 previously-exact atoms became mismatched; 1,620 moved from
+  mismatched to exact). The 67-atom residual is a separate, pre-existing,
+  unrelated formal-charge/`fcadj` redistribution gap for charge-separated
+  species (nitro/azide/charged-sulfoxide types), confirmed unmoved by this
+  fix either direction — flagged as follow-up, not fixed here.
+- New regression-pinned test (`acetone_carbonyl_charges_match_rdkit_oracle_after_bond_type_fix`)
+  and a renumbering-invariance test
+  (`mmff94_charges_numeric_is_invariant_under_atom_renumbering`, same
+  `deterministic_permutation`/`rebuild_with_order` helpers Phase 1's own
+  reviewer follow-up test uses). Full writeup:
+  `scripts/mmff94_provenance/PROVENANCE.md`'s Charges/BCI entry.
+
+---
+
 Issue #227 Phase 1: MMFF94 torsion parameter coverage gap, root-caused and
 fixed. `torsions_missing` on the 265-molecule Wave 1 corpus: 257 instances
 across 62 molecules → 0 (`mmff94_term_coverage_audit.rs`).
