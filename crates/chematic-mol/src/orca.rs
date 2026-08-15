@@ -1247,6 +1247,29 @@ H   0.000000  -0.757200   0.586200
     }
 
     #[test]
+    fn input_no_end_directive_followed_by_multiline_block() {
+        // Sharper version of the above: the `has_end: false` %maxcore
+        // block's search window must stop at the following %scf block's
+        // own line, never reach past it to grab %scf's `end` a few lines
+        // later. If windowing were broken, %maxcore would swallow %scf's
+        // content and %scf would be left with no closing `end` at all.
+        let input = "! Opt\n\n%maxcore 3000\n%scf\n  MaxIter 200\n  convergence tight\nend\n\n* xyz 0 1\nHe 0 0 0\n*\n";
+        let parsed1 = parse_orca_input(input).unwrap();
+        assert_eq!(parsed1.blocks.len(), 2);
+        assert_eq!(parsed1.blocks[0].name, "maxcore");
+        assert!(!parsed1.blocks[0].has_end);
+        assert_eq!(parsed1.blocks[0].raw, "3000");
+        assert_eq!(parsed1.blocks[1].name, "scf");
+        assert!(parsed1.blocks[1].has_end);
+        assert!(parsed1.blocks[1].raw.contains("MaxIter 200"));
+        assert!(parsed1.blocks[1].raw.contains("convergence tight"));
+
+        let written = write_orca_input(&parsed1);
+        let parsed2 = parse_orca_input(&written).unwrap();
+        assert_eq!(parsed1, parsed2);
+    }
+
+    #[test]
     fn input_round_trip_frozen_coordinate_marker() {
         let input = "! Opt\n\n* xyz 0 1\nC 0.000000$ 0.000000$ 0.000000$\nO 1.200000 0.000000 0.000000\n*\n";
         let parsed1 = parse_orca_input(input).unwrap();
