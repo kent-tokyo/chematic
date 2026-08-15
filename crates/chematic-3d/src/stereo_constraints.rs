@@ -1535,7 +1535,8 @@ mod tests {
         // implementations -- this assertion exists to make that guarantee
         // visible and regression-checked, not because it was ever in doubt.
         assert_eq!(
-            m.atom(pt).chirality, original_chirality,
+            m.atom(pt).chirality,
+            original_chirality,
             "a square-planar center's declared Chirality must never be mutated by verification"
         );
     }
