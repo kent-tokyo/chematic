@@ -19,8 +19,8 @@
 use std::collections::{HashMap, HashSet};
 
 use chematic_core::{
-    AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL, SquarePlanarPermutation,
-    implicit_hcount, remap_tetrahedral_parity, valence_inferred_hcount,
+    AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL, implicit_hcount,
+    remap_square_planar_tag, remap_tetrahedral_parity, valence_inferred_hcount,
 };
 
 use crate::writer::{
@@ -1533,7 +1533,9 @@ impl<'a> CanonicalWriter<'a> {
     /// for a 3-state tag, passing the *original* tag through against a
     /// *reordered* neighbor list can silently describe a different,
     /// plausible-but-wrong stereoisomer, exactly the failure category this
-    /// mechanism exists to eliminate. See `remap_square_planar` below.
+    /// mechanism exists to eliminate. See
+    /// [`chematic_core::remap_square_planar_tag`] (the generalized
+    /// stereo-geometry module, `docs/rfcs/generalized_stereo_geometry_rfc.md`).
     fn corrected_chirality(&self, atom: AtomIdx, from_atom: Option<AtomIdx>) -> Chirality {
         let stored = self.mol.atom(atom).chirality;
         if stored == Chirality::None {
@@ -1601,15 +1603,18 @@ impl<'a> CanonicalWriter<'a> {
             };
         }
 
-        // Square-planar centers are always genuinely 4-coordinate. Tetrahedral
+        // Square-planar centers are always genuinely 4-coordinate, so
+        // `original`/`canonical` are always 4-element there. Tetrahedral
         // centers are 4-element in the common case, but an allene *end*
-        // carbon (sp2, one real double-bond partner standing in for the 4th
-        // tetrahedral-like position) legitimately has only 3 entries (e.g.
-        // `F[C@@H]=[C]=[C@H]Cl`'s F-bearing atom: [F, implicit-H sentinel,
-        // =C partner]) -- `chematic_core::StereoGeometry::Tetrahedral` is
-        // fixed at 4 slots and doesn't model that case, so it keeps using
-        // the length-generic `permutation_is_odd` fallback unchanged for
-        // any non-4 length.
+        // carbon (sp2, one real double-bond partner standing in for the
+        // 4th tetrahedral-like position) legitimately has only 3 entries
+        // (e.g. `F[C@@H]=[C]=[C@H]Cl`'s F-bearing atom: [F, implicit-H
+        // sentinel, =C partner]) -- `StereoGeometry::Tetrahedral` is fixed
+        // at 4 slots and doesn't model that case, so it keeps using the
+        // length-generic `permutation_is_odd` fallback unchanged for any
+        // non-4 length (never reachable for square-planar in practice,
+        // since that geometry has no cumulated-bond analog, but handled
+        // the same way there for symmetry/safety).
         let original_arr = <[u32; 4]>::try_from(original).ok();
         let canonical_arr = <[u32; 4]>::try_from(canonical.as_slice()).ok();
 
@@ -1629,74 +1634,15 @@ impl<'a> CanonicalWriter<'a> {
                     stored
                 }
             }
-            Chirality::SquarePlanar(tag) => remap_square_planar(tag, original, &canonical)
-                .map(Chirality::SquarePlanar)
-                .unwrap_or(Chirality::None),
+            Chirality::SquarePlanar(tag) => match (original_arr, canonical_arr) {
+                (Some(o), Some(c)) => remap_square_planar_tag(tag, o, c)
+                    .map(Chirality::SquarePlanar)
+                    .unwrap_or(Chirality::None),
+                _ => Chirality::None,
+            },
             Chirality::None => Chirality::None,
         }
     }
-}
-
-/// Remap a square-planar tag from `original` (parse-time) neighbor order to
-/// `canonical` (canonical-DFS) neighbor order.
-///
-/// Rule (oracle-verified against RDKit 2026.03.3 across 24 neighbor
-/// permutations × 3 tags × 4 independent molecule shapes -- 0 mismatches; see
-/// `docs/rfcs/square_planar_stereo_rfc.md`): each tag names a partition of
-/// positions `{0,1,2,3}` into its two trans-pairs (SP1={0,2}|{1,3},
-/// SP2={0,1}|{2,3}, SP3={0,3}|{1,2}). Apply the neighbor-id permutation to
-/// that pair-of-pairs and match the result against the 3 templates.
-///
-/// `None` if `original`/`canonical` aren't both exactly 4 ids naming the same
-/// set of 4 distinct atoms -- a data-integrity problem to fail closed on, not
-/// a case to guess through.
-fn remap_square_planar(
-    tag: SquarePlanarPermutation,
-    original: &[u32],
-    canonical: &[u32],
-) -> Option<SquarePlanarPermutation> {
-    if original.len() != 4 || canonical.len() != 4 {
-        return None;
-    }
-    let mut sorted_original = original.to_vec();
-    sorted_original.sort_unstable();
-    sorted_original.dedup();
-    if sorted_original.len() != 4 {
-        return None; // duplicate neighbor ids -- malformed
-    }
-    let mut sorted_canonical = canonical.to_vec();
-    sorted_canonical.sort_unstable();
-    if sorted_original != sorted_canonical {
-        return None; // not the same 4 atoms
-    }
-
-    let position_in_canonical =
-        |id: u32| -> u8 { canonical.iter().position(|&x| x == id).unwrap() as u8 };
-
-    let mut new_pairs: Vec<(u8, u8)> = tag
-        .trans_pairs()
-        .into_iter()
-        .map(|(i, j)| {
-            let (a, b) = (
-                position_in_canonical(original[i as usize]),
-                position_in_canonical(original[j as usize]),
-            );
-            (a.min(b), a.max(b))
-        })
-        .collect();
-    new_pairs.sort_unstable();
-
-    [
-        SquarePlanarPermutation::SP1,
-        SquarePlanarPermutation::SP2,
-        SquarePlanarPermutation::SP3,
-    ]
-    .into_iter()
-    .find(|candidate| {
-        let mut template: Vec<(u8, u8)> = candidate.trans_pairs().into();
-        template.sort_unstable();
-        template == new_pairs
-    })
 }
 
 /// Return `true` if the permutation mapping `original` order to `canonical` order

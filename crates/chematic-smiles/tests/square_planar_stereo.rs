@@ -44,6 +44,52 @@ fn cisplatin_and_transplatin_have_distinct_canonical_identity() {
     );
 }
 
+/// `(tag name, enum value, trans-pair-of-positions template)` for all 3
+/// square-planar tags -- shared fixture data for both
+/// `oracle_verified_permutation_table_matches_end_to_end` (end-to-end
+/// through the parser/writer) and `remap_square_planar_tag_matches_oracle_table_directly`
+/// (direct unit-level call), so the 144-case sweep isn't hand-transcribed
+/// twice.
+type TagEntry<'a> = (&'a str, SquarePlanarPermutation, [(u8, u8); 2]);
+const TAGS: [TagEntry<'static>; 3] = [
+    ("SP1", SquarePlanarPermutation::SP1, [(0u8, 2u8), (1, 3)]),
+    ("SP2", SquarePlanarPermutation::SP2, [(0, 1), (2, 3)]),
+    ("SP3", SquarePlanarPermutation::SP3, [(0, 3), (1, 2)]),
+];
+
+fn build(order: [usize; 4], ligands: &[&str; 4], tag: &str) -> String {
+    format!(
+        "{}[Pt@{tag}]({})({}){}",
+        ligands[order[0]], ligands[order[1]], ligands[order[2]], ligands[order[3]]
+    )
+}
+
+/// Predict which tag describes the same physical arrangement as
+/// `(tag_pairs, order)` when re-expressed against the reference order
+/// `[0,1,2,3]`. `order[i]` names which ligand id sits at original SMILES
+/// slot `i`. The reference target order IS the identity `[0,1,2,3]`, so
+/// "the position within the reference order of ligand id v" is simply `v`
+/// itself -- no lookup needed (unlike the general case `remap_square_planar_tag`
+/// handles, which looks a real `canonical` sequence up).
+fn predict(tag_pairs: [(u8, u8); 2], order: [usize; 4]) -> &'static str {
+    let mut new_pairs: Vec<(u8, u8)> = tag_pairs
+        .iter()
+        .map(|&(i, j)| {
+            let (a, b) = (order[i as usize] as u8, order[j as usize] as u8);
+            (a.min(b), a.max(b))
+        })
+        .collect();
+    new_pairs.sort_unstable();
+    for &(name, _, pairs) in &TAGS {
+        let mut t = pairs.to_vec();
+        t.sort_unstable();
+        if t == new_pairs {
+            return name;
+        }
+    }
+    unreachable!("one of the 3 tags must match")
+}
+
 /// Every `@SP1`/`@SP2`/`@SP3` RDKit-oracle-verified permutation case
 /// (`scripts/square_planar_permutation_oracle.py`, 144/144, 0 mismatches),
 /// re-verified here end to end through chematic's own parser + canonical
@@ -55,54 +101,15 @@ fn oracle_verified_permutation_table_matches_end_to_end() {
     // C[Pt@tag](F)(Cl)[H] -- same shape as the oracle script's
     // "simple_4_distinct_ligands", ligand order [C, F, Cl, H].
     let ligands = ["C", "F", "Cl", "[H]"];
-    let tags = [
-        ("SP1", SquarePlanarPermutation::SP1, [(0u8, 2u8), (1, 3)]),
-        ("SP2", SquarePlanarPermutation::SP2, [(0, 1), (2, 3)]),
-        ("SP3", SquarePlanarPermutation::SP3, [(0, 3), (1, 2)]),
-    ];
-
-    fn build(order: [usize; 4], ligands: &[&str; 4], tag: &str) -> String {
-        format!(
-            "{}[Pt@{tag}]({})({}){}",
-            ligands[order[0]], ligands[order[1]], ligands[order[2]], ligands[order[3]]
-        )
-    }
-
-    type TagEntry<'a> = (&'a str, SquarePlanarPermutation, [(u8, u8); 2]);
-
-    fn predict<'a>(tag_pairs: [(u8, u8); 2], order: [usize; 4], tags: &[TagEntry<'a>]) -> &'a str {
-        // order[i] names which ligand id sits at original SMILES slot i.
-        // The reference target order IS the identity [0,1,2,3], so "the
-        // position within the reference order of ligand id v" is simply v
-        // itself -- no lookup needed (unlike the general case in
-        // `remap_square_planar`, which looks a real `canonical` sequence
-        // up via `position_in_canonical`).
-        let mut new_pairs: Vec<(u8, u8)> = tag_pairs
-            .iter()
-            .map(|&(i, j)| {
-                let (a, b) = (order[i as usize] as u8, order[j as usize] as u8);
-                (a.min(b), a.max(b))
-            })
-            .collect();
-        new_pairs.sort_unstable();
-        for &(name, _, pairs) in tags {
-            let mut t = pairs.to_vec();
-            t.sort_unstable();
-            if t == new_pairs {
-                return name;
-            }
-        }
-        unreachable!("one of the 3 tags must match")
-    }
 
     let mut checked = 0;
     for order in permutations_of_4() {
-        for &(tag_name, _, tag_pairs) in &tags {
+        for &(tag_name, _, tag_pairs) in &TAGS {
             let smi = build(order, &ligands, tag_name);
             let mol = parse(&smi).unwrap_or_else(|e| panic!("{smi} failed to parse: {e}"));
             let canon = canonical_smiles(&mol);
 
-            let predicted = predict(tag_pairs, order, &tags);
+            let predicted = predict(tag_pairs, order);
             let reference_smi = build([0, 1, 2, 3], &ligands, predicted);
             let reference_canon = canonical_smiles(&parse(&reference_smi).unwrap());
 
@@ -110,6 +117,44 @@ fn oracle_verified_permutation_table_matches_end_to_end() {
                 canon, reference_canon,
                 "order={order:?} tag={tag_name} ({smi}) should canonicalize the same as \
                  reference-order+{predicted} ({reference_smi})"
+            );
+            checked += 1;
+        }
+    }
+    assert_eq!(checked, 24 * 3, "must check all 24 permutations x 3 tags");
+}
+
+/// Direct unit-level counterpart to the end-to-end test above: calls
+/// `chematic_core::remap_square_planar_tag` (the generalized-stereo-geometry
+/// replacement for the removed `remap_square_planar`) directly against the
+/// same 24-permutations x 3-tags sweep and the same `predict` fixture data
+/// (not hand-transcribed a second time), skipping the SMILES parser/writer
+/// entirely -- proves the new module reproduces the oracle-verified
+/// `trans_pairs()` semantics at the function level, not just "some writer
+/// output looks unchanged."
+#[test]
+fn remap_square_planar_tag_matches_oracle_table_directly() {
+    let reference: [u32; 4] = [0, 1, 2, 3];
+    let mut checked = 0;
+    for order in permutations_of_4() {
+        let original: [u32; 4] = [
+            order[0] as u32,
+            order[1] as u32,
+            order[2] as u32,
+            order[3] as u32,
+        ];
+        for &(tag_name, tag, tag_pairs) in &TAGS {
+            let predicted_name = predict(tag_pairs, order);
+            let predicted_tag = TAGS
+                .iter()
+                .find(|&&(name, _, _)| name == predicted_name)
+                .map(|&(_, t, _)| t)
+                .unwrap();
+
+            assert_eq!(
+                chematic_core::remap_square_planar_tag(tag, original, reference),
+                Some(predicted_tag),
+                "order={order:?} tag={tag_name}"
             );
             checked += 1;
         }
