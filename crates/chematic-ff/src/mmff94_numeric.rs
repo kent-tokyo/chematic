@@ -2688,6 +2688,63 @@ mod tests {
         }
     }
 
+    // ── assign_mmff94_numeric_types_with_view (issue #227 Phase 1) ──────────
+
+    #[test]
+    fn caffeine_reperceived_view_kekulizes_the_dione_ring_bond_to_single() {
+        // Root-cause regression: the SAME bond the aromaticity test above
+        // already showed gets non-aromatic (type 3/type 63, not two
+        // aromatic-designated types) numeric types must ALSO carry a
+        // non-Aromatic BondOrder in the returned view -- otherwise
+        // bond_type_for/torsion_type_for (which read BondOrder, not the
+        // numeric type's own registry `arom` flag) still see the wrong
+        // thing even though typing itself is correct. Oracle-confirmed via
+        // `MolFromSmiles(...).GetBondBetweenAtoms(5,6).GetIsAromatic() ==
+        // False` (Release 2026.03.4).
+        let m = mol("Cn1cnc2c1c(=O)n(C)c(=O)n2C");
+        let (types, view) = assign_mmff94_numeric_types_with_view(&m).unwrap();
+        assert_eq!(types[5], 63);
+        assert_eq!(types[6], 3);
+        let order = view
+            .bond_between(AtomIdx(5), AtomIdx(6))
+            .expect("atoms 5-6 must be bonded")
+            .1
+            .order;
+        assert_ne!(
+            order,
+            BondOrder::Aromatic,
+            "caffeine's ring-6 C5A-C=O bond must be Kekulized to a real \
+             Single/Double order in the MMFF view, not left Aromatic"
+        );
+        // Original `m` is untouched (`&Molecule`, never mutated) -- the two
+        // molecules may legitimately disagree.
+        assert_eq!(
+            m.bond_between(AtomIdx(5), AtomIdx(6)).unwrap().1.order,
+            BondOrder::Aromatic,
+            "the caller's original molecule must be left exactly as parsed"
+        );
+    }
+
+    #[test]
+    fn assign_mmff94_numeric_types_is_a_thin_wrapper_over_the_view_variant() {
+        let m = mol("Cn1cnc2c1c(=O)n(C)c(=O)n2C");
+        let types_only = assign_mmff94_numeric_types(&m).unwrap();
+        let (types_with_view, _) = assign_mmff94_numeric_types_with_view(&m).unwrap();
+        assert_eq!(types_only, types_with_view);
+    }
+
+    #[test]
+    fn assign_mmff94_numeric_types_with_view_is_deterministic() {
+        let m = mol("Cn1cnc2c1c(=O)n(C)c(=O)n2C");
+        let (types1, view1) = assign_mmff94_numeric_types_with_view(&m).unwrap();
+        let (types2, view2) = assign_mmff94_numeric_types_with_view(&m).unwrap();
+        assert_eq!(types1, types2);
+        for (_, b) in view1.bonds() {
+            let other = view2.bond_between(b.atom1, b.atom2).unwrap().1;
+            assert_eq!(b.order, other.order);
+        }
+    }
+
     #[test]
     fn small_ring_sp3_carbons_are_cr3r_and_cr4r() {
         // Regression for issue #227 Priority 1A: RDKit AtomTyper.cpp types

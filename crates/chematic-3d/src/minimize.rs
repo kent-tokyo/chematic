@@ -13,7 +13,7 @@ use chematic_ff::{
     is_angle_in_ring_of_size_3_or_4, minimize_mmff94_lbfgs, minimize_uff as ff_minimize_uff,
     mmff94_angle_energy_resolved, mmff94_bond_energy_resolved, mmff94_energy_breakdown, mmff94_oop,
     mmff94_stbn, mmff94_torsion_energy, mmff94_total_energy, stretch_bend_type_for,
-    torsion_type_for, uff_total_energy,
+    torsion_no_term_by_design, torsion_type_for, uff_total_energy,
 };
 use chematic_ff::{
     assign_dreiding_types, assign_mmff94_types, dreiding_angle, dreiding_bond_len, dreiding_vdw,
@@ -1144,6 +1144,12 @@ pub struct Mmff94CoverageReport {
     pub angles_missing: Vec<Mmff94MissingTerm>,
     pub torsions_total: usize,
     pub torsions_missing: Vec<Mmff94MissingTerm>,
+    /// Torsions with NO real MMFF94 term at all, by design, not a coverage
+    /// gap -- both central (j-k) atoms fully typed, but one has MMFF's
+    /// `lin` flag (see `chematic_ff::torsion_no_term_by_design`'s doc, issue
+    /// #227 Phase 1). Included in `torsions_total`, deliberately excluded
+    /// from `torsions_missing` and from `has_gate_failure`'s torsion check.
+    pub torsions_no_term_by_design: usize,
     pub oop_total: usize,
     pub oop_missing: Vec<Mmff94MissingTerm>,
     /// Stretch-bend cross-term coverage (Priority 2 / Stage 1B, issue #227).
@@ -1870,12 +1876,20 @@ fn compute_mmff94_coverage(mol: &Molecule, types: &[u8]) -> Mmff94CoverageReport
                     tl_,
                 );
                 if mmff94_torsion_energy(tt, ti_, tj_, tk_, tl_).is_none() {
-                    report.torsions_missing.push(missing_term(
-                        mol,
-                        types,
-                        Mmff94TermKind::Torsion,
-                        &[i, j, k, l],
-                    ));
+                    if torsion_no_term_by_design(tj_, tk_) {
+                        // Issue #227 Phase 1: RDKit itself generates no term
+                        // here either (linear central atom) -- correct, not
+                        // a coverage gap. Counted separately so this never
+                        // trips `include_torsion_oop_in_gate`.
+                        report.torsions_no_term_by_design += 1;
+                    } else {
+                        report.torsions_missing.push(missing_term(
+                            mol,
+                            types,
+                            Mmff94TermKind::Torsion,
+                            &[i, j, k, l],
+                        ));
+                    }
                 }
             }
         }
@@ -2368,7 +2382,6 @@ pub fn minimize_with_policy(
 mod tests {
     use super::*;
     use crate::dg::generate_coords;
-    use chematic_ff::assign_mmff94_numeric_types;
     use chematic_smiles::parse;
 
     fn all_pairs_min_dist(coords: &Coords3D, n: usize) -> f64 {
@@ -3128,6 +3141,41 @@ mod policy_bridge_tests {
         assert!(
             after < 3.0,
             "expected a sane, non-blown-up geometry from MMFF94 directly, got worst bond {after:.2} Å"
+        );
+    }
+
+    #[test]
+    fn caffeine_passes_the_complete_bonded_term_gate_after_the_reperceived_view_fix() {
+        // Issue #227 Phase 1: caffeine's dione-ring torsions used to be
+        // torsions_missing under the classification bug this PR fixes --
+        // never gated under the default bond+angle-only policy
+        // (minimize_with_policy_gated(..., false, false), what
+        // minimize_with_policy uses), but WOULD have failed
+        // `include_torsion_oop_in_gate=true` before this fix. Confirms the
+        // real, gated production path -- not just the coverage-audit tool --
+        // now succeeds, and does so via a real, non-fallback MMFF94 run.
+        let mol = chematic_smiles::parse("Cn1cnc2c1c(=O)n(C)c(=O)n2C").unwrap();
+        let coords = generate_coords(&mol);
+        let config = MinimizeConfig::default();
+
+        let result = minimize_with_policy_gated(
+            &mol,
+            coords,
+            ForceFieldPolicy::Mmff94BondAngleStrict,
+            &config,
+            true,
+            true,
+        )
+        .expect("caffeine must pass the complete bonded-term gate directly, no fallback");
+
+        let coverage = result
+            .coverage
+            .as_ref()
+            .expect("strict policy always reports coverage");
+        assert!(
+            coverage.torsions_missing.is_empty(),
+            "caffeine has no genuine torsion coverage gap, got: {:?}",
+            coverage.torsions_missing
         );
     }
 
