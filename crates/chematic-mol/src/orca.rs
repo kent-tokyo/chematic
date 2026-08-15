@@ -61,6 +61,12 @@
 //!   ORCA's manual does not appear to document the exact wording).
 //! - The `Total Charge ... Charge .... <n>` / `Multiplicity ... Mult ....
 //!   <n>` echo lines near the top of the output.
+//! - `%maxcore <n>` (and similarly `%moinp "file"`) being a single-line
+//!   "global variable" directive with **no** `end` at all, unlike block
+//!   directives such as `%pal ... end` -- corroborated by several
+//!   independent HPC-site ORCA guides and the official ORCA tutorials
+//!   site, though not found spelled out as a general rule in the manual
+//!   itself.
 //!
 //! Deferred / explicitly out of scope (see individual doc comments below
 //! for the exact boundary): `%coords` block as an alternative to `*
@@ -71,20 +77,17 @@
 //! interpreted), full normal-mode vectors, and any energy other than the
 //! plain (non `(MM)`/`(QM/MM)`-suffixed) `FINAL SINGLE POINT ENERGY`.
 //!
-//! **Known limitation, found while building the test fixtures below and
-//! deliberately not papered over:** a `%name ... end` block's raw content
-//! is found by scanning for the first line whose last token is `end`
-//! (case-insensitive), with no semantic knowledge of any block's internal
-//! grammar (per the "don't deeply parse block semantics" scope above).
-//! Real ORCA `%geom` blocks can contain a nested sub-block such as
-//! `Constraints ... end` that closes with its own `end` *before* the
-//! block's real closing `end` -- there is no purely syntactic way to tell
-//! that inner `end` apart from the block's true terminator without
-//! hard-coding which keywords open a nested scope. Such inputs fail with
-//! a typed [`OrcaInputError::UnterminatedBlock`]/[`OrcaInputError::UnexpectedLine`]
-//! rather than being silently corrupted or causing a panic -- see
-//! `input_block_with_nested_end_is_a_known_limitation` in the tests below
-//! for the exact behavior asserted.
+//! A `%name ... end` block's raw content is found by scanning for the
+//! *last* `end`-terminated line before the next top-level construct
+//! (`%`/`*`/`!`) or EOF, not the first -- with no semantic knowledge of
+//! any block's internal grammar. This is what lets a nested sub-block
+//! such as `%geom`'s `Constraints ... end` (which closes with its own
+//! `end` before `%geom`'s real closing `end`) round-trip correctly as
+//! ordinary raw content: see `input_block_with_nested_end_round_trips` in
+//! the tests below. A block with no `end` anywhere in that window and
+//! nothing on the block-name line itself is a genuinely unterminated
+//! block and fails with a typed [`OrcaInputError::UnterminatedBlock`],
+//! never silently or by panicking.
 //!
 //! No bond perception is performed anywhere in this module: ORCA input and
 //! output carry no bond table, only geometry + charge/multiplicity, and
@@ -250,18 +253,32 @@ impl OrcaCoords {
     }
 }
 
-/// A `%name ... end` block, preserved losslessly as opaque raw text keyed
-/// by its (lower-cased) block name -- this parser does not attempt to
-/// understand the internal structure of `%scf`, `%geom`, `%basis`, etc.
+/// A `%name ... end` block (or a `%name value` single-line directive with
+/// no `end` at all, e.g. `%maxcore 3000` -- see [`Self::has_end`]),
+/// preserved losslessly as opaque raw text keyed by its (lower-cased)
+/// block name -- this parser does not attempt to understand the internal
+/// structure of `%scf`, `%geom`, `%basis`, etc.
 #[derive(Debug, Clone, PartialEq)]
 pub struct OrcaBlock {
     /// Lower-cased block name (ORCA input is case-insensitive), e.g.
-    /// `"scf"`, `"geom"`, `"pal"`.
+    /// `"scf"`, `"geom"`, `"pal"`, `"maxcore"`.
     pub name: String,
-    /// Raw inner text between the block name and the closing `end`,
-    /// trimmed of leading/trailing whitespace but otherwise verbatim
-    /// (internal line breaks and indentation preserved).
+    /// Raw inner text, trimmed of leading/trailing whitespace but
+    /// otherwise verbatim (internal line breaks and indentation
+    /// preserved). For a `has_end: true` block this is everything between
+    /// the block name and the closing `end` (which may itself contain
+    /// other `end`-terminated lines belonging to a nested sub-block, such
+    /// as `%geom`'s `Constraints ... end` -- this block's own `end` is
+    /// found as the *last* `end`-terminated line before the next
+    /// top-level construct, not the first, precisely so nested `end`s
+    /// like that round-trip as ordinary raw content instead of being
+    /// mistaken for the terminator). For a `has_end: false` block this is
+    /// whatever followed the block name on its own line.
     pub raw: String,
+    /// Whether this block is closed with an explicit `end` keyword.
+    /// `false` for ORCA's single-line "global variable" directives that
+    /// take no `end` at all (e.g. `%maxcore 3000`, `%moinp "file.gbw"`).
+    pub has_end: bool,
 }
 
 /// A parsed ORCA input file.
@@ -359,28 +376,81 @@ fn parse_block(lines: &[&str], start: usize) -> Result<(OrcaBlock, usize), OrcaI
     }
     let rest_of_first_line = after_pct[name_end..].trim_start();
 
-    let mut collected: Vec<String> = vec![rest_of_first_line.to_string()];
-    let mut i = start;
-    loop {
-        if let Some(end_pos) = line_ends_with_end(collected.last().unwrap()) {
-            let last = collected.pop().unwrap();
-            collected.push(last[..end_pos].trim_end().to_string());
+    // Window: from `start` up to (not including) the next top-level
+    // construct line (`%`/`*`/`!`) or EOF. Bounds how far we search for
+    // this block's closing `end` so a later, unrelated block's `end` can
+    // never be misattributed to this one.
+    let mut window_end = lines.len();
+    for (k, l) in lines.iter().enumerate().skip(start + 1) {
+        let t = l.trim();
+        if t.starts_with('%') || t.starts_with('*') || t.starts_with('!') {
+            window_end = k;
             break;
         }
-        i += 1;
-        if i >= lines.len() {
-            return Err(OrcaInputError::UnterminatedBlock { name });
-        }
-        collected.push(lines[i].to_string());
     }
-    let raw = collected.join("\n").trim().to_string();
-    Ok((
-        OrcaBlock {
-            name: name.to_lowercase(),
-            raw,
-        },
-        i + 1,
-    ))
+
+    // `content[0]` is whatever followed the block name on its own line;
+    // `content[k]` for `k >= 1` is `lines[start + k]`.
+    let mut content: Vec<&str> = Vec::with_capacity(window_end - start);
+    content.push(rest_of_first_line);
+    content.extend_from_slice(&lines[start + 1..window_end]);
+
+    // The block's true terminator is the LAST `end`-terminated line in
+    // the window, not the first: some blocks contain a nested sub-block
+    // (e.g. `%geom`'s `Constraints ... end`) that closes with its own
+    // `end` before the block's real closing `end`, and there is no
+    // purely syntactic way to tell those apart -- but the block's own
+    // `end` is always the last one before the next top-level construct,
+    // so taking the last match handles the nested case correctly without
+    // needing any semantic knowledge of what "Constraints" means.
+    match content
+        .iter()
+        .rposition(|l| line_ends_with_end(l).is_some())
+    {
+        Some(end_idx) => {
+            let end_pos = line_ends_with_end(content[end_idx]).unwrap();
+            let mut collected: Vec<String> =
+                content[..end_idx].iter().map(|s| s.to_string()).collect();
+            let before = content[end_idx][..end_pos].trim_end();
+            if !before.is_empty() {
+                collected.push(before.to_string());
+            }
+            let raw = collected.join("\n").trim().to_string();
+            let next_i = if end_idx == 0 {
+                start + 1
+            } else {
+                start + end_idx + 1
+            };
+            Ok((
+                OrcaBlock {
+                    name: name.to_lowercase(),
+                    raw,
+                    has_end: true,
+                },
+                next_i,
+            ))
+        }
+        None if !rest_of_first_line.is_empty() => {
+            // No `end` anywhere in the window, but the block name has a
+            // value directly on its own line: one of ORCA's single-line
+            // "global variable" directives with no `end` at all (e.g.
+            // `%maxcore 3000`, `%moinp "file.gbw"`). Consumes only the
+            // block-name line itself.
+            Ok((
+                OrcaBlock {
+                    name: name.to_lowercase(),
+                    raw: rest_of_first_line.to_string(),
+                    has_end: false,
+                },
+                start + 1,
+            ))
+        }
+        None => {
+            // No `end` anywhere in the window, and nothing on the block's
+            // own line either: a genuinely unterminated multi-line block.
+            Err(OrcaInputError::UnterminatedBlock { name })
+        }
+    }
 }
 
 fn parse_charge_mult(
@@ -568,7 +638,15 @@ pub fn write_orca_input(input: &OrcaInput) -> String {
         out.push('\n');
         out.push('%');
         out.push_str(&b.name);
-        if b.raw.is_empty() {
+        if !b.has_end {
+            // Single-line directive with no `end` at all (e.g. `%maxcore
+            // 3000`).
+            if !b.raw.is_empty() {
+                out.push(' ');
+                out.push_str(&b.raw);
+            }
+            out.push('\n');
+        } else if b.raw.is_empty() {
             out.push_str(" end\n");
         } else {
             out.push('\n');
@@ -1118,24 +1196,54 @@ H   0.000000  -0.757200   0.586200
     }
 
     #[test]
-    fn input_block_with_nested_end_is_a_known_limitation() {
-        // KNOWN LIMITATION (documented in the module docs): this parser
-        // finds a block's closing `end` by scanning for the first
-        // "end"-terminated line, using no semantic knowledge of any
-        // block's grammar (deliberately, per this module's scope). Real
-        // ORCA `%geom` blocks can contain a nested `Constraints ... end`
-        // sub-block that itself closes with `end` before the block's own
-        // closing `end` -- there is no purely syntactic way to tell that
-        // inner `end` apart from the block's real terminator without
-        // hard-coding which keywords open a sub-scope (exactly the
-        // "deeply parse block semantics" work this module's brief says is
-        // unnecessary). The result here is a *typed error*
-        // (`UnterminatedBlock`, because the real closing `end` is left as
-        // an unconsumed stray top-level line), never silent corruption of
-        // the block content and never a panic.
+    fn input_block_with_nested_end_round_trips() {
+        // Real ORCA `%geom` blocks can contain a nested `Constraints ...
+        // end` sub-block that closes with its own `end` *before* the
+        // block's real closing `end`. This parser finds the block's true
+        // terminator as the *last* `end`-terminated line before the next
+        // top-level construct, not the first -- so the inner `end` is
+        // correctly captured as ordinary raw content instead of being
+        // mistaken for the block's terminator (see module docs).
         let input = "! Opt\n\n%geom\n Constraints\n  {C 0 C}\n end\nend\n\n* xyz 0 1\nC 0 0 0\n*\n";
-        let err = parse_orca_input(input).unwrap_err();
-        assert!(matches!(err, OrcaInputError::UnexpectedLine { .. }));
+        let parsed1 = parse_orca_input(input).unwrap();
+        assert_eq!(parsed1.blocks.len(), 1);
+        assert_eq!(parsed1.blocks[0].name, "geom");
+        assert!(parsed1.blocks[0].has_end);
+        assert!(parsed1.blocks[0].raw.contains("Constraints"));
+        assert!(parsed1.blocks[0].raw.contains("{C 0 C}"));
+        // The inner `end` line survives verbatim as raw content.
+        assert!(parsed1.blocks[0].raw.trim_end().ends_with("end"));
+
+        // The coordinate block after it must still parse normally -- the
+        // outer `end` was correctly consumed as the block's terminator,
+        // not left as a stray top-level line.
+        let coords = parsed1.coords.as_ref().expect("coordinate block");
+        assert!(matches!(coords, OrcaCoords::Xyz { .. }));
+
+        let written = write_orca_input(&parsed1);
+        let parsed2 = parse_orca_input(&written).unwrap();
+        assert_eq!(parsed1, parsed2);
+    }
+
+    #[test]
+    fn input_no_end_single_line_directive_round_trips() {
+        // `%maxcore <n>` is a single-line ORCA "global variable" directive
+        // with no `end` at all (unlike `%pal ... end`) -- confirmed via
+        // multiple independent secondary sources, see module docs.
+        let input = "! Opt\n\n%maxcore 3000\n%pal nprocs 4 end\n\n* xyz 0 1\nHe 0 0 0\n*\n";
+        let parsed1 = parse_orca_input(input).unwrap();
+        assert_eq!(parsed1.blocks.len(), 2);
+        assert_eq!(parsed1.blocks[0].name, "maxcore");
+        assert!(!parsed1.blocks[0].has_end);
+        assert_eq!(parsed1.blocks[0].raw, "3000");
+        assert_eq!(parsed1.blocks[1].name, "pal");
+        assert!(parsed1.blocks[1].has_end);
+
+        let written = write_orca_input(&parsed1);
+        assert!(written.contains("%maxcore 3000\n"));
+        assert!(!written.contains("%maxcore 3000 end"));
+        let parsed2 = parse_orca_input(&written).unwrap();
+        assert_eq!(parsed1, parsed2);
     }
 
     #[test]
