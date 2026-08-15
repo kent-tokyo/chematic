@@ -29,7 +29,21 @@
 //!
 //! Run: `cargo run --release -p chematic-3d --example pipeline_v2_vs_rdkit_common_scorer
 //!   > validation/results/pipeline_v2_vs_rdkit_common_scored_rows.jsonl`
+//!
+//! Issue #227 Phase 2 addition: optional paired heavy-atom RMSD, opt-in via
+//! `--pair <chematic_arm> <rdkit_arm>` (and `--chematic-rows`/`--rdkit-rows`
+//! to point at a specific state's dump, e.g. a Phase-2 State-1/2/3 snapshot
+//! instead of the canonical committed files) -- with no flags, output is
+//! byte-for-byte identical to before this addition (same default paths, same
+//! `score_rows` calls, no new rows). Reuses `chematic_3d::conformer::
+//! rmsd_symmetric` (the project's existing symmetry-aware Kabsch RMSD,
+//! already used by `rmsd_symmetric_oracle_dump.rs`/`rmsd_symmetric_oracle_check.py`)
+//! rather than a new implementation -- joins chematic's and RDKit's
+//! already-saved heavy-atom coordinates for the SAME (tier, name) on the two
+//! named arms, molecule reparsed once from the shared manifest SMILES (same
+//! atom-mapping precedent `verify_stereo` above already relies on).
 
+use chematic_3d::conformer::rmsd_symmetric;
 use chematic_3d::coords::{Coords3D, Point3};
 use chematic_3d::stereo_constraints::verify_stereo;
 use chematic_core::{AtomIdx, Molecule};
@@ -307,7 +321,124 @@ fn score_rows(
     }
 }
 
+/// (tier, name) -> success-row coords/atom-count for one specific arm.
+fn coords_by_key(rows: &[Value], arm: &str) -> HashMap<(String, String), Value> {
+    rows.iter()
+        .filter(|r| r["arm"].as_str() == Some(arm) && r["status"].as_str() == Some("success"))
+        .map(|r| {
+            (
+                (
+                    r["tier"].as_str().unwrap_or("?").to_string(),
+                    r["name"].as_str().unwrap_or("?").to_string(),
+                ),
+                r["coords"].clone(),
+            )
+        })
+        .collect()
+}
+
+/// Issue #227 Phase 2: paired symmetric heavy-atom RMSD between one
+/// chematic arm and one RDKit arm, joined per (tier, name) over molecules
+/// that succeeded on BOTH sides. Emits one `status: "paired_rmsd"` row per
+/// joined molecule (and an `integrity_error` row for a join/parse failure,
+/// same convention as `score_rows` above) -- never silently drops a
+/// molecule that succeeded on both sides.
+fn emit_paired_rmsd(
+    chematic_rows: &[Value],
+    rdkit_rows: &[Value],
+    smiles_by_name: &HashMap<String, HashMap<String, String>>,
+    chematic_arm: &str,
+    rdkit_arm: &str,
+) {
+    let chematic_coords = coords_by_key(chematic_rows, chematic_arm);
+    let rdkit_coords = coords_by_key(rdkit_rows, rdkit_arm);
+
+    let mut keys: Vec<&(String, String)> = chematic_coords.keys().collect();
+    keys.sort();
+    for key @ (tier, name) in keys {
+        let Some(rd_coords_json) = rdkit_coords.get(key) else {
+            continue; // not a join failure -- RDKit simply didn't succeed on this molecule/arm
+        };
+        let ch_coords_json = &chematic_coords[key];
+
+        let smiles = match smiles_by_name.get(tier).and_then(|m| m.get(name)) {
+            Some(s) => s.clone(),
+            None => {
+                println!(
+                    "{}",
+                    json!({"tier": tier, "name": name, "chematic_arm": chematic_arm,
+                           "rdkit_arm": rdkit_arm, "status": "integrity_error",
+                           "reason": "smiles_not_found_in_manifest"})
+                );
+                continue;
+            }
+        };
+        let mol = match chematic_smiles::parse(&smiles) {
+            Ok(m) => m,
+            Err(e) => {
+                println!(
+                    "{}",
+                    json!({"tier": tier, "name": name, "chematic_arm": chematic_arm,
+                           "rdkit_arm": rdkit_arm, "status": "integrity_error",
+                           "reason": format!("reparse_failed: {e}")})
+                );
+                continue;
+            }
+        };
+        let n = mol.atom_count();
+        let (Some(ch_coords), Some(rd_coords)) = (
+            coords_from_json(ch_coords_json, n),
+            coords_from_json(rd_coords_json, n),
+        ) else {
+            println!(
+                "{}",
+                json!({"tier": tier, "name": name, "chematic_arm": chematic_arm,
+                       "rdkit_arm": rdkit_arm, "status": "integrity_error",
+                       "reason": "coords_count_mismatch_or_malformed"})
+            );
+            continue;
+        };
+
+        let rmsd = rmsd_symmetric(&mol, &ch_coords, &rd_coords);
+        println!(
+            "{}",
+            json!({
+                "tier": tier,
+                "name": name,
+                "chematic_arm": chematic_arm,
+                "rdkit_arm": rdkit_arm,
+                "status": "paired_rmsd",
+                "rmsd_symmetric_angstrom": rmsd,
+            })
+        );
+    }
+}
+
 fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    let mut chematic_path =
+        "validation/results/pipeline_v2_vs_rdkit_chematic_rows.jsonl".to_string();
+    let mut rdkit_path = "validation/results/pipeline_v2_vs_rdkit_rdkit_rows.jsonl".to_string();
+    let mut pair: Option<(String, String)> = None;
+    let mut i = 1;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--chematic-rows" if i + 1 < args.len() => {
+                chematic_path = args[i + 1].clone();
+                i += 2;
+            }
+            "--rdkit-rows" if i + 1 < args.len() => {
+                rdkit_path = args[i + 1].clone();
+                i += 2;
+            }
+            "--pair" if i + 2 < args.len() => {
+                pair = Some((args[i + 1].clone(), args[i + 2].clone()));
+                i += 3;
+            }
+            other => panic!("unrecognized/malformed argument: {other}"),
+        }
+    }
+
     let tier_a_smiles =
         load_manifest_smiles("validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_a.json");
     let tier_b_smiles =
@@ -316,9 +447,19 @@ fn main() {
     smiles_by_name.insert("A".to_string(), tier_a_smiles);
     smiles_by_name.insert("B".to_string(), tier_b_smiles);
 
-    let chematic_rows = load_jsonl("validation/results/pipeline_v2_vs_rdkit_chematic_rows.jsonl");
-    let rdkit_rows = load_jsonl("validation/results/pipeline_v2_vs_rdkit_rdkit_rows.jsonl");
+    let chematic_rows = load_jsonl(&chematic_path);
+    let rdkit_rows = load_jsonl(&rdkit_path);
 
     score_rows(&chematic_rows, "chematic", &smiles_by_name);
     score_rows(&rdkit_rows, "rdkit", &smiles_by_name);
+
+    if let Some((chematic_arm, rdkit_arm)) = pair {
+        emit_paired_rmsd(
+            &chematic_rows,
+            &rdkit_rows,
+            &smiles_by_name,
+            &chematic_arm,
+            &rdkit_arm,
+        );
+    }
 }
