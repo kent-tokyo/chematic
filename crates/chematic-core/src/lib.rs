@@ -20,6 +20,7 @@ pub mod coords3d;
 pub mod element;
 pub mod kekulization;
 pub mod molecule;
+pub mod stereo_geometry;
 pub mod stereo_group;
 pub mod valence;
 
@@ -30,6 +31,11 @@ pub use coords3d::{Coords3D, Point3};
 pub use element::Element;
 pub use kekulization::{KekuleError, KekuleResult, apply_kekule, kekulize};
 pub use molecule::{AtomIdx, BondIdx, MolError, Molecule, MoleculeBuilder, STEREO_H_SENTINEL};
+pub use stereo_geometry::{
+    CanonicalStereoConfiguration, StereoConfiguration, StereoGeometry, StereoGeometryError,
+    canonicalize_configuration, equivalent_under_rotation, remap_square_planar_tag,
+    remap_tetrahedral_parity,
+};
 pub use stereo_group::{StereoGroup, StereoGroupKind};
 #[allow(deprecated)]
 pub use valence::total_hcount;
