@@ -25,7 +25,7 @@ rxn         = ["smiles", "dep:chematic-rxn"]
 threed      = ["perception", "dep:chematic-3d"]
 inchi       = ["chem", "dep:chematic-inchi"]
 iupac       = ["dep:chematic-iupac"]
-crystal     = ["dep:chematic-crystal"]
+crystal     = ["dep:chematic-crystal", "chematic-mol?/crystal"]
 # `full` is the aggregate of every optional facade capability (not scoped
 # to Molecule-only features) -- a user who writes `features = ["full"]`
 # expects everything, `crystal` included. `chematic-crystal`'s
@@ -34,6 +34,17 @@ crystal     = ["dep:chematic-crystal"]
 # features should default to joining `full` too unless there's a specific
 # reason not to (see docs/rfcs/chematic_crystal_foundation.md's
 # facade-feature section for the crystal-specific decision record).
+#
+# `crystal`'s weak-dependency forward (`chematic-mol?/crystal`) activates
+# chematic-mol's own `crystal` feature (the CIF <-> PeriodicStructure
+# adapter, `parse_cif_periodic_structure`/`write_cif_periodic_structure`)
+# whenever `chematic-mol` is *also* already a dependency (i.e. `mol` is
+# enabled too) -- a no-op otherwise, per Cargo's `?` weak-feature syntax.
+# Found and fixed as a release-readiness check: `full` previously enabled
+# both `mol` and `crystal` without this forward, so a `full` user got
+# `chematic::crystal` and `chematic::mol` but never the adapter bridging
+# them -- exactly the "enabled full but one thing doesn't work" surprise
+# this facade's own `full` contract is meant to rule out.
 full        = ["smiles", "perception", "mol", "depict", "fp", "chem", "smarts", "rxn", "threed", "inchi", "iupac", "crystal"]
 
 [package.metadata.docs.rs]
