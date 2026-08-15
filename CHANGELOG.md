@@ -61,6 +61,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   routing only the common 4-element case through the new module. Pinned
   with an exact golden-value regression test.
 
+### Measured — `pipeline_v2` vs RDKit 2026.03.4 benchmark re-run (issue #227 impact, release-grade)
+
+Release-grade re-measurement only -- no `pipeline_v2`/force-field algorithm
+or library code was changed to produce these numbers (the only non-data
+changes in this PR are to measurement tooling itself: a report-generator
+row-count fix for a pre-existing, unrelated 13th diagnostic arm, and a
+scorer-script stereo-report-plumbing fix -- see the PR diff). Supersedes
+the stale `docs/rfcs/
+pipeline_v2_vs_rdkit_etkdgv3_benchmark.md` numbers (dated 2026-08-06,
+predating PRs #314-317's MMFF94 Bond/Angle empirical-rule fallback).
+Pinned at commit `494d634`, RDKit `2026.03.4`; full environment/seed/
+timeout/ETKDG-parameter/MMFF-variant record at
+`validation/results/pipeline_v2_vs_rdkit_environment_record.json`.
+
+- **`chematic_pipeline_v2_mmff94_strict`** (this benchmark's own arm,
+  via `embed_pipeline_v2`): **149/265 → 239/265** since the 2026-08-06
+  baseline (90.2% usable coverage, up from 56.2%). **This number is NOT
+  directly comparable to the `[0.15.0]` entry's 158→248/265 figure below**
+  -- that number comes from `mmff94_strict_gate_remeasure_227`, a
+  *different* embedding entry point (`dg::generate_coords`, not
+  `embed_pipeline_v2`) with a different starting geometry. Same corpus,
+  same `Mmff94BondAngleStrict` policy, different upstream pipeline --
+  treat as two independently-useful, not-interchangeable numbers, not a
+  contradiction.
+- Other arms (this run): `no_ff` 254/265, `uff_only` 250/265,
+  `mmff94_with_uff_fallback` 253/265, `chematic_legacy_etkdg` 265/265.
+  RDKit's own 4 arms are near-saturated at 264/265 each (the one failure
+  is a known RDKit-internal `BFGSOpt.h` crash on cyclopentane, present
+  identically at both RDKit 2026.03.3 and 2026.03.4 -- see the
+  environment record's version-isolation control).
+- **New finding: torsion parameter coverage, not bond/angle, is now the
+  dominant remaining MMFF94 gap.** `mmff94_strict_complete_bonded_term_gated`
+  (requires full torsion+OOP coverage, not just bond/angle) drops to
+  **180/265** (67.9%) -- of its 84 failures, 60 (71%) cite non-empty
+  `torsions_missing`, while `oop_missing` is 0 across the board and
+  `bonds_missing` is 0. This is the concrete evidence the project's
+  roadmap needed: issue #227's Bond/Angle empirical fallback closed the
+  bond/angle gap, and torsion coverage is the next real bottleneck --
+  promotes the (currently lowest-priority) MMFF torsion empirical
+  fallback item for re-evaluation. Note: this is a *coverage* finding
+  (how often the strict gate refuses to proceed at all); whether the
+  gap also causes measurably worse *geometry* on molecules where a
+  fallback (UFF) is used instead is not yet measured -- RMSD/TFD/
+  coverage-at-threshold metrics against this same corpus are a separate,
+  not-yet-done follow-up (`chematic_pipeline_v2_mmff94_with_uff_fallback_
+  complete_bonded_term_gated` itself stays healthy at 252/265, since the
+  UFF fallback absorbs most of the torsion-coverage-gap cases).
+- Per-molecule transition vs. the 2026-08-06 baseline: overwhelmingly
+  `typed_failure → success` (matching #227's intent) across every MMFF94
+  arm. Two residual anomalies, reported honestly rather than smoothed
+  over: (1) `chembl_tier_b_0166` newly times out on 6 arms -- its
+  baseline elapsed time was already 15-16s (75-80% of the 20s budget)
+  and now runs 21-25s; cause not conclusively isolated (could be a small
+  real per-molecule overhead from work landed since the baseline, or
+  residual timing variance -- this molecule sits close enough to the
+  timeout boundary that it warrants a note, not a firm regression claim).
+  (2) `chembl_tier_b_0182`'s `mmff94_with_uff_fallback_repair` arm flips
+  `success → typed_failure` (`FinalStereoViolation`) at nearly identical,
+  well-under-budget elapsed time (~1.4s baseline, ~4.7s now) -- this is a
+  real, reproducible stereo-repair-then-minimize outcome change, not a
+  timing artifact; root cause not investigated further here (out of
+  scope for a measurement-only pass).
+- **Measurement provenance note**: the first attempt at this
+  re-measurement (2026-08-14) was discarded after its data was found
+  contaminated by an unrelated concurrent process on the same machine
+  (confirmed via this benchmark's own gate-widening monotonicity
+  integrity check tripping, and via elapsed-time analysis showing
+  several molecules pushed 5-30x over their baseline time, well past the
+  20s timeout). Re-run cleanly (2026-08-15) after confirming the
+  contending process had exited; see the environment record's
+  `measurement_history_note` for the full account.
+
 ### Added — `chematic-fp` (FPS fingerprint exchange format)
 
 - New `fps` module: streaming read/write for the FPS ("Fingerprint file
