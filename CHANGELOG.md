@@ -9,6 +9,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Issue #227 Phase 1: MMFF94 torsion parameter coverage gap, root-caused and
+fixed. `torsions_missing` on the 265-molecule Wave 1 corpus: 257 instances
+across 62 molecules → 0 (`mmff94_term_coverage_audit.rs`).
+
+### Fixed — `chematic-ff` / `chematic-3d` (MMFF94 bond-order classification)
+
+- **Root cause**: `assign_mmff94_numeric_types` already computed an
+  MMFF-specific re-perceived molecule (`compute_mmff94_aromatic_view`,
+  Kekulized to match RDKit's real `setMMFFAromaticity` output) to derive
+  correct atom TYPES, then discarded it — `bond_type_for`/`angle_type_for`/
+  `torsion_type_for`/`stretch_bend_type_for` kept reading `BondOrder` from
+  the caller's original, un-reperceived molecule. For ring systems where
+  chematic's general aromaticity perception and MMFF94's own stricter
+  perception disagree (e.g. caffeine's pyrimidinedione ring — oracle-
+  confirmed non-aromatic in RDKit's real sanitizer), this fed the
+  classification formula the wrong bond order, landing on a table code with
+  no row even though the correct row already existed in chematic's own,
+  unmodified parameter tables at a different code.
+- New `assign_mmff94_numeric_types_with_view` returns `(types, mmff_mol)`;
+  `assign_mmff94_numeric_types` is now a thin wrapper. Threaded through
+  chematic-ff's 5 production energy/gradient entry points and chematic-3d's
+  `compute_mmff94_coverage` (the `Mmff94BondAngleStrict`/
+  `Mmff94WithUffFallback` coverage gate), so the gate and the energy
+  functions it gates agree on classification.
+- Measured on the 265-molecule Wave 1 corpus, same audit tool throughout:
+  `torsions_missing` 257→0 instances (62→0 molecules);
+  `bonds_missing` (type-only) 80→1; `angles_missing` (type-only) 191→46 —
+  side effects of the same shared root cause, not separately implemented.
+  Zero success→failure regressions on either the default bond+angle gate
+  (`minimize_with_policy`, 248→249/265 `Ok`) or the stricter
+  `complete_bonded_term_gate` (`minimize_with_policy_gated(...,true,true)`,
+  187→249/265 `Ok`), verified by a full per-molecule join against the
+  pre-fix baseline, not aggregate counts.
+- New `torsion_no_term_by_design`/`Mmff94Resolution::NoTermByDesign`:
+  RDKit's real empirical-rule cascade generates no torsion term at all when
+  either central atom is linear (MMFF `lin` flag, e.g. nitrile/acetylenic
+  carbon) — the exact, complete explanation for the corpus's remaining 3
+  `table_gap` instances (oracle-confirmed `GetMMFFTorsionParams` also
+  returns `None`). Wired into the coverage gate as a new
+  `Mmff94CoverageReport::torsions_no_term_by_design` counter so these are no
+  longer misclassified as coverage gaps.
+- **No Halgren empirical torsion rule was implemented.** Investigated and
+  falsified two hypotheses against a live RDKit oracle (all 254 real
+  instances, not a sample) before finding the real cause above — see
+  `scripts/mmff94_provenance/PROVENANCE.md`'s Torsion entry for the full
+  writeup, including why an empirical-rule implementation was deliberately
+  not shipped (zero instances in this corpus need it).
+- These `complete_bonded_term_gate`/`minimize_with_policy` gate figures are
+  a separate measurement from the production `pipeline_v2_mmff94_strict`
+  entry point (`embed_pipeline_v2`, previously measured at 239/265 -- see
+  the `[0.16.0]` entry below) -- coverage-gate improvement here does not by
+  itself imply the same gain on the full production pipeline (embedding,
+  minimization convergence, stereo verification). A full `embed_pipeline_v2`
+  re-measurement is planned as Phase 2 follow-up work, not part of this fix.
+
+---
+
 Format-expansion Wave 1: `chematic-mol` gains bidirectional PDBx/mmCIF,
 PQR, QCSchema JSON (`Molecule`/`AtomicInput`/`AtomicResult`), and ORCA
 input/output support. Goal is depth over format count -- each format is

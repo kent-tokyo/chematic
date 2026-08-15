@@ -97,6 +97,15 @@ pub enum Mmff94Resolution {
     /// same RDKit function and the same "no usable ka in the table" case, so
     /// they share this one variant.
     EmpiricalAngle,
+    /// Torsion only (issue #227 Phase 1): RDKit's real empirical-rule
+    /// cascade generates NO torsion term at all when either central (j-k)
+    /// atom has MMFF's `lin` flag -- see
+    /// `crate::mmff94_minimizer::torsion_no_term_by_design`'s doc. A missing
+    /// lookup with this cause is correct, matching RDKit exactly, not a
+    /// coverage gap; distinct from a genuine unresolved miss so callers
+    /// (the `include_torsion_oop_in_gate` strict-policy gate, coverage
+    /// audits) don't misclassify it as one.
+    NoTermByDesign,
 }
 
 mod angle;
