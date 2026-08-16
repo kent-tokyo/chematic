@@ -32,6 +32,7 @@ pub mod mol2_tripos;
 pub mod mol3000;
 pub mod moljson;
 pub mod mrv;
+pub mod opendx;
 pub mod orca;
 pub mod pdbqt;
 pub mod pqr;
@@ -87,6 +88,9 @@ pub use mol3000::{
 pub use moljson::{MolJsonError, parse_moljson, write_moljson};
 pub use mrv::{
     MrvError, MrvParseLimits, MrvWriteOptions, parse_mrv, parse_mrv_with_limits, write_mrv,
+};
+pub use opendx::{
+    OpenDxError, OpenDxParseLimits, parse_opendx, parse_opendx_with_limits, write_opendx,
 };
 pub use orca::{
     GeometryFrame, OrcaAtom, OrcaBlock, OrcaCoords, OrcaInput, OrcaInputError, OrcaOptConvergence,
