@@ -28,22 +28,36 @@
 //!   needed rich structured diagnostics attached to the error itself; these
 //!   error enums are already self-describing `Display` strings, so no
 //!   custom exception adds anything here).
-//! - **CIF symmetry status.** `PeriodicStructure.symmetry_status` is
-//!   `None` for any structure not read via `from_cif` (direct
-//!   construction, `from_poscar`, ...); for a CIF-sourced structure it is
-//!   always `Some(CifSymmetryStatus(...))`. `to_cif()` refuses (raises
-//!   `ValueError`) to re-emit a structure whose status is
-//!   `is_p1=False` — `write_cif_periodic_structure` always writes a literal
-//!   `P 1` tag, so writing back an asymmetric-unit-only structure would
-//!   falsely declare it complete (chematic's standing "never silently
-//!   treat undeclared/unexpanded symmetry as P1" rule, PR #323 — applied
-//!   here to the write path, which the Rust-level adapter itself does not
-//!   guard). `symmetry_status` (and this `to_cif` guard) survive
+//! - **CIF symmetry status.** `PeriodicStructure.from_cif(text,
+//!   expand_symmetry=True)` (the default) expands every symmetry operation
+//!   literally written in the CIF's own operation-list tag into a full
+//!   unit cell — never generated from a space-group name/number, never
+//!   cross-checked against any space-group database (see
+//!   `chematic_mol::CifSymmetryStatus`'s Rust docs for the full caveat on
+//!   what "expanded" does and doesn't claim). `expand_symmetry=False`
+//!   restores the pre-expansion behavior (asymmetric unit only).
+//!   `PeriodicStructure.symmetry_status` is `None` for any structure not
+//!   read via `from_cif` (direct construction, `from_poscar`, ...); for a
+//!   CIF-sourced structure it is always `Some(CifSymmetryStatus(...))`,
+//!   whose `is_complete_cell` property is `True` for `is_p1` or
+//!   `is_expanded`, `False` for a genuinely unexpanded (or
+//!   expansion-opted-out) asymmetric unit. `to_cif()` refuses (raises
+//!   `ValueError`, via `chematic_mol::CifPeriodicResult::to_cif_checked` —
+//!   the single Rust-side source of truth for this judgment, not
+//!   re-implemented here) to re-emit a structure whose
+//!   `is_complete_cell=False` — `write_cif_periodic_structure` always
+//!   writes a literal `P 1` tag, so writing back an asymmetric-unit-only
+//!   structure would falsely declare it complete (chematic's standing
+//!   "never silently treat undeclared/unexpanded symmetry as P1" rule, PR
+//!   #323). `symmetry_status` (and this `to_cif` guard) survive
 //!   `wrap_into_cell()` (site count/order unchanged) and `make_supercell()`
 //!   (site count changes, but the underlying "only the asymmetric unit was
-//!   ever read" problem does not go away, so the guard must not either);
-//!   they do not survive being passed through the direct `PeriodicStructure()`
-//!   constructor (a fresh structure with no CIF provenance).
+//!   ever read" problem for an `UnexpandedSymmetry` structure does not go
+//!   away, so the guard must not either — an already-complete-cell
+//!   structure, `is_p1` or `is_expanded`, correctly stays writable after a
+//!   supercell multiply too); they do not survive being passed through the
+//!   direct `PeriodicStructure()` constructor (a fresh structure with no
+//!   CIF provenance).
 //! - **POSCAR extras out of scope as individual attributes.** `selective_dynamics`/
 //!   `velocities`/`predictor_corrector` (and the file `comment`) are not
 //!   exposed as separate Python-visible fields in this first version —
@@ -70,7 +84,10 @@ use chematic_crystal::{
     CartesianCoord, CrystalError, FractionalCoord, Lattice, Occupancy, PeriodicNeighbor,
     PeriodicSite, PeriodicStructure, SiteSpecies,
 };
-use chematic_mol::{CifPeriodicError, CifSymmetryStatus, parse_cif_periodic_structure};
+use chematic_mol::{
+    CifPeriodicError, CifPeriodicParseOptions, CifPeriodicResult, CifSymmetryStatus,
+    parse_cif_periodic_structure_with_options,
+};
 
 // ---------------------------------------------------------------------------
 // Error mapping — see module docs for the "why ValueError uniformly" call.
@@ -115,27 +132,48 @@ fn points_to_pyarray<'py>(py: Python<'py>, rows: Vec<[f64; 3]>) -> Bound<'py, Py
 
 /// How a CIF's declared symmetry relates to a `PeriodicStructure.sites`.
 ///
-/// `is_p1=True` means the returned sites are the complete unit cell as far
-/// as the CIF states. `is_p1=False` means the file declares symmetry beyond
-/// P1 that this parser did not expand — `sites` is only the *asymmetric
-/// unit*, not a full cell.
+/// - `is_p1=True`: no symmetry beyond P1 was declared (or nothing was
+///   declared at all) -- the returned sites are already the complete cell.
+/// - `is_expanded=True`: every symmetry operation *literally written* in
+///   the CIF's own operation-list tag was applied. This is a faithfulness
+///   claim about the CIF's own text, not a claim that the list is complete
+///   or correct for the named/numbered space group -- see
+///   `chematic_mol::CifSymmetryStatus`'s Rust docs for the full caveat.
+/// - `is_complete_cell` (`is_p1 or is_expanded`): `True` iff `sites` is a
+///   genuinely complete unit cell (safe to round-trip through `to_cif()`).
+/// - `asymmetric_site_count`/`expanded_site_count`: only set (not `None`)
+///   when `is_expanded` is `True`.
 #[pyclass(name = "CifSymmetryStatus", from_py_object)]
 #[derive(Clone)]
 pub struct PyCifSymmetryStatus {
     #[pyo3(get)]
     is_p1: bool,
     #[pyo3(get)]
+    is_expanded: bool,
+    #[pyo3(get)]
+    is_complete_cell: bool,
+    #[pyo3(get)]
     space_group_name: Option<String>,
     #[pyo3(get)]
     operation_count: usize,
+    #[pyo3(get)]
+    asymmetric_site_count: Option<usize>,
+    #[pyo3(get)]
+    expanded_site_count: Option<usize>,
 }
 
 #[pymethods]
 impl PyCifSymmetryStatus {
     fn __repr__(&self) -> String {
         format!(
-            "CifSymmetryStatus(is_p1={}, space_group_name={:?}, operation_count={})",
-            self.is_p1, self.space_group_name, self.operation_count
+            "CifSymmetryStatus(is_p1={}, is_expanded={}, space_group_name={:?}, \
+             operation_count={}, asymmetric_site_count={:?}, expanded_site_count={:?})",
+            self.is_p1,
+            self.is_expanded,
+            self.space_group_name,
+            self.operation_count,
+            self.asymmetric_site_count,
+            self.expanded_site_count
         )
     }
 
@@ -146,19 +184,42 @@ impl PyCifSymmetryStatus {
 
 impl From<CifSymmetryStatus> for PyCifSymmetryStatus {
     fn from(status: CifSymmetryStatus) -> Self {
+        let is_complete_cell = status.is_complete_cell();
         match status {
             CifSymmetryStatus::P1 => PyCifSymmetryStatus {
                 is_p1: true,
+                is_expanded: false,
+                is_complete_cell,
                 space_group_name: None,
                 operation_count: 0,
+                asymmetric_site_count: None,
+                expanded_site_count: None,
+            },
+            CifSymmetryStatus::ExpandedExplicitOperations {
+                space_group_name,
+                operation_count,
+                asymmetric_site_count,
+                expanded_site_count,
+            } => PyCifSymmetryStatus {
+                is_p1: false,
+                is_expanded: true,
+                is_complete_cell,
+                space_group_name,
+                operation_count,
+                asymmetric_site_count: Some(asymmetric_site_count),
+                expanded_site_count: Some(expanded_site_count),
             },
             CifSymmetryStatus::UnexpandedSymmetry {
                 space_group_name,
                 operation_count,
             } => PyCifSymmetryStatus {
                 is_p1: false,
+                is_expanded: false,
+                is_complete_cell,
                 space_group_name,
                 operation_count,
+                asymmetric_site_count: None,
+                expanded_site_count: None,
             },
         }
     }
@@ -439,7 +500,13 @@ struct PoscarExtra {
 #[pyclass(name = "PeriodicStructure")]
 pub struct PyPeriodicStructure {
     inner: PeriodicStructure,
-    cif_symmetry: Option<PyCifSymmetryStatus>,
+    /// The raw Rust status, not the Python-facing summary struct — kept
+    /// this way so `to_cif()` can delegate to
+    /// `chematic_mol::CifPeriodicResult::to_cif_checked` (the single source
+    /// of truth for the write-safety judgment) instead of re-implementing
+    /// it against a lossy Python-side copy; `symmetry_status` derives
+    /// `PyCifSymmetryStatus` from this on demand.
+    cif_symmetry_status: Option<CifSymmetryStatus>,
     poscar_extra: Option<PoscarExtra>,
 }
 
@@ -447,7 +514,7 @@ impl PyPeriodicStructure {
     fn bare(inner: PeriodicStructure) -> Self {
         PyPeriodicStructure {
             inner,
-            cif_symmetry: None,
+            cif_symmetry_status: None,
             poscar_extra: None,
         }
     }
@@ -466,15 +533,26 @@ impl PyPeriodicStructure {
         Ok(PyPeriodicStructure::bare(inner))
     }
 
-    /// Parse a CIF file (text, not a path). See `symmetry_status` on the
-    /// returned structure for whether the file declared symmetry beyond
-    /// P1 that this parser did not expand.
+    /// Parse a CIF file (text, not a path). `expand_symmetry` (default
+    /// `True`) expands every symmetry operation literally written in the
+    /// CIF's own operation-list tag into a full unit cell — see
+    /// `symmetry_status` on the returned structure for whether/how that
+    /// happened (never generated from a space-group name/number, and never
+    /// cross-checked against any space-group database — see
+    /// `CifSymmetryStatus`'s docs). `expand_symmetry=False` restores the
+    /// pre-expansion behavior: only the asymmetric unit as literally
+    /// listed is returned, and `symmetry_status.is_expanded` is always
+    /// `False`.
     #[staticmethod]
-    fn from_cif(text: &str) -> PyResult<Self> {
-        let result = parse_cif_periodic_structure(text).map_err(cif_err)?;
+    #[pyo3(signature = (text, expand_symmetry=true))]
+    fn from_cif(text: &str, expand_symmetry: bool) -> PyResult<Self> {
+        let options = CifPeriodicParseOptions {
+            expand_explicit_symmetry: expand_symmetry,
+        };
+        let result = parse_cif_periodic_structure_with_options(text, options).map_err(cif_err)?;
         Ok(PyPeriodicStructure {
             inner: result.structure,
-            cif_symmetry: Some(result.symmetry.into()),
+            cif_symmetry_status: Some(result.symmetry),
             poscar_extra: None,
         })
     }
@@ -488,7 +566,7 @@ impl PyPeriodicStructure {
         let doc = poscar::parse_poscar(text).map_err(poscar_err)?;
         Ok(PyPeriodicStructure {
             inner: doc.structure,
-            cif_symmetry: None,
+            cif_symmetry_status: None,
             poscar_extra: Some(PoscarExtra {
                 comment: doc.comment,
                 selective_dynamics: doc.selective_dynamics,
@@ -564,11 +642,15 @@ impl PyPeriodicStructure {
             .map_err(crystal_err)?;
         Ok(PyPeriodicStructure {
             inner,
-            // The asymmetric-unit-vs-full-cell problem a CIF's
-            // `UnexpandedSymmetry` status flags doesn't go away under a
-            // supercell expansion, so the flag (and the `to_cif` guard it
-            // drives) must survive too.
-            cif_symmetry: self.cif_symmetry.clone(),
+            // The asymmetric-unit-vs-full-cell problem an `UnexpandedSymmetry`
+            // status flags doesn't go away under a supercell expansion, so
+            // the status (and the `to_cif` guard it drives) must survive
+            // too. Conversely, an already-`ExpandedExplicitOperations` or
+            // `P1` structure is still a genuinely complete cell after a
+            // supercell multiply (that transform is defined in terms of
+            // whole unit cells) -- `is_complete_cell` correctly stays
+            // `True` for those.
+            cif_symmetry_status: self.cif_symmetry_status.clone(),
             // Site count changes, so `poscar_extra`'s per-site vectors
             // (selective_dynamics/velocities) would no longer correspond
             // positionally -- must not carry those over.
@@ -583,17 +665,19 @@ impl PyPeriodicStructure {
     fn wrap_into_cell(&self) -> Self {
         PyPeriodicStructure {
             inner: self.inner.wrapped(),
-            cif_symmetry: self.cif_symmetry.clone(),
+            cif_symmetry_status: self.cif_symmetry_status.clone(),
             poscar_extra: self.poscar_extra.clone(),
         }
     }
 
     /// `None` unless this structure was produced by `from_cif`, in which
-    /// case it reports whether the file declared symmetry beyond P1 that
-    /// this parser did not expand (see module docs).
+    /// case it reports how (if at all) the file's declared symmetry was
+    /// expanded (see `CifSymmetryStatus`'s docs).
     #[getter]
     fn symmetry_status(&self) -> Option<PyCifSymmetryStatus> {
-        self.cif_symmetry.clone()
+        self.cif_symmetry_status
+            .clone()
+            .map(PyCifSymmetryStatus::from)
     }
 
     /// Hill-order (C, H, then alphabetical) formula string summed over
@@ -607,23 +691,23 @@ impl PyPeriodicStructure {
     }
 
     /// Write as CIF text. Raises `ValueError` if this structure's
-    /// `symmetry_status.is_p1` is `False` — see module docs for why
-    /// (writing would falsely declare a complete P1 cell for what is only
-    /// an asymmetric unit).
+    /// `symmetry_status.is_complete_cell` is `False` — see
+    /// `CifSymmetryStatus`'s docs for why (writing would falsely declare a
+    /// complete cell for what is only an asymmetric unit). Delegates to
+    /// `chematic_mol::CifPeriodicResult::to_cif_checked` (the single
+    /// Rust-side source of truth for this judgment) rather than
+    /// re-implementing the check here; a structure with no CIF provenance
+    /// (`symmetry_status is None`) is always writable, same as before.
     fn to_cif(&self) -> PyResult<String> {
-        if let Some(status) = &self.cif_symmetry
-            && !status.is_p1
-        {
-            return Err(PyValueError::new_err(format!(
-                "cannot write CIF: this structure holds only the asymmetric unit of an \
-                 unexpanded space group (space_group_name={:?}, {} symmetry operation(s) \
-                 declared in the source CIF) -- chematic-mol's CIF adapter does not expand \
-                 symmetry, so writing it back would falsely declare a complete P1 cell; expand \
-                 the symmetry yourself first if you need a full-cell CIF",
-                status.space_group_name, status.operation_count
-            )));
-        }
-        Ok(chematic_mol::write_cif_periodic_structure(&self.inner))
+        let symmetry = self
+            .cif_symmetry_status
+            .clone()
+            .unwrap_or(CifSymmetryStatus::P1);
+        let result = CifPeriodicResult {
+            structure: self.inner.clone(),
+            symmetry,
+        };
+        result.to_cif_checked().map_err(cif_err)
     }
 
     /// Write as POSCAR text (VASP 5 format: explicit species-name line,
