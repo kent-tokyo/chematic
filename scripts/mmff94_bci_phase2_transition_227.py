@@ -60,10 +60,19 @@ def main():
     ap.add_argument("--before-tfd", default=None)
     ap.add_argument("--after-tfd", default=None)
     ap.add_argument("--arm", default="chematic_pipeline_v2_mmff94_strict")
+    ap.add_argument("--subset", default=None, help="file, one molecule name per line, restricts the join to this subset")
     args = ap.parse_args()
+
+    subset = None
+    if args.subset:
+        with open(args.subset) as f:
+            subset = {line.strip() for line in f if line.strip()}
 
     before = index_by_name(load_jsonl(args.before), args.arm)
     after = index_by_name(load_jsonl(args.after), args.arm)
+    if subset is not None:
+        before = {k: v for k, v in before.items() if k in subset}
+        after = {k: v for k, v in after.items() if k in subset}
 
     before_rmsd = index_pairs_by_name(
         [r for r in load_jsonl(args.before_rmsd) if r.get("status") == "paired_rmsd"],
