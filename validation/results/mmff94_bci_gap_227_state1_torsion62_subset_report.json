@@ -1,0 +1,59 @@
+{
+  "label": "STATE1_torsion62subset",
+  "arm": "chematic_pipeline_v2_mmff94_strict",
+  "subset_restricted": true,
+  "subset_size_requested": 62,
+  "total_rows": 62,
+  "status_counts": {
+    "typed_failure": 3,
+    "success": 59
+  },
+  "success_rate": 0.9516129032258065,
+  "failure_cause_counts": {
+    "ForceField::MissingParameters": 1,
+    "DistanceGeometry::BoundsConstructionFailed": 2
+  },
+  "n_typed_failure": 3,
+  "n_timeout": 0,
+  "n_internal_error_crash": 0,
+  "wall_time_ms": {
+    "n": 62,
+    "mean": 1471.8064516129032,
+    "p50": 1327,
+    "p75": 1878,
+    "p90": 2705,
+    "p95": 2996
+  },
+  "rmsd_symmetric_angstrom": {
+    "n_paired": 59,
+    "mean": 1.1564535518059398,
+    "p50": 1.21010842331229,
+    "p75": 1.8122955830650775,
+    "p90": 2.2669273385333963,
+    "p95": 2.409165243860923
+  },
+  "tfd": {
+    "n_paired": 59,
+    "mean": 0.13015948995304005,
+    "p50": 0.11402480583121802,
+    "p75": 0.20425003922439008,
+    "p90": 0.2785793785054171,
+    "p95": 0.2922745423523983
+  },
+  "coverage": {
+    "coverage_at_0.5A": 0.2903225806451613,
+    "coverage_at_1.0A": 0.3870967741935484,
+    "coverage_at_2.0A": 0.7741935483870968
+  },
+  "stereo": {
+    "declared": 1,
+    "satisfied": 1,
+    "violated": 0,
+    "unevaluable": 0,
+    "satisfaction_rate": 1.0
+  },
+  "best_of_n": {
+    "best_of_1": "measured (this report)",
+    "best_of_10": "NOT MEASURABLE with existing tooling -- pipeline_v2_vs_rdkit_dump.rs runs exactly one embedding attempt sequence per (molecule, arm); MAX_ATTEMPTS=8 is retry-on-failure, not a best-of-N conformer selection. Building best-of-N tooling is out of scope for this measurement PR per the roadmap's 'use what's feasible' clause."
+  }
+}

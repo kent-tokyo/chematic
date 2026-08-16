@@ -1,0 +1,184 @@
+{
+  "generated_from": "crates/chematic-3d/examples/pipeline_v2_vs_rdkit_dump.rs, pipeline_v2_vs_rdkit_common_scorer.rs, scripts/pipeline_v2_vs_rdkit_tfd_227.py, scripts/mmff94_bci_phase2_report_227.py, scripts/mmff94_bci_phase2_transition_227.py, scripts/mmff94_bci_charges_oracle_227.py, crates/chematic-3d/examples/mmff94_bci_charges_dump_227.rs -- issue #227 Phase 2 (BCI investigation + 3-state embed_pipeline_v2 re-measurement), 2026-08-16",
+  "corpus": "265 molecules (validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_{a,b}.json)",
+  "entry_point": "embed_pipeline_v2, arm chematic_pipeline_v2_mmff94_strict (== pipeline_v2_mmff94_strict) throughout, never the coverage-gate-only mmff94_strict_gate_remeasure_227.rs tool",
+  "rdkit_oracle": {
+    "version": "2026.03.4",
+    "reused_unchanged_across_all_3_states": true,
+    "reason": "RDKit output depends only on the RDKit install + corpus, neither of which changed between states"
+  },
+  "bci_investigation": {
+    "verdict": "fixed",
+    "hypothesis_as_originally_stated": "half right -- a compound bug (formula bug + view-source bug), not just the view-source bug Phase 1 flagged",
+    "root_cause": "mmff94_charges_numeric used a private bond_type_for(order) encoding bond multiplicity (Double->1, Triple->2, Aromatic->4), structurally unrelated to RDKit's real getMMFFBondType (0 unless SINGLE and sbmb/arom-flagged); also read bond order from the caller's un-reperceived molecule",
+    "fix": "delete the wrong local function, reuse crate::mmff94_minimizer::bond_type_for(ti, tj, order) fed assign_mmff94_numeric_types_with_view's reperceived bond order",
+    "oracle_evidence": {
+      "population": "all 264 typing-succeeded corpus molecules, not a sample",
+      "before_fix": {
+        "atoms_mismatched": 1687,
+        "atoms_total": 6693,
+        "molecules_with_any_mismatch": 206,
+        "molecules_total": 264,
+        "mean_abs_diff_e": 0.018945704467353972,
+        "p90_abs_diff_e": 0.07640000000000013,
+        "p99_abs_diff_e": 0.239,
+        "max_abs_diff_e": 1.0
+      },
+      "after_fix": {
+        "atoms_mismatched": 67,
+        "atoms_total": 6693,
+        "molecules_with_any_mismatch": 11,
+        "molecules_total": 264,
+        "mean_abs_diff_e": 0.001160735096369341,
+        "p90_abs_diff_e": 0.0,
+        "p99_abs_diff_e": 0.0144,
+        "max_abs_diff_e": 1.0
+      },
+      "per_atom_join": {
+        "regressions": 0,
+        "improvements": 1620,
+        "unchanged_match": 5006,
+        "unchanged_mismatch_residual": 67
+      }
+    },
+    "residual_67_atoms_11_molecules": "separate, pre-existing, out-of-scope formal-charge/fcadj redistribution gap for charge-separated species (nitro/azide/charged-sulfoxide types), confirmed unmoved by this fix either direction -- flagged as follow-up, not fixed here"
+  },
+  "three_state_measurement": {
+    "state1": {
+      "label": "v0.16.0 pre-torsion-fix baseline",
+      "commit": "c079926",
+      "success": 240,
+      "total": 265,
+      "success_rate": 0.9056603773584906,
+      "typed_failure": 25,
+      "timeout": 0,
+      "internal_error": 0,
+      "rmsd_symmetric_angstrom": {"mean": 1.6978746627187369, "p50": 1.5308688604794145, "p75": 2.5359811662192686, "p90": 3.33869885516894, "p95": 3.908580560800497},
+      "tfd": {"mean": 0.22447390678969673, "p50": 0.18734492477193546, "p75": 0.32127993227239976, "p90": 0.46942141446942, "p95": 0.5888213458292804},
+      "coverage_at_0_5A": 0.17358490566037735,
+      "coverage_at_1_0A": 0.28679245283018867,
+      "coverage_at_2_0A": 0.5584905660377358,
+      "stereo": {"declared": 146, "satisfied": 83, "violated": 63, "unevaluable": 0, "satisfaction_rate": 0.5684931506849316},
+      "wall_time_ms": {"mean": 1923.9433962264152, "p50": 1176, "p75": 2775, "p90": 5125, "p95": 6268}
+    },
+    "state2": {
+      "label": "post-torsion-fix, pre-BCI-fix (current main)",
+      "commit": "a2baac4",
+      "success": 241,
+      "total": 265,
+      "success_rate": 0.909433962264151,
+      "typed_failure": 24,
+      "timeout": 0,
+      "internal_error": 0,
+      "rmsd_symmetric_angstrom": {"mean": 1.6852507344717538, "p50": 1.5308688604794145, "p75": 2.4939227748311397, "p90": 3.33869885516894, "p95": 3.908580560800497},
+      "tfd": {"mean": 0.2233106753294736, "p50": 0.18734492477193546, "p75": 0.32127993227239976, "p90": 0.46942141446942, "p95": 0.5888213458292804},
+      "coverage_at_0_5A": 0.17735849056603772,
+      "coverage_at_1_0A": 0.2981132075471698,
+      "coverage_at_2_0A": 0.569811320754717,
+      "stereo": {"declared": 146, "satisfied": 83, "violated": 63, "unevaluable": 0, "satisfaction_rate": 0.5684931506849316},
+      "wall_time_ms": {"mean": 1843.4377358490567, "p50": 1056, "p75": 2689, "p90": 5084, "p95": 6229}
+    },
+    "state3": {
+      "label": "post-torsion-fix, post-BCI-fix (this PR)",
+      "commit": "branch tip",
+      "success": 241,
+      "total": 265,
+      "success_rate": 0.909433962264151,
+      "typed_failure": 24,
+      "timeout": 0,
+      "internal_error": 0,
+      "rmsd_symmetric_angstrom": {"mean": 1.6845374154142767, "p50": 1.5042799339527124, "p75": 2.4925210408084264, "p90": 3.456141394503098, "p95": 3.8764367201965455},
+      "tfd": {"mean": 0.22281961858275334, "p50": 0.1796968812819398, "p75": 0.3215862418212573, "p90": 0.4778952263579092, "p95": 0.5888213458292804},
+      "coverage_at_0_5A": 0.17735849056603772,
+      "coverage_at_1_0A": 0.3018867924528302,
+      "coverage_at_2_0A": 0.5622641509433962,
+      "stereo": {"declared": 146, "satisfied": 82, "violated": 64, "unevaluable": 0, "satisfaction_rate": 0.5616438356164384},
+      "wall_time_ms": {"mean": 1827.9245283018868, "p50": 1025, "p75": 2652, "p90": 5051, "p95": 6047}
+    },
+    "best_of_n": "not measurable with existing tooling -- pipeline_v2_vs_rdkit_dump.rs runs one embedding-attempt sequence per (molecule, arm); MAX_ATTEMPTS=8 is retry-on-failure, not best-of-N conformer selection"
+  },
+  "subset_evaluations": {
+    "torsion_fix_62_molecule_subset_state1_to_state2": {
+      "n": 62,
+      "per_molecule_join_regressions_status_level_only": 0,
+      "per_molecule_join_improvements": 1,
+      "improvement_molecule": "caffeine",
+      "rmsd_improved": 47,
+      "rmsd_worsened": 11,
+      "rmsd_mean_before": 1.1564535518059398,
+      "rmsd_mean_after": 1.1149815239998873,
+      "tfd_improved": 25,
+      "tfd_worsened": 26,
+      "tfd_mean_before": 0.13015948995304005,
+      "tfd_mean_after": 0.12719479420544738,
+      "stereo_newly_violated": 0,
+      "verdict": "both_improved"
+    },
+    "bci_affected_206_molecule_subset_state2_to_state3": {
+      "n": 206,
+      "n_joined_success_success_or_typedfailure_typedfailure": 206,
+      "per_molecule_join_regressions_status_level_only": 0,
+      "per_molecule_join_improvements": 0,
+      "rmsd_improved": 83,
+      "rmsd_worsened": 101,
+      "rmsd_mean_delta": -0.0009204116870671588,
+      "rmsd_median_delta": 0.00030942937078166227,
+      "tfd_improved": 92,
+      "tfd_worsened": 84,
+      "stereo_newly_violated": 1,
+      "stereo_newly_violated_molecules": ["chembl_tier_b_0082"],
+      "verdict": "no_change",
+      "verdict_reason": "coverage structurally unaffected (charges don't gate the strict policy); aggregate RMSD/TFD deltas are noise-level (mean RMSD delta -0.0009A); one isolated new stereo violation flagged, not part of a systemic pattern"
+    }
+  },
+  "full_corpus_transition_state1_to_state3": {
+    "n": 265,
+    "common_rows": 265,
+    "status_transitions": {"success->success": 240, "typed_failure->success": 1, "typed_failure->typed_failure": 24},
+    "per_molecule_join_regressions_status_level_only": 0,
+    "per_molecule_join_improvements": 1,
+    "improvement_molecule": "caffeine",
+    "known_jitter_flips": 0,
+    "known_jitter_molecules_checked": ["chembl_tier_b_0166", "chembl_tier_b_0114", "chembl_tier_b_0117", "atorvastatin_fragment", "cholesterol"],
+    "rmsd_improved": 113,
+    "rmsd_worsened": 70,
+    "rmsd_mean_delta": -0.006423822316433436,
+    "rmsd_median_delta": 0.0,
+    "tfd_improved": 93,
+    "tfd_worsened": 82,
+    "stereo_newly_violated": 1,
+    "stereo_newly_violated_molecules": ["chembl_tier_b_0082"]
+  },
+  "chembl_tier_b_0082_stereo_investigation": {
+    "note": "the one genuine stereo-quality regression in this PR -- NOT captured by any 'per_molecule_join_regressions_status_level_only' field above, since that field only tracks success/typed_failure/timeout transitions, not stereo-quality changes within an otherwise-successful call",
+    "declared_bond": {"bond_atoms": [13, 14], "sub1": 11, "sub2": 15, "declared_same_side": false},
+    "angle_deg": {
+      "pre_minimization": -140.677,
+      "state2_final": 166.924,
+      "state3_final": 0.286,
+      "state3_after_repair_stereo": -179.714
+    },
+    "rdkit_oracle_comparison": {
+      "method": "chematic's own verify_stereo judge applied to RDKit's already-saved geometries via pipeline_v2_vs_rdkit_common_scorer.rs's existing score_rows step",
+      "rdkit_etkdgv3_raw": "satisfied",
+      "rdkit_etkdgv3_uff": "satisfied",
+      "rdkit_etkdgv3_mmff94": "satisfied",
+      "rdkit_etkdgv3_best_of_n": "satisfied",
+      "verdict": "chematic-specific gap -- RDKit's own real MMFF94 minimizer (always-correct BCI charges) does not reproduce the flip"
+    },
+    "architectural_context": "mmff94_minimizer.rs has zero stereo references (confirmed by source read); pipeline_v2.rs's own module docs already document this exact failure class for chembl_tier_b_0076/chembl_tier_b_0083 (found during the v0.14.0 release gate) -- a third instance of an already-known gap, not new",
+    "repair_stereo_safety_check": {
+      "worst_bond_length_ratio_before_repair": 0.1397,
+      "worst_bond_length_ratio_after_repair": 0.1397,
+      "gross_clash_count_before_repair": 0,
+      "gross_clash_count_after_repair": 0,
+      "atoms_moved": 9,
+      "max_displacement_angstrom": 13.821935824257938
+    },
+    "fix_implemented": "StereoPolicy::RepairAndVerify gets one additional repair-and-reverify attempt on the post-minimization geometry (crates/chematic-3d/src/pipeline_v2.rs, new PipelineV2Result::post_minimization_stereo_repair field), fail-closed (accepted only if repair succeeds, reverified result has zero violations, and geometry stays sound); StereoPolicy::Ignore/VerifyOnly unaffected by construction",
+    "residual": "under StereoPolicy::Ignore (the policy this report's own chematic_pipeline_v2_mmff94_strict arm uses), the violation is real and not recovered -- by that policy's own design. Named, tested, not hidden: chembl_tier_b_0082_ez_bond_survives_bci_fix_under_repair_and_verify_not_under_ignore in crates/chematic-3d/src/pipeline_v2.rs",
+    "measurement_impact": "none -- the fix cannot affect the Ignore-policy arm this report's States 1-3 were measured on; no re-measurement was needed or performed"
+  },
+  "stop_conditions_triggered": "none",
+  "recommended_next_action": "root-cause DistanceGeometry::BoundsConstructionFailed (11/265, unchanged across all 3 states, now tied for the largest pipeline_v2_mmff94_strict failure bucket) -- upstream of MMFF94 entirely, out of issue #227's scope. Secondary: MMFF94 minimization's zero stereo-awareness (chembl_tier_b_0076/0083/0082, three known instances) is now confirmed chematic-specific (RDKit does not share it) -- a root-cause fix (real stereo-awareness inside the minimizer) remains a separate, large piece of future work."
+}

@@ -1,0 +1,59 @@
+{
+  "label": "NEW_fixed",
+  "molecules_compared": 264,
+  "atoms_compared": 6693,
+  "atoms_exact_match": 6626,
+  "atoms_mismatched": 67,
+  "molecules_with_any_mismatch": 11,
+  "mean_abs_diff": 0.001160735096369341,
+  "median_abs_diff": 0.0,
+  "p90_abs_diff": 0.0,
+  "p99_abs_diff": 0.0144,
+  "max_abs_diff": 1.0,
+  "top_20_mismatched_molecules": [
+    {
+      "molecule": "B:chembl_tier_b_0080",
+      "max_abs_diff": 1.0
+    },
+    {
+      "molecule": "B:chembl_tier_b_0159",
+      "max_abs_diff": 0.5
+    },
+    {
+      "molecule": "B:chembl_tier_b_0161",
+      "max_abs_diff": 0.5
+    },
+    {
+      "molecule": "B:chembl_tier_b_0071",
+      "max_abs_diff": 0.2550000000000001
+    },
+    {
+      "molecule": "B:chembl_tier_b_0082",
+      "max_abs_diff": 0.2550000000000001
+    },
+    {
+      "molecule": "B:chembl_tier_b_0009",
+      "max_abs_diff": 0.16690000000000005
+    },
+    {
+      "molecule": "B:chembl_tier_b_0023",
+      "max_abs_diff": 0.16690000000000005
+    },
+    {
+      "molecule": "B:chembl_tier_b_0028",
+      "max_abs_diff": 0.16690000000000005
+    },
+    {
+      "molecule": "B:chembl_tier_b_0029",
+      "max_abs_diff": 0.16690000000000005
+    },
+    {
+      "molecule": "B:chembl_tier_b_0030",
+      "max_abs_diff": 0.16690000000000005
+    },
+    {
+      "molecule": "B:chembl_tier_b_0034",
+      "max_abs_diff": 0.16690000000000005
+    }
+  ]
+}

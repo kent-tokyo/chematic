@@ -9,6 +9,106 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Issue #227 Phase 2: MMFF94 BCI (bond-charge-increment) partial-charge bug,
+investigated per Phase 1's own flagged follow-up and fixed. Also adds a
+full `embed_pipeline_v2` 3-state quality re-measurement (State 1: v0.16.0
+pre-Phase-1; State 2: post-Phase-1 torsion fix; State 3: post-Phase-2 BCI
+fix) — see the PR body / `validation/results/` for the full report.
+
+### Fixed — `chematic-ff` (MMFF94 partial-charge BCI bond-type source)
+
+- **Root cause, a compound bug, not the single view-source bug Phase 1's
+  own note anticipated**: `mmff94_charges_numeric` used a private,
+  standalone `bond_type_for(order: BondOrder) -> u8` that mapped bond
+  *multiplicity* directly (`Double -> 1, Triple -> 2, Aromatic -> 4`) —
+  unrelated to RDKit's real `getMMFFBondType`, which returns 0 unless the
+  bond is formally SINGLE *and* both atom types are `sbmb`/`arom`-flagged,
+  and which RDKit's real `computeMMFFCharges` calls identically to its own
+  bond-stretch code (`AtomTyper.cpp:2457-2475,3462-3474`, pinned commit).
+  It also read bond order from the caller's original, un-reperceived
+  molecule rather than the MMFF-specific Kekulized view — the view-only
+  bug Phase 1 fixed for bond/angle/torsion/stretch-bend.
+- Fix: reuse the already-fixed, already-oracle-validated
+  `crate::mmff94_minimizer::bond_type_for(ti, tj, order)` (deleting the
+  wrong local function), fed `assign_mmff94_numeric_types_with_view`'s
+  reperceived bond order instead of the caller's `mol`.
+- Measured against a live RDKit oracle, all 264 typing-succeeded molecules
+  (not a sample): 1,687/6,693 heavy-atom charges (25.2%, 206/264
+  molecules) mismatched the oracle before the fix; 67/6,693 (1.0%, 11/264
+  molecules) after — a genuine per-atom join confirms **zero regressions**
+  (0 previously-exact atoms became mismatched; 1,620 moved from
+  mismatched to exact). The 67-atom residual is a separate, pre-existing,
+  unrelated formal-charge/`fcadj` redistribution gap for charge-separated
+  species (nitro/azide/charged-sulfoxide types), confirmed unmoved by this
+  fix either direction — flagged as follow-up, not fixed here.
+- New regression-pinned test (`acetone_carbonyl_charges_match_rdkit_oracle_after_bond_type_fix`)
+  and a renumbering-invariance test
+  (`mmff94_charges_numeric_is_invariant_under_atom_renumbering`, same
+  `deterministic_permutation`/`rebuild_with_order` helpers Phase 1's own
+  reviewer follow-up test uses). Full writeup:
+  `scripts/mmff94_provenance/PROVENANCE.md`'s Charges/BCI entry.
+
+### Measured — 3-state `embed_pipeline_v2` quality re-measurement (`pipeline_v2_mmff94_strict`)
+
+- Fresh measurement (not reused from any older commit) at State 1 (`c079926`,
+  v0.16.0 release, pre-torsion-fix), State 2 (`a2baac4`, post-torsion-fix
+  main, pre-BCI-fix), State 3 (this PR, post-both-fixes). `pipeline_v2_mmff94_strict`
+  success: 240/265 → 241/265 → 241/265; RMSD (symmetric, vs
+  `rdkit_etkdgv3_mmff94`) mean 1.698 → 1.685 → 1.685 Å; TFD mean 0.2245 →
+  0.2233 → 0.2228; **0 status-level regressions** (success/typed_failure/
+  timeout) on every pairwise per-molecule join — see below for the one
+  genuine stereo-quality regression this note does NOT cover.
+- 62-molecule torsion-fix subset (State 1 → State 2): **both coverage and
+  geometry quality improved together** (+1 success, RMSD mean 1.156 → 1.115
+  Å, coverage@2.0Å 77.4% → 82.3%) — not a coverage-only gain.
+- 206-molecule BCI-fix-affected subset (State 2 → State 3): coverage
+  unaffected (structural — charges don't gate this policy), aggregate
+  RMSD/TFD flat/noise-level (mean RMSD delta −0.0009 Å), **one genuine new
+  stereo violation** (`chembl_tier_b_0082`, investigated and addressed —
+  see next section).
+- Full report: `validation/results/mmff94_bci_gap_227_phase2_report.md`
+  (+ `_summary.json`, raw per-state dumps, per-molecule transition tables).
+
+### Fixed — `chematic-3d` (post-minimization stereo repair-and-reverify)
+
+- **Found during the 3-state re-measurement above**: `chembl_tier_b_0082`'s
+  declared E/Z bond is satisfied post-embedding (identical in States 2 and
+  3 — charges don't affect embedding) but MMFF94 minimization walks it to
+  violated only under State 3's corrected charges. Oracle-confirmed
+  chematic-specific: RDKit's own real MMFF94 minimizer, run on the same
+  molecule, does NOT reproduce this on any of its 4 arms — the same
+  already-documented "MMFF94 minimization has zero stereo awareness"
+  architectural class as `chembl_tier_b_0076`/`chembl_tier_b_0083` (found
+  during the v0.14.0 release gate), a third instance, not a new failure
+  class this fix introduced.
+- Fix: `StereoPolicy::RepairAndVerify` now gets one additional
+  repair-and-reverify attempt on the POST-minimization geometry (new
+  `PipelineV2Result::post_minimization_stereo_repair` field) — stage 8's
+  existing repair runs too early to see a violation minimization itself
+  introduces. Empirically verified safe (bond lengths/clash count
+  unchanged by the repair) and effective before implementing. Fail-closed:
+  accepted only if repair succeeds, the reverified result has zero
+  violations, and the geometry stays sound; any rejection falls through to
+  the original, unmodified `FinalStereoViolation` failure.
+  `StereoPolicy::Ignore`/`VerifyOnly` (including this PR's own measured
+  arm, `chematic_pipeline_v2_mmff94_strict`) are completely unaffected by
+  construction — the fix cannot and does not change any of the 3-state
+  numbers above, which were not re-measured for this reason.
+- Root-cause fix (real stereo-awareness inside MMFF94 minimization) and
+  broadening `StereoPolicy::Ignore`'s own gate were both considered and
+  explicitly out of scope (large, cross-cutting changes deserving their
+  own separate authorization) — under `Ignore`, `chembl_tier_b_0082`'s
+  violation remains real and unrecovered, a named, tested residual
+  (`chembl_tier_b_0082_ez_bond_survives_bci_fix_under_repair_and_verify_not_under_ignore`),
+  not silently hidden.
+- New/updated tests: `repair_and_verify_recovers_post_minimization_stereo_violation`
+  (updates a now-obsolete negative-control test that used to assert this
+  exact `gly_ala_gly` case was unrecoverable), a no-op sanity check, and
+  the `chembl_tier_b_0082` golden regression test above. Full writeup:
+  `scripts/mmff94_provenance/PROVENANCE.md`'s "Follow-up investigation" entry.
+
+---
+
 Issue #227 Phase 1: MMFF94 torsion parameter coverage gap, root-caused and
 fixed. `torsions_missing` on the 265-molecule Wave 1 corpus: 257 instances
 across 62 molecules → 0 (`mmff94_term_coverage_audit.rs`).

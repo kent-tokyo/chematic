@@ -1,0 +1,958 @@
+{
+  "before_label": "STATE2",
+  "after_label": "STATE3",
+  "arm": "chematic_pipeline_v2_mmff94_strict",
+  "common_rows": 206,
+  "status_transitions": {
+    "success->success": 186,
+    "typed_failure->typed_failure": 20
+  },
+  "per_molecule_join_regressions": [],
+  "per_molecule_join_regressions_count": 0,
+  "per_molecule_join_improvements": [],
+  "per_molecule_join_improvements_count": 0,
+  "join_methodology": "before/after rows keyed by molecule `name` into a dict per state, regression = name present in both with before-status success and after-status != success, improvement = before-status != success and after-status == success -- a genuine per-molecule-ID join, matching mmff94_torsion_gap_227_phase1_summary.json's own methodology field, not a before-count/after-count comparison.",
+  "known_jitter_flips": [],
+  "known_jitter_flips_note": "molecules pre-registered (before this diff was computed) as wall-clock-timeout-boundary-sensitive per pipeline_v2_vs_rdkit_3point_paired_diff_summary.json's own byte_identical_verification (same commit re-run twice already flips these) -- any flip here is flagged, not silently folded into the regression/improvement counts' causal story.",
+  "rmsd_improved_count": 83,
+  "rmsd_worsened_count": 101,
+  "rmsd_worsened": [
+    {
+      "molecule": "caffeine",
+      "before": 0.03120934028610391,
+      "after": 0.03222884327588792
+    },
+    {
+      "molecule": "chembl_tier_b_0000",
+      "before": 1.9173268570392248,
+      "after": 1.9273237199772268
+    },
+    {
+      "molecule": "chembl_tier_b_0002",
+      "before": 1.4579338585188266,
+      "after": 1.4621236221606149
+    },
+    {
+      "molecule": "chembl_tier_b_0004",
+      "before": 1.3841188562040019,
+      "after": 1.3903157068189347
+    },
+    {
+      "molecule": "chembl_tier_b_0006",
+      "before": 1.3576365547459994,
+      "after": 1.358363985858658
+    },
+    {
+      "molecule": "chembl_tier_b_0008",
+      "before": 1.0361234026036166,
+      "after": 1.0786331801877547
+    },
+    {
+      "molecule": "chembl_tier_b_0009",
+      "before": 3.0912845935268787,
+      "after": 3.091577880333826
+    },
+    {
+      "molecule": "chembl_tier_b_0010",
+      "before": 1.4878711755204908,
+      "after": 1.4879109245051667
+    },
+    {
+      "molecule": "chembl_tier_b_0011",
+      "before": 1.4823564385995096,
+      "after": 1.4978353911158182
+    },
+    {
+      "molecule": "chembl_tier_b_0013",
+      "before": 0.7149801054620265,
+      "after": 0.715279812125303
+    },
+    {
+      "molecule": "chembl_tier_b_0015",
+      "before": 1.3632823611582472,
+      "after": 1.3655682602962083
+    },
+    {
+      "molecule": "chembl_tier_b_0017",
+      "before": 1.5476620448786251,
+      "after": 1.5516857796533412
+    },
+    {
+      "molecule": "chembl_tier_b_0018",
+      "before": 1.5377472229702343,
+      "after": 1.5399130800476886
+    },
+    {
+      "molecule": "chembl_tier_b_0019",
+      "before": 1.8040972473533947,
+      "after": 1.8062851023919622
+    },
+    {
+      "molecule": "chembl_tier_b_0021",
+      "before": 0.8575261092092912,
+      "after": 0.9768455711045576
+    },
+    {
+      "molecule": "chembl_tier_b_0026",
+      "before": 2.82085805775942,
+      "after": 2.85079068665511
+    },
+    {
+      "molecule": "chembl_tier_b_0027",
+      "before": 5.455229573714899,
+      "after": 5.4558428469150755
+    },
+    {
+      "molecule": "chembl_tier_b_0028",
+      "before": 2.7413339890387016,
+      "after": 2.7956452167548838
+    },
+    {
+      "molecule": "chembl_tier_b_0030",
+      "before": 2.0503015915246436,
+      "after": 2.0828873021897047
+    },
+    {
+      "molecule": "chembl_tier_b_0032",
+      "before": 0.7662969201141273,
+      "after": 0.7786396878576989
+    },
+    {
+      "molecule": "chembl_tier_b_0034",
+      "before": 2.323469643603458,
+      "after": 2.326804549052614
+    },
+    {
+      "molecule": "chembl_tier_b_0035",
+      "before": 0.5867205996696543,
+      "after": 0.6791418623538764
+    },
+    {
+      "molecule": "chembl_tier_b_0036",
+      "before": 3.7252287172796428,
+      "after": 3.7680974980938076
+    },
+    {
+      "molecule": "chembl_tier_b_0038",
+      "before": 1.3912114714489734,
+      "after": 1.3973919632450296
+    },
+    {
+      "molecule": "chembl_tier_b_0041",
+      "before": 3.454773769238962,
+      "after": 3.456141394503098
+    },
+    {
+      "molecule": "chembl_tier_b_0043",
+      "before": 2.357675654412275,
+      "after": 2.3674582164185236
+    },
+    {
+      "molecule": "chembl_tier_b_0047",
+      "before": 4.970547968167718,
+      "after": 5.061053151141954
+    },
+    {
+      "molecule": "chembl_tier_b_0048",
+      "before": 2.3220707023978084,
+      "after": 2.3302234719760158
+    },
+    {
+      "molecule": "chembl_tier_b_0049",
+      "before": 1.6739106268342077,
+      "after": 1.6799349197236877
+    },
+    {
+      "molecule": "chembl_tier_b_0051",
+      "before": 2.8292331716971626,
+      "after": 2.8523785771955836
+    },
+    {
+      "molecule": "chembl_tier_b_0054",
+      "before": 1.744081900782882,
+      "after": 1.756790614287865
+    },
+    {
+      "molecule": "chembl_tier_b_0058",
+      "before": 1.5985957941212903,
+      "after": 1.6022165710684413
+    },
+    {
+      "molecule": "chembl_tier_b_0060",
+      "before": 1.212073029809465,
+      "after": 1.2391260555782038
+    },
+    {
+      "molecule": "chembl_tier_b_0061",
+      "before": 0.5573097981528116,
+      "after": 0.5686812068951156
+    },
+    {
+      "molecule": "chembl_tier_b_0062",
+      "before": 2.0389082296114673,
+      "after": 2.0407818358652867
+    },
+    {
+      "molecule": "chembl_tier_b_0067",
+      "before": 1.5591098983938,
+      "after": 1.5739398866655303
+    },
+    {
+      "molecule": "chembl_tier_b_0068",
+      "before": 0.904984504200388,
+      "after": 0.9472895005369967
+    },
+    {
+      "molecule": "chembl_tier_b_0069",
+      "before": 0.06811873830956264,
+      "after": 0.07064012426405351
+    },
+    {
+      "molecule": "chembl_tier_b_0070",
+      "before": 1.2301158867225026,
+      "after": 1.2700806625693728
+    },
+    {
+      "molecule": "chembl_tier_b_0071",
+      "before": 3.7595277923237025,
+      "after": 3.796403108456616
+    },
+    {
+      "molecule": "chembl_tier_b_0076",
+      "before": 2.6341442176442604,
+      "after": 2.6357155222564193
+    },
+    {
+      "molecule": "chembl_tier_b_0081",
+      "before": 3.731744761814823,
+      "after": 3.7321003776948682
+    },
+    {
+      "molecule": "chembl_tier_b_0082",
+      "before": 2.69749831404814,
+      "after": 3.1982381933986055
+    },
+    {
+      "molecule": "chembl_tier_b_0084",
+      "before": 0.06998799830900902,
+      "after": 0.07034401757253772
+    },
+    {
+      "molecule": "chembl_tier_b_0085",
+      "before": 0.05984301014606545,
+      "after": 0.06016848528817229
+    },
+    {
+      "molecule": "chembl_tier_b_0086",
+      "before": 0.0650742183375028,
+      "after": 0.06548227658392092
+    },
+    {
+      "molecule": "chembl_tier_b_0087",
+      "before": 0.06378161844184844,
+      "after": 0.06397986781636068
+    },
+    {
+      "molecule": "chembl_tier_b_0088",
+      "before": 0.06783481113772956,
+      "after": 0.07325356456007058
+    },
+    {
+      "molecule": "chembl_tier_b_0093",
+      "before": 2.882826514010985,
+      "after": 2.888115733473765
+    },
+    {
+      "molecule": "chembl_tier_b_0098",
+      "before": 0.06796666551898478,
+      "after": 0.06831094450107474
+    },
+    {
+      "molecule": "chembl_tier_b_0099",
+      "before": 0.06982215493193566,
+      "after": 0.0701451835890197
+    },
+    {
+      "molecule": "chembl_tier_b_0100",
+      "before": 0.24181599142784596,
+      "after": 0.24251778164744964
+    },
+    {
+      "molecule": "chembl_tier_b_0103",
+      "before": 0.06646993986710475,
+      "after": 0.06677411474274315
+    },
+    {
+      "molecule": "chembl_tier_b_0104",
+      "before": 0.0619206162273827,
+      "after": 0.06223004559816436
+    },
+    {
+      "molecule": "chembl_tier_b_0107",
+      "before": 0.07276536295596521,
+      "after": 0.07309248684618905
+    },
+    {
+      "molecule": "chembl_tier_b_0108",
+      "before": 3.0316336769984877,
+      "after": 3.034258446935126
+    },
+    {
+      "molecule": "chembl_tier_b_0109",
+      "before": 4.285269161102374,
+      "after": 4.310687028131125
+    },
+    {
+      "molecule": "chembl_tier_b_0110",
+      "before": 3.5066365282955294,
+      "after": 3.5275310519754615
+    },
+    {
+      "molecule": "chembl_tier_b_0111",
+      "before": 4.190211630871685,
+      "after": 4.253062524604007
+    },
+    {
+      "molecule": "chembl_tier_b_0114",
+      "before": 6.101297708966085,
+      "after": 6.144475506319262
+    },
+    {
+      "molecule": "chembl_tier_b_0117",
+      "before": 3.6758386211833054,
+      "after": 3.7451433284949536
+    },
+    {
+      "molecule": "chembl_tier_b_0120",
+      "before": 0.9288310806025064,
+      "after": 1.0626959763233559
+    },
+    {
+      "molecule": "chembl_tier_b_0121",
+      "before": 0.8503414622745497,
+      "after": 0.8584094538948064
+    },
+    {
+      "molecule": "chembl_tier_b_0122",
+      "before": 0.07175459154140289,
+      "after": 0.07230082568162599
+    },
+    {
+      "molecule": "chembl_tier_b_0123",
+      "before": 0.264867227253185,
+      "after": 0.2649636835391012
+    },
+    {
+      "molecule": "chembl_tier_b_0124",
+      "before": 2.70183174599712,
+      "after": 2.7498101816028235
+    },
+    {
+      "molecule": "chembl_tier_b_0125",
+      "before": 2.4158020766712585,
+      "after": 2.4642741655522236
+    },
+    {
+      "molecule": "chembl_tier_b_0127",
+      "before": 2.49044920970553,
+      "after": 2.597968828079015
+    },
+    {
+      "molecule": "chembl_tier_b_0131",
+      "before": 3.33271427884265,
+      "after": 3.347527958752648
+    },
+    {
+      "molecule": "chembl_tier_b_0132",
+      "before": 2.677437137084377,
+      "after": 2.692429325740736
+    },
+    {
+      "molecule": "chembl_tier_b_0134",
+      "before": 2.166813746779604,
+      "after": 2.173657141411133
+    },
+    {
+      "molecule": "chembl_tier_b_0137",
+      "before": 2.416065913428797,
+      "after": 2.4506862017718927
+    },
+    {
+      "molecule": "chembl_tier_b_0140",
+      "before": 3.275378675219436,
+      "after": 3.296162806094772
+    },
+    {
+      "molecule": "chembl_tier_b_0141",
+      "before": 1.7393094883884832,
+      "after": 1.7753472592615946
+    },
+    {
+      "molecule": "chembl_tier_b_0143",
+      "before": 4.960488668189444,
+      "after": 4.962697521653708
+    },
+    {
+      "molecule": "chembl_tier_b_0144",
+      "before": 3.33869885516894,
+      "after": 3.46699523182081
+    },
+    {
+      "molecule": "chembl_tier_b_0145",
+      "before": 0.9063303112400196,
+      "after": 0.9439319084816757
+    },
+    {
+      "molecule": "chembl_tier_b_0149",
+      "before": 1.7555470657240937,
+      "after": 1.7639476717217395
+    },
+    {
+      "molecule": "chembl_tier_b_0153",
+      "before": 3.426279660356284,
+      "after": 3.4952792788647757
+    },
+    {
+      "molecule": "chembl_tier_b_0155",
+      "before": 2.101079570897944,
+      "after": 2.1105913794527877
+    },
+    {
+      "molecule": "chembl_tier_b_0157",
+      "before": 5.07383055380742,
+      "after": 5.075372977789324
+    },
+    {
+      "molecule": "chembl_tier_b_0159",
+      "before": 1.9977293154001832,
+      "after": 2.1021423739533405
+    },
+    {
+      "molecule": "chembl_tier_b_0161",
+      "before": 2.5773795169821128,
+      "after": 2.6474430084272385
+    },
+    {
+      "molecule": "chembl_tier_b_0163",
+      "before": 1.0742607742233972,
+      "after": 1.0761694007025115
+    },
+    {
+      "molecule": "chembl_tier_b_0164",
+      "before": 1.973153505262901,
+      "after": 2.014837389300548
+    },
+    {
+      "molecule": "chembl_tier_b_0166",
+      "before": 3.6699393285539488,
+      "after": 3.684798907717032
+    },
+    {
+      "molecule": "chembl_tier_b_0170",
+      "before": 1.2897575646554038,
+      "after": 1.297249443174365
+    },
+    {
+      "molecule": "chembl_tier_b_0172",
+      "before": 2.1157432759733217,
+      "after": 2.169235385382032
+    },
+    {
+      "molecule": "chembl_tier_b_0173",
+      "before": 0.6573959943663021,
+      "after": 0.7145773099136569
+    },
+    {
+      "molecule": "chembl_tier_b_0175",
+      "before": 1.7747346434498845,
+      "after": 1.8677483139092894
+    },
+    {
+      "molecule": "chembl_tier_b_0176",
+      "before": 1.658536639874755,
+      "after": 1.6952270096984103
+    },
+    {
+      "molecule": "chembl_tier_b_0177",
+      "before": 0.9324870616411803,
+      "after": 0.9429195500809483
+    },
+    {
+      "molecule": "chembl_tier_b_0181",
+      "before": 1.0009092028816178,
+      "after": 1.063183642555651
+    },
+    {
+      "molecule": "chembl_tier_b_0192",
+      "before": 1.821921099472542,
+      "after": 1.8348164209591786
+    },
+    {
+      "molecule": "chembl_tier_b_0194",
+      "before": 2.357427895419333,
+      "after": 2.359790370978338
+    },
+    {
+      "molecule": "cinnamic_acid_Z",
+      "before": 1.0022963519941666,
+      "after": 1.0044640729998289
+    },
+    {
+      "molecule": "d_alanine",
+      "before": 0.2676064518636328,
+      "after": 0.27043967617869297
+    },
+    {
+      "molecule": "ibuprofen",
+      "before": 0.5957141894751375,
+      "after": 0.5960296686790805
+    },
+    {
+      "molecule": "indole",
+      "before": 0.030851752938953134,
+      "after": 0.030856242807846167
+    },
+    {
+      "molecule": "l_threonine",
+      "before": 1.0761685634772689,
+      "after": 1.0782336174751646
+    },
+    {
+      "molecule": "macrolactam_12",
+      "before": 0.7905847175297054,
+      "after": 0.790839534287109
+    }
+  ],
+  "tfd_improved_count": 92,
+  "tfd_worsened_count": 84,
+  "tfd_worsened": [
+    {
+      "molecule": "atorvastatin_fragment",
+      "before": 0.39788600139657887,
+      "after": 0.4067586773216042
+    },
+    {
+      "molecule": "chembl_tier_b_0000",
+      "before": 0.23709788545733854,
+      "after": 0.23901653590863714
+    },
+    {
+      "molecule": "chembl_tier_b_0001",
+      "before": 0.26160517381455783,
+      "after": 0.26170597370330284
+    },
+    {
+      "molecule": "chembl_tier_b_0004",
+      "before": 0.1423040618550206,
+      "after": 0.15054846610656245
+    },
+    {
+      "molecule": "chembl_tier_b_0011",
+      "before": 0.28779135667761885,
+      "after": 0.28887126541271674
+    },
+    {
+      "molecule": "chembl_tier_b_0013",
+      "before": 0.10879094968841511,
+      "after": 0.10941668472261144
+    },
+    {
+      "molecule": "chembl_tier_b_0014",
+      "before": 0.29099149356023796,
+      "after": 0.35956331255959467
+    },
+    {
+      "molecule": "chembl_tier_b_0015",
+      "before": 0.07522286479332518,
+      "after": 0.07584778935999632
+    },
+    {
+      "molecule": "chembl_tier_b_0017",
+      "before": 0.26385437588715926,
+      "after": 0.2671060670723603
+    },
+    {
+      "molecule": "chembl_tier_b_0018",
+      "before": 0.17204617224627336,
+      "after": 0.1754051152284094
+    },
+    {
+      "molecule": "chembl_tier_b_0021",
+      "before": 0.07081054756541724,
+      "after": 0.09016941000794607
+    },
+    {
+      "molecule": "chembl_tier_b_0026",
+      "before": 0.14690915614525196,
+      "after": 0.14806674389754101
+    },
+    {
+      "molecule": "chembl_tier_b_0028",
+      "before": 0.037247465485940476,
+      "after": 0.03783078713927992
+    },
+    {
+      "molecule": "chembl_tier_b_0030",
+      "before": 0.10178388644839985,
+      "after": 0.1046756687892183
+    },
+    {
+      "molecule": "chembl_tier_b_0031",
+      "before": 0.09949379107499597,
+      "after": 0.10444145832980832
+    },
+    {
+      "molecule": "chembl_tier_b_0032",
+      "before": 0.09662375034732679,
+      "after": 0.09789130781864937
+    },
+    {
+      "molecule": "chembl_tier_b_0034",
+      "before": 0.025246723201139146,
+      "after": 0.037028632690991506
+    },
+    {
+      "molecule": "chembl_tier_b_0035",
+      "before": 0.06602049479005068,
+      "after": 0.07166371068955323
+    },
+    {
+      "molecule": "chembl_tier_b_0036",
+      "before": 0.32138206067179664,
+      "after": 0.32172957804204655
+    },
+    {
+      "molecule": "chembl_tier_b_0038",
+      "before": 0.27115508997665017,
+      "after": 0.2720849466615787
+    },
+    {
+      "molecule": "chembl_tier_b_0039",
+      "before": 0.4193307876982238,
+      "after": 0.43026229570919156
+    },
+    {
+      "molecule": "chembl_tier_b_0040",
+      "before": 0.09579783459517395,
+      "after": 0.10647817609418844
+    },
+    {
+      "molecule": "chembl_tier_b_0041",
+      "before": 0.16391802340583875,
+      "after": 0.1644489023953847
+    },
+    {
+      "molecule": "chembl_tier_b_0043",
+      "before": 0.19363788847247326,
+      "after": 0.2007052479267507
+    },
+    {
+      "molecule": "chembl_tier_b_0044",
+      "before": 0.1311088323915722,
+      "after": 0.1407414694438984
+    },
+    {
+      "molecule": "chembl_tier_b_0045",
+      "before": 0.22869174712118093,
+      "after": 0.23399379668469694
+    },
+    {
+      "molecule": "chembl_tier_b_0048",
+      "before": 0.025493555921572104,
+      "after": 0.09772215063510398
+    },
+    {
+      "molecule": "chembl_tier_b_0050",
+      "before": 0.22499860091512022,
+      "after": 0.2364720871395067
+    },
+    {
+      "molecule": "chembl_tier_b_0051",
+      "before": 0.1005654938469443,
+      "after": 0.10614605393583451
+    },
+    {
+      "molecule": "chembl_tier_b_0052",
+      "before": 0.06384411698539082,
+      "after": 0.06456696510316685
+    },
+    {
+      "molecule": "chembl_tier_b_0054",
+      "before": 0.2746093849176309,
+      "after": 0.2776803113975857
+    },
+    {
+      "molecule": "chembl_tier_b_0056",
+      "before": 0.03395925447159609,
+      "after": 0.03529543251436206
+    },
+    {
+      "molecule": "chembl_tier_b_0058",
+      "before": 0.3644992396196418,
+      "after": 0.3647787842773862
+    },
+    {
+      "molecule": "chembl_tier_b_0061",
+      "before": 0.052254169538771156,
+      "after": 0.05396573097336952
+    },
+    {
+      "molecule": "chembl_tier_b_0062",
+      "before": 0.17418738271103268,
+      "after": 0.17648987261929486
+    },
+    {
+      "molecule": "chembl_tier_b_0067",
+      "before": 0.11349700637029349,
+      "after": 0.11519941795955224
+    },
+    {
+      "molecule": "chembl_tier_b_0070",
+      "before": 0.04403180385276281,
+      "after": 0.051017148999517946
+    },
+    {
+      "molecule": "chembl_tier_b_0075",
+      "before": 0.12697709555849948,
+      "after": 0.1416451012765022
+    },
+    {
+      "molecule": "chembl_tier_b_0078",
+      "before": 0.197745391733519,
+      "after": 0.21148368523662264
+    },
+    {
+      "molecule": "chembl_tier_b_0083",
+      "before": 0.29174024586877645,
+      "after": 0.29760752905792925
+    },
+    {
+      "molecule": "chembl_tier_b_0089",
+      "before": 0.10714007814404207,
+      "after": 0.10797021486005873
+    },
+    {
+      "molecule": "chembl_tier_b_0092",
+      "before": 0.45749233276513374,
+      "after": 0.47580928954692314
+    },
+    {
+      "molecule": "chembl_tier_b_0100",
+      "before": 0.17657064797776637,
+      "after": 0.17657170176061207
+    },
+    {
+      "molecule": "chembl_tier_b_0109",
+      "before": 0.46942141446942,
+      "after": 0.4782998216530444
+    },
+    {
+      "molecule": "chembl_tier_b_0111",
+      "before": 0.2344703186552077,
+      "after": 0.3891329728534057
+    },
+    {
+      "molecule": "chembl_tier_b_0113",
+      "before": 0.36661421625339735,
+      "after": 0.3706496938571843
+    },
+    {
+      "molecule": "chembl_tier_b_0120",
+      "before": 0.08324316686637001,
+      "after": 0.10957342747545208
+    },
+    {
+      "molecule": "chembl_tier_b_0121",
+      "before": 0.04635541500091163,
+      "after": 0.047068353033813536
+    },
+    {
+      "molecule": "chembl_tier_b_0123",
+      "before": 0.19910733504129163,
+      "after": 0.1991127909792605
+    },
+    {
+      "molecule": "chembl_tier_b_0124",
+      "before": 0.2756596245287624,
+      "after": 0.28486239599099983
+    },
+    {
+      "molecule": "chembl_tier_b_0129",
+      "before": 0.27777112743632143,
+      "after": 0.2803117012608415
+    },
+    {
+      "molecule": "chembl_tier_b_0131",
+      "before": 0.30582756987581633,
+      "after": 0.31304988372681525
+    },
+    {
+      "molecule": "chembl_tier_b_0132",
+      "before": 0.3539833509103626,
+      "after": 0.37214049496968094
+    },
+    {
+      "molecule": "chembl_tier_b_0138",
+      "before": 0.3124566113773458,
+      "after": 0.3148606797005429
+    },
+    {
+      "molecule": "chembl_tier_b_0139",
+      "before": 0.27355480402288296,
+      "after": 0.2821251501658058
+    },
+    {
+      "molecule": "chembl_tier_b_0140",
+      "before": 0.3458892360878047,
+      "after": 0.34657155245193877
+    },
+    {
+      "molecule": "chembl_tier_b_0142",
+      "before": 0.18874504937269335,
+      "after": 0.1936534149380011
+    },
+    {
+      "molecule": "chembl_tier_b_0145",
+      "before": 0.13640306405172398,
+      "after": 0.14494413112724167
+    },
+    {
+      "molecule": "chembl_tier_b_0146",
+      "before": 0.23557758102052143,
+      "after": 0.23700294427966517
+    },
+    {
+      "molecule": "chembl_tier_b_0148",
+      "before": 0.396069337008211,
+      "after": 0.39724408262246813
+    },
+    {
+      "molecule": "chembl_tier_b_0149",
+      "before": 0.21743798389241725,
+      "after": 0.21754605190738133
+    },
+    {
+      "molecule": "chembl_tier_b_0157",
+      "before": 0.32127993227239976,
+      "after": 0.3216719024351656
+    },
+    {
+      "molecule": "chembl_tier_b_0159",
+      "before": 0.17974534227611613,
+      "after": 0.18129484852235386
+    },
+    {
+      "molecule": "chembl_tier_b_0162",
+      "before": 0.30498051885536864,
+      "after": 0.318325953231537
+    },
+    {
+      "molecule": "chembl_tier_b_0164",
+      "before": 0.30479834233207975,
+      "after": 0.3073335056305929
+    },
+    {
+      "molecule": "chembl_tier_b_0166",
+      "before": 0.2578853797097853,
+      "after": 0.27221925026583843
+    },
+    {
+      "molecule": "chembl_tier_b_0168",
+      "before": 0.24702935664595327,
+      "after": 0.2688429535624525
+    },
+    {
+      "molecule": "chembl_tier_b_0172",
+      "before": 0.11906414489695936,
+      "after": 0.1197621130010117
+    },
+    {
+      "molecule": "chembl_tier_b_0175",
+      "before": 0.4273759778066974,
+      "after": 0.45276606183190576
+    },
+    {
+      "molecule": "chembl_tier_b_0176",
+      "before": 0.47019343815122583,
+      "after": 0.47980834646407744
+    },
+    {
+      "molecule": "chembl_tier_b_0177",
+      "before": 0.12176966481179703,
+      "after": 0.12349809680002456
+    },
+    {
+      "molecule": "chembl_tier_b_0179",
+      "before": 0.22006595899530113,
+      "after": 0.22215828730059614
+    },
+    {
+      "molecule": "chembl_tier_b_0182",
+      "before": 0.3071990718437502,
+      "after": 0.32045720294377783
+    },
+    {
+      "molecule": "chembl_tier_b_0191",
+      "before": 0.3308929262126958,
+      "after": 0.33570814112277586
+    },
+    {
+      "molecule": "chembl_tier_b_0193",
+      "before": 0.27888745840818924,
+      "after": 0.5831914263163769
+    },
+    {
+      "molecule": "chembl_tier_b_0194",
+      "before": 0.118073975713896,
+      "after": 0.1195816688443387
+    },
+    {
+      "molecule": "cinnamic_acid_Z",
+      "before": 0.1830564580607142,
+      "after": 0.18632911710731226
+    },
+    {
+      "molecule": "d_alanine",
+      "before": 0.1714581492890583,
+      "after": 0.1729753000782722
+    },
+    {
+      "molecule": "ibuprofen",
+      "before": 0.03235630721382841,
+      "after": 0.03277632351272689
+    },
+    {
+      "molecule": "ibuprofen_S",
+      "before": 0.02872157979476975,
+      "after": 0.02911767841060312
+    },
+    {
+      "molecule": "l_alanine",
+      "before": 0.13591707434200972,
+      "after": 0.1374342251312236
+    },
+    {
+      "molecule": "l_threonine",
+      "before": 0.03178361081523388,
+      "after": 0.031854571158761
+    },
+    {
+      "molecule": "paracetamol",
+      "before": 0.0023265551832859412,
+      "after": 0.0023292494737409504
+    },
+    {
+      "molecule": "penicillin_core",
+      "before": 0.4920200494458184,
+      "after": 0.49367239559033965
+    }
+  ],
+  "stereo_newly_violated_count": 1,
+  "stereo_newly_violated": [
+    {
+      "molecule": "chembl_tier_b_0082",
+      "before_violations": 0,
+      "after_violations": 1
+    }
+  ]
+}

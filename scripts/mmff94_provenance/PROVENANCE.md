@@ -42,7 +42,7 @@ Two findings, both checked directly rather than assumed from the stretch-bend PR
 
 **Production fix (issue #227, 2026-08-10)**: the classification-formula bug diagnosed above is now fixed in PRODUCTION, exactly per the diagnostic's own narrower recommendation (no eqLevel ladder, no Halgren empirical rule). `torsion_type_for` (`crates/chematic-ff/src/mmff94_minimizer.rs`) now takes `mol: &Molecule` plus `ti`/`tl` (breaking signature change) and computes the base code as `bond_type_for(tj, tk, order_jk)` (reusing the already-correct, unmodified `bond_type_for`) with the empirically-required override to type 2 (`bond_type_jk==0 && order_jk==Single && (bond_type_ij==1 || bond_type_kl==1)`), instead of the old `(MLTB(tj),MLTB(tk))->0/1/2` atom-type-membership rule. The ring-4/5 override is also replaced end to end: a new private `ring_size_4_or_5` ports `isTorsionInRingOfSize4or5` (`AtomTyper.cpp:403-447`) faithfully -- local bond-adjacency, NOT SSSR-based -- and the 5-ring branch now additionally requires `ti==1 || tj==1 || tk==1 || tl==1`, a condition the old SSSR-based check had no equivalent of at all. Verified fresh against the actual production code (not restated from the diagnostic's self-port estimates): re-running `mmff94_term_coverage_audit` post-fix finds Torsion `routing_bug_candidate` 1,107 -> 254 (`table_gap` unchanged at 14, `torsions_missing` 1,121 -> 268); of the original 1,107, 853 now resolve to a raw table row via chematic's existing, unmodified `mmff94_torsion_energy` fallback chain alone (851 valid non-zero + 2 explicit-zero rows RDKit's own `isDoubleZero` gate would also drop, not counted as resolved), matching the diagnostic's own 851/1,107 (76.9%) prediction exactly; the remaining 254 need RDKit's out-of-scope Halgren empirical rule, also matching exactly. Beyond the 1,107 candidates, a corpus-wide before/after sweep of ALL 13,530 torsion instances (frozen old-formula copy vs. the new production code) found: 10,617 unchanged, 1,792 changed to a numerically different `(V1,V2,V3)` (matching the diagnostic's own self-port estimate of 1,792 exactly), 853 newly resolved (== the 853 above), and **0 newly lost** (no torsion that used to resolve to a wrong value now resolves to nothing). Oracle-validated via live RDKit (`rdkit==2026.3.3`): all 1,792 changed-value rows checked (not a sample) against `GetMMFFTorsionParams` -- **1,776/1,792 (99.1%)** match the new, post-fix value exactly, **0** match the OLD (pre-fix) value instead (i.e. zero cases where this fix made a previously-correct value wrong), and the remaining 16/1,792 (0.9%) are a pre-existing, out-of-scope MMFF94 aromaticity-perception gap for charged aromatic (pyridinium-type) rings unrelated to torsion classification itself (chematic types the ring carbons aromatic type 37, RDKit types them non-aromatic type 2 for these specific rings; both sides agree the torsion classification is type 0 either way). The 853 newly-resolved rows were already oracle-validated at 853/853 (100%) by the diagnostic itself. Also empirically characterized (not just reasoned about): chematic's torsion-enumeration loops have no `i==l` guard (a 3-membered-ring degenerate torsion where the two outer atoms coincide), which theoretically could make `ring_size_4_or_5`'s local-adjacency check misfire for a substituted 3-ring; measured 33 such instances in this corpus, 0 of which trigger the ring override either before or after this fix, and a constructed methylcyclopropane check against the live RDKit oracle confirms the port is faithful (RDKit's own real algorithm computes the identical ring-size-5 local adjacency for this case, but its own type-1 gate -- using RDKit's correct CR3R=22 ring-carbon typing, which chematic also assigns correctly here -- prevents the override from firing, matching chematic's result exactly). See the PR for issue #227 for the full before/after 265-molecule energy-pipeline benchmark comparison. |
 | van der Waals | `Code/ForceField/MMFF/Params.cpp` | `defaultMMFFVdW` | |
-| Charges (partial bond charge increments) | `Code/ForceField/MMFF/Params.cpp` | `defaultMMFFPBCI`, `defaultMMFFChg` | `defaultMMFFPBCI` is already the cited source for chematic's existing `pbci_for` table (pre-dates this PR). |
+| Charges (partial bond charge increments) | `Code/ForceField/MMFF/Params.cpp` | `defaultMMFFPBCI`, `defaultMMFFChg` | `defaultMMFFPBCI` is already the cited source for chematic's existing `pbci_for` table (pre-dates this PR). **Phase 2 update (issue #227, 2026-08-16)**: `mmff94_charges_numeric`'s BCI bond-type source, flagged as a known follow-up in the Torsion entry below, investigated and fixed — see the dedicated Charges/BCI entry after the Torsion entry. |
 | Aromaticity perception feeding MMFF typing | `Code/GraphMol/Aromaticity.cpp` | `setMMFFAromaticity` (module-level function, not a `MolOps` member despite earlier notes in this file placing it there) | Priority 1A (issue #227): ported as `compute_mmff94_aromatic_view` in `mmff94_numeric.rs` — a **partial, behaviorally-calibrated** port, not a full one: every rule is a direct, line-cited port (ring-by-ring pi-electron counting at lines ~955-1035, the exocyclic-double-bond/NOS lone-pair-bonus rules, the multi-pass resolution loop) except the hybridization gate at line 1023 (`atom->getHybridization() != Atom::SP2`), approximated as `total_degree(atom) > 3` since chematic has no general hybridization-inference engine to port this faithfully. Measured gap on the 265-molecule Wave 1 corpus (`scripts/mmff94_hybridization_gate_gap_227_report.py`): 4,128/4,172 (98.9%) ring C/N atoms same decision as RDKit, 44 where the approximation under-triggers (misses a real pyramidal-SP3 ring N), 0 where it over-triggers, 0 unclassified — see `validation/results/mmff94_hybridization_gate_gap_227_report.txt`. RDKit's own general aromaticity model (distinct from both this MMFF-specific one and from chematic's `chematic_perception::apply_aromaticity`) is not relevant to MMFF typing and is out of scope here. |
 
 **Production fix (issue #227, 2026-08-13): nitrile/sulfonamide/nitro/azide-N
@@ -512,6 +512,320 @@ linear central atom, re-open this investigation with a fresh oracle
 differential — do not assume this finding transfers without re-checking, the
 same discipline this entry itself applied to the pre-2026-08-10 diagnostic's
 now-superseded 254-instance empirical-rule hypothesis.
+
+**Production fix (issue #227 Phase 2, 2026-08-16): BCI bond-type source —
+oracle-confirmed real bug, fixed, NOT the same root cause as Phase 1's.**
+Phase 1's Torsion entry above explicitly flagged `mmff94_charges_numeric`
+(`crates/chematic-ff/src/mmff94_numeric.rs`) as reading `bond.order` from
+the caller's original, un-reperceived molecule — "the same root-cause shape"
+as the bug it had just fixed for bond/angle/torsion/stretch-bend
+classification — and left it unaddressed as electrostatics-out-of-scope.
+Phase 2's brief was to check this empirically before assuming it, per the
+directive's explicit falsify-before-fix instruction. **The hypothesis as
+literally stated was only half right**: the BCI code path had a compound
+bug, not a single view-source bug.
+
+*Source-level evidence first* (`Code/GraphMol/ForceFieldHelpers/MMFF/AtomTyper.cpp`,
+pinned commit `e74e7b0a5a2fc4e7f77c04ec26a61d4b8edbf22f`): RDKit's real
+`computeMMFFCharges` (lines 3071-3488) calls `unsigned int bondType =
+this->getMMFFBondType(bond)` at line 3472 — textually the SAME
+`getMMFFBondType` method `getMMFFBondStretchParams` calls at line 3500, on
+the identical `bond` object from the identical (sanitized/Kekulized) `mol`
+built once per `MMFFMolProperties` construction. There is no separate
+"charge bond type" concept in RDKit's own algorithm; `getMMFFBondType`
+itself (lines 2457-2475) is a *narrow* function returning 0 unless the bond
+is formally `Bond::SINGLE` **and** both atom types are flagged `sbmb`/`arom`
+(RDKit's "single bond between two conjugation-capable atoms" special case)
+— it is never a function of bond multiplicity (Double/Triple/Aromatic all
+collapse to 0 unconditionally, confirmed by a direct grep: `getMMFFChgParams`
+is called from exactly this one call site in the whole pinned RDKit source,
+always fed `getMMFFBondType`'s 0/1 result — no other bond-type value ever
+reaches it).
+
+*What chematic actually had*: a **second, independent, private**
+`bond_type_for(order: BondOrder) -> u8` lived in `mmff94_numeric.rs`
+(distinct from `crate::mmff94_minimizer::bond_type_for(ti, tj, order)`, the
+function Phase 1 already fixed and oracle-validated for bond/angle/
+torsion/stretch-bend), mapping `Single/Up/Down -> 0, Double -> 1, Triple ->
+2, Aromatic -> 4` — a bond-*multiplicity* encoding with no resemblance to
+RDKit's real `getMMFFBondType` formula at all, and no atom-type/sbmb
+dependence whatsoever. This is why the population framing in the original
+"same root-cause shape" hypothesis was incomplete: a plain "does the
+Kekulized view differ from the original view" sample would systematically
+undersample this bug, because it also fires on molecules where the two
+views **agree** (e.g. any real, unambiguous C=O double bond, correctly
+`BondOrder::Double` on both the original and reperceived molecule, still
+got the wrong `bond_type` under the old formula).
+
+*Table-level check* (zero-compile, pure text parsing, done before any oracle
+call): chematic's `MMFF94_CHG` table itself is a faithful, byte-identical
+port of RDKit's real `defaultMMFFChg` (both 498 rows, both with bond-type
+column values `{0, 1, 4}` — confirmed by parsing a fresh
+`/tmp/Params.cpp` fetch against the same pinned commit and diffing the
+parsed row sets). The 3 `bond_type=4` rows (atom-type pairs 58/36, 58/37,
+58/57) are demonstrably **unreachable** under RDKit's real algorithm too
+(the single `getMMFFChgParams` call site never produces anything but 0 or
+1) — vestigial data RDKit's own C++ never queries either, not evidence the
+table needed a bond_type=4 concept. Of the table's 50 `bond_type=1` rows,
+15 atom-type pairs also have a `bond_type=0` row for the same pair; 6 of
+those 15 have a **materially different** `bci` value between the two rows
+(up to 0.24 e-, e.g. `(4,9)`: −0.300 at bt=1 vs −0.106 at bt=0) — bounding
+the maximum achievable per-contribution effect before running any molecule,
+and confirming the Phase 1 directive's Step-1.4 off-ramp ("keyed by atom
+TYPE pairs, not bond order, so the view doesn't matter") does NOT apply
+here: bond type is a real, value-changing key in this table.
+
+*Empirical falsification, full corpus (not a sample, same discipline as
+Phase 1's 257/257 and 1,107/1,107 full-population checks)*: dumped
+chematic's then-current (pre-fix) `mmff94_charges_numeric` output for every
+heavy atom in all 264 typing-succeeded molecules
+(`crates/chematic-3d/examples/mmff94_bci_charges_dump_227.rs`) and RDKit's
+real `GetMMFFPartialCharge` for the same atoms, same molecules, no
+embedding/conformer needed (topology-only, same precedent as the Torsion
+investigation) via a live oracle
+(`scripts/mmff94_bci_charges_oracle_227.py`, `rdkit==2026.03.4`). **Before
+any fix**: 1,687/6,693 heavy atoms (25.2%) across 206/264 molecules (78.0%)
+differed from the oracle by more than 1e-6 e⁻ — mean |Δ| 0.0189 e⁻, p90
+0.076 e⁻, p99 0.239 e⁻, max 1.0 e⁻ (`chembl_tier_b_0080`, a separate,
+unrelated cause — see below). This single number already falsifies any
+"BCI already correct" or "bond-type doesn't matter here" hypothesis outright
+— the pre-existing gap was large and corpus-wide, not a narrow edge case.
+
+**Fix**: `mmff94_charges_numeric` now (1) calls
+`assign_mmff94_numeric_types_with_view(mol)` and reads bond order from its
+returned `mmff_mol` (the same reperceived view Phase 1 already threads
+through the other four term kinds) instead of the caller's original `mol`,
+closing the view-source half of the bug; and (2) the private, wrong
+`bond_type_for(order)` is deleted entirely and replaced with a call to
+`crate::mmff94_minimizer::bond_type_for(ti, tj, order)` — the SAME
+already-fixed, already-oracle-validated function bond-stretch/angle/torsion/
+stretch-bend classification uses, not a new third implementation — closing
+the formula half of the bug. No new resolution tier, no table change: the
+existing `lookup_chg_contribution`'s `unwrap_or_else(|| pbci_for(ti).0 -
+pbci_for(tj).0)` fallback is itself RDKit's own real behavior
+(`AtomTyper.cpp:3478-3479`, `mmffChgParams.second ? ... : ((*mmffPBCI)(atomType)->pbci
+- (*mmffPBCI)(nbrAtomType)->pbci)`) and is unchanged.
+
+**Post-fix re-measurement, same tool, same 264 molecules, same oracle
+(literally the same dump script re-run, so before/after is a true diff, not
+two different measurement methods)**: 67/6,693 atoms (1.0%) across 11/264
+molecules (4.2%) still differ from the oracle — mean |Δ| 0.00116 e⁻, p90
+0.0 e⁻ (exact match at the 90th percentile), p99 0.0144 e⁻, max 1.0 e⁻
+(same outlier molecule, unchanged — see below). **Zero regressions,
+verified by a genuine per-atom join (not aggregate-count arithmetic)**: 0
+atoms that matched the oracle exactly before the fix now mismatch; 1,620
+atoms moved from mismatched to exact-match; 5,006 were already exact-match
+and remain so; 67 remain mismatched both before and after (the residual
+below, unmoved by this fix either direction — direct evidence the fix
+neither caused nor masked this separate gap).
+
+**Regression-pinned unit test** (`acetone_carbonyl_charges_match_rdkit_oracle_after_bond_type_fix`,
+`crates/chematic-ff/src/mmff94_numeric.rs`): acetone's C=O bond (type 3 —
+type 7, `BondOrder::Double`) has a `MMFF94_CHG` row only at `bond_type=0`
+(`(0, 3, 7, −0.57)`), no `bond_type=1` row for that pair. Under the old
+formula, `Double -> 1` made this bond MISS the table and silently fall back
+to the generic `pbci_for(3) − pbci_for(7)` PBCI difference; under the fixed
+formula every Double/Triple/Aromatic bond maps to 0 unconditionally
+(matching RDKit's real `getMMFFBondType`), landing on the real row directly.
+Expected values (O = −0.57, carbonyl C = +0.448, both methyl C = +0.061)
+are copied verbatim from a live RDKit oracle query, not derived from this
+fix's own output.
+
+**Residual, 67/6,693 atoms / 11/264 molecules, explicitly NOT investigated
+further (out of scope for a BCI bond-type fix, flagged as follow-up)**: the
+3 largest-magnitude residual molecules
+(`chembl_tier_b_0080`/`_0159`/`_0161`) all show chematic's and RDKit's MMFF
+atom TYPES agreeing exactly at every mismatched atom, with a charge
+difference of almost exactly 0.5 e⁻ (one pair, the azide central/terminal N
+of `chembl_tier_b_0080`, differs by 1.0 e⁻ — additive across the two
+adjacent atoms of the same 0.5 e⁻-shaped effect) — a pattern consistent
+with `mmff94_charges_numeric`'s formal-charge/`fcadj` redistribution step
+(equation 15's `v·ΣformalCharge` term and/or the anionic-neighbor-leak step)
+for charge-separated species (nitro N type 45, azide N types 47/53, charged
+sulfoxide S type 17, O2CM type 32), NOT the bond-type BCI step this fix
+addresses. Confirmed independent of this fix by construction (these 67
+atoms are the "unchanged mismatch both before and after" set from the
+per-atom join above — literally unmoved by the fix in either direction).
+Not root-caused further here; flagged for whoever next touches MMFF94
+formal-charge handling.
+
+**Renumbering invariance, checked directly** (this fix depends on
+`mmff_mol`'s Kekulized bond order, the same genuine-Kekule-tie-sensitive
+input Phase 1's own reviewer follow-up required a test for):
+`mmff94_charges_numeric_is_invariant_under_atom_renumbering`
+(`crates/chematic-ff/src/mmff94_numeric.rs`) renumbers caffeine 32 ways
+(`deterministic_permutation`/`rebuild_with_order`, the same helpers Phase
+1's own renumbering tests use) and confirms the molecule's sorted per-atom
+charge multiset — the only renumbering-stable representation of "which
+charges this molecule produces", since individual atom indices are not
+stable under relabeling — is identical (within 1e-9, float-summation-order
+noise) across all 32 variants. No renumbering-dependence found.
+
+**Quality gates**: `cargo test -p chematic-ff` 178 -> 182 passed (4 new
+tests), 0 failed; `cargo clippy -p chematic-ff --all-targets --all-features
+-- -D warnings` clean; `cargo fmt --all -- --check` clean.
+
+**Follow-up investigation (issue #227 Phase 2, 2026-08-16): the BCI fix's one
+new stereo violation, `chembl_tier_b_0082`.** The 3-state
+`pipeline_v2_mmff94_strict` re-measurement (this file's Torsion/Charges
+entries; full numbers in
+`validation/results/mmff94_bci_gap_227_phase2_report.md`) found exactly one
+molecule whose declared E/Z stereo flips from satisfied to violated between
+State 2 (post-torsion-fix, pre-BCI-fix) and State 3 (post-BCI-fix): a
+per-atom regression the earlier `per_molecule_join_regressions: 0` headline
+number does NOT capture, since that field only tracks pipeline STATUS
+transitions (success/typed_failure/timeout), not stereo-quality changes
+within an otherwise-successful call — stated explicitly here and corrected
+everywhere this file and the Phase 2 report use "0 regressions" language.
+
+*Characterization* (`crates/chematic-3d/examples/mmff94_bci_stereo_drift_diagnostic_227.rs`,
+using the new, purely additive
+`chematic_3d::stereo_constraints::{debug_double_bond,debug_all_double_bonds}`
+diagnostic — production `verify_double_bond`/`verify_stereo` untouched):
+`chembl_tier_b_0082`'s single declared bond (`sub1=11 end1=13=end2=14
+sub2=15`, declared trans/`same_side=false`) is Satisfied identically at
+pre-minimization (`ForceFieldPolicy::None`, angle -140.7°) and State 2 final
+(angle 166.9°, still trans-side) — both states share the same embedding
+seed, and BCI charges do not affect embedding, so this identity is expected,
+not a coincidence. State 3 final: angle 0.286° — `same_side=true`, Violated,
+89.7° past the boundary (not a marginal case; a genuine ~167° rotation of
+the alkene's own substituent dihedral occurred during minimization).
+
+*Reproducibility*: `stereo_before` (post-embedding) is Satisfied in both
+State 2's and State 3's own committed dump rows
+(`mmff94_bci_gap_227_state{2,3}_*_chematic_rows.jsonl`, same
+`embed_seed=20260801`/`max_attempts=8` `pipeline_v2_vs_rdkit_dump.rs` always
+uses for `chematic_pipeline_v2_mmff94_strict` — confirmed this arm goes
+through the seeded `EmbedParameters` path, not the legacy
+`generate_coords_etkdg` entry point some other arms use) — the divergence
+is real and reproducible at this fixed seed, not attributable to a
+different embedding. A multi-seed sweep was not run (the single-seed
+reproduction plus the RDKit oracle comparison below were judged sufficient
+to determine the fix tier; not claimed as an exhaustive seed-independence
+proof).
+
+*RDKit oracle comparison (the key discriminator)*: chematic's own
+`verify_stereo` judge, already applied to RDKit's saved geometries by
+`pipeline_v2_vs_rdkit_common_scorer.rs`'s existing `score_rows` step (not a
+new check), shows this bond **Satisfied on all 4 RDKit arms**
+(`rdkit_etkdgv3_raw/uff/mmff94/best_of_n`) for `chembl_tier_b_0082` —
+RDKit's own real MMFF94 minimizer, which always had correct BCI charges
+(RDKit never had this bug), does not reproduce the flip. This rules out "the
+corrected electrostatics legitimately crossed a real, RDKit-shared torsion
+barrier" — it is a **chematic-specific gap**, not an expected physical
+consequence of the charge fix.
+
+*Energy-term isolation*: not run as a separate charge-swap experiment (the
+oracle comparison above already answers the load-bearing question —
+whether this is chematic-specific — more directly and with less risk of a
+confounded methodology than re-scoring the same converged geometry with a
+different charge set would have). `force_field_converged: false` at the
+200-iteration cap in BOTH State 2 and State 3 (from the committed dump
+rows) is the one other concrete data point: this molecule's minimization
+does not converge either way, consistent with (not proof of) a
+minimizer-robustness explanation rather than a clean two-basin energy
+comparison.
+
+*Architectural context, confirmed by direct source read, not assumed*:
+`crates/chematic-ff/src/mmff94_minimizer.rs` (the MMFF94 minimizer itself)
+has zero references to stereo anywhere in the file — the force field has no
+notion of declared chirality/E-Z at all. `pipeline_v2.rs`'s own module docs
+already document exactly this failure class for two earlier molecules
+(`chembl_tier_b_0076`/`chembl_tier_b_0083`, found during the v0.14.0 release
+gate: "a force field has no notion of declared chirality/E-Z and can walk a
+geometry back across whichever stereo boundary a naive post-hoc repair
+would have fixed") — `chembl_tier_b_0082` is a third instance of the SAME
+already-known, already-documented architectural gap, not a new failure
+class the BCI fix introduced from scratch; the BCI fix only changed which
+molecule's already-marginal minimization trajectory happened to cross it.
+
+*Fix tier chosen, in the directive's own priority order*: (1) a root-cause
+fix (real stereo-awareness inside MMFF94 minimization) would be a large,
+general architecture change — the project's own prior work on this exact
+failure class explicitly deferred a structurally similar composition
+question ("deliberately deferred rather than decided by omission") rather
+than rushing one; out of scope here. (2) Converting this to a typed failure
+under `StereoPolicy::Ignore` (the policy `chematic_pipeline_v2_mmff94_strict`
+actually uses) would change default-arm behavior broadly, explicitly
+flagged as needing its own separate authorization, not decided
+unilaterally in this PR. (3) `StereoPolicy::RepairAndVerify` gets a new
+post-minimization repair-and-reverify step (`crates/chematic-3d/src/pipeline_v2.rs`)
+— empirically verified SAFE and EFFECTIVE for this exact case before
+implementing: `repair_stereo` on State 3's violated geometry succeeds,
+producing angle -179.7° (89.7° past the boundary, a robust result, not
+marginal), with `worst_bond_length_ratio`/`gross_clash_count` both
+IDENTICAL before and after the repair (0.1397/0, unchanged) — the
+9-atom/13.8Å-displacement reflection is large in absolute terms but
+introduces no bond-length or clash degradation, confirmed directly rather
+than assumed. Implemented as an additive, fail-closed step: accepted only
+if repair succeeds AND the reverified result has zero violations AND the
+repaired geometry stays within `MAX_SANE_BOND_LENGTH` — any rejection falls
+through to the original, unmodified `FinalStereoViolation` failure.
+`StereoPolicy::Ignore`/`VerifyOnly` are completely unaffected by
+construction (the new code path is nested inside the existing
+`stereo_policy != Ignore` block and additionally gated on
+`== RepairAndVerify`). (4) Not needed: tier 3 succeeded.
+
+*What remains unrecovered*: `StereoPolicy::Ignore` — the policy this PR's
+own 3-state measurement arm (`chematic_pipeline_v2_mmff94_strict`) actually
+uses — never repairs, by design (its whole point is to never gate on
+stereo), so `chembl_tier_b_0082`'s violation is real and NOT recovered
+under the arm this Phase's headline numbers are measured on. This is a
+known, named, reproducible, now-tested residual (see
+`chembl_tier_b_0082_ez_bond_survives_bci_fix_under_repair_and_verify_not_under_ignore`,
+`crates/chematic-3d/src/pipeline_v2.rs`), not silently absorbed into any
+"0 regressions" claim.
+
+**Test coverage gap, stated plainly rather than hidden**: no test in this
+PR exercises the new post-minimization repair step's OWN fail-closed path
+(repair genuinely fails, or succeeds but leaves a violation, or produces an
+unsound geometry) with a real, from-scratch "unrepairable" molecule — a
+grep of this file's existing test suite found zero pre-existing tests that
+exercise `repair_stereo` returning `Err` at all (stage 8's own,
+already-shipped repair-failure path has the same gap already, predating
+this PR). The new code's fail-closed structure (three ANDed guard
+conditions, falling through to the unchanged, pre-existing
+`FinalStereoViolation` return otherwise) is directly auditable in the diff
+and structurally identical in shape to stage 8's own `match repair_stereo
+{...}` gate, but is not independently exercised by a dedicated
+failing-repair integration test here. Flagged as a known gap, not silently
+omitted.
+
+**Quality gates (this addition)**: **under `--release`** (used for
+faster iteration while developing this fix), `cargo test -p chematic-3d
+--lib` showed 3 failures — 2 timing-race timeout tests
+(`timeout_zero_fails_closed_with_typed_timeout`/
+`timeout_failure_still_carries_evidence_computed_before_it_tripped`) and 1
+already-known-jitter-molecule `atorvastatin_fragment` regression test in
+`distance_geometry_v2.rs` — verified reproducing identically on the commit
+immediately before this addition (none touch this PR's changed files, so
+not caused by it). **Root-caused, not just deferred**: all 3 are
+`--release`-build-specific — the timeout tests rely on a sub-millisecond
+budget (`total_timeout_ms: Some(0)`) being exceeded by *any* nonzero
+elapsed time, which release-mode optimization can defeat entirely for a
+tiny molecule (pipeline completes in <1ms, `elapsed > 0` never trips); the
+`atorvastatin_fragment` case is the same "borderline numerical case,
+build-profile-sensitive" pattern the `chembl_tier_b_0082` investigation
+above independently found for `stereo_before`'s violation count
+(distance-geometry embedding's eigendecomposition + retry loop can pick a
+different one of `max_attempts` attempts across optimization levels, even
+at a fixed seed). **Confirmed via the actual gate command**: `cargo test
+--workspace --all-features` (no `--release` — the command
+`scripts/`/CI/the PR's own test plan actually runs) is fully green, 0
+failures, workspace-wide, including all 3 of these — the debug-profile
+build simply runs slower/differently enough that none of these
+build-profile-sensitivity edge cases manifest. `cargo test -p chematic-3d
+--lib` (same, no `--release`): 534 -> 537 passed (3 new/updated tests:
+`repair_and_verify_recovers_post_minimization_stereo_violation`,
+`post_minimization_stereo_repair_is_a_no_op_when_nothing_needs_recovering`,
+`chembl_tier_b_0082_ez_bond_survives_bci_fix_under_repair_and_verify_not_under_ignore`),
+0 failed. The `chembl_tier_b_0082` golden regression test's own assertions
+were written to avoid pinning the exact violation count for this reason —
+it pins the ROBUST property (`Ignore` never repairs;
+`RepairAndVerify` always ends fully satisfied) rather than the
+build-profile-sensitive exact stereo-before/after counts.
+`cargo clippy -p chematic-3d --all-targets --all-features -- -D warnings`
+clean; `cargo fmt --all -- --check` clean.
 
 ## Halgren primary literature (secondary/theoretical cross-reference, not the implementation source)
 

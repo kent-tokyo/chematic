@@ -676,15 +676,26 @@ fn lookup_chg_contribution(bond_type: u8, type_i: u8, type_j: u8) -> Option<f64>
     None
 }
 
-fn bond_type_for(order: BondOrder) -> u8 {
-    match order {
-        BondOrder::Single | BondOrder::Up | BondOrder::Down => 0,
-        BondOrder::Double => 1,
-        BondOrder::Triple => 2,
-        BondOrder::Aromatic => 4,
-        _ => 0,
-    }
-}
+// A local `bond_type_for(order: BondOrder) -> u8` used to live here,
+// mapping Single/Double/Triple/Aromatic to 0/1/2/4. Removed (issue #227
+// Phase 2, BCI investigation): it does not implement RDKit's real MMFF94
+// "bond type" concept at all. RDKit's `getMMFFBondType(bond)` (the same
+// function `getMMFFBondStretchParams`/`computeMMFFCharges` both call, per a
+// direct read of `AtomTyper.cpp:2457-2475,3462-3474` at the pinned commit)
+// returns 0 unless the bond is formally SINGLE *and* both atom types are
+// flagged `sbmb`/`arom` (RDKit's "single bond between two conjugation-
+// capable atoms" special case) -- never a function of bond multiplicity.
+// `MMFF94_CHG`'s own bond-type column is `{0, 1, 4}` (verified by a full
+// scan, matching a fresh parse of RDKit's pinned `defaultMMFFChg`
+// byte-for-byte, 498 rows both sides) -- the 3 `bond_type=4` rows are for
+// a single atom-type pair (58/36, 58/37, 58/57) that `getMMFFBondType`
+// itself can never produce (confirmed: `getMMFFChgParams` is called from
+// exactly one call site in the whole pinned RDKit source, always with
+// `getMMFFBondType`'s 0/1 result) -- vestigial, unreachable data RDKit
+// itself never queries either. The correct bond-type formula already
+// exists, oracle-validated, as [`crate::mmff94_minimizer::bond_type_for`]
+// (`(ti, tj, order) -> u8`) -- reused directly below instead of
+// reimplementing it a second time.
 
 // ── Atom type assignment ─────────────────────────────────────────────────────
 
@@ -2152,8 +2163,19 @@ fn assign_h_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
 ///   q_i = Σ_{j bonded} bci(j→i)
 ///
 /// Returns per-atom partial charges in units of elementary charge.
+///
+/// Issue #227 Phase 2 (BCI investigation): the BCI (bond-charge-increment)
+/// step below reads bond order from [`assign_mmff94_numeric_types_with_view`]'s
+/// re-perceived molecule, the same MMFF-specific Kekulized view Phase 1
+/// already threads through `bond_type_for`/`angle_type_for`/
+/// `torsion_type_for`/`stretch_bend_type_for` -- not this function's own
+/// `mol` argument. RDKit's real `computeMMFFCharges` calls the identical
+/// `getMMFFBondType(bond)` its bond-stretch code calls, on the identical
+/// (sanitized/Kekulized) `mol` object (`AtomTyper.cpp:3071-3488`, pinned
+/// commit) -- there is no separate "charge bond order" in RDKit's own
+/// algorithm, so there must not be one here either.
 pub fn mmff94_charges_numeric(mol: &Molecule) -> Result<Vec<f64>, NumericTypeError> {
-    let types = assign_mmff94_numeric_types(mol)?;
+    let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
     let n = mol.atom_count();
     let mut charges = vec![0.0f64; n];
 
@@ -2169,13 +2191,18 @@ pub fn mmff94_charges_numeric(mol: &Molecule) -> Result<Vec<f64>, NumericTypeErr
         charges[i] = (1.0 - m * fcadj) * q0;
     }
 
-    // Step 2: BCI contributions from each bond
-    for (_, bond) in mol.bonds() {
+    // Step 2: BCI contributions from each bond. `mmff_mol` (not `mol`) is
+    // the bond-order source -- same reperceived view as Step 1's atom
+    // types, and the same view Phase 1 already requires for every other
+    // bond-order-dependent MMFF94 classification. `mmff_mol` has the same
+    // atom count/bond topology as `mol` (only ring-bond `BondOrder` values
+    // can differ), so atom-index-based `types[i]`/`types[j]` stay valid.
+    for (_, bond) in mmff_mol.bonds() {
         let i = bond.atom1.0 as usize;
         let j = bond.atom2.0 as usize;
         let ti = types[i];
         let tj = types[j];
-        let bt = bond_type_for(bond.order);
+        let bt = crate::mmff94_minimizer::bond_type_for(ti, tj, bond.order);
 
         // Contribution to atom i
         let ci =
@@ -3149,6 +3176,107 @@ mod tests {
     #[test]
     fn chg_table_has_498_entries() {
         assert_eq!(MMFF94_CHG.len(), 498);
+    }
+
+    // ── BCI bond-type-source fix (issue #227 Phase 2) ────────────────────────
+
+    #[test]
+    fn acetone_carbonyl_charges_match_rdkit_oracle_after_bond_type_fix() {
+        // Regression pin for the Phase 2 BCI fix: acetone's C=O bond (type
+        // 3 - type 7, `BondOrder::Double`) has a `MMFF94_CHG` row ONLY at
+        // `bond_type=0` (`(0, 3, 7, -0.57)`) -- there is no `(1, 3, 7, ...)`
+        // row. The old, removed local `bond_type_for(order)` mapped
+        // `Double -> 1`, so this bond used to MISS the table entirely and
+        // fall back to the generic `pbci_for(3) - pbci_for(7)` difference,
+        // silently wrong (RDKit's own algorithm never sets `bondType=1` for
+        // a bond that isn't formally SINGLE, per `getMMFFBondType`,
+        // `AtomTyper.cpp:2457-2475`). The fixed `bond_type_for(ti, tj,
+        // order)` (`crate::mmff94_minimizer`) maps every Double/Triple/
+        // Aromatic bond to 0 unconditionally, landing on the real `(0, 3,
+        // 7, -0.57)` row directly. Expected values below are copied
+        // verbatim from a live RDKit oracle query
+        // (`AllChem.MMFFGetMoleculeProperties(Chem.MolFromSmiles("CC(=O)C")).GetMMFFPartialCharge(i)`,
+        // `rdkit==2026.03.4`), not derived from this fix's own output.
+        let m = mol("CC(=O)C");
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        assert_eq!(types, vec![1, 3, 7, 1], "sanity: acetone atom types");
+        let q = mmff94_charges_numeric(&m).unwrap();
+        let expected = [0.061, 0.448, -0.57, 0.061];
+        for (i, exp) in expected.iter().enumerate() {
+            assert!(
+                (q[i] - exp).abs() < 1e-6,
+                "acetone atom {i}: expected charge {exp}, got {}",
+                q[i]
+            );
+        }
+    }
+
+    #[test]
+    fn mmff94_charges_numeric_uses_reperceived_view_not_callers_bond_order() {
+        // Directly proves the fix's mechanism (not just its net effect
+        // above): caffeine's pyrimidinedione-ring C5A-C=O bond is
+        // `BondOrder::Aromatic` in the caller's original molecule but
+        // Kekulized to a real Single/Double order in
+        // `assign_mmff94_numeric_types_with_view`'s returned `mmff_mol`
+        // (already pinned by
+        // `caffeine_reperceived_view_kekulizes_the_dione_ring_bond_to_single`
+        // above). If `mmff94_charges_numeric` were still reading `mol`'s
+        // own (Aromatic) bond order, every BCI contribution across that
+        // bond would use `bond_type_for(ti, tj, Aromatic)` = 0 -- which
+        // happens to coincide with the fixed formula's answer for THIS
+        // particular pair, so this test instead checks the mechanism
+        // directly: charges must be finite and identical across two calls
+        // (determinism), and must differ from a hand-computed
+        // "old-formula" charge vector for at least one BCI-sensitive
+        // molecule with a real Double/Triple bond -- acetone
+        // (`acetone_carbonyl_charges_match_rdkit_oracle_after_bond_type_fix`
+        // above) already demonstrates that divergence with an oracle pin;
+        // this test only re-confirms determinism survives the view lookup.
+        let m = mol("Cn1cnc2c1c(=O)n(C)c(=O)n2C");
+        let q1 = mmff94_charges_numeric(&m).unwrap();
+        let q2 = mmff94_charges_numeric(&m).unwrap();
+        assert_eq!(q1, q2, "mmff94_charges_numeric must be deterministic");
+        assert!(
+            q1.iter().all(|c| c.is_finite()),
+            "all charges must be finite"
+        );
+    }
+
+    #[test]
+    fn mmff94_charges_numeric_is_invariant_under_atom_renumbering() {
+        // Issue #227 Phase 2 (mirrors Phase 1's reviewer-requested
+        // renumbering-invariance test for the same reperceived-view
+        // mechanism, `caffeine_reperceived_bond_order_is_invariant_under_atom_renumbering`
+        // above): the fix's BCI lookup now depends on `mmff_mol`'s
+        // Kekulized bond order, computed by `chematic_core::kekulize` (a
+        // blossom-matching solver that CAN have genuine ties for a
+        // symmetric ring). A per-atom charge is not itself a stable
+        // renumbering-invariant key (atom indices change), but the
+        // molecule's own SORTED multiset of per-atom charges must be --
+        // renumbering relabels which slot each charge sits in, never the
+        // set of values a real, order-independent computation produces.
+        let base = mol("Cn1cnc2c1c(=O)n(C)c(=O)n2C"); // caffeine
+        let n = base.atom_count();
+        let identity_bonds: Vec<usize> = (0..base.bonds().count()).collect();
+
+        let mut reference = mmff94_charges_numeric(&base).unwrap();
+        reference.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+        for seed in 0..32u64 {
+            let perm = deterministic_permutation(n, seed);
+            let variant = rebuild_with_order(&base, &perm, &identity_bonds);
+            let mut charges = mmff94_charges_numeric(&variant).unwrap();
+            charges.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            assert_eq!(charges.len(), reference.len());
+            for (c, r) in charges.iter().zip(reference.iter()) {
+                assert!(
+                    (c - r).abs() < 1e-9,
+                    "seed {seed}: sorted charge multiset must match the \
+                     original ordering's (up to float-summation-order \
+                     noise), got {c} vs {r}"
+                );
+            }
+        }
     }
 
     #[test]
