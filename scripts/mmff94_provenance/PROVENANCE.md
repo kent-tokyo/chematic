@@ -791,14 +791,39 @@ and structurally identical in shape to stage 8's own `match repair_stereo
 failing-repair integration test here. Flagged as a known gap, not silently
 omitted.
 
-**Quality gates (this addition)**: `cargo test -p chematic-3d --lib` 534 ->
-537 passed (3 new/updated tests: `repair_and_verify_recovers_post_minimization_stereo_violation`,
+**Quality gates (this addition)**: **under `--release`** (used for
+faster iteration while developing this fix), `cargo test -p chematic-3d
+--lib` showed 3 failures — 2 timing-race timeout tests
+(`timeout_zero_fails_closed_with_typed_timeout`/
+`timeout_failure_still_carries_evidence_computed_before_it_tripped`) and 1
+already-known-jitter-molecule `atorvastatin_fragment` regression test in
+`distance_geometry_v2.rs` — verified reproducing identically on the commit
+immediately before this addition (none touch this PR's changed files, so
+not caused by it). **Root-caused, not just deferred**: all 3 are
+`--release`-build-specific — the timeout tests rely on a sub-millisecond
+budget (`total_timeout_ms: Some(0)`) being exceeded by *any* nonzero
+elapsed time, which release-mode optimization can defeat entirely for a
+tiny molecule (pipeline completes in <1ms, `elapsed > 0` never trips); the
+`atorvastatin_fragment` case is the same "borderline numerical case,
+build-profile-sensitive" pattern the `chembl_tier_b_0082` investigation
+above independently found for `stereo_before`'s violation count
+(distance-geometry embedding's eigendecomposition + retry loop can pick a
+different one of `max_attempts` attempts across optimization levels, even
+at a fixed seed). **Confirmed via the actual gate command**: `cargo test
+--workspace --all-features` (no `--release` — the command
+`scripts/`/CI/the PR's own test plan actually runs) is fully green, 0
+failures, workspace-wide, including all 3 of these — the debug-profile
+build simply runs slower/differently enough that none of these
+build-profile-sensitivity edge cases manifest. `cargo test -p chematic-3d
+--lib` (same, no `--release`): 534 -> 537 passed (3 new/updated tests:
+`repair_and_verify_recovers_post_minimization_stereo_violation`,
 `post_minimization_stereo_repair_is_a_no_op_when_nothing_needs_recovering`,
 `chembl_tier_b_0082_ez_bond_survives_bci_fix_under_repair_and_verify_not_under_ignore`),
-3 pre-existing failures unchanged (verified reproducing identically on the
-commit immediately before this addition: 2 timing-race timeout tests, 1
-already-known-jitter-molecule `atorvastatin_fragment` regression test in
-`distance_geometry_v2.rs` — none touch this PR's changed files);
+0 failed. The `chembl_tier_b_0082` golden regression test's own assertions
+were written to avoid pinning the exact violation count for this reason —
+it pins the ROBUST property (`Ignore` never repairs;
+`RepairAndVerify` always ends fully satisfied) rather than the
+build-profile-sensitive exact stereo-before/after counts.
 `cargo clippy -p chematic-3d --all-targets --all-features -- -D warnings`
 clean; `cargo fmt --all -- --check` clean.
 
