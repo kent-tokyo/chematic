@@ -207,6 +207,10 @@ pub enum CubeError {
     /// `shape[0]*shape[1]*shape[2]` requires. Cube has no defined trailing
     /// footer, so any leftover token here is malformed input.
     TrailingData { after_values: usize },
+    /// [`write_cube`] found a `shape` dimension too large to represent as
+    /// the signed `i64` an axis line's voxel-count field requires --
+    /// raised instead of silently wrapping via an unchecked cast.
+    DimensionOutOfRange { axis: usize, value: usize },
     /// A [`VolumetricGrid`] structural-invariant check failed (shape
     /// overflow/cap, value-count mismatch, or a non-finite field) --
     /// raised by [`write_cube`], since a hand-built `VolumetricGrid` is not
@@ -260,6 +264,10 @@ impl std::fmt::Display for CubeError {
             Self::TrailingData { after_values } => write!(
                 f,
                 "cube data block has extra values after the expected {after_values}"
+            ),
+            Self::DimensionOutOfRange { axis, value } => write!(
+                f,
+                "shape axis {axis}'s voxel count {value} exceeds i64::MAX and cannot be written as a Cube axis-line field"
             ),
             Self::Grid(e) => write!(f, "{e}"),
         }
@@ -499,17 +507,26 @@ pub fn parse_cube_with_limits(
 // Streaming reader
 // ---------------------------------------------------------------------------
 
-/// Streaming Cube-file reader over any [`std::io::BufRead`] source.
+/// Streaming-*input* Cube-file reader over any [`std::io::BufRead`] source.
 ///
 /// Unlike [`parse_cube`]/[`parse_cube_with_limits`] (which require the
 /// whole file in memory as one `&str`), `CubeFileReader` reads line-by-line
-/// directly from the source, suitable for the multi-gigabyte cube files
-/// real quantum-chemistry workflows produce for large grids: it never
-/// materializes the whole raw file text as one in-memory `String`, and
-/// header validation (the grid-point cap, the atom cap) happens *before*
+/// directly from the source rather than materializing the whole raw file
+/// text as one in-memory `String` first, suitable for the multi-gigabyte
+/// cube files real quantum-chemistry workflows produce for large grids.
+/// Header validation (the grid-point cap, the atom cap) happens *before*
 /// the voxel data block is read, so a pathological header is rejected
 /// before any large allocation is attempted. Follows the same shape as
 /// [`crate::sdf::SdfFileReader`].
+///
+/// **Only the input reading is streaming** -- [`Self::read`] still returns
+/// one fully-materialized [`VolumetricGrid`], whose `values: Vec<f64>`
+/// holds every voxel in memory at once (this is inherent to
+/// `VolumetricGrid`'s shape, not a limitation specific to this reader).
+/// What this type avoids is the *doubled* memory of first reading the
+/// entire raw text into a `String` and only then parsing it, plus giving
+/// callers a bounded-per-line read path instead of requiring
+/// `std::fs::read_to_string` up front.
 pub struct CubeFileReader<R: std::io::BufRead> {
     reader: R,
     limits: CubeParseLimits,
@@ -563,6 +580,19 @@ impl<R: std::io::BufRead> CubeFileReader<R> {
 /// docs on this convention's confidence level; numbers are emitted exactly
 /// as stored, never rescaled.
 pub fn write_cube(grid: &VolumetricGrid) -> Result<String, CubeError> {
+    // Checked before `validate()`: a shape dimension too large for the
+    // signed i64 an axis-line field requires is a distinct failure mode
+    // from "values doesn't match the shape's point count" (which, for a
+    // dimension this large, would itself require an infeasible
+    // allocation to construct a matching `values` -- this check must be
+    // reachable without one).
+    let mut signed_shape = [0i64; 3];
+    for (axis, count) in grid.shape.iter().enumerate() {
+        signed_shape[axis] = i64::try_from(*count).map_err(|_| CubeError::DimensionOutOfRange {
+            axis,
+            value: *count,
+        })?;
+    }
     grid.validate()?;
 
     let mut out = String::new();
@@ -575,11 +605,11 @@ pub fn write_cube(grid: &VolumetricGrid) -> Result<String, CubeError> {
         grid.origin[1],
         grid.origin[2]
     ));
-    for (axis, count) in grid.shape.iter().enumerate() {
+    for (axis, magnitude) in signed_shape.into_iter().enumerate() {
         let signed_count: i64 = if axis == 0 && grid.units == GridUnits::Angstrom {
-            -(*count as i64)
+            -magnitude
         } else {
-            *count as i64
+            magnitude
         };
         out.push_str(&format!(
             "{signed_count} {} {} {}\n",
@@ -779,6 +809,37 @@ Generated for chematic tests\n\
             err,
             CubeError::Grid(GridError::NonFiniteValue { .. })
         ));
+    }
+
+    #[test]
+    fn write_rejects_zero_dimension_shape() {
+        let mut grid = small_2x2x2();
+        grid.shape = [2, 0, 2];
+        grid.values = Vec::new();
+        let err = write_cube(&grid).unwrap_err();
+        assert_eq!(err, CubeError::Grid(GridError::ZeroDimension { axis: 1 }));
+    }
+
+    #[test]
+    fn write_rejects_dimension_exceeding_i64_max() {
+        let mut grid = small_2x2x2();
+        // A shape[0] this large can't be written as a signed i64 axis-line
+        // field -- must be a typed error, not a wrapped/truncated cast.
+        // This check runs (and must be reachable) before the full
+        // values.len()-matches-shape validate() check, since actually
+        // allocating a matching `values` for a shape this large is
+        // infeasible -- `values` here is deliberately left empty/
+        // mismatched.
+        let huge = i64::MAX as usize + 1;
+        grid.shape = [huge, 1, 1];
+        let err = write_cube(&grid).unwrap_err();
+        assert_eq!(
+            err,
+            CubeError::DimensionOutOfRange {
+                axis: 0,
+                value: huge
+            }
+        );
     }
 
     #[test]

@@ -91,6 +91,7 @@ pub use mrv::{
 };
 pub use opendx::{
     OpenDxError, OpenDxParseLimits, parse_opendx, parse_opendx_with_limits, write_opendx,
+    write_opendx_lossy,
 };
 pub use orca::{
     GeometryFrame, OrcaAtom, OrcaBlock, OrcaCoords, OrcaInput, OrcaInputError, OrcaOptConvergence,

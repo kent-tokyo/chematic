@@ -160,6 +160,22 @@ pub enum OpenDxError {
     /// declared (a non-numeric trailing token is treated as the start of
     /// the out-of-scope footer -- see module docs -- and is not an error).
     TrailingData { after_values: usize },
+    /// [`write_opendx`] was given a grid tagged
+    /// [`crate::volumetric::GridUnits::Bohr`]. OpenDX carries no unit tag
+    /// of its own and every real-world DX consumer (APBS included)
+    /// assumes Ångström (see module docs) -- writing Bohr-magnitude
+    /// numbers into a DX file would silently reinterpret them as Ångström
+    /// on the next read (a real, silent ~1.89x error), so the default
+    /// writer refuses rather than doing that implicitly. Use
+    /// [`write_opendx_lossy`] to opt into an explicit Bohr->Ångström
+    /// conversion instead.
+    NonAngstromUnits { units: GridUnits },
+    /// [`write_opendx`]/[`write_opendx_lossy`] was given a grid with a
+    /// non-empty `atoms` list. OpenDX has no atom section at all (see
+    /// module docs) -- there is no lossy-but-acceptable way to write atom
+    /// data into this format, so both writers refuse rather than silently
+    /// dropping it. Clear `grid.atoms` first if that loss is intentional.
+    AtomsNotSupported { count: usize },
     /// A [`VolumetricGrid`] structural-invariant check failed -- raised by
     /// [`write_opendx`], since a hand-built `VolumetricGrid` is not
     /// guaranteed to satisfy them.
@@ -207,6 +223,14 @@ impl std::fmt::Display for OpenDxError {
             Self::TrailingData { after_values } => write!(
                 f,
                 "OpenDX data block has extra numeric values after the expected {after_values}"
+            ),
+            Self::NonAngstromUnits { units } => write!(
+                f,
+                "cannot write a {units:?}-unit grid to OpenDX (which has no unit tag and is universally read as Angstrom) without an explicit conversion -- use write_opendx_lossy"
+            ),
+            Self::AtomsNotSupported { count } => write!(
+                f,
+                "OpenDX has no atom section; grid carries {count} atom(s) that would be silently dropped"
             ),
             Self::Grid(e) => write!(f, "{e}"),
         }
@@ -490,20 +514,77 @@ pub fn parse_opendx_with_limits(
 // Writer
 // ---------------------------------------------------------------------------
 
+/// CODATA 2018 Bohr radius in Angstrom, matching
+/// `qcschema.rs::BOHR_TO_ANGSTROM` (kept as a separate local constant
+/// rather than importing across format modules -- see that module for the
+/// same value's own derivation note).
+const BOHR_TO_ANGSTROM: f64 = 0.529177210903;
+
 /// Write a [`VolumetricGrid`] as an OpenDX (APBS scalar-field subset) file.
-/// `grid.atoms` is ignored (OpenDX has no atom section -- see module docs);
-/// `grid.units` is not encoded anywhere (the format has no unit field), so
-/// a round trip through this writer does not preserve a
-/// [`crate::volumetric::GridUnits::Bohr`] tag on the way back in --
-/// [`parse_opendx`] always tags a freshly-parsed grid
-/// [`crate::volumetric::GridUnits::Angstrom`], per the format's real-world
-/// convention (see module docs). The numeric values themselves are always
-/// emitted exactly as stored, never rescaled. The trailing
-/// `attribute`/`object "field is ..."` footer is always the standard
-/// boilerplate, not reconstructed from any source file.
+///
+/// Fails closed rather than silently losing information: OpenDX has no
+/// unit tag of its own (every real-world consumer, APBS included, assumes
+/// Ångström -- see module docs) and no atom section at all, so this
+/// refuses with a typed [`OpenDxError::NonAngstromUnits`] for a
+/// [`crate::volumetric::GridUnits::Bohr`] grid (writing its numbers
+/// as-is would have them silently reinterpreted as Ångström -- a real,
+/// silent ~1.89x error -- the next time the file is read) and with
+/// [`OpenDxError::AtomsNotSupported`] for a grid with any atoms (there is
+/// no lossy-but-acceptable way to write those). Use
+/// [`write_opendx_lossy`] to opt into an explicit Bohr->Ångström
+/// conversion; atoms are never silently dropped by either writer -- clear
+/// `grid.atoms` yourself first if that loss is intentional.
+///
+/// The trailing `attribute`/`object "field is ..."` footer is always the
+/// standard boilerplate, not reconstructed from any source file.
 pub fn write_opendx(grid: &VolumetricGrid) -> Result<String, OpenDxError> {
     grid.validate()?;
+    if grid.units != GridUnits::Angstrom {
+        return Err(OpenDxError::NonAngstromUnits { units: grid.units });
+    }
+    if !grid.atoms.is_empty() {
+        return Err(OpenDxError::AtomsNotSupported {
+            count: grid.atoms.len(),
+        });
+    }
+    Ok(write_opendx_body(grid, grid.origin, grid.axes))
+}
 
+/// Like [`write_opendx`], but if `grid.units` is
+/// [`crate::volumetric::GridUnits::Bohr`], explicitly converts `origin`
+/// and `axes` (length quantities) to Ångström before writing, rather than
+/// refusing. `values` (the scalar-field samples themselves -- e.g.
+/// electron density or an electrostatic potential) are **never** rescaled
+/// by this conversion: only `origin`/`axes` are lengths, and this module
+/// has no way to know what physical unit the field values are in. Still
+/// refuses with [`OpenDxError::AtomsNotSupported`] for a grid with any
+/// atoms, same as [`write_opendx`] -- the unit conversion is the only
+/// thing this function does that the default writer won't.
+pub fn write_opendx_lossy(grid: &VolumetricGrid) -> Result<String, OpenDxError> {
+    grid.validate()?;
+    if !grid.atoms.is_empty() {
+        return Err(OpenDxError::AtomsNotSupported {
+            count: grid.atoms.len(),
+        });
+    }
+    let (origin, axes) = if grid.units == GridUnits::Bohr {
+        (
+            grid.origin.map(|v| v * BOHR_TO_ANGSTROM),
+            grid.axes.map(|row| row.map(|v| v * BOHR_TO_ANGSTROM)),
+        )
+    } else {
+        (grid.origin, grid.axes)
+    };
+    Ok(write_opendx_body(grid, origin, axes))
+}
+
+/// Shared serialization body. `origin`/`axes` are passed separately
+/// (rather than read from `grid`) so [`write_opendx_lossy`] can supply a
+/// Bohr->Ångström-converted pair without cloning the rest of the grid
+/// (`values` in particular can be large). Callers must already have
+/// validated the grid and resolved the units/atoms preconditions
+/// [`write_opendx`] and [`write_opendx_lossy`] each enforce their own way.
+fn write_opendx_body(grid: &VolumetricGrid, origin: [f64; 3], axes: [[f64; 3]; 3]) -> String {
     let mut out = String::new();
     out.push_str(&format!(
         "object 1 class gridpositions counts {} {} {}\n",
@@ -511,9 +592,9 @@ pub fn write_opendx(grid: &VolumetricGrid) -> Result<String, OpenDxError> {
     ));
     out.push_str(&format!(
         "origin {} {} {}\n",
-        grid.origin[0], grid.origin[1], grid.origin[2]
+        origin[0], origin[1], origin[2]
     ));
-    for row in &grid.axes {
+    for row in &axes {
         out.push_str(&format!("delta {} {} {}\n", row[0], row[1], row[2]));
     }
     out.push_str(&format!(
@@ -540,7 +621,7 @@ pub fn write_opendx(grid: &VolumetricGrid) -> Result<String, OpenDxError> {
     out.push_str("component \"positions\" value 1\n");
     out.push_str("component \"connections\" value 2\n");
     out.push_str("component \"data\" value 3\n");
-    Ok(out)
+    out
 }
 
 // ===========================================================================
@@ -782,5 +863,71 @@ object 3 class array type double rank 0 items 8 data follows\n\
             .join("\n");
         let grid = parse_opendx(&no_footer).unwrap();
         assert_eq!(grid.shape, [2, 2, 2]);
+    }
+
+    #[test]
+    fn write_rejects_bohr_units_rather_than_silently_reinterpreting() {
+        // Writing Bohr-magnitude numbers into a format that's always read
+        // back as Angstrom would be a real, silent ~1.89x error -- the
+        // default writer must refuse, not convert or pass through.
+        let mut grid = small_2x2x2();
+        grid.units = GridUnits::Bohr;
+        let err = write_opendx(&grid).unwrap_err();
+        assert_eq!(
+            err,
+            OpenDxError::NonAngstromUnits {
+                units: GridUnits::Bohr
+            }
+        );
+    }
+
+    #[test]
+    fn write_rejects_nonempty_atoms() {
+        let mut grid = small_2x2x2();
+        grid.atoms.push(crate::volumetric::GridAtom {
+            element: chematic_core::Element::from_symbol("C").unwrap(),
+            charge: 6.0,
+            position: [0.0, 0.0, 0.0],
+        });
+        let err = write_opendx(&grid).unwrap_err();
+        assert_eq!(err, OpenDxError::AtomsNotSupported { count: 1 });
+    }
+
+    #[test]
+    fn write_lossy_converts_bohr_origin_and_axes_but_not_values() {
+        let mut grid = small_2x2x2();
+        grid.units = GridUnits::Bohr;
+        grid.origin = [1.0, 0.0, 0.0];
+        grid.axes = [[2.0, 0.0, 0.0], [0.0, 2.0, 0.0], [0.0, 0.0, 2.0]];
+        let text = write_opendx_lossy(&grid).unwrap();
+        let parsed = parse_opendx(&text).unwrap();
+        // Geometry is converted...
+        assert!((parsed.origin[0] - 1.0 * BOHR_TO_ANGSTROM).abs() < 1e-9);
+        assert!((parsed.axes[0][0] - 2.0 * BOHR_TO_ANGSTROM).abs() < 1e-9);
+        // ...but the scalar-field samples themselves are untouched (not a
+        // length quantity, so never rescaled by this conversion).
+        assert_eq!(parsed.values, grid.values);
+    }
+
+    #[test]
+    fn write_lossy_still_rejects_atoms() {
+        let mut grid = small_2x2x2();
+        grid.units = GridUnits::Bohr;
+        grid.atoms.push(crate::volumetric::GridAtom {
+            element: chematic_core::Element::from_symbol("C").unwrap(),
+            charge: 6.0,
+            position: [0.0, 0.0, 0.0],
+        });
+        let err = write_opendx_lossy(&grid).unwrap_err();
+        assert_eq!(err, OpenDxError::AtomsNotSupported { count: 1 });
+    }
+
+    #[test]
+    fn write_rejects_zero_dimension_shape() {
+        let mut grid = small_2x2x2();
+        grid.shape = [0, 2, 2];
+        grid.values = Vec::new();
+        let err = write_opendx(&grid).unwrap_err();
+        assert_eq!(err, OpenDxError::Grid(GridError::ZeroDimension { axis: 0 }));
     }
 }

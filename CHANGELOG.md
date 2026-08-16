@@ -476,19 +476,28 @@ subset) read/write support.
   than silently normalizing or silently assuming Bohr, the unit actually
   read/written is recorded explicitly and numbers are never rescaled).
   New shared `GridError` (shape overflow, over-cap, value-count mismatch,
-  non-finite field) used by both formats' writers via `VolumetricGrid::validate`.
+  zero-length dimension, non-finite field) used by both formats' writers
+  via `VolumetricGrid::validate`. `VolumetricGrid::checked_index`/`get`
+  use fully checked arithmetic for the flat-index computation (every
+  field is `pub`, so a caller can construct a shape whose product
+  overflows `usize` even though an individual `(i, j, k)` looks
+  in-bounds — this returns `None` rather than risking a panic).
 - **Gaussian Cube** (`chematic_mol::cube`): `parse_cube`/
-  `parse_cube_with_limits`/`write_cube`, plus a streaming
+  `parse_cube_with_limits`/`write_cube`, plus a streaming-*input*
   `CubeFileReader<R: BufRead>` (same shape as `SdfFileReader`) for the
   multi-gigabyte grids real quantum-chemistry workflows produce — reads
   line-by-line rather than requiring the whole file in memory as one
-  `String`, and validates the grid-point/atom caps from the header before
+  `String` (the returned `VolumetricGrid.values` is still a fully
+  in-memory `Vec<f64>` either way), and validates the grid-point/atom
+  caps from the header before
   the (potentially huge) voxel data block is read. Detects Cube's two
   real documented multi-dataset conventions (negative `NAtoms` with a
   dataset-identifier line; positive `NAtoms` with `NVal != 1`) and
   typed-rejects both (`CubeError::MultiDatasetUnsupported`) rather than
-  silently reading only the first dataset. New `CubeError`/
-  `CubeParseLimits`.
+  silently reading only the first dataset. `write_cube` checks each
+  `shape` dimension fits the signed `i64` an axis-line field requires
+  (`CubeError::DimensionOutOfRange`) instead of an unchecked/wrapping
+  `as i64` cast. New `CubeError`/`CubeParseLimits`.
 - **OpenDX/APBS scalar field** (`chematic_mol::opendx`): `parse_opendx`/
   `parse_opendx_with_limits`/`write_opendx`, scoped explicitly to the
   regular-grid rank-0 `type double` subset APBS/electrostatics tooling
@@ -498,7 +507,17 @@ subset) read/write support.
   `object 2`'s `gridconnections` counts against `object 1`'s
   `gridpositions` counts and `object 3`'s declared `items` count against
   the grid shape, both as typed mismatches rather than trusting either
-  blindly. New `OpenDxError`/`OpenDxParseLimits`.
+  blindly. `write_opendx` fails closed rather than silently losing
+  information: it refuses a `GridUnits::Bohr` grid
+  (`OpenDxError::NonAngstromUnits` — DX has no unit tag and is always read
+  back as Ångström, so writing Bohr magnitudes as-is would be a real,
+  silent ~1.89x error) and refuses a grid with any `atoms`
+  (`OpenDxError::AtomsNotSupported` — DX has no atom section, so there's
+  no lossy-but-acceptable way to write them). New `write_opendx_lossy`
+  opts into an explicit Bohr→Ångström conversion of `origin`/`axes` only
+  (never `values`, which aren't a length quantity) when that's actually
+  wanted; it still refuses non-empty `atoms`. New `OpenDxError`/
+  `OpenDxParseLimits`.
 - Both formats: checked-arithmetic overflow prevention
   (`shape[0]*shape[1]*shape[2]` never allocated before being validated
   against both `usize` overflow and the configured `ParseLimits` cap),

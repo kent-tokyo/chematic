@@ -15,7 +15,7 @@
 //!
 //! `values` is a flat `Vec<f64>` in **row-major, third-axis-fastest**
 //! order: `index = (i * shape[1] + j) * shape[2] + k` for grid coordinates
-//! `(i, j, k)` (see [`VolumetricGrid::index`]). This is not an arbitrary
+//! `(i, j, k)` (see [`VolumetricGrid::checked_index`]). This is not an arbitrary
 //! third convention -- it is the *native* storage order of both formats
 //! this module serves:
 //! - Gaussian Cube: "the x axis as the outer loop and the z axis as the
@@ -110,6 +110,11 @@ pub enum GridError {
     /// The grid-point count is within `usize` range but exceeds the
     /// caller's configured limit.
     GridTooLarge { points: usize, limit: usize },
+    /// A `shape` dimension is `0` -- a degenerate grid that no format this
+    /// module writes can represent losslessly (Cube's axis-line voxel
+    /// count must be strictly positive; a `0`-length axis leaves nothing
+    /// for this crate's own parser to read back).
+    ZeroDimension { axis: usize },
     /// `values.len()` does not equal `shape[0] * shape[1] * shape[2]`.
     ValueCountMismatch { expected: usize, found: usize },
     /// An `origin` component is NaN/Infinite.
@@ -143,6 +148,9 @@ impl std::fmt::Display for GridError {
                     f,
                     "grid has {points} points, exceeding the {limit}-point limit"
                 )
+            }
+            Self::ZeroDimension { axis } => {
+                write!(f, "shape axis {axis} has a zero-length dimension")
             }
             Self::ValueCountMismatch { expected, found } => write!(
                 f,
@@ -215,19 +223,30 @@ impl VolumetricGrid {
             .ok_or(GridError::ShapeOverflow { shape: self.shape })
     }
 
-    /// Flat index into `values` for grid coordinates `(i, j, k)`. See
-    /// module docs for why the third axis (`k`) varies fastest.
-    pub fn index(&self, i: usize, j: usize, k: usize) -> usize {
-        (i * self.shape[1] + j) * self.shape[2] + k
-    }
-
-    /// The value at grid coordinates `(i, j, k)`, or `None` if out of
-    /// bounds.
-    pub fn get(&self, i: usize, j: usize, k: usize) -> Option<f64> {
+    /// Flat index into `values` for grid coordinates `(i, j, k)`, or `None`
+    /// if the coordinates are out of bounds *or* the index arithmetic
+    /// itself would overflow `usize`. Every `VolumetricGrid` field is
+    /// `pub`, so a caller can construct a grid whose `shape` product
+    /// overflows `usize` even though any individual `(i, j, k)` looks
+    /// in-bounds -- this is checked arithmetic throughout specifically so
+    /// that case can never panic. See module docs for why the third axis
+    /// (`k`) varies fastest.
+    pub fn checked_index(&self, i: usize, j: usize, k: usize) -> Option<usize> {
         if i >= self.shape[0] || j >= self.shape[1] || k >= self.shape[2] {
             return None;
         }
-        self.values.get(self.index(i, j, k)).copied()
+        i.checked_mul(self.shape[1])?
+            .checked_add(j)?
+            .checked_mul(self.shape[2])?
+            .checked_add(k)
+    }
+
+    /// The value at grid coordinates `(i, j, k)`, or `None` if out of
+    /// bounds (or, per [`Self::checked_index`], if the index arithmetic
+    /// would overflow).
+    pub fn get(&self, i: usize, j: usize, k: usize) -> Option<f64> {
+        let idx = self.checked_index(i, j, k)?;
+        self.values.get(idx).copied()
     }
 
     /// Validate structural invariants: the shape doesn't overflow,
@@ -237,6 +256,11 @@ impl VolumetricGrid {
     /// only a grid produced by this module's own parsers is guaranteed to
     /// satisfy these already.
     pub fn validate(&self) -> Result<(), GridError> {
+        for (axis, dim) in self.shape.iter().enumerate() {
+            if *dim == 0 {
+                return Err(GridError::ZeroDimension { axis });
+            }
+        }
         let expected = self.point_count()?;
         if self.values.len() != expected {
             return Err(GridError::ValueCountMismatch {
@@ -390,12 +414,25 @@ mod tests {
     fn index_matches_third_axis_fastest_ordering() {
         let g = tiny_grid();
         // (i, j, k) -> (i*2 + j)*2 + k
-        assert_eq!(g.index(0, 0, 0), 0);
-        assert_eq!(g.index(0, 0, 1), 1);
-        assert_eq!(g.index(0, 1, 0), 2);
-        assert_eq!(g.index(1, 0, 0), 4);
+        assert_eq!(g.checked_index(0, 0, 0), Some(0));
+        assert_eq!(g.checked_index(0, 0, 1), Some(1));
+        assert_eq!(g.checked_index(0, 1, 0), Some(2));
+        assert_eq!(g.checked_index(1, 0, 0), Some(4));
         assert_eq!(g.get(1, 0, 0), Some(4.0));
         assert_eq!(g.get(2, 0, 0), None);
+    }
+
+    #[test]
+    fn get_on_overflowing_shape_returns_none_not_panic() {
+        // Every field is `pub`, so a caller can hand-build a grid whose
+        // shape product overflows usize even though (i, j, k) itself looks
+        // in-bounds -- checked_index/get must return None, never panic via
+        // the internal multiply.
+        let mut g = tiny_grid();
+        g.shape = [usize::MAX, usize::MAX, 2];
+        g.values = Vec::new();
+        assert_eq!(g.checked_index(1, 1, 1), None);
+        assert_eq!(g.get(1, 1, 1), None);
     }
 
     #[test]
@@ -406,6 +443,14 @@ mod tests {
             g.point_count(),
             Err(GridError::ShapeOverflow { shape: g.shape })
         );
+    }
+
+    #[test]
+    fn validate_rejects_zero_dimension() {
+        let mut g = tiny_grid();
+        g.shape = [0, 2, 2];
+        g.values = Vec::new();
+        assert_eq!(g.validate(), Err(GridError::ZeroDimension { axis: 0 }));
     }
 
     #[test]
