@@ -37,14 +37,22 @@ conformer writers, building on the generalized stereo geometry foundation
   real coordinates before writing — never fabricating a conformer from
   nothing, never silently trusting a mismatch — and fail closed with a
   typed `MolStereoWriteError` otherwise. The pre-existing, more commonly
-  used writers (`write_mol`, `write_mol_with_coords`,
-  `write_mol_with_conformer`, `write_mol_v3000`,
-  `write_mol_v3000_with_conformer`, and the whole `write_sdf*` family)
-  are **unchanged and still silently drop `Chirality::SquarePlanar`** —
-  each now carries a Rustdoc warning saying so and pointing at its
+  used writers are unchanged, but fall into two different gaps — each now
+  carries a Rustdoc warning naming its specific one and pointing at its
   `_checked` counterpart where one exists. Do not describe MOL/SDF
   writing in general as "square-planar supported"; only the three
   `_checked` functions above are.
+  - **2D-only, so they drop the tag outright**: `write_mol`,
+    `write_mol_with_coords`, `write_mol_v3000`, and the whole `write_sdf*`
+    family (`write_sdf`, `write_sdf_with_charges`, `write_sdf_record`,
+    `write_sdf_record_v3000`) — none of these has a z coordinate to write
+    a square-planar tag against in the first place.
+  - **3D-capable but unvalidated**: `write_mol_with_conformer`,
+    `write_mol_v3000_with_conformer`, and `write_sdf_record_with_conformer`
+    write whatever conformer they're handed and so *do* preserve the tag
+    when the conformer actually matches it — but they trust the caller and
+    never check, so a mismatched or flat conformer is written silently
+    self-inconsistent with no error.
   Explicitly out of scope: pure-2D wedge-only square-planar encoding (no
   such MDL mechanism exists), 3-heavy + implicit-H square-planar centers,
   and a chematic-specific lossless SDF extension (Tier 3, not built).
