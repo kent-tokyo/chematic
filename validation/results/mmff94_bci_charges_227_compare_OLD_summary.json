@@ -1,0 +1,95 @@
+{
+  "label": "OLD_unmodified_main",
+  "molecules_compared": 264,
+  "atoms_compared": 6693,
+  "atoms_exact_match": 5006,
+  "atoms_mismatched": 1687,
+  "molecules_with_any_mismatch": 206,
+  "mean_abs_diff": 0.018945704467353972,
+  "median_abs_diff": 0.0,
+  "p90_abs_diff": 0.07640000000000013,
+  "p99_abs_diff": 0.239,
+  "max_abs_diff": 1.0,
+  "top_20_mismatched_molecules": [
+    {
+      "molecule": "B:chembl_tier_b_0080",
+      "max_abs_diff": 1.0
+    },
+    {
+      "molecule": "B:chembl_tier_b_0159",
+      "max_abs_diff": 0.548
+    },
+    {
+      "molecule": "B:chembl_tier_b_0161",
+      "max_abs_diff": 0.5
+    },
+    {
+      "molecule": "B:chembl_tier_b_0000",
+      "max_abs_diff": 0.2584000000000002
+    },
+    {
+      "molecule": "B:chembl_tier_b_0001",
+      "max_abs_diff": 0.2584000000000002
+    },
+    {
+      "molecule": "B:chembl_tier_b_0003",
+      "max_abs_diff": 0.2584000000000002
+    },
+    {
+      "molecule": "B:chembl_tier_b_0004",
+      "max_abs_diff": 0.2584000000000002
+    },
+    {
+      "molecule": "B:chembl_tier_b_0005",
+      "max_abs_diff": 0.2584000000000002
+    },
+    {
+      "molecule": "B:chembl_tier_b_0006",
+      "max_abs_diff": 0.2584000000000002
+    },
+    {
+      "molecule": "B:chembl_tier_b_0007",
+      "max_abs_diff": 0.2584000000000002
+    },
+    {
+      "molecule": "B:chembl_tier_b_0008",
+      "max_abs_diff": 0.2584000000000002
+    },
+    {
+      "molecule": "B:chembl_tier_b_0010",
+      "max_abs_diff": 0.2584000000000002
+    },
+    {
+      "molecule": "B:chembl_tier_b_0011",
+      "max_abs_diff": 0.2584000000000002
+    },
+    {
+      "molecule": "B:chembl_tier_b_0016",
+      "max_abs_diff": 0.2584000000000002
+    },
+    {
+      "molecule": "B:chembl_tier_b_0018",
+      "max_abs_diff": 0.2584000000000002
+    },
+    {
+      "molecule": "B:chembl_tier_b_0021",
+      "max_abs_diff": 0.2584000000000002
+    },
+    {
+      "molecule": "B:chembl_tier_b_0033",
+      "max_abs_diff": 0.2584000000000002
+    },
+    {
+      "molecule": "B:chembl_tier_b_0054",
+      "max_abs_diff": 0.2584000000000002
+    },
+    {
+      "molecule": "B:chembl_tier_b_0055",
+      "max_abs_diff": 0.2584000000000002
+    },
+    {
+      "molecule": "B:chembl_tier_b_0056",
+      "max_abs_diff": 0.2584000000000002
+    }
+  ]
+}

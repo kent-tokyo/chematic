@@ -48,6 +48,24 @@ fix) — see the PR body / `validation/results/` for the full report.
   reviewer follow-up test uses). Full writeup:
   `scripts/mmff94_provenance/PROVENANCE.md`'s Charges/BCI entry.
 
+### Measured — 3-state `embed_pipeline_v2` quality re-measurement (`pipeline_v2_mmff94_strict`)
+
+- Fresh measurement (not reused from any older commit) at State 1 (`c079926`,
+  v0.16.0 release, pre-torsion-fix), State 2 (`a2baac4`, post-torsion-fix
+  main, pre-BCI-fix), State 3 (this PR, post-both-fixes). `pipeline_v2_mmff94_strict`
+  success: 240/265 → 241/265 → 241/265; RMSD (symmetric, vs
+  `rdkit_etkdgv3_mmff94`) mean 1.698 → 1.685 → 1.685 Å; TFD mean 0.2245 →
+  0.2233 → 0.2228; 0 regressions on every pairwise per-molecule join.
+- 62-molecule torsion-fix subset (State 1 → State 2): **both coverage and
+  geometry quality improved together** (+1 success, RMSD mean 1.156 → 1.115
+  Å, coverage@2.0Å 77.4% → 82.3%) — not a coverage-only gain.
+- 206-molecule BCI-fix-affected subset (State 2 → State 3): coverage
+  unaffected (structural — charges don't gate this policy), aggregate
+  RMSD/TFD flat/noise-level (mean RMSD delta −0.0009 Å), one isolated new
+  stereo violation (`chembl_tier_b_0082`).
+- Full report: `validation/results/mmff94_bci_gap_227_phase2_report.md`
+  (+ `_summary.json`, raw per-state dumps, per-molecule transition tables).
+
 ---
 
 Issue #227 Phase 1: MMFF94 torsion parameter coverage gap, root-caused and
