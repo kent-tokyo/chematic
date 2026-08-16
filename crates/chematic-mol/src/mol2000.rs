@@ -231,9 +231,26 @@ fn signed_volume3(p1: Point3, p2: Point3, p3: Point3, p4: Point3) -> f64 {
 /// synthetic H position needed -- the triple product of the 3 real bond
 /// vectors from the center already carries full parity) for a 3-heavy +
 /// implicit-H center. Only ever consulted when a wedge/hash bond was
-/// actually present (`atom.chirality != Chirality::None`), so this never
+/// actually present (`atom.chirality.is_tetrahedral()`), so this never
 /// fires on the common case of a real 3D SDF record with no wedge notation
 /// at all.
+///
+/// Gated on [`chematic_core::Chirality::is_tetrahedral`], not `!=
+/// Chirality::None`: the computation below assumes a tetrahedral shape (it
+/// only ever produces `Chirality::Clockwise`/`CounterClockwise` and compares
+/// that against `atom.chirality`), so any non-tetrahedral-but-non-`None`
+/// chirality (e.g. `Chirality::SquarePlanar`, produced by this crate's own
+/// MOL/SDF readers as of this file's `perceive_square_planar_from_3d`) must
+/// be excluded up front rather than coerced through a check that can only
+/// ever disagree with it. `is_tetrahedral()` is an allowlist (`true` only
+/// for the two known-tetrahedral variants), which makes this fix
+/// exhaustive-match safe by construction: any future non-tetrahedral
+/// geometry this crate adds later (trigonal-bipyramidal, octahedral --
+/// sketched but unimplemented in `chematic_core::stereo_geometry`) is
+/// automatically excluded too, without a new arm here. Same
+/// equality-vs-exhaustive-match bug shape fixed twice before in this
+/// project's history (`chematic-3d/src/stereo_constraints.rs`,
+/// `chematic-chem/src/cip.rs`).
 pub(crate) fn wedge_vs_3d_conflicts(
     mol: &Molecule,
     conformer: &Coords3D,
@@ -242,7 +259,7 @@ pub(crate) fn wedge_vs_3d_conflicts(
     let get = |a: u32| conformer.points.get(a as usize).copied();
 
     for (idx, atom) in mol.atoms() {
-        if atom.chirality == Chirality::None {
+        if !atom.chirality.is_tetrahedral() {
             continue;
         }
         let Some(order) = mol.stereo_neighbor_order(idx) else {
