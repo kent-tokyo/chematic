@@ -3072,6 +3072,131 @@ def iter_sdf_str(content: str) -> SdfIter:
     ...
 
 # ---------------------------------------------------------------------------
+# Crystal (chematic-crystal bindings) — Lattice / PeriodicStructure / Site
+# ---------------------------------------------------------------------------
+
+class CifSymmetryStatus:
+    """How a CIF's declared symmetry relates to a PeriodicStructure's sites.
+
+    ``is_p1=False`` means the source CIF declared symmetry beyond P1 that
+    chematic's CIF adapter did not expand — the structure's ``sites`` are
+    only the asymmetric unit, not a full unit cell.
+    """
+
+    is_p1: bool
+    space_group_name: Optional[str]
+    operation_count: int
+
+    def __repr__(self) -> str: ...
+
+class PeriodicNeighbor:
+    """One periodic neighbor relationship from ``PeriodicStructure.neighbors()``."""
+
+    center_index: int
+    neighbor_index: int
+    image: tuple[int, int, int]
+    displacement: tuple[float, float, float]
+    distance: float
+
+    def __repr__(self) -> str: ...
+
+class Site:
+    """A periodic site: one or more ``(element_symbol, occupancy)`` species
+    (more than one models disorder), a fractional position, and an optional
+    label.
+    """
+
+    def __new__(
+        cls,
+        species: list[tuple[str, float]],
+        fractional: tuple[float, float, float],
+        label: Optional[str] = None,
+    ) -> Site:
+        """Construct a validated site.
+
+        Raises:
+            ValueError: unknown element symbol, non-finite/negative
+                occupancy, occupancy sum over 1.0 (+ tolerance), empty
+                species list, or non-finite fractional position.
+        """
+        ...
+
+    @property
+    def species(self) -> list[tuple[str, float]]: ...
+    @property
+    def fractional(self) -> tuple[float, float, float]: ...
+    @property
+    def label(self) -> Optional[str]: ...
+    def __repr__(self) -> str: ...
+
+class Lattice:
+    """A validated 3x3 lattice matrix (rows = lattice vectors a, b, c)."""
+
+    @staticmethod
+    def from_matrix(matrix: list[list[float]]) -> Lattice: ...
+    @staticmethod
+    def from_parameters(
+        a: float, b: float, c: float, alpha: float, beta: float, gamma: float
+    ) -> Lattice: ...
+    @staticmethod
+    def cubic(a: float) -> Lattice: ...
+    @staticmethod
+    def orthorhombic(a: float, b: float, c: float) -> Lattice: ...
+    @property
+    def matrix(self) -> ndarray: ...
+    @property
+    def inverse_matrix(self) -> ndarray: ...
+    @property
+    def reciprocal_matrix(self) -> ndarray: ...
+    @property
+    def volume(self) -> float: ...
+    @property
+    def lengths(self) -> tuple[float, float, float]: ...
+    @property
+    def angles_degrees(self) -> tuple[float, float, float]: ...
+    def frac_to_cart(self, point: tuple[float, float, float]) -> tuple[float, float, float]: ...
+    def cart_to_frac(self, point: tuple[float, float, float]) -> tuple[float, float, float]: ...
+    def __repr__(self) -> str: ...
+
+class PeriodicStructure:
+    """A periodic structure: a Lattice plus an ordered list of Sites.
+
+    Immutable by convention — ``wrap_into_cell()``/``make_supercell()``
+    return a new ``PeriodicStructure`` rather than mutating in place.
+
+    Example::
+
+        s = chematic.PeriodicStructure.from_cif(cif_text)
+        s.lattice.volume
+        s.cartesian_positions()
+        s.neighbors(cutoff=3.0)
+        s.make_supercell((2, 2, 2)).to_cif()
+    """
+
+    def __new__(cls, lattice: Lattice, sites: list[Site]) -> PeriodicStructure: ...
+    @staticmethod
+    def from_cif(text: str) -> PeriodicStructure: ...
+    @staticmethod
+    def from_poscar(text: str) -> PeriodicStructure: ...
+    @property
+    def lattice(self) -> Lattice: ...
+    @property
+    def sites(self) -> list[Site]: ...
+    def site_count(self) -> int: ...
+    def cartesian_positions(self) -> ndarray: ...
+    def fractional_positions(self) -> ndarray: ...
+    def neighbors(self, cutoff: float) -> list[PeriodicNeighbor]: ...
+    def make_supercell(self, mult: tuple[int, int, int]) -> PeriodicStructure: ...
+    def wrap_into_cell(self) -> PeriodicStructure: ...
+    @property
+    def symmetry_status(self) -> Optional[CifSymmetryStatus]: ...
+    @property
+    def formula(self) -> str: ...
+    def to_cif(self) -> str: ...
+    def to_poscar(self) -> str: ...
+    def __repr__(self) -> str: ...
+
+# ---------------------------------------------------------------------------
 # bulk submodule
 # ---------------------------------------------------------------------------
 

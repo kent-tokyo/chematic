@@ -300,6 +300,69 @@ data). LAMMPS data/dump and Gaussian Cube/OpenDX (a shared
   dummy/point-charge atom designations, full normal-mode vectors, and
   semantic (only verbatim) parsing of `* int` Z-matrix coordinate blocks.
 
+### Added — `chematic-py` (Python bindings for `chematic-crystal`)
+
+- Roadmap step 3: `PeriodicStructure`/`Lattice`/`Site` are now exposed to
+  Python (`pip install chematic`), the first host-language binding for
+  `chematic-crystal` (no WASM binding exists yet). New `crystal.rs`
+  module, following this crate's existing flat-module/`PyValueError`/
+  `IntoPyArray` conventions rather than inventing new ones.
+
+  ```python
+  from chematic import PeriodicStructure, Lattice, Site
+
+  s = PeriodicStructure.from_cif(cif_text)
+  s.lattice.volume
+  s.sites[0].species          # [(element_symbol, occupancy), ...] -- disorder preserved, never collapsed
+  s.cartesian_positions()     # (N, 3) numpy array
+  s.neighbors(cutoff=3.0)
+  s.make_supercell((2, 2, 2)).to_cif()
+  s.wrap_into_cell()
+  s.formula                   # occupancy-weighted, unreduced Hill-order string
+  PeriodicStructure.from_poscar(poscar_text).to_poscar()
+  ```
+
+  Design decisions (see the PR body for full reasoning):
+  - **Immutable wrappers**, matching the Rust side: no setters;
+    `wrap_into_cell()`/`make_supercell()` return a new `PeriodicStructure`.
+    No `__eq__`/pickling support added (matches this crate's existing
+    baseline: only `__repr__`/`__str__` exist anywhere in `chematic-py`
+    today).
+  - **Disorder is never collapsed** — `Site.species` is always the full
+    `list[(element_symbol, occupancy)]`, even for a single-species site.
+  - Every Python-facing constructor (`Site()`, `PeriodicStructure()`,
+    `Lattice.from_matrix`/`from_parameters`/`cubic`/`orthorhombic`) routes
+    through the Rust side's own fallible constructors — no parallel
+    validation logic, so a Python caller cannot construct a structure that
+    violates the Rust invariants (occupancy sums, coordinate finiteness,
+    degenerate/singular lattices, ...); every `CrystalError`/
+    `CifPeriodicError`/`PoscarError` surfaces as a typed `ValueError` with
+    the Rust error's own message.
+  - `PeriodicStructure.symmetry_status` surfaces `CifSymmetryStatus`
+    (`is_p1`/`space_group_name`/`operation_count`) for any `from_cif`-sourced
+    structure — and `to_cif()` now **raises `ValueError`** rather than
+    silently re-emitting a false `P 1` declaration when the source CIF
+    declared symmetry this parser doesn't expand (a write-path gap the
+    Rust-level `chematic-mol` adapter itself doesn't guard; this binding
+    adds the check rather than changing that crate's public API). The
+    status (and the `to_cif` guard) survive `wrap_into_cell()` and
+    `make_supercell()` — the asymmetric-unit problem doesn't go away
+    under either transform.
+  - `PoscarDocument`'s extra fields (`selective_dynamics`, `velocities`,
+    `predictor_corrector`, `comment`) are not exposed as individual Python
+    attributes in this first version, but are kept internally so a bare
+    `from_poscar()` -> `to_poscar()` round trip (no intervening transform)
+    reproduces them faithfully; `make_supercell()` clears them (site count
+    changes, so their per-site correspondence would break) while
+    `wrap_into_cell()` preserves them (site count/order unchanged).
+  - New `formula` property: Hill-order (C, H, then alphabetical),
+    occupancy-weighted, **unreduced** cell content (a 2x2x2 NaCl supercell
+    reports `"Cl8Na8"`, not `"NaCl"`).
+  - Dependency wiring: `chematic-crystal` added as a `chematic-py`
+    dependency; `chematic-mol`'s existing `crystal` feature (the CIF <->
+    `PeriodicStructure` adapter) is now enabled on the `chematic-py` ->
+    `chematic-mol` edge.
+
 ---
 
 ## [0.16.0] — 2026-08-15
