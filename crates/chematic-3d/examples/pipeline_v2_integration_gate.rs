@@ -461,6 +461,7 @@ fn fake_result_for_raw_dg(mol: &Molecule, coords: Coords3D) -> PipelineV2Result 
             starting_geometry: None,
         },
         final_stereo: stereo,
+        post_minimization_stereo_repair: None,
         final_validation: FinalGeometryValidation {
             all_finite: coords.is_finite(),
             atom_count_unchanged: true,

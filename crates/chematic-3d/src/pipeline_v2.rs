@@ -294,6 +294,11 @@ pub struct StageTimings {
     pub stereo_verify_after_repair_ms: u64,
     pub force_field_ms: u64,
     pub final_stereo_verify_ms: u64,
+    /// Time spent in the post-minimization repair-and-reverify attempt
+    /// (issue #227 Phase 2). `0` unless `StereoPolicy::RepairAndVerify` AND
+    /// stage 11 found a violation the force field introduced -- see
+    /// [`PipelineV2Result::post_minimization_stereo_repair`].
+    pub post_min_stereo_repair_ms: u64,
     pub final_validation_ms: u64,
     pub total_ms: u64,
 }
@@ -407,6 +412,24 @@ pub struct PipelineV2Result {
     pub stereo_after_repair: StereoVerification,
     pub force_field: PolicyMinimizeResult,
     pub final_stereo: StereoVerification,
+    /// `Some(..)` iff `StereoPolicy::RepairAndVerify` AND force-field
+    /// minimization (stage 10) introduced a stereo violation that stage 8's
+    /// pre-minimization repair never had a chance to see (issue #227 Phase
+    /// 2: MMFF94 minimization has no notion of declared stereo and can walk
+    /// a fully-satisfied geometry back across a declared E/Z or tetrahedral
+    /// boundary -- the same class already documented for
+    /// `chembl_tier_b_0076`/`chembl_tier_b_0083` in this module's own
+    /// judgment-call notes above). When present, `coords`/`final_stereo`
+    /// above already reflect the SUCCESSFUL post-repair, re-verified,
+    /// re-soundness-checked geometry -- this field is only ever `Some` on a
+    /// call that recovered; a repair attempt that failed, didn't clear every
+    /// violation, or produced an unsound geometry falls through to
+    /// `PipelineV2FailureCause::FinalStereoViolation` exactly as before this
+    /// field existed (`force_field.coords`/`force_field`'s other fields
+    /// still show the FORCE FIELD's own unmodified output, never the
+    /// repaired geometry -- this field is the one place the repair is
+    /// visible).
+    pub post_minimization_stereo_repair: Option<StereoRepairSummary>,
     pub final_validation: FinalGeometryValidation,
     pub elapsed_ms_by_stage: StageTimings,
 }
@@ -469,6 +492,15 @@ pub struct PipelineV2Failure {
     pub stereo_after_repair: Option<StereoVerification>,
     pub force_field: Option<PolicyMinimizeResult>,
     pub final_stereo: Option<StereoVerification>,
+    /// See [`PipelineV2Result::post_minimization_stereo_repair`]. On a
+    /// *failed* call this is only ever `Some` when a repair was attempted
+    /// but rejected (didn't fully clear every violation, or the result was
+    /// unsound) -- `failures` on the summary is empty either way (the
+    /// mechanism's own per-element failure reasons aren't captured here,
+    /// only that the overall attempt didn't recover); a repair that was
+    /// never attempted (wrong policy, or stage 11 had no violation to begin
+    /// with) leaves this `None`.
+    pub post_minimization_stereo_repair: Option<StereoRepairSummary>,
     pub final_validation: Option<FinalGeometryValidation>,
     pub elapsed_ms_by_stage: StageTimings,
 }
@@ -489,6 +521,7 @@ impl PipelineV2Failure {
             stereo_after_repair: None,
             force_field: None,
             final_stereo: None,
+            post_minimization_stereo_repair: None,
             final_validation: None,
             elapsed_ms_by_stage: timings,
         }
@@ -517,6 +550,7 @@ struct Evidence {
     stereo_after_repair: Option<StereoVerification>,
     force_field: Option<PolicyMinimizeResult>,
     final_stereo: Option<StereoVerification>,
+    post_minimization_stereo_repair: Option<StereoRepairSummary>,
     final_validation: Option<FinalGeometryValidation>,
 }
 
@@ -539,6 +573,7 @@ impl Evidence {
         failure.stereo_after_repair = self.stereo_after_repair.clone();
         failure.force_field = self.force_field.clone();
         failure.final_stereo = self.final_stereo.clone();
+        failure.post_minimization_stereo_repair = self.post_minimization_stereo_repair.clone();
         failure.final_validation = self.final_validation.clone();
         failure
     }
@@ -899,18 +934,71 @@ pub fn embed_pipeline_v2(
     // `VerifyOnly`'s "Violated => failure" and the strict-Unevaluable check fire).
     // -----------------------------------------------------------------
     let t0 = Instant::now();
-    let final_stereo = verify_stereo(mol, &force_field.coords);
+    let mut final_stereo = verify_stereo(mol, &force_field.coords);
     timings.final_stereo_verify_ms = t0.elapsed().as_millis() as u64;
     evidence.final_stereo = Some(final_stereo.clone());
+    // Output geometry from here on -- starts as the force field's own,
+    // unmodified result; only ever reassigned by a SUCCESSFUL post-
+    // minimization repair-and-reverify below. `force_field.coords` itself is
+    // never mutated, so `evidence.force_field`/`PipelineV2Result::force_field`
+    // keep showing exactly what the force field produced.
+    let mut out_coords = force_field.coords.clone();
+    let mut post_min_repair: Option<StereoRepairSummary> = None;
 
     if config.stereo_policy != StereoPolicy::Ignore {
         if final_stereo.n_violations() > 0 {
-            timings.total_ms = overall_start.elapsed().as_millis() as u64;
-            return Err(evidence.fail(
-                PipelineV2FailureCause::FinalStereoViolation,
-                PipelineStage::FinalStereoVerify,
-                timings,
-            ));
+            // Issue #227 Phase 2: MMFF94/UFF minimization has no notion of
+            // declared stereo (see this module's own judgment-call notes
+            // above on `chembl_tier_b_0076`/`chembl_tier_b_0083`) and can
+            // walk a geometry that was fully satisfied at stage 9 back
+            // across a declared E/Z or tetrahedral boundary. Stage 8's
+            // repair runs too early to ever see a violation minimization
+            // itself introduces. `RepairAndVerify` gets exactly one more
+            // repair attempt here, on the post-minimization geometry --
+            // accepted ONLY if the repair mechanism succeeds, the
+            // re-verified result has zero violations, AND the repaired
+            // geometry is still sound (`repair_stereo` is a rigid local
+            // reflection that preserves bond lengths by construction, but
+            // re-checked here rather than assumed -- see
+            // `mmff94_bci_stereo_drift_diagnostic_227.rs` for the empirical
+            // check this mirrors: worst_bond_length_ratio and clash count
+            // both unchanged by the reflection on the case that motivated
+            // this). Any rejection (repair itself fails, doesn't clear
+            // every violation, or produces an unsound geometry) falls
+            // through to the ORIGINAL `FinalStereoViolation` failure,
+            // unchanged from before this existed. Never attempted under
+            // `VerifyOnly`/`Ignore` -- this is additive recovery for
+            // `RepairAndVerify`'s own contract, not a change to what other
+            // policies gate on.
+            let repair_t0 = Instant::now();
+            if config.stereo_policy == StereoPolicy::RepairAndVerify
+                && let Ok(outcome) = repair_stereo(mol, &force_field.coords)
+            {
+                let reverified = verify_stereo(mol, &outcome.coords);
+                let sound_after = outcome.coords.is_finite()
+                    && worst_bond_length(mol, &outcome.coords) <= MAX_SANE_BOND_LENGTH;
+                if reverified.n_violations() == 0 && sound_after {
+                    post_min_repair = Some(StereoRepairSummary {
+                        repaired: outcome.repaired,
+                        failures: Vec::new(),
+                    });
+                    out_coords = outcome.coords;
+                    final_stereo = reverified;
+                }
+            }
+            timings.post_min_stereo_repair_ms = repair_t0.elapsed().as_millis() as u64;
+
+            if post_min_repair.is_none() {
+                timings.total_ms = overall_start.elapsed().as_millis() as u64;
+                return Err(evidence.fail(
+                    PipelineV2FailureCause::FinalStereoViolation,
+                    PipelineStage::FinalStereoVerify,
+                    timings,
+                ));
+            }
+            evidence.final_stereo = Some(final_stereo.clone());
+            evidence.post_minimization_stereo_repair = post_min_repair.clone();
+            evidence.last_known_coords = Some(out_coords.clone());
         }
         if config.fail_on_unevaluable_stereo && final_stereo.n_unevaluable() > 0 {
             timings.total_ms = overall_start.elapsed().as_millis() as u64;
@@ -927,26 +1015,23 @@ pub fn embed_pipeline_v2(
     // Stage 12: final geometry validation.
     // -----------------------------------------------------------------
     let t0 = Instant::now();
-    let torsion_energy_after = match evaluate_torsion_energy(
-        mol,
-        &force_field.coords,
-        &torsion_knowledge_report.potentials,
-    ) {
-        Ok(r) => r.total_energy,
-        Err(_) => {
-            // Only reachable if the force field somehow changed the atom count or
-            // produced an out-of-range index -- a genuine internal-consistency
-            // bug, not an ordinary chemistry failure, so it fails closed here
-            // rather than silently reporting a stale/zero energy.
-            timings.final_validation_ms = t0.elapsed().as_millis() as u64;
-            timings.total_ms = overall_start.elapsed().as_millis() as u64;
-            return Err(evidence.fail(
-                PipelineV2FailureCause::FinalGeometryInvalid,
-                PipelineStage::FinalGeometryValidationStage,
-                timings,
-            ));
-        }
-    };
+    let torsion_energy_after =
+        match evaluate_torsion_energy(mol, &out_coords, &torsion_knowledge_report.potentials) {
+            Ok(r) => r.total_energy,
+            Err(_) => {
+                // Only reachable if the force field somehow changed the atom count or
+                // produced an out-of-range index -- a genuine internal-consistency
+                // bug, not an ordinary chemistry failure, so it fails closed here
+                // rather than silently reporting a stale/zero energy.
+                timings.final_validation_ms = t0.elapsed().as_millis() as u64;
+                timings.total_ms = overall_start.elapsed().as_millis() as u64;
+                return Err(evidence.fail(
+                    PipelineV2FailureCause::FinalGeometryInvalid,
+                    PipelineStage::FinalGeometryValidationStage,
+                    timings,
+                ));
+            }
+        };
 
     let ring_closure_delta = torsion_optimization_report
         .as_ref()
@@ -955,7 +1040,7 @@ pub fn embed_pipeline_v2(
 
     let final_validation = compute_final_validation(
         mol,
-        &force_field.coords,
+        &out_coords,
         &final_stereo,
         torsion_energy_after,
         ring_closure_delta,
@@ -983,7 +1068,7 @@ pub fn embed_pipeline_v2(
 
     timings.total_ms = overall_start.elapsed().as_millis() as u64;
     Ok(PipelineV2Result {
-        coords: force_field.coords.clone(),
+        coords: out_coords,
         embed_stats,
         bound_adjustment_report,
         torsion_knowledge_report,
@@ -994,6 +1079,7 @@ pub fn embed_pipeline_v2(
         stereo_after_repair,
         force_field,
         final_stereo,
+        post_minimization_stereo_repair: post_min_repair,
         final_validation,
         elapsed_ms_by_stage: timings,
     })
@@ -1851,39 +1937,147 @@ mod tests {
         );
     }
 
-    /// Negative control (spec §17), using a REAL molecule found by the integration
-    /// gate harness (`examples/pipeline_v2_integration_gate.rs`) to exercise exactly
-    /// this failure mode on the frozen 58-molecule corpus: under
-    /// `RepairAndVerify` + `ForceFieldPolicy::Dreiding`, gly-ala-gly's stereo repair
-    /// succeeds (stage 8) but DREIDING minimization (stage 10, no stereo awareness
-    /// at all) measurably walks the geometry back across a declared stereo boundary
-    /// -- stage 11 must catch this as `FinalStereoViolation`, never report success.
+    /// Was `negative_control_final_stereo_violation_as_success_would_be_caught`
+    /// (spec §17), using a REAL molecule found by the integration gate harness
+    /// (`examples/pipeline_v2_integration_gate.rs`): under `RepairAndVerify` +
+    /// `ForceFieldPolicy::Dreiding`, gly-ala-gly's stereo repair succeeds (stage 8)
+    /// but DREIDING minimization (stage 10, no stereo awareness at all) measurably
+    /// walks the geometry back across a declared stereo boundary. At the time this
+    /// test was written, stage 11 had no way to recover from that and correctly
+    /// caught it as `FinalStereoViolation` -- this test asserted exactly that.
+    ///
+    /// Issue #227 Phase 2 added a post-minimization repair-and-reverify step
+    /// (immediately below stage 11's violation check, `RepairAndVerify` only) for
+    /// precisely this failure shape -- stage 8's repair runs too early to see a
+    /// violation minimization itself introduces, so `RepairAndVerify` now gets one
+    /// more repair attempt on the POST-minimization geometry, accepted only if it
+    /// fully clears every violation and the repaired geometry is still sound. For
+    /// this exact molecule/config, that new step succeeds (empirically confirmed via
+    /// `mmff94_bci_stereo_drift_diagnostic_227.rs` before this test was written:
+    /// `repair_stereo` recovers a robustly-satisfied geometry -179.7° from the
+    /// declared-boundary, `worst_bond_length_ratio`/`gross_clash_count` both
+    /// unchanged by the reflection) -- so the old premise ("this case is
+    /// unrecoverable") no longer holds. Updated to assert the new, correct, more
+    /// precise behavior instead: not just "does it fail," but "does it recover, and
+    /// is the recovery genuinely visible in the evidence."
     #[test]
-    fn negative_control_final_stereo_violation_as_success_would_be_caught() {
+    fn repair_and_verify_recovers_post_minimization_stereo_violation() {
         let mol = parse("NCC(=O)N[C@@H](C)C(=O)NCC(=O)O").unwrap(); // gly_ala_gly
         let mut config = PipelineV2Config::minimal(ForceFieldPolicy::Dreiding);
         config.stereo_policy = StereoPolicy::RepairAndVerify;
-        let err = embed_pipeline_v2(&mol, &config)
-            .expect_err("gly_ala_gly under RepairAndVerify+Dreiding must NOT report success");
-        assert!(
-            matches!(err.cause, PipelineV2FailureCause::FinalStereoViolation),
-            "expected FinalStereoViolation, got {:?}",
-            err.cause
+        let result = embed_pipeline_v2(&mol, &config).expect(
+            "gly_ala_gly under RepairAndVerify+Dreiding must now recover via the \
+             post-minimization repair-and-reverify step",
         );
         // Stage 8's repair must have genuinely succeeded first (this is specifically
-        // the "fixed, then broken again by the force field" scenario spec §8 warns
-        // about, not merely "repair never worked").
-        let stereo_after_repair = err
-            .stereo_after_repair
-            .expect("stage 9 evidence must be attached");
+        // the "fixed, then broken again by the force field" scenario, not merely
+        // "repair never worked") -- unchanged precondition from the original test.
         assert!(
-            stereo_after_repair.is_fully_satisfied(),
+            result.stereo_after_repair.is_fully_satisfied(),
             "repair (stage 8) must have succeeded before Dreiding (stage 10) broke it again"
         );
-        let final_stereo = err
-            .final_stereo
-            .expect("stage 11 evidence must be attached");
-        assert!(final_stereo.n_violations() > 0);
+        assert!(
+            result.final_stereo.is_fully_satisfied(),
+            "post-minimization repair-and-reverify must leave final_stereo fully satisfied"
+        );
+        let repair = result
+            .post_minimization_stereo_repair
+            .as_ref()
+            .expect("post_minimization_stereo_repair must be Some -- this is exactly the case it exists for");
+        assert!(
+            !repair.repaired.is_empty(),
+            "the post-min repair summary must record what it actually repaired"
+        );
+        assert!(repair.failures.is_empty());
+    }
+
+    /// Companion sanity check: the post-minimization repair-and-reverify step must
+    /// be a true no-op (never invoked, `post_minimization_stereo_repair: None`, its
+    /// own timing bucket `0`) whenever stage 11 finds nothing to recover from --
+    /// covers both "policy doesn't gate stereo at all" (`Ignore`) and "nothing was
+    /// violated" implicitly via any passing `RepairAndVerify` case elsewhere in this
+    /// test module. Guards against the new step accidentally firing (and doing
+    /// needless work, or worse, silently swapping in different-but-also-valid
+    /// coordinates) on a call that never needed it.
+    #[test]
+    fn post_minimization_stereo_repair_is_a_no_op_when_nothing_needs_recovering() {
+        let mol = parse("CCCCCC").unwrap(); // hexane, no declared stereo at all
+        let mut config = PipelineV2Config::minimal(ForceFieldPolicy::Dreiding);
+        config.stereo_policy = StereoPolicy::RepairAndVerify;
+        let result = embed_pipeline_v2(&mol, &config).expect("hexane must embed and minimize");
+        assert!(result.post_minimization_stereo_repair.is_none());
+        assert_eq!(result.elapsed_ms_by_stage.post_min_stereo_repair_ms, 0);
+    }
+
+    /// Golden regression test (issue #227 Phase 2), pinned to the exact molecule
+    /// that surfaced this gap: `chembl_tier_b_0082`
+    /// (`COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(N=C=S)cc4)CC3)nc(N)c2cc1OC`, ChEMBL Wave 1
+    /// corpus). Its single declared E/Z bond is satisfied post-embedding (`stereo_before`)
+    /// under the exact seed `pipeline_v2_vs_rdkit_dump.rs` uses, but the BCI charge
+    /// fix (this same PR) changed the electrostatic term enough that
+    /// `Mmff94BondAngleStrict` minimization now walks it to `Violated` --
+    /// oracle-confirmed via `mmff94_bci_stereo_drift_diagnostic_227.rs` (dihedral
+    /// ~167° -> ~0.3°) and via RDKit's own real MMFF94 minimizer on the same
+    /// molecule, which does NOT reproduce this (all 4 `rdkit_etkdgv3_*` arms
+    /// satisfied -- a chematic-specific minimizer-robustness gap, not a physically
+    /// expected crossing). Pins two things at once: (1) under `Ignore` (the policy
+    /// `pipeline_v2_vs_rdkit_dump.rs`'s `chematic_pipeline_v2_mmff94_strict` arm
+    /// actually uses, and this PR's own measured baseline), the violation is real
+    /// and NOT gated -- documented here explicitly, not silently accepted; (2) under
+    /// `RepairAndVerify`, the new post-minimization step genuinely recovers it.
+    #[test]
+    fn chembl_tier_b_0082_ez_bond_survives_bci_fix_under_repair_and_verify_not_under_ignore() {
+        let mol = parse("COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(N=C=S)cc4)CC3)nc(N)c2cc1OC").unwrap();
+
+        // (1) Ignore: same policy pipeline_v2_vs_rdkit_dump.rs's
+        // chematic_pipeline_v2_mmff94_strict arm uses. Must still succeed (Ignore
+        // never gates on stereo) but must show the real, uncorrected violation --
+        // this is the documented, known, out-of-scope-for-Ignore residual from the
+        // BCI fix's 3-state re-measurement (validation/results/mmff94_bci_gap_227_phase2_report.md
+        // §3b), pinned here so it can never silently regress further or be
+        // silently "fixed" by an unrelated future change without this test noticing.
+        // Config mirrors `pipeline_v2_vs_rdkit_dump.rs`'s `base_config` exactly
+        // (embed feature flags + `RingTorsionApplicationPolicy::DiagnosticOnly`) --
+        // `PipelineV2Config::minimal`'s all-conservative defaults do not reproduce
+        // this molecule's violation (confirmed: `EmbedParameters::default()`'s
+        // fewer active embed features change the geometry enough that it doesn't
+        // manifest), so this is not just a style choice, it's load-bearing for
+        // reproducing the exact case measured in the corpus dump.
+        let mut ignore_config = PipelineV2Config::minimal(ForceFieldPolicy::Mmff94BondAngleStrict);
+        ignore_config.embed = EmbedParameters {
+            random_seed: 20260801,
+            max_attempts: 8,
+            use_exp_torsions: true,
+            use_small_ring_torsions: true,
+            use_macrocycle_torsions: true,
+            use_macrocycle_14_bounds: true,
+            track_failures: true,
+            ..EmbedParameters::default()
+        };
+        ignore_config.ring_torsion_policy = RingTorsionApplicationPolicy::DiagnosticOnly;
+        ignore_config.stereo_policy = StereoPolicy::Ignore;
+        let ignore_result = embed_pipeline_v2(&mol, &ignore_config)
+            .expect("chembl_tier_b_0082 must still succeed under Ignore (never gated)");
+        assert_eq!(
+            ignore_result.stereo_before.n_violations(),
+            0,
+            "pre-minimization embedding must still be satisfied (same seed, charges don't affect embedding)"
+        );
+        assert_eq!(
+            ignore_result.final_stereo.n_violations(),
+            1,
+            "documented, known Ignore-policy residual: minimization introduces exactly \
+             one E/Z violation for this molecule under the corrected BCI charges"
+        );
+        assert!(ignore_result.post_minimization_stereo_repair.is_none());
+
+        // (2) RepairAndVerify: the new step must recover it.
+        let mut repair_config = ignore_config.clone();
+        repair_config.stereo_policy = StereoPolicy::RepairAndVerify;
+        let repair_result = embed_pipeline_v2(&mol, &repair_config)
+            .expect("chembl_tier_b_0082 must recover under RepairAndVerify");
+        assert!(repair_result.final_stereo.is_fully_satisfied());
+        assert!(repair_result.post_minimization_stereo_repair.is_some());
     }
 
     /// Negative control (spec §17): a genuinely degenerate (coplanar) 3D arrangement

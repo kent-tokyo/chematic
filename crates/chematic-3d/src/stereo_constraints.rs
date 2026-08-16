@@ -775,6 +775,89 @@ fn verify_double_bond(
     })
 }
 
+/// Diagnostic-only detail for one declared E/Z double bond: everything
+/// [`verify_double_bond`] computes internally and discards -- the constraint's
+/// atom indices, the raw dihedral angle (radians), and the resulting status --
+/// plus how far past the hard 90 degree satisfied/violated boundary the actual
+/// angle lands (`margin_from_boundary_deg`, always >= 0; small values mean the
+/// call is close to the boundary, not a robust result either way). Added for
+/// issue #227 Phase 2's BCI-fix stereo-drift investigation
+/// (`chembl_tier_b_0082`): production `verify_double_bond`/`verify_stereo`
+/// intentionally keep this data internal (a per-atom-index/per-radian API
+/// would be a much larger public surface than the raw Satisfied/Violated/
+/// Unevaluable status callers need) -- this is purely additive, not called
+/// from any production path.
+#[derive(Debug, Clone, Copy)]
+pub struct DoubleBondDebugInfo {
+    pub bond: BondIdx,
+    pub end1: AtomIdx,
+    pub end2: AtomIdx,
+    pub sub1: AtomIdx,
+    pub sub2: AtomIdx,
+    pub declared_same_side: bool,
+    pub actual_angle_rad: f64,
+    pub actual_angle_deg: f64,
+    pub actual_same_side: bool,
+    pub margin_from_boundary_deg: f64,
+    pub status: StereoStatus,
+}
+
+/// Diagnostic counterpart to [`verify_double_bond`] -- same computation, but
+/// returns the full [`DoubleBondDebugInfo`] instead of just [`StereoStatus`].
+/// `None` under the identical conditions `verify_double_bond` would return
+/// `None` for (not a double bond, or no declared E/Z on it); a bond that *is*
+/// declared but unevaluable (e.g. degenerate geometry, ambiguous direction)
+/// returns `None` here too, since there is no angle to report -- callers that
+/// need the [`StereoRejectionReason`] should call `verify_double_bond`/
+/// `verify_stereo` directly.
+pub fn debug_double_bond(
+    mol: &Molecule,
+    coords: &Coords3D,
+    bond_idx: BondIdx,
+) -> Option<DoubleBondDebugInfo> {
+    let constraint = double_bond_constraint_for(mol, bond_idx)?.ok()?;
+
+    let angle = crate::stereo3d::dihedral(
+        coords.get(constraint.end1),
+        coords.get(constraint.end2),
+        coords.get(constraint.sub1),
+        coords.get(constraint.sub2),
+    )?;
+    let actual_same_side = angle.abs() < std::f64::consts::FRAC_PI_2;
+    let status = if actual_same_side == constraint.same_side {
+        StereoStatus::Satisfied
+    } else {
+        StereoStatus::Violated
+    };
+    let boundary_deg = 90.0;
+    let angle_deg = angle.to_degrees();
+    let margin_from_boundary_deg = (angle_deg.abs() - boundary_deg).abs();
+
+    Some(DoubleBondDebugInfo {
+        bond: bond_idx,
+        end1: constraint.end1,
+        end2: constraint.end2,
+        sub1: constraint.sub1,
+        sub2: constraint.sub2,
+        declared_same_side: constraint.same_side,
+        actual_angle_rad: angle,
+        actual_angle_deg: angle_deg,
+        actual_same_side,
+        margin_from_boundary_deg,
+        status,
+    })
+}
+
+/// Diagnostic helper: every declared-E/Z double bond in `mol`, with full
+/// [`DoubleBondDebugInfo`] where evaluable. Iterates all bonds (small
+/// molecules only -- linear scan, not indexed) rather than requiring the
+/// caller to already know which `BondIdx` carries declared E/Z.
+pub fn debug_all_double_bonds(mol: &Molecule, coords: &Coords3D) -> Vec<DoubleBondDebugInfo> {
+    (0..mol.bond_count())
+        .filter_map(|i| debug_double_bond(mol, coords, BondIdx(i as u32)))
+        .collect()
+}
+
 // ---------------------------------------------------------------------------
 // Repair
 // ---------------------------------------------------------------------------
