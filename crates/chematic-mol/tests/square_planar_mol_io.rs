@@ -17,15 +17,18 @@
 //! round-trip, not a fixture that demonstrates round-tripping.
 
 use chematic_core::{
-    AtomIdx, Chirality, Coords3D, Point3, SquarePlanarPermutation, remap_square_planar_tag,
+    Atom, AtomIdx, BondOrder, Chirality, Coords3D, Element, MoleculeBuilder, Point3,
+    SquarePlanarPermutation, remap_square_planar_tag,
 };
 use chematic_mol::mol2000::{
     MolFormat, MolMetadata, UnsupportedStereoReason, read_mol_with_diagnostics,
-    validate_square_planar_for_write, write_mol_with_conformer_checked,
+    validate_square_planar_for_write, write_mol_with_conformer, write_mol_with_conformer_checked,
+    write_sdf_record_with_conformer_checked,
 };
 use chematic_mol::mol3000::{
     read_mol_v3000_with_diagnostics, write_mol_v3000_with_conformer_checked,
 };
+use chematic_mol::sdf::SdfRecordReader;
 use chematic_smiles::{canonical_smiles, parse};
 
 /// Ideal (undistorted) neighbor positions for `tag`, in `trans_pairs()` slot
@@ -510,4 +513,330 @@ M  END
 ";
     let read = read_mol_with_diagnostics(degenerate_block).expect("degenerate block still parses");
     assert_eq!(read.mol.atom(AtomIdx(0)).chirality, Chirality::None);
+}
+
+// ---------------------------------------------------------------------------
+// Additional fixture coverage (per human-reviewer follow-up on this PR):
+// SP3 + all-distinct ligands, a duplicate-ligand composition, degree-3/5
+// negative controls, a malformed V3000 coordinate block, write-read-write
+// stability, and the real (`$$$$`-terminated) SDF multi-record path.
+// ---------------------------------------------------------------------------
+
+/// Build a Pt-centered molecule with `ligand_elements.len()` explicit
+/// single-bonded neighbors, no SMILES involved -- lets these tests probe
+/// coordination numbers (3, 5) SMILES parsing wouldn't naturally produce,
+/// and ligand compositions (4 distinct elements, 3+1 duplicate) SMILES
+/// fixtures wouldn't cleanly express either.
+fn build_pt_with_ligands(
+    ligand_elements: &[Element],
+) -> (chematic_core::Molecule, AtomIdx, Vec<AtomIdx>) {
+    let mut b = MoleculeBuilder::new();
+    let center = b.add_atom(Atom::new(Element::PT));
+    let mut ligands = Vec::new();
+    for &el in ligand_elements {
+        let l = b.add_atom(Atom::new(el));
+        b.add_bond(center, l, BondOrder::Single).unwrap();
+        ligands.push(l);
+    }
+    (b.build(), center, ligands)
+}
+
+/// Declare `tag` on `center` with `ligands` as its neighbor order, and build
+/// a matching `Coords3D` conformer (nonzero z -- see module docs).
+fn declare_and_place(
+    mol: &mut chematic_core::Molecule,
+    center: AtomIdx,
+    ligands: &[AtomIdx],
+    tag: SquarePlanarPermutation,
+) -> ([u32; 4], Coords3D) {
+    let order: [u32; 4] = ligands
+        .iter()
+        .map(|a| a.0)
+        .collect::<Vec<_>>()
+        .try_into()
+        .expect("exactly 4 ligands");
+    mol.set_chirality(center, Chirality::SquarePlanar(tag));
+    mol.set_stereo_neighbor_order(center, order.to_vec());
+
+    let neighbor_pts = ideal_neighbor_positions(tag, 1.5, 0.0);
+    let mut points = vec![Point3::new(0.0, 0.0, 1.5); mol.atom_count()];
+    for (slot, &atom_id) in order.iter().enumerate() {
+        points[atom_id as usize] = neighbor_pts[slot];
+    }
+    (order, Coords3D { points })
+}
+
+#[test]
+fn all_four_ligands_distinct_round_trips_all_three_tags() {
+    for tag in [
+        SquarePlanarPermutation::SP1,
+        SquarePlanarPermutation::SP2,
+        SquarePlanarPermutation::SP3,
+    ] {
+        let (mut mol, center, ligands) =
+            build_pt_with_ligands(&[Element::F, Element::CL, Element::BR, Element::I]);
+        let (order, conf) = declare_and_place(&mut mol, center, &ligands, tag);
+
+        let block = write_mol_with_conformer_checked(&mol, &MolMetadata::default(), &conf)
+            .unwrap_or_else(|e| panic!("{tag:?}: must write: {e}"));
+        let read = read_mol_with_diagnostics(&block).unwrap_or_else(|e| panic!("{tag:?}: {e}"));
+        let read_center = pt_atom_idx(&read.mol);
+        let recovered_tag = match read.mol.atom(read_center).chirality {
+            Chirality::SquarePlanar(t) => t,
+            other => panic!("{tag:?}: expected SquarePlanar, got {other:?}"),
+        };
+        let recovered_order: [u32; 4] = read
+            .mol
+            .stereo_neighbor_order(read_center)
+            .unwrap()
+            .to_vec()
+            .try_into()
+            .unwrap();
+        assert_eq!(
+            remap_square_planar_tag(recovered_tag, recovered_order, order),
+            Some(tag),
+            "{tag:?}: round trip must recover the same physical arrangement"
+        );
+    }
+
+    // The 3 tags, applied to the SAME distinct-ligand composition, must
+    // remain pairwise distinct after a round trip (not just individually
+    // "recoverable") -- this is what makes them 3 genuinely different
+    // stereoisomers for a 4-distinct-ligand square-planar complex, unlike
+    // cisplatin/transplatin's 2xCl+2xN composition where SP1 and SP3
+    // collapse to the same physical species (see
+    // `chematic-core/src/stereo_geometry.rs`'s own duplicate-ligand note).
+    let mut recovered_tags = Vec::new();
+    for tag in [
+        SquarePlanarPermutation::SP1,
+        SquarePlanarPermutation::SP2,
+        SquarePlanarPermutation::SP3,
+    ] {
+        let (mut mol, center, ligands) =
+            build_pt_with_ligands(&[Element::F, Element::CL, Element::BR, Element::I]);
+        let (_order, conf) = declare_and_place(&mut mol, center, &ligands, tag);
+        let block = write_mol_with_conformer_checked(&mol, &MolMetadata::default(), &conf).unwrap();
+        let read = read_mol_with_diagnostics(&block).unwrap();
+        recovered_tags.push(canonical_smiles(&read.mol));
+    }
+    assert_ne!(recovered_tags[0], recovered_tags[1]);
+    assert_ne!(recovered_tags[0], recovered_tags[2]);
+    assert_ne!(recovered_tags[1], recovered_tags[2]);
+}
+
+#[test]
+fn three_plus_one_duplicate_ligand_composition_round_trips() {
+    // 3xCl + 1xN -- not itself a stereogenic arrangement chemically (no
+    // isomerism when 3 of 4 ligands are identical), but the reader/writer
+    // machinery must still round-trip whatever tag is declared without
+    // crashing or silently corrupting it, the same "duplicate chemistry,
+    // distinct ids" property `chematic-core`'s own unit tests check at the
+    // geometry-module level.
+    let (mut mol, center, ligands) =
+        build_pt_with_ligands(&[Element::CL, Element::CL, Element::CL, Element::N]);
+    let (order, conf) = declare_and_place(&mut mol, center, &ligands, SquarePlanarPermutation::SP1);
+
+    let block = write_mol_with_conformer_checked(&mol, &MolMetadata::default(), &conf)
+        .expect("duplicate-ligand geometry must still be representable");
+    let read = read_mol_with_diagnostics(&block).expect("parses");
+    let read_center = pt_atom_idx(&read.mol);
+    let recovered_tag = match read.mol.atom(read_center).chirality {
+        Chirality::SquarePlanar(t) => t,
+        other => panic!("expected SquarePlanar, got {other:?}"),
+    };
+    let recovered_order: [u32; 4] = read
+        .mol
+        .stereo_neighbor_order(read_center)
+        .unwrap()
+        .to_vec()
+        .try_into()
+        .unwrap();
+    assert_eq!(
+        remap_square_planar_tag(recovered_tag, recovered_order, order),
+        Some(SquarePlanarPermutation::SP1)
+    );
+}
+
+#[test]
+fn three_coordinate_center_is_never_perceived_as_square_planar() {
+    let (mol, center, ligands) = build_pt_with_ligands(&[Element::CL, Element::CL, Element::N]);
+    // Coplanar (real, nonzero-z, 3-around-a-center) positions -- the
+    // perception candidate filter requires exactly 4 neighbors, so this
+    // must never even be classified, regardless of how planar it looks.
+    let mut points = vec![Point3::new(0.0, 0.0, 1.5); mol.atom_count()];
+    let at = |deg: f64| -> Point3 {
+        let r = deg.to_radians();
+        Point3::new(1.5 * r.cos(), 1.5 * r.sin(), 1.5)
+    };
+    for (i, &l) in ligands.iter().enumerate() {
+        points[l.0 as usize] = at(120.0 * i as f64);
+    }
+    let conf = Coords3D { points };
+
+    let block = write_mol_with_conformer(&mol, &MolMetadata::default(), &conf);
+    let read = read_mol_with_diagnostics(&block).expect("parses");
+    assert_eq!(read.mol.atom(center).chirality, Chirality::None);
+    assert!(read.square_planar_diagnostics.is_empty());
+}
+
+#[test]
+fn five_coordinate_center_is_never_perceived_as_square_planar() {
+    let (mol, center, ligands) = build_pt_with_ligands(&[
+        Element::CL,
+        Element::CL,
+        Element::N,
+        Element::N,
+        Element::BR,
+    ]);
+    let mut points = vec![Point3::new(0.0, 0.0, 1.5); mol.atom_count()];
+    let at = |deg: f64| -> Point3 {
+        let r = deg.to_radians();
+        Point3::new(1.5 * r.cos(), 1.5 * r.sin(), 1.5)
+    };
+    for (i, &l) in ligands.iter().enumerate() {
+        points[l.0 as usize] = at(72.0 * i as f64);
+    }
+    let conf = Coords3D { points };
+
+    let block = write_mol_with_conformer(&mol, &MolMetadata::default(), &conf);
+    let read = read_mol_with_diagnostics(&block).expect("parses");
+    assert_eq!(read.mol.atom(center).chirality, Chirality::None);
+    assert!(read.square_planar_diagnostics.is_empty());
+}
+
+#[test]
+fn truncated_v3000_coordinate_block_is_a_typed_error_not_a_panic() {
+    // Same shape as `conformer_3d_io.rs`'s own `v3000_garbled_z_is_a_typed_error`,
+    // applied to a square-planar-eligible (undefined-valence) center: the
+    // malformed z field must fail during ordinary V3000 atom-line parsing,
+    // before this PR's perception code ever runs -- confirming that new
+    // code path doesn't need its own defense here, and that the existing
+    // one still holds for this element class.
+    let bad = "\
+bad
+  chematic
+
+  0  0  0  0  0  0  0  0  0  0999 V3000
+M  V30 BEGIN CTAB
+M  V30 COUNTS 5 4 0 0 0
+M  V30 BEGIN ATOM
+M  V30 1 Pt 0.0 0.0 0.0 0
+M  V30 2 Cl -1.0607 -1.0607 garbage 0
+M  V30 3 Cl -1.0607 1.0607 1.5 0
+M  V30 4 N 1.0607 1.0607 1.5 0
+M  V30 5 N 1.0607 -1.0607 1.5 0
+M  V30 END ATOM
+M  V30 BEGIN BOND
+M  V30 1 1 1 2
+M  V30 2 1 1 3
+M  V30 3 1 1 4
+M  V30 4 1 1 5
+M  V30 END BOND
+M  V30 END CTAB
+M  END
+";
+    let result = read_mol_v3000_with_diagnostics(bad);
+    assert!(matches!(
+        result,
+        Err(chematic_mol::MolParseError::InvalidAtomLine { .. })
+    ));
+}
+
+#[test]
+fn write_read_write_is_stable() {
+    let cis = smiles_to_square_planar_mol_fixture(CISPLATIN_SMILES, 1.5);
+    let block1 =
+        write_mol_with_conformer_checked(&cis.mol, &MolMetadata::default(), &cis.conformer)
+            .expect("first write");
+    let read1 = read_mol_with_diagnostics(&block1).expect("first read");
+    let conformer1 = read1.conformer.clone().expect("first read has a conformer");
+    let block2 = write_mol_with_conformer_checked(&read1.mol, &MolMetadata::default(), &conformer1)
+        .expect("second write");
+
+    assert_eq!(
+        block1, block2,
+        "writing, reading back, and writing again must reproduce byte-identical output"
+    );
+}
+
+#[test]
+fn sdf_multi_record_round_trip_no_cross_contamination() {
+    let cis = smiles_to_square_planar_mol_fixture(CISPLATIN_SMILES, 1.5);
+    let trans = smiles_to_square_planar_mol_fixture(TRANSPLATIN_SMILES, 1.5);
+
+    let mut cis_props = std::collections::HashMap::new();
+    cis_props.insert("Name".to_string(), "cisplatin".to_string());
+    let mut trans_props = std::collections::HashMap::new();
+    trans_props.insert("Name".to_string(), "transplatin".to_string());
+
+    let cis_record = write_sdf_record_with_conformer_checked(
+        &cis.mol,
+        &MolMetadata::default(),
+        &cis.conformer,
+        &cis_props,
+    )
+    .expect("cisplatin SD record must write");
+    let trans_record = write_sdf_record_with_conformer_checked(
+        &trans.mol,
+        &MolMetadata::default(),
+        &trans.conformer,
+        &trans_props,
+    )
+    .expect("transplatin SD record must write");
+
+    let sdf = format!("{cis_record}{trans_record}");
+    let records: Vec<_> = SdfRecordReader::new(&sdf)
+        .collect::<Result<Vec<_>, _>>()
+        .expect("both records must parse");
+    assert_eq!(
+        records.len(),
+        2,
+        "must be exactly 2 records, not merged/split"
+    );
+
+    let rec0_tag = match records[0].mol.atom(pt_atom_idx(&records[0].mol)).chirality {
+        Chirality::SquarePlanar(t) => t,
+        other => panic!("record 0: expected SquarePlanar, got {other:?}"),
+    };
+    let rec1_tag = match records[1].mol.atom(pt_atom_idx(&records[1].mol)).chirality {
+        Chirality::SquarePlanar(t) => t,
+        other => panic!("record 1: expected SquarePlanar, got {other:?}"),
+    };
+
+    // Physical-arrangement-aware check, same as the top-level differential
+    // tests -- not a raw tag comparison.
+    let rec0_order: [u32; 4] = records[0]
+        .mol
+        .stereo_neighbor_order(pt_atom_idx(&records[0].mol))
+        .unwrap()
+        .to_vec()
+        .try_into()
+        .unwrap();
+    let rec1_order: [u32; 4] = records[1]
+        .mol
+        .stereo_neighbor_order(pt_atom_idx(&records[1].mol))
+        .unwrap()
+        .to_vec()
+        .try_into()
+        .unwrap();
+    assert_eq!(
+        remap_square_planar_tag(rec0_tag, rec0_order, cis.order),
+        Some(cis.tag),
+        "record 0 must be cisplatin's arrangement"
+    );
+    assert_eq!(
+        remap_square_planar_tag(rec1_tag, rec1_order, trans.order),
+        Some(trans.tag),
+        "record 1 must be transplatin's arrangement, not cisplatin's"
+    );
+
+    // Properties must attach to the correct record, not cross-contaminate.
+    assert_eq!(
+        records[0].properties.get("Name").map(|s| s.as_str()),
+        Some("cisplatin")
+    );
+    assert_eq!(
+        records[1].properties.get("Name").map(|s| s.as_str()),
+        Some("transplatin")
+    );
 }
