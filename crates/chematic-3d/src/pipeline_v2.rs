@@ -492,14 +492,12 @@ pub struct PipelineV2Failure {
     pub stereo_after_repair: Option<StereoVerification>,
     pub force_field: Option<PolicyMinimizeResult>,
     pub final_stereo: Option<StereoVerification>,
-    /// See [`PipelineV2Result::post_minimization_stereo_repair`]. On a
-    /// *failed* call this is only ever `Some` when a repair was attempted
-    /// but rejected (didn't fully clear every violation, or the result was
-    /// unsound) -- `failures` on the summary is empty either way (the
-    /// mechanism's own per-element failure reasons aren't captured here,
-    /// only that the overall attempt didn't recover); a repair that was
-    /// never attempted (wrong policy, or stage 11 had no violation to begin
-    /// with) leaves this `None`.
+    /// See [`PipelineV2Result::post_minimization_stereo_repair`].
+    /// On a failed call, this is `Some` only when post-minimization repair
+    /// was successfully accepted, but the pipeline subsequently failed
+    /// during strict unevaluable-stereo checking, final geometry validation,
+    /// or timeout enforcement. A repair attempt that was rejected leaves
+    /// this as `None`.
     pub post_minimization_stereo_repair: Option<StereoRepairSummary>,
     pub final_validation: Option<FinalGeometryValidation>,
     pub elapsed_ms_by_stage: StageTimings,
