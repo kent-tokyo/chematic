@@ -565,7 +565,13 @@ pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, Mol
         }
         _ => {}
     }
+    // Same ordering rationale as `mol2000.rs::read_mol_with_diagnostics`:
+    // square-planar reperception first (may set `Chirality::SquarePlanar`),
+    // then `wedge_vs_3d_conflicts` (whose `is_tetrahedral()` gate must see
+    // the final chirality).
+    let mut square_planar_diagnostics = Vec::new();
     if let Some(ref conf) = conformer {
+        square_planar_diagnostics = crate::mol2000::perceive_square_planar_from_3d(&mut mol, conf);
         stereo3d_diagnostics.extend(crate::mol2000::wedge_vs_3d_conflicts(&mol, conf));
     }
 
@@ -579,6 +585,7 @@ pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, Mol
         coordinate_dimension,
         geometry_rank,
         stereo3d_diagnostics,
+        square_planar_diagnostics,
     })
 }
 
@@ -1334,6 +1341,25 @@ pub fn write_mol_v3000_with_conformer(
     out.push_str("M  END\n");
 
     out
+}
+
+/// [`write_mol_v3000_with_conformer`], but fails closed with a typed
+/// [`crate::mol2000::MolStereoWriteError`] instead of silently writing
+/// coordinates that don't actually match a molecule's declared
+/// square-planar stereo (or don't exist at all) -- the V3000 counterpart of
+/// [`crate::mol2000::write_mol_with_conformer_checked`]. See
+/// [`crate::mol2000::validate_square_planar_for_write`].
+pub fn write_mol_v3000_with_conformer_checked(
+    mol: &Molecule,
+    metadata: &MolMetadata,
+    conformer: &Coords3D,
+) -> Result<String, crate::mol2000::MolStereoWriteError> {
+    crate::mol2000::validate_square_planar_for_write(
+        mol,
+        Some(conformer),
+        crate::mol2000::MolFormat::V3000,
+    )?;
+    Ok(write_mol_v3000_with_conformer(mol, metadata, conformer))
 }
 
 #[cfg(test)]

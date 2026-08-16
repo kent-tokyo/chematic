@@ -11,7 +11,7 @@
 
 use chematic_core::{
     Atom, AtomIdx, BondIdx, BondOrder, Chirality, Coords3D, Element, Molecule, MoleculeBuilder,
-    Point3, STEREO_H_SENTINEL,
+    Point3, STEREO_H_SENTINEL, SquarePlanarPermutation, StereoGeometry,
 };
 use chematic_perception::{
     EzDirectionDiagnostic, StereoDiagnostic, apply_ez_directions_from_2d_ex,
@@ -105,6 +105,30 @@ const COLLINEAR_EPS: f64 = 1e-6;
 /// Minimum |signed volume| (Angstrom^3) treated as a reliable, non-degenerate
 /// tetrahedral sign in [`wedge_vs_3d_conflicts`].
 const VOLUME_EPS: f64 = 1e-6;
+/// Minimum bond-vector norm (Angstrom) accepted as non-degenerate by
+/// [`classify_square_planar_geometry`] -- below this, a neighbor's position
+/// coincides with (or is implausibly close to) the center's own position,
+/// which can never be a real bond length for any element. Many orders of
+/// magnitude below any real M-L bond (~1.5-2.5 Angstrom for a transition
+/// metal): a pure corrupt-data guard, not a chemistry judgment call.
+const SQUARE_PLANAR_MIN_BOND_NORM: f64 = 1e-3;
+/// `cos(135 degrees)` -- the geometric midpoint between an ideal
+/// square-planar cis angle (90 degrees) and trans angle (180 degrees), used
+/// by [`classify_square_planar_geometry`] to decide whether a neighbor pair
+/// (viewed from the center) is "trans-like". Self-justifying: over 45
+/// degrees of distortion from either ideal is required to misclassify,
+/// comfortably covering real (non-idealized) square-planar geometry while
+/// still rejecting a tetrahedral center's ~109.5 degree angles outright
+/// (already excluded earlier by the coplanarity check, since a real
+/// tetrahedral center's 4 substituents are never coplanar with it -- this
+/// threshold only has to disambiguate *which* pairing is trans for input
+/// that already passed that gate). Chosen the same way `COPLANAR_EPS`/
+/// `VOLUME_EPS` were: a deliberately-derived, stated-reasoning constant, not
+/// a copied or guessed one. See `docs/rfcs/square_planar_mol_io_rfc.md` §7,
+/// which also cites an RDKit 2026.03.4 oracle observation (empirical cutoff
+/// between 30 and 40 degrees of distortion) in the same family as this
+/// value, without copying RDKit's number.
+const SQUARE_PLANAR_TRANS_COS_MAX: f64 = -std::f64::consts::FRAC_1_SQRT_2;
 
 /// Classify a point cloud's [`GeometryRank`]. See that type's docs for the
 /// four cases.
@@ -309,6 +333,206 @@ pub(crate) fn wedge_vs_3d_conflicts(
     out
 }
 
+// ---------------------------------------------------------------------------
+// Square-planar stereo: 3D-coordinate-derived reperception (read) and
+// pre-write validation (write) -- see
+// `docs/rfcs/square_planar_mol_io_rfc.md` for the full design and RDKit
+// oracle provenance. MDL/CTfile has no symbolic field for a non-tetrahedral
+// stereo tag (RFC §2); this is the *only* mechanism that can represent it.
+// ---------------------------------------------------------------------------
+
+/// Why a coplanar, undefined-valence, 4-coordinate center's neighbor
+/// arrangement failed to resolve to exactly one of SP1/SP2/SP3 in
+/// [`classify_square_planar_geometry`]. Used both as a read-side diagnostic
+/// reason ([`SquarePlanarPerceptionDiagnostic`]) and, wrapped, as a write-side
+/// error reason ([`UnsupportedStereoReason::GeometryRejected`]) -- one
+/// classifier, one reason vocabulary, shared by both directions.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SquarePlanarRejectionReason {
+    /// A neighbor's position coincides with (or is implausibly close to) the
+    /// center's own position -- see [`SQUARE_PLANAR_MIN_BOND_NORM`].
+    DegenerateBondVector,
+    /// The center and its 4 neighbors are not coplanar within tolerance --
+    /// the common case for a genuinely tetrahedral/octahedral/other-shaped
+    /// 4-coordinate center. Never surfaced as a read-side diagnostic (see
+    /// [`perceive_square_planar_from_3d`]'s doc comment) since it is the
+    /// expected, non-noteworthy outcome for the vast majority of real
+    /// undefined-valence-element 4-coordinate centers.
+    NotCoplanar,
+    /// Coplanar, but no single pairing of neighbors had *both* its pairs at
+    /// a trans-like angle (see [`SQUARE_PLANAR_TRANS_COS_MAX`]) -- or more
+    /// than one pairing did, which can only happen for near-degenerate
+    /// input. Either way, the arrangement does not unambiguously name one
+    /// of SP1/SP2/SP3.
+    AmbiguousTransPairing,
+}
+
+impl core::fmt::Display for SquarePlanarRejectionReason {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::DegenerateBondVector => write!(
+                f,
+                "a neighbor position coincides with the center (degenerate bond vector)"
+            ),
+            Self::NotCoplanar => write!(f, "center and neighbors are not coplanar"),
+            Self::AmbiguousTransPairing => {
+                write!(f, "no single trans-pairing of neighbors was unambiguous")
+            }
+        }
+    }
+}
+
+/// Classify a candidate square-planar center's local geometry: `center` plus
+/// its 4 neighbor positions, in [`Molecule::neighbors`]/`stereo_neighbor_order`
+/// order (position `i` of the returned tag's
+/// [`SquarePlanarPermutation::trans_pairs`] refers to `neighbors[i]`).
+///
+/// The single shared implementation used by both
+/// [`perceive_square_planar_from_3d`] (read) and
+/// [`validate_square_planar_for_write`] (write) -- see
+/// `docs/rfcs/square_planar_mol_io_rfc.md` §7 for the full derivation of each
+/// step's tolerance.
+pub(crate) fn classify_square_planar_geometry(
+    center: Point3,
+    neighbors: [Point3; 4],
+) -> Result<SquarePlanarPermutation, SquarePlanarRejectionReason> {
+    let vecs: [Point3; 4] = [
+        neighbors[0].sub(&center),
+        neighbors[1].sub(&center),
+        neighbors[2].sub(&center),
+        neighbors[3].sub(&center),
+    ];
+    let norms: [f64; 4] = [
+        vecs[0].norm(),
+        vecs[1].norm(),
+        vecs[2].norm(),
+        vecs[3].norm(),
+    ];
+    if norms.iter().any(|&n| n < SQUARE_PLANAR_MIN_BOND_NORM) {
+        return Err(SquarePlanarRejectionReason::DegenerateBondVector);
+    }
+
+    // Coplanarity of center + 4 neighbors, reusing `classify_geometry_rank`
+    // directly rather than a second plane-fit implementation. `FlatZero` is
+    // accepted here (it is the *local* 5-point subset that may legitimately
+    // sit at z=0 even inside a molecule whose overall conformer is real 3D
+    // data -- the whole-molecule flat/indeterminate case is rejected
+    // separately, by the caller checking `conformer.is_some()` on read and
+    // by `validate_square_planar_for_write` on write).
+    let five = [
+        center,
+        neighbors[0],
+        neighbors[1],
+        neighbors[2],
+        neighbors[3],
+    ];
+    match classify_geometry_rank(&five) {
+        GeometryRank::Coplanar | GeometryRank::FlatZero => {}
+        GeometryRank::ThreeD | GeometryRank::Indeterminate => {
+            return Err(SquarePlanarRejectionReason::NotCoplanar);
+        }
+    }
+
+    let cos_angle = |i: usize, j: usize| vecs[i].dot(&vecs[j]) / (norms[i] * norms[j]);
+    let is_trans = |i: u8, j: u8| cos_angle(i as usize, j as usize) <= SQUARE_PLANAR_TRANS_COS_MAX;
+
+    let mut matched: Option<SquarePlanarPermutation> = None;
+    for tag in [
+        SquarePlanarPermutation::SP1,
+        SquarePlanarPermutation::SP2,
+        SquarePlanarPermutation::SP3,
+    ] {
+        let [(a, b), (c, d)] = tag.trans_pairs();
+        if is_trans(a, b) && is_trans(c, d) {
+            if matched.is_some() {
+                return Err(SquarePlanarRejectionReason::AmbiguousTransPairing);
+            }
+            matched = Some(tag);
+        }
+    }
+    matched.ok_or(SquarePlanarRejectionReason::AmbiguousTransPairing)
+}
+
+/// One candidate square-planar center whose geometry looked plausible
+/// (coplanar) but did not unambiguously resolve to SP1/SP2/SP3 -- surfaced
+/// instead of silently leaving `Chirality::None`, matching this crate's
+/// existing "explain why, don't guess" diagnostic discipline
+/// (`StereoDiagnostic`/`Stereo3DDiagnostic`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SquarePlanarPerceptionDiagnostic {
+    pub atom: AtomIdx,
+    pub reason: SquarePlanarRejectionReason,
+}
+
+/// Scan `mol` for undefined-valence-element, 4-coordinate, not-already-tagged
+/// atoms and, using `conformer`'s real 3D positions, reperceive
+/// `Chirality::SquarePlanar` directly from geometry -- see
+/// `docs/rfcs/square_planar_mol_io_rfc.md` for why this (not a symbolic MOL
+/// field, which does not exist) is the mechanism.
+///
+/// Element eligibility reuses `Element::normal_valences().is_empty()`
+/// (transition metals and other elements this crate already treats as
+/// "valence undefined") -- reproduces an RDKit 2026.03.4 oracle observation
+/// for every element tested, with one documented divergence (RFC §6).
+///
+/// Only [`SquarePlanarRejectionReason::DegenerateBondVector`]/
+/// `AmbiguousTransPairing` are surfaced as diagnostics.
+/// `NotCoplanar` is silently skipped -- it is the expected, non-noteworthy
+/// outcome for the overwhelming majority of real 4-coordinate
+/// undefined-valence-element centers (genuinely tetrahedral or octahedral,
+/// not square-planar), mirroring `StereoDiagnostic`'s own "no wedge present
+/// -> nothing to say" precedent rather than warning on every ordinary
+/// tetrahedral transition-metal complex in a 3D SDF file.
+pub(crate) fn perceive_square_planar_from_3d(
+    mol: &mut Molecule,
+    conformer: &Coords3D,
+) -> Vec<SquarePlanarPerceptionDiagnostic> {
+    let mut out = Vec::new();
+
+    // Collect candidates first (immutable borrow of `mol`) before mutating.
+    let candidates: Vec<(AtomIdx, [AtomIdx; 4])> = mol
+        .atoms()
+        .filter(|(_, atom)| {
+            atom.chirality == Chirality::None && atom.element.normal_valences().is_empty()
+        })
+        .filter_map(|(idx, _)| {
+            let nbs: Vec<AtomIdx> = mol.neighbors(idx).map(|(n, _)| n).collect();
+            (nbs.len() == 4).then(|| (idx, [nbs[0], nbs[1], nbs[2], nbs[3]]))
+        })
+        .collect();
+
+    for (idx, nbs) in candidates {
+        let Some(center) = conformer.points.get(idx.0 as usize).copied() else {
+            continue;
+        };
+        let mut pts = [Point3::zero(); 4];
+        let mut all_present = true;
+        for (slot, n) in nbs.iter().enumerate() {
+            match conformer.points.get(n.0 as usize).copied() {
+                Some(p) => pts[slot] = p,
+                None => {
+                    all_present = false;
+                    break;
+                }
+            }
+        }
+        if !all_present {
+            continue;
+        }
+
+        match classify_square_planar_geometry(center, pts) {
+            Ok(tag) => {
+                mol.set_chirality(idx, Chirality::SquarePlanar(tag));
+                mol.set_stereo_neighbor_order(idx, nbs.iter().map(|a| a.0).collect());
+            }
+            Err(SquarePlanarRejectionReason::NotCoplanar) => {}
+            Err(reason) => out.push(SquarePlanarPerceptionDiagnostic { atom: idx, reason }),
+        }
+    }
+
+    out
+}
+
 /// Result of parsing a MOL/SDF record with stereo-perception diagnostics.
 ///
 /// `stereo_diagnostics` is empty unless a wedge/hash bond was actually
@@ -331,6 +555,14 @@ pub(crate) fn wedge_vs_3d_conflicts(
 /// `geometry_rank` are always populated; `stereo3d_diagnostics` cross-checks
 /// the two and checks any wedge/hash-declared stereo against real geometry
 /// -- see [`Stereo3DDiagnostic`].
+///
+/// `square_planar_diagnostics` is populated only when `conformer` is `Some`
+/// (square-planar reperception never runs against a flat/absent conformer --
+/// see `docs/rfcs/square_planar_mol_io_rfc.md`), and even then only for a
+/// candidate center whose geometry looked plausible but didn't
+/// unambiguously resolve to SP1/SP2/SP3; a successfully-perceived center is
+/// reflected directly in `mol`'s `Atom.chirality`/`stereo_neighbor_order`,
+/// not listed here.
 #[derive(Clone)]
 pub struct MolReadReport {
     pub mol: Molecule,
@@ -342,6 +574,7 @@ pub struct MolReadReport {
     pub coordinate_dimension: CoordinateDimension,
     pub geometry_rank: GeometryRank,
     pub stereo3d_diagnostics: Vec<Stereo3DDiagnostic>,
+    pub square_planar_diagnostics: Vec<SquarePlanarPerceptionDiagnostic>,
 }
 
 // ---------------------------------------------------------------------------
@@ -691,7 +924,13 @@ pub fn read_mol_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseE
         }
         _ => {}
     }
+    // Square-planar reperception BEFORE `wedge_vs_3d_conflicts`: it may set
+    // `Chirality::SquarePlanar` on some atoms, and that function's own
+    // `is_tetrahedral()` gate (see its doc comment) must see the final
+    // chirality to correctly skip them.
+    let mut square_planar_diagnostics = Vec::new();
     if let Some(ref conf) = conformer {
+        square_planar_diagnostics = perceive_square_planar_from_3d(&mut mol, conf);
         stereo3d_diagnostics.extend(wedge_vs_3d_conflicts(&mol, conf));
     }
 
@@ -705,6 +944,7 @@ pub fn read_mol_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseE
         coordinate_dimension,
         geometry_rank,
         stereo3d_diagnostics,
+        square_planar_diagnostics,
     })
 }
 
@@ -947,6 +1187,253 @@ pub fn write_mol_with_conformer(
 
     out.push_str("M  END\n");
     out
+}
+
+// ---------------------------------------------------------------------------
+// Square-planar write-side validation -- see the read-side section above
+// and `docs/rfcs/square_planar_mol_io_rfc.md` §8-9 for the design (no
+// coordinate fabrication, ever; existing coordinates are validated against
+// the declared tag, never trusted silently).
+// ---------------------------------------------------------------------------
+
+/// Which MOL/SDF variant a [`MolStereoWriteError`] was raised against.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MolFormat {
+    V2000,
+    V3000,
+}
+
+impl core::fmt::Display for MolFormat {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::V2000 => write!(f, "V2000"),
+            Self::V3000 => write!(f, "V3000"),
+        }
+    }
+}
+
+/// Why [`validate_square_planar_for_write`] refused to write a molecule
+/// carrying `Chirality::SquarePlanar`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UnsupportedStereoReason {
+    /// No 3D conformer was supplied at all. MDL/CTfile has no symbolic field
+    /// for a non-tetrahedral stereo tag (RFC §2) -- geometry is the only
+    /// mechanism, and there is none to write here. The writer never
+    /// fabricates one (RFC §8).
+    NoConformerSupplied,
+    /// A conformer was supplied, but this atom has no recorded
+    /// `stereo_neighbor_order` to validate/write positions against.
+    MissingNeighborOrder,
+    /// This atom's `stereo_neighbor_order` contains the implicit-hydrogen
+    /// sentinel -- there is no real spatial position for an implicit H to
+    /// validate or write against (RFC §11).
+    ImplicitHydrogenNeighbor,
+    /// A conformer was supplied, but it has no real position for the center
+    /// or one of its declared neighbors.
+    MissingConformerPosition,
+    /// The whole-molecule conformer is flat (`GeometryRank::FlatZero`) or
+    /// indeterminate -- indistinguishable from an ordinary 2D depiction with
+    /// no 3D data at all (RFC §10); this crate's own reader would never
+    /// reperceive a tag from it, so writing one out would silently produce
+    /// an unrecoverable file.
+    WholeMoleculeConformerFlat,
+    /// The conformer's local geometry around this atom does not
+    /// unambiguously resolve to *any* square-planar permutation.
+    GeometryRejected(SquarePlanarRejectionReason),
+    /// The conformer's local geometry resolves to a *different* permutation
+    /// than the one declared on the atom.
+    GeometryTagMismatch { computed: SquarePlanarPermutation },
+}
+
+impl core::fmt::Display for UnsupportedStereoReason {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::NoConformerSupplied => write!(f, "no 3D conformer supplied"),
+            Self::MissingNeighborOrder => write!(f, "atom has no recorded stereo_neighbor_order"),
+            Self::ImplicitHydrogenNeighbor => write!(
+                f,
+                "stereo_neighbor_order contains an implicit-hydrogen slot"
+            ),
+            Self::MissingConformerPosition => {
+                write!(
+                    f,
+                    "conformer is missing a position for this center or a neighbor"
+                )
+            }
+            Self::WholeMoleculeConformerFlat => {
+                write!(f, "whole-molecule conformer is flat/indeterminate")
+            }
+            Self::GeometryRejected(reason) => write!(f, "geometry rejected: {reason}"),
+            Self::GeometryTagMismatch { computed } => write!(
+                f,
+                "conformer geometry encodes {computed:?}, which does not match the declared tag"
+            ),
+        }
+    }
+}
+
+/// A MOL/SDF write was refused because `atom`'s declared
+/// `chematic_core::StereoGeometry` could not be represented in `format` --
+/// see [`UnsupportedStereoReason`] for why. Never raised for tetrahedral
+/// chirality (which round-trips via wedge/hash bonds, already written
+/// faithfully by every writer in this file).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MolStereoWriteError {
+    pub atom: AtomIdx,
+    pub geometry: StereoGeometry,
+    pub format: MolFormat,
+    pub reason: UnsupportedStereoReason,
+}
+
+impl core::fmt::Display for MolStereoWriteError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "cannot write atom {} ({:?} stereo) to MOL {}: {}",
+            self.atom.0, self.geometry, self.format, self.reason
+        )
+    }
+}
+
+impl std::error::Error for MolStereoWriteError {}
+
+/// Validate every `Chirality::SquarePlanar` atom in `mol` against `conformer`
+/// before writing `format`. `Ok(())` when `mol` has no square-planar atom at
+/// all (the common case -- this is a no-op for every existing caller), or
+/// when every square-planar atom's declared tag matches what its
+/// `conformer` positions actually encode. `pub`, not `pub(crate)`: callers
+/// building their own write pipeline can use this as a pre-flight check
+/// even without going through this crate's `*_checked` writer wrappers.
+///
+/// `conformer: None` means "the 2D-only writer path was used" -- always an
+/// error (`NoConformerSupplied`) when `mol` has any square-planar atom, since
+/// no 2D-only writer in this crate has a z channel to encode one (RFC §2).
+pub fn validate_square_planar_for_write(
+    mol: &Molecule,
+    conformer: Option<&Coords3D>,
+    format: MolFormat,
+) -> Result<(), MolStereoWriteError> {
+    // Whole-molecule flatness check once, up front: if ANY square-planar
+    // atom exists and the conformer is flat/indeterminate, every one of them
+    // fails the same way (RFC §10) -- report the first by atom order for a
+    // deterministic, non-HashMap-dependent error.
+    let whole_mol_flat_or_missing = match conformer {
+        None => true,
+        Some(conf) => matches!(
+            classify_geometry_rank(&conf.points),
+            GeometryRank::FlatZero | GeometryRank::Indeterminate
+        ),
+    };
+
+    for (idx, atom) in mol.atoms() {
+        let Chirality::SquarePlanar(declared) = atom.chirality else {
+            continue;
+        };
+        let geometry = StereoGeometry::SquarePlanar;
+
+        let Some(conf) = conformer else {
+            return Err(MolStereoWriteError {
+                atom: idx,
+                geometry,
+                format,
+                reason: UnsupportedStereoReason::NoConformerSupplied,
+            });
+        };
+        if whole_mol_flat_or_missing {
+            return Err(MolStereoWriteError {
+                atom: idx,
+                geometry,
+                format,
+                reason: UnsupportedStereoReason::WholeMoleculeConformerFlat,
+            });
+        }
+
+        let Some(order) = mol.stereo_neighbor_order(idx) else {
+            return Err(MolStereoWriteError {
+                atom: idx,
+                geometry,
+                format,
+                reason: UnsupportedStereoReason::MissingNeighborOrder,
+            });
+        };
+        if order.len() != 4 {
+            return Err(MolStereoWriteError {
+                atom: idx,
+                geometry,
+                format,
+                reason: UnsupportedStereoReason::MissingNeighborOrder,
+            });
+        }
+        if order.contains(&STEREO_H_SENTINEL) {
+            return Err(MolStereoWriteError {
+                atom: idx,
+                geometry,
+                format,
+                reason: UnsupportedStereoReason::ImplicitHydrogenNeighbor,
+            });
+        }
+
+        let Some(center) = conf.points.get(idx.0 as usize).copied() else {
+            return Err(MolStereoWriteError {
+                atom: idx,
+                geometry,
+                format,
+                reason: UnsupportedStereoReason::MissingConformerPosition,
+            });
+        };
+        let mut pts = [Point3::zero(); 4];
+        for (slot, &n) in order.iter().enumerate() {
+            match conf.points.get(n as usize).copied() {
+                Some(p) => pts[slot] = p,
+                None => {
+                    return Err(MolStereoWriteError {
+                        atom: idx,
+                        geometry,
+                        format,
+                        reason: UnsupportedStereoReason::MissingConformerPosition,
+                    });
+                }
+            }
+        }
+
+        match classify_square_planar_geometry(center, pts) {
+            Ok(computed) if computed == declared => {}
+            Ok(computed) => {
+                return Err(MolStereoWriteError {
+                    atom: idx,
+                    geometry,
+                    format,
+                    reason: UnsupportedStereoReason::GeometryTagMismatch { computed },
+                });
+            }
+            Err(reason) => {
+                return Err(MolStereoWriteError {
+                    atom: idx,
+                    geometry,
+                    format,
+                    reason: UnsupportedStereoReason::GeometryRejected(reason),
+                });
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// [`write_mol_with_conformer`], but fails closed with a typed
+/// [`MolStereoWriteError`] instead of silently writing coordinates that
+/// don't actually match a molecule's declared square-planar stereo (or
+/// don't exist at all). See [`validate_square_planar_for_write`].
+///
+/// For a molecule with no `Chirality::SquarePlanar` atom, this is exactly
+/// [`write_mol_with_conformer`] wrapped in `Ok`.
+pub fn write_mol_with_conformer_checked(
+    mol: &Molecule,
+    metadata: &MolMetadata,
+    conformer: &Coords3D,
+) -> Result<String, MolStereoWriteError> {
+    validate_square_planar_for_write(mol, Some(conformer), MolFormat::V2000)?;
+    Ok(write_mol_with_conformer(mol, metadata, conformer))
 }
 
 // ---------------------------------------------------------------------------
@@ -1539,5 +2026,319 @@ many_bonds
         // confirming the blank-line-skip removal didn't loosen error recovery.
         let bad_sdf = format!("{ETHANOL_MOL}$$$$\nbad\n  prog\n\n  X  Y\nM  END\n$$$$\n");
         assert!(read_sdf_with_diagnostics(&bad_sdf).is_err());
+    }
+}
+
+/// Square-planar 3D-coordinate-derived stereo: classification, perception,
+/// and write-side validation. See `docs/rfcs/square_planar_mol_io_rfc.md`
+/// for the design and `tests/square_planar_mol_io.rs` for the
+/// reader/writer/renumbering integration tests.
+#[cfg(test)]
+mod square_planar_tests {
+    use super::*;
+
+    /// Build the 4 neighbor positions (in trans_pairs() slot order) for an
+    /// ideal, undistorted square-planar arrangement matching `tag` -- reuses
+    /// `trans_pairs()` (not a hand-picked per-tag layout) so this generator
+    /// and `classify_square_planar_geometry` agree by construction on what
+    /// "matches the tag" means. All points share z = 1.5 (nonzero, to avoid
+    /// the FlatZero ambiguity -- see RFC §10).
+    fn ideal_square_planar_neighbors(tag: SquarePlanarPermutation) -> [Point3; 4] {
+        let [(a, b), (c, d)] = tag.trans_pairs();
+        let mut pts = [Point3::zero(); 4];
+        let at = |deg: f64| -> Point3 {
+            let r = deg.to_radians();
+            Point3::new(1.5 * r.cos(), 1.5 * r.sin(), 1.5)
+        };
+        pts[a as usize] = at(45.0);
+        pts[b as usize] = at(225.0); // trans to a
+        pts[c as usize] = at(135.0);
+        pts[d as usize] = at(315.0); // trans to c
+        pts
+    }
+
+    #[test]
+    fn classify_recovers_all_three_tags_from_ideal_geometry() {
+        // Center must share the neighbors' z=1.5 plane (see
+        // `ideal_square_planar_neighbors`) -- coplanarity is center-relative.
+        let center = Point3::new(0.0, 0.0, 1.5);
+        for tag in [
+            SquarePlanarPermutation::SP1,
+            SquarePlanarPermutation::SP2,
+            SquarePlanarPermutation::SP3,
+        ] {
+            let neighbors = ideal_square_planar_neighbors(tag);
+            assert_eq!(
+                classify_square_planar_geometry(center, neighbors),
+                Ok(tag),
+                "failed to recover {tag:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn classify_rejects_genuinely_tetrahedral_geometry_as_not_coplanar() {
+        // Ideal tetrahedral directions (unit vectors), scaled -- never
+        // coplanar with the center.
+        let center = Point3::zero();
+        let neighbors = [
+            Point3::new(1.0, 1.0, 1.0),
+            Point3::new(1.0, -1.0, -1.0),
+            Point3::new(-1.0, 1.0, -1.0),
+            Point3::new(-1.0, -1.0, 1.0),
+        ];
+        assert_eq!(
+            classify_square_planar_geometry(center, neighbors),
+            Err(SquarePlanarRejectionReason::NotCoplanar)
+        );
+    }
+
+    #[test]
+    fn classify_rejects_degenerate_coincident_neighbor() {
+        let center = Point3::zero();
+        let mut neighbors = ideal_square_planar_neighbors(SquarePlanarPermutation::SP1);
+        neighbors[0] = center; // coincides with the center itself
+        assert_eq!(
+            classify_square_planar_geometry(center, neighbors),
+            Err(SquarePlanarRejectionReason::DegenerateBondVector)
+        );
+    }
+
+    #[test]
+    fn classify_rejects_ambiguous_geometry_with_no_trans_pair() {
+        // All 4 neighbors clustered within one 90-degree quadrant -- coplanar,
+        // but no two are ever close to trans (180 degrees) apart.
+        let center = Point3::new(0.0, 0.0, 1.5);
+        let at = |deg: f64| -> Point3 {
+            let r = deg.to_radians();
+            Point3::new(1.5 * r.cos(), 1.5 * r.sin(), 1.5)
+        };
+        let neighbors = [at(0.0), at(20.0), at(40.0), at(60.0)];
+        assert_eq!(
+            classify_square_planar_geometry(center, neighbors),
+            Err(SquarePlanarRejectionReason::AmbiguousTransPairing)
+        );
+    }
+
+    /// Build a 5-atom (center + 4 ligand) molecule plus a matching `Coords3D`
+    /// conformer encoding `tag`'s ideal geometry. `center_element` lets
+    /// callers probe the element-eligibility gate (RFC §6).
+    fn square_planar_fixture(
+        center_element: Element,
+        tag: SquarePlanarPermutation,
+    ) -> (Molecule, Coords3D) {
+        let mut b = MoleculeBuilder::new();
+        let center = b.add_atom(Atom::new(center_element));
+        let cl1 = b.add_atom(Atom::new(Element::CL));
+        let cl2 = b.add_atom(Atom::new(Element::CL));
+        let n1 = b.add_atom(Atom::new(Element::N));
+        let n2 = b.add_atom(Atom::new(Element::N));
+        b.add_bond(center, cl1, BondOrder::Single).unwrap();
+        b.add_bond(center, cl2, BondOrder::Single).unwrap();
+        b.add_bond(center, n1, BondOrder::Single).unwrap();
+        b.add_bond(center, n2, BondOrder::Single).unwrap();
+        let mol = b.build();
+
+        let neighbor_pts = ideal_square_planar_neighbors(tag);
+        let points = vec![
+            Point3::new(0.0, 0.0, 1.5), // center
+            neighbor_pts[0],
+            neighbor_pts[1],
+            neighbor_pts[2],
+            neighbor_pts[3],
+        ];
+        (mol, Coords3D { points })
+    }
+
+    #[test]
+    fn perceive_assigns_all_three_tags_for_an_undefined_valence_element() {
+        for tag in [
+            SquarePlanarPermutation::SP1,
+            SquarePlanarPermutation::SP2,
+            SquarePlanarPermutation::SP3,
+        ] {
+            let (mut mol, conformer) = square_planar_fixture(Element::PT, tag);
+            let diagnostics = perceive_square_planar_from_3d(&mut mol, &conformer);
+            assert!(
+                diagnostics.is_empty(),
+                "{tag:?}: unexpected {diagnostics:?}"
+            );
+            assert_eq!(mol.atom(AtomIdx(0)).chirality, Chirality::SquarePlanar(tag));
+            assert_eq!(
+                mol.stereo_neighbor_order(AtomIdx(0)),
+                Some([1u32, 2, 3, 4].as_slice())
+            );
+        }
+    }
+
+    #[test]
+    fn perceive_never_tags_an_element_with_a_defined_valence() {
+        // Identical coplanar-square coordinates, but Carbon has a defined
+        // (organic-subset) valence list -- RDKit itself does not perceive
+        // non-tetrahedral chirality for such elements either (RFC §4/§6),
+        // even from geometrically-square coordinates.
+        let (mut mol, conformer) = square_planar_fixture(Element::C, SquarePlanarPermutation::SP1);
+        let diagnostics = perceive_square_planar_from_3d(&mut mol, &conformer);
+        assert!(diagnostics.is_empty());
+        assert_eq!(mol.atom(AtomIdx(0)).chirality, Chirality::None);
+    }
+
+    #[test]
+    fn perceive_reports_a_diagnostic_for_coplanar_but_ambiguous_geometry() {
+        let mut b = MoleculeBuilder::new();
+        let center = b.add_atom(Atom::new(Element::PT));
+        let cl1 = b.add_atom(Atom::new(Element::CL));
+        let cl2 = b.add_atom(Atom::new(Element::CL));
+        let n1 = b.add_atom(Atom::new(Element::N));
+        let n2 = b.add_atom(Atom::new(Element::N));
+        b.add_bond(center, cl1, BondOrder::Single).unwrap();
+        b.add_bond(center, cl2, BondOrder::Single).unwrap();
+        b.add_bond(center, n1, BondOrder::Single).unwrap();
+        b.add_bond(center, n2, BondOrder::Single).unwrap();
+        let mut mol = b.build();
+
+        let at = |deg: f64| -> Point3 {
+            let r = deg.to_radians();
+            Point3::new(1.5 * r.cos(), 1.5 * r.sin(), 1.5)
+        };
+        let points = vec![
+            Point3::new(0.0, 0.0, 1.5),
+            at(0.0),
+            at(20.0),
+            at(40.0),
+            at(60.0),
+        ];
+        let conformer = Coords3D { points };
+
+        let diagnostics = perceive_square_planar_from_3d(&mut mol, &conformer);
+        assert_eq!(
+            diagnostics,
+            vec![SquarePlanarPerceptionDiagnostic {
+                atom: AtomIdx(0),
+                reason: SquarePlanarRejectionReason::AmbiguousTransPairing,
+            }]
+        );
+        assert_eq!(mol.atom(AtomIdx(0)).chirality, Chirality::None);
+    }
+
+    #[test]
+    fn validate_is_a_no_op_for_a_molecule_with_no_square_planar_atom() {
+        let (mol, _conformer) = square_planar_fixture(Element::PT, SquarePlanarPermutation::SP1);
+        // No chirality was set on this fixture yet (perceive was never
+        // called) -- validate must be Ok regardless of conformer presence.
+        assert!(validate_square_planar_for_write(&mol, None, MolFormat::V2000).is_ok());
+    }
+
+    #[test]
+    fn validate_rejects_no_conformer_supplied() {
+        let (mut mol, _conformer) =
+            square_planar_fixture(Element::PT, SquarePlanarPermutation::SP1);
+        mol.set_chirality(
+            AtomIdx(0),
+            Chirality::SquarePlanar(SquarePlanarPermutation::SP1),
+        );
+        mol.set_stereo_neighbor_order(AtomIdx(0), vec![1, 2, 3, 4]);
+        let err = validate_square_planar_for_write(&mol, None, MolFormat::V2000).unwrap_err();
+        assert_eq!(err.reason, UnsupportedStereoReason::NoConformerSupplied);
+        assert_eq!(err.format, MolFormat::V2000);
+        assert_eq!(err.geometry, StereoGeometry::SquarePlanar);
+    }
+
+    #[test]
+    fn validate_rejects_whole_molecule_flat_conformer() {
+        let (mut mol, mut conformer) =
+            square_planar_fixture(Element::PT, SquarePlanarPermutation::SP1);
+        mol.set_chirality(
+            AtomIdx(0),
+            Chirality::SquarePlanar(SquarePlanarPermutation::SP1),
+        );
+        mol.set_stereo_neighbor_order(AtomIdx(0), vec![1, 2, 3, 4]);
+        // Flatten every z to exactly 0 -- the ordinary "2D depiction, no
+        // real 3D data" case (RFC §10), indistinguishable from wedge-only
+        // MOL input by this crate's own reader.
+        for p in &mut conformer.points {
+            p.z = 0.0;
+        }
+        let err =
+            validate_square_planar_for_write(&mol, Some(&conformer), MolFormat::V3000).unwrap_err();
+        assert_eq!(
+            err.reason,
+            UnsupportedStereoReason::WholeMoleculeConformerFlat
+        );
+    }
+
+    #[test]
+    fn validate_rejects_geometry_tag_mismatch() {
+        // Declare SP1 but supply SP2-shaped coordinates.
+        let (mut mol, conformer) = square_planar_fixture(Element::PT, SquarePlanarPermutation::SP2);
+        mol.set_chirality(
+            AtomIdx(0),
+            Chirality::SquarePlanar(SquarePlanarPermutation::SP1),
+        );
+        mol.set_stereo_neighbor_order(AtomIdx(0), vec![1, 2, 3, 4]);
+        let err =
+            validate_square_planar_for_write(&mol, Some(&conformer), MolFormat::V2000).unwrap_err();
+        assert_eq!(
+            err.reason,
+            UnsupportedStereoReason::GeometryTagMismatch {
+                computed: SquarePlanarPermutation::SP2
+            }
+        );
+    }
+
+    #[test]
+    fn validate_rejects_implicit_hydrogen_neighbor_slot() {
+        let (mut mol, conformer) = square_planar_fixture(Element::PT, SquarePlanarPermutation::SP1);
+        mol.set_chirality(
+            AtomIdx(0),
+            Chirality::SquarePlanar(SquarePlanarPermutation::SP1),
+        );
+        mol.set_stereo_neighbor_order(AtomIdx(0), vec![1, 2, 3, STEREO_H_SENTINEL]);
+        let err =
+            validate_square_planar_for_write(&mol, Some(&conformer), MolFormat::V2000).unwrap_err();
+        assert_eq!(
+            err.reason,
+            UnsupportedStereoReason::ImplicitHydrogenNeighbor
+        );
+    }
+
+    #[test]
+    fn validate_accepts_matching_geometry_and_checked_writer_produces_output() {
+        let (mut mol, conformer) = square_planar_fixture(Element::PT, SquarePlanarPermutation::SP1);
+        mol.set_chirality(
+            AtomIdx(0),
+            Chirality::SquarePlanar(SquarePlanarPermutation::SP1),
+        );
+        mol.set_stereo_neighbor_order(AtomIdx(0), vec![1, 2, 3, 4]);
+        assert!(validate_square_planar_for_write(&mol, Some(&conformer), MolFormat::V2000).is_ok());
+
+        let block = write_mol_with_conformer_checked(&mol, &MolMetadata::default(), &conformer)
+            .expect("matching geometry must write successfully");
+        assert!(block.contains("V2000"));
+        assert!(block.contains("Pt"));
+    }
+
+    /// The `wedge_vs_3d_conflicts` regression this PR fixes: before the
+    /// `is_tetrahedral()` gate, ANY non-`None` chirality (not just
+    /// `Chirality::None`) fell through into a computation that only ever
+    /// produces `Chirality::Clockwise`/`CounterClockwise` and compares that
+    /// against `atom.chirality` -- which can never equal
+    /// `Chirality::SquarePlanar`, so every square-planar-tagged atom with a
+    /// real conformer would have been flagged as a spurious
+    /// `WedgeVs3DParityConflict`, regardless of whether its geometry was
+    /// actually self-consistent.
+    #[test]
+    fn wedge_vs_3d_conflicts_skips_square_planar_chirality() {
+        let (mut mol, conformer) = square_planar_fixture(Element::PT, SquarePlanarPermutation::SP1);
+        mol.set_chirality(
+            AtomIdx(0),
+            Chirality::SquarePlanar(SquarePlanarPermutation::SP1),
+        );
+        mol.set_stereo_neighbor_order(AtomIdx(0), vec![1, 2, 3, 4]);
+        let diagnostics = wedge_vs_3d_conflicts(&mol, &conformer);
+        assert!(
+            diagnostics.is_empty(),
+            "square-planar chirality must never reach the tetrahedral-only conflict check: {diagnostics:?}"
+        );
     }
 }
