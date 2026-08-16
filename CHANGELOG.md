@@ -9,6 +9,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Roadmap step 2: square-planar stereo (`@SP1`/`@SP2`/`@SP3`-equivalent),
+read on every MOL/SDF (V2000 + V3000) reader and write via new checked
+conformer writers, building on the generalized stereo geometry foundation
+(PR #326).
+
+### Added — `chematic-mol` (square-planar stereo read everywhere; write via new checked conformer writers only)
+
+- MDL/CTfile has no symbolic field for a non-tetrahedral stereo tag
+  (confirmed against RDKit 2026.03.4 as a live oracle, and consistent
+  with public RDKit documentation/source — see
+  `docs/rfcs/square_planar_mol_io_rfc.md`). The only real mechanism is
+  3D-coordinate-derived reperception: given a real (non-flat) 3D
+  conformer, a coplanar 4-coordinate center whose neighbor pair angles
+  unambiguously resolve to one of SP1/SP2/SP3 is reperceived directly
+  from geometry **on every read** (`perceive_square_planar_from_3d`,
+  wired into both `read_mol_with_diagnostics` and
+  `read_mol_v3000_with_diagnostics` — this applies regardless of which
+  writer produced the file). Element eligibility reuses
+  `Element::normal_valences().is_empty()` (transition metals and
+  similar), matching an RDKit oracle observation for every element
+  tested (one documented Na/Mg/Al divergence, see the RFC).
+- **Write support is opt-in, via three new `_checked` functions only**:
+  `write_mol_with_conformer_checked`, `write_mol_v3000_with_conformer_checked`,
+  and `write_sdf_record_with_conformer_checked` (backed by the public
+  `validate_square_planar_for_write`) validate the declared tag against
+  real coordinates before writing — never fabricating a conformer from
+  nothing, never silently trusting a mismatch — and fail closed with a
+  typed `MolStereoWriteError` otherwise. The pre-existing, more commonly
+  used writers are unchanged, but fall into two different gaps — each now
+  carries a Rustdoc warning naming its specific one and pointing at its
+  `_checked` counterpart where one exists. Do not describe MOL/SDF
+  writing in general as "square-planar supported"; only the three
+  `_checked` functions above are.
+  - **2D-only, so they drop the tag outright**: `write_mol`,
+    `write_mol_with_coords`, `write_mol_v3000`, and the whole `write_sdf*`
+    family (`write_sdf`, `write_sdf_with_charges`, `write_sdf_record`,
+    `write_sdf_record_v3000`) — none of these has a z coordinate to write
+    a square-planar tag against in the first place.
+  - **3D-capable but unvalidated**: `write_mol_with_conformer`,
+    `write_mol_v3000_with_conformer`, and `write_sdf_record_with_conformer`
+    write whatever conformer they're handed and so *do* preserve the tag
+    when the conformer actually matches it — but they trust the caller and
+    never check, so a mismatched or flat conformer is written silently
+    self-inconsistent with no error.
+  Explicitly out of scope: pure-2D wedge-only square-planar encoding (no
+  such MDL mechanism exists), 3-heavy + implicit-H square-planar centers,
+  and a chematic-specific lossless SDF extension (Tier 3, not built).
+- New public types: `MolFormat`, `UnsupportedStereoReason`,
+  `MolStereoWriteError`, `SquarePlanarRejectionReason`,
+  `SquarePlanarPerceptionDiagnostic`; `MolReadReport` gained a new
+  `square_planar_diagnostics` field.
+
+### Fixed — `chematic-mol` (`wedge_vs_3d_conflicts` tetrahedral-only gate)
+
+- `wedge_vs_3d_conflicts` gated on `atom.chirality == Chirality::None`,
+  so any non-`None`, non-tetrahedral chirality fell through into a
+  computation that assumes a tetrahedral shape — latent until this PR,
+  since no MOL/SDF reader ever produced `Chirality::SquarePlanar` before
+  now. Fixed by switching to `!atom.chirality.is_tetrahedral()`, an
+  exhaustive-match-safe allowlist gate (same fix shape as two prior
+  instances of this bug class in `chematic-3d`/`chematic-chem`).
+
 Issue #227 Phase 2: MMFF94 BCI (bond-charge-increment) partial-charge bug,
 investigated per Phase 1's own flagged follow-up and fixed. Also adds a
 full `embed_pipeline_v2` 3-state quality re-measurement (State 1: v0.16.0
