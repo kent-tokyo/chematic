@@ -9,6 +9,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Roadmap step 2: square-planar stereo (`@SP1`/`@SP2`/`@SP3`-equivalent)
+MOL/SDF (V2000 + V3000) support, building on the generalized stereo
+geometry foundation (PR #326).
+
+### Added — `chematic-mol` (square-planar stereo in MOL/SDF)
+
+- MDL/CTfile has no symbolic field for a non-tetrahedral stereo tag
+  (confirmed against RDKit 2026.03.4 as a live oracle, and consistent
+  with public RDKit documentation/source — see
+  `docs/rfcs/square_planar_mol_io_rfc.md`). The only real mechanism is
+  3D-coordinate-derived reperception: given a real (non-flat) 3D
+  conformer, a coplanar 4-coordinate center whose neighbor pair angles
+  unambiguously resolve to one of SP1/SP2/SP3 is reperceived directly
+  from geometry on read (`perceive_square_planar_from_3d`, wired into
+  both `read_mol_with_diagnostics` and `read_mol_v3000_with_diagnostics`)
+  and validated against the declared tag before writing (new
+  `write_mol_with_conformer_checked`/`write_mol_v3000_with_conformer_checked`,
+  backed by the public `validate_square_planar_for_write`) — never
+  fabricated from nothing, and never silently trusted to match. Element
+  eligibility reuses `Element::normal_valences().is_empty()` (transition
+  metals and similar), matching an RDKit oracle observation for every
+  element tested (one documented Na/Mg/Al divergence, see the RFC).
+  Explicitly out of scope: pure-2D wedge-only square-planar encoding (no
+  such MDL mechanism exists), 3-heavy + implicit-H square-planar centers,
+  and a chematic-specific lossless SDF extension (Tier 3, not built).
+- New public types: `MolFormat`, `UnsupportedStereoReason`,
+  `MolStereoWriteError`, `SquarePlanarRejectionReason`,
+  `SquarePlanarPerceptionDiagnostic`; `MolReadReport` gained a new
+  `square_planar_diagnostics` field.
+
+### Fixed — `chematic-mol` (`wedge_vs_3d_conflicts` tetrahedral-only gate)
+
+- `wedge_vs_3d_conflicts` gated on `atom.chirality == Chirality::None`,
+  so any non-`None`, non-tetrahedral chirality fell through into a
+  computation that assumes a tetrahedral shape — latent until this PR,
+  since no MOL/SDF reader ever produced `Chirality::SquarePlanar` before
+  now. Fixed by switching to `!atom.chirality.is_tetrahedral()`, an
+  exhaustive-match-safe allowlist gate (same fix shape as two prior
+  instances of this bug class in `chematic-3d`/`chematic-chem`).
+
 Issue #227 Phase 2: MMFF94 BCI (bond-charge-increment) partial-charge bug,
 investigated per Phase 1's own flagged follow-up and fixed. Also adds a
 full `embed_pipeline_v2` 3-state quality re-measurement (State 1: v0.16.0
