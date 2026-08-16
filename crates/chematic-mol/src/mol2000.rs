@@ -1043,6 +1043,15 @@ pub fn parse_sdf_with_coords(
 /// Coordinates are written as 0.0 because the core `Molecule` type does not
 /// store 2D/3D coordinates.  All other atom and bond fields are derived from
 /// the molecule graph.
+///
+/// **Does not preserve `Chirality::SquarePlanar` stereo.** This is a 2D-only
+/// writer with no z channel; MOL/CTfile has no other field for a
+/// non-tetrahedral stereo tag either (see
+/// `docs/rfcs/square_planar_mol_io_rfc.md`). A square-planar-tagged atom is
+/// written with no indication anything was dropped. If `mol` may carry
+/// `Chirality::SquarePlanar`, use [`write_mol_with_conformer_checked`]
+/// instead, which fails closed with a typed error rather than silently
+/// discarding the tag.
 pub fn write_mol(mol: &Molecule, metadata: &MolMetadata) -> String {
     write_mol_with_coords(mol, metadata, &[])
 }
@@ -1051,6 +1060,10 @@ pub fn write_mol(mol: &Molecule, metadata: &MolMetadata) -> String {
 ///
 /// `coords[i]` is the `(x, y)` position in Ångström for atom index `i`.
 /// Atoms beyond `coords.len()` receive `(0.0, 0.0, 0.0)`.
+///
+/// **Does not preserve `Chirality::SquarePlanar` stereo** -- see
+/// [`write_mol`]'s doc comment; the same 2D-only limitation applies here.
+/// Use [`write_mol_with_conformer_checked`] if `mol` may carry it.
 pub fn write_mol_with_coords(
     mol: &Molecule,
     metadata: &MolMetadata,
@@ -1129,6 +1142,15 @@ pub fn write_mol_with_coords(
 /// contradictory at worst -- see [`write_mol_with_coords`] (unchanged, still
 /// the 2D writer) for the wedge-preserving counterpart. Atoms beyond
 /// `conformer.atom_count()` receive `(0.0, 0.0, 0.0)`.
+///
+/// **Does not validate `Chirality::SquarePlanar` stereo against
+/// `conformer`** -- it writes whatever coordinates it is given, trusting the
+/// caller (the same "trust the caller" posture this crate's writers have
+/// always had for tetrahedral wedge bonds). If `conformer`'s geometry
+/// doesn't actually match a declared square-planar tag, this will silently
+/// write a self-inconsistent file. Use
+/// [`write_mol_with_conformer_checked`] instead to fail closed on that
+/// mismatch (or on a missing/flat conformer) rather than trusting it.
 pub fn write_mol_with_conformer(
     mol: &Molecule,
     metadata: &MolMetadata,
@@ -1445,6 +1467,12 @@ pub fn write_mol_with_conformer_checked(
 /// `records` — slice of `(molecule, metadata, coords)` tuples.
 /// `coords` is optional; pass an empty slice to write zero coordinates.
 /// Each molecule block is terminated with `$$$$`.
+///
+/// **Does not preserve `Chirality::SquarePlanar` stereo** -- see
+/// [`write_mol`]'s doc comment; this delegates to [`write_mol_with_coords`]
+/// per record. There is no `_checked` SDF-multi-record entry point today;
+/// call [`write_sdf_record_with_conformer_checked`] once per record and
+/// concatenate if `records` may carry it.
 #[allow(clippy::type_complexity)]
 pub fn write_sdf(records: &[(&Molecule, &MolMetadata, &[(f64, f64)])]) -> String {
     let mut out = String::new();
@@ -1469,6 +1497,10 @@ pub fn write_sdf(records: &[(&Molecule, &MolMetadata, &[(f64, f64)])]) -> String
 ///
 /// $$$$
 /// ```
+///
+/// **Does not preserve `Chirality::SquarePlanar` stereo** -- see
+/// [`write_mol`]'s doc comment; this delegates to [`write_mol_with_coords`]
+/// per record.
 #[allow(clippy::type_complexity)]
 pub fn write_sdf_with_charges(
     records: &[(&Molecule, &MolMetadata, &[(f64, f64)], &[f64])],
@@ -1492,6 +1524,10 @@ pub fn write_sdf_with_charges(
 /// Keys starting with `_` are treated as internal/computed properties and are
 /// omitted from the SD block (e.g. `_Name` is written into the MOL header, not
 /// as an SD field).  The record is terminated with `$$$$`.
+///
+/// **Does not preserve `Chirality::SquarePlanar` stereo** -- see
+/// [`write_mol`]'s doc comment; this delegates to [`write_mol_with_coords`].
+/// Use [`write_sdf_record_with_conformer_checked`] if `mol` may carry it.
 pub fn write_sdf_record(
     mol: &Molecule,
     meta: &MolMetadata,
@@ -1511,6 +1547,10 @@ pub fn write_sdf_record(
 /// Like [`write_sdf_record`] but emits a MOL V3000 (Extended Ctab) block
 /// instead of V2000 — required for molecules with more than 999 atoms or
 /// bonds, which don't fit V2000's fixed-width count fields.
+///
+/// **Does not preserve `Chirality::SquarePlanar` stereo** -- see
+/// [`write_mol`]'s doc comment; this delegates to [`crate::mol3000::write_mol_v3000`],
+/// itself 2D-only.
 pub fn write_sdf_record_v3000(
     mol: &Molecule,
     meta: &MolMetadata,
@@ -1534,6 +1574,12 @@ pub fn write_sdf_record_v3000(
 /// back as one [`crate::sdf::ConformerEnsemble`] by
 /// [`crate::sdf::read_sdf_conformer_ensembles`]), call this once per
 /// conformer and concatenate the results.
+///
+/// **Does not validate `Chirality::SquarePlanar` stereo against
+/// `conformer`** -- see [`write_mol_with_conformer`]'s doc comment for why.
+/// Use [`write_sdf_record_with_conformer_checked`] instead to fail closed on
+/// a geometry/tag mismatch (or a missing/flat conformer) rather than
+/// trusting it.
 pub fn write_sdf_record_with_conformer(
     mol: &Molecule,
     meta: &MolMetadata,
@@ -1548,6 +1594,29 @@ pub fn write_sdf_record_with_conformer(
     }
     out.push_str("$$$$\n");
     out
+}
+
+/// [`write_sdf_record_with_conformer`], but fails closed with a typed
+/// [`MolStereoWriteError`] instead of silently writing coordinates that
+/// don't actually match a molecule's declared square-planar stereo (or
+/// don't exist at all) -- the SDF-record counterpart of
+/// [`write_mol_with_conformer_checked`]. See
+/// [`validate_square_planar_for_write`].
+///
+/// For a molecule with no `Chirality::SquarePlanar` atom, this is exactly
+/// [`write_sdf_record_with_conformer`] wrapped in `Ok`. To write a
+/// multi-record SDF (e.g. several distinct molecules, or several conformers
+/// of the same one), call this once per record and concatenate the
+/// results -- there is no separate multi-record entry point, matching
+/// [`write_sdf`]'s own per-record-call convention.
+pub fn write_sdf_record_with_conformer_checked(
+    mol: &Molecule,
+    meta: &MolMetadata,
+    conformer: &Coords3D,
+    props: &std::collections::HashMap<String, String>,
+) -> Result<String, MolStereoWriteError> {
+    validate_square_planar_for_write(mol, Some(conformer), MolFormat::V2000)?;
+    Ok(write_sdf_record_with_conformer(mol, meta, conformer, props))
 }
 
 // ---------------------------------------------------------------------------

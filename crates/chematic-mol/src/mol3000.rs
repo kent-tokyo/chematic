@@ -1119,6 +1119,15 @@ M  END
 ///
 /// `coords[i]` is the `(x, y)` position for atom `i`.  Atoms beyond
 /// `coords.len()` receive `(0.0, 0.0, 0.0)`.
+///
+/// **Does not preserve `Chirality::SquarePlanar` stereo.** This is a
+/// 2D-only writer with no z channel; MOL/CTfile has no other field for a
+/// non-tetrahedral stereo tag either (see
+/// `docs/rfcs/square_planar_mol_io_rfc.md`). A square-planar-tagged atom is
+/// written with no indication anything was dropped. If `mol` may carry
+/// `Chirality::SquarePlanar`, use
+/// [`write_mol_v3000_with_conformer_checked`] instead, which fails closed
+/// with a typed error rather than silently discarding the tag.
 pub fn write_mol_v3000(mol: &Molecule, metadata: &MolMetadata, coords: &[(f64, f64)]) -> String {
     let natoms = mol.atom_count();
     let nbonds = mol.bond_count();
@@ -1236,6 +1245,13 @@ pub fn write_mol_v3000(mol: &Molecule, metadata: &MolMetadata, coords: &[(f64, f
 /// its own output. Enhanced stereo groups (`COLLECTION`/`STEABS`/`STEOR`/
 /// `STEAND`) are unaffected -- they label which atoms form a stereo group,
 /// not a direction, and remain meaningful for a 3D record.
+///
+/// **Does not validate `Chirality::SquarePlanar` stereo against
+/// `conformer`** -- it writes whatever coordinates it is given, trusting the
+/// caller. If `conformer`'s geometry doesn't actually match a declared
+/// square-planar tag, this will silently write a self-inconsistent file.
+/// Use [`write_mol_v3000_with_conformer_checked`] instead to fail closed on
+/// that mismatch (or on a missing/flat conformer) rather than trusting it.
 pub fn write_mol_v3000_with_conformer(
     mol: &Molecule,
     metadata: &MolMetadata,

@@ -70,7 +70,7 @@ pub use mol2000::{
     read_mol_with_diagnostics, read_sdf_with_diagnostics, validate_square_planar_for_write,
     write_mol, write_mol_with_conformer, write_mol_with_conformer_checked, write_mol_with_coords,
     write_sdf, write_sdf_record, write_sdf_record_v3000, write_sdf_record_with_conformer,
-    write_sdf_with_charges,
+    write_sdf_record_with_conformer_checked, write_sdf_with_charges,
 };
 pub use mol3000::{
     parse_mol_v3000, parse_mol_v3000_with_coords, read_mol_v3000_with_diagnostics, write_mol_v3000,
