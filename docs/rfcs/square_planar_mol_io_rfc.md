@@ -302,22 +302,23 @@ validator (§9) now also requires.
   type ripples through `chematic-py`, `chematic-wasm`, and every existing
   example/test in this crate for a class of molecule vanishingly rare in
   those call sites today. Instead, this PR adds new, additive, fully
-  fail-closed entry points (`*_checked`) for the one path that can actually
-  represent this stereo class (the conformer-aware writers), and leaves the
-  pre-existing infallible 2D writers' documented behavior as "does not
-  encode non-tetrahedral stereo, use the checked conformer writer instead" —
-  an explicit scope decision, flagged here for the maintainer to overrule if
-  a broader breaking change is actually wanted.
-- **`write_sdf_record_with_conformer` has no `_checked` sibling.** Unlike
-  the 2D-only writers above, this one *does* carry a real `Coords3D`
-  conformer, so the gap here is narrower: a caller can still get fail-closed
-  behavior for it today via `validate_square_planar_for_write(mol,
-  Some(conformer), MolFormat::V2000)` before calling it (the function is
-  `pub` precisely so this composes), just not through a single wrapped call.
-  Not added because no fixture or test in this PR needed the SDF-record
-  (`$$$$`-terminated) framing specifically — every round-trip test operates
-  at the plain MOL-block level, which the `*_checked` writers already
-  cover.
+  fail-closed entry points (`*_checked`) for every conformer-aware writer
+  that can actually represent this stereo class
+  (`write_mol_with_conformer_checked`,
+  `write_mol_v3000_with_conformer_checked`,
+  `write_sdf_record_with_conformer_checked`), and leaves the pre-existing
+  infallible 2D writers unchanged but now carrying an explicit Rustdoc
+  warning on each one ("does not preserve `Chirality::SquarePlanar`
+  stereo... use `write_..._checked` instead") so a caller reading the docs
+  for any of them is steered to the right one rather than silently losing
+  data with zero indication anything happened — an explicit scope decision
+  (fail-closed-by-default via new entry points + documented steering, not a
+  breaking signature change to the existing ones), flagged here for the
+  maintainer to overrule if a broader breaking change is actually wanted.
+  There is no V3000 SDF-record-with-conformer writer at all today (only the
+  V2000 `write_sdf_record_with_conformer`/`_checked` pair exists), so
+  nothing was left un-checked there — it simply doesn't exist as a
+  capability yet, checked or not.
 
 ## 12. `wedge_vs_3d_conflicts` fix
 

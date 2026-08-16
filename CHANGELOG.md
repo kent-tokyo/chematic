@@ -9,11 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Roadmap step 2: square-planar stereo (`@SP1`/`@SP2`/`@SP3`-equivalent)
-MOL/SDF (V2000 + V3000) support, building on the generalized stereo
-geometry foundation (PR #326).
+Roadmap step 2: square-planar stereo (`@SP1`/`@SP2`/`@SP3`-equivalent),
+read on every MOL/SDF (V2000 + V3000) reader and write via new checked
+conformer writers, building on the generalized stereo geometry foundation
+(PR #326).
 
-### Added — `chematic-mol` (square-planar stereo in MOL/SDF)
+### Added — `chematic-mol` (square-planar stereo read everywhere; write via new checked conformer writers only)
 
 - MDL/CTfile has no symbolic field for a non-tetrahedral stereo tag
   (confirmed against RDKit 2026.03.4 as a live oracle, and consistent
@@ -22,15 +23,28 @@ geometry foundation (PR #326).
   3D-coordinate-derived reperception: given a real (non-flat) 3D
   conformer, a coplanar 4-coordinate center whose neighbor pair angles
   unambiguously resolve to one of SP1/SP2/SP3 is reperceived directly
-  from geometry on read (`perceive_square_planar_from_3d`, wired into
-  both `read_mol_with_diagnostics` and `read_mol_v3000_with_diagnostics`)
-  and validated against the declared tag before writing (new
-  `write_mol_with_conformer_checked`/`write_mol_v3000_with_conformer_checked`,
-  backed by the public `validate_square_planar_for_write`) — never
-  fabricated from nothing, and never silently trusted to match. Element
-  eligibility reuses `Element::normal_valences().is_empty()` (transition
-  metals and similar), matching an RDKit oracle observation for every
-  element tested (one documented Na/Mg/Al divergence, see the RFC).
+  from geometry **on every read** (`perceive_square_planar_from_3d`,
+  wired into both `read_mol_with_diagnostics` and
+  `read_mol_v3000_with_diagnostics` — this applies regardless of which
+  writer produced the file). Element eligibility reuses
+  `Element::normal_valences().is_empty()` (transition metals and
+  similar), matching an RDKit oracle observation for every element
+  tested (one documented Na/Mg/Al divergence, see the RFC).
+- **Write support is opt-in, via three new `_checked` functions only**:
+  `write_mol_with_conformer_checked`, `write_mol_v3000_with_conformer_checked`,
+  and `write_sdf_record_with_conformer_checked` (backed by the public
+  `validate_square_planar_for_write`) validate the declared tag against
+  real coordinates before writing — never fabricating a conformer from
+  nothing, never silently trusting a mismatch — and fail closed with a
+  typed `MolStereoWriteError` otherwise. The pre-existing, more commonly
+  used writers (`write_mol`, `write_mol_with_coords`,
+  `write_mol_with_conformer`, `write_mol_v3000`,
+  `write_mol_v3000_with_conformer`, and the whole `write_sdf*` family)
+  are **unchanged and still silently drop `Chirality::SquarePlanar`** —
+  each now carries a Rustdoc warning saying so and pointing at its
+  `_checked` counterpart where one exists. Do not describe MOL/SDF
+  writing in general as "square-planar supported"; only the three
+  `_checked` functions above are.
   Explicitly out of scope: pure-2D wedge-only square-planar encoding (no
   such MDL mechanism exists), 3-heavy + implicit-H square-planar centers,
   and a chematic-specific lossless SDF extension (Tier 3, not built).
