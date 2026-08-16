@@ -100,7 +100,7 @@
   "subset_evaluations": {
     "torsion_fix_62_molecule_subset_state1_to_state2": {
       "n": 62,
-      "per_molecule_join_regressions": 0,
+      "per_molecule_join_regressions_status_level_only": 0,
       "per_molecule_join_improvements": 1,
       "improvement_molecule": "caffeine",
       "rmsd_improved": 47,
@@ -117,7 +117,7 @@
     "bci_affected_206_molecule_subset_state2_to_state3": {
       "n": 206,
       "n_joined_success_success_or_typedfailure_typedfailure": 206,
-      "per_molecule_join_regressions": 0,
+      "per_molecule_join_regressions_status_level_only": 0,
       "per_molecule_join_improvements": 0,
       "rmsd_improved": 83,
       "rmsd_worsened": 101,
@@ -135,7 +135,7 @@
     "n": 265,
     "common_rows": 265,
     "status_transitions": {"success->success": 240, "typed_failure->success": 1, "typed_failure->typed_failure": 24},
-    "per_molecule_join_regressions": 0,
+    "per_molecule_join_regressions_status_level_only": 0,
     "per_molecule_join_improvements": 1,
     "improvement_molecule": "caffeine",
     "known_jitter_flips": 0,
@@ -149,6 +149,36 @@
     "stereo_newly_violated": 1,
     "stereo_newly_violated_molecules": ["chembl_tier_b_0082"]
   },
+  "chembl_tier_b_0082_stereo_investigation": {
+    "note": "the one genuine stereo-quality regression in this PR -- NOT captured by any 'per_molecule_join_regressions_status_level_only' field above, since that field only tracks success/typed_failure/timeout transitions, not stereo-quality changes within an otherwise-successful call",
+    "declared_bond": {"bond_atoms": [13, 14], "sub1": 11, "sub2": 15, "declared_same_side": false},
+    "angle_deg": {
+      "pre_minimization": -140.677,
+      "state2_final": 166.924,
+      "state3_final": 0.286,
+      "state3_after_repair_stereo": -179.714
+    },
+    "rdkit_oracle_comparison": {
+      "method": "chematic's own verify_stereo judge applied to RDKit's already-saved geometries via pipeline_v2_vs_rdkit_common_scorer.rs's existing score_rows step",
+      "rdkit_etkdgv3_raw": "satisfied",
+      "rdkit_etkdgv3_uff": "satisfied",
+      "rdkit_etkdgv3_mmff94": "satisfied",
+      "rdkit_etkdgv3_best_of_n": "satisfied",
+      "verdict": "chematic-specific gap -- RDKit's own real MMFF94 minimizer (always-correct BCI charges) does not reproduce the flip"
+    },
+    "architectural_context": "mmff94_minimizer.rs has zero stereo references (confirmed by source read); pipeline_v2.rs's own module docs already document this exact failure class for chembl_tier_b_0076/chembl_tier_b_0083 (found during the v0.14.0 release gate) -- a third instance of an already-known gap, not new",
+    "repair_stereo_safety_check": {
+      "worst_bond_length_ratio_before_repair": 0.1397,
+      "worst_bond_length_ratio_after_repair": 0.1397,
+      "gross_clash_count_before_repair": 0,
+      "gross_clash_count_after_repair": 0,
+      "atoms_moved": 9,
+      "max_displacement_angstrom": 13.821935824257938
+    },
+    "fix_implemented": "StereoPolicy::RepairAndVerify gets one additional repair-and-reverify attempt on the post-minimization geometry (crates/chematic-3d/src/pipeline_v2.rs, new PipelineV2Result::post_minimization_stereo_repair field), fail-closed (accepted only if repair succeeds, reverified result has zero violations, and geometry stays sound); StereoPolicy::Ignore/VerifyOnly unaffected by construction",
+    "residual": "under StereoPolicy::Ignore (the policy this report's own chematic_pipeline_v2_mmff94_strict arm uses), the violation is real and not recovered -- by that policy's own design. Named, tested, not hidden: chembl_tier_b_0082_ez_bond_survives_bci_fix_under_repair_and_verify_not_under_ignore in crates/chematic-3d/src/pipeline_v2.rs",
+    "measurement_impact": "none -- the fix cannot affect the Ignore-policy arm this report's States 1-3 were measured on; no re-measurement was needed or performed"
+  },
   "stop_conditions_triggered": "none",
-  "recommended_next_action": "root-cause DistanceGeometry::BoundsConstructionFailed (11/265, unchanged across all 3 states, now tied for the largest pipeline_v2_mmff94_strict failure bucket) -- upstream of MMFF94 entirely, out of issue #227's scope"
+  "recommended_next_action": "root-cause DistanceGeometry::BoundsConstructionFailed (11/265, unchanged across all 3 states, now tied for the largest pipeline_v2_mmff94_strict failure bucket) -- upstream of MMFF94 entirely, out of issue #227's scope. Secondary: MMFF94 minimization's zero stereo-awareness (chembl_tier_b_0076/0083/0082, three known instances) is now confirmed chematic-specific (RDKit does not share it) -- a root-cause fix (real stereo-awareness inside the minimizer) remains a separate, large piece of future work."
 }

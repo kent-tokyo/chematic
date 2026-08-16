@@ -665,6 +665,143 @@ noise) across all 32 variants. No renumbering-dependence found.
 tests), 0 failed; `cargo clippy -p chematic-ff --all-targets --all-features
 -- -D warnings` clean; `cargo fmt --all -- --check` clean.
 
+**Follow-up investigation (issue #227 Phase 2, 2026-08-16): the BCI fix's one
+new stereo violation, `chembl_tier_b_0082`.** The 3-state
+`pipeline_v2_mmff94_strict` re-measurement (this file's Torsion/Charges
+entries; full numbers in
+`validation/results/mmff94_bci_gap_227_phase2_report.md`) found exactly one
+molecule whose declared E/Z stereo flips from satisfied to violated between
+State 2 (post-torsion-fix, pre-BCI-fix) and State 3 (post-BCI-fix): a
+per-atom regression the earlier `per_molecule_join_regressions: 0` headline
+number does NOT capture, since that field only tracks pipeline STATUS
+transitions (success/typed_failure/timeout), not stereo-quality changes
+within an otherwise-successful call — stated explicitly here and corrected
+everywhere this file and the Phase 2 report use "0 regressions" language.
+
+*Characterization* (`crates/chematic-3d/examples/mmff94_bci_stereo_drift_diagnostic_227.rs`,
+using the new, purely additive
+`chematic_3d::stereo_constraints::{debug_double_bond,debug_all_double_bonds}`
+diagnostic — production `verify_double_bond`/`verify_stereo` untouched):
+`chembl_tier_b_0082`'s single declared bond (`sub1=11 end1=13=end2=14
+sub2=15`, declared trans/`same_side=false`) is Satisfied identically at
+pre-minimization (`ForceFieldPolicy::None`, angle -140.7°) and State 2 final
+(angle 166.9°, still trans-side) — both states share the same embedding
+seed, and BCI charges do not affect embedding, so this identity is expected,
+not a coincidence. State 3 final: angle 0.286° — `same_side=true`, Violated,
+89.7° past the boundary (not a marginal case; a genuine ~167° rotation of
+the alkene's own substituent dihedral occurred during minimization).
+
+*Reproducibility*: `stereo_before` (post-embedding) is Satisfied in both
+State 2's and State 3's own committed dump rows
+(`mmff94_bci_gap_227_state{2,3}_*_chematic_rows.jsonl`, same
+`embed_seed=20260801`/`max_attempts=8` `pipeline_v2_vs_rdkit_dump.rs` always
+uses for `chematic_pipeline_v2_mmff94_strict` — confirmed this arm goes
+through the seeded `EmbedParameters` path, not the legacy
+`generate_coords_etkdg` entry point some other arms use) — the divergence
+is real and reproducible at this fixed seed, not attributable to a
+different embedding. A multi-seed sweep was not run (the single-seed
+reproduction plus the RDKit oracle comparison below were judged sufficient
+to determine the fix tier; not claimed as an exhaustive seed-independence
+proof).
+
+*RDKit oracle comparison (the key discriminator)*: chematic's own
+`verify_stereo` judge, already applied to RDKit's saved geometries by
+`pipeline_v2_vs_rdkit_common_scorer.rs`'s existing `score_rows` step (not a
+new check), shows this bond **Satisfied on all 4 RDKit arms**
+(`rdkit_etkdgv3_raw/uff/mmff94/best_of_n`) for `chembl_tier_b_0082` —
+RDKit's own real MMFF94 minimizer, which always had correct BCI charges
+(RDKit never had this bug), does not reproduce the flip. This rules out "the
+corrected electrostatics legitimately crossed a real, RDKit-shared torsion
+barrier" — it is a **chematic-specific gap**, not an expected physical
+consequence of the charge fix.
+
+*Energy-term isolation*: not run as a separate charge-swap experiment (the
+oracle comparison above already answers the load-bearing question —
+whether this is chematic-specific — more directly and with less risk of a
+confounded methodology than re-scoring the same converged geometry with a
+different charge set would have). `force_field_converged: false` at the
+200-iteration cap in BOTH State 2 and State 3 (from the committed dump
+rows) is the one other concrete data point: this molecule's minimization
+does not converge either way, consistent with (not proof of) a
+minimizer-robustness explanation rather than a clean two-basin energy
+comparison.
+
+*Architectural context, confirmed by direct source read, not assumed*:
+`crates/chematic-ff/src/mmff94_minimizer.rs` (the MMFF94 minimizer itself)
+has zero references to stereo anywhere in the file — the force field has no
+notion of declared chirality/E-Z at all. `pipeline_v2.rs`'s own module docs
+already document exactly this failure class for two earlier molecules
+(`chembl_tier_b_0076`/`chembl_tier_b_0083`, found during the v0.14.0 release
+gate: "a force field has no notion of declared chirality/E-Z and can walk a
+geometry back across whichever stereo boundary a naive post-hoc repair
+would have fixed") — `chembl_tier_b_0082` is a third instance of the SAME
+already-known, already-documented architectural gap, not a new failure
+class the BCI fix introduced from scratch; the BCI fix only changed which
+molecule's already-marginal minimization trajectory happened to cross it.
+
+*Fix tier chosen, in the directive's own priority order*: (1) a root-cause
+fix (real stereo-awareness inside MMFF94 minimization) would be a large,
+general architecture change — the project's own prior work on this exact
+failure class explicitly deferred a structurally similar composition
+question ("deliberately deferred rather than decided by omission") rather
+than rushing one; out of scope here. (2) Converting this to a typed failure
+under `StereoPolicy::Ignore` (the policy `chematic_pipeline_v2_mmff94_strict`
+actually uses) would change default-arm behavior broadly, explicitly
+flagged as needing its own separate authorization, not decided
+unilaterally in this PR. (3) `StereoPolicy::RepairAndVerify` gets a new
+post-minimization repair-and-reverify step (`crates/chematic-3d/src/pipeline_v2.rs`)
+— empirically verified SAFE and EFFECTIVE for this exact case before
+implementing: `repair_stereo` on State 3's violated geometry succeeds,
+producing angle -179.7° (89.7° past the boundary, a robust result, not
+marginal), with `worst_bond_length_ratio`/`gross_clash_count` both
+IDENTICAL before and after the repair (0.1397/0, unchanged) — the
+9-atom/13.8Å-displacement reflection is large in absolute terms but
+introduces no bond-length or clash degradation, confirmed directly rather
+than assumed. Implemented as an additive, fail-closed step: accepted only
+if repair succeeds AND the reverified result has zero violations AND the
+repaired geometry stays within `MAX_SANE_BOND_LENGTH` — any rejection falls
+through to the original, unmodified `FinalStereoViolation` failure.
+`StereoPolicy::Ignore`/`VerifyOnly` are completely unaffected by
+construction (the new code path is nested inside the existing
+`stereo_policy != Ignore` block and additionally gated on
+`== RepairAndVerify`). (4) Not needed: tier 3 succeeded.
+
+*What remains unrecovered*: `StereoPolicy::Ignore` — the policy this PR's
+own 3-state measurement arm (`chematic_pipeline_v2_mmff94_strict`) actually
+uses — never repairs, by design (its whole point is to never gate on
+stereo), so `chembl_tier_b_0082`'s violation is real and NOT recovered
+under the arm this Phase's headline numbers are measured on. This is a
+known, named, reproducible, now-tested residual (see
+`chembl_tier_b_0082_ez_bond_survives_bci_fix_under_repair_and_verify_not_under_ignore`,
+`crates/chematic-3d/src/pipeline_v2.rs`), not silently absorbed into any
+"0 regressions" claim.
+
+**Test coverage gap, stated plainly rather than hidden**: no test in this
+PR exercises the new post-minimization repair step's OWN fail-closed path
+(repair genuinely fails, or succeeds but leaves a violation, or produces an
+unsound geometry) with a real, from-scratch "unrepairable" molecule — a
+grep of this file's existing test suite found zero pre-existing tests that
+exercise `repair_stereo` returning `Err` at all (stage 8's own,
+already-shipped repair-failure path has the same gap already, predating
+this PR). The new code's fail-closed structure (three ANDed guard
+conditions, falling through to the unchanged, pre-existing
+`FinalStereoViolation` return otherwise) is directly auditable in the diff
+and structurally identical in shape to stage 8's own `match repair_stereo
+{...}` gate, but is not independently exercised by a dedicated
+failing-repair integration test here. Flagged as a known gap, not silently
+omitted.
+
+**Quality gates (this addition)**: `cargo test -p chematic-3d --lib` 534 ->
+537 passed (3 new/updated tests: `repair_and_verify_recovers_post_minimization_stereo_violation`,
+`post_minimization_stereo_repair_is_a_no_op_when_nothing_needs_recovering`,
+`chembl_tier_b_0082_ez_bond_survives_bci_fix_under_repair_and_verify_not_under_ignore`),
+3 pre-existing failures unchanged (verified reproducing identically on the
+commit immediately before this addition: 2 timing-race timeout tests, 1
+already-known-jitter-molecule `atorvastatin_fragment` regression test in
+`distance_geometry_v2.rs` — none touch this PR's changed files);
+`cargo clippy -p chematic-3d --all-targets --all-features -- -D warnings`
+clean; `cargo fmt --all -- --check` clean.
+
 ## Halgren primary literature (secondary/theoretical cross-reference, not the implementation source)
 
 - T. A. Halgren, "Merck Molecular Force Field. I. Basis, Form, Scope,

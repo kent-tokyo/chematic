@@ -111,10 +111,18 @@ Machine-readable per-state summaries:
 
 ## 3. Subset evaluations
 
+**Note on "0 regressions" throughout this report**: every occurrence below
+means **0 status-level regressions** specifically — the per-molecule join's
+`success`/`typed_failure`/`timeout` transition only. It does NOT by itself
+mean 0 stereo-quality regressions within an otherwise-successful call; §6
+below tracks that separately (it is a real, different dimension a
+status-only join cannot see, and one genuine case of it was found and
+fixed in this PR — not silently folded into any "0 regressions" claim).
+
 ### 3a. The 62 molecules Phase 1's torsion fix touched (State 1 → State 2)
 
 Per-molecule join (`mmff94_bci_gap_227_transition_state1_to_state2_torsion62subset.json`):
-0 regressions, 1 coverage improvement (caffeine, `typed_failure` →
+0 status-level regressions, 1 coverage improvement (caffeine, `typed_failure` →
 `success`). RMSD 47/58 improved, 11/58 worsened; mean 1.156 → 1.115 Å,
 median 1.210 → 1.128 Å; coverage@0.5/1.0/2.0 all increased (29.0%→30.6%,
 38.7%→43.5%, 77.4%→82.3%). TFD roughly balanced by count (25 improved / 26
@@ -131,26 +139,32 @@ pipeline for the same molecules, not offset by it.
 ### 3b. Molecules the BCI fix changed at least one charge on (State 2 → State 3, n=206)
 
 Per-molecule join (`mmff94_bci_gap_227_transition_state2_to_state3_bciaffectedsubset.json`):
-0 coverage regressions, 0 coverage improvements (expected — partial charges
-do not gate `Mmff94BondAngleStrict`/`Mmff94WithUffFallback` coverage
-eligibility, only the electrostatic energy term). RMSD 83/186 improved,
-101/186 worsened, mean delta −0.0009 Å (essentially zero — a genuine
-noise-level wash, not a directional shift; 12/186 molecules show a
+0 status-level coverage regressions, 0 coverage improvements (expected —
+partial charges do not gate `Mmff94BondAngleStrict`/`Mmff94WithUffFallback`
+coverage eligibility, only the electrostatic energy term). RMSD 83/186
+improved, 101/186 worsened, mean delta −0.0009 Å (essentially zero — a
+genuine noise-level wash, not a directional shift; 12/186 molecules show a
 meaningful >0.1 Å shift in either direction, consistent with a few cases
 landing in a different local minimum, not a systematic quality change). TFD
-92/186 improved, 84/186 worsened (also roughly balanced). One new stereo
-violation: `chembl_tier_b_0082` (0 → 1 violation).
+92/186 improved, 84/186 worsened (also roughly balanced). **One genuine
+stereo-quality regression** (not a status regression — this molecule stays
+`success` in both states): `chembl_tier_b_0082` (0 → 1 declared E/Z
+violation) — investigated in full in §6, not just noted here.
 
-**Verdict: NO CHANGE** — coverage unaffected as structurally expected;
-aggregate geometry quality is flat/noise-level in both directions, not a
-quality-only improvement or a regression. The BCI fix is a real correctness
-fix (Section 1) whose effect on final minimized geometry quality is small
-and mixed-sign, exactly as expected for a fix to one term (electrostatics)
-among several in the MMFF94 energy function — it changes which local
-minimum the minimizer converges to for some molecules, not which basin is
-reachable at all. The one new stereo violation is reported plainly, not
-hidden: an isolated case, not part of a systemic pattern (0 regressions
-among the other 205 molecules' coverage or stereo state).
+**Verdict: NO CHANGE at the coverage/aggregate-quality level, WITH ONE
+NAMED STEREO REGRESSION investigated and addressed separately (§6)** —
+coverage unaffected as structurally expected; aggregate geometry quality is
+flat/noise-level in both directions, not a quality-only improvement or a
+regression. The BCI fix is a real correctness fix (§1) whose effect on
+final minimized geometry quality is small and mixed-sign, exactly as
+expected for a fix to one term (electrostatics) among several in the MMFF94
+energy function — it changes which local minimum the minimizer converges to
+for some molecules, not which basin is reachable at all. The one new stereo
+violation is reported plainly, not hidden, and is the single case
+underlying §6's investigation and the `RepairAndVerify`-scoped fix
+implemented there — it is 0/205 among status-level outcomes for the rest of
+this subset, but it is real for this one molecule under the `Ignore` policy
+this report's own headline arm uses.
 
 ## 4. Full-corpus transition table, State 1 → State 3 final
 
@@ -167,7 +181,7 @@ aggregate-count arithmetic.)
 | success → typed_failure / timeout | **0** |
 | timeout → anything | 0 (no timeouts in either state) |
 
-- `per_molecule_join_regressions`: **0**
+- `per_molecule_join_regressions` (status-level only): **0**
 - `per_molecule_join_improvements`: **1** (caffeine)
 - Pre-registered wall-clock-timeout-boundary jitter molecules
   (`chembl_tier_b_0166`/`_0114`/`_0117`, `atorvastatin_fragment`,
@@ -179,25 +193,89 @@ aggregate-count arithmetic.)
   improvement, driven by the torsion-fix subset above; median delta exactly
   0.0 since most of the corpus is untouched by either fix).
 - TFD: 93/234 improved, 82/234 worsened.
-- Stereo newly violated: 1 (`chembl_tier_b_0082`, same molecule as 3b —
+- Stereo newly violated: 1 (`chembl_tier_b_0082`, same molecule as §3b —
   entered between State 2 and State 3, i.e. attributable to the BCI fix,
-  not the torsion fix).
+  not the torsion fix). This is the ONE genuine regression this whole
+  report contains, on any dimension — investigated and addressed in §6,
+  never blended into the "0 regressions" (status-level) numbers above.
 
-## 5. Stop-condition check
+## 6. `chembl_tier_b_0082` stereo-quality investigation and fix
+
+Full writeup, source citations, and the safety verification behind the fix
+below: `scripts/mmff94_provenance/PROVENANCE.md`'s "Follow-up investigation"
+entry (Charges/BCI section). Summary:
+
+- **Characterization**: the declared E/Z bond's dihedral is -140.7°
+  (pre-minimization) / 166.9° (State 2 final) — both robustly on the
+  declared (trans) side — vs. 0.286° (State 3 final, 89.7° past the
+  boundary) — a genuine, non-marginal rotation, not a knife-edge case.
+- **RDKit oracle comparison (the key discriminator)**: RDKit's own real
+  MMFF94 minimizer, which always had correct BCI charges, does NOT
+  reproduce this flip on any of its 4 arms for the same molecule (already
+  applied via `pipeline_v2_vs_rdkit_common_scorer.rs`'s existing
+  `score_rows` stereo check against RDKit's saved geometries) — this is a
+  **chematic-specific** minimizer-robustness gap, not a physically-expected
+  consequence of the now-correct electrostatics.
+- **Architectural context**: `mmff94_minimizer.rs` (chematic's MMFF94
+  minimizer) has zero stereo awareness anywhere — confirmed by direct
+  source read, not assumed. `pipeline_v2.rs`'s own module docs already
+  document this exact failure class for two earlier molecules
+  (`chembl_tier_b_0076`/`chembl_tier_b_0083`, found during the v0.14.0
+  release gate) — this is a third instance of an already-known gap, not a
+  new one this PR introduced.
+- **Fix implemented**: `StereoPolicy::RepairAndVerify` now gets one
+  additional repair-and-reverify attempt on the POST-minimization geometry
+  (new code in `crates/chematic-3d/src/pipeline_v2.rs`, new
+  `PipelineV2Result::post_minimization_stereo_repair` field) — empirically
+  verified safe (bond lengths/clash count unchanged by the repair) and
+  effective (recovers a robust, far-from-boundary satisfied geometry) for
+  this exact case before implementing, not assumed. Fail-closed:
+  accepted only if repair succeeds, the reverified result has zero
+  violations, and the repaired geometry stays sound; any rejection falls
+  through to the original, unmodified `FinalStereoViolation` failure.
+  `StereoPolicy::Ignore`/`VerifyOnly` — including this report's own
+  headline arm, `chematic_pipeline_v2_mmff94_strict` (`Ignore`) — are
+  completely unaffected by construction, so **every number in §2-5 above
+  remains valid and was not re-measured** (Ignore-policy behavior is
+  unreachable from the new code path; verified by the code structure, not
+  by re-running the 265-molecule corpus).
+- **What remains unrecovered**: under `Ignore` specifically,
+  `chembl_tier_b_0082`'s violation is real and NOT gated/repaired — by
+  that policy's own design (never gates on stereo). This is now a named,
+  reproducible, tested residual
+  (`chembl_tier_b_0082_ez_bond_survives_bci_fix_under_repair_and_verify_not_under_ignore`,
+  `crates/chematic-3d/src/pipeline_v2.rs`), not silently absorbed into any
+  aggregate number in this report.
+- **Test coverage gap, stated plainly**: the new post-minimization repair
+  step's own fail-closed path (repair itself fails, or fails to fully
+  recover, or produces an unsound geometry) is not exercised by a
+  dedicated "genuinely unrepairable molecule" integration test in this PR
+  — a pre-existing gap in this test file (stage 8's own repair-failure
+  path already had zero such tests before this PR either). The new code's
+  fail-closed structure is directly auditable in the diff.
+
+## 7. Stop-condition check
 
 None triggered: RDKit-real-BCI-source was determined with high confidence
 (source read + full-corpus oracle falsification, not a guess); success rate
 did not worsen anywhere (240→241→241); no clear RMSD/TFD worsening
-accompanies the success-rate improvement (Section 3a shows both improved
+accompanies the success-rate improvement (§3a shows both improved
 together); no molecule regressed from success to failure/timeout at any
-transition (0 regressions, all 3 pairwise diffs); canonical SMILES output is
-untouched by this PR (no canonicalization code was touched — confirmed by
-`git diff --stat` scope, only `mmff94_numeric.rs`'s BCI function and new
-measurement tooling changed); no unrelated refactor was needed; all 3
-`embed_pipeline_v2` measurements completed to full 265-molecule corpus size
-(no truncation).
+transition (0 status-level regressions, all 3 pairwise diffs); the one
+genuine stereo-quality regression found (§3b/§6) was investigated to a
+conclusive verdict (chematic-specific minimizer-robustness gap, not
+RDKit-shared physics) and fixed for the policy where a fix was
+architecturally appropriate (`RepairAndVerify`), with the `Ignore`-policy
+residual named and tested rather than hidden; canonical SMILES output is
+untouched by this PR (no canonicalization code was touched); the
+`pipeline_v2.rs` addition is a scoped, empirically-validated, narrowly-gated
+step reusing the existing `repair_stereo` mechanism, not a large unrelated
+refactor; all 3 `embed_pipeline_v2` measurements completed to full
+265-molecule corpus size (no truncation), and did not need to be re-run
+after the stereo fix since that fix cannot affect the `Ignore`-policy arm
+this report measures.
 
-## 6. Recommended next action toward "95 points"
+## 8. Recommended next action toward "95 points"
 
 The MMFF94 bond/angle/torsion/BCI classification-input bug class (issue
 #227) is now closed for its 4 originally-identified sub-bugs (bond, angle,
@@ -226,6 +304,16 @@ un-touched by Phase 1 or 2:
    remains RDKit's largest measured advantage on this corpus (RDKit: 100%)
    — `StereoPolicy::RepairAndVerify`'s own paired-arm numbers (not
    re-measured this round) are the existing lever for this gap.
+5. **MMFF94 minimization's zero stereo awareness** (§6): now confirmed, via
+   a live RDKit comparison, to be a genuine chematic-specific
+   minimizer-robustness gap (not shared with RDKit's own MMFF94
+   minimizer) rather than an expected physical phenomenon — three known
+   instances now (`chembl_tier_b_0076`/`0083`/`0082`). §6's
+   `RepairAndVerify` post-minimization repair-and-reverify step is a
+   partial mitigation (opt-in policy only); a root-cause fix (real
+   stereo-awareness inside the minimizer itself, e.g. an E/Z dihedral
+   restraint term) remains a genuinely large, separate piece of work,
+   flagged here as its own future item rather than attempted piecemeal.
 
 ## Files
 
@@ -246,12 +334,20 @@ un-touched by Phase 1 or 2:
   (re-derived from the committed T0 JSONL dump
   `mmff94_coverage_227_term_audit_v0_16_0_prefix.jsonl`, matches Phase 1's
   reported 62 exactly), `mmff94_bci_gap_227_bci_affected_206_molecule_ids.json`.
-- Tooling (new, all measurement-only, no production algorithm code):
+- Tooling (measurement-only, no production algorithm code):
   `crates/chematic-3d/examples/mmff94_bci_charges_dump_227.rs`,
   `scripts/mmff94_bci_charges_oracle_227.py`,
   `scripts/mmff94_bci_charges_compare_227.py`,
   `scripts/pipeline_v2_vs_rdkit_tfd_227.py`,
   `scripts/mmff94_bci_phase2_report_227.py`,
-  `scripts/mmff94_bci_phase2_transition_227.py`; extension:
+  `scripts/mmff94_bci_phase2_transition_227.py`,
+  `crates/chematic-3d/examples/mmff94_bci_stereo_drift_diagnostic_227.rs`
+  (§6's characterization tooling); extension:
   `crates/chematic-3d/examples/pipeline_v2_vs_rdkit_common_scorer.rs` (new
   opt-in `--pair` mode, default behavior unchanged).
+- §6's production fix: `crates/chematic-3d/src/pipeline_v2.rs` (new
+  post-minimization repair-and-reverify step, `PipelineV2Result::
+  post_minimization_stereo_repair`), `crates/chematic-3d/src/
+  stereo_constraints.rs` (new, purely additive `debug_double_bond`/
+  `debug_all_double_bonds` diagnostic, production `verify_double_bond`/
+  `verify_stereo` untouched).

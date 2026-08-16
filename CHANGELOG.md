@@ -55,16 +55,57 @@ fix) — see the PR body / `validation/results/` for the full report.
   main, pre-BCI-fix), State 3 (this PR, post-both-fixes). `pipeline_v2_mmff94_strict`
   success: 240/265 → 241/265 → 241/265; RMSD (symmetric, vs
   `rdkit_etkdgv3_mmff94`) mean 1.698 → 1.685 → 1.685 Å; TFD mean 0.2245 →
-  0.2233 → 0.2228; 0 regressions on every pairwise per-molecule join.
+  0.2233 → 0.2228; **0 status-level regressions** (success/typed_failure/
+  timeout) on every pairwise per-molecule join — see below for the one
+  genuine stereo-quality regression this note does NOT cover.
 - 62-molecule torsion-fix subset (State 1 → State 2): **both coverage and
   geometry quality improved together** (+1 success, RMSD mean 1.156 → 1.115
   Å, coverage@2.0Å 77.4% → 82.3%) — not a coverage-only gain.
 - 206-molecule BCI-fix-affected subset (State 2 → State 3): coverage
   unaffected (structural — charges don't gate this policy), aggregate
-  RMSD/TFD flat/noise-level (mean RMSD delta −0.0009 Å), one isolated new
-  stereo violation (`chembl_tier_b_0082`).
+  RMSD/TFD flat/noise-level (mean RMSD delta −0.0009 Å), **one genuine new
+  stereo violation** (`chembl_tier_b_0082`, investigated and addressed —
+  see next section).
 - Full report: `validation/results/mmff94_bci_gap_227_phase2_report.md`
   (+ `_summary.json`, raw per-state dumps, per-molecule transition tables).
+
+### Fixed — `chematic-3d` (post-minimization stereo repair-and-reverify)
+
+- **Found during the 3-state re-measurement above**: `chembl_tier_b_0082`'s
+  declared E/Z bond is satisfied post-embedding (identical in States 2 and
+  3 — charges don't affect embedding) but MMFF94 minimization walks it to
+  violated only under State 3's corrected charges. Oracle-confirmed
+  chematic-specific: RDKit's own real MMFF94 minimizer, run on the same
+  molecule, does NOT reproduce this on any of its 4 arms — the same
+  already-documented "MMFF94 minimization has zero stereo awareness"
+  architectural class as `chembl_tier_b_0076`/`chembl_tier_b_0083` (found
+  during the v0.14.0 release gate), a third instance, not a new failure
+  class this fix introduced.
+- Fix: `StereoPolicy::RepairAndVerify` now gets one additional
+  repair-and-reverify attempt on the POST-minimization geometry (new
+  `PipelineV2Result::post_minimization_stereo_repair` field) — stage 8's
+  existing repair runs too early to see a violation minimization itself
+  introduces. Empirically verified safe (bond lengths/clash count
+  unchanged by the repair) and effective before implementing. Fail-closed:
+  accepted only if repair succeeds, the reverified result has zero
+  violations, and the geometry stays sound; any rejection falls through to
+  the original, unmodified `FinalStereoViolation` failure.
+  `StereoPolicy::Ignore`/`VerifyOnly` (including this PR's own measured
+  arm, `chematic_pipeline_v2_mmff94_strict`) are completely unaffected by
+  construction — the fix cannot and does not change any of the 3-state
+  numbers above, which were not re-measured for this reason.
+- Root-cause fix (real stereo-awareness inside MMFF94 minimization) and
+  broadening `StereoPolicy::Ignore`'s own gate were both considered and
+  explicitly out of scope (large, cross-cutting changes deserving their
+  own separate authorization) — under `Ignore`, `chembl_tier_b_0082`'s
+  violation remains real and unrecovered, a named, tested residual
+  (`chembl_tier_b_0082_ez_bond_survives_bci_fix_under_repair_and_verify_not_under_ignore`),
+  not silently hidden.
+- New/updated tests: `repair_and_verify_recovers_post_minimization_stereo_violation`
+  (updates a now-obsolete negative-control test that used to assert this
+  exact `gly_ala_gly` case was unrecoverable), a no-op sanity check, and
+  the `chembl_tier_b_0082` golden regression test above. Full writeup:
+  `scripts/mmff94_provenance/PROVENANCE.md`'s "Follow-up investigation" entry.
 
 ---
 
