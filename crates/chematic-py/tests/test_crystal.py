@@ -120,11 +120,13 @@ def test_cif_roundtrip_preserves_lattice_sites_labels():
     assert s1.lattice.angles_degrees == pytest.approx(s2.lattice.angles_degrees, abs=1e-2)
     assert s1.site_count() == s2.site_count() == 2
 
-    species1 = sorted((site.species[0][0], site.fractional) for site in s1.sites)
-    species2 = sorted((site.species[0][0], site.fractional) for site in s2.sites)
-    for (el1, f1), (el2, f2) in zip(species1, species2):
+    sites1 = sorted((site.species[0][0], site.species[0][1], site.fractional, site.label) for site in s1.sites)
+    sites2 = sorted((site.species[0][0], site.species[0][1], site.fractional, site.label) for site in s2.sites)
+    for (el1, occ1, f1, label1), (el2, occ2, f2, label2) in zip(sites1, sites2):
         assert el1 == el2
+        assert occ1 == pytest.approx(occ2, abs=1e-3)
         assert f1 == pytest.approx(f2, abs=1e-4)
+        assert label1 == label2
 
 
 def test_cif_disordered_site_not_collapsed():
