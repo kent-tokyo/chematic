@@ -17,6 +17,7 @@ type RdkitMorganDetail = (
     std::collections::HashMap<usize, Vec<(u32, u32)>>,
 );
 
+mod crystal;
 mod formats;
 mod misc;
 mod mol_methods;
@@ -91,6 +92,7 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     similarity::register(m)?;
     reports::register(m)?;
     misc::register(m)?;
+    crystal::register(m)?;
 
     Ok(())
 }

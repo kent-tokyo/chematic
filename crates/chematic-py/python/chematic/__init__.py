@@ -14,6 +14,13 @@ from .chematic import (
     iter_sdf,
     iter_sdf_str,
 )
+from .chematic import (
+    Lattice,
+    PeriodicStructure,
+    Site,
+    PeriodicNeighbor,
+    CifSymmetryStatus,
+)
 
 
 # Task → representation mapping (arXiv 2026: CML/MolJSON outperform SMILES on structural tasks)
