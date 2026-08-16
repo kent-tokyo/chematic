@@ -18,6 +18,8 @@
 
 pub mod cdxml;
 pub mod cif;
+#[cfg(feature = "crystal")]
+mod cif_symmetry;
 pub mod cjson;
 pub mod cml;
 pub mod error;
@@ -50,7 +52,8 @@ pub use cdxml::{
 pub use cif::{CifError, CifResult, UnitCell, parse_cif, write_cif};
 #[cfg(feature = "crystal")]
 pub use cif::{
-    CifPeriodicError, CifPeriodicResult, CifSymmetryStatus, parse_cif_periodic_structure,
+    CifPeriodicError, CifPeriodicParseOptions, CifPeriodicResult, CifSymmetryError,
+    CifSymmetryStatus, parse_cif_periodic_structure, parse_cif_periodic_structure_with_options,
     write_cif_periodic_structure,
 };
 pub use cjson::{CjsonError, parse_cjson, write_cjson};

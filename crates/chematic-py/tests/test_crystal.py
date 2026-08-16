@@ -1,8 +1,10 @@
 """Tests for the chematic-crystal Python bindings: Lattice, PeriodicStructure,
 Site, PeriodicNeighbor, CifSymmetryStatus.
 
-Light-gate scope per project policy (Python-binding-only change): ~15 focused
-cases, not a corpus run.
+Light-gate scope per project policy (binding-level change): focused cases
+exercising the Python surface, not a corpus run -- the parser/expansion
+grammar itself is covered by chematic-mol's Rust-side fixture suite
+(crates/chematic-mol/src/cif.rs, cif_symmetry.rs).
 """
 import numpy as np
 import pytest
@@ -28,10 +30,12 @@ Na1 Na 0.0 0.0 0.0
 Cl1 Cl 0.5 0.5 0.5
 """
 
-# Realistic C2/c (space group No. 15) symop list -- the single listed atom
-# is only the asymmetric unit, not the full cell content. Mirrors
+# Realistic C2/c (space group No. 15) symop list -- with expand_symmetry
+# (the default), Ti1's expanded images collapse pairwise onto 4 distinct
+# sites (Ti1 sits on a special position); with expand_symmetry=False, the
+# single listed atom is returned as-is, the pre-expansion behavior. Mirrors
 # chematic-mol's own cif.rs test fixture for this exact scenario.
-UNEXPANDED_SYMMETRY_CIF = """\
+SYMMETRIC_C2C_CIF = """\
 data_synthetic_c2c
 _cell_length_a 10.0
 _cell_length_b 8.0
@@ -138,16 +142,70 @@ def test_cif_disordered_site_not_collapsed():
     assert species["Ni"] == pytest.approx(0.4)
 
 
-def test_cif_undeclared_symmetry_surfaced():
-    s = PeriodicStructure.from_cif(UNEXPANDED_SYMMETRY_CIF)
+def test_cif_declared_symmetry_expands_by_default():
+    s = PeriodicStructure.from_cif(SYMMETRIC_C2C_CIF)
     status = s.symmetry_status
     assert status is not None
     assert status.is_p1 is False
+    assert status.is_expanded is True
+    assert status.is_complete_cell is True
     assert status.space_group_name == "C 2/c"
     assert status.operation_count == 8
+    assert status.asymmetric_site_count == 1
+    assert status.expanded_site_count == 4
+    assert s.site_count() == 4
+    # A genuinely complete (expanded) cell writes back out freely.
+    assert s.to_cif()
+
+
+def test_cif_expand_symmetry_false_keeps_asymmetric_unit_only():
+    s = PeriodicStructure.from_cif(SYMMETRIC_C2C_CIF, expand_symmetry=False)
+    status = s.symmetry_status
+    assert status is not None
+    assert status.is_p1 is False
+    assert status.is_expanded is False
+    assert status.is_complete_cell is False
+    assert status.space_group_name == "C 2/c"
+    assert status.operation_count == 8
+    assert status.asymmetric_site_count is None
+    assert status.expanded_site_count is None
+    assert s.site_count() == 1
     # Writing back must not silently re-declare this asymmetric unit as P1.
     with pytest.raises(ValueError):
         s.to_cif()
+
+
+def test_cif_expand_symmetry_true_is_same_as_default():
+    default = PeriodicStructure.from_cif(SYMMETRIC_C2C_CIF)
+    explicit = PeriodicStructure.from_cif(SYMMETRIC_C2C_CIF, expand_symmetry=True)
+    assert default.site_count() == explicit.site_count() == 4
+
+
+def test_wrap_into_cell_and_make_supercell_preserve_complete_cell_status():
+    # Regression spot-check (PR #333's wrap_into_cell()/make_supercell()
+    # combined with this PR's symmetry expansion): both transforms must
+    # keep reporting a genuinely complete cell as complete.
+    s = PeriodicStructure.from_cif(SYMMETRIC_C2C_CIF)
+    assert s.symmetry_status.is_complete_cell is True
+
+    wrapped = s.wrap_into_cell()
+    assert wrapped.symmetry_status.is_complete_cell is True
+    assert wrapped.to_cif()
+
+    supercell = s.make_supercell((2, 1, 1))
+    assert supercell.symmetry_status.is_complete_cell is True
+    assert supercell.site_count() == 8
+    assert supercell.to_cif()
+
+    # And the unexpanded (opted-out) case must still refuse after both
+    # transforms too -- the asymmetric-unit problem doesn't go away.
+    unexpanded = PeriodicStructure.from_cif(SYMMETRIC_C2C_CIF, expand_symmetry=False)
+    assert unexpanded.wrap_into_cell().symmetry_status.is_complete_cell is False
+    assert unexpanded.make_supercell((2, 1, 1)).symmetry_status.is_complete_cell is False
+    with pytest.raises(ValueError):
+        unexpanded.wrap_into_cell().to_cif()
+    with pytest.raises(ValueError):
+        unexpanded.make_supercell((2, 1, 1)).to_cif()
 
 
 # ---------------------------------------------------------------------------

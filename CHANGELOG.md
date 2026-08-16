@@ -363,6 +363,96 @@ data). LAMMPS data/dump and Gaussian Cube/OpenDX (a shared
     `PeriodicStructure` adapter) is now enabled on the `chematic-py` ->
     `chematic-mol` edge.
 
+### Added — `chematic-mol` (CIF explicit symmetry-operation expansion)
+
+- Roadmap step 4: a CIF's declared asymmetric unit can now be expanded
+  into a full unit cell using **only the symmetry operations literally
+  written in the CIF text** — no space-group database, no name/number-to-
+  operations generation, no spglib-equivalent auto-detection (see
+  `crates/chematic-mol/src/cif_symmetry.rs`'s module docs and
+  `docs/crystal_scope.md`). New `parse_cif_periodic_structure_with_options`
+  (`parse_cif_periodic_structure` becomes a thin wrapper defaulting
+  `expand_explicit_symmetry: true`); new `CifPeriodicResult::to_cif_checked`
+  moves the CIF write-safety judgment from `chematic-py`-only into Rust
+  (see below).
+  - Supports both modern dotted (`_space_group_symop.operation_xyz`,
+    `_symmetry_equiv.pos_as_xyz`) and legacy underscore
+    (`_space_group_symop_operation_xyz`, `_symmetry_equiv_pos_as_xyz`) tag
+    spellings, an optional id column
+    (`_space_group_symop.id`/`_space_group_symop_id`/
+    `_symmetry_equiv.pos_site_id`/`_symmetry_equiv_pos_site_id`), and both
+    a `loop_` of operations and a single standalone (non-loop) operation
+    item (how a genuine P1 CIF sometimes states its one, identity,
+    operation explicitly). If more than one tag alias is present and they
+    parse to genuinely different operation sets, that is a typed
+    `ConflictingSymmetryOperationLists` error rather than silently picking
+    one.
+  - New hand-written operation-expression parser (no `eval`, no external
+    expression-evaluator crate): case-insensitive, whitespace-tolerant,
+    supports `x,y,z`-style rotation terms (coefficient always exactly
+    ±1) plus integer/rational translations (`x+1/2,y,z`,
+    `-y+x,-y,1/3+z`), checked arithmetic throughout (rejects overflow
+    rather than wrapping/panicking), and rejects a parsed rotation matrix
+    whose determinant isn't exactly `+1`/`-1`. New internal
+    `Rational` numerator/denominator type — no external crate; the one
+    existing rational type in this workspace
+    (`chematic-cip::rational::RationalAtomicNumber`) is CIP-specific and
+    not reusable here.
+  - Extended `CifSymmetryStatus` with a third variant,
+    `ExpandedExplicitOperations { space_group_name, operation_count,
+    asymmetric_site_count, expanded_site_count }` — documented prominently
+    as a faithfulness claim about the CIF's own text ("every operation it
+    listed was applied"), **not** a claim that the list is complete or
+    correct for the named/numbered space group (this implementation never
+    cross-checks that against any space-group database). A declared
+    space-group name/number with no parseable operation list at all still
+    classifies as `UnexpandedSymmetry`, unchanged.
+  - Special-position dedup reuses `chematic_crystal::minimum_image`
+    (Cartesian, triclinic-exact) rather than a fresh `min(d, 1-d)`
+    reimplementation. The disorder-row-grouping tolerance and the new
+    expansion-dedup tolerance are now the **same** constant,
+    `SITE_MERGE_TOLERANCE_ANGSTROM = 1e-3` Å (previously two different,
+    differently-unitted tolerances: a `1e-4` *fractional*-coordinate
+    check for disorder grouping, nothing at all for expansion, since
+    expansion didn't exist).
+  - New typed errors (`CifSymmetryError`, nested in
+    `CifPeriodicError::Symmetry`): `MalformedSymmetryOperation`,
+    `UnsupportedSymmetryExpression`, `ZeroDenominator`,
+    `InvalidRotationMatrix`, `DuplicateSymmetryOperation`,
+    `MissingIdentityOperation` (IUCr convention requires the identity to
+    be explicitly listed — a CIF that lists only one operation and that
+    operation genuinely *is* the identity is not an error; a list missing
+    identity entirely is), `ConflictingSymmetryOperationLists`,
+    `SymmetrySiteCollision` (two differently-composed asymmetric-unit
+    sites expanding onto the same position), and `ExpansionTooLarge`
+    (`operation_count * asymmetric_site_count` checked-multiplied against
+    a cap before attempting the O(n²) dedup scan — bounds pathological
+    input, not a realistic-structure limit).
+  - Deterministic output order: asymmetric-unit site order outermost,
+    then within each site the identity operation's image first
+    (regardless of where identity sits in the source operation list),
+    then the remaining operations in their original declared order. A
+    non-identity image's label is the source label with `@sym{N}`
+    appended (`N` = 1-based position in the *declared* operation list);
+    an unlabeled source site produces unlabeled images throughout, never
+    a synthesized label.
+
+### Added — `chematic-py` (CIF explicit symmetry-operation expansion)
+
+- `PeriodicStructure.from_cif(text, expand_symmetry=True)` — the new
+  default — now expands a CIF's explicit symmetry operations into a full
+  unit cell; `expand_symmetry=False` restores the pre-expansion,
+  asymmetric-unit-only behavior. `CifSymmetryStatus` gained
+  `is_expanded`, `is_complete_cell` (`is_p1 or is_expanded`),
+  `asymmetric_site_count`, and `expanded_site_count` (the latter two
+  `None` unless `is_expanded`). `to_cif()` now delegates to
+  `chematic_mol::CifPeriodicResult::to_cif_checked` (the single
+  Rust-side source of truth for the write-safety judgment, previously
+  duplicated Python-side against a lossy `is_p1`-only check) — refuses
+  with `ValueError` iff `is_complete_cell` is `False`, unchanged for
+  `wrap_into_cell()`/`make_supercell()` (both still preserve
+  `symmetry_status`, now correctly including the expanded case).
+
 ---
 
 ## [0.16.0] — 2026-08-15

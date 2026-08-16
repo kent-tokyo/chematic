@@ -305,6 +305,25 @@ case to leave as RFC-only rather than implement
 だけに留めて報告"). **Not implemented in this PR.** `parse_cif`/`write_cif`/
 `UnitCell` are unchanged, not deprecated, not touched.
 
+## Post-RFC update: CIF migration implemented, in two stages
+
+The "CIF migration" sketch above was implemented after this RFC, entirely
+inside `chematic-mol` (not `chematic-crystal`, which gained no new code for
+either stage):
+
+1. `parse_cif_periodic_structure`/`write_cif_periodic_structure` (the
+   `crystal` feature this section anticipated) -- reads a CIF's
+   `_atom_site_*` loop into a `PeriodicStructure`, with `CifSymmetryStatus`
+   distinguishing a genuinely-P1 file from one that declared symmetry this
+   adapter did not expand.
+2. `parse_cif_periodic_structure_with_options` -- expands a CIF's
+   **explicitly written** symmetry-operation list (only that; never a
+   name/number-derived one, see the "Future symmetry boundary" section
+   right below, which this does not cross) into a full unit cell. See
+   `crates/chematic-mol/src/cif_symmetry.rs` for the operation-expression
+   parser and expansion pipeline; it consumes only this crate's existing
+   public API (`minimum_image`, `PeriodicSite::new`, `PeriodicStructure::new`).
+
 ## Future symmetry boundary (non-goal, noted for later RFCs)
 
 Space-group determination, symmetry-operation search, Wyckoff positions,

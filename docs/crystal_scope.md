@@ -38,13 +38,28 @@ living in this crate.
 
 ## Out of scope (v0.1) -- do not assume these exist
 
-- Symmetry: no space-group determination, no symmetry-operation search, no
+- Symmetry: no space-group determination, no symmetry-operation *search*
+  (deriving operations from a name/International Tables number), no
   Wyckoff positions, no primitive/conventional cell conversion, no Niggli
-  reduction, no spglib (or any) FFI.
-- No CIF parser rewrite. `chematic_mol::cif::{parse_cif, write_cif,
-  UnitCell}` are untouched; a future `parse_cif_structure() ->
-  PeriodicStructure` adapter is sketched (not implemented) in
-  `docs/rfcs/chematic_crystal_foundation.md`.
+  reduction, no spglib (or any) FFI. This still holds inside
+  `chematic-crystal` itself. **Not** the same thing as *applying*
+  operations a CIF already states literally in its own text: that
+  capability was added in `chematic-mol` (`crates/chematic-mol/src/
+  cif_symmetry.rs`, consumed by `parse_cif_periodic_structure_with_options`)
+  and consumes only this crate's existing public API
+  (`minimum_image`/`PeriodicSite::new`/`PeriodicStructure::new`, all
+  unchanged) — `chematic-crystal` gained no new symmetry code and remains
+  as scoped above.
+- No CIF parser rewrite in `chematic-crystal` itself.
+  `chematic_mol::cif::{parse_cif, write_cif, UnitCell}` (the original,
+  non-periodic small-molecule reader) are untouched. The
+  `parse_cif_structure() -> PeriodicStructure` adapter this section used
+  to describe as a future sketch has since been implemented, in two
+  stages, entirely inside `chematic-mol`: `parse_cif_periodic_structure`
+  (see `docs/rfcs/chematic_crystal_foundation.md`'s "CIF migration"
+  section for the original sketch) and, later,
+  `parse_cif_periodic_structure_with_options`'s explicit
+  symmetry-operation expansion described above.
 - No XRD simulation, no crystal fingerprinting.
 - No VASP INCAR/KPOINTS/POTCAR parsing (POSCAR/CONTCAR structure I/O is in
   scope, see above).
