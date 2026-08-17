@@ -22,6 +22,7 @@ pub mod cif;
 mod cif_symmetry;
 pub mod cjson;
 pub mod cml;
+pub mod cube;
 pub mod error;
 pub mod gaussian;
 pub mod ket;
@@ -31,6 +32,7 @@ pub mod mol2_tripos;
 pub mod mol3000;
 pub mod moljson;
 pub mod mrv;
+pub mod opendx;
 pub mod orca;
 pub mod pdbqt;
 pub mod pqr;
@@ -40,6 +42,7 @@ pub mod rxn;
 pub mod sdf;
 pub mod smiles_table;
 pub mod tdt;
+pub mod volumetric;
 pub mod xyz;
 
 // Convenient re-exports at crate root.
@@ -58,6 +61,9 @@ pub use cif::{
 };
 pub use cjson::{CjsonError, parse_cjson, write_cjson};
 pub use cml::{CmlError, parse_cml, write_cml};
+pub use cube::{
+    CubeError, CubeFileReader, CubeParseLimits, parse_cube, parse_cube_with_limits, write_cube,
+};
 pub use error::MolParseError as MolError;
 pub use gaussian::{GaussianError, GaussianLogResult, parse_gaussian_log, parse_gjf, write_gjf};
 pub use ket::{KetError, parse_ket, parse_ket_3d, write_ket, write_ket_3d};
@@ -82,6 +88,10 @@ pub use mol3000::{
 pub use moljson::{MolJsonError, parse_moljson, write_moljson};
 pub use mrv::{
     MrvError, MrvParseLimits, MrvWriteOptions, parse_mrv, parse_mrv_with_limits, write_mrv,
+};
+pub use opendx::{
+    OpenDxError, OpenDxParseLimits, parse_opendx, parse_opendx_with_limits, write_opendx,
+    write_opendx_lossy,
 };
 pub use orca::{
     GeometryFrame, OrcaAtom, OrcaBlock, OrcaCoords, OrcaInput, OrcaInputError, OrcaOptConvergence,
@@ -110,6 +120,7 @@ pub use smiles_table::{
     SmilesWriterOptions,
 };
 pub use tdt::{TdtError, TdtReaderOptions, TdtRecordReader, TdtRecordWriter, TdtWriterOptions};
+pub use volumetric::{GridAtom, GridError, GridUnits, VolumetricGrid};
 pub use xyz::{
     ExtxyzReader, ExtxyzWriter, XyzAtom, XyzError, XyzFrame, XyzProperty, XyzPropertyKind,
     XyzReader, XyzValue, XyzWriter, parse_extxyz, parse_extxyz_all, parse_xyz, parse_xyz_all,

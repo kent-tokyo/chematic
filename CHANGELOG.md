@@ -453,6 +453,81 @@ data). LAMMPS data/dump and Gaussian Cube/OpenDX (a shared
   `wrap_into_cell()`/`make_supercell()` (both still preserve
   `symmetry_status`, now correctly including the expanded case).
 
+### Added — `chematic-mol` (Gaussian Cube + OpenDX volumetric formats)
+
+Roadmap step 5 (Wave 2 of the format-expansion program that started with
+mmCIF/PQR/QCSchema/ORCA in PR #329): a new shared `VolumetricGrid` type
+plus Gaussian Cube and OpenDX (the APBS/electrostatics scalar-field
+subset) read/write support.
+
+- New `VolumetricGrid { origin, axes, shape, values, atoms, units }` type
+  (`chematic_mol::volumetric`), independent of `chematic-crystal::Lattice`
+  (a unit-cell-specific type this crate does not depend on outside its
+  optional `crystal` feature — voxel step vectors are a different concept
+  from lattice edge vectors even though the raw `[[f64;3];3]` shape looks
+  similar). `values` uses third-axis-fastest ordering
+  (`index = (i*shape[1]+j)*shape[2]+k`), matching *both* Cube's native
+  "x outer, z inner" order and OpenDX/APBS's native
+  "z fastest, then y, then x" order, so neither reader/writer transposes
+  data relative to its source file. `axes` is a general (non-orthogonal)
+  3x3 matrix — both formats permit non-axis-aligned voxel step vectors.
+  New `GridUnits::{Bohr, Angstrom}` tag (Cube has a real, sourced-but-
+  contested Bohr/Ångström ambiguity on the first axis line's sign; rather
+  than silently normalizing or silently assuming Bohr, the unit actually
+  read/written is recorded explicitly and numbers are never rescaled).
+  New shared `GridError` (shape overflow, over-cap, value-count mismatch,
+  zero-length dimension, non-finite field) used by both formats' writers
+  via `VolumetricGrid::validate`. `VolumetricGrid::checked_index`/`get`
+  use fully checked arithmetic for the flat-index computation (every
+  field is `pub`, so a caller can construct a shape whose product
+  overflows `usize` even though an individual `(i, j, k)` looks
+  in-bounds — this returns `None` rather than risking a panic).
+- **Gaussian Cube** (`chematic_mol::cube`): `parse_cube`/
+  `parse_cube_with_limits`/`write_cube`, plus a streaming-*input*
+  `CubeFileReader<R: BufRead>` (same shape as `SdfFileReader`) for the
+  multi-gigabyte grids real quantum-chemistry workflows produce — reads
+  line-by-line rather than requiring the whole file in memory as one
+  `String` (the returned `VolumetricGrid.values` is still a fully
+  in-memory `Vec<f64>` either way), and validates the grid-point/atom
+  caps from the header before
+  the (potentially huge) voxel data block is read. Detects Cube's two
+  real documented multi-dataset conventions (negative `NAtoms` with a
+  dataset-identifier line; positive `NAtoms` with `NVal != 1`) and
+  typed-rejects both (`CubeError::MultiDatasetUnsupported`) rather than
+  silently reading only the first dataset. `write_cube` checks each
+  `shape` dimension fits the signed `i64` an axis-line field requires
+  (`CubeError::DimensionOutOfRange`) instead of an unchecked/wrapping
+  `as i64` cast. New `CubeError`/`CubeParseLimits`.
+- **OpenDX/APBS scalar field** (`chematic_mol::opendx`): `parse_opendx`/
+  `parse_opendx_with_limits`/`write_opendx`, scoped explicitly to the
+  regular-grid rank-0 `type double` subset APBS/electrostatics tooling
+  actually produces (not the full general OpenDX/IBM Data Explorer
+  format family) — a different `rank`/`type`/`class` declaration is a
+  typed `UnsupportedArrayDeclaration`, not silently misread. Cross-checks
+  `object 2`'s `gridconnections` counts against `object 1`'s
+  `gridpositions` counts and `object 3`'s declared `items` count against
+  the grid shape, both as typed mismatches rather than trusting either
+  blindly. `write_opendx` fails closed rather than silently losing
+  information: it refuses a `GridUnits::Bohr` grid
+  (`OpenDxError::NonAngstromUnits` — DX has no unit tag and is always read
+  back as Ångström, so writing Bohr magnitudes as-is would be a real,
+  silent ~1.89x error) and refuses a grid with any `atoms`
+  (`OpenDxError::AtomsNotSupported` — DX has no atom section, so there's
+  no lossy-but-acceptable way to write them). New `write_opendx_lossy`
+  opts into an explicit Bohr→Ångström conversion of `origin`/`axes` only
+  (never `values`, which aren't a length quantity) when that's actually
+  wanted; it still refuses non-empty `atoms`. New `OpenDxError`/
+  `OpenDxParseLimits`.
+- Both formats: checked-arithmetic overflow prevention
+  (`shape[0]*shape[1]*shape[2]` never allocated before being validated
+  against both `usize` overflow and the configured `ParseLimits` cap),
+  `is_finite()` checks at every numeric parse point (with injected-NaN/
+  Infinity test fixtures), and deterministic output (no `HashMap`
+  anywhere in either module).
+- Out of scope for this step, noted in both modules' doc comments as a
+  future entry point: VASP's CHGCAR/LOCPOT volumetric formats, which
+  would build on this same `VolumetricGrid` type.
+
 ---
 
 ## [0.16.0] — 2026-08-15
