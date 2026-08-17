@@ -138,20 +138,29 @@ fix) — see the PR body / `validation/results/` for the full report.
 - Fix: new `mmff_derived_formal_charge`/`o2cm_sm_formal_charge` helpers
   (reusing this module's existing `count_terminal_o_neighbors`/
   `count_terminal_s_neighbors`/`count_deg2_n_neighbors`, the same counters
-  `classify_terminal_o` already uses to *assign* type 32) compute the
-  derived charge; `mmff94_charges_numeric`'s Step 1 and Step 3 now read it
-  instead of `atom.charge`, and Step 3's leak is gated to `fcadj_i ≈ 0`
+  `classify_terminal_o` already uses to *assign* type 32 — with one known,
+  disclosed divergence: the shared `count_deg2_n_neighbors` helper omits
+  RDKit's `!isAromatic()` condition on secondary nitrogens, which could
+  flip the O2CM/SM sulfone-neighbor branch's result for an aromatic
+  degree-2 N case the corpus does not contain) compute the derived charge;
+  `mmff94_charges_numeric`'s Step 1 and Step 3 now read it instead of
+  `atom.charge`, and Step 3's leak is gated to `fcadj_i ≈ 0`
   (`isDoubleZero`-style `1e-10` epsilon). A faithful but intentionally
-  partial port: the unconditional ±1/±2/±3/−1 simple-type groups and
+  partial port: the unconditional ±1/±2/±3/−1 simple-type groups
+  (including type 62's full two-part rule — its −1.0 base value *and* its
+  extra "subtract half of positive-neighbor-charge" adjustment) and
   O2CM/SM's carbon-neighbor/nitro-nitrate-neighbor/sulfone-neighbor
-  branches are implemented and each independently verified against a live
-  RDKit 2026.03.4 oracle query (not merely re-derived from this fix's own
-  output); O2CM/SM's phosphate/thiosulfinate/perchlorate-neighbor branches
-  and the ring-/conjugation-dependent types (76, 55/56/81, 61, plus type
-  62's extra adjustment) are not ported — zero atoms of any of these appear
-  anywhere in the 264-molecule Wave 1 corpus (confirmed by a dedicated
-  full-corpus survey), so the gap cannot be masking a corpus-visible bug;
-  flagged as a follow-up.
+  branches are implemented; the ±1/±2/±3/−1 groups and 3 of the O2CM/SM
+  branches are each independently verified against a live RDKit 2026.03.4
+  oracle query (not merely re-derived from this fix's own output), while
+  type 62's extra adjustment is implemented but not independently
+  oracle-verified (zero corpus exposure either way, so nothing to falsify
+  against). O2CM/SM's phosphate/thiosulfinate/perchlorate-neighbor
+  branches and the ring-/conjugation-dependent types (76, 55/56/81, 61)
+  are not ported at all — zero atoms of any of these types appear anywhere
+  in the 264-molecule Wave 1 corpus (confirmed by a dedicated full-corpus
+  survey), so the gap cannot be masking a corpus-visible bug; flagged as a
+  follow-up.
 - Measured against the same live RDKit oracle dump and the same per-atom
   join methodology as the bond-type fix above, entry point
   `crates/chematic-3d/examples/mmff94_bci_charges_dump_227.rs`: the
@@ -168,6 +177,21 @@ fix) — see the PR body / `validation/results/` for the full report.
   instead of 4 in 2 molecules) — confirmed unmoved by this fix in either
   direction, and out of scope per this step's own stop condition (fixing
   them means touching atom-type assignment, a different-shaped change).
+- **Blast radius, both directions**: exactly **5 of 6,693 corpus atoms**
+  change computed value at all (5 mismatch→match; the other 6,626
+  match→match and 62 mismatch→mismatch atoms are all byte-identical
+  before/after) — the reason no downstream `embed_pipeline_v2`
+  re-measurement was run for this step (contrast the prior BCI bond-type
+  fix, which moved 1,620 atoms and produced one genuine new stereo
+  violation, `chembl_tier_b_0082`, investigated separately above).
+  Outside this corpus, the real behavioral change is broader than "5
+  atoms" suggests: it applies to *any* molecule with a carboxylate,
+  sulfonate/sulfamate, nitrate, nitro, azide, sulfoxide, or
+  quaternary-ammonium group — this corpus simply happens to contain no
+  carbon-neighbor or phosphorus-neighbor O2CM/SM atoms (every type-32 atom
+  in it has a sulfone/nitro/sulfoxide neighbor) and only 3 molecules
+  combining nitro/azide/sulfoxide with a type absent from RDKit's
+  derived-formal-charge switch.
 - 8 new regression-pinned/synthetic-fixture/renumbering-invariance tests
   (`crates/chematic-ff/src/mmff94_numeric.rs`), same discipline as the
   bond-type fix's tests above — expected values copied verbatim from
