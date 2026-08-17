@@ -36,6 +36,18 @@ impl std::fmt::Display for NumericTypeError {
 // ── PBCI table: (atom_type, pbci, fcadj) ────────────────────────────────────
 // Source: RDKit Code/ForceField/MMFF/Params.cpp — defaultMMFFPBCI
 // 99 entries, one per MMFF94 atom type.
+//
+// Issue #227 Phase 2 Step 6: a table-level cross-check against a fresh
+// `Params.cpp` fetch (pinned commit `e74e7b0a5a2fc4e7f77c04ec26a61d4b8edbf22f`)
+// confirmed every (pbci, fcadj) VALUE below is byte-identical to RDKit's real
+// `defaultMMFFPBCI` -- the table itself was never wrong. Five of the
+// trailing `//` comment symbols/descriptions were, however (types 32, 34,
+// 45, 47, 53, corrected below with a note on each row) -- these are
+// human-written labels only, not read by any lookup, so the mislabeling
+// never affected `pbci_for`'s actual behavior. It did, before this
+// investigation, seed a false lead in this file's own audit trail (an
+// earlier hypothesis assumed the wrong-looking comments meant wrong
+// values).
 static MMFF94_PBCI: &[(u8, f64, f64)] = &[
     (1, 0.000, 0.000),   // CR       alkyl carbon
     (2, -0.135, 0.000),  // C=C      vinylic carbon
@@ -68,9 +80,9 @@ static MMFF94_PBCI: &[(u8, f64, f64)] = &[
     (29, 0.207, 0.000),  // HOCO     H on O in ester
     (30, -0.166, 0.000), // N2OX     N-oxide N
     (31, 0.161, 0.000),  // HOH      H in water
-    (32, -0.732, 0.500), // NR+      protonated amine N (fcadj=0.5)
+    (32, -0.732, 0.500), // O2CM     carboxylate/nitro-nitrate/sulfate/phosphate O (fcadj=0.5) -- was mislabeled "NR+", value already correct
     (33, 0.257, 0.000),  // HOX      H on O in N-oxide
-    (34, -0.491, 0.000), // O-       anionic O (carboxylate/phenoxide)
+    (34, -0.491, 0.000), // NR+      quaternary/protonated nitrogen -- was mislabeled "O-", value already correct
     (35, -0.456, 0.500), // OM       oxide oxygen (fcadj=0.5)
     (36, -0.031, 0.000), // HNR+     H on protonated N
     (37, -0.127, 0.000), // C5A      aromatic C in 5-ring alpha to N
@@ -81,15 +93,15 @@ static MMFF94_PBCI: &[(u8, f64, f64)] = &[
     (42, -0.757, 0.000), // N5+      protonated aromatic N
     (43, -0.326, 0.000), // O5       aromatic O (furan)
     (44, -0.237, 0.000), // S5       aromatic S (thiophene)
-    (45, -0.260, 0.000), // N5       generic 5-ring aromatic N
+    (45, -0.260, 0.000), // NO2/NO3  nitro/nitrate nitrogen -- was mislabeled "N5", value already correct
     (46, -0.429, 0.000), // NO2      nitro N
-    (47, -0.418, 0.000), // NO3      nitrate N
+    (47, -0.418, 0.000), // NAZT     terminal N in azido/diazo group -- was mislabeled "NO3", value already correct
     (48, -0.525, 0.000), // O2NO     nitro O
     (49, -0.283, 0.000), // O3NO     nitrate O
     (50, 0.284, 0.000),  // OP       phosphate O
     (51, -1.046, 0.000), // O2P      phosphonate =O
     (52, -0.546, 0.000), // O3P      bridging phosphate O
-    (53, -0.048, 0.000), // O4P      phosphate anion O
+    (53, -0.048, 0.000), // =N=      central N in C=N=N or N=N=N (azide) -- was mislabeled "O4P", value already correct
     (54, -0.424, 0.000), // O4CL     perchlorate O
     (55, -0.476, 0.000), // CLO4     perchlorate Cl
     (56, -0.438, 0.000), // C=ON     C in amide (alternative)
@@ -2156,6 +2168,120 @@ fn assign_h_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
 
 // ── Partial charge calculation ───────────────────────────────────────────────
 
+/// RDKit's real `computeMMFFCharges` does NOT feed the molecule's raw/literal
+/// formal charge (`atom->getFormalCharge()`) into equation 15 -- it first
+/// computes a separate, MMFF-atom-TYPE-derived formal charge ("MMFFFormalCharge"
+/// in RDKit's own naming) via a dedicated per-type switch statement that runs
+/// BEFORE the main charge loop (`AtomTyper.cpp` lines ~3095-3350, "We need to
+/// set formal charges upfront"), and uses THAT value everywhere a formal
+/// charge is needed: as this atom's own q0 in `(1-M*v)*q0`, and as the
+/// NEIGHBOR formal charge source for both the `v*sumFormalCharge` term and
+/// the anionic-neighbor-leak adjustment. For most types (every type not
+/// named in the switch) the derived charge defaults to 0.0 -- RDKit's own
+/// pre-switch initial value -- even when the atom's raw SMILES formal charge
+/// is nonzero (e.g. nitro nitrogen type 45, azide types 47/53, sulfoxide
+/// type 17: none of these are switch cases, so RDKit treats them as
+/// formal-charge-neutral for equation 15's purposes despite how the input
+/// structure happened to place the literal charge).
+///
+/// Issue #227 Phase 2 Step 6: this was the root cause of the 67/6693-atom
+/// residual left after the BCI bond-type fix (PR #331) -- see
+/// `scripts/mmff94_provenance/PROVENANCE.md`'s Charges/BCI section for the
+/// full molecule-by-molecule evidence.
+///
+/// **Faithful but intentionally partial port.** Implemented: the
+/// unconditional +1/+2/+3/-1 "simple" type groups, and the O2CM/SM (types
+/// 32/72) neighbor-counting redistribution for its carbon-neighbor
+/// (carboxylate/thiocarboxylate), nitro/nitrate-nitrogen-neighbor (type 45,
+/// 3-terminal-O case only), and sulfone/sulfonate/sulfonamide-sulfur-neighbor
+/// (type 18) branches -- each independently verified against a live RDKit
+/// 2026.03.4 oracle query on a synthetic fixture (acetate, nitrate ion,
+/// methanesulfonate, dimethyl sulfone; see the `o2cm_sm_*` tests below), not
+/// merely re-derived from this port's own output.
+///
+/// **NOT ported** (falls through to the 0.0 default, same as RDKit's own
+/// fallback when no switch condition matches):
+/// - O2CM/SM's phosphorus-neighbor (type 25, phosphate/phosphonate O),
+///   thiosulfinate-sulfur-neighbor (type 73), and perchlorate-chlorine-
+///   neighbor (type 77) branches.
+/// - Type 76 (N5M): formal charge shared across N5M nitrogens co-membered in
+///   a 5-ring (needs ring perception).
+/// - Types 55/56/81 (NIM+/N5A+/N5B+): formal charge averaged across a
+///   conjugated cationic-nitrogen network reached via alternating type-57/80
+///   carbons (needs BFS over a subset of the molecule graph).
+/// - Type 61's diazonium special case (+1 bump when bonded to a type-42
+///   diazonium nitrogen).
+/// - Type 62's (NM) extra "subtract half of positive-formal-charge
+///   neighbors" q0 adjustment, applied on top of its -1.0 base value (which
+///   *is* ported, as part of the simple -1 group below).
+///
+/// None of these gaps are guesses papered over with an untested formula --
+/// zero atoms of types 76/55/56/61/81, and zero O2CM/SM atoms with a
+/// phosphorus/type-73/type-77 neighbor, appear anywhere in the 264-molecule
+/// Wave 1 corpus this port was measured against (confirmed by a dedicated,
+/// since-deleted full-corpus survey, issue #227 Phase 2 Step 6), so this gap
+/// cannot be silently masking a corpus-visible bug. Flagged as a follow-up
+/// for whoever next touches MMFF94 formal-charge handling on a corpus that
+/// does exercise these types.
+fn mmff_derived_formal_charge(mol: &Molecule, types: &[u8], idx: AtomIdx) -> f64 {
+    match types[idx.0 as usize] {
+        // "Non-complicated" +1/+2/+3/-1 atom types (`AtomTyper.cpp`'s
+        // `computeMMFFCharges` switch, cases with a single hardcoded `fChg`
+        // assignment) -- independent of the atom's own raw formal charge.
+        34 | 49 | 51 | 54 | 58 | 92 | 93 | 94 | 97 => 1.0,
+        87 | 95 | 96 | 98 | 99 => 2.0,
+        88 => 3.0,
+        35 | 62 | 89 | 90 | 91 => -1.0,
+        // O2CM (32) / SM (72): formal charge shared/localized across
+        // terminal O/S atoms bonded to a common neighbor.
+        32 | 72 => o2cm_sm_formal_charge(mol, types, idx),
+        _ => 0.0,
+    }
+}
+
+/// O2CM/SM formal-charge redistribution (`AtomTyper.cpp` lines ~3095-3168,
+/// `case 32: case 72:`). Reuses this module's existing terminal-O/S/deg-2-N
+/// neighbor counters (`count_terminal_o_neighbors`/`count_terminal_s_neighbors`/
+/// `count_deg2_n_neighbors`), the same helpers `classify_terminal_o` already
+/// uses to *assign* type 32 in the first place, rather than re-deriving the
+/// same counts a second way.
+fn o2cm_sm_formal_charge(mol: &Molecule, types: &[u8], idx: AtomIdx) -> f64 {
+    for nbr_bond in bonds_of(mol, idx) {
+        let nbr = nbr_bond.neighbor;
+        let nbr_elem = mol.atom(nbr).element;
+        let nbr_type = types[nbr.0 as usize];
+        let n_term_os = count_terminal_o_neighbors(mol, nbr) + count_terminal_s_neighbors(mol, nbr);
+        let mut n_sec_n = count_deg2_n_neighbors(mol, nbr);
+        // Deprotonated-sulfonamide fixup: a sulfur with 2 terminal O/S and 1
+        // secondary N is not treated as having a "replaceable" secondary N.
+        if nbr_elem == Element::S && n_term_os == 2 && n_sec_n == 1 {
+            n_sec_n = 0;
+        }
+        if nbr_elem == Element::C && n_term_os > 0 {
+            return if n_term_os == 1 {
+                -1.0
+            } else {
+                -((n_term_os - 1) as f64) / (n_term_os as f64)
+            };
+        }
+        if nbr_type == 45 && n_term_os == 3 {
+            return -1.0 / 3.0;
+        }
+        if nbr_type == 18 && n_term_os > 0 {
+            let total = n_sec_n + n_term_os;
+            return if total == 2 {
+                0.0
+            } else {
+                -((total as f64) - 2.0) / (n_term_os as f64)
+            };
+        }
+        // NOT ported: type-25 (phosphate/phosphonate/phosphine-oxide P) and
+        // type-77 (perchlorate Cl) neighbor branches, and type-73
+        // (thiosulfinate S) -- see `mmff_derived_formal_charge`'s doc.
+    }
+    0.0
+}
+
 /// Compute MMFF94 partial charges using the full PBCI+CHG tables (Halgren 1996).
 ///
 /// Implements equation 15 from MMFF.V paper. For most neutral organic atoms
@@ -2179,12 +2305,19 @@ pub fn mmff94_charges_numeric(mol: &Molecule) -> Result<Vec<f64>, NumericTypeErr
     let n = mol.atom_count();
     let mut charges = vec![0.0f64; n];
 
+    // Derived MMFF formal charges ("MMFFFormalCharge" in RDKit's own naming)
+    // -- NOT the molecule's raw/literal `atom.charge`. See
+    // `mmff_derived_formal_charge`'s doc for why this distinction is load-
+    // bearing (issue #227 Phase 2 Step 6 BCI residual fix).
+    let fchg: Vec<f64> = (0..n)
+        .map(|i| mmff_derived_formal_charge(mol, &types, AtomIdx(i as u32)))
+        .collect();
+
     // Step 1: formal charge contribution (scaled by fcadj)
     for i in 0..n {
         let idx = AtomIdx(i as u32);
-        let atom = mol.atom(idx);
         let (_, fcadj) = pbci_for(types[i]);
-        let q0 = atom.charge as f64;
+        let q0 = fchg[i];
         // (1 - M*v)*q0 simplified for fcadj=0 (most atoms): charge[i] = 0
         // For charged atoms with fcadj > 0:
         let m = bonds_of(mol, idx).len() as f64;
@@ -2216,26 +2349,37 @@ pub fn mmff94_charges_numeric(mol: &Molecule) -> Result<Vec<f64>, NumericTypeErr
         charges[j] += cj;
     }
 
-    // Step 3: formal charge redistribution for charged neighbors (fcadj term)
+    // Step 3: formal charge redistribution -- equation 15's `v*sumFormalCharge`
+    // term and RDKit's `isDoubleZero(v)` anionic-neighbor-leak adjustment
+    // (`AtomTyper.cpp` lines ~3384-3399). These are RDKit's own two
+    // MUTUALLY EXCLUSIVE branches on whether the ipso atom's own fcadj is
+    // (numerically) zero, not two independent unconditional additions: the
+    // leak only fires when fcadj_i == 0, and `v*sumFormalCharge` is
+    // multiplied by v so it is a no-op exactly when fcadj_i == 0 anyway --
+    // the two forms are equivalent, but computing them as an if/else makes
+    // the "leak only applies when v==0" condition explicit rather than
+    // relying on a multiply-by-zero coincidence. Both branches read the
+    // derived `fchg` (not raw `atom.charge`) for the same reason Step 1
+    // does. `ISDOUBLEZERO_EPS` mirrors RDKit's own `isDoubleZero` helper
+    // (`Params.h`: `x < 1e-10 && x > -1e-10`), not an arbitrary tolerance.
+    const ISDOUBLEZERO_EPS: f64 = 1.0e-10;
     for i in 0..n {
         let idx = AtomIdx(i as u32);
         let (_, fcadj_i) = pbci_for(types[i]);
-        if fcadj_i > 0.0 {
-            // v*sumFormalCharge: redistribute neighbor formal charges
+        if fcadj_i.abs() < ISDOUBLEZERO_EPS {
+            for b in bonds_of(mol, idx) {
+                let nbr_fchg = fchg[b.neighbor.0 as usize];
+                if nbr_fchg < 0.0 {
+                    let deg = bonds_of(mol, b.neighbor).len() as f64;
+                    charges[i] += nbr_fchg / (2.0 * deg);
+                }
+            }
+        } else {
             let sum_fc: f64 = bonds_of(mol, idx)
                 .iter()
-                .map(|b| mol.atom(b.neighbor).charge as f64)
+                .map(|b| fchg[b.neighbor.0 as usize])
                 .sum();
             charges[i] += fcadj_i * sum_fc;
-        }
-        // Anionic neighbor charge leaks: q0 adjustment
-        // (for negatively charged neighbors — from RDKit source)
-        for b in bonds_of(mol, idx) {
-            let nbr = mol.atom(b.neighbor);
-            if nbr.charge < 0 {
-                let deg = bonds_of(mol, b.neighbor).len() as f64;
-                charges[i] += (nbr.charge as f64) / (2.0 * deg);
-            }
         }
     }
 
