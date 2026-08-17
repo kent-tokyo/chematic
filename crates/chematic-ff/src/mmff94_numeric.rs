@@ -2189,15 +2189,24 @@ fn assign_h_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
 /// `scripts/mmff94_provenance/PROVENANCE.md`'s Charges/BCI section for the
 /// full molecule-by-molecule evidence.
 ///
-/// **Faithful but intentionally partial port.** Implemented: the
-/// unconditional +1/+2/+3/-1 "simple" type groups, and the O2CM/SM (types
-/// 32/72) neighbor-counting redistribution for its carbon-neighbor
+/// **Faithful but intentionally partial port.** Implemented and
+/// independently verified against a live RDKit 2026.03.4 oracle query (not
+/// merely re-derived from this port's own output): the unconditional
+/// +1/+2/+3/-1 "simple" type groups; the O2CM/SM (types 32/72)
+/// neighbor-counting redistribution for its carbon-neighbor
 /// (carboxylate/thiocarboxylate), nitro/nitrate-nitrogen-neighbor (type 45,
 /// 3-terminal-O case only), and sulfone/sulfonate/sulfonamide-sulfur-neighbor
-/// (type 18) branches -- each independently verified against a live RDKit
-/// 2026.03.4 oracle query on a synthetic fixture (acetate, nitrate ion,
-/// methanesulfonate, dimethyl sulfone; see the `o2cm_sm_*` tests below), not
-/// merely re-derived from this port's own output.
+/// (type 18) branches (synthetic fixtures: acetate, nitrate ion,
+/// methanesulfonate, dimethyl sulfone; see the `o2cm_sm_*`/`nitrate_ion_*`/
+/// `sulfone_and_sulfonate_*` tests below). Implemented but **not**
+/// independently oracle-verified (zero corpus exposure either way, so
+/// nothing to falsify against -- see below): type 62's (NM) extra
+/// "subtract half of each positively-charged neighbor's derived charge"
+/// adjustment (`AtomTyper.cpp` lines ~3378-3383, applied in
+/// `mmff94_charges_numeric`'s Step 1, not here, since -- unlike the
+/// `isDoubleZero(v)` leak -- this adjustment happens BEFORE the `(1-M*v)`
+/// multiplication and therefore cannot be expressed as a separate additive
+/// term when `v != 0`, which it does for type 62, `fcadj=0.25`).
 ///
 /// **NOT ported** (falls through to the 0.0 default, same as RDKit's own
 /// fallback when no switch condition matches):
@@ -2211,18 +2220,31 @@ fn assign_h_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
 ///   carbons (needs BFS over a subset of the molecule graph).
 /// - Type 61's diazonium special case (+1 bump when bonded to a type-42
 ///   diazonium nitrogen).
-/// - Type 62's (NM) extra "subtract half of positive-formal-charge
-///   neighbors" q0 adjustment, applied on top of its -1.0 base value (which
-///   *is* ported, as part of the simple -1 group below).
 ///
 /// None of these gaps are guesses papered over with an untested formula --
-/// zero atoms of types 76/55/56/61/81, and zero O2CM/SM atoms with a
+/// zero atoms of types 62/76/55/56/61/81, and zero O2CM/SM atoms with a
 /// phosphorus/type-73/type-77 neighbor, appear anywhere in the 264-molecule
 /// Wave 1 corpus this port was measured against (confirmed by a dedicated,
-/// since-deleted full-corpus survey, issue #227 Phase 2 Step 6), so this gap
-/// cannot be silently masking a corpus-visible bug. Flagged as a follow-up
-/// for whoever next touches MMFF94 formal-charge handling on a corpus that
-/// does exercise these types.
+/// since-deleted full-corpus survey, issue #227 Phase 2 Step 6), so none of
+/// this can be silently masking a corpus-visible bug. Flagged as a
+/// follow-up for whoever next touches MMFF94 formal-charge handling on a
+/// corpus that does exercise these types.
+///
+/// **Blast radius, stated explicitly in both directions**: within the
+/// 264-molecule corpus, this fix changes the computed charge for exactly
+/// 5/6,693 atoms (see the per-atom-join measurement in
+/// `scripts/mmff94_provenance/PROVENANCE.md`) -- small, and the reason no
+/// downstream 3D-pipeline re-measurement was run for this step (contrast
+/// the prior BCI bond-type fix, which moved 1,620 atoms and produced one
+/// genuine new stereo violation). Outside this corpus, the behavioral
+/// change is broader than that number suggests: it applies to *any*
+/// molecule containing a carboxylate, sulfonate/sulfamate, nitrate,
+/// nitro, azide, sulfoxide, or quaternary-ammonium group -- the corpus
+/// simply happens to contain none of the anionic O2CM/SM forms (every
+/// type-32 atom in it has a sulfone/nitro/sulfoxide neighbor, never a
+/// carbon or phosphorus neighbor) and only 3 molecules combining nitro/
+/// azide/sulfoxide with the absent-from-switch types this fix's Step
+/// 1/Step 3 change directly affects.
 fn mmff_derived_formal_charge(mol: &Molecule, types: &[u8], idx: AtomIdx) -> f64 {
     match types[idx.0 as usize] {
         // "Non-complicated" +1/+2/+3/-1 atom types (`AtomTyper.cpp`'s
@@ -2244,7 +2266,17 @@ fn mmff_derived_formal_charge(mol: &Molecule, types: &[u8], idx: AtomIdx) -> f64
 /// neighbor counters (`count_terminal_o_neighbors`/`count_terminal_s_neighbors`/
 /// `count_deg2_n_neighbors`), the same helpers `classify_terminal_o` already
 /// uses to *assign* type 32 in the first place, rather than re-deriving the
-/// same counts a second way.
+/// same counts a second way -- with one known, pre-existing divergence from
+/// RDKit's real `nSecNbondedToNbr` inherited by this reuse:
+/// `count_deg2_n_neighbors` omits RDKit's `!nbr2Atom->getIsAromatic()`
+/// condition (`AtomTyper.cpp` line ~3116), so a degree-2 AROMATIC nitrogen
+/// would be counted here where RDKit's real algorithm would not (this would
+/// flip the sulfonamide fixup and the type-18 branch's `total` by 1 for such
+/// a case). Not changed here (the shared helper's existing, already-shipped
+/// type-ASSIGNMENT behavior in `classify_terminal_o` is out of scope for a
+/// charge-calculation fix); the full-corpus, zero-regression per-atom join
+/// (`scripts/mmff94_provenance/PROVENANCE.md`) is the corpus-level evidence
+/// this reuse is safe for every type-18-neighbor atom actually measured.
 fn o2cm_sm_formal_charge(mol: &Molecule, types: &[u8], idx: AtomIdx) -> f64 {
     for nbr_bond in bonds_of(mol, idx) {
         let nbr = nbr_bond.neighbor;
@@ -2317,7 +2349,26 @@ pub fn mmff94_charges_numeric(mol: &Molecule) -> Result<Vec<f64>, NumericTypeErr
     for i in 0..n {
         let idx = AtomIdx(i as u32);
         let (_, fcadj) = pbci_for(types[i]);
-        let q0 = fchg[i];
+        let mut q0 = fchg[i];
+        // Type 62 (NM, anionic divalent N) special case (`AtomTyper.cpp`
+        // lines ~3378-3383): subtract half of each positively-charged
+        // neighbor's derived formal charge from q0, purely locally -- this
+        // adjustment is never written back to `fchg`, so it is invisible to
+        // any OTHER atom reading this atom's charge as a neighbor value
+        // (matching RDKit's own `getMMFFFormalCharge`, which always returns
+        // the switch-only stored value). Must happen here, before the
+        // `(1-M*v)` multiplication below, not as a separate additive term
+        // in Step 3 -- unlike the `isDoubleZero(v)` leak, this fires
+        // whenever `v != 0` (fcadj(62) = 0.25), so it cannot be expressed
+        // as a no-op-when-v-is-zero additive term the way that leak can.
+        if types[i] == 62 {
+            for b in bonds_of(mol, idx) {
+                let nbr_fchg = fchg[b.neighbor.0 as usize];
+                if nbr_fchg > 0.0 {
+                    q0 -= nbr_fchg / 2.0;
+                }
+            }
+        }
         // (1 - M*v)*q0 simplified for fcadj=0 (most atoms): charge[i] = 0
         // For charged atoms with fcadj > 0:
         let m = bonds_of(mol, idx).len() as f64;
