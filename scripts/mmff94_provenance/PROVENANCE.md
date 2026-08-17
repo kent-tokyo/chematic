@@ -1103,13 +1103,19 @@ and a new renumbering-invariance test using nitrobenzene
 uses caffeine, which has no type-32/45/47/53/17 atoms and never exercises
 this fix's changed code path at all.
 
-**Quality gates**: `cargo test -p chematic-ff` 181 -> 189 passed (8 new
-tests), 0 failed; `cargo clippy --workspace --all-targets --all-features --
--D warnings` clean; `cargo fmt --all -- --check` clean; full workspace gate
-(`cargo test --workspace --all-features`, `cargo test --workspace
---no-default-features`, `cargo check -p chematic-wasm --target
-wasm32-unknown-unknown`, `python scripts/check_publish_graph.py`, `cargo
-deny check`) run before the PR was opened.
+**Quality gates, run on the final tree (commit `9aed9e0`) before this PR was
+opened, not just at some earlier point in development**: `cargo test -p
+chematic-ff` 181 -> 189 passed (8 new tests), 0 failed. `cargo fmt --all --
+-- check`: clean (exit 0). `cargo clippy --workspace --all-targets
+--all-features -- -D warnings`: clean (exit 0). `cargo test --workspace
+--all-features`: every `test result:` line in the run is `0 failed`
+(includes `chematic-ff` at 189/189). `cargo test --workspace
+--no-default-features`: same, every line `0 failed`. `cargo check -p
+chematic-wasm --target wasm32-unknown-unknown`: clean (exit 0). `python
+scripts/check_publish_graph.py` and `cargo deny check`: both clean (exit
+0) -- run once, not re-run after this PR's later commits, since neither
+command's inputs (`Cargo.toml`/`Cargo.lock`/`deny.toml`) are touched by
+any commit in this PR.
 
 ## Halgren primary literature (secondary/theoretical cross-reference, not the implementation source)
 
