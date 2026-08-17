@@ -827,6 +827,228 @@ build-profile-sensitive exact stereo-before/after counts.
 `cargo clippy -p chematic-3d --all-targets --all-features -- -D warnings`
 clean; `cargo fmt --all -- --check` clean.
 
+**Production fix (issue #227 Phase 2 Step 6, 2026-08-17): the 67-atom
+residual's derived-formal-charge root cause — chased down, not just
+re-confirmed, per the roadmap step's explicit brief.** The Charges/BCI entry
+above already flagged this residual as "a pattern consistent with
+`mmff94_charges_numeric`'s formal-charge/`fcadj` redistribution step... for
+charge-separated species... not root-caused further here" — this entry does
+the root-causing.
+
+**Correction to the earlier entry's finding, stated explicitly**: "the 3
+largest-magnitude residual molecules (`chembl_tier_b_0080`/`_0159`/`_0161`)
+all show chematic's and RDKit's MMFF atom TYPES agreeing exactly at every
+mismatched atom" was true **only for those 3 molecules, which is all the
+earlier investigation checked** — it does not generalize to the other 8/11.
+Checking all 11 (this step's own brief, since a smaller-magnitude case might
+have a genuinely different cause) found exactly that: 8/11 molecules
+(`chembl_tier_b_0009`/`_0023`/`_0028`/`_0029`/`_0030`/`_0034`/`_0071`/`_0082`,
+62/67 atoms) have a **real, unrelated atom-*type* misassignment**, not a
+charge-formula bug at all — see the "Atom-typing bugs found, explicitly out
+of scope" subsection below. Only 3/11 molecules (5/67 atoms) are the
+charge-formula bug this entry fixes.
+
+**Root cause, source-level** (`Code/GraphMol/ForceFieldHelpers/MMFF/AtomTyper.cpp`,
+pinned commit `e74e7b0a5a2fc4e7f77c04ec26a61d4b8edbf22f`, lines ~3095-3399,
+`computeMMFFCharges`): RDKit's real algorithm does **not** feed
+`atom->getFormalCharge()` (the molecule's raw, literal SMILES formal charge)
+into equation 15 at all. It first computes, for every atom, a separate
+derived value it calls `MMFFFormalCharge` (`fChg` in the source), via a
+dedicated per-MMFF-TYPE `switch` that runs *before* the main charge loop
+("We need to set formal charges upfront"), and that derived value — not the
+raw charge — is what equation 15 actually uses: as an atom's own q0 in
+`(1 - M·v)·q0`, and as the *neighbor* formal-charge source for both the
+`v·ΣformalCharge` term and a separate `isDoubleZero(v)`-gated
+anionic-neighbor-leak adjustment (`nbrFormalCharge < 0.0 → q0 +=
+nbrFormalCharge/(2·nbrDegree)`, applied only when the atom's own `fcadj` is
+zero). `mmff94_charges_numeric` used `atom.charge` (the raw charge) for all
+three of these roles, and additionally ran the leak adjustment
+unconditionally rather than gating it to `fcadj_i == 0` (a second,
+independent bug — the leak and the `v·ΣformalCharge` term are RDKit's own
+two *mutually exclusive* branches on that condition, not two independent
+unconditional additions, though the two forms are numerically equivalent
+since `v·ΣformalCharge` is a no-op exactly when `v == 0` anyway).
+
+For most MMFF types (every type absent from the switch), RDKit's derived
+charge defaults to 0.0 — its own pre-switch initial value — even when the
+atom's raw SMILES charge is nonzero. This directly explains the residual:
+nitro nitrogen (type 45), and azide types 47 (`NAZT`, terminal) and 53
+(`=N=`, central) are all absent from the switch, so RDKit treats them as
+formal-charge-neutral for equation 15's purposes despite carrying literal
++1/-1/+1 charges in the input SMILES; sulfoxide S (type 17) is likewise
+absent. O2CM/SM (types 32/72) *are* switch cases, but compute a fractional,
+neighbor-counting-based *shared* charge across terminal O/S atoms bonded to
+a common neighbor (carboxylate carbon, nitro/nitrate N, sulfone/sulfonate/
+sulfonamide S, etc.) — not the literal per-atom charge the input SMILES
+happened to place on one specific oxygen.
+
+**Hand-verified against all 5 fixed atoms** (arithmetic, not assumption):
+for `chembl_tier_b_0080`'s azide central N (type 53, raw charge +1) and
+terminal N (type 47, raw charge -1) — both types absent from the switch, so
+RDKit's derived charge is 0.0 for both — chematic's OLD code contributed an
+extra `(1 - 1·0)·(+1) = +1.0` (central N) and `+1·(-1) = -1.0` (terminal N)
+directly from Step 1's raw-charge q0, PLUS, for the central N only, an
+extra `-1/(2·1) = -0.5` from the (incorrectly unconditional) anionic-leak
+loop picking up its terminal-N neighbor's raw -1 charge (fcadj(53) = 0, so
+the leak fires; fcadj(47) = 0 too, but the terminal N's only neighbor, the
+central N, has a *positive* raw charge, so no leak reaches it) — net excess
+`+0.5` (central N) and `-1.0` (terminal N), matching the measured pre-fix
+deltas of `+0.5` and `-1.0` exactly. The same arithmetic reconciles
+`chembl_tier_b_0159`'s nitro N (type 45, `+0.5` excess) and one of its two
+O2CM oxygens (type 32, fcadj=0.5; the raw-charge Step 1 and Step 3
+`v·ΣformalCharge` terms happen to cancel for the *other*, `[O-]`-bearing
+oxygen because its raw charge is exactly `-(neighbor's raw charge)` — a
+coincidence, not evidence that atom was "already correct") and
+`chembl_tier_b_0161`'s sulfoxide S (type 17, `+0.5` excess, same
+cancellation-vs-no-cancellation asymmetry between the two O2CM/SM-adjacent
+atoms explains why only one atom per molecule shows a residual despite the
+whole functional group being affected by the same underlying bug).
+
+**Atom-typing bugs found, explicitly out of scope (per this step's own stop
+condition — fixing them means touching `assign_mmff94_numeric_types`, a
+different-shaped change)**:
+- 6/11 molecules (`_0009`/`_0023`/`_0028`/`_0029`/`_0030`/`_0034`, a
+  recurring long-chain bis(pyridinium) linker scaffold in this corpus): an
+  exocyclic secondary-amine nitrogen directly bonded to a pyridinium ring
+  carbon (para to the ring N+) is chematic-typed 58 (NPD+, a type RDKit
+  reserves for the *ring* nitrogen itself) instead of RDKit's real 54
+  (N+=C, iminium — RDKit's `doubleBondedCN` branch, `AtomTyper.cpp` lines
+  ~1030-1065, fires because this exocyclic N is conjugated with the
+  pyridinium ring's positive charge, a push-pull vinylogous-amidinium-like
+  system). The type mismatch cascades: the adjacent ring carbons' BCI bond
+  contributions also shift (chematic types them 37, generic aromatic;
+  RDKit types the two carbons flanking the mistyped N as 3/2, a
+  conjugated-carbonyl-like/vinylic pair), which is why each affected
+  molecule shows 7-14 mismatched atoms, not just the one nitrogen.
+- 2/11 molecules (`_0071`/`_0082`, both containing an aryl isothiocyanate
+  `N=C=S` group): the cumulated-double-bond central carbon is
+  chematic-typed 3 (generic C=O family) instead of RDKit's real 4 (CSP,
+  sp-hybridized acetylenic-like carbon — RDKit's total-bond-order-4 branch,
+  `AtomTyper.cpp` lines ~1330-1349, the "central nitrogen"-shaped rule
+  applied to a cumulated carbon rather than nitrogen). Again cascades to
+  the group's N and S BCI contributions despite those two atoms' own TYPES
+  being correctly assigned (9 and 16 respectively, confirmed by direct
+  per-atom check).
+
+Neither gap is guessed at here — both are stated with their RDKit source
+line ranges and the specific structural condition that discriminates
+chematic's (wrong) output from RDKit's (real) one, ready for whoever next
+picks up MMFF94 atom-type assignment. Confirmed independent of this PR's
+fix by construction: all 62 of these atoms are in the "unchanged mismatch
+both before and after" set of the per-atom join below.
+
+**Fix**: new `mmff_derived_formal_charge`/`o2cm_sm_formal_charge` helpers
+in `crates/chematic-ff/src/mmff94_numeric.rs` (full doc comment on the
+former enumerates exactly what is and is not ported, repeated in
+`CHANGELOG.md` — not duplicated verbatim here). `mmff94_charges_numeric`'s
+Step 1 and Step 3 now read the derived value instead of `atom.charge`, and
+Step 3's anionic-neighbor-leak loop is gated to `fcadj_i`'s absolute value
+under `1e-10` (mirroring RDKit's own `isDoubleZero` helper, `Params.h`),
+mutually exclusive with the `v·ΣformalCharge` branch. Reuses this module's
+pre-existing `count_terminal_o_neighbors`/`count_terminal_s_neighbors`/
+`count_deg2_n_neighbors` (the same counters `classify_terminal_o` already
+uses to *assign* type 32 in the first place) rather than re-deriving the
+same terminal-O/S/secondary-N counts a second way.
+
+**Table-level check, done before writing any fix** (falsifying the "maybe
+a `fcadj` table value is wrong" branch of the task's own hypothesis): a
+fresh `Params.cpp` fetch at the same pinned commit confirms `MMFF94_PBCI`'s
+(pbci, fcadj) VALUES are already byte-identical to RDKit's real
+`defaultMMFFPBCI` for all 5 suspected types — 17: (−0.191, 0.000); 32:
+(−0.732, 0.500); 45: (−0.260, 0.000); 47: (−0.418, 0.000); 53: (−0.048,
+0.000) — the table was never wrong. Its trailing `//` comments for exactly
+these 5 types WERE wrong (type 32 labeled "NR+", a nitrogen type, when
+RDKit's real type 32 is O2CM, an oxygen type; type 34 labeled "O-" when
+it's really NR+; types 45/47/53 mislabeled as generic 5-ring N / nitrate N
+/ phosphate-anion O when RDKit's real definitions are nitro-nitrate N /
+azide-terminal N / azide-central N respectively) — cosmetic only (never
+read by any lookup, `pbci_for` matches by the leading `u8` field, not the
+comment), but corrected in the same commit since they are what seeded this
+task's own "maybe the table is wrong" framing in the first place.
+
+**Scope decisions, evidence-grounded, not guessed**: implemented and
+independently oracle-verified (fresh live RDKit 2026.03.4 queries, not
+re-derived from this fix's own output) — the unconditional ±1/±2/±3/−1
+simple-type groups (types 34/49/51/54/58/92/93/94/97 → +1, 87/95/96/98/99
+→ +2, 88 → +3, 35/62/89/90/91 → −1); O2CM/SM's carbon-neighbor
+(carboxylate/thiocarboxylate) branch (formula hand-verified against
+Halgren's cited formula independent of RDKit, since a full end-to-end
+acetate oracle comparison is confounded by the separate carboxylate-carbon
+CO2M/type-41 typing gap noted below); its nitro/nitrate-nitrogen-neighbor
+branch, both the 2-terminal-oxygen "no match" arm (nitro, exercised by the
+residual itself) and the 3-terminal-oxygen "−1/3 each" arm (nitrate, a
+synthetic `[O-][N+](=O)[O-]` fixture — the corpus has no real nitrate);
+its sulfone/sulfonate/sulfonamide-sulfur-neighbor branch, both the
+"2 terminal O → 0.0" arm (already implicitly corpus-validated: 34 such
+atoms across 17 corpus molecules matched the oracle both before and after
+this fix, since raw charge 0 and derived charge 0 coincide for a plain
+neutral sulfone) and the "≠2 → fractional" arm (a synthetic
+methanesulfonate fixture — the corpus has no real sulfonate/sulfamate
+anion). **Not ported**, explicitly, because zero atoms of these types
+appear anywhere in the 264-molecule corpus (confirmed by a dedicated,
+since-deleted full-corpus survey — every atom whose type is one of
+RDKit's fChg-switch cases, not merely atoms with nonzero raw charge, since
+the derived charge can be nonzero even when the raw charge is zero, e.g.
+any carboxylate `=O`): O2CM/SM's phosphate (type 25), thiosulfinate (type
+73), and perchlorate (type 77) neighbor branches; type 76 (N5M, needs
+ring-membership perception); types 55/56/81 (NIM+/N5A+/N5B+, needs a
+conjugated-cation BFS this charge module has no precedent for); type 61's
+diazonium special case; type 62's extra positive-neighbor adjustment
+(its simple −1.0 base value from the "-1 group" *is* ported). A
+follow-up-only, incidentally-discovered gap, also NOT fixed here (atom-type
+assignment, out of scope): a genuine carboxylate's carbon (e.g. acetate,
+`CC(=O)[O-]`) is chematic-typed 3 (generic C=O family) instead of RDKit's
+real CO2M/CS2M (type 41, `AtomTyper.cpp` lines ~885-895, a 3-connected
+carbon with 2 terminal O/S neighbors) — confirmed to shift the BCI
+contribution to both carboxylate oxygens by a constant, uniform offset
+(both still shift identically, consistent with — not contradicting — this
+fix's redistribution logic being correct).
+
+**Measured, same tool and oracle dump as the bond-type fix above (a true
+before/after, not two different methods), full 264-molecule corpus, entry
+point `crates/chematic-3d/examples/mmff94_bci_charges_dump_227.rs`**: the
+67/6,693-atom (11/264-molecule) residual shrinks to **62/6,693 atoms
+(8/264 molecules)**. **Zero regressions, verified by a genuine per-atom
+join** (not aggregate-count arithmetic — the committed
+`scripts/mmff94_bci_charges_compare_227.py` only emits the aggregate
+summary, so a dedicated join script was written for this check): 6,626
+atoms were already exact-match and remain so; 0 atoms that matched the
+oracle before this fix now mismatch; exactly 5 atoms across 3 molecules
+(`chembl_tier_b_0080` idx 19/20, `chembl_tier_b_0159` idx 11/12,
+`chembl_tier_b_0161` idx 14) moved from mismatched to exact match; 62
+atoms across 8 molecules remain mismatched, every one with an IDENTICAL
+before/after value (unmoved by this fix in either direction) — direct,
+constructive evidence these 62 are the separate atom-typing bug class
+above, not something this fix half-addressed.
+
+**8 new tests** (`crates/chematic-ff/src/mmff94_numeric.rs`, same
+verbatim-expected-value discipline as the bond-type fix's own tests):
+regression pins for all 3 fixed molecules' full atom arrays
+(`chembl_tier_b_0080_azide_charges_match_rdkit_oracle_after_derived_formal_charge_fix`
+and the `_0159_nitro_`/`_0161_sulfoxide_` siblings, expected values copied
+verbatim from the already-committed oracle dump); 3 synthetic-fixture tests
+exercising O2CM/SM branches the corpus itself never exercises
+(`nitrobenzene_nitro_group_charges_match_rdkit_oracle`,
+`nitrate_ion_o2cm_three_oxygen_branch_matches_rdkit_oracle`,
+`sulfone_and_sulfonate_o2cm_type18_branch_matches_rdkit_oracle`, all from
+fresh live oracle queries); one direct unit test of the new
+`mmff_derived_formal_charge` function against Halgren's cited formula by
+hand arithmetic, decoupled from the CO2M/type-41 confound
+(`o2cm_carboxylate_carbon_neighbor_branch_shares_formal_charge_evenly`);
+and a new renumbering-invariance test using nitrobenzene
+(`mmff94_charges_numeric_derived_formal_charge_is_invariant_under_atom_renumbering`)
+— the existing `mmff94_charges_numeric_is_invariant_under_atom_renumbering`
+uses caffeine, which has no type-32/45/47/53/17 atoms and never exercises
+this fix's changed code path at all.
+
+**Quality gates**: `cargo test -p chematic-ff` 181 -> 189 passed (8 new
+tests), 0 failed; `cargo clippy --workspace --all-targets --all-features --
+-D warnings` clean; `cargo fmt --all -- --check` clean; full workspace gate
+(`cargo test --workspace --all-features`, `cargo test --workspace
+--no-default-features`, `cargo check -p chematic-wasm --target
+wasm32-unknown-unknown`, `python scripts/check_publish_graph.py`, `cargo
+deny check`) run before the PR was opened.
+
 ## Halgren primary literature (secondary/theoretical cross-reference, not the implementation source)
 
 - T. A. Halgren, "Merck Molecular Force Field. I. Basis, Form, Scope,
