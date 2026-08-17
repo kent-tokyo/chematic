@@ -948,7 +948,37 @@ mutually exclusive with the `v·ΣformalCharge` branch. Reuses this module's
 pre-existing `count_terminal_o_neighbors`/`count_terminal_s_neighbors`/
 `count_deg2_n_neighbors` (the same counters `classify_terminal_o` already
 uses to *assign* type 32 in the first place) rather than re-deriving the
-same terminal-O/S/secondary-N counts a second way.
+same terminal-O/S/secondary-N counts a second way — with one disclosed,
+pre-existing divergence inherited from that reuse: the shared
+`count_deg2_n_neighbors` helper omits RDKit's `!nbr2Atom->getIsAromatic()`
+condition on secondary nitrogens (`AtomTyper.cpp` line ~3116), so an
+aromatic degree-2 N would be counted here where RDKit's real algorithm
+would not, which could flip the O2CM/SM sulfone-neighbor branch's
+`total == 2` sulfonamide-fixup result by 1 for such a case. Not changed
+here (the shared helper's existing, already-shipped type-ASSIGNMENT
+behavior is out of scope for a charge-calculation fix); the zero-regression
+per-atom join below is the corpus-level evidence this reuse is safe for
+every type-18-neighbor atom actually measured, not a claim the divergence
+cannot matter elsewhere.
+
+Also implemented, in `mmff94_charges_numeric`'s Step 1 rather than in
+`mmff_derived_formal_charge` (necessarily separate: it adjusts q0 BEFORE
+the `(1-M·v)` multiplication, so it cannot be folded into the
+`isDoubleZero(v)`-style additive-term trick above, since it fires whenever
+`v != 0` for type 62, `fcadj=0.25`): type 62's (NM, anionic divalent N)
+full two-part special case (`AtomTyper.cpp` lines ~3378-3383) — its −1.0
+base value (already part of the simple −1 group) AND its extra "subtract
+half of each positively-charged neighbor's derived charge" adjustment,
+reading each neighbor's switch-only `fchg` value (never the neighbor's own
+post-adjustment q0, matching RDKit's `getMMFFFormalCharge` always
+returning the switch-only stored value, never mutated by this local
+adjustment). Implemented for completeness (a well-specified, directly
+citable ~10-line addition, not a guess) but **not independently
+oracle-verified** — zero type-62 atoms appear anywhere in the
+264-molecule corpus, so there is no oracle row to check it against either
+way; confirmed zero corpus impact by construction (re-running the
+264-molecule dump before/after adding this adjustment produces a
+byte-identical output file).
 
 **Table-level check, done before writing any fix** (falsifying the "maybe
 a `fcadj` table value is wrong" branch of the task's own hypothesis): a
@@ -993,9 +1023,11 @@ any carboxylate `=O`): O2CM/SM's phosphate (type 25), thiosulfinate (type
 73), and perchlorate (type 77) neighbor branches; type 76 (N5M, needs
 ring-membership perception); types 55/56/81 (NIM+/N5A+/N5B+, needs a
 conjugated-cation BFS this charge module has no precedent for); type 61's
-diazonium special case; type 62's extra positive-neighbor adjustment
-(its simple −1.0 base value from the "-1 group" *is* ported). A
-follow-up-only, incidentally-discovered gap, also NOT fixed here (atom-type
+diazonium special case. (Type 62's full two-part rule, including its extra
+positive-neighbor adjustment, *is* ported — see above — but, unlike the
+other implemented branches, not independently oracle-verified, for the
+same zero-corpus-exposure reason.) A follow-up-only, incidentally-discovered
+gap, also NOT fixed here (atom-type
 assignment, out of scope): a genuine carboxylate's carbon (e.g. acetate,
 `CC(=O)[O-]`) is chematic-typed 3 (generic C=O family) instead of RDKit's
 real CO2M/CS2M (type 41, `AtomTyper.cpp` lines ~885-895, a 3-connected
@@ -1020,6 +1052,33 @@ atoms across 8 molecules remain mismatched, every one with an IDENTICAL
 before/after value (unmoved by this fix in either direction) — direct,
 constructive evidence these 62 are the separate atom-typing bug class
 above, not something this fix half-addressed.
+
+**Blast radius, stated explicitly in both directions, not left implicit**:
+within the corpus, this fix changes the computed charge for exactly
+**5 of 6,693 atoms** (the 5 mismatch→match atoms above; every one of the
+other 6,688 — both the 6,626 match→match and the 62 mismatch→mismatch — has
+a byte-identical value before and after). This is the concrete number
+behind the "keep this light" scoping decision: no `embed_pipeline_v2`
+3D-quality re-measurement was run for this step, and this 5-atom number is
+why that is defensible here specifically — contrast the prior BCI
+bond-type fix a few sections above, which moved 1,620/6,693 atoms and
+produced one genuine new stereo violation (`chembl_tier_b_0082`) requiring
+its own dedicated follow-up investigation. A change with that shape would
+have warranted the same re-measurement discipline again; a 5-atom change
+does not, by the same "measure before assuming, don't guess" standard this
+whole file applies elsewhere. **The inverse also needs stating**: outside
+this specific corpus, this fix's real behavioral scope is broader than "5
+atoms" sounds — it changes computed charges for *any* molecule containing
+a carboxylate, sulfonate/sulfamate, nitrate, nitro, azide, sulfoxide, or
+quaternary-ammonium group, which is the intended, correct effect of fixing
+a genuine formula bug, not a narrow patch scoped to only these 3 named
+molecules. The 264-molecule corpus simply happens not to contain any
+carbon-neighbor or phosphorus-neighbor O2CM/SM atoms (all 37 of its
+type-32 atoms have a sulfone/nitro/sulfoxide neighbor, per the full-corpus
+survey cited above) and only 3 molecules combine a type absent from
+RDKit's derived-formal-charge switch (45/47/53/17) with an actual nonzero
+raw formal charge on that specific atom — the fix's own scope is not
+limited to those combinations, only this corpus's coverage of them is.
 
 **8 new tests** (`crates/chematic-ff/src/mmff94_numeric.rs`, same
 verbatim-expected-value discipline as the bond-type fix's own tests):
