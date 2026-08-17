@@ -2225,10 +2225,12 @@ fn assign_h_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
 /// zero atoms of types 62/76/55/56/61/81, and zero O2CM/SM atoms with a
 /// phosphorus/type-73/type-77 neighbor, appear anywhere in the 264-molecule
 /// Wave 1 corpus this port was measured against (confirmed by a dedicated,
-/// since-deleted full-corpus survey, issue #227 Phase 2 Step 6), so none of
-/// this can be silently masking a corpus-visible bug. Flagged as a
-/// follow-up for whoever next touches MMFF94 formal-charge handling on a
-/// corpus that does exercise these types.
+/// committed, independently re-runnable survey,
+/// `crates/chematic-3d/examples/mmff94_fchg_type_exposure_survey_227.rs` --
+/// issue #227 Phase 2 Step 6), so none of this can be silently masking a
+/// corpus-visible bug. Flagged as a follow-up for whoever next touches
+/// MMFF94 formal-charge handling on a corpus that does exercise these
+/// types.
 ///
 /// **Blast radius, stated explicitly in both directions**: within the
 /// 264-molecule corpus, this fix changes the computed charge for exactly
