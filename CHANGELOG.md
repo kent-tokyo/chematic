@@ -620,6 +620,126 @@ subset) read/write support.
   future entry point: VASP's CHGCAR/LOCPOT volumetric formats, which
   would build on this same `VolumetricGrid` type.
 
+### Added — `chematic-mol` (LAMMPS data file + dump/trajectory file)
+
+Issue #227 format-expansion Wave 2, continued: LAMMPS `read_data`-format
+data files and `dump`-command text-style trajectory files, explicitly
+promised in this same Unreleased block's earlier mmCIF/PQR/QCSchema/ORCA
+entry ("LAMMPS data/dump ... are scoped for a later Wave 2, not this
+PR"). Both new modules (`lammps_data`, `lammps_dump`) are **standalone
+document types**, deliberately not integrated with `chematic_core::Molecule`
+-- LAMMPS bonds/angles/etc. are raw atom-index topology, not chemically
+perceived bonds, and an MD atom under some `atom_style`s is not
+necessarily even a chemical element. Verified independently against
+LAMMPS's own official manual (<https://docs.lammps.org/read_data.html>,
+<https://docs.lammps.org/dump.html>, <https://docs.lammps.org/Howto_triclinic.html>)
+before implementation, not taken from memory; nothing in this brief's
+format spec needed correcting -- every detail below was confirmed rather
+than assumed, including the triclinic bounding-box formula (see below).
+
+- **LAMMPS data file** (`chematic_mol::lammps_data`):
+  `parse_lammps_data(text, atom_style)` / `write_lammps_data(data)`. The
+  data-file format does not declare `atom_style` in-file and LAMMPS's own
+  docs state it must be defined before reading -- it is genuinely not
+  always recoverable from column count alone (`atom_style charge`'s
+  `atom-ID atom-type q x y z` and `atom_style molecular`'s `atom-ID
+  molecule-ID atom-type x y z` are both 6 fields). `atom_style` is
+  therefore a required `LammpsAtomStyle` parameter, not inferred; there
+  is no "guess from column count" fallback. Supports exactly 4 styles --
+  `Atomic`/`Charge`/`Molecular`/`Full`, each with optional trailing `ix
+  iy iz` image flags -- typed via `LammpsMass`/`LammpsAtom`/
+  `LammpsVelocity`/`LammpsBond` for the `Masses`/`Atoms`/`Velocities`/
+  `Bonds` sections and the `LammpsBox` (`lo`/`hi`/optional `tilt`) box.
+  Any other `atom_style` (`LammpsAtomStyle::Other`) fails closed with a
+  typed `LammpsDataError::UnsupportedAtomStyle`.
+- Every other section (`Angles`, `Dihedrals`, `Impropers`, `Pair Coeffs`,
+  `Bond Coeffs`, `Angle Coeffs`, `Dihedral Coeffs`, `Improper Coeffs`,
+  and any unrecognized name) is preserved opaquely, byte-for-byte,
+  in an ordered `Vec<(String, String)>` (`LammpsData::unparsed_sections`
+  -- not a `HashMap`), never interpreted. This is safe specifically
+  because this module is read/write/round-trip only in v1 (no
+  atom-removal/renumbering API yet) -- documented on `LammpsData` as a
+  constraint on any future PR that adds atom mutation, since renumbering
+  would need to also remap these opaque sections' raw atom-index
+  references or reject the operation.
+- LAMMPS's separate type-label framework (`Atom Type Labels`/`Bond Type
+  Labels`/...), under which `Masses`/`Atoms`/`Bonds` rows can key off a
+  string label instead of a numeric type/ID, is fail-closed rejected
+  (`LammpsDataError::TypeLabelsUnsupported`) as soon as such a section
+  name is seen, rather than silently mis-splitting/dropping data: this
+  module's section-boundary detection is numeric-ID-only and cannot
+  safely distinguish a label-keyed row from a new section header.
+- No unit conversion or inference anywhere: LAMMPS data files don't
+  declare a unit system in-file (`units` is a separate input-script
+  command), so every numeric value is stored exactly as read,
+  unit-agnostic -- a deliberate non-goal, matching this project's
+  Cube/OpenDX unit-handling discipline.
+- **LAMMPS dump/trajectory file** (`chematic_mol::lammps_dump`):
+  `parse_lammps_dump_frame` (single frame), the streaming
+  `LammpsDumpReader<R: BufRead>` (`Iterator<Item = Result<LammpsDumpFrame,
+  LammpsDumpError>>`, following this crate's `SdfFileReader` precedent
+  rather than `CubeFileReader`'s one-shot shape, since a trajectory is
+  inherently multi-record), `write_lammps_dump_frame`, and
+  `write_lammps_trajectory`. The `ITEM: ATOMS` column list is arbitrary
+  and self-declared per dump command; `LammpsDumpFrame` stores it as
+  index-parallel `column_names`/`rows` (row-major), not a
+  `HashMap<String, Vec<f64>>`, exactly preserving original column names
+  and order -- confirmed by a round-trip test using unusual real-world
+  column names (`c_myCompute[1]`, `f_myFix`).
+- Reuses `LammpsBox` from `lammps_data` for the box shape -- LAMMPS data
+  files give the true box directly, but dump files instead give an
+  axis-aligned *bounding* box around the (possibly tilted) true box
+  (`xlo_bound`/`xhi_bound`/...), needed because some visualization tools
+  expect an axis-aligned rendering box. The triclinic bound<->true
+  conversion formula was independently confirmed against
+  <https://docs.lammps.org/Howto_triclinic.html> in **both directions**
+  (the page states the true-box-to-bound formula explicitly, `xlo_bound
+  = xlo + MIN(0.0,xy,xz,xy+xz)` etc., and gives the inverse explicitly
+  too, `xlo = xlo_bound - MIN(0.0,xy,xz,xy+xz)`) -- new `box_bounds_to_true`/
+  `true_to_box_bounds`, tested both via a bound->true->bound identity
+  check over several tilt fixtures *and* (since the identity check alone
+  can't catch a self-consistently-wrong `MIN`/`MAX` term) a
+  hand-computed-absolute-value check.
+- `LammpsDumpFrame::cartesian_positions()` resolves `x y z` (pass
+  through) or `xs ys zs` (box-scaled, including the triclinic shear
+  terms -- **not** simply independent per-axis scaling) into real
+  Cartesian positions; `column()`/`column_index()` give raw access to
+  any column by name. `xu yu zu` ("unwrapped": not passed through
+  periodic-boundary wrapping, a materially different quantity from a
+  wrapped position) are deliberately not resolved by
+  `cartesian_positions()` -- use `column("xu")` etc. directly. The
+  scaled-coordinate transform's box-origin term is this module's own
+  derivation (LAMMPS's own docs sentence, "the actual unscaled
+  coordinate is `xs*A + ys*B + zs*C`", omits the origin but cannot be
+  correct without it, since `xs=ys=zs=0` must map to the box's own
+  corner) -- flagged medium-confidence in the module docs per this
+  project's citation-confidence convention, verified against a
+  hand-computed example.
+- Note on `column()`'s signature: returns `Option<Vec<f64>>` (owned), not
+  `Option<&[f64]>` -- `LammpsDumpFrame::rows` is row-major, so a single
+  column is not stored contiguously and cannot be borrowed without a
+  copy; documented as a deliberate deviation.
+- Zero-atom frames, custom/unrecognized dump columns, and orthogonal vs.
+  triclinic boxes in either format all round-trip correctly (see test
+  suite).
+
+**Not supported, by design**: any `atom_style` outside
+Atomic/Charge/Molecular/Full (typed `UnsupportedAtomStyle` error);
+semantic parsing of `Angles`/`Dihedrals`/`Impropers`/any `*Coeffs`
+section (opaquely preserved instead); LAMMPS's type-label framework
+(typed `TypeLabelsUnsupported` error); any unit conversion or inference;
+binary dump formats (only the default text `dump` style is supported);
+any `Molecule`/bond-perception integration (both types are standalone,
+see above); atom removal/renumbering (read/write/round-trip only in
+v1); exact preservation of the *interleaving* order between typed and
+opaque sections in a data file on write (each section's own content is
+preserved exactly; `write_lammps_data` always emits the 4 typed sections
+first in a fixed order, then opaque sections in their original relative
+order -- LAMMPS itself doesn't require a specific section order either).
+No Python or WASM bindings this step (consistent with every other
+format module added in this Wave -- that remains a separate, later
+concern).
+
 ---
 
 ## [0.16.0] — 2026-08-15
