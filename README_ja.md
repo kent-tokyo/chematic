@@ -106,7 +106,7 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.16.0
+# chematic v0.17.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-06, v0.4.22 vs RDKit 2026.03.3 --
@@ -283,6 +283,13 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 ---
 
 ## 最近の開発
+
+**v0.17.0**（2026-08-17）: **フォーマット/Python/材料科学の相互運用性拡充、およびMMFF94電荷・結合次数の精度修正2件**
+- `chematic-mol`：square-planar（`@SP1`/`@SP2`/`@SP3`相当）立体化学のMOL/SDF read/write（3D座標からの再認識）、PDBx/mmCIF・PQR・QCSchema JSON・ORCA入出力、CIF明示的symmetry操作の展開（Rust/Python両方）、共有`VolumetricGrid`型 + Gaussian Cube/OpenDX I/O、LAMMPS data/dump（trajectory）I/O（`Molecule`とは独立した専用document型）
+- `chematic-py`：`chematic-crystal`の`Lattice`/`PeriodicStructure`/`Site`向け新規Pythonバインディング——開発中に既存の実バグも発見・修正（`to_cif()`が未展開symmetryのCIFを誤ってP1と再宣言していた問題）
+- `chematic-ff`：MMFF94結合次数分類の修正（`torsions_missing` 257→0）とMMFF94 BCI部分電荷の修正（RDKitの原子タイプ由来形式電荷が未計算だった根本原因を特定）。本番`pipeline_v2_mmff94_strict`：240/265→241/265
+- リリース整備：宣言MSRVの実態不一致を修正（1.88へ引き上げ、専用CIジョブで継続検証）
+- 詳細は`CHANGELOG.md`の`[0.17.0]`section参照
 
 **v0.16.0**（2026-08-15）: **周期構造の相互運用性（CIF/POSCAR/FPS）と一般化立体化学基盤**
 - `chematic-mol`：新設のoptional `crystal` featureが既存のCIF reader/writerを`chematic_crystal::PeriodicStructure`へ橋渡し（`parse_cif_periodic_structure`/`write_cif_periodic_structure`）——セルパラメータを`Lattice`へ、`_atom_site_occupancy`を`Occupancy`へ、disorderを共有する複数の`_atom_site_*`行を1つの`PeriodicSite`の複数species listへ統合。新設の`CifSymmetryStatus`列挙型により、真にP1な CIFと、symmetryを宣言しているがこのparserが未展開のCIFを区別（後者を暗黙にP1扱いしない）。`chematic-crystal`自体は`chematic-mol`/`Molecule`から独立したまま（依存方向は`chematic-mol`→`chematic-crystal`のoptional依存のみ）

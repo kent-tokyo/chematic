@@ -184,7 +184,9 @@ inference, coordination-geometry classification, DFT, formation-energy or
 phase-diagram computation, band structure, phonons, defect generation, or
 surface/slab construction. No materials-ML models and **no prediction of
 stability or synthesizability** -- this crate stores and computes pure
-geometry. No Python/WASM/MCP bindings. No arbitrary 3x3 integer supercell
+geometry. No WASM/MCP bindings (Python bindings for `Lattice`/
+`PeriodicStructure`/`Site` shipped in v0.17.0 via `chematic-py`, see
+`CHANGELOG.md`). No arbitrary 3x3 integer supercell
 transform (diagonal `[nx, ny, nz]` only). No spatial-partitioning neighbor-
 search optimization -- the baseline is an exact bounded enumeration, not
 necessarily the fastest possible one.
