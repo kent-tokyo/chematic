@@ -121,6 +121,14 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo clippy --workspace -- -D warnings
 
+  msrv:
+    name: MSRV Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.88.0
+      - run: cargo check --workspace --all-features
+
   validate-citation:
     name: Validate CITATION.cff
     runs-on: ubuntu-latest

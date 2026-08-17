@@ -2,6 +2,7 @@
 name = "chematic-inchi"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 authors = ["kent-tokyo <kent-tokyo@users.noreply.github.com>"]
 license = "MIT OR Apache-2.0"
 description = "Pure Rust InChI/InChIKey generation (WASM-compatible) + optional IUPAC-standard InChI via native-inchi feature"
