@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [0.17.0] — 2026-08-18
 
 Format/Python/materials-interop breadth, plus two MMFF94 charge/bond-order
 accuracy fixes: square-planar (`@SP1`/`@SP2`/`@SP3`-equivalent) stereo
@@ -20,13 +20,19 @@ and dump/trajectory I/O; an MMFF94 bond-order-classification fix
 `bond_type_for`, then a derived-formal-charge source fix) with one
 post-minimization stereo-repair addition it surfaced. Production
 `pipeline_v2_mmff94_strict`: 240/265 → 241/265 (see the 3-state
-measurement note below for full provenance). Purely additive at the Rust
-API level for existing crates — no breaking changes. **Not in this
-release** (deferred — see `ROADMAP.md`'s v0.17.0 plan section for current
-status): the residual MMFF94 atom-typing bug tracked as issue #337
-(62/6,693 corpus atoms, a different-shaped fix than either charge bug
-above); targeted canonical-SMILES/aromaticity known-residual fixes; a
-format-capability documentation/discoverability pass.
+measurement note below for full provenance). A release-readiness audit
+found and fixed one metadata defect ahead of this release: the declared
+MSRV (`rust-version = "1.85"`) didn't match reality (`chematic-depict` ->
+`svg2pdf` -> `image` requires rustc 1.88) -- raised to 1.88 (not pinned
+back down, to avoid reopening dependency-resolution/security-update risk)
+and now continuously verified by a dedicated CI job, plus a handful of
+small documentation-hygiene fixes found in the same audit. Purely
+additive at the Rust API level for existing crates — no breaking changes.
+**Not in this release** (deferred to a future version): the residual
+MMFF94 atom-typing bug tracked as issue #337 (62/6,693 corpus atoms, a
+different-shaped fix than either charge bug above); targeted
+canonical-SMILES/aromaticity known-residual fixes; a format-capability
+documentation/discoverability pass.
 
 ### Added — `chematic-mol` (square-planar stereo read everywhere; write via new checked conformer writers only)
 

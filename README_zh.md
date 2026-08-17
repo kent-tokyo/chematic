@@ -251,6 +251,13 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 
 ## 近期开发
 
+**v0.17.0**（2026-08-17）：**格式/Python/材料科学互操作性扩展，以及两项 MMFF94 电荷/键级精度修复**
+- `chematic-mol`：平面四方（`@SP1`/`@SP2`/`@SP3` 等价）立体化学的 MOL/SDF 读写（基于 3D 坐标重新识别）、PDBx/mmCIF、PQR、QCSchema JSON、ORCA 输入输出、CIF 显式对称操作展开（Rust 与 Python 均支持）、共享 `VolumetricGrid` 类型加 Gaussian Cube/OpenDX I/O、LAMMPS data/dump（轨迹）I/O（作为独立于 `Molecule` 的专用 document 类型）
+- `chematic-py`：新增 `chematic-crystal` 的 `Lattice`/`PeriodicStructure`/`Site` Python 绑定——开发过程中发现并修复了一个真实的既有 bug（`to_cif()` 曾将未展开对称性的 CIF 错误地重新声明为 P1）
+- `chematic-ff`：MMFF94 键级分类修复（`torsions_missing` 257→0）与 MMFF94 BCI 部分电荷修复（根因定位到 RDKit 的原子类型派生形式电荷从未被计算）。生产环境 `pipeline_v2_mmff94_strict`：240/265→241/265
+- 发布卫生：修正了与实际不符的 MSRV 声明（提升至 1.88，并新增专用 CI 任务持续验证）
+- 详见 `CHANGELOG.md` 的 `[0.17.0]` 部分
+
 **v0.16.0**（2026-08-15）：**周期结构互操作性（CIF/POSCAR/FPS）与通用立体化学基础**
 - `chematic-mol`：新增可选 `crystal` feature，将现有 CIF reader/writer 桥接到 `chematic_crystal::PeriodicStructure`（`parse_cif_periodic_structure`/`write_cif_periodic_structure`）——晶胞参数映射到 `Lattice`，`_atom_site_occupancy` 映射到 `Occupancy`，共享同一分数坐标的多条 `_atom_site_*` 记录合并为单个 `PeriodicSite` 的多 species 列表。新增 `CifSymmetryStatus` 枚举，区分真正的 P1 结构与声明了对称性但当前 parser 尚未展开的 CIF（后者不会被静默当作 P1 处理）。`chematic-crystal` 自身仍与 `chematic-mol`/`Molecule` 保持独立（依赖方向仅为 `chematic-mol` → `chematic-crystal` 的可选依赖）
 - `chematic-crystal`：原生支持 POSCAR/CONTCAR（VASP 结构文件格式）读写——`parse_poscar`/`parse_contcar`/`write_poscar`，仅支持 VASP 5，兼容两种 scale-factor 写法，支持 Direct/Cartesian 坐标、selective dynamics、离子速度，CONTCAR 的 predictor-corrector（MD 续算段）按原样保留（VASP 官方文档本身也未规定其数值布局）

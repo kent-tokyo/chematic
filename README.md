@@ -180,7 +180,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.16.0
+# chematic v0.17.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -427,6 +427,13 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 ## Recent Development
 
+**v0.17.0** (2026-08-17): **Format/Python/materials-interop breadth, plus two MMFF94 charge/bond-order accuracy fixes**
+- `chematic-mol`: square-planar (`@SP1`/`@SP2`/`@SP3`-equivalent) stereo read/write for MOL/SDF via 3D-coordinate-derived reperception; PDBx/mmCIF, PQR, QCSchema JSON, and ORCA input/output; CIF explicit symmetry-operation expansion into a full unit cell (Rust + Python); a shared `VolumetricGrid` type plus Gaussian Cube and OpenDX (APBS-scoped) I/O; LAMMPS data-file (`read_data` format) and dump/trajectory-file I/O as standalone document types, not integrated with `Molecule`
+- `chematic-py`: new Python bindings for `chematic-crystal`'s `Lattice`/`PeriodicStructure`/`Site` — found and fixed a real pre-existing bug along the way (`to_cif()` silently re-declared an unexpanded-symmetry CIF as false P1)
+- `chematic-ff`: MMFF94 bond-order-classification fix (`assign_mmff94_numeric_types_with_view` — production energy/gradient entry points and the coverage gate now agree on classification; `torsions_missing` 257→0 on the 265-molecule Wave 1 corpus) and an MMFF94 BCI partial-charge fix (own wrong `bond_type_for`, then root-caused a second bug to RDKit's atom-type-*derived* formal charge never being computed at all) with one post-minimization stereo-repair addition the first fix surfaced. Production `pipeline_v2_mmff94_strict`: 240/265 → 241/265
+- Release-hygiene: corrected an MSRV declaration that didn't match reality (`rust-version` raised to 1.88, now continuously verified by a dedicated CI job)
+- Full details in `CHANGELOG.md`'s `[0.17.0]` section
+
 **v0.16.0** (2026-08-15): **Periodic-structure interoperability (CIF/POSCAR/FPS) and generalized stereochemistry foundation**
 - `chematic-mol`: new optional `crystal` feature bridges the existing CIF reader/writer to `chematic_crystal::PeriodicStructure` (`parse_cif_periodic_structure`/`write_cif_periodic_structure`) — cell parameters to `Lattice`, `_atom_site_occupancy` to `Occupancy`, disorder-sharing atom-site rows merged into one `PeriodicSite`'s multi-species list. New `CifSymmetryStatus` enum distinguishes genuinely-P1 CIFs from CIFs that declared symmetry this parser doesn't expand, rather than silently treating the latter as P1. `chematic-crystal` itself remains independent of `chematic-mol`/`Molecule` (dependency direction is one-way: `chematic-mol` → `chematic-crystal`, optional)
 - `chematic-crystal`: native POSCAR/CONTCAR (VASP structure format) read/write — `parse_poscar`/`parse_contcar`/`write_poscar`, VASP 5 only, both scale-factor conventions, Direct/Cartesian coordinates, selective dynamics, ion velocities, and CONTCAR's predictor-corrector MD-restart section preserved verbatim (VASP's own docs don't specify its numeric layout)
@@ -562,7 +569,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.16.0)
+├── Cargo.toml                    workspace root (v0.17.0)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -616,7 +623,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.16.0},
+  version   = {0.17.0},
   year      = {2026},
 }
 ```
