@@ -110,6 +110,98 @@ fix) — see the PR body / `validation/results/` for the full report.
   reviewer follow-up test uses). Full writeup:
   `scripts/mmff94_provenance/PROVENANCE.md`'s Charges/BCI entry.
 
+### Fixed — `chematic-ff` (MMFF94 partial-charge derived-formal-charge source, Phase 2 Step 6)
+
+- **Root cause**: `mmff94_charges_numeric` fed the molecule's raw, literal
+  SMILES formal charge (`atom.charge`) directly into equation 15 — both as
+  an atom's own q0 and as the neighbor-formal-charge source for the
+  `v*sumFormalCharge` redistribution term and the anionic-neighbor-leak
+  adjustment. RDKit's real `computeMMFFCharges` instead computes a separate,
+  MMFF-atom-TYPE-derived formal charge ("MMFFFormalCharge") via a dedicated
+  per-type switch statement that runs *before* the main charge loop
+  (`AtomTyper.cpp` lines ~3095-3350, pinned commit
+  `e74e7b0a5a2fc4e7f77c04ec26a61d4b8edbf22f`), and uses *that* value
+  everywhere — for many types (nitro N type 45, azide N types 47/53,
+  sulfoxide S type 17: none are switch cases) the derived charge is 0.0
+  regardless of the atom's raw SMILES charge; for O2CM/SM (types 32/72) it's
+  a fractional value shared across terminal O/S atoms on a common neighbor,
+  not the literal per-atom charge. A second, independent bug: the
+  anionic-neighbor-leak loop ran unconditionally instead of only when the
+  atom's own `fcadj` is zero (RDKit's `isDoubleZero(v)` gate) — mutually
+  exclusive with the `v*sumFormalCharge` term, not additive with it.
+- Also checked, table-level, before writing any fix: `MMFF94_PBCI`'s
+  (pbci, fcadj) *values* were already byte-identical to RDKit's real
+  `defaultMMFFPBCI` for every one of the 5 suspected types (17/32/45/47/53)
+  — the table was never wrong. Its trailing `//` comments for those 5 types
+  *were* wrong (cosmetic only, never read by any lookup) and are corrected
+  in the same commit.
+- Fix: new `mmff_derived_formal_charge`/`o2cm_sm_formal_charge` helpers
+  (reusing this module's existing `count_terminal_o_neighbors`/
+  `count_terminal_s_neighbors`/`count_deg2_n_neighbors`, the same counters
+  `classify_terminal_o` already uses to *assign* type 32 — with one known,
+  disclosed divergence: the shared `count_deg2_n_neighbors` helper omits
+  RDKit's `!isAromatic()` condition on secondary nitrogens, which could
+  flip the O2CM/SM sulfone-neighbor branch's result for an aromatic
+  degree-2 N case the corpus does not contain) compute the derived charge;
+  `mmff94_charges_numeric`'s Step 1 and Step 3 now read it instead of
+  `atom.charge`, and Step 3's leak is gated to `fcadj_i ≈ 0`
+  (`isDoubleZero`-style `1e-10` epsilon). A faithful but intentionally
+  partial port: the unconditional ±1/±2/±3/−1 simple-type groups
+  (including type 62's full two-part rule — its −1.0 base value *and* its
+  extra "subtract half of positive-neighbor-charge" adjustment) and
+  O2CM/SM's carbon-neighbor/nitro-nitrate-neighbor/sulfone-neighbor
+  branches are implemented; the ±1/±2/±3/−1 groups and 3 of the O2CM/SM
+  branches are each independently verified against a live RDKit 2026.03.4
+  oracle query (not merely re-derived from this fix's own output), while
+  type 62's extra adjustment is implemented but not independently
+  oracle-verified (zero corpus exposure either way, so nothing to falsify
+  against). O2CM/SM's phosphate/thiosulfinate/perchlorate-neighbor
+  branches and the ring-/conjugation-dependent types (76, 55/56/81, 61)
+  are not ported at all — zero atoms of any of these types appear anywhere
+  in the 264-molecule Wave 1 corpus (confirmed by a dedicated, committed,
+  independently re-runnable survey,
+  `crates/chematic-3d/examples/mmff94_fchg_type_exposure_survey_227.rs`),
+  so the gap cannot be masking a corpus-visible bug; flagged as a
+  follow-up.
+- Measured against the same live RDKit oracle dump and the same per-atom
+  join methodology as the bond-type fix above, entry point
+  `crates/chematic-3d/examples/mmff94_bci_charges_dump_227.rs`: the
+  67/6,693-atom (11/264-molecule) residual left after the bond-type fix
+  shrinks to 62/6,693 atoms (8/264 molecules) — a genuine per-atom join
+  confirms **zero regressions** (0 previously-exact atoms became
+  mismatched) and exactly 5 atoms across 3 molecules
+  (`chembl_tier_b_0080` azide, `chembl_tier_b_0159` nitro,
+  `chembl_tier_b_0161` sulfoxide/O2CM) moved from mismatched to exact
+  match. The remaining 62/8 are a **separate, unrelated class of bug**:
+  genuine MMFF atom-*type* misassignments in `assign_mmff94_numeric_types`
+  (an exocyclic amine N adjacent to a pyridinium ring mistyped 58 instead
+  of 54 in 6 molecules; an isothiocyanate cumulated-carbon mistyped 3
+  instead of 4 in 2 molecules) — confirmed unmoved by this fix in either
+  direction, and out of scope per this step's own stop condition (fixing
+  them means touching atom-type assignment, a different-shaped change).
+- **Blast radius, both directions**: exactly **5 of 6,693 corpus atoms**
+  change computed value at all (5 mismatch→match; the other 6,626
+  match→match and 62 mismatch→mismatch atoms are all byte-identical
+  before/after) — the reason no downstream `embed_pipeline_v2`
+  re-measurement was run for this step (contrast the prior BCI bond-type
+  fix, which moved 1,620 atoms and produced one genuine new stereo
+  violation, `chembl_tier_b_0082`, investigated separately above).
+  Outside this corpus, the real behavioral change is broader than "5
+  atoms" suggests: it applies to *any* molecule with a carboxylate,
+  sulfonate/sulfamate, nitrate, nitro, azide, sulfoxide, or
+  quaternary-ammonium group — this corpus simply happens to contain no
+  carbon-neighbor or phosphorus-neighbor O2CM/SM atoms (every type-32 atom
+  in it has a sulfone/nitro/sulfoxide neighbor) and only 3 molecules
+  combining nitro/azide/sulfoxide with a type absent from RDKit's
+  derived-formal-charge switch.
+- 8 new regression-pinned/synthetic-fixture/renumbering-invariance tests
+  (`crates/chematic-ff/src/mmff94_numeric.rs`), same discipline as the
+  bond-type fix's tests above — expected values copied verbatim from
+  either the already-committed oracle dump or a fresh live oracle query,
+  never derived from this fix's own output. Full writeup:
+  `scripts/mmff94_provenance/PROVENANCE.md`'s Charges/BCI entry (Phase 2
+  Step 6 addendum).
+
 ### Measured — 3-state `embed_pipeline_v2` quality re-measurement (`pipeline_v2_mmff94_strict`)
 
 - Fresh measurement (not reused from any older commit) at State 1 (`c079926`,
