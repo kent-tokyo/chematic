@@ -229,7 +229,8 @@ impl From<CifSymmetryStatus> for PyCifSymmetryStatus {
 // PeriodicNeighbor
 // ---------------------------------------------------------------------------
 
-/// One periodic neighbor relationship — see [`PeriodicStructure.neighbors`].
+/// One periodic neighbor relationship — see the Python-facing
+/// `PeriodicStructure.neighbors` method.
 #[pyclass(name = "PeriodicNeighbor", from_py_object)]
 #[derive(Clone)]
 pub struct PyPeriodicNeighbor {

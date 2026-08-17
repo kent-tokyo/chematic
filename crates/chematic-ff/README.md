@@ -68,10 +68,10 @@ Full Merck Molecular Force Field 94 implementation with PBCI/BCI partial charges
 ### Atom Typing & Charges
 
 ```rust
-use chematic_ff::{assign_mmff94_type, mmff94_charges_bci};
+use chematic_ff::{assign_mmff94_types, mmff94_charges_bci};
 
-let types   = assign_mmff94_type(&mol);           // → Vec<Mmff94Type>
-let charges = mmff94_charges_bci(&mol, &types);   // PBCI/BCI partial charges → Vec<f64>
+let types   = assign_mmff94_types(&mol).unwrap(); // → Vec<MMFF94Type>
+let charges = mmff94_charges_bci(&mol).unwrap();  // PBCI/BCI partial charges → Vec<f64>
 ```
 
 ### Energy Terms (7-term stack)

@@ -841,10 +841,11 @@ fn rgroup_fragment_smiles(
     }
 
     for (_, bond) in mol.bonds() {
-        if fragment_set.contains(&bond.atom1) && fragment_set.contains(&bond.atom2) {
-            if let (Some(&n1), Some(&n2)) = (idx_map.get(&bond.atom1), idx_map.get(&bond.atom2)) {
-                let _ = builder.add_bond(n1, n2, bond.order);
-            }
+        if fragment_set.contains(&bond.atom1)
+            && fragment_set.contains(&bond.atom2)
+            && let (Some(&n1), Some(&n2)) = (idx_map.get(&bond.atom1), idx_map.get(&bond.atom2))
+        {
+            let _ = builder.add_bond(n1, n2, bond.order);
         }
     }
 

@@ -30,6 +30,10 @@ No C compiler, no Python, no external tools required for the core crates.
 
 `feat/*` new feature · `fix/*` bug fix · `docs/*` docs only · `release/*` version bump + CHANGELOG + tag
 
+## Release checklist
+
+- Full-workspace doc build sanity check: `cargo doc --workspace --all-features --no-deps --exclude chematic-py`. Plain `cargo doc --workspace --all-features --no-deps` fails — `chematic-py`'s compiled lib is also named `chematic` (needed so it imports as `import chematic` from Python), which collides with the `chematic` facade crate's own rustdoc output path.
+
 ## Main branch protection (recommended settings)
 
 GitHub → Settings → Branches → Add rule for `main`:
