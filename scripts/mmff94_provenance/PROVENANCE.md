@@ -1016,10 +1016,13 @@ neutral sulfone) and the "≠2 → fractional" arm (a synthetic
 methanesulfonate fixture — the corpus has no real sulfonate/sulfamate
 anion). **Not ported**, explicitly, because zero atoms of these types
 appear anywhere in the 264-molecule corpus (confirmed by a dedicated,
-since-deleted full-corpus survey — every atom whose type is one of
-RDKit's fChg-switch cases, not merely atoms with nonzero raw charge, since
-the derived charge can be nonzero even when the raw charge is zero, e.g.
-any carboxylate `=O`): O2CM/SM's phosphate (type 25), thiosulfinate (type
+committed, independently re-runnable survey,
+`crates/chematic-3d/examples/mmff94_fchg_type_exposure_survey_227.rs` —
+every atom whose type is one of RDKit's fChg-switch cases, not merely
+atoms with nonzero raw charge, since the derived charge can be nonzero
+even when the raw charge is zero, e.g. any carboxylate `=O`; run output:
+64 such atoms across 33 molecules, only types {32, 34, 58} present):
+O2CM/SM's phosphate (type 25), thiosulfinate (type
 73), and perchlorate (type 77) neighbor branches; type 76 (N5M, needs
 ring-membership perception); types 55/56/81 (NIM+/N5A+/N5B+, needs a
 conjugated-cation BFS this charge module has no precedent for); type 61's

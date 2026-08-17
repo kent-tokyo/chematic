@@ -158,8 +158,10 @@ fix) — see the PR body / `validation/results/` for the full report.
   against). O2CM/SM's phosphate/thiosulfinate/perchlorate-neighbor
   branches and the ring-/conjugation-dependent types (76, 55/56/81, 61)
   are not ported at all — zero atoms of any of these types appear anywhere
-  in the 264-molecule Wave 1 corpus (confirmed by a dedicated full-corpus
-  survey), so the gap cannot be masking a corpus-visible bug; flagged as a
+  in the 264-molecule Wave 1 corpus (confirmed by a dedicated, committed,
+  independently re-runnable survey,
+  `crates/chematic-3d/examples/mmff94_fchg_type_exposure_survey_227.rs`),
+  so the gap cannot be masking a corpus-visible bug; flagged as a
   follow-up.
 - Measured against the same live RDKit oracle dump and the same per-atom
   join methodology as the bond-type fix above, entry point
