@@ -26,6 +26,8 @@ pub mod cube;
 pub mod error;
 pub mod gaussian;
 pub mod ket;
+pub mod lammps_data;
+pub mod lammps_dump;
 pub mod mmcif;
 pub mod mol2000;
 pub mod mol2_tripos;
@@ -67,6 +69,14 @@ pub use cube::{
 pub use error::MolParseError as MolError;
 pub use gaussian::{GaussianError, GaussianLogResult, parse_gaussian_log, parse_gjf, write_gjf};
 pub use ket::{KetError, parse_ket, parse_ket_3d, write_ket, write_ket_3d};
+pub use lammps_data::{
+    LammpsAtom, LammpsAtomStyle, LammpsBond, LammpsBox, LammpsData, LammpsDataError, LammpsMass,
+    LammpsVelocity, parse_lammps_data, write_lammps_data,
+};
+pub use lammps_dump::{
+    LammpsDumpError, LammpsDumpFrame, LammpsDumpReader, box_bounds_to_true,
+    parse_lammps_dump_frame, true_to_box_bounds, write_lammps_dump_frame, write_lammps_trajectory,
+};
 pub use mmcif::{
     MmcifAtomRecord, MmcifError, MmcifParseLimits, MmcifResult, parse_mmcif,
     parse_mmcif_with_limits, write_mmcif,
