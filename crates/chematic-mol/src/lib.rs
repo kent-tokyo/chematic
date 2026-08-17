@@ -114,10 +114,10 @@ pub use pqr::{
     parse_pqr_with_limits, write_pqr,
 };
 pub use qcschema::{
-    AtomicInput, AtomicResult, Basis, ChematicMoleculeView, ComputeError, Driver, Provenance,
-    QcConvertError, QcModel, QcMolecule, QcSchemaError, ReturnResult, chematic_to_qc_molecule,
-    parse_atomic_input, parse_atomic_result, parse_qcschema_molecule, qc_molecule_to_chematic,
-    write_atomic_input, write_atomic_result, write_qcschema_molecule,
+    AtomicInput, AtomicResult, Basis, ChematicMoleculeView, ComputeError, Connectivity, Driver,
+    JsonObject, Provenance, QcConvertError, QcModel, QcMolecule, QcSchemaError, ReturnResult,
+    chematic_to_qc_molecule, parse_atomic_input, parse_atomic_result, parse_qcschema_molecule,
+    qc_molecule_to_chematic, write_atomic_input, write_atomic_result, write_qcschema_molecule,
 };
 pub use record::MoleculeRecord;
 pub use rxn::{RxnParseError, parse_rxn_file, write_rxn_file};

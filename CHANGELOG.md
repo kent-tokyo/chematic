@@ -9,10 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Roadmap step 2: square-planar stereo (`@SP1`/`@SP2`/`@SP3`-equivalent),
-read on every MOL/SDF (V2000 + V3000) reader and write via new checked
-conformer writers, building on the generalized stereo geometry foundation
-(PR #326).
+Format/Python/materials-interop breadth, plus two MMFF94 charge/bond-order
+accuracy fixes: square-planar (`@SP1`/`@SP2`/`@SP3`-equivalent) stereo
+read/write for MOL/SDF; PDBx/mmCIF, PQR, QCSchema JSON, and ORCA I/O;
+Python (PyO3) bindings for `chematic-crystal`'s `Lattice`/`PeriodicStructure`;
+CIF explicit symmetry-operation expansion (Rust + Python); a shared
+`VolumetricGrid` type plus Gaussian Cube and OpenDX I/O; LAMMPS data-file
+and dump/trajectory I/O; an MMFF94 bond-order-classification fix
+(`torsions_missing` 257→0) and an MMFF94 BCI partial-charge fix (own wrong
+`bond_type_for`, then a derived-formal-charge source fix) with one
+post-minimization stereo-repair addition it surfaced. Production
+`pipeline_v2_mmff94_strict`: 240/265 → 241/265 (see the 3-state
+measurement note below for full provenance). Purely additive at the Rust
+API level for existing crates — no breaking changes. **Not in this
+release** (deferred — see `ROADMAP.md`'s v0.17.0 plan section for current
+status): the residual MMFF94 atom-typing bug tracked as issue #337
+(62/6,693 corpus atoms, a different-shaped fix than either charge bug
+above); targeted canonical-SMILES/aromaticity known-residual fixes; a
+format-capability documentation/discoverability pass.
 
 ### Added — `chematic-mol` (square-planar stereo read everywhere; write via new checked conformer writers only)
 
@@ -65,9 +79,10 @@ conformer writers, building on the generalized stereo geometry foundation
 
 - `wedge_vs_3d_conflicts` gated on `atom.chirality == Chirality::None`,
   so any non-`None`, non-tetrahedral chirality fell through into a
-  computation that assumes a tetrahedral shape — latent until this PR,
-  since no MOL/SDF reader ever produced `Chirality::SquarePlanar` before
-  now. Fixed by switching to `!atom.chirality.is_tetrahedral()`, an
+  computation that assumes a tetrahedral shape — latent until the
+  square-planar MOL/SDF work above (this same release), since no MOL/SDF
+  reader ever produced `Chirality::SquarePlanar` before then. Fixed by
+  switching to `!atom.chirality.is_tetrahedral()`, an
   exhaustive-match-safe allowlist gate (same fix shape as two prior
   instances of this bug class in `chematic-3d`/`chematic-chem`).
 
@@ -206,7 +221,8 @@ fix) — see the PR body / `validation/results/` for the full report.
 
 - Fresh measurement (not reused from any older commit) at State 1 (`c079926`,
   v0.16.0 release, pre-torsion-fix), State 2 (`a2baac4`, post-torsion-fix
-  main, pre-BCI-fix), State 3 (this PR, post-both-fixes). `pipeline_v2_mmff94_strict`
+  main, pre-BCI-fix), State 3 (`e2876bb`, PR #331 tip, post-both-fixes).
+  `pipeline_v2_mmff94_strict`
   success: 240/265 → 241/265 → 241/265; RMSD (symmetric, vs
   `rdkit_etkdgv3_mmff94`) mean 1.698 → 1.685 → 1.685 Å; TFD mean 0.2245 →
   0.2233 → 0.2228; **0 status-level regressions** (success/typed_failure/
@@ -222,6 +238,22 @@ fix) — see the PR body / `validation/results/` for the full report.
   see next section).
 - Full report: `validation/results/mmff94_bci_gap_227_phase2_report.md`
   (+ `_summary.json`, raw per-state dumps, per-molecule transition tables).
+- **State 3's numbers remain valid as the v0.17.0 release figures, not
+  re-measured after State 3**: the only production-3D/FF-relevant change
+  between `e2876bb` and the v0.17.0 release head is PR #336 (`f401f47`,
+  the MMFF94 BCI derived-formal-charge fix), which itself already
+  discloses its own blast radius as exactly 5/6,693 corpus atoms across
+  3/264 molecules changing computed charge value at all, zero status-level
+  regressions — see that entry's "Blast radius, both directions" note
+  below for the full disclosure. No other file under
+  `crates/chematic-3d/src`, `crates/chematic-ff/src`, or
+  `crates/chematic-perception/src` changed between those two commits
+  (confirmed via `git diff --stat e2876bb..916ca4d -- crates/chematic-3d/src
+  crates/chematic-ff/src crates/chematic-perception/src`); PRs #332-#335 and
+  #338 are format/Python-interop/materials I/O work with zero reach into
+  the embedding/minimization/verification path. Citing this instead of
+  re-running the 265-molecule corpus, per this project's standing
+  measurement policy.
 
 ### Fixed — `chematic-3d` (post-minimization stereo repair-and-reverify)
 
@@ -244,10 +276,10 @@ fix) — see the PR body / `validation/results/` for the full report.
   accepted only if repair succeeds, the reverified result has zero
   violations, and the geometry stays sound; any rejection falls through to
   the original, unmodified `FinalStereoViolation` failure.
-  `StereoPolicy::Ignore`/`VerifyOnly` (including this PR's own measured
-  arm, `chematic_pipeline_v2_mmff94_strict`) are completely unaffected by
-  construction — the fix cannot and does not change any of the 3-state
-  numbers above, which were not re-measured for this reason.
+  `StereoPolicy::Ignore`/`VerifyOnly` (including the 3-state measurement's
+  own arm, `chematic_pipeline_v2_mmff94_strict`, above) are completely
+  unaffected by construction — this fix cannot and does not change any
+  of those 3-state numbers, which were not re-measured for this reason.
 - Root-cause fix (real stereo-awareness inside MMFF94 minimization) and
   broadening `StereoPolicy::Ignore`'s own gate were both considered and
   explicitly out of scope (large, cross-cutting changes deserving their
@@ -375,6 +407,14 @@ data). LAMMPS data/dump and Gaussian Cube/OpenDX (a shared
   rather than dropped. NaN/Infinity rejected in all numeric fields.
   `OptimizationInput`/`OptimizationResult` (trajectory-bearing) are out of
   scope for this wave.
+- `qcschema::JsonObject`/`qcschema::Connectivity` (the type aliases used
+  as public field types on `AtomicInput`/`AtomicResult`/`QcMolecule`) are
+  now re-exported at the crate root (`chematic_mol::JsonObject`/
+  `chematic_mol::Connectivity`), matching the crate's existing
+  re-export convention -- found during the v0.17.0 release audit as a
+  caller-facing gap (a `chematic_mol::QcMolecule` user couldn't name the
+  type of its own `.connectivity`/`.extras` fields without reaching into
+  the `qcschema` module directly).
 
 ### Added — `chematic-mol` (ORCA input/output)
 
