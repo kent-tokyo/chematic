@@ -947,7 +947,7 @@ that distinction matters.
 
 ---
 
-### Issue #337 follow-up (PR TBD): one sub-bug fixed, one re-diagnosed and left open
+### Issue #337 follow-up (PR #341): one sub-bug fixed, one re-diagnosed and left open
 
 Both sub-bugs above were independently re-verified live (fresh RDKit
 2026.03.4 queries against the pinned commit's source, plus chematic's own
