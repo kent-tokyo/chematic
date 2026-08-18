@@ -1079,13 +1079,16 @@ and do not jointly establish.**
    what the code does — every bond stays at its `Kekulize`-assigned
    single/double type for the *entire* fixed-point `while` loop, and bonds
    are only rewritten to `Bond::AROMATIC` in one final pass *after* the
-   loop converges (lines ~1062-1074). The precise reason this specific
-   ring's pi-electron count fails the 4n+2 test was not isolated (doing so
-   would mean re-deriving, atom by atom, the exact single/double assignment
-   `MolOps::Kekulize`'s global matching produced for this graph, which is
-   itself the underlying whole-molecule-dependent quantity in fact (3)
-   below) — stated honestly as not run to ground, rather than replaced with
-   a second guess.
+   loop converges (lines ~1062-1074). Direct instrumentation on the minimal
+   macrocyclic fixture recovered 5 of ring 1's 6 Kekule-assigned bond
+   orders post hoc (7-8=double, 8-9=single, 9-10=double, 10-11=single,
+   16-7=single) — only the shared ring-fusion edge (11-16) is unrecoverable
+   from a post-hoc dump, since the final pass above overwrites it to
+   `Bond::AROMATIC` once the *other*, fused ring is confirmed aromatic.
+   That one bond's Kekulize-time type is exactly what decides whether
+   ring 1's pi-electron count reaches 6 (passing 4n+2) or stops at 4
+   (failing it), and it was not isolated — stated honestly as not run to
+   ground, rather than replaced with a second guess.
 3. Which rings pass therefore depends on (a) the *specific* Kekule
    structure `MolOps::Kekulize`'s global matching search happened to choose
    for this molecule's bonds, and (b) the SSSR ring set/iteration order
