@@ -2331,6 +2331,205 @@ def to_extxyz(
     """
     ...
 
+def parse_mmcif(
+    text: str,
+    max_input_bytes: Optional[int] = None,
+    max_atoms: Optional[int] = None,
+    max_line_len: Optional[int] = None,
+) -> dict:
+    """Parse an mmCIF (macromolecular CIF, ``_atom_site.*`` loop) string.
+
+    Returns:
+        dict: ``{"mol": Mol, "coords": list[list[float]], "atoms":
+        list[dict], "cell": dict | None, "space_group": str | None,
+        "unhandled_columns": list[str]}``.
+
+    Raises:
+        ValueError: on parse failure.
+    """
+    ...
+
+def write_mmcif(
+    atoms: list[dict],
+    cell: Optional[dict] = None,
+    space_group: Optional[str] = None,
+    data_block_name: str = "chematic",
+) -> str:
+    """Write an mmCIF file from atom records (same dict shape as
+    :func:`parse_mmcif`'s ``"atoms"``).
+    """
+    ...
+
+def parse_pqr(
+    text: str,
+    max_input_bytes: Optional[int] = None,
+    max_atoms: Optional[int] = None,
+    max_line_len: Optional[int] = None,
+) -> dict:
+    """Parse a PQR (PDB-like ATOM/HETATM + per-atom charge/radius) string.
+
+    Returns:
+        dict: ``{"mol": Mol, "coords": list[list[float]], "atoms": list[dict]}``.
+
+    Raises:
+        ValueError: on parse failure.
+    """
+    ...
+
+def write_pqr(atoms: list[dict]) -> str:
+    """Write a PQR file from atom records (same dict shape as
+    :func:`parse_pqr`'s ``"atoms"``); ``element`` is inferred via
+    :func:`infer_element` when omitted.
+    """
+    ...
+
+def infer_element(group_pdb: str, res_name: str, atom_name: str) -> Optional[str]:
+    """Infer an element symbol from a PQR/PDB atom name."""
+    ...
+
+def parse_orca_input(text: str) -> dict:
+    """Parse an ORCA input file (``.inp``).
+
+    Returns:
+        dict: ``{"comments": list[str], "keywords": list[str], "blocks":
+        list[dict], "coords": dict | None}``.
+
+    Raises:
+        ValueError: on parse failure.
+    """
+    ...
+
+def write_orca_input(input: dict) -> str:
+    """Write an ORCA input file from a dict, same shape as
+    :func:`parse_orca_input`'s return value.
+    """
+    ...
+
+def parse_orca_output(text: str) -> dict:
+    """Parse an ORCA output file (``.out``/``.log``).
+
+    Returns:
+        dict: ``{"charge": int | None, "multiplicity": int | None,
+        "final_energy_hartree": float | None, "trajectory": list[dict],
+        "frequencies_cm1": list[float], "termination": dict,
+        "optimization_convergence": str}``.
+
+    Raises:
+        ValueError: on a non-finite value or oversized input.
+    """
+    ...
+
+def parse_qcschema_molecule(text: str) -> dict:
+    """Parse a QCSchema ``Molecule`` JSON document.
+
+    Returns every QCSchema ``Molecule`` field plus ``"mol"``/``"coords"``
+    convenience keys; :func:`write_qcschema_molecule` strips both before
+    re-serializing, so this dict round-trips through it directly.
+
+    Raises:
+        ValueError: on malformed JSON or a schema violation.
+    """
+    ...
+
+def write_qcschema_molecule(molecule: dict) -> str:
+    """Serialize a QCSchema ``Molecule`` dict to canonical JSON text."""
+    ...
+
+def chematic_to_qc_molecule(
+    mol: Mol,
+    coords: list[list[float]],
+    molecular_charge: float = 0.0,
+    molecular_multiplicity: int = 1,
+) -> dict:
+    """Convert a chematic ``Mol`` + coordinates into a QCSchema ``Molecule`` dict."""
+    ...
+
+def qc_molecule_to_chematic(molecule: dict) -> tuple[Mol, list[list[float]], float, int]:
+    """Convert a QCSchema ``Molecule`` dict into ``(Mol, coords,
+    molecular_charge, molecular_multiplicity)``.
+    """
+    ...
+
+def parse_atomic_input(text: str) -> dict:
+    """Parse a QCSchema ``AtomicInput`` JSON document.
+
+    Returns every ``AtomicInput`` field plus ``"mol"``/``"coords"``
+    convenience keys built from ``"molecule"``.
+
+    Raises:
+        ValueError: on malformed JSON or a schema violation.
+    """
+    ...
+
+def write_atomic_input(input: dict) -> str:
+    """Serialize an ``AtomicInput`` dict to canonical QCSchema JSON text."""
+    ...
+
+def parse_atomic_result(text: str) -> dict:
+    """Parse a QCSchema ``AtomicResult`` JSON document.
+
+    Raises:
+        ValueError: on malformed JSON or a schema violation.
+    """
+    ...
+
+def write_atomic_result(result: dict) -> str:
+    """Serialize an ``AtomicResult`` dict to canonical QCSchema JSON text."""
+    ...
+
+def parse_lammps_data(text: str, atom_style: str) -> dict:
+    """Parse a LAMMPS data file (``read_data`` command format).
+
+    ``atom_style`` is one of ``"atomic"``/``"charge"``/``"molecular"``/``"full"``.
+
+    Returns:
+        dict: ``{"counts": dict[str, int], "atom_style": str, "box": dict,
+        "masses": list[dict], "atoms": list[dict], "velocities": list[dict],
+        "bonds": list[dict], "unparsed_sections": list[tuple[str, str]]}``.
+
+    Raises:
+        ValueError: on parse failure.
+    """
+    ...
+
+def write_lammps_data(data: dict) -> str:
+    """Write a LAMMPS data file from a dict, same shape as
+    :func:`parse_lammps_data`'s return value.
+    """
+    ...
+
+def box_bounds_to_true(
+    bound_lo: tuple[float, float, float],
+    bound_hi: tuple[float, float, float],
+    tilt: Optional[tuple[float, float, float]] = None,
+) -> dict:
+    """Convert a dump file's ``ITEM: BOX BOUNDS`` values into the true box."""
+    ...
+
+def true_to_box_bounds(
+    box_dict: dict,
+) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
+    """Inverse of :func:`box_bounds_to_true`."""
+    ...
+
+def parse_lammps_dump_frame(text: str) -> LammpsDumpFrame:
+    """Parse a single LAMMPS dump frame.
+
+    Raises:
+        ValueError: on parse failure.
+    """
+    ...
+
+def parse_lammps_dump_all(text: str) -> list[LammpsDumpFrame]:
+    """Parse every frame of a LAMMPS dump/trajectory file.
+
+    Raises:
+        ValueError: on the first parse failure.
+    """
+    ...
+
+def write_lammps_dump_frame(frame: LammpsDumpFrame) -> str: ...
+def write_lammps_trajectory(frames: list[LammpsDumpFrame]) -> str: ...
 def tanimoto_map4(a: list[int], b: list[int]) -> float:
     """Estimate MAP4 Tanimoto similarity between two MAP4 fingerprints.
 
@@ -3194,6 +3393,95 @@ class PeriodicStructure:
     def formula(self) -> str: ...
     def to_cif(self) -> str: ...
     def to_poscar(self) -> str: ...
+    def __repr__(self) -> str: ...
+
+# ---------------------------------------------------------------------------
+# VolumetricGrid (Gaussian Cube / OpenDX)
+# ---------------------------------------------------------------------------
+
+class VolumetricGrid:
+    """A scalar field on a regular 3D grid, shared by Gaussian Cube and OpenDX.
+
+    ``values`` is a flat numpy array in row-major, third-axis-fastest order:
+    ``index = (i * shape[1] + j) * shape[2] + k``.
+    """
+
+    def __new__(
+        cls,
+        origin: tuple[float, float, float],
+        axes: list[list[float]],
+        shape: tuple[int, int, int],
+        values: list[float],
+        atoms: list[tuple[str, float, tuple[float, float, float]]] = [],
+        units: str = "angstrom",
+    ) -> VolumetricGrid: ...
+    @staticmethod
+    def from_cube(
+        text: str,
+        max_input_bytes: Optional[int] = None,
+        max_atoms: Optional[int] = None,
+        max_grid_points: Optional[int] = None,
+    ) -> VolumetricGrid: ...
+    @staticmethod
+    def from_opendx(
+        text: str,
+        max_input_bytes: Optional[int] = None,
+        max_grid_points: Optional[int] = None,
+    ) -> VolumetricGrid: ...
+    def to_cube(self) -> str: ...
+    def to_opendx(self) -> str:
+        """Raises ``ValueError`` for a Bohr-units grid or a grid with atoms."""
+        ...
+    def to_opendx_lossy(self) -> str: ...
+    @property
+    def origin(self) -> tuple[float, float, float]: ...
+    @property
+    def axes(self) -> ndarray: ...
+    @property
+    def shape(self) -> tuple[int, int, int]: ...
+    @property
+    def values(self) -> ndarray: ...
+    @property
+    def units(self) -> str: ...
+    @property
+    def atoms(self) -> list[tuple[str, float, tuple[float, float, float]]]: ...
+    def point_count(self) -> int: ...
+    def checked_index(self, i: int, j: int, k: int) -> Optional[int]: ...
+    def get(self, i: int, j: int, k: int) -> Optional[float]: ...
+    def to_molecule(self) -> tuple[Mol, list[list[float]]]: ...
+    def __repr__(self) -> str: ...
+
+# ---------------------------------------------------------------------------
+# LammpsDumpFrame
+# ---------------------------------------------------------------------------
+
+class LammpsDumpFrame:
+    """One frame of a LAMMPS dump/trajectory file."""
+
+    def __new__(
+        cls,
+        timestep: int,
+        box_bounds: dict,
+        column_names: list[str],
+        rows: list[list[float]],
+        boundary_flags: tuple[str, str, str] = ("pp", "pp", "pp"),
+        num_atoms: Optional[int] = None,
+    ) -> LammpsDumpFrame: ...
+    @property
+    def timestep(self) -> int: ...
+    @property
+    def num_atoms(self) -> int: ...
+    @property
+    def box_bounds(self) -> dict: ...
+    @property
+    def boundary_flags(self) -> tuple[str, str, str]: ...
+    @property
+    def column_names(self) -> list[str]: ...
+    @property
+    def rows(self) -> ndarray: ...
+    def column_index(self, name: str) -> Optional[int]: ...
+    def column(self, name: str) -> Optional[list[float]]: ...
+    def cartesian_positions(self) -> Optional[ndarray]: ...
     def __repr__(self) -> str: ...
 
 # ---------------------------------------------------------------------------
