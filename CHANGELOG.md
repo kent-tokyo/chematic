@@ -35,6 +35,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dropped). `write_opendx` (fail-closed on non-Ångström units) and
   `write_opendx_lossy` (explicit Bohr→Ångström opt-in) are kept as two
   distinct bindings, not collapsed into one lossy-by-default function.
+- `lammps_dump_cartesian_positions_json` delegates to
+  `chematic_mol::LammpsDumpFrame::cartesian_positions` to resolve a dump
+  frame's real Cartesian positions (`x/y/z` passthrough, `xs/ys/zs`
+  orthogonal-or-triclinic scaled-coordinate transform, `null` for an
+  `xu/yu/zu`-only frame) rather than requiring a JS caller to reimplement
+  that box-bounds/triclinic math itself.
 
 ## [0.17.0] — 2026-08-18
 

@@ -1282,15 +1282,56 @@ fn lammps_dump_frame_from_json(
 /// "box_bounds":{"lo":[x,y,z],"hi":[x,y,z],"tilt":[xy,xz,yz]|null},
 /// "boundary_flags":["pp","pp","pp"],"column_names":[...],
 /// "rows":[[...values, one per column_names entry...],...]}`.
-/// `box_bounds` is the dump file's raw bounding-box shape -- see
-/// [`chematic_mol::box_bounds_to_true`] if the true (un-shifted) box is
-/// needed for a triclinic frame.
+/// `box_bounds` is already the resolved TRUE simulation box (the parser
+/// applies [`chematic_mol::box_bounds_to_true`] internally before
+/// `LammpsDumpFrame` is ever built) -- not the file's raw
+/// `xlo_bound`/`xhi_bound`/... values. `rows` is the raw per-atom column
+/// data as declared by `column_names`, which may be `x y z`
+/// (already-Cartesian), `xs ys zs` (box-scaled), `xu yu zu` (unwrapped), or
+/// any other dump-command column -- use
+/// [`lammps_dump_cartesian_positions_json`] to resolve real Cartesian
+/// positions from whichever convention is present, rather than
+/// reimplementing that resolution/transform in JS.
 #[wasm_bindgen]
 pub fn lammps_dump_frame_to_json_str(text: &str) -> Result<String, JsValue> {
     check_input_len("LAMMPS dump input", text)?;
     let frame = chematic_mol::parse_lammps_dump_frame(text)
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
     to_json_string(&lammps_dump_frame_to_json(&frame))
+}
+
+/// Real Cartesian positions for a LAMMPS dump frame (in the JSON shape
+/// [`lammps_dump_frame_to_json_str`] returns), resolved by delegating
+/// directly to [`chematic_mol::LammpsDumpFrame::cartesian_positions`] --
+/// this function does not reimplement any part of the box-bounds or
+/// scaled-coordinate math itself; that method is the single place this
+/// crate gets the (orthogonal or triclinic) transform right, and every
+/// WASM caller must go through it rather than re-deriving the transform in
+/// JS (the same reasoning behind this crate's OpenDX fail-closed unit
+/// handling and QCSchema's single Bohr<->Ångström conversion point).
+///
+/// - `x y z` columns: passed straight through.
+/// - `xs ys zs` columns: transformed through `frame.box_bounds` (including
+///   the triclinic shear terms when a tilt is present).
+/// - Neither present (including an `xu yu zu`-only frame -- "unwrapped" is
+///   a materially different physical quantity from a scaled coordinate,
+///   never resolved by this method): returns JSON `null`, not an error and
+///   not an empty array, matching
+///   [`chematic_mol::LammpsDumpFrame::cartesian_positions`]'s own
+///   `Option` semantics exactly.
+///
+/// Returns JSON `[[x,y,z],...]` on success, in the same atom order as
+/// `frame.rows`.
+#[wasm_bindgen]
+pub fn lammps_dump_cartesian_positions_json(frame_json: &str) -> Result<String, JsValue> {
+    let v = parse_json_value("LAMMPS dump frame JSON", frame_json)?;
+    let frame = lammps_dump_frame_from_json(&v).map_err(|e| JsValue::from_str(&e))?;
+    match frame.cartesian_positions() {
+        Some(positions) => {
+            serde_json::to_string(&positions).map_err(|e| JsValue::from_str(&e.to_string()))
+        }
+        None => Ok("null".to_string()),
+    }
 }
 
 /// Parse every frame of a LAMMPS dump/trajectory file and return them as a
@@ -1491,6 +1532,47 @@ component \"data\" value 3\n";
         assert!(out.contains("b3lyp"));
     }
 
+    #[test]
+    fn qcschema_validate_atomic_input_preserves_unknown_fields() {
+        // `extras` (a spec-defined open bag) and a wholly unrecognized
+        // top-level key must both still be present after the
+        // parse_atomic_input -> write_atomic_input round trip --
+        // chematic_mol::AtomicInput::{extras,unknown_fields} already
+        // implement this; this test pins that guarantee at the WASM
+        // binding level specifically (not just "a known field survives",
+        // which qcschema_validate_atomic_input_round_trip above already
+        // covers).
+        let json = format!(
+            r#"{{"schema_name":"qcschema_input","schema_version":1,"molecule":{QCSCHEMA_WATER_JSON},
+                "driver":"energy","model":{{"method":"b3lyp","basis":"def2-svp"}},
+                "extras":{{"vendor_tag":"keep-me"}},
+                "x_vendor_extension":{{"nested":42}}}}"#
+        );
+        let out = qcschema_validate_atomic_input(&json).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&out).unwrap();
+        assert_eq!(v["extras"]["vendor_tag"], "keep-me");
+        assert_eq!(v["x_vendor_extension"]["nested"], 42);
+    }
+
+    #[test]
+    fn qcschema_validate_atomic_result_preserves_unknown_fields() {
+        // chematic_mol::AtomicResult has the same extras/unknown_fields
+        // mechanism as AtomicInput (both are JsonObject fields collected
+        // via collect_unknown) -- same guarantee, pinned independently
+        // since AtomicResult has its own parse/write pair.
+        let json = format!(
+            r#"{{"schema_name":"qcschema_output","schema_version":1,"molecule":{QCSCHEMA_WATER_JSON},
+                "driver":"energy","model":{{"method":"b3lyp","basis":"def2-svp"}},
+                "provenance":{{"creator":"test"}},"success":true,"return_result":-76.3,
+                "extras":{{"vendor_tag":"keep-me"}},
+                "x_vendor_extension":{{"nested":42}}}}"#
+        );
+        let out = qcschema_validate_atomic_result(&json).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&out).unwrap();
+        assert_eq!(v["extras"]["vendor_tag"], "keep-me");
+        assert_eq!(v["x_vendor_extension"]["nested"], 42);
+    }
+
     const ORCA_INPUT_JSON: &str = r##"{
         "comments": ["# a comment line"],
         "keywords": ["B3LYP", "def2-SVP"],
@@ -1593,5 +1675,76 @@ FINAL SINGLE POINT ENERGY       -76.320145981234
         let out = lammps_trajectory_to_json(&text).unwrap();
         let v: serde_json::Value = serde_json::from_str(&out).unwrap();
         assert_eq!(v.as_array().unwrap().len(), 2);
+    }
+
+    // Fixtures below reuse the exact box/tilt/xs values from
+    // chematic_mol::lammps_dump's own `orthogonal_frame`/`triclinic_frame`
+    // test fixtures and their `cartesian_positions_passes_through_x_y_z`/
+    // `scaled_coordinates_triclinic_hand_computed`/
+    // `cartesian_positions_none_for_unwrapped_only_columns` tests, so the
+    // hand-computed expected values are shared with (not re-derived from)
+    // that module's own oracle.
+
+    const LAMMPS_DUMP_XYZ_FRAME_JSON: &str = r#"{
+        "timestep": 1000,
+        "num_atoms": 2,
+        "box_bounds": {"lo":[0.0,0.0,0.0],"hi":[10.0,20.0,30.0],"tilt":null},
+        "boundary_flags": ["pp","pp","pp"],
+        "column_names": ["id","type","x","y","z"],
+        "rows": [[1.0,1.0,1.0,2.0,3.0],[2.0,1.0,4.0,5.0,6.0]]
+    }"#;
+
+    #[test]
+    fn lammps_dump_cartesian_positions_passthrough_xyz() {
+        let out = lammps_dump_cartesian_positions_json(LAMMPS_DUMP_XYZ_FRAME_JSON).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&out).unwrap();
+        assert_eq!(v, serde_json::json!([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]));
+    }
+
+    // box lo=[0,0,0] hi=[10,10,10], tilt xy=2 xz=1 yz=0.5 (a genuinely
+    // triclinic box -- all 3 tilt components nonzero), xs=ys=zs=0.5.
+    const LAMMPS_DUMP_TRICLINIC_XS_FRAME_JSON: &str = r#"{
+        "timestep": 2000,
+        "num_atoms": 1,
+        "box_bounds": {"lo":[0.0,0.0,0.0],"hi":[10.0,10.0,10.0],"tilt":[2.0,1.0,0.5]},
+        "boundary_flags": ["pp","ff","ss"],
+        "column_names": ["id","xs","ys","zs"],
+        "rows": [[1.0,0.5,0.5,0.5]]
+    }"#;
+
+    #[test]
+    fn lammps_dump_cartesian_positions_triclinic_hand_computed() {
+        // x = xlo + xs*(xhi-xlo) + ys*xy + zs*xz = 0 + 0.5*10 + 0.5*2 + 0.5*1 = 5 + 1 + 0.5 = 6.5
+        // y = ylo + ys*(yhi-ylo) + zs*yz         = 0 + 0.5*10 + 0.5*0.5       = 5 + 0.25    = 5.25
+        // z = zlo + zs*(zhi-zlo)                 = 0 + 0.5*10                 = 5.0
+        let out =
+            lammps_dump_cartesian_positions_json(LAMMPS_DUMP_TRICLINIC_XS_FRAME_JSON).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&out).unwrap();
+        let positions = v.as_array().unwrap();
+        assert_eq!(positions.len(), 1);
+        let p = positions[0].as_array().unwrap();
+        assert!((p[0].as_f64().unwrap() - 6.5).abs() < 1e-9);
+        assert!((p[1].as_f64().unwrap() - 5.25).abs() < 1e-9);
+        assert!((p[2].as_f64().unwrap() - 5.0).abs() < 1e-9);
+    }
+
+    const LAMMPS_DUMP_UNWRAPPED_ONLY_FRAME_JSON: &str = r#"{
+        "timestep": 1000,
+        "num_atoms": 2,
+        "box_bounds": {"lo":[0.0,0.0,0.0],"hi":[10.0,20.0,30.0],"tilt":null},
+        "boundary_flags": ["pp","pp","pp"],
+        "column_names": ["id","xu","yu","zu"],
+        "rows": [[1.0,100.0,200.0,300.0],[2.0,1.0,2.0,3.0]]
+    }"#;
+
+    #[test]
+    fn lammps_dump_cartesian_positions_none_for_unwrapped_only_is_json_null() {
+        // "unwrapped" coordinates are a different physical quantity from a
+        // scaled coordinate and must never be silently treated as one --
+        // cartesian_positions() returns None here, which this binding must
+        // surface as JSON `null`, not an error and not `[]`.
+        let out =
+            lammps_dump_cartesian_positions_json(LAMMPS_DUMP_UNWRAPPED_ONLY_FRAME_JSON).unwrap();
+        assert_eq!(out, "null");
     }
 }
