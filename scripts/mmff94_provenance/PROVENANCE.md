@@ -1050,30 +1050,56 @@ this specific ring as aromatic at all** for this specific molecule — not
 because of a discoverable "exocyclic-amine-conjugation" typing rule that
 chematic's N-typing switch is missing a branch for.
 
-**Real mechanism, traced to the source, not inferred from behavior alone.**
-`MMFFMolProperties`'s constructor (`AtomTyper.cpp` lines ~2356-2372) always
-runs two steps before any atom typing: a generic `MolOps::Kekulize` (a
-global maximum-matching search over the *entire* molecule's bonds, choosing
-*some* valid alternating single/double-bond assignment — not necessarily
-the "obvious" one a chemist would draw) followed by
-`MolOps::setMMFFAromaticity` (`Code/GraphMol/Aromaticity.cpp` line 922 at
-the pinned commit), which then *re-derives* which rings still count as
-aromatic for MMFF purposes from that specific Kekule structure, ring by
-ring, via an iterative Hückel 4n+2 pi-electron count
-(`(pi_e > 2) && !((pi_e - 2) % 4)`, line ~1032). Critically, this
-re-derivation's pi-electron count for a ring atom whose ring-neighbor bond
-is not a literal `Bond::DOUBLE` (including a bond already resolved to
-`Bond::AROMATIC` by a *different*, already-successfully-resolved fused
-ring sharing that edge) only credits pi-electrons through a narrower
-exocyclic-neighbor path that itself requires literal `Bond::DOUBLE`, not
-`Bond::AROMATIC` — so which of two fused rings sharing an edge "wins"
-enough pi-electron credit to pass the 4n+2 check depends on the *specific*
-Kekule structure the earlier global-matching step happened to choose for
-that edge, which is a property of the *whole* molecular graph (RDKit's
-SSSR ring perception and its matching solver's internal tie-breaking), not
-of this local ring or substituent alone. Both call sites verified directly
-against a fresh fetch of the pinned commit's source, not assumed from the
-issue text.
+**Real mechanism, traced to the source, not inferred from behavior alone —
+three facts, individually verified, stated separately from what they do
+and do not jointly establish.**
+
+1. `MMFFMolProperties`'s constructor (`AtomTyper.cpp` lines ~2356-2372)
+   always runs two steps before any atom typing: a generic
+   `MolOps::Kekulize` (a global maximum-matching search over the *entire*
+   molecule's bonds, choosing *some* valid alternating single/double-bond
+   assignment — not necessarily the "obvious" one a chemist would draw),
+   then `MolOps::setMMFFAromaticity` (`Code/GraphMol/Aromaticity.cpp` line
+   922 at the pinned commit). Directly measured: on the minimal macrocyclic
+   fixture below, `atom.GetIsAromatic()` for the pyridinium ring N is
+   `True` immediately after `Chem.MolFromSmiles`/before this constructor
+   runs, and `False` immediately after — this constructor is what flips it,
+   in place, mutating the caller's molecule.
+2. `setMMFFAromaticity` re-derives which rings still count as aromatic for
+   MMFF purposes from that one chosen Kekule structure, ring by ring, via
+   an iterative Hückel 4n+2 pi-electron count over RDKit's SSSR ring set
+   (`(pi_e > 2) && !((pi_e - 2) % 4)`, line ~1032), crediting pi-electrons
+   only through bonds of the exact literal type `Bond::DOUBLE` (both the
+   direct next-in-ring check, line ~956, and the exocyclic-neighbor credit
+   path, line ~995) — confirmed by reading the full function body, not
+   inferred from its name. Read in full specifically to check (and correct)
+   an earlier draft of this section's hypothesis that a fused ring's shared
+   edge gets re-typed to `Bond::AROMATIC` *mid*-computation, letting
+   whichever ring resolves second lose that edge's credit: that is **not**
+   what the code does — every bond stays at its `Kekulize`-assigned
+   single/double type for the *entire* fixed-point `while` loop, and bonds
+   are only rewritten to `Bond::AROMATIC` in one final pass *after* the
+   loop converges (lines ~1062-1074). The precise reason this specific
+   ring's pi-electron count fails the 4n+2 test was not isolated (doing so
+   would mean re-deriving, atom by atom, the exact single/double assignment
+   `MolOps::Kekulize`'s global matching produced for this graph, which is
+   itself the underlying whole-molecule-dependent quantity in fact (3)
+   below) — stated honestly as not run to ground, rather than replaced with
+   a second guess.
+3. Which rings pass therefore depends on (a) the *specific* Kekule
+   structure `MolOps::Kekulize`'s global matching search happened to choose
+   for this molecule's bonds, and (b) the SSSR ring set/iteration order
+   `setMMFFAromaticity` processes — both whole-molecule properties, not
+   something a local pattern match on this ring or its substituent alone
+   can predict. Empirical support, independent of the exact internal
+   arithmetic: five fragments sharing the *identical* local ring +
+   exocyclic-amine motif split 4-aromatic / 1-not-aromatic, with the one
+   difference between them being whether the isoquinolinium N+-substituent
+   carbon is itself embedded in an aromatic-bridge-closed macrocycle — see
+   the negative controls immediately below.
+
+All three call sites and line ranges verified directly against a fresh
+fetch of the pinned commit's source, not assumed from the issue text.
 
 **Falsified by direct negative controls, not merely "unverified."** The
 issue's proposed rule — "an aromatic ring N+ para to an exocyclic amine

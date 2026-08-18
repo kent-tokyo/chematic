@@ -4620,11 +4620,13 @@ mod tests {
 
     #[test]
     fn chembl_tier_b_0071_aryl_isothiocyanate_matches_rdkit_oracle_after_csp_fix() {
-        // Corpus regression pin. Expected values copied verbatim from the
+        // Corpus regression pin. Expected values cross-checked against the
         // already-committed live RDKit oracle dumps
         // (`validation/results/mmff94_rdkit_type_oracle.jsonl` and
-        // `mmff94_bci_charges_227_rdkit_oracle.jsonl`, `rdkit==2026.03.4`),
-        // not derived from this fix's own output.
+        // `mmff94_bci_charges_227_rdkit_oracle.jsonl`, `rdkit==2026.03.4`)
+        // via the corpus-wide per-atom join reported in
+        // `scripts/mmff94_provenance/PROVENANCE.md`'s issue #337
+        // follow-up, not derived from this fix's own output.
         let m = mol("COc1cc2nc(N3CCN(C(=O)c4ccc(N=C=S)c(I)c4)CC3)nc(N)c2cc1OC");
         let types = assign_mmff94_numeric_types(&m).unwrap();
         let expected_types = [
@@ -4654,8 +4656,9 @@ mod tests {
     fn chembl_tier_b_0082_aryl_isothiocyanate_matches_rdkit_oracle_after_csp_fix() {
         // Corpus regression pin, same mechanism as `_0071` above via an
         // enone rather than a plain benzamide linker. Expected values
-        // copied verbatim from the already-committed live RDKit oracle
-        // dumps, not derived from this fix's own output.
+        // cross-checked against the already-committed live RDKit oracle
+        // dumps via the same corpus-wide per-atom join, not derived from
+        // this fix's own output.
         let m = mol("COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(N=C=S)cc4)CC3)nc(N)c2cc1OC");
         let types = assign_mmff94_numeric_types(&m).unwrap();
         let expected_types = [
