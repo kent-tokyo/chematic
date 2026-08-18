@@ -904,9 +904,11 @@ cancellation-vs-no-cancellation asymmetry between the two O2CM/SM-adjacent
 atoms explains why only one atom per molecule shows a residual despite the
 whole functional group being affected by the same underlying bug).
 
-**Atom-typing bugs found, explicitly out of scope (per this step's own stop
-condition — fixing them means touching `assign_mmff94_numeric_types`, a
-different-shaped change)**:
+**Atom-typing bugs found, explicitly out of scope for this PR's own fix (per
+this step's own stop condition — fixing them means touching
+`assign_mmff94_numeric_types`, a different-shaped change). Filed as issue
+#337, later revisited — see the "Issue #337 follow-up" addendum after this
+subsection for what was actually found and fixed**:
 - 6/11 molecules (`_0009`/`_0023`/`_0028`/`_0029`/`_0030`/`_0034`, a
   recurring long-chain bis(pyridinium) linker scaffold in this corpus): an
   exocyclic secondary-amine nitrogen directly bonded to a pyridinium ring
@@ -920,6 +922,9 @@ different-shaped change)**:
   RDKit types the two carbons flanking the mistyped N as 3/2, a
   conjugated-carbonyl-like/vinylic pair), which is why each affected
   molecule shows 7-14 mismatched atoms, not just the one nitrogen.
+  **Correction (issue #337 follow-up, see addendum below): this
+  characterization of which atom is mistyped is wrong** — re-verified live
+  against RDKit and against chematic's own dump tooling, not re-guessed.
 - 2/11 molecules (`_0071`/`_0082`, both containing an aryl isothiocyanate
   `N=C=S` group): the cumulated-double-bond central carbon is
   chematic-typed 3 (generic C=O family) instead of RDKit's real 4 (CSP,
@@ -928,14 +933,198 @@ different-shaped change)**:
   applied to a cumulated carbon rather than nitrogen). Again cascades to
   the group's N and S BCI contributions despite those two atoms' own TYPES
   being correctly assigned (9 and 16 respectively, confirmed by direct
-  per-atom check).
+  per-atom check). **Fixed, issue #337 follow-up — see addendum below.**
 
-Neither gap is guessed at here — both are stated with their RDKit source
-line ranges and the specific structural condition that discriminates
-chematic's (wrong) output from RDKit's (real) one, ready for whoever next
-picks up MMFF94 atom-type assignment. Confirmed independent of this PR's
-fix by construction: all 62 of these atoms are in the "unchanged mismatch
-both before and after" set of the per-atom join below.
+Neither gap was guessed at here — both were stated with their RDKit source
+line ranges and the specific structural condition believed to discriminate
+chematic's (wrong) output from RDKit's (real) one. Confirmed independent of
+this PR's fix by construction: all 62 of these atoms are in the "unchanged
+mismatch both before and after" set of the per-atom join below. **That
+"62" is this PR's own charge-mismatch count (see the "Measured" paragraph
+below), not a type-mismatch count** — the actual type-level residual behind
+it is 34/6,693 atoms across the same 8 molecules; see the addendum for why
+that distinction matters.
+
+---
+
+### Issue #337 follow-up (PR TBD): one sub-bug fixed, one re-diagnosed and left open
+
+Both sub-bugs above were independently re-verified live (fresh RDKit
+2026.03.4 queries against the pinned commit's source, plus chematic's own
+`mmff94_numeric_type_dump`/`mmff94_bci_charges_dump_227` tooling — not
+re-derived from the paragraphs above) before writing any fix, per this
+project's standing "cited from RDKit's real source, not guessed" discipline.
+One correction and one fix resulted.
+
+**Ledger correction, stated first because it changes how to read every
+number below**: the "62/6,693 atoms across 8/264 molecules" figure quoted
+throughout this file and in issue #337 is the **charge**-mismatch count
+(`mmff94_bci_charges_227_rdkit_oracle.jsonl` join), not a type-mismatch
+count. The actual **type**-mismatch count
+(`mmff94_rdkit_type_oracle.jsonl` join) for the same 8 molecules is
+**34/6,693 atoms** — smaller, because several atoms whose own MMFF TYPE is
+already correct (aromatic ring carbons whose neighbor's type is what's
+wrong) still get the wrong BCI-derived *charge*, since bond-charge-increment
+lookups are keyed on both atoms of a bond. This PR reports both ledgers
+throughout, with separate denominators, rather than the single "62" number
+— conflating the two is exactly the kind of measurement error this
+project's own standing notes warn against.
+
+#### Sub-bug 2 (aryl isothiocyanate CSP carbon): fixed
+
+The original diagnosis holds up entirely on re-verification, with one
+correction to the exact RDKit rule. Live RDKit source read
+(`Code/GraphMol/ForceFieldHelpers/MMFF/AtomTyper.cpp`, pinned commit
+`e74e7b0a5a2fc4e7f77c04ec26a61d4b8edbf22f`, the carbon-typing `switch`'s
+"3 neighbors" block, lines ~838-960): the real CSP (type 4) condition for a
+non-aromatic carbon is not "total bond order 4" or "2 double bonds to
+different neighbors" as originally guessed — it is simply
+**`atom->getTotalDegree() == 2`** (lines ~954-960, the branch reached once
+the earlier `getTotalDegree() == 4` and `getTotalDegree() == 3` blocks
+don't match), unconditional on which elements the two bonds go to. A real
+triple bond and a cumulated double-bond pair are not special-cased
+separately by RDKit at all — both simply leave the carbon with exactly 2
+total neighbors (a triple bond consumes 3 of carbon's 4 valence units,
+leaving one more substituent; two double bonds consume all 4, leaving
+none), so both fall into the same unconditional degree-2 branch.
+
+**Fix** (`assign_c_type`, `crates/chematic-ff/src/mmff94_numeric.rs`):
+replaced the `triple_bonds > 0 => Ok(4)` check with
+`total_degree(mol, idx) == 2 => Ok(4)`, moved ahead of the
+`double_bonds > 0` branch it was previously losing to for cumulated-double
+carbons. This is a strict superset of the old condition (every carbon with
+`triple_bonds > 0` already has `total_degree == 2`, by the valence argument
+above), so it cannot regress any previously-correct triple-bond CSP
+assignment — confirmed by the full-corpus join below, and by a dedicated
+`propyne` (`CC#C`) no-regression test. It is also, correctly, broader than
+the corpus: a plain carbon allene (`C=C=C`, not present in the 264-molecule
+corpus) was also mistyped (its central C got the same generic-vinylic type
+2 fallthrough) and is now fixed too — pinned with its own synthetic test
+since it is the clearest demonstration that the real rule is
+element-agnostic degree, not "cumulated bond to a heteroatom."
+
+**Measured** (same tool/oracle-dump pair as every other measurement in this
+file, full 264-molecule corpus, `crates/chematic-3d/examples/
+mmff94_numeric_type_dump.rs` + `mmff94_bci_charges_dump_227.rs`, before vs.
+after a genuine per-atom join, not aggregate arithmetic): type-mismatch
+ledger 34 → 32 atoms (both `_0071` idx 18 and `_0082` idx 20 move from
+mismatched to exact match, and no other atom anywhere in the corpus moves
+in either direction); molecule count for this ledger 8 → 6. Charge-mismatch
+ledger 62 → 56 atoms (6 atoms move: the isothiocyanate C itself in both
+molecules, plus its N and S neighbors in both — their own TYPES were
+already correct, but the BCI bond lookup keyed on the C's corrected type
+now also gets their charges right, exactly the cascade constraint 3 asked
+to be checked for); molecule count for this ledger 8 → 6 as well (`_0071`
+and `_0082` are now fully clean on both ledgers). Zero regressions on
+either ledger, verified by diffing the full before/after mismatch lists,
+not just comparing counts. `lookup_chg_contribution` already had entries
+for the (4, 9) and (4, 16) bond-type pairs the newly-corrected carbon type
+now looks up (both molecules' `status` stayed `"ok"` in the charges dump,
+before and after — no new `charges_error`).
+
+**6 new tests** (`crates/chematic-ff/src/mmff94_numeric.rs`): full-array
+regression pins for both corpus molecules
+(`chembl_tier_b_0071_aryl_isothiocyanate_matches_rdkit_oracle_after_csp_fix`,
+`_0082` sibling, expected values copied verbatim from the already-committed
+oracle dumps); two minimal synthetic isothiocyanate fixtures
+(`methyl_isothiocyanate_minimal_ncs_fixture_matches_rdkit_oracle`,
+`phenyl_isothiocyanate_aryl_ncs_fixture_matches_rdkit_oracle`, both from
+fresh live oracle queries, `MMFFGetMoleculeProperties` on the implicit-H
+`Chem.MolFromSmiles` result with no `AddHs`/embedding needed, same
+precedent as `scripts/mmff94_bci_charges_oracle_227.py`); a no-regression
+pin (`propyne_alkyne_carbons_still_type_csp_after_degree_based_fix`); and
+the broader-than-corpus allene pin
+(`allene_central_carbon_types_csp_not_generic_vinylic`).
+
+#### Sub-bug 1 (bis-pyridinium exocyclic amine): re-diagnosed, not fixed — genuine RDKit Kekulization/aromaticity-perception artifact, out of scope for an atom-typing helper fix
+
+**The original diagnosis misidentifies which atom is mistyped.** Live
+per-atom dump on `chembl_tier_b_0009` (`c1cc2cc(c1)-c1cccc(c1)C[n+]1ccc
+(c3ccccc31)NCCCCCCCCCCNc1cc[n+](c3ccccc13)C2`): the exocyclic secondary-
+amine nitrogen (atom idx 23, and its mirror idx 34) is typed **40** by both
+chematic and RDKit — it already matches, and always did. The atom that
+actually mismatches is the **ring** nitrogen itself (idx 13/38): chematic
+types it 58 (NPD+, aromatic pyridinium N+), RDKit types it 54 (N+=C,
+iminium) **because RDKit's own MMFF-specific machinery does not perceive
+this specific ring as aromatic at all** for this specific molecule — not
+because of a discoverable "exocyclic-amine-conjugation" typing rule that
+chematic's N-typing switch is missing a branch for.
+
+**Real mechanism, traced to the source, not inferred from behavior alone.**
+`MMFFMolProperties`'s constructor (`AtomTyper.cpp` lines ~2356-2372) always
+runs two steps before any atom typing: a generic `MolOps::Kekulize` (a
+global maximum-matching search over the *entire* molecule's bonds, choosing
+*some* valid alternating single/double-bond assignment — not necessarily
+the "obvious" one a chemist would draw) followed by
+`MolOps::setMMFFAromaticity` (`Code/GraphMol/Aromaticity.cpp` line 922 at
+the pinned commit), which then *re-derives* which rings still count as
+aromatic for MMFF purposes from that specific Kekule structure, ring by
+ring, via an iterative Hückel 4n+2 pi-electron count
+(`(pi_e > 2) && !((pi_e - 2) % 4)`, line ~1032). Critically, this
+re-derivation's pi-electron count for a ring atom whose ring-neighbor bond
+is not a literal `Bond::DOUBLE` (including a bond already resolved to
+`Bond::AROMATIC` by a *different*, already-successfully-resolved fused
+ring sharing that edge) only credits pi-electrons through a narrower
+exocyclic-neighbor path that itself requires literal `Bond::DOUBLE`, not
+`Bond::AROMATIC` — so which of two fused rings sharing an edge "wins"
+enough pi-electron credit to pass the 4n+2 check depends on the *specific*
+Kekule structure the earlier global-matching step happened to choose for
+that edge, which is a property of the *whole* molecular graph (RDKit's
+SSSR ring perception and its matching solver's internal tie-breaking), not
+of this local ring or substituent alone. Both call sites verified directly
+against a fresh fetch of the pinned commit's source, not assumed from the
+issue text.
+
+**Falsified by direct negative controls, not merely "unverified."** The
+issue's proposed rule — "an aromatic ring N+ para to an exocyclic amine
+gets downgraded to 54" — was tested directly and is affirmatively wrong,
+not just imprecise: a bare 4-amino-1-methylpyridinium (`C[n+]1ccc(N)cc1`)
+types the ring N 58 (aromatic, correct, matches this exact motif with no
+fused ring); an isoquinolinium with a 4-amino substituent, still fused to a
+benzo ring exactly like the corpus molecules (`C[n+]1ccc(c2ccccc21)N`),
+*also* types 58; even the full bis-isoquinolinium/decyl-diamine linker with
+both aromatic rings and both exocyclic amines present, left as an
+open-chain (non-macrocyclic) molecule, types both ring nitrogens 58. The
+mismatch **only** appears once the corpus molecule's specific macrocyclic
+ring closure (the biphenyl/diarylmethane unit bridging both isoquinolinium
+N+-substituents into one large ring) is present — reproduced with a
+minimal macrocyclic fixture (single benzo ring instead of biphenyl,
+`c1cc(cc(c1)C[n+]1ccc(c3ccccc31)NCCCCCCCCCCNC2)C2`) that still shows the
+same de-aromatization, while a same-sized macrocycle closed through a
+short aliphatic bridge instead of an aromatic unit does not. Any local,
+substituent-pattern-based heuristic implemented inside
+`assign_mmff94_numeric_types` would have to fire on all of these
+structures identically (they are locally indistinguishable from the actual
+mismatching one) — which means it would necessarily *create* 4+ new false
+mismatches for every 1 it claimed to fix, the opposite of this project's
+zero-regression bar.
+
+**Why this is out of scope for an atom-typing-helper fix, not merely hard.**
+Reproducing RDKit's actual decision exactly would require porting (a) its
+global bond-Kekulization maximum-matching algorithm, including its
+molecule-graph-dependent tie-breaking, and (b) `setMMFFAromaticity`'s own
+iterative, SSSR-ring-processing-order-dependent pi-electron accounting —
+both whole subsystems, not a discriminating condition reducible to a
+citable one-line rule the way sub-bug 2's fix was. Chematic's own
+aromaticity determination for MMFF typing (`ring_is_fully_aromatic`,
+`crates/chematic-ff/src/mmff94_numeric.rs`) instead trusts the molecule's
+already-perceived aromatic bond order directly, with no analogous
+Kekulize-then-re-derive step — a different, simpler architecture that is
+not "wrong" (the ring genuinely is a valid aromatic pyridinium by ordinary
+organic-chemistry reasoning; RDKit's own core `Chem.MolFromSmiles`
+sanitization agrees, `atom.GetIsAromatic()` is `True` right up until
+`MMFFGetMoleculeProperties` mutates it in place) so much as a different
+answer to a genuinely underdetermined question for this specific fused,
+macrocyclic, shared-edge topology. Per this task's own stop condition:
+implementing a heuristic here would be guessing, not citing — left as an
+honestly-disclosed residual instead. **`chembl_tier_b_0009`/`_0023`/`_0028`/
+`_0029`/`_0030`/`_0034` remain at 32/6,693 type-mismatched atoms / 56/6,693
+charge-mismatched atoms** (see the sub-bug-2 "Measured" paragraph above for
+how these totals were obtained) after this PR — unchanged by it, since no
+code touched by this PR affects these 6 molecules' outcome either way.
+Issue #337's text should be corrected to reflect the above (not done as
+part of this PR — GitHub issue edits need separate authorization per this
+project's standing policy).
 
 **Fix**: new `mmff_derived_formal_charge`/`o2cm_sm_formal_charge` helpers
 in `crates/chematic-ff/src/mmff94_numeric.rs` (full doc comment on the
