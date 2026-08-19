@@ -9,6 +9,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — `chematic-ff` (MMFF94 atom typing: aryl isothiocyanate CSP carbon, issue #337)
+
+- **Root cause**: `assign_c_type`'s sp-carbon check only fired on
+  `triple_bonds > 0`, so a carbon reached via *two* double bonds (a
+  cumulated diene / "allenic" carbon — e.g. the central C of an aryl
+  isothiocyanate's `N=C=S`) fell through to the `double_bonds > 0`
+  "double-bonded to N/O/P/S" branch and was mistyped 3 (generic
+  carbonyl-family) instead of RDKit's real CSP type 4. RDKit's actual rule
+  (`AtomTyper.cpp`, pinned commit
+  `e74e7b0a5a2fc4e7f77c04ec26a61d4b8edbf22f`, lines ~954-960) is simply
+  `getTotalDegree() == 2` for a non-aromatic carbon, unconditional on which
+  elements the two bonds go to — a real triple bond and a cumulated
+  double-bond pair aren't special-cased separately by RDKit at all; both
+  just leave the carbon with exactly 2 neighbors.
+- Fix: replaced the `triple_bonds > 0 => Ok(4)` check with
+  `total_degree(mol, idx) == 2 => Ok(4)`, ahead of the `double_bonds > 0`
+  branch it was previously losing to. Strict superset of the old
+  condition (every triple-bonded carbon already has `total_degree == 2`),
+  so it cannot regress any previously-correct triple-bond CSP assignment.
+  Also, correctly, broader than the corpus: a plain carbon allene
+  (`C=C=C`, not present in the 264-molecule corpus) was mistyped the same
+  way and is fixed too.
+- Measured, full 264-molecule corpus, genuine per-atom join (not
+  aggregate-count arithmetic), same tool/oracle pair as every other
+  measurement in this file: type-mismatch ledger 34 → 32 atoms (both
+  `chembl_tier_b_0071`/`_0082`'s isothiocyanate carbon move to exact
+  match; molecule count 8 → 6); charge-mismatch ledger 62 → 56 atoms (6
+  move: the corrected carbon in both molecules, plus its N and S
+  neighbors in both, whose own TYPES were already correct but whose
+  BCI-bond-lookup charge depends on the carbon's type too; molecule count
+  8 → 6). Zero regressions on either ledger, verified by diffing full
+  before/after mismatch lists. `lookup_chg_contribution` already covers
+  the (4, 9) and (4, 16) bond-type pairs the corrected type now looks up
+  — no new charge-computation errors introduced.
+- **Not addressed by this fix**: the other 6/8 molecules behind issue
+  #337 (a pyridinium-conjugated exocyclic-amine scaffold,
+  `chembl_tier_b_0009`/`_0023`/`_0028`/`_0029`/`_0030`/`_0034`) turned out,
+  on live re-investigation, to be a genuine RDKit Kekulization/
+  MMFF-aromaticity-perception artifact for a specific fused, macrocyclic
+  ring topology — not a locally-statable atom-typing rule chematic is
+  missing a branch for (confirmed by direct negative-control fragments:
+  the same ring+exocyclic-amine motif types correctly in four simpler,
+  non-macrocyclic contexts). Reproducing RDKit's exact behavior would
+  require porting its global Kekulization matching algorithm and its
+  iterative, ring-processing-order-dependent MMFF-aromaticity pi-electron
+  count, not adding a discriminating condition — left as an
+  honestly-disclosed residual rather than shipping a heuristic that would
+  create new false mismatches on the negative-control cases. These 6
+  molecules remain unchanged by this fix (32/6,693 type-mismatched, 56/
+  6,693 charge-mismatched atoms, same molecules as before). Full writeup,
+  including the corrected diagnosis of which atom actually mismatches
+  (the ring nitrogen, not the exocyclic amine as originally described) and
+  the RDKit source citations for both the fixed and the unfixed sub-bug:
+  `scripts/mmff94_provenance/PROVENANCE.md`'s issue #337 follow-up
+  addendum.
+- 6 new regression-pinned/synthetic-fixture tests
+  (`crates/chematic-ff/src/mmff94_numeric.rs`): full-array pins for both
+  corpus molecules, two minimal isothiocyanate fixtures, a no-regression
+  plain-alkyne pin, and the broader-than-corpus allene pin.
+
 ### Added — chematic-py (Python bindings for the 7 v0.17.0 file formats)
 
 - Python (PyO3) bindings for the 7 file-format modules `chematic-mol`
