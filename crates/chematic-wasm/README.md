@@ -24,6 +24,8 @@ npm install @kent-tokyo/chematic
 - ECFP4/6, AtomPair, Torsion, and path fingerprints with Tanimoto similarity
 - BRICS fragment count
 - SDF/MOL block parsing
+- PDBx/mmCIF, PQR, QCSchema JSON, ORCA input/output, Gaussian Cube, OpenDX,
+  and LAMMPS data/dump I/O (JSON-based bindings; see `format_io.rs`)
 - Topological descriptors: Wiener index, Hall-Kier κ, χ connectivity indices, Bertz CT
 - Shape descriptors (with 3D coordinates): PMI, NPR, radius of gyration, asphericity
 - 2D SVG depiction with CPK colors and atom/bond highlighting

@@ -16,6 +16,7 @@ const WASM_MAX_JSON_STRING_BYTES: usize = 100_000;
 /// Maximum SMARTS matches returned by WASM APIs.
 const WASM_MAX_SMARTS_MATCHES: usize = 10_000;
 
+mod format_io;
 mod mol_3d;
 mod mol_depict;
 mod mol_descriptors;
@@ -27,6 +28,7 @@ mod pipeline_v2;
 #[cfg(test)]
 mod tests;
 
+pub use format_io::*;
 pub use mol_3d::*;
 pub use mol_depict::*;
 pub use mol_descriptors::*;

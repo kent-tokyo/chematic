@@ -110,6 +110,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   least one round-trip test and one typed-error-to-`ValueError` test per
   format).
 
+### Added — `chematic-wasm` (WASM/JS bindings for the 7 v0.17.0 file formats)
+
+- WASM (wasm-bindgen) bindings for the 7 file-format modules `chematic-mol`
+  gained in v0.17.0 with no prior WASM exposure: Gaussian Cube, OpenDX,
+  PDBx/mmCIF, PQR, QCSchema JSON, ORCA input/output, and LAMMPS data +
+  dump/trajectory. New `crates/chematic-wasm/src/format_io.rs` module,
+  ~40 `#[wasm_bindgen]` functions total. No new dependencies (`chematic-mol`
+  was already an unconditional, default-featured dependency of
+  `chematic-wasm`; `serde_json` was already available).
+- Follows `mol_io.rs`'s existing conventions: `Result<T, JsValue>` for
+  fallible calls, structured multi-field results as JSON strings (not
+  bespoke `#[wasm_bindgen]` structs — this crate has no
+  `js_sys::Float64Array`/typed-array precedent to follow for large numeric
+  arrays, so Cube/OpenDX's `values` grid round-trips through a plain JSON
+  number array; documented as a disclosed perf tradeoff, not a silent one).
+  mmCIF/PQR/ORCA/Cube (formats with no bond table) mirror the existing
+  `mol_from_pdb`/`pdb_coords_json` split — a topology-only `MolHandle` plus
+  a same-atom-order coordinates accessor — rather than fabricating a
+  MOL-block/SMILES-shaped result for chemistry these formats never
+  perceive.
+- `LammpsDumpReader`'s per-frame streaming has no WASM-boundary equivalent
+  in this first pass; `lammps_trajectory_to_json` parses the whole input
+  and returns every frame at once instead (disclosed, not silently
+  dropped). `write_opendx` (fail-closed on non-Ångström units) and
+  `write_opendx_lossy` (explicit Bohr→Ångström opt-in) are kept as two
+  distinct bindings, not collapsed into one lossy-by-default function.
+- `lammps_dump_cartesian_positions_json` delegates to
+  `chematic_mol::LammpsDumpFrame::cartesian_positions` to resolve a dump
+  frame's real Cartesian positions (`x/y/z` passthrough, `xs/ys/zs`
+  orthogonal-or-triclinic scaled-coordinate transform, `null` for an
+  `xu/yu/zu`-only frame) rather than requiring a JS caller to reimplement
+  that box-bounds/triclinic math itself.
+
 ## [0.17.0] — 2026-08-18
 
 Format/Python/materials-interop breadth, plus two MMFF94 charge/bond-order
