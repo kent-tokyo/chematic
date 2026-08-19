@@ -1353,11 +1353,29 @@ fn assign_c_type(
     // atomType.
 
     let double_bonds = count_bond_order(mol, idx, BondOrder::Double);
-    let triple_bonds = count_bond_order(mol, idx, BondOrder::Triple);
 
-    // sp carbon (triple bond or allene)
-    if triple_bonds > 0 {
-        return Ok(4); // CSP
+    // sp carbon: RDKit's real CSP (type 4) rule for a non-aromatic carbon
+    // is simply `getTotalDegree() == 2` (`AtomTyper.cpp`, pinned commit
+    // `e74e7b0a5a2fc4e7f77c04ec26a61d4b8edbf22f`, lines ~954-960 -- the
+    // "2 neighbors" branch reached once the earlier degree-4 and degree-3
+    // branches don't match), with no check on which elements the two
+    // bonds go to. It covers both true acetylenic carbons (one triple
+    // bond leaves exactly one remaining substituent, so degree is always
+    // 2) *and* cumulated-double-bond ("allenic") carbons such as the
+    // central C of an aryl isothiocyanate's N=C=S (two double bonds, zero
+    // remaining substituents, also degree 2). Chematic previously only
+    // special-cased `triple_bonds > 0`, so a degree-2 carbon reached via
+    // two double bonds instead fell into the `double_bonds > 0`
+    // "double-bonded to N/O/P/S" branch below and was mistyped 3 (generic
+    // carbonyl-family) instead of 4 -- confirmed live against RDKit on
+    // `chembl_tier_b_0071`/`_0082`'s isothiocyanate carbon (issue #337).
+    // `total_degree(mol, idx) == 2` is a strict superset of the old
+    // `triple_bonds > 0` gate (a carbon triple bond always consumes 3 of
+    // its 4 valence units, leaving exactly one more substituent), not a
+    // narrower replacement, so this cannot regress any previously-correct
+    // triple-bond CSP assignment.
+    if total_degree(mol, idx) == 2 {
+        return Ok(4); // CSP: acetylenic or cumulated-double-bond ("allenic") carbon
     }
 
     // sp2 carbon
@@ -4489,5 +4507,180 @@ mod tests {
         // proceed to index `types` for parameter lookup; confirming `Err`
         // here is exactly what makes that `?` short-circuit for every
         // caller, without needing to duplicate every caller's own test.
+    }
+
+    // ── Cumulated-double-bond CSP fix (issue #337 sub-bug 2) ─────────────────
+    // Root cause: `assign_c_type`'s sp-carbon check only fired on
+    // `triple_bonds > 0`, so a carbon reached via *two* double bonds (a
+    // cumulated diene / "allenic" carbon, e.g. the central C of an aryl
+    // isothiocyanate's N=C=S) fell through to the `double_bonds > 0`
+    // "double-bonded to N/O/P/S" branch and got the generic carbonyl-family
+    // type 3 instead of RDKit's real CSP type 4. RDKit's actual rule
+    // (`AtomTyper.cpp`, pinned commit
+    // `e74e7b0a5a2fc4e7f77c04ec26a61d4b8edbf22f`, lines ~954-960) is simply
+    // `getTotalDegree() == 2`, unconditional on which elements the two bonds
+    // go to -- see `assign_c_type`'s doc comment for the full citation.
+    // These tests pin the 2/8 issue #337 molecules this fix resolves (the
+    // other 6/8, the pyridinium-conjugated-exocyclic-amine sub-bug, are an
+    // RDKit Kekulization/aromaticity-perception artifact, not an
+    // atom-typing rule -- left as an honestly-disclosed residual, see
+    // `scripts/mmff94_provenance/PROVENANCE.md`), plus isolated synthetic
+    // fixtures pinning the exact discriminating condition independent of
+    // the corpus molecules' other complexity.
+
+    #[test]
+    fn propyne_alkyne_carbons_still_type_csp_after_degree_based_fix() {
+        // No-regression pin: a real triple bond always yields
+        // `total_degree == 2` for carbon (the triple bond alone consumes 3
+        // of its 4 valence units), so this must keep matching RDKit exactly
+        // as it did before this fix broadened the condition. Expected
+        // values from a fresh live RDKit oracle query (`rdkit==2026.03.4`,
+        // `MMFFGetMoleculeProperties(mol, mmffVariant="MMFF94")` on the
+        // implicit-H `Chem.MolFromSmiles` result -- MMFF atom
+        // typing/charges are purely topological, no embedding needed, same
+        // precedent as `scripts/mmff94_bci_charges_oracle_227.py`).
+        let m = mol("CC#C");
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        assert_eq!(types, vec![1, 4, 4]);
+        let q = mmff94_charges_numeric(&m).unwrap();
+        let expected = [0.2, -0.2, 0.0];
+        for (i, exp) in expected.iter().enumerate() {
+            assert!(
+                (q[i] - exp).abs() < 1e-6,
+                "propyne atom {i}: expected charge {exp}, got {}",
+                q[i]
+            );
+        }
+    }
+
+    #[test]
+    fn allene_central_carbon_types_csp_not_generic_vinylic() {
+        // Broader-than-corpus pin: plain carbon allene (no heteroatoms at
+        // all) is not in the 264-molecule corpus, but is the clearest
+        // demonstration that the real discriminating condition is
+        // `total_degree == 2`, not "cumulated bond to a heteroatom" --
+        // before this fix, the central carbon was mistyped 2 (generic
+        // vinylic C=C), same failure mode as the isothiocyanate carbons.
+        // Expected values from a fresh live RDKit oracle query
+        // (`rdkit==2026.03.4`).
+        let m = mol("C=C=C");
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        assert_eq!(types, vec![2, 4, 2]);
+        let q = mmff94_charges_numeric(&m).unwrap();
+        let expected = [0.065, -0.13, 0.065];
+        for (i, exp) in expected.iter().enumerate() {
+            assert!(
+                (q[i] - exp).abs() < 1e-6,
+                "allene atom {i}: expected charge {exp}, got {}",
+                q[i]
+            );
+        }
+    }
+
+    #[test]
+    fn methyl_isothiocyanate_minimal_ncs_fixture_matches_rdkit_oracle() {
+        // Minimal isolated reproduction of the corpus mechanism below,
+        // independent of the aromatic ring and amide/piperazine complexity
+        // both `chembl_tier_b_0071`/`_0082` also carry. Expected values
+        // from a fresh live RDKit oracle query (`rdkit==2026.03.4`).
+        let m = mol("CN=C=S");
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        assert_eq!(types, vec![1, 9, 4, 16]);
+        let q = mmff94_charges_numeric(&m).unwrap();
+        let expected = [0.246, -0.546, 0.575, -0.275];
+        for (i, exp) in expected.iter().enumerate() {
+            assert!(
+                (q[i] - exp).abs() < 1e-6,
+                "methyl isothiocyanate atom {i}: expected charge {exp}, got {}",
+                q[i]
+            );
+        }
+    }
+
+    #[test]
+    fn phenyl_isothiocyanate_aryl_ncs_fixture_matches_rdkit_oracle() {
+        // Same motif, aryl instead of methyl (closer to the corpus
+        // molecules' own aryl isothiocyanate substructure). Also confirms
+        // the fix doesn't disturb the adjacent aromatic ring's own typing.
+        // Expected values from a fresh live RDKit oracle query
+        // (`rdkit==2026.03.4`).
+        let m = mol("c1ccccc1N=C=S");
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        assert_eq!(types, vec![37, 37, 37, 37, 37, 37, 9, 4, 16]);
+        let q = mmff94_charges_numeric(&m).unwrap();
+        let expected = [0.0, 0.0, 0.0, 0.0, 0.0, 0.179, -0.479, 0.575, -0.275];
+        for (i, exp) in expected.iter().enumerate() {
+            assert!(
+                (q[i] - exp).abs() < 1e-6,
+                "phenyl isothiocyanate atom {i}: expected charge {exp}, got {}",
+                q[i]
+            );
+        }
+    }
+
+    #[test]
+    fn chembl_tier_b_0071_aryl_isothiocyanate_matches_rdkit_oracle_after_csp_fix() {
+        // Corpus regression pin. Expected values cross-checked against the
+        // already-committed live RDKit oracle dumps
+        // (`validation/results/mmff94_rdkit_type_oracle.jsonl` and
+        // `mmff94_bci_charges_227_rdkit_oracle.jsonl`, `rdkit==2026.03.4`)
+        // via the corpus-wide per-atom join reported in
+        // `scripts/mmff94_provenance/PROVENANCE.md`'s issue #337
+        // follow-up, not derived from this fix's own output.
+        let m = mol("COc1cc2nc(N3CCN(C(=O)c4ccc(N=C=S)c(I)c4)CC3)nc(N)c2cc1OC");
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        let expected_types = [
+            1, 6, 37, 37, 37, 38, 37, 40, 1, 1, 10, 3, 7, 37, 37, 37, 37, 9, 4, 16, 37, 14, 37, 1,
+            1, 38, 37, 40, 37, 37, 37, 6, 1,
+        ];
+        assert_eq!(
+            types, expected_types,
+            "sanity: chembl_tier_b_0071 atom types"
+        );
+        let q = mmff94_charges_numeric(&m).unwrap();
+        let expected = [
+            0.28, -0.3625, 0.0825, 0.0, 0.31, -0.62, 0.72, -0.8382, 0.3691, 0.3001, -0.6602,
+            0.5438, -0.57, 0.0862, 0.0, 0.0, 0.179, -0.479, 0.575, -0.275, 0.081, -0.081, 0.0,
+            0.3001, 0.3691, -0.62, 0.41, -0.1, 0.0, 0.0, 0.0825, -0.3625, 0.28,
+        ];
+        for (i, exp) in expected.iter().enumerate() {
+            assert!(
+                (q[i] - exp).abs() < 1e-6,
+                "chembl_tier_b_0071 atom {i}: expected charge {exp}, got {}",
+                q[i]
+            );
+        }
+    }
+
+    #[test]
+    fn chembl_tier_b_0082_aryl_isothiocyanate_matches_rdkit_oracle_after_csp_fix() {
+        // Corpus regression pin, same mechanism as `_0071` above via an
+        // enone rather than a plain benzamide linker. Expected values
+        // cross-checked against the already-committed live RDKit oracle
+        // dumps via the same corpus-wide per-atom join, not derived from
+        // this fix's own output.
+        let m = mol("COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(N=C=S)cc4)CC3)nc(N)c2cc1OC");
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        let expected_types = [
+            1, 6, 37, 37, 37, 38, 37, 40, 1, 1, 10, 3, 7, 2, 2, 37, 37, 37, 37, 9, 4, 16, 37, 37,
+            1, 1, 38, 37, 40, 37, 37, 37, 6, 1,
+        ];
+        assert_eq!(
+            types, expected_types,
+            "sanity: chembl_tier_b_0082 atom types"
+        );
+        let q = mmff94_charges_numeric(&m).unwrap();
+        let expected = [
+            0.28, -0.3625, 0.0825, 0.0, 0.31, -0.62, 0.72, -0.8382, 0.3691, 0.3001, -0.6602,
+            0.6156, -0.57, 0.0144, -0.0284, 0.0284, 0.0, 0.0, 0.179, -0.479, 0.575, -0.275, 0.0,
+            0.0, 0.3001, 0.3691, -0.62, 0.41, -0.1, 0.0, 0.0, 0.0825, -0.3625, 0.28,
+        ];
+        for (i, exp) in expected.iter().enumerate() {
+            assert!(
+                (q[i] - exp).abs() < 1e-6,
+                "chembl_tier_b_0082 atom {i}: expected charge {exp}, got {}",
+                q[i]
+            );
+        }
     }
 }
