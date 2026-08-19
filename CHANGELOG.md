@@ -7,7 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [0.18.0] — 2026-08-20
+
+Python and WASM bindings for the 7 file formats `chematic-mol` gained in
+v0.17.0 (mmCIF, PQR, ORCA, QCSchema, Gaussian Cube, OpenDX, LAMMPS
+data/dump), which had zero Python/WASM exposure until now, plus an MMFF94
+atom-typing fix and a finishing cross-language-consistency pass. One
+sub-bug of issue #337 (aryl isothiocyanate cumulated-double-bond CSP
+carbon) fixed via a strict-superset condition matching RDKit's real rule
+(`getTotalDegree() == 2`); the other 6/8 molecules behind that issue were
+re-diagnosed as a genuine RDKit Kekulization/MMFF-aromaticity-perception
+artifact rather than a locally-fixable typing rule, and left as an
+honestly-disclosed residual (confirmed via direct negative-control
+fragments, not merely asserted). The Binding Quality Pack that closes out
+this release adds `VolumetricGrid.values_3d` (Python), a verified-in-wheel
+`py.typed` marker with a `mypy --strict` check against a fresh-venv wheel
+install, 5 additive `js_sys::Float64Array`/`Uint32Array`-returning WASM
+functions alongside the existing JSON-string API (this crate's first
+typed-array precedent), cross-language parity fixtures proving Rust/
+Python/WASM agree on the same small Cube/OpenDX/mmCIF/LAMMPS-dump inputs,
+and runnable Python + Node.js examples — deliberately scoped as polish and
+consistency, not new format support. Purely additive at the Rust API
+level for existing crates — no breaking changes. **Not in this release**
+(deferred to a future version): the residual MMFF94 atom-typing artifact
+noted above; targeted canonical-SMILES/aromaticity known-residual fixes;
+Rustdoc warning cleanup and a broader API/format-capability documentation
+pass; Gaussian Cube multi-dataset support.
 
 ### Fixed — `chematic-ff` (MMFF94 atom typing: aryl isothiocyanate CSP carbon, issue #337)
 
