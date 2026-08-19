@@ -437,6 +437,47 @@ def test_volumetric_grid_to_molecule():
     assert len(coords) == 1
 
 
+def test_values_3d_axis_order():
+    # A non-cubic (2,3,4) shape so a transposed reshape can't coincidentally
+    # pass: values = 0..23 in flat (k-fastest) order, per checked_index(i,j,k)
+    # = i*shape[1]*shape[2] + j*shape[2] + k (chematic_mol::VolumetricGrid).
+    values = list(range(24))
+    grid = VolumetricGrid(
+        origin=(0.0, 0.0, 0.0),
+        axes=[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+        shape=(2, 3, 4),
+        values=[float(v) for v in values],
+    )
+    v3d = grid.values_3d
+    assert v3d.shape == (2, 3, 4)
+    # Every (i, j, k) must agree with checked_index/get -- the strongest
+    # oracle available, but shares its formula with the reshape under test,
+    # so it alone can't catch a self-consistently-wrong reshape.
+    for i in range(2):
+        for j in range(3):
+            for k in range(4):
+                assert v3d[i, j, k] == pytest.approx(grid.get(i, j, k))
+    # Independent, hand-computed spot checks a transpose/wrong reshape would
+    # break: with k fastest, index(i,j,k) = i*12 + j*4 + k.
+    assert v3d[0, 1, 0] == pytest.approx(4.0)   # index 0*12+1*4+0 = 4
+    assert v3d[1, 0, 0] == pytest.approx(12.0)  # index 1*12+0*4+0 = 12
+    assert v3d[0, 0, 1] == pytest.approx(1.0)
+    assert v3d[1, 2, 3] == pytest.approx(23.0)  # last element
+
+
+def test_values_3d_matches_flat_values_reshaped():
+    grid = VolumetricGrid.from_cube(CUBE_FIXTURE)
+    flat = list(grid.values)
+    v3d = grid.values_3d
+    assert v3d.shape == grid.shape
+    nx, ny, nz = grid.shape
+    for i in range(nx):
+        for j in range(ny):
+            for k in range(nz):
+                idx = grid.checked_index(i, j, k)
+                assert v3d[i, j, k] == pytest.approx(flat[idx])
+
+
 # ---------------------------------------------------------------------------
 # LAMMPS data
 # ---------------------------------------------------------------------------
@@ -540,3 +581,82 @@ def test_box_bounds_round_trip_utilities():
     box = chematic.box_bounds_to_true((0.0, 0.0, 0.0), (10.0, 10.0, 10.0), (1.0, 0.5, 0.0))
     lo, hi = chematic.true_to_box_bounds(box)
     assert lo == pytest.approx((0.0, 0.0, 0.0))
+
+
+# ---------------------------------------------------------------------------
+# Cross-language parity fixtures (Binding Quality Pack, v0.18.0)
+#
+# Same 4 fixtures (verbatim CUBE_FIXTURE/OPENDX_FIXTURE/MMCIF_FIXTURE above,
+# plus the LAMMPS triclinic frame below) and the same hardcoded expected
+# values as crates/chematic-mol/tests/format_binding_parity.rs (Rust) and
+# crates/chematic-wasm/tests/format_parity.test.mjs (WASM) -- each computed
+# once, independently, not by trusting another binding's output. See the
+# Rust file's module doc comment for why this independently-hardcoded
+# approach (rather than a shared fixture file) still proves 3-way parity.
+# ---------------------------------------------------------------------------
+
+
+def test_parity_cube_fixture_summary():
+    grid = VolumetricGrid.from_cube(CUBE_FIXTURE)
+    assert grid.shape == (2, 2, 2)
+    assert grid.units == "bohr"
+    assert grid.point_count() == 8
+    assert len(grid.atoms) == 1
+    # First/last values (reversed-flatten tripwire) plus two interior
+    # values only a correctly k-fastest-ordered flatten reproduces.
+    values = list(grid.values)
+    assert values[0] == pytest.approx(0.0)
+    assert values[-1] == pytest.approx(7.0)
+    assert grid.get(0, 1, 0) == pytest.approx(2.0)
+    assert grid.get(1, 0, 0) == pytest.approx(4.0)
+
+
+def test_parity_opendx_fixture_summary():
+    grid = VolumetricGrid.from_opendx(OPENDX_FIXTURE)
+    assert grid.shape == (2, 2, 2)
+    assert grid.units == "angstrom"
+    assert grid.point_count() == 8
+    assert len(grid.atoms) == 0
+    # axes: a Bohr<->Angstrom unit-conversion bug would show up here directly.
+    # pytest.approx doesn't support nested sequences, so flatten first.
+    flat_axes = [v for row in grid.axes for v in row]
+    assert flat_axes == pytest.approx([0.5, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.5])
+    assert grid.get(0, 1, 0) == pytest.approx(2.0)
+    assert grid.get(1, 0, 0) == pytest.approx(4.0)
+
+
+def test_parity_mmcif_fixture_summary():
+    result = chematic.parse_mmcif(MMCIF_FIXTURE)
+    assert len(result["atoms"]) == 2
+    # MMCIF_FIXTURE has no occupancy column at all, so this exercises both
+    # the coordinate field-mapping AND the spec-mandated occupancy default
+    # (1.0) in one pair of assertions.
+    assert result["atoms"][0]["element"] == "O"
+    assert result["atoms"][0]["x"] == pytest.approx(1.0)
+    assert result["atoms"][0]["y"] == pytest.approx(2.0)
+    assert result["atoms"][0]["z"] == pytest.approx(3.0)
+    assert result["atoms"][0]["occupancy"] == pytest.approx(1.0)
+
+
+def test_parity_lammps_dump_triclinic_fixture_summary():
+    # Built directly via the LammpsDumpFrame constructor (box_bounds is
+    # already the resolved TRUE box, matching chematic_mol::LammpsDumpFrame
+    # exactly) rather than parsed from hand-written dump-file text: a dump
+    # file's "ITEM: BOX BOUNDS" line carries the *bound* box, not the true
+    # box, and hand-deriving that conversion for a fixture file would be
+    # exactly the kind of step this parity check exists to make impossible
+    # to get wrong. Same triclinic box/tilt/xs values as
+    # chematic_mol::lammps_dump's own triclinic_frame() test fixture.
+    frame = LammpsDumpFrame(
+        timestep=2000,
+        box_bounds={"lo": (0.0, 0.0, 0.0), "hi": (10.0, 10.0, 10.0), "tilt": (2.0, 1.0, 0.5)},
+        column_names=["id", "xs", "ys", "zs"],
+        rows=[[1.0, 0.5, 0.5, 0.5]],
+        boundary_flags=("pp", "ff", "ss"),
+    )
+    assert frame.num_atoms == 1
+    positions = frame.cartesian_positions()
+    assert positions is not None
+    # Hand-computed (see crates/chematic-mol/tests/format_binding_parity.rs
+    # for the derivation): x=6.5, y=5.25, z=5.0.
+    assert list(positions[0]) == pytest.approx([6.5, 5.25, 5.0])

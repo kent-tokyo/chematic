@@ -33,19 +33,27 @@
 //! object with no precedent anywhere else in this crate, every parse
 //! function below simply uses each type's own `Default` limits.
 //!
-//! ## Grid JSON is a full round trip, not a typed-array view
+//! ## Grid JSON is a full round trip; typed-array siblings avoid it
 //!
 //! [`chematic_mol::VolumetricGrid::values`] can be very large (Cube/OpenDX
-//! routinely carry hundreds of thousands to millions of voxels). This crate
-//! has no existing `js_sys::Float64Array`/typed-array precedent to follow
-//! (checked: none of `mol_3d.rs`/`mol_depict.rs`/`mol_descriptors.rs`/
-//! `mol_edit.rs`/`mol_fingerprints.rs`/`mol_io.rs`/`mol_reactions.rs` use
-//! one), so `cube_grid_json`/`opendx_grid_json` serialize `values` as a
-//! plain JSON number array -- a real, disclosed perf cost (a full parse +
-//! JSON-string materialization + JS-side `JSON.parse` of every voxel value)
-//! versus a typed-array accessor view that would avoid it. Acceptable for a
-//! first pass; revisit with a `js_sys::Float64Array`-returning accessor
-//! struct if a large-grid workload proves this too slow in practice.
+//! routinely carry hundreds of thousands to millions of voxels). At the time
+//! `cube_grid_json`/`opendx_grid_json` were first added, this crate had no
+//! `js_sys::Float64Array`/typed-array precedent anywhere (checked:
+//! `mol_3d.rs`/`mol_depict.rs`/`mol_descriptors.rs`/`mol_edit.rs`/
+//! `mol_fingerprints.rs`/`mol_io.rs`/`mol_reactions.rs` all used none), so
+//! those two functions serialize `values` as a plain JSON number array -- a
+//! real, disclosed perf cost (a full parse + JSON-string materialization +
+//! JS-side `JSON.parse` of every voxel value). The "typed-array accessors"
+//! section near the end of this file (`cube_values_f64`/`cube_shape_u32`/
+//! `opendx_values_f64`/`opendx_shape_u32`/`lammps_dump_rows_f64`/
+//! `lammps_dump_cartesian_positions_f64`) is that deferred follow-up:
+//! `js_sys::Float64Array`/`Uint32Array`-returning siblings that avoid the
+//! JSON round trip for the specific large, purely-numeric payloads where it
+//! matters most, added ADDITIVELY alongside the original JSON functions
+//! (which stay, unchanged, for every other field/format). This is now the
+//! crate's first `js_sys` typed-array precedent -- `js-sys` was promoted
+//! from a transitive dependency (already pulled in by `web-sys`) to a
+//! direct one in `Cargo.toml` to allow it.
 
 use crate::{MolHandle, WASM_MAX_ATOMS, WASM_MAX_INPUT_BYTES};
 use wasm_bindgen::prelude::*;
@@ -1321,7 +1329,10 @@ pub fn lammps_dump_frame_to_json_str(text: &str) -> Result<String, JsValue> {
 ///   `Option` semantics exactly.
 ///
 /// Returns JSON `[[x,y,z],...]` on success, in the same atom order as
-/// `frame.rows`.
+/// `frame.rows`. See [`lammps_dump_cartesian_positions_f64`] for a flat
+/// `Float64Array` sibling -- note its `null` case becomes an `Err` there
+/// instead, a disclosed, real API-shape difference (a typed array has no
+/// `null`).
 #[wasm_bindgen]
 pub fn lammps_dump_cartesian_positions_json(frame_json: &str) -> Result<String, JsValue> {
     let v = parse_json_value("LAMMPS dump frame JSON", frame_json)?;
@@ -1380,6 +1391,154 @@ pub fn write_lammps_trajectory_json(json: &str) -> Result<String, JsValue> {
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| JsValue::from_str(&e))?;
     Ok(chematic_mol::write_lammps_trajectory(&frames))
+}
+
+// ===========================================================================
+// Typed-array accessors (Float64Array/Uint32Array)
+//
+// Additive alongside the JSON-returning functions above (which stay,
+// unchanged) -- see this file's module docs, "Grid JSON is a full round
+// trip; typed-array siblings avoid it". Every `#[wasm_bindgen]` function
+// below is a thin wrapper around a private helper that returns a plain
+// `Vec<f64>`/`[u32; 3]`/`String` error rather than `js_sys`/`JsValue`: a
+// `js_sys::Float64Array`/`Uint32Array` is an `extern "C"` JS binding that
+// aborts the process when called outside a real JS runtime (same
+// constraint `mod tests` below already documents for `JsValue`), so the
+// actual parsing/flattening logic is kept out of that unreachable-in-tests
+// zone and is exercised natively (against the JSON siblings' own output,
+// the strongest cross-check available) in `mod tests`; the Node
+// `.test.mjs` suite exercises the real typed arrays plus the
+// `lammps_dump_cartesian_positions_f64` error path.
+//
+// Every helper below delegates to the exact same `chematic_mol` call as
+// its JSON-returning sibling -- no parsing/math is reimplemented.
+// ===========================================================================
+
+fn shape_to_u32_array(shape: [usize; 3], label: &str) -> Result<[u32; 3], String> {
+    let mut out = [0u32; 3];
+    for (i, &d) in shape.iter().enumerate() {
+        out[i] =
+            u32::try_from(d).map_err(|_| format!("{label} shape[{i}]={d} does not fit u32"))?;
+    }
+    Ok(out)
+}
+
+fn cube_values_vec(text: &str) -> Result<Vec<f64>, String> {
+    chematic_mol::parse_cube(text)
+        .map(|g| g.values)
+        .map_err(|e| e.to_string())
+}
+
+fn cube_shape_vec(text: &str) -> Result<[u32; 3], String> {
+    let grid = chematic_mol::parse_cube(text).map_err(|e| e.to_string())?;
+    shape_to_u32_array(grid.shape, "cube")
+}
+
+fn opendx_values_vec(text: &str) -> Result<Vec<f64>, String> {
+    chematic_mol::parse_opendx(text)
+        .map(|g| g.values)
+        .map_err(|e| e.to_string())
+}
+
+fn opendx_shape_vec(text: &str) -> Result<[u32; 3], String> {
+    let grid = chematic_mol::parse_opendx(text).map_err(|e| e.to_string())?;
+    shape_to_u32_array(grid.shape, "OpenDX")
+}
+
+fn dump_frame_from_json_str(frame_json: &str) -> Result<chematic_mol::LammpsDumpFrame, String> {
+    let v: serde_json::Value =
+        serde_json::from_str(frame_json).map_err(|e| format!("invalid frame JSON: {e}"))?;
+    lammps_dump_frame_from_json(&v)
+}
+
+/// Flattens `rows` (one row per atom, `column_names.len()` values per row)
+/// into a single flat `Vec<f64>`, row-major: atom 0's columns, then atom
+/// 1's, etc.
+fn dump_rows_flat(frame_json: &str) -> Result<Vec<f64>, String> {
+    let frame = dump_frame_from_json_str(frame_json)?;
+    Ok(frame.rows.into_iter().flatten().collect())
+}
+
+/// Same resolution as [`lammps_dump_cartesian_positions_json`]
+/// (`LammpsDumpFrame::cartesian_positions`), flattened to `[x0,y0,z0,
+/// x1,y1,z1,...]`. `Err` (not `None`/`null`) when no recognized coordinate
+/// columns are present/resolvable -- see [`lammps_dump_cartesian_positions_f64`]'s
+/// doc comment for why.
+fn dump_cartesian_flat(frame_json: &str) -> Result<Vec<f64>, String> {
+    let frame = dump_frame_from_json_str(frame_json)?;
+    let positions = frame.cartesian_positions().ok_or_else(|| {
+        "no recognized coordinate columns (x/y/z, xs/ys/zs, or xu/yu/zu present but unresolvable)"
+            .to_string()
+    })?;
+    Ok(positions.into_iter().flatten().collect())
+}
+
+/// Flat `values` from a Gaussian Cube file's grid, as a `Float64Array` --
+/// same data [`cube_grid_json`]'s `"values"` field carries (row-major,
+/// third-axis-fastest order -- see `chematic_mol::volumetric`'s module
+/// docs for the exact index formula), as a real typed array instead of a
+/// JSON number array.
+#[wasm_bindgen]
+pub fn cube_values_f64(text: &str) -> Result<js_sys::Float64Array, JsValue> {
+    check_input_len("cube input", text)?;
+    let values = cube_values_vec(text).map_err(|e| JsValue::from_str(&e))?;
+    Ok(js_sys::Float64Array::from(values.as_slice()))
+}
+
+/// `[nx, ny, nz]` for a Gaussian Cube file's grid, as a `Uint32Array`.
+#[wasm_bindgen]
+pub fn cube_shape_u32(text: &str) -> Result<js_sys::Uint32Array, JsValue> {
+    check_input_len("cube input", text)?;
+    let shape = cube_shape_vec(text).map_err(|e| JsValue::from_str(&e))?;
+    Ok(js_sys::Uint32Array::from(shape.as_slice()))
+}
+
+/// Flat `values` from an OpenDX file's grid, as a `Float64Array` -- same
+/// data [`opendx_grid_json`]'s `"values"` field carries.
+#[wasm_bindgen]
+pub fn opendx_values_f64(text: &str) -> Result<js_sys::Float64Array, JsValue> {
+    check_input_len("OpenDX input", text)?;
+    let values = opendx_values_vec(text).map_err(|e| JsValue::from_str(&e))?;
+    Ok(js_sys::Float64Array::from(values.as_slice()))
+}
+
+/// `[nx, ny, nz]` for an OpenDX file's grid, as a `Uint32Array`.
+#[wasm_bindgen]
+pub fn opendx_shape_u32(text: &str) -> Result<js_sys::Uint32Array, JsValue> {
+    check_input_len("OpenDX input", text)?;
+    let shape = opendx_shape_vec(text).map_err(|e| JsValue::from_str(&e))?;
+    Ok(js_sys::Uint32Array::from(shape.as_slice()))
+}
+
+/// Flattens a LAMMPS dump frame's `rows` (JSON shape
+/// [`lammps_dump_frame_to_json_str`] returns) into a single flat
+/// `Float64Array`, row-major (atom 0's `column_names.len()` values, then
+/// atom 1's, ...). The caller already has `column_names` from
+/// [`lammps_dump_frame_to_json_str`] and can compute the row length
+/// itself (`column_names.length`); no separate row-length accessor is
+/// provided here.
+#[wasm_bindgen]
+pub fn lammps_dump_rows_f64(frame_json: &str) -> Result<js_sys::Float64Array, JsValue> {
+    check_json_len("LAMMPS dump frame JSON", frame_json)?;
+    let flat = dump_rows_flat(frame_json).map_err(|e| JsValue::from_str(&e))?;
+    Ok(js_sys::Float64Array::from(flat.as_slice()))
+}
+
+/// Like [`lammps_dump_cartesian_positions_json`], but returns a flat
+/// `Float64Array` (`[x0,y0,z0,x1,y1,z1,...]`, 3 values per atom) instead
+/// of a JSON `[[x,y,z],...]` array.
+///
+/// **Behavioral difference from the JSON sibling**: when the frame has no
+/// recognized coordinate columns, [`lammps_dump_cartesian_positions_json`]
+/// returns JSON `null`; a `Float64Array` has no `null`, so this function
+/// returns `Err` instead, with a message naming the columns it looked for.
+#[wasm_bindgen]
+pub fn lammps_dump_cartesian_positions_f64(
+    frame_json: &str,
+) -> Result<js_sys::Float64Array, JsValue> {
+    check_json_len("LAMMPS dump frame JSON", frame_json)?;
+    let flat = dump_cartesian_flat(frame_json).map_err(|e| JsValue::from_str(&e))?;
+    Ok(js_sys::Float64Array::from(flat.as_slice()))
 }
 
 // ===========================================================================
@@ -1746,5 +1905,87 @@ FINAL SINGLE POINT ENERGY       -76.320145981234
         let out =
             lammps_dump_cartesian_positions_json(LAMMPS_DUMP_UNWRAPPED_ONLY_FRAME_JSON).unwrap();
         assert_eq!(out, "null");
+    }
+
+    // -----------------------------------------------------------------
+    // Typed-array accessor helpers -- exercised natively against their
+    // pure-Rust helper functions (not the `#[wasm_bindgen]`-exposed
+    // Float64Array/Uint32Array functions themselves, which construct real
+    // `js_sys` values and would abort a native test process; see this
+    // file's "Typed-array accessors" section header comment). Each
+    // assertion cross-checks the helper's output against the JSON
+    // sibling's own already-tested output, the strongest available
+    // same-input cross-check.
+    // -----------------------------------------------------------------
+
+    #[test]
+    fn cube_values_vec_matches_cube_grid_json() {
+        let values = cube_values_vec(CUBE_2X2X2).unwrap();
+        let json = cube_grid_json(CUBE_2X2X2).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let expected: Vec<f64> = serde_json::from_value(v["values"].clone()).unwrap();
+        assert_eq!(values, expected);
+        assert_eq!(values, vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]);
+    }
+
+    #[test]
+    fn cube_shape_vec_matches_cube_grid_json() {
+        let shape = cube_shape_vec(CUBE_2X2X2).unwrap();
+        let json = cube_grid_json(CUBE_2X2X2).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let expected: [usize; 3] = serde_json::from_value(v["shape"].clone()).unwrap();
+        assert_eq!(shape, [2u32, 2, 2]);
+        assert_eq!(shape.map(|d| d as usize), expected);
+    }
+
+    #[test]
+    fn opendx_values_vec_matches_opendx_grid_json() {
+        let values = opendx_values_vec(OPENDX_2X2X2).unwrap();
+        let json = opendx_grid_json(OPENDX_2X2X2).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let expected: Vec<f64> = serde_json::from_value(v["values"].clone()).unwrap();
+        assert_eq!(values, expected);
+        assert_eq!(values, vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]);
+    }
+
+    #[test]
+    fn opendx_shape_vec_matches_opendx_grid_json() {
+        let shape = opendx_shape_vec(OPENDX_2X2X2).unwrap();
+        assert_eq!(shape, [2u32, 2, 2]);
+    }
+
+    #[test]
+    fn dump_rows_flat_matches_frame_json_rows() {
+        let flat = dump_rows_flat(LAMMPS_DUMP_FRAME_JSON).unwrap();
+        // LAMMPS_DUMP_FRAME_JSON: column_names has 4 entries, 2 atoms.
+        assert_eq!(flat, vec![1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0]);
+    }
+
+    #[test]
+    fn dump_cartesian_flat_matches_cartesian_positions_json_xyz_passthrough() {
+        let flat = dump_cartesian_flat(LAMMPS_DUMP_XYZ_FRAME_JSON).unwrap();
+        assert_eq!(flat, vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+    }
+
+    #[test]
+    fn dump_cartesian_flat_matches_cartesian_positions_json_triclinic_hand_computed() {
+        // Same hand-computed expected values as
+        // `lammps_dump_cartesian_positions_triclinic_hand_computed` above.
+        let flat = dump_cartesian_flat(LAMMPS_DUMP_TRICLINIC_XS_FRAME_JSON).unwrap();
+        assert_eq!(flat.len(), 3);
+        assert!((flat[0] - 6.5).abs() < 1e-9);
+        assert!((flat[1] - 5.25).abs() < 1e-9);
+        assert!((flat[2] - 5.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn dump_cartesian_flat_errs_for_unwrapped_only_columns() {
+        // The JSON sibling (lammps_dump_cartesian_positions_json) returns
+        // JSON `null` for this same fixture -- a `Float64Array` has no
+        // `null`, so this helper (and the Float64Array-returning
+        // #[wasm_bindgen] function built on it) returns `Err` instead. See
+        // lammps_dump_cartesian_positions_f64's doc comment.
+        let err = dump_cartesian_flat(LAMMPS_DUMP_UNWRAPPED_ONLY_FRAME_JSON).unwrap_err();
+        assert!(err.contains("no recognized coordinate columns"));
     }
 }
