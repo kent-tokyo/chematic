@@ -69,6 +69,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   corpus molecules, two minimal isothiocyanate fixtures, a no-regression
   plain-alkyne pin, and the broader-than-corpus allene pin.
 
+### Added — chematic-py (Python bindings for the 7 v0.17.0 file formats)
+
+- Python (PyO3) bindings for the 7 file-format modules `chematic-mol`
+  gained in v0.17.0, which had zero Python exposure until now: mmCIF, PQR,
+  ORCA input/output, QCSchema (`Molecule`/`AtomicInput`/`AtomicResult`),
+  Gaussian Cube, OpenDX, and LAMMPS data/dump.
+- `chematic.parse_mmcif`/`write_mmcif`, `chematic.parse_pqr`/`write_pqr`/
+  `infer_element`, `chematic.parse_orca_input`/`write_orca_input`/
+  `parse_orca_output` (`formats.rs`) — plain functions returning/consuming
+  dicts, matching the existing `parse_cif` convention; every typed Rust
+  parse error maps to `ValueError`; `*ParseLimits` are exposed as optional
+  keyword arguments with the Rust `Default` values.
+- `chematic.parse_qcschema_molecule`/`write_qcschema_molecule`,
+  `chematic.chematic_to_qc_molecule`/`qc_molecule_to_chematic`,
+  `chematic.parse_atomic_input`/`write_atomic_input`,
+  `chematic.parse_atomic_result`/`write_atomic_result` (`formats.rs`) —
+  routed through Python's own `json` module as the dict<->text boundary
+  rather than a hand-written field-by-field struct mapper, so QCSchema's
+  open extensibility bags (`extras`/`unknown_fields`/`keywords`/
+  `protocols`/`native_files`/`wavefunction`) round-trip losslessly with no
+  new dependency (`serde_json` is not linked into `chematic-py`).
+- `chematic.VolumetricGrid` (new `volumetric.rs`), a pyclass shared by Cube
+  and OpenDX (both read/write the same underlying Rust type): `from_cube`/
+  `from_opendx` constructors, `to_cube`/`to_opendx`/`to_opendx_lossy`
+  writers (the fail-closed `to_opendx` vs. explicit-opt-in
+  `to_opendx_lossy` split from PR #335 is preserved faithfully — no boolean
+  flag defaulting to lossy), `get`/`checked_index`/`point_count`/
+  `to_molecule` methods, and numpy-array `values`/`axes` properties.
+- `chematic.parse_lammps_data`/`write_lammps_data` (plain dict, new
+  `lammps.rs`) and `chematic.LammpsDumpFrame` (pyclass, real `column`/
+  `cartesian_positions` behavior) plus `parse_lammps_dump_frame`/
+  `parse_lammps_dump_all`/`write_lammps_dump_frame`/
+  `write_lammps_trajectory`/`box_bounds_to_true`/`true_to_box_bounds`.
+  `parse_lammps_dump_all` materializes the whole trajectory as a list
+  rather than exposing `LammpsDumpReader`'s true streaming iteration to
+  Python — a disclosed scope decision (see the function's docstring), not
+  a silently dropped capability.
+- pytest coverage for all 7 formats in `crates/chematic-py/tests/` (at
+  least one round-trip test and one typed-error-to-`ValueError` test per
+  format).
+
 ### Added — `chematic-wasm` (WASM/JS bindings for the 7 v0.17.0 file formats)
 
 - WASM (wasm-bindgen) bindings for the 7 file-format modules `chematic-mol`

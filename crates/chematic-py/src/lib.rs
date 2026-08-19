@@ -19,6 +19,7 @@ type RdkitMorganDetail = (
 
 mod crystal;
 mod formats;
+mod lammps;
 mod misc;
 mod mol_methods;
 mod pipeline_v2;
@@ -26,6 +27,7 @@ mod reactions;
 mod reports;
 mod rwmol;
 mod similarity;
+mod volumetric;
 
 mod bulk;
 mod index;
@@ -93,6 +95,8 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
     reports::register(m)?;
     misc::register(m)?;
     crystal::register(m)?;
+    volumetric::register(m)?;
+    lammps::register(m)?;
 
     Ok(())
 }
