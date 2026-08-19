@@ -180,7 +180,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.17.0
+# chematic v0.18.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -427,6 +427,13 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 ## Recent Development
 
+**v0.18.0** (2026-08-20): **Python/WASM bindings for the 7 v0.17.0 formats, plus an MMFF94 atom-typing fix and a binding-quality/cross-language-consistency pass**
+- `chematic-ff`: fixed the aryl-isothiocyanate cumulated-double-bond CSP carbon mistyping from issue #337 (`getTotalDegree() == 2` replacing a `triple_bonds > 0`-only check — a strict superset, RDKit's real rule); the other 6/8 molecules behind that issue were re-diagnosed as a genuine RDKit Kekulization/MMFF-aromaticity-perception artifact (confirmed via direct negative-control fragments) rather than a locally-fixable typing rule, and left as an honestly-disclosed residual
+- `chematic-py`: Python bindings for all 7 v0.17.0 formats (mmCIF, PQR, ORCA, QCSchema, Gaussian Cube, OpenDX, LAMMPS data/dump) — previously Rust-only; `VolumetricGrid`/`LammpsDumpFrame` pyclasses with numpy-array properties, `to_opendx`/`to_opendx_lossy` fail-closed split preserved faithfully; a `py.typed` marker verified to actually ship in the built wheel (`mypy --strict` passes against a fresh-venv wheel install, not just the source tree)
+- `chematic-wasm`: WASM (wasm-bindgen) bindings for the same 7 formats, plus 5 additive `js_sys::Float64Array`/`Uint32Array`-returning functions alongside the existing JSON-string API (large numeric grid/row data without a full JSON round trip) — this crate's first typed-array precedent
+- Cross-language parity: the same 4 small fixtures (Cube, OpenDX, mmCIF, LAMMPS triclinic dump) independently verified to produce identical results from Rust, Python, and WASM entry points — no discrepancy found
+- Full details in `CHANGELOG.md`'s `[0.18.0]` section
+
 **v0.17.0** (2026-08-17): **Format/Python/materials-interop breadth, plus two MMFF94 charge/bond-order accuracy fixes**
 - `chematic-mol`: square-planar (`@SP1`/`@SP2`/`@SP3`-equivalent) stereo read/write for MOL/SDF via 3D-coordinate-derived reperception; PDBx/mmCIF, PQR, QCSchema JSON, and ORCA input/output; CIF explicit symmetry-operation expansion into a full unit cell (Rust + Python); a shared `VolumetricGrid` type plus Gaussian Cube and OpenDX (APBS-scoped) I/O; LAMMPS data-file (`read_data` format) and dump/trajectory-file I/O as standalone document types, not integrated with `Molecule`
 - `chematic-py`: new Python bindings for `chematic-crystal`'s `Lattice`/`PeriodicStructure`/`Site` — found and fixed a real pre-existing bug along the way (`to_cif()` silently re-declared an unexpanded-symmetry CIF as false P1)
@@ -569,7 +576,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.17.0)
+├── Cargo.toml                    workspace root (v0.18.0)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -623,7 +630,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.17.0},
+  version   = {0.18.0},
   year      = {2026},
 }
 ```

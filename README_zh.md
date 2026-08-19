@@ -251,6 +251,13 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 
 ## 近期开发
 
+**v0.18.0**（2026-08-20）：**为 v0.17.0 的 7 种新格式添加 Python/WASM 绑定，一项 MMFF94 原子类型修复，以及跨语言一致性完善**
+- `chematic-ff`：修复了 issue #337 中芳基异硫氰酸酯累积双键 CSP 碳的误判类型（`getTotalDegree() == 2`，是 RDKit 真实规则的严格超集）。其余 6/8 个分子被重新诊断为 RDKit 自身 Kekulization/MMFF 芳香性识别的真实伪影（通过直接的负对照片段验证），并作为诚实披露的遗留问题保留
+- `chematic-py`：为 v0.17.0 的全部 7 种格式（mmCIF、PQR、ORCA、QCSchema、Gaussian Cube、OpenDX、LAMMPS data/dump）新增 Python 绑定——此前仅限 Rust 使用。`VolumetricGrid`/`LammpsDumpFrame` pyclass 具有 numpy 数组属性，`to_opendx`/`to_opendx_lossy` 的 fail-closed 分离被忠实保留；`py.typed` 标记已验证确实包含在构建的 wheel 中（对新建 venv 中安装的 wheel 而非源码树运行 `mypy --strict` 通过）
+- `chematic-wasm`：为相同 7 种格式新增 WASM（wasm-bindgen）绑定，并在现有 JSON 字符串 API 之外新增 5 个返回 `js_sys::Float64Array`/`Uint32Array` 的附加函数（无需完整 JSON 往返即可获取大型数值网格/行数据）——该 crate 首次支持 typed array
+- 跨语言一致性：同一组 4 个小型 fixture（Cube、OpenDX、mmCIF、LAMMPS triclinic dump）已独立验证在 Rust、Python、WASM 三个语言入口点产生一致结果，未发现差异
+- 详见 `CHANGELOG.md` 的 `[0.18.0]` 部分
+
 **v0.17.0**（2026-08-17）：**格式/Python/材料科学互操作性扩展，以及两项 MMFF94 电荷/键级精度修复**
 - `chematic-mol`：平面四方（`@SP1`/`@SP2`/`@SP3` 等价）立体化学的 MOL/SDF 读写（基于 3D 坐标重新识别）、PDBx/mmCIF、PQR、QCSchema JSON、ORCA 输入输出、CIF 显式对称操作展开（Rust 与 Python 均支持）、共享 `VolumetricGrid` 类型加 Gaussian Cube/OpenDX I/O、LAMMPS data/dump（轨迹）I/O（作为独立于 `Molecule` 的专用 document 类型）
 - `chematic-py`：新增 `chematic-crystal` 的 `Lattice`/`PeriodicStructure`/`Site` Python 绑定——开发过程中发现并修复了一个真实的既有 bug（`to_cif()` 曾将未展开对称性的 CIF 错误地重新声明为 P1）

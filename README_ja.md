@@ -106,7 +106,7 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.17.0
+# chematic v0.18.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-06, v0.4.22 vs RDKit 2026.03.3 --
@@ -283,6 +283,13 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 ---
 
 ## 最近の開発
+
+**v0.18.0**（2026-08-20）: **v0.17.0の7新形式へのPython/WASMバインディング、MMFF94 atom-typing修正、言語間一貫性の仕上げ**
+- `chematic-ff`：issue #337のアリールイソチオシアネート累積二重結合CSP炭素の誤タイプを修正（`getTotalDegree() == 2`、RDKitの実際のルールに合わせた厳密な上位集合）。残る6/8分子はRDKit自身のKekulization/MMFF芳香族性認識に起因する真正のアーティファクトと再診断し（negative-control fragmentsで直接検証）、誠実な残課題として開示
+- `chematic-py`：v0.17.0の7形式（mmCIF・PQR・ORCA・QCSchema・Gaussian Cube・OpenDX・LAMMPS data/dump）全てにPythonバインディングを追加——これまでRust限定だった機能。`VolumetricGrid`/`LammpsDumpFrame`のpyclassはNumPy配列プロパティを持ち、`to_opendx`/`to_opendx_lossy`のfail-closed分離も忠実に維持。`py.typed`マーカーが実際にビルド済みwheelへ含まれることを検証済み（ソースツリーではなく新規venvへのwheel installに対して`mypy --strict`が通過）
+- `chematic-wasm`：同じ7形式へのWASM（wasm-bindgen）バインディング、加えて既存のJSON文字列APIに追加する形で`js_sys::Float64Array`/`Uint32Array`を返す5つの新規関数（大きな数値グリッド/行データをJSON往復なしで取得）——このクレート初のtyped-array対応
+- 言語間の一貫性：同一の4つの小規模fixture（Cube・OpenDX・mmCIF・LAMMPS triclinic dump）がRust・Python・WASMの3言語entry pointで同一結果を返すことを独立検証、不一致なし
+- 詳細は`CHANGELOG.md`の`[0.18.0]`section参照
 
 **v0.17.0**（2026-08-17）: **フォーマット/Python/材料科学の相互運用性拡充、およびMMFF94電荷・結合次数の精度修正2件**
 - `chematic-mol`：square-planar（`@SP1`/`@SP2`/`@SP3`相当）立体化学のMOL/SDF read/write（3D座標からの再認識）、PDBx/mmCIF・PQR・QCSchema JSON・ORCA入出力、CIF明示的symmetry操作の展開（Rust/Python両方）、共有`VolumetricGrid`型 + Gaussian Cube/OpenDX I/O、LAMMPS data/dump（trajectory）I/O（`Molecule`とは独立した専用document型）
