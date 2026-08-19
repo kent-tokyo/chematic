@@ -28,8 +28,8 @@
 
 use std::sync::Arc;
 
-use ndarray::{Array1, Array2};
-use numpy::{IntoPyArray, PyArray1, PyArray2};
+use ndarray::{Array1, Array2, Array3};
+use numpy::{IntoPyArray, PyArray1, PyArray2, PyArray3};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
@@ -244,10 +244,27 @@ impl PyVolumetricGrid {
 
     /// Flat scalar-field samples as a 1-D numpy array of length
     /// ``shape[0] * shape[1] * shape[2]``. See the class docs for the index
-    /// ordering.
+    /// ordering. See :attr:`values_3d` for the same data reshaped to
+    /// ``self.shape``.
     #[getter]
     fn values<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray1<f64>> {
         Array1::from_vec(self.inner.values.clone()).into_pyarray(py)
+    }
+
+    /// :attr:`values` reshaped to a 3-D numpy array of shape ``self.shape``
+    /// (``(nx, ny, nz)``), so ``values_3d[i, j, k] == get(i, j, k)``. A
+    /// plain copy of :attr:`values`, not a zero-copy view.
+    ///
+    /// Raises:
+    ///     ValueError: if ``shape``'s point count doesn't match
+    ///     ``len(values)`` (only reachable for a hand-built, invalid grid;
+    ///     see [`Self::new`]).
+    #[getter]
+    fn values_3d<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyArray3<f64>>> {
+        let [nx, ny, nz] = self.inner.shape;
+        let arr = Array3::from_shape_vec((nx, ny, nz), self.inner.values.clone())
+            .map_err(|e| PyValueError::new_err(format!("values does not match shape: {e}")))?;
+        Ok(arr.into_pyarray(py))
     }
 
     #[getter]

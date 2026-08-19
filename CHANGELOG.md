@@ -143,6 +143,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `xu/yu/zu`-only frame) rather than requiring a JS caller to reimplement
   that box-bounds/triclinic math itself.
 
+### Added — Binding Quality Pack (polish/consistency for the 7 v0.17.0 formats, no new format support)
+
+Finishing pass over the Python/WASM bindings the 3 previous entries in this
+section added (PRs #341-#343) — cross-language consistency and ergonomics,
+explicitly NOT new capability. No `chematic-mol` changes.
+
+- `chematic-py`: `VolumetricGrid.values_3d` — `values` (flat) reshaped to a
+  3-D numpy array of shape `self.shape`, so `values_3d[i, j, k] ==
+  get(i, j, k)`. A plain copy of `values` (no zero-copy view — deliberately
+  out of scope). Axis order verified against
+  `chematic_mol::VolumetricGrid::checked_index` (k varies fastest) with a
+  non-cubic `(2, 3, 4)` fixture and hardcoded interior values, not just a
+  cubic 2×2×2 grid where a transposed reshape could pass by coincidence.
+- `chematic-py`: added `python/chematic/py.typed` (PEP 561 marker). Verified
+  it — and `__init__.pyi` — actually ship in a `maturin build --release`
+  wheel (`unzip -l`, not just "the file exists in the source tree"), and
+  that `mypy --strict` against a fresh venv with that wheel installed (not
+  the source tree — confirmed via `chematic.__file__` resolving to
+  `site-packages`) passes clean for the 7 new-format bindings
+  (`crates/chematic-py/tests/typecheck_new_formats.py`). No pre-existing
+  stub gaps surfaced for these 7 formats; no full-API stub audit performed
+  (out of scope).
+- `chematic-wasm`: 5 new `js_sys::Float64Array`/`Uint32Array`-returning
+  functions — `cube_values_f64`, `cube_shape_u32`, `opendx_values_f64`,
+  `opendx_shape_u32`, `lammps_dump_rows_f64`,
+  `lammps_dump_cartesian_positions_f64` — added ADDITIVELY alongside the
+  existing JSON-returning functions (`cube_grid_json`, `opendx_grid_json`,
+  `lammps_dump_frame_to_json_str`, `lammps_dump_cartesian_positions_json`,
+  all unchanged), avoiding a full JSON round trip for large numeric grid/row
+  payloads. This is the crate's first `js_sys` typed-array precedent;
+  `js-sys` promoted from a transitive dependency (already pulled in by
+  `web-sys`) to a direct one in `Cargo.toml` — no new supply-chain surface.
+  `lammps_dump_cartesian_positions_f64` has one disclosed, real API-shape
+  difference from its JSON sibling: the JSON version returns `null` for a
+  frame with no resolvable coordinate columns; a `Float64Array` can't
+  represent `null`, so this version returns `Err` instead. Read-direction
+  only — no typed-array *write* functions added (out of scope; OpenDX's
+  fail-closed unit handling stays entirely on the write path, untouched).
+  Every new function delegates to the same underlying `chematic_mol` call
+  as its JSON sibling (no reimplemented parsing/math); native `cargo test`
+  cross-checks the shared pure-Rust helpers against the JSON output
+  directly (a `js_sys` typed array can't be constructed outside a real JS
+  runtime, so the `#[wasm_bindgen]`-exposed functions themselves are
+  exercised in the Node `.test.mjs` suite instead).
+- Cross-language parity fixtures (Cube, OpenDX, mmCIF, LAMMPS dump — not
+  full-format-spec coverage): the same 4 small fixtures, with the same
+  independently-hardcoded expected values, asserted from all 3 language
+  entry points — `crates/chematic-mol/tests/format_binding_parity.rs`
+  (Rust), `test_parity_*` in `crates/chematic-py/tests/test_new_formats.py`
+  (Python), `crates/chematic-wasm/tests/format_parity.test.mjs` (WASM).
+  The LAMMPS case reuses the exact triclinic box/tilt fixture from
+  `chematic_mol::lammps_dump`'s own hand-computed test — this is the same
+  bound-box-vs-true-box / triclinic-shear-term class of bug an independent
+  review caught and required fixing in PR #343, so it is deliberately not
+  re-derived per language. All 3 language surfaces agree; no discrepancy
+  found.
+- Runnable examples: `examples/materials_formats_quickstart.py` (Cube
+  `values_3d`, mmCIF atom fields, LAMMPS dump Cartesian positions) and
+  `crates/chematic-wasm/tests/materials_formats_example.test.mjs` (same 3
+  formats via WASM; picked up automatically by the existing WASM CI test
+  loop, doubling as both a runnable example and a CI-executed test).
+- Deliberately NOT done (see PR description for the full scope-boundary
+  list): no format auto-detection/dispatch, no zero-copy numpy views, Cube
+  is still single-dataset-only, and no full `.pyi`/mypy audit of the entire
+  `chematic-py` API surface beyond these 7 formats' stub entries.
+
 ## [0.17.0] — 2026-08-18
 
 Format/Python/materials-interop breadth, plus two MMFF94 charge/bond-order
