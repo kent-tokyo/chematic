@@ -153,7 +153,10 @@ class Mol:
 
         Returns:
             dict with keys ``coords`` (list[list[float]]), ``energy`` (float,
-            kcal/mol), ``iterations`` (int), ``converged`` (bool).
+            kcal/mol), ``iterations`` (int), ``converged`` (bool), ``sound``
+            (bool — all-finite coordinates and no bond stretched past a sane
+            covalent-bond length; independent of ``converged``, check this
+            before trusting a result).
         """
         ...
 
