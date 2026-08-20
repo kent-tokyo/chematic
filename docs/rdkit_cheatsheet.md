@@ -2,6 +2,8 @@
 
 Side-by-side API reference for users coming from RDKit. chematic is pure Rust with zero C/C++ dependencies — install with `pip install chematic`, no conda required.
 
+See also: [`rdkit-migration.md`](rdkit-migration.md) for a feature-by-feature Supported/Partial/Not-supported breakdown.
+
 ## Installation
 
 ```bash

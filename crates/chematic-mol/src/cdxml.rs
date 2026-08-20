@@ -118,7 +118,8 @@ pub struct CdxmlParseOptions {
 ///
 /// **Coordinate system:** The returned `coords` use **ChemDraw Y-down convention**
 /// (Y increases downward, matching screen/SVG pixel space). No Y-axis conversion is required
-/// for SVG rendering; coordinates can be used directly in [`crate::svg::render_svg`] or similar.
+/// for SVG rendering; coordinates can be used directly with an SVG renderer such as
+/// `render_svg` (see `chematic-depict`).
 pub fn parse_cdxml(input: &str) -> Result<(Molecule, Vec<(f64, f64)>), CdxmlError> {
     parse_cdxml_with_options(input, &CdxmlParseOptions::default())
 }

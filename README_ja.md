@@ -59,6 +59,16 @@ WASM サイズ: chematic **719 KB** · RDKit.js ~30 MB · Indigo WASM ~40 MB
 
 ---
 
+## インターフェースを選ぶ
+
+- [Rust](#クイックスタート)
+- [Python](#クイックスタート)
+- [WebAssembly / Node.js](README.md#javascript--typescript-webassembly)
+- [材料・シミュレーション用フォーマット](docs/format-capabilities.md) — mmCIF, PQR, QCSchema, ORCA, Gaussian Cube, OpenDX, LAMMPS
+- [RDKit からの移行](docs/rdkit-migration.md) — 機能ごとの Supported / Partial / Not-supported 対応表
+
+---
+
 ## クイックスタート
 
 ### インストール

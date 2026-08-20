@@ -63,11 +63,16 @@ nav:
   - Cookbook (EN): cookbook.md
   - Cookbook (日本語): cookbook_ja.md
   - Benchmark: benchmark.md
+  - Formats & Bindings:
+    - Format Capability Matrix: format-capabilities.md
+    - Language Bindings Cross-Reference: language-bindings.md
+    - Error Handling & Limits: error-and-limits.md
   - Reliability:
     - Validation vs RDKit: validation.md
     - Detailed RDKit Comparison: rdkit-comparison.md
     - RDKit Issue Lessons: rdkit_issue_lessons.md
   - RDKit Migration Guide: rdkit_cheatsheet.md
+  - RDKit Feature Support Matrix: rdkit-migration.md
   - API Reference:
     - chematic: api/chematic.md
   - Changelog: changelog.md
