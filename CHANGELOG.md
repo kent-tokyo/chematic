@@ -45,6 +45,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bond-length check without depending on steepest descent actually getting
   stuck there), and non-finite coordinates.
 
+### Fixed — `chematic-depict` 2D auto-layout (issue #347)
+
+- Long open chains no longer drift into a monotonic ~30°/bond rotation and
+  wrap onto themselves (a plain 13-carbon chain used to place its first and
+  last atom at identical coordinates). `dfs_zigzag`
+  (`crates/chematic-depict/src/layout.rs`) was alternating its ±30°
+  deflection by a neighbor's position within its *own parent's*
+  unplaced-neighbor list, which is `0` for every ordinary single-successor
+  chain step — not a real alternation signal. Now threads an explicit
+  `sign: f64` through the DFS stack that flips on every step, so a plain
+  chain continuation genuinely zigzags.
+- Exocyclic substituent bonds at ring junctions now point along the correct
+  outward bisector instead of missing it by up to ~30°.
+  `best_outgoing_direction` had its own coarser 6-point 60° candidate grid
+  with a last-wins tie-break; it now shares the richer, chemistry-aware
+  candidate set (`suggest_bond_direction`'s existing 12-point 30° grid plus
+  bond-relative sp2/sp3/anti offsets) via a new `ranked_candidates` helper.
+- `best_outgoing_direction` also gained a positional collision check: the
+  angularly-best candidate is skipped if it would land on top of an
+  already-placed atom elsewhere in the layout (falls back through the
+  ranked list, then to the top pick if every candidate collides). This is
+  a real, independent gap the coarse grid had been accidentally masking —
+  angular separation from an atom's own bonds doesn't guard against a
+  distant already-placed atom happening to sit on the chosen ray.
+- **Known, intentional behavior change**: any MOL/SDF/CML output that
+  relies on `chematic`'s auto-generated 2D coordinates (no
+  caller-supplied coordinates) will now differ from before, since these
+  coordinates were wrong. No fixture in this repo pins the old
+  (buggy) auto-layout output as a golden value.
+- New `Mol.depict_data()` binding for `chematic-py`
+  (`crates/chematic-py/src/mol_methods.rs`): returns the full structured
+  `DepictData` (atoms with element/position/label/color/charge, bonds with
+  kind including wedge/hash stereo) as a native Python `dict`, mirroring
+  `chematic-wasm`'s existing `depict_data_json` (shipped since v0.1.20) —
+  previously Python could only get an SVG string or a function that takes
+  coordinates as input, not raw layout data.
+
 ## [0.18.0] — 2026-08-20
 
 Python and WASM bindings for the 7 file formats `chematic-mol` gained in

@@ -10,7 +10,7 @@
 - **Ring templates**: pre-drawn benzene and other common rings for cleaner depiction
 - **Stereo bonds**: wedge (Up) and dash (Down) for 3D stereochemistry
 - **CPK coloring**: element-specific color scheme (C gray, H white, O red, N blue, etc.)
-- **Automatic 2D layout**: uses distance geometry and spring forces for readable coordinates
+- **Automatic 2D layout**: geometric placement rules (ring templates, zigzag chains, angle-aware branching) for readable coordinates — no physics simulation
 - **Atom/bond highlighting**: highlight arbitrary atoms or bonds with color overlays
 - **Label customization**: hide/show atom symbols, hydrogens, or atom indices
 - **PNG rasterization**: optional `png` feature (default=enabled) via `tiny_skia`; excluded from WASM — use SVG there
