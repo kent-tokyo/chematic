@@ -1335,6 +1335,119 @@ scripts/check_publish_graph.py` and `cargo deny check`: both clean (exit
 command's inputs (`Cargo.toml`/`Cargo.lock`/`deny.toml`) are touched by
 any commit in this PR.
 
+#### Sub-bug 1 correction (v0.18.1 investigation): the "no analogous step" claim above was wrong; the real blocker is a three-part gap, two small and one genuinely large
+
+The sub-bug-1 writeup above states chematic's MMFF aromaticity
+determination "trusts the molecule's already-perceived aromatic bond
+order directly, with no analogous Kekulize-then-re-derive step." **That
+sentence is false as a description of the code that existed when it was
+written.** `compute_mmff94_aromatic_view`
+(`crates/chematic-ff/src/mmff94_numeric.rs`) already implements a real
+Kekulize-then-Hückel-re-derive pipeline — it calls
+`chematic_core::kekulize` (a 4-pass maximum-matching algorithm,
+`crates/chematic-core/src/kekulization.rs`), then runs a fixed-point
+iterative loop computing a 4n+2 pi-electron count per SSSR ring, closely
+mirroring RDKit's own `setMMFFAromaticity` (`Aromaticity.cpp` line 922).
+It predates PR #341 entirely (introduced in `fb8ddff`/`feed246`) and is
+already wired into `assign_n_type` via
+`assign_mmff94_numeric_types_with_view`, which passes its re-perceived
+`mmff_mol` — not the original molecule — into every `assign_*_type` call.
+The mechanism this section claimed didn't exist, exists, and was already
+in use for exactly this purpose.
+
+**Direct measurement, not re-inference.** A live diagnostic against
+`chembl_tier_b_0009` confirms: chematic's re-perceived view marks the
+pyridinium ring aromatic (`mmff.aromatic=true`, type 58) where RDKit does
+not (type 54). This looked, at first, like it might confirm the original
+hypothesis (Kekulization tie-break) — it does not. A bond-by-bond diff of
+chematic's raw Kekulized bond orders against RDKit's own
+`Chem.Kekulize(mol, clearAromaticFlags=True)` output for every bond in and
+around both 6-membered rings (`{13,14}`, `{14,15}`, `{15,16}`, `{16,17}`,
+`{17,22}`, `{22,13}`, `{17,18}`, `{18,19}`, `{19,20}`, `{20,21}`,
+`{21,22}`) on this exact molecule finds **zero differences** — chematic's
+maximum-matching Kekulization chose the identical Kekule structure RDKit's
+did. Kekulization tie-breaking is not the discriminator for this molecule;
+that hypothesis is falsified, not just untested.
+
+**The actual discriminator, isolated by faithfully re-implementing
+`setMMFFAromaticity` in Python against RDKit's own live bond/ring/
+hybridization data and diffing it against chematic's Rust loop
+line-by-line:** chematic's fixed-point loop (`compute_mmff94_aromatic_view`,
+~line 1104) terminates only on "no progress since last pass"
+(`n_resolved <= old_n_resolved`). RDKit's `setMMFFAromaticity` has a
+*second*, independent termination condition it is missing:
+`aromRingsAllSet` — the loop also stops as soon as every atom in every
+SSSR ring has been resolved (deferred-or-accepted), even if that happens
+before the loop's per-atom progress has plateaued. For this molecule,
+RDKit's SSSR contains **two** 28-membered macrocycles (chematic's Horton
+SSSR finds only **one** — see below); both of RDKit's macrocycles happen
+to pass through atoms 14/15 (the two ring carbons the pyridinium ring
+does not share with any other small ring), so by the end of pass 1 every
+ring-atom slot in the molecule is already resolved and RDKit's loop exits
+immediately — the pyridinium ring never gets the second pass in which the
+fused benzo ring's now-resolved exocyclic credit would push its
+pi-electron count from 4 to 6. Chematic's single macrocycle does not pass
+through atoms 14/15 (it independently confirmed via direct Rust
+instrumentation: patching only the `aromRingsAllSet`-equivalent
+termination condition into `compute_mmff94_aromatic_view`, with no other
+change, left `chembl_tier_b_0009` unchanged — atom 13 stays
+`mmff.aromatic=true`/type 58 — because atoms 14/15 never reach `resolved`
+after pass 1 without that second macrocycle, so the loop proceeds to pass
+2 regardless and the pyridinium ring gets its credit anyway).
+
+**Why chematic's SSSR has one macrocycle where RDKit's has two, and why
+that's not a chematic bug.** The cyclomatic number of this molecule's
+heavy-atom graph (52 bonds − 46 atoms + 1 = 7) equals the ring count
+chematic's `find_sssr` returns — chematic is at the true minimal SSSR,
+not missing a ring it should have found. RDKit's 8th ring is a
+deliberate *symmetrization* extra: `chematic-perception`'s own SSSR module
+already documents, at `crates/chematic-perception/src/sssr.rs:843`, that
+"symmetrization ... matching RDKit's `GetSymmSSSR` ... is out of scope for
+Horton alone" — a scope decision made independently of this issue, now
+confirmed to be exactly the missing piece here too.
+
+**Net effect: the residual decomposes into three named, ordered
+prerequisites, not one large undifferentiated "port two subsystems"
+claim.**
+
+1. **Large, already out of scope by a prior, independent decision**: ring
+   symmetrization (a `GetSymmSSSR`-equivalent) in `chematic-perception`,
+   so `resolved[]` in `compute_mmff94_aromatic_view` converges the same
+   way RDKit's `aromBitVect` does for molecules with ring-choice
+   degeneracy. This is a real subsystem addition, not a citable one-line
+   rule.
+2. **Small and individually citable, but only correct once (1) ships**:
+   the missing `aromRingsAllSet` early-termination condition in
+   `compute_mmff94_aromatic_view`'s fixed-point loop
+   (`Aromaticity.cpp` line 943's `while` condition, directly portable).
+   Confirmed by direct instrumentation to be necessary but not sufficient
+   on its own — and shipping it *without* (1) would make the loop's exit
+   timing depend on which macrocycles chematic's own Horton SSSR happens
+   to pick, an arbitrary implementation detail, which is a worse-defined
+   state than today's honest, deterministic divergence. Not shipped
+   standalone for that reason.
+3. **Small and individually citable, independent of (1)/(2), currently
+   dormant**: `assign_n_type`
+   (`crates/chematic-ff/src/mmff94_numeric.rs`) has no code path that can
+   ever produce MMFF type 54 (`N+=C`, IMINIUM NITROGEN) at all — confirmed
+   by reading every branch. RDKit's rule is in `AtomTyper.cpp` lines
+   ~1017-1070 (`case 7:`, 3-connected N, total bond order ≥ 4,
+   `doubleBondedCN` true, no terminal-oxygen match) and would need to be
+   inserted before the generic `atom.charge > 0 => Ok(34)` fallback at
+   line 1726, the same pattern already used for the nitro-N and azide-N
+   special cases just above it. Type 54 appears in the RDKit oracle for
+   exactly these same 6 molecules and nowhere else in the 265-molecule
+   corpus, so this branch has zero effect on any currently-matching atom
+   either way — it only starts to matter once (1) and (2) close the
+   aromaticity gap for these molecules specifically.
+
+**`chembl_tier_b_0009`/`_0023`/`_0028`/`_0029`/`_0030`/`_0034` remain an
+honestly-disclosed residual** — the diagnosis is now precise and the path
+forward is decomposed into ordered, individually-citable prerequisites
+instead of "would require porting whole subsystems" as an undifferentiated
+claim, but prerequisite (1) is genuinely minor-version-scale work, not a
+patch-level fix, so no code changed as part of this correction.
+
 ## Halgren primary literature (secondary/theoretical cross-reference, not the implementation source)
 
 - T. A. Halgren, "Merck Molecular Force Field. I. Basis, Form, Scope,
