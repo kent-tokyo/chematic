@@ -148,7 +148,11 @@ pub fn parse_cjson(input: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), Cjso
                         got: flat.len(),
                     });
                 }
-                flat.chunks_exact(3).map(|c| (c[0], c[1], c[2])).collect()
+                flat.as_chunks::<3>()
+                    .0
+                    .iter()
+                    .map(|c| (c[0], c[1], c[2]))
+                    .collect()
             }
         }
     };
@@ -185,7 +189,7 @@ pub fn parse_cjson(input: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), Cjso
             .map(|arr| arr.iter().map(|v| v.as_f64().unwrap_or(1.0)).collect())
             .unwrap_or_else(|| vec![1.0; index.len() / 2]);
 
-        for (pair_idx, chunk) in index.chunks_exact(2).enumerate() {
+        for (pair_idx, chunk) in index.as_chunks::<2>().0.iter().enumerate() {
             let a = chunk[0];
             let b = chunk[1];
             if a as usize >= n_atoms {
