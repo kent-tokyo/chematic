@@ -600,7 +600,13 @@ impl<R: BufRead> Iterator for TdtRecordReader<R> {
             if self.options.read_2d {
                 match parse_coordinate_list(&raw) {
                     Ok(nums) if nums.len() == 2 * mol.atom_count() => {
-                        coordinates_2d = Some(nums.chunks_exact(2).map(|c| [c[0], c[1]]).collect());
+                        coordinates_2d = Some(
+                            nums.as_chunks::<2>()
+                                .0
+                                .iter()
+                                .map(|c| [c[0], c[1]])
+                                .collect(),
+                        );
                     }
                     Ok(nums) => {
                         return Some(Err(TdtError::MalformedCoordinateList {
@@ -632,8 +638,13 @@ impl<R: BufRead> Iterator for TdtRecordReader<R> {
             if self.options.read_3d {
                 match parse_coordinate_list(&raw) {
                     Ok(nums) if nums.len() == 3 * mol.atom_count() => {
-                        coordinates_3d =
-                            Some(nums.chunks_exact(3).map(|c| [c[0], c[1], c[2]]).collect());
+                        coordinates_3d = Some(
+                            nums.as_chunks::<3>()
+                                .0
+                                .iter()
+                                .map(|c| [c[0], c[1], c[2]])
+                                .collect(),
+                        );
                     }
                     Ok(nums) => {
                         return Some(Err(TdtError::MalformedCoordinateList {

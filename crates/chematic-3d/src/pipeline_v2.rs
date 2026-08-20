@@ -612,7 +612,21 @@ pub fn embed_pipeline_v2(
     macro_rules! check_timeout {
         ($stage:expr) => {
             if let Some(budget) = config.total_timeout_ms
-                && overall_start.elapsed().as_millis() as u64 > budget
+                // `budget == 0` is checked unconditionally, not via the elapsed-time
+                // comparison below: `Instant::elapsed().as_millis()` has only
+                // millisecond granularity, so real (nonzero) wall-clock time spent
+                // reaching this checkpoint can still read back as exactly 0ms on a
+                // fast machine/small molecule -- `0 > 0` is false, letting a
+                // `total_timeout_ms: 0` config silently succeed instead of failing
+                // closed as documented. A zero budget means "no time was granted at
+                // all," so any checkpoint reached at all must fail, independent of
+                // what the (unreliable-at-this-resolution) elapsed reading says.
+                // Found via a real, intermittent CI failure in `pipeline_v2_web_
+                // target.test.mjs`/`pipeline_v2.test.mjs` (both assert this exact
+                // "zero timeout must fail closed" contract) -- reproduced 0/60 times
+                // locally but observed on 3 independent CI runs, consistent with a
+                // race that only manifests on especially fast CI runners.
+                && (budget == 0 || overall_start.elapsed().as_millis() as u64 > budget)
             {
                 timings.total_ms = overall_start.elapsed().as_millis() as u64;
                 return Err(evidence.fail(PipelineV2FailureCause::Timeout, $stage, timings));

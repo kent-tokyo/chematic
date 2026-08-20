@@ -402,7 +402,7 @@ fn hex_to_bitvecn(hex: &str, num_bits: usize) -> Result<BitVecN, FpsError> {
         });
     }
     let mut bv = BitVecN::new(num_bits);
-    for (byte_idx, pair) in hex_bytes.chunks_exact(2).enumerate() {
+    for (byte_idx, pair) in hex_bytes.as_chunks::<2>().0.iter().enumerate() {
         let byte = (hex_nibble(pair[0])? << 4) | hex_nibble(pair[1])?;
         for bit_in_byte in 0..8usize {
             let bit_idx = byte_idx * 8 + bit_in_byte;
