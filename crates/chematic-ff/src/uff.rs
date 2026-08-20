@@ -523,6 +523,41 @@ fn uff_gradient(
     grad
 }
 
+/// No legitimate covalent bond stretches anywhere near this length; a
+/// post-minimization bond longer than this indicates a blown-up geometry,
+/// not a slow-but-fine one. Mirrors `chematic-3d`'s
+/// `minimize::MAX_SANE_BOND_LENGTH` (that crate can't be depended on from
+/// here — `chematic-3d` depends on `chematic-ff`, not the reverse — so this
+/// is a deliberately-duplicated copy of the same, already-corpus-validated
+/// constant, not an independently chosen one; keep the two in sync).
+const MAX_SANE_UFF_BOND_LENGTH: f64 = 3.0;
+
+fn worst_uff_bond_length(mol: &Molecule, coords: &[[f64; 3]]) -> f64 {
+    let dist = |a: [f64; 3], b: [f64; 3]| {
+        let d = [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+        (d[0] * d[0] + d[1] * d[1] + d[2] * d[2]).sqrt()
+    };
+    mol.bonds()
+        .map(|(_, b)| dist(coords[b.atom1.0 as usize], coords[b.atom2.0 as usize]))
+        .fold(0.0_f64, f64::max)
+}
+
+/// True iff every coordinate is finite and no bond exceeds
+/// [`MAX_SANE_UFF_BOND_LENGTH`]. Deliberately independent of `converged`:
+/// steepest descent frequently reports `converged == false` on perfectly
+/// sound geometries that simply haven't hit the tight RMS-gradient
+/// threshold within `max_iter` (same rationale as `chematic-3d`'s
+/// `check_minimization_soundness`, which this mirrors the bond-length half
+/// of — that gate's other half, a residual-force ceiling, has no UFF
+/// equivalent here since this steepest-descent loop doesn't retain a
+/// converged gradient norm past each iteration).
+fn is_sound_uff_geometry(mol: &Molecule, coords: &[[f64; 3]]) -> bool {
+    if coords.iter().any(|p| p.iter().any(|x| !x.is_finite())) {
+        return false;
+    }
+    worst_uff_bond_length(mol, coords) <= MAX_SANE_UFF_BOND_LENGTH
+}
+
 /// Result of UFF minimisation.
 pub struct UffMinimizeResult {
     /// Final atomic coordinates (Å).
@@ -533,6 +568,18 @@ pub struct UffMinimizeResult {
     pub iterations: usize,
     /// True if the gradient norm converged below threshold.
     pub converged: bool,
+    /// True if `coords` is a geometrically sound result (all-finite, no
+    /// bond stretched past [`MAX_SANE_UFF_BOND_LENGTH`]) — independent of
+    /// `converged`, which only reports whether the RMS-gradient stopping
+    /// criterion was met, not whether the geometry itself is trustworthy.
+    /// Callers that skip a soundness check of their own (both
+    /// `chematic-py`'s `Mol.minimize_uff()` and `chematic-wasm`'s
+    /// `minimize_uff_json()` did, until this field existed) previously had
+    /// no signal at all that a result like a blown-up bond in a fused
+    /// aromatic ring folding non-planar (a real stationary point of UFF's
+    /// torsion/out-of-plane-incomplete potential, not slow convergence) had
+    /// occurred.
+    pub sound: bool,
 }
 
 /// Minimise UFF energy using steepest descent (convergence criterion: RMS
@@ -561,11 +608,13 @@ pub fn minimize_uff(
         };
 
         if rms < 0.01 {
+            let sound = is_sound_uff_geometry(mol, &coords);
             return UffMinimizeResult {
                 coords,
                 energy,
                 iterations: iter,
                 converged: true,
+                sound,
             };
         }
 
@@ -586,22 +635,26 @@ pub fn minimize_uff(
         } else {
             step *= 0.5;
             if step < 1e-8 {
+                let sound = is_sound_uff_geometry(mol, &coords);
                 return UffMinimizeResult {
                     coords,
                     energy,
                     iterations: iter,
                     converged: false,
+                    sound,
                 };
             }
         }
     }
 
     let energy = uff_total_energy(mol, types, &coords);
+    let sound = is_sound_uff_geometry(mol, &coords);
     UffMinimizeResult {
         coords,
         energy,
         iterations: max_iter,
         converged: false,
+        sound,
     }
 }
 
@@ -668,6 +721,44 @@ mod tests {
             "minimisation should reduce energy: {e0} → {}",
             result.energy
         );
+    }
+
+    #[test]
+    fn minimize_uff_reports_sound_on_ordinary_ethanol() {
+        let mol = parse("CCO").unwrap();
+        let types = assign_uff_types(&mol);
+        let coords: Vec<[f64; 3]> = vec![[0.0, 0.0, 0.0], [1.54, 0.0, 0.0], [2.5, 1.2, 0.0]];
+        let result = minimize_uff(&mol, &types, coords, 200);
+        assert!(
+            result.sound,
+            "an ordinary small molecule minimizing normally should report sound"
+        );
+    }
+
+    #[test]
+    fn minimize_uff_reports_unsound_on_a_blown_up_bond() {
+        // max_iter=0 returns the initial coords untouched (the `for iter in
+        // 0..max_iter` loop never runs), so this deterministically exercises
+        // `sound`'s bond-length check against a deliberately-stretched
+        // C-C bond (5.0 Å, well past MAX_SANE_UFF_BOND_LENGTH) without
+        // depending on steepest descent actually getting stuck there.
+        let mol = parse("CCO").unwrap();
+        let types = assign_uff_types(&mol);
+        let coords: Vec<[f64; 3]> = vec![[0.0, 0.0, 0.0], [5.0, 0.0, 0.0], [6.0, 1.2, 0.0]];
+        let result = minimize_uff(&mol, &types, coords, 0);
+        assert!(
+            !result.sound,
+            "a 5.0 Å C-C bond must be reported unsound regardless of `converged`"
+        );
+    }
+
+    #[test]
+    fn minimize_uff_reports_unsound_on_non_finite_coordinates() {
+        let mol = parse("CCO").unwrap();
+        let types = assign_uff_types(&mol);
+        let coords: Vec<[f64; 3]> = vec![[0.0, 0.0, 0.0], [f64::NAN, 0.0, 0.0], [2.5, 1.2, 0.0]];
+        let result = minimize_uff(&mol, &types, coords, 0);
+        assert!(!result.sound, "non-finite coordinates must be unsound");
     }
 
     /// Propane skeleton (C0-C1-C2, heavy atoms only — implicit H fills

@@ -620,8 +620,13 @@ pub fn depict_data_with_coords_json(mol: &MolHandle, coords_json: &str) -> Strin
 /// `coords_json` — JSON array of `[x,y,z]` arrays (Å), one per atom.
 /// `max_iter` — maximum iterations (0 = default 500).
 ///
-/// Returns JSON: `{"coords":[[x,y,z],...], "energy":float, "iterations":int, "converged":bool}`
-/// or `{"error":"<msg>"}` on failure.
+/// Returns JSON: `{"coords":[[x,y,z],...], "energy":float, "iterations":int, "converged":bool, "sound":bool}`
+/// or `{"error":"<msg>"}` on failure. `sound` is all-finite coordinates and
+/// no bond stretched past a sane covalent-bond length — independent of
+/// `converged`, since steepest descent often reports `converged:false` on
+/// geometries that are perfectly fine but simply haven't hit the tight
+/// RMS-gradient threshold yet. Check `sound`, not just `converged`, before
+/// trusting a result.
 #[wasm_bindgen]
 pub fn minimize_uff_json(smiles: &str, coords_json: &str, max_iter: u32) -> String {
     let mol = match chematic_smiles::parse(smiles) {
@@ -646,8 +651,8 @@ pub fn minimize_uff_json(smiles: &str, coords_json: &str, max_iter: u32) -> Stri
         .collect::<Vec<_>>()
         .join(",");
     format!(
-        "{{\"coords\":[{coords_str}],\"energy\":{:.4},\"iterations\":{},\"converged\":{}}}",
-        result.energy, result.iterations, result.converged
+        "{{\"coords\":[{coords_str}],\"energy\":{:.4},\"iterations\":{},\"converged\":{},\"sound\":{}}}",
+        result.energy, result.iterations, result.converged, result.sound
     )
 }
 

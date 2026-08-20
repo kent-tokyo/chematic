@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added — `chematic-ff`/`chematic-py`/`chematic-wasm` (UFF minimizer soundness signal, ROADMAP.md Backlog item 5a)
+
+- `UffMinimizeResult` (`crates/chematic-ff/src/uff.rs`) gains a `sound: bool`
+  field: true iff the final coordinates are all-finite and no bond exceeds
+  a 3.0 Å sane-covalent-bond ceiling — the same, already corpus-validated
+  threshold `chematic-3d`'s `minimize::MAX_SANE_BOND_LENGTH` uses for its
+  own (unrelated, `embed_pipeline_v2`-only) soundness gate. `chematic-ff`
+  cannot depend on `chematic-3d` (the dependency runs the other way), so
+  this is a deliberately duplicated copy of that constant/check, not an
+  independently chosen one.
+- Deliberately independent of `converged`: steepest descent frequently
+  reports `converged == false` on perfectly sound geometries that simply
+  haven't hit the tight RMS-gradient stopping threshold within `max_iter`
+  — treating `converged` alone as a quality signal would be a false-failure
+  generator, the same rationale `chematic-3d`'s own soundness gate already
+  documents.
+- Before this change, `chematic-py`'s `Mol.minimize_uff()` and
+  `chematic-wasm`'s `minimize_uff_json()` called UFF directly with zero
+  soundness signal of any kind — a caller had no way to distinguish a
+  genuinely converged, trustworthy geometry from one where UFF's
+  torsion/out-of-plane-incomplete potential settled at a real but unsound
+  stationary point (e.g. a fused polycyclic aromatic folding non-planar
+  with a blown-up bond — issue #185's finding). Both bindings now surface
+  `sound` alongside `coords`/`energy`/`iterations`/`converged`.
+- Does not add a residual-force half of the gate the way `chematic-3d`'s
+  own `check_minimization_soundness` has (`max_residual_force` ceiling):
+  `minimize_uff`'s steepest-descent loop doesn't retain a converged
+  gradient norm past each iteration, and computing one is out of scope for
+  this change — the bond-length check alone is a real, if partial, signal
+  that previously didn't exist at all.
+- **4 new tests** (`crates/chematic-ff/src/uff.rs`): known-sound (ordinary
+  ethanol minimizing normally), known-unsound via a deliberately-stretched
+  5.0 Å bond (using `max_iter=0` to deterministically exercise the
+  bond-length check without depending on steepest descent actually getting
+  stuck there), and non-finite coordinates.
+
 ## [0.18.0] — 2026-08-20
 
 Python and WASM bindings for the 7 file formats `chematic-mol` gained in

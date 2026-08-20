@@ -376,13 +376,19 @@ impl Mol {
     /// Returns:
     ///     dict with keys:
     ///     ``coords`` (list of [x,y,z]), ``energy`` (float, kcal/mol),
-    ///     ``iterations`` (int), ``converged`` (bool).
+    ///     ``iterations`` (int), ``converged`` (bool), ``sound`` (bool —
+    ///     all-finite coordinates and no bond stretched past a sane
+    ///     covalent-bond length; independent of ``converged``, since
+    ///     steepest descent often reports ``converged=False`` on geometries
+    ///     that are perfectly fine but simply haven't hit the tight
+    ///     RMS-gradient threshold yet. Check this, not just ``converged``,
+    ///     before trusting a result).
     ///
     /// Example::
     ///
     ///     mol = chematic.from_smiles("CCO")
     ///     result = mol.minimize_uff([[0,0,0],[1.54,0,0],[2.5,1.2,0]])
-    ///     print(result["energy"], result["converged"])
+    ///     print(result["energy"], result["converged"], result["sound"])
     fn minimize_uff<'py>(
         &self,
         py: Python<'py>,
@@ -398,6 +404,7 @@ impl Mol {
         d.set_item("energy", result.energy)?;
         d.set_item("iterations", result.iterations)?;
         d.set_item("converged", result.converged)?;
+        d.set_item("sound", result.sound)?;
         Ok(d)
     }
 
