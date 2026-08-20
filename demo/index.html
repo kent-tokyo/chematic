@@ -223,6 +223,18 @@ section h2::before {
 }
 .preset-label { color: var(--muted); font-size: .82rem; align-self: center; }
 
+/* ── Formats & Materials tab ─────────────────────────────────────────── */
+.format-mode-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.formats-dropzone { position: relative; }
+.formats-dropzone.drag-over textarea {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
 /* ── Error banner ────────────────────────────────────────────────────── */
 .error-banner {
   background: color-mix(in srgb, var(--fail) 15%, transparent);
@@ -691,6 +703,7 @@ footer {
     <button class="tab-btn"        data-tab="tab-sar"    id="tb-sar"     role="tab"></button>
     <button class="tab-btn"        data-tab="tab-3d"     id="tb-3d"      role="tab"></button>
     <button class="tab-btn"        data-tab="tab-gallery" id="tb-gallery" role="tab"></button>
+    <button class="tab-btn"        data-tab="tab-formats" id="tb-formats" role="tab"></button>
     <button class="tab-btn"        data-tab="tab-dynamics" id="tb-dynamics" role="tab"><span class="exp-badge">exp</span></button>
   </div>
 </nav>
@@ -1051,6 +1064,66 @@ footer {
     </section>
   </div><!-- /tab-gallery -->
 
+  <!-- Tab: Formats & Materials -->
+  <div class="tab-panel" id="tab-formats" role="tabpanel">
+    <section id="section-formats">
+      <h2 id="h-formats-title"></h2>
+      <p class="value-strip" id="formats-intro"></p>
+
+      <div class="preset-row" id="formats-mode-row">
+        <button class="btn-outline format-mode-btn active" data-mode="cube"         id="fmt-mode-cube"></button>
+        <button class="btn-outline format-mode-btn"        data-mode="opendx"       id="fmt-mode-opendx"></button>
+        <button class="btn-outline format-mode-btn"        data-mode="mmcif"        id="fmt-mode-mmcif"></button>
+        <button class="btn-outline format-mode-btn"        data-mode="pqr"          id="fmt-mode-pqr"></button>
+        <button class="btn-outline format-mode-btn"        data-mode="qcschema"     id="fmt-mode-qcschema"></button>
+        <button class="btn-outline format-mode-btn"        data-mode="orca_input"   id="fmt-mode-orca-input"></button>
+        <button class="btn-outline format-mode-btn"        data-mode="orca_output"  id="fmt-mode-orca-output"></button>
+        <button class="btn-outline format-mode-btn"        data-mode="lammps_data"  id="fmt-mode-lammps-data"></button>
+        <button class="btn-outline format-mode-btn"        data-mode="lammps_dump"  id="fmt-mode-lammps-dump"></button>
+      </div>
+
+      <div id="formats-atom-style-row" style="display:none;margin-bottom:.5rem">
+        <label id="formats-atom-style-label" for="formats-atom-style" style="font-size:.82rem;color:var(--muted);margin-right:.5rem"></label>
+        <select id="formats-atom-style">
+          <option value="atomic">atomic</option>
+          <option value="charge">charge</option>
+          <option value="molecular">molecular</option>
+          <option value="full">full</option>
+        </select>
+      </div>
+
+      <div id="formats-dropzone" class="formats-dropzone">
+        <textarea id="formats-input" rows="8" class="smiles-input"
+                  style="width:100%;height:auto;resize:vertical;font-size:.78rem;font-family:var(--font-mono);padding:.5rem .75rem"
+                  spellcheck="false"></textarea>
+      </div>
+
+      <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin:.5rem 0">
+        <button id="btn-formats-example" class="btn-outline"></button>
+        <button id="btn-formats-browse" class="btn-outline"></button>
+        <input type="file" id="formats-file-input" style="display:none">
+        <button id="btn-formats-parse" class="btn"></button>
+        <span id="formats-drop-hint" style="font-size:.75rem;color:var(--muted)"></span>
+      </div>
+
+      <div id="error-formats" class="error-banner hidden"></div>
+
+      <div id="formats-output" style="display:none">
+        <div class="table-wrap">
+          <table id="formats-summary-table">
+            <thead><tr><th id="formats-th-field"></th><th id="formats-th-value"></th></tr></thead>
+            <tbody id="formats-summary-tbody"></tbody>
+          </table>
+        </div>
+        <canvas id="formats-histogram" width="600" height="140" style="display:none;width:100%;height:140px;margin-top:.75rem;border:1px solid var(--border);border-radius:6px"></canvas>
+        <details style="margin-top:.75rem">
+          <summary id="formats-raw-json-label" style="cursor:pointer;font-size:.8rem;color:var(--muted)"></summary>
+          <pre id="formats-raw-json" style="font-size:.72rem;overflow-x:auto;background:var(--surface);padding:.6rem;border-radius:6px;margin-top:.4rem"></pre>
+        </details>
+      </div>
+    </section>
+  </div><!-- /tab-formats -->
+
   <!-- Tab: Dynamics -->
   <div class="tab-panel" id="tab-dynamics" role="tabpanel">
     <section id="section-dynamics">
@@ -1401,6 +1474,45 @@ const T = {
     'dyn.torsion.atoms':'Atoms (0-indexed):',
     'dyn.torsion.steps':'Steps:',
     'dyn.torsion.btn':  'Scan',
+    'tab.formats':      'Formats & Materials',
+    'formats.title':    'Materials-Science File Formats',
+    'formats.intro':    'Parse Gaussian Cube, OpenDX, mmCIF, PQR, QCSchema, ORCA, and LAMMPS files directly in the browser — no server round-trip.',
+    'formats.mode.cube':        'Gaussian Cube',
+    'formats.mode.opendx':      'OpenDX',
+    'formats.mode.mmcif':       'mmCIF',
+    'formats.mode.pqr':         'PQR',
+    'formats.mode.qcschema':    'QCSchema',
+    'formats.mode.orca_input':  'ORCA Input',
+    'formats.mode.orca_output': 'ORCA Output',
+    'formats.mode.lammps_data': 'LAMMPS Data',
+    'formats.mode.lammps_dump': 'LAMMPS Dump',
+    'formats.atom_style':'Atom style:',
+    'formats.example':  'Load Example',
+    'formats.browse':   'Browse…',
+    'formats.parse':    'Parse',
+    'formats.drop_hint':'or drag & drop a file',
+    'formats.th_field': 'Field',
+    'formats.th_value': 'Value',
+    'formats.raw_json': 'Raw parsed JSON',
+    'formats.f.atoms':       'Atoms',
+    'formats.f.shape':       'Grid shape',
+    'formats.f.units':       'Units',
+    'formats.f.values':      'Grid values',
+    'formats.f.cell':        'Unit cell',
+    'formats.f.space_group': 'Space group',
+    'formats.f.warnings':    'Unhandled columns',
+    'formats.f.charge':      'Molecular charge',
+    'formats.f.multiplicity':'Multiplicity',
+    'formats.f.keywords':    'Keywords',
+    'formats.f.blocks':      'Blocks',
+    'formats.f.coord_kind':  'Coordinate block',
+    'formats.f.energy':      'Final energy (hartree)',
+    'formats.f.termination': 'Termination',
+    'formats.f.convergence': 'Optimization convergence',
+    'formats.f.frames':      'Frames',
+    'formats.f.atom_style':  'Atom style',
+    'formats.f.bonds':       'Bonds',
+    'formats.f.timestep':    'Timestep',
   },
   ja: {
     'app.tagline':      'ブラウザで動く純Rust化学情報処理ライブラリ',
@@ -1595,6 +1707,45 @@ const T = {
     'dyn.torsion.atoms':'原子 (0 始まり):',
     'dyn.torsion.steps':'ステップ数:',
     'dyn.torsion.btn':  'スキャン',
+    'tab.formats':      'フォーマット & 材料科学',
+    'formats.title':    '材料科学向けファイルフォーマット',
+    'formats.intro':    'Gaussian Cube、OpenDX、mmCIF、PQR、QCSchema、ORCA、LAMMPS ファイルをブラウザ内で直接解析します — サーバー通信は不要です。',
+    'formats.mode.cube':        'Gaussian Cube',
+    'formats.mode.opendx':      'OpenDX',
+    'formats.mode.mmcif':       'mmCIF',
+    'formats.mode.pqr':         'PQR',
+    'formats.mode.qcschema':    'QCSchema',
+    'formats.mode.orca_input':  'ORCA 入力',
+    'formats.mode.orca_output': 'ORCA 出力',
+    'formats.mode.lammps_data': 'LAMMPS データ',
+    'formats.mode.lammps_dump': 'LAMMPS ダンプ',
+    'formats.atom_style':'atom_style:',
+    'formats.example':  '例を読み込む',
+    'formats.browse':   'ファイルを選択…',
+    'formats.parse':    '解析',
+    'formats.drop_hint':'またはファイルをドラッグ＆ドロップ',
+    'formats.th_field': '項目',
+    'formats.th_value': '値',
+    'formats.raw_json': '生の解析結果 (JSON)',
+    'formats.f.atoms':       '原子数',
+    'formats.f.shape':       'グリッド形状',
+    'formats.f.units':       '単位',
+    'formats.f.values':      'グリッド値数',
+    'formats.f.cell':        '単位胞',
+    'formats.f.space_group': '空間群',
+    'formats.f.warnings':    '未処理カラム',
+    'formats.f.charge':      '分子電荷',
+    'formats.f.multiplicity':'多重度',
+    'formats.f.keywords':    'キーワード',
+    'formats.f.blocks':      'ブロック数',
+    'formats.f.coord_kind':  '座標ブロック',
+    'formats.f.energy':      '最終エネルギー (hartree)',
+    'formats.f.termination': '終了ステータス',
+    'formats.f.convergence': '構造最適化の収束',
+    'formats.f.frames':      'フレーム数',
+    'formats.f.atom_style':  'atom_style',
+    'formats.f.bonds':       '結合数',
+    'formats.f.timestep':    'タイムステップ',
   },
   zh: {
     'app.tagline':      '纯Rust化学信息学库，运行于浏览器',
@@ -1789,6 +1940,45 @@ const T = {
     'dyn.torsion.atoms':'原子（从 0 开始编号）:',
     'dyn.torsion.steps':'步数:',
     'dyn.torsion.btn':  '扫描',
+    'tab.formats':      '格式与材料科学',
+    'formats.title':    '材料科学文件格式',
+    'formats.intro':    '直接在浏览器中解析 Gaussian Cube、OpenDX、mmCIF、PQR、QCSchema、ORCA 和 LAMMPS 文件 — 无需服务器往返。',
+    'formats.mode.cube':        'Gaussian Cube',
+    'formats.mode.opendx':      'OpenDX',
+    'formats.mode.mmcif':       'mmCIF',
+    'formats.mode.pqr':         'PQR',
+    'formats.mode.qcschema':    'QCSchema',
+    'formats.mode.orca_input':  'ORCA 输入',
+    'formats.mode.orca_output': 'ORCA 输出',
+    'formats.mode.lammps_data': 'LAMMPS 数据',
+    'formats.mode.lammps_dump': 'LAMMPS 转储',
+    'formats.atom_style':'atom_style:',
+    'formats.example':  '加载示例',
+    'formats.browse':   '浏览…',
+    'formats.parse':    '解析',
+    'formats.drop_hint':'或拖放文件',
+    'formats.th_field': '字段',
+    'formats.th_value': '值',
+    'formats.raw_json': '原始解析 JSON',
+    'formats.f.atoms':       '原子数',
+    'formats.f.shape':       '网格形状',
+    'formats.f.units':       '单位',
+    'formats.f.values':      '网格值数',
+    'formats.f.cell':        '晶胞',
+    'formats.f.space_group': '空间群',
+    'formats.f.warnings':    '未处理的列',
+    'formats.f.charge':      '分子电荷',
+    'formats.f.multiplicity':'多重度',
+    'formats.f.keywords':    '关键字',
+    'formats.f.blocks':      '块数',
+    'formats.f.coord_kind':  '坐标块类型',
+    'formats.f.energy':      '最终能量 (hartree)',
+    'formats.f.termination': '终止状态',
+    'formats.f.convergence': '优化收敛状态',
+    'formats.f.frames':      '帧数',
+    'formats.f.atom_style':  'atom_style',
+    'formats.f.bonds':       '键数',
+    'formats.f.timestep':    '时间步',
   },
 };
 
@@ -1849,7 +2039,27 @@ const STATIC_IDS = {
   'tb-sar':             'tab.sar',
   'tb-3d':              'tab.3d',
   'tb-gallery':         'tab.gallery',
+  'tb-formats':         'tab.formats',
   'tb-dynamics':        'tab.dynamics',
+  'h-formats-title':    'formats.title',
+  'formats-intro':      'formats.intro',
+  'fmt-mode-cube':        'formats.mode.cube',
+  'fmt-mode-opendx':      'formats.mode.opendx',
+  'fmt-mode-mmcif':       'formats.mode.mmcif',
+  'fmt-mode-pqr':         'formats.mode.pqr',
+  'fmt-mode-qcschema':    'formats.mode.qcschema',
+  'fmt-mode-orca-input':  'formats.mode.orca_input',
+  'fmt-mode-orca-output': 'formats.mode.orca_output',
+  'fmt-mode-lammps-data': 'formats.mode.lammps_data',
+  'fmt-mode-lammps-dump': 'formats.mode.lammps_dump',
+  'formats-atom-style-label': 'formats.atom_style',
+  'btn-formats-example': 'formats.example',
+  'btn-formats-browse':  'formats.browse',
+  'btn-formats-parse':   'formats.parse',
+  'formats-drop-hint':   'formats.drop_hint',
+  'formats-th-field':    'formats.th_field',
+  'formats-th-value':    'formats.th_value',
+  'formats-raw-json-label': 'formats.raw_json',
   'h-stereo-title':     'stereo.title',
   'stereo-hint':        'stereo.hint',
   'btn-stereo':         'stereo.btn',
@@ -1994,6 +2204,14 @@ let molFromSdfBlock, sdfToSmilesJson, estateIndicesJson, tanimotoTopoPath;
 let identifyFunctionalGroups, gasteigerChargesJson, saScore, slogpVsaJson, smrVsaJson, peoeVsaJson;
 let detectFunctionalGroups, getAtomInfo, getBondBetween, molBlockFromSmiles;
 let moleculeReportJson, compareMultipleJson, screenSmilesJson, generate3dOptimizedPdb;
+// Formats & Materials tab
+let molFromCube, cubeGridJson, cubeValuesF64, cubeShapeU32;
+let opendxGridJson, opendxValuesF64, opendxShapeU32;
+let molFromMmcif, mmcifToJson;
+let molFromPqr, pqrToJson;
+let molFromQcschemaMolecule, qcschemaMoleculeCoordsJson;
+let molFromOrcaInput, orcaInputToJson, orcaOutputToJson;
+let lammpsDataToJson, lammpsTrajectoryToJson;
 let lastMol = null;
 let lastSimResults = null;
 let highlightedAtoms = [];
@@ -2070,6 +2288,25 @@ async function initWasm() {
     compareMultipleJson      = mod.compare_molecules_json;
     screenSmilesJson         = mod.screen_smiles_json;
     generate3dOptimizedPdb   = mod.generate_3d_optimized_pdb;
+    // Formats & Materials tab (v0.17.0/v0.18.0 materials-science formats)
+    molFromCube              = mod.mol_from_cube;
+    cubeGridJson             = mod.cube_grid_json;
+    cubeValuesF64            = mod.cube_values_f64;
+    cubeShapeU32             = mod.cube_shape_u32;
+    opendxGridJson           = mod.opendx_grid_json;
+    opendxValuesF64          = mod.opendx_values_f64;
+    opendxShapeU32           = mod.opendx_shape_u32;
+    molFromMmcif             = mod.mol_from_mmcif;
+    mmcifToJson              = mod.mmcif_to_json;
+    molFromPqr               = mod.mol_from_pqr;
+    pqrToJson                = mod.pqr_to_json;
+    molFromQcschemaMolecule  = mod.mol_from_qcschema_molecule;
+    qcschemaMoleculeCoordsJson = mod.qcschema_molecule_coords_json;
+    molFromOrcaInput         = mod.mol_from_orca_input;
+    orcaInputToJson          = mod.orca_input_to_json;
+    orcaOutputToJson         = mod.orca_output_to_json;
+    lammpsDataToJson         = mod.lammps_data_to_json;
+    lammpsTrajectoryToJson   = mod.lammps_trajectory_to_json;
     // Store in window namespace for easy access in dynamic handlers
     window.chemWasm = mod;
     wasmReady = true;
@@ -3187,6 +3424,373 @@ function runRgroup() {
 }
 
 // ============================================================
+// Formats & Materials tab
+// ============================================================
+let formatsMode = 'cube';
+
+const FORMATS_EXAMPLES = {
+  cube: `Water density
+Generated for chematic examples
+1    0.000000    0.000000    0.000000
+2    1.000000    0.000000    0.000000
+2    0.000000    1.000000    0.000000
+2    0.000000    0.000000    1.000000
+8    8.000000    0.500000    0.500000    0.500000
+0.0 1.0 2.0 3.0
+4.0 5.0 6.0 7.0
+`,
+  opendx: `object 1 class gridpositions counts 2 2 2
+origin -1.0 -1.0 -1.0
+delta 0.5 0.0 0.0
+delta 0.0 0.5 0.0
+delta 0.0 0.0 0.5
+object 2 class gridconnections counts 2 2 2
+object 3 class array type double rank 0 items 8 data follows
+0.0 1.0 2.0
+3.0 4.0 5.0
+6.0 7.0
+attribute "dep" string "positions"
+object "regular positions regular connections" class field
+component "positions" value 1
+component "connections" value 2
+component "data" value 3
+`,
+  mmcif: `data_EXAMPLE
+loop_
+_atom_site.group_PDB
+_atom_site.id
+_atom_site.type_symbol
+_atom_site.label_atom_id
+_atom_site.label_comp_id
+_atom_site.label_asym_id
+_atom_site.Cartn_x
+_atom_site.Cartn_y
+_atom_site.Cartn_z
+ATOM   1  O  O1  HOH A 1.000 2.000 3.000
+ATOM   2  H  H1  HOH A 1.500 2.500 3.500
+`,
+  pqr: `ATOM      1  N   ALA     1     -0.966   1.523   1.412 -0.400  1.500
+ATOM      2  CA  ALA     1      0.257   0.679   1.911  0.100  1.700
+HETATM    3  ZN  ZN      2      5.000   5.000   5.000  2.000  1.090
+`,
+  qcschema: JSON.stringify({
+    schema_name: 'qcschema_molecule',
+    schema_version: 1,
+    symbols: ['O', 'H', 'H'],
+    geometry: [
+      0.0, 0.0, 0.0,
+      0.0, 1.431544636036637, 1.109419726497757,
+      0.0, -1.431544636036637, 1.109419726497757,
+    ],
+    molecular_charge: 0.0,
+    molecular_multiplicity: 1,
+    connectivity: [[0, 1, 1.0], [0, 2, 1.0]],
+  }, null, 2),
+  orca_input: `! B3LYP def2-SVP
+! Opt Freq
+
+* xyz 0 1
+O 0 0 0
+*
+`,
+  orca_output: `
+ Total Charge           Charge          ....    0
+ Multiplicity           Mult            ....    1
+
+-------------------------   --------------------
+FINAL SINGLE POINT ENERGY       -76.025678123456
+-------------------------   --------------------
+
+****ORCA TERMINATED NORMALLY****
+`,
+  lammps_data: `comment
+
+1 atoms
+1 atom types
+
+0.0 10.0 xlo xhi
+0.0 10.0 ylo yhi
+0.0 10.0 zlo zhi
+
+Atoms # atomic
+
+1 1 5.0 5.0 5.0
+`,
+  lammps_dump:
+    'ITEM: TIMESTEP\n0\nITEM: NUMBER OF ATOMS\n2\nITEM: BOX BOUNDS pp pp pp\n' +
+    '0.0 10.0\n0.0 10.0\n0.0 10.0\nITEM: ATOMS id x y z\n1 1.0 2.0 3.0\n2 4.0 5.0 6.0\n',
+};
+
+const FORMATS_MODES = {
+  cube: {
+    parse(text) {
+      const mol = molFromCube(text);
+      const atomCount = mol.atom_count();
+      mol.free();
+      const grid = JSON.parse(cubeGridJson(text));
+      const values = cubeValuesF64(text);
+      return {
+        summary: [
+          [t('formats.f.atoms'), atomCount],
+          [t('formats.f.shape'), grid.shape.join(' × ')],
+          [t('formats.f.units'), grid.units],
+          [t('formats.f.values'), values.length],
+        ],
+        raw: grid,
+        histogram: values,
+      };
+    },
+  },
+  opendx: {
+    parse(text) {
+      const grid = JSON.parse(opendxGridJson(text));
+      const values = opendxValuesF64(text);
+      return {
+        summary: [
+          [t('formats.f.shape'), grid.shape.join(' × ')],
+          [t('formats.f.units'), grid.units],
+          [t('formats.f.values'), values.length],
+        ],
+        raw: grid,
+        histogram: values,
+      };
+    },
+  },
+  mmcif: {
+    parse(text) {
+      const mol = molFromMmcif(text);
+      const atomCount = mol.atom_count();
+      mol.free();
+      const result = JSON.parse(mmcifToJson(text));
+      const summary = [[t('formats.f.atoms'), atomCount]];
+      if (result.cell) {
+        const c = result.cell;
+        summary.push([t('formats.f.cell'),
+          `a=${c.a} b=${c.b} c=${c.c} α=${c.alpha} β=${c.beta} γ=${c.gamma}`]);
+      }
+      if (result.space_group) summary.push([t('formats.f.space_group'), result.space_group]);
+      if (result.unhandled_columns && result.unhandled_columns.length) {
+        summary.push([t('formats.f.warnings'), result.unhandled_columns.join(', ')]);
+      }
+      return { summary, raw: result, histogram: null };
+    },
+  },
+  pqr: {
+    parse(text) {
+      const mol = molFromPqr(text);
+      const atomCount = mol.atom_count();
+      mol.free();
+      const result = JSON.parse(pqrToJson(text));
+      return { summary: [[t('formats.f.atoms'), atomCount]], raw: result, histogram: null };
+    },
+  },
+  qcschema: {
+    parse(text) {
+      const mol = molFromQcschemaMolecule(text);
+      const atomCount = mol.atom_count();
+      mol.free();
+      const result = JSON.parse(qcschemaMoleculeCoordsJson(text));
+      return {
+        summary: [
+          [t('formats.f.atoms'), atomCount],
+          [t('formats.f.charge'), result.molecular_charge],
+          [t('formats.f.multiplicity'), result.molecular_multiplicity],
+        ],
+        raw: result,
+        histogram: null,
+      };
+    },
+  },
+  orca_input: {
+    parse(text) {
+      let atomCount = null;
+      try {
+        const mol = molFromOrcaInput(text);
+        atomCount = mol.atom_count();
+        mol.free();
+      } catch (_) {
+        // xyzfile/gzmtfile/int (Z-matrix) coordinate block, or none at all --
+        // orca_input_to_json below still describes it, just without an atom count.
+      }
+      const result = JSON.parse(orcaInputToJson(text));
+      const summary = [
+        [t('formats.f.keywords'), result.keywords.join(' ')],
+        [t('formats.f.blocks'), result.blocks.length],
+      ];
+      if (atomCount !== null) summary.unshift([t('formats.f.atoms'), atomCount]);
+      if (result.coords) summary.push([t('formats.f.coord_kind'), result.coords.type]);
+      return { summary, raw: result, histogram: null };
+    },
+  },
+  orca_output: {
+    parse(text) {
+      const result = JSON.parse(orcaOutputToJson(text));
+      const summary = [
+        [t('formats.f.energy'), result.final_energy_hartree],
+        [t('formats.f.termination'), result.termination.kind],
+        [t('formats.f.convergence'), result.optimization_convergence],
+        [t('formats.f.frames'), result.trajectory.length],
+      ];
+      return { summary, raw: result, histogram: null };
+    },
+  },
+  lammps_data: {
+    needsAtomStyle: true,
+    parse(text, atomStyle) {
+      const result = JSON.parse(lammpsDataToJson(text, atomStyle));
+      const summary = [
+        [t('formats.f.atom_style'), result.atom_style],
+        [t('formats.f.atoms'), result.atoms.length],
+        [t('formats.f.bonds'), result.bonds.length],
+      ];
+      if (result.unparsed_sections.length) {
+        summary.push([t('formats.f.warnings'), result.unparsed_sections.map(s => s[0]).join(', ')]);
+      }
+      return { summary, raw: result, histogram: null };
+    },
+  },
+  lammps_dump: {
+    parse(text) {
+      const frames = JSON.parse(lammpsTrajectoryToJson(text));
+      const summary = [[t('formats.f.frames'), frames.length]];
+      if (frames[0]) {
+        summary.push([t('formats.f.atoms'), frames[0].num_atoms]);
+        summary.push([t('formats.f.timestep'), frames[0].timestep]);
+      }
+      return { summary, raw: frames, histogram: null };
+    },
+  },
+};
+
+function setFormatsMode(mode) {
+  formatsMode = mode;
+  document.querySelectorAll('.format-mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === mode);
+  });
+  document.getElementById('formats-atom-style-row').style.display =
+    FORMATS_MODES[mode].needsAtomStyle ? '' : 'none';
+  document.getElementById('formats-output').style.display = 'none';
+  clearError('error-formats');
+}
+
+function loadFormatsExample() {
+  document.getElementById('formats-input').value = FORMATS_EXAMPLES[formatsMode] || '';
+  clearError('error-formats');
+}
+
+function readFormatsFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    document.getElementById('formats-input').value = String(reader.result);
+    clearError('error-formats');
+  };
+  reader.onerror = () => showError('error-formats', String(reader.error));
+  reader.readAsText(file);
+}
+
+function renderFormatsSummary(rows) {
+  const tbody = document.getElementById('formats-summary-tbody');
+  tbody.textContent = '';
+  for (const [name, value] of rows) {
+    const tr = document.createElement('tr');
+    const tdName = document.createElement('td');
+    tdName.className = 'td-name';
+    tdName.textContent = name;
+    const tdVal = document.createElement('td');
+    tdVal.className = 'td-value';
+    tdVal.textContent = String(value);
+    tr.appendChild(tdName);
+    tr.appendChild(tdVal);
+    tbody.appendChild(tr);
+  }
+}
+
+// Dependency-free bar histogram of a scalar field (Cube/OpenDX grid values).
+// Min/max/bin-count computed via plain loops, not Math.min(...values) /
+// Math.max(...values) -- spreading a real (potentially large) grid's values
+// into call arguments risks a stack-size blowup that a loop never does.
+function renderFormatsHistogram(values) {
+  const canvas = document.getElementById('formats-histogram');
+  if (!values || values.length === 0) { canvas.style.display = 'none'; return; }
+  canvas.style.display = '';
+
+  let min = Infinity, max = -Infinity;
+  for (const v of values) { if (v < min) min = v; if (v > max) max = v; }
+  const binCount = 20;
+  const bins = new Array(binCount).fill(0);
+  const range = (max - min) || 1;
+  for (const v of values) {
+    let idx = Math.floor((v - min) / range * binCount);
+    if (idx >= binCount) idx = binCount - 1;
+    if (idx < 0) idx = 0;
+    bins[idx]++;
+  }
+  let maxCount = 0;
+  for (const c of bins) if (c > maxCount) maxCount = c;
+  maxCount = maxCount || 1;
+
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  const accentVar = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+  ctx.fillStyle = accentVar || '#4f8ef7';
+  const barW = w / binCount;
+  for (let i = 0; i < binCount; i++) {
+    const barH = (bins[i] / maxCount) * (h - 4);
+    ctx.fillRect(i * barW + 1, h - barH, barW - 2, barH);
+  }
+}
+
+function runFormatsParse() {
+  clearError('error-formats');
+  const text = document.getElementById('formats-input').value.trim();
+  if (!text) { showError('error-formats', t('error.empty')); return; }
+  if (!wasmReady) { showError('error-formats', t('error.wasm')); return; }
+
+  const atomStyle = document.getElementById('formats-atom-style').value;
+  let result;
+  try {
+    result = FORMATS_MODES[formatsMode].parse(text, atomStyle);
+  } catch (e) {
+    document.getElementById('formats-output').style.display = 'none';
+    showError('error-formats', String(e));
+    return;
+  }
+
+  renderFormatsSummary(result.summary);
+  renderFormatsHistogram(result.histogram);
+  document.getElementById('formats-raw-json').textContent = JSON.stringify(result.raw, null, 2);
+  document.getElementById('formats-output').style.display = '';
+}
+
+function initFormatsTab() {
+  document.querySelectorAll('.format-mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => setFormatsMode(btn.dataset.mode));
+  });
+  document.getElementById('btn-formats-example').addEventListener('click', loadFormatsExample);
+  document.getElementById('btn-formats-parse').addEventListener('click', runFormatsParse);
+
+  const fileInput = document.getElementById('formats-file-input');
+  document.getElementById('btn-formats-browse').addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) readFormatsFile(fileInput.files[0]);
+    fileInput.value = '';
+  });
+
+  const dropzone = document.getElementById('formats-dropzone');
+  dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+  dropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) readFormatsFile(file);
+  });
+
+  setFormatsMode('cube');
+}
+
+// ============================================================
 // Boot
 // ============================================================
 (async () => {
@@ -3474,6 +4078,9 @@ function runRgroup() {
 
   // SDF / MOL upload
   document.getElementById('btn-sdf-load').addEventListener('click', loadSdf);
+
+  // Formats & Materials
+  initFormatsTab();
 
   // 3D style buttons
   document.querySelectorAll('[data-style]').forEach(btn => {
