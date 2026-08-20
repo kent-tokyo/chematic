@@ -670,7 +670,7 @@ footer {
   <div class="header-inner">
     <span class="logo">chematic</span>
     <a href="https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md" target="_blank" rel="noopener" style="margin-left: 0.5rem;">
-      <span class="version" style="background: linear-gradient(135deg, #34d399, #4f8ef7); color: white; border-color: #34d399; cursor: pointer;">v0.4.23</span>
+      <span class="version" id="version-badge" style="display:none;background: linear-gradient(135deg, #34d399, #4f8ef7); color: white; border-color: #34d399; cursor: pointer;"></span>
     </a>
     <span class="tagline" id="tagline"></span>
     <div class="lang-switcher">
@@ -703,7 +703,7 @@ footer {
     <!-- Descriptor Calculator -->
     <section id="section-descriptor">
       <h2 id="h-desc-title"></h2>
-      <p class="value-strip">Pure Rust &middot; WASM 504 KB &middot; 99.7% RDKit-accurate LogP &mdash; change the SMILES below or pick an example&nbsp;&darr;&nbsp;&nbsp;<a href="https://pypi.org/project/chematic/" target="_blank" rel="noopener" style="color:var(--accent)">pip install chematic</a></p>
+      <p class="value-strip">Pure Rust &middot; WASM <span id="wasm-size-badge">&hellip;</span> &middot; <a href="https://kent-tokyo.github.io/chematic/benchmark/" target="_blank" rel="noopener" style="color:var(--accent)">RDKit-accuracy benchmarks</a> &mdash; change the SMILES below or pick an example&nbsp;&darr;&nbsp;&nbsp;<a href="https://pypi.org/project/chematic/" target="_blank" rel="noopener" style="color:var(--accent)">pip install chematic</a></p>
       <div class="input-row">
         <input id="smiles-input" class="smiles-input" type="text"
                spellcheck="false" autocomplete="off">
@@ -754,9 +754,8 @@ footer {
         </table>
       </div>
       <p id="rdkit-note" style="display:none;font-size:.72rem;color:var(--muted);margin:.35rem 0 0">
-        &#10003; LogP <span style="color:var(--pass)">99.7%</span> &middot;
-        TPSA <span style="color:var(--pass)">98.9%</span>
-        agreement with RDKit on 4,999-molecule benchmark
+        &#10003; Benchmarked against RDKit on a 4,999-molecule corpus &mdash;
+        <a href="https://kent-tokyo.github.io/chematic/benchmark/" target="_blank" rel="noopener" style="color:var(--accent)">see full results &amp; methodology</a>
       </p>
       <div id="code-wrap" style="display:none;margin:.9rem 0 0">
         <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
@@ -2007,10 +2006,34 @@ let groupColorMap = {};
 // ============================================================
 // WASM init
 // ============================================================
+// Formats a byte count as a human-readable "X.X MB" / "XXX KB" string.
+function formatBytes(n) {
+  if (n >= 1024 * 1024) return (n / (1024 * 1024)).toFixed(1) + ' MB';
+  return Math.round(n / 1024) + ' KB';
+}
+
 async function initWasm() {
   try {
     const mod = await import('./pkg/chematic_wasm.js');
-    await mod.default('./pkg/chematic_wasm_bg.wasm');
+    // Fetch the WASM binary ourselves (rather than letting init() do it
+    // internally) so we can measure its real, current size and display it
+    // -- the actual bytes served, never a hardcoded number that goes stale
+    // across releases. init() accepts a Response directly, so this adds no
+    // extra network round-trip.
+    const wasmResp = await fetch('./pkg/chematic_wasm_bg.wasm');
+    const wasmBytes = (await wasmResp.clone().arrayBuffer()).byteLength;
+    await mod.default(wasmResp);
+    // chematic_version() may be absent on an older locally-built ./pkg (e.g.
+    // a fresh git clone before CI has rebuilt it) -- guarded the same way
+    // depict_svg_opts is a few lines down, so a stale pkg degrades this one
+    // badge instead of failing WASM init entirely.
+    const versionEl = document.getElementById('version-badge');
+    if (versionEl && typeof mod.chematic_version === 'function') {
+      versionEl.textContent = 'v' + mod.chematic_version();
+      versionEl.style.display = '';
+    }
+    const wasmSizeEl = document.getElementById('wasm-size-badge');
+    if (wasmSizeEl) wasmSizeEl.textContent = formatBytes(wasmBytes);
     parseSmilesWasm  = mod.parse_smiles;
     tanimotoEcfp4    = mod.tanimoto_ecfp4;
     tanimotoFcfp4    = mod.tanimoto_fcfp4;
