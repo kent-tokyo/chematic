@@ -192,8 +192,8 @@ struct CmlAtomData {
 ///
 /// **Coordinate system:** The returned `coords` use **chemical Y-up convention**
 /// (Y increases upward, matching mathematical axes). This differs from SVG/screen Y-down.
-/// When rendering via [`crate::svg::render_svg`] or similar, callers must negate Y coordinates
-/// to match SVG pixel space.
+/// When rendering with an SVG renderer such as `render_svg` (see `chematic-depict`),
+/// callers must negate Y coordinates to match SVG pixel space.
 ///
 /// # Example
 /// ```text

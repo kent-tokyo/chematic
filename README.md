@@ -103,6 +103,16 @@ Full worked examples → [Use cases](https://kent-tokyo.github.io/chematic/use-c
 
 ---
 
+## Choose your interface
+
+- [Rust](#quick-start)
+- [Python](#quick-start)
+- [WebAssembly / Node.js](#javascript--typescript-webassembly)
+- [Materials and simulation formats](docs/format-capabilities.md) — mmCIF, PQR, QCSchema, ORCA, Gaussian Cube, OpenDX, LAMMPS
+- [Migrating from RDKit](docs/rdkit-migration.md) — feature-by-feature Supported/Partial/Not-supported breakdown
+
+---
+
 ## Quick Start
 
 ### Installation

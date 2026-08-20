@@ -2,6 +2,8 @@
 
 This page gives a direct comparison between chematic and RDKit for teams evaluating which library to use.
 
+See also: [`rdkit-migration.md`](rdkit-migration.md) for a feature-by-feature Supported/Partial/Not-supported breakdown.
+
 ---
 
 ## TL;DR
