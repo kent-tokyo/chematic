@@ -45,6 +45,16 @@ pub fn start() {
     }));
 }
 
+/// The `chematic-wasm` crate version (matches the workspace release version).
+///
+/// Lets callers (e.g. the browser playground demo) display the running
+/// version without hardcoding it — `demo/index.html` previously had a
+/// static version string that silently went stale across releases.
+#[wasm_bindgen]
+pub fn chematic_version() -> String {
+    env!("CARGO_PKG_VERSION").to_string()
+}
+
 // High-level workflow APIs
 pub mod workflow;
 
