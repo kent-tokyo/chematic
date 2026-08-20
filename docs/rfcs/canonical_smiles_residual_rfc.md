@@ -2,6 +2,43 @@
 
 Status: **Diagnosis complete. No production behavior change.**
 
+> **Update (Wave 2D, 2026-08-20 — `Fixes #149`'s ring-constrained half):**
+> implemented the Wave 2C audit's recommended predicate. `compute_stereo_
+> alkene_ends` (`crates/chematic-smiles/src/canonical.rs`) now excludes a
+> double bond's ends from marker-carrier candidacy when the bond itself is
+> endocyclic in an SSSR ring smaller than 8 atoms (`double_bond_endocyclic_
+> in_small_ring`, using `chematic_perception::find_sssr` — promoted from a
+> dev-only to a real dependency of `chematic-smiles` for this). Since
+> `compute_stereo_alkene_ends` runs on every `canonical_smiles()` call,
+> `find_sssr` is gated behind an early-exit collecting only double-bond
+> candidates first, so it is never computed for molecules with no
+> stereo-relevant double bond — the common case is unaffected by the added
+> dependency's cost. Result,
+> measured directly against all 18 pinned fixtures, not assumed from the
+> audit's corpus-level numbers: **all 8 of the 8 ring-constrained residuals
+> now fully converge** (better than the audit's own "necessary, not
+> sufficient" caveat anticipated — no second factor turned out to block
+> convergence for these particular 8, though the audit's broader point that
+> the predicate doesn't explain the general corpus coupling population
+> still stands, see below), and the original 10 — including the 5 the audit
+> flagged as sharing the identical endocyclic shape and therefore worth
+> re-checking, not assuming — remain fully resolved (re-verified, not
+> assumed). All 18 fixtures are now merged into one list
+> (`EZ_SHARED_CARRIER_FULLY_RESOLVED`) in `canonical.rs`'s test module; the
+> two dedicated "still a residual" tests were removed as they would
+> otherwise assert over an empty set. Full `cargo test -p chematic-smiles
+> --lib` (202/202) and `cargo check --workspace --all-features` clean; no
+> full 5,000-molecule corpus rescan performed for this change (the 18-fixture
+> check is the audit's own specified verification and is what regressed
+> when the predicate was implemented — a full corpus rescan was judged
+> unnecessary heavy re-measurement for this step, consistent with this
+> project's standing policy on scoping remeasurement to the affected
+> subset). Per the audit's own "Verdict: CONDITIONAL GO", issue #149 stays
+> open: only ~10% of the corpus's own general shared-carrier coupling
+> population (3 of 31 coupling components) is explained by this ring-
+> constrained mechanism — the other ~90% is a separate, still-unidentified
+> mechanism this predicate does not touch.
+
 > **Update (Wave 2A remeasurement, main@1bc1b63):** re-ran
 > `scripts/canonical_residual_diagnosis.py` unmodified (no script changes) on
 > the same 5,000-mol corpus, a week and several dozen merged PRs after the

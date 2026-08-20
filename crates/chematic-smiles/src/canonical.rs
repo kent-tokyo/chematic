@@ -719,6 +719,30 @@ impl<'a> CanonicalWriter<'a> {
             .collect()
     }
 
+    /// Whether the double bond between `a` and `b` is endocyclic in a ring
+    /// smaller than 8 atoms — i.e. some SSSR ring contains both atoms and
+    /// has fewer than 8 members. Such a bond's real-world geometry is fixed
+    /// by the ring itself, not a free stereochemical choice (issue #149's
+    /// ring-constrained residual, `docs/rfcs/ez_ring_constrained_residual_
+    /// audit.md`): RDKit independently agrees the bond is not a real
+    /// stereocenter (`STEREONONE`/absent from `FindPotentialStereo`) with
+    /// 0/1,387 row-level disagreements on a 5,000-molecule corpus at exactly
+    /// this threshold. Deliberately checks ring membership of the BOND (both
+    /// endpoints in the same ring), not merely of the atom — a ring carbon
+    /// with a genuinely free *exocyclic* double bond (its own C=X pointing
+    /// outward) must not be excluded, and the audit found the naive
+    /// atom-membership version over-excludes by ~9 percentage points of a
+    /// real corpus for exactly this reason.
+    fn double_bond_endocyclic_in_small_ring(
+        rings: &[Vec<AtomIdx>],
+        a: AtomIdx,
+        b: AtomIdx,
+    ) -> bool {
+        rings
+            .iter()
+            .any(|r| r.len() < 8 && r.contains(&a) && r.contains(&b))
+    }
+
     /// Every atom that is a stereogenic double bond's terminus with exactly
     /// 2 candidate substituents — the ambiguity precondition a marker-carrier
     /// choice exists for at all (0 or 1 substituent has nothing to choose
@@ -729,15 +753,38 @@ impl<'a> CanonicalWriter<'a> {
     /// ketone/aldehyde `C=O` never does, the O side has none), so the carbon
     /// side of such a bond is never treated as ambiguous purely because it
     /// happens to have 2 ring-bond substituents of its own.
+    ///
+    /// Also excludes both ends of a double bond that is itself endocyclic in
+    /// a ring smaller than 8 atoms (see
+    /// [`Self::double_bond_endocyclic_in_small_ring`]) — such a bond has no
+    /// real stereochemical freedom, so treating it as ambiguous only
+    /// destabilizes marker-carrier selection for a genuinely stereogenic
+    /// bond it happens to share a candidate bond with (issue #149).
+    ///
+    /// This runs on every `canonical_smiles()` call via `resolve_ez_markers`,
+    /// so `chematic_perception::find_sssr` (Horton: O(V·E) candidates + GF(2)
+    /// elimination) is only ever computed when there is at least one
+    /// double-bond candidate that could need the ring check — most
+    /// molecules (no double bonds, or only non-candidate ones like a
+    /// ketone's `C=O`) skip it entirely.
     fn compute_stereo_alkene_ends(mol: &Molecule) -> HashSet<AtomIdx> {
+        let candidates: Vec<_> = mol
+            .bonds()
+            .filter(|(_, bond)| bond.order == BondOrder::Double)
+            .filter(|(_, bond)| {
+                Self::end_has_substituent(mol, bond.atom1)
+                    && Self::end_has_substituent(mol, bond.atom2)
+            })
+            .collect();
+        if candidates.is_empty() {
+            return HashSet::new();
+        }
+
+        let rings = chematic_perception::find_sssr(mol);
+        let rings = rings.rings();
         let mut ends = HashSet::new();
-        for (_, bond) in mol.bonds() {
-            if bond.order != BondOrder::Double {
-                continue;
-            }
-            if !Self::end_has_substituent(mol, bond.atom1)
-                || !Self::end_has_substituent(mol, bond.atom2)
-            {
+        for (_, bond) in candidates {
+            if Self::double_bond_endocyclic_in_small_ring(rings, bond.atom1, bond.atom2) {
                 continue;
             }
             for end in [bond.atom1, bond.atom2] {
@@ -3185,7 +3232,7 @@ mod tests {
     /// Deliberately NOT built on `chematic_smiles::random_smiles`: probing
     /// it during this investigation found that `random_smiles(&mol, 2)` on
     /// `CC1=C2CC[C@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\N=C(N)N` (one of the
-    /// [`EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS`] fixtures) produces a
+    /// [`EZ_SHARED_CARRIER_FULLY_RESOLVED`] fixtures) produces a
     /// canonical key differing at a SECOND, unrelated ring stereocenter's
     /// `@`/`@@` tag from the original -- independently confirmed via RDKit
     /// (`Chem.MolToSmiles`/`compare_molecules(..., StandardInchiString)` ->
@@ -3223,7 +3270,7 @@ mod tests {
     /// which always preserves which physical bond carries the mark.
     /// Measured directly: pure index relabeling alone (even 16+ deterministic
     /// permutations) never reproduces the divergence the corpus diagnosis
-    /// found for [`EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS`] fixtures,
+    /// found for several [`EZ_SHARED_CARRIER_FULLY_RESOLVED`] fixtures,
     /// because that divergence is specifically about the solver's decision
     /// changing based on WHICH candidate bond happens to carry the input's
     /// raw mark -- this helper is what actually exercises that axis.
@@ -3240,7 +3287,7 @@ mod tests {
     /// moving its mark away for ONE end's sake, considered in isolation,
     /// can silently strip the OTHER end's only source of geometry --
     /// measured directly on one of the
-    /// [`EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS`] fixtures (the
+    /// [`EZ_SHARED_CARRIER_FULLY_RESOLVED`] fixtures (the
     /// enol-ether double bond's own mark vanishing as a side effect of
     /// relocating the SEPARATE, merely-bond-adjacent coupled imine's own
     /// mark). Every candidate alternate is checked against
@@ -3381,7 +3428,7 @@ mod tests {
     /// Deliberately NOT asserting the stronger "0 or all of an end's own
     /// 2 candidates are marked" for every end unconditionally: that is
     /// FALSE in a real, legitimate case measured directly on one of the
-    /// [`EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS`] fixtures -- an end
+    /// [`EZ_SHARED_CARRIER_FULLY_RESOLVED`] fixtures -- an end
     /// with zero raw geometry of its own (`reference_up` returns `None`,
     /// so `end_votes` contributes nothing) can still be a bystander whose
     /// shared bond gets marked purely by its *coupled partner's* own vote.
@@ -3419,15 +3466,26 @@ mod tests {
         }
     }
 
-    /// 10 of the 18 real-corpus molecules from the 282-molecule
-    /// `has_ez_marker` diagnosis subset (issue #149) where two
-    /// independently stereogenic double bonds share one physical candidate
-    /// carrier bond -- the subset the joint component solver
-    /// (`resolve_component_jointly`) resolves **fully**: canonical output
-    /// is invariant under every relabeling tested below, not just one.
-    /// See [`EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS`] for the other
-    /// 8, which are a genuine, still-open residual -- do not merge the two
-    /// lists back together or treat this one as "all 18."
+    /// All 18 real-corpus molecules from the 282-molecule `has_ez_marker`
+    /// diagnosis subset (issue #149) where two independently stereogenic
+    /// double bonds share one physical candidate carrier bond -- the joint
+    /// component solver (`resolve_component_jointly`) resolves **all** of
+    /// them fully: canonical output is invariant under every relabeling
+    /// tested below, not just one.
+    ///
+    /// Originally split 10/8: the last 8 (`CC1=C2CC[C@H](/C=N/N=C(N)N)...`
+    /// through `CCO/C(O)=C(\C1=NCCN1)...`) were a genuine, still-open
+    /// residual until `compute_stereo_alkene_ends` gained a ring-size gate
+    /// (`double_bond_endocyclic_in_small_ring`, issue #149's Wave 2C audit,
+    /// `docs/rfcs/ez_ring_constrained_residual_audit.md`) that excludes an
+    /// end whose own double bond is endocyclic in a ring smaller than 8
+    /// atoms -- exactly the shape all 8 shared (an endocyclic culprit with
+    /// no real stereochemical freedom, coupled via a shared candidate bond
+    /// to a genuinely stereogenic partner). Measured directly: all 8 now
+    /// converge to one canonical output, and the original 10 (re-verified,
+    /// not assumed -- 5 of them share the identical endocyclic shape per
+    /// the audit's own finding) remain fully resolved. Merged into one list
+    /// since the split no longer describes anything real.
     const EZ_SHARED_CARRIER_FULLY_RESOLVED: &[&str] = &[
         r"CCCCC/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
         r"O=C(Nc1ccc(C[C@H](/N=c2\c(O)c(O)\c2=N/Cc2ccccc2)C(=O)O)cc1)c1c(Cl)cncc1Cl",
@@ -3439,35 +3497,6 @@ mod tests {
         r"CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1ccccc1OC",
         r"CCO/C(O)=C1\C(C)=NC(C)=C(C(=O)OC)C1c1ccc([N+](=O)[O-])cc1",
         r"CCO/C(O)=C1\C(C)=NC(C)=C(C(=O)OC)C1c1cccc(C(F)(F)F)c1",
-    ];
-
-    /// The other 8 of the 18 (see [`EZ_SHARED_CARRIER_FULLY_RESOLVED`]):
-    /// the joint solver no longer *abstains* for these (unlike the
-    /// pre-fix behavior, which abstained for all 18 unconditionally), but
-    /// canonical output still is **not** fully permutation-invariant --
-    /// some relabelings converge, at least one measured relabeling does
-    /// not (measured against a fresh 5,000-molecule corpus diagnosis:
-    /// `scripts/canonical_residual_diagnosis.py`, "random-relabeling-only"
-    /// failures 18 -> 8, this exact set). Confirmed cosmetic only (RDKit
-    /// re-parse of every divergent spelling is structurally/
-    /// stereochemically identical), root-caused to a shared mechanism: the
-    /// coupled component in each of these 8 includes an end that is part
-    /// of an *endocyclic* double bond in a 5- or 6-membered ring, whose
-    /// real-world geometry is fixed by the ring itself, not a free
-    /// stereochemical choice -- `compute_stereo_alkene_ends` has no
-    /// ring-size gate, so this end is still treated as ambiguous, and
-    /// [`CanonicalWriter::reference_up`] can read as defined or `None`
-    /// depending on which of the ring bond's two candidates the current
-    /// spelling happens to mark.
-    ///
-    /// Deliberately NOT fixed here: excluding small-ring endocyclic bonds
-    /// from `compute_stereo_alkene_ends` would change marker placement for
-    /// molecules well outside these 8, with no measurement of that blast
-    /// radius yet -- tracked as follow-up work (Wave 2C audit), not
-    /// silently absorbed into this change. Do NOT read the tests below as
-    /// "resolved," "fixed," or "converged" for this set -- they exist to
-    /// pin the opposite (still-residual) while proving zero semantic harm.
-    const EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS: &[&str] = &[
         r"CC1=C2CC[C@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\N=C(N)N",
         r"CC1=C2CC[C@@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\N=C(N)N",
         r"COC(=O)/C=C/[C@H]1CCC2=C(C)/C(=N/N=C(N)N)CC[C@@]21C",
@@ -3478,7 +3507,7 @@ mod tests {
         r"CCO/C(O)=C(\C1=NCCN1)c1nnc(N)s1",
     ];
 
-    /// Proves the 10 [`EZ_SHARED_CARRIER_FULLY_RESOLVED`] fixtures are
+    /// Proves all 18 [`EZ_SHARED_CARRIER_FULLY_RESOLVED`] fixtures are
     /// genuinely, fully permutation-invariant -- not just under the one
     /// relabeling a weaker test might check. Per fixture: the original
     /// parse, its reversed-atom-order relabeling, and 16 deterministic
@@ -3489,7 +3518,7 @@ mod tests {
     /// re-parse without error, and a reparse of it must preserve both the
     /// E/Z ([`geometry_fingerprint`]) and tetrahedral
     /// ([`tetrahedral_fingerprint`]) stereo facts read from the original
-    /// parse. Also asserts the joint solver never abstains for these 10
+    /// parse. Also asserts the joint solver never abstains for these 18
     /// (production's own `ez_shared_bond_abstains` record, not re-derived
     /// topology) and never applies a partial marker plan.
     #[test]
@@ -3553,119 +3582,6 @@ mod tests {
                 before_geo.iter().any(|f| f.is_some()),
                 "test setup sanity: '{s}' must have at least one defined \
                  E/Z geometry fact"
-            );
-        }
-    }
-
-    /// Pins that the 8 [`EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS`] are
-    /// genuinely STILL a residual: among the SAME relabeling/marking set
-    /// [`ez_shared_carrier_fully_resolved_are_permutation_invariant`]
-    /// checks ([`ez_carrier_test_variants`]: original, reversed, 16
-    /// deterministic Fisher-Yates relabelings, and every mark-relocated
-    /// alternate from [`alternate_ez_markings`]), at least 2 distinct
-    /// canonical outputs must appear for every one of these 8.
-    /// Deliberately NOT just "reversed differs from original", and
-    /// deliberately NOT atom-index relabeling alone: measured directly,
-    /// plain index relabeling (even 16 deterministic permutations, not just
-    /// the reversed one) never reproduces the divergence for at least one
-    /// of these 8 -- the actual degree of freedom the corpus diagnosis
-    /// caught is WHICH candidate bond carries the mark, only reachable via
-    /// [`alternate_ez_markings`]. This is the mirror image of
-    /// [`ez_shared_carrier_fully_resolved_are_permutation_invariant`] -- if
-    /// any of these 8 starts producing exactly one output across the full
-    /// variant set, that is a genuine improvement, but it must be moved to
-    /// [`EZ_SHARED_CARRIER_FULLY_RESOLVED`] and re-verified with the full
-    /// permutation gate, never left silently passing this assertion with a
-    /// weakened claim.
-    #[test]
-    fn ring_constrained_residuals_are_not_claimed_resolved() {
-        for &s in EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS {
-            let mol = parse(s).unwrap_or_else(|e| panic!("parse '{s}': {e}"));
-            let variants = ez_carrier_test_variants(&mol);
-            let unique: HashSet<String> = variants.iter().map(canonical_smiles).collect();
-            assert!(
-                unique.len() >= 2,
-                "'{s}': expected this fixture to STILL be a residual (>=2 \
-                 distinct canonical outputs across {} relabelings/markings), \
-                 got {} distinct -- if this now converges, the ring-constrained \
-                 mechanism may have been independently resolved; move this \
-                 fixture to EZ_SHARED_CARRIER_FULLY_RESOLVED and re-verify \
-                 with the full permutation-invariance gate rather than \
-                 leaving this assertion silently weakened",
-                variants.len(),
-                unique.len()
-            );
-        }
-    }
-
-    /// Proves the 8 [`EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS`] never
-    /// corrupt or lose stereochemistry despite not fully converging. Per
-    /// fixture: collects every distinct canonical output across the full
-    /// [`ez_carrier_test_variants`] set (relabelings AND mark-relocated
-    /// alternates), then for EVERY distinct output (not just one) checks:
-    ///  - it re-parses without error,
-    ///  - its own `geometry_fingerprint`/`tetrahedral_fingerprint` (E/Z and
-    ///    tetrahedral stereo) exactly match the ORIGINAL parse's -- zero
-    ///    lost, zero flipped, for either kind of stereo, across every
-    ///    spelling this fixture produces,
-    ///  - it is individually idempotent
-    ///    (`canonical(spelling) == spelling`) -- each distinct output is
-    ///    its own stable fixed point even though different relabelings
-    ///    land on different fixed points,
-    ///  - the joint solver never applies a partial marker plan for it
-    ///    (`assert_no_partial_marker_application`).
-    #[test]
-    fn ring_constrained_residuals_remain_semantically_safe() {
-        for &s in EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS {
-            let mol = parse(s).unwrap_or_else(|e| panic!("parse '{s}': {e}"));
-            assert_no_partial_marker_application(&mol);
-
-            let before_geo = geometry_fingerprint(&mol);
-            let before_tet = tetrahedral_fingerprint(&mol);
-            assert!(
-                before_geo.iter().any(|f| f.is_some()),
-                "test setup sanity: '{s}' must have at least one defined \
-                 E/Z geometry fact"
-            );
-
-            let variants = ez_carrier_test_variants(&mol);
-
-            let mut distinct_outputs: HashSet<String> = HashSet::new();
-            for variant in &variants {
-                let canon = canonical_smiles(variant);
-                if !distinct_outputs.insert(canon.clone()) {
-                    continue; // already checked this exact spelling
-                }
-
-                let reparsed =
-                    parse(&canon).unwrap_or_else(|e| panic!("'{s}': reparse of '{canon}': {e}"));
-
-                let after_geo = geometry_fingerprint(&reparsed);
-                assert_eq!(
-                    before_geo, after_geo,
-                    "'{s}': spelling '{canon}' must preserve E/Z geometry \
-                     (0 lost, 0 flipped) even though this fixture doesn't \
-                     fully converge"
-                );
-                let after_tet = tetrahedral_fingerprint(&reparsed);
-                assert_eq!(
-                    before_tet, after_tet,
-                    "'{s}': spelling '{canon}' must preserve tetrahedral \
-                     stereo (0 lost, 0 flipped) even though this fixture \
-                     doesn't fully converge"
-                );
-
-                // Per-spelling idempotence: THIS spelling, once produced,
-                // is its own stable fixed point.
-                let canon_twice = canonical_smiles(&reparsed);
-                assert_eq!(
-                    canon, canon_twice,
-                    "'{s}': spelling '{canon}' must be idempotent on its own"
-                );
-            }
-            assert!(
-                !distinct_outputs.is_empty(),
-                "test setup sanity: '{s}' produced no canonical outputs at all"
             );
         }
     }
@@ -3830,10 +3746,9 @@ mod tests {
     /// SAME set of stereo-alkene ends via several different insertion
     /// orders always yields the SAME partition into components (compared
     /// as sets of atoms, never as the returned `Vec`'s order), across
-    /// every fixture in both [`EZ_SHARED_CARRIER_FULLY_RESOLVED`] and
-    /// [`EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS`] -- i.e. component
-    /// MEMBERSHIP is a pure function of molecule structure, never of
-    /// `HashSet` build/iteration order.
+    /// every fixture in [`EZ_SHARED_CARRIER_FULLY_RESOLVED`] -- i.e.
+    /// component MEMBERSHIP is a pure function of molecule structure, never
+    /// of `HashSet` build/iteration order.
     #[test]
     fn coupling_components_membership_is_insertion_order_independent() {
         fn normalized_components(
@@ -3849,10 +3764,7 @@ mod tests {
             components
         }
 
-        let all_fixtures = EZ_SHARED_CARRIER_FULLY_RESOLVED
-            .iter()
-            .chain(EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS.iter());
-        for &s in all_fixtures {
+        for &s in EZ_SHARED_CARRIER_FULLY_RESOLVED {
             let mol = parse(s).unwrap_or_else(|e| panic!("parse '{s}': {e}"));
             let ends = CanonicalWriter::compute_stereo_alkene_ends(&mol);
             let baseline = normalized_components(&mol, &ends);

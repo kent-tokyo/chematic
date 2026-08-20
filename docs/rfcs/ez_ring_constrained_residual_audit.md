@@ -2,6 +2,21 @@
 
 Status: **Diagnosis only. No production behavior change.** `Refs #149`.
 
+> **Update (Wave 2D, 2026-08-20, `Fixes #149`'s ring-constrained half):** the
+> "Recommended production predicate" below was implemented as-specified in
+> `compute_stereo_alkene_ends` (`crates/chematic-smiles/src/canonical.rs`).
+> Measured directly against all 18 of the issue #149 pinned fixtures (not
+> just the 8 named here): all 8 residuals in this audit's table now fully
+> converge, and the 5 `EZ_SHARED_CARRIER_FULLY_RESOLVED` fixtures flagged
+> above as sharing the identical endocyclic shape were re-verified to remain
+> resolved. See `docs/rfcs/canonical_smiles_residual_rfc.md`'s own Wave 2D
+> update for the full result and test-suite numbers — not duplicated here,
+> since this doc's own mandate was diagnosis-only and its findings (the
+> corpus-blast-radius table, the ~10%-of-corpus-population caveat in the
+> "Verdict" section below) remain the accurate scoping of what this specific
+> predicate does and does not close. Issue #149 stays open for the other
+> ~90% of the corpus's general coupling population.
+
 This is a follow-up to PR #229 (Wave 2B), which replaced the single-end
 shared-bond abstain guard with a joint component solver
 (`resolve_component_jointly` in `crates/chematic-smiles/src/canonical.rs`)
