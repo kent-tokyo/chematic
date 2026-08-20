@@ -755,6 +755,18 @@ fn grow_layout(
 }
 
 /// Compute the best outgoing direction from a ring atom to avoid collisions.
+///
+/// Ranks candidates by angular separation via [`ranked_candidates`] (see that
+/// function's doc for why -- issue #347: this used to have its own, coarser
+/// 60°-spaced candidate set with no chemistry-aware offsets, missing the
+/// correct bisector for e.g. a hexagon-ring substituent by ~30°), then walks
+/// them best-first and skips any candidate whose resulting position would
+/// land on top of an already-placed atom elsewhere in the component --
+/// angular separation from *this atom's own bonds* alone doesn't guard
+/// against that (issue #347: a bridged-core molecule with a separate,
+/// pre-existing placement bug has an atom sitting far from where its own
+/// bonds would suggest, and the top-angular candidate can point straight at
+/// it). Falls back to the top-ranked candidate if every one collides.
 fn best_outgoing_direction(
     atom: AtomIdx,
     placed: &[Option<Point>],
@@ -779,19 +791,76 @@ fn best_outgoing_direction(
         return 0.0;
     }
 
-    // Try candidate angles at 60-degree increments and pick the one farthest from all used.
-    let candidates: Vec<f64> = (0..6)
-        .map(|i| i as f64 * std::f64::consts::PI / 3.0)
-        .collect();
+    let ranked = ranked_candidates(&used_angles);
+    let occupies = |dir: f64| -> bool {
+        let candidate = Point::new(
+            origin.x + BOND_LEN * dir.cos(),
+            origin.y + BOND_LEN * dir.sin(),
+        );
+        placed
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| component.contains(&AtomIdx(*i as u32)))
+            .filter_map(|(_, p)| p.as_ref())
+            .any(|p| candidate.dist(p) < BOND_LEN / 2.0)
+    };
 
+    ranked
+        .iter()
+        .copied()
+        .find(|&dir| !occupies(dir))
+        .unwrap_or(ranked[0])
+}
+
+/// Pick the direction (radians) that maximizes the minimum angular separation
+/// from every angle in `used_angles`.
+///
+/// Thin wrapper over [`ranked_candidates`] -- see that function's doc for the
+/// candidate set. Returns `0.0` if `used_angles` is empty.
+fn best_direction_avoiding(used_angles: &[f64]) -> f64 {
+    if used_angles.is_empty() {
+        return 0.0;
+    }
+    ranked_candidates(used_angles)[0]
+}
+
+/// Candidate directions (radians), best-first by minimum angular separation
+/// from every angle in `used_angles`.
+///
+/// Candidates: a 30-degree grid (12 directions covering 360°), plus, for each
+/// angle already in `used_angles`: its anti-direction (α+180°), the two sp3
+/// zigzag offsets (α+150°/α+210°) and the two sp2 offsets (α±120°) --
+/// chemistry-aware candidates that a plain fixed grid alone can miss (issue
+/// #347's ring-substituent bisector case: two ring bonds 120° apart need a
+/// candidate at their exact bisector, which isn't always on a 30°-aligned
+/// grid point relative to 0°, but always is one of these bond-relative
+/// offsets). Shared by [`best_outgoing_direction`] and
+/// [`suggest_bond_direction`] (via [`best_direction_avoiding`]) -- previously
+/// duplicated with two different (one worse) candidate sets; this is the
+/// single, richer implementation both now use. Returns `[0.0]` if
+/// `used_angles` is empty.
+fn ranked_candidates(used_angles: &[f64]) -> Vec<f64> {
+    use std::f64::consts::PI;
+
+    if used_angles.is_empty() {
+        return vec![0.0];
+    }
+
+    let mut candidates: Vec<f64> = (0..12).map(|i| i as f64 * PI / 6.0).collect();
+    for &a in used_angles {
+        candidates.push(a + PI);
+        candidates.push(a + PI - PI / 6.0);
+        candidates.push(a + PI + PI / 6.0);
+        candidates.push(a + 2.0 * PI / 3.0);
+        candidates.push(a - 2.0 * PI / 3.0);
+    }
+
+    candidates.sort_by(|&a, &b| {
+        let min_sep_a = min_angle_separation(a, used_angles);
+        let min_sep_b = min_angle_separation(b, used_angles);
+        min_sep_b.partial_cmp(&min_sep_a).unwrap()
+    });
     candidates
-        .into_iter()
-        .max_by(|&a, &b| {
-            let min_sep_a = min_angle_separation(a, &used_angles);
-            let min_sep_b = min_angle_separation(b, &used_angles);
-            min_sep_a.partial_cmp(&min_sep_b).unwrap()
-        })
-        .unwrap_or(0.0)
 }
 
 /// Minimum angular separation between `angle` and any angle in `used`.
@@ -810,6 +879,15 @@ fn min_angle_separation(angle: f64, used: &[f64]) -> f64 {
 
 /// Iterative zigzag placement: place `start_atom` at `BOND_LEN` from `start_parent`
 /// in direction `start_dir`, then expand unplaced neighbors with alternating ±30° deflection.
+///
+/// The alternation is carried as a `sign` (±1.0) threaded through the DFS stack,
+/// not derived from a neighbor's position in its parent's own unplaced-neighbor
+/// list -- that would only ever alternate at a genuine branch point (2+ unplaced
+/// neighbors), and always reapply the same deflection on an ordinary single-child
+/// chain continuation (the overwhelming majority of atoms), producing a monotonic
+/// per-bond rotational drift instead of a zigzag (issue #347: a plain 13-carbon
+/// chain's first and last atoms landed on identical coordinates, since 12
+/// consecutive -30° steps trace a full circle).
 ///
 /// If a popped atom belongs to a not-yet-placed ring system (`atom_to_system`),
 /// this anchors that whole system via [`place_ring_system`]/
@@ -832,10 +910,13 @@ fn dfs_zigzag(
     system_placed: &mut [bool],
     newly_ring_placed: &mut Vec<AtomIdx>,
 ) {
-    let deflections = [-std::f64::consts::PI / 6.0, std::f64::consts::PI / 6.0];
-    let mut stack: Vec<(AtomIdx, AtomIdx, f64)> = vec![(start_atom, start_parent, start_dir)];
+    let deflection = std::f64::consts::PI / 6.0;
+    // 4th element: the sign to apply, and then flip, when this atom continues
+    // the chain alone. -1.0 matches the pre-fix first-step behavior.
+    let mut stack: Vec<(AtomIdx, AtomIdx, f64, f64)> =
+        vec![(start_atom, start_parent, start_dir, -1.0)];
 
-    while let Some((atom, parent, dir)) = stack.pop() {
+    while let Some((atom, parent, dir, sign)) = stack.pop() {
         if placed[atom.0 as usize].is_some() {
             continue;
         }
@@ -867,9 +948,19 @@ fn dfs_zigzag(
             })
             .collect();
 
-        // Push in reverse so the first neighbor is popped first, preserving DFS order.
-        for (i, nb) in unplaced.into_iter().enumerate().rev() {
-            stack.push((nb, atom, dir + deflections[i % 2]));
+        if unplaced.len() == 1 {
+            // Ordinary chain continuation: apply this atom's sign, flip it for
+            // the next step -- this is the alternation the pre-fix code missed.
+            stack.push((unplaced[0], atom, dir + sign * deflection, -sign));
+        } else {
+            // A real branch (0, or 2+, unplaced neighbors): preserve the
+            // original per-child split (alternating by position), each child
+            // then continuing its own zigzag from its own starting sign.
+            // Push in reverse so the first neighbor is popped first, preserving DFS order.
+            for (i, nb) in unplaced.into_iter().enumerate().rev() {
+                let child_sign = if i % 2 == 0 { -1.0 } else { 1.0 };
+                stack.push((nb, atom, dir + child_sign * deflection, -child_sign));
+            }
         }
     }
 }
@@ -881,22 +972,12 @@ fn dfs_zigzag(
 /// Suggest the best direction (radians, measured from positive x-axis) for a
 /// new bond leaving `atom`, given the molecule's current 2D `layout`.
 ///
-/// The algorithm:
-/// 1. Collects angles to all already-placed neighbors of `atom`.
-/// 2. Generates chemistry-aware candidate directions (see below).
-/// 3. Returns the candidate with the **maximum minimum angular separation**
-///    from all existing bond angles.
-///
-/// Candidates include:
-/// - A 30-degree grid (12 directions covering 360°).
-/// - For each existing bond at angle α: the anti-direction (α+180°) and the
-///   two zigzag offsets (α+150°, α+210°) that model sp3 chain extension,
-///   plus the two sp2 offsets (α+120°, α+240°) for aromatic / double-bonded atoms.
+/// Collects angles to all already-placed neighbors of `atom`, then delegates
+/// candidate generation/selection to [`best_direction_avoiding`] -- see that
+/// function's doc for the candidate set and selection rule.
 ///
 /// Returns `0.0` (pointing right) when `atom` has no neighbors in `layout`.
 pub fn suggest_bond_direction(mol: &Molecule, atom: AtomIdx, layout: &Layout) -> f64 {
-    use std::f64::consts::PI;
-
     let origin = layout.get(atom);
 
     // Angles to neighbors that are already placed in the layout.
@@ -913,28 +994,7 @@ pub fn suggest_bond_direction(mol: &Molecule, atom: AtomIdx, layout: &Layout) ->
         return 0.0;
     }
 
-    // Build candidate set.
-    let mut candidates: Vec<f64> = (0..12).map(|i| i as f64 * PI / 6.0).collect();
-
-    for &a in &used_angles {
-        // Anti-direction (straight opposite).
-        candidates.push(a + PI);
-        // sp3 zigzag: ±30° from the anti-direction.
-        candidates.push(a + PI - PI / 6.0);
-        candidates.push(a + PI + PI / 6.0);
-        // sp2: ±120° from the existing bond.
-        candidates.push(a + 2.0 * PI / 3.0);
-        candidates.push(a - 2.0 * PI / 3.0);
-    }
-
-    candidates
-        .into_iter()
-        .max_by(|&ca, &cb| {
-            let sa = min_angle_separation(ca, &used_angles);
-            let sb = min_angle_separation(cb, &used_angles);
-            sa.partial_cmp(&sb).unwrap()
-        })
-        .unwrap_or(0.0)
+    best_direction_avoiding(&used_angles)
 }
 
 // ---------------------------------------------------------------------------
@@ -1113,8 +1173,10 @@ mod tests {
         // distance 0.0). Tier A only (no exact/near coincidence) -- the
         // bridged core's OWN internal bond lengths have a separate,
         // pre-existing bug (`find_shared_edge` only handles a 2-atom
-        // shared edge, not the 3-atom-shared case a true bridge produces),
-        // out of scope for this fix, so Tier B/C are not asserted here.
+        // shared edge, not the 3-atom-shared case a true bridge produces --
+        // e.g. this molecule's atom5-atom6 bond, a real bond, lands ~108
+        // units apart instead of the expected `BOND_LEN` of 40), out of
+        // scope for this fix, so Tier B/C are not asserted here.
         use chematic_smiles::parse;
         let mol = parse("C1CC2CN(CC1N2c1ccccc1)c1cccc(c1)-c1ccccc1").unwrap();
         let layout = compute_layout(&mol);
@@ -1129,6 +1191,94 @@ mod tests {
     #[test]
     fn pure_chain_layout_unaffected() {
         assert_layout_clean("CCCCCCCC");
+    }
+
+    // --- Issue #347 regressions ------------------------------------------
+
+    #[test]
+    fn long_chain_does_not_wrap_onto_itself() {
+        // Pre-fix, dfs_zigzag applied a constant -30°/bond drift instead of
+        // alternating, so 12 consecutive bonds traced a full circle: a plain
+        // 13-carbon chain's first and last atoms landed on identical
+        // coordinates. 20 carbons is well past that wrap point -- a true
+        // zigzag (ping-ponging between two directions) never revisits a
+        // point no matter how long the chain runs, so this can't pass by
+        // accident the way a shorter fixture might.
+        assert_layout_clean(&"C".repeat(20));
+    }
+
+    #[test]
+    fn long_chain_bond_directions_genuinely_alternate() {
+        // Direct angle check, not just non-collision: asserts the actual
+        // zigzag pattern (ping-ponging between exactly two directions 30°
+        // apart), not merely that nothing happened to collide.
+        use chematic_smiles::parse;
+        let mol = parse(&"C".repeat(10)).unwrap();
+        let layout = compute_layout(&mol);
+        let n = mol.atom_count();
+        let dirs: Vec<f64> = (0..n - 1)
+            .map(|i| {
+                let a = layout.get(AtomIdx(i as u32));
+                let b = layout.get(AtomIdx((i + 1) as u32));
+                (b.y - a.y).atan2(b.x - a.x)
+            })
+            .collect();
+        // Consecutive bond directions must differ by exactly 30° in
+        // magnitude (a real zigzag turn), never 0° (collinear) or drifting
+        // to some other value.
+        for w in dirs.windows(2) {
+            let mut turn = (w[1] - w[0]).abs();
+            if turn > std::f64::consts::PI {
+                turn = 2.0 * std::f64::consts::PI - turn;
+            }
+            assert!(
+                (turn - std::f64::consts::PI / 6.0).abs() < 1e-6,
+                "expected a 30° zigzag turn between consecutive bonds, got {turn} rad \
+                 (dirs={dirs:?})"
+            );
+        }
+        // And the pattern must actually alternate (ping-pong), not drift:
+        // only 2 distinct directions should appear across the whole chain.
+        let mut distinct: Vec<f64> = Vec::new();
+        for &d in &dirs {
+            if !distinct.iter().any(|&e: &f64| (e - d).abs() < 1e-6) {
+                distinct.push(d);
+            }
+        }
+        assert_eq!(
+            distinct.len(),
+            2,
+            "expected exactly 2 distinct bond directions (ping-pong zigzag), got {distinct:?}"
+        );
+    }
+
+    #[test]
+    fn ring_substituent_direction_bisects_the_open_angle() {
+        // Issue #347 repro 2's exact scenario: a hexagon-ring atom with two
+        // ring bonds at -30°/90° (120° apart, as any regular-hexagon vertex
+        // is). The correct outward direction for an exocyclic substituent is
+        // the bisector of the open 240° angle: 210°. Pre-fix,
+        // best_outgoing_direction's coarse 60°-grid + broken tie-break
+        // returned 180° here -- a real ~30° miss.
+        let used_angles = [-std::f64::consts::PI / 6.0, std::f64::consts::PI / 2.0];
+        let dir = best_direction_avoiding(&used_angles);
+        let expected = 7.0 * std::f64::consts::PI / 6.0; // 210°
+        let mut diff = (dir - expected).abs();
+        if diff > std::f64::consts::PI {
+            diff = 2.0 * std::f64::consts::PI - diff;
+        }
+        assert!(
+            diff < 1e-6,
+            "expected the 210° bisector, got {} rad ({} deg)",
+            dir,
+            dir.to_degrees()
+        );
+    }
+
+    #[test]
+    fn ring_plus_exocyclic_branch_layout_unaffected() {
+        // Full end-to-end version of issue #347 repro 2.
+        assert_layout_clean("C1CCCC(C(=O)CC)C1");
     }
 
     #[test]

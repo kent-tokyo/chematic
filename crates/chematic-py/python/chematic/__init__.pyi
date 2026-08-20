@@ -611,6 +611,29 @@ class Mol:
         """
         ...
 
+    def depict_data(self) -> dict:
+        """Structured 2D depiction data (atoms + bonds with layout coordinates).
+
+        Use this instead of :meth:`svg` when you want to drive your own
+        renderer (e.g. matplotlib, a custom canvas) rather than parse SVG.
+
+        Returns:
+            dict with keys:
+            ``atoms`` (list of dicts: ``idx``, ``element`` (symbol string),
+            ``x``, ``y``, ``label`` (``None`` when suppressed), ``color``
+            (CSS hex string), ``charge``) and ``bonds`` (list of dicts:
+            ``idx``, ``atom1``, ``atom2``, ``kind`` — one of ``"Single"``,
+            ``"Double"``, ``"Triple"``, ``"Aromatic"``, ``"Up"``, ``"Down"``).
+
+        Example::
+
+            mol = chematic.from_smiles("CCO")
+            data = mol.depict_data()
+            for atom in data["atoms"]:
+                print(atom["element"], atom["x"], atom["y"])
+        """
+        ...
+
     def _repr_svg_(self) -> str:
         """Jupyter auto-display hook — renders the molecule automatically in a cell.
 

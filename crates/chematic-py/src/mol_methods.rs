@@ -1504,6 +1504,72 @@ impl Mol {
         chematic_depict::depict_svg(&self.inner)
     }
 
+    /// Structured 2D depiction data (atoms + bonds with layout coordinates).
+    ///
+    /// Use this instead of ``svg()`` when you want to drive your own
+    /// renderer (e.g. matplotlib, a custom canvas) rather than parse SVG.
+    ///
+    /// Returns:
+    ///     dict with keys:
+    ///     ``atoms`` (list of dicts: ``idx``, ``element`` (symbol string),
+    ///     ``x``, ``y``, ``label`` (``None`` when suppressed), ``color``
+    ///     (CSS hex string), ``charge``) and ``bonds`` (list of dicts:
+    ///     ``idx``, ``atom1``, ``atom2``, ``kind`` — one of ``"Single"``,
+    ///     ``"Double"``, ``"Triple"``, ``"Aromatic"``, ``"Up"``, ``"Down"``).
+    ///
+    /// Example::
+    ///
+    ///     mol = chematic.from_smiles("CCO")
+    ///     data = mol.depict_data()
+    ///     for atom in data["atoms"]:
+    ///         print(atom["element"], atom["x"], atom["y"])
+    fn depict_data<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
+        let data = chematic_depict::compute_depict_data(&self.inner);
+
+        let atoms = data
+            .atoms
+            .iter()
+            .map(|a| {
+                let ad = PyDict::new(py);
+                ad.set_item("idx", a.idx.0)?;
+                ad.set_item("element", a.element.symbol())?;
+                ad.set_item("x", a.pos.x)?;
+                ad.set_item("y", a.pos.y)?;
+                ad.set_item("label", a.label.as_deref())?;
+                ad.set_item("color", &a.color)?;
+                ad.set_item("charge", a.charge)?;
+                Ok::<_, PyErr>(ad)
+            })
+            .collect::<PyResult<Vec<_>>>()?;
+
+        let bond_kind = |k: &chematic_depict::DepictBondKind| match k {
+            chematic_depict::DepictBondKind::Single => "Single",
+            chematic_depict::DepictBondKind::Double => "Double",
+            chematic_depict::DepictBondKind::Triple => "Triple",
+            chematic_depict::DepictBondKind::Aromatic => "Aromatic",
+            chematic_depict::DepictBondKind::Up => "Up",
+            chematic_depict::DepictBondKind::Down => "Down",
+        };
+
+        let bonds = data
+            .bonds
+            .iter()
+            .map(|b| {
+                let bd = PyDict::new(py);
+                bd.set_item("idx", b.idx.0)?;
+                bd.set_item("atom1", b.atom1.0)?;
+                bd.set_item("atom2", b.atom2.0)?;
+                bd.set_item("kind", bond_kind(&b.kind))?;
+                Ok::<_, PyErr>(bd)
+            })
+            .collect::<PyResult<Vec<_>>>()?;
+
+        let d = PyDict::new(py);
+        d.set_item("atoms", atoms)?;
+        d.set_item("bonds", bonds)?;
+        Ok(d)
+    }
+
     /// Export the 2D structure as an EPS string.
     ///
     /// Generates a self-contained PostScript EPS document.
