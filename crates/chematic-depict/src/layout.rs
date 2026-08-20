@@ -799,7 +799,9 @@ fn best_outgoing_direction(
         );
         placed
             .iter()
-            .flatten()
+            .enumerate()
+            .filter(|(i, _)| component.contains(&AtomIdx(*i as u32)))
+            .filter_map(|(_, p)| p.as_ref())
             .any(|p| candidate.dist(p) < BOND_LEN / 2.0)
     };
 
