@@ -17,7 +17,7 @@ Full methodology and raw numbers: [`benchmarks/2026-07-17.md`](../benchmarks/202
 | Descriptor accuracy vs RDKit | **19 metrics ≥98.6%, most 100%** — MW/HBA/HBD/TPSA/LogP/ARC/RotB/Spiro/Bridge/… (4,999-mol) | baseline |
 | Install | `pip install chematic` | conda or cmake |
 | C/C++ dependencies | **Zero** | Required |
-| WASM binary size | **719 KB** | ~30 MB |
+| WASM binary size | **~1.1 MB gzip** | ~30 MB |
 
 The ECFP4 speedup is fixture-dependent: a small set of simple molecules repeated to fill
 the batch shows a larger ratio than a large, structurally diverse corpus. See
@@ -192,7 +192,7 @@ python scripts/bench5k.py path/to/SMILES.csv --detail
 | C/C++ compiler | Not required | Required (Boost) |
 | Docker image size delta | ~4 MB | ~200 MB+ |
 | GitHub Actions | Single pip line | Separate conda setup step |
-| JavaScript / WASM | `npm install @kent-tokyo/chematic` (719 KB) | No official package |
+| JavaScript / WASM | `npm install @kent-tokyo/chematic` (~1.1 MB gzip) | No official package |
 | Browser deployment | Yes | No |
 
 ---
@@ -206,7 +206,7 @@ python scripts/bench5k.py path/to/SMILES.csv --detail
 | MCP server (AI agent integration) | 20 tools (stdio only) | Not available |
 | LSH approximate nearest-neighbour index | Built-in | Not available |
 | IUPAC name generation | Built-in (offline) | Not available |
-| Browser / WASM deployment | Yes (719 KB) | No |
+| Browser / WASM deployment | Yes (~1.1 MB gzip) | No |
 | ECFP4 batch speed | 2–3× faster (diverse corpus) | Baseline |
 | SMARTS atom map `:N` | Yes | Yes |
 | Retrosynthesis (template-based) | 60 retro-SMIRKS built-in | External tool |

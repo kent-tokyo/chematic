@@ -19,13 +19,13 @@ Pure Rust · Zero C/C++ · Python · WebAssembly · [Live Demo](https://kent-tok
 | | chematic | RDKit (Python) | RDKit.js (WASM) |
 |---|---|---|---|
 | **Get started** | `pip install chematic` | conda / cmake required | no Python bindings |
-| **Browser bundle** | **719 KB** | not available | ~30 MB (~42× larger) |
+| **Browser bundle** | **~1.1 MB gzip** | not available | ~30 MB (~27× larger) |
 | **Batch fingerprints** | **~78 µs/mol** (2–3× faster) | ~160–235 µs/mol | — |
 | **Memory safety** | compiler-enforced (Rust) | C++ | C++ |
 | **Build from source** | `cargo build` only | cmake + clang + Boost | Emscripten SDK |
 
 All numbers are reproducible — see [benchmark details](https://kent-tokyo.github.io/chematic/benchmark/).  
-WASM sizes: chematic **719 KB** · RDKit.js ~30 MB · Indigo WASM ~40 MB
+WASM sizes: chematic **~1.1 MB gzip** · RDKit.js ~30 MB · Indigo WASM ~40 MB
 
 **Feature maturity at a glance:**
 
@@ -74,7 +74,7 @@ cmp.save("compare.html")
 | **Drug screening** | 190+ descriptors, ADMET, PAINS/Brenk, QED — batch over thousands of compounds |
 | **Molecule search** | ECFP4/MACCS fingerprints, Tanimoto, LSH approximate nearest-neighbour |
 | **AI agent / MCP** | Built-in MCP server — Claude Desktop can call chemistry tools directly |
-| **Browser app** | 719 KB WASM bundle, zero backend required, React/Vue/Svelte ready |
+| **Browser app** | ~1.1 MB gzip WASM bundle, zero backend required, React/Vue/Svelte ready |
 | **Jupyter notebook** | `mol` renders SVG inline; `descriptors_df()` returns a pandas DataFrame |
 | **Batch analysis** | Rayon-parallel descriptor/fingerprint/3D pipelines; SDF/CSV in, CSV out |
 | **Rust server** | Pure-Rust crates with no C/C++ toolchain; Axum/Actix compatible |
@@ -87,7 +87,7 @@ Full worked examples → [Use cases](https://kent-tokyo.github.io/chematic/use-c
 
 **Use chematic if:**
 
-- You want chemistry in the browser (WASM, 719 KB, no server required)
+- You want chemistry in the browser (WASM, ~1.1 MB gzip, no server required)
 - You need a pure Rust stack with no C++ toolchain dependencies
 - You deploy to environments where `pip install rdkit` is impractical (Cloudflare Workers, Lambda, embedded)
 - You build AI agents and want native MCP tool integration
@@ -275,7 +275,7 @@ safety at every call site chematic itself wrote.
 ### Anywhere
 
 Pure Rust compiles to `wasm32-unknown-unknown` natively — no Emscripten, no `cmake`,
-no `clang`. The npm package `@kent-tokyo/chematic` is **719 KB gzip** — ~42× smaller
+no `clang`. The npm package `@kent-tokyo/chematic` is **~1.1 MB gzip** — ~27× smaller
 than RDKit.js. One codebase runs on Linux, macOS, Windows, and in every browser.
 
 ---
@@ -290,7 +290,7 @@ than RDKit.js. One codebase runs on Linux, macOS, Windows, and in every browser.
 | LogP (Crippen) | **100% RDKit agreement**\* | 4,999-mol ChEMBL subset |
 | Stereocenter count | **99.96%** vs legacy†; 98.6% vs new CIP | 4,999-mol ChEMBL subset |
 | CIP R/S label agreement | **96.30%** vs modern `rdCIPLabeler`‡; 96.83% vs legacy | 5,000-mol ChEMBL subset |
-| WASM bundle | **719 KB** gzip | — |
+| WASM bundle | **~1.1 MB** gzip | — |
 
 \*LogP max Δ = 1.1×10⁻¹³ across 4,999 molecules — within float64 rounding error.  
 †Stereocenter count: ~99.96% vs legacy `CalcNumAtomStereoCenters` (a handful of molecules where chematic matches `FindPotentialStereo` and legacy under-counts); ~98.6% vs new-CIP `FindPotentialStereo` (cage/bridgehead molecules where both chematic and legacy correctly return fewer than the new oracle). chematic is calibrated between both extremes. This measures whether an atom is *flagged* as a stereocenter, not whether its R/S label is correct — see the next row.  
@@ -306,7 +306,7 @@ Full history → [benchmarks/](benchmarks/) · Methodology → [validation/](val
 | Feature                 | **chematic**                              | RDKit (rdkit-sys)  | OpenBabel FFI  | RDKit.js (WASM)    |
 |-------------------------|-------------------------------------------|--------------------|----------------|--------------------|
 | **C/C++ dependencies**  | **None (default)**†                       | Extensive C++      | Extensive C++  | C++ via Emscripten |
-| **WASM binary size**    | **~1.9 MB** (719 KB gzip)                 | N/A (no WASM)      | N/A (no WASM)  | ~30 MB             |
+| **WASM binary size**    | **~2.9 MB** (~1.1 MB gzip)                | N/A (no WASM)      | N/A (no WASM)  | ~30 MB             |
 | **Build requirement**   | `cargo build` only                        | cmake + clang      | cmake + clang  | Emscripten SDK     |
 | **WASM target support** | **Full (native)**                         | No                 | No             | Yes (Emscripten)   |
 | **Python bindings**     | **Yes** (`pip install chematic`, PyO3)    | Yes (rdkit-sys)    | Yes            | No                 |
@@ -371,7 +371,7 @@ Full history → [benchmarks/](benchmarks/) · Methodology → [validation/](val
 
 ## JavaScript / TypeScript (WebAssembly)
 
-**719 KB gzip — ~42× smaller than RDKit.js.** No Emscripten, no cmake. Drop-in for browser or Node.js.
+**~1.1 MB gzip — ~27× smaller than RDKit.js.** No Emscripten, no cmake. Drop-in for browser or Node.js.
 
 ```sh
 npm install @kent-tokyo/chematic

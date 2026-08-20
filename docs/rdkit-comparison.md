@@ -11,7 +11,7 @@ See also: [`rdkit-migration.md`](rdkit-migration.md) for a feature-by-feature Su
 | | chematic | RDKit |
 |---|---|---|
 | **Install** | `pip install chematic` | conda / cmake required |
-| **Browser / WASM** | Yes — 719 KB | No |
+| **Browser / WASM** | Yes — ~1.1 MB gzip | No |
 | **C++ dependency** | None (default) | Required |
 | **Batch fingerprint speed** | ~78 µs/mol (2–3× faster, diverse corpus) | ~160–235 µs/mol |
 | **AI agent integration** | MCP server built-in | None |
@@ -39,7 +39,7 @@ See also: [`rdkit-migration.md`](rdkit-migration.md) for a feature-by-feature Su
 
 | Library | Bundle size | Build toolchain |
 |---|---|---|
-| **chematic** | **719 KB gzip** | `wasm-pack build` only |
+| **chematic** | **~1.1 MB gzip** | `wasm-pack build` only |
 | RDKit.js | ~30 MB | Emscripten SDK + cmake |
 | Indigo WASM | ~40 MB | Emscripten SDK + cmake |
 
@@ -165,7 +165,7 @@ Most common operations map directly:
 
 **Choose chematic if:**
 
-- You want chemistry in the browser (WASM, 719 KB, no server)
+- You want chemistry in the browser (WASM, ~1.1 MB gzip, no server)
 - You need a pure Rust stack with no C++ toolchain
 - You deploy to Lambda, Cloudflare Workers, or other constrained environments
 - You build AI agents and want native MCP tool integration

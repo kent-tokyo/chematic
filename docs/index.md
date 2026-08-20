@@ -21,7 +21,7 @@ print(mol.admet())                   # BBB, Caco-2, hERG, CYP3A4 in one call
 |---|---|---|
 | Install | `pip install chematic` | conda or complex build |
 | C/C++ deps | **Zero** | Required |
-| WASM | **Yes** (719 KB) | No (30–50 MB) |
+| WASM | **Yes** (~1.1 MB gzip) | No (30–50 MB) |
 | pKa prediction | **Built-in** | External tool |
 | ADMET profile | **Built-in** | External tool |
 | Pure Python wheel | **Yes** | No |

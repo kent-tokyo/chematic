@@ -291,7 +291,7 @@ df = pd.DataFrame(chematic.bulk.descriptors(smiles_list))
 
 - **pKa prediction** — built-in, no external tools
 - **ADMET profile** — BBB, Caco-2, hERG, CYP3A4 in a single call
-- **WASM support** — runs in the browser (719 KB bundle)
+- **WASM support** — runs in the browser (~1.1 MB gzip bundle)
 - **MCP server** — direct integration with AI agents
 - **Pure Rust** — no conda, works in Docker / serverless / CI without extra setup
 - **Atropisomer detection** — `mol.atropisomers()` detects biaryl and allene axes
