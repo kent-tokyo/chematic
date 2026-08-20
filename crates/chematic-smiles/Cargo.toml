@@ -18,6 +18,16 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 chematic-core = { path = "../chematic-core", version = "0.18.0" }
+# Production use: `compute_stereo_alkene_ends` (canonical.rs) needs SSSR ring
+# membership to exclude endocyclic small-ring double bonds from marker-carrier
+# candidacy (issue #149's ring-constrained residual, see
+# docs/rfcs/ez_ring_constrained_residual_audit.md). chematic-perception's own
+# dev-dependency on chematic-smiles (for its own tests) does not create a
+# cycle here -- dev-dependencies never appear in a published crate's library
+# graph, only test binaries. Was previously a dev-only dependency of this
+# crate for a different reason (re-aromatizing test fixtures); now also a
+# real one.
+chematic-perception = { path = "../chematic-perception", version = "0.18.0" }
 
 [features]
 # Feature-gated internal work counters for the orbit-pruning canonical
@@ -27,20 +37,6 @@ chematic-core = { path = "../chematic-core", version = "0.18.0" }
 canonical-search-instrumentation = []
 
 [dev-dependencies]
-# Test-only: re-aromatizing after an explicit kekulize+apply_kekule round
-# trip needs perception-level Huckel logic to get back to a fairly
-# comparable (aromatic-form) canonical string. chematic-perception's own
-# dev-dependencies pull in chematic-smiles the same way -- Cargo supports
-# this dev-dependency cycle since it never affects either crate's published
-# library dependency graph, only test binaries.
-#
-# No `version` here (path-only): a version-pinned dev-dependency still
-# needs to resolve against the registry when THIS crate is packaged (cargo
-# generates a full Cargo.lock, including dev-deps, before the publish
-# verify step) -- with both sides pinned, neither could ever publish first.
-# Path-only dev-deps are dropped from the published manifest entirely, so
-# there's nothing to resolve. See scripts/check_publish_graph.py.
-chematic-perception = { path = "../chematic-perception" }
 criterion = { version = "0.8", features = ["html_reports"] }
 
 [[bench]]

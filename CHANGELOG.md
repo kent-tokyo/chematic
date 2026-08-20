@@ -82,6 +82,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   previously Python could only get an SVG string or a function that takes
   coordinates as input, not raw layout data.
 
+### Fixed — `chematic-smiles` canonical SMILES (issue #149's ring-constrained E/Z residual)
+
+- `compute_stereo_alkene_ends` now excludes a double bond's ends from
+  marker-carrier candidacy when the bond itself is endocyclic in an SSSR
+  ring smaller than 8 atoms — such a bond's real-world geometry is fixed by
+  the ring, not a free stereochemical choice, so treating it as ambiguous
+  only destabilized marker-carrier selection for a genuinely stereogenic
+  double bond it happened to share a candidate bond with. Implements the
+  predicate specified in `docs/rfcs/ez_ring_constrained_residual_audit.md`
+  ("Wave 2C audit", 0/1,387 row-level disagreements with RDKit's own
+  stereo-possibility judgment on a 5,000-molecule corpus).
+- All 8 of the previously-documented 8 ring-constrained residual fixtures
+  (`EZ_SHARED_CARRIER_RING_CONSTRAINED_RESIDUALS`) now fully converge to one
+  canonical output; re-verified (not assumed) that the 10 already-resolved
+  fixtures — including 5 sharing the identical endocyclic shape — remain
+  fully resolved. All 18 are now one merged fixture list
+  (`EZ_SHARED_CARRIER_FULLY_RESOLVED`) in `crates/chematic-smiles/src/
+  canonical.rs`'s test module.
+- `chematic-perception` promoted from a dev-only to a real (production)
+  dependency of `chematic-smiles`, needed for `find_sssr` ring-membership
+  data. No cycle: `chematic-perception`'s own dependency on
+  `chematic-smiles` remains dev-only (test-only), so the real dependency
+  graph is still acyclic (verified via `scripts/check_publish_graph.py`).
+  `compute_stereo_alkene_ends` runs on every `canonical_smiles()` call, so
+  `find_sssr` (Horton: O(V·E) candidates + GF(2) elimination) is only
+  computed when the molecule has at least one double-bond candidate that
+  could need the ring check — most molecules (no double bonds, or only
+  non-candidate ones like a ketone's `C=O`) skip it entirely, keeping the
+  common-case cost of this hot path unchanged.
+- **Issue #149 stays open**: this closes only ~10% of the corpus's general
+  shared-carrier coupling population (3 of 31 coupling components, per the
+  Wave 2C audit's own blast-radius measurement) — the other ~90% is a
+  separate, still-unidentified mechanism this predicate does not touch.
+- `cargo test -p chematic-smiles --lib`: 202/202 passed. No full
+  5,000-molecule corpus rescan performed for this change — the 18-fixture
+  regression check is the audit's own specified verification.
+
 ## [0.18.0] — 2026-08-20
 
 Python and WASM bindings for the 7 file formats `chematic-mol` gained in
