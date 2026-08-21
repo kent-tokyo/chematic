@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Local Compound Explorer — chematic</title>
+<meta name="description" content="Load, filter, sort, and compare a batch of compounds entirely in your browser — powered by chematic's Rust/WASM cheminformatics engine. No data leaves your browser.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="loading-overlay" class="explorer-loading-overlay">
+  <p>Loading chematic (WASM)…</p>
+</div>
+
+<header class="explorer-header">
+  <h1>Local Compound Explorer</h1>
+  <p class="explorer-tagline">Your molecular data stays in your browser.</p>
+  <p class="explorer-links">
+    <a href="../playground/">← chematic Playground</a>
+    <a href="https://github.com/kent-tokyo/chematic">GitHub</a>
+  </p>
+</header>
+
+<main>
+
+  <section id="explorer-privacy" class="explorer-banner" aria-label="Privacy">
+    <ul>
+      <li>Supported analysis (parsing, descriptors, similarity, depiction) runs entirely locally in your browser.</li>
+      <li>Uploaded or pasted files are never sent to a chematic server.</li>
+      <li>Reloading this page clears the current session — nothing is saved automatically.</li>
+      <li>This page makes no external network calls of its own.</li>
+    </ul>
+  </section>
+
+  <section id="explorer-intro" class="explorer-banner">
+    <h2>How to use this page</h2>
+    <ol>
+      <li>Load the sample dataset, paste SMILES, or drop a CSV / SDF / <code>.smi</code> file.</li>
+      <li>Filter, sort, or run a similarity search against a reference structure.</li>
+      <li>Export the current view as CSV.</li>
+    </ol>
+    <p class="explorer-limits">
+      Supported formats: CSV (auto-detects a SMILES/name column), SDF (single or multi-record,
+      capped at 1,024 records or ~1&nbsp;MB, whichever comes first), <code>.smi</code>/newline-separated
+      SMILES, or pasted text. Comfortable up to a few hundred records; a hard display cap of 2,000
+      applies beyond that.
+    </p>
+  </section>
+
+  <section id="explorer-input" aria-label="Load compounds">
+    <div style="display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:.75rem;">
+      <button id="explorer-btn-sample" class="btn">Load sample dataset</button>
+      <button id="explorer-btn-browse" class="btn-outline">Browse for a file…</button>
+      <input type="file" id="explorer-file-input" accept=".csv,.sdf,.mol,.smi,.txt" style="display:none">
+    </div>
+
+    <div id="explorer-dropzone" class="explorer-dropzone">
+      <label for="explorer-paste-textarea">Paste SMILES (one per line) or drop a CSV / SDF / .smi file here</label>
+      <textarea id="explorer-paste-textarea" rows="4" spellcheck="false"
+        placeholder="CCO&#10;c1ccccc1 benzene"></textarea>
+      <button id="explorer-btn-parse-paste" class="btn">Parse pasted text</button>
+    </div>
+
+    <div id="explorer-column-picker" class="explorer-banner hidden">
+      <label for="explorer-column-picker-select">Could not auto-detect a SMILES column. Choose one:</label>
+      <select id="explorer-column-picker-select"></select>
+      <button id="explorer-column-picker-confirm" class="btn">Use this column</button>
+    </div>
+
+    <div id="explorer-error" class="explorer-error hidden" role="alert"></div>
+    <p id="explorer-status" role="status" aria-live="polite"></p>
+    <button id="explorer-cancel" class="btn-outline hidden">Cancel</button>
+  </section>
+
+  <section id="explorer-filters" aria-label="Filters">
+    <h2>Filters</h2>
+    <div class="explorer-filter-grid">
+      <label>Search
+        <input type="text" id="explorer-filter-text" placeholder="name, SMILES, formula…">
+      </label>
+      <label><input type="checkbox" id="explorer-filter-valid-only"> Valid molecules only</label>
+      <label><input type="checkbox" id="explorer-filter-lipinski"> Lipinski pass</label>
+      <label><input type="checkbox" id="explorer-filter-pains"> PAINS pass</label>
+      <label>MW min <input type="number" id="explorer-filter-mw-min"></label>
+      <label>MW max <input type="number" id="explorer-filter-mw-max"></label>
+      <label>LogP min <input type="number" id="explorer-filter-logp-min"></label>
+      <label>LogP max <input type="number" id="explorer-filter-logp-max"></label>
+      <label>TPSA min <input type="number" id="explorer-filter-tpsa-min"></label>
+      <label>TPSA max <input type="number" id="explorer-filter-tpsa-max"></label>
+      <label>QED min <input type="number" id="explorer-filter-qed-min" step="0.01" min="0" max="1"></label>
+      <label id="explorer-filter-similarity-row" style="display:none">Similarity min
+        <input type="number" id="explorer-filter-similarity-min" step="0.01" min="0" max="1">
+      </label>
+    </div>
+    <button id="explorer-btn-reset-filters" class="btn-outline">Reset filters</button>
+  </section>
+
+  <section id="explorer-sort" aria-label="Sort">
+    <label>Sort by
+      <select id="explorer-sort-key">
+        <option value="inputOrder">Input order</option>
+        <option value="name">Name</option>
+        <option value="mw">MW</option>
+        <option value="logP">LogP</option>
+        <option value="tpsa">TPSA</option>
+        <option value="qed">QED</option>
+        <option value="similarity" disabled title="Run a similarity search first">Similarity</option>
+      </select>
+    </label>
+    <label>Direction
+      <select id="explorer-sort-dir">
+        <option value="asc">Ascending</option>
+        <option value="desc">Descending</option>
+      </select>
+    </label>
+  </section>
+
+  <section id="explorer-similarity" aria-label="Similarity search">
+    <h2>Similarity search</h2>
+    <label for="explorer-reference-smiles">Reference SMILES</label>
+    <input type="text" id="explorer-reference-smiles" placeholder="e.g. CC(=O)Oc1ccccc1C(=O)O">
+    <button id="explorer-btn-similarity" class="btn">Search (ECFP4, radius 2, 2048 bits)</button>
+  </section>
+
+  <section id="explorer-results" aria-label="Results">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <span id="explorer-result-count"></span>
+      <button id="explorer-btn-export" class="btn">Export CSV</button>
+    </div>
+    <p id="explorer-empty-filter" class="explorer-banner hidden">No molecules match the current filters.</p>
+    <div class="explorer-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Structure</th><th>Name</th><th>Formula</th><th>MW</th><th>LogP</th>
+            <th>TPSA</th><th>HBD</th><th>HBA</th><th>Rot. bonds</th><th>QED</th>
+            <th>Lipinski</th><th>PAINS</th><th>Similarity</th>
+          </tr>
+        </thead>
+        <tbody id="explorer-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="explorer-detail" class="explorer-detail hidden" aria-label="Molecule detail">
+    <button id="explorer-detail-close" class="btn-outline" style="float:right">Close</button>
+    <h2 id="explorer-detail-name"></h2>
+    <div id="explorer-detail-svg" class="explorer-detail-svg"></div>
+    <p><code id="explorer-detail-smiles"></code></p>
+    <dl id="explorer-detail-descriptors"></dl>
+  </section>
+
+</main>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
