@@ -1,11 +1,12 @@
 site_name: chematic
-site_description: Pure-Rust cheminformatics for Python — SMILES, fingerprints, 190+ descriptors, pKa, ADMET
+site_description: A compact Rust and WebAssembly chemistry engine for interactive tools, local analysis, and serverless applications — plus native Rust and Python bindings.
 site_url: https://kent-tokyo.github.io/chematic/
 repo_url: https://github.com/kent-tokyo/chematic
 repo_name: kent-tokyo/chematic
 
 theme:
   name: material
+  custom_dir: docs/overrides
   palette:
     - scheme: default
       primary: teal
@@ -45,12 +46,18 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
   - admonition
   - pymdownx.details
   - attr_list
 
+extra_css:
+  - stylesheets/homepage.css
+
 nav:
   - Home: index.md
+  - Local Compound Explorer: https://kent-tokyo.github.io/chematic/explorer/
   - Getting Started:
     - Installation: getting_started/installation.md
     - Quick Start: getting_started/quickstart.md

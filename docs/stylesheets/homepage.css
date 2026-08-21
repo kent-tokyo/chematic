@@ -1,0 +1,99 @@
+/* Homepage-only hero/CTA/card styles. Minimal, no JS framework. */
+
+.chm-hero {
+  padding: 2rem 0 1.5rem;
+}
+
+.chm-hero h1 {
+  font-size: 2.1rem;
+  margin-bottom: .5rem;
+}
+
+.chm-hero p.chm-subhead {
+  font-size: 1.05rem;
+  color: var(--md-default-fg-color--light);
+  max-width: 46rem;
+  margin-bottom: 1.25rem;
+}
+
+.chm-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+  margin-bottom: .75rem;
+}
+
+.chm-btn {
+  display: inline-block;
+  padding: .55rem 1.1rem;
+  border-radius: .4rem;
+  font-weight: 600;
+  text-decoration: none !important;
+  border: 1px solid transparent;
+  transition: filter .15s, border-color .15s;
+}
+
+.chm-btn:hover {
+  filter: brightness(1.1);
+}
+
+.chm-btn-primary {
+  background: var(--md-primary-fg-color);
+  color: var(--md-primary-bg-color) !important;
+}
+
+.chm-btn-secondary {
+  background: transparent;
+  color: var(--md-default-fg-color) !important;
+  border-color: var(--md-default-fg-color--lighter);
+}
+
+.chm-links-row {
+  font-size: .9rem;
+}
+
+.chm-links-row a {
+  margin-right: 1rem;
+}
+
+.chm-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.chm-card {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: .5rem;
+  padding: 1rem 1.1rem;
+}
+
+.chm-card h3 {
+  margin-top: 0;
+  margin-bottom: .5rem;
+  font-size: 1.05rem;
+}
+
+.chm-card ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: .88rem;
+}
+
+.chm-card ul li {
+  margin-bottom: .25rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chm-btn {
+    transition: none;
+  }
+}
+
+/* Keyboard focus visibility (theme-independent, works in both light/dark) */
+.chm-btn:focus-visible,
+.chm-card a:focus-visible {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: 2px;
+}

@@ -71,6 +71,8 @@ jobs:
       - name: Merge demo into docs site
         run: |
           cp -r demo/ _site/playground/
+          cp -r demo/explorer/ _site/explorer/
+          cp -r demo/pkg/ _site/pkg/
 
       - uses: actions/configure-pages@v6
 

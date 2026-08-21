@@ -2,15 +2,15 @@
 
 ## Problem
 
-You want to ship a chemistry tool to users who won't install anything — a web app for medicinal chemists, a public screening tool, or an internal dashboard. Server-side chemistry APIs add latency, infrastructure cost, and data-privacy concerns. RDKit.js at ~30 MB is too heavy for a smooth page load.
+You want to ship a chemistry tool to users who won't install anything — a web app for medicinal chemists, a public screening tool, or an internal dashboard. Server-side chemistry APIs add latency, infrastructure cost, and data-privacy concerns. RDKit.js (`@rdkit/rdkit`, a separate community project from RDKit itself) is a heavier download — its `RDKit_minimal.wasm` is 6.91 MB raw.
 
 ## Solution
 
-chematic compiles to WebAssembly at **504 KB gzip** — roughly 60× smaller than RDKit.js. No server required: descriptor calculation, fingerprint generation, and similarity search run entirely in the browser, offline-capable after first load.
+chematic compiles to WebAssembly at **2.94 MB raw / 1.10 MB gzip** (measured 2026-08-21, commit `ef7dc25` — see [`docs/rdkit-comparison.md`](../rdkit-comparison.md) for the full measurement methodology) — roughly 2.3× smaller than RDKit.js on a raw-to-raw basis. No server required: descriptor calculation, fingerprint generation, and similarity search run entirely in the browser, offline-capable after first load.
 
 ## Output / What you get
 
-A React component that renders a 2D structure + property card from a SMILES string, entirely client-side. Load time for the WASM module: ~150 ms on a 4G connection.
+A React component that renders a 2D structure + property card from a SMILES string, entirely client-side.
 
 ## Why browser-first matters
 
@@ -22,13 +22,13 @@ A React component that renders a 2D structure + property card from a SMILES stri
 ## Setup
 
 ```bash
-npm install @kent-tokyo/chematic-wasm
+npm install @kent-tokyo/chematic
 ```
 
 ## SMILES to descriptors in the browser
 
 ```js
-import init, { parse_smiles } from "@kent-tokyo/chematic-wasm";
+import init, { parse_smiles } from "@kent-tokyo/chematic";
 await init();
 
 const mol = parse_smiles("CC(=O)Oc1ccccc1C(=O)O");
@@ -36,25 +36,29 @@ console.log(mol.molecular_weight());   // 180.16
 console.log(mol.tpsa());               // 63.6
 console.log(mol.lipinski_passes());    // true
 console.log(mol.qed());               // 0.55
+mol.free();   // release the WASM-side handle once its data has been extracted
 ```
 
 ## Similarity search in the browser
 
 ```js
-import init, { SimilarityIndex } from "@kent-tokyo/chematic-wasm";
+import init, { MhfpLshHandle } from "@kent-tokyo/chematic";
 await init();
 
-const library = ["CCO", "c1ccccc1", "CC(=O)O", "CCCCCC", "c1cccnc1"];
-const idx = SimilarityIndex.from_smiles(library);
-const hits = idx.search("CC(=O)Oc1ccccc1C(=O)O", 0.3, 5);
-// [{index: 2, score: 0.38}, ...]
+// num_hashes must be a multiple of 16
+const idx = new MhfpLshHandle(128);
+for (const smiles of ["CCO", "c1ccccc1", "CC(=O)O", "CCCCCC", "c1cccnc1"]) {
+  idx.add_smiles(smiles);
+}
+const hits = JSON.parse(idx.query_json("CC(=O)Oc1ccccc1C(=O)O", 0.3));
+// [{index: 2, similarity: 0.38}, ...]
 ```
 
 ## React component example
 
 ```jsx
 import { useState, useEffect } from "react";
-import init, { parse_smiles } from "@kent-tokyo/chematic-wasm";
+import init, { parse_smiles } from "@kent-tokyo/chematic";
 
 let wasmReady = false;
 
@@ -68,15 +72,17 @@ export function MoleculeCard({ smiles }) {
   useEffect(() => {
     (async () => {
       if (!wasmReady) { await init(); wasmReady = true; }
-      const mol = parse_smiles(smiles);
-      if (!mol) return;
+      let mol;
+      try { mol = parse_smiles(smiles); }   // throws a string on invalid SMILES, never returns null
+      catch (e) { return; }
       setInfo({
         mw:     mol.molecular_weight().toFixed(2),
-        logp:   mol.logp().toFixed(2),
+        logp:   mol.logp_crippen().toFixed(2),
         tpsa:   mol.tpsa().toFixed(1),
         passes: mol.lipinski_passes(),
-        svgUrl: svgToDataUrl(mol.svg()),
+        svgUrl: svgToDataUrl(mol.depict_svg()),
       });
+      mol.free();   // free the WASM-side handle once its data has been extracted
     })();
   }, [smiles]);
 
@@ -99,20 +105,22 @@ export function MoleculeCard({ smiles }) {
 ## SDF upload and analysis in the browser
 
 ```js
-import init, { sdf_to_smiles_json, parse_smiles } from "@kent-tokyo/chematic-wasm";
+import init, { sdf_to_records_json, parse_smiles } from "@kent-tokyo/chematic";
 await init();
 
 document.getElementById("file-input").addEventListener("change", async (e) => {
   const text = await e.target.files[0].text();
-  const parsed = JSON.parse(sdf_to_smiles_json(text));
+  // sdf_to_records_json returns each record's name + canonical SMILES + SD properties
+  // (sdf_to_smiles_json, by contrast, returns a bare array of SMILES strings with no names)
+  const records = JSON.parse(sdf_to_records_json(text));
 
-  const results = parsed.map(({ smiles, name }) => {
-    const mol = parse_smiles(smiles);
-    return {
-      name,
-      mw:     mol?.molecular_weight(),
-      passes: mol?.lipinski_passes(),
-    };
+  const results = records.map((record) => {
+    // a record that failed to parse is the bare JSON value `null`, not an object
+    if (!record) return { name: null, mw: null, passes: null };
+    const mol = parse_smiles(record.smiles);
+    const result = { name: record.name, mw: mol.molecular_weight(), passes: mol.lipinski_passes() };
+    mol.free();
+    return result;
   });
 
   renderResultsTable(results);
@@ -123,17 +131,21 @@ document.getElementById("file-input").addEventListener("change", async (e) => {
 
 | Task | chematic WASM | RDKit.js |
 |------|--------------|----------|
-| Bundle size (gzip) | 504 KB | ~30 MB |
-| Parse SMILES | ~0.5 us | ~2 us |
-| ECFP4 fingerprint | ~2 us | ~6 us |
-| Tanimoto (pair) | ~0.1 us | ~0.3 us |
+| Bundle size | 2.94 MB raw / 1.10 MB gzip | 6.91 MB raw (`RDKit_minimal.wasm`; gzip not independently measured) |
 
-All benchmarks run in Chrome 124 on M2 MacBook Pro.
+Bundle sizes measured 2026-08-21 at commit `ef7dc25` (see [`docs/rdkit-comparison.md`](../rdkit-comparison.md)
+for the full methodology). Per-operation, in-browser timings (SMILES parse, ECFP4, Tanimoto)
+previously listed here were never independently reconfirmed and have been removed rather than
+repeated as fact — see [`benchmarks/2026-07-17.md`](../../benchmarks/2026-07-17.md)'s own notes,
+which flag this exact gap. The `python`/Rust-native throughput figures elsewhere in this repo
+(e.g. [`docs/benchmark.md`](../benchmark.md)) are measured and reproducible, but do not
+transfer directly to WASM-in-browser numbers, which have different call overhead.
 
 ## Related APIs
 
-- `parse_smiles(smiles)` — returns a `Mol` with all descriptor methods
-- `SimilarityIndex.from_smiles(library)` / `.search(query, threshold, k)` — LSH nearest-neighbour
-- `sdf_to_smiles_json(text)` — parse SDF file contents to `[{smiles, name}]`
-- `mol.svg()` / `mol.svg_highlighted(atoms, color)` — 2D structure rendering
+- `parse_smiles(smiles)` — returns a `MolHandle` with all descriptor methods (throws a string on invalid input; call `.free()` once done with it)
+- `new MhfpLshHandle(numHashes)` / `.add_smiles(smiles)` / `.query_json(smiles, threshold)` — MinHash LSH approximate nearest-neighbour index
+- `sdf_to_records_json(text)` — parse SDF file contents to an array of `{smiles, name, properties, stereo_diagnostics}` (or `null` for a record that failed to parse)
+- `mol.depict_svg()` / `depict_svg_grid_highlighted(smilesBlock, cols, matchSmarts)` — 2D structure rendering
 - [Live demo](https://kent-tokyo.github.io/chematic/playground/) — try WASM in the browser now
+- [Local Compound Explorer](https://kent-tokyo.github.io/chematic/explorer/) — load, filter, and compare a batch of compounds entirely in the browser

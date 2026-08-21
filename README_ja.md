@@ -18,14 +18,22 @@ Pure Rust · C/C++ ゼロ · Python · WebAssembly · [ライブデモ](https://
 
 | | chematic | RDKit (Python) | RDKit.js (WASM) |
 |---|---|---|---|
-| **導入方法** | `pip install chematic` | conda / cmake が必要 | Python バインディングなし |
-| **ブラウザ向けバンドル** | **719 KB** | 提供なし | ~30 MB（~42× 大きい） |
+| **導入方法** | `pip install chematic` | `pip install rdkit`（公式prebuiltホイール）または conda | `npm install @rdkit/rdkit`、Python バインディングなし |
+| **ブラウザ向けバンドル** | **2.94 MB raw / 1.10 MB gzip** | 該当なし（Python/C++ライブラリ） | 6.91 MB raw* |
 | **バッチ FP 速度** | **~78 µs/mol**（2–3× 高速） | ~160–235 µs/mol | — |
 | **メモリ安全性** | コンパイラが保証（Rust） | C++ | C++ |
 | **ソースビルド** | `cargo build` のみ | cmake + clang + Boost | Emscripten SDK |
 
+\* RDKit.js の gzip転送時サイズは未計測のため、rawサイズ同士で比較している。RDKit.js は
+現在メンテナ移行中(詳細は同リポジトリを参照)。
+
 すべての数値は再現可能です — [ベンチマーク詳細](https://kent-tokyo.github.io/chematic/benchmark/)を参照。  
-WASM サイズ: chematic **719 KB** · RDKit.js ~30 MB · Indigo WASM ~40 MB
+WASM サイズ(raw、2026-08-21計測、`wasm-pack build --target web --release` + `wasm-opt -O3`
+のクリーンビルド、commit `ef7dc25`): chematic **2.94 MB**(**1.10 MB gzip**) · RDKit.js **6.91 MB**
+(`@rdkit/rdkit@2025.3.4-1.0.0`の`RDKit_minimal.wasm`、unpkg.com で確認) · Indigo(Ketcher向けビルド)
+**11.24 MB**(`indigo-ketcher@1.45.1`のメイン`.wasm`、jsDelivr で確認) — chematic の raw WASM
+バイナリは現在、RDKit.js よりおよそ2.3倍、Indigo の Ketcher向けビルドよりおよそ3.8倍小さい
+(raw同士の比較)。
 
 **機能の成熟度（早見表）：**
 
@@ -43,9 +51,10 @@ WASM サイズ: chematic **719 KB** · RDKit.js ~30 MB · Indigo WASM ~40 MB
 
 **chematic が適している場合：**
 
-- ブラウザで化学計算を動かしたい（WASM、719 KB、サーバー不要）
+- ブラウザで化学計算を動かしたい（WASM、1.10 MB gzip、サーバー不要）
 - C++ ツールチェーンなしの Pure Rust スタックが必要
-- `pip install rdkit` が困難な環境（Cloudflare Workers、Lambda、組み込み）にデプロイする
+- RDKit の導入が困難・非対応な環境（Cloudflare Workers、Lambda、組み込み）にデプロイする
+  (RDKit 自体も公式`pip install rdkit`ホイールを提供しているが、通常のCPython環境を前提とする)
 - AI エージェントを構築し、ネイティブな MCP ツール統合が必要
 - バッチ処理で高スループットが必要（ECFP4: RDKit の 2〜3 倍高速、Rayon 並列）
 - `pip install chematic` がどこでも動くシンプルさを求めている
@@ -122,8 +131,8 @@ chematic.doctor()
 # Descriptor accuracy (benchmark 2026-06, v0.4.22 vs RDKit 2026.03.3 --
 # descriptor calculation paths unchanged through v0.8.0, not re-measured since):
 #   MW / HBA / HBD / ARC  100%   (4,999-mol ChEMBL subset)
-#   TPSA                  98.1%
-#   LogP (Crippen)        ~99%
+#   TPSA                  100%
+#   LogP (Crippen)        100%*  (max Δ = 1.1×10⁻¹³)
 # ...
 ```
 
@@ -171,7 +180,7 @@ RDKit Python API の 2〜3× 高速（全 CPU コアで Rayon 並列化）。GIL
 
 ### 安全
 
-chematic 自身の約 149,000 行の Rust コード(tokei計測、全18クレート、2026-08-02時点)には
+chematic 自身の約 180,700 行の Rust コード(tokei計測、全20クレート、2026-08-21時点)には
 `unsafe` ブロックが1ファイルの外では**ゼロ**個 — `unsafe {}` 9個 + `unsafe extern "C"` 宣言1個のみで、
 すべて opt-in の `native-inchi` FFI 層に限定されています(下記参照)。
 C++ のヒープ破壊なし。不正な SMILES 入力によるセグメンテーション違反なし。
@@ -188,7 +197,8 @@ C++ のヒープ破壊なし。不正な SMILES 入力によるセグメンテ�
 ### どこでも動く
 
 Pure Rust は Emscripten・`cmake`・`clang` なしで `wasm32-unknown-unknown` にネイティブでコンパイルされます。
-npm パッケージ `@kent-tokyo/chematic` は **719 KB gzip** — RDKit.js の約 42 分の 1。
+npm パッケージ `@kent-tokyo/chematic` は **1.10 MB gzip**(raw 2.94 MB)— RDKit.js の
+`RDKit_minimal.wasm`(raw 6.91 MB)と raw同士で比較しておよそ2.3分の1。
 1 つのコードベースが Linux・macOS・Windows・あらゆるブラウザで動作します。
 
 ---
@@ -198,7 +208,7 @@ npm パッケージ `@kent-tokyo/chematic` は **719 KB gzip** — RDKit.js の�
 | 観点                                        | **chematic**                               | RDKit (rdkit-sys)  | OpenBabel FFI | RDKit.js (WASM)  |
 |---------------------------------------------|--------------------------------------------|--------------------|---------------|------------------|
 | **C/C++ 依存**                              | **ゼロ（デフォルト）**†                    | 大規模 C++         | 大規模 C++    | C++（Emscripten）|
-| **WASM バイナリサイズ**                     | **〜550 KB**                               | N/A（WASM 非対応） | N/A           | 〜30 MB          |
+| **WASM バイナリサイズ**                     | **raw 2.94 MB(gzip 1.10 MB)**              | N/A（WASM 非対応） | N/A           | raw 6.91 MB      |
 | **ビルド要件**                              | `cargo build` のみ                         | cmake + clang      | cmake + clang | Emscripten SDK   |
 | **Python バインディング**                   | **あり** (`pip install chematic`, PyO3)    | あり（rdkit-sys）  | あり          | なし             |
 | unsafe Rust                                 | **自クレートはなし**‡                      | 大規模             | 大規模        | N/A              |
@@ -225,7 +235,7 @@ npm パッケージ `@kent-tokyo/chematic` は **719 KB gzip** — RDKit.js の�
 
 † デフォルトビルドのみ。`native-inchi` feature は opt-in で C コンパイラが必要（IUPAC InChI C ライブラリ v1.07.5 の vendoring）。これは C/C++ FFI 固有の話 — 下記の `depict` feature は純 Rust の描画クレートを引き込むため、unsafe フリーではなくても C コンパイラ依存は追加しません（‡参照）。
 
-‡ chematic 自身の約 149,000 行の Rust コード(tokei計測): `native-inchi` の9個の FFI ブロックを除き unsafe フリー（上記「安全」参照）— chematic 自身が書いたコードについての実測済みの主張であり、コンパイラによるチェックが一切効かない RDKit/OpenBabel の C++ FFI unsafe とは、たとえ個数が同程度でも種類が根本的に異なります。**依存ツリー全体については成り立ちません**: opt-in の `depict` feature（SVG/PDF/EPS 描画）は resvg/usvg/rustybuzz/tiny-skia/zune-jpeg を引き込み、これらは純 Rust ですが unsafe フリーではありません — 実測（`unsafe fn`/`impl`/`trait`/`{` の出現数）: tiny-skia 151、zune-jpeg 79、rustybuzz 14、image 8、fontdb 3、tiny-skia-path 3(この範囲だけで合計 258)。`chematic-py`（`pip install chematic`）と npm パッケージはどちらも `chematic-depict` に直接依存するため、これは実際の2つのインストール経路の両方に当てはまります。
+‡ chematic 自身の約 180,700 行の Rust コード(tokei計測、2026-08-21): `native-inchi` の9個の FFI ブロックを除き unsafe フリー（上記「安全」参照）— chematic 自身が書いたコードについての実測済みの主張であり、コンパイラによるチェックが一切効かない RDKit/OpenBabel の C++ FFI unsafe とは、たとえ個数が同程度でも種類が根本的に異なります。**依存ツリー全体については成り立ちません**: opt-in の `depict` feature（SVG/PDF/EPS 描画）は resvg/usvg/rustybuzz/tiny-skia/zune-jpeg を引き込み、これらは純 Rust ですが unsafe フリーではありません — 実測（`unsafe fn`/`impl`/`trait`/`{` の出現数）: tiny-skia 151、zune-jpeg 79、rustybuzz 14、image 8、fontdb 3、tiny-skia-path 3(この範囲だけで合計 258)。`chematic-py`（`pip install chematic`）と npm パッケージはどちらも `chematic-depict` に直接依存するため、これは実際の2つのインストール経路の両方に当てはまります。
 
 
 </details>
@@ -233,7 +243,7 @@ npm パッケージ `@kent-tokyo/chematic` は **719 KB gzip** — RDKit.js の�
 
 ## JavaScript / TypeScript（WebAssembly）
 
-**719 KB gzip — RDKit.js の約 42 分の 1。** Emscripten・cmake 不要。ブラウザ・Node.js どちらでも動作。
+**1.10 MB gzip — RDKit.js の raw WASM と比べておよそ2.3分の1。** Emscripten・cmake 不要。ブラウザ・Node.js どちらでも動作。
 
 ```sh
 npm install @kent-tokyo/chematic
@@ -258,7 +268,7 @@ const isomers = JSON.parse(enumerate_stereo_isomers_json(parse_smiles('C(F)(Cl)B
 const picks = JSON.parse(maxmin_picks_ecfp4_json('["CC","c1ccccc1","CCO","CCCC"]', 2));
 ```
 
-130+ のエクスポート関数が記述子・フィンガープリント・3D・反応・多様性選択・SDF を網羅。
+218+ のエクスポート関数(+ `MolHandle`/`DepictOptions` のクラスメソッド、2026-08-21計測)が記述子・フィンガープリント・3D・反応・多様性選択・SDF を網羅。
 全エクスポートは [WASM API リファレンス](https://kent-tokyo.github.io/chematic/) を参照。
 ---
 
@@ -266,27 +276,27 @@ const picks = JSON.parse(maxmin_picks_ecfp4_json('["CC","c1ccccc1","CCO","CCCC"]
 
 | クレート               | 説明                                                                                                                                      | テスト数 |
 |------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|---------|
-| `chematic-core`        | Atom, Bond, Molecule, Element, ケクレ化（依存ゼロ）；ミュータブル API・`fragments`・`validate_valence`・`formula_with_isotopes`・`StereoGroup`/`StereoGroupKind` | 71      |
-| `chematic-smiles`      | OpenSMILES パーサー、ライター、正規 SMILES、**CXSMILES メタデータ対応**                                                                  | 109      |
-| `chematic-perception`  | SSSR、Hückel 芳香族性 + 反芳香族性（4n+2 則）、`apply_aromaticity`・`aromatize`・`kekulize_inplace`・`assign_stereo_from_2d`・`assign_ez_from_2d`・`cip_ez_descriptor` | 101      |
-| `chematic-mol`         | MOL/SDF V2000+V3000（R/W、2D 座標付き）、CML（R/W）、CDXML（R）；`SdfRecord`（coords+props）、MDL RXN V2000 読み書き；V3000 ステレオグループ COLLECTION R/W；**2Dウェッジ/ハッシュのtetrahedral parity + E/Z二重結合方向を読み込み時に自動認識**（`read_mol_with_diagnostics`/`read_mol_v3000_with_diagnostics`、型付きopt-in診断）；**PDBx/mmCIF**（R/W、chain/altloc/model/occupancy/B-factor保持、Open Babel本体はread-only）；**PQR**（R/W）；**QCSchema JSON**（`Molecule`/`AtomicInput`/`AtomicResult`、MolSSIスキーマ、Bohr↔Å変換）；**ORCA**（input R/W・未知blockを損失なく保持、output R：final geometry/trajectory/energy/frequencies/termination/convergenceを型付きで取得）；新設の共有`VolumetricGrid`型 + **Gaussian Cube**（R/W、大規模グリッド向けstreaming-*input* `CubeFileReader` — パース後のvoxel配列自体は引き続き全てメモリ上、非直交axes対応、Bohr/Ångström単位を明示タグ化）+ **OpenDX/APBS scalar field**（R/W）— single-dataset限定、multi-dataset Cubeは黙って切り詰めず型付きでreject | 130+     |
-| `chematic-depict`      | 2D SVG（CPK カラー・ハイライト・グリッド）、`detect_crossings`・`render_svg_with_metadata`・反応 SVG；Y座標系ドキュメント整備  | 64      |
-| `chematic-chem`        | 190+ 記述子値（71 関数）、タウトマー、スキャフォルド、BRICS、QED、標準化；**pKa 予測** (15 SMARTS ルール)；**ADMET プロファイル** (BBB/Caco-2/hERG/CYP3A4)；**HBA 99.98% RDKit 一致率**（4,999 分子 ChEMBL ベンチマーク）；**TPSA ±0.1 Å² 98.1% / LogP ±0.01 96.5% / HBD 100%** RDKit 一致 | 662     |
-| `chematic-fp`          | ECFP2/4/6、FCFP4/6、MACCS、TopoPF、AtomPair、Torsion、Layered、Pattern、Pharmacophore、Reaction、**MAP4** (Minervini 2020) — Tanimoto/Dice | 185      |
-| `chematic-ff`          | **MMFF94 全 7 エネルギー項** (Halgren 1996)：OOP (117件) + Stretch-Bend (282件)；steepest descent + L-BFGS；DREIDING | 98      |
-| `chematic-smarts`      | SMARTS、VF2、MCS；**SmartsCache** (LRU 5–20×)；**named_pattern()** (20 パターン)；**SMARTS 内アトムマップ `:N`** (`[O;D1;H0:3]` 形式 — メタデータとして保存、マッチング条件には不使用) | 142     |
-| `chematic-3d`          | 3D 座標生成、ETKDG KB (40 パターン、adaptive noise)、力場最小化、形状記述子、ConformerEnsemble、PDB/XYZ | 265     |
-| `chematic-rxn`         | 反応 SMILES/SMIRKS、`run_reactants`/`run_reactants_strict`；**`retro_disconnect()`** — 60 retro-SMIRKS テンプレート (AmideBond/Ester/Ether/CNBond/CCBond/CSBond) + SA Score ランク付き | 137      |
+| `chematic-core`        | Atom, Bond, Molecule, Element, ケクレ化（依存ゼロ）；ミュータブル API・`fragments`・`validate_valence`・`formula_with_isotopes`・`StereoGroup`/`StereoGroupKind` | 132      |
+| `chematic-smiles`      | OpenSMILES パーサー、ライター、正規 SMILES、**CXSMILES メタデータ対応**                                                                  | 202      |
+| `chematic-perception`  | SSSR、Hückel 芳香族性 + 反芳香族性（4n+2 則）、`apply_aromaticity`・`aromatize`・`kekulize_inplace`・`assign_stereo_from_2d`・`assign_ez_from_2d`・`cip_ez_descriptor` | 194      |
+| `chematic-mol`         | MOL/SDF V2000+V3000（R/W、2D 座標付き）、CML（R/W）、CDXML（R）；`SdfRecord`（coords+props）、MDL RXN V2000 読み書き；V3000 ステレオグループ COLLECTION R/W；**2Dウェッジ/ハッシュのtetrahedral parity + E/Z二重結合方向を読み込み時に自動認識**（`read_mol_with_diagnostics`/`read_mol_v3000_with_diagnostics`、型付きopt-in診断）；**PDBx/mmCIF**（R/W、chain/altloc/model/occupancy/B-factor保持、Open Babel本体はread-only）；**PQR**（R/W）；**QCSchema JSON**（`Molecule`/`AtomicInput`/`AtomicResult`、MolSSIスキーマ、Bohr↔Å変換）；**ORCA**（input R/W・未知blockを損失なく保持、output R：final geometry/trajectory/energy/frequencies/termination/convergenceを型付きで取得）；新設の共有`VolumetricGrid`型 + **Gaussian Cube**（R/W、大規模グリッド向けstreaming-*input* `CubeFileReader` — パース後のvoxel配列自体は引き続き全てメモリ上、非直交axes対応、Bohr/Ångström単位を明示タグ化）+ **OpenDX/APBS scalar field**（R/W）— single-dataset限定、multi-dataset Cubeは黙って切り詰めず型付きでreject | 476     |
+| `chematic-depict`      | 2D SVG（CPK カラー・ハイライト・グリッド）、`detect_crossings`・`render_svg_with_metadata`・反応 SVG；Y座標系ドキュメント整備  | 75      |
+| `chematic-chem`        | 190+ 記述子値（71 関数）、タウトマー、スキャフォルド、BRICS、QED、標準化；**pKa 予測** (15 SMARTS ルール)；**ADMET プロファイル** (BBB/Caco-2/hERG/CYP3A4)；**HBA 100% RDKit 一致率**（4,999 分子 ChEMBL ベンチマーク）；**TPSA ±0.1 Å² 100% / LogP 100%\* / HBD 100%** RDKit 一致 | 724     |
+| `chematic-fp`          | ECFP2/4/6、FCFP4/6、MACCS、TopoPF、AtomPair、Torsion、Layered、Pattern、Pharmacophore、Reaction、**MAP4** (Minervini 2020) — Tanimoto/Dice | 266      |
+| `chematic-ff`          | **MMFF94 全 7 エネルギー項** (Halgren 1996)：OOP (117件) + Stretch-Bend (282件)；steepest descent + L-BFGS；DREIDING | 198      |
+| `chematic-smarts`      | SMARTS、VF2、MCS；**SmartsCache** (LRU 5–20×)；**named_pattern()** (20 パターン)；**SMARTS 内アトムマップ `:N`** (`[O;D1;H0:3]` 形式 — メタデータとして保存、マッチング条件には不使用) | 169     |
+| `chematic-3d`          | 3D 座標生成、ETKDG KB (40 パターン、adaptive noise)、力場最小化、形状記述子、ConformerEnsemble、PDB/XYZ | 540     |
+| `chematic-rxn`         | 反応 SMILES/SMIRKS、`run_reactants`/`run_reactants_strict`；**`retro_disconnect()`** — 60 retro-SMIRKS テンプレート (AmideBond/Ester/Ether/CNBond/CCBond/CSBond) + SA Score ランク付き | 180      |
 | `chematic-inchi`       | InChI/InChIKey：純 Rust 近似（WASM 対応）**+ `native-inchi` feature で IUPAC 標準準拠**（C ライブラリ 1.07.5 vendored、ビット完全一致）；**parse_inchi** 読み込み；**検証付きcanonical SMILES重複排除**（`dedup`モジュール、legacy CIPで未解決の指定済みtetrahedral stereoに対してfail-closed）；**accurate-CIP dedup preflight**（issue #161、legacy CIPで未解決のstereocentreに対して検証capabilityを回復）；**indexed graph relation API**（`compare_indexed_graph_relation`、直交する`GraphStrictness`/`AtomMapPolicy`軸） | 108 (+16*)   |
 | `chematic-cip`         | opt-inの高精度CIPエンジン（`assign_cip_accurate_experimental`、階層的digraph、Rules 1a/1b/2/4b/5、RDKit互換MANCUDE分数原子番号）— デフォルトの`assign_cip()`/`CipMode::LegacyFast`は変更なし | —       |
-| `chematic-wasm`        | **130+ WASM エクスポート** — npm: `@kent-tokyo/chematic`（`0.7.0`公開済み、crates.io/PyPIと同期）；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 211     |
-| `chematic-iupac`       | ローカル IUPAC 命名（Pure Rust・オフライン）— **25+ 化合物クラス**：アルカン、シクロアルカン、アルコール、アミン、ハロアルカン、ケトン、酸、エステル、アミド、**ピペリジン、モルホリン、ピペラジン、ナフタレン、スルフィド** | 47      |
+| `chematic-wasm`        | **218+ WASM エクスポート**（+クラスメソッド、2026-08-21計測） — npm: `@kent-tokyo/chematic`（crates.io/PyPIと同期して公開）；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 276     |
+| `chematic-iupac`       | ローカル IUPAC 命名（Pure Rust・オフライン）— **25+ 化合物クラス**：アルカン、シクロアルカン、アルコール、アミン、ハロアルカン、ケトン、酸、エステル、アミド、**ピペリジン、モルホリン、ピペラジン、ナフタレン、スルフィド** | 56      |
 | `chematic-mcp`         | **MCP (Model Context Protocol) サーバー** — AI エージェント統合；**20 ツール**：parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, name_to_smiles, retrosynthesis, smiles_to_moljson, moljson_to_smiles, representation_router, molecule_context_pack；dual-eraプロトコル（レガシー`2024-11-05` + モダン`2026-07-28`ステートレス方言）、全20ツールに`structuredContent`/`outputSchema` | 82      |
 | `chematic-py`          | PyO3 Python バインディング（`pip install chematic`）；**`PeriodicStructure.from_cif()`/`.from_poscar()`, `Lattice`, `Site`**（周期／結晶構造 — `chematic-crystal`の最初のホスト言語バインディング）；**`from_cif(text, expand_symmetry=True)`** はデフォルトでCIF自身が明示するsymmetry operationsを展開してfull unit cellを生成（`expand_symmetry=False`で非対称単位のみ — space-groupデータベースは無く、名前/番号からのoperation生成も無し） | 300+    |
 | `chematic`             | フィーチャーフラグ付きアンブレラクレート（統合クレート）                                                                                                  | 1       |
 
 ```
-cargo test --workspace --lib --quiet                                               # 3,235 ライブラリテスト、全パス（2026-08-02 時点）
+cargo test --workspace --lib --quiet                                               # 3,912 ライブラリテスト、全パス（2026-08-21 時点）
 cargo test -p chematic-inchi --features native-inchi --test standard_inchi         # +16 IUPAC 標準 InChI 統合テスト
 ```
 
@@ -493,7 +503,7 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 - **カノニカルSMILESの構造的破損 — 修正済み**: 修正前は `canonical_smiles(parse(x))` が `x` の入力走査順によっては(単に綴りが異なるだけの等価な文字列ではなく)別の立体異性体を静かに出力することがありました。5,000分子ChEMBLサブセット・worst-of-10走査・RDKit検証済みの構造正しさで測定: **4.28%（214/5000）** の分子で、少なくとも1つの変異体が誤った分子として読み戻されていました。根本原因は独立した2件のパーサーバグで(当初疑われていた「共役二重結合のマーカーは結合をまたいで幾何学的に連動している」という診断は誤りであったことが判明— 下記参照)、いずれも実在する分子と最小構成の回帰テストで確認済みです: (1) 環closure(`/`/`\`) の方向マーカーを閉環側の出現位置で読み取る際、開環→閉環方向へのフリップをせず生の値のまま保存しており、共役E/Z鎖の連結結合がたまたま環closureを経由する場合に破損していた。(2) 自身の分岐の中で環closureの相手が閉じるステレオ中心は、再利用可能な環番号ではなく出現ごとに一意なIDで隣接原子順序の解決を行うべきところ、番号ベースで解決していたため、SMILES文字列の後方で同じ番号が無関係な環に再利用された際に、ステレオ中心の隣接原子順序が静かに乗っ取られ破損していました。**両修正後: ChEMBLコーパスで構造正しさは100%（0/5000）** — これは、rankingという第3の無関係な修正の有無を含む独立した3通りの再構成手順で3重に確認済みです。両方の根本原因が環closure固有のものである一方、レチノイド・カロテノイド・プロスタグランジン・ロイコトリエン・ポリエン系マクロライドは長い共役系を**非環式**の鎖として持っており、ChEMBLのランダムサンプリングにはほぼ含まれないため、これら5クラスの実在化合物33種からなる専用コーパス(トレチノイン、β-カロテン、リコペン、アンフォテリシンB、ロイコトリエンB4など、`scripts/polyene_corpus.csv`)でも独立に再検証しました: **worst-of-30で0/33（0.00%）**。同一コーパスの未修正コードでは12/33（36.36%）の破損を陽性対照として確認済みです(12件全てが環closureを多く含む構造で、完全非環式のリコペンを含め純粋な非環式の例は未修正コードでも一度も破損しませんでした)。これにより当初の「共役系全般が原因」という診断が誤りであったことが直接確定し、残存する破損クラスは見つかっていません。骨格限定・四面体限定の自己**安定性**もいずれも0%に到達(旧: 0.16%、4.36%)。全ステレオを含めた生の自己安定性は**86.02%→90.28%**（不安定率13.98%→9.72%）に改善 — 残差は全て上記の非破損な方向正規化ギャップによるもので、破損の残存ではありません。往復不変性（`canonical(parse(canonical(m))) == canonical(m)`）はわずかに改善（**98.26%→98.32%**）— この指標はそもそも破損クラスを直接測定していなかったためです。
 - **環知覚（SSSR）は非決定的・非最小だったが修正済み**: 旧 `find_sssr` は単一の全域木から非木辺ごとに基本閉路を1つずつ生成していたため、木の形によっては最小でない環（例: ナフタレン `c1ccc2ccccc2c1` が決定的に `[6,10]` を返す。正しくは `[6,6]`）を返していました。現在の `find_sssr` は Horton アルゴリズム（全頂点×全辺の最短路木から候補閉路を生成、O(V·E) 候補、決定性のためのカノニカルランクによるタイブレーク）を用いており、真に最小重み・決定的な基底を返します。5,000分子ChEMBLサブセット・worst-of-10走査で測定: 自己安定性 **100%**（旧: 50.6%）、単一パースでのRDKitとの環サイズ一致率 **98.9%**（旧: 72.4%）— 残る約1.1%の差はRDKit自身の `GetSymmSSSR` が対称縮合環系（例: キュバン、μ=5に対しRDKitは6環を返す）でトポロジー的最小数より多い環を正当に返すことによるもので、chematic側のバグではありません（完全な対称化＝Vismara relevant cyclesは将来課題）。下流への効果（同コーパス）: 環サイズSMARTS `[r5]`/`[r6]` **0%不安定**（旧: 29〜55%）、`NumAromaticRings` **0%**（旧: 約4%）、`RingCount`/MW/TPSA/HBA/HBD/LogP/MRは元々0%のまま。旧SSSRのバグが偶然、別の未解決な芳香族性バグを覆い隠していた2件については下記の芳香族性モデルの項を参照してください。詳細: `scripts/ringinfo_parity.py`。
 - **Murckoスキャフォールド: 環トポロジーと正規化文字列出力はいずれも完全に安定**: 以前報告した「100%不安定」自体が測定ハーネスのバグでした（`Mol` オブジェクトをPythonの同一性で比較しており、実際の結果に関わらず常に「不安定」と判定していた）。このスクリプトバグは修正済みです（`scripts/ring_collateral_damage.py`）。上記のカノニカルSMILES破損修正後に5,000分子・worst-of-10で再測定した結果、正規化後（`apply_aromaticity().canonical_smiles_mode("nostereo")`）の自己安定性は**100%（0/5000が不安定）**に到達しました（旧: 0.8%残差）— この残差が上記と同じカノニカルSMILESの構造的破損であったことが確認され、今回で完全に解消しました。正規化なしの生の同位体的 `scaffold().smiles` 文字列比較は**79.30%**安定（不安定率20.70%、旧: 約45%。上記のE/Z部分正規化修正による変化はほぼなし — スキャフォールドはその修正が効く側鎖モチーフの大半を除去してしまうため）— 残りはMurcko固有の問題ではなく、上記の部分的に未解決な `/`/`\` 方向正規化ギャップ（別問題）によるものです。`scaffold()` は正しい環系を確実に抽出します。走査順が異なる入力間で文字列として比較したい場合は、生の `.smiles` ではなく `mol.apply_aromaticity().canonical_smiles_mode("nostereo")` を使ってください。
-- **芳香族性モデル**: Hückel 4n+2 則を各 SSSR 環に独立適用（RDKit は縮合環電子非局在化モデルを使用）。N-ヘテロ環で差異あり。4,999 分子 ChEMBL コーパスの現状: HBA/HBD/芳香環数 **100%**、TPSA **98.1%**（±0.1 Å²）。Kekulized入力でのworst-of-10芳香族性パリティ: **96.3%**（`scripts/aromaticity_atom_parity.py`）— 上記SSSR修正後も数値はビット単位で不変（SSSRのバグと芳香族性のギャップが独立していたことを確認）。芳香族性ギャップの根本原因は別途 `aromatic_context` バイパス機構にあり、未修正です。SSSR修正により2分子（アズレン、プリン）が明確に退行したことが判明しています — 旧来の壊れたSSSRが、これら非交互環系・架橋頭部を多く含む構造に対して `aromatic_context` のバグを偶然覆い隠していたためです。この2分子は5,000分子の測定コーパスに**そもそも含まれていません**（直接検索で確認済み — ChEMBL由来の薬様コーパスには裸のアズレン・プリンは含まれない）。したがって96.3%という数値が不変なのはこの2分子を「見ていない」からであり、「影響がゼロ」だからではありません。両分子は根本原因をコード内に記載した上で `chematic-perception` のテストスイートに `#[ignore]` 付き既知回帰として記録済みで、`aromatic_context` 修正を待っています。
+- **芳香族性モデル**: Hückel 4n+2 則を各 SSSR 環に独立適用（RDKit は縮合環電子非局在化モデルを使用）。N-ヘテロ環で差異あり。4,999 分子 ChEMBL コーパスの現状: HBA/HBD/芳香環数 **100%**、TPSA **100%**（±0.1 Å²）。Kekulized入力でのworst-of-10芳香族性パリティ: **96.3%**（`scripts/aromaticity_atom_parity.py`）— 上記SSSR修正後も数値はビット単位で不変（SSSRのバグと芳香族性のギャップが独立していたことを確認）。芳香族性ギャップの根本原因は別途 `aromatic_context` バイパス機構にあり、未修正です。SSSR修正により2分子（アズレン、プリン）が明確に退行したことが判明しています — 旧来の壊れたSSSRが、これら非交互環系・架橋頭部を多く含む構造に対して `aromatic_context` のバグを偶然覆い隠していたためです。この2分子は5,000分子の測定コーパスに**そもそも含まれていません**（直接検索で確認済み — ChEMBL由来の薬様コーパスには裸のアズレン・プリンは含まれない）。したがって96.3%という数値が不変なのはこの2分子を「見ていない」からであり、「影響がゼロ」だからではありません。両分子は根本原因をコード内に記載した上で `chematic-perception` のテストスイートに `#[ignore]` 付き既知回帰として記録済みで、`aromatic_context` 修正を待っています。
 - **TPSA 残差**: 1.9% はアジド基・マクロライドラクトン・ホスファゼン等の特殊化学構造に集中。
 
 ---
