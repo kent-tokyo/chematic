@@ -252,10 +252,13 @@ mol.sasa_per_atom()  # per-atom list
 
 ## pKa prediction
 
+Rule-based screening (15 SMARTS rules), not a trained predictive model — useful for early
+triage, not a substitute for experimental or clinical measurement.
+
 ```python
 # RDKit — not in the standard library (external tools required)
 
-# chematic — built-in
+# chematic — built-in, rule-based screening
 pka = mol.pka()
 print(pka["most_acidic"])   # 3.49
 print(pka["most_basic"])    # None
@@ -263,10 +266,14 @@ print(pka["most_basic"])    # None
 
 ## ADMET profile
 
+Rule-based/empirical screening (BOILED-Egg-style heuristics), not validated against clinical
+endpoints — directional guidance for early triage, not a substitute for named tools like
+pkasolver or SwissADME.
+
 ```python
 # RDKit — not in the standard library (pkasolver, SwissADME, etc. required)
 
-# chematic — built-in
+# chematic — built-in, rule-based screening
 profile = mol.admet()
 # {"bbb": False, "bbb_score": -1.2, "caco2": -5.1, "herg_risk": 0.3, "cyp3a4_risk": 0.4}
 ```
@@ -289,9 +296,9 @@ df = pd.DataFrame(chematic.bulk.descriptors(smiles_list))
 
 ## Features only in chematic
 
-- **pKa prediction** — built-in, no external tools
-- **ADMET profile** — BBB, Caco-2, hERG, CYP3A4 in a single call
-- **WASM support** — runs in the browser (719 KB bundle)
+- **pKa prediction** — built-in rule-based screening, no external tools (not for clinical use)
+- **ADMET profile** — built-in rule-based screening, BBB/Caco-2/hERG/CYP3A4 in a single call (not for clinical use)
+- **WASM support** — runs in the browser (2.94 MB raw / 1.10 MB gzip bundle, measured 2026-08-21)
 - **MCP server** — direct integration with AI agents
 - **Pure Rust** — no conda, works in Docker / serverless / CI without extra setup
 - **Atropisomer detection** — `mol.atropisomers()` detects biaryl and allene axes

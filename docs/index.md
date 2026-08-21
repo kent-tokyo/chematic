@@ -1,57 +1,191 @@
-# chematic
+<div class="chm-hero" markdown>
 
-**Pure-Rust cheminformatics for Python** — no C/C++ dependencies, WASM-native, 190+ descriptors.
+# Cheminformatics that runs entirely in your browser
+
+<p class="chm-subhead">A compact Rust and WebAssembly chemistry engine for interactive tools,
+local analysis, and serverless applications — plus native Rust and Python bindings from the
+same codebase. No backend required for supported browser workflows.</p>
+
+<div class="chm-cta-row">
+  <a class="chm-btn chm-btn-primary" href="https://kent-tokyo.github.io/chematic/explorer/">Open Local Compound Explorer</a>
+  <a class="chm-btn chm-btn-secondary" href="https://kent-tokyo.github.io/chematic/playground/">Try the Playground</a>
+  <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
+</div>
+
+<p class="chm-links-row">
+  <a href="https://github.com/kent-tokyo/chematic">View on GitHub</a>
+  <a href="use-cases/browser-app/">Read the browser integration guide</a>
+  <a href="rdkit-comparison/#wasm-deployment">View benchmark methodology</a>
+</p>
+
+</div>
 
 [![CI](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions)
 [![PyPI](https://img.shields.io/pypi/v/chematic)](https://pypi.org/project/chematic/)
 [![crates.io](https://img.shields.io/crates/v/chematic)](https://crates.io/crates/chematic)
+[![npm](https://img.shields.io/npm/v/@kent-tokyo/chematic)](https://www.npmjs.com/package/@kent-tokyo/chematic)
 
-```python
-import chematic
+---
 
-mol = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")  # aspirin
-print(mol.mw, mol.logp, mol.tpsa)   # 180.16  1.31  63.6
-print(mol.lipinski_passes)           # True
-print(mol.admet())                   # BBB, Caco-2, hERG, CYP3A4 in one call
-```
+## Runs locally, ships light, one core everywhere
 
-## Why chematic?
+**Runs locally.** Supported analysis (parsing, descriptors, fingerprints, similarity search,
+2D depiction) executes inside the browser's own WASM sandbox — the molecule data you type or
+upload is never sent to a chematic server. The [Local Compound Explorer](https://kent-tokyo.github.io/chematic/explorer/)
+and [Playground](https://kent-tokyo.github.io/chematic/playground/) are both static pages with
+no backend of their own. (This describes chematic's own browser tools; if you build a product
+on top of chematic-wasm that calls other network APIs, that's your own code's choice, not
+something chematic does on your behalf.)
 
-| | chematic | RDKit |
-|---|---|---|
-| Install | `pip install chematic` | conda or complex build |
-| C/C++ deps | **Zero** | Required |
-| WASM | **Yes** (719 KB) | No (30–50 MB) |
-| pKa prediction | **Built-in** | External tool |
-| ADMET profile | **Built-in** | External tool |
-| Pure Python wheel | **Yes** | No |
+**Lightweight deployment.** The WASM bundle is **2.94 MB raw / 1.10 MB gzip**, measured
+2026-08-21 from a clean release build (`wasm-pack build --target web --release` + `wasm-opt -O3`,
+commit `ef7dc25`) — see [`docs/rdkit-comparison.md`](rdkit-comparison.md#wasm-deployment) for the
+full methodology and how this compares to RDKit.js.
 
-## Features
+**One Rust core, multiple interfaces.** The same `chematic-*` Rust crates back the native Rust
+API, the Python bindings (`pip install chematic`), and the WASM/JavaScript bindings
+(`npm install @kent-tokyo/chematic`) — one implementation, not three ports to keep in sync.
 
-- **SMILES / SDF / MOL / InChI** parsing and writing
-- **190+ molecular descriptors** (MW, LogP, TPSA, QED, SA Score, pKa, ADMET …)
-- **Fingerprints**: ECFP4/6, FCFP4/6, MACCS, AtomPair, Torsion, Layered
-- **SMARTS** substructure search with full recursive SMARTS support
-- **Reactions**: SMIRKS application, reaction SMARTS matching, MDL RXN I/O
-- **Standardisation**: salt removal, charge neutralisation, tautomer normalisation
-- **Scaffolds**: Murcko, generic Murcko, BRICS fragmentation
-- **3D**: distance geometry, UFF/MMFF94 minimisation, SASA, conformer ensembles
-- **Visualisation**: 2D SVG with CPK colours, atom highlighting, grid depiction
-- **Bulk / parallel**: Rayon-powered batch descriptors, fingerprint matrices, similarity search
-- **LSH index**: approximate nearest-neighbour search for large libraries
-- **`mol.describe()`**: natural-language property summary for LLM / MCP agents
-- **`mol.diff(other)`**: element-level and descriptor-level structural diff
+---
 
-## Installation
+## 30 seconds of chematic
 
-```bash
-pip install chematic
-```
+=== "JavaScript / WASM"
 
-Requires Python ≥ 3.8. No conda, no RDKit, no C compiler needed.
+    ```js
+    import init, { parse_smiles } from "@kent-tokyo/chematic";
+    await init();
+
+    const mol = parse_smiles("CC(=O)Oc1ccccc1C(=O)O");  // aspirin
+    console.log(mol.molecular_weight(), mol.tpsa(), mol.lipinski_passes());
+    // 180.16  63.6  true
+    mol.free();
+    ```
+
+=== "Rust"
+
+    ```rust
+    use chematic::{smiles, chem};
+
+    let mol = smiles::parse("CC(=O)Oc1ccccc1C(=O)O").unwrap();  // aspirin
+    println!("{:.2} {:.1}", chem::molecular_weight(&mol), chem::tpsa(&mol));
+    // 180.16 63.6
+    ```
+
+=== "Python"
+
+    ```python
+    import chematic
+
+    mol = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")  # aspirin
+    print(mol.mw, mol.tpsa, mol.lipinski_passes)
+    # 180.16  63.6  True
+    ```
+
+---
+
+## Pick your entry point
+
+<div class="chm-card-grid" markdown>
+
+<div class="chm-card" markdown>
+### Browser developers
+- JavaScript / TypeScript, native WASM (no Emscripten)
+- No backend for supported local workflows
+- SVG 2D depiction, descriptors, fingerprints, similarity search
+- [Browser integration guide →](use-cases/browser-app.md)
+</div>
+
+<div class="chm-card" markdown>
+### Rust developers
+- Native Rust API, `cargo add chematic`
+- Zero C/C++ toolchain in the standard pure-Rust path
+- Embeds in servers, CLIs, and embedded targets
+- [Rust server guide →](use-cases/rust-server.md)
+</div>
+
+<div class="chm-card" markdown>
+### AI developers
+- Built-in MCP server, 20 structured chemistry tools
+- Runs locally over stdio — no hosted service
+- Does not implement remote/HTTP MCP transports
+- [AI-assisted analysis guide →](use-cases/ai-drug-discovery.md)
+</div>
+
+<div class="chm-card" markdown>
+### Python users
+- `pip install chematic` — prebuilt wheels, no C/C++ compiler needed
+- Jupyter-friendly inline SVG rendering, pandas DataFrame export
+- RDKit-familiar API subset — not a full drop-in replacement
+- [Python notebook guide →](use-cases/python-notebook.md)
+</div>
+
+</div>
+
+---
+
+## Common use cases
+
+| Scenario | How chematic helps |
+|---|---|
+| **Local compound triage** | [Local Compound Explorer](https://kent-tokyo.github.io/chematic/explorer/) — load a CSV/SDF, filter, sort, and export, entirely client-side |
+| **Browser app** | 1.10 MB gzip WASM bundle, zero backend required, React/Vue/Svelte ready |
+| **Drug screening** | 190+ descriptor values, ADMET, PAINS/Brenk, QED — batch over thousands of compounds |
+| **AI agent / MCP** | Built-in MCP server — Claude Desktop can call chemistry tools directly |
+| **Batch analysis** | Rayon-parallel descriptor/fingerprint/3D pipelines; SDF/CSV in, CSV out |
+| **Rust server** | Pure-Rust crates with no C/C++ toolchain; Axum/Actix compatible |
+
+Full worked examples → [Use cases](use-cases/)
+
+---
+
+## Honest comparison
+
+| | chematic | RDKit (Python) | RDKit.js (WASM) |
+|---|---|---|---|
+| Install | `pip install chematic` | `pip install rdkit` (official prebuilt wheels) or conda | `npm install @rdkit/rdkit`, no Python bindings |
+| C/C++ toolchain | Not required, even building from source | Not required for the prebuilt wheel; required building from source | Not required by consumers of the published package |
+| Browser / WASM | Yes — 2.94 MB raw / 1.10 MB gzip | Not applicable (Python/C++ library) | Yes — 6.91 MB raw (`RDKit_minimal.wasm`; a separate community project, currently in a maintainer transition) |
+| pKa / ADMET prediction | Built-in, rule-based screening — not for clinical use | External tool required | External tool required |
+| AI agent / MCP integration | Built-in, 20 tools (stdio only) | — | — |
+| Ecosystem maturity | Growing (2024–) | Established (2006–) | Established, but the WASM distribution specifically is community-maintained |
+
+Bundle sizes measured 2026-08-21 (commit `ef7dc25`); chematic vs RDKit.js compared on a
+raw-to-raw basis since RDKit.js's gzip-over-the-wire size was not independently measured. Full
+detail, including where chematic is weaker: [Detailed RDKit comparison](rdkit-comparison.md).
+
+---
+
+## Validation
+
+Descriptor accuracy is measured against RDKit on a 4,999-molecule ChEMBL-derived corpus:
+MW, HBA, HBD, TPSA, LogP (Crippen), molar refractivity, Fsp3, and ring/stereocenter counts all
+reach 100% agreement (LogP within float64 rounding error). Full breakdown, known residuals, and
+reproduction commands: [Validation report](validation.md).
+
+---
+
+## When to use chematic
+
+- You want chemistry in the browser (WASM, 1.10 MB gzip, no server required)
+- You need a pure Rust stack with no C++ toolchain dependencies
+- You deploy to environments where installing RDKit is impractical (Cloudflare Workers, Lambda, embedded)
+- You build AI agents and want native MCP tool integration
+- You want `pip install chematic` to just work, anywhere, no compiler needed
+
+## When to use RDKit
+
+- You need maximum ecosystem compatibility and 20+ years of production validation
+- You need publication-quality 3D structures with ML-assisted torsion corrections (ETKDGv3)
+- You depend on community plugins written against the RDKit Python API
+- You need bit-exact standard InChI without enabling an opt-in feature
+
+---
 
 ## Quick links
 
+- [Local Compound Explorer](https://kent-tokyo.github.io/chematic/explorer/) — analyze a batch of compounds entirely in your browser
+- [Playground](https://kent-tokyo.github.io/chematic/playground/) — interactive single-molecule WASM demo
 - [Cookbook](cookbook.md) — 20 copy-paste-ready tasks
 - [Use cases](use-cases/) — AI agent workflows, notebooks, browser apps, Rust servers, batch analysis
 - [Benchmark](benchmark.md) — performance vs RDKit, descriptor accuracy

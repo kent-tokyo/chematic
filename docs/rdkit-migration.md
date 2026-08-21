@@ -118,7 +118,7 @@ extrapolate to other batch sizes or fingerprint types not in that table.
 | | RDKit | chematic |
 |---|---|---|
 | One descriptor | `Descriptors.MolWt(mol)`, `rdMolDescriptors.CalcTPSA(mol)`, etc. | `mol.mw`, `mol.tpsa`, ... (property access) |
-| All at once | manual loop over `Descriptors._descList` | `mol.descriptors()` — dict of 70+ scalar descriptors in one call |
+| All at once | manual loop over `Descriptors._descList` | `mol.descriptors()` — dict of 70+ descriptor *functions* in one call (190+ individual *values*, since a few functions such as MQN/BCUT2D/autocorr2d return multi-value arrays — see `docs/rdkit-comparison.md`'s descriptor accuracy caveat) |
 | Bulk / DataFrame | manual loop + `pd.DataFrame(...)` | `chematic.bulk.descriptors(smiles_list)` / `chematic.descriptors_df(smiles_list)` (Rayon-parallel, returns a list of dicts / DataFrame directly) |
 
 Accuracy vs. RDKit, per `docs/benchmark.md` and README's badge comment
@@ -284,10 +284,11 @@ formats" claim.
 **Not applicable to RDKit's core package** — RDKit has no first-party
 Python-style WASM bindings; RDKit.js is a separate community project.
 chematic ships `chematic-wasm` directly from the same Rust source as the
-Python bindings. Per `docs/benchmark.md`/README's badge table: chematic's
-WASM bundle is **719 KB**, versus RDKit.js's **~30 MB** (~42× smaller) —
-cited because it is already measured and documented in this repository, not
-asserted fresh here. See [`format-capabilities.md`](format-capabilities.md)
+Python bindings. Measured 2026-08-21 (see `docs/rdkit-comparison.md`'s WASM
+deployment table for the full methodology): chematic's WASM bundle is
+**2.94 MB raw / 1.10 MB gzip**, versus RDKit.js's `RDKit_minimal.wasm` at
+**6.91 MB raw** (gzip not independently measured) — about 2.3× smaller on a
+raw-to-raw basis. See [`format-capabilities.md`](format-capabilities.md)
 for exactly which formats are and are not exposed at the WASM layer (plain
 CIF, notably, is not).
 

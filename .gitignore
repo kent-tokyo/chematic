@@ -24,6 +24,10 @@ dist/
 *.egg-info/
 .pytest_cache/
 
+# MkDocs
+/site/
+/_site/
+
 # OS
 .DS_Store
 Thumbs.db

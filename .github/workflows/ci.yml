@@ -74,6 +74,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      # Zero Rust/WASM dependency -- runs before the toolchain setup below so a
+      # failure here gives the fastest possible signal.
+      - name: Local Compound Explorer unit tests (pure functions, no WASM)
+        run: node demo/explorer/tests/explorer.test.mjs
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
