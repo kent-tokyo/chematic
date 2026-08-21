@@ -18,14 +18,21 @@
 
 | | chematic | RDKit (Python) | RDKit.js (WASM) |
 |---|---|---|---|
-| **快速上手** | `pip install chematic` | 需要 conda / cmake | 无 Python 绑定 |
-| **浏览器包体积** | **719 KB** | 不支持 | ~30 MB（大约 42 倍） |
+| **快速上手** | `pip install chematic` | `pip install rdkit`（官方预编译 wheel）或 conda | `npm install @rdkit/rdkit`，无 Python 绑定 |
+| **浏览器包体积** | **raw 2.94 MB / gzip 1.10 MB** | 不适用（Python/C++ 库） | raw 6.91 MB* |
 | **批量指纹速度** | **~78 µs/mol**（快 2–3 倍） | ~160–235 µs/mol | — |
 | **内存安全性** | 编译器保证（Rust） | C++ | C++ |
 | **源码构建** | 仅需 `cargo build` | cmake + clang + Boost | Emscripten SDK |
 
+\* RDKit.js 的 gzip 传输体积未独立测量，此处以 raw 体积做同口径比较。RDKit.js 目前处于
+维护者交接阶段（详见其仓库）。
+
 所有数据均可复现 — 参阅[基准测试详情](https://kent-tokyo.github.io/chematic/benchmark/)。  
-WASM 包体积对比：chematic **719 KB** · RDKit.js ~30 MB · Indigo WASM ~40 MB
+WASM 包体积（raw，2026-08-21 测量，`wasm-pack build --target web --release` + `wasm-opt -O3`
+的干净构建，commit `ef7dc25`）：chematic **2.94 MB**（**1.10 MB gzip**）· RDKit.js **6.91 MB**
+（`@rdkit/rdkit@2025.3.4-1.0.0` 的 `RDKit_minimal.wasm`，经 unpkg.com 确认）· Indigo（Ketcher
+构建版）**11.24 MB**（`indigo-ketcher@1.45.1` 的主 `.wasm`，经 jsDelivr 确认）—— 以 raw 对 raw
+比较，chematic 目前比 RDKit.js 小约 2.3 倍，比 Indigo 的 Ketcher 构建版小约 3.8 倍。
 
 **功能成熟度一览：**
 
@@ -43,9 +50,10 @@ WASM 包体积对比：chematic **719 KB** · RDKit.js ~30 MB · Indigo WASM ~40
 
 **适合使用 chematic 的场景：**
 
-- 需要在浏览器中运行化学计算（WASM，719 KB，无需服务器）
+- 需要在浏览器中运行化学计算（WASM，1.10 MB gzip，无需服务器）
 - 需要纯 Rust 技术栈，不依赖 C++ 工具链
-- 部署到 `pip install rdkit` 不可行的环境（Cloudflare Workers、Lambda、嵌入式设备）
+- 部署到难以安装或不支持 RDKit 的环境（Cloudflare Workers、Lambda、嵌入式设备 ——
+  RDKit 本身已提供官方 `pip install rdkit` wheel，但仍需标准 CPython 环境）
 - 构建 AI 代理并需要原生 MCP 工具集成
 - 需要批量高吞吐量处理分子（ECFP4：比 RDKit 快 2–3 倍，Rayon 并行）
 - 希望 `pip install chematic` 在任何环境都能直接使用，无需编译器
@@ -154,17 +162,26 @@ RDKit Python API 快 2–3×（通过 Rayon 在所有 CPU 核心上并行）。�
 
 ### 安全
 
-整个默认依赖树在 15,000 余行 Rust 代码中仅含 **~6 个 `unsafe` 块**。
+chematic 自身约 180,700 行 Rust 代码(tokei 统计的代码行数，全部20个crate，2026-08-21)中，
+**一个文件之外为零** `unsafe` 块 — 仅有 9 个 `unsafe {}` 块 + 1 个 `unsafe extern "C"` 声明，
+全部限定在可选的 `native-inchi` FFI 层(见下文)。
 无 C++ 堆损坏，无因畸形 SMILES 输入导致的段错误，无 `-sys` crate 引起的平台相关构建失败。
 编译器在每个调用点强制执行内存安全。
 
 > `native-inchi` feature 是唯一的可选例外 — 它 vendors IUPAC InChI C 库 (v1.07.5)
-> 以获得逐位精确的标准 InChI。其余所有 crate 保持零 FFI。
+> 以获得逐位精确的标准 InChI。其余所有 crate 保持 FFI-free、unsafe-free。此数值仅指
+> chematic 自身的源代码，不含依赖树 —— 可选的 `depict` feature(SVG/PDF/EPS 渲染)引入了
+> 字体/图像渲染栈(resvg/usvg/rustybuzz/tiny-skia/zune-jpeg)，这些纯 Rust 依赖**并非**
+> unsafe-free —— 实测(`unsafe fn`/`impl`/`trait`/`{` 出现次数)：tiny-skia 151、
+> zune-jpeg 79、rustybuzz 14、image 8、fontdb 3、tiny-skia-path 3(仅此范围合计 258)。
+> `chematic-py`(`pip install chematic`)与 npm 包均直接依赖 `chematic-depict`，因此这一点
+> 适用于两条实际安装路径。
 
 ### 随处可用
 
 纯 Rust 无需 Emscripten、`cmake`、`clang` 即可原生编译至 `wasm32-unknown-unknown`。
-npm 包 `@kent-tokyo/chematic` 为 **719 KB gzip** — 比 RDKit.js 小约 42 倍。
+npm 包 `@kent-tokyo/chematic` 为 **1.10 MB gzip**(raw 2.94 MB) — 与 RDKit.js 的
+`RDKit_minimal.wasm`(raw 6.91 MB)以 raw 对 raw 比较，约小 2.3 倍。
 一套代码库在 Linux、macOS、Windows 及任意浏览器中运行。
 
 ---
@@ -174,10 +191,10 @@ npm 包 `@kent-tokyo/chematic` 为 **719 KB gzip** — 比 RDKit.js 小约 42 �
 | 功能                                         | **chematic**                                 | RDKit (rdkit-sys)  | OpenBabel FFI | RDKit.js (WASM)   |
 |----------------------------------------------|----------------------------------------------|--------------------|---------------|-------------------|
 | **C/C++ 依赖**                               | **零（默认）**†                              | 大量 C++           | 大量 C++      | C++（Emscripten） |
-| **WASM 二进制体积**                          | **〜550 KB**                                 | N/A（不支持 WASM） | N/A           | 〜30 MB           |
+| **WASM 二进制体积**                          | **raw 2.94 MB（gzip 1.10 MB）**              | N/A（不支持 WASM） | N/A           | raw 6.91 MB       |
 | **构建要求**                                 | 仅需 `cargo build`                           | cmake + clang      | cmake + clang | Emscripten SDK    |
 | **Python 绑定**                              | **有** (`pip install chematic`, PyO3)        | 有（rdkit-sys）    | 有            | 无                |
-| Unsafe Rust                                  | **无**                                       | 大量               | 大量          | N/A               |
+| Unsafe Rust                                  | **自身 crate 中为无**‡                       | 大量               | 大量          | N/A               |
 | Kekulization                                 | **4-pass（含 Edmonds' blossom）**            | 有                 | 有            | 有                |
 | SDF/MOL V2000+V3000                          | 有                                           | 有                 | 有            | 有                |
 | Tripos MOL2 格式                             | **有**（读写 + Python）                      | 有                 | 有            | 无                |
@@ -195,11 +212,20 @@ npm 包 `@kent-tokyo/chematic` 为 **719 KB gzip** — 比 RDKit.js 小约 42 �
 
 † 仅限默认构建。`native-inchi` feature 需要 C 编译器，为可选例外。其余所有 crate 保持零 FFI。
 
+‡ chematic 自身约 180,700 行 Rust 代码(tokei 统计，2026-08-21)：除 `native-inchi` 的 9 个 FFI
+块外均为 unsafe-free(见上文"安全"一节) —— 这是关于 chematic 自身编写代码的实测结论，与编译器
+完全无法检查的 RDKit/OpenBabel C++ FFI unsafe 有本质区别，即便数量相近。**此结论不适用于完整
+依赖树**：可选的 `depict` feature(SVG/PDF/EPS 渲染)引入 resvg/usvg/rustybuzz/tiny-skia/
+zune-jpeg，这些纯 Rust 依赖并非 unsafe-free —— 实测(`unsafe fn`/`impl`/`trait`/`{` 出现次数)：
+tiny-skia 151、zune-jpeg 79、rustybuzz 14、image 8、fontdb 3、tiny-skia-path 3(仅此范围合计
+258)。`chematic-py`(`pip install chematic`)与 npm 包均直接依赖 `chematic-depict`，因此这一点
+适用于两条实际安装路径。
+
 ---
 
 ## JavaScript / TypeScript（WebAssembly）
 
-**719 KB gzip — 比 RDKit.js 小约 42 倍。** 无需 Emscripten 或 cmake，可直接在浏览器和 Node.js 中使用。
+**1.10 MB gzip — 与 RDKit.js 的 raw WASM 相比约小 2.3 倍。** 无需 Emscripten 或 cmake，可直接在浏览器和 Node.js 中使用。
 
 ```sh
 npm install @kent-tokyo/chematic
@@ -224,7 +250,7 @@ const isomers = JSON.parse(enumerate_stereo_isomers_json(parse_smiles('C(F)(Cl)B
 const picks = JSON.parse(maxmin_picks_ecfp4_json('["CC","c1ccccc1","CCO","CCCC"]', 2));
 ```
 
-130+ 个导出函数涵盖描述符、指纹、3D 几何、反应、多样性筛选和 SDF 处理。
+218+ 个导出函数（另加 `MolHandle`/`DepictOptions` 类方法，2026-08-21 测量）涵盖描述符、指纹、3D 几何、反应、多样性筛选和 SDF 处理。
 完整 API 请参阅 [WASM API 参考文档](https://kent-tokyo.github.io/chematic/)。
 ---
 
@@ -232,28 +258,28 @@ const picks = JSON.parse(maxmin_picks_ecfp4_json('["CC","c1ccccc1","CCO","CCCC"]
 
 | Crate                 | 说明                                                                                                   | 测试数 |
 |-----------------------|--------------------------------------------------------------------------------------------------------|--------|
-| `chematic-core`       | Atom、Bond、Molecule、Element、Kekulization（无依赖）；可变 API、`fragments`、`validate_valence`、`formula_with_isotopes`；`StereoGroup`/`StereoGroupKind` | 71     |
-| `chematic-smiles`     | OpenSMILES 解析器、写入器、规范 SMILES、**CXSMILES 元数据支持**                                      | 109     |
-| `chematic-perception` | SSSR、Hückel 芳香性 + 反芳香性（4n+2 规则）、`apply_aromaticity`/`aromatize`/`kekulize_inplace`、`assign_stereo_from_2d`、`assign_ez_from_2d`、`cip_ez_descriptor` | 101     |
-| `chematic-mol`        | MOL/SDF V2000+V3000（读写含 2D 坐标）、CML（读写）、CDXML（读）；`SdfRecord`（含坐标+属性）、MDL RXN V2000 读写；V3000 立体基团 COLLECTION 读写；**读取时自动识别 2D 楔形/虚线四面体 parity 与 E/Z 双键方向**（`read_mol_with_diagnostics`/`read_mol_v3000_with_diagnostics`，类型化 opt-in 诊断）；**PDBx/mmCIF**（读写，保留 chain/altloc/model/occupancy/B-factor，Open Babel 本身仅支持读取）；**PQR**（读写）；**QCSchema JSON**（`Molecule`/`AtomicInput`/`AtomicResult`，MolSSI schema，Bohr↔Å 转换）；**ORCA**（input 读写、未知 block 无损保留；output 读取：final geometry/trajectory/energy/frequencies/termination/convergence 均为类型化字段）；新增共享 `VolumetricGrid` 类型 + **Gaussian Cube**（读写，面向大网格的 streaming-*input* `CubeFileReader`——解析后的体素数组仍完全驻留内存，支持非正交 axes，显式标注 Bohr/Ångström 单位）+ **OpenDX/APBS scalar field**（读写）——仅支持单数据集，multi-dataset Cube 会被类型化拒绝而非静默截断 | 130+     |
-| `chematic-depict`     | 2D SVG 绘制（CPK 配色、高亮、网格）、`detect_crossings`/`render_svg_with_metadata`、反应 SVG；Y 坐标系文档已更新 | 64     |
-| `chematic-chem`       | 190+ 描述符值（71 个函数）、互变异构体、骨架、BRICS、QED、标准化；**pKa 预测**（15 条 SMARTS 规则）；**ADMET 概况**（BBB/Caco-2/hERG/CYP3A4）；**HBA 与 RDKit 一致率 99.98%**（4,999 分子 ChEMBL 基准）；**TPSA ±0.1 Å² 98.1% / LogP ±0.01 96.5% / HBD 100%** | 662    |
-| `chematic-fp`         | ECFP2/4/6、FCFP4/6、MACCS、TopoPF、AtomPair、Torsion、Layered、Pattern、Pharmacophore、Reaction、**MAP4** — Tanimoto/Dice | 185     |
-| `chematic-ff`         | **MMFF94 全 7 能量项**（Halgren 1996）：OOP（117 条）+ STRE-BEN（282 条）；L-BFGS；DREIDING | 98     |
-| `chematic-smarts`     | SMARTS、VF2、MCS；**SmartsCache**（LRU 5–20×）；**named_pattern()** 库（20 种模式）；**SMARTS 原子映射 `:N`**（`[O;D1;H0:3]` — 作为元数据存储，不用于匹配） | 142    |
-| `chematic-3d`         | 3D 坐标生成、ETKDG KB（40 种模式，自适应噪声）、力场最小化、形状描述符、ConformerEnsemble、PDB/XYZ | 265    |
-| `chematic-rxn`        | 反应 SMILES/SMIRKS、`run_reactants`/`run_reactants_strict`；**`retro_disconnect()`** — 60 个 retro-SMIRKS 模板（AmideBond/Ester/Ether/CNBond/CCBond/CSBond）+ SA 分数排序 | 137     |
+| `chematic-core`       | Atom、Bond、Molecule、Element、Kekulization（无依赖）；可变 API、`fragments`、`validate_valence`、`formula_with_isotopes`；`StereoGroup`/`StereoGroupKind` | 132     |
+| `chematic-smiles`     | OpenSMILES 解析器、写入器、规范 SMILES、**CXSMILES 元数据支持**                                      | 202     |
+| `chematic-perception` | SSSR、Hückel 芳香性 + 反芳香性（4n+2 规则）、`apply_aromaticity`/`aromatize`/`kekulize_inplace`、`assign_stereo_from_2d`、`assign_ez_from_2d`、`cip_ez_descriptor` | 194     |
+| `chematic-mol`        | MOL/SDF V2000+V3000（读写含 2D 坐标）、CML（读写）、CDXML（读）；`SdfRecord`（含坐标+属性）、MDL RXN V2000 读写；V3000 立体基团 COLLECTION 读写；**读取时自动识别 2D 楔形/虚线四面体 parity 与 E/Z 双键方向**（`read_mol_with_diagnostics`/`read_mol_v3000_with_diagnostics`，类型化 opt-in 诊断）；**PDBx/mmCIF**（读写，保留 chain/altloc/model/occupancy/B-factor，Open Babel 本身仅支持读取）；**PQR**（读写）；**QCSchema JSON**（`Molecule`/`AtomicInput`/`AtomicResult`，MolSSI schema，Bohr↔Å 转换）；**ORCA**（input 读写、未知 block 无损保留；output 读取：final geometry/trajectory/energy/frequencies/termination/convergence 均为类型化字段）；新增共享 `VolumetricGrid` 类型 + **Gaussian Cube**（读写，面向大网格的 streaming-*input* `CubeFileReader`——解析后的体素数组仍完全驻留内存，支持非正交 axes，显式标注 Bohr/Ångström 单位）+ **OpenDX/APBS scalar field**（读写）——仅支持单数据集，multi-dataset Cube 会被类型化拒绝而非静默截断 | 476     |
+| `chematic-depict`     | 2D SVG 绘制（CPK 配色、高亮、网格）、`detect_crossings`/`render_svg_with_metadata`、反应 SVG；Y 坐标系文档已更新 | 75     |
+| `chematic-chem`       | 190+ 描述符值（71 个函数）、互变异构体、骨架、BRICS、QED、标准化；**pKa 预测**（15 条 SMARTS 规则）；**ADMET 概况**（BBB/Caco-2/hERG/CYP3A4）；**HBA 与 RDKit 一致率 100%**（4,999 分子 ChEMBL 基准）；**TPSA ±0.1 Å² 100% / LogP 100%\* / HBD 100%** | 724    |
+| `chematic-fp`         | ECFP2/4/6、FCFP4/6、MACCS、TopoPF、AtomPair、Torsion、Layered、Pattern、Pharmacophore、Reaction、**MAP4** — Tanimoto/Dice | 266     |
+| `chematic-ff`         | **MMFF94 全 7 能量项**（Halgren 1996）：OOP（117 条）+ STRE-BEN（282 条）；L-BFGS；DREIDING | 198     |
+| `chematic-smarts`     | SMARTS、VF2、MCS；**SmartsCache**（LRU 5–20×）；**named_pattern()** 库（20 种模式）；**SMARTS 原子映射 `:N`**（`[O;D1;H0:3]` — 作为元数据存储，不用于匹配） | 169    |
+| `chematic-3d`         | 3D 坐标生成、ETKDG KB（40 种模式，自适应噪声）、力场最小化、形状描述符、ConformerEnsemble、PDB/XYZ | 540    |
+| `chematic-rxn`        | 反应 SMILES/SMIRKS、`run_reactants`/`run_reactants_strict`；**`retro_disconnect()`** — 60 个 retro-SMIRKS 模板（AmideBond/Ester/Ether/CNBond/CCBond/CSBond）+ SA 分数排序 | 180     |
 | `chematic-inchi`      | InChI/InChIKey：纯 Rust 近似（WASM 兼容）**+ `native-inchi` feature 提供 IUPAC 标准**（vendored C 库 1.07.5，逐位一致）；**parse_inchi** 读取；**带验证的 canonical SMILES 去重**（`dedup` 模块，遇到 legacy CIP 无法解析的指定四面体立体中心时安全失败）；**accurate-CIP 去重预检**（issue #161，为 legacy CIP 无法解析的立体中心恢复已验证比较能力）；**indexed graph relation API**（`compare_indexed_graph_relation`，正交的 `GraphStrictness`/`AtomMapPolicy` 轴） | 108 (+16*)   |
 | `chematic-cip`        | opt-in 高精度 CIP 引擎（`assign_cip_accurate_experimental`，层次化 digraph，Rules 1a/1b/2/4b/5，RDKit 兼容 MANCUDE 分数原子序数）— 默认的 `assign_cip()`/`CipMode::LegacyFast` 未变更 | —    |
-| `chematic-wasm`       | **130+ WASM 导出** — npm：`@kent-tokyo/chematic`（已发布 `0.7.0`，与 crates.io/PyPI 同步）；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 211    |
-| `chematic-iupac`      | 本地 IUPAC 命名（纯 Rust·离线）— **25+ 化合物类**：烷烃、环烷烃、醇、胺、卤代烃、酮、酸、酯、酰胺、**哌啶、吗啉、哌嗪、萘、硫醚** | 47     |
+| `chematic-wasm`       | **218+ WASM 导出**（另加类方法，2026-08-21 测量） — npm：`@kent-tokyo/chematic`（与 crates.io/PyPI 同步发布）；**pKa/ADMET/BBB/Caco-2/hERG/CYP3A4** WASM API | 276    |
+| `chematic-iupac`      | 本地 IUPAC 命名（纯 Rust·离线）— **25+ 化合物类**：烷烃、环烷烃、醇、胺、卤代烃、酮、酸、酯、酰胺、**哌啶、吗啉、哌嗪、萘、硫醚** | 56     |
 | `chematic-mcp`        | **MCP（模型上下文协议）服务器** — AI 代理集成；**20 个工具**：parse_smiles, calc_properties, ecfp4, tanimoto, smarts_match, canonical_smiles, find_mcs, generate_3d, pains_check, brenk_check, sa_score, admet_profile, boiled_egg, lipinski_check, name_to_smiles, retrosynthesis, smiles_to_moljson, moljson_to_smiles, representation_router, molecule_context_pack；dual-era 协议（旧版 `2024-11-05` + 现代 `2026-07-28` 无状态方言）、全部 20 个工具均支持 `structuredContent`/`outputSchema` | 82     |
-| `chematic-crystal`    | 周期（晶体）结构基础 crate——`Lattice`（三斜晶系）、`PeriodicSite`/`Occupancy`、精确周期最小像距离、近邻枚举、supercell；有意与 `chematic-core::Molecule`（键图）保持独立 | 92     |
+| `chematic-crystal`    | 周期（晶体）结构基础 crate——`Lattice`（三斜晶系）、`PeriodicSite`/`Occupancy`、精确周期最小像距离、近邻枚举、supercell；有意与 `chematic-core::Molecule`（键图）保持独立 | 88     |
 | `chematic-py`         | PyO3 Python 绑定（`pip install chematic`）；**`PeriodicStructure.from_cif()`/`.from_poscar()`, `Lattice`, `Site`**（周期/晶体结构——`chematic-crystal` 的首个宿主语言绑定）；**`from_cif(text, expand_symmetry=True)`** 默认将 CIF 自身声明的对称操作展开为完整晶胞（`expand_symmetry=False` 时仅保留非对称单元——不含空间群数据库，不做名称/编号到操作的自动生成） | 300+   |
 | `chematic`            | 带功能标志的伞形 crate                                                                                   | 1      |
 
 ```
-cargo test --workspace --lib --quiet                                               # 2,812 个库测试，全部通过（截至 2026-07-27）
+cargo test --workspace --lib --quiet                                               # 3,912 个库测试，全部通过（截至 2026-08-21）
 cargo test -p chematic-inchi --features native-inchi --test standard_inchi         # +16 IUPAC 标准 InChI 集成测试
 ```
 
@@ -470,7 +496,7 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 ## 已知限制
 
 - **Kekulization**：4,999 分子中仅 2 个失败 — 硼芳香环（`b1ccccn1`）和 `[H][H]`。明确返回 `KekuleError`，不产生无声错误输出。
-- **芳香性模型**：Hückel 4n+2 规则独立应用于每个 SSSR 环（RDKit 使用稠合环电子离域模型）。N-杂环中存在差异。4,999 分子 ChEMBL 语料库当前状态：HBA/HBD/芳香环计数 **100%**，TPSA **98.1%**（±0.1 Å²）。
+- **芳香性模型**：Hückel 4n+2 规则独立应用于每个 SSSR 环（RDKit 使用稠合环电子离域模型）。N-杂环中存在差异。4,999 分子 ChEMBL 语料库当前状态：HBA/HBD/芳香环计数 **100%**，TPSA **100%**（±0.1 Å²）。
 
 ---
 

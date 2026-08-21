@@ -10,8 +10,8 @@ See also: [`rdkit-migration.md`](rdkit-migration.md) for a feature-by-feature Su
 
 | | chematic | RDKit |
 |---|---|---|
-| **Install** | `pip install chematic` | conda / cmake required |
-| **Browser / WASM** | Yes — 719 KB | No |
+| **Install** | `pip install chematic` | `pip install rdkit` (official prebuilt wheels) or conda |
+| **Browser / WASM** | Yes — 2.94 MB raw / 1.10 MB gzip | Not applicable (Python/C++ library); RDKit.js is a separate community project — 6.91 MB raw |
 | **C++ dependency** | None (default) | Required |
 | **Batch fingerprint speed** | ~78 µs/mol (2–3× faster, diverse corpus) | ~160–235 µs/mol |
 | **AI agent integration** | MCP server built-in | None |
@@ -27,9 +27,9 @@ See also: [`rdkit-migration.md`](rdkit-migration.md) for a feature-by-feature Su
 
 | | chematic | RDKit |
 |---|---|---|
-| Python | `pip install chematic` | `conda install -c conda-forge rdkit` |
-| C++ compiler | Not required | Required (Boost, CMake) |
-| Docker image delta | ~4 MB | ~200 MB+ |
+| Python | `pip install chematic` | `pip install rdkit` (official prebuilt wheels) or `conda install -c conda-forge rdkit` |
+| C++ compiler | Not required (pure Rust, even building from source) | Not required when installing the official prebuilt wheel; required (Boost, CMake) when building RDKit itself from source |
+| Docker image delta | ~4 MB (approximate; not independently re-measured this cycle) | ~200 MB+ (approximate; not independently re-measured this cycle) |
 | GitHub Actions | `pip install chematic` | Separate conda setup step |
 | Cloudflare Workers | Yes | No |
 | AWS Lambda | Yes | Difficult (binary size) |
@@ -39,11 +39,15 @@ See also: [`rdkit-migration.md`](rdkit-migration.md) for a feature-by-feature Su
 
 | Library | Bundle size | Build toolchain |
 |---|---|---|
-| **chematic** | **719 KB gzip** | `wasm-pack build` only |
-| RDKit.js | ~30 MB | Emscripten SDK + cmake |
-| Indigo WASM | ~40 MB | Emscripten SDK + cmake |
+| **chematic** | **2.94 MB raw / 1.10 MB gzip** | `wasm-pack build` only |
+| RDKit.js (`@rdkit/rdkit`) | 6.91 MB raw (`RDKit_minimal.wasm`, gzip not independently measured) | Emscripten SDK + cmake (upstream; not needed by consumers of the published npm package) |
+| Indigo (Ketcher-oriented build, `indigo-ketcher`) | 11.24 MB raw (main `.wasm`; a "norender" variant is 7.17 MB) | Emscripten SDK + cmake (upstream) |
 
-chematic compiles to `wasm32-unknown-unknown` natively — no Emscripten, no cmake, no clang.
+All three raw sizes measured 2026-08-21: chematic from a clean `wasm-pack build --target web --release`
++ `wasm-opt -O3` at commit `ef7dc25`; RDKit.js via `@rdkit/rdkit@2025.3.4-1.0.0`'s file listing on
+unpkg.com; Indigo via `indigo-ketcher@1.45.1`'s file listing on jsDelivr. chematic's raw binary is
+currently about 2.3× smaller than RDKit.js's and about 3.8× smaller than Indigo's Ketcher-oriented
+build. chematic compiles to `wasm32-unknown-unknown` natively — no Emscripten, no cmake, no clang.
 
 ---
 
@@ -123,13 +127,13 @@ python scripts/benchmark_vs_rdkit.py --rdkit
 |---|---|---|
 | Native WASM (no Emscripten) | Yes | No |
 | MCP server (AI agent API) | 20 tools (stdio only) | None |
-| pKa prediction (built-in) | 15 SMARTS rules | External tool required |
-| ADMET profile (built-in) | BBB / Caco-2 / hERG / CYP3A4 | External tool required |
+| pKa prediction (built-in, rule-based screening — not for clinical use) | 15 SMARTS rules | External tool required |
+| ADMET profile (built-in, rule-based screening — not for clinical use) | BBB / Caco-2 / hERG / CYP3A4 | External tool required |
 | MAP4 fingerprint | Yes (Minervini 2020) | No (external package) |
 | UFF force field for metals | Yes (Zn, Fe, Cu, …) | No |
 | IUPAC name generation (offline) | 25+ compound classes | No |
 | Retrosynthesis (template-based) | 60 retro-SMIRKS built-in | External tool required |
-| `pip install` anywhere | Yes | No (conda/cmake) |
+| Pure Rust, zero C/C++ toolchain even building from source | Yes | No (RDKit itself is a C++ library; official wheels avoid a *local* build, but the library's own build still requires cmake/Boost) |
 
 ### RDKit has, chematic does not (or is weaker)
 
@@ -165,7 +169,7 @@ Most common operations map directly:
 
 **Choose chematic if:**
 
-- You want chemistry in the browser (WASM, 719 KB, no server)
+- You want chemistry in the browser (WASM, 1.10 MB gzip, no server)
 - You need a pure Rust stack with no C++ toolchain
 - You deploy to Lambda, Cloudflare Workers, or other constrained environments
 - You build AI agents and want native MCP tool integration
@@ -210,5 +214,8 @@ RDKit users while adding batch-first and browser-native capabilities.
 
 ---
 
-*Benchmark data: Apple M-series, Python 3.12, chematic v0.4.22, RDKit 2026.03.3.*  
+*Benchmark data: Apple M4, Python 3.13.6, chematic v0.18.0, RDKit 2026.03.3 (2026-07-17 snapshot;
+see [`benchmarks/2026-07-17.md`](../benchmarks/2026-07-17.md) for the underlying methodology —
+descriptor calculation paths unchanged since, not re-measured this cycle). Bundle-size figures
+above were freshly re-measured 2026-08-21 (see the WASM deployment table).*  
 *Reproduce all benchmarks: see [benchmark details](benchmark.md).*

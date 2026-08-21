@@ -594,12 +594,41 @@ export function canonical_tautomer_with_blocked_atoms_json(mol: MolHandle, block
 export function cdxml_to_smiles_json(cdxml: string): string;
 
 /**
+ * The `chematic-wasm` crate version (matches the workspace release version).
+ *
+ * Lets callers (e.g. the browser playground demo) display the running
+ * version without hardcoding it — `demo/index.html` previously had a
+ * static version string that silently went stale across releases.
+ */
+export function chematic_version(): string;
+
+/**
+ * CIP stereo assignments via the accurate hierarchical-digraph engine, as a JSON
+ * array of `{atomIdx, cipCode}` objects -- same shape as [`cip_assignments_json`],
+ * but merges the accurate engine's tetrahedral R/S (~99.6% oracle-stable agreement,
+ * see `docs/rfcs/cip_accurate_rfc.md`) with legacy's E/Z and allene answers (the accurate
+ * engine computes neither). Atoms it can't resolve are omitted here -- see
+ * [`cip_unresolved_json`] -- never a silently-guessed label. Returns `"null"` on an
+ * internal engine error (budget-independent computations should not normally hit this).
+ */
+export function cip_assignments_accurate_json(mol: MolHandle): string;
+
+/**
  * CIP stereo assignments as a JSON array of `{atomIdx, cipCode}` objects.
  *
  * `cipCode` is one of `"R"`, `"S"`, `"E"`, or `"Z"`.
  * Returns `[]` for molecules with no specified stereocenters.
  */
 export function cip_assignments_json(mol: MolHandle): string;
+
+/**
+ * Atoms the accurate CIP engine could not resolve a tetrahedral R/S for, as a JSON
+ * array of `{atomIdx, reason}` objects. `reason` is `"tied"` (a genuine CIP-rule tie,
+ * not a missing rule) or `"budgetExceeded"`. Always `[]` for the legacy engine (see
+ * [`cip_assignments_json`]) -- it never reports "I don't know". Returns `"null"` on
+ * an internal engine error.
+ */
+export function cip_unresolved_json(mol: MolHandle): string;
 
 /**
  * Compare multiple SMILES strings (up to 256 by default).
@@ -639,6 +668,30 @@ export function conformer_ensemble_json(mol: MolHandle, n: number, rmsd_threshol
  * Returns `"#000000"` (black) for carbon and unknown elements.
  */
 export function cpk_color(element_symbol: string): string;
+
+/**
+ * Parse a Gaussian Cube file and return its full [`chematic_mol::VolumetricGrid`]
+ * as JSON: `{"origin":[x,y,z],"axes":[[..],[..],[..]],"shape":[nx,ny,nz],
+ * "values":[...flat, row-major third-axis-fastest...],
+ * "atoms":[{"element":"C","charge":6.0,"position":[x,y,z]}],
+ * "units":"bohr"|"angstrom"}`. See module docs for the perf tradeoff of a
+ * full `values` JSON round trip on a large grid.
+ */
+export function cube_grid_json(text: string): string;
+
+/**
+ * `[nx, ny, nz]` for a Gaussian Cube file's grid, as a `Uint32Array`.
+ */
+export function cube_shape_u32(text: string): Uint32Array;
+
+/**
+ * Flat `values` from a Gaussian Cube file's grid, as a `Float64Array` --
+ * same data [`cube_grid_json`]'s `"values"` field carries (row-major,
+ * third-axis-fastest order -- see `chematic_mol::volumetric`'s module
+ * docs for the exact index formula), as a real typed array instead of a
+ * JSON number array.
+ */
+export function cube_values_f64(text: string): Float64Array;
 
 /**
  * Compute structured depiction data for `mol` as a JSON object.
@@ -771,6 +824,30 @@ export function ecfp6_bitvec_with_chirality(mol: MolHandle, use_chirality: boole
 export function ecfp_bitvec_custom(mol: MolHandle, radius: number, nbits: number, use_chirality: boolean): Uint8Array;
 
 /**
+ * Run the opt-in v2 embedding pipeline, applied directly to `mol`'s own atom
+ * order (never canonicalizes/reparses -- see the module doc).
+ *
+ * `config_json` must be an object with the 15 required fields
+ * `PipelineV2Config` requires (camelCase keys: `embedSeed`, `maxAttempts`,
+ * `embedTimeoutMs`, `useExpTorsions`, `useSmallRingTorsions`,
+ * `useMacrocycleTorsions`, `useMacrocycle14Bounds`,
+ * `includeLegacyTorsionHeuristic`, `stereoPolicy`, `failOnUnevaluableStereo`,
+ * `forceFieldPolicy`, `forceFieldMaxIterations`, `gateMmff94TorsionOop`,
+ * `ringTorsionPolicy`, `totalTimeoutMs`), plus one optional field added in
+ * Priority 2 (issue #227): `gateMmff94StretchBend` (`#[serde(default)]` ->
+ * `false` if omitted, so pre-Priority-2 caller configs keep working
+ * unmodified, matching `false`'s meaning of "existing/unchanged behavior"
+ * everywhere else in this codebase). An unknown field, a missing *required*
+ * field, an unknown `stereoPolicy`/`ringTorsionPolicy`/`forceFieldPolicy`
+ * string, or a wrong-typed/out-of-range integer all fail closed rather than
+ * silently defaulting.
+ *
+ * Never throws. Always returns a JSON string tagged with `schemaVersion: 1` and
+ * `ok: true`/`false` -- see the module doc for both shapes.
+ */
+export function embed_pipeline_v2_json(mol: MolHandle, config_json: string): string;
+
+/**
  * Enumerate a combinatorial library from a SMIRKS template and two fragment sets.
  *
  * Generates all products by combining every scaffold with every building block.
@@ -816,6 +893,23 @@ export function erg_vec_json(mol: MolHandle): string;
  * Indices match `mol.atoms()` order.  Hydrogen atoms get 0.0.
  */
 export function estate_indices_json(mol: MolHandle): string;
+
+/**
+ * Extract an extxyz frame's coordinates, cell, per-atom properties and
+ * frame metadata as JSON, in the SAME atom order [`mol_from_extxyz`]
+ * returns topology for (both read the identical frame via
+ * `chematic_mol::parse_extxyz`, so atom-index correspondence between the
+ * two calls is structural, not just conventional).
+ *
+ * Returns JSON `{"coords":[[x,y,z],...],
+ * "lattice":[9 numbers]|null,
+ * "properties":{"name":[[...atom values...], ...], ...},
+ * "info":{"key":"value", ...}}`.
+ *
+ * Returns a JS error on parse failure or if the frame exceeds the WASM
+ * atom-count limit.
+ */
+export function extxyz_frame_json(text: string): string;
 
 /**
  * FCFP4 (pharmacophore, radius-2) fingerprint as a bit-packed byte vector (256 bytes).
@@ -1003,6 +1097,21 @@ export function get_dihedral_json(smiles: string, a: number, b: number, c: numbe
 export function getaway_descriptors_json(mol: MolHandle): string;
 
 /**
+ * Parse a ChemDraw XML (CDXML) string into a `MolHandle`.
+ *
+ * Compute an HDF fingerprint and return it as a JSON array of float32 values.
+ *
+ * Returns a unit-norm vector of length `dim` as a JSON number array.
+ * Use cosine dot product for similarity: `a · b = sum(a[i]*b[i])`.
+ *
+ * ```js
+ * const fp = JSON.parse(hdf_json(mol));        // float[] of length 1024
+ * const sim = fp.reduce((s, v, i) => s + v * fp2[i], 0);  // cosine similarity
+ * ```
+ */
+export function hdf_json(mol: MolHandle, dim: number, radius: number, seed: bigint): string;
+
+/**
  * Identify functional groups. Returns a JSON array of objects:
  * `[{"atoms":[0,2,3],"type":"C,N,O"}, …]`
  */
@@ -1041,6 +1150,114 @@ export function is_valid_smiles(s: string): boolean;
  * Non-finite values (single-atom molecules etc.) are emitted as JSON `null`.
  */
 export function labute_asa_per_atom_json(mol: MolHandle): string;
+
+/**
+ * Parse a LAMMPS data file (`read_data` format) and return every section
+ * as JSON: `{"counts":[["atoms",120],["atom types",4],...],
+ * "atom_style":"atomic"|"charge"|"molecular"|"full"|"<other>",
+ * "simulation_box":{"lo":[x,y,z],"hi":[x,y,z],"tilt":[xy,xz,yz]|null},
+ * "masses":[{"atom_type":N,"mass":N}],
+ * "atoms":[{"id":N,"molecule_id":N|null,"atom_type":N,"charge":N|null,"x":N,"y":N,"z":N,"image":[ix,iy,iz]|null}],
+ * "velocities":[{"atom_id":N,"vx":N,"vy":N,"vz":N}],
+ * "bonds":[{"id":N,"bond_type":N,"atom1":N,"atom2":N}],
+ * "unparsed_sections":[["Angles","<raw row text>"],...]}`. `atom_type`
+ * must be exactly `"atomic"`/`"charge"`/`"molecular"`/`"full"` -- LAMMPS's
+ * atom style is not recoverable from the file itself (see
+ * [`chematic_mol::LammpsData`]'s module doc comment); any other value is
+ * rejected with a JS error, matching
+ * [`chematic_mol::LammpsDataError::UnsupportedAtomStyle`].
+ *
+ * This module has no bond-perception step of its own: `Angles`/
+ * `Dihedrals`/`Impropers`/`*Coeffs`/any other section not listed above
+ * are preserved verbatim (byte-for-byte, `#` comments included) in
+ * `unparsed_sections`, not modeled field-by-field.
+ */
+export function lammps_data_to_json(text: string, atom_style: string): string;
+
+/**
+ * Like [`lammps_dump_cartesian_positions_json`], but returns a flat
+ * `Float64Array` (`[x0,y0,z0,x1,y1,z1,...]`, 3 values per atom) instead
+ * of a JSON `[[x,y,z],...]` array.
+ *
+ * **Behavioral difference from the JSON sibling**: when the frame has no
+ * recognized coordinate columns, [`lammps_dump_cartesian_positions_json`]
+ * returns JSON `null`; a `Float64Array` has no `null`, so this function
+ * returns `Err` instead, with a message naming the columns it looked for.
+ */
+export function lammps_dump_cartesian_positions_f64(frame_json: string): Float64Array;
+
+/**
+ * Real Cartesian positions for a LAMMPS dump frame (in the JSON shape
+ * [`lammps_dump_frame_to_json_str`] returns), resolved by delegating
+ * directly to [`chematic_mol::LammpsDumpFrame::cartesian_positions`] --
+ * this function does not reimplement any part of the box-bounds or
+ * scaled-coordinate math itself; that method is the single place this
+ * crate gets the (orthogonal or triclinic) transform right, and every
+ * WASM caller must go through it rather than re-deriving the transform in
+ * JS (the same reasoning behind this crate's OpenDX fail-closed unit
+ * handling and QCSchema's single Bohr<->Ångström conversion point).
+ *
+ * - `x y z` columns: passed straight through.
+ * - `xs ys zs` columns: transformed through `frame.box_bounds` (including
+ *   the triclinic shear terms when a tilt is present).
+ * - Neither present (including an `xu yu zu`-only frame -- "unwrapped" is
+ *   a materially different physical quantity from a scaled coordinate,
+ *   never resolved by this method): returns JSON `null`, not an error and
+ *   not an empty array, matching
+ *   [`chematic_mol::LammpsDumpFrame::cartesian_positions`]'s own
+ *   `Option` semantics exactly.
+ *
+ * Returns JSON `[[x,y,z],...]` on success, in the same atom order as
+ * `frame.rows`. See [`lammps_dump_cartesian_positions_f64`] for a flat
+ * `Float64Array` sibling -- note its `null` case becomes an `Err` there
+ * instead, a disclosed, real API-shape difference (a typed array has no
+ * `null`).
+ */
+export function lammps_dump_cartesian_positions_json(frame_json: string): string;
+
+/**
+ * Parse a single LAMMPS dump/trajectory frame and return it as JSON:
+ * `{"timestep":N,"num_atoms":N,
+ * "box_bounds":{"lo":[x,y,z],"hi":[x,y,z],"tilt":[xy,xz,yz]|null},
+ * "boundary_flags":["pp","pp","pp"],"column_names":[...],
+ * "rows":[[...values, one per column_names entry...],...]}`.
+ * `box_bounds` is already the resolved TRUE simulation box (the parser
+ * applies [`chematic_mol::box_bounds_to_true`] internally before
+ * `LammpsDumpFrame` is ever built) -- not the file's raw
+ * `xlo_bound`/`xhi_bound`/... values. `rows` is the raw per-atom column
+ * data as declared by `column_names`, which may be `x y z`
+ * (already-Cartesian), `xs ys zs` (box-scaled), `xu yu zu` (unwrapped), or
+ * any other dump-command column -- use
+ * [`lammps_dump_cartesian_positions_json`] to resolve real Cartesian
+ * positions from whichever convention is present, rather than
+ * reimplementing that resolution/transform in JS.
+ */
+export function lammps_dump_frame_to_json_str(text: string): string;
+
+/**
+ * Flattens a LAMMPS dump frame's `rows` (JSON shape
+ * [`lammps_dump_frame_to_json_str`] returns) into a single flat
+ * `Float64Array`, row-major (atom 0's `column_names.len()` values, then
+ * atom 1's, ...). The caller already has `column_names` from
+ * [`lammps_dump_frame_to_json_str`] and can compute the row length
+ * itself (`column_names.length`); no separate row-length accessor is
+ * provided here.
+ */
+export function lammps_dump_rows_f64(frame_json: string): Float64Array;
+
+/**
+ * Parse every frame of a LAMMPS dump/trajectory file and return them as a
+ * JSON array (same per-frame shape as [`lammps_dump_frame_to_json_str`]).
+ *
+ * This reads the whole input, parses it fully, and returns every frame at
+ * once -- [`chematic_mol::LammpsDumpReader`]'s per-frame streaming
+ * iteration (reading one frame at a time from a `BufRead` without holding
+ * the whole trajectory in memory) has no natural equivalent across the
+ * JS/WASM boundary in this first pass and is deliberately not exposed
+ * here, not silently dropped: a JS caller with a truly large trajectory
+ * that needs bounded memory should process it server-side instead.
+ */
+export function lammps_trajectory_to_json(text: string): string;
 
 /**
  * Return the largest fragment of `mol` (salt/solvent stripping).
@@ -1141,10 +1358,33 @@ export function minimize_mmff94_lbfgs_json(mol: MolHandle, max_iter: number): st
  * `coords_json` — JSON array of `[x,y,z]` arrays (Å), one per atom.
  * `max_iter` — maximum iterations (0 = default 500).
  *
- * Returns JSON: `{"coords":[[x,y,z],...], "energy":float, "iterations":int, "converged":bool}`
- * or `{"error":"<msg>"}` on failure.
+ * Returns JSON: `{"coords":[[x,y,z],...], "energy":float, "iterations":int, "converged":bool, "sound":bool}`
+ * or `{"error":"<msg>"}` on failure. `sound` is all-finite coordinates and
+ * no bond stretched past a sane covalent-bond length — independent of
+ * `converged`, since steepest descent often reports `converged:false` on
+ * geometries that are perfectly fine but simply haven't hit the tight
+ * RMS-gradient threshold yet. Check `sound`, not just `converged`, before
+ * trusting a result.
  */
 export function minimize_uff_json(smiles: string, coords_json: string, max_iter: number): string;
+
+/**
+ * Cartesian coordinates from an mmCIF file, in the SAME atom order
+ * [`mol_from_mmcif`] returns topology for. Returns JSON `[[x,y,z],...]`
+ * (Å).
+ */
+export function mmcif_coords_json(text: string): string;
+
+/**
+ * Parse an mmCIF file and return every `_atom_site` field (occupancy,
+ * B-factor, chain/residue bookkeeping, formal charge, model number, ...),
+ * the unit cell, space group, and any loop column this reader saw but
+ * does not model, as JSON: `{"atoms":[{...}],"cell":{...}|null,
+ * "space_group":"..."|null,"unhandled_columns":[...]}`. See
+ * [`chematic_mol::MmcifAtomRecord`]'s doc comment for each atom field's
+ * exact source column and defaulting rule.
+ */
+export function mmcif_to_json(text: string): string;
 
 /**
  * MMFF94 partial charges (BCI table, ±0.1e accuracy) as a JSON array of f64.
@@ -1164,7 +1404,33 @@ export function mmff94_charges_json(mol: MolHandle): string;
 export function mmff94_charges_typed_json(mol: MolHandle): string;
 
 /**
- * Compute MMFF94 energy breakdown for current rule-based 3D geometry.
+ * Compute MMFF94 energy breakdown for EXPLICIT, caller-supplied 3D
+ * coordinates -- unlike `mmff94_energy_breakdown_json`, this reads the
+ * geometry the caller actually has (e.g. from `pdb_coords_json`,
+ * `generate_3d_coords_json`, `generate_3d_etkdg_coords_json`, or an
+ * externally computed conformer) instead of silently generating a fresh
+ * rule-based one, matching the Python binding's
+ * `mol.mmff94_energy_breakdown(coords)` contract (issue #90).
+ *
+ * `coords_json` -- JSON array of `[x,y,z]` arrays (Å), one per heavy atom,
+ * in the same atom order as `mol`.
+ *
+ * Returns JSON `{"bond":B,"angle":A,"stretch_bend":S,"torsion":T,"oop":O,
+ * "vdw":V,"electrostatic":E,"total":X}` at full `f64` round-trip precision
+ * (not rounded -- this API exists specifically for oracle comparison
+ * against the Python binding, where 4-decimal rounding would mask
+ * sub-1e-4 discrepancies), or `{"error":"<msg>"}` on malformed JSON, a
+ * non-finite coordinate, or a coordinate-count/atom-count mismatch. Never
+ * falls back to a generated conformer.
+ */
+export function mmff94_energy_breakdown_from_coords_json(mol: MolHandle, coords_json: string): string;
+
+/**
+ * Computes energy on an internally generated conformer.
+ * `MolHandle` stores topology only; coordinates previously read from PDB/XYZ
+ * are not used by this function.
+ * Use [`mmff94_energy_breakdown_from_coords_json`] for explicit coordinates.
+ *
  * Returns JSON: {"bond":B,"angle":A,"torsion":T,"vdw":V,"elec":E,"total":X} or {"error":"..."}.
  */
 export function mmff94_energy_breakdown_json(mol: MolHandle): string;
@@ -1223,8 +1489,17 @@ export function mol_block_coords_json(mol_block: string): string;
 export function mol_block_from_smiles(smiles: string): string;
 
 /**
- * Parse a ChemDraw XML (CDXML) string into a `MolHandle`.
+ * Rejected wedge/hash stereocenters for a MOL V2000 block, as JSON.
  *
+ * Companion to [`mol_from_sdf_block`]/[`mol_block_coords_json`] -- returns
+ * `[{"atom_idx":N,"reason":"..."}]`, empty unless a wedge/hash bond was
+ * present at some center and got rejected. See
+ * `crates/chematic-py/src/formats.rs`'s `from_mol_block_with_diagnostics`
+ * for the reason vocabulary (kept identical across bindings).
+ */
+export function mol_block_stereo_diagnostics_json(mol_block: string): string;
+
+/**
  * Only the first molecular fragment in the document is returned.
  * Returns a JS error if the document cannot be parsed.
  */
@@ -1238,12 +1513,83 @@ export function mol_from_cdxml(cdxml: string): MolHandle;
 export function mol_from_cml(cml: string): MolHandle;
 
 /**
- * Parse a PDB file and return a `MolHandle` (topology only; coordinates are discarded).
+ * Parse a Gaussian Cube file and return a `MolHandle` (topology only --
+ * element list, no bonds; Cube carries no bond table). Use
+ * [`cube_grid_json`] to recover coordinates, the scalar field, and the
+ * grid geometry.
+ */
+export function mol_from_cube(text: string): MolHandle;
+
+/**
+ * Parse an Extended XYZ (extxyz) frame and return a `MolHandle` (topology +
+ * element/position only; use [`extxyz_frame_json`] to recover coordinates,
+ * cell, per-atom properties and frame metadata in the SAME atom order).
+ *
+ * A plain XYZ file (free-form comment, no `Lattice=`/`Properties=`) parses
+ * too. Only the first frame of a multi-frame file is read.
+ *
+ * Returns a JS error on parse failure or if the frame exceeds the WASM
+ * atom-count limit.
+ */
+export function mol_from_extxyz(text: string): MolHandle;
+
+/**
+ * Parse an mmCIF file and return a `MolHandle` (topology only -- element
+ * list, no bonds; mmCIF's `_atom_site` category carries no connectivity).
+ * Includes every model's atoms if the file has more than one -- use
+ * [`mmcif_to_json`] to get each atom's `model_num` for filtering. Use
+ * [`mmcif_coords_json`] to recover coordinates in the same atom order.
+ */
+export function mol_from_mmcif(text: string): MolHandle;
+
+/**
+ * Parse a MolJSON string into a `MolHandle`.
+ *
+ * MolJSON is a JSON-based molecular representation designed for LLM
+ * (large language model) compatibility.  Returns a JS error on invalid input.
+ */
+export function mol_from_moljson(json: string): MolHandle;
+
+/**
+ * Parse an ORCA input file (`.inp`) and return a `MolHandle` (topology
+ * only -- element list, no bonds; ORCA input carries no bond table).
+ * Returns a JS error unless the file's coordinate block is an embedded
+ * `* xyz ... *` block -- `xyzfile`/`gzmtfile`/`int` (Z-matrix) blocks
+ * carry no atom list to convert, or none is present at all. Use
+ * [`orca_input_coords_json`] to recover coordinates + charge +
+ * multiplicity in the same atom order, or [`orca_input_to_json`] for the
+ * full input (comments/keywords/blocks/any coordinate-block kind).
+ */
+export function mol_from_orca_input(text: string): MolHandle;
+
+/**
+ * Parse a PDB file and return a `MolHandle` (topology only; coordinates are
+ * discarded -- use [`pdb_coords_json`] to recover them in the SAME atom
+ * order, and [`mmff94_energy_breakdown_from_coords_json`] to score them
+ * without chematic regenerating a fresh conformer).
  *
  * Uses CONECT records for connectivity if present; otherwise infers bonds from
  * atom distances (the same heuristic as the internal `pdb_to_molecule` function).
  */
 export function mol_from_pdb(pdb: string): MolHandle;
+
+/**
+ * Parse a PQR file and return a `MolHandle` (topology only -- element
+ * list inferred per-atom, no bonds; PQR carries no connectivity). Use
+ * [`pqr_coords_json`] to recover coordinates in the same atom order.
+ */
+export function mol_from_pqr(text: string): MolHandle;
+
+/**
+ * Parse a QCSchema `qcschema_molecule` JSON document and return a
+ * `MolHandle` (topology + `atomic_numbers`-derived isotopes -- no bonds
+ * unless the document's optional `connectivity` list is present, in which
+ * case those bond orders are mapped onto the nearest
+ * [`chematic_core::BondOrder`]). Use [`qcschema_molecule_coords_json`] to
+ * recover coordinates (converted Bohr -> Å) plus molecular
+ * charge/multiplicity, in the same atom order.
+ */
+export function mol_from_qcschema_molecule(json: string): MolHandle;
 
 /**
  * Parse a MOL V2000 block and return a `MolHandle`.
@@ -1270,6 +1616,12 @@ export function mol_from_xyz(xyz: string): MolHandle;
  * Return the index that would be assigned to an atom appended to `mol`.
  */
 export function mol_next_atom_idx(mol: MolHandle): number;
+
+/**
+ * Rejected wedge/hash stereocenters for a MOL V3000 block, as JSON. Same
+ * shape as [`mol_block_stereo_diagnostics_json`] but for V3000 input.
+ */
+export function mol_v3000_stereo_diagnostics_json(block: string): string;
 
 /**
  * Return a new `MolHandle` with one atom appended.
@@ -1379,6 +1731,58 @@ export function normalize_cxsmiles(s: string): string;
 export function normalize_reaction_smiles(rxn_smiles: string): string;
 
 /**
+ * Parse an OpenDX (APBS scalar-field subset) file and return its full
+ * [`chematic_mol::VolumetricGrid`] as JSON (same shape as
+ * [`cube_grid_json`]; `atoms` is always empty -- OpenDX has no atom
+ * section). No `mol_from_opendx` is provided: an OpenDX grid never carries
+ * atoms, so a `MolHandle` from one would always be empty and is not a
+ * useful binding.
+ */
+export function opendx_grid_json(text: string): string;
+
+/**
+ * `[nx, ny, nz]` for an OpenDX file's grid, as a `Uint32Array`.
+ */
+export function opendx_shape_u32(text: string): Uint32Array;
+
+/**
+ * Flat `values` from an OpenDX file's grid, as a `Float64Array` -- same
+ * data [`opendx_grid_json`]'s `"values"` field carries.
+ */
+export function opendx_values_f64(text: string): Float64Array;
+
+/**
+ * Coordinates + charge + multiplicity from an ORCA input file's embedded
+ * `* xyz ... *` block, in the SAME atom order [`mol_from_orca_input`]
+ * returns topology for. Returns JSON
+ * `{"coords":[[x,y,z],...],"charge":0,"multiplicity":1}`, or a JS error
+ * under the same conditions as [`mol_from_orca_input`].
+ */
+export function orca_input_coords_json(text: string): string;
+
+/**
+ * Parse an ORCA input file and return every field as JSON:
+ * `{"comments":[...],"keywords":[...],
+ * "blocks":[{"name":"scf","raw":"...","has_end":true},...],
+ * "coords":{"type":"xyz"|"xyzfile"|"gzmtfile"|"internal",...}|null}`.
+ * See [`chematic_mol::OrcaInput`]'s doc comment for each field's meaning.
+ */
+export function orca_input_to_json(text: string): string;
+
+/**
+ * Parse an ORCA output file (`.out`/`.log`) and return every extracted
+ * field as JSON: `{"charge":N|null,"multiplicity":N|null,
+ * "final_energy_hartree":N|null,
+ * "trajectory":[{"elements":[...],"coords":[[x,y,z],...]},...],
+ * "frequencies_cm1":[...],
+ * "termination":{"kind":"normal"|"error"|"incomplete","detail":"..."?},
+ * "optimization_convergence":"not_requested"|"converged"|"not_converged"|"unknown"}`.
+ * No writer is provided -- an ORCA output file is a job log, not a
+ * document this crate constructs.
+ */
+export function orca_output_to_json(text: string): string;
+
+/**
  * PAINS structural alert names matched by `mol` as a JSON array.
  *
  * Returns `[]` when no alerts fire, or e.g. `["ene_six_het_A(483)"]`.
@@ -1410,6 +1814,19 @@ export function parse_cxsmiles_json(s: string): string;
 export function parse_smiles(s: string): MolHandle;
 
 /**
+ * Extract the atomic coordinates from a PDB block, in the SAME atom order
+ * `mol_from_pdb` returns topology for (both read the identical underlying
+ * parse via `parse_pdb_molecule_and_coords`, so atom-index correspondence
+ * between the two calls is structural, not just conventional -- issue #90).
+ *
+ * Returns JSON `[[x,y,z],...]` (full `f64` precision, not rounded -- for
+ * oracle comparison against the Python binding) or `{"error":"<msg>"}` --
+ * including when a coordinate field parsed to a non-finite value (see
+ * `coords_all_finite`'s doc comment), rather than emitting invalid JSON.
+ */
+export function pdb_coords_json(pdb: string): string;
+
+/**
  * PEOE_VSA descriptors (14 bins) as a JSON array.
  */
 export function peoe_vsa_json(mol: MolHandle): string;
@@ -1433,6 +1850,26 @@ export function pharmacophore_fp_2d_summary(mol: MolHandle): string;
 export function pharmacophore_fp_3d_summary(mol: MolHandle): string;
 
 /**
+ * Cartesian coordinates from a PQR file, in the SAME atom order
+ * [`mol_from_pqr`] returns topology for. Returns JSON `[[x,y,z],...]` (Å).
+ */
+export function pqr_coords_json(text: string): string;
+
+/**
+ * Infer an element from a PQR atom name (see
+ * [`chematic_mol::infer_element`]'s doc comment for the heuristic).
+ * Returns `undefined` (JS) / `None` if no element could be inferred.
+ */
+export function pqr_infer_element(group_pdb: string, res_name: string, atom_name: string): string | undefined;
+
+/**
+ * Parse a PQR file and return every field (charge, radius, chain,
+ * residue, inferred element, ...) as JSON: `{"atoms":[{...}]}`. See
+ * [`chematic_mol::PqrAtomRecord`]'s doc comment for each field's meaning.
+ */
+export function pqr_to_json(text: string): string;
+
+/**
  * Predict pKa for all ionizable sites in a molecule.
  *
  * Returns a JSON array: `[{"atom_idx":8,"pka":4.0,"type":"acid","group":"carboxylic_acid"},...]`
@@ -1440,6 +1877,34 @@ export function pharmacophore_fp_3d_summary(mol: MolHandle): string;
  * Returns `[]` if no ionizable sites are found, or `{"error":"..."}` on parse failure.
  */
 export function predict_pka_json(smiles: string): string;
+
+/**
+ * Coordinates (Å) plus molecular charge/multiplicity from a QCSchema
+ * `qcschema_molecule` document, in the SAME atom order
+ * [`mol_from_qcschema_molecule`] returns topology for. Returns JSON
+ * `{"coords":[[x,y,z],...],"molecular_charge":0.0,"molecular_multiplicity":1}`.
+ */
+export function qcschema_molecule_coords_json(json: string): string;
+
+/**
+ * Parse a QCSchema `qcschema_input`/`qc_schema_input` JSON document
+ * (molecule + driver + model + keywords) and re-emit it, validating and
+ * canonicalizing field defaults in the process (e.g. a missing
+ * `schema_name`/`schema_version` is filled in). Job-level fields
+ * (`driver`, `model`, `keywords`, `protocols`, `extras`) are round-tripped
+ * opaquely -- this binding validates/reformats the document; it does not
+ * expose a separate JS-facing accessor for each field (out of scope for
+ * this first pass, see module docs' "None of these formats carry a bond
+ * table" section for the analogous molecule-centric scope choice made
+ * elsewhere in this file).
+ */
+export function qcschema_validate_atomic_input(json: string): string;
+
+/**
+ * Like [`qcschema_validate_atomic_input`], for a QCSchema
+ * `qcschema_output`/`qc_schema_output` (`AtomicResult`) document.
+ */
+export function qcschema_validate_atomic_result(json: string): string;
 
 /**
  * Generate `count` random SMILES from a SMILES string using the given seed.
@@ -1460,9 +1925,83 @@ export function predict_pka_json(smiles: string): string;
 export function random_smiles_json(smiles: string, count: number, seed: bigint): string;
 
 /**
+ * RDKit-bit-exact ECFP4 (radius=2, 2048 bits, `useChirality=false`, `useBondTypes=true`,
+ * RDKit's default atom invariant) as a bit-packed byte vector (256 bytes = 2048 bits).
+ *
+ * Bit-for-bit identical to
+ * `rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=2048).GetFingerprint(mol)`
+ * for every input this preprocessing handles. **Not** the same bits as `ecfp4_bitvec`
+ * (that path uses chematic's own FNV-1a hash and is not RDKit-bit-compatible by
+ * design -- the two are never silently interchanged).
+ *
+ * Returns a JS error (its string carrying `RdkitMorganError`'s `Display` text, e.g.
+ * `"rdkit-exact ecfp4: aromaticity: ..."`) if RDKit-parity aromaticity preprocessing
+ * fails, never a silent fallback to `ecfp4_bitvec`'s Hückel-based engine -- the two
+ * engines are not bit-compatible, so a silent substitution would look successful
+ * while actually returning the wrong hash. See `docs/rfcs/ecfp4_bitexact_api_rfc.md`.
+ */
+export function rdkit_ecfp4_bitvec(mol: MolHandle): Uint8Array;
+
+/**
+ * Same fingerprint as `rdkit_ecfp4_bitvec`, plus the raw (unfolded) data behind it, as
+ * JSON: `{"fingerprint":[u8,...],"sparseCounts":{"rawId":count,...},
+ * "rawBitInfo":{"rawId":[[atomIdx,radius],...],...},
+ * "foldedBitInfo":{"bit":[[atomIdx,radius],...],...}}`.
+ *
+ * Returns a JS error on the same preprocessing failures as `rdkit_ecfp4_bitvec`.
+ */
+export function rdkit_ecfp4_detail_json(mol: MolHandle): string;
+
+/**
+ * RDKit-bit-exact Morgan/ECFP fingerprint at a caller-chosen radius/bit-width, as a
+ * bit-packed byte vector (`nbits / 8` bytes, LSB-first).
+ *
+ * `radius` must be 0, 1, 2 (`rdkit_ecfp4_bitvec`'s ECFP4), or 3. `nbits` must be one
+ * of 128, 256, 512, 1024, or 2048. Each of these 20 combinations is independently
+ * re-verified against a live RDKit oracle (not assumed to generalize from
+ * radius=2/2048 bits alone) -- see `validation/ecfp4_rdkit_stable_api_fixtures.json`.
+ * An unsupported value returns a JS error rather than being silently coerced to the
+ * nearest supported one.
+ */
+export function rdkit_ecfp_config_bitvec(mol: MolHandle, radius: number, nbits: number): Uint8Array;
+
+/**
+ * Same fingerprint as `rdkit_ecfp_config_bitvec`, plus the raw (unfolded) data -- see
+ * `rdkit_ecfp4_detail_json` for the JSON shape (identical, generalized to this
+ * function's `radius`/`nbits`).
+ */
+export function rdkit_ecfp_config_detail_json(mol: MolHandle, radius: number, nbits: number): string;
+
+/**
  * Return a copy of the molecule with all explicit hydrogen atoms removed.
  */
 export function remove_hydrogens(mol: MolHandle): MolHandle;
+
+/**
+ * Single-step retrosynthetic disconnection (issue #91).
+ *
+ * Thin wrapper around [`chematic_rxn::retro::retro_disconnect`] -- applies
+ * the same built-in 60-template SMIRKS library and returns identical
+ * disconnections (same templates, same precursor sets, same ordering:
+ * fewest precursors first) as the Rust and Python (`Mol.retro_disconnect()`)
+ * APIs. This function changes nothing about the underlying algorithm; it
+ * only serializes the result to JSON.
+ *
+ * `max_results` -- cap on returned disconnections (0 = unlimited).
+ *
+ * `reaction_class` -- filter to a single reaction class, or `""` for all
+ * classes. Valid values: `"AmideBond"`, `"Ester"`, `"Ether"`, `"CNBond"`,
+ * `"CCBond"`, `"CSBond"`, `"Other"`. An unrecognized non-empty value is a
+ * JS error (not silently ignored).
+ *
+ * JSON schema: array of
+ * `{"template":str,"reaction_class":str,"precursors":[str,...],"sa_scores":[number,...],"max_sa_score":number}`
+ * -- same field names as the Python binding's dict output. Returns `[]`
+ * when no template matches the molecule (e.g. it has no disconnectable
+ * bond the template library recognizes) -- a valid, non-error result,
+ * distinct from the `reaction_class` validation error above.
+ */
+export function retro_disconnect_json(mol: MolHandle, max_results: number, reaction_class: string): string;
 
 /**
  * Decompose a set of molecules against a core SMARTS, returning R-group SMILES.
@@ -1547,11 +2086,15 @@ export function sdf_from_records_json(smiles_json: string, names_json: string, p
  *
  * Each record has the shape:
  * ```json
- * {"smiles":"CC(=O)O","name":"aspirin","properties":{"MW":"180.2","Activity":"high"}}
+ * {"smiles":"CC(=O)O","name":"aspirin","properties":{"MW":"180.2","Activity":"high"},"stereo_diagnostics":[]}
  * ```
  *
  * Invalid records are represented as `null`.  SD data fields are included in
- * `properties`; multi-line values are joined with `\n`.
+ * `properties`; multi-line values are joined with `\n`. `stereo_diagnostics`
+ * is a list of `{"atom_idx":N,"reason":"..."}` objects, one per rejected
+ * wedge/hash center (see [`mol_block_stereo_diagnostics_json`] for the
+ * reason vocabulary) -- empty unless a wedge/hash bond was present at some
+ * center and got rejected.
  */
 export function sdf_to_records_json(sdf: string): string;
 
@@ -1750,6 +2293,26 @@ export function tanimoto_torsion(a: MolHandle, b: MolHandle): number;
 export function to_cml(mol: MolHandle): string;
 
 /**
+ * Write a molecule + coordinates as an Extended XYZ (extxyz) frame.
+ *
+ * `coords_json`: `[[x,y,z],...]` (Å), same order and length as `mol`'s
+ * atoms.
+ *
+ * `options_json`: an optional JSON object,
+ * `{"lattice":[9 numbers]|null,"properties":{"name":[[...]],...},"info":{"key":"value",...}}`
+ * -- pass `"{}"` for a plain (non-extended) frame. Only real-valued
+ * per-atom `properties` columns are supported from this binding (matches
+ * the Python `to_extxyz` binding's scope); build a
+ * `chematic_mol::XyzProperty` directly from Rust for integer/string/logical
+ * columns.
+ *
+ * Returns a JS error if `coords_json`/`options_json` are malformed, if
+ * `coords_json`'s length doesn't match `mol`'s atom count, or if a
+ * `properties` column's row count doesn't match it.
+ */
+export function to_extxyz_json(mol: MolHandle, coords_json: string, options_json: string): string;
+
+/**
  * Serialize a molecule to a MOL V2000 block with 2D coordinates.
  *
  * Atom positions are computed via the same layout engine used for SVG depiction
@@ -1761,6 +2324,24 @@ export function to_mol_block(mol: MolHandle): string;
  * Serialise a `MolHandle` to MOL V3000 format with 2D coordinates.
  */
 export function to_mol_v3000_block(mol: MolHandle): string;
+
+/**
+ * Serialise a `MolHandle` to a MolJSON string (pretty-printed).
+ *
+ * Atom IDs are assigned as `"a1"`, `"a2"`, … in molecule atom order.
+ * The `hydrogens` field reflects computed implicit H count.
+ */
+export function to_moljson(mol: MolHandle): string;
+
+/**
+ * Serialize a `MolHandle` + coordinates (Å) + molecular charge/multiplicity
+ * as a QCSchema `qcschema_molecule` JSON document (coordinates converted
+ * to Bohr).
+ *
+ * `coords_json`: `[[x,y,z],...]` (Å), same order and length as `mol`'s
+ * atoms.
+ */
+export function to_qcschema_molecule_json(mol: MolHandle, coords_json: string, charge: number, multiplicity: bigint): string;
 
 /**
  * Serialize a molecule to XYZ format.
@@ -1799,6 +2380,76 @@ export function whim_descriptors_json(mol: MolHandle): string;
  * Useful for ML pipelines requiring both shape and topologic features.
  */
 export function whim_getaway_combined_json(mol: MolHandle): string;
+
+/**
+ * Write a grid (in the JSON shape [`cube_grid_json`] returns) as a
+ * Gaussian Cube file.
+ */
+export function write_cube_json(grid_json: string): string;
+
+/**
+ * Write a LAMMPS data file from the JSON shape [`lammps_data_to_json`]
+ * returns.
+ */
+export function write_lammps_data_json(json: string): string;
+
+/**
+ * Write a single LAMMPS dump frame from the JSON shape
+ * [`lammps_dump_frame_to_json_str`] returns.
+ */
+export function write_lammps_dump_frame_json(json: string): string;
+
+/**
+ * Write a LAMMPS trajectory (N frames concatenated back to back, matching
+ * [`chematic_mol::write_lammps_trajectory`]) from a JSON array of frames
+ * in the shape [`lammps_dump_frame_to_json_str`] returns.
+ */
+export function write_lammps_trajectory_json(json: string): string;
+
+/**
+ * Write an mmCIF file from atom records in the JSON shape
+ * [`mmcif_to_json`]'s `"atoms"` array uses (a full record per atom, not
+ * just element+coordinates -- mmCIF has no equivalent of "build from a
+ * bare `MolHandle`", since occupancy/B-factor/chain/residue fields have no
+ * source in a plain [`MolHandle`]).
+ *
+ * `cell_json`: `"null"` or `{"a":...,"b":...,"c":...,"alpha":...,"beta":...,"gamma":...}`.
+ * `space_group`: pass `""` for none.
+ */
+export function write_mmcif_json(records_json: string, cell_json: string, space_group: string, data_block_name: string): string;
+
+/**
+ * Write a grid as an OpenDX file. Fails closed for a
+ * [`chematic_mol::GridUnits::Bohr`]-tagged grid (OpenDX has no unit tag of
+ * its own and is universally read back as Ångström -- see
+ * `chematic_mol::opendx`'s module docs) and for a grid carrying any atoms
+ * (OpenDX has no atom section). Use [`write_opendx_lossy_json`] to opt
+ * into an explicit Bohr->Ångström conversion instead of failing.
+ */
+export function write_opendx_json(grid_json: string): string;
+
+/**
+ * Like [`write_opendx_json`], but a [`chematic_mol::GridUnits::Bohr`] grid
+ * has its `origin`/`axes` explicitly converted to Ångström rather than
+ * rejected (`values` -- the scalar-field samples themselves -- are never
+ * rescaled; see `write_opendx_lossy`'s doc comment). Still fails for a
+ * grid carrying any atoms.
+ */
+export function write_opendx_lossy_json(grid_json: string): string;
+
+/**
+ * Write an ORCA input file from the JSON shape [`orca_input_to_json`]
+ * returns.
+ */
+export function write_orca_input_json(json: string): string;
+
+/**
+ * Write a PQR file from atom records in the JSON shape [`pqr_to_json`]'s
+ * `"atoms"` array uses. Each atom's `chain_id` independently controls
+ * whether that line is written with or without the (optional) chain
+ * column.
+ */
+export function write_pqr_json(records_json: string): string;
 
 /**
  * Non-canonical SMILES for `mol`.
@@ -1843,7 +2494,10 @@ export interface InitOutput {
     readonly canonical_tautomer: (a: number) => number;
     readonly canonical_tautomer_with_blocked_atoms_json: (a: number, b: number, c: number) => [number, number];
     readonly cdxml_to_smiles_json: (a: number, b: number) => [number, number, number, number];
+    readonly chematic_version: () => [number, number];
+    readonly cip_assignments_accurate_json: (a: number) => [number, number];
     readonly cip_assignments_json: (a: number) => [number, number];
+    readonly cip_unresolved_json: (a: number) => [number, number];
     readonly compare_molecules_batch_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly compare_molecules_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly conformer_ensemble_json: (a: number, b: number, c: number) => [number, number];
@@ -1858,6 +2512,9 @@ export interface InitOutput {
     readonly conformerhandle_new: (a: number, b: number) => [number, number, number];
     readonly conformerhandle_remove_conformer: (a: number, b: number) => number;
     readonly cpk_color: (a: number, b: number) => [number, number];
+    readonly cube_grid_json: (a: number, b: number) => [number, number, number, number];
+    readonly cube_shape_u32: (a: number, b: number) => [number, number, number];
+    readonly cube_values_f64: (a: number, b: number) => [number, number, number];
     readonly depict_data_json: (a: number) => [number, number];
     readonly depict_data_with_coords_json: (a: number, b: number, c: number) => [number, number];
     readonly depict_reaction_svg: (a: number, b: number) => [number, number, number, number];
@@ -1885,11 +2542,13 @@ export interface InitOutput {
     readonly ecfp6_bitvec: (a: number) => [number, number];
     readonly ecfp6_bitvec_with_chirality: (a: number, b: number) => [number, number];
     readonly ecfp_bitvec_custom: (a: number, b: number, c: number, d: number) => [number, number];
+    readonly embed_pipeline_v2_json: (a: number, b: number, c: number) => [number, number];
     readonly enumerate_library_2way: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
     readonly enumerate_stereo_isomers_json: (a: number) => [number, number, number, number];
     readonly enumerate_tautomers_json: (a: number) => [number, number];
     readonly erg_vec_json: (a: number) => [number, number];
     readonly estate_indices_json: (a: number) => [number, number];
+    readonly extxyz_frame_json: (a: number, b: number) => [number, number, number, number];
     readonly fcfp4_bitvec: (a: number) => [number, number];
     readonly fcfp6_bitvec: (a: number) => [number, number];
     readonly find_reaction_center_json: (a: number, b: number) => [number, number];
@@ -1910,12 +2569,19 @@ export interface InitOutput {
     readonly get_descriptors_json: (a: number) => [number, number];
     readonly get_dihedral_json: (a: number, b: number, c: number, d: number, e: number, f: number) => any;
     readonly getaway_descriptors_json: (a: number) => [number, number];
+    readonly hdf_json: (a: number, b: number, c: number, d: bigint) => [number, number];
     readonly identify_functional_groups: (a: number) => [number, number];
     readonly inchi_from_smiles: (a: number, b: number) => [number, number];
     readonly inchikey_from_smiles: (a: number, b: number) => [number, number];
     readonly invert_stereocenter_at: (a: number, b: number) => [number, number, number];
     readonly is_valid_smiles: (a: number, b: number) => number;
     readonly labute_asa_per_atom_json: (a: number) => [number, number];
+    readonly lammps_data_to_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly lammps_dump_cartesian_positions_f64: (a: number, b: number) => [number, number, number];
+    readonly lammps_dump_cartesian_positions_json: (a: number, b: number) => [number, number, number, number];
+    readonly lammps_dump_frame_to_json_str: (a: number, b: number) => [number, number, number, number];
+    readonly lammps_dump_rows_f64: (a: number, b: number) => [number, number, number];
+    readonly lammps_trajectory_to_json: (a: number, b: number) => [number, number, number, number];
     readonly largest_fragment: (a: number) => number;
     readonly logp_per_atom_json: (a: number) => [number, number];
     readonly maccs_bitvec: (a: number) => [number, number];
@@ -1933,21 +2599,33 @@ export interface InitOutput {
     readonly minimize_mmff94_json: (a: number, b: number) => [number, number];
     readonly minimize_mmff94_lbfgs_json: (a: number, b: number) => [number, number];
     readonly minimize_uff_json: (a: number, b: number, c: number, d: number, e: number) => [number, number];
+    readonly mmcif_coords_json: (a: number, b: number) => [number, number, number, number];
+    readonly mmcif_to_json: (a: number, b: number) => [number, number, number, number];
     readonly mmff94_charges_json: (a: number) => [number, number];
     readonly mmff94_charges_typed_json: (a: number) => [number, number];
+    readonly mmff94_energy_breakdown_from_coords_json: (a: number, b: number, c: number) => [number, number];
     readonly mmff94_energy_breakdown_json: (a: number) => [number, number];
     readonly mmff94_partial_charges_json: (a: number) => [number, number];
     readonly mmp_pairs_json: (a: number, b: number) => [number, number, number, number];
     readonly mol2_to_smiles: (a: number, b: number) => [number, number];
     readonly mol_block_coords_json: (a: number, b: number) => [number, number, number, number];
     readonly mol_block_from_smiles: (a: number, b: number) => [number, number, number, number];
+    readonly mol_block_stereo_diagnostics_json: (a: number, b: number) => [number, number, number, number];
     readonly mol_from_cdxml: (a: number, b: number) => [number, number, number];
     readonly mol_from_cml: (a: number, b: number) => [number, number, number];
+    readonly mol_from_cube: (a: number, b: number) => [number, number, number];
+    readonly mol_from_extxyz: (a: number, b: number) => [number, number, number];
+    readonly mol_from_mmcif: (a: number, b: number) => [number, number, number];
+    readonly mol_from_moljson: (a: number, b: number) => [number, number, number];
+    readonly mol_from_orca_input: (a: number, b: number) => [number, number, number];
     readonly mol_from_pdb: (a: number, b: number) => number;
+    readonly mol_from_pqr: (a: number, b: number) => [number, number, number];
+    readonly mol_from_qcschema_molecule: (a: number, b: number) => [number, number, number];
     readonly mol_from_sdf_block: (a: number, b: number) => [number, number, number];
     readonly mol_from_v3000_block: (a: number, b: number) => [number, number, number];
     readonly mol_from_xyz: (a: number, b: number) => [number, number, number];
     readonly mol_next_atom_idx: (a: number) => number;
+    readonly mol_v3000_stereo_diagnostics_json: (a: number, b: number) => [number, number, number, number];
     readonly mol_with_atom_added: (a: number, b: number, c: number) => [number, number, number];
     readonly mol_with_atom_charge: (a: number, b: number, c: number) => [number, number, number];
     readonly mol_with_atom_element: (a: number, b: number, c: number, d: number) => [number, number, number];
@@ -1957,7 +2635,6 @@ export interface InitOutput {
     readonly molecule_report_json: (a: number, b: number) => [number, number, number, number];
     readonly molhandle_aromatic_ring_count: (a: number) => number;
     readonly molhandle_assign_cip_json: (a: number) => [number, number];
-    readonly molhandle_atom_count: (a: number) => number;
     readonly molhandle_bbb_passes: (a: number) => number;
     readonly molhandle_bbb_score: (a: number) => number;
     readonly molhandle_bertz_ct: (a: number) => number;
@@ -2035,17 +2712,35 @@ export interface InitOutput {
     readonly neutralize_charges: (a: number) => number;
     readonly normalize_cxsmiles: (a: number, b: number) => [number, number, number, number];
     readonly normalize_reaction_smiles: (a: number, b: number) => [number, number, number, number];
+    readonly opendx_grid_json: (a: number, b: number) => [number, number, number, number];
+    readonly opendx_shape_u32: (a: number, b: number) => [number, number, number];
+    readonly opendx_values_f64: (a: number, b: number) => [number, number, number];
+    readonly orca_input_coords_json: (a: number, b: number) => [number, number, number, number];
+    readonly orca_input_to_json: (a: number, b: number) => [number, number, number, number];
+    readonly orca_output_to_json: (a: number, b: number) => [number, number, number, number];
     readonly pains_matches_json: (a: number) => [number, number];
     readonly parse_cxsmarts_json: (a: number, b: number) => [number, number, number, number];
     readonly parse_cxsmiles_json: (a: number, b: number) => [number, number, number, number];
     readonly parse_smiles: (a: number, b: number) => [number, number, number];
+    readonly pdb_coords_json: (a: number, b: number) => [number, number];
     readonly peoe_vsa_json: (a: number) => [number, number];
     readonly pharmacophore_features_json: (a: number) => [number, number];
     readonly pharmacophore_fp_2d_summary: (a: number) => [number, number];
     readonly pharmacophore_fp_3d_summary: (a: number) => [number, number];
+    readonly pqr_coords_json: (a: number, b: number) => [number, number, number, number];
+    readonly pqr_infer_element: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];
+    readonly pqr_to_json: (a: number, b: number) => [number, number, number, number];
     readonly predict_pka_json: (a: number, b: number) => [number, number];
+    readonly qcschema_molecule_coords_json: (a: number, b: number) => [number, number, number, number];
+    readonly qcschema_validate_atomic_input: (a: number, b: number) => [number, number, number, number];
+    readonly qcschema_validate_atomic_result: (a: number, b: number) => [number, number, number, number];
     readonly random_smiles_json: (a: number, b: number, c: number, d: bigint) => [number, number, number, number];
+    readonly rdkit_ecfp4_bitvec: (a: number) => [number, number, number, number];
+    readonly rdkit_ecfp4_detail_json: (a: number) => [number, number, number, number];
+    readonly rdkit_ecfp_config_bitvec: (a: number, b: number, c: number) => [number, number, number, number];
+    readonly rdkit_ecfp_config_detail_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly remove_hydrogens: (a: number) => number;
+    readonly retro_disconnect_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly rgroup_decompose_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly ring_families_json: (a: number) => [number, number, number, number];
     readonly run_reactants: (a: number, b: number, c: number, d: number) => [number, number, number, number];
@@ -2067,7 +2762,6 @@ export interface InitOutput {
     readonly sssr_rings_json: (a: number) => [number, number];
     readonly standardize_smiles: (a: number, b: number) => [number, number];
     readonly standardize_smiles_report_json: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];
-    readonly start: () => void;
     readonly tanimoto_atom_pair: (a: number, b: number) => number;
     readonly tanimoto_ecfp4: (a: number, b: number) => number;
     readonly tanimoto_ecfp6: (a: number, b: number) => number;
@@ -2080,18 +2774,33 @@ export interface InitOutput {
     readonly tanimoto_topo_path: (a: number, b: number) => number;
     readonly tanimoto_torsion: (a: number, b: number) => number;
     readonly to_cml: (a: number) => [number, number];
+    readonly to_extxyz_json: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
     readonly to_mol_block: (a: number) => [number, number];
     readonly to_mol_v3000_block: (a: number) => [number, number];
+    readonly to_moljson: (a: number) => [number, number];
+    readonly to_qcschema_molecule_json: (a: number, b: number, c: number, d: number, e: bigint) => [number, number, number, number];
     readonly to_xyz: (a: number) => [number, number];
     readonly torsion_bitvec: (a: number) => [number, number];
     readonly virtual_screen_ecfp4_json: (a: number, b: number, c: number, d: number, e: number) => [number, number];
     readonly whim_descriptors_json: (a: number) => [number, number];
     readonly whim_getaway_combined_json: (a: number) => [number, number];
+    readonly write_cube_json: (a: number, b: number) => [number, number, number, number];
+    readonly write_lammps_data_json: (a: number, b: number) => [number, number, number, number];
+    readonly write_lammps_dump_frame_json: (a: number, b: number) => [number, number, number, number];
+    readonly write_lammps_trajectory_json: (a: number, b: number) => [number, number, number, number];
+    readonly write_mmcif_json: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
+    readonly write_opendx_json: (a: number, b: number) => [number, number, number, number];
+    readonly write_opendx_lossy_json: (a: number, b: number) => [number, number, number, number];
+    readonly write_orca_input_json: (a: number, b: number) => [number, number, number, number];
+    readonly write_pqr_json: (a: number, b: number) => [number, number, number, number];
     readonly write_smiles: (a: number) => [number, number];
     readonly xlogp3_json: (a: number) => [number, number];
     readonly xlogp3_per_atom_json: (a: number) => [number, number];
+    readonly molhandle_atom_count: (a: number) => number;
+    readonly start: () => void;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
+    readonly __externref_table_alloc: () => number;
     readonly __wbindgen_externrefs: WebAssembly.Table;
     readonly __wbindgen_free: (a: number, b: number, c: number) => void;
     readonly __externref_table_dealloc: (a: number) => void;

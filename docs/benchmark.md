@@ -15,9 +15,9 @@ Full methodology and raw numbers: [`benchmarks/2026-07-17.md`](../benchmarks/202
 | ECFP4 batch — 10,000 mol (small repeated fixture) | **126 ms** | ~839 ms (6.7×) |
 | ECFP4 batch — 5,000 mol (diverse ChEMBL corpus) | **~78 µs/mol** | ~160–235 µs/mol (2–3×) |
 | Descriptor accuracy vs RDKit | **19 metrics ≥98.6%, most 100%** — MW/HBA/HBD/TPSA/LogP/ARC/RotB/Spiro/Bridge/… (4,999-mol) | baseline |
-| Install | `pip install chematic` | conda or cmake |
-| C/C++ dependencies | **Zero** | Required |
-| WASM binary size | **719 KB** | ~30 MB |
+| Install | `pip install chematic` | `pip install rdkit` (official prebuilt wheels) or conda |
+| C/C++ dependencies | **Zero**, even building from source | Not required for the prebuilt wheel; required (Boost, CMake) building from source |
+| WASM binary size | **2.94 MB raw / 1.10 MB gzip** (measured 2026-08-21, commit `ef7dc25`) | 6.91 MB raw (RDKit.js, a separate community project — see [`docs/rdkit-comparison.md`](rdkit-comparison.md)) |
 
 The ECFP4 speedup is fixture-dependent: a small set of simple molecules repeated to fill
 the batch shows a larger ratio than a large, structurally diverse corpus. See
@@ -188,12 +188,12 @@ python scripts/bench5k.py path/to/SMILES.csv --detail
 
 | | chematic | RDKit |
 |---|----------|-------|
-| Python | `pip install chematic` | `conda install -c conda-forge rdkit` |
-| C/C++ compiler | Not required | Required (Boost) |
-| Docker image size delta | ~4 MB | ~200 MB+ |
+| Python | `pip install chematic` | `pip install rdkit` (official prebuilt wheels) or `conda install -c conda-forge rdkit` |
+| C/C++ compiler | Not required, even building from source | Not required for the prebuilt wheel; required (Boost) building RDKit itself from source |
+| Docker image size delta | ~4 MB (approximate; not independently re-measured this cycle) | ~200 MB+ (approximate; not independently re-measured this cycle) |
 | GitHub Actions | Single pip line | Separate conda setup step |
-| JavaScript / WASM | `npm install @kent-tokyo/chematic` (719 KB) | No official package |
-| Browser deployment | Yes | No |
+| JavaScript / WASM | `npm install @kent-tokyo/chematic` (2.94 MB raw / 1.10 MB gzip) | `npm install @rdkit/rdkit` (RDKit.js, a separate community project — 6.91 MB raw) |
+| Browser deployment | Yes | Yes, via RDKit.js |
 
 ---
 
@@ -201,12 +201,12 @@ python scripts/bench5k.py path/to/SMILES.csv --detail
 
 | Feature | chematic | RDKit |
 |---------|----------|-------|
-| pKa prediction | Built-in (15 SMARTS rules) | External tool required |
-| ADMET profile (BBB, Caco-2, hERG, CYP3A4) | Built-in | External tool required |
+| pKa prediction | Built-in, rule-based screening — not for clinical use (15 SMARTS rules) | External tool required |
+| ADMET profile (BBB, Caco-2, hERG, CYP3A4) | Built-in, rule-based screening — not for clinical use | External tool required |
 | MCP server (AI agent integration) | 20 tools (stdio only) | Not available |
 | LSH approximate nearest-neighbour index | Built-in | Not available |
 | IUPAC name generation | Built-in (offline) | Not available |
-| Browser / WASM deployment | Yes (719 KB) | No |
+| Browser / WASM deployment | Yes (2.94 MB raw / 1.10 MB gzip) | Yes, via RDKit.js (a separate community project — 6.91 MB raw) |
 | ECFP4 batch speed | 2–3× faster (diverse corpus) | Baseline |
 | SMARTS atom map `:N` | Yes | Yes |
 | Retrosynthesis (template-based) | 60 retro-SMIRKS built-in | External tool |

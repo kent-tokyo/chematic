@@ -20,12 +20,21 @@ python scripts/bench5k.py ~/Downloads/SMILES.csv
 python scripts/bench5k.py ~/Downloads/SMILES.csv --detail   # show mismatches
 ```
 
-### Accuracy vs RDKit (175-mol drug-like corpus, in-repo)
+### Accuracy vs RDKit (4,999-mol ChEMBL-derived corpus)
+
+`scripts/rdkit_benchmark.py` measures RDKit-side timing only (see its own docstring) — it
+does not perform an accuracy comparison, despite an earlier version of this file pointing to
+it for that purpose. The actual, current accuracy-reproduction path is:
 
 ```bash
+# Requires a SMILES CSV with a 'SMILES' column (e.g. ChEMBL export)
 pip install chematic rdkit pandas
-python scripts/rdkit_benchmark.py
+python scripts/bench5k.py ~/Downloads/SMILES.csv --json /tmp/bench5k.json
+python scripts/gen_validation_report.py /tmp/bench5k.json
 ```
+
+See [`docs/validation.md`](../docs/validation.md) for the canonical, regeneratable report
+this produces.
 
 ### WASM bundle size
 
