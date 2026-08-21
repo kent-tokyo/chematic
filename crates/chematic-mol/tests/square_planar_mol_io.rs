@@ -470,9 +470,7 @@ fn degenerate_and_truncated_conformers_never_panic() {
 
     // Every atom coincident at the same point (degenerate bond vectors).
     let center_pt = conf.points[pt_atom_idx(&mol).0 as usize];
-    for p in &mut conf.points {
-        *p = center_pt;
-    }
+    conf.points.fill(center_pt);
     let _ = write_mol_with_conformer_checked(&mol, &MolMetadata::default(), &conf);
     let _ = validate_square_planar_for_write(&mol, Some(&conf), MolFormat::V3000);
 

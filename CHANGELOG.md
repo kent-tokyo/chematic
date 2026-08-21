@@ -119,6 +119,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   5,000-molecule corpus rescan performed for this change — the 18-fixture
   regression check is the audit's own specified verification.
 
+### Fixed — `chematic-3d` `embed_pipeline_v2` (`total_timeout_ms: 0` race, intermittent CI failure)
+
+- `check_timeout!`'s elapsed-time comparison (`crates/chematic-3d/src/
+  pipeline_v2.rs`) used `Instant::elapsed().as_millis() > budget`, which
+  only has millisecond granularity — for a `total_timeout_ms: Some(0)`
+  config on a small molecule with a minimal-work config (`forceFieldPolicy:
+  "none"`, all optional torsion sources disabled), a fast enough machine
+  could complete every stage within the same millisecond tick, reading
+  `elapsed_ms == 0` even at the last checkpoint. `0 > 0` is false, so the
+  pipeline silently succeeded instead of failing closed as documented and
+  tested (`timeout_zero_fails_closed_with_typed_timeout`).
+- Root-caused after this was reported as an intermittent `Test (WASM)` CI
+  failure (`pipeline_v2.test.mjs`/`pipeline_v2_web_target.test.mjs`, both
+  assert the "zero timeout must fail closed" contract): reproduced 0/60
+  times locally before the fix (fast local machine never hit the race) but
+  observed on 3 independent CI runs the same day — consistent with a race
+  that manifests more often on fast CI runners, not a deterministic bug a
+  simple local re-run would catch.
+- Fix: `budget == 0` is now checked unconditionally, independent of the
+  (unreliable-at-this-resolution) elapsed-time reading — a zero budget
+  means no time was granted at all, so any checkpoint reached must fail,
+  full stop. Every `budget > 0` case is untouched (identical `>`
+  comparison) — this is not a behavior change for any other timeout value.
+- Fires at the same `check_timeout!` call site as before (first one, right
+  after torsion-knowledge/stage 2 completes), so the existing evidence-
+  preservation guarantee (`timeout_failure_still_carries_evidence_computed_
+  before_it_tripped` — a timeout must still carry the torsion-knowledge
+  report) is unaffected, not just incidentally still passing.
+- Shared Rust core (`chematic-3d`), so this also fixes the same latent gap
+  for the Python binding (`crates/chematic-py/src/pipeline_v2.rs`), which
+  doesn't currently test the zero-timeout edge case explicitly but goes
+  through the identical `embed_pipeline_v2` function.
+- `cargo test -p chematic-3d --lib`: 540/540 passed (0 failures, 3 ignored,
+  unchanged from before this fix). Both previously-flaky Node test files
+  re-run 100/100 times each after rebuilding the WASM target with the fix
+  — 0 failures (does not prove the race can never recur, only that it's
+  now logically impossible for the `budget == 0` case specifically, by
+  code inspection, not by re-running until lucky).
+
 ## [0.18.0] — 2026-08-20
 
 Python and WASM bindings for the 7 file formats `chematic-mol` gained in
