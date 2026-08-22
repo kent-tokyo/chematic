@@ -9,6 +9,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `chematic-chem` (Tautomer & Parent Identity round 2B, ROADMAP.md Phase 2)
+
+- `fragment_parent`/`charge_parent`/`isotope_parent`/`stereo_parent`/
+  `tautomer_parent`/`super_parent`: an explicit "Parent identity" concept —
+  an idempotent, deterministic reduction of one axis of molecular
+  variability (fragment, charge, isotope, stereo, tautomer) to one
+  representative structure, meant as a grouping/dedup key. `charge_parent`
+  is **not** a bare `neutralize_charges` wrapper: it selects the fragment
+  parent first, then neutralizes that single fragment — a design correction
+  made during RFC review before any code was written (see the RFC's round
+  2A revision note). `fragment_parent`/`isotope_parent`/`stereo_parent`
+  are thin, explainable wrappers over the existing `select_fragment`/
+  `remove_isotopes`/`remove_stereo` primitives. `super_parent` composes all
+  five in the fixed order fragment → charge → isotope → stereo → tautomer,
+  returning every intermediate stage's audit record, not just the final
+  molecule.
+- `TautomerLimits { max_transforms, max_tautomers, timeout_ms }`: a
+  deterministic budget for `tautomer_parent`, generalizing
+  `TautomerConfig::max_iter`/`max_tautomers`. `max_transforms`/
+  `max_tautomers` are reproducible (same input + limits ⇒ same result,
+  always); `timeout_ms` is an explicitly non-deterministic escape hatch
+  (wall-clock, machine-dependent), documented as outside that guarantee.
+  `max_restarts`/`Canceled` from the original RFC sketch were dropped this
+  round: `max_restarts` has no defined meaning at this level, and `Canceled`
+  had no cancellation mechanism to ever produce it — see the RFC's round 2A
+  revision.
+- `ParentResult`/`ParentComputationStatus`/`ParentAudit`: `tautomer_parent`
+  and `super_parent` now report `Completed`/`MaxTransformsReached`/
+  `MaxTautomersReached`/`TimedOut`/`Abstained`/`InvalidInput` instead of a
+  bare `Molecule` — budget exhaustion is a previously-silent gap in
+  `canonical_tautomer_with_config` (confirmed via an existing `#[ignore]`d
+  regression test on a 25-independent-site "comb" molecule) that is now
+  visible to the caller instead of silently returning a possibly
+  input-order-dependent result.
+- `TautomerAuditRecord`/`ScoreContribution`/`TautomerScoreTerm`/
+  `AppliedTransform`/`TautomerRuleId`: an explainable trail for
+  `tautomer_parent` — which candidate was selected, its score breakdown by
+  named term, which rules fired (one of 42 stable `TautomerRuleId`
+  variants, not a bare string), and which atoms (if any) had stereo or
+  isotope data affected. `applied_transforms` covers the rule-based
+  1,3-/1,5-shift loop only; the final direct-aromatic-shift tie-break
+  contributes to `score_breakdown`/`candidate_count` instead (disclosed
+  scope limitation, not an oversight).
+- Fixed the module's stale `"The 15 tautomer rules"` doc comment — the
+  array actually has 42.
+- **Not in this round** (round 2C/2D, per the RFC's explicit split): the
+  aromatic lactam/lactim canonical-tautomer fix (2-pyridone/cytosine/
+  uracil/purine-class non-invariance, confirmed but not fixed); the
+  nitroso/oxime non-convergence gap found while reviewing a fixture;
+  `TautomerScoringConfig`/custom rule support; Python/WASM bindings for any
+  of the above.
+- Design: `docs/rfcs/tautomer_parent_identity_phase2_rfc.md`.
+
 ### Added — `chematic-chem` (explainable Molecule Standardization Phase 1, ROADMAP.md Phase 1)
 
 - `FragmentPolicy` + `select_fragment(mol, &FragmentPolicy) -> (Molecule,

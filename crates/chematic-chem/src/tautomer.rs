@@ -1,16 +1,26 @@
 //! Tautomer enumeration and canonical tautomer selection.
 //!
-//! Provides two public functions:
+//! Provides:
 //! - [`canonical_tautomer`]: return the canonical (preferred) tautomer form.
 //! - [`enumerate_tautomers`]: enumerate all reachable tautomers up to a cap.
+//! - [`tautomer_parent`]: like `canonical_tautomer`, but budget-limited via
+//!   [`TautomerLimits`] and returns an explainable [`TautomerAuditRecord`]
+//!   instead of a bare `Molecule` -- see
+//!   `docs/rfcs/tautomer_parent_identity_phase2_rfc.md` section 4.
 //!
 //! Pattern matching is implemented directly on the molecule graph (no SMARTS).
 
 #![forbid(unsafe_code)]
 
 use std::collections::HashSet;
+use std::time::Instant;
 
-use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule, MoleculeBuilder, implicit_hcount};
+use chematic_core::{
+    AtomIdx, BondIdx, BondOrder, Chirality, Molecule, MoleculeBuilder, implicit_hcount,
+};
+
+use crate::parent::{InvalidInputReason, ParentAudit, ParentComputationStatus, ParentResult};
+use crate::standardize::MoleculeSnapshot;
 
 /// Bond order match type for tautomer rule patterns.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -61,7 +71,7 @@ struct TautomerRule {
     path_len: usize,
 }
 
-/// The 15 tautomer rules.
+/// The 42 tautomer rules.
 static RULES: &[TautomerRule] = &[
     // 1. keto-enol: O-H adjacent to C=C → O=C-C (prefer keto)
     TautomerRule {
@@ -554,14 +564,35 @@ fn enumerate_direct_aromatic_forms(
     blocked: &HashSet<AtomIdx>,
     max: usize,
 ) -> Vec<Molecule> {
+    enumerate_direct_aromatic_forms_tracked(start, blocked, max).0
+}
+
+/// Like [`enumerate_direct_aromatic_forms`], but also reports whether the
+/// search was cut short by `max` while more candidates were still reachable
+/// (`true`) versus exhausting the frontier naturally (`false`) -- needed by
+/// [`tautomer_parent`] to distinguish `Completed` from `MaxTautomersReached`.
+fn enumerate_direct_aromatic_forms_tracked(
+    start: &Molecule,
+    blocked: &HashSet<AtomIdx>,
+    max: usize,
+) -> (Vec<Molecule>, bool) {
     let mut result = Vec::new();
     let mut seen: HashSet<Vec<Option<u32>>> = HashSet::new();
     seen.insert(h_assignment(start));
     let mut frontier = vec![start.clone()];
+    let mut truncated = false;
 
-    while !frontier.is_empty() && result.len() < max {
+    'outer: while !frontier.is_empty() {
+        if result.len() >= max {
+            truncated = true;
+            break;
+        }
         let current = frontier.remove(0);
         for (d, a) in find_direct_aromatic_matches(&current) {
+            if result.len() >= max {
+                truncated = true;
+                break 'outer;
+            }
             if let Some(next) = transfer_hydrogen_aromatic(&current, d, a, blocked) {
                 let ha = h_assignment(&next);
                 if !seen.contains(&ha) {
@@ -572,7 +603,7 @@ fn enumerate_direct_aromatic_forms(
             }
         }
     }
-    result
+    (result, truncated)
 }
 
 /// Find adjacent pairs of aromatic N atoms where the first (donor) carries an explicit H.
@@ -654,11 +685,17 @@ use crate::hash::{FNV1A_OFFSET, FNV1A_PRIME};
 
 /// Tautomer form score for canonical selection: prefers O-H > N-H > S-H and aromatic rings.
 fn tautomer_score(mol: &Molecule) -> i32 {
-    let mut score = 0i32;
+    score_breakdown(mol).iter().map(|c| c.value).sum()
+}
+
+/// Same scoring rule as [`tautomer_score`], decomposed into named
+/// contributions for [`TautomerAuditRecord::score_breakdown`]. This is the
+/// single source of truth for the scoring rule; `tautomer_score` sums it.
+fn score_breakdown(mol: &Molecule) -> Vec<ScoreContribution> {
+    let mut contributions = Vec::new();
     let mut has_aromatic = false;
 
     for (_, atom) in mol.atoms() {
-        // Aromatic ring bonus
         if atom.aromatic {
             has_aromatic = true;
         }
@@ -666,21 +703,31 @@ fn tautomer_score(mol: &Molecule) -> i32 {
         // Heteroatom hydrogen: O-H > N-H > S-H (explicit or implicit)
         let h_count = atom.hydrogen_count.unwrap_or(0) as i32;
         if h_count > 0 {
-            match atom.element.atomic_number() {
-                8 => score += h_count * 100, // O-H: highest priority
-                7 => score += h_count * 50,  // N-H: medium priority
-                16 => score += h_count * 25, // S-H: low priority
-                _ => {}
+            let weight = match atom.element.atomic_number() {
+                8 => Some(100), // O-H: highest priority
+                7 => Some(50),  // N-H: medium priority
+                16 => Some(25), // S-H: low priority
+                _ => None,
+            };
+            if let Some(weight) = weight {
+                contributions.push(ScoreContribution {
+                    term: TautomerScoreTerm::HeteroatomHydrogen {
+                        element: atom.element.atomic_number(),
+                    },
+                    value: h_count * weight,
+                });
             }
         }
     }
 
-    // Aromatic system bonus
     if has_aromatic {
-        score += 1000;
+        contributions.push(ScoreContribution {
+            term: TautomerScoreTerm::AromaticRing,
+            value: 1000,
+        });
     }
 
-    score
+    contributions
 }
 
 /// Order-independent structural hash for convergence detection.
@@ -887,8 +934,20 @@ fn apply_first_match(
     rule: &TautomerRule,
     config: &TautomerConfig,
 ) -> Option<Molecule> {
+    apply_first_match_tracked(mol, rule, config).map(|(next, ..)| next)
+}
+
+/// Like [`apply_first_match`], but also returns the (donor, bridge, acceptor)
+/// triple that was moved -- needed by [`tautomer_parent`] to record which
+/// atoms/bonds each applied transform touched.
+fn apply_first_match_tracked(
+    mol: &Molecule,
+    rule: &TautomerRule,
+    config: &TautomerConfig,
+) -> Option<(Molecule, AtomIdx, AtomIdx, AtomIdx)> {
     find_matches(mol, rule).into_iter().find_map(|(d, b, a)| {
         transfer_hydrogen(mol, d, b, a, &config.blocked_atoms, &config.blocked_bonds)
+            .map(|next| (next, d, b, a))
     })
 }
 
@@ -1128,6 +1187,374 @@ pub fn enumerate_tautomers_with_config(mol: &Molecule, config: &TautomerConfig) 
         }
     }
     result
+}
+
+// ---------------------------------------------------------------------------
+// Tautomer Parent (ROADMAP.md Phase 2 round 2B) -- see
+// docs/rfcs/tautomer_parent_identity_phase2_rfc.md section 4.
+// ---------------------------------------------------------------------------
+
+/// Budget limits for [`tautomer_parent`].
+///
+/// `max_transforms`/`max_tautomers` are deterministic budgets, counted
+/// exactly as [`TautomerConfig::max_iter`]/[`TautomerConfig::max_tautomers`]
+/// always have been: `max_transforms` counts outer-loop iterations in which
+/// a transform was actually applied (a rule that matches but produces an
+/// already-seen fingerprint does not consume budget); `max_tautomers`
+/// counts distinct direct-aromatic-shift candidates found while choosing
+/// among them at the end (duplicates rejected by fingerprint do not consume
+/// budget either). Both are reproducible: same input, same limits, same
+/// result, always.
+///
+/// `timeout_ms` is a different kind of bound: a wall-clock timeout depends
+/// on machine speed and load, so a `TimedOut` result is explicitly outside
+/// the "same canonical tautomer regardless of input" determinism guarantee
+/// the other two limits carry. `None` (the default) performs no wall-clock
+/// check.
+///
+/// `max_tautomers: 0` is treated as "skip the direct-aromatic-shift
+/// comparison step entirely" (status stays `Completed`, using whatever the
+/// rule-based loop converged to) rather than reporting `MaxTautomersReached`
+/// on every input regardless of whether any alternate form actually
+/// exists -- the latter would be a boundary artifact of the search
+/// algorithm, not a meaningful signal.
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct TautomerLimits {
+    pub max_transforms: usize,
+    pub max_tautomers: usize,
+    pub timeout_ms: Option<u64>,
+}
+
+impl Default for TautomerLimits {
+    fn default() -> Self {
+        Self {
+            max_transforms: 16,
+            max_tautomers: 32,
+            timeout_ms: None,
+        }
+    }
+}
+
+/// Stable identifier for one of the built-in [`TautomerRule`]s, used in
+/// [`AppliedTransform::rule_id`]. `#[non_exhaustive]` so new rules can be
+/// added without a breaking change; `Other` is a defensive fallback for a
+/// rule name not yet mapped to a variant here -- should not occur for any
+/// rule currently in `RULES` (see `all_rules_map_to_a_named_tautomer_rule_id`
+/// in this module's tests).
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum TautomerRuleId {
+    KetoEnol,
+    AmideIminol,
+    IminolAmide,
+    ImineEnamine,
+    OneThreeNToO,
+    OneThreeNToN,
+    Thioamide,
+    ThioIminolAmide,
+    ThioKetoEnol,
+    ThioEnolKetone,
+    OneThreeNToS,
+    OneThreeSToO,
+    OneThreeSToN,
+    OneThreeOToS,
+    OneThreeSToS,
+    OneThreeOToNAnyBridge,
+    OneThreeOToOAnyBridge,
+    OneThreeNToCAnyBridge,
+    OneThreeCToOAnyBridge,
+    OneThreeCToNAnyBridge,
+    OneFiveOToOBetaDiketone,
+    OneFiveOToN,
+    OneFiveNToN,
+    OneFiveNToO,
+    OneFiveCToO,
+    OneFiveOToONBridge,
+    OneFiveOToOSBridge,
+    OneFiveNToONBridge,
+    OneFiveNToOSBridge,
+    OneFiveNToNNBridge,
+    OneFiveNToNSBridge,
+    OneFiveOToNNBridge,
+    OneFiveOToNSBridge,
+    OneFiveSToONBridge,
+    OneFiveSToOSBridge,
+    OneFiveSToNCBridge,
+    OneFiveSToNNBridge,
+    OneFiveCToNCBridge,
+    OneFiveCToNNBridge,
+    OneFiveCToNSBridge,
+    OneFiveCToSNBridge,
+    OneFiveCToSSBridge,
+    /// A rule name not yet mapped to a named variant above.
+    Other(&'static str),
+}
+
+fn rule_id_for(name: &'static str) -> TautomerRuleId {
+    match name {
+        "keto-enol" => TautomerRuleId::KetoEnol,
+        "amide-iminol" => TautomerRuleId::AmideIminol,
+        "iminol-amide" => TautomerRuleId::IminolAmide,
+        "imine-enamine" => TautomerRuleId::ImineEnamine,
+        "1,3-N-to-O" => TautomerRuleId::OneThreeNToO,
+        "1,3-N-to-N" => TautomerRuleId::OneThreeNToN,
+        "thioamide" => TautomerRuleId::Thioamide,
+        "thio-iminol-amide" => TautomerRuleId::ThioIminolAmide,
+        "thio-keto-enol" => TautomerRuleId::ThioKetoEnol,
+        "thio-enol-ketone" => TautomerRuleId::ThioEnolKetone,
+        "1,3-N-to-S" => TautomerRuleId::OneThreeNToS,
+        "1,3-S-to-O" => TautomerRuleId::OneThreeSToO,
+        "1,3-S-to-N" => TautomerRuleId::OneThreeSToN,
+        "1,3-O-to-S" => TautomerRuleId::OneThreeOToS,
+        "1,3-S-to-S" => TautomerRuleId::OneThreeSToS,
+        "1,3-O-to-N-any-bridge" => TautomerRuleId::OneThreeOToNAnyBridge,
+        "1,3-O-to-O-any-bridge" => TautomerRuleId::OneThreeOToOAnyBridge,
+        "1,3-N-to-C-any-bridge" => TautomerRuleId::OneThreeNToCAnyBridge,
+        "1,3-C-to-O-any-bridge" => TautomerRuleId::OneThreeCToOAnyBridge,
+        "1,3-C-to-N-any-bridge" => TautomerRuleId::OneThreeCToNAnyBridge,
+        "1,5-O-to-O-beta-diketone" => TautomerRuleId::OneFiveOToOBetaDiketone,
+        "1,5-O-to-N" => TautomerRuleId::OneFiveOToN,
+        "1,5-N-to-N" => TautomerRuleId::OneFiveNToN,
+        "1,5-N-to-O" => TautomerRuleId::OneFiveNToO,
+        "1,5-C-to-O" => TautomerRuleId::OneFiveCToO,
+        "1,5-O-to-O-N-bridge" => TautomerRuleId::OneFiveOToONBridge,
+        "1,5-O-to-O-S-bridge" => TautomerRuleId::OneFiveOToOSBridge,
+        "1,5-N-to-O-N-bridge" => TautomerRuleId::OneFiveNToONBridge,
+        "1,5-N-to-O-S-bridge" => TautomerRuleId::OneFiveNToOSBridge,
+        "1,5-N-to-N-N-bridge" => TautomerRuleId::OneFiveNToNNBridge,
+        "1,5-N-to-N-S-bridge" => TautomerRuleId::OneFiveNToNSBridge,
+        "1,5-O-to-N-N-bridge" => TautomerRuleId::OneFiveOToNNBridge,
+        "1,5-O-to-N-S-bridge" => TautomerRuleId::OneFiveOToNSBridge,
+        "1,5-S-to-O-N-bridge" => TautomerRuleId::OneFiveSToONBridge,
+        "1,5-S-to-O-S-bridge" => TautomerRuleId::OneFiveSToOSBridge,
+        "1,5-S-to-N-C-bridge" => TautomerRuleId::OneFiveSToNCBridge,
+        "1,5-S-to-N-N-bridge" => TautomerRuleId::OneFiveSToNNBridge,
+        "1,5-C-to-N-C-bridge" => TautomerRuleId::OneFiveCToNCBridge,
+        "1,5-C-to-N-N-bridge" => TautomerRuleId::OneFiveCToNNBridge,
+        "1,5-C-to-N-S-bridge" => TautomerRuleId::OneFiveCToNSBridge,
+        "1,5-C-to-S-N-bridge" => TautomerRuleId::OneFiveCToSNBridge,
+        "1,5-C-to-S-S-bridge" => TautomerRuleId::OneFiveCToSSBridge,
+        other => TautomerRuleId::Other(other),
+    }
+}
+
+/// One named contribution to a candidate tautomer's [`tautomer_score`],
+/// decomposed for [`TautomerAuditRecord::score_breakdown`].
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum TautomerScoreTerm {
+    AromaticRing,
+    /// `element` is an atomic number (today: 8=O, 7=N, 16=S).
+    HeteroatomHydrogen {
+        element: u8,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct ScoreContribution {
+    pub term: TautomerScoreTerm,
+    pub value: i32,
+}
+
+/// One transformation applied by the rule-based 1,3-/1,5-shift loop while
+/// computing a [`TautomerAuditRecord`].
+///
+/// Does not implement `Serialize`/`Deserialize` even under the `serde`
+/// feature: `AtomIdx`/`BondIdx` (from `chematic-core`) do not implement
+/// them.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AppliedTransform {
+    pub rule_id: TautomerRuleId,
+    pub affected_atoms: Vec<AtomIdx>,
+    pub affected_bonds: Vec<BondIdx>,
+}
+
+/// Explainable audit record for one [`tautomer_parent`] call.
+///
+/// `applied_transforms` records only the rule-based 1,3-/1,5-shift loop (the
+/// same loop [`canonical_tautomer_with_config`] runs); the final
+/// direct-aromatic-shift tie-break contributes to `score_breakdown` and
+/// `candidate_count` instead, since that search does not track the specific
+/// shift sequence taken to reach each candidate -- a disclosed scope
+/// limitation, not an oversight.
+///
+/// `lost_stereo`/`affected_isotopes` are atom-index lists (empty = none
+/// affected), not booleans: every transform this module applies preserves
+/// `chirality`/`isotope` (see the RFC's non-bug finding, section 1.2), so
+/// both are expected to always be empty today; the check is real (not
+/// hardcoded) so it stays correct if that ever changes.
+///
+/// Does not implement `Serialize`/`Deserialize` even under the `serde`
+/// feature: it embeds [`AppliedTransform`] (see its own doc comment).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TautomerAuditRecord {
+    pub selected: MoleculeSnapshot,
+    pub candidate_count: usize,
+    pub score_breakdown: Vec<ScoreContribution>,
+    pub applied_transforms: Vec<AppliedTransform>,
+    pub lost_stereo: Vec<AtomIdx>,
+    pub affected_isotopes: Vec<AtomIdx>,
+}
+
+/// Like [`canonical_tautomer`], but budget-limited via [`TautomerLimits`]
+/// and returns a [`ParentResult`] (status + explainable
+/// [`TautomerAuditRecord`]) instead of a bare `Molecule` -- see
+/// `docs/rfcs/tautomer_parent_identity_phase2_rfc.md` sections 4.2-4.3.
+///
+/// Does **not** implement the section 4.4 aromatic lactam/lactim fix (round
+/// 2C) -- on the aromatic tautomer pairs described there, this returns the
+/// same non-invariant result `canonical_tautomer` does today, just with an
+/// explicit `Completed` status (the rule-based loop and aromatic-shift
+/// search both genuinely converge without hitting any budget; the result is
+/// wrong for a different, structural reason that budget visibility cannot
+/// detect).
+pub fn tautomer_parent(mol: &Molecule, limits: &TautomerLimits) -> ParentResult {
+    if mol.atom_count() == 0 {
+        return ParentResult {
+            molecule: mol.clone(),
+            status: ParentComputationStatus::InvalidInput(InvalidInputReason::EmptyMolecule),
+            audit: ParentAudit::Tautomer(TautomerAuditRecord {
+                selected: MoleculeSnapshot::from_mol(mol),
+                candidate_count: 0,
+                score_breakdown: Vec::new(),
+                applied_transforms: Vec::new(),
+                lost_stereo: Vec::new(),
+                affected_isotopes: Vec::new(),
+            }),
+        };
+    }
+
+    let config = TautomerConfig {
+        max_iter: limits.max_transforms,
+        max_tautomers: limits.max_tautomers,
+        ..TautomerConfig::default()
+    };
+    let deadline = limits
+        .timeout_ms
+        .map(|ms| (Instant::now(), std::time::Duration::from_millis(ms)));
+    let timed_out = |deadline: &Option<(Instant, std::time::Duration)>| match deadline {
+        Some((start, budget)) => start.elapsed() >= *budget,
+        None => false,
+    };
+
+    let mut current = mol.clone();
+    let mut seen = HashSet::new();
+    seen.insert(mol_fingerprint(&current));
+    let mut applied_transforms = Vec::new();
+    let mut transforms_applied = 0usize;
+    let mut status = ParentComputationStatus::Completed;
+
+    loop {
+        if timed_out(&deadline) {
+            status = ParentComputationStatus::TimedOut;
+            break;
+        }
+        if transforms_applied >= limits.max_transforms {
+            let has_more = active_rules(&config)
+                .into_iter()
+                .filter(|r| r.prefer_forward)
+                .any(|rule| {
+                    apply_first_match_tracked(&current, rule, &config)
+                        .is_some_and(|(next, ..)| !seen.contains(&mol_fingerprint(&next)))
+                });
+            if has_more {
+                status = ParentComputationStatus::MaxTransformsReached;
+            }
+            break;
+        }
+        let mut changed = false;
+        for rule in active_rules(&config)
+            .into_iter()
+            .filter(|r| r.prefer_forward)
+        {
+            if let Some((next, donor, bridge, acceptor)) =
+                apply_first_match_tracked(&current, rule, &config)
+            {
+                let fp = mol_fingerprint(&next);
+                if !seen.contains(&fp) {
+                    seen.insert(fp);
+                    let mut affected_bonds = Vec::new();
+                    if let Some((bidx, _)) = current.bond_between(donor, bridge) {
+                        affected_bonds.push(bidx);
+                    }
+                    if let Some((bidx, _)) = current.bond_between(bridge, acceptor) {
+                        affected_bonds.push(bidx);
+                    }
+                    applied_transforms.push(AppliedTransform {
+                        rule_id: rule_id_for(rule.name),
+                        affected_atoms: vec![donor, bridge, acceptor],
+                        affected_bonds,
+                    });
+                    current = next;
+                    transforms_applied += 1;
+                    changed = true;
+                    break;
+                }
+            }
+        }
+        if !changed {
+            break; // converged: no forward rule produces an unseen form
+        }
+    }
+
+    let mut candidate_count = 1;
+    if matches!(status, ParentComputationStatus::Completed) && limits.max_tautomers > 0 {
+        if timed_out(&deadline) {
+            status = ParentComputationStatus::TimedOut;
+        } else {
+            let (extra, truncated) = enumerate_direct_aromatic_forms_tracked(
+                &current,
+                &HashSet::new(),
+                limits.max_tautomers,
+            );
+            let mut candidates: Vec<Molecule> = vec![current.clone()];
+            candidates.extend(extra);
+            candidate_count = candidates.len();
+            if candidates.len() > 1 {
+                candidates.sort_by(|a, b| {
+                    tautomer_score(b).cmp(&tautomer_score(a)).then_with(|| {
+                        chematic_smiles::canonical_smiles(a)
+                            .cmp(&chematic_smiles::canonical_smiles(b))
+                    })
+                });
+                current = candidates.into_iter().next().unwrap();
+            }
+            if truncated {
+                status = ParentComputationStatus::MaxTautomersReached;
+            }
+        }
+    }
+
+    let common_atoms = mol.atom_count().min(current.atom_count());
+    let lost_stereo: Vec<AtomIdx> = (0..common_atoms)
+        .map(|i| AtomIdx(i as u32))
+        .filter(|&i| {
+            mol.atom(i).chirality != Chirality::None && current.atom(i).chirality == Chirality::None
+        })
+        .collect();
+    let affected_isotopes: Vec<AtomIdx> = (0..common_atoms)
+        .map(|i| AtomIdx(i as u32))
+        .filter(|&i| mol.atom(i).isotope != current.atom(i).isotope)
+        .collect();
+    let score_breakdown_final = score_breakdown(&current);
+
+    ParentResult {
+        status,
+        audit: ParentAudit::Tautomer(TautomerAuditRecord {
+            selected: MoleculeSnapshot::from_mol(&current),
+            candidate_count,
+            score_breakdown: score_breakdown_final,
+            applied_transforms,
+            lost_stereo,
+            affected_isotopes,
+        }),
+        molecule: current,
+    }
 }
 
 #[cfg(test)]
@@ -2246,6 +2673,154 @@ mod tests {
                 !smi.is_empty(),
                 "tautomer {i} must produce valid canonical SMILES"
             );
+        }
+    }
+
+    // -- Phase 2 round-2B tautomer_parent tests --------------------------------
+    // See docs/rfcs/tautomer_parent_identity_phase2_rfc.md sections 4.1-4.3.
+
+    #[test]
+    fn all_rules_map_to_a_named_tautomer_rule_id() {
+        for rule in RULES {
+            assert!(
+                !matches!(rule_id_for(rule.name), TautomerRuleId::Other(_)),
+                "rule '{}' has no TautomerRuleId variant -- add one",
+                rule.name
+            );
+        }
+    }
+
+    #[test]
+    fn tautomer_parent_completed_on_keto_enol() {
+        let mol = parse("CC(O)=CC(C)=O").unwrap();
+        let result = tautomer_parent(&mol, &TautomerLimits::default());
+        assert_eq!(result.status, ParentComputationStatus::Completed);
+        assert_eq!(
+            canonical_smiles(&result.molecule),
+            canonical_smiles(&canonical_tautomer(&mol))
+        );
+        match &result.audit {
+            ParentAudit::Tautomer(record) => {
+                assert_eq!(record.applied_transforms.len(), 1);
+                assert_eq!(
+                    record.applied_transforms[0].rule_id,
+                    TautomerRuleId::KetoEnol
+                );
+                assert!(record.lost_stereo.is_empty());
+                assert!(record.affected_isotopes.is_empty());
+            }
+            other => panic!("expected ParentAudit::Tautomer, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn tautomer_parent_max_transforms_reached_when_budget_too_small() {
+        // 3 independent enol arms, each needing exactly 1 transform; a
+        // budget of 1 converts only one and must report the exhaustion,
+        // not silently return a partially-converted, order-dependent result
+        // as if it were `Completed`.
+        let mol = build_comb(3, false, false);
+        let limits = TautomerLimits {
+            max_transforms: 1,
+            ..TautomerLimits::default()
+        };
+        let result = tautomer_parent(&mol, &limits);
+        assert_eq!(result.status, ParentComputationStatus::MaxTransformsReached);
+        match &result.audit {
+            ParentAudit::Tautomer(record) => assert_eq!(record.applied_transforms.len(), 1),
+            other => panic!("expected ParentAudit::Tautomer, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn tautomer_parent_completed_with_enough_budget_for_all_arms() {
+        let mol = build_comb(3, false, false);
+        let limits = TautomerLimits {
+            max_transforms: 10,
+            ..TautomerLimits::default()
+        };
+        let result = tautomer_parent(&mol, &limits);
+        assert_eq!(result.status, ParentComputationStatus::Completed);
+        match &result.audit {
+            ParentAudit::Tautomer(record) => assert_eq!(record.applied_transforms.len(), 3),
+            other => panic!("expected ParentAudit::Tautomer, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn tautomer_parent_max_tautomers_reached_on_tetrazole() {
+        let mol = parse("c1nnn[nH]1").unwrap();
+        let unlimited = tautomer_parent(&mol, &TautomerLimits::default());
+        let (unlimited_candidate_count, _) = match &unlimited.audit {
+            ParentAudit::Tautomer(r) => (r.candidate_count, ()),
+            other => panic!("expected ParentAudit::Tautomer, got {other:?}"),
+        };
+        assert!(
+            unlimited_candidate_count > 1,
+            "tetrazole must have more than one direct-aromatic-shift candidate to make this test meaningful"
+        );
+
+        let limited = tautomer_parent(
+            &mol,
+            &TautomerLimits {
+                max_tautomers: 1,
+                ..TautomerLimits::default()
+            },
+        );
+        assert_eq!(limited.status, ParentComputationStatus::MaxTautomersReached);
+    }
+
+    #[test]
+    fn tautomer_parent_max_tautomers_zero_skips_comparison_without_false_exhaustion() {
+        // A molecule with NO direct-aromatic-shift candidates at all must
+        // not report MaxTautomersReached just because max_tautomers=0 --
+        // see TautomerLimits::max_tautomers's doc comment.
+        let mol = parse("CC(O)=CC(C)=O").unwrap();
+        let result = tautomer_parent(
+            &mol,
+            &TautomerLimits {
+                max_tautomers: 0,
+                ..TautomerLimits::default()
+            },
+        );
+        assert_eq!(result.status, ParentComputationStatus::Completed);
+    }
+
+    #[test]
+    fn tautomer_parent_empty_molecule_is_invalid_input() {
+        let empty = MoleculeBuilder::new().build();
+        let result = tautomer_parent(&empty, &TautomerLimits::default());
+        assert_eq!(
+            result.status,
+            ParentComputationStatus::InvalidInput(InvalidInputReason::EmptyMolecule)
+        );
+    }
+
+    #[test]
+    fn tp2_29_idempotence_acetylacetone() {
+        let mol = parse("CC(=O)CC(C)=O").unwrap();
+        let once = tautomer_parent(&mol, &TautomerLimits::default());
+        let twice = tautomer_parent(&once.molecule, &TautomerLimits::default());
+        assert_eq!(
+            canonical_smiles(&once.molecule),
+            canonical_smiles(&twice.molecule)
+        );
+        assert_eq!(twice.status, ParentComputationStatus::Completed);
+    }
+
+    #[test]
+    fn tautomer_parent_preserves_remote_stereocenter() {
+        // Alanine's stereocenter must survive tautomer_parent unaffected,
+        // same as the primitive transfer_hydrogen/transfer_hydrogen_aromatic
+        // functions this is built on (RFC section 1.2's confirmed non-bug).
+        let mol = parse("C[C@@H](N)C(=O)O").unwrap();
+        let result = tautomer_parent(&mol, &TautomerLimits::default());
+        match &result.audit {
+            ParentAudit::Tautomer(record) => {
+                assert!(record.lost_stereo.is_empty());
+                assert!(record.affected_isotopes.is_empty());
+            }
+            other => panic!("expected ParentAudit::Tautomer, got {other:?}"),
         }
     }
 }

@@ -32,6 +32,7 @@ pub mod mlp;
 pub mod mmff94_bci;
 pub mod mmp;
 pub mod named_groups;
+pub mod parent;
 pub mod pka;
 pub mod qed;
 pub mod recap;
@@ -102,6 +103,10 @@ pub use mlp::{MLP_SOLUBILITY_TRAINED, mlp_solubility};
 pub use mmff94_bci::{MmffType, assign_mmff94_type, mmff94_charges_bci, mmff94_charges_typed};
 pub use mmp::{MmpPair, MmsMember, MmsSeries, find_mmp, find_mms};
 pub use named_groups::{NamedGroup, detect_named_functional_groups};
+pub use parent::{
+    AbstainReason, InvalidInputReason, ParentAudit, ParentComputationStatus, ParentResult,
+    super_parent,
+};
 pub use pka::{PkaSite, PkaSiteType, pka_acid, pka_base, pka_both, predict_pka};
 pub use qed::{qed, qed_with_bundle};
 pub use recap::{recap_breakable_bond_count, recap_fragment};
@@ -115,14 +120,16 @@ pub use standardize::{
     FragmentDecision, FragmentPolicy, FragmentRecord, FragmentSnapshot, MoleculeSnapshot,
     PipelineStatus, StandardizationPipeline, StandardizationReport, StandardizationStep,
     StandardizationStepReport, StandardizationWarning, StandardizeOptions, TransformationRecord,
-    ZwitterionHandling, has_zwitterion, largest_fragment, neutralize_charges, normalize_groups,
-    normalize_zwitterion, prefer_organic, reionize, remove_isotopes, remove_stereo,
-    select_fragment, standardize, uncharge,
+    ZwitterionHandling, charge_parent, fragment_parent, has_zwitterion, isotope_parent,
+    largest_fragment, neutralize_charges, normalize_groups, normalize_zwitterion, prefer_organic,
+    reionize, remove_isotopes, remove_stereo, select_fragment, standardize, stereo_parent,
+    uncharge,
 };
 pub use stereo::{assign_complete_stereochemistry, enumerate_stereoisomers, invert_stereocenter};
 pub use tautomer::{
-    TautomerConfig, canonical_tautomer, canonical_tautomer_with_config, enumerate_tautomers,
-    enumerate_tautomers_with_config,
+    AppliedTransform, ScoreContribution, TautomerAuditRecord, TautomerConfig, TautomerLimits,
+    TautomerRuleId, TautomerScoreTerm, canonical_tautomer, canonical_tautomer_with_config,
+    enumerate_tautomers, enumerate_tautomers_with_config, tautomer_parent,
 };
 pub use topo_descriptors::{
     bertz_ct, chi_all, chi0, chi0v, chi1, chi1v, chi2, chi2v, chi3, chi3v, chi4, chi4v,
