@@ -38,6 +38,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   generalizing the acceptor element).
 - Isotope labels and remote stereocenters are confirmed preserved through
   the shift (atom-level checks, not string comparison).
+- **Hardened after review, before merge:** the matcher is fail-closed —
+  `bridge` must be a neutral aromatic carbon (not any aromatic element),
+  `donor` a neutral, degree-1 oxygen with exactly one transferable H, and
+  `acceptor` a neutral, degree-2 (pyridine-type, valence-compatible after
+  +1H) aromatic nitrogen. Every candidate is verified post-generation
+  against a full atom/bond invariant check (nothing changes except the one
+  H-count pair and the one bond order) before being accepted, and the
+  candidate tie-break cross-checks an independent fingerprint against
+  canonical SMILES rather than trusting the SMILES string alone. Additional
+  confirmed-excluded negative controls: a charged/3-connected pyridinium
+  acceptor, an aromatic-nitrogen bridge (N-hydroxypyrrole), and a fused
+  bridgehead-nitrogen acceptor. Atom-permutation invariance is now checked
+  directly (same molecular graph, different `AtomIdx` insertion order) for
+  2-pyridone and uracil's two independent sites, plus respelling-based
+  checks for 4-pyridone, hypoxanthine, the isotope case, and the remote
+  stereocenter case — `canonical_tautomer`, `tautomer_parent`'s molecule
+  and status, and the applied `TautomerRuleId` sequence must all agree.
 
 ### Added — `chematic-chem` (Tautomer & Parent Identity round 2B, ROADMAP.md Phase 2)
 

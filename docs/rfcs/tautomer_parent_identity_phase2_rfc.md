@@ -1,8 +1,36 @@
 # RFC: Tautomer & Parent Identity (ROADMAP.md Phase 2, v0.20.0)
 
-Status: draft, round 2C-2/2C-3 implemented (the exocyclic lactam/lactim
-shift; hypoxanthine holdout checked). Not merged, not marked ready.
+Status: draft, round 2C-2/2C-3 implemented and hardened after review
+(PR #365). Not merged, not marked ready.
 
+> **Revision (2026-08-22, round 2C-2 hardening, post-PR-#365-review):**
+> user review of PR #365 found 4 real gaps before merge-readiness, all
+> fixed: (1) a stale `tautomer_parent` doc comment still claiming round 2C
+> was unimplemented (also fixed `canonical_tautomer`'s own doc, similarly
+> stale from before round 2B's score-based tiebreak refactor); (2)
+> insufficient atom-permutation-invariance evidence -- added direct
+> same-graph/different-`AtomIdx`-order tests (2-pyridone, uracil's two
+> independent sites) plus verified-equivalent respelling tests (4-pyridone,
+> hypoxanthine, isotope, remote stereocenter), each checking
+> `canonical_tautomer`, `tautomer_parent`'s molecule+status, and the
+> applied `TautomerRuleId` sequence agree; (3) the matcher was too broad --
+> narrowed to fail-closed preconditions (`bridge`: neutral aromatic carbon
+> only; `donor`: neutral degree-1 oxygen with exactly one H; `acceptor`:
+> neutral degree-2 aromatic nitrogen, degree-2 being the actual
+> valence-compatibility condition for +1H), added a post-generation
+> full atom/bond invariant check (fail-closed on any unexpected change),
+> and 3 new negative-control fixtures (`tp2-36/37/38`: charged/3-connected
+> pyridinium acceptor, aromatic-N bridge, fused bridgehead-N acceptor); (4)
+> SSSR/tie-break hardening -- candidates are deduplicated (a bridge atom
+> can belong to more than one SSSR ring in a fused system) and returned in
+> a fixed order, never hash-iteration order, and the canonical-SMILES tie
+> pick is now cross-checked against an independently-computed
+> `mol_fingerprint` before being trusted, failing closed on disagreement;
+> the remote-stereocenter check now confirms the *same* atom's chirality,
+> `stereo_neighbor_order`, and CIP label are unchanged, not just that a
+> stereocenter still exists somewhere. 799/799 lib tests pass (23 new this
+> round), 0 regressions.
+>
 > **Revision (2026-08-22, round 2C-2/2C-3):** implemented
 > `apply_exocyclic_lactam_shift_tracked` in `crates/chematic-chem/src/tautomer.rs`
 > per §4.4a's mechanism table, wired into both `canonical_tautomer_with_config`
@@ -627,6 +655,32 @@ audit, not an extension of this one. Scoping the acceptor element to O keeps
 these two molecules correctly excluded by construction (no O to react with),
 not by a scoring judgment call.
 
+**Fail-closed structural preconditions (added during round 2C-2's
+post-review hardening, not the initial implementation).** The odd-distance
+condition alone is necessary but not sufficient — it says nothing about
+charge state or valence room. The shipped matcher additionally requires:
+`bridge` to be a **neutral aromatic carbon** (not any aromatic element —
+an aromatic N/S/P/B bridge, e.g. an N-hydroxy heterocycle, is a
+structurally different, unevidenced system); `donor` to be a **neutral,
+degree-1** oxygen with **exactly one** transferable H (an ether/bridging
+oxygen with a second heavy-atom connection is not a lactam/lactim
+hydroxyl); and `acceptor` to be a **neutral, degree-2** aromatic nitrogen.
+Degree 2 is not an arbitrary extra filter — it *is* the valence-
+compatibility condition itself: an organic-subset N's normal valence is 3,
+so a 2-connected aromatic N always has exactly one free slot for the
+incoming H, while a 3-connected one (pyrrole-type, or a bridgehead/fusion
+position) has none and could only accept an H by also changing its formal
+charge, which this mechanism must never do. Confirmed excluded by these
+checks, not merely untested: a charged/3-connected pyridinium acceptor
+(`tp2-36`), an aromatic-nitrogen bridge (`tp2-37`), and a fused
+bridgehead-nitrogen acceptor (`tp2-38`). Every accepted candidate is also
+verified post-generation against a full atom/bond invariant check (every
+atom except donor/acceptor identical; every bond except the one exocyclic
+bond identical; the donor/acceptor H-count change and the one bond-order
+flip exactly as expected) — defense in depth against `MoleculeBuilder`
+silently changing something beyond what the explicit field copy touched,
+the same bug class Phase 1 found in fragment extraction.
+
 **Why this must be a directional step, not fed into the existing
 score-ranked pool.** `enumerate_direct_aromatic_forms`'s candidates are
 ranked by `tautomer_score` (`score_breakdown`, descending) with canonical
@@ -659,7 +713,25 @@ qualifying (bridge, acceptor) pairs each pass and select deterministically
 existing tiebreak's own reasoning at line ~1126) — never `.first()`/`[0]`
 over an unordered neighbor list, which would make the result track input
 atom-index order rather than structure (the same order-dependence class
-this project has already audited and fixed elsewhere).
+this project has already audited and fixed elsewhere). A bridge atom can
+also belong to more than one SSSR ring in a fused system (hypoxanthine),
+which would otherwise report the same candidate triple once per ring it's
+reachable through — candidates are deduplicated and returned in a fixed
+`(donor, bridge, acceptor)`-tuple order, never hash-iteration order.
+Candidates that tie on minimal canonical SMILES are cross-checked against
+an independently-computed `mol_fingerprint` (sorted per-atom
+element/charge/bond-order-sum, already used elsewhere in this file for the
+same "is this really the same molecule" question) before being treated as
+interchangeable — canonical SMILES alone is not trusted as the sole
+tie-break oracle, since this project has found real canonical-SMILES bugs
+before; a fingerprint disagreement fails closed (no move that iteration)
+rather than guesses. Verified directly: `find_exocyclic_lactam_shift_matches`
+produces no duplicate triples on hypoxanthine, and `canonical_tautomer`/
+`tautomer_parent` (molecule, status, and applied-rule-id sequence) agree
+across genuinely different `AtomIdx` insertion orders of the same graph for
+both 2-pyridone and uracil's two-independent-site case, plus verified-
+equivalent respellings of 4-pyridone, hypoxanthine, the isotope case, and
+the remote-stereocenter case.
 
 **Negative controls, fixed set (all confirmed no-ops on `main` today, must
 stay no-ops):**
@@ -829,10 +901,15 @@ today.
   `currently_passing: false`; the stereocenter is on a ring substituent
   uninvolved in the shift and must survive unchanged.
 
-Categories now covered in the main set (35 rows after round 2A's and round
-2C-1's corrections and additions): non-aromatic tautomer controls,
-ring-internal NH-shift controls, aromatic lactam/lactim (the
-confirmed-failing class), `disconnected_metal_ion_interaction`,
+**New negative controls added during round 2C-2's post-review hardening**
+(§4.4a's matcher-narrowing): `tp2-36` (charged/3-connected pyridinium
+acceptor), `tp2-37` (aromatic-nitrogen bridge, N-hydroxypyrrole), `tp2-38`
+(fused bridgehead-nitrogen acceptor) — all confirmed no-ops.
+
+Categories now covered in the main set (38 rows after round 2A's, round
+2C-1's, and round 2C-2 hardening's corrections and additions): non-aromatic
+tautomer controls, ring-internal NH-shift controls, aromatic lactam/lactim
+(the confirmed-failing class), `disconnected_metal_ion_interaction`,
 zwitterion-interaction, all Parent
 functions, and the new negative/metamorphic controls.
 
