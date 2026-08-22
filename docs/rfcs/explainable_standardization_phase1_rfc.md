@@ -1,11 +1,13 @@
 # RFC: Explainable Molecule Standardization — Phase 1 (Fragment Policy + Audit Log)
 
-**Status**: Draft — RFC + acceptance fixtures only, no production code this round.
+**Status**: Implemented in `chematic-chem` — see section 8 for what shipped, what
+deliberately deviated from this document's original sketch, and what's still
+disclosed-but-open.
 **Refs**: `ROADMAP.md`'s "chematicを100点へ到達させるROADMAP", Phase 1 (v0.19.0).
-**Scope of this PR**: this document + `validation/standardization_phase1_fixtures.jsonl`
-+ `validation/standardization_phase1_holdout.jsonl`. Zero changes under `crates/*/src/**`.
-Production implementation of what's proposed here is explicitly deferred to a later,
-separately-authorized round.
+**Original scope of this PR**: this document + `validation/standardization_phase1_
+fixtures.jsonl` + `validation/standardization_phase1_holdout.jsonl`, RFC-only, no
+production code. **Superseded**: the same PR was extended, with explicit authorization
+("次roundへ進んで"), to include the Rust implementation described below — see section 8.
 
 ## 1. Why this, why now
 
@@ -372,3 +374,104 @@ changes. The next round (separately authorized) implements §3/§4 in
 `chematic-chem`, resolves §4.5's open compatibility question, and adds the Rust-side
 tests that make the acceptance fixtures executable — Python/WASM bindings follow only
 after the Rust core is stable, per the roadmap's explicit ordering.
+
+## 8. Implementation round (2026-08-22) — what shipped, deviations, corrections
+
+Implemented in `crates/chematic-chem/src/standardize.rs`, re-exported from
+`crates/chematic-chem/src/lib.rs`. All 34 main + 10 holdout fixtures now exist as
+executable `#[test]`s in `standardize.rs` (`phase1_*`), 67/67 `chematic-chem` standardize
+tests green, zero regressions in the 34 pre-existing tests, clean `cargo clippy -D
+warnings` and `cargo fmt --check`, clean `cargo check --workspace --all-features`
+(including the `serde` feature), and `chematic-wasm`'s existing `largest_fragment_
+strips_salt` test still passes unchanged.
+
+### 8.1 §4.5 resolved without needing any of the three proposed options
+
+The implementation does not touch `StandardizationReport`/`StandardizationStepReport`/
+`MoleculeSnapshot`/`StandardizationWarning` at all. Instead, a new, fully independent
+function — `pub fn select_fragment(mol: &Molecule, policy: &FragmentPolicy) -> (Molecule,
+TransformationRecord)` — is the explainable entry point, orthogonal to the existing
+pipeline types. `largest_fragment`/`remove_salts` become thin wrappers
+(`select_fragment(mol, &FragmentPolicy::default()).0`), so `StandardizationPipeline::run`'s
+`LargestFragment` stage (which calls `largest_fragment` as a bare `fn` pointer) picks up
+the corrected policy automatically with zero changes to `apply_stage` or any report type.
+This makes §4.5's compatibility question moot for this round — there was a smaller,
+zero-risk option the RFC didn't anticipate: don't extend the existing report types at
+all, add a new orthogonal one instead. §4.5's three options remain relevant only if a
+future round wants fragment-level detail folded into `StandardizationPipeline`'s own
+per-stage report.
+
+### 8.2 `FragmentDecision` simplified to 2 variants, not 3
+
+§4.1 sketched `FragmentDecision::{Kept, Removed, Abstained}`. Implemented as `{Kept,
+Removed}` only, plus a `TransformationRecord.abstained: Option<String>` field for the
+whole-transformation case where no fragment classified as a confident non-salt candidate
+(e.g. `NaCl`). Rationale: an "abstained" fragment is a contradiction in this design — the
+function must still return *some* molecule (an existing pre-implementation test,
+`largest_fragment_ionic_pair_keeps_one_atom`, requires `largest_fragment("[Na+].[Cl-]")`
+to return a 1-atom molecule, not nothing), so exactly one fragment always ends up `Kept`
+regardless of whether the classification was confident. Abstention is a property of *the
+decision as a whole* ("we had no organic parent to point to"), not of any one fragment —
+moving it to `TransformationRecord` is more honest than inventing a third per-fragment
+state that would never actually block an output.
+
+### 8.3 Two real, previously-undiscovered bugs found and fixed while implementing
+
+1. **Fragment extraction silently corrupted stereocenters.** Both the pre-existing
+   `remove_salts_with_catalog` and this round's first draft of `extract_fragment` built
+   fragment molecules via a fresh `MoleculeBuilder` + manual atom/bond remap, which never
+   copied `Molecule`'s `stereo_neighbor_order`/`bond_directions`/`stereo_groups` side
+   tables. Caught empirically: `phase1_std_p1_07_10_zwitterions_are_noop` (alanine,
+   `C[C@@H](N)C(=O)[O-]`) failed with `@@` flipped to `@` after a same-atom-order,
+   single-fragment no-op pass. Root-caused and fixed by rewriting `extract_fragment` to
+   build the fragment via repeated `Molecule::remove_atom` (an existing, already-correct,
+   already-tested method that does remap those side tables) instead of a from-scratch
+   builder — removing atoms in descending original-index order, which keeps every
+   not-yet-removed index stable until its own removal (`remove_atom(k)` only shifts
+   indices `> k`). `remove_salts_with_catalog`'s duplicate inline extraction logic was
+   replaced with a call to the fixed `extract_fragment`, fixing the same latent bug in
+   the legacy catalog path too — one fix, both callers, per this project's "fix the root
+   cause where all callers route through" convention. This class of bug (forgetting to
+   remap `stereo_neighbor_order` during atom-subset extraction) has a documented
+   precedent in `chematic-cip`'s `digraph_diff.rs`/test helpers, so it was not a novel
+   risk to have checked for going in — this implementation just hadn't checked yet.
+2. **`std-p1-holdout-02`'s original fixture note had an arithmetic error**: it described
+   phosphoric acid (`OP(=O)(O)O`) as "exactly 4 heavy atoms," calling it a boundary case
+   for `MAX_SALT_HEAVY_ATOMS_NO_CARBON`. Phosphoric acid is P + 4×O = 5 heavy atoms, not
+   4 — the same over-threshold bucket as holdout-01's H2SO4. Corrected in the holdout
+   file and the test; this also surfaced a real, disclosed Phase 1 limitation (not a
+   bug): ethanolamine (4 heavy atoms) is smaller than phosphoric acid (5), so a pure
+   heavy-atom-count policy with no named-acid recognition keeps the acid over the amine
+   in `std-p1-holdout-02` — see the test's own comment.
+
+### 8.4 `std-p1-19`'s ambiguity-flag idea dropped, not implemented
+
+While writing the test for the 2-API cocrystal fixture (`std-p1-19`,
+acetaminophen/salicylic acid, heavy-atom margin = 1), it was found that a heavy-atom-count
+margin threshold cannot distinguish this genuinely-ambiguous case from
+`std-p1-holdout-10` (pentane/butane, margin = 1, explicitly *not* meant to be flagged).
+Rather than ship a margin-based "close decision" warning that both fixtures would
+disprove, this mechanism was dropped entirely for Phase 1. `std-p1-19`'s expected outcome
+was corrected to plain ranked-by-size (same as any other multi-organic-fragment case);
+the cocrystal-vs-counterion ambiguity problem is disclosed as unaddressed, not silently
+resolved by a heuristic that doesn't actually work.
+
+### 8.5 Decisions made, not left open
+
+- `MAX_SALT_HEAVY_ATOMS_NO_CARBON = 4` (inherited from the pre-existing
+  `is_salt_fragment`, per §6 — kept, not re-derived).
+- Always-strip monatomic ion set implemented exactly as §3.2: Li/Na/K/F/Cl/Br/I, charged,
+  single heavy atom. Ca²⁺/Mg²⁺ deliberately excluded from this list (still removed via the
+  general no-carbon/≤4-heavy-atom fallback, but attributed to a different `rule_id` in the
+  audit log — see `phase1_holdout_03_calcium_diacetate_via_general_heuristic`).
+- `SaltCatalog`/`remove_salts_with_catalog`/`is_salt_fragment` untouched and still public,
+  exactly as §4.2 specified — opt-in legacy behavior only, not reachable from
+  `remove_salts`/`largest_fragment`/the pipeline's `LargestFragment` stage by default.
+
+### 8.6 Still out of scope (unchanged from §2)
+
+Python/WASM bindings for `FragmentPolicy`/`select_fragment`/`TransformationRecord`;
+`preserve_counterion_if_required` (declared, not yet consulted by any logic); a
+non-heuristic cocrystal/counterion ambiguity signal (§8.4); extending the always-strip
+element list; wiring `select_fragment`'s richer audit trail into
+`StandardizationPipeline::run`'s own per-stage report.

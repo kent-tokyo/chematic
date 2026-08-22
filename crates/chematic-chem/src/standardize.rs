@@ -210,14 +210,20 @@ fn is_salt_fragment(frag: &Molecule) -> bool {
     false
 }
 
-/// Return a new `Molecule` with inorganic salts removed, keeping largest organic fragment.
+/// Return a new `Molecule` with salts/solvents removed, keeping the fragment
+/// selected by [`FragmentPolicy::default()`] (see [`select_fragment`]).
 ///
-/// Uses a comprehensive salt catalog (SMARTS patterns) and heuristic detection to identify
-/// and exclude common counterions (Na+, K+, TFA-, acetate, etc.) and inorganic salt fragments.
+/// Uses a small, structural classification (monatomic counterions, water, a
+/// no-carbon/small-fragment heuristic) rather than [`SaltCatalog`]'s named
+/// pattern list — see `docs/rfcs/explainable_standardization_phase1_rfc.md`
+/// for why. Callers who specifically want the legacy named-catalog behavior
+/// can still call [`remove_salts_with_catalog`] directly.
 ///
-/// If no non-salt fragment exists or molecule is empty, returns the original largest fragment.
+/// If no non-salt fragment exists or molecule is empty, returns the largest
+/// fragment by the same policy's ranking (never panics, never drops the
+/// input to nothing).
 pub fn remove_salts(mol: &Molecule) -> Molecule {
-    remove_salts_with_catalog(mol, &SaltCatalog::new())
+    select_fragment(mol, &FragmentPolicy::default()).0
 }
 
 /// Remove salts using a custom catalog.
@@ -237,15 +243,13 @@ pub fn remove_salts_with_catalog(mol: &Molecule, catalog: &SaltCatalog) -> Molec
     let mut largest_non_salt_size = 0;
 
     for component in &components {
-        // Extract fragment molecule temporarily to check if it's a salt
-        let mut builder = MoleculeBuilder::new();
-        let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
-        for &old_idx in component {
-            let new_idx = builder.add_atom(mol.atom(old_idx).clone());
-            remap.insert(old_idx, new_idx);
-        }
-        copy_bonds(mol, &mut builder, &remap);
-        let frag = builder.build();
+        // Extract fragment molecule temporarily to check if it's a salt.
+        // `extract_fragment` preserves stereo_neighbor_order/bond_directions/
+        // stereo_groups via `Molecule::remove_atom` -- an earlier version of
+        // this function built fragments with a bare MoleculeBuilder remap
+        // that silently dropped stereo_neighbor_order, flipping @/@@ on any
+        // stereocenter-bearing fragment (found while adding Phase 1 tests).
+        let frag = extract_fragment(mol, component);
 
         // Check with catalog first, fall back to heuristic
         let is_salt = catalog.is_salt(&frag) || is_salt_fragment(&frag);
@@ -259,15 +263,7 @@ pub fn remove_salts_with_catalog(mol: &Molecule, catalog: &SaltCatalog) -> Molec
 
     // Fall back to largest fragment if no non-salt found
     let component = largest_non_salt.unwrap_or(&components[0]);
-
-    let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
-    let mut builder = MoleculeBuilder::new();
-    for &old_idx in component {
-        let new_idx = builder.add_atom(mol.atom(old_idx).clone());
-        remap.insert(old_idx, new_idx);
-    }
-    copy_bonds(mol, &mut builder, &remap);
-    builder.build()
+    extract_fragment(mol, component)
 }
 
 /// Return a new `Molecule` containing only the largest connected fragment.
@@ -276,6 +272,385 @@ pub fn remove_salts_with_catalog(mol: &Molecule, catalog: &SaltCatalog) -> Molec
 /// This is an alias for `remove_salts()` for backward compatibility.
 pub fn largest_fragment(mol: &Molecule) -> Molecule {
     remove_salts(mol)
+}
+
+/// Policy controlling fragment ranking and salt/solvent classification for
+/// [`select_fragment`].
+///
+/// Classification is purely structural (monatomic-ion identity, water,
+/// no-carbon/small-fragment shape) — it never depends on matching a named
+/// substance pattern, unlike [`SaltCatalog`]. See
+/// `docs/rfcs/explainable_standardization_phase1_rfc.md` section 3.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct FragmentPolicy {
+    /// Rank fragments by heavy-atom count rather than total atom count, so
+    /// an explicit-hydrogen spelling of a small fragment can't outrank a
+    /// larger heavy-atom-bearing fragment.
+    pub count_heavy_atoms_only: bool,
+    /// Prefer a carbon-containing fragment when ranks would otherwise tie.
+    pub prefer_organic: bool,
+    /// Never classify an isotopically-labeled fragment as salt/solvent, even
+    /// if it would otherwise match the structural heuristic.
+    pub preserve_isotopes: bool,
+    /// Reserved for a future policy refinement (prefer keeping a counterion
+    /// when the pipeline can't confidently identify an organic parent at
+    /// all). Not consulted by [`select_fragment`] yet.
+    pub preserve_counterion_if_required: bool,
+}
+
+impl Default for FragmentPolicy {
+    fn default() -> Self {
+        Self {
+            count_heavy_atoms_only: true,
+            prefer_organic: true,
+            preserve_isotopes: true,
+            preserve_counterion_if_required: false,
+        }
+    }
+}
+
+/// Per-fragment atom/formula/canonical-SMILES snapshot, used in
+/// [`FragmentRecord`].
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct FragmentSnapshot {
+    /// Total atom count (including explicit hydrogens, if any).
+    pub atom_count: usize,
+    /// Heavy-atom (non-hydrogen) count.
+    pub heavy_atom_count: usize,
+    /// Hill-order molecular formula.
+    pub formula: String,
+    /// Canonical SMILES of this fragment alone.
+    pub canonical_smiles: String,
+}
+
+/// Why a fragment was kept or removed by [`select_fragment`].
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum FragmentDecision {
+    /// This fragment is the pipeline's output. `rank_key` is a
+    /// human-readable rendering of the ranking fields that won.
+    Kept {
+        /// Human-readable ranking-field summary, e.g.
+        /// `"rank_size=7, has_carbon=true, canonical_smiles=..."`.
+        rank_key: String,
+    },
+    /// This fragment was excluded from the output.
+    Removed {
+        /// Stable, machine-readable rule identifier, e.g.
+        /// `"monatomic_always_strip_ion"`, `"water_always_strip"`,
+        /// `"structural_no_carbon_small_fragment"`, `"ranked_out_by_size"`,
+        /// `"duplicate_of_kept_fragment"`.
+        rule_id: String,
+        /// Human-readable explanation.
+        reason: String,
+    },
+}
+
+/// One fragment's classification/ranking outcome within a
+/// [`TransformationRecord`].
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct FragmentRecord {
+    /// Structure summary of this fragment as it appeared in the input.
+    pub snapshot: FragmentSnapshot,
+    /// Why this fragment was kept or removed.
+    pub decision: FragmentDecision,
+}
+
+/// Explainable audit record for one [`select_fragment`] call: every input
+/// fragment, its classification/ranking decision, and before/after
+/// structure — see
+/// `docs/rfcs/explainable_standardization_phase1_rfc.md` section 4.
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct TransformationRecord {
+    /// Stable rule identifier for this transformation as a whole.
+    pub rule_id: String,
+    /// Rule version, bumped whenever the classification/ranking policy's
+    /// observable behavior changes.
+    pub rule_version: u32,
+    /// Every input fragment (kept and removed), in a deterministic,
+    /// canonical-SMILES-ordered sequence — never input/discovery order.
+    pub fragments: Vec<FragmentRecord>,
+    /// Set when no fragment classified as a confident non-salt candidate
+    /// (e.g. a purely inorganic input like `NaCl`), explaining that the
+    /// kept fragment was chosen by falling back to ranking among
+    /// salt-classified fragments rather than from a real organic parent.
+    pub abstained: Option<String>,
+    /// Molecule summary before this transformation.
+    pub before: MoleculeSnapshot,
+    /// Molecule summary after this transformation.
+    pub after: MoleculeSnapshot,
+    /// Warnings raised while processing.
+    pub warnings: Vec<StandardizationWarning>,
+}
+
+/// Monatomic ions always classified as salt/counterion, regardless of what
+/// else is present in the input. Deliberately tiny (fixed-identity,
+/// commonly-encountered single-atom counterions) rather than a general
+/// "known salts" list — see
+/// `docs/rfcs/explainable_standardization_phase1_rfc.md` section 3.2.
+/// Atomic numbers: Li, Na, K, F, Cl, Br, I.
+const ALWAYS_STRIP_MONATOMIC_IONS: &[u8] = &[3, 11, 19, 9, 17, 35, 53];
+
+/// Upper bound on heavy-atom count for the structural "no carbon → likely
+/// salt/solvent" fallback. Inherited from the pre-existing `is_salt_fragment`
+/// threshold (this module); flagged in the RFC as open to revisiting via
+/// fixture evidence, not re-derived from first principles here.
+const MAX_SALT_HEAVY_ATOMS_NO_CARBON: usize = 4;
+
+fn heavy_atom_count(frag: &Molecule) -> usize {
+    frag.atoms()
+        .filter(|(_, a)| a.element.atomic_number() != 1)
+        .count()
+}
+
+fn fragment_has_carbon(frag: &Molecule) -> bool {
+    frag.atoms().any(|(_, a)| a.element.atomic_number() == 6)
+}
+
+fn fragment_has_isotope(frag: &Molecule) -> bool {
+    frag.atoms().any(|(_, a)| a.isotope.is_some())
+}
+
+/// A lone, neutral oxygen fragment — water, however many (implicit or
+/// explicit) hydrogens accompany it in the graph.
+fn is_water_fragment(frag: &Molecule) -> bool {
+    heavy_atom_count(frag) == 1
+        && frag
+            .atoms()
+            .any(|(_, a)| a.element.atomic_number() == 8 && a.charge == 0)
+}
+
+fn is_always_strip_monatomic_ion(frag: &Molecule) -> bool {
+    if heavy_atom_count(frag) != 1 {
+        return false;
+    }
+    frag.atoms().any(|(_, a)| {
+        a.charge != 0 && ALWAYS_STRIP_MONATOMIC_IONS.contains(&a.element.atomic_number())
+    })
+}
+
+fn is_structural_salt_fallback(frag: &Molecule) -> bool {
+    heavy_atom_count(frag) <= MAX_SALT_HEAVY_ATOMS_NO_CARBON && !fragment_has_carbon(frag)
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum FragmentClass {
+    Kept,
+    AlwaysStripWater,
+    AlwaysStripIon,
+    StructuralSalt,
+}
+
+fn classify_fragment(frag: &Molecule, policy: &FragmentPolicy) -> FragmentClass {
+    if policy.preserve_isotopes && fragment_has_isotope(frag) {
+        return FragmentClass::Kept;
+    }
+    if is_water_fragment(frag) {
+        FragmentClass::AlwaysStripWater
+    } else if is_always_strip_monatomic_ion(frag) {
+        FragmentClass::AlwaysStripIon
+    } else if is_structural_salt_fallback(frag) {
+        FragmentClass::StructuralSalt
+    } else {
+        FragmentClass::Kept
+    }
+}
+
+/// Select which connected fragment of `mol` to keep, per `policy`, returning
+/// both the kept fragment and a full per-fragment audit record.
+///
+/// Ranking is a pure function of each fragment's own structure — heavy-atom
+/// count, carbon presence, and (as an intrinsic tie-break) canonical SMILES
+/// — never of atom index or input spelling order, so two differently-spelled
+/// inputs describing the same set of fragments always select the same
+/// output. See `docs/rfcs/explainable_standardization_phase1_rfc.md`.
+pub fn select_fragment(
+    mol: &Molecule,
+    policy: &FragmentPolicy,
+) -> (Molecule, TransformationRecord) {
+    let before = MoleculeSnapshot::from_mol(mol);
+
+    if mol.atom_count() == 0 {
+        let empty = MoleculeBuilder::new().build();
+        let after = MoleculeSnapshot::from_mol(&empty);
+        return (
+            empty,
+            TransformationRecord {
+                rule_id: "fragment_policy_v1".to_string(),
+                rule_version: 1,
+                fragments: Vec::new(),
+                abstained: None,
+                before,
+                after,
+                warnings: Vec::new(),
+            },
+        );
+    }
+
+    let components = connected_components(mol);
+    let frags: Vec<Molecule> = components
+        .iter()
+        .map(|c| extract_fragment(mol, c))
+        .collect();
+
+    struct Scored {
+        heavy: usize,
+        rank_size: usize,
+        has_carbon: bool,
+        canon: String,
+        class: FragmentClass,
+    }
+
+    let scored: Vec<Scored> = frags
+        .iter()
+        .map(|f| {
+            let heavy = heavy_atom_count(f);
+            let rank_size = if policy.count_heavy_atoms_only {
+                heavy
+            } else {
+                f.atom_count()
+            };
+            Scored {
+                heavy,
+                rank_size,
+                has_carbon: fragment_has_carbon(f),
+                canon: chematic_smiles::canonical_smiles(f),
+                class: classify_fragment(f, policy),
+            }
+        })
+        .collect();
+
+    let rank_key = |i: usize| -> (usize, bool, std::cmp::Reverse<String>) {
+        let s = &scored[i];
+        let carbon_key = policy.prefer_organic && s.has_carbon;
+        (s.rank_size, carbon_key, std::cmp::Reverse(s.canon.clone()))
+    };
+
+    let kept_candidates: Vec<usize> = (0..frags.len())
+        .filter(|&i| scored[i].class == FragmentClass::Kept)
+        .collect();
+
+    let (winner, abstained) = if kept_candidates.is_empty() {
+        let w = (0..frags.len()).max_by_key(|&i| rank_key(i)).unwrap();
+        (
+            w,
+            Some(format!(
+                "no_fragment_classified_kept: all {} fragment(s) matched a salt/ion/water \
+                 classification rule; falling back to the size-ranked choice among them",
+                frags.len()
+            )),
+        )
+    } else {
+        let w = *kept_candidates
+            .iter()
+            .max_by_key(|&&i| rank_key(i))
+            .unwrap();
+        (w, None)
+    };
+
+    let winner_canon = scored[winner].canon.clone();
+    let mut warnings = Vec::new();
+    if let Some(reason) = &abstained {
+        warnings.push(StandardizationWarning::new(
+            "fragment_selection_abstained",
+            reason.clone(),
+        ));
+    }
+
+    let fragments: Vec<FragmentRecord> = frags
+        .iter()
+        .enumerate()
+        .map(|(i, f)| {
+            let snapshot = FragmentSnapshot {
+                atom_count: f.atom_count(),
+                heavy_atom_count: scored[i].heavy,
+                formula: f.formula(),
+                canonical_smiles: scored[i].canon.clone(),
+            };
+            let decision = if i == winner {
+                FragmentDecision::Kept {
+                    rank_key: format!(
+                        "rank_size={}, has_carbon={}, canonical_smiles={}",
+                        scored[i].rank_size, scored[i].has_carbon, scored[i].canon
+                    ),
+                }
+            } else if scored[i].canon == winner_canon {
+                FragmentDecision::Removed {
+                    rule_id: "duplicate_of_kept_fragment".to_string(),
+                    reason: "identical structure to the kept fragment (same canonical SMILES)"
+                        .to_string(),
+                }
+            } else {
+                let (rule_id, reason) = match scored[i].class {
+                    FragmentClass::AlwaysStripWater => (
+                        "water_always_strip",
+                        "single neutral oxygen fragment (water)".to_string(),
+                    ),
+                    FragmentClass::AlwaysStripIon => (
+                        "monatomic_always_strip_ion",
+                        "single charged atom on the fixed always-strip element list".to_string(),
+                    ),
+                    FragmentClass::StructuralSalt => (
+                        "structural_no_carbon_small_fragment",
+                        format!("no carbon and <= {MAX_SALT_HEAVY_ATOMS_NO_CARBON} heavy atoms"),
+                    ),
+                    FragmentClass::Kept => (
+                        "ranked_out_by_size",
+                        "outranked by the kept fragment under the fragment policy".to_string(),
+                    ),
+                };
+                FragmentDecision::Removed {
+                    rule_id: rule_id.to_string(),
+                    reason,
+                }
+            };
+            FragmentRecord { snapshot, decision }
+        })
+        .collect();
+
+    let output = frags[winner].clone();
+    let after = MoleculeSnapshot::from_mol(&output);
+
+    (
+        output,
+        TransformationRecord {
+            rule_id: "fragment_policy_v1".to_string(),
+            rule_version: 1,
+            fragments,
+            abstained,
+            before,
+            after,
+            warnings,
+        },
+    )
+}
+
+/// Extract a connected fragment (given its atom set) as a standalone
+/// `Molecule`, preserving stereo data.
+///
+/// Built via repeated [`Molecule::remove_atom`] rather than a fresh
+/// `MoleculeBuilder` + manual atom/bond remap: `remove_atom` already
+/// correctly remaps `stereo_neighbor_order`/`bond_directions`/`stereo_groups`
+/// (see its own doc comment), which a from-scratch builder copy silently
+/// drops, flipping `@`/`@@` on any stereocenter-bearing fragment. Atoms not
+/// in `component` are removed in descending original-index order, which
+/// keeps every not-yet-removed index — including every atom still to be
+/// kept or removed — stable until it is itself removed (each `remove_atom`
+/// call only shifts indices *above* the one removed).
+fn extract_fragment(mol: &Molecule, component: &[AtomIdx]) -> Molecule {
+    let keep: std::collections::HashSet<u32> = component.iter().map(|a| a.0).collect();
+    let mut result = mol.clone();
+    let mut to_remove: Vec<u32> = (0..mol.atom_count() as u32)
+        .filter(|i| !keep.contains(i))
+        .collect();
+    to_remove.sort_unstable_by(|a, b| b.cmp(a));
+    for idx in to_remove {
+        result.remove_atom(AtomIdx(idx));
+    }
+    result
 }
 
 /// Normalize chemical groups (nitro groups, etc.).
@@ -1867,5 +2242,433 @@ mod tests {
         // All atoms should be neutral
         let all_neutral = result.atoms().all(|(_, a)| a.charge == 0);
         assert!(all_neutral, "both nitro and azide should be neutralized");
+    }
+
+    // -- Phase 1 fragment-policy fixture tests --------------------------------
+    // Mirrors validation/standardization_phase1_fixtures.jsonl and
+    // validation/standardization_phase1_holdout.jsonl (ids referenced in each
+    // test name/comment). See docs/rfcs/explainable_standardization_phase1_rfc.md.
+
+    fn canon(s: &str) -> String {
+        chematic_smiles::canonical_smiles(&parse(s).unwrap())
+    }
+
+    /// Assert `remove_salts(input)` keeps exactly the fragment `expected_kept`
+    /// describes (compared by canonical SMILES, not string equality).
+    fn assert_kept(id: &str, input: &str, expected_kept: &str) {
+        let mol = parse(input).unwrap();
+        let result = remove_salts(&mol);
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&result),
+            canon(expected_kept),
+            "{id}: expected kept fragment {expected_kept:?} for input {input:?}"
+        );
+    }
+
+    #[test]
+    fn phase1_std_p1_01_sodium_acetate() {
+        assert_kept("std-p1-01", "CC(=O)[O-].[Na+]", "CC(=O)[O-]");
+    }
+
+    #[test]
+    fn phase1_std_p1_02_potassium_benzoate() {
+        assert_kept("std-p1-02", "c1ccccc1C(=O)[O-].[K+]", "c1ccccc1C(=O)[O-]");
+    }
+
+    #[test]
+    fn phase1_std_p1_03_amine_hcl_neutral_form() {
+        assert_kept(
+            "std-p1-03",
+            "CC(C)NCC(O)COc1ccccc1CCOC.Cl",
+            "CC(C)NCC(O)COc1ccccc1CCOC",
+        );
+    }
+
+    #[test]
+    fn phase1_std_p1_04_triethylamine_hbr() {
+        assert_kept("std-p1-04", "CCN(CC)CC.Br", "CCN(CC)CC");
+    }
+
+    #[test]
+    fn phase1_std_p1_05_sodium_octanoate_long_chain() {
+        assert_kept("std-p1-05", "CCCCCCCC(=O)[O-].[Na+]", "CCCCCCCC(=O)[O-]");
+    }
+
+    #[test]
+    fn phase1_std_p1_06_amine_hcl_hydrate_3_fragment() {
+        assert_kept(
+            "std-p1-06",
+            "CC(C)NCC(O)c1ccc(O)c(CO)c1.Cl.O",
+            "CC(C)NCC(O)c1ccc(O)c(CO)c1",
+        );
+    }
+
+    #[test]
+    fn phase1_std_p1_07_10_zwitterions_are_noop() {
+        for (id, smi) in [
+            ("std-p1-07", "NCC(=O)[O-]"),
+            ("std-p1-08", "C[C@@H](N)C(=O)[O-]"),
+            ("std-p1-09", "NCCS(=O)(=O)[O-]"),
+            ("std-p1-10", "NCCCC(=O)[O-]"),
+        ] {
+            assert_kept(id, smi, smi);
+        }
+    }
+
+    #[test]
+    fn phase1_std_p1_11_13_hydrates() {
+        assert_kept(
+            "std-p1-11",
+            "Cn1cnc2c1c(=O)n(C)c(=O)n2C.O",
+            "Cn1cnc2c1c(=O)n(C)c(=O)n2C",
+        );
+        assert_kept(
+            "std-p1-12",
+            "OCC(O)C(O)C(O)C(O)CO.O",
+            "OCC(O)C(O)C(O)C(O)CO",
+        );
+        assert_kept("std-p1-13", "CC(=O)Nc1ccc(O)cc1.O", "CC(=O)Nc1ccc(O)cc1");
+    }
+
+    #[test]
+    fn phase1_std_p1_14_anhydrous_negative_control() {
+        // Same parent as std-p1-11 with no water fragment present: must be a
+        // pure no-op, not strip anything from the one remaining fragment.
+        assert_kept(
+            "std-p1-14",
+            "Cn1cnc2c1c(=O)n(C)c(=O)n2C",
+            "Cn1cnc2c1c(=O)n(C)c(=O)n2C",
+        );
+    }
+
+    #[test]
+    fn phase1_std_p1_15_ferrocene_ionic_fragments() {
+        // Fe2+ removed; either cyclopentadienide is an equally valid "kept"
+        // choice since both are identical -- assert on the kept fragment's
+        // OWN structure, not on which literal input position it came from.
+        let mol = parse("[Fe+2].c1cc[cH-]c1.c1cc[cH-]c1").unwrap();
+        let result = remove_salts(&mol);
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&result),
+            canon("c1cc[cH-]c1"),
+            "std-p1-15: expected a cyclopentadienide fragment kept, Fe2+ removed"
+        );
+    }
+
+    #[test]
+    fn phase1_std_p1_16_ethylmagnesium_bromide() {
+        assert_kept("std-p1-16", "CC[Mg+].[Br-]", "CC[Mg+]");
+    }
+
+    #[test]
+    fn phase1_std_p1_17_cisplatin_single_fragment_noop() {
+        // Bonded Cl/N ligands, not disconnected fragments -- must not be
+        // misparsed as separate salt components.
+        assert_kept("std-p1-17", "Cl[Pt](Cl)(N)N", "Cl[Pt](Cl)(N)N");
+    }
+
+    #[test]
+    fn phase1_std_p1_18_amine_tartrate_salt() {
+        assert_kept(
+            "std-p1-18",
+            "CN1CCC(CC1)Nc1ccccc1.OC(=O)C(O)C(O)C(=O)O",
+            "CN1CCC(CC1)Nc1ccccc1",
+        );
+    }
+
+    #[test]
+    fn phase1_std_p1_19_two_api_cocrystal_ranked_by_size() {
+        // Deliberate Phase 1 scope decision (see RFC section 6 / PR notes):
+        // no ambiguity-margin detector is implemented -- a heavy-atom-count
+        // margin alone cannot distinguish this genuinely-ambiguous cocrystal
+        // from std-p1-holdout-10's unambiguous pentane/butane pair (both have
+        // a 1-heavy-atom gap). This fixture's outcome is the same size-ranked
+        // decision as any other multi-organic-fragment case: acetaminophen
+        // (11 heavy atoms) outranks salicylic acid (10). The RFC's proposed
+        // "flag close decisions" mechanism is a disclosed, not-yet-implemented
+        // gap, not something this test asserts.
+        assert_kept(
+            "std-p1-19",
+            "CC(=O)Nc1ccc(O)cc1.OC(=O)c1ccccc1O",
+            "CC(=O)Nc1ccc(O)cc1",
+        );
+    }
+
+    #[test]
+    fn phase1_std_p1_20_22_isotope_containing() {
+        assert_kept("std-p1-20", "[13CH3]C(=O)[O-].[Na+]", "[13CH3]C(=O)[O-]");
+        assert_kept(
+            "std-p1-21",
+            "OC[C@H]1O[C@@H]([13OH])[C@H](O)[C@@H](O)[C@@H]1O.O",
+            "OC[C@H]1O[C@@H]([13OH])[C@H](O)[C@@H](O)[C@@H]1O",
+        );
+        assert_kept("std-p1-22", "[13CH3][NH3+].[Cl-]", "[13CH3][NH3+]");
+    }
+
+    #[test]
+    fn phase1_std_p1_23_tied_spelling_is_atom_order_invariant() {
+        // REGRESSION for confirmed defect 1.1(a): pre-RFC largest_fragment()
+        // picked a DIFFERENT fragment for these two spellings.
+        let a = remove_salts(&parse("CCC.CCN").unwrap());
+        let b = remove_salts(&parse("CCN.CCC").unwrap());
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&a),
+            chematic_smiles::canonical_smiles(&b),
+            "std-p1-23: kept fragment must not depend on input spelling order"
+        );
+    }
+
+    #[test]
+    fn phase1_std_p1_24_heavy_atom_count_not_explicit_h_count() {
+        // REGRESSION for confirmed defect 1.1(b).
+        assert_kept("std-p1-24", "CCC.[H]C([H])([H])[H]", "CCC");
+    }
+
+    #[test]
+    fn phase1_std_p1_25_benzene_hexane_tied_spelling_invariant() {
+        let a = remove_salts(&parse("c1ccccc1.CCCCCC").unwrap());
+        let b = remove_salts(&parse("CCCCCC.c1ccccc1").unwrap());
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&a),
+            chematic_smiles::canonical_smiles(&b),
+            "std-p1-25: 6-heavy-atom tie must resolve the same way regardless of spelling"
+        );
+    }
+
+    #[test]
+    fn phase1_std_p1_26_27_charged_fragments() {
+        assert_kept("std-p1-26", "CC(C)(C)[NH3+].[Br-]", "CC(C)(C)[NH3+]");
+        assert_kept("std-p1-27", "c1cc[nH+]cc1.[Cl-]", "c1cc[nH+]cc1");
+    }
+
+    #[test]
+    fn phase1_std_p1_28_choline_chloride_correct_for_the_right_reason() {
+        // REGRESSION for confirmed defect 1.1(c): the legacy SaltCatalog's
+        // "ammonium" SMARTS also classifies choline itself as salt (verified
+        // empirically: SaltCatalog::default().is_salt() on choline alone
+        // returns true), so the pre-RFC code only got this right via an
+        // unrelated size-comparison fallback. The new structural policy
+        // (no catalog consulted by default) must keep choline because it is
+        // organic and heavy-atom-dominant, independent of any nitrogen-charge
+        // pattern.
+        assert_kept("std-p1-28", "C[N+](C)(C)CCO.[Cl-]", "C[N+](C)(C)CCO");
+        assert!(
+            SaltCatalog::default().is_salt(&parse("C[N+](C)(C)CCO").unwrap()),
+            "sanity check: the legacy catalog's false positive on choline alone is still present \
+             (expected -- SaltCatalog is intentionally untouched, kept as opt-in legacy behavior)"
+        );
+    }
+
+    #[test]
+    fn phase1_std_p1_29_30_no_organic_fragment_abstains_with_warning() {
+        for (id, smi) in [("std-p1-29", "[Na+].[Cl-]"), ("std-p1-30", "[Cl-]")] {
+            let mol = parse(smi).unwrap();
+            let (_output, record) = select_fragment(&mol, &FragmentPolicy::default());
+            assert!(
+                record.abstained.is_some(),
+                "{id}: expected an abstain reason when no fragment classifies as Kept"
+            );
+            assert!(
+                !record.warnings.is_empty(),
+                "{id}: expected a warning surfaced alongside the abstain reason"
+            );
+        }
+    }
+
+    #[test]
+    fn phase1_std_p1_31_single_fragment_is_pure_noop() {
+        let mol = parse("CCO").unwrap();
+        let (output, record) = select_fragment(&mol, &FragmentPolicy::default());
+        assert_eq!(chematic_smiles::canonical_smiles(&output), canon("CCO"));
+        assert_eq!(record.fragments.len(), 1);
+        assert!(record.abstained.is_none());
+        assert!(matches!(
+            record.fragments[0].decision,
+            FragmentDecision::Kept { .. }
+        ));
+    }
+
+    #[test]
+    fn phase1_std_p1_32_empty_molecule_completes_not_errors() {
+        let empty = MoleculeBuilder::new().build();
+        let (output, record) = select_fragment(&empty, &FragmentPolicy::default());
+        assert_eq!(output.atom_count(), 0);
+        assert!(record.fragments.is_empty());
+        assert!(record.abstained.is_none());
+    }
+
+    #[test]
+    fn phase1_std_p1_33_duplicate_fragment_genuine_tie() {
+        let mol = parse("CC(=O)[O-].[Na+].CC(=O)[O-].[Na+]").unwrap();
+        let (output, record) = select_fragment(&mol, &FragmentPolicy::default());
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&output),
+            canon("CC(=O)[O-]")
+        );
+        let kept_count = record
+            .fragments
+            .iter()
+            .filter(|f| matches!(f.decision, FragmentDecision::Kept { .. }))
+            .count();
+        assert_eq!(
+            kept_count, 1,
+            "exactly one fragment is reported Kept even though a duplicate exists"
+        );
+        let duplicate_marked = record.fragments.iter().any(|f| {
+            matches!(
+                &f.decision,
+                FragmentDecision::Removed { rule_id, .. } if rule_id == "duplicate_of_kept_fragment"
+            )
+        });
+        assert!(
+            duplicate_marked,
+            "the identical second acetate must be recorded as a duplicate, not a ranked-out loser"
+        );
+    }
+
+    #[test]
+    fn phase1_std_p1_34_carbon_containing_solvate_known_gap() {
+        // Disclosed Phase 1 limitation: DMSO contains carbon, so it does NOT
+        // match the no-carbon structural salt heuristic and is kept (and
+        // must be recorded as Kept-by-ranking, not Removed-as-solvent).
+        let mol = parse("c1ccc2c(c1)cccc2.CS(=O)C").unwrap();
+        let (output, record) = select_fragment(&mol, &FragmentPolicy::default());
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&output),
+            canon("c1ccc2c(c1)cccc2")
+        );
+        let dmso_decision = record
+            .fragments
+            .iter()
+            .find(|f| f.snapshot.heavy_atom_count == 4)
+            .map(|f| f.decision.clone())
+            .expect("DMSO fragment present");
+        assert!(
+            matches!(
+                dmso_decision,
+                FragmentDecision::Removed { ref rule_id, .. } if rule_id == "ranked_out_by_size"
+            ),
+            "DMSO must be recorded as ranked-out-by-size (Kept-class, just smaller), not as a matched salt/solvent rule"
+        );
+    }
+
+    #[test]
+    fn phase1_holdout_01_dopamine_wins_regardless_of_n_threshold() {
+        // Dopamine (11 heavy atoms) vs H2SO4 (5 heavy atoms, S+4O -- corrected
+        // from the RFC/holdout fixture's original "5 heavy atoms" note, which
+        // is right) is not close enough for the open N threshold (RFC
+        // section 6) to matter: dopamine wins by ranking regardless of
+        // whether H2SO4 is classified StructuralSalt (excluded from
+        // candidates) or Kept-but-outranked. This confirms the threshold
+        // question only affects the audit log's rule_id here, not the
+        // fragment-selection outcome.
+        assert_kept(
+            "std-p1-holdout-01",
+            "CC(N)Cc1ccc(O)c(O)c1.OS(=O)(=O)O",
+            "CC(N)Cc1ccc(O)c(O)c1",
+        );
+    }
+
+    #[test]
+    fn phase1_holdout_02_phosphoric_acid_outranks_small_amine_disclosed_gap() {
+        // Correction to the original holdout fixture's arithmetic: H3PO4 has
+        // 4 oxygens (P + 4*O = 5 heavy atoms), not 3 -- it is NOT a boundary
+        // case at N=4, it is squarely over it, same bucket as H2SO4. Unlike
+        // holdout-01, ethanolamine (NCCO, 4 heavy atoms) is SMALLER than
+        // phosphoric acid (5 heavy atoms), so under a pure heavy-atom-count
+        // policy with no named-acid recognition, phosphoric acid outranks the
+        // amine and is kept. This is a disclosed limitation of a purely
+        // structural, no-named-list policy -- not a bug -- and is exactly the
+        // kind of case a future, carefully-scoped small always-strip
+        // extension (common mineral acids) would need to address, per RFC
+        // section 6.
+        assert_kept("std-p1-holdout-02", "NCCO.OP(=O)(O)O", "OP(=O)(O)O");
+    }
+
+    #[test]
+    fn phase1_holdout_03_calcium_diacetate_via_general_heuristic() {
+        // Ca2+ is NOT on the tiny always-strip element list; it is still
+        // removed, but via the general structural fallback rule, not
+        // "monatomic_always_strip_ion" -- the audit log must say so.
+        let mol = parse("CC(=O)[O-].CC(=O)[O-].[Ca+2]").unwrap();
+        let (output, record) = select_fragment(&mol, &FragmentPolicy::default());
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&output),
+            canon("CC(=O)[O-]")
+        );
+        let ca_decision = record
+            .fragments
+            .iter()
+            .find(|f| f.snapshot.heavy_atom_count == 1 && f.snapshot.formula.contains("Ca"))
+            .map(|f| f.decision.clone())
+            .expect("Ca2+ fragment present");
+        assert!(
+            matches!(
+                ca_decision,
+                FragmentDecision::Removed { ref rule_id, .. } if rule_id == "structural_no_carbon_small_fragment"
+            ),
+            "Ca2+ removal must be attributed to the general heuristic, not the always-strip-ion list"
+        );
+    }
+
+    #[test]
+    fn phase1_holdout_04_05_always_strip_coverage() {
+        assert_kept("std-p1-holdout-04", "CC(=O)[O-].[Li+]", "CC(=O)[O-]");
+        assert_kept("std-p1-holdout-05", "c1ccc(cc1)CCN.F", "c1ccc(cc1)CCN");
+    }
+
+    #[test]
+    fn phase1_holdout_06_dihydrate_both_removed() {
+        let mol = parse("Cn1cnc2c1c(=O)n(C)c(=O)n2C.O.O").unwrap();
+        let (output, record) = select_fragment(&mol, &FragmentPolicy::default());
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&output),
+            canon("Cn1cnc2c1c(=O)n(C)c(=O)n2C")
+        );
+        let water_removed_count = record
+            .fragments
+            .iter()
+            .filter(|f| matches!(&f.decision, FragmentDecision::Removed { rule_id, .. } if rule_id == "water_always_strip"))
+            .count();
+        assert_eq!(
+            water_removed_count, 2,
+            "both water fragments must be independently recorded"
+        );
+    }
+
+    #[test]
+    fn phase1_holdout_07_three_fragment_mixed_rationale() {
+        let mol = parse("CN1CCC(CC1)Nc1ccccc1.OC(=O)c1ccccc1O.Cl").unwrap();
+        let (output, record) = select_fragment(&mol, &FragmentPolicy::default());
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&output),
+            canon("CN1CCC(CC1)Nc1ccccc1")
+        );
+        assert_eq!(record.fragments.len(), 3);
+        let rule_ids: Vec<&str> = record
+            .fragments
+            .iter()
+            .filter_map(|f| match &f.decision {
+                FragmentDecision::Removed { rule_id, .. } => Some(rule_id.as_str()),
+                FragmentDecision::Kept { .. } => None,
+            })
+            .collect();
+        assert!(rule_ids.contains(&"ranked_out_by_size"));
+        assert!(rule_ids.contains(&"structural_no_carbon_small_fragment"));
+    }
+
+    #[test]
+    fn phase1_holdout_08_isotope_sugar_hydrate_generalization() {
+        assert_kept(
+            "std-p1-holdout-08",
+            "OC[C@H]1O[C@@H]([13OH])[C@H](O)[C@@H](O)[C@@H]1O.O",
+            "OC[C@H]1O[C@@H]([13OH])[C@H](O)[C@@H](O)[C@@H]1O",
+        );
+    }
+
+    #[test]
+    fn phase1_holdout_09_10_non_tie_sanity_checks() {
+        assert_kept("std-p1-holdout-09", "CC.CCCCCCCCCC", "CCCCCCCCCC");
+        assert_kept("std-p1-holdout-10", "CCCCC.CCCC", "CCCCC");
     }
 }
