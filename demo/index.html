@@ -140,6 +140,28 @@ header {
   border-bottom-color: var(--accent);
   color: var(--accent);
 }
+.tab-cat-row {
+  max-width: 1100px; margin: 0 auto;
+  display: flex; gap: 0;
+  border-bottom: 1px solid var(--border);
+}
+.tab-cat-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: .78rem; font-weight: 700;
+  letter-spacing: .04em; text-transform: uppercase;
+  padding: .6rem 1.2rem;
+  transition: color .15s, border-color .15s;
+  white-space: nowrap;
+}
+.tab-cat-btn:hover { color: var(--text); }
+.tab-cat-btn.active {
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+}
 
 /* ── Main layout ─────────────────────────────────────────────────────── */
 main {
@@ -694,17 +716,24 @@ footer {
 </header>
 
 <!-- Tab bar -->
-<nav class="tab-bar" role="tablist">
-  <div class="tab-bar-inner">
-    <button class="tab-btn active" data-tab="tab-2d"     id="tb-2d"      role="tab"></button>
-    <button class="tab-btn"        data-tab="tab-sim"    id="tb-sim"     role="tab"></button>
-    <button class="tab-btn"        data-tab="tab-report" id="tb-report"  role="tab"></button>
-    <button class="tab-btn"        data-tab="tab-rxn"    id="tb-rxn"     role="tab"></button>
-    <button class="tab-btn"        data-tab="tab-sar"    id="tb-sar"     role="tab"></button>
-    <button class="tab-btn"        data-tab="tab-3d"     id="tb-3d"      role="tab"></button>
-    <button class="tab-btn"        data-tab="tab-gallery" id="tb-gallery" role="tab"></button>
-    <button class="tab-btn"        data-tab="tab-formats" id="tb-formats" role="tab"></button>
-    <button class="tab-btn"        data-tab="tab-dynamics" id="tb-dynamics" role="tab"><span class="exp-badge">exp</span></button>
+<nav class="tab-bar">
+  <div class="tab-cat-row" role="tablist">
+    <button class="tab-cat-btn active" data-cat="cat-structure" id="tc-structure" role="tab"></button>
+    <button class="tab-cat-btn"        data-cat="cat-analysis"  id="tc-analysis"  role="tab"></button>
+    <button class="tab-cat-btn"        data-cat="cat-reactions" id="tc-reactions" role="tab"></button>
+    <button class="tab-cat-btn"        data-cat="cat-data"      id="tc-data"      role="tab"></button>
+    <button class="tab-cat-btn"        data-cat="cat-labs"      id="tc-labs"      role="tab"><span class="exp-badge">exp</span></button>
+  </div>
+  <div class="tab-bar-inner" role="tablist">
+    <button class="tab-btn active" data-tab="tab-2d"      data-cat="cat-structure" id="tb-2d"      role="tab"></button>
+    <button class="tab-btn"        data-tab="tab-3d"      data-cat="cat-structure" id="tb-3d"      role="tab"></button>
+    <button class="tab-btn"        data-tab="tab-sim"     data-cat="cat-analysis"  id="tb-sim"     role="tab" style="display:none"></button>
+    <button class="tab-btn"        data-tab="tab-sar"     data-cat="cat-analysis"  id="tb-sar"     role="tab" style="display:none"></button>
+    <button class="tab-btn"        data-tab="tab-report"  data-cat="cat-analysis"  id="tb-report"  role="tab" style="display:none"></button>
+    <button class="tab-btn"        data-tab="tab-rxn"     data-cat="cat-reactions" id="tb-rxn"     role="tab" style="display:none"></button>
+    <button class="tab-btn"        data-tab="tab-formats" data-cat="cat-data"      id="tb-formats" role="tab" style="display:none"></button>
+    <button class="tab-btn"        data-tab="tab-gallery" data-cat="cat-data"      id="tb-gallery" role="tab" style="display:none"></button>
+    <button class="tab-btn"        data-tab="tab-dynamics" data-cat="cat-labs"     id="tb-dynamics" role="tab" style="display:none"></button>
   </div>
 </nav>
 
@@ -1402,6 +1431,11 @@ const T = {
     'tab.3d':           '3D Viewer',
     'tab.gallery':      'Gallery',
     'tab.dynamics':     'Advanced',
+    'cat.structure':    'Structure',
+    'cat.analysis':     'Analysis',
+    'cat.reactions':    'Reactions',
+    'cat.data':         'Data & Formats',
+    'cat.labs':         'Labs',
     'stereo.title':     'Stereoisomer Enumeration',
     'stereo.hint':      'Enumerates all possible stereoisomers for unspecified stereocenters (up to 6 centers / 64 isomers).',
     'stereo.btn':       'Show Stereoisomers',
@@ -1635,6 +1669,11 @@ const T = {
     'tab.3d':           '3D ビューア',
     'tab.gallery':      'ギャラリー',
     'tab.dynamics':     '高度な計算',
+    'cat.structure':    '構造',
+    'cat.analysis':     '解析',
+    'cat.reactions':    '反応',
+    'cat.data':         'データ形式',
+    'cat.labs':         'ラボ',
     'stereo.title':     '立体異性体列挙',
     'stereo.hint':      '未指定の不斉中心に対して全ての立体異性体を列挙します（最大 6 中心 / 64 異性体）。',
     'stereo.btn':       '立体異性体を表示',
@@ -1868,6 +1907,11 @@ const T = {
     'tab.3d':           '3D 查看器',
     'tab.gallery':      '图库',
     'tab.dynamics':     '高级计算',
+    'cat.structure':    '结构',
+    'cat.analysis':     '分析',
+    'cat.reactions':    '反应',
+    'cat.data':         '数据格式',
+    'cat.labs':         '实验室',
     'stereo.title':     '立体异构体枚举',
     'stereo.hint':      '对未指定的立体中心枚举所有可能的立体异构体（最多 6 个中心 / 64 种）。',
     'stereo.btn':       '显示立体异构体',
@@ -2041,6 +2085,11 @@ const STATIC_IDS = {
   'tb-gallery':         'tab.gallery',
   'tb-formats':         'tab.formats',
   'tb-dynamics':        'tab.dynamics',
+  'tc-structure':       'cat.structure',
+  'tc-analysis':        'cat.analysis',
+  'tc-reactions':       'cat.reactions',
+  'tc-data':            'cat.data',
+  'tc-labs':            'cat.labs',
   'h-formats-title':    'formats.title',
   'formats-intro':      'formats.intro',
   'fmt-mode-cube':        'formats.mode.cube',
@@ -2172,6 +2221,7 @@ function applyLang(newLang) {
 // Tab switching
 // ============================================================
 let activeTab = 'tab-2d';
+let activeCategory = 'cat-structure';
 let viewer3dInited = false;
 let viewer3dMolDirty = false;
 
@@ -2184,6 +2234,21 @@ function switchTab(tabId) {
     panel.classList.toggle('active', panel.id === tabId);
   });
 
+  // Keep the category row in sync whenever a tab is opened directly
+  // (the gallery's hardcoded switchTab('tab-2d') call, page load, etc.)
+  // rather than only through a category click.
+  const btnEl = document.querySelector(`.tab-bar-inner .tab-btn[data-tab="${tabId}"]`);
+  const cat = btnEl ? btnEl.dataset.cat : null;
+  if (cat && cat !== activeCategory) {
+    activeCategory = cat;
+    document.querySelectorAll('.tab-cat-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.cat === cat);
+    });
+    document.querySelectorAll('.tab-bar-inner .tab-btn').forEach(b => {
+      b.style.display = b.dataset.cat === cat ? '' : 'none';
+    });
+  }
+
   if (tabId === 'tab-3d' && lastMol) {
     if (!viewer3dInited) {
       init3dViewer();
@@ -2191,6 +2256,18 @@ function switchTab(tabId) {
       render3d(lastMol);
     }
   }
+}
+
+function setCategory(catId) {
+  activeCategory = catId;
+  document.querySelectorAll('.tab-cat-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.cat === catId);
+  });
+  document.querySelectorAll('.tab-bar-inner .tab-btn').forEach(btn => {
+    btn.style.display = btn.dataset.cat === catId ? '' : 'none';
+  });
+  const firstBtn = document.querySelector(`.tab-bar-inner .tab-btn[data-cat="${catId}"]`);
+  if (firstBtn) switchTab(firstBtn.dataset.tab);
 }
 
 // ============================================================
@@ -3969,6 +4046,9 @@ function initFormatsTab() {
   // Tab switching
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+  document.querySelectorAll('.tab-cat-btn').forEach(btn => {
+    btn.addEventListener('click', () => setCategory(btn.dataset.cat));
   });
 
   // Language switcher
