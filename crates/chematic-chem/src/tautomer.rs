@@ -681,6 +681,176 @@ fn transfer_hydrogen_aromatic(
     Some(builder.build())
 }
 
+// ---------------------------------------------------------------------------
+// Aromatic lactam/lactim shift (ROADMAP.md Phase 2, round 2C-2)
+//
+// Generalizes the ring-internal-only mechanism above to admit one more mobile-H
+// position: an exocyclic oxygen singly bonded to an aromatic ring atom. See
+// docs/rfcs/tautomer_parent_identity_phase2_rfc.md section 4.4a for the full
+// mechanism table and the empirical reason this must be a directional step
+// (like the 41 `TautomerRule`s' own `prefer_forward` direction) rather than a
+// new candidate generator feeding `enumerate_direct_aromatic_forms`'s
+// score-ranked pool -- reusing that pool's `tautomer_score` would select the
+// wrong (lactim) tautomer for 2-pyridone (measured: enol scores 1100 vs keto
+// 1050).
+// ---------------------------------------------------------------------------
+
+/// Ring-path distance, in bond hops along the one ring `ring` (as returned by
+/// [`chematic_perception::find_sssr`]), between two members of that ring.
+/// `None` if either atom is not a member of `ring`.
+fn ring_distance(ring: &[AtomIdx], a: AtomIdx, b: AtomIdx) -> Option<usize> {
+    let ia = ring.iter().position(|&x| x == a)?;
+    let ib = ring.iter().position(|&x| x == b)?;
+    let d = ia.abs_diff(ib);
+    Some(d.min(ring.len() - d))
+}
+
+/// Find every (donor, bridge, acceptor) triple eligible for the exocyclic
+/// lactam/lactim shift: `donor` is an exocyclic, non-aromatic oxygen with an
+/// explicit H, singly bonded to the aromatic ring atom `bridge`; `acceptor`
+/// is an aromatic ring nitrogen with no H, sharing an SSSR ring with `bridge`
+/// at **odd** ring distance (the condition for a real alternating
+/// single/double path between them to exist at all -- RFC section 4.4a).
+/// O-only, not O-or-N: every confirmed-broken molecule is this type (RFC
+/// section 1.1); the analogous N-acceptor (amino/imino) case is a distinct,
+/// unevidenced defect, deliberately out of scope (RFC section 4.4a).
+fn find_exocyclic_lactam_shift_matches(mol: &Molecule) -> Vec<(AtomIdx, AtomIdx, AtomIdx)> {
+    let rings = chematic_perception::find_sssr(mol);
+    let mut out = Vec::new();
+    for (bridge, bridge_atom) in mol.atoms() {
+        if !bridge_atom.aromatic {
+            continue;
+        }
+        for (donor, bond_idx) in mol.neighbors(bridge) {
+            let donor_atom = mol.atom(donor);
+            if donor_atom.aromatic || donor_atom.element.atomic_number() != 8 {
+                continue;
+            }
+            // Not `.hydrogen_count.unwrap_or(0)`: an unbracketed hydroxyl
+            // (`Oc1...`, the common enol spelling) stores `None` and relies
+            // on valence inference for its implicit H -- `unwrap_or(0)` would
+            // misread that as "no H to donate" and silently never fire.
+            if implicit_hcount(mol, donor) == 0 {
+                continue;
+            }
+            if mol.bond(bond_idx).order != BondOrder::Single {
+                continue;
+            }
+            for ring in rings.rings() {
+                if !ring.contains(&bridge) {
+                    continue;
+                }
+                for &acceptor in ring {
+                    let acceptor_atom = mol.atom(acceptor);
+                    if !acceptor_atom.aromatic || acceptor_atom.element.atomic_number() != 7 {
+                        continue;
+                    }
+                    if acceptor_atom.hydrogen_count.is_some_and(|h| h > 0) {
+                        continue;
+                    }
+                    if ring_distance(ring, bridge, acceptor).is_some_and(|d| d % 2 == 1) {
+                        out.push((donor, bridge, acceptor));
+                    }
+                }
+            }
+        }
+    }
+    out
+}
+
+/// Move the H from `donor` (exocyclic O) to `acceptor` (ring N), flipping
+/// only the `donor`-`bridge` bond order (`Single` -> `Double`); every
+/// ring-internal bond, including `bridge`-`acceptor` when they're directly
+/// bonded, stays exactly as it was (`Aromatic`) -- confirmed structurally
+/// true for every design molecule (RFC section 4.4a).
+fn transfer_hydrogen_exocyclic_lactam(
+    mol: &Molecule,
+    donor: AtomIdx,
+    bridge: AtomIdx,
+    acceptor: AtomIdx,
+    blocked_atoms: &HashSet<AtomIdx>,
+    blocked_bonds: &HashSet<BondIdx>,
+) -> Option<Molecule> {
+    if blocked_atoms.contains(&donor) || blocked_atoms.contains(&acceptor) {
+        return None;
+    }
+    // implicit_hcount, not `.hydrogen_count`: an unbracketed hydroxyl's H is
+    // stored as `None` (see find_exocyclic_lactam_shift_matches's own note).
+    let donor_h = implicit_hcount(mol, donor);
+    if donor_h == 0 {
+        return None;
+    }
+    let (bond_idx, bond) = mol.bond_between(donor, bridge)?;
+    if bond.order != BondOrder::Single || blocked_bonds.contains(&bond_idx) {
+        return None;
+    }
+    let acceptor_h = mol.atom(acceptor).hydrogen_count.unwrap_or(0);
+
+    let mut builder = MoleculeBuilder::new();
+    for i in 0..mol.atom_count() {
+        let idx = AtomIdx(i as u32);
+        let mut atom = mol.atom(idx).clone();
+        if idx == donor {
+            atom.hydrogen_count = donor_h.checked_sub(1).filter(|&h| h > 0);
+        } else if idx == acceptor {
+            atom.hydrogen_count = Some(acceptor_h.saturating_add(1));
+        }
+        builder.add_atom(atom);
+    }
+    for i in 0..mol.bond_count() {
+        let bidx = BondIdx(i as u32);
+        let b = mol.bond(bidx);
+        let order = if bidx == bond_idx {
+            BondOrder::Double
+        } else {
+            b.order
+        };
+        builder.add_bond(b.atom1, b.atom2, order).expect(
+            "transfer_hydrogen_exocyclic_lactam: bond from a valid molecule must be re-addable",
+        );
+    }
+    builder.copy_stereo_groups_from(mol);
+    builder.copy_stereo_from(mol);
+    builder.copy_bond_directions_from(mol);
+    Some(builder.build())
+}
+
+/// Apply one exocyclic lactam/lactim shift, chosen deterministically among
+/// every eligible (donor, bridge, acceptor) triple by minimal canonical
+/// SMILES of the result -- never `.first()`/index order, which would make
+/// the choice track input atom order rather than structure (uracil has two
+/// independent sites; cytosine's/guanine's carbonyl-bearing ring atom is
+/// flanked by two ring nitrogens, only one a valid acceptor at a time, but
+/// both may qualify simultaneously from a fully-shifted starting form). See
+/// RFC section 4.4a's order-invariance requirement.
+fn apply_exocyclic_lactam_shift_tracked(
+    mol: &Molecule,
+    config: &TautomerConfig,
+) -> Option<(Molecule, AtomIdx, AtomIdx, AtomIdx)> {
+    let mut candidates: Vec<(Molecule, AtomIdx, AtomIdx, AtomIdx)> =
+        find_exocyclic_lactam_shift_matches(mol)
+            .into_iter()
+            .filter_map(|(donor, bridge, acceptor)| {
+                transfer_hydrogen_exocyclic_lactam(
+                    mol,
+                    donor,
+                    bridge,
+                    acceptor,
+                    &config.blocked_atoms,
+                    &config.blocked_bonds,
+                )
+                .map(|next| (next, donor, bridge, acceptor))
+            })
+            .collect();
+    if candidates.is_empty() {
+        return None;
+    }
+    candidates.sort_by(|x, y| {
+        chematic_smiles::canonical_smiles(&x.0).cmp(&chematic_smiles::canonical_smiles(&y.0))
+    });
+    candidates.into_iter().next()
+}
+
 use crate::hash::{FNV1A_OFFSET, FNV1A_PRIME};
 
 /// Tautomer form score for canonical selection: prefers O-H > N-H > S-H and aromatic rings.
@@ -1103,6 +1273,21 @@ pub fn canonical_tautomer_with_config(mol: &Molecule, config: &TautomerConfig) -
             }
         }
         if !changed {
+            // The 41 rules above never match across an aromatic ring bond
+            // (BondOrderMatch::Double never matches BondOrder::Aromatic).
+            // This is the round 2C-2 generalization: an exocyclic O donor
+            // across an aromatic ring atom -- see the mechanism block above
+            // `transfer_hydrogen_exocyclic_lactam`.
+            if let Some((next, ..)) = apply_exocyclic_lactam_shift_tracked(&current, config) {
+                let fp = mol_fingerprint(&next);
+                if !seen.contains(&fp) {
+                    seen.insert(fp);
+                    current = next;
+                    changed = true;
+                }
+            }
+        }
+        if !changed {
             break;
         }
     }
@@ -1289,6 +1474,12 @@ pub enum TautomerRuleId {
     OneFiveCToNSBridge,
     OneFiveCToSNBridge,
     OneFiveCToSSBridge,
+    /// The round 2C-2 exocyclic lactam/lactim shift -- not a `RULES` table
+    /// entry (it's a directional step applied alongside them, see
+    /// `apply_exocyclic_lactam_shift_tracked`), so it is never produced by
+    /// `rule_id_for` and is exempt from
+    /// `all_rules_map_to_a_named_tautomer_rule_id`'s drift check.
+    AromaticExocyclicLactamLactim,
     /// A rule name not yet mapped to a named variant above.
     Other(&'static str),
 }
@@ -1461,7 +1652,9 @@ pub fn tautomer_parent(mol: &Molecule, limits: &TautomerLimits) -> ParentResult 
                 .any(|rule| {
                     apply_first_match_tracked(&current, rule, &config)
                         .is_some_and(|(next, ..)| !seen.contains(&mol_fingerprint(&next)))
-                });
+                })
+                || apply_exocyclic_lactam_shift_tracked(&current, &config)
+                    .is_some_and(|(next, ..)| !seen.contains(&mol_fingerprint(&next)));
             if has_more {
                 status = ParentComputationStatus::MaxTransformsReached;
             }
@@ -1494,6 +1687,31 @@ pub fn tautomer_parent(mol: &Molecule, limits: &TautomerLimits) -> ParentResult 
                     transforms_applied += 1;
                     changed = true;
                     break;
+                }
+            }
+        }
+        if !changed {
+            // Round 2C-2: the exocyclic lactam/lactim shift, tried only when
+            // no rule above matched (same fallback order as
+            // canonical_tautomer_with_config).
+            if let Some((next, donor, bridge, acceptor)) =
+                apply_exocyclic_lactam_shift_tracked(&current, &config)
+            {
+                let fp = mol_fingerprint(&next);
+                if !seen.contains(&fp) {
+                    seen.insert(fp);
+                    let mut affected_bonds = Vec::new();
+                    if let Some((bidx, _)) = current.bond_between(donor, bridge) {
+                        affected_bonds.push(bidx);
+                    }
+                    applied_transforms.push(AppliedTransform {
+                        rule_id: TautomerRuleId::AromaticExocyclicLactamLactim,
+                        affected_atoms: vec![donor, bridge, acceptor],
+                        affected_bonds,
+                    });
+                    current = next;
+                    transforms_applied += 1;
+                    changed = true;
                 }
             }
         }
@@ -2822,5 +3040,208 @@ mod tests {
             }
             other => panic!("expected ParentAudit::Tautomer, got {other:?}"),
         }
+    }
+
+    // -- Phase 2 round-2C-2/2C-3: exocyclic lactam/lactim shift ----------------
+    // See docs/rfcs/tautomer_parent_identity_phase2_rfc.md section 4.4a.
+
+    #[test]
+    fn ring_distance_matches_ortho_and_meta() {
+        let two_pyridone = parse("O=c1cccc[nH]1").unwrap();
+        let ring = chematic_perception::find_sssr(&two_pyridone);
+        let ring = ring.rings().first().expect("one ring");
+        // bridge = AtomIdx(1) (bonded to the exocyclic O), acceptor =
+        // AtomIdx(6) (the ring N) -- ortho, distance 1.
+        assert_eq!(ring_distance(ring, AtomIdx(1), AtomIdx(6)), Some(1));
+
+        let three_hydroxypyridine = parse("Oc1cccnc1").unwrap();
+        let ring = chematic_perception::find_sssr(&three_hydroxypyridine);
+        let ring = ring.rings().first().expect("one ring");
+        // bridge = AtomIdx(1), ring N = AtomIdx(5) -- meta, distance 2 (even).
+        assert_eq!(ring_distance(ring, AtomIdx(1), AtomIdx(5)), Some(2));
+    }
+
+    fn assert_converges(label: &str, variants: &[&str]) {
+        let outs: Vec<String> = variants
+            .iter()
+            .map(|s| canonical_smiles(&canonical_tautomer(&parse(s).unwrap())))
+            .collect();
+        assert!(
+            outs.windows(2).all(|w| w[0] == w[1]),
+            "{label}: variants did not converge to one canonical form: {outs:?}"
+        );
+    }
+
+    fn assert_noop(label: &str, smi: &str) {
+        let mol = parse(smi).unwrap();
+        let out = canonical_tautomer(&mol);
+        assert_eq!(
+            canonical_smiles(&out),
+            canonical_smiles(&mol),
+            "{label}: expected a no-op, got a change"
+        );
+    }
+
+    #[test]
+    fn tp2_05_2_pyridone_converges() {
+        assert_converges("tp2-05", &["O=c1cccc[nH]1", "Oc1ccccn1"]);
+    }
+
+    #[test]
+    fn tp2_06_4_pyridone_converges() {
+        assert_converges("tp2-06", &["O=c1cc[nH]cc1", "Oc1ccncc1"]);
+    }
+
+    #[test]
+    fn tp2_08_uracil_converges() {
+        assert_converges("tp2-08", &["O=c1cc[nH]c(=O)[nH]1", "Oc1ccnc(O)n1"]);
+    }
+
+    #[test]
+    fn tp2_holdout_01_hypoxanthine_converges() {
+        // Holdout: never used to shape the mechanism above.
+        assert_converges(
+            "tp2-holdout-01",
+            &["O=c1[nH]cnc2[nH]cnc12", "Oc1ncnc2[nH]cnc12"],
+        );
+    }
+
+    #[test]
+    fn tp2_07_09_dual_flank_residual_documented_not_silently_fixed() {
+        // Cytosine and guanine's carbonyl carbon is flanked by two ring
+        // nitrogens (RFC section 1.7): the shift fires on both inputs, but
+        // full convergence needs ring-internal N-position normalization
+        // too, out of scope for round 2C. This test pins the CURRENT,
+        // documented residual so a future change to either mechanism must
+        // consciously update this test (and the RFC/fixtures), not silently
+        // start or stop converging.
+        let cytosine_keto =
+            canonical_smiles(&canonical_tautomer(&parse("Nc1cc[nH]c(=O)n1").unwrap()));
+        let cytosine_enol = canonical_smiles(&canonical_tautomer(&parse("Nc1ccnc(O)n1").unwrap()));
+        assert_ne!(
+            cytosine_keto, cytosine_enol,
+            "cytosine: if this now passes, section 1.7 was resolved -- update the RFC/fixtures, don't just delete this test"
+        );
+        // Both sides must still be genuinely keto (the shift itself fired),
+        // not merely "different because the enol side is untouched".
+        assert!(
+            cytosine_enol.contains("=O"),
+            "enol side should have shifted to a keto form: {cytosine_enol}"
+        );
+
+        let guanine_keto = canonical_smiles(&canonical_tautomer(
+            &parse("Nc1nc2[nH]cnc2c(=O)[nH]1").unwrap(),
+        ));
+        let guanine_enol =
+            canonical_smiles(&canonical_tautomer(&parse("Nc1nc2[nH]cnc2c(O)n1").unwrap()));
+        assert_ne!(
+            guanine_keto, guanine_enol,
+            "guanine: if this now passes, section 1.7 was resolved -- update the RFC/fixtures, don't just delete this test"
+        );
+        assert!(
+            guanine_enol.contains("=O"),
+            "enol side should have shifted to a keto form: {guanine_enol}"
+        );
+    }
+
+    #[test]
+    fn tp2_34_isotope_preserved_through_exocyclic_shift() {
+        let mol = parse("[18OH]c1ccccn1").unwrap();
+        let out = canonical_tautomer(&mol);
+        assert_converges("tp2-34", &["[18O]=c1cccc[nH]1", "[18OH]c1ccccn1"]);
+        // The isotope must land on an oxygen atom, not be dropped or moved
+        // to an unrelated atom.
+        let labeled = (0..out.atom_count())
+            .map(|i| AtomIdx(i as u32))
+            .find(|&i| out.atom(i).isotope == Some(18))
+            .expect("18O label must survive");
+        assert_eq!(out.atom(labeled).element.atomic_number(), 8);
+    }
+
+    #[test]
+    fn tp2_35_remote_stereocenter_preserved_through_exocyclic_shift() {
+        assert_converges(
+            "tp2-35",
+            &["O=c1c([C@@H](F)Cl)ccc[nH]1", "Oc1c([C@@H](F)Cl)cccn1"],
+        );
+        let mol = parse("Oc1c([C@@H](F)Cl)cccn1").unwrap();
+        let out = canonical_tautomer(&mol);
+        let stereocenters_before = (0..mol.atom_count())
+            .filter(|&i| mol.atom(AtomIdx(i as u32)).chirality != Chirality::None)
+            .count();
+        let stereocenters_after = (0..out.atom_count())
+            .filter(|&i| out.atom(AtomIdx(i as u32)).chirality != Chirality::None)
+            .count();
+        assert_eq!(stereocenters_before, 1);
+        assert_eq!(stereocenters_after, 1);
+    }
+
+    #[test]
+    fn negative_controls_stay_noop_under_exocyclic_shift() {
+        for (label, smi) in [
+            ("phenol", "Oc1ccccc1"),
+            ("anisole", "COc1ccccc1"),
+            ("aniline", "Nc1ccccc1"),
+            ("pyridine-n-oxide", "[O-][n+]1ccccc1"),
+            ("acetamide", "CC(N)=O"),
+            ("3-hydroxypyridine", "Oc1cccnc1"),
+            ("4-aminopyridine", "Nc1ccncc1"),
+            ("2-aminopyridine", "Nc1ccccn1"),
+        ] {
+            assert_noop(label, smi);
+        }
+    }
+
+    #[test]
+    fn ring_internal_nh_shift_controls_unaffected_by_round_2c2() {
+        // Existing ring-internal-only mechanism must still work exactly as
+        // before -- the new step is a fallback tried only when no rule (and,
+        // in canonical_tautomer_with_config's loop, implicitly, since this
+        // check runs on the post-rule-loop `current`) already changed the
+        // molecule; it never touches ring-internal bonds.
+        for smi in ["c1cc[nH]n1", "c1nn[nH]n1", "c1ccc2[nH]cnc2c1"] {
+            let mol = parse(smi).unwrap();
+            let out = canonical_tautomer(&mol);
+            let twice = canonical_tautomer(&out);
+            assert_eq!(
+                canonical_smiles(&out),
+                canonical_smiles(&twice),
+                "{smi}: not idempotent"
+            );
+        }
+    }
+
+    #[test]
+    fn canonical_tautomer_and_tautomer_parent_agree_on_exocyclic_shift() {
+        for smi in [
+            "O=c1cccc[nH]1",
+            "Oc1ccccn1",
+            "O=c1cc[nH]cc1",
+            "Oc1ccncc1",
+            "O=c1cc[nH]c(=O)[nH]1",
+            "Oc1ccnc(O)n1",
+            "O=c1[nH]cnc2[nH]cnc12",
+            "Oc1ncnc2[nH]cnc12",
+        ] {
+            let mol = parse(smi).unwrap();
+            let via_canonical = canonical_smiles(&canonical_tautomer(&mol));
+            let via_parent =
+                canonical_smiles(&tautomer_parent(&mol, &TautomerLimits::default()).molecule);
+            assert_eq!(
+                via_canonical, via_parent,
+                "{smi}: canonical_tautomer and tautomer_parent diverged"
+            );
+        }
+    }
+
+    #[test]
+    fn tautomer_parent_max_transforms_reached_via_exocyclic_shift() {
+        let mol = parse("Oc1ccccn1").unwrap();
+        let limits = TautomerLimits {
+            max_transforms: 0,
+            ..TautomerLimits::default()
+        };
+        let result = tautomer_parent(&mol, &limits);
+        assert_eq!(result.status, ParentComputationStatus::MaxTransformsReached);
     }
 }

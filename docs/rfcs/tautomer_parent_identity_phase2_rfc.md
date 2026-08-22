@@ -1,8 +1,24 @@
 # RFC: Tautomer & Parent Identity (ROADMAP.md Phase 2, v0.20.0)
 
-Status: draft, round 2C-1 (mechanism fixation only; no production code
-changes yet this round)
+Status: draft, round 2C-2/2C-3 implemented (the exocyclic lactam/lactim
+shift; hypoxanthine holdout checked). Not merged, not marked ready.
 
+> **Revision (2026-08-22, round 2C-2/2C-3):** implemented
+> `apply_exocyclic_lactam_shift_tracked` in `crates/chematic-chem/src/tautomer.rs`
+> per §4.4a's mechanism table, wired into both `canonical_tautomer_with_config`
+> and `tautomer_parent` as a directional step (not fed into the score-ranked
+> pool). Measured result, not the hoped-for one: the shift fires correctly
+> on all 5 design pairs, but end-to-end convergence only holds for 3 of 5
+> (2-pyridone, 4-pyridone, uracil) plus the hypoxanthine holdout — cytosine
+> and guanine hit the §1.7 dual-flanking-nitrogen residual and do not
+> converge, a genuine, documented consequence of keeping §1.7 out of scope,
+> not a bug in this round's mechanism. §4.4a's acceptance-criteria section
+> and the `tp2-05/06/07/08/09/34/35` and `tp2-holdout-01` fixture rows are
+> updated to the measured result. 776/776 lib tests pass, 0 regressions;
+> `cargo test -p chematic-chem` was run as the regression baseline (not
+> just the new fixtures) since this touches
+> `canonical_tautomer_with_config`'s shared loop.
+>
 > **Revision (2026-08-22, round 2C-1):** before touching
 > `crates/*/src/**`, fixed the exact structural condition under which the
 > §1.1 aromatic lactam/lactim shift applies, and re-verified the negative
@@ -662,20 +678,36 @@ stay no-ops):**
 | isotope-bearing (new, §5) | `[18O]=c1cccc[nH]1` / `[18OH]c1ccccn1` | not a control against misfire — a positive case pinning that the isotope label must follow the O atom through the shift, not be dropped or misplaced |
 | remote stereocenter (new, §5) | `O=c1c([C@@H](F)Cl)ccc[nH]1` / `Oc1c([C@@H](F)Cl)cccn1` | not a control against misfire — a positive case pinning that a stereocenter uninvolved in the shift must survive unchanged |
 
-**Acceptance criteria this fixes (2C-2/2C-3), restated precisely:**
-- All 5 design pairs above converge to one canonical form each.
+**Acceptance criteria this fixes (2C-2/2C-3), restated precisely, and the
+measured result (round 2C-2 implemented and tested):**
+- **The shift itself fires correctly on all 5 design pairs** — confirmed
+  structurally on every one (the exocyclic bond flips, the correct ring N
+  gains the H, no ring-internal bond order changes).
+- **End-to-end canonicalization converges on 3 of 5** (2-pyridone,
+  4-pyridone, uracil) **plus the holdout** (hypoxanthine, §4.4a's
+  single-acceptor shape). **Cytosine and guanine do not converge
+  end-to-end**, for a reason outside this mechanism: both have their
+  carbonyl carbon flanked by *two* ring nitrogens (§1.7), so the directional
+  step's own deterministic tie-break (canonical-SMILES-minimum among
+  eligible acceptors) is not guaranteed to land on the same nitrogen an
+  already-keto input happened to use. Closing this fully requires also
+  normalizing ring-internal N-position selection — exactly §1.7, already
+  scoped out of round 2C for the same reason as §1.6's nitroso/oxime
+  exclusion (mixing two independent mechanisms would obscure which change
+  fixed what). This is a measured result, not a shortfall to paper over: see
+  the updated `tp2-07`/`tp2-09` fixture notes.
 - The 8 no-op negative controls stay no-ops (byte-identical canonical
-  SMILES before/after the round 2C-2 change).
+  SMILES before/after the round 2C-2 change) — confirmed.
 - The isotope and remote-stereocenter cases converge with the label/center
   provably preserved (atom-level check — isotope value and `Chirality` on
-  the *specific* untouched atom, not just "canonical SMILES looks plausible").
+  the *specific* untouched atom, not just "canonical SMILES looks
+  plausible") — confirmed.
 - Atom-permutation invariance and idempotence hold for every converging
-  case, checked with a re-traversal that preserves which physical ring
-  atoms are structurally donor/acceptor (per §1.7's caveat for cytosine —
-  never a re-traversal that would additionally exercise the separate,
-  out-of-scope ring-internal N-position gap).
-- Hypoxanthine (holdout) is checked only in round 2C-3, after the above is
-  fixed and frozen — never used to adjust the table or predicate above.
+  case — confirmed on the 3 fully-converging design pairs plus the holdout.
+- Hypoxanthine (holdout) was checked only after the above was fixed and
+  frozen — never used to adjust the table or predicate above. It lands in
+  the single-acceptor (fully-converging) class, not the §1.7-gated one — a
+  genuine generalization result, not a case that shaped the design.
 
 ### 4.5 Custom rule/scoring hook
 
@@ -857,18 +889,22 @@ separate explicit authorization (mirroring Phase 1's RFC → "次roundへ進ん�
   fix in this round.
 - **Round 2C:** the §4.4/§4.4a aromatic lactam/lactim fix, split into three
   sub-steps per the same audit-before-code discipline:
-  - **2C-1 (this update):** mechanism fixation only — §4.4a's per-molecule
-    table, validity condition, negative-control set (including two new
-    discriminating checks, 3-hydroxypyridine and the two aminopyridines,
-    and the isotope/stereocenter positive cases), and the finding that the
-    fix must be a directional step, not fed into the existing score-ranked
-    pool. §1.7 (cytosine's separate, out-of-scope ring-N-H ambiguity) also
-    surfaced this round. No changes under `crates/*/src/**` yet.
-  - **2C-2:** the minimal directional-step implementation against 2C-1's
-    fixed conditions.
-  - **2C-3:** hypoxanthine holdout validation (checked only now, never used
-    to shape 2C-1/2C-2) plus the fused-purine, multi-carbonyl, and
-    candidate-order-invariance checks §4.4a's acceptance criteria list.
+  - **2C-1:** mechanism fixation only — §4.4a's per-molecule table, validity
+    condition, negative-control set (including two new discriminating
+    checks, 3-hydroxypyridine and the two aminopyridines, and the
+    isotope/stereocenter positive cases), and the finding that the fix must
+    be a directional step, not fed into the existing score-ranked pool.
+    §1.7 (cytosine's separate, out-of-scope ring-N-H ambiguity) also
+    surfaced this round. No changes under `crates/*/src/**`.
+  - **2C-2 (done):** `apply_exocyclic_lactam_shift_tracked` implemented
+    against 2C-1's fixed conditions, wired into both
+    `canonical_tautomer_with_config` and `tautomer_parent`. Measured: fires
+    on all 5 design pairs; end-to-end convergence holds for 3 of 5
+    (2-pyridone, 4-pyridone, uracil) — cytosine/guanine hit §1.7 and remain
+    open, documented, not silently patched over.
+  - **2C-3 (done):** hypoxanthine holdout checked only after 2C-2 was
+    frozen — converges cleanly (single-acceptor shape, not §1.7's
+    dual-flank one), a genuine generalization result.
   - Round 2C as a whole ends as a **draft PR** — not merged, not marked
     ready — per explicit instruction; nitroso/oxime (§1.6) and
     `TautomerScoringConfig` (§4.5) are not in scope for any of 2C-1/2C-2/2C-3.

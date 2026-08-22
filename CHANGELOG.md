@@ -9,6 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `chematic-chem` (Tautomer & Parent Identity round 2C, ROADMAP.md Phase 2)
+
+- `canonical_tautomer`/`tautomer_parent` now canonicalize the aromatic
+  lactam/lactim class (e.g. 2-pyridone `O=c1cccc[nH]1` /
+  2-hydroxypyridine `Oc1ccccn1`) that was previously not invariant across
+  input tautomer spelling. Implemented as a new directional step
+  (`apply_exocyclic_lactam_shift_tracked` in `tautomer.rs`) — an exocyclic
+  O donor/acceptor across an aromatic ring atom at odd ring-path distance
+  — rather than fed into the existing score-ranked candidate pool, which
+  measurably selects the wrong (lactim) tautomer for this class. See
+  `docs/rfcs/tautomer_parent_identity_phase2_rfc.md` section 4.4a for the
+  full mechanism and the measurement behind that design choice.
+- **Measured, not assumed:** the shift fires correctly on all 5 of the
+  RFC's design molecules, but end-to-end convergence holds for 3 of 5
+  (2-pyridone, 4-pyridone, uracil) plus the hypoxanthine holdout — cytosine
+  and guanine do not converge end-to-end, because their carbonyl carbon is
+  flanked by two ring nitrogens (RFC section 1.7, a second, distinct,
+  out-of-scope tautomer defect found while fixing this one). Closing that
+  gap needs ring-internal N-position normalization, deliberately not part
+  of this change (same reasoning as excluding the nitroso/oxime defect,
+  section 1.6).
+- New negative controls confirmed unaffected: phenol, anisole, aniline,
+  pyridine N-oxide, plain amides, and — the two checks that specifically
+  probe the fix's scope boundary — 3-hydroxypyridine (excluded: even/meta
+  ring distance, no valid Kekulé path) and 4-/2-aminopyridine (excluded:
+  the analogous N-acceptor case is evidenced-out-of-scope, not swept in by
+  generalizing the acceptor element).
+- Isotope labels and remote stereocenters are confirmed preserved through
+  the shift (atom-level checks, not string comparison).
+
 ### Added — `chematic-chem` (Tautomer & Parent Identity round 2B, ROADMAP.md Phase 2)
 
 - `fragment_parent`/`charge_parent`/`isotope_parent`/`stereo_parent`/

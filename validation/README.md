@@ -1123,7 +1123,7 @@ atoms, not 4).
   (status-quo defect audit, fragment-policy design, audit-log data model,
   section 8: implementation deviations, bugs found, and disclosed gaps)
 
-### Tautomer & Parent Identity Phase 2 -- acceptance fixtures + holdout (round 2B merged, round 2C-1 mechanism fixation, aromatic fix not yet implemented)
+### Tautomer & Parent Identity Phase 2 -- acceptance fixtures + holdout (round 2B merged; round 2C-2/2C-3 aromatic lactam/lactim fix implemented, draft PR not yet merged)
 
 `crates/chematic-chem/src/tautomer.rs` and the 5 unwired
 `StandardizationStep` variants in `standardize.rs` were audited before
@@ -1191,15 +1191,23 @@ fixtures; see the RFC's revision note for detail.
 - **Status:** round 2B (`ParentResult`/`ParentComputationStatus`/
   `TautomerLimits`, `fragment_parent`/`charge_parent`/`isotope_parent`/
   `stereo_parent`/`tautomer_parent`/`super_parent`) implemented and merged
-  (PR #363). Round 2C (the aromatic lactam/lactim fix) split into 2C-1
-  (mechanism fixation, this update -- §4.4a's per-molecule table, validity
-  condition, negative controls, and the finding that the fix must be a
-  directional step rather than fed into the existing score-ranked pool) /
-  2C-2 (implementation) / 2C-3 (hypoxanthine holdout + audit). 2C-1 adds no
-  changes under `crates/*/src/**`; a second, distinct, out-of-scope
-  tautomer defect (cytosine's own ring-N-H position ambiguity, RFC §1.7)
-  was found during 2C-1's own rigor and is explicitly not fixed by round
-  2C. `TautomerScoringConfig` (round 2D) remains design-only.
+  (PR #363). Round 2C (the aromatic lactam/lactim fix) complete across its
+  three sub-steps: 2C-1 fixed the mechanism conditions (§4.4a's
+  per-molecule table, validity condition, negative controls, and the
+  finding that the fix must be a directional step rather than fed into the
+  existing score-ranked pool); 2C-2 implemented
+  `apply_exocyclic_lactam_shift_tracked` in `tautomer.rs`, wired into both
+  `canonical_tautomer_with_config` and `tautomer_parent`; 2C-3 checked the
+  hypoxanthine holdout only after 2C-2 was frozen. **Measured result:** the
+  shift fires correctly on all 5 design pairs, but end-to-end convergence
+  holds for 3 of 5 (2-pyridone, 4-pyridone, uracil) plus the hypoxanthine
+  holdout -- cytosine and guanine hit a second, distinct, out-of-scope
+  tautomer defect found during 2C-1's own rigor (cytosine's/guanine's
+  carbonyl carbon is flanked by two ring nitrogens, RFC §1.7) and do not
+  converge; this is documented, not silently patched over, and left open
+  for a future round. 776+12 lib tests pass, 0 regressions.
+  `TautomerScoringConfig` (round 2D) remains design-only. This PR is left
+  in **draft**, not merged.
 - **Full report:** `docs/rfcs/tautomer_parent_identity_phase2_rfc.md`
   (audit findings including the round-2A design review, round 2C-1's
   mechanism fixation and new §1.7 finding, `TautomerLimits`/typed
