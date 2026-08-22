@@ -8,7 +8,7 @@
     "scripts/ecfp_rdkit_edge_fixtures.csv",
     "scripts/ecfp_rdkit_morgan_edge_fixtures.csv",
     "--rows-out",
-    "/private/tmp/claude-501/-Users-k-tanabe-Documents-Documents-oss-rust-chematic/ee1b0d18-6958-4b03-bc7c-750280190f13/scratchpad/rdkit_oracle_full.jsonl",
+    "<scratchpad>/rdkit_oracle_full.jsonl",
     "--manifest-out",
     "validation/ecfp_rdkit_environment_parity_manifest.json"
   ],

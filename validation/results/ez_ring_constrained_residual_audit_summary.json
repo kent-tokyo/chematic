@@ -1,5 +1,5 @@
 {
-  "corpus": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.claude/worktrees/agent-a80fed5c64dd5a70b/scripts/descriptor_census_corpus.smi",
+  "corpus": ".claude/worktrees/agent-a80fed5c64dd5a70b/scripts/descriptor_census_corpus.smi",
   "n_fixture_rows": 72,
   "n_corpus_rows": 1387,
   "n_corpus_molecules_with_ends": 995,

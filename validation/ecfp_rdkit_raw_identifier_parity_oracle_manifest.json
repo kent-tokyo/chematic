@@ -2,22 +2,22 @@
   "command_line": [
     "scripts/gen_ecfp_rdkit_environment_oracle.py",
     "--corpus",
-    "/Users/k_tanabe/Downloads/SMILES.csv",
+    "~/Downloads/SMILES.csv",
     "--fixtures",
     "scripts/ecfp_rdkit_edge_fixtures.csv",
     "scripts/ecfp_rdkit_morgan_edge_fixtures.csv",
     "scripts/ecfp_rdkit_suppression_representative_swap_fixtures.csv",
     "scripts/ecfp_rdkit_m4a0_hash_fixtures.csv",
     "--rows-out",
-    "/private/tmp/claude-501/-Users-k-tanabe-Documents-Documents-oss-rust-chematic/3163eec9-9646-4580-b112-9358c56880bd/scratchpad/m4a0_rerun/oracle_rows.jsonl",
+    "<scratchpad>/m4a0_rerun/oracle_rows.jsonl",
     "--manifest-out",
-    "/private/tmp/claude-501/-Users-k-tanabe-Documents-Documents-oss-rust-chematic/3163eec9-9646-4580-b112-9358c56880bd/scratchpad/m4a0_rerun/oracle_manifest.json"
+    "<scratchpad>/m4a0_rerun/oracle_manifest.json"
   ],
   "corpus_paths": [
-    "/Users/k_tanabe/Downloads/SMILES.csv"
+    "~/Downloads/SMILES.csv"
   ],
   "corpus_sha256": {
-    "/Users/k_tanabe/Downloads/SMILES.csv": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e"
+    "~/Downloads/SMILES.csv": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e"
   },
   "diagnostic_source_commit_sha": "77d2589d19644c064077e1b9fcb0f27b2f5625ea",
   "diagnostic_source_tree_dirty": true,
