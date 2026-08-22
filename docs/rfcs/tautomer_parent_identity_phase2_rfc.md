@@ -1,7 +1,64 @@
 # RFC: Tautomer & Parent Identity (ROADMAP.md Phase 2, v0.20.0)
 
-Status: draft, round 2C-2/2C-3 implemented and hardened after review
-(PR #365). Not merged, not marked ready.
+Status: draft, round 2C-N diagnosis-only (RFC + fixtures, no production
+code). Not merged, not marked ready.
+
+> **Revision (2026-08-23, round 2C-N, diagnosis and design only, no
+> `crates/*/src/**` changes):** full diagnosis of section 1.7 (cytosine's/
+> guanine's ring-N-H non-uniqueness), requested as the next round after
+> PR #365/#366 merged. Key findings, all measured, not assumed:
+>
+> 1. **The primary defect is not the tie-break -- it is a missing
+>    normalization step.** Two already-*keto* spellings of cytosine
+>    (`Nc1cc[nH]c(=O)n1`, `Nc1ccnc(=O)[nH]1`) each independently return
+>    `find_exocyclic_lactam_shift_matches() == []` and never converge --
+>    this failure exists even for a hypothetically perfect tie-break,
+>    because neither keto input ever reaches the tie-break code path. The
+>    enol-input tie-break mismatch described in the original section 1.7
+>    text is a real but secondary symptom of the same missing mechanism.
+> 2. **Both chematic's own `tautomer_score` and RDKit 2026.03.4's
+>    `TautomerEnumerator.ScoreTautomer` tie exactly** between cytosine's/
+>    guanine's two candidate ring-N placements (chematic: 1050 vs 1050 for
+>    cytosine, 1100 vs 1100 for guanine; RDKit: 102.0 vs 102.0 and 202 vs
+>    202 respectively, independently confirmed on chematic's own two
+>    generated candidates). Both scoring functions are position-blind by
+>    construction (sum of per-element H counts plus a global aromaticity
+>    flag) -- **Round 2D's currently-scoped `TautomerScoringConfig`
+>    (customizable weights on these same terms) cannot resolve this**; only
+>    new position-sensitive terms could, which is out of 2D's current scope.
+> 3. **A candidate selection rule was tried and rejected**: "prefer the
+>    acceptor whose non-bridge ring neighbor carries no exocyclic
+>    substituent" picks correctly for cytosine but is *vacuous* (not merely
+>    wrong) for guanine -- direct SSSR inspection shows guanine's
+>    amino-bearing ring carbon sits directly between *both* candidate
+>    nitrogens, so the rule is trivially satisfied by either choice and
+>    discriminates nothing.
+> 4. **A previously-merged claim is corrected**: `tp2-holdout-01`
+>    (PR #365) asserted hypoxanthine has "exactly one candidate ring-N
+>    acceptor" and is immune to section 1.7. Re-measurement with the
+>    current matcher shows this is false -- hypoxanthine has the identical
+>    two-candidate dual-flank shape as guanine (the ring-fusion asymmetry
+>    that creates it has nothing to do with the 2-amino substituent), and a
+>    second, RDKit-verified keto spelling (`O=c1nc[nH]c2nc[nH]c12`, new
+>    fixture `tp2-39`) does not converge with the originally-tested one.
+>    Hypoxanthine is reclassified from "clean holdout" to "confirmed
+>    affected."
+> 5. **The dual-flank shape alone is not sufficient for the defect**: a
+>    bare, substituent-free dual-flanked lactam (no ring fusion, no
+>    exocyclic substituent) is a genuine *automorphism* -- both ring-N
+>    positions are the same molecule (RDKit-verified: deleting cytosine's
+>    amino group from either of its two keto spellings collapses both to
+>    one identical canonical SMILES, `tp2-41`). The defect requires either
+>    ring fusion (guanine, hypoxanthine) or an explicit substituent breaking
+>    ring symmetry (cytosine, and the new minimal non-nucleobase
+>    `tp2-40`), never the dual-flank topology by itself.
+>
+> See section 4.4b for the full diagnosis (per-molecule candidate tables,
+> the rejected-rule analysis, and the proposed design direction). `tp2-07`/
+> `tp2-09`/`tp2-holdout-01` notes corrected; `tp2-39`..`tp2-42` added. Zero
+> changes under `crates/*/src/**` this round. Nitroso/oxime (section 1.6),
+> `TautomerScoringConfig`'s implementation, Python/WASM bindings, and full
+> corpus measurement remain explicitly out of scope.
 
 > **Revision (2026-08-22, round 2C-2 hardening, post-PR-#365-review):**
 > user review of PR #365 found 4 real gaps before merge-readiness, all
@@ -252,14 +309,14 @@ trade-off, not aromatic bond-order matching) is unrelated. Scoping its fix is
 left as an explicit open question (§6) rather than assumed to be solved by
 §4.4's aromatic-shift work.
 
-### 1.7 Confirmed defect (distinct mechanism, out of scope for round 2C):
-cytosine's ring-N-H position is itself non-unique
+### 1.7 Confirmed defect: ring-N-H position is non-unique when a lactam's
+carbonyl carbon is flanked by two candidate ring nitrogens
 
-Found while fixing round 2C-1's mechanism table (below), not by design —
-the same discipline that found §1.6. Two spellings of cytosine's *keto*
-tautomer, differing only in which of the two ring nitrogens flanking the
-carbonyl carbon carries the mobile H (both real, chemically distinct: this
-is the literature's own N1-H/N3-H cytosine ambiguity, not an artifact of
+Found while fixing round 2C-1's mechanism table, not by design — the same
+discipline that found §1.6. Two spellings of cytosine's *keto* tautomer,
+differing only in which of the two ring nitrogens flanking the carbonyl
+carbon carries the mobile H (both real, chemically distinct: this is the
+literature's own N1-H/N3-H cytosine ambiguity, not an artifact of
 SMILES-writing), do not converge on `main`:
 
 ```
@@ -280,14 +337,26 @@ ring-internal mechanism itself**, unrelated to §1.1's exocyclic donor/acceptor
 gap: round 2C's fix only moves H between a ring nitrogen and an *exocyclic*
 oxygen, never between two ring nitrogens, so it neither causes nor repairs
 this. Left unfixed and out of scope for round 2C, matching §1.6's precedent
-— broadening this round to also fix ring-internal N-position selection would
-mix two independent mechanisms and muddy which change fixed what. Round
-2C-1's own acceptance fixtures for cytosine (§5) hold the ring-N-H position
-fixed (always `AtomIdx(4)`'s position, matching the design-driving SMILES
-already in `tp2-05`'s sibling rows) specifically to avoid conflating this
-gap with the one round 2C fixes; genuine atom-permutation-invariance checks
-for cytosine use a re-traversal that preserves which physical nitrogen holds
-the H, not a re-traversal that happens to swap it.
+— broadening that round to also fix ring-internal N-position selection would
+have mixed two independent mechanisms and muddied which change fixed what.
+Round 2C-1's own acceptance fixtures for cytosine (§5) hold the ring-N-H
+position fixed (always `AtomIdx(4)`'s position, matching the design-driving
+SMILES already in `tp2-05`'s sibling rows) specifically to avoid conflating
+this gap with the one round 2C fixes; genuine atom-permutation-invariance
+checks for cytosine use a re-traversal that preserves which physical
+nitrogen holds the H, not a re-traversal that happens to swap it.
+
+**Round 2C-N (diagnosis and design, this revision) — full write-up in
+§4.4b.** Two corrections to the framing above, both measured this round:
+(1) the *primary* defect is that `find_exocyclic_lactam_shift_matches`
+(round 2C's own mechanism) never fires on an already-keto input at all — the
+enol-tie-break-vs-keto mismatch is real but secondary, since two already-keto
+spellings fail to converge with each other regardless of any tie-break; (2)
+hypoxanthine, previously claimed as a clean holdout (`tp2-holdout-01`), is
+actually also affected — the claim was based on testing only one of its two
+keto spellings. §4.4b gives the per-molecule candidate tables, the rejected
+selection-rule analysis, and the proposed design direction; no production
+code changes this round.
 
 ## 2. Goals / non-goals
 
@@ -777,9 +846,156 @@ measured result (round 2C-2 implemented and tested):**
 - Atom-permutation invariance and idempotence hold for every converging
   case — confirmed on the 3 fully-converging design pairs plus the holdout.
 - Hypoxanthine (holdout) was checked only after the above was fixed and
-  frozen — never used to adjust the table or predicate above. It lands in
-  the single-acceptor (fully-converging) class, not the §1.7-gated one — a
-  genuine generalization result, not a case that shaped the design.
+  frozen — never used to adjust the table or predicate above. **Correction
+  (round 2C-N):** the claim below this bullet originally said hypoxanthine
+  "lands in the single-acceptor (fully-converging) class, not the
+  §1.7-gated one." That was wrong — re-measurement found hypoxanthine has
+  the same two-candidate dual-flank shape as guanine; the two variants
+  `tp2-holdout-01` tested happened to converge, but a second, RDKit-verified
+  keto spelling (`tp2-39`) does not. See §4.4b.
+
+### 4.4b Round 2C-N: §1.7 diagnosis and design (no production code this
+round)
+
+**Scope of this round.** Diagnosis and design only, per explicit
+instruction — zero changes under `crates/*/src/**`. Ends as this RFC
+revision plus fixture updates, in a draft PR.
+
+**Per-molecule candidate tables**, generated by
+`find_exocyclic_lactam_shift_matches` against each molecule's *enol*
+precursor (both ring nitrogens open, no H placed yet) — the same function
+round 2C shipped, unmodified:
+
+| molecule | enol precursor | bridge (carbonyl-to-be) | candidate 1 | candidate 2 | ring-distance (1, 2) |
+|---|---|---|---|---|---|
+| cytosine | `Oc1ccnc(N)n1` | `AtomIdx(1)` | `AtomIdx(4)` | `AtomIdx(7)` | 1, 3 |
+| guanine-core | `Nc1nc2[nH]cnc2c(O)n1` | `AtomIdx(8)` | `AtomIdx(2)` | `AtomIdx(10)` | 3, 1 |
+| hypoxanthine | `Oc1ncnc2[nH]cnc12` | `AtomIdx(1)` | `AtomIdx(2)` | `AtomIdx(4)` | 1, 3 |
+
+Both candidates are always at odd ring-distance from the bridge (the
+existing Kekulé-path condition, §4.4a), which is exactly why the matcher
+finds two, not one: a plain "N-C(=O)-N" dual-flank motif has one candidate
+at distance 1 (direct neighbor) and a second reachable only at distance 3
+(around the other side of the ring, through the ring-fusion carbon for
+guanine/hypoxanthine, or through the far carbon for cytosine's monocyclic
+ring).
+
+**Why `find_direct_aromatic_matches` never generates this candidate.** That
+function (§1.7's original text, still accurate) only creates a
+donor→acceptor pair when the acceptor is a **direct ring neighbor** of the
+donor (`mol.neighbors(d)`, a strict 1,2-shift — this is what already handles
+imidazole/pyrazole/tetrazole/benzimidazole correctly, tp2-10/11 and
+tp2-holdout-02). In every molecule above, the donor ring nitrogen's actual
+ring neighbors are the bridge carbon and a plain ring carbon — never the
+*other* candidate nitrogen, which sits one atom further around the ring, on
+the opposite side of the bridge. The move needed is a **1,3-shift through
+the bridge carbon** (the same amide/imide-type resonance `find_exocyclic_
+lactam_shift_matches` already reasons about for the exocyclic-O case), which
+is structurally outside a direct-neighbor-only function's search radius by
+construction, not a bug in that function.
+
+**Why the exocyclic-shift mechanism doesn't normalize keto-form inputs
+either.** `find_exocyclic_lactam_shift_matches`'s `donor` role requires an
+*exocyclic* oxygen with exactly 1 implicit H (§4.4a's own precondition
+table) — once that oxygen is already `C=O` (keto form), there is no donor at
+all, so the function structurally cannot fire, regardless of which ring
+nitrogen the input placed the H on. Measured directly: both of cytosine's
+already-keto spellings above return `matches: []`; so do both of
+hypoxanthine's. This is the primary defect (see the round 2C-N revision
+blockquote at the top of this document) — not the tie-break.
+
+**Empirical scoring evidence (RDKit 2026.03.4 oracle + chematic's own
+`tautomer_score`).** For each molecule, the two candidates tie exactly on
+*both* scoring functions:
+
+| molecule | chematic `tautomer_score` (candidate 1 / 2) | RDKit `ScoreTautomer` (candidate 1 / 2) |
+|---|---|---|
+| cytosine | 1050 / 1050 | 102.0 / 102.0 |
+| guanine-core | 1100 / 1100 | 202 / 202 |
+| hypoxanthine | 1100 / 1100 | 202 / 202 (RDKit's own top tier is a 4-way tie spanning both this axis and the unrelated imidazole N7/N9 tautomer axis — isolated to just this axis by holding the 5-ring form fixed and varying only the 6-ring N, as chematic's own two generated candidates do) |
+
+Both scoring functions are **position-blind by construction**: chematic's
+`score_breakdown` sums a per-element heteroatom-H count plus one global
+aromatic-ring flag (`crates/chematic-chem/src/tautomer.rs`); it has no term
+that depends on *which* atom holds the H, only *how many* atoms of each
+element do, so swapping the H between two ring nitrogens of the same
+element never changes the total. RDKit's default substructure-weight table
+(`rdMolStandardize.GetDefaultTautomerScoreSubstructs`) evidently has the
+same property for this specific ambiguity. **This means Round 2D's
+currently-scoped `TautomerScoringConfig` (§4.5) — customizable weights on
+these same kinds of terms — cannot resolve section 1.7.** Closing it would
+require a fundamentally new class of term (one sensitive to local ring
+position/connectivity, not just element counts), which is a larger change
+than 2D's current scope and not designed here.
+
+**A candidate selection rule considered and rejected.** "Prefer the acceptor
+whose non-bridge ring neighbor carries no exocyclic substituent" (i.e., stay
+away from the ring nitrogen adjacent to cytosine's amino-bearing carbon) —
+this rule picks correctly for cytosine (candidate `AtomIdx(7)` is adjacent
+to the amino carbon; RDKit's own preferred tautomer avoids it). It is
+**rejected**, not merely because it picks wrong for guanine, but because
+direct SSSR inspection shows it is **vacuous** there: guanine's ring-1 cycle
+(`find_sssr`, guanine-core enol) is `[G(fusion), C(fusion), B(candidate,
+AtomIdx 2), A(amino carbon, AtomIdx 1), I(candidate, AtomIdx 10), H(bridge,
+AtomIdx 8)]` — the amino-bearing carbon `A` sits directly *between* both
+candidate nitrogens `B` and `I` in the ring cycle. "Adjacent to the amino
+carbon" is trivially true for both candidates simultaneously and
+discriminates nothing; this is not a directional rule that points the wrong
+way, it is a feature with no signal in this molecule's topology. No other
+local (bridge/acceptor/substituent-adjacency) rule was found that
+distinguishes the two candidates in a way that holds across both cytosine
+and guanine — each candidate remains a legitimate, valence-correct neutral
+Lewis structure in every molecule tested; there is no invalid candidate to
+exclude on chemical grounds, only a choice between two continuously valid
+ones.
+
+**When the ambiguity is real vs. merely apparent.** The matcher's two raw
+candidates are not always two genuinely different molecules. A bare
+dual-flanked lactam with no ring fusion and no other ring substituent (RDKit-
+verified: deleting cytosine's amino nitrogen from either of its two keto
+spellings collapses both to the identical canonical SMILES
+`O=c1nccc[nH]1`) is a true automorphism — swapping which ring nitrogen holds
+the H produces the same molecule, not a tautomer pair, so there is nothing
+for a fix to normalize (`tp2-41`). The defect requires an asymmetry
+elsewhere: ring fusion (guanine, hypoxanthine — the fusion carbons sit
+nearer one candidate than the other, distance 1 vs. 3) or an explicit
+substituent breaking the ring's mirror symmetry (cytosine, and the new
+minimal non-nucleobase case `tp2-40`, methyl in place of amino — confirming
+the substituent's specific identity is irrelevant, only that one exists).
+
+**Design direction (not implemented this round).** Per the required
+priority order — directional rule, then valence/charge/aromaticity
+conservation, then functional-group preference, then declarative scoring,
+structural tie-break only as a last resort — the evidence above shows the
+first four are exhausted for this specific ambiguity: no directional rule
+survives both cytosine and guanine (the one tried is vacuous on guanine);
+valence/charge/aromaticity do not distinguish (both candidates are equally
+valid neutral Lewis structures); no functional-group-preference feature was
+found that generalizes; and declarative scoring, including RDKit's own,
+ties exactly. Per §5's existing design principle (`canonical_tautomer`'s
+choice need not match RDKit's preferred form — only be self-consistent),
+the practical fix does not need to *derive* a chemically preferred answer;
+it needs to make the choice **deterministic regardless of which valid
+tautomer was fed in**. Two changes are indicated, both left to the
+implementation round:
+1. **Symmetrize the mechanism**: add a bridge-mediated ring-N-to-ring-N
+   normalization step that fires on already-keto inputs too (not only on
+   inputs with a movable exocyclic OH), so a keto-form input is no longer a
+   silent fixed point.
+2. **Harden the tie-break**: once the mechanism can consider both ring-N
+   candidates symmetrically from any starting form, the deterministic pick
+   between them should not rely on raw canonical-SMILES lexicographic order
+   as the *sole* signal (this project has hit real canonical-SMILES bugs
+   elsewhere) — reuse the existing `mol_fingerprint`-cross-check discipline
+   §4.4a's hardening already added, or an equivalent atom-order-invariant
+   structural key, and apply it identically regardless of whether the
+   normalization started from a keto or enol input.
+
+Not designed this round: the exact mechanism shape (a new matcher function,
+or a generalization of `find_exocyclic_lactam_shift_matches`), and whether
+it should special-case the automorphic case (`tp2-41`) or simply let it fall
+out for free (both candidates converging to the same fingerprint already
+satisfies the fail-closed tie check §4.4a's hardening added).
 
 ### 4.5 Custom rule/scoring hook
 
@@ -953,7 +1169,7 @@ already-reduced input (toluene), and a companion citation of the existing
 RFC (this document, including this revision) + the two fixture files (§5) +
 `ROADMAP.md`/`validation/README.md` pointers. **No changes under
 `crates/*/src/**` this round** — matching Phase 1's own RFC-round discipline.
-PR #362 stays in **draft**; no merge, version bump, or release this round.
+This PR stays in **draft**; no merge, version bump, or release this round.
 
 Per this revision, implementation is split into four rounds, each awaiting
 separate explicit authorization (mirroring Phase 1's RFC → "次roundへ進んで"
@@ -985,6 +1201,16 @@ separate explicit authorization (mirroring Phase 1's RFC → "次roundへ進ん�
   - Round 2C as a whole ends as a **draft PR** — not merged, not marked
     ready — per explicit instruction; nitroso/oxime (§1.6) and
     `TautomerScoringConfig` (§4.5) are not in scope for any of 2C-1/2C-2/2C-3.
+- **Round 2C-N (this revision, done):** §1.7 diagnosis and design only, no
+  production code — per-molecule candidate tables, the RDKit-oracle and
+  chematic-own-scoring tie evidence, the rejected candidate-selection rule
+  (and why it's vacuous, not just wrong, on guanine), the corrected
+  hypoxanthine finding (§4.4b), and a proposed (not implemented) design
+  direction: symmetrize the exocyclic-shift mechanism to also normalize
+  already-keto inputs, plus harden the resulting tie-break beyond raw
+  canonical-SMILES order. Ends as a **draft PR**, referencing RFC §1.7/§4.4b
+  (no dedicated GitHub issue exists for this residual) — not merged, not
+  marked ready, no version bump.
 - **Round 2D:** `TautomerScoringConfig` and the rule-customization surface.
 
 Round order is fixed as 2B → 2C → 2D (Parent API and budget visibility

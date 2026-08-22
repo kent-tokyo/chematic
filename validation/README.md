@@ -1123,7 +1123,7 @@ atoms, not 4).
   (status-quo defect audit, fragment-policy design, audit-log data model,
   section 8: implementation deviations, bugs found, and disclosed gaps)
 
-### Tautomer & Parent Identity Phase 2 -- acceptance fixtures + holdout (round 2B merged; round 2C-2/2C-3 aromatic lactam/lactim fix implemented and hardened after direct code review, draft PR not yet merged)
+### Tautomer & Parent Identity Phase 2 -- acceptance fixtures + holdout (round 2B + round 2C aromatic lactam/lactim fix merged; round 2C-N section 1.7 diagnosis, draft PR not yet merged)
 
 `crates/chematic-chem/src/tautomer.rs` and the 5 unwired
 `StandardizationStep` variants in `standardize.rs` were audited before
@@ -1168,7 +1168,7 @@ an accidental same-structure "pair," not a real tautomer pair -- fixing it
 surfaced the nitroso/oxime finding above. All 5 are corrected in the RFC and
 fixtures; see the RFC's revision note for detail.
 
-- **Files:** `validation/tautomer_parent_identity_phase2_fixtures.jsonl` (38
+- **Files:** `validation/tautomer_parent_identity_phase2_fixtures.jsonl` (42
   rows), `validation/tautomer_parent_identity_phase2_holdout.jsonl` (5 rows,
   held out from design). Two row shapes: `tautomer_self_consistency`
   (asserts all listed input variants canonicalize to one identical output --
@@ -1187,8 +1187,12 @@ fixtures; see the RFC's revision note for detail.
   aniline/pyridine-N-oxide/3-hydroxypyridine/4-and-2-aminopyridine/charged-
   pyridinium-acceptor/aromatic-N-bridge/fused-bridgehead-N-acceptor, all
   confirmed no-ops), 2 general-property checks (idempotence, atom-order
-  reorder), and 2 isotope/stereocenter-preservation positive cases guarding
-  the round-2C aromatic-shift fix.
+  reorder), 2 isotope/stereocenter-preservation positive cases guarding
+  the round-2C aromatic-shift fix, and (round 2C-N, diagnosis-only) 2 new
+  confirmed-affected section-1.7 cases (hypoxanthine's alternate-keto
+  residual, a minimal non-nucleobase methyl-pyrimidinone pair) plus 2 new
+  negative controls (a bare, substituent-free pyrimidinone confirmed as a
+  genuine automorphism rather than a real tautomer pair, and adenine).
 - **Status:** round 2B (`ParentResult`/`ParentComputationStatus`/
   `TautomerLimits`, `fragment_parent`/`charge_parent`/`isotope_parent`/
   `stereo_parent`/`tautomer_parent`/`super_parent`) implemented and merged
@@ -1213,13 +1217,37 @@ fixtures; see the RFC's revision note for detail.
   the tie-break, direct atom-permutation-invariance tests (genuinely
   different `AtomIdx` insertion order, not just SMILES respelling), and
   stale doc comments fixed. 799+23 lib tests pass, 0 regressions, all 19 CI
-  checks green. `TautomerScoringConfig` (round 2D) remains design-only.
+  checks green. This round's PR (#365) merged.
+  **Round 2C-N (diagnosis-only, this PR, not merged):** full diagnosis of
+  §1.7. Two corrections to what was previously believed: (1) the primary
+  defect is that the exocyclic-shift mechanism never fires on an
+  already-keto input at all (two already-keto cytosine spellings fail to
+  converge with each other, independent of any tie-break) -- the
+  enol-vs-keto tie-break mismatch previously described is a real but
+  secondary symptom; (2) hypoxanthine, previously reported as a clean
+  holdout, is actually also affected (`tp2-holdout-01`'s claim corrected;
+  `tp2-39` pins the second keto spelling that exposes it). Measured that
+  both chematic's own `tautomer_score` and RDKit 2026.03.4's
+  `ScoreTautomer` tie exactly between the two candidates for every affected
+  molecule -- declarative scoring, including Round 2D's currently-scoped
+  `TautomerScoringConfig`, cannot resolve this. A candidate selection rule
+  ("avoid the ring nitrogen adjacent to the amino substituent") was tried
+  and rejected: it is vacuous, not just wrong, on guanine (its amino-bearing
+  carbon sits directly between both candidates). Confirmed the dual-flank
+  shape alone is not sufficient for the defect -- a bare, substituent-free
+  case is a genuine automorphism, not a real tautomer pair (`tp2-41`); the
+  defect needs either ring fusion or an explicit symmetry-breaking
+  substituent. Proposed (not implemented) design direction: symmetrize the
+  mechanism to also normalize keto-form inputs, then harden the resulting
+  tie-break beyond raw canonical-SMILES order. Zero changes under
+  `crates/*/src/**`. `TautomerScoringConfig` (round 2D) remains design-only.
   This PR is left in **draft**, not merged.
 - **Full report:** `docs/rfcs/tautomer_parent_identity_phase2_rfc.md`
   (audit findings including the round-2A design review, round 2C-1's
-  mechanism fixation and new §1.7 finding, `TautomerLimits`/typed
-  result-state design, Parent function design, aromatic-shift fix design,
-  open questions, round split)
+  mechanism fixation and original §1.7 finding, round 2C-N's full §1.7
+  diagnosis and design in §4.4b, `TautomerLimits`/typed result-state design,
+  Parent function design, aromatic-shift fix design, open questions, round
+  split)
 
 ## Summary results
 
