@@ -628,6 +628,82 @@ pub fn select_fragment(
     )
 }
 
+// ---------------------------------------------------------------------------
+// Parent identity (ROADMAP.md Phase 2 round 2B) -- see
+// docs/rfcs/tautomer_parent_identity_phase2_rfc.md section 4.3.
+// ---------------------------------------------------------------------------
+
+/// [`select_fragment`] with the default [`FragmentPolicy`] -- the "Parent"
+/// framing of Phase 1's fragment-selection logic.
+pub fn fragment_parent(mol: &Molecule) -> (Molecule, TransformationRecord) {
+    select_fragment(mol, &FragmentPolicy::default())
+}
+
+/// Select the fragment parent, then neutralize all formal charges on it.
+///
+/// **Not** the same as [`neutralize_charges`], which neutralizes every
+/// fragment in a possibly-multi-fragment molecule and leaves them all in
+/// the output. `charge_parent` first resolves fragment-selection ambiguity
+/// down to one representative structure, matching this module's definition
+/// of a Parent: an idempotent reduction to *one* structure, not a
+/// multi-fragment mechanical transform.
+///
+/// The returned record's `fragments` (inherited from `fragment_parent`)
+/// describe each candidate fragment **as selected**, before neutralization
+/// -- a record of what was chosen and why. Only the record's own `after`
+/// snapshot is updated to reflect the neutralized result.
+pub fn charge_parent(mol: &Molecule) -> (Molecule, TransformationRecord) {
+    let (selected, mut record) = fragment_parent(mol);
+    let neutralized = neutralize_charges(&selected);
+    record.rule_id = "charge_parent_v1".to_string();
+    record.after = MoleculeSnapshot::from_mol(&neutralized);
+    (neutralized, record)
+}
+
+/// [`remove_isotopes`] with an explainable audit record.
+///
+/// `fragments` is always empty: no fragment-selection decision is made
+/// here (unlike `fragment_parent`/`charge_parent`), only isotope removal
+/// on the whole input molecule.
+pub fn isotope_parent(mol: &Molecule) -> (Molecule, TransformationRecord) {
+    let before = MoleculeSnapshot::from_mol(mol);
+    let output = remove_isotopes(mol);
+    let after = MoleculeSnapshot::from_mol(&output);
+    (
+        output,
+        TransformationRecord {
+            rule_id: "isotope_parent_v1".to_string(),
+            rule_version: 1,
+            fragments: Vec::new(),
+            abstained: None,
+            before,
+            after,
+            warnings: Vec::new(),
+        },
+    )
+}
+
+/// [`remove_stereo`] with an explainable audit record.
+///
+/// `fragments` is always empty -- see [`isotope_parent`]'s doc comment.
+pub fn stereo_parent(mol: &Molecule) -> (Molecule, TransformationRecord) {
+    let before = MoleculeSnapshot::from_mol(mol);
+    let output = remove_stereo(mol);
+    let after = MoleculeSnapshot::from_mol(&output);
+    (
+        output,
+        TransformationRecord {
+            rule_id: "stereo_parent_v1".to_string(),
+            rule_version: 1,
+            fragments: Vec::new(),
+            abstained: None,
+            before,
+            after,
+            warnings: Vec::new(),
+        },
+    )
+}
+
 /// Extract a connected fragment (given its atom set) as a standalone
 /// `Molecule`, preserving stereo data.
 ///
@@ -1332,7 +1408,7 @@ pub struct MoleculeSnapshot {
 }
 
 impl MoleculeSnapshot {
-    fn from_mol(mol: &Molecule) -> Self {
+    pub(crate) fn from_mol(mol: &Molecule) -> Self {
         Self {
             atoms: mol.atom_count(),
             bonds: mol.bond_count(),
@@ -2670,5 +2746,100 @@ mod tests {
     fn phase1_holdout_09_10_non_tie_sanity_checks() {
         assert_kept("std-p1-holdout-09", "CC.CCCCCCCCCC", "CCCCCCCCCC");
         assert_kept("std-p1-holdout-10", "CCCCC.CCCC", "CCCCC");
+    }
+
+    // -- Phase 2 round-2B Parent-function fixture tests -----------------------
+    // Mirrors validation/tautomer_parent_identity_phase2_fixtures.jsonl's
+    // tp2-17..22. See docs/rfcs/tautomer_parent_identity_phase2_rfc.md
+    // section 4.3.
+
+    #[test]
+    fn tp2_17_charge_parent_ammonium_acetate_single_fragment_result() {
+        // charge_parent is NOT neutralize_charges: it selects the fragment
+        // parent first (acetate: 4 heavy atoms, has carbon, over ammonium:
+        // 1 heavy atom, no carbon), THEN neutralizes that one fragment.
+        let mol = parse("CC(=O)[O-].[NH4+]").unwrap();
+        let (result, record) = charge_parent(&mol);
+        assert_eq!(chematic_smiles::canonical_smiles(&result), canon("CC(O)=O"));
+        assert_eq!(record.rule_id, "charge_parent_v1");
+        assert_eq!(
+            record.fragments.len(),
+            2,
+            "inherited from fragment_parent's selection"
+        );
+    }
+
+    #[test]
+    fn tp2_18_charge_parent_zwitterion_amino_acid() {
+        let mol = parse("[NH3+]CC(=O)[O-]").unwrap();
+        let (result, _) = charge_parent(&mol);
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&result),
+            canon("NCC(O)=O")
+        );
+    }
+
+    #[test]
+    fn tp2_19_isotope_parent_deuterated_ethanol() {
+        let mol = parse("[2H]C([2H])([2H])CO").unwrap();
+        let (result, record) = isotope_parent(&mol);
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&result),
+            canon("[H]C(CO)([H])[H]")
+        );
+        assert!(record.fragments.is_empty());
+    }
+
+    #[test]
+    fn tp2_20_isotope_parent_preserves_stereo() {
+        let mol = parse("OC[C@H]1O[C@@H]([13CH2]O)[C@H](O)[C@@H](O)[C@@H]1O").unwrap();
+        let (result, _) = isotope_parent(&mol);
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&result),
+            canon("[C@@H]1(CO)O[C@H]([C@@H](O)[C@@H]([C@H]1O)O)CO")
+        );
+    }
+
+    #[test]
+    fn tp2_21_stereo_parent_alanine() {
+        let mol = parse("C[C@@H](N)C(=O)O").unwrap();
+        let (result, record) = stereo_parent(&mol);
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&result),
+            canon("C(C(O)=O)(C)N")
+        );
+        assert!(record.fragments.is_empty());
+    }
+
+    #[test]
+    fn tp2_22_fragment_parent_hcl_salt() {
+        let mol = parse("CN1CCC(CC1)Nc1ccccc1.Cl").unwrap();
+        let (result, _) = fragment_parent(&mol);
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&result),
+            canon("N(c2ccccc2)C1CCN(CC1)C")
+        );
+    }
+
+    #[test]
+    fn holdout_04_parent_functions_noop_on_toluene() {
+        let mol = parse("Cc1ccccc1").unwrap();
+        let expected = chematic_smiles::canonical_smiles(&mol);
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&fragment_parent(&mol).0),
+            expected
+        );
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&charge_parent(&mol).0),
+            expected
+        );
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&isotope_parent(&mol).0),
+            expected
+        );
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&stereo_parent(&mol).0),
+            expected
+        );
     }
 }
