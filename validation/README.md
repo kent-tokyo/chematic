@@ -1050,6 +1050,37 @@ code changed.
   classification, blast-radius table, recommended predicate,
   CONDITIONAL GO verdict)
 
+### Wave 3: general shared-carrier coupling-component residual (issue #149, 5,000-mol corpus + 18 pinned fixtures + 2 never-corrupts fixtures)
+
+Follow-up to PR #351 (Wave 2D), which closed only ~10% (3 of 31) of the
+corpus's general shared-carrier coupling-component population per its own
+commit message -- the other ~90% (28 of 31) was reported as "a separate,
+still-unidentified mechanism." This audit measures that remaining
+population directly instead of assuming its residual status from that
+topological-presence figure. Result: 28 coupled components confirmed today
+(all size-2 paths, 0 cycles), 0/28 confirmed permutation-invariance
+failures under 16 RDKit relabelings each; a second probe (mark relocation)
+found structurally incapable of testing coupled pairs at all. All 28 share
+one RDKit-confirmed shape (both ends genuinely stereogenic). A calibration
+check found the permanent never-corrupts regression fixture's own "does not
+converge" doc claim likely stale. Verdict: NEEDS-RESEARCH, leaning GO
+(already-likely-resolved) -- not proof. No production code changed.
+
+- **Files:** `validation/results/ez_shared_carrier_coupling_mechanism_audit.jsonl`
+  (per-component axis1/axis2/classification detail),
+  `ez_shared_carrier_coupling_mechanism_audit_summary.json` (topology, axis
+  summaries, structural buckets, calibration check, verdict)
+- **Reference tool:** RDKit 2026.03.4 (`Chem.RenumberAtoms`,
+  `Chem.FindPotentialStereo`, `Chem.AssignStereochemistry`)
+- **How to regenerate:** `.venv/bin/python3 scripts/ez_shared_carrier_
+  coupling_mechanism_diagnosis.py` (drives `cargo run -p chematic-smiles
+  --release --example ez_shared_carrier_coupling_mechanism_audit`
+  internally). Self-test: `.venv/bin/python3 scripts/ez_shared_carrier_
+  coupling_mechanism_diagnosis.py --self-test`.
+- **Full report:** `docs/rfcs/ez_shared_carrier_coupling_mechanism_audit.md`
+  (method, per-bucket structural classification, field-by-field findings,
+  NEEDS-RESEARCH/leaning-GO verdict)
+
 ## Summary results
 
 See [rdkit/README.md](rdkit/README.md) for per-descriptor breakdowns.
