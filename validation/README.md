@@ -1123,6 +1123,82 @@ atoms, not 4).
   (status-quo defect audit, fragment-policy design, audit-log data model,
   section 8: implementation deviations, bugs found, and disclosed gaps)
 
+### Tautomer & Parent Identity Phase 2 -- acceptance fixtures + holdout (RFC stage, revision round 2A, not yet implemented)
+
+`crates/chematic-chem/src/tautomer.rs` and the 5 unwired
+`StandardizationStep` variants in `standardize.rs` were audited before
+drafting the RFC. Confirmed via a throwaway example run against `main` at
+commit `99401a6` (deleted after use, not committed): `canonical_tautomer` is
+**not** invariant across input tautomer spelling for the aromatic
+lactam/lactim class -- 6 real molecules tested (2-pyridone, 4-pyridone,
+cytosine, uracil, a guanine-class purine, hypoxanthine) all produce two
+different canonical outputs depending on which tautomer was fed in, while
+every non-aromatic keto-enol/amide-iminol/guanidine case and every
+ring-*internal* NH-shift case (imidazole/pyrazole/tetrazole/benzimidazole)
+already converges correctly. Root cause: `BondOrderMatch::Double` never
+matches `BondOrder::Aromatic`, so no 1,3-/1,5-shift rule can fire across an
+aromatic ring bond, and the separate aromatic-shift mechanism only moves H
+between ring atoms, never to/from an exocyclic substituent. A **second,
+mechanistically distinct** tautomer defect was found while fixing a broken
+fixture during review: nitroso/oxime interconversion (`CCN=O` vs. `CC=NO`)
+also fails to converge, but for an unrelated reason -- the one matching rule
+(`"1,3-C-to-O-any-bridge"`) is marked `prefer_forward: false`, likely
+deliberately, to avoid enolizing plain ketones via the same any-bridge
+pattern. Also confirmed: no repeat of Phase 1's stereocenter-corruption bug
+class (`tautomer.rs`'s `MoleculeBuilder`-rebuilding transforms already call
+`copy_stereo_groups_from`/`copy_stereo_from`/`copy_bond_directions_from`,
+pinned by existing regression tests); budget exhaustion (`max_iter`/
+`max_tautomers`) is silent with no result-state signal, already
+self-documented via an `#[ignore]`d regression test proving real
+order-dependence on a 25-independent-site molecule; and the 5 unwired
+`StandardizationStep` parent variants mostly already have correct
+underlying implementations (`normalize_groups`/`neutralize_charges`/
+`remove_isotopes`/`remove_stereo`/`select_fragment`) -- the gap is the
+absence of an explicit "Parent identity" concept and audit trail, not
+missing transforms.
+
+A design review (round 2A) caught 5 real problems in the first draft before
+any implementation started: `charge_parent` had been defined as a bare
+`neutralize_charges` wrapper (leaving multiple fragments in the output,
+contradicting the RFC's own "one representative structure" definition of a
+Parent); `super_parent`'s stage order was self-contradictory; the
+`StandardizationLimits`/counter semantics were unspecified; the Parent API
+returned untyped tuples and `String` reasons; and one fixture (`tp2-04`) was
+an accidental same-structure "pair," not a real tautomer pair -- fixing it
+surfaced the nitroso/oxime finding above. All 5 are corrected in the RFC and
+fixtures; see the RFC's revision note for detail.
+
+- **Files:** `validation/tautomer_parent_identity_phase2_fixtures.jsonl` (30
+  rows), `validation/tautomer_parent_identity_phase2_holdout.jsonl` (5 rows,
+  held out from design). Two row shapes: `tautomer_self_consistency`
+  (asserts all listed input variants canonicalize to one identical output --
+  which specific tautomer wins is chematic's own choice, not required to
+  match RDKit) and `parent_generation` (asserts a fixed expected output, or
+  for `super_parent`, a fixed sequence of intermediate outputs, for the
+  mechanical `charge_parent`/`isotope_parent`/`stereo_parent`/
+  `fragment_parent`/`super_parent` functions -- `charge_parent` is fragment
+  selection followed by neutralization of that one fragment, not a bare
+  `neutralize_charges` wrapper). Categories: non-aromatic tautomer controls
+  (already passing), aromatic lactam/lactim (confirmed failing),
+  ring-internal NH-shift controls (already passing), zwitterion and
+  `disconnected_metal_ion_interaction` full-pipeline checks (already
+  passing), all 5 Parent functions, a limit-exhaustion citation of existing
+  `tautomer.rs` regression tests, and 6 new negative/metamorphic controls
+  (phenol/anisole/aniline/pyridine-N-oxide non-regression, idempotence,
+  atom-order reorder) guarding the round-2C aromatic-shift fix against
+  over-firing.
+- **Status:** RFC + fixtures only, revision round 2A complete. No changes
+  under `crates/*/src/**` this round -- `ParentResult`/
+  `ParentComputationStatus`/`TautomerLimits`, the `*_parent` functions, the
+  aromatic lactam/lactim fix (RFC section 4.4), and
+  `TautomerScoringConfig` are design-only pending further authorization,
+  split into rounds 2B (Parent API + budget visibility) / 2C (aromatic fix)
+  / 2D (scoring customization), mirroring Phase 1's RFC-round discipline.
+- **Full report:** `docs/rfcs/tautomer_parent_identity_phase2_rfc.md`
+  (audit findings including the round-2A design review, `TautomerLimits`/
+  typed result-state design, Parent function design, aromatic-shift fix
+  design, open questions, round split)
+
 ## Summary results
 
 See [rdkit/README.md](rdkit/README.md) for per-descriptor breakdowns.
