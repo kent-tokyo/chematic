@@ -1,8 +1,20 @@
 # RFC: Tautomer & Parent Identity (ROADMAP.md Phase 2, v0.20.0)
 
-Status: draft, revision round 2A (RFC + acceptance fixtures only; no
-production code changes this round)
+Status: draft, round 2C-1 (mechanism fixation only; no production code
+changes yet this round)
 
+> **Revision (2026-08-22, round 2C-1):** before touching
+> `crates/*/src/**`, fixed the exact structural condition under which the
+> §1.1 aromatic lactam/lactim shift applies, and re-verified the negative
+> controls against two cases the original list didn't cover. New: §1.7 (a
+> second, distinct, out-of-scope non-convergence found by this round's own
+> rigor: cytosine's ring-N-H position is itself non-unique, unrelated to the
+> lactam/lactim shift); §4.4a (the per-molecule mechanism table, the
+> validity condition for the exocyclic donor/acceptor, and why the fix must
+> be a directional step rather than feed the existing score-ranked pool —
+> the latter would select the wrong tautomer, measured, not assumed). §5
+> gains 5 new fixtures. See §4.4a for detail.
+>
 > **Revision (2026-08-22, round 2A):** the original draft defined
 > `charge_parent` as a bare wrapper over `neutralize_charges` (leaving
 > multiple fragments in the output), left `super_parent`'s stage order
@@ -195,6 +207,43 @@ not folded into §1.1's fix, since the mechanism (rule generality/specificity
 trade-off, not aromatic bond-order matching) is unrelated. Scoping its fix is
 left as an explicit open question (§6) rather than assumed to be solved by
 §4.4's aromatic-shift work.
+
+### 1.7 Confirmed defect (distinct mechanism, out of scope for round 2C):
+cytosine's ring-N-H position is itself non-unique
+
+Found while fixing round 2C-1's mechanism table (below), not by design —
+the same discipline that found §1.6. Two spellings of cytosine's *keto*
+tautomer, differing only in which of the two ring nitrogens flanking the
+carbonyl carbon carries the mobile H (both real, chemically distinct: this
+is the literature's own N1-H/N3-H cytosine ambiguity, not an artifact of
+SMILES-writing), do not converge on `main`:
+
+```
+canonical_tautomer("Nc1cc[nH]c(=O)n1")  -> c1[nH]c(nc(N)c1)=O    (H on N4)
+canonical_tautomer("Nc1ccnc(=O)[nH]1")  -> c1(=O)nccc([nH]1)N    (H on N7)
+```
+
+Both ring nitrogens (`AtomIdx(4)` and `AtomIdx(7)` in the first spelling)
+are directly ring-bonded to the carbonyl carbon (`AtomIdx(5)`); the ring is
+not otherwise symmetric (only one of the two flanks the exocyclic-amino
+carbon too), so these are genuinely different tautomers, not a relabeling of
+one. Root cause: `find_direct_aromatic_matches`/`enumerate_direct_aromatic_forms`
+(the pre-existing ring-internal-only mechanism that already handles
+imidazole/pyrazole/tetrazole/benzimidazole correctly) does not generate this
+particular hop for cytosine's ring at all — from either starting spelling,
+so neither converges toward the other. This is a **pre-existing gap in the
+ring-internal mechanism itself**, unrelated to §1.1's exocyclic donor/acceptor
+gap: round 2C's fix only moves H between a ring nitrogen and an *exocyclic*
+oxygen, never between two ring nitrogens, so it neither causes nor repairs
+this. Left unfixed and out of scope for round 2C, matching §1.6's precedent
+— broadening this round to also fix ring-internal N-position selection would
+mix two independent mechanisms and muddy which change fixed what. Round
+2C-1's own acceptance fixtures for cytosine (§5) hold the ring-N-H position
+fixed (always `AtomIdx(4)`'s position, matching the design-driving SMILES
+already in `tp2-05`'s sibling rows) specifically to avoid conflating this
+gap with the one round 2C fixes; genuine atom-permutation-invariance checks
+for cytosine use a re-traversal that preserves which physical nitrogen holds
+the H, not a re-traversal that happens to swap it.
 
 ## 2. Goals / non-goals
 
@@ -504,6 +553,130 @@ without misfiring on substituents that aren't part of a lactam/lactim system
 precisely to catch over-eager matching here), so it's scoped as round 2C
 rather than done inline in this RFC.
 
+### 4.4a Round 2C-1: mechanism fixation (structural conditions + negative
+controls, fixed before any implementation)
+
+**Per-molecule mechanism table.** For each design-driving molecule, `bridge`
+is the ring atom carrying the exocyclic substituent; `donor`/`acceptor` are
+named for the keto→enol direction (donor loses the H, acceptor gains it);
+`ring path (bridge→acceptor)` is the shortest walk along that one SSSR ring's
+own bonds. Atom indices are from parsing the keto SMILES exactly as written
+(order-dependent labels, not a structural property — the mechanism itself
+must not depend on them; see permutation-invariance acceptance criteria
+below).
+
+| molecule | keto SMILES | bridge | exocyclic acceptor (enol side) | ring-N donor (keto side) | ring path, bridge→donor | ring bonds touched |
+|---|---|---|---|---|---|---|
+| 2-pyridone | `O=c1cccc[nH]1` | C(1) | O(0) | N(6) | 1 (ortho) | none — all stay `Aromatic` |
+| 4-pyridone | `O=c1cc[nH]cc1` | C(1) | O(0) | N(4) | 3 (para) | none — all stay `Aromatic` |
+| cytosine | `Nc1cc[nH]c(=O)n1` | C(5) | O(6) | N(4) | 1 (ortho) | none — all stay `Aromatic`; exocyclic amino (N0–C1) is a spectator, never touched (§1.7) |
+| uracil | `O=c1cc[nH]c(=O)[nH]1` | C(1) **and** C(5) | O(0) **and** O(6) | N(7) **and** N(4) | 1 (ortho), both sites | none — both sites shift together; see order-invariance note below |
+| guanine-class purine | `Nc1nc2[nH]cnc2c(=O)[nH]1` | C(8) | O(9) | N(10) | 1 (ortho) | none — all stay `Aromatic`; the 5-ring (imidazole-type) and its own N–H are untouched |
+
+The one structural fact every row shares, confirmed by direct execution, not
+assumed: only the exocyclic bridge–acceptor bond changes order
+(`Double`↔`Single`); **every ring-internal bond, including the one directly
+joining bridge and donor, stays `Aromatic` in both forms.** The H moves, the
+ring's own bond-order labels do not.
+
+**Validity condition (not a heuristic — a structural requirement).** The
+donor must be an aromatic ring nitrogen reachable from `bridge` *along that
+same SSSR ring* at an **odd** bond distance (1 or, for a 6-ring, 3). This is
+not a preference tie-break; it is the condition for a real alternating
+single/double (Kekulé) path to exist between bridge and donor at all — at
+even distance (meta, distance 2 in a 6-ring) no such path exists, so there
+is no neutral lactam tautomer to draw, full stop. Confirmed by direct
+execution on the discriminating case this analysis specifically requires:
+**3-hydroxypyridine** (`Oc1cccnc1`, donor at ring distance **2**, meta) —
+`canonical_tautomer` is a no-op today (`c1ncccc1O`) and must stay one; the
+fix's own scope predicate excludes it structurally, not by a score that
+happens to lose.
+
+**Why an O-only acceptor scope, not O-or-N.** Two negative-control molecules
+were checked specifically to probe whether an N-type exocyclic acceptor
+(amino/imino) should also be in scope: **4-aminopyridine** (`Nc1ccncc1`,
+para, odd distance — same shape as 4-pyridone) and **2-aminopyridine**
+(`Nc1ccccn1`, ortho, odd distance — same shape as 2-pyridone). Both are real
+amino/imino tautomer pairs by the same distance-parity condition above, and
+both are currently no-ops (`c1(ccncc1)N`, `c1nc(N)ccc1`). They are
+deliberately **not** brought into scope this round: every confirmed-broken
+molecule in §1.1 is an O-type (carbonyl/hydroxyl) shift — cytosine's and
+guanine's own exocyclic amino groups are spectators in their broken pairs,
+never the reacting atom (table above) — so there is no evidenced defect to
+fix on the N-acceptor side, and amino/imino tautomer preference is not
+simply "the same rule with N instead of O" (aminopyridines favor the amino,
+single-bond form; lactams favor the carbonyl, double-bond form — the
+opposite bonded-H pattern), which would need its own separate mechanism
+audit, not an extension of this one. Scoping the acceptor element to O keeps
+these two molecules correctly excluded by construction (no O to react with),
+not by a scoring judgment call.
+
+**Why this must be a directional step, not fed into the existing
+score-ranked pool.** `enumerate_direct_aromatic_forms`'s candidates are
+ranked by `tautomer_score` (`score_breakdown`, descending) with canonical
+SMILES as tiebreak — correct for the ring-internal-only shifts it already
+handles (imidazole/pyrazole/tetrazole/benzimidazole), where the competing
+forms tie on heteroatom-H weight. It is measurably wrong for this
+mechanism: computed directly from `score_breakdown`'s existing weights
+(O-H=100, N-H=50, aromatic-ring bonus=1000, both forms fully aromatic under
+chematic's model) for 2-pyridone, the **enol** side scores **1100** (one
+O-H + aromatic bonus) against the **keto** side's **1050** (one N-H +
+aromatic bonus) — sorted descending, the existing pool would select the
+chemically minor lactim form, silently inverting the fix. This is why §4.4's
+new mechanism must be applied as a **directional step** (added to
+`canonical_tautomer_with_config`'s `prefer_forward` loop, the same
+architecture the other 42 rules already use to hard-code amide-over-imidic-
+acid preference, converging to a fixed point *before* the score-ranked pool
+ever runs) rather than as a new candidate generator feeding
+`enumerate_direct_aromatic_forms`. It must be added to **both**
+`canonical_tautomer_with_config`'s loop and `tautomer_parent`'s equivalent
+loop, or the two functions diverge on the same input; `tautomer_parent`
+must count each application toward `transforms_applied` so
+`MaxTransformsReached` does not under-count.
+
+**Order-invariance requirement, made explicit for the multi-site case.**
+Uracil has two independent qualifying sites; guanine's/cytosine's bridge
+carbon is flanked by two ring nitrogens (only one of which is the correct
+donor per the table above). The implementation must enumerate *all*
+qualifying (bridge, acceptor) pairs each pass and select deterministically
+(canonical-SMILES minimum among the resulting candidates, mirroring the
+existing tiebreak's own reasoning at line ~1126) — never `.first()`/`[0]`
+over an unordered neighbor list, which would make the result track input
+atom-index order rather than structure (the same order-dependence class
+this project has already audited and fixed elsewhere).
+
+**Negative controls, fixed set (all confirmed no-ops on `main` today, must
+stay no-ops):**
+
+| control | SMILES | why excluded |
+|---|---|---|
+| phenol | `Oc1ccccc1` | no ring heteroatom acceptor at all |
+| anisole | `COc1ccccc1` | exocyclic O has no H to donate |
+| aniline | `Nc1ccccc1` | no ring heteroatom acceptor (all-carbon ring) |
+| pyridine N-oxide | `[O-][n+]1ccccc1` | neither side has an H to move (O is anionic, ring N has none) |
+| simple amide (acetamide) | `CC(N)=O` | not aromatic — mechanism is ring-gated |
+| 3-hydroxypyridine | `Oc1cccnc1` | donor at even (meta) ring distance — no valid Kekulé path (see above) |
+| 4-aminopyridine | `Nc1ccncc1` | acceptor is N, not O — out of scope this round (see above) |
+| 2-aminopyridine | `Nc1ccccn1` | acceptor is N, not O — out of scope this round (see above) |
+| ring-internal NH shift (imidazole, pyrazole, tetrazole, benzimidazole) | e.g. `c1cc[nH]n1` | already-passing existing mechanism; must be untouched, not merely unaffected |
+| isotope-bearing (new, §5) | `[18O]=c1cccc[nH]1` / `[18OH]c1ccccn1` | not a control against misfire — a positive case pinning that the isotope label must follow the O atom through the shift, not be dropped or misplaced |
+| remote stereocenter (new, §5) | `O=c1c([C@@H](F)Cl)ccc[nH]1` / `Oc1c([C@@H](F)Cl)cccn1` | not a control against misfire — a positive case pinning that a stereocenter uninvolved in the shift must survive unchanged |
+
+**Acceptance criteria this fixes (2C-2/2C-3), restated precisely:**
+- All 5 design pairs above converge to one canonical form each.
+- The 8 no-op negative controls stay no-ops (byte-identical canonical
+  SMILES before/after the round 2C-2 change).
+- The isotope and remote-stereocenter cases converge with the label/center
+  provably preserved (atom-level check — isotope value and `Chirality` on
+  the *specific* untouched atom, not just "canonical SMILES looks plausible").
+- Atom-permutation invariance and idempotence hold for every converging
+  case, checked with a re-traversal that preserves which physical ring
+  atoms are structurally donor/acceptor (per §1.7's caveat for cytosine —
+  never a re-traversal that would additionally exercise the separate,
+  out-of-scope ring-internal N-position gap).
+- Hypoxanthine (holdout) is checked only in round 2C-3, after the above is
+  fixed and frozen — never used to adjust the table or predicate above.
+
 ### 4.5 Custom rule/scoring hook
 
 **Revision:** the original draft proposed `scorer: Option<fn(&Molecule) ->
@@ -604,10 +777,31 @@ idempotence/reorder checks are currently passing on `main` — they exist to
 stay passing through round 2C's implementation, not because they're failing
 today.
 
-Categories now covered in the main set (30 rows after the corrections and
-additions above): non-aromatic tautomer controls, ring-internal NH-shift
-controls, aromatic lactam/lactim (the confirmed-failing class),
-`disconnected_metal_ion_interaction`, zwitterion-interaction, all Parent
+**New fixtures added in round 2C-1** (§4.4a's mechanism fixation):
+- `tp2-31-3-hydroxypyridine-meta-not-lactam` — 3-hydroxypyridine
+  (`Oc1cccnc1`), donor at even (meta) ring distance from any exocyclic
+  acceptor site; must stay a no-op — the discriminating check that the
+  fix's scope predicate is a real distance condition, not a coincidence of
+  the 5 design molecules all being ortho/para.
+- `tp2-32-4-aminopyridine-not-in-scope` / `tp2-33-2-aminopyridine-not-in-scope`
+  — both real amino/imino tautomer pairs at valid (odd) ring distance, but
+  with an N acceptor, not O; must stay no-ops this round (§4.4a's "why
+  O-only" argument) — currently passing, must keep passing.
+- `tp2-34-2-pyridone-isotope-preserved` — `["[18O]=c1cccc[nH]1",
+  "[18OH]c1ccccn1"]`, `currently_passing: false`; round 2C-2 must converge
+  this pair **and** the `18O` isotope label must remain on the same
+  physical oxygen atom in the result, not merely produce a plausible-looking
+  canonical string.
+- `tp2-35-2-pyridone-remote-stereocenter-preserved` —
+  `["O=c1c([C@@H](F)Cl)ccc[nH]1", "Oc1c([C@@H](F)Cl)cccn1"]`,
+  `currently_passing: false`; the stereocenter is on a ring substituent
+  uninvolved in the shift and must survive unchanged.
+
+Categories now covered in the main set (35 rows after round 2A's and round
+2C-1's corrections and additions): non-aromatic tautomer controls,
+ring-internal NH-shift controls, aromatic lactam/lactim (the
+confirmed-failing class), `disconnected_metal_ion_interaction`,
+zwitterion-interaction, all Parent
 functions, and the new negative/metamorphic controls.
 
 The holdout set (5 rows, unchanged from the original draft) generalizes each
@@ -624,10 +818,13 @@ already-reduced input (toluene), and a companion citation of the existing
    — sketched but not fully specified (§4.5); decided in the round that
    implements it (2D), not speculatively now.
 2. **Does the aromatic-lactam/lactim fix ever need to *dearomatize* a ring
-   bond**, or is toggling only the exocyclic bond always sufficient? All six
-   confirmed cases (§1.1) only required the exocyclic bond to change — but
-   this needs re-checking against a larger corpus during round 2C, not
-   assumed to generalize from 6 examples.
+   bond**, or is toggling only the exocyclic bond always sufficient? Round
+   2C-1 (§4.4a) answers this structurally for the odd-ring-distance case: no
+   ring bond changes order, by construction — the H moves, the ring's own
+   `Aromatic` labels don't. Still open: whether corpus molecules outside the
+   5 design pairs + hypoxanthine hit some other exocyclic-shift shape this
+   table doesn't cover; deferred to round 2C-3's holdout/audit pass, not
+   assumed to generalize from 6 examples alone.
 3. **Is §1.6 (nitroso/oxime) one mechanism with §1.1, or genuinely separate?**
    Current evidence says separate (different root cause: rule-generality
    trade-off vs. aromatic bond-order matching) — but no fix design is
@@ -658,10 +855,23 @@ separate explicit authorization (mirroring Phase 1's RFC → "次roundへ進ん�
   `fragment_parent`/`charge_parent`/`isotope_parent`/`stereo_parent`/
   `super_parent`, limit-exhaustion signaling. **No** aromatic lactam/lactim
   fix in this round.
-- **Round 2C:** the §4.4 aromatic lactam/lactim fix, validated against the
-  negative controls added in §5 (phenol/anisole/aniline/pyridine N-oxide,
-  idempotence, atom-order reorder) plus all confirmed-failing fixtures
-  turning green.
+- **Round 2C:** the §4.4/§4.4a aromatic lactam/lactim fix, split into three
+  sub-steps per the same audit-before-code discipline:
+  - **2C-1 (this update):** mechanism fixation only — §4.4a's per-molecule
+    table, validity condition, negative-control set (including two new
+    discriminating checks, 3-hydroxypyridine and the two aminopyridines,
+    and the isotope/stereocenter positive cases), and the finding that the
+    fix must be a directional step, not fed into the existing score-ranked
+    pool. §1.7 (cytosine's separate, out-of-scope ring-N-H ambiguity) also
+    surfaced this round. No changes under `crates/*/src/**` yet.
+  - **2C-2:** the minimal directional-step implementation against 2C-1's
+    fixed conditions.
+  - **2C-3:** hypoxanthine holdout validation (checked only now, never used
+    to shape 2C-1/2C-2) plus the fused-purine, multi-carbonyl, and
+    candidate-order-invariance checks §4.4a's acceptance criteria list.
+  - Round 2C as a whole ends as a **draft PR** — not merged, not marked
+    ready — per explicit instruction; nitroso/oxime (§1.6) and
+    `TautomerScoringConfig` (§4.5) are not in scope for any of 2C-1/2C-2/2C-3.
 - **Round 2D:** `TautomerScoringConfig` and the rule-customization surface.
 
 Round order is fixed as 2B → 2C → 2D (Parent API and budget visibility

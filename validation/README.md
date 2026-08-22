@@ -1123,7 +1123,7 @@ atoms, not 4).
   (status-quo defect audit, fragment-policy design, audit-log data model,
   section 8: implementation deviations, bugs found, and disclosed gaps)
 
-### Tautomer & Parent Identity Phase 2 -- acceptance fixtures + holdout (RFC stage, revision round 2A, not yet implemented)
+### Tautomer & Parent Identity Phase 2 -- acceptance fixtures + holdout (round 2B merged, round 2C-1 mechanism fixation, aromatic fix not yet implemented)
 
 `crates/chematic-chem/src/tautomer.rs` and the 5 unwired
 `StandardizationStep` variants in `standardize.rs` were audited before
@@ -1168,7 +1168,7 @@ an accidental same-structure "pair," not a real tautomer pair -- fixing it
 surfaced the nitroso/oxime finding above. All 5 are corrected in the RFC and
 fixtures; see the RFC's revision note for detail.
 
-- **Files:** `validation/tautomer_parent_identity_phase2_fixtures.jsonl` (30
+- **Files:** `validation/tautomer_parent_identity_phase2_fixtures.jsonl` (35
   rows), `validation/tautomer_parent_identity_phase2_holdout.jsonl` (5 rows,
   held out from design). Two row shapes: `tautomer_self_consistency`
   (asserts all listed input variants canonicalize to one identical output --
@@ -1183,21 +1183,28 @@ fixtures; see the RFC's revision note for detail.
   ring-internal NH-shift controls (already passing), zwitterion and
   `disconnected_metal_ion_interaction` full-pipeline checks (already
   passing), all 5 Parent functions, a limit-exhaustion citation of existing
-  `tautomer.rs` regression tests, and 6 new negative/metamorphic controls
-  (phenol/anisole/aniline/pyridine-N-oxide non-regression, idempotence,
-  atom-order reorder) guarding the round-2C aromatic-shift fix against
-  over-firing.
-- **Status:** RFC + fixtures only, revision round 2A complete. No changes
-  under `crates/*/src/**` this round -- `ParentResult`/
-  `ParentComputationStatus`/`TautomerLimits`, the `*_parent` functions, the
-  aromatic lactam/lactim fix (RFC section 4.4), and
-  `TautomerScoringConfig` are design-only pending further authorization,
-  split into rounds 2B (Parent API + budget visibility) / 2C (aromatic fix)
-  / 2D (scoring customization), mirroring Phase 1's RFC-round discipline.
+  `tautomer.rs` regression tests, and 11 negative/metamorphic controls
+  (phenol/anisole/aniline/pyridine-N-oxide/3-hydroxypyridine/4-and-2-
+  aminopyridine non-regression, idempotence, atom-order reorder) plus 2
+  isotope/stereocenter-preservation positive cases guarding the round-2C
+  aromatic-shift fix.
+- **Status:** round 2B (`ParentResult`/`ParentComputationStatus`/
+  `TautomerLimits`, `fragment_parent`/`charge_parent`/`isotope_parent`/
+  `stereo_parent`/`tautomer_parent`/`super_parent`) implemented and merged
+  (PR #363). Round 2C (the aromatic lactam/lactim fix) split into 2C-1
+  (mechanism fixation, this update -- §4.4a's per-molecule table, validity
+  condition, negative controls, and the finding that the fix must be a
+  directional step rather than fed into the existing score-ranked pool) /
+  2C-2 (implementation) / 2C-3 (hypoxanthine holdout + audit). 2C-1 adds no
+  changes under `crates/*/src/**`; a second, distinct, out-of-scope
+  tautomer defect (cytosine's own ring-N-H position ambiguity, RFC §1.7)
+  was found during 2C-1's own rigor and is explicitly not fixed by round
+  2C. `TautomerScoringConfig` (round 2D) remains design-only.
 - **Full report:** `docs/rfcs/tautomer_parent_identity_phase2_rfc.md`
-  (audit findings including the round-2A design review, `TautomerLimits`/
-  typed result-state design, Parent function design, aromatic-shift fix
-  design, open questions, round split)
+  (audit findings including the round-2A design review, round 2C-1's
+  mechanism fixation and new §1.7 finding, `TautomerLimits`/typed
+  result-state design, Parent function design, aromatic-shift fix design,
+  open questions, round split)
 
 ## Summary results
 
