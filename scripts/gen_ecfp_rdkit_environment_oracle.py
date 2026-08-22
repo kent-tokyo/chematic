@@ -240,6 +240,25 @@ def _repo_root():
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+def path_for_report(path):
+    """Path suitable for embedding in committed provenance JSON: relative to
+    the repo root if it's inside the repo, home-contracted (~) otherwise --
+    never a raw absolute path, which would embed the local username. Applied
+    to every command_line token too, so it must leave non-path tokens (bare
+    flags like "--corpus") untouched rather than resolving them against cwd."""
+    path = str(path)
+    if "/" not in path and not path.startswith("~"):
+        return path
+    root = _repo_root()
+    abs_path = os.path.abspath(os.path.expanduser(path))
+    if abs_path.startswith(root + os.sep):
+        return os.path.relpath(abs_path, root)
+    home = os.path.expanduser("~")
+    if abs_path.startswith(home):
+        return "~" + abs_path[len(home) :]
+    return path
+
+
 def diagnostic_source_commit_sha():
     return (
         subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=_repo_root()).decode().strip()
@@ -269,10 +288,10 @@ def build_manifest(args, stamp, row_count, input_count):
         "oracle_generator_script_sha256": sha256_file(os.path.abspath(__file__)),
         "rdkit_version": rdBase.rdkitVersion,
         "python_version": sys.version,
-        "corpus_paths": args.corpus,
-        "corpus_sha256": {p: sha256_file(p) for p in args.corpus},
-        "fixture_paths": args.fixtures,
-        "fixture_sha256": {p: sha256_file(p) for p in args.fixtures},
+        "corpus_paths": [path_for_report(p) for p in args.corpus],
+        "corpus_sha256": {path_for_report(p): sha256_file(p) for p in args.corpus},
+        "fixture_paths": [path_for_report(p) for p in args.fixtures],
+        "fixture_sha256": {path_for_report(p): sha256_file(p) for p in args.fixtures},
         "morgan_options": MORGAN_OPTIONS,
         "morgan_options_note": (
             "GetMorganGenerator(radius=2, fpSize=2048, includeChirality=False, "
@@ -282,7 +301,7 @@ def build_manifest(args, stamp, row_count, input_count):
             "interactively against RDKit 2026.03.3, on-bit sets equal."
         ),
         "generated_at_utc": stamp,
-        "command_line": sys.argv,
+        "command_line": [path_for_report(a) for a in sys.argv],
         "oracle_row_count": row_count,
         "input_count": input_count,
     }

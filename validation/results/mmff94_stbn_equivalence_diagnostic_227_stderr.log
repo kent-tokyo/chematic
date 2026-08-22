@@ -1,4 +1,4 @@
-   Compiling chematic-3d v0.12.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.claude/worktrees/agent-a02eb3112e0c43e1e/crates/chematic-3d)
+   Compiling chematic-3d v0.12.0 (chematic/.claude/worktrees/agent-a02eb3112e0c43e1e/crates/chematic-3d)
     Finished `release` profile [optimized] target(s) in 31.96s
      Running `target/release/examples/mmff94_stbn_equivalence_diagnostic_227`
 corpus size: 265

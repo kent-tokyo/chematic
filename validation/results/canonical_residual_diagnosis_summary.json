@@ -1,6 +1,6 @@
 {
   "summary": {
-    "corpus": "/Users/k_tanabe/Downloads/SMILES.csv",
+    "corpus": "~/Downloads/SMILES.csv",
     "n_input_lines": 5000,
     "n_total_parsed_by_both": 5000,
     "chematic_parse_failures": 0,

@@ -53,6 +53,19 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_JSONL = os.path.join(ROOT, "validation", "results", "canonical_residual_diagnosis.jsonl")
 OUT_SUMMARY = os.path.join(ROOT, "validation", "results", "canonical_residual_diagnosis_summary.json")
 
+
+def path_for_report(path):
+    """Path suitable for embedding in committed provenance JSON: relative to
+    the repo root if it's inside the repo, home-contracted (~) otherwise --
+    never a raw absolute path, which would embed the local username."""
+    abs_path = os.path.abspath(os.path.expanduser(str(path)))
+    if abs_path.startswith(ROOT + os.sep):
+        return os.path.relpath(abs_path, ROOT)
+    home = os.path.expanduser("~")
+    if abs_path.startswith(home):
+        return "~" + abs_path[len(home) :]
+    return abs_path
+
 BUCKETS = [
     "aromaticity_kekulization",
     "tetrahedral_parity",
@@ -384,7 +397,7 @@ def run(corpus_path, limit, k_variants, out_jsonl=OUT_JSONL, out_summary=OUT_SUM
             f.write(json.dumps(r) + "\n")
 
     summary = {
-        "corpus": corpus_path,
+        "corpus": path_for_report(corpus_path),
         "n_input_lines": len(smis),
         "n_total_parsed_by_both": n_total,
         "chematic_parse_failures": n_chematic_parse_fail,

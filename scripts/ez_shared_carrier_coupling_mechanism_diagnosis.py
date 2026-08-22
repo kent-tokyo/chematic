@@ -83,6 +83,20 @@ OUT_JSONL = os.path.join(ROOT, "validation", "results", f"{EXAMPLE}.jsonl")
 OUT_SUMMARY = os.path.join(ROOT, "validation", "results", f"{EXAMPLE}_summary.json")
 DEFAULT_CORPUS = os.path.join(ROOT, "scripts", "descriptor_census_corpus.smi")
 
+
+def path_for_report(path):
+    """Path suitable for embedding in committed provenance JSON: relative to
+    the repo root if it's inside the repo, home-contracted (~) otherwise --
+    never a raw absolute path, which would embed the local username."""
+    abs_path = os.path.abspath(os.path.expanduser(str(path)))
+    if abs_path.startswith(ROOT + os.sep):
+        return os.path.relpath(abs_path, ROOT)
+    home = os.path.expanduser("~")
+    if abs_path.startswith(home):
+        return "~" + abs_path[len(home) :]
+    return abs_path
+
+
 # Mirrors `canonical.rs`'s current, merged 18-entry `EZ_SHARED_CARRIER_
 # FULLY_RESOLVED` list exactly -- used only for the provenance gate and the
 # negative control, never re-derived independently of canonical.rs.
@@ -562,7 +576,7 @@ def main():
             }) + "\n")
 
     summary = {
-        "corpus": args.corpus,
+        "corpus": path_for_report(args.corpus),
         "provenance_gate": provenance,
         "topology": topology,
         "axis1_summary": {k: v for k, v in axis1_result.items() if k != "per_molecule"},

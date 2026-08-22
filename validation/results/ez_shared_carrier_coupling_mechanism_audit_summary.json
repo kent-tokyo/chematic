@@ -1,5 +1,5 @@
 {
-  "corpus": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/descriptor_census_corpus.smi",
+  "corpus": "scripts/descriptor_census_corpus.smi",
   "provenance_gate": {
     "n_pinned_fixtures_in_corpus": 5,
     "n_pinned_fixtures_total": 18,
