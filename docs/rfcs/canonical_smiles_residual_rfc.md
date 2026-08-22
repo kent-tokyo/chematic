@@ -2,6 +2,35 @@
 
 Status: **Diagnosis complete. No production behavior change.**
 
+> **Update (Wave 3, 2026-08-22, `Refs #149` not `Fixes #149`):** measured the
+> ~90%/28-of-31 general coupling-component population PR #351 left open,
+> rather than assuming its size or residual status from that topological-
+> presence figure. New tool (`crates/chematic-smiles/examples/ez_shared_
+> carrier_coupling_mechanism_audit.rs`, ring-gate-aware, unlike either prior
+> example) re-measures the current corpus topology: **exactly 28 coupled
+> components today** (31 pre-fix − 3 closed by PR #351's ring gate), every
+> one size exactly 2, shape "path," 0 cycles — matching PR #351's own claim
+> precisely. Two independent probes found **0/28 confirmed permutation-
+> invariance failures**: 16 seeded RDKit relabelings per component (448
+> variants, 0 correspondence failures) show 0 divergence; a second probe
+> (single-end mark relocation) was found to be structurally incapable of
+> testing any genuinely coupled pair at all (traced mechanistically, not
+> assumed). All 28 components share one RDKit-confirmed shape — both ends
+> independently, genuinely stereogenic — the same shape already known-fine
+> for 5 of the 18 pinned fixtures. A calibration check on the permanent
+> `ez_carrier_shared_bond_between_two_stereo_systems_never_corrupts`
+> regression fixture found its own doc comment's "does NOT resolve to one
+> canonical string" claim likely **stale** (it converges today, both pinned
+> spellings plus 10 fresh relabelings). **Verdict: NEEDS-RESEARCH, leaning GO
+> (already-likely-resolved)** — not proof, since K=16 relabeling is a sample
+> and whether RDKit's own reserialization ever varies which bond carries the
+> mark for a *shared* bond specifically was not independently confirmed.
+> Recommended next step: hand-construct genuine alternate spellings (moving
+> the mark to the other candidate bond by direct SMILES-text authorship, as
+> the never-corrupts fixture's own `a`/`b` pair was built) for a sample of
+> the 28. No production code changed. See
+> `docs/rfcs/ez_shared_carrier_coupling_mechanism_audit.md` for full detail.
+
 > **Update (Wave 2D, 2026-08-20 — `Fixes #149`'s ring-constrained half):**
 > implemented the Wave 2C audit's recommended predicate. `compute_stereo_
 > alkene_ends` (`crates/chematic-smiles/src/canonical.rs`) now excludes a
