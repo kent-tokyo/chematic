@@ -39,26 +39,64 @@ code). Not merged, not marked ready.
 >    current matcher shows this is false -- hypoxanthine has the identical
 >    two-candidate dual-flank shape as guanine (the ring-fusion asymmetry
 >    that creates it has nothing to do with the 2-amino substituent), and a
->    second, RDKit-verified keto spelling (`O=c1nc[nH]c2nc[nH]c12`, new
->    fixture `tp2-39`) does not converge with the originally-tested one.
->    Hypoxanthine is reclassified from "clean holdout" to "confirmed
->    affected."
+>    second, RDKit-verified keto spelling (`O=c1nc[nH]c2nc[nH]c12`, added
+>    as a third `tp2-holdout-01` variant) does not converge with the
+>    originally-tested pair. Hypoxanthine is reclassified from "clean
+>    holdout" to "confirmed affected," kept as a holdout (not moved to the
+>    main fixture set -- see the follow-up revision below).
 > 5. **The dual-flank shape alone is not sufficient for the defect**: a
 >    bare, substituent-free dual-flanked lactam (no ring fusion, no
 >    exocyclic substituent) is a genuine *automorphism* -- both ring-N
 >    positions are the same molecule (RDKit-verified: deleting cytosine's
 >    amino group from either of its two keto spellings collapses both to
->    one identical canonical SMILES, `tp2-41`). The defect requires either
+>    one identical canonical SMILES, `tp2-40`). The defect requires either
 >    ring fusion (guanine, hypoxanthine) or an explicit substituent breaking
 >    ring symmetry (cytosine, and the new minimal non-nucleobase
->    `tp2-40`), never the dual-flank topology by itself.
+>    `tp2-39`), never the dual-flank topology by itself.
 >
 > See section 4.4b for the full diagnosis (per-molecule candidate tables,
 > the rejected-rule analysis, and the proposed design direction). `tp2-07`/
-> `tp2-09`/`tp2-holdout-01` notes corrected; `tp2-39`..`tp2-42` added. Zero
-> changes under `crates/*/src/**` this round. Nitroso/oxime (section 1.6),
+> `tp2-09`/`tp2-holdout-01` notes corrected; `tp2-39`..`tp2-41` added to the
+> main fixture set, `tp2-holdout-06` added. Zero changes under
+> `crates/*/src/**` this round. Nitroso/oxime (section 1.6),
 > `TautomerScoringConfig`'s implementation, Python/WASM bindings, and full
 > corpus measurement remain explicitly out of scope.
+>
+> **Revision (2026-08-23, round 2C-N hardened after direct review, still
+> pre-merge):** user review of this draft, before any merge, found 4 real
+> issues in the revision above and in section 4.4b, all fixed: (1) the
+> proposed tie-break hardening ("reuse the `mol_fingerprint` cross-check")
+> was itself unsound -- `mol_fingerprint` hashes a sorted
+> `(element, charge, bond_order_sum)` multiset per atom, which does not
+> encode which specific atom carries the mobile H and is exactly the kind
+> of check two ring-N-H positional isomers can coincidentally agree on;
+> replaced with a rooted-structural-key-plus-exact-automorphism-check
+> design, failing closed on a genuine irreducible tie (§4.4b); (2) "the
+> first four [priority-order tiers] are exhausted" overstated what was
+> measured -- softened to "no generalizable rule was found among what was
+> actually audited," since ring-fusion-distance, fused/non-fused-membership,
+> and rooted-graph-rank features were never tried; (3) hypoxanthine's newly
+> found alternate-keto residual was originally added as a new *main-set*
+> fixture (`tp2-39`) -- moved instead into `tp2-holdout-01`'s own
+> `variants` (now 3, `currently_passing: false`), keeping hypoxanthine a
+> genuine holdout the future implementation round designs against last, not
+> a case folded into the design set; a second, previously-unused holdout
+> (`tp2-holdout-06`, N9-methylhypoxanthine -- a fused, substituted purinone
+> distinct from both guanine and plain hypoxanthine) was added for the same
+> reason; (4) `tp2-07`/`tp2-09` (cytosine/guanine) expanded from 2-variant
+> keto/enol pairs to full 3-variant sets (both keto candidates plus the
+> enol precursor), since the real acceptance bar is all three agreeing, not
+> just one pair. Fixture IDs renumbered accordingly (`tp2-39` is now
+> methylpyrimidinone; former `tp2-40`/`tp2-41`/`tp2-42` are now
+> `tp2-40`/`tp2-41` -- one slot freed by moving hypoxanthine's alternate
+> keto into the holdout file). Explicit acceptance criteria for the future
+> implementation round added to §4.4b (symmetric candidate generation from
+> any input form, 16+ atom-renumbering checks, idempotence,
+> `canonical_tautomer`/`tautomer_parent` agreement, budget-counting
+> compatibility, isotope/stereo preservation, the automorphism negative
+> control must not be perturbed, both holdouts checked only after the
+> design is frozen). Still diagnosis-only, zero changes under
+> `crates/*/src/**`, still **draft**, not merged.
 
 > **Revision (2026-08-22, round 2C-2 hardening, post-PR-#365-review):**
 > user review of PR #365 found 4 real gaps before merge-readiness, all
@@ -850,9 +888,9 @@ measured result (round 2C-2 implemented and tested):**
   (round 2C-N):** the claim below this bullet originally said hypoxanthine
   "lands in the single-acceptor (fully-converging) class, not the
   §1.7-gated one." That was wrong — re-measurement found hypoxanthine has
-  the same two-candidate dual-flank shape as guanine; the two variants
-  `tp2-holdout-01` tested happened to converge, but a second, RDKit-verified
-  keto spelling (`tp2-39`) does not. See §4.4b.
+  the same two-candidate dual-flank shape as guanine; the original two
+  variants happened to converge, but a second, RDKit-verified keto spelling
+  (now `tp2-holdout-01`'s third variant) does not. See §4.4b.
 
 ### 4.4b Round 2C-N: §1.7 diagnosis and design (no production code this
 round)
@@ -871,6 +909,16 @@ round 2C shipped, unmodified:
 | cytosine | `Oc1ccnc(N)n1` | `AtomIdx(1)` | `AtomIdx(4)` | `AtomIdx(7)` | 1, 3 |
 | guanine-core | `Nc1nc2[nH]cnc2c(O)n1` | `AtomIdx(8)` | `AtomIdx(2)` | `AtomIdx(10)` | 3, 1 |
 | hypoxanthine | `Oc1ncnc2[nH]cnc12` | `AtomIdx(1)` | `AtomIdx(2)` | `AtomIdx(4)` | 1, 3 |
+
+Each molecule's own two keto spellings (one per candidate, both RDKit-
+verified distinct real tautomers) plus its enol precursor are now pinned as
+a 3-way fixture set (`tp2-07` cytosine, `tp2-09` guanine, `tp2-holdout-01`
+hypoxanthine, `tp2-39` methylpyrimidinone, `tp2-holdout-06`
+N9-methylhypoxanthine) — measured pairwise convergence varies per molecule
+(e.g. guanine's enol currently happens to match its candidate-2 keto
+spelling but not candidate 1; cytosine's three variants are all three
+mutually distinct), which is itself evidence that today's behavior is
+input-direction-dependent, not a stable partial fix.
 
 Both candidates are always at odd ring-distance from the bridge (the
 existing Kekulé-path condition, §4.4a), which is exactly why the matcher
@@ -956,46 +1004,133 @@ verified: deleting cytosine's amino nitrogen from either of its two keto
 spellings collapses both to the identical canonical SMILES
 `O=c1nccc[nH]1`) is a true automorphism — swapping which ring nitrogen holds
 the H produces the same molecule, not a tautomer pair, so there is nothing
-for a fix to normalize (`tp2-41`). The defect requires an asymmetry
+for a fix to normalize (`tp2-40`). The defect requires an asymmetry
 elsewhere: ring fusion (guanine, hypoxanthine — the fusion carbons sit
 nearer one candidate than the other, distance 1 vs. 3) or an explicit
 substituent breaking the ring's mirror symmetry (cytosine, and the new
-minimal non-nucleobase case `tp2-40`, methyl in place of amino — confirming
+minimal non-nucleobase case `tp2-39`, methyl in place of amino — confirming
 the substituent's specific identity is irrelevant, only that one exists).
 
 **Design direction (not implemented this round).** Per the required
 priority order — directional rule, then valence/charge/aromaticity
 conservation, then functional-group preference, then declarative scoring,
-structural tie-break only as a last resort — the evidence above shows the
-first four are exhausted for this specific ambiguity: no directional rule
-survives both cytosine and guanine (the one tried is vacuous on guanine);
-valence/charge/aromaticity do not distinguish (both candidates are equally
-valid neutral Lewis structures); no functional-group-preference feature was
-found that generalizes; and declarative scoring, including RDKit's own,
-ties exactly. Per §5's existing design principle (`canonical_tautomer`'s
-choice need not match RDKit's preferred form — only be self-consistent),
-the practical fix does not need to *derive* a chemically preferred answer;
-it needs to make the choice **deterministic regardless of which valid
-tautomer was fed in**. Two changes are indicated, both left to the
+structural tie-break only as a last resort — the honest statement of what
+was measured is narrower than "exhausted": **among the rules and score
+terms actually audited this round, none generalizes across both cytosine
+and guanine.** No directional rule survives both (the one tried is vacuous
+on guanine, §4.4b above); valence/charge/aromaticity do not distinguish the
+two candidates (both are equally valid neutral Lewis structures in every
+molecule tested); no functional-group-preference feature was found among
+those considered; and the two declarative scoring functions actually
+measured (chematic's own, and RDKit's) both tie exactly. This is evidence
+against the specific rules tried, not proof that no position-sensitive
+rule could ever exist — a term sensitive to ring-fusion distance, fused-vs-
+non-fused ring membership, canonical local environment, or rooted-graph
+rank was not attempted this round and is not ruled out. Per §5's existing
+design principle (`canonical_tautomer`'s choice need not match RDKit's
+preferred form — only be self-consistent), the practical fix does not need
+to *derive* a chemically preferred answer; it needs to make the choice
+**deterministic regardless of which valid tautomer was fed in**.
+
+**A correction to an earlier draft of this section.** A previous version of
+this proposal suggested hardening the tie-break by reusing the existing
+`mol_fingerprint` cross-check (§4.4a's hardening). On review, this is
+**not adequate as an identity proof** and must not be used that way:
+`mol_fingerprint` (`crates/chematic-chem/src/tautomer.rs`) hashes a sorted
+multiset of `(element, formal_charge, bond_order_sum)` per atom — it
+discards which specific atom carries which bond pattern, and in particular
+does not encode *which* nitrogen holds the mobile H. Two ring-N-H
+positional isomers of the same molecule are exactly the kind of pair this
+fingerprint is likely to collide on (same element multiset, same
+charge multiset, same bond-order-sum multiset) even when they are genuinely
+different structures — the opposite of what a "prove these two candidates
+are really the same molecule" check needs. `canonical_smiles` agreement
+plus `mol_fingerprint` agreement is not a structural-identity proof for
+this specific ambiguity class; both signals can agree by coincidence.
+
+**Revised tie-break design.** When symmetrized candidate generation (below)
+produces two or more candidates with tied scores, resolve them in this
+order:
+1. Compute a **rooted structural key** for each candidate atom on the
+   common heavy-atom graph with the mobile H removed (so the two candidates
+   being compared share one graph, differing only in which atom is
+   "rooted" as the acceptor): iterative neighbor-rank refinement (the same
+   category of technique as this project's own canonical atom-ranking
+   infrastructure — Morgan/CIP-style refinement to a fixed point), not a
+   single-pass local feature. Prefer the candidate with the strictly lower
+   rank.
+2. If ranks still tie, check whether a **graph automorphism** exists that
+   maps one candidate onto the other (holding every non-candidate atom and
+   every bond order fixed). If such an automorphism exists, the two
+   candidates are the same molecule (this is exactly `tp2-40`'s bare-
+   pyrimidinone case) — either is a correct answer, and the implementation
+   may pick deterministically (e.g. lower `AtomIdx`) without it mattering
+   chemically.
+3. If no automorphism can be established and ranks still tie, this is a
+   **genuine, irreducible tie between two different molecules** — fail
+   closed (report no change / `Abstained`, matching this project's existing
+   fail-closed conventions elsewhere, e.g. §4.4a's post-generation invariant
+   check), never guess via a coarse hash or raw canonical-SMILES string
+   comparison.
+
+**Symmetrizing the mechanism.** Two changes are indicated, both left to the
 implementation round:
-1. **Symmetrize the mechanism**: add a bridge-mediated ring-N-to-ring-N
-   normalization step that fires on already-keto inputs too (not only on
-   inputs with a movable exocyclic OH), so a keto-form input is no longer a
-   silent fixed point.
-2. **Harden the tie-break**: once the mechanism can consider both ring-N
-   candidates symmetrically from any starting form, the deterministic pick
-   between them should not rely on raw canonical-SMILES lexicographic order
-   as the *sole* signal (this project has hit real canonical-SMILES bugs
-   elsewhere) — reuse the existing `mol_fingerprint`-cross-check discipline
-   §4.4a's hardening already added, or an equivalent atom-order-invariant
-   structural key, and apply it identically regardless of whether the
-   normalization started from a keto or enol input.
+1. Add a bridge-mediated ring-N-to-ring-N normalization step that
+   constructs **both** candidates symmetrically from *any* starting form —
+   enol, keto-candidate-1, or keto-candidate-2 — rather than moving the
+   input's own H by one step. Concretely: detect the motif (neutral
+   exocyclic C=O or C-OH bridge on a neutral aromatic carbon, with two
+   neutral aromatic ring-N candidates at odd ring-distance, each able to
+   accept the H) from any of the three starting forms, then always
+   (re)build both fully-formed candidates from scratch rather than
+   incrementally shifting the one H the input happened to already place.
+   This removes the current asymmetry where only inputs with a movable
+   exocyclic OH ever reach the selection logic at all.
+2. Every generated candidate must pass the same invariant checks already
+   established for the shipped mechanism (§4.4a's
+   `exocyclic_lactam_shift_preserves_invariants`): atom count, element,
+   isotope, formal charge, and aromaticity preserved on every atom except
+   the two candidate positions; total formal charge conserved; valence
+   valid at both candidate positions; every bond order unchanged except the
+   ones the transform is explicitly allowed to touch; stereo metadata
+   (`chirality`, `stereo_neighbor_order`, `stereo_groups`,
+   `bond_directions`) untouched on every atom not involved in the shift.
+   Any candidate failing these checks is discarded, not silently corrected.
+
+**Acceptance criteria for the implementation round (not this one):**
+- From any of a molecule's three input forms (both keto candidates, the
+  enol precursor), the same fixed candidate set is generated and the same
+  final molecule is selected — full pairwise convergence, not just one
+  matching pair (the `tp2-07`/`tp2-09`/`tp2-holdout-01` 3-way fixtures
+  above are the exact test).
+- Atom-renumbering invariance: the result is unchanged under at least 16
+  random atom-index relabelings per design molecule (matching this
+  project's existing convention elsewhere, e.g. the E/Z canonical-residual
+  audits' own `seed in range(16)` practice), not just one alternate
+  spelling.
+- Idempotence: applying the fix twice equals applying it once.
+- `canonical_tautomer` and `tautomer_parent`'s reported molecule and
+  `TautomerRuleId` sequence agree.
+- `TautomerLimits`/transform-budget behavior is unaffected — the new
+  normalization step must respect `max_transforms`/`max_tautomers` like
+  every other rule, not bypass counting.
+- Isotope labels and remote stereocenters (chirality, CIP label,
+  `stereo_neighbor_order`) survive unchanged on every atom not involved in
+  the shift, checked on the specific atom, not just "a stereocenter exists
+  somewhere" (matching §4.4a's own hardened stereocenter check).
+- The automorphism negative control (`tp2-40`, bare pyrimidinone) must
+  **not** be perturbed — no unnecessary atom/bond changes on a molecule
+  where the two candidates are already the same structure.
+- `tp2-holdout-01` (hypoxanthine, now 3 variants) and `tp2-holdout-06`
+  (N9-methylhypoxanthine, new) must be checked only *after* the
+  implementation is designed and frozen against cytosine/guanine/
+  methylpyrimidinone — not used to shape the rule, mirroring round 2C-3's
+  own discipline.
 
 Not designed this round: the exact mechanism shape (a new matcher function,
-or a generalization of `find_exocyclic_lactam_shift_matches`), and whether
-it should special-case the automorphic case (`tp2-41`) or simply let it fall
-out for free (both candidates converging to the same fingerprint already
-satisfies the fail-closed tie check §4.4a's hardening added).
+or a generalization of `find_exocyclic_lactam_shift_matches`), and the
+precise rooted-structural-key algorithm (which existing canonicalization
+primitives to reuse vs. build fresh).
 
 ### 4.5 Custom rule/scoring hook
 
