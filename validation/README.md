@@ -1123,7 +1123,7 @@ atoms, not 4).
   (status-quo defect audit, fragment-policy design, audit-log data model,
   section 8: implementation deviations, bugs found, and disclosed gaps)
 
-### Tautomer & Parent Identity Phase 2 -- acceptance fixtures + holdout (round 2B merged; round 2C-2/2C-3 aromatic lactam/lactim fix implemented, draft PR not yet merged)
+### Tautomer & Parent Identity Phase 2 -- acceptance fixtures + holdout (round 2B merged; round 2C-2/2C-3 aromatic lactam/lactim fix implemented and hardened after direct code review, draft PR not yet merged)
 
 `crates/chematic-chem/src/tautomer.rs` and the 5 unwired
 `StandardizationStep` variants in `standardize.rs` were audited before
@@ -1168,7 +1168,7 @@ an accidental same-structure "pair," not a real tautomer pair -- fixing it
 surfaced the nitroso/oxime finding above. All 5 are corrected in the RFC and
 fixtures; see the RFC's revision note for detail.
 
-- **Files:** `validation/tautomer_parent_identity_phase2_fixtures.jsonl` (35
+- **Files:** `validation/tautomer_parent_identity_phase2_fixtures.jsonl` (38
   rows), `validation/tautomer_parent_identity_phase2_holdout.jsonl` (5 rows,
   held out from design). Two row shapes: `tautomer_self_consistency`
   (asserts all listed input variants canonicalize to one identical output --
@@ -1183,11 +1183,12 @@ fixtures; see the RFC's revision note for detail.
   ring-internal NH-shift controls (already passing), zwitterion and
   `disconnected_metal_ion_interaction` full-pipeline checks (already
   passing), all 5 Parent functions, a limit-exhaustion citation of existing
-  `tautomer.rs` regression tests, and 11 negative/metamorphic controls
-  (phenol/anisole/aniline/pyridine-N-oxide/3-hydroxypyridine/4-and-2-
-  aminopyridine non-regression, idempotence, atom-order reorder) plus 2
-  isotope/stereocenter-preservation positive cases guarding the round-2C
-  aromatic-shift fix.
+  `tautomer.rs` regression tests, 10 negative controls (phenol/anisole/
+  aniline/pyridine-N-oxide/3-hydroxypyridine/4-and-2-aminopyridine/charged-
+  pyridinium-acceptor/aromatic-N-bridge/fused-bridgehead-N-acceptor, all
+  confirmed no-ops), 2 general-property checks (idempotence, atom-order
+  reorder), and 2 isotope/stereocenter-preservation positive cases guarding
+  the round-2C aromatic-shift fix.
 - **Status:** round 2B (`ParentResult`/`ParentComputationStatus`/
   `TautomerLimits`, `fragment_parent`/`charge_parent`/`isotope_parent`/
   `stereo_parent`/`tautomer_parent`/`super_parent`) implemented and merged
@@ -1205,9 +1206,15 @@ fixtures; see the RFC's revision note for detail.
   tautomer defect found during 2C-1's own rigor (cytosine's/guanine's
   carbonyl carbon is flanked by two ring nitrogens, RFC §1.7) and do not
   converge; this is documented, not silently patched over, and left open
-  for a future round. 776+12 lib tests pass, 0 regressions.
-  `TautomerScoringConfig` (round 2D) remains design-only. This PR is left
-  in **draft**, not merged.
+  for a future round. **Hardened after the user's own direct PR review**
+  (not `/code-review`): matcher narrowed to fail-closed neutral/degree
+  preconditions, a post-generation atom/bond invariant check added,
+  candidate deduplication + an independent `mol_fingerprint` cross-check on
+  the tie-break, direct atom-permutation-invariance tests (genuinely
+  different `AtomIdx` insertion order, not just SMILES respelling), and
+  stale doc comments fixed. 799+23 lib tests pass, 0 regressions, all 19 CI
+  checks green. `TautomerScoringConfig` (round 2D) remains design-only.
+  This PR is left in **draft**, not merged.
 - **Full report:** `docs/rfcs/tautomer_parent_identity_phase2_rfc.md`
   (audit findings including the round-2A design review, round 2C-1's
   mechanism fixation and new §1.7 finding, `TautomerLimits`/typed
