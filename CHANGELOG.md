@@ -9,6 +9,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `chematic-chem` (explainable Molecule Standardization Phase 1, ROADMAP.md Phase 1)
+
+- `FragmentPolicy` + `select_fragment(mol, &FragmentPolicy) -> (Molecule,
+  TransformationRecord)`: a structural, non-named-list classification for
+  largest-fragment selection and salt/solvent removal — a tiny always-strip
+  monatomic-ion set (Li/Na/K/F/Cl/Br/I), water, and a no-carbon/small-fragment
+  heuristic, in place of matching a named SMARTS catalog. Ranking is
+  heavy-atom count → carbon presence → an intrinsic canonical-SMILES
+  tie-break, never input/discovery order.
+- `TransformationRecord`/`FragmentRecord`/`FragmentSnapshot`/`FragmentDecision`:
+  a per-fragment audit trail (formula, canonical SMILES, kept/removed
+  decision with a machine-readable `rule_id` and human-readable reason, and
+  a whole-transformation `abstained` reason for inputs with no confident
+  organic parent, e.g. `NaCl`).
+- `largest_fragment`/`remove_salts` are now thin wrappers around
+  `select_fragment` with the default policy — same signatures, corrected
+  behavior. `SaltCatalog`/`remove_salts_with_catalog`/`is_salt_fragment`
+  are unchanged, kept as opt-in-only legacy behavior, no longer on the
+  default path.
+- Fixes 3 confirmed defects in the prior `largest_fragment`/`remove_salts`:
+  tied-fragment-size selection was spelling-order-dependent (kept a
+  different fragment for `"CCC.CCN"` vs `"CCN.CCC"`); fragment "size"
+  counted raw atom count including explicit hydrogens, not heavy atoms;
+  `SaltCatalog`'s "ammonium" SMARTS entry false-positived on real organic
+  cations (e.g. choline), previously masked rather than fixed by an
+  unrelated size comparison.
+- Also fixes a real, previously-undiscovered bug found while implementing:
+  fragment extraction (both the new code and the pre-existing
+  `remove_salts_with_catalog`) silently corrupted stereocenters by
+  rebuilding fragments through a fresh `MoleculeBuilder` without remapping
+  `stereo_neighbor_order`. `extract_fragment` now rebuilds fragments via
+  repeated `Molecule::remove_atom` (which already remaps this correctly),
+  removing atoms in descending index order — one fix, both callers.
+- Design: `docs/rfcs/explainable_standardization_phase1_rfc.md`.
+  Acceptance/holdout fixtures: `validation/standardization_phase1_
+  fixtures.jsonl` (34 rows), `validation/standardization_phase1_
+  holdout.jsonl` (10 rows) — all 44 now exist as `chematic-chem` tests
+  (`phase1_*` in `standardize.rs`).
+- **Not in this round** (per the RFC's stated scope): Python/WASM bindings
+  for any of the new types; a non-heuristic signal for genuine
+  cocrystal-vs-counterion ambiguity (found, empirically, not to be
+  distinguishable from an unrelated unambiguous case via a heavy-atom-count
+  margin alone — disclosed as unimplemented rather than shipped as a
+  heuristic that doesn't actually work); wiring the richer audit trail into
+  `StandardizationPipeline`'s own per-stage report.
+
 ### Added — `chematic-ff`/`chematic-py`/`chematic-wasm` (UFF minimizer soundness signal, ROADMAP.md Backlog item 5a)
 
 - `UffMinimizeResult` (`crates/chematic-ff/src/uff.rs`) gains a `sound: bool`

@@ -1081,6 +1081,48 @@ converge" doc claim likely stale. Verdict: NEEDS-RESEARCH, leaning GO
   (method, per-bucket structural classification, field-by-field findings,
   NEEDS-RESEARCH/leaning-GO verdict)
 
+### Explainable Standardization Phase 1 -- acceptance fixtures + holdout (implemented)
+
+`crates/chematic-chem/src/standardize.rs` had no formal design/RFC prior to
+this pass. Before drafting the RFC, three concrete defects in the
+already-shipped code were confirmed empirically (a throwaway example run
+against `main` at commit `1ac442a`, deleted after use, not committed): (a)
+tied-fragment-size selection was spelling-order-dependent, not
+atom-order-invariant (`largest_fragment` kept a different fragment for
+`"CCC.CCN"` vs `"CCN.CCC"`); (b) fragment "size" counted raw atom count
+including explicit hydrogens, not heavy atoms; (c) the named `SaltCatalog`'s
+"ammonium" SMARTS entry false-positived on real organic cations (e.g.
+choline), previously masked rather than fixed by an unrelated size
+comparison. All three are now fixed and pinned as named regression tests.
+Implementing the fixtures as tests also caught two more issues (see the
+RFC's section 8): fragment extraction was silently corrupting
+stereocenters (a `stereo_neighbor_order` remap bug shared with the legacy
+`remove_salts_with_catalog` path, fixed for both at once), and one holdout
+fixture's own note had an arithmetic error (phosphoric acid is 5 heavy
+atoms, not 4).
+
+- **Files:** `validation/standardization_phase1_fixtures.jsonl` (34 rows),
+  `validation/standardization_phase1_holdout.jsonl` (10 rows, held out from
+  rule design). Categories: simple salts, zwitterions, hydrates,
+  organometallics, multi-organic fragments (incl. a genuine 2-API cocrystal
+  case), isotope-containing compounds, equal-size ties (incl. 3 named
+  regression fixtures), charged fragments, and edge cases (empty molecule,
+  all-inorganic input, duplicate fragments, a carbon-containing solvate the
+  default policy deliberately does not strip).
+- **Implementation:** `crates/chematic-chem/src/standardize.rs` --
+  `FragmentPolicy`, `select_fragment`, `TransformationRecord`/
+  `FragmentRecord`/`FragmentSnapshot`/`FragmentDecision`, re-exported from
+  `chematic-chem`'s crate root. `largest_fragment`/`remove_salts` are now
+  thin wrappers around `select_fragment` with the default policy --
+  `SaltCatalog`/`remove_salts_with_catalog` remain unchanged, opt-in-only.
+- **How to regenerate:** all 44 fixtures are hand-transcribed as `#[test]`
+  functions (`phase1_*`) in `standardize.rs`'s test module, not a
+  JSONL-driven runtime harness -- `cargo test -p chematic-chem --lib
+  standardize::tests::phase1`.
+- **Full report:** `docs/rfcs/explainable_standardization_phase1_rfc.md`
+  (status-quo defect audit, fragment-policy design, audit-log data model,
+  section 8: implementation deviations, bugs found, and disclosed gaps)
+
 ## Summary results
 
 See [rdkit/README.md](rdkit/README.md) for per-descriptor breakdowns.
