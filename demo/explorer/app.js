@@ -53,6 +53,11 @@ async function initWasm() {
     wasmReady = true;
     $("loading-overlay")?.classList.add("hidden");
   } catch (e) {
+    // The loading overlay is a full-screen, high-z-index element that would
+    // otherwise permanently hide this message behind "Loading chematic
+    // (WASM)…" -- surface the failure where it's actually visible.
+    const overlay = $("loading-overlay");
+    if (overlay) overlay.textContent = "Failed to load chematic (WASM): " + String(e);
     showStatus("WASM failed to load: " + String(e));
     throw e;
   }
