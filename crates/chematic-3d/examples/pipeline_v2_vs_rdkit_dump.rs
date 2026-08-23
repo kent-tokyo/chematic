@@ -31,11 +31,14 @@ use chematic_3d::pipeline_v2::{
     self as pv2, PipelineV2Config, PipelineV2FailureCause, RingTorsionApplicationPolicy,
     StereoPolicy,
 };
+use chematic_3d::{ConformerDisposition, EnsembleV2Config, embed_ensemble_v2};
 use chematic_core::Molecule;
 use serde_json::{Value, json};
 
 const EMBED_SEED: u64 = 20260801; // fixed for reproducibility; not a cross-platform bit-exactness claim
 const MAX_ATTEMPTS: usize = 8;
+const BEST_OF_N_ARM_NAME: &str = "chematic_pipeline_v2_uff_best_of_10";
+const BEST_OF_N_COUNT: usize = 10;
 
 #[derive(Clone, Copy)]
 struct Arm {
@@ -503,6 +506,137 @@ fn run_legacy_arm(mol: &Molecule) -> Value {
     }
 }
 
+/// A2 best-of-N arm: `embed_ensemble_v2` with `count: BEST_OF_N_COUNT`,
+/// force-field and seed matched to RDKit's own `rdkit_etkdgv3_best_of_n`
+/// arm (`scripts/pipeline_v2_vs_rdkit_oracle.py`'s `run_best_of_n`:
+/// `EmbedMultipleConfs(numConfs=10, randomSeed=20260801)` + per-conformer
+/// UFF optimization + lowest-energy selection), so the "10 attempts, best
+/// by energy" comparison means the same quantity on both sides.
+#[allow(clippy::result_large_err)]
+fn run_best_of_n_arm(mol: &Molecule) -> Value {
+    let mut per_conformer = base_config(
+        ForceFieldPolicy::UffOnly,
+        StereoPolicy::Ignore,
+        false,
+        false,
+        false,
+    );
+    // RDKit's EmbedMultipleConfs has no per-conformer retry loop; matching
+    // its "10 draws" semantics means one attempt per conformer here too,
+    // not this file's usual MAX_ATTEMPTS=8 (which retries a single slot on
+    // a bad draw) -- leaving this at 8 would silently give chematic up to
+    // 80 embedding attempts against RDKit's 10.
+    per_conformer.embed.max_attempts = 1;
+    let config = EnsembleV2Config {
+        per_conformer,
+        count: BEST_OF_N_COUNT,
+        base_seed: EMBED_SEED,
+        // Disables RMSD-dedup pruning: EmbedMultipleConfs doesn't RMSD-dedupe
+        // before optimizing either, so "10 attempts" only means the same
+        // thing on both sides with chematic's own pruning also off. RMSD
+        // pruning is A2's own value-add, out of scope for this comparison.
+        rmsd_threshold: 0.0,
+        use_symmetric_rmsd_pruning: true,
+        ensemble_timeout_ms: Some(20_000 * BEST_OF_N_COUNT as u64),
+    };
+
+    let start = Instant::now();
+    let result = panic::catch_unwind(AssertUnwindSafe(|| embed_ensemble_v2(mol, &config)));
+    let elapsed_ms = start.elapsed().as_millis() as u64;
+
+    let r = match result {
+        Err(_panic) => {
+            return json!({
+                "arm": BEST_OF_N_ARM_NAME,
+                "status": "internal_error",
+                "elapsed_ms": elapsed_ms,
+            });
+        }
+        Ok(Err(cfg_err)) => {
+            panic!("unexpected EnsembleV2ConfigError with a fixed valid config: {cfg_err}");
+        }
+        Ok(Ok(r)) => r,
+    };
+
+    let attempts_failed = r.attempts.iter().filter(|a| a.outcome.is_err()).count();
+    let attempts_pruned = r
+        .attempts
+        .iter()
+        .filter(|a| {
+            matches!(
+                &a.outcome,
+                Ok(s) if matches!(s.disposition, ConformerDisposition::PrunedAsDuplicate { .. })
+            )
+        })
+        .count();
+
+    let Some(best_coords) = r.ensemble.get_conformer(0) else {
+        // Not a new status vocabulary word: `gen_pipeline_v2_vs_rdkit_report.py`'s
+        // `classify_row` exhaustively dispatches on `status`, and anything it
+        // doesn't recognize becomes "unclassified" -- a hard integrity-gate
+        // failure. "typed_failure" + a `failure_cause` substring keeps this
+        // arm inside the report generator's existing closed vocabulary.
+        return json!({
+            "arm": BEST_OF_N_ARM_NAME,
+            "status": "typed_failure",
+            "failure_cause": "NoConformersKept",
+            "elapsed_ms": elapsed_ms,
+            "attempts_requested": r.requested_count,
+            "conformers_kept": 0,
+            "attempts_failed": attempts_failed,
+            "attempts_pruned": attempts_pruned,
+            "termination": format!("{:?}", r.termination),
+        });
+    };
+
+    // `ensemble` is ordered group-then-ascending-energy; under this
+    // single-policy (UffOnly) config there is exactly one force-field group
+    // and UFF energy is always present on success, so index 0 is
+    // unambiguously "the lowest-energy kept conformer." A future config
+    // change to this arm (e.g. a mixed-policy ensemble) would break that
+    // assumption -- reverse-mapping back to the originating attempt below
+    // (rather than trusting index 0 alone) keeps `best_energy` honest.
+    let best = r
+        .attempts
+        .iter()
+        .find_map(|a| match &a.outcome {
+            Ok(s)
+                if matches!(
+                    s.disposition,
+                    ConformerDisposition::Kept { conformer_index: 0 }
+                ) =>
+            {
+                Some(s)
+            }
+            _ => None,
+        })
+        .expect("ensemble.get_conformer(0) implies some attempt has Kept{conformer_index: 0}");
+
+    let check = legacy_geometry_check(mol, best_coords);
+    json!({
+        "arm": BEST_OF_N_ARM_NAME,
+        "status": "success",
+        "elapsed_ms": elapsed_ms,
+        "atom_count": best_coords.atom_count(),
+        "coords": coords_to_json(best_coords),
+        "attempts_requested": r.requested_count,
+        "conformers_kept": r.ensemble.conformer_count(),
+        "attempts_failed": attempts_failed,
+        "attempts_pruned": attempts_pruned,
+        "termination": format!("{:?}", r.termination),
+        "mixed_force_field": r.mixed_force_field,
+        "best_energy": best.energy,
+        "all_finite": check.all_finite,
+        "atom_count_unchanged": check.atom_count_unchanged,
+        "worst_bond_length_ratio": check.worst_bond_length_ratio,
+        "bond_violation_rate_15pct": check.bond_violation_rate_15pct,
+        "bond_violation_rate_50pct": check.bond_violation_rate_50pct,
+        "gross_clash_count": check.gross_clash_count,
+        "sound": check.sound,
+        "geometry_check_methodology": "independent_lightweight_not_pipeline_v2_internal",
+    })
+}
+
 fn load_manifest(path: &str) -> Value {
     let text =
         std::fs::read_to_string(path).unwrap_or_else(|e| panic!("failed to read {path}: {e}"));
@@ -538,6 +672,12 @@ fn main() {
         .collect();
     eprintln!(
         "config_snapshot embed_seed={EMBED_SEED} max_attempts={MAX_ATTEMPTS} arms={config_snapshot:?}"
+    );
+    eprintln!(
+        "config_snapshot {BEST_OF_N_ARM_NAME}: ff=UffOnly count={BEST_OF_N_COUNT} \
+         base_seed={EMBED_SEED} max_attempts=1 (NOT {MAX_ATTEMPTS} -- one draw per \
+         conformer, matching RDKit's EmbedMultipleConfs) rmsd_threshold=0.0 (pruning \
+         disabled, for parity with RDKit's no-dedup best-of-N selection)"
     );
 
     for (tier, manifest) in &manifests {
@@ -583,6 +723,14 @@ fn main() {
             legacy_row["primary_category"] = json!(primary_category);
             legacy_row["heavy_atom_elements"] = json!(elements);
             println!("{legacy_row}");
+
+            let mut best_of_n_row = run_best_of_n_arm(&mol);
+            best_of_n_row["tier"] = json!(tier);
+            best_of_n_row["name"] = json!(name);
+            best_of_n_row["smiles"] = json!(smiles);
+            best_of_n_row["primary_category"] = json!(primary_category);
+            best_of_n_row["heavy_atom_elements"] = json!(elements);
+            println!("{best_of_n_row}");
 
             if primary_category == "known_fail_closed_case" {
                 let mut probe_row = run_fail_closed_probe(&mol);

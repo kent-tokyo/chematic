@@ -40,10 +40,11 @@ Measurement-only. No pipeline v2 or force-field algorithm code was changed to pr
 | chematic | chematic_pipeline_v2_mmff94_strict_repair | 265 | 231 | 231 | 100.0% | 87.2% | 22 | 12 | 0 | 0 |
 | chematic | chematic_pipeline_v2_mmff94_with_uff_fallback_repair | 265 | 244 | 244 | 100.0% | 92.1% | 21 | 0 | 0 | 0 |
 | chematic | chematic_pipeline_v2_mmff94_strict_stretch_bend_gated | 265 | 241 | 241 | 100.0% | 90.9% | 12 | 12 | 0 | 0 |
-| chematic | chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated | 265 | 253 | 253 | 100.0% | 95.5% | 11 | 0 | 1 | 0 |
+| chematic | chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated | 265 | 254 | 254 | 100.0% | 95.8% | 11 | 0 | 0 | 0 |
 | chematic | chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated | 265 | 241 | 241 | 100.0% | 90.9% | 12 | 12 | 0 | 0 |
 | chematic | chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated | 265 | 254 | 254 | 100.0% | 95.8% | 11 | 0 | 0 | 0 |
 | chematic | chematic_legacy_etkdg | 265 | 265 | 248 | 93.6% | 93.6% | 0 | 0 | 0 | 0 |
+| chematic | chematic_pipeline_v2_uff_best_of_10 | 265 | 251 | 251 | 100.0% | 94.7% | 14 | 0 | 0 | 0 |
 | rdkit | rdkit_etkdgv3_raw | 265 | 264 | 264 | 100.0% | 99.6% | 0 | 0 | 0 | 1 |
 | rdkit | rdkit_etkdgv3_uff | 265 | 264 | 264 | 100.0% | 99.6% | 0 | 0 | 0 | 1 |
 | rdkit | rdkit_etkdgv3_mmff94 | 265 | 264 | 264 | 100.0% | 99.6% | 0 | 0 | 0 | 1 |
@@ -65,10 +66,11 @@ Applied identically to chematic's and RDKit's already-saved heavy-atom coordinat
 | chematic | chematic_pipeline_v2_mmff94_strict_repair | 231 | 100.0% | 0.7% | 0.0% | 3 | 0 | 100.0% |
 | chematic | chematic_pipeline_v2_mmff94_with_uff_fallback_repair | 244 | 100.0% | 0.7% | 0.0% | 3 | 0 | 100.0% |
 | chematic | chematic_pipeline_v2_mmff94_strict_stretch_bend_gated | 241 | 100.0% | 0.9% | 0.0% | 0 | 0 | 100.0% |
-| chematic | chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated | 253 | 100.0% | 0.8% | 0.0% | 0 | 0 | 100.0% |
+| chematic | chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated | 254 | 100.0% | 0.8% | 0.0% | 0 | 0 | 100.0% |
 | chematic | chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated | 241 | 100.0% | 0.9% | 0.0% | 0 | 0 | 100.0% |
 | chematic | chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated | 254 | 100.0% | 0.8% | 0.0% | 0 | 0 | 100.0% |
 | chematic | chematic_legacy_etkdg | 265 | 100.0% | 54.8% | 23.7% | 225 | 0 | 93.6% |
+| chematic | chematic_pipeline_v2_uff_best_of_10 | 251 | 100.0% | 0.5% | 0.0% | 0 | 0 | 100.0% |
 | rdkit | rdkit_etkdgv3_raw | 264 | 100.0% | 0.6% | 0.0% | 0 | 0 | 100.0% |
 | rdkit | rdkit_etkdgv3_uff | 264 | 100.0% | 0.0% | 0.0% | 0 | 0 | 100.0% |
 | rdkit | rdkit_etkdgv3_mmff94 | 264 | 100.0% | 0.9% | 0.0% | 0 | 0 | 100.0% |
@@ -76,9 +78,23 @@ Applied identically to chematic's and RDKit's already-saved heavy-atom coordinat
 
 This common scorer checks for exactly-coincident atom pairs (distance < 1e-3 Å), which the original ad-hoc legacy scorer did not -- 0/265 legacy outputs have ≥1 coincident atom pair and are NOT independently sound under this stricter, shared check. 11/11 pipeline_v2 arms are 100% independently sound this run (matching their own internal `final_validation.sound`); see the table above for any arm below 100%.
 
+## Best-of-N conformer selection (chematic A2 ensemble vs. RDKit EmbedMultipleConfs)
+
+Compares `chematic_pipeline_v2_uff_best_of_10` (`chematic_3d::embed_ensemble_v2`, A2 core, PR #373) against RDKit's own `rdkit_etkdgv3_best_of_n` arm (`scripts/pipeline_v2_vs_rdkit_oracle.py`'s `run_best_of_n`): both embed 10 conformers (`count=10` / `numConfs=10`), optimize each with UFF, and keep the lowest-energy one. Config matched deliberately for this comparison, not chematic's general-purpose default: `ForceFieldPolicy::UffOnly` (RDKit's arm never uses MMFF94), `base_seed`/`randomSeed=20260801` (same literal both sides), `per_conformer.embed.max_attempts=1` (NOT this file's usual 8 -- RDKit's `EmbedMultipleConfs` has no per-conformer retry loop, so 8 would silently let chematic use up to 80 embedding attempts against RDKit's 10), and `rmsd_threshold=0.0` (RMSD-dedup pruning disabled -- RDKit's `EmbedMultipleConfs` doesn't dedupe before optimizing either, and pruning is A2's own value-add, out of scope for a best-of-N *selection* comparison). `coords`/`best_energy` on chematic's side are the ensemble's lowest-energy kept conformer, reverse-mapped from its originating attempt (never a cross-force-field energy comparison -- both engines are UFF-only here).
+
+chematic attempted 265 molecules, 251 succeeded (kept >=1 conformer), mean conformers kept per success 9.42/10.
+
+**Sanity check** (must hold for the config above to mean what this section claims): 0 molecule(s) had any conformer pruned as a duplicate (expected 0, since `rmsd_threshold=0.0` disables pruning) and 0 molecule(s) reported a mixed force field across kept conformers (expected 0, since every attempt uses `UffOnly`). A nonzero count in either column means this run's config drifted from what's described above, and the numbers below should not be trusted until investigated.
+
+**Paired symmetric heavy-atom RMSD** (`pipeline_v2_vs_rdkit_common_scorer.rs --pair`), 250 molecules successful on both sides: median 2.147 Å, p90 3.833 Å.
+
+**Paired Torsion Fingerprint Deviation** (`scripts/pipeline_v2_vs_rdkit_tfd_227.py`, RDKit's own `GetTFDBetweenMolecules`), 243 molecules successful on both sides: median 0.344, p90 0.514.
+
+A low RMSD/TFD would mean chematic's own energy-ranked best-of-10 selection tends to land on essentially the same conformer RDKit's does under a matched budget; a high one would mean the two engines' distinct sampling (chematic's ETKDG-derived `embed_pipeline_v2` vs. RDKit's own ETKDGv3) and/or UFF energy landscape disagree on which of 10 candidates is best, independent of whether either individual embed is sound (see the geometry-quality table above for that, separately, under `chematic_pipeline_v2_uff_best_of_10`).
+
 ## Stereo preservation (same judge -- chematic's own `verify_stereo` -- applied to both engines)
 
-**Methodology, read before the numbers**: the 9 `Ignore`-policy arms below (including the 4 bonded-term-gate arms added in Priority 2, which only change the coverage gate's scope, not stereo policy) reflect raw distance-geometry-embedding output -- `Ignore` never repairs a violated stereocenter, so those rows are NOT chematic's best achievable stereo correctness. Starting Priority 1 (v0.11.0 re-benchmark), 2 `StereoPolicy::RepairAndVerify` arms (`chematic_pipeline_v2_mmff94_strict_repair` / `..._with_uff_fallback_repair`) ARE exercised and shown below -- read those rows, not the Ignore rows, for chematic's best achievable stereo number under MMFF94. Their lower `declared`/`molecules w/ declared stereo` counts vs. the matching Ignore arm reflect fewer molecules reaching success at all under RepairAndVerify (see the RepairAndVerify effectiveness section below for the paired-arm accounting), not a smaller stereo-bearing subset by construction. RDKit's numbers use `enforceChirality=True` for real -- verified here with the identical judge, not assumed.
+**Methodology, read before the numbers**: the 10 `Ignore`-policy arms below (including the 4 bonded-term-gate arms added in Priority 2, which only change the coverage gate's scope, not stereo policy) reflect raw distance-geometry-embedding output -- `Ignore` never repairs a violated stereocenter, so those rows are NOT chematic's best achievable stereo correctness. Starting Priority 1 (v0.11.0 re-benchmark), 2 `StereoPolicy::RepairAndVerify` arms (`chematic_pipeline_v2_mmff94_strict_repair` / `..._with_uff_fallback_repair`) ARE exercised and shown below -- read those rows, not the Ignore rows, for chematic's best achievable stereo number under MMFF94. Their lower `declared`/`molecules w/ declared stereo` counts vs. the matching Ignore arm reflect fewer molecules reaching success at all under RepairAndVerify (see the RepairAndVerify effectiveness section below for the paired-arm accounting), not a smaller stereo-bearing subset by construction. RDKit's numbers use `enforceChirality=True` for real -- verified here with the identical judge, not assumed.
 
 | Engine | Arm | molecules w/ declared stereo | declared | satisfied | violated | unevaluable | satisfaction rate |
 |---|---|---|---|---|---|---|---|
@@ -94,6 +110,7 @@ This common scorer checks for exactly-coincident atom pairs (distance < 1e-3 Å)
 | chematic | chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated | 83 | 146 | 82 | 64 | 0 | 56.2% |
 | chematic | chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated | 83 | 146 | 82 | 64 | 0 | 56.2% |
 | chematic | chematic_legacy_etkdg | 90 | 170 | 107 | 63 | 0 | 62.9% |
+| chematic | chematic_pipeline_v2_uff_best_of_10 | 81 | 142 | 68 | 74 | 0 | 47.9% |
 | rdkit | rdkit_etkdgv3_raw | 90 | 170 | 170 | 0 | 0 | 100.0% |
 | rdkit | rdkit_etkdgv3_uff | 90 | 170 | 170 | 0 | 0 | 100.0% |
 | rdkit | rdkit_etkdgv3_mmff94 | 90 | 170 | 170 | 0 | 0 | 100.0% |
@@ -111,7 +128,7 @@ An RDKit `AddHs=false` auxiliary arm was NOT added this round (would meaningfull
 
 ## Performance
 
-### Process-level performance: NOT RUN this round -- the chematic arm matrix has grown from the `1bc1b63`-era 6 to 12 (2 RepairAndVerify arms added in Priority 1, 4 bonded-term-gate arms added in Priority 2), so the stored `1bc1b63`-era process-level file would no longer be measuring the same binary and was deliberately excluded rather than presented as if comparable. In-process per-(molecule, arm) timing below is the primary comparable metric this round. Re-run `scripts/pipeline_v2_vs_rdkit_process_level_perf.sh` in a follow-up if the whole-corpus process-level figure is needed against the new arm matrix.
+### Process-level performance: NOT RUN this round -- the chematic arm matrix has grown from the `1bc1b63`-era 6 to 13 (2 RepairAndVerify arms added in Priority 1, 4 bonded-term-gate arms added in Priority 2), so the stored `1bc1b63`-era process-level file would no longer be measuring the same binary and was deliberately excluded rather than presented as if comparable. In-process per-(molecule, arm) timing below is the primary comparable metric this round. Re-run `scripts/pipeline_v2_vs_rdkit_process_level_perf.sh` in a follow-up if the whole-corpus process-level figure is needed against the new arm matrix.
 
 ### In-process per-(molecule, arm) timing (secondary)
 
@@ -121,18 +138,19 @@ _In-process wall-clock per (molecule, arm) call within a single long-running pro
 
 | Arm | n | p50 (ms) | p95 (ms) | p99 (ms) | max (ms) |
 |---|---|---|---|---|---|
-| chematic_pipeline_v2_no_ff | 265 | 4.0 | 25.8 | 37.1 | 48 |
-| chematic_pipeline_v2_dreiding | 265 | 134.0 | 1036.8 | 1288.8 | 1692 |
-| chematic_pipeline_v2_uff_only | 265 | 209.0 | 1462.0 | 2280.4 | 3508 |
-| chematic_pipeline_v2_mmff94_strict | 265 | 1047.0 | 6452.4 | 9022.7 | 13032 |
-| chematic_pipeline_v2_mmff94_with_uff_fallback | 265 | 1068.0 | 6383.4 | 9475.7 | 11623 |
-| chematic_pipeline_v2_mmff94_strict_repair | 265 | 942.0 | 6340.6 | 10127.2 | 17213 |
-| chematic_pipeline_v2_mmff94_with_uff_fallback_repair | 265 | 958.0 | 6480.8 | 11366.8 | 17476 |
-| chematic_pipeline_v2_mmff94_strict_stretch_bend_gated | 265 | 1047.0 | 6672.8 | 10735.3 | 17244 |
-| chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated | 265 | 1065.0 | 6643.2 | 10758.6 | 21946 |
-| chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated | 265 | 1062.0 | 6646.8 | 11812.2 | 19154 |
-| chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated | 265 | 1067.0 | 6357.8 | 12855.3 | 19345 |
-| chematic_legacy_etkdg | 265 | 1.0 | 4.0 | 6.4 | 11 |
+| chematic_pipeline_v2_no_ff | 265 | 4.0 | 23.8 | 36.4 | 48 |
+| chematic_pipeline_v2_dreiding | 265 | 123.0 | 997.6 | 1141.5 | 1264 |
+| chematic_pipeline_v2_uff_only | 265 | 202.0 | 1386.0 | 2094.9 | 3477 |
+| chematic_pipeline_v2_mmff94_strict | 265 | 1066.0 | 6336.0 | 8047.5 | 11103 |
+| chematic_pipeline_v2_mmff94_with_uff_fallback | 265 | 1063.0 | 6322.0 | 8047.4 | 11079 |
+| chematic_pipeline_v2_mmff94_strict_repair | 265 | 880.0 | 6317.0 | 8031.7 | 11020 |
+| chematic_pipeline_v2_mmff94_with_uff_fallback_repair | 265 | 879.0 | 6275.2 | 8035.1 | 11002 |
+| chematic_pipeline_v2_mmff94_strict_stretch_bend_gated | 265 | 1082.0 | 6309.8 | 8168.3 | 11060 |
+| chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated | 265 | 1087.0 | 6311.0 | 8059.9 | 11057 |
+| chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated | 265 | 1068.0 | 6295.4 | 8118.7 | 11008 |
+| chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated | 265 | 1068.0 | 6318.6 | 8129.4 | 11031 |
+| chematic_legacy_etkdg | 265 | 0.0 | 4.0 | 5.0 | 7 |
+| chematic_pipeline_v2_uff_best_of_10 | 265 | 2032.0 | 14144.6 | 23353.0 | 38350 |
 
 #### RDKit
 
@@ -158,7 +176,7 @@ In plain terms: this crash requires the non-default `useSmallRingTorsions=True`,
 - chematic_pipeline_v2_mmff94_strict_repair: n=231, fallback_rate=0.0%, converged_rate=22.5%
 - chematic_pipeline_v2_mmff94_with_uff_fallback_repair: n=244, fallback_rate=5.3%, converged_rate=21.7%
 - chematic_pipeline_v2_mmff94_strict_stretch_bend_gated: n=241, fallback_rate=0.0%, converged_rate=22.4%
-- chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated: n=253, fallback_rate=5.1%, converged_rate=21.7%
+- chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated: n=254, fallback_rate=5.1%, converged_rate=21.7%
 - chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated: n=241, fallback_rate=0.0%, converged_rate=22.4%
 - chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated: n=254, fallback_rate=5.1%, converged_rate=21.7%
 
@@ -176,12 +194,13 @@ Real `pipeline_v2` execution order (`crates/chematic-3d/src/pipeline_v2.rs` `Pip
 | chematic_pipeline_v2_mmff94_strict_repair | 265 | 254 | 254 | 244 | 231 | 231 | 231 |
 | chematic_pipeline_v2_mmff94_with_uff_fallback_repair | 265 | 254 | 254 | 244 | 244 | 244 | 244 |
 | chematic_pipeline_v2_mmff94_strict_stretch_bend_gated | 265 | 254 | 254 | 254 | 241 | 241 | 241 |
-| chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated | 265 | 254 | 254 | 254 | 253 | 253 | 253 |
+| chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated | 265 | 254 | 254 | 254 | 254 | 254 | 254 |
 | chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated | 265 | 254 | 254 | 254 | 241 | 241 | 241 |
 | chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated | 265 | 254 | 254 | 254 | 254 | 254 | 254 |
 | chematic_legacy_etkdg | 265 | n/a | n/a | n/a | n/a | n/a | 265 |
+| chematic_pipeline_v2_uff_best_of_10 | 265 | n/a | n/a | n/a | n/a | n/a | 251 |
 
-Note: `chematic_legacy_etkdg` does not run through `pipeline_v2` at all (separate `generate_coords_etkdg` entry point, no `PipelineStage` tracking) -- its row reports `attempted`/`final_validation_passed` only; the intermediate columns are `n/a` rather than a fabricated 0 or a misleading 265 (a naive reuse of the success-implies-passed-every-stage rule above would have printed 265 for every column here, which would misrepresent a code path that never runs those stages at all).
+Note: `chematic_legacy_etkdg` does not run through `pipeline_v2` at all (separate `generate_coords_etkdg` entry point, no `PipelineStage` tracking) -- its row reports `attempted`/`final_validation_passed` only; the intermediate columns are `n/a` rather than a fabricated 0 or a misleading 265 (a naive reuse of the success-implies-passed-every-stage rule above would have printed 265 for every column here, which would misrepresent a code path that never runs those stages at all). `chematic_pipeline_v2_uff_best_of_10` gets the same `n/a` treatment for the same reason: it calls `embed_pipeline_v2` internally (via `embed_ensemble_v2`) but its per-attempt `ConformerAttempt` type doesn't surface `PipelineStage`/`failure_stage`.
 
 ## RepairAndVerify effectiveness (paired-arm comparison, Priority 1 new arms)
 
@@ -191,8 +210,8 @@ Each `StereoPolicy::RepairAndVerify` arm is a genuinely independent arm (not a c
 
 | Ignore arm | Repair arm | n compared | excluded (incomparable) | before-mismatch | repair attempted | repair succeeded | outcome unavailable | after-mismatch | geometry pairs | geometry degraded | time delta median (ms) | time delta p95 (ms) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| chematic_pipeline_v2_mmff94_strict | chematic_pipeline_v2_mmff94_strict_repair | 254 | 11 | 46 | 64 | 52 | 0 | 0 | 231 | 0 | 0 | 212 |
-| chematic_pipeline_v2_mmff94_with_uff_fallback | chematic_pipeline_v2_mmff94_with_uff_fallback_repair | 254 | 11 | 46 | 64 | 52 | 0 | 0 | 244 | 0 | 0 | 122 |
+| chematic_pipeline_v2_mmff94_strict | chematic_pipeline_v2_mmff94_strict_repair | 254 | 11 | 46 | 64 | 52 | 0 | 0 | 231 | 0 | 0 | 26 |
+| chematic_pipeline_v2_mmff94_with_uff_fallback | chematic_pipeline_v2_mmff94_with_uff_fallback_repair | 254 | 11 | 46 | 64 | 52 | 0 | 0 | 244 | 0 | 0 | 34 |
 
 _Note on reading `after-mismatch` next to the stereo-preservation table's "100% satisfaction" figure below: they are measured over different populations. The 100% satisfaction rate is computed only over the arm's *successful* rows (131/229); `after-mismatch` here is computed over all 254 comparable rows, including ones that failed after repair (e.g. in force-field minimization) -- so a non-zero after-mismatch count and a 100%-among-successes satisfaction rate are not in conflict, they answer different denominators. See the Stage funnel table above for the exact per-arm counts at each stage._
 
@@ -231,14 +250,8 @@ Each stage's arm is a genuinely independent arm (never a config edit to a previo
 |---|---|---|---|---|---|
 | chematic_pipeline_v2_mmff94_strict | chematic_pipeline_v2_mmff94_strict_stretch_bend_gated | 265 | 241 | 241 | 0 |
 | chematic_pipeline_v2_mmff94_strict_stretch_bend_gated | chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated | 265 | 241 | 241 | 0 |
-| chematic_pipeline_v2_mmff94_with_uff_fallback | chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated | 265 | 254 | 253 | 1 |
-| chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated | chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated | 265 | 253 | 254 | 0 |
-
-`chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated` newly-failing molecules (1): chembl_tier_b_0030
-
-`chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated` **also has 1 molecule(s) that flip the other way** (earlier stage fails, later stage succeeds) -- independently verified against one of two recognized explanation categories (`GATE_WIDENING_EXPLANATIONS` in `scripts/gen_pipeline_v2_vs_rdkit_report.py`), never asserted away. Any case matching neither category fails report generation instead of being silently accepted.
-
-- **identical_coverage_timing_variance** (1): chembl_tier_b_0030. The later row succeeded via the SAME (non-fallback) force field, with the coverage dimension this stage newly gates on measured as fully covered (zero missing) -- the gate flag is a mechanical no-op for these molecules, so both stages run identical minimization on identical geometry; the timeout/success flip is consistent with wall-clock scheduling variance around the shared 20000ms boundary, corroborated by the later row's own `elapsed_ms` being a substantial fraction of that budget (not an arbitrary fast, unrelated success). First observed on `chembl_tier_b_0030` during A1's 265-molecule re-audit (see `docs/rfcs/a1_conformer_benchmark_failure_ledger.md`, Finding 3).
+| chematic_pipeline_v2_mmff94_with_uff_fallback | chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated | 265 | 254 | 254 | 0 |
+| chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated | chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated | 265 | 254 | 254 | 0 |
 
 **Stretch-bend-gated -> complete-bonded-term is 0 newly-failing for every policy this round** -- every molecule that already survives the stretch-bend gate also has complete torsion+OOP coverage in this specific 265-molecule corpus. This is empirical, not structural (torsion has 1,121 missing instances measured above; they evidently concentrate on molecules that already fail the stretch-bend gate, in this corpus) -- a different, larger, or differently-composed corpus could show a non-zero delta at this stage. Practical effect for this run: the stretch-bend-gated and complete-bonded-term-gated success counts are numerically identical here, so the corrected, narrower name (`..._stretch_bend_gated`, not "true complete-term") only matters for what the number *means*, not for its value on this particular corpus.
 
@@ -248,7 +261,7 @@ Each stage's arm is a genuinely independent arm (never a config edit to a previo
 
 ## Ring-torsion FailClosed probe
 
-1 row(s) -- demonstrates `RingTorsionApplicationPolicy::FailClosed`'s documented behavior. Not folded into any of the 12 main arms' coverage numbers (those use `DiagnosticOnly`).
+1 row(s) -- demonstrates `RingTorsionApplicationPolicy::FailClosed`'s documented behavior. Not folded into any of the 13 main arms' coverage numbers (those use `DiagnosticOnly`).
 
 ## Reference geometry subset
 
@@ -261,7 +274,7 @@ Status: **insufficient_evidence**. No experimentally-determined reference confor
 ## Data integrity
 
 - Unclassified rows: 0 (hard-gated at 0 by the report generator)
-- chematic rows sha256: `afd098159d6e9754...`
+- chematic rows sha256: `3fcfb1ca25674c57...`
 - RDKit rows sha256: `4c4e02540ede2d59...`
 - All integrity gates (row-count, unclassified, atom-mapping, missing/mismatched coords, non-finite coords, common-scorer coverage, denominator self-consistency) passed at generation time -- see `run_integrity_gates` in this script.
 
@@ -279,8 +292,8 @@ Classified per class/metric — no single overall win/loss score.
 | Stereo preservation (same judge, `RepairAndVerify`, new this round) | Parity with RDKit among successes, coverage gap remains the real cost | mmff94_strict_repair 100.0%, mmff94_with_uff_fallback_repair 100.0% satisfaction among molecules that reached success under RepairAndVerify (both match RDKit's 100% on that subset) -- but RepairAndVerify also reduces the success *count* vs. the matching Ignore arm (fewer molecules reach final success at all when repair is required to pass); see the RepairAndVerify effectiveness section for the exact paired accounting |
 | Bonded-term coverage gate, mmff94_strict -> mmff94_strict_stretch_bend_gated (new this round) | Real coverage gap surfaced, widening the gate is a real cost | 241 earlier-stage successes -> 241 under the later stage's gate (0 newly fail, 0.0% of earlier-stage successes) -- see the Bonded-term coverage gate section for the term-kind sub-classification and full molecule list |
 | Bonded-term coverage gate, mmff94_strict_stretch_bend_gated -> mmff94_strict_complete_bonded_term_gated (new this round) | Real coverage gap surfaced, widening the gate is a real cost | 241 earlier-stage successes -> 241 under the later stage's gate (0 newly fail, 0.0% of earlier-stage successes) -- see the Bonded-term coverage gate section for the term-kind sub-classification and full molecule list |
-| Bonded-term coverage gate, mmff94_with_uff_fallback -> mmff94_with_uff_fallback_stretch_bend_gated (new this round) | Real coverage gap surfaced, widening the gate is a real cost | 254 earlier-stage successes -> 253 under the later stage's gate (1 newly fail, 0.4% of earlier-stage successes) -- see the Bonded-term coverage gate section for the term-kind sub-classification and full molecule list |
-| Bonded-term coverage gate, mmff94_with_uff_fallback_stretch_bend_gated -> mmff94_with_uff_fallback_complete_bonded_term_gated (new this round) | Real coverage gap surfaced, widening the gate is a real cost | 253 earlier-stage successes -> 254 under the later stage's gate (0 newly fail, 0.0% of earlier-stage successes) -- see the Bonded-term coverage gate section for the term-kind sub-classification and full molecule list |
+| Bonded-term coverage gate, mmff94_with_uff_fallback -> mmff94_with_uff_fallback_stretch_bend_gated (new this round) | Real coverage gap surfaced, widening the gate is a real cost | 254 earlier-stage successes -> 254 under the later stage's gate (0 newly fail, 0.0% of earlier-stage successes) -- see the Bonded-term coverage gate section for the term-kind sub-classification and full molecule list |
+| Bonded-term coverage gate, mmff94_with_uff_fallback_stretch_bend_gated -> mmff94_with_uff_fallback_complete_bonded_term_gated (new this round) | Real coverage gap surfaced, widening the gate is a real cost | 254 earlier-stage successes -> 254 under the later stage's gate (0 newly fail, 0.0% of earlier-stage successes) -- see the Bonded-term coverage gate section for the term-kind sub-classification and full molecule list |
 | Force-field convergence rate | RDKit-favor, and an input to Priority 3 (Stage 1C) | chematic mmff94_with_uff_fallback 21.7% converged within 200 iterations, yet 254/265 of that arm's runs pass final validation regardless -- i.e. most successful outputs did NOT converge within 200 iterations and still passed geometry validation. Either `force_field_converged` is narrower than "produced a usable geometry" (an iteration-budget artifact, not necessarily a quality problem), or this is a real gap worth diagnosing -- Priority 3's MinimizationFailed root-causing (CatastrophicBondBlowup vs. ExcessiveResidualForce) is the next stage that should resolve which; corroborates open issues #185/#188 |
 | Known crashes | RDKit has a narrowly-scoped one; chematic none found this round | cyclopentane crash classified `nondefault_small_ring_torsion_only` -- non-default config, seed-dependent, not RDKit's own default behavior |
 | Unsupported chemistry | RDKit-favor | chematic mmff94_strict 24/265 unsupported (issue #227); RDKit's 4 arms show 0 unsupported_chemistry rows |
