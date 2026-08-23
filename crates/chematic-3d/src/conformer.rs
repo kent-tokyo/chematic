@@ -217,19 +217,68 @@ impl ConformerEnsemble {
         leaders
     }
 
-    /// Return `true` if `coords` is within `rmsd_threshold` Å of any existing
-    /// conformer after Kabsch superposition.
+    /// Return the `(index, rmsd)` of the first existing conformer within
+    /// `rmsd_threshold` Å of `coords` after Kabsch superposition, or `None` if
+    /// no existing conformer is within the threshold (including an empty
+    /// ensemble, or `rmsd_threshold <= 0.0` — the "no pruning" convention this
+    /// type's duplicate-checking methods all share).
     ///
     /// Used by ensemble generators to discard near-duplicate structures before
-    /// adding them.  O(k) Kabsch operations where k is the current ensemble size.
-    pub fn is_duplicate(&self, coords: &Coords3D, rmsd_threshold: f64) -> bool {
+    /// adding them, while still reporting *which* existing conformer matched
+    /// and at what RMSD (needed to record provenance for a discarded
+    /// candidate, not just a yes/no). O(k) Kabsch operations where k is the
+    /// current ensemble size.
+    pub fn find_duplicate(&self, coords: &Coords3D, rmsd_threshold: f64) -> Option<(usize, f64)> {
         if rmsd_threshold <= 0.0 {
-            return false;
+            return None;
         }
         let n = self.mol.atom_count();
         self.conformers
             .iter()
-            .any(|existing| kabsch_rmsd(coords, existing, n) < rmsd_threshold)
+            .enumerate()
+            .map(|(i, existing)| (i, kabsch_rmsd(coords, existing, n)))
+            .find(|(_, rmsd)| *rmsd < rmsd_threshold)
+    }
+
+    /// Return `true` if `coords` is within `rmsd_threshold` Å of any existing
+    /// conformer after Kabsch superposition. Thin wrapper over
+    /// [`find_duplicate`](Self::find_duplicate) for callers that only need the
+    /// yes/no answer.
+    pub fn is_duplicate(&self, coords: &Coords3D, rmsd_threshold: f64) -> bool {
+        self.find_duplicate(coords, rmsd_threshold).is_some()
+    }
+
+    /// Symmetry-aware counterpart to [`find_duplicate`](Self::find_duplicate):
+    /// the `(index, rmsd)` of the first existing conformer within
+    /// `rmsd_threshold` Å under [`rmsd_symmetric`] (automorphism-aware) rather
+    /// than plain fixed-index Kabsch RMSD. Correct on molecules with
+    /// interchangeable substituents (e.g. a terminal `-CF3`, see
+    /// `symmetric_rmsd_recovers_zero_when_fixed_index_rmsd_is_wrong` in this
+    /// module's tests) where `find_duplicate` can treat truly-identical
+    /// conformers as distinct. O(k) automorphism enumerations where k is the
+    /// current ensemble size — more expensive than `find_duplicate`, used
+    /// where correctness on symmetric molecules matters more than raw speed.
+    pub fn find_duplicate_symmetric(
+        &self,
+        coords: &Coords3D,
+        rmsd_threshold: f64,
+    ) -> Option<(usize, f64)> {
+        if rmsd_threshold <= 0.0 {
+            return None;
+        }
+        self.conformers
+            .iter()
+            .enumerate()
+            .map(|(i, existing)| (i, rmsd_symmetric(&self.mol, coords, existing)))
+            .find(|(_, rmsd)| *rmsd < rmsd_threshold)
+    }
+
+    /// Thin wrapper over
+    /// [`find_duplicate_symmetric`](Self::find_duplicate_symmetric) for
+    /// callers that only need the yes/no answer.
+    pub fn is_duplicate_symmetric(&self, coords: &Coords3D, rmsd_threshold: f64) -> bool {
+        self.find_duplicate_symmetric(coords, rmsd_threshold)
+            .is_some()
     }
 
     /// Mean pairwise USR dissimilarity across all conformers.
@@ -960,6 +1009,81 @@ mod tests {
         ens.add_conformer(cb).unwrap();
         let kept = ens.cluster_conformers_by_rms(0.5);
         assert_eq!(kept, vec![0, 1], "two distinct conformers → both kept");
+    }
+
+    // --- is_duplicate_symmetric ----------------------------------------------
+
+    #[test]
+    fn is_duplicate_symmetric_recovers_true_when_plain_is_duplicate_misses() {
+        // Same setup as symmetric_rmsd_recovers_zero_when_fixed_index_rmsd_is_wrong:
+        // swapping two of CF3's interchangeable fluorines gives a clearly nonzero
+        // plain Kabsch RMSD but a ~0 symmetric RMSD.
+        let mol = parse("FC(F)(F)C").unwrap();
+        let n = mol.atom_count();
+        let base = generate_coords(&mol);
+
+        let fluorines: Vec<AtomIdx> = (0..n)
+            .map(|i| AtomIdx(i as u32))
+            .filter(|&idx| mol.atom(idx).element == chematic_core::Element::F)
+            .collect();
+        let (f0, f1) = (fluorines[0], fluorines[1]);
+        let mut swapped = Coords3D::new_zeroed(n);
+        for i in 0..n {
+            swapped.set(AtomIdx(i as u32), base.get(AtomIdx(i as u32)));
+        }
+        let (p0, p1) = (base.get(f0), base.get(f1));
+        swapped.set(f0, p1);
+        swapped.set(f1, p0);
+
+        let ens = ConformerEnsemble::with_conformer(mol, base).unwrap();
+        assert!(
+            !ens.is_duplicate(&swapped, 0.05),
+            "plain Kabsch should NOT treat the swap as a near-duplicate at a tight threshold"
+        );
+        assert!(
+            ens.is_duplicate_symmetric(&swapped, 0.05),
+            "symmetric RMSD should treat the swap as a duplicate (automorphism-only difference)"
+        );
+    }
+
+    #[test]
+    fn is_duplicate_symmetric_zero_threshold_is_never_duplicate() {
+        let ens = make_ensemble();
+        let c = ens.get_conformer(0).unwrap().clone();
+        assert!(!ens.is_duplicate_symmetric(&c, 0.0));
+    }
+
+    #[test]
+    fn find_duplicate_reports_matching_index_and_rmsd() {
+        let ens = make_ensemble(); // one conformer, index 0
+        let c = ens.get_conformer(0).unwrap().clone();
+        let (idx, rmsd) = ens
+            .find_duplicate(&c, 0.5)
+            .expect("identical coords must match");
+        assert_eq!(idx, 0);
+        assert!(
+            rmsd.abs() < 1e-9,
+            "self-comparison RMSD should be ~0, got {rmsd}"
+        );
+    }
+
+    #[test]
+    fn find_duplicate_none_when_no_match() {
+        let mol = parse("CCC").unwrap();
+        let n = mol.atom_count();
+        let mut far = Coords3D::new_zeroed(n);
+        for i in 0..n {
+            far.set(
+                AtomIdx(i as u32),
+                Point3 {
+                    x: 0.0,
+                    y: i as f64 * 100.0,
+                    z: 0.0,
+                },
+            );
+        }
+        let ens = make_ensemble();
+        assert!(ens.find_duplicate(&far, 0.5).is_none());
     }
 
     #[test]
