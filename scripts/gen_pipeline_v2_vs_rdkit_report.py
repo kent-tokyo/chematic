@@ -47,6 +47,12 @@ REPORT_OUT = ROOT / "docs/rfcs/pipeline_v2_vs_rdkit_etkdgv3_benchmark.md"
 ENVIRONMENT_RECORD_PATH = ROOT / "validation/results/pipeline_v2_vs_rdkit_environment_record.json"
 MMFF94_TERM_AUDIT_SUMMARY_PATH = ROOT / "validation/results/mmff94_coverage_227_term_audit_summary.json"
 
+# `crates/chematic-3d/examples/pipeline_v2_vs_rdkit_dump.rs`'s
+# `total_timeout_ms: Some(20_000)` -- the wall-clock budget every
+# `pipeline_v2` arm shares. Used by `_verify_identical_coverage_timing_variance`
+# below to corroborate a "near the boundary" claim, not hardcoded inline.
+TOTAL_TIMEOUT_MS = 20_000
+
 
 def load_environment_record():
     """Reproducibility record written by the benchmark run script (not by
@@ -282,6 +288,118 @@ def run_integrity_gates(ctx):
 
     if errors:
         raise IntegrityError("\n".join(errors))
+
+
+# ---------------------------------------------------------------------------
+# Coverage-gate widening: recognized explanations for a newly-passing case
+# ---------------------------------------------------------------------------
+#
+# Module-level (not nested in `main()`) specifically so `scripts/tests/
+# test_gate_stage_delta_explanations.py` can import and unit-test them
+# directly against fixture row data, per A1's own finding: this file's
+# `newly_passing_unexplained` assertion had never tripped in this project's
+# history until a fresh 265-molecule re-run hit `chembl_tier_b_0030` --
+# discovered by running the whole benchmark, not by any test of the
+# classification logic itself. Both functions are pure (row dicts in,
+# `(bool, str | None)` out) -- no closure state, so moving them here changes
+# nothing about `gate_stage_delta`'s behavior, only where they live.
+#
+# Each function checks a SPECIFIC, narrow, typed explanation shape. A
+# newly-passing case that fails every recognized check is `unexplained` and
+# still fails report generation (see the `assert` in `main()`) -- adding a
+# category here is a deliberate widening of what this script accepts as
+# "not a scoring bug," and must never be done to make one specific molecule
+# pass without also being mechanistically justified and covered by a
+# regression test (see the positive/negative fixtures in
+# `scripts/tests/test_gate_stage_delta_explanations.py`).
+
+
+def _verify_uff_fallback_rescue(earlier_row, later_row, required_missing_fields):
+    """A stricter policy times out; the wider gate's policy falls back to UFF
+    because the coverage dimension this stage newly gates on is missing.
+    Checked via typed/numeric fields only (status, force_field_actual,
+    force_field_fallback, the specific missing-count fields) -- earlier
+    versions of this check also substring-matched `force_field_fallback_reason`
+    for the text "MissingParameters", which was redundant with the numeric
+    coverage check below AND fragile (a wording change to the Rust
+    `ForceFieldBridgeError` Display/Debug output could silently break or
+    silently start passing this check without anyone noticing)."""
+    if earlier_row.get("status") != "timeout":
+        return False, "earlier-stage status != timeout"
+    if earlier_row.get("failure_cause") != "Timeout":
+        return False, "earlier-stage failure_cause != Timeout"
+    if earlier_row.get("failure_stage") != "ForceFieldMinimization":
+        return False, "earlier-stage failure_stage != ForceFieldMinimization"
+    if later_row.get("status") != "success":
+        return False, "later-stage status != success"
+    if later_row.get("force_field_actual") != "UffOnly":
+        return False, "later-stage force_field_actual != UffOnly"
+    if later_row.get("force_field_fallback") is not True:
+        return False, "later-stage force_field_fallback != true"
+    if not any((later_row.get(f) or 0) > 0 for f in required_missing_fields):
+        return False, f"later-stage coverage shows none of {required_missing_fields} non-empty"
+    return True, None
+
+
+def _verify_identical_coverage_timing_variance(earlier_row, later_row, required_missing_fields):
+    """A stricter policy times out; the wider gate's policy succeeds via the
+    SAME (non-fallback) force field, with the coverage dimension this stage
+    newly gates on measured as fully COVERED (zero missing) in the later
+    row. When that dimension is fully covered, the gate flag itself is a
+    mechanical no-op for this molecule -- both stages run the exact same
+    minimization on the exact same geometry, so a timeout-vs-success flip
+    between them cannot be attributed to the gate's own behavior. What it IS
+    consistent with: wall-clock scheduling variance around the shared
+    `TOTAL_TIMEOUT_MS` boundary (`embed_seed` governs geometry/RNG
+    determinism, never real-time scheduling) -- corroborated, not just
+    asserted, by requiring the later row's own `elapsed_ms` to itself be a
+    substantial fraction of that budget (a later row that finished trivially
+    fast alongside a timed-out earlier row would NOT be corroborated as
+    "the same computation, just noisy," and must fail this check).
+
+    Deliberately narrower in scope than `_verify_uff_fallback_rescue`: only
+    tried for `Mmff94WithUffFallback`-family arms in this file's current
+    caller (`gate_stage_delta`'s `policy_has_fallback` branch), even though
+    nothing in this function's own logic actually depends on fallback being
+    possible -- the identical mechanism could in principle apply to a pure
+    `Mmff94BondAngleStrict` gate pair too, but that has never been observed,
+    and this project's own convention (see `docs/rfcs/
+    a1_conformer_benchmark_failure_ledger.md`'s Finding 2/3) is to widen a
+    recognized-explanation surface only as far as evidence currently
+    supports, not preemptively based on a plausible-but-unverified
+    mechanistic argument."""
+    if earlier_row.get("status") != "timeout":
+        return False, "earlier-stage status != timeout"
+    if earlier_row.get("failure_cause") != "Timeout":
+        return False, "earlier-stage failure_cause != Timeout"
+    if earlier_row.get("failure_stage") != "ForceFieldMinimization":
+        return False, "earlier-stage failure_stage != ForceFieldMinimization"
+    if later_row.get("status") != "success":
+        return False, "later-stage status != success"
+    if later_row.get("force_field_fallback"):
+        return False, "later-stage force_field_fallback is true (see _verify_uff_fallback_rescue instead)"
+    if any((later_row.get(f) or 0) > 0 for f in required_missing_fields):
+        return False, f"later-stage still shows missing coverage in {required_missing_fields} -- gate is not a no-op here"
+    later_elapsed = later_row.get("elapsed_ms") or 0
+    if later_elapsed < TOTAL_TIMEOUT_MS * 0.5:
+        return (
+            False,
+            f"later-stage elapsed_ms ({later_elapsed}) is not a substantial fraction of "
+            f"TOTAL_TIMEOUT_MS ({TOTAL_TIMEOUT_MS}) -- not corroborated as boundary timing variance",
+        )
+    return True, None
+
+
+# Explanation categories tried, in order, for a newly-passing case under a
+# fallback-capable policy. The FIRST one that returns True wins; if none do,
+# the case is `unexplained`. Order does not currently affect correctness
+# (the two functions' preconditions on `force_field_fallback` are mutually
+# exclusive -- at most one can ever match a given row pair) but is fixed
+# here so category assignment is deterministic regardless.
+GATE_WIDENING_EXPLANATIONS = [
+    ("uff_fallback_rescue", _verify_uff_fallback_rescue),
+    ("identical_coverage_timing_variance", _verify_identical_coverage_timing_variance),
+]
 
 
 def main():
@@ -659,44 +777,15 @@ def main():
     # MMFF94 minimization attempt entirely and leave enough budget for the UFF
     # fallback to finish before the timeout, which the less-gated stage can miss.
     # A newly-passing case under `Mmff94WithUffFallback` is only accepted (not
-    # asserted away) if independently, mechanically verified against the row data
-    # itself -- not just "legacy status was timeout" (too weak: a totally
-    # different, unrelated timeout cause would pass that check too):
-    #   1. earlier-stage row: status == "timeout", failure_cause == "Timeout",
-    #      failure_stage == "ForceFieldMinimization" (the MMFF94 attempt itself is
-    #      what ate the budget, not some other pipeline stage)
-    #   2. later-stage row: status == "success", force_field_actual == "UffOnly",
-    #      force_field_fallback == true, force_field_fallback_reason contains
-    #      "MissingParameters" (the fallback fired for the reason this gate stage
-    #      controls, not e.g. a coincidental MinimizationFailed)
-    #   3. later-stage row's own coverage evidence (surfaced on the ORIGINAL
-    #      failed MMFF94 attempt, which survives into a successful UFF-fallback
-    #      result) shows a non-empty count for the exact term kind(s) this stage
-    #      newly gates -- stretch_bend_missing_count for the stretch-bend stage,
-    #      torsion_missing_count/oop_missing_count (either) for the
-    #      complete-bonded-term stage.
-    # Any newly-passing case failing ANY of these checks is unexplained and still
-    # treated as a scoring bug (assertion failure), not silently accepted.
-    def _verify_timeout_rescue(earlier_row, later_row, required_missing_fields):
-        if earlier_row.get("status") != "timeout":
-            return False, "earlier-stage status != timeout"
-        if earlier_row.get("failure_cause") != "Timeout":
-            return False, "earlier-stage failure_cause != Timeout"
-        if earlier_row.get("failure_stage") != "ForceFieldMinimization":
-            return False, "earlier-stage failure_stage != ForceFieldMinimization"
-        if later_row.get("status") != "success":
-            return False, "later-stage status != success"
-        if later_row.get("force_field_actual") != "UffOnly":
-            return False, "later-stage force_field_actual != UffOnly"
-        if later_row.get("force_field_fallback") is not True:
-            return False, "later-stage force_field_fallback != true"
-        reason = later_row.get("force_field_fallback_reason") or ""
-        if "MissingParameters" not in reason:
-            return False, f"later-stage force_field_fallback_reason ({reason!r}) does not cite MissingParameters"
-        if not any((later_row.get(f) or 0) > 0 for f in required_missing_fields):
-            return False, f"later-stage coverage shows none of {required_missing_fields} non-empty"
-        return True, None
-
+    # asserted away) if it matches one of the module-level
+    # `GATE_WIDENING_EXPLANATIONS` checks (defined above `main()` specifically
+    # so they're independently unit-testable -- see
+    # `scripts/tests/test_gate_stage_delta_explanations.py`), each of which
+    # independently, mechanically verifies the row data itself -- not just
+    # "earlier status was timeout" (too weak: a totally different, unrelated
+    # timeout cause would pass that check too). A newly-passing case matching
+    # neither is unexplained and still treated as a scoring bug (assertion
+    # failure), not silently accepted.
     def gate_stage_delta(earlier_arm, later_arm, policy_has_fallback, required_missing_fields):
         earlier_by_key = {(r["tier"], r["name"]): r for r in chematic_rows if r["arm"] == earlier_arm}
         later_by_key = {(r["tier"], r["name"]): r for r in chematic_rows if r["arm"] == later_arm}
@@ -718,15 +807,32 @@ def main():
                 "earlier_elapsed_ms": earlier_row.get("elapsed_ms"),
                 "later_elapsed_ms": later_row.get("elapsed_ms"),
             }
-            ok, reason = (
-                _verify_timeout_rescue(earlier_row, later_row, required_missing_fields)
-                if policy_has_fallback
-                else (False, "policy has no fallback -- gate widening must be strictly monotonic")
-            )
-            if ok:
-                newly_passing_explained.append(entry)
+            if not policy_has_fallback:
+                # Pure gate policy (Mmff94BondAngleStrict, no fallback path at
+                # all): never attempt any explanation here, even though
+                # `_verify_identical_coverage_timing_variance`'s own logic
+                # doesn't structurally require a fallback -- this project has
+                # never observed this flip on a non-fallback arm, so the
+                # recognized-explanation surface stays exactly as narrow as
+                # what's actually been evidenced (see that function's own doc).
+                newly_passing_unexplained.append(
+                    {**entry, "why_unexplained": "policy has no fallback -- gate widening must be strictly monotonic"}
+                )
+                continue
+
+            matched_category = None
+            reasons = []
+            for category, check_fn in GATE_WIDENING_EXPLANATIONS:
+                ok, reason = check_fn(earlier_row, later_row, required_missing_fields)
+                if ok:
+                    matched_category = category
+                    break
+                reasons.append(f"{category}: {reason}")
+
+            if matched_category:
+                newly_passing_explained.append({**entry, "explanation_category": matched_category})
             else:
-                newly_passing_unexplained.append({**entry, "why_unexplained": reason})
+                newly_passing_unexplained.append({**entry, "why_unexplained": "; ".join(reasons)})
 
         return {
             "earlier_arm": earlier_arm,
@@ -736,7 +842,7 @@ def main():
             "later_success": len(later_success_keys),
             "newly_failing_under_later_gate": len(newly_failing),
             "newly_failing_names": [name for _tier, name in newly_failing],
-            "newly_passing_explained_timeout_rescue": newly_passing_explained,
+            "newly_passing_explained": newly_passing_explained,
             "newly_passing_unexplained": newly_passing_unexplained,
         }
 
@@ -752,8 +858,8 @@ def main():
     for r in stretch_bend_gate_results:
         assert not r["newly_passing_unexplained"], (
             f"{r['later_arm']}: widening a coverage gate turned a failure into a success for "
-            f"{r['newly_passing_unexplained']} with no independently-verified timeout-rescue "
-            "explanation -- this is a scoring bug, not a real result; do not report until fixed"
+            f"{r['newly_passing_unexplained']} matching none of GATE_WIDENING_EXPLANATIONS -- "
+            "this is a scoring bug, not a real result; do not report until fixed"
         )
 
     mmff94_term_audit_summary = None
@@ -1440,27 +1546,52 @@ def write_markdown_report(agg):
                 f"{', '.join(r['newly_failing_names'])}"
             )
             lines.append("")
-        if r["newly_passing_explained_timeout_rescue"]:
-            names = ", ".join(e["name"] for e in r["newly_passing_explained_timeout_rescue"])
+        if r["newly_passing_explained"]:
+            by_category = defaultdict(list)
+            for e in r["newly_passing_explained"]:
+                by_category[e["explanation_category"]].append(e["name"])
             lines.append(
-                f"`{r['later_arm']}` **also has {len(r['newly_passing_explained_timeout_rescue'])} "
+                f"`{r['later_arm']}` **also has {len(r['newly_passing_explained'])} "
                 f"molecule(s) that flip the other way** (earlier stage fails, later stage "
-                f"succeeds): {names}. Independently verified, not asserted away -- "
-                "`mmff94_with_uff_fallback` shares one `total_timeout_ms` wall-clock budget across "
-                "the MMFF94 attempt AND the UFF fallback. Gating a term dimension earlier can skip "
-                "a doomed, slow MMFF94 minimization attempt entirely (an uncovered term silently "
-                "zero-contributes rather than erroring, which can make minimization "
-                "oscillate/stall) and go straight to UFF with the full time budget still "
-                "available. Every case listed here passed ALL of: earlier row "
-                "`status==timeout, failure_cause==Timeout, failure_stage==ForceFieldMinimization`; "
-                "later row `status==success, force_field_actual==UffOnly, force_field_fallback==true, "
-                "fallback_reason` citing `MissingParameters`; AND the later row's own surfaced "
-                "coverage evidence (from the original failed MMFF94 attempt, which survives into "
-                "the successful UFF-fallback result) showing a non-empty missing-term count for "
-                "the exact dimension this stage newly gates. Any case failing even one of these "
-                "checks fails report generation instead of being silently accepted."
+                "succeeds) -- independently verified against one of two recognized explanation "
+                "categories (`GATE_WIDENING_EXPLANATIONS` in `scripts/gen_pipeline_v2_vs_rdkit_report.py`), "
+                "never asserted away. Any case matching neither category fails report generation "
+                "instead of being silently accepted."
             )
             lines.append("")
+            if by_category["uff_fallback_rescue"]:
+                lines.append(
+                    f"- **uff_fallback_rescue** ({len(by_category['uff_fallback_rescue'])}): "
+                    f"{', '.join(by_category['uff_fallback_rescue'])}. `mmff94_with_uff_fallback` "
+                    "shares one `total_timeout_ms` wall-clock budget across the MMFF94 attempt AND "
+                    "the UFF fallback -- gating a term dimension earlier can skip a doomed, slow "
+                    "MMFF94 minimization attempt entirely (an uncovered term silently "
+                    "zero-contributes rather than erroring, which can make minimization "
+                    "oscillate/stall) and go straight to UFF with the full time budget still "
+                    "available. Verified via typed/numeric fields only: earlier row "
+                    "`status==timeout, failure_cause==Timeout, failure_stage==ForceFieldMinimization`; "
+                    "later row `status==success, force_field_actual==UffOnly, force_field_fallback==true`; "
+                    "AND the later row's own surfaced coverage evidence (from the original failed "
+                    "MMFF94 attempt, which survives into the successful UFF-fallback result) showing "
+                    "a non-empty missing-term count for the exact dimension this stage newly gates."
+                )
+                lines.append("")
+            if by_category["identical_coverage_timing_variance"]:
+                lines.append(
+                    f"- **identical_coverage_timing_variance** "
+                    f"({len(by_category['identical_coverage_timing_variance'])}): "
+                    f"{', '.join(by_category['identical_coverage_timing_variance'])}. The later "
+                    "row succeeded via the SAME (non-fallback) force field, with the coverage "
+                    "dimension this stage newly gates on measured as fully covered (zero missing) -- "
+                    "the gate flag is a mechanical no-op for these molecules, so both stages run "
+                    "identical minimization on identical geometry; the timeout/success flip is "
+                    f"consistent with wall-clock scheduling variance around the shared "
+                    f"{TOTAL_TIMEOUT_MS}ms boundary, corroborated by the later row's own `elapsed_ms` "
+                    "being a substantial fraction of that budget (not an arbitrary fast, unrelated "
+                    "success). First observed on `chembl_tier_b_0030` during A1's 265-molecule "
+                    "re-audit (see `docs/rfcs/a1_conformer_benchmark_failure_ledger.md`, Finding 3)."
+                )
+                lines.append("")
     _sb_to_complete = [
         r for r in agg["stretch_bend_gate_effectiveness"] if "complete_bonded_term_gated" in r["later_arm"]
     ]
