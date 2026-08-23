@@ -751,7 +751,12 @@ fn apply_declared_ez_bounds(
 /// `(base, attempt)` pair always produces the same derived seed, so a fixed
 /// `random_seed` reproduces the exact same sequence of attempts (and thus the exact
 /// same final result) every time.
-fn derive_attempt_seed(base: u64, attempt: usize) -> u64 {
+///
+/// `pub(crate)`, not private: reused as-is by `ensemble_v2`'s outer
+/// multi-conformer loop (A2) rather than inventing a second derivation scheme
+/// for the same "derive N distinct, deterministic seeds from one base seed"
+/// need. Still not part of this crate's public API.
+pub(crate) fn derive_attempt_seed(base: u64, attempt: usize) -> u64 {
     const GOLDEN: u64 = 0x9E37_79B9_7F4A_7C15;
     const OFFSET: u64 = 0xD1B5_4A32_D192_ED03;
     base ^ (attempt as u64).wrapping_mul(GOLDEN).wrapping_add(OFFSET)

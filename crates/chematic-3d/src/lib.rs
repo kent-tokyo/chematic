@@ -20,6 +20,7 @@ pub mod determine_bonds;
 pub mod dg;
 pub mod dg_fft;
 pub mod distance_geometry_v2;
+pub mod ensemble_v2;
 pub mod etkdg;
 pub mod etkdg_knowledge;
 pub mod md;
@@ -54,6 +55,9 @@ pub use descriptors_3d::{
     autocorr_3d, getaway_descriptors, rdf_descriptors, whim_descriptors, whim_getaway_combined,
 };
 pub use dg::generate_coords;
+pub use ensemble_v2::{
+    ConformerAttempt, ConformerSuccess, EnsembleV2Config, EnsembleV2Result, embed_ensemble_v2,
+};
 pub use etkdg::generate_coords_etkdg;
 pub use md::{MDConfig, MDFrame, MDTrajectory, Thermostat, run_md};
 pub use minimize::{

@@ -232,6 +232,24 @@ impl ConformerEnsemble {
             .any(|existing| kabsch_rmsd(coords, existing, n) < rmsd_threshold)
     }
 
+    /// Symmetry-aware counterpart to [`is_duplicate`](Self::is_duplicate): `true`
+    /// if `coords` is within `rmsd_threshold` Å of any existing conformer under
+    /// [`rmsd_symmetric`] (automorphism-aware) rather than plain fixed-index
+    /// Kabsch RMSD. Correct on molecules with interchangeable substituents
+    /// (e.g. a terminal `-CF3`, see `symmetric_rmsd_recovers_zero_when_fixed_index_rmsd_is_wrong`
+    /// in this module's tests) where `is_duplicate` can treat truly-identical
+    /// conformers as distinct. O(k) automorphism enumerations where k is the
+    /// current ensemble size — more expensive than `is_duplicate`, used where
+    /// correctness on symmetric molecules matters more than raw speed.
+    pub fn is_duplicate_symmetric(&self, coords: &Coords3D, rmsd_threshold: f64) -> bool {
+        if rmsd_threshold <= 0.0 {
+            return false;
+        }
+        self.conformers
+            .iter()
+            .any(|existing| rmsd_symmetric(&self.mol, coords, existing) < rmsd_threshold)
+    }
+
     /// Mean pairwise USR dissimilarity across all conformers.
     ///
     /// Returns a value in `[0.0, 1.0]`: 0.0 means all conformers are identical
@@ -960,6 +978,48 @@ mod tests {
         ens.add_conformer(cb).unwrap();
         let kept = ens.cluster_conformers_by_rms(0.5);
         assert_eq!(kept, vec![0, 1], "two distinct conformers → both kept");
+    }
+
+    // --- is_duplicate_symmetric ----------------------------------------------
+
+    #[test]
+    fn is_duplicate_symmetric_recovers_true_when_plain_is_duplicate_misses() {
+        // Same setup as symmetric_rmsd_recovers_zero_when_fixed_index_rmsd_is_wrong:
+        // swapping two of CF3's interchangeable fluorines gives a clearly nonzero
+        // plain Kabsch RMSD but a ~0 symmetric RMSD.
+        let mol = parse("FC(F)(F)C").unwrap();
+        let n = mol.atom_count();
+        let base = generate_coords(&mol);
+
+        let fluorines: Vec<AtomIdx> = (0..n)
+            .map(|i| AtomIdx(i as u32))
+            .filter(|&idx| mol.atom(idx).element == chematic_core::Element::F)
+            .collect();
+        let (f0, f1) = (fluorines[0], fluorines[1]);
+        let mut swapped = Coords3D::new_zeroed(n);
+        for i in 0..n {
+            swapped.set(AtomIdx(i as u32), base.get(AtomIdx(i as u32)));
+        }
+        let (p0, p1) = (base.get(f0), base.get(f1));
+        swapped.set(f0, p1);
+        swapped.set(f1, p0);
+
+        let ens = ConformerEnsemble::with_conformer(mol, base).unwrap();
+        assert!(
+            !ens.is_duplicate(&swapped, 0.05),
+            "plain Kabsch should NOT treat the swap as a near-duplicate at a tight threshold"
+        );
+        assert!(
+            ens.is_duplicate_symmetric(&swapped, 0.05),
+            "symmetric RMSD should treat the swap as a duplicate (automorphism-only difference)"
+        );
+    }
+
+    #[test]
+    fn is_duplicate_symmetric_zero_threshold_is_never_duplicate() {
+        let ens = make_ensemble();
+        let c = ens.get_conformer(0).unwrap().clone();
+        assert!(!ens.is_duplicate_symmetric(&c, 0.0));
     }
 
     #[test]
