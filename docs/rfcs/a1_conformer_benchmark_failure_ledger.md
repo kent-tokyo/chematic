@@ -122,11 +122,25 @@ previously-undocumented methodology gap in an already-existing,
 multiply-reused benchmark script — not a new defect in the underlying
 `pipeline_v2` algorithm itself.
 
-**Not fixed this round** (diagnosis only — re-categorizing manifest
-entries or changing the report generator's grouping logic is itself a
-methodology change that deserves its own small, explicit decision, not a
-silent edit buried inside a "just re-running the numbers" round). Flagged
-as Discovered Work for a tiny, clearly-scoped follow-up.
+**Fixed in the A1/A2 closeout round** (2026-08-23, separate PR from the
+original diagnosis): `scripts/gen_pipeline_v2_vs_rdkit_tier_b_manifest.py`
+now detects any ring ≥`MACROCYCLE_MIN` (9) via RDKit ring info and tags
+`primary_category: "macrocycle"` instead of hardcoding `"drug_like"` for
+every accepted molecule — the actual root cause, not just the 6 known
+symptoms, so a future regeneration of this manifest can't silently
+reintroduce the same mis-categorization. Re-running the fixed generator
+reproduces the exact same 6-molecule set found here (cross-checked against
+a manual edit before adopting the generator's own output — see the PR),
+plus one pre-existing, unrelated `source_acquisition` path-drift fix the
+generator had already accumulated (`docs/descriptor_census_rfc.md` →
+`docs/rfcs/descriptor_census_rfc.md`) that this round's regeneration
+picked up incidentally. No molecule ID, SMILES, or measured value changed
+— only the categorization label, confirmed by a new regression test
+(`scripts/tests/test_tier_b_macrocycle_categorization.py`) that
+independently re-derives every one of the 200 molecules' expected category
+from its SMILES and asserts it matches the manifest, not just the 6 known
+cases (guards against a fix that moved the wrong molecules, not only
+against one that missed some).
 
 ### 3. The aggregation script's own self-consistency check blocked report generation this round — and the trip is a third, independent symptom of Finding 2
 
@@ -186,28 +200,56 @@ consequences: these six molecules are not just miscounted in the
 among the corpus's timeout-boundary-adjacent cases, which a
 category-blended report cannot surface.
 
-**Per this round's own no-silent-scoring-changes discipline** (the same
-reasoning as Finding 2's "not fixed this round"), the assertion was not
-weakened, bypassed, or patched. Effect: `gen_pipeline_v2_vs_rdkit_report.py`
-could not complete, so `docs/rfcs/pipeline_v2_vs_rdkit_etkdgv3_benchmark.md`
-and `validation/results/pipeline_v2_vs_rdkit_aggregate.json` were **not**
-regenerated this round — see "Files touched," below. The numbers in the
-next section were instead computed directly from the two already-produced
-JSONL files (`pipeline_v2_vs_rdkit_chematic_rows.jsonl`,
-`..._rdkit_rows.jsonl`) plus one existing, unmodified Rust binary
-(`pipeline_v2_vs_rdkit_common_scorer`, run both in its default flag-free
-form and once with its existing opt-in `--pair` flag), via a throwaway,
-uncommitted script — no scoring logic in any committed file was changed.
+**At the time of this round's own diagnosis**, per the no-silent-scoring-
+changes discipline, the assertion was deliberately left untouched:
+`gen_pipeline_v2_vs_rdkit_report.py` could not complete, so
+`docs/rfcs/pipeline_v2_vs_rdkit_etkdgv3_benchmark.md` and
+`validation/results/pipeline_v2_vs_rdkit_aggregate.json` were not
+regenerated at that point, and the "Measured results" section below was
+instead computed directly from the two already-produced JSONL files via a
+throwaway, uncommitted script.
 
-**Parked, not decided this round**: whether/how to extend
-`_verify_timeout_rescue`'s recognized-explanation set to also cover
-"succeeded within budget via the non-fallback path, on a molecule already
-known to sit near the timeout boundary" is a real methodology decision
-(it would need to define what independent evidence makes a flip
-"explained" versus accepting these as permanently rare, disclosed,
-report-blocking events). Not made this round; needs explicit
-authorization before touching `scripts/gen_pipeline_v2_vs_rdkit_report.py`'s
-scoring logic.
+**Fixed in the A1/A2 closeout round** (2026-08-23, explicit, separate
+authorization to touch this script's scoring logic — see that round's own
+instructions): added a second, narrower recognized-explanation category,
+`identical_coverage_timing_variance`, alongside the pre-existing
+`uff_fallback_rescue` check (both now module-level functions in
+`scripts/gen_pipeline_v2_vs_rdkit_report.py`, collected in
+`GATE_WIDENING_EXPLANATIONS`, specifically so they're independently
+unit-testable rather than only exercisable by running the full 265-corpus
+benchmark). `identical_coverage_timing_variance` requires: later-stage
+success via the SAME (non-fallback) force field, the exact coverage
+dimension this stage newly gates on measured as fully covered (zero
+missing) in the later row — i.e. the gate flag is a mechanical no-op for
+this molecule, so both stages ran identical minimization on identical
+geometry — AND the later row's own `elapsed_ms` corroborated as a
+substantial fraction of `TOTAL_TIMEOUT_MS` (not an arbitrary fast,
+unrelated success). Deliberately **not** extended to the pure
+`Mmff94BondAngleStrict` (no-fallback) gate pairs, even though nothing in
+the check's own logic requires a fallback path to exist — this project has
+never observed this flip on a non-fallback arm, so the recognized surface
+stays exactly as narrow as what's actually been evidenced, per this
+round's own explicit instruction not to unconditionally permit unknown
+improvements.
+
+Regression tests in `scripts/tests/test_gate_stage_delta_explanations.py`:
+two positive fixtures (a synthetic `uff_fallback_rescue` case confirming
+the pre-existing category still matches after the refactor that dropped a
+fragile substring match on `force_field_fallback_reason`; the REAL
+`chembl_tier_b_0030` row pair, matching exactly `identical_coverage_
+timing_variance` and nothing else) and two negative fixtures (a
+superficially-similar case that still shows missing coverage in the gated
+dimension — must be rejected by every category; a fast, uncorroborated
+success with fully-covered coverage — must still be rejected, proving the
+`elapsed_ms` corroboration check is load-bearing, not decorative).
+
+With this fix, `gen_pipeline_v2_vs_rdkit_report.py` now completes against
+the same fresh JSONL files this round already produced — no 265-corpus
+re-embedding was needed. `docs/rfcs/pipeline_v2_vs_rdkit_etkdgv3_benchmark.md`
+and `validation/results/pipeline_v2_vs_rdkit_aggregate.json` are
+regenerated and current as of this update (see "Files touched," below);
+the fresh-run figures reported informally in "Measured results" below are
+now independently corroborated by the official generator's own output.
 
 ## Measured results (fresh 265-molecule re-run, 2026-08-23, commit range on this branch)
 
@@ -249,24 +291,67 @@ existing `pipeline_v2_vs_rdkit_common_scorer` binary — not from
   max 13,032 ms (n=241) — 0 molecules exceed 15,000 ms on this specific,
   least-gated arm (the near-timeout cases in Finding 3 only appear on
   more heavily-gated/repair-variant arms for the same molecule).
+- **Correction (A1/A2 closeout round, 2026-08-23) to this section's
+  original claims below**: this ledger originally said the RMSD figure
+  here was "the first time this specific 265-molecule benchmark has
+  measured this number" and that `docs/benchmark.md`/`docs/rdkit-
+  migration.md`'s corrected "no RMSD/TFD comparison exists" claim (PR
+  #369) "referred to a different, 227-molecule BCI-residual corpus, not
+  this one." **Both statements were wrong.** `validation/results/
+  mmff94_bci_gap_227_phase2_report.md` states its own corpus explicitly:
+  "Corpus: 265 molecules (`validation/manifests/pipeline_v2_vs_rdkit_
+  etkdgv3_tier_{a,b}.json`)" — the SAME corpus this A1 round re-audited.
+  "227" in that report's name and this project's other `_227` script
+  names (`pipeline_v2_vs_rdkit_tfd_227.py`,
+  `mmff94_bci_charges_oracle_227.py`, etc.) refers to **issue #227** (the
+  MMFF94 bond/angle/BCI coverage gap this whole workstream traces back
+  to), not a molecule count — a naming-convention misreading on this
+  session's part, not a discrepancy in the underlying project docs
+  (`docs/benchmark.md`/`docs/rdkit-migration.md`/`CHANGELOG.md` all
+  already correctly say "265-molecule corpus" when citing that report;
+  PR #369's original correction was accurate, this ledger's later
+  restatement of it was not).
+
+  What this means for A1's own RMSD/TFD figures below: they are **not**
+  first-ever measurements — they **reconfirm** numbers the 2026-08-16
+  Phase 2 report already established for this exact corpus/arm pairing
+  (`RMSD (symmetric, vs rdkit_etkdgv3_mmff94) mean 1.685 Å`, `TFD mean
+  0.2228`, per `CHANGELOG.md`'s own `[0.17.0]` entry). That is still
+  useful — re-verifying rather than assuming a prior measurement still
+  holds is exactly this round's stated purpose — but "reconfirmed" and
+  "first time measured" are different claims, and only the former is
+  true here.
 - **RMSD vs. RDKit, `chematic_pipeline_v2_mmff94_strict` vs.
-  `rdkit_etkdgv3_mmff94`** (RDKit's own MMFF94 arm) — the **first time
-  this specific 265-molecule benchmark has measured this number**;
-  `docs/benchmark.md`/`docs/rdkit-migration.md`'s "no RMSD/TFD comparison
-  exists" claim (corrected in PR #369) referred to a *different*,
-  227-molecule BCI-residual corpus, not this one. Computed via the
+  `rdkit_etkdgv3_mmff94`** (RDKit's own MMFF94 arm), computed via the
   existing `pipeline_v2_vs_rdkit_common_scorer` binary's opt-in `--pair`
   flag (no committed-file or scoring-logic change): n=240 pairable
   molecules (1 of the 241 `mmff94_strict` successes has no RDKit-side
   MMFF94 success to pair against — not a join failure, RDKit itself
   didn't succeed on that molecule under its own MMFF94 arm), mean 1.678
-  Å, median 1.503 Å, p90 3.456 Å, max 6.144 Å. Macrocycle subset (n=11):
-  mean 1.610 Å, max 3.092 Å — comparable to, not worse than, the
-  full-corpus figure. **TFD (torsion fingerprint deviation) is not
-  computed anywhere in this project's codebase** (confirmed absent by
-  direct grep) — it is not a gap introduced or left open by this round,
-  it has simply never existed as a measured axis in chematic, on this or
-  any other corpus.
+  Å, median 1.503 Å, p90 3.456 Å, max 6.144 Å — closely reconfirms the
+  Phase 2 report's 1.685 Å mean on the same pairing (small delta
+  consistent with the MMFF94-coverage-driven success-count/geometry
+  changes already tracked between v0.17.0 and current `main`, not
+  investigated further this round). Macrocycle subset (n=11): mean 1.610
+  Å, max 3.092 Å — comparable to, not worse than, the full-corpus figure.
+- **TFD vs. RDKit, same pairing**, computed via the existing
+  `scripts/pipeline_v2_vs_rdkit_tfd_227.py` (reads the same manifests and
+  dump JSONL files this benchmark already produces; calls RDKit's own
+  `TorsionFingerprints.GetTFDBetweenMolecules` directly, no hand-rolled
+  TFD implementation — the same "reuse the real library" convention
+  already established for RMSD): n=234 pairable (6 excluded —
+  `chfclbr_R/S`, `quaternary_1/2_R/S`, all rigid/low-rotatable-bond
+  molecules where RDKit's own `GetTFDBetweenMolecules` raises `list index
+  out of range`, a known RDKit behavior for too-few-torsion cases, not a
+  bug in this measurement), mean 0.223, median 0.179, p90 0.478, max
+  1.698 (TFD is conventionally reported in [0, 1]; this corpus's max
+  slightly exceeds that range for at least one molecule pair — reported
+  as measured, not clipped or explained away, since the cause was not
+  investigated this round) — closely reconfirms the Phase 2 report's
+  0.2228 mean/0.1797 median/0.4779 p90 on the same pairing. Macrocycle
+  subset (n=11, all pairable): mean 0.059, max 0.121 — lower (better
+  torsional agreement) than the full-corpus mean, consistent with the
+  RMSD finding that this corpus's macrocycles are not a weak point.
 - **Best-of-N parity, reconfirmed structurally**: chematic still has 0
   best-of-N arm across its 13 `pipeline_v2`/legacy arms; RDKit's
   `rdkit_etkdgv3_best_of_n` (N=10) remains the only multi-restart arm in

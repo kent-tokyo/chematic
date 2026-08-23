@@ -173,6 +173,59 @@ risk, verdict.
 - **Verdict: NEEDS-RESEARCH** until A1 lands (the exact wiring and
   failure-taxonomy shape depend on what A1's audit finds).
 
+**Status (2026-08-23): DONE — merged (PR #371, `cc0c0b1`; hardening pass
+`669342a` after a real algorithm-ordering bug was caught in code review).**
+A1's research question is answered: `embed_pipeline_v2`'s own
+`max_attempts`/`timeout_ms` retry the *same* target conformer, they don't
+generate different ones — a genuinely **new outer loop** was required, not
+an in-place extension. What actually shipped, vs. this section's original
+sketch:
+
+- New function `embed_ensemble_v2(mol, &EnsembleV2Config) ->
+  Result<EnsembleV2Result, EnsembleV2ConfigError>` in a new
+  `crates/chematic-3d/src/ensemble_v2.rs` — **a new function, not a reused
+  `conformer_ensemble()` signature**, resolving this section's own
+  "breaking-change risk: high" concern by construction; the legacy API is
+  completely untouched.
+- Seed derivation reuses `derive_attempt_seed(base_seed, attempt)` exactly
+  as sketched (widened to `pub(crate)`, no public API change).
+- **Deviation from the sketch**: pruning is NOT done via
+  `EmbedParameters::prune_rms_threshold` (that field remains an
+  unconsumed, forward-compat-only field, unchanged) — it's done one layer
+  up, by the ensemble loop reusing the existing
+  `ConformerEnsemble::find_duplicate`/`find_duplicate_symmetric`
+  (`conformer.rs`, the latter newly added this round for automorphism-
+  aware pruning). In hindsight this is the more natural layering
+  (pruning is inherently a multi-conformer, not single-embed, concern),
+  but it means the specific mechanism this section predicted did not
+  materialize — noted here rather than silently left stale.
+- Energy ranking: kept conformers are grouped by `actual_force_field_used`
+  and ranked by ascending energy *within* each group only — MMFF94 and UFF
+  energies are never compared across a fallback boundary (a correctness
+  issue this round's own code review caught before merge: an earlier
+  version of the selection algorithm pruned near-duplicates in generation
+  order before ranking by energy, silently keeping the first-generated
+  representative of an RMSD cluster instead of the lowest-energy one).
+- Failure taxonomy: full per-attempt provenance via `ConformerAttempt`
+  (`Ok(ConformerSuccess)` with a typed `ConformerDisposition::Kept{..}` /
+  `PrunedAsDuplicate{representative_attempt_index, rmsd, symmetric}`, or
+  `Err(PipelineV2Failure)`) plus ensemble-level
+  `EnsembleTermination::{Completed, TimedOut}` — no ensemble-level
+  "N of M failed" wrapper enum was needed; per-attempt detail turned out
+  sufficient.
+- Benchmark: **not done this round** — no ensemble-mode arm was added to
+  the 265-corpus benchmark, and no comparison against RDKit's
+  `etkdgv3_best_of_n` was run. Verified instead with unit tests (synthetic
+  selection-logic fixtures) and a small, uncommitted real-molecule spot
+  check (aspirin/caffeine/cyclododecane/ibuprofen). The best-of-N parity
+  gap this RFC named (chematic has zero best-of-N arm in the benchmark)
+  is now addressable in principle but not yet exercised.
+- **Scope, as planned**: Rust core only, `chematic-3d`. No Python/WASM
+  bindings — `embed_ensemble_v2` is not yet callable from Python or WASM.
+  That is the natural next step before this item delivers end-user value
+  to chematic's largest current audience (Python users), per this RFC's
+  own §8 reasoning for why A1/A2 were prioritized over Track B.
+
 ### A3 — Shape Runtime
 
 - **User value**: the single largest remaining true "OpenEye is ahead"

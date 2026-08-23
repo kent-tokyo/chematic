@@ -50,6 +50,15 @@ TARGET_COUNT = 200
 ALLOWED_ELEMENTS = {"C", "N", "O", "F", "P", "S", "Cl", "Br", "I"}
 MIN_HEAVY_ATOMS = 8
 MAX_HEAVY_ATOMS = 60
+# Matches chematic_3d::etkdg_knowledge::classify::MACROCYCLE_MIN exactly --
+# a molecule with any ring at or above this size is macrocycle-class, never
+# blended into the flat "drug_like" bucket the rest of this corpus uses (see
+# docs/rfcs/a1_conformer_benchmark_failure_ledger.md's Finding 2: this
+# script previously hardcoded every accepted molecule as "drug_like" with no
+# ring-size check at all, silently mis-tagging 6 large bis-pyridinium
+# macrocycles that a later benchmark round found by auditing ring sizes
+# directly, not by anything this generator itself reported).
+MACROCYCLE_MIN = 9
 
 
 def main():
@@ -105,12 +114,15 @@ def main():
             continue
         seen_canonical.add(canonical)
 
+        ring_sizes = [len(ring) for ring in mol.GetRingInfo().AtomRings()]
+        is_macrocycle = any(size >= MACROCYCLE_MIN for size in ring_sizes)
+
         selected.append(
             {
                 "name": f"chembl_tier_b_{len(selected):04d}",
                 "smiles": canonical,
                 "heavy_atom_count": heavy_count,
-                "primary_category": "drug_like",
+                "primary_category": "macrocycle" if is_macrocycle else "drug_like",
             }
         )
 
@@ -148,6 +160,8 @@ def main():
             f"heavy-atom range: [{MIN_HEAVY_ATOMS}, {MAX_HEAVY_ATOMS}]",
             "dedup by RDKit canonical SMILES (first occurrence wins)",
             f"take first {TARGET_COUNT} survivors in file order (deterministic, no RNG)",
+            f"primary_category: 'macrocycle' if any ring >= {MACROCYCLE_MIN} atoms "
+            "(matches chematic_3d::etkdg_knowledge::classify::MACROCYCLE_MIN), else 'drug_like'",
         ],
         "source_lines_scanned": scanned,
         "parse_failure_count": parse_failures,

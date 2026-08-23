@@ -4,7 +4,7 @@
   "source_file": "scripts/descriptor_census_corpus.smi",
   "source_sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c",
   "source_license": "ChEMBL database, CC BY-SA 3.0 (https://www.ebi.ac.uk/about/terms-of-use); canonical SMILES only.",
-  "source_acquisition": "scripts/download_chembl_smiles.py --count 5000 (already committed to this repo; not re-downloaded for this benchmark -- see docs/descriptor_census_rfc.md)",
+  "source_acquisition": "scripts/download_chembl_smiles.py --count 5000 (already committed to this repo; not re-downloaded for this benchmark -- see docs/rfcs/descriptor_census_rfc.md)",
   "generator": "scripts/gen_pipeline_v2_vs_rdkit_tier_b_manifest.py",
   "target_count": 200,
   "selection_rule": [
@@ -14,7 +14,8 @@
     "element filter: heavy atoms in ['Br', 'C', 'Cl', 'F', 'I', 'N', 'O', 'P', 'S']",
     "heavy-atom range: [8, 60]",
     "dedup by RDKit canonical SMILES (first occurrence wins)",
-    "take first 200 survivors in file order (deterministic, no RNG)"
+    "take first 200 survivors in file order (deterministic, no RNG)",
+    "primary_category: 'macrocycle' if any ring >= 9 atoms (matches chematic_3d::etkdg_knowledge::classify::MACROCYCLE_MIN), else 'drug_like'"
   ],
   "source_lines_scanned": 203,
   "parse_failure_count": 0,
@@ -23,7 +24,7 @@
   "size_filtered_count": 2,
   "dedup_dropped_count": 0,
   "molecule_count": 200,
-  "corpus_sha256": "1a1698f5444c1b6e32da4eaa896cc347c7f051fdf71044bf53b6a644f0b9af77",
+  "corpus_sha256": "0059fcbcb862663bbe079da901141c9383fefb6d013058a0e540dd1d4af46f92",
   "molecules": [
     {
       "name": "chembl_tier_b_0000",
@@ -83,7 +84,7 @@
       "name": "chembl_tier_b_0009",
       "smiles": "c1cc2cc(c1)-c1cccc(c1)C[n+]1ccc(c3ccccc31)NCCCCCCCCCCNc1cc[n+](c3ccccc13)C2",
       "heavy_atom_count": 46,
-      "primary_category": "drug_like"
+      "primary_category": "macrocycle"
     },
     {
       "name": "chembl_tier_b_0010",
@@ -167,7 +168,7 @@
       "name": "chembl_tier_b_0023",
       "smiles": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)-c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
       "heavy_atom_count": 46,
-      "primary_category": "drug_like"
+      "primary_category": "macrocycle"
     },
     {
       "name": "chembl_tier_b_0024",
@@ -197,19 +198,19 @@
       "name": "chembl_tier_b_0028",
       "smiles": "C1=C\\c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCNc2cc[n+](c3ccccc23)Cc2ccc/1cc2",
       "heavy_atom_count": 48,
-      "primary_category": "drug_like"
+      "primary_category": "macrocycle"
     },
     {
       "name": "chembl_tier_b_0029",
       "smiles": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)CCc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
       "heavy_atom_count": 48,
-      "primary_category": "drug_like"
+      "primary_category": "macrocycle"
     },
     {
       "name": "chembl_tier_b_0030",
       "smiles": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)Cc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
       "heavy_atom_count": 47,
-      "primary_category": "drug_like"
+      "primary_category": "macrocycle"
     },
     {
       "name": "chembl_tier_b_0031",
@@ -233,7 +234,7 @@
       "name": "chembl_tier_b_0034",
       "smiles": "c1ccc2c(c1)c1cc[n+]2Cc2ccc3c(c2)Cc2cc(ccc2-3)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
       "heavy_atom_count": 47,
-      "primary_category": "drug_like"
+      "primary_category": "macrocycle"
     },
     {
       "name": "chembl_tier_b_0035",
