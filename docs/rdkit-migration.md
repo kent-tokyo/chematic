@@ -166,11 +166,20 @@ functions — see [`format-capabilities.md`](format-capabilities.md#molsdf).
 README's "Use RDKit if" section states this directly: RDKit's ETKDGv3
 includes ML-assisted torsion corrections chematic does not have. The
 feature-maturity table in README.md marks 3D conformer generation
-(distance geometry + MMFF94) as **Experimental**. This page does not
-attempt to quantify the conformer-quality gap further than that, because no
-already-measured RDKit-comparison figure for conformer RMSD/TFD exists in
-this repository's own docs to cite (this PR does not run new 3D/RMSD/TFD
-measurement scripts — see the PR description's scope note).
+(distance geometry + MMFF94) as **Experimental**.
+
+**Correction (2026-08-23):** an earlier version of this page said no
+RDKit-comparison figure for conformer RMSD/TFD existed in this
+repository's docs. That was wrong — `validation/results/mmff94_bci_gap_
+227_phase2_report.md` already measures RMSD (mean 1.685 Å) and TFD (mean
+0.2228) against RDKit's ETKDGv3+MMFF94 on the project's 265-molecule
+corpus (`pipeline_v2_mmff94_strict`, last re-measured v0.17.0, 241/265
+success). This page still does not attempt a deeper quantitative
+characterization of the conformer-quality gap than that one summary
+figure — see `docs/rfcs/etkdg_3d_gap_rfc.md` and
+`docs/rfcs/openeye_materials_advantage_rfc.md` for the fuller picture,
+including a live defect found in the public `Mol.conformer_ensemble()`
+API (distinct from the sound `embed_pipeline_v2` path measured above).
 
 ## Force-field optimization
 

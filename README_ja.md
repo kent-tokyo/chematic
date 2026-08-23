@@ -227,7 +227,7 @@ npm パッケージ `@kent-tokyo/chematic` は **1.10 MB gzip**(raw 2.94 MB)— 
 | 3D 座標生成                                 | あり（DG + MMFF94/DREIDING + L-BFGS）      | あり（ETKDG）      | あり          | あり             |
 | 多様性選択（MaxMin/Butina）                 | **あり**                                   | あり               | なし          | なし             |
 | InChI / InChIKey                            | **あり** — 純 Rust（デフォルト）+ **IUPAC 準拠**（`native-inchi`）| C ライブラリ必要 | C ライブラリ必要 | C ライブラリ必要 |
-| **pKa 予測**                                | **あり（15 SMARTS ルール）**               | なし               | なし          | なし             |
+| **pKa 予測**                                | **あり（23 SMARTS ルール）**               | なし               | なし          | なし             |
 | **ADMET プロファイル + BOILED-Egg**         | **あり**                                   | 一部               | なし          | 一部             |
 | **MCP サーバー（AI エージェント API）**     | **あり — 20 ツール（Name→SMILES 含む、stdio のみ）**  | なし               | なし          | なし             |
 | IUPAC 名生成                                | **あり（25+ 化合物クラス）**               | なし               | なし          | 一部             |
@@ -281,7 +281,7 @@ const picks = JSON.parse(maxmin_picks_ecfp4_json('["CC","c1ccccc1","CCO","CCCC"]
 | `chematic-perception`  | SSSR、Hückel 芳香族性 + 反芳香族性（4n+2 則）、`apply_aromaticity`・`aromatize`・`kekulize_inplace`・`assign_stereo_from_2d`・`assign_ez_from_2d`・`cip_ez_descriptor` | 194      |
 | `chematic-mol`         | MOL/SDF V2000+V3000（R/W、2D 座標付き）、CML（R/W）、CDXML（R）；`SdfRecord`（coords+props）、MDL RXN V2000 読み書き；V3000 ステレオグループ COLLECTION R/W；**2Dウェッジ/ハッシュのtetrahedral parity + E/Z二重結合方向を読み込み時に自動認識**（`read_mol_with_diagnostics`/`read_mol_v3000_with_diagnostics`、型付きopt-in診断）；**PDBx/mmCIF**（R/W、chain/altloc/model/occupancy/B-factor保持、Open Babel本体はread-only）；**PQR**（R/W）；**QCSchema JSON**（`Molecule`/`AtomicInput`/`AtomicResult`、MolSSIスキーマ、Bohr↔Å変換）；**ORCA**（input R/W・未知blockを損失なく保持、output R：final geometry/trajectory/energy/frequencies/termination/convergenceを型付きで取得）；新設の共有`VolumetricGrid`型 + **Gaussian Cube**（R/W、大規模グリッド向けstreaming-*input* `CubeFileReader` — パース後のvoxel配列自体は引き続き全てメモリ上、非直交axes対応、Bohr/Ångström単位を明示タグ化）+ **OpenDX/APBS scalar field**（R/W）— single-dataset限定、multi-dataset Cubeは黙って切り詰めず型付きでreject | 476     |
 | `chematic-depict`      | 2D SVG（CPK カラー・ハイライト・グリッド）、`detect_crossings`・`render_svg_with_metadata`・反応 SVG；Y座標系ドキュメント整備  | 75      |
-| `chematic-chem`        | 190+ 記述子値（71 関数）、タウトマー、スキャフォルド、BRICS、QED、標準化；**pKa 予測** (15 SMARTS ルール)；**ADMET プロファイル** (BBB/Caco-2/hERG/CYP3A4)；**HBA 100% RDKit 一致率**（4,999 分子 ChEMBL ベンチマーク）；**TPSA ±0.1 Å² 100% / LogP 100%\* / HBD 100%** RDKit 一致 | 724     |
+| `chematic-chem`        | 190+ 記述子値（71 関数）、タウトマー、スキャフォルド、BRICS、QED、標準化；**pKa 予測** (23 SMARTS ルール)；**ADMET プロファイル** (BBB/Caco-2/hERG/CYP3A4)；**HBA 100% RDKit 一致率**（4,999 分子 ChEMBL ベンチマーク）；**TPSA ±0.1 Å² 100% / LogP 100%\* / HBD 100%** RDKit 一致 | 724     |
 | `chematic-fp`          | ECFP2/4/6、FCFP4/6、MACCS、TopoPF、AtomPair、Torsion、Layered、Pattern、Pharmacophore、Reaction、**MAP4** (Minervini 2020) — Tanimoto/Dice | 266      |
 | `chematic-ff`          | **MMFF94 全 7 エネルギー項** (Halgren 1996)：OOP (117件) + Stretch-Bend (282件)；steepest descent + L-BFGS；DREIDING | 198      |
 | `chematic-smarts`      | SMARTS、VF2、MCS；**SmartsCache** (LRU 5–20×)；**named_pattern()** (20 パターン)；**SMARTS 内アトムマップ `:N`** (`[O;D1;H0:3]` 形式 — メタデータとして保存、マッチング条件には不使用) | 169     |

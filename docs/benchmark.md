@@ -216,7 +216,7 @@ python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --detail
 
 | Feature | chematic | RDKit |
 |---------|----------|-------|
-| pKa prediction | Built-in, rule-based screening — not for clinical use (15 SMARTS rules) | External tool required |
+| pKa prediction | Built-in, rule-based screening — not for clinical use (23 SMARTS rules) | External tool required |
 | ADMET profile (BBB, Caco-2, hERG, CYP3A4) | Built-in, rule-based screening — not for clinical use | External tool required |
 | MCP server (AI agent integration) | 20 tools (stdio only) | Not available |
 | LSH approximate nearest-neighbour index | Built-in | Not available |
@@ -226,7 +226,7 @@ python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --detail
 | SMARTS atom map `:N` | Yes | Yes |
 | Retrosynthesis (template-based) | 60 retro-SMIRKS built-in | External tool |
 | File formats | 20+ | 100+ |
-| 3D conformer generation | **Experimental** — distance geometry + torsion-aware pipeline (`embed_pipeline_v2`); no RMSD/TFD comparison against RDKit exists yet, see [`rdkit-migration.md`](rdkit-migration.md) | Mature — ETKDGv3 with ML-assisted torsion corrections |
+| 3D conformer generation | **Experimental** — distance geometry + torsion-aware pipeline (`embed_pipeline_v2`); RMSD (mean 1.685 Å) / TFD (mean 0.2228) vs. RDKit ETKDGv3+MMFF94 measured on a 265-molecule corpus (`validation/results/mmff94_bci_gap_227_phase2_report.md`, 241/265 success, last re-measured v0.17.0), see [`rdkit-migration.md`](rdkit-migration.md) for the fuller picture incl. a known live defect in the separate `conformer_ensemble()` API | Mature — ETKDGv3 with ML-assisted torsion corrections |
 | Community & publications | Growing | Established (20+ years) |
 
 ---
