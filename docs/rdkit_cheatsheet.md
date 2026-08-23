@@ -252,7 +252,7 @@ mol.sasa_per_atom()  # per-atom list
 
 ## pKa prediction
 
-Rule-based screening (15 SMARTS rules), not a trained predictive model — useful for early
+Rule-based screening (23 SMARTS rules), not a trained predictive model — useful for early
 triage, not a substitute for experimental or clinical measurement.
 
 ```python

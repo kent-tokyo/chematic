@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — documentation (correction to a v0.19.0 changelog entry)
+
+- v0.19.0's own benchmark-refresh entry below states 3D conformer quality
+  was corrected to match `docs/rdkit-migration.md`'s "Experimental, no
+  RMSD/TFD comparison exists" characterization — **that characterization
+  was itself wrong**, found during this round's OpenEye/materials-science
+  competitive audit. `validation/results/mmff94_bci_gap_227_phase2_
+  report.md` already measures RMSD (mean 1.685 Å) and TFD (mean 0.2228)
+  against RDKit's ETKDGv3+MMFF94 on the project's 265-molecule corpus.
+  `docs/benchmark.md`, `docs/rdkit-migration.md`, and the same stale
+  "15 SMARTS rules" pKa-rule-count claim (actual: 23 rules, 6 acid + 17
+  base, `crates/chematic-chem/src/pka.rs`) copied across README.md/
+  README_ja.md/`docs/rdkit-comparison.md`/`docs/rdkit_cheatsheet.md`/
+  `docs/benchmark.md` are corrected. Not rewriting v0.19.0's already-
+  released changelog text itself, per this project's convention of never
+  silently editing a shipped version's own historical record — see the
+  entry below for what v0.19.0 originally said.
+
 ## [0.19.0] — 2026-08-23
 
 ### Added — `chematic-chem` (Tautomer & Parent Identity round 2C, ROADMAP.md Phase 2)
