@@ -199,7 +199,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.18.0
+# chematic v0.19.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -447,6 +447,11 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 ## Recent Development
 
+**v0.19.0** (2026-08-23): **Round 2C aromatic lactam/lactim tautomer fix, plus a benchmark/validation refresh**
+- `chematic-chem`: Tautomer & Parent Identity round 2C (ROADMAP.md Phase 2) — `canonical_tautomer`/`tautomer_parent` now canonicalize the aromatic lactam/lactim class for 2-pyridone, 4-pyridone, and uracil; cytosine, guanine, and hypoxanthine remain open (a distinct, documented ring-N-H position residual, RFC section 1.7 — diagnosed but not yet fixed), as does the unrelated nitroso/oxime defect (section 1.6). Phase 2 is **not** complete; `TautomerScoringConfig` and Python/WASM Parent-API bindings remain unimplemented
+- Benchmark/validation refresh: every number in `docs/benchmark.md`/`docs/validation.md` was pinned to chematic v0.4.29/RDKit 2026.03.3 (~14 releases stale) — re-measured fresh against RDKit 2026.03.4. The 4,999-mol accuracy corpus is now committed (`scripts/chembl_accuracy_corpus_4999.smi`, previously an uncommitted personal path); molecular weight has a real corpus-wide check for the first time (99.82%, not the previously-unmeasured "175-mol"/100% placeholder); CIP R/S/E/Z label agreement re-measured at 99.74–99.78% (up from a stale 96.30–96.83%); WASM bundle size rebuilt clean; the ECFP4 "diverse corpus" figure now has a reproducible source (`benchmark_vs_rdkit.py --corpus`, previously none existed); 3D conformer generation's "Good (ETKDG rules)" framing corrected to "Experimental," matching the migration guide's own honest characterization
+- Full details in `CHANGELOG.md`'s `[0.19.0]` section
+
 **v0.18.0** (2026-08-20): **Python/WASM bindings for the 7 v0.17.0 formats, plus an MMFF94 atom-typing fix and a binding-quality/cross-language-consistency pass**
 - `chematic-ff`: fixed the aryl-isothiocyanate cumulated-double-bond CSP carbon mistyping from issue #337 (`getTotalDegree() == 2` replacing a `triple_bonds > 0`-only check — a strict superset, RDKit's real rule); the other 6/8 molecules behind that issue were re-diagnosed as a genuine RDKit Kekulization/MMFF-aromaticity-perception artifact (confirmed via direct negative-control fragments) rather than a locally-fixable typing rule, and left as an honestly-disclosed residual
 - `chematic-py`: Python bindings for all 7 v0.17.0 formats (mmCIF, PQR, ORCA, QCSchema, Gaussian Cube, OpenDX, LAMMPS data/dump) — previously Rust-only; `VolumetricGrid`/`LammpsDumpFrame` pyclasses with numpy-array properties, `to_opendx`/`to_opendx_lossy` fail-closed split preserved faithfully; a `py.typed` marker verified to actually ship in the built wheel (`mypy --strict` passes against a fresh-venv wheel install, not just the source tree)
@@ -595,7 +600,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.18.0)
+├── Cargo.toml                    workspace root (v0.19.0)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -649,7 +654,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.18.0},
+  version   = {0.19.0},
   year      = {2026},
 }
 ```

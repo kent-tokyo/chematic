@@ -6,6 +6,7 @@ Periodic performance snapshots. Each file is a date-stamped record of throughput
 
 | Date | Version | Notes |
 |------|---------|-------|
+| [2026-08-23](2026-08-23.md) | v0.18.0 (commit `24a9239`) | v0.19.0 release-prep re-measurement; corpus now committed (`scripts/chembl_accuracy_corpus_4999.smi`); real MW check added; diverse-corpus ECFP4 now reproducible via `benchmark_vs_rdkit.py --corpus`; WASM size rebuilt clean; CIP R/S/E/Z label agreement re-measured (96%→99.7%+) |
 | [2026-07-17](2026-07-17.md) | v0.4.29 | Hardware moved to Apple M4; throughput headline (5–14×) did not reproduce even on the same fixture — see file for details; descriptor accuracy holds |
 | [2026-06-25](2026-06-25.md) | v0.4.20 | Baseline: ECFP4, descriptor batch, WASM size, RDKit accuracy |
 
@@ -14,10 +15,10 @@ Periodic performance snapshots. Each file is a date-stamped record of throughput
 ### Throughput (Python)
 
 ```bash
-# Requires a SMILES CSV with a 'SMILES' column (e.g. ChEMBL export)
+# Corpus is committed — scripts/chembl_accuracy_corpus_4999.smi
 pip install chematic rdkit
-python scripts/bench5k.py ~/Downloads/SMILES.csv
-python scripts/bench5k.py ~/Downloads/SMILES.csv --detail   # show mismatches
+python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi
+python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --detail   # show mismatches
 ```
 
 ### Accuracy vs RDKit (4,999-mol ChEMBL-derived corpus)
@@ -27,9 +28,8 @@ does not perform an accuracy comparison, despite an earlier version of this file
 it for that purpose. The actual, current accuracy-reproduction path is:
 
 ```bash
-# Requires a SMILES CSV with a 'SMILES' column (e.g. ChEMBL export)
-pip install chematic rdkit pandas
-python scripts/bench5k.py ~/Downloads/SMILES.csv --json /tmp/bench5k.json
+pip install chematic rdkit
+python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --json /tmp/bench5k.json
 python scripts/gen_validation_report.py /tmp/bench5k.json
 ```
 

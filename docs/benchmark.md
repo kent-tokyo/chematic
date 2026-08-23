@@ -1,67 +1,67 @@
 # Benchmark
 
-Measured environment: Python 3.13.6, Apple M4, chematic v0.4.29, RDKit 2026.03.3
-(descriptor calculation paths unchanged through v0.8.0, not re-measured since).
-Full methodology and raw numbers: [`benchmarks/2026-07-17.md`](../benchmarks/2026-07-17.md).
+## Current Release Snapshot
 
----
+**chematic v0.18.0** (commit `24a9239`, pre-`v0.19.0` bump) · **RDKit 2026.03.4**
+· Python 3.13.6 · Apple M4 (10-core, 16 GB RAM) · macOS 26.5.2 · measured 2026-08-23.
 
-## Summary
+Full methodology, raw numbers, and what changed since the last snapshot:
+[`benchmarks/2026-08-23.md`](../benchmarks/2026-08-23.md). Snapshot history:
+[`benchmarks/README.md`](../benchmarks/README.md).
 
 | Metric | chematic | RDKit |
 |--------|----------|-------|
-| Import time | **~35 ms** | ~400 ms (11×) — not remeasured this cycle |
-| SMILES parse — 5,000 mol | **~5 ms** | ~50 ms (10×) — not remeasured this cycle |
-| ECFP4 batch — 10,000 mol (small repeated fixture) | **126 ms** | ~839 ms (6.7×) |
-| ECFP4 batch — 5,000 mol (diverse ChEMBL corpus) | **~78 µs/mol** | ~160–235 µs/mol (2–3×) |
-| Descriptor accuracy vs RDKit | **19 metrics ≥98.6%, most 100%** — MW/HBA/HBD/TPSA/LogP/ARC/RotB/Spiro/Bridge/… (4,999-mol) | baseline |
+| Import time | **14.6 ms** | 98.1 ms (6.7×) |
+| SMILES parse — 5,000 mol (repeated fixture) | **1.0 µs/mol** | 17.7 µs/mol (17.7×) |
+| ECFP4 — 10,000 mol (repeated fixture) | **6.76 µs/mol** | 44.48 µs/mol (6.6×) |
+| ECFP4 — 5,000 mol (diverse ChEMBL corpus) | **54.7 µs/mol** | 94.3 µs/mol (1.7×) |
+| Descriptor accuracy vs RDKit | **20 metrics ≥98.6%, 16 at 100%** (4,999-mol corpus) | baseline |
+| CIP R/S/E/Z label agreement | **99.74–99.78%** | baseline |
 | Install | `pip install chematic` | `pip install rdkit` (official prebuilt wheels) or conda |
 | C/C++ dependencies | **Zero**, even building from source | Not required for the prebuilt wheel; required (Boost, CMake) building from source |
-| WASM binary size | **2.94 MB raw / 1.10 MB gzip** (measured 2026-08-21, commit `ef7dc25`) | 6.91 MB raw (RDKit.js, a separate community project — see [`docs/rdkit-comparison.md`](rdkit-comparison.md)) |
+| WASM binary size | **2.98 MB raw / 1.11 MB gzip** | 6.91 MB raw / 2.06 MB gzip (RDKit.js) |
 
-The ECFP4 speedup is fixture-dependent: a small set of simple molecules repeated to fill
-the batch shows a larger ratio than a large, structurally diverse corpus. See
-[`benchmarks/2026-07-17.md`](../benchmarks/2026-07-17.md#notes) for why, and for a partial,
-evidence-backed explanation (SSSR ring-perception cost) of why both numbers are lower than
-the 2026-06 snapshot's headline (3.6 µs/mol, 5–14×) reported here previously.
+The ECFP4 speedup is fixture-dependent: a small set of simple molecules repeated
+to fill the batch shows a larger ratio (6.6×) than a large, structurally diverse
+corpus (1.7×) — **never blend these two numbers**. See
+[`benchmarks/2026-08-23.md`](../benchmarks/2026-08-23.md) for why, and for the
+full record of what moved since the previous (v0.4.29-era) snapshot.
 
 ---
 
 ## 1. Startup Time (import latency)
 
-Cold-process import time measured by spawning a fresh Python subprocess per sample
-(5 samples, median reported).  No module-cache warm-up.
+Cold-process import time measured by spawning a fresh Python subprocess per
+sample (10 samples, median reported). No module-cache warm-up.
 
 | | chematic | RDKit |
 |---|---|---|
-| `import` only | **~35 ms** | ~400 ms |
-| `import` + first parse | **~38 ms** | ~430 ms |
-| **Speedup** | **~11×** | baseline |
-
-**chematic**
-
-```bash
-python scripts/bench_startup.py --runs 5
-```
+| `import` only | **14.6 ms** | 98.1 ms |
+| `import` + first parse | **14.6 ms** | 103.3 ms |
+| **Speedup** | **6.7×** | baseline |
 
 **Why chematic is faster**: chematic is a single PyO3 extension module with no
 transitive Python dependencies. RDKit initialises multiple C++ modules, reads
 SMARTS definition files, and triggers Boost data-structure setup on first import.
 
+### How to reproduce
+
+```bash
+python scripts/bench_startup.py --rdkit --runs 10 --json
+```
+
 ---
 
 ## 2. SMILES Parse Throughput
 
-Timed on the built-in 20-molecule diverse corpus repeated to 5,000 total parses.
+Timed on the built-in 20-molecule diverse corpus repeated to N total parses.
 Warm-up pass excluded.
 
 | N | chematic | RDKit | Speedup |
 |---|---|---|---|
-| 1,000 | ~1 ms | ~10 ms | ~10× |
-| 5,000 | **~5 ms** | **~50 ms** | **~10×** |
-| 10,000 | ~10 ms | ~100 ms | ~10× |
-
-Per-molecule: **~1 µs/mol** (chematic) vs ~10 µs/mol (RDKit).
+| 1,000 | 1.11 µs/mol | 16.38 µs/mol | 14.9× |
+| 5,000 | **1.00 µs/mol** | **17.74 µs/mol** | **17.7×** |
+| 10,000 | 0.98 µs/mol | 16.00 µs/mol | 16.3× |
 
 **chematic**
 
@@ -82,34 +82,41 @@ mols = [Chem.MolFromSmiles(s) for s in smiles_list]
 ### How to reproduce
 
 ```bash
-python scripts/bench_smiles_parse.py --n 5000 --rdkit
+python scripts/bench_smiles_parse.py --n 5000 --rdkit --json
 ```
 
 **Related micro-benchmarks** (same corpus-tiering convention, not folded into the table
 above): `python scripts/bench_canonical.py --rdkit` measures canonical SMILES generation
 throughput; `python scripts/bench_smarts.py --rdkit` measures SMARTS substructure-match
-throughput (pairs with `scripts/rdkit_benchmark.py`'s `bench_smarts_match`).
+throughput (pairs with `scripts/rdkit_benchmark.py`'s `bench_smarts_match`). Not
+re-measured this cycle.
 
 ---
 
 ## 3. Speed — ECFP4 Fingerprint Generation (batch)
 
-Rayon parallelism across all CPU cores. Fixture: 20 small drug-like SMILES cycled to
-fill each N (same fixture the historical 2026-06 numbers used) — see
-[`benchmarks/2026-07-17.md`](../benchmarks/2026-07-17.md) for a large, diverse-corpus
-comparison that shows a smaller (~2–3×) margin on unique molecules.
+Rayon parallelism across all CPU cores.
 
-| Molecules (N) | chematic (`bulk.ecfp4`) | RDKit (Python loop) | Speedup |
+**Repeated small fixture** (20 small drug-like SMILES cycled to fill each N):
+
+| Molecules (N) | chematic (`bulk.ecfp4`) | RDKit (Python loop, deprecated `GetMorganFingerprintAsBitVect`) | Speedup |
 |---------------|------------------------|---------------------|---------|
-| 100 | 1.4 ms | 8 ms | 6.1× |
-| 1,000 | 10 ms | 83 ms | 8.0× |
-| 10,000 | 126 ms | 839 ms | **6.7×** |
+| 100 | 9.16 µs/mol | 46.98 µs/mol | 5.1× |
+| 1,000 | 6.75 µs/mol | 44.86 µs/mol | 6.6× |
+| 10,000 | 6.76 µs/mol | 44.48 µs/mol | **6.6×** |
 
-Per-molecule: **~13 µs/mol** (chematic, small fixture) / **~78 µs/mol** (chematic, diverse
-5,000-mol corpus) vs ~84–235 µs/mol (RDKit, both fixtures). Measured 2026-07-17 on Apple M4;
-does not reproduce the previously-reported 3.6 µs/mol / 5–14× figures even on identical
-hardware-class and script — see `benchmarks/2026-07-17.md`'s Notes for what was ruled out
-and what remains an open question.
+**Diverse corpus** (5,000 unique molecules,
+`scripts/descriptor_census_corpus.smi`):
+
+| | chematic | RDKit | Speedup |
+|--|----------|-------|---------|
+| ECFP4 | **54.7 µs/mol** | 94.3 µs/mol | **1.7×** |
+
+**Never blend these two numbers.** Unique, structurally diverse molecules
+consistently show a smaller margin than a small fixture repeated many times —
+see [`benchmarks/2026-08-23.md`](../benchmarks/2026-08-23.md#notes) for the
+mechanism this project has partially traced (SSSR ring-perception cost is a
+non-trivial share of `ecfp4`'s per-molecule cost), not fully root-caused.
 
 **chematic**
 
@@ -131,18 +138,25 @@ fps = [rdMolDescriptors.GetMorganFingerprintAsBitVect(
 ### How to reproduce
 
 ```bash
-python scripts/benchmark_vs_rdkit.py --rdkit
+# repeated small fixture:
+python scripts/benchmark_vs_rdkit.py --rdkit --n 10000 --repeats 5
+# diverse corpus:
+python scripts/benchmark_vs_rdkit.py --rdkit --corpus scripts/descriptor_census_corpus.smi --repeats 5
 ```
 
 ---
 
 ## 4. Descriptor Accuracy vs RDKit
 
-Tested on a 4,999-molecule ChEMBL-derived SMILES corpus (`scripts/bench5k.py`). See [Validation](validation.md) for full per-metric breakdown.
+Tested on a 4,999-molecule ChEMBL-derived SMILES corpus
+(`scripts/chembl_accuracy_corpus_4999.smi`, committed to this repo). See
+[Validation](validation.md) for the full per-metric breakdown, the
+stereocenter oracle-calibration detail, and the separate CIP R/S/E/Z
+label-agreement measurement.
 
 | Descriptor | Agreement | Tolerance |
 |-----------|-----------|-----------|
-| Molecular weight | **100%** | exact |
+| Molecular weight | 99.82% | ±0.01 Da |
 | Heavy atom count | **100%** | exact |
 | H-bond donors (HBD) | **100%** | exact |
 | H-bond acceptors (HBA) | **100%** | exact |
@@ -162,24 +176,25 @@ Tested on a 4,999-molecule ChEMBL-derived SMILES corpus (`scripts/bench5k.py`). 
 | Num stereocenters (legacy)  | **99.96%** | exact |
 | Num stereocenters (new CIP) | 98.6% | exact |
 | [nH] SMARTS match | **100%** | precision/recall |
+| CIP R/S/E/Z label agreement | 99.74–99.78% | exact (separate metric — see below) |
 
-19 of 19 metrics reach ≥98.6% on the 4,999-molecule ChEMBL corpus (RDKit 2026.03.3).
-Stereocenters are reported against two RDKit oracles:
-- Legacy `CalcNumAtomStereoCenters`: 99.96% (4997/4999).
-- New CIP `FindPotentialStereo`: 98.6% (4929/4999). The new oracle counts cage/bridgehead
-  atoms as potential stereocenters in most of the residual; chematic and legacy both
-  correctly exclude these false positives.
+20 of 20 descriptor/count metrics reach ≥98.6% on the 4,999-molecule ChEMBL
+corpus (RDKit 2026.03.4). Molecular weight is a **new check this release** —
+`bench5k.py` never actually measured it before (only monoisotopic exact mass);
+see [Validation](validation.md) for that fix and the corrected stereocenter
+oracle-disagreement accounting.
 
-(These moved slightly, by 1–3 molecules each, from the 2026-07-13 snapshot in
-`docs/validation.md` — consistent with the `invert_stereocenter`/`transfer_hydrogen`/parser
-correctness fixes merged 2026-07-13 through 2026-07-17. See
-[`benchmarks/2026-07-17.md`](../benchmarks/2026-07-17.md) for the fresh full run.)
+**CIP R/S/E/Z label agreement is a distinct question from stereocenter
+*count* agreement above**: given a stereocenter both engines agree exists,
+does chematic assign the same R/S/E/Z label? 99.74% vs a modern
+`rdCIPLabeler` oracle, 99.78% vs the legacy `_CIPCode` oracle — both a large
+improvement over a prior snapshot's 96.30–96.83%, reflecting CIP-engine work
+landed in the interim. Full detail: [Validation](validation.md).
 
 ### How to reproduce
 
 ```bash
-# Requires RDKit and the 5k SMILES file
-python scripts/bench5k.py path/to/SMILES.csv --detail
+python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --detail
 ```
 
 ---
@@ -192,7 +207,7 @@ python scripts/bench5k.py path/to/SMILES.csv --detail
 | C/C++ compiler | Not required, even building from source | Not required for the prebuilt wheel; required (Boost) building RDKit itself from source |
 | Docker image size delta | ~4 MB (approximate; not independently re-measured this cycle) | ~200 MB+ (approximate; not independently re-measured this cycle) |
 | GitHub Actions | Single pip line | Separate conda setup step |
-| JavaScript / WASM | `npm install @kent-tokyo/chematic` (2.94 MB raw / 1.10 MB gzip) | `npm install @rdkit/rdkit` (RDKit.js, a separate community project — 6.91 MB raw) |
+| JavaScript / WASM | `npm install @kent-tokyo/chematic` (2.98 MB raw / 1.11 MB gzip) | `npm install @rdkit/rdkit` (RDKit.js, a separate community project — 6.91 MB raw / 2.06 MB gzip) |
 | Browser deployment | Yes | Yes, via RDKit.js |
 
 ---
@@ -206,12 +221,12 @@ python scripts/bench5k.py path/to/SMILES.csv --detail
 | MCP server (AI agent integration) | 20 tools (stdio only) | Not available |
 | LSH approximate nearest-neighbour index | Built-in | Not available |
 | IUPAC name generation | Built-in (offline) | Not available |
-| Browser / WASM deployment | Yes (2.94 MB raw / 1.10 MB gzip) | Yes, via RDKit.js (a separate community project — 6.91 MB raw) |
-| ECFP4 batch speed | 2–3× faster (diverse corpus) | Baseline |
+| Browser / WASM deployment | Yes (2.98 MB raw / 1.11 MB gzip) | Yes, via RDKit.js (a separate community project — 6.91 MB raw / 2.06 MB gzip) |
+| ECFP4 batch speed | 1.7× faster (diverse corpus), 6.6× faster (repeated fixture) | Baseline |
 | SMARTS atom map `:N` | Yes | Yes |
 | Retrosynthesis (template-based) | 60 retro-SMIRKS built-in | External tool |
 | File formats | 20+ | 100+ |
-| 3D conformer quality | Good (ETKDG rules) | Better (ML-assisted) |
+| 3D conformer generation | **Experimental** — distance geometry + torsion-aware pipeline (`embed_pipeline_v2`); no RMSD/TFD comparison against RDKit exists yet, see [`rdkit-migration.md`](rdkit-migration.md) | Mature — ETKDGv3 with ML-assisted torsion corrections |
 | Community & publications | Growing | Established (20+ years) |
 
 ---
@@ -223,14 +238,12 @@ python scripts/bench5k.py path/to/SMILES.csv --detail
 
 | N | chematic (`bulk.descriptors`) | Descriptors per call |
 |---|-------------------------------|---------------------|
-| 100 | ~91 ms | 55+ (incl. pKa, ADMET) |
-| 1,000 | ~1.26 s | 55+ (incl. pKa, ADMET) |
+| 100 | 63 ms (629 µs/mol) | 55+ (incl. pKa, ADMET) |
+| 1,000 | 605 ms (605 µs/mol) | 55+ (incl. pKa, ADMET) |
 
-Measured 2026-07-17 (`scripts/benchmark_vs_rdkit.py --rdkit`); does not match the
-previously-listed ~10 ms / ~50 ms figures (~9–25× off). `descriptors_array(smiles, columns)`
-runs this same full pipeline regardless of the requested column subset — selecting fewer
-columns does not reduce the computation, only the returned dict. See
-[`benchmarks/2026-07-17.md`](../benchmarks/2026-07-17.md#notes).
+`descriptors_array(smiles, columns)` runs this same full pipeline regardless of
+the requested column subset — selecting fewer columns does not reduce the
+computation, only the returned dict.
 
 ```python
 import chematic
@@ -265,3 +278,59 @@ for batch in chematic.iter_sdf_batched("large.sdf", batch_size=1000):
 ```
 
 RDKit's `rdkit.Chem.Descriptors.CalcMolDescriptors` covers ~200 descriptors but does not include pKa or ADMET.
+
+### How to reproduce
+
+```bash
+python scripts/benchmark_vs_rdkit.py --rdkit --n 10000 --repeats 5
+```
+
+---
+
+## Reproduction & Raw Results
+
+Every number on this page traces to one of these commands, run against
+commit `24a9239` (Python 3.13.6, RDKit 2026.03.4, Apple M4, macOS 26.5.2,
+2026-08-23):
+
+```bash
+# Environment (fix once if the editable install is stale):
+.venv/bin/maturin develop --release -m crates/chematic-py/Cargo.toml
+
+# Startup / import
+python scripts/bench_startup.py --rdkit --runs 10 --json
+
+# SMILES parse throughput
+python scripts/bench_smiles_parse.py --n 1000 --rdkit --json
+python scripts/bench_smiles_parse.py --n 5000 --rdkit --json
+python scripts/bench_smiles_parse.py --n 10000 --rdkit --json
+
+# ECFP4 + bulk.descriptors (repeated small fixture)
+python scripts/benchmark_vs_rdkit.py --rdkit --n 10000 --repeats 5
+
+# ECFP4 (diverse corpus)
+python scripts/benchmark_vs_rdkit.py --rdkit --corpus scripts/descriptor_census_corpus.smi --repeats 5
+
+# Descriptor accuracy (4,999-mol ChEMBL corpus)
+python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --json validation/results/bench5k_latest.json
+python3 scripts/gen_validation_report.py validation/results/bench5k_latest.json
+
+# CIP R/S/E/Z label agreement
+cargo run -p chematic-cip --release --example corpus_snapshot -- \
+    --candidate scripts/chembl_accuracy_corpus_4999.smi /tmp/candidate.tsv
+python scripts/cip_accurate_full_corpus_report.py \
+    /tmp/candidate.tsv /tmp/candidate.tsv scripts/chembl_accuracy_corpus_4999.smi
+
+# WASM bundle size
+cd crates/chematic-wasm && rm -rf pkg
+wasm-pack build --target web --release
+wasm-opt -O3 -o pkg/chematic_wasm_bg.wasm pkg/chematic_wasm_bg.wasm
+ls -lh pkg/chematic_wasm_bg.wasm
+gzip -k pkg/chematic_wasm_bg.wasm && ls -lh pkg/chematic_wasm_bg.wasm.gz
+```
+
+Raw output and full methodology notes (including everything that changed
+since the v0.4.29-era snapshot):
+[`benchmarks/2026-08-23.md`](../benchmarks/2026-08-23.md). Snapshot history
+and hardware notes: [`benchmarks/README.md`](../benchmarks/README.md).
+Machine-readable JSON: `validation/results/bench5k_latest.json`.

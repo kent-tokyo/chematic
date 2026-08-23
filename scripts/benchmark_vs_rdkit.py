@@ -81,7 +81,28 @@ def main():
     parser.add_argument("--rdkit", action="store_true", help="Include RDKit benchmark")
     parser.add_argument("--n", type=int, default=10_000, help="Number of molecules")
     parser.add_argument("--repeats", type=int, default=3, help="Timing repetitions")
+    parser.add_argument("--corpus", metavar="FILE",
+                        help="Also time ECFP4 over the real, diverse molecules in this "
+                             "SMILES-per-line file (not cycled), reported separately from "
+                             "the repeated-fixture sweep above -- never blend the two.")
     args = parser.parse_args()
+
+    if args.corpus:
+        with open(args.corpus) as f:
+            corpus_smiles = [line.strip() for line in f if line.strip()]
+        print(f"\nBenchmark: ECFP4 fingerprint generation -- diverse corpus ({args.corpus}, "
+              f"{len(corpus_smiles)} molecules, {args.repeats} runs, median)")
+        ch_time, ch_n = benchmark_chematic(corpus_smiles, args.repeats)
+        row = f"chematic: {fmt(ch_time, ch_n)}"
+        if args.rdkit:
+            try:
+                rd_time, rd_n = benchmark_rdkit(corpus_smiles, args.repeats)
+                speedup = rd_time / ch_time
+                row += f"   RDKit: {fmt(rd_time, rd_n)}   speedup: {speedup:.1f}x"
+            except ImportError:
+                row += "  [RDKit not available]"
+        print(row)
+        return
 
     sizes = [100, 1_000, args.n]
     print(f"\nBenchmark: ECFP4 fingerprint generation ({args.repeats} runs, median)")

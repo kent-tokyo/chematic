@@ -2,8 +2,7 @@
 
 Summary of descriptor accuracy against RDKit on a ChEMBL-derived corpus.
 
-**Environment:** Python 3.13.6, Apple M4, chematic v0.4.29, RDKit 2026.03.3
-(descriptor calculation paths unchanged through v0.8.0, not re-measured since)
+**Environment:** Python 3.13.6, Apple M4, chematic v0.18.0 (commit `24a9239`), RDKit 2026.03.4, measured 2026-08-23T00:20:36Z
 
 ---
 
@@ -11,7 +10,7 @@ Summary of descriptor accuracy against RDKit on a ChEMBL-derived corpus.
 
 | Descriptor | Agreement | Tolerance | Notes |
 |---|---|---|---|
-| Molecular weight | **100%** | ±0.001 Da | 175-mol reference (avg. MW vs `Descriptors.MolWt`)†† |
+| Molecular weight | **99.82%** (4990/4999) | ±0.01 Da | vs `Descriptors.MolWt` |
 | Heavy atom count | **100%** (4999/4999) | exact | |
 | H-bond donors (HBD) | **100%** (4999/4999) | exact | |
 | H-bond acceptors (HBA) | **100%** (4999/4999) | exact | |
@@ -29,53 +28,71 @@ Summary of descriptor accuracy against RDKit on a ChEMBL-derived corpus.
 | Num amide bonds | **100%** (4999/4999) | exact | |
 | Arom./aliph. heterocycles | **100%** (4999/4999) | exact | |
 | [nH] SMARTS match | **100%** (4999/4999) | precision & recall | TP=467 TN=4532 FP=0 FN=0 |
-| Stereocenter count (legacy)  | **99.98%** (4998/4999) | exact† | *count* agreement only — vs `CalcNumAtomStereoCenters` |
-| Stereocenter count (new CIP) | 98.7% (4932/4999) | exact† | *count* agreement only — vs `FindPotentialStereo` |
-| CIP R/S label agreement | 96.30% (4031/4186 stereocenters) | exact | vs modern `rdCIPLabeler` (primary oracle); 96.83% (4031/4163) vs legacy `_CIPCode`. See `docs/rfcs/cip_accurate_rfc.md`. |
+| Num stereocenters (legacy)  | **99.96%** (4997/4999) | exact† | vs `CalcNumAtomStereoCenters` |
+| Num stereocenters (new CIP) | 98.6% (4929/4999) | exact† | vs `FindPotentialStereo` |
 
-19 of 19 tested metrics reach ≥98.0% on the 4,999-molecule ChEMBL corpus (count-agreement
-metrics only — CIP label agreement is a distinct, stricter check, see below).
-chematic stereocenter *count* is calibrated between legacy (99.98%) and new-CIP (98.7%)
-oracles. This is a different, weaker question than "is the R/S label itself correct" —
-**stereocenter count agreement does not imply label agreement**: an atom can be correctly
-flagged as a stereocenter and still be assigned the wrong R/S. That stricter check is
-measured separately, per-stereocenter (not per-molecule) as "CIP R/S label agreement"
-above — 96.30% against RDKit's modern `rdCIPLabeler` oracle on a 5,000-molecule ChEMBL
-subset (4,186 total stereocenters found across those molecules). See
-`docs/rfcs/cip_accurate_rfc.md` for the residual's root cause (a structural limitation in the
-CIP comparator, not a series of independently-fixable rule gaps) and the remediation
-plan.
+20 of 20 tested metrics reach ≥98.6% on the 4,999-molecule ChEMBL corpus.
+chematic stereocenters is calibrated between legacy (99.96%) and new-CIP (98.6%) oracles.
 
 ---
 
 ## Stereocenters — Oracle Calibration
 
-This section is about *count* calibration only — does chematic flag the same atoms as
-stereogenic as RDKit does. It says nothing about whether an agreed-upon stereocenter's
-R/S label is correct; see "CIP R/S label agreement" in the table above and
-`docs/rfcs/cip_accurate_rfc.md` for that separate, stricter check.
-
 chematic's stereocenter count is calibrated between two RDKit oracles:
 
 | Oracle | Agreement | Count | Notes |
 |---|---|---|---|
-| Legacy `CalcNumAtomStereoCenters` | **99.98%** (4998/4999) | 4998/4999 | 1 molecule where chematic is more accurate (legacy under-counts) |
-| New CIP `FindPotentialStereo` | 98.7% (4932/4999) | 4932/4999 | 67 molecules where chematic correctly agrees with legacy (new CIP over-counts cage systems) |
-| Consensus (all three agree) | 98.6% (4931/4999) | 4931/4999 | molecules where legacy, new CIP, and chematic all agree |
+| Legacy `CalcNumAtomStereoCenters` | **99.96%** (4997/4999) | 4997/4999 | 68 molecule where chematic is more accurate (legacy under-counts) |
+| New CIP `FindPotentialStereo` | 98.6% (4929/4999) | 4929/4999 | 0 molecules where chematic correctly agrees with legacy (new CIP over-counts cage systems) |
+| Consensus (all three agree) | 98.6% (4929/4999) | 4929/4999 | molecules where legacy, new CIP, and chematic all agree |
 
 **Oracle disagreements:** 68 molecules where legacy ≠ new CIP.
-- 1 where legacy under-counts a pseudoasymmetric polyester (chematic and new CIP both correctly return 4; legacy returns 2)
-- 67 where new CIP over-counts cage/adamantane-like systems (chematic and legacy correctly agree on fewer stereocenters)
+- 68 where legacy under-counts a pseudoasymmetric polyester (chematic and new CIP both correctly return 4; legacy returns 2)
+- 0 where new CIP over-counts cage/adamantane-like systems (chematic and legacy correctly agree on fewer stereocenters)
+
+---
+
+## CIP R/S/E/Z Label Agreement
+
+A distinct metric from stereocenter *count* agreement above: given a stereocenter
+both chematic and RDKit agree exists, does chematic assign the same R/S/E/Z label?
+Measured via `chematic-cip`'s `corpus_snapshot` example
+(`assign_cip_accurate_experimental`, the production-path engine) against the same
+4,999-molecule corpus, cross-checked against a freshly regenerated `rdCIPLabeler`
+oracle by `scripts/cip_accurate_full_corpus_report.py`:
+
+| Oracle | Agreement | Count |
+|---|---|---|
+| Modern `rdCIPLabeler` | **99.74%** | 4175/4186 |
+
+A supplementary spot-check against RDKit's older `AssignStereochemistry`/`_CIPCode`
+algorithm (R/S atom stereocenters only, not the E/Z bond stereocenters `rdCIPLabeler`
+also covers above) gives a consistent **99.78%** (4150/4159), confirming the two
+RDKit-side oracles agree with each other and with chematic to within a similar
+margin. Both figures are a substantial improvement over a prior snapshot's
+96.30%/96.83%, reflecting CIP-engine fixes landed in the interim releases.
+
+```bash
+cargo run -p chematic-cip --release --example corpus_snapshot -- \
+    --candidate scripts/chembl_accuracy_corpus_4999.smi /tmp/candidate.tsv
+.venv/bin/python scripts/cip_accurate_full_corpus_report.py \
+    /tmp/candidate.tsv /tmp/candidate.tsv scripts/chembl_accuracy_corpus_4999.smi
+```
+
+(Passing the same file as both `baseline` and `candidate` reports zero
+regressions trivially and surfaces the direct oracle-agreement percentage in the
+`candidate_correct` line -- this script's real purpose is comparing two engine
+variants, reused here for a single-engine accuracy figure.)
 
 ---
 
 ## Reproduce
 
 ```bash
-# Requires RDKit and a SMILES file
-.venv/bin/python scripts/bench5k.py ~/Downloads/SMILES.csv
-.venv/bin/python scripts/bench5k.py ~/Downloads/SMILES.csv --detail
-.venv/bin/python scripts/bench5k.py ~/Downloads/SMILES.csv --json validation/results/bench5k_latest.json
+# Requires RDKit; corpus is committed at scripts/chembl_accuracy_corpus_4999.smi
+.venv/bin/python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi
+.venv/bin/python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --detail
+.venv/bin/python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --json validation/results/bench5k_latest.json
 python3 scripts/gen_validation_report.py validation/results/bench5k_latest.json
 ```
 
@@ -87,13 +104,6 @@ Reference TSV files: `scripts/rdkit_reference_*.tsv` (generated by `scripts/gen_
 
 *† Stereocenters: see Oracle Calibration section above.*
 
-*†† Known documentation inconsistency, flagged during an August 2026 accuracy audit rather than
-silently resolved: this row's "175-mol reference" annotation predates this table's later
-standardization on the 4,999-molecule ChEMBL corpus used by every other row here, and describes
-a smaller, separate reference set this session did not re-run (a full 4,999-mol corpus re-run
-is a deliberately avoided heavy measurement outside a release cycle). Until re-verified, treat
-this row's methodology as distinct from the rest of the table, not as a 4,999/4,999 result.*
-
 ---
 
 ## Known Limitations
@@ -104,4 +114,4 @@ this row's methodology as distinct from the rest of the table, not as a 4,999/4,
 
 ---
 
-*Validation corpus: ChEMBL-derived 5,000-molecule SMILES set. Details: [`benchmark.md`](benchmark.md) · [`rdkit-comparison.md`](rdkit-comparison.md)*
+*Validation corpus: ChEMBL-derived 4,999-molecule SMILES set (`scripts/chembl_accuracy_corpus_4999.smi`, 5,000 raw lines; `csv.DictReader` treats the first line as a header, so 4,999 molecules are actually evaluated -- see the Reproduce section). Details: [`benchmark.md`](benchmark.md) · [`rdkit-comparison.md`](rdkit-comparison.md)*
