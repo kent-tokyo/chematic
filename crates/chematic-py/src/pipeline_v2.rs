@@ -90,7 +90,7 @@ fn parse_force_field_policy(s: &str) -> PyResult<ForceFieldPolicy> {
     }
 }
 
-fn force_field_policy_str(p: ForceFieldPolicy) -> &'static str {
+pub(crate) fn force_field_policy_str(p: ForceFieldPolicy) -> &'static str {
     match p {
         ForceFieldPolicy::Mmff94BondAngleStrict => "mmff94_bond_angle_strict",
         ForceFieldPolicy::Mmff94WithUffFallback => "mmff94_with_uff_fallback",
@@ -104,7 +104,7 @@ fn force_field_policy_str(p: ForceFieldPolicy) -> &'static str {
 /// this pipeline (e.g. `EmbedFailureCause::BoundsSmoothingFailed` ->
 /// `"bounds_smoothing_failed"`). Not used for enums with data-carrying variants
 /// (those get hand-written conversions above/below so the payload isn't lost).
-fn snake_case_debug<T: std::fmt::Debug>(value: &T) -> String {
+pub(crate) fn snake_case_debug<T: std::fmt::Debug>(value: &T) -> String {
     let debug = format!("{value:?}");
     let mut out = String::with_capacity(debug.len() + 4);
     for (i, c) in debug.chars().enumerate() {
@@ -364,7 +364,7 @@ impl PyPipelineV2Config {
 // Result / failure -> PyDict conversion
 // ---------------------------------------------------------------------------
 
-fn coords_to_vec(coords: &chematic_3d::coords::Coords3D) -> Vec<Vec<f64>> {
+pub(crate) fn coords_to_vec(coords: &chematic_3d::coords::Coords3D) -> Vec<Vec<f64>> {
     coords.points.iter().map(|p| vec![p.x, p.y, p.z]).collect()
 }
 
@@ -703,7 +703,7 @@ fn mmff94_coverage_dict<'py>(
     Ok(d)
 }
 
-fn force_field_bridge_error_dict<'py>(
+pub(crate) fn force_field_bridge_error_dict<'py>(
     py: Python<'py>,
     e: &chematic_3d::minimize::ForceFieldBridgeError,
 ) -> PyResult<Bound<'py, PyDict>> {
@@ -966,7 +966,10 @@ fn failure_cause_dict<'py>(
     Ok(d)
 }
 
-fn failure_to_dict<'py>(py: Python<'py>, f: &PipelineV2Failure) -> PyResult<Bound<'py, PyDict>> {
+pub(crate) fn failure_to_dict<'py>(
+    py: Python<'py>,
+    f: &PipelineV2Failure,
+) -> PyResult<Bound<'py, PyDict>> {
     let d = PyDict::new(py);
     d.set_item("cause", failure_cause_dict(py, &f.cause)?)?;
     d.set_item("stage", snake_case_debug(&f.stage))?;
