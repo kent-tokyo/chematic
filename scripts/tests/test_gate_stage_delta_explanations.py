@@ -19,12 +19,22 @@ Three fixtures, not one:
    newly-passing case in the current committed data is chembl_tier_b_0030,
    which is the OTHER category below) -- still exercises the exact typed
    fields the check reads.
-2. POSITIVE (`identical_coverage_timing_variance`, the new category): the
-   ACTUAL row pair for `chembl_tier_b_0030`
+2. POSITIVE (`identical_coverage_timing_variance`, the new category): a
+   frozen snapshot of the real row pair for `chembl_tier_b_0030`
    (`chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated` ->
-   `..._complete_bonded_term_gated`), taken verbatim from
-   `validation/results/pipeline_v2_vs_rdkit_chematic_rows.jsonl` at the time
-   this fix was written -- the exact case that tripped the assertion.
+   `..._complete_bonded_term_gated`) that originally tripped the assertion
+   during the A1/A2 closeout round (2026-08-23) -- captured once, not
+   re-read from the live rows file. This is a regression test of the
+   classification LOGIC, not of that molecule's current benchmark outcome:
+   `chembl_tier_b_0030` sits right at the 20s wall-clock timeout boundary
+   under these two (otherwise unmodified) arms, so its real status flips
+   between runs/machines on pure timing noise -- exactly the phenomenon
+   this category exists to recognize, and exactly why re-reading it live
+   would make this test assert on benchmark timing variance instead of on
+   `_verify_identical_coverage_timing_variance`'s own logic. Found flipping
+   for real during the best-of-N benchmark round (2026-08-24): timed out at
+   21946ms in one run, succeeded cleanly at 6643ms in the next, both on
+   identical unmodified code.
 3. NEGATIVE (must keep failing both checks -- the one that matters, per
    this project's established two-control convention): a case that
    superficially resembles a rescue (earlier row times out, later row
@@ -36,7 +46,6 @@ Three fixtures, not one:
 Usage: python scripts/tests/test_gate_stage_delta_explanations.py
 """
 
-import json
 import os
 import sys
 
@@ -46,11 +55,6 @@ from gen_pipeline_v2_vs_rdkit_report import (  # noqa: E402
     TOTAL_TIMEOUT_MS,
     _verify_identical_coverage_timing_variance,
     _verify_uff_fallback_rescue,
-)
-
-ROOT = os.path.join(os.path.dirname(__file__), "..", "..")
-CHEMATIC_ROWS_PATH = os.path.join(
-    ROOT, "validation", "results", "pipeline_v2_vs_rdkit_chematic_rows.jsonl"
 )
 
 
@@ -74,53 +78,39 @@ def positive_uff_fallback_rescue():
 
 
 def positive_identical_coverage_timing_variance_chembl_tier_b_0030():
-    """The real row pair that tripped the assertion during A1's fresh
-    265-molecule re-run, loaded from the committed JSONL if present (so
-    this test tracks the actual data, not a frozen copy that could drift
-    from it silently) with an embedded fallback copy for CI environments
-    that don't have the (large, regenerated-per-benchmark-round) rows file
-    checked out."""
-    earlier_row = None
-    later_row = None
-    if os.path.exists(CHEMATIC_ROWS_PATH):
-        with open(CHEMATIC_ROWS_PATH) as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                row = json.loads(line)
-                if row.get("name") != "chembl_tier_b_0030":
-                    continue
-                if row["arm"] == "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated":
-                    earlier_row = row
-                elif row["arm"] == "chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated":
-                    later_row = row
-
-    if earlier_row is None or later_row is None:
-        # Fallback: verbatim snapshot of the real rows (captured 2026-08-23,
-        # A1/A2 closeout round) for environments without the rows file.
-        earlier_row = {
-            "arm": "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated",
-            "elapsed_ms": 21946,
-            "failure_cause": "Timeout",
-            "failure_stage": "ForceFieldMinimization",
-            "name": "chembl_tier_b_0030",
-            "status": "timeout",
-            "tier": "B",
-        }
-        later_row = {
-            "arm": "chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated",
-            "elapsed_ms": 18914,
-            "force_field_actual": "Mmff94BondAngleStrict",
-            "force_field_fallback": False,
-            "force_field_fallback_reason": None,
-            "name": "chembl_tier_b_0030",
-            "oop_missing_count": 0,
-            "status": "success",
-            "stretch_bend_missing_count": 0,
-            "tier": "B",
-            "torsion_missing_count": 0,
-        }
+    """Frozen snapshot (captured 2026-08-23, A1/A2 closeout round) of the
+    real row pair that originally tripped the assertion -- deliberately
+    NEVER re-read from the live, regenerated-per-benchmark-round rows file.
+    This function tests `_verify_identical_coverage_timing_variance`'s
+    classification logic in isolation; the molecule's CURRENT benchmark
+    outcome is irrelevant to that and does genuinely change from run to
+    run (it sits right at the 20s wall-clock timeout boundary under these
+    two otherwise-unmodified arms -- confirmed flipping timeout<->success
+    on identical code between the A1/A2 closeout round and the best-of-N
+    round, 2026-08-24). Loading live data here would make this test assert
+    on benchmark timing noise instead of on the classifier."""
+    earlier_row = {
+        "arm": "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated",
+        "elapsed_ms": 21946,
+        "failure_cause": "Timeout",
+        "failure_stage": "ForceFieldMinimization",
+        "name": "chembl_tier_b_0030",
+        "status": "timeout",
+        "tier": "B",
+    }
+    later_row = {
+        "arm": "chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated",
+        "elapsed_ms": 18914,
+        "force_field_actual": "Mmff94BondAngleStrict",
+        "force_field_fallback": False,
+        "force_field_fallback_reason": None,
+        "name": "chembl_tier_b_0030",
+        "oop_missing_count": 0,
+        "status": "success",
+        "stretch_bend_missing_count": 0,
+        "tier": "B",
+        "torsion_missing_count": 0,
+    }
 
     ok, reason = _verify_identical_coverage_timing_variance(
         earlier_row, later_row, ["torsion_missing_count", "oop_missing_count"]

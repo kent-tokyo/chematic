@@ -49102,7 +49102,8 @@
     "rdkit_arm": "rdkit_etkdgv3_best_of_n",
     "chematic_attempted": 265,
     "chematic_success": 251,
-    "chematic_mean_conformers_kept": 9.422641509433962,
+    "chematic_mean_conformers_kept_per_attempted": 9.422641509433962,
+    "chematic_mean_conformers_kept_per_success": 9.94820717131474,
     "sanity_molecules_with_any_pruning": 0,
     "sanity_molecules_with_mixed_force_field": 0,
     "n_paired_rmsd": 250,
@@ -49111,7 +49112,9 @@
     "n_paired_tfd": 243,
     "tfd_median": 0.34353541367232854,
     "tfd_p90": 0.514413007949022,
-    "tfd_file_present": true
+    "tfd_file_present": true,
+    "rdkit_best_of_n_success": 264,
+    "chematic_single_uff_only_success": 250
   },
   "generated_by": [
     "scripts/gen_pipeline_v2_vs_rdkit_tier_a_manifest.py",

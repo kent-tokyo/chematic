@@ -592,17 +592,32 @@ def main():
         n_success = sum(1 for r in chematic_bon_rows if r["_bucket"] == "success")
         n_pruned_any = sum(1 for r in chematic_bon_rows if r.get("attempts_pruned", 0) > 0)
         n_mixed_ff = sum(1 for r in chematic_bon_rows if r.get("mixed_force_field") is True)
-        conformers_kept = [r["conformers_kept"] for r in chematic_bon_rows if "conformers_kept" in r]
+        # NoConformersKept failure rows also carry "conformers_kept": 0 (a
+        # true, not-missing value), so filtering on key presence alone mixes
+        # 265 attempted molecules into what should be a per-success average.
+        # Report both denominators explicitly rather than mislabel one.
+        conformers_kept_attempted = [r["conformers_kept"] for r in chematic_bon_rows if "conformers_kept" in r]
+        conformers_kept_success = [
+            r["conformers_kept"] for r in chematic_bon_rows if r["_bucket"] == "success" and "conformers_kept" in r
+        ]
 
         rmsd_values = [r["rmsd_symmetric_angstrom"] for r in rmsd_rows]
         tfd_values = [r["tfd"] for r in tfd_rows]
+
+        rdkit_bon_success = rdkit_coverage[rdkit_arm]["success"]
+        chematic_single_uff_success = chematic_coverage["chematic_pipeline_v2_uff_only"]["success"]
 
         return {
             "chematic_arm": chematic_arm,
             "rdkit_arm": rdkit_arm,
             "chematic_attempted": n_attempted,
             "chematic_success": n_success,
-            "chematic_mean_conformers_kept": statistics.fmean(conformers_kept) if conformers_kept else None,
+            "chematic_mean_conformers_kept_per_attempted": (
+                statistics.fmean(conformers_kept_attempted) if conformers_kept_attempted else None
+            ),
+            "chematic_mean_conformers_kept_per_success": (
+                statistics.fmean(conformers_kept_success) if conformers_kept_success else None
+            ),
             "sanity_molecules_with_any_pruning": n_pruned_any,
             "sanity_molecules_with_mixed_force_field": n_mixed_ff,
             "n_paired_rmsd": len(rmsd_values),
@@ -612,6 +627,8 @@ def main():
             "tfd_median": percentile(tfd_values, 0.50),
             "tfd_p90": percentile(tfd_values, 0.90),
             "tfd_file_present": TFD_BEST_OF_N_PATH.exists(),
+            "rdkit_best_of_n_success": rdkit_bon_success,
+            "chematic_single_uff_only_success": chematic_single_uff_success,
         }
 
     best_of_n = best_of_n_summary()
@@ -1225,8 +1242,13 @@ def write_markdown_report(agg):
     lines.append("")
     lines.append(
         f"chematic attempted {bon['chematic_attempted']} molecules, {bon['chematic_success']} "
-        f"succeeded (kept >=1 conformer), mean conformers kept per success "
-        f"{fmt_num(bon['chematic_mean_conformers_kept'], 2)}/10."
+        f"succeeded (kept >=1 conformer). Mean conformers kept per attempted molecule "
+        f"(265 denominator, failures counting as 0): "
+        f"{fmt_num(bon['chematic_mean_conformers_kept_per_attempted'], 2)}/10. Mean conformers "
+        f"kept per successful molecule ({bon['chematic_success']} denominator): "
+        f"{fmt_num(bon['chematic_mean_conformers_kept_per_success'], 2)}/10 -- report both; a "
+        "single blended number silently mixes zero-conformer failures into what should be a "
+        "per-success average."
     )
     lines.append("")
     lines.append(
@@ -1266,14 +1288,33 @@ def write_markdown_report(agg):
             f"(expected output: `{TFD_BEST_OF_N_PATH.relative_to(ROOT)}`)."
         )
     lines.append("")
+    _coverage_gap = bon["rdkit_best_of_n_success"] - bon["chematic_success"]
+    _bon_rescue = bon["chematic_success"] - bon["chematic_single_uff_only_success"]
     lines.append(
-        "A low RMSD/TFD would mean chematic's own energy-ranked best-of-10 selection tends to "
-        "land on essentially the same conformer RDKit's does under a matched budget; a high one "
-        "would mean the two engines' distinct sampling (chematic's ETKDG-derived "
-        "`embed_pipeline_v2` vs. RDKit's own ETKDGv3) and/or UFF energy landscape disagree on "
-        "which of 10 candidates is best, independent of whether either individual embed is sound "
-        "(see the geometry-quality table above for that, separately, under "
-        f"`{bon['chematic_arm']}`)."
+        f"**Reading these numbers**: median RMSD {fmt_num(bon['rmsd_median_angstrom'], 3)} Å / "
+        f"median TFD {fmt_num(bon['tfd_median'], 3)} are moderate-to-large, not \"essentially the "
+        "same conformer\" -- a TFD of 0 means identical torsions and 1 means maximally different, "
+        "so ~0.34 median plus a 3+ Å median RMSD indicates chematic's and RDKit's best-of-10 "
+        "selections diverge substantially on which of 10 candidates is representative, most "
+        "plausibly from the two engines' distinct sampling (chematic's ETKDG-derived "
+        "`embed_pipeline_v2` vs. RDKit's own ETKDGv3) and/or differing UFF energy landscapes "
+        "steering the lowest-energy pick differently -- independent of whether either individual "
+        f"embed is itself sound (100% independently sound for `{bon['chematic_arm']}`, see the "
+        "geometry-quality table above)."
+    )
+    lines.append("")
+    lines.append(
+        f"**Net assessment**: chematic's A2 best-of-10 returned a sound conformer for "
+        f"{bon['chematic_success']}/{bon['chematic_attempted']} molecules, confirming the "
+        "energy-ranked ensemble path works at real-corpus scale. Coverage still trails RDKit's "
+        f"own best-of-10 ({bon['rdkit_best_of_n_success']}/265, a {_coverage_gap}-molecule gap), "
+        f"and running 10 attempts instead of 1 rescued only {_bon_rescue} additional molecule(s) "
+        f"over the single-attempt `chematic_pipeline_v2_uff_only` arm "
+        f"({bon['chematic_single_uff_only_success']}/265) -- best-of-N is not primarily a coverage "
+        "lever here. Conformer-selection parity with RDKit is NOT yet established (see the "
+        "RMSD/TFD numbers above). A2's demonstrated value this round is generating multiple "
+        "candidates with energy ranking, a reproducible seed, and full per-attempt provenance "
+        "(kept/pruned/failed) -- not closing the coverage or selection-parity gap with RDKit."
     )
     lines.append("")
 
