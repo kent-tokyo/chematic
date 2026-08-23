@@ -82,6 +82,7 @@ def main():
     def make_float_counter():
         return {"match": 0, "over": 0, "under": 0, "detail_count": 0}
 
+    mw    = make_float_counter()
     hba   = make_int_counter()
     hbd   = make_int_counter()
     arc   = make_int_counter()
@@ -169,6 +170,7 @@ def main():
             parse_fail_rd += 1
             continue
 
+        rd_mw   = Descriptors.MolWt(rd_mol)
         rd_hba  = rdMolDescriptors.CalcNumHBA(rd_mol)
         rd_hbd  = rdMolDescriptors.CalcNumHBD(rd_mol)
         rd_arc  = sum(
@@ -250,6 +252,7 @@ def main():
             parse_fail_ch += 1
             continue
 
+        ch_mw   = ch_mol.mw
         ch_hba  = ch_mol.hba
         ch_hbd  = ch_mol.hbd
         ch_arc  = ch_mol.aromatic_ring_count
@@ -302,6 +305,7 @@ def main():
                     print(f"{label} {delta:{fmt}}  rd={rd_val:{fmt}} ch={ch_val:{fmt}}  {smi}", file=sys.stderr)
                     c["detail_count"] += 1
 
+        check_float(mw,   rd_mw,    ch_mw,    0.01, "MW",     smi, ".4f")
         check_int(hba,    rd_hba,   ch_hba,   "HBA",    smi)
         check_int(hbd,    rd_hbd,   ch_hbd,   "HBD",    smi)
         check_int(arc,    rd_arc,   ch_arc,   "ARC",    smi)
@@ -410,6 +414,7 @@ def main():
     print(f"  extended metrics skipped:{extended_skipped:>6}  (rare elements RDKit lacks Gasteiger/valence params for)")
     print(sep)
 
+    print(fmt_int("Molecular weight (±0.01):", mw))
     print(fmt_int("HBA agreement:", hba))
     print(fmt_int("HBD agreement:", hbd))
     print(f"  {'Aromatic ring count:':<28} {pct(arc):6.1f}%  ({arc['match']}/{total})")
@@ -516,9 +521,11 @@ def main():
                 "agreement_pct": round(fam_match / fam_total * 100, 2) if fam_total else 0,
                 "per_sub_descriptor": per_sub,
             }
+        import rdkit as _rdkit
         results = {
             "generated_at": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
             "chematic_version": ver,
+            "rdkit_version": _rdkit.__version__,
             "corpus": {"total": total, "rdkit_parse_failures": parse_fail_rd,
                        "chematic_parse_failures": parse_fail_ch,
                        "extended_metrics_skipped": extended_skipped},
@@ -528,6 +535,7 @@ def main():
                 "oracle_disagree_new_cip_over": nsc_oracle_new_over,
             },
             "metrics": {
+                "mw":    metric_dict(mw,   "±0.01"),
                 "hba":   metric_dict(hba,  "exact"),
                 "hbd":   metric_dict(hbd,  "exact"),
                 "arc":   metric_dict(arc,  "exact"),

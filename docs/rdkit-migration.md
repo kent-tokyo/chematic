@@ -103,11 +103,11 @@ been measured).
 | Tanimoto similarity | `DataStructs.TanimotoSimilarity(fp1, fp2)` | `chematic.tanimoto(fp1, fp2)` |
 | Bulk fingerprints | list comprehension over `mols` | `chematic.bulk.ecfp4(smiles_list)` (NumPy `(N, 2048)` uint8, Rayon-parallel) |
 
-Performance note: batch ECFP4 was measured at **~78 µs/mol vs. RDKit's
-~160–235 µs/mol** (2–3×) on a diverse 5,000-mol ChEMBL corpus, and up to
-**126 ms vs. ~839 ms** (6.7×) on a small repeated-fixture 10,000-mol batch —
-both numbers from `docs/benchmark.md` (measured Python 3.13.6, Apple M4,
-chematic v0.4.29, RDKit 2026.03.3; not re-measured for this PR). Cite these
+Performance note: batch ECFP4 was measured at **~54.7 µs/mol vs. RDKit's
+~94.3 µs/mol** (1.7×) on a diverse 5,000-mol ChEMBL corpus, and
+**6.76 µs/mol vs. ~44.5 µs/mol** (6.6×) on a small repeated-fixture
+10,000-mol batch — both numbers from `docs/benchmark.md` (measured Python
+3.13.6, Apple M4, chematic v0.18.0, RDKit 2026.03.4, 2026-08-23). Cite these
 exact, already-measured figures if you cite speed at all — do not
 extrapolate to other batch sizes or fingerprint types not in that table.
 
@@ -122,11 +122,11 @@ extrapolate to other batch sizes or fingerprint types not in that table.
 | Bulk / DataFrame | manual loop + `pd.DataFrame(...)` | `chematic.bulk.descriptors(smiles_list)` / `chematic.descriptors_df(smiles_list)` (Rayon-parallel, returns a list of dicts / DataFrame directly) |
 
 Accuracy vs. RDKit, per `docs/benchmark.md` and README's badge comment
-(4,999-mol ChEMBL subset, chematic v0.4.29 vs. RDKit 2026.03.3, descriptor
-calculation paths unchanged through v0.8.0 and not re-measured since): MW/
-HBA/HBD/ARC **100%**, TPSA **100% within ±0.1 Å²** (README's "TPSA edge
-cases" bullet notes a residual 0.3%/16-molecule gap in exotic
-phosphazene/S=N=P chemistry), LogP (Crippen) **100%*** (max Δ =
+(4,999-mol ChEMBL subset, chematic v0.18.0 vs. RDKit 2026.03.4, measured
+2026-08-23): HBA/HBD/ARC **100%**, MW **99.82%** (±0.01 Da — a genuine
+corpus-wide check, added this release), TPSA **100% within ±0.1 Å²**
+(README's "TPSA edge cases" bullet notes a residual 0.3%/16-molecule gap in
+exotic phosphazene/S=N=P chemistry), LogP (Crippen) **100%*** (max Δ =
 1.1×10⁻¹³). These are the only descriptor-accuracy figures this page
 cites, and only because README/CHANGELOG already document them.
 

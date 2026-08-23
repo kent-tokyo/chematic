@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] — 2026-08-23
+
 ### Added — `chematic-chem` (Tautomer & Parent Identity round 2C, ROADMAP.md Phase 2)
 
 - `canonical_tautomer`/`tautomer_parent` now canonicalize the aromatic
@@ -22,14 +24,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `docs/rfcs/tautomer_parent_identity_phase2_rfc.md` section 4.4a for the
   full mechanism and the measurement behind that design choice.
 - **Measured, not assumed:** the shift fires correctly on all 5 of the
-  RFC's design molecules, but end-to-end convergence holds for 3 of 5
-  (2-pyridone, 4-pyridone, uracil) plus the hypoxanthine holdout — cytosine
-  and guanine do not converge end-to-end, because their carbonyl carbon is
-  flanked by two ring nitrogens (RFC section 1.7, a second, distinct,
-  out-of-scope tautomer defect found while fixing this one). Closing that
-  gap needs ring-internal N-position normalization, deliberately not part
-  of this change (same reasoning as excluding the nitroso/oxime defect,
-  section 1.6).
+  RFC's design molecules, but end-to-end convergence holds for only 3 of 5
+  (2-pyridone, 4-pyridone, uracil) — cytosine and guanine do not converge
+  end-to-end, because their carbonyl carbon is flanked by two ring
+  nitrogens (RFC section 1.7, a second, distinct, out-of-scope tautomer
+  defect found while fixing this one). **Correction (round 2C-N,
+  diagnosis-only, no production-code change): hypoxanthine was originally
+  reported here as a clean holdout that generalized the fix — this was
+  wrong.** Re-measurement found hypoxanthine has the identical two-candidate
+  ring-N-H ambiguity as cytosine/guanine (RFC section 1.7); the original
+  holdout check happened to test only one of its two valid keto spellings.
+  Closing section 1.7 for all three molecules needs ring-internal
+  N-position normalization, deliberately not part of this change (same
+  reasoning as excluding the nitroso/oxime defect, section 1.6). Neither
+  section 1.6 nor section 1.7 is resolved as of this release; Phase 2
+  (Tautomer & Parent Identity) is not complete, and `TautomerScoringConfig`/
+  Python/WASM Parent-API bindings remain unimplemented.
 - New negative controls confirmed unaffected: phenol, anisole, aniline,
   pyridine N-oxide, plain amides, and — the two checks that specifically
   probe the fix's scope boundary — 3-hydroxypyridine (excluded: even/meta
@@ -303,6 +313,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   — 0 failures (does not prove the race can never recur, only that it's
   now logically impossible for the `budget == 0` case specifically, by
   code inspection, not by re-running until lucky).
+
+### Changed — benchmark/validation refresh (release-prep, v0.19.0)
+
+Every number in `docs/benchmark.md`/`docs/validation.md` was pinned to
+**chematic v0.4.29 / RDKit 2026.03.3** — ~14 minor releases stale. Re-measured
+fresh against this release (RDKit 2026.03.4); full raw results and
+methodology: `benchmarks/2026-08-23.md`.
+
+- **The 4,999-molecule ChEMBL accuracy corpus is now committed**
+  (`scripts/chembl_accuracy_corpus_4999.smi`) — every prior snapshot back to
+  2026-06 depended on an uncommitted personal `~/Downloads/SMILES.csv` path
+  nobody else could reproduce from.
+- **Molecular weight now has a real, corpus-wide accuracy check** (99.82%,
+  4990/4999, ±0.01 Da vs `Descriptors.MolWt`) — `scripts/bench5k.py` never
+  actually measured it before; `docs/validation.md`'s "175-mol reference"
+  annotation was unconnected template prose, not a real second measurement.
+  Fixed at the source, not just reworded.
+- Fixed a real bug in `scripts/gen_validation_report.py`'s stereocenter
+  oracle-disagreement breakdown: it read chematic-vs-oracle delta fields
+  where it needed legacy-vs-new-CIP oracle-internal disagreement counts —
+  the two coincidentally summed to the right total in the last snapshot's
+  data, and do not in this one (68 disagreements, not "0 + 70").
+- **CIP R/S/E/Z label agreement** (a distinct metric from stereocenter
+  *count* agreement) re-measured at 99.74–99.78%, up from a stale
+  96.30–96.83% — reflects CIP-engine fixes landed across the ~14
+  intervening releases, not a change in this release itself.
+- The ECFP4 "diverse corpus" throughput figure previously had **no script
+  that could reproduce it at all** — added an optional `--corpus FILE`
+  argument to `scripts/benchmark_vs_rdkit.py` (reuses its existing timing
+  logic; still kept strictly separate from the repeated-fixture numbers).
+- WASM bundle size rebuilt clean (`--target web`, not the stale
+  `--target nodejs` artifact the old figure partially matched) — current:
+  2.98 MB raw / 1.11 MB gzip (chematic) vs 6.91 MB raw / 2.06 MB gzip
+  (RDKit.js, independently verified via `npm pack @rdkit/rdkit`).
+- `docs/benchmark.md`'s "3D conformer quality: Good (ETKDG rules)" framing
+  overstated what's actually measured — corrected to match
+  `docs/rdkit-migration.md`'s existing honest "Experimental, no RMSD/TFD
+  comparison exists" characterization. No 3D/RMSD/TFD measurement was added
+  or is claimed.
+- **Not claimed**: Phase 2 (Tautomer & Parent Identity) completion, or full
+  tautomer canonicalization — see this file's round 2C/2C-N entries above.
+  This is a benchmark/tooling refresh, not a Phase 2 status change.
 
 ## [0.18.0] — 2026-08-20
 
