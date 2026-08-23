@@ -121,15 +121,14 @@
       "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated": {
         "n_rows": 265,
         "buckets": {
-          "success": 253,
-          "typed_failure": 11,
-          "timeout": 1
+          "success": 254,
+          "typed_failure": 11
         },
-        "success": 253,
-        "independently_sound_successes": 253,
+        "success": 254,
+        "independently_sound_successes": 254,
         "sound_given_success": 1.0,
-        "sound_overall": 0.9547169811320755,
-        "usable_coverage": 0.9547169811320755
+        "sound_overall": 0.9584905660377359,
+        "usable_coverage": 0.9584905660377359
       },
       "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated": {
         "n_rows": 265,
@@ -166,6 +165,18 @@
         "sound_given_success": 0.9358490566037736,
         "sound_overall": 0.9358490566037736,
         "usable_coverage": 0.9358490566037736
+      },
+      "chematic_pipeline_v2_uff_best_of_10": {
+        "n_rows": 265,
+        "buckets": {
+          "success": 251,
+          "typed_failure": 14
+        },
+        "success": 251,
+        "independently_sound_successes": 251,
+        "sound_given_success": 1.0,
+        "sound_overall": 0.9471698113207547,
+        "usable_coverage": 0.9471698113207547
       }
     },
     "rdkit": {
@@ -673,8 +684,7 @@
           "success": 6
         },
         "macrocycle": {
-          "success": 8,
-          "timeout": 1
+          "success": 9
         },
         "stereocenter_implicit_h": {
           "success": 10
@@ -877,6 +887,60 @@
         },
         "drug_like": {
           "success": 194
+        }
+      },
+      "chematic_pipeline_v2_uff_best_of_10": {
+        "rigid_ring": {
+          "success": 9
+        },
+        "fused_aromatic": {
+          "success": 7
+        },
+        "flexible_chain": {
+          "success": 6
+        },
+        "macrocycle": {
+          "success": 9
+        },
+        "stereocenter_implicit_h": {
+          "success": 10
+        },
+        "stereocenter_quaternary": {
+          "success": 6
+        },
+        "alkene_ez": {
+          "success": 8
+        },
+        "druglike": {
+          "success": 7
+        },
+        "druglike_rigid": {
+          "success": 1
+        },
+        "druglike_stress": {
+          "success": 2
+        },
+        "small_ring_boundary": {
+          "success": 1
+        },
+        "macrocycle_boundary": {
+          "success": 1
+        },
+        "hindered_biaryl": {
+          "success": 1
+        },
+        "macrocycle_amide": {
+          "success": 1
+        },
+        "known_fail_closed_case": {
+          "success": 1
+        },
+        "force_field_unsupported": {
+          "success": 1
+        },
+        "drug_like": {
+          "success": 180,
+          "typed_failure": 14
         }
       }
     },
@@ -1174,10 +1238,10 @@
         "molecules_with_coincident_atoms": 0
       },
       "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated": {
-        "n_scored": 253,
+        "n_scored": 254,
         "all_finite_rate": 1.0,
         "independently_sound_rate": 1.0,
-        "mean_bond_violation_rate_15pct": 0.008478947366435525,
+        "mean_bond_violation_rate_15pct": 0.008445565683890502,
         "mean_bond_violation_rate_50pct": 0.0,
         "molecules_with_any_clash": 0,
         "molecules_with_coincident_atoms": 0
@@ -1207,6 +1271,15 @@
         "mean_bond_violation_rate_15pct": 0.5483798715343126,
         "mean_bond_violation_rate_50pct": 0.2371590787352756,
         "molecules_with_any_clash": 225,
+        "molecules_with_coincident_atoms": 0
+      },
+      "chematic_pipeline_v2_uff_best_of_10": {
+        "n_scored": 251,
+        "all_finite_rate": 1.0,
+        "independently_sound_rate": 1.0,
+        "mean_bond_violation_rate_15pct": 0.00516333402579499,
+        "mean_bond_violation_rate_50pct": 0.0,
+        "molecules_with_any_clash": 0,
         "molecules_with_coincident_atoms": 0
       }
     },
@@ -1346,6 +1419,14 @@
         "violated": 63,
         "unevaluable": 0,
         "satisfaction_rate": 0.6294117647058823
+      },
+      "chematic_pipeline_v2_uff_best_of_10": {
+        "n_molecules_with_declared_stereo": 81,
+        "declared": 142,
+        "satisfied": 68,
+        "violated": 74,
+        "unevaluable": 0,
+        "satisfaction_rate": 0.4788732394366197
       }
     },
     "rdkit": {
@@ -1411,9 +1492,9 @@
         "converged_rate": 0.22406639004149378
       },
       "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated": {
-        "n_success": 253,
-        "fallback_rate": 0.05138339920948617,
-        "converged_rate": 0.21739130434782608
+        "n_success": 254,
+        "fallback_rate": 0.051181102362204724,
+        "converged_rate": 0.21653543307086615
       },
       "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated": {
         "n_success": 241,
@@ -1505,9 +1586,9 @@
       "embed_succeeded": 254,
       "stereo_repair_reached": 254,
       "ff_attempted": 254,
-      "ff_succeeded": 253,
-      "final_stereo_verified": 253,
-      "final_validation_passed": 253
+      "ff_succeeded": 254,
+      "final_stereo_verified": 254,
+      "final_validation_passed": 254
     },
     "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated": {
       "attempted": 265,
@@ -1535,6 +1616,15 @@
       "ff_succeeded": null,
       "final_stereo_verified": null,
       "final_validation_passed": 265
+    },
+    "chematic_pipeline_v2_uff_best_of_10": {
+      "attempted": 265,
+      "embed_succeeded": null,
+      "stereo_repair_reached": null,
+      "ff_attempted": null,
+      "ff_succeeded": null,
+      "final_stereo_verified": null,
+      "final_validation_passed": 251
     }
   },
   "repair_effectiveness": [
@@ -1551,7 +1641,7 @@
       "geometry_pairs_compared": 231,
       "geometry_degraded_by_repair": 0,
       "repair_time_delta_median_ms": 0.0,
-      "repair_time_delta_p95_ms": 212.5,
+      "repair_time_delta_p95_ms": 26.5,
       "note": "repair_time_delta is (repair-arm elapsed_ms - Ignore-arm elapsed_ms) per molecule, a paired-arm difference -- not a directly instrumented repair-stage timer. n_excluded_incomparable = molecules where either arm failed before reaching StereoVerifyBefore (excluded, not counted as 0). n_repair_outcome_unavailable = molecules with a real before-mismatch where the repair arm failed before recording a repair outcome (also not counted as 0)."
     },
     {
@@ -1567,7 +1657,7 @@
       "geometry_pairs_compared": 244,
       "geometry_degraded_by_repair": 0,
       "repair_time_delta_median_ms": 0.0,
-      "repair_time_delta_p95_ms": 122.09999999999985,
+      "repair_time_delta_p95_ms": 33.69999999999999,
       "note": "repair_time_delta is (repair-arm elapsed_ms - Ignore-arm elapsed_ms) per molecule, a paired-arm difference -- not a directly instrumented repair-stage timer. n_excluded_incomparable = molecules where either arm failed before reaching StereoVerifyBefore (excluded, not counted as 0). n_repair_outcome_unavailable = molecules with a real before-mismatch where the repair arm failed before recording a repair outcome (also not counted as 0)."
     }
   ],
@@ -1599,11 +1689,9 @@
       "later_arm": "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated",
       "n_molecules_compared": 265,
       "earlier_success": 254,
-      "later_success": 253,
-      "newly_failing_under_later_gate": 1,
-      "newly_failing_names": [
-        "chembl_tier_b_0030"
-      ],
+      "later_success": 254,
+      "newly_failing_under_later_gate": 0,
+      "newly_failing_names": [],
       "newly_passing_explained": [],
       "newly_passing_unexplained": []
     },
@@ -1611,20 +1699,11 @@
       "earlier_arm": "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated",
       "later_arm": "chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated",
       "n_molecules_compared": 265,
-      "earlier_success": 253,
+      "earlier_success": 254,
       "later_success": 254,
       "newly_failing_under_later_gate": 0,
       "newly_failing_names": [],
-      "newly_passing_explained": [
-        {
-          "name": "chembl_tier_b_0030",
-          "earlier_status": "timeout",
-          "earlier_failure_cause": "Timeout",
-          "earlier_elapsed_ms": 21946,
-          "later_elapsed_ms": 18914,
-          "explanation_category": "identical_coverage_timing_variance"
-        }
-      ],
+      "newly_passing_explained": [],
       "newly_passing_unexplained": []
     }
   ],
@@ -1716,86 +1795,93 @@
       "chematic_pipeline_v2_no_ff": {
         "n": 265,
         "p50": 4.0,
-        "p95": 25.799999999999983,
-        "p99": 37.08000000000004,
+        "p95": 23.799999999999983,
+        "p99": 36.360000000000014,
         "max": 48
       },
       "chematic_pipeline_v2_dreiding": {
         "n": 265,
-        "p50": 134.0,
-        "p95": 1036.8,
-        "p99": 1288.8400000000001,
-        "max": 1692
+        "p50": 123.0,
+        "p95": 997.5999999999997,
+        "p99": 1141.4800000000002,
+        "max": 1264
       },
       "chematic_pipeline_v2_uff_only": {
         "n": 265,
-        "p50": 209.0,
-        "p95": 1462.0,
-        "p99": 2280.440000000002,
-        "max": 3508
+        "p50": 202.0,
+        "p95": 1386.0,
+        "p99": 2094.920000000005,
+        "max": 3477
       },
       "chematic_pipeline_v2_mmff94_strict": {
         "n": 265,
-        "p50": 1047.0,
-        "p95": 6452.4,
-        "p99": 9022.720000000001,
-        "max": 13032
+        "p50": 1066.0,
+        "p95": 6335.999999999999,
+        "p99": 8047.520000000001,
+        "max": 11103
       },
       "chematic_pipeline_v2_mmff94_with_uff_fallback": {
         "n": 265,
-        "p50": 1068.0,
-        "p95": 6383.4,
-        "p99": 9475.720000000014,
-        "max": 11623
+        "p50": 1063.0,
+        "p95": 6322.0,
+        "p99": 8047.440000000002,
+        "max": 11079
       },
       "chematic_pipeline_v2_mmff94_strict_repair": {
         "n": 265,
-        "p50": 942.0,
-        "p95": 6340.5999999999985,
-        "p99": 10127.160000000013,
-        "max": 17213
+        "p50": 880.0,
+        "p95": 6316.999999999997,
+        "p99": 8031.68,
+        "max": 11020
       },
       "chematic_pipeline_v2_mmff94_with_uff_fallback_repair": {
         "n": 265,
-        "p50": 958.0,
-        "p95": 6480.799999999998,
-        "p99": 11366.800000000027,
-        "max": 17476
+        "p50": 879.0,
+        "p95": 6275.199999999998,
+        "p99": 8035.12,
+        "max": 11002
       },
       "chematic_pipeline_v2_mmff94_strict_stretch_bend_gated": {
         "n": 265,
-        "p50": 1047.0,
-        "p95": 6672.799999999995,
-        "p99": 10735.320000000002,
-        "max": 17244
+        "p50": 1082.0,
+        "p95": 6309.799999999999,
+        "p99": 8168.280000000003,
+        "max": 11060
       },
       "chematic_pipeline_v2_mmff94_with_uff_fallback_stretch_bend_gated": {
         "n": 265,
-        "p50": 1065.0,
-        "p95": 6643.2,
-        "p99": 10758.560000000003,
-        "max": 21946
+        "p50": 1087.0,
+        "p95": 6310.999999999999,
+        "p99": 8059.920000000001,
+        "max": 11057
       },
       "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated": {
         "n": 265,
-        "p50": 1062.0,
-        "p95": 6646.799999999995,
-        "p99": 11812.240000000042,
-        "max": 19154
+        "p50": 1068.0,
+        "p95": 6295.4,
+        "p99": 8118.720000000002,
+        "max": 11008
       },
       "chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated": {
         "n": 265,
-        "p50": 1067.0,
-        "p95": 6357.799999999998,
-        "p99": 12855.320000000069,
-        "max": 19345
+        "p50": 1068.0,
+        "p95": 6318.599999999999,
+        "p99": 8129.4000000000015,
+        "max": 11031
       },
       "chematic_legacy_etkdg": {
         "n": 265,
-        "p50": 1.0,
+        "p50": 0.0,
         "p95": 4.0,
-        "p99": 6.360000000000014,
-        "max": 11
+        "p99": 5.0,
+        "max": 7
+      },
+      "chematic_pipeline_v2_uff_best_of_10": {
+        "n": 265,
+        "p50": 2032.0,
+        "p95": 14144.599999999993,
+        "p99": 23353.000000000033,
+        "max": 38350
       }
     },
     "rdkit": {
@@ -1836,7 +1922,7 @@
     "rows": [
       {
         "arm": "chematic_pipeline_v2_ring_torsion_failclosed_probe",
-        "elapsed_ms": 3,
+        "elapsed_ms": 2,
         "failure_cause": "RingTorsionApplicationUnsupported",
         "failure_stage": "TorsionOptimization",
         "final_stereo_declared": null,
@@ -2024,7 +2110,7 @@
             0.6402156484854435
           ]
         ],
-        "elapsed_ms": 43,
+        "elapsed_ms": 44,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -2369,7 +2455,7 @@
             -0.6302677461845816
           ]
         ],
-        "elapsed_ms": 44,
+        "elapsed_ms": 45,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -2723,7 +2809,7 @@
             -1.2541925232880062
           ]
         ],
-        "elapsed_ms": 43,
+        "elapsed_ms": 42,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -3054,7 +3140,7 @@
             -0.6529586797651669
           ]
         ],
-        "elapsed_ms": 141,
+        "elapsed_ms": 142,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -3194,7 +3280,7 @@
             -0.15017158363160507
           ]
         ],
-        "elapsed_ms": 186,
+        "elapsed_ms": 190,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -3316,7 +3402,7 @@
             2.3304046100648113
           ]
         ],
-        "elapsed_ms": 217,
+        "elapsed_ms": 223,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -3576,7 +3662,7 @@
             -1.5988062795510076
           ]
         ],
-        "elapsed_ms": 86,
+        "elapsed_ms": 87,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -3682,7 +3768,7 @@
             3.9768447329911085
           ]
         ],
-        "elapsed_ms": 98,
+        "elapsed_ms": 96,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -3778,7 +3864,7 @@
             -0.8673986809738723
           ]
         ],
-        "elapsed_ms": 53,
+        "elapsed_ms": 52,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -3912,7 +3998,7 @@
             -1.137616118961561
           ]
         ],
-        "elapsed_ms": 281,
+        "elapsed_ms": 298,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -4034,7 +4120,7 @@
             -1.9818956916122803
           ]
         ],
-        "elapsed_ms": 345,
+        "elapsed_ms": 161,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -4300,7 +4386,7 @@
             1.5401801858973196
           ]
         ],
-        "elapsed_ms": 433,
+        "elapsed_ms": 458,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -4656,7 +4742,7 @@
             1.2770329360189638
           ]
         ],
-        "elapsed_ms": 44,
+        "elapsed_ms": 49,
         "embed_attempts_used": 1,
         "final_stereo_declared": 2,
         "final_stereo_satisfied": 2,
@@ -4811,7 +4897,7 @@
             -1.8833126656197503
           ]
         ],
-        "elapsed_ms": 3,
+        "elapsed_ms": 2,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -5013,7 +5099,7 @@
             0.7525821628169912
           ]
         ],
-        "elapsed_ms": 360,
+        "elapsed_ms": 362,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -5159,7 +5245,7 @@
             -0.0010335086370815197
           ]
         ],
-        "elapsed_ms": 1654,
+        "elapsed_ms": 535,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 0,
@@ -5423,7 +5509,7 @@
             -0.12107972652743483
           ]
         ],
-        "elapsed_ms": 4,
+        "elapsed_ms": 3,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -5499,7 +5585,7 @@
             0.7443416771205172
           ]
         ],
-        "elapsed_ms": 4,
+        "elapsed_ms": 3,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -5575,7 +5661,7 @@
             0.3261598195403831
           ]
         ],
-        "elapsed_ms": 3,
+        "elapsed_ms": 2,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -5651,7 +5737,7 @@
             0.6226622307862978
           ]
         ],
-        "elapsed_ms": 6,
+        "elapsed_ms": 2,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -5722,7 +5808,7 @@
             -0.013403593595181802
           ]
         ],
-        "elapsed_ms": 2,
+        "elapsed_ms": 1,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -5867,7 +5953,7 @@
             -0.6855115203097113
           ]
         ],
-        "elapsed_ms": 7,
+        "elapsed_ms": 6,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -5943,7 +6029,7 @@
             -0.281001639259392
           ]
         ],
-        "elapsed_ms": 7,
+        "elapsed_ms": 6,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -6049,7 +6135,7 @@
             -0.46450452864306396
           ]
         ],
-        "elapsed_ms": 163,
+        "elapsed_ms": 158,
         "embed_attempts_used": 4,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -6161,7 +6247,7 @@
             0.3811238695450522
           ]
         ],
-        "elapsed_ms": 159,
+        "elapsed_ms": 157,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -6243,7 +6329,7 @@
             -1.952961090531248
           ]
         ],
-        "elapsed_ms": 6,
+        "elapsed_ms": 5,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -6319,7 +6405,7 @@
             2.1803497828082854
           ]
         ],
-        "elapsed_ms": 5,
+        "elapsed_ms": 4,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -6435,7 +6521,7 @@
             -0.2269591550047076
           ]
         ],
-        "elapsed_ms": 475,
+        "elapsed_ms": 250,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -6569,7 +6655,7 @@
             0.7525821628169912
           ]
         ],
-        "elapsed_ms": 407,
+        "elapsed_ms": 363,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -6700,7 +6786,7 @@
             1.2561282139501495
           ]
         ],
-        "elapsed_ms": 609,
+        "elapsed_ms": 319,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -6815,7 +6901,7 @@
             0.9337193357578325
           ]
         ],
-        "elapsed_ms": 135,
+        "elapsed_ms": 169,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -7117,7 +7203,7 @@
             2.487895157644664
           ]
         ],
-        "elapsed_ms": 700,
+        "elapsed_ms": 695,
         "embed_attempts_used": 1,
         "final_stereo_declared": 3,
         "final_stereo_satisfied": 3,
@@ -7173,7 +7259,7 @@
       },
       {
         "arm": "chematic_pipeline_v2_mmff94_strict_enforce_chirality",
-        "elapsed_ms": 11,
+        "elapsed_ms": 8,
         "failure_cause": "DistanceGeometry(StereoConstraintFailed)",
         "failure_stage": "DistanceGeometry",
         "final_stereo_declared": null,
@@ -7483,7 +7569,7 @@
             2.11863598478945
           ]
         ],
-        "elapsed_ms": 8398,
+        "elapsed_ms": 4779,
         "embed_attempts_used": 1,
         "final_stereo_declared": 2,
         "final_stereo_satisfied": 2,
@@ -7640,7 +7726,7 @@
             7.5023220488046505
           ]
         ],
-        "elapsed_ms": 552,
+        "elapsed_ms": 258,
         "embed_attempts_used": 3,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -7720,7 +7806,7 @@
             3.6467630132798095e-05
           ]
         ],
-        "elapsed_ms": 2,
+        "elapsed_ms": 1,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -7810,7 +7896,7 @@
             0.11956001721173057
           ]
         ],
-        "elapsed_ms": 35,
+        "elapsed_ms": 20,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -7909,7 +7995,7 @@
             -1.1079697820277188
           ]
         ],
-        "elapsed_ms": 59,
+        "elapsed_ms": 36,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -8034,7 +8120,7 @@
             1.6405711892895438
           ]
         ],
-        "elapsed_ms": 508,
+        "elapsed_ms": 333,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -8159,7 +8245,7 @@
             1.9666899083606966
           ]
         ],
-        "elapsed_ms": 362,
+        "elapsed_ms": 215,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -8308,7 +8394,7 @@
             3.099125142941012
           ]
         ],
-        "elapsed_ms": 631,
+        "elapsed_ms": 455,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -8522,7 +8608,7 @@
             -4.595790319618182
           ]
         ],
-        "elapsed_ms": 3629,
+        "elapsed_ms": 1373,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -8717,7 +8803,7 @@
             3.3872041078764568
           ]
         ],
-        "elapsed_ms": 2164,
+        "elapsed_ms": 1504,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -8913,7 +8999,7 @@
             1.8911542223044926
           ]
         ],
-        "elapsed_ms": 1500,
+        "elapsed_ms": 1490,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -9099,7 +9185,7 @@
             0.3400089324205961
           ]
         ],
-        "elapsed_ms": 1180,
+        "elapsed_ms": 1217,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -9288,7 +9374,7 @@
             3.6294990938581595
           ]
         ],
-        "elapsed_ms": 1367,
+        "elapsed_ms": 1337,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -9473,7 +9559,7 @@
             4.773889280362303
           ]
         ],
-        "elapsed_ms": 1201,
+        "elapsed_ms": 1203,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -9667,7 +9753,7 @@
             -2.4194676148078025
           ]
         ],
-        "elapsed_ms": 1545,
+        "elapsed_ms": 1531,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -9863,7 +9949,7 @@
             -1.9010725246855935
           ]
         ],
-        "elapsed_ms": 1513,
+        "elapsed_ms": 1525,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -10069,7 +10155,7 @@
             0.745795278851913
           ]
         ],
-        "elapsed_ms": 1867,
+        "elapsed_ms": 1868,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -10372,7 +10458,7 @@
             1.9017288051198593
           ]
         ],
-        "elapsed_ms": 11846,
+        "elapsed_ms": 6526,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -10435,7 +10521,7 @@
         ],
         "name": "chembl_tier_b_0009",
         "oop_missing_count": 0,
-        "primary_category": "drug_like",
+        "primary_category": "macrocycle",
         "ring_closure_delta": 0.0,
         "ring_torsion_diagnostic_only": true,
         "ring_torsion_potentials_applied": 0,
@@ -10589,7 +10675,7 @@
             5.072095798857634
           ]
         ],
-        "elapsed_ms": 1476,
+        "elapsed_ms": 1482,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -10780,7 +10866,7 @@
             -1.4255176571773753
           ]
         ],
-        "elapsed_ms": 1375,
+        "elapsed_ms": 1352,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -10945,7 +11031,7 @@
             -1.3447856273689245
           ]
         ],
-        "elapsed_ms": 753,
+        "elapsed_ms": 731,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -11105,7 +11191,7 @@
             0.02534554459800706
           ]
         ],
-        "elapsed_ms": 737,
+        "elapsed_ms": 723,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -11270,7 +11356,7 @@
             -2.5051226010491834
           ]
         ],
-        "elapsed_ms": 846,
+        "elapsed_ms": 813,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -11431,7 +11517,7 @@
             0.8312814583401835
           ]
         ],
-        "elapsed_ms": 760,
+        "elapsed_ms": 724,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -11606,7 +11692,7 @@
             0.5945471659915582
           ]
         ],
-        "elapsed_ms": 1127,
+        "elapsed_ms": 1060,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -11794,7 +11880,7 @@
             4.837823123086912
           ]
         ],
-        "elapsed_ms": 1744,
+        "elapsed_ms": 1331,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -11979,7 +12065,7 @@
             1.792953667385984
           ]
         ],
-        "elapsed_ms": 1273,
+        "elapsed_ms": 1225,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -12163,7 +12249,7 @@
             2.5669238849026454
           ]
         ],
-        "elapsed_ms": 1338,
+        "elapsed_ms": 1179,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -12409,7 +12495,7 @@
             1.4161060935031153
           ]
         ],
-        "elapsed_ms": 1326,
+        "elapsed_ms": 1309,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -12472,7 +12558,7 @@
       },
       {
         "arm": "chematic_pipeline_v2_mmff94_strict_enforce_chirality",
-        "elapsed_ms": 13,
+        "elapsed_ms": 7,
         "failure_cause": "ForceField(MissingParameters(Mmff94CoverageReport { bonds_total: 32, bonds_missing: [], angles_total: 47, angles_missing: [Mmff94MissingTerm { kind: Angle, atoms: [AtomIdx(10), AtomIdx(11), AtomIdx(14)], description: \"Angle N(43)-S(18)-C(63) (atom indices [10, 11, 14])\" }], torsions_total: 65, torsions_missing: [], torsions_no_term_by_design: 0, oop_total: 9, oop_missing: [], stretch_bend_total: 47, stretch_bend_missing: [] }))",
         "failure_stage": "ForceFieldMinimization",
         "final_stereo_declared": null,
@@ -12763,7 +12849,7 @@
             -4.303667347952432
           ]
         ],
-        "elapsed_ms": 6352,
+        "elapsed_ms": 6285,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -12826,7 +12912,7 @@
         ],
         "name": "chembl_tier_b_0023",
         "oop_missing_count": 0,
-        "primary_category": "drug_like",
+        "primary_category": "macrocycle",
         "ring_closure_delta": 0.0,
         "ring_torsion_diagnostic_only": true,
         "ring_torsion_potentials_applied": 0,
@@ -13035,7 +13121,7 @@
             4.27180028784566
           ]
         ],
-        "elapsed_ms": 3733,
+        "elapsed_ms": 3585,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -13307,7 +13393,7 @@
             -4.569222280245203
           ]
         ],
-        "elapsed_ms": 4088,
+        "elapsed_ms": 3856,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -13581,7 +13667,7 @@
             -6.663083520741107
           ]
         ],
-        "elapsed_ms": 4375,
+        "elapsed_ms": 3881,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -13895,7 +13981,7 @@
             2.2576639544460972
           ]
         ],
-        "elapsed_ms": 6114,
+        "elapsed_ms": 6086,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -14227,7 +14313,7 @@
             3.19048028647002
           ]
         ],
-        "elapsed_ms": 6899,
+        "elapsed_ms": 7156,
         "embed_attempts_used": 3,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -14292,7 +14378,7 @@
         ],
         "name": "chembl_tier_b_0028",
         "oop_missing_count": 0,
-        "primary_category": "drug_like",
+        "primary_category": "macrocycle",
         "ring_closure_delta": 0.0,
         "ring_torsion_diagnostic_only": true,
         "ring_torsion_potentials_applied": 0,
@@ -14561,7 +14647,7 @@
             -3.450035915313408
           ]
         ],
-        "elapsed_ms": 6754,
+        "elapsed_ms": 7003,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -14626,7 +14712,7 @@
         ],
         "name": "chembl_tier_b_0029",
         "oop_missing_count": 0,
-        "primary_category": "drug_like",
+        "primary_category": "macrocycle",
         "ring_closure_delta": 0.0,
         "ring_torsion_diagnostic_only": true,
         "ring_torsion_potentials_applied": 0,
@@ -14890,7 +14976,7 @@
             -5.083553435237749
           ]
         ],
-        "elapsed_ms": 17023,
+        "elapsed_ms": 6766,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -14954,7 +15040,7 @@
         ],
         "name": "chembl_tier_b_0030",
         "oop_missing_count": 0,
-        "primary_category": "drug_like",
+        "primary_category": "macrocycle",
         "ring_closure_delta": 0.0,
         "ring_torsion_diagnostic_only": true,
         "ring_torsion_potentials_applied": 0,
@@ -15168,7 +15254,7 @@
             5.060973045731639
           ]
         ],
-        "elapsed_ms": 9839,
+        "elapsed_ms": 3902,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -15431,7 +15517,7 @@
             0.3287810609913272
           ]
         ],
-        "elapsed_ms": 3423,
+        "elapsed_ms": 3488,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -15638,7 +15724,7 @@
             -1.5673744860688017
           ]
         ],
-        "elapsed_ms": 1518,
+        "elapsed_ms": 1530,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -15944,7 +16030,7 @@
             -6.488849551311909
           ]
         ],
-        "elapsed_ms": 19519,
+        "elapsed_ms": 7059,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -16008,7 +16094,7 @@
         ],
         "name": "chembl_tier_b_0034",
         "oop_missing_count": 0,
-        "primary_category": "drug_like",
+        "primary_category": "macrocycle",
         "ring_closure_delta": 0.0,
         "ring_torsion_diagnostic_only": true,
         "ring_torsion_potentials_applied": 0,
@@ -16222,7 +16308,7 @@
             1.266726417184639
           ]
         ],
-        "elapsed_ms": 3649,
+        "elapsed_ms": 3711,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -16515,7 +16601,7 @@
             5.152640775082258
           ]
         ],
-        "elapsed_ms": 6249,
+        "elapsed_ms": 4916,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -16758,7 +16844,7 @@
             0.3736362992538804
           ]
         ],
-        "elapsed_ms": 2819,
+        "elapsed_ms": 2414,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -17000,7 +17086,7 @@
             4.625316153576524
           ]
         ],
-        "elapsed_ms": 3122,
+        "elapsed_ms": 2956,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -17239,7 +17325,7 @@
             -7.079233009188544
           ]
         ],
-        "elapsed_ms": 2617,
+        "elapsed_ms": 2697,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -17467,7 +17553,7 @@
             0.40853093290034054
           ]
         ],
-        "elapsed_ms": 2385,
+        "elapsed_ms": 2432,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -17683,7 +17769,7 @@
             -1.5334401140803595
           ]
         ],
-        "elapsed_ms": 1947,
+        "elapsed_ms": 1951,
         "embed_attempts_used": 2,
         "final_stereo_declared": 2,
         "final_stereo_satisfied": 2,
@@ -17912,7 +17998,7 @@
             -2.792767000911817
           ]
         ],
-        "elapsed_ms": 2381,
+        "elapsed_ms": 2462,
         "embed_attempts_used": 2,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -18149,7 +18235,7 @@
             4.289070809928689
           ]
         ],
-        "elapsed_ms": 2565,
+        "elapsed_ms": 2651,
         "embed_attempts_used": 2,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -18387,7 +18473,7 @@
             -3.0065909666808484
           ]
         ],
-        "elapsed_ms": 2660,
+        "elapsed_ms": 2715,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -18625,7 +18711,7 @@
             -4.900679131181368
           ]
         ],
-        "elapsed_ms": 2658,
+        "elapsed_ms": 2700,
         "embed_attempts_used": 2,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -18853,7 +18939,7 @@
             -3.6977430380258904
           ]
         ],
-        "elapsed_ms": 2503,
+        "elapsed_ms": 2508,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -19129,7 +19215,7 @@
             0.9165663342687802
           ]
         ],
-        "elapsed_ms": 4197,
+        "elapsed_ms": 4290,
         "embed_attempts_used": 6,
         "final_stereo_declared": 2,
         "final_stereo_satisfied": 2,
@@ -19365,7 +19451,7 @@
             1.5165034284873602
           ]
         ],
-        "elapsed_ms": 2562,
+        "elapsed_ms": 2592,
         "embed_attempts_used": 7,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -19596,7 +19682,7 @@
             -0.7761921760893198
           ]
         ],
-        "elapsed_ms": 2607,
+        "elapsed_ms": 2678,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -19828,7 +19914,7 @@
             4.2959593684342865
           ]
         ],
-        "elapsed_ms": 2531,
+        "elapsed_ms": 2607,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -20055,7 +20141,7 @@
             3.933357339044506
           ]
         ],
-        "elapsed_ms": 2568,
+        "elapsed_ms": 2616,
         "embed_attempts_used": 2,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -20236,7 +20322,7 @@
             2.186227248998552
           ]
         ],
-        "elapsed_ms": 1012,
+        "elapsed_ms": 1025,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -20413,7 +20499,7 @@
             -3.6775104303637027
           ]
         ],
-        "elapsed_ms": 1046,
+        "elapsed_ms": 1057,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -20606,7 +20692,7 @@
             -3.393916980415867
           ]
         ],
-        "elapsed_ms": 1473,
+        "elapsed_ms": 1525,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -20787,7 +20873,7 @@
             -0.41138674333929703
           ]
         ],
-        "elapsed_ms": 1052,
+        "elapsed_ms": 1109,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -20980,7 +21066,7 @@
             1.2167833115981355
           ]
         ],
-        "elapsed_ms": 1470,
+        "elapsed_ms": 1511,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -21176,7 +21262,7 @@
             0.49589316165932124
           ]
         ],
-        "elapsed_ms": 1492,
+        "elapsed_ms": 1500,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -21337,7 +21423,7 @@
             1.3565401800895982
           ]
         ],
-        "elapsed_ms": 693,
+        "elapsed_ms": 697,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -21516,7 +21602,7 @@
             -0.6452185746928392
           ]
         ],
-        "elapsed_ms": 1182,
+        "elapsed_ms": 1205,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -21710,7 +21796,7 @@
             -0.20115665292542914
           ]
         ],
-        "elapsed_ms": 1473,
+        "elapsed_ms": 1475,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -21896,7 +21982,7 @@
             -0.2021504750025127
           ]
         ],
-        "elapsed_ms": 1179,
+        "elapsed_ms": 1187,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -22085,7 +22171,7 @@
             -0.7173187439703932
           ]
         ],
-        "elapsed_ms": 1316,
+        "elapsed_ms": 1341,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -22255,7 +22341,7 @@
             -0.6886698027179249
           ]
         ],
-        "elapsed_ms": 746,
+        "elapsed_ms": 761,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -22421,7 +22507,7 @@
             1.2850388622025546
           ]
         ],
-        "elapsed_ms": 740,
+        "elapsed_ms": 758,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -22592,7 +22678,7 @@
             -0.12649389314922685
           ]
         ],
-        "elapsed_ms": 817,
+        "elapsed_ms": 838,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -22764,7 +22850,7 @@
             0.048156012675405376
           ]
         ],
-        "elapsed_ms": 816,
+        "elapsed_ms": 836,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -22991,7 +23077,7 @@
             4.591889567347191
           ]
         ],
-        "elapsed_ms": 2702,
+        "elapsed_ms": 2756,
         "embed_attempts_used": 2,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -23164,7 +23250,7 @@
             1.5398269539483496
           ]
         ],
-        "elapsed_ms": 739,
+        "elapsed_ms": 737,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -23314,7 +23400,7 @@
             0.7908614060859295
           ]
         ],
-        "elapsed_ms": 582,
+        "elapsed_ms": 596,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -23527,7 +23613,7 @@
             -3.782620061937067
           ]
         ],
-        "elapsed_ms": 2375,
+        "elapsed_ms": 2457,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -23768,7 +23854,7 @@
             -4.336455946318826
           ]
         ],
-        "elapsed_ms": 2937,
+        "elapsed_ms": 3011,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -24008,7 +24094,7 @@
             -0.23230194811244553
           ]
         ],
-        "elapsed_ms": 738,
+        "elapsed_ms": 765,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -24174,7 +24260,7 @@
             0.15532768938184763
           ]
         ],
-        "elapsed_ms": 733,
+        "elapsed_ms": 763,
         "embed_attempts_used": 2,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -24380,7 +24466,7 @@
             4.878639407952119
           ]
         ],
-        "elapsed_ms": 2527,
+        "elapsed_ms": 2184,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -24609,7 +24695,7 @@
             -2.6102187570460047
           ]
         ],
-        "elapsed_ms": 2628,
+        "elapsed_ms": 2661,
         "embed_attempts_used": 1,
         "final_stereo_declared": 2,
         "final_stereo_satisfied": 1,
@@ -24908,7 +24994,7 @@
             -3.5514766238738362
           ]
         ],
-        "elapsed_ms": 4347,
+        "elapsed_ms": 2980,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -25152,7 +25238,7 @@
             -2.5877722929126112
           ]
         ],
-        "elapsed_ms": 2828,
+        "elapsed_ms": 2911,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -25396,7 +25482,7 @@
             2.098941288636194
           ]
         ],
-        "elapsed_ms": 2972,
+        "elapsed_ms": 3057,
         "embed_attempts_used": 2,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -25630,7 +25716,7 @@
             -4.605787260935511
           ]
         ],
-        "elapsed_ms": 2521,
+        "elapsed_ms": 2611,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -25877,7 +25963,7 @@
             5.49265791883117
           ]
         ],
-        "elapsed_ms": 3224,
+        "elapsed_ms": 3294,
         "embed_attempts_used": 3,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 0,
@@ -26137,7 +26223,7 @@
             1.2951963009122371
           ]
         ],
-        "elapsed_ms": 3327,
+        "elapsed_ms": 3381,
         "embed_attempts_used": 3,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 0,
@@ -26309,7 +26395,7 @@
             -0.7772673085366936
           ]
         ],
-        "elapsed_ms": 541,
+        "elapsed_ms": 545,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -26448,7 +26534,7 @@
             1.4660160801305164
           ]
         ],
-        "elapsed_ms": 276,
+        "elapsed_ms": 283,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -26594,7 +26680,7 @@
             1.1652293981343769
           ]
         ],
-        "elapsed_ms": 511,
+        "elapsed_ms": 515,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -26742,7 +26828,7 @@
             1.136897611442713
           ]
         ],
-        "elapsed_ms": 410,
+        "elapsed_ms": 421,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -26900,7 +26986,7 @@
             -0.4641434629512185
           ]
         ],
-        "elapsed_ms": 701,
+        "elapsed_ms": 724,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -27120,7 +27206,7 @@
             -3.6585694738275376
           ]
         ],
-        "elapsed_ms": 2373,
+        "elapsed_ms": 2461,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -27257,7 +27343,7 @@
             -0.44159186223532415
           ]
         ],
-        "elapsed_ms": 207,
+        "elapsed_ms": 216,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 0,
@@ -27370,7 +27456,7 @@
             -1.5446469805637313
           ]
         ],
-        "elapsed_ms": 195,
+        "elapsed_ms": 207,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -27647,7 +27733,7 @@
             -1.787595914575017
           ]
         ],
-        "elapsed_ms": 5064,
+        "elapsed_ms": 5290,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -27962,7 +28048,7 @@
             0.9179628203296373
           ]
         ],
-        "elapsed_ms": 5453,
+        "elapsed_ms": 5721,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -28273,7 +28359,7 @@
             0.545879864603075
           ]
         ],
-        "elapsed_ms": 5059,
+        "elapsed_ms": 5305,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -28468,7 +28554,7 @@
             -1.1385090070990431
           ]
         ],
-        "elapsed_ms": 868,
+        "elapsed_ms": 891,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -28630,7 +28716,7 @@
             0.41690336531398414
           ]
         ],
-        "elapsed_ms": 662,
+        "elapsed_ms": 695,
         "embed_attempts_used": 5,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -28790,7 +28876,7 @@
             -1.6124735335414369
           ]
         ],
-        "elapsed_ms": 656,
+        "elapsed_ms": 678,
         "embed_attempts_used": 2,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -28945,7 +29031,7 @@
             1.2248545618959588
           ]
         ],
-        "elapsed_ms": 586,
+        "elapsed_ms": 615,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -29104,7 +29190,7 @@
             1.1880046088738765
           ]
         ],
-        "elapsed_ms": 711,
+        "elapsed_ms": 744,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -29264,7 +29350,7 @@
             0.026599606218358413
           ]
         ],
-        "elapsed_ms": 731,
+        "elapsed_ms": 757,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -29424,7 +29510,7 @@
             -0.5386584239793707
           ]
         ],
-        "elapsed_ms": 779,
+        "elapsed_ms": 794,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -29579,7 +29665,7 @@
             0.5754625476325496
           ]
         ],
-        "elapsed_ms": 661,
+        "elapsed_ms": 690,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -29738,7 +29824,7 @@
             1.216248574428738
           ]
         ],
-        "elapsed_ms": 715,
+        "elapsed_ms": 750,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -29893,7 +29979,7 @@
             -0.5294257225240456
           ]
         ],
-        "elapsed_ms": 535,
+        "elapsed_ms": 551,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -29950,7 +30036,7 @@
       },
       {
         "arm": "chematic_pipeline_v2_mmff94_strict_enforce_chirality",
-        "elapsed_ms": 4,
+        "elapsed_ms": 3,
         "failure_cause": "DistanceGeometry(BoundsConstructionFailed)",
         "failure_stage": "DistanceGeometry",
         "final_stereo_declared": null,
@@ -30153,7 +30239,7 @@
             -0.3224744535942769
           ]
         ],
-        "elapsed_ms": 726,
+        "elapsed_ms": 747,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -30438,7 +30524,7 @@
             -2.8619451024756013
           ]
         ],
-        "elapsed_ms": 5093,
+        "elapsed_ms": 5312,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -30743,7 +30829,7 @@
             7.826702829817658
           ]
         ],
-        "elapsed_ms": 4885,
+        "elapsed_ms": 5094,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -31057,7 +31143,7 @@
             -3.804230797529176
           ]
         ],
-        "elapsed_ms": 5326,
+        "elapsed_ms": 5643,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -31383,7 +31469,7 @@
             -4.479561486590834
           ]
         ],
-        "elapsed_ms": 5865,
+        "elapsed_ms": 6123,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -31671,7 +31757,7 @@
             4.210896370361253
           ]
         ],
-        "elapsed_ms": 3839,
+        "elapsed_ms": 4085,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -31991,7 +32077,7 @@
             -3.389974171807541
           ]
         ],
-        "elapsed_ms": 5752,
+        "elapsed_ms": 5996,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -32359,7 +32445,7 @@
             -1.2116237188834817
           ]
         ],
-        "elapsed_ms": 9090,
+        "elapsed_ms": 9473,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -32565,7 +32651,7 @@
             -2.350177324539909
           ]
         ],
-        "elapsed_ms": 944,
+        "elapsed_ms": 971,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -32867,7 +32953,7 @@
             2.140882113878699
           ]
         ],
-        "elapsed_ms": 6283,
+        "elapsed_ms": 6566,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -33195,7 +33281,7 @@
             7.61716918075195
           ]
         ],
-        "elapsed_ms": 6247,
+        "elapsed_ms": 6583,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -33518,7 +33604,7 @@
             0.4047269504372449
           ]
         ],
-        "elapsed_ms": 1788,
+        "elapsed_ms": 1840,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -33675,7 +33761,7 @@
             0.16326952687321694
           ]
         ],
-        "elapsed_ms": 614,
+        "elapsed_ms": 635,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -33848,7 +33934,7 @@
             0.6628190434289245
           ]
         ],
-        "elapsed_ms": 1107,
+        "elapsed_ms": 1150,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -34016,7 +34102,7 @@
             -0.038467941894790914
           ]
         ],
-        "elapsed_ms": 819,
+        "elapsed_ms": 845,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -34302,7 +34388,7 @@
             2.1104317086174644
           ]
         ],
-        "elapsed_ms": 5215,
+        "elapsed_ms": 5516,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -34607,7 +34693,7 @@
             2.997442966639124
           ]
         ],
-        "elapsed_ms": 4833,
+        "elapsed_ms": 5086,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -34801,7 +34887,7 @@
             -0.23315741812049195
           ]
         ],
-        "elapsed_ms": 1065,
+        "elapsed_ms": 1094,
         "embed_attempts_used": 1,
         "final_stereo_declared": 3,
         "final_stereo_satisfied": 3,
@@ -35003,7 +35089,7 @@
             -0.33150880276496586
           ]
         ],
-        "elapsed_ms": 1835,
+        "elapsed_ms": 1898,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -35311,7 +35397,7 @@
             2.5375749256519944
           ]
         ],
-        "elapsed_ms": 6395,
+        "elapsed_ms": 6607,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -35727,7 +35813,7 @@
             5.309643459951906
           ]
         ],
-        "elapsed_ms": 6718,
+        "elapsed_ms": 7066,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -36057,7 +36143,7 @@
             7.757993214893658
           ]
         ],
-        "elapsed_ms": 6020,
+        "elapsed_ms": 6302,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -36355,7 +36441,7 @@
             -3.299902181472384
           ]
         ],
-        "elapsed_ms": 4291,
+        "elapsed_ms": 4518,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -36667,7 +36753,7 @@
             -2.3914953733766553
           ]
         ],
-        "elapsed_ms": 5382,
+        "elapsed_ms": 5651,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -36973,7 +37059,7 @@
             -5.104674117315301
           ]
         ],
-        "elapsed_ms": 4905,
+        "elapsed_ms": 5097,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -37317,7 +37403,7 @@
             2.316463635529255
           ]
         ],
-        "elapsed_ms": 7700,
+        "elapsed_ms": 8174,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -37634,7 +37720,7 @@
             -7.377660444868008
           ]
         ],
-        "elapsed_ms": 5111,
+        "elapsed_ms": 5324,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -37944,7 +38030,7 @@
             4.937558925535303
           ]
         ],
-        "elapsed_ms": 5085,
+        "elapsed_ms": 5320,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -38269,7 +38355,7 @@
             -0.5640099059604243
           ]
         ],
-        "elapsed_ms": 5916,
+        "elapsed_ms": 6191,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -38582,7 +38668,7 @@
             -4.947988491316894
           ]
         ],
-        "elapsed_ms": 5093,
+        "elapsed_ms": 5369,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -38892,7 +38978,7 @@
             -1.0833527788087702
           ]
         ],
-        "elapsed_ms": 5180,
+        "elapsed_ms": 5377,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -39207,7 +39293,7 @@
             -6.601190282934423
           ]
         ],
-        "elapsed_ms": 5506,
+        "elapsed_ms": 5747,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -39513,7 +39599,7 @@
             1.277733630669594
           ]
         ],
-        "elapsed_ms": 4741,
+        "elapsed_ms": 4985,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -39817,7 +39903,7 @@
             -1.4625965690157445
           ]
         ],
-        "elapsed_ms": 4374,
+        "elapsed_ms": 4571,
         "embed_attempts_used": 5,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -40116,7 +40202,7 @@
             -0.3919358801331806
           ]
         ],
-        "elapsed_ms": 4632,
+        "elapsed_ms": 4857,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -40329,7 +40415,7 @@
             -1.03590547689309
           ]
         ],
-        "elapsed_ms": 1541,
+        "elapsed_ms": 1582,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -40505,7 +40591,7 @@
             0.3164150372401272
           ]
         ],
-        "elapsed_ms": 861,
+        "elapsed_ms": 873,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -40677,7 +40763,7 @@
             -3.4555679067855745
           ]
         ],
-        "elapsed_ms": 858,
+        "elapsed_ms": 876,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -40844,7 +40930,7 @@
             0.3713614866816751
           ]
         ],
-        "elapsed_ms": 781,
+        "elapsed_ms": 813,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -41010,7 +41096,7 @@
             0.4026072106544809
           ]
         ],
-        "elapsed_ms": 787,
+        "elapsed_ms": 818,
         "embed_attempts_used": 3,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -41291,7 +41377,7 @@
             2.5265994843301725
           ]
         ],
-        "elapsed_ms": 4858,
+        "elapsed_ms": 5090,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -41422,7 +41508,7 @@
       },
       {
         "arm": "chematic_pipeline_v2_mmff94_strict_enforce_chirality",
-        "elapsed_ms": 3,
+        "elapsed_ms": 4,
         "failure_cause": "DistanceGeometry(BoundsConstructionFailed)",
         "failure_stage": "DistanceGeometry",
         "final_stereo_declared": null,
@@ -41685,7 +41771,7 @@
             0.7613029708781414
           ]
         ],
-        "elapsed_ms": 4098,
+        "elapsed_ms": 4313,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -41922,7 +42008,7 @@
             -5.080189981268741
           ]
         ],
-        "elapsed_ms": 2321,
+        "elapsed_ms": 2373,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -42168,7 +42254,7 @@
             3.06242857704514
           ]
         ],
-        "elapsed_ms": 2773,
+        "elapsed_ms": 2887,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -42468,7 +42554,7 @@
             4.2879302656528475
           ]
         ],
-        "elapsed_ms": 4678,
+        "elapsed_ms": 4933,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -42773,7 +42859,7 @@
             -0.6553186600682401
           ]
         ],
-        "elapsed_ms": 4578,
+        "elapsed_ms": 4818,
         "embed_attempts_used": 2,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -43077,7 +43163,7 @@
             8.691010975083003
           ]
         ],
-        "elapsed_ms": 4802,
+        "elapsed_ms": 5076,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -43261,7 +43347,7 @@
             0.2784425452003922
           ]
         ],
-        "elapsed_ms": 635,
+        "elapsed_ms": 653,
         "embed_attempts_used": 2,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -43366,7 +43452,7 @@
             -1.7668273687619829
           ]
         ],
-        "elapsed_ms": 65,
+        "elapsed_ms": 64,
         "embed_attempts_used": 1,
         "final_stereo_declared": 1,
         "final_stereo_satisfied": 1,
@@ -43535,7 +43621,7 @@
             -1.6100441036008681
           ]
         ],
-        "elapsed_ms": 1298,
+        "elapsed_ms": 1335,
         "embed_attempts_used": 6,
         "final_stereo_declared": 3,
         "final_stereo_satisfied": 3,
@@ -43704,7 +43790,7 @@
             -2.090797611124839
           ]
         ],
-        "elapsed_ms": 949,
+        "elapsed_ms": 980,
         "embed_attempts_used": 1,
         "final_stereo_declared": 3,
         "final_stereo_satisfied": 3,
@@ -43845,7 +43931,7 @@
             -1.5397370760352491
           ]
         ],
-        "elapsed_ms": 535,
+        "elapsed_ms": 545,
         "embed_attempts_used": 1,
         "final_stereo_declared": 2,
         "final_stereo_satisfied": 2,
@@ -44041,7 +44127,7 @@
             2.9341944020446546
           ]
         ],
-        "elapsed_ms": 1900,
+        "elapsed_ms": 1944,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -44161,7 +44247,7 @@
       },
       {
         "arm": "chematic_pipeline_v2_mmff94_strict_enforce_chirality",
-        "elapsed_ms": 191,
+        "elapsed_ms": 197,
         "failure_cause": "DistanceGeometry(StereoConstraintFailed)",
         "failure_stage": "DistanceGeometry",
         "final_stereo_declared": null,
@@ -44246,7 +44332,7 @@
       },
       {
         "arm": "chematic_pipeline_v2_mmff94_strict_enforce_chirality",
-        "elapsed_ms": 67,
+        "elapsed_ms": 65,
         "failure_cause": "DistanceGeometry(StereoConstraintFailed)",
         "failure_stage": "DistanceGeometry",
         "final_stereo_declared": null,
@@ -44426,7 +44512,7 @@
             -1.2755068057214436
           ]
         ],
-        "elapsed_ms": 1066,
+        "elapsed_ms": 1107,
         "embed_attempts_used": 8,
         "final_stereo_declared": 3,
         "final_stereo_satisfied": 2,
@@ -44603,7 +44689,7 @@
             0.8586384423213069
           ]
         ],
-        "elapsed_ms": 1184,
+        "elapsed_ms": 1214,
         "embed_attempts_used": 4,
         "final_stereo_declared": 3,
         "final_stereo_satisfied": 3,
@@ -44811,7 +44897,7 @@
             -0.44125232103481504
           ]
         ],
-        "elapsed_ms": 2104,
+        "elapsed_ms": 2158,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -45035,7 +45121,7 @@
             1.8593568756433188
           ]
         ],
-        "elapsed_ms": 2631,
+        "elapsed_ms": 2713,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -45271,7 +45357,7 @@
             -0.33360047555411143
           ]
         ],
-        "elapsed_ms": 2694,
+        "elapsed_ms": 2794,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -45494,7 +45580,7 @@
             -4.291521076510364
           ]
         ],
-        "elapsed_ms": 2363,
+        "elapsed_ms": 2401,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -45669,7 +45755,7 @@
             1.7242930866254547
           ]
         ],
-        "elapsed_ms": 1011,
+        "elapsed_ms": 1035,
         "embed_attempts_used": 1,
         "final_stereo_declared": 3,
         "final_stereo_satisfied": 3,
@@ -45870,7 +45956,7 @@
             -1.036324356060143
           ]
         ],
-        "elapsed_ms": 2081,
+        "elapsed_ms": 2182,
         "embed_attempts_used": 1,
         "final_stereo_declared": 3,
         "final_stereo_satisfied": 2,
@@ -46083,7 +46169,7 @@
             0.5093757293672265
           ]
         ],
-        "elapsed_ms": 2396,
+        "elapsed_ms": 2441,
         "embed_attempts_used": 1,
         "final_stereo_declared": 3,
         "final_stereo_satisfied": 3,
@@ -46287,7 +46373,7 @@
             -0.6046875374604631
           ]
         ],
-        "elapsed_ms": 1702,
+        "elapsed_ms": 1757,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -46489,7 +46575,7 @@
             -1.6237164963189334
           ]
         ],
-        "elapsed_ms": 1677,
+        "elapsed_ms": 1733,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -46716,7 +46802,7 @@
             0.3772970280025551
           ]
         ],
-        "elapsed_ms": 2612,
+        "elapsed_ms": 2677,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -46991,7 +47077,7 @@
             2.6395920207402273
           ]
         ],
-        "elapsed_ms": 2406,
+        "elapsed_ms": 2452,
         "embed_attempts_used": 1,
         "final_stereo_declared": 3,
         "final_stereo_satisfied": 3,
@@ -47205,7 +47291,7 @@
             -4.698745687059907
           ]
         ],
-        "elapsed_ms": 2390,
+        "elapsed_ms": 2462,
         "embed_attempts_used": 1,
         "final_stereo_declared": 3,
         "final_stereo_satisfied": 3,
@@ -47439,7 +47525,7 @@
             1.3114937386432592
           ]
         ],
-        "elapsed_ms": 2913,
+        "elapsed_ms": 3049,
         "embed_attempts_used": 2,
         "final_stereo_declared": 3,
         "final_stereo_satisfied": 3,
@@ -47510,7 +47596,7 @@
       },
       {
         "arm": "chematic_pipeline_v2_mmff94_strict_enforce_chirality",
-        "elapsed_ms": 10,
+        "elapsed_ms": 9,
         "failure_cause": "ForceField(MissingParameters(Mmff94CoverageReport { bonds_total: 37, bonds_missing: [], angles_total: 56, angles_missing: [Mmff94MissingTerm { kind: Angle, atoms: [AtomIdx(25), AtomIdx(4), AtomIdx(3)], description: \"Angle C(3)-C(2)-C(64) (atom indices [25, 4, 3])\" }, Mmff94MissingTerm { kind: Angle, atoms: [AtomIdx(22), AtomIdx(5), AtomIdx(6)], description: \"Angle C(3)-C(2)-C(64) (atom indices [22, 5, 6])\" }], torsions_total: 77, torsions_missing: [], torsions_no_term_by_design: 0, oop_total: 12, oop_missing: [], stretch_bend_total: 56, stretch_bend_missing: [] }))",
         "failure_stage": "ForceFieldMinimization",
         "final_stereo_declared": null,
@@ -47568,7 +47654,7 @@
       },
       {
         "arm": "chematic_pipeline_v2_mmff94_strict_enforce_chirality",
-        "elapsed_ms": 10,
+        "elapsed_ms": 9,
         "failure_cause": "ForceField(MissingParameters(Mmff94CoverageReport { bonds_total: 37, bonds_missing: [], angles_total: 54, angles_missing: [Mmff94MissingTerm { kind: Angle, atoms: [AtomIdx(25), AtomIdx(4), AtomIdx(3)], description: \"Angle C(3)-C(2)-C(64) (atom indices [25, 4, 3])\" }, Mmff94MissingTerm { kind: Angle, atoms: [AtomIdx(22), AtomIdx(5), AtomIdx(6)], description: \"Angle C(3)-C(2)-C(64) (atom indices [22, 5, 6])\" }], torsions_total: 77, torsions_missing: [], torsions_no_term_by_design: 0, oop_total: 13, oop_missing: [], stretch_bend_total: 54, stretch_bend_missing: [] }))",
         "failure_stage": "ForceFieldMinimization",
         "final_stereo_declared": null,
@@ -47880,7 +47966,7 @@
             2.040688162723516
           ]
         ],
-        "elapsed_ms": 1868,
+        "elapsed_ms": 1933,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -47999,7 +48085,7 @@
       },
       {
         "arm": "chematic_pipeline_v2_mmff94_strict_enforce_chirality",
-        "elapsed_ms": 10,
+        "elapsed_ms": 9,
         "failure_cause": "ForceField(MissingParameters(Mmff94CoverageReport { bonds_total: 37, bonds_missing: [], angles_total: 54, angles_missing: [Mmff94MissingTerm { kind: Angle, atoms: [AtomIdx(25), AtomIdx(4), AtomIdx(3)], description: \"Angle C(3)-C(2)-C(64) (atom indices [25, 4, 3])\" }, Mmff94MissingTerm { kind: Angle, atoms: [AtomIdx(22), AtomIdx(5), AtomIdx(6)], description: \"Angle C(3)-C(2)-C(64) (atom indices [22, 5, 6])\" }], torsions_total: 77, torsions_missing: [], torsions_no_term_by_design: 0, oop_total: 13, oop_missing: [], stretch_bend_total: 54, stretch_bend_missing: [] }))",
         "failure_stage": "ForceFieldMinimization",
         "final_stereo_declared": null,
@@ -48199,7 +48285,7 @@
             -0.2986525171656873
           ]
         ],
-        "elapsed_ms": 2163,
+        "elapsed_ms": 2228,
         "embed_attempts_used": 2,
         "final_stereo_declared": 3,
         "final_stereo_satisfied": 3,
@@ -48427,7 +48513,7 @@
             -0.028735057017185962
           ]
         ],
-        "elapsed_ms": 1175,
+        "elapsed_ms": 1218,
         "embed_attempts_used": 6,
         "final_stereo_declared": 3,
         "final_stereo_satisfied": 3,
@@ -48645,7 +48731,7 @@
             -0.26971794977961355
           ]
         ],
-        "elapsed_ms": 2533,
+        "elapsed_ms": 2587,
         "embed_attempts_used": 1,
         "final_stereo_declared": 0,
         "final_stereo_satisfied": 0,
@@ -48768,7 +48854,7 @@
       },
       {
         "arm": "chematic_pipeline_v2_mmff94_strict_enforce_chirality",
-        "elapsed_ms": 7,
+        "elapsed_ms": 8,
         "failure_cause": "ForceField(MissingParameters(Mmff94CoverageReport { bonds_total: 34, bonds_missing: [], angles_total: 50, angles_missing: [Mmff94MissingTerm { kind: Angle, atoms: [AtomIdx(22), AtomIdx(4), AtomIdx(3)], description: \"Angle C(3)-C(2)-C(64) (atom indices [22, 4, 3])\" }, Mmff94MissingTerm { kind: Angle, atoms: [AtomIdx(19), AtomIdx(5), AtomIdx(6)], description: \"Angle C(3)-C(2)-C(64) (atom indices [19, 5, 6])\" }], torsions_total: 74, torsions_missing: [], torsions_no_term_by_design: 0, oop_total: 12, oop_missing: [], stretch_bend_total: 50, stretch_bend_missing: [] }))",
         "failure_stage": "ForceFieldMinimization",
         "final_stereo_declared": null,
@@ -49011,6 +49097,25 @@
     "status": "insufficient_evidence",
     "note": "No experimentally-determined reference conformers were available for this benchmark round. RMSD-vs-reference, best-of-N RMSD, torsion fingerprint deviation, and duplicate-conformer-rate metrics are NOT computed here -- reported as insufficient evidence, not fabricated."
   },
+  "best_of_n_selection": {
+    "chematic_arm": "chematic_pipeline_v2_uff_best_of_10",
+    "rdkit_arm": "rdkit_etkdgv3_best_of_n",
+    "chematic_attempted": 265,
+    "chematic_success": 251,
+    "chematic_mean_conformers_kept_per_attempted": 9.422641509433962,
+    "chematic_mean_conformers_kept_per_success": 9.94820717131474,
+    "sanity_molecules_with_any_pruning": 0,
+    "sanity_molecules_with_mixed_force_field": 0,
+    "n_paired_rmsd": 250,
+    "rmsd_median_angstrom": 2.1473936674340983,
+    "rmsd_p90_angstrom": 3.83287384551944,
+    "n_paired_tfd": 243,
+    "tfd_median": 0.34353541367232854,
+    "tfd_p90": 0.514413007949022,
+    "tfd_file_present": true,
+    "rdkit_best_of_n_success": 264,
+    "chematic_single_uff_only_success": 250
+  },
   "generated_by": [
     "scripts/gen_pipeline_v2_vs_rdkit_tier_a_manifest.py",
     "scripts/gen_pipeline_v2_vs_rdkit_tier_b_manifest.py",
@@ -49019,10 +49124,11 @@
     "crates/chematic-3d/examples/pipeline_v2_vs_rdkit_common_scorer.rs",
     "scripts/pipeline_v2_vs_rdkit_process_level_perf.sh",
     "scripts/pipeline_v2_vs_rdkit_cyclopentane_crash_ablation.py",
+    "scripts/pipeline_v2_vs_rdkit_tfd_227.py",
     "scripts/gen_pipeline_v2_vs_rdkit_report.py"
   ],
   "input_file_hashes": {
-    "chematic_rows_sha256": "afd098159d6e975433fda57839978f1835f5b133fbef4fdcc48cf4cfa0222419",
+    "chematic_rows_sha256": "3fcfb1ca25674c577dd9b9d1ead154e785546f76b8d7606653170e90f3becb50",
     "rdkit_rows_sha256": "4c4e02540ede2d59b7412ffdc3e7041c34be08d868a00ba6a6fec591b4e16ade",
     "tier_a_manifest_sha256": "6a478ea0f5d4ef067a4d1739e77a7209e8f76ecaa837e3f487c723dd6f465d6b",
     "tier_b_manifest_sha256": "ec93ac160aa91c3c4416d57d3000d6e344e0b75cdf5c122211364c7495dce239"

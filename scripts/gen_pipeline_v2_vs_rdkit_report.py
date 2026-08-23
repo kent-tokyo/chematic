@@ -45,6 +45,7 @@ TIER_B_MANIFEST = ROOT / "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier
 AGGREGATE_OUT = ROOT / "validation/results/pipeline_v2_vs_rdkit_aggregate.json"
 REPORT_OUT = ROOT / "docs/rfcs/pipeline_v2_vs_rdkit_etkdgv3_benchmark.md"
 ENVIRONMENT_RECORD_PATH = ROOT / "validation/results/pipeline_v2_vs_rdkit_environment_record.json"
+TFD_BEST_OF_N_PATH = ROOT / "validation/results/pipeline_v2_vs_rdkit_tfd_best_of_n.jsonl"
 MMFF94_TERM_AUDIT_SUMMARY_PATH = ROOT / "validation/results/mmff94_coverage_227_term_audit_summary.json"
 
 # `crates/chematic-3d/examples/pipeline_v2_vs_rdkit_dump.rs`'s
@@ -75,7 +76,26 @@ CHEMATIC_ARMS = [
     "chematic_pipeline_v2_mmff94_strict_complete_bonded_term_gated",
     "chematic_pipeline_v2_mmff94_with_uff_fallback_complete_bonded_term_gated",
     "chematic_legacy_etkdg",
+    # Best-of-N conformer-ensemble arm (A2 `embed_ensemble_v2`, count=10,
+    # ForceFieldPolicy::UffOnly, rmsd_threshold=0.0), compared against RDKit's
+    # own `rdkit_etkdgv3_best_of_n` arm -- see BEST_OF_N_ARM_PAIR below. A
+    # genuine engine arm meant to be compared, unlike the enforce_chirality
+    # diagnostic excluded below, so it belongs in the main arm list.
+    "chematic_pipeline_v2_uff_best_of_10",
 ]
+
+# The one RDKit arm this benchmark pairs the best-of-N arm against for a
+# dedicated RMSD/TFD comparison (see BEST_OF_N section below). Both names
+# must already be members of CHEMATIC_ARMS/RDKIT_ARMS.
+BEST_OF_N_ARM_PAIR = ("chematic_pipeline_v2_uff_best_of_10", "rdkit_etkdgv3_best_of_n")
+
+# CHEMATIC_ARMS members that don't run through pipeline_v2's own per-attempt
+# PipelineStage tracking (no per-stage funnel to report) AND whose "sound"
+# evidence is this script's own independent `legacy_geometry_check`, not
+# pipeline_v2's internal `final_validation.sound` (see each row's own
+# `geometry_check_methodology` field) -- one shared exclusion set for both
+# properties, since for every current member both happen to hold together.
+NON_PIPELINE_V2_ARMS = {"chematic_legacy_etkdg", "chematic_pipeline_v2_uff_best_of_10"}
 
 # Priority 1 (v0.11.0 re-benchmark) added the 2 RepairAndVerify arms above as
 # genuinely independent arms (StereoPolicy::RepairAndVerify instead of
@@ -408,6 +428,7 @@ def main():
     common_scored_rows = load_jsonl(COMMON_SCORED_PATH) if COMMON_SCORED_PATH.exists() else []
     ablation_rows = load_jsonl(ABLATION_PATH) if ABLATION_PATH.exists() else []
     process_perf = json.loads(PROCESS_PERF_PATH.read_text()) if PROCESS_PERF_PATH.exists() else None
+    tfd_best_of_n_rows = load_jsonl(TFD_BEST_OF_N_PATH) if TFD_BEST_OF_N_PATH.exists() else []
 
     with open(TIER_A_MANIFEST) as f:
         tier_a = json.load(f)
@@ -548,6 +569,70 @@ def main():
         "rdkit": {arm: common_geometry_summary("rdkit", arm) for arm in RDKIT_ARMS},
     }
 
+    # --- Best-of-N conformer selection: chematic A2 ensemble vs. RDKit EmbedMultipleConfs ---
+    # Paired RMSD comes from `pipeline_v2_vs_rdkit_common_scorer.rs --pair`
+    # (already loaded generically into common_scored_rows above); paired TFD
+    # comes from the separate `pipeline_v2_vs_rdkit_tfd_227.py` run, loaded
+    # into tfd_best_of_n_rows just above. Neither tool needed any change to
+    # produce these -- both already take arbitrary `--pair`/positional arm
+    # name pairs.
+    def best_of_n_summary():
+        chematic_arm, rdkit_arm = BEST_OF_N_ARM_PAIR
+        rmsd_rows = [
+            r
+            for r in common_scored_rows
+            if r.get("status") == "paired_rmsd"
+            and r.get("chematic_arm") == chematic_arm
+            and r.get("rdkit_arm") == rdkit_arm
+        ]
+        tfd_rows = [r for r in tfd_best_of_n_rows if r.get("status") == "paired_tfd"]
+
+        chematic_bon_rows = [r for r in chematic_rows if r["arm"] == chematic_arm]
+        n_attempted = len(chematic_bon_rows)
+        n_success = sum(1 for r in chematic_bon_rows if r["_bucket"] == "success")
+        n_pruned_any = sum(1 for r in chematic_bon_rows if r.get("attempts_pruned", 0) > 0)
+        n_mixed_ff = sum(1 for r in chematic_bon_rows if r.get("mixed_force_field") is True)
+        # NoConformersKept failure rows also carry "conformers_kept": 0 (a
+        # true, not-missing value), so filtering on key presence alone mixes
+        # 265 attempted molecules into what should be a per-success average.
+        # Report both denominators explicitly rather than mislabel one.
+        conformers_kept_attempted = [r["conformers_kept"] for r in chematic_bon_rows if "conformers_kept" in r]
+        conformers_kept_success = [
+            r["conformers_kept"] for r in chematic_bon_rows if r["_bucket"] == "success" and "conformers_kept" in r
+        ]
+
+        rmsd_values = [r["rmsd_symmetric_angstrom"] for r in rmsd_rows]
+        tfd_values = [r["tfd"] for r in tfd_rows]
+
+        rdkit_bon_success = rdkit_coverage[rdkit_arm]["success"]
+        chematic_single_uff_success = chematic_coverage["chematic_pipeline_v2_uff_only"]["success"]
+
+        return {
+            "chematic_arm": chematic_arm,
+            "rdkit_arm": rdkit_arm,
+            "chematic_attempted": n_attempted,
+            "chematic_success": n_success,
+            "chematic_mean_conformers_kept_per_attempted": (
+                statistics.fmean(conformers_kept_attempted) if conformers_kept_attempted else None
+            ),
+            "chematic_mean_conformers_kept_per_success": (
+                statistics.fmean(conformers_kept_success) if conformers_kept_success else None
+            ),
+            "sanity_molecules_with_any_pruning": n_pruned_any,
+            "sanity_molecules_with_mixed_force_field": n_mixed_ff,
+            "n_paired_rmsd": len(rmsd_values),
+            "rmsd_median_angstrom": percentile(rmsd_values, 0.50),
+            "rmsd_p90_angstrom": percentile(rmsd_values, 0.90),
+            "n_paired_tfd": len(tfd_values),
+            "tfd_median": percentile(tfd_values, 0.50),
+            "tfd_p90": percentile(tfd_values, 0.90),
+            "tfd_file_present": TFD_BEST_OF_N_PATH.exists(),
+            "rdkit_best_of_n_success": rdkit_bon_success,
+            "chematic_single_uff_only_success": chematic_single_uff_success,
+        }
+
+    best_of_n = best_of_n_summary()
+
     # --- Stereo preservation via the SAME judge (chematic's verify_stereo) on both engines ---
     def stereo_summary(engine, arm):
         rows = [
@@ -615,7 +700,7 @@ def main():
     # (it never does). Excluded by name instead, matching the same hardcoded
     # arm-name special-case already used for it elsewhere in this file (see
     # `_legacy_geo` above).
-    LEGACY_ARMS_WITHOUT_PIPELINE_STAGE_TRACKING = {"chematic_legacy_etkdg"}
+    LEGACY_ARMS_WITHOUT_PIPELINE_STAGE_TRACKING = NON_PIPELINE_V2_ARMS
 
     def stage_funnel(rows, arm):
         arm_rows = [r for r in rows if r["arm"] == arm]
@@ -943,6 +1028,7 @@ def main():
         },
         "cyclopentane_crash_ablation": ablation_summary,
         "reference_geometry_subset": reference_geometry_subset,
+        "best_of_n_selection": best_of_n,
         "generated_by": [
             "scripts/gen_pipeline_v2_vs_rdkit_tier_a_manifest.py",
             "scripts/gen_pipeline_v2_vs_rdkit_tier_b_manifest.py",
@@ -951,6 +1037,7 @@ def main():
             "crates/chematic-3d/examples/pipeline_v2_vs_rdkit_common_scorer.rs",
             "scripts/pipeline_v2_vs_rdkit_process_level_perf.sh",
             "scripts/pipeline_v2_vs_rdkit_cyclopentane_crash_ablation.py",
+            "scripts/pipeline_v2_vs_rdkit_tfd_227.py",
             "scripts/gen_pipeline_v2_vs_rdkit_report.py",
         ],
         "input_file_hashes": {
@@ -1118,7 +1205,7 @@ def write_markdown_report(agg):
     lines.append("")
     _legacy_geo = agg["common_geometry_quality"]["chematic"].get("chematic_legacy_etkdg")
     _pv2_arms_geo = {
-        a: g for a, g in agg["common_geometry_quality"]["chematic"].items() if a != "chematic_legacy_etkdg" and g
+        a: g for a, g in agg["common_geometry_quality"]["chematic"].items() if a not in NON_PIPELINE_V2_ARMS and g
     }
     _n_pv2_fully_sound = sum(1 for g in _pv2_arms_geo.values() if g["independently_sound_rate"] == 1.0)
     lines.append(
@@ -1130,6 +1217,104 @@ def write_markdown_report(agg):
         f"{_n_pv2_fully_sound}/{len(_pv2_arms_geo)} pipeline_v2 arms are 100% independently sound "
         "this run (matching their own internal `final_validation.sound`); see the table above "
         "for any arm below 100%."
+    )
+    lines.append("")
+
+    lines.append("## Best-of-N conformer selection (chematic A2 ensemble vs. RDKit EmbedMultipleConfs)")
+    lines.append("")
+    bon = agg["best_of_n_selection"]
+    lines.append(
+        f"Compares `{bon['chematic_arm']}` (`chematic_3d::embed_ensemble_v2`, A2 core, PR #373) "
+        f"against RDKit's own `{bon['rdkit_arm']}` arm (`scripts/pipeline_v2_vs_rdkit_oracle.py`'s "
+        "`run_best_of_n`): both embed 10 conformers (`count=10` / `numConfs=10`), optimize each "
+        "with UFF, and keep the lowest-energy one. Config matched deliberately for this "
+        "comparison, not chematic's general-purpose default: `ForceFieldPolicy::UffOnly` (RDKit's "
+        "arm never uses MMFF94), `base_seed`/`randomSeed=20260801` (same literal both sides), "
+        "`per_conformer.embed.max_attempts=1` (NOT this file's usual 8 -- RDKit's "
+        "`EmbedMultipleConfs` has no per-conformer retry loop, so 8 would silently let chematic "
+        "use up to 80 embedding attempts against RDKit's 10), and `rmsd_threshold=0.0` "
+        "(RMSD-dedup pruning disabled -- RDKit's `EmbedMultipleConfs` doesn't dedupe before "
+        "optimizing either, and pruning is A2's own value-add, out of scope for a best-of-N "
+        "*selection* comparison). `coords`/`best_energy` on chematic's side are the ensemble's "
+        "lowest-energy kept conformer, reverse-mapped from its originating attempt (never a "
+        "cross-force-field energy comparison -- both engines are UFF-only here)."
+    )
+    lines.append("")
+    lines.append(
+        f"chematic attempted {bon['chematic_attempted']} molecules, {bon['chematic_success']} "
+        f"succeeded (kept >=1 conformer). Mean conformers kept per attempted molecule "
+        f"(265 denominator, failures counting as 0): "
+        f"{fmt_num(bon['chematic_mean_conformers_kept_per_attempted'], 2)}/10. Mean conformers "
+        f"kept per successful molecule ({bon['chematic_success']} denominator): "
+        f"{fmt_num(bon['chematic_mean_conformers_kept_per_success'], 2)}/10 -- report both; a "
+        "single blended number silently mixes zero-conformer failures into what should be a "
+        "per-success average."
+    )
+    lines.append("")
+    lines.append(
+        "**Sanity check** (must hold for the config above to mean what this section claims): "
+        f"{bon['sanity_molecules_with_any_pruning']} molecule(s) had any conformer pruned as a "
+        f"duplicate (expected 0, since `rmsd_threshold=0.0` disables pruning) and "
+        f"{bon['sanity_molecules_with_mixed_force_field']} molecule(s) reported a mixed force "
+        "field across kept conformers (expected 0, since every attempt uses `UffOnly`). A "
+        "nonzero count in either column means this run's config drifted from what's described "
+        "above, and the numbers below should not be trusted until investigated."
+    )
+    lines.append("")
+    if bon["n_paired_rmsd"] > 0:
+        lines.append(
+            f"**Paired symmetric heavy-atom RMSD** (`pipeline_v2_vs_rdkit_common_scorer.rs "
+            f"--pair`), {bon['n_paired_rmsd']} molecules successful on both sides: median "
+            f"{fmt_num(bon['rmsd_median_angstrom'], 3)} Å, p90 {fmt_num(bon['rmsd_p90_angstrom'], 3)} Å."
+        )
+    else:
+        lines.append(
+            "**Paired symmetric heavy-atom RMSD**: not available -- "
+            "`pipeline_v2_vs_rdkit_common_scorer.rs --pair "
+            f"{bon['chematic_arm']} {bon['rdkit_arm']}` has not been run against the current "
+            "`pipeline_v2_vs_rdkit_common_scored_rows.jsonl`."
+        )
+    lines.append("")
+    if bon["tfd_file_present"] and bon["n_paired_tfd"] > 0:
+        lines.append(
+            f"**Paired Torsion Fingerprint Deviation** (`scripts/pipeline_v2_vs_rdkit_tfd_227.py`, "
+            f"RDKit's own `GetTFDBetweenMolecules`), {bon['n_paired_tfd']} molecules successful on "
+            f"both sides: median {fmt_num(bon['tfd_median'], 3)}, p90 {fmt_num(bon['tfd_p90'], 3)}."
+        )
+    else:
+        lines.append(
+            "**Paired Torsion Fingerprint Deviation**: not available -- "
+            f"`scripts/pipeline_v2_vs_rdkit_tfd_227.py` has not been run for this arm pair "
+            f"(expected output: `{TFD_BEST_OF_N_PATH.relative_to(ROOT)}`)."
+        )
+    lines.append("")
+    _coverage_gap = bon["rdkit_best_of_n_success"] - bon["chematic_success"]
+    _bon_rescue = bon["chematic_success"] - bon["chematic_single_uff_only_success"]
+    lines.append(
+        f"**Reading these numbers**: median RMSD {fmt_num(bon['rmsd_median_angstrom'], 3)} Å / "
+        f"median TFD {fmt_num(bon['tfd_median'], 3)} are moderate-to-large, not \"essentially the "
+        "same conformer\" -- a TFD of 0 means identical torsions and 1 means maximally different, "
+        "so ~0.34 median plus a 3+ Å median RMSD indicates chematic's and RDKit's best-of-10 "
+        "selections diverge substantially on which of 10 candidates is representative, most "
+        "plausibly from the two engines' distinct sampling (chematic's ETKDG-derived "
+        "`embed_pipeline_v2` vs. RDKit's own ETKDGv3) and/or differing UFF energy landscapes "
+        "steering the lowest-energy pick differently -- independent of whether either individual "
+        f"embed is itself sound (100% independently sound for `{bon['chematic_arm']}`, see the "
+        "geometry-quality table above)."
+    )
+    lines.append("")
+    lines.append(
+        f"**Net assessment**: chematic's A2 best-of-10 returned a sound conformer for "
+        f"{bon['chematic_success']}/{bon['chematic_attempted']} molecules, confirming the "
+        "energy-ranked ensemble path works at real-corpus scale. Coverage still trails RDKit's "
+        f"own best-of-10 ({bon['rdkit_best_of_n_success']}/265, a {_coverage_gap}-molecule gap), "
+        f"and running 10 attempts instead of 1 rescued only {_bon_rescue} additional molecule(s) "
+        f"over the single-attempt `chematic_pipeline_v2_uff_only` arm "
+        f"({bon['chematic_single_uff_only_success']}/265) -- best-of-N is not primarily a coverage "
+        "lever here. Conformer-selection parity with RDKit is NOT yet established (see the "
+        "RMSD/TFD numbers above). A2's demonstrated value this round is generating multiple "
+        "candidates with energy ranking, a reproducible seed, and full per-attempt provenance "
+        "(kept/pruned/failed) -- not closing the coverage or selection-parity gap with RDKit."
     )
     lines.append("")
 
@@ -1345,7 +1530,10 @@ def write_markdown_report(agg):
         "`attempted`/`final_validation_passed` only; the intermediate columns are `n/a` rather "
         "than a fabricated 0 or a misleading 265 (a naive reuse of the success-implies-passed-"
         "every-stage rule above would have printed 265 for every column here, which would "
-        "misrepresent a code path that never runs those stages at all)."
+        "misrepresent a code path that never runs those stages at all). "
+        "`chematic_pipeline_v2_uff_best_of_10` gets the same `n/a` treatment for the same "
+        "reason: it calls `embed_pipeline_v2` internally (via `embed_ensemble_v2`) but its "
+        "per-attempt `ConformerAttempt` type doesn't surface `PipelineStage`/`failure_stage`."
     )
     lines.append("")
 
