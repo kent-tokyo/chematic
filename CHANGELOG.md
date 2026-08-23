@@ -9,6 +9,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `chematic-py` (A2.1: Python bindings for the conformer ensemble core)
+
+- `Mol.conformer_ensemble_v2(config)`: a new, separate Python method
+  exposing `chematic_3d::embed_ensemble_v2` (A2, PR #373) — a deterministic
+  multi-conformer generator built as a new outer loop over
+  `embed_pipeline_v2`, with energy-ranked selection scoped within each
+  force field actually used and full per-attempt provenance. Added
+  alongside the existing `Mol.conformer_ensemble()`, not in place of it —
+  see below.
+- `EnsembleV2Config(per_conformer, count, base_seed, rmsd_threshold=0.5,
+  use_symmetric_rmsd_pruning=True, ensemble_timeout_ms=None)`: seed,
+  attempt count, ensemble-wide timeout, and RMSD pruning threshold are all
+  explicit, required-or-defaulted arguments — no hidden global state.
+  Construction is infallible; an invalid `rmsd_threshold` (negative, `NaN`,
+  infinite) is rejected with `ValueError` at `conformer_ensemble_v2()` call
+  time, matching where the Rust core itself validates it.
+- The returned dict never raises just because zero conformers were kept —
+  every per-attempt outcome (kept, pruned as a near-duplicate, or a typed
+  failure) is reported in `attempts`, and `conformers`/`conformer_provenance`
+  are simply empty in that case. This is the opposite convention from
+  `Mol.embed_pipeline_v2()`, which does raise on a failed embed — documented
+  explicitly on the new method, since "no exception raised" does not imply
+  "got at least one conformer" here.
+- MMFF94 and UFF energies are never cross-compared: kept conformers in
+  `conformers` are ordered group-by-group (by force field actually used),
+  ascending energy only *within* each group, and `mixed_force_field`
+  discloses when more than one group has a kept member. No flattened,
+  globally energy-sorted field is exposed — that would silently reintroduce
+  the cross-scale comparison this design avoids.
+- `Mol.conformer_ensemble()` (the legacy, `etkdg`-backed multi-conformer
+  method) is unchanged in this release — no behavior or return-type change,
+  no removal. Its docstring now carries a deprecation note pointing at
+  `conformer_ensemble_v2` and naming the concrete reasons (no seed, no
+  energy ranking, silent `Err(_) => []` on internal failure, and the live
+  MMFF94-zero-energy defect from PR #369). The docstring's own duplicated
+  intro paragraph (a pre-existing copy-paste artifact, unrelated to this
+  change) was cleaned up in the same edit.
+- Not done this round, by design: no WASM bindings for `embed_ensemble_v2`,
+  no version bump, and no best-of-N-vs-RDKit benchmark arm — those are the
+  explicitly planned next steps, not part of this change.
+
 ### Fixed — documentation (correction to a v0.19.0 changelog entry)
 
 - v0.19.0's own benchmark-refresh entry below states 3D conformer quality

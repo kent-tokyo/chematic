@@ -2490,14 +2490,20 @@ impl Mol {
         coords.points.iter().map(|p| vec![p.x, p.y, p.z]).collect()
     }
 
-    /// Generate multiple conformers with RMSD-based pruning.
+    /// Generate a conformer ensemble using ETKDG + force-field minimization + RMSD pruning.
+    ///
+    /// .. deprecated::
+    ///     Prefer :meth:`conformer_ensemble_v2`, which is deterministic
+    ///     (explicit seed), energy-ranks kept conformers, reports full
+    ///     per-attempt provenance (kept / duplicate-pruned / failed), and
+    ///     avoids a known soundness defect in this method's underlying
+    ///     MMFF94 path (silently zero energy/gradient for atom-type pairs
+    ///     its tables don't cover -- see PR #369). Also, on any internal
+    ///     failure this method silently returns an empty list rather than
+    ///     raising. This method is unchanged and not scheduled for removal
+    ///     in this release.
     ///
     /// Returns a list of coordinate arrays — each is a ``[[x,y,z], ...]`` list.
-    ///
-    /// Args:
-    ///     n: Number of conformers to attempt.
-    ///     rmsd_threshold: Minimum RMSD (Å) between conformers (default 0.5).
-    /// Generate a conformer ensemble using ETKDG + force-field minimization + RMSD pruning.
     ///
     /// Args:
     ///     n: Number of conformers to attempt.
@@ -2684,6 +2690,55 @@ impl Mol {
         config: &crate::pipeline_v2::PyPipelineV2Config,
     ) -> PyResult<Bound<'py, PyDict>> {
         crate::pipeline_v2::run_embed_pipeline_v2(py, &self.inner, config)
+    }
+
+    /// Generate a multi-conformer ensemble by calling the v2 embedding
+    /// pipeline (:meth:`embed_pipeline_v2`) ``config.count`` times, once
+    /// per deterministically derived seed, then selecting kept
+    /// representatives by ascending energy within each force-field group.
+    ///
+    /// Unlike :meth:`embed_pipeline_v2`, a call here does **not** raise
+    /// just because no conformer was kept -- every per-attempt outcome,
+    /// including an ensemble where every attempt failed, is a normal,
+    /// fully-diagnosable result. This only raises ``ValueError`` for a
+    /// ``config`` that could never succeed regardless of the molecule
+    /// (currently: an invalid ``rmsd_threshold``). Always check
+    /// ``len(result["conformers"])`` rather than relying on "no exception."
+    ///
+    /// Applied directly to this ``Mol``'s own atom order -- never
+    /// canonicalizes/reparses first (see issue #172).
+    ///
+    /// ``config``: an :class:`EnsembleV2Config`.
+    ///
+    /// Returns a dict with keys:
+    ///     conformers: kept conformers only, as ``[[[x,y,z], ...], ...]``,
+    ///         ordered group-by-group (by force field actually used),
+    ///         ascending energy within each group. Never a single
+    ///         cross-group energy sort -- MMFF94 and UFF energies are not
+    ///         on a comparable scale (see ``mixed_force_field`` below).
+    ///     conformer_provenance: one dict per entry of ``conformers``, same
+    ///         order: ``attempt_index``, ``seed``, ``energy``,
+    ///         ``actual_force_field_used``.
+    ///     attempts: every attempt, success or failure, in order. Each has
+    ///         ``attempt_index``, ``seed``, ``outcome`` (``"success"`` or
+    ///         ``"failure"``), and one of ``success``/``failure`` populated.
+    ///         A successful attempt's dict has ``energy``,
+    ///         ``actual_force_field_used``, ``fallback_reason``, and
+    ///         ``disposition`` (``{"kind": "kept", "conformer_index"}`` or
+    ///         ``{"kind": "pruned_as_duplicate", "representative_attempt_index",
+    ///         "rmsd", "symmetric"}``). A failed attempt's dict has the same
+    ///         shape :meth:`embed_pipeline_v2` raises on failure.
+    ///     mixed_force_field: ``True`` iff kept conformers span more than
+    ///         one force field actually used.
+    ///     termination: ``"completed"`` or ``"timed_out"``
+    ///         (``ensemble_timeout_ms`` exhausted before all attempts ran).
+    ///     requested_count: ``config.count`` at call time.
+    fn conformer_ensemble_v2<'py>(
+        &self,
+        py: Python<'py>,
+        config: &crate::ensemble_v2::PyEnsembleV2Config,
+    ) -> PyResult<Bound<'py, PyDict>> {
+        crate::ensemble_v2::run_embed_ensemble_v2(py, &self.inner, config)
     }
 
     /// Scan a torsion dihedral (atoms i–j–k–l) over 360° in ``steps`` increments.

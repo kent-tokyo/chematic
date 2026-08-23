@@ -18,6 +18,7 @@ type RdkitMorganDetail = (
 );
 
 mod crystal;
+mod ensemble_v2;
 mod formats;
 mod lammps;
 mod misc;
@@ -76,6 +77,7 @@ fn chematic(m: &Bound<'_, PyModule>) -> PyResult<()> {
         "PipelineV2Error",
         m.py().get_type::<pipeline_v2::PipelineV2Error>(),
     )?;
+    m.add_class::<ensemble_v2::PyEnsembleV2Config>()?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
 
     // bulk submodule
