@@ -56,7 +56,8 @@ pub use descriptors_3d::{
 };
 pub use dg::generate_coords;
 pub use ensemble_v2::{
-    ConformerAttempt, ConformerSuccess, EnsembleV2Config, EnsembleV2Result, embed_ensemble_v2,
+    ConformerAttempt, ConformerDisposition, ConformerSuccess, EnsembleTermination,
+    EnsembleV2Config, EnsembleV2ConfigError, EnsembleV2Result, embed_ensemble_v2,
 };
 pub use etkdg::generate_coords_etkdg;
 pub use md::{MDConfig, MDFrame, MDTrajectory, Thermostat, run_md};
