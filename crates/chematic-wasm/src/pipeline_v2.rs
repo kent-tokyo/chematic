@@ -214,11 +214,6 @@ struct PipelineV2ConfigJson {
     // every existing arm's unchanged behavior).
     #[serde(default)]
     enforce_chirality: bool,
-    // #[serde(default)]: same precedent again -- added after the JSON config
-    // was already documented (issue #291 Step B). `false` matches
-    // `EmbedParameters::default()`.
-    #[serde(default)]
-    materialize_implicit_h_for_chirality: bool,
 }
 
 impl PipelineV2ConfigJson {
@@ -239,7 +234,6 @@ impl PipelineV2ConfigJson {
                 use_macrocycle_torsions: self.use_macrocycle_torsions,
                 use_macrocycle_14_bounds: self.use_macrocycle_14_bounds,
                 enforce_chirality: self.enforce_chirality,
-                materialize_implicit_h_for_chirality: self.materialize_implicit_h_for_chirality,
                 ..EmbedParameters::default()
             },
             torsion_optimization: TorsionOptimizationConfig::default(),

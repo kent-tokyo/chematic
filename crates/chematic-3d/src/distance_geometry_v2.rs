@@ -967,8 +967,15 @@ fn try_embed_once(
         // it: `repair_stereo`'s rigid-subtree translation preserves bond
         // lengths exactly, so re-running `validate_final_coords` below (not
         // full `refine_coords`) is enough to catch any resulting distortion.
-        // Only reached when the pre-refinement repair didn't already survive,
-        // so this cannot change the outcome for any molecule that passes today.
+        // Only reached when the pre-refinement repair didn't already survive --
+        // an attempt that was already `is_fully_satisfied()` here never enters this
+        // branch, so its own returned coordinates are byte-identical to before this
+        // change. That does NOT mean overall behavior is unchanged: an attempt that
+        // used to fail this check now often succeeds instead, so which seed/attempt
+        // the outer retry loop settles on, how many attempts it consumes, and
+        // whether a molecule succeeds at all can all change -- by design, that's
+        // the fix (see `cinnamic_acid_E`/`chembl_tier_b_0168`'s tests below, both
+        // measurably 4/5 -> 5/5).
         coords = match repair_stereo(mol, &coords) {
             Ok(outcome) => outcome.coords,
             Err(failure) => failure.partial_coords,

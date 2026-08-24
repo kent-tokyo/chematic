@@ -3111,7 +3111,6 @@ class PipelineV2Config:
         ring_torsion_policy: str,
         total_timeout_ms: Optional[int],
         enforce_chirality: bool = False,
-        materialize_implicit_h_for_chirality: bool = False,
     ) -> None: ...
     @staticmethod
     def safe(
@@ -3132,7 +3131,6 @@ class PipelineV2Config:
         gate_mmff94_stretch_bend: bool = False,
         total_timeout_ms: Optional[int] = None,
         enforce_chirality: bool = False,
-        materialize_implicit_h_for_chirality: bool = False,
     ) -> "PipelineV2Config":
         """Convenience constructor.
 
@@ -3167,19 +3165,6 @@ class PipelineV2Config:
     composing the two repair mechanisms measurably improves correctness with
     no observed regressions). Default ``False``, matching the Rust
     ``EmbedParameters`` default -- existing callers are unaffected."""
-
-    materialize_implicit_h_for_chirality: bool
-    """Has no effect unless ``enforce_chirality`` is also True. When both are
-    set and the molecule has declared stereo, each embedding attempt
-    temporarily materializes every implicit hydrogen as a real atom before
-    embedding, then maps the result back onto the original atom count --
-    lets the repair mechanism fix ring-fused declared stereocenters whose
-    only non-ring substituent is an implicit H (e.g. steroid ring-fusion
-    carbons), which are otherwise unrepairable. Roughly doubles atom count
-    for an all-implicit-H molecule, so embedding cost rises accordingly;
-    molecules with several simultaneous ring-fused stereocenters may also
-    need a substantially higher ``max_attempts`` to reliably converge.
-    Default ``False``, matching the Rust ``EmbedParameters`` default."""
 
     def __repr__(self) -> str: ...
 

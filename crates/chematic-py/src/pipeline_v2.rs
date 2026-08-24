@@ -157,7 +157,6 @@ impl PyPipelineV2Config {
         ring_torsion_policy,
         total_timeout_ms,
         enforce_chirality = false,
-        materialize_implicit_h_for_chirality = false,
     ))]
     fn new(
         embed_seed: u64,
@@ -185,10 +184,6 @@ impl PyPipelineV2Config {
         // `"repair_and_verify"` (raises `PipelineV2Error` at validate-config
         // otherwise).
         enforce_chirality: bool,
-        // Same trailing-defaulted precedent again (issue #291 Step B). Has no
-        // effect unless `enforce_chirality` is also `True` -- see
-        // `EmbedParameters::materialize_implicit_h_for_chirality`'s own doc.
-        materialize_implicit_h_for_chirality: bool,
     ) -> PyResult<Self> {
         Ok(Self {
             inner: pv2::PipelineV2Config {
@@ -201,7 +196,6 @@ impl PyPipelineV2Config {
                     use_macrocycle_torsions,
                     use_macrocycle_14_bounds,
                     enforce_chirality,
-                    materialize_implicit_h_for_chirality,
                     ..EmbedParameters::default()
                 },
                 torsion_optimization: TorsionOptimizationConfig::default(),
@@ -242,7 +236,6 @@ impl PyPipelineV2Config {
         gate_mmff94_stretch_bend = false,
         total_timeout_ms = None,
         enforce_chirality = false,
-        materialize_implicit_h_for_chirality = false,
     ))]
     #[allow(clippy::too_many_arguments)]
     fn safe(
@@ -263,7 +256,6 @@ impl PyPipelineV2Config {
         gate_mmff94_stretch_bend: bool,
         total_timeout_ms: Option<u64>,
         enforce_chirality: bool,
-        materialize_implicit_h_for_chirality: bool,
     ) -> PyResult<Self> {
         Self::new(
             embed_seed,
@@ -283,7 +275,6 @@ impl PyPipelineV2Config {
             ring_torsion_policy,
             total_timeout_ms,
             enforce_chirality,
-            materialize_implicit_h_for_chirality,
         )
     }
 
@@ -354,10 +345,6 @@ impl PyPipelineV2Config {
     #[getter]
     fn enforce_chirality(&self) -> bool {
         self.inner.embed.enforce_chirality
-    }
-    #[getter]
-    fn materialize_implicit_h_for_chirality(&self) -> bool {
-        self.inner.embed.materialize_implicit_h_for_chirality
     }
 
     fn __repr__(&self) -> String {
