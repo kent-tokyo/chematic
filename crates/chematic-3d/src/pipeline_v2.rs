@@ -320,6 +320,37 @@ impl PipelineV2Config {
             expand_implicit_h_through_pipeline: false,
         }
     }
+
+    /// Convenience constructor for the "stereo-safe" configuration (issue
+    /// #291/#383): the exact 3-flag combination measured to close #291's
+    /// residual for ring-fused declared stereocenters (testosterone,
+    /// cholesterol, and similar) -- [`StereoPolicy::RepairAndVerify`],
+    /// `embed.enforce_chirality: true`, and
+    /// `expand_implicit_h_through_pipeline: true`, always set together.
+    /// These three only work correctly as a set (`expand_implicit_h_through_pipeline`
+    /// requires `enforce_chirality`, stage-1-validated elsewhere in this
+    /// module; `RepairAndVerify` is what actually uses the corrected
+    /// geometry) -- exposing them as independent flags risks a caller
+    /// setting some but not all of them, silently landing back on a
+    /// configuration issue #291's own measurement found unsound. Everything
+    /// else matches [`Self::minimal`]'s conservative defaults; override any
+    /// other field on the returned value the same way `minimal`'s own
+    /// callers already do. `max_attempts` is deliberately left at
+    /// `EmbedParameters::default()`'s `8` -- the exact value the 29-molecule
+    /// regression measurement (`crates/chematic-3d/examples/
+    /// issue291_repair_policy_measurement.rs`) validated (144/145 correct,
+    /// 0 silently wrong), not bumped speculatively.
+    pub fn stereo_safe(force_field_policy: ForceFieldPolicy) -> Self {
+        Self {
+            stereo_policy: StereoPolicy::RepairAndVerify,
+            embed: EmbedParameters {
+                enforce_chirality: true,
+                ..EmbedParameters::default()
+            },
+            expand_implicit_h_through_pipeline: true,
+            ..Self::minimal(force_field_policy)
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1624,6 +1655,33 @@ mod tests {
                     "atom {idx:?}: declared {code:?} but 3D-perceived {perceived_code:?} \
                      -- pipeline reported success with wrong chirality"
                 );
+            }
+        }
+    }
+
+    #[test]
+    fn stereo_safe_matches_the_hand_built_configuration_above() {
+        // issue #383: `stereo_safe` must be exactly the same as manually setting the
+        // 3 flags -- same testosterone happy-path, same seed, same expectations as
+        // `expand_implicit_h_through_pipeline_fixes_testosterone_with_correct_geometry`
+        // above, just built via the convenience constructor instead.
+        let mol = parse("C[C@]12CC[C@H]3[C@@H](CC[C@H]4CCC(=O)C=C34)[C@@H]1CC[C@@H]2O").unwrap();
+        let declared = chematic_chem::assign_cip(&mol);
+
+        let mut config = PipelineV2Config::stereo_safe(ForceFieldPolicy::Mmff94WithUffFallback);
+        assert!(config.embed.enforce_chirality);
+        assert!(config.expand_implicit_h_through_pipeline);
+        assert_eq!(config.stereo_policy, StereoPolicy::RepairAndVerify);
+        config.embed.random_seed = 0;
+
+        let result = embed_pipeline_v2(&mol, &config).expect("testosterone must succeed");
+        assert!(result.final_stereo.is_fully_satisfied());
+        assert_eq!(result.coords.atom_count(), mol.atom_count());
+
+        let perceived = crate::stereo3d::assign_stereo_from_3d(&mol, &result.coords);
+        for &(idx, code) in &declared.assignments {
+            if let Some(perceived_code) = perceived.get(idx) {
+                assert_eq!(perceived_code, code);
             }
         }
     }

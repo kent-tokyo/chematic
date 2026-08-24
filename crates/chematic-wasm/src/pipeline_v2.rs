@@ -214,6 +214,15 @@ struct PipelineV2ConfigJson {
     // every existing arm's unchanged behavior).
     #[serde(default)]
     enforce_chirality: bool,
+    // #[serde(default)]: same precedent again (issue #291/#383). Requires
+    // `enforceChirality: true` (raises the same `invalid_configuration` error
+    // otherwise) -- see `PipelineV2Config::expand_implicit_h_through_pipeline`'s
+    // own Rust doc for what it does. Prefer `pipeline_v2_stereo_safe_config_json`
+    // over setting this field alone: it only works correctly combined with
+    // `stereoPolicy: "repair_and_verify"` and `enforceChirality: true`, which
+    // that helper sets together so a caller can't set one but forget another.
+    #[serde(default)]
+    expand_implicit_h_through_pipeline: bool,
 }
 
 impl PipelineV2ConfigJson {
@@ -246,10 +255,7 @@ impl PipelineV2ConfigJson {
             gate_mmff94_stretch_bend: self.gate_mmff94_stretch_bend,
             ring_torsion_policy: self.ring_torsion_policy.into(),
             total_timeout_ms,
-            // Issue #291 pipeline-level H-expansion: Rust-core-only for now (not
-            // yet exposed in this JSON config), same staging PR #380 used for the
-            // embed-level `materialize_implicit_h_for_chirality`.
-            expand_implicit_h_through_pipeline: false,
+            expand_implicit_h_through_pipeline: self.expand_implicit_h_through_pipeline,
         })
     }
 }
@@ -1231,6 +1237,75 @@ pub fn embed_pipeline_v2_json(mol: &MolHandle, config_json: &str) -> String {
     }
 }
 
+/// Returns a ready-to-use `embed_pipeline_v2_json` config JSON string for the
+/// "stereo-safe" configuration (issue #291/#383): `stereoPolicy:
+/// "repair_and_verify"`, `enforceChirality: true`, and
+/// `expandImplicitHThroughPipeline: true` together -- the exact combination
+/// measured to correctly handle ring-fused declared stereocenters (e.g.
+/// testosterone, cholesterol) that `enforceChirality` alone cannot repair.
+/// Mirrors `PipelineV2Config::stereo_safe`/the Python binding's
+/// `PipelineV2Config.stereo_safe(...)` -- prefer this over setting those three
+/// fields individually: they only work correctly as a set, and forgetting one
+/// silently falls back to a configuration issue #291 measured as unsound for
+/// that molecule class. `forceFieldPolicy`/`ringTorsionPolicy` are still
+/// required, explicit arguments; everything else takes the same conservative
+/// defaults `embed_pipeline_v2_json`'s own documented examples do. The caller
+/// may parse and further override individual fields before passing the result
+/// to `embed_pipeline_v2_json` (e.g. a different `embedSeed`).
+///
+/// Never throws, matching `embed_pipeline_v2_json`'s own convention: an
+/// unknown `force_field`/`ring_torsion_policy` string returns the same
+/// `{"ok": false, "error": {...}}` shape `embed_pipeline_v2_json` would for an
+/// invalid config, tagged `schemaVersion: 1`.
+#[wasm_bindgen]
+pub fn pipeline_v2_stereo_safe_config_json(force_field: &str, ring_torsion_policy: &str) -> String {
+    // Validate against the same closed enums `embed_pipeline_v2_json` itself
+    // parses with -- reuses their exact error messages, no hand-rolled match.
+    // The caller's own strings are re-serialized verbatim below (already
+    // proven to round-trip, since these enums serialize back to exactly the
+    // strings they deserialize from).
+    if let Err(e) = serde_json::from_value::<ForceFieldPolicyJson>(serde_json::Value::String(
+        force_field.to_string(),
+    )) {
+        return wasm_input_error_json(FailureCauseJson::InvalidConfig {
+            message: format!("forceFieldPolicy: {e}"),
+        });
+    }
+    if let Err(e) = serde_json::from_value::<RingTorsionPolicyJson>(serde_json::Value::String(
+        ring_torsion_policy.to_string(),
+    )) {
+        return wasm_input_error_json(FailureCauseJson::InvalidConfig {
+            message: format!("ringTorsionPolicy: {e}"),
+        });
+    }
+
+    serde_json::json!({
+        "schemaVersion": SCHEMA_VERSION,
+        "ok": true,
+        "config": {
+            "embedSeed": 0xC0FF_EE42_D157_6E02_u64,
+            "maxAttempts": 8,
+            "embedTimeoutMs": null,
+            "useExpTorsions": false,
+            "useSmallRingTorsions": false,
+            "useMacrocycleTorsions": false,
+            "useMacrocycle14Bounds": false,
+            "includeLegacyTorsionHeuristic": false,
+            "stereoPolicy": "repair_and_verify",
+            "failOnUnevaluableStereo": false,
+            "forceFieldPolicy": force_field,
+            "forceFieldMaxIterations": 200,
+            "gateMmff94TorsionOop": false,
+            "gateMmff94StretchBend": false,
+            "ringTorsionPolicy": ring_torsion_policy,
+            "totalTimeoutMs": null,
+            "enforceChirality": true,
+            "expandImplicitHThroughPipeline": true,
+        }
+    })
+    .to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1730,6 +1805,113 @@ mod tests {
         assert_eq!(
             value["result"]["finalStereo"]["isFullySatisfied"], true,
             "{json}"
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // expand_implicit_h_through_pipeline / pipeline_v2_stereo_safe_config_json
+    // (issue #291/#383) -- WASM parity
+    // -----------------------------------------------------------------------
+
+    const TESTOSTERONE: &str = "C[C@]12CC[C@H]3[C@@H](CC[C@H]4CCC(=O)C=C34)[C@@H]1CC[C@@H]2O";
+
+    #[test]
+    fn expand_implicit_h_through_pipeline_requires_enforce_chirality() {
+        let mol = parse_smiles(TESTOSTERONE).expect("testosterone");
+        let config = r#"{
+                "embedSeed": 0,
+                "maxAttempts": 8,
+                "embedTimeoutMs": null,
+                "useExpTorsions": false,
+                "useSmallRingTorsions": false,
+                "useMacrocycleTorsions": false,
+                "useMacrocycle14Bounds": false,
+                "includeLegacyTorsionHeuristic": false,
+                "stereoPolicy": "repair_and_verify",
+                "failOnUnevaluableStereo": false,
+                "forceFieldPolicy": "mmff94_with_uff_fallback",
+                "forceFieldMaxIterations": 200,
+                "gateMmff94TorsionOop": false,
+                "gateMmff94StretchBend": false,
+                "ringTorsionPolicy": "diagnostic_only",
+                "totalTimeoutMs": null,
+                "enforceChirality": false,
+                "expandImplicitHThroughPipeline": true
+            }"#;
+        let json = embed_pipeline_v2_json(&mol, config);
+        let value: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert_eq!(value["ok"], false, "{json}");
+        assert_eq!(
+            value["error"]["cause"]["kind"], "invalid_configuration",
+            "{json}"
+        );
+        assert_eq!(value["error"]["stage"], "validate_config", "{json}");
+    }
+
+    #[test]
+    fn stereo_safe_config_json_has_expected_shape() {
+        let json = pipeline_v2_stereo_safe_config_json("mmff94_with_uff_fallback", "fail_closed");
+        let value: serde_json::Value = serde_json::from_str(&json).expect("valid JSON");
+        assert_eq!(value["schemaVersion"], 1);
+        assert_eq!(value["ok"], true);
+        let config = &value["config"];
+        assert_eq!(config["stereoPolicy"], "repair_and_verify");
+        assert_eq!(config["enforceChirality"], true);
+        assert_eq!(config["expandImplicitHThroughPipeline"], true);
+        assert_eq!(config["forceFieldPolicy"], "mmff94_with_uff_fallback");
+        assert_eq!(config["ringTorsionPolicy"], "fail_closed");
+    }
+
+    #[test]
+    fn stereo_safe_config_json_rejects_unknown_force_field() {
+        let json = pipeline_v2_stereo_safe_config_json("not_a_real_force_field", "fail_closed");
+        let value: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert_eq!(value["ok"], false, "{json}");
+        assert_eq!(value["error"]["cause"]["kind"], "invalid_config", "{json}");
+    }
+
+    #[test]
+    fn stereo_safe_config_json_fixes_testosterone_via_wasm_binding() {
+        // Same seed/configuration already Rust-level tested and cross-checked
+        // against an independent oracle in pipeline_v2.rs's own
+        // stereo_safe_matches_the_hand_built_configuration_above test.
+        let mol = parse_smiles(TESTOSTERONE).expect("testosterone");
+        let generated =
+            pipeline_v2_stereo_safe_config_json("mmff94_with_uff_fallback", "diagnostic_only");
+        let mut config: serde_json::Value = serde_json::from_str(&generated).unwrap();
+        config["config"]["embedSeed"] = serde_json::json!(0);
+        let config_json = config["config"].to_string();
+
+        let json = embed_pipeline_v2_json(&mol, &config_json);
+        let value: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert_eq!(value["ok"], true, "{json}");
+        assert_eq!(
+            value["result"]["finalStereo"]["isFullySatisfied"], true,
+            "{json}"
+        );
+        assert_eq!(value["result"]["coords"].as_array().unwrap().len(), 20);
+    }
+
+    #[test]
+    fn expand_implicit_h_through_pipeline_is_noop_without_declared_stereo() {
+        let mol = parse_smiles("CCCCCCCCCC").expect("decane"); // no declared stereo
+        let base = embed_pipeline_v2_json(
+            &mol,
+            &enforce_chirality_config_json("repair_and_verify", true),
+        );
+        let expanded_config = {
+            let mut c: serde_json::Value =
+                serde_json::from_str(&enforce_chirality_config_json("repair_and_verify", true))
+                    .unwrap();
+            c["expandImplicitHThroughPipeline"] = serde_json::json!(true);
+            c.to_string()
+        };
+        let expanded = embed_pipeline_v2_json(&mol, &expanded_config);
+        let base_value: serde_json::Value = serde_json::from_str(&base).unwrap();
+        let expanded_value: serde_json::Value = serde_json::from_str(&expanded).unwrap();
+        assert_eq!(
+            base_value["result"]["coords"],
+            expanded_value["result"]["coords"]
         );
     }
 

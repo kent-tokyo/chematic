@@ -122,11 +122,32 @@ const response = JSON.parse(embed_pipeline_v2_json(mol, JSON.stringify({
   forceFieldPolicy: "none",
   forceFieldMaxIterations: 200,
   gateMmff94TorsionOop: false,
+  gateMmff94StretchBend: false,
   ringTorsionPolicy: "fail_closed",
   totalTimeoutMs: null,
+  enforceChirality: false,
+  expandImplicitHThroughPipeline: false,
 })));
 // response.ok, response.result / response.error — same shape as
 // Mol.embed_pipeline_v2() in the Python binding.
+```
+
+For ring-fused declared stereocenters (e.g. testosterone, cholesterol) that
+`enforceChirality` alone can't repair, `stereoPolicy: "repair_and_verify"` +
+`enforceChirality: true` + `expandImplicitHThroughPipeline: true` are needed
+*together* (issue #291/#383) — `pipeline_v2_stereo_safe_config_json` builds
+that exact combination so a caller can't set one and forget another:
+
+```js
+const configResponse = JSON.parse(pipeline_v2_stereo_safe_config_json(
+  "mmff94_with_uff_fallback", "fail_closed"
+));
+// configResponse.ok, configResponse.config (or configResponse.error, same
+// shape as embed_pipeline_v2_json's own error) — modify configResponse.config
+// (e.g. a different embedSeed) before passing it to embed_pipeline_v2_json.
+const response = JSON.parse(
+  embed_pipeline_v2_json(mol, JSON.stringify(configResponse.config))
+);
 ```
 
 Verified working end-to-end under real WASM (both `wasm-pack --target nodejs`
