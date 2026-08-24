@@ -1009,6 +1009,202 @@ mod tests {
     }
 
     #[test]
+    fn generate_coords_naphthalene_fusion_seam_known_broken() {
+        // NOT a regression test for a fix -- pins a KNOWN, still-open
+        // limitation (issue #255): the simplest possible 2-ring fusion
+        // (exactly one shared edge) still hits `place_rings`'
+        // `shared_atoms.len() >= 2` branch's fixed `+y` extension from the
+        // fusion bond's midpoint, which is only correct when `+y` happens
+        // to point away from the already-placed ring -- not guaranteed,
+        // and not correct here. Genuinely absent from this file's test
+        // suite before this addition; the file's only prior fused-ring
+        // test (anthracene, 3 rings) deliberately avoided a bonded-pair
+        // check for the same underlying reason (see that test's own
+        // comment). This is #256 Phase 0 fixture work: pin naphthalene's
+        // current broken value so the design doc's claim that a
+        // connectivity-ordered rewrite should also close #255 is
+        // checkable, not just asserted.
+        let mol = parse("c1ccc2ccccc2c1").unwrap();
+        let n = mol.atom_count();
+        assert_eq!(n, 10, "naphthalene has 10 heavy atoms");
+        let coords = generate_coords(&mol);
+        let worst = mol
+            .bonds()
+            .map(|(_, b)| coords.get(b.atom1).distance(&coords.get(b.atom2)))
+            .fold(0.0_f64, f64::max);
+        assert!(
+            worst > 2.0,
+            "expected this known-broken 2-ring fusion case to still have a distorted \
+             bond (last measured 2.2644 \u{c5} vs. ~1.40 \u{c5} ideal aromatic C-C); got \
+             worst bond {worst:.4} \u{c5} -- if this now passes, issue #255's fusion-seam \
+             limitation was fixed and this test should be replaced with an \
+             `assert_bonded_pairs_sane` call instead of deleting it"
+        );
+    }
+
+    #[test]
+    fn generate_coords_quinoline_fused_heterocycle_known_broken() {
+        // Same root cause and same measured value as naphthalene above
+        // (identical 2-ring, 1-shared-edge fusion topology; the fused
+        // pyridine nitrogen doesn't change which `place_rings` branch
+        // fires) -- included as its own fixture, not merged into the
+        // naphthalene test, so a future fix's coverage of at least one
+        // fused *heterocycle* is checked explicitly, not inferred from an
+        // all-carbon case.
+        let mol = parse("c1ccc2ncccc2c1").unwrap();
+        let n = mol.atom_count();
+        assert_eq!(n, 10, "quinoline has 10 heavy atoms");
+        let coords = generate_coords(&mol);
+        let worst = mol
+            .bonds()
+            .map(|(_, b)| coords.get(b.atom1).distance(&coords.get(b.atom2)))
+            .fold(0.0_f64, f64::max);
+        assert!(
+            worst > 2.0,
+            "expected this known-broken fused-heterocycle case to still have a distorted \
+             bond (last measured 2.2644 \u{c5}); got worst bond {worst:.4} \u{c5} -- if this \
+             now passes, issue #255's fusion-seam limitation was fixed and this test \
+             should be replaced with an `assert_bonded_pairs_sane` call instead of deleting it"
+        );
+    }
+
+    #[test]
+    fn generate_coords_phenanthrene_angular_fusion_known_broken() {
+        // NOT a regression test for a fix -- pins a KNOWN, still-open
+        // limitation (issue #255), same fixed-`+y` fusion-seam branch as
+        // naphthalene above, but ANGULAR 3-ring fusion rather than linear
+        // (unlike anthracene). This specific molecule matters beyond
+        // general coverage: issue #255's own history records a reverted
+        // overnight fix attempt (a 2-point rigid rotation of the ring
+        // template onto the real shared-edge positions) that fixed
+        // anthracene exactly but broke phenanthrene with two EXACT atom
+        // coincidences plus a 3.7 \u{c5} stretch -- worse than today's
+        // distortion. This fixture exists so any future fix attempt is
+        // checked against phenanthrene from the start, not discovered to
+        // regress it after the fact.
+        let mol = parse("c1ccc2c(c1)ccc1ccccc12").unwrap();
+        let n = mol.atom_count();
+        assert_eq!(n, 14, "phenanthrene has 14 heavy atoms");
+        let coords = generate_coords(&mol);
+        let worst = mol
+            .bonds()
+            .map(|(_, b)| coords.get(b.atom1).distance(&coords.get(b.atom2)))
+            .fold(0.0_f64, f64::max);
+        assert!(
+            worst > 3.0,
+            "expected this known-broken angular-fusion case to still have a distorted \
+             bond (last measured 3.3856 \u{c5}); got worst bond {worst:.4} \u{c5} -- if this \
+             now passes, issue #255's fusion-seam limitation was fixed for angular fusion \
+             and this test should be replaced with an `assert_bonded_pairs_sane` call \
+             instead of deleting it"
+        );
+    }
+
+    #[test]
+    fn generate_coords_pyrene_multi_ring_fusion_known_broken() {
+        // NOT a regression test for a fix -- pins a KNOWN, still-open
+        // limitation (issue #255), same fixed-`+y` fusion-seam branch,
+        // 4-ring fusion. Also part of #255's reverted-fix history: the
+        // same overnight attempt that broke phenanthrene also produced an
+        // exact atom coincidence here. Highest-multiplicity fusion case
+        // in this file's fixture set.
+        let mol = parse("c1cc2ccc3cccc4ccc(c1)c2c34").unwrap();
+        let n = mol.atom_count();
+        assert_eq!(n, 16, "pyrene has 16 heavy atoms");
+        let coords = generate_coords(&mol);
+        let worst = mol
+            .bonds()
+            .map(|(_, b)| coords.get(b.atom1).distance(&coords.get(b.atom2)))
+            .fold(0.0_f64, f64::max);
+        assert!(
+            worst > 3.5,
+            "expected this known-broken multi-ring-fusion case to still have a distorted \
+             bond (last measured 3.8974 \u{c5}); got worst bond {worst:.4} \u{c5} -- if this \
+             now passes, issue #255's fusion-seam limitation was fixed for multi-ring \
+             fusion and this test should be replaced with an `assert_bonded_pairs_sane` \
+             call instead of deleting it"
+        );
+    }
+
+    #[test]
+    fn generate_coords_diphenylmethane_chain_bridge_length_1_known_broken() {
+        // NOT a regression test for a fix -- pins a KNOWN, still-open
+        // limitation (issue #256), same root cause as the bibenzyl test
+        // below but at the SHORTEST possible ring-chain-ring bridge (a
+        // single -CH2- atom, vs. bibenzyl's -CH2CH2-). Confirms #256's
+        // bug isn't specific to a 2-atom bridge -- even the minimal case
+        // still finds no already-placed anchor for `place_rings`' direct-
+        // bond check, since the ONE bridging atom is itself unplaced at
+        // `place_rings` time.
+        let mol = parse("c1ccccc1Cc1ccccc1").unwrap();
+        let n = mol.atom_count();
+        assert_eq!(n, 13, "diphenylmethane has 13 heavy atoms");
+        let coords = generate_coords(&mol);
+        let worst = mol
+            .bonds()
+            .map(|(_, b)| coords.get(b.atom1).distance(&coords.get(b.atom2)))
+            .fold(0.0_f64, f64::max);
+        assert!(
+            worst > 6.0,
+            "expected this known-broken chain-bridged case (bridge length 1) to still have \
+             a grossly stretched bond (last measured 8.0738 \u{c5}); got worst bond \
+             {worst:.4} \u{c5} -- if this now passes, issue #256's chain-bridged \
+             ring-island limitation was fixed and this test should be replaced with an \
+             `assert_bonded_pairs_sane` call instead of deleting it"
+        );
+    }
+
+    #[test]
+    fn generate_coords_diphenylpropane_chain_bridge_length_3_known_broken() {
+        // Same root cause as bibenzyl (bridge length 2) and the
+        // diphenylmethane test above (bridge length 1), at bridge length
+        // 3 (-CH2CH2CH2-) -- part of a bridge-length series (1, 2, 3, 4)
+        // so a future fix's differential evaluation can check the fix
+        // generalizes across bridge length, not just bibenzyl's single
+        // data point.
+        let mol = parse("c1ccccc1CCCc1ccccc1").unwrap();
+        let n = mol.atom_count();
+        assert_eq!(n, 15, "1,3-diphenylpropane has 15 heavy atoms");
+        let coords = generate_coords(&mol);
+        let worst = mol
+            .bonds()
+            .map(|(_, b)| coords.get(b.atom1).distance(&coords.get(b.atom2)))
+            .fold(0.0_f64, f64::max);
+        assert!(
+            worst > 6.0,
+            "expected this known-broken chain-bridged case (bridge length 3) to still have \
+             a grossly stretched bond (last measured 8.9731 \u{c5}); got worst bond \
+             {worst:.4} \u{c5} -- if this now passes, issue #256's chain-bridged \
+             ring-island limitation was fixed and this test should be replaced with an \
+             `assert_bonded_pairs_sane` call instead of deleting it"
+        );
+    }
+
+    #[test]
+    fn generate_coords_diphenylbutane_chain_bridge_length_4_known_broken() {
+        // Same root cause as bibenzyl (bridge length 2) and the two tests
+        // above (bridge lengths 1, 3), at bridge length 4
+        // (-CH2CH2CH2CH2-) -- completes the 1/2(bibenzyl)/3/4 bridge-length
+        // series.
+        let mol = parse("c1ccccc1CCCCc1ccccc1").unwrap();
+        let n = mol.atom_count();
+        assert_eq!(n, 16, "1,4-diphenylbutane has 16 heavy atoms");
+        let coords = generate_coords(&mol);
+        let worst = mol
+            .bonds()
+            .map(|(_, b)| coords.get(b.atom1).distance(&coords.get(b.atom2)))
+            .fold(0.0_f64, f64::max);
+        assert!(
+            worst > 6.0,
+            "expected this known-broken chain-bridged case (bridge length 4) to still have \
+             a grossly stretched bond (last measured 8.7060 \u{c5}); got worst bond \
+             {worst:.4} \u{c5} -- if this now passes, issue #256's chain-bridged \
+             ring-island limitation was fixed and this test should be replaced with an \
+             `assert_bonded_pairs_sane` call instead of deleting it"
+        );
+    }
+
+    #[test]
     fn generate_and_minimize_dreiding_benzene() {
         use crate::minimize::minimize_dreiding;
         let mol = parse("c1ccccc1").unwrap();
