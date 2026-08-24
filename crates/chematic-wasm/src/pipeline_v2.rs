@@ -1713,14 +1713,20 @@ mod tests {
     }
 
     #[test]
-    fn enforce_chirality_with_repair_and_verify_is_invalid_configuration() {
+    fn enforce_chirality_with_repair_and_verify_is_allowed() {
+        // Revised 2026-08-24 (issue #291 Step A): this combination was
+        // previously rejected as invalid_configuration -- now validated (see
+        // `chematic_3d::pipeline_v2`'s revised Stage 1 doc entry and
+        // `crates/chematic-3d/examples/issue291_repair_policy_measurement.rs`).
         let mol = parse_smiles(r"C/C=C\C").expect("but2ene_Z");
         let config = enforce_chirality_config_json("repair_and_verify", true);
         let json = embed_pipeline_v2_json(&mol, &config);
         let value: serde_json::Value = serde_json::from_str(&json).unwrap();
-        assert_eq!(value["ok"], false, "{json}");
-        assert_eq!(value["error"]["stage"], "validate_config");
-        assert_eq!(value["error"]["cause"]["kind"], "invalid_configuration");
+        assert_eq!(value["ok"], true, "{json}");
+        assert_eq!(
+            value["result"]["finalStereo"]["isFullySatisfied"], true,
+            "{json}"
+        );
     }
 
     // -----------------------------------------------------------------------
