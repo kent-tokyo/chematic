@@ -23,6 +23,8 @@ pub mod distance_geometry_v2;
 pub mod ensemble_v2;
 pub mod etkdg;
 pub mod etkdg_knowledge;
+#[cfg(test)]
+mod issue256_255_phase2_evaluation;
 pub mod md;
 pub mod minimize;
 pub mod mol_transforms;
