@@ -3111,6 +3111,7 @@ class PipelineV2Config:
         ring_torsion_policy: str,
         total_timeout_ms: Optional[int],
         enforce_chirality: bool = False,
+        expand_implicit_h_through_pipeline: bool = False,
     ) -> None: ...
     @staticmethod
     def safe(
@@ -3131,6 +3132,7 @@ class PipelineV2Config:
         gate_mmff94_stretch_bend: bool = False,
         total_timeout_ms: Optional[int] = None,
         enforce_chirality: bool = False,
+        expand_implicit_h_through_pipeline: bool = False,
     ) -> "PipelineV2Config":
         """Convenience constructor.
 
@@ -3138,6 +3140,39 @@ class PipelineV2Config:
         still required, explicit arguments -- never hidden defaults --
         everything else takes a conservative default (every torsion-knowledge
         flag off, ``fail_on_unevaluable_stereo=False``, no timeouts).
+        """
+        ...
+    @staticmethod
+    def stereo_safe(
+        force_field: str,
+        ring_torsion_policy: str,
+        fail_on_unevaluable_stereo: bool = False,
+        embed_seed: int = ...,
+        max_attempts: int = 8,
+        embed_timeout_ms: Optional[int] = None,
+        use_exp_torsions: bool = False,
+        use_small_ring_torsions: bool = False,
+        use_macrocycle_torsions: bool = False,
+        use_macrocycle_14_bounds: bool = False,
+        include_legacy_torsion_heuristic: bool = False,
+        force_field_max_iterations: int = 200,
+        gate_mmff94_torsion_oop: bool = False,
+        gate_mmff94_stretch_bend: bool = False,
+        total_timeout_ms: Optional[int] = None,
+    ) -> "PipelineV2Config":
+        """Convenience constructor for the "stereo-safe" configuration (issue
+        #291/#383): sets ``stereo_policy="repair_and_verify"``,
+        ``enforce_chirality=True``, and
+        ``expand_implicit_h_through_pipeline=True`` together -- the exact
+        combination measured to correctly handle ring-fused declared
+        stereocenters (e.g. testosterone, cholesterol) that
+        ``enforce_chirality`` alone cannot repair. Prefer this over setting
+        those three individually via :meth:`safe`/the constructor: they only
+        work correctly as a set, and forgetting one silently falls back to a
+        configuration issue #291 measured as unsound for that molecule
+        class. ``force_field``/``ring_torsion_policy`` are still required,
+        explicit arguments; everything else takes the same conservative
+        defaults :meth:`safe` does.
         """
         ...
 
@@ -3165,6 +3200,19 @@ class PipelineV2Config:
     composing the two repair mechanisms measurably improves correctness with
     no observed regressions). Default ``False``, matching the Rust
     ``EmbedParameters`` default -- existing callers are unaffected."""
+
+    expand_implicit_h_through_pipeline: bool
+    """Issue #291/#383: for declared stereocenters whose only non-ring
+    substituent is an implicit H (ring-fused steroid-like centers such as
+    testosterone/cholesterol), run the whole pipeline on a temporary
+    ``add_hydrogens``-expanded copy of the molecule instead of the original,
+    then map the result back onto the original atom count before returning.
+    Requires ``enforce_chirality=True`` (raises :class:`PipelineV2Error`
+    otherwise). Prefer :meth:`stereo_safe` over setting this flag alone --
+    it only works correctly combined with ``stereo_policy="repair_and_verify"``
+    and ``enforce_chirality=True``, which ``stereo_safe`` sets together so a
+    caller can't set one but forget another. Default ``False``, matching the
+    Rust ``PipelineV2Config`` default -- existing callers are unaffected."""
 
     def __repr__(self) -> str: ...
 

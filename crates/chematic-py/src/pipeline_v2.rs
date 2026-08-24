@@ -157,6 +157,7 @@ impl PyPipelineV2Config {
         ring_torsion_policy,
         total_timeout_ms,
         enforce_chirality = false,
+        expand_implicit_h_through_pipeline = false,
     ))]
     fn new(
         embed_seed: u64,
@@ -184,6 +185,15 @@ impl PyPipelineV2Config {
         // `"repair_and_verify"` (raises `PipelineV2Error` at validate-config
         // otherwise).
         enforce_chirality: bool,
+        // Same trailing-defaulted precedent again (issue #291/#383). Requires
+        // `enforce_chirality=True` (raises `PipelineV2Error` at validate-config
+        // otherwise) -- see `PipelineV2Config::expand_implicit_h_through_pipeline`'s
+        // own Rust doc for what it does. Prefer `PipelineV2Config.stereo_safe(...)`
+        // over setting this flag alone: it only works correctly combined with
+        // `stereo_policy="repair_and_verify"` and `enforce_chirality=True`, and
+        // `stereo_safe` sets all three together so a caller can't set one but
+        // forget another.
+        expand_implicit_h_through_pipeline: bool,
     ) -> PyResult<Self> {
         Ok(Self {
             inner: pv2::PipelineV2Config {
@@ -208,10 +218,7 @@ impl PyPipelineV2Config {
                 gate_mmff94_stretch_bend,
                 ring_torsion_policy: parse_ring_torsion_policy(ring_torsion_policy)?,
                 total_timeout_ms,
-                // Issue #291 pipeline-level H-expansion: Rust-core-only for now
-                // (not yet exposed as a constructor argument here), same staging
-                // PR #380 used for the embed-level `materialize_implicit_h_for_chirality`.
-                expand_implicit_h_through_pipeline: false,
+                expand_implicit_h_through_pipeline,
             },
         })
     }
@@ -240,6 +247,7 @@ impl PyPipelineV2Config {
         gate_mmff94_stretch_bend = false,
         total_timeout_ms = None,
         enforce_chirality = false,
+        expand_implicit_h_through_pipeline = false,
     ))]
     #[allow(clippy::too_many_arguments)]
     fn safe(
@@ -260,6 +268,7 @@ impl PyPipelineV2Config {
         gate_mmff94_stretch_bend: bool,
         total_timeout_ms: Option<u64>,
         enforce_chirality: bool,
+        expand_implicit_h_through_pipeline: bool,
     ) -> PyResult<Self> {
         Self::new(
             embed_seed,
@@ -279,7 +288,74 @@ impl PyPipelineV2Config {
             ring_torsion_policy,
             total_timeout_ms,
             enforce_chirality,
+            expand_implicit_h_through_pipeline,
         )
+    }
+
+    /// Convenience constructor for the "stereo-safe" configuration (issue
+    /// #291/#383): sets `stereo_policy="repair_and_verify"`,
+    /// `enforce_chirality=True`, and `expand_implicit_h_through_pipeline=True`
+    /// together -- the exact combination measured to correctly handle
+    /// ring-fused declared stereocenters (e.g. testosterone, cholesterol) that
+    /// `enforce_chirality` alone cannot repair. These three only work
+    /// correctly as a set; prefer this over setting them individually via
+    /// `safe(...)`/the constructor, where forgetting one silently falls back
+    /// to a configuration issue #291 measured as unsound for that molecule
+    /// class. `force_field`/`ring_torsion_policy` are still required,
+    /// explicit arguments; everything else takes the same conservative
+    /// defaults `safe(...)` does.
+    #[staticmethod]
+    #[pyo3(signature = (
+        force_field,
+        ring_torsion_policy,
+        fail_on_unevaluable_stereo = false,
+        embed_seed = 0xC0FF_EE42_D157_6E02,
+        max_attempts = 8,
+        embed_timeout_ms = None,
+        use_exp_torsions = false,
+        use_small_ring_torsions = false,
+        use_macrocycle_torsions = false,
+        use_macrocycle_14_bounds = false,
+        include_legacy_torsion_heuristic = false,
+        force_field_max_iterations = 200,
+        gate_mmff94_torsion_oop = false,
+        gate_mmff94_stretch_bend = false,
+        total_timeout_ms = None,
+    ))]
+    #[allow(clippy::too_many_arguments)]
+    fn stereo_safe(
+        force_field: &str,
+        ring_torsion_policy: &str,
+        fail_on_unevaluable_stereo: bool,
+        embed_seed: u64,
+        max_attempts: usize,
+        embed_timeout_ms: Option<u64>,
+        use_exp_torsions: bool,
+        use_small_ring_torsions: bool,
+        use_macrocycle_torsions: bool,
+        use_macrocycle_14_bounds: bool,
+        include_legacy_torsion_heuristic: bool,
+        force_field_max_iterations: usize,
+        gate_mmff94_torsion_oop: bool,
+        gate_mmff94_stretch_bend: bool,
+        total_timeout_ms: Option<u64>,
+    ) -> PyResult<Self> {
+        let mut inner = pv2::PipelineV2Config::stereo_safe(parse_force_field_policy(force_field)?);
+        inner.ring_torsion_policy = parse_ring_torsion_policy(ring_torsion_policy)?;
+        inner.fail_on_unevaluable_stereo = fail_on_unevaluable_stereo;
+        inner.embed.random_seed = embed_seed;
+        inner.embed.max_attempts = max_attempts;
+        inner.embed.timeout_ms = embed_timeout_ms;
+        inner.embed.use_exp_torsions = use_exp_torsions;
+        inner.embed.use_small_ring_torsions = use_small_ring_torsions;
+        inner.embed.use_macrocycle_torsions = use_macrocycle_torsions;
+        inner.embed.use_macrocycle_14_bounds = use_macrocycle_14_bounds;
+        inner.include_legacy_torsion_heuristic = include_legacy_torsion_heuristic;
+        inner.force_field_max_iterations = force_field_max_iterations;
+        inner.gate_mmff94_torsion_oop = gate_mmff94_torsion_oop;
+        inner.gate_mmff94_stretch_bend = gate_mmff94_stretch_bend;
+        inner.total_timeout_ms = total_timeout_ms;
+        Ok(Self { inner })
     }
 
     #[getter]
@@ -349,6 +425,10 @@ impl PyPipelineV2Config {
     #[getter]
     fn enforce_chirality(&self) -> bool {
         self.inner.embed.enforce_chirality
+    }
+    #[getter]
+    fn expand_implicit_h_through_pipeline(&self) -> bool {
+        self.inner.expand_implicit_h_through_pipeline
     }
 
     fn __repr__(&self) -> String {

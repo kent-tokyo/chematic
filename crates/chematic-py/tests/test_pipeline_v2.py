@@ -450,6 +450,77 @@ def test_enforce_chirality_with_repair_and_verify_is_allowed():
 
 
 # ---------------------------------------------------------------------------
+# expand_implicit_h_through_pipeline / stereo_safe (issue #291/#383)
+# ---------------------------------------------------------------------------
+
+TESTOSTERONE = "C[C@]12CC[C@H]3[C@@H](CC[C@H]4CCC(=O)C=C34)[C@@H]1CC[C@@H]2O"
+
+
+def test_expand_implicit_h_through_pipeline_requires_enforce_chirality():
+    mol = chematic.from_smiles(TESTOSTERONE)
+    config = _safe_config(
+        expand_implicit_h_through_pipeline=True,
+        enforce_chirality=False,
+    )
+    with pytest.raises(chematic.PipelineV2Error) as excinfo:
+        mol.embed_pipeline_v2(config)
+    diag = excinfo.value.diagnostics
+    assert diag["cause"] == {"kind": "invalid_configuration"}
+    assert diag["stage"] == "validate_config"
+
+
+def test_stereo_safe_sets_all_three_flags_together():
+    config = chematic.PipelineV2Config.stereo_safe(
+        force_field="mmff94_with_uff_fallback",
+        ring_torsion_policy="fail_closed",
+    )
+    assert config.stereo_policy == "repair_and_verify"
+    assert config.enforce_chirality is True
+    assert config.expand_implicit_h_through_pipeline is True
+
+
+def test_stereo_safe_fixes_testosterone_via_python_binding():
+    """Issue #291/#383: testosterone via the Python binding, same seed/
+    configuration already Rust-level tested and cross-checked against an
+    independent oracle in pipeline_v2.rs's own
+    stereo_safe_matches_the_hand_built_configuration_above test."""
+    mol = chematic.from_smiles(TESTOSTERONE)
+    config = chematic.PipelineV2Config.stereo_safe(
+        force_field="mmff94_with_uff_fallback",
+        ring_torsion_policy="diagnostic_only",
+        embed_seed=0,
+    )
+    result = mol.embed_pipeline_v2(config)
+    assert result["final_stereo"]["is_fully_satisfied"] is True
+    assert result["final_stereo"]["n_violations"] == 0
+    assert len(result["coords"]) == mol.heavy_atoms
+
+
+def test_expand_implicit_h_through_pipeline_is_noop_without_declared_stereo():
+    """A molecule with no declared stereo must give an identical result with
+    the flag on vs. off -- decane has no stereocenters at all."""
+    mol = chematic.from_smiles(DECANE)
+    base = mol.embed_pipeline_v2(
+        _safe_config(
+            force_field="mmff94_with_uff_fallback",
+            stereo_policy="repair_and_verify",
+            enforce_chirality=True,
+            embed_seed=0,
+        )
+    )
+    expanded = mol.embed_pipeline_v2(
+        _safe_config(
+            force_field="mmff94_with_uff_fallback",
+            stereo_policy="repair_and_verify",
+            enforce_chirality=True,
+            expand_implicit_h_through_pipeline=True,
+            embed_seed=0,
+        )
+    )
+    assert expanded["coords"] == base["coords"]
+
+
+# ---------------------------------------------------------------------------
 # .pyi stub existence check ("type stub test")
 # ---------------------------------------------------------------------------
 
@@ -479,6 +550,8 @@ def test_pyi_declares_the_new_public_surface():
     }
     assert "safe" in config_methods
     assert hasattr(chematic.PipelineV2Config, "safe")
+    assert "stereo_safe" in config_methods
+    assert hasattr(chematic.PipelineV2Config, "stereo_safe")
 
     mol_class = next(
         node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "Mol"
