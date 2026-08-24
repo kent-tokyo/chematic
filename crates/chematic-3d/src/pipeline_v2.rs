@@ -674,6 +674,31 @@ pub fn embed_pipeline_v2(
     // `StereoPolicy::VerifyOnly` remain allowed with `enforce_chirality: true`
     // as before this revision.
 
+    // `materialize_implicit_h_for_chirality: true` is rejected here, unconditionally,
+    // pending a follow-up to issue #291: `embed.materialize_implicit_h_for_chirality`
+    // is proven correct in isolation (`distance_geometry_v2`'s own tests, an
+    // independent-oracle cross-check), but this pipeline's own stages 7/8/9/11 below
+    // verify/repair against `mol` -- the *original*, non-H-expanded molecule -- so
+    // they fall back to `stereo_constraints::phantom_neighbor_position`'s estimated
+    // implicit-H direction, not the real materialized position the embed actually
+    // used. Measured directly: for ring-fused declared stereocenters (testosterone,
+    // cholesterol) that estimate disagrees with the true, oracle-confirmed-correct
+    // geometry, so `StereoVerifyBefore` falsely reports a violation and, under
+    // `RepairAndVerify`, `StereoRepair` then fails the same way the original bug did.
+    // Reject here rather than let a caller observe that confusing behavior -- the
+    // flag stays usable directly through `embed_distance_geometry_v2`/
+    // `embed_distance_geometry_v2_detail`, which have no such stage, until a
+    // follow-up either threads H-materialization through this pipeline's own stages
+    // or removes `phantom_neighbor_position`'s dependency on an estimated position.
+    if config.embed.materialize_implicit_h_for_chirality {
+        timings.total_ms = overall_start.elapsed().as_millis() as u64;
+        return Err(evidence.fail(
+            PipelineV2FailureCause::InvalidConfiguration,
+            PipelineStage::ValidateConfig,
+            timings,
+        ));
+    }
+
     // -----------------------------------------------------------------
     // Stage 2: build torsion knowledge.
     // -----------------------------------------------------------------
@@ -1292,6 +1317,30 @@ mod tests {
                 "must not be rejected as InvalidConfiguration, got {e:?}"
             ),
         }
+    }
+
+    #[test]
+    fn materialize_implicit_h_for_chirality_is_rejected_here_pending_issue_291_followup() {
+        // `embed.materialize_implicit_h_for_chirality` is proven correct in isolation
+        // (`distance_geometry_v2`'s own tests, an independent-oracle cross-check), but
+        // this pipeline's stages 7/8/9/11 verify/repair against the *original*,
+        // non-H-expanded molecule and so fall back to `phantom_neighbor_position`'s
+        // estimate, which can disagree with the real materialized-H geometry the
+        // embed actually used -- see this module's Stage 1 doc comment. Rejected here
+        // unconditionally until a follow-up resolves that; the flag stays usable
+        // directly through `embed_distance_geometry_v2`/`_detail`.
+        let mol = parse("C[C@]12CC[C@H]3[C@@H](CC[C@H]4CCC(=O)C=C34)[C@@H]1CC[C@@H]2O").unwrap();
+        let mut config = config_none();
+        config.embed.enforce_chirality = true;
+        config.embed.materialize_implicit_h_for_chirality = true;
+        let err = embed_pipeline_v2(&mol, &config).expect_err(
+            "materialize_implicit_h_for_chirality must be rejected, not silently ignored or run",
+        );
+        assert!(
+            matches!(err.cause, PipelineV2FailureCause::InvalidConfiguration),
+            "expected InvalidConfiguration, got {err:?}"
+        );
+        assert_eq!(err.stage, PipelineStage::ValidateConfig);
     }
 
     #[test]

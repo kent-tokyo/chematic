@@ -3158,11 +3158,12 @@ class PipelineV2Config:
     ring_torsion_policy: str
     total_timeout_ms: Optional[int]
     enforce_chirality: bool
-    """When True, each embedding attempt is checked against declared E/Z (and,
-    where the raw embedder's own repair can reach it, tetrahedral) stereo;
-    compatible with ``stereo_policy="ignore"``/``"verify_only"``, rejected as
-    a :class:`PipelineV2Error` with ``"repair_and_verify"`` (a separate,
-    not-yet-validated combination). Default ``False``, matching the Rust
+    """When True, each embedding attempt is checked against declared E/Z and
+    tetrahedral stereo; violations are repaired where the raw embedder's own
+    repair can reach them. Compatible with every ``stereo_policy`` value,
+    including ``"repair_and_verify"`` (validated as of issue #291 Step A --
+    composing the two repair mechanisms measurably improves correctness with
+    no observed regressions). Default ``False``, matching the Rust
     ``EmbedParameters`` default -- existing callers are unaffected."""
 
     def __repr__(self) -> str: ...
