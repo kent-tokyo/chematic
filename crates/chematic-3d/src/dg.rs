@@ -2006,6 +2006,22 @@ mod tests {
     // itself is untouched -- these tests call the new engine directly, not
     // through any routing decision (Phase 3, not yet made).
 
+    /// Both checks together, matching every old-engine fixture's own
+    /// convention (`assert_bonded_pairs_sane` alone cannot catch an exact
+    /// atom coincidence with otherwise-correct bond lengths -- the RFC's
+    /// own history records the reverted #255 fix attempt doing exactly
+    /// that on phenanthrene/pyrene, "two EXACT atom coincidences plus a
+    /// 3.7 Å stretch" and "an exact atom coincidence" respectively).
+    fn assert_geometry_sane(mol: &Molecule, coords: &Coords3D) {
+        let n = mol.atom_count();
+        let min_d = min_pairwise_distance(coords, n);
+        assert!(
+            min_d > 0.3,
+            "no two atoms should be nearly coincident, got min pairwise distance {min_d}"
+        );
+        assert_bonded_pairs_sane(mol, coords, 1.0, 1.8);
+    }
+
     #[test]
     fn connectivity_ordered_naphthalene_fusion_seam_sane() {
         // #255: today's `generate_coords` distorts this to 2.2644 Å (see
@@ -2013,7 +2029,7 @@ mod tests {
         let mol = parse("c1ccc2ccccc2c1").unwrap();
         assert_eq!(mol.atom_count(), 10, "naphthalene has 10 heavy atoms");
         let coords = generate_coords_connectivity_ordered(&mol);
-        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
+        assert_geometry_sane(&mol, &coords);
     }
 
     #[test]
@@ -2021,23 +2037,30 @@ mod tests {
         let mol = parse("c1ccc2ncccc2c1").unwrap();
         assert_eq!(mol.atom_count(), 10, "quinoline has 10 heavy atoms");
         let coords = generate_coords_connectivity_ordered(&mol);
-        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
+        assert_geometry_sane(&mol, &coords);
     }
 
     #[test]
     fn connectivity_ordered_phenanthrene_angular_fusion_sane() {
+        // The reverted #255 fix attempt produced "two EXACT atom
+        // coincidences plus a 3.7 Å stretch" on this exact molecule (RFC
+        // §2) -- `assert_geometry_sane`'s collision check, not just the
+        // bond-length check, is what would catch a repeat of that failure.
         let mol = parse("c1ccc2c(c1)ccc1ccccc12").unwrap();
         assert_eq!(mol.atom_count(), 14, "phenanthrene has 14 heavy atoms");
         let coords = generate_coords_connectivity_ordered(&mol);
-        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
+        assert_geometry_sane(&mol, &coords);
     }
 
     #[test]
     fn connectivity_ordered_pyrene_multi_ring_fusion_sane() {
+        // The reverted #255 fix attempt produced "an exact atom
+        // coincidence" here too (RFC §2) -- same reasoning as phenanthrene
+        // above.
         let mol = parse("c1cc2ccc3cccc4ccc(c1)c2c34").unwrap();
         assert_eq!(mol.atom_count(), 16, "pyrene has 16 heavy atoms");
         let coords = generate_coords_connectivity_ordered(&mol);
-        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
+        assert_geometry_sane(&mol, &coords);
     }
 
     #[test]
@@ -2048,7 +2071,7 @@ mod tests {
         let mol = parse("c1ccc2cc3ccccc3cc2c1").unwrap();
         assert_eq!(mol.atom_count(), 14, "anthracene has 14 heavy atoms");
         let coords = generate_coords_connectivity_ordered(&mol);
-        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
+        assert_geometry_sane(&mol, &coords);
     }
 
     #[test]
@@ -2058,7 +2081,7 @@ mod tests {
         let mol = parse("c1ccccc1Cc1ccccc1").unwrap();
         assert_eq!(mol.atom_count(), 13, "diphenylmethane has 13 heavy atoms");
         let coords = generate_coords_connectivity_ordered(&mol);
-        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
+        assert_geometry_sane(&mol, &coords);
     }
 
     #[test]
@@ -2068,7 +2091,7 @@ mod tests {
         let mol = parse("c1ccccc1CCc1ccccc1").unwrap();
         assert_eq!(mol.atom_count(), 14, "bibenzyl has 14 heavy atoms");
         let coords = generate_coords_connectivity_ordered(&mol);
-        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
+        assert_geometry_sane(&mol, &coords);
     }
 
     #[test]
@@ -2080,7 +2103,7 @@ mod tests {
             "1,3-diphenylpropane has 15 heavy atoms"
         );
         let coords = generate_coords_connectivity_ordered(&mol);
-        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
+        assert_geometry_sane(&mol, &coords);
     }
 
     #[test]
@@ -2092,7 +2115,7 @@ mod tests {
             "1,4-diphenylbutane has 16 heavy atoms"
         );
         let coords = generate_coords_connectivity_ordered(&mol);
-        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
+        assert_geometry_sane(&mol, &coords);
     }
 
     #[test]
@@ -2106,7 +2129,7 @@ mod tests {
             "spiro[5.5]undecane has 11 heavy atoms"
         );
         let coords = generate_coords_connectivity_ordered(&mol);
-        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
+        assert_geometry_sane(&mol, &coords);
     }
 
     #[test]
@@ -2118,7 +2141,7 @@ mod tests {
         let mol = parse("c1ccc(cc1)-c1ccccc1").unwrap();
         assert_eq!(mol.atom_count(), 12, "biphenyl has 12 heavy atoms");
         let coords = generate_coords_connectivity_ordered(&mol);
-        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
+        assert_geometry_sane(&mol, &coords);
     }
 
     #[test]
@@ -2126,7 +2149,27 @@ mod tests {
         let mol = parse("c1ccc(cc1)-c1ccc(cc1)-c1ccccc1").unwrap();
         assert_eq!(mol.atom_count(), 18, "terphenyl has 18 heavy atoms");
         let coords = generate_coords_connectivity_ordered(&mol);
-        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
+        assert_geometry_sane(&mol, &coords);
+    }
+
+    #[test]
+    fn connectivity_ordered_meta_linked_biaryl_sane() {
+        // Highest-risk untested topology for this engine's ring-entry
+        // direction choice: the old engine's fixed +X extension pointed
+        // this ring straight back into what was already placed (measured
+        // 0.14 Å min pairwise distance before its own centroid-outward
+        // fix) BECAUSE the connecting ring atom sits on the side of its
+        // ring FACING the already-placed structure, unlike biphenyl's
+        // para-like case. `dfs_place_connectivity_ordered`'s ring-entry
+        // direction comes from the tetrahedral bend/dihedral choice, not
+        // an explicit centroid-outward computation like the old engine's
+        // fix or `chematic-depict`'s `best_outgoing_direction` -- this
+        // fixture is what would catch a regression of that specific
+        // failure mode if the two approaches don't coincide.
+        let mol = parse("c1ccc(cc1)-c1cccnc1").unwrap();
+        assert_eq!(mol.atom_count(), 12, "3-phenylpyridine has 12 heavy atoms");
+        let coords = generate_coords_connectivity_ordered(&mol);
+        assert_geometry_sane(&mol, &coords);
     }
 
     #[test]
@@ -2136,31 +2179,29 @@ mod tests {
         let mol = parse("CC(C)Cc1ccc(cc1)C(C)C(=O)O").unwrap();
         assert_eq!(mol.atom_count(), 15, "ibuprofen has 15 heavy atoms");
         let coords = generate_coords_connectivity_ordered(&mol);
-        let n = mol.atom_count();
-        let mut min_d = f64::MAX;
-        for i in 0..n {
-            for j in (i + 1)..n {
-                let d = coords
-                    .get(AtomIdx(i as u32))
-                    .distance(&coords.get(AtomIdx(j as u32)));
-                min_d = min_d.min(d);
-            }
-        }
-        assert!(
-            min_d > 0.3,
-            "no two atoms should be nearly coincident, got min pairwise distance {min_d}"
-        );
-        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
+        assert_geometry_sane(&mol, &coords);
     }
 
     #[test]
     fn connectivity_ordered_pure_chain_no_ring_sane() {
         // No ring anywhere in the component -- exercises the isolated
-        // chain-start seeding path, not ring-system seeding.
-        let mol = parse("CCCCCCCC").unwrap();
-        assert_eq!(mol.atom_count(), 8, "octane has 8 heavy atoms");
+        // chain-start seeding path, not ring-system seeding. Pentane, not a
+        // longer alkane: `dfs_place_connectivity_ordered`'s plain-chain
+        // math is deliberately byte-identical to `dfs_place`'s own (see
+        // that function's doc), which already has a known, pre-existing,
+        // unrelated-to-this-PR property that a long enough unbranched
+        // chain's fixed bend+0°-roll-per-step placement self-approaches
+        // (confirmed identical on both engines: octane already measures
+        // 0.1948 Å min pairwise distance under TODAY's shipped
+        // `generate_coords`, not something this PR introduces or is
+        // scoped to fix). Pentane stays at the terminal bond length
+        // (1.54 Å) on both engines, so this fixture actually tests the
+        // seeding path itself rather than being confounded by that
+        // separate, pre-existing limitation.
+        let mol = parse("CCCCC").unwrap();
+        assert_eq!(mol.atom_count(), 5, "pentane has 5 heavy atoms");
         let coords = generate_coords_connectivity_ordered(&mol);
-        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
+        assert_geometry_sane(&mol, &coords);
     }
 
     #[test]
