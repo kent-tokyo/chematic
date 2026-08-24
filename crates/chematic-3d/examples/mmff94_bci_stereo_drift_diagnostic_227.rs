@@ -116,6 +116,7 @@ fn main() {
         gate_mmff94_stretch_bend: false,
         ring_torsion_policy: RingTorsionApplicationPolicy::DiagnosticOnly,
         total_timeout_ms: Some(20_000),
+        expand_implicit_h_through_pipeline: false,
     };
     let pre_min = pv2::embed_pipeline_v2(&mol, &config).expect("embedding must succeed");
     report(

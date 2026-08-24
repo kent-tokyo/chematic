@@ -208,6 +208,10 @@ impl PyPipelineV2Config {
                 gate_mmff94_stretch_bend,
                 ring_torsion_policy: parse_ring_torsion_policy(ring_torsion_policy)?,
                 total_timeout_ms,
+                // Issue #291 pipeline-level H-expansion: Rust-core-only for now
+                // (not yet exposed as a constructor argument here), same staging
+                // PR #380 used for the embed-level `materialize_implicit_h_for_chirality`.
+                expand_implicit_h_through_pipeline: false,
             },
         })
     }
