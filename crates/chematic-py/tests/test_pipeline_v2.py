@@ -433,21 +433,20 @@ def test_enforce_chirality_true_fixes_but2ene_z_raw_embed():
         )
 
 
-def test_enforce_chirality_with_repair_and_verify_raises():
-    """Matches the Rust-level InvalidConfiguration gate: enforce_chirality is
-    incompatible with stereo_policy="repair_and_verify" (composing the two
-    repair mechanisms is a separate, not-yet-validated question -- see
-    pipeline_v2.rs's module doc)."""
+def test_enforce_chirality_with_repair_and_verify_is_allowed():
+    """Revised 2026-08-24 (issue #291 Step A): enforce_chirality +
+    stereo_policy="repair_and_verify" was previously rejected as
+    InvalidConfiguration -- now validated (see the Rust-level
+    pipeline_v2.rs's revised Stage 1 doc entry and
+    crates/chematic-3d/examples/issue291_repair_policy_measurement.rs)."""
     mol = chematic.from_smiles(r"C/C=C\C")
     config = _safe_config(
         force_field="none",
         stereo_policy="repair_and_verify",
         enforce_chirality=True,
     )
-    with pytest.raises(chematic.PipelineV2Error) as excinfo:
-        mol.embed_pipeline_v2(config)
-    assert excinfo.value.diagnostics["stage"] == "validate_config"
-    assert excinfo.value.diagnostics["cause"] == {"kind": "invalid_configuration"}
+    result = mol.embed_pipeline_v2(config)
+    assert result["final_stereo"]["is_fully_satisfied"] is True
 
 
 # ---------------------------------------------------------------------------
