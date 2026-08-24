@@ -67,7 +67,15 @@
 //! the bounds-driven relaxation absorbs whatever bond-length distortion the repair's
 //! rigid-subtree translation introduced. Then, after `refine_coords`, independently
 //! re-verify the *actual returned* geometry (never trust that refinement preserved
-//! the repair) — if any declared element is still `Violated`, this attempt fails with
+//! the repair). If that re-verify still finds a violation, `try_embed_once` runs one
+//! more `repair_stereo` pass directly on the post-refinement geometry (no further
+//! `refine_coords` call) as a safety net — measured directly (issue #291) for
+//! ring-fused, multi-stereocenter molecules like testosterone/cholesterol,
+//! `refine_coords`'s chirality-blind bound correction routinely undoes the
+//! pre-refinement repair, and this second pass recovers it without reopening the
+//! bounds-distortion problem the pre-refinement ordering exists to avoid, since
+//! `repair_stereo`'s rigid-subtree translation preserves bond lengths exactly. Only
+//! if *that* also fails to verify does the attempt fail with
 //! [`EmbedFailureCause::StereoConstraintFailed`] and the existing per-attempt retry
 //! loop tries a new seed. Molecules with no declared stereo are unaffected
 //! (`repair_stereo`/`verify_stereo` are no-ops on them); `enforce_chirality: false`
@@ -253,6 +261,36 @@ pub struct EmbedParameters {
     /// `attempts_used` but the per-cause breakdown is left empty (cheaper bookkeeping,
     /// not a lossy summary of data that was collected anyway). **Consumed.**
     pub track_failures: bool,
+    /// Has no effect unless `enforce_chirality` is also `true`. When both are
+    /// set and the molecule has declared stereo, every attempt embeds a
+    /// temporary copy of `mol` with every implicit hydrogen materialized as
+    /// a real, explicit atom (`chematic_chem::add_hydrogens`), then truncates
+    /// the returned coordinates back to the caller's original atom count —
+    /// the external coordinate contract (one entry per atom of the molecule
+    /// passed in) is unchanged either way.
+    ///
+    /// Exists because `repair_tetrahedral_center`'s substituent-reflection
+    /// repair has no coordinate to move for an *implicit* H — a declared
+    /// tetrahedral center whose only non-ring substituent is an implicit H
+    /// (e.g. a ring-fusion carbon in a steroid) is unrepairable as-is
+    /// (`RepairRejectionReason::NoBridgeEligibleSubstituent`). A real,
+    /// explicit H atom is terminal and non-ring, so it becomes a valid
+    /// reflection candidate with no new geometry mechanism needed.
+    ///
+    /// Roughly doubles atom count for an all-implicit-H molecule, so
+    /// `refine_coords`'s O(n²)-per-iteration cost rises accordingly (up to
+    /// ~4x) — opt-in, not automatic, for exactly this reason. Molecules with
+    /// several *simultaneous* ring-fused declared stereocenters (e.g.
+    /// cholesterol) may also need a substantially higher `max_attempts` to
+    /// reliably converge than a single easier stereocenter would (measured:
+    /// low single-digit attempts typically suffice for one such center, but
+    /// cholesterol's three needed ~100 attempts for a reliable draw) — this
+    /// field does not change `max_attempts`'s default; the caller absorbs
+    /// that cost explicitly, same as `enforce_chirality`'s existing
+    /// retry-on-violation behavior already works today. `false` (default)
+    /// is byte-identical to this field's behavior before it existed.
+    /// **Consumed.**
+    pub materialize_implicit_h_for_chirality: bool,
 }
 
 impl Default for EmbedParameters {
@@ -270,6 +308,7 @@ impl Default for EmbedParameters {
             prune_rms_threshold: None,
             num_threads: 1,
             track_failures: false,
+            materialize_implicit_h_for_chirality: false,
         }
     }
 }
@@ -489,6 +528,28 @@ pub(crate) fn embed_distance_geometry_v2_with_adjustments(
 ) -> Result<(Coords3D, EmbedStats), (EmbedWithAdjustmentsFailure, EmbedStats)> {
     let mut stats = EmbedStats::default();
 
+    let original_n = mol.atom_count();
+
+    // Opt-in: embed a temporary H-expanded copy so `repair_tetrahedral_center`
+    // has a real, movable substituent for ring-fused declared stereocenters
+    // whose only non-ring "substituent" is an implicit H (see
+    // `EmbedParameters::materialize_implicit_h_for_chirality`'s own doc
+    // comment). `add_hydrogens` keeps every heavy atom at its original index
+    // (new H atoms are strictly appended), so every downstream index
+    // (`adjustments`, bound-matrix sizing) stays valid unchanged against the
+    // larger molecule -- only the final coordinates need truncating back
+    // down before returning to the caller.
+    let expanded_mol;
+    let mol: &Molecule = if params.materialize_implicit_h_for_chirality
+        && params.enforce_chirality
+        && mol_has_declared_stereo(mol)
+    {
+        expanded_mol = chematic_chem::add_hydrogens(mol);
+        &expanded_mol
+    } else {
+        mol
+    };
+
     let n = mol.atom_count();
     for adj in adjustments {
         let i = adj.atom1.0 as usize;
@@ -549,7 +610,14 @@ pub(crate) fn embed_distance_geometry_v2_with_adjustments(
 
         let attempt_seed = derive_attempt_seed(params.random_seed, attempt);
         match try_embed_once(mol, params, attempt_seed, &mut stats, adjustments) {
-            Ok(coords) => return Ok((coords, stats)),
+            Ok(coords) => {
+                let coords = if n != original_n {
+                    truncate_coords(&coords, original_n)
+                } else {
+                    coords
+                };
+                return Ok((coords, stats));
+            }
             Err(cause) => {
                 last_cause = cause;
                 record_failure(&mut stats, params, cause);
@@ -558,6 +626,19 @@ pub(crate) fn embed_distance_geometry_v2_with_adjustments(
     }
 
     Err((EmbedWithAdjustmentsFailure::Embed(last_cause), stats))
+}
+
+/// Drop every atom from index `n` onward -- used to map a temporarily
+/// H-expanded embed (see `materialize_implicit_h_for_chirality`) back onto
+/// the caller's original atom count. Heavy atoms keep their original index
+/// under `add_hydrogens`, so a plain prefix copy is exact, not an
+/// approximation.
+fn truncate_coords(coords: &Coords3D, n: usize) -> Coords3D {
+    let mut out = Coords3D::new_zeroed(n);
+    for i in 0..n {
+        out.set(AtomIdx(i as u32), coords.get(AtomIdx(i as u32)));
+    }
+    out
 }
 
 /// How well does a **final, already-embedded** geometry satisfy the distance bounds
@@ -877,7 +958,25 @@ fn try_embed_once(
         && mol_has_declared_stereo(mol)
         && !verify_stereo(mol, &coords).is_fully_satisfied()
     {
-        return Err(EmbedFailureCause::StereoConstraintFailed);
+        // Safety net for centers `refine_coords` un-repairs: for ring-fused
+        // multi-stereocenter molecules (e.g. testosterone, cholesterol) the
+        // pre-refinement repair above is routinely undone by refine_coords's
+        // chirality-blind bound correction -- measured directly, every seed
+        // tried failed here without this net. Repairing again on the
+        // POST-refine geometry, with no further refine_coords call, resolves
+        // it: `repair_stereo`'s rigid-subtree translation preserves bond
+        // lengths exactly, so re-running `validate_final_coords` below (not
+        // full `refine_coords`) is enough to catch any resulting distortion.
+        // Only reached when the pre-refinement repair didn't already survive,
+        // so this cannot change the outcome for any molecule that passes today.
+        coords = match repair_stereo(mol, &coords) {
+            Ok(outcome) => outcome.coords,
+            Err(failure) => failure.partial_coords,
+        };
+        validate_final_coords(mol, &coords)?;
+        if !verify_stereo(mol, &coords).is_fully_satisfied() {
+            return Err(EmbedFailureCause::StereoConstraintFailed);
+        }
     }
 
     Ok(coords)
@@ -1528,10 +1627,14 @@ mod tests {
                 passes += 1;
             }
         }
+        // Was 4/5 before issue #291's post-refinement repair safety net
+        // (`try_embed_once`'s second `repair_stereo` pass when the pre-refinement
+        // repair doesn't survive `refine_coords`) -- that net recovers the one
+        // seed that used to fail here too, independent of ring-fused centers.
         assert_eq!(
-            passes, 4,
-            "cinnamic_acid_E: expected 4/5 seeds to resolve within 8 attempts (unchanged \
-             pre-existing flexible-molecule variance), got {passes}/5"
+            passes, 5,
+            "cinnamic_acid_E: expected 5/5 seeds to resolve within 8 attempts \
+             (post-refinement repair safety net, issue #291), got {passes}/5"
         );
     }
 
@@ -1544,7 +1647,9 @@ mod tests {
     /// independently measured on unmodified `main`, seeds 0..5, `max_attempts: 8`:
     /// `chembl_tier_b_0126` 5/5, `chembl_tier_b_0168` 4/5 (`[true, true, true, true,
     /// false]`) -- asserted exactly, not just "mostly succeeds", so a regression is
-    /// still caught.
+    /// still caught. Re-measured after issue #291's post-refinement repair safety
+    /// net (`try_embed_once`'s second `repair_stereo` pass): `chembl_tier_b_0168`'s
+    /// one previously-failing seed now recovers too, so both are 5/5.
     #[test]
     fn ez_bounds_chembl_tier_b_0126_0168_retry_loop_succeeds() {
         let cases: &[(&str, &str, usize)] = &[
@@ -1556,7 +1661,7 @@ mod tests {
             (
                 "chembl_tier_b_0168",
                 "CC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@H]12",
-                4,
+                5,
             ),
         ];
         for (name, smiles, expected_passes) in cases.iter().copied() {
@@ -1708,5 +1813,68 @@ mod tests {
                  regression introduced by the declared-E/Z bound change"
             );
         }
+    }
+
+    /// Issue #291 residual (testosterone, one of the two ring-fused molecules
+    /// `repair_tetrahedral_center`'s bridge-eligibility check alone cannot fix, since
+    /// every real neighbor of the affected centers is a ring atom): confirms
+    /// `materialize_implicit_h_for_chirality` combined with the post-refinement
+    /// repair safety net in `try_embed_once` above actually delivers *correct*
+    /// geometry, not just an internally-reported "satisfied". Checked against
+    /// `chematic_chem::assign_cip` (declared) vs `stereo3d::assign_stereo_from_3d`
+    /// (perceived from the *returned* coordinates) -- a genuinely different code
+    /// path than this module's own `verify_stereo`, so it can't be fooled the same
+    /// way a bug in `verify_stereo`'s own input (e.g. the now-fixed `add_hydrogens`
+    /// stereo-order loss) could fool `verify_stereo` alone.
+    ///
+    /// Without the post-refinement safety net, every one of these 5 seeds failed
+    /// with `StereoConstraintFailed` (measured directly while diagnosing this) even
+    /// though `repair_stereo` alone, called directly on a raw embed, reached 6/6 on
+    /// every seed -- `refine_coords`'s chirality-blind bound correction was undoing
+    /// the pre-refinement repair every time.
+    #[test]
+    fn materialize_implicit_h_for_chirality_fixes_testosterone_with_correct_geometry() {
+        let mol = parse("C[C@]12CC[C@H]3[C@@H](CC[C@H]4CCC(=O)C=C34)[C@@H]1CC[C@@H]2O").unwrap();
+        let declared = chematic_chem::assign_cip(&mol);
+        assert_eq!(
+            declared.assignments.len(),
+            6,
+            "sanity: 6 declared stereocenters"
+        );
+
+        let mut passes = 0usize;
+        for seed in 0..5u64 {
+            let params = EmbedParameters {
+                random_seed: seed,
+                max_attempts: 8,
+                enforce_chirality: true,
+                materialize_implicit_h_for_chirality: true,
+                ..EmbedParameters::default()
+            };
+            let coords = match embed_distance_geometry_v2_detail(&mol, &params) {
+                Ok((coords, _)) => coords,
+                Err(_) => continue,
+            };
+            // `assign_stereo_from_3d` only assigns centers with exactly 4 heavy-atom
+            // neighbors (no implicit H) -- skip declared centers it can't independently
+            // check (e.g. any with an implicit H), don't treat that as a mismatch.
+            let perceived = crate::stereo3d::assign_stereo_from_3d(&mol, &coords);
+            for &(idx, code) in &declared.assignments {
+                if let Some(perceived_code) = perceived.get(idx) {
+                    assert_eq!(
+                        perceived_code, code,
+                        "testosterone seed={seed}: atom {idx:?} declared {code:?} but \
+                         3D-perceived {perceived_code:?} -- embed reported success with \
+                         wrong chirality"
+                    );
+                }
+            }
+            passes += 1;
+        }
+        assert!(
+            passes >= 4,
+            "testosterone: expected at least 4/5 seeds to embed successfully with \
+             materialize_implicit_h_for_chirality (post-refinement safety net), got {passes}/5"
+        );
     }
 }
