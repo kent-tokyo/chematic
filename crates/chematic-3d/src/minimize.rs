@@ -2076,22 +2076,43 @@ fn run_uff_bridge(
 /// A retry is only accepted as a real rescue if it is BOTH geometrically
 /// sound AND preserves every declared stereocenter/E-Z bond
 /// ([`crate::stereo_constraints::verify_stereo`]) — measured directly, not
-/// assumed: `embed_distance_geometry_v2`'s default parameters do not enforce
-/// declared chirality (`EmbedParameters::enforce_chirality` defaults to
-/// `false`, and setting it `true` would instead make embedding itself refuse
-/// any molecule with declared stereo outright, per that module's own "fail-
-/// closed" doc — not a fix), and measured to actually flip stereocenters on
-/// real corpus molecules (testosterone, cholesterol: 2-3 of their declared
-/// centers remain violated after an otherwise-sound rescue). A rescue that
-/// fixed a bond-length blowup while silently destroying declared
-/// stereochemistry would be a worse outcome than the honest failure it
-/// replaced, so this bridge does not accept one — the original failure is
-/// returned instead, same as if the rescue had never been geometrically
-/// sound. Only the rescue's own (new) behavior is held to this bar; the
-/// unrelated, pre-existing fact that this bridge's *first*-attempt path
-/// never verifies stereo either is a known, separate, out-of-scope gap
-/// (already disclosed in `examples/cf_integration_smoke_test.rs`'s closing
-/// note), not one this fix introduces or is scoped to close.
+/// assumed. A rescue that fixed a bond-length blowup while silently
+/// destroying declared stereochemistry would be a worse outcome than the
+/// honest failure it replaced, so this bridge does not accept one — the
+/// original failure is returned instead, same as if the rescue had never
+/// been geometrically sound. Only the rescue's own (new) behavior is held to
+/// this bar; the unrelated, pre-existing fact that this bridge's *first*-
+/// attempt path never verifies stereo either is a known, separate,
+/// out-of-scope gap (already disclosed in `examples/
+/// cf_integration_smoke_test.rs`'s closing note), not one this fix
+/// introduces or is scoped to close.
+///
+/// **Revised (issue #210, 2026-08-24)**: the embed call below now sets
+/// `enforce_chirality`/`materialize_implicit_h_for_chirality` (both `true`,
+/// gated on [`mol_has_declared_stereo`]) rather than plain
+/// `EmbedParameters::default()`. The original rationale for defaults —
+/// "`enforce_chirality: true` would make embedding refuse any molecule with
+/// declared stereo outright" — was stale even before this change (that flag
+/// repairs via `repair_stereo` before failing, not an unconditional refusal);
+/// what actually blocked ring-fused declared stereocenters (testosterone,
+/// cholesterol) specifically was `repair_tetrahedral_center` having no
+/// bridge-eligible substituent to reflect when every real neighbor is a ring
+/// atom — exactly the gap issue #291's `materialize_implicit_h_for_chirality`
+/// closed. **Measured directly** against the 58-molecule corpus this
+/// bridge's own tests use (`examples/cf_integration_smoke_test.rs`'s
+/// corpus): zero regressions (every previously-passing molecule, and every
+/// declared-stereo molecule's existing pass/fail-and-stereo-check outcome,
+/// unchanged), and one of #210's 5 named residual molecules
+/// (`atorvastatin_fragment`) newly succeeds with stereo preserved.
+/// `naproxen_S`/`ibuprofen_S`/`testosterone`/`cholesterol` remain unfixed —
+/// this bridge has no post-minimization repair-and-reverify step (UFF
+/// minimization is chirality-blind and can walk a stereo-satisfied embed
+/// back across a declared boundary, same class of problem issue #291's
+/// `pipeline_v2.rs` stage 11 exists to catch and retry; this simpler
+/// embed→minimize→verify bridge just falls through to the original failure
+/// instead, which is correct/safe, not a bug) — closing that residual would
+/// need adding an equivalent repair step here, a separate, larger change not
+/// attempted by this measurement.
 ///
 /// If `embed_distance_geometry_v2` itself fails, or the retry is unsound or
 /// stereo-violating, the ORIGINAL failure is returned unchanged except for
@@ -2103,11 +2124,21 @@ fn rescue_with_distance_geometry_v2(
     max_iter: usize,
     original_failure: Box<MinimizationFailureDetail>,
 ) -> Result<UffBridgeRun, ForceFieldBridgeError> {
-    use crate::distance_geometry_v2::{EmbedParameters, embed_distance_geometry_v2};
+    use crate::distance_geometry_v2::{
+        EmbedParameters, embed_distance_geometry_v2, mol_has_declared_stereo,
+    };
     use crate::stereo_constraints::verify_stereo;
 
     let n = mol.atom_count();
-    if let Ok(v2_coords) = embed_distance_geometry_v2(mol, &EmbedParameters::default()) {
+    // See this function's own doc comment ("Revised, issue #210") for why
+    // these are set instead of `EmbedParameters::default()`.
+    let has_stereo = mol_has_declared_stereo(mol);
+    let embed_params = EmbedParameters {
+        enforce_chirality: has_stereo,
+        materialize_implicit_h_for_chirality: has_stereo,
+        ..EmbedParameters::default()
+    };
+    if let Ok(v2_coords) = embed_distance_geometry_v2(mol, &embed_params) {
         let retry_coord_vec = coords_to_vec(&v2_coords, n);
         // `energy_before`/`energy_after` on a successful rescue must both describe
         // the SAME trajectory (the DG v2 geometry, before and after minimizing it) --
@@ -3783,6 +3814,38 @@ mod policy_bridge_tests {
             }
             other => panic!("expected MinimizationFailed, got {other:?}"),
         }
+    }
+
+    /// The positive counterpart to the cholesterol test above (issue #210,
+    /// revised): atorvastatin_fragment is one of #210's 5 named residual
+    /// molecules ("still fail `UffOnly` from a legacy `generate_coords`
+    /// start... rescue geometry doesn't preserve stereochemistry"), measured
+    /// directly (not assumed) to newly succeed, with declared stereochemistry
+    /// preserved, once `rescue_with_distance_geometry_v2`'s embed call sets
+    /// `enforce_chirality`/`materialize_implicit_h_for_chirality` instead of
+    /// plain defaults. `naproxen_S`/`ibuprofen_S`/`testosterone`/`cholesterol`
+    /// remain unfixed by this specific change (see this function's own
+    /// revised doc comment for why) -- this molecule is the one #210 residual
+    /// member this measurement actually closes, not a stand-in for the
+    /// others.
+    #[test]
+    fn uff_only_rescue_now_preserves_stereo_for_atorvastatin_fragment() {
+        let mol = parse(
+            "CC(C)c1c(C(=O)Nc2ccccc2)c(-c2ccccc2)c(-c2ccc(F)cc2)n1CC[C@@H](O)C[C@@H](O)CC(=O)O",
+        )
+        .expect("atorvastatin_fragment");
+        let coords = generate_coords(&mol);
+        let config = MinimizeConfig::default();
+
+        let result = minimize_with_policy(&mol, coords, ForceFieldPolicy::UffOnly, &config).expect(
+            "atorvastatin_fragment's generate_coords start is catastrophically clashed, \
+                 but the enforce_chirality/materialize_implicit_h_for_chirality-aware rescue \
+                 must now succeed",
+        );
+        assert!(
+            crate::stereo_constraints::verify_stereo(&mol, &result.coords).is_fully_satisfied(),
+            "the rescued geometry must preserve every declared stereocenter"
+        );
     }
 
     /// Starting-geometry-source axis: the same `UffOnly` policy, same
