@@ -98,10 +98,25 @@
 //!   whose final declared stereo is wrong. `StereoPolicy::Ignore` and
 //!   `StereoPolicy::VerifyOnly` are now both allowed with `enforce_chirality: true`
 //!   (VerifyOnly's stage 11 "Violated => failure" gate is exactly the fail-closed
-//!   check that catches this class of drift). `StereoPolicy::RepairAndVerify` remains
-//!   rejected in this combination — composing `enforce_chirality`'s own repair-then-
-//!   retry with stage 8's repair pass is a separate, not-yet-validated question,
-//!   deliberately deferred rather than decided by omission.
+//!   check that catches this class of drift).
+//! - **Revised 2026-08-24 (issue #291 Step A)**: `StereoPolicy::RepairAndVerify`
+//!   used to also be rejected in combination with `enforce_chirality: true` here —
+//!   composing `enforce_chirality`'s own repair-then-retry with stage 8's repair
+//!   pass was "a separate, not-yet-validated question, deliberately deferred
+//!   rather than decided by omission". Now validated on issue #291's own
+//!   29-molecule declared-stereo corpus (5 base seeds, see
+//!   `crates/chematic-3d/examples/issue291_repair_policy_measurement.rs`):
+//!   `RepairAndVerify` alone (unaffected by this change) already takes `UffOnly`
+//!   from 58.6% silently-wrong / 41.4% correct to 0% silently-wrong / 86.2%
+//!   correct + 13.8% honest failure — allowing `enforce_chirality: true` on top
+//!   raises correctness to 92.4%, with zero regressions (no new silent-wrong
+//!   outcomes, no unsound repaired geometry), fully recovering 3 molecules
+//!   `RepairAndVerify` alone could not (naproxen_S, ibuprofen_S,
+//!   penicillin_core). It does not help the 2 that remain (testosterone,
+//!   cholesterol — ring-fused stereocenters with no non-ring substituent to
+//!   reflect; that population needs the separately-scoped chiral-volume-
+//!   penalty-in-`refine_coords` work `docs/rfcs/etkdg_3d_gap_rfc.md` already
+//!   diagnosed, not this fix).
 //! - The `use_small_ring_torsions`/`use_macrocycle_torsions` fail-closed gate (stage
 //!   6) is scoped exactly to `TorsionKnowledgeSource::SmallRingExperimental` /
 //!   `MacrocycleAdaptation` potentials — not to `BasicChemicalKnowledge`'s flat-ring
@@ -637,31 +652,27 @@ pub fn embed_pipeline_v2(
     // -----------------------------------------------------------------
     // Stage 1: validate config.
     // -----------------------------------------------------------------
-    if config.embed.enforce_chirality && config.stereo_policy == StereoPolicy::RepairAndVerify {
-        // See the module docs' judgment-call section (revised 2026-08-11, v0.14.0
-        // release gate): `embed.enforce_chirality` and this pipeline's own stage
-        // 7-11 stereo gate are complementary, not redundant -- `enforce_chirality`
-        // protects embedding-time correctness only, and stage 10's force-field
-        // minimization has no notion of declared stereo and can walk a correctly-
-        // embedded E/Z bond back across its boundary (measured directly on the
-        // 265-molecule corpus: `chembl_tier_b_0076`/`chembl_tier_b_0083` embed
-        // correctly under `enforce_chirality` but MMFF94 minimization flips them --
-        // confirmed by re-running with `ForceFieldPolicy::None`, which does not).
-        // `StereoPolicy::Ignore` and `StereoPolicy::VerifyOnly` are both allowed
-        // with `enforce_chirality: true` (VerifyOnly's stage 11 gate is exactly
-        // the fail-closed check needed to catch that kind of post-minimization
-        // drift). `StereoPolicy::RepairAndVerify` remains excluded here -- its
-        // stage 8 repair pass was designed and validated against embeddings that
-        // never ran `enforce_chirality`'s own repair-then-retry first, and
-        // composing the two repair mechanisms is a separate, not-yet-validated
-        // question (deliberately deferred, not decided by omission).
-        timings.total_ms = overall_start.elapsed().as_millis() as u64;
-        return Err(evidence.fail(
-            PipelineV2FailureCause::InvalidConfiguration,
-            PipelineStage::ValidateConfig,
-            timings,
-        ));
-    }
+    // Revised 2026-08-24 (issue #291 Step A): `embed.enforce_chirality` +
+    // `StereoPolicy::RepairAndVerify` used to be rejected here as
+    // `InvalidConfiguration` -- composing the two repair mechanisms was
+    // "a separate, not-yet-validated question (deliberately deferred, not
+    // decided by omission)". Now validated: on issue #291's own 29-molecule
+    // declared-stereo corpus (5 base seeds, `crates/chematic-3d/examples/
+    // issue291_repair_policy_measurement.rs`), `RepairAndVerify` alone
+    // (unaffected by this change) already takes `UffOnly` from 58.6%
+    // silently-wrong / 41.4% correct to 0% silently-wrong / 86.2% correct +
+    // 13.8% honest failure. Additionally allowing `enforce_chirality: true`
+    // here raises that to 92.4% correct, with zero regressions (no new
+    // silent-wrong outcomes, no unsound repaired geometry) -- it fully
+    // recovers 3 of the corpus's molecules that `RepairAndVerify` alone
+    // could not (naproxen_S, ibuprofen_S, penicillin_core), and does not
+    // help or hurt the 2 that remain unfixable by substituent-reflection
+    // repair (testosterone, cholesterol -- ring-fused stereocenters with no
+    // non-ring substituent to reflect; needs the separately-scoped chiral-
+    // volume-penalty-in-`refine_coords` work `docs/rfcs/etkdg_3d_gap_rfc.md`
+    // already diagnosed, not this fix). `StereoPolicy::Ignore` and
+    // `StereoPolicy::VerifyOnly` remain allowed with `enforce_chirality: true`
+    // as before this revision.
 
     // -----------------------------------------------------------------
     // Stage 2: build torsion knowledge.
@@ -1262,21 +1273,25 @@ mod tests {
     // -----------------------------------------------------------------------
 
     #[test]
-    fn enforce_chirality_with_repair_and_verify_stereo_policy_is_invalid_configuration() {
-        // Revised 2026-08-11: enforce_chirality's InvalidConfiguration gate now only
-        // excludes RepairAndVerify (composing its stage-8 repair with
-        // enforce_chirality's own repair-then-retry is a separate, deliberately
-        // deferred question) -- see the module doc's revised judgment-call entry.
+    fn enforce_chirality_with_repair_and_verify_stereo_policy_is_allowed() {
+        // Revised 2026-08-24 (issue #291 Step A): this combination was
+        // previously rejected as InvalidConfiguration -- now validated (see
+        // the module doc's revised Stage 1 entry and
+        // `crates/chematic-3d/examples/issue291_repair_policy_measurement.rs`).
         let mol = parse("C[C@H](O)CC").unwrap();
         let mut config = config_none();
         config.embed.enforce_chirality = true;
         config.stereo_policy = StereoPolicy::RepairAndVerify;
-        let err = embed_pipeline_v2(&mol, &config).unwrap_err();
-        assert!(matches!(
-            err.cause,
-            PipelineV2FailureCause::InvalidConfiguration
-        ));
-        assert_eq!(err.stage, PipelineStage::ValidateConfig);
+        match embed_pipeline_v2(&mol, &config) {
+            Ok(r) => assert!(
+                r.final_stereo.is_fully_satisfied(),
+                "2-butanol has no ring-fused stereocenter -- must succeed with satisfied stereo"
+            ),
+            Err(e) => assert!(
+                !matches!(e.cause, PipelineV2FailureCause::InvalidConfiguration),
+                "must not be rejected as InvalidConfiguration, got {e:?}"
+            ),
+        }
     }
 
     #[test]
