@@ -237,6 +237,7 @@ fn base_config(
         // to let the whole benchmark hang indefinitely (which would silently
         // omit that row forever, worse than reporting it as a timeout).
         total_timeout_ms: Some(20_000),
+        expand_implicit_h_through_pipeline: false,
     }
 }
 

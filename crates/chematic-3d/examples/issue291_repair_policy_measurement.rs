@@ -67,6 +67,26 @@
 //! `distance_geometry_v2_gap_check.rs`) -- a stereo fix that leaves a strained
 //! structure is not a real success.
 //!
+//! **4th arm added (issue #291 real implementation, following the "Phase 0.5"
+//! feasibility measurement in `crates/chematic-3d/examples/
+//! issue291_expanded_geometry_feasibility.rs`)**: `expand_implicit_h_repair_and_verify`
+//! -- same as `enforce_chirality_repair_and_verify` plus
+//! `PipelineV2Config::expand_implicit_h_through_pipeline: true`, threading an
+//! `add_hydrogens`-expanded molecule through the whole pipeline instead of
+//! truncating right after embed. Targets exactly testosterone/cholesterol,
+//! the two molecules the prior arms could never fix (ring-fused declared
+//! stereocenters with no non-ring substituent for `repair_stereo` to
+//! reflect).
+//!
+//! **Result (2026-08-24, this corpus, 5 seeds)**: 144/145 (99.3%) correct_and_ok,
+//! 0 silently_wrong, 0 loud_failure_stereo -- testosterone and cholesterol both
+//! now succeed on every declared stereocenter, every seed (5/5 each), fully
+//! closing the residual `enforce_chirality_repair_and_verify` could not. The
+//! single remaining failure (cholesterol, one seed) is `loud_failure_other`
+//! (`ForceField(MinimizationFailed(CatastrophicBondBlowup))` under `UffOnly`) --
+//! the same pre-existing, unrelated UFF numerical issue this file's docs
+//! already named for menthol/atorvastatin_fragment, not a stereo failure.
+//!
 //! Pure external caller via the existing public API, same convention as
 //! `pipeline_v2_vs_rdkit_dump.rs` -- the only production change this needed
 //! was lifting `pipeline_v2.rs`'s config-validation guard (see above), which
@@ -208,15 +228,21 @@ fn base_config(
     stereo_policy: StereoPolicy,
     seed: u64,
     enforce_chirality: bool,
+    expand_implicit_h_through_pipeline: bool,
 ) -> PipelineV2Config {
     PipelineV2Config {
         embed: EmbedParameters {
             random_seed: seed,
+            // Same budget for every arm, including the new expanded-geometry one
+            // -- matches what the Phase 0.5 measurement harness actually used
+            // (8) and validated testosterone/cholesterol against; not bumped
+            // speculatively.
             max_attempts: 8,
             enforce_chirality,
             ..EmbedParameters::default()
         },
         stereo_policy,
+        expand_implicit_h_through_pipeline,
         ..PipelineV2Config::minimal(ForceFieldPolicy::UffOnly)
     }
 }
@@ -230,19 +256,34 @@ struct Counts {
     loud_failure_other: usize,
 }
 
-const ARMS: &[(&str, StereoPolicy, bool)] = &[
-    ("ignore", StereoPolicy::Ignore, false),
-    ("repair_and_verify", StereoPolicy::RepairAndVerify, false),
+const ARMS: &[(&str, StereoPolicy, bool, bool)] = &[
+    ("ignore", StereoPolicy::Ignore, false, false),
+    (
+        "repair_and_verify",
+        StereoPolicy::RepairAndVerify,
+        false,
+        false,
+    ),
     (
         "enforce_chirality_repair_and_verify",
         StereoPolicy::RepairAndVerify,
+        true,
+        false,
+    ),
+    // New arm (issue #291 real implementation): threads an add_hydrogens-expanded
+    // molecule through the whole pipeline instead of just the embed. See
+    // ROADMAP.md's #291 entry ("Phase 0.5") for the measurement this is based on.
+    (
+        "expand_implicit_h_repair_and_verify",
+        StereoPolicy::RepairAndVerify,
+        true,
         true,
     ),
 ];
 
 fn main() {
     let mut counts: BTreeMap<&'static str, Counts> = BTreeMap::new();
-    for &(arm_key, _, _) in ARMS {
+    for &(arm_key, _, _, _) in ARMS {
         counts.insert(arm_key, Counts::default());
     }
 
@@ -255,9 +296,9 @@ fn main() {
             "{name}: expected to be in the declared-stereo subset"
         );
 
-        for &(arm_key, policy, enforce_chirality) in ARMS {
+        for &(arm_key, policy, enforce_chirality, expand_implicit_h) in ARMS {
             for &seed in BASE_SEEDS {
-                let config = base_config(policy, seed, enforce_chirality);
+                let config = base_config(policy, seed, enforce_chirality, expand_implicit_h);
                 let acc = counts.get_mut(arm_key).unwrap();
                 match embed_pipeline_v2(&mol, &config) {
                     Ok(result) => {

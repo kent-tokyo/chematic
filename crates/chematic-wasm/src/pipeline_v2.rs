@@ -246,6 +246,10 @@ impl PipelineV2ConfigJson {
             gate_mmff94_stretch_bend: self.gate_mmff94_stretch_bend,
             ring_torsion_policy: self.ring_torsion_policy.into(),
             total_timeout_ms,
+            // Issue #291 pipeline-level H-expansion: Rust-core-only for now (not
+            // yet exposed in this JSON config), same staging PR #380 used for the
+            // embed-level `materialize_implicit_h_for_chirality`.
+            expand_implicit_h_through_pipeline: false,
         })
     }
 }
@@ -1881,6 +1885,7 @@ mod tests {
                 gate_mmff94_stretch_bend: cfg["gateMmff94StretchBend"].as_bool().unwrap_or(false),
                 ring_torsion_policy,
                 total_timeout_ms: cfg["totalTimeoutMs"].as_u64(),
+                expand_implicit_h_through_pipeline: false,
             };
 
             let expected_ok = fixture["ok"].as_bool().unwrap();

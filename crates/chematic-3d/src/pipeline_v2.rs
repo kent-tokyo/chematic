@@ -158,7 +158,8 @@ use crate::coords::Coords3D;
 use crate::dg_fft::ideal_bond_length;
 use crate::distance_geometry_v2::{
     self, BoundsConformance, DistanceBoundAdjustment, EmbedFailureCause, EmbedParameters,
-    EmbedStats, EmbedWithAdjustmentsFailure, bounds_conformance,
+    EmbedStats, EmbedWithAdjustmentsFailure, bounds_conformance, mol_has_declared_stereo,
+    truncate_coords,
 };
 use crate::etkdg_knowledge::{
     PairBoundAdjustment, TorsionKnowledgeConfig, TorsionKnowledgeError, TorsionKnowledgeReport,
@@ -265,6 +266,36 @@ pub struct PipelineV2Config {
     /// convention `EmbedParameters::timeout_ms` already documents for the raw
     /// embedder, applied one level up.
     pub total_timeout_ms: Option<u64>,
+    /// Issue #291: for declared stereocenters whose only non-ring substituent is
+    /// an implicit H (`repair_tetrahedral_center` has no coordinate to reflect for
+    /// those -- ring-fused steroid-like centers such as testosterone/cholesterol),
+    /// run this whole pipeline on a temporary `chematic_chem::add_hydrogens`-
+    /// expanded copy of the molecule instead of the original, then map the result
+    /// back onto the caller's original atom count before returning.
+    ///
+    /// Distinct from `embed.materialize_implicit_h_for_chirality` (still rejected
+    /// unconditionally by stage-1 validation, unaffected by this field): that one
+    /// only expands within a single raw embed attempt and truncates immediately,
+    /// so this pipeline's own stage 7/8/9/11 verify/repair calls never see the
+    /// real H position and can disagree with it. This field expands once, before
+    /// stage 4, and keeps the expanded molecule for the whole stage 4-11 sequence
+    /// -- `PipelineV2Result::coords`/`final_stereo` are still always scoped to the
+    /// original atom count; other diagnostic fields (`embed_stats`,
+    /// `torsion_knowledge_report`, `stereo_before`/`stereo_repair`/
+    /// `stereo_after_repair`, `force_field`, `final_validation`) describe the
+    /// expanded internal working state when this is active -- every stereocenter/
+    /// declared-E/Z-bond they can reference is a heavy atom or heavy-heavy bond,
+    /// so their `AtomIdx`/`BondIdx` values stay meaningful against the original
+    /// molecule too (`add_hydrogens` never renumbers heavy atoms or reorders
+    /// original bonds), but coordinate-sized fields like `force_field.coords`
+    /// stay at the expanded atom count.
+    ///
+    /// Requires `embed.enforce_chirality: true` (`InvalidConfiguration` otherwise
+    /// -- same precedent as every other flag here that only makes sense combined
+    /// with it). A no-op, byte-identical to `false`, for any molecule with no
+    /// declared stereo at all. See `ROADMAP.md`'s `#291` entry ("Phase 0.5") for
+    /// the measurement this design is based on. Default `false`.
+    pub expand_implicit_h_through_pipeline: bool,
 }
 
 impl PipelineV2Config {
@@ -286,6 +317,7 @@ impl PipelineV2Config {
             gate_mmff94_stretch_bend: false,
             ring_torsion_policy: RingTorsionApplicationPolicy::FailClosed,
             total_timeout_ms: None,
+            expand_implicit_h_through_pipeline: false,
         }
     }
 }
@@ -410,6 +442,29 @@ pub struct FinalGeometryValidation {
 
 /// Full result of a successful [`embed_pipeline_v2`] call — evidence of what actually
 /// happened at every stage, never just final coordinates.
+///
+/// Issue #291's `expand_implicit_h_through_pipeline` (see `PipelineV2Config`'s own
+/// doc) changes what indexing every field below other than `coords`/`final_stereo`
+/// describes when active: `coords` and `final_stereo` are always scoped to the
+/// caller's original molecule (the external contract), but `embed_stats`,
+/// `torsion_knowledge_report`, `ring_torsion_evidence`, `torsion_optimization_report`,
+/// `stereo_before`/`stereo_repair`/`stereo_after_repair`, `force_field` (including
+/// `force_field.coords`), and `final_validation` describe the temporary, internal
+/// H-expanded working molecule/coordinates instead — a strictly larger atom count
+/// than `coords.atom_count()`. This is not a mixed-indexing hazard for the element
+/// references those fields carry (`StereoElement::Tetrahedral(AtomIdx)`,
+/// `StereoElement::DoubleBond(BondIdx)`, `RepairedElement`,
+/// `PotentialApplicationEvidence::central_bond`): every stereocenter or declared
+/// E/Z bond any of them can name is a heavy atom or a heavy-heavy bond, and
+/// `chematic_chem::add_hydrogens` never renumbers heavy atoms or reorders original
+/// bonds, so those specific indices agree against either molecule. It IS a real
+/// difference for anything that measures the geometry itself:
+/// `final_validation.gross_clash_count`/`bond_violation_rate_15pct`/`_50pct`/
+/// `bounds_conformance` describe the expanded molecule when this flag is active,
+/// not directly comparable to a flag-off run. `worst_bond_length`/`all_finite` are
+/// the exception — heavy-heavy bonds are a strict subset of the expanded
+/// molecule's bonds, so those two specifically still bound the (truncated)
+/// returned geometry too.
 #[derive(Debug, Clone)]
 pub struct PipelineV2Result {
     pub coords: Coords3D,
@@ -426,6 +481,10 @@ pub struct PipelineV2Result {
     pub stereo_repair: Option<StereoRepairSummary>,
     pub stereo_after_repair: StereoVerification,
     pub force_field: PolicyMinimizeResult,
+    /// The authoritative gate (see the struct doc above) — always computed
+    /// against the caller's *original* molecule and `coords`' atom count, even
+    /// when `expand_implicit_h_through_pipeline` is active and every stage
+    /// leading up to this ran on a temporary, larger, H-expanded molecule.
     pub final_stereo: StereoVerification,
     /// `Some(..)` iff `StereoPolicy::RepairAndVerify` AND force-field
     /// minimization (stage 10) introduced a stereo violation that stage 8's
@@ -491,7 +550,12 @@ pub enum PipelineV2FailureCause {
 /// A failed [`embed_pipeline_v2`] call. Never carries `coords` as if it were a usable
 /// result (see the module's standing "never return partial coordinates dressed as a
 /// success" rule) — `last_known_coords` is explicitly named and typed as a diagnostic
-/// only, distinguishing it from [`PipelineV2Result::coords`].
+/// only, distinguishing it from [`PipelineV2Result::coords`]. When
+/// `expand_implicit_h_through_pipeline` is active, `last_known_coords` may be sized
+/// to the temporary H-expanded molecule (a strictly larger atom count than the
+/// caller's original molecule) rather than always matching it — same caveat as
+/// [`PipelineV2Result`]'s own doc on its non-`coords`/`final_stereo` fields, and for
+/// the same reason (diagnostic only, never treated as a returned result).
 #[derive(Debug, Clone)]
 pub struct PipelineV2Failure {
     pub cause: PipelineV2FailureCause,
@@ -699,6 +763,22 @@ pub fn embed_pipeline_v2(
         ));
     }
 
+    // Revised (issue #291 real implementation): `expand_implicit_h_through_pipeline`
+    // is the follow-up the comment above points to -- see its own doc comment on
+    // `PipelineV2Config` and the stage-4 shadow below for what it actually does.
+    // Requires `enforce_chirality` for the same reason every other flag here that
+    // only matters combined with it does: without `enforce_chirality`, nothing
+    // downstream ever checks declared stereo during embedding, so materializing
+    // H for that purpose would just be wasted cost.
+    if config.expand_implicit_h_through_pipeline && !config.embed.enforce_chirality {
+        timings.total_ms = overall_start.elapsed().as_millis() as u64;
+        return Err(evidence.fail(
+            PipelineV2FailureCause::InvalidConfiguration,
+            PipelineStage::ValidateConfig,
+            timings,
+        ));
+    }
+
     // -----------------------------------------------------------------
     // Stage 2: build torsion knowledge.
     // -----------------------------------------------------------------
@@ -738,6 +818,32 @@ pub fn embed_pipeline_v2(
     timings.bound_adjustment_ms = t0.elapsed().as_millis() as u64;
     evidence.bound_adjustment_report = bound_adjustment_report.clone();
     check_timeout!(PipelineStage::MacrocycleBoundAdjustment);
+
+    // Issue #291: from here through stage 11, `mol` is shadowed to a temporary
+    // `add_hydrogens`-expanded copy when `expand_implicit_h_through_pipeline` is
+    // set -- NOT any earlier. Stages 2/3 above must see the ORIGINAL molecule
+    // unconditionally: `etkdg_knowledge::classify_atom_type` classifies nitrogen
+    // via raw graph-neighbor count, and `add_hydrogens` appending implicit H as
+    // real graph nodes would silently reclassify e.g. a secondary amine
+    // (NSp2 -> NSp3), changing which torsion rule matches for ANY molecule,
+    // whenever a torsion-knowledge flag is on -- an interaction this feature has
+    // no business touching. `torsion_knowledge_report.potentials[].central_bond`/
+    // `bound_adjustment_report[].atom_pair` (already computed above, against the
+    // original molecule) cite only heavy-atom `AtomIdx`s, and `add_hydrogens`
+    // preserves heavy-atom `AtomIdx`/original `BondIdx` 1:1 (heavy atoms copied
+    // first in original order, original bonds copied before H-bonds are
+    // appended) -- so those indices stay valid once `mol` is shadowed here.
+    let orig_mol: &Molecule = mol;
+    let original_atom_count = orig_mol.atom_count();
+    let use_expanded_geometry =
+        config.expand_implicit_h_through_pipeline && mol_has_declared_stereo(orig_mol);
+    let expanded_mol_storage: Molecule;
+    let mol: &Molecule = if use_expanded_geometry {
+        expanded_mol_storage = chematic_chem::add_hydrogens(orig_mol);
+        &expanded_mol_storage
+    } else {
+        orig_mol
+    };
 
     // -----------------------------------------------------------------
     // Stage 4: raw stochastic DG with adjustments.
@@ -981,8 +1087,26 @@ pub fn embed_pipeline_v2(
     // module docs' judgment-call section for why this, not stage 7, is where
     // `VerifyOnly`'s "Violated => failure" and the strict-Unevaluable check fire).
     // -----------------------------------------------------------------
+    // Issue #291: the actual, caller-facing signal. When `use_expanded_geometry`,
+    // `mol`'s own `verify_stereo` (real H positions, no estimate) is proven
+    // correct in isolation but is NOT this gate -- Phase 0.5 measured it can
+    // disagree with what's actually returned (`PipelineV2Result::coords` is
+    // always truncated to `original_atom_count`), specifically right after an
+    // unrelaxed repair step. This closure is the one thing that decides
+    // success/failure either way: truncate-then-verify-against-the-original-
+    // molecule when expanded, otherwise byte-identical to the plain
+    // `verify_stereo(mol, coords)` call this replaced.
+    let authoritative_final_stereo = |coords: &Coords3D| -> StereoVerification {
+        if use_expanded_geometry {
+            let truncated = truncate_coords(coords, original_atom_count);
+            verify_stereo(orig_mol, &truncated)
+        } else {
+            verify_stereo(mol, coords)
+        }
+    };
+
     let t0 = Instant::now();
-    let mut final_stereo = verify_stereo(mol, &force_field.coords);
+    let mut final_stereo = authoritative_final_stereo(&force_field.coords);
     timings.final_stereo_verify_ms = t0.elapsed().as_millis() as u64;
     evidence.final_stereo = Some(final_stereo.clone());
     // Output geometry from here on -- starts as the force field's own,
@@ -1026,17 +1150,47 @@ pub fn embed_pipeline_v2(
                 let sound_after = outcome.coords.is_finite()
                     && worst_bond_length(mol, &outcome.coords) <= MAX_SANE_BOND_LENGTH;
                 if reverified.n_violations() == 0 && sound_after {
+                    // Issue #291: `repair_stereo` moves the smallest bridge-eligible
+                    // substituent, which for a materialized implicit H is that H
+                    // itself (a 1-atom terminal component) -- measured directly
+                    // (Phase 0.5): this repair alone never moves a heavy atom, so
+                    // its own `reverified`/`sound_after` check above (real H
+                    // positions, no truncation) can say Satisfied while the
+                    // heavy-only coordinates this pipeline actually returns still
+                    // disagree. One more force-field relaxation pass -- reusing the
+                    // caller's own policy/gates, not hardcoding a force field --
+                    // was measured to always resolve that disagreement, either to a
+                    // genuine success or an honest, mutually-agreed failure, never a
+                    // silent-wrong result. Gated on the expanded-side check here
+                    // (matching exactly what was measured); the actual accept/
+                    // reject decision below still runs through
+                    // `authoritative_final_stereo`.
+                    let mut repaired_coords = outcome.coords;
+                    if use_expanded_geometry
+                        && let Ok(relaxed) = minimize_with_policy_gated(
+                            mol,
+                            repaired_coords.clone(),
+                            config.force_field_policy,
+                            &ff_config,
+                            config.gate_mmff94_torsion_oop,
+                            config.gate_mmff94_stretch_bend,
+                        )
+                        && verify_stereo(mol, &relaxed.coords).n_violations() == 0
+                    {
+                        repaired_coords = relaxed.coords;
+                    }
                     post_min_repair = Some(StereoRepairSummary {
                         repaired: outcome.repaired,
                         failures: Vec::new(),
                     });
-                    out_coords = outcome.coords;
-                    final_stereo = reverified;
+                    out_coords = repaired_coords;
+                    final_stereo = authoritative_final_stereo(&out_coords);
                 }
             }
             timings.post_min_stereo_repair_ms = repair_t0.elapsed().as_millis() as u64;
 
-            if post_min_repair.is_none() {
+            if post_min_repair.is_none() || final_stereo.n_violations() > 0 {
+                evidence.final_stereo = Some(final_stereo.clone());
                 timings.total_ms = overall_start.elapsed().as_millis() as u64;
                 return Err(evidence.fail(
                     PipelineV2FailureCause::FinalStereoViolation,
@@ -1115,8 +1269,19 @@ pub fn embed_pipeline_v2(
     check_timeout!(PipelineStage::FinalGeometryValidationStage);
 
     timings.total_ms = overall_start.elapsed().as_millis() as u64;
+    // Issue #291: the external contract ("one entry per atom of the molecule the
+    // caller passed in") is unconditional -- truncate here, exactly once, the only
+    // place `out_coords` itself (as opposed to `final_stereo`, already handled by
+    // `authoritative_final_stereo` above) needs to change size. Every other field
+    // on `PipelineV2Result` keeps describing the expanded internal state (see the
+    // struct's own doc comment for why that's not a hazard).
+    let returned_coords = if use_expanded_geometry {
+        truncate_coords(&out_coords, original_atom_count)
+    } else {
+        out_coords
+    };
     Ok(PipelineV2Result {
-        coords: out_coords,
+        coords: returned_coords,
         embed_stats,
         bound_adjustment_report,
         torsion_knowledge_report,
@@ -1320,15 +1485,15 @@ mod tests {
     }
 
     #[test]
-    fn materialize_implicit_h_for_chirality_is_rejected_here_pending_issue_291_followup() {
+    fn embed_level_materialize_implicit_h_for_chirality_is_rejected_alone() {
         // `embed.materialize_implicit_h_for_chirality` is proven correct in isolation
         // (`distance_geometry_v2`'s own tests, an independent-oracle cross-check), but
-        // this pipeline's stages 7/8/9/11 verify/repair against the *original*,
-        // non-H-expanded molecule and so fall back to `phantom_neighbor_position`'s
-        // estimate, which can disagree with the real materialized-H geometry the
-        // embed actually used -- see this module's Stage 1 doc comment. Rejected here
-        // unconditionally until a follow-up resolves that; the flag stays usable
-        // directly through `embed_distance_geometry_v2`/`_detail`.
+        // on its own it only expands within a single raw embed attempt and truncates
+        // immediately -- this pipeline's stages 7/8/9/11 verify/repair would never see
+        // the real H position. Stays rejected unconditionally when used alone; the
+        // real follow-up landed as the distinct, pipeline-level
+        // `expand_implicit_h_through_pipeline` flag tested below, which keeps the
+        // expanded molecule for the whole stage 4-11 sequence instead.
         let mol = parse("C[C@]12CC[C@H]3[C@@H](CC[C@H]4CCC(=O)C=C34)[C@@H]1CC[C@@H]2O").unwrap();
         let mut config = config_none();
         config.embed.enforce_chirality = true;
@@ -1341,6 +1506,170 @@ mod tests {
             "expected InvalidConfiguration, got {err:?}"
         );
         assert_eq!(err.stage, PipelineStage::ValidateConfig);
+    }
+
+    #[test]
+    fn embed_level_and_pipeline_level_materialize_implicit_h_flags_together_still_rejected() {
+        // The pre-existing unconditional check on `embed.materialize_implicit_h_for_chirality`
+        // already rejects this combination before any new code runs -- pinned here so
+        // a future reordering of the stage-1 checks can't silently change that.
+        let mol = parse("C[C@]12CC[C@H]3[C@@H](CC[C@H]4CCC(=O)C=C34)[C@@H]1CC[C@@H]2O").unwrap();
+        let mut config = config_none();
+        config.embed.enforce_chirality = true;
+        config.embed.materialize_implicit_h_for_chirality = true;
+        config.expand_implicit_h_through_pipeline = true;
+        let err = embed_pipeline_v2(&mol, &config)
+            .expect_err("both flags together must still be rejected");
+        assert!(matches!(
+            err.cause,
+            PipelineV2FailureCause::InvalidConfiguration
+        ));
+    }
+
+    #[test]
+    fn expand_implicit_h_through_pipeline_requires_enforce_chirality() {
+        let mol = parse("C[C@]12CC[C@H]3[C@@H](CC[C@H]4CCC(=O)C=C34)[C@@H]1CC[C@@H]2O").unwrap();
+        let mut config = config_none();
+        config.embed.enforce_chirality = false;
+        config.expand_implicit_h_through_pipeline = true;
+        let err = embed_pipeline_v2(&mol, &config).expect_err(
+            "expand_implicit_h_through_pipeline without enforce_chirality must be rejected",
+        );
+        assert!(
+            matches!(err.cause, PipelineV2FailureCause::InvalidConfiguration),
+            "expected InvalidConfiguration, got {err:?}"
+        );
+        assert_eq!(err.stage, PipelineStage::ValidateConfig);
+    }
+
+    #[test]
+    fn expand_implicit_h_through_pipeline_is_noop_without_declared_stereo() {
+        let mol = parse("CCCCCCCCCC").unwrap(); // decane, no declared stereo at all
+        let base = {
+            let mut config = config_none();
+            config.embed.enforce_chirality = true;
+            embed_pipeline_v2(&mol, &config).unwrap()
+        };
+        let expanded = {
+            let mut config = config_none();
+            config.embed.enforce_chirality = true;
+            config.expand_implicit_h_through_pipeline = true;
+            embed_pipeline_v2(&mol, &config).unwrap()
+        };
+        assert_eq!(base.coords.atom_count(), expanded.coords.atom_count());
+        for i in 0..base.coords.atom_count() {
+            let idx = AtomIdx(i as u32);
+            assert_eq!(
+                base.coords.get(idx),
+                expanded.coords.get(idx),
+                "atom {i}: expand_implicit_h_through_pipeline must be byte-identical to off \
+                 for a molecule with no declared stereo"
+            );
+        }
+    }
+
+    #[test]
+    fn expand_implicit_h_through_pipeline_negative_control_no_ring_fused_center() {
+        // 2-butanol's declared stereocenter has an implicit H but is NOT ring-fused
+        // -- repair_tetrahedral_center's existing substituent-reflection already
+        // handles it without any H materialization. The flag must not change the
+        // observable outcome here: it's real work spent on a molecule that never
+        // needed it.
+        let mol = parse("C[C@H](O)CC").unwrap();
+        let mut config = PipelineV2Config::minimal(ForceFieldPolicy::Mmff94WithUffFallback);
+        config.embed.enforce_chirality = true;
+        config.embed.random_seed = 0;
+        config.stereo_policy = StereoPolicy::RepairAndVerify;
+        config.expand_implicit_h_through_pipeline = true;
+        let result = embed_pipeline_v2(&mol, &config)
+            .expect("2-butanol must still succeed with the flag on");
+        assert!(result.final_stereo.is_fully_satisfied());
+    }
+
+    #[test]
+    fn expand_implicit_h_through_pipeline_fixes_testosterone_with_correct_geometry() {
+        // Issue #291's original residual. Seed picked from the Phase 0.5 measurement
+        // harness's own run (`issue291_expanded_geometry_feasibility.rs`) as one of
+        // testosterone's 3 known-clean seeds under this exact configuration -- not
+        // an arbitrary seed, since that measurement found a real 3/5-vs-2/5 split
+        // (the other 2/5 are honest, safe failures, not silent-wrong -- see
+        // ROADMAP.md's #291 entry).
+        let mol = parse("C[C@]12CC[C@H]3[C@@H](CC[C@H]4CCC(=O)C=C34)[C@@H]1CC[C@@H]2O").unwrap();
+        let declared = chematic_chem::assign_cip(&mol);
+        assert_eq!(
+            declared.assignments.len(),
+            6,
+            "sanity: 6 declared stereocenters"
+        );
+
+        let mut config = PipelineV2Config::minimal(ForceFieldPolicy::Mmff94WithUffFallback);
+        config.embed.enforce_chirality = true;
+        config.embed.random_seed = 0;
+        config.embed.max_attempts = 8;
+        config.stereo_policy = StereoPolicy::RepairAndVerify;
+        config.expand_implicit_h_through_pipeline = true;
+        let result = embed_pipeline_v2(&mol, &config).expect("testosterone must succeed");
+        assert!(
+            result.final_stereo.is_fully_satisfied(),
+            "final_stereo: {:?}",
+            result.final_stereo
+        );
+        assert_eq!(result.coords.atom_count(), mol.atom_count());
+
+        let perceived = crate::stereo3d::assign_stereo_from_3d(&mol, &result.coords);
+        for &(idx, code) in &declared.assignments {
+            if let Some(perceived_code) = perceived.get(idx) {
+                assert_eq!(
+                    perceived_code, code,
+                    "atom {idx:?}: declared {code:?} but 3D-perceived {perceived_code:?} \
+                     -- pipeline reported success with wrong chirality"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn expand_implicit_h_through_pipeline_with_verify_only_never_reports_success_with_violated_final_stereo()
+     {
+        // `VerifyOnly` never repairs, so this test doesn't assert success at any
+        // particular seed (unlike the RepairAndVerify happy-path test above) --
+        // it asserts the *invariant* this flag must preserve regardless of policy:
+        // whatever `final_stereo` says, it must never disagree with an Ok result.
+        // This specific interaction (VerifyOnly + expand_implicit_h_through_pipeline)
+        // was never empirically measured by the Phase 0.5 harness (which only ran
+        // RepairAndVerify) -- it only follows from `authoritative_final_stereo` being
+        // computed before the `stereo_policy != Ignore` branch, which this test
+        // verifies directly rather than trusting the code-structure argument alone.
+        let mol = parse("C[C@]12CC[C@H]3[C@@H](CC[C@H]4CCC(=O)C=C34)[C@@H]1CC[C@@H]2O").unwrap();
+        for seed in 0..5u64 {
+            let mut config = PipelineV2Config::minimal(ForceFieldPolicy::Mmff94WithUffFallback);
+            config.embed.enforce_chirality = true;
+            config.embed.random_seed = seed;
+            config.embed.max_attempts = 8;
+            config.stereo_policy = StereoPolicy::VerifyOnly;
+            config.expand_implicit_h_through_pipeline = true;
+            match embed_pipeline_v2(&mol, &config) {
+                Ok(result) => assert!(
+                    result.final_stereo.is_fully_satisfied(),
+                    "seed={seed}: Ok result must never carry a violated final_stereo, got {:?}",
+                    result.final_stereo
+                ),
+                Err(e) => {
+                    // VerifyOnly never repairs, so any of these are legitimate --
+                    // just confirm it's a recognized stereo-related failure, not a
+                    // silent success/failure mismatch.
+                    assert!(
+                        matches!(
+                            e.cause,
+                            PipelineV2FailureCause::FinalStereoViolation
+                                | PipelineV2FailureCause::DistanceGeometry(_)
+                        ),
+                        "seed={seed}: unexpected failure cause {:?}",
+                        e.cause
+                    );
+                }
+            }
+        }
     }
 
     #[test]

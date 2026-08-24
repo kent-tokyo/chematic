@@ -632,8 +632,10 @@ pub(crate) fn embed_distance_geometry_v2_with_adjustments(
 /// H-expanded embed (see `materialize_implicit_h_for_chirality`) back onto
 /// the caller's original atom count. Heavy atoms keep their original index
 /// under `add_hydrogens`, so a plain prefix copy is exact, not an
-/// approximation.
-fn truncate_coords(coords: &Coords3D, n: usize) -> Coords3D {
+/// approximation. `pub(crate)`: also reused by `pipeline_v2.rs`'s own
+/// H-expanded-geometry path (issue #291), which needs to truncate at its own
+/// stage 11/12 boundary rather than immediately after embed.
+pub(crate) fn truncate_coords(coords: &Coords3D, n: usize) -> Coords3D {
     let mut out = Coords3D::new_zeroed(n);
     for i in 0..n {
         out.set(AtomIdx(i as u32), coords.get(AtomIdx(i as u32)));
@@ -709,7 +711,10 @@ fn mol_has_wildcard_atom(mol: &Molecule) -> bool {
     (0..mol.atom_count()).any(|i| mol.atom(AtomIdx(i as u32)).wildcard)
 }
 
-fn mol_has_declared_stereo(mol: &Molecule) -> bool {
+/// `pub(crate)`: also reused by `pipeline_v2.rs`'s own H-expanded-geometry
+/// path (issue #291) to gate expansion the same way this module already
+/// gates `materialize_implicit_h_for_chirality`'s own effect.
+pub(crate) fn mol_has_declared_stereo(mol: &Molecule) -> bool {
     if (0..mol.atom_count()).any(|i| mol.atom(AtomIdx(i as u32)).chirality != Chirality::None) {
         return true;
     }
