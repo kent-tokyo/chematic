@@ -54,6 +54,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   separate fix and issue — not addressed, not fixed, and not blocking
   this PR.
 
+### Fixed — `chematic-chem`/`chematic-smiles` (stereo identity changes after canonical round-trip)
+
+- `chematic-chem::hydrogen::remove_hydrogens` never restored `Molecule`'s
+  `stereo_neighbor_order`/`bond_directions` side tables (unlike its sibling
+  `add_hydrogens`, which explicitly does via `copy_stereo_from` + sentinel
+  remapping) -- it always rebuilds a fresh `MoleculeBuilder`, so these
+  tables were silently wiped on *every* call, even a complete no-op one
+  that removed nothing.
+- `chematic-smiles`'s canonical writer's `corrected_chirality` requires
+  `stereo_neighbor_order` to safely reinterpret a stored `@`/`@@` tag
+  against a different (e.g. canonically-reordered) neighbor sequence; with
+  it missing, the writer silently passed the raw stored tag through
+  unchanged against whatever new traversal order it picked. Since
+  `standardize`'s `remove_explicit_h: true` (this crate's own default)
+  calls `remove_hydrogens`, re-canonicalizing an already-canonical SMILES
+  could flip a declared tetrahedral stereocenter to its mirror image on
+  some symmetric-ranking-ambiguous molecules -- a real,
+  independently-confirmed correctness defect (via RDKit InChIKey
+  divergence), not just a cosmetic re-spelling.
+- Now: `remove_hydrogens` restores both side tables for every surviving
+  atom/bond, remapping indices (and reintroducing the `STEREO_H_SENTINEL`
+  marker where a removed H's slot is now implicit again) the exact
+  inverse of what `add_hydrogens` already does for the opposite direction.
+- Verified against the real 290-compound InChIKey-mismatch corpus from the
+  originating investigation (eMolecules, 9.47M compounds, `renkin doctor
+  stock reimport_idempotency`): **289 of 290 now match the true input
+  identity** (up from 0 before this fix). The one residual case is a
+  coupled/shared-bond E/Z system (an oxime/hydrazone shape) with a
+  confirmed **different** root cause, independent of `remove_hydrogens`
+  entirely (reproduces with bare `parse`/`canonical_smiles`, no
+  `standardize` involved) -- tracked separately, not mixed into this fix;
+  see issue #390.
+- New tests: `remove_hydrogens` restoring the side tables both when
+  nothing is removed and when a real explicit H neighbor is removed
+  (chained through `add_hydrogens` to reach a genuinely non-sentinel
+  starting order), a minimized tetrahedral witness, a minimized (simple,
+  non-coupled) E/Z witness, CIP-descriptor preservation across a second
+  canonicalization pass, mirror-image distinctness (the fix must not
+  degrade into "never distinguish stereo"), atom-order-permutation
+  invariance for two independently-written spellings of the same
+  configuration, and Boc-protecting-group / fused-bicyclic-ring
+  regression cases.
+
 ### Added — `chematic-py` (A2.1: Python bindings for the conformer ensemble core)
 
 - `Mol.conformer_ensemble_v2(config)`: a new, separate Python method
