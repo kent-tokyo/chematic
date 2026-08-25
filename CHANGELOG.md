@@ -9,6 +9,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — `chematic-chem` `remove_hydrogens` (isotope labels silently destroyed)
+
+- `remove_hydrogens` previously removed *any* atom with `element == H`,
+  including deuterium (`[2H]`), tritium (`[3H]`), and any other
+  isotope-labeled hydrogen — collapsing an explicit isotopic-H atom into an
+  ordinary heavy atom's opaque `hydrogen_count` silently discards the
+  isotope label, since that representation has no way to record "N
+  implicit hydrogens, one of which is deuterium." Found via a downstream
+  consumer (RENKIN) whose stock-identity pipeline calls `standardize`
+  with `remove_explicit_h: true` (chematic's own default) on a
+  9.48M-compound real-world building-block corpus containing 12,688
+  explicitly-isotopic-hydrogen rows — every one of them lost its D/T
+  label on the very first canonicalization pass, exhaustively confirmed,
+  zero exceptions.
+- Now: only a *non-isotopic* explicit H (`element == H && isotope.is_none()`)
+  is removed. An isotope-labeled H is kept as an explicit atom node, like
+  any other heavy atom — its bond is preserved, and a heavy atom that
+  retains an isotopic-H neighbor still gets its `hydrogen_count` reset to
+  `None` so implicit H is recomputed from valence, which correctly
+  accounts for the kept neighbor's own bond (`valence_inferred_hcount`
+  counts every bonded neighbor by bond order, not by element identity, so
+  this needed no separate special-casing).
+- Heavy-atom isotopes (¹³C, ¹⁴C, ¹⁵N, ¹⁸O, ...) were never affected by
+  this bug in the first place (they're not `element == H` atoms at all)
+  and remain untouched — new regression tests pin this explicitly rather
+  than leaving it as an implicit assumption.
+- New tests: fully-deuterated methane, tritium, mixed deuterium+plain-H on
+  the same atom (confirms `hydrogen_count` recomputation is exactly
+  correct, not off-by-the-kept-neighbor), the four heavy-isotope no-op
+  cases, an isotope-labeled tetrahedral stereocenter (structural
+  soundness only — see below), a full `standardize()` round-trip, and a
+  canonical-round-trip (`canon(parse(canon(parse(s))))`) case matching
+  the exact re-canonicalization scenario that surfaced the bug.
+- **Does not** address the separate, independent finding from the same
+  investigation: `canonical_smiles` can pick a different, structurally-
+  identical-but-differently-parity'd traversal on a second canonicalization
+  pass for certain (typically ring-fused or otherwise symmetric-adjacent)
+  molecules, occasionally flipping a declared tetrahedral or E/Z
+  descriptor's *meaning* even though the literal token or overall
+  structure looks unchanged. That is a distinct root cause (this
+  function's own missing `stereo_neighbor_order` restoration, unlike
+  `add_hydrogens`, which explicitly does restore it) needing its own,
+  separate fix and issue — not addressed, not fixed, and not blocking
+  this PR.
+
 ### Added — `chematic-py` (A2.1: Python bindings for the conformer ensemble core)
 
 - `Mol.conformer_ensemble_v2(config)`: a new, separate Python method
