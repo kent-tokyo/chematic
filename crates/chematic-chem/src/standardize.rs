@@ -826,6 +826,17 @@ pub fn normalize_groups(mol: &Molecule) -> Molecule {
         }
     }
 
+    // Every atom above is copied 1:1 in original index order (never
+    // filtered), so `remap` is the identity and bond indices are assigned in
+    // the same relative order too -- `copy_stereo_from`/
+    // `copy_bond_directions_from`'s verbatim-clone semantics are exactly
+    // valid here. Without this, any stereocenter/declared-E-Z-bond
+    // surviving nitro/azide/sulfoxide normalization silently lost its
+    // `stereo_neighbor_order`/`bond_directions` entry -- issue #399's root
+    // cause, the same defect class #392 fixed in `remove_hydrogens`.
+    builder.copy_stereo_from(mol);
+    builder.copy_bond_directions_from(mol);
+    builder.copy_stereo_groups_from(mol);
     builder.build()
 }
 
@@ -1019,6 +1030,11 @@ pub fn normalize_zwitterion(mol: &Molecule) -> Molecule {
         remap.insert(old_idx, new_idx);
     }
     copy_bonds(mol, &mut builder, &remap);
+    // Identity-preserving rebuild (every atom carried forward at the same
+    // relative order, remap is the identity) -- see issue #399.
+    builder.copy_stereo_from(mol);
+    builder.copy_bond_directions_from(mol);
+    builder.copy_stereo_groups_from(mol);
     builder.build()
 }
 
@@ -1092,6 +1108,10 @@ pub fn neutralize_charges(mol: &Molecule) -> Molecule {
         remap.insert(old_idx, new_idx);
     }
     copy_bonds(mol, &mut builder, &remap);
+    // Identity-preserving rebuild -- see issue #399.
+    builder.copy_stereo_from(mol);
+    builder.copy_bond_directions_from(mol);
+    builder.copy_stereo_groups_from(mol);
     builder.build()
 }
 
@@ -1110,6 +1130,10 @@ pub fn remove_isotopes(mol: &Molecule) -> Molecule {
         remap.insert(old_idx, new_idx);
     }
     copy_bonds(mol, &mut builder, &remap);
+    // Identity-preserving rebuild -- see issue #399.
+    builder.copy_stereo_from(mol);
+    builder.copy_bond_directions_from(mol);
+    builder.copy_stereo_groups_from(mol);
     builder.build()
 }
 
@@ -1210,14 +1234,10 @@ pub fn prefer_organic(mol: &Molecule) -> Molecule {
     let target_component = largest_organic.or_else(|| components.first());
 
     if let Some(component) = target_component {
-        let mut builder = MoleculeBuilder::new();
-        let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
-        for &old_idx in component {
-            let new_idx = builder.add_atom(mol.atom(old_idx).clone());
-            remap.insert(old_idx, new_idx);
-        }
-        copy_bonds(mol, &mut builder, &remap);
-        builder.build()
+        // extract_fragment remaps stereo_neighbor_order/bond_directions/
+        // stereo_groups correctly for a genuine atom-subset extraction; a
+        // fresh MoleculeBuilder copy here would silently drop them (#399).
+        extract_fragment(mol, component)
     } else {
         MoleculeBuilder::new().build()
     }
@@ -1291,6 +1311,10 @@ pub fn reionize(mol: &Molecule) -> Molecule {
     }
 
     copy_bonds(mol, &mut builder, &remap);
+    // Identity-preserving rebuild -- see issue #399.
+    builder.copy_stereo_from(mol);
+    builder.copy_bond_directions_from(mol);
+    builder.copy_stereo_groups_from(mol);
     builder.build()
 }
 
@@ -1317,6 +1341,10 @@ pub fn uncharge(mol: &Molecule) -> Molecule {
     }
 
     copy_bonds(mol, &mut builder, &remap);
+    // Identity-preserving rebuild -- see issue #399.
+    builder.copy_stereo_from(mol);
+    builder.copy_bond_directions_from(mol);
+    builder.copy_stereo_groups_from(mol);
     builder.build()
 }
 
@@ -1674,18 +1702,29 @@ fn disconnect_metals(mol: &Molecule) -> Molecule {
         builder.add_atom(mol.atom(AtomIdx(i as u32)).clone());
     }
 
-    // Copy only non-metal bonds
+    // Copy only non-metal bonds. Atom indices are unchanged (identity remap,
+    // safe for copy_stereo_from/copy_stereo_groups_from below), but dropped
+    // metal bonds shift surviving bonds' indices, so bond_directions is
+    // remapped bond-by-bond here rather than cloned wholesale -- the same
+    // pattern as `Molecule::with_bond_removed` (see #399).
     for i in 0..mol.bond_count() {
-        let bond = mol.bond(BondIdx(i as u32));
+        let old_bidx = BondIdx(i as u32);
+        let bond = mol.bond(old_bidx);
         let atom1_is_metal = is_metal(mol.atom(bond.atom1).element);
         let atom2_is_metal = is_metal(mol.atom(bond.atom2).element);
 
         // Skip bonds where at least one atom is a metal
-        if !atom1_is_metal && !atom2_is_metal {
-            builder.add_bond(bond.atom1, bond.atom2, bond.order).ok();
+        if !atom1_is_metal
+            && !atom2_is_metal
+            && let Ok(new_bidx) = builder.add_bond(bond.atom1, bond.atom2, bond.order)
+            && let Some(direction) = mol.bond_direction(old_bidx)
+        {
+            builder.set_bond_direction(new_bidx, direction);
         }
     }
 
+    builder.copy_stereo_from(mol);
+    builder.copy_stereo_groups_from(mol);
     builder.build()
 }
 
@@ -2792,11 +2831,20 @@ mod tests {
 
     #[test]
     fn tp2_20_isotope_parent_preserves_stereo() {
+        // Expected value corrected under issue #399: `remove_isotopes`
+        // rebuilt the molecule via a bare `MoleculeBuilder` without carrying
+        // `stereo_neighbor_order` forward, so this test's original expected
+        // string had the anomeric-adjacent ring stereocenter silently
+        // flipped -- baked into the "golden" value instead of being caught.
+        // Independently verified via RDKit: parse the input, zero every
+        // atom's isotope, `AssignStereochemistry(cleanIt=True, force=True)`,
+        // and compare `MolToInchi` -- only the value below (not the old one)
+        // matches the isotope-free reference's InChI.
         let mol = parse("OC[C@H]1O[C@@H]([13CH2]O)[C@H](O)[C@@H](O)[C@@H]1O").unwrap();
         let (result, _) = isotope_parent(&mol);
         assert_eq!(
             chematic_smiles::canonical_smiles(&result),
-            canon("[C@@H]1(CO)O[C@H]([C@@H](O)[C@@H]([C@H]1O)O)CO")
+            canon("[C@@H]1(CO)O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO")
         );
     }
 

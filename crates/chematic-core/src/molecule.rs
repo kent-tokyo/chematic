@@ -784,6 +784,24 @@ impl Molecule {
     /// Returns `None` for atoms not parsed from SMILES or without stereo.
     /// The slice contains neighbor atom indices in SMILES text order;
     /// [`STEREO_H_SENTINEL`] (`u32::MAX`) marks the implicit bracket-H slot.
+    ///
+    /// # Invariant
+    ///
+    /// For any atom with `chirality != Chirality::None`, once this table is
+    /// populated it must stay populated and correct relative to that atom's
+    /// *current* neighbor set for as long as the chirality flag is set. A
+    /// function that rebuilds a `Molecule` while keeping the same surviving
+    /// atom/bond set (even if nothing actually changes) must carry this
+    /// table forward explicitly (`MoleculeBuilder::copy_stereo_from`, plus
+    /// `copy_bond_directions_from`/`copy_stereo_groups_from` for the other
+    /// two stereo side tables) rather than leaving a downstream consumer to
+    /// reconstruct it from raw adjacency — that reconstruction is only a
+    /// best-effort fallback and is provably wrong for ring-opening
+    /// stereocenters (see `chematic-chem`'s `hydrogen::declared_neighbor_order`
+    /// and issue #399). A function that genuinely removes atoms or bonds
+    /// must use the index-remap-with-sentinel-substitution pattern in
+    /// [`Self::with_atom_removed`]/[`Self::with_bond_removed`], not a bare
+    /// rebuild.
     pub fn stereo_neighbor_order(&self, idx: AtomIdx) -> Option<&[u32]> {
         self.stereo_neighbor_order.get(&idx.0).map(|v| v.as_slice())
     }
