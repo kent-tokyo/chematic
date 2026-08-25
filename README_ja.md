@@ -125,7 +125,7 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.20.0
+# chematic v0.20.1
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-06, v0.4.22 vs RDKit 2026.03.3 --
@@ -303,6 +303,11 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 ---
 
 ## 最近の開発
+
+**v0.20.1**（2026-08-26）: **パッチリリース——coupled E/Z正準化の正確性修正、および冪等性プロパティテストの追加**
+- `chematic-smiles`：曖昧なstereo-alkene末端のmarker-carrier選出が分子の実際のE/Z幾何を静かに変えてしまう実際のバグを修正（issue #390）——内部の自己整合性だけでなく、独立したRDKit `MolToInchi`/`GetStereo()`照合で確認済み。互いに独立した2つの根本原因を両方修正、v0.20.0の`remove_hydrogens`調査と同じ290化合物コーパスで再検証（290/290、修正前は289/290）
+- 新規テスト：`canon(parse(x)) == canon(parse(canon(parse(x))))`を、本リポジトリに既にコミット済みの5,000化合物コーパス2件に対して実施——新たに独立した未修正の欠陥を1件発見（issue #395）。無関係な将来のPRのCIを毎回失敗させないよう、上限値として固定・可視化
+- 詳細は`CHANGELOG.md`の`[0.20.1]`section参照
 
 **v0.20.0**（2026-08-25）: **立体化学を保った3D構造生成、connectivity-ordered座標エンジン、`remove_hydrogens`の同一性正確性修正**
 - `chematic-3d`/`chematic-py`/`chematic-wasm`：`PipelineV2Config::stereo_safe(force_field_policy)`——環に組み込まれた宣言済み立体中心（テストステロン、コレステロール等）に対する実際のギャップを一括解決する設定。従来`repair_tetrahedral_center`は暗黙のHを反映すべき座標を持たなかった。29分子×5 seedコーパスで測定：144/145（99.3%）がcorrect_and_ok、silently wrongは0件、テストステロン・コレステロールとも全宣言立体中心・全seedで5/5成功
