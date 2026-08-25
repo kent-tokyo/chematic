@@ -168,13 +168,41 @@ fn is_removable_explicit_h(a: &Atom) -> bool {
 /// or not) via its bond order, not by element identity (see
 /// `chematic_core::valence::valence_inferred_hcount`).
 ///
-/// Declared tetrahedral/E-Z stereo *parity* is unaffected by this function
-/// either way (it lives on `Atom::chirality`/bond directions, copied
-/// verbatim); this function does not restore the parser-recorded
-/// `stereo_neighbor_order` side table for any atom, isotopic-H-bearing or
-/// not -- unlike [`add_hydrogens`], which explicitly does. That gap is
-/// pre-existing and out of scope here; see `chematic`'s canonical-SMILES
-/// stereo-round-trip issue tracker for the separate, broader fix.
+/// Declared tetrahedral/square-planar chirality's neighbor order, and E/Z
+/// bond direction, are also restored: this is the exact inverse of what
+/// [`add_hydrogens`] already does for the opposite direction (see its own
+/// doc comment for why this matters -- `stereo_neighbor_order`/
+/// `bond_directions` are `Molecule`-level side tables, not part of `Atom`/
+/// `BondEntry`, so a fresh `MoleculeBuilder` rebuild loses them by default,
+/// even on a call that removes nothing at all). For every stereocenter
+/// that survives, this atom's *original* declared order (parser-recorded,
+/// or the same bracket-H heuristic reconstruction [`add_hydrogens`] uses
+/// when nothing was recorded) is remapped: an entry pointing at a removed
+/// (non-isotopic) H becomes the `STEREO_H_SENTINEL` marker again (mirroring
+/// the sentinel this function's own H-removal just re-created conceptually
+/// -- an entry pointing at a *kept* isotopic H, or at any surviving heavy
+/// atom, is remapped to its new index instead), and every surviving bond
+/// that carried a declared E/Z direction keeps it at its new bond index.
+///
+/// Without this, `chematic-smiles`'s canonical writer -- which requires
+/// `stereo_neighbor_order` to safely reinterpret a stored `@`/`@@` tag
+/// against a *different* (e.g. canonically-reordered) neighbor sequence --
+/// has no order to consult for any stereocenter that survived a
+/// `remove_hydrogens` call, and silently passes the raw stored tag through
+/// unchanged against whatever new order it picks (`corrected_chirality`'s
+/// `stereo_neighbor_order(atom).is_none()` fallback). That tag's meaning is
+/// only valid relative to the order it was declared against; reusing it
+/// against an unrelated order can silently encode the *wrong*
+/// configuration. This was a real, confirmed bug: re-canonicalizing an
+/// already-canonical SMILES (produced via `standardize` with
+/// `remove_explicit_h: true`, this crate's own default) could flip a
+/// declared stereocenter to its mirror image on some symmetric-ranking-
+/// ambiguous molecules, independently confirmed via RDKit InChIKey
+/// divergence on a real-world eMolecules corpus (9.47M compounds; 289 of
+/// 290 confirmed InChIKey mismatches are resolved by this fix -- the one
+/// residual case is a coupled/shared-bond E/Z system with a confirmed
+/// *different* root cause, independent of `remove_hydrogens` entirely;
+/// see issue #390).
 pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
     let mut builder = MoleculeBuilder::new();
     let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
@@ -193,17 +221,78 @@ pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
         remap.insert(old_idx, new_idx);
     }
 
-    // Copy bonds, dropping only those touching a removed (non-isotopic) H.
+    // Copy bonds, dropping only those touching a removed (non-isotopic) H,
+    // and tracking each surviving bond's new index so `bond_directions`
+    // (E/Z `/`/`\` markers, a separate Molecule-level side table keyed by
+    // bond index) can be remapped below -- the same "fresh MoleculeBuilder
+    // loses any side table nothing explicitly re-populates" issue
+    // `stereo_neighbor_order` has, just for bonds instead of atoms.
+    // `Molecule::with_atom_removed`/`with_bond_removed` already carry an
+    // equivalent remap for exactly this reason (see their own doc comments
+    // on `bond_directions` "silent loss" -- the same failure category,
+    // just not yet closed for this function).
+    let mut bond_remap: HashMap<BondIdx, BondIdx> = HashMap::new();
     for i in 0..mol.bond_count() {
-        let bond = mol.bond(BondIdx(i as u32));
+        let old_bidx = BondIdx(i as u32);
+        let bond = mol.bond(old_bidx);
         let a1_removed = is_removable_explicit_h(mol.atom(bond.atom1));
         let a2_removed = is_removable_explicit_h(mol.atom(bond.atom2));
         if a1_removed || a2_removed {
             continue;
         }
-        if let (Some(&na), Some(&nb)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
-            let _ = builder.add_bond(na, nb, bond.order);
+        if let (Some(&na), Some(&nb)) = (remap.get(&bond.atom1), remap.get(&bond.atom2))
+            && let Ok(new_bidx) = builder.add_bond(na, nb, bond.order)
+        {
+            bond_remap.insert(old_bidx, new_bidx);
         }
+    }
+
+    // Restore bond_directions (E/Z `/`/`\` markers) for every surviving
+    // bond that carried one -- without this, `chematic-smiles`'s canonical
+    // writer has no declared direction to reinterpret against a
+    // canonically-reordered traversal for a double bond whose ends are
+    // organic-subset atoms (no bracket, so nothing lives on `Atom` itself
+    // to carry this), and silently drops or guesses E/Z geometry the same
+    // way `corrected_chirality` does for tetrahedral centers without
+    // `stereo_neighbor_order` (see that fix above).
+    for (&old_bidx, &new_bidx) in &bond_remap {
+        if let Some(direction) = mol.bond_direction(old_bidx) {
+            builder.set_bond_direction(new_bidx, direction);
+        }
+    }
+
+    // Restore stereo_neighbor_order for every surviving stereocenter --
+    // the exact inverse of add_hydrogens' own sentinel-remap (above).
+    for i in 0..mol.atom_count() {
+        let old_idx = AtomIdx(i as u32);
+        let Some(&new_idx) = remap.get(&old_idx) else {
+            continue; // this atom itself was removed (an H can't be chiral anyway)
+        };
+        if mol.atom(old_idx).chirality == Chirality::None {
+            continue;
+        }
+        let Some(order) = declared_neighbor_order(mol, old_idx) else {
+            continue;
+        };
+        let new_order: Vec<u32> = order
+            .into_iter()
+            .map(|v| {
+                if v == STEREO_H_SENTINEL {
+                    // Already an implicit-H slot in the original -- stays one.
+                    STEREO_H_SENTINEL
+                } else {
+                    match remap.get(&AtomIdx(v)) {
+                        // Surviving neighbor (heavy atom, or a kept
+                        // isotopic H): follow it to its new index.
+                        Some(&nb_new) => nb_new.0,
+                        // This neighbor was itself a removed explicit H --
+                        // it's now an implicit hydrogen on this atom again.
+                        None => STEREO_H_SENTINEL,
+                    }
+                }
+            })
+            .collect();
+        builder.set_stereo_neighbor_order(new_idx, new_order);
     }
 
     builder.build()
@@ -668,6 +757,219 @@ mod tests {
             } else {
                 assert_eq!(new_order, orig_order);
             }
+        }
+    }
+
+    // ─── remove_hydrogens: stereo_neighbor_order/bond_directions restoration
+    // (canonical round-trip non-idempotency fix) ───────────────────────────
+
+    use crate::cip::assign_cip;
+    use crate::standardize::{StandardizeOptions, ZwitterionHandling, standardize};
+
+    /// RENKIN's own stock-identity policy (`remove_explicit_h: true`) --
+    /// the exact real pipeline that surfaced this bug via a `renkin doctor
+    /// stock reimport_idempotency` FAIL on a 9.48M-compound corpus.
+    fn stock_identity_opts() -> StandardizeOptions {
+        StandardizeOptions {
+            canonical_tautomer: false,
+            neutralize_charges: false,
+            remove_explicit_h: true,
+            largest_fragment_only: false,
+            zwitterion_handling: ZwitterionHandling::Keep,
+        }
+    }
+
+    fn stock_identity(s: &str) -> String {
+        canonical_smiles(&standardize(&mol(s), &stock_identity_opts()))
+    }
+
+    #[test]
+    fn remove_hydrogens_restores_stereo_neighbor_order_with_nothing_removed() {
+        // A stereocenter written with bracket-implicit H ([C@H]) -- there is
+        // no separate explicit H atom node here at all, so remove_hydrogens
+        // has literally nothing to remove. Before this fix, the function
+        // still built a brand-new MoleculeBuilder without ever copying
+        // stereo_neighbor_order, so this table was silently wiped even in
+        // this complete no-op case.
+        let orig = mol("N[C@@H](C)C(=O)O");
+        let stereocenter = orig
+            .atoms()
+            .find(|(_, a)| a.chirality != Chirality::None)
+            .map(|(idx, _)| idx)
+            .unwrap();
+        let result = remove_hydrogens(&orig);
+        assert!(
+            result.stereo_neighbor_order(stereocenter).is_some(),
+            "stereo_neighbor_order must survive a remove_hydrogens call that \
+             removed nothing at all"
+        );
+    }
+
+    #[test]
+    fn remove_hydrogens_converts_removed_h_neighbor_back_to_sentinel() {
+        // A stereocenter whose declared order records a REAL (non-sentinel)
+        // explicit-H atom index, not a bracket-implicit sentinel -- the
+        // parser itself always collapses a *written* `[C@@H]([H])`-style
+        // explicit H straight into the sentinel form (confirmed directly:
+        // `mol("N[C@@H]([H])C(=O)O")`'s own `stereo_neighbor_order` already
+        // contains `STEREO_H_SENTINEL`, not a real index), so the only way
+        // to reach a REAL index in this table is via `add_hydrogens`'s own
+        // sentinel -> new-real-H-atom substitution. Chaining
+        // `remove_hydrogens(add_hydrogens(orig))` is therefore the actual
+        // round trip this fix must get right -- the exact inverse of
+        // add_h_implicit_h_stereocenter_remaps_sentinel_to_new_h_atom above.
+        let orig = mol("N[C@@H](C)C(=O)O");
+        let stereocenter = orig
+            .atoms()
+            .find(|(_, a)| a.chirality != Chirality::None)
+            .map(|(idx, _)| idx)
+            .unwrap();
+        let orig_order = orig.stereo_neighbor_order(stereocenter).unwrap().to_vec();
+        assert!(
+            orig_order.contains(&STEREO_H_SENTINEL),
+            "sanity: the original bracket-implicit form must start as a sentinel: {orig_order:?}"
+        );
+
+        let with_h = add_hydrogens(&orig);
+        let with_h_order = with_h.stereo_neighbor_order(stereocenter).unwrap().to_vec();
+        assert!(
+            !with_h_order.contains(&STEREO_H_SENTINEL),
+            "sanity: add_hydrogens must have substituted a real H atom index: {with_h_order:?}"
+        );
+
+        let result = remove_hydrogens(&with_h);
+        let new_order = result
+            .stereo_neighbor_order(stereocenter)
+            .expect("order must survive the round trip")
+            .to_vec();
+        assert!(
+            new_order.contains(&STEREO_H_SENTINEL),
+            "the removed H's slot must become a sentinel again: {new_order:?}"
+        );
+        assert_eq!(
+            new_order, orig_order,
+            "round trip must reproduce the original order exactly"
+        );
+    }
+
+    #[test]
+    fn canonical_round_trip_tetrahedral_witness() {
+        // Minimized tetrahedral witness (a fluorenylmethyl-carbamate-type
+        // stereocenter) that flipped to its mirror image on a second
+        // canonicalization pass before this fix.
+        let witness = "c1c2c(C(c3c2cccc3)[C@H](OC(Cl)=O)C)ccc1";
+        let once = stock_identity(witness);
+        let twice = stock_identity(&once);
+        assert_eq!(once, twice, "canon(x) must equal canon(canon(x))");
+    }
+
+    #[test]
+    fn canonical_round_trip_ez_witness() {
+        // Minimized E/Z witness (fumaric acid, a genuine textbook E-alkene).
+        let witness = "OC(=O)/C=C/C(=O)O";
+        let once = stock_identity(witness);
+        let twice = stock_identity(&once);
+        assert_eq!(once, twice, "canon(x) must equal canon(canon(x))");
+    }
+
+    #[test]
+    fn cip_assignment_preserved_across_canonical_round_trip() {
+        let witness = "c1c2c(C(c3c2cccc3)[C@H](OC(Cl)=O)C)ccc1";
+        let once = mol(&stock_identity(witness));
+        let twice = mol(&stock_identity(&stock_identity(witness)));
+
+        let mut once_codes: Vec<_> = assign_cip(&once)
+            .assignments
+            .iter()
+            .map(|(_, c)| *c)
+            .collect();
+        let mut twice_codes: Vec<_> = assign_cip(&twice)
+            .assignments
+            .iter()
+            .map(|(_, c)| *c)
+            .collect();
+        once_codes.sort_by_key(|c| format!("{c:?}"));
+        twice_codes.sort_by_key(|c| format!("{c:?}"));
+        assert_eq!(
+            once_codes, twice_codes,
+            "the same set of CIP descriptors must survive a second \
+             canonicalization pass, not just the raw @/@@ token"
+        );
+        assert!(
+            !once_codes.is_empty(),
+            "witness must have an assignable CIP center"
+        );
+    }
+
+    #[test]
+    fn mirror_image_gets_a_different_canonical_identity() {
+        // Sanity check in the opposite direction from idempotency: fixing
+        // "don't accidentally flip stereo" must not degrade into "don't
+        // distinguish stereo at all". @ and @@ on the same skeleton must
+        // still canonicalize to two different strings.
+        let r = stock_identity("N[C@H](C)C(=O)O");
+        let s = stock_identity("N[C@@H](C)C(=O)O");
+        assert_ne!(
+            r, s,
+            "enantiomers must still get distinct canonical identities"
+        );
+    }
+
+    #[test]
+    fn atom_order_permutation_invariance_tetrahedral() {
+        // Two textually different, independently-written SMILES for the
+        // exact same real molecule and the exact same real configuration
+        // (verified by hand-checking the substituent priority order, not
+        // just asserting a chosen answer) -- both must canonicalize to the
+        // same string, not just be self-idempotent individually.
+        let a = stock_identity("N[C@@H](C)C(=O)O"); // L-alanine, written from N
+        let b = stock_identity("C[C@H](N)C(=O)O"); // same molecule, written from the methyl
+        assert_eq!(
+            a, b,
+            "two valid spellings of the same molecule/configuration must converge"
+        );
+    }
+
+    #[test]
+    fn regression_boc_protected_amine_tetrahedral_stable() {
+        // Boc (tert-butyloxycarbonyl) protecting group next to a
+        // stereocenter -- a very common real-world substructure, deliberately
+        // included per this fix's own regression-test requirement.
+        let witness = "CC(C)(C)OC(=O)N[C@@H](C)C(=O)O";
+        let once = stock_identity(witness);
+        let twice = stock_identity(&once);
+        assert_eq!(once, twice);
+    }
+
+    #[test]
+    fn regression_fused_ring_system_tetrahedral_stable() {
+        // A fused bicyclic (indane-type) system with an adjacent
+        // stereocenter -- the ring-fusion/symmetric-ranking-ambiguous shape
+        // this whole investigation's corpus scan found the bug concentrated in.
+        let witness = "c1ccc2c(c1)CC[C@H]2N";
+        let once = stock_identity(witness);
+        let twice = stock_identity(&once);
+        assert_eq!(once, twice);
+    }
+
+    #[test]
+    fn simple_isolated_ez_bonds_are_correct_and_stable() {
+        // A spread of simple, non-coupled E/Z cases -- all confirmed via
+        // this fix's own investigation to already round-trip correctly
+        // (both idempotent AND matching an independent InChIKey check),
+        // pinned here as an explicit regression net.
+        for (e_form, z_form) in [
+            ("C/C=C/C", "C/C=C\\C"),
+            ("OC(=O)/C=C/C(=O)O", "OC(=O)/C=C\\C(=O)O"),
+        ] {
+            let e_once = stock_identity(e_form);
+            let z_once = stock_identity(z_form);
+            assert_eq!(e_once, stock_identity(&e_once), "{e_form} must be stable");
+            assert_eq!(z_once, stock_identity(&z_once), "{z_form} must be stable");
+            assert_ne!(
+                e_once, z_once,
+                "E and Z isomers must not collapse to the same canonical form"
+            );
         }
     }
 }
