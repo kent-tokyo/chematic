@@ -199,7 +199,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.20.0
+# chematic v0.20.1
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -447,6 +447,12 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 ## Recent Development
 
+**v0.20.1** (2026-08-26): **Patch release — coupled E/Z canonicalization and standardize-path stereo-table correctness fixes, plus a new idempotency property test**
+- `chematic-smiles`: fixed a genuine correctness bug (issue #390) where an ambiguous stereo-alkene end's marker-carrier election could silently change a molecule's real E/Z geometry — confirmed via independent RDKit `MolToInchi`/`GetStereo()` cross-checks, not just internal self-consistency. Two independent root causes, both fixed; verified against the same 290-compound corpus from the v0.20.0 `remove_hydrogens` investigation (290/290, up from 289/290)
+- New test: `canon(parse(x)) == canon(parse(canon(parse(x))))` against the two 5,000-compound corpora already committed to this repo — found a real, previously-undetected defect (issue #395: a ring-closure marker ignored its partner atom's aromaticity), **fixed in this same release** (73/5000 + 57/5000 → 0/5000 + 0/5000, independent RDKit InChI cross-check clean)
+- `chematic-chem`: fixed 8 `standardize()` functions that dropped stereo/bond-direction side tables on an identity-preserving rebuild (issue #399) — a regression the v0.20.0 `remove_hydrogens` fix (#392) exposed by making the fallback reconstruction path fire far more often. `standardize()`-path idempotency restored to the pre-#392 baseline, then to 0/5000 + 4/5000 once combined with the issue #395 fix above (4 residuals confirmed unrelated, filed separately)
+- Full details in `CHANGELOG.md`'s `[0.20.1]` section
+
 **v0.20.0** (2026-08-25): **Stereo-safe 3D generation, a connectivity-ordered coordinate engine, and identity-correctness fixes for `remove_hydrogens`**
 - `chematic-3d`/`chematic-py`/`chematic-wasm`: `PipelineV2Config::stereo_safe(force_field_policy)` — a single-call configuration that resolves a real gap for ring-fused declared stereocenters (testosterone, cholesterol, and similar), where `repair_tetrahedral_center` previously had no coordinate to reflect an implicit H against. Measured on a 29-molecule × 5-seed corpus: 144/145 (99.3%) correct_and_ok, 0 silently wrong, testosterone/cholesterol both 5/5 seeds on every declared stereocenter
 - `chematic-3d`: `generate_coords_connectivity_ordered`, a new public alternative 3D placement engine (issues #256/#255) — places rings and chain atoms in true connectivity order rather than "all rings, then all chains." Measured: raw-geometry soundness 10/33 → 33/33 on a differential corpus with zero regressions, post-UFF bond-violation rate reaching 0.0000 (better than the legacy engine's own baseline). `generate_coords` itself is completely unchanged — ships as an available alternative, not a default-behavior switch; no existing caller is routed to it
@@ -609,7 +615,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.20.0)
+├── Cargo.toml                    workspace root (v0.20.1)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -663,7 +669,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.20.0},
+  version   = {0.20.1},
   year      = {2026},
 }
 ```
