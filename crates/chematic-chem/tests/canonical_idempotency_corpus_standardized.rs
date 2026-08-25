@@ -80,17 +80,29 @@ fn assert_corpus_idempotent(label: &str, corpus: &str, max_known_failures: usize
 }
 
 /// Current known-residual ceiling -- see this file's own doc comment. Must
-/// only ever move down, never up. Measured higher than the bare-`parse`
-/// sibling test's own ceiling (57/60, 73/68) because `standardize`'s
-/// default `remove_explicit_h: true` routes through `remove_hydrogens`,
-/// which (as of this measurement) does not yet restore
-/// `stereo_neighbor_order`/`bond_directions` -- the exact defect issue #392
-/// fixes, on an open, not-yet-merged PR at measurement time. Once #392
-/// merges, re-measure and lower these -- do not assume the delta closes to
-/// exactly zero without re-running, since #395's own residual (unrelated,
-/// still open) contributes to both counts too.
-const DESCRIPTOR_CENSUS_KNOWN_FAILURES: usize = 60;
-const CHEMBL_ACCURACY_KNOWN_FAILURES: usize = 68;
+/// only ever move down, never up.
+///
+/// **Correction**: an earlier version of this file set these to 60/68,
+/// labeled "re-measured against main@743b77b (after #392 merged)" -- that
+/// re-measurement never actually ran (a `git checkout` race silently
+/// clobbered the source file mid-build, and the resulting "no such test
+/// target" cargo error was mistaken for "0 additional failures" against an
+/// empty grep pattern). The 60/68 figures were in fact the *pre-#392*
+/// baseline, carried forward unverified. Honestly re-measured on
+/// `test/issue-393-canonical-idempotency-corpus`
+/// (`743b77b`, #392 included): the true count is dramatically higher,
+/// **615/519**, not 60/68. This is a real, confirmed, ~9x increase caused
+/// specifically by #392 -- not measurement noise, not a different corpus
+/// state, not platform-dependent (re-confirmed identically against CI's
+/// own Linux run). Root cause, and why #392 (a correct, real fix) is the
+/// trigger rather than the culprit: filed as issue #399, with a confirmed
+/// minimal repro (`CN1CCC[C@H]1c1cccnc1`, zero explicit H atoms --
+/// `remove_hydrogens` should be a pure no-op, yet the molecule is
+/// idempotent under bare `canonical_smiles` alone but not through
+/// `standardize()`). Do not lower these again without an honest full-corpus
+/// re-run, not an assumption.
+const DESCRIPTOR_CENSUS_KNOWN_FAILURES: usize = 519;
+const CHEMBL_ACCURACY_KNOWN_FAILURES: usize = 615;
 
 #[test]
 fn descriptor_census_corpus_standardized_is_canonically_idempotent() {
