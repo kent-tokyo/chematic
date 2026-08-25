@@ -1288,6 +1288,14 @@ fn place_component_connectivity_ordered(
 /// replacement; `generate_coords` itself calls none of this. Not yet wired
 /// up as any live caller's implementation (RFC §5 Phase 3 is the routing
 /// decision, deliberately deferred).
+///
+/// Deliberately `pub(crate)`, not `pub` -- this engine has a known,
+/// unfixed residual (issue #256/#255 Phase 2's new-island ring-entry-
+/// direction regression) and has not cleared Phase 3's go/no-go criteria.
+/// Its own differential-evaluation harness lives inside this crate (see
+/// `issue256_255_phase2_evaluation`, an ignored test, not an example) for
+/// exactly this reason -- reachable for internal measurement without
+/// committing to public SemVer surface before it's ready.
 #[allow(dead_code)]
 pub(crate) fn generate_coords_connectivity_ordered(mol: &Molecule) -> Coords3D {
     let n = mol.atom_count();
