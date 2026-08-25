@@ -18,6 +18,7 @@ pub mod coords;
 pub mod descriptors_3d;
 pub mod determine_bonds;
 pub mod dg;
+pub mod dg_connectivity_ordered;
 pub mod dg_fft;
 pub mod distance_geometry_v2;
 pub mod ensemble_v2;
@@ -57,6 +58,7 @@ pub use descriptors_3d::{
     autocorr_3d, getaway_descriptors, rdf_descriptors, whim_descriptors, whim_getaway_combined,
 };
 pub use dg::generate_coords;
+pub use dg_connectivity_ordered::generate_coords_connectivity_ordered;
 pub use ensemble_v2::{
     ConformerAttempt, ConformerDisposition, ConformerSuccess, EnsembleTermination,
     EnsembleV2Config, EnsembleV2ConfigError, EnsembleV2Result, embed_ensemble_v2,

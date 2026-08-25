@@ -1,13 +1,16 @@
 //! Issue #256/#255 Phase 2: differential evaluation of `generate_coords_connectivity_ordered`
+//! (now [`crate::dg_connectivity_ordered::generate_coords_connectivity_ordered`], `pub`)
 //! against legacy `generate_coords` (RFC `docs/rfcs/dg_connectivity_ordered_placement_rfc.md`
 //! §5's Phase 2, spec given directly by the user 2026-08-25).
 //!
-//! An ignored test, not an example: `generate_coords_connectivity_ordered` is
-//! deliberately `pub(crate)`, not `pub` -- it has a known, unfixed residual
-//! (the new-island ring-entry-direction regression this module's own first
-//! run found) and hasn't cleared Phase 3's go/no-go criteria, so it must not
-//! become public SemVer surface just to make a measurement harness reachable.
-//! Run manually with:
+//! Originally written while the engine was still `pub(crate)` (it had a
+//! known, unfixed new-island ring-entry-direction regression at the time and
+//! hadn't cleared Phase 3's go/no-go criteria), hence an ignored test rather
+//! than an example crate. The engine has since cleared those criteria (fixed
+//! by the new-island fix this same harness was used to measure) and moved to
+//! its own public module, `crate::dg_connectivity_ordered` -- kept as an
+//! internal ignored test regardless, since that's still the fastest way to
+//! re-run this specific differential comparison. Run manually with:
 //! `cargo test -p chematic-3d issue256_255_phase2_differential_evaluation --release -- --ignored --nocapture`
 //!
 //! Compares, per molecule, four states: legacy raw, new-engine raw, legacy →
@@ -54,7 +57,8 @@ use chematic_core::{AtomIdx, Molecule, MoleculeBuilder};
 use chematic_smiles::parse;
 
 use crate::Coords3D;
-use crate::dg::{generate_coords, generate_coords_connectivity_ordered};
+use crate::dg::generate_coords;
+use crate::dg_connectivity_ordered::generate_coords_connectivity_ordered;
 use crate::dg_fft::ideal_bond_length;
 use crate::minimize::{
     ForceFieldPolicy, MAX_SANE_BOND_LENGTH, MinimizeConfig, minimize_with_policy,
