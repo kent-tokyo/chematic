@@ -135,21 +135,53 @@ pub fn add_hydrogens(mol: &Molecule) -> Molecule {
     builder.build()
 }
 
-/// Return a new molecule in which explicit H atom nodes are removed and their
-/// bonds are converted back to implicit hydrogens.
+/// Whether atom `a` is a *removable* explicit hydrogen: element `H` with no
+/// isotope specified. An isotope-labeled hydrogen (`[2H]` deuterium, `[3H]`
+/// tritium, ...) is real, distinguishing chemical information -- akin to
+/// charge or element identity, not a notation choice -- so it is never
+/// removed by this function regardless of `element == H`. See
+/// [`remove_hydrogens`]'s own doc comment for the full rationale and the
+/// regression this guards (issue: isotope labels silently destroyed by
+/// unconditional H-node removal).
+fn is_removable_explicit_h(a: &Atom) -> bool {
+    a.element == Element::H && a.isotope.is_none()
+}
+
+/// Return a new molecule in which removable explicit H atom nodes (see
+/// [`is_removable_explicit_h`]) are removed and their bonds are converted
+/// back to implicit hydrogens.
 ///
-/// Only explicit hydrogen atoms (nodes with `element == H`) are removed.
-/// Chirality annotations and other atom properties are preserved.
+/// Only *non-isotopic* explicit hydrogen atoms are removed -- an
+/// isotope-labeled H (`[2H]`, `[3H]`, ...) is kept as an explicit atom node,
+/// exactly like any other heavy atom, since collapsing it into an ordinary
+/// atom's opaque `hydrogen_count` would silently discard the isotope label
+/// (there is no way to record "N implicit hydrogens, one of which is
+/// deuterium" in that compact representation). A heavy atom that retains an
+/// isotopic-H neighbor keeps that bond untouched; only bonds to a removed
+/// (non-isotopic) H are dropped. Chirality annotations and other atom
+/// properties are preserved.
 ///
-/// Heavy atoms that had explicit H neighbors will have `hydrogen_count` set
-/// to `None` so that implicit H is recomputed from valence.
+/// Heavy atoms that had *removable* explicit H neighbors will have
+/// `hydrogen_count` reset to `None` so implicit H is recomputed from
+/// valence -- correct even when the atom also keeps an explicit isotopic-H
+/// neighbor, since valence inference counts every bonded neighbor (isotopic
+/// or not) via its bond order, not by element identity (see
+/// `chematic_core::valence::valence_inferred_hcount`).
+///
+/// Declared tetrahedral/E-Z stereo *parity* is unaffected by this function
+/// either way (it lives on `Atom::chirality`/bond directions, copied
+/// verbatim); this function does not restore the parser-recorded
+/// `stereo_neighbor_order` side table for any atom, isotopic-H-bearing or
+/// not -- unlike [`add_hydrogens`], which explicitly does. That gap is
+/// pre-existing and out of scope here; see `chematic`'s canonical-SMILES
+/// stereo-round-trip issue tracker for the separate, broader fix.
 pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
     let mut builder = MoleculeBuilder::new();
     let mut remap: HashMap<AtomIdx, AtomIdx> = HashMap::new();
 
     for i in 0..mol.atom_count() {
         let old_idx = AtomIdx(i as u32);
-        if mol.atom(old_idx).element == Element::H {
+        if is_removable_explicit_h(mol.atom(old_idx)) {
             continue;
         }
         let mut atom = mol.atom(old_idx).clone();
@@ -161,12 +193,12 @@ pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
         remap.insert(old_idx, new_idx);
     }
 
-    // Copy heavy–heavy bonds only.
+    // Copy bonds, dropping only those touching a removed (non-isotopic) H.
     for i in 0..mol.bond_count() {
         let bond = mol.bond(BondIdx(i as u32));
-        let a1_is_h = mol.atom(bond.atom1).element == Element::H;
-        let a2_is_h = mol.atom(bond.atom2).element == Element::H;
-        if a1_is_h || a2_is_h {
+        let a1_removed = is_removable_explicit_h(mol.atom(bond.atom1));
+        let a2_removed = is_removable_explicit_h(mol.atom(bond.atom2));
+        if a1_removed || a2_removed {
             continue;
         }
         if let (Some(&na), Some(&nb)) = (remap.get(&bond.atom1), remap.get(&bond.atom2)) {
@@ -182,10 +214,247 @@ pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chematic_smiles::parse;
+    use chematic_smiles::{canonical_smiles, parse};
 
     fn mol(s: &str) -> Molecule {
         parse(s).unwrap_or_else(|e| panic!("parse '{s}': {e}"))
+    }
+
+    // ─── Isotopic-hydrogen preservation ────────────────────────────────────
+
+    fn h_isotopes(m: &Molecule) -> Vec<Option<u16>> {
+        let mut v: Vec<Option<u16>> = m
+            .atoms()
+            .filter(|(_, a)| a.element == Element::H)
+            .map(|(_, a)| a.isotope)
+            .collect();
+        v.sort();
+        v
+    }
+
+    #[test]
+    fn remove_hydrogens_keeps_fully_deuterated_methane() {
+        // CD4: 4 explicit D atom nodes, no plain H at all.
+        let orig = mol("[2H]C([2H])([2H])[2H]");
+        assert_eq!(orig.atom_count(), 5);
+        let result = remove_hydrogens(&orig);
+        assert_eq!(
+            result.atom_count(),
+            5,
+            "all 4 deuteriums must be kept as explicit atom nodes, not folded away"
+        );
+        assert_eq!(
+            h_isotopes(&result),
+            vec![Some(2), Some(2), Some(2), Some(2)]
+        );
+        let canon = canonical_smiles(&result);
+        assert_eq!(
+            canon.matches("[2H]").count(),
+            4,
+            "canonical SMILES must show all 4 deuteriums: {canon}"
+        );
+        assert!(
+            !canon.contains("[H]"),
+            "must not have degraded to plain explicit H: {canon}"
+        );
+    }
+
+    #[test]
+    fn remove_hydrogens_keeps_tritium() {
+        // Tritiated water analog: O bonded to one T and (implicitly) one
+        // ordinary H it never had explicitly -- OT.
+        let orig = mol("[3H]O");
+        let result = remove_hydrogens(&orig);
+        assert_eq!(
+            result.atom_count(),
+            2,
+            "the tritium atom must be kept, not removed"
+        );
+        assert_eq!(h_isotopes(&result), vec![Some(3)]);
+        let canon = canonical_smiles(&result);
+        assert!(canon.contains("[3H]"), "canonical SMILES lost T: {canon}");
+    }
+
+    #[test]
+    fn remove_hydrogens_mixed_deuterium_and_plain_hydrogen() {
+        // One explicit D + three explicit plain H on the same carbon
+        // (CHD3-style methane, fully explicit form). The plain H's must be
+        // removed (folded into hydrogen_count); the D must survive as an
+        // explicit neighbor; the carbon's total valence (4 bonds either way)
+        // must stay correct.
+        let orig = mol("[2H]C([H])([H])[H]");
+        assert_eq!(orig.atom_count(), 5);
+        let result = remove_hydrogens(&orig);
+        assert_eq!(
+            result.atom_count(),
+            2,
+            "C + the single kept deuterium; the 3 plain H must be removed"
+        );
+        assert_eq!(h_isotopes(&result), vec![Some(2)]);
+
+        let carbon = result
+            .atoms()
+            .find(|(_, a)| a.element == Element::C)
+            .map(|(idx, _)| idx)
+            .expect("carbon must survive");
+        // Valence must be satisfied by 1 explicit D bond + 3 recomputed
+        // implicit H -- not 4 implicit H (which would silently duplicate
+        // the D's own bond) and not 0 (which would under-saturate carbon).
+        assert_eq!(
+            chematic_core::implicit_hcount(&result, carbon),
+            3,
+            "carbon must recompute exactly 3 implicit H, correctly accounting for \
+             the kept deuterium's own bond -- not 4 (double-counting D) or fewer"
+        );
+
+        let canon = canonical_smiles(&result);
+        assert_eq!(canon.matches("[2H]").count(), 1, "{canon}");
+        assert!(!canon.contains("[H]"), "plain H must not survive: {canon}");
+        // total_formula() is deliberately isotope-blind (it keys purely by
+        // element symbol, per its own doc comment) -- 4 H-family atoms
+        // total either way (1 kept D + 3 recomputed implicit protium),
+        // matching the original explicit-everything form's own H count.
+        assert_eq!(result.total_formula(), orig.total_formula());
+        // formula_with_isotopes() *is* isotope-aware and must show the kept D.
+        assert!(
+            result.formula_with_isotopes().contains("2H"),
+            "isotope-aware formula must show the surviving deuterium: {}",
+            result.formula_with_isotopes()
+        );
+    }
+
+    #[test]
+    fn remove_hydrogens_heavy_isotopes_untouched_13c_14c_15n_18o() {
+        // None of these carry an isotope-tagged H at all -- confirms the
+        // fix's H-specific guard doesn't regress the already-correct
+        // heavy-atom-isotope behavior (unaffected before and after, since
+        // `element == H` was always false for these atoms).
+        for smi in ["[13CH4]", "[14CH4]", "[15NH3]", "[18OH2]"] {
+            let orig = mol(smi);
+            let before_isotope = orig
+                .atoms()
+                .find(|(_, a)| a.element != Element::H)
+                .and_then(|(_, a)| a.isotope);
+            let result = remove_hydrogens(&orig);
+            let after_isotope = result
+                .atoms()
+                .find(|(_, a)| a.element != Element::H)
+                .and_then(|(_, a)| a.isotope);
+            assert_eq!(
+                before_isotope, after_isotope,
+                "{smi}: heavy-atom isotope must be untouched by remove_hydrogens"
+            );
+            assert!(
+                result.atoms().all(|(_, a)| a.element != Element::H),
+                "{smi}: no explicit H atom node exists in bracket-implicit-H \
+                 form to begin with, so nothing should remain either way"
+            );
+        }
+    }
+
+    #[test]
+    fn remove_hydrogens_preserves_isotope_on_a_tetrahedral_stereocenter() {
+        // Alpha-deuterated alanine analog: a declared tetrahedral
+        // stereocenter with an explicit deuterium substituent (a real,
+        // common labeling pattern in metabolic-stability medicinal
+        // chemistry). Scope of this fix: the D atom and the stereocenter's
+        // atom-level `chirality` tag must both survive structurally sound
+        // (right atom/bond count, right element set) -- this test does NOT
+        // assert the exact `@`/`@@` parity is textually preserved, since
+        // `remove_hydrogens` does not restore the parser-recorded
+        // `stereo_neighbor_order` side table (a separate, pre-existing gap,
+        // out of scope for this isotope-only fix -- see the module doc
+        // comment on `remove_hydrogens`).
+        let orig = mol("N[C@@H]([2H])C(=O)O");
+        let stereocenter = orig
+            .atoms()
+            .find(|(_, a)| a.chirality != Chirality::None)
+            .map(|(idx, _)| idx)
+            .expect("a declared stereocenter must exist");
+        assert_ne!(orig.atom(stereocenter).chirality, Chirality::None);
+
+        let result = remove_hydrogens(&orig);
+        assert_eq!(h_isotopes(&result), vec![Some(2)], "the D must survive");
+        assert_eq!(
+            result.atom(stereocenter).chirality,
+            orig.atom(stereocenter).chirality,
+            "the stereocenter's own chirality tag (an Atom-level field, not \
+             the separate neighbor-order side table) must be copied verbatim"
+        );
+        assert!(
+            result
+                .neighbors(stereocenter)
+                .any(|(nb, _)| result.atom(nb).element == Element::H
+                    && result.atom(nb).isotope == Some(2)),
+            "the kept deuterium must still be bonded to the stereocenter"
+        );
+        // Structural soundness: same heavy-atom formula, same total H-family
+        // count (1 explicit D + whatever protium the other atoms need).
+        assert_eq!(result.total_formula(), orig.total_formula());
+    }
+
+    #[test]
+    fn standardize_round_trip_preserves_isotope() {
+        // The exact policy RENKIN's stock-identity pipeline uses
+        // (`remove_explicit_h: true`), run through the real, full
+        // `standardize()` entry point -- not just the bare `remove_hydrogens`
+        // helper -- to confirm the fix actually reaches consumers through
+        // that path, not only when called directly.
+        use crate::standardize::{StandardizeOptions, ZwitterionHandling, standardize};
+        let opts = StandardizeOptions {
+            canonical_tautomer: false,
+            neutralize_charges: false,
+            remove_explicit_h: true,
+            largest_fragment_only: false,
+            zwitterion_handling: ZwitterionHandling::Keep,
+        };
+        let orig = mol("[2H]C([2H])([2H])[2H]");
+        let result = standardize(&orig, &opts);
+        assert_eq!(
+            h_isotopes(&result),
+            vec![Some(2), Some(2), Some(2), Some(2)]
+        );
+        let canon = canonical_smiles(&result);
+        assert_eq!(canon.matches("[2H]").count(), 4, "{canon}");
+    }
+
+    #[test]
+    fn canonical_round_trip_preserves_isotope() {
+        // canon(parse(canon(parse(s)))) must still carry the isotope --
+        // the exact re-canonicalization scenario (RENKIN's `renkin doctor
+        // stock` reimport_idempotency check) that originally surfaced this
+        // bug: a real stock file's already-canonical line, canonicalized
+        // again, silently losing D/T on the very first pass, let alone a
+        // second one.
+        use crate::standardize::{StandardizeOptions, ZwitterionHandling, standardize};
+        let opts = StandardizeOptions {
+            canonical_tautomer: false,
+            neutralize_charges: false,
+            remove_explicit_h: true,
+            largest_fragment_only: false,
+            zwitterion_handling: ZwitterionHandling::Keep,
+        };
+        let stock_identity =
+            |s: &str| -> String { canonical_smiles(&standardize(&parse(s).unwrap(), &opts)) };
+
+        for smi in [
+            "[2H]C([2H])([2H])[2H]",
+            "[3H]O",
+            "[2H]C([2H])([2H])C(=O)N[C@H]1CCc2cc(OC)c(OC)c(OC)c2-c2ccc(OC)c(=O)cc21",
+        ] {
+            let once = stock_identity(smi);
+            let twice = stock_identity(&once);
+            assert_eq!(
+                once, twice,
+                "re-canonicalizing an already-canonical isotope-labeled SMILES \
+                 must be a no-op: {smi}"
+            );
+            assert!(
+                once.contains("[2H]") || once.contains("[3H]"),
+                "isotope must survive even one full standardize+canonicalize pass: \
+                 {smi} -> {once}"
+            );
+        }
     }
 
     #[test]
