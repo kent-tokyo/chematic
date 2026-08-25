@@ -125,7 +125,7 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.19.0
+# chematic v0.20.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-06, v0.4.22 vs RDKit 2026.03.3 --
@@ -303,6 +303,15 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 ---
 
 ## 最近の開発
+
+**v0.20.0**（2026-08-25）: **立体化学を保った3D構造生成、connectivity-ordered座標エンジン、`remove_hydrogens`の同一性正確性修正**
+- `chematic-3d`/`chematic-py`/`chematic-wasm`：`PipelineV2Config::stereo_safe(force_field_policy)`——環に組み込まれた宣言済み立体中心（テストステロン、コレステロール等）に対する実際のギャップを一括解決する設定。従来`repair_tetrahedral_center`は暗黙のHを反映すべき座標を持たなかった。29分子×5 seedコーパスで測定：144/145（99.3%）がcorrect_and_ok、silently wrongは0件、テストステロン・コレステロールとも全宣言立体中心・全seedで5/5成功
+- `chematic-3d`：`generate_coords_connectivity_ordered`——新しい公開の代替3D配置エンジン（issue #256/#255）。「まず全ての環、その後で鎖」ではなく、真の連結順序で環・鎖原子を配置。測定：raw geometryのsoundnessが差分コーパスで10/33→33/33（退行ゼロ）、post-UFFの結合長違反率は0.0000まで到達（旧エンジン自身の基準値より良好）。`generate_coords`自体は完全に無変更——デフォルト動作の切り替えではなく、選択可能な代替として提供。既存の呼び出し元はいずれも新エンジンへルーティングされていない
+- `chematic-3d`：`rescue_with_distance_geometry_v2`（UFF破局的破綻からの救済ブリッジ）が再試行時に宣言済みキラリティを強制するようになった（issue #210、部分修正）。58分子コーパスで退行ゼロ、既知の残存5分子のうち1件が新たに成功。このブリッジ単体では残り4分子は未解決（上記の`stereo_safe`では解決済み）
+- `chematic-chem`：`remove_hydrogens`が同位体標識水素（`[2H]`、`[3H]`）を破壊したり、呼び出しのたびに宣言済み立体・E/Z情報を静かに失ったりしなくなった——いずれも下流利用者の947万化合物規模の実世界コーパススキャンで発見された実際の出荷済みバグ。影響を受けない分子は変化しないことを確認済み、元の調査で見つかった同一性不一致290件中289件を解消
+- `chematic-py`：`Mol.conformer_ensemble_v2(config)`が`embed_ensemble_v2`（決定的な複数コンフォーマー生成、力場ごとにスコープされたエネルギーランキング、全試行のprovenance）を公開——既存の`conformer_ensemble()`を置き換えるのではなく併設。新しいbest-of-10ベンチマークにより大規模でも堅牢に動作することを確認（約250/265分子、RDKit比で中央値RMSD 2.147Å／TFD 0.344）——RDKitのコンフォーマー*選択*との一致は別の未確立の主張であることに注意
+- 既知の制約：`generate_coords`はまだ新エンジンへルーティングされていない、issue #210の残り4分子はこのブリッジ単体では未解決、issue #390（無関係の単一分子E/Z正確性残課題）は未解決、本リリース専用の新規全コーパス再測定は実施していない
+- 詳細は`CHANGELOG.md`の`[0.20.0]`section参照
 
 **v0.18.0**（2026-08-20）: **v0.17.0の7新形式へのPython/WASMバインディング、MMFF94 atom-typing修正、言語間一貫性の仕上げ**
 - `chematic-ff`：issue #337のアリールイソチオシアネート累積二重結合CSP炭素の誤タイプを修正（`getTotalDegree() == 2`、RDKitの実際のルールに合わせた厳密な上位集合）。残る6/8分子はRDKit自身のKekulization/MMFF芳香族性認識に起因する真正のアーティファクトと再診断し（negative-control fragmentsで直接検証）、誠実な残課題として開示

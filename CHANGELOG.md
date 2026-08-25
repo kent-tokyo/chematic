@@ -9,6 +9,103 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] — 2026-08-25
+
+### Added — `chematic-3d`/`chematic-py`/`chematic-wasm` (stereo-safe 3D generation, issue #291)
+
+- `PipelineV2Config::expand_implicit_h_through_pipeline`: runs
+  `embed_pipeline_v2`'s whole pipeline on a temporary
+  `add_hydrogens`-expanded copy of the molecule instead of the original,
+  closing a real gap for ring-fused declared stereocenters (testosterone,
+  cholesterol, and similar) where `repair_tetrahedral_center` previously had
+  no coordinate to reflect an implicit H against. `PipelineV2Result::coords`/
+  `final_stereo` stay scoped to the caller's original atom count either way;
+  other diagnostic fields describe the expanded internal working state,
+  documented explicitly on the struct. Stage 2/3 (torsion knowledge) always
+  run against the *original* molecule, not the expanded one — `add_hydrogens`
+  appending real graph nodes would otherwise silently reclassify e.g. a
+  secondary amine's hybridization for torsion-rule purposes, an interaction
+  this design deliberately avoids rather than leaves unmeasured.
+- `PipelineV2Config::stereo_safe(force_field_policy)`: a new convenience
+  constructor bundling `stereo_policy: RepairAndVerify` +
+  `enforce_chirality: true` + `expand_implicit_h_through_pipeline: true` —
+  setting only some of these three together silently falls back to a
+  configuration already measured unsound for exactly this molecule class.
+  Exposed identically through `chematic-py` (`PipelineV2Config.stereo_safe(...)`
+  staticmethod) and `chematic-wasm` (`pipeline_v2_stereo_safe_config_json(...)`,
+  since JS has no static-method equivalent).
+- **Measured**, 29-molecule × 5-seed regression corpus: **144/145 (99.3%)
+  correct_and_ok, 0 silently_wrong, 0 loud_failure_stereo** — testosterone
+  and cholesterol both now succeed on every declared stereocenter, every
+  seed (5/5 each). The one remaining failure is cholesterol's pre-existing,
+  unrelated UFF `CatastrophicBondBlowup` issue (not a stereo defect).
+- Existing callers unaffected: the new flag defaults to `false` at every
+  layer (Rust/Python/WASM), and `expand_implicit_h_through_pipeline: true`
+  without `enforce_chirality: true` is rejected with a typed
+  `InvalidConfiguration` error rather than silently doing nothing.
+
+### Added — `chematic-3d` (connectivity-ordered 3D coordinate generation, issues #256/#255)
+
+- `generate_coords_connectivity_ordered` (new `chematic_3d::dg_connectivity_ordered`
+  module, also re-exported at the crate root): a parallel rule-based 3D
+  placement engine, structurally ported from `chematic-depict`'s proven 2D
+  technique — a single worklist discovers and places rings and chain atoms
+  in true connectivity order (never "all rings, then all chains"), unlike
+  the legacy `generate_coords`'s `place_rings`, which places every ring in a
+  component before walking any chain atom (issue #256) and can produce
+  distorted fusion-seam bonds via a fixed `+y` extension (issue #255).
+- **Measured**, 33-molecule differential corpus (issue #277's 17 real
+  ChEMBL molecules + 8 RFC known-broken topologies + positive controls):
+  raw-geometry soundness **10/33 → 33/33**, zero regressions, all 17 of
+  #277's real molecules improved. Post-UFF-minimization: an initial
+  "new-island" ring-entry-direction regression (rings joined by a single
+  direct bond, e.g. biphenyl) was found and fixed via a 12-candidate
+  centroid-away-plus-clearance ranking — the fixed engine's post-UFF
+  `mean_viol15` reaches **0.0000**, past even the legacy engine's own
+  0.0055 baseline. Determinism (33/33 identical across repeated runs) and
+  atom-order-permutation-invariant quality both confirmed.
+- **`generate_coords` itself is completely unchanged** — this ships as an
+  available, independently-selectable alternative (not a default-behavior
+  switch or topology-based routing), the conservative and fully reversible
+  of the three options considered. No existing caller (`generate_coords_etkdg`,
+  `embed_pipeline_v2`, ...) is routed to the new engine by this release.
+  Issues #255/#256/#277 stay open — availability as public API is not the
+  same as a production routing decision.
+- Not yet exposed through Python/WASM bindings — Rust core first, per this
+  project's established pattern; deferred to a follow-up.
+
+### Fixed — `chematic-3d` (UFF-rescue path did not enforce declared chirality, issue #210)
+
+- `rescue_with_distance_geometry_v2` (the bridge that retries embedding
+  after a UFF catastrophic-bond-length-blowup) embedded its retry with
+  `enforce_chirality: false` unconditionally — a constraint that no longer
+  needed to hold once `EmbedParameters::materialize_implicit_h_for_chirality`
+  became available (issue #291, above) at this same low-level embed API.
+- **Measured** against the 58-molecule corpus this bridge's own tests use:
+  zero regressions across the full corpus, and one of the 5 residual
+  molecules this issue names (`atorvastatin_fragment`) newly succeeds with
+  declared stereochemistry preserved.
+- `naproxen_S`/`ibuprofen_S`/`testosterone`/`cholesterol` remain unfixed by
+  this specific change — this bridge has no post-minimization
+  repair-and-reverify step the way `embed_pipeline_v2`'s own stage 11 does,
+  so a UFF-introduced post-embed violation still falls through to the
+  original (honest) failure. Issue #210 stays open, partial fix only.
+
+### Added — benchmark (`chematic-3d` best-of-N conformer generation vs. RDKit)
+
+- New benchmark arm, `chematic_pipeline_v2_uff_best_of_10`: `embed_ensemble_v2`
+  (`count=10`, `UffOnly`, `max_attempts=1`, `rmsd_threshold=0.0`), matched
+  against `docs/rfcs/pipeline_v2_vs_rdkit_etkdgv3_benchmark.md`'s existing
+  `rdkit_etkdgv3_best_of_n` arm so "10 attempts, best by energy" means the
+  same thing on both sides.
+- **Measured**: ~250/265 molecules successful on both sides; median paired
+  RMSD **2.147 Å**, median TFD **0.344** against RDKit's own best-of-10
+  `EmbedMultipleConfs`. This confirms `embed_ensemble_v2` (A2) works
+  robustly at this scale, but **does not** establish that chematic's
+  energy-based conformer *selection* picks the same conformer RDKit would
+  from the same pool — that's a separate, unestablished claim this
+  benchmark's numbers alone don't support.
+
 ### Fixed — `chematic-chem` `remove_hydrogens` (isotope labels silently destroyed)
 
 - `remove_hydrogens` previously removed *any* atom with `element == H`,
@@ -134,9 +231,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   MMFF94-zero-energy defect from PR #369). The docstring's own duplicated
   intro paragraph (a pre-existing copy-paste artifact, unrelated to this
   change) was cleaned up in the same edit.
-- Not done this round, by design: no WASM bindings for `embed_ensemble_v2`,
-  no version bump, and no best-of-N-vs-RDKit benchmark arm — those are the
-  explicitly planned next steps, not part of this change.
+- Not done this round, by design: no WASM bindings for `embed_ensemble_v2`.
+  The best-of-N-vs-RDKit benchmark arm planned as a next step here has
+  since landed — see "Added — benchmark" below.
 
 ### Fixed — documentation (correction to a v0.19.0 changelog entry)
 
@@ -155,6 +252,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   released changelog text itself, per this project's convention of never
   silently editing a shipped version's own historical record — see the
   entry below for what v0.19.0 originally said.
+
+### Known limitations in this release
+
+- `generate_coords` (the legacy 3D placement engine) is **not** routed to
+  the new connectivity-ordered engine — no existing caller's default
+  behavior changed. See "Added — connectivity-ordered 3D coordinate
+  generation" above.
+- Issue #210's remaining 4 residual molecules (`naproxen_S`, `ibuprofen_S`,
+  `testosterone`, `cholesterol`) are still unfixed via the UFF-rescue
+  bridge specifically — `stereo_safe` (this release's own headline feature,
+  above) already resolves them through `embed_pipeline_v2`'s own path.
+- Issue #390 (a single-molecule coupled/shared-bond E/Z correctness
+  residual, independent of every fix in this release) remains open.
+- The best-of-10 conformer benchmark establishes that `embed_ensemble_v2`
+  works robustly at scale; it does **not** establish RDKit conformer-
+  *selection* parity — see "Added — benchmark" above for the exact
+  distinction.
+- This release's evidence is drawn from measurements already taken during
+  development (29-molecule × 5-seed stereo sweep, 33-molecule connectivity
+  differential, 265-molecule best-of-10 benchmark, 58-molecule UFF-rescue
+  sweep, the 9.47M-compound downstream identity investigation) — no fresh
+  full-corpus re-measurement was run solely for this release, per this
+  project's own "minimize heavy measurements" policy.
 
 ## [0.19.0] — 2026-08-23
 
