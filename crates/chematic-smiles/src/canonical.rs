@@ -506,8 +506,14 @@ pub(crate) struct CanonicalWriter<'a> {
     ranks: &'a [u64],
     written: Vec<bool>,
     ring_bonds: HashSet<BondIdx>,
-    /// (ring_num, bond_order, ring_partner_atom, physical_bond)
-    atom_ring_nums: HashMap<AtomIdx, Vec<(u32, BondOrder, AtomIdx, BondIdx)>>,
+    /// (ring_num, is_open_side, ring_partner_atom, physical_bond). Deliberately
+    /// does NOT store a precomputed `BondOrder`: which endpoint of `bidx` is
+    /// "open" vs "close" is fixed at discovery time (`dfs_mark`), but the
+    /// actual `/`/`\` token can only be correctly computed once written --
+    /// see `normalize_ez`'s doc comment for why baking in a write-direction
+    /// re-orientation this early corrupts E/Z groups spanning bonds visited
+    /// in different directions (issue #390).
+    atom_ring_nums: HashMap<AtomIdx, Vec<(u32, bool, AtomIdx, BondIdx)>>,
     next_ring: u32,
     out: String,
     /// Union-find groups of directional (`/`/`\`) bonds that jointly encode
@@ -1061,6 +1067,17 @@ impl<'a> CanonicalWriter<'a> {
     ) -> Option<HashMap<BondIdx, BondOrder>> {
         let mut votes: HashMap<BondIdx, BondOrder> = HashMap::new();
         for (i, &end) in ordered.iter().enumerate() {
+            // A carrier election is not geometry-neutral when the losing
+            // (demoted) candidate is itself load-bearing for a *different*
+            // stereo double bond -- demoting it would silently strip that
+            // other double bond's own explicit geometry, and electing the
+            // winner would (via `build_ez_groups`) hand that other double
+            // bond's side a spurious value it never had (issue #390's actual
+            // root cause). See `is_load_bearing_elsewhere`.
+            let other_bidx = subs[i][1 - choice[i]].1;
+            if self.is_load_bearing_elsewhere(other_bidx, end) {
+                return None;
+            }
             for (bidx, value) in self.end_votes(end, &subs[i], pref[i], ref_up[i], choice[i]) {
                 match votes.get(&bidx) {
                     None => {
@@ -1072,6 +1089,55 @@ impl<'a> CanonicalWriter<'a> {
             }
         }
         Some(votes)
+    }
+
+    /// True if `bidx` (one of `owning_end`'s own two candidate substituent
+    /// bonds) carries a genuine raw input mark *and* also flanks a
+    /// *different* stereo double bond's end that is itself *not* ambiguous
+    /// (exactly one substituent, so `bidx` is its ONLY possible source of
+    /// geometric information) -- i.e. electing `owning_end`'s *other*
+    /// candidate as carrier would demote `bidx` to a plain bond, silently
+    /// stripping that other, unrelated double bond of the one explicit mark
+    /// it has no alternative way to recover.
+    ///
+    /// Deliberately excludes the case where the far end is itself ambiguous
+    /// (2 substituents, i.e. also in [`Self::compute_stereo_alkene_ends`]):
+    /// such an end has its own resolution machinery (possibly jointly, via
+    /// [`Self::coupling_components`]/[`Self::resolve_component_jointly`])
+    /// and is not solely dependent on this one candidate's raw mark --
+    /// forbidding its demotion here would block genuinely coupled,
+    /// resolvable systems (`EZ_SHARED_CARRIER_FULLY_RESOLVED`) for no
+    /// reason, since a real conflict there is already caught by
+    /// `evaluate_choice`'s own vote-consistency check.
+    ///
+    /// This is deliberately narrower than "does `bidx` have a raw mark":
+    /// demoting a raw-marked candidate that flanks nothing else (the common,
+    /// intended case `resolve_ez_markers` exists for -- picking whichever of
+    /// two candidates the canonical rank prefers, regardless of which one
+    /// the input happened to mark) must stay allowed. Only a candidate that
+    /// is *also* someone else's sole, non-ambiguous load-bearing mark is
+    /// protected.
+    fn is_load_bearing_elsewhere(&self, bidx: BondIdx, owning_end: AtomIdx) -> bool {
+        if self.raw_input_direction(bidx).is_none() {
+            return false;
+        }
+        let bond = self.mol.bond(bidx);
+        let Some(other_end) = bond.other(owning_end) else {
+            return false;
+        };
+        if Self::substituents(self.mol, other_end).len() != 1 {
+            return false; // other_end is itself ambiguous -- has its own resolution path
+        }
+        self.mol.neighbors(other_end).any(|(_, nb_bidx)| {
+            nb_bidx != bidx
+                && self.mol.bond(nb_bidx).order == BondOrder::Double
+                && Self::end_has_substituent(self.mol, other_end)
+                && self
+                    .mol
+                    .bond(nb_bidx)
+                    .other(other_end)
+                    .is_some_and(|far| Self::end_has_substituent(self.mol, far))
+        })
     }
 
     /// One end's own votes on its two candidate bonds, given its
@@ -1167,10 +1233,47 @@ impl<'a> CanonicalWriter<'a> {
         }
     }
 
-    /// Normalize a directional bond order so the first occurrence of each
-    /// E/Z system in canonical write order is always `Up` (`/`); every other
-    /// bond in the system is flipped consistently to preserve geometry.
-    fn normalize_ez(&mut self, bidx: BondIdx, order: BondOrder) -> BondOrder {
+    /// Normalize a directional bond so every member of its E/Z system is
+    /// flipped consistently -- in mol-relative (`atom1`->`atom2`) terms -- to
+    /// preserve geometry, with the group's shared sign pinned so the first
+    /// occurrence in canonical write order prints as `Up` (`/`).
+    ///
+    /// This function does two genuinely different jobs, on two different
+    /// frames, and conflating them is exactly how issue #390 happened:
+    ///
+    /// 1. **Propagation** (every call): flip [`Self::effective_order`] --
+    ///    mol-relative, topology-fixed -- by the group's shared bit.
+    ///    `build_ez_groups` unions bonds by molecule topology alone, so this
+    ///    MUST run in that same topology-fixed frame. A bond's `atom1`/
+    ///    `atom2` struct fields are fixed at parse/build time, but which
+    ///    endpoint a *specific* DFS write visits first varies per occurrence
+    ///    and per candidate canonical numbering; flipping an
+    ///    already-write-oriented value mixes bonds visited "forward" with
+    ///    bonds visited "backward" relative to their own storage, silently
+    ///    inverting the very same/different relationship this function
+    ///    exists to preserve whenever a group spans bonds with different
+    ///    write directions (confirmed against RDKit: a coupled system with
+    ///    one member's DFS direction reversed relative to another's produced
+    ///    a genuinely wrong, not just differently spelled, configuration).
+    /// 2. **Anchoring** (first call per group only): seed the group's shared
+    ///    bit from whether *this specific occurrence*, re-oriented for
+    ///    `from_atom` via [`Self::reorient_for_write`], would print as
+    ///    `Down` -- because the point of the bit is to pin a *printed*
+    ///    character, which only exists in write-perspective terms. Seeding
+    ///    it from the mol-relative value instead pins an artifact of
+    ///    whichever input text happened to be parsed (`atom1`/`atom2`
+    ///    ordering is parse-order, not a canonical property): a different
+    ///    spelling of the same molecule can swap `atom1`/`atom2`, seed a
+    ///    different bit, and sign-flip the entire group -- geometry still
+    ///    internally consistent (propagation was already fixed), but no
+    ///    longer canonical or idempotent. `from_atom` is used **only** here,
+    ///    never mixed into propagation.
+    ///
+    /// Every call site MUST separately apply [`Self::reorient_for_write`] to
+    /// this function's *return value* for its own occurrence -- passing
+    /// `from_atom` here does not do that; it only seeds the anchor.
+    fn normalize_ez(&mut self, bidx: BondIdx, from_atom: AtomIdx) -> BondOrder {
+        let order = self.effective_order(bidx);
         if !matches!(order, BondOrder::Up | BondOrder::Down) {
             return order;
         }
@@ -1184,7 +1287,15 @@ impl<'a> CanonicalWriter<'a> {
             }
             x
         };
-        let flip = *self.ez_flip.entry(root).or_insert(order == BondOrder::Down);
+        let flip = if let Some(&f) = self.ez_flip.get(&root) {
+            f
+        } else {
+            let bond_atom1 = self.mol.bond(bidx).atom1;
+            let printed = Self::reorient_for_write(bond_atom1, from_atom, order);
+            let seed = printed == BondOrder::Down;
+            self.ez_flip.insert(root, seed);
+            seed
+        };
         if flip {
             match order {
                 BondOrder::Up => BondOrder::Down,
@@ -1193,6 +1304,32 @@ impl<'a> CanonicalWriter<'a> {
             }
         } else {
             order
+        }
+    }
+
+    /// Re-orient a mol-relative (`atom1`->`atom2`) directional order for
+    /// reading "from `from_atom` toward the bond's other endpoint" -- the
+    /// per-occurrence step every [`Self::normalize_ez`] caller must apply to
+    /// its return value. Mirrors `crate::writer::direction_from` exactly
+    /// (kept as a second copy since this one only ever runs after
+    /// `normalize_ez`, which has no equivalent in the plain writer).
+    fn reorient_for_write(bond_atom1: AtomIdx, from_atom: AtomIdx, order: BondOrder) -> BondOrder {
+        match order {
+            BondOrder::Up => {
+                if bond_atom1 == from_atom {
+                    BondOrder::Up
+                } else {
+                    BondOrder::Down
+                }
+            }
+            BondOrder::Down => {
+                if bond_atom1 == from_atom {
+                    BondOrder::Down
+                } else {
+                    BondOrder::Up
+                }
+            }
+            other => other,
         }
     }
 
@@ -1311,54 +1448,22 @@ impl<'a> CanonicalWriter<'a> {
                 self.ring_bonds.insert(bidx);
                 let rn = self.next_ring;
                 self.next_ring += 1;
-                let bond = self.mol.bond(bidx);
-                // A ring bond forced to Aromatic (e.g. adjacent to an
-                // exocyclic C=N) may carry its true E/Z direction stashed
-                // separately rather than in `order` itself; a bond flanking
-                // a tri-/tetra-substituted stereo alkene may instead carry
-                // `resolve_ez_markers`'s resolved choice. `effective_order`
-                // checks both, in that priority, before falling back to the
-                // bond's own real order.
-                let effective_order = self.effective_order(bidx);
-                // Direction seen from `neighbor` (the open atom) going toward `atom`.
-                let order_at_open = match effective_order {
-                    BondOrder::Up => {
-                        if bond.atom1 == neighbor {
-                            BondOrder::Up
-                        } else {
-                            BondOrder::Down
-                        }
-                    }
-                    BondOrder::Down => {
-                        if bond.atom1 == neighbor {
-                            BondOrder::Down
-                        } else {
-                            BondOrder::Up
-                        }
-                    }
-                    other => other,
-                };
-                // Suppress stereo at the close atom to avoid conflicting
-                // ring-closure chars, falling back to the bond's own plain
-                // (non-directional) order: `Aromatic` unchanged for a
-                // stashed/resolved direction (implicit ring bond, no char),
-                // `Single` for a genuine literal directional single bond.
-                let order_at_close = match effective_order {
-                    BondOrder::Up | BondOrder::Down => Self::plain_order(bond.order),
-                    other => other,
-                };
-                self.atom_ring_nums.entry(neighbor).or_default().push((
-                    rn,
-                    order_at_open,
-                    atom,
-                    bidx,
-                )); // partner = close atom
-                self.atom_ring_nums.entry(atom).or_default().push((
-                    rn,
-                    order_at_close,
-                    neighbor,
-                    bidx,
-                )); // partner = open atom
+                // Discovery only decides ring numbering and which endpoint is
+                // "open" (carries the marker, written when `neighbor` is
+                // reached) vs "close" (suppressed, written when `atom` is
+                // reached) -- NOT the actual `/`/`\` token. That is computed
+                // later, in `write_chain`, from `normalize_ez`'s mol-relative
+                // result re-oriented for whichever atom is actually being
+                // written at consumption time (see `normalize_ez`'s doc
+                // comment and `atom_ring_nums`'s field comment).
+                self.atom_ring_nums
+                    .entry(neighbor)
+                    .or_default()
+                    .push((rn, true, atom, bidx)); // open side; partner = close atom
+                self.atom_ring_nums
+                    .entry(atom)
+                    .or_default()
+                    .push((rn, false, neighbor, bidx)); // close side; partner = open atom
             }
         }
 
@@ -1388,8 +1493,27 @@ impl<'a> CanonicalWriter<'a> {
 
         // Ring-closure digits.
         if let Some(rings) = self.atom_ring_nums.remove(&atom) {
-            for (rn, bond_order, _partner, bidx) in rings {
-                let bond_order = self.normalize_ez(bidx, bond_order);
+            for (rn, is_open, _partner, bidx) in rings {
+                // The open side carries the marker (normalize_ez's
+                // mol-relative result, re-oriented for `atom` -- the
+                // endpoint actually being written right now); the close
+                // side is always suppressed to its plain, non-directional
+                // order to avoid printing conflicting ring-closure chars at
+                // both ends of the same back-edge. Mirrors dfs_mark's
+                // former order_at_open/order_at_close split exactly, just
+                // computed now instead of at discovery time (see
+                // `normalize_ez`'s doc comment for why).
+                let bond_order = if is_open {
+                    let normalized = self.normalize_ez(bidx, atom);
+                    Self::reorient_for_write(self.mol.bond(bidx).atom1, atom, normalized)
+                } else {
+                    match self.effective_order(bidx) {
+                        BondOrder::Up | BondOrder::Down => {
+                            Self::plain_order(self.mol.bond(bidx).order)
+                        }
+                        other => other,
+                    }
+                };
                 let bond_order = suppress_standalone_wedge(self.mol, bidx, bond_order);
                 let atom_arom = self.mol.atom(atom).aromatic;
                 if !(bond_order == BondOrder::Aromatic && atom_arom)
@@ -1420,7 +1544,7 @@ impl<'a> CanonicalWriter<'a> {
         }
 
         // Tree-edge children, sorted canonically.
-        let mut children: Vec<(AtomIdx, BondIdx, BondOrder)> = self
+        let mut children: Vec<(AtomIdx, BondIdx)> = self
             .mol
             .neighbors(atom)
             .filter(|(nb, bidx)| {
@@ -1428,45 +1552,24 @@ impl<'a> CanonicalWriter<'a> {
                     && !self.written[nb.0 as usize]
                     && !self.ring_bonds.contains(bidx)
             })
-            .map(|(nb, bidx)| {
-                let bond = self.mol.bond(bidx);
-                // See the ring-closure site above: `effective_order` applies
-                // `resolve_ez_markers`'s resolved carrier choice and the
-                // aromatic-bond-direction stash, both ahead of the bond's
-                // own literal order.
-                let effective_order = self.effective_order(bidx);
-                // Direction seen from `atom` going toward `nb`.
-                let order = match effective_order {
-                    BondOrder::Up => {
-                        if bond.atom1 == atom {
-                            BondOrder::Up
-                        } else {
-                            BondOrder::Down
-                        }
-                    }
-                    BondOrder::Down => {
-                        if bond.atom1 == atom {
-                            BondOrder::Down
-                        } else {
-                            BondOrder::Up
-                        }
-                    }
-                    other => other,
-                };
-                (nb, bidx, order)
-            })
             .collect();
 
         // Sort children by canonical rank (ascending → highest rank = main chain).
         children.sort_by(|&(a, ..), &(b, ..)| self.canonical_cmp(a, b));
 
         let n = children.len();
-        for (i, (child, bidx, bond_order)) in children.into_iter().enumerate() {
-            // Normalized here (not in the map above) so the flip decision is
+        for (i, (child, bidx)) in children.into_iter().enumerate() {
+            // Normalized here (not before sorting) so the flip decision is
             // made in true left-to-right write order: this atom's earlier
             // (lower-rank) children have already fully recursed by the time
-            // a later sibling's direction is decided.
-            let bond_order = self.normalize_ez(bidx, bond_order);
+            // a later sibling's direction is decided. `effective_order`
+            // applies `resolve_ez_markers`'s resolved carrier choice and the
+            // aromatic-bond-direction stash, both ahead of the bond's own
+            // literal order; `normalize_ez` (mol-relative) must run before
+            // re-orienting for `atom`'s write direction, never after -- see
+            // its doc comment.
+            let normalized = self.normalize_ez(bidx, atom);
+            let bond_order = Self::reorient_for_write(self.mol.bond(bidx).atom1, atom, normalized);
             let bond_order = suppress_standalone_wedge(self.mol, bidx, bond_order);
             let is_last = i == n - 1;
             let parent_arom = self.mol.atom(atom).aromatic;
@@ -3584,6 +3687,149 @@ mod tests {
                  E/Z geometry fact"
             );
         }
+    }
+
+    /// Issue #390 witness: `O/N=C/C(C=N/O)=N\NC`. A prior version of
+    /// `normalize_ez` silently changed this molecule's atom3=atom7 double
+    /// bond from Z to E -- confirmed genuinely wrong (not just a different,
+    /// equally valid spelling) via an independent RDKit `MolToInchi`/
+    /// `GetStereo()` check, before any fix existed.
+    ///
+    /// Root cause, in two parts:
+    /// 1. `resolve_ez_markers`'s carrier election for the ambiguous end
+    ///    (2 candidates: the bond toward the atom1=atom2 double bond's own
+    ///    side, raw-marked and load-bearing for atom1=atom2's geometry; the
+    ///    bond toward the atom4=atom5 double bond's side, unmarked --
+    ///    atom4=atom5 is itself genuinely undefined in this molecule, only
+    ///    one of its two flanking bonds ever carries a mark, confirmed via
+    ///    InChI's own `?` stereo descriptor for it) could elect the
+    ///    unmarked candidate. That demotes the marked one -- silently
+    ///    under-specifying atom1=atom2 -- while handing atom4=atom5 a
+    ///    geometry it never had. Neither move is neutral. Fixed by
+    ///    [`Self::is_load_bearing_elsewhere`]: an election must not demote a
+    ///    raw-marked candidate that is some other, non-ambiguous double
+    ///    bond's only geometric anchor.
+    /// 2. Independently, `build_ez_groups`/`normalize_ez` chained the
+    ///    elected carrier's group together with atom4=atom5's own group
+    ///    (both touch the same connecting bond), and the group's sign was
+    ///    seeded from a value that had already been re-oriented for one
+    ///    specific DFS write direction -- which bond within a group gets
+    ///    visited "forward" vs "backward" varies across candidate canonical
+    ///    numberings for reasons unrelated to this bond's own geometry, so
+    ///    the seeded sign could vary too. Fixed by splitting `normalize_ez`
+    ///    into a mol-relative propagation step (always operates on
+    ///    [`Self::effective_order`], never an already-write-oriented value)
+    ///    and a write-perspective anchor-seeding step (uses the write atom
+    ///    ONLY to decide the group's shared sign once, never to decide what
+    ///    gets propagated).
+    #[test]
+    fn issue390_witness_geometry_preserved_and_stable() {
+        let smi = "O/N=C/C(C=N/O)=N\\NC";
+        let mol = parse(smi).unwrap();
+        let canon = canonical_smiles(&mol);
+        assert_eq!(
+            canon, smi,
+            "canonical form must match this already-canonically-written input exactly"
+        );
+
+        let reparsed = parse(&canon).unwrap();
+        let canon_twice = canonical_smiles(&reparsed);
+        assert_eq!(
+            canon, canon_twice,
+            "canonical(canonical(x)) must equal canonical(x)"
+        );
+
+        let before_geo = geometry_fingerprint(&mol);
+        let after_geo = geometry_fingerprint(&reparsed);
+        assert_eq!(
+            before_geo, after_geo,
+            "E/Z geometry must be preserved by canonicalization"
+        );
+        assert!(
+            before_geo.iter().any(|f| f.is_some()),
+            "test setup sanity: witness must have at least one defined E/Z fact"
+        );
+    }
+
+    /// The issue #390 witness's ambiguous end has exactly one *safe*
+    /// candidate: the bond toward atom1=atom2, which is load-bearing for
+    /// that unrelated double bond's own geometry. Its sibling (toward
+    /// atom4=atom5, itself undefined) is therefore NOT a valid
+    /// geometry-preserving alternate carrier -- moving the mark there would
+    /// silently strip atom1=atom2's geometry, exactly the corruption
+    /// [`Self::is_load_bearing_elsewhere`] exists to forbid.
+    /// [`alternate_ez_markings`] independently verifies geometry
+    /// preservation before offering an alternate, so it returning none here
+    /// is itself a direct, positive confirmation the fix is in effect --
+    /// not a vacuous negative.
+    #[test]
+    fn issue390_witness_has_no_valid_alternate_marking() {
+        let mol = parse("O/N=C/C(C=N/O)=N\\NC").unwrap();
+        let alternates = alternate_ez_markings(&mol);
+        assert!(
+            alternates.is_empty(),
+            "the only other candidate is load-bearing for atom1=atom2's own geometry; \
+             moving the mark there must not be offered as a valid alternate"
+        );
+    }
+
+    /// Mirror/stereoisomer distinctness: the issue #390 witness's E and Z
+    /// forms must remain genuinely distinguishable after canonicalization,
+    /// never collapse into the same string. Direct regression test for a
+    /// mid-investigation defect (never shipped) where an earlier attempted
+    /// fix made canonicalization informationally lossy for this coupled
+    /// shape -- both the true-Z and true-E spellings canonicalized to
+    /// identical output regardless of which geometry was actually input.
+    #[test]
+    fn issue390_mirror_stereoisomers_stay_distinct() {
+        let z = canonical_smiles(&parse("O/N=C/C(C=N/O)=N\\NC").unwrap());
+        let e = canonical_smiles(&parse("O/N=C/C(C=N/O)=N/NC").unwrap());
+        assert_ne!(
+            z, e,
+            "genuinely different E/Z witnesses must not canonicalize to the same string"
+        );
+    }
+
+    /// Atom-order permutation invariance for the issue #390 witness: every
+    /// deterministic relabeling [`ez_carrier_test_variants`] produces
+    /// (identity, reversed, 16 seeded Fisher-Yates shuffles, plus any
+    /// geometry-preserving alternate markings) must canonicalize to the
+    /// identical string, and that string must be idempotent and preserve
+    /// the input's own E/Z geometry.
+    #[test]
+    fn issue390_witness_permutation_invariant() {
+        let mol = parse("O/N=C/C(C=N/O)=N\\NC").unwrap();
+        let variants = ez_carrier_test_variants(&mol);
+        assert!(
+            variants.len() >= 18,
+            "sanity: at least 16 deterministic + 2 fixed relabelings"
+        );
+
+        let outputs: Vec<String> = variants.iter().map(canonical_smiles).collect();
+        let unique: HashSet<&String> = outputs.iter().collect();
+        assert_eq!(
+            unique.len(),
+            1,
+            "expected ONE canonical output across {} relabelings/markings, got {}: {:?}",
+            variants.len(),
+            unique.len(),
+            unique
+        );
+
+        let canon = outputs[0].clone();
+        let reparsed = parse(&canon).unwrap_or_else(|e| panic!("reparse of '{canon}': {e}"));
+        assert_eq!(
+            canonical_smiles(&reparsed),
+            canon,
+            "canonical(canonical(x)) must equal canonical(x)"
+        );
+
+        let before_geo = geometry_fingerprint(&mol);
+        let after_geo = geometry_fingerprint(&reparsed);
+        assert_eq!(
+            before_geo, after_geo,
+            "E/Z geometry must be preserved across permutation + canonicalization"
+        );
     }
 
     /// Direct empirical check of the invariant [`Self::resolve_component_

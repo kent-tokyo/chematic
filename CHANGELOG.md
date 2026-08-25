@@ -194,6 +194,88 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   configuration, and Boc-protecting-group / fused-bicyclic-ring
   regression cases.
 
+### Fixed — `chematic-smiles` (issue #390: coupled E/Z canonicalization could silently change geometry)
+
+- Root cause, two independent defects in `CanonicalWriter`'s E/Z marker
+  machinery, both needed to reproduce the filed witness
+  (`O/N=C/C(C=N/O)=N\NC`, whose atom3=atom7 double bond was silently
+  written as E instead of the true Z — confirmed via independent RDKit
+  `MolToInchi`/`GetStereo()`, not just chematic's own self-consistency):
+  1. `resolve_ez_markers`'s carrier election for an ambiguous end could
+     elect a candidate bond whose sibling was raw-marked and load-bearing
+     for a *different*, unrelated double bond — demoting the sibling
+     silently under-specified that other double bond, while the elected
+     candidate simultaneously handed a *third*, genuinely undefined
+     double bond (confirmed via InChI's own `?` stereo descriptor for it)
+     a geometry it never had. Neither the demotion nor the promotion is
+     geometry-neutral, and picking between them at random (by whichever
+     canonical-numbering trial happened to explore first) is exactly how
+     the witness's true geometry got lost. Fixed by
+     `CanonicalWriter::is_load_bearing_elsewhere`: an election must not
+     demote a raw-marked candidate that is some other, non-ambiguous
+     double bond's only geometric anchor. Deliberately narrower than "has
+     a raw mark" — a candidate whose sibling is *itself* ambiguous (has
+     its own resolution path, e.g. a genuinely coupled/shared-carrier
+     system) is not protected, so legitimate coupled resolution is
+     unaffected.
+  2. Independently, `normalize_ez` decided a shared E/Z group's sign from
+     a value that had already been re-oriented for one specific DFS write
+     direction. Which end of a directional bond a given canonicalization
+     trial happens to write "forward" vs "backward" varies across
+     candidate atom numberings for reasons unrelated to that bond's own
+     geometry (a tie elsewhere in the molecule), so the seeded sign could
+     vary too, non-deterministically flipping an otherwise-correct group.
+     Fixed by splitting `normalize_ez` into a mol-relative propagation
+     step (always flips `effective_order`, the bond's own topology-fixed
+     `atom1`→`atom2` reading, never an already-write-oriented value) and a
+     write-perspective anchor-seeding step (the write atom decides the
+     group's shared sign exactly once, and only that — it never enters
+     propagation). Found and fixed second, after the first fix alone
+     restored correctness for the filed witness but broke canonical-form
+     stability (10 independently-rooted, InChI-confirmed-equivalent
+     respellings of the witness converged to only 1 string before this
+     defect existed in the code at all — introducing defect #1's fix
+     alone dropped that to 3 non-idempotent strings; both fixes together
+     restore 10/10 convergence).
+- An intermediate, never-shipped attempt at defect #2 (seeding purely
+  from write-perspective, dropping the mol-relative anchor entirely)
+  restored canonical-form stability but silently made canonicalization
+  *informationally lossy* for this shape — the witness's true-Z and a
+  hand-verified true-E mirror both canonicalized to the identical string,
+  each losing its own stereo identity in different directions. Caught by
+  a mirror-distinctness regression test before being combined with defect
+  #1's fix into what actually shipped; not a real intermediate state of
+  the code, called out here only because the failure mode (idempotent AND
+  self-consistent, yet wrong) is exactly the kind that hides behind a
+  weaker "does it round-trip" check alone.
+- Verified against the real 290-compound corpus from the originating
+  investigation (eMolecules, 9.47M compounds,
+  `renkin doctor stock reimport_idempotency`) two ways: idempotence
+  (**290/290**, up from 289/290 before this fix) and, independently, that
+  each record's chematic canonical form reparses in RDKit to the exact
+  InChIKey recorded for that record at investigation time (**290/290**) —
+  the corpus itself is not committed (see PR #389's own note on this), only
+  aggregate counts.
+- New tests: the witness's own geometry preserved and stable, its only
+  safe alternate-carrier candidate confirmed to have none available
+  (`alternate_ez_markings` returns empty — the sibling candidate is
+  load-bearing elsewhere, so no valid respelling moves the mark there),
+  mirror-image (E vs Z) distinctness, and full atom-order-permutation
+  invariance across 18 relabelings/markings via the same
+  `ez_carrier_test_variants` harness `EZ_SHARED_CARRIER_FULLY_RESOLVED`'s
+  own regression test uses.
+- Not addressed, not fixed, not blocking this PR: a synthetic edge case
+  found while writing this fix's own tests (not part of the filed issue,
+  the 290-corpus, or any pre-existing test) — an ambiguous end whose
+  *both* candidate bonds carry mutually-consistent raw marks, where one
+  candidate's sibling is itself adjacent to a genuinely undefined double
+  bond, produced a geometry mismatch between the raw input and a
+  canonicalize→reparse round-trip in this crate's own test-only
+  `up_of_reference` oracle. Not confirmed as a production defect (the
+  oracle is test-only scaffolding, not the production code path) or ruled
+  out as one — flagged here rather than silently dropped, deliberately
+  not filed as an issue without that confirmation.
+
 ### Added — `chematic-py` (A2.1: Python bindings for the conformer ensemble core)
 
 - `Mol.conformer_ensemble_v2(config)`: a new, separate Python method
