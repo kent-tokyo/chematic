@@ -130,7 +130,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@1.88.0
+      # Pin the action's own code to @master (per dtolnay/rust-toolchain's
+      # own documented pattern) and set the actual Rust version under test
+      # via `toolchain:`, matching Cargo.toml's `rust-version`. Using the
+      # action ref itself as the version pin (e.g. `@1.88.0`) makes
+      # Dependabot treat this job's MSRV as a bumpable dependency -- it
+      # previously proposed bumping straight to a not-yet-released Rust
+      # version (1.100.0), breaking this job outright (PR #378).
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.88"
       - run: cargo check --workspace --all-features
 
   validate-citation:
