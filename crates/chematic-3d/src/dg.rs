@@ -824,6 +824,100 @@ fn direction_away_from_centroid_xy(
     }
 }
 
+/// Candidate roll angles (around the incoming-bond axis) tried when choosing
+/// the entry direction for a newly-discovered ring system reached via a
+/// direct bond (see [`choose_ring_entry_direction_xy`]).
+const RING_ENTRY_CANDIDATE_COUNT: usize = 12;
+
+/// Choose the outgoing XY direction for the first ring atom of a
+/// newly-discovered ring system reached from `current` via a direct bond
+/// (issue #256/#255 Phase 2's "new-island" regression: a plain chain
+/// neighbor's single `i * 120°` roll has no reason to avoid the rest of the
+/// already-placed structure, and post-minimisation that shows up as real
+/// clashes for e.g. biphenyl/terphenyl).
+///
+/// Does not abandon the existing bend/dihedral scheme -- every candidate is
+/// still `dir_bent` rolled around `incoming_dir`, just at
+/// [`RING_ENTRY_CANDIDATE_COUNT`] angles instead of one. Ranked by: (1) XY
+/// distance from the centroid of everything placed so far (farther is
+/// better -- extend away from the existing structure, mirroring
+/// `chematic-depict::place_ring_anchored`'s own documented reason for using
+/// the whole-structure centroid rather than a single ring's own anchor,
+/// which degenerates to a tie); (2) on a tie, the minimum XY distance from
+/// the candidate entry position to any already-placed atom (larger is
+/// better -- more room); (3) a final deterministic tie-break seeded by
+/// `entry_atom`'s own `AtomIdx`, not candidate/array order -- an
+/// identity-less index tie-break is wrong here (see this crate's own
+/// permutation-invariance precedent).
+#[allow(clippy::too_many_arguments)]
+fn choose_ring_entry_direction_xy(
+    entry_atom: AtomIdx,
+    pos_current: Point3,
+    incoming_dir: Point3,
+    dir_bent: Point3,
+    bond_len: f64,
+    coords: &Coords3D,
+    placed: &[bool],
+) -> (f64, f64) {
+    let centroid = centroid_of_placed_xy(coords, placed);
+    let start = (entry_atom.0 as usize) % RING_ENTRY_CANDIDATE_COUNT;
+
+    let mut best_score: Option<(f64, f64)> = None; // (centroid_dist, min_clearance)
+    let mut best_dir = (1.0, 0.0);
+    for offset in 0..RING_ENTRY_CANDIDATE_COUNT {
+        let k = (start + offset) % RING_ENTRY_CANDIDATE_COUNT;
+        let dihedral = k as f64 * (2.0 * PI / RING_ENTRY_CANDIDATE_COUNT as f64);
+        let dir_final = rotate_around_axis(dir_bent, incoming_dir, dihedral);
+        let xy_len = (dir_final.x * dir_final.x + dir_final.y * dir_final.y).sqrt();
+        let dir_xy = if xy_len > 1e-9 {
+            (dir_final.x / xy_len, dir_final.y / xy_len)
+        } else {
+            (1.0, 0.0)
+        };
+        let entry_xy = (
+            pos_current.x + dir_xy.0 * bond_len,
+            pos_current.y + dir_xy.1 * bond_len,
+        );
+        let centroid_dist = match centroid {
+            Some((cx, cy)) => {
+                let dx = entry_xy.0 - cx;
+                let dy = entry_xy.1 - cy;
+                (dx * dx + dy * dy).sqrt()
+            }
+            None => 0.0,
+        };
+        let min_clearance = placed
+            .iter()
+            .enumerate()
+            .filter(|&(_, &p)| p)
+            .map(|(idx, _)| {
+                let p = coords.get(AtomIdx(idx as u32));
+                let dx = entry_xy.0 - p.x;
+                let dy = entry_xy.1 - p.y;
+                (dx * dx + dy * dy).sqrt()
+            })
+            .fold(f64::INFINITY, f64::min);
+
+        let is_better = match best_score {
+            None => true,
+            Some((best_centroid_dist, best_min_clearance)) => {
+                if centroid_dist > best_centroid_dist + 1e-9 {
+                    true
+                } else if centroid_dist < best_centroid_dist - 1e-9 {
+                    false
+                } else {
+                    min_clearance > best_min_clearance + 1e-9
+                }
+            }
+        };
+        if is_better {
+            best_score = Some((centroid_dist, min_clearance));
+            best_dir = dir_xy;
+        }
+    }
+    best_dir
+}
+
 /// Two consecutive-in-ring-order atoms that are both placed (the shared
 /// fusion edge), if any.
 fn find_shared_edge(ring: &[AtomIdx], placed: &[bool]) -> Option<(AtomIdx, AtomIdx)> {
@@ -1150,20 +1244,21 @@ fn dfs_place_connectivity_ordered(
             // guarded defensively rather than double-placed).
             continue;
         }
-        let dihedral = (i as f64) * (2.0 * PI / 3.0);
-        let dir_final = rotate_around_axis(dir_bent, incoming_dir, dihedral);
 
         if let Some(&sys_idx) = atom_to_system.get(&nb) {
             if system_placed[sys_idx] {
                 continue;
             }
-            let xy_len = (dir_final.x * dir_final.x + dir_final.y * dir_final.y).sqrt();
-            let dir_xy = if xy_len > 1e-9 {
-                (dir_final.x / xy_len, dir_final.y / xy_len)
-            } else {
-                (1.0, 0.0)
-            };
             let bond_len = ideal_bond_len(mol, current, nb);
+            let dir_xy = choose_ring_entry_direction_xy(
+                nb,
+                pos_current,
+                incoming_dir,
+                dir_bent,
+                bond_len,
+                coords,
+                placed,
+            );
             let entry_pos = Point3::new(
                 pos_current.x + dir_xy.0 * bond_len,
                 pos_current.y + dir_xy.1 * bond_len,
@@ -1187,6 +1282,8 @@ fn dfs_place_connectivity_ordered(
             continue;
         }
 
+        let dihedral = (i as f64) * (2.0 * PI / 3.0);
+        let dir_final = rotate_around_axis(dir_bent, incoming_dir, dihedral);
         let bond_len = ideal_bond_len(mol, current, nb);
         let new_pos = pos_current.add(&dir_final.scale(bond_len));
         coords.set(nb, new_pos);
