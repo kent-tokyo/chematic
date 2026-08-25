@@ -199,7 +199,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.19.0
+# chematic v0.20.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -447,6 +447,15 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 ## Recent Development
 
+**v0.20.0** (2026-08-25): **Stereo-safe 3D generation, a connectivity-ordered coordinate engine, and identity-correctness fixes for `remove_hydrogens`**
+- `chematic-3d`/`chematic-py`/`chematic-wasm`: `PipelineV2Config::stereo_safe(force_field_policy)` — a single-call configuration that resolves a real gap for ring-fused declared stereocenters (testosterone, cholesterol, and similar), where `repair_tetrahedral_center` previously had no coordinate to reflect an implicit H against. Measured on a 29-molecule × 5-seed corpus: 144/145 (99.3%) correct_and_ok, 0 silently wrong, testosterone/cholesterol both 5/5 seeds on every declared stereocenter
+- `chematic-3d`: `generate_coords_connectivity_ordered`, a new public alternative 3D placement engine (issues #256/#255) — places rings and chain atoms in true connectivity order rather than "all rings, then all chains." Measured: raw-geometry soundness 10/33 → 33/33 on a differential corpus with zero regressions, post-UFF bond-violation rate reaching 0.0000 (better than the legacy engine's own baseline). `generate_coords` itself is completely unchanged — ships as an available alternative, not a default-behavior switch; no existing caller is routed to it
+- `chematic-3d`: `rescue_with_distance_geometry_v2` (the UFF-catastrophic-blowup rescue bridge) now enforces declared chirality on retry (issue #210, partial fix) — zero regressions on its 58-molecule corpus, one of 5 named residual molecules newly succeeds; 4 residuals remain unfixed via this specific bridge (though resolved via `stereo_safe` above)
+- `chematic-chem`: `remove_hydrogens` no longer destroys isotope-labeled hydrogen (`[2H]`, `[3H]`) or silently drops declared stereo/E-Z information on every call — both were real, shipped correctness bugs found via a downstream consumer's 9.47M-compound real-world corpus scan, unaffected molecules confirmed unchanged, 289/290 of the originating investigation's identity mismatches resolved
+- `chematic-py`: `Mol.conformer_ensemble_v2(config)` exposes `embed_ensemble_v2` (deterministic multi-conformer generation, energy ranking scoped within force field, full per-attempt provenance) — added alongside the existing `conformer_ensemble()`, not replacing it. New best-of-10 benchmark arm confirms it works robustly at scale (~250/265 molecules, median RMSD 2.147 Å / TFD 0.344 vs. RDKit) — RDKit conformer-*selection* parity is a separate, unestablished claim
+- Known limitations: `generate_coords` not yet routed to the new engine; issue #210's 4 residuals remain open via that specific bridge; issue #390 (a single-molecule E/Z correctness residual, unrelated) remains open; no fresh full-corpus re-measurement was run solely for this release
+- Full details in `CHANGELOG.md`'s `[0.20.0]` section
+
 **v0.19.0** (2026-08-23): **Round 2C aromatic lactam/lactim tautomer fix, plus a benchmark/validation refresh**
 - `chematic-chem`: Tautomer & Parent Identity round 2C (ROADMAP.md Phase 2) — `canonical_tautomer`/`tautomer_parent` now canonicalize the aromatic lactam/lactim class for 2-pyridone, 4-pyridone, and uracil; cytosine, guanine, and hypoxanthine remain open (a distinct, documented ring-N-H position residual, RFC section 1.7 — diagnosed but not yet fixed), as does the unrelated nitroso/oxime defect (section 1.6). Phase 2 is **not** complete; `TautomerScoringConfig` and Python/WASM Parent-API bindings remain unimplemented
 - Benchmark/validation refresh: every number in `docs/benchmark.md`/`docs/validation.md` was pinned to chematic v0.4.29/RDKit 2026.03.3 (~14 releases stale) — re-measured fresh against RDKit 2026.03.4. The 4,999-mol accuracy corpus is now committed (`scripts/chembl_accuracy_corpus_4999.smi`, previously an uncommitted personal path); molecular weight has a real corpus-wide check for the first time (99.82%, not the previously-unmeasured "175-mol"/100% placeholder); CIP R/S/E/Z label agreement re-measured at 99.74–99.78% (up from a stale 96.30–96.83%); WASM bundle size rebuilt clean; the ECFP4 "diverse corpus" figure now has a reproducible source (`benchmark_vs_rdkit.py --corpus`, previously none existed); 3D conformer generation's "Good (ETKDG rules)" framing corrected to "Experimental," matching the migration guide's own honest characterization
@@ -600,7 +609,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.19.0)
+├── Cargo.toml                    workspace root (v0.20.0)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -654,7 +663,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.19.0},
+  version   = {0.20.0},
   year      = {2026},
 }
 ```
