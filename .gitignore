@@ -42,3 +42,7 @@ Thumbs.db
 tasks/todo.md
 ROADMAP.md
 ROADMAP_ARCHIVE.md
+
+# internal design/competitive-strategy docs -- not published in the public repo
+docs/rfcs/
+docs/competitive/
