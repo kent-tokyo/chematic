@@ -14,7 +14,7 @@
 Python・Rust・ブラウザ向けケモインフォマティクスライブラリ。
 
 **デフォルトで速く、設計で安全なケモインフォマティクス。**  
-Pure Rust · C/C++ ゼロ · Python · WebAssembly · [ライブデモ](https://kent-tokyo.github.io/chematic/playground/)
+Pure Rust · C/C++ ゼロ · Python · WebAssembly · [公式サイト](https://chematic.io/) · [ライブデモ](https://kent-tokyo.github.io/chematic/playground/)
 
 | | chematic | RDKit (Python) | RDKit.js (WASM) |
 |---|---|---|---|
@@ -125,7 +125,7 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.20.0
+# chematic v0.20.1
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-06, v0.4.22 vs RDKit 2026.03.3 --
@@ -303,6 +303,13 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 ---
 
 ## 最近の開発
+
+**v0.20.1**（2026-08-26）: **canonical SMILES／standardizeの正確性修正3件（パッチリリース、破壊的変更なし）**
+- `chematic-smiles`：coupled E/Zのcanonicalizationが再canonicalize時に幾何をsilentlyに変えてしまう問題（issue #390）——canonical writerのE/Zマーカー機構における独立した2つのバグ、再現には両方の修正が必要。修正後、実際の290化合物コーパスで検証（idempotency 290/290、独立したRDKit InChIKeyとの一致290/290、修正前の289/290から改善）
+- `chematic-chem`：`standardize()`がいくつかの再構築経路でstereoテーブルをsilentlyに失う問題（issue #399）——`standardize.rs`の8関数が素の`MoleculeBuilder`で再構築する際に`stereo_neighbor_order`/`bond_directions`/`stereo_groups`を引き継いでおらず、ring-closing/ring-openingの役割次第で`@`/`@@`がフリップしていた。開発用corpusのstandardize経由idempotencyは615/519→68/60（#392以前の水準に正確に一致）、NCI holdout（未使用の実分子4,999件、一度だけ実行）でステレオ関連の失敗は0件
+- `chematic-smiles`：canonical writerのring-closure bond markerがclosure相手側の芳香族性を見ていなかった問題（issue #395）——個別には芳香族な2原子をつなぐ非芳香族の"fusion"結合（例：`c1-2`）が、再parse時にsilentlyに芳香族結合へ変わっていた。開発用corpusのbare-parse idempotencyは73/57→0/0（完全な修正）、独立したRDKit InChI oracleで全10,000件corpus一致（不一致0件）
+- 上記2件のstandardize経由修正を組み合わせた結果、そのcorpusの残差は0/4まで改善——残る4件は新規に発見・ファイルした2つの未修正issue（#407、#402系統）に起因し、本リリースには含めていない
+- 詳細は`CHANGELOG.md`の`[0.20.1]`section参照
 
 **v0.20.0**（2026-08-25）: **立体化学を保った3D構造生成、connectivity-ordered座標エンジン、`remove_hydrogens`の同一性正確性修正**
 - `chematic-3d`/`chematic-py`/`chematic-wasm`：`PipelineV2Config::stereo_safe(force_field_policy)`——環に組み込まれた宣言済み立体中心（テストステロン、コレステロール等）に対する実際のギャップを一括解決する設定。従来`repair_tetrahedral_center`は暗黙のHを反映すべき座標を持たなかった。29分子×5 seedコーパスで測定：144/145（99.3%）がcorrect_and_ok、silently wrongは0件、テストステロン・コレステロールとも全宣言立体中心・全seedで5/5成功

@@ -14,7 +14,7 @@
 面向 Python、Rust 和浏览器的化学信息学库。
 
 **默认快速，设计安全的化学信息学库。**  
-纯 Rust · 零 C/C++ · Python · WebAssembly · [在线演示](https://kent-tokyo.github.io/chematic/playground/)
+纯 Rust · 零 C/C++ · Python · WebAssembly · [官方网站](https://chematic.io/) · [在线演示](https://kent-tokyo.github.io/chematic/playground/)
 
 | | chematic | RDKit (Python) | RDKit.js (WASM) |
 |---|---|---|---|
