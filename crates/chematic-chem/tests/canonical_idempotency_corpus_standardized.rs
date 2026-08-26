@@ -99,27 +99,33 @@ fn assert_corpus_idempotent(label: &str, corpus: &str, max_known_failures: usize
 /// `remove_hydrogens`'s adjacency-based reconstruction -- correct for
 /// ring-closing stereocenters, transposed for ring-opening ones.
 ///
-/// **#399 fix (this measurement)**: all 8 functions above now carry the
-/// three stereo side tables forward (a simple bulk copy for the 7 that
-/// preserve every atom/bond 1:1; `prefer_organic` now delegates to the
-/// already-correct `extract_fragment`; `disconnect_metals` remaps
-/// `bond_directions` bond-by-bond since it drops metal bonds). Re-measured:
-/// **68/60** -- back down to the exact pre-#392 baseline, i.e. the ~547/459
-/// failures #392 newly introduced are gone. The remaining 68/60 are
-/// confirmed, by direct trace of representative cases (stereo, E/Z, and
-/// plain-ring-fusion residuals), to be **unrelated to #399's root cause**:
-/// `stereo_neighbor_order`/`bond_directions` survive `standardize()` fully
-/// intact for these molecules, and disabling `remove_explicit_h` entirely
-/// does not change the outcome -- so neither defect this issue fixed is in
-/// play. ~76% of the residual lines share issue #395's exact syntactic
-/// signature (an explicit bond symbol directly preceding a ring-closure
-/// digit, e.g. `c1-2`); the rest are plain fused-ring systems with no
-/// stereocenter at all. Left for #395 (or a new issue if #395 doesn't fully
-/// explain them) rather than folded into this fix. Do not lower these again
-/// without an honest full-corpus re-run, not an assumption; do not raise
-/// them to hide a future regression either.
-const DESCRIPTOR_CENSUS_KNOWN_FAILURES: usize = 60;
-const CHEMBL_ACCURACY_KNOWN_FAILURES: usize = 68;
+/// **#399 fix**: all 8 functions above now carry the three stereo side
+/// tables forward (a simple bulk copy for the 7 that preserve every
+/// atom/bond 1:1; `prefer_organic` now delegates to the already-correct
+/// `extract_fragment`; `disconnect_metals` remaps `bond_directions`
+/// bond-by-bond since it drops metal bonds). Re-measured: **68/60** -- back
+/// down to the exact pre-#392 baseline. The remaining 68/60 were confirmed,
+/// by direct trace, to be unrelated to #399's root cause: ~76% shared
+/// issue #395's exact syntactic signature (an explicit bond symbol directly
+/// preceding a ring-closure digit, e.g. `c1-2`).
+///
+/// **#395 fix (this measurement, both #399 and #395 now merged)**:
+/// `canonical.rs`'s ring-closure bond-marker decision now checks both
+/// endpoints' aromaticity (previously only checked one), fixing the
+/// `c1-2`-shaped defect at its source. Re-measured with both fixes
+/// combined: **0/4** -- `chembl_accuracy_corpus_4999.smi` is now fully
+/// idempotent; `descriptor_census_corpus.smi` has 4 residual failures, all
+/// confirmed unrelated to #395/#399: 3 share a `normalize_zwitterion`
+/// proton-transfer bug (unconditionally invents a hydrogen on the negative
+/// atom even when the "nearest positive" partner has none to donate, for
+/// non-zwitterionic charge-separated groups like a diazo-`N,N'`-dioxide;
+/// filed as issue #407), and 1 is a `canonical_tautomer` interaction
+/// (bare-parse idempotent, confirmed via #395's own fix; only `standardize()`
+/// with tautomer canonicalization enabled breaks it -- same class as #402).
+/// Do not lower these again without an honest full-corpus re-run, not an
+/// assumption; do not raise them to hide a future regression either.
+const DESCRIPTOR_CENSUS_KNOWN_FAILURES: usize = 4;
+const CHEMBL_ACCURACY_KNOWN_FAILURES: usize = 0;
 
 #[test]
 fn descriptor_census_corpus_standardized_is_canonically_idempotent() {
