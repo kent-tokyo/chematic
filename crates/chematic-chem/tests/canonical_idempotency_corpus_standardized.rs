@@ -82,27 +82,44 @@ fn assert_corpus_idempotent(label: &str, corpus: &str, max_known_failures: usize
 /// Current known-residual ceiling -- see this file's own doc comment. Must
 /// only ever move down, never up.
 ///
-/// **Correction**: an earlier version of this file set these to 60/68,
+/// **History**: an earlier version of this file set these to 60/68,
 /// labeled "re-measured against main@743b77b (after #392 merged)" -- that
 /// re-measurement never actually ran (a `git checkout` race silently
-/// clobbered the source file mid-build, and the resulting "no such test
-/// target" cargo error was mistaken for "0 additional failures" against an
-/// empty grep pattern). The 60/68 figures were in fact the *pre-#392*
-/// baseline, carried forward unverified. Honestly re-measured on
-/// `test/issue-393-canonical-idempotency-corpus`
-/// (`743b77b`, #392 included): the true count is dramatically higher,
-/// **615/519**, not 60/68. This is a real, confirmed, ~9x increase caused
-/// specifically by #392 -- not measurement noise, not a different corpus
-/// state, not platform-dependent (re-confirmed identically against CI's
-/// own Linux run). Root cause, and why #392 (a correct, real fix) is the
-/// trigger rather than the culprit: filed as issue #399, with a confirmed
-/// minimal repro (`CN1CCC[C@H]1c1cccnc1`, zero explicit H atoms --
-/// `remove_hydrogens` should be a pure no-op, yet the molecule is
-/// idempotent under bare `canonical_smiles` alone but not through
-/// `standardize()`). Do not lower these again without an honest full-corpus
-/// re-run, not an assumption.
-const DESCRIPTOR_CENSUS_KNOWN_FAILURES: usize = 519;
-const CHEMBL_ACCURACY_KNOWN_FAILURES: usize = 615;
+/// clobbered the source file mid-build). The 60/68 figures were in fact the
+/// *pre-#392* baseline, carried forward unverified. Honestly re-measured on
+/// `test/issue-393-canonical-idempotency-corpus` (`743b77b`, #392 included):
+/// the true count was **615/519** -- a real, confirmed ~9x increase caused
+/// by #392 exposing a pre-existing bug in `standardize.rs` (issue #399):
+/// `neutralize_charges`, `normalize_zwitterion`, `normalize_groups`,
+/// `remove_isotopes`, `reionize`, `uncharge`, `prefer_organic` and
+/// `disconnect_metals` each rebuilt the molecule via a bare
+/// `MoleculeBuilder` without carrying `stereo_neighbor_order`/
+/// `bond_directions`/`stereo_groups` forward, so any stereocenter surviving
+/// one of those stages lost its declared order and fell back to
+/// `remove_hydrogens`'s adjacency-based reconstruction -- correct for
+/// ring-closing stereocenters, transposed for ring-opening ones.
+///
+/// **#399 fix (this measurement)**: all 8 functions above now carry the
+/// three stereo side tables forward (a simple bulk copy for the 7 that
+/// preserve every atom/bond 1:1; `prefer_organic` now delegates to the
+/// already-correct `extract_fragment`; `disconnect_metals` remaps
+/// `bond_directions` bond-by-bond since it drops metal bonds). Re-measured:
+/// **68/60** -- back down to the exact pre-#392 baseline, i.e. the ~547/459
+/// failures #392 newly introduced are gone. The remaining 68/60 are
+/// confirmed, by direct trace of representative cases (stereo, E/Z, and
+/// plain-ring-fusion residuals), to be **unrelated to #399's root cause**:
+/// `stereo_neighbor_order`/`bond_directions` survive `standardize()` fully
+/// intact for these molecules, and disabling `remove_explicit_h` entirely
+/// does not change the outcome -- so neither defect this issue fixed is in
+/// play. ~76% of the residual lines share issue #395's exact syntactic
+/// signature (an explicit bond symbol directly preceding a ring-closure
+/// digit, e.g. `c1-2`); the rest are plain fused-ring systems with no
+/// stereocenter at all. Left for #395 (or a new issue if #395 doesn't fully
+/// explain them) rather than folded into this fix. Do not lower these again
+/// without an honest full-corpus re-run, not an assumption; do not raise
+/// them to hide a future regression either.
+const DESCRIPTOR_CENSUS_KNOWN_FAILURES: usize = 60;
+const CHEMBL_ACCURACY_KNOWN_FAILURES: usize = 68;
 
 #[test]
 fn descriptor_census_corpus_standardized_is_canonically_idempotent() {
