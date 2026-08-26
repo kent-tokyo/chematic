@@ -69,6 +69,13 @@ pub struct McsConfig {
     /// If `true`, stereochemistry (chirality) must match between atoms. If `false`, chirality
     /// is ignored (default). Prevents matching of enantiomers in MCS.
     pub match_chiral_tag: bool,
+    /// If `true`, formal charge must match between atoms. If `false` (default), charge is
+    /// ignored -- e.g. a carboxylate `[O-]` matches a neutral `O`. Mirrors `match_chiral_tag`.
+    pub match_charge: bool,
+    /// If `true`, isotope label must match between atoms (including "no label" only matching
+    /// "no label"). If `false` (default), isotope is ignored -- e.g. `[13CH4]` matches `C`.
+    /// Mirrors `match_chiral_tag`.
+    pub match_isotope: bool,
     /// If `true`, when multiple MCS of the same atom count exist, prefer the one with more bonds.
     /// Defaults to `true` (matching RDKit's default behavior).
     pub maximize_bonds: bool,
@@ -85,6 +92,8 @@ impl Default for McsConfig {
             atom_compare: AtomCompare::Elements,
             bond_compare: BondCompare::OrderOrAromatic,
             match_chiral_tag: false,
+            match_charge: false,
+            match_isotope: false,
             maximize_bonds: true,
         }
     }
@@ -437,7 +446,14 @@ fn build_frontier_candidates(
                 continue;
             }
             // Must be atom-compatible.
-            if !atoms_compatible(atom0, atom_i, &config.atom_compare, config.match_chiral_tag) {
+            if !atoms_compatible(
+                atom0,
+                atom_i,
+                &config.atom_compare,
+                config.match_chiral_tag,
+                config.match_charge,
+                config.match_isotope,
+            ) {
                 continue;
             }
             // ring_matches_ring_only: ring atoms must match ring atoms only.
@@ -492,7 +508,14 @@ fn collect_seed_candidates(
         let cands: Vec<AtomIdx> = mols[mi]
             .atoms()
             .filter(|(ai, a)| {
-                if !atoms_compatible(atom0, a, &config.atom_compare, config.match_chiral_tag) {
+                if !atoms_compatible(
+                    atom0,
+                    a,
+                    &config.atom_compare,
+                    config.match_chiral_tag,
+                    config.match_charge,
+                    config.match_isotope,
+                ) {
                     return false;
                 }
                 if config.ring_matches_ring_only {
@@ -564,6 +587,8 @@ fn atoms_compatible(
     b: &chematic_core::Atom,
     compare: &AtomCompare,
     match_chiral: bool,
+    match_charge: bool,
+    match_isotope: bool,
 ) -> bool {
     let base = match compare {
         AtomCompare::Elements => {
@@ -576,6 +601,12 @@ fn atoms_compatible(
         return false;
     }
     if match_chiral && a.chirality != b.chirality {
+        return false;
+    }
+    if match_charge && a.charge != b.charge {
+        return false;
+    }
+    if match_isotope && a.isotope != b.isotope {
         return false;
     }
     true
@@ -1234,6 +1265,115 @@ mod tests {
             result.atom_count(),
             r_ala1.atom_count(),
             "match_chiral_tag=true should still match molecules with same stereochemistry"
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // match_charge / match_isotope tests (mirror match_chiral_tag exactly)
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_match_charge_false_matches_charge_states() {
+        // Acetate vs neutral acetic acid: with match_charge=false (default),
+        // the carboxylate/carboxylic-acid oxygen should still match.
+        let acetate = parse("CC(=O)[O-]").unwrap();
+        let acetic_acid = parse("CC(=O)O").unwrap();
+        let default_result = find_mcs(&[&acetate, &acetic_acid]);
+        assert_eq!(
+            default_result.atom_count(),
+            acetate.atom_count(),
+            "Default (match_charge=false) should match all atoms across charge states"
+        );
+    }
+
+    #[test]
+    fn test_match_charge_true_blocks_differently_charged_atoms() {
+        // Acetate vs neutral acetic acid: with match_charge=true, the [O-]
+        // atom must not match the neutral O, so MCS should be smaller.
+        let acetate = parse("CC(=O)[O-]").unwrap();
+        let acetic_acid = parse("CC(=O)O").unwrap();
+        let default_result = find_mcs(&[&acetate, &acetic_acid]);
+        let config = McsConfig {
+            match_charge: true,
+            ..McsConfig::default()
+        };
+        let result = find_mcs_with_config(&[&acetate, &acetic_acid], &config);
+        assert!(
+            result.atom_count() < default_result.atom_count(),
+            "match_charge=true should find smaller MCS than default: {} vs {}",
+            result.atom_count(),
+            default_result.atom_count()
+        );
+    }
+
+    #[test]
+    fn test_match_charge_true_matches_same_charge_state() {
+        // Acetate vs acetate: with match_charge=true, should still match
+        // all atoms (identical charge state).
+        let acetate1 = parse("CC(=O)[O-]").unwrap();
+        let acetate2 = parse("CC(=O)[O-]").unwrap();
+        let config = McsConfig {
+            match_charge: true,
+            ..McsConfig::default()
+        };
+        let result = find_mcs_with_config(&[&acetate1, &acetate2], &config);
+        assert_eq!(
+            result.atom_count(),
+            acetate1.atom_count(),
+            "match_charge=true should still match molecules with the same charge state"
+        );
+    }
+
+    #[test]
+    fn test_match_isotope_false_matches_isotope_labels() {
+        // 13C-labeled methanol vs unlabeled methanol: with match_isotope=false
+        // (default), the labeled carbon should still match.
+        let labeled = parse("[13CH3]O").unwrap();
+        let unlabeled = parse("CO").unwrap();
+        let default_result = find_mcs(&[&labeled, &unlabeled]);
+        assert_eq!(
+            default_result.atom_count(),
+            labeled.atom_count(),
+            "Default (match_isotope=false) should match all atoms across isotope labels"
+        );
+    }
+
+    #[test]
+    fn test_match_isotope_true_blocks_differently_labeled_atoms() {
+        // 13C-labeled methanol vs unlabeled methanol: with match_isotope=true,
+        // the labeled carbon must not match the unlabeled one, so MCS should
+        // be smaller.
+        let labeled = parse("[13CH3]O").unwrap();
+        let unlabeled = parse("CO").unwrap();
+        let default_result = find_mcs(&[&labeled, &unlabeled]);
+        let config = McsConfig {
+            match_isotope: true,
+            ..McsConfig::default()
+        };
+        let result = find_mcs_with_config(&[&labeled, &unlabeled], &config);
+        assert!(
+            result.atom_count() < default_result.atom_count(),
+            "match_isotope=true should find smaller MCS than default: {} vs {}",
+            result.atom_count(),
+            default_result.atom_count()
+        );
+    }
+
+    #[test]
+    fn test_match_isotope_true_matches_same_isotope_label() {
+        // Two identically 13C-labeled methanol molecules: with
+        // match_isotope=true, should still match all atoms.
+        let labeled1 = parse("[13CH3]O").unwrap();
+        let labeled2 = parse("[13CH3]O").unwrap();
+        let config = McsConfig {
+            match_isotope: true,
+            ..McsConfig::default()
+        };
+        let result = find_mcs_with_config(&[&labeled1, &labeled2], &config);
+        assert_eq!(
+            result.atom_count(),
+            labeled1.atom_count(),
+            "match_isotope=true should still match molecules with the same isotope label"
         );
     }
 
