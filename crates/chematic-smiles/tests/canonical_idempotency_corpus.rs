@@ -15,25 +15,27 @@
 //! collect-all-failures-then-panic), scaled from a 50-molecule hand-picked
 //! list to the full 5,000-line corpora.
 //!
-//! **Known residual, tracked as issue #395, not a regression from this
-//! test's own addition.** Running this test against both corpora for the
+//! **Issue #395, fixed.** Running this test against both corpora for the
 //! first time found a real, previously-undetected defect, independent of
 //! #389/#392/#390: 73/5000 lines in `chembl_accuracy_corpus_4999.smi` and
-//! 57/5000 in `descriptor_census_corpus.smi` are not idempotent. Every one
-//! of the smallest failing examples shares an explicit-bond-order ring
+//! 57/5000 in `descriptor_census_corpus.smi` were not idempotent. Every one
+//! of the smallest failing examples shared an explicit-bond-order ring
 //! closure (SMILES `-N`/`=N` immediately preceding a ring-closure digit,
-//! e.g. `c1-2`) -- an unconfirmed lead, not a diagnosis; see #395. Per this
-//! project's own `_known_broken`-fixture convention (e.g. `dg.rs`'s ring-
-//! fusion tests) and its "gate fail != regression until redesigned"
-//! precedent (issue #70): rather than either (a) leaving this test
-//! hard-failing on `main` -- which would make every unrelated future PR's
-//! CI run red for a pre-existing, already-tracked defect it didn't cause --
-//! or (b) `#[ignore]`-ing it and losing the "visible and tracked, not
-//! silently ignored" property issue #393 explicitly asked for, this test
-//! pins the CURRENT failure count as a ceiling: it stays green as long as
-//! the count doesn't exceed what's measured today, and fails (loudly, with
-//! every failing line) the moment it gets worse. Fixing #395 should lower
-//! these constants, not raise them.
+//! e.g. `c1-2`).
+//!
+//! Root cause: `canonical.rs`'s `write_chain` decided whether a ring-closure
+//! digit needed an explicit bond-order prefix by checking only the
+//! currently-written atom's own aromaticity, never its ring-closure
+//! partner's -- unlike the equivalent decision for a tree-edge child, which
+//! correctly checks both endpoints (`parent_arom && child_arom`). A bare
+//! ring-closure digit between two aromatic atoms is read back by the parser
+//! as an *aromatic* bond, so a genuinely `Single`-order ring-closure bond
+//! between two atoms that each individually happen to be aromatic (e.g. a
+//! non-aromatic fusion bond joining two separately-aromatic ring systems,
+//! `c1-2`) silently became an aromatic bond on re-parse whenever the writer
+//! omitted its `-` marker. Fixed by checking both endpoints' aromaticity,
+//! mirroring the tree-edge `implicit` computation exactly. Both corpora are
+//! now **0/5000** failing -- a full fix, not a partial improvement.
 
 use chematic_smiles::{canonical_smiles, parse};
 
@@ -42,10 +44,13 @@ const DESCRIPTOR_CENSUS_CORPUS: &str =
 const CHEMBL_ACCURACY_CORPUS: &str =
     include_str!("../../../scripts/chembl_accuracy_corpus_4999.smi");
 
-/// Current known-residual ceiling (issue #395) -- see this file's own doc
-/// comment. Must only ever move down, never up.
-const DESCRIPTOR_CENSUS_KNOWN_FAILURES: usize = 57;
-const CHEMBL_ACCURACY_KNOWN_FAILURES: usize = 73;
+/// Known-residual ceiling -- see this file's own doc comment. Issue #395 is
+/// now fully fixed (both corpora measured at 0 failures); kept as named
+/// constants, not inlined `0`s, so a future regression here fails loudly
+/// with the same message shape as when this was a nonzero ceiling. Must
+/// only ever move down, never up.
+const DESCRIPTOR_CENSUS_KNOWN_FAILURES: usize = 0;
+const CHEMBL_ACCURACY_KNOWN_FAILURES: usize = 0;
 
 /// For every non-empty line in `corpus`: parse, canonicalize once, re-parse,
 /// canonicalize twice, check the two canonical strings are identical. Parse

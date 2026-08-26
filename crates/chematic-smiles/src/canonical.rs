@@ -1493,7 +1493,7 @@ impl<'a> CanonicalWriter<'a> {
 
         // Ring-closure digits.
         if let Some(rings) = self.atom_ring_nums.remove(&atom) {
-            for (rn, is_open, _partner, bidx) in rings {
+            for (rn, is_open, partner, bidx) in rings {
                 // The open side carries the marker (normalize_ez's
                 // mol-relative result, re-oriented for `atom` -- the
                 // endpoint actually being written right now); the close
@@ -1515,10 +1515,25 @@ impl<'a> CanonicalWriter<'a> {
                     }
                 };
                 let bond_order = suppress_standalone_wedge(self.mol, bidx, bond_order);
+                // Whether a ring-closure digit needs an explicit bond-order
+                // prefix depends on BOTH endpoints' aromaticity, exactly like
+                // a tree-edge's own `implicit` computation below: a bare
+                // digit between two aromatic atoms is read back as an
+                // *aromatic* bond by the parser, so a genuinely Single
+                // ring-closure bond between two aromatic atoms (e.g. a
+                // non-aromatic fusion bond joining two separately-aromatic
+                // ring systems, `c1-2`) must carry the `-` marker or it
+                // silently becomes aromatic on re-parse -- issue #395. The
+                // previous check only inspected `atom`'s own aromaticity,
+                // never the ring-closure partner's.
                 let atom_arom = self.mol.atom(atom).aromatic;
-                if !(bond_order == BondOrder::Aromatic && atom_arom)
-                    && bond_order != BondOrder::Single
-                {
+                let partner_arom = self.mol.atom(partner).aromatic;
+                let implicit = match bond_order {
+                    BondOrder::Single => !(atom_arom && partner_arom),
+                    BondOrder::Aromatic => atom_arom && partner_arom,
+                    _ => false,
+                };
+                if !implicit {
                     // Oriented from the atom being written right now, so a
                     // dative ring closure prints `->` at its donor end and
                     // `<-` at its acceptor end (the same bond read from
@@ -4403,6 +4418,60 @@ mod explicit_implicit_h_invariance {
                     "not idempotent starting from {smi}: {canon}"
                 );
             }
+        }
+    }
+
+    // ── Round 11: ring-closure explicit-bond-order aromaticity check (#395) ──
+    //
+    // `write_chain`'s ring-closure marker decision checked only the
+    // currently-written atom's own aromaticity, never its ring-closure
+    // partner's -- unlike the equivalent tree-edge decision, which correctly
+    // checks both endpoints. A bare ring-closure digit between two aromatic
+    // atoms is read back as an *aromatic* bond, so a genuinely `Single`
+    // ring-closure bond joining two atoms that each individually happen to
+    // be aromatic (e.g. a non-aromatic fusion bond between two separately-
+    // aromatic ring systems, `c1-2`) silently became aromatic on re-parse
+    // whenever the writer omitted the `-` marker. Confirmed via corpus sweep
+    // (130/10,000 molecules) and RDKit InChI cross-check.
+
+    #[test]
+    fn ring_closure_explicit_single_bond_between_aromatic_atoms_real_world_repro() {
+        // Smallest real-corpus repro from issue #395: the final atom closes
+        // both ring 1 (implicit aromatic, correct) and ring 2 (explicit
+        // `-2`, a non-aromatic fusion bond) at once.
+        let smi = "Oc1[nH]c(Br)nc2nnc(Br)c1-2";
+        let mol = parse(smi).unwrap();
+        let once = canonical_smiles(&mol);
+        let reparsed = parse(&once).unwrap();
+        let twice = canonical_smiles(&reparsed);
+        assert_eq!(
+            once, twice,
+            "explicit-bond-order ring closure not idempotent: {smi} -> once={once} twice={twice}"
+        );
+    }
+
+    #[test]
+    fn ring_closure_explicit_bond_order_survives_reparse_for_various_orders() {
+        // A minimal two-ring system where the fusion bond (ring digit `2`)
+        // is deliberately non-aromatic, exercised at each explicit bond
+        // order the writer can emit on a ring closure.
+        for smi in [
+            "c1ccc2c1-c1ccccc-21", // single fusion bond
+            "c1ccc2c1=CC=CC2",     // double fusion bond into a non-aromatic ring
+        ] {
+            let mol = match parse(smi) {
+                Ok(m) => m,
+                Err(_) => continue, // not every hand-written combination is valid; skip malformed ones
+            };
+            let once = canonical_smiles(&mol);
+            let reparsed = parse(&once).unwrap_or_else(|e| {
+                panic!("re-parse of canonical output '{once}' (from {smi}) failed: {e}")
+            });
+            let twice = canonical_smiles(&reparsed);
+            assert_eq!(
+                once, twice,
+                "not idempotent: {smi} -> once={once} twice={twice}"
+            );
         }
     }
 }
