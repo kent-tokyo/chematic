@@ -133,6 +133,15 @@ pub fn find_mcs_with_config(mols: &[&Molecule], config: &McsConfig) -> QueryMole
 pub enum McsOutcome {
     /// The search explored the whole candidate space and confirmed `result`
     /// is the true (config-constrained) maximum common substructure.
+    ///
+    /// This claim depends on `grow`'s branch-and-bound actually being
+    /// complete over connected subgraphs of `mols[0]` -- true since the
+    /// include/exclude branch fix (every frontier atom is eventually either
+    /// included or explicitly excluded, not just the first one tried at
+    /// each node). Before that fix this variant was a real over-claim: a
+    /// frontier atom incompatible with some other molecule could silently
+    /// kill a branch that would have reached a strictly larger common
+    /// substructure by excluding it instead.
     Exhaustive(QueryMolecule),
     /// `timeout_ms` was reached before the search finished; `result` is the
     /// best candidate found so far, not guaranteed optimal.
@@ -175,6 +184,8 @@ pub fn find_mcs_with_config_checked(mols: &[&Molecule], config: &McsConfig) -> M
         Vec::new()
     };
 
+    let n0 = mols[0].atom_count();
+
     let mut state = McsState {
         mols,
         config,
@@ -182,9 +193,8 @@ pub fn find_mcs_with_config_checked(mols: &[&Molecule], config: &McsConfig) -> M
         deadline,
         timed_out: false,
         ring_sets,
+        excluded: vec![false; n0],
     };
-
-    let n0 = mols[0].atom_count();
 
     'outer: for a0 in 0..n0 {
         if state.timed_out {
@@ -220,6 +230,10 @@ pub fn find_mcs_with_config_checked(mols: &[&Molecule], config: &McsConfig) -> M
             }
 
             let mut mapping = PartialMapping::from_seed(mols, AtomIdx(a0 as u32), &seed);
+            // Exclusion is a per-seed-tree decision; every push/pop in `grow`
+            // unwinds back to all-`false`, but reset explicitly so a fresh
+            // seed never inherits state from a prior seed's search tree.
+            state.excluded.iter_mut().for_each(|b| *b = false);
             grow(&mut state, &mut mapping);
         }
     }
@@ -348,6 +362,11 @@ struct McsState<'a> {
     deadline: Option<Instant>,
     timed_out: bool,
     ring_sets: Vec<RingSet>,
+    /// `excluded[a.0]` = `true` if mol[0] atom `a` has been decided OUT of
+    /// the current search-tree branch (see the include/exclude split in
+    /// `grow`). Reset to all-`false` before growing from each new seed --
+    /// exclusion is a per-branch decision, not global across seeds.
+    excluded: Vec<bool>,
 }
 
 // ---------------------------------------------------------------------------
@@ -401,21 +420,24 @@ fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
     }
 
     // Upper bound pruning: compute max additional atoms reachable from current state.
-    let additional_ub = upper_bound_additional(state.mols, mapping);
+    let additional_ub = upper_bound_additional(state.mols, mapping, &state.excluded);
     if mapping.size + additional_ub <= state.best.size {
         return;
     }
 
-    // Find frontier candidates: unmapped neighbors of already-mapped atoms in mol[0].
-    // For each unmapped neighbor `n0` of a mapped atom in mol[0], try to extend the mapping.
+    // Find frontier candidates: unmapped, non-excluded neighbors of already-mapped
+    // atoms in mol[0]. For each such neighbor `n0`, decide (in a moment) whether to
+    // include it in the mapping or exclude it from this branch entirely.
     let mol0 = state.mols[0];
 
-    // Collect unmapped neighbors of mapped atoms in mol[0].
     let mut frontier: Vec<AtomIdx> = Vec::new();
     for row in &mapping.query_to_mol {
         let a0 = row[0];
         for (nb, _) in mol0.neighbors(a0) {
-            if !mapping.is_mapped(0, nb) && !frontier.contains(&nb) {
+            if !mapping.is_mapped(0, nb)
+                && !state.excluded[nb.0 as usize]
+                && !frontier.contains(&nb)
+            {
                 frontier.push(nb);
             }
         }
@@ -425,11 +447,17 @@ fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
         return;
     }
 
-    // Pick only the first frontier atom (to avoid duplicate paths in the DFS tree).
-    // This is the "connected growth" property.
+    // Only the first frontier atom is branched on per call (the "connected growth"
+    // property), but BOTH outcomes for it are explored -- include it now, or exclude
+    // it and let a later frontier atom be tried in its place. Without the exclude
+    // branch, a `n0` that happens to be incompatible with every other molecule kills
+    // the whole subtree even when skipping it (and mapping a different frontier atom
+    // instead) would reach a strictly larger common substructure -- see
+    // scratch_repro_frontier0_only_incompleteness.
     let n0 = frontier[0];
 
-    // For each other molecule, find compatible unmapped atoms that are:
+    // Branch 1: include n0. For each other molecule, find compatible unmapped atoms
+    // that are:
     // 1. Atom-compatible with n0
     // 2. Adjacent to every mol[i]-atom that corresponds to a mapped neighbor of n0 in mol[0]
     // 3. Bond-compatible with each such adjacency
@@ -453,6 +481,15 @@ fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
         mapping.extend(&atoms, extra_bonds);
         grow(state, mapping);
         mapping.retract(&atoms, extra_bonds);
+    }
+
+    // Branch 2: exclude n0 from this branch and recurse so the next frontier atom
+    // gets a turn. Reset on the way back out -- exclusion only applies within this
+    // subtree, not to sibling branches elsewhere in the search.
+    if !state.timed_out {
+        state.excluded[n0.0 as usize] = true;
+        grow(state, mapping);
+        state.excluded[n0.0 as usize] = false;
     }
 }
 
@@ -613,14 +650,22 @@ fn upper_bound_for_seeds(mols: &[&Molecule], a0: AtomIdx, seed: &[AtomIdx]) -> u
 
 /// Upper bound on *additional* atoms reachable from the current mapping.
 ///
-/// For each element, count unmapped atoms in each molecule; the maximum additional
-/// atoms of that element = min over all molecules.
-fn upper_bound_additional(mols: &[&Molecule], mapping: &PartialMapping) -> usize {
+/// For each element, count unmapped atoms in each molecule (mol[0] atoms already
+/// excluded from this branch don't count -- they can never be reached); the maximum
+/// additional atoms of that element = min over all molecules.
+fn upper_bound_additional(
+    mols: &[&Molecule],
+    mapping: &PartialMapping,
+    excluded: &[bool],
+) -> usize {
     let mut counts: HashMap<u8, Vec<usize>> = HashMap::new();
 
     for (mi, mol) in mols.iter().enumerate() {
         for (ai, atom) in mol.atoms() {
             if mapping.is_mapped(mi, ai) {
+                continue;
+            }
+            if mi == 0 && excluded[ai.0 as usize] {
                 continue;
             }
             let en = atom.element.atomic_number();
@@ -1467,6 +1512,32 @@ mod tests {
             result.atom_count(),
             labeled1.atom_count(),
             "match_isotope=true should still match molecules with the same isotope label"
+        );
+    }
+
+    #[test]
+    fn frontier_exclude_branch_finds_larger_mcs_than_include_only() {
+        // Regression test for a real completeness bug: `grow` used to try
+        // only `frontier[0]` at each node with no way to exclude it and try
+        // a different frontier atom instead.
+        //
+        // mol0: O-C(-N)(-N) — hub C's neighbor list (parse/bond-insertion
+        // order) is [O, N(branch), N]. mol1: N-C(-N) — hub' with 2 N leaves,
+        // no O at all. True MCS is the full 3-atom C(N)(N) (mol1 in its
+        // entirety): every seed that reaches "hub mapped, one N-leaf still
+        // unmapped" puts unmatchable O ahead of the remaining N leaf in
+        // frontier order. Without an exclude branch, growth died at size 2
+        // (stuck on O) regardless of which atom was used as the seed --
+        // fixed by branching include/exclude on `frontier[0]` instead of
+        // only ever including it.
+        let mol0 = parse("OC(N)N").unwrap();
+        let mol1 = parse("NC(N)").unwrap();
+        let result = find_mcs(&[&mol0, &mol1]);
+        assert_eq!(
+            result.atom_count(),
+            3,
+            "expected true MCS (C(N)(N), 3 atoms = all of mol1), got {}",
+            result.atom_count()
         );
     }
 
