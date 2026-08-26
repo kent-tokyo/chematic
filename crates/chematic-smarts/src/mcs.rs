@@ -111,12 +111,58 @@ pub fn find_mcs(mols: &[&Molecule]) -> QueryMolecule {
 }
 
 /// Find the Maximum Common Substructure of `mols` using `config`.
+///
+/// If `config.timeout_ms` is set and the deadline is reached, returns the
+/// best result found so far -- silently, with no way to tell it apart from
+/// an exhaustive result. Use [`find_mcs_with_config_checked`] /
+/// [`McsOutcome`] when that distinction matters (mirrors
+/// `match_vf2.rs`'s own `find_matches_with_rings_and_config` /
+/// `_checked` split for the same reason).
 pub fn find_mcs_with_config(mols: &[&Molecule], config: &McsConfig) -> QueryMolecule {
+    find_mcs_with_config_checked(mols, config).into_query()
+}
+
+/// Outcome of an MCS search that may have been cut off by
+/// `McsConfig::timeout_ms`.
+///
+/// The whole point of this type is that `TimedOut` must never be silently
+/// treated the same as `Exhaustive`: a cut-off search's result is the best
+/// found before the deadline, not proven to be the true maximum common
+/// substructure.
+#[derive(Debug, Clone)]
+pub enum McsOutcome {
+    /// The search explored the whole candidate space and confirmed `result`
+    /// is the true (config-constrained) maximum common substructure.
+    Exhaustive(QueryMolecule),
+    /// `timeout_ms` was reached before the search finished; `result` is the
+    /// best candidate found so far, not guaranteed optimal.
+    TimedOut(QueryMolecule),
+}
+
+impl McsOutcome {
+    /// Discard the exhaustive/timed-out distinction and return the result
+    /// either way -- what [`find_mcs`]/[`find_mcs_with_config`] have always
+    /// returned.
+    pub fn into_query(self) -> QueryMolecule {
+        match self {
+            McsOutcome::Exhaustive(q) | McsOutcome::TimedOut(q) => q,
+        }
+    }
+
+    /// `true` if the search was cut off by `timeout_ms` before finishing.
+    pub fn was_timed_out(&self) -> bool {
+        matches!(self, McsOutcome::TimedOut(_))
+    }
+}
+
+/// Like [`find_mcs_with_config`], but reports whether `config.timeout_ms`
+/// was reached before the search finished exhaustively -- see [`McsOutcome`].
+pub fn find_mcs_with_config_checked(mols: &[&Molecule], config: &McsConfig) -> McsOutcome {
     if mols.is_empty() {
-        return QueryMolecule::new();
+        return McsOutcome::Exhaustive(QueryMolecule::new());
     }
     if mols.len() == 1 {
-        return molecule_to_query(mols[0]);
+        return McsOutcome::Exhaustive(molecule_to_query(mols[0]));
     }
 
     let deadline = config
@@ -185,10 +231,19 @@ pub fn find_mcs_with_config(mols: &[&Molecule], config: &McsConfig) -> QueryMole
 
     // Apply min_atoms filter.
     if state.best.size < config.min_atoms {
-        return QueryMolecule::new();
+        return if state.timed_out {
+            McsOutcome::TimedOut(QueryMolecule::new())
+        } else {
+            McsOutcome::Exhaustive(QueryMolecule::new())
+        };
     }
 
-    build_query(mols[0], &state.best, config)
+    let result = build_query(mols[0], &state.best, config);
+    if state.timed_out {
+        McsOutcome::TimedOut(result)
+    } else {
+        McsOutcome::Exhaustive(result)
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -976,6 +1031,44 @@ mod tests {
         let b = parse("Cc1ccccc1").unwrap();
         // Should return without panic (may return partial result)
         let _ = find_mcs_with_config(&[&a, &b], &config);
+    }
+
+    #[test]
+    fn test_checked_reports_exhaustive_without_timeout() {
+        let a = parse("c1ccccc1").unwrap();
+        let b = parse("Cc1ccccc1").unwrap();
+        let unchecked_result = find_mcs_with_config(&[&a, &b], &McsConfig::default());
+        let checked = find_mcs_with_config_checked(&[&a, &b], &McsConfig::default());
+        assert!(
+            !checked.was_timed_out(),
+            "no timeout_ms set: search must report Exhaustive"
+        );
+        assert!(matches!(checked, McsOutcome::Exhaustive(_)));
+        assert_eq!(
+            checked.into_query().atom_count(),
+            unchecked_result.atom_count(),
+            "find_mcs_with_config_checked's result must match find_mcs_with_config's"
+        );
+    }
+
+    #[test]
+    fn test_checked_reports_timed_out_with_zero_deadline() {
+        // A 0ms deadline is reached on the very first check, guaranteeing a
+        // cut-off search (unlike test_timeout_does_not_panic's 1ms, which
+        // isn't guaranteed to actually trigger on a small molecule pair --
+        // that test only checks "no panic", this one checks the outcome tag).
+        let config = McsConfig {
+            timeout_ms: Some(0),
+            ..McsConfig::default()
+        };
+        let a = parse("c1ccccc1").unwrap();
+        let b = parse("Cc1ccccc1").unwrap();
+        let checked = find_mcs_with_config_checked(&[&a, &b], &config);
+        assert!(
+            checked.was_timed_out(),
+            "0ms deadline must be reported as TimedOut, not silently treated as Exhaustive"
+        );
+        assert!(matches!(checked, McsOutcome::TimedOut(_)));
     }
 
     #[test]

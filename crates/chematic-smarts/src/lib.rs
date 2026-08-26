@@ -24,7 +24,10 @@ pub use match_vf2::{
     find_matches_with_rings_and_config, find_matches_with_rings_and_config_checked,
     has_match_bounded,
 };
-pub use mcs::{AtomCompare, BondCompare, McsConfig, find_mcs, find_mcs_with_config};
+pub use mcs::{
+    AtomCompare, BondCompare, McsConfig, McsOutcome, find_mcs, find_mcs_with_config,
+    find_mcs_with_config_checked,
+};
 pub use parser::{SmartsError, parse_smarts};
 pub use query::{
     AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryAtom, QueryBond, QueryMolecule,
