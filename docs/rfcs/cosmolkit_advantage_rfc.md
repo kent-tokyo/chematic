@@ -12,11 +12,19 @@
 >   silently drop していた問題。開発用corpus 1,134失敗→128失敗（#392以前の水準まで復帰）。
 >   NCI holdout（4,999件、blind, run once）でステレオ関連の失敗は0件。詳細は issue #399 の
 >   コメント履歴（診断コメント→修正→最終結果コメント）を参照。
-> - **issue #395 は未解決（OPEN）のまま**。canonical SMILES のring-closure
->   explicit-bond-order記法に起因する非冪等性（10,000件corpusの約130件）。#399とは別の
->   root cause。
-> - 本指示書の第5節が明記する通り、**#395が解決するまで、Phase A（COSMolKit競合スナップ
->   ショット）以降のCOSMolKit固有の作業には着手しない**。次の具体的な一手は #395 である。
+> - **issue #395 も修正済み**（PR #406、draft、未マージ）。canonical SMILES の writer が
+>   ring-closure の bond marker を出す判定で、自atomの芳香族性しかチェックしておらず
+>   ring-closure partner側の芳香族性を見ていなかった問題（`c1-2` のような非芳香族fusion
+>   結合が再parse時に暗黙的に芳香族結合へ変わっていた）。bare-parse idempotency corpus
+>   （10,000件）: 130失敗→**0失敗**、RDKit InChI独立oracleとも完全一致。#399とは別ファイル・
+>   別root causeの独立した修正。
+> - **#404・#406はいずれもdraft PRで未マージ**。両方マージされ次第、
+>   `canonical_idempotency_corpus_standardized.rs`（standardize経由corpus）の
+>   ceiling定数を再測定して確定する必要がある（#395単独修正時点で615/519→571/481まで
+>   改善することは確認済み）。
+> - 本指示書の第5節が求める「正しさの負債」（#399・#395）はどちらも診断・修正・検証まで
+>   完了した。残るのは両PRのレビュー・マージ判断のみ。**Phase A（COSMolKit競合スナップ
+>   ショット）は、#404・#406のマージ後に着手する**。
 
 ---
 
@@ -147,7 +155,7 @@ COSMolKitとの機能競争へ進む前に、現在openのcanonical identity問�
 優先順位：
 
 1. issue #399 — **完了（2026-08-26、PR #404 draft）**
-2. issue #395 — **未解決、次の一手**
+2. issue #395 — **完了（2026-08-26、PR #406 draft）**
 3. standardize／canonicalの未使用holdout
 4. InChIKey／CIP／graph identityの独立確認
 
