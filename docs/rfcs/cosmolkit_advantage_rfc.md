@@ -22,9 +22,24 @@
 >   `canonical_idempotency_corpus_standardized.rs`（standardize経由corpus）の
 >   ceiling定数を再測定して確定する必要がある（#395単独修正時点で615/519→571/481まで
 >   改善することは確認済み）。
-> - 本指示書の第5節が求める「正しさの負債」（#399・#395）はどちらも診断・修正・検証まで
->   完了した。残るのは両PRのレビュー・マージ判断のみ。**Phase A（COSMolKit競合スナップ
->   ショット）は、#404・#406のマージ後に着手する**。
+> - 本指示書の第5節が求める「正しさの負債」（#399・#395）はどちらも診断・修正・検証・マージ
+>   まで完了した（PR #404・#406・#408、いずれもmain）。追加で見つかった `normalize_zwitterion`
+>   のプロトン移動非対称バグ（issue #407）と `canonical_tautomer` 起因の残差（issue #402系統）
+>   は、原因特定済み・未修正のまま記録。
+> - **Phase A（競合スナップショット＋gap matrix）完了**（2026-08-26）。
+>   `docs/competitive/cosmolkit_gap_matrix.md` 参照。GitHub API経由でCOSMolKitの実際の
+>   README/VALIDATION.md/Cargo.tomlを確認し、本指示書自身の前提を1点訂正した：
+>   **COSMolKitは既にWASM/browserデプロイを実際に出荷済み**（`tools.cosmol.org`、
+>   `wasm-bindgen`依存を確認）— 「WASM/browserはCOSMolKitの未完成領域」という当初の前提は
+>   もはや成立せず、bundle sizeとAPI表面の広さではchematicが優位だが「browserで動くこと
+>   自体」はparity化した。また、COSMolKitは自己申告でChEMBL 37全件（289万分子）に対する
+>   RDKit `2026.03.1` 完全一致検証（29.6億件の照合、0 mismatch自己申告）を主張しており、
+>   これはchematic自身の検証規模（5,000件corpus×2、NCI holdout 4,999件）の約1000倍の
+>   スケール — 化学的正確性軸（重み30、最大）で軽視できない事実。詳細・全項目のAhead/
+>   Competitive/Partial/Missing分類は gap matrix 本体を参照。
+> - **勝敗判定は一切していない**（本指示書第3節の勝利条件を満たす測定はまだ存在しない）。
+>   次のステップはStep 3（再現可能な比較harness、`validation/cosmolkit_comparison/`）だが、
+>   未着手・未承認。
 
 ---
 
