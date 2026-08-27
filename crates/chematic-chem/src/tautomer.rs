@@ -678,7 +678,27 @@ fn transfer_hydrogen_aromatic(
     builder.copy_stereo_groups_from(mol);
     builder.copy_stereo_from(mol);
     builder.copy_bond_directions_from(mol);
-    Some(builder.build())
+    let next = builder.build();
+
+    // Issue #415: `acceptor` being individually valence-legal (has an
+    // available H slot in isolation) isn't sufficient in a fused/bridged
+    // ring -- it can be ring-adjacent to *another* atom that already carries
+    // an "extra" H, and two such atoms next to each other in one aromatic
+    // ring can't both correctly contribute a lone pair to the same ring's pi
+    // system. Confirmed via a real repro this exact function reaches
+    // (`Oc1[nH]ncc2c3cc(OCc4ccccc4)ccc3nc1-2`'s two ring nitrogens end up
+    // adjacent-both-protonated, an over-valent state RDKit itself rejects).
+    // Same general-purpose oracle used for the same reason in
+    // `transfer_hydrogen_exocyclic_lactam` below -- see that function's own
+    // comment for why `kekulize` (not `validate_valence`, which doesn't cap
+    // aromatic atoms to their primary valence and misses this) is the right
+    // check. Bounded cost: this function is only ever called on the (`max`,
+    // default 16) candidates `enumerate_direct_aromatic_forms_tracked`'s BFS
+    // frontier actually visits, not on every possible pair in the molecule.
+    if chematic_core::kekulize(&next).is_err() {
+        return None;
+    }
+    Some(next)
 }
 
 // ---------------------------------------------------------------------------
@@ -862,6 +882,27 @@ fn transfer_hydrogen_exocyclic_lactam(
         // see Phase 1's fragment-extraction stereo-corruption fix). Fail
         // closed rather than return a molecule that silently changed
         // something this transform must never touch.
+        return None;
+    }
+
+    // Second defense-in-depth layer (issue #415): the per-atom preconditions
+    // above (`implicit_hcount(mol, acceptor) == 0`, degree 2) are necessary
+    // but not sufficient in a fused/bridged ring system -- `find_sssr`'s own
+    // ring choice for such systems isn't always unique (a known, separate
+    // residual: the *same* physical molecule can get a different SSSR
+    // decomposition depending on atom-labeling order, which can change which
+    // ring this function's `ring_distance` check sees), and an acceptor that
+    // looks individually valid (0 H, degree 2) can still be ring-adjacent to
+    // *another* aromatic atom that already carries an "extra" H. Two such
+    // atoms next to each other in one aromatic ring cannot both correctly
+    // contribute a lone pair to the same ring's pi system -- confirmed via a
+    // real repro (`Oc1[nH]ncc2c3cc(OCc4ccccc4)ccc3nc1-2`) that this function
+    // previously accepted and which produced an over-valent `[nH2]` nitrogen
+    // RDKit itself rejects outright. `kekulize` is a general, already-used-
+    // elsewhere oracle for "is this aromatic system actually valid" that
+    // catches this (and would catch other, not-yet-evidenced pathological
+    // shapes too) without needing to hand-enumerate every such shape here.
+    if chematic_core::kekulize(&next).is_err() {
         return None;
     }
     Some(next)
@@ -3719,5 +3760,38 @@ mod tests {
             crate::cip::assign_cip(&out).get(stereocenter),
             "CIP label changed on the uninvolved stereocenter"
         );
+    }
+
+    // -----------------------------------------------------------------------
+    // Issue #415: canonical_tautomer must never produce an unkekulizable
+    // (chemically invalid) molecule, even for a fused/bridged ring system
+    // where `find_sssr`'s own ring choice can differ depending on atom
+    // labeling.
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn issue415_fused_ring_shift_never_produces_invalid_molecule() {
+        // A phthalazinone-like fused bicyclic tautomer where re-labeling via
+        // a canonical-SMILES round trip used to make both the
+        // exocyclic-lactam-shift mechanism and the plain direct-aromatic
+        // 1,2-shift mechanism protonate a ring nitrogen that was already
+        // ring-adjacent to another protonated nitrogen -- an over-valent
+        // `[nH2]`-shaped state RDKit itself rejects outright (confirmed via
+        // `Chem.MolFromSmiles` at diagnosis time). Every candidate this
+        // molecule can reach through repeated standardize passes must stay
+        // kekulizable.
+        let smi = "Oc1[nH]ncc2c3cc(OCc4ccccc4)ccc3nc1-2";
+        let mol = parse(smi).unwrap();
+        let mut current = mol;
+        for pass in 0..6 {
+            let next = canonical_tautomer(&current);
+            assert!(
+                chematic_core::kekulize(&next).is_ok(),
+                "pass {pass}: canonical_tautomer produced an unkekulizable molecule: {}",
+                canonical_smiles(&next)
+            );
+            let reparsed = parse(&canonical_smiles(&next)).unwrap();
+            current = reparsed;
+        }
     }
 }
