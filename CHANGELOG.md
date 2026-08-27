@@ -9,6 +9,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `chematic-smarts` (`McsConfig`: `match_charge`/`match_isotope`, typed timeout outcome)
+
+- `McsConfig` gained `match_charge`/`match_isotope` fields, mirroring the
+  existing `match_chiral_tag` exactly (default `false`, ignoring charge/
+  isotope unless opted in — e.g. a carboxylate `[O-]` matches neutral `O`,
+  `[13CH4]` matches `C`, unless explicitly required to match).
+- New `McsOutcome` enum (`Exhaustive`/`TimedOut`) and
+  `find_mcs_with_config_checked`, mirroring `match_vf2.rs`'s own
+  `find_matches_with_rings_and_config_checked` pattern: reports whether
+  `McsConfig::timeout_ms` was reached before the search finished, rather
+  than silently returning a possibly-non-optimal result indistinguishable
+  from an exhaustive one. `find_mcs`/`find_mcs_with_config`'s existing
+  signatures and behavior are unchanged — purely additive.
+
+### Fixed — `chematic-smarts` (`find_mcs`'s branch-and-bound search was incomplete)
+
+- `grow()` only ever tried `frontier[0]` at each search node, with no way
+  to exclude it and try a different frontier atom instead. If `frontier[0]`
+  had no compatible candidate in some other input molecule, the whole
+  branch died silently — even when skipping it (mapping a different,
+  compatible frontier atom instead) would reach a strictly larger common
+  substructure. Minimal repro: `OC(N)N` vs `NC(N)` returned an MCS of 2
+  atoms instead of the true 3 (every seed path hit an unmatchable O ahead
+  of a still-needed N leaf in frontier iteration order, and nothing
+  backtracked past it).
+- Fixed via standard include/exclude branch-and-bound: include the first
+  frontier atom (as before), or exclude it from this subtree and let a
+  later frontier atom be tried instead, unwinding the exclusion on
+  backtrack. `upper_bound_additional`'s pruning tightened to also skip
+  excluded mol[0] atoms. `McsOutcome::Exhaustive`'s doc comment previously
+  claimed a completeness the algorithm didn't actually have; corrected.
+- Found while scoping MCES/multi-tie-MCS-enumeration work (both would have
+  quietly inherited this incompleteness); fixed first, as its own
+  correctness fix, before any new-feature work on top of it.
+
+### Fixed — `chematic-chem` (issue #403: `disconnect_metals` left a dative-bond-derived formal charge unneutralized)
+
+- `disconnect_metals` severed dative M-O/M-N bonds without touching the
+  non-metal atom's stored `hydrogen_count`. A dative bond is commonly
+  written with a formal charge that exactly balances the bond (e.g. `[O+]`
+  single-bonded to a metal, satisfying O+'s valence-3 with 0 implicit H) —
+  after disconnection the atom's true valence changed, but its stale H
+  count didn't, so the very next pipeline stage, `neutralize_charges`
+  (guard `h > 0` on the raw stored field), saw `h == 0` and skipped it,
+  leaving a dangling formal charge with nothing left to justify it. The
+  charge only got neutralized on a *second* standardize pass, once a fresh
+  parse of the incorrectly-charged first-pass output stored the H count
+  explicitly — a real, confirmed idempotency bug across 34/4999 molecules
+  in RDKit's own bundled NCI Diversity Set holdout.
+- Fixed: `disconnect_metals` now recomputes the affected atom's H count via
+  valence inference against the post-disconnection topology, so
+  `neutralize_charges` sees the true state on the very first pass.
+- Also fixed a related bug in `remove_hydrogens`: it unconditionally reset
+  any atom with `hydrogen_count == Some(0)` to `None`, when its own doc
+  comment's stated intent was narrower — only atoms that actually had an
+  explicit H *atom* neighbor removed this call. Tightened to match.
+- Verified: NCI `first_5K.smi` (4,999 molecules, now a permanent regression
+  corpus, `scripts/nci_first_5k_smiles_only.smi`) 34 → **0** failures. New
+  hand-built metal-complex holdout added (11 fixtures spanning Ni, Co, Al,
+  Zn, Cr, Fe, Mg, Mn, Hg, Cd, Pd with varied ligand shapes plus an
+  ionic-salt negative control), all pass. Existing dev corpora unaffected.
+
 ## [0.20.1] — 2026-08-26
 
 Patch release: three canonical-SMILES/standardization correctness fixes, all
