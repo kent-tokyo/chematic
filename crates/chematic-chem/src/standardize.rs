@@ -956,8 +956,18 @@ pub fn has_zwitterion(mol: &Molecule) -> bool {
 
 /// Normalize a zwitterion to neutral form by proton transfer.
 ///
-/// For each negatively-charged atom, find the nearest positively-charged atom
-/// and transfer one proton (increase positive charge's H count, decrease negative charge).
+/// For each negatively-charged atom, find the nearest positively-charged atom.
+/// A proton is transferred (donor's H count -1, acceptor's H count +1, both
+/// charges move one step toward neutral) only if the chosen positive atom
+/// actually has a hydrogen to give -- `has_zwitterion`'s "some + and some -
+/// charge exists somewhere" check is necessary but not sufficient for a real
+/// protonation-state zwitterion (amino-acid-style `[NH3+]`.../`[COO-]`...);
+/// permanently-charge-separated groups with no available proton on either
+/// side (e.g. a diazo-`N,N'`-dioxide, `[N+]([O-])=[N+]...[O-]`) are left
+/// untouched atom-by-atom, never invented from nowhere. Every atom not
+/// involved in an actual transfer keeps its original charge and H count
+/// exactly -- atom count, per-element counts, and isotopes are always
+/// preserved (see issue #407).
 ///
 /// Returns a new molecule with normalized charges.
 pub fn normalize_zwitterion(mol: &Molecule) -> Molecule {
@@ -1000,21 +1010,27 @@ pub fn normalize_zwitterion(mol: &Molecule) -> Molecule {
             }
         }
 
-        // Transfer proton: N+ loses H, O- gains H
-        let neg_atom = mol.atom(neg_idx);
+        // Transfer proton: N+ loses H, O- gains H. Both sides of the pair must
+        // move together or not at all -- a positive atom with no available H
+        // (e.g. the fully-substituted N of a diazo-N,N'-dioxide, which is not
+        // a real protonation-state zwitterion) has no proton to give, so the
+        // pair is left untouched entirely. Previously the negative atom was
+        // neutralized unconditionally regardless of whether the positive atom
+        // actually donated anything, inventing a hydrogen and an unbalanced
+        // charge/atom-count change from nowhere (issue #407).
         let pos_atom = mol.atom(closest_pos_idx);
+        let pos_h = pos_atom.hydrogen_count.unwrap_or(0);
+        if pos_h == 0 {
+            continue;
+        }
 
-        // Decrease negative charge
+        let neg_atom = mol.atom(neg_idx);
         let new_neg_charge = neg_atom.charge + 1;
         let neg_h = neg_atom.hydrogen_count.unwrap_or(0);
         modifications.insert(neg_idx, (new_neg_charge, Some(neg_h + 1)));
 
-        // Decrease positive charge by decreasing H count
-        let pos_h = pos_atom.hydrogen_count.unwrap_or(0);
-        if pos_h > 0 {
-            let new_pos_charge = pos_atom.charge - 1;
-            modifications.insert(closest_pos_idx, (new_pos_charge, Some(pos_h - 1)));
-        }
+        let new_pos_charge = pos_atom.charge - 1;
+        modifications.insert(closest_pos_idx, (new_pos_charge, Some(pos_h - 1)));
     }
 
     // Reconstruct molecule with modified charges
@@ -2937,6 +2953,195 @@ mod tests {
         assert_eq!(
             chematic_smiles::canonical_smiles(&stereo_parent(&mol).0),
             expected
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // Issue #407: normalize_zwitterion must never invent a proton. Every
+    // check here is a property (atom/element/H-count/charge conservation),
+    // not a spot check against one hardcoded expected string -- per the
+    // acceptance criteria, RDKit's MolStandardize output is deliberately
+    // never used as a blind oracle for these.
+    // -----------------------------------------------------------------------
+
+    /// Per-element heavy-atom counts plus total H (implicit `hydrogen_count`
+    /// summed across all atoms -- explicit H atoms, if any, are also heavy
+    /// atoms already counted in `counts` and contribute 0 to this sum, so
+    /// nothing is double-counted).
+    fn atom_and_h_census(mol: &Molecule) -> (std::collections::BTreeMap<&'static str, u32>, u32) {
+        let mut counts: std::collections::BTreeMap<&'static str, u32> =
+            std::collections::BTreeMap::new();
+        let mut total_h: u32 = 0;
+        for (_, atom) in mol.atoms() {
+            *counts.entry(atom.element.symbol()).or_insert(0) += 1;
+            total_h += atom.hydrogen_count.unwrap_or(0) as u32;
+        }
+        (counts, total_h)
+    }
+
+    fn net_charge(mol: &Molecule) -> i32 {
+        mol.atoms().map(|(_, a)| a.charge as i32).sum()
+    }
+
+    /// Rebuild `mol` with atom indices reversed (last atom becomes index 0,
+    /// etc.), bonds remapped accordingly -- an isomorphic relabeling used to
+    /// check that `normalize_zwitterion`'s output doesn't depend on which
+    /// atom happens to be enumerated first.
+    fn reverse_atom_order(mol: &Molecule) -> Molecule {
+        let n = mol.atom_count();
+        // old atom i -> new position (n - 1 - i): the last original atom
+        // becomes index 0, and so on.
+        let remap: HashMap<AtomIdx, AtomIdx> = (0..n)
+            .map(|i| (AtomIdx(i as u32), AtomIdx((n - 1 - i) as u32)))
+            .collect();
+        let mut slots: Vec<Option<chematic_core::Atom>> = vec![None; n];
+        for i in 0..n {
+            let old_idx = AtomIdx(i as u32);
+            slots[remap[&old_idx].0 as usize] = Some(mol.atom(old_idx).clone());
+        }
+        let mut builder = MoleculeBuilder::new();
+        for slot in slots {
+            builder.add_atom(slot.expect("every slot filled by construction"));
+        }
+        copy_bonds(mol, &mut builder, &remap);
+        builder.build()
+    }
+
+    fn assert_conserves_atoms_and_protons(label: &str, smi: &str) {
+        let mol = parse(smi).unwrap();
+        let result = normalize_zwitterion(&mol);
+        let (before_counts, before_h) = atom_and_h_census(&mol);
+        let (after_counts, after_h) = atom_and_h_census(&result);
+        assert_eq!(
+            before_counts, after_counts,
+            "{label}: per-element heavy-atom counts must be conserved"
+        );
+        assert_eq!(
+            before_h, after_h,
+            "{label}: total H count (implicit) must be conserved -- a proton must never be invented or destroyed"
+        );
+        assert_eq!(
+            result.atom_count(),
+            mol.atom_count(),
+            "{label}: atom count must be conserved"
+        );
+    }
+
+    fn assert_idempotent(label: &str, smi: &str) {
+        let mol = parse(smi).unwrap();
+        let once = normalize_zwitterion(&mol);
+        let once_canon = chematic_smiles::canonical_smiles(&once);
+        let reparsed = parse(&once_canon).unwrap();
+        let twice = normalize_zwitterion(&reparsed);
+        let twice_canon = chematic_smiles::canonical_smiles(&twice);
+        assert_eq!(
+            once_canon, twice_canon,
+            "{label}: normalize_zwitterion must be idempotent (re-running on its own output is a no-op)"
+        );
+    }
+
+    #[test]
+    fn issue407_known_repro_molecules_conserve_atoms_and_are_idempotent() {
+        // The exact 3 molecules from issue #407: diazo-N,N'-dioxide-like
+        // fragments where neither charged nitrogen has an available proton.
+        // Before the fix: the negative oxygen was unconditionally given a
+        // proton it invented from nowhere, changing the formula and net
+        // charge; the two nitrogens (which have no H to give) were untouched.
+        for (label, smi) in [
+            ("407-1", "CC12CCCCC1(Br)[N+]([O-])=[N+]2[O-]"),
+            ("407-2", "CC12CCCCC1(Cl)[N+]([O-])=[N+]2[O-]"),
+            ("407-3", "CC1(C)[N+]([O-])=[N+]([O-])C1(C)Br"),
+        ] {
+            assert_conserves_atoms_and_protons(label, smi);
+            assert_idempotent(label, smi);
+            let mol = parse(smi).unwrap();
+            let result = normalize_zwitterion(&mol);
+            assert_eq!(
+                net_charge(&result),
+                net_charge(&mol),
+                "{label}: net charge must be unchanged when no atom has a transferable proton"
+            );
+            // Neither +N has an available H, so this pair must be left
+            // completely untouched -- not just "charge-neutral overall".
+            let canon_before = chematic_smiles::canonical_smiles(&mol);
+            let canon_after = chematic_smiles::canonical_smiles(&result);
+            assert_eq!(
+                canon_before, canon_after,
+                "{label}: with no transferable proton anywhere, normalize_zwitterion must be a full no-op"
+            );
+        }
+    }
+
+    #[test]
+    fn issue407_genuine_amino_acid_zwitterion_still_normalizes() {
+        // Positive control: a real protonation-state zwitterion (donor has
+        // an available H) must still be neutralized as before the fix.
+        let mol = parse("[NH3+]CC(=O)[O-]").unwrap();
+        let result = normalize_zwitterion(&mol);
+        assert_eq!(
+            net_charge(&result),
+            0,
+            "genuine zwitterion must reach net charge 0"
+        );
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&result),
+            chematic_smiles::canonical_smiles(&parse("NCC(=O)O").unwrap()),
+            "genuine zwitterion must still normalize to the neutral amino acid form"
+        );
+        assert_conserves_atoms_and_protons("genuine-zwitterion", "[NH3+]CC(=O)[O-]");
+        assert_idempotent("genuine-zwitterion", "[NH3+]CC(=O)[O-]");
+    }
+
+    #[test]
+    fn issue407_negative_controls_no_regression() {
+        // Nitro and pyridine-N-oxide: both have a +N/-O pair (has_zwitterion
+        // fires) but the +N never has an available proton in either case --
+        // must be a no-op, not a corruption, and must not regress into
+        // "always neutralize nitro/N-oxide groups" (a different, wrong fix).
+        for (label, smi) in [
+            ("nitrobenzene", "c1ccccc1[N+](=O)[O-]"),
+            ("pyridine-n-oxide", "[O-][n+]1ccccc1"),
+        ] {
+            assert_conserves_atoms_and_protons(label, smi);
+            assert_idempotent(label, smi);
+            let mol = parse(smi).unwrap();
+            let result = normalize_zwitterion(&mol);
+            assert_eq!(
+                net_charge(&result),
+                net_charge(&mol),
+                "{label}: no transferable proton anywhere -- net charge must be unchanged"
+            );
+            assert_eq!(
+                chematic_smiles::canonical_smiles(&mol),
+                chematic_smiles::canonical_smiles(&result),
+                "{label}: must be a full no-op, not a partial/silent mutation"
+            );
+        }
+    }
+
+    #[test]
+    fn issue407_atom_permutation_does_not_change_outcome() {
+        // A symmetric case with two equidistant candidate positive atoms
+        // (both with an available proton) for one negative atom: whichever
+        // one the BFS-tie-break picks, the OUTCOME (net charge, formula,
+        // canonical structure after normalization) must not depend on which
+        // atom happened to be enumerated first.
+        let mol = parse("[NH3+]CC([O-])C[NH3+]").unwrap();
+        let reversed = reverse_atom_order(&mol);
+        let result = normalize_zwitterion(&mol);
+        let result_reversed = normalize_zwitterion(&reversed);
+        assert_eq!(
+            net_charge(&result),
+            net_charge(&result_reversed),
+            "atom-order permutation must not change the net charge outcome"
+        );
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&result),
+            chematic_smiles::canonical_smiles(&result_reversed),
+            "atom-order permutation must not change the normalized structure \
+             (whichever of the two equidistant +N atoms the BFS tie-break \
+             picks, the two are chemically interchangeable here, so the \
+             canonical result must converge either way)"
         );
     }
 }

@@ -119,22 +119,33 @@ fn assert_corpus_idempotent(label: &str, corpus: &str, max_known_failures: usize
 /// issue #395's exact syntactic signature (an explicit bond symbol directly
 /// preceding a ring-closure digit, e.g. `c1-2`).
 ///
-/// **#395 fix (this measurement, both #399 and #395 now merged)**:
-/// `canonical.rs`'s ring-closure bond-marker decision now checks both
-/// endpoints' aromaticity (previously only checked one), fixing the
-/// `c1-2`-shaped defect at its source. Re-measured with both fixes
-/// combined: **0/4** -- `chembl_accuracy_corpus_4999.smi` is now fully
-/// idempotent; `descriptor_census_corpus.smi` has 4 residual failures, all
-/// confirmed unrelated to #395/#399: 3 share a `normalize_zwitterion`
-/// proton-transfer bug (unconditionally invents a hydrogen on the negative
-/// atom even when the "nearest positive" partner has none to donate, for
+/// **#395 fix**: `canonical.rs`'s ring-closure bond-marker decision now
+/// checks both endpoints' aromaticity (previously only checked one), fixing
+/// the `c1-2`-shaped defect at its source. Re-measured with both #399 and
+/// #395 combined: **0/4** -- `chembl_accuracy_corpus_4999.smi` is now fully
+/// idempotent; `descriptor_census_corpus.smi` had 4 residual failures, all
+/// confirmed unrelated to #395/#399: 3 shared a `normalize_zwitterion`
+/// proton-transfer bug (unconditionally invented a hydrogen on the negative
+/// atom even when the "nearest positive" partner had none to donate, for
 /// non-zwitterionic charge-separated groups like a diazo-`N,N'`-dioxide;
 /// filed as issue #407), and 1 is a `canonical_tautomer` interaction
 /// (bare-parse idempotent, confirmed via #395's own fix; only `standardize()`
 /// with tautomer canonicalization enabled breaks it -- same class as #402).
+///
+/// **#407 fix**: proton transfer now only happens when the chosen positive
+/// atom actually has an available H to donate -- if it doesn't (as in the
+/// diazo-dioxide case, where the +N is fully substituted), the pair is left
+/// completely untouched rather than inventing a proton on the negative side
+/// alone. Re-measured: **0/1** -- `chembl_accuracy_corpus_4999.smi` still
+/// fully idempotent; `descriptor_census_corpus.smi` down to exactly **1**
+/// residual (line 3179, `Oc1[nH]ncc2c3cc(OCc4ccccc4)ccc3nc1-2`), confirmed
+/// standing alone and matching the #402-class signature already documented
+/// above (bare-parse idempotent; only breaks under `standardize()` with
+/// `canonical_tautomer` enabled) -- not the same failure as before, not
+/// re-diagnosed here, tracked under #402.
 /// Do not lower these again without an honest full-corpus re-run, not an
 /// assumption; do not raise them to hide a future regression either.
-const DESCRIPTOR_CENSUS_KNOWN_FAILURES: usize = 4;
+const DESCRIPTOR_CENSUS_KNOWN_FAILURES: usize = 1;
 const CHEMBL_ACCURACY_KNOWN_FAILURES: usize = 0;
 
 /// **Issue #403 fix**: `disconnect_metals` left a dative-bond-derived
