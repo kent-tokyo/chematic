@@ -213,8 +213,25 @@ pub fn remove_hydrogens(mol: &Molecule) -> Molecule {
             continue;
         }
         let mut atom = mol.atom(old_idx).clone();
-        // Restore implicit H computation for atoms that had explicit H set.
-        if atom.hydrogen_count == Some(0) {
+        // Restore implicit H computation, but only for atoms that actually
+        // had a removable explicit H *atom* neighbor this call is dropping --
+        // `add_hydrogens` sets `hydrogen_count = Some(0)` on every atom it
+        // converts specifically to pair with the new explicit H atom
+        // neighbors it adds, so "had a removable-H neighbor" is the correct
+        // signal to undo that, not "stored H count happens to be 0". An atom
+        // whose H count is genuinely, deliberately 0 (e.g. a dative-bonded
+        // `[O+]` disconnected from a metal by an earlier standardize stage,
+        // never had, and isn't gaining, any H atom neighbor) must not have
+        // that 0 reinterpreted via valence-based inference: doing so
+        // silently invents an implicit hydrogen from a valence change that
+        // happened elsewhere in the pipeline, and does so too late for
+        // `neutralize_charges` (which already ran) to neutralize the
+        // resulting charge -- a real, confirmed idempotency bug (issue #403).
+        if atom.hydrogen_count == Some(0)
+            && mol
+                .neighbors(old_idx)
+                .any(|(nb, _)| is_removable_explicit_h(mol.atom(nb)))
+        {
             atom.hydrogen_count = None;
         }
         let new_idx = builder.add_atom(atom);

@@ -18,6 +18,16 @@ const DESCRIPTOR_CENSUS_CORPUS: &str =
     include_str!("../../../scripts/descriptor_census_corpus.smi");
 const CHEMBL_ACCURACY_CORPUS: &str =
     include_str!("../../../scripts/chembl_accuracy_corpus_4999.smi");
+/// RDKit's own bundled NCI Diversity Set sample (`Data/NCI/first_5K.smi`,
+/// public-domain structures from the US National Cancer Institute; the
+/// original file's tab-separated NCI ID column is stripped, SMILES only).
+/// Used as an independent-source holdout for issue #399's fix and, per issue
+/// #403, already exercised once (34/4999 failures found, all metal
+/// complexes) -- re-used here for regression tracking, not treated as a
+/// fresh/blind holdout for future work (see
+/// `canonical_idempotency_corpus_nci_metal_holdout.rs` for a genuinely new,
+/// not-yet-used metal-complex holdout).
+const NCI_FIRST_5K_CORPUS: &str = include_str!("../../../scripts/nci_first_5k_smiles_only.smi");
 
 /// For every non-empty line in `corpus`: parse, standardize, canonicalize
 /// once, re-parse, standardize again, canonicalize twice, check the two
@@ -127,6 +137,26 @@ fn assert_corpus_idempotent(label: &str, corpus: &str, max_known_failures: usize
 const DESCRIPTOR_CENSUS_KNOWN_FAILURES: usize = 4;
 const CHEMBL_ACCURACY_KNOWN_FAILURES: usize = 0;
 
+/// **Issue #403 fix**: `disconnect_metals` left a dative-bond-derived
+/// `[O+]`/`[N+]`'s stale, too-low `hydrogen_count` in place after severing
+/// the metal bond, so the very next pipeline stage (`neutralize_charges`,
+/// whose guard is `h > 0` on the raw stored field) saw `h == 0` and skipped
+/// neutralizing it -- the charge only got cleaned up on a *second*
+/// standardize pass, once a fresh parse of the (incorrectly charged) first
+/// pass's output stored the H count explicitly. Fixed by having
+/// `disconnect_metals` itself recompute the affected atom's H count by
+/// valence inference against the post-disconnection topology, so
+/// `neutralize_charges` sees the true state immediately. A second, related
+/// bug in `remove_hydrogens` (unconditionally resetting ANY
+/// `hydrogen_count == Some(0)` atom to `None`, not just ones that actually
+/// had an explicit H *atom* neighbor removed) could independently reinvent
+/// the same stale-charge problem after `disconnect_metals`'s own fix;
+/// tightened to only reset atoms with a removed explicit-H neighbor.
+/// Re-measured: **0/4999** on this corpus (was 34/4999) -- all previously-
+/// failing molecules confirmed to be dative metal complexes, all now
+/// idempotent and correctly neutralized on the first pass.
+const NCI_FIRST_5K_KNOWN_FAILURES: usize = 0;
+
 #[test]
 fn descriptor_census_corpus_standardized_is_canonically_idempotent() {
     assert_corpus_idempotent(
@@ -142,5 +172,14 @@ fn chembl_accuracy_corpus_standardized_is_canonically_idempotent() {
         "chembl_accuracy_corpus_4999.smi",
         CHEMBL_ACCURACY_CORPUS,
         CHEMBL_ACCURACY_KNOWN_FAILURES,
+    );
+}
+
+#[test]
+fn nci_first_5k_corpus_standardized_is_canonically_idempotent() {
+    assert_corpus_idempotent(
+        "nci_first_5k_smiles_only.smi",
+        NCI_FIRST_5K_CORPUS,
+        NCI_FIRST_5K_KNOWN_FAILURES,
     );
 }

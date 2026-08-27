@@ -6,9 +6,11 @@
 
 #![forbid(unsafe_code)]
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 
-use chematic_core::{AtomIdx, BondIdx, Element, Molecule, MoleculeBuilder, validate_valence};
+use chematic_core::{
+    AtomIdx, BondIdx, Element, Molecule, MoleculeBuilder, valence_inferred_hcount, validate_valence,
+};
 
 use crate::{hash::mol_hash, hydrogen::remove_hydrogens, tautomer::canonical_tautomer};
 use chematic_smarts::{MatchConfig, find_matches_with_config, parse_smarts};
@@ -1694,26 +1696,52 @@ fn append_valence_warnings(
 /// Iterates through all atoms; if a metal is found, removes all bonds between
 /// that metal and organic/inorganic atoms. Returns the molecule with metal
 /// coordination bonds severed.
+///
+/// For every non-metal atom losing a bond this way, an explicitly-stored
+/// `hydrogen_count` is recomputed by valence inference from the *surviving*
+/// bonds -- a dative M-O/M-N bond is commonly written with a formal charge on
+/// the non-metal atom that exactly balances the bond (e.g. `[O+]`
+/// single-bonded to the metal, satisfying O+'s valence-3), and leaving the
+/// stale, now-too-low H count in place would let the very next pipeline
+/// stage, `neutralize_charges`, see `h == 0` (its guard is `h > 0`), skip
+/// neutralizing it, and leave a dangling formal charge with no bond left to
+/// justify it -- a real, confirmed idempotency bug (issue #403): the charge
+/// only got neutralized on a *second* standardize pass, once a fresh parse of
+/// the first pass's (incorrectly charged) output SMILES stored the H count
+/// explicitly instead of inferring it. Recomputing here (not merely resetting
+/// to `None` -- `neutralize_charges` reads the raw stored field, not
+/// `implicit_hcount`, so an unresolved `None` would look identical to a
+/// stored `Some(0)` to its guard) means `neutralize_charges` sees the true
+/// post-disconnection valence on the very first pass and can correctly
+/// neutralize (or correctly decide not to) right away, converging to the
+/// same result every time.
 fn disconnect_metals(mol: &Molecule) -> Molecule {
-    let mut builder = MoleculeBuilder::new();
+    // Atoms adjacent to a metal, on the *non-metal* side of the bond -- their
+    // hydrogen_count needs recomputing once that bond is dropped.
+    let mut affected: HashSet<AtomIdx> = HashSet::new();
+    for i in 0..mol.bond_count() {
+        let bond = mol.bond(BondIdx(i as u32));
+        let atom1_is_metal = is_metal(mol.atom(bond.atom1).element);
+        let atom2_is_metal = is_metal(mol.atom(bond.atom2).element);
+        if atom1_is_metal && !atom2_is_metal {
+            affected.insert(bond.atom2);
+        } else if atom2_is_metal && !atom1_is_metal {
+            affected.insert(bond.atom1);
+        }
+    }
 
-    // Copy all atoms
+    // Pass 1: copy atoms unchanged, drop metal bonds -- builds the
+    // post-disconnection *topology* so valence inference below has the
+    // surviving bonds (not the original, metal-including ones) to work from.
+    let mut builder = MoleculeBuilder::new();
     for i in 0..mol.atom_count() {
         builder.add_atom(mol.atom(AtomIdx(i as u32)).clone());
     }
-
-    // Copy only non-metal bonds. Atom indices are unchanged (identity remap,
-    // safe for copy_stereo_from/copy_stereo_groups_from below), but dropped
-    // metal bonds shift surviving bonds' indices, so bond_directions is
-    // remapped bond-by-bond here rather than cloned wholesale -- the same
-    // pattern as `Molecule::with_bond_removed` (see #399).
     for i in 0..mol.bond_count() {
         let old_bidx = BondIdx(i as u32);
         let bond = mol.bond(old_bidx);
         let atom1_is_metal = is_metal(mol.atom(bond.atom1).element);
         let atom2_is_metal = is_metal(mol.atom(bond.atom2).element);
-
-        // Skip bonds where at least one atom is a metal
         if !atom1_is_metal
             && !atom2_is_metal
             && let Ok(new_bidx) = builder.add_bond(bond.atom1, bond.atom2, bond.order)
@@ -1722,9 +1750,30 @@ fn disconnect_metals(mol: &Molecule) -> Molecule {
             builder.set_bond_direction(new_bidx, direction);
         }
     }
+    let disconnected = builder.build();
 
-    builder.copy_stereo_from(mol);
-    builder.copy_stereo_groups_from(mol);
+    // Pass 2: recompute the affected atoms' hydrogen_count against the
+    // now-disconnected topology (charge unchanged; `neutralize_charges` runs
+    // next and decides whether the charge itself should move).
+    let mut builder = MoleculeBuilder::new();
+    for i in 0..disconnected.atom_count() {
+        let idx = AtomIdx(i as u32);
+        let mut atom = disconnected.atom(idx).clone();
+        if affected.contains(&idx) && atom.hydrogen_count.is_some() {
+            atom.hydrogen_count = Some(valence_inferred_hcount(&disconnected, idx));
+        }
+        builder.add_atom(atom);
+    }
+    for i in 0..disconnected.bond_count() {
+        let bond = disconnected.bond(BondIdx(i as u32));
+        if let Ok(new_bidx) = builder.add_bond(bond.atom1, bond.atom2, bond.order)
+            && let Some(direction) = disconnected.bond_direction(BondIdx(i as u32))
+        {
+            builder.set_bond_direction(new_bidx, direction);
+        }
+    }
+    builder.copy_stereo_from(&disconnected);
+    builder.copy_stereo_groups_from(&disconnected);
     builder.build()
 }
 
