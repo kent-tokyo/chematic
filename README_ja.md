@@ -125,7 +125,7 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.20.1
+# chematic v0.21.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-06, v0.4.22 vs RDKit 2026.03.3 --
@@ -303,6 +303,14 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 ---
 
 ## 最近の開発
+
+**v0.21.0**（2026-08-27）: **`McsConfig`の電荷/同位体マッチングと型付きtimeout結果、正確性修正4件**
+- `chematic-smarts`：`McsConfig`に`match_charge`/`match_isotope`フィールドを追加（既存の`match_chiral_tag`と同様、デフォルト`false`）。また新規`McsOutcome` enum（`Exhaustive`/`TimedOut`）を`find_mcs_with_config_checked`経由で提供し、timeoutで探索が打ち切られたかを明示的に報告（最適とは限らない結果をexhaustiveなものと区別できずに返す状態を解消）——純粋に追加のみ、`find_mcs`/`find_mcs_with_config`は無変更
+- `chematic-smarts`：`find_mcs`のbranch-and-bound探索が不完全だった問題——`grow()`が各探索ノードでfrontierの最初の候補しか試さず、除外して別候補を試す手段がなかったため、真に大きい共通部分構造を見逃すケースがあった（最小反例：`OC(N)N` vs `NC(N)`は真の3原子ではなく2原子を返していた）。標準的なinclude/exclude branch-and-boundで修正
+- `chematic-chem`：`disconnect_metals`が金属結合切断後にdative結合由来の形式電荷を中和せず放置していた問題（issue #403）——RDKit同梱のNCI Diversity Setホールドアウトで4,999件中34件が非冪等だった。切断直後に価電子推論でH数を再計算するよう修正。NCIホールドアウト34件→0件、新規11件の金属錯体ホールドアウトも追加
+- `chematic-chem`：`normalize_zwitterion`が、移動可能なプロトンがどちらの原子にもない永続的な電荷分離構造（例：diazo-N,N'-dioxide）に対し、負電荷側原子にプロトンを無から生成し分子式を静かに変えていた問題（issue #407）——両原子が実際にプロトンをやり取りできる場合のみ移動するよう修正。開発用corpusの残差は4→1（残る1件は無関係、issue #402/#415参照）
+- `chematic-chem`：`canonical_tautomer`が、融合・架橋環系で化学的に不正な過剰原子価窒素を生成しうる問題（issue #415）——2つの芳香族水素移動機構双方に、受理前のkekulization検証を追加
+- 詳細は`CHANGELOG.md`の`[0.21.0]`section参照
 
 **v0.20.1**（2026-08-26）: **canonical SMILES／standardizeの正確性修正3件（パッチリリース、破壊的変更なし）**
 - `chematic-smiles`：coupled E/Zのcanonicalizationが再canonicalize時に幾何をsilentlyに変えてしまう問題（issue #390）——canonical writerのE/Zマーカー機構における独立した2つのバグ、再現には両方の修正が必要。修正後、実際の290化合物コーパスで検証（idempotency 290/290、独立したRDKit InChIKeyとの一致290/290、修正前の289/290から改善）
