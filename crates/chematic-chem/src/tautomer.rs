@@ -1423,6 +1423,21 @@ fn active_rules(config: &TautomerConfig) -> Vec<&'static TautomerRule> {
 /// by `tautomer_score` (O-H > N-H > S-H, aromatic-ring bonus), with
 /// canonical SMILES as the final tiebreaker.
 ///
+/// **A stereocenter's CIP (R/S) label can legitimately change across this
+/// shift, even at an atom this function never touches** (issue #402):
+/// `stereo_neighbor_order`/`chirality` are always carried forward verbatim
+/// for every atom not directly part of the transform (the real spatial
+/// configuration never moves), but a CIP label is *computed* from
+/// substituent priorities across the whole molecular graph, and a keto-enol
+/// (or similar) shift a few bonds away can change those priorities. Compare
+/// CIP labels only on the *same* tautomeric form on both sides -- comparing
+/// a pre-shift label to a post-shift label for "did stereo survive
+/// standardization" is not a valid check, and a difference there does not by
+/// itself indicate a bug. Confirmed via independent RDKit CIP oracle on two
+/// molecules where this shift changes a label: chematic's CIP on its own
+/// shifted structure matches RDKit's CIP on that identical structure exactly
+/// in both cases.
+///
 /// Uses [`TautomerConfig::default`] (all rules, max_iter=16).
 pub fn canonical_tautomer(mol: &Molecule) -> Molecule {
     canonical_tautomer_with_config(mol, &TautomerConfig::default())
