@@ -1816,6 +1816,12 @@ fn is_metal(element: Element) -> bool {
 /// 4. If `canonical_tautomer`, convert to the canonical tautomer.
 ///
 /// Useful for cleaning pasted structures or database entries.
+///
+/// With `canonical_tautomer` enabled (the default), a stereocenter's CIP
+/// (R/S) label can legitimately change even though its real spatial
+/// configuration never moves -- see [`crate::tautomer::canonical_tautomer`]'s
+/// own doc comment (issue #402) before treating a pre- vs. post-standardize
+/// CIP-label difference as a bug on its own.
 pub fn standardize(mol: &Molecule, opts: &StandardizeOptions) -> Molecule {
     StandardizationPipeline::new(opts.clone()).run(mol).0
 }
