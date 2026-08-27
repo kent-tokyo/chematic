@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] — 2026-08-27
+
+Minor release: `McsConfig` gains new fields (`match_charge`/`match_isotope`) and
+`McsOutcome` (additive, non-breaking public API), plus four correctness fixes —
+MCS branch-and-bound completeness, and issues #403/#407/#415 (metal-complex
+charge neutralization, zwitterion proton transfer, tautomer valence validity).
+No breaking API changes.
+
 ### Added — `chematic-smarts` (`McsConfig`: `match_charge`/`match_isotope`, typed timeout outcome)
 
 - `McsConfig` gained `match_charge`/`match_isotope` fields, mirroring the
@@ -70,6 +78,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hand-built metal-complex holdout added (11 fixtures spanning Ni, Co, Al,
   Zn, Cr, Fe, Mg, Mn, Hg, Cd, Pd with varied ligand shapes plus an
   ionic-salt negative control), all pass. Existing dev corpora unaffected.
+
+### Fixed — `chematic-chem` (issue #407: `normalize_zwitterion` invented a proton for non-transferable charge pairs)
+
+- The active proton-transfer path unconditionally neutralized the negative
+  atom (+1 charge, +1 H) but only neutralized the paired positive atom if
+  it had an available H. For a permanently charge-separated group with no
+  transferable proton on either side (e.g. a diazo-N,N'-dioxide,
+  `[N+]([O-])=[N+]...[O-]`, structurally similar to a nitro group), this
+  invented a hydrogen on the negative atom from nowhere, silently changing
+  the molecule's formula and net charge.
+- `has_zwitterion`'s "some + and some - charge exists somewhere" check is
+  necessary but not sufficient for a real protonation-state zwitterion.
+  Rather than hand-classifying every non-transferable functional-group
+  family (nitro, diazo N-oxide, mesoionic, ...), fixed by gating the
+  transfer on the invariant that actually matters: a proton can only move
+  if the chosen donor has one to give. If the positive atom has no
+  available H, neither atom is modified — the pair is left untouched.
+- Verified: `descriptor_census_corpus.smi` standardize-path idempotency
+  4 → **1** residual (the 3 known molecules for this issue now pass; the 1
+  remaining is an unrelated `canonical_tautomer` interaction, confirmed
+  standing alone — see issue #402/#415). New property-based tests (atom/
+  element/H-count conservation, net-charge conservation, idempotency, a
+  genuine-zwitterion positive control, nitro/pyridine-N-oxide negative
+  controls, and an atom-permutation invariance check) rather than
+  spot-checking one hardcoded expected string per molecule.
+
+### Fixed — `chematic-chem` (issue #415: `canonical_tautomer` could produce an unkekulizable molecule)
+
+- Both of `canonical_tautomer`'s aromatic H-shift mechanisms
+  (`transfer_hydrogen_exocyclic_lactam`, `transfer_hydrogen_aromatic`)
+  validated their acceptor atom in isolation (0 implicit H, correct
+  degree) but not against the rest of the ring. In a fused/bridged ring
+  system, an acceptor that looks individually valence-legal can be
+  ring-adjacent to *another* aromatic atom that already carries an "extra"
+  H — two such atoms next to each other in one aromatic ring can't both
+  correctly contribute a lone pair to the same ring's pi system. Confirmed
+  via a real repro (`Oc1[nH]ncc2c3cc(OCc4ccccc4)ccc3nc1-2`) that this
+  produced an `[nH2]`-shaped, over-valent nitrogen RDKit's own parser
+  rejects outright.
+- Fixed by validating both mechanisms' output with `kekulize` before
+  accepting it (`validate_valence` doesn't cap aromatic atoms to their
+  primary valence and doesn't catch this shape). `find_sssr`'s own ring
+  choice for such fused systems isn't always unique, which is why the same
+  physical molecule reached this state on a second standardize pass but
+  not the first — a separate, deeper, not-fully-solved order-dependence
+  residual this fix doesn't chase down; it stops the resulting corruption.
+- The known corpus residual this molecule was already causing
+  (`descriptor_census_corpus.smi`, ceiling 1) is unchanged in count — the
+  molecule still isn't byte-identical after one standardize pass vs two —
+  but now converges to a valid tautomer by the second pass instead of
+  producing invalid chemistry on the first.
 
 ## [0.20.1] — 2026-08-26
 

@@ -199,7 +199,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.20.1
+# chematic v0.21.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -447,6 +447,14 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 ## Recent Development
 
+**v0.21.0** (2026-08-27): **`McsConfig` charge/isotope matching + typed timeout outcome, four correctness fixes**
+- `chematic-smarts`: `McsConfig` gains `match_charge`/`match_isotope` fields (mirroring the existing `match_chiral_tag`, default `false`) and a new `McsOutcome` enum (`Exhaustive`/`TimedOut`) via `find_mcs_with_config_checked`, reporting whether a timeout cut the search short rather than silently returning a possibly-non-optimal result — purely additive, `find_mcs`/`find_mcs_with_config` unchanged
+- `chematic-smarts`: `find_mcs`'s branch-and-bound search was incomplete — `grow()` only ever tried the first frontier atom with no way to exclude it and try another, silently missing a strictly larger common substructure in some cases (minimal repro: `OC(N)N` vs `NC(N)` returned 2 atoms instead of the true 3); fixed via standard include/exclude branch-and-bound
+- `chematic-chem`: `disconnect_metals` left a dative-bond-derived formal charge unneutralized after severing the metal bond (issue #403) — 34/4999 molecules in RDKit's own bundled NCI Diversity Set holdout were non-idempotent; fixed by recomputing the affected atom's H count via valence inference immediately after disconnection; NCI holdout 34 → 0 failures, new 11-fixture metal-complex holdout added
+- `chematic-chem`: `normalize_zwitterion` invented a proton on the negative atom of a permanently charge-separated group with no transferable proton anywhere (e.g. a diazo-N,N'-dioxide), silently changing the molecule's formula (issue #407) — fixed by gating the transfer on both atoms actually having a proton to move; dev-corpus residual 4 → 1 (the remaining one is unrelated, see issue #402/#415)
+- `chematic-chem`: `canonical_tautomer` could produce a chemically invalid, over-valent nitrogen in a fused/bridged ring system (issue #415) — both aromatic H-shift mechanisms now validate their output via kekulization before accepting it
+- Full details in `CHANGELOG.md`'s `[0.21.0]` section
+
 **v0.20.1** (2026-08-26): **Three canonical-SMILES/standardization correctness fixes (patch release, no breaking changes)**
 - `chematic-smiles`: coupled E/Z canonicalization could silently change geometry on re-canonicalization (issue #390) — two independent defects in the canonical writer's E/Z marker machinery, both required to reproduce the filed witness; fixed together, verified against a real 290-compound corpus (290/290 idempotent, 290/290 matching independent RDKit InChIKeys, up from 289/290)
 - `chematic-chem`: `standardize()` silently dropped stereo tables on several rebuild paths (issue #399) — 8 functions in `standardize.rs` rebuilt the molecule via a bare `MoleculeBuilder` without carrying `stereo_neighbor_order`/`bond_directions`/`stereo_groups` forward, flipping `@`/`@@` depending on ring-open/close role; dev-corpus standardize-path idempotency 615/519 → 68/60 (the exact pre-#392 baseline), NCI holdout (4,999 unused real molecules, run once) 0 stereo-related failures
@@ -616,7 +624,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.20.1)
+├── Cargo.toml                    workspace root (v0.21.0)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -670,7 +678,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.20.1},
+  version   = {0.21.0},
   year      = {2026},
 }
 ```
