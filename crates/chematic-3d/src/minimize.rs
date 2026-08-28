@@ -3531,6 +3531,71 @@ mod policy_bridge_tests {
         assert_eq!(report.total_missing(), 0);
     }
 
+    /// RDKit/COSMolKit/OpenEye advantage directive, Phase 4 (3D coverage
+    /// gap): 11 of the 265-molecule strict corpus's coverage failures were
+    /// exactly the same `Angle C(3)-C(2)-C(64)` gap (bis-indolylmaleimide
+    /// scaffold, C5B indole-ring carbon exocyclic to a maleimide ring),
+    /// closed by adding type 64's `MMFF94_EQ_LEVEL` row
+    /// (`chematic-ff/src/mmff94_energy/angle.rs`). End-to-end confirmation
+    /// through this crate's own real coverage-check path (not just the
+    /// isolated `chematic-ff` angle-lookup unit test).
+    #[test]
+    fn issue_c5b_angle_gap_bis_indolylmaleimide_scaffold_now_covered() {
+        let smiles = [
+            "Cn1cc(C2=C(c3cn(CCCSC(=N)N)c4ccccc34)C(=O)NC2=O)c2ccccc21", // chembl_tier_b_0180
+            "Cn1cc(C2=C(c3cn(CCC[N+](C)(C)C)c4ccccc34)C(=O)NC2=O)c2ccccc21", // _0184
+            "Cn1cc(C2=C(c3cn(CCCCC(=N)N)c4ccccc34)C(=O)NC2=O)c2ccccc21", // _0185
+            "CN(C)CCCn1cc(C2=C(c3cn(C)c4ccccc34)C(=O)NC2=O)c2ccccc21",   // _0186
+            "Cn1cc(C2=C(c3cn(CCCN)c4ccccc34)C(=O)NC2=O)c2ccccc21",       // _0187
+            "Cn1cc(C2=C(c3cn(CCCN=C(N)N)c4ccccc34)C(=O)NC2=O)c2ccccc21", // _0190
+            "Cn1cc(C2=C(c3cn(CCO)c4ccccc34)C(=O)NC2=O)c2ccccc21",        // _0195
+            "Cn1cc(C2=C(c3cn(CCCO)c4ccccc34)C(=O)NC2=O)c2ccccc21",       // _0196
+            "Cn1cc(C2=C(c3cn(CCCCO)c4ccccc34)C(=O)NC2=O)c2ccccc21",      // _0197
+            "Cn1cc(C2=C(c3cn(CCCCCO)c4ccccc34)C(=O)NC2=O)c2ccccc21",     // _0198
+            "CNCCCn1cc(C2=C(c3cn(C)c4ccccc34)C(=O)NC2=O)c2ccccc21",      // _0199
+        ];
+        for smi in smiles {
+            let mol = parse(smi).unwrap_or_else(|e| panic!("failed to parse '{smi}': {e}"));
+            let (types, mmff_mol) =
+                assign_mmff94_numeric_types_with_view(&mol).unwrap_or_else(|e| {
+                    panic!("assign_mmff94_numeric_types_with_view failed for '{smi}': {e:?}")
+                });
+            let report = compute_mmff94_coverage(&mmff_mol, &types);
+            assert!(
+                report.angles_missing.is_empty(),
+                "'{smi}': expected no missing angle parameters, got {:?}",
+                report.angles_missing
+            );
+        }
+    }
+
+    /// Negative control: `chembl_tier_b_0022`'s `(angle_type=0, 43, 18, 63)`
+    /// triple is a separate, already-diagnosed, deliberately-unresolved case
+    /// (see `angle_empirical_fails_closed_for_undefined_eq_level_substitution`
+    /// in `chematic-ff`) -- this fix (type 64 only) must not accidentally
+    /// change its behavior.
+    #[test]
+    fn issue_type_63_case_unaffected_by_type_64_fix() {
+        let smi = "COc1cc2nc(N3CCN(S(=O)(=O)c4cccs4)CC3)nc(N)c2cc1OC";
+        let mol = parse(smi);
+        // Sanity: this test only needs to hold if the fixture molecule still
+        // parses and still exhibits the known gap; if either assumption goes
+        // stale, fail loudly rather than silently asserting nothing.
+        let Ok(mol) = mol else {
+            panic!("chembl_tier_b_0022 fixture failed to parse: {smi}");
+        };
+        let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(&mol)
+            .unwrap_or_else(|e| panic!("assign_mmff94_numeric_types_with_view failed: {e:?}"));
+        let report = compute_mmff94_coverage(&mmff_mol, &types);
+        assert!(
+            !report.angles_missing.is_empty(),
+            "chembl_tier_b_0022's known type-63 angle gap should still be present \
+             (unaffected by the type-64 fix) -- if this now passes, the fixture may have \
+             drifted from the real chembl_tier_b_0022 molecule; re-verify before treating \
+             this as a second fix landing for free"
+        );
+    }
+
     /// Was `chematic_ff_own_energy_function_is_blind_to_this_bond_stretch`,
     /// which pinned a real chematic-ff bug (`bond_type_for` using OR-logic
     /// with no bond-order check) found while building this bridge:

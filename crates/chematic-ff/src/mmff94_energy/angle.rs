@@ -2360,10 +2360,34 @@ pub static MMFF94_ANGLE_ENERGY: &[(u8, u8, u8, u8, f64, f64)] = &[
 /// `eqLevel` columns, `Code/ForceField/MMFF/Params.cpp` at the pinned commit
 /// -- issue #227 Stage B). `[level2, level3, level4, level5]` per MMFF94
 /// numeric atom type; level1 is skipped, identical to level2 per MMFF.I note
-/// 68, page 519. 55 entries -- every numeric type this table doesn't list
-/// (rare/metal/exotic types outside chematic's supported corpus) is treated
-/// as its own identity substitution at every stage by [`eq_level`], matching
-/// what a real, valid MMFF94 molecule never needs to exercise in practice.
+/// 68, page 519. Every numeric type this table doesn't list (rare/metal/
+/// exotic types outside chematic's supported corpus) is treated as its own
+/// identity substitution at every stage by [`eq_level`].
+///
+/// **Type 64 (C5B) added 2026-08-28 (RDKit/COSMolKit/OpenEye advantage
+/// directive, Phase 4: 3D coverage gap)**:
+/// the table previously stopped at type 55, on the documented assumption
+/// that every type beyond it was "rare/exotic" and would never need a row
+/// in practice. Empirically false for type 64 specifically -- it's an
+/// aromatic 5-ring carbon (indole/pyrrole/furan/thiophene beta position),
+/// not rare at all, and 11 of the 265-molecule strict corpus's coverage
+/// failures were exactly this gap (`Angle C(3)-C(2)-C(64)`, e.g.
+/// `chembl_tier_b_0180`). Confirmed via the already-frozen
+/// `scripts/mmff94_provenance/rdkit_defaultMMFFDef.txt` (line 153: `C5B  64
+/// 64  2  1  0`) AND independently via a live RDKit oracle query
+/// (`MMFFGetMoleculeProperties(...).GetMMFFAngleBendParams`) on
+/// `chembl_tier_b_0180`'s own `(angle_type=2, 3, 2, 64)` triple, which
+/// returns real, defined values (`ka=0.893, theta0=118.456`) -- i.e. RDKit's
+/// real behavior resolves this deterministically, not the "returns nullptr,
+/// undefined behavior" situation type 63's own still-open, deliberately-
+/// unresolved case describes just below in this file
+/// (`angle_empirical_fails_closed_for_undefined_eq_level_substitution`).
+/// **Deliberately not added here**: any other type beyond 55 (63, 65-99,
+/// etc.) -- the frozen provenance file lists rows for those too, but none of
+/// them are evidenced by a concrete corpus failure this round; adding
+/// unverified rows risks resolving some future triple to a wrong value
+/// rather than correctly abstaining. See issue #415's own PR/ROADMAP note
+/// for this as flagged, deferred work, not silently dropped.
 static MMFF94_EQ_LEVEL: &[(u8, [u8; 4])] = &[
     (1, [1, 1, 1, 0]),
     (2, [2, 2, 1, 0]),
@@ -2420,6 +2444,7 @@ static MMFF94_EQ_LEVEL: &[(u8, [u8; 4])] = &[
     (53, [53, 42, 8, 0]),
     (54, [54, 9, 8, 0]),
     (55, [55, 10, 8, 0]),
+    (64, [64, 2, 1, 0]),
 ];
 
 /// `stage` in `0..4`, matching RDKit's Level 2/3/4/5. Falls back to `atom_type`
@@ -2745,7 +2770,7 @@ pub fn mmff94_angle_energy_resolved(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mmff94_energy::mmff94_bond_energy;
+    use crate::mmff94_energy::{mmff94_bond_energy, mmff94_bond_energy_resolved};
 
     #[test]
     fn eq_level_resolves_type_via_ladder_and_falls_back_to_identity() {
@@ -2829,6 +2854,42 @@ mod tests {
                 "plain mmff94_angle_energy must stay None for a ka==0.0 row"
             );
         }
+    }
+
+    #[test]
+    fn angle_type_3_2_64_resolves_via_new_c5b_eq_level_row() {
+        // RDKit/COSMolKit/OpenEye advantage directive, Phase 4 (3D coverage
+        // gap): 11 of the 265-molecule strict corpus's coverage failures
+        // were exactly this triple (`chembl_tier_b_0180` and 10 others,
+        // "Angle C(3)-C(2)-C(64)" -- an indole-ring C5B carbon beta to the
+        // ring N, exocyclic to a maleimide-type ring). Confirmed
+        // independently via a live RDKit oracle query on
+        // `chembl_tier_b_0180`'s own SMILES
+        // (`Cn1cc(C2=C(c3cn(CCCSC(=N)N)c4ccccc34)C(=O)NC2=O)c2ccccc21`):
+        // `MMFFGetMoleculeProperties(...).GetMMFFAngleBendParams` returns
+        // `(angleType=2, ka=0.893, theta0=118.456)` for this exact atom-type
+        // triple -- both values reproduced exactly here, resolved via the
+        // eqLevel ladder now that type 64 (C5B) has a row.
+        let r0_23 = mmff94_bond_energy_resolved(0, 2, 3).unwrap().0.r0;
+        let r0_264 = mmff94_bond_energy_resolved(0, 2, 64).unwrap().0.r0;
+        let (params, kind) = mmff94_angle_energy_resolved(2, 3, 2, 64, r0_23, r0_264, 0)
+            .expect("(angle_type=2, 3, 2, 64) must resolve now that type 64 has an eq_level row");
+        assert_eq!(kind, Mmff94Resolution::EquivalentType { level: 3 });
+        assert!(
+            (params.ka - 0.893).abs() < 1e-9,
+            "ka={} should be 0.893 (RDKit oracle value)",
+            params.ka
+        );
+        assert!(
+            (params.theta0 - 118.456).abs() < 1e-9,
+            "theta0={} should be 118.456 (RDKit oracle value)",
+            params.theta0
+        );
+        // Reversed i/k order must agree (angle bend is symmetric in i/k).
+        let (params_rev, _) = mmff94_angle_energy_resolved(2, 64, 2, 3, r0_264, r0_23, 0)
+            .expect("reversed (64, 2, 3) must also resolve");
+        assert_eq!(params_rev.ka, params.ka);
+        assert_eq!(params_rev.theta0, params.theta0);
     }
 
     #[test]
