@@ -9,6 +9,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — `chematic-smiles` (canonical_smiles/canonical_atom_order could hang, issue #421)
+
+- `canonical_automorphism::extend_mapping`'s colored-graph automorphism
+  backtracking search had no internal step bound of its own — the outer
+  `SearchBudget` in `canonical_search.rs` only counts *calls* to
+  `has_colored_automorphism_mapping`, not work done *inside* one call. On a
+  molecule with several simultaneously-unresolved large symmetric regions
+  (e.g. 3 near-identical repeated substituent arms all still non-singleton
+  at once), a single call could explore a combinatorially large space and
+  never return — observed running past 2 minutes, never confirmed to
+  terminate, on a real 94-atom ChEMBL molecule whose atom order already
+  coincided with `canonical_atom_order`'s own output order. Fixed with an
+  always-on `MAX_EXTEND_MAPPING_STEPS` ceiling (200,000) that falls back to
+  `false` on exceeding it — safe per this module's own pre-existing
+  documented invariant ("a false result may cost performance... a true
+  result must always be a genuine automorphism"), so this can only ever
+  cost a missed prune, never a wrong canonical answer. Verified: the
+  reordered repro molecule now canonicalizes in ~0.6s and produces the
+  exact same canonical SMILES as the original ordering.
+
+### Added — `chematic-wasm` (`embed_ensemble_v2_json`, A2.1 WASM bindings)
+
+- New `embed_ensemble_v2_json` binding for `chematic_3d::embed_ensemble_v2`
+  (Track A, OpenEye advantage RFC), mirroring the Python binding
+  (`Mol.conformer_ensemble_v2()`, already shipped) via the existing
+  `pipeline_v2.rs` WASM conventions (camelCase keys, `schemaVersion: 1`
+  tagged-union envelope, `FiniteF64` for JSON-safe non-finite handling).
+  Preserves `embed_ensemble_v2`'s documented error asymmetry: an ensemble
+  where every attempt fails and zero conformers are kept is still
+  `{"ok": true, "result": {...}}`, with per-attempt detail in
+  `result.attempts` — only a config that could never succeed (an invalid
+  `rmsdThreshold`) surfaces as `ok: false`.
+
 ### Fixed — `chematic-3d` (3-membered rings no longer fail closed at the distance-geometry stage)
 
 - `dg_fft::build_bond_angle_bounds`'s angle-constraint loop treated every pair
