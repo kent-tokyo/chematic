@@ -44,7 +44,7 @@ const STAGE_WASM_INPUT_VALIDATION: &str = "wasm_input_validation";
 /// `null` rather than ever emitting a literal `NaN`/`Infinity` token, which would
 /// make the output invalid JSON and break `JSON.parse` on the JS side.
 #[derive(Debug, Clone, Copy)]
-struct FiniteF64(f64);
+pub(crate) struct FiniteF64(f64);
 
 impl From<f64> for FiniteF64 {
     fn from(v: f64) -> Self {
@@ -65,7 +65,7 @@ impl Serialize for FiniteF64 {
 /// `format!("{value:?}")` -> `snake_case`, for the many small fieldless enums in
 /// this pipeline (e.g. `EmbedFailureCause::BoundsSmoothingFailed` ->
 /// `"bounds_smoothing_failed"`). Matches the identical helper in the Python binding.
-fn snake_case_debug<T: std::fmt::Debug>(value: &T) -> String {
+pub(crate) fn snake_case_debug<T: std::fmt::Debug>(value: &T) -> String {
     let debug = format!("{value:?}");
     let mut out = String::with_capacity(debug.len() + 4);
     for (i, c) in debug.chars().enumerate() {
@@ -150,7 +150,7 @@ impl From<ForceFieldPolicyJson> for ForceFieldPolicy {
     }
 }
 
-fn force_field_policy_str(p: ForceFieldPolicy) -> &'static str {
+pub(crate) fn force_field_policy_str(p: ForceFieldPolicy) -> &'static str {
     match p {
         ForceFieldPolicy::Mmff94BondAngleStrict => "mmff94_bond_angle_strict",
         ForceFieldPolicy::Mmff94WithUffFallback => "mmff94_with_uff_fallback",
@@ -170,7 +170,7 @@ fn force_field_policy_str(p: ForceFieldPolicy) -> &'static str {
 /// requires rejecting for `embedTimeoutMs`/`totalTimeoutMs`, since Python's
 /// constructor requires both as explicit, always-present arguments too, even though
 /// their value can be `None`).
-fn deserialize_present<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+pub(crate) fn deserialize_present<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
 where
     D: serde::Deserializer<'de>,
     T: serde::Deserialize<'de>,
@@ -180,7 +180,7 @@ where
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
-struct PipelineV2ConfigJson {
+pub(crate) struct PipelineV2ConfigJson {
     embed_seed: u64,
     max_attempts: usize,
     #[serde(deserialize_with = "deserialize_present")]
@@ -226,7 +226,7 @@ struct PipelineV2ConfigJson {
 }
 
 impl PipelineV2ConfigJson {
-    fn into_pipeline_config(self) -> Result<pv2::PipelineV2Config, String> {
+    pub(crate) fn into_pipeline_config(self) -> Result<pv2::PipelineV2Config, String> {
         let embed_timeout_ms = self.embed_timeout_ms.ok_or_else(|| {
             "missing field `embedTimeoutMs` (must be present; value may be null)".to_string()
         })?;
@@ -276,7 +276,7 @@ fn parse_pipeline_config(config_json: &str) -> Result<pv2::PipelineV2Config, Str
 // Python binding's dict conversion in crates/chematic-py/src/pipeline_v2.rs)
 // ---------------------------------------------------------------------------
 
-fn coords_to_json(coords: &chematic_3d::coords::Coords3D) -> Vec<[FiniteF64; 3]> {
+pub(crate) fn coords_to_json(coords: &chematic_3d::coords::Coords3D) -> Vec<[FiniteF64; 3]> {
     coords
         .points
         .iter()
@@ -709,7 +709,7 @@ fn mmff94_coverage_json(r: &chematic_3d::minimize::Mmff94CoverageReport) -> Mmff
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-struct ForceFieldBridgeErrorJson {
+pub(crate) struct ForceFieldBridgeErrorJson {
     kind: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     message: Option<String>,
@@ -727,7 +727,7 @@ struct ForceFieldBridgeErrorJson {
     max_residual_force: Option<FiniteF64>,
 }
 
-fn force_field_bridge_error_json(
+pub(crate) fn force_field_bridge_error_json(
     e: &chematic_3d::minimize::ForceFieldBridgeError,
 ) -> ForceFieldBridgeErrorJson {
     use chematic_3d::minimize::ForceFieldBridgeError;
@@ -1020,7 +1020,7 @@ fn result_to_json(r: &pv2::PipelineV2Result) -> String {
 
 #[derive(Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
-enum FailureCauseJson {
+pub(crate) enum FailureCauseJson {
     InvalidConfiguration,
     BoundAdjustmentFailed,
     DistanceGeometry {
@@ -1060,7 +1060,7 @@ enum FailureCauseJson {
     },
 }
 
-fn failure_cause_json(cause: &pv2::PipelineV2FailureCause) -> FailureCauseJson {
+pub(crate) fn failure_cause_json(cause: &pv2::PipelineV2FailureCause) -> FailureCauseJson {
     use pv2::PipelineV2FailureCause;
     match cause {
         PipelineV2FailureCause::InvalidConfiguration => FailureCauseJson::InvalidConfiguration,
@@ -1089,7 +1089,7 @@ fn failure_cause_json(cause: &pv2::PipelineV2FailureCause) -> FailureCauseJson {
 
 #[derive(Serialize, Default)]
 #[serde(rename_all = "camelCase")]
-struct FailureDiagnosticsJson {
+pub(crate) struct FailureDiagnosticsJson {
     embed_stats: Option<EmbedStatsJson>,
     bound_adjustment_report: Option<Vec<BoundAdjustmentJson>>,
     torsion_knowledge_report: Option<TorsionKnowledgeReportJson>,
@@ -1106,7 +1106,7 @@ struct FailureDiagnosticsJson {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-struct ErrorEnvelopeJson {
+pub(crate) struct ErrorEnvelopeJson {
     stage: String,
     cause: FailureCauseJson,
     last_known_coords: Option<Vec<[FiniteF64; 3]>>,
@@ -1126,42 +1126,53 @@ struct FailureEnvelopeJson {
     error: ErrorEnvelopeJson,
 }
 
+/// Builds the `error` object of a failure envelope, without the outer
+/// `schemaVersion`/`ok` wrapper -- reused as-is by `ensemble_v2.rs` to embed a
+/// per-attempt failure inside its own top-level envelope (an ensemble's own
+/// `Result` only ever rejects a config that could never succeed; a single
+/// attempt's `PipelineV2Failure` is ordinary per-attempt evidence, not
+/// something that gets its own `schemaVersion`/`ok` pair nested inside
+/// another one).
+pub(crate) fn error_envelope_json(f: &pv2::PipelineV2Failure) -> ErrorEnvelopeJson {
+    ErrorEnvelopeJson {
+        stage: snake_case_debug(&f.stage),
+        cause: failure_cause_json(&f.cause),
+        last_known_coords: f.last_known_coords.as_ref().map(coords_to_json),
+        coords_are_diagnostic_only: true,
+        diagnostics: FailureDiagnosticsJson {
+            embed_stats: f.embed_stats.as_ref().map(embed_stats_json),
+            bound_adjustment_report: f
+                .bound_adjustment_report
+                .as_ref()
+                .map(|v| v.iter().map(bound_adjustment_json).collect()),
+            torsion_knowledge_report: f
+                .torsion_knowledge_report
+                .as_ref()
+                .map(torsion_knowledge_report_json),
+            ring_torsion_evidence: f
+                .ring_torsion_evidence
+                .as_ref()
+                .map(ring_torsion_evidence_json),
+            torsion_optimization_report: f
+                .torsion_optimization_report
+                .as_ref()
+                .map(torsion_optimization_report_json),
+            stereo_before: f.stereo_before.as_ref().map(stereo_verification_json),
+            stereo_repair: f.stereo_repair.as_ref().map(stereo_repair_summary_json),
+            stereo_after_repair: f.stereo_after_repair.as_ref().map(stereo_verification_json),
+            force_field: f.force_field.as_ref().map(policy_minimize_result_json),
+            final_stereo: f.final_stereo.as_ref().map(stereo_verification_json),
+            final_validation: f.final_validation.as_ref().map(final_validation_json),
+            elapsed_ms_by_stage: stage_timings_json(&f.elapsed_ms_by_stage),
+        },
+    }
+}
+
 fn failure_to_json(f: &pv2::PipelineV2Failure) -> String {
     let envelope = FailureEnvelopeJson {
         schema_version: SCHEMA_VERSION,
         ok: false,
-        error: ErrorEnvelopeJson {
-            stage: snake_case_debug(&f.stage),
-            cause: failure_cause_json(&f.cause),
-            last_known_coords: f.last_known_coords.as_ref().map(coords_to_json),
-            coords_are_diagnostic_only: true,
-            diagnostics: FailureDiagnosticsJson {
-                embed_stats: f.embed_stats.as_ref().map(embed_stats_json),
-                bound_adjustment_report: f
-                    .bound_adjustment_report
-                    .as_ref()
-                    .map(|v| v.iter().map(bound_adjustment_json).collect()),
-                torsion_knowledge_report: f
-                    .torsion_knowledge_report
-                    .as_ref()
-                    .map(torsion_knowledge_report_json),
-                ring_torsion_evidence: f
-                    .ring_torsion_evidence
-                    .as_ref()
-                    .map(ring_torsion_evidence_json),
-                torsion_optimization_report: f
-                    .torsion_optimization_report
-                    .as_ref()
-                    .map(torsion_optimization_report_json),
-                stereo_before: f.stereo_before.as_ref().map(stereo_verification_json),
-                stereo_repair: f.stereo_repair.as_ref().map(stereo_repair_summary_json),
-                stereo_after_repair: f.stereo_after_repair.as_ref().map(stereo_verification_json),
-                force_field: f.force_field.as_ref().map(policy_minimize_result_json),
-                final_stereo: f.final_stereo.as_ref().map(stereo_verification_json),
-                final_validation: f.final_validation.as_ref().map(final_validation_json),
-                elapsed_ms_by_stage: stage_timings_json(&f.elapsed_ms_by_stage),
-            },
-        },
+        error: error_envelope_json(f),
     };
     serde_json::to_string(&envelope).expect("failure envelope must always serialize")
 }
@@ -1170,7 +1181,7 @@ fn failure_to_json(f: &pv2::PipelineV2Failure) -> String {
 /// input, too many atoms, malformed/incomplete config JSON). Same envelope shape
 /// as a real `PipelineV2Failure`, with `diagnostics` entirely empty (nothing was
 /// computed) and `elapsedMsByStage` all-zero.
-fn wasm_input_error_json(cause: FailureCauseJson) -> String {
+pub(crate) fn wasm_input_error_json(cause: FailureCauseJson) -> String {
     let envelope = FailureEnvelopeJson {
         schema_version: SCHEMA_VERSION,
         ok: false,
