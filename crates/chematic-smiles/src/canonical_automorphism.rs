@@ -28,6 +28,32 @@ use crate::canonical_partition::{CanonicalColoredGraph, Partition};
 /// search below is restricted to same-cell atoms and a singleton's only
 /// same-cell candidate is itself. That is exactly what "keep
 /// already-individualized singletons fixed" means in practice.
+/// Hard, always-on ceiling on total backtracking steps within one
+/// [`has_colored_automorphism_mapping`] call (issue #421). `extend_mapping`'s
+/// candidate-vertex backtracking has no depth bound of its own: `feasible`
+/// only checks edges to already-assigned neighbors (a purely local,
+/// one-hop-away consistency check), so on a molecule with several
+/// simultaneously-unresolved large symmetric regions (e.g. 3+ near-identical
+/// repeated substituent arms, all still non-singleton cells at the same
+/// search node) it can explore a combinatorially large space. Observed to
+/// still be running after 100+ seconds (never confirmed to terminate) on a
+/// real 94-atom ChEMBL molecule reordered into `canonical_atom_order`'s own
+/// output order -- the outer `SearchBudget` in `canonical_search.rs` only
+/// counts *calls* to this function, not work done *inside* one call, so it
+/// could not catch this.
+///
+/// Exceeding this ceiling makes [`extend_mapping`] return `false` (via
+/// `steps` below), which is always a *safe* fallback per this module's own
+/// documented invariant ("a false result may cost performance... a true
+/// result must always be a genuine automorphism"): it can only ever cost a
+/// missed prune (redundant-but-still-correct exploration one level up in
+/// `canonical_search.rs`), never a wrong canonical answer. Chosen generously
+/// relative to this crate's actual fixtures/corpus (the entire cage/cubane/
+/// coronene test suite in this module needs a tiny fraction of this per
+/// call) while still bounding wall-clock to a small fraction of a second even
+/// in an unoptimized debug build.
+const MAX_EXTEND_MAPPING_STEPS: usize = 200_000;
+
 pub(crate) fn has_colored_automorphism_mapping(
     graph: &CanonicalColoredGraph,
     coloring: &Partition,
@@ -50,7 +76,8 @@ pub(crate) fn has_colored_automorphism_mapping(
     image[from.0 as usize] = Some(to.0);
     used[to.0 as usize] = true;
 
-    if !extend_mapping(graph, coloring, &mut image, &mut used) {
+    let mut steps = 0usize;
+    if !extend_mapping(graph, coloring, &mut image, &mut used, &mut steps) {
         return false;
     }
 
@@ -62,7 +89,12 @@ fn extend_mapping(
     coloring: &Partition,
     image: &mut [Option<u32>],
     used: &mut [bool],
+    steps: &mut usize,
 ) -> bool {
+    *steps += 1;
+    if *steps > MAX_EXTEND_MAPPING_STEPS {
+        return false;
+    }
     let n = image.len();
     let Some(u) = (0..n).find(|&i| image[i].is_none()) else {
         return true;
@@ -98,7 +130,7 @@ fn extend_mapping(
         }
         image[u] = Some(v);
         used[v as usize] = true;
-        if extend_mapping(graph, coloring, image, used) {
+        if extend_mapping(graph, coloring, image, used, steps) {
             return true;
         }
         image[u] = None;
