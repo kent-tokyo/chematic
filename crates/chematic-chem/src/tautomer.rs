@@ -563,18 +563,26 @@ fn enumerate_direct_aromatic_forms(
     start: &Molecule,
     blocked: &HashSet<AtomIdx>,
     max: usize,
+    rank: &[u32],
 ) -> Vec<Molecule> {
-    enumerate_direct_aromatic_forms_tracked(start, blocked, max).0
+    enumerate_direct_aromatic_forms_tracked(start, blocked, max, rank).0
 }
 
 /// Like [`enumerate_direct_aromatic_forms`], but also reports whether the
 /// search was cut short by `max` while more candidates were still reachable
 /// (`true`) versus exhausting the frontier naturally (`false`) -- needed by
 /// [`tautomer_parent`] to distinguish `Completed` from `MaxTautomersReached`.
+///
+/// `rank` (see the "Atom-order canonicalization" section above) makes
+/// `find_direct_aromatic_matches`'s per-step candidate order a function of
+/// the molecule's structure, not raw `AtomIdx` -- relevant when `max` cuts
+/// the BFS short: which subset of candidates got explored first must not
+/// depend on the caller's atom labeling.
 fn enumerate_direct_aromatic_forms_tracked(
     start: &Molecule,
     blocked: &HashSet<AtomIdx>,
     max: usize,
+    rank: &[u32],
 ) -> (Vec<Molecule>, bool) {
     let mut result = Vec::new();
     let mut seen: HashSet<Vec<Option<u32>>> = HashSet::new();
@@ -588,7 +596,7 @@ fn enumerate_direct_aromatic_forms_tracked(
             break;
         }
         let current = frontier.remove(0);
-        for (d, a) in find_direct_aromatic_matches(&current) {
+        for (d, a) in find_direct_aromatic_matches(&current, rank) {
             if result.len() >= max {
                 truncated = true;
                 break 'outer;
@@ -608,8 +616,10 @@ fn enumerate_direct_aromatic_forms_tracked(
 
 /// Find adjacent pairs of aromatic N atoms where the first (donor) carries an explicit H.
 ///
-/// Returns (donor, acceptor) pairs for direct 1,2-shift (no bridge atom).
-fn find_direct_aromatic_matches(mol: &Molecule) -> Vec<(AtomIdx, AtomIdx)> {
+/// Returns (donor, acceptor) pairs for direct 1,2-shift (no bridge atom),
+/// sorted by canonical rank (see the "Atom-order canonicalization" section
+/// above) rather than raw `AtomIdx`/adjacency-list order.
+fn find_direct_aromatic_matches(mol: &Molecule, rank: &[u32]) -> Vec<(AtomIdx, AtomIdx)> {
     let mut pairs = Vec::new();
     for (d, _) in mol.atoms() {
         let da = mol.atom(d);
@@ -626,6 +636,7 @@ fn find_direct_aromatic_matches(mol: &Molecule) -> Vec<(AtomIdx, AtomIdx)> {
             }
         }
     }
+    pairs.sort_by_key(|&(d, a)| (rank[d.0 as usize], rank[a.0 as usize]));
     pairs
 }
 
@@ -761,7 +772,10 @@ fn ring_distance(ring: &[AtomIdx], a: AtomIdx, b: AtomIdx) -> Option<usize> {
 /// never hash-iteration order: `bridge` can belong to more than one SSSR
 /// ring in a fused system (hypoxanthine), which would otherwise report the
 /// same triple once per ring it's found through.
-fn find_exocyclic_lactam_shift_matches(mol: &Molecule) -> Vec<(AtomIdx, AtomIdx, AtomIdx)> {
+fn find_exocyclic_lactam_shift_matches(
+    mol: &Molecule,
+    rank: &[u32],
+) -> Vec<(AtomIdx, AtomIdx, AtomIdx)> {
     let rings = chematic_perception::find_sssr(mol);
     let mut out: HashSet<(AtomIdx, AtomIdx, AtomIdx)> = HashSet::new();
     for (bridge, bridge_atom) in mol.atoms() {
@@ -814,7 +828,7 @@ fn find_exocyclic_lactam_shift_matches(mol: &Molecule) -> Vec<(AtomIdx, AtomIdx,
         }
     }
     let mut out: Vec<_> = out.into_iter().collect();
-    out.sort_by_key(|&(d, b, a)| (d.0, b.0, a.0));
+    out.sort_by_key(|&(d, b, a)| (rank[d.0 as usize], rank[b.0 as usize], rank[a.0 as usize]));
     out
 }
 
@@ -980,9 +994,10 @@ fn exocyclic_lactam_shift_preserves_invariants(
 fn apply_exocyclic_lactam_shift_tracked(
     mol: &Molecule,
     config: &TautomerConfig,
+    rank: &[u32],
 ) -> Option<(Molecule, AtomIdx, AtomIdx, AtomIdx)> {
     let mut candidates: Vec<(Molecule, AtomIdx, AtomIdx, AtomIdx)> =
-        find_exocyclic_lactam_shift_matches(mol)
+        find_exocyclic_lactam_shift_matches(mol, rank)
             .into_iter()
             .filter_map(|(donor, bridge, acceptor)| {
                 transfer_hydrogen_exocyclic_lactam(
@@ -1103,7 +1118,11 @@ fn mol_fingerprint(mol: &Molecule) -> u64 {
 /// Find all (donor, bridge, acceptor) triples matching the rule in `mol`.
 /// For path_len=3: donor-bridge-acceptor (standard 1,3-shift)
 /// For path_len=5: donor-b1-b2-b3-acceptor (1,5-shift) where b2 is stored in "bridge"
-fn find_matches(mol: &Molecule, rule: &TautomerRule) -> Vec<(AtomIdx, AtomIdx, AtomIdx)> {
+fn find_matches(
+    mol: &Molecule,
+    rule: &TautomerRule,
+    rank: &[u32],
+) -> Vec<(AtomIdx, AtomIdx, AtomIdx)> {
     let mut matches = Vec::new();
 
     if rule.path_len == 5 {
@@ -1202,6 +1221,11 @@ fn find_matches(mol: &Molecule, rule: &TautomerRule) -> Vec<(AtomIdx, AtomIdx, A
         }
     }
 
+    // Sort by canonical rank, not raw AtomIdx (parse/insertion order) --
+    // whichever match a caller treats as "first" must depend on the
+    // molecule's structure alone, not on how its atoms happened to be
+    // labeled. See the "Atom-order canonicalization" section above.
+    matches.sort_by_key(|&(d, b, a)| (rank[d.0 as usize], rank[b.0 as usize], rank[a.0 as usize]));
     matches
 }
 
@@ -1277,8 +1301,9 @@ fn apply_first_match(
     mol: &Molecule,
     rule: &TautomerRule,
     config: &TautomerConfig,
+    rank: &[u32],
 ) -> Option<Molecule> {
-    apply_first_match_tracked(mol, rule, config).map(|(next, ..)| next)
+    apply_first_match_tracked(mol, rule, config, rank).map(|(next, ..)| next)
 }
 
 /// Like [`apply_first_match`], but also returns the (donor, bridge, acceptor)
@@ -1288,11 +1313,14 @@ fn apply_first_match_tracked(
     mol: &Molecule,
     rule: &TautomerRule,
     config: &TautomerConfig,
+    rank: &[u32],
 ) -> Option<(Molecule, AtomIdx, AtomIdx, AtomIdx)> {
-    find_matches(mol, rule).into_iter().find_map(|(d, b, a)| {
-        transfer_hydrogen(mol, d, b, a, &config.blocked_atoms, &config.blocked_bonds)
-            .map(|next| (next, d, b, a))
-    })
+    find_matches(mol, rule, rank)
+        .into_iter()
+        .find_map(|(d, b, a)| {
+            transfer_hydrogen(mol, d, b, a, &config.blocked_atoms, &config.blocked_bonds)
+                .map(|next| (next, d, b, a))
+        })
 }
 
 /// Apply every matching transformation for `rule`; return all resulting molecules.
@@ -1300,8 +1328,9 @@ fn apply_all_matches(
     mol: &Molecule,
     rule: &TautomerRule,
     config: &TautomerConfig,
+    rank: &[u32],
 ) -> Vec<Molecule> {
-    find_matches(mol, rule)
+    find_matches(mol, rule, rank)
         .into_iter()
         .filter_map(|(d, b, a)| {
             transfer_hydrogen(mol, d, b, a, &config.blocked_atoms, &config.blocked_bonds)
@@ -1409,6 +1438,57 @@ fn active_rules(config: &TautomerConfig) -> Vec<&'static TautomerRule> {
 }
 
 // ---------------------------------------------------------------------------
+// Atom-order canonicalization (issue #415 residual)
+//
+// `find_sssr`'s ring choice (consumed directly by
+// `find_exocyclic_lactam_shift_matches`) and `find_matches`'/
+// `find_direct_aromatic_matches`'s "first match in raw AtomIdx order" policy
+// are both dependent on the *caller's* parse/atom-insertion order, not just
+// the molecule's structure -- so which tautomer this module reaches for the
+// same molecule could depend on how its atoms happened to be labeled.
+//
+// Fixed by computing a canonical *rank* per atom once
+// (`chematic_smiles::canonical_atom_order`, inverted into an `AtomIdx ->
+// rank` lookup) and using it to break every such tie -- sort candidates by
+// rank instead of by raw `AtomIdx`, and prefer the lowest-rank ring when a
+// ring choice is needed. `AtomIdx` identity never changes across a
+// tautomer-search step (every transform function rebuilds atom-for-atom via
+// `for i in 0..mol.atom_count()`, same order in and out), so one rank
+// vector computed from the *entry* molecule stays valid for every
+// intermediate form the search visits.
+//
+// An earlier version of this fix instead rebuilt the molecule with atoms
+// physically reordered into `canonical_atom_order`'s own order before
+// searching. That was correct (verified: full order-invariance across 6
+// permutations of issue #415's residual) but is NOT what's implemented here
+// -- it uncovered a separate, pre-existing `chematic-smiles` defect where
+// `canonical_smiles`/`canonical_atom_order`'s own individualize-refine
+// search degenerates into a multi-minute hang specifically when its input's
+// atom order already coincides with `canonical_atom_order`'s own output
+// order, for at least one real highly-symmetric molecule
+// (`chembl_accuracy_corpus_4999.smi` line 2741, a 94-atom molecule with 3
+// near-equivalent Boc-benzylamine arms -- reproduces with zero
+// `chematic-chem` involvement: `parse` -> `canonical_atom_order` -> rebuild
+// in that order -> `canonical_smiles` hangs). Rank-based tie-breaking never
+// constructs that pathological input shape (the molecule's own storage/atom
+// order is never touched), so it sidesteps the landmine entirely rather
+// than working around it. That `chematic-smiles` defect is filed separately
+// (issue TBD) as discovered-but-deferred, out of scope for this fix.
+// ---------------------------------------------------------------------------
+
+/// Canonical rank per atom (`result[idx.0] = canonical position`), used to
+/// break every atom-order-sensitive tie in this module's search
+/// deterministically, as a function of `mol`'s structure alone.
+fn atom_rank(mol: &Molecule) -> Vec<u32> {
+    let order = chematic_smiles::canonical_atom_order(mol);
+    let mut rank = vec![0u32; order.len()];
+    for (pos, &orig) in order.iter().enumerate() {
+        rank[orig] = pos as u32;
+    }
+    rank
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -1444,43 +1524,91 @@ pub fn canonical_tautomer(mol: &Molecule) -> Molecule {
 }
 
 /// Like [`canonical_tautomer`] but with explicit configuration.
+///
+/// Every internal candidate/ring tie is broken via [`atom_rank`] (see the
+/// "Atom-order canonicalization" section above), computed once from `mol`
+/// and reused for every intermediate form the search visits (atom identity
+/// never changes across a tautomer-search step), so the result is
+/// independent of the caller's parse/atom-insertion order.
 pub fn canonical_tautomer_with_config(mol: &Molecule, config: &TautomerConfig) -> Molecule {
+    let rank = atom_rank(mol);
+
+    // canonical_tautomer_search's own final direct-aromatic tie-break is a
+    // one-shot step, not iterated to convergence -- confirmed real (not an
+    // atom-order artifact) via issue #415's own residual, which needs
+    // exactly one extra application to reach a stable form, order-
+    // invariantly, once rank-based tie-breaking is used above. Re-run until
+    // stable so this function is actually idempotent on its own output, not
+    // just closer to it. The `canonical_smiles`-based equality check is
+    // skipped entirely when a pass changes nothing (the common case for
+    // molecules with no tautomerizable groups at all).
+    let (mut result, changed) = canonical_tautomer_search(mol, config, &rank);
+    if changed {
+        let mut seen_smiles: HashSet<String> = HashSet::new();
+        seen_smiles.insert(chematic_smiles::canonical_smiles(&result));
+        for _ in 0..3 {
+            let (next, next_changed) = canonical_tautomer_search(&result, config, &rank);
+            if !next_changed {
+                break;
+            }
+            let is_new = seen_smiles.insert(chematic_smiles::canonical_smiles(&next));
+            result = next;
+            if !is_new {
+                break;
+            }
+        }
+    }
+    result
+}
+
+/// The actual rule-based/exocyclic-lactam/direct-aromatic search. Returns
+/// the result plus whether anything actually changed from `mol` -- lets
+/// [`canonical_tautomer_with_config`]'s convergence loop skip re-verifying
+/// (and the `canonical_smiles` calls that involves) when a pass was a no-op.
+fn canonical_tautomer_search(
+    mol: &Molecule,
+    config: &TautomerConfig,
+    rank: &[u32],
+) -> (Molecule, bool) {
     let mut current = mol.clone();
     let mut seen = HashSet::new();
     seen.insert(mol_fingerprint(&current));
+    let mut changed = false;
 
     for _ in 0..config.max_iter {
-        let mut changed = false;
+        let mut iter_changed = false;
         for rule in active_rules(config)
             .into_iter()
             .filter(|r| r.prefer_forward)
         {
-            if let Some(next) = apply_first_match(&current, rule, config) {
+            if let Some(next) = apply_first_match(&current, rule, config, rank) {
                 let fp = mol_fingerprint(&next);
                 if !seen.contains(&fp) {
                     seen.insert(fp);
                     current = next;
+                    iter_changed = true;
                     changed = true;
                     break;
                 }
             }
         }
-        if !changed {
+        if !iter_changed {
             // The 41 rules above never match across an aromatic ring bond
             // (BondOrderMatch::Double never matches BondOrder::Aromatic).
             // This is the round 2C-2 generalization: an exocyclic O donor
             // across an aromatic ring atom -- see the mechanism block above
             // `transfer_hydrogen_exocyclic_lactam`.
-            if let Some((next, ..)) = apply_exocyclic_lactam_shift_tracked(&current, config) {
+            if let Some((next, ..)) = apply_exocyclic_lactam_shift_tracked(&current, config, rank) {
                 let fp = mol_fingerprint(&next);
                 if !seen.contains(&fp) {
                     seen.insert(fp);
                     current = next;
+                    iter_changed = true;
                     changed = true;
                 }
             }
         }
-        if !changed {
+        if !iter_changed {
             break;
         }
     }
@@ -1497,6 +1625,7 @@ pub fn canonical_tautomer_with_config(mol: &Molecule, config: &TautomerConfig) -
         &current,
         &config.blocked_atoms,
         16,
+        rank,
     ));
     if candidates.len() > 1 {
         candidates.sort_by(|a, b| {
@@ -1505,8 +1634,9 @@ pub fn canonical_tautomer_with_config(mol: &Molecule, config: &TautomerConfig) -
             })
         });
         current = candidates.into_iter().next().unwrap();
+        changed = true;
     }
-    current
+    (current, changed)
 }
 
 /// Enumerate all reachable tautomers of `mol`, capped at 32.
@@ -1521,6 +1651,7 @@ pub fn enumerate_tautomers(mol: &Molecule) -> Vec<Molecule> {
 
 /// Like [`enumerate_tautomers`] but with explicit configuration.
 pub fn enumerate_tautomers_with_config(mol: &Molecule, config: &TautomerConfig) -> Vec<Molecule> {
+    let rank = atom_rank(mol);
     let mut result = vec![mol.clone()];
     let mut seen = HashSet::new();
     seen.insert(mol_fingerprint(mol));
@@ -1532,7 +1663,7 @@ pub fn enumerate_tautomers_with_config(mol: &Molecule, config: &TautomerConfig) 
     while !frontier.is_empty() && result.len() < config.max_tautomers {
         let current = frontier.remove(0);
         for rule in active_rules(config).into_iter() {
-            for next in apply_all_matches(&current, rule, config) {
+            for next in apply_all_matches(&current, rule, config, &rank) {
                 let fp = mol_fingerprint(&next);
                 if !seen.contains(&fp) {
                     seen.insert(fp);
@@ -1549,7 +1680,7 @@ pub fn enumerate_tautomers_with_config(mol: &Molecule, config: &TautomerConfig) 
             }
         }
         // Direct aromatic 1,2-shift (e.g. pyrazole N1H ↔ N2H).
-        for (d, a) in find_direct_aromatic_matches(&current) {
+        for (d, a) in find_direct_aromatic_matches(&current, &rank) {
             if result.len() >= config.max_tautomers {
                 break;
             }
@@ -1822,6 +1953,11 @@ pub fn tautomer_parent(mol: &Molecule, limits: &TautomerLimits) -> ParentResult 
         };
     }
 
+    // Every candidate/ring tie broken via `rank` (issue #415 residual --
+    // see the "Atom-order canonicalization" section above), so the result
+    // is independent of `mol`'s caller-supplied atom order.
+    let rank = atom_rank(mol);
+
     let config = TautomerConfig {
         max_iter: limits.max_transforms,
         max_tautomers: limits.max_tautomers,
@@ -1852,10 +1988,10 @@ pub fn tautomer_parent(mol: &Molecule, limits: &TautomerLimits) -> ParentResult 
                 .into_iter()
                 .filter(|r| r.prefer_forward)
                 .any(|rule| {
-                    apply_first_match_tracked(&current, rule, &config)
+                    apply_first_match_tracked(&current, rule, &config, &rank)
                         .is_some_and(|(next, ..)| !seen.contains(&mol_fingerprint(&next)))
                 })
-                || apply_exocyclic_lactam_shift_tracked(&current, &config)
+                || apply_exocyclic_lactam_shift_tracked(&current, &config, &rank)
                     .is_some_and(|(next, ..)| !seen.contains(&mol_fingerprint(&next)));
             if has_more {
                 status = ParentComputationStatus::MaxTransformsReached;
@@ -1868,7 +2004,7 @@ pub fn tautomer_parent(mol: &Molecule, limits: &TautomerLimits) -> ParentResult 
             .filter(|r| r.prefer_forward)
         {
             if let Some((next, donor, bridge, acceptor)) =
-                apply_first_match_tracked(&current, rule, &config)
+                apply_first_match_tracked(&current, rule, &config, &rank)
             {
                 let fp = mol_fingerprint(&next);
                 if !seen.contains(&fp) {
@@ -1897,7 +2033,7 @@ pub fn tautomer_parent(mol: &Molecule, limits: &TautomerLimits) -> ParentResult 
             // no rule above matched (same fallback order as
             // canonical_tautomer_with_config).
             if let Some((next, donor, bridge, acceptor)) =
-                apply_exocyclic_lactam_shift_tracked(&current, &config)
+                apply_exocyclic_lactam_shift_tracked(&current, &config, &rank)
             {
                 let fp = mol_fingerprint(&next);
                 if !seen.contains(&fp) {
@@ -1931,6 +2067,7 @@ pub fn tautomer_parent(mol: &Molecule, limits: &TautomerLimits) -> ParentResult 
                 &current,
                 &HashSet::new(),
                 limits.max_tautomers,
+                &rank,
             );
             let mut candidates: Vec<Molecule> = vec![current.clone()];
             candidates.extend(extra);
@@ -1982,8 +2119,73 @@ mod tests {
     #![allow(dead_code)]
 
     use super::*;
-    use chematic_core::{AtomIdx, Chirality};
+    use chematic_core::{AtomIdx, Chirality, STEREO_H_SENTINEL, StereoGroup};
     use chematic_smiles::{canonical_smiles, parse};
+    use std::collections::HashMap;
+
+    /// Test-only: rebuild `mol` with atoms placed in `new_order`
+    /// (`new_order[i]` is the `AtomIdx` from `mol` that becomes atom `i` in
+    /// the result), remapping every `AtomIdx`/`BondIdx`-keyed side table
+    /// (`stereo_neighbor_order`, `bond_directions`, `stereo_groups`) along
+    /// with it -- used to construct genuine atom-order permutations of an
+    /// already-parsed molecule for order-invariance regression tests (see
+    /// `issue415_residual_canonical_tautomer_is_atom_order_invariant_and_idempotent`
+    /// below). Production code no longer reorders molecules this way (see
+    /// the "Atom-order canonicalization" section above) -- it breaks ties
+    /// via [`atom_rank`] instead, without ever rebuilding/relabeling the
+    /// molecule's own storage.
+    fn reorder_atoms(mol: &Molecule, new_order: &[AtomIdx]) -> Molecule {
+        let mut builder = MoleculeBuilder::new();
+        let mut atom_map: HashMap<AtomIdx, AtomIdx> = HashMap::with_capacity(new_order.len());
+        for &old_idx in new_order {
+            let new_idx = builder.add_atom(mol.atom(old_idx).clone());
+            atom_map.insert(old_idx, new_idx);
+        }
+
+        let mut bond_map: HashMap<BondIdx, BondIdx> = HashMap::with_capacity(mol.bond_count());
+        for i in 0..mol.bond_count() {
+            let old_bidx = BondIdx(i as u32);
+            let bond = mol.bond(old_bidx);
+            let new_a = atom_map[&bond.atom1];
+            let new_b = atom_map[&bond.atom2];
+            let new_bidx = builder
+                .add_bond(new_a, new_b, bond.order)
+                .expect("reorder_atoms: bond from a valid molecule must be re-addable");
+            bond_map.insert(old_bidx, new_bidx);
+        }
+
+        for (&old_bidx, &new_bidx) in &bond_map {
+            if let Some(direction) = mol.bond_direction(old_bidx) {
+                builder.set_bond_direction(new_bidx, direction);
+            }
+        }
+
+        for &old_idx in new_order {
+            let new_idx = atom_map[&old_idx];
+            if let Some(order) = mol.stereo_neighbor_order(old_idx) {
+                let remapped: Vec<u32> = order
+                    .iter()
+                    .map(|&v| {
+                        if v == STEREO_H_SENTINEL {
+                            STEREO_H_SENTINEL
+                        } else {
+                            atom_map[&AtomIdx(v)].0
+                        }
+                    })
+                    .collect();
+                builder.set_stereo_neighbor_order(new_idx, remapped);
+            }
+        }
+
+        for g in mol.stereo_groups() {
+            builder.add_stereo_group(StereoGroup::new(
+                g.kind.clone(),
+                g.atom_indices.iter().map(|&a| atom_map[&a]).collect(),
+            ));
+        }
+
+        builder.build()
+    }
 
     /// "Comb" molecule for the max_iter-exhaustion tests below: an
     /// asymmetric backbone (an extra methyl end-cap on backbone[0] breaks
@@ -2719,7 +2921,7 @@ mod tests {
             "test setup sanity: atom 1 must be chiral"
         );
 
-        let (donor, acceptor) = find_direct_aromatic_matches(&mol)
+        let (donor, acceptor) = find_direct_aromatic_matches(&mol, &atom_rank(&mol))
             .into_iter()
             .next()
             .expect("test setup sanity: pyrazole should have a direct aromatic N-H match");
@@ -2758,7 +2960,7 @@ mod tests {
             .expect("C-O bond must exist");
         mol.set_bond_direction(co_bond, BondOrder::Up);
 
-        let (donor, acceptor) = find_direct_aromatic_matches(&mol)
+        let (donor, acceptor) = find_direct_aromatic_matches(&mol, &atom_rank(&mol))
             .into_iter()
             .next()
             .expect("test setup sanity: pyrazole should have a direct aromatic N-H match");
@@ -2799,7 +3001,7 @@ mod tests {
             .iter()
             .find(|r| r.name == "keto-enol")
             .expect("keto-enol rule must exist");
-        find_matches(mol, rule)
+        find_matches(mol, rule, &atom_rank(mol))
             .into_iter()
             .next()
             .expect("test setup sanity: molecule should have a keto-enol match")
@@ -3702,7 +3904,7 @@ mod tests {
         // Hypoxanthine's bridge/acceptor pair is reachable through more than
         // one SSSR ring in a fused bicyclic system; must be reported once.
         let mol = parse("Oc1ncnc2[nH]cnc12").unwrap();
-        let matches = find_exocyclic_lactam_shift_matches(&mol);
+        let matches = find_exocyclic_lactam_shift_matches(&mol, &atom_rank(&mol));
         assert!(!matches.is_empty());
         let mut seen = HashSet::new();
         for m in &matches {
@@ -3807,6 +4009,70 @@ mod tests {
             );
             let reparsed = parse(&canonical_smiles(&next)).unwrap();
             current = reparsed;
+        }
+    }
+
+    /// Direct regression for issue #415's residual order-dependence: the
+    /// same molecule, relabeled only via atom-order permutation
+    /// (`reorder_atoms`, so every permutation is guaranteed structurally
+    /// identical -- not a hand-alternate SMILES respelling that could
+    /// accidentally encode a different molecule), must reach the byte-
+    /// identical canonical tautomer regardless of which permutation the
+    /// caller happens to hand in, and that result must already be its own
+    /// fixed point (`canonical_tautomer` applied to its own output must be
+    /// a no-op) -- not just "eventually convergent after enough reparses."
+    ///
+    /// Empirically confirmed before writing this test (not assumed): this
+    /// molecule's true canonical form needs the *search itself* to run
+    /// twice to stabilize (`canonical_tautomer_with_config`'s own outer
+    /// convergence loop, not an atom-order artifact -- a single search
+    /// pass genuinely doesn't reach the fixed point, independent of atom
+    /// labeling). 6 orderings covering identity, full reversal, and 4
+    /// distinct rotations all agree exactly, both on the first search's
+    /// result and on the final stable form.
+    #[test]
+    fn issue415_residual_canonical_tautomer_is_atom_order_invariant_and_idempotent() {
+        let smi = "Oc1[nH]ncc2c3cc(OCc4ccccc4)ccc3nc1-2";
+        let base = parse(smi).unwrap();
+        let n = base.atom_count();
+
+        let mut orderings: Vec<Vec<AtomIdx>> = vec![
+            (0..n as u32).map(AtomIdx).collect(),
+            (0..n as u32).rev().map(AtomIdx).collect(),
+        ];
+        for shift in [1usize, 3, (n / 2).max(1), n - 1] {
+            let mut order: Vec<AtomIdx> = (0..n as u32).map(AtomIdx).collect();
+            order.rotate_left(shift);
+            orderings.push(order);
+        }
+        assert_eq!(orderings.len(), 6, "expected 6 distinct atom orderings");
+
+        let mut expected: Option<(String, String)> = None;
+        for (i, order) in orderings.iter().enumerate() {
+            let permuted = reorder_atoms(&base, order);
+            assert_eq!(
+                canonical_smiles(&permuted),
+                canonical_smiles(&base),
+                "ordering {i}: reorder_atoms must not change the molecule's own identity"
+            );
+            let result = canonical_tautomer(&permuted);
+            let reapplied = canonical_tautomer(&result);
+            let result_smi = canonical_smiles(&result);
+            let reapplied_smi = canonical_smiles(&reapplied);
+            assert_eq!(
+                result_smi, reapplied_smi,
+                "ordering {i}: canonical_tautomer's own output is not a fixed point of itself"
+            );
+            match &expected {
+                None => expected = Some((result_smi, reapplied_smi)),
+                Some((exp_result, exp_reapplied)) => {
+                    assert_eq!(
+                        &result_smi, exp_result,
+                        "ordering {i} reached a different canonical tautomer than ordering 0"
+                    );
+                    assert_eq!(&reapplied_smi, exp_reapplied);
+                }
+            }
         }
     }
 }

@@ -145,7 +145,7 @@ fn assert_corpus_idempotent(label: &str, corpus: &str, max_known_failures: usize
 /// re-diagnosed here, tracked under #402.
 /// Do not lower these again without an honest full-corpus re-run, not an
 /// assumption; do not raise them to hide a future regression either.
-const DESCRIPTOR_CENSUS_KNOWN_FAILURES: usize = 1;
+const DESCRIPTOR_CENSUS_KNOWN_FAILURES: usize = 0;
 const CHEMBL_ACCURACY_KNOWN_FAILURES: usize = 0;
 
 /// **Issue #403 fix**: `disconnect_metals` left a dative-bond-derived
