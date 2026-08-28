@@ -125,7 +125,7 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.21.0
+# chematic v0.22.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-06, v0.4.22 vs RDKit 2026.03.3 --
@@ -303,6 +303,12 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 ---
 
 ## 最近の開発
+
+**v0.22.0**（2026-08-29）: **WASM ensemble binding新規追加、canonicalizationハング修正、3員環embedding修正**
+- `chematic-wasm`：`chematic_3d::embed_ensemble_v2`向けの新規`embed_ensemble_v2_json` bindingを追加。Python binding（`Mol.conformer_ensemble_v2()`）を`pipeline_v2.rs`既存の規約（camelCase JSONキー、`schemaVersion: 1` envelope）に沿って踏襲——純粋に追加のみ
+- `chematic-smiles`：複数の対称領域が同時に未解決な分子で`canonical_smiles`/`canonical_atom_order`がハングしうる問題（issue #421）——automorphism backtracking探索に内部ステップ上限がなかった。常時有効なステップ上限を追加し、超過時は安全側（automorphismと証明できない扱い）にフォールバックするよう修正
+- `chematic-3d`：3員環（シクロプロパン/エポキシド/アジリジン/チイラン）がdistance-geometry embedding段階でfail closedしていた問題——リング閉環ペアが同時に「1-3」かつ直接結合している場合に、汎用角度制約が正しい（より厳しい）結合長制約を上書きしていた。既に結合済みの近傍ペアには角度制約をスキップするよう修正。strict-MMFF94 3Dコーパス 252/265 → 263/265
+- 詳細は`CHANGELOG.md`の`[0.22.0]`section参照
 
 **v0.21.0**（2026-08-27）: **`McsConfig`の電荷/同位体マッチングと型付きtimeout結果、正確性修正4件**
 - `chematic-smarts`：`McsConfig`に`match_charge`/`match_isotope`フィールドを追加（既存の`match_chiral_tag`と同様、デフォルト`false`）。また新規`McsOutcome` enum（`Exhaustive`/`TimedOut`）を`find_mcs_with_config_checked`経由で提供し、timeoutで探索が打ち切られたかを明示的に報告（最適とは限らない結果をexhaustiveなものと区別できずに返す状態を解消）——純粋に追加のみ、`find_mcs`/`find_mcs_with_config`は無変更

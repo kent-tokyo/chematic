@@ -199,7 +199,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.21.0
+# chematic v0.22.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -447,6 +447,12 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 ## Recent Development
 
+**v0.22.0** (2026-08-29): **New WASM ensemble binding, canonicalization-hang fix, 3-membered-ring embedding fix**
+- `chematic-wasm`: new `embed_ensemble_v2_json` binding for `chematic_3d::embed_ensemble_v2`, mirroring the Python binding (`Mol.conformer_ensemble_v2()`) via the existing `pipeline_v2.rs` conventions (camelCase JSON keys, `schemaVersion: 1` envelope) — purely additive
+- `chematic-smiles`: `canonical_smiles`/`canonical_atom_order` could hang on molecules with several simultaneously-unresolved symmetric regions (issue #421) — the automorphism backtracking search had no internal step bound; fixed with an always-on step ceiling that safely falls back to "not proven automorphic" rather than searching unbounded
+- `chematic-3d`: 3-membered rings (cyclopropane/epoxide/aziridine/thiirane) failed closed at the distance-geometry embedding stage — a generic angle bound was overwriting the correct, tighter bond-length bound for a ring-closing pair that's simultaneously "1-3" and directly bonded; fixed by skipping the angle bound for any already-bonded neighbor pair; strict-MMFF94 3D corpus 252/265 → 263/265
+- Full details in `CHANGELOG.md`'s `[0.22.0]` section
+
 **v0.21.0** (2026-08-27): **`McsConfig` charge/isotope matching + typed timeout outcome, four correctness fixes**
 - `chematic-smarts`: `McsConfig` gains `match_charge`/`match_isotope` fields (mirroring the existing `match_chiral_tag`, default `false`) and a new `McsOutcome` enum (`Exhaustive`/`TimedOut`) via `find_mcs_with_config_checked`, reporting whether a timeout cut the search short rather than silently returning a possibly-non-optimal result — purely additive, `find_mcs`/`find_mcs_with_config` unchanged
 - `chematic-smarts`: `find_mcs`'s branch-and-bound search was incomplete — `grow()` only ever tried the first frontier atom with no way to exclude it and try another, silently missing a strictly larger common substructure in some cases (minimal repro: `OC(N)N` vs `NC(N)` returned 2 atoms instead of the true 3); fixed via standard include/exclude branch-and-bound
@@ -624,7 +630,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.21.0)
+├── Cargo.toml                    workspace root (v0.22.0)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -678,7 +684,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.21.0},
+  version   = {0.22.0},
   year      = {2026},
 }
 ```
