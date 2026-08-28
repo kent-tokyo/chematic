@@ -1166,26 +1166,19 @@ mod tests {
             .fold(0.0_f64, f64::max)
     }
 
-    /// KNOWN LIMITATION (documented, not fixed by this module -- see PR body):
-    /// every 3-membered ring fails closed with `BoundsConstructionFailed`. Root
-    /// cause is in `dg_fft::build_bound_matrix` (not this module's code): its
-    /// angle-constraint loop treats every pair of a center atom's neighbors as a
-    /// 1-3 (through-center) relationship and unconditionally tightens their bound
-    /// using the *generic* ideal angle (~109.5°/120°, `ideal_bond_angle` has no
-    /// notion of ring strain) -- but in a 3-membered ring, that "1-3" pair is
-    /// *also* a direct 1-2 bonded pair (the ring closes one bond away), so the
-    /// angle constraint's generic-angle-derived bound overwrites the correct,
-    /// much shorter bond-length bound with a value inconsistent with it
-    /// (concretely, for cyclopropane's ring-closing C-C pair: bond constraint
-    /// gives upper ≈ 1.59 Å, the angle constraint then tightens lower to ≈ 2.41 Å
-    /// using the generic ~109.5° angle instead of the real ~60° ring angle,
-    /// producing `lower > upper` for the same pair). This module's own
-    /// pre-smoothing sanity check (`try_embed_once`) catches exactly this and
-    /// fails closed with a typed error -- correct behavior, just a real, disclosed
-    /// gap for a common drug-discovery motif (cyclopropane/epoxide/aziridine
-    /// rings), not silently mishandled.
+    /// FORMERLY a known limitation (`dg_fft::build_bound_matrix`'s angle-constraint
+    /// loop treated every pair of a center atom's neighbors as a 1-3
+    /// (through-center) relationship and unconditionally tightened their bound with
+    /// the *generic* ideal angle (~109.5°/120°) -- but in a 3-membered ring, that
+    /// "1-3" pair is *also* a direct 1-2 bonded pair, so the generic-angle bound
+    /// overwrote the correct, much shorter bond-length bound with a contradictory
+    /// one). Fixed by skipping the angle-derived bound for any neighbor pair that
+    /// is itself directly bonded (`dg_fft::build_bond_angle_bounds`): a 3-membered
+    /// ring's three bond-length constraints already fully determine its shape, so
+    /// nothing is lost. See `cyclopropane_ring_closing_bond_uses_bond_length_bound_not_angle`
+    /// for the exact numbers this replaced.
     #[test]
-    fn three_membered_rings_fail_closed_not_silently() {
+    fn three_membered_rings_embed_successfully() {
         for smiles in [
             "C1CC1",         // cyclopropane
             "C1CO1",         // epoxide
@@ -1196,12 +1189,10 @@ mod tests {
         ] {
             let mol = parse(smiles).unwrap();
             let params = EmbedParameters::default();
-            let err = embed_distance_geometry_v2(&mol, &params).unwrap_err();
-            assert_eq!(
-                err,
-                EmbedFailureCause::BoundsConstructionFailed,
-                "{smiles}: expected a typed BoundsConstructionFailed, not a silent success or a different error"
-            );
+            let coords = embed_distance_geometry_v2(&mol, &params)
+                .unwrap_or_else(|e| panic!("{smiles}: expected a successful embed, got {e:?}"));
+            let worst = worst_bond(&mol, &coords);
+            assert!(worst < 2.0, "{smiles}: worst bond length {worst}");
         }
         // Controls: 4- and 5-membered rings are unaffected (this is specific to
         // 3-membered rings, not "any small ring").
@@ -1216,29 +1207,28 @@ mod tests {
     }
 
     #[test]
-    fn cyclopropane_exact_bound_contradiction_verified() {
-        // Verifies the exact numbers cited in the doc comment above (and in the PR
-        // body's Known Limitations) rather than trusting them from memory.
+    fn cyclopropane_ring_closing_bond_uses_bond_length_bound_not_angle() {
+        // The ring-closing C-C pair must keep the tight bond-length bound (upper
+        // ≈ 1.59 Å) rather than being overwritten by the generic ~109.5°-angle-
+        // derived bound (which previously forced lower ≈ 2.414 Å > upper, the
+        // exact contradiction `three_membered_rings_embed_successfully` used to
+        // fail closed on).
         let mol = parse("C1CC1").unwrap();
         let (lower, upper) = crate::dg_fft::build_bound_matrix(&mol);
         let mut found = false;
         for (_, bond) in mol.bonds() {
             let i = bond.atom1.0 as usize;
             let j = bond.atom2.0 as usize;
-            if lower[i][j] > upper[i][j] {
-                println!(
-                    "cyclopropane ring-closing pair ({i},{j}): lower={:.3} upper={:.3}",
-                    lower[i][j], upper[i][j]
-                );
-                assert!((lower[i][j] - 2.414).abs() < 0.01, "lower={}", lower[i][j]);
-                assert!((upper[i][j] - 1.590).abs() < 0.01, "upper={}", upper[i][j]);
-                found = true;
-            }
+            assert!(
+                lower[i][j] <= upper[i][j],
+                "bonded pair ({i},{j}): lower={} > upper={}",
+                lower[i][j],
+                upper[i][j]
+            );
+            assert!((upper[i][j] - 1.590).abs() < 0.01, "upper={}", upper[i][j]);
+            found = true;
         }
-        assert!(
-            found,
-            "expected at least one bonded pair with lower > upper in cyclopropane's bound matrix"
-        );
+        assert!(found, "cyclopropane has no bonds?");
     }
 
     #[test]

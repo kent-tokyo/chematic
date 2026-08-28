@@ -10,16 +10,17 @@
 //! bounds are ever actually applied to a working bounds copy, simulating
 //! what a future Coordinator integration would do.
 //!
-//! # Known limitation: 3-membered rings still fail to embed
+//! # Formerly a known limitation: 3-membered rings used to fail to embed
 //!
-//! `embed_distance_geometry_v2` fails closed with `BoundsConstructionFailed`
-//! for every 3-membered ring (documented in
-//! `distance_geometry_v2::tests::three_membered_rings_fail_closed_not_silently`
-//! -- a `dg_fft::build_bound_matrix` bug this PR does not fix, since this PR
-//! does not edit `dg_fft.rs`/`distance_geometry_v2.rs`). This means
-//! cyclopropane (and any 3-membered ring) cannot reach the coordinate-level
-//! arms (A-D) below. Rather than silently dropping it from the corpus, this
-//! harness splits its fixtures into two layers:
+//! `embed_distance_geometry_v2` used to fail closed with
+//! `BoundsConstructionFailed` for every 3-membered ring (a
+//! `dg_fft::build_bond_angle_bounds` bug, since fixed -- see
+//! `distance_geometry_v2::tests::three_membered_rings_embed_successfully`),
+//! which meant cyclopropane (and any 3-membered ring) could not reach the
+//! coordinate-level arms (A-D) below. The split is kept anyway (harmless now
+//! that the embed succeeds -- the coordinate layer just stops emitting an
+//! `[embed-failed: ...]` row for these) rather than silently dropping it from
+//! the corpus. This harness splits its fixtures into two layers:
 //! - **Knowledge layer** (rule matching, ring classification, 1-4 pair
 //!   selection): every required fixture, cyclopropane included, runs here
 //!   -- no coordinates needed.
