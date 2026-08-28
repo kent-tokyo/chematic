@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — `chematic-3d` (3-membered rings no longer fail closed at the distance-geometry stage)
+
+- `dg_fft::build_bond_angle_bounds`'s angle-constraint loop treated every pair
+  of a center atom's neighbors as a generic 1-3 (through-center) relationship,
+  tightening their bound with the generic ~109.5°/120° ideal angle. In a
+  3-membered ring, that "1-3" pair is *also* a direct 1-2 bonded pair (the
+  ring closes one bond away), so the generic-angle bound overwrote the
+  correct, much shorter bond-length bound with a contradictory one
+  (cyclopropane's ring-closing C-C pair: bond constraint gave upper ≈ 1.59 Å,
+  the angle constraint then tightened lower to ≈ 2.41 Å) — `lower > upper`,
+  caught by `try_embed_once`'s pre-smoothing sanity check and failed closed
+  as `BoundsConstructionFailed`. This was a disclosed limitation affecting
+  every cyclopropane/epoxide/aziridine/thiirane-containing molecule (11/265
+  in the strict 3D corpus). Fixed by skipping the angle-derived bound for any
+  neighbor pair that is itself directly bonded — a 3-membered ring's three
+  bond-length constraints already fully determine its shape, so nothing is
+  lost. Every molecule without a 3-membered ring is provably unaffected (the
+  skip condition can only fire on a ring-closing bonded pair). Verified: all
+  11 previously-failing molecules now embed and pass the strict-MMFF94 arm
+  under its exact production config; `embed_pipeline_v2`'s strict-MMFF94
+  corpus result moves from 252/265 to 263/265.
+
 ## [0.21.0] — 2026-08-27
 
 Minor release: `McsConfig` gains new fields (`match_charge`/`match_isotope`) and

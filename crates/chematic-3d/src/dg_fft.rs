@@ -81,6 +81,21 @@ pub(crate) fn build_bond_angle_bounds(mol: &Molecule) -> (Vec<Vec<f64>>, Vec<Vec
             for j in (i + 1)..neighbors.len() {
                 let a = neighbors[i];
                 let b = neighbors[j];
+
+                // `a` and `b` are both bonded to `center`; if they are ALSO bonded to
+                // each other, `center`-`a`-`b` is a 3-membered ring, not a genuine 1-3
+                // (through-center) relationship. The generic ~109.5°/120° angle below
+                // is wrong for a ring this tight (true angle ~60°) and, left in place,
+                // overwrites the already-correct 1-2 bond-length bound set above for
+                // this same pair with a contradictory one (see
+                // `distance_geometry_v2::tests::cyclopropane_exact_bound_contradiction_verified`).
+                // A 3-membered ring's three bond lengths already fix its shape (a
+                // triangle's side lengths determine it up to reflection), so skipping
+                // the angle bound here drops a wrong constraint, not a needed one.
+                if mol.bond_between(a, b).is_some() {
+                    continue;
+                }
+
                 let bond_len_1 = ideal_bond_length(mol, center, a);
                 let bond_len_2 = ideal_bond_length(mol, center, b);
                 let angle = ideal_bond_angle(mol, center);

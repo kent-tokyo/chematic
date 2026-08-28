@@ -32,16 +32,17 @@
 //! agree with the model that constrained it?), not an external-oracle check like
 //! the bond-length one. Reported separately, never mixed into the same table.
 //!
-//! # Known limitation: 3-membered rings
+//! # Formerly a known limitation: 3-membered rings
 //!
-//! Every 3-membered ring (cyclopropane, epoxide, aziridine, thiirane, ...) fails
-//! closed with `EmbedFailureCause::BoundsConstructionFailed` -- see
-//! `distance_geometry_v2::tests::{three_membered_rings_fail_closed_not_silently,
-//! cyclopropane_exact_bound_contradiction_verified}` for the exact numbers and root
-//! cause (in `dg_fft::build_bound_matrix`'s angle-constraint loop, not this module).
-//! **The frozen 58-molecule corpus below contains zero 3-membered rings**, so the
-//! "58/58" gate result never exercises this path -- stated explicitly so the gate
-//! doesn't read as broader coverage than it has.
+//! Every 3-membered ring (cyclopropane, epoxide, aziridine, thiirane, ...) used to
+//! fail closed with `EmbedFailureCause::BoundsConstructionFailed`, root-caused to
+//! `dg_fft::build_bond_angle_bounds`'s angle-constraint loop treating a ring-closing
+//! bonded pair as a generic 1-3 (through-center) relationship. Fixed by skipping the
+//! angle-derived bound for any neighbor pair that is itself directly bonded -- see
+//! `distance_geometry_v2::tests::three_membered_rings_embed_successfully`.
+//! **The frozen 58-molecule corpus below still contains zero 3-membered rings**, so
+//! the "58/58" gate result never exercised this path either way -- stated explicitly
+//! so the gate doesn't read as broader coverage than it has.
 //!
 //! # 4-layer acceptance gate
 //!

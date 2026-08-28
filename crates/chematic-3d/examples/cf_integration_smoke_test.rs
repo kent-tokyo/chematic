@@ -525,33 +525,25 @@ fn main() {
 
     // =========================================================================
     // 3-membered-ring probe: the frozen 58 contains ZERO 3-membered rings
-    // (Agent C's own module doc states this), so item 5's "confirm 3-rings
-    // never reach the minimizer" cannot be exercised by the main corpus loop
-    // above. Separate, explicit check on the exact molecules Agent C's own
-    // tests use for this known limitation.
+    // (Agent C's own module doc states this), so this is a separate, explicit
+    // check on the exact molecules Agent C's own tests use. FORMERLY these all
+    // failed closed with `BoundsConstructionFailed` (a bound-construction bug
+    // in `dg_fft::build_bond_angle_bounds`'s angle-constraint loop, now fixed --
+    // see `distance_geometry_v2::tests::three_membered_rings_embed_successfully`).
     // =========================================================================
     println!("\n=== 3-membered-ring probe (not part of the 58-molecule corpus) ===");
-    let mut three_ring_all_failed_closed = true;
+    let mut three_ring_all_embedded = true;
     for smiles in ["C1CC1", "C1CO1", "C1CN1", "C1CS1"] {
         let mol = parse(smiles).unwrap();
         let result = embed_distance_geometry_v2(&mol, &EmbedParameters::default());
-        let failed_as_expected = matches!(
-            result,
-            Err(chematic_3d::distance_geometry_v2::EmbedFailureCause::BoundsConstructionFailed)
-        );
-        println!(
-            "  {smiles:<8} embed result: {result:?} (never reaches minimize_with_policy -- no code path calls it on Err)"
-        );
-        three_ring_all_failed_closed &= failed_as_expected;
+        println!("  {smiles:<8} embed result: {}", result.is_ok());
+        three_ring_all_embedded &= result.is_ok();
     }
     assert!(
-        three_ring_all_failed_closed,
-        "expected every 3-membered ring to fail closed with BoundsConstructionFailed"
+        three_ring_all_embedded,
+        "expected every 3-membered ring to embed successfully"
     );
-    println!(
-        "VERIFIED: 3-membered rings fail at the embed stage and structurally never reach the \
-         minimizer (this smoke test's own control flow only calls minimize_with_policy on Ok(coords))."
-    );
+    println!("VERIFIED: 3-membered rings now embed successfully and reach the minimizer.");
 
     // =========================================================================
     // Seed-robustness spot check (item raised by review): the embedder is
