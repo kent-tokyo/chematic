@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0] — 2026-08-29
+
+Minor release: new additive, non-breaking WASM API (`embed_ensemble_v2_json`), plus two
+correctness/robustness fixes — a `chematic-smiles` canonicalization hang (issue #421)
+and a `chematic-3d` distance-geometry embedding gap affecting every 3-membered-ring
+molecule. No breaking API changes.
+
 ### Fixed — `chematic-smiles` (canonical_smiles/canonical_atom_order could hang, issue #421)
 
 - `canonical_automorphism::extend_mapping`'s colored-graph automorphism
