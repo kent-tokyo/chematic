@@ -610,6 +610,67 @@ mod tests {
         );
     }
 
+    /// Issue #421: on a real 94-atom ChEMBL molecule (3 near-identical
+    /// Boc-protected benzylamine arms off a symmetric polyamine core)
+    /// reordered into `canonical_atom_order`'s own output order,
+    /// `canonical_smiles` used to hang -- observed running past 2 minutes,
+    /// never confirmed to terminate. Root cause was in
+    /// `canonical_automorphism::extend_mapping`, not this module: an
+    /// unbounded backtracking search with no internal step cap, which the
+    /// `SearchBudget` here cannot see (it only counts *calls* to
+    /// `has_colored_automorphism_mapping`, not work done inside one call).
+    /// Fixed there via an always-on `MAX_EXTEND_MAPPING_STEPS` ceiling that
+    /// falls back to `false` (a documented-safe result -- see that module's
+    /// own invariant) rather than searching unbounded. This test pins both
+    /// that the fix actually bounds the search (a generous but finite node
+    /// budget suffices, where before it would not terminate at all) and
+    /// that atom-order invariance holds despite the internal fallback (the
+    /// reordered input must still canonicalize to the exact same string as
+    /// the original).
+    #[test]
+    fn issue421_reordered_symmetric_molecule_does_not_hang() {
+        use chematic_core::{AtomIdx, MoleculeBuilder};
+
+        let smi = "CC(C)(C)OC(=O)N(CCCCCN1CCCN(CCCCCN(Cc2ccccc2)C(=O)OC(C)(C)C)CCN(CCCCCN(Cc2ccccc2)C(=O)OC(C)(C)C)CCCN(CCCCCN(Cc2ccccc2)C(=O)OC(C)(C)C)CC1)Cc1ccccc1";
+        let mol = parse(smi).unwrap();
+        assert_eq!(mol.atom_count(), 94);
+
+        // Reorder atoms into canonical_atom_order's own output order -- the
+        // exact composition that triggered the hang.
+        let order = crate::canonical_atom_order(&mol);
+        let mut builder = MoleculeBuilder::new();
+        let mut remap = std::collections::HashMap::new();
+        for &old in &order {
+            let old_idx = AtomIdx(old as u32);
+            remap.insert(old_idx, builder.add_atom(mol.atom(old_idx).clone()));
+        }
+        for i in 0..mol.bond_count() {
+            let b = mol.bond(chematic_core::BondIdx(i as u32));
+            builder
+                .add_bond(remap[&b.atom1], remap[&b.atom2], b.order)
+                .unwrap();
+        }
+        let reordered = builder.build();
+
+        // Generous but finite budget: before the fix, no finite budget on
+        // either axis mattered because a single automorphism-test call
+        // itself never returned.
+        let limits = CanonicalizationLimits {
+            max_search_nodes: Some(10_000),
+            max_automorphism_tests: Some(1_000_000),
+        };
+        let reordered_result = canonical_smiles_with_limits(&reordered, &limits)
+            .expect("reordered molecule must canonicalize within a bounded search");
+
+        let original_result = canonical_smiles_with_limits(&mol, &limits)
+            .expect("original-order molecule must canonicalize within a bounded search");
+        assert_eq!(
+            reordered_result, original_result,
+            "canonical_smiles must be atom-order-invariant even when the internal \
+             automorphism-search step cap falls back to `false`"
+        );
+    }
+
     #[test]
     fn tiny_node_budget_fails_closed_not_empty_string() {
         let mol = parse("c1ccccc1").unwrap();
