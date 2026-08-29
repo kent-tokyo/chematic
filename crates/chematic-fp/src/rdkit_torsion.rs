@@ -52,7 +52,7 @@ const NUM_PI_BITS: u32 = 2;
 const MAX_NUM_PI: u32 = (1 << NUM_PI_BITS) - 1;
 const NUM_BRANCH_BITS: u32 = 3;
 const MAX_NUM_BRANCHES: u32 = (1 << NUM_BRANCH_BITS) - 1;
-const CODE_SIZE: u32 = NUM_TYPE_BITS + NUM_PI_BITS + NUM_BRANCH_BITS;
+pub(crate) const CODE_SIZE: u32 = NUM_TYPE_BITS + NUM_PI_BITS + NUM_BRANCH_BITS;
 
 /// Count-simulation thresholds (`AtomPairs.cpp`'s `bounds[4] = {1, 2, 4, 8}`),
 /// used only when `nBitsPerEntry == 4` (the default, and the only mode this
@@ -88,7 +88,7 @@ const N_BITS_PER_ENTRY: usize = 4;
 /// 1000-molecule general corpus sample, with essentially all remaining
 /// misses attributable to this gap or to asymmetrically-substituted
 /// 3-membered rings (see that function's own doc comment).
-fn num_pi_electrons(mol: &Molecule, idx: AtomIdx) -> u32 {
+pub(crate) fn num_pi_electrons(mol: &Molecule, idx: AtomIdx) -> u32 {
     let atom = mol.atom(idx);
     if atom.aromatic {
         return 1;
@@ -121,7 +121,7 @@ fn num_pi_electrons(mol: &Molecule, idx: AtomIdx) -> u32 {
 /// default `GetHashedTopologicalTorsionFingerprintAsBitVect` call and this
 /// crate's `mol.torsion_fp()`-equivalent scope) -- callers must not pass
 /// `true`.
-fn atom_code(mol: &Molecule, idx: AtomIdx, branch_subtract: u32) -> u32 {
+pub(crate) fn atom_code(mol: &Molecule, idx: AtomIdx, branch_subtract: u32) -> u32 {
     let atom = mol.atom(idx);
     let degree = mol.degree(idx) as u32;
     let num_branches = degree.saturating_sub(branch_subtract);

@@ -29,6 +29,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (e.g. phosphorus/sulfur) isn't replicated, and asymmetrically-substituted
   3-membered rings can need more than the one closure entry generated here.
 
+### Added — `chematic-fp`/`chematic-py` (`rdkit_atom_pair_fp`, RDKit-compatible Atom Pair fingerprint)
+
+- New `chematic_fp::rdkit_atom_pair_fp` (Rust) / `Mol.rdkit_atom_pair_fp()` (Python): a
+  from-scratch Rust port of RDKit's `GetHashedAtomPairFingerprintAsBitVect`, opt-in
+  and fully separate from the existing native `atom_pair_fp` (neither affects the
+  other). Second entry in the fingerprint-parity series (Track A / 99-point
+  directive Phase 6), reusing `rdkit_torsion_fp`'s atom-invariant primitive since
+  RDKit's own `AtomPairAtomInvGenerator` is the shared generator for both.
+- Measured 87.2% bit-exact on a 1000-molecule general corpus sample against a live
+  RDKit oracle, with zero implementation bugs found this round — every mismatching
+  molecule in the sample contains a hypervalent phosphorus or sulfur atom, confirming
+  the entire residual is `rdkit_torsion_fp`'s already-documented hybridization-gated
+  pi-electron count gap (shared via the reused atom-invariant), not a new gap in
+  atom-pair enumeration or hashing.
+
 ### Added — `chematic-py`/`chematic-wasm` (full `McsConfig`/`McsOutcome` exposed to MCS bindings)
 
 - Python's `find_mcs` previously exposed only 2 of `McsConfig`'s 11 fields
