@@ -538,32 +538,66 @@ fn run_smirks_strict(smirks: &str, reactants: Vec<Mol>) -> PyResult<Vec<Vec<Mol>
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
-/// Find the Maximum Common Substructure (MCS) of a list of molecules.
-///
-/// Returns the MCS as a Mol, or ``None`` when there is no common substructure.
-///
-///     mcs = chematic.find_mcs([mol1, mol2])
-///     if mcs: print(mcs.smiles)
-///
-///     # Ring-aware scaffold extraction
-///     scaffold = chematic.find_mcs(mols, ring_matches_ring_only=True, complete_rings_only=True)
-#[pyfunction]
-#[pyo3(signature = (mols, ring_matches_ring_only=false, complete_rings_only=false))]
-fn find_mcs(
-    mols: Vec<Mol>,
+/// Build a full `McsConfig` from the individual keyword arguments shared by
+/// [`find_mcs`] and [`find_mcs_checked`] -- kept as one function so the two
+/// entry points can never silently drift apart on how a given argument set
+/// maps to `McsConfig`.
+#[allow(clippy::too_many_arguments)]
+fn build_mcs_config(
+    match_bonds: bool,
+    min_atoms: usize,
+    timeout_ms: Option<u64>,
     ring_matches_ring_only: bool,
     complete_rings_only: bool,
-) -> Option<Mol> {
-    use chematic_core::{Atom, AtomIdx, BondOrder, Element, MoleculeBuilder};
-    use chematic_smarts::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, McsConfig};
+    atom_compare: &str,
+    bond_compare: &str,
+    match_chiral_tag: bool,
+    match_charge: bool,
+    match_isotope: bool,
+    maximize_bonds: bool,
+) -> PyResult<chematic_smarts::McsConfig> {
+    use chematic_smarts::{AtomCompare, BondCompare, McsConfig};
 
-    let refs: Vec<&chematic_core::Molecule> = mols.iter().map(|m| m.inner.as_ref()).collect();
-    let config = McsConfig {
+    let atom_compare = match atom_compare {
+        "elements" => AtomCompare::Elements,
+        "any_heavy_atom" => AtomCompare::AnyHeavyAtom,
+        "any" => AtomCompare::Any,
+        other => {
+            return Err(PyValueError::new_err(format!(
+                "invalid atom_compare {other:?}: expected \"elements\", \"any_heavy_atom\", or \"any\""
+            )));
+        }
+    };
+    let bond_compare = match bond_compare {
+        "order_or_aromatic" => BondCompare::OrderOrAromatic,
+        "any" => BondCompare::Any,
+        other => {
+            return Err(PyValueError::new_err(format!(
+                "invalid bond_compare {other:?}: expected \"order_or_aromatic\" or \"any\""
+            )));
+        }
+    };
+    Ok(McsConfig {
+        match_bonds,
+        min_atoms,
+        timeout_ms,
         ring_matches_ring_only,
         complete_rings_only,
-        ..McsConfig::default()
-    };
-    let qmol = chematic_smarts::find_mcs_with_config(&refs, &config);
+        atom_compare,
+        bond_compare,
+        match_chiral_tag,
+        match_charge,
+        match_isotope,
+        maximize_bonds,
+    })
+}
+
+/// Reconstruct a concrete `Mol` from a `QueryMolecule` produced by MCS search
+/// (atom queries are always `AtomicNum` primitives; bond queries are typed
+/// primitives) -- `None` when the query has no atoms (no common substructure).
+fn qmol_to_mol(qmol: &chematic_smarts::QueryMolecule) -> Option<Mol> {
+    use chematic_core::{Atom, AtomIdx, BondOrder, Element, MoleculeBuilder};
+    use chematic_smarts::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery};
 
     if qmol.atoms.is_empty() {
         return None;
@@ -607,6 +641,129 @@ fn find_mcs(
     })
 }
 
+/// Find the Maximum Common Substructure (MCS) of a list of molecules.
+///
+/// Returns the MCS as a Mol, or ``None`` when there is no common substructure.
+/// If ``timeout_ms`` is reached before the search finishes, returns the best
+/// result found so far -- indistinguishable here from an exhaustive result;
+/// use [`find_mcs_checked`] when that distinction matters.
+///
+///     mcs = chematic.find_mcs([mol1, mol2])
+///     if mcs: print(mcs.smiles)
+///
+///     # Ring-aware scaffold extraction
+///     scaffold = chematic.find_mcs(mols, ring_matches_ring_only=True, complete_rings_only=True)
+///
+///     # Ignore element identity, match any heavy atom (scaffold hopping)
+///     core = chematic.find_mcs(mols, atom_compare="any_heavy_atom")
+#[pyfunction]
+#[pyo3(signature = (
+    mols,
+    match_bonds=true,
+    min_atoms=1,
+    timeout_ms=None,
+    ring_matches_ring_only=false,
+    complete_rings_only=false,
+    atom_compare="elements",
+    bond_compare="order_or_aromatic",
+    match_chiral_tag=false,
+    match_charge=false,
+    match_isotope=false,
+    maximize_bonds=true,
+))]
+#[allow(clippy::too_many_arguments)]
+fn find_mcs(
+    mols: Vec<Mol>,
+    match_bonds: bool,
+    min_atoms: usize,
+    timeout_ms: Option<u64>,
+    ring_matches_ring_only: bool,
+    complete_rings_only: bool,
+    atom_compare: &str,
+    bond_compare: &str,
+    match_chiral_tag: bool,
+    match_charge: bool,
+    match_isotope: bool,
+    maximize_bonds: bool,
+) -> PyResult<Option<Mol>> {
+    let config = build_mcs_config(
+        match_bonds,
+        min_atoms,
+        timeout_ms,
+        ring_matches_ring_only,
+        complete_rings_only,
+        atom_compare,
+        bond_compare,
+        match_chiral_tag,
+        match_charge,
+        match_isotope,
+        maximize_bonds,
+    )?;
+    let refs: Vec<&chematic_core::Molecule> = mols.iter().map(|m| m.inner.as_ref()).collect();
+    let qmol = chematic_smarts::find_mcs_with_config(&refs, &config);
+    Ok(qmol_to_mol(&qmol))
+}
+
+/// Like [`find_mcs`], but also reports whether ``timeout_ms`` was reached
+/// before the search finished exhaustively.
+///
+/// Returns a tuple ``(mcs, was_timed_out)``: ``mcs`` is the MCS as a Mol (or
+/// ``None`` if there is no common substructure), and ``was_timed_out`` is
+/// ``True`` if the search was cut off before proving ``mcs`` optimal.
+///
+///     mcs, timed_out = chematic.find_mcs_checked(mols, timeout_ms=500)
+///     if timed_out:
+///         print("warning: MCS may not be optimal")
+#[pyfunction]
+#[pyo3(signature = (
+    mols,
+    match_bonds=true,
+    min_atoms=1,
+    timeout_ms=None,
+    ring_matches_ring_only=false,
+    complete_rings_only=false,
+    atom_compare="elements",
+    bond_compare="order_or_aromatic",
+    match_chiral_tag=false,
+    match_charge=false,
+    match_isotope=false,
+    maximize_bonds=true,
+))]
+#[allow(clippy::too_many_arguments)]
+fn find_mcs_checked(
+    mols: Vec<Mol>,
+    match_bonds: bool,
+    min_atoms: usize,
+    timeout_ms: Option<u64>,
+    ring_matches_ring_only: bool,
+    complete_rings_only: bool,
+    atom_compare: &str,
+    bond_compare: &str,
+    match_chiral_tag: bool,
+    match_charge: bool,
+    match_isotope: bool,
+    maximize_bonds: bool,
+) -> PyResult<(Option<Mol>, bool)> {
+    let config = build_mcs_config(
+        match_bonds,
+        min_atoms,
+        timeout_ms,
+        ring_matches_ring_only,
+        complete_rings_only,
+        atom_compare,
+        bond_compare,
+        match_chiral_tag,
+        match_charge,
+        match_isotope,
+        maximize_bonds,
+    )?;
+    let refs: Vec<&chematic_core::Molecule> = mols.iter().map(|m| m.inner.as_ref()).collect();
+    let outcome = chematic_smarts::find_mcs_with_config_checked(&refs, &config);
+    let was_timed_out = outcome.was_timed_out();
+    let qmol = outcome.into_query();
+    Ok((qmol_to_mol(&qmol), was_timed_out))
+}
+
 // ---------------------------------------------------------------------------
 // Module definition
 // ---------------------------------------------------------------------------
@@ -637,5 +794,6 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(run_smirks, m)?)?;
     m.add_function(wrap_pyfunction!(run_smirks_strict, m)?)?;
     m.add_function(wrap_pyfunction!(find_mcs, m)?)?;
+    m.add_function(wrap_pyfunction!(find_mcs_checked, m)?)?;
     Ok(())
 }

@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `chematic-py`/`chematic-wasm` (full `McsConfig`/`McsOutcome` exposed to MCS bindings)
+
+- Python's `find_mcs` previously exposed only 2 of `McsConfig`'s 11 fields
+  (`ring_matches_ring_only`/`complete_rings_only`); the rest were silently
+  hardcoded to their defaults. Extended to accept all 11 as keyword
+  arguments (`match_bonds`, `min_atoms`, `timeout_ms`, `atom_compare`,
+  `bond_compare`, `match_chiral_tag`, `match_charge`, `match_isotope`,
+  `maximize_bonds`, plus the existing two) — fully backward-compatible,
+  every new argument defaults to `McsConfig::default()`'s own value.
+- New `find_mcs_checked` (Python) and `mcs_smiles_json_with_config` (WASM,
+  camelCase JSON config in, `{"smiles": string|null, "wasTimedOut": bool}`
+  out) expose `McsOutcome`'s exhaustive/timed-out distinction for the first
+  time — previously always silently discarded via `find_mcs_with_config`
+  (never the `_checked` variant), so a caller using `timeout_ms` had no way
+  to tell a possibly-non-optimal result apart from a proven-optimal one.
+- The two pre-existing WASM `mcs_smiles_json`/`mcs_smiles_json_with_ring_config`
+  functions keep their exact signatures and behavior unchanged, refactored
+  to share one `QueryMolecule`-to-`Molecule` reconstruction helper (was
+  duplicated verbatim 2-3x per binding).
+
 ## [0.22.0] — 2026-08-29
 
 Minor release: new additive, non-breaking WASM API (`embed_ensemble_v2_json`), plus two

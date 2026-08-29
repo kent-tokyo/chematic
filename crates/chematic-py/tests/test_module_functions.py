@@ -198,6 +198,76 @@ def test_find_mcs_default_kwargs_unchanged():
     assert mcs is not None
 
 
+def test_find_mcs_match_charge_narrows_result():
+    # Acetate vs acetic acid: match_charge=False (default) matches the full
+    # core; match_charge=True must reject the charge-differing oxygen.
+    acetate = chematic.from_smiles("CC(=O)[O-]")
+    acetic = chematic.from_smiles("CC(=O)O")
+    without = chematic.find_mcs([acetate, acetic], match_charge=False)
+    with_charge = chematic.find_mcs([acetate, acetic], match_charge=True)
+    assert without.smiles != with_charge.smiles
+
+
+def test_find_mcs_match_isotope_narrows_result():
+    labeled = chematic.from_smiles("[13CH4]")
+    plain = chematic.from_smiles("C")
+    without = chematic.find_mcs([labeled, plain], match_isotope=False)
+    with_isotope = chematic.find_mcs([labeled, plain], match_isotope=True)
+    assert without is not None and without.heavy_atoms == 1
+    assert with_isotope is None or with_isotope.heavy_atoms == 0
+
+
+def test_find_mcs_atom_compare_any_heavy_atom_widens_match():
+    benzene = chematic.from_smiles("c1ccccc1")
+    pyridine = chematic.from_smiles("c1ccncc1")
+    elements = chematic.find_mcs([benzene, pyridine], atom_compare="elements")
+    any_heavy = chematic.find_mcs([benzene, pyridine], atom_compare="any_heavy_atom")
+    assert any_heavy is not None
+    assert any_heavy.heavy_atoms == 6
+    assert elements.heavy_atoms < any_heavy.heavy_atoms
+
+
+def test_find_mcs_invalid_atom_compare_raises():
+    m1 = chematic.from_smiles("CCO")
+    m2 = chematic.from_smiles("CCO")
+    with pytest.raises(ValueError):
+        chematic.find_mcs([m1, m2], atom_compare="not_a_real_mode")
+
+
+def test_find_mcs_invalid_bond_compare_raises():
+    m1 = chematic.from_smiles("CCO")
+    m2 = chematic.from_smiles("CCO")
+    with pytest.raises(ValueError):
+        chematic.find_mcs([m1, m2], bond_compare="not_a_real_mode")
+
+
+def test_find_mcs_checked_matches_find_mcs_when_not_timed_out():
+    m1 = chematic.from_smiles("c1ccccc1")
+    m2 = chematic.from_smiles("Cc1ccccc1")
+    mcs = chematic.find_mcs([m1, m2])
+    mcs_checked, was_timed_out = chematic.find_mcs_checked([m1, m2])
+    assert was_timed_out is False
+    assert mcs_checked is not None
+    assert mcs_checked.smiles == mcs.smiles
+
+
+def test_find_mcs_checked_reports_timeout():
+    m1 = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")
+    m2 = chematic.from_smiles("CC(=O)Nc1ccc(O)cc1")
+    mcs, was_timed_out = chematic.find_mcs_checked([m1, m2], timeout_ms=0)
+    assert was_timed_out is True
+
+
+def test_find_mcs_checked_none_result_shape():
+    m1 = chematic.from_smiles("C")
+    m2 = chematic.from_smiles("N")
+    result = chematic.find_mcs_checked([m1, m2])
+    assert isinstance(result, tuple) and len(result) == 2
+    mcs, was_timed_out = result
+    assert mcs is None or isinstance(mcs, chematic.Mol)
+    assert isinstance(was_timed_out, bool)
+
+
 # ---------------------------------------------------------------------------
 # B7: Reaction SMARTS matching
 # ---------------------------------------------------------------------------

@@ -6,7 +6,105 @@ use crate::{
     escape_json_string, json_option_string_array, json_option_u8_array, parse_smiles_json_array,
     rgroup_fragment_smiles,
 };
+use serde::Deserialize;
 use wasm_bindgen::prelude::*;
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+enum AtomCompareJson {
+    #[serde(rename = "elements")]
+    Elements,
+    #[serde(rename = "any_heavy_atom")]
+    AnyHeavyAtom,
+    #[serde(rename = "any")]
+    Any,
+}
+
+impl From<AtomCompareJson> for chematic_smarts::AtomCompare {
+    fn from(v: AtomCompareJson) -> Self {
+        match v {
+            AtomCompareJson::Elements => chematic_smarts::AtomCompare::Elements,
+            AtomCompareJson::AnyHeavyAtom => chematic_smarts::AtomCompare::AnyHeavyAtom,
+            AtomCompareJson::Any => chematic_smarts::AtomCompare::Any,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+enum BondCompareJson {
+    #[serde(rename = "order_or_aromatic")]
+    OrderOrAromatic,
+    #[serde(rename = "any")]
+    Any,
+}
+
+impl From<BondCompareJson> for chematic_smarts::BondCompare {
+    fn from(v: BondCompareJson) -> Self {
+        match v {
+            BondCompareJson::OrderOrAromatic => chematic_smarts::BondCompare::OrderOrAromatic,
+            BondCompareJson::Any => chematic_smarts::BondCompare::Any,
+        }
+    }
+}
+
+fn default_true() -> bool {
+    true
+}
+fn default_min_atoms() -> usize {
+    1
+}
+fn default_atom_compare() -> AtomCompareJson {
+    AtomCompareJson::Elements
+}
+fn default_bond_compare() -> BondCompareJson {
+    BondCompareJson::OrderOrAromatic
+}
+
+/// JSON config for [`mcs_smiles_json_with_config`] -- every field optional,
+/// defaulting to exactly `McsConfig::default()`'s value.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+struct McsConfigJson {
+    #[serde(default = "default_true")]
+    match_bonds: bool,
+    #[serde(default = "default_min_atoms")]
+    min_atoms: usize,
+    #[serde(default)]
+    timeout_ms: Option<u64>,
+    #[serde(default)]
+    ring_matches_ring_only: bool,
+    #[serde(default)]
+    complete_rings_only: bool,
+    #[serde(default = "default_atom_compare")]
+    atom_compare: AtomCompareJson,
+    #[serde(default = "default_bond_compare")]
+    bond_compare: BondCompareJson,
+    #[serde(default)]
+    match_chiral_tag: bool,
+    #[serde(default)]
+    match_charge: bool,
+    #[serde(default)]
+    match_isotope: bool,
+    #[serde(default = "default_true")]
+    maximize_bonds: bool,
+}
+
+impl McsConfigJson {
+    fn into_mcs_config(self) -> chematic_smarts::McsConfig {
+        chematic_smarts::McsConfig {
+            match_bonds: self.match_bonds,
+            min_atoms: self.min_atoms,
+            timeout_ms: self.timeout_ms,
+            ring_matches_ring_only: self.ring_matches_ring_only,
+            complete_rings_only: self.complete_rings_only,
+            atom_compare: self.atom_compare.into(),
+            bond_compare: self.bond_compare.into(),
+            match_chiral_tag: self.match_chiral_tag,
+            match_charge: self.match_charge,
+            match_isotope: self.match_isotope,
+            maximize_bonds: self.maximize_bonds,
+        }
+    }
+}
 
 /// Parse CXSMILES and return preserved metadata as JSON.
 ///
@@ -435,36 +533,11 @@ pub fn neutralize_charges(mol: &MolHandle) -> MolHandle {
     }
 }
 
-/// Maximum Common Substructure of a set of molecules, returned as a canonical SMILES string.
-///
-/// `smiles_json` — a JSON array of at least 2 SMILES strings.
-/// Returns the MCS SMILES, or `"null"` when no common substructure was found.
-/// Returns a JS error on SMILES parse failure.
-#[wasm_bindgen]
-pub fn mcs_smiles_json(smiles_json: &str) -> Result<String, JsValue> {
-    let smiles_list = parse_smiles_json_array(smiles_json)?;
-    if smiles_list.len() < 2 {
-        return Err(JsValue::from_str(
-            "mcs_smiles_json requires at least 2 SMILES",
-        ));
-    }
-    let mols: Vec<chematic_core::Molecule> = smiles_list
-        .iter()
-        .map(|s| {
-            let mol = chematic_smiles::parse(s).map_err(|e| JsValue::from_str(&e.to_string()))?;
-            enforce_wasm_molecule_size(&mol)?;
-            Ok::<_, JsValue>(mol)
-        })
-        .collect::<Result<_, _>>()?;
-    let mol_refs: Vec<&chematic_core::Molecule> = mols.iter().collect();
-    let qmol = chematic_smarts::find_mcs(&mol_refs);
-
-    if qmol.atoms.is_empty() {
-        return Ok("null".to_string());
-    }
-
-    // Reconstruct a concrete Molecule from the QueryMolecule.
-    // MCS atom queries are AtomicNum primitives; bond queries are typed primitives.
+/// Reconstruct a concrete `Molecule` from a `QueryMolecule` produced by MCS
+/// search (atom queries are always `AtomicNum` primitives; bond queries are
+/// typed primitives) -- shared by every MCS binding below so they can't
+/// silently drift apart on how a query result is turned back into a molecule.
+fn qmol_to_molecule(qmol: &chematic_smarts::QueryMolecule) -> chematic_core::Molecule {
     use chematic_core::{Atom, AtomIdx, BondOrder, Element, MoleculeBuilder};
     use chematic_smarts::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery};
 
@@ -495,8 +568,44 @@ pub fn mcs_smiles_json(smiles_json: &str) -> Result<String, JsValue> {
             }
         }
     }
-    let mol = builder.build();
-    Ok(chematic_smiles::canonical_smiles(&mol))
+    builder.build()
+}
+
+fn parse_mcs_input(
+    smiles_json: &str,
+    fn_name: &str,
+) -> Result<Vec<chematic_core::Molecule>, JsValue> {
+    let smiles_list = parse_smiles_json_array(smiles_json)?;
+    if smiles_list.len() < 2 {
+        return Err(JsValue::from_str(&format!(
+            "{fn_name} requires at least 2 SMILES"
+        )));
+    }
+    smiles_list
+        .iter()
+        .map(|s| {
+            let mol = chematic_smiles::parse(s).map_err(|e| JsValue::from_str(&e.to_string()))?;
+            enforce_wasm_molecule_size(&mol)?;
+            Ok::<_, JsValue>(mol)
+        })
+        .collect()
+}
+
+/// Maximum Common Substructure of a set of molecules, returned as a canonical SMILES string.
+///
+/// `smiles_json` — a JSON array of at least 2 SMILES strings.
+/// Returns the MCS SMILES, or `"null"` when no common substructure was found.
+/// Returns a JS error on SMILES parse failure.
+#[wasm_bindgen]
+pub fn mcs_smiles_json(smiles_json: &str) -> Result<String, JsValue> {
+    let mols = parse_mcs_input(smiles_json, "mcs_smiles_json")?;
+    let mol_refs: Vec<&chematic_core::Molecule> = mols.iter().collect();
+    let qmol = chematic_smarts::find_mcs(&mol_refs);
+
+    if qmol.atoms.is_empty() {
+        return Ok("null".to_string());
+    }
+    Ok(chematic_smiles::canonical_smiles(&qmol_to_molecule(&qmol)))
 }
 
 /// MCS with ring-awareness constraints.
@@ -511,20 +620,7 @@ pub fn mcs_smiles_json_with_ring_config(
     ring_matches_ring_only: bool,
     complete_rings_only: bool,
 ) -> Result<String, JsValue> {
-    let smiles_list = parse_smiles_json_array(smiles_json)?;
-    if smiles_list.len() < 2 {
-        return Err(JsValue::from_str(
-            "mcs_smiles_json_with_ring_config requires at least 2 SMILES",
-        ));
-    }
-    let mols: Vec<chematic_core::Molecule> = smiles_list
-        .iter()
-        .map(|s| {
-            let mol = chematic_smiles::parse(s).map_err(|e| JsValue::from_str(&e.to_string()))?;
-            enforce_wasm_molecule_size(&mol)?;
-            Ok::<_, JsValue>(mol)
-        })
-        .collect::<Result<_, _>>()?;
+    let mols = parse_mcs_input(smiles_json, "mcs_smiles_json_with_ring_config")?;
     let mol_refs: Vec<&chematic_core::Molecule> = mols.iter().collect();
     let config = chematic_smarts::McsConfig {
         ring_matches_ring_only,
@@ -536,39 +632,50 @@ pub fn mcs_smiles_json_with_ring_config(
     if qmol.atoms.is_empty() {
         return Ok("null".to_string());
     }
+    Ok(chematic_smiles::canonical_smiles(&qmol_to_molecule(&qmol)))
+}
 
-    use chematic_core::{Atom, AtomIdx, BondOrder, Element, MoleculeBuilder};
-    use chematic_smarts::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery};
+/// Full `McsConfig` + `McsOutcome`-aware MCS search.
+///
+/// `smiles_json` — JSON array of at least 2 SMILES strings.
+/// `config_json` — a JSON object with any subset of `McsConfig`'s fields
+/// (camelCase keys, all optional, defaulting to `McsConfig::default()`):
+/// `matchBonds`, `minAtoms`, `timeoutMs`, `ringMatchesRingOnly`,
+/// `completeRingsOnly`, `atomCompare` (`"elements"` | `"any_heavy_atom"` |
+/// `"any"`), `bondCompare` (`"order_or_aromatic"` | `"any"`),
+/// `matchChiralTag`, `matchCharge`, `matchIsotope`, `maximizeBonds`.
+///
+/// Returns a JSON object `{"smiles": string|null, "wasTimedOut": bool}` --
+/// `smiles` is `null` when there is no common substructure; `wasTimedOut` is
+/// `true` if `timeoutMs` was reached before the search finished exhaustively
+/// (the returned `smiles`, if any, is then the best result found so far, not
+/// proven optimal).
+#[wasm_bindgen]
+pub fn mcs_smiles_json_with_config(
+    smiles_json: &str,
+    config_json: &str,
+) -> Result<String, JsValue> {
+    let mols = parse_mcs_input(smiles_json, "mcs_smiles_json_with_config")?;
+    let config: McsConfigJson =
+        serde_json::from_str(config_json).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let config = config.into_mcs_config();
 
-    let mut builder = MoleculeBuilder::new();
-    for qa in &qmol.atoms {
-        let elem = match &qa.query {
-            AtomQuery::Primitive(AtomPrimitive::AtomicNum(n)) => {
-                Element::from_atomic_number(*n).unwrap_or(Element::C)
-            }
-            _ => Element::C,
-        };
-        builder.add_atom(Atom::new(elem));
-    }
-    for (atom_idx, neighbors) in qmol.adj.iter().enumerate() {
-        for (bond_idx, neighbor_idx) in neighbors {
-            if atom_idx < *neighbor_idx {
-                let order = match &qmol.bonds[*bond_idx].query {
-                    BondQuery::Primitive(BondPrimitive::Double) => BondOrder::Double,
-                    BondQuery::Primitive(BondPrimitive::Triple) => BondOrder::Triple,
-                    BondQuery::Primitive(BondPrimitive::Aromatic) => BondOrder::Aromatic,
-                    _ => BondOrder::Single,
-                };
-                let _ = builder.add_bond(
-                    AtomIdx(atom_idx as u32),
-                    AtomIdx(*neighbor_idx as u32),
-                    order,
-                );
-            }
-        }
-    }
-    let mol = builder.build();
-    Ok(chematic_smiles::canonical_smiles(&mol))
+    let mol_refs: Vec<&chematic_core::Molecule> = mols.iter().collect();
+    let outcome = chematic_smarts::find_mcs_with_config_checked(&mol_refs, &config);
+    let was_timed_out = outcome.was_timed_out();
+    let qmol = outcome.into_query();
+
+    let smiles_json_value = if qmol.atoms.is_empty() {
+        "null".to_string()
+    } else {
+        format!(
+            "\"{}\"",
+            escape_json_string(&chematic_smiles::canonical_smiles(&qmol_to_molecule(&qmol)))
+        )
+    };
+    Ok(format!(
+        r#"{{"smiles":{smiles_json_value},"wasTimedOut":{was_timed_out}}}"#
+    ))
 }
 
 /// Find matched molecular pairs in a set of molecules as JSON.
@@ -1119,3 +1226,84 @@ pub fn invert_stereocenter_at(mol: &MolHandle, atom_idx: u32) -> Result<MolHandl
 // ---------------------------------------------------------------------------
 // mol_transforms (3D geometry manipulation)
 // ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod mcs_config_tests {
+    use super::*;
+
+    #[test]
+    fn default_config_matches_bare_mcs_smiles_json() {
+        let smiles = r#"["CC(=O)Oc1ccccc1C(=O)O","CC(=O)Nc1ccc(O)cc1"]"#;
+        let full = mcs_smiles_json_with_config(smiles, "{}").unwrap();
+        let bare = mcs_smiles_json(smiles).unwrap();
+        let value: serde_json::Value = serde_json::from_str(&full).unwrap();
+        assert_eq!(value["smiles"], serde_json::Value::String(bare));
+        assert_eq!(value["wasTimedOut"], false);
+    }
+
+    #[test]
+    fn no_common_substructure_returns_null_smiles() {
+        // Two disconnected, chemically unrelated single-heavy-atom molecules.
+        let smiles = r#"["[He]","[Ne]"]"#;
+        let result = mcs_smiles_json_with_config(smiles, "{}").unwrap();
+        let value: serde_json::Value = serde_json::from_str(&result).unwrap();
+        assert_eq!(value["smiles"], serde_json::Value::Null);
+        assert_eq!(value["wasTimedOut"], false);
+    }
+
+    #[test]
+    fn match_charge_true_prevents_charged_neutral_match() {
+        // Acetate vs acetic acid: MCS with match_charge=false matches the
+        // full 4-heavy-atom core; match_charge=true must reject the
+        // charge-differing carboxylate oxygen, shrinking the MCS.
+        let smiles = r#"["CC(=O)[O-]","CC(=O)O"]"#;
+        let without = mcs_smiles_json_with_config(smiles, r#"{"matchCharge":false}"#).unwrap();
+        let with = mcs_smiles_json_with_config(smiles, r#"{"matchCharge":true}"#).unwrap();
+        assert_ne!(
+            without, with,
+            "match_charge=true must change the MCS result"
+        );
+    }
+
+    #[test]
+    fn atom_compare_any_heavy_atom_widens_match() {
+        // Benzene vs pyridine: default (element-exact) MCS excludes the N
+        // position; any_heavy_atom compare should include it (6-atom ring).
+        let smiles = r#"["c1ccccc1","c1ccncc1"]"#;
+        let elements =
+            mcs_smiles_json_with_config(smiles, r#"{"atomCompare":"elements"}"#).unwrap();
+        let any_heavy =
+            mcs_smiles_json_with_config(smiles, r#"{"atomCompare":"any_heavy_atom"}"#).unwrap();
+        assert_ne!(
+            elements, any_heavy,
+            "any_heavy_atom compare must change the MCS result vs elements"
+        );
+    }
+
+    #[test]
+    fn timeout_zero_is_reported_as_timed_out() {
+        let smiles = r#"["CC(=O)Oc1ccccc1C(=O)O","CC(=O)Nc1ccc(O)cc1"]"#;
+        let result = mcs_smiles_json_with_config(smiles, r#"{"timeoutMs":0}"#).unwrap();
+        let value: serde_json::Value = serde_json::from_str(&result).unwrap();
+        assert_eq!(value["wasTimedOut"], true);
+    }
+
+    // Error paths that surface as a real thrown `JsValue` are only safely
+    // constructible on the wasm32 target (constructing a `JsValue` natively
+    // aborts the process, per wasm-bindgen's own design) -- covered instead
+    // by `tests/mcs.test.mjs`, run under the actual wasm runtime via CI's
+    // `Test (WASM)` job. What's safe and worth testing natively here is the
+    // pure-serde config-parsing layer, which never touches `JsValue`.
+
+    #[test]
+    fn invalid_atom_compare_string_rejected_at_parse_time() {
+        let err = serde_json::from_str::<McsConfigJson>(r#"{"atomCompare":"bogus"}"#).unwrap_err();
+        assert!(err.to_string().contains("atomCompare") || err.to_string().contains("unknown"));
+    }
+
+    #[test]
+    fn unknown_config_field_rejected_at_parse_time() {
+        let err = serde_json::from_str::<McsConfigJson>(r#"{"notAField":true}"#).unwrap_err();
+        assert!(err.to_string().contains("notAField") || err.to_string().contains("unknown"));
+    }
+}
