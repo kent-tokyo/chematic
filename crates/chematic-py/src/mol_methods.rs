@@ -1393,6 +1393,20 @@ impl Mol {
         bitvec2048_to_bytes(&chematic_fp::rdkit_atom_pair_fp(&self.inner))
     }
 
+    /// RDKit-compatible "Layered fingerprint" (``rdkit.Chem.LayeredFingerprint``)
+    /// as bytes (256 bytes = 2048 bits).
+    ///
+    /// A from-scratch Rust port of RDKit's own branched-subgraph, 6-layer
+    /// fingerprint (``layerFlags=0xFFFFFFFF, minPath=1, maxPath=7,
+    /// fpSize=2048``); upstream itself documents this fingerprint as
+    /// experimental. A separate, opt-in function from :meth:`layered_fp`
+    /// (chematic's own pre-existing, non-bit-exact scheme); neither affects
+    /// the other's output. See ``chematic_fp::rdkit_layered``'s module doc
+    /// comment for the full algorithm and current bit-exactness figures.
+    fn rdkit_layered_fp(&self) -> Vec<u8> {
+        bitvec2048_to_bytes(&chematic_fp::rdkit_layered_fp(&self.inner))
+    }
+
     /// RDKit-*compatible* (not yet fully bit-exact) Pattern fingerprint as
     /// bytes (256 bytes = 2048 bits).
     ///

@@ -131,6 +131,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   out-of-scope dependency gap already documented for the three earlier
   fingerprints in this series, not a defect introduced by this port.
 
+### Added — `chematic-fp`/`chematic-py` (`rdkit_layered_fp`, RDKit-compatible Layered fingerprint)
+
+- New `chematic_fp::rdkit_layered_fp` (Rust) / `Mol.rdkit_layered_fp()` (Python):
+  a from-scratch Rust port of RDKit's `Chem.LayeredFingerprint`
+  (`LayeredFingerprintMol`), opt-in and fully separate from the existing
+  native `layered_fp` (neither affects the other). Fifth and final entry in
+  the fingerprint-parity series (Track A / 99-point directive Phase 6).
+  Upstream itself documents this fingerprint as experimental.
+- Reuses the same branched-subgraph enumeration as `rdkit_rdk_fp`, but
+  computes 6 independent per-bond feature "layers" (topology, bond order,
+  atom type, ring membership, ring size, aromaticity), each packed into a
+  small bitfield and folded separately into its own fingerprint bit per
+  subgraph — no `numBitsPerFeature`/PRNG step, unlike `rdkit_rdk_fp`.
+- One real bug found and fixed: `LayeredFingerprintMol` enumerates with
+  `useHs=false` (unlike `rdkit_rdk_fp`'s own `useHs=true`), so any bond
+  touching an explicit hydrogen atom must be excluded entirely from
+  enumeration. chematic, like RDKit, represents an isotope-labeled hydrogen
+  (e.g. `[2H]`/`[3H]`) as a real graph atom rather than folding it into an
+  implicit H count, so a naive `useHs=true` port silently included such bonds
+  and produced extra bits (caught on the general and ChEMBL corpora, each via
+  a single deuterium/tritium-containing molecule).
+- Measured bit-exact (identical on-bit sets) against a live RDKit oracle:
+  100% on `descriptor_census_corpus.smi` (5000/5000) and
+  `chembl_accuracy_corpus_4999.smi` (5000/5000), 99.46% on
+  `nci_first_5k_smiles_only.smi` (4964/4991) — the same pre-existing
+  `chematic-perception` aromaticity/ring-model gap class (fused
+  polyheteroaromatic dyes, exotic charged heterocycles, metal-coordination
+  complexes) already documented for the other fingerprints in this series,
+  confirmed via the same throwaway-Python-prototype-against-RDKit's-own-mol
+  methodology used for `rdkit_rdk_fp`.
+
 ## [0.22.0] — 2026-08-29
 
 Minor release: new additive, non-breaking WASM API (`embed_ensemble_v2_json`), plus two
