@@ -176,6 +176,78 @@ def test_rdkit_atom_pair_fp_matches_rdkit_oracle_on_simple_molecules():
         assert chem_bits == rd_bits, f"{smi}: parity mismatch vs RDKit oracle"
 
 
+def _bits(fp_bytes):
+    return set(i for i in range(2048) if (fp_bytes[i // 8] >> (i % 8)) & 1)
+
+
+def test_rdkit_pattern_fp_substructure_bits_are_a_subset():
+    # Pattern fingerprints exist for substructure screening: a substructure's
+    # own bits must be a subset of its parent molecule's bits, or screening
+    # would produce false negatives. Checked on whole *concrete* molecules
+    # (this port doesn't support fingerprinting a SMARTS query molecule
+    # itself -- see the module's own doc comment) where one is a literal
+    # substructure of the other.
+    import chematic
+
+    pairs = [
+        ("c1ccccc1", "c1ccc2ccccc2c1"),
+        ("CCO", "CCOC"),
+        ("c1ccccc1", "CC(=O)Oc1ccccc1C(=O)O"),
+    ]
+    for sub, full in pairs:
+        b_sub = _bits(chematic.from_smiles(sub).rdkit_pattern_fp())
+        b_full = _bits(chematic.from_smiles(full).rdkit_pattern_fp())
+        assert b_sub <= b_full, f"{sub} bits not a subset of {full} bits"
+
+
+def test_rdkit_pattern_fp_length(aspirin):
+    assert len(aspirin.rdkit_pattern_fp()) == 256
+
+
+def test_rdkit_pattern_fp_different(aspirin, benzene):
+    assert aspirin.rdkit_pattern_fp() != benzene.rdkit_pattern_fp()
+
+
+def test_rdkit_pattern_fp_deterministic(aspirin):
+    assert aspirin.rdkit_pattern_fp() == aspirin.rdkit_pattern_fp()
+
+
+def test_rdkit_pattern_fp_independent_of_native_pattern_fp(aspirin):
+    # Separate opt-in function -- must not be the same bytes as the native
+    # (non-RDKit) scheme just because both happen to be 256-byte outputs.
+    assert aspirin.rdkit_pattern_fp() != aspirin.pattern_fp()
+
+
+def test_rdkit_pattern_fp_matches_rdkit_oracle_on_simple_molecules():
+    # Regression pin, including the Kekule-notation heteroaromatic that
+    # exposed the aromaticity-perception bug this port originally had (a raw
+    # bond.order == Aromatic check silently missed every ring bond of a
+    # Kekule-written aromatic ring) -- must stay bit-exact.
+    import chematic
+
+    cases = [
+        "CCO",
+        "CCCC",
+        "C1CC1",
+        "c1ccccc1",
+        "c1ccc2ccccc2c1",
+        "S1C2=CC3=CC=CC=C3C=C2N=C1C4=CC=CC=C4",
+    ]
+    try:
+        from rdkit import Chem
+    except ImportError:
+        return  # rdkit not installed in this environment -- skip
+    for smi in cases:
+        m_chem = chematic.from_smiles(smi)
+        m_rd = Chem.MolFromSmiles(smi)
+        rd_bits = Chem.PatternFingerprint(m_rd, fpSize=2048).ToBitString()
+        chem_bytes = m_chem.rdkit_pattern_fp()
+        chem_bits = "".join(
+            format(byte, "08b")[::-1] for byte in chem_bytes
+        )[:2048]
+        assert chem_bits == rd_bits, f"{smi}: parity mismatch vs RDKit oracle"
+
+
 # ---------------------------------------------------------------------------
 # MACCS
 # ---------------------------------------------------------------------------

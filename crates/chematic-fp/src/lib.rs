@@ -39,6 +39,7 @@ mod rdkit_isotope_delta_table;
 mod rdkit_morgan_config;
 mod rdkit_morgan_ecfp4;
 mod rdkit_morgan_hash;
+pub mod rdkit_pattern;
 pub mod rdkit_torsion;
 pub mod reaction_fp;
 pub mod search;
@@ -56,6 +57,7 @@ pub use ecfp::{
     tanimoto_ecfp4,
 };
 pub use rdkit_atom_pair::rdkit_atom_pair_fp;
+pub use rdkit_pattern::rdkit_pattern_fp;
 pub use rdkit_torsion::rdkit_torsion_fp;
 /// Diagnostic-only APIs, not meant for production use — a per-`(atom,
 /// radius)` trace of chematic's real Morgan expansion, for the RDKit

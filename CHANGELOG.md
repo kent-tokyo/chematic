@@ -44,6 +44,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pi-electron count gap (shared via the reused atom-invariant), not a new gap in
   atom-pair enumeration or hashing.
 
+### Added — `chematic-fp`/`chematic-py` (`rdkit_pattern_fp`, RDKit-compatible Pattern fingerprint)
+
+- New `chematic_fp::rdkit_pattern_fp` (Rust) / `Mol.rdkit_pattern_fp()` (Python): a
+  from-scratch Rust port of RDKit's `PatternFingerprint`, opt-in and fully separate
+  from the existing native `pattern_fp` (neither affects the other). Third entry in
+  the fingerprint-parity series (Track A / 99-point directive Phase 6) — structurally
+  unrelated to the first two (SMARTS substructure matching against 13 fixed patterns,
+  not a path/pair enumeration), reusing chematic's existing `chematic-smarts` matcher
+  rather than a new one.
+- Measured against a live RDKit oracle on three corpora with different chemical
+  distributions: 100% bit-exact on a 1000-molecule general corpus sample, 99.6% on an
+  NCI sample, 94.1% on a ChEMBL sample. One real bug found and fixed along the way:
+  chematic's SMILES parser preserves a Kekule-notation input's literal single/double
+  bond orders even when the ring is perceived as aromatic, so a raw `bond.order ==
+  Aromatic` check silently missed every ring bond of a Kekule-written heteroaromatic —
+  fixed by using chematic's own aromaticity-perception model instead (found via a live
+  oracle repro, not source re-reading; caught the NCI corpus number at 30.4% before
+  the fix). The remaining residual traces entirely to chematic's own
+  aromaticity-perception model disagreeing with RDKit's on specific ring systems
+  (fused N/S-heterocycles, quinones, coordination complexes) — a pre-existing,
+  separate gap, not a defect in this fingerprint's own match-enumeration or hashing
+  logic (independently verified: per-pattern match counts identical to RDKit's own
+  `GetSubstructMatches(..., uniquify=False)` across all 13 patterns on a repro
+  molecule).
+
 ### Added — `chematic-py`/`chematic-wasm` (full `McsConfig`/`McsOutcome` exposed to MCS bindings)
 
 - Python's `find_mcs` previously exposed only 2 of `McsConfig`'s 11 fields

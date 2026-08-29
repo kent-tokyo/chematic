@@ -1393,6 +1393,20 @@ impl Mol {
         bitvec2048_to_bytes(&chematic_fp::rdkit_atom_pair_fp(&self.inner))
     }
 
+    /// RDKit-*compatible* (not yet fully bit-exact) Pattern fingerprint as
+    /// bytes (256 bytes = 2048 bits).
+    ///
+    /// A from-scratch Rust port of RDKit's
+    /// ``rdkit.Chem.PatternFingerprint(mol, fpSize=2048)``. Unlike
+    /// :meth:`rdkit_torsion_fp`/:meth:`rdkit_atom_pair_fp`, this uses SMARTS
+    /// substructure matching against 13 fixed patterns rather than a path/pair
+    /// enumeration. A separate, opt-in function from :meth:`pattern_fp`
+    /// (chematic's own native scheme, unchanged); neither affects the other's
+    /// output. Does not support ``tautomericFingerprint=True``.
+    fn rdkit_pattern_fp(&self) -> Vec<u8> {
+        bitvec2048_to_bytes(&chematic_fp::rdkit_pattern_fp(&self.inner))
+    }
+
     /// ECFP4 with chirality fingerprint as bytes.
     fn ecfp4_chiral(&self) -> Vec<u8> {
         let config = chematic_fp::EcfpConfig {
