@@ -198,6 +198,23 @@ def test_find_mcs_default_kwargs_unchanged():
     assert mcs is not None
 
 
+def test_find_mcs_result_is_substructure_of_both_inputs():
+    # Regression test: qmol_to_mol once built every MCS atom via Atom::new(elem),
+    # which always sets aromatic=False -- even for atoms on an aromatic-bonded
+    # ring. That desync between the atom's aromatic flag and its bonds' literal
+    # Aromatic order produced a self-consistent-looking but unusable SMILES
+    # (e.g. "C:1:C:C(O):C:C:C:1", uppercase C with explicit aromatic bonds),
+    # which then failed a substructure re-match against either parent molecule --
+    # defeating the primary purpose of an MCS result (self-verification /
+    # substructure screening).
+    m1 = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")  # aspirin
+    m2 = chematic.from_smiles("CC(=O)Nc1ccc(O)cc1")  # paracetamol
+    mcs = chematic.find_mcs([m1, m2])
+    assert mcs is not None
+    assert m1.has_substructure(mcs.smiles), f"MCS {mcs.smiles!r} not found in aspirin"
+    assert m2.has_substructure(mcs.smiles), f"MCS {mcs.smiles!r} not found in paracetamol"
+
+
 def test_find_mcs_match_charge_narrows_result():
     # Acetate vs acetic acid: match_charge=False (default) matches the full
     # core; match_charge=True must reject the charge-differing oxygen.

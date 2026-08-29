@@ -611,12 +611,26 @@ fn qmol_to_mol(qmol: &chematic_smarts::QueryMolecule) -> Option<Mol> {
         }
     }
 
+    // `build_query`/`molecule_to_query` always wrap each atom's query as
+    // `And(AtomicNum(n), Aromatic(bool))`, so this must recurse the same way
+    // `extract_atomic_num` does -- a non-recursive match here would silently
+    // never find the `Aromatic` primitive and leave every atom non-aromatic.
+    fn extract_aromatic(q: &AtomQuery) -> Option<bool> {
+        match q {
+            AtomQuery::Primitive(AtomPrimitive::Aromatic(a)) => Some(*a),
+            AtomQuery::And(lhs, rhs) => extract_aromatic(lhs).or_else(|| extract_aromatic(rhs)),
+            _ => None,
+        }
+    }
+
     let mut builder = MoleculeBuilder::new();
     for qa in &qmol.atoms {
         let elem = extract_atomic_num(&qa.query)
             .and_then(Element::from_atomic_number)
             .unwrap_or(Element::C);
-        builder.add_atom(Atom::new(elem));
+        let mut atom = Atom::new(elem);
+        atom.aromatic = extract_aromatic(&qa.query).unwrap_or(false);
+        builder.add_atom(atom);
     }
     for (atom_idx, neighbors) in qmol.adj.iter().enumerate() {
         for (bond_idx, neighbor_idx) in neighbors {
