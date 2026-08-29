@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `chematic-fp`/`chematic-py` (`rdkit_torsion_fp`, RDKit-compatible Topological Torsion fingerprint)
+
+- New `chematic_fp::rdkit_torsion_fp` (Rust) / `Mol.rdkit_torsion_fp()` (Python): a
+  from-scratch Rust port of RDKit's
+  `GetHashedTopologicalTorsionFingerprintAsBitVect`, opt-in and fully separate from
+  the existing native `torsion_fp` (neither affects the other). First entry in the
+  fingerprint-parity series (Track A / 99-point directive Phase 6) — the closest of
+  six priority fingerprints measured against RDKit, chosen to establish the pattern.
+- Measured 87.2% bit-exact on a 1000-molecule general corpus sample against a live
+  RDKit oracle, up from 0% at the start of this round. Three real bugs found and
+  fixed along the way, each verified against the oracle: a missing `-2`
+  "topological torsion correction" on atom invariants, double-counted torsion paths
+  inflating RDKit's "count simulation" threshold bits, and missing 3-membered-ring
+  closure entries (a triangle's own closing bond forms an additional torsion that a
+  plain 4-distinct-atom path search can't find).
+- Two known, documented residuals remain (see `chematic_fp::rdkit_torsion`'s module
+  doc comment): RDKit's hybridization-gated pi-electron count for hypervalent atoms
+  (e.g. phosphorus/sulfur) isn't replicated, and asymmetrically-substituted
+  3-membered rings can need more than the one closure entry generated here.
+
 ### Added — `chematic-py`/`chematic-wasm` (full `McsConfig`/`McsOutcome` exposed to MCS bindings)
 
 - Python's `find_mcs` previously exposed only 2 of `McsConfig`'s 11 fields

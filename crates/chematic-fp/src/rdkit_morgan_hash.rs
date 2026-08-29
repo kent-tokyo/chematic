@@ -91,7 +91,7 @@ use crate::morgan_environment::BondSet;
 /// arithmetic, not UB) — `wrapping_add` is required, not cosmetic: plain `+`
 /// panics in a Rust debug build on the frequent overflow this formula
 /// produces.
-fn hash_combine(seed: u32, value: u32) -> u32 {
+pub(crate) fn hash_combine(seed: u32, value: u32) -> u32 {
     seed ^ value
         .wrapping_add(0x9e37_79b9)
         .wrapping_add(seed << 6)
@@ -113,7 +113,7 @@ fn hash_pair(a: u32, b: u32) -> u32 {
 /// invariant, whose component count is *not* fixed (see
 /// [`connectivity_invariant`]) — a shorter or longer vector changes the
 /// number of `hash_combine` calls, not just one component's value.
-fn hash_vec(values: &[u32]) -> u32 {
+pub(crate) fn hash_vec(values: &[u32]) -> u32 {
     values.iter().fold(0u32, |seed, &v| hash_combine(seed, v))
 }
 
