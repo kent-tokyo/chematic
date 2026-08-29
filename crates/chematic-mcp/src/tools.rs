@@ -142,17 +142,35 @@ fn bitvec_to_hex(fp: &BitVec2048) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-/// Reconstruct a concrete `Molecule` from an MCS `QueryMolecule`.
+/// Reconstruct a concrete `Molecule` from an MCS `QueryMolecule`. Atom
+/// queries are `And(AtomicNum(n), Aromatic(bool))` compounds, not bare
+/// `AtomicNum` primitives -- see `build_query`/`molecule_to_query` in
+/// `chematic-smarts`.
 fn qmol_to_molecule(qmol: &chematic_smarts::QueryMolecule) -> chematic_core::Molecule {
+    fn extract_atomic_num(q: &AtomQuery) -> Option<u8> {
+        match q {
+            AtomQuery::Primitive(AtomPrimitive::AtomicNum(n)) => Some(*n),
+            AtomQuery::And(lhs, rhs) => extract_atomic_num(lhs).or_else(|| extract_atomic_num(rhs)),
+            _ => None,
+        }
+    }
+
+    fn extract_aromatic(q: &AtomQuery) -> Option<bool> {
+        match q {
+            AtomQuery::Primitive(AtomPrimitive::Aromatic(a)) => Some(*a),
+            AtomQuery::And(lhs, rhs) => extract_aromatic(lhs).or_else(|| extract_aromatic(rhs)),
+            _ => None,
+        }
+    }
+
     let mut builder = MoleculeBuilder::new();
     for qa in &qmol.atoms {
-        let elem = match &qa.query {
-            AtomQuery::Primitive(AtomPrimitive::AtomicNum(n)) => {
-                Element::from_atomic_number(*n).unwrap_or(Element::C)
-            }
-            _ => Element::C,
-        };
-        builder.add_atom(Atom::new(elem));
+        let elem = extract_atomic_num(&qa.query)
+            .and_then(Element::from_atomic_number)
+            .unwrap_or(Element::C);
+        let mut atom = Atom::new(elem);
+        atom.aromatic = extract_aromatic(&qa.query).unwrap_or(false);
+        builder.add_atom(atom);
     }
     for (atom_idx, neighbors) in qmol.adj.iter().enumerate() {
         for (bond_idx, neighbor_idx) in neighbors {
@@ -1500,6 +1518,27 @@ mod tests {
         args_obj.insert("smiles_list".to_string(), smiles_list);
         let v = tool_find_mcs(&Value::Object(args_obj)).unwrap();
         assert!(v["atom_count"].as_u64().unwrap() >= 6);
+    }
+
+    #[test]
+    fn test_find_mcs_preserves_heteroatoms_and_aromaticity() {
+        // Regression test: `qmol_to_molecule` once matched only the bare
+        // `AtomQuery::Primitive(AtomicNum(n))` case, but `find_mcs`'s query atoms
+        // are always the compound `And(AtomicNum(n), Aromatic(bool))` -- so every
+        // atom silently fell through to carbon. The benzene/phenol pair above
+        // can't catch this (its MCS is all-carbon benzene); aspirin/paracetamol's
+        // shared hydroxyphenyl MCS can, since it contains an O atom.
+        let smiles_list = json!(["CC(=O)Oc1ccccc1C(=O)O", "CC(=O)Nc1ccc(O)cc1"]);
+        let mut args_obj = serde_json::Map::new();
+        args_obj.insert("smiles_list".to_string(), smiles_list);
+        let v = tool_find_mcs(&Value::Object(args_obj)).unwrap();
+        let mcs = v["mcs"]
+            .as_str()
+            .expect("aspirin/paracetamol share a hydroxyphenyl MCS");
+        assert!(
+            mcs.contains('O') || mcs.contains('o'),
+            "MCS lost its oxygen atom: {mcs:?}"
+        );
     }
 
     #[test]

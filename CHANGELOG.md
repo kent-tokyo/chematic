@@ -9,6 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — `chematic-py`/`chematic-wasm`/`chematic-mcp`/`chematic-chem` (MCS result silently lost heteroatoms and/or aromaticity)
+
+- `find_mcs`'s query-molecule atoms are encoded as the compound
+  `AtomQuery::And(AtomicNum(n), Aromatic(bool))` (`chematic-smarts`'s
+  `build_query`/`molecule_to_query`), never a bare `AtomicNum` primitive. Four
+  independent copies of the "reconstruct a concrete `Molecule` from an MCS
+  result" helper (Python's `qmol_to_mol`, WASM's `qmol_to_molecule`, the MCP
+  server's own `qmol_to_molecule`, and `chematic-chem`'s
+  `query_molecule_to_smiles`) each matched only the bare `AtomicNum` case (or,
+  for the Python binding, correctly unwrapped `AtomicNum` but not
+  `Aromatic`) — so every MCS atom silently fell through to carbon in three of
+  the four copies (WASM, MCP, `chematic-chem`), and every MCS atom lost its
+  aromaticity flag in the fourth (Python), regardless of the molecule's real
+  elements/aromaticity. The Python binding's own MCS result then failed to
+  re-match as a substructure of either input molecule it was computed from —
+  defeating a primary purpose of an MCS result (self-verification /
+  substructure screening).
+- Found while scoping the "99-point directive" Phase 2 differential-corpus
+  measurement (MCS vs. RDKit's FMCS): a hand-picked aspirin/paracetamol pair's
+  hydroxyphenyl MCS came back as an all-carbon, non-aromatic ring in every
+  binding. Root-caused via the same live-oracle-first discipline used
+  throughout this session: confirmed the underlying MCS *algorithm* already
+  finds the chemically correct answer (`build_query` already encodes the right
+  atomic number and aromaticity per atom), isolating the bug entirely to these
+  four independently-duplicated, never-kept-in-sync conversion helpers.
+- Fixed by adding a recursive `extract_atomic_num`/`extract_aromatic` pair
+  (unwrapping through `AtomQuery::And`) to each of the four copies, matching
+  the pattern the Python binding's own `extract_atomic_num` already used for
+  atomic number (just never extended to aromaticity, and never ported to the
+  other three copies). New regression tests in all four locations, each using
+  a heteroatom-containing MCS pair specifically chosen because the
+  pre-existing benzene/toluene-style tests' all-carbon MCS answers could never
+  have caught this class of bug.
+
 ### Added — `chematic-fp`/`chematic-py` (`rdkit_torsion_fp`, RDKit-compatible Topological Torsion fingerprint)
 
 - New `chematic_fp::rdkit_torsion_fp` (Rust) / `Mol.rdkit_torsion_fp()` (Python): a

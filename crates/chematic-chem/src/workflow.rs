@@ -572,6 +572,18 @@ fn query_molecule_to_smiles(qmol: &QueryMolecule) -> Option<String> {
         return None;
     }
 
+    // `build_query`/`molecule_to_query` (chematic-smarts) always wrap each
+    // atom's query as `And(AtomicNum(n), Aromatic(bool))`, never a bare
+    // `AtomicNum` primitive, so this must recurse through `And` or it
+    // silently falls through to Carbon for every atom.
+    fn extract_atomic_num(q: &AtomQuery) -> Option<u8> {
+        match q {
+            AtomQuery::Primitive(AtomPrimitive::AtomicNum(n)) => Some(*n),
+            AtomQuery::And(lhs, rhs) => extract_atomic_num(lhs).or_else(|| extract_atomic_num(rhs)),
+            _ => None,
+        }
+    }
+
     let mut aromatic_atoms = vec![false; qmol.atoms.len()];
     for (atom_idx, neighbors) in qmol.adj.iter().enumerate() {
         for (bond_idx, neighbor_idx) in neighbors {
@@ -587,12 +599,9 @@ fn query_molecule_to_smiles(qmol: &QueryMolecule) -> Option<String> {
 
     let mut builder = MoleculeBuilder::new();
     for (idx, qa) in qmol.atoms.iter().enumerate() {
-        let elem = match &qa.query {
-            AtomQuery::Primitive(AtomPrimitive::AtomicNum(n)) => {
-                Element::from_atomic_number(*n).unwrap_or(Element::C)
-            }
-            _ => Element::C,
-        };
+        let elem = extract_atomic_num(&qa.query)
+            .and_then(Element::from_atomic_number)
+            .unwrap_or(Element::C);
         let mut atom = Atom::new(elem);
         atom.aromatic = aromatic_atoms[idx];
         builder.add_atom(atom);
@@ -650,6 +659,25 @@ mod tests {
         assert_eq!(comparison.descriptor_deltas.len(), 1);
         assert!(comparison.pairwise[0].similarities.ecfp4_tanimoto > 0.0);
         assert_eq!(comparison.mcs_smiles.as_deref(), Some("c1ccccc1"));
+    }
+
+    #[test]
+    fn compare_molecules_mcs_preserves_heteroatoms_and_aromaticity() {
+        // Regression test: `query_molecule_to_smiles` once matched only the bare
+        // `AtomQuery::Primitive(AtomicNum(n))` case, but `find_mcs`'s query atoms
+        // are always the compound `And(AtomicNum(n), Aromatic(bool))` -- so every
+        // atom silently fell through to carbon. Benzene/toluene's all-carbon MCS
+        // (see the test above) could never catch this; a hydroxyphenyl MCS shared
+        // between aspirin and paracetamol can, since it contains an O atom.
+        let comparison =
+            compare_molecules(&["CC(=O)Oc1ccccc1C(=O)O", "CC(=O)Nc1ccc(O)cc1"]).unwrap();
+        let mcs = comparison
+            .mcs_smiles
+            .expect("aspirin/paracetamol share a hydroxyphenyl MCS");
+        assert!(
+            mcs.contains('O') || mcs.contains('o'),
+            "MCS lost its oxygen atom: {mcs:?}"
+        );
     }
 
     #[test]

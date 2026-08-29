@@ -534,22 +534,39 @@ pub fn neutralize_charges(mol: &MolHandle) -> MolHandle {
 }
 
 /// Reconstruct a concrete `Molecule` from a `QueryMolecule` produced by MCS
-/// search (atom queries are always `AtomicNum` primitives; bond queries are
-/// typed primitives) -- shared by every MCS binding below so they can't
-/// silently drift apart on how a query result is turned back into a molecule.
+/// search (atom queries are `And(AtomicNum(n), Aromatic(bool))` compounds, not
+/// bare `AtomicNum` primitives -- see `build_query`/`molecule_to_query` in
+/// `chematic-smarts`; bond queries are typed primitives) -- shared by every
+/// MCS binding below so they can't silently drift apart on how a query result
+/// is turned back into a molecule.
 fn qmol_to_molecule(qmol: &chematic_smarts::QueryMolecule) -> chematic_core::Molecule {
     use chematic_core::{Atom, AtomIdx, BondOrder, Element, MoleculeBuilder};
     use chematic_smarts::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery};
 
+    fn extract_atomic_num(q: &AtomQuery) -> Option<u8> {
+        match q {
+            AtomQuery::Primitive(AtomPrimitive::AtomicNum(n)) => Some(*n),
+            AtomQuery::And(lhs, rhs) => extract_atomic_num(lhs).or_else(|| extract_atomic_num(rhs)),
+            _ => None,
+        }
+    }
+
+    fn extract_aromatic(q: &AtomQuery) -> Option<bool> {
+        match q {
+            AtomQuery::Primitive(AtomPrimitive::Aromatic(a)) => Some(*a),
+            AtomQuery::And(lhs, rhs) => extract_aromatic(lhs).or_else(|| extract_aromatic(rhs)),
+            _ => None,
+        }
+    }
+
     let mut builder = MoleculeBuilder::new();
     for qa in &qmol.atoms {
-        let elem = match &qa.query {
-            AtomQuery::Primitive(AtomPrimitive::AtomicNum(n)) => {
-                Element::from_atomic_number(*n).unwrap_or(Element::C)
-            }
-            _ => Element::C,
-        };
-        builder.add_atom(Atom::new(elem));
+        let elem = extract_atomic_num(&qa.query)
+            .and_then(Element::from_atomic_number)
+            .unwrap_or(Element::C);
+        let mut atom = Atom::new(elem);
+        atom.aromatic = extract_aromatic(&qa.query).unwrap_or(false);
+        builder.add_atom(atom);
     }
     for (atom_idx, neighbors) in qmol.adj.iter().enumerate() {
         for (bond_idx, neighbor_idx) in neighbors {
