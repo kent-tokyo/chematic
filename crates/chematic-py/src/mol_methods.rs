@@ -1358,6 +1358,24 @@ impl Mol {
         bitvec2048_to_bytes(&chematic_fp::torsion_fp(&self.inner))
     }
 
+    /// RDKit-*compatible* (not yet fully bit-exact) Topological Torsion
+    /// fingerprint as bytes (256 bytes = 2048 bits).
+    ///
+    /// A from-scratch Rust port of RDKit's
+    /// ``rdkit.Chem.AllChem.GetHashedTopologicalTorsionFingerprintAsBitVect(mol, nBits=2048)``.
+    /// Measured 87.2% bit-exact on a 1000-molecule general corpus sample against a live
+    /// RDKit oracle. Two known, documented residual sources remain (see
+    /// ``chematic_fp::rdkit_torsion``'s own module doc comment for detail): RDKit's
+    /// hybridization-gated pi-electron count for hypervalent atoms (e.g. P/S) is not yet
+    /// replicated, and asymmetrically-substituted 3-membered rings can need more closure
+    /// entries than this implementation generates. A separate, opt-in function from
+    /// :meth:`torsion_fp` (chematic's own native, similarity-preserving scheme, unchanged);
+    /// neither affects the other's output. Does not support chirality (``includeChirality=True``
+    /// is not implemented).
+    fn rdkit_torsion_fp(&self) -> Vec<u8> {
+        bitvec2048_to_bytes(&chematic_fp::rdkit_torsion_fp(&self.inner))
+    }
+
     /// ECFP4 with chirality fingerprint as bytes.
     fn ecfp4_chiral(&self) -> Vec<u8> {
         let config = chematic_fp::EcfpConfig {

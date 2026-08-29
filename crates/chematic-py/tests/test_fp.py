@@ -78,6 +78,55 @@ def test_atom_pair_fp_different(aspirin, benzene):
     assert aspirin.atom_pair_fp() != benzene.atom_pair_fp()
 
 
+def test_rdkit_torsion_fp_length(aspirin):
+    assert len(aspirin.rdkit_torsion_fp()) == 256
+
+
+def test_rdkit_torsion_fp_different(aspirin, benzene):
+    assert aspirin.rdkit_torsion_fp() != benzene.rdkit_torsion_fp()
+
+
+def test_rdkit_torsion_fp_deterministic(aspirin):
+    assert aspirin.rdkit_torsion_fp() == aspirin.rdkit_torsion_fp()
+
+
+def test_rdkit_torsion_fp_independent_of_native_torsion_fp(aspirin):
+    # Separate opt-in function -- must not be the same bytes as the native
+    # (non-RDKit) scheme just because both happen to be 256-byte outputs.
+    assert aspirin.rdkit_torsion_fp() != aspirin.torsion_fp()
+
+
+def test_rdkit_torsion_fp_matches_rdkit_oracle_on_simple_molecules():
+    # Regression pin for the 3 real bugs found and fixed this round (missing
+    # -2 topological torsion correction, double-counted torsion paths,
+    # missing 3-membered-ring closure entries) -- these specific molecules
+    # were used to isolate each bug and must stay bit-exact.
+    import chematic
+
+    cases = [
+        "CCCC",  # linear butane, no ring
+        "C1CC1",  # bare cyclopropane -- only a ring-closure torsion exists
+        "CC1CC1",  # methylcyclopropane -- symmetric ring substitution
+        "COC1CC1",  # cyclopropyl ether
+    ]
+    try:
+        from rdkit import Chem
+        from rdkit.Chem import AllChem
+    except ImportError:
+        return  # rdkit not installed in this environment -- skip
+    for smi in cases:
+        m_chem = chematic.from_smiles(smi)
+        m_rd = Chem.MolFromSmiles(smi)
+        rd_bits = AllChem.GetHashedTopologicalTorsionFingerprintAsBitVect(
+            m_rd, nBits=2048
+        ).ToBitString()
+        chem_bytes = m_chem.rdkit_torsion_fp()
+        chem_bits = "".join(
+            format(byte, "08b")[::-1] for byte in chem_bytes
+        )[:2048]
+        assert chem_bits == rd_bits, f"{smi}: parity mismatch vs RDKit oracle"
+
+
 # ---------------------------------------------------------------------------
 # MACCS
 # ---------------------------------------------------------------------------
