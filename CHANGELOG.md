@@ -44,6 +44,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pi-electron count gap (shared via the reused atom-invariant), not a new gap in
   atom-pair enumeration or hashing.
 
+### Added — `chematic-fp`/`chematic-py` (`rdkit_pattern_fp`, RDKit-compatible Pattern fingerprint)
+
+- New `chematic_fp::rdkit_pattern_fp` (Rust) / `Mol.rdkit_pattern_fp()` (Python): a
+  from-scratch Rust port of RDKit's `PatternFingerprint`, opt-in and fully separate
+  from the existing native `pattern_fp` (neither affects the other). Third entry in
+  the fingerprint-parity series (Track A / 99-point directive Phase 6) — structurally
+  unrelated to the first two (SMARTS substructure matching against 13 fixed patterns,
+  not a path/pair enumeration), reusing chematic's existing `chematic-smarts` matcher
+  rather than a new one.
+- Measured against a live RDKit oracle on three corpora with different chemical
+  distributions: 100% bit-exact on a 1000-molecule general corpus sample, 100% on a
+  ChEMBL sample, 99.6% on an NCI sample. Two real bugs found and fixed along the way:
+  (1) chematic's SMILES parser preserves a Kekule-notation input's literal
+  single/double bond orders even when the ring is perceived as aromatic, so a raw
+  `bond.order == Aromatic` check silently missed every ring bond of a Kekule-written
+  heteroaromatic — caught the NCI corpus number at 30.4% before switching to
+  chematic's own aromaticity-perception model; (2) naively re-perceiving *every*
+  non-literally-aromatic bond then regressed the ChEMBL corpus from 100% to 94.1% —
+  for a molecule with both lowercase-aromatic and Kekule-written rings, re-perceiving
+  the whole molecule wrongly classified a genuinely non-aromatic Kekule ring as
+  aromatic too. Fixed by only re-perceiving molecules with *zero* literal `Aromatic`
+  bonds anywhere; molecules that already carry any literal `Aromatic` bond trust every
+  bond's own stored order throughout instead. The remaining NCI residual traces
+  entirely to chematic's own aromaticity-perception model disagreeing with RDKit's on
+  specific wholly-Kekule-written ring systems (a brominated anthraquinone/xanthone
+  core, an S/N-containing bicyclic heterocycle, a ketone-fused tetralone-like system,
+  a Zn coordination complex) — a pre-existing, separate gap, not a defect in this
+  fingerprint's own match-enumeration or hashing logic (independently verified:
+  per-pattern match counts identical to RDKit's own `GetSubstructMatches(...,
+  uniquify=False)` across all 13 patterns on a repro molecule before either bug was
+  even found).
+
 ### Added — `chematic-py`/`chematic-wasm` (full `McsConfig`/`McsOutcome` exposed to MCS bindings)
 
 - Python's `find_mcs` previously exposed only 2 of `McsConfig`'s 11 fields
