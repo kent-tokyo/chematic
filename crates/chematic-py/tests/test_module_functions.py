@@ -207,6 +207,18 @@ def test_find_mcs_result_is_substructure_of_both_inputs():
     # which then failed a substructure re-match against either parent molecule --
     # defeating the primary purpose of an MCS result (self-verification /
     # substructure screening).
+    #
+    # NOTE: `mcs.smiles` re-matching *every* input is only guaranteed when the
+    # inputs agree on aromaticity at the matched atoms, as aspirin/paracetamol
+    # do here. `AtomCompare::Elements` (the default) matches purely on atomic
+    # number and permits cross-aromaticity matches (matching RDKit's own
+    # `CompareElements`); `build_query` reflects that by never encoding
+    # aromaticity as a per-atom constraint, only via bond queries. A SMILES
+    # string can't express "aromaticity don't-care" the way a SMARTS/query
+    # pattern can, so when two inputs' matched atoms genuinely disagree on
+    # aromaticity, `mcs.smiles` -- built from one specific input's own bonds --
+    # can fail to re-match the *other* input. That's an inherent limitation of
+    # the concrete-SMILES accessor, not a bug in the MCS search itself.
     m1 = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")  # aspirin
     m2 = chematic.from_smiles("CC(=O)Nc1ccc(O)cc1")  # paracetamol
     mcs = chematic.find_mcs([m1, m2])

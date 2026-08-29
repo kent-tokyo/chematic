@@ -28,9 +28,9 @@ const { mcs_smiles_json, mcs_smiles_json_with_config } = wasm;
   assert.equal(full.smiles, bare);
   assert.equal(full.wasTimedOut, false);
   // Regression test: qmol_to_molecule once matched only the bare
-  // AtomQuery::Primitive(AtomicNum(n)) case, but find_mcs's query atoms are
-  // always the compound And(AtomicNum(n), Aromatic(bool)) -- so every atom
-  // silently fell through to carbon. Aspirin/paracetamol's shared
+  // AtomQuery::Primitive(AtomicNum(n)) case, but at the time find_mcs's query
+  // atoms were always the compound And(AtomicNum(n), Aromatic(bool)) -- so
+  // every atom silently fell through to carbon. Aspirin/paracetamol's shared
   // hydroxyphenyl MCS must keep its oxygen atom.
   assert.match(full.smiles, /[Oo]/, `MCS lost its oxygen atom: ${full.smiles}`);
 }

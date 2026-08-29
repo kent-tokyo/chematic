@@ -534,9 +534,9 @@ pub fn neutralize_charges(mol: &MolHandle) -> MolHandle {
 }
 
 /// Reconstruct a concrete `Molecule` from a `QueryMolecule` produced by MCS
-/// search (atom queries are `And(AtomicNum(n), Aromatic(bool))` compounds, not
-/// bare `AtomicNum` primitives -- see `build_query`/`molecule_to_query` in
-/// `chematic-smarts`; bond queries are typed primitives) -- shared by every
+/// search (atom queries are bare `AtomicNum` primitives; aromaticity is never a
+/// per-atom constraint, only carried via aromatic bond queries -- see
+/// `build_query`/`molecule_to_query` in `chematic-smarts`) -- shared by every
 /// MCS binding below so they can't silently drift apart on how a query result
 /// is turned back into a molecule.
 fn qmol_to_molecule(qmol: &chematic_smarts::QueryMolecule) -> chematic_core::Molecule {
@@ -551,21 +551,30 @@ fn qmol_to_molecule(qmol: &chematic_smarts::QueryMolecule) -> chematic_core::Mol
         }
     }
 
-    fn extract_aromatic(q: &AtomQuery) -> Option<bool> {
-        match q {
-            AtomQuery::Primitive(AtomPrimitive::Aromatic(a)) => Some(*a),
-            AtomQuery::And(lhs, rhs) => extract_aromatic(lhs).or_else(|| extract_aromatic(rhs)),
-            _ => None,
+    // `build_query`/`molecule_to_query` never encode aromaticity as a per-atom
+    // constraint (matches RDKit's own `CompareElements` representation) -- it's
+    // carried entirely by the aromatic bond queries, so an atom is aromatic here
+    // iff at least one of its query bonds is `BondPrimitive::Aromatic`.
+    let mut aromatic_atoms = vec![false; qmol.atoms.len()];
+    for (atom_idx, neighbors) in qmol.adj.iter().enumerate() {
+        for (bond_idx, neighbor_idx) in neighbors {
+            if matches!(
+                qmol.bonds[*bond_idx].query,
+                BondQuery::Primitive(BondPrimitive::Aromatic)
+            ) {
+                aromatic_atoms[atom_idx] = true;
+                aromatic_atoms[*neighbor_idx] = true;
+            }
         }
     }
 
     let mut builder = MoleculeBuilder::new();
-    for qa in &qmol.atoms {
+    for (idx, qa) in qmol.atoms.iter().enumerate() {
         let elem = extract_atomic_num(&qa.query)
             .and_then(Element::from_atomic_number)
             .unwrap_or(Element::C);
         let mut atom = Atom::new(elem);
-        atom.aromatic = extract_aromatic(&qa.query).unwrap_or(false);
+        atom.aromatic = aromatic_atoms[idx];
         builder.add_atom(atom);
     }
     for (atom_idx, neighbors) in qmol.adj.iter().enumerate() {

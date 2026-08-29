@@ -9,6 +9,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — `chematic-smarts` (`find_mcs`'s default `AtomCompare::Elements` no longer requires matching aromaticity)
+
+- **Behavior change for every `find_mcs` caller (Rust/Python/WASM/MCP) using the
+  default `atom_compare`.** `AtomCompare::Elements` previously required both atomic
+  number AND aromaticity flag to match between atoms. It now matches on atomic
+  number alone, exactly mirroring RDKit's identically-named
+  `rdFMCS.AtomCompare.CompareElements` (confirmed via live oracle: RDKit never
+  encodes aromaticity as a per-atom constraint, only via bond-type queries, even
+  when both input molecules fully agree on aromaticity). Concretely: `find_mcs`
+  can now return a match (or a larger match) for atom pairs that agree on element
+  but disagree on aromaticity -- previously this returned `None` or an undersized
+  MCS. Differential measurement against a live RDKit oracle (`scripts/
+  mcs_rdkit_fmcs_diff.py`, n=200 pairs/corpus, exhaustive-only): agreement rose
+  from 74.6%/68.2%/70.4% to 88.4%/88.5%/97.0% across the three established
+  corpora (descriptor_census/ChEMBL/NCI).
+- **`AtomCompare::AnyHeavyAtom`/`Any` are unaffected** (they never checked
+  aromaticity). **There is currently no `AtomCompare` mode that restores the old
+  strict element+aromaticity match** -- callers relying on that exact behavior
+  need to add their own post-filter on the result.
+- Co-dependent fix: `build_query`/`molecule_to_query` no longer encode
+  aromaticity as a per-atom query constraint at all (previously hard-coded from
+  `mol[0]`'s own atom, regardless of which comparator mode found the match --
+  itself a latent, pre-existing gap for `AnyHeavyAtom`/`Any` too). Aromaticity is
+  now conveyed purely through the existing bond-level `Aromatic` query, matching
+  RDKit's own representation. The 4 independent "QueryMolecule -> concrete
+  Molecule" reconstruction sites (Python's `qmol_to_mol`, WASM's
+  `qmol_to_molecule`, the MCP server's own `qmol_to_molecule`, `chematic-chem`'s
+  `query_molecule_to_smiles`) were updated to derive `atom.aromatic` from
+  incident bond aromaticity instead of an atom-level primitive that no longer
+  exists.
+- **Known residual limitation**: an MCS result's `.smiles` accessor is a concrete
+  SMILES string, which cannot express "aromaticity don't-care" the way a SMARTS
+  pattern can. When two inputs' matched atoms genuinely disagree on aromaticity,
+  `.smiles` (built from one specific input's own bonds) is only guaranteed to
+  re-match *that* input as a substructure, not necessarily every input. A
+  SMARTS-preserving accessor is the real fix and is tracked as a follow-up, not
+  included here.
+
 ### Fixed — `chematic-py`/`chematic-wasm`/`chematic-mcp`/`chematic-chem` (MCS result silently lost heteroatoms and/or aromaticity)
 
 - `find_mcs`'s query-molecule atoms are encoded as the compound
