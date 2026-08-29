@@ -373,6 +373,63 @@ def test_layered_fp_tanimoto(benzene, toluene):
     assert 0.0 <= sim <= 1.0
 
 
+def test_rdkit_layered_fp_length(aspirin):
+    assert len(aspirin.rdkit_layered_fp()) == 256
+
+
+def test_rdkit_layered_fp_different(aspirin, benzene):
+    assert aspirin.rdkit_layered_fp() != benzene.rdkit_layered_fp()
+
+
+def test_rdkit_layered_fp_deterministic(aspirin):
+    assert aspirin.rdkit_layered_fp() == aspirin.rdkit_layered_fp()
+
+
+def test_rdkit_layered_fp_independent_of_native_layered_fp(aspirin):
+    # Separate opt-in function -- must not be the same bytes as chematic's own
+    # pre-existing, non-bit-exact scheme just because both happen to be
+    # 256-byte outputs.
+    assert aspirin.rdkit_layered_fp() != aspirin.layered_fp()
+
+
+def test_rdkit_layered_fp_matches_rdkit_oracle_on_simple_molecules():
+    # Regression pin, including the isotope-labeled-hydrogen case that exposed
+    # a real bug this port originally had (LayeredFingerprintMol enumerates
+    # with useHs=false, unlike rdkit_rdk_fp's useHs=true -- a naive useHs=true
+    # port silently included bonds touching an explicit deuterium atom).
+    import chematic
+
+    cases = [
+        "CC",
+        "C=C",
+        "C#C",
+        "CCC",
+        "CC(C)C",
+        "c1ccccc1",
+        "C1CC1",
+        "CCO",
+        "CC(=O)O",
+        "c1ccc2ccccc2c1",
+        "CC(=O)Oc1ccccc1C(=O)O",
+        "[2H]C([2H])([2H])NC=O",
+    ]
+    try:
+        from rdkit import Chem
+    except ImportError:
+        return  # rdkit not installed in this environment -- skip
+    for smi in cases:
+        m_chem = chematic.from_smiles(smi)
+        m_rd = Chem.MolFromSmiles(smi)
+        rd_bits = Chem.LayeredFingerprint(
+            m_rd, minPath=1, maxPath=7, fpSize=2048
+        ).ToBitString()
+        chem_bytes = m_chem.rdkit_layered_fp()
+        chem_bits = "".join(
+            format(byte, "08b")[::-1] for byte in chem_bytes
+        )[:2048]
+        assert chem_bits == rd_bits, f"{smi}: parity mismatch vs RDKit oracle"
+
+
 # ---------------------------------------------------------------------------
 # Avalon fingerprint
 # ---------------------------------------------------------------------------

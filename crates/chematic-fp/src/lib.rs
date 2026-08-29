@@ -36,6 +36,7 @@ pub mod pattern;
 pub mod pharmacophore_fp;
 pub mod rdkit_atom_pair;
 mod rdkit_isotope_delta_table;
+pub mod rdkit_layered;
 mod rdkit_morgan_config;
 mod rdkit_morgan_ecfp4;
 mod rdkit_morgan_hash;
@@ -58,6 +59,7 @@ pub use ecfp::{
     tanimoto_ecfp4,
 };
 pub use rdkit_atom_pair::rdkit_atom_pair_fp;
+pub use rdkit_layered::rdkit_layered_fp;
 pub use rdkit_pattern::rdkit_pattern_fp;
 pub use rdkit_rdk::rdkit_rdk_fp;
 pub use rdkit_torsion::rdkit_torsion_fp;
