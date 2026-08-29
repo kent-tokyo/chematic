@@ -3057,16 +3057,67 @@ def run_smirks(smirks: str, reactants: list[Mol]) -> list[list[Mol]]:
     """
     ...
 
-def find_mcs(mols: list[Mol]) -> Optional[Mol]:
+def find_mcs(
+    mols: list[Mol],
+    match_bonds: bool = True,
+    min_atoms: int = 1,
+    timeout_ms: Optional[int] = None,
+    ring_matches_ring_only: bool = False,
+    complete_rings_only: bool = False,
+    atom_compare: str = "elements",
+    bond_compare: str = "order_or_aromatic",
+    match_chiral_tag: bool = False,
+    match_charge: bool = False,
+    match_isotope: bool = False,
+    maximize_bonds: bool = True,
+) -> Optional[Mol]:
     """Find the Maximum Common Substructure (MCS) of a list of molecules.
 
     Returns the MCS as a :class:`Mol`, or ``None`` when there is no common substructure.
+    If ``timeout_ms`` is reached before the search finishes, returns the best result
+    found so far -- indistinguishable here from an exhaustive result; use
+    :func:`find_mcs_checked` when that distinction matters.
+
+    ``atom_compare`` is one of ``"elements"`` (default), ``"any_heavy_atom"``, or ``"any"``.
+    ``bond_compare`` is one of ``"order_or_aromatic"`` (default) or ``"any"``.
 
     Example::
 
         mcs = chematic.find_mcs([mol1, mol2])
         if mcs:
             print(mcs.smiles)
+
+        # Ring-aware scaffold extraction
+        scaffold = chematic.find_mcs(mols, ring_matches_ring_only=True, complete_rings_only=True)
+    """
+    ...
+
+def find_mcs_checked(
+    mols: list[Mol],
+    match_bonds: bool = True,
+    min_atoms: int = 1,
+    timeout_ms: Optional[int] = None,
+    ring_matches_ring_only: bool = False,
+    complete_rings_only: bool = False,
+    atom_compare: str = "elements",
+    bond_compare: str = "order_or_aromatic",
+    match_chiral_tag: bool = False,
+    match_charge: bool = False,
+    match_isotope: bool = False,
+    maximize_bonds: bool = True,
+) -> tuple[Optional[Mol], bool]:
+    """Like :func:`find_mcs`, but also reports whether ``timeout_ms`` was reached
+    before the search finished exhaustively.
+
+    Returns ``(mcs, was_timed_out)``: ``mcs`` is the MCS as a :class:`Mol` (or ``None``
+    if there is no common substructure), and ``was_timed_out`` is ``True`` if the search
+    was cut off before proving ``mcs`` optimal.
+
+    Example::
+
+        mcs, timed_out = chematic.find_mcs_checked(mols, timeout_ms=500)
+        if timed_out:
+            print("warning: MCS may not be optimal")
     """
     ...
 
