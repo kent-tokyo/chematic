@@ -127,6 +127,55 @@ def test_rdkit_torsion_fp_matches_rdkit_oracle_on_simple_molecules():
         assert chem_bits == rd_bits, f"{smi}: parity mismatch vs RDKit oracle"
 
 
+def test_rdkit_atom_pair_fp_length(aspirin):
+    assert len(aspirin.rdkit_atom_pair_fp()) == 256
+
+
+def test_rdkit_atom_pair_fp_different(aspirin, benzene):
+    assert aspirin.rdkit_atom_pair_fp() != benzene.rdkit_atom_pair_fp()
+
+
+def test_rdkit_atom_pair_fp_deterministic(aspirin):
+    assert aspirin.rdkit_atom_pair_fp() == aspirin.rdkit_atom_pair_fp()
+
+
+def test_rdkit_atom_pair_fp_independent_of_native_atom_pair_fp(aspirin):
+    # Separate opt-in function -- must not be the same bytes as the native
+    # (non-RDKit) scheme just because both happen to be 256-byte outputs.
+    assert aspirin.rdkit_atom_pair_fp() != aspirin.atom_pair_fp()
+
+
+def test_rdkit_atom_pair_fp_matches_rdkit_oracle_on_simple_molecules():
+    # Regression pin: these were the molecules used to verify the atom-pair
+    # port (shares its atom-invariant scheme with rdkit_torsion_fp, so these
+    # overlap that fingerprint's own repro set) -- must stay bit-exact.
+    import chematic
+
+    cases = [
+        "CCO",
+        "CCCC",
+        "C1CC1",
+        "CC1CC1",
+        "COC1CC1",
+    ]
+    try:
+        from rdkit import Chem
+        from rdkit.Chem import rdMolDescriptors
+    except ImportError:
+        return  # rdkit not installed in this environment -- skip
+    for smi in cases:
+        m_chem = chematic.from_smiles(smi)
+        m_rd = Chem.MolFromSmiles(smi)
+        rd_bits = rdMolDescriptors.GetHashedAtomPairFingerprintAsBitVect(
+            m_rd, nBits=2048
+        ).ToBitString()
+        chem_bytes = m_chem.rdkit_atom_pair_fp()
+        chem_bits = "".join(
+            format(byte, "08b")[::-1] for byte in chem_bytes
+        )[:2048]
+        assert chem_bits == rd_bits, f"{smi}: parity mismatch vs RDKit oracle"
+
+
 # ---------------------------------------------------------------------------
 # MACCS
 # ---------------------------------------------------------------------------
