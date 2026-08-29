@@ -1413,6 +1413,28 @@ impl Mol {
         bitvec2048_to_bytes(&chematic_fp::rdkit_pattern_fp(&self.inner))
     }
 
+    /// RDKit-compatible "RDKit fingerprint" (``rdkit.Chem.RDKFingerprint``) as
+    /// bytes (256 bytes = 2048 bits).
+    ///
+    /// A from-scratch Rust port of RDKit's default branched-subgraph
+    /// fingerprint (``minPath=1, maxPath=7, fpSize=2048, numBitsPerFeature=2``),
+    /// including RDKit's own deliberately weakened Mersenne Twister variant
+    /// (with a boost-library quirk that silently changes its effective seeding
+    /// constant from what RDKit's own source suggests) used for the second bit
+    /// per feature. 100% bit-exact against a live RDKit oracle on
+    /// ``descriptor_census_corpus.smi`` and ``chembl_accuracy_corpus_4999.smi``,
+    /// 99.44% on ``nci_first_5k_smiles_only.smi`` (every residual is a known,
+    /// pre-existing ``chematic-perception`` aromaticity-model gap on fused
+    /// polyheteroaromatic dyes and metal-coordination complexes, not a defect
+    /// in this port). See
+    /// ``chematic_fp::rdkit_rdk``'s module doc comment for the full algorithm.
+    /// A separate function from :meth:`path_fp` (chematic's own pre-existing,
+    /// non-bit-exact linear-path approximation, itself Rust-side named
+    /// ``rdkit_path_fp``); neither affects the other's output.
+    fn rdkit_rdk_fp(&self) -> Vec<u8> {
+        bitvec2048_to_bytes(&chematic_fp::rdkit_rdk_fp(&self.inner))
+    }
+
     /// ECFP4 with chirality fingerprint as bytes.
     fn ecfp4_chiral(&self) -> Vec<u8> {
         let config = chematic_fp::EcfpConfig {

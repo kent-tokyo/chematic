@@ -248,6 +248,63 @@ def test_rdkit_pattern_fp_matches_rdkit_oracle_on_simple_molecules():
         assert chem_bits == rd_bits, f"{smi}: parity mismatch vs RDKit oracle"
 
 
+def test_rdkit_rdk_fp_length(aspirin):
+    assert len(aspirin.rdkit_rdk_fp()) == 256
+
+
+def test_rdkit_rdk_fp_different(aspirin, benzene):
+    assert aspirin.rdkit_rdk_fp() != benzene.rdkit_rdk_fp()
+
+
+def test_rdkit_rdk_fp_deterministic(aspirin):
+    assert aspirin.rdkit_rdk_fp() == aspirin.rdkit_rdk_fp()
+
+
+def test_rdkit_rdk_fp_independent_of_native_path_fp(aspirin):
+    # Separate opt-in function -- must not be the same bytes as chematic's own
+    # pre-existing, non-bit-exact linear-path approximation just because both
+    # happen to be 256-byte outputs.
+    assert aspirin.rdkit_rdk_fp() != aspirin.path_fp()
+
+
+def test_rdkit_rdk_fp_matches_rdkit_oracle_on_simple_molecules():
+    # Regression pin for the branched-subgraph enumeration (root-at-min-bond-index
+    # backtracking), path-local (not molecular) atom degree in the bond hash, and
+    # RDKit's own weakened Mersenne Twister used for the second bit per feature --
+    # these specific molecules were used to validate each mechanism and must stay
+    # bit-exact.
+    import chematic
+
+    cases = [
+        "CC",
+        "C=C",
+        "C#C",
+        "CCC",
+        "CC(C)C",
+        "c1ccccc1",
+        "C1CC1",
+        "CCO",
+        "CC(=O)O",
+        "c1ccc2ccccc2c1",
+        "CC(=O)Oc1ccccc1C(=O)O",
+    ]
+    try:
+        from rdkit import Chem
+    except ImportError:
+        return  # rdkit not installed in this environment -- skip
+    for smi in cases:
+        m_chem = chematic.from_smiles(smi)
+        m_rd = Chem.MolFromSmiles(smi)
+        rd_bits = Chem.RDKFingerprint(
+            m_rd, minPath=1, maxPath=7, fpSize=2048
+        ).ToBitString()
+        chem_bytes = m_chem.rdkit_rdk_fp()
+        chem_bits = "".join(
+            format(byte, "08b")[::-1] for byte in chem_bytes
+        )[:2048]
+        assert chem_bits == rd_bits, f"{smi}: parity mismatch vs RDKit oracle"
+
+
 # ---------------------------------------------------------------------------
 # MACCS
 # ---------------------------------------------------------------------------
