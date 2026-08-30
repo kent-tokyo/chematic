@@ -270,6 +270,11 @@ def test_parent_identity_bindings_cover_each_axis():
     parent, status = mol.super_parent()
     assert status == "Completed"
     assert parent.heavy_atoms == 5
+    report = mol.super_parent_report()
+    assert report["status"] == "Completed"
+    assert [stage["name"] for stage in report["stages"]] == [
+        "fragment", "charge", "isotope", "stereo", "tautomer"
+    ]
 
 
 def test_enumerate_tautomers(ethanol):

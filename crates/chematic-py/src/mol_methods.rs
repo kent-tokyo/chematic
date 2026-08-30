@@ -12,7 +12,7 @@ use ndarray::Array1;
 use numpy::{IntoPyArray, PyArray1};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use pyo3::types::PyDict;
+use pyo3::types::{PyDict, PyList};
 use std::sync::Arc;
 
 #[pymethods]
@@ -1980,8 +1980,56 @@ impl Mol {
         limits.max_transforms = max_transforms;
         limits.max_tautomers = max_tautomers;
         limits.timeout_ms = timeout_ms;
+        limits.timeout_ms = timeout_ms;
         let result = chematic_chem::super_parent(&self.inner, &limits);
         (Mol::bare(result.molecule), format!("{:?}", result.status))
+    }
+
+    /// Return the composed Parent result with every intermediate stage.
+    ///
+    /// The returned dictionary contains ``smiles``, ``status``, and a
+    /// ``stages`` list with the five ordered Parent transformations. This is
+    /// the binding-level counterpart of Rust's ``ParentAudit::Composed`` and
+    /// keeps provenance inspectable without exposing internal Rust enums.
+    #[pyo3(signature = (max_transforms=16, max_tautomers=32, timeout_ms=None))]
+    fn super_parent_report<'py>(
+        &self,
+        py: Python<'py>,
+        max_transforms: usize,
+        max_tautomers: usize,
+        timeout_ms: Option<u64>,
+    ) -> PyResult<Bound<'py, PyDict>> {
+        let mut limits = chematic_chem::TautomerLimits::default();
+        limits.max_transforms = max_transforms;
+        limits.max_tautomers = max_tautomers;
+        limits.timeout_ms = timeout_ms;
+
+        let (fragment, _) = chematic_chem::fragment_parent(&self.inner);
+        let (charge, _) = chematic_chem::charge_parent(&fragment);
+        let (isotope, _) = chematic_chem::isotope_parent(&charge);
+        let (stereo, _) = chematic_chem::stereo_parent(&isotope);
+        let result = chematic_chem::super_parent(&self.inner, &limits);
+        let stages = PyList::empty(py);
+        for (name, molecule) in [
+            ("fragment", &fragment),
+            ("charge", &charge),
+            ("isotope", &isotope),
+            ("stereo", &stereo),
+            ("tautomer", &result.molecule),
+        ] {
+            let stage = PyDict::new(py);
+            stage.set_item("name", name)?;
+            stage.set_item("smiles", chematic_smiles::canonical_smiles(molecule))?;
+            stages.append(stage)?;
+        }
+        let report = PyDict::new(py);
+        report.set_item(
+            "smiles",
+            chematic_smiles::canonical_smiles(&result.molecule),
+        )?;
+        report.set_item("status", format!("{:?}", result.status))?;
+        report.set_item("stages", stages)?;
+        Ok(report)
     }
 
     /// Return the canonical SMILES under the given canonicalization mode.
