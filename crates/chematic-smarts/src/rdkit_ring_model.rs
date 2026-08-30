@@ -59,6 +59,7 @@ use rustc_hash::{FxHashMap, FxHashSet};
 use chematic_core::{AtomIdx, BondIdx, Molecule};
 use chematic_perception::{
     RingSet, find_smallest_rings_bfs, find_smallest_rings_bfs_with_rdkit_tree,
+    select_rdkit_d2_roots,
 };
 
 /// Typed error for chematic-smarts's opt-in RDKit-parity matching mode.
@@ -213,15 +214,7 @@ pub fn build_rdkit_parity_ring_model(
     // the same bounded primitive used by the perception crate instead of
     // enumerating every simple cycle up to the largest SSSR size; the latter
     // admits non-D2 cycles and over-produces extras in macrocycles.
-    let d2_roots: Vec<AtomIdx> = (0..mol.atom_count())
-        .map(|raw| AtomIdx(raw as u32))
-        .filter(|&root| {
-            mol.neighbors(root)
-                .filter(|(_, bond)| is_ring_bond(mol, *bond))
-                .count()
-                == 2
-        })
-        .collect();
+    let d2_roots = select_rdkit_d2_roots(mol);
     // RDKit's Figueras search starts with D2 nodes.  Highly symmetric cages
     // such as cubane have no D2 nodes and are handled by the later D3-style
     // fallback, for which considering every root is the useful approximation.

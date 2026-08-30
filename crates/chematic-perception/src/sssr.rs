@@ -484,6 +484,44 @@ pub fn find_smallest_rings_bfs_with_rdkit_tree(
     rings
 }
 
+/// Select one root from each connected component of ring-eligible degree-2
+/// atoms, matching RDKit's `pickD2Nodes`/`markUselessD2s` pass. A degree-2
+/// chain is represented by its first atom in molecule order; this avoids
+/// treating every atom along the same chain as an independent root.
+pub fn select_rdkit_d2_roots(mol: &Molecule) -> Vec<AtomIdx> {
+    let degree2: Vec<bool> = (0..mol.atom_count())
+        .map(|raw| {
+            mol.neighbors(AtomIdx(raw as u32))
+                .filter(|(_, bond)| is_ring_eligible(mol.bond(*bond).order))
+                .count()
+                == 2
+        })
+        .collect();
+    let mut seen = vec![false; mol.atom_count()];
+    let mut roots = Vec::new();
+    for raw in 0..mol.atom_count() {
+        if !degree2[raw] || seen[raw] {
+            continue;
+        }
+        roots.push(AtomIdx(raw as u32));
+        let mut stack = vec![AtomIdx(raw as u32)];
+        seen[raw] = true;
+        while let Some(atom) = stack.pop() {
+            for (neighbor, bond) in mol.neighbors(atom) {
+                let neighbor_i = neighbor.0 as usize;
+                if degree2[neighbor_i]
+                    && is_ring_eligible(mol.bond(bond).order)
+                    && !seen[neighbor_i]
+                {
+                    seen[neighbor_i] = true;
+                    stack.push(neighbor);
+                }
+            }
+        }
+    }
+    roots
+}
+
 /// Build the symmetrized smallest-ring set from the Horton basis and the
 /// root-centered Figueras candidates.
 ///
@@ -513,15 +551,7 @@ pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
     let base_keys: FxHashSet<Vec<u32>> = base_bonds.iter().map(bond_set_key).collect();
     let mut seen = base_keys.clone();
     let mut rings = base.rings().to_vec();
-    let d2_roots: Vec<AtomIdx> = (0..mol.atom_count())
-        .map(|raw| AtomIdx(raw as u32))
-        .filter(|&root| {
-            mol.neighbors(root)
-                .filter(|(_, bond)| is_ring_eligible(mol.bond(*bond).order))
-                .count()
-                == 2
-        })
-        .collect();
+    let d2_roots = select_rdkit_d2_roots(mol);
 
     let mut accept_candidate = |candidate: Vec<AtomIdx>| {
         let candidate_bonds = ring_bond_set(mol, &candidate);
@@ -1067,6 +1097,12 @@ mod tests {
         blocked.insert(bond);
         assert!(find_smallest_rings_bfs_with_blocked_bonds(&mol, AtomIdx(0), &blocked).is_empty());
         assert_eq!(find_sssr(&mol).ring_count(), 1);
+    }
+
+    #[test]
+    fn rdkit_d2_root_selection_collapses_degree2_chains() {
+        let roots = select_rdkit_d2_roots(&benzene());
+        assert_eq!(roots, vec![AtomIdx(0)]);
     }
 
     #[test]
