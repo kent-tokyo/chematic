@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.0] — 2026-08-30
+
+Minor release: MCS accuracy and correctness (a default-comparator behavior change,
+see below), plus the fifth and sixth entries in the RDKit fingerprint-parity series
+(`rdkit_rdk_fp`, `rdkit_layered_fp`) and full `McsConfig`/`McsOutcome` exposed to the
+Python/WASM MCS bindings. No breaking API changes except the documented
+`AtomCompare::Elements` semantics change below.
+
 ### Changed — `chematic-smarts` (`find_mcs`'s default `AtomCompare::Elements` no longer requires matching aromaticity)
 
 - **Behavior change for every `find_mcs` caller (Rust/Python/WASM/MCP) using the
