@@ -24,6 +24,20 @@ The COSMolKit runner is intentionally not bundled yet: its installation/access
 method is not resolved in the roadmap. An adapter must emit the same schema and
 must identify unsupported operations as `unsupported`, never as a passing value.
 
+An external adapter can be plugged in without changing the harness:
+
+```bash
+python3 validation/cosmolkit_comparison/run_external.py \
+  --engine cosmolkit --adapter 'python3 path/to/cosmolkit_adapter.py' \
+  --output /tmp/cosmolkit.jsonl
+python3 validation/cosmolkit_comparison/score.py \
+  /tmp/chematic.jsonl /tmp/cosmolkit.jsonl
+```
+
+The adapter receives `--corpus PATH --engine NAME` and writes only common-schema
+JSONL records to stdout. This keeps competitor installation and API decisions
+outside the repository while making the eventual COSMolKit run reproducible.
+
 The result contract is versioned by `schema_version`. Each record contains the
 engine version, source commit when available, corpus hash, input id/SMILES, and
 an operation map. The corpus is a smoke test, not a claim of corpus-scale parity.

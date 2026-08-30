@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v0.29.0 — external comparison adapter protocol
+
+- Added a command-based external-engine adapter runner for the Phase 2
+  comparison harness. Adapters receive the shared corpus and emit only the
+  versioned common JSONL contract.
+- External output is rejected unless every corpus record has the expected hash,
+  unique id, and valid operation status, making future COSMolKit runs
+  reproducible without coupling the repository to one installation method.
+
 ### v0.28.0 — reproducible comparison gates
 
 - Added dependency-free JSONL contract validation for the Phase 2 comparison
