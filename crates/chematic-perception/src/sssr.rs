@@ -352,6 +352,53 @@ pub fn find_smallest_rings_bfs_with_blocked_bonds(
     rings
 }
 
+/// Find smallest root-centered rings after applying RDKit-style leaf trimming
+/// to the temporary bond mask. Removing a bond can expose degree-0/1 atoms;
+/// those atoms cannot participate in a cycle, so their remaining active bonds
+/// are removed transitively before the BFS is run. The molecule is unchanged.
+pub fn find_smallest_rings_bfs_with_trimmed_bonds(
+    mol: &Molecule,
+    root: AtomIdx,
+    blocked_bonds: &FxHashSet<BondIdx>,
+) -> Vec<Vec<AtomIdx>> {
+    let mut active_degree = vec![0usize; mol.atom_count()];
+    for (bond, entry) in mol.bonds() {
+        if !is_ring_eligible(entry.order) || blocked_bonds.contains(&bond) {
+            continue;
+        }
+        active_degree[entry.atom1.0 as usize] += 1;
+        active_degree[entry.atom2.0 as usize] += 1;
+    }
+
+    let mut trimmed = blocked_bonds.clone();
+    let mut queue: VecDeque<AtomIdx> = active_degree
+        .iter()
+        .enumerate()
+        .filter(|(_, degree)| **degree < 2)
+        .map(|(idx, _)| AtomIdx(idx as u32))
+        .collect();
+    let mut queued = vec![false; mol.atom_count()];
+    for atom in &queue {
+        queued[atom.0 as usize] = true;
+    }
+
+    while let Some(atom) = queue.pop_front() {
+        for (neighbor, bond) in mol.neighbors(atom) {
+            if !is_ring_eligible(mol.bond(bond).order) || !trimmed.insert(bond) {
+                continue;
+            }
+            let neighbor_degree = &mut active_degree[neighbor.0 as usize];
+            *neighbor_degree = neighbor_degree.saturating_sub(1);
+            if *neighbor_degree < 2 && !queued[neighbor.0 as usize] {
+                queued[neighbor.0 as usize] = true;
+                queue.push_back(neighbor);
+            }
+        }
+    }
+
+    find_smallest_rings_bfs_with_blocked_bonds(mol, root, &trimmed)
+}
+
 /// Build the symmetrized smallest-ring set from the Horton basis and the
 /// root-centered Figueras candidates.
 ///
@@ -456,7 +503,7 @@ pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
                         }
                     }
                 }
-                replacements.extend(find_smallest_rings_bfs_with_blocked_bonds(
+                replacements.extend(find_smallest_rings_bfs_with_trimmed_bonds(
                     mol, root, &blocked,
                 ));
             }
