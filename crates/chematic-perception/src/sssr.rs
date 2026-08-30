@@ -431,8 +431,11 @@ pub fn find_smallest_rings_bfs_with_rdkit_tree(
     state[root.0 as usize] = 1;
     queue.push_back(root);
 
-    while let Some(current) = queue.pop_front() {
+    'bfs: while let Some(current) = queue.pop_front() {
         state[current.0 as usize] = 2;
+        if depth[current.0 as usize] + 1 > best_size {
+            break;
+        }
         for (neighbor, bond) in mol.neighbors(current) {
             if !is_ring_eligible(mol.bond(bond).order) || blocked_bonds.contains(&bond) {
                 continue;
@@ -448,46 +451,34 @@ pub fn find_smallest_rings_bfs_with_rdkit_tree(
                     queue.push_back(neighbor);
                 }
                 1 => {
-                    let mut left = current;
-                    let mut right = neighbor;
-                    let mut left_path = vec![left];
-                    let mut right_path = vec![right];
-                    while depth[left.0 as usize] > depth[right.0 as usize] {
-                        left = parent[left.0 as usize].expect("BFS node has a parent");
-                        left_path.push(left);
+                    let mut ring = vec![neighbor];
+                    let mut ancestor = parent[neighbor.0 as usize];
+                    while ancestor.is_some() && ancestor != Some(root) {
+                        let atom = ancestor.expect("BFS node has a parent");
+                        ring.push(atom);
+                        ancestor = parent[atom.0 as usize];
                     }
-                    while depth[right.0 as usize] > depth[left.0 as usize] {
-                        right = parent[right.0 as usize].expect("BFS node has a parent");
-                        right_path.push(right);
+                    ring.insert(0, current);
+                    ancestor = parent[current.0 as usize];
+                    while let Some(atom) = ancestor {
+                        if ring.contains(&atom) {
+                            ring.clear();
+                            break;
+                        }
+                        ring.insert(0, atom);
+                        ancestor = parent[atom.0 as usize];
                     }
-                    while left != right {
-                        left = parent[left.0 as usize].expect("BFS node has a parent");
-                        right = parent[right.0 as usize].expect("BFS node has a parent");
-                        left_path.push(left);
-                        right_path.push(right);
+                    if ring.len() > 1 {
+                        if ring.len() <= best_size {
+                            if ring.len() < best_size {
+                                best_size = ring.len();
+                                rings.clear();
+                            }
+                            rings.push(ring);
+                        } else {
+                            break 'bfs;
+                        }
                     }
-                    // RDKit's rooted Figueras pass discards a cross-edge
-                    // whose two BFS branches meet below the requested root:
-                    // that cycle belongs to the closer LCA, not this root.
-                    if left != root {
-                        continue;
-                    }
-                    let ring_size = left_path.len() + right_path.len() - 1;
-                    if ring_size > best_size {
-                        continue;
-                    }
-                    let mut ring = left_path;
-                    right_path.pop();
-                    right_path.reverse();
-                    ring.extend(right_path);
-                    if ring.len() < 3 {
-                        continue;
-                    }
-                    if ring_size < best_size {
-                        best_size = ring_size;
-                        rings.clear();
-                    }
-                    rings.push(ring);
                 }
                 _ => {}
             }
@@ -646,9 +637,7 @@ pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
                     }
                 }
                 let trimmed = trim_ring_bonds(mol, &blocked);
-                replacements.extend(find_smallest_rings_bfs_with_blocked_bonds(
-                    mol, root, &trimmed,
-                ));
+                replacements.extend(find_smallest_rings_bfs_with_rdkit_tree(mol, root, &trimmed));
             }
             if let Some(min_size) = replacements.iter().map(Vec::len).min() {
                 replacements.retain(|candidate| candidate.len() == min_size);
