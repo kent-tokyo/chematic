@@ -267,13 +267,26 @@ fn bfs_tree(mol: &Molecule, root: AtomIdx) -> (Vec<usize>, Vec<Option<AtomIdx>>)
 /// symmetrization layer is responsible for applying RDKit's duplicate-ring
 /// acceptance rules.
 pub fn find_smallest_rings_bfs(mol: &Molecule, root: AtomIdx) -> Vec<Vec<AtomIdx>> {
+    find_smallest_rings_bfs_with_blocked_bonds(mol, root, &FxHashSet::default())
+}
+
+/// Find the smallest root-centered rings while temporarily ignoring a set of
+/// bonds. This is the bounded re-search primitive used by the RDKit-compatible
+/// duplicate-D2 candidate pass; the molecule itself is never mutated.
+pub fn find_smallest_rings_bfs_with_blocked_bonds(
+    mol: &Molecule,
+    root: AtomIdx,
+    blocked_bonds: &FxHashSet<BondIdx>,
+) -> Vec<Vec<AtomIdx>> {
     if root.0 as usize >= mol.atom_count() {
         return Vec::new();
     }
 
     let neighbors: Vec<AtomIdx> = mol
         .neighbors(root)
-        .filter(|(_, bidx)| is_ring_eligible(mol.bond(*bidx).order))
+        .filter(|(_, bidx)| {
+            is_ring_eligible(mol.bond(*bidx).order) && !blocked_bonds.contains(bidx)
+        })
         .map(|(neighbor, _)| neighbor)
         .collect();
     if neighbors.len() < 2 {
@@ -294,7 +307,10 @@ pub fn find_smallest_rings_bfs(mol: &Molecule, root: AtomIdx) -> Vec<Vec<AtomIdx
                     break;
                 }
                 for (next, bidx) in mol.neighbors(current) {
-                    if next == root || !is_ring_eligible(mol.bond(bidx).order) {
+                    if next == root
+                        || !is_ring_eligible(mol.bond(bidx).order)
+                        || blocked_bonds.contains(&bidx)
+                    {
                         continue;
                     }
                     let next_i = next.0 as usize;
@@ -319,7 +335,15 @@ pub fn find_smallest_rings_bfs(mol: &Molecule, root: AtomIdx) -> Vec<Vec<AtomIdx
                 rings.clear();
             }
             let mut path = vec![left];
-            enumerate_shortest_paths(mol, root, right, &dist, &mut path, &mut rings);
+            enumerate_shortest_paths(
+                mol,
+                root,
+                right,
+                &dist,
+                blocked_bonds,
+                &mut path,
+                &mut rings,
+            );
         }
     }
 
@@ -411,6 +435,7 @@ fn enumerate_shortest_paths(
     excluded: AtomIdx,
     target: AtomIdx,
     dist: &[usize],
+    blocked_bonds: &FxHashSet<BondIdx>,
     path: &mut Vec<AtomIdx>,
     rings: &mut Vec<Vec<AtomIdx>>,
 ) {
@@ -425,14 +450,17 @@ fn enumerate_shortest_paths(
 
     let current_dist = dist[current.0 as usize];
     for (next, bidx) in mol.neighbors(current) {
-        if next == excluded || !is_ring_eligible(mol.bond(bidx).order) {
+        if next == excluded
+            || !is_ring_eligible(mol.bond(bidx).order)
+            || blocked_bonds.contains(&bidx)
+        {
             continue;
         }
         if dist[next.0 as usize] != current_dist + 1 {
             continue;
         }
         path.push(next);
-        enumerate_shortest_paths(mol, excluded, target, dist, path, rings);
+        enumerate_shortest_paths(mol, excluded, target, dist, blocked_bonds, path, rings);
         path.pop();
     }
 }

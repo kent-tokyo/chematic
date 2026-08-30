@@ -57,7 +57,9 @@
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use chematic_core::{AtomIdx, BondIdx, Molecule};
-use chematic_perception::{RingSet, find_smallest_rings_bfs};
+use chematic_perception::{
+    RingSet, find_smallest_rings_bfs, find_smallest_rings_bfs_with_blocked_bonds,
+};
 
 /// Typed error for chematic-smarts's opt-in RDKit-parity matching mode.
 ///
@@ -223,39 +225,114 @@ pub fn build_rdkit_parity_ring_model(
     // RDKit's Figueras search starts with D2 nodes.  Highly symmetric cages
     // such as cubane have no D2 nodes and are handled by the later D3-style
     // fallback, for which considering every root is the useful approximation.
-    let roots: Box<dyn Iterator<Item = AtomIdx>> = if d2_roots.is_empty() {
-        Box::new((0..mol.atom_count()).map(|raw| AtomIdx(raw as u32)))
+    let has_d2_roots = !d2_roots.is_empty();
+    let roots: Box<dyn Iterator<Item = AtomIdx>> = if has_d2_roots {
+        Box::new(d2_roots.iter().copied())
     } else {
-        Box::new(d2_roots.into_iter())
+        Box::new((0..mol.atom_count()).map(|raw| AtomIdx(raw as u32)))
     };
-    for root in roots {
-        for candidate in find_smallest_rings_bfs(mol, root) {
-            candidates_examined += 1;
-            if candidates_examined > budget.max_candidates {
-                return Err(RdkitParityError::RingModelBudgetExceeded {
-                    candidates_examined,
-                    cap: budget.max_candidates,
-                });
+    let mut accept_candidate = |candidate: Vec<AtomIdx>| -> bool {
+        let len = candidate.len();
+        let Some(ring_idxs) = by_size.get(&len) else {
+            return false;
+        };
+        let cand_set = ring_bond_set(mol, &candidate);
+        let key = bond_set_key(&cand_set);
+        if base_bond_key.contains(&key) || !seen_extra.insert(key) {
+            return false;
+        }
+        for &ring_idx in ring_idxs {
+            let base_set = &base_bond_sets[ring_idx];
+            if base_set.iter().any(|b| cand_set.contains(b))
+                && base_set.iter().all(|b| {
+                    bond_ring_count.get(b).copied().unwrap_or(0) != 1 || cand_set.contains(b)
+                })
+            {
+                extra_rings.push(candidate);
+                return true;
             }
-            let len = candidate.len();
-            let Some(ring_idxs) = by_size.get(&len) else {
-                continue;
-            };
-            let cand_set = ring_bond_set(mol, &candidate);
-            let key = bond_set_key(&cand_set);
-            if base_bond_key.contains(&key) || !seen_extra.insert(key.clone()) {
-                continue;
-            }
-            for &ring_idx in ring_idxs {
-                let base_set = &base_bond_sets[ring_idx];
-                if base_set.iter().any(|b| cand_set.contains(b))
-                    && base_set.iter().all(|b| {
-                        bond_ring_count.get(b).copied().unwrap_or(0) != 1 || cand_set.contains(b)
-                    })
-                {
-                    extra_rings.push(candidate);
-                    break;
+        }
+        false
+    };
+
+    if !has_d2_roots {
+        for root in roots {
+            for candidate in find_smallest_rings_bfs(mol, root) {
+                candidates_examined += 1;
+                if candidates_examined > budget.max_candidates {
+                    return Err(RdkitParityError::RingModelBudgetExceeded {
+                        candidates_examined,
+                        cap: budget.max_candidates,
+                    });
                 }
+                accept_candidate(candidate);
+            }
+        }
+    } else {
+        // First identify rings discovered by more than one D2 node. RDKit
+        // treats these as duplicate candidates and does not accept the
+        // original ring again; it removes the competing D2 connections and
+        // searches for the next-smallest replacement ring.
+        let mut duplicate_groups: FxHashMap<Vec<u32>, (Vec<AtomIdx>, Vec<AtomIdx>)> =
+            FxHashMap::default();
+        for root in roots {
+            for candidate in find_smallest_rings_bfs(mol, root) {
+                candidates_examined += 1;
+                if candidates_examined > budget.max_candidates {
+                    return Err(RdkitParityError::RingModelBudgetExceeded {
+                        candidates_examined,
+                        cap: budget.max_candidates,
+                    });
+                }
+                let key = bond_set_key(&ring_bond_set(mol, &candidate));
+                let entry = duplicate_groups
+                    .entry(key)
+                    .or_insert_with(|| (candidate.clone(), Vec::new()));
+                if !entry.1.contains(&root) {
+                    entry.1.push(root);
+                }
+            }
+        }
+
+        for (_, (original_candidate, duplicate_roots)) in duplicate_groups {
+            if duplicate_roots.len() < 2 {
+                // A ring found by only one D2 node is not a duplicate-D2
+                // candidate; retain the normal Figueras acceptance path.
+                accept_candidate(original_candidate);
+                continue;
+            }
+            let mut replacement_found = false;
+            for &root in &duplicate_roots {
+                let mut blocked_bonds = FxHashSet::default();
+                for &other in &duplicate_roots {
+                    if other == root {
+                        continue;
+                    }
+                    for (_, bond) in mol.neighbors(other) {
+                        if is_ring_bond(mol, bond) {
+                            blocked_bonds.insert(bond);
+                        }
+                    }
+                }
+                for candidate in
+                    find_smallest_rings_bfs_with_blocked_bonds(mol, root, &blocked_bonds)
+                {
+                    candidates_examined += 1;
+                    if candidates_examined > budget.max_candidates {
+                        return Err(RdkitParityError::RingModelBudgetExceeded {
+                            candidates_examined,
+                            cap: budget.max_candidates,
+                        });
+                    }
+                    replacement_found |= accept_candidate(candidate);
+                }
+            }
+            // Some small cage topologies expose a duplicate group but have
+            // no usable replacement after trimming. Preserve the established
+            // symmetrized-ring result in that case; otherwise the D2 pass
+            // would regress a valid extra face to the minimal basis.
+            if !replacement_found {
+                accept_candidate(original_candidate);
             }
         }
     }

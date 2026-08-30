@@ -48,7 +48,10 @@ pub use ring_family::{RingFamily, RingSystemKind, find_ring_families, find_ring_
 pub mod diagnostics {
     pub use crate::rdkit_parity::rdkit_parity_aromaticity;
 }
-pub use sssr::{RingSet, find_smallest_rings_bfs, find_sssr, find_symmetrized_sssr};
+pub use sssr::{
+    RingSet, find_smallest_rings_bfs, find_smallest_rings_bfs_with_blocked_bonds, find_sssr,
+    find_symmetrized_sssr,
+};
 pub use stereo_validation::{
     StereoCompleteness, StereoError, StereoErrorKind, stereo_centers, stereo_completeness,
     validate_stereo,
