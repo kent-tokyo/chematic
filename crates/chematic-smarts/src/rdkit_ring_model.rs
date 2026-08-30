@@ -350,6 +350,25 @@ pub fn build_rdkit_parity_ring_model(
         }
     }
 
+    // Several D2 groups can describe the same connected symmetry class. Keep
+    // one stable representative per bond-overlap component; retaining every
+    // overlapping replacement would inflate the symmetrized count (notably
+    // the issue-337 macrocycle family) while adding no new ring frontier.
+    extra_rings.sort_by_key(|ring| bond_set_key(&ring_bond_set(mol, ring)));
+    let mut selected_extra_sets: Vec<FxHashSet<BondIdx>> = Vec::new();
+    extra_rings.retain(|ring| {
+        let candidate_set = ring_bond_set(mol, ring);
+        if selected_extra_sets
+            .iter()
+            .any(|selected| selected.iter().any(|bond| candidate_set.contains(bond)))
+        {
+            false
+        } else {
+            selected_extra_sets.push(candidate_set);
+            true
+        }
+    });
+
     let mut ring_count_by_atom: FxHashMap<AtomIdx, u8> = FxHashMap::default();
     for ring in base_rings.iter().chain(extra_rings.iter()) {
         for &a in ring {
@@ -536,6 +555,13 @@ mod tests {
             result,
             Err(RdkitParityError::RingModelBudgetExceeded { .. })
         ));
+    }
+
+    #[test]
+    fn issue_337_macrocycle_keeps_one_extra_ring_representative() {
+        let smiles = "c1cc2cc(c1)-c1cccc(c1)C[n+]1ccc(c3ccccc31)NCCCCCCCCCCNc1cc[n+](c3ccccc13)C2";
+        let (_, model) = model_for(smiles);
+        assert_eq!(model.extra_ring_count(), 1);
     }
 
     #[test]
