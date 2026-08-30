@@ -1968,6 +1968,9 @@ fn parent_json_bindings_cover_mechanical_and_composed_parents() {
     assert!(isotope_parent_json(&mol).contains(r#""status":"completed""#));
     assert!(stereo_parent_json(&mol).contains(r#""status":"completed""#));
     assert!(super_parent_json(&mol, 16, 32, None).contains(r#""status":"completed""#));
+    let report = super_parent_report_json(&mol, 16, 32, None);
+    assert!(report.contains(r#""name":"fragment""#));
+    assert!(report.contains(r#""name":"tautomer""#));
 }
 
 #[test]

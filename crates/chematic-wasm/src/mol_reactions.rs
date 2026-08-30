@@ -520,6 +520,57 @@ pub fn super_parent_json(
     format!(r#"{{"smiles":"{smiles}","status":"{status}"}}"#)
 }
 
+/// Compute the composed Super Parent and expose every ordered stage.
+#[wasm_bindgen]
+pub fn super_parent_report_json(
+    mol: &MolHandle,
+    max_transforms: usize,
+    max_tautomers: usize,
+    timeout_ms: Option<u64>,
+) -> String {
+    if mol.inner.atom_count() > WASM_MAX_ATOMS {
+        return format!(
+            r#"{{"error":"molecule too large (max {} atoms)"}}"#,
+            WASM_MAX_ATOMS
+        );
+    }
+    let mut limits = chematic_chem::TautomerLimits::default();
+    limits.max_transforms = max_transforms;
+    limits.max_tautomers = max_tautomers;
+    limits.timeout_ms = timeout_ms;
+    let (fragment, _) = chematic_chem::fragment_parent(&mol.inner);
+    let (charge, _) = chematic_chem::charge_parent(&fragment);
+    let (isotope, _) = chematic_chem::isotope_parent(&charge);
+    let (stereo, _) = chematic_chem::stereo_parent(&isotope);
+    let result = chematic_chem::super_parent(&mol.inner, &limits);
+    let status = match result.status {
+        chematic_chem::ParentComputationStatus::Completed => "completed",
+        chematic_chem::ParentComputationStatus::MaxTransformsReached => "max_transforms_reached",
+        chematic_chem::ParentComputationStatus::MaxTautomersReached => "max_tautomers_reached",
+        chematic_chem::ParentComputationStatus::TimedOut => "timed_out",
+        chematic_chem::ParentComputationStatus::Abstained(_) => "abstained",
+        chematic_chem::ParentComputationStatus::InvalidInput(_) => "invalid_input",
+        _ => "unknown",
+    };
+    let stage = |name: &str, molecule: &chematic_core::Molecule| {
+        format!(
+            r#"{{"name":"{}","smiles":"{}"}}"#,
+            name,
+            escape_json_string(&chematic_smiles::canonical_smiles(molecule))
+        )
+    };
+    let stages = [
+        stage("fragment", &fragment),
+        stage("charge", &charge),
+        stage("isotope", &isotope),
+        stage("stereo", &stereo),
+        stage("tautomer", &result.molecule),
+    ]
+    .join(",");
+    let smiles = escape_json_string(&chematic_smiles::canonical_smiles(&result.molecule));
+    format!(r#"{{"smiles":"{smiles}","status":"{status}","stages":[{stages}]}}"#)
+}
+
 /// Compute the tautomer parent with explicit resource limits.
 /// Returns `{"smiles":"...","status":"completed"}` (or a structured
 /// error) so callers can distinguish a definite result from a budget-limited
