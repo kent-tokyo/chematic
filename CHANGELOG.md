@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v0.27.0 — Phase 2 direct-comparison smoke harness
+
+- Added a versioned public smoke corpus, common JSONL result schema, RDKit and
+  chematic runners, and a scorer that separates matches, mismatches, parse
+  failures, and unsupported operations. The harness is ready for a COSMolKit
+  adapter without treating unavailable tooling as a parity result.
+- The comparison runner uses chematic's RDKit-exact Morgan API when available;
+  older installations report that operation as unsupported rather than falling
+  back to native ECFP4.
+
 ### v0.26.0 — RDKit Morgan tetrahedral chirality parity
 
 - The generalized RDKit Morgan fingerprint API now supports opt-in tetrahedral
