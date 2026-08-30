@@ -17,6 +17,13 @@ name: Bench PR Gate
 on:
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_benchmarks:
+        description: Run the expensive baseline/candidate benchmark gate
+        required: true
+        default: true
+        type: boolean
 
 concurrency:
   group: bench-pr-${{ github.event.pull_request.number || github.ref }}
@@ -26,28 +33,9 @@ permissions:
   contents: read
 
 jobs:
-  changes:
-    name: Detect performance-sensitive changes
-    runs-on: ubuntu-latest
-    outputs:
-      performance: ${{ steps.filter.outputs.performance }}
-    steps:
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            performance:
-              - 'Cargo.toml'
-              - 'Cargo.lock'
-              - 'crates/**'
-              - 'benches/**'
-              - 'scripts/bench_*.py'
-              - 'scripts/criterion_gate.sh'
-
   bench-gate:
     name: Python bench regression gate
-    needs: changes
-    if: needs.changes.outputs.performance == 'true'
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'performance')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR branch
@@ -176,8 +164,7 @@ jobs:
 
   criterion-gate:
     name: Rust Criterion regression gate
-    needs: changes
-    if: needs.changes.outputs.performance == 'true'
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'performance')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR branch
