@@ -350,7 +350,16 @@ fn assign_aromaticity_ex_impl(
         }
 
         pass2_candidates = still_pending;
-        if !any_new {
+        // Once every atom in the candidate ring set is already aromatic, no
+        // pending ring can add information to the aromatic context. This is
+        // RDKit's `aromRingsAllSet` fixed-point short circuit; in particular,
+        // it prevents a later indeterminate ring from reopening a converged
+        // fused-ring component.
+        let arom_rings_all_set = rings
+            .iter()
+            .flatten()
+            .all(|atom| aromatic_atoms.contains(atom));
+        if !any_new || arom_rings_all_set {
             break;
         }
     }
