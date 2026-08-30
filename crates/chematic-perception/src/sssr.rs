@@ -593,6 +593,7 @@ pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
             false
         }
     };
+    let mut direct_replacements: Vec<Vec<AtomIdx>> = Vec::new();
 
     if d2_roots.is_empty() {
         for root in 0..mol.atom_count() {
@@ -645,34 +646,40 @@ pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
                     }
                 }
                 let trimmed = trim_ring_bonds(mol, &blocked);
-                replacements.extend(find_smallest_rings_bfs_with_rdkit_tree(mol, root, &trimmed));
+                replacements.extend(find_smallest_rings_bfs_with_blocked_bonds(
+                    mol, root, &trimmed,
+                ));
             }
             if let Some(min_size) = replacements.iter().map(Vec::len).min() {
                 replacements.retain(|candidate| candidate.len() == min_size);
             }
             replacements.sort_by_key(|candidate| bond_set_key(&ring_bond_set(mol, candidate)));
-            replacements.into_iter().any(&mut accept_candidate);
+            for replacement in replacements {
+                direct_replacements.push(replacement);
+            }
         }
     }
 
-    // Multiple duplicate-D2 groups can still describe one connected
-    // symmetry class. Keep the stable minimum representative per overlapping
-    // extra-ring component, while never filtering the original Horton basis.
+    #[allow(clippy::drop_non_drop)]
+    drop(accept_candidate);
+    for replacement in direct_replacements {
+        let key = bond_set_key(&ring_bond_set(mol, &replacement));
+        if seen.insert(key)
+            && base
+                .rings()
+                .iter()
+                .any(|ring| ring.len() == replacement.len())
+        {
+            rings.push(replacement);
+        }
+    }
+
+    // Keep every independently verified minimum replacement. RDKit's
+    // symmetrized SSSR intentionally retains multiple overlapping rings in a
+    // degenerate fused/bridged system; collapsing them to one representative
+    // loses the active ring context needed by MMFF94 aromaticity.
     let mut extras = rings.split_off(base.ring_count());
     extras.sort_by_key(|ring| basis_exchange_key(mol, ring, &base_bonds));
-    let mut selected_extra_sets: Vec<FxHashSet<BondIdx>> = Vec::new();
-    extras.retain(|ring| {
-        let candidate_set = ring_bond_set(mol, ring);
-        if selected_extra_sets
-            .iter()
-            .any(|selected| selected.iter().any(|bond| candidate_set.contains(bond)))
-        {
-            false
-        } else {
-            selected_extra_sets.push(candidate_set);
-            true
-        }
-    });
     rings.extend(extras);
 
     let ranks = canonical_atom_ranks(mol);
