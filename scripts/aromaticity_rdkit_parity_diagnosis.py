@@ -82,9 +82,10 @@ EXPECTED_BUCKET_BY_ID = {
     # azulene/selenophene/tellurophene/phosphole: untouched by K2a (charge
     # is not their root cause -- azulene needs a non-alternant whole-
     # perimeter Huckel candidate the Pass1/Pass2 model doesn't build;
-    # selenophene/tellurophene need Se/Te support the default Huckel engine
-    # doesn't have (RdkitLike-only); phosphole needs P support that exists
-    # nowhere in this engine). All four stay exactly where K1 left them:
+    # selenophene/tellurophene/phosphole need the Se/Te/P support that the
+    # default Huckel engine doesn't have (the RdkitLike production path now
+    # covers these, while this diagnostic intentionally audits the default
+    # path). All four stay exactly where K1 left them:
     # kekulize() succeeds, the raw Huckel model still doesn't confirm
     # aromaticity, and `build_molecule_from_model`'s promote-only rebuild
     # loop (K2b, a separate, not-yet-merged PR) still lets the stale
