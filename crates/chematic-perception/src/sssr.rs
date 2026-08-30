@@ -644,9 +644,8 @@ pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
                         }
                     }
                 }
-                replacements.extend(find_smallest_rings_bfs_with_trimmed_bonds(
-                    mol, root, &blocked,
-                ));
+                let trimmed = trim_ring_bonds(mol, &blocked);
+                replacements.extend(find_smallest_rings_bfs_with_rdkit_tree(mol, root, &trimmed));
             }
             if let Some(min_size) = replacements.iter().map(Vec::len).min() {
                 replacements.retain(|candidate| candidate.len() == min_size);
