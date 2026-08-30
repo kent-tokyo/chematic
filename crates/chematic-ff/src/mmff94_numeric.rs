@@ -1197,6 +1197,19 @@ pub fn compute_mmff94_aromatic_view(
             .iter()
             .map(|r| r.iter().filter(|&&a| resolved[a.0 as usize]).count() as i64)
             .sum();
+
+        // RDKit's setMMFFAromaticity also stops once every atom belonging to
+        // an SSSR ring has been resolved. This is distinct from the progress
+        // plateau check above: a pass may resolve all ring atoms while the
+        // aggregate counter would otherwise permit another pass. Keep this
+        // condition explicit so termination does not depend on the chosen
+        // fixed-point counter representation.
+        let arom_rings_all_set = rings
+            .iter()
+            .all(|ring| ring.iter().all(|&a| resolved[a.0 as usize]));
+        if arom_rings_all_set {
+            break;
+        }
     }
 
     // A ring's bonds are MMFF-aromatic iff *that ring itself* passed the
