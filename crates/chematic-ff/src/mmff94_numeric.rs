@@ -775,7 +775,12 @@ pub fn assign_mmff94_numeric_types_with_view(
 ) -> Result<(Vec<u8>, Molecule), NumericTypeError> {
     let n = mol.atom_count();
     let mut types = vec![0u8; n];
-    let rings = chematic_perception::find_sssr(mol).rings().to_vec();
+    // MMFF94's aromaticity loop follows RDKit's symmetrized SSSR semantics;
+    // the extra same-size representatives matter for degenerate fused ring
+    // systems. The general perception APIs continue to use the Horton SSSR.
+    let rings = chematic_perception::find_symmetrized_sssr(mol)
+        .rings()
+        .to_vec();
     // MMFF94 has its own, stricter, Kekule-based aromaticity perception
     // (RDKit's `setMMFFAromaticity`), distinct from chematic's own general
     // Huckel model -- most visibly for "mancude" ring systems where a ring

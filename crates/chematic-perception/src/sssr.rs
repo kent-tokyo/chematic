@@ -406,6 +406,26 @@ pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
         }
     }
 
+    // Multiple duplicate-D2 groups can still describe one connected
+    // symmetry class. Keep the stable minimum representative per overlapping
+    // extra-ring component, while never filtering the original Horton basis.
+    let mut extras = rings.split_off(base.ring_count());
+    extras.sort_by_key(|ring| bond_set_key(&ring_bond_set(mol, ring)));
+    let mut selected_extra_sets: Vec<FxHashSet<BondIdx>> = Vec::new();
+    extras.retain(|ring| {
+        let candidate_set = ring_bond_set(mol, ring);
+        if selected_extra_sets
+            .iter()
+            .any(|selected| selected.iter().any(|bond| candidate_set.contains(bond)))
+        {
+            false
+        } else {
+            selected_extra_sets.push(candidate_set);
+            true
+        }
+    });
+    rings.extend(extras);
+
     let ranks = canonical_atom_ranks(mol);
     rings.sort_by_cached_key(|ring| (ring.len(), canonical_cycle_key(ring, &ranks)));
     RingSet(rings)
