@@ -265,7 +265,9 @@ def test_parent_identity_bindings_cover_each_axis():
     mol = chematic.from_smiles("[NH3+][C@@H]([2H])C(=O)[O-].Cl")
     assert mol.fragment_parent().heavy_atoms < mol.heavy_atoms
     assert mol.charge_parent().formal_charge == 0
-    assert mol.isotope_parent().formula != mol.formula
+    # ``formula`` intentionally omits isotope labels; compare the structural
+    # representation to verify that the isotope axis was normalized.
+    assert mol.isotope_parent().smiles != mol.smiles
     assert "@" not in mol.stereo_parent().smiles
     parent, status = mol.super_parent()
     assert status == "Completed"
