@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kent-tokyo/chematic/validation/parent-identity-v1.json",
+  "title": "chematic Parent identity report",
+  "type": "object",
+  "required": ["smiles", "status", "stages"],
+  "properties": {
+    "smiles": {"type": "string", "minLength": 1},
+    "status": {"type": "string", "minLength": 1},
+    "stages": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["name", "smiles"],
+        "properties": {
+          "name": {"enum": ["fragment", "charge", "isotope", "stereo", "tautomer"]},
+          "smiles": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
