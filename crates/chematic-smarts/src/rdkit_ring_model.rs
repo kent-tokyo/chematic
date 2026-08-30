@@ -56,7 +56,7 @@
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use chematic_core::{AtomIdx, BondIdx, Molecule};
-use chematic_perception::RingSet;
+use chematic_perception::{RingSet, find_smallest_rings_bfs};
 
 /// Typed error for chematic-smarts's opt-in RDKit-parity matching mode.
 ///
@@ -202,66 +202,43 @@ pub fn build_rdkit_parity_ring_model(
     for (i, r) in base_rings.iter().enumerate() {
         by_size.entry(r.len()).or_default().push(i);
     }
-    let max_size = base_rings.iter().map(|r| r.len()).max().unwrap_or(0);
-
     let mut seen_extra: FxHashSet<Vec<u32>> = FxHashSet::default();
     let mut extra_rings: Vec<Vec<AtomIdx>> = Vec::new();
     let mut candidates_examined = 0usize;
 
-    let atom_count = mol.atom_count();
-    'outer: for start_raw in 0..atom_count {
-        let start = AtomIdx(start_raw as u32);
-        let mut visited: FxHashSet<AtomIdx> = FxHashSet::default();
-        visited.insert(start);
-        let mut atom_path: Vec<AtomIdx> = vec![start];
-        let mut bond_path: Vec<BondIdx> = Vec::new();
-
-        if enumerate_cycles_from(
-            mol,
-            start,
-            start,
-            &mut visited,
-            &mut atom_path,
-            &mut bond_path,
-            max_size,
-            budget.max_candidates,
-            &mut candidates_examined,
-            &mut |cycle_atoms, cycle_bonds| {
-                let len = cycle_atoms.len();
-                let Some(ring_idxs) = by_size.get(&len) else {
-                    return;
-                };
-                let key = bond_set_key(&cycle_bonds.iter().copied().collect());
-                if base_bond_key.contains(&key) || seen_extra.contains(&key) {
-                    return;
-                }
-                let cand_set: FxHashSet<BondIdx> = cycle_bonds.iter().copied().collect();
-                for &ring_idx in ring_idxs {
-                    let base_set = &base_bond_sets[ring_idx];
-                    let shares_bond = base_set.iter().any(|b| cand_set.contains(b));
-                    if !shares_bond {
-                        continue;
-                    }
-                    let replaces_all_unique = base_set.iter().all(|b| {
+    // RDKit's duplicate-D2 pool is rooted and shortest-ring based. Consume
+    // the same bounded primitive used by the perception crate instead of
+    // enumerating every simple cycle up to the largest SSSR size; the latter
+    // admits non-D2 cycles and over-produces extras in macrocycles.
+    for root_raw in 0..mol.atom_count() {
+        for candidate in find_smallest_rings_bfs(mol, AtomIdx(root_raw as u32)) {
+            candidates_examined += 1;
+            if candidates_examined > budget.max_candidates {
+                return Err(RdkitParityError::RingModelBudgetExceeded {
+                    candidates_examined,
+                    cap: budget.max_candidates,
+                });
+            }
+            let len = candidate.len();
+            let Some(ring_idxs) = by_size.get(&len) else {
+                continue;
+            };
+            let cand_set = ring_bond_set(mol, &candidate);
+            let key = bond_set_key(&cand_set);
+            if base_bond_key.contains(&key) || !seen_extra.insert(key.clone()) {
+                continue;
+            }
+            for &ring_idx in ring_idxs {
+                let base_set = &base_bond_sets[ring_idx];
+                if base_set.iter().any(|b| cand_set.contains(b))
+                    && base_set.iter().all(|b| {
                         bond_ring_count.get(b).copied().unwrap_or(0) != 1 || cand_set.contains(b)
-                    });
-                    if replaces_all_unique {
-                        seen_extra.insert(key.clone());
-                        extra_rings.push(cycle_atoms.to_vec());
-                        break;
-                    }
+                    })
+                {
+                    extra_rings.push(candidate);
+                    break;
                 }
-            },
-        )
-        .is_err()
-        {
-            return Err(RdkitParityError::RingModelBudgetExceeded {
-                candidates_examined,
-                cap: budget.max_candidates,
-            });
-        }
-        if candidates_examined > budget.max_candidates {
-            break 'outer;
+            }
         }
     }
 
@@ -296,58 +273,6 @@ fn bond_set_key(set: &FxHashSet<BondIdx>) -> Vec<u32> {
     let mut v: Vec<u32> = set.iter().map(|b| b.0).collect();
     v.sort_unstable();
     v
-}
-
-/// Depth-bounded DFS enumeration of simple cycles through `start`, up to
-/// `max_size` atoms. Calls `on_cycle(atoms, bonds)` for every closed simple
-/// path found (each real cycle is typically visited multiple times, once
-/// per starting atom/direction combination -- the caller dedupes by bond
-/// set). Returns `Err(())` the moment `*examined` exceeds `cap`, unwinding
-/// immediately without exploring further.
-#[allow(clippy::too_many_arguments)]
-fn enumerate_cycles_from(
-    mol: &Molecule,
-    start: AtomIdx,
-    current: AtomIdx,
-    visited: &mut FxHashSet<AtomIdx>,
-    atom_path: &mut Vec<AtomIdx>,
-    bond_path: &mut Vec<BondIdx>,
-    max_size: usize,
-    cap: usize,
-    examined: &mut usize,
-    on_cycle: &mut impl FnMut(&[AtomIdx], &[BondIdx]),
-) -> Result<(), ()> {
-    for (nb, bidx) in mol.neighbors(current) {
-        // Never immediately backtrack over the edge we just arrived on.
-        if bond_path.last() == Some(&bidx) {
-            continue;
-        }
-        if nb == start {
-            if atom_path.len() >= 3 {
-                *examined += 1;
-                if *examined > cap {
-                    return Err(());
-                }
-                bond_path.push(bidx);
-                on_cycle(atom_path, bond_path);
-                bond_path.pop();
-            }
-            continue;
-        }
-        if visited.contains(&nb) || atom_path.len() >= max_size {
-            continue;
-        }
-        visited.insert(nb);
-        atom_path.push(nb);
-        bond_path.push(bidx);
-        enumerate_cycles_from(
-            mol, start, nb, visited, atom_path, bond_path, max_size, cap, examined, on_cycle,
-        )?;
-        atom_path.pop();
-        bond_path.pop();
-        visited.remove(&nb);
-    }
-    Ok(())
 }
 
 #[cfg(test)]
