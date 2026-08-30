@@ -31,13 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   regression confirms discovery of all six symmetry-equivalent square faces;
   alternate shortest paths are now retained as well, with a dodecahedrane
   regression confirming all twelve pentagonal faces. RDKit duplicate-ring
-  acceptance is covered by a dedicated symmetrized-ring API, and the MMFF94
-  numeric-type entry point now consumes that ring view while the lower-level
-  view function remains explicit about its supplied ring set. A fresh
-  265-molecule parity dump leaves the known six #337 macrocyclic residuals
-  unchanged (atom 99.5222%, bond 99.4461%), so this increment does not claim
-  those residuals are fixed; their remaining cause is the MMFF-specific global
-  Kekulization/fixed-point interaction.
+  acceptance is covered by a provisional dedicated symmetrized-ring API. The
+  provisional candidate generator over-produces on the #337 macrocyclic
+  residual (10 rings versus RDKit's 8), so it is deliberately not wired into
+  MMFF94 production. A fresh 265-molecule parity dump leaves the known six
+  residuals unchanged (atom 99.5222%, bond 99.4461%); the exact Figueras
+  duplicate-D2 candidate selection remains the next gate.
 
 ### v0.24.0 release policy
 

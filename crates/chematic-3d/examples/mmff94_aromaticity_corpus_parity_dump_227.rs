@@ -44,9 +44,7 @@ fn main() {
                 }
             };
 
-            let rings = chematic_perception::find_symmetrized_sssr(&mol)
-                .rings()
-                .to_vec();
+            let rings = chematic_perception::find_sssr(&mol).rings().to_vec();
             let view = match compute_mmff94_aromatic_view(&mol, &rings) {
                 Ok(v) => v,
                 Err(e) => {
