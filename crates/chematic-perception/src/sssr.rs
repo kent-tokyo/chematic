@@ -632,10 +632,7 @@ pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
                 replacements.retain(|candidate| candidate.len() == min_size);
             }
             replacements.sort_by_key(|candidate| bond_set_key(&ring_bond_set(mol, candidate)));
-            let replacement_found = replacements.into_iter().any(&mut accept_candidate);
-            if !replacement_found {
-                accept_candidate(original_candidate);
-            }
+            replacements.into_iter().any(&mut accept_candidate);
         }
     }
 

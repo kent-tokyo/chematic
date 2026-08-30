@@ -329,16 +329,9 @@ pub fn build_rdkit_parity_ring_model(
             // latter was the source of three extras for one macrocycle).
             replacement_candidates
                 .sort_by_key(|candidate| bond_set_key(&ring_bond_set(mol, candidate)));
-            let replacement_found = replacement_candidates
+            replacement_candidates
                 .into_iter()
                 .any(&mut accept_candidate);
-            // Some small cage topologies expose a duplicate group but have
-            // no usable replacement after trimming. Preserve the established
-            // symmetrized-ring result in that case; otherwise the D2 pass
-            // would regress a valid extra face to the minimal basis.
-            if !replacement_found {
-                accept_candidate(original_candidate);
-            }
         }
     }
 
