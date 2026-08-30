@@ -664,11 +664,12 @@ mod tests {
     #[test]
     fn compare_molecules_mcs_preserves_heteroatoms_and_aromaticity() {
         // Regression test: `query_molecule_to_smiles` once matched only the bare
-        // `AtomQuery::Primitive(AtomicNum(n))` case, but `find_mcs`'s query atoms
-        // are always the compound `And(AtomicNum(n), Aromatic(bool))` -- so every
-        // atom silently fell through to carbon. Benzene/toluene's all-carbon MCS
-        // (see the test above) could never catch this; a hydroxyphenyl MCS shared
-        // between aspirin and paracetamol can, since it contains an O atom.
+        // `AtomQuery::Primitive(AtomicNum(n))` case, but at the time `find_mcs`'s
+        // query atoms were always the compound `And(AtomicNum(n), Aromatic(bool))`
+        // -- so every atom silently fell through to carbon. Benzene/toluene's
+        // all-carbon MCS (see the test above) could never catch this; a
+        // hydroxyphenyl MCS shared between aspirin and paracetamol can, since it
+        // contains an O atom.
         let comparison =
             compare_molecules(&["CC(=O)Oc1ccccc1C(=O)O", "CC(=O)Nc1ccc(O)cc1"]).unwrap();
         let mcs = comparison

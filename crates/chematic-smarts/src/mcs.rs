@@ -21,8 +21,11 @@ use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMole
 /// Atom-level comparison mode for MCS search.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum AtomCompare {
-    /// Atoms match only if they share the same atomic number and aromaticity flag.
-    /// This is the default and produces the most chemically specific MCS.
+    /// Atoms match if they share the same atomic number, regardless of aromaticity
+    /// (matches RDKit's `rdFMCS.AtomCompare.CompareElements` exactly -- confirmed
+    /// against a live oracle, e.g. `[#6]` matches both aromatic and non-aromatic
+    /// carbon; RDKit never encodes aromaticity as a per-atom constraint, only via
+    /// bond-type queries). This is the default.
     #[default]
     Elements,
     /// Any heavy atom (atomic number > 1) matches any other heavy atom, regardless of
@@ -691,9 +694,7 @@ fn atoms_compatible(
     match_isotope: bool,
 ) -> bool {
     let base = match compare {
-        AtomCompare::Elements => {
-            a.element.atomic_number() == b.element.atomic_number() && a.aromatic == b.aromatic
-        }
+        AtomCompare::Elements => a.element.atomic_number() == b.element.atomic_number(),
         AtomCompare::AnyHeavyAtom => a.element.atomic_number() > 1 && b.element.atomic_number() > 1,
         AtomCompare::Any => true,
     };
@@ -813,17 +814,19 @@ fn prune_partial_rings(mols: &[&Molecule], mapping: &mut PartialMapping, ring_se
 fn build_query(mol0: &Molecule, mapping: &PartialMapping, config: &McsConfig) -> QueryMolecule {
     let mut qmol = QueryMolecule::new();
 
-    // Add one query atom per mapped position.
+    // Add one query atom per mapped position. Aromaticity is deliberately NOT
+    // encoded here as a per-atom constraint (matches RDKit's own `CompareElements`
+    // representation, confirmed via live oracle): it's already fully captured by
+    // the aromatic bond queries added below, and hard-coding mol0's own atom.aromatic
+    // would make the query fail to re-match a different input molecule whose
+    // corresponding atom disagrees on aromaticity (a real, confirmed regression when
+    // AtomCompare::Elements permits cross-aromaticity matches).
     for row in &mapping.query_to_mol {
         let a0 = row[0];
         let atom = mol0.atom(a0);
         let an = atom.element.atomic_number();
-        let arom = atom.aromatic;
 
-        let query = AtomQuery::And(
-            Box::new(AtomQuery::Primitive(AtomPrimitive::AtomicNum(an))),
-            Box::new(AtomQuery::Primitive(AtomPrimitive::Aromatic(arom))),
-        );
+        let query = AtomQuery::Primitive(AtomPrimitive::AtomicNum(an));
         qmol.add_atom(query);
     }
 
@@ -888,11 +891,7 @@ fn molecule_to_query(mol: &Molecule) -> QueryMolecule {
 
     for (_, atom) in mol.atoms() {
         let an = atom.element.atomic_number();
-        let arom = atom.aromatic;
-        let query = AtomQuery::And(
-            Box::new(AtomQuery::Primitive(AtomPrimitive::AtomicNum(an))),
-            Box::new(AtomQuery::Primitive(AtomPrimitive::Aromatic(arom))),
-        );
+        let query = AtomQuery::Primitive(AtomPrimitive::AtomicNum(an));
         qmol.add_atom(query);
     }
 
@@ -1565,17 +1564,11 @@ mod tests {
         assert_eq!(o_first.atom_count(), 3);
         assert_eq!(
             n_first.atoms[0].query,
-            AtomQuery::And(
-                Box::new(AtomQuery::Primitive(AtomPrimitive::AtomicNum(7))),
-                Box::new(AtomQuery::Primitive(AtomPrimitive::Aromatic(false)))
-            )
+            AtomQuery::Primitive(AtomPrimitive::AtomicNum(7))
         );
         assert_eq!(
             o_first.atoms[0].query,
-            AtomQuery::And(
-                Box::new(AtomQuery::Primitive(AtomPrimitive::AtomicNum(8))),
-                Box::new(AtomQuery::Primitive(AtomPrimitive::Aromatic(false)))
-            )
+            AtomQuery::Primitive(AtomPrimitive::AtomicNum(8))
         );
     }
 }
