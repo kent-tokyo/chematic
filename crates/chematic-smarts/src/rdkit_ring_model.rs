@@ -301,7 +301,7 @@ pub fn build_rdkit_parity_ring_model(
                 accept_candidate(original_candidate);
                 continue;
             }
-            let mut replacement_found = false;
+            let mut replacement_candidates = Vec::new();
             for &root in &duplicate_roots {
                 let mut blocked_bonds = FxHashSet::default();
                 for &other in &duplicate_roots {
@@ -324,9 +324,22 @@ pub fn build_rdkit_parity_ring_model(
                             cap: budget.max_candidates,
                         });
                     }
-                    replacement_found |= accept_candidate(candidate);
+                    replacement_candidates.push(candidate);
                 }
             }
+            if let Some(min_size) = replacement_candidates.iter().map(Vec::len).min() {
+                replacement_candidates.retain(|candidate| candidate.len() == min_size);
+            }
+            // RDKit gathers the minimum-size replacements for the duplicate
+            // group and then inserts that minimum set. Choosing the first
+            // accepted candidate in a stable bond-key order avoids adding all
+            // equivalent paths emitted by the shortest-path enumerator (the
+            // latter was the source of three extras for one macrocycle).
+            replacement_candidates
+                .sort_by_key(|candidate| bond_set_key(&ring_bond_set(mol, candidate)));
+            let replacement_found = replacement_candidates
+                .into_iter()
+                .any(&mut accept_candidate);
             // Some small cage topologies expose a duplicate group but have
             // no usable replacement after trimming. Preserve the established
             // symmetrized-ring result in that case; otherwise the D2 pass
