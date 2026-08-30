@@ -252,6 +252,92 @@ fn bfs_tree(mol: &Molecule, root: AtomIdx) -> (Vec<usize>, Vec<Option<AtomIdx>>)
     (dist, parent)
 }
 
+/// Find the smallest simple rings containing `root` using the Figueras-style
+/// root-neighbor BFS primitive.
+///
+/// A ring through `root` is formed by two distinct ring-eligible neighbors of
+/// the root plus a shortest path between those neighbors with the root
+/// removed. Every neighbor pair is searched, and all pairs producing the
+/// minimum ring size for this root are returned. The result is a local
+/// primitive for the future symmetrized-ring model; it is deliberately not
+/// substituted for [`find_sssr`], whose output is a linearly independent
+/// Horton basis.
+///
+/// The search returns one deterministic shortest path per neighbor pair. A
+/// later symmetrization layer is responsible for resolving alternate shortest
+/// paths and applying RDKit's duplicate-ring acceptance rules.
+pub fn find_smallest_rings_bfs(mol: &Molecule, root: AtomIdx) -> Vec<Vec<AtomIdx>> {
+    if root.0 as usize >= mol.atom_count() {
+        return Vec::new();
+    }
+
+    let neighbors: Vec<AtomIdx> = mol
+        .neighbors(root)
+        .filter(|(_, bidx)| is_ring_eligible(mol.bond(*bidx).order))
+        .map(|(neighbor, _)| neighbor)
+        .collect();
+    if neighbors.len() < 2 {
+        return Vec::new();
+    }
+
+    let mut best_size = usize::MAX;
+    let mut rings = Vec::new();
+    for (left_pos, &left) in neighbors.iter().enumerate() {
+        for &right in neighbors.iter().skip(left_pos + 1) {
+            let mut dist = vec![usize::MAX; mol.atom_count()];
+            let mut parent: Vec<Option<AtomIdx>> = vec![None; mol.atom_count()];
+            let mut queue = VecDeque::new();
+            dist[left.0 as usize] = 0;
+            queue.push_back(left);
+
+            while let Some(current) = queue.pop_front() {
+                if current == right {
+                    break;
+                }
+                for (next, bidx) in mol.neighbors(current) {
+                    if next == root || !is_ring_eligible(mol.bond(bidx).order) {
+                        continue;
+                    }
+                    let next_i = next.0 as usize;
+                    if dist[next_i] == usize::MAX {
+                        dist[next_i] = dist[current.0 as usize] + 1;
+                        parent[next_i] = Some(current);
+                        queue.push_back(next);
+                    }
+                }
+            }
+
+            let right_dist = dist[right.0 as usize];
+            if right_dist == usize::MAX {
+                continue;
+            }
+            let ring_size = right_dist + 2;
+            if ring_size > best_size {
+                continue;
+            }
+
+            let mut path = path_to_root(right, &parent);
+            path.reverse();
+            if path.first() != Some(&left) || path.last() != Some(&right) {
+                continue;
+            }
+            let mut ring = Vec::with_capacity(ring_size);
+            ring.push(root);
+            ring.extend(path);
+
+            if ring_size < best_size {
+                best_size = ring_size;
+                rings.clear();
+            }
+            rings.push(ring);
+        }
+    }
+
+    rings.sort();
+    rings.dedup();
+    rings
+}
+
 /// Form the Horton candidate cycle `SP(root,x) + edge(x,y) + SP(y,root)`.
 ///
 /// Returns `None` if the two root-rooted shortest paths share any vertex
@@ -817,6 +903,25 @@ mod tests {
                 "each dodecane atom is in exactly 1 ring"
             );
         }
+    }
+
+    #[test]
+    fn test_figueras_bfs_finds_all_smallest_cubane_faces_through_each_root() {
+        let mol = chematic_smiles::parse("C12C3C4C1C5C4C3C25").expect("cubane SMILES");
+        let mut faces = std::collections::BTreeSet::new();
+        for root in 0..mol.atom_count() {
+            for ring in find_smallest_rings_bfs(&mol, AtomIdx(root as u32)) {
+                assert_eq!(ring.len(), 4, "cubane's smallest rings are square faces");
+                let mut face = ring.into_iter().map(|a| a.0).collect::<Vec<_>>();
+                face.sort_unstable();
+                faces.insert(face);
+            }
+        }
+        assert_eq!(
+            faces.len(),
+            6,
+            "cubane has six symmetry-equivalent square faces"
+        );
     }
 
     #[test]
