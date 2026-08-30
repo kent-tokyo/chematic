@@ -758,6 +758,16 @@ mod tests {
     }
 
     #[test]
+    fn blocked_bond_shortest_ring_search_is_non_mutating() {
+        let mol = cyclohexane();
+        let (bond, _) = mol.bond_between(AtomIdx(0), AtomIdx(1)).unwrap();
+        let mut blocked = FxHashSet::default();
+        blocked.insert(bond);
+        assert!(find_smallest_rings_bfs_with_blocked_bonds(&mol, AtomIdx(0), &blocked).is_empty());
+        assert_eq!(find_sssr(&mol).ring_count(), 1);
+    }
+
+    #[test]
     fn test_benzene_sssr() {
         let mol = benzene();
         let rings = find_sssr(&mol);
