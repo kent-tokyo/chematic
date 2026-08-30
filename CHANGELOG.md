@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   matching the existing Se/Te extension. The default strict Hückel mode is
   unchanged, and the diagnostic electron-contribution trace follows the same
   rule.
+- `RdkitLike` now routes through the independently verified fused-ring parity
+  engine, covering non-alternant whole-perimeter systems such as azulene while
+  retaining the historical engine as a defensive fallback for un-kekulizable
+  input.
 
 ### v0.24.0 release policy
 
