@@ -20,6 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   engine, covering non-alternant whole-perimeter systems such as azulene while
   retaining the historical engine as a defensive fallback for un-kekulizable
   input.
+- The accurate CIP residual report now measures 4,175/4,186 (99.74%) agreement
+  against the modern RDKit labeler estimate, with zero regressions in the
+  frozen residual subset. The remaining phosphorus rows stay explicitly
+  unresolved when respelled inputs produce representation-unstable oracle
+  labels; no plausible-looking R/S guess is emitted for those cases.
 
 ### v0.24.0 release policy
 

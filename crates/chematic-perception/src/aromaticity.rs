@@ -204,7 +204,8 @@ pub fn assign_aromaticity_ex(mol: &Molecule, algo: AromaticityAlgorithm) -> Arom
 /// longer wrongly treated as a genuine exocyclic substituent. Always uses
 /// [`AromaticityAlgorithm::Huckel`], matching [`assign_aromaticity`]'s own
 /// default (this mechanism is orthogonal to the `RdkitLike` Se/Te
-/// extension; no caller has needed both together yet).
+/// extension; the ordinary `RdkitLike` path now uses the verified fused-ring
+/// parity engine when its pre-kekulized-input precondition can be met).
 ///
 /// **Known limitation, honestly documented, not a blocker to using this**:
 /// resolves 29/33 of the corpus cluster this fix targets
