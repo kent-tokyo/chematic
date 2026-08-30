@@ -328,6 +328,81 @@ pub fn find_smallest_rings_bfs(mol: &Molecule, root: AtomIdx) -> Vec<Vec<AtomIdx
     rings
 }
 
+/// Build the symmetrized smallest-ring set from the Horton basis and the
+/// root-centered Figueras candidates.
+///
+/// A candidate is accepted only when it has the same size as a basis ring,
+/// shares a bond with that ring, and does not omit a bond that is unique to
+/// the basis ring. These are RDKit's duplicate-ring acceptance conditions.
+/// The existing [`find_sssr`] result remains the base and this function is a
+/// separate opt-in model for consumers that need symmetry-equivalent rings.
+pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
+    let base = find_sssr(mol);
+    if base.rings().is_empty() {
+        return base;
+    }
+
+    let base_bonds: Vec<FxHashSet<BondIdx>> = base
+        .rings()
+        .iter()
+        .map(|ring| ring_bond_set(mol, ring))
+        .collect();
+    let mut bond_ring_count: FxHashMap<BondIdx, usize> = FxHashMap::default();
+    for ring_bonds in &base_bonds {
+        for &bond in ring_bonds {
+            *bond_ring_count.entry(bond).or_insert(0) += 1;
+        }
+    }
+
+    let base_keys: FxHashSet<Vec<u32>> = base_bonds.iter().map(bond_set_key).collect();
+    let mut seen = base_keys.clone();
+    let mut rings = base.rings().to_vec();
+    for root in 0..mol.atom_count() {
+        for candidate in find_smallest_rings_bfs(mol, AtomIdx(root as u32)) {
+            let candidate_bonds = ring_bond_set(mol, &candidate);
+            let key = bond_set_key(&candidate_bonds);
+            if base_keys.contains(&key) || !seen.insert(key) {
+                continue;
+            }
+            let accepted = base_bonds.iter().any(|basis| {
+                basis.iter().any(|bond| candidate_bonds.contains(bond))
+                    && basis.iter().all(|bond| {
+                        bond_ring_count.get(bond).copied().unwrap_or(0) != 1
+                            || candidate_bonds.contains(bond)
+                    })
+            });
+            if accepted
+                && base
+                    .rings()
+                    .iter()
+                    .any(|ring| ring.len() == candidate.len())
+            {
+                rings.push(candidate);
+            }
+        }
+    }
+
+    let ranks = canonical_atom_ranks(mol);
+    rings.sort_by_cached_key(|ring| (ring.len(), canonical_cycle_key(ring, &ranks)));
+    RingSet(rings)
+}
+
+fn ring_bond_set(mol: &Molecule, ring: &[AtomIdx]) -> FxHashSet<BondIdx> {
+    let mut bonds = FxHashSet::default();
+    for i in 0..ring.len() {
+        if let Some((bond, _)) = mol.bond_between(ring[i], ring[(i + 1) % ring.len()]) {
+            bonds.insert(bond);
+        }
+    }
+    bonds
+}
+
+fn bond_set_key(set: &FxHashSet<BondIdx>) -> Vec<u32> {
+    let mut key: Vec<u32> = set.iter().map(|bond| bond.0).collect();
+    key.sort_unstable();
+    key
+}
+
 /// Enumerate shortest paths in an already-computed BFS distance field.
 /// Distances strictly increase at each step, so every emitted path is simple
 /// and cannot revisit the excluded root.
@@ -967,6 +1042,19 @@ mod tests {
             12,
             "dodecahedrane has twelve symmetry-equivalent pentagonal faces"
         );
+    }
+
+    #[test]
+    fn test_symmetrized_sssr_adds_only_verified_duplicate_faces() {
+        let benzene = chematic_smiles::parse("c1ccccc1").expect("benzene SMILES");
+        assert_eq!(find_symmetrized_sssr(&benzene).ring_count(), 1);
+
+        let cubane = chematic_smiles::parse("C12C3C4C1C5C4C3C25").expect("cubane SMILES");
+        assert_eq!(find_symmetrized_sssr(&cubane).ring_count(), 6);
+
+        let dodeca = chematic_smiles::parse("C12C3C4C5C1C6C7C2C8C3C9C4C1C5C6C2C7C8C9C12")
+            .expect("dodecahedrane SMILES");
+        assert_eq!(find_symmetrized_sssr(&dodeca).ring_count(), 12);
     }
 
     #[test]

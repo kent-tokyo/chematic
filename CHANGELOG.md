@@ -31,7 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   regression confirms discovery of all six symmetry-equivalent square faces;
   alternate shortest paths are now retained as well, with a dodecahedrane
   regression confirming all twelve pentagonal faces. RDKit duplicate-ring
-  acceptance and MMFF wiring remain separate follow-up gates.
+  acceptance is covered by a dedicated symmetrized-ring API, and the MMFF94
+  numeric-type entry point now consumes that ring view while the lower-level
+  view function remains explicit about its supplied ring set.
 
 ### v0.24.0 release policy
 
