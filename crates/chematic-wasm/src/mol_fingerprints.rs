@@ -658,7 +658,7 @@ pub fn rdkit_ecfp_config_bitvec(
     radius: u32,
     nbits: usize,
 ) -> Result<Vec<u8>, JsValue> {
-    let config = wasm_rdkit_morgan_config(radius, nbits)?;
+    let config = wasm_rdkit_morgan_config(radius, nbits, false)?;
     let result = chematic_fp::rdkit_morgan_fingerprint(&mol.inner, &config)
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
     Ok(bitvecn_to_bytes(&result.fingerprint))
@@ -673,7 +673,39 @@ pub fn rdkit_ecfp_config_detail_json(
     radius: u32,
     nbits: usize,
 ) -> Result<String, JsValue> {
-    let config = wasm_rdkit_morgan_config(radius, nbits)?;
+    let config = wasm_rdkit_morgan_config(radius, nbits, false)?;
+    let result = chematic_fp::rdkit_morgan_fingerprint(&mol.inner, &config)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(rdkit_morgan_detail_json(
+        &bitvecn_to_bytes(&result.fingerprint),
+        &sorted_pairs(&result.sparse_counts),
+        &sorted_bit_info(&result.raw_bit_info),
+        &sorted_bit_info(&result.folded_bit_info),
+    ))
+}
+
+/// Chirality-enabled variant of [`rdkit_ecfp_config_bitvec`]. E/Z bond stereo
+/// is not included by this API yet.
+#[wasm_bindgen]
+pub fn rdkit_ecfp_config_chiral_bitvec(
+    mol: &MolHandle,
+    radius: u32,
+    nbits: usize,
+) -> Result<Vec<u8>, JsValue> {
+    let config = wasm_rdkit_morgan_config(radius, nbits, true)?;
+    let result = chematic_fp::rdkit_morgan_fingerprint(&mol.inner, &config)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(bitvecn_to_bytes(&result.fingerprint))
+}
+
+/// Chirality-enabled variant of [`rdkit_ecfp_config_detail_json`].
+#[wasm_bindgen]
+pub fn rdkit_ecfp_config_chiral_detail_json(
+    mol: &MolHandle,
+    radius: u32,
+    nbits: usize,
+) -> Result<String, JsValue> {
+    let config = wasm_rdkit_morgan_config(radius, nbits, true)?;
     let result = chematic_fp::rdkit_morgan_fingerprint(&mol.inner, &config)
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
     Ok(rdkit_morgan_detail_json(
@@ -690,6 +722,7 @@ pub fn rdkit_ecfp_config_detail_json(
 fn wasm_rdkit_morgan_config(
     radius: u32,
     nbits: usize,
+    include_chirality: bool,
 ) -> Result<chematic_fp::RdkitMorganConfig, JsValue> {
     let radius = match radius {
         0 => chematic_fp::RdkitMorganRadius::R0,
@@ -714,7 +747,11 @@ fn wasm_rdkit_morgan_config(
             )));
         }
     };
-    Ok(chematic_fp::RdkitMorganConfig { radius, fp_size })
+    Ok(chematic_fp::RdkitMorganConfig {
+        radius,
+        fp_size,
+        include_chirality,
+    })
 }
 
 fn bitvecn_to_bytes(fp: &chematic_fp::BitVecN) -> Vec<u8> {

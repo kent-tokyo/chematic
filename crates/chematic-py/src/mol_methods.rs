@@ -1517,9 +1517,16 @@ impl Mol {
     ///
     /// Raises ``ValueError`` on the same preprocessing failures as :meth:`rdkit_ecfp4`
     /// (regardless of ``radius``/``nbits`` -- the failure happens before folding).
-    #[pyo3(signature = (radius = 2, nbits = 2048))]
-    fn rdkit_ecfp_config(&self, radius: u32, nbits: usize) -> PyResult<Vec<u8>> {
-        let config = python_rdkit_morgan_config(radius, nbits)?;
+    /// ``include_chirality`` enables RDKit-compatible tetrahedral chirality.
+    /// E/Z bond stereo is not included by this API yet.
+    #[pyo3(signature = (radius = 2, nbits = 2048, include_chirality = false))]
+    fn rdkit_ecfp_config(
+        &self,
+        radius: u32,
+        nbits: usize,
+        include_chirality: bool,
+    ) -> PyResult<Vec<u8>> {
+        let config = python_rdkit_morgan_config(radius, nbits, include_chirality)?;
         let result = chematic_fp::rdkit_morgan_fingerprint(&self.inner, &config)
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
         Ok(bitvecn_to_bytes(&result.fingerprint))
@@ -1528,9 +1535,14 @@ impl Mol {
     /// Same fingerprint as :meth:`rdkit_ecfp_config`, plus the raw (unfolded) data --
     /// see :meth:`rdkit_ecfp4_detail` for the return shape (identical, generalized to
     /// this method's ``radius``/``nbits``).
-    #[pyo3(signature = (radius = 2, nbits = 2048))]
-    fn rdkit_ecfp_config_detail(&self, radius: u32, nbits: usize) -> PyResult<RdkitMorganDetail> {
-        let config = python_rdkit_morgan_config(radius, nbits)?;
+    #[pyo3(signature = (radius = 2, nbits = 2048, include_chirality = false))]
+    fn rdkit_ecfp_config_detail(
+        &self,
+        radius: u32,
+        nbits: usize,
+        include_chirality: bool,
+    ) -> PyResult<RdkitMorganDetail> {
+        let config = python_rdkit_morgan_config(radius, nbits, include_chirality)?;
         let result = chematic_fp::rdkit_morgan_fingerprint(&self.inner, &config)
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
         Ok((
@@ -4438,6 +4450,7 @@ impl Mol {
 fn python_rdkit_morgan_config(
     radius: u32,
     nbits: usize,
+    include_chirality: bool,
 ) -> PyResult<chematic_fp::RdkitMorganConfig> {
     let radius = match radius {
         0 => chematic_fp::RdkitMorganRadius::R0,
@@ -4464,7 +4477,11 @@ fn python_rdkit_morgan_config(
             )));
         }
     };
-    Ok(chematic_fp::RdkitMorganConfig { radius, fp_size })
+    Ok(chematic_fp::RdkitMorganConfig {
+        radius,
+        fp_size,
+        include_chirality,
+    })
 }
 
 /// Bit-pack a variable-width `BitVecN` into `bit_width()/8` bytes, LSB-first --

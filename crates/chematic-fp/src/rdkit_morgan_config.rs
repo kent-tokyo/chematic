@@ -26,12 +26,12 @@
 //! if unsupported" path -- a caller cannot construct an unverified combination in the
 //! first place, so there is nothing to guess or silently coerce.
 
-use chematic_core::{BondIdx, Molecule};
+use chematic_core::{AtomIdx, BondIdx, Molecule};
 use rustc_hash::FxHashMap;
 
 use crate::bitvec::BitVecN;
 use crate::rdkit_morgan_ecfp4::RdkitMorganError;
-use crate::rdkit_morgan_hash::{checked_bond_invariant, expand_one_pass};
+use crate::rdkit_morgan_hash::{checked_bond_invariant, expand_one_pass_with_chirality};
 
 /// Morgan/ECFP radius, restricted to the four values independently re-verified
 /// against a live RDKit oracle for this API (`validation/ecfp4_rdkit_stable_api_fixtures.json`'s
@@ -91,6 +91,9 @@ impl RdkitMorganFpSize {
 pub struct RdkitMorganConfig {
     pub radius: RdkitMorganRadius,
     pub fp_size: RdkitMorganFpSize,
+    /// Include RDKit-compatible tetrahedral chirality contributions.
+    /// E/Z bond stereo remains outside this first verified increment.
+    pub include_chirality: bool,
 }
 
 impl Default for RdkitMorganConfig {
@@ -98,6 +101,7 @@ impl Default for RdkitMorganConfig {
         RdkitMorganConfig {
             radius: RdkitMorganRadius::R2,
             fp_size: RdkitMorganFpSize::B2048,
+            include_chirality: false,
         }
     }
 }
@@ -161,12 +165,33 @@ pub fn rdkit_morgan_fingerprint(
         bond_invariants.push(invariant);
     }
 
-    let emitted = expand_one_pass(
+    let cip_codes = if config.include_chirality {
+        let assignment = chematic_cip::assign_cip_accurate_experimental(
+            &aromatized,
+            chematic_cip::CipBudget::default_budget(),
+        )
+        .map_err(|e| RdkitMorganError::InternalInvariantViolation {
+            reason: format!("CIP assignment failed for chiral Morgan fingerprint: {e}"),
+        })?;
+        Some(
+            assignment
+                .assignments
+                .into_iter()
+                .filter(|(_, code)| {
+                    matches!(code, chematic_core::CipCode::R | chematic_core::CipCode::S)
+                })
+                .collect::<rustc_hash::FxHashMap<AtomIdx, chematic_core::CipCode>>(),
+        )
+    } else {
+        None
+    };
+    let emitted = expand_one_pass_with_chirality(
         &aromatized,
         &ring_set,
         &bond_invariants,
         config.radius.as_u32(),
         true,
+        cip_codes.as_ref(),
     );
 
     for ((atom_idx, radius), raw_id) in emitted {
@@ -233,6 +258,70 @@ mod tests {
     }
 
     #[test]
+    fn tetrahedral_chirality_matches_rdkit_and_distinguishes_enantiomers() {
+        let r = parse("C[C@H](N)C(=O)O").unwrap();
+        let s = parse("C[C@@H](N)C(=O)O").unwrap();
+        let config = RdkitMorganConfig {
+            radius: RdkitMorganRadius::R2,
+            fp_size: RdkitMorganFpSize::B2048,
+            include_chirality: true,
+        };
+        let r_result = rdkit_morgan_fingerprint(&r, &config).unwrap();
+        let s_result = rdkit_morgan_fingerprint(&s, &config).unwrap();
+
+        let expected_r: FxHashMap<u32, u32> = [
+            (101282979, 1),
+            (847957139, 1),
+            (864662311, 1),
+            (864942730, 1),
+            (1510328189, 1),
+            (1533864325, 1),
+            (2245273601, 1),
+            (2246699815, 1),
+            (2246728737, 1),
+            (2599973650, 1),
+            (3374146648, 1),
+            (3537119515, 1),
+            (3855312692, 1),
+        ]
+        .into_iter()
+        .collect();
+        let expected_s: FxHashMap<u32, u32> = [
+            (803825710, 1),
+            (847957139, 1),
+            (864662311, 1),
+            (864942730, 1),
+            (1510328189, 1),
+            (1533864325, 1),
+            (2245273601, 1),
+            (2246699815, 1),
+            (2246728737, 1),
+            (2599973650, 1),
+            (3374146649, 1),
+            (3537119515, 1),
+            (3855312692, 1),
+        ]
+        .into_iter()
+        .collect();
+        assert_eq!(r_result.sparse_counts, expected_r);
+        assert_eq!(s_result.sparse_counts, expected_s);
+        assert_ne!(r_result.sparse_counts, s_result.sparse_counts);
+
+        let non_chiral = RdkitMorganConfig {
+            include_chirality: false,
+            ..config
+        };
+        assert_eq!(
+            rdkit_morgan_fingerprint(&r, &non_chiral)
+                .unwrap()
+                .sparse_counts,
+            rdkit_morgan_fingerprint(&s, &non_chiral)
+                .unwrap()
+                .sparse_counts
+        );
+    }
+
+    #[test]
     fn radius_zero_has_no_bond_environment_regardless_of_fp_size() {
         // Radius 0 is a pure atom invariant -- every fp_size must fold the same raw
         // ids, just into a narrower/wider bit space.
@@ -247,6 +336,7 @@ mod tests {
                 &RdkitMorganConfig {
                     radius: RdkitMorganRadius::R0,
                     fp_size,
+                    include_chirality: false,
                 },
             )
             .unwrap();
@@ -269,6 +359,7 @@ mod tests {
             &RdkitMorganConfig {
                 radius: RdkitMorganRadius::R2,
                 fp_size: RdkitMorganFpSize::B128,
+                include_chirality: false,
             },
         )
         .unwrap();
@@ -292,6 +383,7 @@ mod tests {
                 &RdkitMorganConfig {
                     radius,
                     fp_size: RdkitMorganFpSize::B2048,
+                    include_chirality: false,
                 },
             );
             assert!(

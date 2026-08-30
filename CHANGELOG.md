@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v0.26.0 — RDKit Morgan tetrahedral chirality parity
+
+- The generalized RDKit Morgan fingerprint API now supports opt-in tetrahedral
+  chirality, with R/S contributions matching RDKit's repeated per-round
+  environment hashing. The implementation is pinned by exact sparse-count
+  regression fixtures for both alanine enantiomers; the default non-chiral path
+  remains bit-identical.
+- Python `rdkit_ecfp_config` and `rdkit_ecfp_config_detail` accept the optional
+  `include_chirality` keyword. WASM adds ABI-preserving
+  `rdkit_ecfp_config_chiral_bitvec` and `rdkit_ecfp_config_chiral_detail_json`.
+- E/Z bond-stereo invariants are intentionally not included in this increment and
+  remain a documented follow-up.
+
 ### v0.25.0 — aromaticity exactness
 
 - The opt-in `AromaticityAlgorithm::RdkitLike` mode now recognizes phosphole

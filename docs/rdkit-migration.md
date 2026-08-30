@@ -93,7 +93,7 @@ been measured).
 |---|---|---|
 | ECFP4 (Morgan, radius 2) | `AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=2048)` | `mol.ecfp4()` (bytes) / `mol.ecfp4_numpy()` (NumPy `(2048,)` uint8) |
 | ECFP6 | `AllChem.GetMorganFingerprintAsBitVect(mol, 3, nBits=2048)` | `mol.ecfp6()` |
-| Chiral ECFP4 | `useChirality=True` | `mol.ecfp4_chiral()` |
+| Chiral ECFP4 | `useChirality=True` | `mol.ecfp4_chiral()` / `mol.rdkit_ecfp_config(include_chirality=True)` |
 | FCFP4 | `useFeatures=True` | `mol.fcfp4()` |
 | MACCS 166-bit | `MACCSkeys.GenMACCSKeys(mol)` | `mol.maccs()` / `mol.maccs_numpy()` |
 | Atom-pair | `Pairs.GetAtomPairFingerprintAsBitVect(mol)` | `mol.atom_pair_fp()` (bytes) |

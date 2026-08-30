@@ -72,7 +72,7 @@
 
 #![allow(dead_code)] // only reachable via the `diagnostics` feature + this module's own tests
 
-use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
+use chematic_core::{AtomIdx, BondIdx, BondOrder, CipCode, Molecule};
 use chematic_perception::RingSet;
 use rustc_hash::{FxHashMap, FxHashSet};
 use smallvec::SmallVec;
@@ -245,6 +245,23 @@ pub(crate) fn expand_one_pass(
     max_radius: u32,
     suppress: bool,
 ) -> FxHashMap<(u32, u32), u32> {
+    expand_one_pass_with_chirality(mol, ring_set, bond_invariants, max_radius, suppress, None)
+}
+
+/// Morgan expansion with RDKit's opt-in tetrahedral chirality re-fold.
+///
+/// RDKit adds the chiral contribution once an atom's current neighborhood
+/// proves it has four distinct single-bond ligand invariants. Once proven,
+/// the contribution is retained in subsequent rounds through the ordinary
+/// invariant hash and is added again by RDKit's per-round loop.
+pub(crate) fn expand_one_pass_with_chirality(
+    mol: &Molecule,
+    ring_set: &RingSet,
+    bond_invariants: &[u32],
+    max_radius: u32,
+    suppress: bool,
+    cip_codes: Option<&FxHashMap<AtomIdx, CipCode>>,
+) -> FxHashMap<(u32, u32), u32> {
     let n = mol.atom_count();
     let mut out: FxHashMap<(u32, u32), u32> = FxHashMap::default();
     if n == 0 {
@@ -263,6 +280,7 @@ pub(crate) fn expand_one_pass(
     let mut dead = vec![false; n];
     let mut atom_neighborhoods: Vec<BondSet> = (0..n).map(|_| BondSet::empty(bond_count)).collect();
     let mut seen: FxHashSet<BondSet> = FxHashSet::default();
+    let mut chiral_atoms = vec![false; n];
 
     for layer in 0..max_radius {
         let mut next_invariants = vec![0u32; n];
@@ -293,8 +311,25 @@ pub(crate) fn expand_one_pass(
 
             let mut invar = layer;
             invar = hash_combine(invar, current_invariants[i]);
+            let mut looks_chiral =
+                cip_codes.is_some() && mol.atom(idx).chirality != chematic_core::Chirality::None;
+            let mut previous_neighbor: Option<u32> = None;
             for &(bond_inv, nb_inv) in &pairs {
                 invar = hash_combine(invar, hash_pair(bond_inv, nb_inv));
+                if looks_chiral {
+                    if bond_inv != 1 || previous_neighbor == Some(nb_inv) {
+                        looks_chiral = false;
+                    }
+                    previous_neighbor = Some(nb_inv);
+                }
+            }
+            if looks_chiral {
+                chiral_atoms[i] = true;
+                let code = cip_codes
+                    .and_then(|codes| codes.get(&idx).copied())
+                    .map(chiral_code)
+                    .unwrap_or(1);
+                invar = hash_combine(invar, code);
             }
 
             next_invariants[i] = invar;
@@ -327,6 +362,14 @@ pub(crate) fn expand_one_pass(
     }
 
     out
+}
+
+fn chiral_code(code: CipCode) -> u32 {
+    match code {
+        CipCode::R => 3,
+        CipCode::S => 2,
+        _ => 1,
+    }
 }
 
 /// Every `(atom, radius)` combination chematic's port computes, up to
