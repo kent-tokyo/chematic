@@ -18,12 +18,13 @@
 //! doesn't expose it, and this module must not change `find_sssr`'s public
 //! output/behavior per this crate's scope). Instead it re-derives candidate
 //! "extra" rings from chematic's own already-computed SSSR basis, by
-//! enumerating simple cycles up to the basis's largest ring size and
-//! re-applying RDKit's own substitution rule (b)/(c) above. This is a
-//! different *candidate-generation* mechanism reaching for the same
-//! *acceptance* rule — see `docs/rdkit_compat.md`'s "SMARTS-R2" section for
-//! the measured over-/under-generation split this produces relative to a
-//! live RDKit oracle.
+//! enumerating all root-centered shortest rings and re-applying RDKit's own
+//! substitution rule (b)/(c) above. This keeps the candidate pool bounded to
+//! D2-like shortest cycles rather than admitting arbitrary longer simple
+//! cycles, while remaining an approximation until the rejected Horton
+//! candidates are exposed. See `docs/rdkit_compat.md`'s "SMARTS-R2" section
+//! for the measured over-/under-generation split relative to a live RDKit
+//! oracle.
 //!
 //! **What this changes, and what it deliberately does not.** A graph-theory
 //! fact bounds the blast radius tightly: an edge lies on *some* basis cycle
