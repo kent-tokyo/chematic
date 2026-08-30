@@ -1123,16 +1123,16 @@ atoms, not 4).
   (status-quo defect audit, fragment-policy design, audit-log data model,
   section 8: implementation deviations, bugs found, and disclosed gaps)
 
-### Tautomer & Parent Identity Phase 2 -- acceptance fixtures + holdout (round 2B + round 2C aromatic lactam/lactim fix merged; round 2C-N section 1.7 diagnosis, draft PR not yet merged)
+### Tautomer & Parent Identity Phase 2 -- acceptance fixtures + holdout (round 2B + round 2C aromatic lactam/lactim implementation)
 
 `crates/chematic-chem/src/tautomer.rs` and the 5 unwired
 `StandardizationStep` variants in `standardize.rs` were audited before
 drafting the RFC. Confirmed via a throwaway example run against `main` at
-commit `99401a6` (deleted after use, not committed): `canonical_tautomer` is
+commit `99401a6` (deleted after use, not committed): `canonical_tautomer` was
 **not** invariant across input tautomer spelling for the aromatic
-lactam/lactim class -- 6 real molecules tested (2-pyridone, 4-pyridone,
-cytosine, uracil, a guanine-class purine, hypoxanthine) all produce two
-different canonical outputs depending on which tautomer was fed in, while
+lactam/lactim class. The round-2C implementation now covers 2-pyridone,
+4-pyridone, uracil, cytosine, guanine, and the primary hypoxanthine case,
+while
 every non-aromatic keto-enol/amide-iminol/guanidine case and every
 ring-*internal* NH-shift case (imidazole/pyrazole/tetrazole/benzimidazole)
 already converges correctly. Root cause: `BondOrderMatch::Double` never
@@ -1140,11 +1140,9 @@ matches `BondOrder::Aromatic`, so no 1,3-/1,5-shift rule can fire across an
 aromatic ring bond, and the separate aromatic-shift mechanism only moves H
 between ring atoms, never to/from an exocyclic substituent. A **second,
 mechanistically distinct** tautomer defect was found while fixing a broken
-fixture during review: nitroso/oxime interconversion (`CCN=O` vs. `CC=NO`)
-also fails to converge, but for an unrelated reason -- the one matching rule
-(`"1,3-C-to-O-any-bridge"`) is marked `prefer_forward: false`, likely
-deliberately, to avoid enolizing plain ketones via the same any-bridge
-pattern. Also confirmed: no repeat of Phase 1's stereocenter-corruption bug
+fixture during review. Nitroso/oxime interconversion (`CCN=O` vs. `CC=NO`)
+is now handled by a dedicated forward rule, while plain ketones remain
+protected. Also confirmed: no repeat of Phase 1's stereocenter-corruption bug
 class (`tautomer.rs`'s `MoleculeBuilder`-rebuilding transforms already call
 `copy_stereo_groups_from`/`copy_stereo_from`/`copy_bond_directions_from`,
 pinned by existing regression tests); budget exhaustion (`max_iter`/
@@ -1181,7 +1179,8 @@ fixtures; see the RFC's revision note for detail.
   `neutralize_charges` wrapper). Categories: non-aromatic tautomer controls
   (already passing), aromatic lactam/lactim (confirmed failing, cytosine and
   guanine now pinned as full 3-variant keto-candidate-A/keto-candidate-B/enol
-  sets, round 2C-N), ring-internal NH-shift controls (already passing),
+  sets, round 2C-N; the original positional-isomer entries are historical
+  rejected data), ring-internal NH-shift controls (already passing),
   zwitterion and `disconnected_metal_ion_interaction` full-pipeline checks
   (already passing), all 5 Parent functions, a limit-exhaustion citation of
   existing `tautomer.rs` regression tests, 10 negative controls (phenol/
@@ -1198,6 +1197,12 @@ fixtures; see the RFC's revision note for detail.
   to confirmed-affected, `currently_passing: false`) plus one new held-out
   fused/substituted purinone (N9-methylhypoxanthine) reserved for checking
   only after the eventual fix is designed and frozen.
+  **Fixture identity correction (2026-08-30):** independent RDKit InChIKey
+  checks found that the former third tp2-39 variant and former second
+  `tp2-holdout-06` variant were positional isomers, not tautomers. Corrected
+  variants are preserved in `validation/tautomer_parent_identity_phase2_holdout_corrected.jsonl`
+  and now pass the general implementation; the original rows are retained
+  as historical audit data and are not release gates.
 - **Status:** round 2B (`ParentResult`/`ParentComputationStatus`/
   `TautomerLimits`, `fragment_parent`/`charge_parent`/`isotope_parent`/
   `stereo_parent`/`tautomer_parent`/`super_parent`) implemented and merged
@@ -1209,13 +1214,13 @@ fixtures; see the RFC's revision note for detail.
   `apply_exocyclic_lactam_shift_tracked` in `tautomer.rs`, wired into both
   `canonical_tautomer_with_config` and `tautomer_parent`; 2C-3 checked the
   hypoxanthine holdout only after 2C-2 was frozen. **Measured result:** the
-  shift fires correctly on all 5 design pairs, but end-to-end convergence
-  holds for 3 of 5 (2-pyridone, 4-pyridone, uracil) plus the hypoxanthine
-  holdout -- cytosine and guanine hit a second, distinct, out-of-scope
-  tautomer defect found during 2C-1's own rigor (cytosine's/guanine's
-  carbonyl carbon is flanked by two ring nitrogens, RFC §1.7) and do not
-  converge; this is documented, not silently patched over, and left open
-  for a future round. **Hardened after the user's own direct PR review**
+  shift fires correctly on the covered design pairs; rooted dual-flank
+  normalization now covers cytosine and guanine as well. Bounded enumeration
+  also traverses the reverse lactam/lactim edge and retains all eligible
+  dual-flank orientations. The corrected tp2-39 and N9-methylhypoxanthine
+  same-identity pairs converge; the previously reported residuals were caused
+  by positional-isomer fixture entries, not missing ring-bond enumeration.
+  **Hardened after the user's own direct PR review**
   (not `/code-review`): matcher narrowed to fail-closed neutral/degree
   preconditions, a post-generation atom/bond invariant check added,
   candidate deduplication + an independent `mol_fingerprint` cross-check on
@@ -1223,7 +1228,7 @@ fixtures; see the RFC's revision note for detail.
   different `AtomIdx` insertion order, not just SMILES respelling), and
   stale doc comments fixed. 799+23 lib tests pass, 0 regressions, all 19 CI
   checks green. This round's PR (#365) merged.
-  **Round 2C-N (diagnosis-only, this PR, not merged):** full diagnosis of
+  **Round 2C-N follow-up implementation:** the diagnosis of
   §1.7, hardened after a direct pre-merge review of the draft itself. Key
   corrections to what was previously believed: (1) the primary defect is
   that the exocyclic-shift mechanism never fires on an already-keto input
@@ -1258,9 +1263,11 @@ fixtures; see the RFC's revision note for detail.
   input form, 16+ atom-renumbering checks, idempotence,
   `canonical_tautomer`/`tautomer_parent` agreement, isotope/stereo
   preservation, the automorphism control must not be perturbed, both
-  holdouts checked only after the design is frozen). Zero changes under
-  `crates/*/src/**`. `TautomerScoringConfig` (round 2D) remains design-only.
-  This PR is left in **draft**, not merged.
+  holdouts checked only after the design is frozen). The current implementation
+  adds rooted structural selection, bidirectional bounded enumeration, and
+  regression coverage under `crates/chematic-chem/src/tautomer.rs`.
+  `TautomerScoringConfig` (round 2D) remains design-only; no tautomer residual
+  remains from the corrected Phase 2 acceptance set.
 - **Full report:** `docs/rfcs/tautomer_parent_identity_phase2_rfc.md`
   (audit findings including the round-2A design review, round 2C-1's
   mechanism fixation and original §1.7 finding, round 2C-N's full §1.7

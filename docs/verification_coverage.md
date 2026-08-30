@@ -22,6 +22,17 @@ are found by scanning for blank cells, not by accident.
 - `KNOWN GAP` — deliberately deferred, documented limitation with a pinned regression
   test or doc comment (e.g. tautomer `max_iter` exhaustion, O3A greedy-order-sensitivity).
 
+### v0.24.0 tautomer audit update
+
+The Phase 2 aromatic lactam/lactim implementation now covers 2-pyridone,
+4-pyridone, uracil, cytosine, guanine, and the primary hypoxanthine case.
+`enumerate_tautomers` traverses the safe bidirectional exocyclic edge and
+retains all eligible dual-flank orientations. The former `tp2-39` and
+`tp2-holdout-06` residual reports were re-audited against independent RDKit
+InChIKeys. Each contained one positional isomer mistaken for a tautomer. The
+corrected same-identity variants now pass the general aromatic lactam/lactim
+implementation; the original invalid variants remain rejected fixture data.
+
 ---
 
 ## Matrix

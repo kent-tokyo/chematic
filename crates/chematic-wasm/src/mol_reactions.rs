@@ -447,6 +447,41 @@ pub fn canonical_tautomer(mol: &MolHandle) -> MolHandle {
     }
 }
 
+/// Compute the tautomer parent with explicit resource limits.
+/// Returns `{"smiles":"...","status":"completed"}` (or a structured
+/// error) so callers can distinguish a definite result from a budget-limited
+/// one.
+#[wasm_bindgen]
+pub fn tautomer_parent_json(
+    mol: &MolHandle,
+    max_transforms: usize,
+    max_tautomers: usize,
+    timeout_ms: Option<u64>,
+) -> String {
+    if mol.inner.atom_count() > WASM_MAX_ATOMS {
+        return format!(
+            r#"{{"error":"molecule too large (max {} atoms)"}}"#,
+            WASM_MAX_ATOMS
+        );
+    }
+    let mut limits = chematic_chem::TautomerLimits::default();
+    limits.max_transforms = max_transforms;
+    limits.max_tautomers = max_tautomers;
+    limits.timeout_ms = timeout_ms;
+    let result = chematic_chem::tautomer_parent(&mol.inner, &limits);
+    let status = match result.status {
+        chematic_chem::ParentComputationStatus::Completed => "completed",
+        chematic_chem::ParentComputationStatus::MaxTransformsReached => "max_transforms_reached",
+        chematic_chem::ParentComputationStatus::MaxTautomersReached => "max_tautomers_reached",
+        chematic_chem::ParentComputationStatus::TimedOut => "timed_out",
+        chematic_chem::ParentComputationStatus::Abstained(_) => "abstained",
+        chematic_chem::ParentComputationStatus::InvalidInput(_) => "invalid_input",
+        _ => "unknown",
+    };
+    let smiles = escape_json_string(&chematic_smiles::canonical_smiles(&result.molecule));
+    format!(r#"{{"smiles":"{smiles}","status":"{status}"}}"#)
+}
+
 /// Compute the canonical tautomer with specific atoms blocked from H-transfer.
 ///
 /// `blocked_atom_indices_json`: JSON array of 0-based atom indices, e.g. `[0, 3]`.

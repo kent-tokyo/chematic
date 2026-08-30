@@ -9,6 +9,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v0.24.0 release policy
+
+- Phase 2 tautomer identity and Parent API work is release-ready. The legacy
+  CIP residual, cosmetic E/Z spelling variance, and aromaticity-context gap are
+  explicit known limitations for v0.24.0; `CipMode::Accurate` plus its typed
+  unresolved result is the opt-in path for callers needing stronger CIP
+  guarantees. See `docs/release/v0.24.0-readiness.md`.
+
+### Fixed — dual-flank nucleobase tautomer canonicalization
+
+- Re-audited the `tp2-39` and `tp2-holdout-06` residual fixtures against
+  independent RDKit InChIKeys. Each originally included a positional isomer
+  mislabeled as a tautomer; corrected same-identity variants now pass without
+  adding a fixture-specific ring-bond transformation.
+- Cytosine and guanine keto/amino-imino tautomer spellings now converge via a
+  deterministic carbonyl-centered aromatic N-H normalization. Explicit H
+  placement is retained in tautomer deduplication so equivalent N sites are
+  not incorrectly collapsed.
+- Dual-flank selection now uses a rooted structural key with explicit H
+  placement removed, making the choice independent of input atom order.
+  `tp2-39` is covered after correcting its enol fixture to the same positional
+  isomer; the former positional-isomer input remains rejected as invalid data.
+- `enumerate_tautomers` now traverses the aromatic lactam/lactim edge in both
+  directions and retains all eligible dual-flank orientations, so bounded
+  enumeration exposes the complete candidate component instead of only the
+  directed canonical-search path.
+
+### Fixed — `chematic-chem` nitroso/oxime tautomer canonicalization
+
+- `canonical_tautomer` now converges nitroso/oxime pairs such as `CCN=O` and
+  `CC=NO` via a dedicated C-H adjacent to N=O rule. The generic any-bridge
+  C→O rule remains non-forward, preventing unrelated aldehydes and ketones
+  from being incorrectly enolized.
+- E/Z-bearing molecules are no longer collapsed during tautomer candidate
+  deduplication: directional bond metadata is included in the fingerprint, and
+  canonical tautomerization preserves such inputs until directional remapping
+  is available. Hydrazone E/Z regression coverage is now enabled.
+
 ## [0.23.0] — 2026-08-30
 
 Minor release: MCS accuracy and correctness (a default-comparator behavior change,

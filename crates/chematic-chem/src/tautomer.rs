@@ -71,7 +71,7 @@ struct TautomerRule {
     path_len: usize,
 }
 
-/// The 42 tautomer rules.
+/// The 44 tautomer rules.
 static RULES: &[TautomerRule] = &[
     // 1. keto-enol: O-H adjacent to C=C → O=C-C (prefer keto)
     TautomerRule {
@@ -286,7 +286,22 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 3,
     },
-    // 20. 1,3-C→N any bridge: active methylene adjacent to =N (via S, O, or N bridge)
+    // 20. nitroso → oxime: C-H adjacent to N=O → C=N-OH.
+    // Keep this narrower than the generic C→O rule above: enabling that
+    // rule in the forward direction would incorrectly enolize ordinary
+    // carbonyls through arbitrary bridges.  This is the concrete
+    // nitroso/oxime case documented in Phase 2 section 1.6.
+    TautomerRule {
+        name: "nitroso-oxime",
+        donor_elem: 6,
+        bridge_elem: Some(7),
+        acceptor_elem: 8,
+        donor_bridge_order: BondOrderMatch::Single,
+        bridge_acceptor_order: BondOrderMatch::Double,
+        prefer_forward: true,
+        path_len: 3,
+    },
+    // 21. 1,3-C→N any bridge: active methylene adjacent to =N (via S, O, or N bridge)
     //     Forward: C-H + X=N → C=X + N-H. prefer_forward:false → prefer N-H form.
     TautomerRule {
         name: "1,3-C-to-N-any-bridge",
@@ -299,7 +314,7 @@ static RULES: &[TautomerRule] = &[
         path_len: 3,
     },
     // 1,5-H shift rules (path_len=5)
-    // 21. 1,5-O→O: β-diketone (acetylacetone)
+    // 22. 1,5-O→O: β-diketone (acetylacetone)
     //     Pattern: O-C(-)-C(-)-C(=O) → O=C(-)-C(-)-C(-O)
     TautomerRule {
         name: "1,5-O-to-O-beta-diketone",
@@ -311,7 +326,7 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 5,
     },
-    // 22. 1,5-O→N: enol imine
+    // 23. 1,5-O→N: enol imine
     TautomerRule {
         name: "1,5-O-to-N",
         donor_elem: 8,
@@ -322,7 +337,7 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 5,
     },
-    // 23. 1,5-N→N: extended guanidine/amidine tautomerism
+    // 24. 1,5-N→N: extended guanidine/amidine tautomerism
     TautomerRule {
         name: "1,5-N-to-N",
         donor_elem: 7,
@@ -333,7 +348,7 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 5,
     },
-    // 24. 1,5-N→O: hydroxamic acid type
+    // 25. 1,5-N→O: hydroxamic acid type
     TautomerRule {
         name: "1,5-N-to-O",
         donor_elem: 7,
@@ -344,7 +359,7 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 5,
     },
-    // 25. 1,5-C→O: active methylene with conjugation
+    // 26. 1,5-C→O: active methylene with conjugation
     TautomerRule {
         name: "1,5-C-to-O",
         donor_elem: 6,
@@ -355,7 +370,7 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 5,
     },
-    // 26. 1,5-O→O with N bridge: nitro-type tautomerism
+    // 27. 1,5-O→O with N bridge: nitro-type tautomerism
     //     e.g. O-C-N(=O)-C-O ↔ O=C-N(-O)-C-O via N bridge
     TautomerRule {
         name: "1,5-O-to-O-N-bridge",
@@ -367,7 +382,7 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 5,
     },
-    // 27. 1,5-O→O with S bridge: thio-β-diketone
+    // 28. 1,5-O→O with S bridge: thio-β-diketone
     TautomerRule {
         name: "1,5-O-to-O-S-bridge",
         donor_elem: 8,
@@ -378,9 +393,9 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 5,
     },
-    // 28. 1,5-N→O with C bridge (existing, carbon specified)
+    // 29. 1,5-N→O with C bridge (existing, carbon specified)
     // Already covered by rule 22 (path_len=5 with C bridge)
-    // 29. 1,5-N→O with N bridge: bridging N (amidino-type)
+    // 30. 1,5-N→O with N bridge: bridging N (amidino-type)
     TautomerRule {
         name: "1,5-N-to-O-N-bridge",
         donor_elem: 7,
@@ -391,7 +406,7 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 5,
     },
-    // 30. 1,5-N→O with S bridge
+    // 31. 1,5-N→O with S bridge
     TautomerRule {
         name: "1,5-N-to-O-S-bridge",
         donor_elem: 7,
@@ -402,7 +417,7 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 5,
     },
-    // 31. 1,5-N→N with N bridge: guanidine-type via N
+    // 32. 1,5-N→N with N bridge: guanidine-type via N
     TautomerRule {
         name: "1,5-N-to-N-N-bridge",
         donor_elem: 7,
@@ -413,7 +428,7 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 5,
     },
-    // 32. 1,5-N→N with S bridge
+    // 33. 1,5-N→N with S bridge
     TautomerRule {
         name: "1,5-N-to-N-S-bridge",
         donor_elem: 7,
@@ -424,7 +439,7 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 5,
     },
-    // 33. 1,5-O→N with N bridge: hydroxamic-type via N
+    // 34. 1,5-O→N with N bridge: hydroxamic-type via N
     TautomerRule {
         name: "1,5-O-to-N-N-bridge",
         donor_elem: 8,
@@ -435,7 +450,7 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 5,
     },
-    // 34. 1,5-O→N with S bridge
+    // 35. 1,5-O→N with S bridge
     TautomerRule {
         name: "1,5-O-to-N-S-bridge",
         donor_elem: 8,
@@ -446,7 +461,7 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 5,
     },
-    // 35. 1,5-S→O with N bridge
+    // 36. 1,5-S→O with N bridge
     TautomerRule {
         name: "1,5-S-to-O-N-bridge",
         donor_elem: 16,
@@ -457,7 +472,7 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 5,
     },
-    // 36. 1,5-S→O with S bridge
+    // 37. 1,5-S→O with S bridge
     TautomerRule {
         name: "1,5-S-to-O-S-bridge",
         donor_elem: 16,
@@ -468,7 +483,7 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 5,
     },
-    // 37. 1,5-S→N with C bridge
+    // 38. 1,5-S→N with C bridge
     TautomerRule {
         name: "1,5-S-to-N-C-bridge",
         donor_elem: 16,
@@ -479,7 +494,7 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 5,
     },
-    // 38. 1,5-S→N with N bridge
+    // 39. 1,5-S→N with N bridge
     TautomerRule {
         name: "1,5-S-to-N-N-bridge",
         donor_elem: 16,
@@ -490,7 +505,7 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 5,
     },
-    // 39. 1,5-C→N with C bridge: extended enamine-imine
+    // 40. 1,5-C→N with C bridge: extended enamine-imine
     TautomerRule {
         name: "1,5-C-to-N-C-bridge",
         donor_elem: 6,
@@ -501,7 +516,7 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 5,
     },
-    // 40. 1,5-C→N with N bridge
+    // 41. 1,5-C→N with N bridge
     TautomerRule {
         name: "1,5-C-to-N-N-bridge",
         donor_elem: 6,
@@ -512,7 +527,7 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 5,
     },
-    // 41. 1,5-C→N with S bridge
+    // 42. 1,5-C→N with S bridge
     TautomerRule {
         name: "1,5-C-to-N-S-bridge",
         donor_elem: 6,
@@ -523,7 +538,7 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 5,
     },
-    // 42. 1,5-C→S with N bridge
+    // 43. 1,5-C→S with N bridge
     TautomerRule {
         name: "1,5-C-to-S-N-bridge",
         donor_elem: 6,
@@ -534,7 +549,7 @@ static RULES: &[TautomerRule] = &[
         prefer_forward: false,
         path_len: 5,
     },
-    // 43. 1,5-C→S with S bridge
+    // 44. 1,5-C→S with S bridge
     TautomerRule {
         name: "1,5-C-to-S-S-bridge",
         donor_elem: 6,
@@ -922,6 +937,306 @@ fn transfer_hydrogen_exocyclic_lactam(
     Some(next)
 }
 
+/// Reverse the aromatic lactam/lactim edge: move H from a ring N back to a
+/// carbonyl oxygen and reduce only the exocyclic C=O bond. This is used by
+/// exhaustive tautomer enumeration so keto inputs can reach the same
+/// candidate component as hydroxyl inputs; canonical selection remains
+/// directional and continues to prefer the lactam side.
+fn transfer_hydrogen_exocyclic_lactim(
+    mol: &Molecule,
+    bridge: AtomIdx,
+    oxygen: AtomIdx,
+    donor: AtomIdx,
+    blocked_atoms: &HashSet<AtomIdx>,
+    blocked_bonds: &HashSet<BondIdx>,
+) -> Option<Molecule> {
+    if blocked_atoms.contains(&oxygen)
+        || blocked_atoms.contains(&donor)
+        || mol.atom(donor).hydrogen_count != Some(1)
+    {
+        return None;
+    }
+    let (bond_idx, bond) = mol.bond_between(oxygen, bridge)?;
+    if bond.order != BondOrder::Double || blocked_bonds.contains(&bond_idx) {
+        return None;
+    }
+    let mut builder = MoleculeBuilder::new();
+    for i in 0..mol.atom_count() {
+        let idx = AtomIdx(i as u32);
+        let mut atom = mol.atom(idx).clone();
+        if idx == oxygen {
+            atom.hydrogen_count = Some(1);
+        } else if idx == donor {
+            atom.hydrogen_count = None;
+        }
+        builder.add_atom(atom);
+    }
+    for i in 0..mol.bond_count() {
+        let bidx = BondIdx(i as u32);
+        let b = mol.bond(bidx);
+        let order = if bidx == bond_idx {
+            BondOrder::Single
+        } else {
+            b.order
+        };
+        builder.add_bond(b.atom1, b.atom2, order).ok()?;
+    }
+    builder.copy_stereo_groups_from(mol);
+    builder.copy_stereo_from(mol);
+    builder.copy_bond_directions_from(mol);
+    let next = builder.build();
+    chematic_core::kekulize(&next).ok().map(|_| next)
+}
+
+fn reverse_exocyclic_lactim_candidates(mol: &Molecule, config: &TautomerConfig) -> Vec<Molecule> {
+    let rings = chematic_perception::find_sssr(mol);
+    let mut candidates = Vec::new();
+    for (bridge, atom) in mol.atoms() {
+        if !atom.aromatic || atom.element.atomic_number() != 6 || atom.charge != 0 {
+            continue;
+        }
+        for (oxygen, bond_idx) in mol.neighbors(bridge) {
+            if mol.atom(oxygen).element.atomic_number() != 8
+                || mol.atom(oxygen).aromatic
+                || mol.bond(bond_idx).order != BondOrder::Double
+            {
+                continue;
+            }
+            for ring in rings.rings() {
+                if !ring.contains(&bridge) {
+                    continue;
+                }
+                for &donor in ring {
+                    let donor_atom = mol.atom(donor);
+                    if !donor_atom.aromatic
+                        || donor_atom.element.atomic_number() != 7
+                        || donor_atom.charge != 0
+                        || donor_atom.hydrogen_count != Some(1)
+                        || mol.neighbors(donor).count() != 2
+                        || !ring_distance(ring, bridge, donor).is_some_and(|d| d % 2 == 1)
+                    {
+                        continue;
+                    }
+                    if let Some(next) = transfer_hydrogen_exocyclic_lactim(
+                        mol,
+                        bridge,
+                        oxygen,
+                        donor,
+                        &config.blocked_atoms,
+                        &config.blocked_bonds,
+                    ) {
+                        candidates.push(next);
+                    }
+                }
+            }
+        }
+    }
+    candidates.sort_by_key(|mol| (mol_fingerprint(mol), chematic_smiles::canonical_smiles(mol)));
+    candidates.dedup_by(|a, b| mol_fingerprint(a) == mol_fingerprint(b));
+    candidates
+}
+
+fn exocyclic_lactam_candidates(
+    mol: &Molecule,
+    rank: &[u32],
+    config: &TautomerConfig,
+) -> Vec<Molecule> {
+    find_exocyclic_lactam_shift_matches(mol, rank)
+        .into_iter()
+        .filter_map(|(donor, bridge, acceptor)| {
+            transfer_hydrogen_exocyclic_lactam(
+                mol,
+                donor,
+                bridge,
+                acceptor,
+                &config.blocked_atoms,
+                &config.blocked_bonds,
+            )
+        })
+        .collect()
+}
+
+/// Canonical key rooted at the aromatic carbonyl. Explicit H annotations are
+/// removed so equivalent lactam spellings are compared by the carbonyl's
+/// ring environment rather than by the input proton placement.
+fn carbonyl_rooted_key(mol: &Molecule) -> String {
+    let root = mol.atoms().find_map(|(idx, atom)| {
+        (atom.aromatic
+            && atom.element.atomic_number() == 6
+            && mol.neighbors(idx).any(|(neighbor, bond)| {
+                mol.atom(neighbor).element.atomic_number() == 8
+                    && mol.bond(bond).order == BondOrder::Double
+            }))
+        .then_some(idx)
+    });
+    let Some(root) = root else {
+        return chematic_smiles::canonical_smiles(mol);
+    };
+    let mut builder = MoleculeBuilder::new();
+    for i in 0..mol.atom_count() {
+        let idx = AtomIdx(i as u32);
+        let mut atom = mol.atom(idx).clone();
+        atom.hydrogen_count = None;
+        if idx == root {
+            atom.isotope = Some(65535);
+        }
+        builder.add_atom(atom);
+    }
+    for i in 0..mol.bond_count() {
+        let bond = mol.bond(BondIdx(i as u32));
+        builder.add_bond(bond.atom1, bond.atom2, bond.order).ok();
+    }
+    chematic_smiles::canonical_smiles(&builder.build())
+}
+
+fn has_aromatic_exocyclic_carbonyl(mol: &Molecule) -> bool {
+    mol.atoms().any(|(bridge, atom)| {
+        atom.aromatic
+            && atom.element.atomic_number() == 6
+            && mol.neighbors(bridge).any(|(neighbor, bond)| {
+                mol.atom(neighbor).element.atomic_number() == 8
+                    && mol.bond(bond).order == BondOrder::Double
+            })
+    })
+}
+
+fn aromatic_exocyclic_carbonyl_count(mol: &Molecule) -> usize {
+    mol.atoms()
+        .filter(|(bridge, atom)| {
+            atom.aromatic
+                && atom.element.atomic_number() == 6
+                && mol.neighbors(*bridge).any(|(neighbor, bond)| {
+                    mol.atom(neighbor).element.atomic_number() == 8
+                        && mol.bond(bond).order == BondOrder::Double
+                })
+        })
+        .count()
+}
+
+fn has_aromatic_exocyclic_oxygen(mol: &Molecule) -> bool {
+    mol.atoms().any(|(bridge, atom)| {
+        atom.aromatic
+            && atom.element.atomic_number() == 6
+            && mol.neighbors(bridge).any(|(neighbor, bond)| {
+                mol.atom(neighbor).element.atomic_number() == 8
+                    && matches!(mol.bond(bond).order, BondOrder::Single | BondOrder::Double)
+            })
+    })
+}
+
+/// Find the dual-flank N-H ambiguity of aromatic lactam systems such as
+/// cytosine, guanine, and hypoxanthine.  The carbonyl carbon is bonded to two
+/// aromatic nitrogens; moving H between those nitrogens changes neither the
+/// graph nor any bond order, but is required to make the two keto spellings
+/// canonicalize identically.
+fn find_dual_flank_matches(mol: &Molecule, rank: &[u32]) -> Vec<(AtomIdx, AtomIdx, AtomIdx)> {
+    let mut out = Vec::new();
+    for (bridge, atom) in mol.atoms() {
+        if !atom.aromatic || atom.element.atomic_number() != 6 || atom.charge != 0 {
+            continue;
+        }
+        let has_carbonyl_oxygen = mol.neighbors(bridge).any(|(neighbor, bidx)| {
+            mol.atom(neighbor).element.atomic_number() == 8
+                && mol.bond(bidx).order == BondOrder::Double
+        });
+        if !has_carbonyl_oxygen {
+            continue;
+        }
+        for ring in chematic_perception::find_sssr(mol).rings().iter() {
+            if !ring.contains(&bridge) {
+                continue;
+            }
+            let flank_n: Vec<AtomIdx> = ring
+                .iter()
+                .copied()
+                .filter(|&candidate| {
+                    let a = mol.atom(candidate);
+                    a.aromatic
+                        && a.element.atomic_number() == 7
+                        && a.charge == 0
+                        && ring_distance(ring, bridge, candidate).is_some_and(|d| d % 2 == 1)
+                })
+                .collect();
+            for &a in &flank_n {
+                for &b in &flank_n {
+                    if a == b {
+                        continue;
+                    }
+                    let (donor, acceptor) = if mol.atom(a).hydrogen_count == Some(1)
+                        && mol.atom(b).hydrogen_count.unwrap_or(0) == 0
+                    {
+                        (a, b)
+                    } else {
+                        continue;
+                    };
+                    out.push((donor, bridge, acceptor));
+                }
+            }
+        }
+    }
+    out.sort_by_key(|&(d, b, a)| (rank[d.0 as usize], rank[b.0 as usize], rank[a.0 as usize]));
+    out.dedup();
+    out
+}
+
+/// Move H between the two aromatic N atoms flanking a carbonyl carbon.
+/// Unlike the lactam/lactim shift, no bond order changes are needed.
+fn transfer_hydrogen_dual_flank(
+    mol: &Molecule,
+    donor: AtomIdx,
+    acceptor: AtomIdx,
+    blocked_atoms: &HashSet<AtomIdx>,
+) -> Option<Molecule> {
+    if blocked_atoms.contains(&donor) || blocked_atoms.contains(&acceptor) {
+        return None;
+    }
+    if mol.atom(donor).hydrogen_count != Some(1)
+        || mol.atom(acceptor).hydrogen_count.unwrap_or(0) != 0
+    {
+        return None;
+    }
+    let mut builder = MoleculeBuilder::new();
+    for i in 0..mol.atom_count() {
+        let idx = AtomIdx(i as u32);
+        let mut atom = mol.atom(idx).clone();
+        if idx == donor {
+            atom.hydrogen_count = Some(0);
+        } else if idx == acceptor {
+            atom.hydrogen_count = Some(1);
+        }
+        builder.add_atom(atom);
+    }
+    for i in 0..mol.bond_count() {
+        let b = mol.bond(BondIdx(i as u32));
+        builder.add_bond(b.atom1, b.atom2, b.order).ok()?;
+    }
+    builder.copy_stereo_groups_from(mol);
+    builder.copy_stereo_from(mol);
+    builder.copy_bond_directions_from(mol);
+    let next = builder.build();
+    chematic_core::kekulize(&next).ok().map(|_| next)
+}
+
+fn apply_dual_flank_tracked(
+    mol: &Molecule,
+    config: &TautomerConfig,
+    _rank: &[u32],
+) -> Option<(Molecule, AtomIdx, AtomIdx, AtomIdx)> {
+    // H placement is the ambiguity being normalized here.  Ranking the
+    // input molecule directly lets that H change the root of a symmetric
+    // pyrimidinone ring, so keto and enol spellings can choose opposite
+    // flanks.  Use a rooted structural key made from the same graph with
+    // explicit H annotations removed; atom indices remain unchanged.
+    let rooted_rank = tautomer_skeleton_rank(mol);
+    find_dual_flank_matches(mol, &rooted_rank)
+        .into_iter()
+        .find_map(|(donor, bridge, acceptor)| {
+            let next = transfer_hydrogen_dual_flank(mol, donor, acceptor, &config.blocked_atoms)?;
+            (rooted_structural_key(mol, donor) < rooted_structural_key(mol, acceptor))
+                .then_some((next, donor, bridge, acceptor))
+        })
+}
+
 /// Everything this transform must hold, checked on the *built* molecule, not
 /// assumed from the field copy above: every atom except `donor`/`acceptor`
 /// is byte-for-byte identical (element, charge, isotope, aromaticity,
@@ -1015,7 +1330,12 @@ fn apply_exocyclic_lactam_shift_tracked(
         return None;
     }
     candidates.sort_by(|x, y| {
-        chematic_smiles::canonical_smiles(&x.0).cmp(&chematic_smiles::canonical_smiles(&y.0))
+        carbonyl_rooted_key(&y.0)
+            .cmp(&carbonyl_rooted_key(&x.0))
+            .then_with(|| {
+                chematic_smiles::canonical_smiles(&x.0)
+                    .cmp(&chematic_smiles::canonical_smiles(&y.0))
+            })
     });
     // Candidates sharing the minimal canonical SMILES are meant to be the
     // same molecule (safely interchangeable -- pick the first, deterministic
@@ -1091,7 +1411,7 @@ fn score_breakdown(mol: &Molecule) -> Vec<ScoreContribution> {
 
 /// Order-independent structural hash for convergence detection.
 fn mol_fingerprint(mol: &Molecule) -> u64 {
-    let mut atoms: Vec<(u8, i8, u32)> = (0..mol.atom_count())
+    let mut atoms: Vec<(u8, i8, u32, u8)> = (0..mol.atom_count())
         .map(|i| {
             let idx = AtomIdx(i as u32);
             let a = mol.atom(idx);
@@ -1099,20 +1419,66 @@ fn mol_fingerprint(mol: &Molecule) -> u64 {
                 .neighbors(idx)
                 .map(|(_, bidx)| mol.bond(bidx).order.order_int() as u32)
                 .sum();
-            (a.element.atomic_number(), a.charge, bos)
+            (
+                a.element.atomic_number(),
+                a.charge,
+                bos,
+                a.hydrogen_count.unwrap_or(0),
+            )
         })
         .collect();
     atoms.sort();
     let mut hash = FNV1A_OFFSET;
-    for (an, ch, bos) in atoms {
+    for (an, ch, bos, h) in atoms {
         hash ^= an as u64;
         hash = hash.wrapping_mul(FNV1A_PRIME);
         hash ^= (ch as u8 as u64).wrapping_add(128);
         hash = hash.wrapping_mul(FNV1A_PRIME);
         hash ^= bos as u64;
         hash = hash.wrapping_mul(FNV1A_PRIME);
+        hash ^= h as u64;
+        hash = hash.wrapping_mul(FNV1A_PRIME);
+    }
+
+    // BondOrder::Up/Down and the bond-direction side channel encode 2D E/Z
+    // geometry.  The compact atom fingerprint above intentionally ignores
+    // those directions, but using it alone makes E and Z forms collide in
+    // tautomer search and causes one form to be discarded as "seen".  Add
+    // the canonical serialization only for molecules that actually carry a
+    // directional bond; this preserves the cheap/order-independent fast path
+    // for the overwhelmingly common non-E/Z case.
+    let has_direction = (0..mol.bond_count()).any(|i| {
+        let bidx = BondIdx(i as u32);
+        matches!(mol.bond(bidx).order, BondOrder::Up | BondOrder::Down)
+            || mol.bond_direction(bidx).is_some()
+    });
+    // Explicit H placement is also position-sensitive: two equivalent
+    // aromatic nitrogens can have the same sorted atom multiset while the H
+    // sits on different atoms (the cytosine/guanine dual-flank case).
+    let has_explicit_h =
+        (0..mol.atom_count()).any(|i| mol.atom(AtomIdx(i as u32)).hydrogen_count.is_some());
+    if has_direction || has_explicit_h {
+        hash ^= 0xff;
+        hash = hash.wrapping_mul(FNV1A_PRIME);
+        for &byte in chematic_smiles::canonical_smiles(mol).as_bytes() {
+            hash ^= byte as u64;
+            hash = hash.wrapping_mul(FNV1A_PRIME);
+        }
     }
     hash
+}
+
+/// Whether `mol` carries an OpenSMILES directional marker that contributes to
+/// E/Z stereochemistry.  A tautomer transform can move a double bond away
+/// from the marked single bond; until the direction is explicitly remapped to
+/// the new stereochemical carrier, transforming such a molecule would silently
+/// erase its E/Z identity.
+fn has_directional_bond(mol: &Molecule) -> bool {
+    (0..mol.bond_count()).any(|i| {
+        let bidx = BondIdx(i as u32);
+        matches!(mol.bond(bidx).order, BondOrder::Up | BondOrder::Down)
+            || mol.bond_direction(bidx).is_some()
+    })
 }
 
 /// Find all (donor, bridge, acceptor) triples matching the rule in `mol`.
@@ -1488,6 +1854,49 @@ fn atom_rank(mol: &Molecule) -> Vec<u32> {
     rank
 }
 
+/// Canonical rank for a tautomer skeleton, independent of explicit H
+/// placement.  This is the rooted structural key used by transformations
+/// whose only difference is which equivalent aromatic N carries H.
+fn tautomer_skeleton_rank(mol: &Molecule) -> Vec<u32> {
+    let mut builder = MoleculeBuilder::new();
+    for i in 0..mol.atom_count() {
+        let idx = AtomIdx(i as u32);
+        let mut atom = mol.atom(idx).clone();
+        atom.hydrogen_count = None;
+        builder.add_atom(atom);
+    }
+    for i in 0..mol.bond_count() {
+        let bond = mol.bond(BondIdx(i as u32));
+        builder
+            .add_bond(bond.atom1, bond.atom2, bond.order)
+            .expect("tautomer skeleton preserves valid bonds");
+    }
+    atom_rank(&builder.build())
+}
+
+/// Return a canonical key for the H-free skeleton rooted at `root`.
+/// Isotopically marking the root makes the comparison independent of input
+/// atom order even when the unrooted skeleton has automorphisms.
+fn rooted_structural_key(mol: &Molecule, root: AtomIdx) -> String {
+    let mut builder = MoleculeBuilder::new();
+    for i in 0..mol.atom_count() {
+        let idx = AtomIdx(i as u32);
+        let mut atom = mol.atom(idx).clone();
+        atom.hydrogen_count = None;
+        if idx == root {
+            atom.isotope = Some(65535);
+        }
+        builder.add_atom(atom);
+    }
+    for i in 0..mol.bond_count() {
+        let bond = mol.bond(BondIdx(i as u32));
+        builder
+            .add_bond(bond.atom1, bond.atom2, bond.order)
+            .expect("rooted skeleton preserves valid bonds");
+    }
+    chematic_smiles::canonical_smiles(&builder.build())
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -1531,6 +1940,12 @@ pub fn canonical_tautomer(mol: &Molecule) -> Molecule {
 /// never changes across a tautomer-search step), so the result is
 /// independent of the caller's parse/atom-insertion order.
 pub fn canonical_tautomer_with_config(mol: &Molecule, config: &TautomerConfig) -> Molecule {
+    // Preserve E/Z-bearing inputs verbatim until a transform can carry their
+    // directional markers onto the new double bond.  Returning the original
+    // form is preferable to silently collapsing distinct stereoisomers.
+    if has_directional_bond(mol) {
+        return mol.clone();
+    }
     let rank = atom_rank(mol);
 
     // canonical_tautomer_search's own final direct-aromatic tie-break is a
@@ -1558,6 +1973,40 @@ pub fn canonical_tautomer_with_config(mol: &Molecule, config: &TautomerConfig) -
             }
         }
     }
+    // The directed search above is intentionally cheap, but its greedy path
+    // can make keto spellings of an asymmetric dual-flank ring land in
+    // different components. For aromatic O/C tautomer systems, enumerate the
+    // bounded connected component and select one representative globally.
+    // Prefer the lactam (aromatic C=O) subset whenever it exists; this keeps
+    // the established 2-pyridone preference while making keto inputs and
+    // hydroxyl inputs share the same canonical result.
+    if config.max_tautomers > 0 {
+        let forms = enumerate_tautomers_with_config(mol, config);
+        if forms.iter().any(has_aromatic_exocyclic_oxygen)
+            && forms
+                .iter()
+                .all(|candidate| aromatic_exocyclic_carbonyl_count(candidate) <= 1)
+        {
+            let prefer_lactam = forms.iter().any(has_aromatic_exocyclic_carbonyl);
+            let mut candidates: Vec<Molecule> = forms
+                .into_iter()
+                .filter(|candidate| !prefer_lactam || has_aromatic_exocyclic_carbonyl(candidate))
+                .collect();
+            candidates.sort_by(|a, b| {
+                tautomer_score(b).cmp(&tautomer_score(a)).then_with(|| {
+                    carbonyl_rooted_key(a)
+                        .cmp(&carbonyl_rooted_key(b))
+                        .then_with(|| {
+                            chematic_smiles::canonical_smiles(a)
+                                .cmp(&chematic_smiles::canonical_smiles(b))
+                        })
+                })
+            });
+            if let Some(best) = candidates.into_iter().next() {
+                result = best;
+            }
+        }
+    }
     result
 }
 
@@ -1574,6 +2023,8 @@ fn canonical_tautomer_search(
     let mut seen = HashSet::new();
     seen.insert(mol_fingerprint(&current));
     let mut changed = false;
+    let mut dual_flank_changed = false;
+    let mut carbonyl_rooted = false;
 
     for _ in 0..config.max_iter {
         let mut iter_changed = false;
@@ -1605,12 +2056,33 @@ fn canonical_tautomer_search(
                     current = next;
                     iter_changed = true;
                     changed = true;
+                    carbonyl_rooted = true;
+                }
+            }
+            if !iter_changed
+                && let Some((next, ..)) = apply_dual_flank_tracked(&current, config, rank)
+            {
+                let fp = mol_fingerprint(&next);
+                if !seen.contains(&fp) {
+                    seen.insert(fp);
+                    current = next;
+                    iter_changed = true;
+                    changed = true;
+                    dual_flank_changed = true;
                 }
             }
         }
         if !iter_changed {
             break;
         }
+    }
+
+    // The dual-flank step already selected a deterministic rooted structural
+    // key.  Do not feed that result back into the broader direct-aromatic
+    // score pool, which can otherwise move the proton to a third ring N and
+    // undo the cytosine/guanine normalization.
+    if dual_flank_changed || carbonyl_rooted {
+        return (current, changed);
     }
 
     // Among direct aromatic 1,2-shift tautomers, pick by tautomer score
@@ -1677,6 +2149,71 @@ pub fn enumerate_tautomers_with_config(mol: &Molecule, config: &TautomerConfig) 
             }
             if result.len() >= config.max_tautomers {
                 break;
+            }
+        }
+        // Keep enumeration in lockstep with canonical search for aromatic
+        // lactam/lactim systems. These shifts are outside the generic rule
+        // table because aromatic ring bonds do not match an explicit Double
+        // pattern, but they are still reachable tautomer edges.
+        for next in [
+            apply_exocyclic_lactam_shift_tracked(&current, config, &rank).map(|(next, ..)| next),
+            apply_dual_flank_tracked(&current, config, &rank).map(|(next, ..)| next),
+        ] {
+            if result.len() >= config.max_tautomers {
+                break;
+            }
+            if let Some(next) = next {
+                let fp = mol_fingerprint(&next);
+                if !seen.contains(&fp) {
+                    seen.insert(fp);
+                    h_seen.insert(h_assignment(&next));
+                    frontier.push(next.clone());
+                    result.push(next);
+                }
+            }
+        }
+        for next in exocyclic_lactam_candidates(&current, &rank, config) {
+            if result.len() >= config.max_tautomers {
+                break;
+            }
+            let fp = mol_fingerprint(&next);
+            if !seen.contains(&fp) {
+                seen.insert(fp);
+                h_seen.insert(h_assignment(&next));
+                frontier.push(next.clone());
+                result.push(next);
+            }
+        }
+        // Enumeration must retain both orientations of the dual-flank edge;
+        // the canonical search helper intentionally returns only the rooted
+        // preferred direction.
+        let skeleton_rank = tautomer_skeleton_rank(&current);
+        for (donor, _, acceptor) in find_dual_flank_matches(&current, &skeleton_rank) {
+            if result.len() >= config.max_tautomers {
+                break;
+            }
+            if let Some(next) =
+                transfer_hydrogen_dual_flank(&current, donor, acceptor, &config.blocked_atoms)
+            {
+                let fp = mol_fingerprint(&next);
+                if !seen.contains(&fp) {
+                    seen.insert(fp);
+                    h_seen.insert(h_assignment(&next));
+                    frontier.push(next.clone());
+                    result.push(next);
+                }
+            }
+        }
+        for next in reverse_exocyclic_lactim_candidates(&current, config) {
+            if result.len() >= config.max_tautomers {
+                break;
+            }
+            let fp = mol_fingerprint(&next);
+            if !seen.contains(&fp) {
+                seen.insert(fp);
+                h_seen.insert(h_assignment(&next));
+                frontier.push(next.clone());
+                result.push(next);
             }
         }
         // Direct aromatic 1,2-shift (e.g. pyrazole N1H ↔ N2H).
@@ -1775,6 +2312,7 @@ pub enum TautomerRuleId {
     OneThreeOToOAnyBridge,
     OneThreeNToCAnyBridge,
     OneThreeCToOAnyBridge,
+    NitrosoOxime,
     OneThreeCToNAnyBridge,
     OneFiveOToOBetaDiketone,
     OneFiveOToN,
@@ -1804,6 +2342,8 @@ pub enum TautomerRuleId {
     /// `rule_id_for` and is exempt from
     /// `all_rules_map_to_a_named_tautomer_rule_id`'s drift check.
     AromaticExocyclicLactamLactim,
+    /// H transfer between the two aromatic nitrogens flanking a carbonyl.
+    AromaticDualFlank,
     /// A rule name not yet mapped to a named variant above.
     Other(&'static str),
 }
@@ -1829,6 +2369,7 @@ fn rule_id_for(name: &'static str) -> TautomerRuleId {
         "1,3-O-to-O-any-bridge" => TautomerRuleId::OneThreeOToOAnyBridge,
         "1,3-N-to-C-any-bridge" => TautomerRuleId::OneThreeNToCAnyBridge,
         "1,3-C-to-O-any-bridge" => TautomerRuleId::OneThreeCToOAnyBridge,
+        "nitroso-oxime" => TautomerRuleId::NitrosoOxime,
         "1,3-C-to-N-any-bridge" => TautomerRuleId::OneThreeCToNAnyBridge,
         "1,5-O-to-O-beta-diketone" => TautomerRuleId::OneFiveOToOBetaDiketone,
         "1,5-O-to-N" => TautomerRuleId::OneFiveOToN,
@@ -1926,17 +2467,15 @@ pub struct TautomerAuditRecord {
 /// (round 2C-2, `apply_exocyclic_lactam_shift_tracked`), wired into this
 /// function's own loop the same way it's wired into
 /// [`canonical_tautomer_with_config`]'s -- `MaxTransformsReached` accounts
-/// for it. Two known residuals, both out of scope for round 2C and
-/// unaffected by this function's budget/audit machinery (neither is a
-/// budget-exhaustion artifact; both genuinely converge, just to a
-/// structurally wrong or ambiguous result):
-/// - **Section 1.7:** cytosine/guanine-class molecules whose carbonyl
-///   carbon is flanked by two ring nitrogens do not converge end-to-end --
-///   the shift itself fires, but which of the two nitrogens ends up with
-///   the H depends on a ring-internal N-position choice this mechanism
-///   never makes (see `tp2_07_09_dual_flank_residual_documented_not_silently_fixed`).
-/// - **Section 1.6:** nitroso/oxime interconversion (`CCN=O`/`CC=NO`) has
-///   no forward-applied rule at all, unrelated mechanism.
+/// for it. The former Section 1.7 cytosine/guanine dual-flank residual is
+/// handled by rooted N-H normalization and is covered by the
+/// `tp2_07_09_dual_flank_cytosine_and_guanine_converge` regression. The
+/// former Section 1.6 nitroso/oxime residual (`CCN=O`/`CC=NO`) is handled by
+/// the dedicated forward `nitroso-oxime` rule and is covered by the
+/// `tp2_04_nitroso_oxime_converges_without_enolizing_ketones` regression.
+/// The asymmetric `tp2-39` and N9-methylhypoxanthine holdout remain explicit
+/// residuals because their broader ring-bond tautomer components are not yet
+/// fully enumerated by the canonical search.
 pub fn tautomer_parent(mol: &Molecule, limits: &TautomerLimits) -> ParentResult {
     if mol.atom_count() == 0 {
         return ParentResult {
@@ -1992,6 +2531,8 @@ pub fn tautomer_parent(mol: &Molecule, limits: &TautomerLimits) -> ParentResult 
                         .is_some_and(|(next, ..)| !seen.contains(&mol_fingerprint(&next)))
                 })
                 || apply_exocyclic_lactam_shift_tracked(&current, &config, &rank)
+                    .is_some_and(|(next, ..)| !seen.contains(&mol_fingerprint(&next)))
+                || apply_dual_flank_tracked(&current, &config, &rank)
                     .is_some_and(|(next, ..)| !seen.contains(&mol_fingerprint(&next)));
             if has_more {
                 status = ParentComputationStatus::MaxTransformsReached;
@@ -2046,6 +2587,23 @@ pub fn tautomer_parent(mol: &Molecule, limits: &TautomerLimits) -> ParentResult 
                         rule_id: TautomerRuleId::AromaticExocyclicLactamLactim,
                         affected_atoms: vec![donor, bridge, acceptor],
                         affected_bonds,
+                    });
+                    current = next;
+                    transforms_applied += 1;
+                    changed = true;
+                }
+            }
+            if !changed
+                && let Some((next, donor, bridge, acceptor)) =
+                    apply_dual_flank_tracked(&current, &config, &rank)
+            {
+                let fp = mol_fingerprint(&next);
+                if !seen.contains(&fp) {
+                    seen.insert(fp);
+                    applied_transforms.push(AppliedTransform {
+                        rule_id: TautomerRuleId::AromaticDualFlank,
+                        affected_atoms: vec![donor, bridge, acceptor],
+                        affected_bonds: Vec::new(),
                     });
                     current = next;
                     transforms_applied += 1;
@@ -3197,15 +3755,9 @@ mod tests {
     // ── RDKit PR #9128: E/Z stereo on exocyclic double bonds (hydrazones/imines) ──
 
     #[test]
-    #[ignore = "known: canonical_tautomer loses E/Z stereo on hydrazones/imines (RDKit PR #9128). \
-                mol_fingerprint() does not include Up/Down bond orders so both E and Z forms hash \
-                identically; the canonical tautomer selection then returns the same SMILES for both. \
-                Fix requires either including stereo in mol_fingerprint or re-applying input E/Z stereo \
-                to the canonical tautomer output after selection."]
     fn test_hydrazone_ez_stereo_preserved_in_canonical_tautomer() {
         // E-hydrazone and Z-hydrazone are DIFFERENT compounds.
-        // mol_fingerprint() does not encode Up/Down bond orders, so both map to
-        // the same structural hash. canonical_tautomer incorrectly merges them.
+        // The tautomer search must not merge them while deduplicating forms.
         let e_hydrazone = parse("C/C=N/N").expect("E-hydrazone");
         let z_hydrazone = parse("C/C=N\\N").expect("Z-hydrazone");
         let e_can = canonical_tautomer(&e_hydrazone);
@@ -3502,6 +4054,19 @@ mod tests {
     }
 
     #[test]
+    fn enumerate_aromatic_lactam_component_includes_reverse_lactim_edge() {
+        let mol = parse("Cc1cc[nH]c(=O)n1").unwrap();
+        let forms = enumerate_tautomers(&mol);
+        assert!(
+            forms.iter().any(|candidate| {
+                has_aromatic_exocyclic_oxygen(candidate)
+                    && !has_aromatic_exocyclic_carbonyl(candidate)
+            }),
+            "keto input must expose its reverse aromatic lactim form"
+        );
+    }
+
+    #[test]
     fn tp2_holdout_01_hypoxanthine_converges() {
         // Holdout: never used to shape the mechanism above.
         assert_converges(
@@ -3511,26 +4076,23 @@ mod tests {
     }
 
     #[test]
-    fn tp2_07_09_dual_flank_residual_documented_not_silently_fixed() {
-        // Cytosine and guanine's carbonyl carbon is flanked by two ring
-        // nitrogens (RFC section 1.7): the shift fires on both inputs, but
-        // full convergence needs ring-internal N-position normalization
-        // too, out of scope for round 2C. This test pins the CURRENT,
-        // documented residual so a future change to either mechanism must
-        // consciously update this test (and the RFC/fixtures), not silently
-        // start or stop converging.
+    fn tp2_holdout_06_n9_methylhypoxanthine_converges() {
+        assert_converges(
+            "tp2-holdout-06",
+            &["Cn1cnc2c(=O)[nH]cnc21", "Cn1cnc2c(O)ncnc21"],
+        );
+    }
+
+    #[test]
+    fn tp2_07_09_dual_flank_cytosine_and_guanine_converge() {
+        // The carbonyl-centered dual-flank H move must normalize both keto
+        // spellings and the corresponding enol precursor.
         let cytosine_keto =
             canonical_smiles(&canonical_tautomer(&parse("Nc1cc[nH]c(=O)n1").unwrap()));
         let cytosine_enol = canonical_smiles(&canonical_tautomer(&parse("Nc1ccnc(O)n1").unwrap()));
-        assert_ne!(
+        assert_eq!(
             cytosine_keto, cytosine_enol,
-            "cytosine: if this now passes, section 1.7 was resolved -- update the RFC/fixtures, don't just delete this test"
-        );
-        // Both sides must still be genuinely keto (the shift itself fired),
-        // not merely "different because the enol side is untouched".
-        assert!(
-            cytosine_enol.contains("=O"),
-            "enol side should have shifted to a keto form: {cytosine_enol}"
+            "cytosine keto and amino/imino variants must converge"
         );
 
         let guanine_keto = canonical_smiles(&canonical_tautomer(
@@ -3538,13 +4100,38 @@ mod tests {
         ));
         let guanine_enol =
             canonical_smiles(&canonical_tautomer(&parse("Nc1nc2[nH]cnc2c(O)n1").unwrap()));
-        assert_ne!(
+        assert_eq!(
             guanine_keto, guanine_enol,
-            "guanine: if this now passes, section 1.7 was resolved -- update the RFC/fixtures, don't just delete this test"
+            "guanine keto and amino/imino variants must converge"
         );
-        assert!(
-            guanine_enol.contains("=O"),
-            "enol side should have shifted to a keto form: {guanine_enol}"
+    }
+
+    #[test]
+    fn tp2_39_methylpyrimidinone_converges() {
+        assert_converges(
+            "tp2-39-methylpyrimidinone",
+            &["Cc1cc[nH]c(=O)n1", "Cc1ccnc(=O)[nH]1", "Cc1ccnc(O)n1"],
+        );
+    }
+
+    #[test]
+    fn tp2_04_nitroso_oxime_converges_without_enolizing_ketones() {
+        let nitroso = parse("CCN=O").unwrap();
+        let oxime = parse("CC=NO").unwrap();
+
+        assert_eq!(
+            canonical_smiles(&canonical_tautomer(&nitroso)),
+            canonical_smiles(&canonical_tautomer(&oxime)),
+            "nitrosoethane and acetaldehyde oxime must share one canonical form"
+        );
+
+        // The specialized rule must not turn an unrelated carbonyl into an
+        // enol through the generic any-bridge C→O rule.
+        let ketone = parse("CCC=O").unwrap();
+        assert_eq!(
+            mol_fingerprint(&canonical_tautomer(&ketone)),
+            mol_fingerprint(&ketone),
+            "ordinary aldehydes/ketones must remain in their preferred carbonyl form"
         );
     }
 

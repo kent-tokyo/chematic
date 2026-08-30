@@ -1918,6 +1918,22 @@ impl Mol {
         }
     }
 
+    /// Return the tautomer parent and its computation status.
+    #[pyo3(signature = (max_transforms=16, max_tautomers=32, timeout_ms=None))]
+    fn tautomer_parent(
+        &self,
+        max_transforms: usize,
+        max_tautomers: usize,
+        timeout_ms: Option<u64>,
+    ) -> (Mol, String) {
+        let mut limits = chematic_chem::TautomerLimits::default();
+        limits.max_transforms = max_transforms;
+        limits.max_tautomers = max_tautomers;
+        limits.timeout_ms = timeout_ms;
+        let result = chematic_chem::tautomer_parent(&self.inner, &limits);
+        (Mol::bare(result.molecule), format!("{:?}", result.status))
+    }
+
     /// Return the canonical SMILES under the given canonicalization mode.
     ///
     /// ``mode`` is one of:

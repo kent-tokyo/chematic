@@ -1940,6 +1940,27 @@ fn canonical_tautomer_returns_handle() {
 }
 
 #[test]
+fn tautomer_parent_json_reports_completed_result() {
+    let mol = parse("CCN=O");
+    let json = tautomer_parent_json(&mol, 16, 32, None);
+    assert!(json.contains(r#""smiles":"#), "missing smiles: {json}");
+    assert!(
+        json.contains(r#""status":"completed""#),
+        "unexpected status: {json}"
+    );
+}
+
+#[test]
+fn tautomer_parent_json_reports_transform_budget() {
+    let mol = parse("OC=C");
+    let json = tautomer_parent_json(&mol, 0, 32, None);
+    assert!(
+        json.contains(r#""status":"max_transforms_reached""#),
+        "expected budget status: {json}"
+    );
+}
+
+#[test]
 fn enumerate_tautomers_json_is_array() {
     let mol = parse("Oc1cccc2ccccc12");
     let json = enumerate_tautomers_json(&mol);
