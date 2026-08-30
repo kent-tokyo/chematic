@@ -33,7 +33,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   regression confirming all twelve pentagonal faces. RDKit duplicate-ring
   acceptance is covered by a dedicated symmetrized-ring API, and the MMFF94
   numeric-type entry point now consumes that ring view while the lower-level
-  view function remains explicit about its supplied ring set.
+  view function remains explicit about its supplied ring set. A fresh
+  265-molecule parity dump leaves the known six #337 macrocyclic residuals
+  unchanged (atom 99.5222%, bond 99.4461%), so this increment does not claim
+  those residuals are fixed; their remaining cause is the MMFF-specific global
+  Kekulization/fixed-point interaction.
 
 ### v0.24.0 release policy
 
