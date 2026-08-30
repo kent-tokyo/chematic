@@ -1702,6 +1702,31 @@ fn assign_n_type(
         return Ok(53); // =N=: central cumulated nitrogen (azide/diazo)
     }
 
+    // Iminium nitrogen (N+=C, type 54). RDKit's MMFF atom typer checks this
+    // before the generic positive-N fallback: a three-connected, positively
+    // charged N with total bond order at least four and a real N=C/C=N
+    // double bond is the iminium class, unless it is a terminal-oxygen
+    // environment handled by the dedicated oxygen/nitro cases below.
+    let double_bonded_to_c_or_n = nbrs.iter().any(|b| {
+        b.order == BondOrder::Double
+            && matches!(mol.atom(b.neighbor).element, Element::C | Element::N)
+    });
+    let total_bond_order: u32 = nbrs.iter().map(|b| b.order.order_int() as u32).sum();
+    let iminium_terminal_o_count = nbrs
+        .iter()
+        .filter(|b| {
+            mol.atom(b.neighbor).element == Element::O && bonds_of(mol, b.neighbor).len() == 1
+        })
+        .count();
+    if atom.charge > 0
+        && degree == 3
+        && total_bond_order >= 4
+        && double_bonded_to_c_or_n
+        && iminium_terminal_o_count == 0
+    {
+        return Ok(54); // N+=C: iminium nitrogen
+    }
+
     // Nitro nitrogen (NO2/NO3, type 45). Also must run before the generic
     // `charge > 0 -> 34` fallback: a nitro N is only ever written
     // charge-separated ([N+](=O)[O-]) by a sanitizable structure, so the
@@ -2570,6 +2595,15 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn iminium_n_is_type_54_when_not_aromatic() {
+        // Kekulized iminium spelling: the positive, three-connected N has
+        // total bond order 4 and a real N=C bond, so RDKit uses N+=C (54).
+        let m = mol("C[N+]1=CC=CC=C1");
+        let (n_idx, _) = m.atoms().find(|(_, a)| a.element == Element::N).unwrap();
+        assert_eq!(assign_n_type(&m, &[], n_idx).unwrap(), 54);
     }
 
     #[test]
