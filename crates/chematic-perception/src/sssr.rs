@@ -381,27 +381,92 @@ pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
     let base_keys: FxHashSet<Vec<u32>> = base_bonds.iter().map(bond_set_key).collect();
     let mut seen = base_keys.clone();
     let mut rings = base.rings().to_vec();
-    for root in 0..mol.atom_count() {
-        for candidate in find_smallest_rings_bfs(mol, AtomIdx(root as u32)) {
-            let candidate_bonds = ring_bond_set(mol, &candidate);
-            let key = bond_set_key(&candidate_bonds);
-            if base_keys.contains(&key) || !seen.insert(key) {
+    let d2_roots: Vec<AtomIdx> = (0..mol.atom_count())
+        .map(|raw| AtomIdx(raw as u32))
+        .filter(|&root| {
+            mol.neighbors(root)
+                .filter(|(_, bond)| is_ring_eligible(mol.bond(*bond).order))
+                .count()
+                == 2
+        })
+        .collect();
+
+    let mut accept_candidate = |candidate: Vec<AtomIdx>| {
+        let candidate_bonds = ring_bond_set(mol, &candidate);
+        let key = bond_set_key(&candidate_bonds);
+        if base_keys.contains(&key) || !seen.insert(key) {
+            return false;
+        }
+        let accepted = base_bonds.iter().any(|basis| {
+            basis.iter().any(|bond| candidate_bonds.contains(bond))
+                && basis.iter().all(|bond| {
+                    bond_ring_count.get(bond).copied().unwrap_or(0) != 1
+                        || candidate_bonds.contains(bond)
+                })
+        });
+        if accepted
+            && base
+                .rings()
+                .iter()
+                .any(|ring| ring.len() == candidate.len())
+        {
+            rings.push(candidate);
+            true
+        } else {
+            false
+        }
+    };
+
+    if d2_roots.is_empty() {
+        for root in 0..mol.atom_count() {
+            for candidate in find_smallest_rings_bfs(mol, AtomIdx(root as u32)) {
+                accept_candidate(candidate);
+            }
+        }
+    } else {
+        let mut duplicate_groups: FxHashMap<Vec<u32>, (Vec<AtomIdx>, Vec<AtomIdx>)> =
+            FxHashMap::default();
+        for &root in &d2_roots {
+            for candidate in find_smallest_rings_bfs(mol, root) {
+                let key = bond_set_key(&ring_bond_set(mol, &candidate));
+                let entry = duplicate_groups
+                    .entry(key)
+                    .or_insert_with(|| (candidate.clone(), Vec::new()));
+                if !entry.1.contains(&root) {
+                    entry.1.push(root);
+                }
+            }
+        }
+
+        for (_, (original_candidate, duplicate_roots)) in duplicate_groups {
+            if duplicate_roots.len() < 2 {
+                accept_candidate(original_candidate);
                 continue;
             }
-            let accepted = base_bonds.iter().any(|basis| {
-                basis.iter().any(|bond| candidate_bonds.contains(bond))
-                    && basis.iter().all(|bond| {
-                        bond_ring_count.get(bond).copied().unwrap_or(0) != 1
-                            || candidate_bonds.contains(bond)
-                    })
-            });
-            if accepted
-                && base
-                    .rings()
-                    .iter()
-                    .any(|ring| ring.len() == candidate.len())
-            {
-                rings.push(candidate);
+            let mut replacements = Vec::new();
+            for &root in &duplicate_roots {
+                let mut blocked = FxHashSet::default();
+                for &other in &duplicate_roots {
+                    if other == root {
+                        continue;
+                    }
+                    for (_, bond) in mol.neighbors(other) {
+                        if is_ring_eligible(mol.bond(bond).order) {
+                            blocked.insert(bond);
+                        }
+                    }
+                }
+                replacements.extend(find_smallest_rings_bfs_with_blocked_bonds(
+                    mol, root, &blocked,
+                ));
+            }
+            if let Some(min_size) = replacements.iter().map(Vec::len).min() {
+                replacements.retain(|candidate| candidate.len() == min_size);
+            }
+            replacements.sort_by_key(|candidate| bond_set_key(&ring_bond_set(mol, candidate)));
+            let replacement_found = replacements.into_iter().any(&mut accept_candidate);
+            if !replacement_found {
+                accept_candidate(original_candidate);
             }
         }
     }
