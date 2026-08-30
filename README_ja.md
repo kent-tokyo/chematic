@@ -304,6 +304,13 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 
 ## 最近の開発
 
+**v0.23.0**（2026-08-30）: **MCS精度修正（挙動変更）、RDKit互換fingerprintを2種追加、MCS bindingフル対応**
+- `chematic-smarts`：**挙動変更** — `find_mcs`のデフォルト`AtomCompare::Elements`が、芳香族性の一致を要求しなくなった。RDKitの同名`rdFMCS.AtomCompare.CompareElements`と完全に一致する挙動（ライブオラクルで確認済み——RDKitは芳香族性を原子側の制約として一切エンコードせず、結合タイプのクエリのみで表現する）。ライブRDKitオラクルとの一致率は、3つの既存corpusで74.6%/68.2%/70.4%から88.4%/88.5%/97.0%へ向上。従来の厳密な元素+芳香族一致を復元する`AtomCompare`モードは現時点で存在しない
+- `chematic-py`/`chematic-wasm`/`chematic-mcp`/`chematic-chem`：`find_mcs`の結果再構築が4つのbinding全てでヘテロ原子や芳香族性を静かに失っていた問題を修正（`QueryMolecule`→具体的な`Molecule`への変換が複合atomクエリを正しく展開していなかった）——上記の修正の測定中に発見
+- `chematic-fp`/`chematic-py`：`rdkit_rdk_fp`/`rdkit_layered_fp` — RDKit互換の`Chem.RDKFingerprint`/`Chem.LayeredFingerprint`移植版。6種のfingerprint parityシリーズを完了（ライブRDKitオラクルに対し3corpusで100%/100%/99.44%、100%/100%/99.46%のbit-exact一致）
+- `chematic-py`/`chematic-wasm`：`McsConfig`/`McsOutcome`の全フィールドを`find_mcs` bindingに公開（`match_charge`/`match_isotope`/`atom_compare`/`bond_compare`/`timeout_ms`等、従来Rust限定だったもの）
+- 詳細は`CHANGELOG.md`の`[0.23.0]`section参照
+
 **v0.22.0**（2026-08-29）: **WASM ensemble binding新規追加、canonicalizationハング修正、3員環embedding修正**
 - `chematic-wasm`：`chematic_3d::embed_ensemble_v2`向けの新規`embed_ensemble_v2_json` bindingを追加。Python binding（`Mol.conformer_ensemble_v2()`）を`pipeline_v2.rs`既存の規約（camelCase JSONキー、`schemaVersion: 1` envelope）に沿って踏襲——純粋に追加のみ
 - `chematic-smiles`：複数の対称領域が同時に未解決な分子で`canonical_smiles`/`canonical_atom_order`がハングしうる問題（issue #421）——automorphism backtracking探索に内部ステップ上限がなかった。常時有効なステップ上限を追加し、超過時は安全側（automorphismと証明できない扱い）にフォールバックするよう修正
