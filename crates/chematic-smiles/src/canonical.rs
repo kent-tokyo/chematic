@@ -3308,41 +3308,6 @@ mod tests {
         );
     }
 
-    /// Two DIFFERENT, independently stereogenic double bonds (two exocyclic
-    /// imines on the same four-membered ring) can end up sharing the very
-    /// ring-closure bond each would otherwise use as one of its own two
-    /// candidate carriers. Resolving one end's carrier independently of the
-    /// other's could move or demote a mark the other system relies on for
-    /// the same physical bond -- `resolve_ez_markers` must detect this and
-    /// abstain for BOTH ends rather than risk corrupting either one's
-    /// geometry. This is a real corpus molecule that a fully general
-    /// carrier choice does NOT resolve to one canonical string (a known,
-    /// documented residual -- see the module-level fix commit), but its E/Z
-    /// geometry must never change either way.
-    #[test]
-    fn ez_carrier_shared_bond_between_two_stereo_systems_never_corrupts() {
-        let a = "OC(=O)[C@H](Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)/N=c1/c(c(c1O)O)=N/CCCCC";
-        let b = "OC(=O)[C@H](Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)/N=c\\1c(/c(c1O)O)=N/CCCCC";
-        for s in [a, b] {
-            let mol = parse(s).unwrap();
-            let ez_before = ez_pair(&mol);
-            let canon = canonical_smiles(&mol);
-            let mol2 = parse(&canon).unwrap_or_else(|e| panic!("re-parse '{canon}': {e}"));
-            let ez_after = ez_pair(&mol2);
-            assert_eq!(
-                ez_before, ez_after,
-                "canonicalizing '{s}' -> '{canon}' must not change either \
-                 imine's E/Z geometry, even though this shared-bond shape \
-                 is not resolved to one canonical string"
-            );
-            assert!(
-                ez_before.0.is_some() && ez_before.1.is_some(),
-                "test setup sanity: both imines in '{s}' must have a defined \
-                 geometry to make this a meaningful check (got {ez_before:?})"
-            );
-        }
-    }
-
     /// A deterministic (seeded, reproducible -- never true randomness)
     /// Fisher-Yates permutation of `0..n`, for exercising many atom
     /// relabelings without external randomness.
@@ -3584,12 +3549,15 @@ mod tests {
         }
     }
 
-    /// All 18 real-corpus molecules from the 282-molecule `has_ez_marker`
-    /// diagnosis subset (issue #149) where two independently stereogenic
-    /// double bonds share one physical candidate carrier bond -- the joint
-    /// component solver (`resolve_component_jointly`) resolves **all** of
-    /// them fully: canonical output is invariant under every relabeling
-    /// tested below, not just one.
+    /// 18 of these 19 are real-corpus molecules from the 282-molecule
+    /// `has_ez_marker` diagnosis subset (issue #149) where two independently
+    /// stereogenic double bonds share one physical candidate carrier bond --
+    /// the joint component solver (`resolve_component_jointly`) resolves
+    /// **all** of them fully: canonical output is invariant under every
+    /// relabeling tested below, not just one. The 19th (see this list's own
+    /// doc comment) is a separately-found real corpus molecule with the same
+    /// shared-carrier shape, added once measured to resolve with the same
+    /// rigor.
     ///
     /// Originally split 10/8: the last 8 (`CC1=C2CC[C@H](/C=N/N=C(N)N)...`
     /// through `CCO/C(O)=C(\C1=NCCN1)...`) were a genuine, still-open
@@ -3623,9 +3591,10 @@ mod tests {
         r"CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(C)c1",
         r"CCOC(=O)C1=C(C)N=C(C)/C(=C(/O)OCC)C1c1cccc(OC)c1",
         r"CCO/C(O)=C(\C1=NCCN1)c1nnc(N)s1",
+        r"OC(=O)[C@H](Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)/N=c1/c(c(c1O)O)=N/CCCCC",
     ];
 
-    /// Proves all 18 [`EZ_SHARED_CARRIER_FULLY_RESOLVED`] fixtures are
+    /// Proves all 19 [`EZ_SHARED_CARRIER_FULLY_RESOLVED`] fixtures are
     /// genuinely, fully permutation-invariant -- not just under the one
     /// relabeling a weaker test might check. Per fixture: the original
     /// parse, its reversed-atom-order relabeling, and 16 deterministic
@@ -3636,9 +3605,22 @@ mod tests {
     /// re-parse without error, and a reparse of it must preserve both the
     /// E/Z ([`geometry_fingerprint`]) and tetrahedral
     /// ([`tetrahedral_fingerprint`]) stereo facts read from the original
-    /// parse. Also asserts the joint solver never abstains for these 18
+    /// parse. Also asserts the joint solver never abstains for these 19
     /// (production's own `ez_shared_bond_abstains` record, not re-derived
     /// topology) and never applies a partial marker plan.
+    ///
+    /// The 19th fixture (two independently stereogenic exocyclic imines on
+    /// the same four-membered ring, sharing the ring-closure bond each
+    /// would otherwise use as a candidate carrier) was previously believed
+    /// to be a genuine, documented residual that a fully general carrier
+    /// choice could not resolve to one canonical string -- tracked by a
+    /// separate, weaker test that only checked E/Z-preservation across two
+    /// specific hand-picked respellings, not full permutation-invariance.
+    /// Re-measured directly (not assumed) while auditing a stale-doc-comment
+    /// flag in ROADMAP.md: it passes this test's full 18-spelling rigor,
+    /// same as the other 18 -- the residual is resolved, and the split has
+    /// been merged into this one list for the same reason the original 8/10
+    /// split above was.
     #[test]
     fn ez_shared_carrier_fully_resolved_are_permutation_invariant() {
         for &s in EZ_SHARED_CARRIER_FULLY_RESOLVED {
@@ -4088,51 +4070,6 @@ mod tests {
             "geometry_fingerprint must be sensitive to a real E/Z flip, or \
              the no-corruption check above is vacuous"
         );
-    }
-
-    /// Both stereo double bonds' E/Z parity in a molecule with (at least)
-    /// two -- used by `ez_carrier_shared_bond_between_two_stereo_systems_
-    /// never_corrupts` to check geometry survives even where string
-    /// convergence isn't achieved. Returns `(first, second)` in bond-index
-    /// order (stable within one parse, which is all this same-molecule
-    /// before/after comparison needs).
-    /// Reads each double bond's geometry via [`up_of_reference`] (the same
-    /// rank-based, marker-*placement*-invariant oracle [`geometry_fingerprint`]
-    /// uses), not "whichever substituent happens to carry a raw direction" --
-    /// the whole point of the joint carrier solver is that the marker may
-    /// legitimately move to a different (canonically preferred) substituent
-    /// without changing the encoded geometry, so a naive "read whichever one
-    /// has a direction" oracle would report a false flip whenever the
-    /// carrier moves. `doubles` is ordered by an intrinsic (rank-based) key,
-    /// not raw `BondIdx`, so pairing between a before/after (re-parsed, thus
-    /// differently-indexed) molecule stays meaningful.
-    fn ez_pair(mol: &Molecule) -> (Option<bool>, Option<bool>) {
-        let ranks = morgan_ranks(mol);
-        let mut doubles: Vec<(u64, BondIdx)> = mol
-            .bonds()
-            .filter(|(_, b)| b.order == BondOrder::Double)
-            .filter(|(_, b)| {
-                CanonicalWriter::end_has_substituent(mol, b.atom1)
-                    && CanonicalWriter::end_has_substituent(mol, b.atom2)
-            })
-            .map(|(bidx, b)| {
-                let key = ranks[b.atom1.0 as usize].min(ranks[b.atom2.0 as usize]);
-                (key, bidx)
-            })
-            .collect();
-        doubles.sort_by_key(|&(k, _)| k);
-        assert_eq!(
-            doubles.len(),
-            2,
-            "expected exactly 2 stereogenic double bonds"
-        );
-        let ez = |bidx: BondIdx| -> Option<bool> {
-            let bond = mol.bond(bidx);
-            let ua = up_of_reference(mol, &ranks, bond.atom1)?;
-            let ub = up_of_reference(mol, &ranks, bond.atom2)?;
-            Some(ua != ub)
-        };
-        (ez(doubles[0].1), ez(doubles[1].1))
     }
 }
 
