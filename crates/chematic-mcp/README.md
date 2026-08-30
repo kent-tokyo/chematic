@@ -28,10 +28,8 @@ reachable over the network except the one tool noted below.
 | MCP Apps | **Unsupported** |
 | Resources / Prompts / Sampling / Roots / Logging / Subscriptions | **Unsupported** — not advertised in `server/discover`'s capabilities |
 
-See `docs/mcp/2026-07-28-implementation-rfc.md` for the full design, primary-source
-citations (pinned to `modelcontextprotocol/modelcontextprotocol` tag
-`2026-07-28-RC`, commit `9d700ed`), and every deliberate deviation from a
-literal reading of that tag.
+See this README for the protocol behavior and compatibility notes; the tool
+registry in `src/tools.rs` is the source of truth for the available tools.
 
 ```toml
 [dependencies]
@@ -257,7 +255,7 @@ Response — same `content`, plus `resultType`/`structuredContent`:
   adversarial-input limits) → `server` (method dispatch + per-era response
   shaping) → `tools` (chemistry, protocol-agnostic). Every tool computes its
   result exactly once; the presentation layer decides how to wrap it per
-  era — see `docs/mcp/2026-07-28-implementation-rfc.md`.
+  era — see the protocol sections above.
 - **JSON Schema 2020-12**: every tool has both `inputSchema` and
   `outputSchema`; no external `$ref` is ever resolved. Runtime argument
   validation uses a small hand-rolled subset validator (no new runtime

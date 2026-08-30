@@ -191,7 +191,7 @@ DataStructs.TanimotoSimilarity(fp, fp)       # 1.0
 ```
 
 It is **not a full RDKit clone**, and unsupported options fail loudly. See the
-[RDKit compatibility guide](docs/rdkit_compat.md) for the compatibility matrix,
+[RDKit migration guide](docs/rdkit-migration.md) for the compatibility matrix,
 differential-validation results vs RDKit, and runnable examples.
 
 ### Diagnostics
@@ -199,7 +199,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.23.0
+# chematic v0.25.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -249,8 +249,8 @@ implemented.
 handshake) and the modern MCP `2026-07-28` stateless dialect
 (`server/discover`, per-request `_meta`, cacheable `tools/list`,
 `structuredContent`) on the same stdio connection — see the
-[`chematic-mcp` README](crates/chematic-mcp/README.md#protocol-eras) and
-[`docs/mcp/2026-07-28-implementation-rfc.md`](docs/mcp/2026-07-28-implementation-rfc.md).
+[`chematic-mcp` README](crates/chematic-mcp/README.md#protocol-eras)
+for the protocol details.
 Remote HTTP, OAuth, the Tasks extension, and MCP Apps remain unsupported.
 
 ---
@@ -630,7 +630,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.23.0)
+├── Cargo.toml                    workspace root (v0.25.0)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -684,7 +684,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.23.0},
+  version   = {0.25.0},
   year      = {2026},
 }
 ```

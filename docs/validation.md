@@ -2,6 +2,10 @@
 
 Summary of descriptor accuracy against RDKit on a ChEMBL-derived corpus.
 
+The figures below are a dated measurement snapshot, not a claim that every
+current workspace revision has been re-measured. Reproduce them with the
+version, commit, corpus, and commands shown here.
+
 **Environment:** Python 3.13.6, Apple M4, chematic v0.18.0 (commit `24a9239`), RDKit 2026.03.4, measured 2026-08-23T00:20:36Z
 
 ---

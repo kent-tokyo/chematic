@@ -86,7 +86,7 @@ and root-cause detail: README.md's "Known Limitations" section.
 
 **Supported** for the common bit-vector families; **partially supported**
 for exact-parity claims against RDKit's implementation (not independently
-re-verified on this pass — see `docs/verification_coverage.md` for what has
+re-verified on this pass — see the validation and limitations sections for what has
 been measured).
 
 | | RDKit | chematic |
@@ -176,10 +176,9 @@ repository's docs. That was wrong — `validation/results/mmff94_bci_gap_
 corpus (`pipeline_v2_mmff94_strict`, last re-measured v0.17.0, 241/265
 success). This page still does not attempt a deeper quantitative
 characterization of the conformer-quality gap than that one summary
-figure — see `docs/rfcs/etkdg_3d_gap_rfc.md` and
-`docs/rfcs/openeye_materials_advantage_rfc.md` for the fuller picture,
+figure — see the limitations in this guide for the fuller picture,
 including a live defect found in the public `Mol.conformer_ensemble()`
-API (distinct from the sound `embed_pipeline_v2` path measured above).
+API (distinct from the `embed_pipeline_v2` path measured above).
 
 ## Force-field optimization
 
@@ -199,7 +198,7 @@ perception artifact for a specific fused, macrocyclic ring topology (a
 pyridinium-conjugated exocyclic-amine scaffold) rather than a locally-
 statable atom-typing rule gap — 32/6,693 type-mismatched and 56/6,693
 charge-mismatched atoms remain on the 264-molecule reference corpus. See
-`CHANGELOG.md`'s `[0.18.0]` entry and `scripts/mmff94_provenance/PROVENANCE.md`
+`CHANGELOG.md`'s release entries and the public force-field documentation
 for the full writeup; this page does not re-derive it.
 
 ## Molecular depiction (2D)

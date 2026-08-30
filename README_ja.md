@@ -165,7 +165,7 @@ MCP 対応エージェントから呼び出せる 20 の化学ツール（全リ
 
 **Transport**: stdio（標準入出力経由の JSON-RPC 2.0）のみ。ローカルプロセスとして動作し、公開された Remote MCP エンドポイント・認証・公開サービス SLA は存在しない。remote 対応のリファクタは検討中だが未実装。
 
-**Protocol**: 同一の stdio コネクション上でレガシー（`2024-11-05` 形式の `initialize` ハンドシェイク）と、MCP `2026-07-28` のステートレス方言（`server/discover`、リクエストごとの `_meta`、キャッシュ可能な `tools/list`、`structuredContent`）の両方に対応。詳細は [`chematic-mcp` README](crates/chematic-mcp/README.md#protocol-eras) と [`docs/mcp/2026-07-28-implementation-rfc.md`](docs/mcp/2026-07-28-implementation-rfc.md) を参照。Remote HTTP・OAuth・Tasks 拡張・MCP Apps は引き続き未対応。
+**Protocol**: 同一の stdio コネクション上でレガシー（`2024-11-05` 形式の `initialize` ハンドシェイク）と、MCP `2026-07-28` のステートレス方言（`server/discover`、リクエストごとの `_meta`、キャッシュ可能な `tools/list`、`structuredContent`）の両方に対応。詳細は [`chematic-mcp` README](crates/chematic-mcp/README.md#protocol-eras) を参照。Remote HTTP・OAuth・Tasks 拡張・MCP Apps は引き続き未対応。
 
 ---
 

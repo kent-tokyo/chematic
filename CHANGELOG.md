@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### v0.25.0 development — aromaticity exactness
+### v0.25.0 — aromaticity exactness
 
 - The opt-in `AromaticityAlgorithm::RdkitLike` mode now recognizes phosphole
   rings: neutral P in a two-connected ring contributes its lone pair as 2π,
@@ -28,18 +28,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - MMFF94 now classifies non-aromatic, three-connected iminium nitrogen (N+=C)
   as type 54 before the generic charged-nitrogen fallback; a direct Kekule
   regression protects the independent atom-typing rule.
-- Added the first Phase 7C ring-perception primitive,
-  `find_smallest_rings_bfs`, which enumerates the shortest root-centered rings
-  without changing the existing Horton `find_sssr` contract. A cubane
-  regression confirms discovery of all six symmetry-equivalent square faces;
-  alternate shortest paths are now retained as well, with a dodecahedrane
-  regression confirming all twelve pentagonal faces. RDKit duplicate-ring
-  acceptance is covered by a provisional dedicated symmetrized-ring API. The
-  provisional candidate generator over-produces on the #337 macrocyclic
-  residual (10 rings versus RDKit's 8), so it is deliberately not wired into
-  MMFF94 production. A fresh 265-molecule parity dump leaves the known six
-  residuals unchanged (atom 99.5222%, bond 99.4461%); the exact Figueras
-  duplicate-D2 candidate selection remains the next gate.
+- The opt-in RDKit ring-count model now derives candidates from the bounded
+  root-centered shortest-ring (D2-like) primitive, re-searches duplicate D2
+  groups after bond trimming, and retains independently verified minimum
+  replacements. MMFF94 production now consumes this symmetrized ring model.
+  A fresh 265-molecule run improves atom parity from 99.522245% to 99.641684%
+  and bond parity from 99.446060% to 99.584545%, leaving five known fused
+  heteroaromatic residual molecules explicitly tracked for a later correction.
+- The Phase 7C ring-perception implementation now includes RDKit-style
+  root-centered BFS, D2 root selection, bond trimming, duplicate re-search,
+  and exact rooted ring stitching. Cubane, dodecahedrane, SMARTS, and MMFF94
+  regressions cover the public behavior; the remaining five corpus residuals
+  are documented rather than hidden behind a heuristic.
 
 ### v0.24.0 release policy
 
@@ -47,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CIP residual, cosmetic E/Z spelling variance, and aromaticity-context gap are
   explicit known limitations for v0.24.0; `CipMode::Accurate` plus its typed
   unresolved result is the opt-in path for callers needing stronger CIP
-  guarantees. See `docs/release/v0.24.0-readiness.md`.
+  guarantees. See the public API and limitations documentation.
 
 ### Fixed — dual-flank nucleobase tautomer canonicalization
 

@@ -10,8 +10,8 @@ required dependency (`chematic-core`, for `Element`).
 
 `v0.1` is a structural/geometric foundation, not a symmetry or materials-
 property library -- see "Out of scope" below and
-`docs/crystal_scope.md`/`docs/rfcs/chematic_crystal_foundation.md` in the
-workspace root for the full design record.
+`docs/crystal_scope.md` in the workspace root for the public scope and
+limitations.
 
 ## What this crate is not: `Molecule`
 
@@ -107,7 +107,7 @@ image (verified concretely by a pinned regression fixture in
 Angstrom). Instead, `minimum_image` derives a finite, provably sufficient
 search box from the lattice's own reciprocal vectors and checks every
 candidate inside it -- exact for any lattice this crate's validation
-accepts. Full derivation: `docs/rfcs/chematic_crystal_foundation.md`.
+accepts. See `docs/crystal_scope.md` for the public scope and limitations.
 
 `PeriodicDisplacement` reports which image was chosen (`image: [i32; 3]`),
 the Cartesian and fractional displacement, and the distance. Ties (multiple
@@ -177,8 +177,8 @@ the species symbol). Full format-fidelity decision list:
 No space-group determination, symmetry-operation search, Wyckoff
 positions, primitive/conventional cell conversion, Niggli reduction, or
 spglib (or any) FFI. No CIF parser rewrite (`chematic_mol::cif` is
-untouched; see `docs/rfcs/chematic_crystal_foundation.md` for a migration
-sketch). No VASP INCAR/KPOINTS/POTCAR parsing (POSCAR/CONTCAR structure I/O
+untouched; see `docs/crystal_scope.md` for the supported migration path).
+No VASP INCAR/KPOINTS/POTCAR parsing (POSCAR/CONTCAR structure I/O
 is in scope, see above). No XRD, crystal fingerprinting, oxidation-state
 inference, coordination-geometry classification, DFT, formation-energy or
 phase-diagram computation, band structure, phonons, defect generation, or

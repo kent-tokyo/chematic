@@ -1,7 +1,7 @@
 # Format Capability Matrix
 
-What each of chematic's 15 supported file formats actually does, in Rust,
-Python, and WASM, as of v0.18.0 — read/write coverage, streaming, coordinate
+What each of chematic's supported file formats actually does, in Rust,
+Python, and WASM — read/write coverage, streaming, coordinate
 units, connectivity handling, round-trip fidelity, lossy operations, parse
 limits, and known limitations.
 
