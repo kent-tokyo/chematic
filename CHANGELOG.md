@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v0.30.0 — Python Parent identity bindings
+
+- Exposed `fragment_parent`, `charge_parent`, `isotope_parent`, and
+  `stereo_parent` on Python `Mol` objects, preserving the Rust Parent
+  semantics and transformation boundaries.
+- Added Python `super_parent`, returning the composed parent molecule and its
+  explicit computation status alongside the existing `tautomer_parent` API.
+- Added regression coverage for fragment, charge, isotope, stereo, and
+  composed parent behavior.
+
 ### v0.29.0 — external comparison adapter protocol
 
 - Added a command-based external-engine adapter runner for the Phase 2

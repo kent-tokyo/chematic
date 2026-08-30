@@ -1914,6 +1914,28 @@ impl Mol {
         }
     }
 
+    /// Return the fragment parent, retaining the largest chemically relevant
+    /// fragment and its transformation semantics.
+    fn fragment_parent(&self) -> Mol {
+        Mol::bare(chematic_chem::fragment_parent(&self.inner).0)
+    }
+
+    /// Return the charge parent (fragment selection followed by charge
+    /// normalization), without removing isotopes or stereochemistry.
+    fn charge_parent(&self) -> Mol {
+        Mol::bare(chematic_chem::charge_parent(&self.inner).0)
+    }
+
+    /// Return the isotope parent while preserving stereochemistry.
+    fn isotope_parent(&self) -> Mol {
+        Mol::bare(chematic_chem::isotope_parent(&self.inner).0)
+    }
+
+    /// Return the stereo parent with stereochemical annotations removed.
+    fn stereo_parent(&self) -> Mol {
+        Mol::bare(chematic_chem::stereo_parent(&self.inner).0)
+    }
+
     /// Return the Murcko scaffold as a new Mol.
     fn scaffold(&self) -> Mol {
         Mol {
@@ -1943,6 +1965,22 @@ impl Mol {
         limits.max_tautomers = max_tautomers;
         limits.timeout_ms = timeout_ms;
         let result = chematic_chem::tautomer_parent(&self.inner, &limits);
+        (Mol::bare(result.molecule), format!("{:?}", result.status))
+    }
+
+    /// Return the composed super parent and its computation status.
+    #[pyo3(signature = (max_transforms=16, max_tautomers=32, timeout_ms=None))]
+    fn super_parent(
+        &self,
+        max_transforms: usize,
+        max_tautomers: usize,
+        timeout_ms: Option<u64>,
+    ) -> (Mol, String) {
+        let mut limits = chematic_chem::TautomerLimits::default();
+        limits.max_transforms = max_transforms;
+        limits.max_tautomers = max_tautomers;
+        limits.timeout_ms = timeout_ms;
+        let result = chematic_chem::super_parent(&self.inner, &limits);
         (Mol::bare(result.molecule), format!("{:?}", result.status))
     }
 
