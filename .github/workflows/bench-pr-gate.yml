@@ -18,12 +18,36 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: bench-pr-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
+  changes:
+    name: Detect performance-sensitive changes
+    runs-on: ubuntu-latest
+    outputs:
+      performance: ${{ steps.filter.outputs.performance }}
+    steps:
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            performance:
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+              - 'crates/**'
+              - 'benches/**'
+              - 'scripts/bench_*.py'
+              - 'scripts/criterion_gate.sh'
+
   bench-gate:
     name: Python bench regression gate
+    needs: changes
+    if: needs.changes.outputs.performance == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR branch
@@ -152,6 +176,8 @@ jobs:
 
   criterion-gate:
     name: Rust Criterion regression gate
+    needs: changes
+    if: needs.changes.outputs.performance == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR branch
