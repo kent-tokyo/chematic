@@ -457,6 +457,12 @@ pub fn find_smallest_rings_bfs_with_rdkit_tree(
                         left_path.push(left);
                         right_path.push(right);
                     }
+                    // RDKit's rooted Figueras pass discards a cross-edge
+                    // whose two BFS branches meet below the requested root:
+                    // that cycle belongs to the closer LCA, not this root.
+                    if left != root {
+                        continue;
+                    }
                     let ring_size = left_path.len() + right_path.len() - 1;
                     if ring_size > best_size {
                         continue;
