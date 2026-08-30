@@ -1,1 +1,0 @@
-config_snapshot embed_seed=20260801 max_attempts=8 arms={"chematic_pipeline_v2_uff_only": String("UffOnly"), "chematic_pipeline_v2_no_ff": String("None"), "chematic_pipeline_v2_mmff94_strict": String("Mmff94BondAngleStrict"), "chematic_pipeline_v2_dreiding": String("Dreiding"), "chematic_pipeline_v2_mmff94_with_uff_fallback": String("Mmff94WithUffFallback")}
