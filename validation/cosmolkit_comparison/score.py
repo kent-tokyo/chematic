@@ -4,6 +4,7 @@
 import argparse
 import json
 from collections import Counter
+from validate import validate
 
 COMPARE = ("canonical_smiles", "formula", "molecular_weight", "rdkit_morgan_bits")
 
@@ -16,7 +17,12 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("left", type=__import__("pathlib").Path)
     parser.add_argument("right", type=__import__("pathlib").Path)
+    parser.add_argument("--fail-on-mismatch", action="store_true")
     args = parser.parse_args()
+    validation_errors = validate(args.left) + validate(args.right)
+    if validation_errors:
+        print(json.dumps({"valid": False, "errors": validation_errors}, sort_keys=True, indent=2))
+        raise SystemExit(2)
     left, right = load(args.left), load(args.right)
     counts = Counter()
     mismatches = []
@@ -37,7 +43,10 @@ def main() -> None:
                 counts["mismatch"] += 1
                 mismatches.append({"id": ident, "operation": operation,
                                    "left": a.get("value"), "right": b.get("value")})
-    print(json.dumps({"counts": counts, "mismatches": mismatches}, sort_keys=True, indent=2))
+    report = {"valid": True, "counts": counts, "mismatches": mismatches}
+    print(json.dumps(report, sort_keys=True, indent=2))
+    if args.fail_on_mismatch and (counts["mismatch"] or counts["failure"] or counts["missing_record"]):
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

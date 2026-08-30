@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v0.28.0 — reproducible comparison gates
+
+- Added dependency-free JSONL contract validation for the Phase 2 comparison
+  harness, including corpus hash, record uniqueness, operation status, and
+  complete-corpus checks.
+- Added strict mismatch gating and deterministic Markdown reports so comparison
+  runs can be used in CI without counting unsupported operations as failures.
+
 ### v0.27.0 — Phase 2 direct-comparison smoke harness
 
 - Added a versioned public smoke corpus, common JSONL result schema, RDKit and
