@@ -1,0 +1,7 @@
+=== issue #227 faithful re-measurement (production minimize_with_policy) ===
+total: 265
+Ok (success): 130
+Err(MissingParameters) ["unsupported" in the original issue]: 106
+Err(UnsupportedAtomType): 1
+Err(MinimizationFailed) ["typed_failure" in the original issue]: 28
+parse/other: 0
