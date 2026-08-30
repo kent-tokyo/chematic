@@ -211,8 +211,25 @@ pub fn build_rdkit_parity_ring_model(
     // the same bounded primitive used by the perception crate instead of
     // enumerating every simple cycle up to the largest SSSR size; the latter
     // admits non-D2 cycles and over-produces extras in macrocycles.
-    for root_raw in 0..mol.atom_count() {
-        for candidate in find_smallest_rings_bfs(mol, AtomIdx(root_raw as u32)) {
+    let d2_roots: Vec<AtomIdx> = (0..mol.atom_count())
+        .map(|raw| AtomIdx(raw as u32))
+        .filter(|&root| {
+            mol.neighbors(root)
+                .filter(|(_, bond)| is_ring_bond(mol, *bond))
+                .count()
+                == 2
+        })
+        .collect();
+    // RDKit's Figueras search starts with D2 nodes.  Highly symmetric cages
+    // such as cubane have no D2 nodes and are handled by the later D3-style
+    // fallback, for which considering every root is the useful approximation.
+    let roots: Box<dyn Iterator<Item = AtomIdx>> = if d2_roots.is_empty() {
+        Box::new((0..mol.atom_count()).map(|raw| AtomIdx(raw as u32)))
+    } else {
+        Box::new(d2_roots.into_iter())
+    };
+    for root in roots {
+        for candidate in find_smallest_rings_bfs(mol, root) {
             candidates_examined += 1;
             if candidates_examined > budget.max_candidates {
                 return Err(RdkitParityError::RingModelBudgetExceeded {
@@ -268,6 +285,19 @@ fn ring_bond_set(mol: &Molecule, ring: &[AtomIdx]) -> FxHashSet<BondIdx> {
             mol.bond_between(a, b).map(|(bidx, _)| bidx)
         })
         .collect()
+}
+
+fn is_ring_bond(mol: &Molecule, bond: BondIdx) -> bool {
+    matches!(
+        mol.bond(bond).order,
+        chematic_core::BondOrder::Single
+            | chematic_core::BondOrder::Double
+            | chematic_core::BondOrder::Triple
+            | chematic_core::BondOrder::Quadruple
+            | chematic_core::BondOrder::Aromatic
+            | chematic_core::BondOrder::Up
+            | chematic_core::BondOrder::Down
+    )
 }
 
 fn bond_set_key(set: &FxHashSet<BondIdx>) -> Vec<u32> {
