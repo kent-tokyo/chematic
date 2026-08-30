@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v0.31.0 — WASM Parent identity bindings
+
+- Exposed fragment, charge, isotope, stereo, and composed Super Parent
+  operations through WASM JSON APIs with consistent status-shaped results.
+- Preserved the existing resource limits and size guard so browser callers
+  receive explicit budget or size outcomes instead of unbounded work.
+- Added native regression coverage for every new Parent binding.
+
 ### v0.30.0 — Python Parent identity bindings
 
 - Exposed `fragment_parent`, `charge_parent`, `isotope_parent`, and

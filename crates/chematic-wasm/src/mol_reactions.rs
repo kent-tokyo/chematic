@@ -447,6 +447,79 @@ pub fn canonical_tautomer(mol: &MolHandle) -> MolHandle {
     }
 }
 
+fn parent_transform_json(
+    mol: &MolHandle,
+    transform: fn(
+        &chematic_core::Molecule,
+    ) -> (chematic_core::Molecule, chematic_chem::TransformationRecord),
+) -> String {
+    if mol.inner.atom_count() > WASM_MAX_ATOMS {
+        return format!(
+            r#"{{"error":"molecule too large (max {} atoms)"}}"#,
+            WASM_MAX_ATOMS
+        );
+    }
+    let (parent, _) = transform(&mol.inner);
+    let smiles = escape_json_string(&chematic_smiles::canonical_smiles(&parent));
+    format!(r#"{{"smiles":"{smiles}","status":"completed"}}"#)
+}
+
+/// Compute the fragment Parent and return a status-shaped JSON result.
+#[wasm_bindgen]
+pub fn fragment_parent_json(mol: &MolHandle) -> String {
+    parent_transform_json(mol, chematic_chem::fragment_parent)
+}
+
+/// Compute the charge Parent and return a status-shaped JSON result.
+#[wasm_bindgen]
+pub fn charge_parent_json(mol: &MolHandle) -> String {
+    parent_transform_json(mol, chematic_chem::charge_parent)
+}
+
+/// Compute the isotope Parent and return a status-shaped JSON result.
+#[wasm_bindgen]
+pub fn isotope_parent_json(mol: &MolHandle) -> String {
+    parent_transform_json(mol, chematic_chem::isotope_parent)
+}
+
+/// Compute the stereo Parent and return a status-shaped JSON result.
+#[wasm_bindgen]
+pub fn stereo_parent_json(mol: &MolHandle) -> String {
+    parent_transform_json(mol, chematic_chem::stereo_parent)
+}
+
+/// Compute the composed Super Parent with explicit resource limits.
+#[wasm_bindgen]
+pub fn super_parent_json(
+    mol: &MolHandle,
+    max_transforms: usize,
+    max_tautomers: usize,
+    timeout_ms: Option<u64>,
+) -> String {
+    if mol.inner.atom_count() > WASM_MAX_ATOMS {
+        return format!(
+            r#"{{"error":"molecule too large (max {} atoms)"}}"#,
+            WASM_MAX_ATOMS
+        );
+    }
+    let mut limits = chematic_chem::TautomerLimits::default();
+    limits.max_transforms = max_transforms;
+    limits.max_tautomers = max_tautomers;
+    limits.timeout_ms = timeout_ms;
+    let result = chematic_chem::super_parent(&mol.inner, &limits);
+    let status = match result.status {
+        chematic_chem::ParentComputationStatus::Completed => "completed",
+        chematic_chem::ParentComputationStatus::MaxTransformsReached => "max_transforms_reached",
+        chematic_chem::ParentComputationStatus::MaxTautomersReached => "max_tautomers_reached",
+        chematic_chem::ParentComputationStatus::TimedOut => "timed_out",
+        chematic_chem::ParentComputationStatus::Abstained(_) => "abstained",
+        chematic_chem::ParentComputationStatus::InvalidInput(_) => "invalid_input",
+        _ => "unknown",
+    };
+    let smiles = escape_json_string(&chematic_smiles::canonical_smiles(&result.molecule));
+    format!(r#"{{"smiles":"{smiles}","status":"{status}"}}"#)
+}
+
 /// Compute the tautomer parent with explicit resource limits.
 /// Returns `{"smiles":"...","status":"completed"}` (or a structured
 /// error) so callers can distinguish a definite result from a budget-limited

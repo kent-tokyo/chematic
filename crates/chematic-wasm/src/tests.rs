@@ -1961,6 +1961,16 @@ fn tautomer_parent_json_reports_transform_budget() {
 }
 
 #[test]
+fn parent_json_bindings_cover_mechanical_and_composed_parents() {
+    let mol = parse("[NH3+][C@@H]([2H])C(=O)[O-].Cl");
+    assert!(fragment_parent_json(&mol).contains(r#""status":"completed""#));
+    assert!(charge_parent_json(&mol).contains(r#""status":"completed""#));
+    assert!(isotope_parent_json(&mol).contains(r#""status":"completed""#));
+    assert!(stereo_parent_json(&mol).contains(r#""status":"completed""#));
+    assert!(super_parent_json(&mol, 16, 32, None).contains(r#""status":"completed""#));
+}
+
+#[test]
 fn enumerate_tautomers_json_is_array() {
     let mol = parse("Oc1cccc2ccccc12");
     let json = enumerate_tautomers_json(&mol);
