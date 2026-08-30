@@ -34,11 +34,10 @@ pub enum AromaticityAlgorithm {
     /// Strict Hückel 4n+2 rule (default). Supports C, N, O, S.
     #[default]
     Huckel,
-    /// RDKit-compatible extension. Adds Se (34) and Te (52) as chalcogen lone-pair
-    /// donors (2π), matching the RDKit DEFAULT aromaticity model for common
-    /// organic and chalcogen heteroaromatics.
+    /// RDKit-compatible extension. Adds P (15), Se (34), and Te (52) as
+    /// heteroatom lone-pair donors (2π), matching the RDKit DEFAULT
+    /// aromaticity model for common organic heteroaromatics.
     ///
-    /// P-containing aromatic rings are NOT supported in this mode (separate sprint).
     /// Keto-lactam aromaticity is NOT included (TautomerMode, separate sprint).
     RdkitLike,
 }
@@ -187,7 +186,7 @@ pub fn assign_aromaticity(mol: &Molecule) -> AromaticityModel {
 /// Assign aromaticity using the specified algorithm.
 ///
 /// The default ([`assign_aromaticity`]) uses [`AromaticityAlgorithm::Huckel`].
-/// Pass [`AromaticityAlgorithm::RdkitLike`] to additionally recognise Se/Te
+/// Pass [`AromaticityAlgorithm::RdkitLike`] to additionally recognise P/Se/Te
 /// as lone-pair donors in aromatic rings.
 ///
 /// Byte-identical to this function's behavior before the K2b
@@ -1026,7 +1025,8 @@ pub fn count_aromatic_rings(mol: &Molecule) -> usize {
 ///   5. Already in `aromatic_context` → 1π.
 ///   6. Otherwise → None.
 /// - **O/S**: ring_degree must be 2; contributes 2π (lone pair).
-/// - **Se (34) / Te (52)**: analogous to S; only in [`AromaticityAlgorithm::RdkitLike`] mode.
+/// - **P (15) / Se (34) / Te (52)**: analogous lone-pair donors; only in
+///   [`AromaticityAlgorithm::RdkitLike`] mode.
 /// - **Other elements**: None (unsupported).
 fn ring_pi_electrons(
     mol: &Molecule,
@@ -1195,9 +1195,12 @@ fn ring_pi_electrons(
                 }
             }
 
-            // Se (34) / Te (52): chalcogen lone-pair donors (2π), analogous to S.
-            // Only recognised in RdkitLike mode.
-            34 | 52 => {
+            // P (15) / Se (34) / Te (52): heteroatom lone-pair donors (2π),
+            // analogous to S. Only recognised in RdkitLike mode. P-H and
+            // substituted P in a five-membered ring are the phosphole
+            // counterparts of pyrrole; the ring-degree and exocyclic-double
+            // guards keep hypervalent/exocyclic forms fail-closed.
+            15 | 34 | 52 => {
                 if algo != AromaticityAlgorithm::RdkitLike {
                     return None;
                 }
@@ -1266,6 +1269,8 @@ pub enum ContributionReason {
     NitrogenIneligible,
     /// O/S/Se/Te lone-pair donor, neutral or anionic, ring-degree 2: 2π.
     ChalcogenLonePair,
+    /// P lone-pair donor in the opt-in RDKit-compatible model: 2π.
+    PnictogenOrChalcogenLonePair,
     /// Charged O/S (e.g. pyrylium's `[o+]`): the positive charge consumes
     /// the lone pair, so this atom needs pyridine-type treatment (1π via
     /// its own ring double/aromatic bond) instead of donating 2π.
@@ -1306,7 +1311,8 @@ impl ContributionReason {
             CarbonCarbanionLonePair
             | NitrogenPyrroleTypeH
             | NitrogenBridgeheadOrSubstitutedLonePair
-            | ChalcogenLonePair => PiEligibility::LonePairDonor,
+            | ChalcogenLonePair
+            | PnictogenOrChalcogenLonePair => PiEligibility::LonePairDonor,
             CarbonExocyclicHeteroatomDouble | CarbonCationVacant => PiEligibility::ZeroElectron,
             CarbonSp3Ineligible | NitrogenIneligible | ChalcogenIneligible | UnsupportedElement => {
                 PiEligibility::Ineligible
@@ -1584,14 +1590,14 @@ fn evaluate_atom_pi_contribution_inner(
                 }
             }
         }
-        34 | 52 => {
+        15 | 34 | 52 => {
             let exocyclic_double = mol.neighbors(atom_idx).any(|(nb, bidx)| {
                 !ring_atom_set.contains(&nb) && mol.bond(bidx).order == BondOrder::Double
             });
             if algo != AromaticityAlgorithm::RdkitLike || ring_degree != 2 || exocyclic_double {
                 (None, ContributionReason::ChalcogenIneligible)
             } else {
-                (Some(2), ContributionReason::ChalcogenLonePair)
+                (Some(2), ContributionReason::PnictogenOrChalcogenLonePair)
             }
         }
         _ => (None, ContributionReason::UnsupportedElement),
@@ -3165,8 +3171,20 @@ mod tests {
     }
 
     // =========================================================================
-    // RdkitLike mode: Se/Te chalcogen heteroaromatics
+    // RdkitLike mode: P/Se/Te heteroaromatics
     // =========================================================================
+
+    #[test]
+    fn test_phosphole_rdkit_aromatic() {
+        // c1cc[pH]c1 — P donates its lone pair in the RDKit-compatible mode.
+        let mol = mol_aromatic("c1cc[pH]c1");
+        let m = assign_aromaticity_ex(&mol, AromaticityAlgorithm::RdkitLike);
+        assert_eq!(
+            m.aromatic_atom_count(),
+            5,
+            "phosphole: all 5 atoms aromatic in RdkitLike"
+        );
+    }
 
     #[test]
     fn test_selenophene_huckel_not_aromatic() {

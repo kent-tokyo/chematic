@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v0.25.0 development — aromaticity exactness
+
+- The opt-in `AromaticityAlgorithm::RdkitLike` mode now recognizes phosphole
+  rings: neutral P in a two-connected ring contributes its lone pair as 2π,
+  matching the existing Se/Te extension. The default strict Hückel mode is
+  unchanged, and the diagnostic electron-contribution trace follows the same
+  rule.
+
 ### v0.24.0 release policy
 
 - Phase 2 tautomer identity and Parent API work is release-ready. The legacy
