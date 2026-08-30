@@ -263,9 +263,9 @@ fn bfs_tree(mol: &Molecule, root: AtomIdx) -> (Vec<usize>, Vec<Option<AtomIdx>>)
 /// substituted for [`find_sssr`], whose output is a linearly independent
 /// Horton basis.
 ///
-/// The search returns one deterministic shortest path per neighbor pair. A
-/// later symmetrization layer is responsible for resolving alternate shortest
-/// paths and applying RDKit's duplicate-ring acceptance rules.
+/// The search enumerates every shortest path for each neighbor pair. A later
+/// symmetrization layer is responsible for applying RDKit's duplicate-ring
+/// acceptance rules.
 pub fn find_smallest_rings_bfs(mol: &Molecule, root: AtomIdx) -> Vec<Vec<AtomIdx>> {
     if root.0 as usize >= mol.atom_count() {
         return Vec::new();
@@ -285,7 +285,6 @@ pub fn find_smallest_rings_bfs(mol: &Molecule, root: AtomIdx) -> Vec<Vec<AtomIdx
     for (left_pos, &left) in neighbors.iter().enumerate() {
         for &right in neighbors.iter().skip(left_pos + 1) {
             let mut dist = vec![usize::MAX; mol.atom_count()];
-            let mut parent: Vec<Option<AtomIdx>> = vec![None; mol.atom_count()];
             let mut queue = VecDeque::new();
             dist[left.0 as usize] = 0;
             queue.push_back(left);
@@ -301,7 +300,6 @@ pub fn find_smallest_rings_bfs(mol: &Molecule, root: AtomIdx) -> Vec<Vec<AtomIdx
                     let next_i = next.0 as usize;
                     if dist[next_i] == usize::MAX {
                         dist[next_i] = dist[current.0 as usize] + 1;
-                        parent[next_i] = Some(current);
                         queue.push_back(next);
                     }
                 }
@@ -316,26 +314,52 @@ pub fn find_smallest_rings_bfs(mol: &Molecule, root: AtomIdx) -> Vec<Vec<AtomIdx
                 continue;
             }
 
-            let mut path = path_to_root(right, &parent);
-            path.reverse();
-            if path.first() != Some(&left) || path.last() != Some(&right) {
-                continue;
-            }
-            let mut ring = Vec::with_capacity(ring_size);
-            ring.push(root);
-            ring.extend(path);
-
             if ring_size < best_size {
                 best_size = ring_size;
                 rings.clear();
             }
-            rings.push(ring);
+            let mut path = vec![left];
+            enumerate_shortest_paths(mol, root, right, &dist, &mut path, &mut rings);
         }
     }
 
     rings.sort();
     rings.dedup();
     rings
+}
+
+/// Enumerate shortest paths in an already-computed BFS distance field.
+/// Distances strictly increase at each step, so every emitted path is simple
+/// and cannot revisit the excluded root.
+fn enumerate_shortest_paths(
+    mol: &Molecule,
+    excluded: AtomIdx,
+    target: AtomIdx,
+    dist: &[usize],
+    path: &mut Vec<AtomIdx>,
+    rings: &mut Vec<Vec<AtomIdx>>,
+) {
+    let current = *path.last().expect("shortest-path prefix is non-empty");
+    if current == target {
+        let mut ring = Vec::with_capacity(path.len() + 1);
+        ring.push(excluded);
+        ring.extend(path.iter().copied());
+        rings.push(ring);
+        return;
+    }
+
+    let current_dist = dist[current.0 as usize];
+    for (next, bidx) in mol.neighbors(current) {
+        if next == excluded || !is_ring_eligible(mol.bond(bidx).order) {
+            continue;
+        }
+        if dist[next.0 as usize] != current_dist + 1 {
+            continue;
+        }
+        path.push(next);
+        enumerate_shortest_paths(mol, excluded, target, dist, path, rings);
+        path.pop();
+    }
 }
 
 /// Form the Horton candidate cycle `SP(root,x) + edge(x,y) + SP(y,root)`.
@@ -921,6 +945,27 @@ mod tests {
             faces.len(),
             6,
             "cubane has six symmetry-equivalent square faces"
+        );
+
+        let mol = chematic_smiles::parse("C12C3C4C5C1C6C7C2C8C3C9C4C1C5C6C2C7C8C9C12")
+            .expect("dodecahedrane SMILES");
+        let mut faces = std::collections::BTreeSet::new();
+        for root in 0..mol.atom_count() {
+            for ring in find_smallest_rings_bfs(&mol, AtomIdx(root as u32)) {
+                assert_eq!(
+                    ring.len(),
+                    5,
+                    "dodecahedrane's smallest rings are pentagons"
+                );
+                let mut face = ring.into_iter().map(|a| a.0).collect::<Vec<_>>();
+                face.sort_unstable();
+                faces.insert(face);
+            }
+        }
+        assert_eq!(
+            faces.len(),
+            12,
+            "dodecahedrane has twelve symmetry-equivalent pentagonal faces"
         );
     }
 

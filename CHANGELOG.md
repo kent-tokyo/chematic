@@ -29,8 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `find_smallest_rings_bfs`, which enumerates the shortest root-centered rings
   without changing the existing Horton `find_sssr` contract. A cubane
   regression confirms discovery of all six symmetry-equivalent square faces;
-  RDKit duplicate-ring acceptance and MMFF wiring remain separate follow-up
-  gates.
+  alternate shortest paths are now retained as well, with a dodecahedrane
+  regression confirming all twelve pentagonal faces. RDKit duplicate-ring
+  acceptance and MMFF wiring remain separate follow-up gates.
 
 ### v0.24.0 release policy
 
