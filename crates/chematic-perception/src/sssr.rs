@@ -475,7 +475,7 @@ pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
     // symmetry class. Keep the stable minimum representative per overlapping
     // extra-ring component, while never filtering the original Horton basis.
     let mut extras = rings.split_off(base.ring_count());
-    extras.sort_by_key(|ring| bond_set_key(&ring_bond_set(mol, ring)));
+    extras.sort_by_key(|ring| basis_exchange_key(mol, ring, &base_bonds));
     let mut selected_extra_sets: Vec<FxHashSet<BondIdx>> = Vec::new();
     extras.retain(|ring| {
         let candidate_set = ring_bond_set(mol, ring);
@@ -510,6 +510,91 @@ fn bond_set_key(set: &FxHashSet<BondIdx>) -> Vec<u32> {
     let mut key: Vec<u32> = set.iter().map(|bond| bond.0).collect();
     key.sort_unstable();
     key
+}
+
+/// Stable tie-break key for a candidate ring based on a GF(2)-valid basis
+/// exchange. The candidate replaces each same-sized Horton basis ring in
+/// turn; only replacements that remain linearly independent are considered.
+/// This preserves the minimum-cycle-basis contract while making the choice
+/// depend on the resulting basis rather than raw bond numbering alone.
+fn basis_exchange_key(
+    mol: &Molecule,
+    candidate: &[AtomIdx],
+    base_bonds: &[FxHashSet<BondIdx>],
+) -> Vec<Vec<u32>> {
+    let candidate_set = ring_bond_set(mol, candidate);
+    let candidate_key = bond_set_key(&candidate_set);
+    let candidate_len = candidate.len();
+    let mut best: Option<Vec<Vec<u32>>> = None;
+    for (replace_idx, base_ring) in base_bonds.iter().enumerate() {
+        if base_ring.len() != candidate_len {
+            continue;
+        }
+        let mut rows = base_bonds
+            .iter()
+            .enumerate()
+            .map(|(idx, set)| {
+                if idx == replace_idx {
+                    candidate_key.clone()
+                } else {
+                    bond_set_key(set)
+                }
+            })
+            .collect::<Vec<_>>();
+        if gf2_rank(&rows) != base_bonds.len() {
+            continue;
+        }
+        rows.sort_unstable();
+        if best.as_ref().is_none_or(|current| rows < *current) {
+            best = Some(rows);
+        }
+    }
+    best.unwrap_or_else(|| vec![candidate_key])
+}
+
+fn gf2_rank(rows: &[Vec<u32>]) -> usize {
+    let mut basis: FxHashMap<u32, Vec<u32>> = FxHashMap::default();
+    let mut rank = 0;
+    for row in rows {
+        let mut reduced = row.clone();
+        while let Some(&pivot) = reduced.first() {
+            let Some(existing) = basis.get(&pivot) else {
+                basis.insert(pivot, reduced);
+                rank += 1;
+                break;
+            };
+            let mut xor = Vec::with_capacity(reduced.len() + existing.len());
+            let mut left = 0;
+            let mut right = 0;
+            while left < reduced.len() || right < existing.len() {
+                match (reduced.get(left), existing.get(right)) {
+                    (Some(&a), Some(&b)) if a == b => {
+                        left += 1;
+                        right += 1;
+                    }
+                    (Some(&a), Some(&b)) if a < b => {
+                        xor.push(a);
+                        left += 1;
+                    }
+                    (Some(_), Some(&b)) => {
+                        xor.push(b);
+                        right += 1;
+                    }
+                    (Some(&a), None) => {
+                        xor.push(a);
+                        left += 1;
+                    }
+                    (None, Some(&b)) => {
+                        xor.push(b);
+                        right += 1;
+                    }
+                    (None, None) => break,
+                }
+            }
+            reduced = xor;
+        }
+    }
+    rank
 }
 
 /// Enumerate shortest paths in an already-computed BFS distance field.
