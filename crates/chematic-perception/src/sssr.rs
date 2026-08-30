@@ -399,6 +399,91 @@ pub fn find_smallest_rings_bfs_with_trimmed_bonds(
     find_smallest_rings_bfs_with_blocked_bonds(mol, root, &trimmed)
 }
 
+/// Find smallest rings from the BFS tree used by RDKit's Figueras pass.
+/// Unlike [`find_smallest_rings_bfs_with_blocked_bonds`], this intentionally
+/// keeps one parent tree and derives cycles from non-tree edges. It is exposed
+/// separately so the bounded pair-shortest-path primitive remains available
+/// for callers that need all shortest paths.
+pub fn find_smallest_rings_bfs_with_rdkit_tree(
+    mol: &Molecule,
+    root: AtomIdx,
+    blocked_bonds: &FxHashSet<BondIdx>,
+) -> Vec<Vec<AtomIdx>> {
+    if root.0 as usize >= mol.atom_count() {
+        return Vec::new();
+    }
+
+    let mut state = vec![0u8; mol.atom_count()];
+    let mut parent: Vec<Option<AtomIdx>> = vec![None; mol.atom_count()];
+    let mut depth = vec![0usize; mol.atom_count()];
+    let mut queue = VecDeque::new();
+    let mut best_size = usize::MAX;
+    let mut rings = Vec::new();
+    state[root.0 as usize] = 1;
+    queue.push_back(root);
+
+    while let Some(current) = queue.pop_front() {
+        state[current.0 as usize] = 2;
+        for (neighbor, bond) in mol.neighbors(current) {
+            if !is_ring_eligible(mol.bond(bond).order) || blocked_bonds.contains(&bond) {
+                continue;
+            }
+            if parent[current.0 as usize] == Some(neighbor) {
+                continue;
+            }
+            match state[neighbor.0 as usize] {
+                0 => {
+                    state[neighbor.0 as usize] = 1;
+                    parent[neighbor.0 as usize] = Some(current);
+                    depth[neighbor.0 as usize] = depth[current.0 as usize] + 1;
+                    queue.push_back(neighbor);
+                }
+                1 => {
+                    let mut left = current;
+                    let mut right = neighbor;
+                    let mut left_path = vec![left];
+                    let mut right_path = vec![right];
+                    while depth[left.0 as usize] > depth[right.0 as usize] {
+                        left = parent[left.0 as usize].expect("BFS node has a parent");
+                        left_path.push(left);
+                    }
+                    while depth[right.0 as usize] > depth[left.0 as usize] {
+                        right = parent[right.0 as usize].expect("BFS node has a parent");
+                        right_path.push(right);
+                    }
+                    while left != right {
+                        left = parent[left.0 as usize].expect("BFS node has a parent");
+                        right = parent[right.0 as usize].expect("BFS node has a parent");
+                        left_path.push(left);
+                        right_path.push(right);
+                    }
+                    let ring_size = left_path.len() + right_path.len() - 1;
+                    if ring_size > best_size {
+                        continue;
+                    }
+                    let mut ring = left_path;
+                    right_path.pop();
+                    right_path.reverse();
+                    ring.extend(right_path);
+                    if ring.len() < 3 {
+                        continue;
+                    }
+                    if ring_size < best_size {
+                        best_size = ring_size;
+                        rings.clear();
+                    }
+                    rings.push(ring);
+                }
+                _ => {}
+            }
+        }
+    }
+
+    rings.sort();
+    rings.dedup();
+    rings
+}
+
 /// Build the symmetrized smallest-ring set from the Horton basis and the
 /// root-centered Figueras candidates.
 ///

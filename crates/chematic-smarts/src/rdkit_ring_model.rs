@@ -58,7 +58,7 @@ use rustc_hash::{FxHashMap, FxHashSet};
 
 use chematic_core::{AtomIdx, BondIdx, Molecule};
 use chematic_perception::{
-    RingSet, find_smallest_rings_bfs, find_smallest_rings_bfs_with_trimmed_bonds,
+    RingSet, find_smallest_rings_bfs, find_smallest_rings_bfs_with_rdkit_tree,
 };
 
 /// Typed error for chematic-smarts's opt-in RDKit-parity matching mode.
@@ -314,8 +314,7 @@ pub fn build_rdkit_parity_ring_model(
                         }
                     }
                 }
-                for candidate in
-                    find_smallest_rings_bfs_with_trimmed_bonds(mol, root, &blocked_bonds)
+                for candidate in find_smallest_rings_bfs_with_rdkit_tree(mol, root, &blocked_bonds)
                 {
                     candidates_examined += 1;
                     if candidates_examined > budget.max_candidates {
