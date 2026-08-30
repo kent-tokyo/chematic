@@ -228,6 +228,19 @@ fn assign_aromaticity_ex_impl(
     algo: AromaticityAlgorithm,
     ring_fusion_aware: bool,
 ) -> AromaticityModel {
+    // The RDKit-compatible mode uses the independently verified parity engine
+    // as its production path. Unlike this module's historical per-ring Hückel
+    // pass, that engine evaluates connected fused-ring subsets and therefore
+    // handles non-alternant whole-perimeter systems such as azulene. Keep the
+    // old infallible implementation as a defensive fallback for molecules the
+    // parity engine cannot kekulize; callers needing to distinguish that case
+    // can use the fallible `assign_aromaticity_rdkit_parity_experimental` API.
+    if algo == AromaticityAlgorithm::RdkitLike
+        && let Ok(model) = crate::rdkit_parity::assign_aromaticity_rdkit_parity_experimental(mol)
+    {
+        return model;
+    }
+
     let ring_set = find_sssr(mol);
     let sssr_rings = ring_set.rings();
 
@@ -3183,6 +3196,19 @@ mod tests {
             m.aromatic_atom_count(),
             5,
             "phosphole: all 5 atoms aromatic in RdkitLike"
+        );
+    }
+
+    #[test]
+    fn test_azulene_rdkit_like_uses_whole_perimeter() {
+        // The strict per-ring Hückel pass sees azulene as an odd/odd fused
+        // split. RDKit evaluates the connected 10π perimeter instead.
+        let mol = mol_kekulized("C1=CC2=CC=CC=CC2=C1");
+        let m = assign_aromaticity_ex(&mol, AromaticityAlgorithm::RdkitLike);
+        assert_eq!(
+            m.aromatic_atom_count(),
+            10,
+            "azulene: whole perimeter must be aromatic in RdkitLike"
         );
     }
 
