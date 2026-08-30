@@ -361,6 +361,15 @@ pub fn find_smallest_rings_bfs_with_trimmed_bonds(
     root: AtomIdx,
     blocked_bonds: &FxHashSet<BondIdx>,
 ) -> Vec<Vec<AtomIdx>> {
+    let trimmed = trim_ring_bonds(mol, blocked_bonds);
+    find_smallest_rings_bfs_with_blocked_bonds(mol, root, &trimmed)
+}
+
+/// Compute the active-bond mask after repeatedly removing bonds incident to
+/// degree-0/1 atoms. This is the non-mutating equivalent of RDKit's
+/// `trimBonds` queue and is useful when several rooted searches share a
+/// progressively reduced graph.
+pub fn trim_ring_bonds(mol: &Molecule, blocked_bonds: &FxHashSet<BondIdx>) -> FxHashSet<BondIdx> {
     let mut active_degree = vec![0usize; mol.atom_count()];
     for (bond, entry) in mol.bonds() {
         if !is_ring_eligible(entry.order) || blocked_bonds.contains(&bond) {
@@ -396,7 +405,7 @@ pub fn find_smallest_rings_bfs_with_trimmed_bonds(
         }
     }
 
-    find_smallest_rings_bfs_with_blocked_bonds(mol, root, &trimmed)
+    trimmed
 }
 
 /// Find smallest rings from the BFS tree used by RDKit's Figueras pass.
@@ -594,8 +603,19 @@ pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
     } else {
         let mut duplicate_groups: FxHashMap<Vec<u32>, (Vec<AtomIdx>, Vec<AtomIdx>)> =
             FxHashMap::default();
+        let mut active_blocked = FxHashSet::default();
         for &root in &d2_roots {
-            for candidate in find_smallest_rings_bfs(mol, root) {
+            let candidates = find_smallest_rings_bfs_with_blocked_bonds(mol, root, &active_blocked);
+            if candidates.is_empty() {
+                for (_, bond) in mol.neighbors(root) {
+                    if is_ring_eligible(mol.bond(bond).order) {
+                        active_blocked.insert(bond);
+                    }
+                }
+                active_blocked = trim_ring_bonds(mol, &active_blocked);
+                continue;
+            }
+            for candidate in candidates {
                 let key = bond_set_key(&ring_bond_set(mol, &candidate));
                 let entry = duplicate_groups
                     .entry(key)

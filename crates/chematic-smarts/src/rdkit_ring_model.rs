@@ -58,8 +58,8 @@ use rustc_hash::{FxHashMap, FxHashSet};
 
 use chematic_core::{AtomIdx, BondIdx, Molecule};
 use chematic_perception::{
-    RingSet, find_smallest_rings_bfs, find_smallest_rings_bfs_with_rdkit_tree,
-    select_rdkit_d2_roots,
+    RingSet, find_smallest_rings_bfs, find_smallest_rings_bfs_with_blocked_bonds,
+    find_smallest_rings_bfs_with_rdkit_tree, select_rdkit_d2_roots, trim_ring_bonds,
 };
 
 /// Typed error for chematic-smarts's opt-in RDKit-parity matching mode.
@@ -268,8 +268,19 @@ pub fn build_rdkit_parity_ring_model(
         // searches for the next-smallest replacement ring.
         let mut duplicate_groups: FxHashMap<Vec<u32>, (Vec<AtomIdx>, Vec<AtomIdx>)> =
             FxHashMap::default();
+        let mut active_blocked = FxHashSet::default();
         for root in roots {
-            for candidate in find_smallest_rings_bfs(mol, root) {
+            let candidates = find_smallest_rings_bfs_with_blocked_bonds(mol, root, &active_blocked);
+            if candidates.is_empty() {
+                for (_, bond) in mol.neighbors(root) {
+                    if is_ring_bond(mol, bond) {
+                        active_blocked.insert(bond);
+                    }
+                }
+                active_blocked = trim_ring_bonds(mol, &active_blocked);
+                continue;
+            }
+            for candidate in candidates {
                 candidates_examined += 1;
                 if candidates_examined > budget.max_candidates {
                     return Err(RdkitParityError::RingModelBudgetExceeded {
