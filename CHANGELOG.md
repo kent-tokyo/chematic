@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.66.0] - 2026-08-31
+
+### v0.66.0 — bounded reaction parsing
+
+- Added `ReactionParseLimits` and `parse_reaction_with_limits` for bounded
+  reaction SMILES input, component counts, atoms, and bonds.
+- Made the default reaction parser use safe finite limits while retaining the
+  existing parse/write API shape.
+- Added typed resource-limit errors and regression coverage.
+
 ## [0.65.0] - 2026-08-31
 
 ### v0.65.0 — bounded batch CLI inputs

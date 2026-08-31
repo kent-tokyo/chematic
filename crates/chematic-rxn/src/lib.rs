@@ -34,7 +34,8 @@ pub use query::{
     parse_reaction_query, query_reaction,
 };
 pub use reaction::{
-    Reaction, ReactionCenter, RxnError, find_reaction_center, parse_reaction, write_reaction,
+    Reaction, ReactionCenter, ReactionParseLimits, RxnError, find_reaction_center, parse_reaction,
+    parse_reaction_with_limits, write_reaction,
 };
 pub use retro::{DEFAULT_TEMPLATES, RetroClass, RetroResult, RetroTemplate, retro_disconnect};
 pub use transform::{

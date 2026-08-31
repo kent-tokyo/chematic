@@ -170,6 +170,12 @@ printf 'c1ccccc1\tc\nCCO\t[\n' | chematic batch-substructure
 reaction records with component counts and reaction-center summaries. Invalid
 reaction lines remain as per-record errors in the manifest.
 
+Reaction parsing also enforces bounded input and component sizes through the
+public `ReactionParseLimits` contract. The default limits are 16 MiB per
+reaction, 10,000 components per side, 100,000 atoms per component, and 200,000
+bonds per component; callers can use `parse_reaction_with_limits` for a
+stricter policy.
+
 ```sh
 printf 'CCO>>CCO\nCCO\n' | chematic batch-reactions
 ```
