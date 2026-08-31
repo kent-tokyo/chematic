@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.57.0] - 2026-08-31
+
+### v0.57.0 — resilient batch report CLI workflow
+
+- Added `chematic batch-report` for line-delimited SMILES input from stdin or
+  a file.
+- Added JSON manifest output with input-order records, complete reports for
+  valid molecules, and retained per-record errors for invalid molecules.
+- Added blank-line/comment handling, regression coverage, and documentation.
+
 ## [0.56.0] - 2026-08-31
 
 ### v0.56.0 — reaction similarity CLI workflow

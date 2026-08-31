@@ -107,6 +107,12 @@ enum Command {
         /// Second reaction SMILES.
         reaction_b: String,
     },
+    /// Process one SMILES per line and retain per-record errors in JSON.
+    BatchReport {
+        /// Read line-delimited SMILES from this file instead of stdin.
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+    },
 }
 
 fn format_name(format: &str) -> Option<String> {
@@ -450,6 +456,18 @@ fn reaction_similarity_json(reaction_a: &str, reaction_b: &str) -> Result<String
     .to_string())
 }
 
+fn batch_report_json(text: &str) -> Result<String, String> {
+    let smiles: Vec<String> = text
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .map(str::to_string)
+        .collect();
+    let refs: Vec<&str> = smiles.iter().map(String::as_str).collect();
+    let report = chematic_chem::screen_smiles(&refs);
+    serde_json::to_string(&report).map_err(|e| format!("serialize batch report: {e}"))
+}
+
 fn run(cli: Cli) -> Result<(), String> {
     match cli.command {
         Command::Convert {
@@ -519,6 +537,11 @@ fn run(cli: Cli) -> Result<(), String> {
             let json = reaction_similarity_json(&reaction_a, &reaction_b)?;
             write_output(None, &format!("{json}\n"))
         }
+        Command::BatchReport { input } => {
+            let text = read_input(input.as_ref())?;
+            let json = batch_report_json(&text)?;
+            write_output(None, &format!("{json}\n"))
+        }
     }
 }
 
@@ -532,7 +555,7 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::{
-        convert_text, descriptors_json, fingerprint_json, reaction_balance_json,
+        batch_report_json, convert_text, descriptors_json, fingerprint_json, reaction_balance_json,
         reaction_fingerprint_json, reaction_json, reaction_match_json, reaction_similarity_json,
         report_json, similarity_json, standardize_json, substructure_json,
     };
@@ -755,5 +778,19 @@ mod tests {
     #[test]
     fn reaction_similarity_rejects_invalid_reaction() {
         assert!(reaction_similarity_json("CCO", "CCO>>CCO").is_err());
+    }
+
+    #[test]
+    fn batch_report_retains_partial_errors_in_input_order() {
+        let json: serde_json::Value =
+            serde_json::from_str(&batch_report_json("CCO\nC1CC\n# comment\nCCN\n").unwrap())
+                .unwrap();
+        let records = json["records"].as_array().unwrap();
+        assert_eq!(records.len(), 3);
+        assert_eq!(records[0]["input_index"], 0);
+        assert!(records[0]["report"].is_object());
+        assert!(records[1]["error"].as_str().is_some());
+        assert_eq!(records[2]["input_index"], 2);
+        assert!(records[2]["report"].is_object());
     }
 }

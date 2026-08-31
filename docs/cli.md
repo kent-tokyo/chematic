@@ -105,3 +105,12 @@ normalized reactions. Invalid reaction input is rejected.
 ```sh
 chematic reaction-similarity 'CCO>>CC=O' 'CCO>>CC=O'
 ```
+
+`batch-report` reads one SMILES per line from stdin (or `--input FILE`) and
+returns a JSON manifest with one record per non-empty, non-comment line.
+Successful records contain the complete report; invalid records retain their
+input index and an error, so one bad molecule does not discard the batch.
+
+```sh
+printf 'CCO\nC1CC\nCCN\n' | chematic batch-report
+```
