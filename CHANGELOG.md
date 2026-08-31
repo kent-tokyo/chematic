@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.37.0] - 2026-08-31
+
+### v0.37.0 — bounded, atom-order-invariant tautomer convergence
+
+- Tautomer canonicalization now applies non-overlapping matches of the active
+  rule together within one bounded iteration. Conflicting matches remain
+  deferred for a later pass, preserving the safety of `max_iter` while
+  preventing independent sites from being selected by input atom order.
+- Promoted the large independent-site convergence regression from an ignored
+  diagnostic to a normal test and documented the deterministic bounded-pass
+  contract.
+
 ## [0.36.0] - 2026-08-31
 
 ### v0.36.0 — operation-level compatibility scorecards
@@ -7608,6 +7620,7 @@ Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception 
 
 [Unreleased]: https://github.com/kent-tokyo/chematic/compare/v0.31.0...HEAD
 [0.36.0]: https://github.com/kent-tokyo/chematic/compare/v0.35.0...v0.36.0
+[0.37.0]: https://github.com/kent-tokyo/chematic/compare/v0.36.0...v0.37.0
 [0.31.0]: https://github.com/kent-tokyo/chematic/compare/v0.30.0...v0.31.0
 [0.1.22]: https://github.com/kent-tokyo/chematic/compare/v0.1.21...v0.1.22
 [0.1.21]: https://github.com/kent-tokyo/chematic/compare/v0.1.20...v0.1.21

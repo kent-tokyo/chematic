@@ -1662,17 +1662,7 @@ fn transfer_hydrogen(
     Some(builder.build())
 }
 
-/// Apply the first matching transformation for `rule`; return the new molecule.
-fn apply_first_match(
-    mol: &Molecule,
-    rule: &TautomerRule,
-    config: &TautomerConfig,
-    rank: &[u32],
-) -> Option<Molecule> {
-    apply_first_match_tracked(mol, rule, config, rank).map(|(next, ..)| next)
-}
-
-/// Like [`apply_first_match`], but also returns the (donor, bridge, acceptor)
+/// Like the first-match helper, but also returns the (donor, bridge, acceptor)
 /// triple that was moved -- needed by [`tautomer_parent`] to record which
 /// atoms/bonds each applied transform touched.
 fn apply_first_match_tracked(
@@ -1704,6 +1694,67 @@ fn apply_all_matches(
         .collect()
 }
 
+/// Apply all non-overlapping matches of one rule in a single bounded pass.
+///
+/// A rule match changes the donor/bridge/acceptor and the two bonds joining
+/// them.  Matches that touch any of those atoms are therefore conservatively
+/// treated as conflicting and deferred to a later pass.  This preserves the
+/// old rule priority while allowing independent sites to consume one
+/// `max_iter` unit together.  In particular, the result no longer depends on
+/// which of many independent sites happened to receive the first raw atom
+/// index when the transform budget is reached.
+fn apply_nonconflicting_matches(
+    mol: &Molecule,
+    rule: &TautomerRule,
+    config: &TautomerConfig,
+    rank: &[u32],
+) -> (Molecule, bool) {
+    let matches = find_matches(mol, rule, rank);
+    if matches.is_empty() {
+        return (mol.clone(), false);
+    }
+
+    let mut current = mol.clone();
+    let mut occupied: HashSet<AtomIdx> = HashSet::new();
+    let mut changed = false;
+
+    for (donor, bridge, acceptor) in matches {
+        let Some((db, _)) = mol.bond_between(donor, bridge) else {
+            continue;
+        };
+        let Some((ba, _)) = mol.bond_between(bridge, acceptor) else {
+            continue;
+        };
+        let touched = [
+            donor,
+            bridge,
+            acceptor,
+            mol.bond(db).atom1,
+            mol.bond(db).atom2,
+            mol.bond(ba).atom1,
+            mol.bond(ba).atom2,
+        ];
+        if touched.iter().any(|atom| occupied.contains(atom)) {
+            continue;
+        }
+        let Some(next) = transfer_hydrogen(
+            &current,
+            donor,
+            bridge,
+            acceptor,
+            &config.blocked_atoms,
+            &config.blocked_bonds,
+        ) else {
+            continue;
+        };
+        current = next;
+        occupied.extend(touched);
+        changed = true;
+    }
+
+    (current, changed)
+}
+
 // ---------------------------------------------------------------------------
 // TautomerConfig
 // ---------------------------------------------------------------------------
@@ -1727,18 +1778,11 @@ fn apply_all_matches(
 pub struct TautomerConfig {
     /// Maximum iterations in [`canonical_tautomer_with_config`] (default 16).
     ///
-    /// Each outer iteration applies at most one transformation (the first
-    /// match found, in atom-index order, for the first rule that has an
-    /// unseen match). If a molecule has MORE independent, non-automorphic,
-    /// same-rule tautomerizable sites than `max_iter` allows, the final
-    /// result depends on input atom order (parse/spelling order): which
-    /// subset of sites got converted before the budget ran out differs.
-    /// Confirmed reachable (not just theoretical) for a "comb" molecule
-    /// with >16 independent enol arms, but no known real-molecule instance
-    /// hits this in practice -- see
-    /// `test_max_iter_default_diverges_on_many_independent_sites` (an
-    /// `#[ignore]`d regression pin, not a passing guarantee) for the exact
-    /// mechanism and why it's not fixed by simply raising this constant.
+    /// Each outer iteration applies all non-overlapping matches of the first
+    /// active forward rule. Overlapping matches are deferred and reconsidered
+    /// in the next iteration. This keeps the bound meaningful for chained or
+    /// conflicting transformations while making independent sites consume one
+    /// iteration together, independent of input atom insertion order.
     pub max_iter: usize,
     /// Maximum tautomers returned by [`enumerate_tautomers_with_config`] (default 32).
     pub max_tautomers: usize,
@@ -2032,7 +2076,8 @@ fn canonical_tautomer_search(
             .into_iter()
             .filter(|r| r.prefer_forward)
         {
-            if let Some(next) = apply_first_match(&current, rule, config, rank) {
+            let (next, applied) = apply_nonconflicting_matches(&current, rule, config, rank);
+            if applied {
                 let fp = mol_fingerprint(&next);
                 if !seen.contains(&fp) {
                     seen.insert(fp);
@@ -2812,28 +2857,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "confirmed real, root-caused, and deliberately not fixed this \
-                round: canonical_tautomer_with_config's greedy loop applies \
-                one transform per outer iteration via apply_first_match \
-                (atom-index order, see find_matches), bounded by \
-                config.max_iter (default 16). A molecule with MORE \
-                independent same-rule tautomerizable sites than max_iter \
-                allows has its FINAL result depend on atom insertion order: \
-                which subset of sites got converted before the budget ran \
-                out differs. Verified NOT a deeper tie-break flaw -- with \
-                max_iter=1000 (room to fully process all 25 sites) both \
-                atom orderings converge to the byte-identical correct \
-                answer (see test_max_iter_1000_resolves_the_divergence); \
-                verified NOT a canonical_smiles bug either (see \
-                test_canonical_smiles_alone_is_order_independent_on_comb). \
-                The trigger (>16 independent, same-rule, non-automorphic \
-                tautomerizable sites in one molecule) is an extreme edge \
-                case with no known real-molecule instance -- a proper fix \
-                needs batching all of a rule's non-conflicting matches per \
-                iteration instead of raising the constant, an architectural \
-                change with its own conflict-resolution complexity, \
-                correctly left out of scope for this round rather than \
-                rushed. See TautomerConfig::max_iter's doc comment."]
     fn test_max_iter_default_diverges_on_many_independent_sites() {
         let forward = build_comb(25, false, false);
         let reversed = build_comb(25, true, false);
@@ -2850,10 +2873,8 @@ mod tests {
 
     #[test]
     fn test_max_iter_1000_resolves_the_divergence() {
-        // Companion to the #[ignore]d test above: proves the divergence
-        // there is PURELY max_iter exhaustion, not a deeper algorithmic
-        // flaw -- with enough budget to process all 25 independent sites,
-        // atom insertion order no longer matters.
+        // With enough budget, this also exercises the ordinary convergence
+        // path rather than the batched independent-site path.
         let forward = build_comb(25, false, false);
         let reversed = build_comb(25, true, false);
         let big_config = TautomerConfig {
