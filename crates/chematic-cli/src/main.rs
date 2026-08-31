@@ -87,6 +87,11 @@ enum Command {
         /// Reaction SMARTS in `reactant>>product` form.
         query: String,
     },
+    /// Check atom balance for a reaction and report element counts.
+    ReactionBalance {
+        /// Reaction SMILES in `reactants>agents>products` form.
+        reaction_smiles: String,
+    },
 }
 
 fn format_name(format: &str) -> Option<String> {
@@ -377,6 +382,19 @@ fn reaction_match_json(reaction_smiles: &str, query: &str) -> Result<String, Str
     .to_string())
 }
 
+fn reaction_balance_json(reaction_smiles: &str) -> Result<String, String> {
+    let reaction = chematic_rxn::parse_reaction(reaction_smiles).map_err(|e| e.to_string())?;
+    let balance = chematic_rxn::balance_check(&reaction);
+    Ok(serde_json::json!({
+        "reaction_smiles": chematic_rxn::write_reaction(&reaction),
+        "balanced": balance.balanced,
+        "reactant_formula": balance.reactant_formula,
+        "product_formula": balance.product_formula,
+        "differences": balance.diff(),
+    })
+    .to_string())
+}
+
 fn run(cli: Cli) -> Result<(), String> {
     match cli.command {
         Command::Convert {
@@ -428,6 +446,10 @@ fn run(cli: Cli) -> Result<(), String> {
             let json = reaction_match_json(&reaction_smiles, &query)?;
             write_output(None, &format!("{json}\n"))
         }
+        Command::ReactionBalance { reaction_smiles } => {
+            let json = reaction_balance_json(&reaction_smiles)?;
+            write_output(None, &format!("{json}\n"))
+        }
     }
 }
 
@@ -441,8 +463,8 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::{
-        convert_text, descriptors_json, fingerprint_json, reaction_json, reaction_match_json,
-        report_json, similarity_json, standardize_json, substructure_json,
+        convert_text, descriptors_json, fingerprint_json, reaction_balance_json, reaction_json,
+        reaction_match_json, report_json, similarity_json, standardize_json, substructure_json,
     };
 
     #[test]
@@ -607,6 +629,25 @@ mod tests {
             reaction_match_json("CCO>>CCO", "[#6]")
                 .unwrap_err()
                 .contains("invalid reaction SMARTS")
+        );
+    }
+
+    #[test]
+    fn reaction_balance_reports_counts_and_differences() {
+        let balanced: serde_json::Value =
+            serde_json::from_str(&reaction_balance_json("CO.CO>>COC.O").unwrap()).unwrap();
+        assert_eq!(balanced["balanced"], true);
+        assert!(balanced["differences"].as_array().unwrap().is_empty());
+
+        let unbalanced: serde_json::Value =
+            serde_json::from_str(&reaction_balance_json("C>>CC").unwrap()).unwrap();
+        assert_eq!(unbalanced["balanced"], false);
+        assert!(
+            unbalanced["differences"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|difference| difference.as_str().unwrap().contains("C"))
         );
     }
 }

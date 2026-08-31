@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.54.0] - 2026-08-31
+
+### v0.54.0 — reaction atom-balance CLI workflow
+
+- Added `chematic reaction-balance <REACTION_SMILES>` with reactant/product
+  element counts including implicit hydrogens.
+- Added explicit balance status and human-readable element differences while
+  excluding agents from the calculation.
+- Added CLI regression coverage and documented the command contract.
+
 ## [0.53.0] - 2026-08-31
 
 ### v0.53.0 — reaction SMARTS matching CLI workflow

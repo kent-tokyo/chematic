@@ -80,3 +80,11 @@ syntax is reported as a command error.
 ```sh
 chematic reaction-match 'CCO>>CCO' '[#6]>>[#6]'
 ```
+
+`reaction-balance <REACTION_SMILES>` checks element and implicit-hydrogen
+counts on the reactant and product sides. It emits both count maps and human-
+readable differences; agents are excluded from the balance calculation.
+
+```sh
+chematic reaction-balance 'CO.CO>>COC.O'
+```
