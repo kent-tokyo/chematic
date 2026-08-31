@@ -108,9 +108,9 @@ pub use opendx::{
     write_opendx_lossy,
 };
 pub use orca::{
-    GeometryFrame, OrcaAtom, OrcaBlock, OrcaCoords, OrcaInput, OrcaInputError, OrcaOptConvergence,
-    OrcaOutput, OrcaOutputError, OrcaTermination, parse_orca_input, parse_orca_output,
-    write_orca_input,
+    GeometryFrame, OrcaAtom, OrcaBlock, OrcaCoords, OrcaInput, OrcaInputError,
+    OrcaInputParseLimits, OrcaOptConvergence, OrcaOutput, OrcaOutputError, OrcaTermination,
+    parse_orca_input, parse_orca_input_with_limits, parse_orca_output, write_orca_input,
 };
 pub use pdbqt::{PdbqtError, autodock_atom_type, parse_pdbqt, write_pdbqt};
 pub use pqr::{

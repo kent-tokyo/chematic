@@ -278,14 +278,16 @@ disambiguate by crate, not by name alone:
 
 ### ORCA input
 
-- **Rust**: `chematic_mol::{parse_orca_input, write_orca_input, OrcaInput, OrcaInputError, OrcaBlock, OrcaCoords, OrcaAtom}`.
+- **Rust**: `chematic_mol::{parse_orca_input, parse_orca_input_with_limits, write_orca_input, OrcaInput, OrcaInputError, OrcaInputParseLimits, OrcaBlock, OrcaCoords, OrcaAtom}`.
 - **Python**: `parse_orca_input`, `write_orca_input`.
 - **WASM**: `mol_from_orca_input`, `orca_input_coords_json`, `orca_input_to_json`, `write_orca_input_json`.
 - **Coordinate units**: Ångström.
 - **Connectivity**: no bond perception anywhere in this module.
 - **Round-trip**: lossless preservation of unknown `%block ... end` blocks, including nested sub-blocks.
 - **Lossy operations**: none named.
-- **Parse limits**: no `OrcaParseLimits` type exists (unlike mmCIF/PQR/Cube/OpenDX).
+- **Parse limits**: `OrcaInputParseLimits` bounds input bytes, physical line
+  length/count, keywords, blocks, block bytes, and coordinate atoms. The
+  existing `parse_orca_input` parser uses finite defaults.
 
 ### ORCA output
 

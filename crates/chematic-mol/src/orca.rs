@@ -100,6 +100,32 @@ use chematic_core::{Atom, Element, Molecule, MoleculeBuilder};
 /// `gaussian.rs`'s `GjfResult`.
 type OrcaXyzMolecule = (Molecule, Vec<(f64, f64, f64)>, i32, u32);
 
+/// Resource limits for ORCA input parsing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct OrcaInputParseLimits {
+    pub max_input_bytes: usize,
+    pub max_line_bytes: usize,
+    pub max_lines: usize,
+    pub max_keywords: usize,
+    pub max_blocks: usize,
+    pub max_block_bytes: usize,
+    pub max_atoms: usize,
+}
+
+impl Default for OrcaInputParseLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: 64 * 1024 * 1024,
+            max_line_bytes: 1024 * 1024,
+            max_lines: 1_000_000,
+            max_keywords: 100_000,
+            max_blocks: 256,
+            max_block_bytes: 16 * 1024 * 1024,
+            max_atoms: 1_000_000,
+        }
+    }
+}
+
 // ===========================================================================
 // Input: errors
 // ===========================================================================
@@ -131,6 +157,12 @@ pub enum OrcaInputError {
     NonFiniteCoordinate { line: usize, value: String },
     /// A non-blank top-level line matched none of `#`/`!`/`%`/`*`.
     UnexpectedLine { line: usize, content: String },
+    /// The input exceeded a configured resource limit.
+    ResourceLimit {
+        resource: &'static str,
+        actual: usize,
+        limit: usize,
+    },
 }
 
 impl std::fmt::Display for OrcaInputError {
@@ -167,6 +199,11 @@ impl std::fmt::Display for OrcaInputError {
             Self::UnexpectedLine { line, content } => {
                 write!(f, "unexpected top-level line {line}: '{content}'")
             }
+            Self::ResourceLimit {
+                resource,
+                actual,
+                limit,
+            } => write!(f, "{resource} has size {actual}, exceeding limit {limit}"),
         }
     }
 }
@@ -304,7 +341,38 @@ pub struct OrcaInput {
 
 /// Parse an ORCA input file (`.inp`).
 pub fn parse_orca_input(input: &str) -> Result<OrcaInput, OrcaInputError> {
+    parse_orca_input_with_limits(input, &OrcaInputParseLimits::default())
+}
+
+/// Parse an ORCA input file with explicit resource limits.
+pub fn parse_orca_input_with_limits(
+    input: &str,
+    limits: &OrcaInputParseLimits,
+) -> Result<OrcaInput, OrcaInputError> {
+    if input.len() > limits.max_input_bytes {
+        return Err(OrcaInputError::ResourceLimit {
+            resource: "input bytes",
+            actual: input.len(),
+            limit: limits.max_input_bytes,
+        });
+    }
     let lines: Vec<&str> = input.lines().collect();
+    if lines.len() > limits.max_lines {
+        return Err(OrcaInputError::ResourceLimit {
+            resource: "lines",
+            actual: lines.len(),
+            limit: limits.max_lines,
+        });
+    }
+    if let Some(line_bytes) = lines.iter().map(|line| line.len()).max()
+        && line_bytes > limits.max_line_bytes
+    {
+        return Err(OrcaInputError::ResourceLimit {
+            resource: "line bytes",
+            actual: line_bytes,
+            limit: limits.max_line_bytes,
+        });
+    }
     let mut out = OrcaInput::default();
     let mut i = 0usize;
     while i < lines.len() {
@@ -322,17 +390,47 @@ pub fn parse_orca_input(input: &str) -> Result<OrcaInput, OrcaInputError> {
             let rest = rest.split('#').next().unwrap_or("");
             out.keywords
                 .extend(rest.split_whitespace().map(|s| s.to_string()));
+            if out.keywords.len() > limits.max_keywords {
+                return Err(OrcaInputError::ResourceLimit {
+                    resource: "keywords",
+                    actual: out.keywords.len(),
+                    limit: limits.max_keywords,
+                });
+            }
             i += 1;
             continue;
         }
         if trimmed.starts_with('%') {
             let (block, next_i) = parse_block(&lines, i)?;
+            if out.blocks.len() >= limits.max_blocks {
+                return Err(OrcaInputError::ResourceLimit {
+                    resource: "blocks",
+                    actual: out.blocks.len() + 1,
+                    limit: limits.max_blocks,
+                });
+            }
+            if block.raw.len() > limits.max_block_bytes {
+                return Err(OrcaInputError::ResourceLimit {
+                    resource: "block bytes",
+                    actual: block.raw.len(),
+                    limit: limits.max_block_bytes,
+                });
+            }
             out.blocks.push(block);
             i = next_i;
             continue;
         }
         if trimmed.starts_with('*') {
             let (coords, next_i) = parse_coords(&lines, i)?;
+            if let OrcaCoords::Xyz { atoms, .. } = &coords
+                && atoms.len() > limits.max_atoms
+            {
+                return Err(OrcaInputError::ResourceLimit {
+                    resource: "atoms",
+                    actual: atoms.len(),
+                    limit: limits.max_atoms,
+                });
+            }
             out.coords = Some(coords);
             i = next_i;
             continue;
@@ -1311,6 +1409,55 @@ H   0.000000  -0.757200   0.586200
             }
             other => panic!("expected XyzFile, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn bounded_input_parser_rejects_input_and_line_limits() {
+        assert!(matches!(
+            parse_orca_input_with_limits(
+                WATER_OPT_FREQ_INP,
+                &OrcaInputParseLimits {
+                    max_input_bytes: 8,
+                    ..Default::default()
+                }
+            ),
+            Err(OrcaInputError::ResourceLimit {
+                resource: "input bytes",
+                ..
+            })
+        ));
+
+        let long_line = format!("{}\n", "x".repeat(32));
+        assert!(matches!(
+            parse_orca_input_with_limits(
+                &long_line,
+                &OrcaInputParseLimits {
+                    max_line_bytes: 16,
+                    ..Default::default()
+                }
+            ),
+            Err(OrcaInputError::ResourceLimit {
+                resource: "line bytes",
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn bounded_input_parser_rejects_coordinate_atom_limit() {
+        assert!(matches!(
+            parse_orca_input_with_limits(
+                WATER_OPT_FREQ_INP,
+                &OrcaInputParseLimits {
+                    max_atoms: 2,
+                    ..Default::default()
+                }
+            ),
+            Err(OrcaInputError::ResourceLimit {
+                resource: "atoms",
+                ..
+            })
+        ));
     }
 
     #[test]

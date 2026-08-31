@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.77.0] - 2026-08-31
+
+### v0.77.0 — bounded ORCA input
+
+- Added `OrcaInputParseLimits` and `parse_orca_input_with_limits` for input
+  bytes, physical line length, line count, keywords, blocks, block bytes, and
+  coordinate atoms.
+- Added typed resource-limit errors and regression coverage while preserving
+  the existing `parse_orca_input` entry point with finite defaults.
+
 ## [0.76.0] - 2026-08-31
 
 ### v0.76.0 — bounded LAMMPS data input
