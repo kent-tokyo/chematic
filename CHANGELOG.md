@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.46.0] - 2026-08-31
+
+### v0.46.0 — compact descriptor CLI output
+
+- Added `chematic descriptors <SMILES>` for compact machine-readable JSON
+  containing core identity, count, physicochemical, and Lipinski descriptors.
+- Kept descriptor failures explicit and non-zero, matching the conversion CLI's
+  fail-closed behavior.
+- Added descriptor CLI regression coverage and documented the command contract.
+
 ## [0.45.0] - 2026-08-31
 
 ### v0.45.0 — first composable command-line workflow
@@ -7712,6 +7722,7 @@ Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception 
 [0.36.0]: https://github.com/kent-tokyo/chematic/compare/v0.35.0...v0.36.0
 [0.37.0]: https://github.com/kent-tokyo/chematic/compare/v0.36.0...v0.37.0
 [0.38.0]: https://github.com/kent-tokyo/chematic/compare/v0.37.0...v0.38.0
+[0.46.0]: https://github.com/kent-tokyo/chematic/compare/v0.45.0...v0.46.0
 [0.45.0]: https://github.com/kent-tokyo/chematic/compare/v0.44.0...v0.45.0
 [0.44.0]: https://github.com/kent-tokyo/chematic/compare/v0.43.0...v0.44.0
 [0.43.0]: https://github.com/kent-tokyo/chematic/compare/v0.42.0...v0.43.0

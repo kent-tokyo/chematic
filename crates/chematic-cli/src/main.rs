@@ -35,6 +35,11 @@ enum Command {
         #[arg(short, long)]
         output: Option<PathBuf>,
     },
+    /// Calculate a compact JSON descriptor record from a SMILES string.
+    Descriptors {
+        /// SMILES to analyze.
+        smiles: String,
+    },
 }
 
 fn format_name(format: &str) -> Option<String> {
@@ -121,6 +126,23 @@ fn write_output(path: Option<&PathBuf>, text: &str) -> Result<(), String> {
     }
 }
 
+fn descriptors_json(smiles: &str) -> Result<String, String> {
+    let mol = chematic_smiles::parse(smiles).map_err(|e| e.to_string())?;
+    Ok(serde_json::json!({
+        "smiles": chematic_smiles::canonical_smiles(&mol),
+        "formula": chematic_chem::calc_mol_formula(&mol),
+        "heavy_atoms": chematic_chem::heavy_atom_count(&mol),
+        "molecular_weight": chematic_chem::molecular_weight(&mol),
+        "exact_mass": chematic_chem::exact_mass(&mol),
+        "logp": chematic_chem::logp_crippen(&mol),
+        "tpsa": chematic_chem::tpsa(&mol),
+        "hbd": chematic_chem::hbd_count(&mol),
+        "hba": chematic_chem::hba_count(&mol),
+        "rotatable_bonds": chematic_chem::rotatable_bond_count(&mol),
+    })
+    .to_string())
+}
+
 fn run(cli: Cli) -> Result<(), String> {
     match cli.command {
         Command::Convert {
@@ -132,6 +154,10 @@ fn run(cli: Cli) -> Result<(), String> {
             let text = read_input(input.as_ref())?;
             let converted = convert_text(&text, &input_format, &output_format)?;
             write_output(output.as_ref(), &converted)
+        }
+        Command::Descriptors { smiles } => {
+            let json = descriptors_json(&smiles)?;
+            write_output(None, &format!("{json}\n"))
         }
     }
 }
@@ -145,7 +171,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::convert_text;
+    use super::{convert_text, descriptors_json};
 
     #[test]
     fn converts_smiles_to_mol2_and_back() {
@@ -165,5 +191,14 @@ mod tests {
                 .unwrap_err()
                 .contains("unsupported output format")
         );
+    }
+
+    #[test]
+    fn descriptors_are_json_and_include_core_fields() {
+        let json: serde_json::Value =
+            serde_json::from_str(&descriptors_json("CCO").unwrap()).unwrap();
+        assert_eq!(json["heavy_atoms"], 3);
+        assert!(json["molecular_weight"].as_f64().unwrap() > 40.0);
+        assert_eq!(json["formula"], "C2H6O");
     }
 }
