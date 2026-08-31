@@ -155,12 +155,26 @@ pub struct SdfRecord {
 /// callers can access per-molecule properties (e.g. activity values, MW, etc.).
 pub struct SdfRecordReader<'a> {
     remaining: &'a str,
+    input_bytes: usize,
+    records_read: usize,
+    limits: SdfParseLimits,
 }
 
 impl<'a> SdfRecordReader<'a> {
     /// Create a new reader over the given SDF string.
     pub fn new(input: &'a str) -> Self {
-        Self { remaining: input }
+        Self::with_limits(input, SdfParseLimits::default())
+    }
+
+    /// Create a record reader with explicit input, line, record-size, and
+    /// record-count limits.
+    pub fn with_limits(input: &'a str, limits: SdfParseLimits) -> Self {
+        Self {
+            remaining: input,
+            input_bytes: input.len(),
+            records_read: 0,
+            limits,
+        }
     }
 }
 
@@ -168,67 +182,111 @@ impl<'a> Iterator for SdfRecordReader<'a> {
     type Item = Result<SdfRecord, MolParseError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // A blank first line is a legal MOL name line (issue #171) -- do not
-        // skip it. A genuinely empty gap between/after `$$$$` delimiters is
-        // already handled below via `block.trim().is_empty()`.
-        if self.remaining.is_empty() {
-            return None;
-        }
-
-        // Scan to find the $$$$ delimiter (line-by-line to avoid false matches).
-        let mut byte_offset = 0usize;
-        let (end_byte, after_delim) = loop {
-            let rest = &self.remaining[byte_offset..];
-            match rest.find('\n') {
-                Some(nl) => {
-                    let line = rest[..nl].trim_end_matches('\r');
-                    if line == "$$$$" {
-                        break (byte_offset, &self.remaining[byte_offset + nl + 1..]);
-                    }
-                    byte_offset += nl + 1;
-                }
-                None => {
-                    if rest.trim_end_matches('\r') == "$$$$" {
-                        break (byte_offset, "");
-                    }
-                    break (self.remaining.len(), "");
-                }
+        loop {
+            if self.input_bytes > self.limits.max_input_bytes {
+                self.remaining = "";
+                return Some(Err(MolParseError::ResourceLimit {
+                    resource: "input bytes",
+                    actual: self.input_bytes,
+                    limit: self.limits.max_input_bytes,
+                }));
             }
-        };
+            // A blank first line is a legal MOL name line (issue #171) -- do not
+            // skip it. A genuinely empty gap between/after `$$$$` delimiters is
+            // already handled below via `block.trim().is_empty()`.
+            if self.remaining.is_empty() {
+                return None;
+            }
 
-        let block = &self.remaining[..end_byte];
-        self.remaining = after_delim;
+            // Scan to find the $$$$ delimiter (line-by-line to avoid false matches).
+            let mut byte_offset = 0usize;
+            let (end_byte, after_delim) = loop {
+                let rest = &self.remaining[byte_offset..];
+                match rest.find('\n') {
+                    Some(nl) => {
+                        let line = rest[..nl].trim_end_matches('\r');
+                        if line.len() > self.limits.max_line_bytes {
+                            self.remaining = "";
+                            return Some(Err(MolParseError::ResourceLimit {
+                                resource: "line bytes",
+                                actual: line.len(),
+                                limit: self.limits.max_line_bytes,
+                            }));
+                        }
+                        if line == "$$$$" {
+                            break (byte_offset, &self.remaining[byte_offset + nl + 1..]);
+                        }
+                        byte_offset += nl + 1;
+                    }
+                    None => {
+                        if rest.trim_end_matches('\r') == "$$$$" {
+                            break (byte_offset, "");
+                        }
+                        if rest.trim_end_matches('\r').len() > self.limits.max_line_bytes {
+                            self.remaining = "";
+                            return Some(Err(MolParseError::ResourceLimit {
+                                resource: "line bytes",
+                                actual: rest.trim_end_matches('\r').len(),
+                                limit: self.limits.max_line_bytes,
+                            }));
+                        }
+                        break (self.remaining.len(), "");
+                    }
+                }
+            };
 
-        if block.trim().is_empty() {
-            return self.next();
+            let block = &self.remaining[..end_byte];
+            self.remaining = after_delim;
+
+            if block.trim().is_empty() {
+                continue;
+            }
+
+            if block.len() > self.limits.max_record_bytes {
+                self.remaining = "";
+                return Some(Err(MolParseError::ResourceLimit {
+                    resource: "record bytes",
+                    actual: block.len(),
+                    limit: self.limits.max_record_bytes,
+                }));
+            }
+            if self.records_read >= self.limits.max_records {
+                self.remaining = "";
+                return Some(Err(MolParseError::ResourceLimit {
+                    resource: "records",
+                    actual: self.records_read.saturating_add(1),
+                    limit: self.limits.max_records,
+                }));
+            }
+            self.records_read += 1;
+
+            // Parse molecule + 2D coordinates + stereo diagnostics.
+            let report = match read_mol_with_diagnostics(block) {
+                Ok(report) => report,
+                Err(e) => return Some(Err(e)),
+            };
+
+            // Extract data fields from the part after "M  END".
+            let data_part = block
+                .find("M  END")
+                .map(|pos| &block[pos + 6..])
+                .unwrap_or("");
+            let properties: std::collections::HashMap<String, String> =
+                parse_sd_fields(data_part).into_iter().collect();
+
+            return Some(Ok(SdfRecord {
+                mol: report.mol,
+                meta: report.metadata,
+                coords: report.coords,
+                properties,
+                stereo_diagnostics: report.stereo_diagnostics,
+                ez_diagnostics: report.ez_diagnostics,
+                conformer: report.conformer,
+                coordinate_dimension: report.coordinate_dimension,
+                geometry_rank: report.geometry_rank,
+                stereo3d_diagnostics: report.stereo3d_diagnostics,
+            }));
         }
-
-        // Parse molecule + 2D coordinates + stereo diagnostics.
-        let report = match read_mol_with_diagnostics(block) {
-            Ok(report) => report,
-            Err(e) => return Some(Err(e)),
-        };
-
-        // Extract data fields from the part after "M  END".
-        let data_part = block
-            .find("M  END")
-            .map(|pos| &block[pos + 6..])
-            .unwrap_or("");
-        let properties: std::collections::HashMap<String, String> =
-            parse_sd_fields(data_part).into_iter().collect();
-
-        Some(Ok(SdfRecord {
-            mol: report.mol,
-            meta: report.metadata,
-            coords: report.coords,
-            properties,
-            stereo_diagnostics: report.stereo_diagnostics,
-            ez_diagnostics: report.ez_diagnostics,
-            conformer: report.conformer,
-            coordinate_dimension: report.coordinate_dimension,
-            geometry_rank: report.geometry_rank,
-            stereo3d_diagnostics: report.stereo3d_diagnostics,
-        }))
     }
 }
 
@@ -738,6 +796,40 @@ $$$$
                 resource: "line bytes",
                 ..
             })
+        ));
+    }
+
+    #[test]
+    fn test_sdf_record_reader_enforces_limits_without_recursive_skip() {
+        let input = format!("$$$$\n{}$$$$\n", MOL_A);
+        let mut reader = SdfRecordReader::with_limits(
+            &input,
+            SdfParseLimits {
+                max_records: 0,
+                ..SdfParseLimits::default()
+            },
+        );
+        assert!(matches!(
+            reader.next(),
+            Some(Err(MolParseError::ResourceLimit {
+                resource: "records",
+                ..
+            }))
+        ));
+
+        let mut reader = SdfRecordReader::with_limits(
+            &input,
+            SdfParseLimits {
+                max_input_bytes: 8,
+                ..SdfParseLimits::default()
+            },
+        );
+        assert!(matches!(
+            reader.next(),
+            Some(Err(MolParseError::ResourceLimit {
+                resource: "input bytes",
+                ..
+            }))
         ));
     }
 

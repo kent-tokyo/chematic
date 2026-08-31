@@ -198,8 +198,9 @@ Notes on the cells above that need qualification:
   path does not perceive or emit it.
 - **Parse limits**: `SdfParseLimits` bounds input bytes, physical line bytes,
   individual record bytes, and yielded record count; use
-  `SdfFileReader::with_limits` or `parse_sdf_with_limits` for an explicit
-  policy. The existing `parse_sdf` uses finite defaults.
+  `SdfFileReader::with_limits`, `SdfRecordReader::with_limits`, or
+  `parse_sdf_with_limits` for an explicit policy. The existing `parse_sdf`,
+  `SdfReader`, and `SdfRecordReader::new` use finite defaults.
 
 ### PDB
 

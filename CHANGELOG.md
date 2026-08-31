@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.88.0] - 2026-08-31
+
+### v0.88.0 — bounded SDF record reading
+
+- Added explicit resource limits to `SdfRecordReader`, including input bytes,
+  physical line bytes, record bytes, and yielded record count.
+- Replaced empty-record recursive skipping with an iterative path to avoid
+  stack growth on delimiter-heavy input.
+
 ## [0.87.0] - 2026-08-31
 
 ### v0.87.0 — bounded SDF convenience parsing
