@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.55.0] - 2026-08-31
+
+### v0.55.0 — inspectable reaction fingerprint CLI workflow
+
+- Added `chematic reaction-fingerprint <REACTION_SMILES>` with a stable
+  2048-bit set-bit JSON representation.
+- Added explicit `xor` transformation mode and `or` composition mode, with
+  reactant/product popcounts and normalized reaction output.
+- Added CLI regression coverage and documented the fingerprint contract.
+
 ## [0.54.0] - 2026-08-31
 
 ### v0.54.0 — reaction atom-balance CLI workflow

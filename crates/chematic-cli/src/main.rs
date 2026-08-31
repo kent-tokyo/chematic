@@ -92,6 +92,14 @@ enum Command {
         /// Reaction SMILES in `reactants>agents>products` form.
         reaction_smiles: String,
     },
+    /// Generate an inspectable reaction fingerprint.
+    ReactionFingerprint {
+        /// Reaction SMILES in `reactants>agents>products` form.
+        reaction_smiles: String,
+        /// Combination mode: xor (transformation) or or (composition).
+        #[arg(long, default_value = "xor")]
+        mode: String,
+    },
 }
 
 fn format_name(format: &str) -> Option<String> {
@@ -395,6 +403,34 @@ fn reaction_balance_json(reaction_smiles: &str) -> Result<String, String> {
     .to_string())
 }
 
+fn reaction_fingerprint_json(reaction_smiles: &str, mode: &str) -> Result<String, String> {
+    let reaction = chematic_rxn::parse_reaction(reaction_smiles).map_err(|e| e.to_string())?;
+    let mode = mode.to_ascii_lowercase();
+    let use_xor = match mode.as_str() {
+        "xor" => true,
+        "or" => false,
+        _ => return Err(format!("unsupported reaction fingerprint mode: {mode}")),
+    };
+    let fingerprint =
+        chematic_fp::reaction_fp_with_config(&reaction, &chematic_fp::ReactionFpConfig { use_xor });
+    let set_bits = |fp: &chematic_fp::BitVec2048| -> Vec<usize> {
+        (0..2048).filter(|&bit| fp.get(bit)).collect()
+    };
+    let reactant_bits = set_bits(&fingerprint.reactant_fp);
+    let product_bits = set_bits(&fingerprint.product_fp);
+    let combined_bits = set_bits(&fingerprint.combined_fp);
+    Ok(serde_json::json!({
+        "reaction_smiles": chematic_rxn::write_reaction(&reaction),
+        "mode": mode,
+        "n_bits": 2048,
+        "reactant_popcount": reactant_bits.len(),
+        "product_popcount": product_bits.len(),
+        "popcount": combined_bits.len(),
+        "set_bits": combined_bits,
+    })
+    .to_string())
+}
+
 fn run(cli: Cli) -> Result<(), String> {
     match cli.command {
         Command::Convert {
@@ -450,6 +486,13 @@ fn run(cli: Cli) -> Result<(), String> {
             let json = reaction_balance_json(&reaction_smiles)?;
             write_output(None, &format!("{json}\n"))
         }
+        Command::ReactionFingerprint {
+            reaction_smiles,
+            mode,
+        } => {
+            let json = reaction_fingerprint_json(&reaction_smiles, &mode)?;
+            write_output(None, &format!("{json}\n"))
+        }
     }
 }
 
@@ -463,8 +506,9 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::{
-        convert_text, descriptors_json, fingerprint_json, reaction_balance_json, reaction_json,
-        reaction_match_json, report_json, similarity_json, standardize_json, substructure_json,
+        convert_text, descriptors_json, fingerprint_json, reaction_balance_json,
+        reaction_fingerprint_json, reaction_json, reaction_match_json, report_json,
+        similarity_json, standardize_json, substructure_json,
     };
 
     #[test]
@@ -648,6 +692,28 @@ mod tests {
                 .unwrap()
                 .iter()
                 .any(|difference| difference.as_str().unwrap().contains("C"))
+        );
+    }
+
+    #[test]
+    fn reaction_fingerprint_reports_transformation_bits() {
+        let json: serde_json::Value =
+            serde_json::from_str(&reaction_fingerprint_json("CCO>>CC=O", "xor").unwrap()).unwrap();
+        assert_eq!(json["mode"], "xor");
+        assert_eq!(json["n_bits"], 2048);
+        assert!(json["popcount"].as_u64().unwrap() > 0);
+        assert_eq!(
+            json["set_bits"].as_array().unwrap().len(),
+            json["popcount"].as_u64().unwrap() as usize
+        );
+    }
+
+    #[test]
+    fn reaction_fingerprint_rejects_unknown_mode() {
+        assert!(
+            reaction_fingerprint_json("CCO>>CCO", "bad")
+                .unwrap_err()
+                .contains("unsupported reaction fingerprint mode")
         );
     }
 }

@@ -88,3 +88,12 @@ readable differences; agents are excluded from the balance calculation.
 ```sh
 chematic reaction-balance 'CO.CO>>COC.O'
 ```
+
+`reaction-fingerprint <REACTION_SMILES>` emits the 2048-bit reaction
+fingerprint as set-bit indices. The default `--mode xor` emphasizes structural
+transformation differences; `--mode or` reports the composition union. The
+output also includes reactant/product popcounts and the normalized reaction.
+
+```sh
+chematic reaction-fingerprint 'CCO>>CC=O'
+```

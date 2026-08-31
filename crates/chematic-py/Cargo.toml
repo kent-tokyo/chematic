@@ -25,17 +25,17 @@ pyo3 = { version = "0.29", features = ["extension-module"] }
 numpy = "0.29"
 rayon = "1"
 ndarray = { version = "0.17", default-features = false }
-chematic-core       = { path = "../chematic-core",       version = "0.54.0" }
-chematic-smiles     = { path = "../chematic-smiles",     version = "0.54.0" }
-chematic-perception = { path = "../chematic-perception", version = "0.54.0" }
-chematic-chem       = { path = "../chematic-chem",       version = "0.54.0" }
-chematic-fp         = { path = "../chematic-fp",         version = "0.54.0" }
-chematic-depict     = { path = "../chematic-depict",     version = "0.54.0", features = ["pdf"] }
-chematic-mol        = { path = "../chematic-mol",        version = "0.54.0", features = ["crystal"] }
-chematic-smarts     = { path = "../chematic-smarts",     version = "0.54.0" }
-chematic-inchi      = { path = "../chematic-inchi",      version = "0.54.0" }
-chematic-iupac      = { path = "../chematic-iupac",      version = "0.54.0" }
-chematic-rxn        = { path = "../chematic-rxn",        version = "0.54.0" }
-chematic-3d         = { path = "../chematic-3d",         version = "0.54.0" }
-chematic-ff         = { path = "../chematic-ff",         version = "0.54.0" }
-chematic-crystal    = { path = "../chematic-crystal",    version = "0.54.0" }
+chematic-core       = { path = "../chematic-core",       version = "0.55.0" }
+chematic-smiles     = { path = "../chematic-smiles",     version = "0.55.0" }
+chematic-perception = { path = "../chematic-perception", version = "0.55.0" }
+chematic-chem       = { path = "../chematic-chem",       version = "0.55.0" }
+chematic-fp         = { path = "../chematic-fp",         version = "0.55.0" }
+chematic-depict     = { path = "../chematic-depict",     version = "0.55.0", features = ["pdf"] }
+chematic-mol        = { path = "../chematic-mol",        version = "0.55.0", features = ["crystal"] }
+chematic-smarts     = { path = "../chematic-smarts",     version = "0.55.0" }
+chematic-inchi      = { path = "../chematic-inchi",      version = "0.55.0" }
+chematic-iupac      = { path = "../chematic-iupac",      version = "0.55.0" }
+chematic-rxn        = { path = "../chematic-rxn",        version = "0.55.0" }
+chematic-3d         = { path = "../chematic-3d",         version = "0.55.0" }
+chematic-ff         = { path = "../chematic-ff",         version = "0.55.0" }
+chematic-crystal    = { path = "../chematic-crystal",    version = "0.55.0" }
