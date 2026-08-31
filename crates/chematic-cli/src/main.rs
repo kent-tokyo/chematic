@@ -58,6 +58,13 @@ enum Command {
         #[arg(long, default_value = "ecfp4")]
         algorithm: String,
     },
+    /// Find all SMARTS substructure matches in a SMILES molecule.
+    Substructure {
+        /// Molecule SMILES to search.
+        smiles: String,
+        /// SMARTS query.
+        smarts: String,
+    },
 }
 
 fn format_name(format: &str) -> Option<String> {
@@ -208,6 +215,30 @@ fn similarity_json(smiles_a: &str, smiles_b: &str, algorithm: &str) -> Result<St
     .to_string())
 }
 
+fn substructure_json(smiles: &str, smarts: &str) -> Result<String, String> {
+    let mol = chematic_smiles::parse(smiles).map_err(|e| e.to_string())?;
+    let query = chematic_smarts::parse_smarts(smarts).map_err(|e| e.to_string())?;
+    let matches = chematic_smarts::find_matches(&query, &mol);
+    let matches: Vec<Vec<usize>> = matches
+        .iter()
+        .map(|mapping| {
+            let mut pairs: Vec<(usize, usize)> = mapping
+                .iter()
+                .map(|(query, atom)| (*query, atom.0 as usize))
+                .collect();
+            pairs.sort_unstable_by_key(|(query, _)| *query);
+            pairs.into_iter().map(|(_, atom)| atom).collect()
+        })
+        .collect();
+    Ok(serde_json::json!({
+        "smiles": chematic_smiles::canonical_smiles(&mol),
+        "smarts": smarts,
+        "match_count": matches.len(),
+        "matches": matches,
+    })
+    .to_string())
+}
+
 fn run(cli: Cli) -> Result<(), String> {
     match cli.command {
         Command::Convert {
@@ -236,6 +267,10 @@ fn run(cli: Cli) -> Result<(), String> {
             let json = similarity_json(&smiles_a, &smiles_b, &algorithm)?;
             write_output(None, &format!("{json}\n"))
         }
+        Command::Substructure { smiles, smarts } => {
+            let json = substructure_json(&smiles, &smarts)?;
+            write_output(None, &format!("{json}\n"))
+        }
     }
 }
 
@@ -248,7 +283,9 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::{convert_text, descriptors_json, fingerprint_json, similarity_json};
+    use super::{
+        convert_text, descriptors_json, fingerprint_json, similarity_json, substructure_json,
+    };
 
     #[test]
     fn converts_smiles_to_mol2_and_back() {
@@ -315,6 +352,29 @@ mod tests {
             similarity_json("CCO", "CCN", "unknown")
                 .unwrap_err()
                 .contains("unsupported fingerprint algorithm")
+        );
+    }
+
+    #[test]
+    fn substructure_reports_sorted_atom_mappings() {
+        let json: serde_json::Value =
+            serde_json::from_str(&substructure_json("c1ccccc1", "c").unwrap()).unwrap();
+        assert_eq!(json["match_count"], 6);
+        assert_eq!(
+            json["matches"].as_array().unwrap()[0]
+                .as_array()
+                .unwrap()
+                .len(),
+            1
+        );
+    }
+
+    #[test]
+    fn substructure_rejects_invalid_smarts() {
+        assert!(
+            substructure_json("CCO", "[")
+                .unwrap_err()
+                .contains("SMARTS")
         );
     }
 }

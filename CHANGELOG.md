@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.49.0] - 2026-08-31
+
+### v0.49.0 — SMARTS substructure CLI workflow
+
+- Added `chematic substructure <SMILES> <SMARTS>` for bounded-scope
+  substructure search with JSON match counts and query-order atom mappings.
+- Added explicit SMARTS parse failures and regression coverage for aromatic
+  matching and invalid queries.
+- Documented the command alongside the existing conversion, descriptor,
+  fingerprint, and similarity workflows.
+
 ## [0.48.0] - 2026-08-31
 
 ### v0.48.0 — fingerprint similarity CLI workflow
@@ -7743,6 +7754,7 @@ Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception 
 [0.36.0]: https://github.com/kent-tokyo/chematic/compare/v0.35.0...v0.36.0
 [0.37.0]: https://github.com/kent-tokyo/chematic/compare/v0.36.0...v0.37.0
 [0.38.0]: https://github.com/kent-tokyo/chematic/compare/v0.37.0...v0.38.0
+[0.49.0]: https://github.com/kent-tokyo/chematic/compare/v0.48.0...v0.49.0
 [0.48.0]: https://github.com/kent-tokyo/chematic/compare/v0.47.0...v0.48.0
 [0.47.0]: https://github.com/kent-tokyo/chematic/compare/v0.46.0...v0.47.0
 [0.46.0]: https://github.com/kent-tokyo/chematic/compare/v0.45.0...v0.46.0

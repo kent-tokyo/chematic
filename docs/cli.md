@@ -39,3 +39,7 @@ and remains language-neutral.
 `similarity <SMILES_A> <SMILES_B>` emits the selected algorithm and Tanimoto
 similarity. It accepts the same `ecfp4`, `ecfp6`, and `maccs` algorithms as
 `fingerprint`.
+
+`substructure <SMILES> <SMARTS>` emits canonical SMILES, the query, match
+count, and query-order atom-index mappings as JSON. Invalid SMARTS is reported
+as a command error.
