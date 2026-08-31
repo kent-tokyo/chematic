@@ -70,6 +70,11 @@ enum Command {
         /// SMILES to standardize.
         smiles: String,
     },
+    /// Generate a complete single-molecule analysis report as JSON.
+    Report {
+        /// SMILES to analyze.
+        smiles: String,
+    },
 }
 
 fn format_name(format: &str) -> Option<String> {
@@ -306,6 +311,11 @@ fn standardize_json(smiles: &str) -> Result<String, String> {
     .to_string())
 }
 
+fn report_json(smiles: &str) -> Result<String, String> {
+    let report = chematic_chem::molecule_report(smiles).map_err(|e| e.to_string())?;
+    serde_json::to_string(&report).map_err(|e| format!("serialize report: {e}"))
+}
+
 fn run(cli: Cli) -> Result<(), String> {
     match cli.command {
         Command::Convert {
@@ -342,6 +352,10 @@ fn run(cli: Cli) -> Result<(), String> {
             let json = standardize_json(&smiles)?;
             write_output(None, &format!("{json}\n"))
         }
+        Command::Report { smiles } => {
+            let json = report_json(&smiles)?;
+            write_output(None, &format!("{json}\n"))
+        }
     }
 }
 
@@ -355,8 +369,8 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::{
-        convert_text, descriptors_json, fingerprint_json, similarity_json, standardize_json,
-        substructure_json,
+        convert_text, descriptors_json, fingerprint_json, report_json, similarity_json,
+        standardize_json, substructure_json,
     };
 
     #[test]
@@ -466,5 +480,21 @@ mod tests {
                 .any(|step| step["step"] == "neutralize_charges" && step["changed"] == true)
         );
         assert!(json["warnings"].is_array());
+    }
+
+    #[test]
+    fn report_emits_complete_machine_readable_analysis() {
+        let json: serde_json::Value =
+            serde_json::from_str(&report_json("CC(=O)Oc1ccccc1C(=O)O").unwrap()).unwrap();
+        assert_eq!(json["input_smiles"], "CC(=O)Oc1ccccc1C(=O)O");
+        assert!(json["canonical_smiles"].as_str().is_some());
+        assert!(json["descriptors"]["molecular_weight"].as_f64().unwrap() > 100.0);
+        assert!(json["filters"]["pains_alerts"].is_array());
+        assert!(json["functional_groups"].is_array());
+    }
+
+    #[test]
+    fn report_rejects_invalid_smiles() {
+        assert!(report_json("C1CC").is_err());
     }
 }

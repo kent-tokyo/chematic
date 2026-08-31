@@ -53,3 +53,12 @@ warnings. This makes normalization decisions inspectable in shell pipelines.
 ```sh
 chematic standardize 'C[NH3+]'
 ```
+
+`report <SMILES>` emits the complete single-molecule analysis record used by
+the workflow API: canonical identity, formula, Murcko scaffold, descriptor
+summary, drug-likeness filters and alert names, functional groups, and named
+groups. Invalid input is rejected with a non-zero exit status.
+
+```sh
+chematic report 'CC(=O)Oc1ccccc1C(=O)O'
+```

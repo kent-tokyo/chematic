@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.51.0] - 2026-08-31
+
+### v0.51.0 — complete molecule report CLI workflow
+
+- Added `chematic report <SMILES>` with the workflow API's complete
+  machine-readable single-molecule analysis record.
+- Exposed canonical identity, formula, scaffold, descriptors, filters and
+  alerts, functional groups, and named groups through one JSON contract.
+- Added CLI success/error regression coverage and documented the workflow.
+
 ## [0.50.0] - 2026-08-31
 
 ### v0.50.0 — auditable standardization CLI workflow
