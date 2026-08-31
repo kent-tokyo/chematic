@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.38.0] - 2026-08-31
+
+### v0.38.0 — deterministic bounded Parent tautomer audits
+
+- Extended bounded, non-overlapping tautomer batching to `tautomer_parent`,
+  keeping `max_transforms` enforced while selecting independent sites by
+  canonical rank rather than input atom order.
+- Every batched transformation is now retained in the existing
+  `TautomerAuditRecord::applied_transforms` contract, with regression coverage
+  for bounded parent selection and atom-order invariance.
+
 ## [0.37.0] - 2026-08-31
 
 ### v0.37.0 — bounded, atom-order-invariant tautomer convergence
@@ -7621,6 +7632,7 @@ Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception 
 [Unreleased]: https://github.com/kent-tokyo/chematic/compare/v0.31.0...HEAD
 [0.36.0]: https://github.com/kent-tokyo/chematic/compare/v0.35.0...v0.36.0
 [0.37.0]: https://github.com/kent-tokyo/chematic/compare/v0.36.0...v0.37.0
+[0.38.0]: https://github.com/kent-tokyo/chematic/compare/v0.37.0...v0.38.0
 [0.31.0]: https://github.com/kent-tokyo/chematic/compare/v0.30.0...v0.31.0
 [0.1.22]: https://github.com/kent-tokyo/chematic/compare/v0.1.21...v0.1.22
 [0.1.21]: https://github.com/kent-tokyo/chematic/compare/v0.1.20...v0.1.21

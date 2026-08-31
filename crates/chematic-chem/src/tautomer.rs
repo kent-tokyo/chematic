@@ -1709,16 +1709,34 @@ fn apply_nonconflicting_matches(
     config: &TautomerConfig,
     rank: &[u32],
 ) -> (Molecule, bool) {
+    let (next, applied) = apply_nonconflicting_matches_tracked(mol, rule, config, rank, usize::MAX);
+    (next, !applied.is_empty())
+}
+
+/// Tracked form of [`apply_nonconflicting_matches`]. `limit` is the maximum
+/// number of transformations to apply in this pass, allowing the audit-aware
+/// parent API to preserve its `max_transforms` bound while still making its
+/// selection order canonical.
+fn apply_nonconflicting_matches_tracked(
+    mol: &Molecule,
+    rule: &TautomerRule,
+    config: &TautomerConfig,
+    rank: &[u32],
+    limit: usize,
+) -> (Molecule, Vec<(AtomIdx, AtomIdx, AtomIdx)>) {
     let matches = find_matches(mol, rule, rank);
-    if matches.is_empty() {
-        return (mol.clone(), false);
+    if matches.is_empty() || limit == 0 {
+        return (mol.clone(), Vec::new());
     }
 
     let mut current = mol.clone();
     let mut occupied: HashSet<AtomIdx> = HashSet::new();
-    let mut changed = false;
+    let mut applied = Vec::new();
 
     for (donor, bridge, acceptor) in matches {
+        if applied.len() >= limit {
+            break;
+        }
         let Some((db, _)) = mol.bond_between(donor, bridge) else {
             continue;
         };
@@ -1749,10 +1767,10 @@ fn apply_nonconflicting_matches(
         };
         current = next;
         occupied.extend(touched);
-        changed = true;
+        applied.push((donor, bridge, acceptor));
     }
 
-    (current, changed)
+    (current, applied)
 }
 
 // ---------------------------------------------------------------------------
@@ -2521,6 +2539,11 @@ pub struct TautomerAuditRecord {
 /// The asymmetric `tp2-39` and N9-methylhypoxanthine holdout remain explicit
 /// residuals because their broader ring-bond tautomer components are not yet
 /// fully enumerated by the canonical search.
+///
+/// Independent matches of one rule are applied together in canonical-rank
+/// order, subject to `limits.max_transforms`; each applied match is retained
+/// in `TautomerAuditRecord::applied_transforms`. This keeps bounded parent
+/// selection atom-order invariant without weakening the transform limit.
 pub fn tautomer_parent(mol: &Molecule, limits: &TautomerLimits) -> ParentResult {
     if mol.atom_count() == 0 {
         return ParentResult {
@@ -2589,26 +2612,29 @@ pub fn tautomer_parent(mol: &Molecule, limits: &TautomerLimits) -> ParentResult 
             .into_iter()
             .filter(|r| r.prefer_forward)
         {
-            if let Some((next, donor, bridge, acceptor)) =
-                apply_first_match_tracked(&current, rule, &config, &rank)
-            {
+            let remaining = limits.max_transforms - transforms_applied;
+            let (next, applied) =
+                apply_nonconflicting_matches_tracked(&current, rule, &config, &rank, remaining);
+            if !applied.is_empty() {
                 let fp = mol_fingerprint(&next);
                 if !seen.contains(&fp) {
                     seen.insert(fp);
-                    let mut affected_bonds = Vec::new();
-                    if let Some((bidx, _)) = current.bond_between(donor, bridge) {
-                        affected_bonds.push(bidx);
+                    for (donor, bridge, acceptor) in applied.iter().copied() {
+                        let mut affected_bonds = Vec::new();
+                        if let Some((bidx, _)) = current.bond_between(donor, bridge) {
+                            affected_bonds.push(bidx);
+                        }
+                        if let Some((bidx, _)) = current.bond_between(bridge, acceptor) {
+                            affected_bonds.push(bidx);
+                        }
+                        applied_transforms.push(AppliedTransform {
+                            rule_id: rule_id_for(rule.name),
+                            affected_atoms: vec![donor, bridge, acceptor],
+                            affected_bonds,
+                        });
                     }
-                    if let Some((bidx, _)) = current.bond_between(bridge, acceptor) {
-                        affected_bonds.push(bidx);
-                    }
-                    applied_transforms.push(AppliedTransform {
-                        rule_id: rule_id_for(rule.name),
-                        affected_atoms: vec![donor, bridge, acceptor],
-                        affected_bonds,
-                    });
                     current = next;
-                    transforms_applied += 1;
+                    transforms_applied += applied.len();
                     changed = true;
                     break;
                 }
@@ -2886,6 +2912,27 @@ mod tests {
         assert_eq!(canonical_smiles(&ta), canonical_smiles(&tb));
         // Every site should have converted (no leftover [OH] enol form).
         assert!(!canonical_smiles(&ta).contains("[OH]"));
+    }
+
+    #[test]
+    fn tautomer_parent_bounded_selection_is_atom_order_invariant() {
+        let forward = build_comb(25, false, false);
+        let reversed = build_comb(25, true, false);
+        let limits = TautomerLimits {
+            max_transforms: 16,
+            ..TautomerLimits::default()
+        };
+        let a = tautomer_parent(&forward, &limits);
+        let b = tautomer_parent(&reversed, &limits);
+        assert_eq!(
+            canonical_smiles(&a.molecule),
+            canonical_smiles(&b.molecule),
+            "bounded parent selection must not depend on atom insertion order"
+        );
+        let ParentAudit::Tautomer(audit) = a.audit else {
+            panic!("tautomer_parent must return a tautomer audit")
+        };
+        assert_eq!(audit.applied_transforms.len(), limits.max_transforms);
     }
 
     #[test]
