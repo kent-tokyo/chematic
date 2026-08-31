@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.73.0] - 2026-08-31
+
+### v0.73.0 — bounded QCSchema input
+
+- Added `QcSchemaParseLimits` and bounded molecule, atomic-input, and
+  atomic-result parsing APIs for JSON input size, depth, array, and string
+  resources.
+- Added typed resource-limit errors and regression coverage while preserving
+  the existing parser entry points and defaults.
+
 ## [0.72.0] - 2026-08-31
 
 ### v0.72.0 — bounded PDB input

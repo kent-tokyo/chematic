@@ -254,6 +254,10 @@ disambiguate by crate, not by name alone:
 ### QCSchema
 
 - **Rust**: `chematic_mol::{QcMolecule, AtomicInput, AtomicResult, parse_qcschema_molecule, write_qcschema_molecule, parse_atomic_input, write_atomic_input, parse_atomic_result, write_atomic_result, chematic_to_qc_molecule, qc_molecule_to_chematic}`.
+- **Parse limits**: `QcSchemaParseLimits` bounds input bytes, JSON nesting depth,
+  array entries, and string bytes. `parse_qcschema_molecule_with_limits`,
+  `parse_atomic_input_with_limits`, and `parse_atomic_result_with_limits` accept
+  an explicit policy; the existing parsers use finite defaults.
 - **Python**: same names, routed through Python's stdlib `json` module rather than a hand-mapped dict.
 - **WASM**: `mol_from_qcschema_molecule`, `qcschema_molecule_coords_json`, `to_qcschema_molecule_json`, `qcschema_validate_atomic_input`, `qcschema_validate_atomic_result`.
 - **Coordinate units**: `QcMolecule.geometry` is explicitly **Bohr (a0)** in Rust; Python and WASM bindings convert to Ångström for convenience.
