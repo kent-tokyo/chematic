@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.48.0] - 2026-08-31
+
+### v0.48.0 — fingerprint similarity CLI workflow
+
+- Added `chematic similarity <SMILES_A> <SMILES_B>` with ECFP4, ECFP6, and
+  MACCS Tanimoto similarity selection.
+- Added language-neutral JSON output containing the selected algorithm,
+  similarity, and normalized molecule identifiers.
+- Added explicit algorithm errors and regression coverage for identical and
+  unsupported comparisons.
+
 ## [0.47.0] - 2026-08-31
 
 ### v0.47.0 — inspectable fingerprint CLI output
@@ -7732,6 +7743,7 @@ Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception 
 [0.36.0]: https://github.com/kent-tokyo/chematic/compare/v0.35.0...v0.36.0
 [0.37.0]: https://github.com/kent-tokyo/chematic/compare/v0.36.0...v0.37.0
 [0.38.0]: https://github.com/kent-tokyo/chematic/compare/v0.37.0...v0.38.0
+[0.48.0]: https://github.com/kent-tokyo/chematic/compare/v0.47.0...v0.48.0
 [0.47.0]: https://github.com/kent-tokyo/chematic/compare/v0.46.0...v0.47.0
 [0.46.0]: https://github.com/kent-tokyo/chematic/compare/v0.45.0...v0.46.0
 [0.45.0]: https://github.com/kent-tokyo/chematic/compare/v0.44.0...v0.45.0

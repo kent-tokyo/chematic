@@ -35,3 +35,7 @@ rotatable-bond count.
 Set-bit indices
 are used instead of an opaque binary string so the output is easy to inspect
 and remains language-neutral.
+
+`similarity <SMILES_A> <SMILES_B>` emits the selected algorithm and Tanimoto
+similarity. It accepts the same `ecfp4`, `ecfp6`, and `maccs` algorithms as
+`fingerprint`.

@@ -48,6 +48,16 @@ enum Command {
         #[arg(long, default_value = "ecfp4")]
         algorithm: String,
     },
+    /// Compare two SMILES strings with fingerprint Tanimoto similarity.
+    Similarity {
+        /// First SMILES to analyze.
+        smiles_a: String,
+        /// Second SMILES to analyze.
+        smiles_b: String,
+        /// Algorithm: ecfp4, ecfp6, or maccs.
+        #[arg(long, default_value = "ecfp4")]
+        algorithm: String,
+    },
 }
 
 fn format_name(format: &str) -> Option<String> {
@@ -171,6 +181,33 @@ fn fingerprint_json(smiles: &str, algorithm: &str) -> Result<String, String> {
     .to_string())
 }
 
+fn fingerprint_for(
+    mol: &chematic_core::Molecule,
+    algorithm: &str,
+) -> Result<chematic_fp::BitVec2048, String> {
+    match algorithm.to_ascii_lowercase().as_str() {
+        "ecfp4" => Ok(chematic_fp::ecfp4(mol)),
+        "ecfp6" => Ok(chematic_fp::ecfp6(mol)),
+        "maccs" => Ok(chematic_fp::maccs(mol)),
+        other => Err(format!("unsupported fingerprint algorithm: {other}")),
+    }
+}
+
+fn similarity_json(smiles_a: &str, smiles_b: &str, algorithm: &str) -> Result<String, String> {
+    let mol_a = chematic_smiles::parse(smiles_a).map_err(|e| e.to_string())?;
+    let mol_b = chematic_smiles::parse(smiles_b).map_err(|e| e.to_string())?;
+    let algorithm = algorithm.to_ascii_lowercase();
+    let fp_a = fingerprint_for(&mol_a, &algorithm)?;
+    let fp_b = fingerprint_for(&mol_b, &algorithm)?;
+    Ok(serde_json::json!({
+        "algorithm": algorithm,
+        "similarity": fp_a.tanimoto(&fp_b),
+        "smiles_a": chematic_smiles::canonical_smiles(&mol_a),
+        "smiles_b": chematic_smiles::canonical_smiles(&mol_b),
+    })
+    .to_string())
+}
+
 fn run(cli: Cli) -> Result<(), String> {
     match cli.command {
         Command::Convert {
@@ -191,6 +228,14 @@ fn run(cli: Cli) -> Result<(), String> {
             let json = fingerprint_json(&smiles, &algorithm)?;
             write_output(None, &format!("{json}\n"))
         }
+        Command::Similarity {
+            smiles_a,
+            smiles_b,
+            algorithm,
+        } => {
+            let json = similarity_json(&smiles_a, &smiles_b, &algorithm)?;
+            write_output(None, &format!("{json}\n"))
+        }
     }
 }
 
@@ -203,7 +248,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::{convert_text, descriptors_json, fingerprint_json};
+    use super::{convert_text, descriptors_json, fingerprint_json, similarity_json};
 
     #[test]
     fn converts_smiles_to_mol2_and_back() {
@@ -251,6 +296,23 @@ mod tests {
     fn fingerprint_rejects_unknown_algorithms() {
         assert!(
             fingerprint_json("CCO", "unknown")
+                .unwrap_err()
+                .contains("unsupported fingerprint algorithm")
+        );
+    }
+
+    #[test]
+    fn similarity_is_one_for_identical_molecules() {
+        let json: serde_json::Value =
+            serde_json::from_str(&similarity_json("CCO", "CCO", "ecfp4").unwrap()).unwrap();
+        assert_eq!(json["similarity"], 1.0);
+        assert_eq!(json["algorithm"], "ecfp4");
+    }
+
+    #[test]
+    fn similarity_rejects_unknown_algorithms() {
+        assert!(
+            similarity_json("CCO", "CCN", "unknown")
                 .unwrap_err()
                 .contains("unsupported fingerprint algorithm")
         );
