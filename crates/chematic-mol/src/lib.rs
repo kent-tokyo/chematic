@@ -54,7 +54,9 @@ pub use cdxml::{
     CdxmlError, CdxmlParseOptions, parse_cdxml, parse_cdxml_all, parse_cdxml_all_with_options,
     parse_cdxml_with_options, write_cdxml,
 };
-pub use cif::{CifError, CifResult, UnitCell, parse_cif, write_cif};
+pub use cif::{
+    CifError, CifParseLimits, CifResult, UnitCell, parse_cif, parse_cif_with_limits, write_cif,
+};
 #[cfg(feature = "crystal")]
 pub use cif::{
     CifPeriodicError, CifPeriodicParseOptions, CifPeriodicResult, CifSymmetryError,

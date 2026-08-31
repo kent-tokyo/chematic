@@ -202,7 +202,9 @@ Notes on the cells above that need qualification:
 - **Connectivity**: **no bond table at all** — CIF's `_atom_site` loop carries only positions; this module returns atoms with no bonds.
 - **Round-trip**: symmetry expansion is **not** performed on the plain (non-`crystal`-feature) path — only atoms literally listed in `_atom_site_*` are returned (effectively P1 treatment). See `docs/crystal_scope.md` for the `crystal`-feature periodic-structure variants.
 - **Lossy operations**: symmetry-operation information is not applied/round-tripped on the plain path.
-- **Parse limits**: no `*ParseLimits` type exists for plain CIF.
+- **Parse limits**: `CifParseLimits { max_input_bytes, max_line_bytes,
+  max_tokens, max_atoms }`; use `parse_cif_with_limits` for an explicit
+  policy. The existing `parse_cif` parser uses finite defaults.
 
 ### PQR
 

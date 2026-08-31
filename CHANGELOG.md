@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.74.0] - 2026-08-31
+
+### v0.74.0 — bounded plain CIF input
+
+- Added `CifParseLimits` and `parse_cif_with_limits` for input bytes, physical
+  line length, token count, and atom-row count.
+- Added typed resource-limit errors and regression coverage while preserving
+  the existing `parse_cif` entry point with finite defaults.
+
 ## [0.73.0] - 2026-08-31
 
 ### v0.73.0 — bounded QCSchema input
