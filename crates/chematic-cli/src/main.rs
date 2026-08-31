@@ -2,7 +2,7 @@
 
 #![forbid(unsafe_code)]
 
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 use std::fs;
 use std::io::{self, Read, Write};
 use std::path::PathBuf;
@@ -16,6 +16,29 @@ use std::path::PathBuf;
 struct Cli {
     #[command(subcommand)]
     command: Command,
+}
+
+#[derive(Args, Clone, Debug)]
+struct BatchLimits {
+    /// Maximum batch input size in bytes.
+    #[arg(long, default_value_t = 64 * 1024 * 1024)]
+    max_input_bytes: usize,
+    /// Maximum number of non-empty, non-comment records.
+    #[arg(long, default_value_t = 100_000)]
+    max_records: usize,
+    /// Maximum physical line size in bytes.
+    #[arg(long, default_value_t = 1 * 1024 * 1024)]
+    max_line_bytes: usize,
+}
+
+impl Default for BatchLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: 64 * 1024 * 1024,
+            max_records: 100_000,
+            max_line_bytes: 1024 * 1024,
+        }
+    }
 }
 
 #[derive(Subcommand, Debug)]
@@ -117,12 +140,16 @@ enum Command {
         /// Read line-delimited SMILES from this file instead of stdin.
         #[arg(short, long)]
         input: Option<PathBuf>,
+        #[command(flatten)]
+        limits: BatchLimits,
     },
     /// Process one SMILES per line and return lightweight descriptor records.
     BatchDescriptors {
         /// Read line-delimited SMILES from this file instead of stdin.
         #[arg(short, long)]
         input: Option<PathBuf>,
+        #[command(flatten)]
+        limits: BatchLimits,
     },
     /// Process one SMILES per line and return fingerprint records.
     BatchFingerprints {
@@ -132,12 +159,16 @@ enum Command {
         /// Algorithm: ecfp4, ecfp6, or maccs.
         #[arg(long, default_value = "ecfp4")]
         algorithm: String,
+        #[command(flatten)]
+        limits: BatchLimits,
     },
     /// Process one SMILES per line with the auditable standardization pipeline.
     BatchStandardize {
         /// Read line-delimited SMILES from this file instead of stdin.
         #[arg(short, long)]
         input: Option<PathBuf>,
+        #[command(flatten)]
+        limits: BatchLimits,
     },
     /// Compare one tab-separated pair of SMILES per line.
     BatchSimilarity {
@@ -147,18 +178,24 @@ enum Command {
         /// Algorithm: ecfp4, ecfp6, or maccs.
         #[arg(long, default_value = "ecfp4")]
         algorithm: String,
+        #[command(flatten)]
+        limits: BatchLimits,
     },
     /// Search one tab-separated SMILES/SMARTS pair per line.
     BatchSubstructure {
         /// Read tab-separated pairs from this file instead of stdin.
         #[arg(short, long)]
         input: Option<PathBuf>,
+        #[command(flatten)]
+        limits: BatchLimits,
     },
     /// Process one reaction SMILES per line and retain per-record errors.
     BatchReactions {
         /// Read line-delimited reaction SMILES from this file instead of stdin.
         #[arg(short, long)]
         input: Option<PathBuf>,
+        #[command(flatten)]
+        limits: BatchLimits,
     },
 }
 
@@ -235,6 +272,56 @@ fn read_input(path: Option<&PathBuf>) -> Result<String, String> {
             Ok(text)
         }
     }
+}
+
+fn read_batch_input(path: Option<&PathBuf>, max_input_bytes: usize) -> Result<String, String> {
+    let mut bytes = Vec::new();
+    let read_result = match path {
+        Some(path) => {
+            let file = fs::File::open(path).map_err(|e| format!("read {}: {e}", path.display()))?;
+            file.take(max_input_bytes.saturating_add(1) as u64)
+                .read_to_end(&mut bytes)
+        }
+        None => io::stdin()
+            .take(max_input_bytes.saturating_add(1) as u64)
+            .read_to_end(&mut bytes),
+    };
+    read_result.map_err(|e| format!("read batch input: {e}"))?;
+    if bytes.len() > max_input_bytes {
+        return Err(format!(
+            "batch input exceeds --max-input-bytes ({max_input_bytes})"
+        ));
+    }
+    String::from_utf8(bytes).map_err(|e| format!("batch input is not UTF-8: {e}"))
+}
+
+fn batch_lines<'a>(text: &'a str, limits: &BatchLimits) -> Result<Vec<&'a str>, String> {
+    if text.len() > limits.max_input_bytes {
+        return Err(format!(
+            "batch input exceeds --max-input-bytes ({})",
+            limits.max_input_bytes
+        ));
+    }
+    let mut lines = Vec::new();
+    for line in text.lines() {
+        if line.len() > limits.max_line_bytes {
+            return Err(format!(
+                "batch line exceeds --max-line-bytes ({})",
+                limits.max_line_bytes
+            ));
+        }
+        let line = line.trim();
+        if !line.is_empty() && !line.starts_with('#') {
+            if lines.len() == limits.max_records {
+                return Err(format!(
+                    "batch input exceeds --max-records ({})",
+                    limits.max_records
+                ));
+            }
+            lines.push(line);
+        }
+    }
+    Ok(lines)
 }
 
 fn write_output(path: Option<&PathBuf>, text: &str) -> Result<(), String> {
@@ -516,25 +603,15 @@ fn reaction_similarity_json(reaction_a: &str, reaction_b: &str) -> Result<String
     .to_string())
 }
 
-fn batch_report_json(text: &str) -> Result<String, String> {
-    let smiles: Vec<String> = text
-        .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty() && !line.starts_with('#'))
-        .map(str::to_string)
-        .collect();
-    let refs: Vec<&str> = smiles.iter().map(String::as_str).collect();
+fn batch_report_json(text: &str, limits: &BatchLimits) -> Result<String, String> {
+    let smiles = batch_lines(text, limits)?;
+    let refs: Vec<&str> = smiles.clone();
     let report = chematic_chem::screen_smiles(&refs);
     serde_json::to_string(&report).map_err(|e| format!("serialize batch report: {e}"))
 }
 
-fn batch_descriptors_json(text: &str) -> Result<String, String> {
-    let smiles: Vec<String> = text
-        .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty() && !line.starts_with('#'))
-        .map(str::to_string)
-        .collect();
+fn batch_descriptors_json(text: &str, limits: &BatchLimits) -> Result<String, String> {
+    let smiles = batch_lines(text, limits)?;
     let mut records = Vec::with_capacity(smiles.len());
     let mut valid_count = 0usize;
     for (input_index, input_smiles) in smiles.iter().enumerate() {
@@ -566,13 +643,12 @@ fn batch_descriptors_json(text: &str) -> Result<String, String> {
     .to_string())
 }
 
-fn batch_fingerprints_json(text: &str, algorithm: &str) -> Result<String, String> {
-    let smiles: Vec<String> = text
-        .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty() && !line.starts_with('#'))
-        .map(str::to_string)
-        .collect();
+fn batch_fingerprints_json(
+    text: &str,
+    algorithm: &str,
+    limits: &BatchLimits,
+) -> Result<String, String> {
+    let smiles = batch_lines(text, limits)?;
     let mut records = Vec::with_capacity(smiles.len());
     let mut valid_count = 0usize;
     for (input_index, input_smiles) in smiles.iter().enumerate() {
@@ -605,13 +681,8 @@ fn batch_fingerprints_json(text: &str, algorithm: &str) -> Result<String, String
     .to_string())
 }
 
-fn batch_standardize_json(text: &str) -> Result<String, String> {
-    let smiles: Vec<String> = text
-        .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty() && !line.starts_with('#'))
-        .map(str::to_string)
-        .collect();
+fn batch_standardize_json(text: &str, limits: &BatchLimits) -> Result<String, String> {
+    let smiles = batch_lines(text, limits)?;
     let mut records = Vec::with_capacity(smiles.len());
     let mut valid_count = 0usize;
     for (input_index, input_smiles) in smiles.iter().enumerate() {
@@ -643,12 +714,12 @@ fn batch_standardize_json(text: &str) -> Result<String, String> {
     .to_string())
 }
 
-fn batch_similarity_json(text: &str, algorithm: &str) -> Result<String, String> {
-    let lines: Vec<&str> = text
-        .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty() && !line.starts_with('#'))
-        .collect();
+fn batch_similarity_json(
+    text: &str,
+    algorithm: &str,
+    limits: &BatchLimits,
+) -> Result<String, String> {
+    let lines = batch_lines(text, limits)?;
     let mut records = Vec::with_capacity(lines.len());
     let mut valid_count = 0usize;
     for (input_index, line) in lines.iter().enumerate() {
@@ -688,12 +759,8 @@ fn batch_similarity_json(text: &str, algorithm: &str) -> Result<String, String> 
     .to_string())
 }
 
-fn batch_substructure_json(text: &str) -> Result<String, String> {
-    let lines: Vec<&str> = text
-        .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty() && !line.starts_with('#'))
-        .collect();
+fn batch_substructure_json(text: &str, limits: &BatchLimits) -> Result<String, String> {
+    let lines = batch_lines(text, limits)?;
     let mut records = Vec::with_capacity(lines.len());
     let mut valid_count = 0usize;
     for (input_index, line) in lines.iter().enumerate() {
@@ -730,12 +797,8 @@ fn batch_substructure_json(text: &str) -> Result<String, String> {
     .to_string())
 }
 
-fn batch_reactions_json(text: &str) -> Result<String, String> {
-    let lines: Vec<&str> = text
-        .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty() && !line.starts_with('#'))
-        .collect();
+fn batch_reactions_json(text: &str, limits: &BatchLimits) -> Result<String, String> {
+    let lines = batch_lines(text, limits)?;
     let mut records = Vec::with_capacity(lines.len());
     let mut valid_count = 0usize;
     for (input_index, line) in lines.iter().enumerate() {
@@ -840,39 +903,47 @@ fn run(cli: Cli) -> Result<(), String> {
             let json = reaction_similarity_json(&reaction_a, &reaction_b)?;
             write_output(None, &format!("{json}\n"))
         }
-        Command::BatchReport { input } => {
-            let text = read_input(input.as_ref())?;
-            let json = batch_report_json(&text)?;
+        Command::BatchReport { input, limits } => {
+            let text = read_batch_input(input.as_ref(), limits.max_input_bytes)?;
+            let json = batch_report_json(&text, &limits)?;
             write_output(None, &format!("{json}\n"))
         }
-        Command::BatchDescriptors { input } => {
-            let text = read_input(input.as_ref())?;
-            let json = batch_descriptors_json(&text)?;
+        Command::BatchDescriptors { input, limits } => {
+            let text = read_batch_input(input.as_ref(), limits.max_input_bytes)?;
+            let json = batch_descriptors_json(&text, &limits)?;
             write_output(None, &format!("{json}\n"))
         }
-        Command::BatchFingerprints { input, algorithm } => {
-            let text = read_input(input.as_ref())?;
-            let json = batch_fingerprints_json(&text, &algorithm)?;
+        Command::BatchFingerprints {
+            input,
+            algorithm,
+            limits,
+        } => {
+            let text = read_batch_input(input.as_ref(), limits.max_input_bytes)?;
+            let json = batch_fingerprints_json(&text, &algorithm, &limits)?;
             write_output(None, &format!("{json}\n"))
         }
-        Command::BatchStandardize { input } => {
-            let text = read_input(input.as_ref())?;
-            let json = batch_standardize_json(&text)?;
+        Command::BatchStandardize { input, limits } => {
+            let text = read_batch_input(input.as_ref(), limits.max_input_bytes)?;
+            let json = batch_standardize_json(&text, &limits)?;
             write_output(None, &format!("{json}\n"))
         }
-        Command::BatchSimilarity { input, algorithm } => {
-            let text = read_input(input.as_ref())?;
-            let json = batch_similarity_json(&text, &algorithm)?;
+        Command::BatchSimilarity {
+            input,
+            algorithm,
+            limits,
+        } => {
+            let text = read_batch_input(input.as_ref(), limits.max_input_bytes)?;
+            let json = batch_similarity_json(&text, &algorithm, &limits)?;
             write_output(None, &format!("{json}\n"))
         }
-        Command::BatchSubstructure { input } => {
-            let text = read_input(input.as_ref())?;
-            let json = batch_substructure_json(&text)?;
+        Command::BatchSubstructure { input, limits } => {
+            let text = read_batch_input(input.as_ref(), limits.max_input_bytes)?;
+            let json = batch_substructure_json(&text, &limits)?;
             write_output(None, &format!("{json}\n"))
         }
-        Command::BatchReactions { input } => {
-            let text = read_input(input.as_ref())?;
-            let json = batch_reactions_json(&text)?;
+        Command::BatchReactions { input, limits } => {
+            let text = read_batch_input(input.as_ref(), limits.max_input_bytes)?;
+            let json = batch_reactions_json(&text, &limits)?;
             write_output(None, &format!("{json}\n"))
         }
     }
@@ -888,12 +959,16 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::{
-        batch_descriptors_json, batch_fingerprints_json, batch_reactions_json, batch_report_json,
-        batch_similarity_json, batch_standardize_json, batch_substructure_json, convert_text,
-        descriptors_json, fingerprint_json, parse_json, reaction_balance_json,
+        BatchLimits, batch_descriptors_json, batch_fingerprints_json, batch_reactions_json,
+        batch_report_json, batch_similarity_json, batch_standardize_json, batch_substructure_json,
+        convert_text, descriptors_json, fingerprint_json, parse_json, reaction_balance_json,
         reaction_fingerprint_json, reaction_json, reaction_match_json, reaction_similarity_json,
         report_json, similarity_json, standardize_json, substructure_json,
     };
+
+    fn default_batch_limits() -> BatchLimits {
+        BatchLimits::default()
+    }
 
     #[test]
     fn converts_smiles_to_mol2_and_back() {
@@ -1133,9 +1208,10 @@ mod tests {
 
     #[test]
     fn batch_report_retains_partial_errors_in_input_order() {
-        let json: serde_json::Value =
-            serde_json::from_str(&batch_report_json("CCO\nC1CC\n# comment\nCCN\n").unwrap())
-                .unwrap();
+        let json: serde_json::Value = serde_json::from_str(
+            &batch_report_json("CCO\nC1CC\n# comment\nCCN\n", &default_batch_limits()).unwrap(),
+        )
+        .unwrap();
         let records = json["records"].as_array().unwrap();
         assert_eq!(records.len(), 3);
         assert_eq!(records[0]["input_index"], 0);
@@ -1147,9 +1223,11 @@ mod tests {
 
     #[test]
     fn batch_descriptors_returns_lightweight_partial_manifest() {
-        let json: serde_json::Value =
-            serde_json::from_str(&batch_descriptors_json("CCO\nC1CC\n# comment\nCCN\n").unwrap())
-                .unwrap();
+        let json: serde_json::Value = serde_json::from_str(
+            &batch_descriptors_json("CCO\nC1CC\n# comment\nCCN\n", &default_batch_limits())
+                .unwrap(),
+        )
+        .unwrap();
         assert_eq!(json["valid_count"], 2);
         assert_eq!(json["error_count"], 1);
         let records = json["records"].as_array().unwrap();
@@ -1160,9 +1238,10 @@ mod tests {
 
     #[test]
     fn batch_fingerprints_returns_algorithm_and_partial_manifest() {
-        let json: serde_json::Value =
-            serde_json::from_str(&batch_fingerprints_json("CCO\nC1CC\nCCN\n", "ecfp4").unwrap())
-                .unwrap();
+        let json: serde_json::Value = serde_json::from_str(
+            &batch_fingerprints_json("CCO\nC1CC\nCCN\n", "ecfp4", &default_batch_limits()).unwrap(),
+        )
+        .unwrap();
         assert_eq!(json["algorithm"], "ecfp4");
         assert_eq!(json["valid_count"], 2);
         assert_eq!(json["error_count"], 1);
@@ -1172,16 +1251,20 @@ mod tests {
 
     #[test]
     fn batch_fingerprints_rejects_unknown_algorithm_per_record() {
-        let json: serde_json::Value =
-            serde_json::from_str(&batch_fingerprints_json("CCO\nCCN\n", "bad").unwrap()).unwrap();
+        let json: serde_json::Value = serde_json::from_str(
+            &batch_fingerprints_json("CCO\nCCN\n", "bad", &default_batch_limits()).unwrap(),
+        )
+        .unwrap();
         assert_eq!(json["valid_count"], 0);
         assert_eq!(json["error_count"], 2);
     }
 
     #[test]
     fn batch_standardize_retains_audit_reports_and_errors() {
-        let json: serde_json::Value =
-            serde_json::from_str(&batch_standardize_json("C[NH3+]\nC1CC\nCCO\n").unwrap()).unwrap();
+        let json: serde_json::Value = serde_json::from_str(
+            &batch_standardize_json("C[NH3+]\nC1CC\nCCO\n", &default_batch_limits()).unwrap(),
+        )
+        .unwrap();
         assert_eq!(json["valid_count"], 2);
         assert_eq!(json["error_count"], 1);
         assert!(json["records"][0]["standardization"]["steps"].is_array());
@@ -1192,7 +1275,12 @@ mod tests {
     #[test]
     fn batch_similarity_processes_tsv_pairs_and_retains_errors() {
         let json: serde_json::Value = serde_json::from_str(
-            &batch_similarity_json("CCO\tCCO\nCCO\tC1CC\nmissing\n", "ecfp4").unwrap(),
+            &batch_similarity_json(
+                "CCO\tCCO\nCCO\tC1CC\nmissing\n",
+                "ecfp4",
+                &default_batch_limits(),
+            )
+            .unwrap(),
         )
         .unwrap();
         assert_eq!(json["algorithm"], "ecfp4");
@@ -1205,9 +1293,10 @@ mod tests {
 
     #[test]
     fn batch_substructure_processes_tsv_queries_and_retains_errors() {
-        let json: serde_json::Value =
-            serde_json::from_str(&batch_substructure_json("c1ccccc1\tc\nCCO\t[\n").unwrap())
-                .unwrap();
+        let json: serde_json::Value = serde_json::from_str(
+            &batch_substructure_json("c1ccccc1\tc\nCCO\t[\n", &default_batch_limits()).unwrap(),
+        )
+        .unwrap();
         assert_eq!(json["valid_count"], 1);
         assert_eq!(json["error_count"], 1);
         assert_eq!(json["records"][0]["substructure"]["match_count"], 6);
@@ -1216,11 +1305,40 @@ mod tests {
 
     #[test]
     fn batch_reactions_returns_normalized_records_and_errors() {
-        let json: serde_json::Value =
-            serde_json::from_str(&batch_reactions_json("CCO>>CCO\nCCO\n").unwrap()).unwrap();
+        let json: serde_json::Value = serde_json::from_str(
+            &batch_reactions_json("CCO>>CCO\nCCO\n", &default_batch_limits()).unwrap(),
+        )
+        .unwrap();
         assert_eq!(json["valid_count"], 1);
         assert_eq!(json["error_count"], 1);
         assert_eq!(json["records"][0]["reaction"]["reactants"], 1);
         assert!(json["records"][1]["error"].as_str().is_some());
+    }
+
+    #[test]
+    fn batch_limits_reject_oversized_input_and_records() {
+        let mut limits = default_batch_limits();
+        limits.max_input_bytes = 3;
+        assert!(
+            batch_reactions_json("CCO\n", &limits)
+                .unwrap_err()
+                .contains("max-input-bytes")
+        );
+
+        limits = default_batch_limits();
+        limits.max_records = 1;
+        assert!(
+            batch_reactions_json("CCO>>CCO\nCCN>>CCN\n", &limits)
+                .unwrap_err()
+                .contains("max-records")
+        );
+
+        limits = default_batch_limits();
+        limits.max_line_bytes = 3;
+        assert!(
+            batch_reactions_json("CCO>>CCO\n", &limits)
+                .unwrap_err()
+                .contains("max-line-bytes")
+        );
     }
 }

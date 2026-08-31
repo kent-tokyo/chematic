@@ -173,3 +173,14 @@ reaction lines remain as per-record errors in the manifest.
 ```sh
 printf 'CCO>>CCO\nCCO\n' | chematic batch-reactions
 ```
+
+All batch commands enforce the same resource bounds: `--max-input-bytes`
+(default 64 MiB), `--max-records` (default 100,000), and
+`--max-line-bytes` (default 1 MiB). An exceeded bound is a command error before
+the batch is processed; malformed chemistry within the bounds remains a
+per-record error. For example:
+
+```sh
+chematic batch-descriptors --max-records 10000 --max-line-bytes 65536 \
+  --input molecules.smi
+```

@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.65.0] - 2026-08-31
+
+### v0.65.0 — bounded batch CLI inputs
+
+- Added uniform `--max-input-bytes`, `--max-records`, and `--max-line-bytes`
+  limits to every batch CLI command.
+- Added bounded stdin/file reads and explicit UTF-8/resource-limit errors before
+  batch processing.
+- Added regression coverage for input, line, and record limits and documented
+  the batch resource contract.
+
 ## [0.64.0] - 2026-08-31
 
 ### v0.64.0 — batch reaction CLI workflow
