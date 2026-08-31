@@ -29,3 +29,9 @@ input unchanged.
 `descriptors` emits compact JSON containing canonical SMILES, formula, atom
 counts, molecular weight, exact mass, Crippen logP, TPSA, HBD, HBA, and
 rotatable-bond count.
+
+`fingerprint <SMILES>` emits JSON with the selected algorithm (`ecfp4`,
+`ecfp6`, or `maccs`), width, set-bit indices, popcount, and canonical SMILES.
+Set-bit indices
+are used instead of an opaque binary string so the output is easy to inspect
+and remains language-neutral.

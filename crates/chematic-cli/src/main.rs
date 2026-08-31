@@ -40,6 +40,14 @@ enum Command {
         /// SMILES to analyze.
         smiles: String,
     },
+    /// Calculate a fingerprint and emit its set-bit indices as JSON.
+    Fingerprint {
+        /// SMILES to analyze.
+        smiles: String,
+        /// Algorithm: ecfp4, ecfp6, or maccs.
+        #[arg(long, default_value = "ecfp4")]
+        algorithm: String,
+    },
 }
 
 fn format_name(format: &str) -> Option<String> {
@@ -143,6 +151,26 @@ fn descriptors_json(smiles: &str) -> Result<String, String> {
     .to_string())
 }
 
+fn fingerprint_json(smiles: &str, algorithm: &str) -> Result<String, String> {
+    let mol = chematic_smiles::parse(smiles).map_err(|e| e.to_string())?;
+    let algorithm = algorithm.to_ascii_lowercase();
+    let fp = match algorithm.as_str() {
+        "ecfp4" => chematic_fp::ecfp4(&mol),
+        "ecfp6" => chematic_fp::ecfp6(&mol),
+        "maccs" => chematic_fp::maccs(&mol),
+        _ => return Err(format!("unsupported fingerprint algorithm: {algorithm}")),
+    };
+    let bits: Vec<usize> = (0..2048).filter(|&bit| fp.get(bit)).collect();
+    Ok(serde_json::json!({
+        "algorithm": algorithm,
+        "n_bits": 2048,
+        "set_bits": bits,
+        "popcount": bits.len(),
+        "smiles": chematic_smiles::canonical_smiles(&mol),
+    })
+    .to_string())
+}
+
 fn run(cli: Cli) -> Result<(), String> {
     match cli.command {
         Command::Convert {
@@ -159,6 +187,10 @@ fn run(cli: Cli) -> Result<(), String> {
             let json = descriptors_json(&smiles)?;
             write_output(None, &format!("{json}\n"))
         }
+        Command::Fingerprint { smiles, algorithm } => {
+            let json = fingerprint_json(&smiles, &algorithm)?;
+            write_output(None, &format!("{json}\n"))
+        }
     }
 }
 
@@ -171,7 +203,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::{convert_text, descriptors_json};
+    use super::{convert_text, descriptors_json, fingerprint_json};
 
     #[test]
     fn converts_smiles_to_mol2_and_back() {
@@ -200,5 +232,27 @@ mod tests {
         assert_eq!(json["heavy_atoms"], 3);
         assert!(json["molecular_weight"].as_f64().unwrap() > 40.0);
         assert_eq!(json["formula"], "C2H6O");
+    }
+
+    #[test]
+    fn fingerprint_json_is_stable_and_reports_set_bits() {
+        let json: serde_json::Value =
+            serde_json::from_str(&fingerprint_json("CCO", "ecfp4").unwrap()).unwrap();
+        assert_eq!(json["algorithm"], "ecfp4");
+        assert_eq!(json["n_bits"], 2048);
+        assert!(json["popcount"].as_u64().unwrap() > 0);
+        assert_eq!(
+            json["set_bits"].as_array().unwrap().len(),
+            json["popcount"].as_u64().unwrap() as usize
+        );
+    }
+
+    #[test]
+    fn fingerprint_rejects_unknown_algorithms() {
+        assert!(
+            fingerprint_json("CCO", "unknown")
+                .unwrap_err()
+                .contains("unsupported fingerprint algorithm")
+        );
     }
 }
