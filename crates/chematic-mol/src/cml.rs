@@ -28,6 +28,30 @@ use std::collections::HashMap;
 
 use chematic_core::{Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder};
 
+/// Resource limits for the lightweight CML parser.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CmlParseLimits {
+    pub max_input_bytes: usize,
+    pub max_line_bytes: usize,
+    pub max_lines: usize,
+    pub max_atoms: usize,
+    pub max_bonds: usize,
+    pub max_xml_elements: usize,
+}
+
+impl Default for CmlParseLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: 256 * 1024 * 1024,
+            max_line_bytes: 1024 * 1024,
+            max_lines: 1_000_000,
+            max_atoms: 1_000_000,
+            max_bonds: 2_000_000,
+            max_xml_elements: 2_000_000,
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Error type
 // ---------------------------------------------------------------------------
@@ -43,6 +67,14 @@ pub enum CmlError {
     InvalidAtomRefs2(String),
     /// A `<bond>` element's `order` attribute could not be interpreted.
     InvalidBondOrder(String),
+    /// A coordinate attribute parsed as NaN or infinite.
+    NonFiniteCoordinate(String),
+    /// The input exceeded a configured resource limit.
+    ResourceLimit {
+        resource: &'static str,
+        actual: usize,
+        limit: usize,
+    },
 }
 
 impl std::fmt::Display for CmlError {
@@ -52,6 +84,15 @@ impl std::fmt::Display for CmlError {
             CmlError::UnknownAtomRef(s) => write!(f, "unknown atom ref: {s}"),
             CmlError::InvalidAtomRefs2(s) => write!(f, "invalid atomRefs2: {s}"),
             CmlError::InvalidBondOrder(s) => write!(f, "invalid bond order: {s}"),
+            CmlError::NonFiniteCoordinate(s) => write!(f, "non-finite coordinate: {s}"),
+            CmlError::ResourceLimit {
+                resource,
+                actual,
+                limit,
+            } => write!(
+                f,
+                "CML: {resource} has size {actual}, exceeding limit {limit}"
+            ),
         }
     }
 }
@@ -207,6 +248,49 @@ struct CmlAtomData {
 ///     .collect();
 /// ```
 pub fn parse_cml(input: &str) -> Result<(Molecule, Vec<(f64, f64)>), CmlError> {
+    parse_cml_with_limits(input, &CmlParseLimits::default())
+}
+
+/// Parse CML with explicit resource limits.
+pub fn parse_cml_with_limits(
+    input: &str,
+    limits: &CmlParseLimits,
+) -> Result<(Molecule, Vec<(f64, f64)>), CmlError> {
+    if input.len() > limits.max_input_bytes {
+        return Err(CmlError::ResourceLimit {
+            resource: "input bytes",
+            actual: input.len(),
+            limit: limits.max_input_bytes,
+        });
+    }
+    let lines = input.lines().collect::<Vec<_>>();
+    if lines.len() > limits.max_lines {
+        return Err(CmlError::ResourceLimit {
+            resource: "lines",
+            actual: lines.len(),
+            limit: limits.max_lines,
+        });
+    }
+    if let Some(line_bytes) = lines.iter().map(|line| line.len()).max()
+        && line_bytes > limits.max_line_bytes
+    {
+        return Err(CmlError::ResourceLimit {
+            resource: "line bytes",
+            actual: line_bytes,
+            limit: limits.max_line_bytes,
+        });
+    }
+    let element_count = lines
+        .iter()
+        .filter(|line| line.contains('<') && line.contains('>'))
+        .count();
+    if element_count > limits.max_xml_elements {
+        return Err(CmlError::ResourceLimit {
+            resource: "XML elements",
+            actual: element_count,
+            limit: limits.max_xml_elements,
+        });
+    }
     // --- Pass 1: collect atoms and bonds from the CML -----------------------
 
     let mut atom_data: Vec<CmlAtomData> = Vec::new();
@@ -220,13 +304,20 @@ pub fn parse_cml(input: &str) -> Result<(Molecule, Vec<(f64, f64)>), CmlError> {
     }
     let mut bond_data: Vec<BondData> = Vec::new();
 
-    for raw_line in input.lines() {
+    for raw_line in lines {
         let line = raw_line.trim();
         if line.is_empty() {
             continue;
         }
 
         if is_element_tag(line, "atom") {
+            if atom_data.len() >= limits.max_atoms {
+                return Err(CmlError::ResourceLimit {
+                    resource: "atom elements",
+                    actual: atom_data.len() + 1,
+                    limit: limits.max_atoms,
+                });
+            }
             let attrs = parse_xml_attrs(line);
             let id = attrs.get("id").cloned().unwrap_or_default();
 
@@ -254,6 +345,12 @@ pub fn parse_cml(input: &str) -> Result<(Molecule, Vec<(f64, f64)>), CmlError> {
                 .get("y2")
                 .and_then(|s| s.trim().parse::<f64>().ok())
                 .unwrap_or(0.0);
+            if !x2.is_finite() {
+                return Err(CmlError::NonFiniteCoordinate(x2.to_string()));
+            }
+            if !y2.is_finite() {
+                return Err(CmlError::NonFiniteCoordinate(y2.to_string()));
+            }
 
             let pos = atom_data.len();
             if !id.is_empty() {
@@ -272,6 +369,13 @@ pub fn parse_cml(input: &str) -> Result<(Molecule, Vec<(f64, f64)>), CmlError> {
         }
 
         if is_element_tag(line, "bond") {
+            if bond_data.len() >= limits.max_bonds {
+                return Err(CmlError::ResourceLimit {
+                    resource: "bond elements",
+                    actual: bond_data.len() + 1,
+                    limit: limits.max_bonds,
+                });
+            }
             let attrs = parse_xml_attrs(line);
             let refs = attrs
                 .get("atomRefs2")
@@ -530,5 +634,66 @@ mod tests {
         let (mol, _) = parse_cml(cml).unwrap();
         let bond = mol.bond(chematic_core::BondIdx(0));
         assert_eq!(bond.order, BondOrder::Double, "order=2 should give Double");
+    }
+
+    #[test]
+    fn bounded_parser_rejects_input_and_line_limits() {
+        assert!(matches!(
+            parse_cml_with_limits(
+                ETHANOL_CML,
+                &CmlParseLimits {
+                    max_input_bytes: 8,
+                    ..Default::default()
+                }
+            ),
+            Err(CmlError::ResourceLimit {
+                resource: "input bytes",
+                ..
+            })
+        ));
+        let long_line = format!("{}\n", "x".repeat(32));
+        assert!(matches!(
+            parse_cml_with_limits(
+                &long_line,
+                &CmlParseLimits {
+                    max_line_bytes: 16,
+                    ..Default::default()
+                }
+            ),
+            Err(CmlError::ResourceLimit {
+                resource: "line bytes",
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn bounded_parser_rejects_atom_and_bond_limits() {
+        assert!(matches!(
+            parse_cml_with_limits(
+                ETHANOL_CML,
+                &CmlParseLimits {
+                    max_atoms: 2,
+                    ..Default::default()
+                }
+            ),
+            Err(CmlError::ResourceLimit {
+                resource: "atom elements",
+                ..
+            })
+        ));
+        assert!(matches!(
+            parse_cml_with_limits(
+                ETHANOL_CML,
+                &CmlParseLimits {
+                    max_bonds: 1,
+                    ..Default::default()
+                }
+            ),
+            Err(CmlError::ResourceLimit {
+                resource: "bond elements",
+                ..
+            })
+        ));
     }
 }

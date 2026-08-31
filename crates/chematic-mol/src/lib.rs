@@ -64,7 +64,7 @@ pub use cif::{
     write_cif_periodic_structure,
 };
 pub use cjson::{CjsonError, parse_cjson, write_cjson};
-pub use cml::{CmlError, parse_cml, write_cml};
+pub use cml::{CmlError, CmlParseLimits, parse_cml, parse_cml_with_limits, write_cml};
 pub use cube::{
     CubeError, CubeFileReader, CubeParseLimits, parse_cube, parse_cube_with_limits, write_cube,
 };

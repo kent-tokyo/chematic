@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.81.0] - 2026-08-31
+
+### v0.81.0 — bounded CML input
+
+- Added `CmlParseLimits` and `parse_cml_with_limits` for input bytes,
+  physical line length/count, XML element count, and atom/bond elements.
+- Added typed resource-limit and non-finite-coordinate errors with regression
+  coverage while preserving the existing `parse_cml` entry point.
+
 ## [0.80.0] - 2026-08-31
 
 ### v0.80.0 — bounded MOL2 input

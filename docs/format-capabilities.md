@@ -141,6 +141,15 @@ Notes on the cells above that need qualification:
   length/count, section count, atom records, and bond records. The existing
   parser uses finite defaults.
 
+### CML
+
+- **Rust**: `chematic_mol::{parse_cml, parse_cml_with_limits, write_cml, CmlError, CmlParseLimits}`.
+- **Coordinate units**: Ångström in returned 2D coordinates.
+- **Connectivity**: native CML bond elements.
+- **Parse limits**: `CmlParseLimits` bounds input bytes, physical line
+  length/count, XML element count, and atom/bond elements. The existing parser
+  uses finite defaults.
+
 ### MOL/SDF
 
 - **Rust read**: `parse_mol`, `parse_mol_with_coords`, `read_mol_with_diagnostics`, `parse_mol_v3000*`, `SdfReader`, `SdfFileReader`, `SdfRecordReader`.
