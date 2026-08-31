@@ -3,8 +3,8 @@
 use crate::{
     MolHandle, WASM_MAX_ATOMS, WASM_MAX_BATCH_ITEMS, WASM_MAX_JSON_STRING_BYTES,
     WASM_MAX_SMARTS_MATCHES, enforce_wasm_input_len, enforce_wasm_molecule_size,
-    escape_json_string, json_option_string_array, json_option_u8_array, parse_smiles_json_array,
-    rgroup_fragment_smiles,
+    escape_json_string, json_error, json_option_string_array, json_option_u8_array, json_string,
+    parse_smiles_json_array, rgroup_fragment_smiles,
 };
 use serde::Deserialize;
 use wasm_bindgen::prelude::*;
@@ -102,6 +102,7 @@ impl McsConfigJson {
             match_charge: self.match_charge,
             match_isotope: self.match_isotope,
             maximize_bonds: self.maximize_bonds,
+            ..chematic_smarts::McsConfig::default()
         }
     }
 }
@@ -632,7 +633,7 @@ pub fn canonical_tautomer_with_blocked_atoms_json(
     }
     let indices: Vec<u32> = match serde_json::from_str(blocked_atom_indices_json) {
         Ok(v) => v,
-        Err(e) => return format!(r#"{{"error":"invalid JSON: {e}"}}"#),
+        Err(e) => return json_error(format!("invalid JSON: {e}")),
     };
     let blocked_atoms: std::collections::HashSet<chematic_core::AtomIdx> =
         indices.into_iter().map(chematic_core::AtomIdx).collect();
@@ -642,8 +643,7 @@ pub fn canonical_tautomer_with_blocked_atoms_json(
     };
     let result = chematic_chem::canonical_tautomer_with_config(&mol.inner, &config);
     let smi = chematic_smiles::canonical_smiles(&result);
-    let escaped = smi.replace('\\', "\\\\").replace('"', "\\\"");
-    format!("\"{escaped}\"")
+    json_string(&smi)
 }
 
 /// All enumerated tautomers of `mol` as a JSON array of canonical SMILES strings.
@@ -652,22 +652,14 @@ pub fn canonical_tautomer_with_blocked_atoms_json(
 #[wasm_bindgen]
 pub fn enumerate_tautomers_json(mol: &MolHandle) -> String {
     if mol.inner.atom_count() > WASM_MAX_ATOMS {
-        return format!(
-            r#"["{{"error":"molecule too large (max {} atoms)"}}"]"#,
-            WASM_MAX_ATOMS
-        );
+        return json_error(format!("molecule too large (max {WASM_MAX_ATOMS} atoms)"));
     }
     let tautomers = chematic_chem::enumerate_tautomers(&mol.inner);
-    let parts: Vec<String> = tautomers
+    let values: Vec<String> = tautomers
         .iter()
-        .map(|m| {
-            format!(
-                "\"{}\"",
-                chematic_smiles::canonical_smiles(m).replace('"', "\\\"")
-            )
-        })
+        .map(chematic_smiles::canonical_smiles)
         .collect();
-    format!("[{}]", parts.join(","))
+    serde_json::to_string(&values).expect("serializing tautomer strings cannot fail")
 }
 
 /// Return the largest fragment of `mol` (salt/solvent stripping).

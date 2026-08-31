@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.67.0] - 2026-08-31
+
+### v0.67.0 — bounded MCS search outcomes
+
+- Added input atom/bond limits and a configurable search-node budget to
+  `McsConfig`.
+- Added typed `McsOutcome::ResourceLimited` and
+  `was_resource_limited()` so partial MCS results are never reported as
+  exhaustive.
+- Synchronized Python and WASM MCS configuration construction with the new
+  safe defaults and added regression coverage.
+
 ## [0.66.0] - 2026-08-31
 
 ### v0.66.0 — bounded reaction parsing

@@ -589,6 +589,7 @@ fn build_mcs_config(
         match_charge,
         match_isotope,
         maximize_bonds,
+        ..McsConfig::default()
     })
 }
 
