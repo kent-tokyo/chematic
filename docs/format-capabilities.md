@@ -118,7 +118,9 @@ Notes on the cells above that need qualification:
 - SMARTS is a query language, not a molecule storage format — streaming,
   coordinate units, connectivity, round-trip, and lossy-operation columns
   don't apply in the same sense as the other 14 formats.
-- **Parse limits**: no `*ParseLimits` type exists.
+- **Parse limits**: `PdbParseLimits` bounds input bytes, physical line length,
+  ATOM/HETATM records, and MODEL records; use
+  `parse_pdb_atoms_with_limits` for a typed resource-limit error contract.
 
 ### MOL/SDF
 

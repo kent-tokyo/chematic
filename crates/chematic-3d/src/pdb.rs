@@ -65,11 +65,104 @@ pub struct PdbAtom {
 ///
 /// Atoms are capped at PDB_MAX_ATOMS (10,000) to prevent O(n²) bond inference DoS.
 pub fn parse_pdb_atoms(input: &str) -> Vec<PdbAtom> {
-    const PDB_MAX_ATOMS: usize = 10_000;
+    parse_pdb_atoms_capped(input, 10_000)
+}
+
+/// Resource limits for parsing untrusted PDB input.
+#[derive(Debug, Clone, Copy)]
+pub struct PdbParseLimits {
+    /// Maximum input size in bytes.
+    pub max_input_bytes: usize,
+    /// Maximum physical line size in bytes.
+    pub max_line_bytes: usize,
+    /// Maximum ATOM/HETATM records.
+    pub max_atoms: usize,
+    /// Maximum MODEL records.
+    pub max_models: usize,
+}
+
+impl Default for PdbParseLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: 256 << 20,
+            max_line_bytes: 1 << 20,
+            max_atoms: 10_000,
+            max_models: 1_000,
+        }
+    }
+}
+
+/// Error returned when a configured PDB resource limit is exceeded.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PdbResourceLimitError {
+    pub resource: &'static str,
+    pub actual: usize,
+    pub limit: usize,
+}
+
+impl std::fmt::Display for PdbResourceLimitError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "PDB {} exceeds limit {} (got {})",
+            self.resource, self.limit, self.actual
+        )
+    }
+}
+
+impl std::error::Error for PdbResourceLimitError {}
+
+/// Parse PDB atoms while enforcing input, line, atom, and model limits.
+pub fn parse_pdb_atoms_with_limits(
+    input: &str,
+    limits: &PdbParseLimits,
+) -> Result<Vec<PdbAtom>, PdbResourceLimitError> {
+    if input.len() > limits.max_input_bytes {
+        return Err(PdbResourceLimitError {
+            resource: "input bytes",
+            actual: input.len(),
+            limit: limits.max_input_bytes,
+        });
+    }
+    let mut atom_count = 0usize;
+    let mut model_count = 0usize;
+    for line in input.lines() {
+        if line.len() > limits.max_line_bytes {
+            return Err(PdbResourceLimitError {
+                resource: "line bytes",
+                actual: line.len(),
+                limit: limits.max_line_bytes,
+            });
+        }
+        let record = line.get(0..6).unwrap_or("").trim_end();
+        if record == "MODEL" {
+            model_count = model_count.saturating_add(1);
+            if model_count > limits.max_models {
+                return Err(PdbResourceLimitError {
+                    resource: "models",
+                    actual: model_count,
+                    limit: limits.max_models,
+                });
+            }
+        } else if record == "ATOM" || record == "HETATM" {
+            atom_count = atom_count.saturating_add(1);
+            if atom_count > limits.max_atoms {
+                return Err(PdbResourceLimitError {
+                    resource: "atoms",
+                    actual: atom_count,
+                    limit: limits.max_atoms,
+                });
+            }
+        }
+    }
+    Ok(parse_pdb_atoms_capped(input, limits.max_atoms))
+}
+
+fn parse_pdb_atoms_capped(input: &str, max_atoms: usize) -> Vec<PdbAtom> {
     let mut atoms = Vec::new();
 
     for line in input.lines() {
-        if atoms.len() >= PDB_MAX_ATOMS {
+        if atoms.len() >= max_atoms {
             break;
         }
 
@@ -100,6 +193,65 @@ pub fn parse_pdb_atoms(input: &str) -> Vec<PdbAtom> {
     }
 
     atoms
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{PdbParseLimits, PdbResourceLimitError, parse_pdb_atoms_with_limits};
+
+    const ATOM: &str =
+        "ATOM      1  CA  ALA A   1      10.000  11.000  12.000  1.00 20.00           C  ";
+
+    #[test]
+    fn bounded_parser_rejects_input_lines_atoms_and_models() {
+        let limits = PdbParseLimits {
+            max_input_bytes: 2,
+            ..PdbParseLimits::default()
+        };
+        assert!(matches!(
+            parse_pdb_atoms_with_limits(ATOM, &limits),
+            Err(PdbResourceLimitError {
+                resource: "input bytes",
+                ..
+            })
+        ));
+
+        let limits = PdbParseLimits {
+            max_line_bytes: 2,
+            ..PdbParseLimits::default()
+        };
+        assert!(matches!(
+            parse_pdb_atoms_with_limits(ATOM, &limits),
+            Err(PdbResourceLimitError {
+                resource: "line bytes",
+                ..
+            })
+        ));
+
+        let limits = PdbParseLimits {
+            max_atoms: 0,
+            ..PdbParseLimits::default()
+        };
+        assert!(matches!(
+            parse_pdb_atoms_with_limits(ATOM, &limits),
+            Err(PdbResourceLimitError {
+                resource: "atoms",
+                ..
+            })
+        ));
+
+        let limits = PdbParseLimits {
+            max_models: 0,
+            ..PdbParseLimits::default()
+        };
+        assert!(matches!(
+            parse_pdb_atoms_with_limits("MODEL        1\n", &limits),
+            Err(PdbResourceLimitError {
+                resource: "models",
+                ..
+            })
+        ));
+    }
 }
 
 // ---------------------------------------------------------------------------

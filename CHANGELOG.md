@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.72.0] - 2026-08-31
+
+### v0.72.0 — bounded PDB input
+
+- Added `PdbParseLimits` and `parse_pdb_atoms_with_limits` for input bytes,
+  line length, atom-record, and MODEL limits.
+- Added a typed `PdbResourceLimitError` while preserving the existing
+  `parse_pdb_atoms` return shape.
+- Added PDB resource-limit regression coverage and updated the format matrix.
+
 ## [0.71.0] - 2026-08-31
 
 ### v0.71.0 — bounded XYZ input

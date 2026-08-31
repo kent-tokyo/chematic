@@ -74,7 +74,10 @@ pub use mol_transforms::{
     get_dihedral, get_dihedral_deg, set_dihedral, transform_conformer,
 };
 pub use o3a::{O3AError, O3AResult, o3a_align};
-pub use pdb::{PdbAtom, parse_pdb_atoms, pdb_to_molecule, write_pdb};
+pub use pdb::{
+    PdbAtom, PdbParseLimits, PdbResourceLimitError, parse_pdb_atoms, parse_pdb_atoms_with_limits,
+    pdb_to_molecule, write_pdb,
+};
 pub use pharmacophore_fp_3d::{pharmacophore_fp_3d, tanimoto_pharmacophore_3d};
 pub use pipeline_v2::{
     PipelineV2Config, PipelineV2Failure, PipelineV2FailureCause, PipelineV2Result,
