@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.79.0] - 2026-08-31
+
+### v0.79.0 — bounded PDBQT input
+
+- Added `PdbqtParseLimits` and `parse_pdbqt_with_limits` for input bytes,
+  physical line length, line count, and ATOM/HETATM records.
+- Added typed resource-limit and non-finite-value errors with regression
+  coverage while preserving the existing `parse_pdbqt` entry point.
+
 ## [0.78.0] - 2026-08-31
 
 ### v0.78.0 — bounded Gaussian input and log parsing

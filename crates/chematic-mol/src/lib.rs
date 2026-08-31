@@ -115,7 +115,10 @@ pub use orca::{
     OrcaInputParseLimits, OrcaOptConvergence, OrcaOutput, OrcaOutputError, OrcaTermination,
     parse_orca_input, parse_orca_input_with_limits, parse_orca_output, write_orca_input,
 };
-pub use pdbqt::{PdbqtError, autodock_atom_type, parse_pdbqt, write_pdbqt};
+pub use pdbqt::{
+    PdbqtError, PdbqtParseLimits, autodock_atom_type, parse_pdbqt, parse_pdbqt_with_limits,
+    write_pdbqt,
+};
 pub use pqr::{
     PqrAtomRecord, PqrError, PqrParseLimits, PqrResult, infer_element, parse_pqr,
     parse_pqr_with_limits, write_pqr,

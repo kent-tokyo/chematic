@@ -14,6 +14,26 @@
 
 use chematic_core::{AtomIdx, Element, Molecule};
 
+/// Resource limits for PDBQT parsing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PdbqtParseLimits {
+    pub max_input_bytes: usize,
+    pub max_line_bytes: usize,
+    pub max_lines: usize,
+    pub max_atoms: usize,
+}
+
+impl Default for PdbqtParseLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: 256 * 1024 * 1024,
+            max_line_bytes: 1024 * 1024,
+            max_lines: 1_000_000,
+            max_atoms: 1_000_000,
+        }
+    }
+}
+
 /// Error returned when parsing a PDBQT file fails.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PdbqtError {
@@ -23,6 +43,14 @@ pub enum PdbqtError {
     InvalidCharge { line: usize, raw: String },
     /// Unknown element symbol.
     UnknownElement { symbol: String, line: usize },
+    /// A coordinate or charge parsed as NaN or infinite.
+    NonFiniteValue { line: usize, field: &'static str },
+    /// The input exceeded a configured resource limit.
+    ResourceLimit {
+        resource: &'static str,
+        actual: usize,
+        limit: usize,
+    },
 }
 
 impl core::fmt::Display for PdbqtError {
@@ -37,6 +65,17 @@ impl core::fmt::Display for PdbqtError {
             Self::UnknownElement { symbol, line } => {
                 write!(f, "PDBQT: unknown element '{symbol}' at line {line}")
             }
+            Self::NonFiniteValue { line, field } => {
+                write!(f, "PDBQT: non-finite {field} at line {line}")
+            }
+            Self::ResourceLimit {
+                resource,
+                actual,
+                limit,
+            } => write!(
+                f,
+                "PDBQT: {resource} has size {actual}, exceeding limit {limit}"
+            ),
         }
     }
 }
@@ -171,16 +210,57 @@ pub fn write_pdbqt(
 /// `BRANCH`, `ENDBRANCH`, and `TORSDOF` lines are silently skipped.
 #[allow(clippy::type_complexity)]
 pub fn parse_pdbqt(s: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>, Vec<f64>), PdbqtError> {
+    parse_pdbqt_with_limits(s, &PdbqtParseLimits::default())
+}
+
+/// Parse a PDBQT string with explicit resource limits.
+#[allow(clippy::type_complexity)]
+pub fn parse_pdbqt_with_limits(
+    s: &str,
+    limits: &PdbqtParseLimits,
+) -> Result<(Molecule, Vec<(f64, f64, f64)>, Vec<f64>), PdbqtError> {
     use chematic_core::MoleculeBuilder;
+
+    if s.len() > limits.max_input_bytes {
+        return Err(PdbqtError::ResourceLimit {
+            resource: "input bytes",
+            actual: s.len(),
+            limit: limits.max_input_bytes,
+        });
+    }
+    let lines = s.lines().collect::<Vec<_>>();
+    if lines.len() > limits.max_lines {
+        return Err(PdbqtError::ResourceLimit {
+            resource: "lines",
+            actual: lines.len(),
+            limit: limits.max_lines,
+        });
+    }
+    if let Some(line_bytes) = lines.iter().map(|line| line.len()).max()
+        && line_bytes > limits.max_line_bytes
+    {
+        return Err(PdbqtError::ResourceLimit {
+            resource: "line bytes",
+            actual: line_bytes,
+            limit: limits.max_line_bytes,
+        });
+    }
 
     let mut builder = MoleculeBuilder::new();
     let mut coords: Vec<(f64, f64, f64)> = Vec::new();
     let mut charges: Vec<f64> = Vec::new();
 
-    for (lineno, line) in s.lines().enumerate() {
+    for (lineno, line) in lines.into_iter().enumerate() {
         let record = &line[..line.len().min(6)];
         if !matches!(record.trim(), "ATOM" | "HETATM") {
             continue;
+        }
+        if coords.len() >= limits.max_atoms {
+            return Err(PdbqtError::ResourceLimit {
+                resource: "atom records",
+                actual: coords.len() + 1,
+                limit: limits.max_atoms,
+            });
         }
         if line.len() < 54 {
             return Err(PdbqtError::InvalidAtomLine {
@@ -225,6 +305,24 @@ pub fn parse_pdbqt(s: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>, Vec<f64>)
         let x = parse_f(&line[30..38], "x")?;
         let y = parse_f(&line[38..46], "y")?;
         let z = parse_f(&line[46..54], "z")?;
+        if !x.is_finite() {
+            return Err(PdbqtError::NonFiniteValue {
+                line: lineno + 1,
+                field: "x coordinate",
+            });
+        }
+        if !y.is_finite() {
+            return Err(PdbqtError::NonFiniteValue {
+                line: lineno + 1,
+                field: "y coordinate",
+            });
+        }
+        if !z.is_finite() {
+            return Err(PdbqtError::NonFiniteValue {
+                line: lineno + 1,
+                field: "z coordinate",
+            });
+        }
         coords.push((x, y, z));
 
         // Partial charge: cols 67-76 (0-indexed 66-75), or fallback 71-76
@@ -239,6 +337,12 @@ pub fn parse_pdbqt(s: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>, Vec<f64>)
                 line: lineno + 1,
                 raw: q_raw.to_string(),
             })?;
+        if !q.is_finite() {
+            return Err(PdbqtError::NonFiniteValue {
+                line: lineno + 1,
+                field: "partial charge",
+            });
+        }
         charges.push(q);
     }
 
@@ -285,5 +389,57 @@ mod tests {
         assert!((coords2[0].0 - 1.0).abs() < 0.01);
         assert!((coords2[1].1 - 5.0).abs() < 0.01);
         assert!((charges2[2] - (-0.3)).abs() < 0.01);
+    }
+
+    #[test]
+    fn bounded_parser_rejects_input_and_line_limits() {
+        let mol = parse("CCO").unwrap();
+        let text = write_pdbqt(&mol, &[], &[], "TST");
+        assert!(matches!(
+            parse_pdbqt_with_limits(
+                &text,
+                &PdbqtParseLimits {
+                    max_input_bytes: 8,
+                    ..Default::default()
+                }
+            ),
+            Err(PdbqtError::ResourceLimit {
+                resource: "input bytes",
+                ..
+            })
+        ));
+        let long_line = format!("{}\n", "x".repeat(32));
+        assert!(matches!(
+            parse_pdbqt_with_limits(
+                &long_line,
+                &PdbqtParseLimits {
+                    max_line_bytes: 16,
+                    ..Default::default()
+                }
+            ),
+            Err(PdbqtError::ResourceLimit {
+                resource: "line bytes",
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn bounded_parser_rejects_atom_limit() {
+        let mol = parse("CCO").unwrap();
+        let text = write_pdbqt(&mol, &[], &[], "TST");
+        assert!(matches!(
+            parse_pdbqt_with_limits(
+                &text,
+                &PdbqtParseLimits {
+                    max_atoms: 2,
+                    ..Default::default()
+                }
+            ),
+            Err(PdbqtError::ResourceLimit {
+                resource: "atom records",
+                ..
+            })
+        ));
     }
 }

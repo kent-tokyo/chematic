@@ -122,6 +122,15 @@ Notes on the cells above that need qualification:
   ATOM/HETATM records, and MODEL records; use
   `parse_pdb_atoms_with_limits` for a typed resource-limit error contract.
 
+### PDBQT
+
+- **Rust**: `chematic_mol::{parse_pdbqt, parse_pdbqt_with_limits, write_pdbqt, PdbqtError, PdbqtParseLimits}`.
+- **Coordinate units**: Ångström.
+- **Connectivity**: no bond perception; rigid-body PDBQT only.
+- **Parse limits**: `PdbqtParseLimits` bounds input bytes, physical line
+  length/count, and ATOM/HETATM records. The existing parser uses finite
+  defaults.
+
 ### MOL/SDF
 
 - **Rust read**: `parse_mol`, `parse_mol_with_coords`, `read_mol_with_diagnostics`, `parse_mol_v3000*`, `SdfReader`, `SdfFileReader`, `SdfRecordReader`.
