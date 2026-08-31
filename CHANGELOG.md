@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.62.0] - 2026-08-31
+
+### v0.62.0 — batch similarity CLI workflow
+
+- Added `chematic batch-similarity` for tab-separated SMILES pairs from stdin
+  or a file.
+- Added ecfp4/ecfp6/maccs selection, per-record Tanimoto results, input-order
+  manifests, and retained errors for malformed pairs or molecules.
+- Added CLI regression coverage and documented the TSV input contract.
+
 ## [0.61.0] - 2026-08-31
 
 ### v0.61.0 — lightweight parse CLI workflow

@@ -139,6 +139,15 @@ enum Command {
         #[arg(short, long)]
         input: Option<PathBuf>,
     },
+    /// Compare one tab-separated pair of SMILES per line.
+    BatchSimilarity {
+        /// Read tab-separated pairs from this file instead of stdin.
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        /// Algorithm: ecfp4, ecfp6, or maccs.
+        #[arg(long, default_value = "ecfp4")]
+        algorithm: String,
+    },
 }
 
 fn format_name(format: &str) -> Option<String> {
@@ -622,6 +631,51 @@ fn batch_standardize_json(text: &str) -> Result<String, String> {
     .to_string())
 }
 
+fn batch_similarity_json(text: &str, algorithm: &str) -> Result<String, String> {
+    let lines: Vec<&str> = text
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .collect();
+    let mut records = Vec::with_capacity(lines.len());
+    let mut valid_count = 0usize;
+    for (input_index, line) in lines.iter().enumerate() {
+        let result = line
+            .split_once('\t')
+            .ok_or_else(|| "expected SMILES_A<TAB>SMILES_B".to_string())
+            .and_then(|(smiles_a, smiles_b)| {
+                similarity_json(smiles_a.trim(), smiles_b.trim(), algorithm)
+            })
+            .and_then(|json| {
+                serde_json::from_str::<serde_json::Value>(&json).map_err(|e| e.to_string())
+            });
+        match result {
+            Ok(similarity) => {
+                valid_count += 1;
+                records.push(serde_json::json!({
+                    "input_index": input_index,
+                    "input": line,
+                    "similarity": similarity,
+                    "error": null,
+                }));
+            }
+            Err(error) => records.push(serde_json::json!({
+                "input_index": input_index,
+                "input": line,
+                "similarity": null,
+                "error": error,
+            })),
+        }
+    }
+    Ok(serde_json::json!({
+        "algorithm": algorithm.to_ascii_lowercase(),
+        "records": records,
+        "valid_count": valid_count,
+        "error_count": lines.len() - valid_count,
+    })
+    .to_string())
+}
+
 fn run(cli: Cli) -> Result<(), String> {
     match cli.command {
         Command::Convert {
@@ -715,6 +769,11 @@ fn run(cli: Cli) -> Result<(), String> {
             let json = batch_standardize_json(&text)?;
             write_output(None, &format!("{json}\n"))
         }
+        Command::BatchSimilarity { input, algorithm } => {
+            let text = read_input(input.as_ref())?;
+            let json = batch_similarity_json(&text, &algorithm)?;
+            write_output(None, &format!("{json}\n"))
+        }
     }
 }
 
@@ -728,10 +787,11 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::{
-        batch_descriptors_json, batch_fingerprints_json, batch_report_json, batch_standardize_json,
-        convert_text, descriptors_json, fingerprint_json, parse_json, reaction_balance_json,
-        reaction_fingerprint_json, reaction_json, reaction_match_json, reaction_similarity_json,
-        report_json, similarity_json, standardize_json, substructure_json,
+        batch_descriptors_json, batch_fingerprints_json, batch_report_json, batch_similarity_json,
+        batch_standardize_json, convert_text, descriptors_json, fingerprint_json, parse_json,
+        reaction_balance_json, reaction_fingerprint_json, reaction_json, reaction_match_json,
+        reaction_similarity_json, report_json, similarity_json, standardize_json,
+        substructure_json,
     };
 
     #[test]
@@ -1026,5 +1086,19 @@ mod tests {
         assert!(json["records"][0]["standardization"]["steps"].is_array());
         assert!(json["records"][1]["error"].as_str().is_some());
         assert_eq!(json["records"][2]["standardization"]["status"], "unchanged");
+    }
+
+    #[test]
+    fn batch_similarity_processes_tsv_pairs_and_retains_errors() {
+        let json: serde_json::Value = serde_json::from_str(
+            &batch_similarity_json("CCO\tCCO\nCCO\tC1CC\nmissing\n", "ecfp4").unwrap(),
+        )
+        .unwrap();
+        assert_eq!(json["algorithm"], "ecfp4");
+        assert_eq!(json["valid_count"], 1);
+        assert_eq!(json["error_count"], 2);
+        assert_eq!(json["records"][0]["similarity"]["similarity"], 1.0);
+        assert!(json["records"][1]["error"].as_str().is_some());
+        assert!(json["records"][2]["error"].as_str().is_some());
     }
 }

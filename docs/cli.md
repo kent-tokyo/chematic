@@ -148,3 +148,12 @@ FILE` contract as the other batch commands.
 ```sh
 printf 'C[NH3+]\nC1CC\nCCO\n' | chematic batch-standardize
 ```
+
+`batch-similarity` reads one tab-separated pair per line in the form
+`SMILES_A<TAB>SMILES_B`, using the selected ecfp4/ecfp6/maccs algorithm. It
+returns per-record similarity JSON, input order, and retained errors for bad
+pairs or molecules.
+
+```sh
+printf 'CCO\tCCO\nCCO\tCCN\n' | chematic batch-similarity --algorithm ecfp4
+```
