@@ -50,6 +50,32 @@ use chematic_perception::{apply_local_parity_from_wedges, assign_ez_from_2d};
 
 use crate::cml::parse_xml_attrs;
 
+/// Resource limits for CDXML parsing.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CdxmlParseLimits {
+    pub max_input_bytes: usize,
+    pub max_line_bytes: usize,
+    pub max_lines: usize,
+    pub max_attribute_bytes: usize,
+    pub max_atoms: usize,
+    pub max_bonds: usize,
+    pub max_fragments: usize,
+}
+
+impl Default for CdxmlParseLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: 256 * 1024 * 1024,
+            max_line_bytes: 16 * 1024 * 1024,
+            max_lines: 5_000_000,
+            max_attribute_bytes: 16 * 1024 * 1024,
+            max_atoms: CDXML_MAX_ATOMS,
+            max_bonds: 20_000,
+            max_fragments: 10_000,
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Error type
 // ---------------------------------------------------------------------------
@@ -67,6 +93,12 @@ pub enum CdxmlError {
     InvalidCoords(String),
     /// The document contains more atoms than the parser's safety limit.
     TooManyAtoms(usize),
+    /// The document exceeded a configured resource limit.
+    ResourceLimit {
+        resource: &'static str,
+        actual: usize,
+        limit: usize,
+    },
 }
 
 impl std::fmt::Display for CdxmlError {
@@ -77,6 +109,14 @@ impl std::fmt::Display for CdxmlError {
             CdxmlError::MissingBondEndpoint => write!(f, "bond missing B or E attribute"),
             CdxmlError::InvalidCoords(s) => write!(f, "invalid p coords: {s}"),
             CdxmlError::TooManyAtoms(n) => write!(f, "CDXML document exceeds atom limit ({n})"),
+            CdxmlError::ResourceLimit {
+                resource,
+                actual,
+                limit,
+            } => write!(
+                f,
+                "CDXML: {resource} has size {actual}, exceeding limit {limit}"
+            ),
         }
     }
 }
@@ -121,7 +161,19 @@ pub struct CdxmlParseOptions {
 /// for SVG rendering; coordinates can be used directly with an SVG renderer such as
 /// `render_svg` (see `chematic-depict`).
 pub fn parse_cdxml(input: &str) -> Result<(Molecule, Vec<(f64, f64)>), CdxmlError> {
-    parse_cdxml_with_options(input, &CdxmlParseOptions::default())
+    parse_cdxml_with_options_and_limits(
+        input,
+        &CdxmlParseOptions::default(),
+        &CdxmlParseLimits::default(),
+    )
+}
+
+/// Parse a CDXML document with explicit resource limits.
+pub fn parse_cdxml_with_limits(
+    input: &str,
+    limits: &CdxmlParseLimits,
+) -> Result<(Molecule, Vec<(f64, f64)>), CdxmlError> {
+    parse_cdxml_with_options_and_limits(input, &CdxmlParseOptions::default(), limits)
 }
 
 /// Same as [`parse_cdxml`], with explicit [`CdxmlParseOptions`].
@@ -129,7 +181,16 @@ pub fn parse_cdxml_with_options(
     input: &str,
     options: &CdxmlParseOptions,
 ) -> Result<(Molecule, Vec<(f64, f64)>), CdxmlError> {
-    let mut all = parse_cdxml_all_with_options(input, options)?;
+    parse_cdxml_with_options_and_limits(input, options, &CdxmlParseLimits::default())
+}
+
+/// Same as [`parse_cdxml_with_options`], with explicit resource limits.
+pub fn parse_cdxml_with_options_and_limits(
+    input: &str,
+    options: &CdxmlParseOptions,
+    limits: &CdxmlParseLimits,
+) -> Result<(Molecule, Vec<(f64, f64)>), CdxmlError> {
+    let mut all = parse_cdxml_all_with_options_and_limits(input, options, limits)?;
     if all.is_empty() {
         return Ok((MoleculeBuilder::new().build(), vec![]));
     }
@@ -168,7 +229,20 @@ pub fn parse_cdxml_with_options(
 /// non-directional opt-in).
 #[allow(clippy::type_complexity)]
 pub fn parse_cdxml_all(input: &str) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, CdxmlError> {
-    parse_cdxml_all_with_options(input, &CdxmlParseOptions::default())
+    parse_cdxml_all_with_options_and_limits(
+        input,
+        &CdxmlParseOptions::default(),
+        &CdxmlParseLimits::default(),
+    )
+}
+
+/// Parse all CDXML fragments with explicit resource limits.
+#[allow(clippy::type_complexity)]
+pub fn parse_cdxml_all_with_limits(
+    input: &str,
+    limits: &CdxmlParseLimits,
+) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, CdxmlError> {
+    parse_cdxml_all_with_options_and_limits(input, &CdxmlParseOptions::default(), limits)
 }
 
 /// Accumulator for a single CDXML `<fragment>` being parsed.
@@ -383,16 +457,56 @@ pub fn parse_cdxml_all_with_options(
     input: &str,
     options: &CdxmlParseOptions,
 ) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, CdxmlError> {
+    parse_cdxml_all_with_options_and_limits(input, options, &CdxmlParseLimits::default())
+}
+
+/// Same as [`parse_cdxml_all_with_options`], with explicit resource limits.
+#[allow(clippy::type_complexity)]
+pub fn parse_cdxml_all_with_options_and_limits(
+    input: &str,
+    options: &CdxmlParseOptions,
+    limits: &CdxmlParseLimits,
+) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, CdxmlError> {
+    if input.len() > limits.max_input_bytes {
+        return Err(CdxmlError::ResourceLimit {
+            resource: "input bytes",
+            actual: input.len(),
+            limit: limits.max_input_bytes,
+        });
+    }
     let mut acc = FragAccum::default();
     let mut results: Vec<(Molecule, Vec<(f64, f64)>)> = Vec::new();
+    let mut fragment_count = 0usize;
 
-    for raw_line in input.lines() {
+    for (line_index, raw_line) in input.lines().enumerate() {
+        if line_index >= limits.max_lines {
+            return Err(CdxmlError::ResourceLimit {
+                resource: "lines",
+                actual: line_index + 1,
+                limit: limits.max_lines,
+            });
+        }
+        if raw_line.len() > limits.max_line_bytes {
+            return Err(CdxmlError::ResourceLimit {
+                resource: "line bytes",
+                actual: raw_line.len(),
+                limit: limits.max_line_bytes,
+            });
+        }
         let line = raw_line.trim();
         if line.is_empty() {
             continue;
         }
 
         if line.starts_with("<fragment") {
+            if fragment_count >= limits.max_fragments {
+                return Err(CdxmlError::ResourceLimit {
+                    resource: "fragments",
+                    actual: fragment_count + 1,
+                    limit: limits.max_fragments,
+                });
+            }
+            fragment_count += 1;
             acc = FragAccum::default();
             continue;
         }
@@ -404,6 +518,7 @@ pub fn parse_cdxml_all_with_options(
 
         if is_n_tag(line) {
             let attrs = parse_xml_attrs(line);
+            check_attribute_limits(&attrs, limits)?;
             let id = match attrs.get("id") {
                 Some(s) => s.clone(),
                 None => continue,
@@ -440,8 +555,12 @@ pub fn parse_cdxml_all_with_options(
             } else {
                 (0.0, 0.0)
             };
-            if acc.atom_ids.len() >= CDXML_MAX_ATOMS {
-                return Err(CdxmlError::TooManyAtoms(CDXML_MAX_ATOMS));
+            if acc.atom_ids.len() >= limits.max_atoms {
+                return Err(CdxmlError::ResourceLimit {
+                    resource: "atoms",
+                    actual: acc.atom_ids.len() + 1,
+                    limit: limits.max_atoms,
+                });
             }
             acc.atom_ids.push(id);
             acc.atom_elems.push(element);
@@ -455,6 +574,14 @@ pub fn parse_cdxml_all_with_options(
 
         if is_b_tag(line) {
             let attrs = parse_xml_attrs(line);
+            check_attribute_limits(&attrs, limits)?;
+            if acc.bond_bs.len() >= limits.max_bonds {
+                return Err(CdxmlError::ResourceLimit {
+                    resource: "bonds",
+                    actual: acc.bond_bs.len() + 1,
+                    limit: limits.max_bonds,
+                });
+            }
             let b = attrs
                 .get("B")
                 .cloned()
@@ -494,6 +621,23 @@ pub fn parse_cdxml_all_with_options(
     acc.flush(&mut results, options)?;
 
     Ok(results)
+}
+
+fn check_attribute_limits(
+    attrs: &HashMap<String, String>,
+    limits: &CdxmlParseLimits,
+) -> Result<(), CdxmlError> {
+    for (key, value) in attrs {
+        let bytes = key.len().saturating_add(value.len());
+        if bytes > limits.max_attribute_bytes {
+            return Err(CdxmlError::ResourceLimit {
+                resource: "attribute bytes",
+                actual: bytes,
+                limit: limits.max_attribute_bytes,
+            });
+        }
+    }
+    Ok(())
 }
 
 /// True if `line` starts a CDXML `<n` atom node tag.
@@ -1357,5 +1501,78 @@ mod tests {
         assert_eq!(atom2.charge, 1);
         assert_eq!(atom2.isotope, Some(15));
         assert_eq!(atom2.hydrogen_count, Some(2));
+    }
+
+    #[test]
+    fn bounded_parser_rejects_input_line_and_atom_limits() {
+        assert!(matches!(
+            parse_cdxml_with_limits(
+                ETHANOL_CDXML,
+                &CdxmlParseLimits {
+                    max_input_bytes: 8,
+                    ..Default::default()
+                }
+            ),
+            Err(CdxmlError::ResourceLimit {
+                resource: "input bytes",
+                ..
+            })
+        ));
+        assert!(matches!(
+            parse_cdxml_with_limits(
+                ETHANOL_CDXML,
+                &CdxmlParseLimits {
+                    max_lines: 1,
+                    ..Default::default()
+                }
+            ),
+            Err(CdxmlError::ResourceLimit {
+                resource: "lines",
+                ..
+            })
+        ));
+        assert!(matches!(
+            parse_cdxml_with_limits(
+                ETHANOL_CDXML,
+                &CdxmlParseLimits {
+                    max_atoms: 1,
+                    ..Default::default()
+                }
+            ),
+            Err(CdxmlError::ResourceLimit {
+                resource: "atoms",
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn bounded_parser_rejects_bond_and_fragment_limits() {
+        assert!(matches!(
+            parse_cdxml_all_with_limits(
+                ETHANOL_CDXML,
+                &CdxmlParseLimits {
+                    max_bonds: 1,
+                    ..Default::default()
+                }
+            ),
+            Err(CdxmlError::ResourceLimit {
+                resource: "bonds",
+                ..
+            })
+        ));
+        assert!(matches!(
+            parse_cdxml_all_with_limits(
+                TWO_FRAGMENT_CDXML,
+                &CdxmlParseLimits {
+                    max_fragments: 1,
+                    ..Default::default()
+                }
+            ),
+            Err(CdxmlError::ResourceLimit {
+                resource: "fragments",
+                ..
+            })
+        ));
     }
 }

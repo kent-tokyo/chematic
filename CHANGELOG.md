@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.85.0] - 2026-08-31
+
+### v0.85.0 — bounded CDXML input
+
+- Added `CdxmlParseLimits` and bounded CDXML parsing APIs for input bytes,
+  physical lines, attributes, atoms, bonds, and fragments.
+- Added typed resource-limit errors while preserving the existing CDXML
+  convenience APIs with finite defaults.
+
 ## [0.84.0] - 2026-08-31
 
 ### v0.84.0 — bounded ChemicalJSON input

@@ -51,8 +51,10 @@ pub mod xyz;
 pub use error::MolParseError;
 // Re-export MolParseError under the alias MolError as specified by the public API.
 pub use cdxml::{
-    CdxmlError, CdxmlParseOptions, parse_cdxml, parse_cdxml_all, parse_cdxml_all_with_options,
-    parse_cdxml_with_options, write_cdxml,
+    CdxmlError, CdxmlParseLimits, CdxmlParseOptions, parse_cdxml, parse_cdxml_all,
+    parse_cdxml_all_with_limits, parse_cdxml_all_with_options,
+    parse_cdxml_all_with_options_and_limits, parse_cdxml_with_limits, parse_cdxml_with_options,
+    parse_cdxml_with_options_and_limits, write_cdxml,
 };
 pub use cif::{
     CifError, CifParseLimits, CifResult, UnitCell, parse_cif, parse_cif_with_limits, write_cif,

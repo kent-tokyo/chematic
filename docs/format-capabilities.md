@@ -164,6 +164,14 @@ Notes on the cells above that need qualification:
   array/string resources, and atom/bond records. The existing parser uses
   finite defaults and rejects numeric type/range truncation.
 
+### CDXML
+
+- **Rust**: `chematic_mol::{parse_cdxml, parse_cdxml_with_limits, parse_cdxml_all, parse_cdxml_all_with_limits, write_cdxml, CdxmlError, CdxmlParseLimits, CdxmlParseOptions}`.
+- **Parse limits**: `CdxmlParseLimits` bounds input bytes, physical line
+  bytes/count, attribute bytes, atoms, bonds, and fragments. Existing parsers
+  use finite defaults; option and limit policies can be combined with
+  `parse_cdxml_all_with_options_and_limits`.
+
 ### MOL/SDF
 
 - **Rust read**: `parse_mol`, `parse_mol_with_coords`, `read_mol_with_diagnostics`, `parse_mol_v3000*`, `SdfReader`, `SdfFileReader`, `SdfRecordReader`.
