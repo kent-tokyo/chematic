@@ -57,6 +57,9 @@ enum Command {
         /// Write to this file instead of stdout.
         #[arg(short, long)]
         output: Option<PathBuf>,
+        /// Maximum input size in bytes.
+        #[arg(long, default_value_t = 64 * 1024 * 1024)]
+        max_input_bytes: usize,
     },
     /// Parse and validate a SMILES molecule without descriptor calculation.
     Parse {
@@ -261,20 +264,7 @@ fn convert_text(text: &str, input_format: &str, output_format: &str) -> Result<S
     })
 }
 
-fn read_input(path: Option<&PathBuf>) -> Result<String, String> {
-    match path {
-        Some(path) => fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display())),
-        None => {
-            let mut text = String::new();
-            io::stdin()
-                .read_to_string(&mut text)
-                .map_err(|e| format!("read stdin: {e}"))?;
-            Ok(text)
-        }
-    }
-}
-
-fn read_batch_input(path: Option<&PathBuf>, max_input_bytes: usize) -> Result<String, String> {
+fn read_limited_input(path: Option<&PathBuf>, max_input_bytes: usize) -> Result<String, String> {
     let mut bytes = Vec::new();
     let read_result = match path {
         Some(path) => {
@@ -286,10 +276,10 @@ fn read_batch_input(path: Option<&PathBuf>, max_input_bytes: usize) -> Result<St
             .take(max_input_bytes.saturating_add(1) as u64)
             .read_to_end(&mut bytes),
     };
-    read_result.map_err(|e| format!("read batch input: {e}"))?;
+    read_result.map_err(|e| format!("read input: {e}"))?;
     if bytes.len() > max_input_bytes {
         return Err(format!(
-            "batch input exceeds --max-input-bytes ({max_input_bytes})"
+            "input exceeds --max-input-bytes ({max_input_bytes})"
         ));
     }
     String::from_utf8(bytes).map_err(|e| format!("batch input is not UTF-8: {e}"))
@@ -837,8 +827,9 @@ fn run(cli: Cli) -> Result<(), String> {
             output_format,
             input,
             output,
+            max_input_bytes,
         } => {
-            let text = read_input(input.as_ref())?;
+            let text = read_limited_input(input.as_ref(), max_input_bytes)?;
             let converted = convert_text(&text, &input_format, &output_format)?;
             write_output(output.as_ref(), &converted)
         }
@@ -904,12 +895,12 @@ fn run(cli: Cli) -> Result<(), String> {
             write_output(None, &format!("{json}\n"))
         }
         Command::BatchReport { input, limits } => {
-            let text = read_batch_input(input.as_ref(), limits.max_input_bytes)?;
+            let text = read_limited_input(input.as_ref(), limits.max_input_bytes)?;
             let json = batch_report_json(&text, &limits)?;
             write_output(None, &format!("{json}\n"))
         }
         Command::BatchDescriptors { input, limits } => {
-            let text = read_batch_input(input.as_ref(), limits.max_input_bytes)?;
+            let text = read_limited_input(input.as_ref(), limits.max_input_bytes)?;
             let json = batch_descriptors_json(&text, &limits)?;
             write_output(None, &format!("{json}\n"))
         }
@@ -918,12 +909,12 @@ fn run(cli: Cli) -> Result<(), String> {
             algorithm,
             limits,
         } => {
-            let text = read_batch_input(input.as_ref(), limits.max_input_bytes)?;
+            let text = read_limited_input(input.as_ref(), limits.max_input_bytes)?;
             let json = batch_fingerprints_json(&text, &algorithm, &limits)?;
             write_output(None, &format!("{json}\n"))
         }
         Command::BatchStandardize { input, limits } => {
-            let text = read_batch_input(input.as_ref(), limits.max_input_bytes)?;
+            let text = read_limited_input(input.as_ref(), limits.max_input_bytes)?;
             let json = batch_standardize_json(&text, &limits)?;
             write_output(None, &format!("{json}\n"))
         }
@@ -932,17 +923,17 @@ fn run(cli: Cli) -> Result<(), String> {
             algorithm,
             limits,
         } => {
-            let text = read_batch_input(input.as_ref(), limits.max_input_bytes)?;
+            let text = read_limited_input(input.as_ref(), limits.max_input_bytes)?;
             let json = batch_similarity_json(&text, &algorithm, &limits)?;
             write_output(None, &format!("{json}\n"))
         }
         Command::BatchSubstructure { input, limits } => {
-            let text = read_batch_input(input.as_ref(), limits.max_input_bytes)?;
+            let text = read_limited_input(input.as_ref(), limits.max_input_bytes)?;
             let json = batch_substructure_json(&text, &limits)?;
             write_output(None, &format!("{json}\n"))
         }
         Command::BatchReactions { input, limits } => {
-            let text = read_batch_input(input.as_ref(), limits.max_input_bytes)?;
+            let text = read_limited_input(input.as_ref(), limits.max_input_bytes)?;
             let json = batch_reactions_json(&text, &limits)?;
             write_output(None, &format!("{json}\n"))
         }

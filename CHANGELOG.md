@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.68.0] - 2026-08-31
+
+### v0.68.0 — bounded format conversion input
+
+- Added a bounded `convert` CLI input path with a 64 MiB default and explicit
+  `--max-input-bytes` configuration.
+- Reused the same bounded stdin/file reader used by batch commands and added
+  the user-facing error contract.
+
 ## [0.67.0] - 2026-08-31
 
 ### v0.67.0 — bounded MCS search outcomes

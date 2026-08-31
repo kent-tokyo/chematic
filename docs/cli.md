@@ -12,6 +12,10 @@ chematic convert --input-format mol2 --output-format smiles \
   --input ligand.mol2 --output ligand.smi
 ```
 
+`convert` enforces a 64 MiB input limit by default. Use
+`--max-input-bytes N` to select a stricter or larger explicit bound; inputs
+that exceed it are rejected before parsing.
+
 ```sh
 chematic descriptors 'CC(=O)Oc1ccccc1C(=O)O'
 ```
