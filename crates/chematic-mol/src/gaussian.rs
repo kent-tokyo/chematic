@@ -31,6 +31,28 @@ use chematic_core::{Atom, AtomIdx, Element, Molecule, MoleculeBuilder};
 /// `(Molecule, coords, charge, multiplicity)`.
 type GjfResult = (Molecule, Vec<(f64, f64, f64)>, i32, u32);
 
+/// Resource limits for Gaussian input and log parsing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct GaussianParseLimits {
+    pub max_input_bytes: usize,
+    pub max_line_bytes: usize,
+    pub max_lines: usize,
+    pub max_sections: usize,
+    pub max_atoms: usize,
+}
+
+impl Default for GaussianParseLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: 64 * 1024 * 1024,
+            max_line_bytes: 1024 * 1024,
+            max_lines: 1_000_000,
+            max_sections: 100_000,
+            max_atoms: 1_000_000,
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Error type
 // ---------------------------------------------------------------------------
@@ -48,6 +70,14 @@ pub enum GaussianError {
     InvalidCoordinate(String),
     /// The log file contained no `Standard orientation:` block.
     NoStandardOrientation,
+    /// A parsed coordinate was NaN or infinite.
+    NonFiniteCoordinate(String),
+    /// The input exceeded a configured resource limit.
+    ResourceLimit {
+        resource: &'static str,
+        actual: usize,
+        limit: usize,
+    },
 }
 
 impl core::fmt::Display for GaussianError {
@@ -62,6 +92,12 @@ impl core::fmt::Display for GaussianError {
             Self::NoStandardOrientation => {
                 write!(f, "no 'Standard orientation' block found in Gaussian log")
             }
+            Self::NonFiniteCoordinate(s) => write!(f, "non-finite coordinate '{s}'"),
+            Self::ResourceLimit {
+                resource,
+                actual,
+                limit,
+            } => write!(f, "{resource} has size {actual}, exceeding limit {limit}"),
         }
     }
 }
@@ -92,6 +128,15 @@ pub struct GaussianLogResult {
 /// `coords` is a `Vec<(f64, f64, f64)>` in Ångströms.
 /// The `Molecule` has no bonds; use `determine_bonds` to infer connectivity.
 pub fn parse_gjf(input: &str) -> Result<GjfResult, GaussianError> {
+    parse_gjf_with_limits(input, &GaussianParseLimits::default())
+}
+
+/// Parse a Gaussian input file with explicit resource limits.
+pub fn parse_gjf_with_limits(
+    input: &str,
+    limits: &GaussianParseLimits,
+) -> Result<GjfResult, GaussianError> {
+    check_input_limits(input, limits)?;
     // Split into sections at blank lines.
     let sections: Vec<Vec<&str>> = {
         let mut secs: Vec<Vec<&str>> = Vec::new();
@@ -146,13 +191,21 @@ pub fn parse_gjf(input: &str) -> Result<GjfResult, GaussianError> {
         return Err(GaussianError::NoAtoms);
     };
 
-    parse_atom_coords(coord_lines, charge, multiplicity)
+    if sections.len() > limits.max_sections {
+        return Err(GaussianError::ResourceLimit {
+            resource: "sections",
+            actual: sections.len(),
+            limit: limits.max_sections,
+        });
+    }
+    parse_atom_coords(coord_lines, charge, multiplicity, limits.max_atoms)
 }
 
 fn parse_atom_coords(
     lines: &[&str],
     charge: i32,
     multiplicity: u32,
+    max_atoms: usize,
 ) -> Result<GjfResult, GaussianError> {
     let mut builder = MoleculeBuilder::new();
     let mut coords: Vec<(f64, f64, f64)> = Vec::new();
@@ -191,6 +244,22 @@ fn parse_atom_coords(
         let z: f64 = parts[3]
             .parse()
             .map_err(|_| GaussianError::InvalidCoordinate(parts[3].to_string()))?;
+        if !x.is_finite() {
+            return Err(GaussianError::NonFiniteCoordinate(parts[1].to_string()));
+        }
+        if !y.is_finite() {
+            return Err(GaussianError::NonFiniteCoordinate(parts[2].to_string()));
+        }
+        if !z.is_finite() {
+            return Err(GaussianError::NonFiniteCoordinate(parts[3].to_string()));
+        }
+        if coords.len() >= max_atoms {
+            return Err(GaussianError::ResourceLimit {
+                resource: "atoms",
+                actual: coords.len() + 1,
+                limit: max_atoms,
+            });
+        }
 
         builder.add_atom(Atom::new(elem));
         coords.push((x, y, z));
@@ -250,6 +319,15 @@ pub fn write_gjf(
 ///
 /// Returns [`GaussianLogResult`] with no bond information.
 pub fn parse_gaussian_log(input: &str) -> Result<GaussianLogResult, GaussianError> {
+    parse_gaussian_log_with_limits(input, &GaussianParseLimits::default())
+}
+
+/// Parse a Gaussian output log with explicit resource limits.
+pub fn parse_gaussian_log_with_limits(
+    input: &str,
+    limits: &GaussianParseLimits,
+) -> Result<GaussianLogResult, GaussianError> {
+    check_input_limits(input, limits)?;
     let lines: Vec<&str> = input.lines().collect();
 
     // Locate last Standard orientation: block.
@@ -299,6 +377,18 @@ pub fn parse_gaussian_log(input: &str) -> Result<GaussianLogResult, GaussianErro
         let z: f64 = parts[x_col + 2]
             .parse()
             .map_err(|_| GaussianError::InvalidCoordinate(parts[x_col + 2].to_string()))?;
+        if !x.is_finite() || !y.is_finite() || !z.is_finite() {
+            return Err(GaussianError::NonFiniteCoordinate(
+                parts[x_col..x_col + 3].join(" "),
+            ));
+        }
+        if coords.len() >= limits.max_atoms {
+            return Err(GaussianError::ResourceLimit {
+                resource: "atoms",
+                actual: coords.len() + 1,
+                limit: limits.max_atoms,
+            });
+        }
 
         builder.add_atom(Atom::new(elem));
         coords.push((x, y, z));
@@ -322,6 +412,34 @@ pub fn parse_gaussian_log(input: &str) -> Result<GaussianLogResult, GaussianErro
         coords,
         scf_energy,
     })
+}
+
+fn check_input_limits(input: &str, limits: &GaussianParseLimits) -> Result<(), GaussianError> {
+    if input.len() > limits.max_input_bytes {
+        return Err(GaussianError::ResourceLimit {
+            resource: "input bytes",
+            actual: input.len(),
+            limit: limits.max_input_bytes,
+        });
+    }
+    let lines = input.lines().count();
+    if lines > limits.max_lines {
+        return Err(GaussianError::ResourceLimit {
+            resource: "lines",
+            actual: lines,
+            limit: limits.max_lines,
+        });
+    }
+    if let Some(line_bytes) = input.lines().map(str::len).max()
+        && line_bytes > limits.max_line_bytes
+    {
+        return Err(GaussianError::ResourceLimit {
+            resource: "line bytes",
+            actual: line_bytes,
+            limit: limits.max_line_bytes,
+        });
+    }
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------
@@ -425,5 +543,72 @@ H   2.028000   1.604000   0.886000
         let r = parse_gaussian_log(&input).unwrap();
         // Last block has atom at (9, 9, 9)
         assert!((r.coords[0].0 - 9.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn bounded_gaussian_parsers_reject_input_and_line_limits() {
+        let limits = GaussianParseLimits {
+            max_input_bytes: 8,
+            ..Default::default()
+        };
+        assert!(matches!(
+            parse_gjf_with_limits(ETHANOL_GJF, &limits),
+            Err(GaussianError::ResourceLimit {
+                resource: "input bytes",
+                ..
+            })
+        ));
+        assert!(matches!(
+            parse_gaussian_log_with_limits(LOG_SNIPPET, &limits),
+            Err(GaussianError::ResourceLimit {
+                resource: "input bytes",
+                ..
+            })
+        ));
+
+        let long_line = format!("{}\n", "x".repeat(32));
+        assert!(matches!(
+            parse_gjf_with_limits(
+                &long_line,
+                &GaussianParseLimits {
+                    max_line_bytes: 16,
+                    ..Default::default()
+                }
+            ),
+            Err(GaussianError::ResourceLimit {
+                resource: "line bytes",
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn bounded_gaussian_parsers_reject_atom_limit() {
+        assert!(matches!(
+            parse_gjf_with_limits(
+                ETHANOL_GJF,
+                &GaussianParseLimits {
+                    max_atoms: 2,
+                    ..Default::default()
+                }
+            ),
+            Err(GaussianError::ResourceLimit {
+                resource: "atoms",
+                ..
+            })
+        ));
+        assert!(matches!(
+            parse_gaussian_log_with_limits(
+                LOG_SNIPPET,
+                &GaussianParseLimits {
+                    max_atoms: 2,
+                    ..Default::default()
+                }
+            ),
+            Err(GaussianError::ResourceLimit {
+                resource: "atoms",
+                ..
+            })
+        ));
     }
 }

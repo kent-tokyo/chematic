@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.78.0] - 2026-08-31
+
+### v0.78.0 — bounded Gaussian input and log parsing
+
+- Added `GaussianParseLimits` and bounded GJF/log parsing APIs for input
+  bytes, physical line length, line count, section count, and atom count.
+- Added typed resource-limit and non-finite-coordinate errors with regression
+  coverage while preserving the existing parser entry points.
+
 ## [0.77.0] - 2026-08-31
 
 ### v0.77.0 — bounded ORCA input

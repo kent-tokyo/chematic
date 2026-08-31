@@ -69,7 +69,10 @@ pub use cube::{
     CubeError, CubeFileReader, CubeParseLimits, parse_cube, parse_cube_with_limits, write_cube,
 };
 pub use error::MolParseError as MolError;
-pub use gaussian::{GaussianError, GaussianLogResult, parse_gaussian_log, parse_gjf, write_gjf};
+pub use gaussian::{
+    GaussianError, GaussianLogResult, GaussianParseLimits, parse_gaussian_log,
+    parse_gaussian_log_with_limits, parse_gjf, parse_gjf_with_limits, write_gjf,
+};
 pub use ket::{KetError, parse_ket, parse_ket_3d, write_ket, write_ket_3d};
 pub use lammps_data::{
     LammpsAtom, LammpsAtomStyle, LammpsBond, LammpsBox, LammpsData, LammpsDataError,

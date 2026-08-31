@@ -301,6 +301,14 @@ disambiguate by crate, not by name alone:
   **not** imply a requested geometry optimization converged; check both.
 - **Parse limits**: no `*ParseLimits` type exists.
 
+### Gaussian input/log
+
+- **Rust**: `chematic_mol::{parse_gjf, parse_gjf_with_limits, write_gjf, parse_gaussian_log, parse_gaussian_log_with_limits, GaussianLogResult, GaussianParseLimits, GaussianError}`.
+- **Parse limits**: `GaussianParseLimits` bounds input bytes, physical line
+  length/count, section count, and atom count for both GJF and log parsing.
+- **Coordinate units**: Ångström.
+- **Connectivity**: no bond table is inferred.
+
 ### Gaussian Cube
 
 - **Rust**: `chematic_mol::{parse_cube, parse_cube_with_limits, write_cube, CubeError, CubeFileReader, CubeParseLimits}`, plus the shared `VolumetricGrid` type.
