@@ -71,3 +71,12 @@ groups. Invalid input is rejected with a non-zero exit status.
 ```sh
 chematic report 'CC(=O)Oc1ccccc1C(=O)O'
 ```
+
+`reaction-match <REACTION_SMILES> <REACTION_SMARTS>` checks whether all
+reactant and product patterns match. It emits the normalized reaction, the
+original query, and a boolean `matched` field. Invalid reaction input or query
+syntax is reported as a command error.
+
+```sh
+chematic reaction-match 'CCO>>CCO' '[#6]>>[#6]'
+```

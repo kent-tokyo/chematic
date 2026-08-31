@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.53.0] - 2026-08-31
+
+### v0.53.0 — reaction SMARTS matching CLI workflow
+
+- Added `chematic reaction-match <REACTION_SMILES> <REACTION_SMARTS>` for
+  explicit reactant/product pattern matching.
+- Added normalized reaction output, original query echo, and a boolean match
+  result without inferring unsupported reaction behavior.
+- Added invalid-input regression coverage and documented the command contract.
+
 ## [0.52.0] - 2026-08-31
 
 ### v0.52.0 — mapped reaction CLI workflow
