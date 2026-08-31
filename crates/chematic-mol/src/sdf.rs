@@ -376,14 +376,46 @@ pub fn read_sdf_conformer_ensembles(input: &str) -> Result<Vec<ConformerEnsemble
 pub struct SdfFileReader<R: std::io::BufRead> {
     reader: R,
     done: bool,
+    limits: SdfParseLimits,
+    bytes_read: usize,
+    records_read: usize,
+}
+
+/// Resource limits for streaming SDF input.
+#[derive(Debug, Clone, Copy)]
+pub struct SdfParseLimits {
+    /// Maximum bytes read from the source.
+    pub max_input_bytes: usize,
+    /// Maximum bytes in one MOL/data record.
+    pub max_record_bytes: usize,
+    /// Maximum non-empty records yielded.
+    pub max_records: usize,
+}
+
+impl Default for SdfParseLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: 1 << 30,
+            max_record_bytes: 16 << 20,
+            max_records: 100_000,
+        }
+    }
 }
 
 impl<R: std::io::BufRead> SdfFileReader<R> {
     /// Wrap any `BufRead` source (e.g. `BufReader<File>`).
     pub fn new(reader: R) -> Self {
+        Self::with_limits(reader, SdfParseLimits::default())
+    }
+
+    /// Wrap a `BufRead` source and enforce input, record-size, and record-count limits.
+    pub fn with_limits(reader: R, limits: SdfParseLimits) -> Self {
         Self {
             reader,
             done: false,
+            limits,
+            bytes_read: 0,
+            records_read: 0,
         }
     }
 }
@@ -416,6 +448,15 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
                     break;
                 }
                 Ok(_) => {
+                    self.bytes_read = self.bytes_read.saturating_add(line.len());
+                    if self.bytes_read > self.limits.max_input_bytes {
+                        self.done = true;
+                        return Some(Err(MolParseError::ResourceLimit {
+                            resource: "input bytes",
+                            actual: self.bytes_read,
+                            limit: self.limits.max_input_bytes,
+                        }));
+                    }
                     let trimmed = line.trim_end_matches(['\r', '\n']);
                     if trimmed == "$$$$" {
                         break;
@@ -429,6 +470,24 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
             // Empty block (e.g. two consecutive $$$$) — advance to next.
             return self.next();
         }
+
+        if block.len() > self.limits.max_record_bytes {
+            self.done = true;
+            return Some(Err(MolParseError::ResourceLimit {
+                resource: "record bytes",
+                actual: block.len(),
+                limit: self.limits.max_record_bytes,
+            }));
+        }
+        if self.records_read >= self.limits.max_records {
+            self.done = true;
+            return Some(Err(MolParseError::ResourceLimit {
+                resource: "records",
+                actual: self.records_read.saturating_add(1),
+                limit: self.limits.max_records,
+            }));
+        }
+        self.records_read += 1;
 
         // Reuse the same parse path as SdfRecordReader.
         let report = match read_mol_with_diagnostics(&block) {
@@ -601,6 +660,43 @@ $$$$
             .filter_map(|r| r.ok())
             .collect();
         assert_eq!(records.len(), 1);
+    }
+
+    #[test]
+    fn test_sdf_file_reader_enforces_resource_limits() {
+        use std::io::{BufReader, Cursor};
+
+        let limits = SdfParseLimits {
+            max_record_bytes: 8,
+            ..SdfParseLimits::default()
+        };
+        let result =
+            SdfFileReader::with_limits(BufReader::new(Cursor::new(MOL_A.as_bytes())), limits)
+                .next()
+                .unwrap();
+        assert!(matches!(
+            result,
+            Err(MolParseError::ResourceLimit {
+                resource: "record bytes",
+                ..
+            })
+        ));
+
+        let limits = SdfParseLimits {
+            max_records: 1,
+            ..SdfParseLimits::default()
+        };
+        let input = format!("{MOL_A}$$$$\n{MOL_B}$$$$\n");
+        let mut reader =
+            SdfFileReader::with_limits(BufReader::new(Cursor::new(input.into_bytes())), limits);
+        assert!(reader.next().unwrap().is_ok());
+        assert!(matches!(
+            reader.next().unwrap(),
+            Err(MolParseError::ResourceLimit {
+                resource: "records",
+                ..
+            })
+        ));
     }
 
     #[test]

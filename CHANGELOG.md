@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.70.0] - 2026-08-31
+
+### v0.70.0 — bounded streaming SDF input
+
+- Added `SdfParseLimits` and `SdfFileReader::with_limits` for total input,
+  record-size, and record-count bounds.
+- Added typed `MolParseError::ResourceLimit` errors and streaming regression
+  coverage without changing the existing `SdfFileReader::new` entry point.
+- Documented the bounded SDF contract in the format capability matrix.
+
 ## [0.69.0] - 2026-08-31
 
 ### v0.69.0 — bounded SMILES parsing
