@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.60.0] - 2026-08-31
+
+### v0.60.0 — auditable batch standardization CLI workflow
+
+- Added `chematic batch-standardize` for line-delimited SMILES input from
+  stdin or a file.
+- Added per-record canonical input/output, stage audit reports, warnings, and
+  retained errors with aggregate valid/error counts.
+- Added CLI regression coverage and documented the batch standardization
+  contract.
+
 ## [0.59.0] - 2026-08-31
 
 ### v0.59.0 — batch fingerprint CLI workflow

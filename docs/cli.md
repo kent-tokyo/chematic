@@ -131,3 +131,12 @@ the same aggregate/per-record error manifest as `batch-descriptors`.
 ```sh
 printf 'CCO\nC1CC\nCCN\n' | chematic batch-fingerprints --algorithm ecfp4
 ```
+
+`batch-standardize` applies the default auditable standardization pipeline to
+each line and returns canonical input/output SMILES, stage reports, warnings,
+and per-record errors in input order. It accepts the same stdin or `--input
+FILE` contract as the other batch commands.
+
+```sh
+printf 'C[NH3+]\nC1CC\nCCO\n' | chematic batch-standardize
+```
