@@ -113,6 +113,12 @@ enum Command {
         #[arg(short, long)]
         input: Option<PathBuf>,
     },
+    /// Process one SMILES per line and return lightweight descriptor records.
+    BatchDescriptors {
+        /// Read line-delimited SMILES from this file instead of stdin.
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+    },
 }
 
 fn format_name(format: &str) -> Option<String> {
@@ -468,6 +474,44 @@ fn batch_report_json(text: &str) -> Result<String, String> {
     serde_json::to_string(&report).map_err(|e| format!("serialize batch report: {e}"))
 }
 
+fn batch_descriptors_json(text: &str) -> Result<String, String> {
+    let smiles: Vec<String> = text
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .map(str::to_string)
+        .collect();
+    let mut records = Vec::with_capacity(smiles.len());
+    let mut valid_count = 0usize;
+    for (input_index, input_smiles) in smiles.iter().enumerate() {
+        match descriptors_json(input_smiles).and_then(|json| {
+            serde_json::from_str::<serde_json::Value>(&json).map_err(|e| e.to_string())
+        }) {
+            Ok(descriptors) => {
+                valid_count += 1;
+                records.push(serde_json::json!({
+                    "input_index": input_index,
+                    "input_smiles": input_smiles,
+                    "descriptors": descriptors,
+                    "error": null,
+                }));
+            }
+            Err(error) => records.push(serde_json::json!({
+                "input_index": input_index,
+                "input_smiles": input_smiles,
+                "descriptors": null,
+                "error": error,
+            })),
+        }
+    }
+    Ok(serde_json::json!({
+        "records": records,
+        "valid_count": valid_count,
+        "error_count": smiles.len() - valid_count,
+    })
+    .to_string())
+}
+
 fn run(cli: Cli) -> Result<(), String> {
     match cli.command {
         Command::Convert {
@@ -542,6 +586,11 @@ fn run(cli: Cli) -> Result<(), String> {
             let json = batch_report_json(&text)?;
             write_output(None, &format!("{json}\n"))
         }
+        Command::BatchDescriptors { input } => {
+            let text = read_input(input.as_ref())?;
+            let json = batch_descriptors_json(&text)?;
+            write_output(None, &format!("{json}\n"))
+        }
     }
 }
 
@@ -555,9 +604,10 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::{
-        batch_report_json, convert_text, descriptors_json, fingerprint_json, reaction_balance_json,
-        reaction_fingerprint_json, reaction_json, reaction_match_json, reaction_similarity_json,
-        report_json, similarity_json, standardize_json, substructure_json,
+        batch_descriptors_json, batch_report_json, convert_text, descriptors_json,
+        fingerprint_json, reaction_balance_json, reaction_fingerprint_json, reaction_json,
+        reaction_match_json, reaction_similarity_json, report_json, similarity_json,
+        standardize_json, substructure_json,
     };
 
     #[test]
@@ -792,5 +842,18 @@ mod tests {
         assert!(records[1]["error"].as_str().is_some());
         assert_eq!(records[2]["input_index"], 2);
         assert!(records[2]["report"].is_object());
+    }
+
+    #[test]
+    fn batch_descriptors_returns_lightweight_partial_manifest() {
+        let json: serde_json::Value =
+            serde_json::from_str(&batch_descriptors_json("CCO\nC1CC\n# comment\nCCN\n").unwrap())
+                .unwrap();
+        assert_eq!(json["valid_count"], 2);
+        assert_eq!(json["error_count"], 1);
+        let records = json["records"].as_array().unwrap();
+        assert!(records[0]["descriptors"].is_object());
+        assert!(records[1]["error"].as_str().is_some());
+        assert!(records[2]["descriptors"].is_object());
     }
 }

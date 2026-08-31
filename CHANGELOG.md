@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.58.0] - 2026-08-31
+
+### v0.58.0 — lightweight batch descriptor CLI workflow
+
+- Added `chematic batch-descriptors` for line-delimited SMILES input from
+  stdin or a file.
+- Added compact per-record descriptor results, retained parse errors, and
+  aggregate valid/error counts without discarding partial batches.
+- Added CLI regression coverage and documented the batch input contract.
+
 ## [0.57.0] - 2026-08-31
 
 ### v0.57.0 — resilient batch report CLI workflow

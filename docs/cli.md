@@ -114,3 +114,12 @@ input index and an error, so one bad molecule does not discard the batch.
 ```sh
 printf 'CCO\nC1CC\nCCN\n' | chematic batch-report
 ```
+
+`batch-descriptors` is the lighter batch path: it returns only the compact
+descriptor record for each valid SMILES, with per-record errors and aggregate
+valid/error counts. It accepts the same stdin or `--input FILE` line contract
+as `batch-report`.
+
+```sh
+printf 'CCO\nC1CC\nCCN\n' | chematic batch-descriptors
+```
