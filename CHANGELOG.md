@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.59.0] - 2026-08-31
+
+### v0.59.0 — batch fingerprint CLI workflow
+
+- Added `chematic batch-fingerprints` for line-delimited SMILES input from
+  stdin or a file.
+- Added explicit `ecfp4`, `ecfp6`, and `maccs` selection with set-bit output,
+  input-order records, aggregate counts, and retained per-record errors.
+- Added CLI regression coverage and documented the batch fingerprint contract.
+
 ## [0.58.0] - 2026-08-31
 
 ### v0.58.0 — lightweight batch descriptor CLI workflow

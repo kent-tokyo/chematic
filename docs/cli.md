@@ -123,3 +123,11 @@ as `batch-report`.
 ```sh
 printf 'CCO\nC1CC\nCCN\n' | chematic batch-descriptors
 ```
+
+`batch-fingerprints` is the corresponding batch path for `ecfp4`, `ecfp6`, or
+`maccs`. It emits the selected algorithm, set-bit fingerprint records, and
+the same aggregate/per-record error manifest as `batch-descriptors`.
+
+```sh
+printf 'CCO\nC1CC\nCCN\n' | chematic batch-fingerprints --algorithm ecfp4
+```
