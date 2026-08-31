@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.45.0] - 2026-08-31
+
+### v0.45.0 — first composable command-line workflow
+
+- Added the `chematic` CLI with stdin/stdout and file-based conversion for
+  SMILES, MOL/SDF, MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML.
+- Added explicit format aliases and fail-closed errors for unsupported formats
+  and parse failures.
+- Added CLI smoke tests and documented the topology-only boundary; coordinate
+  and metadata-preserving workflows remain available through the existing APIs.
+
 ## [0.44.0] - 2026-08-31
 
 ### v0.44.0 — cross-binding format conversion contract
@@ -7701,6 +7712,7 @@ Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception 
 [0.36.0]: https://github.com/kent-tokyo/chematic/compare/v0.35.0...v0.36.0
 [0.37.0]: https://github.com/kent-tokyo/chematic/compare/v0.36.0...v0.37.0
 [0.38.0]: https://github.com/kent-tokyo/chematic/compare/v0.37.0...v0.38.0
+[0.45.0]: https://github.com/kent-tokyo/chematic/compare/v0.44.0...v0.45.0
 [0.44.0]: https://github.com/kent-tokyo/chematic/compare/v0.43.0...v0.44.0
 [0.43.0]: https://github.com/kent-tokyo/chematic/compare/v0.42.0...v0.43.0
 [0.42.0]: https://github.com/kent-tokyo/chematic/compare/v0.41.0...v0.42.0
