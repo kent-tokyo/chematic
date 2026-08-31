@@ -341,7 +341,7 @@ disambiguate by crate, not by name alone:
 
 ### ORCA output
 
-- **Rust**: `chematic_mol::{parse_orca_output, OrcaOutput, OrcaOutputError, OrcaTermination, OrcaOptConvergence}` — **read-only, no writer, in all 3 languages.**
+- **Rust**: `chematic_mol::{parse_orca_output, parse_orca_output_with_limits, OrcaOutput, OrcaOutputError, OrcaOutputParseLimits, OrcaTermination, OrcaOptConvergence}` — **read-only, no writer, in all 3 languages.**
 - **Python**: `parse_orca_output`.
 - **WASM**: `orca_output_to_json`.
 - **Coordinate units**: Ångström.
@@ -349,7 +349,9 @@ disambiguate by crate, not by name alone:
 - **Semantics**: `termination` and `optimization_convergence` are two
   independently-reported fields — `ORCA TERMINATED NORMALLY` alone does
   **not** imply a requested geometry optimization converged; check both.
-- **Parse limits**: no `*ParseLimits` type exists.
+- **Parse limits**: `OrcaOutputParseLimits` bounds input bytes, physical line
+  bytes/count, geometry frames/atoms, and frequency values. The existing parser
+  uses finite defaults.
 
 ### Gaussian input/log
 

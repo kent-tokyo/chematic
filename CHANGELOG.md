@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.86.0] - 2026-08-31
+
+### v0.86.0 — bounded ORCA output input
+
+- Added `OrcaOutputParseLimits` and `parse_orca_output_with_limits` for output
+  input bytes, physical lines, geometry frames/atoms, and frequencies.
+- Preserved the existing parser with finite defaults and added typed rejection
+  for oversized output components.
+
 ## [0.85.0] - 2026-08-31
 
 ### v0.85.0 — bounded CDXML input
