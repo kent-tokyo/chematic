@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.83.0] - 2026-08-31
+
+### v0.83.0 — security surface baseline
+
+- Added a public input-boundary inventory covering parsers, search, 3D,
+  bindings, MCP, CLI, and supply-chain checks.
+- Documented verified local controls and residual risks for the S0 security
+  baseline without asserting unverified repository-host settings.
+
 ## [0.82.0] - 2026-08-31
 
 ### v0.82.0 — bounded MolJSON input

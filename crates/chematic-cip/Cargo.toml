@@ -18,8 +18,8 @@ publish = ["crates-io"]
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-chematic-core       = { path = "../chematic-core",       version = "0.82.0" }
-chematic-perception = { path = "../chematic-perception", version = "0.82.0" }
+chematic-core       = { path = "../chematic-core",       version = "0.83.0" }
+chematic-perception = { path = "../chematic-perception", version = "0.83.0" }
 
 [dev-dependencies]
 # Path-only (no `version`): see chematic-smiles/Cargo.toml's dev-dependencies
