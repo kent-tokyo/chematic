@@ -7,6 +7,30 @@
 
 use chematic_core::{Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder};
 
+/// Resource limits for Tripos MOL2 parsing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Mol2ParseLimits {
+    pub max_input_bytes: usize,
+    pub max_line_bytes: usize,
+    pub max_lines: usize,
+    pub max_sections: usize,
+    pub max_atoms: usize,
+    pub max_bonds: usize,
+}
+
+impl Default for Mol2ParseLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: 256 * 1024 * 1024,
+            max_line_bytes: 1024 * 1024,
+            max_lines: 1_000_000,
+            max_sections: 256,
+            max_atoms: 1_000_000,
+            max_bonds: 2_000_000,
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Error type
 // ---------------------------------------------------------------------------
@@ -22,6 +46,12 @@ pub enum Mol2Error {
     InvalidBondLine { line: usize, detail: String },
     /// Unknown element symbol.
     UnknownElement { symbol: String, line: usize },
+    /// The input exceeded a configured resource limit.
+    ResourceLimit {
+        resource: &'static str,
+        actual: usize,
+        limit: usize,
+    },
 }
 
 impl core::fmt::Display for Mol2Error {
@@ -37,6 +67,14 @@ impl core::fmt::Display for Mol2Error {
             Self::UnknownElement { symbol, line } => {
                 write!(f, "MOL2: unknown element '{symbol}' at line {line}")
             }
+            Self::ResourceLimit {
+                resource,
+                actual,
+                limit,
+            } => write!(
+                f,
+                "MOL2: {resource} has size {actual}, exceeding limit {limit}"
+            ),
         }
     }
 }
@@ -92,7 +130,55 @@ fn strip_atom_type(sym: &str) -> &str {
 /// molecule's atom indices.
 #[allow(clippy::type_complexity)]
 pub fn parse_mol2(s: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), Mol2Error> {
-    let all_lines: Vec<(usize, &str)> = s.lines().enumerate().map(|(i, l)| (i + 1, l)).collect();
+    parse_mol2_with_limits(s, &Mol2ParseLimits::default())
+}
+
+/// Parse a Tripos MOL2 string with explicit resource limits.
+#[allow(clippy::type_complexity)]
+pub fn parse_mol2_with_limits(
+    s: &str,
+    limits: &Mol2ParseLimits,
+) -> Result<(Molecule, Vec<(f64, f64, f64)>), Mol2Error> {
+    if s.len() > limits.max_input_bytes {
+        return Err(Mol2Error::ResourceLimit {
+            resource: "input bytes",
+            actual: s.len(),
+            limit: limits.max_input_bytes,
+        });
+    }
+    let lines = s.lines().collect::<Vec<_>>();
+    if lines.len() > limits.max_lines {
+        return Err(Mol2Error::ResourceLimit {
+            resource: "lines",
+            actual: lines.len(),
+            limit: limits.max_lines,
+        });
+    }
+    if let Some(line_bytes) = lines.iter().map(|line| line.len()).max()
+        && line_bytes > limits.max_line_bytes
+    {
+        return Err(Mol2Error::ResourceLimit {
+            resource: "line bytes",
+            actual: line_bytes,
+            limit: limits.max_line_bytes,
+        });
+    }
+    let section_count = lines
+        .iter()
+        .filter(|line| line.trim_start().starts_with("@<TRIPOS>"))
+        .count();
+    if section_count > limits.max_sections {
+        return Err(Mol2Error::ResourceLimit {
+            resource: "sections",
+            actual: section_count,
+            limit: limits.max_sections,
+        });
+    }
+    let all_lines: Vec<(usize, &str)> = lines
+        .into_iter()
+        .enumerate()
+        .map(|(i, l)| (i + 1, l))
+        .collect();
 
     // -- MOLECULE section: we read it but only need it for sanity; skip for now.
 
@@ -106,6 +192,14 @@ pub fn parse_mol2(s: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), Mol2Error
     let mut coords: Vec<(f64, f64, f64)> = Vec::new();
     // Map from MOL2 1-based atom_id → builder AtomIdx.
     let mut atom_id_map: Vec<(u32, AtomIdx)> = Vec::new();
+
+    if atom_lines.len() > limits.max_atoms {
+        return Err(Mol2Error::ResourceLimit {
+            resource: "atom records",
+            actual: atom_lines.len(),
+            limit: limits.max_atoms,
+        });
+    }
 
     for (lineno, line) in &atom_lines {
         // MOL2 ATOM line format (space-separated):
@@ -170,6 +264,13 @@ pub fn parse_mol2(s: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), Mol2Error
     let bond_lines = section_lines(&all_lines, "BOND");
     // BOND section is optional (0-atom molecules are valid).
 
+    if bond_lines.len() > limits.max_bonds {
+        return Err(Mol2Error::ResourceLimit {
+            resource: "bond records",
+            actual: bond_lines.len(),
+            limit: limits.max_bonds,
+        });
+    }
     for (lineno, line) in &bond_lines {
         // bond_id  origin_atom_id  target_atom_id  bond_type
         let parts: Vec<&str> = line.split_whitespace().collect();
@@ -381,5 +482,66 @@ GASTEIGER
     fn test_missing_atom_section() {
         let bad = "@<TRIPOS>MOLECULE\nbad\n";
         assert!(parse_mol2(bad).is_err());
+    }
+
+    #[test]
+    fn bounded_parser_rejects_input_and_line_limits() {
+        assert!(matches!(
+            parse_mol2_with_limits(
+                ETHANOL_MOL2,
+                &Mol2ParseLimits {
+                    max_input_bytes: 8,
+                    ..Default::default()
+                }
+            ),
+            Err(Mol2Error::ResourceLimit {
+                resource: "input bytes",
+                ..
+            })
+        ));
+        let long_line = format!("{}\n", "x".repeat(32));
+        assert!(matches!(
+            parse_mol2_with_limits(
+                &long_line,
+                &Mol2ParseLimits {
+                    max_line_bytes: 16,
+                    ..Default::default()
+                }
+            ),
+            Err(Mol2Error::ResourceLimit {
+                resource: "line bytes",
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn bounded_parser_rejects_atom_and_bond_limits() {
+        assert!(matches!(
+            parse_mol2_with_limits(
+                ETHANOL_MOL2,
+                &Mol2ParseLimits {
+                    max_atoms: 2,
+                    ..Default::default()
+                }
+            ),
+            Err(Mol2Error::ResourceLimit {
+                resource: "atom records",
+                ..
+            })
+        ));
+        assert!(matches!(
+            parse_mol2_with_limits(
+                ETHANOL_MOL2,
+                &Mol2ParseLimits {
+                    max_bonds: 1,
+                    ..Default::default()
+                }
+            ),
+            Err(Mol2Error::ResourceLimit {
+                resource: "bond records",
+                ..
+            })
+        ));
     }
 }

@@ -131,6 +131,16 @@ Notes on the cells above that need qualification:
   length/count, and ATOM/HETATM records. The existing parser uses finite
   defaults.
 
+### MOL2 (Tripos)
+
+- **Rust**: `chematic_mol::{parse_mol2, parse_mol2_with_limits, write_mol2, Mol2Error, Mol2ParseLimits}`.
+- **Coordinate units**: Ångström.
+- **Connectivity**: native MOL2 bond section; unsupported/unknown bond types
+  use the parser's documented conservative fallback.
+- **Parse limits**: `Mol2ParseLimits` bounds input bytes, physical line
+  length/count, section count, atom records, and bond records. The existing
+  parser uses finite defaults.
+
 ### MOL/SDF
 
 - **Rust read**: `parse_mol`, `parse_mol_with_coords`, `read_mol_with_diagnostics`, `parse_mol_v3000*`, `SdfReader`, `SdfFileReader`, `SdfRecordReader`.

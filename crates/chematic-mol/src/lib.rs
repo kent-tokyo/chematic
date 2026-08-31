@@ -88,7 +88,7 @@ pub use mmcif::{
     MmcifAtomRecord, MmcifError, MmcifParseLimits, MmcifResult, parse_mmcif,
     parse_mmcif_with_limits, write_mmcif,
 };
-pub use mol2_tripos::{Mol2Error, parse_mol2, write_mol2};
+pub use mol2_tripos::{Mol2Error, Mol2ParseLimits, parse_mol2, parse_mol2_with_limits, write_mol2};
 pub use mol2000::{
     CoordinateDimension, GeometryRank, MolFormat, MolMetadata, MolReadReport, MolStereoWriteError,
     SquarePlanarPerceptionDiagnostic, SquarePlanarRejectionReason, Stereo3DDiagnostic,

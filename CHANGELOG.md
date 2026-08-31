@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.80.0] - 2026-08-31
+
+### v0.80.0 — bounded MOL2 input
+
+- Added `Mol2ParseLimits` and `parse_mol2_with_limits` for input bytes,
+  physical line length/count, section count, atom records, and bond records.
+- Added typed resource-limit errors with regression coverage while preserving
+  the existing `parse_mol2` entry point.
+
 ## [0.79.0] - 2026-08-31
 
 ### v0.79.0 — bounded PDBQT input
