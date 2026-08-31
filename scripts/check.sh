@@ -23,6 +23,7 @@ else
     echo "=== deny === (skipped: cargo-deny not installed)"
 fi
 echo "=== publish graph ===" && python3 scripts/check_publish_graph.py
+echo "=== comparison corpus manifest ===" && python3 validation/cosmolkit_comparison/validate_manifest.py
 echo "=== version ==="
 VER=$(grep '^version = ' Cargo.toml | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
 fail=0

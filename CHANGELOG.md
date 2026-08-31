@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.40.0] - 2026-08-31
+
+### v0.40.0 — maintained comparison corpus contract
+
+- Added a checked-in corpus manifest for the Phase 0 comparison smoke corpus,
+  including its exact record order, IDs, SMILES, and SHA-256.
+- Comparison validation now rejects corpus drift before accepting engine
+  results, while preserving distinct parse, unsupported, and value-mismatch
+  outcomes in scorecards.
+- Added regression coverage for manifest drift and documented the update
+  contract for future RDKit and COSMolKit adapter runs.
+
 ## [0.39.0] - 2026-08-31
 
 ### v0.39.0 — complete standardization stage audit coverage
@@ -7643,6 +7655,7 @@ Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception 
 [0.36.0]: https://github.com/kent-tokyo/chematic/compare/v0.35.0...v0.36.0
 [0.37.0]: https://github.com/kent-tokyo/chematic/compare/v0.36.0...v0.37.0
 [0.38.0]: https://github.com/kent-tokyo/chematic/compare/v0.37.0...v0.38.0
+[0.40.0]: https://github.com/kent-tokyo/chematic/compare/v0.39.0...v0.40.0
 [0.39.0]: https://github.com/kent-tokyo/chematic/compare/v0.38.0...v0.39.0
 [0.31.0]: https://github.com/kent-tokyo/chematic/compare/v0.30.0...v0.31.0
 [0.1.22]: https://github.com/kent-tokyo/chematic/compare/v0.1.21...v0.1.22

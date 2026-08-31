@@ -4,10 +4,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 ROOT = Path(__file__).parents[2]
 HARNESS = ROOT / "validation/cosmolkit_comparison"
 CORPUS = HARNESS / "smoke_corpus.jsonl"
+
+sys.path.insert(0, str(HARNESS))
+import validate as comparison_validate
 
 
 def result_file(tmp_path, engine, *, mismatch=False):
@@ -56,3 +58,18 @@ def test_scorecard_separates_statuses_and_mismatches(tmp_path):
         "mismatch": 1,
     }
     assert json.loads(completed.stdout)["valid"] is True
+
+
+def test_validator_rejects_manifest_drift(tmp_path):
+    corpus = tmp_path / "smoke_corpus.jsonl"
+    corpus.write_text(CORPUS.read_text().replace('"CCO"', '"CCN"', 1))
+    manifest = tmp_path / "corpus_manifest.json"
+    manifest.write_text((HARNESS / "corpus_manifest.json").read_text())
+    result = result_file(tmp_path, "chematic")
+    old_corpus, old_manifest = comparison_validate.CORPUS, comparison_validate.MANIFEST
+    comparison_validate.CORPUS, comparison_validate.MANIFEST = corpus, manifest
+    try:
+        errors = comparison_validate.validate(result)
+    finally:
+        comparison_validate.CORPUS, comparison_validate.MANIFEST = old_corpus, old_manifest
+    assert any("manifest sha256" in error for error in errors)

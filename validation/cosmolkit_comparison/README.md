@@ -1,6 +1,6 @@
 # Direct comparison smoke harness
 
-This directory is the first checked-in slice of ROADMAP Phase 2. It defines a
+This directory is the first checked-in slice of ROADMAP Phase 0. It defines a
 small public smoke corpus and a common JSONL result contract for chematic, RDKit,
 and a future COSMolKit adapter. It deliberately reports parse failures and
 unsupported operations separately from value mismatches.
@@ -55,3 +55,9 @@ outside the repository while making the eventual COSMolKit run reproducible.
 The result contract is versioned by `schema_version`. Each record contains the
 engine version, source commit when available, corpus hash, input id/SMILES, and
 an operation map. The corpus is a smoke test, not a claim of corpus-scale parity.
+
+`corpus_manifest.json` is the authoritative contract for the smoke corpus. The
+validator checks its filename, SHA-256, record order, IDs, and exact SMILES
+values before accepting any engine output. Updating the corpus therefore
+requires an explicit manifest update and makes accidental fixture drift visible
+in CI. Run `python3 validate_manifest.py` for the fast, dependency-free gate.
