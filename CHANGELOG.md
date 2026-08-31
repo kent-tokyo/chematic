@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.41.0] - 2026-08-31
+
+### v0.41.0 — bounded external comparison adapters
+
+- Added a 120-second default execution limit for external comparison adapters,
+  with an explicit positive `--timeout-seconds` override.
+- Adapter output now has to name the requested engine and pass validation before
+  it replaces the destination result file, preventing stale or partial results
+  from being consumed as evidence.
+- Added regression coverage for engine mismatch rejection and documented the
+  bounded adapter contract for future COSMolKit runs.
+
 ## [0.40.0] - 2026-08-31
 
 ### v0.40.0 — maintained comparison corpus contract
@@ -7655,6 +7667,7 @@ Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception 
 [0.36.0]: https://github.com/kent-tokyo/chematic/compare/v0.35.0...v0.36.0
 [0.37.0]: https://github.com/kent-tokyo/chematic/compare/v0.36.0...v0.37.0
 [0.38.0]: https://github.com/kent-tokyo/chematic/compare/v0.37.0...v0.38.0
+[0.41.0]: https://github.com/kent-tokyo/chematic/compare/v0.40.0...v0.41.0
 [0.40.0]: https://github.com/kent-tokyo/chematic/compare/v0.39.0...v0.40.0
 [0.39.0]: https://github.com/kent-tokyo/chematic/compare/v0.38.0...v0.39.0
 [0.31.0]: https://github.com/kent-tokyo/chematic/compare/v0.30.0...v0.31.0

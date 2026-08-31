@@ -51,6 +51,9 @@ python3 validation/cosmolkit_comparison/score.py \
 The adapter receives `--corpus PATH --engine NAME` and writes only common-schema
 JSONL records to stdout. This keeps competitor installation and API decisions
 outside the repository while making the eventual COSMolKit run reproducible.
+The runner enforces a 120-second timeout by default (`--timeout-seconds` can
+adjust it), verifies that every emitted record names the requested engine, and
+publishes the output only after validation succeeds.
 
 The result contract is versioned by `schema_version`. Each record contains the
 engine version, source commit when available, corpus hash, input id/SMILES, and

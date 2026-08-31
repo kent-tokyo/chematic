@@ -29,7 +29,7 @@ def corpus() -> tuple[str, dict[str, str]]:
     return actual_hash, {row["id"]: row["smiles"] for row in rows}
 
 
-def validate(path: Path) -> list[str]:
+def validate(path: Path, expected_engine: str | None = None) -> list[str]:
     errors: list[str] = []
     try:
         expected_hash, expected_smiles = corpus()
@@ -52,6 +52,8 @@ def validate(path: Path) -> list[str]:
             continue
         if record["schema_version"] != 1:
             errors.append(f"line {number}: unsupported schema_version {record['schema_version']!r}")
+        if expected_engine is not None and record["engine"] != expected_engine:
+            errors.append(f"line {number}: engine does not match requested {expected_engine!r}")
         if record["corpus_sha256"] != expected_hash:
             errors.append(f"line {number}: corpus_sha256 does not match smoke_corpus.jsonl")
         if record["status"] not in STATUSES:

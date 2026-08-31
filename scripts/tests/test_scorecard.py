@@ -73,3 +73,21 @@ def test_validator_rejects_manifest_drift(tmp_path):
     finally:
         comparison_validate.CORPUS, comparison_validate.MANIFEST = old_corpus, old_manifest
     assert any("manifest sha256" in error for error in errors)
+
+
+def test_external_runner_rejects_engine_mismatch_without_output(tmp_path):
+    adapter = tmp_path / "adapter.py"
+    adapter.write_text(
+        "import json, sys\n"
+        "for line in open(sys.argv[sys.argv.index('--corpus') + 1]):\n"
+        " row = json.loads(line); print(json.dumps({'schema_version': 1, 'engine': 'wrong', 'engine_version': 'test', 'source_commit': None, 'corpus_sha256': '07e0f5f7a4ac2743b54d6c7d4fa63a5c1e0f6278c0637a80fe9a0dc85ba145ec', 'id': row['id'], 'smiles': row['smiles'], 'status': 'ok', 'operations': {}}))\n"
+    )
+    output = tmp_path / "result.jsonl"
+    completed = subprocess.run(
+        [sys.executable, str(HARNESS / "run_external.py"), "--engine", "cosmolkit",
+         "--adapter", f"{sys.executable} {adapter}", "--output", str(output)],
+        cwd=ROOT, capture_output=True, text=True,
+    )
+    assert completed.returncode != 0
+    assert "engine does not match" in completed.stderr
+    assert not output.exists()
