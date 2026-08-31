@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.56.0] - 2026-08-31
+
+### v0.56.0 — reaction similarity CLI workflow
+
+- Added `chematic reaction-similarity <REACTION_A> <REACTION_B>` using the
+  default XOR reaction ECFP4 fingerprints.
+- Added Tanimoto similarity, normalized reaction outputs, and an explicit
+  fingerprint identifier in the JSON contract.
+- Added CLI regression coverage and documented invalid-input behavior.
+
 ## [0.55.0] - 2026-08-31
 
 ### v0.55.0 — inspectable reaction fingerprint CLI workflow

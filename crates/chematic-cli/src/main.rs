@@ -100,6 +100,13 @@ enum Command {
         #[arg(long, default_value = "xor")]
         mode: String,
     },
+    /// Compare two reactions with reaction-fingerprint Tanimoto similarity.
+    ReactionSimilarity {
+        /// First reaction SMILES.
+        reaction_a: String,
+        /// Second reaction SMILES.
+        reaction_b: String,
+    },
 }
 
 fn format_name(format: &str) -> Option<String> {
@@ -431,6 +438,18 @@ fn reaction_fingerprint_json(reaction_smiles: &str, mode: &str) -> Result<String
     .to_string())
 }
 
+fn reaction_similarity_json(reaction_a: &str, reaction_b: &str) -> Result<String, String> {
+    let first = chematic_rxn::parse_reaction(reaction_a).map_err(|e| e.to_string())?;
+    let second = chematic_rxn::parse_reaction(reaction_b).map_err(|e| e.to_string())?;
+    Ok(serde_json::json!({
+        "similarity": chematic_fp::tanimoto_reaction_fp(&first, &second),
+        "reaction_a": chematic_rxn::write_reaction(&first),
+        "reaction_b": chematic_rxn::write_reaction(&second),
+        "fingerprint": "reaction_ecfp4_xor",
+    })
+    .to_string())
+}
+
 fn run(cli: Cli) -> Result<(), String> {
     match cli.command {
         Command::Convert {
@@ -493,6 +512,13 @@ fn run(cli: Cli) -> Result<(), String> {
             let json = reaction_fingerprint_json(&reaction_smiles, &mode)?;
             write_output(None, &format!("{json}\n"))
         }
+        Command::ReactionSimilarity {
+            reaction_a,
+            reaction_b,
+        } => {
+            let json = reaction_similarity_json(&reaction_a, &reaction_b)?;
+            write_output(None, &format!("{json}\n"))
+        }
     }
 }
 
@@ -507,8 +533,8 @@ fn main() {
 mod tests {
     use super::{
         convert_text, descriptors_json, fingerprint_json, reaction_balance_json,
-        reaction_fingerprint_json, reaction_json, reaction_match_json, report_json,
-        similarity_json, standardize_json, substructure_json,
+        reaction_fingerprint_json, reaction_json, reaction_match_json, reaction_similarity_json,
+        report_json, similarity_json, standardize_json, substructure_json,
     };
 
     #[test]
@@ -715,5 +741,19 @@ mod tests {
                 .unwrap_err()
                 .contains("unsupported reaction fingerprint mode")
         );
+    }
+
+    #[test]
+    fn reaction_similarity_is_one_for_identical_reactions() {
+        let json: serde_json::Value =
+            serde_json::from_str(&reaction_similarity_json("CCO>>CC=O", "CCO>>CC=O").unwrap())
+                .unwrap();
+        assert_eq!(json["similarity"], 1.0);
+        assert_eq!(json["fingerprint"], "reaction_ecfp4_xor");
+    }
+
+    #[test]
+    fn reaction_similarity_rejects_invalid_reaction() {
+        assert!(reaction_similarity_json("CCO", "CCO>>CCO").is_err());
     }
 }

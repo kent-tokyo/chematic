@@ -97,3 +97,11 @@ output also includes reactant/product popcounts and the normalized reaction.
 ```sh
 chematic reaction-fingerprint 'CCO>>CC=O'
 ```
+
+`reaction-similarity <REACTION_A> <REACTION_B>` compares the default XOR
+reaction ECFP4 fingerprints and emits a Tanimoto similarity together with both
+normalized reactions. Invalid reaction input is rejected.
+
+```sh
+chematic reaction-similarity 'CCO>>CC=O' 'CCO>>CC=O'
+```

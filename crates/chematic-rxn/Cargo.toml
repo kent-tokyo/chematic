@@ -23,9 +23,9 @@ rustdoc-args = ["--cfg", "docsrs"]
 perf-instrumentation = []
 
 [dependencies]
-chematic-core   = { path = "../chematic-core",   version = "0.55.0" }
-chematic-smiles = { path = "../chematic-smiles", version = "0.55.0" }
-chematic-smarts = { path = "../chematic-smarts", version = "0.55.0" }
+chematic-core   = { path = "../chematic-core",   version = "0.56.0" }
+chematic-smiles = { path = "../chematic-smiles", version = "0.56.0" }
+chematic-smarts = { path = "../chematic-smarts", version = "0.56.0" }
 rustc-hash = "2"
 
 [dev-dependencies]
