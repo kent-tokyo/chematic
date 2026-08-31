@@ -157,6 +157,13 @@ Notes on the cells above that need qualification:
   array/string resources, and atom/bond records. The existing parser uses
   finite defaults.
 
+### ChemicalJSON
+
+- **Rust**: `chematic_mol::{parse_cjson, parse_cjson_with_limits, write_cjson, CjsonError, CjsonParseLimits}`.
+- **Parse limits**: `CjsonParseLimits` bounds JSON input bytes/depth,
+  array/string resources, and atom/bond records. The existing parser uses
+  finite defaults and rejects numeric type/range truncation.
+
 ### MOL/SDF
 
 - **Rust read**: `parse_mol`, `parse_mol_with_coords`, `read_mol_with_diagnostics`, `parse_mol_v3000*`, `SdfReader`, `SdfFileReader`, `SdfRecordReader`.

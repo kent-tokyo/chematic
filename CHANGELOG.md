@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.84.0] - 2026-08-31
+
+### v0.84.0 — bounded ChemicalJSON input
+
+- Added `CjsonParseLimits` and `parse_cjson_with_limits` for JSON input
+  bytes/depth, array/string resources, and atom/bond records.
+- Rejected malformed numeric fields and out-of-range charge, isotope, and bond
+  index values instead of silently defaulting or truncating them.
+
 ## [0.83.0] - 2026-08-31
 
 ### v0.83.0 — security surface baseline
