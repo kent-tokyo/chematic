@@ -1370,6 +1370,8 @@ pub fn uncharge(mol: &Molecule) -> Molecule {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum StandardizationStep {
+    /// Remove metal coordination bonds before charge and fragment processing.
+    DisconnectMetals,
     /// Select the largest connected component.
     LargestFragment,
     /// Apply simple neutralization rules for common formal charges.
@@ -1396,6 +1398,7 @@ impl StandardizationStep {
     /// Stable machine-readable stage name.
     pub fn as_str(self) -> &'static str {
         match self {
+            Self::DisconnectMetals => "disconnect_metals",
             Self::LargestFragment => "largest_fragment",
             Self::NeutralizeCharges => "neutralize_charges",
             Self::NormalizeGroups => "normalize_groups",
@@ -1565,11 +1568,18 @@ impl StandardizationPipeline {
         let mut steps = Vec::new();
         let mut warnings = detect_initial_warnings(mol);
 
-        // Disconnect metals early (remove dative/coordinate bonds)
+        // Disconnect metals early (remove dative/coordinate bonds). Keep this
+        // implicit chemistry step in the report: otherwise the input snapshot
+        // and the first reported stage describe different molecules.
         let has_metals = current.atoms().any(|(_, a)| is_metal(a.element));
-        if has_metals {
-            current = disconnect_metals(&current);
-        }
+        current = self.apply_stage(
+            current,
+            StandardizationStep::DisconnectMetals,
+            has_metals,
+            disconnect_metals,
+            &mut steps,
+            &mut warnings,
+        );
 
         // Apply NeutralizeCharges BEFORE LargestFragment to ensure predictable fragment selection.
         // Example: [NH3+].[Cl-] should be neutralized first to [NH3].[Cl-], then largest fragment.
@@ -1953,14 +1963,17 @@ mod tests {
         assert_eq!(result.atom_count(), 3);
         assert_eq!(report.status, PipelineStatus::Modified);
         assert!(report.changed());
-        assert_eq!(report.steps.len(), 5);
-        // NeutralizeCharges is applied first (not enabled, so no change)
-        assert_eq!(report.steps[0].step, StandardizationStep::NeutralizeCharges);
+        assert_eq!(report.steps.len(), 6);
+        // Metal disconnection is the first (not enabled, so no change)
+        assert_eq!(report.steps[0].step, StandardizationStep::DisconnectMetals);
         assert!(!report.steps[0].enabled);
-        // LargestFragment is applied second and is enabled
-        assert_eq!(report.steps[1].step, StandardizationStep::LargestFragment);
-        assert!(report.steps[1].enabled);
-        assert!(report.steps[1].changed);
+        // NeutralizeCharges is applied second (not enabled, so no change)
+        assert_eq!(report.steps[1].step, StandardizationStep::NeutralizeCharges);
+        assert!(!report.steps[1].enabled);
+        // LargestFragment is applied third and is enabled
+        assert_eq!(report.steps[2].step, StandardizationStep::LargestFragment);
+        assert!(report.steps[2].enabled);
+        assert!(report.steps[2].changed);
     }
 
     #[test]
@@ -1995,7 +2008,7 @@ mod tests {
             zwitterion_handling: ZwitterionHandling::Keep,
         });
 
-        let (result, _report) = pipeline.run(&mol);
+        let (result, report) = pipeline.run(&mol);
 
         // Metal disconnection should run automatically, removing the Na-O bond
         assert_eq!(result.bond_count(), 1, "Na-O bond should be disconnected");
@@ -2004,6 +2017,12 @@ mod tests {
             result.bond(BondIdx(0)).atom1.0 < 3 && result.bond(BondIdx(0)).atom2.0 < 3,
             "remaining bond should connect organic atoms"
         );
+        let metal_step = &report.steps[0];
+        assert_eq!(metal_step.step, StandardizationStep::DisconnectMetals);
+        assert!(metal_step.enabled);
+        assert!(metal_step.changed);
+        assert_eq!(metal_step.before.bonds, 2);
+        assert_eq!(metal_step.after.bonds, 1);
     }
 
     #[test]
@@ -2026,16 +2045,21 @@ mod tests {
         let (_result, report) = pipeline.run(&mol);
 
         // Verify step order: NeutralizeCharges MUST come before LargestFragment
-        assert_eq!(report.steps.len(), 5, "Should have 5 steps in pipeline");
+        assert_eq!(report.steps.len(), 6, "Should have 6 steps in pipeline");
         assert_eq!(
             report.steps[0].step,
-            StandardizationStep::NeutralizeCharges,
-            "NeutralizeCharges must be step 0"
+            StandardizationStep::DisconnectMetals,
+            "DisconnectMetals must be step 0"
         );
         assert_eq!(
             report.steps[1].step,
+            StandardizationStep::NeutralizeCharges,
+            "NeutralizeCharges must be step 1"
+        );
+        assert_eq!(
+            report.steps[2].step,
             StandardizationStep::LargestFragment,
-            "LargestFragment must be step 1"
+            "LargestFragment must be step 2"
         );
 
         // The test passes if step order is correct and the pipeline runs without error

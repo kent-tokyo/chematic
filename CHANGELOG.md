@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.39.0] - 2026-08-31
+
+### v0.39.0 — complete standardization stage audit coverage
+
+- Added `StandardizationStep::DisconnectMetals` and recorded the automatic
+  metal-coordination disconnection in `StandardizationReport.steps`.
+- The report now covers the full execution order from the original molecule
+  through charge and fragment processing, including bond-count changes caused
+  by metal disconnection.
+
 ## [0.38.0] - 2026-08-31
 
 ### v0.38.0 — deterministic bounded Parent tautomer audits
@@ -7633,6 +7643,7 @@ Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception 
 [0.36.0]: https://github.com/kent-tokyo/chematic/compare/v0.35.0...v0.36.0
 [0.37.0]: https://github.com/kent-tokyo/chematic/compare/v0.36.0...v0.37.0
 [0.38.0]: https://github.com/kent-tokyo/chematic/compare/v0.37.0...v0.38.0
+[0.39.0]: https://github.com/kent-tokyo/chematic/compare/v0.38.0...v0.39.0
 [0.31.0]: https://github.com/kent-tokyo/chematic/compare/v0.30.0...v0.31.0
 [0.1.22]: https://github.com/kent-tokyo/chematic/compare/v0.1.21...v0.1.22
 [0.1.21]: https://github.com/kent-tokyo/chematic/compare/v0.1.20...v0.1.21
