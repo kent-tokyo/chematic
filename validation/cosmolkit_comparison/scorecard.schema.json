@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kent-tokyo/chematic/validation/cosmolkit-scorecard-v1.json",
+  "title": "chematic operation-level comparison scorecard",
+  "type": "object",
+  "required": ["valid", "schema_version", "corpus_sha256", "corpus_records", "reference_engine", "engines", "operations"],
+  "properties": {
+    "valid": {"const": true},
+    "schema_version": {"const": 1},
+    "corpus_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "corpus_records": {"type": "integer", "minimum": 1},
+    "reference_engine": {"type": "string", "minLength": 1},
+    "engines": {"type": "object", "minProperties": 1},
+    "operations": {"type": "object", "minProperties": 1}
+  },
+  "additionalProperties": false
+}

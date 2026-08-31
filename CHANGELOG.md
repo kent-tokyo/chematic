@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+No unreleased changes.
+
+## [0.36.0] - 2026-08-31
+
+### v0.36.0 — operation-level compatibility scorecards
+
+- Added a dependency-free scorecard generator for the Phase 0 comparison
+  contract. It records engine versions, source commits, corpus identity, and
+  per-operation `match`, `mismatch`, `unsupported`, `failure`, and
+  `uncomparable` outcomes.
+- Added a versioned scorecard schema and regression coverage. Unsupported or
+  failed operations remain visible and are never counted as matches.
+
+## [0.31.0] - 2026-08-30
+
 ### v0.31.0 — WASM Parent identity bindings
 
 - Exposed fragment, charge, isotope, stereo, and composed Super Parent
@@ -7591,7 +7606,9 @@ Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception 
 - `#![forbid(unsafe_code)]` on all crates.
 - FNV-1a hashing for reproducible, deterministic canonical SMILES across platforms.
 
-[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v0.1.22...HEAD
+[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v0.31.0...HEAD
+[0.36.0]: https://github.com/kent-tokyo/chematic/compare/v0.35.0...v0.36.0
+[0.31.0]: https://github.com/kent-tokyo/chematic/compare/v0.30.0...v0.31.0
 [0.1.22]: https://github.com/kent-tokyo/chematic/compare/v0.1.21...v0.1.22
 [0.1.21]: https://github.com/kent-tokyo/chematic/compare/v0.1.20...v0.1.21
 [0.1.20]: https://github.com/kent-tokyo/chematic/compare/v0.1.19...v0.1.20

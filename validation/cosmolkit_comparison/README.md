@@ -16,6 +16,20 @@ python3 validation/cosmolkit_comparison/score.py \
   /tmp/chematic.jsonl /tmp/rdkit.jsonl
 ```
 
+Build an operation-level scorecard when more than two engines are available:
+
+```bash
+python3 validation/cosmolkit_comparison/scorecard.py \
+  --result rdkit=/tmp/rdkit.jsonl \
+  --result chematic=/tmp/chematic.jsonl \
+  --reference rdkit --output /tmp/scorecard.json
+```
+
+The scorecard records each engine's version and source commit, then separates
+per-operation status counts from reference comparisons. Unsupported or failed
+operations are reported as `uncomparable`; they are never counted as matches.
+The output is deterministic and is described by `scorecard.schema.json`.
+
 The `rdkit_morgan_bits` operation uses chematic's promoted RDKit-exact Morgan
 API when available; older installed chematic versions report it as
 `unsupported` instead of silently substituting native ECFP4.
