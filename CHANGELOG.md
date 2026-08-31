@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.42.0] - 2026-08-31
+
+### v0.42.0 — broader RDKit-compatible Python imports
+
+- Added common `AllChem.GetMorganFingerprintAsBitVect` and
+  `rdFingerprintGenerator.GetMorganGenerator` compatibility entry points.
+- Added `Chem.CanonSmiles` and explicit rejection for unsupported Morgan modes,
+  keeping the compatibility layer honest about algorithmic differences.
+- Added migration documentation and regression coverage for the legacy and
+  stable RDKit import paths.
+
 ## [0.41.0] - 2026-08-31
 
 ### v0.41.0 — bounded external comparison adapters
@@ -7667,6 +7678,7 @@ Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception 
 [0.36.0]: https://github.com/kent-tokyo/chematic/compare/v0.35.0...v0.36.0
 [0.37.0]: https://github.com/kent-tokyo/chematic/compare/v0.36.0...v0.37.0
 [0.38.0]: https://github.com/kent-tokyo/chematic/compare/v0.37.0...v0.38.0
+[0.42.0]: https://github.com/kent-tokyo/chematic/compare/v0.41.0...v0.42.0
 [0.41.0]: https://github.com/kent-tokyo/chematic/compare/v0.40.0...v0.41.0
 [0.40.0]: https://github.com/kent-tokyo/chematic/compare/v0.39.0...v0.40.0
 [0.39.0]: https://github.com/kent-tokyo/chematic/compare/v0.38.0...v0.39.0

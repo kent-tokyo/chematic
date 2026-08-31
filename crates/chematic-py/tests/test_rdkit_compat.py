@@ -4,7 +4,8 @@ import chematic
 from chematic import rdkit_compat as Chem
 from chematic.rdkit_compat import (
     Descriptors, rdMolDescriptors, DataStructs, ExplicitBitVect,
-    Atom, Bond, BondType, RingInfo, RWMol, pyAvalonTools,
+    Atom, Bond, BondType, RingInfo, RWMol, pyAvalonTools, AllChem,
+    CanonSmiles, rdFingerprintGenerator,
 )
 
 
@@ -19,6 +20,24 @@ def test_import_style():
     assert Descriptors is not None
     assert rdMolDescriptors is not None
     assert DataStructs is not None
+
+
+def test_common_rdkit_morgan_import_paths():
+    mol = Chem.MolFromSmiles("CCO")
+    legacy = AllChem.GetMorganFingerprintAsBitVect(mol, 2)
+    generator = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=2048)
+    stable = generator.GetFingerprint(mol)
+    assert legacy.GetNumBits() == stable.GetNumBits() == 2048
+    assert legacy.GetOnBits() == stable.GetOnBits()
+
+
+def test_canon_smiles_convenience_wrapper():
+    assert CanonSmiles("OCC") == Chem.MolToSmiles(Chem.MolFromSmiles("OCC"))
+
+
+def test_morgan_generator_rejects_unimplemented_modes():
+    with pytest.raises(NotImplementedError):
+        rdFingerprintGenerator.GetMorganGenerator(countSimulation=True)
 
 
 # ---------------------------------------------------------------------------
