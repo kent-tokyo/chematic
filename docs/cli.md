@@ -54,6 +54,15 @@ warnings. This makes normalization decisions inspectable in shell pipelines.
 chematic standardize 'C[NH3+]'
 ```
 
+`reaction <REACTION_SMILES>` normalizes reaction components and emits the
+canonical reaction SMILES, component counts, and a mapped reaction-center
+summary. Changed atoms and broken/formed bonds are reported by atom index;
+without atom maps, the center is empty rather than inferred.
+
+```sh
+chematic reaction '[CH3:1][OH:2]>>[CH3:1][O-:2]'
+```
+
 `report <SMILES>` emits the complete single-molecule analysis record used by
 the workflow API: canonical identity, formula, Murcko scaffold, descriptor
 summary, drug-likeness filters and alert names, functional groups, and named

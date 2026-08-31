@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.52.0] - 2026-08-31
+
+### v0.52.0 — mapped reaction CLI workflow
+
+- Added `chematic reaction <REACTION_SMILES>` for canonical reaction
+  component output and explicit reactant/agent/product counts.
+- Added mapped reaction-center JSON for changed atoms and broken/formed bonds;
+  unmapped reactions remain empty rather than being guessed.
+- Added CLI regression coverage and documented the reaction contract.
+
 ## [0.51.0] - 2026-08-31
 
 ### v0.51.0 — complete molecule report CLI workflow

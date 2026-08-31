@@ -75,6 +75,11 @@ enum Command {
         /// SMILES to analyze.
         smiles: String,
     },
+    /// Normalize a reaction SMILES and report its mapped reaction center.
+    Reaction {
+        /// Reaction SMILES in `reactants>agents>products` form.
+        reaction_smiles: String,
+    },
 }
 
 fn format_name(format: &str) -> Option<String> {
@@ -316,6 +321,42 @@ fn report_json(smiles: &str) -> Result<String, String> {
     serde_json::to_string(&report).map_err(|e| format!("serialize report: {e}"))
 }
 
+fn reaction_json(reaction_smiles: &str) -> Result<String, String> {
+    let reaction = chematic_rxn::parse_reaction(reaction_smiles).map_err(|e| e.to_string())?;
+    let canonical_part = |molecules: &[chematic_core::Molecule]| {
+        molecules
+            .iter()
+            .map(chematic_smiles::canonical_smiles)
+            .collect::<Vec<_>>()
+            .join(".")
+    };
+    let reactants = canonical_part(&reaction.reactants);
+    let agents = canonical_part(&reaction.agents);
+    let products = canonical_part(&reaction.products);
+    let center = chematic_rxn::find_reaction_center(&reaction);
+    let pairs = |pairs: &[(chematic_core::AtomIdx, chematic_core::AtomIdx)]| {
+        pairs
+            .iter()
+            .map(|(left, right)| vec![left.0 as usize, right.0 as usize])
+            .collect::<Vec<_>>()
+    };
+    Ok(serde_json::json!({
+        "reaction_smiles": format!("{reactants}>{agents}>{products}"),
+        "reactants": reaction.reactants.len(),
+        "agents": reaction.agents.len(),
+        "products": reaction.products.len(),
+        "mapped": !center.changed_atoms.is_empty()
+            || !center.broken_bonds.is_empty()
+            || !center.formed_bonds.is_empty(),
+        "reaction_center": {
+            "changed_atoms": center.changed_atoms.iter().map(|idx| idx.0 as usize).collect::<Vec<_>>(),
+            "broken_bonds": pairs(&center.broken_bonds),
+            "formed_bonds": pairs(&center.formed_bonds),
+        },
+    })
+    .to_string())
+}
+
 fn run(cli: Cli) -> Result<(), String> {
     match cli.command {
         Command::Convert {
@@ -356,6 +397,10 @@ fn run(cli: Cli) -> Result<(), String> {
             let json = report_json(&smiles)?;
             write_output(None, &format!("{json}\n"))
         }
+        Command::Reaction { reaction_smiles } => {
+            let json = reaction_json(&reaction_smiles)?;
+            write_output(None, &format!("{json}\n"))
+        }
     }
 }
 
@@ -369,8 +414,8 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::{
-        convert_text, descriptors_json, fingerprint_json, report_json, similarity_json,
-        standardize_json, substructure_json,
+        convert_text, descriptors_json, fingerprint_json, reaction_json, report_json,
+        similarity_json, standardize_json, substructure_json,
     };
 
     #[test]
@@ -496,5 +541,28 @@ mod tests {
     #[test]
     fn report_rejects_invalid_smiles() {
         assert!(report_json("C1CC").is_err());
+    }
+
+    #[test]
+    fn reaction_normalizes_components_and_reports_mapped_center() {
+        let json: serde_json::Value =
+            serde_json::from_str(&reaction_json("[CH3:1][OH:2]>>[CH3:1][O-:2]").unwrap()).unwrap();
+        assert_eq!(json["reaction_smiles"], "[OH:2][CH3:1]>>[CH3:1][O-:2]");
+        assert_eq!(json["reactants"], 1);
+        assert_eq!(json["products"], 1);
+        assert_eq!(json["mapped"], true);
+        assert_eq!(
+            json["reaction_center"]["changed_atoms"],
+            serde_json::json!([1])
+        );
+    }
+
+    #[test]
+    fn reaction_rejects_missing_arrow() {
+        assert!(
+            reaction_json("CCO")
+                .unwrap_err()
+                .contains("reaction SMILES")
+        );
     }
 }
