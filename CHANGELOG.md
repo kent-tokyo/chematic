@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.61.0] - 2026-08-31
+
+### v0.61.0 — lightweight parse CLI workflow
+
+- Added `chematic parse <SMILES>` for fast parse and canonicalization checks.
+- Added JSON output for input/canonical SMILES, formula, atom and bond counts,
+  and formal charge without running the full descriptor workflow.
+- Added CLI regression coverage and documented the lightweight contract.
+
 ## [0.60.0] - 2026-08-31
 
 ### v0.60.0 — auditable batch standardization CLI workflow

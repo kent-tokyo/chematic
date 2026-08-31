@@ -35,6 +35,11 @@ enum Command {
         #[arg(short, long)]
         output: Option<PathBuf>,
     },
+    /// Parse and validate a SMILES molecule without descriptor calculation.
+    Parse {
+        /// SMILES to parse.
+        smiles: String,
+    },
     /// Calculate a compact JSON descriptor record from a SMILES string.
     Descriptors {
         /// SMILES to analyze.
@@ -233,6 +238,19 @@ fn descriptors_json(smiles: &str) -> Result<String, String> {
         "hbd": chematic_chem::hbd_count(&mol),
         "hba": chematic_chem::hba_count(&mol),
         "rotatable_bonds": chematic_chem::rotatable_bond_count(&mol),
+    })
+    .to_string())
+}
+
+fn parse_json(smiles: &str) -> Result<String, String> {
+    let mol = chematic_smiles::parse(smiles).map_err(|e| e.to_string())?;
+    Ok(serde_json::json!({
+        "input_smiles": smiles,
+        "canonical_smiles": chematic_smiles::canonical_smiles(&mol),
+        "formula": mol.total_formula(),
+        "atoms": mol.atom_count(),
+        "bonds": mol.bond_count(),
+        "formal_charge": chematic_chem::formal_charge_sum(&mol),
     })
     .to_string())
 }
@@ -620,6 +638,10 @@ fn run(cli: Cli) -> Result<(), String> {
             let json = descriptors_json(&smiles)?;
             write_output(None, &format!("{json}\n"))
         }
+        Command::Parse { smiles } => {
+            let json = parse_json(&smiles)?;
+            write_output(None, &format!("{json}\n"))
+        }
         Command::Fingerprint { smiles, algorithm } => {
             let json = fingerprint_json(&smiles, &algorithm)?;
             write_output(None, &format!("{json}\n"))
@@ -707,7 +729,7 @@ fn main() {
 mod tests {
     use super::{
         batch_descriptors_json, batch_fingerprints_json, batch_report_json, batch_standardize_json,
-        convert_text, descriptors_json, fingerprint_json, reaction_balance_json,
+        convert_text, descriptors_json, fingerprint_json, parse_json, reaction_balance_json,
         reaction_fingerprint_json, reaction_json, reaction_match_json, reaction_similarity_json,
         report_json, similarity_json, standardize_json, substructure_json,
     };
@@ -739,6 +761,22 @@ mod tests {
         assert_eq!(json["heavy_atoms"], 3);
         assert!(json["molecular_weight"].as_f64().unwrap() > 40.0);
         assert_eq!(json["formula"], "C2H6O");
+    }
+
+    #[test]
+    fn parse_reports_structure_without_expensive_descriptors() {
+        let json: serde_json::Value =
+            serde_json::from_str(&parse_json("C[NH3+]").unwrap()).unwrap();
+        assert_eq!(json["input_smiles"], "C[NH3+]");
+        assert_eq!(json["canonical_smiles"], "C[NH3+]");
+        assert_eq!(json["atoms"], 2);
+        assert_eq!(json["bonds"], 1);
+        assert_eq!(json["formal_charge"], 1);
+    }
+
+    #[test]
+    fn parse_rejects_invalid_smiles() {
+        assert!(parse_json("C1CC").is_err());
     }
 
     #[test]

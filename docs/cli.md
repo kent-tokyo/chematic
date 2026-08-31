@@ -72,6 +72,14 @@ groups. Invalid input is rejected with a non-zero exit status.
 chematic report 'CC(=O)Oc1ccccc1C(=O)O'
 ```
 
+`parse <SMILES>` is the lightweight validation path. It emits the original
+input, canonical SMILES, formula, atom/bond counts, and formal charge without
+running the full descriptor or alert workflow.
+
+```sh
+chematic parse 'C[NH3+]'
+```
+
 `reaction-match <REACTION_SMILES> <REACTION_SMARTS>` checks whether all
 reactant and product patterns match. It emits the normalized reaction, the
 original query, and a boolean `matched` field. Invalid reaction input or query
