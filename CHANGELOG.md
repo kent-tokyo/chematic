@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.44.0] - 2026-08-31
+
+### v0.44.0 — cross-binding format conversion contract
+
+- Added the WASM `convert_common_format()` bridge for the topology-bearing
+  common formats already available through Python.
+- Matched format aliases and explicit input-size limits across bindings while
+  keeping coordinate and format-specific metadata handling separate.
+- Added cross-binding regression coverage and documented the supported
+  topology-only subset and coordinate API boundary.
+
 ## [0.43.0] - 2026-08-31
 
 ### v0.43.0 — common molecular format conversion bridge
@@ -7690,6 +7701,7 @@ Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception 
 [0.36.0]: https://github.com/kent-tokyo/chematic/compare/v0.35.0...v0.36.0
 [0.37.0]: https://github.com/kent-tokyo/chematic/compare/v0.36.0...v0.37.0
 [0.38.0]: https://github.com/kent-tokyo/chematic/compare/v0.37.0...v0.38.0
+[0.44.0]: https://github.com/kent-tokyo/chematic/compare/v0.43.0...v0.44.0
 [0.43.0]: https://github.com/kent-tokyo/chematic/compare/v0.42.0...v0.43.0
 [0.42.0]: https://github.com/kent-tokyo/chematic/compare/v0.41.0...v0.42.0
 [0.41.0]: https://github.com/kent-tokyo/chematic/compare/v0.40.0...v0.41.0

@@ -893,6 +893,86 @@ pub fn smiles_to_mol2(smiles: &str) -> String {
     }
 }
 
+pub(crate) fn common_format_name(format: &str) -> Option<String> {
+    match format.to_ascii_lowercase().trim_start_matches('.').replace('-', "_").as_str() {
+        "smi" | "smiles" => Some("smiles".to_string()),
+        "mol" | "sdf" => Some("mol".to_string()),
+        "v3000" | "mol_v3000" => Some("mol_v3000".to_string()),
+        "mol2" => Some("mol2".to_string()),
+        "cml" => Some("cml".to_string()),
+        "cjson" => Some("cjson".to_string()),
+        "moljson" => Some("moljson".to_string()),
+        "cdxml" => Some("cdxml".to_string()),
+        _ => None,
+    }
+}
+
+fn parse_common_format(text: &str, format: &str) -> Result<chematic_core::Molecule, String> {
+    match format {
+        "smiles" => chematic_smiles::parse(text).map_err(|e| e.to_string()),
+        "mol" => chematic_mol::parse_mol(text).map(|(mol, _)| mol).map_err(|e| e.to_string()),
+        "mol_v3000" => chematic_mol::parse_mol_v3000(text)
+            .map(|(mol, _)| mol)
+            .map_err(|e| e.to_string()),
+        "mol2" => chematic_mol::parse_mol2(text)
+            .map(|(mol, _)| mol)
+            .map_err(|e| e.to_string()),
+        "cml" => chematic_mol::parse_cml(text)
+            .map(|(mol, _)| mol)
+            .map_err(|e| e.to_string()),
+        "cjson" => chematic_mol::parse_cjson(text)
+            .map(|(mol, _)| mol)
+            .map_err(|e| e.to_string()),
+        "moljson" => chematic_mol::parse_moljson(text).map_err(|e| e.to_string()),
+        "cdxml" => chematic_mol::parse_cdxml(text)
+            .map(|(mol, _)| mol)
+            .map_err(|e| e.to_string()),
+        _ => Err(format!("unsupported input format: {format}")),
+    }
+}
+
+/// Convert between common topology-bearing molecular formats.
+///
+/// This is the WASM counterpart of Python's `convert_format`. It supports
+/// SMILES, MOL/SDF, MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML.
+/// Coordinates and format-specific metadata are intentionally not carried
+/// across this topology-only bridge; use the format-specific coordinate APIs
+/// when those fields must be preserved.
+#[wasm_bindgen]
+pub fn convert_common_format(
+    text: &str,
+    input_format: &str,
+    output_format: &str,
+) -> Result<String, JsValue> {
+    if text.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str(&format!(
+            "format input exceeds maximum input size ({} > {WASM_MAX_INPUT_BYTES} bytes)",
+            text.len()
+        )));
+    }
+    let input = common_format_name(input_format)
+        .ok_or_else(|| JsValue::from_str(&format!("unsupported molecular format: {input_format}")))?;
+    let output = common_format_name(output_format)
+        .ok_or_else(|| JsValue::from_str(&format!("unsupported molecular format: {output_format}")))?;
+    let mol = parse_common_format(text, &input).map_err(|e| JsValue::from_str(&e))?;
+    let result = match output.as_str() {
+        "smiles" => chematic_smiles::canonical_smiles(&mol),
+        "mol" => chematic_mol::write_mol(&mol, &chematic_mol::MolMetadata::default()),
+        "mol_v3000" => chematic_mol::write_mol_v3000(
+            &mol,
+            &chematic_mol::MolMetadata::default(),
+            &[],
+        ),
+        "mol2" => chematic_mol::write_mol2(&mol, &[]),
+        "cml" => chematic_mol::write_cml(&mol, None),
+        "cjson" => chematic_mol::write_cjson(&mol, &[]),
+        "moljson" => chematic_mol::write_moljson(&mol),
+        "cdxml" => chematic_mol::write_cdxml(&mol, &[]),
+        _ => return Err(JsValue::from_str(&format!("unsupported output format: {output}"))),
+    };
+    Ok(result)
+}
+
 /// Write a molecule to AutoDock PDBQT format.
 ///
 /// `coords_json` — JSON array of `[x,y,z]` arrays (Å). Pass `"[]"` for zero coords.

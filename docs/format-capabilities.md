@@ -16,12 +16,18 @@ any format — each row states exactly what is implemented and names the gaps.
 ### Common format conversion bridge
 
 The Python package provides `convert_format(text, input_format, output_format)`
-for explicit conversion between the most interoperable molecular formats:
+and the WASM package provides `convert_common_format(text, input_format,
+output_format)` for explicit conversion between the most interoperable molecular formats:
 SMILES, MOL/SDF (V2000), MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, CDXML,
 PDB, XYZ, PDBQT, and Gaussian input. Extensions are accepted as aliases (for
 example `.mol2`, `smi`, and `com`). PDB/XYZ/PDBQT output requires 3D
 coordinates; graph-only conversions do not claim to preserve format-specific
 metadata. Unsupported formats fail before conversion with a `ValueError`.
+
+The WASM bridge intentionally exposes the topology-only subset (SMILES, MOL,
+MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML) so that JavaScript
+and Python share a predictable core contract. Use the existing coordinate APIs
+for PDB/XYZ/PDBQT in browser workflows.
 
 This is intentionally a bounded interoperability layer, not an Open Babel
 replacement. The format-specific APIs remain available when coordinates,
