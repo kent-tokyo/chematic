@@ -246,6 +246,34 @@ pub struct LammpsDumpFrame {
     pub rows: Vec<Vec<f64>>,
 }
 
+/// Resource limits for LAMMPS dump frame and trajectory parsing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LammpsDumpParseLimits {
+    /// Maximum input size, in bytes. For a streaming reader this is the
+    /// cumulative number of bytes consumed from the source.
+    pub max_input_bytes: usize,
+    /// Maximum physical line size, in bytes.
+    pub max_line_bytes: usize,
+    /// Maximum atoms in one frame.
+    pub max_atoms_per_frame: usize,
+    /// Maximum declared atom columns in one frame.
+    pub max_columns: usize,
+    /// Maximum frames yielded by a streaming reader.
+    pub max_frames: usize,
+}
+
+impl Default for LammpsDumpParseLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: 256 * 1024 * 1024,
+            max_line_bytes: 1024 * 1024,
+            max_atoms_per_frame: 1_000_000,
+            max_columns: 256,
+            max_frames: 100_000,
+        }
+    }
+}
+
 impl LammpsDumpFrame {
     /// Index of `name` within [`Self::column_names`], if present.
     pub fn column_index(&self, name: &str) -> Option<usize> {
@@ -345,6 +373,12 @@ pub enum LammpsDumpError {
     /// An IO error occurred while reading from a streaming
     /// [`LammpsDumpReader`] source.
     Io(String),
+    /// The input exceeded a configured resource limit.
+    ResourceLimit {
+        resource: &'static str,
+        actual: usize,
+        limit: usize,
+    },
 }
 
 impl std::fmt::Display for LammpsDumpError {
@@ -381,6 +415,11 @@ impl std::fmt::Display for LammpsDumpError {
                 write!(f, "unexpected end of input while reading {context}")
             }
             Self::Io(msg) => write!(f, "IO error: {msg}"),
+            Self::ResourceLimit {
+                resource,
+                actual,
+                limit,
+            } => write!(f, "{resource} has size {actual}, exceeding limit {limit}"),
         }
     }
 }
@@ -417,6 +456,8 @@ fn strip_item_prefix<'a>(line: &'a str, expected: &str) -> Result<&'a str, Lammp
 /// frames (i.e. before any of this frame's lines have been read).
 fn read_frame_from_feed<F>(
     feed: &mut LineFeed<LammpsDumpError, F>,
+    limits: &LammpsDumpParseLimits,
+    frame_index: usize,
 ) -> Result<Option<LammpsDumpFrame>, LammpsDumpError>
 where
     F: FnMut() -> Result<Option<String>, LammpsDumpError>,
@@ -452,6 +493,13 @@ where
                 line: feed.line_no,
                 detail: count_line.clone(),
             })?;
+    if num_atoms > limits.max_atoms_per_frame {
+        return Err(LammpsDumpError::ResourceLimit {
+            resource: "atoms per frame",
+            actual: num_atoms,
+            limit: limits.max_atoms_per_frame,
+        });
+    }
 
     let bb_line = feed.line()?.ok_or(LammpsDumpError::TruncatedInput {
         context: "ITEM: BOX BOUNDS",
@@ -532,6 +580,20 @@ where
     })?;
     let cols_rest = strip_item_prefix(&atoms_line, "ATOMS")?;
     let column_names: Vec<String> = cols_rest.split_whitespace().map(str::to_string).collect();
+    if column_names.len() > limits.max_columns {
+        return Err(LammpsDumpError::ResourceLimit {
+            resource: "columns per frame",
+            actual: column_names.len(),
+            limit: limits.max_columns,
+        });
+    }
+    if frame_index >= limits.max_frames {
+        return Err(LammpsDumpError::ResourceLimit {
+            resource: "frames",
+            actual: frame_index + 1,
+            limit: limits.max_frames,
+        });
+    }
 
     let mut rows: Vec<Vec<f64>> = Vec::with_capacity(num_atoms);
     for row_idx in 0..num_atoms {
@@ -594,11 +656,35 @@ where
 /// parsed; anything after it is silently ignored. Use
 /// [`LammpsDumpReader`] to read every frame of a multi-frame trajectory.
 pub fn parse_lammps_dump_frame(text: &str) -> Result<LammpsDumpFrame, LammpsDumpError> {
+    parse_lammps_dump_frame_with_limits(text, &LammpsDumpParseLimits::default())
+}
+
+/// Parse a single LAMMPS dump frame with explicit resource limits.
+pub fn parse_lammps_dump_frame_with_limits(
+    text: &str,
+    limits: &LammpsDumpParseLimits,
+) -> Result<LammpsDumpFrame, LammpsDumpError> {
+    if text.len() > limits.max_input_bytes {
+        return Err(LammpsDumpError::ResourceLimit {
+            resource: "input bytes",
+            actual: text.len(),
+            limit: limits.max_input_bytes,
+        });
+    }
+    if let Some(line_bytes) = text.lines().map(str::len).max()
+        && line_bytes > limits.max_line_bytes
+    {
+        return Err(LammpsDumpError::ResourceLimit {
+            resource: "line bytes",
+            actual: line_bytes,
+            limit: limits.max_line_bytes,
+        });
+    }
     let mut lines = text.lines();
     let next_line =
         move || -> Result<Option<String>, LammpsDumpError> { Ok(lines.next().map(str::to_string)) };
     let mut feed = LineFeed::new(next_line);
-    read_frame_from_feed(&mut feed)?.ok_or(LammpsDumpError::TruncatedInput {
+    read_frame_from_feed(&mut feed, limits, 0)?.ok_or(LammpsDumpError::TruncatedInput {
         context: "frame (empty input)",
     })
 }
@@ -617,6 +703,9 @@ pub fn parse_lammps_dump_frame(text: &str) -> Result<LammpsDumpFrame, LammpsDump
 pub struct LammpsDumpReader<R: std::io::BufRead> {
     reader: R,
     done: bool,
+    limits: LammpsDumpParseLimits,
+    bytes_read: usize,
+    frames_read: usize,
 }
 
 impl<R: std::io::BufRead> LammpsDumpReader<R> {
@@ -625,6 +714,20 @@ impl<R: std::io::BufRead> LammpsDumpReader<R> {
         Self {
             reader,
             done: false,
+            limits: LammpsDumpParseLimits::default(),
+            bytes_read: 0,
+            frames_read: 0,
+        }
+    }
+
+    /// Wrap a source with explicit trajectory resource limits.
+    pub fn with_limits(reader: R, limits: LammpsDumpParseLimits) -> Self {
+        Self {
+            reader,
+            done: false,
+            limits,
+            bytes_read: 0,
+            frames_read: 0,
         }
     }
 }
@@ -637,17 +740,39 @@ impl<R: std::io::BufRead> Iterator for LammpsDumpReader<R> {
             return None;
         }
         let reader = &mut self.reader;
+        let limits = self.limits;
+        let bytes_read = &mut self.bytes_read;
         let next_line = move || -> Result<Option<String>, LammpsDumpError> {
             let mut buf = String::new();
             match reader.read_line(&mut buf) {
                 Ok(0) => Ok(None),
-                Ok(_) => Ok(Some(buf.trim_end_matches(['\n', '\r']).to_string())),
+                Ok(n) => {
+                    *bytes_read = bytes_read.saturating_add(n);
+                    if *bytes_read > limits.max_input_bytes {
+                        return Err(LammpsDumpError::ResourceLimit {
+                            resource: "input bytes",
+                            actual: *bytes_read,
+                            limit: limits.max_input_bytes,
+                        });
+                    }
+                    if buf.trim_end_matches(['\n', '\r']).len() > limits.max_line_bytes {
+                        return Err(LammpsDumpError::ResourceLimit {
+                            resource: "line bytes",
+                            actual: buf.trim_end_matches(['\n', '\r']).len(),
+                            limit: limits.max_line_bytes,
+                        });
+                    }
+                    Ok(Some(buf.trim_end_matches(['\n', '\r']).to_string()))
+                }
                 Err(e) => Err(LammpsDumpError::Io(e.to_string())),
             }
         };
         let mut feed = LineFeed::new(next_line);
-        match read_frame_from_feed(&mut feed) {
-            Ok(Some(frame)) => Some(Ok(frame)),
+        match read_frame_from_feed(&mut feed, &limits, self.frames_read) {
+            Ok(Some(frame)) => {
+                self.frames_read += 1;
+                Some(Ok(frame))
+            }
             Ok(None) => {
                 self.done = true;
                 None
@@ -1031,5 +1156,91 @@ mod tests {
     fn empty_input_is_truncated_input_not_panic() {
         let err = parse_lammps_dump_frame("").unwrap_err();
         assert!(matches!(err, LammpsDumpError::TruncatedInput { .. }));
+    }
+
+    #[test]
+    fn bounded_frame_parser_rejects_input_and_line_limits() {
+        let text = write_lammps_dump_frame(&orthogonal_frame());
+        assert!(matches!(
+            parse_lammps_dump_frame_with_limits(
+                &text,
+                &LammpsDumpParseLimits {
+                    max_input_bytes: 8,
+                    ..Default::default()
+                }
+            ),
+            Err(LammpsDumpError::ResourceLimit {
+                resource: "input bytes",
+                ..
+            })
+        ));
+
+        let long_line = format!("ITEM: TIMESTEP{}\n", "x".repeat(32));
+        assert!(matches!(
+            parse_lammps_dump_frame_with_limits(
+                &long_line,
+                &LammpsDumpParseLimits {
+                    max_line_bytes: 16,
+                    ..Default::default()
+                }
+            ),
+            Err(LammpsDumpError::ResourceLimit {
+                resource: "line bytes",
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn bounded_frame_parser_rejects_atom_and_column_limits() {
+        let text = write_lammps_dump_frame(&orthogonal_frame());
+        assert!(matches!(
+            parse_lammps_dump_frame_with_limits(
+                &text,
+                &LammpsDumpParseLimits {
+                    max_atoms_per_frame: 1,
+                    ..Default::default()
+                }
+            ),
+            Err(LammpsDumpError::ResourceLimit {
+                resource: "atoms per frame",
+                ..
+            })
+        ));
+        assert!(matches!(
+            parse_lammps_dump_frame_with_limits(
+                &text,
+                &LammpsDumpParseLimits {
+                    max_columns: 2,
+                    ..Default::default()
+                }
+            ),
+            Err(LammpsDumpError::ResourceLimit {
+                resource: "columns per frame",
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn bounded_reader_rejects_a_frame_beyond_frame_budget() {
+        use std::io::Cursor;
+
+        let text = write_lammps_trajectory(&[orthogonal_frame(), orthogonal_frame()]);
+        let mut reader = LammpsDumpReader::with_limits(
+            Cursor::new(text),
+            LammpsDumpParseLimits {
+                max_frames: 1,
+                ..Default::default()
+            },
+        );
+        assert!(reader.next().unwrap().is_ok());
+        assert!(matches!(
+            reader.next().unwrap(),
+            Err(LammpsDumpError::ResourceLimit {
+                resource: "frames",
+                ..
+            })
+        ));
     }
 }

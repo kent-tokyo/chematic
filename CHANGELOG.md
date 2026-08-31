@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.75.0] - 2026-08-31
+
+### v0.75.0 — bounded LAMMPS dump input
+
+- Added `LammpsDumpParseLimits` for input bytes, physical line length, atoms
+  and columns per frame, and streaming trajectory frame count.
+- Added `parse_lammps_dump_frame_with_limits` and
+  `LammpsDumpReader::with_limits` with typed resource-limit errors and
+  regression coverage.
+
 ## [0.74.0] - 2026-08-31
 
 ### v0.74.0 — bounded plain CIF input

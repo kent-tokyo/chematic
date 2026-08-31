@@ -373,7 +373,7 @@ disambiguate by crate, not by name alone:
 
 ### LAMMPS dump/trajectory
 
-- **Rust**: `chematic_mol::{parse_lammps_dump_frame, write_lammps_dump_frame, write_lammps_trajectory, box_bounds_to_true, true_to_box_bounds, LammpsDumpFrame, LammpsDumpReader, LammpsDumpError}`.
+- **Rust**: `chematic_mol::{parse_lammps_dump_frame, parse_lammps_dump_frame_with_limits, write_lammps_dump_frame, write_lammps_trajectory, box_bounds_to_true, true_to_box_bounds, LammpsDumpFrame, LammpsDumpReader, LammpsDumpParseLimits, LammpsDumpError}`.
 - **Python**: `parse_lammps_dump_frame`, `parse_lammps_dump_all` (**materializes the whole trajectory** — does not expose `LammpsDumpReader`'s streaming; a disclosed scope choice, already stated in CHANGELOG), `write_lammps_dump_frame`, `write_lammps_trajectory`, `box_bounds_to_true`, `true_to_box_bounds`; pyclass `LammpsDumpFrame` (`.column()`, `.cartesian_positions()`).
 - **WASM**: `lammps_dump_frame_to_json_str`, `lammps_trajectory_to_json` (**also materializes, does not stream** — same disclosed choice), `write_lammps_dump_frame_json`, `write_lammps_trajectory_json`, `lammps_dump_cartesian_positions_json`, plus typed-array `lammps_dump_rows_f64`, `lammps_dump_cartesian_positions_f64`.
 - **Streaming**: `LammpsDumpReader<R: BufRead>` is a **true streaming
@@ -400,7 +400,10 @@ disambiguate by crate, not by name alone:
   has no `null` representation. Both are doc-commented; this is disclosed,
   not accidental. See [`language-bindings.md`](language-bindings.md).
 - **Coordinate units**: not stated in-file (same as LAMMPS data).
-- **Parse limits**: no `*ParseLimits` type exists.
+- **Parse limits**: `LammpsDumpParseLimits { max_input_bytes,
+  max_line_bytes, max_atoms_per_frame, max_columns, max_frames }` bounds both
+  single-frame input and the streaming reader; use
+  `parse_lammps_dump_frame_with_limits` or `LammpsDumpReader::with_limits`.
 
 ---
 

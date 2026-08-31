@@ -76,8 +76,9 @@ pub use lammps_data::{
     LammpsVelocity, parse_lammps_data, write_lammps_data,
 };
 pub use lammps_dump::{
-    LammpsDumpError, LammpsDumpFrame, LammpsDumpReader, box_bounds_to_true,
-    parse_lammps_dump_frame, true_to_box_bounds, write_lammps_dump_frame, write_lammps_trajectory,
+    LammpsDumpError, LammpsDumpFrame, LammpsDumpParseLimits, LammpsDumpReader, box_bounds_to_true,
+    parse_lammps_dump_frame, parse_lammps_dump_frame_with_limits, true_to_box_bounds,
+    write_lammps_dump_frame, write_lammps_trajectory,
 };
 pub use mmcif::{
     MmcifAtomRecord, MmcifError, MmcifParseLimits, MmcifResult, parse_mmcif,
