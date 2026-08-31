@@ -157,3 +157,11 @@ pairs or molecules.
 ```sh
 printf 'CCO\tCCO\nCCO\tCCN\n' | chematic batch-similarity --algorithm ecfp4
 ```
+
+`batch-substructure` reads one `SMILES<TAB>SMARTS` pair per line and returns
+match counts and query-order atom mappings in an input-order manifest. Invalid
+SMARTS or molecules remain as per-record errors.
+
+```sh
+printf 'c1ccccc1\tc\nCCO\t[\n' | chematic batch-substructure
+```

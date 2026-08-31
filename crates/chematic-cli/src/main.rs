@@ -148,6 +148,12 @@ enum Command {
         #[arg(long, default_value = "ecfp4")]
         algorithm: String,
     },
+    /// Search one tab-separated SMILES/SMARTS pair per line.
+    BatchSubstructure {
+        /// Read tab-separated pairs from this file instead of stdin.
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+    },
 }
 
 fn format_name(format: &str) -> Option<String> {
@@ -676,6 +682,48 @@ fn batch_similarity_json(text: &str, algorithm: &str) -> Result<String, String> 
     .to_string())
 }
 
+fn batch_substructure_json(text: &str) -> Result<String, String> {
+    let lines: Vec<&str> = text
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .collect();
+    let mut records = Vec::with_capacity(lines.len());
+    let mut valid_count = 0usize;
+    for (input_index, line) in lines.iter().enumerate() {
+        let result = line
+            .split_once('\t')
+            .ok_or_else(|| "expected SMILES<TAB>SMARTS".to_string())
+            .and_then(|(smiles, smarts)| substructure_json(smiles.trim(), smarts.trim()))
+            .and_then(|json| {
+                serde_json::from_str::<serde_json::Value>(&json).map_err(|e| e.to_string())
+            });
+        match result {
+            Ok(substructure) => {
+                valid_count += 1;
+                records.push(serde_json::json!({
+                    "input_index": input_index,
+                    "input": line,
+                    "substructure": substructure,
+                    "error": null,
+                }));
+            }
+            Err(error) => records.push(serde_json::json!({
+                "input_index": input_index,
+                "input": line,
+                "substructure": null,
+                "error": error,
+            })),
+        }
+    }
+    Ok(serde_json::json!({
+        "records": records,
+        "valid_count": valid_count,
+        "error_count": lines.len() - valid_count,
+    })
+    .to_string())
+}
+
 fn run(cli: Cli) -> Result<(), String> {
     match cli.command {
         Command::Convert {
@@ -774,6 +822,11 @@ fn run(cli: Cli) -> Result<(), String> {
             let json = batch_similarity_json(&text, &algorithm)?;
             write_output(None, &format!("{json}\n"))
         }
+        Command::BatchSubstructure { input } => {
+            let text = read_input(input.as_ref())?;
+            let json = batch_substructure_json(&text)?;
+            write_output(None, &format!("{json}\n"))
+        }
     }
 }
 
@@ -788,10 +841,10 @@ fn main() {
 mod tests {
     use super::{
         batch_descriptors_json, batch_fingerprints_json, batch_report_json, batch_similarity_json,
-        batch_standardize_json, convert_text, descriptors_json, fingerprint_json, parse_json,
-        reaction_balance_json, reaction_fingerprint_json, reaction_json, reaction_match_json,
-        reaction_similarity_json, report_json, similarity_json, standardize_json,
-        substructure_json,
+        batch_standardize_json, batch_substructure_json, convert_text, descriptors_json,
+        fingerprint_json, parse_json, reaction_balance_json, reaction_fingerprint_json,
+        reaction_json, reaction_match_json, reaction_similarity_json, report_json, similarity_json,
+        standardize_json, substructure_json,
     };
 
     #[test]
@@ -1100,5 +1153,16 @@ mod tests {
         assert_eq!(json["records"][0]["similarity"]["similarity"], 1.0);
         assert!(json["records"][1]["error"].as_str().is_some());
         assert!(json["records"][2]["error"].as_str().is_some());
+    }
+
+    #[test]
+    fn batch_substructure_processes_tsv_queries_and_retains_errors() {
+        let json: serde_json::Value =
+            serde_json::from_str(&batch_substructure_json("c1ccccc1\tc\nCCO\t[\n").unwrap())
+                .unwrap();
+        assert_eq!(json["valid_count"], 1);
+        assert_eq!(json["error_count"], 1);
+        assert_eq!(json["records"][0]["substructure"]["match_count"], 6);
+        assert!(json["records"][1]["error"].as_str().is_some());
     }
 }

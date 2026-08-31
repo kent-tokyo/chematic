@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.63.0] - 2026-08-31
+
+### v0.63.0 — batch substructure CLI workflow
+
+- Added `chematic batch-substructure` for tab-separated SMILES/SMARTS pairs
+  from stdin or a file.
+- Added match counts, query-order atom mappings, input-order records, and
+  retained per-record errors for invalid queries or molecules.
+- Added CLI regression coverage and documented the TSV input contract.
+
 ## [0.62.0] - 2026-08-31
 
 ### v0.62.0 — batch similarity CLI workflow
