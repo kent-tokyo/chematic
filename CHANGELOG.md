@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.69.0] - 2026-08-31
+
+### v0.69.0 — bounded SMILES parsing
+
+- Added `SmilesParseLimits` and `parse_with_limits` for input-byte, atom, and
+  bond limits on untrusted SMILES.
+- Made the default `parse` path use finite safe limits and added typed resource
+  limit errors with regression coverage.
+
 ## [0.68.0] - 2026-08-31
 
 ### v0.68.0 — bounded format conversion input

@@ -23,6 +23,58 @@ pub use chematic_core::Molecule;
 
 /// Parse an OpenSMILES string into a [`Molecule`].
 pub fn parse(input: &str) -> Result<Molecule, SmilesError> {
+    parse_with_limits(input, &SmilesParseLimits::default())
+}
+
+/// Resource limits for parsing untrusted SMILES.
+#[derive(Debug, Clone, Copy)]
+pub struct SmilesParseLimits {
+    /// Maximum UTF-8 input size in bytes.
+    pub max_input_bytes: usize,
+    /// Maximum atoms in the parsed molecule.
+    pub max_atoms: usize,
+    /// Maximum bonds in the parsed molecule.
+    pub max_bonds: usize,
+}
+
+impl Default for SmilesParseLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: 16 * 1024 * 1024,
+            max_atoms: MAX_ATOMS,
+            max_bonds: 200_000,
+        }
+    }
+}
+
+/// Parse an OpenSMILES string while enforcing input and graph-size limits.
+pub fn parse_with_limits(input: &str, limits: &SmilesParseLimits) -> Result<Molecule, SmilesError> {
+    if input.len() > limits.max_input_bytes {
+        return Err(SmilesError::ResourceLimit {
+            resource: "input bytes",
+            actual: input.len(),
+            limit: limits.max_input_bytes,
+        });
+    }
+    let mol = parse_unbounded(input)?;
+    if mol.atom_count() > limits.max_atoms {
+        return Err(SmilesError::ResourceLimit {
+            resource: "atoms",
+            actual: mol.atom_count(),
+            limit: limits.max_atoms,
+        });
+    }
+    if mol.bond_count() > limits.max_bonds {
+        return Err(SmilesError::ResourceLimit {
+            resource: "bonds",
+            actual: mol.bond_count(),
+            limit: limits.max_bonds,
+        });
+    }
+    Ok(mol)
+}
+
+fn parse_unbounded(input: &str) -> Result<Molecule, SmilesError> {
     let input = input.trim();
     if input.is_empty() {
         return Err(SmilesError::EmptyInput);
@@ -1290,6 +1342,45 @@ mod tests {
         assert!(matches!(
             parse("[C@"),
             Err(SmilesError::InvalidBracketAtom { .. })
+        ));
+    }
+
+    #[test]
+    fn parse_with_limits_reports_input_and_graph_limits() {
+        let limits = SmilesParseLimits {
+            max_input_bytes: 2,
+            ..SmilesParseLimits::default()
+        };
+        assert!(matches!(
+            parse_with_limits("CCO", &limits),
+            Err(SmilesError::ResourceLimit {
+                resource: "input bytes",
+                ..
+            })
+        ));
+
+        let limits = SmilesParseLimits {
+            max_atoms: 2,
+            ..SmilesParseLimits::default()
+        };
+        assert!(matches!(
+            parse_with_limits("CCO", &limits),
+            Err(SmilesError::ResourceLimit {
+                resource: "atoms",
+                ..
+            })
+        ));
+
+        let limits = SmilesParseLimits {
+            max_bonds: 1,
+            ..SmilesParseLimits::default()
+        };
+        assert!(matches!(
+            parse_with_limits("CCC", &limits),
+            Err(SmilesError::ResourceLimit {
+                resource: "bonds",
+                ..
+            })
         ));
     }
 }

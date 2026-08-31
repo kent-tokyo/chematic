@@ -96,7 +96,9 @@ Notes on the cells above that need qualification:
   are not preserved). `canonical_smiles()` is **not** guaranteed to be a safe
   dedup/cache key today — see the Known Limitations section below.
 - **Lossy operations**: none inherent to the format itself.
-- **Parse limits**: no `*ParseLimits` type exists for SMILES.
+- **Parse limits**: `SmilesParseLimits` controls input bytes, atom count, and
+  bond count; `parse` applies finite safe defaults and
+  `parse_with_limits` accepts a stricter policy.
 - **Known limitations**: `canonical_smiles()` has a documented residual —
   isolated/simple E/Z double bonds can still produce two different, both-valid
   canonical strings for the same molecule in ~1 in 18 stereo-bearing

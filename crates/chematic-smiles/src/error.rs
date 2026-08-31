@@ -5,6 +5,12 @@ use core::fmt;
 /// Errors produced during SMILES parsing.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SmilesError {
+    /// The input or parsed graph exceeded a configured resource limit.
+    ResourceLimit {
+        resource: &'static str,
+        actual: usize,
+        limit: usize,
+    },
     /// Input string ended unexpectedly.
     UnexpectedEnd { pos: usize },
     /// Unrecognised element symbol inside a bracket atom.
@@ -34,6 +40,11 @@ pub enum SmilesError {
 impl fmt::Display for SmilesError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::ResourceLimit {
+                resource,
+                actual,
+                limit,
+            } => write!(f, "SMILES {resource} exceeds limit {limit} (got {actual})"),
             Self::UnexpectedEnd { pos } => write!(f, "unexpected end of input at position {pos}"),
             Self::UnknownElement { symbol, pos } => {
                 write!(f, "unknown element '{symbol}' at position {pos}")
