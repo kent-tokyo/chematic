@@ -140,7 +140,7 @@ pub use record::MoleculeRecord;
 pub use rxn::{RxnParseError, parse_rxn_file, write_rxn_file};
 pub use sdf::{
     ConformerEnsemble, SdfFileReader, SdfParseLimits, SdfReader, SdfRecord, SdfRecordReader,
-    read_sdf_conformer_ensembles,
+    parse_sdf_with_limits, read_sdf_conformer_ensembles,
 };
 pub use smiles_table::{
     Delimiter, SmilesReaderOptions, SmilesRecordReader, SmilesRecordWriter, SmilesTableError,

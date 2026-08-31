@@ -88,7 +88,22 @@ impl<'a> Iterator for SdfReader<'a> {
 ///
 /// Stops and returns an error on the first parse failure.
 pub fn parse_sdf(input: &str) -> Result<Vec<(Molecule, MolMetadata)>, MolParseError> {
-    SdfReader::new(input).collect()
+    parse_sdf_with_limits(input, SdfParseLimits::default())
+}
+
+/// Parse all molecules from an SDF string with explicit resource limits.
+///
+/// This uses the same bounded record path as [`SdfFileReader`], while keeping
+/// the compact `(Molecule, MolMetadata)` result of [`parse_sdf`].
+pub fn parse_sdf_with_limits(
+    input: &str,
+    limits: SdfParseLimits,
+) -> Result<Vec<(Molecule, MolMetadata)>, MolParseError> {
+    use std::io::{BufReader, Cursor};
+
+    SdfFileReader::with_limits(BufReader::new(Cursor::new(input.as_bytes())), limits)
+        .map(|result| result.map(|record| (record.mol, record.meta)))
+        .collect()
 }
 
 // ---------------------------------------------------------------------------
@@ -388,6 +403,8 @@ pub struct SdfParseLimits {
     pub max_input_bytes: usize,
     /// Maximum bytes in one MOL/data record.
     pub max_record_bytes: usize,
+    /// Maximum bytes in one physical input line.
+    pub max_line_bytes: usize,
     /// Maximum non-empty records yielded.
     pub max_records: usize,
 }
@@ -397,6 +414,7 @@ impl Default for SdfParseLimits {
         Self {
             max_input_bytes: 1 << 30,
             max_record_bytes: 16 << 20,
+            max_line_bytes: 16 << 20,
             max_records: 100_000,
         }
     }
@@ -448,6 +466,14 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
                     break;
                 }
                 Ok(_) => {
+                    if line.len() > self.limits.max_line_bytes {
+                        self.done = true;
+                        return Some(Err(MolParseError::ResourceLimit {
+                            resource: "line bytes",
+                            actual: line.len(),
+                            limit: self.limits.max_line_bytes,
+                        }));
+                    }
                     self.bytes_read = self.bytes_read.saturating_add(line.len());
                     if self.bytes_read > self.limits.max_input_bytes {
                         self.done = true;
@@ -694,6 +720,56 @@ $$$$
             reader.next().unwrap(),
             Err(MolParseError::ResourceLimit {
                 resource: "records",
+                ..
+            })
+        ));
+
+        let limits = SdfParseLimits {
+            max_line_bytes: 8,
+            ..SdfParseLimits::default()
+        };
+        let result =
+            SdfFileReader::with_limits(BufReader::new(Cursor::new(MOL_A.as_bytes())), limits)
+                .next()
+                .unwrap();
+        assert!(matches!(
+            result,
+            Err(MolParseError::ResourceLimit {
+                resource: "line bytes",
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn test_parse_sdf_with_limits_uses_bounded_record_path() {
+        let input = two_mol_sdf();
+        let result = parse_sdf_with_limits(
+            &input,
+            SdfParseLimits {
+                max_records: 1,
+                ..SdfParseLimits::default()
+            },
+        );
+        assert!(matches!(
+            result,
+            Err(MolParseError::ResourceLimit {
+                resource: "records",
+                ..
+            })
+        ));
+
+        let result = parse_sdf_with_limits(
+            &input,
+            SdfParseLimits {
+                max_record_bytes: 8,
+                ..SdfParseLimits::default()
+            },
+        );
+        assert!(matches!(
+            result,
+            Err(MolParseError::ResourceLimit {
+                resource: "record bytes",
                 ..
             })
         ));

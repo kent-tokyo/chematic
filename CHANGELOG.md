@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.87.0] - 2026-08-31
+
+### v0.87.0 — bounded SDF convenience parsing
+
+- Added `parse_sdf_with_limits` and finite-default limits to the in-memory SDF
+  parser path.
+- Added physical line-size enforcement to `SdfFileReader` and documented the
+  shared input, record, line, and record-count policy.
+
 ## [0.86.0] - 2026-08-31
 
 ### v0.86.0 — bounded ORCA output input

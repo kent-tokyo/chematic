@@ -196,9 +196,10 @@ Notes on the cells above that need qualification:
   `write_sdf_record_with_conformer_checked`. Do not describe MOL/SDF writing
   in general as "square-planar supported" — the plain `write_mol`/`write_sdf`
   path does not perceive or emit it.
-- **Parse limits**: `SdfParseLimits` bounds streaming input bytes, individual
-  record bytes, and yielded record count; use `SdfFileReader::with_limits` for
-  an explicit policy. The in-memory readers remain intentionally separate.
+- **Parse limits**: `SdfParseLimits` bounds input bytes, physical line bytes,
+  individual record bytes, and yielded record count; use
+  `SdfFileReader::with_limits` or `parse_sdf_with_limits` for an explicit
+  policy. The existing `parse_sdf` uses finite defaults.
 
 ### PDB
 
