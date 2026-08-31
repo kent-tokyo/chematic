@@ -244,7 +244,10 @@ disambiguate by crate, not by name alone:
   produced on that path).
 - **Round-trip**: not characterized beyond the two-crate split above.
 - **Lossy operations**: none named.
-- **Parse limits**: no `*ParseLimits` type exists for either crate's XYZ path.
+- **Parse limits**: `XyzParseLimits` bounds input bytes, atoms per frame, frame
+  count, and physical line length. `parse_xyz_with_limits`,
+  `parse_xyz_all_with_limits`, and `parse_extxyz_with_limits` accept an
+  explicit policy; default single/all-frame parsers use finite defaults.
 
 ### QCSchema
 

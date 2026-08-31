@@ -171,6 +171,12 @@ impl XyzFrame {
 /// Errors that can occur while parsing an XYZ frame.
 #[derive(Debug, Clone, PartialEq)]
 pub enum XyzError {
+    /// A configured input, frame, or line limit was exceeded.
+    ResourceLimit {
+        resource: &'static str,
+        actual: usize,
+        limit: usize,
+    },
     /// The atom-count line (line 1) is missing or not a valid non-negative integer.
     InvalidCountLine { line: usize, raw: String },
     /// The comment line (line 2) is missing (input ended after the count line).
@@ -235,6 +241,11 @@ pub enum XyzError {
 impl std::fmt::Display for XyzError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::ResourceLimit {
+                resource,
+                actual,
+                limit,
+            } => write!(f, "XYZ {resource} exceeds limit {limit} (got {actual})"),
             Self::InvalidCountLine { line, raw } => {
                 write!(f, "invalid atom-count line {line}: '{raw}'")
             }
@@ -301,11 +312,87 @@ impl std::fmt::Display for XyzError {
 
 impl std::error::Error for XyzError {}
 
+/// Resource limits for XYZ and Extended XYZ parsing.
+#[derive(Debug, Clone, Copy)]
+pub struct XyzParseLimits {
+    /// Maximum input size in bytes.
+    pub max_input_bytes: usize,
+    /// Maximum atoms declared in one frame.
+    pub max_atoms_per_frame: usize,
+    /// Maximum number of frames in an all-frames parse.
+    pub max_frames: usize,
+    /// Maximum physical line size in bytes.
+    pub max_line_bytes: usize,
+}
+
+impl Default for XyzParseLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: 1 << 30,
+            max_atoms_per_frame: 1_000_000,
+            max_frames: 100_000,
+            max_line_bytes: 16 << 20,
+        }
+    }
+}
+
+fn validate_xyz_limits(text: &str, limits: &XyzParseLimits) -> Result<(), XyzError> {
+    if text.len() > limits.max_input_bytes {
+        return Err(XyzError::ResourceLimit {
+            resource: "input bytes",
+            actual: text.len(),
+            limit: limits.max_input_bytes,
+        });
+    }
+    for line in text.lines() {
+        if line.len() > limits.max_line_bytes {
+            return Err(XyzError::ResourceLimit {
+                resource: "line bytes",
+                actual: line.len(),
+                limit: limits.max_line_bytes,
+            });
+        }
+    }
+    let mut lines = text.lines();
+    let mut frames = 0usize;
+    while let Some(count_line) = lines.next() {
+        let Ok(count) = count_line.trim().parse::<usize>() else {
+            break;
+        };
+        frames = frames.saturating_add(1);
+        if frames > limits.max_frames {
+            return Err(XyzError::ResourceLimit {
+                resource: "frames",
+                actual: frames,
+                limit: limits.max_frames,
+            });
+        }
+        if count > limits.max_atoms_per_frame {
+            return Err(XyzError::ResourceLimit {
+                resource: "atoms per frame",
+                actual: count,
+                limit: limits.max_atoms_per_frame,
+            });
+        }
+        let _ = lines.next();
+        for _ in 0..count {
+            let _ = lines.next();
+        }
+    }
+    Ok(())
+}
+
 /// Parse a single XYZ frame from the start of `text`. Trailing content
 /// after the frame (e.g. further frames in a multi-frame trajectory file)
 /// is ignored -- use [`XyzReader`] to iterate every frame in a multi-frame
 /// file.
 pub fn parse_xyz(text: &str) -> Result<XyzFrame, XyzError> {
+    parse_xyz_with_limits(text, &XyzParseLimits::default())
+}
+
+/// Parse a single XYZ frame while enforcing resource limits.
+pub fn parse_xyz_with_limits(text: &str, limits: &XyzParseLimits) -> Result<XyzFrame, XyzError> {
+    validate_xyz_limits(text, limits)?;
     parse_one_frame(text).map(|(frame, _rest)| frame)
 }
 
@@ -455,6 +542,15 @@ impl<'a> Iterator for XyzReader<'a> {
 /// Parse every frame in a multi-frame XYZ string. Stops and returns an
 /// error on the first parse failure.
 pub fn parse_xyz_all(input: &str) -> Result<Vec<XyzFrame>, XyzError> {
+    parse_xyz_all_with_limits(input, &XyzParseLimits::default())
+}
+
+/// Parse every XYZ frame while enforcing resource limits.
+pub fn parse_xyz_all_with_limits(
+    input: &str,
+    limits: &XyzParseLimits,
+) -> Result<Vec<XyzFrame>, XyzError> {
+    validate_xyz_limits(input, limits)?;
     XyzReader::new(input).collect()
 }
 
@@ -836,6 +932,12 @@ fn parse_one_frame_ext(text: &str) -> Result<(XyzFrame, &str), XyzError> {
 /// module-level "Extended XYZ" docs for what `Lattice=`/`Properties=`
 /// support covers.
 pub fn parse_extxyz(text: &str) -> Result<XyzFrame, XyzError> {
+    parse_extxyz_with_limits(text, &XyzParseLimits::default())
+}
+
+/// Parse a single Extended XYZ frame while enforcing resource limits.
+pub fn parse_extxyz_with_limits(text: &str, limits: &XyzParseLimits) -> Result<XyzFrame, XyzError> {
+    validate_xyz_limits(text, limits)?;
     parse_one_frame_ext(text).map(|(frame, _rest)| frame)
 }
 
@@ -879,6 +981,7 @@ impl<'a> Iterator for ExtxyzReader<'a> {
 /// Parse every frame in a multi-frame extxyz string. Stops and returns an
 /// error on the first parse failure.
 pub fn parse_extxyz_all(input: &str) -> Result<Vec<XyzFrame>, XyzError> {
+    validate_xyz_limits(input, &XyzParseLimits::default())?;
     ExtxyzReader::new(input).collect()
 }
 
@@ -1606,5 +1709,57 @@ mod tests {
         let written = write_extxyz(&frame).unwrap();
         let reparsed = parse_extxyz(&written).unwrap();
         assert_eq!(reparsed.info, frame.info);
+    }
+
+    #[test]
+    fn xyz_parse_limits_reject_input_atoms_lines_and_frames() {
+        let limits = XyzParseLimits {
+            max_input_bytes: 2,
+            ..XyzParseLimits::default()
+        };
+        assert!(matches!(
+            parse_xyz_with_limits(WATER_XYZ, &limits),
+            Err(XyzError::ResourceLimit {
+                resource: "input bytes",
+                ..
+            })
+        ));
+
+        let limits = XyzParseLimits {
+            max_atoms_per_frame: 1,
+            ..XyzParseLimits::default()
+        };
+        assert!(matches!(
+            parse_xyz_with_limits(WATER_XYZ, &limits),
+            Err(XyzError::ResourceLimit {
+                resource: "atoms per frame",
+                ..
+            })
+        ));
+
+        let limits = XyzParseLimits {
+            max_line_bytes: 2,
+            ..XyzParseLimits::default()
+        };
+        assert!(matches!(
+            parse_extxyz_with_limits(WATER_XYZ, &limits),
+            Err(XyzError::ResourceLimit {
+                resource: "line bytes",
+                ..
+            })
+        ));
+
+        let limits = XyzParseLimits {
+            max_frames: 1,
+            ..XyzParseLimits::default()
+        };
+        let trajectory = format!("{WATER_XYZ}{WATER_XYZ}");
+        assert!(matches!(
+            parse_xyz_all_with_limits(&trajectory, &limits),
+            Err(XyzError::ResourceLimit {
+                resource: "frames",
+                ..
+            })
+        ));
     }
 }

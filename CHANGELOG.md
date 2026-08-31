@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.71.0] - 2026-08-31
+
+### v0.71.0 — bounded XYZ input
+
+- Added `XyzParseLimits` for input bytes, atoms per frame, frame count, and
+  physical line length.
+- Added bounded single-frame and all-frame XYZ/Extended XYZ parse APIs with
+  typed resource-limit errors and regression coverage.
+
 ## [0.70.0] - 2026-08-31
 
 ### v0.70.0 — bounded streaming SDF input
