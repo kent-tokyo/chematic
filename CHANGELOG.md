@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.76.0] - 2026-08-31
+
+### v0.76.0 — bounded LAMMPS data input
+
+- Added `LammpsDataParseLimits` and `parse_lammps_data_with_limits` for input
+  bytes, physical line length, header counts, section rows, opaque section
+  bytes, and section count.
+- Added typed resource-limit errors and regression coverage while preserving
+  the existing `parse_lammps_data` entry point with finite defaults.
+
 ## [0.75.0] - 2026-08-31
 
 ### v0.75.0 — bounded LAMMPS dump input

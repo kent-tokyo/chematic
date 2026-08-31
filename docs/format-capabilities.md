@@ -342,7 +342,7 @@ disambiguate by crate, not by name alone:
 
 ### LAMMPS data
 
-- **Rust**: `chematic_mol::{parse_lammps_data, write_lammps_data, LammpsData, LammpsDataError, LammpsAtom, LammpsAtomStyle, LammpsBond, LammpsBox, LammpsMass, LammpsVelocity}`.
+- **Rust**: `chematic_mol::{parse_lammps_data, parse_lammps_data_with_limits, write_lammps_data, LammpsData, LammpsDataError, LammpsDataParseLimits, LammpsAtom, LammpsAtomStyle, LammpsBond, LammpsBox, LammpsMass, LammpsVelocity}`.
 - **Python**: `parse_lammps_data`, `write_lammps_data` (plain dict).
 - **WASM**: `lammps_data_to_json`, `write_lammps_data_json`.
 - **`atom_style` handling**: `atom_style` **cannot be inferred from the
@@ -369,7 +369,10 @@ disambiguate by crate, not by name alone:
 - **Round-trip**: opaque sections round-trip verbatim; typed sections
   round-trip through the typed representation (not guaranteed
   byte-identical, e.g. whitespace).
-- **Parse limits**: no `LammpsParseLimits` type exists.
+- **Parse limits**: `LammpsDataParseLimits` bounds input bytes, physical line
+  length, header counts, typed-section rows, opaque-section bytes, and section
+  count. Use `parse_lammps_data_with_limits`; the existing parser uses finite
+  defaults.
 
 ### LAMMPS dump/trajectory
 

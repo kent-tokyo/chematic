@@ -72,8 +72,9 @@ pub use error::MolParseError as MolError;
 pub use gaussian::{GaussianError, GaussianLogResult, parse_gaussian_log, parse_gjf, write_gjf};
 pub use ket::{KetError, parse_ket, parse_ket_3d, write_ket, write_ket_3d};
 pub use lammps_data::{
-    LammpsAtom, LammpsAtomStyle, LammpsBond, LammpsBox, LammpsData, LammpsDataError, LammpsMass,
-    LammpsVelocity, parse_lammps_data, write_lammps_data,
+    LammpsAtom, LammpsAtomStyle, LammpsBond, LammpsBox, LammpsData, LammpsDataError,
+    LammpsDataParseLimits, LammpsMass, LammpsVelocity, parse_lammps_data,
+    parse_lammps_data_with_limits, write_lammps_data,
 };
 pub use lammps_dump::{
     LammpsDumpError, LammpsDumpFrame, LammpsDumpParseLimits, LammpsDumpReader, box_bounds_to_true,
