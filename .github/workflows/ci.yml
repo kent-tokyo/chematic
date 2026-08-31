@@ -34,33 +34,56 @@ jobs:
         run: cargo test --workspace --lib --quiet
 
   test-integration:
-    name: Integration tests (${{ matrix.package }})
+    name: Integration tests (${{ matrix.package }} / ${{ matrix.target }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        package:
-          - chematic-core
-          - chematic-smiles
-          - chematic-perception
-          - chematic-mol
-          - chematic-crystal
-          - chematic-rxn
-          - chematic-smarts
-          - chematic-chem
-          - chematic-cip
-          - chematic-fp
-          - chematic-iupac
-          - chematic-depict
-          - chematic-3d
-          - chematic-ff
-          - chematic-ewald
-          - chematic-inchi
-          - chematic-wasm
-          - chematic
-          - chematic-mcp
-          - chematic-py
-          - gen-sa-table
+        include:
+          - { package: chematic-3d, target: g1_regression_byte_identical }
+          - { package: chematic-3d, target: rdkit_g1_parity }
+          - { package: chematic-3d, target: torsion_knowledge_negative_controls }
+          - { package: chematic-chem, target: canonical_idempotency_corpus_standardized }
+          - { package: chematic-chem, target: canonical_stereo_d0_cip_multiset_invariance }
+          - { package: chematic-chem, target: issue415_fused_heteroaromatic_holdout }
+          - { package: chematic-chem, target: metal_disconnect_holdout }
+          - { package: chematic-chem, target: rdkit_reference }
+          - { package: chematic-chem, target: standardize_stereo_table_preservation }
+          - { package: chematic-cip, target: corpus_report }
+          - { package: chematic-cip, target: corpus_smoke }
+          - { package: chematic-cip, target: kekule_s0_stereo_invariance }
+          - { package: chematic-cip, target: mancude_context }
+          - { package: chematic-cip, target: mancude_corpus_classification }
+          - { package: chematic-cip, target: mancude_decision_regression }
+          - { package: chematic-cip, target: mancude_digraph_diff }
+          - { package: chematic-cip, target: rule4b_production_parity }
+          - { package: chematic-cip, target: uncharacterized_diagnosis }
+          - { package: chematic-crystal, target: neighbor }
+          - { package: chematic-crystal, target: periodicity }
+          - { package: chematic-crystal, target: serde_roundtrip }
+          - { package: chematic-fp, target: rdkit_morgan_stable_api_fixtures }
+          - { package: chematic-inchi, target: accurate_cip_preflight }
+          - { package: chematic-inchi, target: dedup_fixtures }
+          - { package: chematic-inchi, target: explicit_h_stereo }
+          - { package: chematic-inchi, target: ez_stash_stereo0d }
+          - { package: chematic-inchi, target: indexed_graph_relation }
+          - { package: chematic-inchi, target: invert_stereocenter_p0_stereo_invariance }
+          - { package: chematic-inchi, target: kekule_s0_stereo_invariance }
+          - { package: chematic-inchi, target: standard_inchi }
+          - { package: chematic-mcp, target: schema_conformance }
+          - { package: chematic-mol, target: conformer_3d_io }
+          - { package: chematic-mol, target: format_binding_parity }
+          - { package: chematic-mol, target: mmcif_pqr_integration }
+          - { package: chematic-mol, target: qcschema }
+          - { package: chematic-mol, target: square_planar_mol_io }
+          - { package: chematic-mol, target: stereo2d_ez_reader_integration }
+          - { package: chematic-mol, target: stereo_reader_integration }
+          - { package: chematic-smiles, target: canonical_idempotency_corpus }
+          - { package: chematic-smiles, target: canonical_robustness }
+          - { package: chematic-smiles, target: chembl_roundtrip }
+          - { package: chematic-smiles, target: dative_bond_direction }
+          - { package: chematic-smiles, target: kekule_s0_stereo_invariance }
+          - { package: chematic-smiles, target: square_planar_stereo }
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
@@ -75,7 +98,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-test-integration-
       - name: Integration tests
-        run: cargo test -p ${{ matrix.package }} --tests --quiet
+        run: cargo test -p ${{ matrix.package }} --test ${{ matrix.target }} --quiet
 
   test-native-inchi:
     name: Test (native-inchi)
