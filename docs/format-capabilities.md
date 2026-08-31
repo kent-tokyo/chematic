@@ -13,6 +13,20 @@ mapping (function names, return shapes, `None`/`null`/`Err` divergences).
 This page describes what exists today. It does not claim "full support" for
 any format — each row states exactly what is implemented and names the gaps.
 
+### Common format conversion bridge
+
+The Python package provides `convert_format(text, input_format, output_format)`
+for explicit conversion between the most interoperable molecular formats:
+SMILES, MOL/SDF (V2000), MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, CDXML,
+PDB, XYZ, PDBQT, and Gaussian input. Extensions are accepted as aliases (for
+example `.mol2`, `smi`, and `com`). PDB/XYZ/PDBQT output requires 3D
+coordinates; graph-only conversions do not claim to preserve format-specific
+metadata. Unsupported formats fail before conversion with a `ValueError`.
+
+This is intentionally a bounded interoperability layer, not an Open Babel
+replacement. The format-specific APIs remain available when coordinates,
+metadata, multiple records, or domain-specific options must be preserved.
+
 ---
 
 ## Support matrix
