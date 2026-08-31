@@ -65,6 +65,11 @@ enum Command {
         /// SMARTS query.
         smarts: String,
     },
+    /// Standardize a SMILES molecule and emit an auditable JSON report.
+    Standardize {
+        /// SMILES to standardize.
+        smiles: String,
+    },
 }
 
 fn format_name(format: &str) -> Option<String> {
@@ -239,6 +244,68 @@ fn substructure_json(smiles: &str, smarts: &str) -> Result<String, String> {
     .to_string())
 }
 
+fn standardize_json(smiles: &str) -> Result<String, String> {
+    let mol = chematic_smiles::parse(smiles).map_err(|e| e.to_string())?;
+    let input_smiles = chematic_smiles::canonical_smiles(&mol);
+    let (standardized, report) = chematic_chem::StandardizationPipeline::default().run(&mol);
+    let output_smiles = chematic_smiles::canonical_smiles(&standardized);
+    let status = match report.status {
+        chematic_chem::PipelineStatus::Unchanged => "unchanged",
+        chematic_chem::PipelineStatus::Modified => "modified",
+        chematic_chem::PipelineStatus::CompletedWithWarnings => "completed_with_warnings",
+    };
+    let steps: Vec<_> = report
+        .steps
+        .iter()
+        .map(|step| {
+            serde_json::json!({
+                "step": step.step.as_str(),
+                "enabled": step.enabled,
+                "changed": step.changed,
+                "before": {
+                    "atoms": step.before.atoms,
+                    "bonds": step.before.bonds,
+                    "hash": step.before.hash,
+                },
+                "after": {
+                    "atoms": step.after.atoms,
+                    "bonds": step.after.bonds,
+                    "hash": step.after.hash,
+                },
+            })
+        })
+        .collect();
+    let warnings: Vec<_> = report
+        .warnings
+        .iter()
+        .map(|warning| {
+            serde_json::json!({
+                "code": warning.code,
+                "message": warning.message,
+            })
+        })
+        .collect();
+    Ok(serde_json::json!({
+        "input_smiles": input_smiles,
+        "output_smiles": output_smiles,
+        "changed": report.changed(),
+        "status": status,
+        "input": {
+            "atoms": report.input.atoms,
+            "bonds": report.input.bonds,
+            "hash": report.input.hash,
+        },
+        "output": {
+            "atoms": report.output.atoms,
+            "bonds": report.output.bonds,
+            "hash": report.output.hash,
+        },
+        "steps": steps,
+        "warnings": warnings,
+    })
+    .to_string())
+}
+
 fn run(cli: Cli) -> Result<(), String> {
     match cli.command {
         Command::Convert {
@@ -271,6 +338,10 @@ fn run(cli: Cli) -> Result<(), String> {
             let json = substructure_json(&smiles, &smarts)?;
             write_output(None, &format!("{json}\n"))
         }
+        Command::Standardize { smiles } => {
+            let json = standardize_json(&smiles)?;
+            write_output(None, &format!("{json}\n"))
+        }
     }
 }
 
@@ -284,7 +355,8 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::{
-        convert_text, descriptors_json, fingerprint_json, similarity_json, substructure_json,
+        convert_text, descriptors_json, fingerprint_json, similarity_json, standardize_json,
+        substructure_json,
     };
 
     #[test]
@@ -376,5 +448,23 @@ mod tests {
                 .unwrap_err()
                 .contains("SMARTS")
         );
+    }
+
+    #[test]
+    fn standardize_reports_pipeline_and_canonical_output() {
+        let json: serde_json::Value =
+            serde_json::from_str(&standardize_json("C[NH3+]").unwrap()).unwrap();
+        assert_eq!(json["input_smiles"], "C[NH3+]");
+        assert_eq!(json["status"], "modified");
+        assert!(json["changed"].as_bool().unwrap());
+        assert_eq!(json["steps"].as_array().unwrap().len(), 6);
+        assert!(
+            json["steps"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|step| step["step"] == "neutralize_charges" && step["changed"] == true)
+        );
+        assert!(json["warnings"].is_array());
     }
 }

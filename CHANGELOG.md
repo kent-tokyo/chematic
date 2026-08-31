@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.50.0] - 2026-08-31
+
+### v0.50.0 — auditable standardization CLI workflow
+
+- Added `chematic standardize <SMILES>` with canonical input/output SMILES and
+  a machine-readable audit of every standardization stage.
+- Included per-stage change flags, before/after structural snapshots, stable
+  status values, and explicit warning records for inspectable normalization.
+- Added CLI regression coverage and documented the standardization contract.
+
 ## [0.49.0] - 2026-08-31
 
 ### v0.49.0 — SMARTS substructure CLI workflow

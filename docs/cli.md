@@ -43,3 +43,13 @@ similarity. It accepts the same `ecfp4`, `ecfp6`, and `maccs` algorithms as
 `substructure <SMILES> <SMARTS>` emits canonical SMILES, the query, match
 count, and query-order atom-index mappings as JSON. Invalid SMARTS is reported
 as a command error.
+
+`standardize <SMILES>` applies the default standardization pipeline and emits
+the canonical input and output SMILES plus an audit report. The report includes
+the overall status, whether the structure changed, each pipeline stage's
+enabled/changed flags and before/after snapshots, and machine-readable
+warnings. This makes normalization decisions inspectable in shell pipelines.
+
+```sh
+chematic standardize 'C[NH3+]'
+```
