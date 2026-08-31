@@ -165,3 +165,11 @@ SMARTS or molecules remain as per-record errors.
 ```sh
 printf 'c1ccccc1\tc\nCCO\t[\n' | chematic batch-substructure
 ```
+
+`batch-reactions` processes one reaction SMILES per line and returns normalized
+reaction records with component counts and reaction-center summaries. Invalid
+reaction lines remain as per-record errors in the manifest.
+
+```sh
+printf 'CCO>>CCO\nCCO\n' | chematic batch-reactions
+```

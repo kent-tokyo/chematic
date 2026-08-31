@@ -154,6 +154,12 @@ enum Command {
         #[arg(short, long)]
         input: Option<PathBuf>,
     },
+    /// Process one reaction SMILES per line and retain per-record errors.
+    BatchReactions {
+        /// Read line-delimited reaction SMILES from this file instead of stdin.
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+    },
 }
 
 fn format_name(format: &str) -> Option<String> {
@@ -724,6 +730,43 @@ fn batch_substructure_json(text: &str) -> Result<String, String> {
     .to_string())
 }
 
+fn batch_reactions_json(text: &str) -> Result<String, String> {
+    let lines: Vec<&str> = text
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .collect();
+    let mut records = Vec::with_capacity(lines.len());
+    let mut valid_count = 0usize;
+    for (input_index, line) in lines.iter().enumerate() {
+        match reaction_json(line).and_then(|json| {
+            serde_json::from_str::<serde_json::Value>(&json).map_err(|e| e.to_string())
+        }) {
+            Ok(reaction) => {
+                valid_count += 1;
+                records.push(serde_json::json!({
+                    "input_index": input_index,
+                    "input": line,
+                    "reaction": reaction,
+                    "error": null,
+                }));
+            }
+            Err(error) => records.push(serde_json::json!({
+                "input_index": input_index,
+                "input": line,
+                "reaction": null,
+                "error": error,
+            })),
+        }
+    }
+    Ok(serde_json::json!({
+        "records": records,
+        "valid_count": valid_count,
+        "error_count": lines.len() - valid_count,
+    })
+    .to_string())
+}
+
 fn run(cli: Cli) -> Result<(), String> {
     match cli.command {
         Command::Convert {
@@ -827,6 +870,11 @@ fn run(cli: Cli) -> Result<(), String> {
             let json = batch_substructure_json(&text)?;
             write_output(None, &format!("{json}\n"))
         }
+        Command::BatchReactions { input } => {
+            let text = read_input(input.as_ref())?;
+            let json = batch_reactions_json(&text)?;
+            write_output(None, &format!("{json}\n"))
+        }
     }
 }
 
@@ -840,11 +888,11 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::{
-        batch_descriptors_json, batch_fingerprints_json, batch_report_json, batch_similarity_json,
-        batch_standardize_json, batch_substructure_json, convert_text, descriptors_json,
-        fingerprint_json, parse_json, reaction_balance_json, reaction_fingerprint_json,
-        reaction_json, reaction_match_json, reaction_similarity_json, report_json, similarity_json,
-        standardize_json, substructure_json,
+        batch_descriptors_json, batch_fingerprints_json, batch_reactions_json, batch_report_json,
+        batch_similarity_json, batch_standardize_json, batch_substructure_json, convert_text,
+        descriptors_json, fingerprint_json, parse_json, reaction_balance_json,
+        reaction_fingerprint_json, reaction_json, reaction_match_json, reaction_similarity_json,
+        report_json, similarity_json, standardize_json, substructure_json,
     };
 
     #[test]
@@ -1163,6 +1211,16 @@ mod tests {
         assert_eq!(json["valid_count"], 1);
         assert_eq!(json["error_count"], 1);
         assert_eq!(json["records"][0]["substructure"]["match_count"], 6);
+        assert!(json["records"][1]["error"].as_str().is_some());
+    }
+
+    #[test]
+    fn batch_reactions_returns_normalized_records_and_errors() {
+        let json: serde_json::Value =
+            serde_json::from_str(&batch_reactions_json("CCO>>CCO\nCCO\n").unwrap()).unwrap();
+        assert_eq!(json["valid_count"], 1);
+        assert_eq!(json["error_count"], 1);
+        assert_eq!(json["records"][0]["reaction"]["reactants"], 1);
         assert!(json["records"][1]["error"].as_str().is_some());
     }
 }

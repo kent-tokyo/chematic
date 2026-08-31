@@ -17,7 +17,7 @@ documentation = "https://docs.rs/chematic-ewald"
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "0.63.0" }
+chematic-core = { path = "../chematic-core", version = "0.64.0" }
 rustfft = "6.4"
 
 [dev-dependencies]

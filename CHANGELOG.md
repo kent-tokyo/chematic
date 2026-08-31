@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.64.0] - 2026-08-31
+
+### v0.64.0 — batch reaction CLI workflow
+
+- Added `chematic batch-reactions` for line-delimited reaction SMILES input
+  from stdin or a file.
+- Added normalized reaction records with component counts, mapped reaction
+  centers, input ordering, and retained per-record errors.
+- Added CLI regression coverage and documented the batch reaction contract.
+
 ## [0.63.0] - 2026-08-31
 
 ### v0.63.0 — batch substructure CLI workflow
