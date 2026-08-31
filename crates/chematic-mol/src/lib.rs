@@ -102,7 +102,9 @@ pub use mol3000::{
     parse_mol_v3000, parse_mol_v3000_with_coords, read_mol_v3000_with_diagnostics, write_mol_v3000,
     write_mol_v3000_with_conformer, write_mol_v3000_with_conformer_checked,
 };
-pub use moljson::{MolJsonError, parse_moljson, write_moljson};
+pub use moljson::{
+    MolJsonError, MolJsonParseLimits, parse_moljson, parse_moljson_with_limits, write_moljson,
+};
 pub use mrv::{
     MrvError, MrvParseLimits, MrvWriteOptions, parse_mrv, parse_mrv_with_limits, write_mrv,
 };

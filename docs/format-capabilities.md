@@ -150,6 +150,13 @@ Notes on the cells above that need qualification:
   length/count, XML element count, and atom/bond elements. The existing parser
   uses finite defaults.
 
+### MolJSON
+
+- **Rust**: `chematic_mol::{parse_moljson, parse_moljson_with_limits, write_moljson, MolJsonError, MolJsonParseLimits}`.
+- **Parse limits**: `MolJsonParseLimits` bounds JSON input bytes/depth,
+  array/string resources, and atom/bond records. The existing parser uses
+  finite defaults.
+
 ### MOL/SDF
 
 - **Rust read**: `parse_mol`, `parse_mol_with_coords`, `read_mol_with_diagnostics`, `parse_mol_v3000*`, `SdfReader`, `SdfFileReader`, `SdfRecordReader`.

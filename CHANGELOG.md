@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 No unreleased changes.
 
+## [0.82.0] - 2026-08-31
+
+### v0.82.0 — bounded MolJSON input
+
+- Added `MolJsonParseLimits` and `parse_moljson_with_limits` for JSON input
+  bytes/depth, array/string resources, and atom/bond records.
+- Added typed resource-limit errors and regression coverage while preserving
+  the existing `parse_moljson` entry point with finite defaults.
+
 ## [0.81.0] - 2026-08-31
 
 ### v0.81.0 — bounded CML input

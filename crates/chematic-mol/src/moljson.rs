@@ -36,14 +36,46 @@ use chematic_core::{
 };
 use std::collections::HashMap;
 
+/// Resource limits for MolJSON parsing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MolJsonParseLimits {
+    pub max_input_bytes: usize,
+    pub max_json_depth: usize,
+    pub max_array_items: usize,
+    pub max_string_bytes: usize,
+    pub max_atoms: usize,
+    pub max_bonds: usize,
+}
+
+impl Default for MolJsonParseLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: 256 * 1024 * 1024,
+            max_json_depth: 128,
+            max_array_items: 10_000_000,
+            max_string_bytes: 16 * 1024 * 1024,
+            max_atoms: 1_000_000,
+            max_bonds: 2_000_000,
+        }
+    }
+}
+
 // ─── Error ───────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MolJsonError {
     InvalidJson(String),
     UnknownElement(String),
-    InvalidBondRef { bond_id: String, ref_id: String },
+    InvalidBondRef {
+        bond_id: String,
+        ref_id: String,
+    },
     MissingField(&'static str),
+    ResourceLimit {
+        resource: &'static str,
+        actual: usize,
+        limit: usize,
+    },
 }
 
 impl std::fmt::Display for MolJsonError {
@@ -58,6 +90,14 @@ impl std::fmt::Display for MolJsonError {
             MolJsonError::MissingField(fld) => {
                 write!(f, "MolJSON: missing required field '{fld}'")
             }
+            MolJsonError::ResourceLimit {
+                resource,
+                actual,
+                limit,
+            } => write!(
+                f,
+                "MolJSON: {resource} has size {actual}, exceeding limit {limit}"
+            ),
         }
     }
 }
@@ -73,13 +113,36 @@ impl std::error::Error for MolJsonError {}
 /// The `hydrogens` field is informational and is ignored during parsing —
 /// implicit H counts are recomputed from valence rules by chematic-core.
 pub fn parse_moljson(input: &str) -> Result<Molecule, MolJsonError> {
+    parse_moljson_with_limits(input, &MolJsonParseLimits::default())
+}
+
+/// Parse MolJSON with explicit resource limits.
+pub fn parse_moljson_with_limits(
+    input: &str,
+    limits: &MolJsonParseLimits,
+) -> Result<Molecule, MolJsonError> {
+    if input.len() > limits.max_input_bytes {
+        return Err(MolJsonError::ResourceLimit {
+            resource: "input bytes",
+            actual: input.len(),
+            limit: limits.max_input_bytes,
+        });
+    }
     let v: serde_json::Value =
         serde_json::from_str(input).map_err(|e| MolJsonError::InvalidJson(e.to_string()))?;
+    check_json_limits(&v, "$", 0, limits)?;
 
     let atoms_arr = v
         .get("atoms")
         .and_then(|a| a.as_array())
         .ok_or(MolJsonError::MissingField("atoms"))?;
+    if atoms_arr.len() > limits.max_atoms {
+        return Err(MolJsonError::ResourceLimit {
+            resource: "atom records",
+            actual: atoms_arr.len(),
+            limit: limits.max_atoms,
+        });
+    }
 
     // ── Build atoms and id→AtomIdx map ──────────────────────────────────────
     let mut builder = MoleculeBuilder::new();
@@ -126,6 +189,13 @@ pub fn parse_moljson(input: &str) -> Result<Molecule, MolJsonError> {
 
     // ── Bonds ────────────────────────────────────────────────────────────────
     if let Some(bonds_arr) = v.get("bonds").and_then(|b| b.as_array()) {
+        if bonds_arr.len() > limits.max_bonds {
+            return Err(MolJsonError::ResourceLimit {
+                resource: "bond records",
+                actual: bonds_arr.len(),
+                limit: limits.max_bonds,
+            });
+        }
         for bond_val in bonds_arr {
             let bond_id = bond_val
                 .get("id")
@@ -178,6 +248,56 @@ pub fn parse_moljson(input: &str) -> Result<Molecule, MolJsonError> {
     }
 
     Ok(builder.build())
+}
+
+fn check_json_limits(
+    value: &serde_json::Value,
+    path: &str,
+    depth: usize,
+    limits: &MolJsonParseLimits,
+) -> Result<(), MolJsonError> {
+    if depth > limits.max_json_depth {
+        return Err(MolJsonError::ResourceLimit {
+            resource: "JSON depth",
+            actual: depth,
+            limit: limits.max_json_depth,
+        });
+    }
+    match value {
+        serde_json::Value::String(s) if s.len() > limits.max_string_bytes => {
+            return Err(MolJsonError::ResourceLimit {
+                resource: "string bytes",
+                actual: s.len(),
+                limit: limits.max_string_bytes,
+            });
+        }
+        serde_json::Value::Array(values) => {
+            if values.len() > limits.max_array_items {
+                return Err(MolJsonError::ResourceLimit {
+                    resource: "array items",
+                    actual: values.len(),
+                    limit: limits.max_array_items,
+                });
+            }
+            for (index, child) in values.iter().enumerate() {
+                check_json_limits(child, &format!("{path}[{index}]"), depth + 1, limits)?;
+            }
+        }
+        serde_json::Value::Object(object) => {
+            for (key, child) in object {
+                if key.len() > limits.max_string_bytes {
+                    return Err(MolJsonError::ResourceLimit {
+                        resource: "object key bytes",
+                        actual: key.len(),
+                        limit: limits.max_string_bytes,
+                    });
+                }
+                check_json_limits(child, &format!("{path}.{key}"), depth + 1, limits)?;
+            }
+        }
+        _ => {}
+    }
+    Ok(())
 }
 
 fn float_to_bond_order(v: f64) -> BondOrder {
@@ -392,5 +512,68 @@ mod tests {
             cs,
             canonical_smiles(&parse("CC(=O)Oc1ccccc1C(=O)O").unwrap())
         );
+    }
+
+    #[test]
+    fn bounded_parser_rejects_input_and_json_limits() {
+        let input = r#"{"atoms":[],"bonds":[]}"#;
+        let array_input = r#"{"atoms":[{}],"bonds":[]}"#;
+        assert!(matches!(
+            parse_moljson_with_limits(
+                input,
+                &MolJsonParseLimits {
+                    max_input_bytes: 8,
+                    ..Default::default()
+                }
+            ),
+            Err(MolJsonError::ResourceLimit {
+                resource: "input bytes",
+                ..
+            })
+        ));
+        assert!(matches!(
+            parse_moljson_with_limits(
+                array_input,
+                &MolJsonParseLimits {
+                    max_array_items: 0,
+                    ..Default::default()
+                }
+            ),
+            Err(MolJsonError::ResourceLimit {
+                resource: "array items",
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn bounded_parser_rejects_atom_and_bond_limits() {
+        let input = r#"{"atoms":[{"id":"a1","element":"C"},{"id":"a2","element":"O"}],"bonds":[{"id":"b1","source_id":"a1","target_id":"a2","order":1.0}]}"#;
+        assert!(matches!(
+            parse_moljson_with_limits(
+                input,
+                &MolJsonParseLimits {
+                    max_atoms: 1,
+                    ..Default::default()
+                }
+            ),
+            Err(MolJsonError::ResourceLimit {
+                resource: "atom records",
+                ..
+            })
+        ));
+        assert!(matches!(
+            parse_moljson_with_limits(
+                input,
+                &MolJsonParseLimits {
+                    max_bonds: 0,
+                    ..Default::default()
+                }
+            ),
+            Err(MolJsonError::ResourceLimit {
+                resource: "bond records",
+                ..
+            })
+        ));
     }
 }
