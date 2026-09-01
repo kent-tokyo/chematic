@@ -2,6 +2,8 @@ name: Miri
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ci/linux-gates-089]
   schedule:
     # Miri is intentionally isolated from the normal PR critical path.
     - cron: '0 6 * * 6'

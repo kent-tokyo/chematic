@@ -2,6 +2,8 @@ name: Sanitizers
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ci/linux-gates-089]
   schedule:
     # Keep the expensive memory checks off the normal PR critical path.
     - cron: '0 5 * * 6'
