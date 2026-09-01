@@ -24,5 +24,7 @@ export RUSTFLAGS="-Zsanitizer=${sanitizer}"
 cargo +nightly test \
     -Zbuild-std \
     --target "$target" \
-    --workspace \
+    -p chematic-core \
+    -p chematic-smiles \
+    -p chematic-mol \
     --lib
