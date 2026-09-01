@@ -1,0 +1,47 @@
+name: Sanitizers
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Keep the expensive memory checks off the normal PR critical path.
+    - cron: '0 5 * * 6'
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  sanitizer:
+    name: ${{ matrix.sanitizer }} sanitizer
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizer: [address, leak, thread]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install nightly Rust and source
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master
+        with:
+          toolchain: nightly
+          target: x86_64-unknown-linux-gnu
+          components: rust-src
+
+      - name: Cache cargo and sanitizer build
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-sanitizer-${{ matrix.sanitizer }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-sanitizer-${{ matrix.sanitizer }}-
+
+      - name: Run ${{ matrix.sanitizer }} sanitizer tests
+        run: bash scripts/run_sanitizer.sh "${{ matrix.sanitizer }}"

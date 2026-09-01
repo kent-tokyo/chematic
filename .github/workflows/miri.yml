@@ -1,0 +1,29 @@
+name: Miri
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Miri is intentionally isolated from the normal PR critical path.
+    - cron: '0 6 * * 6'
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  MIRIFLAGS: -Zmiri-symbolic-alignment-check
+
+jobs:
+  miri:
+    name: Miri core and parser tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master
+        with:
+          toolchain: nightly
+          components: miri
+      - name: Run Miri tests
+        run: |
+          cargo +nightly miri test -p chematic-core --lib
+          cargo +nightly miri test -p chematic-smiles --lib
