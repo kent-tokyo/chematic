@@ -29,7 +29,7 @@ jobs:
       - name: Install Playwright
         run: npm install --no-save --no-package-lock playwright@1.55.0
       - name: Cache Playwright browser
-        uses: actions/cache@v4 # current v4 runtime; old cache backend is deprecated
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-1.55.0-${{ matrix.browser }}
