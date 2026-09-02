@@ -41,6 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and heterocyclic inputs while checking descriptor state between updates.
 - Malformed ring-closure SMILES rejection and recovery are covered after the
   oversized-input boundary.
+- Similarity comparison now covers empty and malformed inputs plus recovery to
+  valid SVG output.
 - Narrowed the Linux sanitizer runner to the independently buildable core,
   SMILES, and Mol parser crates after the first remote run exposed a pre-existing
   WASM workspace compile failure unrelated to sanitizer execution.
