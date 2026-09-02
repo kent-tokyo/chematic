@@ -913,7 +913,11 @@ pub fn smiles_to_mol2(smiles: &str) -> String {
 }
 
 pub(crate) fn common_format_name(format: &str) -> Option<String> {
-    match format.to_ascii_lowercase().trim_start_matches('.').replace('-', "_").as_str()
+    match format
+        .to_ascii_lowercase()
+        .trim_start_matches('.')
+        .replace('-', "_")
+        .as_str()
     {
         "smi" | "smiles" => Some("smiles".to_string()),
         "mol" | "sdf" => Some("mol".to_string()),
@@ -930,7 +934,9 @@ pub(crate) fn common_format_name(format: &str) -> Option<String> {
 fn parse_common_format(text: &str, format: &str) -> Result<chematic_core::Molecule, String> {
     match format {
         "smiles" => chematic_smiles::parse(text).map_err(|e| e.to_string()),
-        "mol" => chematic_mol::parse_mol(text).map(|(mol, _)| mol).map_err(|e| e.to_string()),
+        "mol" => chematic_mol::parse_mol(text)
+            .map(|(mol, _)| mol)
+            .map_err(|e| e.to_string()),
         "mol_v3000" => chematic_mol::parse_mol_v3000(text)
             .map(|(mol, _)| mol)
             .map_err(|e| e.to_string()),
@@ -970,25 +976,29 @@ pub fn convert_common_format(
             text.len()
         )));
     }
-    let input = common_format_name(input_format)
-        .ok_or_else(|| JsValue::from_str(&format!("unsupported molecular format: {input_format}")))?;
-    let output = common_format_name(output_format)
-        .ok_or_else(|| JsValue::from_str(&format!("unsupported molecular format: {output_format}")))?;
+    let input = common_format_name(input_format).ok_or_else(|| {
+        JsValue::from_str(&format!("unsupported molecular format: {input_format}"))
+    })?;
+    let output = common_format_name(output_format).ok_or_else(|| {
+        JsValue::from_str(&format!("unsupported molecular format: {output_format}"))
+    })?;
     let mol = parse_common_format(text, &input).map_err(|e| JsValue::from_str(&e))?;
     let result = match output.as_str() {
         "smiles" => chematic_smiles::canonical_smiles(&mol),
         "mol" => chematic_mol::write_mol(&mol, &chematic_mol::MolMetadata::default()),
-        "mol_v3000" => chematic_mol::write_mol_v3000(
-            &mol,
-            &chematic_mol::MolMetadata::default(),
-            &[],
-        ),
+        "mol_v3000" => {
+            chematic_mol::write_mol_v3000(&mol, &chematic_mol::MolMetadata::default(), &[])
+        }
         "mol2" => chematic_mol::write_mol2(&mol, &[]),
         "cml" => chematic_mol::write_cml(&mol, None),
         "cjson" => chematic_mol::write_cjson(&mol, &[]),
         "moljson" => chematic_mol::write_moljson(&mol),
         "cdxml" => chematic_mol::write_cdxml(&mol, &[]),
-        _ => return Err(JsValue::from_str(&format!("unsupported output format: {output}"))),
+        _ => {
+            return Err(JsValue::from_str(&format!(
+                "unsupported output format: {output}"
+            )));
+        }
     };
     Ok(result)
 }

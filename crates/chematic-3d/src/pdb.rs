@@ -196,6 +196,7 @@ fn parse_pdb_atoms_capped(input: &str, max_atoms: usize) -> Vec<PdbAtom> {
 }
 
 #[cfg(test)]
+#[allow(clippy::items_after_test_module)]
 mod tests {
     use super::{PdbParseLimits, PdbResourceLimitError, parse_pdb_atoms_with_limits};
 
