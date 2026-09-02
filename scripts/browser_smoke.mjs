@@ -32,6 +32,17 @@ try {
   const hba = page.locator("#desc-tbody tr").filter({ hasText: "HBA" }).locator("td").nth(1);
   await hba.waitFor({ state: "visible" });
   assert.equal(await hba.innerText(), "6");
+  for (const [nextSmiles, expectedHba] of [
+    ["CCO", "1"],
+    ["CC(=O)O", "1"],
+    ["c1ccccc1", "0"],
+    ["Cn1cnc2c1c(=O)n(c(=O)n2C)C", "6"],
+  ]) {
+    await page.locator("#smiles-input").fill(nextSmiles);
+    await page.locator("#btn-calc").click();
+    await page.locator("#error-desc").waitFor({ state: "hidden" });
+    assert.equal(await hba.innerText(), expectedHba);
+  }
   await page.locator("#smiles-input").fill("C".repeat(1_000_001));
   await page.locator("#btn-calc").click();
   await page.locator("#error-desc").waitFor({ state: "visible" });

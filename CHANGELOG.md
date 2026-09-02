@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that rendering and descriptors recover cleanly.
 - Whitespace-only SMILES input is covered as an empty-input rejection with
   recovery to a valid calculation.
+- Repeated browser calculations now cover aliphatic, aromatic, carboxylic-acid,
+  and heterocyclic inputs while checking descriptor state between updates.
 - Narrowed the Linux sanitizer runner to the independently buildable core,
   SMILES, and Mol parser crates after the first remote run exposed a pre-existing
   WASM workspace compile failure unrelated to sanitizer execution.
