@@ -87,11 +87,7 @@ impl Molecule {
     pub fn atom(&self, idx: AtomIdx) -> &Atom {
         let i = idx.0 as usize;
         if i >= self.atoms.len() {
-            panic!(
-                "atom index {} out of range (molecule has {} atoms)",
-                idx.0,
-                self.atoms.len()
-            );
+            panic!("atom index out of range");
         }
         &self.atoms[i]
     }
@@ -115,11 +111,7 @@ impl Molecule {
     pub fn bond(&self, idx: BondIdx) -> &BondEntry {
         let i = idx.0 as usize;
         if i >= self.bonds.len() {
-            panic!(
-                "bond index {} out of range (molecule has {} bonds)",
-                idx.0,
-                self.bonds.len()
-            );
+            panic!("bond index out of range");
         }
         &self.bonds[i]
     }
@@ -159,11 +151,9 @@ impl Molecule {
     pub fn neighbors(&self, idx: AtomIdx) -> impl Iterator<Item = (AtomIdx, BondIdx)> + '_ {
         let i = idx.0 as usize;
         if i >= self.adjacency.len() {
-            panic!(
-                "atom index {} out of range (molecule has {} atoms)",
-                idx.0,
-                self.adjacency.len()
-            );
+            // Keep the panic diagnostic free of input-derived values. Callers
+            // handling untrusted atom indices should use `degree_opt`.
+            panic!("atom index out of range");
         }
         self.adjacency[i].iter().copied()
     }
@@ -187,11 +177,7 @@ impl Molecule {
     pub fn degree(&self, idx: AtomIdx) -> usize {
         let i = idx.0 as usize;
         if i >= self.adjacency.len() {
-            panic!(
-                "atom index {} out of range (molecule has {} atoms)",
-                idx.0,
-                self.adjacency.len()
-            );
+            panic!("atom index out of range");
         }
         self.adjacency[i].len()
     }
