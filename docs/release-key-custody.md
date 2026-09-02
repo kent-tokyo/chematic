@@ -13,8 +13,8 @@ exact provenance bytes with:
 
 ```sh
 scripts/verify_release_key.sh \
-  schematic.provenance.json schematic.provenance.sig \
-  schematic-release-public-key.pem <published-fingerprint>
+  chematic.provenance.json chematic.provenance.sig \
+  chematic-release-public-key.pem <published-fingerprint>
 ```
 
 The verifier checks both the DER-encoded public-key fingerprint and the
