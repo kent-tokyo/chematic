@@ -20,6 +20,8 @@ typed `SemanticError`; callers must not treat it as a best-effort molecule.
 
 `CdxmlDocument` preserves the original XML and exposes page/object summaries.
 `CdxmlEdit` applies bounded page-attribute or opaque-object replacements and
-re-parses the result before returning it. Unknown attributes and objects remain
-in `write()` output. The binding JSON marker is
+re-parses the result before returning it. `ReplaceObjectPath` addresses a
+multiline nested object by its parent-to-child sibling path (for example,
+`[0, 1]` is the second child of the first page-level object), while retaining
+unknown attributes and all untouched objects in `write()` output. The binding JSON marker is
 `chematic.cdxml-document.v1`.
