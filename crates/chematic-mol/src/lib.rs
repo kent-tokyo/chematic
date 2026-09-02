@@ -146,7 +146,8 @@ pub use sdf::{
     parse_sdf_with_limits, read_sdf_conformer_ensembles,
 };
 pub use semantic::{
-    AtomRef, PolymerRepeatUnit, RGroupDefinition, SemanticError, SemanticId, SemanticModel,
+    AtomRef, ExpandedSemantic, PolymerRepeatUnit, RGroupDefinition, SemanticCommand, SemanticError,
+    SemanticId, SemanticModel,
 };
 pub use smiles_table::{
     Delimiter, SmilesReaderOptions, SmilesRecordReader, SmilesRecordWriter, SmilesTableError,

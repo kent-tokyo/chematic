@@ -7,6 +7,8 @@ use std::collections::BTreeMap;
 
 use serde_json::{Map, Value};
 
+use chematic_core::{AtomIdx, Molecule};
+
 /// Stable identifier used by source-level semantic objects.
 pub type SemanticId = String;
 
@@ -44,6 +46,7 @@ pub enum SemanticError {
     AmbiguousAttachment(String),
     Unsupported { construct: String, reason: String },
     InvalidJson(String),
+    InvalidExpansion { id: String, reason: String },
 }
 
 impl std::fmt::Display for SemanticError {
@@ -60,6 +63,7 @@ impl std::fmt::Display for SemanticError {
                 write!(f, "unsupported {construct}: {reason}")
             }
             Self::InvalidJson(reason) => write!(f, "invalid semantic JSON: {reason}"),
+            Self::InvalidExpansion { id, reason } => write!(f, "cannot expand {id}: {reason}"),
         }
     }
 }
@@ -74,6 +78,141 @@ pub struct SemanticModel {
     pub r_groups: Vec<RGroupDefinition>,
     pub polymer_units: Vec<PolymerRepeatUnit>,
     pub extensions: BTreeMap<String, Value>,
+}
+
+/// Result of a checked semantic expansion. The mapping is required for undo/edit flows.
+#[derive(Clone)]
+pub struct ExpandedSemantic {
+    pub molecule: Molecule,
+    pub source_to_expanded: BTreeMap<SemanticId, Vec<AtomIdx>>,
+}
+
+/// Immutable, auditable edits to a semantic model.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum SemanticCommand {
+    SelectRGroupAlternative {
+        group_id: SemanticId,
+        alternative: usize,
+    },
+}
+
+impl SemanticModel {
+    /// Apply one command while preserving stable IDs and rejecting ambiguity.
+    pub fn apply(&self, command: &SemanticCommand) -> Result<Self, SemanticError> {
+        let mut next = self.clone();
+        match command {
+            SemanticCommand::SelectRGroupAlternative {
+                group_id,
+                alternative,
+            } => {
+                let group = next
+                    .r_groups
+                    .iter_mut()
+                    .find(|g| &g.id == group_id)
+                    .ok_or_else(|| SemanticError::InvalidExpansion {
+                        id: group_id.clone(),
+                        reason: "unknown R-group".into(),
+                    })?;
+                if *alternative >= group.alternatives.len() {
+                    return Err(SemanticError::MissingAlternative(group_id.clone()));
+                }
+                group.selected_alternative = Some(*alternative);
+            }
+        }
+        next.validate()?;
+        Ok(next)
+    }
+
+    /// Expand only explicitly selected R-groups. No alternative is guessed.
+    /// Supported alternatives use a leading `[*]` attachment placeholder.
+    pub fn expand(&self, base: &Molecule) -> Result<ExpandedSemantic, SemanticError> {
+        self.validate()?;
+        if self.atom_ids.len() != base.atom_count() {
+            return Err(SemanticError::InvalidExpansion {
+                id: "model".into(),
+                reason: "atom_ids must match base molecule atom count".into(),
+            });
+        }
+        let mut molecule = base.clone();
+        let mut mapping: BTreeMap<SemanticId, Vec<AtomIdx>> = self
+            .atom_ids
+            .iter()
+            .cloned()
+            .zip((0..base.atom_count()).map(|i| vec![AtomIdx(i as u32)]))
+            .collect();
+        for group in &self.r_groups {
+            let Some(selected) = group.selected_alternative else {
+                return Err(SemanticError::Unsupported {
+                    construct: group.id.clone(),
+                    reason: "no explicit alternative selected".into(),
+                });
+            };
+            let pattern = &group.alternatives[selected];
+            let fragment =
+                chematic_smiles::parse(pattern).map_err(|e| SemanticError::InvalidExpansion {
+                    id: group.id.clone(),
+                    reason: e.to_string(),
+                })?;
+            if fragment.atom_count() < 2 || group.attachment_atoms.len() != 1 {
+                return Err(SemanticError::Unsupported {
+                    construct: group.id.clone(),
+                    reason: "requires one attachment and a fragment with a leading placeholder"
+                        .into(),
+                });
+            }
+            let base_atom = AtomIdx(
+                self.atom_ids
+                    .iter()
+                    .position(|id| id == &group.attachment_atoms[0].atom_id)
+                    .ok_or_else(|| {
+                        SemanticError::MissingAtom(group.attachment_atoms[0].atom_id.clone())
+                    })? as u32,
+            );
+            if base_atom.0 as usize >= molecule.atom_count() {
+                return Err(SemanticError::MissingAtom(
+                    group.attachment_atoms[0].atom_id.clone(),
+                ));
+            }
+            let mut remap = BTreeMap::new();
+            for (idx, atom) in fragment.atoms() {
+                if idx.0 == 0 {
+                    continue;
+                }
+                remap.insert(idx, molecule.add_atom(atom.clone()));
+            }
+            for (_, bond) in fragment.bonds() {
+                if bond.atom1.0 == 0 || bond.atom2.0 == 0 {
+                    continue;
+                }
+                molecule
+                    .add_bond(remap[&bond.atom1], remap[&bond.atom2], bond.order)
+                    .map_err(|e| SemanticError::InvalidExpansion {
+                        id: group.id.clone(),
+                        reason: e.to_string(),
+                    })?;
+            }
+            let attach =
+                remap
+                    .values()
+                    .next()
+                    .copied()
+                    .ok_or_else(|| SemanticError::InvalidExpansion {
+                        id: group.id.clone(),
+                        reason: "empty expansion".into(),
+                    })?;
+            molecule
+                .add_bond(base_atom, attach, chematic_core::BondOrder::Single)
+                .map_err(|e| SemanticError::InvalidExpansion {
+                    id: group.id.clone(),
+                    reason: e.to_string(),
+                })?;
+            mapping.insert(group.id.clone(), remap.values().copied().collect());
+        }
+        Ok(ExpandedSemantic {
+            molecule,
+            source_to_expanded: mapping,
+        })
+    }
 }
 
 impl SemanticModel {
@@ -198,5 +337,31 @@ mod tests {
             model.validate(),
             Err(SemanticError::AmbiguousAttachment(_))
         ));
+    }
+
+    #[test]
+    fn command_selects_explicit_r_group_and_expands_with_mapping() {
+        let base = chematic_smiles::parse("CC").unwrap();
+        let model = SemanticModel {
+            atom_ids: vec!["a1".into(), "a2".into()],
+            r_groups: vec![RGroupDefinition {
+                id: "r1".into(),
+                attachment_atoms: vec![AtomRef {
+                    atom_id: "a2".into(),
+                }],
+                alternatives: vec!["[*]O".into()],
+                selected_alternative: None,
+            }],
+            ..Default::default()
+        };
+        let selected = model
+            .apply(&SemanticCommand::SelectRGroupAlternative {
+                group_id: "r1".into(),
+                alternative: 0,
+            })
+            .unwrap();
+        let expanded = selected.expand(&base).unwrap();
+        assert_eq!(expanded.molecule.atom_count(), 3);
+        assert_eq!(expanded.source_to_expanded["r1"].len(), 1);
     }
 }
