@@ -16,6 +16,7 @@ jobs:
   browser-smoke:
     name: ${{ matrix.browser }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -27,6 +28,11 @@ jobs:
           node-version: 22
       - name: Install Playwright
         run: npm install --no-save --no-package-lock playwright@1.55.0
+      - name: Cache Playwright browser
+        uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.2.3
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-1.55.0-${{ matrix.browser }}
       - name: Install browser
         run: npx playwright install --with-deps "${{ matrix.browser }}"
       - name: Serve demo
