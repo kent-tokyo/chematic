@@ -75,6 +75,27 @@ try {
   await page.locator("#smarts-input").fill("c1ccccc1");
   await page.getByRole("button", { name: "Highlight", exact: true }).click();
   await page.locator("#error-desc").waitFor({ state: "hidden" });
+  await page.locator("#tc-reactions").click();
+  await page.locator("#tb-rxn").waitFor({ state: "visible" });
+  await page.locator("#tb-rxn").click();
+  await page.locator("#rxn-smirks").fill("[");
+  await page.locator("#rxn-reactants").fill("CCO");
+  await page.locator("#btn-rxn").click();
+  await page.locator("#error-rxn").waitFor({ state: "visible" });
+  assert.match(await page.locator("#error-rxn").innerText(), /parse|invalid|reaction|SMILES/i);
+  await page.locator("#rxn-smirks").fill("[C:1]Br.[N:2]>>[C:1][N:2]");
+  await page.locator("#rxn-reactants").fill("CCBr|CN");
+  await page.locator("#btn-rxn").click();
+  await page.locator("#rxn-svg-wrap svg").waitFor({ state: "visible" });
+  await page.locator("#error-rxn").waitFor({ state: "hidden" });
+  await page.locator("#rxn-eq-input").fill("not-a-reaction");
+  await page.locator("#btn-rxn-eq").click();
+  await page.locator("#error-rxn-eq").waitFor({ state: "visible" });
+  assert.match(await page.locator("#error-rxn-eq").innerText(), /parse|invalid|reaction|SMILES/i);
+  await page.locator("#rxn-eq-input").fill("CC(=O)O.CCO>>CC(=O)OCC.O");
+  await page.locator("#btn-rxn-eq").click();
+  await page.locator("#rxn-eq-svg-wrap svg").waitFor({ state: "visible" });
+  await page.locator("#error-rxn-eq").waitFor({ state: "hidden" });
   await page.getByRole("button", { name: "日", exact: true }).click();
   await page.getByText("記述子計算機", { exact: true }).waitFor({ state: "visible" });
   await page.getByRole("button", { name: "EN", exact: true }).click();
@@ -125,10 +146,14 @@ try {
   await page.waitForFunction(
     () => typeof window.__browserSmoke?.sdfToSmilesJson === "function",
   );
-  const oversizedSdfResult = await page.evaluate(() =>
-    window.__browserSmoke.sdfToSmilesJson("x".repeat(1_000_001)),
+  const sdfBoundaryResults = await page.evaluate(() =>
+    [1_000_000, 1_000_001, 1_000_001].map((size) =>
+      window.__browserSmoke.sdfToSmilesJson("x".repeat(size)),
+    ),
   );
-  assert.match(oversizedSdfResult, /SDF input too large|input.*large|size/i);
+  assert.doesNotMatch(sdfBoundaryResults[0], /SDF input too large/i);
+  assert.match(sdfBoundaryResults[1], /SDF input too large|input.*large|size/i);
+  assert.equal(sdfBoundaryResults[1], sdfBoundaryResults[2]);
   await sdfInput.fill(ETHANE_MOL_BLOCK);
   await page.locator("#btn-sdf-load").click();
   await page.locator("#sdf-grid-output svg").waitFor({ state: "visible" });
