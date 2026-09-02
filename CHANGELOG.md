@@ -35,6 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   path.
 - Valid SDF/MOL loading is rechecked after a malformed-record error to verify
   that rendering and descriptors recover cleanly.
+- Whitespace-only SMILES input is covered as an empty-input rejection with
+  recovery to a valid calculation.
 - Narrowed the Linux sanitizer runner to the independently buildable core,
   SMILES, and Mol parser crates after the first remote run exposed a pre-existing
   WASM workspace compile failure unrelated to sanitizer execution.
