@@ -3,7 +3,7 @@ name: Browser compatibility smoke
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, ci/linux-gates-089]
     paths:
       - 'demo/**'
       - 'scripts/browser_smoke.mjs'
