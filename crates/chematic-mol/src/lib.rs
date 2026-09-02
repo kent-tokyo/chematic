@@ -17,6 +17,7 @@
 //! ```
 
 pub mod cdxml;
+pub mod cdxml_document;
 pub mod cif;
 #[cfg(feature = "crystal")]
 mod cif_symmetry;
@@ -42,6 +43,7 @@ pub mod qcschema;
 pub mod record;
 pub mod rxn;
 pub mod sdf;
+pub mod semantic;
 pub mod smiles_table;
 pub mod tdt;
 pub mod volumetric;
@@ -56,6 +58,7 @@ pub use cdxml::{
     parse_cdxml_all_with_options_and_limits, parse_cdxml_with_limits, parse_cdxml_with_options,
     parse_cdxml_with_options_and_limits, write_cdxml,
 };
+pub use cdxml_document::{CdxmlDocument, CdxmlObject, CdxmlPage, CdxmlValue};
 pub use cif::{
     CifError, CifParseLimits, CifResult, UnitCell, parse_cif, parse_cif_with_limits, write_cif,
 };
@@ -141,6 +144,9 @@ pub use rxn::{RxnParseError, parse_rxn_file, write_rxn_file};
 pub use sdf::{
     ConformerEnsemble, SdfFileReader, SdfParseLimits, SdfReader, SdfRecord, SdfRecordReader,
     parse_sdf_with_limits, read_sdf_conformer_ensembles,
+};
+pub use semantic::{
+    AtomRef, PolymerRepeatUnit, RGroupDefinition, SemanticError, SemanticId, SemanticModel,
 };
 pub use smiles_table::{
     Delimiter, SmilesReaderOptions, SmilesRecordReader, SmilesRecordWriter, SmilesTableError,

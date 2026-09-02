@@ -727,6 +727,14 @@ fn escape_json_string(s: &str) -> String {
     out
 }
 
+fn json_string(s: &str) -> String {
+    format!(r#""{}""#, escape_json_string(s))
+}
+
+fn json_error(message: String) -> String {
+    format!(r#"{{"error":"{}"}}"#, escape_json_string(&message))
+}
+
 fn json_option_string_array(values: &[Option<String>]) -> String {
     let items = values
         .iter()

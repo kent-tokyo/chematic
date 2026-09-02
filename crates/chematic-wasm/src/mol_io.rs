@@ -426,6 +426,25 @@ pub fn cdxml_to_smiles_json(cdxml: &str) -> Result<String, JsValue> {
     Ok(format!("[{}]", parts.join(",")))
 }
 
+/// Parse a CDXML document while preserving page and presentation objects.
+/// The returned JSON contains an opaque `raw_xml` for each object so unknown
+/// ChemDraw extensions are never silently discarded.
+#[wasm_bindgen]
+pub fn cdxml_document_json(cdxml: &str) -> Result<String, JsValue> {
+    if cdxml.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str("CDXML input too large"));
+    }
+    let document = chematic_mol::CdxmlDocument::parse_with_limits(
+        cdxml,
+        &chematic_mol::CdxmlParseLimits {
+            max_input_bytes: WASM_MAX_INPUT_BYTES,
+            ..Default::default()
+        },
+    )
+    .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    serde_json::to_string(&document.to_json()).map_err(|e| JsValue::from_str(&e.to_string()))
+}
+
 /// Parse a MOL V2000 string and return 2D coordinates as a JSON array.
 ///
 /// Returns `[[x0,y0],[x1,y1],...]` in atom-insertion order.
@@ -894,7 +913,8 @@ pub fn smiles_to_mol2(smiles: &str) -> String {
 }
 
 pub(crate) fn common_format_name(format: &str) -> Option<String> {
-    match format.to_ascii_lowercase().trim_start_matches('.').replace('-', "_").as_str() {
+    match format.to_ascii_lowercase().trim_start_matches('.').replace('-', "_").as_str()
+    {
         "smi" | "smiles" => Some("smiles".to_string()),
         "mol" | "sdf" => Some("mol".to_string()),
         "v3000" | "mol_v3000" => Some("mol_v3000".to_string()),
