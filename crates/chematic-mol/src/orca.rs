@@ -1043,6 +1043,9 @@ fn parse_final_energy_line(toks: &[&str]) -> Result<Option<f64>, OrcaOutputError
 /// Never panics on malformed or truncated input; always returns a typed
 /// `Result`. Truncated input (a job that crashed or was killed mid-run) is
 /// reported via [`OrcaTermination::Incomplete`], not an error.
+/// Unrecognized fragments without an explicit ORCA error marker follow the
+/// same incomplete-result contract; resource-limit violations remain typed
+/// errors.
 pub fn parse_orca_output(input: &str) -> Result<OrcaOutput, OrcaOutputError> {
     parse_orca_output_with_limits(input, &OrcaOutputParseLimits::default())
 }
@@ -1845,6 +1848,14 @@ TOTAL RUN TIME: 0 days 0 hours 0 minutes 4 seconds 118 msec
         for input in inputs {
             let _ = parse_orca_output(input);
         }
+    }
+
+    #[test]
+    fn output_unrecognized_fragment_is_incomplete_result() {
+        let out = parse_orca_output("partial launcher output without an ORCA marker").unwrap();
+        assert_eq!(out.termination, OrcaTermination::Incomplete);
+        assert_eq!(out.final_energy_hartree, None);
+        assert!(out.trajectory.is_empty());
     }
 
     /// [`OrcaOutput`] doesn't implement `Debug` (it holds a [`Molecule`],

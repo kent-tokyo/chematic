@@ -134,6 +134,41 @@ try {
   await page.locator("#sdf-grid-output svg").waitFor({ state: "visible" });
   await sdfError.waitFor({ state: "hidden" });
   assert.equal(await sdfHba.innerText(), "0");
+  await page.getByRole("tab", { name: "Data & Formats", exact: true }).click();
+  const formatCases = [
+    "Gaussian Cube",
+    "OpenDX",
+    "mmCIF",
+    "PQR",
+    "QCSchema",
+    "ORCA Input",
+    "ORCA Output",
+    "LAMMPS Data",
+    "LAMMPS Dump",
+  ];
+  const formatInput = page.locator("#formats-input");
+  const formatError = page.locator("#error-formats");
+  const formatOutput = page.locator("#formats-output");
+  for (const formatName of formatCases) {
+    await page.getByRole("button", { name: formatName, exact: true }).click();
+    await page.getByRole("button", { name: "Load Example", exact: true }).click();
+    await page.getByRole("button", { name: "Parse", exact: true }).click();
+    await formatOutput.waitFor({ state: "visible" });
+    await formatError.waitFor({ state: "hidden" });
+    await formatInput.fill("malformed input");
+    await page.getByRole("button", { name: "Parse", exact: true }).click();
+    if (formatName === "ORCA Output") {
+      const orcaResult = JSON.parse(await page.locator("#formats-raw-json").textContent());
+      assert.equal(orcaResult.termination.kind, "incomplete");
+    } else {
+      await formatError.waitFor({ state: "visible" });
+      assert.match(await formatError.innerText(), /invalid|parse|unexpected|expected|found|no /i);
+    }
+    await page.getByRole("button", { name: "Load Example", exact: true }).click();
+    await page.getByRole("button", { name: "Parse", exact: true }).click();
+    await formatOutput.waitFor({ state: "visible" });
+    await formatError.waitFor({ state: "hidden" });
+  }
   assert.deepEqual(errors, []);
 } finally {
   await browser.close();
