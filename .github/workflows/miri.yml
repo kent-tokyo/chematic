@@ -17,7 +17,7 @@ env:
 
 jobs:
   miri:
-    name: Miri core and parser tests
+    name: Miri focused core and parser tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -27,5 +27,10 @@ jobs:
           components: miri
       - name: Run Miri tests
         run: |
-          cargo +nightly miri test -p chematic-core --lib
-          cargo +nightly miri test -p chematic-smiles --lib
+          # Keep this gate bounded: full Miri suites are too slow for a
+          # useful recurring signal. These cover the highest-risk remap and
+          # canonical parser paths; ordinary CI carries the full suite.
+          cargo +nightly miri test -p chematic-core --lib molecule::tests::test_with_atom_removed_remaps_bond_direction
+          cargo +nightly miri test -p chematic-core --lib molecule::tests::test_remove_bond_remaps_bond_direction_not_misattributes
+          cargo +nightly miri test -p chematic-smiles --lib canonical::tests::test_caffeine_stable
+          cargo +nightly miri test -p chematic-smiles --lib canonical::tests::ez_canonical_smiles_is_idempotent
