@@ -50,3 +50,11 @@ def test_convert_requires_coordinates_for_3d_output():
 def test_convert_rejects_unknown_formats():
     with pytest.raises(ValueError, match="unsupported molecular format"):
         chematic.convert_format("CCO", "smiles", "foo")
+
+
+def test_cdxml_document_json_preserves_unknown_objects():
+    cdxml = '<CDXML>\n<page id="p1">\n<arrow id="a1" Custom="keep"/>\n</page>\n</CDXML>'
+    document = chematic.parse_cdxml_document_json(cdxml)
+    assert "chematic.cdxml-document.v1" in document
+    assert "Custom" in document
+    assert "arrow" in document

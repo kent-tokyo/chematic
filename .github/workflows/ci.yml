@@ -98,7 +98,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-test-integration-
       - name: Integration tests
-        run: cargo test -p ${{ matrix.package }} --test ${{ matrix.target }} --quiet
+        run: |
+          if [[ "${{ matrix.package }}" == "chematic-crystal" && "${{ matrix.target }}" == "serde_roundtrip" ]]; then
+            cargo test -p "${{ matrix.package }}" --test "${{ matrix.target }}" --features serde --quiet
+          else
+            cargo test -p "${{ matrix.package }}" --test "${{ matrix.target }}" --quiet
+          fi
 
   test-native-inchi:
     name: Test (native-inchi)
