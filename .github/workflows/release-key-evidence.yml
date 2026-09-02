@@ -33,17 +33,20 @@ jobs:
           test -n "$RELEASE_PRIVATE_KEY"
           umask 077
           private_key="$RUNNER_TEMP/release-key.pem"
-          public_key="target/sbom/chematic-release-public-key.pem"
+          derived_public_key="$RUNNER_TEMP/derived-release-public-key.pem"
+          published_public_key="chematic-release-public-key.pem"
           printf '%s\n' "$RELEASE_PRIVATE_KEY" > "$private_key"
-          openssl pkey -in "$private_key" -pubout -out "$public_key"
+          openssl pkey -in "$private_key" -pubout -out "$derived_public_key"
+          published_fingerprint=$(openssl pkey -pubin -in "$published_public_key" -outform DER | sha256sum | awk '{print $1}')
+          derived_fingerprint=$(openssl pkey -pubin -in "$derived_public_key" -outform DER | sha256sum | awk '{print $1}')
+          test "$published_fingerprint" = "$derived_fingerprint"
           scripts/sign_provenance.sh \
             target/sbom/chematic.provenance.json "$private_key" \
             target/sbom/chematic.provenance.sig
-          fingerprint=$(openssl pkey -pubin -in "$public_key" -outform DER | sha256sum | awk '{print $1}')
           scripts/verify_release_key.sh \
             target/sbom/chematic.provenance.json \
-            target/sbom/chematic.provenance.sig "$public_key" "$fingerprint"
-          printf '%s  %s\n' "$fingerprint" "$public_key" > target/sbom/RELEASE-KEY-FINGERPRINT
+            target/sbom/chematic.provenance.sig "$published_public_key" "$published_fingerprint"
+          printf '%s  %s\n' "$published_fingerprint" "$published_public_key" > target/sbom/RELEASE-KEY-FINGERPRINT
           rm -f "$private_key"
       - name: Upload release-key evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
