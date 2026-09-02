@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   records, descriptor reset, rendered SVG output, and malformed-record recovery.
 - The browser smoke path also verifies that an oversized-SMILES rejection does
   not poison the next valid calculation.
+- It also covers whitespace-trimmed SMILES input on the recovered calculation
+  path.
 - Narrowed the Linux sanitizer runner to the independently buildable core,
   SMILES, and Mol parser crates after the first remote run exposed a pre-existing
   WASM workspace compile failure unrelated to sanitizer execution.
