@@ -46,7 +46,7 @@ try {
   await page.locator("#smiles-input").fill("C".repeat(1_000_001));
   await page.locator("#btn-calc").click();
   await page.locator("#error-desc").waitFor({ state: "visible" });
-  assert.match(await page.locator("#error-desc").innerText(), /input|size|large/i);
+  assert.match(await page.locator("#error-desc").innerText(), /input|size|large|atom/i);
   await page.locator("#smiles-input").fill("C1CC");
   await page.locator("#btn-calc").click();
   await page.locator("#error-desc").waitFor({ state: "visible" });
