@@ -318,7 +318,7 @@ mod tests {
         generate_conformer_ensemble, generate_conformer_ensemble_mmff94,
         generate_conformer_ensemble_with_config,
         pdb::{parse_pdb_atoms, pdb_to_molecule, write_pdb},
-        xyz::{XyzError, parse_xyz, write_xyz},
+        xyz::{XyzError, XyzParseLimits, parse_xyz, parse_xyz_with_limits, write_xyz},
     };
 
     // -----------------------------------------------------------------------
@@ -726,7 +726,7 @@ mod tests {
         ));
         assert!(matches!(
             parse_xyz_with_limits(
-                xyz,
+                "1\nx\nC 0.0 0.0 0.0\n",
                 XyzParseLimits {
                     max_line_bytes: 3,
                     ..Default::default()
