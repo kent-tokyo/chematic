@@ -313,8 +313,7 @@ fn depict_svg_grid_invalid_smiles_skipped() {
 
 #[test]
 fn depict_svg_grid_rejects_oversized_batch() {
-    let smiles = std::iter::repeat("C")
-        .take(1_025)
+    let smiles = std::iter::repeat_n("C", 1_025)
         .collect::<Vec<_>>()
         .join("\n");
     let svg = depict_svg_grid(&smiles, 8);
