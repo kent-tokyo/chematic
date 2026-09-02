@@ -107,6 +107,10 @@ pub struct TdtReaderOptions {
     pub strict_parsing: bool,
     /// Hard cap on a single line's byte length.
     pub max_line_bytes: usize,
+    /// Maximum records yielded by the reader.
+    pub max_records: usize,
+    /// Maximum tags retained in one record.
+    pub max_tags_per_record: usize,
 }
 
 impl Default for TdtReaderOptions {
@@ -117,6 +121,8 @@ impl Default for TdtReaderOptions {
             read_3d: false,
             strict_parsing: false,
             max_line_bytes: 1 << 20,
+            max_records: 100_000,
+            max_tags_per_record: 10_000,
         }
     }
 }
@@ -191,6 +197,15 @@ pub enum TdtError {
         record_index: usize,
         limit: usize,
     },
+    /// A record contained more tags than allowed.
+    TooManyTags {
+        line: usize,
+        record_index: usize,
+        actual: usize,
+        limit: usize,
+    },
+    /// The reader reached its maximum record budget.
+    TooManyRecords { limit: usize },
     /// An IO error occurred while reading the input stream.
     Io(String),
 }
@@ -237,6 +252,18 @@ impl std::fmt::Display for TdtError {
                 f,
                 "line {line} (record {record_index}) exceeds the {limit}-byte limit"
             ),
+            Self::TooManyTags {
+                line,
+                record_index,
+                actual,
+                limit,
+            } => write!(
+                f,
+                "record {record_index} at line {line} has {actual} tags, exceeding the {limit}-tag limit"
+            ),
+            Self::TooManyRecords { limit } => {
+                write!(f, "TDT input exceeds the {limit}-record limit")
+            }
             Self::Io(msg) => write!(f, "IO error: {msg}"),
         }
     }
@@ -387,6 +414,19 @@ impl<R: BufRead> TdtRecordReader<R> {
         }
     }
 
+    fn push_tag(&self, tags: &mut Vec<RawTag>, tag: RawTag) -> Result<(), TdtError> {
+        if tags.len() >= self.options.max_tags_per_record {
+            return Err(TdtError::TooManyTags {
+                line: self.line_number,
+                record_index: self.record_index,
+                actual: tags.len() + 1,
+                limit: self.options.max_tags_per_record,
+            });
+        }
+        tags.push(tag);
+        Ok(())
+    }
+
     fn read_record_body(
         &mut self,
         start_line: &str,
@@ -399,10 +439,13 @@ impl<R: BufRead> TdtRecordReader<R> {
             record_index: self.record_index,
             tag_name: "$SMI".to_string(),
         })?;
-        tags.push(RawTag::Generic {
-            name: "$SMI".to_string(),
-            value: smi_value,
-        });
+        self.push_tag(
+            &mut tags,
+            RawTag::Generic {
+                name: "$SMI".to_string(),
+                value: smi_value,
+            },
+        )?;
 
         loop {
             let line = match self.read_raw_line()? {
@@ -419,16 +462,22 @@ impl<R: BufRead> TdtRecordReader<R> {
             let tag_name = tag_name_of(&line);
             if tag_name == "2D" || tag_name == "3D" {
                 let raw = self.read_coordinate_list(&line, &tag_name)?;
-                tags.push(RawTag::Coordinates {
-                    name: tag_name,
-                    raw,
-                });
+                self.push_tag(
+                    &mut tags,
+                    RawTag::Coordinates {
+                        name: tag_name,
+                        raw,
+                    },
+                )?;
             } else {
                 match extract_tag_value(&line) {
-                    Some(value) => tags.push(RawTag::Generic {
-                        name: tag_name,
-                        value,
-                    }),
+                    Some(value) => self.push_tag(
+                        &mut tags,
+                        RawTag::Generic {
+                            name: tag_name,
+                            value,
+                        },
+                    )?,
                     None => {
                         return Err(TdtError::UnterminatedTag {
                             line: self.line_number,
@@ -511,6 +560,12 @@ impl<R: BufRead> Iterator for TdtRecordReader<R> {
     fn next(&mut self) -> Option<Self::Item> {
         if self.stopped {
             return None;
+        }
+        if self.record_index >= self.options.max_records {
+            self.stopped = true;
+            return Some(Err(TdtError::TooManyRecords {
+                limit: self.options.max_records,
+            }));
         }
 
         let (record_line, tags) = match self.read_record_tags() {
@@ -1147,6 +1202,34 @@ mod adversarial_tests {
         let results: Vec<_> = reader.collect();
         assert_eq!(results.len(), 1);
         assert!(matches!(results[0], Err(TdtError::LineTooLong { .. })));
+    }
+
+    #[test]
+    fn record_and_tag_limits_are_explicit_errors() {
+        let opts = TdtReaderOptions {
+            max_records: 1,
+            ..Default::default()
+        };
+        let input = b"$SMI<CC>\n|\n$SMI<CCO>\n|\n";
+        let mut reader = TdtRecordReader::new(BufReader::new(Cursor::new(input)), opts);
+        assert!(reader.next().unwrap().is_ok());
+        assert!(matches!(
+            reader.next(),
+            Some(Err(TdtError::TooManyRecords { limit: 1 }))
+        ));
+
+        let opts = TdtReaderOptions {
+            max_tags_per_record: 1,
+            ..Default::default()
+        };
+        let mut reader = TdtRecordReader::new(
+            BufReader::new(Cursor::new(b"$SMI<CC>\nNAME<ethane>\n|\n")),
+            opts,
+        );
+        assert!(matches!(
+            reader.next(),
+            Some(Err(TdtError::TooManyTags { limit: 1, .. }))
+        ));
     }
 
     #[test]

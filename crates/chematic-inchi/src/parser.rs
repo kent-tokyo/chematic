@@ -8,6 +8,11 @@ use std::collections::HashMap;
 /// Error type for InChI parsing.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InchiParseError {
+    ResourceLimit {
+        resource: &'static str,
+        actual: usize,
+        limit: usize,
+    },
     /// Invalid InChI format or prefix.
     InvalidFormat,
     /// Failed to parse formula layer.
@@ -23,6 +28,11 @@ pub enum InchiParseError {
 impl core::fmt::Display for InchiParseError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
+            Self::ResourceLimit {
+                resource,
+                actual,
+                limit,
+            } => write!(f, "InChI {resource} limit exceeded: {actual} > {limit}"),
             Self::InvalidFormat => write!(f, "invalid InChI format"),
             Self::InvalidFormula => write!(f, "invalid formula layer"),
             Self::InvalidConnectivity => write!(f, "invalid connectivity layer"),
@@ -33,6 +43,22 @@ impl core::fmt::Display for InchiParseError {
 }
 
 impl std::error::Error for InchiParseError {}
+
+/// Resource limits for the pure-Rust InChI parser.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct InchiParseLimits {
+    pub max_input_bytes: usize,
+    pub max_atoms: usize,
+}
+
+impl Default for InchiParseLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: 16 << 20,
+            max_atoms: 100_000,
+        }
+    }
+}
 
 /// Parse an InChI string into a Molecule.
 ///
@@ -56,6 +82,21 @@ impl std::error::Error for InchiParseError {}
 /// assert_eq!(mol.atom_count(), 2);
 /// ```
 pub fn parse_inchi(inchi_str: &str) -> Result<Molecule, InchiParseError> {
+    parse_inchi_with_limits(inchi_str, &InchiParseLimits::default())
+}
+
+/// Parse an InChI string while enforcing input and molecular atom limits.
+pub fn parse_inchi_with_limits(
+    inchi_str: &str,
+    limits: &InchiParseLimits,
+) -> Result<Molecule, InchiParseError> {
+    if inchi_str.len() > limits.max_input_bytes {
+        return Err(InchiParseError::ResourceLimit {
+            resource: "input bytes",
+            actual: inchi_str.len(),
+            limit: limits.max_input_bytes,
+        });
+    }
     // Remove "InChI=1S/" prefix
     let content = if let Some(pos) = inchi_str.find("/") {
         &inchi_str[pos + 1..] // Skip the opening "/"
@@ -74,6 +115,23 @@ pub fn parse_inchi(inchi_str: &str) -> Result<Molecule, InchiParseError> {
     // Initialize builder
     let mut builder = MoleculeBuilder::new();
     let mut atom_idx_map: HashMap<usize, AtomIdx> = HashMap::new();
+
+    let heavy_atom_count: usize = element_counts
+        .iter()
+        .filter(|(element, _)| element.atomic_number() != 1)
+        .try_fold(0usize, |total, (_, count)| total.checked_add(*count))
+        .ok_or(InchiParseError::ResourceLimit {
+            resource: "atoms",
+            actual: usize::MAX,
+            limit: limits.max_atoms,
+        })?;
+    if heavy_atom_count > limits.max_atoms {
+        return Err(InchiParseError::ResourceLimit {
+            resource: "atoms",
+            actual: heavy_atom_count,
+            limit: limits.max_atoms,
+        });
+    }
 
     // Create atoms from formula (excluding hydrogens, which are implicit)
     let mut atom_num = 0;
@@ -886,6 +944,38 @@ mod tests {
     fn test_parse_inchi_invalid_format() {
         let result = parse_inchi("InvalidInChI");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_inchi_limits_are_typed() {
+        let input = "InChI=1S/C2H6/c1-2/h1-2H3";
+        assert!(matches!(
+            parse_inchi_with_limits(
+                input,
+                &InchiParseLimits {
+                    max_input_bytes: 4,
+                    ..Default::default()
+                }
+            ),
+            Err(InchiParseError::ResourceLimit {
+                resource: "input bytes",
+                ..
+            })
+        ));
+        assert!(matches!(
+            parse_inchi_with_limits(
+                input,
+                &InchiParseLimits {
+                    max_atoms: 1,
+                    ..Default::default()
+                }
+            ),
+            Err(InchiParseError::ResourceLimit {
+                resource: "atoms",
+                actual: 2,
+                limit: 1
+            })
+        ));
     }
 
     #[test]

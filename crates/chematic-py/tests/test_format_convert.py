@@ -58,3 +58,13 @@ def test_cdxml_document_json_preserves_unknown_objects():
     assert "chematic.cdxml-document.v1" in document
     assert "Custom" in document
     assert "arrow" in document
+
+
+def test_convert_rejects_oversized_input_before_parsing():
+    with pytest.raises(ValueError, match="maximum input size"):
+        chematic.convert_format("C" * (16 * 1024 * 1024 + 1), "smiles", "mol")
+
+
+def test_smiles_batch_rejects_oversized_input_before_parallel_parse():
+    with pytest.raises(ValueError, match="maximum item count"):
+        chematic.from_smiles_list(["C"] * 100_001)

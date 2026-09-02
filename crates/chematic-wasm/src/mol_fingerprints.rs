@@ -140,14 +140,12 @@ pub fn mhfp_hashes_json(mol: &MolHandle) -> String {
 /// Tanimoto-like similarity between two SMILES via MHFP (MinHash Jaccard approximation).
 #[wasm_bindgen]
 pub fn tanimoto_mhfp_smiles(smi1: &str, smi2: &str) -> Result<f64, JsValue> {
+    enforce_wasm_input_len("SMILES", smi1)?;
+    enforce_wasm_input_len("SMILES", smi2)?;
     let m1 = chematic_smiles::parse(smi1).map_err(|e| JsValue::from_str(&e.to_string()))?;
     let m2 = chematic_smiles::parse(smi2).map_err(|e| JsValue::from_str(&e.to_string()))?;
-    if m1.atom_count() > WASM_MAX_ATOMS || m2.atom_count() > WASM_MAX_ATOMS {
-        return Err(JsValue::from_str(&format!(
-            "molecule too large (max {} atoms)",
-            WASM_MAX_ATOMS
-        )));
-    }
+    enforce_wasm_molecule_size(&m1)?;
+    enforce_wasm_molecule_size(&m2)?;
     Ok(chematic_fp::tanimoto_mhfp(&m1, &m2))
 }
 
@@ -156,8 +154,12 @@ pub fn tanimoto_mhfp_smiles(smi1: &str, smi2: &str) -> Result<f64, JsValue> {
 /// Returns a JS error on parse failure.
 #[wasm_bindgen]
 pub fn tanimoto_smiles(smiles1: &str, smiles2: &str) -> Result<f64, JsValue> {
+    enforce_wasm_input_len("SMILES", smiles1)?;
+    enforce_wasm_input_len("SMILES", smiles2)?;
     let m1 = chematic_smiles::parse(smiles1).map_err(|e| JsValue::from_str(&e.to_string()))?;
     let m2 = chematic_smiles::parse(smiles2).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    enforce_wasm_molecule_size(&m1)?;
+    enforce_wasm_molecule_size(&m2)?;
     Ok(chematic_fp::tanimoto_ecfp4(&m1, &m2))
 }
 

@@ -2,8 +2,8 @@
 
 use crate::{
     MolHandle, WASM_MAX_ATOMS, WASM_MAX_BATCH_ITEMS, WASM_MAX_INPUT_BYTES,
-    WASM_MAX_JSON_STRING_BYTES, enforce_wasm_molecule_size, escape_json_string,
-    parse_smiles_json_array, parse_wasm_string_json_array,
+    WASM_MAX_JSON_STRING_BYTES, bounded_json_string, enforce_wasm_molecule_size,
+    escape_json_string, parse_smiles_json_array, parse_wasm_string_json_array,
 };
 use wasm_bindgen::prelude::*;
 
@@ -170,16 +170,21 @@ pub fn sdf_to_smiles_json(sdf: &str) -> String {
             sdf.len()
         );
     }
-    let entries: Vec<String> = chematic_mol::SdfReader::new(sdf)
-        .take(WASM_MAX_BATCH_ITEMS)
-        .map(|r| match r {
+    let mut entries = Vec::new();
+    for (idx, r) in chematic_mol::SdfReader::new(sdf).enumerate() {
+        if idx >= WASM_MAX_BATCH_ITEMS {
+            return format!(
+                r#"[{{"error":"SDF record count exceeds maximum ({WASM_MAX_BATCH_ITEMS})"}}]"#
+            );
+        }
+        entries.push(match r {
             Ok((mol, _)) => {
                 let smi = chematic_smiles::canonical_smiles(&mol);
                 format!("\"{}\"", smi.replace('"', "\\\""))
             }
             Err(_) => "null".to_string(),
-        })
-        .collect();
+        });
+    }
     format!("[{}]", entries.join(","))
 }
 
@@ -221,9 +226,14 @@ pub fn sdf_to_records_json(sdf: &str) -> String {
             sdf.len()
         );
     }
-    let entries: Vec<String> = chematic_mol::SdfRecordReader::new(sdf)
-        .take(WASM_MAX_BATCH_ITEMS)
-        .map(|r| match r {
+    let mut entries = Vec::new();
+    for (idx, r) in chematic_mol::SdfRecordReader::new(sdf).enumerate() {
+        if idx >= WASM_MAX_BATCH_ITEMS {
+            return format!(
+                r#"[{{"error":"SDF record count exceeds maximum ({WASM_MAX_BATCH_ITEMS})"}}]"#
+            );
+        }
+        entries.push(match r {
             Ok(rec) => {
                 let smi = chematic_smiles::canonical_smiles(&rec.mol);
                 let name = escape_json_string(&rec.meta.name);
@@ -247,8 +257,8 @@ pub fn sdf_to_records_json(sdf: &str) -> String {
                 )
             }
             Err(_) => "null".to_string(),
-        })
-        .collect();
+        });
+    }
     format!("[{}]", entries.join(","))
 }
 
@@ -411,11 +421,16 @@ pub fn cdxml_to_smiles_json(cdxml: &str) -> Result<String, JsValue> {
     if cdxml.len() > WASM_MAX_INPUT_BYTES {
         return Err(JsValue::from_str("CDXML input too large"));
     }
-    let fragments =
-        chematic_mol::parse_cdxml_all(cdxml).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let fragments = chematic_mol::parse_cdxml_all_with_limits(
+        cdxml,
+        &chematic_mol::CdxmlParseLimits {
+            max_fragments: WASM_MAX_BATCH_ITEMS,
+            ..Default::default()
+        },
+    )
+    .map_err(|e| JsValue::from_str(&e.to_string()))?;
     let parts: Vec<String> = fragments
         .iter()
-        .take(WASM_MAX_BATCH_ITEMS)
         .map(|(mol, _)| {
             format!(
                 "\"{}\"",
@@ -664,8 +679,7 @@ pub fn extxyz_frame_json(text: &str) -> Result<String, JsValue> {
             "molecule too large (max {WASM_MAX_ATOMS} atoms)"
         )));
     }
-    serde_json::to_string(&extxyz_frame_to_json_value(&frame))
-        .map_err(|e| JsValue::from_str(&e.to_string()))
+    bounded_json_string(&extxyz_frame_to_json_value(&frame))
 }
 
 /// Build the [`chematic_mol::XyzFrame`] for [`to_extxyz_json`] from its raw
@@ -983,6 +997,11 @@ pub fn convert_common_format(
         JsValue::from_str(&format!("unsupported molecular format: {output_format}"))
     })?;
     let mol = parse_common_format(text, &input).map_err(|e| JsValue::from_str(&e))?;
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!(
+            "format input exceeds maximum atom count ({WASM_MAX_ATOMS})"
+        )));
+    }
     let result = match output.as_str() {
         "smiles" => chematic_smiles::canonical_smiles(&mol),
         "mol" => chematic_mol::write_mol(&mol, &chematic_mol::MolMetadata::default()),
@@ -1012,16 +1031,28 @@ pub fn convert_common_format(
 /// Returns the PDBQT string, or `"error:<msg>"` on failure.
 #[wasm_bindgen]
 pub fn smiles_to_pdbqt(smiles: &str, coords_json: &str, charges_json: &str, name: &str) -> String {
+    if smiles.len() > WASM_MAX_INPUT_BYTES
+        || coords_json.len() > WASM_MAX_JSON_STRING_BYTES
+        || charges_json.len() > WASM_MAX_JSON_STRING_BYTES
+        || name.len() > WASM_MAX_JSON_STRING_BYTES
+    {
+        return "error:input exceeds WASM size limits".to_string();
+    }
     let mol = match chematic_smiles::parse(smiles) {
         Ok(m) => m,
         Err(e) => return format!("error:{e}"),
     };
-    let coords: Vec<(f64, f64, f64)> = serde_json::from_str::<Vec<[f64; 3]>>(coords_json)
-        .unwrap_or_default()
-        .into_iter()
-        .map(|c| (c[0], c[1], c[2]))
-        .collect();
-    let charges: Vec<f64> = serde_json::from_str(charges_json).unwrap_or_default();
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return format!("error:molecule too large (max {WASM_MAX_ATOMS} atoms)");
+    }
+    let coords: Vec<(f64, f64, f64)> = match serde_json::from_str::<Vec<[f64; 3]>>(coords_json) {
+        Ok(values) => values.into_iter().map(|c| (c[0], c[1], c[2])).collect(),
+        Err(e) => return format!("error:coords JSON parse error: {e}"),
+    };
+    let charges: Vec<f64> = match serde_json::from_str(charges_json) {
+        Ok(values) => values,
+        Err(e) => return format!("error:charges JSON parse error: {e}"),
+    };
     chematic_mol::write_pdbqt(&mol, &coords, &charges, name)
 }
 
@@ -1030,8 +1061,15 @@ pub fn smiles_to_pdbqt(smiles: &str, coords_json: &str, charges_json: &str, name
 /// Returns `"error:<msg>"` on parse failure.
 #[wasm_bindgen]
 pub fn inchi_from_smiles(smiles: &str) -> String {
+    if smiles.len() > WASM_MAX_INPUT_BYTES {
+        return format!(
+            "error:SMILES exceeds maximum input size ({} > {WASM_MAX_INPUT_BYTES} bytes)",
+            smiles.len()
+        );
+    }
     match chematic_smiles::parse(smiles) {
-        Ok(mol) => chematic_inchi::inchi(&mol),
+        Ok(mol) if mol.atom_count() <= WASM_MAX_ATOMS => chematic_inchi::inchi(&mol),
+        Ok(_) => format!("error:SMILES exceeds maximum atom count ({WASM_MAX_ATOMS})"),
         Err(e) => format!("error:{e}"),
     }
 }
@@ -1041,11 +1079,18 @@ pub fn inchi_from_smiles(smiles: &str) -> String {
 /// Returns `"error:<msg>"` on parse failure.
 #[wasm_bindgen]
 pub fn inchikey_from_smiles(smiles: &str) -> String {
+    if smiles.len() > WASM_MAX_INPUT_BYTES {
+        return format!(
+            "error:SMILES exceeds maximum input size ({} > {WASM_MAX_INPUT_BYTES} bytes)",
+            smiles.len()
+        );
+    }
     match chematic_smiles::parse(smiles) {
-        Ok(mol) => {
+        Ok(mol) if mol.atom_count() <= WASM_MAX_ATOMS => {
             let inchi_str = chematic_inchi::inchi(&mol);
             chematic_inchi::inchi_key(&inchi_str)
         }
+        Ok(_) => format!("error:SMILES exceeds maximum atom count ({WASM_MAX_ATOMS})"),
         Err(e) => format!("error:{e}"),
     }
 }

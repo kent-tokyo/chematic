@@ -1,6 +1,6 @@
 //! Reaction SMARTS querying for chemical reaction matching.
 
-use chematic_smarts::{QueryMolecule, find_matches, parse_smarts};
+use chematic_smarts::{MatchConfig, QueryMolecule, find_matches_with_config, parse_smarts};
 use std::collections::HashSet;
 
 use crate::reaction::Reaction;
@@ -166,6 +166,12 @@ impl MapNumberInfo {
 /// Error type for reaction query operations.
 #[derive(Debug)]
 pub enum ReactionQueryError {
+    /// A configured batch-query limit was exceeded.
+    ResourceLimit {
+        resource: &'static str,
+        actual: usize,
+        limit: usize,
+    },
     /// Failed to parse a SMARTS pattern.
     SmartsParseError { smarts: String, source: String },
     /// Missing arrow delimiter in reaction SMARTS.
@@ -179,6 +185,14 @@ pub enum ReactionQueryError {
 impl core::fmt::Display for ReactionQueryError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
+            Self::ResourceLimit {
+                resource,
+                actual,
+                limit,
+            } => write!(
+                f,
+                "reaction query {resource} exceeds limit {limit} (got {actual})"
+            ),
             Self::SmartsParseError { smarts, source } => {
                 write!(f, "failed to parse SMARTS '{smarts}': {source}")
             }
@@ -576,6 +590,16 @@ pub fn parse_reaction_query(s: &str) -> Result<ReactionQuery, ReactionQueryError
     })
 }
 
+// Query reporting only retains one embedding per molecule. Asking the VF2
+// engine for one match avoids allocating every symmetric embedding just to
+// inspect `.first()` below.
+fn first_match_config() -> MatchConfig {
+    MatchConfig {
+        max_matches: Some(1),
+        ..MatchConfig::default()
+    }
+}
+
 /// Check if a reaction matches the given query pattern.
 ///
 /// Returns `true` if:
@@ -588,7 +612,7 @@ pub fn has_reaction_substructure_match(rxn: &Reaction, query: &ReactionQuery) ->
     for pattern in &query.reactant_patterns {
         let mut matched = false;
         for mol in &rxn.reactants {
-            if !find_matches(pattern, mol).is_empty() {
+            if !find_matches_with_config(pattern, mol, &first_match_config()).is_empty() {
                 matched = true;
                 break;
             }
@@ -602,7 +626,7 @@ pub fn has_reaction_substructure_match(rxn: &Reaction, query: &ReactionQuery) ->
     for pattern in &query.product_patterns {
         let mut matched = false;
         for mol in &rxn.products {
-            if !find_matches(pattern, mol).is_empty() {
+            if !find_matches_with_config(pattern, mol, &first_match_config()).is_empty() {
                 matched = true;
                 break;
             }
@@ -629,7 +653,7 @@ pub fn get_reaction_smarts_matches(rxn: &Reaction, query: &ReactionQuery) -> Rea
     for (pattern_idx, pattern) in query.reactant_patterns.iter().enumerate() {
         let mut matches_for_pattern = Vec::new();
         for (mol_idx, mol) in rxn.reactants.iter().enumerate() {
-            let atom_matches = find_matches(pattern, mol);
+            let atom_matches = find_matches_with_config(pattern, mol, &first_match_config());
             // Use first match if any exist (we only care that it matched)
             if let Some(first_match) = atom_matches.first() {
                 let atom_indices: Vec<usize> = first_match
@@ -651,7 +675,7 @@ pub fn get_reaction_smarts_matches(rxn: &Reaction, query: &ReactionQuery) -> Rea
     for (pattern_idx, pattern) in query.product_patterns.iter().enumerate() {
         let mut matches_for_pattern = Vec::new();
         for (mol_idx, mol) in rxn.products.iter().enumerate() {
-            let atom_matches = find_matches(pattern, mol);
+            let atom_matches = find_matches_with_config(pattern, mol, &first_match_config());
             // Use first match if any exist (we only care that it matched)
             if let Some(first_match) = atom_matches.first() {
                 let atom_indices: Vec<usize> = first_match
@@ -695,6 +719,24 @@ pub struct BatchQueryResults {
     pub match_percentage: f64,
     /// Individual match results
     pub matches: Vec<(usize, bool)>, // (reaction_index, is_match)
+}
+
+/// Resource limits for batch reaction SMARTS queries.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct BatchQueryLimits {
+    /// Maximum number of reactions processed in one batch.
+    pub max_reactions: usize,
+    /// Maximum number of patterns evaluated in one library batch.
+    pub max_patterns: usize,
+}
+
+impl Default for BatchQueryLimits {
+    fn default() -> Self {
+        Self {
+            max_reactions: 100_000,
+            max_patterns: 10_000,
+        }
+    }
 }
 
 impl BatchQueryResults {
@@ -792,6 +834,22 @@ pub fn batch_query_reactions(
     reactions: &[Reaction],
     smarts: &str,
 ) -> Result<BatchQueryResults, ReactionQueryError> {
+    batch_query_reactions_with_limits(reactions, smarts, &BatchQueryLimits::default())
+}
+
+/// Batch query reactions with an explicit reaction-count limit.
+pub fn batch_query_reactions_with_limits(
+    reactions: &[Reaction],
+    smarts: &str,
+    limits: &BatchQueryLimits,
+) -> Result<BatchQueryResults, ReactionQueryError> {
+    if reactions.len() > limits.max_reactions {
+        return Err(ReactionQueryError::ResourceLimit {
+            resource: "batch reactions",
+            actual: reactions.len(),
+            limit: limits.max_reactions,
+        });
+    }
     let pattern = parse_reaction_smarts(smarts)?;
     let query = ReactionQuery {
         reactant_patterns: pattern.reactant_patterns,
@@ -867,6 +925,60 @@ pub fn batch_query_with_library(
     }
 
     results
+}
+
+/// Batch query a pattern library with explicit reaction and pattern limits.
+pub fn batch_query_with_library_with_limits(
+    reactions: &[Reaction],
+    library: &ReactionPatternLibrary,
+    limits: &BatchQueryLimits,
+) -> Result<std::collections::HashMap<String, BatchQueryResults>, ReactionQueryError> {
+    if reactions.len() > limits.max_reactions {
+        return Err(ReactionQueryError::ResourceLimit {
+            resource: "batch reactions",
+            actual: reactions.len(),
+            limit: limits.max_reactions,
+        });
+    }
+    if library.patterns.len() > limits.max_patterns {
+        return Err(ReactionQueryError::ResourceLimit {
+            resource: "query patterns",
+            actual: library.patterns.len(),
+            limit: limits.max_patterns,
+        });
+    }
+
+    let mut results = std::collections::HashMap::with_capacity(library.patterns.len());
+    for (pattern_name, pattern) in &library.patterns {
+        let query = ReactionQuery {
+            reactant_patterns: pattern.reactant_patterns.clone(),
+            product_patterns: pattern.product_patterns.clone(),
+        };
+        let mut matches = Vec::with_capacity(reactions.len());
+        let mut matching_count = 0;
+        for (idx, rxn) in reactions.iter().enumerate() {
+            let is_match = get_reaction_smarts_matches(rxn, &query).is_complete_match;
+            if is_match {
+                matching_count += 1;
+            }
+            matches.push((idx, is_match));
+        }
+        let match_percentage = if reactions.is_empty() {
+            0.0
+        } else {
+            (matching_count as f64 / reactions.len() as f64) * 100.0
+        };
+        results.insert(
+            pattern_name.clone(),
+            BatchQueryResults {
+                total_reactions: reactions.len(),
+                matching_reactions: matching_count,
+                match_percentage,
+                matches,
+            },
+        );
+    }
+    Ok(results)
 }
 
 #[cfg(test)]
@@ -1389,6 +1501,26 @@ mod tests {
         assert_eq!(batch.total_reactions, 0);
         assert_eq!(batch.matching_reactions, 0);
         assert_eq!(batch.match_percentage, 0.0);
+    }
+
+    #[test]
+    fn test_batch_query_limits_reject_oversized_batch() {
+        let reactions = vec![parse_reaction("C>>C").unwrap()];
+        let err = batch_query_reactions_with_limits(
+            &reactions,
+            "[C:1]>>[C:1]",
+            &BatchQueryLimits {
+                max_reactions: 0,
+                ..Default::default()
+            },
+        );
+        assert!(matches!(
+            err,
+            Err(ReactionQueryError::ResourceLimit {
+                resource: "batch reactions",
+                ..
+            })
+        ));
     }
 
     #[test]

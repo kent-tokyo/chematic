@@ -241,6 +241,9 @@ pub fn classify_dialect(method: &str, params: &Value) -> Result<RequestDialect, 
 /// attempting to parse JSON, so an oversized line never reaches the parser.
 pub const MAX_REQUEST_BYTES: usize = 1 << 20; // 1 MiB
 
+/// Maximum serialized JSON-RPC response size written to stdio.
+pub const MAX_RESPONSE_BYTES: usize = 1 << 20; // 1 MiB
+
 /// Maximum accepted JSON nesting depth (objects and arrays combined).
 /// Checked on the raw byte stream before parsing (so an adversarially deep
 /// document is rejected before `serde_json` ever recurses into it), and

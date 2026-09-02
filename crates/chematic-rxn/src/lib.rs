@@ -29,9 +29,10 @@ pub use enumerate::{
 pub use green::{atom_economy, e_factor, pmi_rxn, reaction_mass_efficiency};
 pub use perf_counters::PerfCounters;
 pub use query::{
-    BatchQueryResults, ReactionPatternLibrary, ReactionQuery, ReactionQueryError,
-    batch_query_reactions, batch_query_with_library, has_reaction_substructure_match,
-    parse_reaction_query, query_reaction,
+    BatchQueryLimits, BatchQueryResults, ReactionPatternLibrary, ReactionQuery, ReactionQueryError,
+    batch_query_reactions, batch_query_reactions_with_limits, batch_query_with_library,
+    batch_query_with_library_with_limits, has_reaction_substructure_match, parse_reaction_query,
+    query_reaction,
 };
 pub use reaction::{
     Reaction, ReactionCenter, ReactionParseLimits, RxnError, find_reaction_center, parse_reaction,
@@ -39,6 +40,7 @@ pub use reaction::{
 };
 pub use retro::{DEFAULT_TEMPLATES, RetroClass, RetroResult, RetroTemplate, retro_disconnect};
 pub use transform::{
-    ReactionMatch, TransformError, apply_reaction_match, find_reaction_matches, run_reactants,
-    run_reactants_strict,
+    ReactionMatch, ReactionTransformLimits, TransformError, apply_reaction_match,
+    find_reaction_matches, find_reaction_matches_with_limits, run_reactants, run_reactants_strict,
+    run_reactants_strict_with_limits, run_reactants_with_limits,
 };

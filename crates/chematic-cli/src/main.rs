@@ -31,6 +31,11 @@ struct BatchLimits {
     max_line_bytes: usize,
 }
 
+const MAX_OUTPUT_BYTES: usize = 64 * 1024 * 1024;
+const MAX_INPUT_BYTES: usize = 64 * 1024 * 1024;
+const MAX_SMILES_INPUT_BYTES: usize = 1 << 20;
+const MAX_SMILES_ATOMS: usize = 10_000;
+
 impl Default for BatchLimits {
     fn default() -> Self {
         Self {
@@ -249,6 +254,11 @@ fn convert_text(text: &str, input_format: &str, output_format: &str) -> Result<S
             .map_err(|e| e.to_string())?,
         _ => unreachable!(),
     };
+    if mol.atom_count() > MAX_SMILES_ATOMS {
+        return Err(format!(
+            "molecule exceeds maximum atom count ({MAX_SMILES_ATOMS})"
+        ));
+    }
     Ok(match output.as_str() {
         "smiles" => chematic_smiles::canonical_smiles(&mol),
         "mol" => chematic_mol::write_mol(&mol, &chematic_mol::MolMetadata::default()),
@@ -265,6 +275,11 @@ fn convert_text(text: &str, input_format: &str, output_format: &str) -> Result<S
 }
 
 fn read_limited_input(path: Option<&PathBuf>, max_input_bytes: usize) -> Result<String, String> {
+    if max_input_bytes > MAX_INPUT_BYTES {
+        return Err(format!(
+            "requested input limit exceeds CLI maximum ({MAX_INPUT_BYTES} bytes)"
+        ));
+    }
     let mut bytes = Vec::new();
     let read_result = match path {
         Some(path) => {
@@ -283,6 +298,22 @@ fn read_limited_input(path: Option<&PathBuf>, max_input_bytes: usize) -> Result<
         ));
     }
     String::from_utf8(bytes).map_err(|e| format!("batch input is not UTF-8: {e}"))
+}
+
+fn parse_cli_smiles(smiles: &str) -> Result<chematic_core::Molecule, String> {
+    if smiles.len() > MAX_SMILES_INPUT_BYTES {
+        return Err(format!(
+            "SMILES exceeds maximum input size ({} > {MAX_SMILES_INPUT_BYTES} bytes)",
+            smiles.len()
+        ));
+    }
+    let mol = chematic_smiles::parse(smiles).map_err(|e| e.to_string())?;
+    if mol.atom_count() > MAX_SMILES_ATOMS {
+        return Err(format!(
+            "SMILES exceeds maximum atom count ({MAX_SMILES_ATOMS})"
+        ));
+    }
+    Ok(mol)
 }
 
 fn batch_lines<'a>(text: &'a str, limits: &BatchLimits) -> Result<Vec<&'a str>, String> {
@@ -315,6 +346,11 @@ fn batch_lines<'a>(text: &'a str, limits: &BatchLimits) -> Result<Vec<&'a str>, 
 }
 
 fn write_output(path: Option<&PathBuf>, text: &str) -> Result<(), String> {
+    if text.len() > MAX_OUTPUT_BYTES {
+        return Err(format!(
+            "output exceeds maximum size of {MAX_OUTPUT_BYTES} bytes"
+        ));
+    }
     match path {
         Some(path) => fs::write(path, text).map_err(|e| format!("write {}: {e}", path.display())),
         None => io::stdout()
@@ -324,7 +360,7 @@ fn write_output(path: Option<&PathBuf>, text: &str) -> Result<(), String> {
 }
 
 fn descriptors_json(smiles: &str) -> Result<String, String> {
-    let mol = chematic_smiles::parse(smiles).map_err(|e| e.to_string())?;
+    let mol = parse_cli_smiles(smiles)?;
     Ok(serde_json::json!({
         "smiles": chematic_smiles::canonical_smiles(&mol),
         "formula": chematic_chem::calc_mol_formula(&mol),
@@ -341,7 +377,7 @@ fn descriptors_json(smiles: &str) -> Result<String, String> {
 }
 
 fn parse_json(smiles: &str) -> Result<String, String> {
-    let mol = chematic_smiles::parse(smiles).map_err(|e| e.to_string())?;
+    let mol = parse_cli_smiles(smiles)?;
     Ok(serde_json::json!({
         "input_smiles": smiles,
         "canonical_smiles": chematic_smiles::canonical_smiles(&mol),
@@ -354,7 +390,7 @@ fn parse_json(smiles: &str) -> Result<String, String> {
 }
 
 fn fingerprint_json(smiles: &str, algorithm: &str) -> Result<String, String> {
-    let mol = chematic_smiles::parse(smiles).map_err(|e| e.to_string())?;
+    let mol = parse_cli_smiles(smiles)?;
     let algorithm = algorithm.to_ascii_lowercase();
     let fp = match algorithm.as_str() {
         "ecfp4" => chematic_fp::ecfp4(&mol),
@@ -386,8 +422,8 @@ fn fingerprint_for(
 }
 
 fn similarity_json(smiles_a: &str, smiles_b: &str, algorithm: &str) -> Result<String, String> {
-    let mol_a = chematic_smiles::parse(smiles_a).map_err(|e| e.to_string())?;
-    let mol_b = chematic_smiles::parse(smiles_b).map_err(|e| e.to_string())?;
+    let mol_a = parse_cli_smiles(smiles_a)?;
+    let mol_b = parse_cli_smiles(smiles_b)?;
     let algorithm = algorithm.to_ascii_lowercase();
     let fp_a = fingerprint_for(&mol_a, &algorithm)?;
     let fp_b = fingerprint_for(&mol_b, &algorithm)?;
@@ -401,7 +437,7 @@ fn similarity_json(smiles_a: &str, smiles_b: &str, algorithm: &str) -> Result<St
 }
 
 fn substructure_json(smiles: &str, smarts: &str) -> Result<String, String> {
-    let mol = chematic_smiles::parse(smiles).map_err(|e| e.to_string())?;
+    let mol = parse_cli_smiles(smiles)?;
     let query = chematic_smarts::parse_smarts(smarts).map_err(|e| e.to_string())?;
     let matches = chematic_smarts::find_matches(&query, &mol);
     let matches: Vec<Vec<usize>> = matches
@@ -425,7 +461,7 @@ fn substructure_json(smiles: &str, smarts: &str) -> Result<String, String> {
 }
 
 fn standardize_json(smiles: &str) -> Result<String, String> {
-    let mol = chematic_smiles::parse(smiles).map_err(|e| e.to_string())?;
+    let mol = parse_cli_smiles(smiles)?;
     let input_smiles = chematic_smiles::canonical_smiles(&mol);
     let (standardized, report) = chematic_chem::StandardizationPipeline::default().run(&mol);
     let output_smiles = chematic_smiles::canonical_smiles(&standardized);
@@ -487,6 +523,7 @@ fn standardize_json(smiles: &str) -> Result<String, String> {
 }
 
 fn report_json(smiles: &str) -> Result<String, String> {
+    let _ = parse_cli_smiles(smiles)?;
     let report = chematic_chem::molecule_report(smiles).map_err(|e| e.to_string())?;
     serde_json::to_string(&report).map_err(|e| format!("serialize report: {e}"))
 }
@@ -950,9 +987,10 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::{
-        BatchLimits, batch_descriptors_json, batch_fingerprints_json, batch_reactions_json,
-        batch_report_json, batch_similarity_json, batch_standardize_json, batch_substructure_json,
-        convert_text, descriptors_json, fingerprint_json, parse_json, reaction_balance_json,
+        BatchLimits, MAX_OUTPUT_BYTES, MAX_SMILES_ATOMS, MAX_SMILES_INPUT_BYTES,
+        batch_descriptors_json, batch_fingerprints_json, batch_reactions_json, batch_report_json,
+        batch_similarity_json, batch_standardize_json, batch_substructure_json, convert_text,
+        descriptors_json, fingerprint_json, parse_cli_smiles, parse_json, reaction_balance_json,
         reaction_fingerprint_json, reaction_json, reaction_match_json, reaction_similarity_json,
         report_json, similarity_json, standardize_json, substructure_json,
     };
@@ -1330,6 +1368,34 @@ mod tests {
             batch_reactions_json("CCO>>CCO\n", &limits)
                 .unwrap_err()
                 .contains("max-line-bytes")
+        );
+    }
+
+    #[test]
+    fn single_smiles_contract_rejects_oversized_bytes_before_parse() {
+        let input = "C".repeat(MAX_SMILES_INPUT_BYTES + 1);
+        let error = parse_cli_smiles(&input)
+            .err()
+            .expect("oversized input must fail");
+        assert!(error.contains("maximum input size"));
+    }
+
+    #[test]
+    fn single_smiles_contract_rejects_oversized_molecules() {
+        let input = "C".repeat(MAX_SMILES_ATOMS + 1);
+        let error = parse_cli_smiles(&input)
+            .err()
+            .expect("oversized molecule must fail");
+        assert!(error.contains("maximum atom count"));
+    }
+
+    #[test]
+    fn output_limit_is_explicit_and_bounded() {
+        let oversized = "x".repeat(MAX_OUTPUT_BYTES + 1);
+        assert!(
+            super::write_output(Some(&std::path::PathBuf::from("/dev/null")), &oversized)
+                .unwrap_err()
+                .contains("maximum size")
         );
     }
 }

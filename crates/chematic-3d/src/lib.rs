@@ -108,7 +108,7 @@ pub use torsion_motif::{
     torsion_profile_to_json,
 };
 pub use usr::{shape_screen, usr_descriptors, usr_from_dg, usr_similarity};
-pub use xyz::{XyzError, parse_xyz, write_xyz};
+pub use xyz::{XyzError, XyzParseLimits, parse_xyz, parse_xyz_with_limits, write_xyz};
 
 // ---------------------------------------------------------------------------
 // Configuration types
@@ -318,7 +318,7 @@ mod tests {
         generate_conformer_ensemble, generate_conformer_ensemble_mmff94,
         generate_conformer_ensemble_with_config,
         pdb::{parse_pdb_atoms, pdb_to_molecule, write_pdb},
-        xyz::{XyzError, parse_xyz, write_xyz},
+        xyz::{XyzError, XyzParseLimits, parse_xyz, parse_xyz_with_limits, write_xyz},
     };
 
     // -----------------------------------------------------------------------
@@ -696,6 +696,44 @@ mod tests {
         let xyz = "2\n\nC 0.0 0.0\nC 1.0 1.0 1.0\n"; // first atom line too short
         let result = parse_xyz(xyz);
         assert!(matches!(result, Err(XyzError::InvalidLine(_))));
+    }
+
+    #[test]
+    fn test_xyz_parse_limits_reject_input_atoms_and_lines() {
+        let xyz = "1\ncomment\nC 0.0 0.0 0.0\n";
+        assert!(matches!(
+            parse_xyz_with_limits(
+                xyz,
+                XyzParseLimits {
+                    max_input_bytes: 4,
+                    ..Default::default()
+                }
+            ),
+            Err(XyzError::InputTooLarge { .. })
+        ));
+        assert!(matches!(
+            parse_xyz_with_limits(
+                "999\ncomment\n",
+                XyzParseLimits {
+                    max_atoms: 10,
+                    ..Default::default()
+                }
+            ),
+            Err(XyzError::TooManyAtoms {
+                count: 999,
+                limit: 10,
+            })
+        ));
+        assert!(matches!(
+            parse_xyz_with_limits(
+                "1\nx\nC 0.0 0.0 0.0\n",
+                XyzParseLimits {
+                    max_line_bytes: 3,
+                    ..Default::default()
+                }
+            ),
+            Err(XyzError::LineTooLong { line: 3, limit: 3 })
+        ));
     }
 
     // =========================================================================

@@ -1,0 +1,49 @@
+name: Supply-chain evidence
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v[0-9]*.[0-9]*.[0-9]*']
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  evidence:
+    name: Generate SBOM and provenance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
+
+      - name: Pin evidence timestamp to source revision
+        run: echo "SOURCE_DATE_EPOCH=$(git show -s --format=%ct HEAD)" >> "$GITHUB_ENV"
+
+      - name: Generate SPDX SBOM
+        run: python3 scripts/generate_sbom.py --output target/sbom/chematic.spdx.json
+
+      - name: Generate provenance and checksums
+        run: |
+          python3 scripts/generate_provenance.py \
+            --output target/sbom/chematic.provenance.json \
+            --artifact target/sbom/chematic.spdx.json
+          sha256sum target/sbom/chematic.spdx.json target/sbom/chematic.provenance.json \
+            > target/sbom/SHA256SUMS
+
+      - name: Attest provenance manifest
+        uses: actions/attest-build-provenance@96b4a1ef7235a096b17240c259729fdd70c83d45 # v2
+        with:
+          subject-path: target/sbom/chematic.provenance.json
+
+      - name: Upload supply-chain evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: chematic-supply-chain-evidence
+          path: target/sbom/

@@ -39,25 +39,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR branch
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           path: pr
 
       - name: Checkout main branch
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: main
           path: main
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
 
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: '3.12'
 
       - name: Cache cargo
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |
             ~/.cargo/registry
@@ -78,7 +78,7 @@ jobs:
           .venv/bin/pip install maturin --quiet
           .venv/bin/maturin develop --release -m crates/chematic-py/Cargo.toml
           .venv/bin/python scripts/bench_startup.py --runs 5 --json > ../baseline_startup.json
-          for i in 1 2 3 4 5; do
+          for _ in 1 2 3 4 5; do
             .venv/bin/python scripts/bench_smiles_parse.py --n 5000 --json | jq -c .
           done > ../baseline_parse.jsonl
 
@@ -89,7 +89,7 @@ jobs:
           .venv/bin/pip install maturin --quiet
           .venv/bin/maturin develop --release -m crates/chematic-py/Cargo.toml
           .venv/bin/python scripts/bench_startup.py --runs 5 --json > ../candidate_startup.json
-          for i in 1 2 3 4 5; do
+          for _ in 1 2 3 4 5; do
             .venv/bin/python scripts/bench_smiles_parse.py --n 5000 --json | jq -c .
           done > ../candidate_parse.jsonl
 
@@ -168,21 +168,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR branch
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           path: pr
 
       - name: Checkout main branch
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: main
           path: main
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
 
       - name: Cache cargo
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |
             ~/.cargo/registry
@@ -450,7 +450,7 @@ jobs:
 
       - name: Upload Criterion gate artifacts
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: criterion-gate-artifacts
           path: artifacts/

@@ -1,0 +1,47 @@
+[package]
+name = "chematic-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+chematic-3d = { path = "../crates/chematic-3d" }
+chematic-chem = { path = "../crates/chematic-chem" }
+chematic-mol = { path = "../crates/chematic-mol" }
+chematic-rxn = { path = "../crates/chematic-rxn" }
+chematic-smarts = { path = "../crates/chematic-smarts" }
+chematic-smiles = { path = "../crates/chematic-smiles" }
+
+[[bin]]
+name = "smiles"
+path = "fuzz_targets/smiles.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "xyz"
+path = "fuzz_targets/xyz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "moljson"
+path = "fuzz_targets/moljson.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "formats"
+path = "fuzz_targets/formats.rs"
+test = false
+doc = false
+bench = false
+
+[workspace]

@@ -5,6 +5,9 @@ chematic is dual-licensed under MIT OR Apache-2.0 (see `LICENSE-MIT` /
 third-party projects, distinct from the compiled/linked dependency tree
 covered by ordinary Cargo license metadata.
 
+The project's copyright holder is Kentaro Tanabe (kent-tokyo). See `NOTICE` for the
+project attribution notice; the third-party notices below remain separate.
+
 ## RDKit aromaticity implementation
 
 `crates/chematic-perception/src/rdkit_parity.rs` is a source-verified,

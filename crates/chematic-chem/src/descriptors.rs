@@ -521,14 +521,13 @@ fn hba_count_from_set(mol: &Molecule, ring_bonds: &FxHashSet<BondIdx>) -> usize 
                 let h = implicit_hcount(mol, *idx);
                 if atom.aromatic {
                     // Pyridine-type aromatic N (lone pair orthogonal to pi) IS an HBA.
-                    // Excluded cases:
-                    //   h > 0  → [nH] pyrrole-type: lone pair in pi system
-                    //   degree >= 3 → N-substituted pyrrole or bridgehead N
-                    //                 (e.g. N-methyl pyrrole, indolizine N): lone pair
-                    //                 participates in the aromatic π system
-                    // Known limitation: 1/5000 molecules (a merocyanine dye) differs from
-                    // RDKit because N-methyl in push-pull quinonoid rings is ambiguous.
-                    h == 0 && mol.degree(*idx) < 3
+                    // Excluded case:
+                    //   h > 0 → [nH] pyrrole-type: lone pair participates in the
+                    //           aromatic pi system.
+                    // Aromatic [n] remains an acceptor even when substituted or
+                    // fused (e.g. caffeine's N-methyl imide nitrogens), matching
+                    // RDKit's CalcNumHBA semantics.
+                    h == 0
                 } else {
                     // Non-aromatic N: must have formal valence 3 ([N;v3] in SMARTS);
                     // this excludes radical N (C[N]C, valence 2) and unusual species.
@@ -4196,6 +4195,14 @@ mod tests {
         //   two =NH imine nitrogens → counted (double bond to neighbor, not single-like)
         let m = mol("CN(C)C(=N)NC(=N)N");
         assert_eq!(hba_count(&m), 2, "metformin HBA should match RDKit (2)");
+    }
+
+    #[test]
+    fn test_hba_caffeine_matches_rdkit_for_substituted_aromatic_n() {
+        // RDKit counts caffeine's four aromatic nitrogens and two carbonyl
+        // oxygens as acceptors, including the substituted degree-3 [n] atoms.
+        let m = mol("Cn1cnc2c1c(=O)n(C)c(=O)n2C");
+        assert_eq!(hba_count(&m), 6);
     }
 
     // -- formal_charge_sum tests -------------------------------------------

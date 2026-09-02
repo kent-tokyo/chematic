@@ -1,8 +1,9 @@
 //! 2D depiction (SVG), SMARTS matching, and misc reporting bindings.
 
 use crate::{
-    DepictOptions, MolHandle, WASM_MAX_ATOMS, WASM_MAX_INPUT_BYTES, WASM_MAX_SMARTS_MATCHES,
-    bond_in_ring, enforce_wasm_input_len, enforce_wasm_molecule_size, escape_json_string,
+    DepictOptions, MolHandle, WASM_MAX_ATOMS, WASM_MAX_BATCH_ITEMS, WASM_MAX_INPUT_BYTES,
+    WASM_MAX_SMARTS_MATCHES, bond_in_ring, enforce_wasm_input_len, enforce_wasm_molecule_size,
+    escape_json_string,
 };
 use wasm_bindgen::prelude::*;
 
@@ -23,8 +24,20 @@ pub fn parse_smiles(s: &str) -> Result<MolHandle, JsValue> {
 ///
 /// Lines that fail to parse are silently skipped.
 /// `cols` controls the number of columns (each cell is 200×200 px).
+/// The input is limited to 1 MiB, 1,024 non-empty records, and 10,000 atoms
+/// per successfully parsed molecule. Limit violations return an empty SVG
+/// containing an error title.
 #[wasm_bindgen]
 pub fn depict_svg_grid(smiles_block: &str, cols: usize) -> String {
+    if smiles_block.len() > WASM_MAX_INPUT_BYTES {
+        return wasm_error_svg("input exceeds maximum size");
+    }
+    if nonempty_line_count(smiles_block) > WASM_MAX_BATCH_ITEMS {
+        return wasm_error_svg("molecule count exceeds maximum (1024)");
+    }
+    if has_oversized_molecule(smiles_block) {
+        return wasm_error_svg("molecule exceeds maximum atom count (10000)");
+    }
     let mols: Vec<chematic_core::Molecule> = smiles_block
         .lines()
         .filter(|s| !s.trim().is_empty())
@@ -300,8 +313,20 @@ pub fn get_bond_between(mol: &MolHandle, atom1: u32, atom2: u32) -> String {
 ///
 /// Invalid SMILES are rendered as empty cells; SMARTS parse failure returns an
 /// unhighlighted grid (the SMARTS is silently ignored).
+/// The input is limited to 1 MiB, 1,024 non-empty records, and 10,000 atoms
+/// per successfully parsed molecule. Limit violations return an empty SVG
+/// containing an error title.
 #[wasm_bindgen]
 pub fn depict_svg_grid_highlighted(smiles_block: &str, cols: usize, match_smarts: &str) -> String {
+    if smiles_block.len() > WASM_MAX_INPUT_BYTES || match_smarts.len() > WASM_MAX_INPUT_BYTES {
+        return wasm_error_svg("input exceeds maximum size");
+    }
+    if nonempty_line_count(smiles_block) > WASM_MAX_BATCH_ITEMS {
+        return wasm_error_svg("molecule count exceeds maximum (1024)");
+    }
+    if has_oversized_molecule(smiles_block) {
+        return wasm_error_svg("molecule exceeds maximum atom count (10000)");
+    }
     // Parse all SMILES, skipping invalid ones.
     let mols: Vec<chematic_core::Molecule> = smiles_block
         .lines()
@@ -573,6 +598,8 @@ pub fn ring_families_json(mol: &MolHandle) -> Result<String, JsValue> {
 ///
 /// Empty lines and invalid SMILES are silently skipped.
 /// Returns the same card-grid HTML as Python's `chematic.report()`.
+/// The input is limited to 1 MiB, 1,024 non-empty records, and 10,000 atoms
+/// per successfully parsed molecule. Limit violations return an HTML error.
 ///
 /// ```js
 /// const html = mod.batch_report_html("CCO\nc1ccccc1\nCC(=O)O");
@@ -585,6 +612,16 @@ pub fn batch_report_html(smiles_lines: &str) -> String {
         brenk_passes, hba_count_lipinski, hbd_count, logp_and_mr, molecular_weight, pains_passes,
         qed_with_bundle, ring_bundle, tpsa,
     };
+
+    if smiles_lines.len() > WASM_MAX_INPUT_BYTES {
+        return wasm_error_html("input exceeds maximum size");
+    }
+    if nonempty_line_count(smiles_lines) > WASM_MAX_BATCH_ITEMS {
+        return wasm_error_html("molecule count exceeds maximum (1024)");
+    }
+    if has_oversized_molecule(smiles_lines) {
+        return wasm_error_html("molecule exceeds maximum atom count (10000)");
+    }
 
     let mut cards: Vec<(f64, String)> = smiles_lines
         .lines()
@@ -659,6 +696,29 @@ h1{{font-size:1.4rem;color:#333;margin-bottom:4px}}
 </body>
 </html>"#,
         plural = if n == 1 { "" } else { "s" },
+    )
+}
+
+fn nonempty_line_count(input: &str) -> usize {
+    input.lines().filter(|line| !line.trim().is_empty()).count()
+}
+
+fn has_oversized_molecule(input: &str) -> bool {
+    input
+        .lines()
+        .filter_map(|line| chematic_smiles::parse(line.trim()).ok())
+        .any(|mol| mol.atom_count() > WASM_MAX_ATOMS)
+}
+
+fn wasm_error_svg(message: &str) -> String {
+    format!(
+        r#"<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0"><title>chematic error: {message}</title></svg>"#
+    )
+}
+
+fn wasm_error_html(message: &str) -> String {
+    format!(
+        "<!doctype html><meta charset=\"utf-8\"><title>chematic error</title><p>chematic error: {message}</p>"
     )
 }
 

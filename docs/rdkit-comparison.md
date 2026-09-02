@@ -2,6 +2,10 @@
 
 This page gives a direct comparison between chematic and RDKit for teams evaluating which library to use.
 
+The performance figures are dated snapshots, not current-release guarantees.
+Use [`benchmark.md`](benchmark.md) for the latest reproducible run and its
+exact environment.
+
 See also: [`rdkit-migration.md`](rdkit-migration.md) for a feature-by-feature Supported/Partial/Not-supported breakdown.
 
 ---

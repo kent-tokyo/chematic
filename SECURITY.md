@@ -4,12 +4,13 @@
 
 | Version | Supported | Status |
 |---------|-----------|--------|
-| v0.25.0 | Yes | Current release — active support |
-| v0.23.0 | Limited | Security fixes only (limited) |
-| < v0.23.0 | No | Unsupported |
+| v0.89.0 | Candidate | Linux sanitizer and focused Miri evidence obtained; publication pending |
+| v0.88.0 | Yes | Previous stable release — active support |
+| < v0.88.0 | Limited | Security fixes only (limited) |
 
-**Active Support**: Latest release (v0.25.0) receives all security updates.
-**Limited Support**: Previous release receives critical security fixes only.  
+**Active Support**: v0.88.0 remains the latest published release until
+v0.89.0 is verified and published.
+**Candidate**: v0.89.0 is local-only and not yet supported as a published release.
 **End of Life**: Older versions receive no support.
 
 ---
@@ -68,7 +69,9 @@ The following are **NOT** considered security vulnerabilities in chematic:
 - **Incorrect chemistry results**: Accuracy bugs (report as GitHub Issues instead)
 - **Missing RDKit features**: Partial implementation vs. RDKit (by design)
 - **Dependency vulnerabilities**: If a transitive dependency has a CVE, report to that project; we will update via Dependabot
-- **Third-party FFI exploits**: chematic has zero C/C++ FFI by design
+- **Third-party FFI exploits**: the default feature set has no C/C++ FFI; the
+  optional `native-inchi` feature uses a narrowly scoped vendored InChI FFI
+  boundary, which is separately reviewed and unavailable to WASM
 - **Transition metal chemistry**: Out of scope (atom valence model limitation, not a vulnerability)
 - **ML model attacks**: Cheminformatics is non-ML in chematic
 
@@ -102,6 +105,9 @@ Subscribe to GitHub notifications for this repository to receive alerts about se
 - Safe: Runs in browser sandbox
 - Safe: No network calls
 - Note: SMILES/InChI parsing is complex; malformed input won't exploit chematic but may consume CPU
+- CI smoke coverage runs the static demo on Chromium, Firefox, and WebKit,
+  including an oversized-SMILES rejection check. This does not replace a full
+  browser adversarial assessment.
 
 ### Node.js / Electron
 
@@ -111,13 +117,23 @@ Subscribe to GitHub notifications for this repository to receive alerts about se
 
 ### Rust / Server
 
-- Safe: No FFI, no network calls, no file I/O unless you explicitly request it
+- Safe by default: no FFI, no network calls, no file I/O unless you explicitly
+  request it. The optional native-InChI feature is the documented FFI
+  exception.
 - Dependabot monitors cargo.io registry
 - Note: If you use unsafe code interop with chematic, validate chemical outputs before use
 
 ---
 
 ## Security Fix History
+
+### v0.89.0 candidate verification status
+
+- GitHub Linux AddressSanitizer, LeakSanitizer, and ThreadSanitizer runs passed
+  on the core/parser scope in run [33568431894](https://github.com/kent-tokyo/chematic/actions/runs/33568431894).
+- Focused Miri tests passed in [33588355817](https://github.com/kent-tokyo/chematic/actions/runs/33588355817); the earlier full-library run was cancelled for excessive runtime.
+- These results apply to the candidate branch and do not imply that v0.89.0
+  has been published or that the security exit gate is closed.
 
 ### v0.4.14 (2026-06-21)
 

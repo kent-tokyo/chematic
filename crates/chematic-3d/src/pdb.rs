@@ -195,66 +195,6 @@ fn parse_pdb_atoms_capped(input: &str, max_atoms: usize) -> Vec<PdbAtom> {
     atoms
 }
 
-#[cfg(test)]
-#[allow(clippy::items_after_test_module)]
-mod tests {
-    use super::{PdbParseLimits, PdbResourceLimitError, parse_pdb_atoms_with_limits};
-
-    const ATOM: &str =
-        "ATOM      1  CA  ALA A   1      10.000  11.000  12.000  1.00 20.00           C  ";
-
-    #[test]
-    fn bounded_parser_rejects_input_lines_atoms_and_models() {
-        let limits = PdbParseLimits {
-            max_input_bytes: 2,
-            ..PdbParseLimits::default()
-        };
-        assert!(matches!(
-            parse_pdb_atoms_with_limits(ATOM, &limits),
-            Err(PdbResourceLimitError {
-                resource: "input bytes",
-                ..
-            })
-        ));
-
-        let limits = PdbParseLimits {
-            max_line_bytes: 2,
-            ..PdbParseLimits::default()
-        };
-        assert!(matches!(
-            parse_pdb_atoms_with_limits(ATOM, &limits),
-            Err(PdbResourceLimitError {
-                resource: "line bytes",
-                ..
-            })
-        ));
-
-        let limits = PdbParseLimits {
-            max_atoms: 0,
-            ..PdbParseLimits::default()
-        };
-        assert!(matches!(
-            parse_pdb_atoms_with_limits(ATOM, &limits),
-            Err(PdbResourceLimitError {
-                resource: "atoms",
-                ..
-            })
-        ));
-
-        let limits = PdbParseLimits {
-            max_models: 0,
-            ..PdbParseLimits::default()
-        };
-        assert!(matches!(
-            parse_pdb_atoms_with_limits("MODEL        1\n", &limits),
-            Err(PdbResourceLimitError {
-                resource: "models",
-                ..
-            })
-        ));
-    }
-}
-
 // ---------------------------------------------------------------------------
 // PDB to Molecule
 // ---------------------------------------------------------------------------
@@ -378,4 +318,63 @@ pub fn write_pdb(mol: &Molecule, coords: &Coords3D) -> String {
 
     out.push_str("END\n");
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{PdbParseLimits, PdbResourceLimitError, parse_pdb_atoms_with_limits};
+
+    const ATOM: &str =
+        "ATOM      1  CA  ALA A   1      10.000  11.000  12.000  1.00 20.00           C  ";
+
+    #[test]
+    fn bounded_parser_rejects_input_lines_atoms_and_models() {
+        let limits = PdbParseLimits {
+            max_input_bytes: 2,
+            ..PdbParseLimits::default()
+        };
+        assert!(matches!(
+            parse_pdb_atoms_with_limits(ATOM, &limits),
+            Err(PdbResourceLimitError {
+                resource: "input bytes",
+                ..
+            })
+        ));
+
+        let limits = PdbParseLimits {
+            max_line_bytes: 2,
+            ..PdbParseLimits::default()
+        };
+        assert!(matches!(
+            parse_pdb_atoms_with_limits(ATOM, &limits),
+            Err(PdbResourceLimitError {
+                resource: "line bytes",
+                ..
+            })
+        ));
+
+        let limits = PdbParseLimits {
+            max_atoms: 0,
+            ..PdbParseLimits::default()
+        };
+        assert!(matches!(
+            parse_pdb_atoms_with_limits(ATOM, &limits),
+            Err(PdbResourceLimitError {
+                resource: "atoms",
+                ..
+            })
+        ));
+
+        let limits = PdbParseLimits {
+            max_models: 0,
+            ..PdbParseLimits::default()
+        };
+        assert!(matches!(
+            parse_pdb_atoms_with_limits("MODEL        1\n", &limits),
+            Err(PdbResourceLimitError {
+                resource: "models",
+                ..
+            })
+        ));
+    }
 }

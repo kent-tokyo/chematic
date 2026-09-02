@@ -119,6 +119,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   verification against an externally supplied release public key.
 - Added `scripts/check_workflow_pins.py` to make immutable GitHub Actions pins a
   repeatable local release check.
+- Normalized project copyright attribution to `Kentaro Tanabe (kent-tokyo)` and added a
+  root `NOTICE` while retaining the `MIT OR Apache-2.0` licensing choice.
 - Added a scheduled/manual Linux sanitizer workflow and local runner for
   AddressSanitizer, LeakSanitizer, and ThreadSanitizer; execution evidence
   remains separate and is not claimed by configuration alone.

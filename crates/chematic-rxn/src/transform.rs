@@ -14,17 +14,49 @@ use crate::reaction::{RxnError, parse_reaction};
 /// Error type for SMIRKS transformation.
 #[derive(Debug)]
 pub enum TransformError {
+    /// A configured match-enumeration limit was exceeded.
+    ResourceLimit {
+        resource: &'static str,
+        actual: usize,
+        limit: usize,
+    },
     SmirksParse(RxnError),
-    ReactantCountMismatch { expected: usize, got: usize },
+    ReactantCountMismatch {
+        expected: usize,
+        got: usize,
+    },
 }
 
 impl core::fmt::Display for TransformError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
+            Self::ResourceLimit {
+                resource,
+                actual,
+                limit,
+            } => write!(
+                f,
+                "reaction {resource} exceeds limit {limit} (got {actual})"
+            ),
             Self::SmirksParse(e) => write!(f, "SMIRKS parse error: {e}"),
             Self::ReactantCountMismatch { expected, got } => {
                 write!(f, "reactant count mismatch: expected {expected}, got {got}")
             }
+        }
+    }
+}
+
+/// Resource limits for reaction-template matching and product generation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ReactionTransformLimits {
+    /// Maximum number of accepted match combinations.
+    pub max_matches: usize,
+}
+
+impl Default for ReactionTransformLimits {
+    fn default() -> Self {
+        Self {
+            max_matches: 100_000,
         }
     }
 }
@@ -52,7 +84,16 @@ pub fn run_reactants(
     smirks: &str,
     reactants: &[&Molecule],
 ) -> Result<Vec<Vec<Molecule>>, TransformError> {
-    run_reactants_impl(smirks, reactants, true)
+    run_reactants_with_limits(smirks, reactants, &ReactionTransformLimits::default())
+}
+
+/// Apply a SMIRKS template with an explicit accepted-match limit.
+pub fn run_reactants_with_limits(
+    smirks: &str,
+    reactants: &[&Molecule],
+    limits: &ReactionTransformLimits,
+) -> Result<Vec<Vec<Molecule>>, TransformError> {
+    run_reactants_impl(smirks, reactants, true, limits)
 }
 
 /// Like [`run_reactants`] but **does not carry through substituents**.
@@ -67,17 +108,27 @@ pub fn run_reactants_strict(
     smirks: &str,
     reactants: &[&Molecule],
 ) -> Result<Vec<Vec<Molecule>>, TransformError> {
-    run_reactants_impl(smirks, reactants, false)
+    run_reactants_strict_with_limits(smirks, reactants, &ReactionTransformLimits::default())
+}
+
+/// Apply a strict SMIRKS template with an explicit accepted-match limit.
+pub fn run_reactants_strict_with_limits(
+    smirks: &str,
+    reactants: &[&Molecule],
+    limits: &ReactionTransformLimits,
+) -> Result<Vec<Vec<Molecule>>, TransformError> {
+    run_reactants_impl(smirks, reactants, false, limits)
 }
 
 fn run_reactants_impl(
     smirks: &str,
     reactants: &[&Molecule],
     carry_substituents: bool,
+    limits: &ReactionTransformLimits,
 ) -> Result<Vec<Vec<Molecule>>, TransformError> {
     crate::perf_counters::record_run_reactants_call();
     let prepared = prepare_reaction(smirks)?;
-    let matches = find_matches_impl(&prepared, reactants)?;
+    let matches = find_matches_impl(&prepared, reactants, limits)?;
     Ok(matches
         .iter()
         .filter_map(|m| apply_match_impl(&prepared, reactants, m, carry_substituents))
@@ -129,8 +180,17 @@ pub fn find_reaction_matches(
     smirks: &str,
     reactants: &[&Molecule],
 ) -> Result<Vec<ReactionMatch>, TransformError> {
+    find_reaction_matches_with_limits(smirks, reactants, &ReactionTransformLimits::default())
+}
+
+/// Enumerate reaction matches with an explicit accepted-match limit.
+pub fn find_reaction_matches_with_limits(
+    smirks: &str,
+    reactants: &[&Molecule],
+    limits: &ReactionTransformLimits,
+) -> Result<Vec<ReactionMatch>, TransformError> {
     let prepared = prepare_reaction(smirks)?;
-    find_matches_impl(&prepared, reactants)
+    find_matches_impl(&prepared, reactants, limits)
 }
 
 /// Apply the reaction for exactly one match (as returned by
@@ -255,6 +315,7 @@ fn global_map_of(
 fn find_matches_impl(
     prepared: &PreparedReaction,
     reactants: &[&Molecule],
+    limits: &ReactionTransformLimits,
 ) -> Result<Vec<ReactionMatch>, TransformError> {
     let n_templates = prepared.rxn.reactants.len();
     if reactants.len() != n_templates {
@@ -272,13 +333,33 @@ fn find_matches_impl(
         .map(|(q, mol)| {
             let matches = find_matches(q, mol);
             crate::perf_counters::record_reactant_query_match_call(matches.len());
-            matches
+            if matches.len() > limits.max_matches {
+                return Err(TransformError::ResourceLimit {
+                    resource: "reaction matches",
+                    actual: matches.len(),
+                    limit: limits.max_matches,
+                });
+            }
+            Ok(matches)
         })
-        .collect();
+        .collect::<Result<_, _>>()?;
 
     // No matches when any template has no match.
     if all_match_sets.iter().any(|ms| ms.is_empty()) {
         return Ok(vec![]);
+    }
+
+    let total_combinations = all_match_sets
+        .iter()
+        .map(|matches| matches.len())
+        .try_fold(1usize, |total, count| total.checked_mul(count))
+        .unwrap_or(usize::MAX);
+    if total_combinations > limits.max_matches {
+        return Err(TransformError::ResourceLimit {
+            resource: "reaction match combinations",
+            actual: total_combinations,
+            limit: limits.max_matches,
+        });
     }
 
     let mut matches: Vec<ReactionMatch> = Vec::new();
@@ -1160,6 +1241,23 @@ mod tests {
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].len(), 1);
         assert_eq!(results[0][0].atom_count(), 1);
+    }
+
+    #[test]
+    fn reaction_transform_limits_reject_matches_before_cartesian_product() {
+        let mol = parse("CC").unwrap();
+        let err = find_reaction_matches_with_limits(
+            "[C:1]>>[C:1]",
+            &[&mol],
+            &ReactionTransformLimits { max_matches: 0 },
+        );
+        assert!(matches!(
+            err,
+            Err(TransformError::ResourceLimit {
+                resource: "reaction matches",
+                ..
+            })
+        ));
     }
 
     #[test]

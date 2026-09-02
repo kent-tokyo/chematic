@@ -16,8 +16,8 @@ JS-error mapping in more general terms.
 
 ## Parse limits, by format
 
-Only 4 of the 15 formats covered in [`format-capabilities.md`](format-capabilities.md)
-have a dedicated `*ParseLimits` type. The rest do not — this is not
+The formats below have dedicated `*ParseLimits` or reader-options types. The
+rest do not — this is not
 inconsistent oversight to be quietly worked around; it reflects that most of
 these formats have no natural analogue of "grid points" or a comparably
 unbounded substructure, or simply have not had a limits type added yet.
@@ -33,7 +33,13 @@ unbounded substructure, or simply have not had a limits type added yet.
 | MOL/SDF | none | — |
 | PDB | none | — |
 | CIF (plain) | none | — |
-| XYZ / Extended XYZ | none | — |
+| XYZ / Extended XYZ | `chematic_3d::XyzParseLimits`, `chematic_mol::XyzParseLimits` | 3D XYZ: `max_input_bytes`, `max_atoms`, `max_line_bytes`; extended XYZ: input/atom/frame/line/property limits |
+| KET | `KetParseLimits` | `max_input_bytes`, `max_atoms`, `max_bonds` |
+| SMILES table | `SmiFileParseLimits` | `max_input_bytes`, `max_line_bytes`, `max_records` |
+| Streaming SMILES table | `SmilesReaderOptions` | `max_line_bytes`, `max_records`, `max_fields` |
+| Streaming TDT | `TdtReaderOptions` | `max_line_bytes`, `max_records`, `max_tags_per_record` |
+| InChI (pure Rust) | `InchiParseLimits` | `max_input_bytes`, `max_atoms` |
+| MDL RXN | `RxnFileParseLimits` | `max_input_bytes`, `max_reactants`, `max_products`, `max_molecules` |
 | QCSchema | none | — (JSON-size limits, if any, are whatever the caller or `serde_json` impose) |
 | ORCA input | none | — |
 | ORCA output | none | — |
@@ -44,6 +50,74 @@ In Python, each `*ParseLimits` field is exposed as an optional keyword
 argument on the corresponding `parse_*_with_limits`-style function, using
 the Rust `Default` values when omitted (e.g. `parse_mmcif(text,
 max_input_bytes=None, max_atoms=None, max_line_len=None)`).
+
+WASM convenience renderers also apply binding-level bounds before building
+intermediate molecule vectors: `depict_svg_grid`,
+`depict_svg_grid_highlighted`, and `batch_report_html` accept at most 1 MiB of
+input, 1,024 non-empty records, and 10,000 atoms per parsed molecule. Since
+these legacy APIs return strings rather than `Result`, a violation returns an
+explicit SVG/HTML error document and never a partial rendering.
+
+The high-level WASM workflow APIs apply the same 1 MiB and 1,024-record
+boundaries, plus a 10,000-atom per-molecule bound, before comparison,
+screening, reporting, or 3D generation. APIs returning `Result` surface the
+violation as a JavaScript error; `screen_smiles_json` returns an explicit JSON
+error object.
+
+WASM JSON writers for mmCIF, PQR, and LAMMPS trajectories also cap every
+record/frame array at 1,024 items before converting values into Rust vectors.
+The same cap applies to nested record arrays such as ORCA coordinate atoms.
+LAMMPS trajectory readers apply the same cap while retaining parsed frames;
+the 1,025th frame is rejected rather than returned as a partial success.
+WASM ORCA output parsing likewise applies the binding input, line, geometry
+frame, and geometry atom limits through `OrcaOutputParseLimits` before
+serializing the trajectory.
+ORCA input and QCSchema WASM parsers also override the larger Rust defaults
+with binding-sized line/block/atom and JSON depth/array/string limits before
+decoding structured documents.
+Cube/OpenDX, mmCIF, PQR, LAMMPS data, and single-frame dump WASM parsers
+likewise override their larger Rust defaults for input bytes, atom/record
+counts, line size, section counts, columns, and volumetric grid points.
+Cube/OpenDX typed-array accessors use those same limits rather than delegating
+to the larger parser defaults, so JSON and typed-array entry points reject the
+same oversized grids.
+The WASM `convert_common_format` bridge also rejects parsed molecules over the
+10,000-atom binding limit before serializing a target format.
+The MCP PubChem lookup caps the upstream response body at 1 MiB and rejects
+oversized or invalid UTF-8 responses before JSON parsing.
+MCP SMILES tool arguments are limited to 100,000 bytes and 10,000 parsed
+atoms; SMARTS matching applies the 100,000-byte query limit before compiling
+the query.
+MCP MolJSON input uses explicit limits of 100,000 bytes, depth 64, 1,024 array
+items, 10,000 atoms, and 20,000 bonds before molecule construction.
+MCP SMARTS matching is bounded to 10,000 embeddings and 1,000,000 VF2 visits;
+exhaustion is reported as an explicit domain error rather than a partial list.
+MCP stdio JSON-RPC responses are capped at 1 MiB after envelope serialization;
+an oversized response is replaced by an explicit protocol error.
+MCP stdio request framing also reads at most the 1 MiB request boundary before
+JSON parsing; an oversized frame terminates the loop rather than being split
+into a later request.
+CLI output is capped at 64 MiB for both stdout and file destinations; an
+oversized result is rejected before any bytes are written.
+Format-oriented WASM JSON helpers cap serialized results at 16 MiB and return
+an explicit JS error when the boundary is exceeded.
+The Extended XYZ frame JSON helper uses the same shared output boundary.
+WASM tautomer enumeration also caps the result array at 1,024 entries and
+returns an explicit error object when the cap is exceeded.
+WASM `run_reactants` bounds reaction input to 1 MiB, reactants to 1,024
+entries, each reactant to 10,000 atoms, and each product set to 1,024 entries.
+WASM MCS configuration JSON is also limited to the 1 MiB binding input
+boundary before deserialization.
+WASM R-group decomposition applies the same 1 MiB input limit to its
+`core_smarts` query before compilation.
+WASM MMP pair output is capped at 1,024 pairs before JSON materialization;
+larger result sets return an explicit JS error.
+WASM R-group queries are limited to 10,000 SMARTS query atoms after
+compilation, in addition to the 1 MiB `core_smarts` source limit.
+WASM reaction and library products are also limited to 10,000 atoms before
+canonicalization and JSON materialization.
+WASM library templates and fragment inputs are limited to 1 MiB, and each
+scaffold/building-block molecule is limited to 10,000 atoms before enumeration.
 
 ---
 

@@ -251,7 +251,7 @@ pub fn parse_pdbqt_with_limits(
     let mut charges: Vec<f64> = Vec::new();
 
     for (lineno, line) in lines.into_iter().enumerate() {
-        let record = &line[..line.len().min(6)];
+        let record = line.get(..line.len().min(6)).unwrap_or("");
         if !matches!(record.trim(), "ATOM" | "HETATM") {
             continue;
         }
@@ -302,9 +302,9 @@ pub fn parse_pdbqt_with_limits(
                     detail: format!("cannot parse {col} coordinate: '{}'", s.trim()),
                 })
         };
-        let x = parse_f(&line[30..38], "x")?;
-        let y = parse_f(&line[38..46], "y")?;
-        let z = parse_f(&line[46..54], "z")?;
+        let x = parse_f(line.get(30..38).unwrap_or(""), "x")?;
+        let y = parse_f(line.get(38..46).unwrap_or(""), "y")?;
+        let z = parse_f(line.get(46..54).unwrap_or(""), "z")?;
         if !x.is_finite() {
             return Err(PdbqtError::NonFiniteValue {
                 line: lineno + 1,
@@ -441,5 +441,11 @@ mod tests {
                 ..
             })
         ));
+    }
+
+    #[test]
+    fn malformed_utf8_column_alignment_is_rejected_without_panicking() {
+        let input = "ATOM \u{0328}N\n";
+        assert!(parse_pdbqt(input).is_ok());
     }
 }

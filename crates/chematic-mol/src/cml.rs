@@ -130,7 +130,7 @@ pub(crate) fn parse_xml_attrs(line: &str) -> HashMap<String, String> {
         while i < len && bytes[i] != b'=' && !bytes[i].is_ascii_whitespace() {
             i += 1;
         }
-        let key = line[key_start..i].trim().to_string();
+        let key = line.get(key_start..i).unwrap_or("").trim().to_string();
         if key.is_empty() {
             i += 1;
             continue;
@@ -164,7 +164,7 @@ pub(crate) fn parse_xml_attrs(line: &str) -> HashMap<String, String> {
         while i < len && bytes[i] != quote {
             i += 1;
         }
-        let raw_value = &line[value_start..i];
+        let raw_value = line.get(value_start..i).unwrap_or("");
         let value = unescape_xml(raw_value);
         if i < len {
             i += 1;

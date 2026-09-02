@@ -25,15 +25,15 @@ jobs:
           - runner: ubuntu-24.04-arm
             target: aarch64
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.ref || github.ref }}
-      - uses: PyO3/maturin-action@v1
+      - uses: PyO3/maturin-action@423a6347767a8b16e65c2a7a7042e4a921528da8 # v1
         with:
           target: ${{ matrix.platform.target }}
           args: --release --out dist --manifest-path crates/chematic-py/Cargo.toml
           manylinux: auto
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: wheels-linux-${{ matrix.platform.target }}
           path: dist
@@ -45,17 +45,17 @@ jobs:
         target: [x86_64, aarch64]
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.ref || github.ref }}
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: PyO3/maturin-action@v1
+      - uses: PyO3/maturin-action@423a6347767a8b16e65c2a7a7042e4a921528da8 # v1
         with:
           target: ${{ matrix.target }}
           args: --release --out dist --manifest-path crates/chematic-py/Cargo.toml
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: wheels-macos-${{ matrix.target }}-py${{ matrix.python-version }}
           path: dist
@@ -66,16 +66,16 @@ jobs:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.ref || github.ref }}
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: PyO3/maturin-action@v1
+      - uses: PyO3/maturin-action@423a6347767a8b16e65c2a7a7042e4a921528da8 # v1
         with:
           args: --release --out dist --manifest-path crates/chematic-py/Cargo.toml
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: wheels-windows-py${{ matrix.python-version }}
           path: dist
@@ -83,14 +83,14 @@ jobs:
   sdist:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.ref || github.ref }}
-      - uses: PyO3/maturin-action@v1
+      - uses: PyO3/maturin-action@423a6347767a8b16e65c2a7a7042e4a921528da8 # v1
         with:
           command: sdist
           args: --out dist --manifest-path crates/chematic-py/Cargo.toml
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: wheels-sdist
           path: dist
@@ -105,11 +105,11 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           pattern: wheels-*
           merge-multiple: true
           path: dist
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
         with:
           skip-existing: true

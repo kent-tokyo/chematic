@@ -16,6 +16,24 @@ use crate::parser::parse;
 use crate::writer::write;
 use chematic_core::Molecule;
 
+/// Resource limits for multi-molecule `.smi` input.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SmiFileParseLimits {
+    pub max_input_bytes: usize,
+    pub max_line_bytes: usize,
+    pub max_records: usize,
+}
+
+impl Default for SmiFileParseLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: 64 << 20,
+            max_line_bytes: 16 << 20,
+            max_records: 100_000,
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -28,8 +46,31 @@ use chematic_core::Molecule;
 ///
 /// If a line has no name field, the name is an empty string.
 pub fn parse_smi_file(s: &str) -> Vec<Result<(Molecule, String), SmilesError>> {
+    parse_smi_file_with_limits(s, &SmiFileParseLimits::default())
+}
+
+/// Parse a multi-molecule `.smi` string with explicit resource limits.
+pub fn parse_smi_file_with_limits(
+    s: &str,
+    limits: &SmiFileParseLimits,
+) -> Vec<Result<(Molecule, String), SmilesError>> {
+    if s.len() > limits.max_input_bytes {
+        return vec![Err(SmilesError::ResourceLimit {
+            resource: "smi file input bytes",
+            actual: s.len(),
+            limit: limits.max_input_bytes,
+        })];
+    }
     let mut results = Vec::new();
     for line in s.lines() {
+        if line.len() > limits.max_line_bytes {
+            results.push(Err(SmilesError::ResourceLimit {
+                resource: "smi file line bytes",
+                actual: line.len(),
+                limit: limits.max_line_bytes,
+            }));
+            break;
+        }
         let line = line.trim();
         if line.is_empty() || line.starts_with('#') {
             continue;
@@ -40,6 +81,14 @@ pub fn parse_smi_file(s: &str) -> Vec<Result<(Molecule, String), SmilesError>> {
         let name = parts.next().unwrap_or("").trim().to_string();
         if smiles.is_empty() {
             continue;
+        }
+        if results.len() >= limits.max_records {
+            results.push(Err(SmilesError::ResourceLimit {
+                resource: "smi file records",
+                actual: results.len() + 1,
+                limit: limits.max_records,
+            }));
+            break;
         }
         results.push(parse(smiles).map(|mol| (mol, name)));
     }
@@ -131,5 +180,48 @@ mod tests {
         assert_eq!(back.len(), 2);
         assert_eq!(back[0].as_ref().unwrap().1, "benzene");
         assert_eq!(back[1].as_ref().unwrap().1, "ethane");
+    }
+
+    #[test]
+    fn test_parse_limits_report_file_resource_errors() {
+        assert!(matches!(
+            parse_smi_file_with_limits(
+                "CC\n",
+                &SmiFileParseLimits {
+                    max_input_bytes: 1,
+                    ..Default::default()
+                }
+            )[0],
+            Err(SmilesError::ResourceLimit {
+                resource: "smi file input bytes",
+                ..
+            })
+        ));
+        assert!(matches!(
+            parse_smi_file_with_limits(
+                "CC name\n",
+                &SmiFileParseLimits {
+                    max_line_bytes: 3,
+                    ..Default::default()
+                }
+            )[0],
+            Err(SmilesError::ResourceLimit {
+                resource: "smi file line bytes",
+                ..
+            })
+        ));
+        assert!(matches!(
+            parse_smi_file_with_limits(
+                "CC\nCCO\n",
+                &SmiFileParseLimits {
+                    max_records: 1,
+                    ..Default::default()
+                }
+            )[1],
+            Err(SmilesError::ResourceLimit {
+                resource: "smi file records",
+                ..
+            })
+        ));
     }
 }

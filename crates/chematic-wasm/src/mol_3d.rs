@@ -534,6 +534,12 @@ impl ConformerHandle {
 /// Returns the same JSON format as `depict_data_json`.
 #[wasm_bindgen]
 pub fn depict_data_with_coords_json(mol: &MolHandle, coords_json: &str) -> String {
+    if coords_json.len() > WASM_MAX_JSON_STRING_BYTES {
+        return "{\"error\":\"coords_json too large\"}".to_string();
+    }
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return format!("{{\"error\":\"molecule too large (max {WASM_MAX_ATOMS} atoms)\"}}");
+    }
     // Parse [[x,y],...] — simple format, no full JSON parser needed.
     let coords: Vec<(f64, f64)> = {
         let mut result = Vec::new();
@@ -629,10 +635,16 @@ pub fn depict_data_with_coords_json(mol: &MolHandle, coords_json: &str) -> Strin
 /// trusting a result.
 #[wasm_bindgen]
 pub fn minimize_uff_json(smiles: &str, coords_json: &str, max_iter: u32) -> String {
+    if smiles.len() > WASM_MAX_INPUT_BYTES || coords_json.len() > WASM_MAX_JSON_STRING_BYTES {
+        return "{\"error\":\"input exceeds WASM size limits\"}".to_string();
+    }
     let mol = match chematic_smiles::parse(smiles) {
         Ok(m) => m,
         Err(e) => return format!("{{\"error\":\"{e}\"}}"),
     };
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return format!("{{\"error\":\"molecule too large (max {WASM_MAX_ATOMS} atoms)\"}}");
+    }
     let coords_arr: Vec<[f64; 3]> = match serde_json::from_str(coords_json) {
         Ok(v) => v,
         Err(e) => return format!("{{\"error\":\"coords parse error: {e}\"}}"),

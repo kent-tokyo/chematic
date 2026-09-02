@@ -312,6 +312,15 @@ fn depict_svg_grid_invalid_smiles_skipped() {
 }
 
 #[test]
+fn depict_svg_grid_rejects_oversized_batch() {
+    let smiles = std::iter::repeat_n("C", 1_025)
+        .collect::<Vec<_>>()
+        .join("\n");
+    let svg = depict_svg_grid(&smiles, 8);
+    assert!(svg.contains("molecule count exceeds maximum"));
+}
+
+#[test]
 fn run_reactants_esterification() {
     // Simple esterification: carboxylic acid + alcohol → ester + water
     let result = run_reactants(
@@ -341,6 +350,20 @@ fn is_valid_smiles_invalid() {
         !is_valid_smiles("[NOSUCHELEMENT]"),
         "unknown bracket atom is invalid"
     );
+}
+
+#[test]
+fn is_valid_smiles_rejects_oversized_input_before_parse() {
+    assert!(!is_valid_smiles(
+        &"C".repeat(super::WASM_MAX_INPUT_BYTES + 1)
+    ));
+}
+
+#[test]
+fn inchi_helpers_reject_oversized_input_before_parse() {
+    let smiles = "C".repeat(super::WASM_MAX_INPUT_BYTES + 1);
+    assert!(inchi_from_smiles(&smiles).starts_with("error:SMILES exceeds maximum input size"));
+    assert!(inchikey_from_smiles(&smiles).starts_with("error:SMILES exceeds maximum input size"));
 }
 
 #[test]

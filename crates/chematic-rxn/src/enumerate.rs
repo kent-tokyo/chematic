@@ -57,8 +57,19 @@ pub fn enumerate_library(
         return Err(LibraryError::NoFragmentSets);
     }
 
-    // Check max size feasibility
-    let total_combos: usize = fragment_sets.iter().map(|set| set.len()).product();
+    // Empty sets have no valid combinations. Return an empty result instead
+    // of entering the index loop below, which would index `set[0]`.
+    if fragment_sets.iter().any(|set| set.is_empty()) {
+        return Ok(Vec::new());
+    }
+
+    // Check max size feasibility with checked arithmetic. A wrapped product
+    // could otherwise bypass the configured cap or panic in debug builds.
+    let total_combos = fragment_sets
+        .iter()
+        .map(|set| set.len())
+        .try_fold(1usize, |total, size| total.checked_mul(size))
+        .ok_or(LibraryError::CombinationCountOverflow)?;
 
     if let Some(max) = config.max_size
         && total_combos > max
@@ -81,6 +92,15 @@ pub fn enumerate_library(
             Ok(reaction_product_sets) => {
                 // Flatten: each set can have multiple products
                 for product_set in reaction_product_sets {
+                    if let Some(max) = config.max_size {
+                        let projected = products
+                            .len()
+                            .checked_add(product_set.len())
+                            .ok_or(LibraryError::CombinationCountOverflow)?;
+                        if projected >= max {
+                            return Err(LibraryError::EnumerationLimitExceeded);
+                        }
+                    }
                     products.extend(product_set);
                 }
             }
@@ -150,6 +170,8 @@ pub enum LibraryError {
     EnumerationTooLarge(usize, usize), // actual, max
     /// Hit iteration limit (safety check).
     EnumerationLimitExceeded,
+    /// The fragment-set Cartesian product does not fit in `usize`.
+    CombinationCountOverflow,
 }
 
 impl std::fmt::Display for LibraryError {
@@ -160,6 +182,9 @@ impl std::fmt::Display for LibraryError {
                 write!(f, "enumeration too large: {} > {}", actual, max)
             }
             Self::EnumerationLimitExceeded => write!(f, "enumeration iteration limit exceeded"),
+            Self::CombinationCountOverflow => {
+                write!(f, "fragment combination count exceeds usize")
+            }
         }
     }
 }
@@ -209,6 +234,33 @@ mod tests {
         let template = "[C:1][Cl]>>[C:1]I";
         let result = enumerate_library(template, vec![], &LibraryConfig::default());
         assert!(matches!(result, Err(LibraryError::NoFragmentSets)));
+    }
+
+    #[test]
+    fn test_enumerate_library_empty_fragment_set_is_empty() {
+        let result = enumerate_library(
+            "[C:1]>>[C:1]",
+            vec![vec![], vec![mol("C")]],
+            &LibraryConfig::default(),
+        )
+        .unwrap();
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_enumerate_library_checks_output_cap_before_extending() {
+        let result = enumerate_library(
+            "[C:1][C:2]>>[C:1].[C:2]",
+            vec![vec![mol("CC")]],
+            &LibraryConfig {
+                skip_failures: true,
+                max_size: Some(1),
+            },
+        );
+        assert!(matches!(
+            result,
+            Err(LibraryError::EnumerationLimitExceeded)
+        ));
     }
 
     #[test]

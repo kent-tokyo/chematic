@@ -168,6 +168,10 @@ pub struct SmilesReaderOptions {
     /// a pathological or adversarial input; exceeding it is
     /// [`SmilesTableError::LineTooLong`].
     pub max_line_bytes: usize,
+    /// Maximum non-comment data records yielded by the reader.
+    pub max_records: usize,
+    /// Maximum columns accepted on one data line.
+    pub max_fields: usize,
 }
 
 impl Default for SmilesReaderOptions {
@@ -179,6 +183,8 @@ impl Default for SmilesReaderOptions {
             title_line: false,
             strict_parsing: false,
             max_line_bytes: 1 << 20, // 1 MiB
+            max_records: 100_000,
+            max_fields: 1024,
         }
     }
 }
@@ -212,6 +218,15 @@ pub enum SmilesTableError {
         record_index: usize,
         limit: usize,
     },
+    /// A data line contained more columns than allowed.
+    TooManyFields {
+        line: usize,
+        record_index: usize,
+        actual: usize,
+        limit: usize,
+    },
+    /// The reader reached its maximum yielded-record budget.
+    TooManyRecords { limit: usize },
     /// An IO error occurred while reading the input stream.
     Io(String),
 }
@@ -249,6 +264,18 @@ impl std::fmt::Display for SmilesTableError {
                 f,
                 "line {line} (record {record_index}) exceeds the {limit}-byte limit"
             ),
+            Self::TooManyFields {
+                line,
+                record_index,
+                actual,
+                limit,
+            } => write!(
+                f,
+                "line {line} (record {record_index}) has {actual} fields, exceeding the {limit}-field limit"
+            ),
+            Self::TooManyRecords { limit } => {
+                write!(f, "SMILES table exceeds the {limit}-record limit")
+            }
             Self::Io(msg) => write!(f, "IO error: {msg}"),
         }
     }
@@ -381,6 +408,12 @@ impl<R: BufRead> Iterator for SmilesRecordReader<R> {
 
         let record_line = self.line_number;
         let record_index = self.record_index;
+        if record_index >= self.options.max_records {
+            self.stopped = true;
+            return Some(Err(SmilesTableError::TooManyRecords {
+                limit: self.options.max_records,
+            }));
+        }
         self.record_index += 1;
 
         let tokens = match tokenize_line(&line, self.options.delimiter) {
@@ -396,6 +429,19 @@ impl<R: BufRead> Iterator for SmilesRecordReader<R> {
                 return Some(Err(err));
             }
         };
+
+        if tokens.len() > self.options.max_fields {
+            let err = SmilesTableError::TooManyFields {
+                line: record_line,
+                record_index,
+                actual: tokens.len(),
+                limit: self.options.max_fields,
+            };
+            if self.options.strict_parsing {
+                self.stopped = true;
+            }
+            return Some(Err(err));
+        }
 
         let Some(smi) = tokens.get(self.options.smiles_column) else {
             let err = SmilesTableError::MissingSmilesColumn {
@@ -794,6 +840,34 @@ mod tests {
     }
 
     #[test]
+    fn record_and_field_limits_are_explicit_errors() {
+        let opts = SmilesReaderOptions {
+            max_records: 1,
+            ..Default::default()
+        };
+        let mut reader = reader_over("CC\nCCO\n", opts);
+        assert!(reader.next().unwrap().is_ok());
+        assert!(matches!(
+            reader.next(),
+            Some(Err(SmilesTableError::TooManyRecords { limit: 1 }))
+        ));
+
+        let opts = SmilesReaderOptions {
+            max_fields: 2,
+            ..Default::default()
+        };
+        let mut reader = reader_over("CC name extra\n", opts);
+        assert!(matches!(
+            reader.next(),
+            Some(Err(SmilesTableError::TooManyFields {
+                actual: 3,
+                limit: 2,
+                ..
+            }))
+        ));
+    }
+
+    #[test]
     fn writer_default_roundtrip() {
         let mol = chematic_smiles::parse("c1ccccc1").unwrap();
         let mut record = MoleculeRecord::new(mol);
@@ -1010,9 +1084,14 @@ mod adversarial_tests {
         line.push('\n');
         let results: Vec<_> = drain_results(line.as_bytes(), SmilesReaderOptions::default());
         assert_eq!(results.len(), 1);
-        assert!(results[0].is_ok());
-        let rec = results[0].as_ref().unwrap();
-        assert_eq!(rec.properties.len(), 4999); // 5000 extra tokens minus the name column
+        assert!(matches!(
+            results[0],
+            Err(SmilesTableError::TooManyFields {
+                actual: 5001,
+                limit: 1024,
+                ..
+            })
+        ));
     }
 
     #[test]

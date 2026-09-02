@@ -513,6 +513,13 @@ pub fn retro_disconnect(
                 continue; // already have this precursor set
             }
 
+            // Enforce the caller's output cap before retaining the precursor
+            // molecules and their strings. This keeps a large template's
+            // result burst from temporarily growing `results` past the cap.
+            if max_results > 0 && results.len() >= max_results {
+                continue;
+            }
+
             results.push(RetroResult {
                 template_name: tmpl.name.to_string(),
                 reaction_class: tmpl.reaction_class,
@@ -522,13 +529,12 @@ pub fn retro_disconnect(
         }
     }
 
+    finish_retro_results(results)
+}
+
+fn finish_retro_results(mut results: Vec<RetroResult>) -> Vec<RetroResult> {
     // Sort: fewest precursors first (simpler disconnections first).
     results.sort_by_key(|r| r.precursors.len());
-
-    if max_results > 0 && results.len() > max_results {
-        results.truncate(max_results);
-    }
-
     results
 }
 

@@ -58,7 +58,7 @@ fn split_cx(input: &str) -> (&str, Option<&str>) {
 
 fn parse_cx_block(cx: &str, out: &mut CxSmarts) {
     for field in split_cx_fields(cx) {
-        if field.starts_with('$') && field.ends_with('$') {
+        if field.len() >= 2 && field.starts_with('$') && field.ends_with('$') {
             parse_labels(&field[1..field.len() - 1], out);
         } else if let Some(rest) = field.strip_prefix("atomProp:") {
             parse_atom_props(rest, out);
@@ -212,5 +212,12 @@ mod tests {
             Some("label,end\\"),
             "Escaped comma and trailing backslash should both be preserved"
         );
+    }
+
+    #[test]
+    fn empty_cx_label_field_is_ignored_without_panicking() {
+        let cx = parse_cxsmarts("C |$|").unwrap();
+        assert_eq!(cx.query.atom_count(), 1);
+        assert!(cx.atom_labels.iter().all(Option::is_none));
     }
 }

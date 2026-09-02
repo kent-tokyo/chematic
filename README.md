@@ -36,6 +36,10 @@ WASM sizes (raw, measured 2026-08-21 from a clean `wasm-pack build --target web 
 is currently about 2.3× smaller than RDKit.js's and about 3.8× smaller than Indigo's Ketcher-oriented
 build, on a raw-to-raw basis.
 
+The separate 2026-08-23 benchmark rebuild reports 2.98 MB raw / 1.11 MB gzip;
+both figures are retained with their measurement dates because build outputs
+can vary slightly by toolchain and build environment.
+
 **Feature maturity at a glance:**
 
 | Feature | Status |
@@ -81,7 +85,7 @@ cmp.save("compare.html")
 |---|---|
 | **HTML report** | `chematic.report(mols, output="report.html")` — self-contained compound grid, no server needed |
 | **Drug screening** | 190+ descriptors, ADMET, PAINS/Brenk, QED — batch over thousands of compounds |
-| **Molecule search** | ECFP4/MACCS fingerprints, Tanimoto, LSH approximate nearest-neighbour |
+| **Molecule search** | ECFP4/MACCS fingerprints, opt-in RDKit-compatible chiral Morgan fingerprints, Tanimoto, LSH approximate nearest-neighbour |
 | **AI agent / MCP** | Built-in MCP server — Claude Desktop can call chemistry tools directly |
 | **Browser app** | 1.10 MB gzip WASM bundle, zero backend required, React/Vue/Svelte ready |
 | **Jupyter notebook** | `mol` renders SVG inline; `descriptors_df()` returns a pandas DataFrame |
@@ -199,7 +203,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.25.0
+# chematic v0.89.0 candidate
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -322,60 +326,10 @@ Full history → [benchmarks/](benchmarks/) · Methodology → [validation/](val
 | **Python bindings**     | **Yes** (`pip install chematic`, PyO3)    | Yes (rdkit-sys)    | Yes            | No                 |
 | **Unsafe Rust**         | **None in own crates**‡                   | Extensive          | Extensive      | N/A                |
 
-<details>
-<summary>Full feature comparison (30+ capabilities)</summary>
-
-| Feature                                      | **chematic**                                     | RDKit (rdkit-sys)   | OpenBabel FFI  | RDKit.js (WASM)   |
-|----------------------------------------------|--------------------------------------------------|---------------------|----------------|-------------------|
-| OpenSMILES parser                            | Full                                             | Full                | Full           | Full              |
-| SMILES writer / canonical                    | Yes                                              | Yes                 | Yes            | Yes               |
-| Kekulization                                 | **4-pass (incl. Edmonds' blossom)**              | Yes                 | Yes            | Yes               |
-| Ring perception (SSSR)                       | Yes + iterative augmentation                     | Yes                 | Yes            | Yes               |
-| SDF/MOL V2000+V3000 + SD fields              | Yes                                              | Yes                 | Yes            | Yes               |
-| Tripos MOL2 format                           | **Yes** (parser + writer)                        | Yes                 | Yes            | No                |
-| 2D depiction (SVG, CPK colors, **PDF, EPS**) | Yes                                              | Yes                 | Yes            | Yes               |
-| ECFP/FCFP fingerprints (2/4/6)               | **All variants + bitvec**                        | Yes                 | Yes            | Yes               |
-| AtomPair / Torsion / MACCS FP                | Yes                                              | Yes                 | Yes            | Yes               |
-| **MAP4 fingerprint**                         | **Yes** (Minervini 2020)                         | No (external pkg)   | No             | No                |
-| Molecular descriptors                        | **190+ descriptor values** (71 functions; MQN×42, BCUT2D, autocorr2d return multi-value arrays) | ~30  | ~20            | ~30               |
-| **Topological descriptors**                  | **Yes** (Petitjean, Hosoya Z, ECI, Moran, Geary) | Partial            | Partial        | No                |
-| BRICS / RECAP fragmentation                  | Yes                                              | Yes                 | No             | Yes               |
-| Murcko scaffold                              | Yes                                              | Yes                 | No             | Yes               |
-| Tautomer normalisation                       | Yes                                              | Yes                 | No             | Yes               |
-| MCS                                          | Yes                                              | Yes                 | No             | Yes               |
-| Stereoisomer enumeration                     | **Yes**                                          | Yes                 | No             | Yes               |
-| CIP stereo (R/S, E/Z) detail                 | **Yes (per-atom JSON)**                          | Yes                 | Yes            | Yes               |
-| Allene cumulated stereo (`C=C=C`)            | **Yes** (`@`/`@@`, round-trip stable)            | Yes                 | Partial        | No                |
-| 3D coordinate generation                     | Yes (DG + MMFF94/DREIDING + L-BFGS)             | Yes (ETKDG)         | Yes            | Yes               |
-| 3D shape descriptors (PMI/NPR/USR/…)         | **Yes**                                          | Yes                 | No             | Yes               |
-| **3D GETAWAY descriptors (HATS-matrix)**     | **Yes** (19-dim; `whim_getaway_combined` 29-dim) | Yes                | No             | No                |
-| MMFF94 force field (all 7 energy terms)      | **Yes**                                          | Yes                 | Yes            | No                |
-| **UFF force field** (metals, organometallics)| **Yes**                                          | No                  | Yes            | No                |
-| AutoDock PDBQT format (parse + write)        | **Yes** (docking pipeline ready)                 | Via Python API      | Yes            | No                |
-| PDBx/mmCIF (parse + write)                   | **Yes** (chain/altloc/model/occupancy/B-factor)  | No (native)§        | Read-only      | No                |
-| PQR (parse + write)                          | **Yes**                                          | No                  | Read-only      | No                |
-| QCSchema JSON (Molecule/AtomicInput/Result)  | **Yes**                                          | No                  | No             | No                |
-| ORCA input/output                            | **Yes** (input R/W, output R)                    | No                  | Partial (input write-only, output read-only) | No |
-| Gaussian Cube volumetric grid (parse + write) | **Yes** (streaming *input* reader — the parsed voxel array is still fully in-memory; single-dataset only, typed-reject multi-dataset) | Partial (C++ `RDMIF`, not primary I/O) | Yes (R/W, incl. multi-dataset) | No |
-| OpenDX/APBS scalar field (parse + write)     | **Yes**                                          | No                  | Read-only      | No                |
-| SDF with partial charges                     | **Yes** (`write_sdf_with_charges`)               | Yes                 | Yes            | No                |
-| MaxMin / Butina diversity picking            | **Yes**                                          | Yes                 | No             | No                |
-| Reaction SMILES/SMIRKS                       | Yes                                              | Yes                 | Yes            | Yes               |
-| InChI / InChIKey                             | **Yes** — pure-Rust + **IUPAC-exact** via `native-inchi` | C lib required | C lib required | C lib required |
-| **pKa prediction**                           | **Yes (23 SMARTS rules)**                        | No                  | No             | No                |
-| **ADMET profile** (BBB/Caco-2/hERG/CYP3A4)  | **Yes + BOILED-Egg**                             | Partial             | No             | Partial           |
-| **MCP server (AI agent API)**                | **Yes — 20 tools incl. Name→SMILES (stdio only)** | No                  | No             | No                |
-| IUPAC name generation                        | **Yes (25+ classes)**                            | No                  | No             | Partial           |
-| Name → SMILES (PubChem proxy)                | **Yes** (`name_to_smiles` MCP tool)              | No                  | No             | No                |
-| Maintenance (2026)                           | Active                                           | Active              | Minimal        | Active            |
-
-§ RDKit itself has no built-in `MolFromMMCIF`/mmCIF writer; mmCIF interop is done via separate third-party tooling (e.g. PDBe CCDUtils) layered on top of RDKit, not RDKit's own I/O surface.
-
-</details>
-
-† Default build only. The optional `native-inchi` feature adds a C-compiler dependency for the vendored IUPAC InChI C library (v1.07.5). This is about C/C++ FFI specifically — the `depict` feature below pulls in pure-Rust rendering crates, so it doesn't add a C compiler dependency even though it isn't unsafe-free (see ‡).
-
-‡ chematic's own ~180,700 lines of Rust (tokei-measured, 2026-08-21): unsafe-free outside `native-inchi`'s 9 FFI blocks (see "Safe" above) — a real, verifiable claim about code chematic wrote, and categorically different from RDKit/OpenBabel's *C++ FFI* unsafe (uncheckable by any compiler at that boundary) even where the raw count is comparable. It is **not** true of the full dependency tree: the optional `depict` feature (SVG/PDF/EPS rendering) pulls in resvg/usvg/rustybuzz/tiny-skia/zune-jpeg, pure-Rust crates that are themselves not unsafe-free — measured directly (`unsafe fn`/`impl`/`trait`/`{` openings): tiny-skia 151, zune-jpeg 79, rustybuzz 14, image 8, fontdb 3, tiny-skia-path 3 (258 total in this set alone). `chematic-py` (`pip install chematic`) and the npm package both depend on `chematic-depict` directly, so this applies to both real-world install paths, not just an edge case.
+See the [format capability matrix](docs/format-capabilities.md) and the
+[RDKit migration guide](docs/rdkit-migration.md) for detailed support
+differences. The table above is intentionally limited to deployment-level
+differences; detailed feature claims belong in those maintained pages.
 
 ---
 
@@ -454,6 +408,12 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 - `chematic-py`/`chematic-wasm`: full `McsConfig`/`McsOutcome` exposed to `find_mcs` bindings (`match_charge`/`match_isotope`/`atom_compare`/`bond_compare`/`timeout_ms`/etc., previously Rust-only)
 - Full details in `CHANGELOG.md`'s `[0.23.0]` section
 
+Current development is tracked in [`CHANGELOG.md`](CHANGELOG.md). The latest
+`v0.31.0` work adds Parent identity bindings for WASM, following the Python
+bindings in `v0.30.0`; both expose bounded, status-aware operations.
+
+The older release notes below are retained as a short historical summary.
+
 **v0.22.0** (2026-08-29): **New WASM ensemble binding, canonicalization-hang fix, 3-membered-ring embedding fix**
 - `chematic-wasm`: new `embed_ensemble_v2_json` binding for `chematic_3d::embed_ensemble_v2`, mirroring the Python binding (`Mol.conformer_ensemble_v2()`) via the existing `pipeline_v2.rs` conventions (camelCase JSON keys, `schemaVersion: 1` envelope) — purely additive
 - `chematic-smiles`: `canonical_smiles`/`canonical_atom_order` could hang on molecules with several simultaneously-unresolved symmetric regions (issue #421) — the automorphism backtracking search had no internal step bound; fixed with an always-on step ceiling that safely falls back to "not proven automorphic" rather than searching unbounded
@@ -521,7 +481,7 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 - `chematic-mol`: MDL bond type 9 (dative/coordinate — RDKit's own V3000 convention for `Bond::BondType.DATIVE`) silently mapped to `BondOrder::Single` in both V2000 and V3000 readers, quietly discarding coordination-bond semantics on read. Both readers now map code 9 to `BondOrder::Dative`; V3000's writer now emits code 9 instead of collapsing to plain single
 - `chematic-chem`: `avg_mass`/`mono_mass` covered only ~24 light main-group elements and silently fell back to `atomic_number as f64` for every other element — every transition metal, lanthanide, actinide, and heavy post-transition element (platinum: atomic number 78, real mass ~195 Da, previously returned "78.0 Da") got a wildly wrong mass with no error. Extended to all 118 `Element` values, sourced from RDKit's periodic table data, with the ~24 previously-covered values kept as-is where they differ (selenium: this project's value is the current IUPAC standard, RDKit ships the superseded pre-2013 value)
 - `chematic-mol`: new Extended XYZ (extxyz) format support — `parse_extxyz`/`write_extxyz`, `ExtxyzReader`/`ExtxyzWriter`, `parse_extxyz_all`, built as an extension of the existing multi-frame `XyzFrame` type (ASE's `Lattice=` cell matrix, typed per-atom `Properties=` columns, arbitrary `key=value` frame metadata); a plain XYZ file round-trips through the extxyz reader/writer unchanged. Python: `from_extxyz`/`from_extxyz_all`/`to_extxyz`. WASM: `mol_from_extxyz`/`extxyz_frame_json`/`to_extxyz_json`. **Breaking (Rust API only)**: `XyzFrame` gained three public fields, `XyzError` gained seven variants, `write_extxyz` now returns `Result<String, XyzError>` — a real break to the `chematic-mol` v0.14.0 Rust API already published to crates.io, not merely an unreleased-API change
-- Platinum coordination-chemistry stereochemistry (square-planar cis/trans identity, e.g. cisplatin vs. transplatin) remains unrepresented — measured and explicitly not fixed this release, see `validation/platinum/FEASIBILITY.md`
+- Platinum coordination-chemistry stereochemistry (square-planar cis/trans identity, e.g. cisplatin vs. transplatin) remains unrepresented.
 - Full details in `CHANGELOG.md`'s `[0.14.1]` section
 
 **v0.14.0** (2026-08-11): **Stereo-aware distance geometry — declared E/Z enforced as a bound-matrix constraint, `enforce_chirality` composable with post-minimization stereo verification, Python/WASM exposure**
@@ -637,7 +597,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.25.0)
+├── Cargo.toml                    workspace root (v0.89.0 candidate)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -688,10 +648,10 @@ If you use chematic in academic or research work, please cite:
 
 ```bibtex
 @software{chematic,
-  author    = {kent-tokyo},
+  author    = {Kentaro Tanabe (kent-tokyo)},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.25.0},
+  version   = {0.31.0},
   year      = {2026},
 }
 ```
@@ -701,6 +661,8 @@ If you use chematic in academic or research work, please cite:
 ## License
 
 Licensed under either of Apache License 2.0 or MIT License, at your option.
+Copyright attribution: Kentaro Tanabe (kent-tokyo). See [`NOTICE`](NOTICE) for the
+redistribution attribution notice.
 
 ---
 
