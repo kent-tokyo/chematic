@@ -82,8 +82,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Local supply-chain checks found zero known vulnerabilities across 308 locked
   dependencies; `cargo deny` passed advisory, ban, license, and source checks.
   Unmaintained font/text dependencies, duplicate transitive versions, SBOM,
-  provenance, and immutable Actions pinning remain tracked as release-gate
-  work rather than being silently treated as resolved.
+  provenance, release-key custody, and immutable Actions pinning are tracked
+  explicitly as release-gate evidence rather than being silently treated as
+  resolved.
 - Refreshed 78 compatible Cargo lockfile entries; the 310-package lock now
   passes `cargo check --workspace --locked`. Added deterministic SPDX 2.3 SBOM
   and SHA-256 provenance generators, plus a release-key-only detached signing
@@ -98,8 +99,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SBOM and provenance generation now honors `SOURCE_DATE_EPOCH`; repeated local
   generation with the same locked source state produced byte-identical output.
 - Pinned the supply-chain workflow and pre-existing nightly/MSRV toolchain
-  action references to immutable commits; the remaining workflow tags are
-  tracked for a broader pinning pass.
+  action references to immutable commits; the remaining release evidence is
+  limited to release-key custody and public-key verification.
+- Pinned the remaining floating GitHub Actions references across CI,
+  benchmark, validation, Pages, and publish workflows to immutable commits.
 - Added a scheduled/manual Linux sanitizer workflow and local runner for
   AddressSanitizer, LeakSanitizer, and ThreadSanitizer; execution evidence
   remains separate and is not claimed by configuration alone.
