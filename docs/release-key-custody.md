@@ -3,7 +3,7 @@
 Release artifacts must be signed by a key held outside the repository. The
 private key must never be committed, uploaded as an artifact, printed in logs,
 or placed in a normal repository variable. Store it as the masked GitHub
-Actions secret `SCHEMATIC_RELEASE_PRIVATE_KEY` (or in an equivalent hardware
+Actions secret `CHEMATIC_RELEASE_PRIVATE_KEY` (or in an equivalent hardware
 backed release system) and restrict its use to the protected release
 environment.
 
@@ -26,7 +26,7 @@ and must not be presented as release provenance.
 ## Activation checklist
 
 - [ ] Generate the production key in the maintainer-controlled secret store.
-- [ ] Register `SCHEMATIC_RELEASE_PRIVATE_KEY` in the protected GitHub
+- [ ] Register `CHEMATIC_RELEASE_PRIVATE_KEY` in the protected GitHub
   environment; do not expose it to pull requests.
 - [ ] Publish the matching public key and fingerprint through the project
   release evidence channel.

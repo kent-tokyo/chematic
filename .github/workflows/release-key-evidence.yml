@@ -28,7 +28,7 @@ jobs:
             --artifact target/sbom/chematic.spdx.json
       - name: Sign and verify with protected release key
         env:
-          RELEASE_PRIVATE_KEY: ${{ secrets.SCHEMATIC_RELEASE_PRIVATE_KEY }}
+          RELEASE_PRIVATE_KEY: ${{ secrets.CHEMATIC_RELEASE_PRIVATE_KEY }}
         run: |
           test -n "$RELEASE_PRIVATE_KEY"
           umask 077
