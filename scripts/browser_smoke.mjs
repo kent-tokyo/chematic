@@ -96,7 +96,8 @@ try {
   await page.locator("#btn-rxn-eq").click();
   await page.locator("#rxn-eq-svg-wrap svg").first().waitFor({ state: "visible" });
   await page.locator("#error-rxn-eq").waitFor({ state: "hidden" });
-  await page.locator("#tc-analysis").click();
+  await page.locator("#tc-structure").click();
+  await page.locator("#tb-2d").click();
   await page.getByRole("button", { name: "日", exact: true }).click();
   await page.getByText("記述子計算機", { exact: true }).waitFor({ state: "visible" });
   await page.getByRole("button", { name: "EN", exact: true }).click();
