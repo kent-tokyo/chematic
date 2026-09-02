@@ -3894,16 +3894,6 @@ mod policy_bridge_tests {
     /// member this measurement actually closes, not a stand-in for the
     /// others.
     #[test]
-    #[ignore = "confirmed broken (issue #438): now fails deterministically with \
-                MinimizationFailed/CatastrophicBondBlowup instead of the success \
-                this test asserts. Reproduces identically (same numeric residuals \
-                to 13 significant figures) on a clean rebuild of main AND on a \
-                clean v0.22.0 worktree checkout, so it predates v0.22.0's release \
-                and is not a regression from any change landing in v0.23.0 -- \
-                chematic-3d/ has zero diff since v0.22.0. Root-causing the UFF/ \
-                distance-geometry convergence regression is its own investigation, \
-                not done here; ignored so cargo test --workspace stays green while \
-                the bug stays tracked."]
     fn uff_only_rescue_now_preserves_stereo_for_atorvastatin_fragment() {
         let mol = parse(
             "CC(C)c1c(C(=O)Nc2ccccc2)c(-c2ccccc2)c(-c2ccc(F)cc2)n1CC[C@@H](O)C[C@@H](O)CC(=O)O",
