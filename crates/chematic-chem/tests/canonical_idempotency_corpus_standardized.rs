@@ -139,7 +139,6 @@ fn assert_corpus_idempotent(label: &str, corpus: &str, max_known_failures: usize
 /// diazo-dioxide case, where the +N is fully substituted), the pair is left
 /// completely untouched rather than inventing a proton on the negative side
 /// alone. Re-measured: **0/1** -- `chembl_accuracy_corpus_4999.smi` still
-<<<<<<< HEAD
 /// Re-measured on 2026-09-02 at 6a3ee20f: 28/5000 and 66/5000. The previously
 /// reported line-3179 fixture is now a fixed point when checked directly;
 /// the focused regression test below keeps that repair covered. Do not raise
@@ -147,15 +146,6 @@ fn assert_corpus_idempotent(label: &str, corpus: &str, max_known_failures: usize
 /// full-corpus run and recording the residual reduction above.
 const DESCRIPTOR_CENSUS_KNOWN_FAILURES: usize = 28;
 const CHEMBL_ACCURACY_KNOWN_FAILURES: usize = 66;
-=======
-/// fully idempotent. The previously reported line-3179 fixture has since
-/// been rechecked directly through the complete standardize/parse/canonicalize
-/// pipeline and is now a fixed point; the focused regression test below keeps
-/// that repair covered. Do not raise these ceilings to hide a future
-/// regression.
-const DESCRIPTOR_CENSUS_KNOWN_FAILURES: usize = 0;
-const CHEMBL_ACCURACY_KNOWN_FAILURES: usize = 0;
->>>>>>> 6e95e3b3 (test: lock canonical standardization residual)
 
 /// **Issue #403 fix**: `disconnect_metals` left a dative-bond-derived
 /// `[O+]`/`[N+]`'s stale, too-low `hydrogen_count` in place after severing
