@@ -78,6 +78,11 @@ try {
   await page.locator("#btn-sdf-load").click();
   await sdfError.waitFor({ state: "visible" });
   assert.match(await sdfError.innerText(), /No valid|invalid|parse/i);
+  await sdfInput.fill(ETHANE_MOL_BLOCK);
+  await page.locator("#btn-sdf-load").click();
+  await page.locator("#sdf-grid-output svg").waitFor({ state: "visible" });
+  await sdfError.waitFor({ state: "hidden" });
+  assert.equal(await sdfHba.innerText(), "0");
   assert.deepEqual(errors, []);
 } finally {
   await browser.close();
