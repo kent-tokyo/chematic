@@ -34,6 +34,27 @@ pub struct CdxmlDocument {
     raw_xml: String,
 }
 
+/// Safe, source-oriented edits for document-level CDXML consumers.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum CdxmlEdit {
+    SetPageAttribute {
+        page_id: String,
+        key: String,
+        value: String,
+    },
+    ReplaceObject {
+        page_id: String,
+        object_index: usize,
+        raw_xml: String,
+    },
+    SetObjectAttribute {
+        page_id: String,
+        object_index: usize,
+        key: String,
+        value: String,
+    },
+}
+
 impl CdxmlDocument {
     /// Parse a CDXML document without discarding unknown presentation data.
     pub fn parse(input: &str) -> Result<Self, CdxmlError> {
@@ -140,6 +161,80 @@ impl CdxmlDocument {
         self.raw_xml.clone()
     }
 
+    /// Apply a bounded edit and reparse, so indexes/attributes stay consistent.
+    pub fn apply(&self, edit: &CdxmlEdit) -> Result<Self, CdxmlError> {
+        let mut lines: Vec<String> = self.raw_xml.lines().map(str::to_owned).collect();
+        let page_id = page_id_for(edit);
+        let page = self
+            .pages
+            .iter()
+            .position(|p| p.id.as_deref() == Some(page_id))
+            .ok_or_else(|| CdxmlError::UnknownAtomRef("unknown page id".into()))?;
+        let mut page_index = 0usize;
+        let mut in_page = false;
+        let mut object_index = 0usize;
+        for line in &mut lines {
+            let trimmed = line.trim().to_owned();
+            if trimmed.starts_with("<page") && !trimmed.starts_with("</page") {
+                in_page = page_index == page;
+                object_index = 0;
+                if in_page && let CdxmlEdit::SetPageAttribute { key, value, .. } = edit {
+                    let mut attrs = parse_xml_attrs(&trimmed);
+                    attrs.insert(key.clone(), value.clone());
+                    let mut rebuilt = String::from("<page");
+                    for (k, v) in attrs {
+                        rebuilt.push_str(&format!(" {k}=\"{}\"", xml_escape(&v)));
+                    }
+                    rebuilt.push('>');
+                    *line = rebuilt;
+                }
+            }
+            if in_page
+                && trimmed.starts_with('<')
+                && !trimmed.starts_with("</")
+                && !trimmed.starts_with("<page")
+                && !trimmed.starts_with("<?")
+                && !trimmed.starts_with("<!")
+            {
+                match edit {
+                    CdxmlEdit::ReplaceObject {
+                        object_index: target,
+                        raw_xml,
+                        ..
+                    } if object_index == *target => *line = raw_xml.clone(),
+                    CdxmlEdit::SetObjectAttribute {
+                        object_index: target,
+                        key,
+                        value,
+                        ..
+                    } if object_index == *target => {
+                        let mut attrs = parse_xml_attrs(&trimmed);
+                        attrs.insert(key.clone(), value.clone());
+                        let tag = trimmed
+                            .trim_start_matches('<')
+                            .split(|c: char| c.is_whitespace() || c == '>' || c == '/')
+                            .next()
+                            .unwrap_or_default();
+                        let self_closing = trimmed.ends_with("/>");
+                        let mut rebuilt = format!("<{tag}");
+                        for (k, v) in attrs {
+                            rebuilt.push_str(&format!(" {k}=\"{}\"", xml_escape(&v)));
+                        }
+                        rebuilt.push_str(if self_closing { "/>" } else { ">" });
+                        *line = rebuilt;
+                    }
+                    _ => {}
+                }
+                object_index += 1;
+            }
+            if in_page && trimmed.starts_with("</page") {
+                in_page = false;
+                page_index += 1;
+            }
+        }
+        Self::parse(&format!("{}\n", lines.join("\n")))
+    }
+
     /// A JSON-safe structural summary for editor and binding layers.
     pub fn to_json(&self) -> Value {
         let pages = self
@@ -156,6 +251,22 @@ impl CdxmlDocument {
             })
             .collect::<Vec<_>>();
         serde_json::json!({ "schema": "chematic.cdxml-document.v1", "document_attributes": self.document_attributes, "pages": pages })
+    }
+}
+
+fn xml_escape(value: &str) -> String {
+    value
+        .replace('&', "&amp;")
+        .replace('"', "&quot;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+}
+
+fn page_id_for(edit: &CdxmlEdit) -> &str {
+    match edit {
+        CdxmlEdit::SetPageAttribute { page_id, .. }
+        | CdxmlEdit::ReplaceObject { page_id, .. }
+        | CdxmlEdit::SetObjectAttribute { page_id, .. } => page_id,
     }
 }
 
@@ -191,5 +302,41 @@ mod tests {
                 ..
             })
         ));
+    }
+
+    #[test]
+    fn applies_page_and_object_edits_without_losing_unknown_data() {
+        let input = "<CDXML>\n<page id=\"p1\" keep=\"yes\">\n<arrow id=\"a1\" custom=\"z\"/>\n</page>\n</CDXML>";
+        let doc = CdxmlDocument::parse(input).unwrap();
+        let doc = doc
+            .apply(&CdxmlEdit::SetPageAttribute {
+                page_id: "p1".into(),
+                key: "title".into(),
+                value: "Page 1".into(),
+            })
+            .unwrap();
+        let doc = doc
+            .apply(&CdxmlEdit::ReplaceObject {
+                page_id: "p1".into(),
+                object_index: 0,
+                raw_xml: "<text id=\"t1\" custom=\"z\"/>".into(),
+            })
+            .unwrap();
+        let doc = doc
+            .apply(&CdxmlEdit::SetObjectAttribute {
+                page_id: "p1".into(),
+                object_index: 0,
+                key: "label".into(),
+                value: "A&B".into(),
+            })
+            .unwrap();
+        assert!(doc.write().contains("title=\"Page 1\""));
+        assert!(
+            doc.write()
+                .contains("<text custom=\"z\" id=\"t1\" label=\"A&amp;B\"/>")
+                || doc
+                    .write()
+                    .contains("<text id=\"t1\" custom=\"z\" label=\"A&amp;B\"/>")
+        );
     }
 }

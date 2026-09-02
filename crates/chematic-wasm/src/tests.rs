@@ -857,6 +857,15 @@ fn cdxml_to_smiles_json_two_fragments() {
     assert_eq!(count, 2, "should have 2 fragments: {json}");
 }
 
+#[test]
+fn cdxml_document_json_preserves_page_objects_contract() {
+    let cdxml = "<CDXML>\n<page id=\"p1\">\n<arrow id=\"a1\" Custom=\"keep\"/>\n</page>\n</CDXML>";
+    let json = cdxml_document_json(cdxml).unwrap();
+    assert!(json.contains("chematic.cdxml-document.v1"));
+    assert!(json.contains("Custom"));
+    assert!(json.contains("arrow"));
+}
+
 // CDXML stereo
 #[test]
 fn cdxml_wedge_bond_becomes_up() {

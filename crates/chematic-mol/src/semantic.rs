@@ -34,6 +34,8 @@ pub struct PolymerRepeatUnit {
     pub attachment_atoms: Vec<AtomRef>,
     pub end_groups: Vec<String>,
     pub repeat_count: Option<u32>,
+    /// Supported repeat representation: a SMILES fragment with `[*]` at both ends.
+    pub repeat_smiles: Option<String>,
 }
 
 /// Loss/unsupported reason returned by validation or expansion.
@@ -208,6 +210,93 @@ impl SemanticModel {
                 })?;
             mapping.insert(group.id.clone(), remap.values().copied().collect());
         }
+        for unit in &self.polymer_units {
+            let pattern =
+                unit.repeat_smiles
+                    .as_deref()
+                    .ok_or_else(|| SemanticError::Unsupported {
+                        construct: unit.id.clone(),
+                        reason: "repeat_smiles is not provided".into(),
+                    })?;
+            if !pattern.trim().starts_with("[*]") || !pattern.trim().ends_with("[*]") {
+                return Err(SemanticError::InvalidExpansion {
+                    id: unit.id.clone(),
+                    reason: "repeat_smiles must start and end with [*]".into(),
+                });
+            }
+            let repeats = unit
+                .repeat_count
+                .ok_or_else(|| SemanticError::Unsupported {
+                    construct: unit.id.clone(),
+                    reason: "repeat count must be explicit".into(),
+                })?;
+            let left = AtomIdx(
+                self.atom_ids
+                    .iter()
+                    .position(|id| id == &unit.attachment_atoms[0].atom_id)
+                    .ok_or_else(|| {
+                        SemanticError::MissingAtom(unit.attachment_atoms[0].atom_id.clone())
+                    })? as u32,
+            );
+            let right = AtomIdx(
+                self.atom_ids
+                    .iter()
+                    .position(|id| id == &unit.attachment_atoms[1].atom_id)
+                    .ok_or_else(|| {
+                        SemanticError::MissingAtom(unit.attachment_atoms[1].atom_id.clone())
+                    })? as u32,
+            );
+            let mut unit_atoms = Vec::new();
+            for _ in 0..repeats {
+                let fragment = chematic_smiles::parse(pattern).map_err(|e| {
+                    SemanticError::InvalidExpansion {
+                        id: unit.id.clone(),
+                        reason: e.to_string(),
+                    }
+                })?;
+                let last = AtomIdx(fragment.atom_count().saturating_sub(1) as u32);
+                let ln = fragment.neighbors(AtomIdx(0)).collect::<Vec<_>>();
+                let rn = fragment.neighbors(last).collect::<Vec<_>>();
+                if fragment.atom_count() < 4 || ln.len() != 1 || rn.len() != 1 {
+                    return Err(SemanticError::Unsupported {
+                        construct: unit.id.clone(),
+                        reason: "repeat requires exactly one neighbor at each linkage".into(),
+                    });
+                }
+                let mut remap = BTreeMap::new();
+                for (idx, atom) in fragment.atoms() {
+                    if idx != AtomIdx(0) && idx != last {
+                        let added = molecule.add_atom(atom.clone());
+                        unit_atoms.push(added);
+                        remap.insert(idx, added);
+                    }
+                }
+                for (_, bond) in fragment.bonds() {
+                    if bond.atom1 != AtomIdx(0)
+                        && bond.atom2 != AtomIdx(0)
+                        && bond.atom1 != last
+                        && bond.atom2 != last
+                    {
+                        molecule
+                            .add_bond(remap[&bond.atom1], remap[&bond.atom2], bond.order)
+                            .map_err(|e| SemanticError::InvalidExpansion {
+                                id: unit.id.clone(),
+                                reason: e.to_string(),
+                            })?;
+                    }
+                }
+                molecule
+                    .add_bond(left, remap[&ln[0].0], chematic_core::BondOrder::Single)
+                    .and_then(|_| {
+                        molecule.add_bond(right, remap[&rn[0].0], chematic_core::BondOrder::Single)
+                    })
+                    .map_err(|e| SemanticError::InvalidExpansion {
+                        id: unit.id.clone(),
+                        reason: e.to_string(),
+                    })?;
+            }
+            mapping.insert(unit.id.clone(), unit_atoms);
+        }
         Ok(ExpandedSemantic {
             molecule,
             source_to_expanded: mapping,
@@ -257,6 +346,27 @@ impl SemanticModel {
             if unit.attachment_atoms.len() != 2 {
                 return Err(SemanticError::AmbiguousAttachment(unit.id.clone()));
             }
+            if unit.repeat_count.is_none() {
+                return Err(SemanticError::Unsupported {
+                    construct: unit.id.clone(),
+                    reason: "repeat count must be explicit".into(),
+                });
+            }
+            if let Some(pattern) = unit.repeat_smiles.as_deref() {
+                let pattern = pattern.trim();
+                if !pattern.starts_with("[*]") || !pattern.ends_with("[*]") {
+                    return Err(SemanticError::InvalidExpansion {
+                        id: unit.id.clone(),
+                        reason: "repeat_smiles must start and end with [*]".into(),
+                    });
+                }
+                if pattern.matches("[*]").count() != 2 {
+                    return Err(SemanticError::InvalidExpansion {
+                        id: unit.id.clone(),
+                        reason: "repeat_smiles must contain exactly two [*] markers".into(),
+                    });
+                }
+            }
             for a in &unit.attachment_atoms {
                 if !self.atom_ids.contains(&a.atom_id) {
                     return Err(SemanticError::MissingAtom(a.atom_id.clone()));
@@ -287,7 +397,7 @@ impl SemanticModel {
         })).collect()));
         root.insert("polymer_units".into(), Value::Array(self.polymer_units.iter().map(|u| serde_json::json!({
             "id": u.id, "attachment_atoms": u.attachment_atoms.iter().map(|a| &a.atom_id).collect::<Vec<_>>(),
-            "end_groups": u.end_groups, "repeat_count": u.repeat_count
+            "end_groups": u.end_groups, "repeat_count": u.repeat_count, "repeat_smiles": u.repeat_smiles
         })).collect()));
         root.insert(
             "extensions".into(),
@@ -330,6 +440,7 @@ mod tests {
                 }],
                 end_groups: vec![],
                 repeat_count: None,
+                repeat_smiles: None,
             }],
             ..Default::default()
         };
@@ -363,5 +474,31 @@ mod tests {
         let expanded = selected.expand(&base).unwrap();
         assert_eq!(expanded.molecule.atom_count(), 3);
         assert_eq!(expanded.source_to_expanded["r1"].len(), 1);
+    }
+
+    #[test]
+    fn expands_explicit_two_ended_polymer_repeat() {
+        let base = chematic_smiles::parse("CC").unwrap();
+        let model = SemanticModel {
+            atom_ids: vec!["a1".into(), "a2".into()],
+            polymer_units: vec![PolymerRepeatUnit {
+                id: "p1".into(),
+                attachment_atoms: vec![
+                    AtomRef {
+                        atom_id: "a1".into(),
+                    },
+                    AtomRef {
+                        atom_id: "a2".into(),
+                    },
+                ],
+                end_groups: vec![],
+                repeat_count: Some(1),
+                repeat_smiles: Some("[*]CC[*]".into()),
+            }],
+            ..Default::default()
+        };
+        let expanded = model.expand(&base).unwrap();
+        assert_eq!(expanded.molecule.atom_count(), 4);
+        assert_eq!(expanded.source_to_expanded["p1"].len(), 2);
     }
 }
