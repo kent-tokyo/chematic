@@ -287,6 +287,48 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 
 ## 近期开发
 
+**v0.23.0**（2026-08-30）：**MCS 精度修复（行为变更）、新增两种 RDKit 兼容指纹、MCS 绑定全量暴露**
+- `chematic-smarts`：**行为变更** —— `find_mcs` 的默认 `AtomCompare::Elements` 不再要求芳香性一致，与 RDKit 同名的 `rdFMCS.AtomCompare.CompareElements` 行为完全一致（已通过实时 oracle 确认：RDKit 从不将芳香性编码为原子侧约束，仅通过键类型查询表达）。与实时 RDKit oracle 的一致率从 74.6%/68.2%/70.4% 提升至 88.4%/88.5%/97.0%（三个既有语料库）。目前不存在可恢复旧有"元素+芳香性"严格匹配行为的 `AtomCompare` 模式
+- `chematic-py`/`chematic-wasm`/`chematic-mcp`/`chematic-chem`：修复 `find_mcs` 结果重建在全部 4 个绑定中都会静默丢失杂原子和/或芳香性的问题（`QueryMolecule` 到具体 `Molecule` 的转换未能正确展开复合原子查询）——在测量上述修复时发现
+- `chematic-fp`/`chematic-py`：`rdkit_rdk_fp`/`rdkit_layered_fp` —— RDKit 兼容的 `Chem.RDKFingerprint`/`Chem.LayeredFingerprint` 移植版，完成 6 种指纹的 parity 系列（相对实时 RDKit oracle，三个语料库上分别达到 100%/100%/99.44% 与 100%/100%/99.46% 位精确匹配）
+- `chematic-py`/`chematic-wasm`：`McsConfig`/`McsOutcome` 全字段暴露给 `find_mcs` 绑定（`match_charge`/`match_isotope`/`atom_compare`/`bond_compare`/`timeout_ms` 等，此前仅限 Rust 使用）
+- 详见 `CHANGELOG.md` 的 `[0.23.0]` 部分
+
+**v0.22.0**（2026-08-29）：**新增 WASM ensemble 绑定、canonicalization 死循环修复、三元环 embedding 修复**
+- `chematic-wasm`：为 `chematic_3d::embed_ensemble_v2` 新增 `embed_ensemble_v2_json` 绑定，与已有的 Python 绑定（`Mol.conformer_ensemble_v2()`）保持一致，沿用 `pipeline_v2.rs` 既有规约（camelCase JSON 键、`schemaVersion: 1` envelope）——纯增量修改
+- `chematic-smiles`：`canonical_smiles`/`canonical_atom_order` 在存在多个同时未解决的对称区域的分子上可能死循环（issue #421）——automorphism 回溯搜索此前没有内部步数上限；修复为始终启用的步数上限，超限时安全回退为"未证明是 automorphism"而非无界搜索
+- `chematic-3d`：三元环（环丙烷/环氧乙烷/氮丙啶/环硫乙烷）在 distance-geometry embedding 阶段 fail closed——当环闭合的相邻原子对同时是"1-3"关系且直接成键时，通用角度约束会覆盖本应更严格的键长约束；修复为对已成键的相邻原子对跳过角度约束。strict-MMFF94 3D 语料库 252/265 → 263/265
+- 详见 `CHANGELOG.md` 的 `[0.22.0]` 部分
+
+**v0.21.0**（2026-08-27）：**`McsConfig` 电荷/同位素匹配 + 类型化超时结果，四项正确性修复**
+- `chematic-smarts`：`McsConfig` 新增 `match_charge`/`match_isotope` 字段（与既有 `match_chiral_tag` 一致，默认 `false`），并通过 `find_mcs_with_config_checked` 提供新的 `McsOutcome` 枚举（`Exhaustive`/`TimedOut`），明确报告搜索是否因超时被截断，而非静默返回可能非最优的结果——纯增量修改，`find_mcs`/`find_mcs_with_config` 不受影响
+- `chematic-smarts`：`find_mcs` 的分支限界搜索存在不完整问题——`grow()` 每次只尝试 frontier 的第一个候选原子且没有排除后尝试其他候选的机制，导致在某些情况下错过真正更大的公共子结构（最小反例：`OC(N)N` vs `NC(N)` 返回 2 个原子而非真实的 3 个）；已通过标准的 include/exclude 分支限界修复
+- `chematic-chem`：`disconnect_metals` 在切断金属键后未中和由 dative 键派生的形式电荷（issue #403）——在 RDKit 自带的 NCI Diversity Set holdout 中 4999 个分子里有 34 个非幂等；修复为在切断后立即通过价态推断重新计算受影响原子的氢数；NCI holdout 34→0，新增 11 个金属配合物 fixture
+- `chematic-chem`：`normalize_zwitterion` 在既无可转移质子的永久电荷分离基团（例如 diazo-N,N'-二氧化物）的负电荷原子上凭空生成质子，静默改变分子式（issue #407）——修复为仅在两个原子都确实有质子可转移时才执行转移；开发语料库残留数 4→1（剩余 1 个与此无关，参见 issue #402/#415）
+- `chematic-chem`：`canonical_tautomer` 在融合/桥连环系统中可能产生化学上无效的、超价的氮原子（issue #415）——两种芳香 H 迁移机制现在都会在接受输出前通过 kekulization 校验
+- 详见 `CHANGELOG.md` 的 `[0.21.0]` 部分
+
+**v0.20.1**（2026-08-26）：**三项 canonical-SMILES/标准化正确性修复（补丁版本，无破坏性变更）**
+- `chematic-smiles`：耦合的 E/Z canonicalization 在重新 canonicalize 时可能静默改变几何构型（issue #390）——canonical writer 的 E/Z marker 机制中存在两个独立缺陷，二者需同时具备才能复现所报告的实例；已一并修复，并在一个真实的 290 化合物语料库上验证（290/290 幂等，290/290 与独立的 RDKit InChIKey 匹配，此前为 289/290）
+- `chematic-chem`：`standardize()` 在多条重建路径上静默丢弃立体化学信息表（issue #399）——`standardize.rs` 中 8 个函数通过裸 `MoleculeBuilder` 重建分子而未携带 `stereo_neighbor_order`/`bond_directions`/`stereo_groups`，导致 `@`/`@@` 根据环开闭角色发生翻转；开发语料库 standardize 路径幂等性 615/519 → 68/60（恰好是 #392 之前的基线），NCI holdout（4999 个未使用的真实分子，一次性运行）0 例与立体化学相关的失败
+- `chematic-smiles`：canonical writer 的环闭合键 marker 忽略了闭合伙伴的芳香性（issue #395）——两个各自芳香的原子之间本应是非芳香的环闭合"融合"键（例如 `c1-2`）在重新解析后会静默变为芳香；开发语料库裸解析幂等性 73/57 → 0/0，完全修复，独立 RDKit InChI oracle 在全部 10000 行语料库上 0 处不匹配
+- 综合两项 standardize 路径修复，该语料库残留降至 0/4——剩余 4 个失败可归因于两个新提交、尚未修复的 issue（#407、#402 一类），未纳入本次发布
+- 详见 `CHANGELOG.md` 的 `[0.20.1]` 部分
+
+**v0.20.0**（2026-08-25）：**立体化学安全的 3D 生成、连接顺序坐标引擎，以及 `remove_hydrogens` 的身份正确性修复**
+- `chematic-3d`/`chematic-py`/`chematic-wasm`：`PipelineV2Config::stereo_safe(force_field_policy)`——单次调用即可配置，解决了环融合声明立体中心（睾酮、胆固醇等）的一个真实缺口：此前 `repair_tetrahedral_center` 没有可用坐标来反映隐式氢。在 29 分子 × 5 种子的语料库上测得：144/145（99.3%）correct_and_ok，0 例静默错误，睾酮/胆固醇在每个声明立体中心上均为 5/5 种子成功
+- `chematic-3d`：`generate_coords_connectivity_ordered`，新的公开可选 3D 布置引擎（issue #256/#255）——按真实连接顺序放置环与链原子，而非"先放所有环再放所有链"。实测：原始几何合理性在差异语料库上 10/33 → 33/33，零回归，UFF 后键违规率降至 0.0000（优于原引擎自身基线）。`generate_coords` 本身完全不变——作为可选替代方案发布，不改变默认行为，没有既有调用者被路由至此
+- `chematic-3d`：`rescue_with_distance_geometry_v2`（UFF 灾难性崩溃救援桥接）在重试时现在会强制执行声明的手性（issue #210，部分修复）——在其 58 分子语料库上零回归，5 个已命名残留分子中的 1 个新近成功；仍有 4 个残留未通过该特定桥接修复（但已通过上方的 `stereo_safe` 解决）
+- `chematic-chem`：`remove_hydrogens` 不再破坏同位素标记氢（`[2H]`、`[3H]`），也不再在每次调用时静默丢弃声明的立体/E-Z 信息——两者都是通过下游使用方 947 万化合物真实语料库扫描发现的真实、已发布的正确性 bug，未受影响分子已确认不变，原始调查中 289/290 的身份不匹配问题已解决
+- `chematic-py`：`Mol.conformer_ensemble_v2(config)` 暴露 `embed_ensemble_v2`（确定性多构象生成、力场内部能量排序、完整的逐次尝试溯源）——与既有 `conformer_ensemble()` 并存，而非替代。新增的 best-of-10 基准测试分支确认其在大规模场景下稳健（约 250/265 分子，相对 RDKit 的中位 RMSD 2.147 Å / TFD 0.344）——RDKit 构象*选择*层面的一致性是另一个尚未确立的独立命题
+- 已知局限：`generate_coords` 尚未路由至新引擎；issue #210 的 4 个残留通过该特定桥接仍未解决；issue #390（单分子 E/Z 正确性残留，无关）仍处于打开状态；本次发布未专门运行全新的全语料库重新测量
+- 详见 `CHANGELOG.md` 的 `[0.20.0]` 部分
+
+**v0.19.0**（2026-08-23）：**Round 2C 芳香内酰胺/内酰亚胺互变异构体修复，以及基准测试/验证数据刷新**
+- `chematic-chem`：互变异构体与母体结构鉴定 round 2C（ROADMAP.md Phase 2）——`canonical_tautomer`/`tautomer_parent` 现在可对 2-吡啶酮、4-吡啶酮和尿嘧啶的芳香内酰胺/内酰亚胺类别进行规范化；胞嘧啶、鸟嘌呤和次黄嘌呤仍未解决（一个独立的、已记录的环氮氢位置残留问题，RFC 1.7 节——已诊断但尚未修复），与之无关的亚硝基/肟缺陷（1.6 节）同样未解决。Phase 2 **尚未**完成；`TautomerScoringConfig` 与 Python/WASM Parent-API 绑定均未实现
+- 基准测试/验证数据刷新：`docs/benchmark.md`/`docs/validation.md` 中的每个数字此前都固定于 chematic v0.4.29/RDKit 2026.03.3（约滞后 14 个版本）——已针对 RDKit 2026.03.4 重新测量。4999 分子准确性语料库现已提交入库（`scripts/chembl_accuracy_corpus_4999.smi`，此前是未提交的个人路径）；分子量首次拥有真实的全语料库检验（99.82%，此前是未测量的"175 分子"/100% 占位值）；CIP R/S/E/Z 标签一致性重新测量为 99.74–99.78%（此前为已过时的 96.30–96.83%）；WASM 包体积已干净重建；ECFP4"多样性语料库"数据现已拥有可复现来源（`benchmark_vs_rdkit.py --corpus`，此前不存在）；3D 构象生成的"Good（ETKDG 规则）"描述已订正为"Experimental"，与迁移指南自身的诚实定性保持一致
+- 详见 `CHANGELOG.md` 的 `[0.19.0]` 部分
+
 **v0.18.0**（2026-08-20）：**为 v0.17.0 的 7 种新格式添加 Python/WASM 绑定，一项 MMFF94 原子类型修复，以及跨语言一致性完善**
 - `chematic-ff`：修复了 issue #337 中芳基异硫氰酸酯累积双键 CSP 碳的误判类型（`getTotalDegree() == 2`，是 RDKit 真实规则的严格超集）。其余 6/8 个分子被重新诊断为 RDKit 自身 Kekulization/MMFF 芳香性识别的真实伪影（通过直接的负对照片段验证），并作为诚实披露的遗留问题保留
 - `chematic-py`：为 v0.17.0 的全部 7 种格式（mmCIF、PQR、ORCA、QCSchema、Gaussian Cube、OpenDX、LAMMPS data/dump）新增 Python 绑定——此前仅限 Rust 使用。`VolumetricGrid`/`LammpsDumpFrame` pyclass 具有 numpy 数组属性，`to_opendx`/`to_opendx_lossy` 的 fail-closed 分离被忠实保留；`py.typed` 标记已验证确实包含在构建的 wheel 中（对新建 venv 中安装的 wheel 而非源码树运行 `mypy --strict` 通过）

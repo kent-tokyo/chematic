@@ -447,6 +447,13 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 ## Recent Development
 
+**v0.23.0** (2026-08-30): **MCS accuracy fix (behavior change), two more RDKit fingerprint ports, full MCS bindings**
+- `chematic-smarts`: **behavior change** — `find_mcs`'s default `AtomCompare::Elements` no longer requires matching aromaticity, matching RDKit's identically-named `rdFMCS.AtomCompare.CompareElements` exactly (confirmed via live oracle: RDKit never encodes aromaticity as a per-atom constraint, only via bond-type queries). Agreement vs. a live RDKit oracle rose from 74.6%/68.2%/70.4% to 88.4%/88.5%/97.0% across three established corpora. There is currently no `AtomCompare` mode that restores the old strict element+aromaticity match
+- `chematic-py`/`chematic-wasm`/`chematic-mcp`/`chematic-chem`: fixed `find_mcs` result reconstruction silently losing heteroatoms and/or aromaticity across all 4 binding surfaces (`QueryMolecule` → concrete `Molecule` conversion never unwrapped the compound atom query correctly) — surfaced while measuring the fix above
+- `chematic-fp`/`chematic-py`: `rdkit_rdk_fp`/`rdkit_layered_fp` — RDKit-compatible `Chem.RDKFingerprint`/`Chem.LayeredFingerprint` ports, completing a 6-fingerprint parity series (100%/100%/99.44% and 100%/100%/99.46% bit-exact across 3 corpora vs. a live RDKit oracle)
+- `chematic-py`/`chematic-wasm`: full `McsConfig`/`McsOutcome` exposed to `find_mcs` bindings (`match_charge`/`match_isotope`/`atom_compare`/`bond_compare`/`timeout_ms`/etc., previously Rust-only)
+- Full details in `CHANGELOG.md`'s `[0.23.0]` section
+
 **v0.22.0** (2026-08-29): **New WASM ensemble binding, canonicalization-hang fix, 3-membered-ring embedding fix**
 - `chematic-wasm`: new `embed_ensemble_v2_json` binding for `chematic_3d::embed_ensemble_v2`, mirroring the Python binding (`Mol.conformer_ensemble_v2()`) via the existing `pipeline_v2.rs` conventions (camelCase JSON keys, `schemaVersion: 1` envelope) — purely additive
 - `chematic-smiles`: `canonical_smiles`/`canonical_atom_order` could hang on molecules with several simultaneously-unresolved symmetric regions (issue #421) — the automorphism backtracking search had no internal step bound; fixed with an always-on step ceiling that safely falls back to "not proven automorphic" rather than searching unbounded
