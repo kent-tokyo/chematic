@@ -24,9 +24,39 @@ use chematic_rxn::Reaction;
 use crate::error::MolParseError;
 use crate::mol2000::parse_mol;
 
+/// Resource limits for parsing an MDL RXN V2000 file.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RxnFileParseLimits {
+    /// Maximum UTF-8 input size in bytes.
+    pub max_input_bytes: usize,
+    /// Maximum number of reactants declared by the RXN header.
+    pub max_reactants: usize,
+    /// Maximum number of products declared by the RXN header.
+    pub max_products: usize,
+    /// Maximum number of `$MOL` blocks retained from the file.
+    pub max_molecules: usize,
+}
+
+impl Default for RxnFileParseLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: 64 * 1024 * 1024,
+            max_reactants: 10_000,
+            max_products: 10_000,
+            max_molecules: 20_000,
+        }
+    }
+}
+
 /// Error produced by [`parse_rxn_file`].
 #[derive(Debug)]
 pub enum RxnParseError {
+    /// A configured input or reaction-component limit was exceeded.
+    ResourceLimit {
+        resource: &'static str,
+        actual: usize,
+        limit: usize,
+    },
     /// The file does not start with `$RXN`.
     MissingHeader,
     /// The reactant/product count line could not be parsed.
@@ -38,6 +68,11 @@ pub enum RxnParseError {
 impl core::fmt::Display for RxnParseError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
+            Self::ResourceLimit {
+                resource,
+                actual,
+                limit,
+            } => write!(f, "RXN {resource} exceeds limit {limit} (got {actual})"),
             Self::MissingHeader => write!(f, "RXN file must start with $RXN"),
             Self::BadCountLine => write!(f, "cannot parse reactant/product count line"),
             Self::MolParse(e) => write!(f, "MOL parse error in RXN: {e}"),
@@ -55,6 +90,22 @@ impl From<MolParseError> for RxnParseError {
 
 /// Parse an MDL RXN V2000 string into a [`Reaction`].
 pub fn parse_rxn_file(text: &str) -> Result<Reaction, RxnParseError> {
+    parse_rxn_file_with_limits(text, RxnFileParseLimits::default())
+}
+
+/// Parse an MDL RXN V2000 string with explicit resource limits.
+pub fn parse_rxn_file_with_limits(
+    text: &str,
+    limits: RxnFileParseLimits,
+) -> Result<Reaction, RxnParseError> {
+    if text.len() > limits.max_input_bytes {
+        return Err(RxnParseError::ResourceLimit {
+            resource: "input bytes",
+            actual: text.len(),
+            limit: limits.max_input_bytes,
+        });
+    }
+
     let mut lines = text.lines();
 
     // Line 1: $RXN
@@ -79,6 +130,28 @@ pub fn parse_rxn_file(text: &str) -> Result<Reaction, RxnParseError> {
     }
     let n_reactants = counts[0].max(0) as usize;
     let n_products = counts[1].max(0) as usize;
+    if n_reactants > limits.max_reactants {
+        return Err(RxnParseError::ResourceLimit {
+            resource: "reactants",
+            actual: n_reactants,
+            limit: limits.max_reactants,
+        });
+    }
+    if n_products > limits.max_products {
+        return Err(RxnParseError::ResourceLimit {
+            resource: "products",
+            actual: n_products,
+            limit: limits.max_products,
+        });
+    }
+    let declared_molecules = n_reactants.saturating_add(n_products);
+    if declared_molecules > limits.max_molecules {
+        return Err(RxnParseError::ResourceLimit {
+            resource: "molecules",
+            actual: declared_molecules,
+            limit: limits.max_molecules,
+        });
+    }
 
     // Work directly on the remaining text to find "$MOL" blocks.
     // Find the position of the first "$MOL" in the original text.
@@ -95,17 +168,24 @@ pub fn parse_rxn_file(text: &str) -> Result<Reaction, RxnParseError> {
     let mol_section = &text[first_mol_pos..];
 
     // Split on "$MOL\n" to get individual MOL blocks.
-    let mol_blocks: Vec<&str> = mol_section.split("$MOL\n").skip(1).collect();
+    let mol_blocks = mol_section.split("$MOL\n").skip(1);
 
     let mut reactants = Vec::with_capacity(n_reactants);
     let mut products = Vec::with_capacity(n_products);
 
-    for (i, block) in mol_blocks.iter().enumerate() {
+    for (i, block) in mol_blocks.enumerate() {
+        if i >= limits.max_molecules {
+            return Err(RxnParseError::ResourceLimit {
+                resource: "molecules",
+                actual: i.saturating_add(1),
+                limit: limits.max_molecules,
+            });
+        }
         // Each block is already a valid MOL V2000 block (3 header lines + data).
         let (mol, _meta) = parse_mol(block)?;
         if i < n_reactants {
             reactants.push(mol);
-        } else if i < n_reactants + n_products {
+        } else if i < declared_molecules {
             products.push(mol);
         }
     }
@@ -188,6 +268,40 @@ mod tests {
     fn test_parse_rxn_missing_header() {
         let err = parse_rxn_file("not a rxn file\n");
         assert!(matches!(err, Err(RxnParseError::MissingHeader)));
+    }
+
+    #[test]
+    fn test_parse_rxn_resource_limits() {
+        let text = minimal_rxn_block();
+        let err = parse_rxn_file_with_limits(
+            &text,
+            RxnFileParseLimits {
+                max_input_bytes: text.len() - 1,
+                ..Default::default()
+            },
+        );
+        assert!(matches!(
+            err,
+            Err(RxnParseError::ResourceLimit {
+                resource: "input bytes",
+                ..
+            })
+        ));
+
+        let err = parse_rxn_file_with_limits(
+            &text,
+            RxnFileParseLimits {
+                max_reactants: 0,
+                ..Default::default()
+            },
+        );
+        assert!(matches!(
+            err,
+            Err(RxnParseError::ResourceLimit {
+                resource: "reactants",
+                ..
+            })
+        ));
     }
 
     #[test]

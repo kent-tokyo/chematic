@@ -3,7 +3,7 @@ name = "chematic-inchi"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-authors = ["kent-tokyo <kent-tokyo@users.noreply.github.com>"]
+authors = ["Kentaro Tanabe (kent-tokyo) <kent-tokyo@users.noreply.github.com>"]
 license = "MIT OR Apache-2.0"
 description = "Pure Rust InChI/InChIKey generation (WASM-compatible) + optional IUPAC-standard InChI via native-inchi feature"
 repository = "https://github.com/kent-tokyo/chematic"
@@ -19,10 +19,10 @@ readme = "README.md"
 native-inchi = ["dep:cc"]
 
 [dependencies]
-chematic-core = { version = "0.88.0", path = "../chematic-core" }
-chematic-smiles = { version = "0.88.0", path = "../chematic-smiles" }
-chematic-chem = { version = "0.88.0", path = "../chematic-chem" }
-chematic-rxn = { version = "0.88.0", path = "../chematic-rxn" }
+chematic-core = { version = "0.89.0", path = "../chematic-core" }
+chematic-smiles = { version = "0.89.0", path = "../chematic-smiles" }
+chematic-chem = { version = "0.89.0", path = "../chematic-chem" }
+chematic-rxn = { version = "0.89.0", path = "../chematic-rxn" }
 
 [build-dependencies]
 cc = { version = "1", optional = true }

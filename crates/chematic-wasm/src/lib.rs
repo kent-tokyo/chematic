@@ -13,6 +13,8 @@ const WASM_MAX_INPUT_BYTES: usize = 1_000_000;
 const WASM_MAX_BATCH_ITEMS: usize = 1_024;
 /// Maximum length of one SMILES/name/property JSON array string element.
 const WASM_MAX_JSON_STRING_BYTES: usize = 100_000;
+/// Maximum JSON string returned by format-oriented WASM helpers.
+pub(crate) const WASM_MAX_OUTPUT_BYTES: usize = 16 * 1024 * 1024;
 /// Maximum SMARTS matches returned by WASM APIs.
 const WASM_MAX_SMARTS_MATCHES: usize = 10_000;
 
@@ -521,7 +523,13 @@ impl MolHandle {
 /// Returns `true` if the SMILES string can be parsed without error.
 #[wasm_bindgen]
 pub fn is_valid_smiles(s: &str) -> bool {
-    chematic_smiles::parse(s).is_ok()
+    if s.len() > WASM_MAX_INPUT_BYTES {
+        return false;
+    }
+    match chematic_smiles::parse(s) {
+        Ok(mol) => mol.atom_count() <= WASM_MAX_ATOMS,
+        Err(_) => false,
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -727,12 +735,14 @@ fn escape_json_string(s: &str) -> String {
     out
 }
 
+/// Serialize a JSON string value without duplicating escaping rules at call sites.
 fn json_string(s: &str) -> String {
-    format!(r#""{}""#, escape_json_string(s))
+    serde_json::to_string(s).expect("serializing a string cannot fail")
 }
 
-fn json_error(message: String) -> String {
-    format!(r#"{{"error":"{}"}}"#, escape_json_string(&message))
+/// Return a consistently shaped JSON error object.
+fn json_error(message: impl std::fmt::Display) -> String {
+    serde_json::json!({ "error": message.to_string() }).to_string()
 }
 
 fn json_option_string_array(values: &[Option<String>]) -> String {
@@ -776,6 +786,17 @@ fn enforce_wasm_molecule_size(mol: &chematic_core::Molecule) -> Result<(), JsVal
         )));
     }
     Ok(())
+}
+
+pub(crate) fn bounded_json_string<T: serde::Serialize>(value: &T) -> Result<String, JsValue> {
+    let output = serde_json::to_string(value).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if output.len() > WASM_MAX_OUTPUT_BYTES {
+        return Err(JsValue::from_str(&format!(
+            "JSON output exceeds maximum size ({} > {WASM_MAX_OUTPUT_BYTES} bytes)",
+            output.len()
+        )));
+    }
+    Ok(output)
 }
 
 fn parse_wasm_string_json_array(json: &str, label: &str) -> Result<Vec<String>, JsValue> {

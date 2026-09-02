@@ -568,6 +568,7 @@ chematic/
 ## 许可证
 
 可选择 Apache License 2.0 或 MIT License 中的任意一种。
+版权归属：Kentaro Tanabe (kent-tokyo)。再分发时的归属声明请参阅 [`NOTICE`](NOTICE)。
 
 ---
 

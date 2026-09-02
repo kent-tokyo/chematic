@@ -1,6 +1,6 @@
 //! Descriptor/ADMET/pKa/QSAR bindings.
 
-use crate::{MolHandle, escape_json_string};
+use crate::{MolHandle, WASM_MAX_ATOMS, WASM_MAX_INPUT_BYTES, json_error};
 use wasm_bindgen::prelude::*;
 
 /// Per-atom EState values as a JSON array of f64.
@@ -202,10 +202,21 @@ pub fn get_descriptors_json(mol: &MolHandle) -> String {
 /// Returns `[]` if no ionizable sites are found, or `{"error":"..."}` on parse failure.
 #[wasm_bindgen]
 pub fn predict_pka_json(smiles: &str) -> String {
+    if smiles.len() > WASM_MAX_INPUT_BYTES {
+        return json_error(format!(
+            "SMILES exceeds maximum input size ({} > {WASM_MAX_INPUT_BYTES} bytes)",
+            smiles.len()
+        ));
+    }
     let mol = match chematic_smiles::parse(smiles) {
         Ok(m) => m,
-        Err(e) => return format!(r#"{{"error":"{}"}}"#, escape_json_string(&e.to_string())),
+        Err(e) => return json_error(e),
     };
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return json_error(format!(
+            "SMILES exceeds maximum atom count ({WASM_MAX_ATOMS})"
+        ));
+    }
     let sites = chematic_chem::predict_pka(&mol);
     if sites.is_empty() {
         return "[]".to_string();
@@ -236,10 +247,21 @@ pub fn predict_pka_json(smiles: &str) -> String {
 /// Returns `{"error":"..."}` on parse failure.
 #[wasm_bindgen]
 pub fn admet_profile_json(smiles: &str) -> String {
+    if smiles.len() > WASM_MAX_INPUT_BYTES {
+        return json_error(format!(
+            "SMILES exceeds maximum input size ({} > {WASM_MAX_INPUT_BYTES} bytes)",
+            smiles.len()
+        ));
+    }
     let mol = match chematic_smiles::parse(smiles) {
         Ok(m) => m,
-        Err(e) => return format!(r#"{{"error":"{}"}}"#, escape_json_string(&e.to_string())),
+        Err(e) => return json_error(e),
     };
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return json_error(format!(
+            "SMILES exceeds maximum atom count ({WASM_MAX_ATOMS})"
+        ));
+    }
     let p = chematic_chem::admet_profile(&mol);
     let acid_str = p.pka_acid.map_or("null".to_string(), |v| format!("{v:.2}"));
     let base_str = p.pka_base.map_or("null".to_string(), |v| format!("{v:.2}"));
@@ -283,10 +305,21 @@ pub fn admet_profile_json(smiles: &str) -> String {
 /// Returns JSON: `{"gi_absorbed":bool,"bbb_penetrant":bool,"logp":f64,"tpsa":f64}`
 #[wasm_bindgen]
 pub fn boiled_egg_json(smiles: &str) -> String {
+    if smiles.len() > WASM_MAX_INPUT_BYTES {
+        return json_error(format!(
+            "SMILES exceeds maximum input size ({} > {WASM_MAX_INPUT_BYTES} bytes)",
+            smiles.len()
+        ));
+    }
     let mol = match chematic_smiles::parse(smiles) {
         Ok(m) => m,
-        Err(e) => return format!(r#"{{"error":"{}"}}"#, escape_json_string(&e.to_string())),
+        Err(e) => return json_error(e),
     };
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return json_error(format!(
+            "SMILES exceeds maximum atom count ({WASM_MAX_ATOMS})"
+        ));
+    }
     let e = chematic_chem::boiled_egg(&mol);
     format!(
         r#"{{"gi_absorbed":{},"bbb_penetrant":{},"logp":{:.4},"tpsa":{:.4}}}"#,
@@ -307,7 +340,7 @@ pub fn pains_matches_json(mol: &MolHandle) -> String {
     let names = chematic_chem::pains_matches(&mol.inner);
     let parts: Vec<String> = names
         .iter()
-        .map(|n| format!("\"{}\"", n.replace('"', "\\\"")))
+        .map(|n| serde_json::to_string(n).expect("serializing alert name cannot fail"))
         .collect();
     format!("[{}]", parts.join(","))
 }

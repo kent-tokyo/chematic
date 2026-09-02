@@ -125,7 +125,7 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.23.0
+# chematic v0.89.0 candidate
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-06, v0.4.22 vs RDKit 2026.03.3 --
@@ -311,6 +311,12 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 - `chematic-py`/`chematic-wasm`：`McsConfig`/`McsOutcome`の全フィールドを`find_mcs` bindingに公開（`match_charge`/`match_isotope`/`atom_compare`/`bond_compare`/`timeout_ms`等、従来Rust限定だったもの）
 - 詳細は`CHANGELOG.md`の`[0.23.0]`section参照
 
+最新の変更（v0.30.0〜v0.31.0）は、Python/WASM の Parent identity API と
+計算予算を含む結果ステータスを追加しました。詳細は
+[`CHANGELOG.md`](CHANGELOG.md) を参照してください。
+
+以下は過去リリースの要約です。完全な履歴は `CHANGELOG.md` を参照してください。
+
 **v0.22.0**（2026-08-29）: **WASM ensemble binding新規追加、canonicalizationハング修正、3員環embedding修正**
 - `chematic-wasm`：`chematic_3d::embed_ensemble_v2`向けの新規`embed_ensemble_v2_json` bindingを追加。Python binding（`Mol.conformer_ensemble_v2()`）を`pipeline_v2.rs`既存の規約（camelCase JSONキー、`schemaVersion: 1` envelope）に沿って踏襲——純粋に追加のみ
 - `chematic-smiles`：複数の対称領域が同時に未解決な分子で`canonical_smiles`/`canonical_atom_order`がハングしうる問題（issue #421）——automorphism backtracking探索に内部ステップ上限がなかった。常時有効なステップ上限を追加し、超過時は安全側（automorphismと証明できない扱い）にフォールバックするよう修正
@@ -373,7 +379,7 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 - `chematic-mol`: MDL bond type 9（dative/coordinate結合——RDKit実装が`Bond::BondType.DATIVE`をV3000で書く際に使う規約）が、V2000・V3000両readerで`BondOrder::Single`へ暗黙に丸められ、配位結合の意味情報が読み込み時に静かに失われていた。両readerともcode 9を`BondOrder::Dative`として解釈するよう修正、V3000のwriterもcode 9を出力するよう修正
 - `chematic-chem`: `avg_mass`/`mono_mass`が軽い主族元素約24種のみをカバーし、それ以外の全元素で`atomic_number as f64`へ静かにfallbackしていた——遷移金属・ランタノイド・アクチノイド・重い後周期元素は全てエラーなしで大きく誤った質量を返していた（白金：原子番号78、実際の質量約195Daのところ「78.0 Da」を返していた）。`Element`が持つ全118元素へ拡張、RDKitの周期表データを出典として使用。既存約24元素の値はそのまま維持（セレンなど、本プロジェクトの値が現行IUPAC標準でRDKit側が2013年以前の旧値を採用しているケースは既存値を優先）
 - `chematic-mol`: Extended XYZ（extxyz）形式の新規対応——`parse_extxyz`/`write_extxyz`、`ExtxyzReader`/`ExtxyzWriter`、`parse_extxyz_all`。既存のmulti-frame `XyzFrame`型の拡張として実装（ASEの`Lattice=`セル行列、型付きper-atom `Properties=`列、任意の`key=value`フレームメタデータ）。プレーンXYZファイルはextxyz readerを通しても無変更で往復する。Python: `from_extxyz`/`from_extxyz_all`/`to_extxyz`。WASM: `mol_from_extxyz`/`extxyz_frame_json`/`to_extxyz_json`。**Breaking（Rust APIのみ）**: `XyzFrame`に公開フィールド3つ追加、`XyzError`にvariant 7つ追加、`write_extxyz`の戻り値が`Result<String, XyzError>`に変更——これは既にcrates.io公開済みのv0.14.0 Rust APIに対する実際の破壊的変更であり、未リリースAPIへの変更ではない点に注意
-- 白金配位化学の立体化学（square-planar cis/trans、例：cisplatinとtransplatinの区別）は依然として表現不可能——今回のリリースでは測定のみ行い、意図的に未修正（`validation/platinum/FEASIBILITY.md`参照）
+- 白金配位化学の立体化学（square-planar cis/trans、例：cisplatin と transplatin の区別）は依然として表現不可能です。
 - 詳細は`CHANGELOG.md`の`[0.14.1]`セクション参照
 
 **v0.14.0**（2026-08-11）: **立体化学を考慮したdistance geometry——宣言済みE/Zをbound-matrix制約として強制、`enforce_chirality`とpost-minimization stereo verificationの組み合わせ対応、Python/WASM公開**
@@ -571,6 +577,8 @@ chematic/
 ## ライセンス
 
 Apache License 2.0 または MIT License のいずれかで利用可能。
+著作権表示: Kentaro Tanabe (kent-tokyo)。再配布時の帰属表示は [`NOTICE`](NOTICE) を
+参照してください。
 
 ---
 

@@ -1,5 +1,6 @@
 tasks/
 tasks/*.md
+internal_docs/
 CLAUDE.md
 AGENTS.md
 .env
@@ -43,6 +44,25 @@ tasks/todo.md
 ROADMAP.md
 ROADMAP_ARCHIVE.md
 
+# release private keys must remain outside version control
+*-release-private.pem
+
 # internal design/competitive-strategy docs -- not published in the public repo
 docs/rfcs/
 docs/competitive/
+docs/mcp/
+docs/release/
+docs/verification_coverage.md
+docs/rdkit_compat.md
+validation/README.md
+validation/results/*_report.md
+scripts/mmff94_provenance/
+
+# internal validation notes and generated diagnostics
+validation/cip_m4a0_traces/
+validation/cosmolkit_comparison/README.md
+validation/platinum/FEASIBILITY.md
+validation/rdkit/README.md
+validation/rdkit_issues/README.md
+validation/results/*.md
+validation/results/*.log

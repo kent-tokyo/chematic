@@ -10,15 +10,17 @@
 #![forbid(unsafe_code)]
 
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::io::Read;
 
 use chematic_3d::{generate_and_minimize_dreiding, write_xyz};
 use chematic_core::{Atom, AtomIdx, BondOrder, Element, MoleculeBuilder};
 use chematic_fp::{BitVec2048, ecfp4, tanimoto_ecfp4};
 use chematic_inchi::inchi;
-use chematic_mol::{parse_moljson, write_cml, write_moljson};
+use chematic_mol::{MolJsonParseLimits, parse_moljson_with_limits, write_cml, write_moljson};
+use chematic_perception::find_sssr;
 use chematic_smarts::{
-    AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, McsConfig, find_matches,
-    find_mcs_with_config, parse_smarts,
+    AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, MatchConfig, McsConfig,
+    find_matches_with_rings_and_config_checked, find_mcs_with_config, parse_smarts,
 };
 use serde_json::{Value, json};
 
@@ -27,6 +29,26 @@ use chematic_chem::{
     hbd_count, heavy_atom_count, lipinski_passes, logp_crippen, molecular_weight, pains_matches,
     pains_passes, qed, rotatable_bond_count, sa_score, tpsa,
 };
+
+const MAX_PUBCHEM_RESPONSE_BYTES: usize = 1 << 20;
+const MAX_MOLECULE_INPUT_BYTES: usize = 100_000;
+const MAX_MOLECULE_ATOMS: usize = 10_000;
+
+fn read_bounded_response<R: Read>(reader: &mut R) -> Result<String, String> {
+    let mut bytes = Vec::with_capacity(MAX_PUBCHEM_RESPONSE_BYTES.min(8192));
+    reader
+        .take((MAX_PUBCHEM_RESPONSE_BYTES + 1) as u64)
+        .read_to_end(&mut bytes)
+        .map_err(|e| e.to_string())?;
+    if bytes.len() > MAX_PUBCHEM_RESPONSE_BYTES {
+        return Err(format!(
+            "response exceeds maximum size ({} > {} bytes)",
+            bytes.len(),
+            MAX_PUBCHEM_RESPONSE_BYTES
+        ));
+    }
+    String::from_utf8(bytes).map_err(|e| format!("response is not valid UTF-8: {e}"))
+}
 
 // ── tool-call error taxonomy ───────────────────────────────────────────────
 
@@ -118,9 +140,47 @@ fn get_str<'a>(args: &'a Value, key: &str) -> Result<&'a str, ToolCallError> {
 /// (`INVALID_SMILES`), not an argument-shape error — the argument was a
 /// well-formed string, it just doesn't describe a valid molecule.
 fn parse_mol_arg(smiles: &str) -> Result<chematic_core::Molecule, ToolCallError> {
-    chematic_smiles::parse(smiles).map_err(|e| {
+    if smiles.len() > MAX_MOLECULE_INPUT_BYTES {
+        return Err(ToolCallError::invalid_args(format!(
+            "SMILES exceeds maximum size ({} > {} bytes)",
+            smiles.len(),
+            MAX_MOLECULE_INPUT_BYTES
+        )));
+    }
+    let mol = chematic_smiles::parse(smiles).map_err(|e| {
         ToolCallError::domain("INVALID_SMILES", format!("Invalid SMILES '{smiles}': {e}"))
-    })
+    })?;
+    if mol.atom_count() > MAX_MOLECULE_ATOMS {
+        return Err(ToolCallError::domain(
+            "MOLECULE_TOO_LARGE",
+            format!(
+                "SMILES molecule exceeds maximum atom count ({} > {})",
+                mol.atom_count(),
+                MAX_MOLECULE_ATOMS
+            ),
+        ));
+    }
+    Ok(mol)
+}
+
+fn parse_moljson_arg(json: &str) -> Result<chematic_core::Molecule, ToolCallError> {
+    if json.len() > MAX_MOLECULE_INPUT_BYTES {
+        return Err(ToolCallError::invalid_args(format!(
+            "MolJSON exceeds maximum size ({} > {} bytes)",
+            json.len(),
+            MAX_MOLECULE_INPUT_BYTES
+        )));
+    }
+    let limits = MolJsonParseLimits {
+        max_input_bytes: MAX_MOLECULE_INPUT_BYTES,
+        max_json_depth: 64,
+        max_array_items: 1_024,
+        max_string_bytes: MAX_MOLECULE_INPUT_BYTES,
+        max_atoms: MAX_MOLECULE_ATOMS,
+        max_bonds: MAX_MOLECULE_ATOMS * 2,
+    };
+    parse_moljson_with_limits(json, &limits)
+        .map_err(|e| ToolCallError::domain("INVALID_MOLJSON", e.to_string()))
 }
 
 fn round3(x: f64) -> f64 {
@@ -960,11 +1020,37 @@ fn tool_tanimoto(args: &Value) -> Result<Value, ToolCallError> {
 fn tool_smarts_match(args: &Value) -> Result<Value, ToolCallError> {
     let smarts = get_str(args, "smarts")?;
     let smiles = get_str(args, "smiles")?;
+    if smarts.len() > MAX_MOLECULE_INPUT_BYTES {
+        return Err(ToolCallError::invalid_args(format!(
+            "SMARTS exceeds maximum size ({} > {} bytes)",
+            smarts.len(),
+            MAX_MOLECULE_INPUT_BYTES
+        )));
+    }
     let query = parse_smarts(smarts).map_err(|e| {
         ToolCallError::domain("INVALID_SMARTS", format!("Invalid SMARTS '{smarts}': {e}"))
     })?;
     let mol = parse_mol_arg(smiles)?;
-    let matches = find_matches(&query, &mol);
+    let config = MatchConfig {
+        max_matches: Some(10_001),
+        max_visit_budget: Some(1_000_000),
+        ..MatchConfig::default()
+    };
+    let rings = find_sssr(&mol);
+    let (matches, budget_exhausted) =
+        find_matches_with_rings_and_config_checked(&query, &mol, &rings, &config);
+    if budget_exhausted {
+        return Err(ToolCallError::domain(
+            "MATCH_RESOURCE_LIMIT",
+            "SMARTS matching exceeded its visit budget",
+        ));
+    }
+    if matches.len() > 10_000 {
+        return Err(ToolCallError::domain(
+            "MATCH_RESOURCE_LIMIT",
+            "SMARTS matching produced more than 10,000 matches",
+        ));
+    }
     let atom_maps: Vec<Vec<u32>> = matches
         .iter()
         .map(|m| {
@@ -1191,7 +1277,8 @@ fn tool_name_to_smiles(args: &Value) -> Result<Value, ToolCallError> {
         )
     })?;
 
-    let raw = resp.body_mut().read_to_string().map_err(|e| {
+    let mut response_reader = resp.body_mut().as_reader();
+    let raw = read_bounded_response(&mut response_reader).map_err(|e| {
         ToolCallError::domain(
             "PUBCHEM_LOOKUP_FAILED",
             format!("PubChem response read error: {e}"),
@@ -1311,8 +1398,7 @@ fn tool_smiles_to_moljson(args: &Value) -> Result<Value, ToolCallError> {
 
 fn tool_moljson_to_smiles(args: &Value) -> Result<Value, ToolCallError> {
     let json_str = get_str(args, "json")?;
-    let mol = parse_moljson(json_str)
-        .map_err(|e| ToolCallError::domain("INVALID_MOLJSON", e.to_string()))?;
+    let mol = parse_moljson_arg(json_str)?;
     Ok(json!({ "canonical_smiles": chematic_smiles::canonical_smiles(&mol) }))
 }
 
@@ -1691,6 +1777,13 @@ mod tests {
             v.is_string(),
             "smiles_to_moljson's payload must be a bare JSON string"
         );
+    }
+
+    #[test]
+    fn bounded_pubchem_response_rejects_oversized_body() {
+        let mut body = std::io::Cursor::new(vec![b'x'; MAX_PUBCHEM_RESPONSE_BYTES + 1]);
+        let err = read_bounded_response(&mut body).unwrap_err();
+        assert!(err.contains("exceeds maximum size"));
     }
 
     #[test]

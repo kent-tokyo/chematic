@@ -55,7 +55,10 @@
 //! from a transitive dependency (already pulled in by `web-sys`) to a
 //! direct one in `Cargo.toml` to allow it.
 
-use crate::{MolHandle, WASM_MAX_ATOMS, WASM_MAX_INPUT_BYTES};
+use crate::{
+    MolHandle, WASM_MAX_ATOMS, WASM_MAX_BATCH_ITEMS, WASM_MAX_INPUT_BYTES,
+    WASM_MAX_JSON_STRING_BYTES, WASM_MAX_OUTPUT_BYTES,
+};
 use wasm_bindgen::prelude::*;
 
 // ---------------------------------------------------------------------------
@@ -82,6 +85,82 @@ fn check_json_len(label: &str, input: &str) -> Result<(), JsValue> {
     Ok(())
 }
 
+fn wasm_orca_input_limits() -> chematic_mol::OrcaInputParseLimits {
+    chematic_mol::OrcaInputParseLimits {
+        max_input_bytes: WASM_MAX_INPUT_BYTES,
+        max_line_bytes: WASM_MAX_INPUT_BYTES,
+        max_lines: WASM_MAX_BATCH_ITEMS,
+        max_keywords: WASM_MAX_BATCH_ITEMS,
+        max_blocks: WASM_MAX_BATCH_ITEMS,
+        max_block_bytes: WASM_MAX_INPUT_BYTES,
+        max_atoms: WASM_MAX_ATOMS,
+    }
+}
+
+fn wasm_qcschema_limits() -> chematic_mol::QcSchemaParseLimits {
+    chematic_mol::QcSchemaParseLimits {
+        max_input_bytes: WASM_MAX_INPUT_BYTES,
+        max_json_depth: 64,
+        max_array_items: WASM_MAX_BATCH_ITEMS,
+        max_string_bytes: WASM_MAX_JSON_STRING_BYTES,
+    }
+}
+
+fn wasm_cube_limits() -> chematic_mol::CubeParseLimits {
+    chematic_mol::CubeParseLimits {
+        max_input_bytes: WASM_MAX_INPUT_BYTES,
+        max_atoms: WASM_MAX_ATOMS,
+        max_grid_points: 1_000_000,
+    }
+}
+
+fn wasm_opendx_limits() -> chematic_mol::OpenDxParseLimits {
+    chematic_mol::OpenDxParseLimits {
+        max_input_bytes: WASM_MAX_INPUT_BYTES,
+        max_grid_points: 1_000_000,
+    }
+}
+
+fn wasm_mmcif_limits() -> chematic_mol::MmcifParseLimits {
+    chematic_mol::MmcifParseLimits {
+        max_input_bytes: WASM_MAX_INPUT_BYTES,
+        max_atoms: WASM_MAX_ATOMS,
+        max_line_len: WASM_MAX_INPUT_BYTES,
+    }
+}
+
+fn wasm_pqr_limits() -> chematic_mol::PqrParseLimits {
+    chematic_mol::PqrParseLimits {
+        max_input_bytes: WASM_MAX_INPUT_BYTES,
+        max_atoms: WASM_MAX_ATOMS,
+        max_line_len: WASM_MAX_INPUT_BYTES,
+    }
+}
+
+fn wasm_lammps_limits() -> chematic_mol::LammpsDataParseLimits {
+    chematic_mol::LammpsDataParseLimits {
+        max_input_bytes: WASM_MAX_INPUT_BYTES,
+        max_line_bytes: WASM_MAX_INPUT_BYTES,
+        max_header_counts: WASM_MAX_BATCH_ITEMS,
+        max_masses: WASM_MAX_BATCH_ITEMS,
+        max_atoms: WASM_MAX_ATOMS,
+        max_velocities: WASM_MAX_ATOMS,
+        max_bonds: WASM_MAX_ATOMS,
+        max_opaque_section_bytes: WASM_MAX_INPUT_BYTES,
+        max_sections: WASM_MAX_BATCH_ITEMS,
+    }
+}
+
+fn wasm_lammps_dump_limits() -> chematic_mol::LammpsDumpParseLimits {
+    chematic_mol::LammpsDumpParseLimits {
+        max_input_bytes: WASM_MAX_INPUT_BYTES,
+        max_line_bytes: WASM_MAX_INPUT_BYTES,
+        max_atoms_per_frame: WASM_MAX_ATOMS,
+        max_columns: WASM_MAX_BATCH_ITEMS,
+        max_frames: WASM_MAX_BATCH_ITEMS,
+    }
+}
+
 fn mol_handle_from_molecule(mol: chematic_core::Molecule) -> Result<MolHandle, JsValue> {
     if mol.atom_count() > WASM_MAX_ATOMS {
         return Err(JsValue::from_str(&format!(
@@ -103,7 +182,14 @@ fn coords_tuples_to_json(coords: &[(f64, f64, f64)]) -> serde_json::Value {
 }
 
 fn to_json_string(v: &serde_json::Value) -> Result<String, JsValue> {
-    serde_json::to_string(v).map_err(|e| JsValue::from_str(&e.to_string()))
+    let output = serde_json::to_string(v).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if output.len() > WASM_MAX_OUTPUT_BYTES {
+        return Err(JsValue::from_str(&format!(
+            "JSON output exceeds maximum size ({} > {WASM_MAX_OUTPUT_BYTES} bytes)",
+            output.len()
+        )));
+    }
+    Ok(output)
 }
 
 fn parse_json_value(label: &str, text: &str) -> Result<serde_json::Value, JsValue> {
@@ -151,9 +237,24 @@ fn jopt_str(v: &serde_json::Value, key: &str) -> Option<String> {
     v.get(key).and_then(|x| x.as_str()).map(str::to_string)
 }
 fn jarr<'a>(v: &'a serde_json::Value, key: &str) -> Result<&'a Vec<serde_json::Value>, String> {
-    jget(v, key)?
+    bounded_array(jget(v, key)?, key)
+}
+
+fn bounded_array<'a>(
+    value: &'a serde_json::Value,
+    label: &str,
+) -> Result<&'a Vec<serde_json::Value>, String> {
+    let array = value
         .as_array()
-        .ok_or_else(|| format!("'{key}' must be an array"))
+        .ok_or_else(|| format!("'{label}' must be an array"))?;
+    if array.len() > WASM_MAX_BATCH_ITEMS {
+        return Err(format!(
+            "{label} exceeds maximum item count ({} > {})",
+            array.len(),
+            WASM_MAX_BATCH_ITEMS
+        ));
+    }
+    Ok(array)
 }
 
 /// A single-character JSON field (or `null`) -- used by mmCIF/PQR's
@@ -279,7 +380,8 @@ fn volumetric_grid_from_json_str(text: &str) -> Result<chematic_mol::VolumetricG
 #[wasm_bindgen]
 pub fn mol_from_cube(text: &str) -> Result<MolHandle, JsValue> {
     check_input_len("cube input", text)?;
-    let grid = chematic_mol::parse_cube(text).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let grid = chematic_mol::parse_cube_with_limits(text, &wasm_cube_limits())
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
     let (mol, _coords) = grid.to_molecule();
     mol_handle_from_molecule(mol)
 }
@@ -293,7 +395,8 @@ pub fn mol_from_cube(text: &str) -> Result<MolHandle, JsValue> {
 #[wasm_bindgen]
 pub fn cube_grid_json(text: &str) -> Result<String, JsValue> {
     check_input_len("cube input", text)?;
-    let grid = chematic_mol::parse_cube(text).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let grid = chematic_mol::parse_cube_with_limits(text, &wasm_cube_limits())
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
     to_json_string(&volumetric_grid_to_json(&grid))
 }
 
@@ -315,7 +418,8 @@ pub fn write_cube_json(grid_json: &str) -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn opendx_grid_json(text: &str) -> Result<String, JsValue> {
     check_input_len("OpenDX input", text)?;
-    let grid = chematic_mol::parse_opendx(text).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let grid = chematic_mol::parse_opendx_with_limits(text, &wasm_opendx_limits())
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
     to_json_string(&volumetric_grid_to_json(&grid))
 }
 
@@ -418,7 +522,8 @@ fn mmcif_atom_from_json(v: &serde_json::Value) -> Result<chematic_mol::MmcifAtom
 #[wasm_bindgen]
 pub fn mol_from_mmcif(text: &str) -> Result<MolHandle, JsValue> {
     check_input_len("mmCIF input", text)?;
-    let result = chematic_mol::parse_mmcif(text).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let result = chematic_mol::parse_mmcif_with_limits(text, &wasm_mmcif_limits())
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
     let (mol, _coords) = result.to_molecule();
     mol_handle_from_molecule(mol)
 }
@@ -429,7 +534,8 @@ pub fn mol_from_mmcif(text: &str) -> Result<MolHandle, JsValue> {
 #[wasm_bindgen]
 pub fn mmcif_coords_json(text: &str) -> Result<String, JsValue> {
     check_input_len("mmCIF input", text)?;
-    let result = chematic_mol::parse_mmcif(text).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let result = chematic_mol::parse_mmcif_with_limits(text, &wasm_mmcif_limits())
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
     let (_mol, coords) = result.to_molecule();
     to_json_string(&coords_tuples_to_json(&coords))
 }
@@ -444,7 +550,8 @@ pub fn mmcif_coords_json(text: &str) -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn mmcif_to_json(text: &str) -> Result<String, JsValue> {
     check_input_len("mmCIF input", text)?;
-    let result = chematic_mol::parse_mmcif(text).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let result = chematic_mol::parse_mmcif_with_limits(text, &wasm_mmcif_limits())
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
     let out = serde_json::json!({
         "atoms": result.atoms.iter().map(mmcif_atom_to_json).collect::<Vec<_>>(),
         "cell": result.cell.as_ref().map(unit_cell_to_json),
@@ -470,9 +577,8 @@ pub fn write_mmcif_json(
     data_block_name: &str,
 ) -> Result<String, JsValue> {
     let records = parse_json_value("mmCIF records JSON", records_json)?;
-    let atoms: Vec<chematic_mol::MmcifAtomRecord> = records
-        .as_array()
-        .ok_or_else(|| JsValue::from_str("records_json must be a JSON array"))?
+    let atoms: Vec<chematic_mol::MmcifAtomRecord> = bounded_array(&records, "records_json")
+        .map_err(|e| JsValue::from_str(&e))?
         .iter()
         .map(mmcif_atom_from_json)
         .collect::<Result<Vec<_>, _>>()
@@ -542,7 +648,8 @@ fn pqr_atom_from_json(v: &serde_json::Value) -> Result<chematic_mol::PqrAtomReco
 #[wasm_bindgen]
 pub fn mol_from_pqr(text: &str) -> Result<MolHandle, JsValue> {
     check_input_len("PQR input", text)?;
-    let result = chematic_mol::parse_pqr(text).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let result = chematic_mol::parse_pqr_with_limits(text, &wasm_pqr_limits())
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
     let (mol, _coords) = result.to_molecule();
     mol_handle_from_molecule(mol)
 }
@@ -552,7 +659,8 @@ pub fn mol_from_pqr(text: &str) -> Result<MolHandle, JsValue> {
 #[wasm_bindgen]
 pub fn pqr_coords_json(text: &str) -> Result<String, JsValue> {
     check_input_len("PQR input", text)?;
-    let result = chematic_mol::parse_pqr(text).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let result = chematic_mol::parse_pqr_with_limits(text, &wasm_pqr_limits())
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
     let (_mol, coords) = result.to_molecule();
     to_json_string(&coords_tuples_to_json(&coords))
 }
@@ -563,7 +671,8 @@ pub fn pqr_coords_json(text: &str) -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn pqr_to_json(text: &str) -> Result<String, JsValue> {
     check_input_len("PQR input", text)?;
-    let result = chematic_mol::parse_pqr(text).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let result = chematic_mol::parse_pqr_with_limits(text, &wasm_pqr_limits())
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
     let out = serde_json::json!({
         "atoms": result.atoms.iter().map(pqr_atom_to_json).collect::<Vec<_>>(),
     });
@@ -577,9 +686,8 @@ pub fn pqr_to_json(text: &str) -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn write_pqr_json(records_json: &str) -> Result<String, JsValue> {
     let records = parse_json_value("PQR records JSON", records_json)?;
-    let atoms: Vec<chematic_mol::PqrAtomRecord> = records
-        .as_array()
-        .ok_or_else(|| JsValue::from_str("records_json must be a JSON array"))?
+    let atoms: Vec<chematic_mol::PqrAtomRecord> = bounded_array(&records, "records_json")
+        .map_err(|e| JsValue::from_str(&e))?
         .iter()
         .map(pqr_atom_from_json)
         .collect::<Result<Vec<_>, _>>()
@@ -609,7 +717,7 @@ pub fn pqr_infer_element(group_pdb: &str, res_name: &str, atom_name: &str) -> Op
 #[wasm_bindgen]
 pub fn mol_from_qcschema_molecule(json: &str) -> Result<MolHandle, JsValue> {
     check_input_len("QCSchema molecule JSON", json)?;
-    let qc = chematic_mol::parse_qcschema_molecule(json)
+    let qc = chematic_mol::parse_qcschema_molecule_with_limits(json, &wasm_qcschema_limits())
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
     let view = chematic_mol::qc_molecule_to_chematic(&qc)
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
@@ -623,7 +731,7 @@ pub fn mol_from_qcschema_molecule(json: &str) -> Result<MolHandle, JsValue> {
 #[wasm_bindgen]
 pub fn qcschema_molecule_coords_json(json: &str) -> Result<String, JsValue> {
     check_input_len("QCSchema molecule JSON", json)?;
-    let qc = chematic_mol::parse_qcschema_molecule(json)
+    let qc = chematic_mol::parse_qcschema_molecule_with_limits(json, &wasm_qcschema_limits())
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
     let view = chematic_mol::qc_molecule_to_chematic(&qc)
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
@@ -689,8 +797,8 @@ pub fn to_qcschema_molecule_json(
 #[wasm_bindgen]
 pub fn qcschema_validate_atomic_input(json: &str) -> Result<String, JsValue> {
     check_input_len("QCSchema AtomicInput JSON", json)?;
-    let input =
-        chematic_mol::parse_atomic_input(json).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let input = chematic_mol::parse_atomic_input_with_limits(json, &wasm_qcschema_limits())
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
     Ok(chematic_mol::write_atomic_input(&input))
 }
 
@@ -699,8 +807,8 @@ pub fn qcschema_validate_atomic_input(json: &str) -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn qcschema_validate_atomic_result(json: &str) -> Result<String, JsValue> {
     check_input_len("QCSchema AtomicResult JSON", json)?;
-    let result =
-        chematic_mol::parse_atomic_result(json).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let result = chematic_mol::parse_atomic_result_with_limits(json, &wasm_qcschema_limits())
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
     Ok(chematic_mol::write_atomic_result(&result))
 }
 
@@ -838,8 +946,8 @@ fn orca_block_from_json(v: &serde_json::Value) -> Result<chematic_mol::OrcaBlock
 #[wasm_bindgen]
 pub fn mol_from_orca_input(text: &str) -> Result<MolHandle, JsValue> {
     check_input_len("ORCA input", text)?;
-    let input =
-        chematic_mol::parse_orca_input(text).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let input = chematic_mol::parse_orca_input_with_limits(text, &wasm_orca_input_limits())
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
     let coords = input
         .coords
         .as_ref()
@@ -861,8 +969,8 @@ pub fn mol_from_orca_input(text: &str) -> Result<MolHandle, JsValue> {
 #[wasm_bindgen]
 pub fn orca_input_coords_json(text: &str) -> Result<String, JsValue> {
     check_input_len("ORCA input", text)?;
-    let input =
-        chematic_mol::parse_orca_input(text).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let input = chematic_mol::parse_orca_input_with_limits(text, &wasm_orca_input_limits())
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
     let (_mol, coords, charge, multiplicity) = input
         .coords
         .as_ref()
@@ -888,8 +996,8 @@ pub fn orca_input_coords_json(text: &str) -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn orca_input_to_json(text: &str) -> Result<String, JsValue> {
     check_input_len("ORCA input", text)?;
-    let input =
-        chematic_mol::parse_orca_input(text).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let input = chematic_mol::parse_orca_input_with_limits(text, &wasm_orca_input_limits())
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
     let out = serde_json::json!({
         "comments": input.comments,
         "keywords": input.keywords,
@@ -905,17 +1013,24 @@ pub fn orca_input_to_json(text: &str) -> Result<String, JsValue> {
 pub fn write_orca_input_json(json: &str) -> Result<String, JsValue> {
     let v = parse_json_value("ORCA input JSON", json)?;
     let comments: Vec<String> = match v.get("comments") {
-        Some(x) => serde_json::from_value(x.clone())
-            .map_err(|e| JsValue::from_str(&format!("invalid 'comments': {e}")))?,
+        Some(x) => {
+            bounded_array(x, "comments").map_err(|e| JsValue::from_str(&e))?;
+            serde_json::from_value(x.clone())
+                .map_err(|e| JsValue::from_str(&format!("invalid 'comments': {e}")))?
+        }
         None => Vec::new(),
     };
     let keywords: Vec<String> = match v.get("keywords") {
-        Some(x) => serde_json::from_value(x.clone())
-            .map_err(|e| JsValue::from_str(&format!("invalid 'keywords': {e}")))?,
+        Some(x) => {
+            bounded_array(x, "keywords").map_err(|e| JsValue::from_str(&e))?;
+            serde_json::from_value(x.clone())
+                .map_err(|e| JsValue::from_str(&format!("invalid 'keywords': {e}")))?
+        }
         None => Vec::new(),
     };
     let blocks = match v.get("blocks") {
-        Some(serde_json::Value::Array(arr)) => arr
+        Some(x @ serde_json::Value::Array(_)) => bounded_array(x, "blocks")
+            .map_err(|e| JsValue::from_str(&e))?
             .iter()
             .map(orca_block_from_json)
             .collect::<Result<Vec<_>, _>>()
@@ -982,8 +1097,15 @@ fn orca_opt_convergence_str(c: chematic_mol::OrcaOptConvergence) -> &'static str
 #[wasm_bindgen]
 pub fn orca_output_to_json(text: &str) -> Result<String, JsValue> {
     check_input_len("ORCA output", text)?;
-    let output =
-        chematic_mol::parse_orca_output(text).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let orca_limits = chematic_mol::OrcaOutputParseLimits {
+        max_input_bytes: WASM_MAX_INPUT_BYTES,
+        max_line_bytes: WASM_MAX_INPUT_BYTES,
+        max_geometry_frames: WASM_MAX_BATCH_ITEMS,
+        max_geometry_atoms: WASM_MAX_ATOMS,
+        ..Default::default()
+    };
+    let output = chematic_mol::parse_orca_output_with_limits(text, &orca_limits)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
     let out = serde_json::json!({
         "charge": output.charge,
         "multiplicity": output.multiplicity,
@@ -1131,8 +1253,12 @@ fn lammps_bond_from_json(v: &serde_json::Value) -> Result<chematic_mol::LammpsBo
 #[wasm_bindgen]
 pub fn lammps_data_to_json(text: &str, atom_style: &str) -> Result<String, JsValue> {
     check_input_len("LAMMPS data input", text)?;
-    let data = chematic_mol::parse_lammps_data(text, lammps_atom_style_from_str(atom_style))
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let data = chematic_mol::parse_lammps_data_with_limits(
+        text,
+        lammps_atom_style_from_str(atom_style),
+        &wasm_lammps_limits(),
+    )
+    .map_err(|e| JsValue::from_str(&e.to_string()))?;
     let counts: Vec<serde_json::Value> = data
         .counts
         .iter()
@@ -1303,7 +1429,7 @@ fn lammps_dump_frame_from_json(
 #[wasm_bindgen]
 pub fn lammps_dump_frame_to_json_str(text: &str) -> Result<String, JsValue> {
     check_input_len("LAMMPS dump input", text)?;
-    let frame = chematic_mol::parse_lammps_dump_frame(text)
+    let frame = chematic_mol::parse_lammps_dump_frame_with_limits(text, &wasm_lammps_dump_limits())
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
     to_json_string(&lammps_dump_frame_to_json(&frame))
 }
@@ -1360,8 +1486,15 @@ pub fn lammps_trajectory_to_json(text: &str) -> Result<String, JsValue> {
     check_input_len("LAMMPS dump input", text)?;
     let cursor = std::io::Cursor::new(text.as_bytes());
     let reader = std::io::BufReader::new(cursor);
+    let limits = chematic_mol::LammpsDumpParseLimits {
+        max_input_bytes: WASM_MAX_INPUT_BYTES,
+        max_line_bytes: WASM_MAX_INPUT_BYTES,
+        max_atoms_per_frame: WASM_MAX_ATOMS,
+        max_columns: 256,
+        max_frames: WASM_MAX_BATCH_ITEMS,
+    };
     let mut frames = Vec::new();
-    for frame in chematic_mol::LammpsDumpReader::new(reader) {
+    for frame in chematic_mol::LammpsDumpReader::with_limits(reader, limits) {
         let frame = frame.map_err(|e| JsValue::from_str(&e.to_string()))?;
         frames.push(lammps_dump_frame_to_json(&frame));
     }
@@ -1383,9 +1516,8 @@ pub fn write_lammps_dump_frame_json(json: &str) -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn write_lammps_trajectory_json(json: &str) -> Result<String, JsValue> {
     let v = parse_json_value("LAMMPS trajectory JSON", json)?;
-    let frames: Vec<chematic_mol::LammpsDumpFrame> = v
-        .as_array()
-        .ok_or_else(|| JsValue::from_str("trajectory JSON must be an array of frames"))?
+    let frames: Vec<chematic_mol::LammpsDumpFrame> = bounded_array(&v, "trajectory JSON")
+        .map_err(|e| JsValue::from_str(&e))?
         .iter()
         .map(lammps_dump_frame_from_json)
         .collect::<Result<Vec<_>, _>>()
@@ -1424,24 +1556,26 @@ fn shape_to_u32_array(shape: [usize; 3], label: &str) -> Result<[u32; 3], String
 }
 
 fn cube_values_vec(text: &str) -> Result<Vec<f64>, String> {
-    chematic_mol::parse_cube(text)
+    chematic_mol::parse_cube_with_limits(text, &wasm_cube_limits())
         .map(|g| g.values)
         .map_err(|e| e.to_string())
 }
 
 fn cube_shape_vec(text: &str) -> Result<[u32; 3], String> {
-    let grid = chematic_mol::parse_cube(text).map_err(|e| e.to_string())?;
+    let grid = chematic_mol::parse_cube_with_limits(text, &wasm_cube_limits())
+        .map_err(|e| e.to_string())?;
     shape_to_u32_array(grid.shape, "cube")
 }
 
 fn opendx_values_vec(text: &str) -> Result<Vec<f64>, String> {
-    chematic_mol::parse_opendx(text)
+    chematic_mol::parse_opendx_with_limits(text, &wasm_opendx_limits())
         .map(|g| g.values)
         .map_err(|e| e.to_string())
 }
 
 fn opendx_shape_vec(text: &str) -> Result<[u32; 3], String> {
-    let grid = chematic_mol::parse_opendx(text).map_err(|e| e.to_string())?;
+    let grid = chematic_mol::parse_opendx_with_limits(text, &wasm_opendx_limits())
+        .map_err(|e| e.to_string())?;
     shape_to_u32_array(grid.shape, "OpenDX")
 }
 

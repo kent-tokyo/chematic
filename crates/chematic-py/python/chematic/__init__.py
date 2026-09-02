@@ -79,7 +79,7 @@ def from_smiles_list(smiles, /, *, skip_invalid=True):
         mols = chematic.from_smiles_list(["CCO", "c1ccccc1", "INVALID"])
         # → [<Mol CCO>, <Mol c1ccccc1>]
     """
-    parsed = bulk.parse(list(smiles))
+    parsed = bulk.parse(_materialize_smiles_batch(smiles))
     if skip_invalid:
         return [m for m in parsed if m is not None]
     return parsed
@@ -91,6 +91,18 @@ _FORMAT_ALIASES = {
     "cml": "cml", "cjson": "cjson", "moljson": "moljson", "cdxml": "cdxml",
     "pdb": "pdb", "xyz": "xyz", "pdbqt": "pdbqt", "gjf": "gjf", "com": "gjf",
 }
+_CONVERT_MAX_INPUT_BYTES = 16 * 1024 * 1024
+_MAX_BATCH_ITEMS = 100_000
+
+
+def _materialize_smiles_batch(smiles):
+    values = list(smiles)
+    if len(values) > _MAX_BATCH_ITEMS:
+        raise ValueError(
+            f"SMILES batch exceeds maximum item count ({len(values)} > "
+            f"{_MAX_BATCH_ITEMS})"
+        )
+    return values
 
 
 def convert_format(text, input_format, output_format, /, *, coords=None,
@@ -121,6 +133,12 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     source, target = normalize(input_format), normalize(output_format)
     if not isinstance(text, str):
         raise ValueError("text must be a string")
+    input_bytes = len(text.encode("utf-8"))
+    if input_bytes > _CONVERT_MAX_INPUT_BYTES:
+        raise ValueError(
+            f"format input exceeds maximum input size ({input_bytes} > "
+            f"{_CONVERT_MAX_INPUT_BYTES} bytes)"
+        )
     if source == "smiles":
         mol = from_smiles(text)
     elif source == "mol":
@@ -372,7 +390,7 @@ def descriptors_df(smiles):
         import pandas as pd
     except ImportError:
         raise ImportError("pandas is required: pip install pandas") from None
-    return pd.DataFrame(bulk.descriptors(list(smiles)))
+    return pd.DataFrame(bulk.descriptors(_materialize_smiles_batch(smiles)))
 
 
 def fragment_text(mol, method: str = "brics", fmt: str = "markdown") -> str:
@@ -547,6 +565,8 @@ def screen(smiles, profile: str = "druglike", filters=None) -> list:
     """
     if isinstance(smiles, str):
         smiles = [smiles]
+    else:
+        smiles = _materialize_smiles_batch(smiles)
 
     active = filters if filters is not None else _SCREEN_PROFILES.get(profile, _SCREEN_PROFILES["druglike"])
 

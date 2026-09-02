@@ -152,7 +152,7 @@ pub fn inchi_key(inchi_str: &str) -> String {
 ///
 /// Supports organic molecules with stereo layers (`/b`, `/t`, `/m`, `/s`),
 /// isotope layers (`/i`), and charge layers (`/q`).
-pub use parser::{InchiParseError, parse_inchi};
+pub use parser::{InchiParseError, InchiParseLimits, parse_inchi, parse_inchi_with_limits};
 
 // ─── Reaction InChI ──────────────────────────────────────────────────────────
 

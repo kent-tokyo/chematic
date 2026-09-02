@@ -932,7 +932,13 @@ impl<'a> Parser<'a> {
                 let mut mass: u16 = 0;
                 while let Some(d) = self.peek().filter(|b| b.is_ascii_digit()) {
                     self.advance();
-                    mass = mass * 10 + (d - b'0') as u16;
+                    let Some(next) = mass
+                        .checked_mul(10)
+                        .and_then(|value| value.checked_add((d - b'0') as u16))
+                    else {
+                        return Err(SmartsError::UnexpectedChar(d as char, self.pos - 1));
+                    };
+                    mass = next;
                 }
                 Ok(AtomQuery::Primitive(AtomPrimitive::Isotope(mass)))
             }
@@ -1003,7 +1009,7 @@ impl<'a> Parser<'a> {
         let mut val: u16 = 0;
         while let Some(d) = self.peek().filter(|c| c.is_ascii_digit()) {
             self.advance();
-            val = val * 10 + (d - b'0') as u16;
+            val = val.saturating_mul(10).saturating_add((d - b'0') as u16);
         }
         if val > 255 { None } else { Some(val as u8) }
     }
@@ -1581,6 +1587,12 @@ mod tests {
         // `[13C]` — explicitly labeled isotope
         let mol = parse_smarts("[13C]").unwrap();
         assert_eq!(mol.atoms.len(), 1);
+    }
+
+    #[test]
+    fn test_isotope_overflow_is_rejected_without_panicking() {
+        let result = parse_smarts("[999999999999999999999999C]");
+        assert!(matches!(result, Err(SmartsError::UnexpectedChar(_, _))));
     }
 
     #[test]

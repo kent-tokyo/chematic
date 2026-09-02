@@ -6,6 +6,8 @@ use pyo3::prelude::*;
 use pyo3::types::PyDict;
 use std::sync::Arc;
 
+type SdfWithCoords = Vec<(Mol, String, Vec<Vec<f64>>)>;
+
 /// Stable, typed reason string for a [`chematic_perception::StereoDiagnostic`]
 /// -- never a free-form message (see `docs/rfcs/stereo2d_reader_integration_rfc.md`).
 pub(crate) fn stereo_reason_str(
@@ -229,6 +231,7 @@ fn from_mol_block_with_diagnostics<'py>(
 ///
 /// Returns a list of 3-tuples ``(mol, name, coords_2d)`` — one per SDF record.
 /// Invalid records are silently skipped (same behaviour as :func:`iter_sdf`).
+/// Resource-limit failures are raised as ``ValueError`` rather than skipped.
 ///
 /// This is the batch equivalent of :func:`from_mol_block_with_coords`.
 ///
@@ -243,14 +246,27 @@ fn from_mol_block_with_diagnostics<'py>(
 ///     for mol, name, coords_2d in records:
 ///         new_block = mol.to_mol_block_2d(coords_2d, name=name)
 #[pyfunction]
-fn parse_sdf_with_coords(text: &str) -> Vec<(Mol, String, Vec<Vec<f64>>)> {
+fn parse_sdf_with_coords(text: &str) -> PyResult<SdfWithCoords> {
     // Delegates to SdfRecordReader (line-anchored $$$$ scanning, and no
     // longer eats a legitimately blank MOL name line -- issue #171) instead
     // of a hand-rolled splitter, so this stays in sync with the one fixed
     // core implementation rather than drifting from it.
-    chematic_mol::SdfRecordReader::new(text)
-        .filter_map(|r| r.ok())
-        .map(|rec| {
+    let mut records = Vec::new();
+    for result in chematic_mol::SdfRecordReader::new(text) {
+        let rec = match result {
+            Ok(rec) => rec,
+            Err(chematic_mol::MolParseError::ResourceLimit {
+                resource,
+                actual,
+                limit,
+            }) => {
+                return Err(PyValueError::new_err(format!(
+                    "SDF {resource} exceeds limit {limit} (got {actual})"
+                )));
+            }
+            Err(_) => continue,
+        };
+        records.push({
             let py_coords: Vec<Vec<f64>> = rec.coords.iter().map(|(x, y)| vec![*x, *y]).collect();
             (
                 Mol {
@@ -260,8 +276,9 @@ fn parse_sdf_with_coords(text: &str) -> Vec<(Mol, String, Vec<Vec<f64>>)> {
                 rec.meta.name,
                 py_coords,
             )
-        })
-        .collect()
+        });
+    }
+    Ok(records)
 }
 
 /// Parse an MRV block and return the molecule with its 2D/3D layout coordinates.
@@ -1093,6 +1110,7 @@ fn nearest_neighbors_from_fp(query_fp: &[u8], db_fps: Vec<Vec<u8>>, k: usize) ->
 /// Parse a ``.smi`` file (tab/space-separated SMILES + name) into (Mol, name) pairs.
 ///
 /// Each line is ``SMILES[<tab>name]``. Lines with invalid SMILES are silently skipped.
+/// Resource-limit failures are raised as ``ValueError`` rather than skipped.
 /// Comment lines starting with ``#`` and blank lines are ignored.
 /// Equivalent to RDKit's ``Chem.SmilesMolSupplier``.
 ///
@@ -1100,11 +1118,23 @@ fn nearest_neighbors_from_fp(query_fp: &[u8], db_fps: Vec<Vec<u8>>, k: usize) ->
 ///     for mol, name in records:
 ///         print(name, mol.mw)
 #[pyfunction]
-fn parse_smi_file(content: &str) -> Vec<(Mol, String)> {
-    chematic_smiles::parse_smi_file(content)
-        .into_iter()
-        .filter_map(|r| r.ok())
-        .map(|(mol, name)| {
+fn parse_smi_file(content: &str) -> PyResult<Vec<(Mol, String)>> {
+    let mut records = Vec::new();
+    for result in chematic_smiles::parse_smi_file(content) {
+        let (mol, name) = match result {
+            Ok(record) => record,
+            Err(chematic_smiles::SmilesError::ResourceLimit {
+                resource,
+                actual,
+                limit,
+            }) => {
+                return Err(PyValueError::new_err(format!(
+                    "SMILES {resource} exceeds limit {limit} (got {actual})"
+                )));
+            }
+            Err(_) => continue,
+        };
+        records.push({
             (
                 Mol {
                     inner: Arc::new(mol),
@@ -1112,8 +1142,9 @@ fn parse_smi_file(content: &str) -> Vec<(Mol, String)> {
                 },
                 name,
             )
-        })
-        .collect()
+        });
+    }
+    Ok(records)
 }
 
 /// Write (Mol, name) pairs to ``.smi`` format.
@@ -1125,10 +1156,33 @@ fn parse_smi_file(content: &str) -> Vec<(Mol, String)> {
 ///     with open("output.smi", "w") as f:
 ///         f.write(text)
 #[pyfunction]
-fn write_smi_file(records: Vec<(Mol, String)>) -> String {
+fn write_smi_file(records: Vec<(Mol, String)>) -> PyResult<String> {
+    const MAX_RECORDS: usize = 100_000;
+    const MAX_OUTPUT_BYTES: usize = 16 * 1024 * 1024;
+    if records.len() > MAX_RECORDS {
+        return Err(PyValueError::new_err(format!(
+            "SMILES output exceeds maximum record count ({})",
+            MAX_RECORDS
+        )));
+    }
     let mut out = String::new();
     for (mol, name) in &records {
         let smiles = chematic_smiles::canonical_smiles(&mol.inner);
+        let line_bytes = smiles
+            .len()
+            .checked_add(name.len())
+            .and_then(|n| n.checked_add(if name.is_empty() { 1 } else { 2 }))
+            .ok_or_else(|| PyValueError::new_err("SMILES output size overflow"))?;
+        if out
+            .len()
+            .checked_add(line_bytes)
+            .is_none_or(|size| size > MAX_OUTPUT_BYTES)
+        {
+            return Err(PyValueError::new_err(format!(
+                "SMILES output exceeds maximum size ({} bytes)",
+                MAX_OUTPUT_BYTES
+            )));
+        }
         if name.is_empty() {
             out.push_str(&smiles);
         } else {
@@ -1138,7 +1192,7 @@ fn write_smi_file(records: Vec<(Mol, String)>) -> String {
         }
         out.push('\n');
     }
-    out
+    Ok(out)
 }
 
 // ---------------------------------------------------------------------------
@@ -1394,6 +1448,12 @@ fn write_mmcif(
     space_group: Option<&str>,
     data_block_name: &str,
 ) -> PyResult<String> {
+    const MAX_ATOMS: usize = 100_000;
+    if atoms.len() > MAX_ATOMS {
+        return Err(PyValueError::new_err(format!(
+            "mmCIF output exceeds maximum atom count ({MAX_ATOMS})"
+        )));
+    }
     let records: Vec<chematic_mol::MmcifAtomRecord> = atoms
         .iter()
         .map(pydict_to_mmcif_atom)
@@ -1552,6 +1612,12 @@ fn parse_pqr<'py>(
 ///     ])
 #[pyfunction]
 fn write_pqr(atoms: Vec<Bound<PyDict>>) -> PyResult<String> {
+    const MAX_ATOMS: usize = 100_000;
+    if atoms.len() > MAX_ATOMS {
+        return Err(PyValueError::new_err(format!(
+            "PQR output exceeds maximum atom count ({MAX_ATOMS})"
+        )));
+    }
     let records: Vec<chematic_mol::PqrAtomRecord> = atoms
         .iter()
         .map(pydict_to_pqr_atom)

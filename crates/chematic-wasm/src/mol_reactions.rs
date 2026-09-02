@@ -1,13 +1,38 @@
 //! Reaction (SMIRKS/MMP/BRICS/MCS), tautomer, and standardization bindings.
 
 use crate::{
-    MolHandle, WASM_MAX_ATOMS, WASM_MAX_BATCH_ITEMS, WASM_MAX_JSON_STRING_BYTES,
-    WASM_MAX_SMARTS_MATCHES, enforce_wasm_input_len, enforce_wasm_molecule_size,
-    escape_json_string, json_error, json_option_string_array, json_option_u8_array, json_string,
-    parse_smiles_json_array, rgroup_fragment_smiles,
+    MolHandle, WASM_MAX_ATOMS, WASM_MAX_BATCH_ITEMS, WASM_MAX_INPUT_BYTES,
+    WASM_MAX_JSON_STRING_BYTES, WASM_MAX_OUTPUT_BYTES, WASM_MAX_SMARTS_MATCHES,
+    enforce_wasm_input_len, enforce_wasm_molecule_size, escape_json_string, json_error,
+    json_option_string_array, json_option_u8_array, json_string, parse_smiles_json_array,
+    rgroup_fragment_smiles,
 };
 use serde::Deserialize;
 use wasm_bindgen::prelude::*;
+
+fn bounded_json_output(output: String) -> Result<String, JsValue> {
+    if output.len() > WASM_MAX_OUTPUT_BYTES {
+        return Err(JsValue::from_str(&format!(
+            "JSON output exceeds maximum size ({} > {WASM_MAX_OUTPUT_BYTES} bytes)",
+            output.len()
+        )));
+    }
+    Ok(output)
+}
+
+fn parse_wasm_reaction(
+    reaction_smiles: &str,
+) -> Result<chematic_rxn::Reaction, chematic_rxn::RxnError> {
+    chematic_rxn::parse_reaction_with_limits(
+        reaction_smiles,
+        &chematic_rxn::ReactionParseLimits {
+            max_input_bytes: WASM_MAX_INPUT_BYTES,
+            max_components_per_side: WASM_MAX_BATCH_ITEMS,
+            max_atoms_per_molecule: WASM_MAX_ATOMS,
+            max_bonds_per_molecule: WASM_MAX_ATOMS.saturating_mul(2),
+        },
+    )
+}
 
 #[derive(Debug, Clone, Copy, Deserialize)]
 enum AtomCompareJson {
@@ -236,15 +261,41 @@ pub fn remove_hydrogens(mol: &MolHandle) -> MolHandle {
 /// Returns a JS error on parse failure or arity mismatch.
 #[wasm_bindgen]
 pub fn run_reactants(smirks: &str, reactants_smiles: &str) -> Result<String, JsValue> {
+    if smirks.len() > WASM_MAX_INPUT_BYTES || reactants_smiles.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str(&format!(
+            "reaction input exceeds maximum size of {WASM_MAX_INPUT_BYTES} bytes"
+        )));
+    }
+    if reactants_smiles.split('|').count() > WASM_MAX_BATCH_ITEMS {
+        return Err(JsValue::from_str(&format!(
+            "reactant count exceeds maximum ({WASM_MAX_BATCH_ITEMS})"
+        )));
+    }
     let reactant_mols: Result<Vec<chematic_core::Molecule>, _> = reactants_smiles
         .split('|')
-        .map(|s| chematic_smiles::parse(s.trim()).map_err(|e| JsValue::from_str(&e.to_string())))
+        .map(|s| {
+            let mol =
+                chematic_smiles::parse(s.trim()).map_err(|e| JsValue::from_str(&e.to_string()))?;
+            enforce_wasm_molecule_size(&mol)?;
+            Ok::<_, JsValue>(mol)
+        })
         .collect();
     let reactant_mols = reactant_mols?;
     let refs: Vec<&chematic_core::Molecule> = reactant_mols.iter().collect();
 
     let products = chematic_rxn::run_reactants(smirks, &refs)
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if products.len() > WASM_MAX_BATCH_ITEMS
+        || products.iter().any(|set| set.len() > WASM_MAX_BATCH_ITEMS)
+        || products
+            .iter()
+            .flatten()
+            .any(|mol| mol.atom_count() > WASM_MAX_ATOMS)
+    {
+        return Err(JsValue::from_str(&format!(
+            "reaction result exceeds maximum of {WASM_MAX_BATCH_ITEMS} products per set"
+        )));
+    }
 
     let outer: Vec<String> = products
         .iter()
@@ -256,7 +307,7 @@ pub fn run_reactants(smirks: &str, reactants_smiles: &str) -> Result<String, JsV
             format!("[{}]", inner.join(", "))
         })
         .collect();
-    Ok(format!("[{}]", outer.join(", ")))
+    bounded_json_output(format!("[{}]", outer.join(", ")))
 }
 
 /// Enumerate a combinatorial library from a SMIRKS template and two fragment sets.
@@ -273,15 +324,43 @@ pub fn enumerate_library_2way(
     scaffolds_smiles: &str,
     building_blocks_smiles: &str,
 ) -> Result<String, JsValue> {
+    if template.len() > WASM_MAX_INPUT_BYTES
+        || scaffolds_smiles.len() > WASM_MAX_INPUT_BYTES
+        || building_blocks_smiles.len() > WASM_MAX_INPUT_BYTES
+    {
+        return Err(JsValue::from_str(&format!(
+            "library input exceeds maximum size of {WASM_MAX_INPUT_BYTES} bytes"
+        )));
+    }
+    if scaffolds_smiles.split('|').count() > WASM_MAX_BATCH_ITEMS {
+        return Err(JsValue::from_str(&format!(
+            "scaffold count exceeds maximum ({WASM_MAX_BATCH_ITEMS})"
+        )));
+    }
+    if building_blocks_smiles.split('|').count() > WASM_MAX_BATCH_ITEMS {
+        return Err(JsValue::from_str(&format!(
+            "building-block count exceeds maximum ({WASM_MAX_BATCH_ITEMS})"
+        )));
+    }
     let scaffolds: Result<Vec<chematic_core::Molecule>, _> = scaffolds_smiles
         .split('|')
-        .map(|s| chematic_smiles::parse(s.trim()).map_err(|e| JsValue::from_str(&e.to_string())))
+        .map(|s| {
+            let mol =
+                chematic_smiles::parse(s.trim()).map_err(|e| JsValue::from_str(&e.to_string()))?;
+            enforce_wasm_molecule_size(&mol)?;
+            Ok::<_, JsValue>(mol)
+        })
         .collect();
     let scaffolds = scaffolds?;
 
     let building_blocks: Result<Vec<chematic_core::Molecule>, _> = building_blocks_smiles
         .split('|')
-        .map(|s| chematic_smiles::parse(s.trim()).map_err(|e| JsValue::from_str(&e.to_string())))
+        .map(|s| {
+            let mol =
+                chematic_smiles::parse(s.trim()).map_err(|e| JsValue::from_str(&e.to_string()))?;
+            enforce_wasm_molecule_size(&mol)?;
+            Ok::<_, JsValue>(mol)
+        })
         .collect();
     let building_blocks = building_blocks?;
 
@@ -293,13 +372,18 @@ pub fn enumerate_library_2way(
     let products =
         chematic_rxn::enumerate_library_2way(template, scaffolds, building_blocks, &config)
             .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if products.iter().any(|mol| mol.atom_count() > WASM_MAX_ATOMS) {
+        return Err(JsValue::from_str(&format!(
+            "library product exceeds maximum atom count ({WASM_MAX_ATOMS})"
+        )));
+    }
 
     let smiles_list: Vec<String> = products
         .iter()
         .map(|mol| format!("\"{}\"", chematic_smiles::canonical_smiles(mol)))
         .collect();
 
-    Ok(format!("[{}]", smiles_list.join(", ")))
+    bounded_json_output(format!("[{}]", smiles_list.join(", ")))
 }
 
 /// Render a reaction SMILES string (e.g. `"CC(=O)O.CCO>>CC(=O)OCC.O"`) as a
@@ -308,8 +392,7 @@ pub fn enumerate_library_2way(
 /// Returns a self-contained SVG string.  Returns a JS error on invalid input.
 #[wasm_bindgen]
 pub fn depict_reaction_svg(rxn_smiles: &str) -> Result<String, JsValue> {
-    let rxn =
-        chematic_rxn::parse_reaction(rxn_smiles).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let rxn = parse_wasm_reaction(rxn_smiles).map_err(|e| JsValue::from_str(&e.to_string()))?;
 
     const MOL_W: u32 = 200;
     const MOL_H: u32 = 180;
@@ -655,6 +738,13 @@ pub fn enumerate_tautomers_json(mol: &MolHandle) -> String {
         return json_error(format!("molecule too large (max {WASM_MAX_ATOMS} atoms)"));
     }
     let tautomers = chematic_chem::enumerate_tautomers(&mol.inner);
+    if tautomers.len() > WASM_MAX_BATCH_ITEMS {
+        return json_error(format!(
+            "tautomer enumeration exceeds maximum result count ({} > {})",
+            tautomers.len(),
+            WASM_MAX_BATCH_ITEMS
+        ));
+    }
     let values: Vec<String> = tautomers
         .iter()
         .map(chematic_smiles::canonical_smiles)
@@ -832,6 +922,7 @@ pub fn mcs_smiles_json_with_config(
     smiles_json: &str,
     config_json: &str,
 ) -> Result<String, JsValue> {
+    enforce_wasm_input_len("config_json", config_json)?;
     let mols = parse_mcs_input(smiles_json, "mcs_smiles_json_with_config")?;
     let config: McsConfigJson =
         serde_json::from_str(config_json).map_err(|e| JsValue::from_str(&e.to_string()))?;
@@ -890,6 +981,11 @@ pub fn mmp_pairs_json(smiles_json: &str) -> Result<String, JsValue> {
 
     let mol_refs: Vec<&chematic_core::Molecule> = mols.iter().collect();
     let pairs = chematic_chem::find_mmp(&mol_refs);
+    if pairs.len() > WASM_MAX_BATCH_ITEMS {
+        return Err(JsValue::from_str(&format!(
+            "MMP result exceeds maximum pair count ({WASM_MAX_BATCH_ITEMS})"
+        )));
+    }
 
     let entries: Vec<String> = pairs
         .iter()
@@ -905,7 +1001,7 @@ pub fn mmp_pairs_json(smiles_json: &str) -> Result<String, JsValue> {
         })
         .collect();
 
-    Ok(format!("[{}]", entries.join(",")))
+    bounded_json_output(format!("[{}]", entries.join(",")))
 }
 
 // ---------------------------------------------------------------------------
@@ -937,8 +1033,14 @@ pub fn rgroup_decompose_json(smiles_json: &str, core_smarts: &str) -> Result<Str
     use chematic_smarts::{AtomPrimitive, AtomQuery};
     use std::collections::HashSet;
 
+    enforce_wasm_input_len("core_smarts", core_smarts)?;
     let query = chematic_smarts::parse_smarts(core_smarts)
         .map_err(|e| JsValue::from_str(&format!("{e:?}")))?;
+    if query.atoms.len() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!(
+            "core_smarts exceeds maximum query atom count ({WASM_MAX_ATOMS})"
+        )));
+    }
 
     // Identify which query atoms are wildcards and record their order.
     let wildcard_indices: Vec<usize> = query
@@ -1013,8 +1115,7 @@ pub fn rgroup_decompose_json(smiles_json: &str, core_smarts: &str) -> Result<Str
 /// Returns a JS error on parse failure.
 #[wasm_bindgen]
 pub fn normalize_reaction_smiles(rxn_smiles: &str) -> Result<String, JsValue> {
-    let rxn =
-        chematic_rxn::parse_reaction(rxn_smiles).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let rxn = parse_wasm_reaction(rxn_smiles).map_err(|e| JsValue::from_str(&e.to_string()))?;
     Ok(chematic_rxn::write_reaction(&rxn))
 }
 
@@ -1176,7 +1277,7 @@ pub fn enumerate_stereo_isomers_json(mol: &MolHandle) -> Result<String, JsValue>
 /// APIs. This function changes nothing about the underlying algorithm; it
 /// only serializes the result to JSON.
 ///
-/// `max_results` -- cap on returned disconnections (0 = unlimited).
+/// `max_results` -- cap on returned disconnections (0 = the WASM safety cap).
 ///
 /// `reaction_class` -- filter to a single reaction class, or `""` for all
 /// classes. Valid values: `"AmideBond"`, `"Ester"`, `"Ether"`, `"CNBond"`,
@@ -1198,6 +1299,16 @@ pub fn retro_disconnect_json(
     use chematic_rxn::retro::{DEFAULT_TEMPLATES, RetroClass, RetroTemplate, retro_disconnect};
 
     enforce_wasm_molecule_size(&mol.inner)?;
+    if max_results as usize > WASM_MAX_BATCH_ITEMS {
+        return Err(JsValue::from_str(&format!(
+            "retro result count exceeds maximum ({WASM_MAX_BATCH_ITEMS})"
+        )));
+    }
+    let effective_max_results = if max_results == 0 {
+        WASM_MAX_BATCH_ITEMS
+    } else {
+        max_results as usize
+    };
 
     let filter_class: Option<RetroClass> = match reaction_class {
         "" => None,
@@ -1225,7 +1336,7 @@ pub fn retro_disconnect_json(
         })
         .collect();
 
-    let results = retro_disconnect(&mol.inner, &owned, max_results as usize);
+    let results = retro_disconnect(&mol.inner, &owned, effective_max_results);
 
     let parts: Vec<String> = results
         .iter()
@@ -1268,7 +1379,7 @@ pub fn retro_disconnect_json(
 /// Returns an error string prefixed with `"error:"` on failure.
 #[wasm_bindgen]
 pub fn find_reaction_center_json(reaction_smiles: &str) -> String {
-    let rxn = match chematic_rxn::parse_reaction(reaction_smiles) {
+    let rxn = match parse_wasm_reaction(reaction_smiles) {
         Ok(r) => r,
         Err(e) => return format!("error:{e}"),
     };
@@ -1306,10 +1417,19 @@ pub fn find_reaction_center_json(reaction_smiles: &str) -> String {
 /// Returns `"error:<msg>"` on parse failure.
 #[wasm_bindgen]
 pub fn standardize_smiles(smiles: &str) -> String {
+    if smiles.len() > WASM_MAX_INPUT_BYTES {
+        return format!(
+            "error:SMILES exceeds maximum input size ({} > {WASM_MAX_INPUT_BYTES} bytes)",
+            smiles.len()
+        );
+    }
     let mol = match chematic_smiles::parse(smiles) {
         Ok(m) => m,
         Err(e) => return format!("error:{e}"),
     };
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return format!("error:SMILES exceeds maximum atom count ({WASM_MAX_ATOMS})");
+    }
     let mol = chematic_chem::largest_fragment(&mol);
     let mol = chematic_chem::neutralize_charges(&mol);
     chematic_smiles::canonical_smiles(&mol)
@@ -1327,10 +1447,19 @@ pub fn standardize_smiles_report_json(
     remove_explicit_h: bool,
     canonical_tautomer: bool,
 ) -> String {
+    if smiles.len() > WASM_MAX_INPUT_BYTES {
+        return format!(
+            "error:SMILES exceeds maximum input size ({} > {WASM_MAX_INPUT_BYTES} bytes)",
+            smiles.len()
+        );
+    }
     let mol = match chematic_smiles::parse(smiles) {
         Ok(m) => m,
         Err(e) => return format!("error:{e}"),
     };
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return format!("error:SMILES exceeds maximum atom count ({WASM_MAX_ATOMS})");
+    }
     let pipeline = chematic_chem::StandardizationPipeline::new(chematic_chem::StandardizeOptions {
         canonical_tautomer,
         neutralize_charges,
@@ -1360,7 +1489,7 @@ pub fn standardize_smiles_report_json(
 /// Returns `"error:<msg>"` on parse failure.
 #[wasm_bindgen]
 pub fn balance_check_json(reaction_smiles: &str) -> String {
-    let rxn = match chematic_rxn::parse_reaction(reaction_smiles) {
+    let rxn = match parse_wasm_reaction(reaction_smiles) {
         Ok(r) => r,
         Err(e) => return format!("error:{e}"),
     };

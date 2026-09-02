@@ -7,6 +7,7 @@ use wasm_bindgen::prelude::*;
 
 const WORKFLOW_MAX_INPUT_BYTES: usize = 1_000_000;
 const WORKFLOW_MAX_BATCH_ITEMS: usize = 1_024;
+const WORKFLOW_MAX_ATOMS: usize = 10_000;
 
 fn enforce_input_len(label: &str, input: &str) -> Result<(), JsValue> {
     if input.len() > WORKFLOW_MAX_INPUT_BYTES {
@@ -39,6 +40,33 @@ fn split_bounded_batch<'a>(
     Ok(smiles_vec)
 }
 
+fn enforce_batch_molecule_sizes(smiles: &[&str]) -> Result<(), String> {
+    for (idx, value) in smiles.iter().enumerate() {
+        if let Ok(mol) = chematic_smiles::parse(value.trim())
+            && mol.atom_count() > WORKFLOW_MAX_ATOMS
+        {
+            return Err(format!(
+                "smiles_batch[{idx}] exceeds maximum atom count ({} > {})",
+                mol.atom_count(),
+                WORKFLOW_MAX_ATOMS
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn enforce_molecule_size(smiles: &str, label: &str) -> Result<(), JsValue> {
+    let mol = chematic_smiles::parse(smiles).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if mol.atom_count() > WORKFLOW_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!(
+            "{label} exceeds maximum atom count ({} > {})",
+            mol.atom_count(),
+            WORKFLOW_MAX_ATOMS
+        )));
+    }
+    Ok(())
+}
+
 /// Generate a complete molecular report (JSON string) from a SMILES.
 /// Returns the JSON representation of a `MoleculeReport` struct.
 ///
@@ -51,6 +79,7 @@ fn split_bounded_batch<'a>(
 #[wasm_bindgen]
 pub fn molecule_report_json(smiles: &str) -> Result<String, JsValue> {
     enforce_input_len("smiles", smiles)?;
+    enforce_molecule_size(smiles, "smiles")?;
     let report =
         chematic_chem::molecule_report(smiles).map_err(|e| JsValue::from_str(&e.to_string()))?;
     serde_json::to_string(&report)
@@ -70,6 +99,8 @@ pub fn molecule_report_json(smiles: &str) -> Result<String, JsValue> {
 pub fn compare_molecules_json(smiles1: &str, smiles2: &str) -> Result<String, JsValue> {
     enforce_input_len("smiles1", smiles1)?;
     enforce_input_len("smiles2", smiles2)?;
+    enforce_molecule_size(smiles1, "smiles1")?;
+    enforce_molecule_size(smiles2, "smiles2")?;
     let smiles = [smiles1, smiles2];
     let comparison =
         chematic_chem::compare_molecules(&smiles).map_err(|e| JsValue::from_str(&e.to_string()))?;
@@ -79,6 +110,8 @@ pub fn compare_molecules_json(smiles1: &str, smiles2: &str) -> Result<String, Js
 
 /// Compare multiple SMILES strings (up to 256 by default).
 /// Accepts a delimiter-separated list (e.g., newline or comma).
+/// The input is limited to 1 MiB, 1,024 records, and 10,000 atoms per parsed
+/// molecule.
 ///
 /// # Example (JS)
 /// ```javascript
@@ -92,6 +125,7 @@ pub fn compare_molecules_batch_json(
     delimiter: &str,
 ) -> Result<String, JsValue> {
     let smiles_vec = split_bounded_batch(smiles_batch, delimiter, "smiles_batch")?;
+    enforce_batch_molecule_sizes(&smiles_vec).map_err(|error| JsValue::from_str(&error))?;
     let comparison = chematic_chem::compare_molecules(&smiles_vec)
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
     serde_json::to_string(&comparison)
@@ -101,6 +135,8 @@ pub fn compare_molecules_batch_json(
 /// Screen a batch of SMILES strings (JSON string output).
 /// Returns per-record results including pass/fail with error details.
 /// Includes MaxMin diversity picking and Butina clustering by default.
+/// The input is limited to 1 MiB, 1,024 records, and 10,000 atoms per parsed
+/// molecule.
 ///
 /// # Example (JS)
 /// ```javascript
@@ -122,6 +158,9 @@ pub fn screen_smiles_json(smiles_batch: &str, delimiter: &str) -> String {
             return format!("{{\"error\":\"{}\"}}", msg.replace('"', "\\\""));
         }
     };
+    if let Err(error) = enforce_batch_molecule_sizes(&smiles_vec) {
+        return format!("{{\"error\":\"{}\"}}", error.replace('"', "\\\""));
+    }
     let report = chematic_chem::screen_smiles(&smiles_vec);
     serde_json::to_string(&report)
         .unwrap_or_else(|_| "{\"error\": \"JSON serialization failed\"}".to_string())
@@ -140,6 +179,11 @@ pub fn generate_3d_from_smiles(smiles: &str) -> Result<String, JsValue> {
     enforce_input_len("smiles", smiles)?;
     let mol = chematic_smiles::parse(smiles)
         .map_err(|e| JsValue::from_str(&format!("SMILES parse error: {}", e)))?;
+    if mol.atom_count() > WORKFLOW_MAX_ATOMS {
+        return Err(JsValue::from_str(
+            "smiles exceeds maximum atom count (10000)",
+        ));
+    }
     let coords = chematic_3d::generate_coords(&mol);
     let pdb_str = chematic_3d::write_pdb(&mol, &coords);
     Ok(pdb_str)
@@ -159,6 +203,11 @@ pub fn generate_3d_optimized_pdb(smiles: &str) -> Result<String, JsValue> {
     enforce_input_len("smiles", smiles)?;
     let mol = chematic_smiles::parse(smiles)
         .map_err(|e| JsValue::from_str(&format!("SMILES parse error: {}", e)))?;
+    if mol.atom_count() > WORKFLOW_MAX_ATOMS {
+        return Err(JsValue::from_str(
+            "smiles exceeds maximum atom count (10000)",
+        ));
+    }
     let coords = chematic_3d::generate_and_minimize_dreiding(&mol);
     let pdb_str = chematic_3d::write_pdb(&mol, &coords);
     Ok(pdb_str)
@@ -166,6 +215,8 @@ pub fn generate_3d_optimized_pdb(smiles: &str) -> Result<String, JsValue> {
 
 #[cfg(test)]
 mod tests {
+    use super::{WORKFLOW_MAX_ATOMS, enforce_batch_molecule_sizes};
+
     #[test]
     fn workflow_json_serialization_aspirin() {
         let report = chematic_chem::molecule_report("CC(=O)Oc1ccccc1C(=O)O").unwrap();
@@ -204,6 +255,13 @@ mod tests {
         let mol = chematic_smiles::parse("c1ccccc1").unwrap();
         let coords = chematic_3d::generate_coords(&mol);
         assert_eq!(coords.atom_count(), 6, "benzene has 6 carbons");
+    }
+
+    #[test]
+    fn workflow_batch_atom_limit_is_explicit() {
+        let huge = "C".repeat(WORKFLOW_MAX_ATOMS + 1);
+        let err = enforce_batch_molecule_sizes(&[&huge]).unwrap_err();
+        assert!(err.contains("maximum atom count"));
     }
 
     #[test]

@@ -89,6 +89,8 @@ Notes on the cells above that need qualification:
   `Iterator`. It is not exposed to Python/WASM and is out of scope for the
   "15 formats" table this page otherwise tracks; noted here only because it
   bears directly on any "no format in this codebase streams" claim.
+- **Streaming limits**: `TdtReaderOptions` and `SmilesReaderOptions` bound
+  physical lines and retained record state; TDT also bounds tags per record.
 - **Coordinate units**: N/A — SMILES encodes graph topology and stereo parity,
   not coordinates. CXSMILES can carry optional 2D coordinates as an extension.
 - **Connectivity**: native — bonds are the primary content of the format.
@@ -99,6 +101,12 @@ Notes on the cells above that need qualification:
 - **Parse limits**: `SmilesParseLimits` controls input bytes, atom count, and
   bond count; `parse` applies finite safe defaults and
   `parse_with_limits` accepts a stricter policy.
+- **SMILES tables**: `parse_smi_file_with_limits` accepts
+  `SmiFileParseLimits { max_input_bytes, max_line_bytes, max_records }`; the
+  default `parse_smi_file` path uses finite defaults.
+- **Streaming SMILES tables**: `SmilesReaderOptions` bounds line bytes,
+  yielded records, and columns per row; limit violations are typed
+  `SmilesTableError` results.
 - **Known limitations**: `canonical_smiles()` has a documented residual —
   isolated/simple E/Z double bonds can still produce two different, both-valid
   canonical strings for the same molecule in ~1 in 18 stereo-bearing
@@ -300,10 +308,25 @@ disambiguate by crate, not by name alone:
   produced on that path).
 - **Round-trip**: not characterized beyond the two-crate split above.
 - **Lossy operations**: none named.
-- **Parse limits**: `XyzParseLimits` bounds input bytes, atoms per frame, frame
-  count, and physical line length. `parse_xyz_with_limits`,
+- **Parse limits**: both XYZ implementations have finite defaults. The
+  `chematic_3d::XyzParseLimits` API bounds input bytes, atom count, and physical
+  line length for the bond-inferring parser; `chematic_mol::XyzParseLimits`
+  additionally bounds frame count for multi-frame input. Their respective
+  `parse_xyz_with_limits`,
   `parse_xyz_all_with_limits`, and `parse_extxyz_with_limits` accept an
   explicit policy; default single/all-frame parsers use finite defaults.
+
+### KET (Ketcher JSON)
+
+- **Rust**: `chematic_mol::{parse_ket, parse_ket_with_limits, parse_ket_3d,
+  parse_ket_3d_with_limits, write_ket, write_ket_3d, KetError,
+  KetParseLimits}`.
+- **Parse limits**: `KetParseLimits { max_input_bytes, max_atoms,
+  max_bonds }`; default parsing uses finite defaults and the explicit APIs
+  return typed `KetError::ResourceLimit` failures.
+- **Python/WASM**: existing KET entrypoints use the bounded default parser
+  path; structured Rust errors are surfaced as the binding's normal value/JS
+  error representation.
 
 ### QCSchema
 

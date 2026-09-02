@@ -78,7 +78,10 @@ pub use gaussian::{
     GaussianError, GaussianLogResult, GaussianParseLimits, parse_gaussian_log,
     parse_gaussian_log_with_limits, parse_gjf, parse_gjf_with_limits, write_gjf,
 };
-pub use ket::{KetError, parse_ket, parse_ket_3d, write_ket, write_ket_3d};
+pub use ket::{
+    KetError, KetParseLimits, parse_ket, parse_ket_3d, parse_ket_3d_with_limits,
+    parse_ket_with_limits, write_ket, write_ket_3d,
+};
 pub use lammps_data::{
     LammpsAtom, LammpsAtomStyle, LammpsBond, LammpsBox, LammpsData, LammpsDataError,
     LammpsDataParseLimits, LammpsMass, LammpsVelocity, parse_lammps_data,
@@ -140,7 +143,9 @@ pub use qcschema::{
     write_atomic_input, write_atomic_result, write_qcschema_molecule,
 };
 pub use record::MoleculeRecord;
-pub use rxn::{RxnParseError, parse_rxn_file, write_rxn_file};
+pub use rxn::{
+    RxnFileParseLimits, RxnParseError, parse_rxn_file, parse_rxn_file_with_limits, write_rxn_file,
+};
 pub use sdf::{
     ConformerEnsemble, SdfFileReader, SdfParseLimits, SdfReader, SdfRecord, SdfRecordReader,
     parse_sdf_with_limits, read_sdf_conformer_ensembles,

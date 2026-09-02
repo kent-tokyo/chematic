@@ -121,9 +121,15 @@ fn parse_segment(
             let mut sub_counts: HashMap<String, u32> = HashMap::new();
             let end = parse_segment(chars, i + 1, &mut sub_counts)?;
             // After the closing ')' there may be a multiplier.
-            let (mult, next) = parse_count(chars, end + 1); // end points to ')'
+            let (mult, next) = parse_count(chars, end + 1)?; // end points to ')'
             for (elem, cnt) in sub_counts {
-                *counts.entry(elem).or_insert(0) += cnt * mult;
+                let total = cnt
+                    .checked_mul(mult)
+                    .ok_or_else(|| FormulaParseError::InvalidCount(mult.to_string()))?;
+                let entry = counts.entry(elem).or_insert(0);
+                *entry = entry
+                    .checked_add(total)
+                    .ok_or_else(|| FormulaParseError::InvalidCount(total.to_string()))?;
             }
             i = next;
         } else if c == ')' {
@@ -140,8 +146,11 @@ fn parse_segment(
                 i += 1;
             }
             // Validate: symbol must be non-empty (always true here).
-            let (cnt, next) = parse_count(chars, i);
-            *counts.entry(sym).or_insert(0) += cnt;
+            let (cnt, next) = parse_count(chars, i)?;
+            let entry = counts.entry(sym).or_insert(0);
+            *entry = entry
+                .checked_add(cnt)
+                .ok_or_else(|| FormulaParseError::InvalidCount(cnt.to_string()))?;
             i = next;
         } else if c.is_ascii_digit() {
             // Stray digit (shouldn't appear at top level after stripping charge).
@@ -158,7 +167,7 @@ fn parse_segment(
 
 /// Parse an optional integer count starting at `pos`.
 /// Returns `(count, new_pos)`. If no digit, returns `(1, pos)`.
-fn parse_count(chars: &[char], pos: usize) -> (u32, usize) {
+fn parse_count(chars: &[char], pos: usize) -> Result<(u32, usize), FormulaParseError> {
     let mut i = pos;
     let mut n_str = String::new();
     while i < chars.len() && chars[i].is_ascii_digit() {
@@ -166,9 +175,12 @@ fn parse_count(chars: &[char], pos: usize) -> (u32, usize) {
         i += 1;
     }
     if n_str.is_empty() {
-        (1, i)
+        Ok((1, i))
     } else {
-        (n_str.parse().unwrap_or(1), i)
+        n_str
+            .parse()
+            .map(|count| (count, i))
+            .map_err(|_| FormulaParseError::InvalidCount(n_str))
     }
 }
 
@@ -189,6 +201,14 @@ mod tests {
         assert!(matches!(
             parse_formula("   "),
             Err(FormulaParseError::EmptyFormula)
+        ));
+    }
+
+    #[test]
+    fn test_count_overflow_is_rejected_without_panicking() {
+        assert!(matches!(
+            parse_formula("C999999999999999999999999"),
+            Err(FormulaParseError::InvalidCount(_))
         ));
     }
 

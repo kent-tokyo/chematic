@@ -12,6 +12,12 @@ use crate::coords::{Coords3D, Point3};
 /// Errors that can occur when parsing XYZ format.
 #[derive(Debug, Clone, PartialEq)]
 pub enum XyzError {
+    /// The complete input exceeded the configured byte limit.
+    InputTooLarge { limit: usize },
+    /// The declared atom count exceeded the configured limit.
+    TooManyAtoms { count: usize, limit: usize },
+    /// A physical input line exceeded the configured byte limit.
+    LineTooLong { line: usize, limit: usize },
     /// The first line did not parse as a valid positive integer.
     InvalidAtomCount,
     /// A coordinate line (1-indexed, including header lines) could not be parsed.
@@ -23,9 +29,34 @@ pub enum XyzError {
 impl core::fmt::Display for XyzError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
+            Self::InputTooLarge { limit } => write!(f, "XYZ input exceeds {limit}-byte limit"),
+            Self::TooManyAtoms { count, limit } => {
+                write!(f, "XYZ atom count {count} exceeds {limit}-atom limit")
+            }
+            Self::LineTooLong { line, limit } => {
+                write!(f, "XYZ line {line} exceeds {limit}-byte limit")
+            }
             Self::InvalidAtomCount => write!(f, "invalid atom count in XYZ header"),
             Self::InvalidLine(n) => write!(f, "invalid XYZ coordinate line {n}"),
             Self::UnknownElement(s) => write!(f, "unknown element symbol '{s}' in XYZ file"),
+        }
+    }
+}
+
+/// Resource limits applied by the 3D XYZ parser.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct XyzParseLimits {
+    pub max_input_bytes: usize,
+    pub max_atoms: usize,
+    pub max_line_bytes: usize,
+}
+
+impl Default for XyzParseLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: 64 << 20,
+            max_atoms: 2_000_000,
+            max_line_bytes: 1024,
         }
     }
 }
@@ -35,21 +66,62 @@ impl core::fmt::Display for XyzError {
 /// The returned `Molecule` contains only heavy atoms with no bonds; XYZ files
 /// do not encode connectivity.
 pub fn parse_xyz(input: &str) -> Result<(Molecule, Coords3D), XyzError> {
+    parse_xyz_with_limits(input, XyzParseLimits::default())
+}
+
+/// Parse XYZ with explicit resource limits.
+pub fn parse_xyz_with_limits(
+    input: &str,
+    limits: XyzParseLimits,
+) -> Result<(Molecule, Coords3D), XyzError> {
+    if input.len() > limits.max_input_bytes {
+        return Err(XyzError::InputTooLarge {
+            limit: limits.max_input_bytes,
+        });
+    }
+
     let mut lines = input.lines();
 
     // Line 1: atom count.
-    let count_line = lines.next().unwrap_or("").trim();
+    let count_line = lines.next().unwrap_or("");
+    if count_line.len() > limits.max_line_bytes {
+        return Err(XyzError::LineTooLong {
+            line: 1,
+            limit: limits.max_line_bytes,
+        });
+    }
+    let count_line = count_line.trim();
     let n: usize = count_line.parse().map_err(|_| XyzError::InvalidAtomCount)?;
+    if n > limits.max_atoms {
+        return Err(XyzError::TooManyAtoms {
+            count: n,
+            limit: limits.max_atoms,
+        });
+    }
 
     // Line 2: comment — consumed and discarded.
-    lines.next();
+    if let Some(comment) = lines.next()
+        && comment.len() > limits.max_line_bytes
+    {
+        return Err(XyzError::LineTooLong {
+            line: 2,
+            limit: limits.max_line_bytes,
+        });
+    }
 
     let mut builder = MoleculeBuilder::new();
     let mut points: Vec<Point3> = Vec::with_capacity(n);
 
     for i in 0..n {
         // Line index in the file is i + 3 (1-indexed), but we just use i for clarity.
-        let line = lines.next().ok_or(XyzError::InvalidLine(i + 3))?.trim();
+        let raw_line = lines.next().ok_or(XyzError::InvalidLine(i + 3))?;
+        if raw_line.len() > limits.max_line_bytes {
+            return Err(XyzError::LineTooLong {
+                line: i + 3,
+                limit: limits.max_line_bytes,
+            });
+        }
+        let line = raw_line.trim();
 
         let parts: Vec<&str> = line.split_whitespace().collect();
         if parts.len() < 4 {

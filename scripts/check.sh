@@ -2,6 +2,8 @@
 # Run the same checks as CI locally. Usage: bash scripts/check.sh
 set -e
 echo "=== fmt ===" && cargo fmt --all -- --check
+echo "=== unsafe surface ===" && python3 scripts/check_unsafe_surface.py
+echo "=== workflow action pins ===" && python3 scripts/check_workflow_pins.py
 echo "=== clippy ===" && cargo clippy --workspace --all-targets -- -D warnings
 echo "=== test ===" && cargo test --workspace --lib --quiet
 echo "=== test (integration) ===" && cargo test --workspace --tests --quiet

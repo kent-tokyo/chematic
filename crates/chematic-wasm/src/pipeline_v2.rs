@@ -1881,6 +1881,7 @@ mod tests {
         assert_eq!(value["error"]["cause"]["kind"], "invalid_config", "{json}");
     }
 
+    #[cfg(target_arch = "wasm32")]
     #[test]
     fn stereo_safe_config_json_fixes_testosterone_via_wasm_binding() {
         // Same seed/configuration already Rust-level tested and cross-checked

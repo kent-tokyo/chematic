@@ -31,10 +31,10 @@ lto = true           # whole-program link-time optimization
 codegen-units = 1    # required for LTO; also enables more cross-crate inlining
 
 [workspace.package]
-version = "0.88.0"
+version = "0.89.0"
 edition = "2024"
 rust-version = "1.88"
-authors = ["kent-tokyo <kent-tokyo@users.noreply.github.com>"]
+authors = ["Kentaro Tanabe (kent-tokyo) <kent-tokyo@users.noreply.github.com>"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/kent-tokyo/chematic"
 homepage = "https://kent-tokyo.github.io/chematic/"

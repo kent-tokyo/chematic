@@ -7,7 +7,7 @@
 //! `Connection` owns the era pin. `McpServer` (in `server.rs`) never sees
 //! it — it only ever receives an already-classified `RequestContext`.
 
-use std::io::{BufRead, Write};
+use std::io::{self, BufRead, Write};
 
 use serde_json::{Value, json};
 
@@ -27,6 +27,36 @@ use crate::server::McpServer;
 pub struct Connection {
     server: McpServer,
     pinned_era: Option<ProtocolEra>,
+}
+
+/// Read one newline-delimited frame without allocating beyond the protocol
+/// request limit. A frame that exceeds the limit is fatal to the stdio loop;
+/// stopping there avoids treating its remainder as a new JSON-RPC request.
+fn read_bounded_line<R: BufRead>(reader: &mut R, max_bytes: usize) -> io::Result<Option<Vec<u8>>> {
+    let mut line = Vec::with_capacity(max_bytes.min(8192));
+    loop {
+        let buffer = reader.fill_buf()?;
+        if buffer.is_empty() {
+            return if line.is_empty() {
+                Ok(None)
+            } else {
+                Ok(Some(line))
+            };
+        }
+        let newline = buffer.iter().position(|byte| *byte == b'\n');
+        let available = newline.map_or(buffer.len(), |index| index + 1);
+        if line.len().saturating_add(available) > max_bytes.saturating_add(1) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("request exceeds maximum size of {max_bytes} bytes"),
+            ));
+        }
+        line.extend_from_slice(&buffer[..available]);
+        reader.consume(available);
+        if newline.is_some() {
+            return Ok(Some(line));
+        }
+    }
 }
 
 impl Default for Connection {
@@ -155,7 +185,25 @@ impl Connection {
             method: &method,
             params: &params,
         };
-        Some(self.server.handle_request(request, &ctx))
+        let response = self.server.handle_request(request, &ctx);
+        match serde_json::to_vec(&response) {
+            Ok(bytes) if bytes.len() <= protocol::MAX_RESPONSE_BYTES => Some(response),
+            Ok(_) => Some(protocol::error_response(
+                &id,
+                protocol::INTERNAL_ERROR,
+                format!(
+                    "response exceeds maximum size of {} bytes",
+                    protocol::MAX_RESPONSE_BYTES
+                ),
+                None,
+            )),
+            Err(_) => Some(protocol::error_response(
+                &id,
+                protocol::INTERNAL_ERROR,
+                "response serialization failed",
+                None,
+            )),
+        }
     }
 }
 
@@ -168,9 +216,17 @@ pub fn run_stdio() {
     let mut out = stdout.lock();
     let mut connection = Connection::new();
 
-    for line in stdin.lock().lines() {
-        let line = match line {
-            Ok(l) => l,
+    let mut input = stdin.lock();
+    loop {
+        let line = match read_bounded_line(&mut input, protocol::MAX_REQUEST_BYTES) {
+            Ok(Some(bytes)) => match String::from_utf8(bytes) {
+                Ok(line) => line,
+                Err(e) => {
+                    eprintln!("chematic-mcp: invalid UTF-8 request: {e}");
+                    break;
+                }
+            },
+            Ok(None) => break,
             Err(e) => {
                 eprintln!("chematic-mcp: read error: {e}");
                 break;
@@ -200,6 +256,14 @@ pub fn run_stdio() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bounded_reader_rejects_an_oversized_frame_before_full_allocation() {
+        let mut input = std::io::Cursor::new(b"123456789\nnext\n".to_vec());
+        let error = read_bounded_line(&mut input, 8).unwrap_err();
+        assert_eq!(error.kind(), std::io::ErrorKind::InvalidData);
+        assert!(error.to_string().contains("maximum size of 8 bytes"));
+    }
 
     #[test]
     fn legacy_then_legacy_is_fine() {

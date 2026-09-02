@@ -8,6 +8,7 @@ dynamic = ["version"]
 description = "Pure-Rust cheminformatics — SMILES, fingerprints, 190+ descriptors, pKa, ADMET"
 readme = "README.md"
 license = { text = "MIT OR Apache-2.0" }
+authors = [{ name = "Kentaro Tanabe (kent-tokyo)", email = "kent-tokyo@users.noreply.github.com" }]
 requires-python = ">=3.9"
 keywords = ["cheminformatics", "smiles", "chemistry", "rdkit", "fingerprints", "drug-discovery", "molecular-descriptors", "wasm", "admet", "qed"]
 dependencies = ["numpy>=1.20"]

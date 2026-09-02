@@ -41,6 +41,11 @@ use chematic_core::{Atom, BondOrder, Element, Molecule, MoleculeBuilder};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum KetError {
+    ResourceLimit {
+        resource: &'static str,
+        actual: usize,
+        limit: usize,
+    },
     InvalidJson(String),
     UnknownElement(String),
     InvalidAtomIndex {
@@ -54,6 +59,11 @@ pub enum KetError {
 impl std::fmt::Display for KetError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            KetError::ResourceLimit {
+                resource,
+                actual,
+                limit,
+            } => write!(f, "KET {resource} limit exceeded: {actual} > {limit}"),
             KetError::InvalidJson(s) => write!(f, "KET: invalid JSON: {s}"),
             KetError::UnknownElement(sym) => write!(f, "KET: unknown element '{sym}'"),
             KetError::InvalidAtomIndex {
@@ -70,6 +80,24 @@ impl std::fmt::Display for KetError {
 }
 impl std::error::Error for KetError {}
 
+/// Resource limits applied before and during KET interpretation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct KetParseLimits {
+    pub max_input_bytes: usize,
+    pub max_atoms: usize,
+    pub max_bonds: usize,
+}
+
+impl Default for KetParseLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: 64 << 20,
+            max_atoms: 10_000,
+            max_bonds: 20_000,
+        }
+    }
+}
+
 // ─── Parser ──────────────────────────────────────────────────────────────────
 
 /// Parse a KET (Ketcher JSON) string.
@@ -78,7 +106,15 @@ impl std::error::Error for KetError {}
 /// of the KET `location` field (Z is discarded for 2D use).
 /// For 3D use, call [`parse_ket_3d`] instead.
 pub fn parse_ket(input: &str) -> Result<(Molecule, Vec<(f64, f64)>), KetError> {
-    let (mol, coords3) = parse_ket_3d(input)?;
+    parse_ket_with_limits(input, &KetParseLimits::default())
+}
+
+/// Parse KET with explicit resource limits.
+pub fn parse_ket_with_limits(
+    input: &str,
+    limits: &KetParseLimits,
+) -> Result<(Molecule, Vec<(f64, f64)>), KetError> {
+    let (mol, coords3) = parse_ket_3d_with_limits(input, limits)?;
     let coords2 = coords3.iter().map(|&(x, y, _z)| (x, y)).collect();
     Ok((mol, coords2))
 }
@@ -86,6 +122,22 @@ pub fn parse_ket(input: &str) -> Result<(Molecule, Vec<(f64, f64)>), KetError> {
 /// Parse a KET string and return 3D coordinates `(x, y, z)`.
 #[allow(clippy::type_complexity)]
 pub fn parse_ket_3d(input: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), KetError> {
+    parse_ket_3d_with_limits(input, &KetParseLimits::default())
+}
+
+/// Parse KET with explicit resource limits and return 3D coordinates.
+#[allow(clippy::type_complexity)]
+pub fn parse_ket_3d_with_limits(
+    input: &str,
+    limits: &KetParseLimits,
+) -> Result<(Molecule, Vec<(f64, f64, f64)>), KetError> {
+    if input.len() > limits.max_input_bytes {
+        return Err(KetError::ResourceLimit {
+            resource: "input bytes",
+            actual: input.len(),
+            limit: limits.max_input_bytes,
+        });
+    }
     let v: serde_json::Value =
         serde_json::from_str(input).map_err(|e| KetError::InvalidJson(e.to_string()))?;
 
@@ -114,14 +166,12 @@ pub fn parse_ket_3d(input: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), Ket
         .and_then(|a| a.as_array())
         .ok_or(KetError::MissingField("atoms"))?;
 
-    // Guard against memory-DoS from enormous KET payloads.
-    const MAX_ATOMS: usize = 10_000;
-    const MAX_BONDS: usize = 20_000;
-    if atoms_json.len() > MAX_ATOMS {
-        return Err(KetError::InvalidJson(format!(
-            "KET file exceeds atom limit ({} > {MAX_ATOMS})",
-            atoms_json.len()
-        )));
+    if atoms_json.len() > limits.max_atoms {
+        return Err(KetError::ResourceLimit {
+            resource: "atoms",
+            actual: atoms_json.len(),
+            limit: limits.max_atoms,
+        });
     }
 
     let empty_bonds = vec![];
@@ -130,11 +180,12 @@ pub fn parse_ket_3d(input: &str) -> Result<(Molecule, Vec<(f64, f64, f64)>), Ket
         .and_then(|b| b.as_array())
         .unwrap_or(&empty_bonds); // bonds is optional (single-atom molecules)
 
-    if bonds_json.len() > MAX_BONDS {
-        return Err(KetError::InvalidJson(format!(
-            "KET file exceeds bond limit ({} > {MAX_BONDS})",
-            bonds_json.len()
-        )));
+    if bonds_json.len() > limits.max_bonds {
+        return Err(KetError::ResourceLimit {
+            resource: "bonds",
+            actual: bonds_json.len(),
+            limit: limits.max_bonds,
+        });
     }
 
     // ── Atoms ─────────────────────────────────────────────────────────────────
@@ -459,6 +510,55 @@ mod tests {
         assert!(matches!(
             parse_ket(ket),
             Err(KetError::InvalidAtomIndex { .. })
+        ));
+    }
+
+    #[test]
+    fn parse_ket_limits_are_typed_and_shared_by_2d_and_3d_paths() {
+        let ket = r#"{"atoms":[{"label":"C","location":[0,0,0]}],"bonds":[]}"#;
+        assert!(matches!(
+            parse_ket_with_limits(
+                ket,
+                &KetParseLimits {
+                    max_input_bytes: 4,
+                    ..Default::default()
+                }
+            ),
+            Err(KetError::ResourceLimit {
+                resource: "input bytes",
+                ..
+            })
+        ));
+
+        let many_atoms = r#"{"atoms":[{"label":"C"},{"label":"C"}],"bonds":[]}"#;
+        let limits = KetParseLimits {
+            max_atoms: 1,
+            ..Default::default()
+        };
+        assert!(matches!(
+            parse_ket_3d_with_limits(many_atoms, &limits),
+            Err(KetError::ResourceLimit {
+                resource: "atoms",
+                actual: 2,
+                limit: 1
+            })
+        ));
+
+        let many_bonds =
+            r#"{"atoms":[{"label":"C"},{"label":"C"}],"bonds":[{"atoms":[0,1]},{"atoms":[0,1]}]}"#;
+        assert!(matches!(
+            parse_ket_3d_with_limits(
+                many_bonds,
+                &KetParseLimits {
+                    max_bonds: 1,
+                    ..Default::default()
+                }
+            ),
+            Err(KetError::ResourceLimit {
+                resource: "bonds",
+                actual: 2,
+                limit: 1
+            })
         ));
     }
 }
