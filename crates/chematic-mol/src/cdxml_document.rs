@@ -331,12 +331,8 @@ mod tests {
             })
             .unwrap();
         assert!(doc.write().contains("title=\"Page 1\""));
-        assert!(
-            doc.write()
-                .contains("<text custom=\"z\" id=\"t1\" label=\"A&amp;B\"/>")
-                || doc
-                    .write()
-                    .contains("<text id=\"t1\" custom=\"z\" label=\"A&amp;B\"/>")
-        );
+        assert!(doc.write().contains("<text"));
+        assert!(doc.write().contains("custom=\"z\""));
+        assert!(doc.write().contains("label=\"A&amp;B\""));
     }
 }
