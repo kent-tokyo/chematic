@@ -36,6 +36,11 @@ try {
   await page.locator("#btn-calc").click();
   await page.locator("#error-desc").waitFor({ state: "visible" });
   assert.match(await page.locator("#error-desc").innerText(), /input|size|large/i);
+  await page.locator("#smiles-input").fill("CCO");
+  await page.locator("#btn-calc").click();
+  await page.locator("#error-desc").waitFor({ state: "hidden" });
+  await hba.waitFor({ state: "visible" });
+  assert.equal(await hba.innerText(), "1");
   await page.locator("#smarts-input").fill("[");
   await page.getByRole("button", { name: "Highlight", exact: true }).click();
   await page.locator("#error-desc").waitFor({ state: "visible" });
