@@ -2348,6 +2348,10 @@ async function initWasm() {
     depictReactionSvg   = mod.depict_reaction_svg;
     molFromSdfBlock          = mod.mol_from_sdf_block;
     sdfToSmilesJson          = mod.sdf_to_smiles_json;
+    if (new URLSearchParams(location.search).has('browser-smoke')) {
+      window.__browserSmoke = window.__browserSmoke || {};
+      window.__browserSmoke.sdfToSmilesJson = sdfToSmilesJson;
+    }
     estateIndicesJson        = mod.estate_indices_json;
     tanimotoTopoPath         = mod.tanimoto_topo_path;
     identifyFunctionalGroups = mod.identify_functional_groups;
