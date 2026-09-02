@@ -1374,14 +1374,18 @@ mod tests {
     #[test]
     fn single_smiles_contract_rejects_oversized_bytes_before_parse() {
         let input = "C".repeat(MAX_SMILES_INPUT_BYTES + 1);
-        let error = parse_cli_smiles(&input).unwrap_err();
+        let error = parse_cli_smiles(&input)
+            .err()
+            .expect("oversized input must fail");
         assert!(error.contains("maximum input size"));
     }
 
     #[test]
     fn single_smiles_contract_rejects_oversized_molecules() {
         let input = "C".repeat(MAX_SMILES_ATOMS + 1);
-        let error = parse_cli_smiles(&input).unwrap_err();
+        let error = parse_cli_smiles(&input)
+            .err()
+            .expect("oversized molecule must fail");
         assert!(error.contains("maximum atom count"));
     }
 
