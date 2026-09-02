@@ -122,7 +122,9 @@ try {
   await page.locator("#btn-sdf-load").click();
   await sdfError.waitFor({ state: "visible" });
   assert.match(await sdfError.innerText(), /No valid|invalid|parse/i);
-  await sdfInput.fill("x".repeat(1_000_001));
+  await sdfInput.evaluate((element) => {
+    element.value = "x".repeat(1_000_001);
+  });
   await page.locator("#btn-sdf-load").click();
   await sdfError.waitFor({ state: "visible" });
   assert.match(await sdfError.innerText(), /No valid|large|size|input/i);
