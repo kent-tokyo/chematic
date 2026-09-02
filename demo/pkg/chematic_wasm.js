@@ -1206,6 +1206,8 @@ export function balance_check_json(reaction_smiles) {
  *
  * Empty lines and invalid SMILES are silently skipped.
  * Returns the same card-grid HTML as Python's `chematic.report()`.
+ * The input is limited to 1 MiB, 1,024 non-empty records, and 10,000 atoms
+ * per successfully parsed molecule. Limit violations return an HTML error.
  *
  * ```js
  * const html = mod.batch_report_html("CCO\nc1ccccc1\nCC(=O)O");
@@ -1399,6 +1401,25 @@ export function cdxml_to_smiles_json(cdxml) {
 }
 
 /**
+ * Compute the charge Parent and return a status-shaped JSON result.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function charge_parent_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.charge_parent_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
  * The `chematic-wasm` crate version (matches the workspace release version).
  *
  * Lets callers (e.g. the browser playground demo) display the running
@@ -1492,6 +1513,8 @@ export function cip_unresolved_json(mol) {
 /**
  * Compare multiple SMILES strings (up to 256 by default).
  * Accepts a delimiter-separated list (e.g., newline or comma).
+ * The input is limited to 1 MiB, 1,024 records, and 10,000 atoms per parsed
+ * molecule.
  *
  * # Example (JS)
  * ```javascript
@@ -1582,6 +1605,44 @@ export function conformer_ensemble_json(mol, n, rmsd_threshold) {
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
         wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Convert between common topology-bearing molecular formats.
+ *
+ * This is the WASM counterpart of Python's `convert_format`. It supports
+ * SMILES, MOL/SDF, MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML.
+ * Coordinates and format-specific metadata are intentionally not carried
+ * across this topology-only bridge; use the format-specific coordinate APIs
+ * when those fields must be preserved.
+ * @param {string} text
+ * @param {string} input_format
+ * @param {string} output_format
+ * @returns {string}
+ */
+export function convert_common_format(text, input_format, output_format) {
+    let deferred5_0;
+    let deferred5_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(input_format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ptr2 = passStringToWasm0(output_format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len2 = WASM_VECTOR_LEN;
+        const ret = wasm.convert_common_format(ptr0, len0, ptr1, len1, ptr2, len2);
+        var ptr4 = ret[0];
+        var len4 = ret[1];
+        if (ret[3]) {
+            ptr4 = 0; len4 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred5_0 = ptr4;
+        deferred5_1 = len4;
+        return getStringFromWasm0(ptr4, len4);
+    } finally {
+        wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
     }
 }
 
@@ -1769,6 +1830,9 @@ export function depict_reaction_svg(rxn_smiles) {
  *
  * Lines that fail to parse are silently skipped.
  * `cols` controls the number of columns (each cell is 200×200 px).
+ * The input is limited to 1 MiB, 1,024 non-empty records, and 10,000 atoms
+ * per successfully parsed molecule. Limit violations return an empty SVG
+ * containing an error title.
  * @param {string} smiles_block
  * @param {number} cols
  * @returns {string}
@@ -1798,6 +1862,9 @@ export function depict_svg_grid(smiles_block, cols) {
  *
  * Invalid SMILES are rendered as empty cells; SMARTS parse failure returns an
  * unhighlighted grid (the SMARTS is silently ignored).
+ * The input is limited to 1 MiB, 1,024 non-empty records, and 10,000 atoms
+ * per successfully parsed molecule. Limit violations return an empty SVG
+ * containing an error title.
  * @param {string} smiles_block
  * @param {number} cols
  * @param {string} match_smarts
@@ -1970,6 +2037,37 @@ export function ecfp_bitvec_custom(mol, radius, nbits, use_chirality) {
     var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
     wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
     return v1;
+}
+
+/**
+ * Run `embed_ensemble_v2` on `mol`'s own atom order (never canonicalizes/
+ * reparses, same convention as `embed_pipeline_v2_json`). See the module doc
+ * for the config JSON shape and the success/failure envelope shape.
+ *
+ * Never throws. Always returns a JSON string tagged `schemaVersion: 1` and
+ * `ok: true`/`false`. `ok: false` covers both a WASM-level rejection
+ * (oversized input, too many atoms, malformed/incomplete config JSON) and a
+ * config `embed_ensemble_v2` itself rejects (currently only an invalid
+ * `rmsdThreshold`) -- distinguished by `error.stage` /
+ * `error.cause.kind`, same as `embed_pipeline_v2_json`.
+ * @param {MolHandle} mol
+ * @param {string} config_json
+ * @returns {string}
+ */
+export function embed_ensemble_v2_json(mol, config_json) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ptr0 = passStringToWasm0(config_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.embed_ensemble_v2_json(mol.__wbg_ptr, ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
 }
 
 /**
@@ -2234,6 +2332,25 @@ export function find_reaction_center_json(reaction_smiles) {
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
         wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Compute the fragment Parent and return a status-shaped JSON result.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function fragment_parent_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.fragment_parent_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
     }
 }
 
@@ -2770,6 +2887,25 @@ export function is_valid_smiles(s) {
 }
 
 /**
+ * Compute the isotope Parent and return a status-shaped JSON result.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function isotope_parent_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.isotope_parent_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
  * Per-atom Labute approximate surface area contributions as a JSON array of f64.
  *
  * Non-finite values (single-atom molecules etc.) are emitted as JSON `null`.
@@ -3145,6 +3281,49 @@ export function mcs_smiles_json(smiles_json) {
         return getStringFromWasm0(ptr2, len2);
     } finally {
         wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Full `McsConfig` + `McsOutcome`-aware MCS search.
+ *
+ * `smiles_json` — JSON array of at least 2 SMILES strings.
+ * `config_json` — a JSON object with any subset of `McsConfig`'s fields
+ * (camelCase keys, all optional, defaulting to `McsConfig::default()`):
+ * `matchBonds`, `minAtoms`, `timeoutMs`, `ringMatchesRingOnly`,
+ * `completeRingsOnly`, `atomCompare` (`"elements"` | `"any_heavy_atom"` |
+ * `"any"`), `bondCompare` (`"order_or_aromatic"` | `"any"`),
+ * `matchChiralTag`, `matchCharge`, `matchIsotope`, `maximizeBonds`.
+ *
+ * Returns a JSON object `{"smiles": string|null, "wasTimedOut": bool}` --
+ * `smiles` is `null` when there is no common substructure; `wasTimedOut` is
+ * `true` if `timeoutMs` was reached before the search finished exhaustively
+ * (the returned `smiles`, if any, is then the best result found so far, not
+ * proven optimal).
+ * @param {string} smiles_json
+ * @param {string} config_json
+ * @returns {string}
+ */
+export function mcs_smiles_json_with_config(smiles_json, config_json) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(config_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.mcs_smiles_json_with_config(ptr0, len0, ptr1, len1);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
     }
 }
 
@@ -4590,6 +4769,48 @@ export function pharmacophore_fp_3d_summary(mol) {
 }
 
 /**
+ * Returns a ready-to-use `embed_pipeline_v2_json` config JSON string for the
+ * "stereo-safe" configuration (issue #291/#383): `stereoPolicy:
+ * "repair_and_verify"`, `enforceChirality: true`, and
+ * `expandImplicitHThroughPipeline: true` together -- the exact combination
+ * measured to correctly handle ring-fused declared stereocenters (e.g.
+ * testosterone, cholesterol) that `enforceChirality` alone cannot repair.
+ * Mirrors `PipelineV2Config::stereo_safe`/the Python binding's
+ * `PipelineV2Config.stereo_safe(...)` -- prefer this over setting those three
+ * fields individually: they only work correctly as a set, and forgetting one
+ * silently falls back to a configuration issue #291 measured as unsound for
+ * that molecule class. `forceFieldPolicy`/`ringTorsionPolicy` are still
+ * required, explicit arguments; everything else takes the same conservative
+ * defaults `embed_pipeline_v2_json`'s own documented examples do. The caller
+ * may parse and further override individual fields before passing the result
+ * to `embed_pipeline_v2_json` (e.g. a different `embedSeed`).
+ *
+ * Never throws, matching `embed_pipeline_v2_json`'s own convention: an
+ * unknown `force_field`/`ring_torsion_policy` string returns the same
+ * `{"ok": false, "error": {...}}` shape `embed_pipeline_v2_json` would for an
+ * invalid config, tagged `schemaVersion: 1`.
+ * @param {string} force_field
+ * @param {string} ring_torsion_policy
+ * @returns {string}
+ */
+export function pipeline_v2_stereo_safe_config_json(force_field, ring_torsion_policy) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(force_field, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(ring_torsion_policy, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.pipeline_v2_stereo_safe_config_json(ptr0, len0, ptr1, len1);
+        deferred3_0 = ret[0];
+        deferred3_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Cartesian coordinates from a PQR file, in the SAME atom order
  * [`mol_from_pqr`] returns topology for. Returns JSON `[[x,y,z],...]` (Å).
  * @param {string} text
@@ -4911,6 +5132,52 @@ export function rdkit_ecfp_config_bitvec(mol, radius, nbits) {
 }
 
 /**
+ * Chirality-enabled variant of [`rdkit_ecfp_config_bitvec`]. E/Z bond stereo
+ * is not included by this API yet.
+ * @param {MolHandle} mol
+ * @param {number} radius
+ * @param {number} nbits
+ * @returns {Uint8Array}
+ */
+export function rdkit_ecfp_config_chiral_bitvec(mol, radius, nbits) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.rdkit_ecfp_config_chiral_bitvec(mol.__wbg_ptr, radius, nbits);
+    if (ret[3]) {
+        throw takeFromExternrefTable0(ret[2]);
+    }
+    var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v1;
+}
+
+/**
+ * Chirality-enabled variant of [`rdkit_ecfp_config_detail_json`].
+ * @param {MolHandle} mol
+ * @param {number} radius
+ * @param {number} nbits
+ * @returns {string}
+ */
+export function rdkit_ecfp_config_chiral_detail_json(mol, radius, nbits) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.rdkit_ecfp_config_chiral_detail_json(mol.__wbg_ptr, radius, nbits);
+        var ptr1 = ret[0];
+        var len1 = ret[1];
+        if (ret[3]) {
+            ptr1 = 0; len1 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred2_0 = ptr1;
+        deferred2_1 = len1;
+        return getStringFromWasm0(ptr1, len1);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
  * Same fingerprint as `rdkit_ecfp_config_bitvec`, plus the raw (unfolded) data -- see
  * `rdkit_ecfp4_detail_json` for the JSON shape (identical, generalized to this
  * function's `radius`/`nbits`).
@@ -4960,7 +5227,7 @@ export function remove_hydrogens(mol) {
  * APIs. This function changes nothing about the underlying algorithm; it
  * only serializes the result to JSON.
  *
- * `max_results` -- cap on returned disconnections (0 = unlimited).
+ * `max_results` -- cap on returned disconnections (0 = the WASM safety cap).
  *
  * `reaction_class` -- filter to a single reaction class, or `""` for all
  * classes. Valid values: `"AmideBond"`, `"Ester"`, `"Ether"`, `"CNBond"`,
@@ -5121,6 +5388,8 @@ export function sa_score(mol) {
  * Screen a batch of SMILES strings (JSON string output).
  * Returns per-record results including pass/fail with error details.
  * Includes MaxMin diversity picking and Butina clustering by default.
+ * The input is limited to 1 MiB, 1,024 records, and 10,000 atoms per parsed
+ * molecule.
  *
  * # Example (JS)
  * ```javascript
@@ -5624,6 +5893,69 @@ export function start() {
 }
 
 /**
+ * Compute the stereo Parent and return a status-shaped JSON result.
+ * @param {MolHandle} mol
+ * @returns {string}
+ */
+export function stereo_parent_json(mol) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.stereo_parent_json(mol.__wbg_ptr);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Compute the composed Super Parent with explicit resource limits.
+ * @param {MolHandle} mol
+ * @param {number} max_transforms
+ * @param {number} max_tautomers
+ * @param {bigint | null} [timeout_ms]
+ * @returns {string}
+ */
+export function super_parent_json(mol, max_transforms, max_tautomers, timeout_ms) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.super_parent_json(mol.__wbg_ptr, max_transforms, max_tautomers, !isLikeNone(timeout_ms), isLikeNone(timeout_ms) ? BigInt(0) : timeout_ms);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Compute the composed Super Parent and expose every ordered stage.
+ * @param {MolHandle} mol
+ * @param {number} max_transforms
+ * @param {number} max_tautomers
+ * @param {bigint | null} [timeout_ms]
+ * @returns {string}
+ */
+export function super_parent_report_json(mol, max_transforms, max_tautomers, timeout_ms) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.super_parent_report_json(mol.__wbg_ptr, max_transforms, max_tautomers, !isLikeNone(timeout_ms), isLikeNone(timeout_ms) ? BigInt(0) : timeout_ms);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
  * Tanimoto similarity between two molecules using AtomPair fingerprints.
  * @param {MolHandle} a
  * @param {MolHandle} b
@@ -5792,6 +6124,31 @@ export function tanimoto_torsion(a, b) {
     _assertClass(b, MolHandle);
     const ret = wasm.tanimoto_torsion(a.__wbg_ptr, b.__wbg_ptr);
     return ret;
+}
+
+/**
+ * Compute the tautomer parent with explicit resource limits.
+ * Returns `{"smiles":"...","status":"completed"}` (or a structured
+ * error) so callers can distinguish a definite result from a budget-limited
+ * one.
+ * @param {MolHandle} mol
+ * @param {number} max_transforms
+ * @param {number} max_tautomers
+ * @param {bigint | null} [timeout_ms]
+ * @returns {string}
+ */
+export function tautomer_parent_json(mol, max_transforms, max_tautomers, timeout_ms) {
+    let deferred1_0;
+    let deferred1_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ret = wasm.tautomer_parent_json(mol.__wbg_ptr, max_transforms, max_tautomers, !isLikeNone(timeout_ms), isLikeNone(timeout_ms) ? BigInt(0) : timeout_ms);
+        deferred1_0 = ret[0];
+        deferred1_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
 }
 
 /**

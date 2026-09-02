@@ -2301,6 +2301,11 @@ let groupColorMap = {};
 // ============================================================
 // WASM init
 // ============================================================
+// Keep the shipped WASM assets cache-busted when the binary changes. Without
+// this, a browser can retain an older wasm-bindgen JS/wasm pair after a Pages
+// deployment and display stale chemistry results until its cache expires.
+const WASM_ASSET_VERSION = '0.89.0';
+
 // Formats a byte count as a human-readable "X.X MB" / "XXX KB" string.
 function formatBytes(n) {
   if (n >= 1024 * 1024) return (n / (1024 * 1024)).toFixed(1) + ' MB';
@@ -2309,13 +2314,13 @@ function formatBytes(n) {
 
 async function initWasm() {
   try {
-    const mod = await import('./pkg/chematic_wasm.js');
+    const mod = await import(`./pkg/chematic_wasm.js?v=${WASM_ASSET_VERSION}`);
     // Fetch the WASM binary ourselves (rather than letting init() do it
     // internally) so we can measure its real, current size and display it
     // -- the actual bytes served, never a hardcoded number that goes stale
     // across releases. init() accepts a Response directly, so this adds no
     // extra network round-trip.
-    const wasmResp = await fetch('./pkg/chematic_wasm_bg.wasm');
+    const wasmResp = await fetch(`./pkg/chematic_wasm_bg.wasm?v=${WASM_ASSET_VERSION}`);
     const wasmBytes = (await wasmResp.clone().arrayBuffer()).byteLength;
     await mod.default(wasmResp);
     // chematic_version() may be absent on an older locally-built ./pkg (e.g.
