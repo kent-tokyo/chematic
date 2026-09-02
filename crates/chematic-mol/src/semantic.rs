@@ -254,7 +254,8 @@ impl SemanticModel {
                     })? as u32,
             );
             let mut unit_atoms = Vec::new();
-            for _ in 0..repeats {
+            let mut previous_right: Option<AtomIdx> = None;
+            for repeat_index in 0..repeats {
                 let fragment = chematic_smiles::parse(pattern).map_err(|e| {
                     SemanticError::InvalidExpansion {
                         id: unit.id.clone(),
@@ -308,23 +309,28 @@ impl SemanticModel {
                             })?;
                     }
                 }
+                let chain_left = previous_right.unwrap_or(left);
                 molecule
                     .add_bond(
-                        left,
+                        chain_left,
                         remap[&endpoint_left],
                         chematic_core::BondOrder::Single,
                     )
-                    .and_then(|_| {
-                        molecule.add_bond(
-                            right,
-                            remap[&endpoint_right],
-                            chematic_core::BondOrder::Single,
-                        )
-                    })
                     .map_err(|e| SemanticError::InvalidExpansion {
                         id: unit.id.clone(),
                         reason: e.to_string(),
                     })?;
+                let current_right = remap[&endpoint_right];
+                if repeat_index + 1 == repeats {
+                    molecule
+                        .add_bond(right, current_right, chematic_core::BondOrder::Single)
+                        .map_err(|e| SemanticError::InvalidExpansion {
+                            id: unit.id.clone(),
+                            reason: e.to_string(),
+                        })?;
+                } else {
+                    previous_right = Some(current_right);
+                }
             }
             mapping.insert(unit.id.clone(), unit_atoms);
         }
@@ -536,15 +542,15 @@ mod tests {
                     },
                 ],
                 end_groups: vec![],
-                repeat_count: Some(1),
+                repeat_count: Some(2),
                 repeat_smiles: Some("[*]CC[*]".into()),
                 repeat_endpoint_atoms: None,
             }],
             ..Default::default()
         };
         let expanded = model.expand(&base).unwrap();
-        assert_eq!(expanded.molecule.atom_count(), 4);
-        assert_eq!(expanded.source_to_expanded["p1"].len(), 2);
+        assert_eq!(expanded.molecule.atom_count(), 6);
+        assert_eq!(expanded.source_to_expanded["p1"].len(), 4);
     }
 
     #[test]
@@ -563,14 +569,14 @@ mod tests {
                     },
                 ],
                 end_groups: vec![],
-                repeat_count: Some(1),
+                repeat_count: Some(2),
                 repeat_smiles: Some("CCO".into()),
                 repeat_endpoint_atoms: Some([0, 2]),
             }],
             ..Default::default()
         };
         let expanded = model.expand(&base).unwrap();
-        assert_eq!(expanded.molecule.atom_count(), 5);
-        assert_eq!(expanded.source_to_expanded["p1"].len(), 3);
+        assert_eq!(expanded.molecule.atom_count(), 8);
+        assert_eq!(expanded.source_to_expanded["p1"].len(), 6);
     }
 }

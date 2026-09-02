@@ -62,6 +62,13 @@ pub enum CdxmlEdit {
         page_id: String,
         object_index: usize,
     },
+    /// Replace an object at a parent-to-child sibling path. `[0, 1]` means
+    /// the second child of the first page-level object.
+    ReplaceObjectPath {
+        page_id: String,
+        path: Vec<usize>,
+        raw_xml: String,
+    },
 }
 
 impl CdxmlDocument {
@@ -179,6 +186,58 @@ impl CdxmlDocument {
             .iter()
             .position(|p| p.id.as_deref() == Some(page_id))
             .ok_or_else(|| CdxmlError::UnknownAtomRef("unknown page id".into()))?;
+        if let CdxmlEdit::ReplaceObjectPath { path, raw_xml, .. } = edit {
+            if path.is_empty() {
+                return Err(CdxmlError::UnknownAtomRef("object path is empty".into()));
+            }
+            let mut current_page = 0usize;
+            let mut in_target = false;
+            let mut open_paths: Vec<Vec<usize>> = Vec::new();
+            let mut sibling_counts = vec![0usize];
+            for i in 0..lines.len() {
+                let trimmed = lines[i].trim().to_owned();
+                if trimmed.starts_with("<page") && !trimmed.starts_with("</page") {
+                    in_target = current_page == page;
+                    open_paths.clear();
+                    sibling_counts.clear();
+                    sibling_counts.push(0);
+                    continue;
+                }
+                if !in_target {
+                    if trimmed.starts_with("</page") {
+                        current_page += 1;
+                    }
+                    continue;
+                }
+                if trimmed.starts_with("</page") {
+                    in_target = false;
+                    current_page += 1;
+                    continue;
+                }
+                if trimmed.starts_with("</") {
+                    if !open_paths.is_empty() {
+                        open_paths.pop();
+                        sibling_counts.pop();
+                    }
+                    continue;
+                }
+                if !is_editable_object_line(&trimmed) {
+                    continue;
+                }
+                let mut object_path = open_paths.last().cloned().unwrap_or_default();
+                object_path.push(*sibling_counts.last().unwrap_or(&0));
+                *sibling_counts.last_mut().unwrap_or(&mut 0) += 1;
+                if object_path == *path {
+                    lines[i] = raw_xml.clone();
+                    return Self::parse(&format!("{}\n", lines.join("\n")));
+                }
+                if !trimmed.ends_with("/>") {
+                    open_paths.push(object_path);
+                    sibling_counts.push(0);
+                }
+            }
+            return Err(CdxmlError::UnknownAtomRef("object path not found".into()));
+        }
         let mut page_index = 0usize;
         let mut in_page = false;
         let mut object_index = 0usize;
@@ -324,8 +383,17 @@ fn page_id_for(edit: &CdxmlEdit) -> &str {
         | CdxmlEdit::ReplaceObject { page_id, .. }
         | CdxmlEdit::SetObjectAttribute { page_id, .. }
         | CdxmlEdit::InsertObject { page_id, .. }
-        | CdxmlEdit::RemoveObject { page_id, .. } => page_id,
+        | CdxmlEdit::RemoveObject { page_id, .. }
+        | CdxmlEdit::ReplaceObjectPath { page_id, .. } => page_id,
     }
+}
+
+fn is_editable_object_line(line: &str) -> bool {
+    line.starts_with('<')
+        && !line.starts_with("</")
+        && !line.starts_with("<?")
+        && !line.starts_with("<!")
+        && !line.starts_with("<page")
 }
 
 #[cfg(test)]
@@ -408,5 +476,22 @@ mod tests {
             })
             .unwrap();
         assert!(!doc.write().contains("<graphic id=\"g1\"/>"));
+    }
+
+    #[test]
+    fn replaces_nested_object_by_loss_preserving_path() {
+        let input = "<CDXML>\n<page id=\"p1\">\n<group id=\"g1\" unknown=\"keep\">\n<arrow id=\"a1\" Custom=\"keep\"/>\n</group>\n</page>\n</CDXML>";
+        let doc = CdxmlDocument::parse(input).unwrap();
+        let doc = doc
+            .apply(&CdxmlEdit::ReplaceObjectPath {
+                page_id: "p1".into(),
+                path: vec![0, 0],
+                raw_xml: "<text id=\"t1\" Custom=\"keep\"/>".into(),
+            })
+            .unwrap();
+        let output = doc.write();
+        assert!(output.contains("<group id=\"g1\" unknown=\"keep\">"));
+        assert!(output.contains("<text id=\"t1\" Custom=\"keep\"/>"));
+        assert!(!output.contains("<arrow id=\"a1\""));
     }
 }
