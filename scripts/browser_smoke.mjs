@@ -47,6 +47,10 @@ try {
   await page.locator("#btn-calc").click();
   await page.locator("#error-desc").waitFor({ state: "visible" });
   assert.match(await page.locator("#error-desc").innerText(), /input|size|large/i);
+  await page.locator("#smiles-input").fill("C1CC");
+  await page.locator("#btn-calc").click();
+  await page.locator("#error-desc").waitFor({ state: "visible" });
+  assert.match(await page.locator("#error-desc").innerText(), /parse|invalid|SMILES/i);
   await page.locator("#smiles-input").fill("CCO");
   await page.locator("#btn-calc").click();
   await page.locator("#error-desc").waitFor({ state: "hidden" });
