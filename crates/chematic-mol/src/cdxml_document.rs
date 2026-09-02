@@ -53,6 +53,15 @@ pub enum CdxmlEdit {
         key: String,
         value: String,
     },
+    InsertObject {
+        page_id: String,
+        object_index: usize,
+        raw_xml: String,
+    },
+    RemoveObject {
+        page_id: String,
+        object_index: usize,
+    },
 }
 
 impl CdxmlDocument {
@@ -173,6 +182,53 @@ impl CdxmlDocument {
         let mut page_index = 0usize;
         let mut in_page = false;
         let mut object_index = 0usize;
+        if matches!(
+            edit,
+            CdxmlEdit::InsertObject { .. } | CdxmlEdit::RemoveObject { .. }
+        ) {
+            let mut current_page = 0usize;
+            let mut in_target = false;
+            let mut seen_objects = 0usize;
+            for i in 0..lines.len() {
+                let trimmed = lines[i].trim().to_owned();
+                if trimmed.starts_with("<page") && !trimmed.starts_with("</page") {
+                    in_target = current_page == page;
+                    seen_objects = 0;
+                } else if in_target
+                    && trimmed.starts_with("<")
+                    && !trimmed.starts_with("</")
+                    && !trimmed.starts_with("<?")
+                    && !trimmed.starts_with("<!")
+                {
+                    if let CdxmlEdit::RemoveObject {
+                        object_index: target,
+                        ..
+                    } = edit
+                        && seen_objects == *target
+                    {
+                        lines.remove(i);
+                        return Self::parse(&format!("{}\n", lines.join("\n")));
+                    }
+                    seen_objects += 1;
+                } else if in_target && trimmed.starts_with("</page") {
+                    if let CdxmlEdit::InsertObject {
+                        object_index: target,
+                        raw_xml,
+                        ..
+                    } = edit
+                        && seen_objects == *target
+                    {
+                        lines.insert(i, raw_xml.clone());
+                        return Self::parse(&format!("{}\n", lines.join("\n")));
+                    }
+                    current_page += 1;
+                    in_target = false;
+                }
+            }
+            return Err(CdxmlError::UnknownAtomRef(
+                "object index out of range".into(),
+            ));
+        }
         for line in &mut lines {
             let trimmed = line.trim().to_owned();
             if trimmed.starts_with("<page") && !trimmed.starts_with("</page") {
@@ -266,7 +322,9 @@ fn page_id_for(edit: &CdxmlEdit) -> &str {
     match edit {
         CdxmlEdit::SetPageAttribute { page_id, .. }
         | CdxmlEdit::ReplaceObject { page_id, .. }
-        | CdxmlEdit::SetObjectAttribute { page_id, .. } => page_id,
+        | CdxmlEdit::SetObjectAttribute { page_id, .. }
+        | CdxmlEdit::InsertObject { page_id, .. }
+        | CdxmlEdit::RemoveObject { page_id, .. } => page_id,
     }
 }
 
@@ -334,5 +392,21 @@ mod tests {
         assert!(doc.write().contains("<text"));
         assert!(doc.write().contains("custom=\"z\""));
         assert!(doc.write().contains("label=\"A&amp;B\""));
+
+        let doc = doc
+            .apply(&CdxmlEdit::InsertObject {
+                page_id: "p1".into(),
+                object_index: 1,
+                raw_xml: "<graphic id=\"g1\"/>".into(),
+            })
+            .unwrap();
+        assert!(doc.write().contains("<graphic id=\"g1\"/>"));
+        let doc = doc
+            .apply(&CdxmlEdit::RemoveObject {
+                page_id: "p1".into(),
+                object_index: 1,
+            })
+            .unwrap();
+        assert!(!doc.write().contains("<graphic id=\"g1\"/>"));
     }
 }
