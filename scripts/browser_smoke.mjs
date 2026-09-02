@@ -122,6 +122,11 @@ try {
   await page.locator("#btn-sdf-load").click();
   await sdfError.waitFor({ state: "visible" });
   assert.match(await sdfError.innerText(), /No valid|invalid|parse/i);
+  await sdfInput.fill("x".repeat(1_000_001));
+  await page.locator("#btn-sdf-load").click();
+  await sdfError.waitFor({ state: "visible" });
+  assert.match(await sdfError.innerText(), /No valid|large|size|input/i);
+  assert.equal(await page.locator("#sdf-grid-output svg").count(), 0);
   await sdfInput.fill(ETHANE_MOL_BLOCK);
   await page.locator("#btn-sdf-load").click();
   await page.locator("#sdf-grid-output svg").waitFor({ state: "visible" });
