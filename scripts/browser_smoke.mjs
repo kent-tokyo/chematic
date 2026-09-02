@@ -162,7 +162,10 @@ try {
       assert.equal(orcaResult.termination.kind, "incomplete");
     } else {
       await formatError.waitFor({ state: "visible" });
-      assert.match(await formatError.innerText(), /invalid|parse|unexpected|expected|found|no /i);
+      assert.match(
+        await formatError.innerText(),
+        /invalid|malformed|parse|unexpected|expected|found|no /i,
+      );
     }
     await page.getByRole("button", { name: "Load Example", exact: true }).click();
     await page.getByRole("button", { name: "Parse", exact: true }).click();
