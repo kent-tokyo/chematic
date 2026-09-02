@@ -103,6 +103,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   limited to release-key custody and public-key verification.
 - Pinned the remaining floating GitHub Actions references across CI,
   benchmark, validation, Pages, and publish workflows to immutable commits.
+- Added `scripts/verify_provenance.sh` for exact-byte detached-signature
+  verification against an externally supplied release public key.
 - Added a scheduled/manual Linux sanitizer workflow and local runner for
   AddressSanitizer, LeakSanitizer, and ThreadSanitizer; execution evidence
   remains separate and is not claimed by configuration alone.
