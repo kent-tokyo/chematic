@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "corpus": "smoke_corpus.jsonl",
+  "sha256": "07e0f5f7a4ac2743b54d6c7d4fa63a5c1e0f6278c0637a80fe9a0dc85ba145ec",
+  "records": [
+    {"id": "ethanol", "smiles": "CCO"},
+    {"id": "benzene", "smiles": "c1ccccc1"},
+    {"id": "aspirin", "smiles": "CC(=O)Oc1ccccc1C(=O)O"},
+    {"id": "alanine_r", "smiles": "C[C@H](N)C(=O)O"},
+    {"id": "alanine_s", "smiles": "C[C@@H](N)C(=O)O"},
+    {"id": "fumaric_acid", "smiles": "O=C(O)/C=C/C(=O)O"},
+    {"id": "maleic_acid", "smiles": "O=C(O)/C=C\\C(=O)O"},
+    {"id": "pyridine_kekule", "smiles": "C1=CC=NC=C1"},
+    {"id": "cytosine", "smiles": "Nc1ncc(=O)[nH]1"},
+    {"id": "guanine", "smiles": "Nc1nc2[nH]cnc2c(=O)[nH]1"}
+  ]
+}

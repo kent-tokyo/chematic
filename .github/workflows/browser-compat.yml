@@ -1,0 +1,41 @@
+name: Browser compatibility smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, ci/linux-gates-089]
+    paths:
+      - 'demo/**'
+      - 'scripts/browser_smoke.mjs'
+      - '.github/workflows/browser-compat.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  browser-smoke:
+    name: ${{ matrix.browser }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: npm install --no-save --no-package-lock playwright@1.55.0
+      - name: Cache Playwright browser
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-1.55.0-${{ matrix.browser }}
+      - name: Install browser
+        run: npx playwright install --with-deps "${{ matrix.browser }}"
+      - name: Serve demo
+        run: python3 -m http.server 8765 --directory demo >/tmp/chematic-browser-server.log 2>&1 &
+      - name: Run browser smoke
+        run: node scripts/browser_smoke.mjs "${{ matrix.browser }}"

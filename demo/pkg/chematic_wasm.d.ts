@@ -517,6 +517,8 @@ export function balance_check_json(reaction_smiles: string): string;
  *
  * Empty lines and invalid SMILES are silently skipped.
  * Returns the same card-grid HTML as Python's `chematic.report()`.
+ * The input is limited to 1 MiB, 1,024 non-empty records, and 10,000 atoms
+ * per successfully parsed molecule. Limit violations return an HTML error.
  *
  * ```js
  * const html = mod.batch_report_html("CCO\nc1ccccc1\nCC(=O)O");
@@ -594,6 +596,11 @@ export function canonical_tautomer_with_blocked_atoms_json(mol: MolHandle, block
 export function cdxml_to_smiles_json(cdxml: string): string;
 
 /**
+ * Compute the charge Parent and return a status-shaped JSON result.
+ */
+export function charge_parent_json(mol: MolHandle): string;
+
+/**
  * The `chematic-wasm` crate version (matches the workspace release version).
  *
  * Lets callers (e.g. the browser playground demo) display the running
@@ -633,6 +640,8 @@ export function cip_unresolved_json(mol: MolHandle): string;
 /**
  * Compare multiple SMILES strings (up to 256 by default).
  * Accepts a delimiter-separated list (e.g., newline or comma).
+ * The input is limited to 1 MiB, 1,024 records, and 10,000 atoms per parsed
+ * molecule.
  *
  * # Example (JS)
  * ```javascript
@@ -661,6 +670,17 @@ export function compare_molecules_json(smiles1: string, smiles2: string): string
  * Returns JSON: `{"conformers": [[[x,y,z],...], ...], "count": int}`.
  */
 export function conformer_ensemble_json(mol: MolHandle, n: number, rmsd_threshold: number): string;
+
+/**
+ * Convert between common topology-bearing molecular formats.
+ *
+ * This is the WASM counterpart of Python's `convert_format`. It supports
+ * SMILES, MOL/SDF, MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML.
+ * Coordinates and format-specific metadata are intentionally not carried
+ * across this topology-only bridge; use the format-specific coordinate APIs
+ * when those fields must be preserved.
+ */
+export function convert_common_format(text: string, input_format: string, output_format: string): string;
 
 /**
  * Return the CPK color (CSS hex string) for the given element symbol.
@@ -738,6 +758,9 @@ export function depict_reaction_svg(rxn_smiles: string): string;
  *
  * Lines that fail to parse are silently skipped.
  * `cols` controls the number of columns (each cell is 200×200 px).
+ * The input is limited to 1 MiB, 1,024 non-empty records, and 10,000 atoms
+ * per successfully parsed molecule. Limit violations return an empty SVG
+ * containing an error title.
  */
 export function depict_svg_grid(smiles_block: string, cols: number): string;
 
@@ -751,6 +774,9 @@ export function depict_svg_grid(smiles_block: string, cols: number): string;
  *
  * Invalid SMILES are rendered as empty cells; SMARTS parse failure returns an
  * unhighlighted grid (the SMARTS is silently ignored).
+ * The input is limited to 1 MiB, 1,024 non-empty records, and 10,000 atoms
+ * per successfully parsed molecule. Limit violations return an empty SVG
+ * containing an error title.
  */
 export function depict_svg_grid_highlighted(smiles_block: string, cols: number, match_smarts: string): string;
 
@@ -822,6 +848,20 @@ export function ecfp6_bitvec_with_chirality(mol: MolHandle, use_chirality: boole
  * atom hash. When `false` (default), chirality is ignored.
  */
 export function ecfp_bitvec_custom(mol: MolHandle, radius: number, nbits: number, use_chirality: boolean): Uint8Array;
+
+/**
+ * Run `embed_ensemble_v2` on `mol`'s own atom order (never canonicalizes/
+ * reparses, same convention as `embed_pipeline_v2_json`). See the module doc
+ * for the config JSON shape and the success/failure envelope shape.
+ *
+ * Never throws. Always returns a JSON string tagged `schemaVersion: 1` and
+ * `ok: true`/`false`. `ok: false` covers both a WASM-level rejection
+ * (oversized input, too many atoms, malformed/incomplete config JSON) and a
+ * config `embed_ensemble_v2` itself rejects (currently only an invalid
+ * `rmsdThreshold`) -- distinguished by `error.stage` /
+ * `error.cause.kind`, same as `embed_pipeline_v2_json`.
+ */
+export function embed_ensemble_v2_json(mol: MolHandle, config_json: string): string;
 
 /**
  * Run the opt-in v2 embedding pipeline, applied directly to `mol`'s own atom
@@ -929,6 +969,11 @@ export function fcfp6_bitvec(mol: MolHandle): Uint8Array;
  * Returns an error string prefixed with `"error:"` on failure.
  */
 export function find_reaction_center_json(reaction_smiles: string): string;
+
+/**
+ * Compute the fragment Parent and return a status-shaped JSON result.
+ */
+export function fragment_parent_json(mol: MolHandle): string;
 
 /**
  * Gasteiger-Marsili PEOE partial charges as a JSON array of f64.
@@ -1145,6 +1190,11 @@ export function invert_stereocenter_at(mol: MolHandle, atom_idx: number): MolHan
 export function is_valid_smiles(s: string): boolean;
 
 /**
+ * Compute the isotope Parent and return a status-shaped JSON result.
+ */
+export function isotope_parent_json(mol: MolHandle): string;
+
+/**
  * Per-atom Labute approximate surface area contributions as a JSON array of f64.
  *
  * Non-finite values (single-atom molecules etc.) are emitted as JSON `null`.
@@ -1306,6 +1356,25 @@ export function maxmin_picks_ecfp4_json(smiles_json: string, n: number): string;
  * Returns a JS error on SMILES parse failure.
  */
 export function mcs_smiles_json(smiles_json: string): string;
+
+/**
+ * Full `McsConfig` + `McsOutcome`-aware MCS search.
+ *
+ * `smiles_json` — JSON array of at least 2 SMILES strings.
+ * `config_json` — a JSON object with any subset of `McsConfig`'s fields
+ * (camelCase keys, all optional, defaulting to `McsConfig::default()`):
+ * `matchBonds`, `minAtoms`, `timeoutMs`, `ringMatchesRingOnly`,
+ * `completeRingsOnly`, `atomCompare` (`"elements"` | `"any_heavy_atom"` |
+ * `"any"`), `bondCompare` (`"order_or_aromatic"` | `"any"`),
+ * `matchChiralTag`, `matchCharge`, `matchIsotope`, `maximizeBonds`.
+ *
+ * Returns a JSON object `{"smiles": string|null, "wasTimedOut": bool}` --
+ * `smiles` is `null` when there is no common substructure; `wasTimedOut` is
+ * `true` if `timeoutMs` was reached before the search finished exhaustively
+ * (the returned `smiles`, if any, is then the best result found so far, not
+ * proven optimal).
+ */
+export function mcs_smiles_json_with_config(smiles_json: string, config_json: string): string;
 
 /**
  * MCS with ring-awareness constraints.
@@ -1850,6 +1919,30 @@ export function pharmacophore_fp_2d_summary(mol: MolHandle): string;
 export function pharmacophore_fp_3d_summary(mol: MolHandle): string;
 
 /**
+ * Returns a ready-to-use `embed_pipeline_v2_json` config JSON string for the
+ * "stereo-safe" configuration (issue #291/#383): `stereoPolicy:
+ * "repair_and_verify"`, `enforceChirality: true`, and
+ * `expandImplicitHThroughPipeline: true` together -- the exact combination
+ * measured to correctly handle ring-fused declared stereocenters (e.g.
+ * testosterone, cholesterol) that `enforceChirality` alone cannot repair.
+ * Mirrors `PipelineV2Config::stereo_safe`/the Python binding's
+ * `PipelineV2Config.stereo_safe(...)` -- prefer this over setting those three
+ * fields individually: they only work correctly as a set, and forgetting one
+ * silently falls back to a configuration issue #291 measured as unsound for
+ * that molecule class. `forceFieldPolicy`/`ringTorsionPolicy` are still
+ * required, explicit arguments; everything else takes the same conservative
+ * defaults `embed_pipeline_v2_json`'s own documented examples do. The caller
+ * may parse and further override individual fields before passing the result
+ * to `embed_pipeline_v2_json` (e.g. a different `embedSeed`).
+ *
+ * Never throws, matching `embed_pipeline_v2_json`'s own convention: an
+ * unknown `force_field`/`ring_torsion_policy` string returns the same
+ * `{"ok": false, "error": {...}}` shape `embed_pipeline_v2_json` would for an
+ * invalid config, tagged `schemaVersion: 1`.
+ */
+export function pipeline_v2_stereo_safe_config_json(force_field: string, ring_torsion_policy: string): string;
+
+/**
  * Cartesian coordinates from a PQR file, in the SAME atom order
  * [`mol_from_pqr`] returns topology for. Returns JSON `[[x,y,z],...]` (Å).
  */
@@ -1966,6 +2059,17 @@ export function rdkit_ecfp4_detail_json(mol: MolHandle): string;
 export function rdkit_ecfp_config_bitvec(mol: MolHandle, radius: number, nbits: number): Uint8Array;
 
 /**
+ * Chirality-enabled variant of [`rdkit_ecfp_config_bitvec`]. E/Z bond stereo
+ * is not included by this API yet.
+ */
+export function rdkit_ecfp_config_chiral_bitvec(mol: MolHandle, radius: number, nbits: number): Uint8Array;
+
+/**
+ * Chirality-enabled variant of [`rdkit_ecfp_config_detail_json`].
+ */
+export function rdkit_ecfp_config_chiral_detail_json(mol: MolHandle, radius: number, nbits: number): string;
+
+/**
  * Same fingerprint as `rdkit_ecfp_config_bitvec`, plus the raw (unfolded) data -- see
  * `rdkit_ecfp4_detail_json` for the JSON shape (identical, generalized to this
  * function's `radius`/`nbits`).
@@ -1987,7 +2091,7 @@ export function remove_hydrogens(mol: MolHandle): MolHandle;
  * APIs. This function changes nothing about the underlying algorithm; it
  * only serializes the result to JSON.
  *
- * `max_results` -- cap on returned disconnections (0 = unlimited).
+ * `max_results` -- cap on returned disconnections (0 = the WASM safety cap).
  *
  * `reaction_class` -- filter to a single reaction class, or `""` for all
  * classes. Valid values: `"AmideBond"`, `"Ester"`, `"Ether"`, `"CNBond"`,
@@ -2050,6 +2154,8 @@ export function sa_score(mol: MolHandle): number;
  * Screen a batch of SMILES strings (JSON string output).
  * Returns per-record results including pass/fail with error details.
  * Includes MaxMin diversity picking and Butina clustering by default.
+ * The input is limited to 1 MiB, 1,024 records, and 10,000 atoms per parsed
+ * molecule.
  *
  * # Example (JS)
  * ```javascript
@@ -2223,6 +2329,21 @@ export function standardize_smiles_report_json(smiles: string, largest_fragment_
 export function start(): void;
 
 /**
+ * Compute the stereo Parent and return a status-shaped JSON result.
+ */
+export function stereo_parent_json(mol: MolHandle): string;
+
+/**
+ * Compute the composed Super Parent with explicit resource limits.
+ */
+export function super_parent_json(mol: MolHandle, max_transforms: number, max_tautomers: number, timeout_ms?: bigint | null): string;
+
+/**
+ * Compute the composed Super Parent and expose every ordered stage.
+ */
+export function super_parent_report_json(mol: MolHandle, max_transforms: number, max_tautomers: number, timeout_ms?: bigint | null): string;
+
+/**
  * Tanimoto similarity between two molecules using AtomPair fingerprints.
  */
 export function tanimoto_atom_pair(a: MolHandle, b: MolHandle): number;
@@ -2284,6 +2405,14 @@ export function tanimoto_topo_path(a: MolHandle, b: MolHandle): number;
  * Tanimoto similarity between two molecules using Topological Torsion fingerprints.
  */
 export function tanimoto_torsion(a: MolHandle, b: MolHandle): number;
+
+/**
+ * Compute the tautomer parent with explicit resource limits.
+ * Returns `{"smiles":"...","status":"completed"}` (or a structured
+ * error) so callers can distinguish a definite result from a budget-limited
+ * one.
+ */
+export function tautomer_parent_json(mol: MolHandle, max_transforms: number, max_tautomers: number, timeout_ms?: bigint | null): string;
 
 /**
  * Serialise a `MolHandle` to a CML string with 2D coordinates.
@@ -2494,6 +2623,7 @@ export interface InitOutput {
     readonly canonical_tautomer: (a: number) => number;
     readonly canonical_tautomer_with_blocked_atoms_json: (a: number, b: number, c: number) => [number, number];
     readonly cdxml_to_smiles_json: (a: number, b: number) => [number, number, number, number];
+    readonly charge_parent_json: (a: number) => [number, number];
     readonly chematic_version: () => [number, number];
     readonly cip_assignments_accurate_json: (a: number) => [number, number];
     readonly cip_assignments_json: (a: number) => [number, number];
@@ -2511,6 +2641,7 @@ export interface InitOutput {
     readonly conformerhandle_mol: (a: number) => number;
     readonly conformerhandle_new: (a: number, b: number) => [number, number, number];
     readonly conformerhandle_remove_conformer: (a: number, b: number) => number;
+    readonly convert_common_format: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
     readonly cpk_color: (a: number, b: number) => [number, number];
     readonly cube_grid_json: (a: number, b: number) => [number, number, number, number];
     readonly cube_shape_u32: (a: number, b: number) => [number, number, number];
@@ -2542,6 +2673,7 @@ export interface InitOutput {
     readonly ecfp6_bitvec: (a: number) => [number, number];
     readonly ecfp6_bitvec_with_chirality: (a: number, b: number) => [number, number];
     readonly ecfp_bitvec_custom: (a: number, b: number, c: number, d: number) => [number, number];
+    readonly embed_ensemble_v2_json: (a: number, b: number, c: number) => [number, number];
     readonly embed_pipeline_v2_json: (a: number, b: number, c: number) => [number, number];
     readonly enumerate_library_2way: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
     readonly enumerate_stereo_isomers_json: (a: number) => [number, number, number, number];
@@ -2552,6 +2684,7 @@ export interface InitOutput {
     readonly fcfp4_bitvec: (a: number) => [number, number];
     readonly fcfp6_bitvec: (a: number) => [number, number];
     readonly find_reaction_center_json: (a: number, b: number) => [number, number];
+    readonly fragment_parent_json: (a: number) => [number, number];
     readonly gasteiger_charges_json: (a: number) => [number, number];
     readonly generate_3d_coords_json: (a: number) => [number, number];
     readonly generate_3d_etkdg_coords_json: (a: number) => [number, number];
@@ -2575,6 +2708,7 @@ export interface InitOutput {
     readonly inchikey_from_smiles: (a: number, b: number) => [number, number];
     readonly invert_stereocenter_at: (a: number, b: number) => [number, number, number];
     readonly is_valid_smiles: (a: number, b: number) => number;
+    readonly isotope_parent_json: (a: number) => [number, number];
     readonly labute_asa_per_atom_json: (a: number) => [number, number];
     readonly lammps_data_to_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly lammps_dump_cartesian_positions_f64: (a: number, b: number) => [number, number, number];
@@ -2588,6 +2722,7 @@ export interface InitOutput {
     readonly match_smarts_smiles: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly maxmin_picks_ecfp4_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly mcs_smiles_json: (a: number, b: number) => [number, number, number, number];
+    readonly mcs_smiles_json_with_config: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly mcs_smiles_json_with_ring_config: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly mhfp_hashes_json: (a: number) => [number, number];
     readonly mhfplshhandle_add_smiles: (a: number, b: number, c: number) => [number, number, number];
@@ -2727,6 +2862,7 @@ export interface InitOutput {
     readonly pharmacophore_features_json: (a: number) => [number, number];
     readonly pharmacophore_fp_2d_summary: (a: number) => [number, number];
     readonly pharmacophore_fp_3d_summary: (a: number) => [number, number];
+    readonly pipeline_v2_stereo_safe_config_json: (a: number, b: number, c: number, d: number) => [number, number];
     readonly pqr_coords_json: (a: number, b: number) => [number, number, number, number];
     readonly pqr_infer_element: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];
     readonly pqr_to_json: (a: number, b: number) => [number, number, number, number];
@@ -2738,6 +2874,8 @@ export interface InitOutput {
     readonly rdkit_ecfp4_bitvec: (a: number) => [number, number, number, number];
     readonly rdkit_ecfp4_detail_json: (a: number) => [number, number, number, number];
     readonly rdkit_ecfp_config_bitvec: (a: number, b: number, c: number) => [number, number, number, number];
+    readonly rdkit_ecfp_config_chiral_bitvec: (a: number, b: number, c: number) => [number, number, number, number];
+    readonly rdkit_ecfp_config_chiral_detail_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly rdkit_ecfp_config_detail_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly remove_hydrogens: (a: number) => number;
     readonly retro_disconnect_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
@@ -2762,6 +2900,9 @@ export interface InitOutput {
     readonly sssr_rings_json: (a: number) => [number, number];
     readonly standardize_smiles: (a: number, b: number) => [number, number];
     readonly standardize_smiles_report_json: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];
+    readonly stereo_parent_json: (a: number) => [number, number];
+    readonly super_parent_json: (a: number, b: number, c: number, d: number, e: bigint) => [number, number];
+    readonly super_parent_report_json: (a: number, b: number, c: number, d: number, e: bigint) => [number, number];
     readonly tanimoto_atom_pair: (a: number, b: number) => number;
     readonly tanimoto_ecfp4: (a: number, b: number) => number;
     readonly tanimoto_ecfp6: (a: number, b: number) => number;
@@ -2773,6 +2914,7 @@ export interface InitOutput {
     readonly tanimoto_smiles: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly tanimoto_topo_path: (a: number, b: number) => number;
     readonly tanimoto_torsion: (a: number, b: number) => number;
+    readonly tautomer_parent_json: (a: number, b: number, c: number, d: number, e: bigint) => [number, number];
     readonly to_cml: (a: number) => [number, number];
     readonly to_extxyz_json: (a: number, b: number, c: number, d: number, e: number) => [number, number, number, number];
     readonly to_mol_block: (a: number) => [number, number];

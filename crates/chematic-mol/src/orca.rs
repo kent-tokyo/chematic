@@ -100,6 +100,32 @@ use chematic_core::{Atom, Element, Molecule, MoleculeBuilder};
 /// `gaussian.rs`'s `GjfResult`.
 type OrcaXyzMolecule = (Molecule, Vec<(f64, f64, f64)>, i32, u32);
 
+/// Resource limits for ORCA input parsing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct OrcaInputParseLimits {
+    pub max_input_bytes: usize,
+    pub max_line_bytes: usize,
+    pub max_lines: usize,
+    pub max_keywords: usize,
+    pub max_blocks: usize,
+    pub max_block_bytes: usize,
+    pub max_atoms: usize,
+}
+
+impl Default for OrcaInputParseLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: 64 * 1024 * 1024,
+            max_line_bytes: 1024 * 1024,
+            max_lines: 1_000_000,
+            max_keywords: 100_000,
+            max_blocks: 256,
+            max_block_bytes: 16 * 1024 * 1024,
+            max_atoms: 1_000_000,
+        }
+    }
+}
+
 // ===========================================================================
 // Input: errors
 // ===========================================================================
@@ -131,6 +157,12 @@ pub enum OrcaInputError {
     NonFiniteCoordinate { line: usize, value: String },
     /// A non-blank top-level line matched none of `#`/`!`/`%`/`*`.
     UnexpectedLine { line: usize, content: String },
+    /// The input exceeded a configured resource limit.
+    ResourceLimit {
+        resource: &'static str,
+        actual: usize,
+        limit: usize,
+    },
 }
 
 impl std::fmt::Display for OrcaInputError {
@@ -167,6 +199,11 @@ impl std::fmt::Display for OrcaInputError {
             Self::UnexpectedLine { line, content } => {
                 write!(f, "unexpected top-level line {line}: '{content}'")
             }
+            Self::ResourceLimit {
+                resource,
+                actual,
+                limit,
+            } => write!(f, "{resource} has size {actual}, exceeding limit {limit}"),
         }
     }
 }
@@ -304,7 +341,38 @@ pub struct OrcaInput {
 
 /// Parse an ORCA input file (`.inp`).
 pub fn parse_orca_input(input: &str) -> Result<OrcaInput, OrcaInputError> {
+    parse_orca_input_with_limits(input, &OrcaInputParseLimits::default())
+}
+
+/// Parse an ORCA input file with explicit resource limits.
+pub fn parse_orca_input_with_limits(
+    input: &str,
+    limits: &OrcaInputParseLimits,
+) -> Result<OrcaInput, OrcaInputError> {
+    if input.len() > limits.max_input_bytes {
+        return Err(OrcaInputError::ResourceLimit {
+            resource: "input bytes",
+            actual: input.len(),
+            limit: limits.max_input_bytes,
+        });
+    }
     let lines: Vec<&str> = input.lines().collect();
+    if lines.len() > limits.max_lines {
+        return Err(OrcaInputError::ResourceLimit {
+            resource: "lines",
+            actual: lines.len(),
+            limit: limits.max_lines,
+        });
+    }
+    if let Some(line_bytes) = lines.iter().map(|line| line.len()).max()
+        && line_bytes > limits.max_line_bytes
+    {
+        return Err(OrcaInputError::ResourceLimit {
+            resource: "line bytes",
+            actual: line_bytes,
+            limit: limits.max_line_bytes,
+        });
+    }
     let mut out = OrcaInput::default();
     let mut i = 0usize;
     while i < lines.len() {
@@ -322,17 +390,47 @@ pub fn parse_orca_input(input: &str) -> Result<OrcaInput, OrcaInputError> {
             let rest = rest.split('#').next().unwrap_or("");
             out.keywords
                 .extend(rest.split_whitespace().map(|s| s.to_string()));
+            if out.keywords.len() > limits.max_keywords {
+                return Err(OrcaInputError::ResourceLimit {
+                    resource: "keywords",
+                    actual: out.keywords.len(),
+                    limit: limits.max_keywords,
+                });
+            }
             i += 1;
             continue;
         }
         if trimmed.starts_with('%') {
             let (block, next_i) = parse_block(&lines, i)?;
+            if out.blocks.len() >= limits.max_blocks {
+                return Err(OrcaInputError::ResourceLimit {
+                    resource: "blocks",
+                    actual: out.blocks.len() + 1,
+                    limit: limits.max_blocks,
+                });
+            }
+            if block.raw.len() > limits.max_block_bytes {
+                return Err(OrcaInputError::ResourceLimit {
+                    resource: "block bytes",
+                    actual: block.raw.len(),
+                    limit: limits.max_block_bytes,
+                });
+            }
             out.blocks.push(block);
             i = next_i;
             continue;
         }
         if trimmed.starts_with('*') {
             let (coords, next_i) = parse_coords(&lines, i)?;
+            if let OrcaCoords::Xyz { atoms, .. } = &coords
+                && atoms.len() > limits.max_atoms
+            {
+                return Err(OrcaInputError::ResourceLimit {
+                    resource: "atoms",
+                    actual: atoms.len(),
+                    limit: limits.max_atoms,
+                });
+            }
             out.coords = Some(coords);
             i = next_i;
             continue;
@@ -732,6 +830,14 @@ pub enum OrcaOutputError {
     NonFiniteCoordinate { line: usize, value: String },
     /// A vibrational-frequency value parsed but is NaN/Infinite.
     NonFiniteFrequency(String),
+    /// A physical line exceeded the configured size limit.
+    LineTooLong { actual: usize, limit: usize },
+    /// The output contained more geometry frames than configured.
+    TooManyGeometryFrames { actual: usize, limit: usize },
+    /// A geometry frame contained more atoms than configured.
+    TooManyGeometryAtoms { actual: usize, limit: usize },
+    /// The output contained more vibrational frequencies than configured.
+    TooManyFrequencies { actual: usize, limit: usize },
 }
 
 impl std::fmt::Display for OrcaOutputError {
@@ -757,6 +863,30 @@ impl std::fmt::Display for OrcaOutputError {
             }
             Self::NonFiniteFrequency(v) => {
                 write!(f, "frequency value '{v}' is not finite (NaN/Infinite)")
+            }
+            Self::LineTooLong { actual, limit } => {
+                write!(
+                    f,
+                    "line has size {actual}, exceeding the {limit}-byte limit"
+                )
+            }
+            Self::TooManyGeometryFrames { actual, limit } => {
+                write!(
+                    f,
+                    "geometry frames have size {actual}, exceeding the {limit} limit"
+                )
+            }
+            Self::TooManyGeometryAtoms { actual, limit } => {
+                write!(
+                    f,
+                    "geometry atoms have size {actual}, exceeding the {limit} limit"
+                )
+            }
+            Self::TooManyFrequencies { actual, limit } => {
+                write!(
+                    f,
+                    "frequencies have size {actual}, exceeding the {limit} limit"
+                )
             }
         }
     }
@@ -863,6 +993,30 @@ pub const MAX_OUTPUT_BYTES: usize = 64 << 20; // 64 MiB
 /// which the byte limit alone wouldn't bound as tightly).
 pub const MAX_OUTPUT_LINES: usize = 1_000_000;
 
+/// Resource limits for ORCA output parsing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct OrcaOutputParseLimits {
+    pub max_input_bytes: usize,
+    pub max_line_bytes: usize,
+    pub max_lines: usize,
+    pub max_geometry_frames: usize,
+    pub max_geometry_atoms: usize,
+    pub max_frequencies: usize,
+}
+
+impl Default for OrcaOutputParseLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: MAX_OUTPUT_BYTES,
+            max_line_bytes: 16 * 1024 * 1024,
+            max_lines: MAX_OUTPUT_LINES,
+            max_geometry_frames: 100_000,
+            max_geometry_atoms: 1_000_000,
+            max_frequencies: 1_000_000,
+        }
+    }
+}
+
 fn last_token(line: &str) -> Option<&str> {
     line.split_whitespace().next_back()
 }
@@ -889,17 +1043,36 @@ fn parse_final_energy_line(toks: &[&str]) -> Result<Option<f64>, OrcaOutputError
 /// Never panics on malformed or truncated input; always returns a typed
 /// `Result`. Truncated input (a job that crashed or was killed mid-run) is
 /// reported via [`OrcaTermination::Incomplete`], not an error.
+/// Unrecognized fragments without an explicit ORCA error marker follow the
+/// same incomplete-result contract; resource-limit violations remain typed
+/// errors.
 pub fn parse_orca_output(input: &str) -> Result<OrcaOutput, OrcaOutputError> {
-    if input.len() > MAX_OUTPUT_BYTES {
+    parse_orca_output_with_limits(input, &OrcaOutputParseLimits::default())
+}
+
+/// Parse an ORCA output file with explicit resource limits.
+pub fn parse_orca_output_with_limits(
+    input: &str,
+    limits: &OrcaOutputParseLimits,
+) -> Result<OrcaOutput, OrcaOutputError> {
+    if input.len() > limits.max_input_bytes {
         return Err(OrcaOutputError::InputTooLarge {
-            limit: MAX_OUTPUT_BYTES,
+            limit: limits.max_input_bytes,
         });
     }
     let lines: Vec<&str> = input.lines().collect();
-    if lines.len() > MAX_OUTPUT_LINES {
+    if lines.len() > limits.max_lines {
         return Err(OrcaOutputError::TooManyLines {
-            limit: MAX_OUTPUT_LINES,
+            limit: limits.max_lines,
         });
+    }
+    for line in &lines {
+        if line.len() > limits.max_line_bytes {
+            return Err(OrcaOutputError::LineTooLong {
+                actual: line.len(),
+                limit: limits.max_line_bytes,
+            });
+        }
     }
 
     let mut charge = None;
@@ -926,8 +1099,14 @@ pub fn parse_orca_output(input: &str) -> Result<OrcaOutput, OrcaOutputError> {
             if j < lines.len() && is_dashes(lines[j]) {
                 j += 1;
             }
-            let (frame, next_j) = parse_geometry_table(&lines, j)?;
+            let (frame, next_j) = parse_geometry_table(&lines, j, limits.max_geometry_atoms)?;
             if !frame.coords.is_empty() {
+                if trajectory.len() >= limits.max_geometry_frames {
+                    return Err(OrcaOutputError::TooManyGeometryFrames {
+                        actual: trajectory.len() + 1,
+                        limit: limits.max_geometry_frames,
+                    });
+                }
                 trajectory.push(frame);
             }
             i = next_j;
@@ -938,7 +1117,7 @@ pub fn parse_orca_output(input: &str) -> Result<OrcaOutput, OrcaOutputError> {
                 final_energy_hartree = Some(v);
             }
         } else if t == "VIBRATIONAL FREQUENCIES" {
-            let (freqs, next_i) = parse_frequency_table(&lines, i + 1)?;
+            let (freqs, next_i) = parse_frequency_table(&lines, i + 1, limits.max_frequencies)?;
             frequencies_cm1 = freqs;
             i = next_i;
             continue;
@@ -978,6 +1157,7 @@ fn is_dashes(line: &str) -> bool {
 fn parse_geometry_table(
     lines: &[&str],
     start: usize,
+    max_atoms: usize,
 ) -> Result<(GeometryFrame, usize), OrcaOutputError> {
     let mut builder = MoleculeBuilder::new();
     let mut coords = Vec::new();
@@ -1013,6 +1193,12 @@ fn parse_geometry_table(
         }
         if !row_is_numeric {
             break;
+        }
+        if coords.len() >= max_atoms {
+            return Err(OrcaOutputError::TooManyGeometryAtoms {
+                actual: coords.len() + 1,
+                limit: max_atoms,
+            });
         }
         builder.add_atom(Atom::new(element));
         coords.push((parsed[0], parsed[1], parsed[2]));
@@ -1050,6 +1236,7 @@ fn parse_frequency_line(line: &str) -> Option<Result<f64, String>> {
 fn parse_frequency_table(
     lines: &[&str],
     start: usize,
+    max_frequencies: usize,
 ) -> Result<(Vec<f64>, usize), OrcaOutputError> {
     let mut i = start;
     if i < lines.len() && is_dashes(lines[i]) {
@@ -1075,6 +1262,12 @@ fn parse_frequency_table(
         }
         match parse_frequency_line(t) {
             Some(Ok(v)) => {
+                if freqs.len() >= max_frequencies {
+                    return Err(OrcaOutputError::TooManyFrequencies {
+                        actual: freqs.len() + 1,
+                        limit: max_frequencies,
+                    });
+                }
                 freqs.push(v);
                 i += 1;
             }
@@ -1311,6 +1504,55 @@ H   0.000000  -0.757200   0.586200
             }
             other => panic!("expected XyzFile, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn bounded_input_parser_rejects_input_and_line_limits() {
+        assert!(matches!(
+            parse_orca_input_with_limits(
+                WATER_OPT_FREQ_INP,
+                &OrcaInputParseLimits {
+                    max_input_bytes: 8,
+                    ..Default::default()
+                }
+            ),
+            Err(OrcaInputError::ResourceLimit {
+                resource: "input bytes",
+                ..
+            })
+        ));
+
+        let long_line = format!("{}\n", "x".repeat(32));
+        assert!(matches!(
+            parse_orca_input_with_limits(
+                &long_line,
+                &OrcaInputParseLimits {
+                    max_line_bytes: 16,
+                    ..Default::default()
+                }
+            ),
+            Err(OrcaInputError::ResourceLimit {
+                resource: "line bytes",
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn bounded_input_parser_rejects_coordinate_atom_limit() {
+        assert!(matches!(
+            parse_orca_input_with_limits(
+                WATER_OPT_FREQ_INP,
+                &OrcaInputParseLimits {
+                    max_atoms: 2,
+                    ..Default::default()
+                }
+            ),
+            Err(OrcaInputError::ResourceLimit {
+                resource: "atoms",
+                ..
+            })
+        ));
     }
 
     #[test]
@@ -1608,6 +1850,14 @@ TOTAL RUN TIME: 0 days 0 hours 0 minutes 4 seconds 118 msec
         }
     }
 
+    #[test]
+    fn output_unrecognized_fragment_is_incomplete_result() {
+        let out = parse_orca_output("partial launcher output without an ORCA marker").unwrap();
+        assert_eq!(out.termination, OrcaTermination::Incomplete);
+        assert_eq!(out.final_energy_hartree, None);
+        assert!(out.trajectory.is_empty());
+    }
+
     /// [`OrcaOutput`] doesn't implement `Debug` (it holds a [`Molecule`],
     /// which doesn't either -- same convention as `GaussianLogResult` in
     /// `gaussian.rs`), so `Result::unwrap_err` can't be used directly on
@@ -1647,5 +1897,47 @@ TOTAL RUN TIME: 0 days 0 hours 0 minutes 4 seconds 118 msec
         let huge = "x\n".repeat(MAX_OUTPUT_LINES + 10);
         let err = expect_output_err(parse_orca_output(&huge));
         assert!(matches!(err, OrcaOutputError::TooManyLines { .. }));
+    }
+
+    #[test]
+    fn output_explicit_limits_reject_line_and_frame_growth() {
+        let err = expect_output_err(parse_orca_output_with_limits(
+            WATER_OPT_FREQ_OUT,
+            &OrcaOutputParseLimits {
+                max_line_bytes: 8,
+                ..Default::default()
+            },
+        ));
+        assert!(matches!(err, OrcaOutputError::LineTooLong { .. }));
+
+        let err = expect_output_err(parse_orca_output_with_limits(
+            WATER_OPT_FREQ_OUT,
+            &OrcaOutputParseLimits {
+                max_geometry_frames: 2,
+                ..Default::default()
+            },
+        ));
+        assert!(matches!(err, OrcaOutputError::TooManyGeometryFrames { .. }));
+    }
+
+    #[test]
+    fn output_explicit_limits_reject_geometry_and_frequency_growth() {
+        let err = expect_output_err(parse_orca_output_with_limits(
+            WATER_OPT_FREQ_OUT,
+            &OrcaOutputParseLimits {
+                max_geometry_atoms: 2,
+                ..Default::default()
+            },
+        ));
+        assert!(matches!(err, OrcaOutputError::TooManyGeometryAtoms { .. }));
+
+        let err = expect_output_err(parse_orca_output_with_limits(
+            WATER_OPT_FREQ_OUT,
+            &OrcaOutputParseLimits {
+                max_frequencies: 8,
+                ..Default::default()
+            },
+        ));
+        assert!(matches!(err, OrcaOutputError::TooManyFrequencies { .. }));
     }
 }

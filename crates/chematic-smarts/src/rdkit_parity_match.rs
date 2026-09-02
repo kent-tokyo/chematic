@@ -679,13 +679,10 @@ mod tests {
 
     // -- SMARTS-A0 bridgehead-N bucket: this pipeline vs. RdkitLike re-perception --
     //
-    // `docs/rdkit_compat.md`'s "SMARTS-A0" section documents a bridgehead-N
-    // ring-fusion over-aromatization: `apply_aromaticity_ex(RdkitLike)`
-    // wrongly extends aromaticity past a benzo ring on the reproducer below
-    // (RDKit ground truth: only atoms 2-7, the benzo ring, are aromatic; the
-    // over-extension wrongly adds atoms 0,1,13 too). Confirmed here, three
-    // ways, so the bucket in this track's own diagnosis is honest about
-    // exactly when it does and doesn't fire:
+    // This reproducer guards the bridgehead-N ring-fusion aromaticity case.
+    // RDKit ground truth is that only atoms 2-7, the benzo ring, are
+    // aromatic. Both the direct parser and explicit RdkitLike re-perception
+    // must preserve that result.
 
     #[test]
     fn smarts_a0_does_not_fire_on_direct_parse_no_reperception() {
@@ -707,17 +704,11 @@ mod tests {
     }
 
     #[test]
-    fn smarts_a0_fires_when_caller_explicitly_reperceives_with_rdkit_like() {
-        // If a caller (e.g. `rdkit_compat.MolFromSmiles(sanitize=True)`)
-        // explicitly re-perceives with `AromaticityAlgorithm::RdkitLike`
-        // *before* handing the molecule to this crate, SMARTS-A0's
-        // over-extension bug is reproduced exactly as documented: 3 spurious
-        // aromatic carbons (atoms 0, 1, 13's neighbor pattern -- see
-        // `docs/rdkit_compat.md` for the full mechanism). This is a defect
-        // in `chematic_perception::apply_aromaticity_ex`, not in this
-        // crate's matcher or ring model -- reproduced here only to give this
-        // track's own diagnosis a concrete, named, honestly-attributed
-        // bucket rather than silently never testing the precondition at all.
+    fn smarts_a0_remains_rdkit_compatible_after_explicit_reperception() {
+        // Callers may explicitly re-perceive with
+        // `AromaticityAlgorithm::RdkitLike` before handing the molecule to
+        // this crate. The fixed aromaticity path must retain the RDKit
+        // ground-truth benzo ring rather than extend it into the fused ring.
         let mol = parse("C1=Cc2ccccc2C2=NCCCN12").unwrap();
         let kekulized = chematic_core::kekulize(&mol)
             .map(|k| chematic_core::apply_kekule(&mol, &k))
@@ -730,17 +721,7 @@ mod tests {
         let default = crate::find_matches(&c_query, &reperceived);
         let mut atoms: Vec<u32> = default.iter().map(|m| m[&0].0).collect();
         atoms.sort_unstable();
-        // Bug reproduced: more than just the benzo ring (2-7) comes back
-        // aromatic. This assertion documents the CURRENT (buggy) behavior,
-        // not the desired one -- if `apply_aromaticity_ex` is ever fixed
-        // (tracked separately, `docs/rfcs/aromaticity_a1_rfc.md`), this specific
-        // assertion should start failing and must be updated, not silenced.
-        assert!(
-            atoms.len() > 6,
-            "expected SMARTS-A0's over-extension to still reproduce on main; \
-             got {atoms:?} -- if this now equals [2,3,4,5,6,7], apply_aromaticity_ex \
-             has been fixed upstream and this test (and the PR's bucket writeup) needs updating"
-        );
+        assert_eq!(atoms, vec![2, 3, 4, 5, 6, 7]);
     }
 
     #[test]

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kent-tokyo/chematic/validation/cosmolkit-comparison-v1.json",
+  "title": "chematic direct comparison result",
+  "type": "object",
+  "required": ["schema_version", "engine", "engine_version", "corpus_sha256", "id", "smiles", "status", "operations"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "engine": {"type": "string", "minLength": 1},
+    "engine_version": {"type": "string", "minLength": 1},
+    "source_commit": {"type": ["string", "null"]},
+    "corpus_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "id": {"type": "string", "minLength": 1},
+    "smiles": {"type": "string", "minLength": 1},
+    "status": {"enum": ["ok", "parse_error", "unsupported", "error"]},
+    "operations": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": {"enum": ["ok", "parse_error", "unsupported", "error"]},
+          "value": {},
+          "error": {"type": ["string", "null"]}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

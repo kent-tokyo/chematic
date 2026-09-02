@@ -16,6 +16,10 @@ Usage::
     fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, 2)
     print(DataStructs.TanimotoSimilarity(fp, fp))  # 1.0
 
+Common Morgan imports from both ``rdkit.Chem.AllChem`` and
+``rdkit.Chem.rdFingerprintGenerator`` are also supported. Unsupported options
+raise explicitly rather than silently changing the fingerprint algorithm.
+
 Known differences vs RDKit:
 
 - ``GetNumAtoms()`` returns heavy-atom count regardless of ``onlyHeavy``.
@@ -40,6 +44,7 @@ __all__ = [
     "MolFromSmiles", "MolToSmiles", "MolFromMolBlock", "MolFromMolFile",
     "MolToMolBlock", "SanitizeMol", "Kekulize", "AddHs", "RemoveHs",
     "MolFromSmarts",
+    "CanonSmiles", "AllChem", "rdFingerprintGenerator",
     "MolFromMrvBlock", "MolFromMrvFile", "MolToMrvBlock", "MolToMrvFile",
     "SDMolSupplier", "SDWriter", "SmilesMolSupplier", "SmilesWriter",
     "TDTMolSupplier", "TDTWriter",
@@ -518,6 +523,11 @@ def MolToSmiles(
 ) -> str:
     """Return canonical SMILES for *mol*."""
     return mol._mol.smiles
+
+
+def CanonSmiles(smiles: str, **kwargs) -> str:
+    """RDKit-compatible convenience wrapper for canonical SMILES."""
+    return MolToSmiles(MolFromSmiles(smiles), **kwargs)
 
 
 def MolFromMolBlock(
@@ -1158,6 +1168,72 @@ class rdMolDescriptors:
             return ExplicitBitVect._from_bytes(raw, 2048)
         # ponytail: modulo fold of the internal 2048-bit fp; not RDKit bit-exact
         return _fold_bits(raw, nBits)
+
+
+class AllChem:
+    """Common ``rdkit.Chem.AllChem`` entry points backed by chematic.
+
+    The namespace intentionally exposes only operations with a faithful
+    chematic implementation.  3D embedding and force-field routines are not
+    silently approximated here; callers should use chematic's explicit 3D API.
+    """
+
+    @staticmethod
+    def GetMorganFingerprintAsBitVect(mol: Mol, radius: int, nBits: int = 2048,
+                                      useChirality: bool = False,
+                                      useFeatures: bool = False, **kwargs):
+        return rdMolDescriptors.GetMorganFingerprintAsBitVect(
+            mol, radius, nBits=nBits, useChirality=useChirality,
+            useFeatures=useFeatures, **kwargs
+        )
+
+
+class _MorganGenerator:
+    """Small stable-API analogue of RDKit's MorganGenerator."""
+
+    __slots__ = ("_radius", "_nBits", "_includeChirality", "_useFeatures")
+
+    def __init__(self, radius: int, nBits: int, includeChirality: bool,
+                 useFeatures: bool):
+        if radius < 0:
+            raise ValueError("radius must be non-negative")
+        if nBits <= 0:
+            raise ValueError("fpSize must be positive")
+        self._radius = radius
+        self._nBits = nBits
+        self._includeChirality = includeChirality
+        self._useFeatures = useFeatures
+
+    def GetFingerprint(self, mol: Mol, additionalOutput=None) -> ExplicitBitVect:
+        if additionalOutput is not None:
+            raise NotImplementedError("AdditionalOutput is not supported")
+        return rdMolDescriptors.GetMorganFingerprintAsBitVect(
+            mol, self._radius, nBits=self._nBits,
+            useChirality=self._includeChirality, useFeatures=self._useFeatures,
+        )
+
+
+class rdFingerprintGenerator:
+    """Common ``rdkit.Chem.rdFingerprintGenerator`` Morgan entry point."""
+
+    @staticmethod
+    def GetMorganGenerator(radius: int = 3, countSimulation: bool = False,
+                           includeChirality: bool = False,
+                           useBondTypes: bool = True,
+                           onlyNonzeroInvariants: bool = False,
+                           includeRedundantEnvironments: bool = False,
+                           fpSize: int = 2048, **kwargs):
+        if countSimulation:
+            raise NotImplementedError("countSimulation is not supported")
+        if not useBondTypes:
+            raise NotImplementedError("useBondTypes=False is not supported")
+        if onlyNonzeroInvariants or includeRedundantEnvironments:
+            raise NotImplementedError(
+                "onlyNonzeroInvariants/includeRedundantEnvironments are not supported"
+            )
+        if kwargs:
+            raise TypeError(f"Unsupported keyword arguments: {sorted(kwargs)}")
+        return _MorganGenerator(radius, fpSize, includeChirality, False)
 
 
 # ---------------------------------------------------------------------------

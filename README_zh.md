@@ -148,7 +148,7 @@ chematic 是首个内置 **MCP（模型上下文协议）服务器**的化学信
 
 **Transport**：仅 stdio（通过标准输入输出的 JSON-RPC 2.0）。以本地进程方式运行，目前没有已托管的 Remote MCP 端点、身份验证或公开服务 SLA；remote 化的重构正在考虑中，尚未实现。
 
-**Protocol**：在同一个 stdio 连接上同时支持旧版（`2024-11-05` 风格的 `initialize` 握手）和 MCP `2026-07-28` 无状态方言（`server/discover`、逐请求 `_meta`、可缓存的 `tools/list`、`structuredContent`）。详见 [`chematic-mcp` README](crates/chematic-mcp/README.md#protocol-eras) 与 [`docs/mcp/2026-07-28-implementation-rfc.md`](docs/mcp/2026-07-28-implementation-rfc.md)。Remote HTTP、OAuth、Tasks 扩展与 MCP Apps 仍不支持。
+**Protocol**：在同一个 stdio 连接上同时支持旧版（`2024-11-05` 风格的 `initialize` 握手）和 MCP `2026-07-28` 无状态方言（`server/discover`、逐请求 `_meta`、可缓存的 `tools/list`、`structuredContent`）。详见 [`chematic-mcp` README](crates/chematic-mcp/README.md#protocol-eras)。Remote HTTP、OAuth、Tasks 扩展与 MCP Apps 仍不支持。
 
 ---
 
@@ -310,7 +310,7 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 - 详见 `CHANGELOG.md` 的 `[0.16.0]` 部分
 
 **v0.15.0**（2026-08-14）：**新增 `chematic-crystal`——周期（晶体）结构基础 crate；MMFF94 Bond/Angle empirical rule 支持（issue #227）**
-- 新增 crate `chematic-crystal`：周期（晶体）结构表示与几何计算——`Lattice`（支持三斜晶系，矩阵/逆矩阵/倒易晶格矢量均经过校验）、`FractionalCoord`/`CartesianCoord`、`PeriodicSite`/`SiteSpecies`/`Occupancy`（支持多 species 占位、为无序结构预留设计空间）、`PeriodicStructure` 提供精确（而非 `round()` 近似）的周期最小像距离计算——等距的多个周期像会确定性地解析为字典序最小的 image——以及 cutoff 近邻枚举与对角 supercell。刻意**不**作为 `chematic_core::Molecule`（键图）的扩展，设计说明见 `docs/rfcs/chematic_crystal_foundation.md`。可选 `serde` feature；facade 的 `crystal` feature 已纳入 `full`（`default` 保持为空，未变更）。本次未包含对称性判定、CIF parser 改动、Python/WASM/MCP 绑定
+- 新增 crate `chematic-crystal`：周期（晶体）结构表示与几何计算——`Lattice`（支持三斜晶系，矩阵/逆矩阵/倒易晶格矢量均经过校验）、`FractionalCoord`/`CartesianCoord`、`PeriodicSite`/`SiteSpecies`/`Occupancy`（支持多 species 占位、为无序结构预留设计空间）、`PeriodicStructure` 提供精确（而非 `round()` 近似）的周期最小像距离计算——等距的多个周期像会确定性地解析为字典序最小的 image——以及 cutoff 近邻枚举与对角 supercell。刻意**不**作为 `chematic_core::Molecule`（键图）的扩展，设计说明见 `docs/crystal_scope.md`。可选 `serde` feature；facade 的 `crystal` feature 已纳入 `full`（`default` 保持为空，未变更）。本次未包含对称性判定、CIF parser 改动、Python/WASM/MCP 绑定
 - `chematic-ff`：移植 Halgren MMFF.V eq. 18-20 经验 Bond-stretch/Angle-bend 规则（`mmff94_bond_energy_resolved`/`mmff94_angle_energy_resolved`，新增函数，不改变既有 `mmff94_bond_energy`/`mmff94_angle_energy` 的签名），仅在既有精确表/`eqLevel` 阶梯查找均未命中后才会触发，不会覆盖真实表数据的命中结果。过程中发现并修复了一个真实的数据缺口：RDKit 真实 Angle 表中 97 行（仅按中心原子类型给出通用 `theta0` 默认值的行）此前在 chematic 的移植版本中缺失。其中 1 个三元组被有意保留为未解析（fail-closed）而非猜测性填补——该三元组外侧原子类型没有等价类表条目，RDKit 自身真实 C++ 实现在此处存在未加 null 检查的解引用（未定义行为），其 live oracle 返回值无法归因于任何良定义的解析机制。同时修复了 5 个已知的 MMFF94 原子类型判定缺口，并移植了 RDKit 的 `eqLevel` 原子类型等价阶梯用于 Angle 表查找（均为本次 empirical rule 工作的前置条件）。在 265 分子 Wave 1 语料库上的实测（经生产环境最小化路径，均通过逐分子完整比对验证、零回归）：**自 v0.14.1 以来整个 release 的完整变化为 158/265 → 248/265（失败数 107 → 17）**；**empirical rule 工作本身的贡献**（与本次 release 中更早合并的原子类型判定/`eqLevel` 修复分离后）为 **178/265 → 248/265（失败数 87 → 17）**。最终状态下仍为 `MinimizationFailed` 的 3 个分子，在 v0.14.1 时点本就已是 non-`Ok`（MissingParameters）——原子类型判定修复使其首次获得真实参数，从而暴露出此前被"完全没有参数"掩盖的既有几何问题，并非从已成功状态的回归
 - 详见 `CHANGELOG.md` 的 `[0.15.0]` 部分
 
@@ -387,8 +387,8 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 - 完整细节、语料库层面的前后对比数字及已知限制见 `CHANGELOG.md`
 
 **v0.4.30**（2026-07-17）：**`chematic-cip` opt-in 接入全部接口、SMARTS `[rN]` 修复、新 RDKit-parity 芳香性引擎、5 处立体元数据缺陷修复**
-- `chematic-smarts`：修复 `[rN]`（环大小 SMARTS，如 `[r5]`/`[r6]`）被错误地等同于 `[kN]` 的"任意环"语义——RDKit 真正的 `[rN]` 含义是"该原子所在的*最小*环恰好为 N 大小"，是完全不同的谓词（实测确认：在共享 5 元环与 6 元环的并环原子上，RDKit 的 `[k6]` 匹配但 `[r6]` 不匹配）。未改动环模型本身——`[rN]` 现拥有基于 chematic 现有 SSSR 计算的独立 `MinRingSize` 原语。SMARTS 匹配集合与 RDKit 的一致率在 5,000 分子语料库上从 **96.9% 提升到 99.93%**，零回归；详见 `docs/rdkit_compat.md` 的 "SMARTS-R0"/"SMARTS-R1" 条目
-- Milestone 5A：从所有公开接口 opt-in 访问精确引擎——`chematic_chem::assign_cip_with_mode(mol, CipMode::Accurate)`（Rust）、`Mol.cip_stereo(mode="accurate")` + `Mol.cip_stereo_unresolved()`（Python）、`cip_assignments_accurate_json`/`cip_unresolved_json`（WASM）。所有默认接口（`assign_cip()`、`cip_stereo()`、无后缀的 WASM 函数）保持不变——纯增量，非默认切换；合并语义（精确引擎的四面体 R/S + legacy 的 E/Z，因精确引擎不计算键立体）及"绝不猜测"契约（打平/超预算情况显式暴露，绝不静默回退）详见 `docs/rfcs/cip_accurate_rfc.md` 的 Milestone 5A 条目
+- `chematic-smarts`：修复 `[rN]`（环大小 SMARTS，如 `[r5]`/`[r6]`）的环大小语义，并提升与 RDKit 的匹配一致性。当前行为与限制请参阅公开的 RDKit 迁移指南。
+- Milestone 5A：精确 CIP 引擎通过显式 opt-in API 提供；默认 CIP 路径保持不变，并对无法安全判定的结果显式报告 unresolved。
 - Milestone 4 关口达成：全语料库、按表示稳定性分层的 oracle-stable 一致率达 99.64%（原始一致率 99.38%，4160/4186）——最后剩余的 11 行磷残差经查明为 oracle 不稳定（RDKit 自身标签在化学中性的 Kekulé 重新拼写下会变化），并非 chematic 缺陷；15 行 Rule 5 笼状家族仍延后处理，不受此关口影响
 - 精确引擎（携带溯源信息、逐层递归的 digraph 比较器——Rule 1a/1b/2，外加芳香环立体中心的 RDKit 兼容 MANCUDE 分数原子序数）已通过上述 opt-in API 提供，但尚未成为 `assign_cip()` 背后的默认实现
 - 发现并修复一个真实的约 10-14 倍性能回归（SSSR 被误用于布尔型环键判断，替换为 O(V+E) 桥边 DFS）；CI Criterion 关口的引导脚本修复；一项 Criterion 关口可靠性发现（伪重复采样问题，[#70](https://github.com/kent-tokyo/chematic/issues/70)）——已落地流程级重新设计（独立进程运行观测、两阶段筛选、同一二进制空对照）。后续修复（[#117](https://github.com/kent-tokyo/chematic/pull/117)）解决了通过真实 CI 运行发现的两个更具体的缺陷：Stage 1 的 3 组符号检验在结构上永远无法失败（替换为纯幅度路由筛选，阈值来自对 28 次历史无操作运行的离线评估），Stage 2 的符号检验对较小的构建/代码生成差异同样不敏感（改为符号检验 + 实际效应阈值的组合关口）。该关口仍为非必需项；同一二进制空对照对跨二进制代码生成差异的盲区是已知、已报告但尚未修复的缺口
@@ -397,7 +397,7 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 - `chematic-perception`：新增 opt-in 的 `assign_aromaticity_rdkit_parity_experimental`/`apply_aromaticity_rdkit_parity_experimental`——对 RDKit 真实芳香性算法的源码级验证移植，在 4,999/5,000 个可比分子上实现 **100.0000% 原子/键一致率**。未接入默认路径（`RdkitLike`/`Huckel` 保持不变）；默认提升被一个与此引擎无关、已存在的 canonical-SMILES-writer 敏感性问题所阻塞
 - 修复了同一"元数据未复制"缺陷的 5 个实例（`MoleculeBuilder` 重建时未调用 `copy_stereo_groups_from`/`copy_stereo_from`/`copy_bond_directions_from`），各自静默丢弃 `stereo_neighbor_order` 或更严重：`apply_kekule`（P0）、`enumerate_stereoisomers`（可能静默翻转新分配立体中心的 CIP 编码）、`transfer_hydrogen_aromatic`/`clone_mol`（后者已删除，改用 `Molecule::clone`）、`transfer_hydrogen`、以及 `invert_stereocenter`（结果发现它对纯 `@`/`@@` SMILES 输入是功能性空操作，属于另一个更严重的缺陷）
 - `chematic-smiles`：将芳香键方向暂存逻辑统一整合到 3 条 parser 键创建路径（链边/环闭合/分支连接）共用的辅助函数中——修复了一处 canonical round-trip 表示不稳定问题（4,994/5,000 → 5,000/5,000 稳定）；未修复 `assign_ez` 对该旁路通道本身存在的既有盲区（作为后续任务追踪）
-- 实验性 CIP 引擎的全语料库准确率从 96.68% 提升到 99.38%（原始）/ 99.64%（oracle-stable），对比现代 RDKit `rdCIPLabeler`（零回归）——完整里程碑历史见 `docs/rfcs/cip_accurate_rfc.md`
+- 实验性 CIP 引擎的准确率经过 RDKit 对照验证；具体 API 和限制请参阅公开 API 文档。
 - 基准测试已刷新（`benchmarks/2026-07-17.md`，Apple M4）：此前的 ECFP4 吞吐量头条数字（3.6 µs/mol，比 RDKit 快 5–14 倍）在干净重新测量下未能复现——本 README 及 `docs/` 中已更新为今日实测数字（多样化语料库上约 78 µs/mol / 2–3 倍）；描述符准确率数字复现良好
 
 **v0.4.29**（2026-07-10）：**Kabsch 旋转缺陷修复 + SDF V3000/CDXML 写入、Avalon 指纹、O3A**

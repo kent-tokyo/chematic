@@ -261,6 +261,24 @@ def test_canonical_tautomer(aspirin):
     assert isinstance(t, chematic.Mol)
 
 
+def test_parent_identity_bindings_cover_each_axis():
+    mol = chematic.from_smiles("[NH3+][C@@H]([2H])C(=O)[O-].Cl")
+    assert mol.fragment_parent().heavy_atoms < mol.heavy_atoms
+    assert mol.charge_parent().formal_charge == 0
+    # ``formula`` intentionally omits isotope labels; compare the structural
+    # representation to verify that the isotope axis was normalized.
+    assert mol.isotope_parent().smiles != mol.smiles
+    assert "@" not in mol.stereo_parent().smiles
+    parent, status = mol.super_parent()
+    assert status == "Completed"
+    assert parent.heavy_atoms == 5
+    report = mol.super_parent_report()
+    assert report["status"] == "Completed"
+    assert [stage["name"] for stage in report["stages"]] == [
+        "fragment", "charge", "isotope", "stereo", "tautomer"
+    ]
+
+
 def test_enumerate_tautomers(ethanol):
     tautomers = ethanol.enumerate_tautomers()
     assert isinstance(tautomers, list)

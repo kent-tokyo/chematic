@@ -1,6 +1,11 @@
 # Benchmark
 
-## Current Release Snapshot
+## Latest measured snapshot
+
+This page reports the latest reproducible benchmark run, not necessarily the
+current package version. The benchmark snapshot below was measured before the
+workspace moved to v0.24.0; use the version and commit shown here when
+reproducing these numbers.
 
 **chematic v0.18.0** (commit `24a9239`, pre-`v0.19.0` bump) · **RDKit 2026.03.4**
 · Python 3.13.6 · Apple M4 (10-core, 16 GB RAM) · macOS 26.5.2 · measured 2026-08-23.
@@ -226,7 +231,7 @@ python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --detail
 | SMARTS atom map `:N` | Yes | Yes |
 | Retrosynthesis (template-based) | 60 retro-SMIRKS built-in | External tool |
 | File formats | 20+ | 100+ |
-| 3D conformer generation | **Experimental** — distance geometry + torsion-aware pipeline (`embed_pipeline_v2`); RMSD (mean 1.685 Å) / TFD (mean 0.2228) vs. RDKit ETKDGv3+MMFF94 measured on a 265-molecule corpus (`validation/results/mmff94_bci_gap_227_phase2_report.md`, 241/265 success, last re-measured v0.17.0), see [`rdkit-migration.md`](rdkit-migration.md) for the fuller picture incl. a known live defect in the separate `conformer_ensemble()` API | Mature — ETKDGv3 with ML-assisted torsion corrections |
+| 3D conformer generation | **Experimental** — distance geometry + torsion-aware pipeline (`embed_pipeline_v2`); the dated 265-molecule comparison is summarized in the benchmark snapshot above, see [`rdkit-migration.md`](rdkit-migration.md) for the limitations | Mature — ETKDGv3 with ML-assisted torsion corrections |
 | Community & publications | Growing | Established (20+ years) |
 
 ---

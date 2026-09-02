@@ -1,0 +1,27 @@
+[package]
+name = "chematic-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Small command-line interface for common chematic molecule conversions"
+keywords = ["cheminformatics", "chemistry", "smiles", "molecule", "cli"]
+categories = ["command-line-utilities", "science::computational-chemistry::cheminformatics"]
+homepage.workspace = true
+
+[[bin]]
+name = "chematic"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"] }
+serde_json = "1.0"
+chematic-smarts = { path = "../chematic-smarts", version = "0.88.0" }
+chematic-core = { path = "../chematic-core", version = "0.88.0" }
+chematic-fp = { path = "../chematic-fp", version = "0.88.0" }
+chematic-chem = { path = "../chematic-chem", version = "0.88.0", features = ["serde"] }
+chematic-rxn = { path = "../chematic-rxn", version = "0.88.0" }
+chematic-mol = { path = "../chematic-mol", version = "0.88.0" }
+chematic-smiles = { path = "../chematic-smiles", version = "0.88.0" }

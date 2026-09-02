@@ -3,6 +3,12 @@
 /// Errors that can occur while parsing a MOL V2000 or SDF file.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MolParseError {
+    /// A configured input, record, or record-count limit was exceeded.
+    ResourceLimit {
+        resource: &'static str,
+        actual: usize,
+        limit: usize,
+    },
     /// The header block (lines 1–3) could not be parsed.
     InvalidHeader { line: usize, detail: String },
     /// The counts line (line 4) is missing or malformed.
@@ -24,6 +30,11 @@ pub enum MolParseError {
 impl std::fmt::Display for MolParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::ResourceLimit {
+                resource,
+                actual,
+                limit,
+            } => write!(f, "SDF {resource} exceeds limit {limit} (got {actual})"),
             Self::InvalidHeader { line, detail } => {
                 write!(f, "invalid header at line {line}: {detail}")
             }

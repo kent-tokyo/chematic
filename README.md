@@ -191,7 +191,7 @@ DataStructs.TanimotoSimilarity(fp, fp)       # 1.0
 ```
 
 It is **not a full RDKit clone**, and unsupported options fail loudly. See the
-[RDKit compatibility guide](docs/rdkit_compat.md) for the compatibility matrix,
+[RDKit migration guide](docs/rdkit-migration.md) for the compatibility matrix,
 differential-validation results vs RDKit, and runnable examples.
 
 ### Diagnostics
@@ -199,7 +199,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v0.23.0
+# chematic v0.25.0
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -249,8 +249,8 @@ implemented.
 handshake) and the modern MCP `2026-07-28` stateless dialect
 (`server/discover`, per-request `_meta`, cacheable `tools/list`,
 `structuredContent`) on the same stdio connection — see the
-[`chematic-mcp` README](crates/chematic-mcp/README.md#protocol-eras) and
-[`docs/mcp/2026-07-28-implementation-rfc.md`](docs/mcp/2026-07-28-implementation-rfc.md).
+[`chematic-mcp` README](crates/chematic-mcp/README.md#protocol-eras)
+for the protocol details.
 Remote HTTP, OAuth, the Tasks extension, and MCP Apps remain unsupported.
 
 ---
@@ -478,7 +478,7 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 - Full details in `CHANGELOG.md`'s `[0.20.0]` section
 
 **v0.19.0** (2026-08-23): **Round 2C aromatic lactam/lactim tautomer fix, plus a benchmark/validation refresh**
-- `chematic-chem`: Tautomer & Parent Identity round 2C (ROADMAP.md Phase 2) — `canonical_tautomer`/`tautomer_parent` now canonicalize the aromatic lactam/lactim class for 2-pyridone, 4-pyridone, and uracil; cytosine, guanine, and hypoxanthine remain open (a distinct, documented ring-N-H position residual, RFC section 1.7 — diagnosed but not yet fixed), as does the unrelated nitroso/oxime defect (section 1.6). Phase 2 is **not** complete; `TautomerScoringConfig` and Python/WASM Parent-API bindings remain unimplemented
+- `chematic-chem`: Tautomer & Parent Identity round 2C (ROADMAP.md Phase 2) — `canonical_tautomer`/`tautomer_parent` now cover the aromatic lactam/lactim class for 2-pyridone, 4-pyridone, uracil, cytosine, guanine, methylpyrimidinone, and the primary/N9-methyl hypoxanthine cases. Aromatic exocyclic tautomer edges are traversed in both directions by bounded enumeration, while canonical selection retains the lactam preference. The former tp2-39 and tp2-holdout-06 residuals were corrected after RDKit InChIKey review exposed positional-isomer fixture errors; the unrelated nitroso/oxime defect is fixed. Python/WASM Parent-API bindings are implemented.
 - Benchmark/validation refresh: every number in `docs/benchmark.md`/`docs/validation.md` was pinned to chematic v0.4.29/RDKit 2026.03.3 (~14 releases stale) — re-measured fresh against RDKit 2026.03.4. The 4,999-mol accuracy corpus is now committed (`scripts/chembl_accuracy_corpus_4999.smi`, previously an uncommitted personal path); molecular weight has a real corpus-wide check for the first time (99.82%, not the previously-unmeasured "175-mol"/100% placeholder); CIP R/S/E/Z label agreement re-measured at 99.74–99.78% (up from a stale 96.30–96.83%); WASM bundle size rebuilt clean; the ECFP4 "diverse corpus" figure now has a reproducible source (`benchmark_vs_rdkit.py --corpus`, previously none existed); 3D conformer generation's "Good (ETKDG rules)" framing corrected to "Experimental," matching the migration guide's own honest characterization
 - Full details in `CHANGELOG.md`'s `[0.19.0]` section
 
@@ -630,7 +630,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v0.23.0)
+├── Cargo.toml                    workspace root (v0.25.0)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -684,7 +684,7 @@ If you use chematic in academic or research work, please cite:
   author    = {kent-tokyo},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.23.0},
+  version   = {0.25.0},
   year      = {2026},
 }
 ```

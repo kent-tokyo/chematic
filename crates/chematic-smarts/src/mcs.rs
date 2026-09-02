@@ -59,6 +59,12 @@ pub struct McsConfig {
     /// Optional time limit in milliseconds.  The search is aborted when the deadline is
     /// reached and the best result found so far is returned.
     pub timeout_ms: Option<u64>,
+    /// Maximum number of search nodes. `None` disables this bound.
+    pub max_search_nodes: Option<usize>,
+    /// Maximum atoms accepted from any input molecule.
+    pub max_atoms_per_molecule: usize,
+    /// Maximum bonds accepted from any input molecule.
+    pub max_bonds_per_molecule: usize,
     /// If `true`, ring atoms can only be matched to ring atoms, and non-ring atoms only
     /// to non-ring atoms.  Prevents chemically meaningless matches across ring boundaries.
     pub ring_matches_ring_only: bool,
@@ -90,6 +96,9 @@ impl Default for McsConfig {
             match_bonds: true,
             min_atoms: 1,
             timeout_ms: None,
+            max_search_nodes: Some(1_000_000),
+            max_atoms_per_molecule: 100_000,
+            max_bonds_per_molecule: 200_000,
             ring_matches_ring_only: false,
             complete_rings_only: false,
             atom_compare: AtomCompare::Elements,
@@ -149,6 +158,9 @@ pub enum McsOutcome {
     /// `timeout_ms` was reached before the search finished; `result` is the
     /// best candidate found so far, not guaranteed optimal.
     TimedOut(QueryMolecule),
+    /// A configured input or search-node limit was reached; `result` is the
+    /// best candidate found so far and is not proven to be maximal.
+    ResourceLimited(QueryMolecule),
 }
 
 impl McsOutcome {
@@ -157,7 +169,9 @@ impl McsOutcome {
     /// returned.
     pub fn into_query(self) -> QueryMolecule {
         match self {
-            McsOutcome::Exhaustive(q) | McsOutcome::TimedOut(q) => q,
+            McsOutcome::Exhaustive(q)
+            | McsOutcome::TimedOut(q)
+            | McsOutcome::ResourceLimited(q) => q,
         }
     }
 
@@ -165,16 +179,31 @@ impl McsOutcome {
     pub fn was_timed_out(&self) -> bool {
         matches!(self, McsOutcome::TimedOut(_))
     }
+
+    /// `true` if an input-size or search-node limit stopped the search.
+    pub fn was_resource_limited(&self) -> bool {
+        matches!(self, McsOutcome::ResourceLimited(_))
+    }
 }
 
 /// Like [`find_mcs_with_config`], but reports whether `config.timeout_ms`
 /// was reached before the search finished exhaustively -- see [`McsOutcome`].
 pub fn find_mcs_with_config_checked(mols: &[&Molecule], config: &McsConfig) -> McsOutcome {
+    if mols.iter().any(|mol| {
+        mol.atom_count() > config.max_atoms_per_molecule
+            || mol.bond_count() > config.max_bonds_per_molecule
+    }) {
+        return McsOutcome::ResourceLimited(QueryMolecule::new());
+    }
     if mols.is_empty() {
         return McsOutcome::Exhaustive(QueryMolecule::new());
     }
     if mols.len() == 1 {
-        return McsOutcome::Exhaustive(molecule_to_query(mols[0]));
+        return if config.max_search_nodes == Some(0) {
+            McsOutcome::ResourceLimited(QueryMolecule::new())
+        } else {
+            McsOutcome::Exhaustive(molecule_to_query(mols[0]))
+        };
     }
 
     let deadline = config
@@ -195,6 +224,8 @@ pub fn find_mcs_with_config_checked(mols: &[&Molecule], config: &McsConfig) -> M
         best: PartialMapping::empty(mols.len()),
         deadline,
         timed_out: false,
+        resource_limited: false,
+        search_nodes: 0,
         ring_sets,
         excluded: vec![false; n0],
     };
@@ -248,7 +279,9 @@ pub fn find_mcs_with_config_checked(mols: &[&Molecule], config: &McsConfig) -> M
 
     // Apply min_atoms filter.
     if state.best.size < config.min_atoms {
-        return if state.timed_out {
+        return if state.resource_limited {
+            McsOutcome::ResourceLimited(QueryMolecule::new())
+        } else if state.timed_out {
             McsOutcome::TimedOut(QueryMolecule::new())
         } else {
             McsOutcome::Exhaustive(QueryMolecule::new())
@@ -256,7 +289,9 @@ pub fn find_mcs_with_config_checked(mols: &[&Molecule], config: &McsConfig) -> M
     }
 
     let result = build_query(mols[0], &state.best, config);
-    if state.timed_out {
+    if state.resource_limited {
+        McsOutcome::ResourceLimited(result)
+    } else if state.timed_out {
         McsOutcome::TimedOut(result)
     } else {
         McsOutcome::Exhaustive(result)
@@ -364,6 +399,8 @@ struct McsState<'a> {
     best: PartialMapping,
     deadline: Option<Instant>,
     timed_out: bool,
+    resource_limited: bool,
+    search_nodes: usize,
     ring_sets: Vec<RingSet>,
     /// `excluded[a.0]` = `true` if mol[0] atom `a` has been decided OUT of
     /// the current search-tree branch (see the include/exclude split in
@@ -397,6 +434,13 @@ fn mcs_tiebreak_key(mapping: &PartialMapping) -> Vec<u32> {
 }
 
 fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
+    if let Some(limit) = state.config.max_search_nodes {
+        if state.search_nodes >= limit {
+            state.resource_limited = true;
+            return;
+        }
+        state.search_nodes += 1;
+    }
     // Update best if this mapping is larger, or same size but more bonds (if enabled),
     // or a same-size-and-bond-count tie broken by a canonical key (not "first found in
     // DFS order", which depends on mols[0]'s atom insertion order -- the same bug shape
@@ -1113,6 +1157,33 @@ mod tests {
             "0ms deadline must be reported as TimedOut, not silently treated as Exhaustive"
         );
         assert!(matches!(checked, McsOutcome::TimedOut(_)));
+    }
+
+    #[test]
+    fn test_checked_reports_resource_limit_without_claiming_exhaustive() {
+        let config = McsConfig {
+            max_search_nodes: Some(0),
+            ..McsConfig::default()
+        };
+        let a = parse("CC").unwrap();
+        let b = parse("CC").unwrap();
+        let checked = find_mcs_with_config_checked(&[&a, &b], &config);
+        assert!(checked.was_resource_limited());
+        assert!(matches!(checked, McsOutcome::ResourceLimited(_)));
+        assert_eq!(checked.into_query().atom_count(), 0);
+    }
+
+    #[test]
+    fn test_checked_rejects_oversized_input_molecule() {
+        let config = McsConfig {
+            max_atoms_per_molecule: 1,
+            ..McsConfig::default()
+        };
+        let a = parse("CC").unwrap();
+        let b = parse("C").unwrap();
+        let checked = find_mcs_with_config_checked(&[&a, &b], &config);
+        assert!(checked.was_resource_limited());
+        assert_eq!(checked.into_query().atom_count(), 0);
     }
 
     #[test]

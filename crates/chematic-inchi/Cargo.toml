@@ -19,10 +19,10 @@ readme = "README.md"
 native-inchi = ["dep:cc"]
 
 [dependencies]
-chematic-core = { version = "0.23.0", path = "../chematic-core" }
-chematic-smiles = { version = "0.23.0", path = "../chematic-smiles" }
-chematic-chem = { version = "0.23.0", path = "../chematic-chem" }
-chematic-rxn = { version = "0.23.0", path = "../chematic-rxn" }
+chematic-core = { version = "0.88.0", path = "../chematic-core" }
+chematic-smiles = { version = "0.88.0", path = "../chematic-smiles" }
+chematic-chem = { version = "0.88.0", path = "../chematic-chem" }
+chematic-rxn = { version = "0.88.0", path = "../chematic-rxn" }
 
 [build-dependencies]
 cc = { version = "1", optional = true }

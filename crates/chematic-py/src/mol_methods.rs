@@ -12,7 +12,7 @@ use ndarray::Array1;
 use numpy::{IntoPyArray, PyArray1};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use pyo3::types::PyDict;
+use pyo3::types::{PyDict, PyList};
 use std::sync::Arc;
 
 #[pymethods]
@@ -1517,9 +1517,16 @@ impl Mol {
     ///
     /// Raises ``ValueError`` on the same preprocessing failures as :meth:`rdkit_ecfp4`
     /// (regardless of ``radius``/``nbits`` -- the failure happens before folding).
-    #[pyo3(signature = (radius = 2, nbits = 2048))]
-    fn rdkit_ecfp_config(&self, radius: u32, nbits: usize) -> PyResult<Vec<u8>> {
-        let config = python_rdkit_morgan_config(radius, nbits)?;
+    /// ``include_chirality`` enables RDKit-compatible tetrahedral chirality.
+    /// E/Z bond stereo is not included by this API yet.
+    #[pyo3(signature = (radius = 2, nbits = 2048, include_chirality = false))]
+    fn rdkit_ecfp_config(
+        &self,
+        radius: u32,
+        nbits: usize,
+        include_chirality: bool,
+    ) -> PyResult<Vec<u8>> {
+        let config = python_rdkit_morgan_config(radius, nbits, include_chirality)?;
         let result = chematic_fp::rdkit_morgan_fingerprint(&self.inner, &config)
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
         Ok(bitvecn_to_bytes(&result.fingerprint))
@@ -1528,9 +1535,14 @@ impl Mol {
     /// Same fingerprint as :meth:`rdkit_ecfp_config`, plus the raw (unfolded) data --
     /// see :meth:`rdkit_ecfp4_detail` for the return shape (identical, generalized to
     /// this method's ``radius``/``nbits``).
-    #[pyo3(signature = (radius = 2, nbits = 2048))]
-    fn rdkit_ecfp_config_detail(&self, radius: u32, nbits: usize) -> PyResult<RdkitMorganDetail> {
-        let config = python_rdkit_morgan_config(radius, nbits)?;
+    #[pyo3(signature = (radius = 2, nbits = 2048, include_chirality = false))]
+    fn rdkit_ecfp_config_detail(
+        &self,
+        radius: u32,
+        nbits: usize,
+        include_chirality: bool,
+    ) -> PyResult<RdkitMorganDetail> {
+        let config = python_rdkit_morgan_config(radius, nbits, include_chirality)?;
         let result = chematic_fp::rdkit_morgan_fingerprint(&self.inner, &config)
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
         Ok((
@@ -1902,6 +1914,28 @@ impl Mol {
         }
     }
 
+    /// Return the fragment parent, retaining the largest chemically relevant
+    /// fragment and its transformation semantics.
+    fn fragment_parent(&self) -> Mol {
+        Mol::bare(chematic_chem::fragment_parent(&self.inner).0)
+    }
+
+    /// Return the charge parent (fragment selection followed by charge
+    /// normalization), without removing isotopes or stereochemistry.
+    fn charge_parent(&self) -> Mol {
+        Mol::bare(chematic_chem::charge_parent(&self.inner).0)
+    }
+
+    /// Return the isotope parent while preserving stereochemistry.
+    fn isotope_parent(&self) -> Mol {
+        Mol::bare(chematic_chem::isotope_parent(&self.inner).0)
+    }
+
+    /// Return the stereo parent with stereochemical annotations removed.
+    fn stereo_parent(&self) -> Mol {
+        Mol::bare(chematic_chem::stereo_parent(&self.inner).0)
+    }
+
     /// Return the Murcko scaffold as a new Mol.
     fn scaffold(&self) -> Mol {
         Mol {
@@ -1916,6 +1950,86 @@ impl Mol {
             inner: Arc::new(chematic_chem::canonical_tautomer(&self.inner)),
             props: Default::default(),
         }
+    }
+
+    /// Return the tautomer parent and its computation status.
+    #[pyo3(signature = (max_transforms=16, max_tautomers=32, timeout_ms=None))]
+    fn tautomer_parent(
+        &self,
+        max_transforms: usize,
+        max_tautomers: usize,
+        timeout_ms: Option<u64>,
+    ) -> (Mol, String) {
+        let mut limits = chematic_chem::TautomerLimits::default();
+        limits.max_transforms = max_transforms;
+        limits.max_tautomers = max_tautomers;
+        limits.timeout_ms = timeout_ms;
+        let result = chematic_chem::tautomer_parent(&self.inner, &limits);
+        (Mol::bare(result.molecule), format!("{:?}", result.status))
+    }
+
+    /// Return the composed super parent and its computation status.
+    #[pyo3(signature = (max_transforms=16, max_tautomers=32, timeout_ms=None))]
+    fn super_parent(
+        &self,
+        max_transforms: usize,
+        max_tautomers: usize,
+        timeout_ms: Option<u64>,
+    ) -> (Mol, String) {
+        let mut limits = chematic_chem::TautomerLimits::default();
+        limits.max_transforms = max_transforms;
+        limits.max_tautomers = max_tautomers;
+        limits.timeout_ms = timeout_ms;
+        limits.timeout_ms = timeout_ms;
+        let result = chematic_chem::super_parent(&self.inner, &limits);
+        (Mol::bare(result.molecule), format!("{:?}", result.status))
+    }
+
+    /// Return the composed Parent result with every intermediate stage.
+    ///
+    /// The returned dictionary contains ``smiles``, ``status``, and a
+    /// ``stages`` list with the five ordered Parent transformations. This is
+    /// the binding-level counterpart of Rust's ``ParentAudit::Composed`` and
+    /// keeps provenance inspectable without exposing internal Rust enums.
+    #[pyo3(signature = (max_transforms=16, max_tautomers=32, timeout_ms=None))]
+    fn super_parent_report<'py>(
+        &self,
+        py: Python<'py>,
+        max_transforms: usize,
+        max_tautomers: usize,
+        timeout_ms: Option<u64>,
+    ) -> PyResult<Bound<'py, PyDict>> {
+        let mut limits = chematic_chem::TautomerLimits::default();
+        limits.max_transforms = max_transforms;
+        limits.max_tautomers = max_tautomers;
+        limits.timeout_ms = timeout_ms;
+
+        let (fragment, _) = chematic_chem::fragment_parent(&self.inner);
+        let (charge, _) = chematic_chem::charge_parent(&fragment);
+        let (isotope, _) = chematic_chem::isotope_parent(&charge);
+        let (stereo, _) = chematic_chem::stereo_parent(&isotope);
+        let result = chematic_chem::super_parent(&self.inner, &limits);
+        let stages = PyList::empty(py);
+        for (name, molecule) in [
+            ("fragment", &fragment),
+            ("charge", &charge),
+            ("isotope", &isotope),
+            ("stereo", &stereo),
+            ("tautomer", &result.molecule),
+        ] {
+            let stage = PyDict::new(py);
+            stage.set_item("name", name)?;
+            stage.set_item("smiles", chematic_smiles::canonical_smiles(molecule))?;
+            stages.append(stage)?;
+        }
+        let report = PyDict::new(py);
+        report.set_item(
+            "smiles",
+            chematic_smiles::canonical_smiles(&result.molecule),
+        )?;
+        report.set_item("status", format!("{:?}", result.status))?;
+        report.set_item("stages", stages)?;
+        Ok(report)
     }
 
     /// Return the canonical SMILES under the given canonicalization mode.
@@ -4422,6 +4536,7 @@ impl Mol {
 fn python_rdkit_morgan_config(
     radius: u32,
     nbits: usize,
+    include_chirality: bool,
 ) -> PyResult<chematic_fp::RdkitMorganConfig> {
     let radius = match radius {
         0 => chematic_fp::RdkitMorganRadius::R0,
@@ -4448,7 +4563,11 @@ fn python_rdkit_morgan_config(
             )));
         }
     };
-    Ok(chematic_fp::RdkitMorganConfig { radius, fp_size })
+    Ok(chematic_fp::RdkitMorganConfig {
+        radius,
+        fp_size,
+        include_chirality,
+    })
 }
 
 /// Bit-pack a variable-width `BitVecN` into `bit_width()/8` bytes, LSB-first --

@@ -3748,6 +3748,18 @@ def from_smiles_list(
     """
     ...
 
+def convert_format(
+    text: str,
+    input_format: str,
+    output_format: str,
+    /,
+    *,
+    coords: Optional[list[list[float]]] = None,
+    charges: Optional[list[float]] = None,
+    name: str = "LIG",
+    comment: str = "",
+) -> str: ...
+
 def descriptors_df(smiles: Iterable[str]) -> Any:
     """Compute 55+ descriptors for a list of SMILES and return a DataFrame.
 

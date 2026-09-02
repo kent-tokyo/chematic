@@ -18,12 +18,13 @@
 //! doesn't expose it, and this module must not change `find_sssr`'s public
 //! output/behavior per this crate's scope). Instead it re-derives candidate
 //! "extra" rings from chematic's own already-computed SSSR basis, by
-//! enumerating simple cycles up to the basis's largest ring size and
-//! re-applying RDKit's own substitution rule (b)/(c) above. This is a
-//! different *candidate-generation* mechanism reaching for the same
-//! *acceptance* rule — see `docs/rdkit_compat.md`'s "SMARTS-R2" section for
-//! the measured over-/under-generation split this produces relative to a
-//! live RDKit oracle.
+//! enumerating all root-centered shortest rings and re-applying RDKit's own
+//! substitution rule (b)/(c) above. This keeps the candidate pool bounded to
+//! D2-like shortest cycles rather than admitting arbitrary longer simple
+//! cycles, while remaining an approximation until the rejected Horton
+//! candidates are exposed. See `docs/rdkit_compat.md`'s "SMARTS-R2" section
+//! for the measured over-/under-generation split relative to a live RDKit
+//! oracle.
 //!
 //! **What this changes, and what it deliberately does not.** A graph-theory
 //! fact bounds the blast radius tightly: an edge lies on *some* basis cycle
@@ -56,7 +57,10 @@
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use chematic_core::{AtomIdx, BondIdx, Molecule};
-use chematic_perception::RingSet;
+use chematic_perception::{
+    RingSet, find_smallest_rings_bfs, find_smallest_rings_bfs_with_blocked_bonds,
+    find_smallest_rings_bfs_with_rdkit_tree, select_rdkit_d2_roots, trim_ring_bonds,
+};
 
 /// Typed error for chematic-smarts's opt-in RDKit-parity matching mode.
 ///
@@ -202,68 +206,164 @@ pub fn build_rdkit_parity_ring_model(
     for (i, r) in base_rings.iter().enumerate() {
         by_size.entry(r.len()).or_default().push(i);
     }
-    let max_size = base_rings.iter().map(|r| r.len()).max().unwrap_or(0);
-
     let mut seen_extra: FxHashSet<Vec<u32>> = FxHashSet::default();
     let mut extra_rings: Vec<Vec<AtomIdx>> = Vec::new();
     let mut candidates_examined = 0usize;
 
-    let atom_count = mol.atom_count();
-    'outer: for start_raw in 0..atom_count {
-        let start = AtomIdx(start_raw as u32);
-        let mut visited: FxHashSet<AtomIdx> = FxHashSet::default();
-        visited.insert(start);
-        let mut atom_path: Vec<AtomIdx> = vec![start];
-        let mut bond_path: Vec<BondIdx> = Vec::new();
+    // RDKit's duplicate-D2 pool is rooted and shortest-ring based. Consume
+    // the same bounded primitive used by the perception crate instead of
+    // enumerating every simple cycle up to the largest SSSR size; the latter
+    // admits non-D2 cycles and over-produces extras in macrocycles.
+    let d2_roots = select_rdkit_d2_roots(mol);
+    // RDKit's Figueras search starts with D2 nodes.  Highly symmetric cages
+    // such as cubane have no D2 nodes and are handled by the later D3-style
+    // fallback, for which considering every root is the useful approximation.
+    let has_d2_roots = !d2_roots.is_empty();
+    let roots: Box<dyn Iterator<Item = AtomIdx>> = if has_d2_roots {
+        Box::new(d2_roots.iter().copied())
+    } else {
+        Box::new((0..mol.atom_count()).map(|raw| AtomIdx(raw as u32)))
+    };
+    let mut accept_candidate = |candidate: Vec<AtomIdx>| -> bool {
+        let len = candidate.len();
+        let Some(ring_idxs) = by_size.get(&len) else {
+            return false;
+        };
+        let cand_set = ring_bond_set(mol, &candidate);
+        let key = bond_set_key(&cand_set);
+        if base_bond_key.contains(&key) || !seen_extra.insert(key) {
+            return false;
+        }
+        for &ring_idx in ring_idxs {
+            let base_set = &base_bond_sets[ring_idx];
+            if base_set.iter().any(|b| cand_set.contains(b))
+                && base_set.iter().all(|b| {
+                    bond_ring_count.get(b).copied().unwrap_or(0) != 1 || cand_set.contains(b)
+                })
+            {
+                extra_rings.push(candidate);
+                return true;
+            }
+        }
+        false
+    };
 
-        if enumerate_cycles_from(
-            mol,
-            start,
-            start,
-            &mut visited,
-            &mut atom_path,
-            &mut bond_path,
-            max_size,
-            budget.max_candidates,
-            &mut candidates_examined,
-            &mut |cycle_atoms, cycle_bonds| {
-                let len = cycle_atoms.len();
-                let Some(ring_idxs) = by_size.get(&len) else {
-                    return;
-                };
-                let key = bond_set_key(&cycle_bonds.iter().copied().collect());
-                if base_bond_key.contains(&key) || seen_extra.contains(&key) {
-                    return;
+    if !has_d2_roots {
+        for root in roots {
+            for candidate in find_smallest_rings_bfs(mol, root) {
+                candidates_examined += 1;
+                if candidates_examined > budget.max_candidates {
+                    return Err(RdkitParityError::RingModelBudgetExceeded {
+                        candidates_examined,
+                        cap: budget.max_candidates,
+                    });
                 }
-                let cand_set: FxHashSet<BondIdx> = cycle_bonds.iter().copied().collect();
-                for &ring_idx in ring_idxs {
-                    let base_set = &base_bond_sets[ring_idx];
-                    let shares_bond = base_set.iter().any(|b| cand_set.contains(b));
-                    if !shares_bond {
+                accept_candidate(candidate);
+            }
+        }
+    } else {
+        // First identify rings discovered by more than one D2 node. RDKit
+        // treats these as duplicate candidates and does not accept the
+        // original ring again; it removes the competing D2 connections and
+        // searches for the next-smallest replacement ring.
+        let mut duplicate_groups: FxHashMap<Vec<u32>, (Vec<AtomIdx>, Vec<AtomIdx>)> =
+            FxHashMap::default();
+        let mut active_blocked = FxHashSet::default();
+        for root in roots {
+            let candidates = find_smallest_rings_bfs_with_blocked_bonds(mol, root, &active_blocked);
+            if candidates.is_empty() {
+                for (_, bond) in mol.neighbors(root) {
+                    if is_ring_bond(mol, bond) {
+                        active_blocked.insert(bond);
+                    }
+                }
+                active_blocked = trim_ring_bonds(mol, &active_blocked);
+                continue;
+            }
+            for candidate in candidates {
+                candidates_examined += 1;
+                if candidates_examined > budget.max_candidates {
+                    return Err(RdkitParityError::RingModelBudgetExceeded {
+                        candidates_examined,
+                        cap: budget.max_candidates,
+                    });
+                }
+                let key = bond_set_key(&ring_bond_set(mol, &candidate));
+                let entry = duplicate_groups
+                    .entry(key)
+                    .or_insert_with(|| (candidate.clone(), Vec::new()));
+                if !entry.1.contains(&root) {
+                    entry.1.push(root);
+                }
+            }
+        }
+
+        for (_, (original_candidate, duplicate_roots)) in duplicate_groups {
+            if duplicate_roots.len() < 2 {
+                // A ring found by only one D2 node is not a duplicate-D2
+                // candidate; retain the normal Figueras acceptance path.
+                accept_candidate(original_candidate);
+                continue;
+            }
+            let mut replacement_candidates = Vec::new();
+            for &root in &duplicate_roots {
+                let mut blocked_bonds = FxHashSet::default();
+                for &other in &duplicate_roots {
+                    if other == root {
                         continue;
                     }
-                    let replaces_all_unique = base_set.iter().all(|b| {
-                        bond_ring_count.get(b).copied().unwrap_or(0) != 1 || cand_set.contains(b)
-                    });
-                    if replaces_all_unique {
-                        seen_extra.insert(key.clone());
-                        extra_rings.push(cycle_atoms.to_vec());
-                        break;
+                    for (_, bond) in mol.neighbors(other) {
+                        if is_ring_bond(mol, bond) {
+                            blocked_bonds.insert(bond);
+                        }
                     }
                 }
-            },
-        )
-        .is_err()
-        {
-            return Err(RdkitParityError::RingModelBudgetExceeded {
-                candidates_examined,
-                cap: budget.max_candidates,
-            });
-        }
-        if candidates_examined > budget.max_candidates {
-            break 'outer;
+                for candidate in find_smallest_rings_bfs_with_rdkit_tree(mol, root, &blocked_bonds)
+                {
+                    candidates_examined += 1;
+                    if candidates_examined > budget.max_candidates {
+                        return Err(RdkitParityError::RingModelBudgetExceeded {
+                            candidates_examined,
+                            cap: budget.max_candidates,
+                        });
+                    }
+                    replacement_candidates.push(candidate);
+                }
+            }
+            if let Some(min_size) = replacement_candidates.iter().map(Vec::len).min() {
+                replacement_candidates.retain(|candidate| candidate.len() == min_size);
+            }
+            // RDKit gathers the minimum-size replacements for the duplicate
+            // group and then inserts that minimum set. Choosing the first
+            // accepted candidate in a stable bond-key order avoids adding all
+            // equivalent paths emitted by the shortest-path enumerator (the
+            // latter was the source of three extras for one macrocycle).
+            replacement_candidates
+                .sort_by_key(|candidate| bond_set_key(&ring_bond_set(mol, candidate)));
+            replacement_candidates
+                .into_iter()
+                .any(&mut accept_candidate);
         }
     }
+
+    // Several D2 groups can describe the same connected symmetry class. Keep
+    // one stable representative per bond-overlap component; retaining every
+    // overlapping replacement would inflate the symmetrized count (notably
+    // the issue-337 macrocycle family) while adding no new ring frontier.
+    extra_rings.sort_by_key(|ring| bond_set_key(&ring_bond_set(mol, ring)));
+    let mut selected_extra_sets: Vec<FxHashSet<BondIdx>> = Vec::new();
+    extra_rings.retain(|ring| {
+        let candidate_set = ring_bond_set(mol, ring);
+        if selected_extra_sets
+            .iter()
+            .any(|selected| selected.iter().any(|bond| candidate_set.contains(bond)))
+        {
+            false
+        } else {
+            selected_extra_sets.push(candidate_set);
+            true
+        }
+    });
 
     let mut ring_count_by_atom: FxHashMap<AtomIdx, u8> = FxHashMap::default();
     for ring in base_rings.iter().chain(extra_rings.iter()) {
@@ -292,62 +392,23 @@ fn ring_bond_set(mol: &Molecule, ring: &[AtomIdx]) -> FxHashSet<BondIdx> {
         .collect()
 }
 
+fn is_ring_bond(mol: &Molecule, bond: BondIdx) -> bool {
+    matches!(
+        mol.bond(bond).order,
+        chematic_core::BondOrder::Single
+            | chematic_core::BondOrder::Double
+            | chematic_core::BondOrder::Triple
+            | chematic_core::BondOrder::Quadruple
+            | chematic_core::BondOrder::Aromatic
+            | chematic_core::BondOrder::Up
+            | chematic_core::BondOrder::Down
+    )
+}
+
 fn bond_set_key(set: &FxHashSet<BondIdx>) -> Vec<u32> {
     let mut v: Vec<u32> = set.iter().map(|b| b.0).collect();
     v.sort_unstable();
     v
-}
-
-/// Depth-bounded DFS enumeration of simple cycles through `start`, up to
-/// `max_size` atoms. Calls `on_cycle(atoms, bonds)` for every closed simple
-/// path found (each real cycle is typically visited multiple times, once
-/// per starting atom/direction combination -- the caller dedupes by bond
-/// set). Returns `Err(())` the moment `*examined` exceeds `cap`, unwinding
-/// immediately without exploring further.
-#[allow(clippy::too_many_arguments)]
-fn enumerate_cycles_from(
-    mol: &Molecule,
-    start: AtomIdx,
-    current: AtomIdx,
-    visited: &mut FxHashSet<AtomIdx>,
-    atom_path: &mut Vec<AtomIdx>,
-    bond_path: &mut Vec<BondIdx>,
-    max_size: usize,
-    cap: usize,
-    examined: &mut usize,
-    on_cycle: &mut impl FnMut(&[AtomIdx], &[BondIdx]),
-) -> Result<(), ()> {
-    for (nb, bidx) in mol.neighbors(current) {
-        // Never immediately backtrack over the edge we just arrived on.
-        if bond_path.last() == Some(&bidx) {
-            continue;
-        }
-        if nb == start {
-            if atom_path.len() >= 3 {
-                *examined += 1;
-                if *examined > cap {
-                    return Err(());
-                }
-                bond_path.push(bidx);
-                on_cycle(atom_path, bond_path);
-                bond_path.pop();
-            }
-            continue;
-        }
-        if visited.contains(&nb) || atom_path.len() >= max_size {
-            continue;
-        }
-        visited.insert(nb);
-        atom_path.push(nb);
-        bond_path.push(bidx);
-        enumerate_cycles_from(
-            mol, start, nb, visited, atom_path, bond_path, max_size, cap, examined, on_cycle,
-        )?;
-        atom_path.pop();
-        bond_path.pop();
-        visited.remove(&nb);
-    }
-    Ok(())
 }
 
 #[cfg(test)]
@@ -490,6 +551,13 @@ mod tests {
             result,
             Err(RdkitParityError::RingModelBudgetExceeded { .. })
         ));
+    }
+
+    #[test]
+    fn issue_337_macrocycle_keeps_one_extra_ring_representative() {
+        let smiles = "c1cc2cc(c1)-c1cccc(c1)C[n+]1ccc(c3ccccc31)NCCCCCCCCCCNc1cc[n+](c3ccccc13)C2";
+        let (_, model) = model_for(smiles);
+        assert_eq!(model.extra_ring_count(), 1);
     }
 
     #[test]

@@ -85,6 +85,106 @@ def from_smiles_list(smiles, /, *, skip_invalid=True):
     return parsed
 
 
+_FORMAT_ALIASES = {
+    "smi": "smiles", "smiles": "smiles", "mol": "mol", "sdf": "mol",
+    "mol_v3000": "mol_v3000", "v3000": "mol_v3000", "mol2": "mol2",
+    "cml": "cml", "cjson": "cjson", "moljson": "moljson", "cdxml": "cdxml",
+    "pdb": "pdb", "xyz": "xyz", "pdbqt": "pdbqt", "gjf": "gjf", "com": "gjf",
+}
+
+
+def convert_format(text, input_format, output_format, /, *, coords=None,
+                   charges=None, name="LIG", comment=""):
+    """Convert a molecule between common interchange formats.
+
+    Supported inputs are SMILES, MOL/SDF (V2000), MOL V3000, MOL2, CML,
+    ChemicalJSON, MolJSON, CDXML, PDB, XYZ, PDBQT, and Gaussian input.
+    Supported outputs are SMILES, MOL V2000, MOL V3000, MOL2, CML,
+    ChemicalJSON, MolJSON, CDXML, PDB, XYZ, and PDBQT. PDB, XYZ, and PDBQT
+    output require ``coords=[[x, y, z], ...]`` unless the input provides them.
+
+    The molecular graph and supported stereochemistry are preserved. Format-
+    specific metadata is not promised to survive conversion.
+    """
+    def normalize(value):
+        if not isinstance(value, str):
+            raise ValueError("format names must be strings")
+        key = value.lower().lstrip(".").replace("-", "_")
+        try:
+            return _FORMAT_ALIASES[key]
+        except KeyError as exc:
+            supported = ", ".join(sorted(set(_FORMAT_ALIASES.values())))
+            raise ValueError(
+                f"unsupported molecular format {value!r}; supported formats: {supported}"
+            ) from exc
+
+    source, target = normalize(input_format), normalize(output_format)
+    if not isinstance(text, str):
+        raise ValueError("text must be a string")
+    if source == "smiles":
+        mol = from_smiles(text)
+    elif source == "mol":
+        mol = from_mol_block(text)
+    elif source == "mol_v3000":
+        mol = from_mol_v3000(text)
+    elif source == "mol2":
+        mol = from_mol2(text)
+    elif source == "cml":
+        mol = from_cml(text)
+    elif source == "cjson":
+        mol, parsed_coords = from_cjson(text)
+        if coords is None and parsed_coords:
+            coords = parsed_coords
+    elif source == "moljson":
+        mol = from_moljson(text)
+    elif source == "cdxml":
+        mol = from_cdxml(text)
+    elif source == "pdb":
+        mol, parsed_coords = from_pdb(text)
+        if coords is None:
+            coords = parsed_coords
+    elif source == "xyz":
+        mol, parsed_coords = from_xyz(text)
+        if coords is None:
+            coords = parsed_coords
+    elif source == "pdbqt":
+        mol = from_pdbqt(text)
+    elif source == "gjf":
+        mol = from_gjf(text)
+    else:  # pragma: no cover
+        raise ValueError(f"unsupported input format: {source}")
+
+    if target == "smiles":
+        return mol.smiles
+    if target == "mol":
+        return mol.to_mol_block()
+    if target == "mol_v3000":
+        return mol.to_mol_v3000([], name=name)
+    if target == "mol2":
+        return mol.to_mol2()
+    if target == "cml":
+        return mol.to_cml()
+    if target == "cjson":
+        return mol.to_cjson(coords or [])
+    if target == "moljson":
+        return mol.to_moljson()
+    if target == "cdxml":
+        return mol.to_cdxml()
+    if target in {"pdb", "xyz", "pdbqt"}:
+        if coords is None:
+            raise ValueError(f"{target.upper()} output requires coords=[[x, y, z], ...]")
+        if target == "pdb":
+            return mol.to_pdb(coords)
+        if target == "xyz":
+            return mol.to_xyz(coords, comment)
+        if charges is None:
+            charges = [0.0] * len(coords)
+        if len(charges) != len(coords):
+            raise ValueError("charges must have the same length as coords")
+        return mol.to_pdbqt([tuple(point) for point in coords], charges, name)
+    raise ValueError(f"unsupported output format: {target}")
+
+
 class MolContextPack:
     """Assembled molecular context for LLM prompts and RAG pipelines.
 
@@ -493,4 +593,3 @@ def screen(smiles, profile: str = "druglike", filters=None) -> list:
         row["overall_pass"] = all(v for k, v in row.items() if k.endswith("_pass"))
         results.append(row)
     return results
-

@@ -1,7 +1,7 @@
 # Format Capability Matrix
 
-What each of chematic's 15 supported file formats actually does, in Rust,
-Python, and WASM, as of v0.18.0 — read/write coverage, streaming, coordinate
+What each of chematic's supported file formats actually does, in Rust,
+Python, and WASM — read/write coverage, streaming, coordinate
 units, connectivity handling, round-trip fidelity, lossy operations, parse
 limits, and known limitations.
 
@@ -12,6 +12,26 @@ mapping (function names, return shapes, `None`/`null`/`Err` divergences).
 
 This page describes what exists today. It does not claim "full support" for
 any format — each row states exactly what is implemented and names the gaps.
+
+### Common format conversion bridge
+
+The Python package provides `convert_format(text, input_format, output_format)`
+and the WASM package provides `convert_common_format(text, input_format,
+output_format)` for explicit conversion between the most interoperable molecular formats:
+SMILES, MOL/SDF (V2000), MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, CDXML,
+PDB, XYZ, PDBQT, and Gaussian input. Extensions are accepted as aliases (for
+example `.mol2`, `smi`, and `com`). PDB/XYZ/PDBQT output requires 3D
+coordinates; graph-only conversions do not claim to preserve format-specific
+metadata. Unsupported formats fail before conversion with a `ValueError`.
+
+The WASM bridge intentionally exposes the topology-only subset (SMILES, MOL,
+MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML) so that JavaScript
+and Python share a predictable core contract. Use the existing coordinate APIs
+for PDB/XYZ/PDBQT in browser workflows.
+
+This is intentionally a bounded interoperability layer, not an Open Babel
+replacement. The format-specific APIs remain available when coordinates,
+metadata, multiple records, or domain-specific options must be preserved.
 
 ---
 
@@ -76,7 +96,9 @@ Notes on the cells above that need qualification:
   are not preserved). `canonical_smiles()` is **not** guaranteed to be a safe
   dedup/cache key today — see the Known Limitations section below.
 - **Lossy operations**: none inherent to the format itself.
-- **Parse limits**: no `*ParseLimits` type exists for SMILES.
+- **Parse limits**: `SmilesParseLimits` controls input bytes, atom count, and
+  bond count; `parse` applies finite safe defaults and
+  `parse_with_limits` accepts a stricter policy.
 - **Known limitations**: `canonical_smiles()` has a documented residual —
   isolated/simple E/Z double bonds can still produce two different, both-valid
   canonical strings for the same molecule in ~1 in 18 stereo-bearing
@@ -96,7 +118,59 @@ Notes on the cells above that need qualification:
 - SMARTS is a query language, not a molecule storage format — streaming,
   coordinate units, connectivity, round-trip, and lossy-operation columns
   don't apply in the same sense as the other 14 formats.
-- **Parse limits**: no `*ParseLimits` type exists.
+- **Parse limits**: `PdbParseLimits` bounds input bytes, physical line length,
+  ATOM/HETATM records, and MODEL records; use
+  `parse_pdb_atoms_with_limits` for a typed resource-limit error contract.
+
+### PDBQT
+
+- **Rust**: `chematic_mol::{parse_pdbqt, parse_pdbqt_with_limits, write_pdbqt, PdbqtError, PdbqtParseLimits}`.
+- **Coordinate units**: Ångström.
+- **Connectivity**: no bond perception; rigid-body PDBQT only.
+- **Parse limits**: `PdbqtParseLimits` bounds input bytes, physical line
+  length/count, and ATOM/HETATM records. The existing parser uses finite
+  defaults.
+
+### MOL2 (Tripos)
+
+- **Rust**: `chematic_mol::{parse_mol2, parse_mol2_with_limits, write_mol2, Mol2Error, Mol2ParseLimits}`.
+- **Coordinate units**: Ångström.
+- **Connectivity**: native MOL2 bond section; unsupported/unknown bond types
+  use the parser's documented conservative fallback.
+- **Parse limits**: `Mol2ParseLimits` bounds input bytes, physical line
+  length/count, section count, atom records, and bond records. The existing
+  parser uses finite defaults.
+
+### CML
+
+- **Rust**: `chematic_mol::{parse_cml, parse_cml_with_limits, write_cml, CmlError, CmlParseLimits}`.
+- **Coordinate units**: Ångström in returned 2D coordinates.
+- **Connectivity**: native CML bond elements.
+- **Parse limits**: `CmlParseLimits` bounds input bytes, physical line
+  length/count, XML element count, and atom/bond elements. The existing parser
+  uses finite defaults.
+
+### MolJSON
+
+- **Rust**: `chematic_mol::{parse_moljson, parse_moljson_with_limits, write_moljson, MolJsonError, MolJsonParseLimits}`.
+- **Parse limits**: `MolJsonParseLimits` bounds JSON input bytes/depth,
+  array/string resources, and atom/bond records. The existing parser uses
+  finite defaults.
+
+### ChemicalJSON
+
+- **Rust**: `chematic_mol::{parse_cjson, parse_cjson_with_limits, write_cjson, CjsonError, CjsonParseLimits}`.
+- **Parse limits**: `CjsonParseLimits` bounds JSON input bytes/depth,
+  array/string resources, and atom/bond records. The existing parser uses
+  finite defaults and rejects numeric type/range truncation.
+
+### CDXML
+
+- **Rust**: `chematic_mol::{parse_cdxml, parse_cdxml_with_limits, parse_cdxml_all, parse_cdxml_all_with_limits, write_cdxml, CdxmlError, CdxmlParseLimits, CdxmlParseOptions}`.
+- **Parse limits**: `CdxmlParseLimits` bounds input bytes, physical line
+  bytes/count, attribute bytes, atoms, bonds, and fragments. Existing parsers
+  use finite defaults; option and limit policies can be combined with
+  `parse_cdxml_all_with_options_and_limits`.
 
 ### MOL/SDF
 
@@ -122,7 +196,11 @@ Notes on the cells above that need qualification:
   `write_sdf_record_with_conformer_checked`. Do not describe MOL/SDF writing
   in general as "square-planar supported" — the plain `write_mol`/`write_sdf`
   path does not perceive or emit it.
-- **Parse limits**: no `*ParseLimits` type exists for MOL/SDF.
+- **Parse limits**: `SdfParseLimits` bounds input bytes, physical line bytes,
+  individual record bytes, and yielded record count; use
+  `SdfFileReader::with_limits`, `SdfRecordReader::with_limits`, or
+  `parse_sdf_with_limits` for an explicit policy. The existing `parse_sdf`,
+  `SdfReader`, and `SdfRecordReader::new` use finite defaults.
 
 ### PDB
 
@@ -176,7 +254,9 @@ Notes on the cells above that need qualification:
 - **Connectivity**: **no bond table at all** — CIF's `_atom_site` loop carries only positions; this module returns atoms with no bonds.
 - **Round-trip**: symmetry expansion is **not** performed on the plain (non-`crystal`-feature) path — only atoms literally listed in `_atom_site_*` are returned (effectively P1 treatment). See `docs/crystal_scope.md` for the `crystal`-feature periodic-structure variants.
 - **Lossy operations**: symmetry-operation information is not applied/round-tripped on the plain path.
-- **Parse limits**: no `*ParseLimits` type exists for plain CIF.
+- **Parse limits**: `CifParseLimits { max_input_bytes, max_line_bytes,
+  max_tokens, max_atoms }`; use `parse_cif_with_limits` for an explicit
+  policy. The existing `parse_cif` parser uses finite defaults.
 
 ### PQR
 
@@ -220,11 +300,18 @@ disambiguate by crate, not by name alone:
   produced on that path).
 - **Round-trip**: not characterized beyond the two-crate split above.
 - **Lossy operations**: none named.
-- **Parse limits**: no `*ParseLimits` type exists for either crate's XYZ path.
+- **Parse limits**: `XyzParseLimits` bounds input bytes, atoms per frame, frame
+  count, and physical line length. `parse_xyz_with_limits`,
+  `parse_xyz_all_with_limits`, and `parse_extxyz_with_limits` accept an
+  explicit policy; default single/all-frame parsers use finite defaults.
 
 ### QCSchema
 
 - **Rust**: `chematic_mol::{QcMolecule, AtomicInput, AtomicResult, parse_qcschema_molecule, write_qcschema_molecule, parse_atomic_input, write_atomic_input, parse_atomic_result, write_atomic_result, chematic_to_qc_molecule, qc_molecule_to_chematic}`.
+- **Parse limits**: `QcSchemaParseLimits` bounds input bytes, JSON nesting depth,
+  array entries, and string bytes. `parse_qcschema_molecule_with_limits`,
+  `parse_atomic_input_with_limits`, and `parse_atomic_result_with_limits` accept
+  an explicit policy; the existing parsers use finite defaults.
 - **Python**: same names, routed through Python's stdlib `json` module rather than a hand-mapped dict.
 - **WASM**: `mol_from_qcschema_molecule`, `qcschema_molecule_coords_json`, `to_qcschema_molecule_json`, `qcschema_validate_atomic_input`, `qcschema_validate_atomic_result`.
 - **Coordinate units**: `QcMolecule.geometry` is explicitly **Bohr (a0)** in Rust; Python and WASM bindings convert to Ångström for convenience.
@@ -243,18 +330,20 @@ disambiguate by crate, not by name alone:
 
 ### ORCA input
 
-- **Rust**: `chematic_mol::{parse_orca_input, write_orca_input, OrcaInput, OrcaInputError, OrcaBlock, OrcaCoords, OrcaAtom}`.
+- **Rust**: `chematic_mol::{parse_orca_input, parse_orca_input_with_limits, write_orca_input, OrcaInput, OrcaInputError, OrcaInputParseLimits, OrcaBlock, OrcaCoords, OrcaAtom}`.
 - **Python**: `parse_orca_input`, `write_orca_input`.
 - **WASM**: `mol_from_orca_input`, `orca_input_coords_json`, `orca_input_to_json`, `write_orca_input_json`.
 - **Coordinate units**: Ångström.
 - **Connectivity**: no bond perception anywhere in this module.
 - **Round-trip**: lossless preservation of unknown `%block ... end` blocks, including nested sub-blocks.
 - **Lossy operations**: none named.
-- **Parse limits**: no `OrcaParseLimits` type exists (unlike mmCIF/PQR/Cube/OpenDX).
+- **Parse limits**: `OrcaInputParseLimits` bounds input bytes, physical line
+  length/count, keywords, blocks, block bytes, and coordinate atoms. The
+  existing `parse_orca_input` parser uses finite defaults.
 
 ### ORCA output
 
-- **Rust**: `chematic_mol::{parse_orca_output, OrcaOutput, OrcaOutputError, OrcaTermination, OrcaOptConvergence}` — **read-only, no writer, in all 3 languages.**
+- **Rust**: `chematic_mol::{parse_orca_output, parse_orca_output_with_limits, OrcaOutput, OrcaOutputError, OrcaOutputParseLimits, OrcaTermination, OrcaOptConvergence}` — **read-only, no writer, in all 3 languages.**
 - **Python**: `parse_orca_output`.
 - **WASM**: `orca_output_to_json`.
 - **Coordinate units**: Ångström.
@@ -262,7 +351,17 @@ disambiguate by crate, not by name alone:
 - **Semantics**: `termination` and `optimization_convergence` are two
   independently-reported fields — `ORCA TERMINATED NORMALLY` alone does
   **not** imply a requested geometry optimization converged; check both.
-- **Parse limits**: no `*ParseLimits` type exists.
+- **Parse limits**: `OrcaOutputParseLimits` bounds input bytes, physical line
+  bytes/count, geometry frames/atoms, and frequency values. The existing parser
+  uses finite defaults.
+
+### Gaussian input/log
+
+- **Rust**: `chematic_mol::{parse_gjf, parse_gjf_with_limits, write_gjf, parse_gaussian_log, parse_gaussian_log_with_limits, GaussianLogResult, GaussianParseLimits, GaussianError}`.
+- **Parse limits**: `GaussianParseLimits` bounds input bytes, physical line
+  length/count, section count, and atom count for both GJF and log parsing.
+- **Coordinate units**: Ångström.
+- **Connectivity**: no bond table is inferred.
 
 ### Gaussian Cube
 
@@ -307,7 +406,7 @@ disambiguate by crate, not by name alone:
 
 ### LAMMPS data
 
-- **Rust**: `chematic_mol::{parse_lammps_data, write_lammps_data, LammpsData, LammpsDataError, LammpsAtom, LammpsAtomStyle, LammpsBond, LammpsBox, LammpsMass, LammpsVelocity}`.
+- **Rust**: `chematic_mol::{parse_lammps_data, parse_lammps_data_with_limits, write_lammps_data, LammpsData, LammpsDataError, LammpsDataParseLimits, LammpsAtom, LammpsAtomStyle, LammpsBond, LammpsBox, LammpsMass, LammpsVelocity}`.
 - **Python**: `parse_lammps_data`, `write_lammps_data` (plain dict).
 - **WASM**: `lammps_data_to_json`, `write_lammps_data_json`.
 - **`atom_style` handling**: `atom_style` **cannot be inferred from the
@@ -334,11 +433,14 @@ disambiguate by crate, not by name alone:
 - **Round-trip**: opaque sections round-trip verbatim; typed sections
   round-trip through the typed representation (not guaranteed
   byte-identical, e.g. whitespace).
-- **Parse limits**: no `LammpsParseLimits` type exists.
+- **Parse limits**: `LammpsDataParseLimits` bounds input bytes, physical line
+  length, header counts, typed-section rows, opaque-section bytes, and section
+  count. Use `parse_lammps_data_with_limits`; the existing parser uses finite
+  defaults.
 
 ### LAMMPS dump/trajectory
 
-- **Rust**: `chematic_mol::{parse_lammps_dump_frame, write_lammps_dump_frame, write_lammps_trajectory, box_bounds_to_true, true_to_box_bounds, LammpsDumpFrame, LammpsDumpReader, LammpsDumpError}`.
+- **Rust**: `chematic_mol::{parse_lammps_dump_frame, parse_lammps_dump_frame_with_limits, write_lammps_dump_frame, write_lammps_trajectory, box_bounds_to_true, true_to_box_bounds, LammpsDumpFrame, LammpsDumpReader, LammpsDumpParseLimits, LammpsDumpError}`.
 - **Python**: `parse_lammps_dump_frame`, `parse_lammps_dump_all` (**materializes the whole trajectory** — does not expose `LammpsDumpReader`'s streaming; a disclosed scope choice, already stated in CHANGELOG), `write_lammps_dump_frame`, `write_lammps_trajectory`, `box_bounds_to_true`, `true_to_box_bounds`; pyclass `LammpsDumpFrame` (`.column()`, `.cartesian_positions()`).
 - **WASM**: `lammps_dump_frame_to_json_str`, `lammps_trajectory_to_json` (**also materializes, does not stream** — same disclosed choice), `write_lammps_dump_frame_json`, `write_lammps_trajectory_json`, `lammps_dump_cartesian_positions_json`, plus typed-array `lammps_dump_rows_f64`, `lammps_dump_cartesian_positions_f64`.
 - **Streaming**: `LammpsDumpReader<R: BufRead>` is a **true streaming
@@ -365,7 +467,10 @@ disambiguate by crate, not by name alone:
   has no `null` representation. Both are doc-commented; this is disclosed,
   not accidental. See [`language-bindings.md`](language-bindings.md).
 - **Coordinate units**: not stated in-file (same as LAMMPS data).
-- **Parse limits**: no `*ParseLimits` type exists.
+- **Parse limits**: `LammpsDumpParseLimits { max_input_bytes,
+  max_line_bytes, max_atoms_per_frame, max_columns, max_frames }` bounds both
+  single-frame input and the streaming reader; use
+  `parse_lammps_dump_frame_with_limits` or `LammpsDumpReader::with_limits`.
 
 ---
 

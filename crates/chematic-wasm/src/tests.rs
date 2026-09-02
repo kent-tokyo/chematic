@@ -11,6 +11,23 @@ fn parse_benzene_atom_count() {
     assert_eq!(parse("c1ccccc1").atom_count(), 6);
 }
 
+#[test]
+fn common_format_conversion_uses_shared_aliases_and_preserves_graph() {
+    let mol2 = convert_common_format("CCO", "smiles", "mol2").unwrap();
+    assert!(mol2.contains("@<TRIPOS>MOLECULE"));
+    let smiles = convert_common_format(&mol2, ".mol2", "smi").unwrap();
+    assert!(chematic_chem::are_identical(
+        &chematic_smiles::parse(&smiles).unwrap(),
+        &chematic_smiles::parse("CCO").unwrap()
+    ));
+}
+
+#[test]
+fn common_format_name_rejects_unknown_values_without_wasm_runtime() {
+    assert_eq!(common_format_name(".mol2"), Some("mol2".to_string()));
+    assert_eq!(common_format_name("unknown"), None);
+}
+
 // --- logd / isotope / topological index tests ---------------------------
 
 #[test]
@@ -1940,11 +1957,67 @@ fn canonical_tautomer_returns_handle() {
 }
 
 #[test]
+fn tautomer_parent_json_reports_completed_result() {
+    let mol = parse("CCN=O");
+    let json = tautomer_parent_json(&mol, 16, 32, None);
+    assert!(json.contains(r#""smiles":"#), "missing smiles: {json}");
+    assert!(
+        json.contains(r#""status":"completed""#),
+        "unexpected status: {json}"
+    );
+}
+
+#[test]
+fn tautomer_parent_json_reports_transform_budget() {
+    let mol = parse("OC=C");
+    let json = tautomer_parent_json(&mol, 0, 32, None);
+    assert!(
+        json.contains(r#""status":"max_transforms_reached""#),
+        "expected budget status: {json}"
+    );
+}
+
+#[test]
+fn parent_json_bindings_cover_mechanical_and_composed_parents() {
+    let mol = parse("[NH3+][C@@H]([2H])C(=O)[O-].Cl");
+    assert!(fragment_parent_json(&mol).contains(r#""status":"completed""#));
+    assert!(charge_parent_json(&mol).contains(r#""status":"completed""#));
+    assert!(isotope_parent_json(&mol).contains(r#""status":"completed""#));
+    assert!(stereo_parent_json(&mol).contains(r#""status":"completed""#));
+    assert!(super_parent_json(&mol, 16, 32, None).contains(r#""status":"completed""#));
+    let report = super_parent_report_json(&mol, 16, 32, None);
+    assert!(report.contains(r#""name":"fragment""#));
+    assert!(report.contains(r#""name":"tautomer""#));
+}
+
+#[test]
 fn enumerate_tautomers_json_is_array() {
     let mol = parse("Oc1cccc2ccccc12");
     let json = enumerate_tautomers_json(&mol);
     assert!(json.starts_with('[') && json.ends_with(']'));
     assert!(json.len() > 2, "expected at least one tautomer");
+}
+
+#[test]
+fn enumerate_tautomers_json_reports_oversize_as_an_object() {
+    let smiles = "C".repeat(WASM_MAX_ATOMS + 1);
+    let mol = parse(&smiles);
+    let value: serde_json::Value =
+        serde_json::from_str(&enumerate_tautomers_json(&mol)).expect("valid JSON");
+    assert_eq!(
+        value["error"].as_str(),
+        Some("molecule too large (max 10000 atoms)")
+    );
+}
+
+#[test]
+fn blocked_tautomer_json_is_valid_when_parser_error_contains_special_chars() {
+    let mol = parse("CC");
+    let value: serde_json::Value = serde_json::from_str(
+        &canonical_tautomer_with_blocked_atoms_json(&mol, "{not-json}"),
+    )
+    .expect("invalid input must still produce valid JSON");
+    assert!(value["error"].as_str().is_some());
 }
 
 #[test]

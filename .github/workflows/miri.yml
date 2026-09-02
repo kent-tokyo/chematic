@@ -1,0 +1,36 @@
+name: Miri
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ci/linux-gates-089]
+  schedule:
+    # Miri is intentionally isolated from the normal PR critical path.
+    - cron: '0 6 * * 6'
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  MIRIFLAGS: -Zmiri-symbolic-alignment-check
+
+jobs:
+  miri:
+    name: Miri focused core and parser tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # master
+        with:
+          toolchain: nightly
+          components: miri
+      - name: Run Miri tests
+        run: |
+          # Keep this gate bounded: full Miri suites are too slow for a
+          # useful recurring signal. These cover the highest-risk remap and
+          # canonical parser paths; ordinary CI carries the full suite.
+          cargo +nightly miri test -p chematic-core --lib molecule::tests::test_with_atom_removed_remaps_bond_direction
+          cargo +nightly miri test -p chematic-core --lib molecule::tests::test_remove_bond_remaps_bond_direction_not_misattributes
+          cargo +nightly miri test -p chematic-smiles --lib canonical::tests::test_caffeine_stable
+          cargo +nightly miri test -p chematic-smiles --lib canonical::tests::ez_canonical_smiles_is_idempotent

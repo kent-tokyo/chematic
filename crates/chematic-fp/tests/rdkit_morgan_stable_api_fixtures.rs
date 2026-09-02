@@ -204,6 +204,7 @@ fn rdkit_morgan_fingerprint_matches_shared_oracle_corpus_across_radius_and_fp_si
             let config = RdkitMorganConfig {
                 radius: radius_from_int(radius_int),
                 fp_size: RdkitMorganFpSize::B2048,
+                include_chirality: false,
             };
             let result = chematic_fp::rdkit_morgan_fingerprint(&mol, &config)
                 .unwrap_or_else(|e| panic!("fixture {id} radius={radius_int}: {e}"));
@@ -224,6 +225,7 @@ fn rdkit_morgan_fingerprint_matches_shared_oracle_corpus_across_radius_and_fp_si
             let config = RdkitMorganConfig {
                 radius: RdkitMorganRadius::R2,
                 fp_size,
+                include_chirality: false,
             };
             let result = chematic_fp::rdkit_morgan_fingerprint(&mol, &config)
                 .unwrap_or_else(|e| panic!("fixture {id} fp_size={fp_size_int}: {e}"));

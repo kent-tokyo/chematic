@@ -406,6 +406,14 @@ fn from_cdxml(cdxml_str: &str) -> PyResult<Mol> {
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
+/// Parse CDXML page/presentation structure without dropping unknown objects.
+#[pyfunction]
+fn parse_cdxml_document_json(cdxml_str: &str) -> PyResult<String> {
+    let document = chematic_mol::CdxmlDocument::parse(cdxml_str)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    serde_json::to_string(&document.to_json()).map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
 /// Parse an MDL MOL V3000 (``V3000``) block into a ``Mol`` object.
 ///
 /// Raises ``ValueError`` on parse failure.
@@ -2189,6 +2197,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(from_cjson, m)?)?;
     m.add_function(wrap_pyfunction!(from_moljson, m)?)?;
     m.add_function(wrap_pyfunction!(from_cdxml, m)?)?;
+    m.add_function(wrap_pyfunction!(parse_cdxml_document_json, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol_v3000, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol_v3000_with_coords, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol_v3000_with_diagnostics, m)?)?;

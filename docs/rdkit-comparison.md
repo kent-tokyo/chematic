@@ -17,7 +17,7 @@ See also: [`rdkit-migration.md`](rdkit-migration.md) for a feature-by-feature Su
 | **AI agent integration** | MCP server built-in | None |
 | **Ecosystem maturity** | Growing (2024–) | Established (2006–) |
 
-**Descriptor accuracy caveat**: `Mol.descriptors()` returns 194 values, but bulk (4,999-molecule) RDKit-agreement testing currently covers a subset — the physicochemical core (MW/HBA/HBD/TPSA/LogP/MR/Fsp3/ring & stereocenter counts/etc.) is a verified 100% (or near-100%) match. A larger set of descriptors that are *named* to match RDKit 1:1 (Kappa/HallKierAlpha/BertzCT/BalabanJ/BCUT2D/VSA descriptor families/MQN/SA Score) were found to diverge substantially once measured at corpus scale. See [`tasks/descriptor_validation_coverage.md`](../tasks/descriptor_validation_coverage.md) for the full per-descriptor breakdown.
+**Descriptor accuracy caveat**: `Mol.descriptors()` returns 194 values, but bulk (4,999-molecule) RDKit-agreement testing currently covers a subset — the physicochemical core (MW/HBA/HBD/TPSA/LogP/MR/Fsp3/ring & stereocenter counts/etc.) is a verified 100% (or near-100%) match. A larger set of descriptors that are *named* to match RDKit 1:1 (Kappa/HallKierAlpha/BertzCT/BalabanJ/BCUT2D/VSA descriptor families/MQN/SA Score) were found to diverge substantially once measured at corpus scale. Treat these as chematic-specific implementations unless a public validation table explicitly reports agreement.
 
 ---
 

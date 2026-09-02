@@ -3,8 +3,8 @@
 use crate::{
     MolHandle, WASM_MAX_ATOMS, WASM_MAX_BATCH_ITEMS, WASM_MAX_JSON_STRING_BYTES,
     WASM_MAX_SMARTS_MATCHES, enforce_wasm_input_len, enforce_wasm_molecule_size,
-    escape_json_string, json_option_string_array, json_option_u8_array, parse_smiles_json_array,
-    rgroup_fragment_smiles,
+    escape_json_string, json_error, json_option_string_array, json_option_u8_array, json_string,
+    parse_smiles_json_array, rgroup_fragment_smiles,
 };
 use serde::Deserialize;
 use wasm_bindgen::prelude::*;
@@ -102,6 +102,7 @@ impl McsConfigJson {
             match_charge: self.match_charge,
             match_isotope: self.match_isotope,
             maximize_bonds: self.maximize_bonds,
+            ..chematic_smarts::McsConfig::default()
         }
     }
 }
@@ -447,6 +448,165 @@ pub fn canonical_tautomer(mol: &MolHandle) -> MolHandle {
     }
 }
 
+fn parent_transform_json(
+    mol: &MolHandle,
+    transform: fn(
+        &chematic_core::Molecule,
+    ) -> (chematic_core::Molecule, chematic_chem::TransformationRecord),
+) -> String {
+    if mol.inner.atom_count() > WASM_MAX_ATOMS {
+        return format!(
+            r#"{{"error":"molecule too large (max {} atoms)"}}"#,
+            WASM_MAX_ATOMS
+        );
+    }
+    let (parent, _) = transform(&mol.inner);
+    let smiles = escape_json_string(&chematic_smiles::canonical_smiles(&parent));
+    format!(r#"{{"smiles":"{smiles}","status":"completed"}}"#)
+}
+
+/// Compute the fragment Parent and return a status-shaped JSON result.
+#[wasm_bindgen]
+pub fn fragment_parent_json(mol: &MolHandle) -> String {
+    parent_transform_json(mol, chematic_chem::fragment_parent)
+}
+
+/// Compute the charge Parent and return a status-shaped JSON result.
+#[wasm_bindgen]
+pub fn charge_parent_json(mol: &MolHandle) -> String {
+    parent_transform_json(mol, chematic_chem::charge_parent)
+}
+
+/// Compute the isotope Parent and return a status-shaped JSON result.
+#[wasm_bindgen]
+pub fn isotope_parent_json(mol: &MolHandle) -> String {
+    parent_transform_json(mol, chematic_chem::isotope_parent)
+}
+
+/// Compute the stereo Parent and return a status-shaped JSON result.
+#[wasm_bindgen]
+pub fn stereo_parent_json(mol: &MolHandle) -> String {
+    parent_transform_json(mol, chematic_chem::stereo_parent)
+}
+
+/// Compute the composed Super Parent with explicit resource limits.
+#[wasm_bindgen]
+pub fn super_parent_json(
+    mol: &MolHandle,
+    max_transforms: usize,
+    max_tautomers: usize,
+    timeout_ms: Option<u64>,
+) -> String {
+    if mol.inner.atom_count() > WASM_MAX_ATOMS {
+        return format!(
+            r#"{{"error":"molecule too large (max {} atoms)"}}"#,
+            WASM_MAX_ATOMS
+        );
+    }
+    let mut limits = chematic_chem::TautomerLimits::default();
+    limits.max_transforms = max_transforms;
+    limits.max_tautomers = max_tautomers;
+    limits.timeout_ms = timeout_ms;
+    let result = chematic_chem::super_parent(&mol.inner, &limits);
+    let status = match result.status {
+        chematic_chem::ParentComputationStatus::Completed => "completed",
+        chematic_chem::ParentComputationStatus::MaxTransformsReached => "max_transforms_reached",
+        chematic_chem::ParentComputationStatus::MaxTautomersReached => "max_tautomers_reached",
+        chematic_chem::ParentComputationStatus::TimedOut => "timed_out",
+        chematic_chem::ParentComputationStatus::Abstained(_) => "abstained",
+        chematic_chem::ParentComputationStatus::InvalidInput(_) => "invalid_input",
+        _ => "unknown",
+    };
+    let smiles = escape_json_string(&chematic_smiles::canonical_smiles(&result.molecule));
+    format!(r#"{{"smiles":"{smiles}","status":"{status}"}}"#)
+}
+
+/// Compute the composed Super Parent and expose every ordered stage.
+#[wasm_bindgen]
+pub fn super_parent_report_json(
+    mol: &MolHandle,
+    max_transforms: usize,
+    max_tautomers: usize,
+    timeout_ms: Option<u64>,
+) -> String {
+    if mol.inner.atom_count() > WASM_MAX_ATOMS {
+        return format!(
+            r#"{{"error":"molecule too large (max {} atoms)"}}"#,
+            WASM_MAX_ATOMS
+        );
+    }
+    let mut limits = chematic_chem::TautomerLimits::default();
+    limits.max_transforms = max_transforms;
+    limits.max_tautomers = max_tautomers;
+    limits.timeout_ms = timeout_ms;
+    let (fragment, _) = chematic_chem::fragment_parent(&mol.inner);
+    let (charge, _) = chematic_chem::charge_parent(&fragment);
+    let (isotope, _) = chematic_chem::isotope_parent(&charge);
+    let (stereo, _) = chematic_chem::stereo_parent(&isotope);
+    let result = chematic_chem::super_parent(&mol.inner, &limits);
+    let status = match result.status {
+        chematic_chem::ParentComputationStatus::Completed => "completed",
+        chematic_chem::ParentComputationStatus::MaxTransformsReached => "max_transforms_reached",
+        chematic_chem::ParentComputationStatus::MaxTautomersReached => "max_tautomers_reached",
+        chematic_chem::ParentComputationStatus::TimedOut => "timed_out",
+        chematic_chem::ParentComputationStatus::Abstained(_) => "abstained",
+        chematic_chem::ParentComputationStatus::InvalidInput(_) => "invalid_input",
+        _ => "unknown",
+    };
+    let stage = |name: &str, molecule: &chematic_core::Molecule| {
+        format!(
+            r#"{{"name":"{}","smiles":"{}"}}"#,
+            name,
+            escape_json_string(&chematic_smiles::canonical_smiles(molecule))
+        )
+    };
+    let stages = [
+        stage("fragment", &fragment),
+        stage("charge", &charge),
+        stage("isotope", &isotope),
+        stage("stereo", &stereo),
+        stage("tautomer", &result.molecule),
+    ]
+    .join(",");
+    let smiles = escape_json_string(&chematic_smiles::canonical_smiles(&result.molecule));
+    format!(r#"{{"smiles":"{smiles}","status":"{status}","stages":[{stages}]}}"#)
+}
+
+/// Compute the tautomer parent with explicit resource limits.
+/// Returns `{"smiles":"...","status":"completed"}` (or a structured
+/// error) so callers can distinguish a definite result from a budget-limited
+/// one.
+#[wasm_bindgen]
+pub fn tautomer_parent_json(
+    mol: &MolHandle,
+    max_transforms: usize,
+    max_tautomers: usize,
+    timeout_ms: Option<u64>,
+) -> String {
+    if mol.inner.atom_count() > WASM_MAX_ATOMS {
+        return format!(
+            r#"{{"error":"molecule too large (max {} atoms)"}}"#,
+            WASM_MAX_ATOMS
+        );
+    }
+    let mut limits = chematic_chem::TautomerLimits::default();
+    limits.max_transforms = max_transforms;
+    limits.max_tautomers = max_tautomers;
+    limits.timeout_ms = timeout_ms;
+    let result = chematic_chem::tautomer_parent(&mol.inner, &limits);
+    let status = match result.status {
+        chematic_chem::ParentComputationStatus::Completed => "completed",
+        chematic_chem::ParentComputationStatus::MaxTransformsReached => "max_transforms_reached",
+        chematic_chem::ParentComputationStatus::MaxTautomersReached => "max_tautomers_reached",
+        chematic_chem::ParentComputationStatus::TimedOut => "timed_out",
+        chematic_chem::ParentComputationStatus::Abstained(_) => "abstained",
+        chematic_chem::ParentComputationStatus::InvalidInput(_) => "invalid_input",
+        _ => "unknown",
+    };
+    let smiles = escape_json_string(&chematic_smiles::canonical_smiles(&result.molecule));
+    format!(r#"{{"smiles":"{smiles}","status":"{status}"}}"#)
+}
+
 /// Compute the canonical tautomer with specific atoms blocked from H-transfer.
 ///
 /// `blocked_atom_indices_json`: JSON array of 0-based atom indices, e.g. `[0, 3]`.
@@ -473,7 +633,7 @@ pub fn canonical_tautomer_with_blocked_atoms_json(
     }
     let indices: Vec<u32> = match serde_json::from_str(blocked_atom_indices_json) {
         Ok(v) => v,
-        Err(e) => return format!(r#"{{"error":"invalid JSON: {e}"}}"#),
+        Err(e) => return json_error(format!("invalid JSON: {e}")),
     };
     let blocked_atoms: std::collections::HashSet<chematic_core::AtomIdx> =
         indices.into_iter().map(chematic_core::AtomIdx).collect();
@@ -483,8 +643,7 @@ pub fn canonical_tautomer_with_blocked_atoms_json(
     };
     let result = chematic_chem::canonical_tautomer_with_config(&mol.inner, &config);
     let smi = chematic_smiles::canonical_smiles(&result);
-    let escaped = smi.replace('\\', "\\\\").replace('"', "\\\"");
-    format!("\"{escaped}\"")
+    json_string(&smi)
 }
 
 /// All enumerated tautomers of `mol` as a JSON array of canonical SMILES strings.
@@ -493,22 +652,14 @@ pub fn canonical_tautomer_with_blocked_atoms_json(
 #[wasm_bindgen]
 pub fn enumerate_tautomers_json(mol: &MolHandle) -> String {
     if mol.inner.atom_count() > WASM_MAX_ATOMS {
-        return format!(
-            r#"["{{"error":"molecule too large (max {} atoms)"}}"]"#,
-            WASM_MAX_ATOMS
-        );
+        return json_error(format!("molecule too large (max {WASM_MAX_ATOMS} atoms)"));
     }
     let tautomers = chematic_chem::enumerate_tautomers(&mol.inner);
-    let parts: Vec<String> = tautomers
+    let values: Vec<String> = tautomers
         .iter()
-        .map(|m| {
-            format!(
-                "\"{}\"",
-                chematic_smiles::canonical_smiles(m).replace('"', "\\\"")
-            )
-        })
+        .map(chematic_smiles::canonical_smiles)
         .collect();
-    format!("[{}]", parts.join(","))
+    serde_json::to_string(&values).expect("serializing tautomer strings cannot fail")
 }
 
 /// Return the largest fragment of `mol` (salt/solvent stripping).

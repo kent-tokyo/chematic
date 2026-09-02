@@ -775,7 +775,12 @@ pub fn assign_mmff94_numeric_types_with_view(
 ) -> Result<(Vec<u8>, Molecule), NumericTypeError> {
     let n = mol.atom_count();
     let mut types = vec![0u8; n];
-    let rings = chematic_perception::find_sssr(mol).rings().to_vec();
+    // MMFF94's aromaticity loop follows RDKit's symmetrized SSSR semantics;
+    // the extra same-size representatives matter for degenerate fused ring
+    // systems. The general perception APIs continue to use the Horton SSSR.
+    let rings = chematic_perception::find_symmetrized_sssr(mol)
+        .rings()
+        .to_vec();
     // MMFF94 has its own, stricter, Kekule-based aromaticity perception
     // (RDKit's `setMMFFAromaticity`), distinct from chematic's own general
     // Huckel model -- most visibly for "mancude" ring systems where a ring
@@ -1197,6 +1202,19 @@ pub fn compute_mmff94_aromatic_view(
             .iter()
             .map(|r| r.iter().filter(|&&a| resolved[a.0 as usize]).count() as i64)
             .sum();
+
+        // RDKit's setMMFFAromaticity also stops once every atom belonging to
+        // an SSSR ring has been resolved. This is distinct from the progress
+        // plateau check above: a pass may resolve all ring atoms while the
+        // aggregate counter would otherwise permit another pass. Keep this
+        // condition explicit so termination does not depend on the chosen
+        // fixed-point counter representation.
+        let arom_rings_all_set = rings
+            .iter()
+            .all(|ring| ring.iter().all(|&a| resolved[a.0 as usize]));
+        if arom_rings_all_set {
+            break;
+        }
     }
 
     // A ring's bonds are MMFF-aromatic iff *that ring itself* passed the
@@ -1700,6 +1718,31 @@ fn assign_n_type(
             .all(|b| mol.atom(b.neighbor).element == Element::N)
     {
         return Ok(53); // =N=: central cumulated nitrogen (azide/diazo)
+    }
+
+    // Iminium nitrogen (N+=C, type 54). RDKit's MMFF atom typer checks this
+    // before the generic positive-N fallback: a three-connected, positively
+    // charged N with total bond order at least four and a real N=C/C=N
+    // double bond is the iminium class, unless it is a terminal-oxygen
+    // environment handled by the dedicated oxygen/nitro cases below.
+    let double_bonded_to_c_or_n = nbrs.iter().any(|b| {
+        b.order == BondOrder::Double
+            && matches!(mol.atom(b.neighbor).element, Element::C | Element::N)
+    });
+    let total_bond_order: u32 = nbrs.iter().map(|b| b.order.order_int() as u32).sum();
+    let iminium_terminal_o_count = nbrs
+        .iter()
+        .filter(|b| {
+            mol.atom(b.neighbor).element == Element::O && bonds_of(mol, b.neighbor).len() == 1
+        })
+        .count();
+    if atom.charge > 0
+        && degree == 3
+        && total_bond_order >= 4
+        && double_bonded_to_c_or_n
+        && iminium_terminal_o_count == 0
+    {
+        return Ok(54); // N+=C: iminium nitrogen
     }
 
     // Nitro nitrogen (NO2/NO3, type 45). Also must run before the generic
@@ -2570,6 +2613,15 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn iminium_n_is_type_54_when_not_aromatic() {
+        // Kekulized iminium spelling: the positive, three-connected N has
+        // total bond order 4 and a real N=C bond, so RDKit uses N+=C (54).
+        let m = mol("C[N+]1=CC=CC=C1");
+        let (n_idx, _) = m.atoms().find(|(_, a)| a.element == Element::N).unwrap();
+        assert_eq!(assign_n_type(&m, &[], n_idx).unwrap(), 54);
     }
 
     #[test]

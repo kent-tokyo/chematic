@@ -10,6 +10,30 @@ See also: [`format-capabilities.md`](format-capabilities.md) for the
 per-format read/write/streaming/limits matrix this page's examples are
 drawn from.
 
+## RDKit-compatible Python import surface
+
+The Python package includes an explicit, lightweight compatibility namespace at
+`chematic.rdkit_compat`. The common Morgan entry points below resolve to the
+same chematic-backed fingerprint implementation, so migration does not depend
+on one particular RDKit import style:
+
+```python
+from chematic import rdkit_compat as Chem
+from chematic.rdkit_compat import AllChem, rdFingerprintGenerator
+
+mol = Chem.MolFromSmiles("CCO")
+legacy = AllChem.GetMorganFingerprintAsBitVect(mol, 2)
+stable = rdFingerprintGenerator.GetMorganGenerator(
+    radius=2, fpSize=2048
+).GetFingerprint(mol)
+assert legacy.GetOnBits() == stable.GetOnBits()
+```
+
+`Chem.CanonSmiles` is also available. Unsupported RDKit options such as
+count-simulation Morgan fingerprints raise `NotImplementedError`; they are not
+silently substituted with a different algorithm. This is a Python API
+compatibility surface, not a claim of bit parity with RDKit's C++ implementation.
+
 ---
 
 ## The three surfaces, in one sentence each

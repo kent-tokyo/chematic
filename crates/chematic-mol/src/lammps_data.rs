@@ -356,6 +356,41 @@ pub struct LammpsData {
     pub unparsed_sections: Vec<(String, String)>,
 }
 
+/// Resource limits applied while parsing a LAMMPS data file.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LammpsDataParseLimits {
+    /// Maximum UTF-8 input size, in bytes.
+    pub max_input_bytes: usize,
+    /// Maximum physical line size, in bytes.
+    pub max_line_bytes: usize,
+    /// Maximum header count entries.
+    pub max_header_counts: usize,
+    pub max_masses: usize,
+    pub max_atoms: usize,
+    pub max_velocities: usize,
+    pub max_bonds: usize,
+    /// Maximum raw bytes retained for one opaque section.
+    pub max_opaque_section_bytes: usize,
+    /// Maximum number of section headers.
+    pub max_sections: usize,
+}
+
+impl Default for LammpsDataParseLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: 256 * 1024 * 1024,
+            max_line_bytes: 1024 * 1024,
+            max_header_counts: 256,
+            max_masses: 1_000_000,
+            max_atoms: 1_000_000,
+            max_velocities: 1_000_000,
+            max_bonds: 2_000_000,
+            max_opaque_section_bytes: 64 * 1024 * 1024,
+            max_sections: 256,
+        }
+    }
+}
+
 impl LammpsData {
     /// Look up a header count by its exact label (e.g. `"atoms"`,
     /// `"atom types"`). `None` if the header never declared that label.
@@ -414,6 +449,12 @@ pub enum LammpsDataError {
     /// type-label framework, which this module cannot safely parse. See
     /// module docs.
     TypeLabelsUnsupported { section: String },
+    /// The input exceeded a configured resource limit.
+    ResourceLimit {
+        resource: &'static str,
+        actual: usize,
+        limit: usize,
+    },
 }
 
 impl std::fmt::Display for LammpsDataError {
@@ -460,6 +501,11 @@ impl std::fmt::Display for LammpsDataError {
                 f,
                 "section '{section}' uses LAMMPS's type-label framework, which is not supported"
             ),
+            Self::ResourceLimit {
+                resource,
+                actual,
+                limit,
+            } => write!(f, "{resource} has size {actual}, exceeding limit {limit}"),
         }
     }
 }
@@ -630,6 +676,31 @@ pub fn parse_lammps_data(
     text: &str,
     atom_style: LammpsAtomStyle,
 ) -> Result<LammpsData, LammpsDataError> {
+    parse_lammps_data_with_limits(text, atom_style, &LammpsDataParseLimits::default())
+}
+
+/// Parse a LAMMPS data file with explicit resource limits.
+pub fn parse_lammps_data_with_limits(
+    text: &str,
+    atom_style: LammpsAtomStyle,
+    limits: &LammpsDataParseLimits,
+) -> Result<LammpsData, LammpsDataError> {
+    if text.len() > limits.max_input_bytes {
+        return Err(LammpsDataError::ResourceLimit {
+            resource: "input bytes",
+            actual: text.len(),
+            limit: limits.max_input_bytes,
+        });
+    }
+    if let Some(line_bytes) = text.lines().map(str::len).max()
+        && line_bytes > limits.max_line_bytes
+    {
+        return Err(LammpsDataError::ResourceLimit {
+            resource: "line bytes",
+            actual: line_bytes,
+            limit: limits.max_line_bytes,
+        });
+    }
     if let LammpsAtomStyle::Other(style) = &atom_style {
         return Err(LammpsDataError::UnsupportedAtomStyle {
             style: style.clone(),
@@ -659,6 +730,13 @@ pub fn parse_lammps_data(
         let line_no = cur.line_no();
         match classify_header_line(raw, line_no)? {
             Some(HeaderLine::Count { label, value }) => {
+                if counts.len() >= limits.max_header_counts {
+                    return Err(LammpsDataError::ResourceLimit {
+                        resource: "header counts",
+                        actual: counts.len() + 1,
+                        limit: limits.max_header_counts,
+                    });
+                }
                 counts.push((label, value));
                 cur.next();
             }
@@ -704,6 +782,7 @@ pub fn parse_lammps_data(
     let mut velocities: Vec<LammpsVelocity> = Vec::new();
     let mut bonds: Vec<LammpsBond> = Vec::new();
     let mut unparsed_sections: Vec<(String, String)> = Vec::new();
+    let mut section_count = 0;
 
     // Body: sequence of sections.
     while let Some(raw) = cur.peek() {
@@ -717,6 +796,14 @@ pub fn parse_lammps_data(
             continue;
         }
         cur.next(); // consume the section-name line
+        section_count += 1;
+        if section_count > limits.max_sections {
+            return Err(LammpsDataError::ResourceLimit {
+                resource: "sections",
+                actual: section_count,
+                limit: limits.max_sections,
+            });
+        }
 
         if name.ends_with("Type Labels") {
             return Err(LammpsDataError::TypeLabelsUnsupported { section: name });
@@ -734,6 +821,14 @@ pub fn parse_lammps_data(
         // EOF. Blank lines within a section are skipped, not counted as
         // rows or as section boundaries.
         let mut rows: Vec<(usize, &str)> = Vec::new();
+        let row_limit = match name.as_str() {
+            "Masses" => limits.max_masses,
+            "Atoms" => limits.max_atoms,
+            "Velocities" => limits.max_velocities,
+            "Bonds" => limits.max_bonds,
+            _ => usize::MAX,
+        };
+        let mut opaque_bytes = 0usize;
         while let Some(row_raw) = cur.peek() {
             let stripped = strip_comment(row_raw);
             let Some(first_tok) = stripped.split_whitespace().next() else {
@@ -742,6 +837,26 @@ pub fn parse_lammps_data(
             };
             if !looks_numeric(first_tok) {
                 break; // next section header
+            }
+            if rows.len() >= row_limit {
+                return Err(LammpsDataError::ResourceLimit {
+                    resource: "section rows",
+                    actual: rows.len() + 1,
+                    limit: row_limit,
+                });
+            }
+            opaque_bytes = opaque_bytes.saturating_add(row_raw.len());
+            if name != "Masses"
+                && name != "Atoms"
+                && name != "Velocities"
+                && name != "Bonds"
+                && opaque_bytes > limits.max_opaque_section_bytes
+            {
+                return Err(LammpsDataError::ResourceLimit {
+                    resource: "opaque section bytes",
+                    actual: opaque_bytes,
+                    limit: limits.max_opaque_section_bytes,
+                });
             }
             rows.push((cur.line_no(), row_raw));
             cur.next();
@@ -1487,5 +1602,60 @@ Atoms # atomic\n\
 ";
         let err = parse_lammps_data(text, LammpsAtomStyle::Atomic).unwrap_err();
         assert!(matches!(err, LammpsDataError::InvalidBox { .. }));
+    }
+
+    #[test]
+    fn bounded_parser_rejects_input_and_line_limits() {
+        let text = atomic_fixture();
+        assert!(matches!(
+            parse_lammps_data_with_limits(
+                text,
+                LammpsAtomStyle::Atomic,
+                &LammpsDataParseLimits {
+                    max_input_bytes: 8,
+                    ..Default::default()
+                }
+            ),
+            Err(LammpsDataError::ResourceLimit {
+                resource: "input bytes",
+                ..
+            })
+        ));
+
+        let long_line = format!("{}\n{}", "x".repeat(32), text);
+        assert!(matches!(
+            parse_lammps_data_with_limits(
+                &long_line,
+                LammpsAtomStyle::Atomic,
+                &LammpsDataParseLimits {
+                    max_line_bytes: 16,
+                    ..Default::default()
+                }
+            ),
+            Err(LammpsDataError::ResourceLimit {
+                resource: "line bytes",
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn bounded_parser_rejects_typed_section_rows() {
+        let err = parse_lammps_data_with_limits(
+            atomic_fixture(),
+            LammpsAtomStyle::Atomic,
+            &LammpsDataParseLimits {
+                max_atoms: 0,
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            LammpsDataError::ResourceLimit {
+                resource: "section rows",
+                ..
+            }
+        ));
     }
 }

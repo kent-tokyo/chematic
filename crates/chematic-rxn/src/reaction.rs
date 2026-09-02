@@ -10,11 +10,41 @@ pub struct Reaction {
     pub products: Vec<Molecule>,
 }
 
+/// Resource limits for parsing untrusted reaction SMILES.
+#[derive(Debug, Clone, Copy)]
+pub struct ReactionParseLimits {
+    /// Maximum UTF-8 input size in bytes.
+    pub max_input_bytes: usize,
+    /// Maximum number of non-empty dot-separated components per side.
+    pub max_components_per_side: usize,
+    /// Maximum atoms in one component.
+    pub max_atoms_per_molecule: usize,
+    /// Maximum bonds in one component.
+    pub max_bonds_per_molecule: usize,
+}
+
+impl Default for ReactionParseLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: 16 * 1024 * 1024,
+            max_components_per_side: 10_000,
+            max_atoms_per_molecule: 100_000,
+            max_bonds_per_molecule: 200_000,
+        }
+    }
+}
+
 /// Error type for reaction SMILES parsing.
 #[derive(Debug)]
 pub enum RxnError {
     /// The string does not contain two `>` delimiters (reaction arrow).
     MissingArrow,
+    /// The reaction exceeded a configured resource limit.
+    ResourceLimit {
+        resource: &'static str,
+        actual: usize,
+        limit: usize,
+    },
     /// A SMILES component failed to parse.
     SmilesParse { part: String, source: String },
 }
@@ -23,6 +53,14 @@ impl core::fmt::Display for RxnError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::MissingArrow => write!(f, "reaction SMILES must contain '>>'"),
+            Self::ResourceLimit {
+                resource,
+                actual,
+                limit,
+            } => write!(
+                f,
+                "reaction {resource} exceeds limit {limit} (got {actual})"
+            ),
             Self::SmilesParse { part, source } => {
                 write!(f, "failed to parse SMILES '{part}': {source}")
             }
@@ -39,6 +77,21 @@ impl std::error::Error for RxnError {}
 /// - `"R>>P"` is the standard form with empty agents section.
 /// - Returns `Err(RxnError::MissingArrow)` if fewer than two `>` delimiters are found.
 pub fn parse_reaction(s: &str) -> Result<Reaction, RxnError> {
+    parse_reaction_with_limits(s, &ReactionParseLimits::default())
+}
+
+/// Parse a reaction SMILES while enforcing input and per-component limits.
+pub fn parse_reaction_with_limits(
+    s: &str,
+    limits: &ReactionParseLimits,
+) -> Result<Reaction, RxnError> {
+    if s.len() > limits.max_input_bytes {
+        return Err(RxnError::ResourceLimit {
+            resource: "input bytes",
+            actual: s.len(),
+            limit: limits.max_input_bytes,
+        });
+    }
     // splitn(3, '>') yields 3 parts when at least two `>` are present;
     // fewer parts means the reaction arrow is missing.
     let parts: Vec<&str> = s.splitn(3, '>').collect();
@@ -46,25 +99,49 @@ pub fn parse_reaction(s: &str) -> Result<Reaction, RxnError> {
         return Err(RxnError::MissingArrow);
     }
 
-    let parse_part = |s: &str| -> Result<Vec<Molecule>, RxnError> {
+    let parse_part = |side: &'static str, s: &str| -> Result<Vec<Molecule>, RxnError> {
         if s.is_empty() {
             return Ok(Vec::new());
         }
-        s.split('.')
+        let components: Vec<&str> = s.split('.').filter(|p| !p.is_empty()).collect();
+        if components.len() > limits.max_components_per_side {
+            return Err(RxnError::ResourceLimit {
+                resource: side,
+                actual: components.len(),
+                limit: limits.max_components_per_side,
+            });
+        }
+        components
+            .into_iter()
             .filter(|p| !p.is_empty())
             .map(|p| {
-                parse_smiles(p).map_err(|e| RxnError::SmilesParse {
+                let molecule = parse_smiles(p).map_err(|e| RxnError::SmilesParse {
                     part: p.to_string(),
                     source: e.to_string(),
-                })
+                })?;
+                if molecule.atom_count() > limits.max_atoms_per_molecule {
+                    return Err(RxnError::ResourceLimit {
+                        resource: "atoms per molecule",
+                        actual: molecule.atom_count(),
+                        limit: limits.max_atoms_per_molecule,
+                    });
+                }
+                if molecule.bond_count() > limits.max_bonds_per_molecule {
+                    return Err(RxnError::ResourceLimit {
+                        resource: "bonds per molecule",
+                        actual: molecule.bond_count(),
+                        limit: limits.max_bonds_per_molecule,
+                    });
+                }
+                Ok(molecule)
             })
             .collect()
     };
 
     Ok(Reaction {
-        reactants: parse_part(parts[0])?,
-        agents: parse_part(parts[1])?,
-        products: parse_part(parts[2])?,
+        reactants: parse_part("reactants", parts[0])?,
+        agents: parse_part("agents", parts[1])?,
+        products: parse_part("products", parts[2])?,
     })
 }
 
@@ -336,5 +413,47 @@ mod tests {
         assert!(s.contains('>'), "written reaction should contain '>'");
         // Should have exactly 2 '>' characters
         assert_eq!(s.chars().filter(|&c| c == '>').count(), 2);
+    }
+
+    #[test]
+    fn test_parse_reaction_limits_reject_input_and_components() {
+        let limits = ReactionParseLimits {
+            max_input_bytes: 3,
+            ..ReactionParseLimits::default()
+        };
+        assert!(matches!(
+            parse_reaction_with_limits("C>>C", &limits),
+            Err(RxnError::ResourceLimit {
+                resource: "input bytes",
+                ..
+            })
+        ));
+
+        let limits = ReactionParseLimits {
+            max_components_per_side: 1,
+            ..ReactionParseLimits::default()
+        };
+        assert!(matches!(
+            parse_reaction_with_limits("C.C>>C", &limits),
+            Err(RxnError::ResourceLimit {
+                resource: "reactants",
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn test_parse_reaction_limits_reject_component_size() {
+        let limits = ReactionParseLimits {
+            max_atoms_per_molecule: 1,
+            ..ReactionParseLimits::default()
+        };
+        assert!(matches!(
+            parse_reaction_with_limits("CC>>C", &limits),
+            Err(RxnError::ResourceLimit {
+                resource: "atoms per molecule",
+                ..
+            })
+        ));
     }
 }

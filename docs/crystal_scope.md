@@ -20,7 +20,7 @@ living in this crate.
 - `PeriodicStructure`: lattice + sites, `validate()`, coordinate wrapping,
   periodic-neighbor enumeration, diagonal supercell generation.
 - Exact PBC displacement/minimum-image (bounded exhaustive search derived
-  from reciprocal vectors -- see `docs/rfcs/chematic_crystal_foundation.md`),
+  from reciprocal vectors),
   verified against a from-scratch brute-force oracle, including triclinic
   cells.
 - Diagonal supercells (`[nx, ny, nz]`, each `>= 1`).
@@ -56,8 +56,7 @@ living in this crate.
   `parse_cif_structure() -> PeriodicStructure` adapter this section used
   to describe as a future sketch has since been implemented, in two
   stages, entirely inside `chematic-mol`: `parse_cif_periodic_structure`
-  (see `docs/rfcs/chematic_crystal_foundation.md`'s "CIF migration"
-  section for the original sketch) and, later,
+  (see the CIF notes in this document) and, later,
   `parse_cif_periodic_structure_with_options`'s explicit
   symmetry-operation expansion described above.
 - No XRD simulation, no crystal fingerprinting.

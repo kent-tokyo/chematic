@@ -252,6 +252,569 @@ fn bfs_tree(mol: &Molecule, root: AtomIdx) -> (Vec<usize>, Vec<Option<AtomIdx>>)
     (dist, parent)
 }
 
+/// Find the smallest simple rings containing `root` using the Figueras-style
+/// root-neighbor BFS primitive.
+///
+/// A ring through `root` is formed by two distinct ring-eligible neighbors of
+/// the root plus a shortest path between those neighbors with the root
+/// removed. Every neighbor pair is searched, and all pairs producing the
+/// minimum ring size for this root are returned. The result is a local
+/// primitive for the future symmetrized-ring model; it is deliberately not
+/// substituted for [`find_sssr`], whose output is a linearly independent
+/// Horton basis.
+///
+/// The search enumerates every shortest path for each neighbor pair. A later
+/// symmetrization layer is responsible for applying RDKit's duplicate-ring
+/// acceptance rules.
+pub fn find_smallest_rings_bfs(mol: &Molecule, root: AtomIdx) -> Vec<Vec<AtomIdx>> {
+    find_smallest_rings_bfs_with_blocked_bonds(mol, root, &FxHashSet::default())
+}
+
+/// Find the smallest root-centered rings while temporarily ignoring a set of
+/// bonds. This is the bounded re-search primitive used by the RDKit-compatible
+/// duplicate-D2 candidate pass; the molecule itself is never mutated.
+pub fn find_smallest_rings_bfs_with_blocked_bonds(
+    mol: &Molecule,
+    root: AtomIdx,
+    blocked_bonds: &FxHashSet<BondIdx>,
+) -> Vec<Vec<AtomIdx>> {
+    if root.0 as usize >= mol.atom_count() {
+        return Vec::new();
+    }
+
+    let neighbors: Vec<AtomIdx> = mol
+        .neighbors(root)
+        .filter(|(_, bidx)| {
+            is_ring_eligible(mol.bond(*bidx).order) && !blocked_bonds.contains(bidx)
+        })
+        .map(|(neighbor, _)| neighbor)
+        .collect();
+    if neighbors.len() < 2 {
+        return Vec::new();
+    }
+
+    let mut best_size = usize::MAX;
+    let mut rings = Vec::new();
+    for (left_pos, &left) in neighbors.iter().enumerate() {
+        for &right in neighbors.iter().skip(left_pos + 1) {
+            let mut dist = vec![usize::MAX; mol.atom_count()];
+            let mut queue = VecDeque::new();
+            dist[left.0 as usize] = 0;
+            queue.push_back(left);
+
+            while let Some(current) = queue.pop_front() {
+                if current == right {
+                    break;
+                }
+                for (next, bidx) in mol.neighbors(current) {
+                    if next == root
+                        || !is_ring_eligible(mol.bond(bidx).order)
+                        || blocked_bonds.contains(&bidx)
+                    {
+                        continue;
+                    }
+                    let next_i = next.0 as usize;
+                    if dist[next_i] == usize::MAX {
+                        dist[next_i] = dist[current.0 as usize] + 1;
+                        queue.push_back(next);
+                    }
+                }
+            }
+
+            let right_dist = dist[right.0 as usize];
+            if right_dist == usize::MAX {
+                continue;
+            }
+            let ring_size = right_dist + 2;
+            if ring_size > best_size {
+                continue;
+            }
+
+            if ring_size < best_size {
+                best_size = ring_size;
+                rings.clear();
+            }
+            let mut path = vec![left];
+            enumerate_shortest_paths(
+                mol,
+                root,
+                right,
+                &dist,
+                blocked_bonds,
+                &mut path,
+                &mut rings,
+            );
+        }
+    }
+
+    rings.sort();
+    rings.dedup();
+    rings
+}
+
+/// Find smallest root-centered rings after applying RDKit-style leaf trimming
+/// to the temporary bond mask. Removing a bond can expose degree-0/1 atoms;
+/// those atoms cannot participate in a cycle, so their remaining active bonds
+/// are removed transitively before the BFS is run. The molecule is unchanged.
+pub fn find_smallest_rings_bfs_with_trimmed_bonds(
+    mol: &Molecule,
+    root: AtomIdx,
+    blocked_bonds: &FxHashSet<BondIdx>,
+) -> Vec<Vec<AtomIdx>> {
+    let trimmed = trim_ring_bonds(mol, blocked_bonds);
+    find_smallest_rings_bfs_with_blocked_bonds(mol, root, &trimmed)
+}
+
+/// Compute the active-bond mask after repeatedly removing bonds incident to
+/// degree-0/1 atoms. This is the non-mutating equivalent of RDKit's
+/// `trimBonds` queue and is useful when several rooted searches share a
+/// progressively reduced graph.
+pub fn trim_ring_bonds(mol: &Molecule, blocked_bonds: &FxHashSet<BondIdx>) -> FxHashSet<BondIdx> {
+    let mut active_degree = vec![0usize; mol.atom_count()];
+    for (bond, entry) in mol.bonds() {
+        if !is_ring_eligible(entry.order) || blocked_bonds.contains(&bond) {
+            continue;
+        }
+        active_degree[entry.atom1.0 as usize] += 1;
+        active_degree[entry.atom2.0 as usize] += 1;
+    }
+
+    let mut trimmed = blocked_bonds.clone();
+    let mut queue: VecDeque<AtomIdx> = active_degree
+        .iter()
+        .enumerate()
+        .filter(|(_, degree)| **degree < 2)
+        .map(|(idx, _)| AtomIdx(idx as u32))
+        .collect();
+    let mut queued = vec![false; mol.atom_count()];
+    for atom in &queue {
+        queued[atom.0 as usize] = true;
+    }
+
+    while let Some(atom) = queue.pop_front() {
+        for (neighbor, bond) in mol.neighbors(atom) {
+            if !is_ring_eligible(mol.bond(bond).order) || !trimmed.insert(bond) {
+                continue;
+            }
+            let neighbor_degree = &mut active_degree[neighbor.0 as usize];
+            *neighbor_degree = neighbor_degree.saturating_sub(1);
+            if *neighbor_degree < 2 && !queued[neighbor.0 as usize] {
+                queued[neighbor.0 as usize] = true;
+                queue.push_back(neighbor);
+            }
+        }
+    }
+
+    trimmed
+}
+
+/// Find smallest rings from the BFS tree used by RDKit's Figueras pass.
+/// Unlike [`find_smallest_rings_bfs_with_blocked_bonds`], this intentionally
+/// keeps one parent tree and derives cycles from non-tree edges. It is exposed
+/// separately so the bounded pair-shortest-path primitive remains available
+/// for callers that need all shortest paths.
+pub fn find_smallest_rings_bfs_with_rdkit_tree(
+    mol: &Molecule,
+    root: AtomIdx,
+    blocked_bonds: &FxHashSet<BondIdx>,
+) -> Vec<Vec<AtomIdx>> {
+    if root.0 as usize >= mol.atom_count() {
+        return Vec::new();
+    }
+
+    let mut state = vec![0u8; mol.atom_count()];
+    let mut parent: Vec<Option<AtomIdx>> = vec![None; mol.atom_count()];
+    let mut depth = vec![0usize; mol.atom_count()];
+    let mut queue = VecDeque::new();
+    let mut best_size = usize::MAX;
+    let mut rings = Vec::new();
+    state[root.0 as usize] = 1;
+    queue.push_back(root);
+
+    'bfs: while let Some(current) = queue.pop_front() {
+        state[current.0 as usize] = 2;
+        if depth[current.0 as usize] + 1 > best_size {
+            break;
+        }
+        for (neighbor, bond) in mol.neighbors(current) {
+            if !is_ring_eligible(mol.bond(bond).order) || blocked_bonds.contains(&bond) {
+                continue;
+            }
+            if parent[current.0 as usize] == Some(neighbor) {
+                continue;
+            }
+            match state[neighbor.0 as usize] {
+                0 => {
+                    state[neighbor.0 as usize] = 1;
+                    parent[neighbor.0 as usize] = Some(current);
+                    depth[neighbor.0 as usize] = depth[current.0 as usize] + 1;
+                    queue.push_back(neighbor);
+                }
+                1 => {
+                    let mut ring = vec![neighbor];
+                    let mut ancestor = parent[neighbor.0 as usize];
+                    while ancestor.is_some() && ancestor != Some(root) {
+                        let atom = ancestor.expect("BFS node has a parent");
+                        ring.push(atom);
+                        ancestor = parent[atom.0 as usize];
+                    }
+                    ring.insert(0, current);
+                    ancestor = parent[current.0 as usize];
+                    while let Some(atom) = ancestor {
+                        if ring.contains(&atom) {
+                            ring.clear();
+                            break;
+                        }
+                        ring.insert(0, atom);
+                        ancestor = parent[atom.0 as usize];
+                    }
+                    if ring.len() > 1 {
+                        if ring.len() <= best_size {
+                            if ring.len() < best_size {
+                                best_size = ring.len();
+                                rings.clear();
+                            }
+                            rings.push(ring);
+                        } else {
+                            break 'bfs;
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    rings.sort();
+    rings.dedup();
+    rings
+}
+
+/// Select one root from each connected component of ring-eligible degree-2
+/// atoms, matching RDKit's `pickD2Nodes`/`markUselessD2s` pass. A degree-2
+/// chain is represented by its first atom in molecule order; this avoids
+/// treating every atom along the same chain as an independent root.
+pub fn select_rdkit_d2_roots(mol: &Molecule) -> Vec<AtomIdx> {
+    let degree2: Vec<bool> = (0..mol.atom_count())
+        .map(|raw| {
+            mol.neighbors(AtomIdx(raw as u32))
+                .filter(|(_, bond)| is_ring_eligible(mol.bond(*bond).order))
+                .count()
+                == 2
+        })
+        .collect();
+    let mut seen = vec![false; mol.atom_count()];
+    let mut roots = Vec::new();
+    for raw in 0..mol.atom_count() {
+        if !degree2[raw] || seen[raw] {
+            continue;
+        }
+        roots.push(AtomIdx(raw as u32));
+        let mut stack = vec![AtomIdx(raw as u32)];
+        seen[raw] = true;
+        while let Some(atom) = stack.pop() {
+            for (neighbor, bond) in mol.neighbors(atom) {
+                let neighbor_i = neighbor.0 as usize;
+                if degree2[neighbor_i]
+                    && is_ring_eligible(mol.bond(bond).order)
+                    && !seen[neighbor_i]
+                {
+                    seen[neighbor_i] = true;
+                    stack.push(neighbor);
+                }
+            }
+        }
+    }
+    roots
+}
+
+/// Build the symmetrized smallest-ring set from the Horton basis and the
+/// root-centered Figueras candidates.
+///
+/// A candidate is accepted only when it has the same size as a basis ring,
+/// shares a bond with that ring, and does not omit a bond that is unique to
+/// the basis ring. These are RDKit's duplicate-ring acceptance conditions.
+/// The existing [`find_sssr`] result remains the base and this function is a
+/// separate opt-in model for consumers that need symmetry-equivalent rings.
+pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
+    let base = find_sssr(mol);
+    if base.rings().is_empty() {
+        return base;
+    }
+
+    let base_bonds: Vec<FxHashSet<BondIdx>> = base
+        .rings()
+        .iter()
+        .map(|ring| ring_bond_set(mol, ring))
+        .collect();
+    let mut bond_ring_count: FxHashMap<BondIdx, usize> = FxHashMap::default();
+    for ring_bonds in &base_bonds {
+        for &bond in ring_bonds {
+            *bond_ring_count.entry(bond).or_insert(0) += 1;
+        }
+    }
+
+    let base_keys: FxHashSet<Vec<u32>> = base_bonds.iter().map(bond_set_key).collect();
+    let mut seen = base_keys.clone();
+    let mut rings = base.rings().to_vec();
+    let d2_roots = select_rdkit_d2_roots(mol);
+
+    let mut accept_candidate = |candidate: Vec<AtomIdx>| {
+        let candidate_bonds = ring_bond_set(mol, &candidate);
+        let key = bond_set_key(&candidate_bonds);
+        if base_keys.contains(&key) || !seen.insert(key) {
+            return false;
+        }
+        let accepted = base_bonds.iter().any(|basis| {
+            basis.iter().any(|bond| candidate_bonds.contains(bond))
+                && basis.iter().all(|bond| {
+                    bond_ring_count.get(bond).copied().unwrap_or(0) != 1
+                        || candidate_bonds.contains(bond)
+                })
+        });
+        if accepted
+            && base
+                .rings()
+                .iter()
+                .any(|ring| ring.len() == candidate.len())
+        {
+            rings.push(candidate);
+            true
+        } else {
+            false
+        }
+    };
+    let mut direct_replacements: Vec<Vec<AtomIdx>> = Vec::new();
+
+    if d2_roots.is_empty() {
+        for root in 0..mol.atom_count() {
+            for candidate in find_smallest_rings_bfs(mol, AtomIdx(root as u32)) {
+                accept_candidate(candidate);
+            }
+        }
+    } else {
+        let mut duplicate_groups: FxHashMap<Vec<u32>, (Vec<AtomIdx>, Vec<AtomIdx>)> =
+            FxHashMap::default();
+        let mut active_blocked = FxHashSet::default();
+        for &root in &d2_roots {
+            let candidates = find_smallest_rings_bfs_with_blocked_bonds(mol, root, &active_blocked);
+            if candidates.is_empty() {
+                for (_, bond) in mol.neighbors(root) {
+                    if is_ring_eligible(mol.bond(bond).order) {
+                        active_blocked.insert(bond);
+                    }
+                }
+                active_blocked = trim_ring_bonds(mol, &active_blocked);
+                continue;
+            }
+            for candidate in candidates {
+                let key = bond_set_key(&ring_bond_set(mol, &candidate));
+                let entry = duplicate_groups
+                    .entry(key)
+                    .or_insert_with(|| (candidate.clone(), Vec::new()));
+                if !entry.1.contains(&root) {
+                    entry.1.push(root);
+                }
+            }
+        }
+
+        for (_, (original_candidate, duplicate_roots)) in duplicate_groups {
+            if duplicate_roots.len() < 2 {
+                accept_candidate(original_candidate);
+                continue;
+            }
+            let mut replacements = Vec::new();
+            for &root in &duplicate_roots {
+                let mut blocked = FxHashSet::default();
+                for &other in &duplicate_roots {
+                    if other == root {
+                        continue;
+                    }
+                    for (_, bond) in mol.neighbors(other) {
+                        if is_ring_eligible(mol.bond(bond).order) {
+                            blocked.insert(bond);
+                        }
+                    }
+                }
+                let trimmed = trim_ring_bonds(mol, &blocked);
+                replacements.extend(find_smallest_rings_bfs_with_rdkit_tree(mol, root, &trimmed));
+            }
+            if let Some(min_size) = replacements.iter().map(Vec::len).min() {
+                replacements.retain(|candidate| candidate.len() == min_size);
+            }
+            replacements.sort_by_key(|candidate| bond_set_key(&ring_bond_set(mol, candidate)));
+            for replacement in replacements {
+                direct_replacements.push(replacement);
+            }
+        }
+    }
+
+    #[allow(clippy::drop_non_drop)]
+    drop(accept_candidate);
+    for replacement in direct_replacements {
+        let key = bond_set_key(&ring_bond_set(mol, &replacement));
+        if seen.insert(key)
+            && base
+                .rings()
+                .iter()
+                .any(|ring| ring.len() == replacement.len())
+        {
+            rings.push(replacement);
+        }
+    }
+
+    // Keep every independently verified minimum replacement. RDKit's
+    // symmetrized SSSR intentionally retains multiple overlapping rings in a
+    // degenerate fused/bridged system; collapsing them to one representative
+    // loses the active ring context needed by MMFF94 aromaticity.
+    let mut extras = rings.split_off(base.ring_count());
+    extras.sort_by_key(|ring| basis_exchange_key(mol, ring, &base_bonds));
+    rings.extend(extras);
+
+    let ranks = canonical_atom_ranks(mol);
+    rings.sort_by_cached_key(|ring| (ring.len(), canonical_cycle_key(ring, &ranks)));
+    RingSet(rings)
+}
+
+fn ring_bond_set(mol: &Molecule, ring: &[AtomIdx]) -> FxHashSet<BondIdx> {
+    let mut bonds = FxHashSet::default();
+    for i in 0..ring.len() {
+        if let Some((bond, _)) = mol.bond_between(ring[i], ring[(i + 1) % ring.len()]) {
+            bonds.insert(bond);
+        }
+    }
+    bonds
+}
+
+fn bond_set_key(set: &FxHashSet<BondIdx>) -> Vec<u32> {
+    let mut key: Vec<u32> = set.iter().map(|bond| bond.0).collect();
+    key.sort_unstable();
+    key
+}
+
+/// Stable tie-break key for a candidate ring based on a GF(2)-valid basis
+/// exchange. The candidate replaces each same-sized Horton basis ring in
+/// turn; only replacements that remain linearly independent are considered.
+/// This preserves the minimum-cycle-basis contract while making the choice
+/// depend on the resulting basis rather than raw bond numbering alone.
+fn basis_exchange_key(
+    mol: &Molecule,
+    candidate: &[AtomIdx],
+    base_bonds: &[FxHashSet<BondIdx>],
+) -> Vec<Vec<u32>> {
+    let candidate_set = ring_bond_set(mol, candidate);
+    let candidate_key = bond_set_key(&candidate_set);
+    let candidate_len = candidate.len();
+    let mut best: Option<Vec<Vec<u32>>> = None;
+    for (replace_idx, base_ring) in base_bonds.iter().enumerate() {
+        if base_ring.len() != candidate_len {
+            continue;
+        }
+        let mut rows = base_bonds
+            .iter()
+            .enumerate()
+            .map(|(idx, set)| {
+                if idx == replace_idx {
+                    candidate_key.clone()
+                } else {
+                    bond_set_key(set)
+                }
+            })
+            .collect::<Vec<_>>();
+        if gf2_rank(&rows) != base_bonds.len() {
+            continue;
+        }
+        rows.sort_unstable();
+        if best.as_ref().is_none_or(|current| rows < *current) {
+            best = Some(rows);
+        }
+    }
+    best.unwrap_or_else(|| vec![candidate_key])
+}
+
+fn gf2_rank(rows: &[Vec<u32>]) -> usize {
+    let mut basis: FxHashMap<u32, Vec<u32>> = FxHashMap::default();
+    let mut rank = 0;
+    for row in rows {
+        let mut reduced = row.clone();
+        while let Some(&pivot) = reduced.first() {
+            let Some(existing) = basis.get(&pivot) else {
+                basis.insert(pivot, reduced);
+                rank += 1;
+                break;
+            };
+            let mut xor = Vec::with_capacity(reduced.len() + existing.len());
+            let mut left = 0;
+            let mut right = 0;
+            while left < reduced.len() || right < existing.len() {
+                match (reduced.get(left), existing.get(right)) {
+                    (Some(&a), Some(&b)) if a == b => {
+                        left += 1;
+                        right += 1;
+                    }
+                    (Some(&a), Some(&b)) if a < b => {
+                        xor.push(a);
+                        left += 1;
+                    }
+                    (Some(_), Some(&b)) => {
+                        xor.push(b);
+                        right += 1;
+                    }
+                    (Some(&a), None) => {
+                        xor.push(a);
+                        left += 1;
+                    }
+                    (None, Some(&b)) => {
+                        xor.push(b);
+                        right += 1;
+                    }
+                    (None, None) => break,
+                }
+            }
+            reduced = xor;
+        }
+    }
+    rank
+}
+
+/// Enumerate shortest paths in an already-computed BFS distance field.
+/// Distances strictly increase at each step, so every emitted path is simple
+/// and cannot revisit the excluded root.
+fn enumerate_shortest_paths(
+    mol: &Molecule,
+    excluded: AtomIdx,
+    target: AtomIdx,
+    dist: &[usize],
+    blocked_bonds: &FxHashSet<BondIdx>,
+    path: &mut Vec<AtomIdx>,
+    rings: &mut Vec<Vec<AtomIdx>>,
+) {
+    let current = *path.last().expect("shortest-path prefix is non-empty");
+    if current == target {
+        let mut ring = Vec::with_capacity(path.len() + 1);
+        ring.push(excluded);
+        ring.extend(path.iter().copied());
+        rings.push(ring);
+        return;
+    }
+
+    let current_dist = dist[current.0 as usize];
+    for (next, bidx) in mol.neighbors(current) {
+        if next == excluded
+            || !is_ring_eligible(mol.bond(bidx).order)
+            || blocked_bonds.contains(&bidx)
+        {
+            continue;
+        }
+        if dist[next.0 as usize] != current_dist + 1 {
+            continue;
+        }
+        path.push(next);
+        enumerate_shortest_paths(mol, excluded, target, dist, blocked_bonds, path, rings);
+        path.pop();
+    }
+}
+
 /// Form the Horton candidate cycle `SP(root,x) + edge(x,y) + SP(y,root)`.
 ///
 /// Returns `None` if the two root-rooted shortest paths share any vertex
@@ -545,6 +1108,22 @@ mod tests {
     }
 
     #[test]
+    fn blocked_bond_shortest_ring_search_is_non_mutating() {
+        let mol = cyclohexane();
+        let (bond, _) = mol.bond_between(AtomIdx(0), AtomIdx(1)).unwrap();
+        let mut blocked = FxHashSet::default();
+        blocked.insert(bond);
+        assert!(find_smallest_rings_bfs_with_blocked_bonds(&mol, AtomIdx(0), &blocked).is_empty());
+        assert_eq!(find_sssr(&mol).ring_count(), 1);
+    }
+
+    #[test]
+    fn rdkit_d2_root_selection_collapses_degree2_chains() {
+        let roots = select_rdkit_d2_roots(&benzene());
+        assert_eq!(roots, vec![AtomIdx(0)]);
+    }
+
+    #[test]
     fn test_benzene_sssr() {
         let mol = benzene();
         let rings = find_sssr(&mol);
@@ -817,6 +1396,59 @@ mod tests {
                 "each dodecane atom is in exactly 1 ring"
             );
         }
+    }
+
+    #[test]
+    fn test_figueras_bfs_finds_all_smallest_cubane_faces_through_each_root() {
+        let mol = chematic_smiles::parse("C12C3C4C1C5C4C3C25").expect("cubane SMILES");
+        let mut faces = std::collections::BTreeSet::new();
+        for root in 0..mol.atom_count() {
+            for ring in find_smallest_rings_bfs(&mol, AtomIdx(root as u32)) {
+                assert_eq!(ring.len(), 4, "cubane's smallest rings are square faces");
+                let mut face = ring.into_iter().map(|a| a.0).collect::<Vec<_>>();
+                face.sort_unstable();
+                faces.insert(face);
+            }
+        }
+        assert_eq!(
+            faces.len(),
+            6,
+            "cubane has six symmetry-equivalent square faces"
+        );
+
+        let mol = chematic_smiles::parse("C12C3C4C5C1C6C7C2C8C3C9C4C1C5C6C2C7C8C9C12")
+            .expect("dodecahedrane SMILES");
+        let mut faces = std::collections::BTreeSet::new();
+        for root in 0..mol.atom_count() {
+            for ring in find_smallest_rings_bfs(&mol, AtomIdx(root as u32)) {
+                assert_eq!(
+                    ring.len(),
+                    5,
+                    "dodecahedrane's smallest rings are pentagons"
+                );
+                let mut face = ring.into_iter().map(|a| a.0).collect::<Vec<_>>();
+                face.sort_unstable();
+                faces.insert(face);
+            }
+        }
+        assert_eq!(
+            faces.len(),
+            12,
+            "dodecahedrane has twelve symmetry-equivalent pentagonal faces"
+        );
+    }
+
+    #[test]
+    fn test_symmetrized_sssr_adds_only_verified_duplicate_faces() {
+        let benzene = chematic_smiles::parse("c1ccccc1").expect("benzene SMILES");
+        assert_eq!(find_symmetrized_sssr(&benzene).ring_count(), 1);
+
+        let cubane = chematic_smiles::parse("C12C3C4C1C5C4C3C25").expect("cubane SMILES");
+        assert_eq!(find_symmetrized_sssr(&cubane).ring_count(), 6);
+
+        let dodeca = chematic_smiles::parse("C12C3C4C5C1C6C7C2C8C3C9C4C1C5C6C2C7C8C9C12")
+            .expect("dodecahedrane SMILES");
+        assert_eq!(find_symmetrized_sssr(&dodeca).ring_count(), 12);
     }
 
     #[test]

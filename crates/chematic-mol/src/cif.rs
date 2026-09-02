@@ -100,6 +100,30 @@ pub struct CifResult {
     pub cell: Option<UnitCell>,
 }
 
+/// Resource limits applied while parsing a plain CIF document.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CifParseLimits {
+    /// Maximum UTF-8 input size, in bytes.
+    pub max_input_bytes: usize,
+    /// Maximum physical line size, in bytes.
+    pub max_line_bytes: usize,
+    /// Maximum number of tokens produced by the CIF tokenizer.
+    pub max_tokens: usize,
+    /// Maximum number of atom-site rows returned.
+    pub max_atoms: usize,
+}
+
+impl Default for CifParseLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: 256 * 1024 * 1024,
+            max_line_bytes: 1024 * 1024,
+            max_tokens: 10_000_000,
+            max_atoms: 1_000_000,
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Error type
 // ---------------------------------------------------------------------------
@@ -121,6 +145,12 @@ pub enum CifError {
     /// The atom site loop uses fractional coordinates but the CIF contains no
     /// `_cell_length_*` / `_cell_angle_*` parameters to convert them.
     MissingCellParameters,
+    /// The document exceeded a configured resource limit.
+    ResourceLimit {
+        resource: &'static str,
+        actual: usize,
+        limit: usize,
+    },
 }
 
 impl core::fmt::Display for CifError {
@@ -136,6 +166,14 @@ impl core::fmt::Display for CifError {
             Self::MissingCellParameters => write!(
                 f,
                 "fractional coordinates present but no _cell_length_*/_cell_angle_* parameters found"
+            ),
+            Self::ResourceLimit {
+                resource,
+                actual,
+                limit,
+            } => write!(
+                f,
+                "CIF: {resource} has size {actual}, exceeding limit {limit}"
             ),
         }
     }
@@ -286,6 +324,27 @@ fn find_atom_site_loop(tokens: &[String]) -> Result<(Vec<String>, usize), CifErr
 }
 
 pub fn parse_cif(input: &str) -> Result<CifResult, CifError> {
+    parse_cif_with_limits(input, &CifParseLimits::default())
+}
+
+/// Parse a CIF file with explicit resource limits.
+pub fn parse_cif_with_limits(input: &str, limits: &CifParseLimits) -> Result<CifResult, CifError> {
+    if input.len() > limits.max_input_bytes {
+        return Err(CifError::ResourceLimit {
+            resource: "input bytes",
+            actual: input.len(),
+            limit: limits.max_input_bytes,
+        });
+    }
+    if let Some(line_bytes) = input.lines().map(str::len).max()
+        && line_bytes > limits.max_line_bytes
+    {
+        return Err(CifError::ResourceLimit {
+            resource: "line bytes",
+            actual: line_bytes,
+            limit: limits.max_line_bytes,
+        });
+    }
     // Strip CIF comments (# to end of line), but not '#' inside quoted strings.
     let clean: String = input
         .lines()
@@ -294,6 +353,13 @@ pub fn parse_cif(input: &str) -> Result<CifResult, CifError> {
         .join("\n");
 
     let tokens = tokenize_cif(&clean);
+    if tokens.len() > limits.max_tokens {
+        return Err(CifError::ResourceLimit {
+            resource: "tokens",
+            actual: tokens.len(),
+            limit: limits.max_tokens,
+        });
+    }
 
     // --- Extract cell parameters ---
     let (cell, has_cell, _cell_fields_seen) = scan_cell(&tokens);
@@ -350,6 +416,14 @@ pub fn parse_cif(input: &str) -> Result<CifResult, CifError> {
         // Stop at next loop_ or data_ block.
         if tok[0].as_str() == "loop_" || tok[0].starts_with("data_") {
             break;
+        }
+
+        if row >= limits.max_atoms {
+            return Err(CifError::ResourceLimit {
+                resource: "atom rows",
+                actual: row + 1,
+                limit: limits.max_atoms,
+            });
         }
 
         // Resolve element.
@@ -2044,5 +2118,63 @@ Cl1  Cl  0.50000  0.50000  0.50000
         assert!((fx - 0.3).abs() < 1e-10);
         assert!((fy - 0.4).abs() < 1e-10);
         assert!((fz - 0.5).abs() < 1e-10);
+    }
+
+    #[test]
+    fn bounded_parser_rejects_oversized_input() {
+        let limits = CifParseLimits {
+            max_input_bytes: 8,
+            ..Default::default()
+        };
+        assert!(matches!(
+            parse_cif_with_limits(NACL_CIF, &limits),
+            Err(CifError::ResourceLimit {
+                resource: "input bytes",
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn bounded_parser_rejects_long_lines_before_tokenizing() {
+        let cif = format!("data_x\n#{}\n{}", "x".repeat(32), NACL_CIF);
+        let limits = CifParseLimits {
+            max_line_bytes: 16,
+            ..Default::default()
+        };
+        assert!(matches!(
+            parse_cif_with_limits(&cif, &limits),
+            Err(CifError::ResourceLimit {
+                resource: "line bytes",
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn bounded_parser_rejects_token_and_atom_budgets() {
+        let token_limits = CifParseLimits {
+            max_tokens: 2,
+            ..Default::default()
+        };
+        assert!(matches!(
+            parse_cif_with_limits(NACL_CIF, &token_limits),
+            Err(CifError::ResourceLimit {
+                resource: "tokens",
+                ..
+            })
+        ));
+
+        let atom_limits = CifParseLimits {
+            max_atoms: 1,
+            ..Default::default()
+        };
+        assert!(matches!(
+            parse_cif_with_limits(NACL_CIF, &atom_limits),
+            Err(CifError::ResourceLimit {
+                resource: "atom rows",
+                ..
+            })
+        ));
     }
 }

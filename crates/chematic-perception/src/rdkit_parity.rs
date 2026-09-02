@@ -6,10 +6,11 @@
 //! `aromaticityHelper`'s `includeFused` branch — the exact path
 //! `setAromaticity(mol, AROMATICITY_RDKIT, ...)` calls).
 //!
-//! **Not wired into `assign_aromaticity_ex`/`apply_aromaticity_ex`/
-//! `ring_pi_electrons` (the `Huckel`/`RdkitLike` production path is
-//! unchanged and still the default).** As of A1-1b-1 this engine backs a
-//! separate, explicitly opt-in, fallible production API:
+//! `AromaticityAlgorithm::RdkitLike` now routes through this engine when the
+//! input can be kekulized; the historical per-ring implementation remains as
+//! an infallible fallback for inputs that cannot satisfy the parity engine's
+//! precondition. `Huckel` remains the default and is unchanged. This module
+//! also backs a separate, explicitly opt-in, fallible production API:
 //! [`assign_aromaticity_rdkit_parity_experimental`] and
 //! [`apply_aromaticity_rdkit_parity_experimental`], re-exported from the
 //! crate root. Every other item in this module (the low-level donor-type/

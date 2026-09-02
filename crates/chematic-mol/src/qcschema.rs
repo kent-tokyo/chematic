@@ -112,6 +112,34 @@ pub type Connectivity = Vec<(usize, usize, f64)>;
 
 // ─── Error ──────────────────────────────────────────────────────────────────
 
+/// Resource limits applied before a QCSchema JSON document is decoded into
+/// domain objects.
+///
+/// The existing parsing functions use these defaults. Call the
+/// `*_with_limits` variants when an application has a tighter input budget.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct QcSchemaParseLimits {
+    /// Maximum UTF-8 input size, in bytes.
+    pub max_input_bytes: usize,
+    /// Maximum nesting depth of JSON arrays and objects.
+    pub max_json_depth: usize,
+    /// Maximum number of entries in any JSON array.
+    pub max_array_items: usize,
+    /// Maximum size of any JSON string, in UTF-8 bytes.
+    pub max_string_bytes: usize,
+}
+
+impl Default for QcSchemaParseLimits {
+    fn default() -> Self {
+        Self {
+            max_input_bytes: 256 * 1024 * 1024,
+            max_json_depth: 128,
+            max_array_items: 10_000_000,
+            max_string_bytes: 16 * 1024 * 1024,
+        }
+    }
+}
+
 /// Errors that can occur while parsing a QCSchema document. Never panics --
 /// every malformed/incomplete input maps to one of these variants.
 #[derive(Debug, Clone, PartialEq)]
@@ -148,6 +176,13 @@ pub enum QcSchemaError {
     /// A cross-field invariant was violated (e.g. `success: true` with no
     /// `return_result`).
     Inconsistent { detail: String },
+    /// The document exceeded a configured resource limit.
+    ResourceLimit {
+        resource: &'static str,
+        path: String,
+        actual: usize,
+        limit: usize,
+    },
 }
 
 impl std::fmt::Display for QcSchemaError {
@@ -184,6 +219,15 @@ impl std::fmt::Display for QcSchemaError {
                 "QCSchema: field '{field}' = '{found}' is not one of {expected:?}"
             ),
             Self::Inconsistent { detail } => write!(f, "QCSchema: inconsistent document: {detail}"),
+            Self::ResourceLimit {
+                resource,
+                path,
+                actual,
+                limit,
+            } => write!(
+                f,
+                "QCSchema: {resource} at {path} has size {actual}, exceeding limit {limit}"
+            ),
         }
     }
 }
@@ -218,6 +262,80 @@ fn check_finite(v: &Value, path: &str) -> Result<(), QcSchemaError> {
         }
         _ => Ok(()),
     }
+}
+
+fn check_resource_limits(
+    v: &Value,
+    path: &str,
+    depth: usize,
+    limits: &QcSchemaParseLimits,
+) -> Result<(), QcSchemaError> {
+    if depth > limits.max_json_depth {
+        return Err(QcSchemaError::ResourceLimit {
+            resource: "JSON depth",
+            path: path.to_string(),
+            actual: depth,
+            limit: limits.max_json_depth,
+        });
+    }
+    match v {
+        Value::String(s) if s.len() > limits.max_string_bytes => {
+            Err(QcSchemaError::ResourceLimit {
+                resource: "string bytes",
+                path: path.to_string(),
+                actual: s.len(),
+                limit: limits.max_string_bytes,
+            })
+        }
+        Value::Array(arr) => {
+            if arr.len() > limits.max_array_items {
+                return Err(QcSchemaError::ResourceLimit {
+                    resource: "array items",
+                    path: path.to_string(),
+                    actual: arr.len(),
+                    limit: limits.max_array_items,
+                });
+            }
+            for (i, item) in arr.iter().enumerate() {
+                check_resource_limits(item, &format!("{path}[{i}]"), depth + 1, limits)?;
+            }
+            Ok(())
+        }
+        Value::Object(o) => {
+            for (k, val) in o {
+                if k.len() > limits.max_string_bytes {
+                    return Err(QcSchemaError::ResourceLimit {
+                        resource: "object key bytes",
+                        path: format!("{path}.{k}"),
+                        actual: k.len(),
+                        limit: limits.max_string_bytes,
+                    });
+                }
+                check_resource_limits(val, &format!("{path}.{k}"), depth + 1, limits)?;
+            }
+            Ok(())
+        }
+        _ => Ok(()),
+    }
+}
+
+fn parse_json_with_limits(
+    input: &str,
+    limits: &QcSchemaParseLimits,
+) -> Result<Value, QcSchemaError> {
+    if input.len() > limits.max_input_bytes {
+        return Err(QcSchemaError::ResourceLimit {
+            resource: "input bytes",
+            path: "$".to_string(),
+            actual: input.len(),
+            limit: limits.max_input_bytes,
+        });
+    }
+    let root: Value =
+        serde_json::from_str(input).map_err(|e| QcSchemaError::InvalidJson(e.to_string()))?;
+    check_resource_limits(&root, "$", 0, limits)?;
+    check_finite(&root, "$")?;
+    Ok(root)
 }
 
 fn obj<'a>(v: &'a Value, ctx: &str) -> Result<&'a Map<String, Value>, QcSchemaError> {
@@ -600,9 +718,15 @@ fn get_fragments_opt(
 
 /// Parse a QCSchema `Molecule` JSON document.
 pub fn parse_qcschema_molecule(input: &str) -> Result<QcMolecule, QcSchemaError> {
-    let root: Value =
-        serde_json::from_str(input).map_err(|e| QcSchemaError::InvalidJson(e.to_string()))?;
-    check_finite(&root, "$")?;
+    parse_qcschema_molecule_with_limits(input, &QcSchemaParseLimits::default())
+}
+
+/// Parse a QCSchema `Molecule` JSON document with explicit resource limits.
+pub fn parse_qcschema_molecule_with_limits(
+    input: &str,
+    limits: &QcSchemaParseLimits,
+) -> Result<QcMolecule, QcSchemaError> {
+    let root = parse_json_with_limits(input, limits)?;
     parse_qc_molecule_value(&root)
 }
 
@@ -902,9 +1026,15 @@ const ATOMIC_INPUT_KEYS: &[&str] = &[
 
 /// Parse a QCSchema `AtomicInput` JSON document.
 pub fn parse_atomic_input(input: &str) -> Result<AtomicInput, QcSchemaError> {
-    let root: Value =
-        serde_json::from_str(input).map_err(|e| QcSchemaError::InvalidJson(e.to_string()))?;
-    check_finite(&root, "$")?;
+    parse_atomic_input_with_limits(input, &QcSchemaParseLimits::default())
+}
+
+/// Parse a QCSchema `AtomicInput` JSON document with explicit resource limits.
+pub fn parse_atomic_input_with_limits(
+    input: &str,
+    limits: &QcSchemaParseLimits,
+) -> Result<AtomicInput, QcSchemaError> {
+    let root = parse_json_with_limits(input, limits)?;
     let o = obj(&root, "AtomicInput")?;
 
     let schema_name = get_str(o, "schema_name")?.unwrap_or_else(|| "qcschema_input".to_string());
@@ -1116,9 +1246,15 @@ const ATOMIC_RESULT_EXTRA_KEYS: &[&str] = &[
 
 /// Parse a QCSchema `AtomicResult` JSON document.
 pub fn parse_atomic_result(input: &str) -> Result<AtomicResult, QcSchemaError> {
-    let root: Value =
-        serde_json::from_str(input).map_err(|e| QcSchemaError::InvalidJson(e.to_string()))?;
-    check_finite(&root, "$")?;
+    parse_atomic_result_with_limits(input, &QcSchemaParseLimits::default())
+}
+
+/// Parse a QCSchema `AtomicResult` JSON document with explicit resource limits.
+pub fn parse_atomic_result_with_limits(
+    input: &str,
+    limits: &QcSchemaParseLimits,
+) -> Result<AtomicResult, QcSchemaError> {
+    let root = parse_json_with_limits(input, limits)?;
     let o = obj(&root, "AtomicResult")?;
 
     let schema_name = get_str(o, "schema_name")?.unwrap_or_else(|| "qcschema_output".to_string());
@@ -1473,4 +1609,68 @@ pub fn chematic_to_qc_molecule(
         extras: JsonObject::new(),
         unknown_fields: JsonObject::new(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn minimal_molecule() -> &'static str {
+        r#"{"symbols":["H"],"geometry":[0.0,0.0,0.0]}"#
+    }
+
+    #[test]
+    fn bounded_molecule_parser_rejects_oversized_input() {
+        let limits = QcSchemaParseLimits {
+            max_input_bytes: 8,
+            ..Default::default()
+        };
+        let err = parse_qcschema_molecule_with_limits(minimal_molecule(), &limits).unwrap_err();
+        assert!(matches!(
+            err,
+            QcSchemaError::ResourceLimit {
+                resource: "input bytes",
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn bounded_molecule_parser_rejects_oversized_arrays() {
+        let limits = QcSchemaParseLimits {
+            max_array_items: 2,
+            ..Default::default()
+        };
+        let err = parse_qcschema_molecule_with_limits(minimal_molecule(), &limits).unwrap_err();
+        assert!(matches!(
+            err,
+            QcSchemaError::ResourceLimit {
+                resource: "array items",
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn bounded_atomic_parsers_apply_json_limits_before_schema_validation() {
+        let limits = QcSchemaParseLimits {
+            max_string_bytes: 8,
+            ..Default::default()
+        };
+        let input = r#"{"x":"longvalue","symbols":["H"],"geometry":[0.0,0.0,0.0]}"#;
+        assert!(matches!(
+            parse_atomic_input_with_limits(input, &limits),
+            Err(QcSchemaError::ResourceLimit {
+                resource: "string bytes",
+                ..
+            })
+        ));
+        assert!(matches!(
+            parse_atomic_result_with_limits(input, &limits),
+            Err(QcSchemaError::ResourceLimit {
+                resource: "string bytes",
+                ..
+            })
+        ));
+    }
 }
