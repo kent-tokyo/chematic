@@ -16,33 +16,40 @@ Python・Rust・ブラウザ向けケモインフォマティクスライブラ�
 **デフォルトで速く、設計で安全なケモインフォマティクス。**  
 Pure Rust · C/C++ ゼロ · Python · WebAssembly · [公式サイト](https://chematic.io/) · [ライブデモ](https://kent-tokyo.github.io/chematic/playground/)
 
-### v1.0.1 の対応範囲
+### v1.0.2 の対応範囲
 
-v1.0.1 は、v1.0.0 の対応範囲を維持し、bounded な CDXML/polymer API、部分的な Python `RWMol`
+v1.0.2 は、v1.0.0 の対応範囲を維持し、bounded な CDXML/polymer API、部分的な Python `RWMol`
 互換、fail-closed canonical identity、明示的な aromaticity/CIP モード、
 Experimental の 3D/MMFF94 を公開契約とします。完全な任意構造 CDXML 編集、
 複雑な Markush/polymer 展開、完全な RDKit `RWMol` 互換、3D の完全な
 ETKDG/MMFF94 互換は対象外です。再現可能なローカル gate は
 [v1.0 local release gate](docs/v1.0-local-release-gate.md) を参照してください。
+このパッチでは明示的水素の原子価検証を修正し、canonical SMILES と SDF
+読み書きのホットパスを高速化しました。測定条件と限定範囲は
+[ベンチマーク文書](docs/benchmark.md) に記録しています。
 
 | | chematic | RDKit (Python) | RDKit.js (WASM) |
 |---|---|---|---|
 | **導入方法** | `pip install chematic` | `pip install rdkit`（公式prebuiltホイール）または conda | `npm install @rdkit/rdkit`、Python バインディングなし |
-| **ブラウザ向けバンドル** | **2.94 MB raw / 1.10 MB gzip** | 該当なし（Python/C++ライブラリ） | 6.91 MB raw* |
+| **ブラウザ向けバンドル** | **3.30 MB raw / 1.21 MB gzip** | 該当なし（Python/C++ライブラリ） | 6.91 MB raw* |
 | **バッチ FP 速度** | **~78 µs/mol**（2–3× 高速） | ~160–235 µs/mol | — |
+| **Canonical SMILES** | **24.95 / 18.27 µs/mol** | 25.58 / 26.82 µs/mol | — |
+| **SDF graph read / serialization-only write** | **9.48 / 7.62 µs/mol** | 99.96 / 79.54 µs/mol | — |
 | **メモリ安全性** | コンパイラが保証（Rust） | C++ | C++ |
 | **ソースビルド** | `cargo build` のみ | cmake + clang + Boost | Emscripten SDK |
 
 \* RDKit.js の gzip転送時サイズは未計測のため、rawサイズ同士で比較している。RDKit.js は
 現在メンテナ移行中(詳細は同リポジトリを参照)。
 
-すべての数値は再現可能です — [ベンチマーク詳細](https://kent-tokyo.github.io/chematic/benchmark/)を参照。  
-WASM サイズ(raw、2026-08-21計測、`wasm-pack build --target web --release` + `wasm-opt -O3`
-のクリーンビルド、commit `ef7dc25`): chematic **2.94 MB**(**1.10 MB gzip**) · RDKit.js **6.91 MB**
+canonical/SDF の行は 2026-09-04 macOS arm64 の中央値であり、記録した corpus と
+処理境界に限定されます。[ベンチマーク詳細](https://kent-tokyo.github.io/chematic/benchmark/)を参照。
+chematic の WASM サイズは v1.0.2 リリース候補を `wasm-pack 0.13.1` +
+`wasm-opt 130 -O3` でビルドして 2026-09-04 に計測: **3.30 MB raw**(**1.21 MB gzip**)。
+比較対象は履歴として固定した RDKit.js **6.91 MB**
 (`@rdkit/rdkit@2025.3.4-1.0.0`の`RDKit_minimal.wasm`、unpkg.com で確認) · Indigo(Ketcher向けビルド)
 **11.24 MB**(`indigo-ketcher@1.45.1`のメイン`.wasm`、jsDelivr で確認) — chematic の raw WASM
-バイナリは現在、RDKit.js よりおよそ2.3倍、Indigo の Ketcher向けビルドよりおよそ3.8倍小さい
-(raw同士の比較)。
+バイナリは現在、RDKit.js よりおよそ2.1倍、Indigo の Ketcher向けビルドよりおよそ3.8倍小さい
+(raw同士の比較)。詳細は[artifact 記録](benchmarks/2026-09-04-wasm-size.md)を参照。
 
 **機能の成熟度（早見表）：**
 
@@ -60,7 +67,7 @@ WASM サイズ(raw、2026-08-21計測、`wasm-pack build --target web --release`
 
 **chematic が適している場合：**
 
-- ブラウザで化学計算を動かしたい（WASM、1.10 MB gzip、サーバー不要）
+- ブラウザで化学計算を動かしたい（WASM、1.21 MB gzip、サーバー不要）
 - C++ ツールチェーンなしの Pure Rust スタックが必要
 - RDKit の導入が困難・非対応な環境（Cloudflare Workers、Lambda、組み込み）にデプロイする
   (RDKit 自体も公式`pip install rdkit`ホイールを提供しているが、通常のCPython環境を前提とする)
@@ -134,7 +141,7 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v1.0.1
+# chematic v1.0.2
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-06, v0.4.22 vs RDKit 2026.03.3 --
@@ -206,8 +213,8 @@ C++ のヒープ破壊なし。不正な SMILES 入力によるセグメンテ�
 ### どこでも動く
 
 Pure Rust は Emscripten・`cmake`・`clang` なしで `wasm32-unknown-unknown` にネイティブでコンパイルされます。
-npm パッケージ `@kent-tokyo/chematic` は **1.10 MB gzip**(raw 2.94 MB)— RDKit.js の
-`RDKit_minimal.wasm`(raw 6.91 MB)と raw同士で比較しておよそ2.3分の1。
+npm パッケージ `@kent-tokyo/chematic` は **1.21 MB gzip**(raw 3.30 MB)— RDKit.js の
+`RDKit_minimal.wasm`(raw 6.91 MB)と raw同士で比較しておよそ2.1分の1。
 1 つのコードベースが Linux・macOS・Windows・あらゆるブラウザで動作します。
 
 ---
@@ -217,7 +224,7 @@ npm パッケージ `@kent-tokyo/chematic` は **1.10 MB gzip**(raw 2.94 MB)— 
 | 観点                                        | **chematic**                               | RDKit (rdkit-sys)  | OpenBabel FFI | RDKit.js (WASM)  |
 |---------------------------------------------|--------------------------------------------|--------------------|---------------|------------------|
 | **C/C++ 依存**                              | **ゼロ（デフォルト）**†                    | 大規模 C++         | 大規模 C++    | C++（Emscripten）|
-| **WASM バイナリサイズ**                     | **raw 2.94 MB(gzip 1.10 MB)**              | N/A（WASM 非対応） | N/A           | raw 6.91 MB      |
+| **WASM バイナリサイズ**                     | **raw 3.30 MB(gzip 1.21 MB)**              | N/A（WASM 非対応） | N/A           | raw 6.91 MB      |
 | **ビルド要件**                              | `cargo build` のみ                         | cmake + clang      | cmake + clang | Emscripten SDK   |
 | **Python バインディング**                   | **あり** (`pip install chematic`, PyO3)    | あり（rdkit-sys）  | あり          | なし             |
 | unsafe Rust                                 | **自クレートはなし**‡                      | 大規模             | 大規模        | N/A              |
@@ -252,7 +259,7 @@ npm パッケージ `@kent-tokyo/chematic` は **1.10 MB gzip**(raw 2.94 MB)— 
 
 ## JavaScript / TypeScript（WebAssembly）
 
-**1.10 MB gzip — RDKit.js の raw WASM と比べておよそ2.3分の1。** Emscripten・cmake 不要。ブラウザ・Node.js どちらでも動作。
+**1.21 MB gzip — RDKit.js の raw WASM と比べておよそ2.1分の1。** Emscripten・cmake 不要。ブラウザ・Node.js どちらでも動作。
 
 ```sh
 npm install @kent-tokyo/chematic
@@ -312,6 +319,11 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 ---
 
 ## 最近の開発
+
+**v1.0.2**（2026-09-04）: **canonical SMILES・SDF高速化と原子価契約の厳密化**
+- 2つの5,000分子corpusにおけるcanonical SMILESと、365-record SDFのgraph/property read・serialization-only writeを反復測定しました。数値はmacOS arm64上の限定された操作・corpusの結果であり、全環境での優位性主張ではありません。
+- 明示的水素を含む原子価検証を修正し、standardization fixtureとN-alkylation templateを厳密な契約に合わせました。
+- version固定・中断再開可能なbenchmark runner、raw log、corpus hash、失敗／未対応statusを追加しました。詳細は[`benchmarks/`](benchmarks/)を参照してください。
 
 **v0.23.0**（2026-08-30）: **MCS精度修正（挙動変更）、RDKit互換fingerprintを2種追加、MCS bindingフル対応**
 - `chematic-smarts`：**挙動変更** — `find_mcs`のデフォルト`AtomCompare::Elements`が、芳香族性の一致を要求しなくなった。RDKitの同名`rdFMCS.AtomCompare.CompareElements`と完全に一致する挙動（ライブオラクルで確認済み——RDKitは芳香族性を原子側の制約として一切エンコードせず、結合タイプのクエリのみで表現する）。ライブRDKitオラクルとの一致率は、3つの既存corpusで74.6%/68.2%/70.4%から88.4%/88.5%/97.0%へ向上。従来の厳密な元素+芳香族一致を復元する`AtomCompare`モードは現時点で存在しない

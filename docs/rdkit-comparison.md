@@ -15,7 +15,7 @@ See also: [`rdkit-migration.md`](rdkit-migration.md) for a feature-by-feature Su
 | | chematic | RDKit |
 |---|---|---|
 | **Install** | `pip install chematic` | `pip install rdkit` (official prebuilt wheels) or conda |
-| **Browser / WASM** | Yes — 2.94 MB raw / 1.10 MB gzip | Not applicable (Python/C++ library); RDKit.js is a separate community project — 6.91 MB raw |
+| **Browser / WASM** | Yes — 3.30 MB raw / 1.21 MB gzip | Not applicable (Python/C++ library); RDKit.js is a separate community project — 6.91 MB raw |
 | **C++ dependency** | None (default) | Required |
 | **Batch fingerprint speed** | ~78 µs/mol (2–3× faster, diverse corpus) | ~160–235 µs/mol |
 | **AI agent integration** | MCP server built-in | None |
@@ -43,15 +43,18 @@ See also: [`rdkit-migration.md`](rdkit-migration.md) for a feature-by-feature Su
 
 | Library | Bundle size | Build toolchain |
 |---|---|---|
-| **chematic** | **2.94 MB raw / 1.10 MB gzip** | `wasm-pack build` only |
+| **chematic** | **3.30 MB raw / 1.21 MB gzip** | `wasm-pack build` only |
 | RDKit.js (`@rdkit/rdkit`) | 6.91 MB raw (`RDKit_minimal.wasm`, gzip not independently measured) | Emscripten SDK + cmake (upstream; not needed by consumers of the published npm package) |
 | Indigo (Ketcher-oriented build, `indigo-ketcher`) | 11.24 MB raw (main `.wasm`; a "norender" variant is 7.17 MB) | Emscripten SDK + cmake (upstream) |
 
-All three raw sizes measured 2026-08-21: chematic from a clean `wasm-pack build --target web --release`
-+ `wasm-opt -O3` at commit `ef7dc25`; RDKit.js via `@rdkit/rdkit@2025.3.4-1.0.0`'s file listing on
-unpkg.com; Indigo via `indigo-ketcher@1.45.1`'s file listing on jsDelivr. chematic's raw binary is
-currently about 2.3× smaller than RDKit.js's and about 3.8× smaller than Indigo's Ketcher-oriented
-build. chematic compiles to `wasm32-unknown-unknown` natively — no Emscripten, no cmake, no clang.
+The chematic size was measured 2026-09-04 from the v1.0.2 release candidate using
+`wasm-pack 0.13.1` + `wasm-opt 130 -O3`. The pinned historical comparators were obtained from
+`@rdkit/rdkit@2025.3.4-1.0.0`'s file listing on unpkg.com and
+`indigo-ketcher@1.45.1`'s file listing on jsDelivr. chematic's raw binary is
+currently about 2.1× smaller than RDKit.js's and about 3.8× smaller than Indigo's Ketcher-oriented
+build. See the exact chematic artifact digest in the
+[2026-09-04 record](../benchmarks/2026-09-04-wasm-size.md). chematic compiles to
+`wasm32-unknown-unknown` natively — no Emscripten, no cmake, no clang.
 
 ---
 
@@ -173,7 +176,7 @@ Most common operations map directly:
 
 **Choose chematic if:**
 
-- You want chemistry in the browser (WASM, 1.10 MB gzip, no server)
+- You want chemistry in the browser (WASM, 1.21 MB gzip, no server)
 - You need a pure Rust stack with no C++ toolchain
 - You deploy to Lambda, Cloudflare Workers, or other constrained environments
 - You build AI agents and want native MCP tool integration
@@ -220,6 +223,7 @@ RDKit users while adding batch-first and browser-native capabilities.
 
 *Benchmark data: Apple M4, Python 3.13.6, chematic v0.18.0, RDKit 2026.03.3 (2026-07-17 snapshot;
 see [`benchmarks/2026-07-17.md`](../benchmarks/2026-07-17.md) for the underlying methodology —
-descriptor calculation paths unchanged since, not re-measured this cycle). Bundle-size figures
-above were freshly re-measured 2026-08-21 (see the WASM deployment table).*  
+descriptor calculation paths unchanged since, not re-measured this cycle). The chematic bundle-size
+figure above was measured 2026-09-04 from the v1.0.2 candidate; comparator sizes are pinned historical
+figures (see the WASM deployment table).*
 *Reproduce all benchmarks: see [benchmark details](benchmark.md).*

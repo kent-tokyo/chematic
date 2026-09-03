@@ -5,8 +5,10 @@ reader. The writer benchmark uses `SDWriter(..., compute2d=False)` and removes
 RDKit conformers, so this is a serialization-only comparison. It must not be
 read as a comparison of automatic 2D depiction.
 
-Environment: chematic 1.0.1, RDKit 2025.09.3, Python 3.13.6, macOS 26.5.2
-arm64; corpus is RDKit's bundled `egfr.sdf` (365 records).
+Environment: code included in chematic 1.0.2, measured before the version-only
+metadata bump when the local wheel still reported 1.0.1; source optimization
+through `41acb3b4`, RDKit 2025.09.3, Python 3.13.6, macOS 26.5.2 arm64; corpus
+is RDKit's bundled `egfr.sdf` (365 records).
 
 ## Follow-up optimization
 

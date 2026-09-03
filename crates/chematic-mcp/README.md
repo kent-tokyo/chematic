@@ -33,7 +33,7 @@ registry in `src/tools.rs` is the source of truth for the available tools.
 
 ```toml
 [dependencies]
-chematic-mcp = { version = "1.0.1", path = "../chematic-mcp" }
+chematic-mcp = { version = "1.0.2", path = "../chematic-mcp" }
 ```
 
 ## Running the server

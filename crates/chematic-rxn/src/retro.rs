@@ -252,8 +252,12 @@ pub static DEFAULT_TEMPLATES: &[RetroTemplate] = &[
     },
     RetroTemplate {
         // #296: `CX4` broadened to any non-aromatic C (see mitsunobu_ether).
+        // Leave product N hydrogens implicit: cleavage of a secondary amine
+        // needs NH2, while cleavage of a tertiary amine needs NH. A fixed
+        // `[NH]` product became under-valent for the former once explicit-H
+        // valence validation was corrected in #455.
         name: "n_alkylation",
-        smirks: "[C:1][N:2]>>[C:1]Br.[NH:2]",
+        smirks: "[C:1][N:2]>>[C:1]Br.[N:2]",
         reaction_class: RetroClass::CNBond,
     },
     RetroTemplate {
@@ -780,6 +784,16 @@ mod tests {
         let m = mol("CCCNCC"); // N-ethylpropan-1-amine, same substrate, different template's own filter
         let hits = hits_for(&m, "n_alkylation");
         assert!(!hits.is_empty(), "should disconnect an N-alkyl bond");
+    }
+
+    #[test]
+    fn n_alkylation_matches_tertiary_amine() {
+        let m = mol("CCN(CC)CC"); // triethylamine: cleavage should infer a secondary-amine NH
+        let hits = hits_for(&m, "n_alkylation");
+        assert!(
+            !hits.is_empty(),
+            "should disconnect a tertiary amine without forcing an invalid N hydrogen count"
+        );
     }
 
     #[test]

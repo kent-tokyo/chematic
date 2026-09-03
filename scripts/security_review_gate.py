@@ -13,6 +13,7 @@ import json
 import re
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 
@@ -27,6 +28,8 @@ def main() -> int:
     parser.add_argument("--json-out", type=Path)
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
+    workspace = tomllib.loads((root / "Cargo.toml").read_text(encoding="utf-8"))
+    workspace_version = workspace["workspace"]["package"]["version"]
     checks: list[dict[str, object]] = []
 
     def check(name: str, passed: bool, detail: str) -> None:
@@ -71,7 +74,7 @@ def main() -> int:
     failed = [item for item in checks if item["status"] != "pass"]
     report = {
         "schema": "chematic.security-review-gate.v1",
-        "version": "1.0.0",
+        "version": workspace_version,
         "checks": checks,
         "status": "fail" if failed else "pass",
         "external_review": "required-before-claiming-s5-exit",

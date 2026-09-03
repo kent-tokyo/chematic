@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Status: strategic roadmap, revised 2026-09-03.  v1.0.1 is published;
+> Status: strategic roadmap, revised 2026-09-04. v1.0.2 is the current patch release;
 > the next work remains version-locked until a new release decision.
 
 ## North star
@@ -780,7 +780,7 @@ single manifest.
   local v1.0 release-gate command set.
 - [x] Add an offline release-document consistency validator covering the fixed
   version, `chematic` product name, release-key secret name, and gate links.
-- [x] Audit current-facing documentation examples for v1.0.1 and preserve old
+- [x] Audit current-facing documentation examples for v1.0.2 and preserve old
   versions only where they are historical benchmark or release-note records.
 - Stabilize the modern bounded embedding pipeline and clearly separate it from
   legacy APIs; remove or quarantine paths that can produce unsound geometry.
@@ -877,7 +877,7 @@ field, with no unqualified “RDKit parity” claim.
 
 The next cohesive releases should follow this order:
 
-1. **S0 security baseline**: synchronize `SECURITY.md` with v1.0.1, inventory
+1. **S0 security baseline**: synchronize `SECURITY.md` with v1.0.2, inventory
    every public input/binding boundary, and verify the repository's claimed
    security controls.
 2. **S1 resource safety**: make parser, SMARTS/MCS, reaction, format, 3D, and

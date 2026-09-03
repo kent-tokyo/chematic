@@ -37,10 +37,10 @@ no backend of their own. (This describes chematic's own browser tools; if you bu
 on top of chematic-wasm that calls other network APIs, that's your own code's choice, not
 something chematic does on your behalf.)
 
-**Lightweight deployment.** The WASM bundle is **2.94 MB raw / 1.10 MB gzip**, measured
-2026-08-21 from a clean release build (`wasm-pack build --target web --release` + `wasm-opt -O3`,
-commit `ef7dc25`) — see [`docs/rdkit-comparison.md`](rdkit-comparison.md#wasm-deployment) for the
-full methodology and how this compares to RDKit.js.
+**Lightweight deployment.** The WASM bundle is **3.30 MB raw / 1.21 MB gzip**, measured
+2026-09-04 from the v1.0.2 release candidate (`wasm-pack 0.13.1` +
+`wasm-opt 130 -O3`) — see the [artifact record](../benchmarks/2026-09-04-wasm-size.md)
+for the digest and reproduction commands.
 
 **One Rust core, multiple interfaces.** The same `chematic-*` Rust crates back the native Rust
 API, the Python bindings (`pip install chematic`), and the WASM/JavaScript bindings
@@ -129,7 +129,7 @@ API, the Python bindings (`pip install chematic`), and the WASM/JavaScript bindi
 | Scenario | How chematic helps |
 |---|---|
 | **Local compound triage** | [Local Compound Explorer](https://kent-tokyo.github.io/chematic/explorer/) — load a CSV/SDF, filter, sort, and export, entirely client-side |
-| **Browser app** | 1.10 MB gzip WASM bundle, zero backend required, React/Vue/Svelte ready |
+| **Browser app** | 1.21 MB gzip WASM bundle, zero backend required, React/Vue/Svelte ready |
 | **Drug screening** | 190+ descriptor values, ADMET, PAINS/Brenk, QED — batch over thousands of compounds |
 | **AI agent / MCP** | Built-in MCP server — Claude Desktop can call chemistry tools directly |
 | **Batch analysis** | Rayon-parallel descriptor/fingerprint/3D pipelines; SDF/CSV in, CSV out |
@@ -145,14 +145,14 @@ Full worked examples → [Use cases](use-cases/)
 |---|---|---|---|
 | Install | `pip install chematic` | `pip install rdkit` (official prebuilt wheels) or conda | `npm install @rdkit/rdkit`, no Python bindings |
 | C/C++ toolchain | Not required, even building from source | Not required for the prebuilt wheel; required building from source | Not required by consumers of the published package |
-| Browser / WASM | Yes — 2.94 MB raw / 1.10 MB gzip | Not applicable (Python/C++ library) | Yes — 6.91 MB raw (`RDKit_minimal.wasm`; a separate community project, currently in a maintainer transition) |
+| Browser / WASM | Yes — 3.30 MB raw / 1.21 MB gzip | Not applicable (Python/C++ library) | Yes — 6.91 MB raw (`RDKit_minimal.wasm`; a separate community project, currently in a maintainer transition) |
 | pKa / ADMET prediction | Built-in, rule-based screening — not for clinical use | External tool required | External tool required |
 | AI agent / MCP integration | Built-in, 20 tools (stdio only) | — | — |
 | Ecosystem maturity | Growing (2024–) | Established (2006–) | Established, but the WASM distribution specifically is community-maintained |
 
-Bundle sizes measured 2026-08-21 (commit `ef7dc25`); chematic vs RDKit.js compared on a
-raw-to-raw basis since RDKit.js's gzip-over-the-wire size was not independently measured. Full
-detail, including where chematic is weaker: [Detailed RDKit comparison](rdkit-comparison.md).
+The chematic bundle was measured 2026-09-04 from the v1.0.2 candidate; RDKit.js is a
+pinned historical raw-size comparator because its gzip-over-the-wire size was not independently
+measured. Full detail, including where chematic is weaker: [Detailed RDKit comparison](rdkit-comparison.md).
 
 ---
 
@@ -167,7 +167,7 @@ reproduction commands: [Validation report](validation.md).
 
 ## When to use chematic
 
-- You want chemistry in the browser (WASM, 1.10 MB gzip, no server required)
+- You want chemistry in the browser (WASM, 1.21 MB gzip, no server required)
 - You need a pure Rust stack with no C++ toolchain dependencies
 - You deploy to environments where installing RDKit is impractical (Cloudflare Workers, Lambda, embedded)
 - You build AI agents and want native MCP tool integration

@@ -1,6 +1,6 @@
 # Benchmark
 
-## v1.0.1 benchmark preparation status
+## v1.0.2 benchmark status
 
 The repository now contains a machine-readable competitive benchmark protocol
 at [`validation/competitive_benchmark_manifest.json`](../validation/competitive_benchmark_manifest.json).
@@ -8,9 +8,11 @@ It defines the three in-scope engines (chematic, RDKit, and Open Babel),
 corpora, operations, required provenance, fairness
 rules, and result statuses needed for a defensible comparison.
 
-This is preparation evidence, not a new performance claim. The dated numbers
-below remain historical snapshots until the protocol is executed again on the
-current release. Validate the protocol offline with:
+The broad protocol snapshot remains a v1.0.1 historical measurement. The
+focused 2026-09-04 canonical and SDF measurements were taken from the code now
+released as v1.0.2, before its version-only metadata bump, and are therefore
+reported with that provenance rather than relabeled as a fresh package run.
+Validate the current v1.0.2 protocol offline with:
 
 ```bash
 python3 scripts/validate_competitive_benchmark_manifest.py
@@ -49,7 +51,8 @@ results are operation-specific: chematic led import, SMILES parsing, and
 ECFP4, while RDKit led canonical SMILES and SDF read/write. See the complete
 record and hashes in [`benchmarks/2026-09-03-competitive.md`](../benchmarks/2026-09-03-competitive.md).
 
-Two focused follow-ups optimize and re-measure narrower, equivalent-work paths.
+Two focused follow-ups optimize and re-measure narrower, equivalent-work paths
+included in v1.0.2.
 The canonical SMILES run over 5,000 diverse molecules records a seven-run
 median of 24.95 µs/mol for chematic and 25.58 µs/mol for RDKit (chematic 2.5%
 faster on that environment and corpus). A second 5,000-molecule ChEMBL-derived
@@ -278,7 +281,7 @@ python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --detail
 | C/C++ compiler | Not required, even building from source | Not required for the prebuilt wheel; required (Boost) building RDKit itself from source |
 | Docker image size delta | ~4 MB (approximate; not independently re-measured this cycle) | ~200 MB+ (approximate; not independently re-measured this cycle) |
 | GitHub Actions | Single pip line | Separate conda setup step |
-| JavaScript / WASM | `npm install @kent-tokyo/chematic` (2.98 MB raw / 1.11 MB gzip) | `npm install @rdkit/rdkit` (RDKit.js, a separate community project — 6.91 MB raw / 2.06 MB gzip) |
+| JavaScript / WASM | `npm install @kent-tokyo/chematic` (3.30 MB raw / 1.21 MB gzip) | `npm install @rdkit/rdkit` (RDKit.js, a separate community project — 6.91 MB raw / 2.06 MB gzip) |
 | Browser deployment | Yes | Yes, via RDKit.js |
 
 ---
@@ -292,7 +295,7 @@ python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --detail
 | MCP server (AI agent integration) | 20 tools (stdio only) | Not available |
 | LSH approximate nearest-neighbour index | Built-in | Not available |
 | IUPAC name generation | Built-in (offline) | Not available |
-| Browser / WASM deployment | Yes (2.98 MB raw / 1.11 MB gzip) | Yes, via RDKit.js (a separate community project — 6.91 MB raw / 2.06 MB gzip) |
+| Browser / WASM deployment | Yes (3.30 MB raw / 1.21 MB gzip; [v1.0.2 artifact record](../benchmarks/2026-09-04-wasm-size.md)) | Yes, via RDKit.js (a separate community project — 6.91 MB raw / 2.06 MB gzip) |
 | ECFP4 batch speed | 1.7× faster (diverse corpus), 6.6× faster (repeated fixture) | Baseline |
 | SMARTS atom map `:N` | Yes | Yes |
 | Retrosynthesis (template-based) | 60 retro-SMIRKS built-in | External tool |

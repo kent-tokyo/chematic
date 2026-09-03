@@ -9,6 +9,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+No unreleased changes.
+
+## [1.0.2] - 2026-09-04
+
+### Fixed
+
+- Corrected explicit-hydrogen valence accounting so bracket atoms reject
+  chemically impossible hydrogen counts instead of constructing an invalid
+  molecule (#455).
+- Corrected the N-alkylation retrosynthesis template to infer product nitrogen
+  hydrogens from its remaining substituents instead of forcing an under-valent
+  `[NH]` product.
+
+### Performance
+
+- Reduced canonical SMILES ranking, partition-refinement, automorphism-search,
+  and E/Z-resolution overhead. On the recorded macOS arm64 environment,
+  chematic led RDKit by 2.5% and 1.47x on two independent 5,000-molecule
+  corpora.
+- Added lightweight SDF graph/property reading and serialization-only writing,
+  then removed avoidable coordinate, diagnostic, and allocation work. The
+  recorded seven-process medians improved 1.26x for read and 1.33x for write
+  over the preceding chematic implementation, and were about 10.5x and 10.4x
+  faster than RDKit for those explicitly scoped operations.
+
+### Benchmarking and documentation
+
+- Added a version-pinned competitive benchmark protocol with resumable,
+  operation-level state, stale-environment rejection, raw logs, corpus hashes,
+  and explicit unsupported/failure statuses.
+- Recorded the v1.0.1 broad comparison and the focused canonical/SDF follow-up
+  measurements used by this release; claims remain limited to the documented
+  corpora, operations, hardware, and configurations.
+- Recorded the optimized v1.0.2-candidate WASM artifact size, exact byte counts,
+  SHA-256 digest, tool versions, and reproduction commands.
+- Normalized the public product name to `chematic` and clarified that former
+  local-only milestone versions were consolidated into v0.89.0 rather than
+  published independently.
+
+## [1.0.1] - 2026-09-03
+
 ### Improved — `chematic-3d` UFF stereo rescue (#210)
 
 - The bounded UFF rescue now tries up to three deterministic distance-geometry
@@ -19,8 +60,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Each candidate still requires finite coordinates, sane bond lengths, sound
   minimization, and fully satisfied declared stereo; if all candidates fail, the
   original typed failure is returned unchanged apart from the retry marker.
-
-## [1.0.1] - 2026-09-03
 
 ### Release status
 
@@ -8753,7 +8792,8 @@ Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception 
 - `#![forbid(unsafe_code)]` on all crates.
 - FNV-1a hashing for reproducible, deterministic canonical SMILES across platforms.
 
-[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/kent-tokyo/chematic/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/kent-tokyo/chematic/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/kent-tokyo/chematic/releases/tag/v1.0.0
 [0.89.0]: https://github.com/kent-tokyo/chematic/releases/tag/v0.89.0

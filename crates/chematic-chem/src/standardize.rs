@@ -2028,12 +2028,12 @@ mod tests {
     #[test]
     fn bug3_ionic_pair_neutralize_before_largest_fragment() {
         // BUG #3 Fix Verification: NeutralizeCharges must run BEFORE LargestFragment
-        // Example: [NH3+].[OH-] (ammonium hydroxide)
-        // NH3+ will be neutralized (reduce H by 1)
-        // After neutralization: [NH2+].[OH-] - still two fragments
+        // Example: [NH4+].[OH-] (ammonium hydroxide)
+        // NH4+ will be neutralized (reduce H by 1)
+        // After neutralization: [NH3].[OH-] - still two fragments
         // LargestFragment then picks the larger one
         // Key: stage order affects which fragment is selected
-        let mol = parse("[NH3+].[OH-]").unwrap();
+        let mol = parse("[NH4+].[OH-]").unwrap();
         let pipeline = StandardizationPipeline::new(StandardizeOptions {
             largest_fragment_only: true,
             neutralize_charges: true,
@@ -2068,6 +2068,10 @@ mod tests {
             report.status,
             PipelineStatus::Modified,
             "Should be marked as Modified"
+        );
+        assert!(
+            report.warnings.is_empty(),
+            "valid ammonium hydroxide should not warn"
         );
     }
 

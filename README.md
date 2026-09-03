@@ -19,8 +19,10 @@ Pure Rust · Zero C/C++ · Python · WebAssembly · [Website](https://chematic.i
 | | chematic | RDKit (Python) | RDKit.js (WASM) |
 |---|---|---|---|
 | **Get started** | `pip install chematic` | `pip install rdkit` (official prebuilt wheels) or conda | `npm install @rdkit/rdkit`, no Python bindings |
-| **Browser bundle** | **2.94 MB raw / 1.10 MB gzip** | not applicable (Python/C++ library) | 6.91 MB raw* |
+| **Browser bundle** | **3.30 MB raw / 1.21 MB gzip** | not applicable (Python/C++ library) | 6.91 MB raw* |
 | **Batch fingerprints** | **~78 µs/mol** (2–3× faster) | ~160–235 µs/mol | — |
+| **Canonical SMILES** | **24.95 / 18.27 µs/mol** | 25.58 / 26.82 µs/mol | — |
+| **SDF graph read / serialization-only write** | **9.48 / 7.62 µs/mol** | 99.96 / 79.54 µs/mol | — |
 | **Memory safety** | compiler-enforced (Rust) | C++ | C++ |
 | **Build from source** | `cargo build` only | cmake + clang + Boost | Emscripten SDK |
 
@@ -28,13 +30,16 @@ Pure Rust · Zero C/C++ · Python · WebAssembly · [Website](https://chematic.i
 on a like-for-like basis. RDKit.js is currently in a maintainer transition (see its repo for
 current status).
 
-All numbers are reproducible — see [benchmark details](https://kent-tokyo.github.io/chematic/benchmark/).  
-WASM sizes (raw, measured 2026-08-21 from a clean `wasm-pack build --target web --release`
-+ `wasm-opt -O3`, commit `ef7dc25`): chematic **2.94 MB** (**1.10 MB gzip**) · RDKit.js **6.91 MB**
+The canonical and SDF rows are scoped 2026-09-04 macOS arm64 medians, not
+cross-platform claims; see the exact corpora and operation boundaries in the
+[benchmark details](docs/benchmark.md).
+The chematic WASM size was measured 2026-09-04 from the v1.0.2 release candidate with
+`wasm-pack 0.13.1` + `wasm-opt 130 -O3`: **3.30 MB raw** (**1.21 MB gzip**). The pinned
+historical comparators are RDKit.js **6.91 MB**
 (`@rdkit/rdkit@2025.3.4-1.0.0`'s `RDKit_minimal.wasm`, via unpkg.com) · Indigo (Ketcher build)
 **11.24 MB** (`indigo-ketcher@1.45.1`'s main `.wasm`, via jsDelivr) — chematic's raw WASM binary
-is currently about 2.3× smaller than RDKit.js's and about 3.8× smaller than Indigo's Ketcher-oriented
-build, on a raw-to-raw basis.
+is currently about 2.1× smaller than RDKit.js's and about 3.8× smaller than Indigo's Ketcher-oriented
+build, on a raw-to-raw basis. See the [artifact record](benchmarks/2026-09-04-wasm-size.md).
 
 The separate 2026-08-23 benchmark rebuild reports 2.98 MB raw / 1.11 MB gzip;
 both figures are retained with their measurement dates because build outputs
@@ -50,11 +55,13 @@ can vary slightly by toolchain and build environment.
 | IUPAC name generation | Partial (25+ classes) |
 | Pure-Rust InChI | Approximate (enable `native-inchi` feature for exact) |
 
-### v1.0.1 release boundary
+### v1.0.2 release boundary
 
-The v1.0.1 patch release retains the v1.0.0 documented bounded
+The v1.0.2 patch release retains the v1.0.0 documented bounded
 CDXML/polymer API, partial Python `RWMol` compatibility, fail-closed canonical
-identity, explicit aromaticity/CIP modes, and Experimental 3D/MMFF94. The
+identity, explicit aromaticity/CIP modes, and Experimental 3D/MMFF94. It adds
+the explicit-hydrogen valence correction and canonical/SDF throughput
+improvements without changing that compatibility boundary. The
 complete compatibility contract and reproducible local release gate are in
 [`docs/compatibility-scope.md`](docs/compatibility-scope.md) and
 [`docs/v1.0-local-release-gate.md`](docs/v1.0-local-release-gate.md).
@@ -96,7 +103,7 @@ cmp.save("compare.html")
 | **Drug screening** | 190+ descriptors, ADMET, PAINS/Brenk, QED — batch over thousands of compounds |
 | **Molecule search** | ECFP4/MACCS fingerprints, opt-in RDKit-compatible chiral Morgan fingerprints, Tanimoto, LSH approximate nearest-neighbour |
 | **AI agent / MCP** | Built-in MCP server — Claude Desktop can call chemistry tools directly |
-| **Browser app** | 1.10 MB gzip WASM bundle, zero backend required, React/Vue/Svelte ready |
+| **Browser app** | 1.21 MB gzip WASM bundle, zero backend required, React/Vue/Svelte ready |
 | **Jupyter notebook** | `mol` renders SVG inline; `descriptors_df()` returns a pandas DataFrame |
 | **Batch analysis** | Rayon-parallel descriptor/fingerprint/3D pipelines; SDF/CSV in, CSV out |
 | **Rust server** | Pure-Rust crates with no C/C++ toolchain; Axum/Actix compatible |
@@ -109,7 +116,7 @@ Full worked examples → [Use cases](https://kent-tokyo.github.io/chematic/use-c
 
 **Use chematic if:**
 
-- You want chemistry in the browser (WASM, 1.10 MB gzip, no server required)
+- You want chemistry in the browser (WASM, 1.21 MB gzip, no server required)
 - You need a pure Rust stack with no C++ toolchain dependencies
 - You deploy to environments where installing RDKit is impractical or unsupported (Cloudflare Workers, Lambda, embedded — RDKit itself ships official `pip install rdkit` wheels, but those still assume a standard CPython environment)
 - You build AI agents and want native MCP tool integration
@@ -213,7 +220,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v1.0.1
+# chematic v1.0.2
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -298,8 +305,8 @@ safety at every call site chematic itself wrote.
 ### Anywhere
 
 Pure Rust compiles to `wasm32-unknown-unknown` natively — no Emscripten, no `cmake`,
-no `clang`. The npm package `@kent-tokyo/chematic` is **1.10 MB gzip** (2.94 MB raw) —
-roughly 2.3× smaller than RDKit.js's `RDKit_minimal.wasm` (6.91 MB raw) on a like-for-like
+no `clang`. The npm package `@kent-tokyo/chematic` is **1.21 MB gzip** (3.30 MB raw) —
+roughly 2.1× smaller than RDKit.js's `RDKit_minimal.wasm` (6.91 MB raw) on a like-for-like
 raw-size basis. One codebase runs on Linux, macOS, Windows, and in every browser.
 
 ---
@@ -314,7 +321,7 @@ raw-size basis. One codebase runs on Linux, macOS, Windows, and in every browser
 | LogP (Crippen) | **100% RDKit agreement**\* | 4,999-mol ChEMBL subset |
 | Stereocenter count | **99.96%** vs legacy†; 98.6% vs new CIP | 4,999-mol ChEMBL subset |
 | CIP R/S label agreement | **96.30%** vs modern `rdCIPLabeler`‡; 96.83% vs legacy | 5,000-mol ChEMBL subset |
-| WASM bundle | **1.10 MB** gzip (2.94 MB raw) | measured 2026-08-21, commit `ef7dc25` |
+| WASM bundle | **1.21 MB** gzip (3.30 MB raw) | v1.0.2 candidate, measured 2026-09-04 |
 
 \*LogP max Δ = 1.1×10⁻¹³ across 4,999 molecules — within float64 rounding error.  
 †Stereocenter count: ~99.96% vs legacy `CalcNumAtomStereoCenters` (a handful of molecules where chematic matches `FindPotentialStereo` and legacy under-counts); ~98.6% vs new-CIP `FindPotentialStereo` (cage/bridgehead molecules where both chematic and legacy correctly return fewer than the new oracle). chematic is calibrated between both extremes. This measures whether an atom is *flagged* as a stereocenter, not whether its R/S label is correct — see the next row.  
@@ -330,7 +337,7 @@ Full history → [benchmarks/](benchmarks/) · Methodology → [validation/](val
 | Feature                 | **chematic**                              | RDKit (rdkit-sys)  | OpenBabel FFI  | RDKit.js (WASM)    |
 |-------------------------|-------------------------------------------|--------------------|----------------|--------------------|
 | **C/C++ dependencies**  | **None (default)**†                       | Extensive C++      | Extensive C++  | C++ via Emscripten |
-| **WASM binary size**    | **2.94 MB raw** (1.10 MB gzip)             | N/A (no WASM)      | N/A (no WASM)  | 6.91 MB raw        |
+| **WASM binary size**    | **3.30 MB raw** (1.21 MB gzip)             | N/A (no WASM)      | N/A (no WASM)  | 6.91 MB raw        |
 | **Build requirement**   | `cargo build` only                        | cmake + clang      | cmake + clang  | Emscripten SDK     |
 | **WASM target support** | **Full (native)**                         | No                 | No             | Yes (Emscripten)   |
 | **Python bindings**     | **Yes** (`pip install chematic`, PyO3)    | Yes (rdkit-sys)    | Yes            | No                 |
@@ -345,7 +352,7 @@ differences; detailed feature claims belong in those maintained pages.
 
 ## JavaScript / TypeScript (WebAssembly)
 
-**1.10 MB gzip — roughly 2.3× smaller than RDKit.js's raw WASM.** No Emscripten, no cmake. Drop-in for browser or Node.js.
+**1.21 MB gzip — roughly 2.1× smaller than RDKit.js's raw WASM.** No Emscripten, no cmake. Drop-in for browser or Node.js.
 
 ```sh
 npm install @kent-tokyo/chematic
@@ -411,6 +418,11 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 ## Recent Development
 
+**v1.0.2** (2026-09-04): **canonical SMILES and SDF throughput, stricter valence integration**
+- Canonical SMILES leads RDKit by 2.5% and 1.47× on two recorded 5,000-molecule macOS arm64 runs; SDF graph/property read and serialization-only write are about 10.5× and 10.4× faster on the scoped 365-record run.
+- Explicit bracket-hydrogen valence validation now rejects impossible inputs; standardization and N-alkylation fixtures/templates were aligned with the stricter contract.
+- The benchmark runner is version-pinned, resumable, and records corpus hashes, raw logs, failures, and unsupported operations. Full scope and reproduction commands are in [`benchmarks/`](benchmarks/).
+
 **v0.23.0** (2026-08-30): **MCS accuracy fix (behavior change), two more RDKit fingerprint ports, full MCS bindings**
 - `chematic-smarts`: **behavior change** — `find_mcs`'s default `AtomCompare::Elements` no longer requires matching aromaticity, matching RDKit's identically-named `rdFMCS.AtomCompare.CompareElements` exactly (confirmed via live oracle: RDKit never encodes aromaticity as a per-atom constraint, only via bond-type queries). Agreement vs. a live RDKit oracle rose from 74.6%/68.2%/70.4% to 88.4%/88.5%/97.0% across three established corpora. There is currently no `AtomCompare` mode that restores the old strict element+aromaticity match
 - `chematic-py`/`chematic-wasm`/`chematic-mcp`/`chematic-chem`: fixed `find_mcs` result reconstruction silently losing heteroatoms and/or aromaticity across all 4 binding surfaces (`QueryMolecule` → concrete `Molecule` conversion never unwrapped the compound atom query correctly) — surfaced while measuring the fix above
@@ -418,9 +430,9 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 - `chematic-py`/`chematic-wasm`: full `McsConfig`/`McsOutcome` exposed to `find_mcs` bindings (`match_charge`/`match_isotope`/`atom_compare`/`bond_compare`/`timeout_ms`/etc., previously Rust-only)
 - Full details in `CHANGELOG.md`'s `[0.23.0]` section
 
-Current development is tracked in [`CHANGELOG.md`](CHANGELOG.md). The latest
-`v0.31.0` work adds Parent identity bindings for WASM, following the Python
-bindings in `v0.30.0`; both expose bounded, status-aware operations.
+Current development is tracked in [`CHANGELOG.md`](CHANGELOG.md). v1.0.2 keeps
+the v1.0 compatibility boundary while shipping the measured canonical/SDF
+hot-path improvements and explicit-hydrogen validation correction.
 
 The older release notes below are retained as a short historical summary.
 
@@ -609,7 +621,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v1.0.1)
+├── Cargo.toml                    workspace root (v1.0.2)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -663,7 +675,7 @@ If you use chematic in academic or research work, please cite:
   author    = {Kentaro Tanabe (kent-tokyo)},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {0.31.0},
+  version   = {1.0.2},
   year      = {2026},
 }
 ```

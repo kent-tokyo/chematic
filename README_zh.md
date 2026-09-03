@@ -16,23 +16,35 @@
 **默认快速，设计安全的化学信息学库。**  
 纯 Rust · 零 C/C++ · Python · WebAssembly · [官方网站](https://chematic.io/) · [在线演示](https://kent-tokyo.github.io/chematic/playground/)
 
+### v1.0.2 范围
+
+v1.0.2 保持 v1.0.0 的兼容性边界，并加入显式氢价态校验修复以及
+canonical SMILES、SDF 热路径优化。CDXML/polymer、Python `RWMol`、
+aromaticity/CIP 与 Experimental 3D/MMFF94 的支持范围不变。基准数字仅适用于
+记录的语料、操作、硬件与配置；完整方法见[基准文档](docs/benchmark.md)。
+
 | | chematic | RDKit (Python) | RDKit.js (WASM) |
 |---|---|---|---|
 | **快速上手** | `pip install chematic` | `pip install rdkit`（官方预编译 wheel）或 conda | `npm install @rdkit/rdkit`，无 Python 绑定 |
-| **浏览器包体积** | **raw 2.94 MB / gzip 1.10 MB** | 不适用（Python/C++ 库） | raw 6.91 MB* |
+| **浏览器包体积** | **raw 3.30 MB / gzip 1.21 MB** | 不适用（Python/C++ 库） | raw 6.91 MB* |
 | **批量指纹速度** | **~78 µs/mol**（快 2–3 倍） | ~160–235 µs/mol | — |
+| **Canonical SMILES** | **24.95 / 18.27 µs/mol** | 25.58 / 26.82 µs/mol | — |
+| **SDF graph read / serialization-only write** | **9.48 / 7.62 µs/mol** | 99.96 / 79.54 µs/mol | — |
 | **内存安全性** | 编译器保证（Rust） | C++ | C++ |
 | **源码构建** | 仅需 `cargo build` | cmake + clang + Boost | Emscripten SDK |
 
 \* RDKit.js 的 gzip 传输体积未独立测量，此处以 raw 体积做同口径比较。RDKit.js 目前处于
 维护者交接阶段（详见其仓库）。
 
-所有数据均可复现 — 参阅[基准测试详情](https://kent-tokyo.github.io/chematic/benchmark/)。  
-WASM 包体积（raw，2026-08-21 测量，`wasm-pack build --target web --release` + `wasm-opt -O3`
-的干净构建，commit `ef7dc25`）：chematic **2.94 MB**（**1.10 MB gzip**）· RDKit.js **6.91 MB**
+canonical/SDF 行是 2026-09-04 macOS arm64 的中位数，仅适用于所记录的语料和
+操作边界。参阅[基准测试详情](https://kent-tokyo.github.io/chematic/benchmark/)。
+chematic WASM 包体积于 2026-09-04 使用 `wasm-pack 0.13.1` + `wasm-opt 130 -O3`
+从 v1.0.2 发布候选构建并测量：**raw 3.30 MB**（**gzip 1.21 MB**）。固定的历史比较项为
+RDKit.js **6.91 MB**
 （`@rdkit/rdkit@2025.3.4-1.0.0` 的 `RDKit_minimal.wasm`，经 unpkg.com 确认）· Indigo（Ketcher
 构建版）**11.24 MB**（`indigo-ketcher@1.45.1` 的主 `.wasm`，经 jsDelivr 确认）—— 以 raw 对 raw
-比较，chematic 目前比 RDKit.js 小约 2.3 倍，比 Indigo 的 Ketcher 构建版小约 3.8 倍。
+比较，chematic 目前比 RDKit.js 小约 2.1 倍，比 Indigo 的 Ketcher 构建版小约 3.8 倍。
+详见 [artifact 记录](benchmarks/2026-09-04-wasm-size.md)。
 
 **功能成熟度一览：**
 
@@ -50,7 +62,7 @@ WASM 包体积（raw，2026-08-21 测量，`wasm-pack build --target web --relea
 
 **适合使用 chematic 的场景：**
 
-- 需要在浏览器中运行化学计算（WASM，1.10 MB gzip，无需服务器）
+- 需要在浏览器中运行化学计算（WASM，1.21 MB gzip，无需服务器）
 - 需要纯 Rust 技术栈，不依赖 C++ 工具链
 - 部署到难以安装或不支持 RDKit 的环境（Cloudflare Workers、Lambda、嵌入式设备 ——
   RDKit 本身已提供官方 `pip install rdkit` wheel，但仍需标准 CPython 环境）
@@ -180,7 +192,7 @@ chematic 自身约 180,700 行 Rust 代码(tokei 统计的代码行数，全部2
 ### 随处可用
 
 纯 Rust 无需 Emscripten、`cmake`、`clang` 即可原生编译至 `wasm32-unknown-unknown`。
-npm 包 `@kent-tokyo/chematic` 为 **1.10 MB gzip**(raw 2.94 MB) — 与 RDKit.js 的
+npm 包 `@kent-tokyo/chematic` 为 **1.21 MB gzip**(raw 3.30 MB) — 与 RDKit.js 的
 `RDKit_minimal.wasm`(raw 6.91 MB)以 raw 对 raw 比较，约小 2.3 倍。
 一套代码库在 Linux、macOS、Windows 及任意浏览器中运行。
 
@@ -191,7 +203,7 @@ npm 包 `@kent-tokyo/chematic` 为 **1.10 MB gzip**(raw 2.94 MB) — 与 RDKit.j
 | 功能                                         | **chematic**                                 | RDKit (rdkit-sys)  | OpenBabel FFI | RDKit.js (WASM)   |
 |----------------------------------------------|----------------------------------------------|--------------------|---------------|-------------------|
 | **C/C++ 依赖**                               | **零（默认）**†                              | 大量 C++           | 大量 C++      | C++（Emscripten） |
-| **WASM 二进制体积**                          | **raw 2.94 MB（gzip 1.10 MB）**              | N/A（不支持 WASM） | N/A           | raw 6.91 MB       |
+| **WASM 二进制体积**                          | **raw 3.30 MB（gzip 1.21 MB）**              | N/A（不支持 WASM） | N/A           | raw 6.91 MB       |
 | **构建要求**                                 | 仅需 `cargo build`                           | cmake + clang      | cmake + clang | Emscripten SDK    |
 | **Python 绑定**                              | **有** (`pip install chematic`, PyO3)        | 有（rdkit-sys）    | 有            | 无                |
 | Unsafe Rust                                  | **自身 crate 中为无**‡                       | 大量               | 大量          | N/A               |
@@ -225,7 +237,7 @@ tiny-skia 151、zune-jpeg 79、rustybuzz 14、image 8、fontdb 3、tiny-skia-pat
 
 ## JavaScript / TypeScript（WebAssembly）
 
-**1.10 MB gzip — 与 RDKit.js 的 raw WASM 相比约小 2.3 倍。** 无需 Emscripten 或 cmake，可直接在浏览器和 Node.js 中使用。
+**1.21 MB gzip — 与 RDKit.js 的 raw WASM 相比约小 2.3 倍。** 无需 Emscripten 或 cmake，可直接在浏览器和 Node.js 中使用。
 
 ```sh
 npm install @kent-tokyo/chematic
@@ -286,6 +298,11 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 ---
 
 ## 近期开发
+
+**v1.0.2**（2026-09-04）：**canonical SMILES 与 SDF 加速、严格价态契约**
+- 在两个独立的 5,000 分子语料上重复测量 canonical SMILES，并单独测量 365 条记录的 SDF graph/property read 与 serialization-only write；结果仅代表记录的 macOS arm64 环境。
+- 修复显式氢价态校验，并使 standardization fixture 与 N-alkylation template 符合严格契约。
+- 新增版本固定、可恢复的 benchmark runner，并记录原始日志、语料哈希、失败与 unsupported 状态。详情见 [`benchmarks/`](benchmarks/)。
 
 **v0.23.0**（2026-08-30）：**MCS 精度修复（行为变更）、新增两种 RDKit 兼容指纹、MCS 绑定全量暴露**
 - `chematic-smarts`：**行为变更** —— `find_mcs` 的默认 `AtomCompare::Elements` 不再要求芳香性一致，与 RDKit 同名的 `rdFMCS.AtomCompare.CompareElements` 行为完全一致（已通过实时 oracle 确认：RDKit 从不将芳香性编码为原子侧约束，仅通过键类型查询表达）。与实时 RDKit oracle 的一致率从 74.6%/68.2%/70.4% 提升至 88.4%/88.5%/97.0%（三个既有语料库）。目前不存在可恢复旧有"元素+芳香性"严格匹配行为的 `AtomCompare` 模式

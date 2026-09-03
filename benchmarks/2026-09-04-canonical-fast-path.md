@@ -5,8 +5,9 @@ already parsed molecules, execute a warm-up pass, and canonicalize the same
 5,000-entry corpus. It does not compare parsing, chemical-model agreement, or
 canonical string equality between engines.
 
-Environment: chematic 1.0.1 local candidate based on `f0058d2b`, RDKit
-2025.09.3, Python 3.13.6, macOS 26.5.2 arm64. Corpus:
+Environment: code included in chematic 1.0.2, measured before the version-only
+metadata bump when the local wheel still reported 1.0.1; source optimization
+through `fe06a1cd`, RDKit 2025.09.3, Python 3.13.6, macOS 26.5.2 arm64. Corpus:
 `scripts/descriptor_census_corpus.smi`, SHA-256
 `d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c`.
 
@@ -57,7 +58,7 @@ Reproduce after building and installing the local wheel:
 maturin build --manifest-path crates/chematic-py/Cargo.toml --release --locked \
   --out /private/tmp/chematic-wheels
 python3 -m pip install --force-reinstall --no-deps \
-  /private/tmp/chematic-wheels/chematic-1.0.1-*.whl
+  /private/tmp/chematic-wheels/chematic-1.0.2-*.whl
 for i in 1 2 3 4 5 6 7; do
   python3 scripts/bench_canonical.py scripts/descriptor_census_corpus.smi \
     --rdkit --n 5000 --json
