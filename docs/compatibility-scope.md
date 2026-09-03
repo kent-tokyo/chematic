@@ -67,6 +67,22 @@ universal guarantee: symmetric cages, tied Rule 4b/pseudoasymmetric cases,
 and unsupported or budget-limited structures may remain unresolved. An
 unresolved result is not a guessed R/S label.
 
+## 3D and force fields
+
+3D generation and MMFF94 minimization are experimental. The legacy
+`generate_coords`/`generate_3d` path is retained for compatibility and does
+not promise ETKDGv3-quality conformers or success on every topology. The
+bounded `embed_pipeline_v2` path is opt-in and reports stage/provenance
+evidence with typed failure outcomes; a successful result still guarantees
+sanity checks, not conformational-quality or RDKit parity.
+
+MMFF94 exposes the implemented energy terms and minimization APIs, but
+typing, parameter coverage, charged/metal/fused-ring cases, and convergence
+remain incomplete. Missing parameters or failed minimization must remain
+observable as failure; callers must not interpret the presence of all seven
+term implementations as universal MMFF94 coverage. Use UFF or DREIDING when
+the selected molecule and policy require a different supported scope.
+
 ## Binding contract
 
 Rust is the reference implementation. Python and WASM expose selected,

@@ -191,6 +191,12 @@ includes ML-assisted torsion corrections chematic does not have. The
 feature-maturity table in README.md marks 3D conformer generation
 (distance geometry + MMFF94) as **Experimental**.
 
+The legacy `generate_3d()`/`generate_coords` path is kept for compatibility
+and may produce a usable starting geometry without matching ETKDGv3 quality.
+Use the opt-in `embed_pipeline_v2` when bounded work, stage evidence, and
+typed failure outcomes are required; even a successful pipeline result is not
+a claim of conformational-quality or RDKit parity.
+
 **Correction (2026-08-23):** an earlier version of this page said no
 RDKit-comparison figure for conformer RMSD/TFD existed in this
 repository's docs. That was wrong — `validation/results/mmff94_bci_gap_
@@ -223,6 +229,11 @@ statable atom-typing rule gap — 32/6,693 type-mismatched and 56/6,693
 charge-mismatched atoms remain on the 264-molecule reference corpus. See
 `CHANGELOG.md`'s release entries and the public force-field documentation
 for the full writeup; this page does not re-derive it.
+
+The MMFF94 implementation contains all seven energy-term families, but this
+describes implemented terms, not complete chemical coverage. Missing typing or
+parameters and non-convergent minimization remain valid outcomes, especially
+for charged, metal-containing, fused, or otherwise difficult structures.
 
 ## Molecular depiction (2D)
 
