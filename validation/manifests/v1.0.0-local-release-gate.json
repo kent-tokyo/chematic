@@ -1,10 +1,10 @@
 {
   "schema": "chematic.v1.local-release-gate.v1",
   "release": "1.0.0-rc.1",
-  "candidate_revision": "a7f50118233f94c479fde4661ab6d1dd7708c306",
+  "candidate_revision": "462ae95b",
   "recorded_on": "2026-09-03",
   "host": "macOS arm64",
-  "decision": "pass_with_supplemental_linux_evidence",
+  "decision": "not_ready_workspace_3d_experimental_regression",
   "policy": {
     "external_audit_and_hosted_ci": "supplemental",
     "linux_only_execution": "must_be_recorded_separately",
@@ -37,6 +37,12 @@
       ],
       "result": "1 passed; 118 passed, 1 ignored"
     },
+    "workspace_all_targets": {
+      "status": "blocked_by_experimental_3d_regression",
+      "command": "cargo test --workspace --all-targets --locked",
+      "result": "chematic-3d::minimize::policy_bridge_tests::uff_only_rescue_now_preserves_stereo_for_atorvastatin_fragment failed with MinimizationFailed/CatastrophicBondBlowup",
+      "scope": "Experimental 3D/MMFF94; no parser or binding contract failure"
+    },
     "python_contract": {
       "status": "pass",
       "pytest": "8.4.2",
@@ -45,8 +51,10 @@
       "command": ".venv-v1gate/bin/python -m pytest crates/chematic-py/tests/ -q"
     },
     "node_wasm_contract": {
-      "status": "not_run_local",
-      "reason": "candidate evidence exists in hosted CI; local rebuild not repeated in this record"
+      "status": "pass",
+      "node_build": "wasm-pack build --target nodejs --out-dir pkg-node --release",
+      "web_build": "wasm-pack build --target web --out-dir pkg-web --release",
+      "result": "all checked-in Node/WASM contract files passed, including web-target pipeline"
     },
     "miri": {
       "status": "pass",
@@ -68,5 +76,20 @@
     "independent parser/serialization/binding review",
     "hosted Linux Miri and sanitizer execution",
     "hosted binding matrix rerun"
-  ]
+  ],
+  "release_artifacts": {
+    "status": "generated_and_locally_verified",
+    "directory": "target/release-evidence-v1.0.0/",
+    "files": [
+      "chematic.spdx.json",
+      "chematic.provenance.json",
+      "chematic.provenance.sig",
+      "SHA256SUMS",
+      "RELEASE-KEY-FINGERPRINT",
+      "release-notes.md"
+    ],
+    "public_key_fingerprint_sha256": "f1147c10688e412d183cc6cc0f22017c67874327741815a971c40b362f06ac4e",
+    "local_signature_verification": "pass",
+    "publication": "not_performed; candidate gate is blocked by the Experimental 3D workspace regression"
+  }
 }
