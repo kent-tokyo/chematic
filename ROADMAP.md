@@ -66,6 +66,10 @@ benchmark, and a documented “where to use which tool” migration guide.
 - [x] Add an SDF graph/property fast reader and serialization-only writer mode;
   measure them against RDKit with layout work reported separately in
   `benchmarks/2026-09-04-sdf-fast-path.md`.
+- [x] Optimize the canonical SMILES hot path and record repeated comparisons
+  on two independent 5,000-molecule corpora; chematic leads RDKit by 2.5% and
+  1.47× at the respective medians on the recorded macOS arm64 environment.
+  These are scoped results, not a cross-platform or all-corpus claim.
 
 - Define a lossless record model for molecule, coordinates, SD properties,
   source location, parse status, diagnostics, units, and provenance.

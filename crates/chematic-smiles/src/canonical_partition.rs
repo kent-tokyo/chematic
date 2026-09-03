@@ -36,11 +36,10 @@
 //!    introduces -- but this PR does change its potential consequence from
 //!    "redundant exploration" to "a silently skipped branch").
 
-use std::collections::HashSet;
-
 use chematic_core::{
     AtomIdx, BondIdx, BondOrder, Chirality, Molecule, SquarePlanarPermutation, implicit_hcount,
 };
+use smallvec::SmallVec;
 
 pub(crate) type CellId = u32;
 
@@ -144,30 +143,34 @@ fn bond_has_direction_info(mol: &Molecule, bidx: BondIdx) -> bool {
 /// False negative (conservatively pinning an atom that, with more careful
 /// analysis, could safely have been pruned) only costs performance. See
 /// section 8/19: this is the sanctioned trade.
-fn stereo_sensitive_atoms(mol: &Molecule) -> HashSet<AtomIdx> {
-    let mut base: HashSet<AtomIdx> = HashSet::new();
+fn stereo_sensitive_atoms(mol: &Molecule) -> SmallVec<[bool; 64]> {
+    let mut sensitive: SmallVec<[bool; 64]> = smallvec::smallvec![false; mol.atom_count()];
     for i in 0..mol.atom_count() {
         let idx = AtomIdx(i as u32);
         if mol.atom(idx).chirality != Chirality::None {
-            base.insert(idx);
+            sensitive[i] = true;
         }
     }
     for bidx in 0..mol.bond_count() {
         let bidx = BondIdx(bidx as u32);
         if bond_has_direction_info(mol, bidx) {
             let bond = mol.bond(bidx);
-            base.insert(bond.atom1);
-            base.insert(bond.atom2);
+            sensitive[bond.atom1.0 as usize] = true;
+            sensitive[bond.atom2.0 as usize] = true;
         }
     }
 
-    let mut expanded = base.clone();
-    for &idx in &base {
+    let base = sensitive.clone();
+    for (i, &is_sensitive) in base.iter().enumerate() {
+        if !is_sensitive {
+            continue;
+        }
+        let idx = AtomIdx(i as u32);
         for (nb, _) in mol.neighbors(idx) {
-            expanded.insert(nb);
+            sensitive[nb.0 as usize] = true;
         }
     }
-    expanded
+    sensitive
 }
 
 /// `canonical_fidelity` gates every device in this function that exists
@@ -288,12 +291,12 @@ impl<'a> CanonicalColoredGraph<'a> {
         let sensitive = if canonical_fidelity {
             stereo_sensitive_atoms(mol)
         } else {
-            HashSet::new()
+            smallvec::smallvec![false; mol.atom_count()]
         };
         let vcolor = (0..mol.atom_count())
             .map(|i| {
                 let idx = AtomIdx(i as u32);
-                vertex_color(mol, idx, sensitive.contains(&idx), canonical_fidelity)
+                vertex_color(mol, idx, sensitive[i], canonical_fidelity)
             })
             .collect();
         Self {
@@ -371,24 +374,42 @@ impl Partition {
     }
 }
 
-fn assign_cell_ids<K: Ord + Clone>(keys: &[K]) -> Vec<CellId> {
-    let mut distinct: Vec<K> = keys.to_vec();
-    distinct.sort();
-    distinct.dedup();
-    keys.iter()
-        .map(|k| {
-            distinct
-                .binary_search(k)
-                .expect("key present in distinct set") as CellId
-        })
-        .collect()
+fn assign_cell_ids<K: Ord>(keys: &[K]) -> Vec<CellId> {
+    if keys.is_empty() {
+        return Vec::new();
+    }
+
+    // Sort lightweight indices rather than cloning every key.  Refinement
+    // keys contain a heap-backed neighbor signature, so the old
+    // clone/sort/dedup + one binary search per atom duplicated substantial
+    // work at every search node.  Walking the sorted indices assigns the
+    // exact same lexicographic, gap-free cell IDs directly.
+    let mut order: Vec<usize> = (0..keys.len()).collect();
+    order.sort_unstable_by(|&a, &b| keys[a].cmp(&keys[b]).then_with(|| a.cmp(&b)));
+
+    let mut cells = vec![0; keys.len()];
+    let mut cell = 0;
+    let mut previous = order[0];
+    cells[previous] = cell;
+    for &idx in &order[1..] {
+        if keys[idx] != keys[previous] {
+            cell += 1;
+        }
+        cells[idx] = cell;
+        previous = idx;
+    }
+    cells
 }
 
 fn count_distinct_cells(cell_of: &[CellId]) -> usize {
-    let mut seen: Vec<CellId> = cell_of.to_vec();
-    seen.sort_unstable();
-    seen.dedup();
-    seen.len()
+    // Partition cell IDs are gap-free by contract, so the number of cells
+    // is the largest ID plus one.  Avoid cloning and sorting at every exact
+    // refinement iteration.
+    cell_of
+        .iter()
+        .copied()
+        .max()
+        .map_or(0, |max| max as usize + 1)
 }
 
 /// Build the initial (pre-refinement) partition for the current search node:
@@ -410,7 +431,7 @@ pub(crate) fn initial_partition(graph: &CanonicalColoredGraph, ranks: &[u64]) ->
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone)]
 struct RefineSignature {
     own: CellId,
-    neighbors: Vec<(u8, bool, CellId)>,
+    neighbors: SmallVec<[(u8, bool, CellId); 4]>,
 }
 
 /// Refine `partition` to a fixpoint using an exact structural signature
@@ -420,13 +441,12 @@ struct RefineSignature {
 pub(crate) fn exact_refine(graph: &CanonicalColoredGraph, mut partition: Partition) -> Partition {
     let n = partition.cell_of.len();
     let max_iter = n + 2;
+    let mut old_cells = count_distinct_cells(&partition.cell_of);
     for _ in 0..max_iter {
-        let old_cells = count_distinct_cells(&partition.cell_of);
-
         let sigs: Vec<RefineSignature> = (0..n)
             .map(|i| {
                 let idx = AtomIdx(i as u32);
-                let mut neighbors: Vec<(u8, bool, CellId)> = graph
+                let mut neighbors: SmallVec<[(u8, bool, CellId); 4]> = graph
                     .neighbors(idx)
                     .map(|(nb, bidx)| {
                         let ec = graph.edge_color(idx, bidx);
@@ -452,6 +472,7 @@ pub(crate) fn exact_refine(graph: &CanonicalColoredGraph, mut partition: Partiti
         if new_cells <= old_cells {
             break;
         }
+        old_cells = new_cells;
     }
     partition
 }

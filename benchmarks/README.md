@@ -6,6 +6,9 @@ Periodic performance snapshots. Each file is a date-stamped record of throughput
 
 | Date | Version | Notes |
 |------|---------|-------|
+| [2026-09-04 canonical](2026-09-04-canonical-fast-path.md) | v1.0.1 local candidate | Canonical SMILES comparisons on two 5,000-molecule corpora; chematic leads RDKit by 2.5% and 1.47× at the respective medians on the recorded macOS arm64 environment |
+| [2026-09-04 SDF](2026-09-04-sdf-fast-path.md) | v1.0.1 | Graph/property read and serialization-only write fast-path comparison against RDKit |
+| [2026-09-03](2026-09-03-competitive.md) | v1.0.1 | Resumable six-operation competitive run for chematic and RDKit; Open Babel not installed |
 | [2026-08-23](2026-08-23.md) | v0.18.0 (commit `24a9239`) | v0.19.0 release-prep re-measurement; corpus now committed (`scripts/chembl_accuracy_corpus_4999.smi`); real MW check added; diverse-corpus ECFP4 now reproducible via `benchmark_vs_rdkit.py --corpus`; WASM size rebuilt clean; CIP R/S/E/Z label agreement re-measured (96%→99.7%+) |
 | [2026-07-17](2026-07-17.md) | v0.4.29 | Hardware moved to Apple M4; throughput headline (5–14×) did not reproduce even on the same fixture — see file for details; descriptor accuracy holds |
 | [2026-06-25](2026-06-25.md) | v0.4.20 | Baseline: ECFP4, descriptor batch, WASM size, RDKit accuracy |

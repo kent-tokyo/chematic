@@ -15,6 +15,7 @@
 //! `feasible` pruning used during search.
 
 use chematic_core::AtomIdx;
+use smallvec::{SmallVec, smallvec};
 
 use crate::canonical_partition::{CanonicalColoredGraph, Partition};
 
@@ -71,8 +72,8 @@ pub(crate) fn has_colored_automorphism_mapping(
     }
 
     let n = graph.n();
-    let mut image: Vec<Option<u32>> = vec![None; n];
-    let mut used: Vec<bool> = vec![false; n];
+    let mut image: SmallVec<[Option<u32>; 64]> = smallvec![None; n];
+    let mut used: SmallVec<[bool; 64]> = smallvec![false; n];
     image[from.0 as usize] = Some(to.0);
     used[to.0 as usize] = true;
 
@@ -116,7 +117,7 @@ fn extend_mapping(
     // spuriously report `false` for a genuinely automorphic pair reachable
     // via a different candidate. Checking color directly here removes that
     // dependency entirely.
-    let candidates: Vec<u32> = (0..n as u32)
+    let candidates: SmallVec<[u32; 8]> = (0..n as u32)
         .filter(|&v| {
             !used[v as usize]
                 && coloring.cell_of[v as usize] == cell
@@ -186,7 +187,7 @@ fn feasible(graph: &CanonicalColoredGraph, image: &[Option<u32>], u: u32, v: u32
 /// partial or subgraph match -- every vertex of the graph must be mapped.
 fn verify_full_bijection(graph: &CanonicalColoredGraph, image: &[Option<u32>]) -> bool {
     let n = image.len();
-    let mut seen = vec![false; n];
+    let mut seen: SmallVec<[bool; 64]> = smallvec![false; n];
     for (i, &mapped) in image.iter().enumerate() {
         let Some(v) = mapped else {
             return false;

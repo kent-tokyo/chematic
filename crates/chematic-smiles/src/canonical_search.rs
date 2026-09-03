@@ -20,8 +20,9 @@
 //! `canonical_smiles_exhaustive_oracle` cross-check.
 
 use chematic_core::{AtomIdx, Molecule};
+use smallvec::{SmallVec, smallvec};
 
-use crate::canonical::{CanonicalWriter, group_by_rank, individualize, refine_ranks};
+use crate::canonical::{CanonicalWriter, individualize, refine_ranks};
 use crate::canonical_automorphism::has_colored_automorphism_mapping;
 use crate::canonical_partition::{
     CanonicalColoredGraph, Partition, exact_refine, initial_partition,
@@ -218,10 +219,33 @@ struct Incumbent {
     string: String,
 }
 
+struct SearchNode {
+    ranks: Vec<u64>,
+    target_cell: Option<SmallVec<[usize; 8]>>,
+    depth: usize,
+}
+
 #[derive(Default)]
 struct SearchBudget {
     nodes_visited: usize,
     automorphism_tests: usize,
+}
+
+/// Lowest-ranked non-singleton cell, without constructing a `Vec` for every
+/// rank class. Search only ever branches on this one cell.
+fn first_non_singleton_cell(ranks: &[u64]) -> Option<SmallVec<[usize; 8]>> {
+    let mut counts: SmallVec<[usize; 64]> = smallvec![0; ranks.len()];
+    for &rank in ranks {
+        counts[rank as usize] += 1;
+    }
+    let target = counts.iter().position(|&count| count > 1)?;
+    let mut members = SmallVec::with_capacity(counts[target]);
+    for (atom, &rank) in ranks.iter().enumerate() {
+        if rank as usize == target {
+            members.push(atom);
+        }
+    }
+    Some(members)
 }
 
 /// Return the canonical SMILES for `mol`, respecting `limits`. `Err` on
@@ -253,10 +277,8 @@ pub(crate) fn winning_individualized_ranks_with_limits(
     // preserving fast path: branching is only required when two atoms share
     // a rank, and the existing exhaustive/orbit-pruned paths remain the
     // authority for tied molecules.
-    if crate::canonical::group_by_rank(&ranks)
-        .iter()
-        .all(|cell| cell.len() == 1)
-    {
+    let root_cell = first_non_singleton_cell(&ranks);
+    if root_cell.is_none() {
         let string = crate::canonical::CanonicalWriter::new(mol, &ranks).write_all();
         return Ok((ranks, string));
     }
@@ -264,7 +286,18 @@ pub(crate) fn winning_individualized_ranks_with_limits(
     let graph = CanonicalColoredGraph::new(mol);
     let mut budget = SearchBudget::default();
     let mut incumbent: Option<Incumbent> = None;
-    search_canonical(mol, &graph, ranks, 0, limits, &mut budget, &mut incumbent)?;
+    search_canonical(
+        mol,
+        &graph,
+        SearchNode {
+            ranks,
+            target_cell: root_cell,
+            depth: 0,
+        },
+        limits,
+        &mut budget,
+        &mut incumbent,
+    )?;
     match incumbent {
         Some(Incumbent { ranks, string }) => Ok((ranks, string)),
         None => Err(CanonicalizationError::InvalidInternalMapping {
@@ -276,12 +309,16 @@ pub(crate) fn winning_individualized_ranks_with_limits(
 fn search_canonical(
     mol: &Molecule,
     graph: &CanonicalColoredGraph,
-    ranks: Vec<u64>,
-    depth: usize,
+    node: SearchNode,
     limits: &CanonicalizationLimits,
     budget: &mut SearchBudget,
     incumbent: &mut Option<Incumbent>,
 ) -> Result<(), CanonicalizationError> {
+    let SearchNode {
+        ranks,
+        target_cell,
+        depth,
+    } = node;
     budget.nodes_visited += 1;
     stats::record_node(depth);
     if let Some(max) = limits.max_search_nodes
@@ -294,10 +331,9 @@ fn search_canonical(
         });
     }
 
-    let cells = group_by_rank(&ranks);
     // Same heuristic as the legacy enumeration (section 10: unchanged in
     // this PR): the lowest-ranked non-singleton cell.
-    let Some(members) = cells.iter().find(|m| m.len() > 1) else {
+    let Some(members) = target_cell.or_else(|| first_non_singleton_cell(&ranks)) else {
         let s = CanonicalWriter::new(mol, &ranks).write_all();
         stats::record_leaf();
         let is_better = incumbent.as_ref().is_none_or(|c| s < c.string);
@@ -312,14 +348,35 @@ fn search_canonical(
     // fixpoint. Used only to decide which members of `members` are provably
     // in the same automorphism orbit -- NEVER used to alter `ranks` itself
     // (see module docs).
-    let partition = exact_refine(graph, initial_partition(graph, &ranks));
-    let representatives = exact_orbit_representatives(graph, &partition, members, limits, budget)?;
+    let representatives = if members[1..].iter().all(|&other| {
+        local_twins_without_partition(graph, AtomIdx(members[0] as u32), AtomIdx(other as u32))
+    }) {
+        // Every member is related to the first by an independently proven
+        // fixed-point swap automorphism.  The entire target cell is
+        // therefore one orbit, without needing exact partition refinement
+        // or the general automorphism backtracker.
+        vec![members[0]]
+    } else {
+        let partition = exact_refine(graph, initial_partition(graph, &ranks));
+        exact_orbit_representatives(graph, &partition, &members, limits, budget)?
+    };
     stats::record_target_cell(members.len(), representatives.len());
 
     for rep in representatives {
         let individualized = individualize(&ranks, rep);
         let re_refined = refine_ranks(mol, individualized);
-        search_canonical(mol, graph, re_refined, depth + 1, limits, budget, incumbent)?;
+        search_canonical(
+            mol,
+            graph,
+            SearchNode {
+                ranks: re_refined,
+                target_cell: None,
+                depth: depth + 1,
+            },
+            limits,
+            budget,
+            incumbent,
+        )?;
     }
     Ok(())
 }
@@ -469,19 +526,27 @@ fn local_twins(
     a: AtomIdx,
     b: AtomIdx,
 ) -> bool {
-    if a == b
-        || graph.vertex_color(a) != graph.vertex_color(b)
-        || coloring.cell_of[a.0 as usize] != coloring.cell_of[b.0 as usize]
-    {
+    if a == b || coloring.cell_of[a.0 as usize] != coloring.cell_of[b.0 as usize] {
         return false;
     }
 
-    let mut a_edges: Vec<(AtomIdx, crate::canonical_partition::EdgeColor)> = graph
+    local_twins_without_partition(graph, a, b)
+}
+
+/// Exact fixed-point swap automorphism, independent of a search partition.
+/// If this succeeds, every other vertex is literally left in place, so no
+/// partition refinement can invalidate the mapping.
+fn local_twins_without_partition(graph: &CanonicalColoredGraph, a: AtomIdx, b: AtomIdx) -> bool {
+    if a == b || graph.vertex_color(a) != graph.vertex_color(b) {
+        return false;
+    }
+
+    let mut a_edges: SmallVec<[(AtomIdx, crate::canonical_partition::EdgeColor); 4]> = graph
         .neighbors(a)
         .filter(|&(neighbor, _)| neighbor != b)
         .map(|(neighbor, bond)| (neighbor, graph.edge_color(a, bond)))
         .collect();
-    let mut b_edges: Vec<(AtomIdx, crate::canonical_partition::EdgeColor)> = graph
+    let mut b_edges: SmallVec<[(AtomIdx, crate::canonical_partition::EdgeColor); 4]> = graph
         .neighbors(b)
         .filter(|&(neighbor, _)| neighbor != a)
         .map(|(neighbor, bond)| (neighbor, graph.edge_color(b, bond)))
@@ -690,8 +755,11 @@ mod tests {
             search_canonical(
                 &e,
                 &graph,
-                ranks,
-                0,
+                SearchNode {
+                    ranks,
+                    target_cell: None,
+                    depth: 0,
+                },
                 &CanonicalizationLimits::unbounded(),
                 &mut budget,
                 &mut incumbent,

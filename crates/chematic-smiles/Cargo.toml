@@ -28,6 +28,7 @@ chematic-core = { path = "../chematic-core", version = "1.0.1" }
 # crate for a different reason (re-aromatizing test fixtures); now also a
 # real one.
 chematic-perception = { path = "../chematic-perception", version = "1.0.1" }
+smallvec = "1"
 
 [features]
 # Feature-gated internal work counters for the orbit-pruning canonical

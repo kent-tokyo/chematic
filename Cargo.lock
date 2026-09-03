@@ -496,6 +496,7 @@ dependencies = [
  "chematic-perception",
  "criterion",
  "serde_json",
+ "smallvec",
 ]
 
 [[package]]

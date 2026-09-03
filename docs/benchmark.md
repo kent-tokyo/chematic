@@ -49,7 +49,14 @@ results are operation-specific: chematic led import, SMILES parsing, and
 ECFP4, while RDKit led canonical SMILES and SDF read/write. See the complete
 record and hashes in [`benchmarks/2026-09-03-competitive.md`](../benchmarks/2026-09-03-competitive.md).
 
-The follow-up SDF fast-path measurement separates graph/property parsing from
+Two focused follow-ups optimize and re-measure narrower, equivalent-work paths.
+The canonical SMILES run over 5,000 diverse molecules records a seven-run
+median of 24.95 µs/mol for chematic and 25.58 µs/mol for RDKit (chematic 2.5%
+faster on that environment and corpus). A second 5,000-molecule ChEMBL-derived
+corpus records 18.27 vs 26.82 µs/mol at the five-run median (chematic 1.47×
+faster). See
+[`benchmarks/2026-09-04-canonical-fast-path.md`](../benchmarks/2026-09-04-canonical-fast-path.md).
+The SDF fast-path measurement separates graph/property parsing from
 optional diagnostics and separates serialization from automatic 2D layout.
 On the same 365-record corpus, the fast read path is 6.8× faster and
 serialization-only write is 8.0× faster than RDKit. See [`benchmarks/2026-09-04-sdf-fast-path.md`](../benchmarks/2026-09-04-sdf-fast-path.md).
@@ -147,9 +154,10 @@ python scripts/bench_smiles_parse.py --n 5000 --rdkit --json
 
 **Related micro-benchmarks** (same corpus-tiering convention, not folded into the table
 above): `python scripts/bench_canonical.py --rdkit` measures canonical SMILES generation
-throughput; `python scripts/bench_smarts.py --rdkit` measures SMARTS substructure-match
-throughput (pairs with `scripts/rdkit_benchmark.py`'s `bench_smarts_match`). Not
-re-measured this cycle.
+throughput; its latest focused record is
+[`benchmarks/2026-09-04-canonical-fast-path.md`](../benchmarks/2026-09-04-canonical-fast-path.md).
+`python scripts/bench_smarts.py --rdkit` measures SMARTS substructure-match
+throughput (pairs with `scripts/rdkit_benchmark.py`'s `bench_smarts_match`).
 
 ---
 

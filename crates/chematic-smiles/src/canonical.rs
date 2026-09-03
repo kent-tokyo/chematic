@@ -22,6 +22,7 @@ use chematic_core::{
     AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL, implicit_hcount,
     remap_square_planar_tag, remap_tetrahedral_parity, valence_inferred_hcount,
 };
+use smallvec::SmallVec;
 
 use crate::writer::{
     bond_token_from, emit_bracket_hydrogens, square_planar_token, suppress_standalone_wedge,
@@ -315,57 +316,55 @@ pub fn morgan_ranks(mol: &Molecule) -> Vec<u64> {
 pub(crate) fn refine_ranks(mol: &Molecule, mut ranks: Vec<u64>) -> Vec<u64> {
     let n = ranks.len();
     let max_iter = n + 2;
+    let mut next_ranks = vec![0; n];
+    let mut distinct_scratch = Vec::with_capacity(n);
     // Carry the previous distinct-count forward.  Recomputing it from the
     // unchanged `ranks` at the top of every iteration needlessly cloned and
     // sorted the same vector a second time.
-    let mut old_distinct = count_distinct(&ranks);
+    let mut old_distinct = count_distinct(&ranks, &mut distinct_scratch);
     for _ in 0..max_iter {
-        let new_ranks: Vec<u64> = (0..n)
-            .map(|i| {
-                let idx = AtomIdx(i as u32);
-                // Include bond order in the neighbor contribution so that atoms
-                // bonded via different bond types (e.g. O= vs O-H in acetic acid)
-                // receive distinct Morgan ranks even when neighbor atom ranks are
-                // otherwise identical.
-                // Molecular graphs overwhelmingly have degree <= 8. Keep
-                // the per-atom refinement scratch space on the stack for
-                // that common case; fall back to a Vec only for unusual
-                // highly branched atoms. This loop runs at every refinement
-                // iteration and the old collect() allocated one Vec per atom
-                // per iteration.
-                let mut inline = [0_u64; 8];
-                let mut inline_len = 0usize;
-                let mut overflow: Option<Vec<u64>> = None;
-                for (nb, bidx) in mol.neighbors(idx) {
-                    let bond_val = bond_order_value(mol.bond(bidx).order);
-                    let contribution = fnv_hash_sequence(ranks[nb.0 as usize], &[bond_val]);
-                    if let Some(values) = overflow.as_mut() {
-                        values.push(contribution);
-                    } else if inline_len < inline.len() {
-                        inline[inline_len] = contribution;
-                        inline_len += 1;
-                    } else {
-                        let mut values = Vec::with_capacity(mol.degree(idx));
-                        values.extend_from_slice(&inline);
-                        values.push(contribution);
-                        overflow = Some(values);
-                    }
+        for (i, next) in next_ranks.iter_mut().enumerate() {
+            let idx = AtomIdx(i as u32);
+            // Include bond order in the neighbor contribution so that atoms
+            // bonded via different bond types (e.g. O= vs O-H in acetic acid)
+            // receive distinct Morgan ranks even when neighbor atom ranks are
+            // otherwise identical.
+            // Molecular graphs overwhelmingly have degree <= 8. Keep
+            // the per-atom refinement scratch space on the stack for
+            // that common case; fall back to a Vec only for unusual
+            // highly branched atoms.
+            let mut inline = [0_u64; 8];
+            let mut inline_len = 0usize;
+            let mut overflow: Option<Vec<u64>> = None;
+            for (nb, bidx) in mol.neighbors(idx) {
+                let bond_val = bond_order_value(mol.bond(bidx).order);
+                let contribution = fnv_hash_sequence(ranks[nb.0 as usize], &[bond_val]);
+                if let Some(values) = overflow.as_mut() {
+                    values.push(contribution);
+                } else if inline_len < inline.len() {
+                    inline[inline_len] = contribution;
+                    inline_len += 1;
+                } else {
+                    let mut values = Vec::with_capacity(mol.degree(idx));
+                    values.extend_from_slice(&inline);
+                    values.push(contribution);
+                    overflow = Some(values);
                 }
-                match overflow {
-                    Some(mut values) => {
-                        values.sort_unstable();
-                        fnv_hash_sequence(ranks[i], &values)
-                    }
-                    None => {
-                        inline[..inline_len].sort_unstable();
-                        fnv_hash_sequence(ranks[i], &inline[..inline_len])
-                    }
+            }
+            *next = match overflow {
+                Some(mut values) => {
+                    values.sort_unstable();
+                    fnv_hash_sequence(ranks[i], &values)
                 }
-            })
-            .collect();
+                None => {
+                    inline[..inline_len].sort_unstable();
+                    fnv_hash_sequence(ranks[i], &inline[..inline_len])
+                }
+            };
+        }
 
-        let new_distinct = count_distinct(&new_ranks);
-        ranks = new_ranks;
+        let new_distinct = count_distinct(&next_ranks, &mut distinct_scratch);
+        std::mem::swap(&mut ranks, &mut next_ranks);
 
         if new_distinct <= old_distinct {
             break;
@@ -373,7 +372,7 @@ pub(crate) fn refine_ranks(mol: &Molecule, mut ranks: Vec<u64>) -> Vec<u64> {
         old_distinct = new_distinct;
     }
 
-    normalize_ranks(&ranks)
+    normalize_ranks(ranks)
 }
 
 /// Safety cap on the number of discrete rank assignments
@@ -533,42 +532,38 @@ fn fnv_hash_sequence(base: u64, values: &[u64]) -> u64 {
     h
 }
 
-fn count_distinct(ranks: &[u64]) -> usize {
-    let mut seen: Vec<u64> = ranks.to_vec();
-    seen.sort_unstable();
-    seen.dedup();
-    seen.len()
+fn count_distinct(ranks: &[u64], scratch: &mut Vec<u64>) -> usize {
+    scratch.clear();
+    scratch.extend_from_slice(ranks);
+    scratch.sort_unstable();
+    scratch.dedup();
+    scratch.len()
 }
 
-fn normalize_ranks(ranks: &[u64]) -> Vec<u64> {
-    let mut sorted: Vec<(u64, usize)> = ranks
-        .iter()
-        .copied()
-        .enumerate()
-        .map(|(i, v)| (v, i))
-        .collect();
-    sorted.sort_unstable_by_key(|&(v, _)| v);
+fn normalize_ranks(mut ranks: Vec<u64>) -> Vec<u64> {
+    let mut sorted: smallvec::SmallVec<[usize; 64]> = (0..ranks.len()).collect();
+    sorted.sort_unstable_by_key(|&idx| (ranks[idx], idx));
 
-    let mut result = vec![0u64; ranks.len()];
     let mut current_rank: u64 = 0;
-    let mut prev_val = sorted[0].0;
+    let mut prev_val = ranks[sorted[0]];
 
-    for (val, idx) in sorted {
+    for idx in sorted {
+        let val = ranks[idx];
         if val != prev_val {
             current_rank += 1;
             prev_val = val;
         }
-        result[idx] = current_rank;
+        ranks[idx] = current_rank;
     }
 
-    result
+    ranks
 }
 
 pub(crate) struct CanonicalWriter<'a> {
     mol: &'a Molecule,
     ranks: &'a [u64],
     written: Vec<bool>,
-    ring_bonds: HashSet<BondIdx>,
+    ring_bonds: Vec<bool>,
     /// (ring_num, is_open_side, ring_partner_atom, physical_bond). Deliberately
     /// does NOT store a precomputed `BondOrder`: which endpoint of `bidx` is
     /// "open" vs "close" is fixed at discovery time (`dfs_mark`), but the
@@ -576,7 +571,7 @@ pub(crate) struct CanonicalWriter<'a> {
     /// see `normalize_ez`'s doc comment for why baking in a write-direction
     /// re-orientation this early corrupts E/Z groups spanning bonds visited
     /// in different directions (issue #390).
-    atom_ring_nums: HashMap<AtomIdx, Vec<(u32, bool, AtomIdx, BondIdx)>>,
+    atom_ring_nums: Vec<Vec<(u32, bool, AtomIdx, BondIdx)>>,
     next_ring: u32,
     out: String,
     /// Union-find groups of directional (`/`/`\`) bonds that jointly encode
@@ -618,8 +613,8 @@ impl<'a> CanonicalWriter<'a> {
             mol,
             ranks,
             written: vec![false; n],
-            ring_bonds: HashSet::new(),
-            atom_ring_nums: HashMap::new(),
+            ring_bonds: vec![false; mol.bond_count()],
+            atom_ring_nums: vec![Vec::new(); n],
             next_ring: 1,
             out: String::with_capacity(n.saturating_mul(4) + mol.bond_count().saturating_mul(2)),
             ez_group: HashMap::new(),
@@ -849,11 +844,37 @@ impl<'a> CanonicalWriter<'a> {
             return HashSet::new();
         }
 
-        let rings = chematic_perception::find_sssr(mol);
-        let rings = rings.rings();
+        // The small-ring exclusion below can only apply when the candidate
+        // double bond is itself a cycle edge.  Most stereo double bonds are
+        // exocyclic or acyclic; avoid running the substantially more
+        // expensive whole-molecule SSSR algorithm for those.  Removing an
+        // undirected edge and checking endpoint reachability is an exact
+        // cycle-membership test.
+        let needs_ring_check = candidates.iter().any(|&(candidate_idx, bond)| {
+            let mut seen = vec![false; mol.atom_count()];
+            let mut stack = vec![bond.atom1];
+            seen[bond.atom1.0 as usize] = true;
+            while let Some(atom) = stack.pop() {
+                for (neighbor, edge) in mol.neighbors(atom) {
+                    if edge == candidate_idx || seen[neighbor.0 as usize] {
+                        continue;
+                    }
+                    if neighbor == bond.atom2 {
+                        return true;
+                    }
+                    seen[neighbor.0 as usize] = true;
+                    stack.push(neighbor);
+                }
+            }
+            false
+        });
+        let ring_set = needs_ring_check.then(|| chematic_perception::find_sssr(mol));
+        let rings = ring_set.as_ref().map(|set| set.rings());
         let mut ends = HashSet::new();
         for (_, bond) in candidates {
-            if Self::double_bond_endocyclic_in_small_ring(rings, bond.atom1, bond.atom2) {
+            if rings.is_some_and(|rings| {
+                Self::double_bond_endocyclic_in_small_ring(rings, bond.atom1, bond.atom2)
+            }) {
                 continue;
             }
             for end in [bond.atom1, bond.atom2] {
@@ -1477,10 +1498,10 @@ impl<'a> CanonicalWriter<'a> {
         // Phase 1: discover ring-closure back-edges using the SAME canonical DFS
         // order that the writer will use. This ensures ring-closure numbers are
         // stable across re-parses.
-        self.find_ring_closures();
+        let starts = self.canonical_atom_list();
+        self.find_ring_closures(&starts);
 
         // Phase 2: canonical DFS serialization.
-        let starts = self.canonical_atom_list();
         let mut first = true;
         for start in starts {
             if self.written[start.0 as usize] {
@@ -1499,9 +1520,29 @@ impl<'a> CanonicalWriter<'a> {
     /// Return all atoms sorted in canonical order: highest rank first, ties
     /// broken by chemical properties invariant across re-parses.
     fn canonical_atom_list(&self) -> Vec<AtomIdx> {
-        let mut atoms: Vec<AtomIdx> = (0..self.mol.atom_count())
-            .map(|i| AtomIdx(i as u32))
-            .collect();
+        let n = self.mol.atom_count();
+        let sentinel = AtomIdx(u32::MAX);
+        let mut atoms = vec![sentinel; n];
+        if self.ranks.len() == n {
+            let mut discrete = true;
+            for (i, &rank) in self.ranks.iter().enumerate() {
+                let rank = rank as usize;
+                if rank >= n || atoms[n - 1 - rank] != sentinel {
+                    discrete = false;
+                    break;
+                }
+                atoms[n - 1 - rank] = AtomIdx(i as u32);
+            }
+            if discrete {
+                // `n` unique ranks in 0..n necessarily fill every slot.
+                return atoms;
+            }
+        }
+
+        // Defensive fallback for tests and the legacy capped search, which
+        // may intentionally hand the writer a rank vector containing ties.
+        atoms.clear();
+        atoms.extend((0..n).map(|i| AtomIdx(i as u32)));
         atoms.sort_by(|&a, &b| self.canonical_cmp(b, a)); // descending
         atoms
     }
@@ -1537,14 +1578,14 @@ impl<'a> CanonicalWriter<'a> {
 
     /// Discover back-edges by running the same canonical DFS as the writer.
     /// Using identical traversal order ensures ring-closure numbers are stable.
-    fn find_ring_closures(&mut self) {
+    fn find_ring_closures(&mut self, starts: &[AtomIdx]) {
         let n = self.mol.atom_count();
         let mut visited = vec![false; n];
         let mut in_stack = vec![false; n];
 
-        // Iterate in canonical order (same as write_all).
-        let starts = self.canonical_atom_list();
-        for start in starts {
+        // Iterate in canonical order (the same allocation write_all reuses
+        // for the serialization phase).
+        for &start in starts {
             if !visited[start.0 as usize] {
                 self.dfs_mark(start, None, &mut visited, &mut in_stack);
             }
@@ -1561,21 +1602,21 @@ impl<'a> CanonicalWriter<'a> {
         visited[atom.0 as usize] = true;
         in_stack[atom.0 as usize] = true;
 
-        let mut neighbors: Vec<(AtomIdx, BondIdx)> = self.mol.neighbors(atom).collect();
+        let mut neighbors: SmallVec<[(AtomIdx, BondIdx); 4]> = self.mol.neighbors(atom).collect();
         self.sort_neighbors_canonical(&mut neighbors);
 
         for (neighbor, bidx) in neighbors {
             if Some(bidx) == from_bond {
                 continue;
             }
-            if self.ring_bonds.contains(&bidx) {
+            if self.ring_bonds[bidx.0 as usize] {
                 continue;
             }
 
             if !visited[neighbor.0 as usize] {
                 self.dfs_mark(neighbor, Some(bidx), visited, in_stack);
             } else if in_stack[neighbor.0 as usize] {
-                self.ring_bonds.insert(bidx);
+                self.ring_bonds[bidx.0 as usize] = true;
                 let rn = self.next_ring;
                 self.next_ring += 1;
                 // Discovery only decides ring numbering and which endpoint is
@@ -1586,14 +1627,8 @@ impl<'a> CanonicalWriter<'a> {
                 // result re-oriented for whichever atom is actually being
                 // written at consumption time (see `normalize_ez`'s doc
                 // comment and `atom_ring_nums`'s field comment).
-                self.atom_ring_nums
-                    .entry(neighbor)
-                    .or_default()
-                    .push((rn, true, atom, bidx)); // open side; partner = close atom
-                self.atom_ring_nums
-                    .entry(atom)
-                    .or_default()
-                    .push((rn, false, neighbor, bidx)); // close side; partner = open atom
+                self.atom_ring_nums[neighbor.0 as usize].push((rn, true, atom, bidx)); // open side; partner = close atom
+                self.atom_ring_nums[atom.0 as usize].push((rn, false, neighbor, bidx)); // close side; partner = open atom
             }
         }
 
@@ -1622,7 +1657,8 @@ impl<'a> CanonicalWriter<'a> {
         self.emit_atom(atom, corrected_chirality);
 
         // Ring-closure digits.
-        if let Some(rings) = self.atom_ring_nums.remove(&atom) {
+        let rings = std::mem::take(&mut self.atom_ring_nums[atom.0 as usize]);
+        if !rings.is_empty() {
             for (rn, is_open, partner, bidx) in rings {
                 // The open side carries the marker (normalize_ez's
                 // mol-relative result, re-oriented for `atom` -- the
@@ -1689,13 +1725,13 @@ impl<'a> CanonicalWriter<'a> {
         }
 
         // Tree-edge children, sorted canonically.
-        let mut children: Vec<(AtomIdx, BondIdx)> = self
+        let mut children: SmallVec<[(AtomIdx, BondIdx); 4]> = self
             .mol
             .neighbors(atom)
             .filter(|(nb, bidx)| {
                 Some(*nb) != from_atom
                     && !self.written[nb.0 as usize]
-                    && !self.ring_bonds.contains(bidx)
+                    && !self.ring_bonds[bidx.0 as usize]
             })
             .collect();
 
@@ -1853,7 +1889,7 @@ impl<'a> CanonicalWriter<'a> {
         // 2. bracket H   (only when from_atom is Some and has_h)
         // 3. ring-closure partners in ring-number order
         // 4. children in ascending canonical rank (branches first, main chain last)
-        let mut canonical: Vec<u32> = Vec::with_capacity(original.len());
+        let mut canonical: SmallVec<[u32; 4]> = SmallVec::with_capacity(original.len());
 
         match from_atom {
             Some(prev) => {
@@ -1869,19 +1905,17 @@ impl<'a> CanonicalWriter<'a> {
             }
         }
 
-        if let Some(rings) = self.atom_ring_nums.get(&atom) {
-            for &(_, _, partner, _) in rings {
-                canonical.push(partner.0);
-            }
+        for &(_, _, partner, _) in &self.atom_ring_nums[atom.0 as usize] {
+            canonical.push(partner.0);
         }
 
-        let mut children: Vec<AtomIdx> = self
+        let mut children: SmallVec<[AtomIdx; 4]> = self
             .mol
             .neighbors(atom)
             .filter(|(nb, bidx)| {
                 Some(*nb) != from_atom
                     && !self.written[nb.0 as usize]
-                    && !self.ring_bonds.contains(bidx)
+                    && !self.ring_bonds[bidx.0 as usize]
             })
             .map(|(nb, _)| nb)
             .collect();
