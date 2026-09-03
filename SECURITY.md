@@ -4,14 +4,26 @@
 
 | Version | Supported | Status |
 |---------|-----------|--------|
-| v0.89.0 | Candidate | Linux sanitizer and focused Miri evidence obtained; publication pending |
-| v0.88.0 | Yes | Previous stable release — active support |
+| v1.0.0 | Yes (partial registries) | GitHub Release, crates.io, and PyPI published; npm publication is blocked by registry scope/token permissions |
+| v0.89.0 | Yes | Previous published release; release evidence verified |
+| v0.88.0 | Limited | Previous stable release — security fixes only |
 | < v0.88.0 | Limited | Security fixes only (limited) |
 
-**Active Support**: v0.88.0 remains the latest published release until
-v0.89.0 is verified and published.
-**Candidate**: v0.89.0 is local-only and not yet supported as a published release.
+**Active Support**: v1.0.0 is the latest published release. The npm package
+publication remains an external registry configuration follow-up.
+**Release evidence**: v0.89.0 was built from main commit `344e9dc2`; the
+release-key evidence workflow passed in run `33699428867`, including clean
+checkout signing and public-key verification.
 **End of Life**: Older versions receive no support.
+
+### v1.0 security boundary
+
+The v1.0 release requires repository-local fuzz, dependency, binding,
+focused-Miri, and sanitizer procedures. Independent external review, hosted
+CI execution, and external oracle campaigns are supplemental evidence and are
+not represented as completed audit work. See the
+[local release gate](docs/v1.0-local-release-gate.md) and the
+[compatibility boundary](docs/compatibility-scope.md).
 
 ---
 
@@ -127,13 +139,29 @@ Subscribe to GitHub notifications for this repository to receive alerts about se
 
 ## Security Fix History
 
-### v0.89.0 candidate verification status
+### v1.0.0 verification status
+
+- The GitHub Release workflow passed in run
+  [33739001369](https://github.com/kent-tokyo/chematic/actions/runs/33739001369).
+- The crates.io publication workflow passed on its retry in run
+  [33739001298](https://github.com/kent-tokyo/chematic/actions/runs/33739001298),
+  and the PyPI workflow passed in run
+  [33739001257](https://github.com/kent-tokyo/chematic/actions/runs/33739001257).
+- npm publication remains blocked by the registry returning HTTP 404 for the
+  scoped package; this is a scope/token permission issue, not a release-build
+  failure.
+- The PR gate passed focused Miri, ASan, LSan, TSan, CodeQL, dependency audit,
+  Rust/Python/WASM contracts, and Chromium/Firefox/WebKit browser smoke in
+  the successful checks for PR #453.
+
+### v0.89.0 verification status
 
 - GitHub Linux AddressSanitizer, LeakSanitizer, and ThreadSanitizer runs passed
   on the core/parser scope in run [33568431894](https://github.com/kent-tokyo/chematic/actions/runs/33568431894).
 - Focused Miri tests passed in [33588355817](https://github.com/kent-tokyo/chematic/actions/runs/33588355817); the earlier full-library run was cancelled for excessive runtime.
-- These results apply to the candidate branch and do not imply that v0.89.0
-  has been published or that the security exit gate is closed.
+- The release also has retained SBOM/provenance evidence and a published
+  public-key fingerprint:
+  `f1147c10688e412d183cc6cc0f22017c67874327741815a971c40b362f06ac4e`.
 
 ### v0.4.14 (2026-06-21)
 

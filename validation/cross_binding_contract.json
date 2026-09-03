@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "description": "Shared Rust/Python/Node/WASM contract fixtures for parse, canonical SMILES, and heavy-atom invariants.",
+  "fixtures": [
+    {"id": "ethanol-order-variant", "smiles": "OCC", "canonical_smiles": "C(C)O", "heavy_atoms": 3},
+    {"id": "benzene-kekule-context", "smiles": "c1ccccc1", "canonical_smiles": "c1ccccc1", "heavy_atoms": 6},
+    {"id": "formic-acid", "smiles": "C(=O)O", "canonical_smiles": "C(=O)O", "heavy_atoms": 3},
+    {"id": "acetic-acid", "smiles": "CC(=O)O", "canonical_smiles": "CC(O)=O", "heavy_atoms": 4}
+  ],
+  "adversarial": [
+    {"id": "smiles-unclosed-ring", "format": "smiles", "input": "C1CC"},
+    {"id": "mol-v2000-truncated", "format": "mol", "input": "broken mol block"},
+    {"id": "mol-v3000-truncated", "format": "mol_v3000", "input": "M  V30 COUNTS nope"},
+    {"id": "mol2-missing-sections", "format": "mol2", "input": "@<TRIPOS>MOLECULE\nbroken\n"},
+    {"id": "cml-unknown-element", "format": "cml", "input": "<molecule>\n  <atomArray>\n    <atom id=\"a1\" elementType=\"Xx\"/>\n  </atomArray>\n</molecule>"},
+    {"id": "cjson-truncated", "format": "cjson", "input": "{\"atoms\":"},
+    {"id": "moljson-truncated", "format": "moljson", "input": "{\"atoms\":"},
+    {"id": "cdxml-unknown-atomic-number", "format": "cdxml", "input": "<CDXML>\n<fragment>\n<n id=\"1\" Element=\"999\" p=\"0 0\"/>\n</fragment>\n</CDXML>"}
+  ]
+}

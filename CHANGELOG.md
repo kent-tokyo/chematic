@@ -9,6 +9,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+No unreleased changes.
+
+## [1.0.0] - 2026-09-03
+
+### Release status
+
+- Published the GitHub Release, crates.io packages, and PyPI wheel.
+- The npm publication remains pending because the registry rejected the scoped
+  package with HTTP 404; the required scope/token permission must be corrected
+  externally.
+- Recorded successful three-browser CI, focused Miri, sanitizer, CodeQL,
+  dependency audit, and cross-binding contract evidence.
+
+### v1.0.0-rc.1 — local release gate preparation
+
+- Fixed the Python binding test contract to use a reproducible `pytest<9`
+  and `pytest-asyncio` range.
+- Added the reproducible v1.0 local release gate and candidate manifest,
+  covering four fuzz targets, dependency audits, Rust/binding contracts,
+  focused Miri, and Linux sanitizer execution.
+- Finalized the documented v1.0 boundary: bounded CDXML/polymer editing,
+  partial Python `RWMol`, fail-closed canonical identity, explicit
+  aromaticity/CIP modes, and Experimental 3D/MMFF94.
+- Independent review, hosted CI, and external oracle campaigns remain
+  supplemental and are not claimed as completed audit evidence.
+- The default `cargo test --workspace --all-targets --locked` gate now
+  completes successfully. Experimental 3D long-run and corpus-scale
+  canonical tests are retained in explicit `--ignored` lanes and are not
+  silently treated as default-gate evidence.
+- Recorded successful long-run evidence for all 9 Experimental 3D tests and
+  the NCI 5k, descriptor census, and ChEMBL accuracy canonical corpus lanes;
+  the ChEMBL lane is documented as a serialized run to avoid contention.
+- Added an offline validator for the checked-in long-run evidence manifest,
+  including command, revision, result-count, and timeout-policy drift checks.
+- Added an offline release-document consistency check for the fixed version,
+  `chematic` product name, release-key secret name, and gate references.
+- Updated current dependency examples and the Japanese README's v1.0 boundary;
+  historical benchmark and release-note versions remain explicitly historical.
+- Rebuilt the checked-in demo WASM bundle at v1.0.0 so browser smoke tests use
+  the same version as the workspace release.
+
 ### v0.89.0 maintenance — bounded WASM geometry inputs
 
 - Locally integrated and verified the Dependabot #444 `jsonschema` update
@@ -141,8 +182,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   release after v0.88.0.
 - Adds bounded parser, reaction, CLI, WASM, MCP, and output paths, plus the
   repeatable unsafe-surface gate documented in `ROADMAP.md`.
-- This version has not been published yet; registry and GitHub publication
-  remain intentionally paused.
+- This version was published from the verified main release commit; the
+  consolidated 2.x milestone headings below remain historical implementation
+  detail rather than additional published releases.
 
 The former `2.x` headings below are local development milestone labels only;
 they were never published and are included as implementation detail for the

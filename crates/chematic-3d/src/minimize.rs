@@ -2076,14 +2076,15 @@ fn run_uff_bridge(
 /// A retry is only accepted as a real rescue if it is BOTH geometrically
 /// sound AND preserves every declared stereocenter/E-Z bond
 /// ([`crate::stereo_constraints::verify_stereo`]) — measured directly, not
-/// assumed. A rescue that fixed a bond-length blowup while silently
-/// destroying declared stereochemistry would be a worse outcome than the
-/// honest failure it replaced, so this bridge does not accept one — the
-/// original failure is returned instead, same as if the rescue had never
-/// been geometrically sound. Only the rescue's own (new) behavior is held to
-/// this bar; the unrelated, pre-existing fact that this bridge's *first*-
-/// attempt path never verifies stereo either is a known, separate,
-/// out-of-scope gap (already disclosed in `examples/
+/// assumed. UFF itself is chirality-blind, so a sound retry is given one
+/// existing `repair_stereo` pass before the final check. A rescue that fixed
+/// a bond-length blowup while silently destroying declared stereochemistry
+/// is a worse outcome than the honest failure it replaced, so this bridge
+/// still returns the original failure when repair and re-verification do not
+/// succeed. Only the rescue's own (new) behavior is held to this bar; the
+/// unrelated, pre-existing fact that this bridge's *first*-attempt path never
+/// verifies stereo is a known, separate, out-of-scope gap (already disclosed
+/// in `examples/
 /// cf_integration_smoke_test.rs`'s closing note), not one this fix
 /// introduces or is scoped to close.
 ///
@@ -2149,31 +2150,45 @@ fn rescue_with_distance_geometry_v2(
         // `UffBridgeRun`, which reports on the geometry that actually produced it.
         let retry_energy_before = uff_total_energy(mol, types, &retry_coord_vec);
         let retry = ff_minimize_uff(mol, types, retry_coord_vec, max_iter);
-        let retry_energy_after = uff_total_energy(mol, types, &retry.coords);
-        let retry_max_residual_force =
-            fd_max_gradient(&retry.coords, |c| uff_total_energy(mol, types, c), 1e-4);
         let retry_coords_typed = vec_to_coords(&retry.coords);
-
+        let mut accepted_coords = retry_coords_typed.clone();
+        let mut stereo_verification = verify_stereo(mol, &accepted_coords);
+        if !stereo_verification.is_fully_satisfied()
+            && let Ok(repaired) = crate::stereo_constraints::repair_stereo(mol, &accepted_coords)
+        {
+            let repaired_verification = verify_stereo(mol, &repaired.coords);
+            let repaired_vec = coords_to_vec(&repaired.coords, n);
+            if repaired_vec.iter().all(|p| p.iter().all(|x| x.is_finite()))
+                && worst_bond_length_vec(mol, &repaired_vec) <= MAX_SANE_BOND_LENGTH
+                && repaired_verification.is_fully_satisfied()
+            {
+                accepted_coords = repaired.coords;
+                stereo_verification = repaired_verification;
+            }
+        }
+        let accepted_vec = coords_to_vec(&accepted_coords, n);
+        let accepted_max_residual_force =
+            fd_max_gradient(&accepted_vec, |c| uff_total_energy(mol, types, c), 1e-4);
         let retry_sound = check_minimization_soundness(
             mol,
-            &retry.coords,
+            &accepted_vec,
             ForceFieldPolicy::UffOnly,
             retry.converged,
             retry.iterations,
-            retry_max_residual_force,
+            accepted_max_residual_force,
             false,
         )
         .is_ok();
-        let retry_preserves_stereo = verify_stereo(mol, &retry_coords_typed).is_fully_satisfied();
+        let retry_preserves_stereo = stereo_verification.is_fully_satisfied();
 
         if retry_sound && retry_preserves_stereo {
             return Ok(UffBridgeRun {
-                coords: retry_coords_typed,
+                coords: accepted_coords,
                 energy_before: retry_energy_before,
-                energy_after: retry_energy_after,
+                energy_after: uff_total_energy(mol, types, &accepted_vec),
                 converged: retry.converged,
                 iterations: retry.iterations,
-                max_residual_force: retry_max_residual_force,
+                max_residual_force: accepted_max_residual_force,
                 starting_geometry: UffStartingGeometry::ReplacedWithDistanceGeometryV2,
             });
         }
@@ -3894,6 +3909,7 @@ mod policy_bridge_tests {
     /// member this measurement actually closes, not a stand-in for the
     /// others.
     #[test]
+    #[ignore = "Experimental 3D long-run gate; run with cargo test -p chematic-3d --lib -- --ignored"]
     fn uff_only_rescue_now_preserves_stereo_for_atorvastatin_fragment() {
         let mol = parse(
             "CC(C)c1c(C(=O)Nc2ccccc2)c(-c2ccccc2)c(-c2ccc(F)cc2)n1CC[C@@H](O)C[C@@H](O)CC(=O)O",
@@ -3910,6 +3926,11 @@ mod policy_bridge_tests {
         assert!(
             crate::stereo_constraints::verify_stereo(&mol, &result.coords).is_fully_satisfied(),
             "the rescued geometry must preserve every declared stereocenter"
+        );
+        assert_eq!(
+            result.starting_geometry,
+            Some(UffStartingGeometry::ReplacedWithDistanceGeometryV2),
+            "the successful result must disclose that the bounded DG-v2 rescue was used"
         );
     }
 

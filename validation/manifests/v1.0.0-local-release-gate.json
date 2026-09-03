@@ -1,0 +1,112 @@
+{
+  "schema": "chematic.v1.local-release-gate.v1",
+  "release": "1.0.0",
+  "candidate_revision": "a8e2748e",
+  "recorded_on": "2026-09-03",
+  "host": "macOS arm64",
+  "decision": "pass_with_explicit_long_run_exclusions",
+  "policy": {
+    "external_audit_and_hosted_ci": "supplemental",
+    "linux_only_execution": "must_be_recorded_separately",
+    "required_local_result": "pass_or_explicit_platform_block"
+  },
+  "checks": {
+    "fuzz": {
+      "status": "pass",
+      "toolchain": "nightly",
+      "targets": {
+        "smiles": {"runs": 1000, "corpus_files_after_cmin": 1579},
+        "xyz": {"runs": 1000, "corpus_files_after_cmin": 504},
+        "moljson": {"runs": 1000, "corpus_files_after_cmin": 1158},
+        "formats": {"runs": 1000, "corpus_files_after_cmin": 5082}
+      },
+      "new_crash_or_timeout": false,
+      "cmin": "pass"
+    },
+    "cargo_audit": {
+      "status": "pass_with_accepted_warnings",
+      "locked_dependencies": 286,
+      "unmaintained_warnings": ["rustybuzz", "ttf-parser"]
+    },
+    "cargo_deny": {"status": "pass"},
+    "rust_contract": {
+      "status": "pass",
+      "commands": [
+        "cargo test -p chematic-smiles --test cross_binding_contract --locked",
+        "cargo test -p chematic-chem --test rdkit_reference --locked"
+      ],
+      "result": "1 passed; 118 passed, 1 ignored"
+    },
+    "workspace_all_targets": {
+      "status": "pass_with_explicit_long_run_exclusions",
+      "command": "cargo test --workspace --all-targets --locked",
+      "result": "exit 0; all default workspace targets passed; long-running Experimental 3D and corpus-scale tests were reported as ignored",
+      "scope": "default workspace tests; no parser or binding contract failure observed"
+    },
+    "long_run_experimental_3d": {
+      "status": "pass",
+      "command": "cargo test -p chematic-3d --lib -- --ignored",
+      "result": "9 passed; 0 failed; finished in 1467.02s; no timeout or panic"
+    },
+    "long_run_canonical_corpus": {
+      "status": "pass_with_serialized_final_run",
+      "command": "cargo test -p chematic-chem --test canonical_idempotency_corpus_standardized -- --ignored",
+      "result": "NCI 5k and descriptor census passed in the parallel lane; ChEMBL accuracy 4999 passed in a serialized single-test rerun in 1504.50s; 0 failures"
+    },
+    "python_contract": {
+      "status": "pass",
+      "pytest": "8.4.2",
+      "pytest_asyncio": "0.26.0",
+      "result": "653 passed; 72 skipped",
+      "command": ".venv-v1gate/bin/python -m pytest crates/chematic-py/tests/ -q"
+    },
+    "node_wasm_contract": {
+      "status": "pass",
+      "node_build": "wasm-pack build --target nodejs --out-dir pkg-node --release",
+      "web_build": "wasm-pack build --target web --out-dir pkg-web --release",
+      "result": "all checked-in Node/WASM contract files passed, including web-target pipeline"
+    },
+    "miri": {
+      "status": "pass",
+      "run_id": 33711754307,
+      "result": "focused core and parser tests passed on GitHub Linux"
+    },
+    "sanitizers": {
+      "status": "pass",
+      "run_id": 33711755623,
+      "jobs": {
+        "address": "pass",
+        "leak": "pass",
+        "thread": "pass"
+      },
+      "result": "all three sanitizer jobs passed on GitHub Linux"
+    }
+  },
+  "external_follow_up": [
+    "independent parser/serialization/binding review",
+    "hosted Linux Miri and sanitizer execution",
+    "hosted binding matrix rerun"
+  ],
+  "release_artifacts": {
+    "status": "generated_and_locally_verified",
+    "directory": "target/release-evidence-v1.0.0/",
+    "files": [
+      "chematic.spdx.json",
+      "chematic.provenance.json",
+      "chematic.provenance.sig",
+      "SHA256SUMS",
+      "RELEASE-KEY-FINGERPRINT",
+      "release-notes.md"
+    ],
+    "public_key_fingerprint_sha256": "f1147c10688e412d183cc6cc0f22017c67874327741815a971c40b362f06ac4e",
+    "local_signature_verification": "pass",
+    "publication": "github_release_passed; crates_io_passed; pypi_passed; npm_blocked_scope_or_token_404",
+    "publication_runs": {
+      "github_release": "33739001369",
+      "crates_io": "33739001298",
+      "pypi": "33739001257",
+      "npm": "33739001267"
+    },
+    "browser_ci_run": "33740014401"
+  }
+}

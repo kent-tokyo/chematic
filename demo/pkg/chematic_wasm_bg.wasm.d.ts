@@ -18,6 +18,7 @@ export const brics_fragments_json: (a: number) => [number, number];
 export const butina_cluster_ecfp4_json: (a: number, b: number, c: number) => [number, number, number, number];
 export const canonical_tautomer: (a: number) => number;
 export const canonical_tautomer_with_blocked_atoms_json: (a: number, b: number, c: number) => [number, number];
+export const cdxml_document_json: (a: number, b: number) => [number, number, number, number];
 export const cdxml_to_smiles_json: (a: number, b: number) => [number, number, number, number];
 export const charge_parent_json: (a: number) => [number, number];
 export const chematic_version: () => [number, number];

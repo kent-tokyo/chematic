@@ -416,9 +416,9 @@ fn hba_paracetamol() {
 
 #[test]
 fn hba_caffeine() {
-    // Three N-methyl aromatic N have degree 3 → excluded (pyrrole-type heuristic).
-    // One pyridine-type N (degree 2) + 2 C=O = 3. RDKit CalcNumHBA agrees.
-    assert_eq!(hba_count(&mol("Cn1cnc2c1c(=O)n(c(=O)n2C)C")), 3);
+    // All four neutral ring nitrogens and both carbonyl oxygens are acceptors.
+    // RDKit CalcNumHBA counts the substituted aromatic [n] atoms as acceptors.
+    assert_eq!(hba_count(&mol("Cn1cnc2c1c(=O)n(c(=O)n2C)C")), 6);
 }
 
 #[test]

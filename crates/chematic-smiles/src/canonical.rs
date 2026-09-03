@@ -251,6 +251,41 @@ pub fn canonical_smiles(mol: &Molecule) -> String {
     winning_string
 }
 
+/// Return a canonical SMILES only when its representation is self-stable.
+///
+/// Canonical E/Z carrier placement is still a known residual for a small
+/// subset of highly coupled systems. A plain [`canonical_smiles`] is valid
+/// chemistry in those cases, but must not be used as a deduplication or cache
+/// key when atom-order changes can alter a coupled E/Z geometry spelling.
+/// This helper makes that boundary explicit: it reparses the candidate,
+/// requires idempotence, and returns `None` for molecules with multiple
+/// independently stereogenic E/Z double bonds until their cross-system
+/// canonicalization is proven stable.
+pub fn canonical_smiles_stable_key(mol: &Molecule) -> Option<String> {
+    let candidate = canonical_smiles(mol);
+    let reparsed = crate::parser::parse(&candidate).ok()?;
+    if candidate != canonical_smiles(&reparsed) {
+        return None;
+    }
+
+    let ez_double_bonds = reparsed
+        .bonds()
+        .filter(|(_, bond)| bond.order == BondOrder::Double)
+        .filter(|(double_idx, bond)| {
+            [bond.atom1, bond.atom2].into_iter().all(|end| {
+                reparsed.neighbors(end).any(|(_, side_bond)| {
+                    side_bond != *double_idx
+                        && matches!(
+                            reparsed.bond(side_bond).order,
+                            BondOrder::Up | BondOrder::Down
+                        )
+                })
+            })
+        })
+        .count();
+    (ez_double_bonds <= 1).then_some(candidate)
+}
+
 /// Compute Morgan (extended connectivity) ranks for all atoms.
 ///
 /// Returns a vector of normalised ordinal ranks (0-based, gap-free)

@@ -1,0 +1,48 @@
+{
+  "schema": "chematic.v1.long-run-evidence.v1",
+  "release": "1.0.0-rc.1",
+  "candidate_revision": "5b78d1ae",
+  "recorded_on": "2026-09-03",
+  "host": "macOS arm64",
+  "policy": "Experimental and corpus-scale lanes are supplemental to the default workspace gate.",
+  "runs": [
+    {
+      "name": "experimental_3d",
+      "command": "cargo test -p chematic-3d --lib -- --ignored",
+      "status": "pass",
+      "passed": 9,
+      "failed": 0,
+      "duration_seconds": 1467.02,
+      "timeout_seconds": 1800
+    },
+    {
+      "name": "canonical_corpus_nci_and_descriptor",
+      "command": "cargo test -p chematic-chem --test canonical_idempotency_corpus_standardized -- --ignored",
+      "status": "pass",
+      "cases": [
+        "nci_first_5k_corpus_standardized_is_canonically_idempotent",
+        "descriptor_census_corpus_standardized_is_canonically_idempotent"
+      ],
+      "failed": 0,
+      "timeout_seconds": 1800
+    },
+    {
+      "name": "canonical_corpus_chembl",
+      "command": "cargo test -p chematic-chem --test canonical_idempotency_corpus_standardized -- --ignored chembl_accuracy_corpus_standardized_is_canonically_idempotent",
+      "status": "pass",
+      "cases": [
+        "chembl_accuracy_corpus_standardized_is_canonically_idempotent"
+      ],
+      "passed": 1,
+      "failed": 0,
+      "duration_seconds": 1504.50,
+      "timeout_seconds": 1800,
+      "execution_note": "Serialized single-test rerun avoids contention seen in the parallel corpus invocation."
+    }
+  ],
+  "initial_parallel_corpus_attempt": {
+    "status": "timeout",
+    "exit_code": 124,
+    "note": "NCI and descriptor completed; ChEMBL was subsequently rerun alone and passed."
+  }
+}

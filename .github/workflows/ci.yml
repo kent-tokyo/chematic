@@ -72,13 +72,17 @@ jobs:
           - { package: chematic-inchi, target: standard_inchi }
           - { package: chematic-mcp, target: schema_conformance }
           - { package: chematic-mol, target: conformer_3d_io }
+          - { package: chematic-mol, target: cross_binding_adversarial }
           - { package: chematic-mol, target: format_binding_parity }
           - { package: chematic-mol, target: mmcif_pqr_integration }
           - { package: chematic-mol, target: qcschema }
           - { package: chematic-mol, target: square_planar_mol_io }
           - { package: chematic-mol, target: stereo2d_ez_reader_integration }
           - { package: chematic-mol, target: stereo_reader_integration }
+          - { package: chematic-perception, target: aromaticity_edge_gate }
           - { package: chematic-smiles, target: canonical_idempotency_corpus }
+          - { package: chematic-smiles, target: canonical_ez_residual }
+          - { package: chematic-smiles, target: cross_binding_contract }
           - { package: chematic-smiles, target: canonical_robustness }
           - { package: chematic-smiles, target: chembl_roundtrip }
           - { package: chematic-smiles, target: dative_bond_direction }
@@ -148,7 +152,7 @@ jobs:
           VIRTUAL_ENV: ${{ github.workspace }}/.venv
         run: |
           python -m venv .venv
-          .venv/bin/pip install maturin pytest numpy --quiet
+          .venv/bin/pip install maturin 'pytest<9' 'pytest-asyncio>=0.23,<1' numpy --quiet
           .venv/bin/maturin develop --release -m crates/chematic-py/Cargo.toml
       - name: Run pytest (chematic-py)
         run: .venv/bin/python -m pytest crates/chematic-py/tests/ -q

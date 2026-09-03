@@ -25,11 +25,14 @@ and must not be presented as release provenance.
 
 ## Activation checklist
 
-- [ ] Generate the production key in the maintainer-controlled secret store.
-- [ ] Register `CHEMATIC_RELEASE_PRIVATE_KEY` in the protected GitHub
+- [x] Generate the production key in the maintainer-controlled secret store.
+- [x] Register `CHEMATIC_RELEASE_PRIVATE_KEY` in the protected GitHub
   environment; do not expose it to pull requests.
-- [ ] Publish the matching public key and fingerprint through the project
+- [x] Publish the matching public key and fingerprint through the project
   release evidence channel.
-- [ ] Run the manual `Release key evidence` workflow and retain its artifact.
-- [ ] Verify the signed provenance from a clean checkout using the published
+- [x] Run the manual `Release key evidence` workflow and retain its artifact.
+- [x] Verify the signed provenance from a clean checkout using the published
   public key.
+
+The v0.89.0 evidence run was `33699428867`. Its published-key fingerprint is
+`f1147c10688e412d183cc6cc0f22017c67874327741815a971c40b362f06ac4e`.

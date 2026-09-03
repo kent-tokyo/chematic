@@ -72,6 +72,14 @@ until this closes; use `apply_aromaticity()`-normalized output as your own
 dedup key in the meantime if this matters for your use case. Full figures
 and root-cause detail: README.md's "Known Limitations" section.
 
+For a fail-closed identity key, use `canonical_smiles_stable_key()`. It
+reparses and re-canonicalizes the candidate and returns no key when the
+canonical spelling is not self-stable or when multiple independent E/Z
+systems remain coupled. This is a safety boundary, not a claim that the
+historical 275/5000 E/Z-only residual has been eliminated. The
+recovered Issue #11 corpus and the current diagnostic parameters/results are
+pinned in `validation/canonical_original_corpus_manifest.json`.
+
 ## SMARTS matching
 
 **Supported.**
@@ -140,7 +148,15 @@ bullet: aromaticity-flag parity on Kekulized input is measured at **96.3%**
 worst-of-10 (5,000-mol ChEMBL); visible differences concentrate in
 N-heterocycles (pyridone, quinolone, indolizine) and non-alternant/
 bridgehead-heavy structures (azulene, purine). Root cause is documented as
-an `aromatic_context` bypass mechanism, not yet fixed.
+an `aromatic_context` bypass mechanism in the default compatibility path.
+
+The opt-in `AromaticityAlgorithm::RdkitLike` model is covered by a public
+regression gate for purine (9 aromatic atoms) and azulene (10). The default
+per-SSSR Hückel model remains compatibility-preserving and intentionally
+model-distinct; select and record the RDKit-like model when parity is needed.
+This gate is a supported regression boundary, not a claim of universal RDKit
+parity: bridgehead-N and other fused/non-alternant topologies remain known
+residuals in both model comparisons.
 
 ## Stereocenter / CIP assignment
 
@@ -152,6 +168,13 @@ Per README's badge comment: stereocenter count **99.96%** (legacy) /
 assignment. Square-planar (`@SP1`/`@SP2`/`@SP3`-equivalent) stereo is read
 automatically from MOL/SDF; write is opt-in only via 3 specific `_checked`
 functions — see [`format-capabilities.md`](format-capabilities.md#molsdf).
+
+The default assignment remains the fast legacy CIP path. The hierarchical
+accurate engine is opt-in through `CipMode::Accurate` (and the named Python
+and WASM binding endpoints). It improves agreement on many structures, but
+is not a universal guarantee: symmetric cages, tied Rule 4b/pseudoasymmetric
+cases, and unsupported or budget-limited structures may remain unresolved.
+Unresolved CIP is represented as unresolved, never as a guessed R/S label.
 
 ## Conformer generation
 
@@ -167,6 +190,12 @@ README's "Use RDKit if" section states this directly: RDKit's ETKDGv3
 includes ML-assisted torsion corrections chematic does not have. The
 feature-maturity table in README.md marks 3D conformer generation
 (distance geometry + MMFF94) as **Experimental**.
+
+The legacy `generate_3d()`/`generate_coords` path is kept for compatibility
+and may produce a usable starting geometry without matching ETKDGv3 quality.
+Use the opt-in `embed_pipeline_v2` when bounded work, stage evidence, and
+typed failure outcomes are required; even a successful pipeline result is not
+a claim of conformational-quality or RDKit parity.
 
 **Correction (2026-08-23):** an earlier version of this page said no
 RDKit-comparison figure for conformer RMSD/TFD existed in this
@@ -200,6 +229,11 @@ statable atom-typing rule gap — 32/6,693 type-mismatched and 56/6,693
 charge-mismatched atoms remain on the 264-molecule reference corpus. See
 `CHANGELOG.md`'s release entries and the public force-field documentation
 for the full writeup; this page does not re-derive it.
+
+The MMFF94 implementation contains all seven energy-term families, but this
+describes implemented terms, not complete chemical coverage. Missing typing or
+parameters and non-convergent minimization remain valid outcomes, especially
+for charged, metal-containing, fused, or otherwise difficult structures.
 
 ## Molecular depiction (2D)
 
