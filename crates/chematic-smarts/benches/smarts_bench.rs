@@ -9,6 +9,7 @@
 use criterion::{Criterion, criterion_group, criterion_main};
 use std::hint::black_box;
 
+use chematic_perception::find_sssr;
 use chematic_smarts::{SmartsCache, find_matches, parse_smarts};
 use chematic_smiles::parse;
 
@@ -75,6 +76,29 @@ fn bench_smarts_cache_hit(c: &mut Criterion) {
     });
 }
 
+// ── Multiple cached patterns with shared SSSR ───────────────────────────────
+
+fn bench_smarts_cache_shared_rings(c: &mut Criterion) {
+    let mols: Vec<_> = BENCH_SMILES.iter().map(|s| parse(s).unwrap()).collect();
+    let patterns = ["[a]", "[OH]", "[CX3](=O)", "[nH]", "[F,Cl,Br,I]"];
+    let rings: Vec<_> = mols.iter().map(find_sssr).collect();
+    let mut cache = SmartsCache::new(patterns.len());
+
+    c.bench_function("smarts_cache_shared_rings_5x10mol", |b| {
+        b.iter(|| {
+            for (mol, ring_set) in mols.iter().zip(&rings) {
+                for pattern in patterns {
+                    let _ = black_box(cache.find_matches_with_rings(
+                        black_box(pattern),
+                        black_box(mol),
+                        black_box(ring_set),
+                    ));
+                }
+            }
+        })
+    });
+}
+
 // ── Complex recursive SMARTS ──────────────────────────────────────────────────
 
 fn bench_smarts_complex(c: &mut Criterion) {
@@ -94,6 +118,7 @@ criterion_group!(
     bench_smarts_compile,
     bench_smarts_match_no_cache,
     bench_smarts_cache_hit,
+    bench_smarts_cache_shared_rings,
     bench_smarts_complex,
 );
 criterion_main!(benches);
