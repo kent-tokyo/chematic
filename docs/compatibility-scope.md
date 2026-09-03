@@ -51,6 +51,22 @@ Canonical SMILES, aromaticity, CIP, and stereo retain separate documented
 residuals and model choices. Matching function names do not promise
 algorithmic identity.
 
+## Aromaticity and CIP
+
+The default aromaticity path is the compatibility-preserving per-SSSR Hückel
+model. `AromaticityAlgorithm::RdkitLike` is an explicit opt-in whole-graph
+model for fused and non-alternant systems. Purine and azulene are covered by
+the RDKit-like regression gate, but the two models intentionally remain
+distinct; neither mode claims universal RDKit aromaticity parity. Known
+bridgehead-N and other fused-ring gaps remain documented residuals.
+
+The default CIP path remains the fast legacy assignment. Accurate hierarchical
+CIP is opt-in through `CipMode::Accurate` (and its named Python/WASM binding
+endpoints). It improves coverage and parity for many cases but is not a
+universal guarantee: symmetric cages, tied Rule 4b/pseudoasymmetric cases,
+and unsupported or budget-limited structures may remain unresolved. An
+unresolved result is not a guessed R/S label.
+
 ## Binding contract
 
 Rust is the reference implementation. Python and WASM expose selected,

@@ -148,12 +148,15 @@ bullet: aromaticity-flag parity on Kekulized input is measured at **96.3%**
 worst-of-10 (5,000-mol ChEMBL); visible differences concentrate in
 N-heterocycles (pyridone, quinolone, indolizine) and non-alternant/
 bridgehead-heavy structures (azulene, purine). Root cause is documented as
-an `aromatic_context` bypass mechanism, not yet fixed.
+an `aromatic_context` bypass mechanism in the default compatibility path.
 
 The opt-in `AromaticityAlgorithm::RdkitLike` model is covered by a public
 regression gate for purine (9 aromatic atoms) and azulene (10). The default
 per-SSSR Hückel model remains compatibility-preserving and intentionally
 model-distinct; select and record the RDKit-like model when parity is needed.
+This gate is a supported regression boundary, not a claim of universal RDKit
+parity: bridgehead-N and other fused/non-alternant topologies remain known
+residuals in both model comparisons.
 
 ## Stereocenter / CIP assignment
 
@@ -165,6 +168,13 @@ Per README's badge comment: stereocenter count **99.96%** (legacy) /
 assignment. Square-planar (`@SP1`/`@SP2`/`@SP3`-equivalent) stereo is read
 automatically from MOL/SDF; write is opt-in only via 3 specific `_checked`
 functions — see [`format-capabilities.md`](format-capabilities.md#molsdf).
+
+The default assignment remains the fast legacy CIP path. The hierarchical
+accurate engine is opt-in through `CipMode::Accurate` (and the named Python
+and WASM binding endpoints). It improves agreement on many structures, but
+is not a universal guarantee: symmetric cages, tied Rule 4b/pseudoasymmetric
+cases, and unsupported or budget-limited structures may remain unresolved.
+Unresolved CIP is represented as unresolved, never as a guessed R/S label.
 
 ## Conformer generation
 
