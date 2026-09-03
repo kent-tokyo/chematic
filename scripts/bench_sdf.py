@@ -39,7 +39,11 @@ def run_chematic_read(path: str) -> tuple[float, int]:
     ok = 0
     t0 = time.perf_counter()
     for rec in chematic.iter_sdf(path):
-        if rec.smiles:
+        # Measure SDF parsing only.  Accessing rec.smiles invokes schematic's
+        # canonicalizer, whereas RDKit's SDMolSupplier loop below only parses
+        # molecules; including that extra operation made the old comparison
+        # systematically unfair.
+        if rec.mol is not None:
             ok += 1
     return time.perf_counter() - t0, ok
 

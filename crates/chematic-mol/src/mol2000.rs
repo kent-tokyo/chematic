@@ -1064,12 +1064,19 @@ pub fn write_mol(mol: &Molecule, metadata: &MolMetadata) -> String {
 /// **Does not preserve `Chirality::SquarePlanar` stereo** -- see
 /// [`write_mol`]'s doc comment; the same 2D-only limitation applies here.
 /// Use [`write_mol_with_conformer_checked`] if `mol` may carry it.
+#[allow(clippy::write_with_newline)]
 pub fn write_mol_with_coords(
     mol: &Molecule,
     metadata: &MolMetadata,
     coords: &[(f64, f64)],
 ) -> String {
-    let mut out = String::new();
+    use std::fmt::Write as _;
+
+    // A MOL block is dominated by fixed-width atom and bond rows.  Reserve
+    // the common-size output up front so serialization does not repeatedly
+    // grow and copy the String for every row (the old empty String was a
+    // noticeable cost when writing many small records).
+    let mut out = String::with_capacity(128 + mol.atom_count() * 80 + mol.bond_count() * 16);
 
     // Header lines 1–3
     out.push_str(&metadata.name);
@@ -1081,20 +1088,24 @@ pub fn write_mol_with_coords(
     // Counts line (line 4)
     let natoms = mol.atom_count();
     let nbonds = mol.bond_count();
-    out.push_str(&format!(
+    write!(
+        &mut out,
         "{:>3}{:>3}  0  0  0  0  0  0  0  0999 V2000\n",
         natoms, nbonds
-    ));
+    )
+    .expect("writing to String cannot fail");
 
     // Atom block
     for (idx, atom) in mol.atoms() {
         let sym = atom.element.symbol();
         let charge_code = encode_charge(atom.charge);
         let (x, y) = coords.get(idx.0 as usize).copied().unwrap_or((0.0, 0.0));
-        out.push_str(&format!(
+        write!(
+            &mut out,
             "{:>10.4}{:>10.4}{:>10.4} {:<3} 0{:>3}  0  0  0  0  0  0  0  0  0\n",
             x, y, 0.0_f64, sym, charge_code,
-        ));
+        )
+        .expect("writing to String cannot fail");
     }
 
     // Bond block
@@ -1121,7 +1132,8 @@ pub fn write_mol_with_coords(
             BondOrder::Down => 6,
             _ => 0,
         };
-        out.push_str(&format!("{:>3}{:>3}{:>3}{:>3}\n", a1, a2, btype, stereo));
+        writeln!(&mut out, "{:>3}{:>3}{:>3}{:>3}", a1, a2, btype, stereo)
+            .expect("writing to String cannot fail");
     }
 
     // Terminator

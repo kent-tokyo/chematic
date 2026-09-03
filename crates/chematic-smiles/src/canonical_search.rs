@@ -243,8 +243,25 @@ pub(crate) fn winning_individualized_ranks_with_limits(
     mol: &Molecule,
     limits: &CanonicalizationLimits,
 ) -> Result<(Vec<u64>, String), CanonicalizationError> {
-    let graph = CanonicalColoredGraph::new(mol);
     let ranks = crate::canonical::morgan_ranks(mol);
+
+    // Most drug-like molecules have no Morgan-rank plateau after iterative
+    // refinement.  In that case individualization cannot change the order,
+    // so constructing the writer-visible colored graph and running the
+    // automorphism machinery is redundant.  Keep the exact same writer and
+    // rank vector, but skip that setup entirely.  This is a correctness
+    // preserving fast path: branching is only required when two atoms share
+    // a rank, and the existing exhaustive/orbit-pruned paths remain the
+    // authority for tied molecules.
+    if crate::canonical::group_by_rank(&ranks)
+        .iter()
+        .all(|cell| cell.len() == 1)
+    {
+        let string = crate::canonical::CanonicalWriter::new(mol, &ranks).write_all();
+        return Ok((ranks, string));
+    }
+
+    let graph = CanonicalColoredGraph::new(mol);
     let mut budget = SearchBudget::default();
     let mut incumbent: Option<Incumbent> = None;
     search_canonical(mol, &graph, ranks, 0, limits, &mut budget, &mut incumbent)?;
