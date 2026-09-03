@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   completes successfully. Experimental 3D long-run and corpus-scale
   canonical tests are retained in explicit `--ignored` lanes and are not
   silently treated as default-gate evidence.
+- Recorded successful long-run evidence for all 9 Experimental 3D tests and
+  the NCI 5k, descriptor census, and ChEMBL accuracy canonical corpus lanes;
+  the ChEMBL lane is documented as a serialized run to avoid contention.
 
 ### v0.89.0 maintenance — bounded WASM geometry inputs
 
