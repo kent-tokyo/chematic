@@ -17,6 +17,15 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
+  local-security-gate:
+    name: Local security review gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Run repository-local S4/S5 gate
+        run: python3 scripts/security_review_gate.py
+
   audit:
     name: Cargo Audit
     runs-on: ubuntu-latest
