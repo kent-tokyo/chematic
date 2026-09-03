@@ -16,7 +16,8 @@
 //! `parse_smarts()` + `find_matches()` each time.
 
 use rustc_hash::FxHashMap;
-use std::collections::{HashMap, VecDeque};
+use std::cmp::Reverse;
+use std::collections::{BinaryHeap, HashMap};
 
 use crate::{
     match_vf2::{MatchConfig, find_matches_with_config},
@@ -34,7 +35,11 @@ pub struct SmartsCache {
     // std HashMap (SipHash) intentionally — keys are user-supplied SMARTS strings;
     // FxHash has no random seed and is vulnerable to HashDoS with adversarial input.
     store: HashMap<String, QueryMolecule>,
-    order: VecDeque<String>, // LRU order (front = oldest, back = newest)
+    access_generation: HashMap<String, u64>,
+    // Min-heap via Reverse. Stale entries are discarded on eviction, so a cache
+    // hit no longer scans the entire LRU list.
+    order: BinaryHeap<Reverse<(u64, String)>>,
+    next_generation: u64,
 }
 
 impl SmartsCache {
@@ -43,8 +48,17 @@ impl SmartsCache {
         Self {
             capacity: capacity.max(1),
             store: HashMap::new(),
-            order: VecDeque::new(),
+            access_generation: HashMap::new(),
+            order: BinaryHeap::new(),
+            next_generation: 0,
         }
+    }
+
+    fn touch(&mut self, smarts: &str) {
+        self.next_generation = self.next_generation.wrapping_add(1);
+        let generation = self.next_generation;
+        self.access_generation.insert(smarts.to_owned(), generation);
+        self.order.push(Reverse((generation, smarts.to_owned())));
     }
 
     /// Compile a SMARTS pattern (or retrieve from cache) and return a reference.
@@ -52,19 +66,18 @@ impl SmartsCache {
         if !self.store.contains_key(smarts) {
             let qmol = parse_smarts(smarts)?;
             if self.store.len() >= self.capacity {
-                // Evict LRU: pop_front is O(1) with VecDeque
-                if let Some(oldest) = self.order.pop_front() {
-                    self.store.remove(&oldest);
+                while let Some(Reverse((generation, oldest))) = self.order.pop() {
+                    if self.access_generation.get(&oldest) == Some(&generation) {
+                        self.store.remove(&oldest);
+                        self.access_generation.remove(&oldest);
+                        break;
+                    }
                 }
             }
             self.store.insert(smarts.to_string(), qmol);
-            self.order.push_back(smarts.to_string());
+            self.touch(smarts);
         } else {
-            // Move to back (most recently used)
-            if let Some(pos) = self.order.iter().position(|s| s == smarts) {
-                let key = self.order.remove(pos).unwrap();
-                self.order.push_back(key);
-            }
+            self.touch(smarts);
         }
         Ok(self.store.get(smarts).unwrap())
     }
@@ -118,7 +131,9 @@ impl SmartsCache {
     /// Clear all cached patterns.
     pub fn clear(&mut self) {
         self.store.clear();
+        self.access_generation.clear();
         self.order.clear();
+        self.next_generation = 0;
     }
 }
 
