@@ -4,7 +4,7 @@
   "candidate_revision": "825d6fb55e0a7e6462fb1fc91fced1fa1821bca5",
   "recorded_on": "2026-09-03",
   "host": "macOS arm64",
-  "decision": "not_final",
+  "decision": "pass_with_supplemental_linux_evidence",
   "policy": {
     "external_audit_and_hosted_ci": "supplemental",
     "linux_only_execution": "must_be_recorded_separately",
@@ -49,12 +49,19 @@
       "reason": "candidate evidence exists in hosted CI; local rebuild not repeated in this record"
     },
     "miri": {
-      "status": "platform_blocked",
-      "reason": "focused Miri requires Linux nightly execution"
+      "status": "pass",
+      "run_id": 33711754307,
+      "result": "focused core and parser tests passed on GitHub Linux"
     },
     "sanitizers": {
-      "status": "platform_blocked",
-      "reason": "ASan/LSan/TSan runner requires Linux nightly execution"
+      "status": "pass",
+      "run_id": 33711755623,
+      "jobs": {
+        "address": "pass",
+        "leak": "pass",
+        "thread": "pass"
+      },
+      "result": "all three sanitizer jobs passed on GitHub Linux"
     }
   },
   "external_follow_up": [
