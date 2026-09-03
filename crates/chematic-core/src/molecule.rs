@@ -911,6 +911,22 @@ impl MoleculeBuilder {
         Self::default()
     }
 
+    /// Create an empty builder with storage reserved for a known graph size.
+    ///
+    /// Parsers commonly learn atom and bond counts before constructing the
+    /// graph. Reserving those primary arrays avoids repeated growth while
+    /// preserving exactly the same builder semantics as [`Self::new`].
+    pub fn with_capacity(atom_count: usize, bond_count: usize) -> Self {
+        Self {
+            atoms: Vec::with_capacity(atom_count),
+            bonds: Vec::with_capacity(bond_count),
+            adjacency: Vec::with_capacity(atom_count),
+            stereo_groups: Vec::new(),
+            stereo_neighbor_order: std::collections::HashMap::new(),
+            bond_directions: std::collections::HashMap::new(),
+        }
+    }
+
     /// Create a builder pre-populated with all atoms and bonds from `mol`.
     ///
     /// Use this to make incremental edits to an existing molecule instead of

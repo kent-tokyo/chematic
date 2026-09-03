@@ -66,6 +66,9 @@ benchmark, and a documented “where to use which tool” migration guide.
 - [x] Add an SDF graph/property fast reader and serialization-only writer mode;
   measure them against RDKit with layout work reported separately in
   `benchmarks/2026-09-04-sdf-fast-path.md`.
+- [x] Improve that SDF read/write fast path by at least 1.1× on the same
+  benchmark: seven-process medians improve 1.26× for read and 1.33× for
+  serialization-only write, while strict Z validation remains intact.
 - [x] Optimize the canonical SMILES hot path and record repeated comparisons
   on two independent 5,000-molecule corpora; chematic leads RDKit by 2.5% and
   1.47× at the respective medians on the recorded macOS arm64 environment.

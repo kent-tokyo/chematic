@@ -407,17 +407,16 @@ impl SdWriter {
             name,
             comment: String::new(),
         };
-        let props = match &self.props_filter {
-            None => mol.props.clone(),
-            Some(keys) => keys
-                .iter()
+        let filtered_props = self.props_filter.as_ref().map(|keys| {
+            keys.iter()
                 .filter_map(|k| mol.props.get(k).map(|v| (k.clone(), v.clone())))
-                .collect(),
-        };
+                .collect()
+        });
+        let props = filtered_props.as_ref().unwrap_or(&mol.props);
         let record = if self.force_v3000 {
-            chematic_mol::write_sdf_record_v3000(&mol.inner, &meta, &coords, &props)
+            chematic_mol::write_sdf_record_v3000(&mol.inner, &meta, &coords, props)
         } else {
-            chematic_mol::write_sdf_record(&mol.inner, &meta, &coords, &props)
+            chematic_mol::write_sdf_record(&mol.inner, &meta, &coords, props)
         };
         w.write_all(record.as_bytes())
             .map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))

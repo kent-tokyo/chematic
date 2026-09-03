@@ -58,8 +58,11 @@ faster). See
 [`benchmarks/2026-09-04-canonical-fast-path.md`](../benchmarks/2026-09-04-canonical-fast-path.md).
 The SDF fast-path measurement separates graph/property parsing from
 optional diagnostics and separates serialization from automatic 2D layout.
-On the same 365-record corpus, the fast read path is 6.8× faster and
-serialization-only write is 8.0× faster than RDKit. See [`benchmarks/2026-09-04-sdf-fast-path.md`](../benchmarks/2026-09-04-sdf-fast-path.md).
+On the same 365-record corpus, the latest seven-run medians are 9.48 µs/mol
+for graph/property read and 7.62 µs/mol for serialization-only write: 1.26×
+and 1.33× faster than the preceding chematic implementation, and 10.5× and
+10.4× faster than RDKit in that run. See
+[`benchmarks/2026-09-04-sdf-fast-path.md`](../benchmarks/2026-09-04-sdf-fast-path.md).
 
 The older snapshot below is retained as historical evidence and must not be
 combined with this run.

@@ -724,9 +724,17 @@ fn read_mol_internal(
 
     // -- Atom block ---------------------------------------------------------
 
-    let mut builder = MoleculeBuilder::new();
-    let mut coords: Vec<(f64, f64)> = Vec::with_capacity(natoms);
-    let mut raw_z: Vec<f64> = Vec::with_capacity(natoms);
+    let mut builder = MoleculeBuilder::with_capacity(natoms, nbonds);
+    let mut coords: Vec<(f64, f64)> = if include_diagnostics {
+        Vec::with_capacity(natoms)
+    } else {
+        Vec::new()
+    };
+    let mut raw_z: Vec<f64> = if include_diagnostics {
+        Vec::with_capacity(natoms)
+    } else {
+        Vec::new()
+    };
     let make_atom_err = |ln: usize, d: String| MolParseError::InvalidAtomLine {
         line: ln,
         detail: d,
@@ -735,28 +743,10 @@ fn read_mol_internal(
     for atom_i in 0..natoms {
         let (raw_lineno, atom_line) = next_line()?;
 
-        // Coordinates: bytes 0–9 (x), 10–19 (y), 20–29 (z) — each 10 chars.
-        let x: f64 = atom_line
-            .get(0..10)
-            .and_then(|s| s.trim().parse().ok())
-            .unwrap_or(0.0);
-        let y: f64 = atom_line
-            .get(10..20)
-            .and_then(|s| s.trim().parse().ok())
-            .unwrap_or(0.0);
-        coords.push((x, y));
-
-        // Z coordinate (bytes 20-29): previously silently discarded
-        // entirely -- root cause of the 3D-coordinate-loss bug this PR
-        // fixes (nothing downstream ever read this field). Unlike x/y
-        // above, a present-but-garbled or non-finite z is a typed error
-        // rather than a silent 0.0 default: nothing today reads z, so a
-        // malformed value can only be file corruption, and silently
-        // matching x/y's leniency would manufacture a fake flat conformer
-        // out of garbage input instead of surfacing it. A genuinely
-        // *missing* z field (line too short, or blank) still defaults to
-        // 0.0, same as x/y -- most real 2D-only writers pad it with zeros,
-        // but some don't, and a short 2D line is not corruption.
+        // Keep validating Z even on the graph-only supplier path. A malformed
+        // value was already a typed error there, so skipping all coordinate
+        // parsing would silently loosen strictParsing. Only X/Y conversion
+        // and coordinate storage are diagnostic-path work.
         let z: f64 = match atom_line.get(20..30) {
             None => 0.0,
             Some(raw) => {
@@ -780,7 +770,22 @@ fn read_mol_internal(
                 }
             }
         };
-        raw_z.push(z);
+
+        if include_diagnostics {
+            // X/Y are only needed by coordinate and stereo diagnostics. The
+            // graph-only supplier does not expose either, so avoid converting
+            // and storing values it immediately discards.
+            let x: f64 = atom_line
+                .get(0..10)
+                .and_then(|s| s.trim().parse().ok())
+                .unwrap_or(0.0);
+            let y: f64 = atom_line
+                .get(10..20)
+                .and_then(|s| s.trim().parse().ok())
+                .unwrap_or(0.0);
+            coords.push((x, y));
+            raw_z.push(z);
+        }
 
         // Element symbol: bytes 31–33 (3 chars, left-padded with a space in
         // the spec, but writers vary; trim both ends).
@@ -1134,13 +1139,25 @@ pub fn write_mol_with_coords(
     for (idx, atom) in mol.atoms() {
         let sym = atom.element.symbol();
         let charge_code = encode_charge(atom.charge);
-        let (x, y) = coords.get(idx.0 as usize).copied().unwrap_or((0.0, 0.0));
-        write!(
-            &mut out,
-            "{:>10.4}{:>10.4}{:>10.4} {:<3} 0{:>3}  0  0  0  0  0  0  0  0  0\n",
-            x, y, 0.0_f64, sym, charge_code,
-        )
-        .expect("writing to String cannot fail");
+        if let Some(&(x, y)) = coords.get(idx.0 as usize) {
+            write!(
+                &mut out,
+                "{:>10.4}{:>10.4}{:>10.4} {:<3} 0{:>3}  0  0  0  0  0  0  0  0  0\n",
+                x, y, 0.0_f64, sym, charge_code,
+            )
+            .expect("writing to String cannot fail");
+        } else {
+            // Serialization-only SDF output overwhelmingly has no coordinate
+            // array. Avoid running the float formatter three times per atom
+            // for a byte sequence that is known at compile time.
+            out.push_str("    0.0000    0.0000    0.0000 ");
+            writeln!(
+                &mut out,
+                "{:<3} 0{:>3}  0  0  0  0  0  0  0  0  0",
+                sym, charge_code,
+            )
+            .expect("writing to String cannot fail");
+        }
     }
 
     // Bond block
