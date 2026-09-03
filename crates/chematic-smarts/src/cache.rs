@@ -25,6 +25,7 @@ use crate::{
     query::QueryMolecule,
 };
 use chematic_core::{AtomIdx, Molecule};
+use chematic_perception::RingSet;
 
 /// LRU cache for compiled SMARTS patterns.
 ///
@@ -109,6 +110,20 @@ impl SmartsCache {
     ) -> Result<Vec<FxHashMap<usize, AtomIdx>>, SmartsError> {
         let qmol = self.compile(smarts)?;
         Ok(find_matches_with_config(qmol, mol, config))
+    }
+
+    /// Find matches while reusing a precomputed ring set.
+    ///
+    /// This is the preferred path when applying several cached patterns to
+    /// the same molecule: SSSR calculation is performed once by the caller.
+    pub fn find_matches_with_rings(
+        &mut self,
+        smarts: &str,
+        mol: &Molecule,
+        rings: &RingSet,
+    ) -> Result<Vec<FxHashMap<usize, AtomIdx>>, SmartsError> {
+        let qmol = self.compile(smarts)?;
+        Ok(crate::match_vf2::find_matches_with_rings(qmol, mol, rings))
     }
 
     /// Check whether `smarts` matches at least once in `mol`.

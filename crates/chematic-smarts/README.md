@@ -38,6 +38,8 @@ for m in matches {
 - `find_matches(query: &Molecule, target: &Molecule) -> Vec<AtomMap>` — all substructure matches
 - `find_matches_with_config(query: &Molecule, target: &Molecule, config: &MatchConfig) -> Vec<AtomMap>` — with options
 - `has_match(query: &Molecule, target: &Molecule) -> bool` — fast boolean check
+- `SmartsCache::find_matches_with_rings(pattern, target, rings)` — reuse one
+  precomputed SSSR when matching several cached patterns against one molecule
 
 ### Maximum Common Subgraph
 
