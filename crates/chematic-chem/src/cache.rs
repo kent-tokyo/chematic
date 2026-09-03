@@ -4,6 +4,7 @@
 //! Improves performance when computing same molecules repeatedly.
 
 use std::collections::HashMap;
+use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 
 /// Descriptor cache entry: stores computed descriptor values.
@@ -27,6 +28,7 @@ pub struct DescriptorEntry {
 #[derive(Clone, Debug)]
 pub struct DescriptorCache {
     cache: Arc<Mutex<HashMap<String, DescriptorEntry>>>,
+    order: Arc<Mutex<VecDeque<String>>>,
     max_size: usize,
 }
 
@@ -35,26 +37,46 @@ impl DescriptorCache {
     pub fn new(max_size: usize) -> Self {
         Self {
             cache: Arc::new(Mutex::new(HashMap::new())),
+            order: Arc::new(Mutex::new(VecDeque::new())),
             max_size,
         }
     }
 
     /// Get cached entry for molecule (keyed by canonical SMILES).
     pub fn get(&self, smiles: &str) -> Option<DescriptorEntry> {
-        self.cache.lock().ok().and_then(|c| c.get(smiles).cloned())
+        let entry = self.cache.lock().ok().and_then(|c| c.get(smiles).cloned());
+        if entry.is_some()
+            && let Ok(mut order) = self.order.lock()
+        {
+            if let Some(pos) = order.iter().position(|key| key == smiles) {
+                order.remove(pos);
+            }
+            order.push_back(smiles.to_owned());
+        }
+        entry
     }
 
     /// Store/update cached entry.
     pub fn put(&self, smiles: String, entry: DescriptorEntry) {
+        if self.max_size == 0 {
+            return;
+        }
         if let Ok(mut cache) = self.cache.lock() {
-            // Simple eviction: clear if full and adding new entry
-            if !cache.contains_key(&smiles) && cache.len() >= self.max_size {
-                // Remove arbitrary entry (FIFO-like behavior in practice)
-                if let Some(key) = cache.keys().next().cloned() {
-                    cache.remove(&key);
-                }
+            let is_new = !cache.contains_key(&smiles);
+            if !cache.contains_key(&smiles)
+                && cache.len() >= self.max_size
+                && let Ok(mut order) = self.order.lock()
+                && let Some(oldest) = order.pop_front()
+            {
+                cache.remove(&oldest);
             }
-            cache.insert(smiles, entry);
+            cache.insert(smiles.clone(), entry);
+            if let Ok(mut order) = self.order.lock() {
+                if !is_new && let Some(pos) = order.iter().position(|key| key == &smiles) {
+                    order.remove(pos);
+                }
+                order.push_back(smiles);
+            }
         }
     }
 
@@ -62,6 +84,9 @@ impl DescriptorCache {
     pub fn clear(&self) {
         if let Ok(mut cache) = self.cache.lock() {
             cache.clear();
+        }
+        if let Ok(mut order) = self.order.lock() {
+            order.clear();
         }
     }
 
@@ -108,8 +133,28 @@ mod tests {
         cache.put("C2".to_string(), entry.clone());
         cache.put("C3".to_string(), entry.clone());
 
-        // Cache size should be 2 (evicted oldest)
-        assert!(cache.len() <= 2);
+        assert_eq!(cache.len(), 2);
+        assert!(cache.get("C1").is_none());
+    }
+
+    #[test]
+    fn zero_capacity_disables_storage() {
+        let cache = DescriptorCache::new(0);
+        cache.put("CC".to_string(), DescriptorEntry::default());
+        assert_eq!(cache.len(), 0);
+        assert!(cache.is_empty());
+    }
+
+    #[test]
+    fn cache_eviction_is_lru() {
+        let cache = DescriptorCache::new(2);
+        let entry = DescriptorEntry::default();
+        cache.put("C1".to_string(), entry.clone());
+        cache.put("C2".to_string(), entry.clone());
+        assert!(cache.get("C1").is_some());
+        cache.put("C3".to_string(), entry);
+        assert!(cache.get("C1").is_some());
+        assert!(cache.get("C2").is_none());
     }
 
     #[test]

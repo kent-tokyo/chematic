@@ -75,12 +75,8 @@ impl SmartsCache {
         smarts: &str,
         mol: &Molecule,
     ) -> Result<Vec<FxHashMap<usize, AtomIdx>>, SmartsError> {
-        let qmol = self.compile(smarts)?.clone();
-        Ok(find_matches_with_config(
-            &qmol,
-            mol,
-            &MatchConfig::default(),
-        ))
+        let qmol = self.compile(smarts)?;
+        Ok(find_matches_with_config(qmol, mol, &MatchConfig::default()))
     }
 
     /// Find all substructure matches with custom `MatchConfig`.
@@ -90,8 +86,8 @@ impl SmartsCache {
         mol: &Molecule,
         config: &MatchConfig,
     ) -> Result<Vec<FxHashMap<usize, AtomIdx>>, SmartsError> {
-        let qmol = self.compile(smarts)?.clone();
-        Ok(find_matches_with_config(&qmol, mol, config))
+        let qmol = self.compile(smarts)?;
+        Ok(find_matches_with_config(qmol, mol, config))
     }
 
     /// Check whether `smarts` matches at least once in `mol`.
