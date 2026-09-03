@@ -16,9 +16,9 @@ Python・Rust・ブラウザ向けケモインフォマティクスライブラ�
 **デフォルトで速く、設計で安全なケモインフォマティクス。**  
 Pure Rust · C/C++ ゼロ · Python · WebAssembly · [公式サイト](https://chematic.io/) · [ライブデモ](https://kent-tokyo.github.io/chematic/playground/)
 
-### v1.0.0 の対応範囲
+### v1.0.1 の対応範囲
 
-v1.0.0 は、bounded な CDXML/polymer API、部分的な Python `RWMol`
+v1.0.1 は、v1.0.0 の対応範囲を維持し、bounded な CDXML/polymer API、部分的な Python `RWMol`
 互換、fail-closed canonical identity、明示的な aromaticity/CIP モード、
 Experimental の 3D/MMFF94 を公開契約とします。完全な任意構造 CDXML 編集、
 複雑な Markush/polymer 展開、完全な RDKit `RWMol` 互換、3D の完全な
@@ -134,7 +134,7 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v1.0.0 candidate
+# chematic v1.0.1
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-06, v0.4.22 vs RDKit 2026.03.3 --

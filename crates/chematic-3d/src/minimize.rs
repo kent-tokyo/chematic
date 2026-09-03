@@ -2116,8 +2116,9 @@ fn run_uff_bridge(
 /// `pipeline_v2.rs` stage 11 exists to catch and retry; this simpler
 /// embed→minimize→verify bridge just falls through to the original failure
 /// instead, which is correct/safe, not a bug) — closing that residual would
-/// need adding an equivalent repair step here, a separate, larger change not
-/// attempted by this measurement.
+/// need adding an equivalent repair step here. The rescue now makes a bounded,
+/// deterministic three-seed search, but that is a robustness retry and not a
+/// claim of complete stereochemical convergence for every topology.
 ///
 /// If `embed_distance_geometry_v2` itself fails, or the retry is unsound or
 /// stereo-violating, the ORIGINAL failure is returned unchanged except for
@@ -2138,12 +2139,23 @@ fn rescue_with_distance_geometry_v2(
     // See this function's own doc comment ("Revised, issue #210") for why
     // these are set instead of `EmbedParameters::default()`.
     let has_stereo = mol_has_declared_stereo(mol);
-    let embed_params = EmbedParameters {
+    // Try a small fixed set of independent starts. This is deterministic and
+    // keeps the rescue cost bounded while avoiding dependence on one unlucky
+    // stereo-preserving embedding basin.
+    const RESCUE_SEED_OFFSETS: [u64; 3] = [0, 0x9E37_79B9_7F4A_7C15, 0xD1B5_4A32_D192_ED03];
+    let base_params = EmbedParameters {
         enforce_chirality: has_stereo,
         materialize_implicit_h_for_chirality: has_stereo,
         ..EmbedParameters::default()
     };
-    if let Ok(v2_coords) = embed_distance_geometry_v2(mol, &embed_params) {
+    for offset in RESCUE_SEED_OFFSETS {
+        let embed_params = EmbedParameters {
+            random_seed: base_params.random_seed.wrapping_add(offset),
+            ..base_params.clone()
+        };
+        let Ok(v2_coords) = embed_distance_geometry_v2(mol, &embed_params) else {
+            continue;
+        };
         let retry_coord_vec = coords_to_vec(&v2_coords, n);
         // `energy_before`/`energy_after` on a successful rescue must both describe
         // the SAME trajectory (the DG v2 geometry, before and after minimizing it) --

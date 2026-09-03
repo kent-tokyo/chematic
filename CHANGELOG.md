@@ -9,7 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-No unreleased changes.
+### Improved — `chematic-3d` UFF stereo rescue (#210)
+
+- The bounded UFF rescue now tries up to three deterministic distance-geometry
+  starts when an earlier stereo-preserving start is unsound or cannot converge.
+  The original default seed remains first and successful candidates are accepted
+  immediately, preserving existing successful results while covering additional
+  stochastic embedding basins.
+- Each candidate still requires finite coordinates, sane bond lengths, sound
+  minimization, and fully satisfied declared stereo; if all candidates fail, the
+  original typed failure is returned unchanged apart from the retry marker.
+
+## [1.0.1] - 2026-09-03
+
+### Release status
+
+- Patch release containing the bounded, deterministic UFF stereo-rescue retry
+  improvement and its regression evidence.
+- The v1.0.0 compatibility boundary and known Experimental/non-parity scope are
+  unchanged.
 
 ## [1.0.0] - 2026-09-03
 
@@ -8768,6 +8786,7 @@ Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception 
 - FNV-1a hashing for reproducible, deterministic canonical SMILES across platforms.
 
 [Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.0...HEAD
+[1.0.1]: https://github.com/kent-tokyo/chematic/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/kent-tokyo/chematic/releases/tag/v1.0.0
 [0.89.0]: https://github.com/kent-tokyo/chematic/releases/tag/v0.89.0
 [0.36.0]: https://github.com/kent-tokyo/chematic/compare/v0.35.0...v0.36.0

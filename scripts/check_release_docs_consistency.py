@@ -26,8 +26,8 @@ DOCS = (
 def main() -> int:
     errors: list[str] = []
     cargo = (ROOT / "Cargo.toml").read_text(encoding="utf-8")
-    if not re.search(r'^version\s*=\s*"1\.0\.0"\s*$', cargo, re.MULTILINE):
-        errors.append("Cargo.toml does not declare workspace version 1.0.0")
+    if not re.search(r'^version\s*=\s*"1\.0\.1"\s*$', cargo, re.MULTILINE):
+        errors.append("Cargo.toml does not declare workspace version 1.0.1")
 
     for path in DOCS:
         try:
@@ -57,8 +57,8 @@ def main() -> int:
         ROOT / "crates" / "chematic-mcp" / "README.md",
         ROOT / "crates" / "chematic-inchi" / "README.md",
     ):
-        if 'version = "1.0.0"' not in path.read_text(encoding="utf-8"):
-            errors.append(f"{path.relative_to(ROOT)}: current dependency example is not v1.0.0")
+        if 'version = "1.0.1"' not in path.read_text(encoding="utf-8"):
+            errors.append(f"{path.relative_to(ROOT)}: current dependency example is not v1.0.1")
 
     if errors:
         print("Release documentation consistency failures:", file=sys.stderr)
