@@ -315,9 +315,11 @@ pub fn morgan_ranks(mol: &Molecule) -> Vec<u64> {
 pub(crate) fn refine_ranks(mol: &Molecule, mut ranks: Vec<u64>) -> Vec<u64> {
     let n = ranks.len();
     let max_iter = n + 2;
+    // Carry the previous distinct-count forward.  Recomputing it from the
+    // unchanged `ranks` at the top of every iteration needlessly cloned and
+    // sorted the same vector a second time.
+    let mut old_distinct = count_distinct(&ranks);
     for _ in 0..max_iter {
-        let old_distinct = count_distinct(&ranks);
-
         let new_ranks: Vec<u64> = (0..n)
             .map(|i| {
                 let idx = AtomIdx(i as u32);
@@ -368,6 +370,7 @@ pub(crate) fn refine_ranks(mol: &Molecule, mut ranks: Vec<u64>) -> Vec<u64> {
         if new_distinct <= old_distinct {
             break;
         }
+        old_distinct = new_distinct;
     }
 
     normalize_ranks(&ranks)
@@ -975,6 +978,45 @@ impl<'a> CanonicalWriter<'a> {
             })
             .collect();
 
+        // A singleton has no shared candidate bond, so the global consistency
+        // search below is equivalent to trying the rank-preferred carrier and
+        // then its sibling if the former is load-bearing elsewhere.  Keep the
+        // general 2^k solver for genuinely coupled systems, but make the hot
+        // (and overwhelmingly common) k=1 case allocation-free.
+        if k == 1 {
+            let end = ordered[0];
+            let pair = subs[0];
+            let preferred = if self.ranks[pair[1].0.0 as usize] < self.ranks[pair[0].0.0 as usize] {
+                1
+            } else {
+                0
+            };
+            let Some(reference_up) = self.reference_up(end, &pair, preferred) else {
+                return;
+            };
+            for chosen in [preferred, 1 - preferred] {
+                let demoted = pair[1 - chosen].1;
+                if self.is_load_bearing_elsewhere(demoted, end) {
+                    continue;
+                }
+                let chosen_up = if chosen == preferred {
+                    reference_up
+                } else {
+                    !reference_up
+                };
+                let chosen_bond = pair[chosen].1;
+                let chosen_order =
+                    Self::direction_for_up(self.mol.bond(chosen_bond).atom1, end, chosen_up);
+                self.ez_marker.insert(chosen_bond, chosen_order);
+                self.ez_marker
+                    .insert(demoted, Self::plain_order(self.mol.bond(demoted).order));
+                return;
+            }
+            #[cfg(test)]
+            self.ez_shared_bond_abstains.push(end);
+            return;
+        }
+
         // Each end's own rank-preferred candidate index. A tie (both
         // candidates equal rank) can only mean the two substituents are
         // automorphic (per `self.ranks`'s own fully-discrete-for-genuinely-
@@ -1393,20 +1435,39 @@ impl<'a> CanonicalWriter<'a> {
         }
     }
 
+    /// Whether a directional bond can participate in an E/Z marker choice.
+    ///
+    /// Wedge/dash bonds are also represented as `Up`/`Down`, but they do not
+    /// need the alkene marker solver.  Keep this check allocation-free so the
+    /// common tetrahedral-stereo-only path avoids the SSSR and coupling graph
+    /// work in [`Self::resolve_ez_markers`].
+    fn has_directional_alkene_candidate(&self) -> bool {
+        (0..self.mol.bond_count()).any(|i| {
+            let bidx = BondIdx(i as u32);
+            let bond = self.mol.bond(bidx);
+            if bond.order == BondOrder::Double
+                || !matches!(
+                    crate::writer::raw_bond_direction(self.mol, bidx),
+                    Some(BondOrder::Up | BondOrder::Down)
+                )
+            {
+                return false;
+            }
+            [bond.atom1, bond.atom2].into_iter().any(|end| {
+                self.mol
+                    .neighbors(end)
+                    .any(|(_, adjacent)| self.mol.bond(adjacent).order == BondOrder::Double)
+            })
+        })
+    }
+
     pub(crate) fn write_all(mut self) -> String {
         // Phase -1/0 only matter when the molecule actually carries a
         // directional bond (literal Up/Down or an aromatic-direction stash).
         // Avoid scanning for stereo alkene ends and building union-find
         // groups for the common non-stereo case. `normalize_ez` remains safe
         // for ordinary bonds with an empty group map.
-        let has_directional_bond = (0..self.mol.bond_count()).any(|i| {
-            let bidx = BondIdx(i as u32);
-            matches!(
-                crate::writer::raw_bond_direction(self.mol, bidx),
-                Some(BondOrder::Up | BondOrder::Down)
-            )
-        });
-        if has_directional_bond {
+        if self.has_directional_alkene_candidate() {
             // Pick, for every stereo alkene end, which substituent carries the
             // marker, then group connected E/Z systems.
             self.resolve_ez_markers();
