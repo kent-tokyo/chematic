@@ -49,6 +49,11 @@ results are operation-specific: chematic led import, SMILES parsing, and
 ECFP4, while RDKit led canonical SMILES and SDF read/write. See the complete
 record and hashes in [`benchmarks/2026-09-03-competitive.md`](../benchmarks/2026-09-03-competitive.md).
 
+The follow-up SDF fast-path measurement separates graph/property parsing from
+optional diagnostics and separates serialization from automatic 2D layout.
+On the same 365-record corpus, serialization-only write is 8.6× faster than
+RDKit; read remains 3.1× slower. See [`benchmarks/2026-09-04-sdf-fast-path.md`](../benchmarks/2026-09-04-sdf-fast-path.md).
+
 The older snapshot below is retained as historical evidence and must not be
 combined with this run.
 

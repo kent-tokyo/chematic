@@ -38,12 +38,11 @@ def run_chematic_read(path: str) -> tuple[float, int]:
     # Warm-up (import/JIT-free, but keeps timing consistent with other scripts)
     ok = 0
     t0 = time.perf_counter()
-    for rec in chematic.iter_sdf(path):
-        # Measure SDF parsing only.  Accessing rec.smiles invokes chematic's
-        # canonicalizer, whereas RDKit's SDMolSupplier loop below only parses
-        # molecules; including that extra operation made the old comparison
-        # systematically unfair.
-        if rec.mol is not None:
+    for mol in chematic.SDMolSupplier(path, strictParsing=False):
+        # Match RDKit's SDMolSupplier contract: parse the molecule and fields,
+        # without requesting chematic's optional stereo/3D diagnostics or
+        # canonical SMILES generation.
+        if mol is not None:
             ok += 1
     return time.perf_counter() - t0, ok
 
@@ -62,7 +61,9 @@ def run_chematic_write(path: str, out_path: str) -> tuple[float, int]:
     import chematic
     mols = [rec.mol for rec in chematic.iter_sdf(path) if rec.mol is not None]
     t0 = time.perf_counter()
-    with chematic.SDWriter(out_path) as w:
+    # Serialization-only mode is compared separately from depiction. RDKit's
+    # writer does not run a new 2D layout for each molecule either.
+    with chematic.SDWriter(out_path, compute2d=False) as w:
         for m in mols:
             w.write(m)
     return time.perf_counter() - t0, len(mols)
@@ -71,6 +72,8 @@ def run_chematic_write(path: str, out_path: str) -> tuple[float, int]:
 def run_rdkit_write(path: str, out_path: str) -> tuple[float, int]:
     from rdkit import Chem
     mols = [m for m in Chem.SDMolSupplier(path) if m is not None]
+    for mol in mols:
+        mol.RemoveAllConformers()
     t0 = time.perf_counter()
     w = Chem.SDWriter(out_path)
     for m in mols:

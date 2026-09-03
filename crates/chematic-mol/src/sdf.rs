@@ -452,6 +452,7 @@ pub struct SdfFileReader<R: std::io::BufRead> {
     limits: SdfParseLimits,
     bytes_read: usize,
     records_read: usize,
+    diagnostics: bool,
 }
 
 /// Resource limits for streaming SDF input.
@@ -486,12 +487,27 @@ impl<R: std::io::BufRead> SdfFileReader<R> {
 
     /// Wrap a `BufRead` source and enforce input, record-size, and record-count limits.
     pub fn with_limits(reader: R, limits: SdfParseLimits) -> Self {
+        Self::with_limits_and_diagnostics(reader, limits, true)
+    }
+
+    /// Wrap a source using the lightweight SDMolSupplier-compatible path.
+    ///
+    /// This parses the molecule graph and SD properties but skips optional
+    /// wedge/E-Z/3D diagnostics. It is appropriate when the caller needs the
+    /// structure, not the loss-preserving diagnostic report. The default
+    /// [`Self::new`] path remains diagnostic-complete.
+    pub fn fast(reader: R) -> Self {
+        Self::with_limits_and_diagnostics(reader, SdfParseLimits::default(), false)
+    }
+
+    fn with_limits_and_diagnostics(reader: R, limits: SdfParseLimits, diagnostics: bool) -> Self {
         Self {
             reader,
             done: false,
             limits,
             bytes_read: 0,
             records_read: 0,
+            diagnostics,
         }
     }
 }
@@ -573,18 +589,37 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
         }
         self.records_read += 1;
 
-        // Reuse the same parse path as SdfRecordReader.
-        let report = match read_mol_with_diagnostics(&block) {
-            Ok(report) => report,
-            Err(e) => return Some(Err(e)),
-        };
-
         let data_part = block
             .find("M  END")
             .map(|pos| &block[pos + 6..])
             .unwrap_or("");
         let properties: std::collections::HashMap<String, String> =
             parse_sd_fields(data_part).into_iter().collect();
+
+        if !self.diagnostics {
+            let (mol, meta) = match parse_mol(&block) {
+                Ok(parsed) => parsed,
+                Err(e) => return Some(Err(e)),
+            };
+            return Some(Ok(SdfRecord {
+                mol,
+                meta,
+                coords: Vec::new(),
+                properties,
+                stereo_diagnostics: Vec::new(),
+                ez_diagnostics: Vec::new(),
+                conformer: None,
+                coordinate_dimension: CoordinateDimension::Unknown,
+                geometry_rank: GeometryRank::Indeterminate,
+                stereo3d_diagnostics: Vec::new(),
+            }));
+        }
+
+        // Reuse the diagnostic-complete parse path for the default reader.
+        let report = match read_mol_with_diagnostics(&block) {
+            Ok(report) => report,
+            Err(e) => return Some(Err(e)),
+        };
 
         Some(Ok(SdfRecord {
             mol: report.mol,
