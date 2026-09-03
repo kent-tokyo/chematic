@@ -3926,6 +3926,11 @@ mod policy_bridge_tests {
             crate::stereo_constraints::verify_stereo(&mol, &result.coords).is_fully_satisfied(),
             "the rescued geometry must preserve every declared stereocenter"
         );
+        assert_eq!(
+            result.starting_geometry,
+            Some(UffStartingGeometry::ReplacedWithDistanceGeometryV2),
+            "the successful result must disclose that the bounded DG-v2 rescue was used"
+        );
     }
 
     /// Starting-geometry-source axis: the same `UffOnly` policy, same
