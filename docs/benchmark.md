@@ -35,6 +35,10 @@ An interrupted run must be resumed with the same result directory and state
 file. The runner stops on the first failed operation while preserving its
 status and log.
 
+The runner also fails before timing if the imported Python package version does
+not match the manifest target version. This prevents a stale installed wheel
+from being reported as a current-workspace result.
+
 ## Latest measured snapshot
 
 This page reports the latest reproducible benchmark run, not necessarily the

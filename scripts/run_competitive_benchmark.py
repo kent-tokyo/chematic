@@ -35,6 +35,16 @@ def load_json(path: Path) -> dict:
         raise SystemExit(f"cannot read {path}: {exc}") from exc
 
 
+def installed_chematic_version() -> str:
+    probe = subprocess.run(
+        [sys.executable, "-c", "import chematic; print(getattr(chematic, '__version__', 'unknown'))"],
+        cwd=ROOT, text=True, capture_output=True, check=False,
+    )
+    if probe.returncode != 0:
+        raise SystemExit("chematic is not importable in the benchmark Python environment")
+    return probe.stdout.strip()
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
@@ -50,6 +60,13 @@ def main() -> int:
     args = ap.parse_args()
 
     manifest = load_json(args.manifest)
+    expected_version = manifest["target_version"]
+    actual_version = installed_chematic_version()
+    if actual_version != expected_version:
+        raise SystemExit(
+            f"chematic version mismatch: expected {expected_version}, found {actual_version}; "
+            "build/install the current workspace package before measuring"
+        )
     result_dir = args.result_dir if args.result_dir.is_absolute() else ROOT / args.result_dir
     result_dir.mkdir(parents=True, exist_ok=True)
     state_path = args.state or result_dir / "state.json"
@@ -60,6 +77,7 @@ def main() -> int:
         "schema_version": 1,
         "protocol": "competitive-benchmark",
         "target_version": manifest["target_version"],
+        "environment": {"chematic_version": actual_version},
         "status": "not_started",
         "started_at_utc": now(),
         "host": {"os": platform.platform(), "machine": platform.machine(),

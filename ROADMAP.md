@@ -58,6 +58,8 @@ benchmark, and a documented “where to use which tool” migration guide.
   persistent logs, fail-fast status, and `--resume` support; interrupted
   measurements remain explicitly incomplete rather than being treated as
   results.
+- [x] Add benchmark environment preflight that rejects a stale installed
+  chematic package whose version differs from the target workspace release.
 
 - Define a lossless record model for molecule, coordinates, SD properties,
   source location, parse status, diagnostics, units, and provenance.
