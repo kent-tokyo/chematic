@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the ChEMBL lane is documented as a serialized run to avoid contention.
 - Added an offline validator for the checked-in long-run evidence manifest,
   including command, revision, result-count, and timeout-policy drift checks.
+- Added an offline release-document consistency check for the fixed version,
+  `chematic` product name, release-key secret name, and gate references.
 
 ### v0.89.0 maintenance — bounded WASM geometry inputs
 
