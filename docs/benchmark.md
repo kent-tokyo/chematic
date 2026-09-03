@@ -41,11 +41,11 @@ from being reported as a current-workspace result.
 
 ## Latest measured snapshot
 
-### 2026-09-03 — schematic 1.0.1
+### 2026-09-03 — chematic 1.0.1
 
-The current protocol run completed for schematic and RDKit on macOS arm64.
+The current protocol run completed for chematic and RDKit on macOS arm64.
 Open Babel was not installed, so no Open Babel comparison is claimed. The
-results are operation-specific: schematic led import, SMILES parsing, and
+results are operation-specific: chematic led import, SMILES parsing, and
 ECFP4, while RDKit led canonical SMILES and SDF read/write. See the complete
 record and hashes in [`benchmarks/2026-09-03-competitive.md`](../benchmarks/2026-09-03-competitive.md).
 
