@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `chematic` product name, release-key secret name, and gate references.
 - Updated current dependency examples and the Japanese README's v1.0 boundary;
   historical benchmark and release-note versions remain explicitly historical.
+- Rebuilt the checked-in demo WASM bundle at v1.0.0 so browser smoke tests use
+  the same version as the workspace release.
 
 ### v0.89.0 maintenance — bounded WASM geometry inputs
 

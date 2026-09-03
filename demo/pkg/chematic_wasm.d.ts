@@ -585,6 +585,13 @@ export function canonical_tautomer(mol: MolHandle): MolHandle;
 export function canonical_tautomer_with_blocked_atoms_json(mol: MolHandle, blocked_atom_indices_json: string): string;
 
 /**
+ * Parse a CDXML document while preserving page and presentation objects.
+ * The returned JSON contains an opaque `raw_xml` for each object so unknown
+ * ChemDraw extensions are never silently discarded.
+ */
+export function cdxml_document_json(cdxml: string): string;
+
+/**
  * Parse all molecular fragments from a CDXML string.
  *
  * Returns a JSON array of SMILES strings, one per fragment:
@@ -2622,6 +2629,7 @@ export interface InitOutput {
     readonly butina_cluster_ecfp4_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly canonical_tautomer: (a: number) => number;
     readonly canonical_tautomer_with_blocked_atoms_json: (a: number, b: number, c: number) => [number, number];
+    readonly cdxml_document_json: (a: number, b: number) => [number, number, number, number];
     readonly cdxml_to_smiles_json: (a: number, b: number) => [number, number, number, number];
     readonly charge_parent_json: (a: number) => [number, number];
     readonly chematic_version: () => [number, number];
