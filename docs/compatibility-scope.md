@@ -1,6 +1,6 @@
 # Compatibility scope
 
-This is the v0.89 compatibility boundary and the proposed v1.0 contract.
+This is the v1.0 compatibility boundary and public contract.
 “Compatible” means the operation is implemented and covered by its stated
 contract; it does not mean that chematic is a drop-in reimplementation of
 RDKit or ChemDraw.

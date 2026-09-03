@@ -15,7 +15,11 @@ DOCS = (
     ROOT / "CHANGELOG.md",
     ROOT / "SECURITY.md",
     ROOT / "docs" / "v1.0-local-release-gate.md",
+    ROOT / "docs" / "compatibility-scope.md",
+    ROOT / "docs" / "use-cases" / "rust-server.md",
     ROOT / "docs" / "release-key-custody.md",
+    ROOT / "crates" / "chematic-mcp" / "README.md",
+    ROOT / "crates" / "chematic-inchi" / "README.md",
 )
 
 
@@ -48,6 +52,13 @@ def main() -> int:
     ):
         if required not in gate:
             errors.append(f"release gate document omits {required}")
+    for path in (
+        ROOT / "docs" / "use-cases" / "rust-server.md",
+        ROOT / "crates" / "chematic-mcp" / "README.md",
+        ROOT / "crates" / "chematic-inchi" / "README.md",
+    ):
+        if 'version = "1.0.0"' not in path.read_text(encoding="utf-8"):
+            errors.append(f"{path.relative_to(ROOT)}: current dependency example is not v1.0.0")
 
     if errors:
         print("Release documentation consistency failures:", file=sys.stderr)
