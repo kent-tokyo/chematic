@@ -51,8 +51,8 @@ record and hashes in [`benchmarks/2026-09-03-competitive.md`](../benchmarks/2026
 
 The follow-up SDF fast-path measurement separates graph/property parsing from
 optional diagnostics and separates serialization from automatic 2D layout.
-On the same 365-record corpus, serialization-only write is 8.6× faster than
-RDKit; read remains 3.1× slower. See [`benchmarks/2026-09-04-sdf-fast-path.md`](../benchmarks/2026-09-04-sdf-fast-path.md).
+On the same 365-record corpus, the fast read path is 6.8× faster and
+serialization-only write is 8.0× faster than RDKit. See [`benchmarks/2026-09-04-sdf-fast-path.md`](../benchmarks/2026-09-04-sdf-fast-path.md).
 
 The older snapshot below is retained as historical evidence and must not be
 combined with this run.

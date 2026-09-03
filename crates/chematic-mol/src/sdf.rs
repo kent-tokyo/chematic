@@ -9,7 +9,7 @@ use chematic_perception::{EzDirectionDiagnostic, StereoDiagnostic};
 
 use crate::error::MolParseError;
 use crate::mol2000::{
-    CoordinateDimension, GeometryRank, MolMetadata, Stereo3DDiagnostic, parse_mol,
+    CoordinateDimension, GeometryRank, MolMetadata, Stereo3DDiagnostic, parse_mol, parse_mol_fast,
     read_mol_with_diagnostics,
 };
 
@@ -597,7 +597,7 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
             parse_sd_fields(data_part).into_iter().collect();
 
         if !self.diagnostics {
-            let (mol, meta) = match parse_mol(&block) {
+            let (mol, meta) = match parse_mol_fast(&block) {
                 Ok(parsed) => parsed,
                 Err(e) => return Some(Err(e)),
             };

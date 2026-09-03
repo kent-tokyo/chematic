@@ -10,8 +10,8 @@ arm64; corpus is RDKit's bundled `egfr.sdf` (365 records).
 
 | Operation | chematic | RDKit | Result |
 |---|---:|---:|---:|
-| SDMolSupplier read | 323.73 µs/mol | 103.45 µs/mol | RDKit 3.1× faster |
-| serialization-only write | 9.91 µs/mol | 84.39 µs/mol | chematic 8.6× faster |
+| SDMolSupplier read | 16.17 µs/mol | 110.8 µs/mol | chematic 6.8× faster |
+| serialization-only write | 10.34 µs/mol | 83.01 µs/mol | chematic 8.0× faster |
 
 The full layout-enabled `SDWriter` remains a separate path and is not claimed
 to beat RDKit. Reproduce with:
@@ -19,4 +19,3 @@ to beat RDKit. Reproduce with:
 ```bash
 TMPDIR=/private/tmp/chematic-bench python3 scripts/bench_sdf.py --rdkit --json
 ```
-

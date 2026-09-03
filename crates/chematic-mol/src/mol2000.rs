@@ -647,6 +647,25 @@ fn parse_field3(
 /// regardless of a `sanitize`-equivalent flag. It never touches `Atom.cip_code`
 /// and never depends on CIP ranking.
 pub fn read_mol_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseError> {
+    read_mol_internal(input, true)
+}
+
+/// Parse a MOL V2000 block without optional stereo/3D diagnostics.
+///
+/// This is used by the RDKit-compatible `SDMolSupplier` path, whose contract
+/// is the molecule graph plus metadata and SD properties. Keeping the parser
+/// and fixed-width validation shared with [`read_mol_with_diagnostics`] avoids
+/// semantic drift while skipping perception and geometry work.
+#[allow(clippy::type_complexity)]
+pub(crate) fn parse_mol_fast(input: &str) -> Result<(Molecule, MolMetadata), MolParseError> {
+    let report = read_mol_internal(input, false)?;
+    Ok((report.mol, report.metadata))
+}
+
+fn read_mol_internal(
+    input: &str,
+    include_diagnostics: bool,
+) -> Result<MolReadReport, MolParseError> {
     // Yields (1-based line number, line text); short-circuits on EOF.
     let mut lines = input.lines().enumerate().map(|(i, l)| (i + 1, l));
     let mut next_line = || lines.next().ok_or(MolParseError::UnexpectedEnd);
@@ -889,6 +908,22 @@ pub fn read_mol_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseE
     }
 
     let mut mol = builder.build();
+
+    if !include_diagnostics {
+        return Ok(MolReadReport {
+            mol,
+            metadata,
+            coords,
+            stereo_diagnostics: Vec::new(),
+            ez_diagnostics: Vec::new(),
+            conformer: None,
+            coordinate_dimension: CoordinateDimension::Unknown,
+            geometry_rank: GeometryRank::Indeterminate,
+            stereo3d_diagnostics: Vec::new(),
+            square_planar_diagnostics: Vec::new(),
+        });
+    }
+
     // Tetrahedral parity first (raw wedge/hash still fully intact on
     // `bond.order`), THEN E/Z direction -- the E/Z stage only ever writes to
     // the separate `bond_direction` side channel, never to `bond.order`, so
