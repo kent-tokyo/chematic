@@ -38,9 +38,11 @@
       "result": "1 passed; 118 passed, 1 ignored"
     },
     "python_contract": {
-      "status": "not_run_after_dependency_pin",
-      "reason": "local pytest 9.1.1 is incompatible with installed pytest-asyncio 0.23.3",
-      "fix": "test extra and CI now pin pytest<9"
+      "status": "pass",
+      "pytest": "8.4.2",
+      "pytest_asyncio": "0.26.0",
+      "result": "653 passed; 72 skipped",
+      "command": ".venv-v1gate/bin/python -m pytest crates/chematic-py/tests/ -q"
     },
     "node_wasm_contract": {
       "status": "not_run_local",
