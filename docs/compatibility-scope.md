@@ -26,6 +26,15 @@ stable:
   imply ETKDGv3/conformational-quality parity or complete force-field
   coverage.
 
+### Evidence boundary
+
+The v1.0 release decision is based on reproducible repository-local gates:
+the S1-S4 checks, binding contract suite, focused Miri, sanitizer jobs, fuzz
+regressions, and dependency/license checks. Independent external review,
+third-party audit, hosted CI execution, and external oracle campaigns are
+supplementary evidence and are not presented as completed v1.0 guarantees.
+They remain post-release follow-up work with findings published separately.
+
 ## Python `RWMol`
 
 Supported: construction from an empty molecule or `Mol`; `AddAtom`, `AddBond`,
