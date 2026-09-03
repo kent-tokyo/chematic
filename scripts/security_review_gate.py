@@ -71,7 +71,7 @@ def main() -> int:
     failed = [item for item in checks if item["status"] != "pass"]
     report = {
         "schema": "chematic.security-review-gate.v1",
-        "version": "0.89.0",
+        "version": "1.0.0",
         "checks": checks,
         "status": "fail" if failed else "pass",
         "external_review": "required-before-claiming-s5-exit",

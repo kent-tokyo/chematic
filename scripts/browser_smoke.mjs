@@ -26,7 +26,7 @@ try {
     waitUntil: "networkidle",
   });
   await page.locator("#version-badge").waitFor({ state: "visible" });
-  assert.equal(await page.locator("#version-badge").innerText(), "v0.89.0");
+  assert.equal(await page.locator("#version-badge").innerText(), "v1.0.0");
   await page.locator("#smiles-input").fill("Cn1cnc2c1c(=O)n(c(=O)n2C)C");
   await page.locator("#btn-calc").click();
   const hba = page.locator("#desc-tbody tr").filter({ hasText: "HBA" }).locator("td").nth(1);

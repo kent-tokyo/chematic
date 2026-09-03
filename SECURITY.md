@@ -4,11 +4,13 @@
 
 | Version | Supported | Status |
 |---------|-----------|--------|
+| v1.0.0 | Candidate | Not published; local release gates recorded |
 | v0.89.0 | Yes | Current published release; release evidence verified |
 | v0.88.0 | Limited | Previous stable release — security fixes only |
 | < v0.88.0 | Limited | Security fixes only (limited) |
 
-**Active Support**: v0.89.0 is the latest published release.
+**Active Support**: v0.89.0 remains the latest published release until v1.0.0
+is tagged and published.
 **Release evidence**: v0.89.0 was built from main commit `344e9dc2`; the
 release-key evidence workflow passed in run `33699428867`, including clean
 checkout signing and public-key verification.
