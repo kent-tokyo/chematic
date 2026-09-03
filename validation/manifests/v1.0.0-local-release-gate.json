@@ -1,6 +1,6 @@
 {
   "schema": "chematic.v1.local-release-gate.v1",
-  "release": "1.0.0-rc.1",
+  "release": "1.0.0",
   "candidate_revision": "a8e2748e",
   "recorded_on": "2026-09-03",
   "host": "macOS arm64",
@@ -100,6 +100,13 @@
     ],
     "public_key_fingerprint_sha256": "f1147c10688e412d183cc6cc0f22017c67874327741815a971c40b362f06ac4e",
     "local_signature_verification": "pass",
-    "publication": "not_performed; final full workspace run is still incomplete"
+    "publication": "github_release_passed; crates_io_passed; pypi_passed; npm_blocked_scope_or_token_404",
+    "publication_runs": {
+      "github_release": "33739001369",
+      "crates_io": "33739001298",
+      "pypi": "33739001257",
+      "npm": "33739001267"
+    },
+    "browser_ci_run": "33740014401"
   }
 }

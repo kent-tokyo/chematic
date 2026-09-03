@@ -4,21 +4,21 @@
 
 | Version | Supported | Status |
 |---------|-----------|--------|
-| v1.0.0 | Candidate | Not published; local release gates recorded |
-| v0.89.0 | Yes | Current published release; release evidence verified |
+| v1.0.0 | Yes (partial registries) | GitHub Release, crates.io, and PyPI published; npm publication is blocked by registry scope/token permissions |
+| v0.89.0 | Yes | Previous published release; release evidence verified |
 | v0.88.0 | Limited | Previous stable release — security fixes only |
 | < v0.88.0 | Limited | Security fixes only (limited) |
 
-**Active Support**: v0.89.0 remains the latest published release until v1.0.0
-is tagged and published.
+**Active Support**: v1.0.0 is the latest published release. The npm package
+publication remains an external registry configuration follow-up.
 **Release evidence**: v0.89.0 was built from main commit `344e9dc2`; the
 release-key evidence workflow passed in run `33699428867`, including clean
 checkout signing and public-key verification.
 **End of Life**: Older versions receive no support.
 
-### v1.0 release-candidate security boundary
+### v1.0 security boundary
 
-The v1.0 candidate requires repository-local fuzz, dependency, binding,
+The v1.0 release requires repository-local fuzz, dependency, binding,
 focused-Miri, and sanitizer procedures. Independent external review, hosted
 CI execution, and external oracle campaigns are supplemental evidence and are
 not represented as completed audit work. See the
@@ -138,6 +138,21 @@ Subscribe to GitHub notifications for this repository to receive alerts about se
 ---
 
 ## Security Fix History
+
+### v1.0.0 verification status
+
+- The GitHub Release workflow passed in run
+  [33739001369](https://github.com/kent-tokyo/chematic/actions/runs/33739001369).
+- The crates.io publication workflow passed on its retry in run
+  [33739001298](https://github.com/kent-tokyo/chematic/actions/runs/33739001298),
+  and the PyPI workflow passed in run
+  [33739001257](https://github.com/kent-tokyo/chematic/actions/runs/33739001257).
+- npm publication remains blocked by the registry returning HTTP 404 for the
+  scoped package; this is a scope/token permission issue, not a release-build
+  failure.
+- The PR gate passed focused Miri, ASan, LSan, TSan, CodeQL, dependency audit,
+  Rust/Python/WASM contracts, and Chromium/Firefox/WebKit browser smoke in
+  the successful checks for PR #453.
 
 ### v0.89.0 verification status
 

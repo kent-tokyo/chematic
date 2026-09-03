@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+No unreleased changes.
+
+## [1.0.0] - 2026-09-03
+
+### Release status
+
+- Published the GitHub Release, crates.io packages, and PyPI wheel.
+- The npm publication remains pending because the registry rejected the scoped
+  package with HTTP 404; the required scope/token permission must be corrected
+  externally.
+- Recorded successful three-browser CI, focused Miri, sanitizer, CodeQL,
+  dependency audit, and cross-binding contract evidence.
+
 ### v1.0.0-rc.1 — local release gate preparation
 
 - Fixed the Python binding test contract to use a reproducible `pytest<9`
