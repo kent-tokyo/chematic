@@ -4,7 +4,7 @@
   "candidate_revision": "462ae95b",
   "recorded_on": "2026-09-03",
   "host": "macOS arm64",
-  "decision": "not_ready_workspace_3d_experimental_regression",
+  "decision": "not_ready_full_workspace_run_incomplete",
   "policy": {
     "external_audit_and_hosted_ci": "supplemental",
     "linux_only_execution": "must_be_recorded_separately",
@@ -38,10 +38,10 @@
       "result": "1 passed; 118 passed, 1 ignored"
     },
     "workspace_all_targets": {
-      "status": "blocked_by_experimental_3d_regression",
+      "status": "incomplete_due_to_long_running_experimental_3d_tests",
       "command": "cargo test --workspace --all-targets --locked",
-      "result": "chematic-3d::minimize::policy_bridge_tests::uff_only_rescue_now_preserves_stereo_for_atorvastatin_fragment failed with MinimizationFailed/CatastrophicBondBlowup",
-      "scope": "Experimental 3D/MMFF94; no parser or binding contract failure"
+      "result": "targeted atorvastatin rescue regression now passes; full process was interrupted after more than 10 minutes while other Experimental 3D pipeline tests were still running",
+      "scope": "Experimental 3D/MMFF94; no parser or binding contract failure observed"
     },
     "python_contract": {
       "status": "pass",
@@ -90,6 +90,6 @@
     ],
     "public_key_fingerprint_sha256": "f1147c10688e412d183cc6cc0f22017c67874327741815a971c40b362f06ac4e",
     "local_signature_verification": "pass",
-    "publication": "not_performed; candidate gate is blocked by the Experimental 3D workspace regression"
+    "publication": "not_performed; final full workspace run is still incomplete"
   }
 }
