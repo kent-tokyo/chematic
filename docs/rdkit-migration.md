@@ -74,8 +74,9 @@ and root-cause detail: README.md's "Known Limitations" section.
 
 For a fail-closed identity key, use `canonical_smiles_stable_key()`. It
 reparses and re-canonicalizes the candidate and returns no key when the
-canonical spelling is not self-stable. This is a safety boundary, not a claim
-that the historical 275/5000 E/Z-only residual has been eliminated. The
+canonical spelling is not self-stable or when multiple independent E/Z
+systems remain coupled. This is a safety boundary, not a claim that the
+historical 275/5000 E/Z-only residual has been eliminated. The
 recovered Issue #11 corpus and the current diagnostic parameters/results are
 pinned in `validation/canonical_original_corpus_manifest.json`.
 

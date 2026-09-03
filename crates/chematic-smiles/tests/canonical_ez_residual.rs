@@ -19,3 +19,10 @@ fn stable_key_accepts_converged_ez_spelling() {
         Some(r"C(=C/C)\C".to_string())
     );
 }
+
+#[test]
+fn stable_key_fails_closed_for_coupled_ez_systems() {
+    let mol = parse(r"CC1CNC(/C=C\C=C/C=C\C2(C)C(=C(O)C(C2)=O)C(/C=C\C=C/C=C\C=C/C=C1)=O)=O")
+        .expect("coupled E/Z fixture parses");
+    assert_eq!(canonical_smiles_stable_key(&mol), None);
+}
