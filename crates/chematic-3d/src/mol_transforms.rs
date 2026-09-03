@@ -1,5 +1,6 @@
 use crate::coords::{Coords3D, Point3};
 use chematic_core::{AtomIdx, Molecule};
+use std::collections::HashSet;
 
 /// Get bond length in Ångströms between atoms a and b.
 pub fn get_bond_length(coords: &Coords3D, a: AtomIdx, b: AtomIdx) -> f64 {
@@ -136,11 +137,12 @@ pub fn transform_conformer(coords: &Coords3D, matrix: &[[f64; 4]; 4]) -> Coords3
 /// Find all atoms in the subtree rooted at `target` when coming from `parent`.
 fn find_rotated_atoms(mol: &Molecule, parent: AtomIdx, target: AtomIdx) -> Vec<AtomIdx> {
     let mut result = vec![target];
+    let mut visited = HashSet::from([target]);
     let mut stack = vec![target];
 
     while let Some(current) = stack.pop() {
         for (neighbor, _) in mol.neighbors(current) {
-            if neighbor != parent && !result.contains(&neighbor) {
+            if neighbor != parent && visited.insert(neighbor) {
                 result.push(neighbor);
                 stack.push(neighbor);
             }
