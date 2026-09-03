@@ -3,8 +3,7 @@
 //! Simple LRU-like cache for descriptors keyed by molecule canonical SMILES.
 //! Improves performance when computing same molecules repeatedly.
 
-use std::collections::HashMap;
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex};
 
 /// Descriptor cache entry: stores computed descriptor values.
@@ -27,31 +26,34 @@ pub struct DescriptorEntry {
 /// Thread-safe descriptor cache with max_size limit.
 #[derive(Clone, Debug)]
 pub struct DescriptorCache {
-    cache: Arc<Mutex<HashMap<String, DescriptorEntry>>>,
-    order: Arc<Mutex<VecDeque<String>>>,
+    state: Arc<Mutex<DescriptorCacheState>>,
     max_size: usize,
+}
+
+#[derive(Debug, Default)]
+struct DescriptorCacheState {
+    entries: HashMap<String, DescriptorEntry>,
+    order: VecDeque<String>,
 }
 
 impl DescriptorCache {
     /// Create new cache with given max size.
     pub fn new(max_size: usize) -> Self {
         Self {
-            cache: Arc::new(Mutex::new(HashMap::new())),
-            order: Arc::new(Mutex::new(VecDeque::new())),
+            state: Arc::new(Mutex::new(DescriptorCacheState::default())),
             max_size,
         }
     }
 
     /// Get cached entry for molecule (keyed by canonical SMILES).
     pub fn get(&self, smiles: &str) -> Option<DescriptorEntry> {
-        let entry = self.cache.lock().ok().and_then(|c| c.get(smiles).cloned());
-        if entry.is_some()
-            && let Ok(mut order) = self.order.lock()
-        {
-            if let Some(pos) = order.iter().position(|key| key == smiles) {
-                order.remove(pos);
+        let mut state = self.state.lock().ok()?;
+        let entry = state.entries.get(smiles).cloned();
+        if entry.is_some() {
+            if let Some(pos) = state.order.iter().position(|key| key == smiles) {
+                state.order.remove(pos);
             }
-            order.push_back(smiles.to_owned());
+            state.order.push_back(smiles.to_owned());
         }
         entry
     }
@@ -61,38 +63,36 @@ impl DescriptorCache {
         if self.max_size == 0 {
             return;
         }
-        if let Ok(mut cache) = self.cache.lock() {
-            let is_new = !cache.contains_key(&smiles);
-            if !cache.contains_key(&smiles)
-                && cache.len() >= self.max_size
-                && let Ok(mut order) = self.order.lock()
-                && let Some(oldest) = order.pop_front()
+        if let Ok(mut state) = self.state.lock() {
+            let is_new = !state.entries.contains_key(&smiles);
+            if !state.entries.contains_key(&smiles)
+                && state.entries.len() >= self.max_size
+                && let Some(oldest) = state.order.pop_front()
             {
-                cache.remove(&oldest);
+                state.entries.remove(&oldest);
             }
-            cache.insert(smiles.clone(), entry);
-            if let Ok(mut order) = self.order.lock() {
-                if !is_new && let Some(pos) = order.iter().position(|key| key == &smiles) {
-                    order.remove(pos);
-                }
-                order.push_back(smiles);
+            state.entries.insert(smiles.clone(), entry);
+            if !is_new && let Some(pos) = state.order.iter().position(|key| key == &smiles) {
+                state.order.remove(pos);
             }
+            state.order.push_back(smiles);
         }
     }
 
     /// Clear all cached entries.
     pub fn clear(&self) {
-        if let Ok(mut cache) = self.cache.lock() {
-            cache.clear();
-        }
-        if let Ok(mut order) = self.order.lock() {
-            order.clear();
+        if let Ok(mut state) = self.state.lock() {
+            state.entries.clear();
+            state.order.clear();
         }
     }
 
     /// Get cache size.
     pub fn len(&self) -> usize {
-        self.cache.lock().map(|c| c.len()).unwrap_or(0)
+        self.state
+            .lock()
+            .map(|state| state.entries.len())
+            .unwrap_or(0)
     }
 
     /// Check if cache is empty.
