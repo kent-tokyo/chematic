@@ -232,12 +232,27 @@ pub fn validate_valence(mol: &Molecule) -> Vec<ValenceError> {
         let used = bos.saturating_add(explicit_h);
         let charge = atom.charge as i16;
 
+        // A positive bracket H count is part of the atom's structural
+        // contract, not merely an additive allowance.  Compare it with the
+        // H count that the surviving graph and formal charge would infer.
+        // Without this check a neutral N with three heavy-atom single bonds
+        // and `[NH]` was accepted through nitrogen's higher `[3, 5]` valence
+        // tier, even though the graph leaves no N-H valence available.  Keep
+        // the aromatic `[nH]` spelling as the explicit aromatic exception;
+        // its H is required by aromaticity rather than organic-subset
+        // valence inference.  Zero-H bracket atoms remain valid query/
+        // reaction-template spellings and are not rewritten by validation.
+        let explicit_h_mismatch = explicit_h > 0
+            && !(atom.aromatic && atom.element == crate::element::Element::N)
+            && atom.element.is_organic_subset()
+            && explicit_h != crate::valence::valence_inferred_hcount(mol, idx);
+
         let has_valid = valences.iter().any(|&v| {
             let effective = (v as i16 + charge).max(0) as u8;
             effective >= used
         });
 
-        if !has_valid {
+        if explicit_h_mismatch || !has_valid {
             errors.push(ValenceError {
                 atom: idx,
                 actual: used,
