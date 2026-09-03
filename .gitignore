@@ -10,7 +10,6 @@ AGENTS.md
 
 # Rust / Cargo
 /target
-Cargo.lock
 **/*.rs.bk
 rust_out/
 
