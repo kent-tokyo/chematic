@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   aromaticity/CIP modes, and Experimental 3D/MMFF94.
 - Independent review, hosted CI, and external oracle campaigns remain
   supplemental and are not claimed as completed audit evidence.
+- The default `cargo test --workspace --all-targets --locked` gate now
+  completes successfully. Experimental 3D long-run and corpus-scale
+  canonical tests are retained in explicit `--ignored` lanes and are not
+  silently treated as default-gate evidence.
 
 ### v0.89.0 maintenance — bounded WASM geometry inputs
 
@@ -154,8 +158,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   release after v0.88.0.
 - Adds bounded parser, reaction, CLI, WASM, MCP, and output paths, plus the
   repeatable unsafe-surface gate documented in `ROADMAP.md`.
-- This version has not been published yet; registry and GitHub publication
-  remain intentionally paused.
+- This version was published from the verified main release commit; the
+  consolidated 2.x milestone headings below remain historical implementation
+  detail rather than additional published releases.
 
 The former `2.x` headings below are local development milestone labels only;
 they were never published and are included as implementation detail for the
