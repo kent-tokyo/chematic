@@ -38,6 +38,7 @@ canonical-search-instrumentation = []
 
 [dev-dependencies]
 criterion = { version = "0.8", features = ["html_reports"] }
+serde_json = "1.0"
 
 [[bench]]
 name = "parse_bench"

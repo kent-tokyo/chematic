@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "description": "Shared Rust/Python/Node/WASM contract fixtures for parse, canonical SMILES, and heavy-atom invariants.",
+  "fixtures": [
+    {"id": "ethanol-order-variant", "smiles": "OCC", "canonical_smiles": "C(C)O", "heavy_atoms": 3},
+    {"id": "benzene-kekule-context", "smiles": "c1ccccc1", "canonical_smiles": "c1ccccc1", "heavy_atoms": 6},
+    {"id": "formic-acid", "smiles": "C(=O)O", "canonical_smiles": "C(=O)O", "heavy_atoms": 3},
+    {"id": "acetic-acid", "smiles": "CC(=O)O", "canonical_smiles": "CC(O)=O", "heavy_atoms": 4}
+  ]
+}
