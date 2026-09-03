@@ -457,104 +457,104 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - WASM CDXML fragment conversion now rejects oversized fragment collections
   instead of returning a partial success result.
 
-## [1.9.0] - 2026-09-01
+### Internal development milestone
 
-### v1.9.0 — surfaced Python SMILES-file limits
+#### surfaced Python SMILES-file limits
 
 - Python `parse_smi_file` now propagates `.smi` resource-limit failures as
   `ValueError` instead of silently dropping them.
 - Ordinary malformed SMILES lines retain the existing skip behavior.
 
-## [1.8.0] - 2026-09-01
+### Internal development milestone
 
-### v1.8.0 — surfaced Python SDF resource limits
+#### surfaced Python SDF resource limits
 
 - Python `parse_sdf_with_coords` now propagates SDF resource-limit failures as
   `ValueError` instead of silently dropping them.
 - Ordinary malformed SDF records retain the existing skip behavior.
 
-## [1.7.0] - 2026-09-01
+### Internal development milestone
 
-### v1.7.0 — bounded Python coordinate writers
+#### bounded Python coordinate writers
 
 - Added a 100,000-atom input cap to Python `write_mmcif` and `write_pqr`.
 - Oversized atom collections are rejected before conversion into Rust record
   vectors, limiting binding-side allocation.
 
-## [1.6.0] - 2026-09-01
+### Internal development milestone
 
-### v1.6.0 — bounded Python SMILES writing
+#### bounded Python SMILES writing
 
 - Bounded Python `write_smi_file` to 100,000 records and 16 MiB of output.
 - Oversized output is rejected with `ValueError` before extending the output
   string beyond the configured limit.
 - Added checked output-size arithmetic.
 
-## [1.5.0] - 2026-09-01
+### Internal development milestone
 
-### v1.5.0 — bounded Python batch inputs
+#### bounded Python batch inputs
 
 - Added a 100,000-item cap to Python `from_smiles_list`, `descriptors_df`,
   and `screen` batch inputs.
 - Oversized batches are rejected before parallel parsing or descriptor work.
 - Added regression coverage for the batch boundary.
 
-## [1.4.0] - 2026-09-01
+### Internal development milestone
 
-### v1.4.0 — bounded Python format conversion
+#### bounded Python format conversion
 
 - Added a 16 MiB UTF-8 input cap to Python `convert_format` before dispatching
   to format parsers.
 - Added a regression test for oversized conversion input.
 
-## [1.3.0] - 2026-08-31
+### Internal development milestone
 
-### v1.3.0 — bounded reaction-pattern library queries
+#### bounded reaction-pattern library queries
 
 - Added `batch_query_with_library_with_limits`.
 - Pattern-library batch queries can now bound reaction and pattern counts
   before allocating result maps.
 - Added typed resource-limit handling through `ReactionQueryError`.
 
-## [1.2.0] - 2026-08-31
+### Internal development milestone
 
-### v1.2.0 — bounded reaction query embeddings
+#### bounded reaction query embeddings
 
 - Reaction SMARTS query reporting now asks the VF2 matcher for only the first
   embedding per molecule, matching the public result contract.
 - Avoided retaining all symmetric embeddings when only existence/one example
   is reported.
 
-## [1.1.0] - 2026-08-31
+### Internal development milestone
 
-### v1.1.0 — bounded batch reaction queries
+#### bounded batch reaction queries
 
 - Added `BatchQueryLimits` and `batch_query_reactions_with_limits`.
 - Batch reaction SMARTS queries now use a finite default reaction-count limit
   and return typed resource-limit errors before processing oversized input.
 - Added regression coverage for the batch boundary.
 
-## [1.0.0-pre.1] - 2026-08-31
+### Internal development milestone
 
-### Pre-release milestone — bounded retro-result retention
+#### bounded retro-result retention
 
 - Retrosynthesis enumeration now enforces `max_results` before retaining a
   new precursor set and its canonical strings.
 - Prevented oversized template result bursts from temporarily exceeding the
   caller's output cap.
 
-## [0.99.0] - 2026-08-31
+### Internal development milestone
 
-### v0.99.0 — bounded reaction-template matching
+#### bounded reaction-template matching
 
 - Added `ReactionTransformLimits` and explicit limited reaction matching APIs.
 - `run_reactants` and `find_reaction_matches` now use finite default match
   limits and reject oversized VF2 result sets before Cartesian expansion.
 - Added typed `TransformError::ResourceLimit` and regression coverage.
 
-## [0.98.0] - 2026-08-31
+### Internal development milestone
 
-### v0.98.0 — pre-allocation library output bounds
+#### pre-allocation library output bounds
 
 - Reaction-library enumeration now checks `max_size` before extending the
   accumulated product vector.
@@ -562,9 +562,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the configured output cap.
 - Added regression coverage for the pre-extension boundary.
 
-## [0.97.0] - 2026-08-31
+### Internal development milestone
 
-### v0.97.0 — checked reaction-library enumeration bounds
+#### checked reaction-library enumeration bounds
 
 - Empty fragment sets now return an empty library instead of entering an
   invalid indexing path.
@@ -572,9 +572,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a typed `CombinationCountOverflow` error on overflow.
 - Added regression coverage for the empty-set boundary.
 
-## [0.96.0] - 2026-08-31
+### Internal development milestone
 
-### v0.96.0 — bounded MDL RXN file parsing
+#### bounded MDL RXN file parsing
 
 - Added `RxnFileParseLimits` and `parse_rxn_file_with_limits`.
 - Bounded RXN input bytes, declared reactants/products, and retained MOL
@@ -582,54 +582,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Avoided materializing an unbounded intermediate `$MOL` block list and added
   regression coverage for input and component limits.
 
-## [0.95.0] - 2026-08-31
+### Internal development milestone
 
-### v0.95.0 — bounded streaming TDT reading
+#### bounded streaming TDT reading
 
 - Added record-count and per-record tag-count limits to `TdtReaderOptions`.
 - TDT streams now fail explicitly with typed resource-limit errors before
   retaining unbounded record state.
 - Added regression coverage for both limits.
 
-## [0.94.0] - 2026-08-31
+### Internal development milestone
 
-### v0.94.0 — bounded streaming SMILES tables
+#### bounded streaming SMILES tables
 
 - Added record-count and field-count limits to `SmilesRecordReader`.
 - Oversized streaming tables now return typed `TooManyRecords` or
   `TooManyFields` errors instead of growing unboundedly.
 - Added regression coverage for both streaming resource limits.
 
-## [0.93.0] - 2026-08-31
+### Internal development milestone
 
-### v0.93.0 — bounded InChI parsing
+#### bounded InChI parsing
 
 - Added `InchiParseLimits` and `parse_inchi_with_limits`.
 - Bounded pure-Rust InChI input bytes and heavy-atom construction before
   allocation with typed resource-limit errors.
 - Added regression coverage for input and atom limits.
 
-## [0.92.0] - 2026-08-31
+### Internal development milestone
 
-### v0.92.0 — bounded pure-Rust InChI parsing
+#### bounded pure-Rust InChI parsing
 
 - Added `InchiParseLimits` and `parse_inchi_with_limits`.
 - Bounded InChI input bytes and heavy-atom construction before allocation,
   returning typed `InchiParseError::ResourceLimit` failures.
 - Added regression coverage for input and atom limits.
 
-## [0.91.0] - 2026-08-31
+### Internal development milestone
 
-### v0.91.0 — bounded SMILES-table reading
+#### bounded SMILES-table reading
 
 - Added `SmiFileParseLimits` and `parse_smi_file_with_limits`.
 - Bounded `.smi` input bytes, physical line bytes, and yielded records with
   typed `SmilesError::ResourceLimit` outcomes.
 - Added regression coverage for file-level resource limits.
 
-## [0.90.0] - 2026-08-31
+### Internal development milestone
 
-### v0.90.0 — bounded KET parsing
+#### bounded KET parsing
 
 - Added `KetParseLimits` and explicit limited KET parsing APIs.
 - KET input bytes, atoms, and bonds are now bounded with typed resource-limit
