@@ -325,15 +325,40 @@ pub(crate) fn refine_ranks(mol: &Molecule, mut ranks: Vec<u64>) -> Vec<u64> {
                 // bonded via different bond types (e.g. O= vs O-H in acetic acid)
                 // receive distinct Morgan ranks even when neighbor atom ranks are
                 // otherwise identical.
-                let mut neighbor_contributions: Vec<u64> = mol
-                    .neighbors(idx)
-                    .map(|(nb, bidx)| {
-                        let bond_val = bond_order_value(mol.bond(bidx).order);
-                        fnv_hash_sequence(ranks[nb.0 as usize], &[bond_val])
-                    })
-                    .collect();
-                neighbor_contributions.sort_unstable();
-                fnv_hash_sequence(ranks[i], &neighbor_contributions)
+                // Molecular graphs overwhelmingly have degree <= 8. Keep
+                // the per-atom refinement scratch space on the stack for
+                // that common case; fall back to a Vec only for unusual
+                // highly branched atoms. This loop runs at every refinement
+                // iteration and the old collect() allocated one Vec per atom
+                // per iteration.
+                let mut inline = [0_u64; 8];
+                let mut inline_len = 0usize;
+                let mut overflow: Option<Vec<u64>> = None;
+                for (nb, bidx) in mol.neighbors(idx) {
+                    let bond_val = bond_order_value(mol.bond(bidx).order);
+                    let contribution = fnv_hash_sequence(ranks[nb.0 as usize], &[bond_val]);
+                    if let Some(values) = overflow.as_mut() {
+                        values.push(contribution);
+                    } else if inline_len < inline.len() {
+                        inline[inline_len] = contribution;
+                        inline_len += 1;
+                    } else {
+                        let mut values = Vec::with_capacity(mol.degree(idx));
+                        values.extend_from_slice(&inline);
+                        values.push(contribution);
+                        overflow = Some(values);
+                    }
+                }
+                match overflow {
+                    Some(mut values) => {
+                        values.sort_unstable();
+                        fnv_hash_sequence(ranks[i], &values)
+                    }
+                    None => {
+                        inline[..inline_len].sort_unstable();
+                        fnv_hash_sequence(ranks[i], &inline[..inline_len])
+                    }
+                }
             })
             .collect();
 
@@ -593,7 +618,7 @@ impl<'a> CanonicalWriter<'a> {
             ring_bonds: HashSet::new(),
             atom_ring_nums: HashMap::new(),
             next_ring: 1,
-            out: String::new(),
+            out: String::with_capacity(n.saturating_mul(4) + mol.bond_count().saturating_mul(2)),
             ez_group: HashMap::new(),
             ez_flip: HashMap::new(),
             ez_marker: HashMap::new(),
@@ -1369,15 +1394,24 @@ impl<'a> CanonicalWriter<'a> {
     }
 
     pub(crate) fn write_all(mut self) -> String {
-        // Phase -1: pick, for every tri-/tetra-substituted stereo alkene
-        // end, which substituent bond canonically carries the `/`/`\`
-        // marker (topology + rank only — independent of write order, and of
-        // which substituent the original parse happened to mark).
-        self.resolve_ez_markers();
-
-        // Phase 0: group directional bonds into connected E/Z systems
-        // (topology-only, independent of canonical order).
-        self.build_ez_groups();
+        // Phase -1/0 only matter when the molecule actually carries a
+        // directional bond (literal Up/Down or an aromatic-direction stash).
+        // Avoid scanning for stereo alkene ends and building union-find
+        // groups for the common non-stereo case. `normalize_ez` remains safe
+        // for ordinary bonds with an empty group map.
+        let has_directional_bond = (0..self.mol.bond_count()).any(|i| {
+            let bidx = BondIdx(i as u32);
+            matches!(
+                crate::writer::raw_bond_direction(self.mol, bidx),
+                Some(BondOrder::Up | BondOrder::Down)
+            )
+        });
+        if has_directional_bond {
+            // Pick, for every stereo alkene end, which substituent carries the
+            // marker, then group connected E/Z systems.
+            self.resolve_ez_markers();
+            self.build_ez_groups();
+        }
 
         // Phase 1: discover ring-closure back-edges using the SAME canonical DFS
         // order that the writer will use. This ensures ring-closure numbers are
