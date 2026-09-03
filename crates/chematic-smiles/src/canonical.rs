@@ -251,6 +251,20 @@ pub fn canonical_smiles(mol: &Molecule) -> String {
     winning_string
 }
 
+/// Return a canonical SMILES only when its representation is self-stable.
+///
+/// Canonical E/Z carrier placement is still a known cosmetic residual for a
+/// small subset of highly coupled systems. A plain [`canonical_smiles`] is
+/// valid chemistry in those cases, but must not be used as a deduplication or
+/// cache key when a second canonicalization produces a different spelling.
+/// This helper makes that boundary explicit: it reparses the candidate and
+/// returns `None` on parse failure or non-idempotent output.
+pub fn canonical_smiles_stable_key(mol: &Molecule) -> Option<String> {
+    let candidate = canonical_smiles(mol);
+    let reparsed = crate::parser::parse(&candidate).ok()?;
+    (candidate == canonical_smiles(&reparsed)).then_some(candidate)
+}
+
 /// Compute Morgan (extended connectivity) ranks for all atoms.
 ///
 /// Returns a vector of normalised ordinal ranks (0-based, gap-free)

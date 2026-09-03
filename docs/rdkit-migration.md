@@ -72,6 +72,11 @@ until this closes; use `apply_aromaticity()`-normalized output as your own
 dedup key in the meantime if this matters for your use case. Full figures
 and root-cause detail: README.md's "Known Limitations" section.
 
+For a fail-closed identity key, use `canonical_smiles_stable_key()`. It
+reparses and re-canonicalizes the candidate and returns no key when the
+canonical spelling is not self-stable. This is a safety boundary, not a claim
+that the historical 275/5000 residual has been eliminated.
+
 ## SMARTS matching
 
 **Supported.**
@@ -141,6 +146,11 @@ worst-of-10 (5,000-mol ChEMBL); visible differences concentrate in
 N-heterocycles (pyridone, quinolone, indolizine) and non-alternant/
 bridgehead-heavy structures (azulene, purine). Root cause is documented as
 an `aromatic_context` bypass mechanism, not yet fixed.
+
+The opt-in `AromaticityAlgorithm::RdkitLike` model is covered by a public
+regression gate for purine (9 aromatic atoms) and azulene (10). The default
+per-SSSR Hückel model remains compatibility-preserving and intentionally
+model-distinct; select and record the RDKit-like model when parity is needed.
 
 ## Stereocenter / CIP assignment
 

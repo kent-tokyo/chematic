@@ -79,7 +79,9 @@ jobs:
           - { package: chematic-mol, target: square_planar_mol_io }
           - { package: chematic-mol, target: stereo2d_ez_reader_integration }
           - { package: chematic-mol, target: stereo_reader_integration }
+          - { package: chematic-perception, target: aromaticity_edge_gate }
           - { package: chematic-smiles, target: canonical_idempotency_corpus }
+          - { package: chematic-smiles, target: canonical_ez_residual }
           - { package: chematic-smiles, target: cross_binding_contract }
           - { package: chematic-smiles, target: canonical_robustness }
           - { package: chematic-smiles, target: chembl_roundtrip }
