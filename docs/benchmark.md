@@ -41,6 +41,17 @@ from being reported as a current-workspace result.
 
 ## Latest measured snapshot
 
+### 2026-09-03 — schematic 1.0.1
+
+The current protocol run completed for schematic and RDKit on macOS arm64.
+Open Babel was not installed, so no Open Babel comparison is claimed. The
+results are operation-specific: schematic led import, SMILES parsing, and
+ECFP4, while RDKit led canonical SMILES and SDF read/write. See the complete
+record and hashes in [`benchmarks/2026-09-03-competitive.md`](../benchmarks/2026-09-03-competitive.md).
+
+The older snapshot below is retained as historical evidence and must not be
+combined with this run.
+
 This page reports the latest reproducible benchmark run, not necessarily the
 current package version. The benchmark snapshot below was measured before the
 workspace moved to v0.31.0; use the version and commit shown here when

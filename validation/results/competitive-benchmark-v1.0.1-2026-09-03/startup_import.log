@@ -1,0 +1,55 @@
+{
+  "chematic_import_ms": 13.3,
+  "chematic_import_ms_samples": [
+    13.7,
+    13.2,
+    13.3,
+    13.7,
+    13.3,
+    13.3,
+    13.3,
+    13.4,
+    13.2,
+    13.4
+  ],
+  "chematic_first_parse_ms": 13.6,
+  "chematic_first_parse_ms_samples": [
+    13.8,
+    13.2,
+    13.7,
+    13.7,
+    13.5,
+    13.3,
+    13.7,
+    13.6,
+    13.3,
+    12.9
+  ],
+  "rdkit_import_ms": 117.5,
+  "rdkit_import_ms_samples": [
+    227.5,
+    116.3,
+    117.6,
+    114.8,
+    116.8,
+    118.3,
+    119.1,
+    115.9,
+    116.6,
+    117.5
+  ],
+  "rdkit_first_parse_ms": 123.1,
+  "rdkit_first_parse_ms_samples": [
+    125.9,
+    121.4,
+    122.0,
+    124.1,
+    121.1,
+    120.3,
+    123.3,
+    123.7,
+    119.6,
+    123.1
+  ],
+  "import_speedup_x": 8.8
+}

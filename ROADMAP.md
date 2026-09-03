@@ -60,6 +60,9 @@ benchmark, and a documented “where to use which tool” migration guide.
   results.
 - [x] Add benchmark environment preflight that rejects a stale installed
   chematic package whose version differs from the target workspace release.
+- [x] Execute the current six-operation local benchmark for schematic 1.0.1
+  and record raw state, logs, corpus hashes, and operation-specific results in
+  `benchmarks/2026-09-03-competitive.md`; Open Babel remains `not_installed`.
 
 - Define a lossless record model for molecule, coordinates, SD properties,
   source location, parse status, diagnostics, units, and provenance.
