@@ -6,8 +6,7 @@
   "engines": [
     {"id": "chematic", "required": true, "version_source": "workspace Cargo.toml"},
     {"id": "rdkit", "required": false, "version_source": "python package metadata"},
-    {"id": "openbabel", "required": false, "version_source": "obabel --version"},
-    {"id": "cosmolkit", "required": false, "version_source": "package metadata or git revision"}
+    {"id": "openbabel", "required": false, "version_source": "obabel --version"}
   ],
   "required_metadata": [
     "engine_id", "engine_version", "source_revision", "host_os", "cpu_model",
@@ -28,7 +27,7 @@
     {"id": "descriptor_census_4999", "path": "scripts/descriptor_census_corpus.smi", "role": "unique throughput and descriptor smoke"},
     {"id": "chembl_accuracy_4999", "path": "scripts/chembl_accuracy_corpus_4999.smi", "role": "descriptor/CIP agreement"},
     {"id": "cross_binding_contract", "path": "validation/cross_binding_contract.json", "role": "binding contract, not throughput"},
-    {"id": "smoke_corpus", "path": "validation/cosmolkit_comparison/corpus_manifest.json", "role": "cross-engine contract smoke"}
+    {"id": "smoke_corpus", "path": "validation/cross_binding_contract.json", "role": "cross-engine contract smoke"}
   ],
   "operations": [
     {"id": "startup_import", "metric": "median_ms", "runner": "scripts/bench_startup.py"},

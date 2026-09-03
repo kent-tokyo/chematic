@@ -4,7 +4,8 @@
 
 The repository now contains a machine-readable competitive benchmark protocol
 at [`validation/competitive_benchmark_manifest.json`](../validation/competitive_benchmark_manifest.json).
-It defines the engines, corpora, operations, required provenance, fairness
+It defines the three in-scope engines (chematic, RDKit, and Open Babel),
+corpora, operations, required provenance, fairness
 rules, and result statuses needed for a defensible comparison.
 
 This is preparation evidence, not a new performance claim. The dated numbers
