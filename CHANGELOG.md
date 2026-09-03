@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v1.0.0-rc.1 — local release gate preparation
+
+- Fixed the Python binding test contract to use a reproducible `pytest<9`
+  and `pytest-asyncio` range.
+- Added the reproducible v1.0 local release gate and candidate manifest,
+  covering four fuzz targets, dependency audits, Rust/binding contracts,
+  focused Miri, and Linux sanitizer execution.
+- Finalized the documented v1.0 boundary: bounded CDXML/polymer editing,
+  partial Python `RWMol`, fail-closed canonical identity, explicit
+  aromaticity/CIP modes, and Experimental 3D/MMFF94.
+- Independent review, hosted CI, and external oracle campaigns remain
+  supplemental and are not claimed as completed audit evidence.
+
 ### v0.89.0 maintenance — bounded WASM geometry inputs
 
 - Locally integrated and verified the Dependabot #444 `jsonschema` update

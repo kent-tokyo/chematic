@@ -1,0 +1,63 @@
+{
+  "schema": "chematic.v1.local-release-gate.v1",
+  "release": "1.0.0-rc.1",
+  "candidate_revision": "825d6fb55e0a7e6462fb1fc91fced1fa1821bca5",
+  "recorded_on": "2026-09-03",
+  "host": "macOS arm64",
+  "decision": "not_final",
+  "policy": {
+    "external_audit_and_hosted_ci": "supplemental",
+    "linux_only_execution": "must_be_recorded_separately",
+    "required_local_result": "pass_or_explicit_platform_block"
+  },
+  "checks": {
+    "fuzz": {
+      "status": "pass",
+      "toolchain": "nightly",
+      "targets": {
+        "smiles": {"runs": 1000, "corpus_files_after_cmin": 1579},
+        "xyz": {"runs": 1000, "corpus_files_after_cmin": 504},
+        "moljson": {"runs": 1000, "corpus_files_after_cmin": 1158},
+        "formats": {"runs": 1000, "corpus_files_after_cmin": 5082}
+      },
+      "new_crash_or_timeout": false,
+      "cmin": "pass"
+    },
+    "cargo_audit": {
+      "status": "pass_with_accepted_warnings",
+      "locked_dependencies": 286,
+      "unmaintained_warnings": ["rustybuzz", "ttf-parser"]
+    },
+    "cargo_deny": {"status": "pass"},
+    "rust_contract": {
+      "status": "pass",
+      "commands": [
+        "cargo test -p chematic-smiles --test cross_binding_contract --locked",
+        "cargo test -p chematic-chem --test rdkit_reference --locked"
+      ],
+      "result": "1 passed; 118 passed, 1 ignored"
+    },
+    "python_contract": {
+      "status": "not_run_after_dependency_pin",
+      "reason": "local pytest 9.1.1 is incompatible with installed pytest-asyncio 0.23.3",
+      "fix": "test extra and CI now pin pytest<9"
+    },
+    "node_wasm_contract": {
+      "status": "not_run_local",
+      "reason": "candidate evidence exists in hosted CI; local rebuild not repeated in this record"
+    },
+    "miri": {
+      "status": "platform_blocked",
+      "reason": "focused Miri requires Linux nightly execution"
+    },
+    "sanitizers": {
+      "status": "platform_blocked",
+      "reason": "ASan/LSan/TSan runner requires Linux nightly execution"
+    }
+  },
+  "external_follow_up": [
+    "independent parser/serialization/binding review",
+    "hosted Linux Miri and sanitizer execution",
+    "hosted binding matrix rerun"
+  ]
+}

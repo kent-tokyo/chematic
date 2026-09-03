@@ -14,6 +14,15 @@ release-key evidence workflow passed in run `33699428867`, including clean
 checkout signing and public-key verification.
 **End of Life**: Older versions receive no support.
 
+### v1.0 release-candidate security boundary
+
+The v1.0 candidate requires repository-local fuzz, dependency, binding,
+focused-Miri, and sanitizer procedures. Independent external review, hosted
+CI execution, and external oracle campaigns are supplemental evidence and are
+not represented as completed audit work. See the
+[local release gate](docs/v1.0-local-release-gate.md) and the
+[compatibility boundary](docs/compatibility-scope.md).
+
 ---
 
 ## Reporting a Vulnerability

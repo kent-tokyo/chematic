@@ -50,6 +50,15 @@ can vary slightly by toolchain and build environment.
 | IUPAC name generation | Partial (25+ classes) |
 | Pure-Rust InChI | Approximate (enable `native-inchi` feature for exact) |
 
+### v1.0.0 release boundary
+
+The v1.0 release candidate is intended to ship with the documented bounded
+CDXML/polymer API, partial Python `RWMol` compatibility, fail-closed canonical
+identity, explicit aromaticity/CIP modes, and Experimental 3D/MMFF94. The
+complete compatibility contract and reproducible local release gate are in
+[`docs/compatibility-scope.md`](docs/compatibility-scope.md) and
+[`docs/v1.0-local-release-gate.md`](docs/v1.0-local-release-gate.md).
+
 ---
 
 ## What you get

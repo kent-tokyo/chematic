@@ -152,7 +152,7 @@ jobs:
           VIRTUAL_ENV: ${{ github.workspace }}/.venv
         run: |
           python -m venv .venv
-          .venv/bin/pip install maturin pytest numpy --quiet
+          .venv/bin/pip install maturin 'pytest<9' 'pytest-asyncio>=0.23,<1' numpy --quiet
           .venv/bin/maturin develop --release -m crates/chematic-py/Cargo.toml
       - name: Run pytest (chematic-py)
         run: .venv/bin/python -m pytest crates/chematic-py/tests/ -q
