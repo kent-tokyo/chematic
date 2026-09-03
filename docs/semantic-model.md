@@ -8,8 +8,8 @@ be represented safely as an ordinary `Molecule`.
 The schema marker `chematic.semantic.v1` is the public interchange contract.
 `SemanticModel::validate` must succeed before edits or expansion. An R-group
 alternative is never selected implicitly. A polymer repeat is expandable only
-when it has an explicit repeat count and a `repeat_smiles` value with exactly
-two `[*]` linkage placeholders.
+when it has an explicit repeat count and either a `repeat_smiles` value with
+exactly two `[*]` linkage placeholders or two explicit `repeat_endpoint_atoms`.
 
 `SemanticModel::apply` returns a new model for command-style editing. Expansion
 returns `ExpandedSemantic`, including a `source_to_expanded` mapping for undo,

@@ -123,6 +123,7 @@ Full worked examples → [Use cases](https://kent-tokyo.github.io/chematic/use-c
 - [WebAssembly / Node.js](#javascript--typescript-webassembly)
 - [Materials and simulation formats](docs/format-capabilities.md) — mmCIF, PQR, QCSchema, ORCA, Gaussian Cube, OpenDX, LAMMPS
 - [Migrating from RDKit](docs/rdkit-migration.md) — feature-by-feature Supported/Partial/Not-supported breakdown
+- [Compatibility scope](docs/compatibility-scope.md) — final v0.89 boundary for RWMol, CDXML, polymer expansion, and RDKit/Morgan compatibility
 
 ---
 
