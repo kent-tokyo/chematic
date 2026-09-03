@@ -385,6 +385,22 @@ fn exact_orbit_representatives(
             if ri == rj {
                 continue;
             }
+            // A local-twin swap is an exact automorphism: both vertices have
+            // the same writer-visible color, and fixing every other vertex
+            // while swapping this pair preserves the complete edge-colored
+            // graph. This avoids invoking the much more expensive general
+            // automorphism search for repeated terminal groups such as the
+            // methyl arms of tBu/Boc. It is deliberately stricter than a
+            // Morgan/WL rank comparison and rejects asymmetric dative edges.
+            if local_twins(
+                graph,
+                coloring,
+                AtomIdx(members[i] as u32),
+                AtomIdx(members[j] as u32),
+            ) {
+                parent[ri] = rj;
+                continue;
+            }
             budget.automorphism_tests += 1;
             if let Some(max) = limits.max_automorphism_tests
                 && budget.automorphism_tests > max
@@ -427,6 +443,49 @@ fn exact_orbit_representatives(
     Ok(reps)
 }
 
+/// Return whether swapping `a` and `b` while fixing every other vertex is an
+/// automorphism of the current colored graph. This is a sufficient, exact
+/// test for local (true or false) twins, not a heuristic equivalence test.
+fn local_twins(
+    graph: &CanonicalColoredGraph,
+    coloring: &Partition,
+    a: AtomIdx,
+    b: AtomIdx,
+) -> bool {
+    if a == b
+        || graph.vertex_color(a) != graph.vertex_color(b)
+        || coloring.cell_of[a.0 as usize] != coloring.cell_of[b.0 as usize]
+    {
+        return false;
+    }
+
+    let mut a_edges: Vec<(AtomIdx, crate::canonical_partition::EdgeColor)> = graph
+        .neighbors(a)
+        .filter(|&(neighbor, _)| neighbor != b)
+        .map(|(neighbor, bond)| (neighbor, graph.edge_color(a, bond)))
+        .collect();
+    let mut b_edges: Vec<(AtomIdx, crate::canonical_partition::EdgeColor)> = graph
+        .neighbors(b)
+        .filter(|&(neighbor, _)| neighbor != a)
+        .map(|(neighbor, bond)| (neighbor, graph.edge_color(b, bond)))
+        .collect();
+    a_edges.sort_unstable();
+    b_edges.sort_unstable();
+    if a_edges != b_edges {
+        return false;
+    }
+
+    // If the pair is adjacent, its edge must be invariant under reversal.
+    // This rejects a dative bond whose donor/acceptor direction would flip.
+    let Some((_, a_to_b)) = graph.neighbors(a).find(|&(neighbor, _)| neighbor == b) else {
+        return true;
+    };
+    let Some((_, b_to_a)) = graph.neighbors(b).find(|&(neighbor, _)| neighbor == a) else {
+        return false;
+    };
+    graph.edge_color(a, a_to_b) == graph.edge_color(b, b_to_a)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -455,6 +514,29 @@ mod tests {
             let oracle = canonical_smiles_exhaustive_oracle(&mol);
             assert_eq!(got, oracle, "mismatch for {smi}");
         }
+    }
+
+    #[test]
+    fn local_twins_are_exact_but_dative_direction_is_not_symmetric() {
+        let tbu = parse("CC(C)(C)C").unwrap();
+        let graph = CanonicalColoredGraph::new(&tbu);
+        let partition = initial_partition(&graph, &vec![0; graph.n()]);
+        assert!(local_twins(&graph, &partition, AtomIdx(0), AtomIdx(2)));
+
+        let mut b = chematic_core::MoleculeBuilder::new();
+        let donor = b.add_atom(chematic_core::Atom::organic(chematic_core::Element::N));
+        let acceptor = b.add_atom(chematic_core::Atom::organic(chematic_core::Element::N));
+        b.add_bond(donor, acceptor, chematic_core::BondOrder::Dative)
+            .unwrap();
+        let dative = b.build();
+        let dative_graph = CanonicalColoredGraph::new(&dative);
+        let dative_partition = initial_partition(&dative_graph, &vec![0; dative_graph.n()]);
+        assert!(!local_twins(
+            &dative_graph,
+            &dative_partition,
+            donor,
+            acceptor
+        ));
     }
 
     /// Section 14 chemical fixtures: a molecule whose otherwise-symmetric
