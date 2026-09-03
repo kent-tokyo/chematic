@@ -1,5 +1,26 @@
 # Benchmark
 
+## v1.0.1 benchmark preparation status
+
+The repository now contains a machine-readable competitive benchmark protocol
+at [`validation/competitive_benchmark_manifest.json`](../validation/competitive_benchmark_manifest.json).
+It defines the engines, corpora, operations, required provenance, fairness
+rules, and result statuses needed for a defensible comparison.
+
+This is preparation evidence, not a new performance claim. The dated numbers
+below remain historical snapshots until the protocol is executed again on the
+current release. Validate the protocol offline with:
+
+```bash
+python3 scripts/validate_competitive_benchmark_manifest.py
+```
+
+An advantage claim is publishable only when the result includes the exact
+source revision, engine versions, hardware, corpus hash, configuration,
+failure counts, and reproduction command. Throughput, accuracy, memory,
+startup latency, deployment size, and feature coverage must be reported as
+separate dimensions.
+
 ## Latest measured snapshot
 
 This page reports the latest reproducible benchmark run, not necessarily the

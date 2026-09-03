@@ -50,6 +50,11 @@ benchmark, and a documented “where to use which tool” migration guide.
 
 #### D0 — Dataset contract and benchmark
 
+- [x] Define the first machine-readable competitive benchmark protocol with
+  pinned operation/corpus metadata, fairness rules, explicit unsupported and
+  failure statuses, and an offline validator. This records preparation only;
+  current comparative measurements remain a separate heavyweight task.
+
 - Define a lossless record model for molecule, coordinates, SD properties,
   source location, parse status, diagnostics, units, and provenance.
 - Benchmark SDF/MOL V2000/V3000, MOL2, XYZ, SMILES tables, and gzip input on
