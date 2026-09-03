@@ -21,3 +21,11 @@ for (const expected of fixture.fixtures) {
   assert.equal(mol.atom_count(), expected.heavy_atoms, expected.id);
   mol.free();
 }
+
+for (const expected of fixture.adversarial) {
+  assert.throws(
+    () => wasm.convert_common_format(expected.input, expected.format, "smiles"),
+    undefined,
+    expected.id,
+  );
+}

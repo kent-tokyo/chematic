@@ -72,6 +72,7 @@ jobs:
           - { package: chematic-inchi, target: standard_inchi }
           - { package: chematic-mcp, target: schema_conformance }
           - { package: chematic-mol, target: conformer_3d_io }
+          - { package: chematic-mol, target: cross_binding_adversarial }
           - { package: chematic-mol, target: format_binding_parity }
           - { package: chematic-mol, target: mmcif_pqr_integration }
           - { package: chematic-mol, target: qcschema }
@@ -79,6 +80,7 @@ jobs:
           - { package: chematic-mol, target: stereo2d_ez_reader_integration }
           - { package: chematic-mol, target: stereo_reader_integration }
           - { package: chematic-smiles, target: canonical_idempotency_corpus }
+          - { package: chematic-smiles, target: cross_binding_contract }
           - { package: chematic-smiles, target: canonical_robustness }
           - { package: chematic-smiles, target: chembl_roundtrip }
           - { package: chematic-smiles, target: dative_bond_direction }
