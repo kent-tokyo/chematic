@@ -3,7 +3,8 @@
 //! Simple LRU-like cache for descriptors keyed by molecule canonical SMILES.
 //! Improves performance when computing same molecules repeatedly.
 
-use std::collections::{HashMap, VecDeque};
+use std::cmp::Reverse;
+use std::collections::{BinaryHeap, HashMap};
 use std::sync::{Arc, Mutex};
 
 /// Descriptor cache entry: stores computed descriptor values.
@@ -33,7 +34,9 @@ pub struct DescriptorCache {
 #[derive(Debug, Default)]
 struct DescriptorCacheState {
     entries: HashMap<String, DescriptorEntry>,
-    order: VecDeque<String>,
+    access_generation: HashMap<String, u64>,
+    order: BinaryHeap<Reverse<(u64, String)>>,
+    next_generation: u64,
 }
 
 impl DescriptorCache {
@@ -50,10 +53,7 @@ impl DescriptorCache {
         let mut state = self.state.lock().ok()?;
         let entry = state.entries.get(smiles).cloned();
         if entry.is_some() {
-            if let Some(pos) = state.order.iter().position(|key| key == smiles) {
-                state.order.remove(pos);
-            }
-            state.order.push_back(smiles.to_owned());
+            touch(&mut state, smiles);
         }
         entry
     }
@@ -67,15 +67,16 @@ impl DescriptorCache {
             let is_new = !state.entries.contains_key(&smiles);
             if !state.entries.contains_key(&smiles)
                 && state.entries.len() >= self.max_size
-                && let Some(oldest) = state.order.pop_front()
+                && let Some(oldest) = pop_oldest(&mut state)
             {
                 state.entries.remove(&oldest);
+                state.access_generation.remove(&oldest);
             }
             state.entries.insert(smiles.clone(), entry);
-            if !is_new && let Some(pos) = state.order.iter().position(|key| key == &smiles) {
-                state.order.remove(pos);
+            if !is_new {
+                state.access_generation.remove(&smiles);
             }
-            state.order.push_back(smiles);
+            touch(&mut state, &smiles);
         }
     }
 
@@ -83,7 +84,9 @@ impl DescriptorCache {
     pub fn clear(&self) {
         if let Ok(mut state) = self.state.lock() {
             state.entries.clear();
+            state.access_generation.clear();
             state.order.clear();
+            state.next_generation = 0;
         }
     }
 
@@ -99,6 +102,30 @@ impl DescriptorCache {
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
+}
+
+fn touch(state: &mut DescriptorCacheState, key: &str) {
+    state.next_generation = state.next_generation.wrapping_add(1);
+    let generation = state.next_generation;
+    state.access_generation.insert(key.to_owned(), generation);
+    state.order.push(Reverse((generation, key.to_owned())));
+    let rebuild_at = state.entries.len().saturating_mul(4).max(16);
+    if state.order.len() > rebuild_at {
+        state.order = state
+            .access_generation
+            .iter()
+            .map(|(key, &generation)| Reverse((generation, key.clone())))
+            .collect();
+    }
+}
+
+fn pop_oldest(state: &mut DescriptorCacheState) -> Option<String> {
+    while let Some(Reverse((generation, key))) = state.order.pop() {
+        if state.access_generation.get(&key) == Some(&generation) {
+            return Some(key);
+        }
+    }
+    None
 }
 
 #[cfg(test)]
@@ -155,6 +182,18 @@ mod tests {
         cache.put("C3".to_string(), entry);
         assert!(cache.get("C1").is_some());
         assert!(cache.get("C2").is_none());
+    }
+
+    #[test]
+    fn repeated_hits_bound_recency_heap_growth() {
+        let cache = DescriptorCache::new(1);
+        cache.put("CC".to_string(), DescriptorEntry::default());
+        for _ in 0..1000 {
+            assert!(cache.get("CC").is_some());
+        }
+        let state = cache.state.lock().expect("cache state");
+        assert!(state.order.len() <= 16);
+        assert_eq!(state.access_generation.len(), 1);
     }
 
     #[test]

@@ -1029,6 +1029,15 @@ fn are_identical(mol1: &Mol, mol2: &Mol) -> bool {
     chematic_chem::are_identical(&mol1.inner, &mol2.inner)
 }
 
+/// Compare molecules using chematic's fail-closed canonical identity key.
+///
+/// Returns ``True`` or ``False`` for converged keys and ``None`` when either
+/// molecule belongs to a known canonical residual class.
+#[pyfunction]
+fn stable_are_identical(mol1: &Mol, mol2: &Mol) -> Option<bool> {
+    chematic_chem::stable_are_identical(&mol1.inner, &mol2.inner)
+}
+
 /// Normalize and re-serialize a reaction SMILES.
 ///
 /// Parses the reaction SMILES and writes it back in canonical form.
@@ -2285,6 +2294,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parse_formula, m)?)?;
     m.add_function(wrap_pyfunction!(mol_hash, m)?)?;
     m.add_function(wrap_pyfunction!(are_identical, m)?)?;
+    m.add_function(wrap_pyfunction!(stable_are_identical, m)?)?;
     m.add_function(wrap_pyfunction!(write_reaction, m)?)?;
     m.add_function(wrap_pyfunction!(from_rxn_file, m)?)?;
     m.add_function(wrap_pyfunction!(to_rxn_file, m)?)?;

@@ -1996,6 +1996,14 @@ def from_smiles(smiles: str) -> Mol:
     """
     ...
 
+def stable_are_identical(mol1: Mol, mol2: Mol) -> Optional[bool]:
+    """Compare molecules using the fail-closed canonical identity key.
+
+    Returns ``None`` when either molecule belongs to a known canonical
+    residual class, rather than silently claiming that the molecules differ.
+    """
+    ...
+
 def from_cxsmiles(s: str) -> tuple[Mol, dict]:
     """Parse a CXSMILES string and return the molecule with CX metadata.
 
