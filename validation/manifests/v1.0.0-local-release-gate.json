@@ -1,7 +1,7 @@
 {
   "schema": "chematic.v1.local-release-gate.v1",
   "release": "1.0.0-rc.1",
-  "candidate_revision": "80e61ceb",
+  "candidate_revision": "9c121337",
   "recorded_on": "2026-09-03",
   "host": "macOS arm64",
   "decision": "not_ready_full_workspace_run_incomplete",
