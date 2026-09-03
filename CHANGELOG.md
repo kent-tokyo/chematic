@@ -50,7 +50,9 @@ No unreleased changes.
 - Rebuilt the checked-in demo WASM bundle at v1.0.0 so browser smoke tests use
   the same version as the workspace release.
 
-### v0.89.0 maintenance — bounded WASM geometry inputs
+## [0.89.0] - 2026-09-01
+
+### Maintenance — bounded WASM geometry inputs
 
 - Locally integrated and verified the Dependabot #444 `jsonschema` update
   (`0.50.1` → `0.52.1`); the workspace and all 85 MCP unit tests pass.
@@ -174,21 +176,17 @@ No unreleased changes.
 - WASM PDBQT conversion now reports malformed coordinate or charge JSON instead
   of silently defaulting to empty arrays.
 
-## [0.89.0] - 2026-09-01
-
-### v0.89.0 — consolidated resource-safety release
+### Consolidated resource-safety release
 
 - Consolidates the local-only v2.x development milestones into the next
   release after v0.88.0.
 - Adds bounded parser, reaction, CLI, WASM, MCP, and output paths, plus the
   repeatable unsafe-surface gate documented in `ROADMAP.md`.
-- This version was published from the verified main release commit; the
-  consolidated 2.x milestone headings below remain historical implementation
-  detail rather than additional published releases.
+- The former `2.x` headings below are historical implementation details of
+  this consolidated v0.89.0 release, not separately published releases.
 
-The former `2.x` headings below are local development milestone labels only;
-they were never published and are included as implementation detail for the
-consolidated v0.89.0 release.
+- Earlier in the same release line, the 3D XYZ parser gained bounded input,
+  atom-count, and physical-line limits through `XyzParseLimits`.
 
 ## [2.32.0] - 2026-09-01
 
@@ -550,9 +548,9 @@ consolidated v0.89.0 release.
   and return typed resource-limit errors before processing oversized input.
 - Added regression coverage for the batch boundary.
 
-## [1.0.0] - 2026-08-31
+## [1.0.0-pre.1] - 2026-08-31
 
-### v1.0.0 — bounded retro-result retention
+### Pre-release milestone — bounded retro-result retention
 
 - Retrosynthesis enumeration now enforces `max_results` before retaining a
   new precursor set and its canonical strings.
@@ -651,15 +649,6 @@ consolidated v0.89.0 release.
 - KET input bytes, atoms, and bonds are now bounded with typed resource-limit
   errors, including through the existing Python and WASM parser paths.
 - Added regression coverage for all KET resource limits.
-
-## [0.89.0] - 2026-08-31
-
-### v0.89.0 — bounded 3D XYZ parsing
-
-- Added `XyzParseLimits` and `parse_xyz_with_limits` to `chematic-3d`.
-- Bounded input bytes, declared atom count, and physical line length for the
-  bond-inferring XYZ parser used by Python and WASM bindings.
-- Added regression coverage for each resource-limit error.
 
 ## [0.88.0] - 2026-08-31
 
@@ -8778,7 +8767,9 @@ Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception 
 - `#![forbid(unsafe_code)]` on all crates.
 - FNV-1a hashing for reproducible, deterministic canonical SMILES across platforms.
 
-[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v0.31.0...HEAD
+[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/kent-tokyo/chematic/releases/tag/v1.0.0
+[0.89.0]: https://github.com/kent-tokyo/chematic/releases/tag/v0.89.0
 [0.36.0]: https://github.com/kent-tokyo/chematic/compare/v0.35.0...v0.36.0
 [0.37.0]: https://github.com/kent-tokyo/chematic/compare/v0.36.0...v0.37.0
 [0.38.0]: https://github.com/kent-tokyo/chematic/compare/v0.37.0...v0.38.0
