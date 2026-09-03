@@ -59,6 +59,14 @@ impl SmartsCache {
         let generation = self.next_generation;
         self.access_generation.insert(smarts.to_owned(), generation);
         self.order.push(Reverse((generation, smarts.to_owned())));
+        let rebuild_at = self.capacity.saturating_mul(4).max(16);
+        if self.order.len() > rebuild_at {
+            self.order = self
+                .access_generation
+                .iter()
+                .map(|(key, &generation)| Reverse((generation, key.clone())))
+                .collect();
+        }
     }
 
     /// Compile a SMARTS pattern (or retrieve from cache) and return a reference.
@@ -251,5 +259,16 @@ mod tests {
         let mol = parse("c1ccccc1").expect("benzene");
         assert!(cache.has_match("[a]", &mol).unwrap());
         assert!(!cache.has_match("[OH]", &mol).unwrap());
+    }
+
+    #[test]
+    fn repeated_hits_bound_recency_heap_growth() {
+        let mut cache = SmartsCache::new(1);
+        let mol = parse("CCO").expect("parse ethanol");
+        for _ in 0..1000 {
+            assert!(cache.has_match("[OH]", &mol).unwrap());
+        }
+        assert!(cache.order.len() <= 16);
+        assert_eq!(cache.access_generation.len(), 1);
     }
 }
