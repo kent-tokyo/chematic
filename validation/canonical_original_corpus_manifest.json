@@ -1,0 +1,17 @@
+{
+  "source": "https://github.com/user-attachments/files/28997886/SMILES.csv",
+  "sha256": "98a272f88ccb4411fd5cad88a77df8ae9964295439dabc0e9e0e82eeaf320e4b",
+  "input_lines": 5000,
+  "header": "SMILES",
+  "parsed_by_both": 4999,
+  "measurement": {
+    "script": "scripts/canonical_residual_diagnosis.py",
+    "k": 8,
+    "seed": 0,
+    "idempotence_failures": 0,
+    "permutation_invariance_failures": 31,
+    "semantic_same_failures": 22,
+    "semantic_different_failures": 9
+  },
+  "note": "This is the Issue #11 corpus. The result is not a direct replacement for the historical E/Z-only 275/5000 metric, which used a different measurement projection."
+}
