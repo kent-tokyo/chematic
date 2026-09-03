@@ -4,7 +4,7 @@
 //! SMILES representation. Useful for detecting duplicate molecules in bulk operations.
 
 use chematic_core::Molecule;
-use chematic_smiles::canonical_smiles;
+use chematic_smiles::{canonical_smiles, canonical_smiles_stable_key};
 
 pub(crate) const FNV1A_OFFSET: u64 = 0xcbf29ce484222325;
 pub(crate) const FNV1A_PRIME: u64 = 0x100000001b3;
@@ -21,9 +21,9 @@ pub(crate) fn fnv1a(bytes: &[u8]) -> u64 {
 
 /// Compute a structural hash for a molecule using FNV-1a on the canonical SMILES.
 ///
-/// The hash is deterministic and invariant to atom ordering. Identical molecules
-/// always produce the same hash, but hash collisions are possible (use [`are_identical`]
-/// for a definitive check).
+/// The hash is deterministic and invariant to atom ordering. Hash collisions
+/// are possible, and canonical-SMILES residuals mean this is not a fail-closed
+/// identity key.
 ///
 /// Useful for rapid duplicate detection in large sets; pair with [`are_identical`]
 /// for validation.
@@ -31,12 +31,20 @@ pub fn mol_hash(mol: &Molecule) -> u64 {
     fnv1a(canonical_smiles(mol).as_bytes())
 }
 
-/// Check whether two molecules are structurally identical.
+/// Check whether two molecules have the same current canonical SMILES.
 ///
-/// Returns `true` if both molecules have the same canonical SMILES representation.
-/// This is a definitive check (no collisions), unlike [`mol_hash`].
+/// This is a representation comparison, not a definitive structural identity
+/// proof. Use [`stable_are_identical`] for a fail-closed identity check.
 pub fn are_identical(a: &Molecule, b: &Molecule) -> bool {
     canonical_smiles(a) == canonical_smiles(b)
+}
+
+/// Compare molecules using the fail-closed canonical identity key.
+///
+/// Returns `None` when either molecule cannot produce a stable key. This keeps
+/// known canonical residuals from being reported as a false identity result.
+pub fn stable_are_identical(a: &Molecule, b: &Molecule) -> Option<bool> {
+    Some(canonical_smiles_stable_key(a)? == canonical_smiles_stable_key(b)?)
 }
 
 #[cfg(test)]
@@ -108,5 +116,12 @@ mod tests {
             are_identical(&aspirin1, &aspirin2),
             "different notations of aspirin should be identical"
         );
+    }
+
+    #[test]
+    fn stable_identity_is_available_for_converged_keys() {
+        let a = mol("CC");
+        let b = mol("CC");
+        assert_eq!(stable_are_identical(&a, &b), Some(true));
     }
 }

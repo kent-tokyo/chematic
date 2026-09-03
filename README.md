@@ -50,9 +50,9 @@ can vary slightly by toolchain and build environment.
 | IUPAC name generation | Partial (25+ classes) |
 | Pure-Rust InChI | Approximate (enable `native-inchi` feature for exact) |
 
-### v1.0.0 release boundary
+### v1.0.1 release boundary
 
-The v1.0 release candidate is intended to ship with the documented bounded
+The v1.0.1 patch release retains the v1.0.0 documented bounded
 CDXML/polymer API, partial Python `RWMol` compatibility, fail-closed canonical
 identity, explicit aromaticity/CIP modes, and Experimental 3D/MMFF94. The
 complete compatibility contract and reproducible local release gate are in
@@ -213,7 +213,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v1.0.0 candidate
+# chematic v1.0.1
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -609,7 +609,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v1.0.0 candidate)
+├── Cargo.toml                    workspace root (v1.0.1)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)

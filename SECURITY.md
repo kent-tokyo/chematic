@@ -4,12 +4,13 @@
 
 | Version | Supported | Status |
 |---------|-----------|--------|
+| v1.0.1 | Yes (partial registries) | Current patch release; GitHub Release, crates.io, and PyPI publication follows the v1.0.0 boundary |
 | v1.0.0 | Yes (partial registries) | GitHub Release, crates.io, and PyPI published; npm publication is blocked by registry scope/token permissions |
 | v0.89.0 | Yes | Previous published release; release evidence verified |
 | v0.88.0 | Limited | Previous stable release — security fixes only |
 | < v0.88.0 | Limited | Security fixes only (limited) |
 
-**Active Support**: v1.0.0 is the latest published release. The npm package
+**Active Support**: v1.0.1 is the latest release. The npm package
 publication remains an external registry configuration follow-up.
 **Release evidence**: v0.89.0 was built from main commit `344e9dc2`; the
 release-key evidence workflow passed in run `33699428867`, including clean
@@ -138,6 +139,12 @@ Subscribe to GitHub notifications for this repository to receive alerts about se
 ---
 
 ## Security Fix History
+
+### v1.0.1 verification status
+
+- This patch release preserves the v1.0.0 security boundary and adds no new
+  input or privilege boundary. The local release checks cover the bounded UFF
+  rescue change, documentation consistency, and the existing workspace gates.
 
 ### v1.0.0 verification status
 

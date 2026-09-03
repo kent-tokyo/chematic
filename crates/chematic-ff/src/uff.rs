@@ -580,6 +580,11 @@ pub struct UffMinimizeResult {
     /// torsion/out-of-plane-incomplete potential, not slow convergence) had
     /// occurred.
     pub sound: bool,
+    /// True when line search rejected an energy-decreasing proposal because
+    /// it would have produced an unsound covalent bond length. Callers can
+    /// distinguish this bounded rescue signal from an ordinary high-residual
+    /// result whose geometry never attempted a catastrophic step.
+    pub rejected_unsound_step: bool,
 }
 
 /// Minimise UFF energy using steepest descent (convergence criterion: RMS
@@ -596,6 +601,7 @@ pub fn minimize_uff(
     let mut coords = initial_coords;
     let mut step = 0.05_f64;
     let mut prev_energy = f64::MAX;
+    let mut rejected_unsound_step = false;
 
     for iter in 0..max_iter {
         let energy = uff_total_energy(mol, types, &coords);
@@ -615,6 +621,7 @@ pub fn minimize_uff(
                 iterations: iter,
                 converged: true,
                 sound,
+                rejected_unsound_step,
             };
         }
 
@@ -626,13 +633,24 @@ pub fn minimize_uff(
             .collect();
 
         let new_energy = uff_total_energy(mol, types, &new_coords);
-        if new_energy < energy {
+        // Energy descent alone is not a sufficient acceptance criterion:
+        // the incomplete UFF potential can lower its energy by walking into
+        // a stationary geometry with a catastrophically stretched covalent
+        // bond (notably fused aromatics such as naphthalene). Reject such a
+        // proposal before it becomes the next iterate and let the line
+        // search reduce the step instead. This preserves the existing
+        // fail-closed `sound` contract while preventing the optimizer from
+        // knowingly propagating an unsound intermediate.
+        if new_energy < energy && is_sound_uff_geometry(mol, &new_coords) {
             coords = new_coords;
             if energy - new_energy < prev_energy * 1e-7 {
                 step *= 1.2;
             }
             prev_energy = energy;
         } else {
+            if new_energy < energy {
+                rejected_unsound_step = true;
+            }
             step *= 0.5;
             if step < 1e-8 {
                 let sound = is_sound_uff_geometry(mol, &coords);
@@ -642,6 +660,7 @@ pub fn minimize_uff(
                     iterations: iter,
                     converged: false,
                     sound,
+                    rejected_unsound_step,
                 };
             }
         }
@@ -655,6 +674,7 @@ pub fn minimize_uff(
         iterations: max_iter,
         converged: false,
         sound,
+        rejected_unsound_step,
     }
 }
 

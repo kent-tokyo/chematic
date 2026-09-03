@@ -451,6 +451,17 @@ fn rdkit_8759_ez_idempotence() {
     ]);
 }
 
+/// Issue #423: rare coupled E/Z and locally symmetric stereocenter spellings
+/// must still reach a fixed point after one canonicalization pass.
+#[test]
+fn issue423_coupled_ez_and_symmetric_stereo_are_stable() {
+    assert_all_stable(&[
+        r"C(/C(C(F)(F)F)=C(C#N)C#N)(C(=O)OC)=C(/C)N",
+        r"C([C@H]4C=3CCCCC=3C=C4)C[C@H]1C=CC=2CCCCC1=2.[Cl-].[Cl-].[Ti+2]",
+        r"C1CC(=C([2H])[2H])/C(=C([2H])\C=C\2CCC[C@]3(C)[C@@H]([C@@H](CCCC(O)(C)C)C)CC[C@@H]23)C[C@H]1O",
+    ]);
+}
+
 /// RDKit #9368: fragment extraction near E/Z bonds must never panic.
 /// chematic's brics_fragments() / brics_bonds() must handle these without crashing.
 /// Stereo preservation is best-effort; the invariant is: no panic, valid SMILES out.

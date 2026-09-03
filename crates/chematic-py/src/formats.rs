@@ -1003,7 +1003,8 @@ fn parse_formula<'py>(formula: &str, py: Python<'py>) -> PyResult<Bound<'py, PyD
 /// Fast structural hash for deduplication — one int per molecule.
 ///
 /// Molecules with the same canonical graph return identical hashes.
-/// Use with :func:`are_identical` to confirm true equivalence (no hash collisions).
+/// This is a fast screening hash only. Hash collisions and canonical residuals
+/// are possible; do not treat it as a definitive identity key.
 ///
 /// Equivalent to RDKit's ``rdMolHash.MolHash()``.
 ///
@@ -1014,10 +1015,10 @@ fn mol_hash(mol: &Mol) -> u64 {
     chematic_chem::mol_hash(&mol.inner)
 }
 
-/// Check whether two molecules are graph-isomorphic (exact structural identity).
+/// Check whether two molecules have the same current canonical representation.
 ///
-/// More reliable than comparing SMILES strings (which depend on canonicalization).
-/// Equivalent to RDKit's ``Chem.MolToInchiKey(m1) == Chem.MolToInchiKey(m2)``.
+/// This is not a fail-closed graph-isomorphism proof. Use the stable-key API
+/// when an indeterminate result must be distinguishable from ``False``.
 ///
 ///     assert chematic.are_identical(
 ///         chematic.from_smiles("c1ccccc1"),
@@ -1026,6 +1027,15 @@ fn mol_hash(mol: &Mol) -> u64 {
 #[pyfunction]
 fn are_identical(mol1: &Mol, mol2: &Mol) -> bool {
     chematic_chem::are_identical(&mol1.inner, &mol2.inner)
+}
+
+/// Compare molecules using chematic's fail-closed canonical identity key.
+///
+/// Returns ``True`` or ``False`` for converged keys and ``None`` when either
+/// molecule belongs to a known canonical residual class.
+#[pyfunction]
+fn stable_are_identical(mol1: &Mol, mol2: &Mol) -> Option<bool> {
+    chematic_chem::stable_are_identical(&mol1.inner, &mol2.inner)
 }
 
 /// Normalize and re-serialize a reaction SMILES.
@@ -2284,6 +2294,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parse_formula, m)?)?;
     m.add_function(wrap_pyfunction!(mol_hash, m)?)?;
     m.add_function(wrap_pyfunction!(are_identical, m)?)?;
+    m.add_function(wrap_pyfunction!(stable_are_identical, m)?)?;
     m.add_function(wrap_pyfunction!(write_reaction, m)?)?;
     m.add_function(wrap_pyfunction!(from_rxn_file, m)?)?;
     m.add_function(wrap_pyfunction!(to_rxn_file, m)?)?;

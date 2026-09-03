@@ -21,6 +21,12 @@ def test_convert_graph_formats_round_trip():
     )
 
 
+def test_stable_identity_is_fail_closed_api():
+    assert chematic.stable_are_identical(
+        chematic.from_smiles("CCO"), chematic.from_smiles("CCO")
+    ) is True
+
+
 def test_convert_coordinate_formats_use_input_coordinates():
     xyz = """3
 ethanol

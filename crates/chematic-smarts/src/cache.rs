@@ -16,7 +16,8 @@
 //! `parse_smarts()` + `find_matches()` each time.
 
 use rustc_hash::FxHashMap;
-use std::collections::{HashMap, VecDeque};
+use std::cmp::Reverse;
+use std::collections::{BinaryHeap, HashMap};
 
 use crate::{
     match_vf2::{MatchConfig, find_matches_with_config},
@@ -24,6 +25,7 @@ use crate::{
     query::QueryMolecule,
 };
 use chematic_core::{AtomIdx, Molecule};
+use chematic_perception::RingSet;
 
 /// LRU cache for compiled SMARTS patterns.
 ///
@@ -34,7 +36,11 @@ pub struct SmartsCache {
     // std HashMap (SipHash) intentionally — keys are user-supplied SMARTS strings;
     // FxHash has no random seed and is vulnerable to HashDoS with adversarial input.
     store: HashMap<String, QueryMolecule>,
-    order: VecDeque<String>, // LRU order (front = oldest, back = newest)
+    access_generation: HashMap<String, u64>,
+    // Min-heap via Reverse. Stale entries are discarded on eviction, so a cache
+    // hit no longer scans the entire LRU list.
+    order: BinaryHeap<Reverse<(u64, String)>>,
+    next_generation: u64,
 }
 
 impl SmartsCache {
@@ -43,7 +49,24 @@ impl SmartsCache {
         Self {
             capacity: capacity.max(1),
             store: HashMap::new(),
-            order: VecDeque::new(),
+            access_generation: HashMap::new(),
+            order: BinaryHeap::new(),
+            next_generation: 0,
+        }
+    }
+
+    fn touch(&mut self, smarts: &str) {
+        self.next_generation = self.next_generation.wrapping_add(1);
+        let generation = self.next_generation;
+        self.access_generation.insert(smarts.to_owned(), generation);
+        self.order.push(Reverse((generation, smarts.to_owned())));
+        let rebuild_at = self.capacity.saturating_mul(4).max(16);
+        if self.order.len() > rebuild_at {
+            self.order = self
+                .access_generation
+                .iter()
+                .map(|(key, &generation)| Reverse((generation, key.clone())))
+                .collect();
         }
     }
 
@@ -52,19 +75,18 @@ impl SmartsCache {
         if !self.store.contains_key(smarts) {
             let qmol = parse_smarts(smarts)?;
             if self.store.len() >= self.capacity {
-                // Evict LRU: pop_front is O(1) with VecDeque
-                if let Some(oldest) = self.order.pop_front() {
-                    self.store.remove(&oldest);
+                while let Some(Reverse((generation, oldest))) = self.order.pop() {
+                    if self.access_generation.get(&oldest) == Some(&generation) {
+                        self.store.remove(&oldest);
+                        self.access_generation.remove(&oldest);
+                        break;
+                    }
                 }
             }
             self.store.insert(smarts.to_string(), qmol);
-            self.order.push_back(smarts.to_string());
+            self.touch(smarts);
         } else {
-            // Move to back (most recently used)
-            if let Some(pos) = self.order.iter().position(|s| s == smarts) {
-                let key = self.order.remove(pos).unwrap();
-                self.order.push_back(key);
-            }
+            self.touch(smarts);
         }
         Ok(self.store.get(smarts).unwrap())
     }
@@ -75,12 +97,8 @@ impl SmartsCache {
         smarts: &str,
         mol: &Molecule,
     ) -> Result<Vec<FxHashMap<usize, AtomIdx>>, SmartsError> {
-        let qmol = self.compile(smarts)?.clone();
-        Ok(find_matches_with_config(
-            &qmol,
-            mol,
-            &MatchConfig::default(),
-        ))
+        let qmol = self.compile(smarts)?;
+        Ok(find_matches_with_config(qmol, mol, &MatchConfig::default()))
     }
 
     /// Find all substructure matches with custom `MatchConfig`.
@@ -90,8 +108,22 @@ impl SmartsCache {
         mol: &Molecule,
         config: &MatchConfig,
     ) -> Result<Vec<FxHashMap<usize, AtomIdx>>, SmartsError> {
-        let qmol = self.compile(smarts)?.clone();
-        Ok(find_matches_with_config(&qmol, mol, config))
+        let qmol = self.compile(smarts)?;
+        Ok(find_matches_with_config(qmol, mol, config))
+    }
+
+    /// Find matches while reusing a precomputed ring set.
+    ///
+    /// This is the preferred path when applying several cached patterns to
+    /// the same molecule: SSSR calculation is performed once by the caller.
+    pub fn find_matches_with_rings(
+        &mut self,
+        smarts: &str,
+        mol: &Molecule,
+        rings: &RingSet,
+    ) -> Result<Vec<FxHashMap<usize, AtomIdx>>, SmartsError> {
+        let qmol = self.compile(smarts)?;
+        Ok(crate::match_vf2::find_matches_with_rings(qmol, mol, rings))
     }
 
     /// Check whether `smarts` matches at least once in `mol`.
@@ -122,7 +154,9 @@ impl SmartsCache {
     /// Clear all cached patterns.
     pub fn clear(&mut self) {
         self.store.clear();
+        self.access_generation.clear();
         self.order.clear();
+        self.next_generation = 0;
     }
 }
 
@@ -240,5 +274,16 @@ mod tests {
         let mol = parse("c1ccccc1").expect("benzene");
         assert!(cache.has_match("[a]", &mol).unwrap());
         assert!(!cache.has_match("[OH]", &mol).unwrap());
+    }
+
+    #[test]
+    fn repeated_hits_bound_recency_heap_growth() {
+        let mut cache = SmartsCache::new(1);
+        let mol = parse("CCO").expect("parse ethanol");
+        for _ in 0..1000 {
+            assert!(cache.has_match("[OH]", &mol).unwrap());
+        }
+        assert!(cache.order.len() <= 16);
+        assert_eq!(cache.access_generation.len(), 1);
     }
 }

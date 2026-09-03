@@ -2005,11 +2005,14 @@ struct UffBridgeRun {
 /// Issues #185/#188 (UFF minimizer catastrophic bond-length blowup on some
 /// starting geometries, sound convergence on others, at the shared default
 /// 200-iteration budget): tries the caller-provided `coords` first, exactly
-/// as before. Only if that specific attempt fails soundness with
-/// `CatastrophicBondBlowup`/`NonFiniteCoordinates` does this retry once from
-/// `embed_distance_geometry_v2`'s geometry instead (see
+/// as before. A retry occurs for a catastrophic/non-finite result, or when
+/// chematic-ff reports that it rejected an energy-decreasing but unsound
+/// proposal during line search. The latter preserves the distinction between
+/// an ordinary residual-force failure and a failure caused by the bounded
+/// blowup guard. The retry uses `embed_distance_geometry_v2`'s geometry (see
 /// [`rescue_with_distance_geometry_v2`] for why this is a post-hoc retry on
 /// the actual outcome, not a pre-minimization heuristic guess) — every other
+/// caller
 /// caller (including every molecule that already passes today) sees zero
 /// behavior change, and this never silently substitutes: which geometry
 /// actually produced the returned result is always visible on
@@ -2049,11 +2052,12 @@ fn run_uff_bridge(
             starting_geometry: UffStartingGeometry::AsProvided,
         }),
         Err(ForceFieldBridgeError::MinimizationFailed(detail))
-            if matches!(
-                detail.reason,
-                MinimizationFailureReason::CatastrophicBondBlowup
-                    | MinimizationFailureReason::NonFiniteCoordinates
-            ) =>
+            if result.rejected_unsound_step
+                || matches!(
+                    detail.reason,
+                    MinimizationFailureReason::CatastrophicBondBlowup
+                        | MinimizationFailureReason::NonFiniteCoordinates
+                ) =>
         {
             rescue_with_distance_geometry_v2(mol, &types, max_iter, detail)
         }
@@ -2112,8 +2116,9 @@ fn run_uff_bridge(
 /// `pipeline_v2.rs` stage 11 exists to catch and retry; this simpler
 /// embed→minimize→verify bridge just falls through to the original failure
 /// instead, which is correct/safe, not a bug) — closing that residual would
-/// need adding an equivalent repair step here, a separate, larger change not
-/// attempted by this measurement.
+/// need adding an equivalent repair step here. The rescue now makes a bounded,
+/// deterministic three-seed search, but that is a robustness retry and not a
+/// claim of complete stereochemical convergence for every topology.
 ///
 /// If `embed_distance_geometry_v2` itself fails, or the retry is unsound or
 /// stereo-violating, the ORIGINAL failure is returned unchanged except for
@@ -2134,12 +2139,23 @@ fn rescue_with_distance_geometry_v2(
     // See this function's own doc comment ("Revised, issue #210") for why
     // these are set instead of `EmbedParameters::default()`.
     let has_stereo = mol_has_declared_stereo(mol);
-    let embed_params = EmbedParameters {
+    // Try a small fixed set of independent starts. This is deterministic and
+    // keeps the rescue cost bounded while avoiding dependence on one unlucky
+    // stereo-preserving embedding basin.
+    const RESCUE_SEED_OFFSETS: [u64; 3] = [0, 0x9E37_79B9_7F4A_7C15, 0xD1B5_4A32_D192_ED03];
+    let base_params = EmbedParameters {
         enforce_chirality: has_stereo,
         materialize_implicit_h_for_chirality: has_stereo,
         ..EmbedParameters::default()
     };
-    if let Ok(v2_coords) = embed_distance_geometry_v2(mol, &embed_params) {
+    for offset in RESCUE_SEED_OFFSETS {
+        let embed_params = EmbedParameters {
+            random_seed: base_params.random_seed.wrapping_add(offset),
+            ..base_params.clone()
+        };
+        let Ok(v2_coords) = embed_distance_geometry_v2(mol, &embed_params) else {
+            continue;
+        };
         let retry_coord_vec = coords_to_vec(&v2_coords, n);
         // `energy_before`/`energy_after` on a successful rescue must both describe
         // the SAME trajectory (the DG v2 geometry, before and after minimizing it) --
@@ -3297,21 +3313,13 @@ mod policy_bridge_tests {
     /// it reproduces inside chematic-ff's own UFF minimizer. Confirmed: the
     /// vdW 1-3 exclusion bug (chematic-ff #176) is already fixed (verified
     /// by reading `uff.rs`'s graph-based exclusion set), so this is a
-    /// distinct, still-open chematic-ff robustness gap (candidate cause,
-    /// unproven: `minimize_uff`'s naive steepest-descent-with-step-halving
-    /// line search on a larger, more constrained fused-ring system) — not
-    /// something this PR fixes (chematic-ff is out of this PR's
-    /// file-ownership scope) or definitively diagnoses. Not specific to
-    /// ring count either way: anthracene (3 fused rings) blows up under the
-    /// same isolated path too, and worse than naphthalene (2 fused
-    /// rings) — it never recovers a sound geometry even at 200,000 steps,
-    /// vs. naphthalene's ~10,000 (see issue #185's investigation notes; an
-    /// earlier reading of anthracene as "immune" was itself an artifact of
-    /// a since-fixed `dg::generate_coords` ring-placement bug that
-    /// silently superimposed two of its rings, corrupting that
-    /// measurement).
+    /// Regression for issue #185: chematic-ff's incomplete UFF potential must
+    /// not be allowed to accept an energy-decreasing proposal with a
+    /// catastrophically stretched fused-aromatic bond. The minimizer now
+    /// rejects that proposal in its line search and returns a bounded,
+    /// explicitly unsound result only if no sound descent step remains.
     #[test]
-    fn chematic_ff_own_uff_minimizer_blows_up_naphthalene_independent_of_this_bridge() {
+    fn chematic_ff_own_uff_minimizer_rejects_naphthalene_blowup_steps() {
         let mol = parse("c1ccc2ccccc2c1").expect("naphthalene");
         let coords = generate_coords(&mol);
         let raw: Vec<[f64; 3]> = (0..mol.atom_count())
@@ -3338,12 +3346,8 @@ mod policy_bridge_tests {
             .fold(0.0_f64, f64::max);
 
         assert!(
-            worst > MAX_SANE_BOND_LENGTH,
-            "expected chematic-ff's own uff::minimize_uff to reproduce the measured naphthalene \
-             blow-up with zero chematic-3d bridge code in the path (worst bond {worst:.2} Å) -- \
-             if this now passes, chematic-ff's UFF minimizer robustness improved and this \
-             bridge's soundness-gate regression test / PR body item-4 measurement should be \
-             revisited",
+            worst <= MAX_SANE_BOND_LENGTH,
+            "UFF must reject catastrophic naphthalene steps; got worst bond {worst:.2} Å"
         );
     }
 

@@ -9,7 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-No unreleased changes.
+### Improved — `chematic-3d` UFF stereo rescue (#210)
+
+- The bounded UFF rescue now tries up to three deterministic distance-geometry
+  starts when an earlier stereo-preserving start is unsound or cannot converge.
+  The original default seed remains first and successful candidates are accepted
+  immediately, preserving existing successful results while covering additional
+  stochastic embedding basins.
+- Each candidate still requires finite coordinates, sane bond lengths, sound
+  minimization, and fully satisfied declared stereo; if all candidates fail, the
+  original typed failure is returned unchanged apart from the retry marker.
+
+## [1.0.1] - 2026-09-03
+
+### Release status
+
+- Patch release containing the bounded, deterministic UFF stereo-rescue retry
+  improvement and its regression evidence.
+- The v1.0.0 compatibility boundary and known Experimental/non-parity scope are
+  unchanged.
 
 ## [1.0.0] - 2026-09-03
 
@@ -50,7 +68,9 @@ No unreleased changes.
 - Rebuilt the checked-in demo WASM bundle at v1.0.0 so browser smoke tests use
   the same version as the workspace release.
 
-### v0.89.0 maintenance — bounded WASM geometry inputs
+## [0.89.0] - 2026-09-01
+
+### Maintenance — bounded WASM geometry inputs
 
 - Locally integrated and verified the Dependabot #444 `jsonschema` update
   (`0.50.1` → `0.52.1`); the workspace and all 85 MCP unit tests pass.
@@ -174,227 +194,199 @@ No unreleased changes.
 - WASM PDBQT conversion now reports malformed coordinate or charge JSON instead
   of silently defaulting to empty arrays.
 
-## [0.89.0] - 2026-09-01
+### Consolidated resource-safety release
 
-### v0.89.0 — consolidated resource-safety release
-
-- Consolidates the local-only v2.x development milestones into the next
-  release after v0.88.0.
+- Consolidates the local-only development milestones into the next release
+  after v0.88.0.
 - Adds bounded parser, reaction, CLI, WASM, MCP, and output paths, plus the
   repeatable unsafe-surface gate documented in `ROADMAP.md`.
-- This version was published from the verified main release commit; the
-  consolidated 2.x milestone headings below remain historical implementation
-  detail rather than additional published releases.
+- The internal milestones below are implementation details of this
+  consolidated v0.89.0 release, not separately published releases.
 
-The former `2.x` headings below are local development milestone labels only;
-they were never published and are included as implementation detail for the
-consolidated v0.89.0 release.
+- Earlier in the same release line, the 3D XYZ parser gained bounded input,
+  atom-count, and physical-line limits through `XyzParseLimits`.
 
-## [2.32.0] - 2026-09-01
+### Internal development milestones
 
-### v2.32.0 — repeatable unsafe-surface gate
+#### repeatable unsafe-surface gate
 
 - Added a local unsafe-surface checker that rejects executable `unsafe` outside
   the reviewed optional native-InChI FFI module.
 - Wired the checker into `scripts/check.sh` and recorded the S2 audit gate.
 
-## [2.31.0] - 2026-09-01
 
-### v2.31.0 — native-InChI unsafe boundary audit
+#### native-InChI unsafe boundary audit
 
 - Documented the optional native-InChI C FFI as the sole executable unsafe
   boundary and reconciled security claims with the implementation.
 - Recorded pointer, count, layout, and output-ownership checks in the security
   surface inventory.
 
-## [2.30.0] - 2026-09-01
 
-### v2.30.0 — bounded WASM library inputs
+#### bounded WASM library inputs
 
 - `enumerate_library_2way` now bounds template and fragment input strings to
   1 MiB before parsing.
 - Scaffold and building-block molecules are checked against the 10,000-atom
   WASM boundary before combinatorial enumeration.
 
-## [2.29.0] - 2026-09-01
 
-### v2.29.0 — bounded WASM reaction products
+#### bounded WASM reaction products
 
 - `run_reactants` and `enumerate_library_2way` now reject products over 10,000
   atoms before canonicalization and JSON materialization.
 - Reaction output atom limits are aligned with the existing WASM molecule
   input boundary.
 
-## [2.28.0] - 2026-09-01
 
-### v2.28.0 — bounded WASM R-group queries
+#### bounded WASM R-group queries
 
 - `rgroup_decompose_json` now rejects SMARTS queries over 10,000 atoms after
   compilation.
 - Query complexity is bounded separately from the 1 MiB source-text limit.
 
-## [2.27.0] - 2026-09-01
 
-### v2.27.0 — bounded WASM MMP results
+#### bounded WASM MMP results
 
 - `mmp_pairs_json` now rejects more than 1,024 matched molecular pairs before
   constructing the JSON result.
 - Quadratic pair-result expansion no longer returns a partial payload.
 
-## [2.26.0] - 2026-09-01
 
-### v2.26.0 — bounded WASM SMARTS configuration
+#### bounded WASM SMARTS configuration
 
 - `rgroup_decompose_json` now bounds `core_smarts` before SMARTS compilation.
 - R-group query configuration follows the same 1 MiB WASM input contract as
   MCS configuration JSON and other query inputs.
 
-## [2.25.0] - 2026-09-01
 
-### v2.25.0 — bounded WASM MCS configuration
+#### bounded WASM MCS configuration
 
 - `mcs_smiles_json_with_config` now bounds `config_json` before deserialization.
 - Oversized MCS configuration input returns an explicit JS error.
 
-## [2.24.0] - 2026-09-01
 
-### v2.24.0 — bounded WASM reactant execution
+#### bounded WASM reactant execution
 
 - `run_reactants` now bounds reaction input bytes, reactant count, and atoms
   per reactant before execution.
 - Product sets are capped at 1,024 entries and reject rather than returning a
   partial JSON result.
 
-## [2.23.0] - 2026-09-01
 
-### v2.23.0 — bounded WASM tautomer enumeration
+#### bounded WASM tautomer enumeration
 
 - `enumerate_tautomers_json` now caps results at 1,024 entries.
 - Result-count exhaustion returns an explicit error object instead of a
   partial or unbounded JSON array.
 
-## [2.22.0] - 2026-09-01
 
-### v2.22.0 — bounded WASM Extended XYZ JSON output
+#### bounded WASM Extended XYZ JSON output
 
 - `extxyz_frame_json` now applies the shared 16 MiB serialized JSON output
   limit before returning data across the JS boundary.
 
-## [2.21.0] - 2026-09-01
 
-### v2.21.0 — bounded WASM format JSON output
+#### bounded WASM format JSON output
 
 - Format-oriented WASM JSON helpers now reject serialized output over 16 MiB.
 - The limit applies after serialization and before the result crosses the JS
   boundary, preventing oversized JSON payloads from being returned silently.
 
-## [2.20.0] - 2026-09-01
 
-### v2.20.0 — bounded MCP request framing
+#### bounded MCP request framing
 
 - MCP stdio reads JSON-RPC frames with a bounded buffer before parsing.
 - Oversized frames fail closed instead of allowing `BufRead::lines()` to
   allocate an unbounded line.
 
-## [2.19.0] - 2026-09-01
 
-### v2.19.0 — bounded MCP stdio framing
+#### bounded MCP stdio framing
 
 - MCP stdio now reads each JSON-RPC frame with a bounded buffer before JSON
   parsing, rather than allowing `BufRead::lines()` to allocate an unbounded
   input line.
 - Oversized frames fail closed and do not continue as a partial request.
 
-## [2.18.0] - 2026-09-01
 
-### v2.18.0 — bounded CLI output
+#### bounded CLI output
 
 - CLI output is now capped at 64 MiB for both stdout and file destinations.
 - Oversized conversion or report output fails explicitly before writing a
   partial result.
 
-## [2.17.0] - 2026-09-01
 
-### v2.17.0 — bounded MCP JSON-RPC responses
+#### bounded MCP JSON-RPC responses
 
 - MCP stdio responses are now capped at 1 MiB after envelope serialization.
 - Oversized responses are replaced with an explicit protocol error instead of
   being written as an unbounded JSON-RPC line.
 
-## [2.16.0] - 2026-09-01
 
-### v2.16.0 — bounded MCP SMARTS matching
+#### bounded MCP SMARTS matching
 
 - MCP `smarts_match` now caps returned embeddings at 10,000 and VF2 visits at
   1,000,000.
 - Match-budget or result-count exhaustion returns an explicit domain error
   instead of a partial match list.
 
-## [2.15.0] - 2026-09-01
 
-### v2.15.0 — bounded MCP MolJSON parsing
+#### bounded MCP MolJSON parsing
 
 - MCP `moljson_to_smiles` now uses explicit MolJSON limits instead of the
   much larger library defaults.
 - MolJSON input is bounded to 100,000 bytes, depth 64, 1,024 array items,
   10,000 atoms, and 20,000 bonds before molecule construction.
 
-## [2.14.0] - 2026-09-01
 
-### v2.14.0 — bounded MCP chemistry arguments
+#### bounded MCP chemistry arguments
 
 - MCP SMILES tools now reject inputs over 100,000 bytes and parsed molecules
   over 10,000 atoms before descriptor, fingerprint, reaction, or 3D work.
 - MCP SMARTS matching now applies the same string-size boundary before query
   compilation.
 
-## [2.13.0] - 2026-09-01
 
-### v2.13.0 — bounded MCP upstream responses
+#### bounded MCP upstream responses
 
 - MCP PubChem name lookup now caps the response body at 1 MiB while reading.
 - Oversized or invalid UTF-8 upstream responses fail explicitly without
   retaining an unbounded response string.
 
-## [2.12.0] - 2026-09-01
 
-### v2.12.0 — bounded WASM format conversion bridge
+#### bounded WASM format conversion bridge
 
 - WASM `convert_common_format` now rejects parsed molecules above the binding
   atom limit before any output-format expansion or serialization.
 - Common topology-format conversion now shares the same explicit atom-boundary
   contract as the format-specific APIs.
 
-## [2.11.0] - 2026-09-01
 
-### v2.11.0 — bounded WASM typed-array format paths
+#### bounded WASM typed-array format paths
 
 - Cube/OpenDX typed-array accessors now use the same explicit WASM parser
   limits as their JSON siblings.
 - Grid point and atom bounds therefore apply consistently before numeric data
   is moved into typed-array vectors.
 
-## [2.10.0] - 2026-09-01
 
-### v2.10.0 — uniform WASM format-parser limits
+#### uniform WASM format-parser limits
 
 - WASM Cube/OpenDX, mmCIF, PQR, LAMMPS data, and single-frame dump parsing
   now passes explicit binding-sized limits into the underlying parsers.
 - Volumetric grids, atom records, lines, sections, and frame columns are
   bounded before large format structures are materialized.
 
-## [2.9.0] - 2026-09-01
 
-### v2.9.0 — bounded WASM structured-format parsers
+#### bounded WASM structured-format parsers
 
 - WASM ORCA input parsing now passes explicit binding-sized limits for lines,
   keywords, blocks, block bytes, and atoms.
 - WASM QCSchema molecule/input/result parsing now uses explicit limits for
   JSON depth, array items, string bytes, and total input bytes.
 
-## [2.8.0] - 2026-09-01
 
-### v2.8.0 — bounded WASM output-log parsing
+#### bounded WASM output-log parsing
 
 - WASM ORCA output parsing now applies binding-sized input, line, geometry
   frame, and geometry atom limits before retaining parsed output.
@@ -402,175 +394,167 @@ consolidated v0.89.0 release.
   reader, including input bytes, line size, atoms per frame, columns, and frame
   count.
 
-## [2.7.0] - 2026-09-01
 
-### v2.7.0 — bounded WASM trajectory and ORCA arrays
+#### bounded WASM trajectory and ORCA arrays
 
 - WASM LAMMPS trajectory parsing now caps retained frames at 1,024 and fails
   explicitly before appending another frame.
 - ORCA JSON comments, keywords, blocks, and nested coordinate atoms now share
   the 1,024-item array limit before conversion into Rust vectors.
 
-## [2.6.0] - 2026-09-01
 
-### v2.6.0 — bounded WASM format arrays
+#### bounded WASM format arrays
 
 - WASM mmCIF/PQR record writers and LAMMPS trajectory writers now reject JSON
   arrays larger than 1,024 items before conversion into Rust record vectors.
 - Nested format arrays use the same binding-level item limit, preventing
   oversized intermediate allocations at the JSON boundary.
 
-## [2.5.0] - 2026-09-01
 
-### v2.5.0 — bounded WASM workflow molecules
+#### bounded WASM workflow molecules
 
 - High-level WASM workflow APIs now enforce a 10,000-atom limit for single
   molecules, batch comparison, screening, and 3D generation.
 - Oversized molecules are rejected before descriptor, similarity, or geometry
   work begins, avoiding unbounded downstream allocation.
 
-## [2.4.0] - 2026-09-01
 
-### v2.4.0 — bounded WASM depiction batches
+#### bounded WASM depiction batches
 
 - WASM depiction grids and HTML reports now bound input size, record count, and
   per-molecule atom count before rendering.
 - Limit violations return explicit SVG/HTML errors instead of allowing
   unbounded intermediate molecule and output allocation.
 
-## [2.3.0] - 2026-09-01
 
-### v2.3.0 — bounded WASM retro output
+#### bounded WASM retro output
 
 - WASM `retro_disconnect_json` now rejects requested result caps above 1,024.
 - `max_results = 0` now uses the WASM safety cap instead of meaning unlimited,
   preventing unbounded retro result and JSON growth at the binding boundary.
 
-## [2.2.0] - 2026-09-01
 
-### v2.2.0 — bounded WASM library inputs
+#### bounded WASM library inputs
 
 - WASM `enumerate_library_2way` now checks scaffold and building-block counts
   before parsing and collecting them.
 - Oversized pipe-delimited library inputs are rejected instead of creating
   unbounded intermediate vectors.
 
-## [2.1.0] - 2026-09-01
 
-### v2.1.0 — bounded WASM CDXML expansion
+#### bounded WASM CDXML expansion
 
 - WASM CDXML fragment conversion now passes its 1,024-fragment cap into the
   parser before fragment collection, avoiding oversized intermediate vectors.
 - The existing explicit error behavior for oversized fragment collections is
   preserved.
 
-## [2.0.0] - 2026-09-01
 
-### v2.0.0 — explicit WASM multi-record limits
+#### explicit WASM multi-record limits
 
 - WASM SDF JSON helpers now report record-count overflow instead of silently
   truncating after 1,024 records.
 - WASM CDXML fragment conversion now rejects oversized fragment collections
   instead of returning a partial success result.
 
-## [1.9.0] - 2026-09-01
+### Internal development milestone
 
-### v1.9.0 — surfaced Python SMILES-file limits
+#### surfaced Python SMILES-file limits
 
 - Python `parse_smi_file` now propagates `.smi` resource-limit failures as
   `ValueError` instead of silently dropping them.
 - Ordinary malformed SMILES lines retain the existing skip behavior.
 
-## [1.8.0] - 2026-09-01
+### Internal development milestone
 
-### v1.8.0 — surfaced Python SDF resource limits
+#### surfaced Python SDF resource limits
 
 - Python `parse_sdf_with_coords` now propagates SDF resource-limit failures as
   `ValueError` instead of silently dropping them.
 - Ordinary malformed SDF records retain the existing skip behavior.
 
-## [1.7.0] - 2026-09-01
+### Internal development milestone
 
-### v1.7.0 — bounded Python coordinate writers
+#### bounded Python coordinate writers
 
 - Added a 100,000-atom input cap to Python `write_mmcif` and `write_pqr`.
 - Oversized atom collections are rejected before conversion into Rust record
   vectors, limiting binding-side allocation.
 
-## [1.6.0] - 2026-09-01
+### Internal development milestone
 
-### v1.6.0 — bounded Python SMILES writing
+#### bounded Python SMILES writing
 
 - Bounded Python `write_smi_file` to 100,000 records and 16 MiB of output.
 - Oversized output is rejected with `ValueError` before extending the output
   string beyond the configured limit.
 - Added checked output-size arithmetic.
 
-## [1.5.0] - 2026-09-01
+### Internal development milestone
 
-### v1.5.0 — bounded Python batch inputs
+#### bounded Python batch inputs
 
 - Added a 100,000-item cap to Python `from_smiles_list`, `descriptors_df`,
   and `screen` batch inputs.
 - Oversized batches are rejected before parallel parsing or descriptor work.
 - Added regression coverage for the batch boundary.
 
-## [1.4.0] - 2026-09-01
+### Internal development milestone
 
-### v1.4.0 — bounded Python format conversion
+#### bounded Python format conversion
 
 - Added a 16 MiB UTF-8 input cap to Python `convert_format` before dispatching
   to format parsers.
 - Added a regression test for oversized conversion input.
 
-## [1.3.0] - 2026-08-31
+### Internal development milestone
 
-### v1.3.0 — bounded reaction-pattern library queries
+#### bounded reaction-pattern library queries
 
 - Added `batch_query_with_library_with_limits`.
 - Pattern-library batch queries can now bound reaction and pattern counts
   before allocating result maps.
 - Added typed resource-limit handling through `ReactionQueryError`.
 
-## [1.2.0] - 2026-08-31
+### Internal development milestone
 
-### v1.2.0 — bounded reaction query embeddings
+#### bounded reaction query embeddings
 
 - Reaction SMARTS query reporting now asks the VF2 matcher for only the first
   embedding per molecule, matching the public result contract.
 - Avoided retaining all symmetric embeddings when only existence/one example
   is reported.
 
-## [1.1.0] - 2026-08-31
+### Internal development milestone
 
-### v1.1.0 — bounded batch reaction queries
+#### bounded batch reaction queries
 
 - Added `BatchQueryLimits` and `batch_query_reactions_with_limits`.
 - Batch reaction SMARTS queries now use a finite default reaction-count limit
   and return typed resource-limit errors before processing oversized input.
 - Added regression coverage for the batch boundary.
 
-## [1.0.0] - 2026-08-31
+### Internal development milestone
 
-### v1.0.0 — bounded retro-result retention
+#### bounded retro-result retention
 
 - Retrosynthesis enumeration now enforces `max_results` before retaining a
   new precursor set and its canonical strings.
 - Prevented oversized template result bursts from temporarily exceeding the
   caller's output cap.
 
-## [0.99.0] - 2026-08-31
+### Internal development milestone
 
-### v0.99.0 — bounded reaction-template matching
+#### bounded reaction-template matching
 
 - Added `ReactionTransformLimits` and explicit limited reaction matching APIs.
 - `run_reactants` and `find_reaction_matches` now use finite default match
   limits and reject oversized VF2 result sets before Cartesian expansion.
 - Added typed `TransformError::ResourceLimit` and regression coverage.
 
-## [0.98.0] - 2026-08-31
+### Internal development milestone
 
-### v0.98.0 — pre-allocation library output bounds
+#### pre-allocation library output bounds
 
 - Reaction-library enumeration now checks `max_size` before extending the
   accumulated product vector.
@@ -578,9 +562,9 @@ consolidated v0.89.0 release.
   the configured output cap.
 - Added regression coverage for the pre-extension boundary.
 
-## [0.97.0] - 2026-08-31
+### Internal development milestone
 
-### v0.97.0 — checked reaction-library enumeration bounds
+#### checked reaction-library enumeration bounds
 
 - Empty fragment sets now return an empty library instead of entering an
   invalid indexing path.
@@ -588,9 +572,9 @@ consolidated v0.89.0 release.
   a typed `CombinationCountOverflow` error on overflow.
 - Added regression coverage for the empty-set boundary.
 
-## [0.96.0] - 2026-08-31
+### Internal development milestone
 
-### v0.96.0 — bounded MDL RXN file parsing
+#### bounded MDL RXN file parsing
 
 - Added `RxnFileParseLimits` and `parse_rxn_file_with_limits`.
 - Bounded RXN input bytes, declared reactants/products, and retained MOL
@@ -598,68 +582,59 @@ consolidated v0.89.0 release.
 - Avoided materializing an unbounded intermediate `$MOL` block list and added
   regression coverage for input and component limits.
 
-## [0.95.0] - 2026-08-31
+### Internal development milestone
 
-### v0.95.0 — bounded streaming TDT reading
+#### bounded streaming TDT reading
 
 - Added record-count and per-record tag-count limits to `TdtReaderOptions`.
 - TDT streams now fail explicitly with typed resource-limit errors before
   retaining unbounded record state.
 - Added regression coverage for both limits.
 
-## [0.94.0] - 2026-08-31
+### Internal development milestone
 
-### v0.94.0 — bounded streaming SMILES tables
+#### bounded streaming SMILES tables
 
 - Added record-count and field-count limits to `SmilesRecordReader`.
 - Oversized streaming tables now return typed `TooManyRecords` or
   `TooManyFields` errors instead of growing unboundedly.
 - Added regression coverage for both streaming resource limits.
 
-## [0.93.0] - 2026-08-31
+### Internal development milestone
 
-### v0.93.0 — bounded InChI parsing
+#### bounded InChI parsing
 
 - Added `InchiParseLimits` and `parse_inchi_with_limits`.
 - Bounded pure-Rust InChI input bytes and heavy-atom construction before
   allocation with typed resource-limit errors.
 - Added regression coverage for input and atom limits.
 
-## [0.92.0] - 2026-08-31
+### Internal development milestone
 
-### v0.92.0 — bounded pure-Rust InChI parsing
+#### bounded pure-Rust InChI parsing
 
 - Added `InchiParseLimits` and `parse_inchi_with_limits`.
 - Bounded InChI input bytes and heavy-atom construction before allocation,
   returning typed `InchiParseError::ResourceLimit` failures.
 - Added regression coverage for input and atom limits.
 
-## [0.91.0] - 2026-08-31
+### Internal development milestone
 
-### v0.91.0 — bounded SMILES-table reading
+#### bounded SMILES-table reading
 
 - Added `SmiFileParseLimits` and `parse_smi_file_with_limits`.
 - Bounded `.smi` input bytes, physical line bytes, and yielded records with
   typed `SmilesError::ResourceLimit` outcomes.
 - Added regression coverage for file-level resource limits.
 
-## [0.90.0] - 2026-08-31
+### Internal development milestone
 
-### v0.90.0 — bounded KET parsing
+#### bounded KET parsing
 
 - Added `KetParseLimits` and explicit limited KET parsing APIs.
 - KET input bytes, atoms, and bonds are now bounded with typed resource-limit
   errors, including through the existing Python and WASM parser paths.
 - Added regression coverage for all KET resource limits.
-
-## [0.89.0] - 2026-08-31
-
-### v0.89.0 — bounded 3D XYZ parsing
-
-- Added `XyzParseLimits` and `parse_xyz_with_limits` to `chematic-3d`.
-- Bounded input bytes, declared atom count, and physical line length for the
-  bond-inferring XYZ parser used by Python and WASM bindings.
-- Added regression coverage for each resource-limit error.
 
 ## [0.88.0] - 2026-08-31
 
@@ -8778,7 +8753,10 @@ Initial release covering Phase 1 (foundation) and Phase 2 (molecular perception 
 - `#![forbid(unsafe_code)]` on all crates.
 - FNV-1a hashing for reproducible, deterministic canonical SMILES across platforms.
 
-[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v0.31.0...HEAD
+[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.0...HEAD
+[1.0.1]: https://github.com/kent-tokyo/chematic/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/kent-tokyo/chematic/releases/tag/v1.0.0
+[0.89.0]: https://github.com/kent-tokyo/chematic/releases/tag/v0.89.0
 [0.36.0]: https://github.com/kent-tokyo/chematic/compare/v0.35.0...v0.36.0
 [0.37.0]: https://github.com/kent-tokyo/chematic/compare/v0.36.0...v0.37.0
 [0.38.0]: https://github.com/kent-tokyo/chematic/compare/v0.37.0...v0.38.0
