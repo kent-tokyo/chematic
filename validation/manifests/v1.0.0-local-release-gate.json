@@ -44,14 +44,14 @@
       "scope": "default workspace tests; no parser or binding contract failure observed"
     },
     "long_run_experimental_3d": {
-      "status": "explicit_lane",
+      "status": "pass",
       "command": "cargo test -p chematic-3d --lib -- --ignored",
-      "result": "not part of the default workspace completion gate; run separately and record duration/convergence"
+      "result": "9 passed; 0 failed; finished in 1467.02s; no timeout or panic"
     },
     "long_run_canonical_corpus": {
-      "status": "explicit_lane",
+      "status": "pass_with_serialized_final_run",
       "command": "cargo test -p chematic-chem --test canonical_idempotency_corpus_standardized -- --ignored",
-      "result": "corpus-scale measurement is quarantined from the default workspace gate and must be recorded separately"
+      "result": "NCI 5k and descriptor census passed in the parallel lane; ChEMBL accuracy 4999 passed in a serialized single-test rerun in 1504.50s; 0 failures"
     },
     "python_contract": {
       "status": "pass",
