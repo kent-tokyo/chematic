@@ -54,6 +54,10 @@ benchmark, and a documented “where to use which tool” migration guide.
   pinned operation/corpus metadata, fairness rules, explicit unsupported and
   failure statuses, and an offline validator. This records preparation only;
   current comparative measurements remain a separate heavyweight task.
+- [x] Add resumable per-operation benchmark execution with atomic state,
+  persistent logs, fail-fast status, and `--resume` support; interrupted
+  measurements remain explicitly incomplete rather than being treated as
+  results.
 
 - Define a lossless record model for molecule, coordinates, SD properties,
   source location, parse status, diagnostics, units, and provenance.

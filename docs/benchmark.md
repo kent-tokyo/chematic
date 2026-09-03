@@ -22,6 +22,19 @@ failure counts, and reproduction command. Throughput, accuracy, memory,
 startup latency, deployment size, and feature coverage must be reported as
 separate dimensions.
 
+The execution coordinator is resumable per operation. It writes an atomic
+`state.json` and one log per operation; completed operations are skipped and
+failed or interrupted operations can be retried:
+
+```bash
+python3 scripts/run_competitive_benchmark.py --dry-run
+python3 scripts/run_competitive_benchmark.py --resume
+```
+
+An interrupted run must be resumed with the same result directory and state
+file. The runner stops on the first failed operation while preserving its
+status and log.
+
 ## Latest measured snapshot
 
 This page reports the latest reproducible benchmark run, not necessarily the

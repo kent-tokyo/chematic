@@ -50,6 +50,9 @@ def main() -> None:
         runner = ROOT / operation.get("runner", "")
         if not runner.exists():
             fail(f"runner does not exist: {operation.get('runner')}")
+        command = operation.get("command")
+        if not isinstance(command, list) or not command or not all(isinstance(part, str) for part in command):
+            fail(f"operation command must be a non-empty string list: {operation.get('id')}")
 
     rules = data.get("fairness_rules", [])
     if len(rules) < 6 or any(not isinstance(rule, str) or not rule for rule in rules):
