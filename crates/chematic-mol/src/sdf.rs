@@ -9,7 +9,7 @@ use chematic_perception::{EzDirectionDiagnostic, StereoDiagnostic};
 
 use crate::error::MolParseError;
 use crate::mol2000::{
-    CoordinateDimension, GeometryRank, MolMetadata, Stereo3DDiagnostic, parse_mol,
+    CoordinateDimension, GeometryRank, MolMetadata, Stereo3DDiagnostic, parse_mol, parse_mol_fast,
     read_mol_with_diagnostics,
 };
 
@@ -271,8 +271,7 @@ impl<'a> Iterator for SdfRecordReader<'a> {
                 .find("M  END")
                 .map(|pos| &block[pos + 6..])
                 .unwrap_or("");
-            let properties: std::collections::HashMap<String, String> =
-                parse_sd_fields(data_part).into_iter().collect();
+            let properties = parse_sd_fields(data_part);
 
             return Some(Ok(SdfRecord {
                 mol: report.mol,
@@ -294,10 +293,10 @@ impl<'a> Iterator for SdfRecordReader<'a> {
 ///
 /// Each field starts with `> <FieldName>` on its own line.  The value is
 /// everything on subsequent lines until a blank line (or end of input).
-fn parse_sd_fields(data: &str) -> Vec<(String, String)> {
-    let mut fields = Vec::new();
+fn parse_sd_fields(data: &str) -> std::collections::HashMap<String, String> {
+    let mut fields = std::collections::HashMap::new();
     let mut current_key: Option<String> = None;
-    let mut current_value_lines: Vec<&str> = Vec::new();
+    let mut current_value = String::new();
 
     for raw_line in data.lines() {
         let line = raw_line.trim_end_matches('\r');
@@ -305,23 +304,24 @@ fn parse_sd_fields(data: &str) -> Vec<(String, String)> {
         if let Some(key) = parse_sd_field_header(line) {
             // Flush previous field.
             if let Some(k) = current_key.take() {
-                fields.push((k, current_value_lines.join("\n")));
-                current_value_lines.clear();
+                fields.insert(k, std::mem::take(&mut current_value));
             }
             current_key = Some(key);
         } else if line.is_empty() {
             // Blank line ends the current field's value.
             if let Some(k) = current_key.take() {
-                fields.push((k, current_value_lines.join("\n")));
-                current_value_lines.clear();
+                fields.insert(k, std::mem::take(&mut current_value));
             }
         } else if current_key.is_some() {
-            current_value_lines.push(line);
+            if !current_value.is_empty() {
+                current_value.push('\n');
+            }
+            current_value.push_str(line);
         }
     }
     // Flush trailing field with no blank line.
     if let Some(k) = current_key {
-        fields.push((k, current_value_lines.join("\n")));
+        fields.insert(k, current_value);
     }
 
     fields
@@ -448,10 +448,13 @@ pub fn read_sdf_conformer_ensembles(input: &str) -> Result<Vec<ConformerEnsemble
 /// errors are returned as `Err` items so the caller can decide to skip or stop.
 pub struct SdfFileReader<R: std::io::BufRead> {
     reader: R,
+    block: String,
+    line: String,
     done: bool,
     limits: SdfParseLimits,
     bytes_read: usize,
     records_read: usize,
+    diagnostics: bool,
 }
 
 /// Resource limits for streaming SDF input.
@@ -486,12 +489,29 @@ impl<R: std::io::BufRead> SdfFileReader<R> {
 
     /// Wrap a `BufRead` source and enforce input, record-size, and record-count limits.
     pub fn with_limits(reader: R, limits: SdfParseLimits) -> Self {
+        Self::with_limits_and_diagnostics(reader, limits, true)
+    }
+
+    /// Wrap a source using the lightweight SDMolSupplier-compatible path.
+    ///
+    /// This parses the molecule graph and SD properties but skips optional
+    /// wedge/E-Z/3D diagnostics. It is appropriate when the caller needs the
+    /// structure, not the loss-preserving diagnostic report. The default
+    /// [`Self::new`] path remains diagnostic-complete.
+    pub fn fast(reader: R) -> Self {
+        Self::with_limits_and_diagnostics(reader, SdfParseLimits::default(), false)
+    }
+
+    fn with_limits_and_diagnostics(reader: R, limits: SdfParseLimits, diagnostics: bool) -> Self {
         Self {
             reader,
+            block: String::with_capacity(2048),
+            line: String::new(),
             done: false,
             limits,
             bytes_read: 0,
             records_read: 0,
+            diagnostics,
         }
     }
 }
@@ -504,12 +524,11 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
             return None;
         }
 
-        let mut block = String::with_capacity(2048);
-        let mut line = String::new();
+        self.block.clear();
 
         loop {
-            line.clear();
-            match self.reader.read_line(&mut line) {
+            self.line.clear();
+            match self.reader.read_line(&mut self.line) {
                 Err(e) => {
                     self.done = true;
                     return Some(Err(MolParseError::Io(e.to_string())));
@@ -517,22 +536,22 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
                 Ok(0) => {
                     // EOF
                     self.done = true;
-                    if block.trim().is_empty() {
+                    if self.block.trim().is_empty() {
                         return None;
                     }
                     // Trailing block without $$$$ delimiter — parse it.
                     break;
                 }
                 Ok(_) => {
-                    if line.len() > self.limits.max_line_bytes {
+                    if self.line.len() > self.limits.max_line_bytes {
                         self.done = true;
                         return Some(Err(MolParseError::ResourceLimit {
                             resource: "line bytes",
-                            actual: line.len(),
+                            actual: self.line.len(),
                             limit: self.limits.max_line_bytes,
                         }));
                     }
-                    self.bytes_read = self.bytes_read.saturating_add(line.len());
+                    self.bytes_read = self.bytes_read.saturating_add(self.line.len());
                     if self.bytes_read > self.limits.max_input_bytes {
                         self.done = true;
                         return Some(Err(MolParseError::ResourceLimit {
@@ -541,25 +560,25 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
                             limit: self.limits.max_input_bytes,
                         }));
                     }
-                    let trimmed = line.trim_end_matches(['\r', '\n']);
+                    let trimmed = self.line.trim_end_matches(['\r', '\n']);
                     if trimmed == "$$$$" {
                         break;
                     }
-                    block.push_str(&line);
+                    self.block.push_str(&self.line);
                 }
             }
         }
 
-        if block.trim().is_empty() {
+        if self.block.trim().is_empty() {
             // Empty block (e.g. two consecutive $$$$) — advance to next.
             return self.next();
         }
 
-        if block.len() > self.limits.max_record_bytes {
+        if self.block.len() > self.limits.max_record_bytes {
             self.done = true;
             return Some(Err(MolParseError::ResourceLimit {
                 resource: "record bytes",
-                actual: block.len(),
+                actual: self.block.len(),
                 limit: self.limits.max_record_bytes,
             }));
         }
@@ -573,18 +592,37 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
         }
         self.records_read += 1;
 
-        // Reuse the same parse path as SdfRecordReader.
-        let report = match read_mol_with_diagnostics(&block) {
+        let data_part = self
+            .block
+            .find("M  END")
+            .map(|pos| &self.block[pos + 6..])
+            .unwrap_or("");
+        let properties = parse_sd_fields(data_part);
+
+        if !self.diagnostics {
+            let (mol, meta) = match parse_mol_fast(&self.block) {
+                Ok(parsed) => parsed,
+                Err(e) => return Some(Err(e)),
+            };
+            return Some(Ok(SdfRecord {
+                mol,
+                meta,
+                coords: Vec::new(),
+                properties,
+                stereo_diagnostics: Vec::new(),
+                ez_diagnostics: Vec::new(),
+                conformer: None,
+                coordinate_dimension: CoordinateDimension::Unknown,
+                geometry_rank: GeometryRank::Indeterminate,
+                stereo3d_diagnostics: Vec::new(),
+            }));
+        }
+
+        // Reuse the diagnostic-complete parse path for the default reader.
+        let report = match read_mol_with_diagnostics(&self.block) {
             Ok(report) => report,
             Err(e) => return Some(Err(e)),
         };
-
-        let data_part = block
-            .find("M  END")
-            .map(|pos| &block[pos + 6..])
-            .unwrap_or("");
-        let properties: std::collections::HashMap<String, String> =
-            parse_sd_fields(data_part).into_iter().collect();
 
         Some(Ok(SdfRecord {
             mol: report.mol,
@@ -733,6 +771,21 @@ $$$$
         assert_eq!(records.len(), 2);
         assert_eq!(records[0].mol.atom_count(), 2); // mol_a: 2 C atoms
         assert_eq!(records[1].mol.atom_count(), 3); // mol_b: C, N, O
+    }
+
+    #[test]
+    fn fast_sdf_file_reader_keeps_strict_z_validation() {
+        use std::io::{BufReader, Cursor};
+
+        let malformed = MOL_A.replacen(
+            "    0.0000    0.0000    0.0000 C",
+            "    0.0000    0.0000       NaN C",
+            1,
+        );
+        let result = SdfFileReader::fast(BufReader::new(Cursor::new(malformed.into_bytes())))
+            .next()
+            .expect("one record");
+        assert!(matches!(result, Err(MolParseError::InvalidAtomLine { .. })));
     }
 
     #[test]

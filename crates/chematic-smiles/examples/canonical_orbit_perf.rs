@@ -457,8 +457,9 @@ fn run_tier(name: &'static str, fixtures: &[(String, String)], run_legacy: bool)
                     0
                 };
                 println!(
-                    "    [{label}] old_leaves={old_leaves} new_leaves={} nodes={} orbit_tests={} \
+                    "    [{label}] new_us={} old_leaves={old_leaves} new_leaves={} nodes={} orbit_tests={} \
                      children_pruned={}",
+                    new_stats.durations.last().unwrap().as_micros(),
                     per_fixture.leaves_written,
                     per_fixture.nodes_visited,
                     per_fixture.orbit_tests,
@@ -491,8 +492,9 @@ fn run_tier(name: &'static str, fixtures: &[(String, String)], run_legacy: bool)
                     0
                 };
                 println!(
-                    "    [{label}] old_leaves={old_leaves} new_leaves={} nodes={} orbit_tests={} \
+                    "    [{label}] new_us={} old_leaves={old_leaves} new_leaves={} nodes={} orbit_tests={} \
                      children_pruned={}",
+                    new_stats.durations.last().unwrap().as_micros(),
                     per_fixture.leaves_written,
                     per_fixture.nodes_visited,
                     per_fixture.orbit_tests,

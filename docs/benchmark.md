@@ -1,6 +1,74 @@
 # Benchmark
 
+## v1.0.2 benchmark status
+
+The repository now contains a machine-readable competitive benchmark protocol
+at [`validation/competitive_benchmark_manifest.json`](../validation/competitive_benchmark_manifest.json).
+It defines the three in-scope engines (chematic, RDKit, and Open Babel),
+corpora, operations, required provenance, fairness
+rules, and result statuses needed for a defensible comparison.
+
+The broad protocol snapshot remains a v1.0.1 historical measurement. The
+focused 2026-09-04 canonical and SDF measurements were taken from the code now
+released as v1.0.2, before its version-only metadata bump, and are therefore
+reported with that provenance rather than relabeled as a fresh package run.
+Validate the current v1.0.2 protocol offline with:
+
+```bash
+python3 scripts/validate_competitive_benchmark_manifest.py
+```
+
+An advantage claim is publishable only when the result includes the exact
+source revision, engine versions, hardware, corpus hash, configuration,
+failure counts, and reproduction command. Throughput, accuracy, memory,
+startup latency, deployment size, and feature coverage must be reported as
+separate dimensions.
+
+The execution coordinator is resumable per operation. It writes an atomic
+`state.json` and one log per operation; completed operations are skipped and
+failed or interrupted operations can be retried:
+
+```bash
+python3 scripts/run_competitive_benchmark.py --dry-run
+python3 scripts/run_competitive_benchmark.py --resume
+```
+
+An interrupted run must be resumed with the same result directory and state
+file. The runner stops on the first failed operation while preserving its
+status and log.
+
+The runner also fails before timing if the imported Python package version does
+not match the manifest target version. This prevents a stale installed wheel
+from being reported as a current-workspace result.
+
 ## Latest measured snapshot
+
+### 2026-09-03 — chematic 1.0.1
+
+The current protocol run completed for chematic and RDKit on macOS arm64.
+Open Babel was not installed, so no Open Babel comparison is claimed. The
+results are operation-specific: chematic led import, SMILES parsing, and
+ECFP4, while RDKit led canonical SMILES and SDF read/write. See the complete
+record and hashes in [`benchmarks/2026-09-03-competitive.md`](../benchmarks/2026-09-03-competitive.md).
+
+Two focused follow-ups optimize and re-measure narrower, equivalent-work paths
+included in v1.0.2.
+The canonical SMILES run over 5,000 diverse molecules records a seven-run
+median of 24.95 µs/mol for chematic and 25.58 µs/mol for RDKit (chematic 2.5%
+faster on that environment and corpus). A second 5,000-molecule ChEMBL-derived
+corpus records 18.27 vs 26.82 µs/mol at the five-run median (chematic 1.47×
+faster). See
+[`benchmarks/2026-09-04-canonical-fast-path.md`](../benchmarks/2026-09-04-canonical-fast-path.md).
+The SDF fast-path measurement separates graph/property parsing from
+optional diagnostics and separates serialization from automatic 2D layout.
+On the same 365-record corpus, the latest seven-run medians are 9.48 µs/mol
+for graph/property read and 7.62 µs/mol for serialization-only write: 1.26×
+and 1.33× faster than the preceding chematic implementation, and 10.5× and
+10.4× faster than RDKit in that run. See
+[`benchmarks/2026-09-04-sdf-fast-path.md`](../benchmarks/2026-09-04-sdf-fast-path.md).
+
+The older snapshot below is retained as historical evidence and must not be
+combined with this run.
 
 This page reports the latest reproducible benchmark run, not necessarily the
 current package version. The benchmark snapshot below was measured before the
@@ -92,9 +160,10 @@ python scripts/bench_smiles_parse.py --n 5000 --rdkit --json
 
 **Related micro-benchmarks** (same corpus-tiering convention, not folded into the table
 above): `python scripts/bench_canonical.py --rdkit` measures canonical SMILES generation
-throughput; `python scripts/bench_smarts.py --rdkit` measures SMARTS substructure-match
-throughput (pairs with `scripts/rdkit_benchmark.py`'s `bench_smarts_match`). Not
-re-measured this cycle.
+throughput; its latest focused record is
+[`benchmarks/2026-09-04-canonical-fast-path.md`](../benchmarks/2026-09-04-canonical-fast-path.md).
+`python scripts/bench_smarts.py --rdkit` measures SMARTS substructure-match
+throughput (pairs with `scripts/rdkit_benchmark.py`'s `bench_smarts_match`).
 
 ---
 
@@ -212,7 +281,7 @@ python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --detail
 | C/C++ compiler | Not required, even building from source | Not required for the prebuilt wheel; required (Boost) building RDKit itself from source |
 | Docker image size delta | ~4 MB (approximate; not independently re-measured this cycle) | ~200 MB+ (approximate; not independently re-measured this cycle) |
 | GitHub Actions | Single pip line | Separate conda setup step |
-| JavaScript / WASM | `npm install @kent-tokyo/chematic` (2.98 MB raw / 1.11 MB gzip) | `npm install @rdkit/rdkit` (RDKit.js, a separate community project — 6.91 MB raw / 2.06 MB gzip) |
+| JavaScript / WASM | `npm install @kent-tokyo/chematic` (3.30 MB raw / 1.21 MB gzip) | `npm install @rdkit/rdkit` (RDKit.js, a separate community project — 6.91 MB raw / 2.06 MB gzip) |
 | Browser deployment | Yes | Yes, via RDKit.js |
 
 ---
@@ -226,7 +295,7 @@ python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --detail
 | MCP server (AI agent integration) | 20 tools (stdio only) | Not available |
 | LSH approximate nearest-neighbour index | Built-in | Not available |
 | IUPAC name generation | Built-in (offline) | Not available |
-| Browser / WASM deployment | Yes (2.98 MB raw / 1.11 MB gzip) | Yes, via RDKit.js (a separate community project — 6.91 MB raw / 2.06 MB gzip) |
+| Browser / WASM deployment | Yes (3.30 MB raw / 1.21 MB gzip; [v1.0.2 artifact record](../benchmarks/2026-09-04-wasm-size.md)) | Yes, via RDKit.js (a separate community project — 6.91 MB raw / 2.06 MB gzip) |
 | ECFP4 batch speed | 1.7× faster (diverse corpus), 6.6× faster (repeated fixture) | Baseline |
 | SMARTS atom map `:N` | Yes | Yes |
 | Retrosynthesis (template-based) | 60 retro-SMIRKS built-in | External tool |

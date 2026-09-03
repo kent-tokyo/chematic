@@ -312,7 +312,10 @@ impl SdMolSupplier {
         let file = std::fs::File::open(path)
             .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
         Ok(SdMolSupplier {
-            inner: chematic_mol::SdfFileReader::new(std::io::BufReader::new(file)),
+            // SDMolSupplier exposes RDKit-style molecules, not chematic's
+            // optional stereo/3D diagnostics. Use the matching lightweight
+            // reader so diagnostics do not inflate ordinary supplier reads.
+            inner: chematic_mol::SdfFileReader::fast(std::io::BufReader::new(file)),
             strict_parsing: strictParsing,
         })
     }
@@ -369,18 +372,21 @@ pub struct SdWriter {
     writer: Option<std::io::BufWriter<std::fs::File>>,
     props_filter: Option<Vec<String>>,
     force_v3000: bool,
+    compute_2d: bool,
 }
 
 #[pymethods]
 impl SdWriter {
     #[new]
-    fn new(path: &str) -> PyResult<Self> {
+    #[pyo3(signature = (path, compute2d=true))]
+    fn new(path: &str, compute2d: bool) -> PyResult<Self> {
         let file = std::fs::File::create(path)
             .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
         Ok(SdWriter {
             writer: Some(std::io::BufWriter::new(file)),
             props_filter: None,
             force_v3000: false,
+            compute_2d: compute2d,
         })
     }
 
@@ -390,24 +396,27 @@ impl SdWriter {
             .writer
             .as_mut()
             .ok_or_else(|| pyo3::exceptions::PyValueError::new_err("SDWriter is already closed"))?;
-        let layout = chematic_depict::compute_layout(&mol.inner);
-        let coords: Vec<(f64, f64)> = layout.coords.iter().map(|p| (p.x, p.y)).collect();
+        let coords: Vec<(f64, f64)> = if self.compute_2d {
+            let layout = chematic_depict::compute_layout(&mol.inner);
+            layout.coords.iter().map(|p| (p.x, p.y)).collect()
+        } else {
+            Vec::new()
+        };
         let name = mol.props.get("_Name").cloned().unwrap_or_default();
         let meta = chematic_mol::MolMetadata {
             name,
             comment: String::new(),
         };
-        let props = match &self.props_filter {
-            None => mol.props.clone(),
-            Some(keys) => keys
-                .iter()
+        let filtered_props = self.props_filter.as_ref().map(|keys| {
+            keys.iter()
                 .filter_map(|k| mol.props.get(k).map(|v| (k.clone(), v.clone())))
-                .collect(),
-        };
+                .collect()
+        });
+        let props = filtered_props.as_ref().unwrap_or(&mol.props);
         let record = if self.force_v3000 {
-            chematic_mol::write_sdf_record_v3000(&mol.inner, &meta, &coords, &props)
+            chematic_mol::write_sdf_record_v3000(&mol.inner, &meta, &coords, props)
         } else {
-            chematic_mol::write_sdf_record(&mol.inner, &meta, &coords, &props)
+            chematic_mol::write_sdf_record(&mol.inner, &meta, &coords, props)
         };
         w.write_all(record.as_bytes())
             .map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))
@@ -422,6 +431,16 @@ impl SdWriter {
     /// No-op: chematic always writes aromatic SMILES internally.
     #[pyo3(name = "SetKekulize")]
     fn set_kekulize(&mut self, _val: bool) {}
+
+    /// Enable or disable automatic 2D coordinate generation.
+    ///
+    /// The default is `True` for compatibility. Set it to `False` when the
+    /// caller only needs graph serialization and does not want depiction
+    /// layout work on every record.
+    #[pyo3(name = "SetCompute2D")]
+    fn set_compute_2d(&mut self, val: bool) {
+        self.compute_2d = val;
+    }
 
     /// When ``True``, subsequent ``write()`` calls emit MOL V3000 (Extended
     /// Ctab) blocks instead of V2000 — required for molecules with more

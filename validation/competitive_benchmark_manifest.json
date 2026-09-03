@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "status": "prepared",
+  "target_version": "1.0.2",
+  "purpose": "Operation-level competitive benchmark; preparation only, no new measured claim.",
+  "engines": [
+    {"id": "chematic", "required": true, "version_source": "workspace Cargo.toml"},
+    {"id": "rdkit", "required": false, "version_source": "python package metadata"},
+    {"id": "openbabel", "required": false, "version_source": "obabel --version"}
+  ],
+  "required_metadata": [
+    "engine_id", "engine_version", "source_revision", "host_os", "cpu_model",
+    "cpu_count", "python_version", "corpus_id", "corpus_sha256", "record_count",
+    "operation", "configuration", "warmup_policy", "repetitions", "timing_statistic",
+    "result_counts", "failure_policy", "started_at_utc"
+  ],
+  "fairness_rules": [
+    "Use the same input bytes, record order, and corpus hash for every engine.",
+    "Report parse failures, skips, unsupported operations, and errors separately; never count them as successes.",
+    "Separate repeated-fixture throughput from unique diverse-corpus throughput.",
+    "Pin engine versions and configuration; do not compare debug builds with release builds.",
+    "Report median and dispersion over independent repetitions, not a single fastest run.",
+    "Keep accuracy, throughput, memory, startup, binary size, and feature coverage as separate metrics.",
+    "Do not publish a superiority claim until the result file and reproduction command are checked in."
+  ],
+  "corpora": [
+    {"id": "descriptor_census_4999", "path": "scripts/descriptor_census_corpus.smi", "role": "unique throughput and descriptor smoke"},
+    {"id": "chembl_accuracy_4999", "path": "scripts/chembl_accuracy_corpus_4999.smi", "role": "descriptor/CIP agreement"},
+    {"id": "cross_binding_contract", "path": "validation/cross_binding_contract.json", "role": "binding contract, not throughput"},
+    {"id": "smoke_corpus", "path": "validation/cross_binding_contract.json", "role": "cross-engine contract smoke"}
+  ],
+  "operations": [
+    {"id": "startup_import", "metric": "median_ms", "runner": "scripts/bench_startup.py", "command": ["python3", "scripts/bench_startup.py", "--rdkit", "--json", "--runs", "10"]},
+    {"id": "smiles_parse", "metric": "median_us_per_molecule", "runner": "scripts/bench_smiles_parse.py", "command": ["python3", "scripts/bench_smiles_parse.py", "scripts/descriptor_census_corpus.smi", "--rdkit", "--n", "5000", "--json"]},
+    {"id": "canonical_smiles", "metric": "median_us_per_molecule", "runner": "scripts/bench_canonical.py", "command": ["python3", "scripts/bench_canonical.py", "scripts/descriptor_census_corpus.smi", "--rdkit", "--n", "5000", "--json"]},
+    {"id": "ecfp4", "metric": "median_us_per_molecule", "runner": "scripts/benchmark_vs_rdkit.py", "command": ["python3", "scripts/benchmark_vs_rdkit.py", "--rdkit", "--corpus", "scripts/descriptor_census_corpus.smi", "--repeats", "5"]},
+    {"id": "descriptor_agreement", "metric": "per_metric_agreement", "runner": "scripts/bench5k.py", "command": ["python3", "scripts/bench5k.py", "scripts/chembl_accuracy_corpus_4999.smi", "--json", "{result_dir}/descriptor_agreement.json"]},
+    {"id": "format_parse", "metric": "records_per_second", "runner": "scripts/bench_sdf.py", "command": ["python3", "scripts/bench_sdf.py", "--rdkit", "--json"]}
+  ],
+  "result_policy": {
+    "raw_results_path": "validation/results/competitive_benchmark_<date>.json",
+    "summary_path": "benchmarks/<date>.md",
+    "status_values": ["measured", "not_installed", "unsupported", "failed", "not_run"],
+    "claim_requires": ["measured", "source_revision", "corpus_sha256", "reproduction_command"]
+  }
+}

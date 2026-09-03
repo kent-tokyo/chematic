@@ -9,9 +9,11 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+RELEASE_VERSION = "1.0.2"
 DOCS = (
     ROOT / "README.md",
     ROOT / "README_ja.md",
+    ROOT / "README_zh.md",
     ROOT / "CHANGELOG.md",
     ROOT / "SECURITY.md",
     ROOT / "docs" / "v1.0-local-release-gate.md",
@@ -26,8 +28,9 @@ DOCS = (
 def main() -> int:
     errors: list[str] = []
     cargo = (ROOT / "Cargo.toml").read_text(encoding="utf-8")
-    if not re.search(r'^version\s*=\s*"1\.0\.1"\s*$', cargo, re.MULTILINE):
-        errors.append("Cargo.toml does not declare workspace version 1.0.1")
+    version_pattern = rf'^version\s*=\s*"{re.escape(RELEASE_VERSION)}"\s*$'
+    if not re.search(version_pattern, cargo, re.MULTILINE):
+        errors.append(f"Cargo.toml does not declare workspace version {RELEASE_VERSION}")
 
     for path in DOCS:
         try:
@@ -57,8 +60,11 @@ def main() -> int:
         ROOT / "crates" / "chematic-mcp" / "README.md",
         ROOT / "crates" / "chematic-inchi" / "README.md",
     ):
-        if 'version = "1.0.1"' not in path.read_text(encoding="utf-8"):
-            errors.append(f"{path.relative_to(ROOT)}: current dependency example is not v1.0.1")
+        expected = f'version = "{RELEASE_VERSION}"'
+        if expected not in path.read_text(encoding="utf-8"):
+            errors.append(
+                f"{path.relative_to(ROOT)}: current dependency example is not v{RELEASE_VERSION}"
+            )
 
     if errors:
         print("Release documentation consistency failures:", file=sys.stderr)

@@ -23,14 +23,14 @@ rustdoc-args = ["--cfg", "docsrs"]
 diagnostics = []
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "1.0.1" }
-chematic-cip = { path = "../chematic-cip", version = "1.0.1" }
+chematic-core = { path = "../chematic-core", version = "1.0.2" }
+chematic-cip = { path = "../chematic-cip", version = "1.0.2" }
 rustc-hash = "2"
 smallvec = "1"
-chematic-perception = { path = "../chematic-perception", version = "1.0.1" }
-chematic-rxn = { path = "../chematic-rxn", version = "1.0.1" }
-chematic-smarts = { path = "../chematic-smarts", version = "1.0.1" }
-chematic-smiles = { path = "../chematic-smiles", version = "1.0.1" }
+chematic-perception = { path = "../chematic-perception", version = "1.0.2" }
+chematic-rxn = { path = "../chematic-rxn", version = "1.0.2" }
+chematic-smarts = { path = "../chematic-smarts", version = "1.0.2" }
+chematic-smiles = { path = "../chematic-smiles", version = "1.0.2" }
 
 [dev-dependencies]
 criterion = { version = "0.8", features = ["html_reports"] }

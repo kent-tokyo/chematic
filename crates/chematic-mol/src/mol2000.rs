@@ -647,6 +647,25 @@ fn parse_field3(
 /// regardless of a `sanitize`-equivalent flag. It never touches `Atom.cip_code`
 /// and never depends on CIP ranking.
 pub fn read_mol_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseError> {
+    read_mol_internal(input, true)
+}
+
+/// Parse a MOL V2000 block without optional stereo/3D diagnostics.
+///
+/// This is used by the RDKit-compatible `SDMolSupplier` path, whose contract
+/// is the molecule graph plus metadata and SD properties. Keeping the parser
+/// and fixed-width validation shared with [`read_mol_with_diagnostics`] avoids
+/// semantic drift while skipping perception and geometry work.
+#[allow(clippy::type_complexity)]
+pub(crate) fn parse_mol_fast(input: &str) -> Result<(Molecule, MolMetadata), MolParseError> {
+    let report = read_mol_internal(input, false)?;
+    Ok((report.mol, report.metadata))
+}
+
+fn read_mol_internal(
+    input: &str,
+    include_diagnostics: bool,
+) -> Result<MolReadReport, MolParseError> {
     // Yields (1-based line number, line text); short-circuits on EOF.
     let mut lines = input.lines().enumerate().map(|(i, l)| (i + 1, l));
     let mut next_line = || lines.next().ok_or(MolParseError::UnexpectedEnd);
@@ -705,9 +724,17 @@ pub fn read_mol_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseE
 
     // -- Atom block ---------------------------------------------------------
 
-    let mut builder = MoleculeBuilder::new();
-    let mut coords: Vec<(f64, f64)> = Vec::with_capacity(natoms);
-    let mut raw_z: Vec<f64> = Vec::with_capacity(natoms);
+    let mut builder = MoleculeBuilder::with_capacity(natoms, nbonds);
+    let mut coords: Vec<(f64, f64)> = if include_diagnostics {
+        Vec::with_capacity(natoms)
+    } else {
+        Vec::new()
+    };
+    let mut raw_z: Vec<f64> = if include_diagnostics {
+        Vec::with_capacity(natoms)
+    } else {
+        Vec::new()
+    };
     let make_atom_err = |ln: usize, d: String| MolParseError::InvalidAtomLine {
         line: ln,
         detail: d,
@@ -716,28 +743,10 @@ pub fn read_mol_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseE
     for atom_i in 0..natoms {
         let (raw_lineno, atom_line) = next_line()?;
 
-        // Coordinates: bytes 0–9 (x), 10–19 (y), 20–29 (z) — each 10 chars.
-        let x: f64 = atom_line
-            .get(0..10)
-            .and_then(|s| s.trim().parse().ok())
-            .unwrap_or(0.0);
-        let y: f64 = atom_line
-            .get(10..20)
-            .and_then(|s| s.trim().parse().ok())
-            .unwrap_or(0.0);
-        coords.push((x, y));
-
-        // Z coordinate (bytes 20-29): previously silently discarded
-        // entirely -- root cause of the 3D-coordinate-loss bug this PR
-        // fixes (nothing downstream ever read this field). Unlike x/y
-        // above, a present-but-garbled or non-finite z is a typed error
-        // rather than a silent 0.0 default: nothing today reads z, so a
-        // malformed value can only be file corruption, and silently
-        // matching x/y's leniency would manufacture a fake flat conformer
-        // out of garbage input instead of surfacing it. A genuinely
-        // *missing* z field (line too short, or blank) still defaults to
-        // 0.0, same as x/y -- most real 2D-only writers pad it with zeros,
-        // but some don't, and a short 2D line is not corruption.
+        // Keep validating Z even on the graph-only supplier path. A malformed
+        // value was already a typed error there, so skipping all coordinate
+        // parsing would silently loosen strictParsing. Only X/Y conversion
+        // and coordinate storage are diagnostic-path work.
         let z: f64 = match atom_line.get(20..30) {
             None => 0.0,
             Some(raw) => {
@@ -761,7 +770,22 @@ pub fn read_mol_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseE
                 }
             }
         };
-        raw_z.push(z);
+
+        if include_diagnostics {
+            // X/Y are only needed by coordinate and stereo diagnostics. The
+            // graph-only supplier does not expose either, so avoid converting
+            // and storing values it immediately discards.
+            let x: f64 = atom_line
+                .get(0..10)
+                .and_then(|s| s.trim().parse().ok())
+                .unwrap_or(0.0);
+            let y: f64 = atom_line
+                .get(10..20)
+                .and_then(|s| s.trim().parse().ok())
+                .unwrap_or(0.0);
+            coords.push((x, y));
+            raw_z.push(z);
+        }
 
         // Element symbol: bytes 31–33 (3 chars, left-padded with a space in
         // the spec, but writers vary; trim both ends).
@@ -889,6 +913,22 @@ pub fn read_mol_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseE
     }
 
     let mut mol = builder.build();
+
+    if !include_diagnostics {
+        return Ok(MolReadReport {
+            mol,
+            metadata,
+            coords,
+            stereo_diagnostics: Vec::new(),
+            ez_diagnostics: Vec::new(),
+            conformer: None,
+            coordinate_dimension: CoordinateDimension::Unknown,
+            geometry_rank: GeometryRank::Indeterminate,
+            stereo3d_diagnostics: Vec::new(),
+            square_planar_diagnostics: Vec::new(),
+        });
+    }
+
     // Tetrahedral parity first (raw wedge/hash still fully intact on
     // `bond.order`), THEN E/Z direction -- the E/Z stage only ever writes to
     // the separate `bond_direction` side channel, never to `bond.order`, so
@@ -1064,12 +1104,19 @@ pub fn write_mol(mol: &Molecule, metadata: &MolMetadata) -> String {
 /// **Does not preserve `Chirality::SquarePlanar` stereo** -- see
 /// [`write_mol`]'s doc comment; the same 2D-only limitation applies here.
 /// Use [`write_mol_with_conformer_checked`] if `mol` may carry it.
+#[allow(clippy::write_with_newline)]
 pub fn write_mol_with_coords(
     mol: &Molecule,
     metadata: &MolMetadata,
     coords: &[(f64, f64)],
 ) -> String {
-    let mut out = String::new();
+    use std::fmt::Write as _;
+
+    // A MOL block is dominated by fixed-width atom and bond rows.  Reserve
+    // the common-size output up front so serialization does not repeatedly
+    // grow and copy the String for every row (the old empty String was a
+    // noticeable cost when writing many small records).
+    let mut out = String::with_capacity(128 + mol.atom_count() * 80 + mol.bond_count() * 16);
 
     // Header lines 1–3
     out.push_str(&metadata.name);
@@ -1081,20 +1128,36 @@ pub fn write_mol_with_coords(
     // Counts line (line 4)
     let natoms = mol.atom_count();
     let nbonds = mol.bond_count();
-    out.push_str(&format!(
+    write!(
+        &mut out,
         "{:>3}{:>3}  0  0  0  0  0  0  0  0999 V2000\n",
         natoms, nbonds
-    ));
+    )
+    .expect("writing to String cannot fail");
 
     // Atom block
     for (idx, atom) in mol.atoms() {
         let sym = atom.element.symbol();
         let charge_code = encode_charge(atom.charge);
-        let (x, y) = coords.get(idx.0 as usize).copied().unwrap_or((0.0, 0.0));
-        out.push_str(&format!(
-            "{:>10.4}{:>10.4}{:>10.4} {:<3} 0{:>3}  0  0  0  0  0  0  0  0  0\n",
-            x, y, 0.0_f64, sym, charge_code,
-        ));
+        if let Some(&(x, y)) = coords.get(idx.0 as usize) {
+            write!(
+                &mut out,
+                "{:>10.4}{:>10.4}{:>10.4} {:<3} 0{:>3}  0  0  0  0  0  0  0  0  0\n",
+                x, y, 0.0_f64, sym, charge_code,
+            )
+            .expect("writing to String cannot fail");
+        } else {
+            // Serialization-only SDF output overwhelmingly has no coordinate
+            // array. Avoid running the float formatter three times per atom
+            // for a byte sequence that is known at compile time.
+            out.push_str("    0.0000    0.0000    0.0000 ");
+            writeln!(
+                &mut out,
+                "{:<3} 0{:>3}  0  0  0  0  0  0  0  0  0",
+                sym, charge_code,
+            )
+            .expect("writing to String cannot fail");
+        }
     }
 
     // Bond block
@@ -1121,7 +1184,8 @@ pub fn write_mol_with_coords(
             BondOrder::Down => 6,
             _ => 0,
         };
-        out.push_str(&format!("{:>3}{:>3}{:>3}{:>3}\n", a1, a2, btype, stereo));
+        writeln!(&mut out, "{:>3}{:>3}{:>3}{:>3}", a1, a2, btype, stereo)
+            .expect("writing to String cannot fail");
     }
 
     // Terminator
