@@ -1,8 +1,30 @@
 # Compatibility scope
 
-This is the final v0.89 compatibility boundary. “Compatible” means the
-operation is implemented and covered by its stated contract; it does not mean
-that chematic is a drop-in reimplementation of RDKit or ChemDraw.
+This is the v0.89 compatibility boundary and the proposed v1.0 contract.
+“Compatible” means the operation is implemented and covered by its stated
+contract; it does not mean that chematic is a drop-in reimplementation of
+RDKit or ChemDraw.
+
+## v1.0 release contract
+
+The following boundaries are intentional release decisions, not unfinished
+claims to be inferred as complete. v1.0 may ship with these limits when the
+documented supported paths, typed failures, and regression gates remain
+stable:
+
+- CDXML remains loss-preserving bounded editing, not a complete arbitrary
+  nested-object editor/writer; complex polymer/Markush expansion remains
+  bounded and explicit rather than a general topology engine.
+- Python `RWMol` remains the documented mutation subset, not full RDKit
+  `RWMol` compatibility.
+- `canonical_smiles()` is a representation, not a deduplication/cache key.
+  `canonical_smiles_stable_key()` is the recommended identity API and may
+  return `None` when stability is not proven.
+- Aromaticity model selection and CIP mode are explicit compatibility choices;
+  neither claims universal RDKit parity, and unresolved CIP is not guessed.
+- 3D generation and MMFF94 remain Experimental; successful output does not
+  imply ETKDGv3/conformational-quality parity or complete force-field
+  coverage.
 
 ## Python `RWMol`
 
