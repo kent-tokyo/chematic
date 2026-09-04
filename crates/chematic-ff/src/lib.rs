@@ -31,10 +31,10 @@ pub use mmff94_energy::{
     mmff94_torsion_energy, mmff94_vdw_combined, mmff94_vdw_energy,
 };
 pub use mmff94_minimizer::{
-    EnergyBreakdown, MLTB_TYPES, MinimizeResult, MinimizerError, OOP_SP2_TYPES, angle_type_for,
-    bond_type_for, is_angle_in_ring_of_size_3_or_4, minimize_mmff94_full, minimize_mmff94_lbfgs,
-    mmff94_energy_breakdown, mmff94_torsion_scan, mmff94_total_energy, stretch_bend_type_for,
-    torsion_no_term_by_design, torsion_type_for,
+    EnergyBreakdown, MLTB_TYPES, MinimizeResult, MinimizerError, Mmff94EnergyModel, OOP_SP2_TYPES,
+    angle_type_for, bond_type_for, is_angle_in_ring_of_size_3_or_4, minimize_mmff94_full,
+    minimize_mmff94_lbfgs, mmff94_energy_breakdown, mmff94_torsion_scan, mmff94_total_energy,
+    stretch_bend_type_for, torsion_no_term_by_design, torsion_type_for,
 };
 pub use mmff94_numeric::{
     NumericTypeError, assign_mmff94_numeric_types, assign_mmff94_numeric_types_with_view,

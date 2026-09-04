@@ -17,6 +17,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   many templates can share target ring perception. Existing string-based APIs
   remain compatible wrappers.
 
+## [1.0.3] - 2026-09-04
+
+### Added
+
+- Added reusable MMFF94 topology preparation for repeated energy evaluation and
+  L-BFGS minimization, including cached bonded terms and non-bonded pair
+  exclusions.
+- Added Criterion benchmarks for MMFF94 energy evaluation, minimization, ETKDG
+  generation, and the 3D pipeline.
+
+### Performance
+
+- The local six-molecule prepared-energy benchmark measured 22.5 µs versus
+  365 µs for one-shot evaluation; the five-molecule 3D benchmark measured
+  388 ms for MMFF94 minimization. These are macOS arm64 local measurements,
+  not cross-platform or RDKit replacement claims.
+
 ## [1.0.2] - 2026-09-04
 
 ### Fixed

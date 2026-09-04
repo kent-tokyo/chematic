@@ -8,12 +8,11 @@ use std::collections::HashSet;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 use chematic_ff::{
-    EnergyBreakdown, MinimizerError, NumericTypeError, OOP_SP2_TYPES, UffType, angle_type_for,
-    assign_mmff94_numeric_types_with_view, assign_uff_types, bond_type_for,
-    is_angle_in_ring_of_size_3_or_4, minimize_mmff94_lbfgs, minimize_uff as ff_minimize_uff,
-    mmff94_angle_energy_resolved, mmff94_bond_energy_resolved, mmff94_energy_breakdown, mmff94_oop,
-    mmff94_stbn, mmff94_torsion_energy, mmff94_total_energy, stretch_bend_type_for,
-    torsion_no_term_by_design, torsion_type_for, uff_total_energy,
+    EnergyBreakdown, MinimizerError, Mmff94EnergyModel, NumericTypeError, OOP_SP2_TYPES, UffType,
+    angle_type_for, assign_mmff94_numeric_types_with_view, assign_uff_types, bond_type_for,
+    is_angle_in_ring_of_size_3_or_4, minimize_uff as ff_minimize_uff, mmff94_angle_energy_resolved,
+    mmff94_bond_energy_resolved, mmff94_oop, mmff94_stbn, mmff94_torsion_energy,
+    stretch_bend_type_for, torsion_no_term_by_design, torsion_type_for, uff_total_energy,
 };
 use chematic_ff::{
     assign_dreiding_types, assign_mmff94_types, dreiding_angle, dreiding_bond_len, dreiding_vdw,
@@ -1956,20 +1955,14 @@ fn run_mmff94_bridge(
     }
 
     let coord_vec = coords_to_vec(coords, n);
-    let energy_before = mmff94_energy_breakdown(mol, &coord_vec)?;
+    let energy_model = Mmff94EnergyModel::new(mol)?;
+    let energy_before = energy_model.energy_breakdown(&coord_vec);
 
     let mut work = coord_vec.clone();
-    let result = minimize_mmff94_lbfgs(mol, &mut work, max_iter)?;
+    let result = energy_model.minimize_lbfgs(&mut work, max_iter)?;
 
-    let energy_after = mmff94_energy_breakdown(mol, &work)?;
-    let max_residual_force = fd_max_gradient(
-        &work,
-        |c| {
-            mmff94_total_energy(mol, c)
-                .expect("mmff94_total_energy must not fail after a successful energy_breakdown/minimize call on the same molecule/coords")
-        },
-        1e-4,
-    );
+    let energy_after = energy_model.energy_breakdown(&work);
+    let max_residual_force = fd_max_gradient(&work, |c| energy_model.energy(c), 1e-4);
 
     check_minimization_soundness(
         mol,
@@ -2861,7 +2854,7 @@ mod tests {
 mod policy_bridge_tests {
     use super::*;
     use crate::dg::generate_coords;
-    use chematic_ff::{assign_mmff94_numeric_types, mmff94_bond_energy};
+    use chematic_ff::{assign_mmff94_numeric_types, mmff94_bond_energy, mmff94_total_energy};
     use chematic_smiles::parse;
 
     // --- Coords3D <-> Vec<[f64; 3]> bridge plumbing -------------------------

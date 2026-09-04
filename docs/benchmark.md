@@ -1,6 +1,6 @@
 # Benchmark
 
-## v1.0.2 benchmark status
+## v1.0.3 benchmark status
 
 The repository now contains a machine-readable competitive benchmark protocol
 at [`validation/competitive_benchmark_manifest.json`](../validation/competitive_benchmark_manifest.json).
@@ -12,7 +12,9 @@ The broad protocol snapshot remains a v1.0.1 historical measurement. The
 focused 2026-09-04 canonical and SDF measurements were taken from the code now
 released as v1.0.2, before its version-only metadata bump, and are therefore
 reported with that provenance rather than relabeled as a fresh package run.
-Validate the current v1.0.2 protocol offline with:
+The v1.0.3 release also adds a local MMFF94/3D benchmark lane; its results are
+recorded in `benchmarks/2026-09-04-mmff94-3d.md`.
+Validate the current protocol offline with:
 
 ```bash
 python3 scripts/validate_competitive_benchmark_manifest.py

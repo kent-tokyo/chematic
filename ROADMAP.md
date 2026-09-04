@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Status: strategic roadmap, revised 2026-09-04. v1.0.2 is the current patch release;
+> Status: strategic roadmap, revised 2026-09-04. v1.0.3 is the current patch release;
 > the next work remains version-locked until a new release decision.
 
 ## North star
@@ -73,6 +73,9 @@ benchmark, and a documented “where to use which tool” migration guide.
   on two independent 5,000-molecule corpora; chematic leads RDKit by 2.5% and
   1.47× at the respective medians on the recorded macOS arm64 environment.
   These are scoped results, not a cross-platform or all-corpus claim.
+- [x] Add local MMFF94 and 3D pipeline benchmarks covering prepared energy,
+  one-shot energy, ETKDG generation, and L-BFGS minimization; record the
+  measurements in the 1.0.3 changelog entry.
 
 - Define a lossless record model for molecule, coordinates, SD properties,
   source location, parse status, diagnostics, units, and provenance.

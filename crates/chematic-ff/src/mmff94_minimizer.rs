@@ -18,8 +18,9 @@ use chematic_core::{AtomIdx, BondOrder, Molecule};
 use chematic_perception::find_sssr;
 
 use crate::mmff94_energy::{
-    mmff94_angle_energy_resolved, mmff94_bond_energy_resolved, mmff94_oop, mmff94_stbn,
-    mmff94_torsion_energy, mmff94_vdw_combined,
+    AngleEnergyParams, BondEnergyParams, TorsionEnergyParams, mmff94_angle_energy_resolved,
+    mmff94_bond_energy_resolved, mmff94_oop, mmff94_stbn, mmff94_torsion_energy,
+    mmff94_vdw_combined,
 };
 use crate::mmff94_numeric::{
     NumericTypeError, assign_mmff94_numeric_types_with_view, mmff94_charges_numeric,
@@ -27,6 +28,32 @@ use crate::mmff94_numeric::{
 
 type CoordVec = Vec<[f64; 3]>;
 type LbfgsHistory = VecDeque<(CoordVec, CoordVec, f64)>;
+type VdwPairs = Vec<(usize, usize)>;
+type ElectrostaticPairs = Vec<(usize, usize, f64)>;
+
+#[derive(Clone, Copy)]
+struct PreparedBond {
+    i: usize,
+    j: usize,
+    params: BondEnergyParams,
+}
+
+#[derive(Clone, Copy)]
+struct PreparedAngle {
+    i: usize,
+    j: usize,
+    k: usize,
+    params: AngleEnergyParams,
+}
+
+#[derive(Clone, Copy)]
+struct PreparedTorsion {
+    i: usize,
+    j: usize,
+    k: usize,
+    l: usize,
+    params: TorsionEnergyParams,
+}
 
 // ─── Public types ────────────────────────────────────────────────────────────
 
@@ -80,21 +107,123 @@ pub struct EnergyBreakdown {
     pub total: f64,
 }
 
+/// Reusable MMFF94 energy evaluator for one molecular topology.
+///
+/// Atom typing, MMFF94's aromatic view, charges, and ring perception are
+/// topology-only. Keeping them together avoids repeating that work when a
+/// caller evaluates many nearby geometries, as finite-difference gradients do.
+#[derive(Clone)]
+pub struct Mmff94EnergyModel {
+    types: Vec<u8>,
+    mmff_mol: Molecule,
+    charges: Vec<f64>,
+    rings: Vec<Vec<AtomIdx>>,
+    vdw_pairs: Vec<(usize, usize)>,
+    electrostatic_pairs: Vec<(usize, usize, f64)>,
+    bonds: Vec<PreparedBond>,
+    angles: Vec<PreparedAngle>,
+    torsions: Vec<PreparedTorsion>,
+}
+
+impl Mmff94EnergyModel {
+    /// Prepare the topology-dependent MMFF94 state once.
+    pub fn new(mol: &Molecule) -> Result<Self, MinimizerError> {
+        let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
+        let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
+        let rings = find_sssr(mol).rings().to_vec();
+        let (vdw_pairs, electrostatic_pairs) = build_nonbonded_pairs(mol);
+        let bonds = build_bond_terms(&mmff_mol, &types);
+        let angles = build_angle_terms(&mmff_mol, &types, &rings);
+        let torsions = build_torsion_terms(&mmff_mol, &types);
+        Ok(Self {
+            types,
+            mmff_mol,
+            charges,
+            rings,
+            vdw_pairs,
+            electrostatic_pairs,
+            bonds,
+            angles,
+            torsions,
+        })
+    }
+
+    /// Evaluate total MMFF94 energy for coordinates matching the prepared molecule.
+    pub fn energy(&self, coords: &[[f64; 3]]) -> f64 {
+        self.bond_energy(coords)
+            + self.angle_energy(coords)
+            + self.stretch_bend_energy(coords)
+            + self.torsion_energy(coords)
+            + self.oop_energy(coords)
+            + self.vdw_energy(coords)
+            + self.electrostatic_energy(coords)
+    }
+
+    /// Evaluate all MMFF94 energy terms without rebuilding topology state.
+    pub fn energy_breakdown(&self, coords: &[[f64; 3]]) -> EnergyBreakdown {
+        let b = self.bond_energy(coords);
+        let a = self.angle_energy(coords);
+        let sb = self.stretch_bend_energy(coords);
+        let t = self.torsion_energy(coords);
+        let o = self.oop_energy(coords);
+        let v = self.vdw_energy(coords);
+        let e = self.electrostatic_energy(coords);
+        EnergyBreakdown {
+            bond: b,
+            angle: a,
+            stretch_bend: sb,
+            torsion: t,
+            oop: o,
+            vdw: v,
+            electrostatic: e,
+            total: b + a + sb + t + o + v + e,
+        }
+    }
+
+    /// Minimize coordinates using the prepared MMFF94 topology state.
+    pub fn minimize_lbfgs(
+        &self,
+        coords: &mut [[f64; 3]],
+        max_iter: usize,
+    ) -> Result<MinimizeResult, MinimizerError> {
+        minimize_mmff94_lbfgs_prepared(self, coords, max_iter)
+    }
+
+    fn bond_energy(&self, coords: &[[f64; 3]]) -> f64 {
+        prepared_bond_energy(coords, &self.bonds)
+    }
+
+    fn angle_energy(&self, coords: &[[f64; 3]]) -> f64 {
+        prepared_angle_energy(coords, &self.angles)
+    }
+
+    fn stretch_bend_energy(&self, coords: &[[f64; 3]]) -> f64 {
+        stretch_bend_energy(&self.mmff_mol, coords, &self.types, &self.rings)
+    }
+
+    fn torsion_energy(&self, coords: &[[f64; 3]]) -> f64 {
+        prepared_torsion_energy(coords, &self.torsions)
+    }
+
+    fn oop_energy(&self, coords: &[[f64; 3]]) -> f64 {
+        oop_energy(&self.mmff_mol, coords, &self.types)
+    }
+
+    fn vdw_energy(&self, coords: &[[f64; 3]]) -> f64 {
+        vdw_energy_pairs(coords, &self.types, &self.vdw_pairs)
+    }
+
+    fn electrostatic_energy(&self, coords: &[[f64; 3]]) -> f64 {
+        electrostatic_energy_pairs(coords, &self.charges, &self.electrostatic_pairs)
+    }
+}
+
 /// Compute total MMFF94 energy for a given geometry (kcal/mol).
 ///
 /// Includes bond, angle, torsion, vdW, and electrostatic terms.
 /// Does not modify coordinates.
 pub fn mmff94_total_energy(mol: &Molecule, coords: &[[f64; 3]]) -> Result<f64, MinimizerError> {
-    let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
-    let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
-    let ring_set = find_sssr(mol);
-    Ok(total_energy(
-        &mmff_mol,
-        coords,
-        &types,
-        &charges,
-        ring_set.rings(),
-    ))
+    Ok(Mmff94EnergyModel::new(mol)?.energy(coords))
 }
 
 /// Scan a torsion dihedral angle i-j-k-l from 0° to 360° in `steps` increments,
@@ -191,27 +320,7 @@ pub fn mmff94_energy_breakdown(
     mol: &Molecule,
     coords: &[[f64; 3]],
 ) -> Result<EnergyBreakdown, MinimizerError> {
-    let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
-    let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
-    let ring_set = find_sssr(mol);
-    let rings = ring_set.rings();
-    let b = bond_energy(&mmff_mol, coords, &types);
-    let a = angle_energy(&mmff_mol, coords, &types, rings);
-    let sb = stretch_bend_energy(&mmff_mol, coords, &types, rings);
-    let t = torsion_energy(&mmff_mol, coords, &types);
-    let o = oop_energy(&mmff_mol, coords, &types);
-    let v = vdw_energy(&mmff_mol, coords, &types);
-    let e = elec_energy(&mmff_mol, coords, &charges);
-    Ok(EnergyBreakdown {
-        bond: b,
-        angle: a,
-        stretch_bend: sb,
-        torsion: t,
-        oop: o,
-        vdw: v,
-        electrostatic: e,
-        total: b + a + sb + t + o + v + e,
-    })
+    Ok(Mmff94EnergyModel::new(mol)?.energy_breakdown(coords))
 }
 
 /// Minimize molecular geometry using the full MMFF94 force field.
@@ -312,13 +421,22 @@ pub fn minimize_mmff94_lbfgs(
     coords: &mut [[f64; 3]],
     max_iter: usize,
 ) -> Result<MinimizeResult, MinimizerError> {
+    let model = Mmff94EnergyModel::new(mol)?;
+    minimize_mmff94_lbfgs_prepared(&model, coords, max_iter)
+}
+
+fn minimize_mmff94_lbfgs_prepared(
+    model: &Mmff94EnergyModel,
+    coords: &mut [[f64; 3]],
+    max_iter: usize,
+) -> Result<MinimizeResult, MinimizerError> {
     const M: usize = 5; // L-BFGS history size
     const DELTA: f64 = 1e-4; // finite-difference step (Å)
     const CONVERGENCE: f64 = 1e-4; // max |gradient| threshold
     const C_ARMIJO: f64 = 1e-4; // Armijo sufficient-decrease constant
     const TAU: f64 = 0.5; // Armijo backtracking factor
 
-    if mol.atom_count() <= 1 {
+    if model.mmff_mol.atom_count() <= 1 {
         return Ok(MinimizeResult {
             energy: 0.0,
             rmsd: 0.0,
@@ -327,21 +445,14 @@ pub fn minimize_mmff94_lbfgs(
         });
     }
 
-    let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
-    let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
-    // See minimize_mmff94_full's comment: ring membership is topology-only,
-    // computed once per run rather than once per FD probe.
-    let ring_set = find_sssr(mol);
-    let rings = ring_set.rings();
-
-    let n = mol.atom_count();
+    let n = model.mmff_mol.atom_count();
     let initial = coords.to_vec();
 
     // Circular history buffer: (s_k = Δx, y_k = Δg, ρ_k = 1/(y·s))
     let mut history: LbfgsHistory = VecDeque::new();
 
-    let mut g = compute_gradient(&mmff_mol, coords, &types, &charges, rings, DELTA);
-    let mut f0 = total_energy(&mmff_mol, coords, &types, &charges, rings);
+    let mut g = compute_gradient_prepared(model, coords, DELTA);
+    let mut f0 = model.energy(coords);
 
     let mut iters = 0usize;
     let mut converged = false;
@@ -366,7 +477,7 @@ pub fn minimize_mmff94_lbfgs(
         // Armijo backtracking line search along p
         let gp: f64 = g.iter().zip(p.iter()).map(|(gi, pi)| dot3(*gi, *pi)).sum();
         let mut alpha = 1.0_f64;
-        let new_coords = loop {
+        let (new_coords, f_new) = loop {
             let trial: Vec<[f64; 3]> = coords
                 .iter()
                 .zip(p.iter())
@@ -378,15 +489,15 @@ pub fn minimize_mmff94_lbfgs(
                     ]
                 })
                 .collect();
-            let f_trial = total_energy(&mmff_mol, &trial, &types, &charges, rings);
+            let f_trial = model.energy(&trial);
             if f_trial <= f0 + C_ARMIJO * alpha * gp {
-                break trial;
+                break (trial, f_trial);
             }
             alpha *= TAU;
             if alpha < 1e-12 {
                 // Line search failed — take a tiny steepest descent step
                 let scale = 0.01 / max_g.max(1e-8);
-                break coords
+                let trial: Vec<[f64; 3]> = coords
                     .iter()
                     .zip(g.iter())
                     .map(|(c, gi)| {
@@ -397,12 +508,15 @@ pub fn minimize_mmff94_lbfgs(
                         ]
                     })
                     .collect();
+                let f_trial = model.energy(&trial);
+                break (trial, f_trial);
             }
         };
 
         // Compute new gradient
-        let g_new = compute_gradient(&mmff_mol, &new_coords, &types, &charges, rings, DELTA);
-        let f_new = total_energy(&mmff_mol, &new_coords, &types, &charges, rings);
+        let g_new = compute_gradient_prepared(model, &new_coords, DELTA);
+        // `f_new` is the accepted line-search energy above; do not evaluate
+        // the same coordinates a second time after computing the gradient.
 
         // Compute s = x_new - x, y = g_new - g
         let s: Vec<[f64; 3]> = new_coords
@@ -532,6 +646,254 @@ fn compute_gradient(
         }
     }
     grad
+}
+
+fn compute_gradient_prepared(
+    model: &Mmff94EnergyModel,
+    coords: &[[f64; 3]],
+    delta: f64,
+) -> Vec<[f64; 3]> {
+    let n = coords.len();
+    let mut grad = vec![[0.0_f64; 3]; n];
+    let mut work = coords.to_vec();
+    for i in 0..n {
+        for axis in 0..3 {
+            work[i][axis] += delta;
+            let ep = model.energy(&work);
+            work[i][axis] -= 2.0 * delta;
+            let em = model.energy(&work);
+            work[i][axis] += delta;
+            grad[i][axis] = (ep - em) / (2.0 * delta);
+        }
+    }
+    grad
+}
+
+fn build_bond_terms(mol: &Molecule, types: &[u8]) -> Vec<PreparedBond> {
+    mol.bonds()
+        .filter_map(|(_, bond)| {
+            let i = bond.atom1.0 as usize;
+            let j = bond.atom2.0 as usize;
+            let bt = bond_type_for(types[i], types[j], bond.order);
+            mmff94_bond_energy_resolved(bt, types[i], types[j]).map(|(params, _)| PreparedBond {
+                i,
+                j,
+                params,
+            })
+        })
+        .collect()
+}
+
+fn build_angle_terms(mol: &Molecule, types: &[u8], rings: &[Vec<AtomIdx>]) -> Vec<PreparedAngle> {
+    let mut terms = Vec::new();
+    for j_idx in 0..mol.atom_count() {
+        let j = AtomIdx(j_idx as u32);
+        let neighbors: Vec<usize> = mol.neighbors(j).map(|(nb, _)| nb.0 as usize).collect();
+        for (ii, &i) in neighbors.iter().enumerate() {
+            for &k in &neighbors[ii + 1..] {
+                let at = angle_type_for(mol, rings, i, j_idx, k, types);
+                let bt_ij =
+                    bond_type_for(types[i], types[j_idx], bond_order_between(mol, i, j_idx));
+                let bt_kj =
+                    bond_type_for(types[k], types[j_idx], bond_order_between(mol, k, j_idx));
+                let Some((bond_ij, _)) = mmff94_bond_energy_resolved(bt_ij, types[i], types[j_idx])
+                else {
+                    continue;
+                };
+                let Some((bond_kj, _)) = mmff94_bond_energy_resolved(bt_kj, types[k], types[j_idx])
+                else {
+                    continue;
+                };
+                let ring_size = is_angle_in_ring_of_size_3_or_4(mol, i, j_idx, k);
+                if let Some((params, _)) = mmff94_angle_energy_resolved(
+                    at,
+                    types[i],
+                    types[j_idx],
+                    types[k],
+                    bond_ij.r0,
+                    bond_kj.r0,
+                    ring_size,
+                ) {
+                    terms.push(PreparedAngle {
+                        i,
+                        j: j_idx,
+                        k,
+                        params,
+                    });
+                }
+            }
+        }
+    }
+    terms
+}
+
+fn build_torsion_terms(mol: &Molecule, types: &[u8]) -> Vec<PreparedTorsion> {
+    let mut terms = Vec::new();
+    for (_, bond) in mol.bonds() {
+        let j = bond.atom1.0 as usize;
+        let k = bond.atom2.0 as usize;
+        let nbrs_j: Vec<usize> = mol
+            .neighbors(bond.atom1)
+            .map(|(nb, _)| nb.0 as usize)
+            .collect();
+        let nbrs_k: Vec<usize> = mol
+            .neighbors(bond.atom2)
+            .map(|(nb, _)| nb.0 as usize)
+            .collect();
+        for &i in &nbrs_j {
+            if i == k {
+                continue;
+            }
+            for &l in &nbrs_k {
+                if l == j {
+                    continue;
+                }
+                let tt = torsion_type_for(mol, i, j, k, l, types[i], types[j], types[k], types[l]);
+                if let Some(params) =
+                    mmff94_torsion_energy(tt, types[i], types[j], types[k], types[l])
+                {
+                    terms.push(PreparedTorsion { i, j, k, l, params });
+                }
+            }
+        }
+    }
+    terms
+}
+
+fn prepared_bond_energy(coords: &[[f64; 3]], terms: &[PreparedBond]) -> f64 {
+    const KB_CONV: f64 = 143.9325;
+    const CS: f64 = 2.0;
+    terms
+        .iter()
+        .map(|term| {
+            let dr = dist(coords[term.i], coords[term.j]) - term.params.r0;
+            let cubic = 1.0 - CS * dr + (7.0 / 12.0) * CS * CS * dr * dr;
+            (KB_CONV * term.params.kb / 2.0) * dr * dr * cubic
+        })
+        .sum()
+}
+
+fn prepared_angle_energy(coords: &[[f64; 3]], terms: &[PreparedAngle]) -> f64 {
+    const KA_CONV: f64 = 0.043844;
+    const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+    terms
+        .iter()
+        .map(|term| {
+            let dt = cos_angle(coords[term.i], coords[term.j], coords[term.k]).acos() * RAD_TO_DEG
+                - term.params.theta0;
+            (KA_CONV * term.params.ka / 2.0) * dt * dt * (1.0 - 0.007 * dt)
+        })
+        .sum()
+}
+
+fn prepared_torsion_energy(coords: &[[f64; 3]], terms: &[PreparedTorsion]) -> f64 {
+    terms
+        .iter()
+        .map(|term| {
+            let phi = dihedral(
+                coords[term.i],
+                coords[term.j],
+                coords[term.k],
+                coords[term.l],
+            );
+            0.5 * term.params.v1 * (1.0 + phi.cos())
+                + 0.5 * term.params.v2 * (1.0 - (2.0 * phi).cos())
+                + 0.5 * term.params.v3 * (1.0 + (3.0 * phi).cos())
+        })
+        .sum()
+}
+
+fn build_nonbonded_pairs(mol: &Molecule) -> (VdwPairs, ElectrostaticPairs) {
+    let n = mol.atom_count();
+    let mut excluded = std::collections::HashSet::new();
+    for (_, bond) in mol.bonds() {
+        let i = bond.atom1.0 as usize;
+        let j = bond.atom2.0 as usize;
+        excluded.insert((i.min(j), i.max(j)));
+        for (neighbor, _) in mol.neighbors(bond.atom1) {
+            let k = neighbor.0 as usize;
+            excluded.insert((k.min(j), k.max(j)));
+        }
+        for (neighbor, _) in mol.neighbors(bond.atom2) {
+            let k = neighbor.0 as usize;
+            excluded.insert((i.min(k), i.max(k)));
+        }
+    }
+
+    let mut one_four = std::collections::HashSet::new();
+    for (_, bond) in mol.bonds() {
+        let j = bond.atom1.0 as usize;
+        let k = bond.atom2.0 as usize;
+        for (neighbor_j, _) in mol.neighbors(bond.atom1) {
+            let i = neighbor_j.0 as usize;
+            if i == k {
+                continue;
+            }
+            for (neighbor_k, _) in mol.neighbors(bond.atom2) {
+                let l = neighbor_k.0 as usize;
+                if l == j {
+                    continue;
+                }
+                let pair = (i.min(l), i.max(l));
+                if !excluded.contains(&pair) {
+                    one_four.insert(pair);
+                }
+            }
+        }
+    }
+
+    let mut vdw_pairs = Vec::new();
+    let mut electrostatic_pairs = Vec::new();
+    for i in 0..n {
+        for j in (i + 1)..n {
+            if excluded.contains(&(i, j)) {
+                continue;
+            }
+            vdw_pairs.push((i, j));
+            let scale = if one_four.contains(&(i, j)) {
+                0.75
+            } else {
+                1.0
+            };
+            electrostatic_pairs.push((i, j, scale));
+        }
+    }
+    (vdw_pairs, electrostatic_pairs)
+}
+
+fn vdw_energy_pairs(coords: &[[f64; 3]], types: &[u8], pairs: &[(usize, usize)]) -> f64 {
+    let mut energy = 0.0;
+    for &(i, j) in pairs {
+        let r = dist(coords[i], coords[j]);
+        if r > 10.0 {
+            continue;
+        }
+        if let Some((r_star, eps)) = mmff94_vdw_combined(types[i], types[j])
+            && r_star > 0.0
+            && eps > 0.0
+            && r > 0.01
+        {
+            let t = (1.07 * r_star) / (r + 0.07 * r_star);
+            let t7 = t.powi(7);
+            energy += eps * t7 * (t7 - 2.0);
+        }
+    }
+    energy
+}
+
+fn electrostatic_energy_pairs(
+    coords: &[[f64; 3]],
+    charges: &[f64],
+    pairs: &[(usize, usize, f64)],
+) -> f64 {
+    const COULOMB: f64 = 332.0716;
+    const DELTA: f64 = 0.05;
+    pairs
+        .iter()
+        .map(|&(i, j, scale)| {
+            scale * COULOMB * charges[i] * charges[j] / (dist(coords[i], coords[j]) + DELTA)
+        })
+        .sum()
 }
 
 // ─── Energy components ───────────────────────────────────────────────────────
@@ -1331,6 +1693,16 @@ mod tests {
             [0.630, -0.630, -0.630],
         ];
         (mol, coords)
+    }
+
+    #[test]
+    fn prepared_energy_model_matches_one_shot_api() {
+        let (mol, coords) = methane_mol();
+        let model = Mmff94EnergyModel::new(&mol).expect("prepare MMFF94 model");
+        let one_shot = mmff94_energy_breakdown(&mol, &coords).expect("one-shot energy");
+        let prepared = model.energy_breakdown(&coords);
+        assert!((prepared.total - one_shot.total).abs() < 1e-12);
+        assert!((model.energy(&coords) - one_shot.total).abs() < 1e-12);
     }
 
     fn butane_backbone() -> Molecule {

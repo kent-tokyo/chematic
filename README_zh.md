@@ -16,9 +16,9 @@
 **默认快速，设计安全的化学信息学库。**  
 纯 Rust · 零 C/C++ · Python · WebAssembly · [官方网站](https://chematic.io/) · [在线演示](https://kent-tokyo.github.io/chematic/playground/)
 
-### v1.0.2 范围
+### v1.0.3 范围
 
-v1.0.2 保持 v1.0.0 的兼容性边界，并加入显式氢价态校验修复以及
+v1.0.3 保持 v1.0.0 的兼容性边界，并加入显式氢价态校验修复以及
 canonical SMILES、SDF 热路径优化。CDXML/polymer、Python `RWMol`、
 aromaticity/CIP 与 Experimental 3D/MMFF94 的支持范围不变。基准数字仅适用于
 记录的语料、操作、硬件与配置；完整方法见[基准文档](docs/benchmark.md)。
@@ -298,6 +298,10 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 ---
 
 ## 近期开发
+
+**v1.0.3**（2026-09-04）：**MMFF94 / 3D 管线缓存与基准测试**
+- 增加可复用的 MMFF94 拓扑、bond/angle/torsion 与非键合 pair 缓存。
+- 增加 MMFF94、ETKDG 和 3D minimization 的本地 Criterion benchmark。
 
 **v1.0.2**（2026-09-04）：**canonical SMILES 与 SDF 加速、严格价态契约**
 - 在两个独立的 5,000 分子语料上重复测量 canonical SMILES，并单独测量 365 条记录的 SDF graph/property read 与 serialization-only write；结果仅代表记录的 macOS arm64 环境。

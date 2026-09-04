@@ -55,9 +55,9 @@ can vary slightly by toolchain and build environment.
 | IUPAC name generation | Partial (25+ classes) |
 | Pure-Rust InChI | Approximate (enable `native-inchi` feature for exact) |
 
-### v1.0.2 release boundary
+### v1.0.3 release boundary
 
-The v1.0.2 patch release retains the v1.0.0 documented bounded
+The v1.0.3 patch release retains the v1.0.0 documented bounded
 CDXML/polymer API, partial Python `RWMol` compatibility, fail-closed canonical
 identity, explicit aromaticity/CIP modes, and Experimental 3D/MMFF94. It adds
 the explicit-hydrogen valence correction and canonical/SDF throughput
@@ -220,7 +220,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v1.0.2
+# chematic v1.0.3
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -417,6 +417,12 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 ---
 
 ## Recent Development
+
+**v1.0.3** (2026-09-04): **MMFF94 / 3D pipeline caching and reproducible benchmarks**
+- Added reusable MMFF94 topology state and cached bonded/non-bonded terms for
+  repeated energy and L-BFGS evaluation.
+- Added local Criterion benchmarks for MMFF94 and ETKDG. Results are scoped to
+  the recorded macOS arm64 environment.
 
 **v1.0.2** (2026-09-04): **canonical SMILES and SDF throughput, stricter valence integration**
 - Canonical SMILES leads RDKit by 2.5% and 1.47× on two recorded 5,000-molecule macOS arm64 runs; SDF graph/property read and serialization-only write are about 10.5× and 10.4× faster on the scoped 365-record run.

@@ -16,9 +16,9 @@ Python・Rust・ブラウザ向けケモインフォマティクスライブラ�
 **デフォルトで速く、設計で安全なケモインフォマティクス。**  
 Pure Rust · C/C++ ゼロ · Python · WebAssembly · [公式サイト](https://chematic.io/) · [ライブデモ](https://kent-tokyo.github.io/chematic/playground/)
 
-### v1.0.2 の対応範囲
+### v1.0.3 の対応範囲
 
-v1.0.2 は、v1.0.0 の対応範囲を維持し、bounded な CDXML/polymer API、部分的な Python `RWMol`
+v1.0.3 は、v1.0.0 の対応範囲を維持し、bounded な CDXML/polymer API、部分的な Python `RWMol`
 互換、fail-closed canonical identity、明示的な aromaticity/CIP モード、
 Experimental の 3D/MMFF94 を公開契約とします。完全な任意構造 CDXML 編集、
 複雑な Markush/polymer 展開、完全な RDKit `RWMol` 互換、3D の完全な
@@ -319,6 +319,10 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 ---
 
 ## 最近の開発
+
+**v1.0.3**（2026-09-04）: **MMFF94 / 3D パイプラインのキャッシュ化と benchmark 追加**
+- MMFF94 の topology、bond/angle/torsion、非結合ペアを再利用する評価器を追加しました。
+- MMFF94、ETKDG、3D minimization のローカル Criterion benchmark を追加しました。
 
 **v1.0.2**（2026-09-04）: **canonical SMILES・SDF高速化と原子価契約の厳密化**
 - 2つの5,000分子corpusにおけるcanonical SMILESと、365-record SDFのgraph/property read・serialization-only writeを反復測定しました。数値はmacOS arm64上の限定された操作・corpusの結果であり、全環境での優位性主張ではありません。
