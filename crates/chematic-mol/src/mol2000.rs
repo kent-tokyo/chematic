@@ -1770,12 +1770,7 @@ M  END
                 mol.atom(AtomIdx(0)).isotope
             );
 
-            let sdf = write_sdf_record(
-                &mol,
-                &meta,
-                &[],
-                &std::collections::HashMap::new(),
-            );
+            let sdf = write_sdf_record(&mol, &meta, &[], &std::collections::HashMap::new());
             let records = parse_sdf_with_coords(&sdf).expect("SDF round-trip");
             assert_eq!(records.len(), 1);
             assert_eq!(
