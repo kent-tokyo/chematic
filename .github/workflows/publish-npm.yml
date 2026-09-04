@@ -71,6 +71,8 @@ jobs:
       - name: Validate npm credentials and publication state
         id: npm_state
         working-directory: crates/chematic-wasm/pkg
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
           package_name=$(node -p "require('./package.json').name")
