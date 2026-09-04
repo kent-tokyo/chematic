@@ -76,9 +76,11 @@ complete until the required measurement or external reproduction exists.
   exclude COSMolKit from the active comparison scope.
 - [x] Pin the current release, benchmark protocol, corpus hashes, and local
   validators; preserve historical measurements as historical records.
-- [ ] Add a checked-in capability matrix for RDKit, Open Babel, CDK, sdfrust,
+- [x] Add a checked-in capability matrix for RDKit, Open Babel, CDK, sdfrust,
   kekule, and chematic with `supported`, `partial`, `unsupported`, and
   `not_measured` states per operation.
+- [x] Add an offline capability-matrix validator that rejects stale or
+  incomplete engine inventories and invalid status values.
 - [ ] Add a scorecard validator that rejects stale release versions, missing
   corpus/configuration metadata, and claims derived from unsupported rows.
 

@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.3",
+  "scope": "Named workflow capability inventory; not a performance or quality benchmark.",
+  "excluded_comparators": ["cosmolkit"],
+  "allowed_states": ["supported", "partial", "unsupported", "not_measured"],
+  "engines": [
+    {"id": "chematic", "name": "chematic", "version_source": "workspace Cargo.toml"},
+    {"id": "rdkit", "name": "RDKit", "version_source": "pinned benchmark environment"},
+    {"id": "openbabel", "name": "Open Babel", "version_source": "obabel --version"},
+    {"id": "cdk", "name": "CDK", "version_source": "pinned benchmark environment"},
+    {"id": "sdfrust", "name": "sdfrust", "version_source": "Cargo metadata"},
+    {"id": "kekule", "name": "kekule", "version_source": "repository metadata"}
+  ],
+  "operations": [
+    {"id": "smiles", "category": "core", "status": {"chematic": "supported", "rdkit": "supported", "openbabel": "supported", "cdk": "supported", "sdfrust": "partial", "kekule": "supported"}},
+    {"id": "sdf_mol_io", "category": "interchange", "status": {"chematic": "supported", "rdkit": "supported", "openbabel": "supported", "cdk": "supported", "sdfrust": "supported", "kekule": "partial"}},
+    {"id": "broad_format_conversion", "category": "interchange", "status": {"chematic": "partial", "rdkit": "partial", "openbabel": "supported", "cdk": "partial", "sdfrust": "partial", "kekule": "partial"}},
+    {"id": "canonicalization_standardization", "category": "identity", "status": {"chematic": "partial", "rdkit": "supported", "openbabel": "partial", "cdk": "partial", "sdfrust": "not_measured", "kekule": "partial"}},
+    {"id": "descriptors_fingerprints", "category": "ml", "status": {"chematic": "partial", "rdkit": "supported", "openbabel": "partial", "cdk": "supported", "sdfrust": "supported", "kekule": "partial"}},
+    {"id": "smarts_mcs", "category": "queries", "status": {"chematic": "partial", "rdkit": "supported", "openbabel": "partial", "cdk": "supported", "sdfrust": "not_measured", "kekule": "partial"}},
+    {"id": "reactions", "category": "chemistry", "status": {"chematic": "partial", "rdkit": "supported", "openbabel": "partial", "cdk": "supported", "sdfrust": "not_measured", "kekule": "partial"}},
+    {"id": "three_d_force_field", "category": "3d", "status": {"chematic": "partial", "rdkit": "supported", "openbabel": "partial", "cdk": "partial", "sdfrust": "not_measured", "kekule": "supported"}},
+    {"id": "python_binding", "category": "bindings", "status": {"chematic": "supported", "rdkit": "supported", "openbabel": "partial", "cdk": "partial", "sdfrust": "partial", "kekule": "not_measured"}},
+    {"id": "browser_wasm", "category": "portable", "status": {"chematic": "supported", "rdkit": "unsupported", "openbabel": "unsupported", "cdk": "partial", "sdfrust": "not_measured", "kekule": "not_measured"}}
+  ]
+}
