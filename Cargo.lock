@@ -470,6 +470,7 @@ version = "1.0.2"
 dependencies = [
  "chematic-chem",
  "chematic-core",
+ "chematic-perception",
  "chematic-smarts",
  "chematic-smiles",
  "rustc-hash",

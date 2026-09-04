@@ -24,6 +24,7 @@ perf-instrumentation = []
 
 [dependencies]
 chematic-core   = { path = "../chematic-core",   version = "1.0.2" }
+chematic-perception = { path = "../chematic-perception", version = "1.0.2" }
 chematic-smiles = { path = "../chematic-smiles", version = "1.0.2" }
 chematic-smarts = { path = "../chematic-smarts", version = "1.0.2" }
 rustc-hash = "2"

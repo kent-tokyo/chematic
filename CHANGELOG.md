@@ -9,7 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-No unreleased changes.
+### Added
+
+- Added `chematic_rxn::PreparedReaction`, an immutable, thread-safe compiled
+  SMIRKS representation for repeated reaction matching and application without
+  reparsing the template. It can also consume caller-provided SSSR ring sets so
+  many templates can share target ring perception. Existing string-based APIs
+  remain compatible wrappers.
 
 ## [1.0.2] - 2026-09-04
 
