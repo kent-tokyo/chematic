@@ -10,7 +10,8 @@ use chematic_core::{AtomIdx, BondOrder, Molecule};
 use chematic_ff::{
     EnergyBreakdown, MinimizerError, Mmff94EnergyModel, NumericTypeError, OOP_SP2_TYPES, UffType,
     angle_type_for, assign_mmff94_numeric_types_with_view, assign_uff_types, bond_type_for,
-    is_angle_in_ring_of_size_3_or_4, minimize_uff as ff_minimize_uff, mmff94_angle_energy_resolved,
+    is_angle_in_ring_of_size_3_or_4, minimize_uff as ff_minimize_uff,
+    minimize_uff_with_constraint as ff_minimize_uff_with_constraint, mmff94_angle_energy_resolved,
     mmff94_bond_energy_resolved, mmff94_oop, mmff94_stbn, mmff94_torsion_energy,
     stretch_bend_type_for, torsion_no_term_by_design, torsion_type_for, uff_total_energy,
 };
@@ -2156,7 +2157,13 @@ fn rescue_with_distance_geometry_v2(
         // back to if the rescue doesn't pan out) -- it has no place in a successful
         // `UffBridgeRun`, which reports on the geometry that actually produced it.
         let retry_energy_before = uff_total_energy(mol, types, &retry_coord_vec);
-        let retry = ff_minimize_uff(mol, types, retry_coord_vec, max_iter);
+        let retry = if has_stereo && verify_stereo(mol, &v2_coords).is_fully_satisfied() {
+            ff_minimize_uff_with_constraint(mol, types, retry_coord_vec, max_iter, |candidate| {
+                verify_stereo(mol, &vec_to_coords(candidate)).is_fully_satisfied()
+            })
+        } else {
+            ff_minimize_uff(mol, types, retry_coord_vec, max_iter)
+        };
         let retry_coords_typed = vec_to_coords(&retry.coords);
         let mut accepted_coords = retry_coords_typed.clone();
         let mut stereo_verification = verify_stereo(mol, &accepted_coords);

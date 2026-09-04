@@ -598,6 +598,27 @@ pub fn minimize_uff(
     initial_coords: Vec<[f64; 3]>,
     max_iter: usize,
 ) -> UffMinimizeResult {
+    minimize_uff_with_constraint(mol, types, initial_coords, max_iter, |_| true)
+}
+
+/// Minimise UFF while rejecting candidate line-search steps that violate a
+/// caller-supplied geometry constraint.
+///
+/// The initial geometry must already satisfy `accept`; the predicate is
+/// evaluated only for proposed coordinates. Rejected candidates reduce the
+/// line-search step exactly like an unsound bond-length proposal, so this is a
+/// bounded, fail-closed constraint rather than a post-hoc correction. The
+/// callback must be deterministic and side-effect free.
+pub fn minimize_uff_with_constraint<F>(
+    mol: &Molecule,
+    types: &[(AtomIdx, UffType)],
+    initial_coords: Vec<[f64; 3]>,
+    max_iter: usize,
+    accept: F,
+) -> UffMinimizeResult
+where
+    F: Fn(&[[f64; 3]]) -> bool,
+{
     let mut coords = initial_coords;
     let mut step = 0.05_f64;
     let mut prev_energy = f64::MAX;
@@ -641,7 +662,7 @@ pub fn minimize_uff(
         // search reduce the step instead. This preserves the existing
         // fail-closed `sound` contract while preventing the optimizer from
         // knowingly propagating an unsound intermediate.
-        if new_energy < energy && is_sound_uff_geometry(mol, &new_coords) {
+        if new_energy < energy && is_sound_uff_geometry(mol, &new_coords) && accept(&new_coords) {
             coords = new_coords;
             if energy - new_energy < prev_energy * 1e-7 {
                 step *= 1.2;
@@ -741,6 +762,20 @@ mod tests {
             "minimisation should reduce energy: {e0} → {}",
             result.energy
         );
+    }
+
+    #[test]
+    fn constrained_minimizer_rejects_constraint_violating_steps() {
+        let mol = parse("CCO").unwrap();
+        let types = assign_uff_types(&mol);
+        let coords: Vec<[f64; 3]> = vec![[0.0, 0.0, 0.0], [2.5, 0.0, 0.0], [3.5, 1.2, 0.0]];
+        let initial = coords.clone();
+        let result = minimize_uff_with_constraint(&mol, &types, coords, 20, |candidate| {
+            candidate == initial.as_slice()
+        });
+        assert_eq!(result.coords, initial);
+        assert_eq!(result.energy, uff_total_energy(&mol, &types, &initial));
+        assert!(!result.converged);
     }
 
     #[test]
