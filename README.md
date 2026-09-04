@@ -627,7 +627,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v1.0.2)
+├── Cargo.toml                    workspace root (v1.0.3)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)

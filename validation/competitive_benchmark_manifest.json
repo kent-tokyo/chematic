@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "prepared",
-  "target_version": "1.0.2",
+  "target_version": "1.0.3",
   "purpose": "Operation-level competitive benchmark; preparation only, no new measured claim.",
   "engines": [
     {"id": "chematic", "required": true, "version_source": "workspace Cargo.toml"},
