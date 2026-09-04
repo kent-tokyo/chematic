@@ -5,7 +5,7 @@ Pure Rust molecular structure perception — **ring detection, aromaticity, ster
 ## Features
 
 ### Ring Detection (SSSR)
-- **Balducci-Pearlman Algorithm**: Efficiently finds smallest set of smallest rings
+- **Horton minimum cycle basis**: deterministic smallest-ring basis
 - **Gaussian Elimination (GF(2))**: Linear algebra over finite fields
 - Usage: `find_sssr(&mol) -> RingSet`
 
@@ -29,26 +29,6 @@ Pure Rust molecular structure perception — **ring detection, aromaticity, ster
 - **Implicit Hydrogens**: OpenSMILES valence rules
 - **Formal Charges**: Automatic charge assignment
 - **Heteroatoms**: N, O, S, P, halogens with correct aromaticity
-
-## Version History
-
-**v0.1.93** (2026-06-12):
-- NEW: Full multi-sphere CIP priority module (`cip_priority` module)
-- Hierarchical sphere-by-sphere comparison with phantom atoms for double bonds
-- Atomic mass tiebreaker (Rule 4), isotope handling (Rule 2)
-- Correct R/S assignment for chiral centers with more complex stereochemistry
-
-**v0.1.92** (2026-06-12):
-- InChI `/t` (tetrahedral) and `/b` (E/Z) stereo layer parsing
-- CIP code assignment from InChI round-trip
-
-**v0.1.91** (2026-06-12):
-- Enhanced ECFP radii and Ertl functional group detection
-- True structural fragment signatures
-
-**v0.1.32** (2026-06-07):
-- Antiaromaticity detection (4n systems like cyclobutadiene)
-- Improved ring classification APIs
 
 ## Quick Start
 
@@ -100,7 +80,7 @@ let mol_with_stereo = assign_stereo_from_2d(&mol)?;
 
 | Algorithm | Purpose | Complexity |
 |-----------|---------|-----------|
-| Balducci-Pearlman + GF(2) | SSSR ring detection | O(n³) |
+| Horton candidates + GF(2) | SSSR ring detection | graph-dependent; bounded by the implementation |
 | Hückel 4n+2 Rule | Aromaticity classification | O(n) |
 | CIP Priority Rules | R/S stereochemistry | O(n log n) |
 | E/Z Geometry Detection | Double-bond stereochemistry | O(n) |
@@ -112,21 +92,10 @@ let mol_with_stereo = assign_stereo_from_2d(&mol)?;
 
 **Zero FFI**: Pure Rust, WASM-compatible.
 
-## Testing
+## Validation
 
-```bash
-cargo test --lib
-# 34 tests: SSSR edge cases, aromaticity, stereochemistry
-```
-
-## Version History
-
-**v0.1.32** (2026-06-07):
-- NEW: Antiaromaticity detection (4n Hückel rule)
-- NEW: `ring_classifications()`, `antiaromatic_rings()`, `has_antiaromaticity()` methods
-- 16 new aromaticity tests (including antiaromatic systems)
+Run `cargo test -p chematic-perception`. Model choices, differential results, and known residuals are documented in [`docs/validation.md`](../../docs/validation.md) and [`docs/compatibility-scope.md`](../../docs/compatibility-scope.md). Release history is maintained in the repository [`CHANGELOG.md`](../../CHANGELOG.md).
 
 ## License
 
 MIT OR Apache-2.0
-

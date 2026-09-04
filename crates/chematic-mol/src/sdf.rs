@@ -448,8 +448,8 @@ pub fn read_sdf_conformer_ensembles(input: &str) -> Result<Vec<ConformerEnsemble
 /// errors are returned as `Err` items so the caller can decide to skip or stop.
 pub struct SdfFileReader<R: std::io::BufRead> {
     reader: R,
-    block: String,
-    line: String,
+    block: Vec<u8>,
+    line: Vec<u8>,
     done: bool,
     limits: SdfParseLimits,
     bytes_read: usize,
@@ -505,8 +505,8 @@ impl<R: std::io::BufRead> SdfFileReader<R> {
     fn with_limits_and_diagnostics(reader: R, limits: SdfParseLimits, diagnostics: bool) -> Self {
         Self {
             reader,
-            block: String::with_capacity(2048),
-            line: String::new(),
+            block: Vec::with_capacity(2048),
+            line: Vec::new(),
             done: false,
             limits,
             bytes_read: 0,
@@ -528,7 +528,7 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
 
         loop {
             self.line.clear();
-            match self.reader.read_line(&mut self.line) {
+            match self.reader.read_until(b'\n', &mut self.line) {
                 Err(e) => {
                     self.done = true;
                     return Some(Err(MolParseError::Io(e.to_string())));
@@ -536,7 +536,7 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
                 Ok(0) => {
                     // EOF
                     self.done = true;
-                    if self.block.trim().is_empty() {
+                    if self.block.iter().all(u8::is_ascii_whitespace) {
                         return None;
                     }
                     // Trailing block without $$$$ delimiter — parse it.
@@ -560,16 +560,17 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
                             limit: self.limits.max_input_bytes,
                         }));
                     }
-                    let trimmed = self.line.trim_end_matches(['\r', '\n']);
-                    if trimmed == "$$$$" {
+                    let trimmed = self.line.strip_suffix(b"\n").unwrap_or(&self.line);
+                    let trimmed = trimmed.strip_suffix(b"\r").unwrap_or(trimmed);
+                    if trimmed == b"$$$$" {
                         break;
                     }
-                    self.block.push_str(&self.line);
+                    self.block.extend_from_slice(&self.line);
                 }
             }
         }
 
-        if self.block.trim().is_empty() {
+        if self.block.iter().all(u8::is_ascii_whitespace) {
             // Empty block (e.g. two consecutive $$$$) — advance to next.
             return self.next();
         }
@@ -592,15 +593,21 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
         }
         self.records_read += 1;
 
-        let data_part = self
-            .block
+        let block = match std::str::from_utf8(&self.block) {
+            Ok(block) => block,
+            Err(error) => {
+                self.done = true;
+                return Some(Err(MolParseError::Io(error.to_string())));
+            }
+        };
+        let data_part = block
             .find("M  END")
-            .map(|pos| &self.block[pos + 6..])
+            .map(|pos| &block[pos + 6..])
             .unwrap_or("");
         let properties = parse_sd_fields(data_part);
 
         if !self.diagnostics {
-            let (mol, meta) = match parse_mol_fast(&self.block) {
+            let (mol, meta) = match parse_mol_fast(block) {
                 Ok(parsed) => parsed,
                 Err(e) => return Some(Err(e)),
             };
@@ -619,7 +626,7 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
         }
 
         // Reuse the diagnostic-complete parse path for the default reader.
-        let report = match read_mol_with_diagnostics(&self.block) {
+        let report = match read_mol_with_diagnostics(block) {
             Ok(report) => report,
             Err(e) => return Some(Err(e)),
         };
@@ -771,6 +778,20 @@ $$$$
         assert_eq!(records.len(), 2);
         assert_eq!(records[0].mol.atom_count(), 2); // mol_a: 2 C atoms
         assert_eq!(records[1].mol.atom_count(), 3); // mol_b: C, N, O
+    }
+
+    #[test]
+    fn sdf_file_reader_rejects_invalid_utf8_record() {
+        use std::io::{BufReader, Cursor};
+
+        let mut input = MOL_A.as_bytes().to_vec();
+        input.extend_from_slice(b"> <bad>\nvalue ");
+        input.push(0xff);
+        input.extend_from_slice(b"\n\n$$$$\n");
+
+        let mut reader = SdfFileReader::fast(BufReader::new(Cursor::new(input)));
+        assert!(matches!(reader.next(), Some(Err(MolParseError::Io(_)))));
+        assert!(reader.next().is_none());
     }
 
     #[test]

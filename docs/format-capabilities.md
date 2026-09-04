@@ -468,15 +468,15 @@ disambiguate by crate, not by name alone:
 ### LAMMPS dump/trajectory
 
 - **Rust**: `chematic_mol::{parse_lammps_dump_frame, parse_lammps_dump_frame_with_limits, write_lammps_dump_frame, write_lammps_trajectory, box_bounds_to_true, true_to_box_bounds, LammpsDumpFrame, LammpsDumpReader, LammpsDumpParseLimits, LammpsDumpError}`.
-- **Python**: `parse_lammps_dump_frame`, `parse_lammps_dump_all` (**materializes the whole trajectory** — does not expose `LammpsDumpReader`'s streaming; a disclosed scope choice, already stated in CHANGELOG), `write_lammps_dump_frame`, `write_lammps_trajectory`, `box_bounds_to_true`, `true_to_box_bounds`; pyclass `LammpsDumpFrame` (`.column()`, `.cartesian_positions()`).
+- **Python**: `parse_lammps_dump_frame`, `parse_lammps_dump_all` (**materializes the whole trajectory** — does not expose `LammpsDumpReader`'s streaming; a documented scope choice), `write_lammps_dump_frame`, `write_lammps_trajectory`, `box_bounds_to_true`, `true_to_box_bounds`; pyclass `LammpsDumpFrame` (`.column()`, `.cartesian_positions()`).
 - **WASM**: `lammps_dump_frame_to_json_str`, `lammps_trajectory_to_json` (**also materializes, does not stream** — same disclosed choice), `write_lammps_dump_frame_json`, `write_lammps_trajectory_json`, `lammps_dump_cartesian_positions_json`, plus typed-array `lammps_dump_rows_f64`, `lammps_dump_cartesian_positions_f64`.
 - **Streaming**: `LammpsDumpReader<R: BufRead>` is a **true streaming
   `Iterator`** over any `BufRead` — reads and yields one frame at a time
   without holding the whole trajectory in memory. Together with
   `SdfFileReader`, this is one of two `BufRead`-backed streaming readers
-  among these 15 Rust formats, and the only one whose Python/WASM bindings
+  among these documented Rust formats, and the only one whose Python/WASM bindings
   both deliberately materialize instead of streaming (a disclosed
-  trade-off, not an oversight — see CHANGELOG `[0.18.0]`/`[0.17.0]`).
+  trade-off, not an oversight).
 - **Box bounds**: triclinic box-bounds↔true-box conversion
   (`box_bounds_to_true`/`true_to_box_bounds`) independently verified
   against LAMMPS's own documentation. `LammpsBox` is reused from the

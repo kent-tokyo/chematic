@@ -5,7 +5,7 @@ Pure Rust molecular file format reader/writer — **SDF, MOL V2000/V3000, CML, C
 ## Features
 
 ### MOL Format Support
-- **V2000 Parser/Writer**: Full support with `parse_mol` / `write_mol`
+- **V2000 Parser/Writer**: bounded core CTAB support with `parse_mol` / `write_mol`
 - **V2000 with Coords**: 2D coordinates preserved via `parse_mol_with_coords` / `write_mol_with_coords`
 - **V3000 Parser/Writer**: Extended blocks (CTAB, ATOM, BOND, COLLECTION)
 - **V3000 with Coords** (NEW in v0.1.32): 2D coordinates now recovered via `parse_mol_v3000_with_coords`
@@ -24,7 +24,8 @@ Pure Rust molecular file format reader/writer — **SDF, MOL V2000/V3000, CML, C
   - SVG rendering requires Y-negation: `svg_y = -cml_y`
 
 ### CDXML (ChemDraw XML)
-- **Parser**: ChemDraw XML format support
+- **Parser/Writer**: molecular read/write plus a loss-preserving, bounded
+  document API. This is not a complete ChemDraw object model.
 - **Y-Coordinate System** (DOCUMENTED in v0.1.32):
   - CDXML uses **ChemDraw Y-down** (Y increases downward, SVG-compatible)
   - No Y-axis conversion needed for SVG rendering
@@ -140,7 +141,7 @@ println!("{}", mol_str);  // V2000 format
 | MOL V3000 | ✅ | ✅ | — | Extended atoms, COLLECTION |
 | SDF (multi) | ✅ | ✅ | ✅ | Per-record properties |
 | CML | ✅ | ✅ | ✅ | Y-up convention (documented) |
-| CDXML | ✅ | — | ✅ | Y-down convention (documented) |
+| CDXML | ✅ | ✅ | ✅ | Molecular writer plus bounded loss-preserving document edits; not complete ChemDraw parity |
 | MDL RXN | ✅ | ✅ | — | V2000 reactants/products |
 | ChemicalJSON (.cjson) | ✅ | ✅ | ✅ (3D) | Avogadro 2, MolSSI Open Chemistry |
 
@@ -176,37 +177,9 @@ fn parse_any(input: &str) -> Result<(), Box<dyn Error>> {
 
 **Zero FFI**: No rdkit-sys, no OpenBabel, no C/C++ libraries.
 
-## Performance
+## Validation
 
-| Format | Size | Parse Time | Notes |
-|--------|------|-----------|-------|
-| V2000 (100 atoms) | ~5 KB | ~100 µs | Typical molecule |
-| V3000 (200 atoms) | ~15 KB | ~200 µs | Extended format |
-| SDF (1000 mols) | ~5 MB | ~500 ms | Streaming reader |
-| CML (50 atoms) | ~10 KB | ~50 µs | XML parsing |
-
-## Testing
-
-```bash
-cargo test --lib
-# 63 tests covering all formats, coordinates, round-trips
-```
-
-## Version History
-
-**v0.1.93** (2026-06-12):
-- Integrated with full multi-sphere CIP stereochemistry
-- Improved stereo-group handling in molecular round-trips
-
-**v0.1.32** (2026-06-07):
-- NEW: `parse_mol_v3000_with_coords()` recovers 2D coordinates from V3000 atom blocks
-- NEW: Y-coordinate system documentation (CML, CDXML, compute_layout)
-- NEW: Error trait implementations (CmlError, CdxmlError, Mol2Error, RxnParseError)
-- 2 new V3000 coordinate tests
-
-**v0.1.30** (2026-06-07):
-- V3000 stereo-group COLLECTION support
-- Full V3000 line-continuation handling
+Run `cargo test -p chematic-mol`. Exact format coverage, round-trip semantics, coordinate handling, and resource limits are maintained in [`docs/format-capabilities.md`](../../docs/format-capabilities.md). Performance measurements are indexed in [`benchmarks/README.md`](../../benchmarks/README.md); release history is in [`CHANGELOG.md`](../../CHANGELOG.md).
 
 ## License
 
@@ -215,4 +188,3 @@ MIT OR Apache-2.0
 ## Contributing
 
 Contributions welcome! File format issues, coordinate system problems, or new format support.
-

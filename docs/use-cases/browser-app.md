@@ -8,7 +8,7 @@ You want to ship a chemistry tool to users who won't install anything — a web 
 
 chematic compiles to WebAssembly at **3.30 MB raw / 1.21 MB gzip** (v1.0.2 candidate,
 measured 2026-09-04 with `wasm-pack 0.13.1` + `wasm-opt 130 -O3`; see the
-[artifact record](../../benchmarks/2026-09-04-wasm-size.md)) — roughly 2.1× smaller than the
+[artifact record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-wasm-size.md)) — roughly 2.1× smaller than the
 pinned RDKit.js raw-size comparator. No server required: descriptor calculation, fingerprint
 generation, and similarity search run entirely in the browser, offline-capable after first load.
 
@@ -138,10 +138,10 @@ document.getElementById("file-input").addEventListener("change", async (e) => {
 | Bundle size | 3.30 MB raw / 1.21 MB gzip | 6.91 MB raw (`RDKit_minimal.wasm`; gzip not independently measured) |
 
 The chematic bundle was measured 2026-09-04 from the v1.0.2 candidate (see the
-[artifact record](../../benchmarks/2026-09-04-wasm-size.md)). Per-operation, in-browser timings
+[artifact record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-wasm-size.md)). Per-operation, in-browser timings
 (SMILES parse, ECFP4, Tanimoto)
 previously listed here were never independently reconfirmed and have been removed rather than
-repeated as fact — see [`benchmarks/2026-07-17.md`](../../benchmarks/2026-07-17.md)'s own notes,
+repeated as fact — see [`benchmarks/2026-07-17.md`](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-07-17.md)'s own notes,
 which flag this exact gap. The `python`/Rust-native throughput figures elsewhere in this repo
 (e.g. [`docs/benchmark.md`](../benchmark.md)) are measured and reproducible, but do not
 transfer directly to WASM-in-browser numbers, which have different call overhead.

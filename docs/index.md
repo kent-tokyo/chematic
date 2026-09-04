@@ -15,7 +15,7 @@ same codebase. No backend required for supported browser workflows.</p>
 <p class="chm-links-row">
   <a href="https://github.com/kent-tokyo/chematic">View on GitHub</a>
   <a href="use-cases/browser-app/">Read the browser integration guide</a>
-  <a href="rdkit-comparison/#wasm-deployment">View benchmark methodology</a>
+  <a href="rdkit-comparison/#wasm-artifact-size">View benchmark methodology</a>
 </p>
 
 </div>
@@ -39,7 +39,7 @@ something chematic does on your behalf.)
 
 **Lightweight deployment.** The WASM bundle is **3.30 MB raw / 1.21 MB gzip**, measured
 2026-09-04 from the v1.0.2 release candidate (`wasm-pack 0.13.1` +
-`wasm-opt 130 -O3`) — see the [artifact record](../benchmarks/2026-09-04-wasm-size.md)
+`wasm-opt 130 -O3`) — see the [artifact record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-wasm-size.md)
 for the digest and reproduction commands.
 
 **One Rust core, multiple interfaces.** The same `chematic-*` Rust crates back the native Rust
@@ -158,10 +158,12 @@ measured. Full detail, including where chematic is weaker: [Detailed RDKit compa
 
 ## Validation
 
-Descriptor accuracy is measured against RDKit on a 4,999-molecule ChEMBL-derived corpus:
-MW, HBA, HBD, TPSA, LogP (Crippen), molar refractivity, Fsp3, and ring/stereocenter counts all
-reach 100% agreement (LogP within float64 rounding error). Full breakdown, known residuals, and
-reproduction commands: [Validation report](validation.md).
+Descriptor accuracy is measured against RDKit on a 4,999-molecule ChEMBL-derived corpus.
+Molecular weight reaches 99.82% within ±0.01 Da; HBA, HBD, TPSA, LogP
+(Crippen), molar refractivity, Fsp3, and the documented ring metrics reach
+100% at their stated tolerances. Stereocenter agreement depends on the selected
+oracle. Full breakdown, known residuals, and reproduction commands:
+[Validation report](validation.md).
 
 ---
 

@@ -10,6 +10,7 @@ use std::io::BufReader;
 use std::time::{Duration, Instant};
 
 use chematic_core::Molecule;
+use chematic_mol::mol2000::write_sdf_record_into;
 use chematic_mol::{MolMetadata, SdfFileReader, write_mol_with_coords, write_sdf_record};
 
 fn baseline_record(mol: &Molecule, meta: &MolMetadata, props: &HashMap<String, String>) -> String {
@@ -37,6 +38,22 @@ fn measure(
             } else {
                 baseline_record(mol, meta, props)
             };
+            bytes = bytes.wrapping_add(black_box(record.len()));
+        }
+    }
+    (started.elapsed(), bytes)
+}
+
+fn measure_reused(
+    records: &[(Molecule, MolMetadata, HashMap<String, String>)],
+    repeats: usize,
+) -> (Duration, usize) {
+    let started = Instant::now();
+    let mut bytes = 0usize;
+    let mut record = String::new();
+    for _ in 0..repeats {
+        for (mol, meta, props) in records {
+            write_sdf_record_into(&mut record, mol, meta, &[], props);
             bytes = bytes.wrapping_add(black_box(record.len()));
         }
     }
@@ -75,6 +92,7 @@ fn main() {
 
     let mut baseline = Vec::with_capacity(rounds);
     let mut optimized = Vec::with_capacity(rounds);
+    let mut reused = Vec::with_capacity(rounds);
     let mut expected_bytes = None;
     for round in 0..rounds {
         let (first_optimized, second_optimized) = if round % 2 == 0 {
@@ -98,17 +116,23 @@ fn main() {
                 baseline.push(elapsed);
             }
         }
+        let (elapsed, bytes) = measure_reused(&records, repeats);
+        assert_eq!(bytes, expected_bytes.expect("one serializer measurement"));
+        reused.push(elapsed);
     }
 
     let baseline = median(&mut baseline);
     let optimized = median(&mut optimized);
+    let reused = median(&mut reused);
     let operations = records.len() * repeats;
     println!(
-        "records={} repeats={} baseline_us_per_record={:.3} optimized_us_per_record={:.3} speedup_x={:.3}",
+        "records={} repeats={} baseline_us_per_record={:.3} optimized_us_per_record={:.3} reused_us_per_record={:.3} existing_to_reused_speedup_x={:.3} historical_to_reused_speedup_x={:.3}",
         records.len(),
         repeats,
         baseline.as_secs_f64() * 1e6 / operations as f64,
         optimized.as_secs_f64() * 1e6 / operations as f64,
-        baseline.as_secs_f64() / optimized.as_secs_f64(),
+        reused.as_secs_f64() * 1e6 / operations as f64,
+        optimized.as_secs_f64() / reused.as_secs_f64(),
+        baseline.as_secs_f64() / reused.as_secs_f64(),
     );
 }

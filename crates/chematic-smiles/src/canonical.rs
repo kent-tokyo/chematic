@@ -771,6 +771,13 @@ impl<'a> CanonicalWriter<'a> {
             .any(|(_, b)| mol.bond(b).order != BondOrder::Double)
     }
 
+    #[inline]
+    fn substituent_count(mol: &Molecule, end: AtomIdx) -> usize {
+        mol.neighbors(end)
+            .filter(|&(_, b)| mol.bond(b).order != BondOrder::Double)
+            .count()
+    }
+
     /// Non-double-bond neighbors of `end` — an alkene carbon's up-to-two
     /// sigma substituents. Filtered by bond order, not by comparing against
     /// a specific double-bond `BondIdx`, so an allene/cumulene terminus
@@ -836,8 +843,9 @@ impl<'a> CanonicalWriter<'a> {
             .bonds()
             .filter(|(_, bond)| bond.order == BondOrder::Double)
             .filter(|(_, bond)| {
-                Self::end_has_substituent(mol, bond.atom1)
-                    && Self::end_has_substituent(mol, bond.atom2)
+                let count1 = Self::substituent_count(mol, bond.atom1);
+                let count2 = Self::substituent_count(mol, bond.atom2);
+                count1 > 0 && count2 > 0 && (count1 == 2 || count2 == 2)
             })
             .collect();
         if candidates.is_empty() {
@@ -878,7 +886,7 @@ impl<'a> CanonicalWriter<'a> {
                 continue;
             }
             for end in [bond.atom1, bond.atom2] {
-                if Self::substituents(mol, end).len() == 2 {
+                if Self::substituent_count(mol, end) == 2 {
                     ends.insert(end);
                 }
             }

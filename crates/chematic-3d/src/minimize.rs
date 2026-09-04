@@ -1230,8 +1230,9 @@ pub enum ForceFieldBridgeError {
     /// large relative to the common `Ok` path).
     MissingParameters(Box<Mmff94CoverageReport>),
     /// The minimizer ran (coverage/typing succeeded) but produced a
-    /// geometry that is not actually sound — NaN/Inf coordinates, a
-    /// catastrophic bond blow-up, or an excessive residual force. Before
+    /// geometry that is not acceptable — NaN/Inf coordinates, a
+    /// catastrophic bond blow-up, an excessive residual force, or a declared
+    /// stereo contradiction. Before
     /// this variant existed, every one of these cases was returned as
     /// `Ok(PolicyMinimizeResult { converged: false, .. })` — a result a
     /// careless caller could mistake for success (independent review found
@@ -1258,12 +1259,18 @@ pub enum MinimizationFailureReason {
     /// geometry that isn't bond-length-blown-up but is still nowhere near a
     /// force-balanced minimum.
     ExcessiveResidualForce,
+    /// The geometry is finite and bond-length-sound, but contradicts at least
+    /// one tetrahedral or E/Z declaration on the input molecule. This is used
+    /// by the stereo-aware UFF bridge so a legacy starting geometry can never
+    /// be returned as a successful minimization after silently inverting a
+    /// declared stereo element.
+    StereoConstraintViolation,
 }
 
 /// Evidence attached to [`ForceFieldBridgeError::MinimizationFailed`].
-/// `converged`/`iterations` are carried here for diagnostics but — per
-/// [`check_minimization_soundness`]'s doc — are NOT what triggered the
-/// failure; `reason` (plus `worst_bond_length`/`max_residual_force`) is.
+/// `converged`/`iterations` are carried here for diagnostics but are not by
+/// themselves what triggered the failure; `reason` identifies the geometry
+/// or stereo gate that did.
 #[derive(Debug, Clone)]
 pub struct MinimizationFailureDetail {
     pub policy: ForceFieldPolicy,
@@ -1287,20 +1294,16 @@ pub struct MinimizationFailureDetail {
     /// This `MinimizationFailureDetail` always describes the ORIGINAL attempt's
     /// failure (the caller's own coordinates) — never the retry's. This flag only
     /// records whether a retry was even attempted before that original failure was
-    /// returned: `true` means the original attempt failed with
-    /// `CatastrophicBondBlowup`/`NonFiniteCoordinates`, `embed_distance_geometry_v2`
-    /// was tried as a rescue, and that rescue was **not accepted** (its own result
-    /// was unsound, stereo-violating, or embedding itself errored) — so the
-    /// original failure is what's being returned, annotated to show a rescue was
-    /// tried and didn't help. `false` means either no rescue was attempted at all
-    /// (wrong policy, or an `ExcessiveResidualForce`-only failure — issues #185/#188
-    /// measured this rescue helping catastrophic bond blowup specifically, not
-    /// residual-force-only unsoundness, see [`run_uff_bridge`]'s doc for why the
-    /// rescue is scoped this narrowly) or a rescue *was* attempted and accepted, in
-    /// which case this function returns `Ok`, not this error type, and this field is
-    /// moot. Lets a caller distinguish "no rescue was even attempted" from "the
-    /// rescue was attempted and did not help either" — never "the retry's own
-    /// failure reason," which this field does not carry.
+    /// returned: `true` means the original attempt failed with catastrophic/non-
+    /// finite geometry or a declared-stereo violation,
+    /// `embed_distance_geometry_v2` was tried as a rescue, and that rescue was **not
+    /// accepted** (its own result was unsound, stereo-violating, or embedding itself
+    /// errored). `false` means either no rescue was attempted at all (wrong policy,
+    /// or an `ExcessiveResidualForce`-only failure) or a rescue was accepted, in
+    /// which case this function returns `Ok` and this field is moot. Lets a caller
+    /// distinguish "no rescue was even attempted" from "the rescue was attempted
+    /// and did not help either" — never "the retry's own failure reason," which
+    /// this field does not carry.
     pub distance_geometry_v2_retry_attempted: bool,
 }
 
@@ -1313,11 +1316,12 @@ pub struct MinimizationFailureDetail {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UffStartingGeometry {
     /// The coordinates the caller passed in were used to seed minimization
-    /// and that attempt was already sound — no re-embedding was attempted.
+    /// and that attempt was already sound and consistent with every declared
+    /// stereo element — no re-embedding was attempted.
     AsProvided,
-    /// The caller-provided coordinates produced a catastrophically unsound
-    /// result; `embed_distance_geometry_v2` was used to re-seed instead, and
-    /// that retry was sound.
+    /// The caller-provided coordinates produced an unsound or declared-stereo-
+    /// violating result; `embed_distance_geometry_v2` was used to re-seed
+    /// instead, and that retry was sound and stereo-satisfied.
     ReplacedWithDistanceGeometryV2,
 }
 
@@ -1340,7 +1344,7 @@ impl std::fmt::Display for ForceFieldBridgeError {
             ),
             ForceFieldBridgeError::MinimizationFailed(d) => write!(
                 f,
-                "{:?} minimization produced an unsound geometry: {:?} \
+                "{:?} minimization produced an unacceptable geometry: {:?} \
                  (converged={}, iterations={}, worst_bond_length={:.2} Å, \
                  max_residual_force={:.2} kcal/mol/Å)",
                 d.policy,
@@ -1998,8 +2002,8 @@ struct UffBridgeRun {
 
 /// Issues #185/#188 (UFF minimizer catastrophic bond-length blowup on some
 /// starting geometries, sound convergence on others, at the shared default
-/// 200-iteration budget): tries the caller-provided `coords` first, exactly
-/// as before. A retry occurs for a catastrophic/non-finite result, or when
+/// 200-iteration budget): tries the caller-provided `coords` first. A retry
+/// occurs for a catastrophic/non-finite result, a declared-stereo violation, or when
 /// chematic-ff reports that it rejected an energy-decreasing but unsound
 /// proposal during line search. The latter preserves the distinction between
 /// an ordinary residual-force failure and a failure caused by the bounded
@@ -2027,6 +2031,9 @@ fn run_uff_bridge(
     let max_residual_force =
         fd_max_gradient(&result.coords, |c| uff_total_energy(mol, &types, c), 1e-4);
 
+    let first_coords = vec_to_coords(&result.coords);
+    let first_preserves_stereo = !crate::distance_geometry_v2::mol_has_declared_stereo(mol)
+        || crate::stereo_constraints::verify_stereo(mol, &first_coords).is_fully_satisfied();
     match check_minimization_soundness(
         mol,
         &result.coords,
@@ -2036,8 +2043,8 @@ fn run_uff_bridge(
         max_residual_force,
         false,
     ) {
-        Ok(()) => Ok(UffBridgeRun {
-            coords: vec_to_coords(&result.coords),
+        Ok(()) if first_preserves_stereo => Ok(UffBridgeRun {
+            coords: first_coords,
             energy_before,
             energy_after,
             converged: result.converged,
@@ -2045,8 +2052,23 @@ fn run_uff_bridge(
             max_residual_force,
             starting_geometry: UffStartingGeometry::AsProvided,
         }),
+        Ok(()) => rescue_with_distance_geometry_v2(
+            mol,
+            &types,
+            max_iter,
+            Box::new(MinimizationFailureDetail {
+                policy: ForceFieldPolicy::UffOnly,
+                reason: MinimizationFailureReason::StereoConstraintViolation,
+                converged: result.converged,
+                iterations: result.iterations,
+                max_residual_force,
+                worst_bond_length: worst_bond_length_vec(mol, &result.coords),
+                distance_geometry_v2_retry_attempted: false,
+            }),
+        ),
         Err(ForceFieldBridgeError::MinimizationFailed(detail))
-            if result.rejected_unsound_step
+            if !first_preserves_stereo
+                || result.rejected_unsound_step
                 || matches!(
                     detail.reason,
                     MinimizationFailureReason::CatastrophicBondBlowup
@@ -2079,38 +2101,19 @@ fn run_uff_bridge(
 /// a bond-length blowup while silently destroying declared stereochemistry
 /// is a worse outcome than the honest failure it replaced, so this bridge
 /// still returns the original failure when repair and re-verification do not
-/// succeed. Only the rescue's own (new) behavior is held to this bar; the
-/// unrelated, pre-existing fact that this bridge's *first*-attempt path never
-/// verifies stereo is a known, separate, out-of-scope gap (already disclosed
-/// in `examples/
-/// cf_integration_smoke_test.rs`'s closing note), not one this fix
-/// introduces or is scoped to close.
+/// succeed. The first-attempt path is held to the same stereo gate: a sound
+/// but stereo-violating result triggers this rescue instead of being returned.
 ///
-/// **Revised (issue #210, 2026-08-24)**: the embed call below now sets
-/// `enforce_chirality`/`materialize_implicit_h_for_chirality` (both `true`,
-/// gated on [`mol_has_declared_stereo`]) rather than plain
-/// `EmbedParameters::default()`. The original rationale for defaults —
-/// "`enforce_chirality: true` would make embedding refuse any molecule with
-/// declared stereo outright" — was stale even before this change (that flag
-/// repairs via `repair_stereo` before failing, not an unconditional refusal);
-/// what actually blocked ring-fused declared stereocenters (testosterone,
-/// cholesterol) specifically was `repair_tetrahedral_center` having no
-/// bridge-eligible substituent to reflect when every real neighbor is a ring
-/// atom — exactly the gap issue #291's `materialize_implicit_h_for_chirality`
-/// closed. **Measured directly** against the 58-molecule corpus this
-/// bridge's own tests use (`examples/cf_integration_smoke_test.rs`'s
-/// corpus): zero regressions (every previously-passing molecule, and every
-/// declared-stereo molecule's existing pass/fail-and-stereo-check outcome,
-/// unchanged), and one of #210's 5 named residual molecules
-/// (`atorvastatin_fragment`) newly succeeds with stereo preserved.
-/// `naproxen_S`/`ibuprofen_S`/`testosterone`/`cholesterol` remain candidates for
-/// further work — UFF minimization is chirality-blind and can walk a
-/// stereo-satisfied embed back across a declared boundary. The bounded repair
-/// loop below can reconcile interacting repairs when a fixed point is reachable,
-/// but it deliberately falls through to the original failure when it is not.
-/// The rescue also makes a bounded, deterministic three-seed search, but that is
-/// a robustness retry and not a claim of complete stereochemical convergence for
-/// every topology.
+/// **Final issue #210 revision:** declared-stereo retries use an
+/// `add_hydrogens` working molecule through embedding, constrained UFF, and
+/// repair, then truncate to the caller's original heavy-atom count and verify
+/// again. Keeping the real H through minimization is load-bearing for ring-
+/// fused testosterone/cholesterol centers, where no heavy-atom bridge can be
+/// reflected safely. The public result's coordinates, UFF energies, residual
+/// force, and soundness gate are all recomputed on the original molecule after
+/// truncation. A fixed three-seed search keeps the operation deterministic and
+/// bounded. The focused issue harness verifies all five named molecules;
+/// this is not a claim that arbitrary stereochemical topologies always converge.
 ///
 /// If `embed_distance_geometry_v2` itself fails, or the retry is unsound or
 /// stereo-violating, the ORIGINAL failure is returned unchanged except for
@@ -2128,16 +2131,38 @@ fn rescue_with_distance_geometry_v2(
     use crate::stereo_constraints::verify_stereo;
 
     let n = mol.atom_count();
-    // See this function's own doc comment ("Revised, issue #210") for why
+    // See this function's final issue #210 revision for why
     // these are set instead of `EmbedParameters::default()`.
     let has_stereo = mol_has_declared_stereo(mol);
     // Try a small fixed set of independent starts. This is deterministic and
     // keeps the rescue cost bounded while avoiding dependence on one unlucky
     // stereo-preserving embedding basin.
     const RESCUE_SEED_OFFSETS: [u64; 3] = [0, 0x9E37_79B9_7F4A_7C15, 0xD1B5_4A32_D192_ED03];
+    // Ring-fused tetrahedral centers may have no movable heavy-atom bridge.
+    // Keep explicit hydrogens present through both embedding and UFF so the
+    // stereo repair/constraint machinery has a one-atom substituent it can
+    // move without breaking a ring. Heavy atoms retain their indices and the
+    // final accepted geometry is truncated back to the caller's molecule.
+    let expanded_mol_storage;
+    let working_mol: &Molecule = if has_stereo {
+        expanded_mol_storage = chematic_chem::add_hydrogens(mol);
+        &expanded_mol_storage
+    } else {
+        mol
+    };
+    let expanded_types_storage;
+    let working_types: &[(AtomIdx, UffType)] = if has_stereo {
+        expanded_types_storage = assign_uff_types(working_mol);
+        &expanded_types_storage
+    } else {
+        types
+    };
+    let working_n = working_mol.atom_count();
     let base_params = EmbedParameters {
         enforce_chirality: has_stereo,
-        materialize_implicit_h_for_chirality: has_stereo,
+        // Hydrogens are already materialized above and must remain present
+        // through minimization rather than being truncated after embedding.
+        materialize_implicit_h_for_chirality: false,
         ..EmbedParameters::default()
     };
     for offset in RESCUE_SEED_OFFSETS {
@@ -2145,10 +2170,10 @@ fn rescue_with_distance_geometry_v2(
             random_seed: base_params.random_seed.wrapping_add(offset),
             ..base_params.clone()
         };
-        let Ok(v2_coords) = embed_distance_geometry_v2(mol, &embed_params) else {
+        let Ok(v2_coords) = embed_distance_geometry_v2(working_mol, &embed_params) else {
             continue;
         };
-        let retry_coord_vec = coords_to_vec(&v2_coords, n);
+        let retry_coord_vec = coords_to_vec(&v2_coords, working_n);
         // `energy_before`/`energy_after` on a successful rescue must both describe
         // the SAME trajectory (the DG v2 geometry, before and after minimizing it) --
         // never the caller's original (now-abandoned) starting geometry paired with
@@ -2156,17 +2181,29 @@ fn rescue_with_distance_geometry_v2(
         // separately, in `original_failure` (the typed error this function falls
         // back to if the rescue doesn't pan out) -- it has no place in a successful
         // `UffBridgeRun`, which reports on the geometry that actually produced it.
-        let retry_energy_before = uff_total_energy(mol, types, &retry_coord_vec);
-        let retry = if has_stereo && verify_stereo(mol, &v2_coords).is_fully_satisfied() {
-            ff_minimize_uff_with_constraint(mol, types, retry_coord_vec, max_iter, |candidate| {
-                verify_stereo(mol, &vec_to_coords(candidate)).is_fully_satisfied()
-            })
+        let embedded_return_coords = if has_stereo {
+            crate::distance_geometry_v2::truncate_coords(&v2_coords, n)
         } else {
-            ff_minimize_uff(mol, types, retry_coord_vec, max_iter)
+            v2_coords.clone()
+        };
+        let retry_energy_before =
+            uff_total_energy(mol, types, &coords_to_vec(&embedded_return_coords, n));
+        let retry = if has_stereo && verify_stereo(working_mol, &v2_coords).is_fully_satisfied() {
+            ff_minimize_uff_with_constraint(
+                working_mol,
+                working_types,
+                retry_coord_vec,
+                max_iter,
+                |candidate| {
+                    verify_stereo(working_mol, &vec_to_coords(candidate)).is_fully_satisfied()
+                },
+            )
+        } else {
+            ff_minimize_uff(working_mol, working_types, retry_coord_vec, max_iter)
         };
         let retry_coords_typed = vec_to_coords(&retry.coords);
         let mut accepted_coords = retry_coords_typed.clone();
-        let mut stereo_verification = verify_stereo(mol, &accepted_coords);
+        let mut stereo_verification = verify_stereo(working_mol, &accepted_coords);
         if !stereo_verification.is_fully_satisfied() {
             // `repair_stereo` deliberately reports the partial geometry when
             // one repair disturbs another declared center. Feed that geometry
@@ -2182,23 +2219,28 @@ fn rescue_with_distance_geometry_v2(
                     break;
                 }
                 accepted_coords =
-                    match crate::stereo_constraints::repair_stereo(mol, &accepted_coords) {
+                    match crate::stereo_constraints::repair_stereo(working_mol, &accepted_coords) {
                         Ok(repaired) => repaired.coords,
                         Err(failure) => failure.partial_coords,
                     };
-                stereo_verification = verify_stereo(mol, &accepted_coords);
+                stereo_verification = verify_stereo(working_mol, &accepted_coords);
             }
         }
         if stereo_verification.is_fully_satisfied() {
-            let accepted_vec = coords_to_vec(&accepted_coords, n);
+            let accepted_vec = coords_to_vec(&accepted_coords, working_n);
             if !accepted_vec.iter().all(|p| p.iter().all(|x| x.is_finite()))
-                || worst_bond_length_vec(mol, &accepted_vec) > MAX_SANE_BOND_LENGTH
+                || worst_bond_length_vec(working_mol, &accepted_vec) > MAX_SANE_BOND_LENGTH
             {
-                stereo_verification = verify_stereo(mol, &retry_coords_typed);
+                stereo_verification = verify_stereo(working_mol, &retry_coords_typed);
                 accepted_coords = retry_coords_typed.clone();
             }
         }
-        let accepted_vec = coords_to_vec(&accepted_coords, n);
+        let returned_coords = if has_stereo {
+            crate::distance_geometry_v2::truncate_coords(&accepted_coords, n)
+        } else {
+            accepted_coords.clone()
+        };
+        let accepted_vec = coords_to_vec(&returned_coords, n);
         let accepted_max_residual_force =
             fd_max_gradient(&accepted_vec, |c| uff_total_energy(mol, types, c), 1e-4);
         let retry_sound = check_minimization_soundness(
@@ -2211,11 +2253,12 @@ fn rescue_with_distance_geometry_v2(
             false,
         )
         .is_ok();
-        let retry_preserves_stereo = stereo_verification.is_fully_satisfied();
+        let retry_preserves_stereo = stereo_verification.is_fully_satisfied()
+            && verify_stereo(mol, &returned_coords).is_fully_satisfied();
 
         if retry_sound && retry_preserves_stereo {
             return Ok(UffBridgeRun {
-                coords: accepted_coords,
+                coords: returned_coords,
                 energy_before: retry_energy_before,
                 energy_after: uff_total_energy(mol, types, &accepted_vec),
                 converged: retry.converged,
@@ -3881,53 +3924,68 @@ mod policy_bridge_tests {
         }
     }
 
-    /// The stereo-safety gate itself, isolated: cholesterol's `UffOnly`
-    /// minimization from `generate_coords` fails soundness (catastrophic
-    /// bond blowup), triggering the rescue -- but measured directly
-    /// (`verify_stereo`), the rescued geometry still violates 3 of
-    /// cholesterol's 8 declared stereocenters. The rescue must therefore be
-    /// REFUSED, and the ORIGINAL (bond-blowup) failure returned, annotated to
-    /// show a rescue was attempted -- never a silent `Ok` that quietly ships
-    /// wrong stereochemistry. See issue #210 (filed alongside this fix) for
-    /// the tracked follow-up.
+    /// Ring-fused positive controls for issue #210. These have no movable
+    /// heavy-atom bridge at several declared centers; the rescue must retain
+    /// materialized implicit hydrogens through UFF and return only after the
+    /// truncated heavy-atom geometry independently verifies every declaration.
     #[test]
-    fn uff_only_refuses_a_rescue_that_would_violate_declared_stereochemistry() {
-        let mol =
-            parse("C[C@H](CCCC(C)C)[C@H]1CC[C@H]2[C@@H]3CC=C4C[C@@H](O)CC[C@]4(C)[C@H]3CC[C@]12C")
-                .expect("cholesterol");
-        let coords = generate_coords(&mol);
-        let config = MinimizeConfig::default();
-
-        let err = minimize_with_policy(&mol, coords, ForceFieldPolicy::UffOnly, &config)
-            .expect_err(
-                "cholesterol's generate_coords start is catastrophically clashed, and its \
-                 embed_distance_geometry_v2 rescue is measured to violate declared \
-                 stereochemistry -- the rescue must be refused, not silently accepted",
+    #[ignore = "Experimental 3D long-run gate; run with cargo test -p chematic-3d --lib -- --ignored"]
+    fn uff_only_rescue_preserves_ring_fused_declared_stereochemistry() {
+        for (name, smiles) in [
+            (
+                "testosterone",
+                "C[C@]12CC[C@H]3[C@@H](CC[C@H]4CCC(=O)C=C34)[C@@H]1CC[C@@H]2O",
+            ),
+            (
+                "cholesterol",
+                "C[C@H](CCCC(C)C)[C@H]1CC[C@H]2[C@@H]3CC=C4C[C@@H](O)CC[C@]4(C)[C@H]3CC[C@]12C",
+            ),
+        ] {
+            let mol = parse(smiles).unwrap_or_else(|error| panic!("parse {name}: {error}"));
+            let result = minimize_with_policy(
+                &mol,
+                generate_coords(&mol),
+                ForceFieldPolicy::UffOnly,
+                &MinimizeConfig::default(),
+            )
+            .unwrap_or_else(|error| panic!("{name} rescue failed: {error:?}"));
+            assert_eq!(
+                result.starting_geometry,
+                Some(UffStartingGeometry::ReplacedWithDistanceGeometryV2)
             );
-        match err {
-            ForceFieldBridgeError::MinimizationFailed(detail) => {
-                assert!(
-                    detail.distance_geometry_v2_retry_attempted,
-                    "expected the rescue to have been attempted (and refused for stereo \
-                     reasons), not skipped entirely: {detail:?}"
-                );
-            }
-            other => panic!("expected MinimizationFailed, got {other:?}"),
+            assert!(
+                crate::stereo_constraints::verify_stereo(&mol, &result.coords).is_fully_satisfied(),
+                "{name} returned with violated declared stereo"
+            );
         }
     }
 
-    /// The positive counterpart to the cholesterol test above (issue #210,
-    /// revised): atorvastatin_fragment is one of #210's 5 named residual
-    /// molecules ("still fail `UffOnly` from a legacy `generate_coords`
-    /// start... rescue geometry doesn't preserve stereochemistry"), measured
-    /// directly (not assumed) to newly succeed, with declared stereochemistry
-    /// preserved, once `rescue_with_distance_geometry_v2`'s embed call sets
-    /// `enforce_chirality`/`materialize_implicit_h_for_chirality` instead of
-    /// plain defaults. `naproxen_S`/`ibuprofen_S`/`testosterone`/`cholesterol`
-    /// remain unfixed by this specific change (see this function's own
-    /// revised doc comment for why) -- this molecule is the one #210 residual
-    /// member this measurement actually closes, not a stand-in for the
-    /// others.
+    /// A geometrically sound first UFF result is still unacceptable when it
+    /// contradicts declared stereo. Before issue #210's final fix, ibuprofen_S
+    /// returned `Ok(AsProvided)` with its only stereocenter inverted.
+    #[test]
+    fn uff_only_reseeds_a_sound_but_stereo_violating_first_result() {
+        let mol = parse("CC(C)Cc1ccc(cc1)[C@H](C)C(=O)O").expect("ibuprofen_S");
+        let result = minimize_with_policy(
+            &mol,
+            generate_coords(&mol),
+            ForceFieldPolicy::UffOnly,
+            &MinimizeConfig::default(),
+        )
+        .expect("stereo-violating first result must be replaced by a safe rescue");
+        assert_eq!(
+            result.starting_geometry,
+            Some(UffStartingGeometry::ReplacedWithDistanceGeometryV2)
+        );
+        assert!(
+            crate::stereo_constraints::verify_stereo(&mol, &result.coords).is_fully_satisfied()
+        );
+    }
+
+    /// Atorvastatin positive control retained from #210's earlier partial fix.
+    /// The final five-molecule gate lives in
+    /// `examples/issue210_rescue_measurement.rs`; this focused test keeps the
+    /// original high-stress flexible-molecule regression independently pinned.
     #[test]
     #[ignore = "Experimental 3D long-run gate; run with cargo test -p chematic-3d --lib -- --ignored"]
     fn uff_only_rescue_now_preserves_stereo_for_atorvastatin_fragment() {

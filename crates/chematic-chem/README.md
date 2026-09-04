@@ -4,8 +4,14 @@ Pure Rust chemical intelligence library — **descriptors, drug-likeness rules, 
 
 ## Features
 
-### Molecular Descriptors (40+)
-- **Physicochemical**: MW, LogP (Crippen, ±0.3 vs RDKit on 175 mol), TPSA (±1.0 Å² vs RDKit on 175 mol), PSA, MOLAR_REFR, VdW volume
+### Molecular descriptors
+
+The Python facade exposes 70+ descriptor functions and 190+ individual values;
+the Rust crate provides the underlying scalar and vector implementations.
+RDKit agreement is metric-specific rather than universal; see
+[`docs/validation.md`](../../docs/validation.md).
+
+- **Physicochemical**: MW, LogP (Crippen), TPSA, PSA, MOLAR_REFR, VdW volume
 - **Van der Waals volume**: `vabc(mol) -> f64` — Bondi radii + spherical-cap overlaps, no 3D coordinates required
 - **Lipophilicity**: LogP (multiple models), MolLogP  
 - **Hydrogen Bonding**: HBA (99.98% RDKit agreement on 5 000 molecules), HBD (100% agreement, including S-H thiols), HBA_LIPINSKI, HBD_LIPINSKI
@@ -129,28 +135,10 @@ println!("Selected {} diverse molecules", picks.len());
 
 **Zero FFI**: Pure Rust, WASM-compatible via npm `@kent-tokyo/chematic`.
 
-## Testing
+## Validation
 
-```bash
-cargo test --lib
-# 496 tests: descriptors, rules, MCS, diversity
-```
-
-## Version History
-
-**v0.1.94** (2026-06-12):
-- SA Score fragment corpus expanded: 145 → 188 FDA molecules (1034 → 1415 unique fragments)
-- Integrated with multi-sphere CIP and enhanced fingerprints
-
-**v0.1.93** (2026-06-12):
-- Full multi-sphere CIP priority rules (moved from chematic-chem to chematic-perception)
-- Correct R/S stereochemistry assignment (>2 distinct substituents)
-
-**v0.1.32** (2026-06-07):
-- 992 total tests (v0.1.30: 948)
-- Integrated with v0.1.32 crate updates (3D constraints, aromaticity)
+Run `cargo test -p chematic-chem`. Corpus-level agreement and known residuals are documented in [`docs/validation.md`](../../docs/validation.md). Release history is maintained in the repository [`CHANGELOG.md`](../../CHANGELOG.md).
 
 ## License
 
 MIT OR Apache-2.0
-

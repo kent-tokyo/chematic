@@ -219,7 +219,8 @@ API (distinct from the `embed_pipeline_v2` path measured above).
 | UFF | `AllChem.UFFOptimizeMolecule(mol)` | `mol.minimize_uff(coords)` — per its own docstring, UFF covers all elements including metals, unlike chematic's MMFF94, which is limited |
 | DREIDING (not in RDKit core) | — | `mol.minimize_dreiding(coords)` |
 
-Known residual: MMFF94 atom-typing issue #337 — as of CHANGELOG `[0.18.0]`,
+Known residual: MMFF94 atom-typing issue #337 — in the archived v0.18.0
+development record,
 one sub-bug (aryl isothiocyanate cumulated-double-bond CSP carbon) is
 fixed; 6 of the original 8 affected molecules remain an honestly-disclosed
 residual, root-caused to a genuine RDKit Kekulization/MMFF-aromaticity-
@@ -227,7 +228,8 @@ perception artifact for a specific fused, macrocyclic ring topology (a
 pyridinium-conjugated exocyclic-amine scaffold) rather than a locally-
 statable atom-typing rule gap — 32/6,693 type-mismatched and 56/6,693
 charge-mismatched atoms remain on the 264-molecule reference corpus. See
-`CHANGELOG.md`'s release entries and the public force-field documentation
+the [detailed development archive](https://github.com/kent-tokyo/chematic/blob/main/docs/archive/detailed-development-history.md)
+and the public force-field documentation
 for the full writeup; this page does not re-derive it.
 
 The MMFF94 implementation contains all seven energy-term families, but this
@@ -284,18 +286,18 @@ beyond what's listed.
 
 ## Maximum Common Substructure (MCS)
 
-**Supported**, single-function scope.
+**Supported** with explicit configuration and timeout reporting.
 
 | | RDKit | chematic |
 |---|---|---|
-| MCS of a set of molecules | `rdFMCS.FindMCS(mols)` | `chematic.find_mcs(mols)` → `Optional[Mol]` |
+| MCS of a set of molecules | `rdFMCS.FindMCS(mols)` | `chematic.find_mcs(mols, ...)` → `Optional[Mol]` |
+| Distinguish timeout from no match | result status | `chematic.find_mcs_checked(mols, ...)` → `(Optional[Mol], bool)` |
 
-Migration note: RDKit's `rdFMCS.FindMCS` exposes tunable parameters
-(atom/bond comparison mode, timeout, ring-matching strictness, ...) via
-`MCSParameters`. `chematic.find_mcs` is a single-call function with no
-documented equivalent tuning surface in `__init__.pyi` as of this pass —
-if your RDKit usage depends on non-default `MCSParameters`, verify the
-chematic result matches your needs before switching.
+Migration note: chematic exposes atom/bond comparison modes, timeout,
+ring-matching strictness, charge/isotope/chirality matching, and related
+options as keyword arguments. The option model and search semantics are not a
+drop-in copy of RDKit's `MCSParameters`; verify application-specific results
+before switching.
 
 ## CIF / materials & simulation formats
 
@@ -304,8 +306,8 @@ category — to our knowledge, RDKit's core Python package does not ship
 native mmCIF/PQR/QCSchema/ORCA/Cube/OpenDX/LAMMPS readers (some may be
 reachable indirectly via other tools in the wider ecosystem, which this
 page does not attempt to catalogue or verify).
-See [`format-capabilities.md`](format-capabilities.md) for the full
-15-format matrix, including which of these formats has **zero WASM
+See [`format-capabilities.md`](format-capabilities.md) for the full format
+matrix, including which of these formats has **zero WASM
 exposure** (plain CIF) and which Python bindings are read-only (plain CIF).
 This is a real area where chematic covers formats RDKit's core package
 does not — stated narrowly, without a general "chematic beats RDKit on
@@ -327,7 +329,7 @@ formats" claim.
 Python-style WASM bindings; RDKit.js is a separate community project.
 chematic ships `chematic-wasm` directly from the same Rust source as the
 Python bindings. Measured 2026-09-04 from the v1.0.2 release candidate (see the
-[artifact record](../benchmarks/2026-09-04-wasm-size.md)): chematic's WASM bundle is
+[artifact record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-wasm-size.md)): chematic's WASM bundle is
 **3.30 MB raw / 1.21 MB gzip**, versus RDKit.js's `RDKit_minimal.wasm` at
 **6.91 MB raw** (gzip not independently measured) — about 2.1× smaller on a
 raw-to-raw basis. See [`format-capabilities.md`](format-capabilities.md)

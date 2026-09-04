@@ -230,10 +230,9 @@ LAMMPS dump/trajectory is the one format with a real Rust-level
 streaming-vs-materializing distinction: `LammpsDumpReader<R: BufRead>` is a
 true streaming `Iterator`, while both the Python (`parse_lammps_dump_all`)
 and WASM (`lammps_trajectory_to_json`) bindings materialize the whole
-trajectory instead — a disclosed scope choice from CHANGELOG `[0.17.0]`/
-`[0.18.0]`, not a gap uncovered by this pass. MOL/SDF's `SdfFileReader<R:
+trajectory instead — a documented scope choice. MOL/SDF's `SdfFileReader<R:
 BufRead>` is a true streaming reader too, but this is not currently called
-out in CHANGELOG the way the LAMMPS case is. See
+called out separately. See
 [`language-bindings.md`](language-bindings.md#streaming-vs-materialization-by-language)
 for the full per-format table.
 

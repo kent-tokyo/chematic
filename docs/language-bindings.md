@@ -48,8 +48,8 @@ compatibility surface, not a claim of bit parity with RDKit's C++ implementation
   NumPy arrays are used for large numeric payloads (fingerprints, grid
   values) — **always fresh copies, never views**.
 - **WASM** (`chematic-wasm`, wasm-bindgen): mostly free functions returning
-  JSON strings (`Result<String, JsValue>`), with 6 functions (as of
-  v0.18.0) additionally returning `js_sys::Float64Array`/`Uint32Array` for
+  JSON strings (`Result<String, JsValue>`), with selected functions also
+  returning `js_sys::Float64Array`/`Uint32Array` for
   large numeric grid/row payloads — **also always fresh copies, never
   views.** Typed Rust errors map to a thrown JS error / `JsValue`.
 
@@ -69,7 +69,7 @@ sniffs format from content.
 | Boundary | Owns a view of Rust memory? | Notes |
 |---|---|---|
 | Python NumPy arrays (`ecfp4_numpy()`, `VolumetricGrid.values`, `VolumetricGrid.values_3d`, ...) | No — fresh copy | `values_3d` reshapes the flat `values` copy to `(nx, ny, nz)`, third axis (`k`) fastest, matching `chematic_mol::VolumetricGrid::checked_index`. |
-| WASM `js_sys::Float64Array`/`Uint32Array` (`cube_values_f64`, `opendx_values_f64`, `lammps_dump_rows_f64`, `lammps_dump_cartesian_positions_f64`, `cube_shape_u32`, `opendx_shape_u32`) | No — fresh copy | Added in v0.18.0's Binding Quality Pack, additively alongside the pre-existing JSON-string functions; neither replaces the other. |
+| WASM `js_sys::Float64Array`/`Uint32Array` (`cube_values_f64`, `opendx_values_f64`, `lammps_dump_rows_f64`, `lammps_dump_cartesian_positions_f64`, `cube_shape_u32`, `opendx_shape_u32`) | No — fresh copy | Additive alongside the JSON-string functions; neither replaces the other. |
 | WASM JSON strings (`cube_grid_json`, `opendx_grid_json`, `mmcif_to_json`, ...) | No — serialized copy | The oldest/default binding shape in `chematic-wasm`; large numeric arrays here round-trip through a JSON number array, a disclosed perf trade-off versus the typed-array functions above. |
 
 ---
@@ -177,12 +177,11 @@ binding.
 | MOL/SDF | `SdfFileReader<R: BufRead>` — true streaming `Iterator` | materializes (no streaming reader bound) | materializes |
 | LAMMPS dump/trajectory | `LammpsDumpReader<R: BufRead>` — true streaming `Iterator` | `parse_lammps_dump_all` materializes the whole trajectory as a list (disclosed scope choice, not a silently dropped capability) | `lammps_trajectory_to_json` materializes (same disclosed choice) |
 | Gaussian Cube | `CubeFileReader<R: BufRead>` streams the *input reading* only — the returned `VolumetricGrid.values` is still one fully-materialized `Vec<f64>` (single-dataset format, nothing to iterate across) | via `VolumetricGrid.from_cube()`, materializes | materializes |
-| All other 12 formats | no `BufRead`-backed streaming reader type exists | materializes | materializes |
+| Other documented formats | no `BufRead`-backed streaming reader type exists | materializes | materializes |
 
 LAMMPS dump is the one format where a real Rust-level streaming/
 materializing distinction exists **and** both bindings deliberately choose
-materialization — this is the case CHANGELOG `[0.17.0]`/`[0.18.0]` call out
-explicitly, not a gap this PR discovered.
+materialization. This is a documented compatibility choice.
 
 ---
 
