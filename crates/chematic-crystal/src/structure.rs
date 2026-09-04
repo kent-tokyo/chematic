@@ -5,6 +5,7 @@ use crate::lattice::Lattice;
 use crate::neighbor::{self, PeriodicNeighbor};
 use crate::site::{CartesianCoord, FractionalCoord, PeriodicSite};
 use crate::supercell;
+use chematic_core::Element;
 
 /// A periodic structure: a validated [`Lattice`] and an ordered list of
 /// [`PeriodicSite`]s.
@@ -17,6 +18,44 @@ use crate::supercell;
 pub struct PeriodicStructure {
     lattice: Lattice,
     sites: Vec<PeriodicSite>,
+}
+
+/// Deterministic, occupancy-weighted elemental composition of the stored
+/// periodic cell.
+///
+/// Amounts are per *stored* cell, not normalized to one occupied site. A
+/// species with zero occupancy remains present in the summary with amount
+/// `0.0`, because it is explicit source data. Distinct sites are aggregated
+/// only by element; sites at the same coordinate are still counted
+/// independently before aggregation.
+#[derive(Debug, Clone, PartialEq)]
+pub struct CompositionSummary {
+    amounts: std::collections::BTreeMap<Element, f64>,
+    site_count: usize,
+}
+
+impl CompositionSummary {
+    /// Occupancy-weighted amount for an element, or `0.0` if absent.
+    pub fn amount(&self, element: Element) -> f64 {
+        self.amounts.get(&element).copied().unwrap_or(0.0)
+    }
+
+    /// Deterministic iteration in atomic-number order.
+    pub fn iter(&self) -> impl Iterator<Item = (Element, f64)> + '_ {
+        self.amounts
+            .iter()
+            .map(|(&element, &amount)| (element, amount))
+    }
+
+    /// Number of sites in the stored cell, before elemental aggregation.
+    pub fn site_count(&self) -> usize {
+        self.site_count
+    }
+
+    /// Number of distinct element entries, including zero-occupancy species.
+    pub fn element_count(&self) -> usize {
+        self.amounts.len()
+    }
 }
 
 impl PeriodicStructure {
@@ -73,6 +112,23 @@ impl PeriodicStructure {
     #[inline]
     pub fn site_count(&self) -> usize {
         self.sites.len()
+    }
+
+    /// Compute the occupancy-weighted elemental composition of this stored
+    /// cell. Calling this on a supercell reports the supercell amount (for
+    /// example, a 2x2x2 cell reports eight times the amount of a one-cell
+    /// structure); it never silently reduces back to the original cell.
+    pub fn composition(&self) -> CompositionSummary {
+        let mut amounts = std::collections::BTreeMap::new();
+        for site in &self.sites {
+            for species in &site.species {
+                *amounts.entry(species.element).or_insert(0.0) += species.occupancy.value();
+            }
+        }
+        CompositionSummary {
+            amounts,
+            site_count: self.sites.len(),
+        }
     }
 
     /// Fractional position of every site, in site order.
@@ -270,6 +326,60 @@ mod tests {
             }
             other => panic!("expected InvalidSite, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn composition_is_occupancy_weighted_deterministic_and_keeps_zero_species() {
+        let lattice = Lattice::cubic(4.0).unwrap();
+        let sites = vec![
+            PeriodicSite::new(
+                vec![
+                    SiteSpecies {
+                        element: Element::FE,
+                        occupancy: Occupancy::new(0.6).unwrap(),
+                    },
+                    SiteSpecies {
+                        element: Element::NI,
+                        occupancy: Occupancy::new(0.4).unwrap(),
+                    },
+                ],
+                FractionalCoord::new([0.0, 0.0, 0.0]),
+                Some("mixed".into()),
+            )
+            .unwrap(),
+            PeriodicSite::new(
+                vec![SiteSpecies {
+                    element: Element::O,
+                    occupancy: Occupancy::new(0.0).unwrap(),
+                }],
+                FractionalCoord::new([0.0, 0.0, 0.0]),
+                Some("vacant".into()),
+            )
+            .unwrap(),
+        ];
+        let structure = PeriodicStructure::new(lattice, sites).unwrap();
+        let composition = structure.composition();
+        assert_eq!(composition.site_count(), 2);
+        assert_eq!(composition.element_count(), 3);
+        assert!((composition.amount(Element::FE) - 0.6).abs() < 1e-12);
+        assert!((composition.amount(Element::NI) - 0.4).abs() < 1e-12);
+        assert_eq!(composition.amount(Element::O), 0.0);
+        assert_eq!(
+            composition
+                .iter()
+                .map(|(element, _)| element)
+                .collect::<Vec<_>>(),
+            vec![Element::O, Element::FE, Element::NI]
+        );
+    }
+
+    #[test]
+    fn composition_scales_with_explicit_supercell() {
+        let structure = cubic_two_site();
+        let composition = structure.make_supercell([2, 2, 2]).unwrap().composition();
+        assert_eq!(composition.site_count(), 16);
+        assert_eq!(composition.amount(Element::NA), 8.0);
+        assert_eq!(composition.amount(Element::CL), 8.0);
     }
 
     #[test]

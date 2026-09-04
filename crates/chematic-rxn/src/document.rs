@@ -113,6 +113,14 @@ impl core::fmt::Display for ReactionDocumentError {
 
 impl std::error::Error for ReactionDocumentError {}
 
+impl ReactionDocumentError {
+    /// Build a typed parse error for format adapters that cannot expose their
+    /// parser's concrete error type through this crate's dependency graph.
+    pub fn parse_message(message: impl Into<String>) -> Self {
+        Self::Parse(RxnErrorMessage(message.into()))
+    }
+}
+
 impl ReactionDocument {
     /// Parse a legacy reaction SMILES into a one-step derived document.
     pub fn from_reaction_smiles(s: &str) -> Result<Self, ReactionDocumentError> {

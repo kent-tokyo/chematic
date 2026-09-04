@@ -1,6 +1,6 @@
 # Benchmark
 
-## v1.0.3 benchmark status
+## v1.0.4 benchmark status
 
 The repository now contains a machine-readable competitive benchmark protocol
 at [`validation/competitive_benchmark_manifest.json`](../validation/competitive_benchmark_manifest.json).
@@ -12,8 +12,15 @@ The broad protocol snapshot remains a v1.0.1 historical measurement. The
 focused 2026-09-04 canonical and SDF measurements were taken from the code now
 released as v1.0.2, before its version-only metadata bump, and are therefore
 reported with that provenance rather than relabeled as a fresh package run.
-The v1.0.3 release also adds a local MMFF94/3D benchmark lane; its results are
+The v1.0.3 release added a local MMFF94/3D benchmark lane; its results are
 recorded in `benchmarks/2026-09-04-mmff94-3d.md`.
+An RDKit/Open Babel speed snapshot is recorded in
+`benchmarks/2026-09-04-rdkit-openbabel.md`. Open Babel is measured through its
+CLI, so its conversion numbers are intentionally not combined with chematic or
+RDKit in-process parser/writer numbers. That report also records the canonical
+automorphism and SDF property-serialization A/B checks included in v1.0.4;
+they remain separate from the v1.0.3-wheel headline because they were measured
+as source-level before/after comparisons rather than as a rebuilt wheel run.
 Validate the current protocol offline with:
 
 ```bash
@@ -93,7 +100,7 @@ Full methodology, raw numbers, and what changed since the last snapshot:
 | Descriptor accuracy vs RDKit | **20 metrics ≥98.6%, 16 at 100%** (4,999-mol corpus) | baseline |
 | CIP R/S/E/Z label agreement | **99.74–99.78%** | baseline |
 | Install | `pip install chematic` | `pip install rdkit` (official prebuilt wheels) or conda |
-| C/C++ dependencies | **Zero**, even building from source | Not required for the prebuilt wheel; required (Boost, CMake) building from source |
+| C/C++ dependencies | **Zero by default**; optional `native-inchi` uses vendored C FFI | Not required for the prebuilt wheel; required (Boost, CMake) building from source |
 | WASM binary size | **2.98 MB raw / 1.11 MB gzip** | 6.91 MB raw / 2.06 MB gzip (RDKit.js) |
 
 The ECFP4 speedup is fixture-dependent: a small set of simple molecules repeated

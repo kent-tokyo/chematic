@@ -94,6 +94,47 @@ Copyright (C) 2003-2022 Greg Landrum and other RDKit contributors
 
 Licensed under the BSD 3-Clause License (same text as above).
 
+### Additional RDKit-derived compatibility code
+
+The following source files also implement compatibility behavior or copied
+constant/pattern data from RDKit and are covered by the same BSD-3-Clause
+notice above. They must retain this notice in source and binary distributions:
+
+```
+crates/chematic-fp/src/rdkit_pattern.rs
+crates/chematic-fp/src/rdkit_rdk.rs
+crates/chematic-fp/src/rdkit_layered.rs
+crates/chematic-fp/src/rdkit_torsion.rs
+crates/chematic-fp/src/rdkit_atom_pair.rs
+crates/chematic-fp/src/rdkit_isotope_delta_table.rs
+crates/chematic-chem/src/gasteiger.rs
+crates/chematic-perception/src/rdkit_parity.rs
+```
+
+These are compatibility implementations, not a copy or redistribution of
+the RDKit build. This inventory is a copyright/license notice; it is not a
+patent or freedom-to-operate opinion. No patent clearance is claimed for any
+algorithm merely because its reference implementation is BSD-licensed.
+
+## IUPAC InChI source
+
+The optional `native-inchi` feature vendors the IUPAC InChI source under
+`crates/chematic-inchi/vendor/inchi-src`. That source is distributed under
+its own MIT license and retains its upstream headers. The vendored tree also
+contains component notices (including the `stb_sprintf` and SHA-2 notices);
+they remain applicable and are not relicensed as chematic code. This optional
+feature is therefore excluded from the claim that the default build is
+FFI-free.
+
+## Research and patent boundary
+
+Research-derived descriptors or fingerprints with unresolved FTO review are
+not part of the public v1.0 surface. In particular, Spectrophores and the
+rejected geometry-aware spectral fingerprint are not shipped. Existing
+MMFF94, ETKDG, and other published-method implementations are independent
+implementations with cited sources; this repository makes no patent-clearance
+claim for them.
+
 ### BSD 3-Clause License
 
 ```

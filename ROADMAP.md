@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Status: strategic roadmap, revised 2026-09-04. v1.0.3 is the current patch release;
+> Status: strategic roadmap, revised 2026-09-04. v1.0.4 is the current release;
 > the next work remains version-locked until a new release decision.
 
 ## North star
@@ -106,6 +106,10 @@ complete until the required measurement or external reproduction exists.
   keep `canonical_smiles_stable_key()` as the only dedup/cache recommendation.
 - [ ] Inventory and stabilize descriptor/fingerprint shapes, sparse/count
   semantics, configuration, provenance, and explanation APIs.
+- [x] Reject Issue #464 for the v1.0 product surface: the proposed
+  geometry-aware spectral fingerprint is not shipped while patent/FTO review
+  is incomplete. No implementation, dependency, trained artifact, or
+  benchmark claim is part of the release.
 - [ ] Add held-out parity reports for Morgan/ECFP, MACCS, topological, torsion,
   descriptor, and standardization operations across Rust/Python/WASM.
 
@@ -154,6 +158,24 @@ complete until the required measurement or external reproduction exists.
   on two independent 5,000-molecule corpora; chematic leads RDKit by 2.5% and
   1.47× at the respective medians on the recorded macOS arm64 environment.
   These are scoped results, not a cross-platform or all-corpus claim.
+- [x] Reconfirm the canonical-SMILES 1.1× target on the current v1.0.3 wheel:
+  seven independent 1,000-row process runs measured 23.70 us/mol for chematic
+  and 26.37 us/mol for RDKit at the median (1.11×). Two allocation-oriented
+  experiments regressed by 1–2% and were rejected rather than shipped.
+- [x] Further reduce canonical automorphism feasibility overhead without
+  changing traversal or output: maintain the inverse mapping in O(1) and use
+  compact `u32` sentinel maps. Focused 5,000-record engine checks reduced the
+  inverse-map run by 8.7%, followed by a 1.6% repeated-run median improvement
+  from sentinel compaction; all 122 canonical tests, including the randomized
+  brute-force oracle, pass.
+- [x] Remove per-property temporary allocations from SDF record serialization
+  across V2000, V3000, and 3D writers. The checked-in same-process A/B runner
+  verifies byte identity and measured a 1.248× median speedup over five
+  invocations on the 365-record `egfr.sdf` corpus (all runs at least 1.145×).
+- [x] Package the retained reaction/CDXML/polymer/crystal, UFF-safety,
+  canonical/SDF performance, provenance, and patent-boundary work as v1.0.4;
+  keep historical v1.0.2/v1.0.3 measurements labeled with their actual source
+  revisions rather than relabeling them as fresh v1.0.4 runs.
 - [x] Add local MMFF94 and 3D pipeline benchmarks covering prepared energy,
   one-shot energy, ETKDG generation, and L-BFGS minimization; record the
   measurements in the 1.0.3 changelog entry.
@@ -643,10 +665,11 @@ local macOS/ASan evidence; Linux sanitizer and Miri evidence remain separate.
 **Exit gate:** dependency/CI audit に未評価の high/critical finding がなく、同じ
   source revision から artifact、SBOM、checksum、provenance を再生成・照合できる。
 
-**Supply-chain audit evidence (2026-09-02):**
+**Supply-chain audit evidence (refreshed 2026-09-04 for v1.0.4):**
 
-- [x] `cargo audit` scanned 308 locked dependencies with zero vulnerability
-  findings.
+- [x] `cargo audit` scanned 286 locked dependencies with zero vulnerability
+  findings; the two explicitly accepted unmaintained rendering-chain notices
+  remain non-vulnerability findings.
 - [x] `cargo deny check` passed advisories, bans, licenses, and sources.
 - [x] Copyright attribution is normalized to `Kentaro Tanabe (kent-tokyo)` across the
   license texts, Cargo/Python metadata, citation, README translations, and a
@@ -797,6 +820,22 @@ building block.
 - [x] Freeze the proposed v1.0 compatibility contract: bounded CDXML/polymer
   scope, partial Python `RWMol`, fail-closed canonical identity, explicit
   aromaticity/CIP modes, and Experimental 3D/MMFF94 boundaries.
+- [x] Add the typed, loss-aware reaction-document contract with explicit
+  agents, coefficients, conditions, provenance, atom-map identity, and
+  multi-step preservation; legacy RXN export rejects unsupported richness
+  instead of flattening it (Issue #460).
+- [x] Add the document-level CDXML contract: bounded multi-page summaries,
+  opaque presentation-object preservation, and JSON command edits shared by
+  Rust, Python, WASM, and Node bindings (Issue #461).
+- [x] Add the typed Markush/polymer semantic JSON contract with explicit
+  alternative selection, bounded expansion, and source-to-expanded mapping
+  across Rust, Python, WASM, and Node bindings (Issue #462).
+- [x] Add occupancy-aware deterministic `PeriodicStructure::composition()`
+  summaries with zero-occupancy and explicit-supercell coverage (Issue #463).
+- [x] Reject Issues #465-#468 for the v1.0 product surface. These research
+  proposals depend on unresolved patent/FTO review or source-license
+  boundaries; no related implementation, paper-derived artifact, dataset,
+  benchmark claim, or public API is shipped.
 - Finish canonical SMILES invariance across atom order, equivalent spellings,
   isotope/charge/stereo state, and directional bond systems.
 - Make standardization and Parent identity configurable, bounded, and

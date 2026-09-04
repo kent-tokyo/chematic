@@ -11,8 +11,9 @@ url: https://kent-tokyo.github.io/chematic/
 abstract: >-
   A pure-Rust cheminformatics toolkit with Python, WebAssembly, and MCP
   interfaces. Provides SMILES parsing, molecular descriptors, fingerprints,
-  substructure search, 3D coordinate generation, and AI agent integration
-  — without C/C++ dependencies.
+  substructure search, 3D coordinate generation, and AI agent integration.
+  The default build is pure Rust; exact standard InChI is available through
+  an optional vendored C FFI feature.
 keywords:
   - cheminformatics
   - rust
@@ -24,5 +25,5 @@ keywords:
 license:
   - MIT
   - Apache-2.0
-version: 1.0.2
+version: 1.0.4
 date-released: "2026-09-04"

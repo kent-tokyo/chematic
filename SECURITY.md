@@ -4,7 +4,8 @@
 
 | Version | Supported | Status |
 |---------|-----------|--------|
-| v1.0.3 | Yes | Current patch release; compatibility and security boundary unchanged from v1.0.0 |
+| v1.0.4 | Yes | Current release; bounded document and semantic APIs preserve the v1.0 security boundary |
+| v1.0.3 | Yes | Previous patch release; compatibility and security boundary unchanged from v1.0.0 |
 | v1.0.2 | Yes | Previous patch release; compatibility and security boundary unchanged from v1.0.0 |
 | v1.0.1 | Yes (partial registries) | Previous patch release; GitHub Release, crates.io, and PyPI published |
 | v1.0.0 | Yes (partial registries) | GitHub Release, crates.io, and PyPI published; npm publication is blocked by registry scope/token permissions |
@@ -12,7 +13,7 @@
 | v0.88.0 | Limited | Previous stable release — security fixes only |
 | < v0.88.0 | Limited | Security fixes only (limited) |
 
-**Active Support**: v1.0.3 is the latest release.
+**Active Support**: v1.0.4 is the latest release.
 **Release evidence**: v0.89.0 was built from main commit `344e9dc2`; the
 release-key evidence workflow passed in run `33699428867`, including clean
 checkout signing and public-key verification.
@@ -140,6 +141,25 @@ Subscribe to GitHub notifications for this repository to receive alerts about se
 ---
 
 ## Security Fix History
+
+### v1.0.4 verification status
+
+- The typed reaction, CDXML, and Markush/polymer adapters use the existing
+  bounded parser and JSON limits and reject lossy or ambiguous conversion.
+- UFF rescue now revalidates declared stereochemistry and constraints after
+  minimization rather than accepting a lower-energy invalid geometry.
+- Spectrophores and the proposed Issue #464 replacement are excluded pending
+  independent patent/FTO review. Dependency, provenance, and redistribution
+  notices are recorded in `THIRD_PARTY_NOTICES.md` and
+  `docs/implementation-provenance.md`.
+- Local release checks cover the workspace tests, binding contracts, release
+  documents, publish graph, unsafe surface, formatting, and clippy. Hosted
+  registry workflows remain separate publication evidence.
+
+### v1.0.3 verification status
+
+- This patch retained the v1.0.0 input and privilege boundary while adding
+  reusable MMFF94 topology preparation and scoped 3D benchmarks.
 
 ### v1.0.2 verification status
 

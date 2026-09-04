@@ -2782,39 +2782,6 @@ impl Mol {
         chematic_3d::autocorr_3d(&self.inner, &c3d)
     }
 
-    /// Spectrophores 3D fingerprint — 48-element vector.
-    ///
-    /// Encodes the electrostatic, lipophilic, aromatic, and H-bond character
-    /// of the molecule's 3D surface into a fixed-size numerical vector suitable
-    /// for 3D QSAR, shape-based screening, and virtual screening.
-    ///
-    /// Requires 3D coordinates (one ``[x, y, z]`` per heavy atom, in Å).
-    /// Use :meth:`generate_3d` to obtain coordinates.
-    ///
-    /// Returns a list of 48 floats organised as four blocks of 12 probe values:
-    /// electrostatic, lipophilic, aromatic, H-bond (in that order).
-    ///
-    /// Reference: Silicos-it Spectrophores (patent expired 2024).
-    ///
-    ///     coords = mol.generate_3d()
-    ///     fp = mol.spectrophores(coords)          # len == 48
-    ///     fp_z = mol.spectrophores(coords, normalize="zscore")
-    ///     sim = chematic.tanimoto_spectrophores(fp1, fp2)
-    #[pyo3(signature = (coords, normalize = "none"))]
-    fn spectrophores(&self, coords: Vec<[f64; 3]>, normalize: &str) -> Vec<f64> {
-        let c3d = flat_to_coords3d(&coords);
-        let norm = match normalize.to_lowercase().as_str() {
-            "zscore" | "z-score" => chematic_3d::SpectrophoresNorm::ZScore,
-            "l2" => chematic_3d::SpectrophoresNorm::L2,
-            _ => chematic_3d::SpectrophoresNorm::None,
-        };
-        let config = chematic_3d::SpectrophoresConfig {
-            normalize: norm,
-            ..Default::default()
-        };
-        chematic_3d::spectrophores(&self.inner, &c3d, &config)
-    }
-
     // -----------------------------------------------------------------------
     // 3D file I/O
     // -----------------------------------------------------------------------

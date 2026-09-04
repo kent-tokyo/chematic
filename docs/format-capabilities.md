@@ -175,6 +175,10 @@ Notes on the cells above that need qualification:
 ### CDXML
 
 - **Rust**: `chematic_mol::{parse_cdxml, parse_cdxml_with_limits, parse_cdxml_all, parse_cdxml_all_with_limits, write_cdxml, CdxmlError, CdxmlParseLimits, CdxmlParseOptions}`.
+- **Document API**: `CdxmlDocument` supports bounded multi-page summaries,
+  exact-source writing, and loss-preserving page/object command edits. Opaque
+  presentation objects are retained; arbitrary ChemDraw presentation
+  interpretation/rendering is outside the compatibility claim.
 - **Parse limits**: `CdxmlParseLimits` bounds input bytes, physical line
   bytes/count, attribute bytes, atoms, bonds, and fragments. Existing parsers
   use finite defaults; option and limit policies can be combined with

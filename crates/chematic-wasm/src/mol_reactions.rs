@@ -1119,6 +1119,50 @@ pub fn normalize_reaction_smiles(rxn_smiles: &str) -> Result<String, JsValue> {
     Ok(chematic_rxn::write_reaction(&rxn))
 }
 
+/// Validate and normalize a typed Markush/polymer semantic model JSON.
+#[wasm_bindgen]
+pub fn semantic_model_json(model_json: &str) -> Result<String, JsValue> {
+    let value: serde_json::Value = serde_json::from_str(model_json)
+        .map_err(|e| JsValue::from_str(&format!("invalid semantic JSON: {e}")))?;
+    let model = chematic_mol::SemanticModel::from_json(&value)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    serde_json::to_string(&model.to_json()).map_err(|e| JsValue::from_str(&e.to_string()))
+}
+
+/// Apply an explicit Markush selection command to a semantic model JSON.
+#[wasm_bindgen]
+pub fn semantic_apply_json_command(
+    model_json: &str,
+    command_json: &str,
+) -> Result<String, JsValue> {
+    let model_value: serde_json::Value = serde_json::from_str(model_json)
+        .map_err(|e| JsValue::from_str(&format!("invalid semantic JSON: {e}")))?;
+    let command: serde_json::Value = serde_json::from_str(command_json)
+        .map_err(|e| JsValue::from_str(&format!("invalid semantic command JSON: {e}")))?;
+    let model = chematic_mol::SemanticModel::from_json(&model_value)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let next = model
+        .apply_json_command(&command)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    serde_json::to_string(&next.to_json()).map_err(|e| JsValue::from_str(&e.to_string()))
+}
+
+/// Expand a validated semantic model against a base SMILES and return the
+/// expanded graph plus source-to-expanded atom mapping.
+#[wasm_bindgen]
+pub fn semantic_expand_json(base_smiles: &str, model_json: &str) -> Result<String, JsValue> {
+    let value: serde_json::Value = serde_json::from_str(model_json)
+        .map_err(|e| JsValue::from_str(&format!("invalid semantic JSON: {e}")))?;
+    let model = chematic_mol::SemanticModel::from_json(&value)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let base =
+        chematic_smiles::parse(base_smiles).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let expanded = model
+        .expand(&base)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    serde_json::to_string(&expanded.to_json()).map_err(|e| JsValue::from_str(&e.to_string()))
+}
+
 // ---------------------------------------------------------------------------
 // Sprint Z: BRICS fragment SMILES, FP bit-vectors, FCFP6, SDF write
 // ---------------------------------------------------------------------------

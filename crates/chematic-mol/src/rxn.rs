@@ -19,7 +19,9 @@
 //! …
 //! ```
 
-use chematic_rxn::Reaction;
+use chematic_rxn::{
+    ComponentRole, Reaction, ReactionDocument, ReactionDocumentError, ReactionLoss,
+};
 
 use crate::error::MolParseError;
 use crate::mol2000::parse_mol;
@@ -65,6 +67,38 @@ pub enum RxnParseError {
     MolParse(MolParseError),
 }
 
+/// Error returned by the loss-aware RXN/document adapter.
+#[derive(Debug)]
+pub enum RxnDocumentError {
+    /// The upstream-backed RXN V2000 parser rejected the input.
+    Rxn(RxnParseError),
+    /// The typed document was invalid or could not be represented losslessly.
+    Document(ReactionDocumentError),
+}
+
+impl core::fmt::Display for RxnDocumentError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Rxn(error) => write!(f, "RXN document parse error: {error}"),
+            Self::Document(error) => write!(f, "RXN document conversion error: {error}"),
+        }
+    }
+}
+
+impl std::error::Error for RxnDocumentError {}
+
+impl From<RxnParseError> for RxnDocumentError {
+    fn from(error: RxnParseError) -> Self {
+        Self::Rxn(error)
+    }
+}
+
+impl From<ReactionDocumentError> for RxnDocumentError {
+    fn from(error: ReactionDocumentError) -> Self {
+        Self::Document(error)
+    }
+}
+
 impl core::fmt::Display for RxnParseError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
@@ -91,6 +125,73 @@ impl From<MolParseError> for RxnParseError {
 /// Parse an MDL RXN V2000 string into a [`Reaction`].
 pub fn parse_rxn_file(text: &str) -> Result<Reaction, RxnParseError> {
     parse_rxn_file_with_limits(text, RxnFileParseLimits::default())
+}
+
+/// Parse an upstream-backed MDL RXN V2000 file into a typed reaction document.
+///
+/// The classic RXN dialect has reactant and product MOL blocks but no agents,
+/// conditions, provenance, or stoichiometric coefficient channel. Components
+/// are therefore marked as derived and receive deterministic IDs.
+pub fn parse_rxn_document(text: &str) -> Result<ReactionDocument, RxnDocumentError> {
+    let reaction = parse_rxn_file(text)?;
+    Ok(ReactionDocument::from_reaction(&reaction))
+}
+
+/// Write a typed reaction document as MDL RXN V2000 without silent data loss.
+///
+/// Agents and rich document metadata are rejected with a typed `Losses` error
+/// because RXN V2000 has no representational channel for them.
+pub fn write_rxn_document(document: &ReactionDocument) -> Result<String, RxnDocumentError> {
+    document.validate()?;
+    let mut losses = Vec::new();
+    if document.steps.len() != 1 {
+        losses.push(ReactionLoss {
+            field: "steps".to_string(),
+            detail: "RXN V2000 has one reaction boundary".to_string(),
+        });
+    }
+    if !document.provenance.is_empty() {
+        losses.push(ReactionLoss {
+            field: "provenance".to_string(),
+            detail: "RXN V2000 has no document provenance channel".to_string(),
+        });
+    }
+    let step = &document.steps[0];
+    if !step.conditions.is_empty() {
+        losses.push(ReactionLoss {
+            field: "conditions".to_string(),
+            detail: "RXN V2000 has no reaction conditions channel".to_string(),
+        });
+    }
+    if !step.provenance.is_empty() {
+        losses.push(ReactionLoss {
+            field: "step.provenance".to_string(),
+            detail: "RXN V2000 has no step provenance channel".to_string(),
+        });
+    }
+    for component in &step.components {
+        if component.coefficient != 1 {
+            losses.push(ReactionLoss {
+                field: format!("{}.coefficient", component.id),
+                detail: "RXN V2000 has no stoichiometric coefficient channel".to_string(),
+            });
+        }
+        if component.role == ComponentRole::Agent {
+            losses.push(ReactionLoss {
+                field: format!("{}.role", component.id),
+                detail: "RXN V2000 has no agent channel".to_string(),
+            });
+        }
+    }
+    if !losses.is_empty() {
+        return Err(RxnDocumentError::Document(ReactionDocumentError::Losses(
+            losses,
+        )));
+    }
+    let reaction_smiles = document.to_reaction_smiles()?;
+    let reaction = chematic_rxn::parse_reaction(&reaction_smiles)
+        .map_err(|error| ReactionDocumentError::parse_message(error.to_string()))?;
+    Ok(write_rxn_file(&reaction))
 }
 
 /// Parse an MDL RXN V2000 string with explicit resource limits.
@@ -313,5 +414,27 @@ mod tests {
         let rxn2 = parse_rxn_file(&written).unwrap();
         assert_eq!(rxn2.reactants.len(), 1);
         assert_eq!(rxn2.products.len(), 1);
+    }
+
+    #[test]
+    fn rxn_document_adapter_round_trips_through_upstream_parser() {
+        let source = minimal_rxn_block();
+        let document = parse_rxn_document(&source).unwrap();
+        assert_eq!(document.steps.len(), 1);
+        assert_eq!(document.steps[0].components.len(), 2);
+        let written = write_rxn_document(&document).unwrap();
+        let decoded = parse_rxn_document(&written).unwrap();
+        assert_eq!(decoded.steps[0].components.len(), 2);
+    }
+
+    #[test]
+    fn rxn_document_rejects_agents_instead_of_dropping_them() {
+        let mut document = ReactionDocument::from_reaction_smiles("CC>O>CC").unwrap();
+        document.steps[0].components[0].role = ComponentRole::Agent;
+        let error = write_rxn_document(&document).unwrap_err();
+        assert!(matches!(
+            error,
+            RxnDocumentError::Document(ReactionDocumentError::Losses(_))
+        ));
     }
 }

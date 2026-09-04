@@ -1633,13 +1633,32 @@ pub fn write_sdf_record(
     props: &std::collections::HashMap<String, String>,
 ) -> String {
     let mut out = write_mol_with_coords(mol, meta, coords);
-    for (k, v) in props {
-        if !k.starts_with('_') {
-            out.push_str(&format!("> <{k}>\n{v}\n\n"));
+    append_sd_fields_and_delimiter(&mut out, props);
+    out
+}
+
+/// Append visible SD fields and the record delimiter without allocating a
+/// temporary formatted `String` for every property.  Reserving the aggregate
+/// payload once also avoids repeated growth when records carry many fields.
+fn append_sd_fields_and_delimiter(
+    out: &mut String,
+    props: &std::collections::HashMap<String, String>,
+) {
+    use std::fmt::Write as _;
+
+    let additional = props
+        .iter()
+        .filter(|(key, _)| !key.starts_with('_'))
+        .map(|(key, value)| key.len().saturating_add(value.len()).saturating_add(7))
+        .sum::<usize>()
+        .saturating_add(5);
+    out.reserve(additional);
+    for (key, value) in props {
+        if !key.starts_with('_') {
+            write!(out, "> <{key}>\n{value}\n\n").expect("writing to String cannot fail");
         }
     }
     out.push_str("$$$$\n");
-    out
 }
 
 /// Like [`write_sdf_record`] but emits a MOL V3000 (Extended Ctab) block
@@ -1656,12 +1675,7 @@ pub fn write_sdf_record_v3000(
     props: &std::collections::HashMap<String, String>,
 ) -> String {
     let mut out = crate::mol3000::write_mol_v3000(mol, meta, coords);
-    for (k, v) in props {
-        if !k.starts_with('_') {
-            out.push_str(&format!("> <{k}>\n{v}\n\n"));
-        }
-    }
-    out.push_str("$$$$\n");
+    append_sd_fields_and_delimiter(&mut out, props);
     out
 }
 
@@ -1685,12 +1699,7 @@ pub fn write_sdf_record_with_conformer(
     props: &std::collections::HashMap<String, String>,
 ) -> String {
     let mut out = write_mol_with_conformer(mol, meta, conformer);
-    for (k, v) in props {
-        if !k.starts_with('_') {
-            out.push_str(&format!("> <{k}>\n{v}\n\n"));
-        }
-    }
-    out.push_str("$$$$\n");
+    append_sd_fields_and_delimiter(&mut out, props);
     out
 }
 

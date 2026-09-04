@@ -6,6 +6,7 @@
 
 use std::collections::BTreeMap;
 
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::cdxml::{CdxmlError, CdxmlParseLimits};
@@ -13,21 +14,21 @@ use crate::cml::parse_xml_attrs;
 
 pub type CdxmlValue = Value;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CdxmlObject {
     pub tag: String,
     pub attributes: BTreeMap<String, CdxmlValue>,
     pub raw_xml: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CdxmlPage {
     pub id: Option<String>,
     pub attributes: BTreeMap<String, CdxmlValue>,
     pub children: Vec<CdxmlObject>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CdxmlDocument {
     pub document_attributes: BTreeMap<String, CdxmlValue>,
     pub pages: Vec<CdxmlPage>,
@@ -35,7 +36,8 @@ pub struct CdxmlDocument {
 }
 
 /// Safe, source-oriented edits for document-level CDXML consumers.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "kind")]
 pub enum CdxmlEdit {
     SetPageAttribute {
         page_id: String,
@@ -175,6 +177,29 @@ impl CdxmlDocument {
     /// Return the exact source representation, preserving unknown tags and attributes.
     pub fn write(&self) -> String {
         self.raw_xml.clone()
+    }
+
+    /// Number of document pages, including pages containing only presentation
+    /// objects or otherwise unknown CDXML content.
+    pub fn page_count(&self) -> usize {
+        self.pages.len()
+    }
+
+    /// Return page IDs in source order. Missing IDs remain `None` so callers
+    /// cannot accidentally address a page using an invented identifier.
+    pub fn page_ids(&self) -> Vec<Option<&str>> {
+        self.pages.iter().map(|page| page.id.as_deref()).collect()
+    }
+
+    /// Apply a JSON-encoded document edit and return the reparsed document.
+    ///
+    /// This is the binding-neutral command boundary. The edit is applied to
+    /// the original XML, then parsed again under the normal resource limits.
+    pub fn apply_json_edit(&self, edit_json: &str) -> Result<Self, CdxmlError> {
+        let edit: CdxmlEdit = serde_json::from_str(edit_json).map_err(|error| {
+            CdxmlError::InvalidCoords(format!("invalid CDXML edit JSON: {error}"))
+        })?;
+        self.apply(&edit)
     }
 
     /// Apply a bounded edit and reparse, so indexes/attributes stay consistent.
@@ -342,7 +367,7 @@ impl CdxmlDocument {
                 }
                 object_index += 1;
             }
-            if in_page && trimmed.starts_with("</page") {
+            if trimmed.starts_with("</page") {
                 in_page = false;
                 page_index += 1;
             }
@@ -493,5 +518,24 @@ mod tests {
         assert!(output.contains("<group id=\"g1\" unknown=\"keep\">"));
         assert!(output.contains("<text id=\"t1\" Custom=\"keep\"/>"));
         assert!(!output.contains("<arrow id=\"a1\""));
+    }
+
+    #[test]
+    fn applies_json_command_across_multiple_pages() {
+        let input = "<CDXML>\n<page id=\"p1\">\n<arrow id=\"a1\"/>\n</page>\n<page id=\"p2\">\n<text id=\"t1\"/>\n</page>\n</CDXML>";
+        let doc = CdxmlDocument::parse(input).unwrap();
+        assert_eq!(doc.page_count(), 2);
+        assert_eq!(doc.page_ids(), vec![Some("p1"), Some("p2")]);
+        let edited = doc
+            .apply_json_edit(
+                r#"{"kind":"set_page_attribute","page_id":"p2","key":"title","value":"Page 2"}"#,
+            )
+            .unwrap();
+        assert!(
+            edited.write().contains("title=\"Page 2\""),
+            "{}",
+            edited.write()
+        );
+        assert!(edited.write().contains("<arrow id=\"a1\"/>"));
     }
 }

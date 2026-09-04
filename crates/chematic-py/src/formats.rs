@@ -431,6 +431,61 @@ fn parse_cdxml_document_json(cdxml_str: &str) -> PyResult<String> {
     serde_json::to_string(&document.to_json()).map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
+/// Apply a loss-preserving page/presentation edit to a CDXML document.
+///
+/// ``edit_json`` is a ``CdxmlEdit`` command object, for example
+/// ``{"kind":"set_page_attribute", "page_id":"p1", "key":"title", "value":"Page 1"}``.
+/// Unknown presentation XML remains intact.
+#[pyfunction]
+fn edit_cdxml_document_json(cdxml_str: &str, edit_json: &str) -> PyResult<String> {
+    let document = chematic_mol::CdxmlDocument::parse(cdxml_str)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let edited = document
+        .apply_json_edit(edit_json)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    Ok(edited.write())
+}
+
+/// Validate and normalize a typed Markush/polymer semantic model JSON.
+#[pyfunction]
+fn semantic_model_json(model_json: &str) -> PyResult<String> {
+    let value: serde_json::Value = serde_json::from_str(model_json)
+        .map_err(|e| PyValueError::new_err(format!("invalid semantic JSON: {e}")))?;
+    let model = chematic_mol::SemanticModel::from_json(&value)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    serde_json::to_string(&model.to_json()).map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
+/// Apply an explicit Markush selection command to a semantic model JSON.
+#[pyfunction]
+fn semantic_apply_json_command(model_json: &str, command_json: &str) -> PyResult<String> {
+    let model_value: serde_json::Value = serde_json::from_str(model_json)
+        .map_err(|e| PyValueError::new_err(format!("invalid semantic JSON: {e}")))?;
+    let command: serde_json::Value = serde_json::from_str(command_json)
+        .map_err(|e| PyValueError::new_err(format!("invalid semantic command JSON: {e}")))?;
+    let model = chematic_mol::SemanticModel::from_json(&model_value)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let next = model
+        .apply_json_command(&command)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    serde_json::to_string(&next.to_json()).map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
+/// Expand a validated semantic model against a base SMILES.
+#[pyfunction]
+fn semantic_expand_json(base_smiles: &str, model_json: &str) -> PyResult<String> {
+    let value: serde_json::Value = serde_json::from_str(model_json)
+        .map_err(|e| PyValueError::new_err(format!("invalid semantic JSON: {e}")))?;
+    let model = chematic_mol::SemanticModel::from_json(&value)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let base =
+        chematic_smiles::parse(base_smiles).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let expanded = model
+        .expand(&base)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    serde_json::to_string(&expanded.to_json()).map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
 /// Parse an MDL MOL V3000 (``V3000``) block into a ``Mol`` object.
 ///
 /// Raises ``ValueError`` on parse failure.
@@ -1076,6 +1131,26 @@ fn to_rxn_file(reaction_smiles: &str) -> PyResult<String> {
     let rxn = chematic_rxn::parse_reaction(reaction_smiles)
         .map_err(|e| PyValueError::new_err(e.to_string()))?;
     Ok(chematic_mol::write_rxn_file(&rxn))
+}
+
+/// Parse an MDL RXN V2000 file into the typed, loss-aware reaction-document
+/// JSON contract shared with the WASM/Node bindings.
+#[pyfunction]
+fn from_rxn_document_json(text: &str) -> PyResult<String> {
+    let document =
+        chematic_mol::parse_rxn_document(text).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    serde_json::to_string(&document).map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
+/// Write typed reaction-document JSON as MDL RXN V2000.
+///
+/// Rich fields with no RXN V2000 representation raise ``ValueError`` instead
+/// of being silently discarded.
+#[pyfunction]
+fn to_rxn_document_json(document_json: &str) -> PyResult<String> {
+    let document: chematic_rxn::ReactionDocument = serde_json::from_str(document_json)
+        .map_err(|e| PyValueError::new_err(format!("invalid reaction document JSON: {e}")))?;
+    chematic_mol::write_rxn_document(&document).map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
 /// Find top-K nearest neighbors from precomputed fingerprint byte arrays.
@@ -2274,6 +2349,10 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(from_moljson, m)?)?;
     m.add_function(wrap_pyfunction!(from_cdxml, m)?)?;
     m.add_function(wrap_pyfunction!(parse_cdxml_document_json, m)?)?;
+    m.add_function(wrap_pyfunction!(edit_cdxml_document_json, m)?)?;
+    m.add_function(wrap_pyfunction!(semantic_model_json, m)?)?;
+    m.add_function(wrap_pyfunction!(semantic_apply_json_command, m)?)?;
+    m.add_function(wrap_pyfunction!(semantic_expand_json, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol_v3000, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol_v3000_with_coords, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol_v3000_with_diagnostics, m)?)?;
@@ -2298,6 +2377,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(write_reaction, m)?)?;
     m.add_function(wrap_pyfunction!(from_rxn_file, m)?)?;
     m.add_function(wrap_pyfunction!(to_rxn_file, m)?)?;
+    m.add_function(wrap_pyfunction!(from_rxn_document_json, m)?)?;
+    m.add_function(wrap_pyfunction!(to_rxn_document_json, m)?)?;
     m.add_function(wrap_pyfunction!(nearest_neighbors_from_fp, m)?)?;
     m.add_function(wrap_pyfunction!(parse_smi_file, m)?)?;
     m.add_function(wrap_pyfunction!(write_smi_file, m)?)?;

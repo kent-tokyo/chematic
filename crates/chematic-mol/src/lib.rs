@@ -144,7 +144,8 @@ pub use qcschema::{
 };
 pub use record::MoleculeRecord;
 pub use rxn::{
-    RxnFileParseLimits, RxnParseError, parse_rxn_file, parse_rxn_file_with_limits, write_rxn_file,
+    RxnDocumentError, RxnFileParseLimits, RxnParseError, parse_rxn_document, parse_rxn_file,
+    parse_rxn_file_with_limits, write_rxn_document, write_rxn_file,
 };
 pub use sdf::{
     ConformerEnsemble, SdfFileReader, SdfParseLimits, SdfReader, SdfRecord, SdfRecordReader,

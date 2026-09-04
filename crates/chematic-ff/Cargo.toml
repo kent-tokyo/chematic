@@ -17,8 +17,8 @@ documentation = "https://docs.rs/chematic-ff"
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-chematic-core       = { path = "../chematic-core",       version = "1.0.3" }
-chematic-perception = { path = "../chematic-perception", version = "1.0.3" }
+chematic-core       = { path = "../chematic-core",       version = "1.0.4" }
+chematic-perception = { path = "../chematic-perception", version = "1.0.4" }
 
 [dev-dependencies]
 criterion = { version = "0.8", features = ["html_reports"] }

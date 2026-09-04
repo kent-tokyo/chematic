@@ -42,4 +42,4 @@ pub use poscar::{
     PoscarDocument, PoscarError, PredictorCorrector, parse_contcar, parse_poscar, write_poscar,
 };
 pub use site::{CartesianCoord, FractionalCoord, Occupancy, PeriodicSite, SiteSpecies};
-pub use structure::PeriodicStructure;
+pub use structure::{CompositionSummary, PeriodicStructure};

@@ -37,7 +37,6 @@ pub(crate) mod prng;
 pub mod rdkit_shape_descriptors;
 pub mod sasa;
 pub mod shape_descriptors;
-pub mod spectrophores;
 pub mod stereo3d;
 pub mod stereo_constraints;
 pub mod torsion_motif;
@@ -97,9 +96,6 @@ pub use sasa::{
 pub use shape_descriptors::{
     asphericity, eccentricity, npr1, npr2, plane_of_best_fit, pmi, pmi1, pmi2, pmi3,
     radius_of_gyration,
-};
-pub use spectrophores::{
-    SpectrophoresConfig, SpectrophoresNorm, spectrophores, tanimoto_spectrophores,
 };
 pub use stereo3d::{StereoAssignment3D, assign_stereo_from_3d};
 pub use torsion_motif::{

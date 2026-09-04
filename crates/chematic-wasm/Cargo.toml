@@ -32,19 +32,19 @@ web-sys = { version = "0.3", features = ["console"] }
 js-sys = "0.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-chematic-core       = { path = "../chematic-core",       version = "1.0.3" }
-chematic-smiles     = { path = "../chematic-smiles",     version = "1.0.3" }
-chematic-perception = { path = "../chematic-perception", version = "1.0.3" }
-chematic-chem       = { path = "../chematic-chem",       version = "1.0.3", features = ["serde"] }
-chematic-fp         = { path = "../chematic-fp",         version = "1.0.3" }
-chematic-depict     = { path = "../chematic-depict",     version = "1.0.3", default-features = false, features = [] }
-chematic-rxn        = { path = "../chematic-rxn",        version = "1.0.3" }
-chematic-smarts     = { path = "../chematic-smarts",     version = "1.0.3" }
-chematic-3d         = { path = "../chematic-3d",         version = "1.0.3" }
-chematic-mol        = { path = "../chematic-mol",        version = "1.0.3" }
-chematic-inchi      = { path = "../chematic-inchi",      version = "1.0.3" }
-chematic-iupac      = { path = "../chematic-iupac",      version = "1.0.3" }
-chematic-ff         = { path = "../chematic-ff",         version = "1.0.3" }
+chematic-core       = { path = "../chematic-core",       version = "1.0.4" }
+chematic-smiles     = { path = "../chematic-smiles",     version = "1.0.4" }
+chematic-perception = { path = "../chematic-perception", version = "1.0.4" }
+chematic-chem       = { path = "../chematic-chem",       version = "1.0.4", features = ["serde"] }
+chematic-fp         = { path = "../chematic-fp",         version = "1.0.4" }
+chematic-depict     = { path = "../chematic-depict",     version = "1.0.4", default-features = false, features = [] }
+chematic-rxn        = { path = "../chematic-rxn",        version = "1.0.4" }
+chematic-smarts     = { path = "../chematic-smarts",     version = "1.0.4" }
+chematic-3d         = { path = "../chematic-3d",         version = "1.0.4" }
+chematic-mol        = { path = "../chematic-mol",        version = "1.0.4" }
+chematic-inchi      = { path = "../chematic-inchi",      version = "1.0.4" }
+chematic-iupac      = { path = "../chematic-iupac",      version = "1.0.4" }
+chematic-ff         = { path = "../chematic-ff",         version = "1.0.4" }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.2"

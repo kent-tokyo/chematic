@@ -1,6 +1,9 @@
 # RDKit → chematic migration cheatsheet
 
-Side-by-side API reference for users coming from RDKit. chematic is pure Rust with zero C/C++ dependencies — install with `pip install chematic`, no conda required.
+Side-by-side API reference for users coming from RDKit. chematic is pure Rust
+by default — install with `pip install chematic`, no conda required. The
+optional `native-inchi` Cargo feature is the documented vendored C FFI
+exception.
 
 See also: [`rdkit-migration.md`](rdkit-migration.md) for a feature-by-feature Supported/Partial/Not-supported breakdown.
 

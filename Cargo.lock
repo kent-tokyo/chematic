@@ -239,7 +239,7 @@ checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
 name = "chematic"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "chematic-3d",
  "chematic-chem",
@@ -258,7 +258,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-3d"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "chematic-chem",
  "chematic-core",
@@ -274,7 +274,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-chem"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "chematic-cip",
  "chematic-core",
@@ -291,7 +291,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-cip"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "chematic-chem",
  "chematic-core",
@@ -303,7 +303,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-cli"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "chematic-chem",
  "chematic-core",
@@ -318,11 +318,11 @@ dependencies = [
 
 [[package]]
 name = "chematic-core"
-version = "1.0.3"
+version = "1.0.4"
 
 [[package]]
 name = "chematic-crystal"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "chematic-core",
  "criterion",
@@ -332,7 +332,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-depict"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "chematic-core",
  "chematic-perception",
@@ -344,7 +344,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-ewald"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "chematic-3d",
  "chematic-core",
@@ -353,7 +353,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-ff"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "chematic-core",
  "chematic-perception",
@@ -363,7 +363,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-fp"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "chematic-cip",
  "chematic-core",
@@ -379,7 +379,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-inchi"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "cc",
  "chematic-chem",
@@ -390,7 +390,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-iupac"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "chematic-core",
  "chematic-perception",
@@ -399,7 +399,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-mcp"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "chematic-3d",
  "chematic-chem",
@@ -417,7 +417,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-mol"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "chematic-chem",
  "chematic-core",
@@ -427,12 +427,13 @@ dependencies = [
  "chematic-rxn",
  "chematic-smarts",
  "chematic-smiles",
+ "serde",
  "serde_json",
 ]
 
 [[package]]
 name = "chematic-perception"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "chematic-core",
  "chematic-smiles",
@@ -443,7 +444,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-py"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "chematic-3d",
  "chematic-chem",
@@ -468,7 +469,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-rxn"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "chematic-chem",
  "chematic-core",
@@ -482,7 +483,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-smarts"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "chematic-core",
  "chematic-perception",
@@ -495,7 +496,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-smiles"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "chematic-core",
  "chematic-perception",
@@ -506,7 +507,7 @@ dependencies = [
 
 [[package]]
 name = "chematic-wasm"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "chematic-3d",
  "chematic-chem",
