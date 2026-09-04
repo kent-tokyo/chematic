@@ -1,6 +1,8 @@
 # chematic-rxn
 
-Reaction SMILES and SMIRKS parser for Rust. Parses chemical transformations (reactants → products) and reaction patterns (transform rules). Pure Rust, RDKit-compatible, WASM-compatible.
+Reaction SMILES and SMIRKS parser for Rust. Parses chemical transformations
+(reactants → products) and bounded transform rules. Pure Rust and
+WASM-compatible, with selected RDKit-oriented behavior.
 
 ## Features
 
@@ -21,7 +23,9 @@ Reaction SMILES and SMIRKS parser for Rust. Parses chemical transformations (rea
   - `CNBond` — reductive amination, SNAr, Buchwald, N-alkylation, imine reduction
   - `CCBond` — Suzuki, Heck, Sonogashira, Negishi, Grignard, aldol, Michael, Wittig
   - `CSBond` — thioether, disulfide, borylation, halogenation, phosphonate
-- **RDKit compatibility**: parses RDKit reaction SMILES, produces identical results
+- **RDKit-oriented interoperability**: common reaction SMILES and SMIRKS are
+  supported, but product enumeration, sanitization, ordering, and unsupported
+  extensions are not claimed to be universally identical to RDKit.
 - **WASM-compatible**: zero C/C++ dependencies
 
 ## Quick Start

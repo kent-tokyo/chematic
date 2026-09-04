@@ -651,10 +651,30 @@ fn parse_field3(
     let field = line
         .get(start..start + 3)
         .ok_or_else(|| make_err(line_num, format!("line too short at column {start}")))?;
-    field
-        .trim()
-        .parse::<usize>()
-        .map_err(|_| make_err(line_num, format!("cannot parse integer from '{field}'")))
+    parse_unsigned_ascii(field)
+        .or_else(|| field.trim().parse::<usize>().ok())
+        .ok_or_else(|| make_err(line_num, format!("cannot parse integer from '{field}'")))
+}
+
+/// Parse the common CTfile integer spelling without invoking the generic
+/// `FromStr` machinery. Fixed-width count/bond fields are overwhelmingly
+/// ASCII spaces followed by decimal digits; uncommon accepted spellings
+/// (such as a leading `+`) fall back to `str::parse` at the call site.
+#[inline]
+fn parse_unsigned_ascii(field: &str) -> Option<usize> {
+    let mut value = 0usize;
+    let mut saw_digit = false;
+    for &byte in field.as_bytes() {
+        match byte {
+            b' ' if !saw_digit => {}
+            b'0'..=b'9' => {
+                saw_digit = true;
+                value = value.checked_mul(10)?.checked_add((byte - b'0') as usize)?;
+            }
+            _ => return None,
+        }
+    }
+    saw_digit.then_some(value)
 }
 
 /// Parse a MOL V2000 string, running stereo perception and returning every
@@ -780,12 +800,20 @@ fn read_mol_internal(
                 if trimmed.is_empty() {
                     0.0
                 } else {
-                    let val: f64 = trimmed.parse().map_err(|_| {
-                        make_atom_err(
-                            raw_lineno,
-                            format!("cannot parse z coordinate from '{trimmed}'"),
-                        )
-                    })?;
+                    // Zero Z is by far the dominant V2000 spelling (especially
+                    // in 2D SDF corpora). Avoid the generic float parser for the
+                    // exact writer-produced value while retaining the existing
+                    // strict parse/finite validation for every other spelling.
+                    let val: f64 = if trimmed == "0.0000" || trimmed == "0" {
+                        0.0
+                    } else {
+                        trimmed.parse().map_err(|_| {
+                            make_atom_err(
+                                raw_lineno,
+                                format!("cannot parse z coordinate from '{trimmed}'"),
+                            )
+                        })?
+                    };
                     if !val.is_finite() {
                         return Err(make_atom_err(
                             raw_lineno,
@@ -833,7 +861,12 @@ fn read_mol_internal(
         // Charge code: bytes 36–38 (3 chars).
         let charge = atom_line
             .get(36..39)
-            .map(|ccc| decode_charge(ccc.trim().parse().unwrap_or(0)))
+            .map(|ccc| {
+                let code = parse_unsigned_ascii(ccc)
+                    .and_then(|value| i8::try_from(value).ok())
+                    .unwrap_or_else(|| ccc.trim().parse().unwrap_or(0));
+                decode_charge(code)
+            })
             .unwrap_or(0);
 
         // V2000 mass difference: bytes 34–35 (two-character signed field).
@@ -937,18 +970,13 @@ fn read_mol_internal(
         }
     }
 
-    // Skip property lines until "M  END" (or EOF if absent).
-    for (_, l) in lines.by_ref() {
-        if l.trim_start().starts_with("M  END") {
-            break;
-        }
-    }
-
-    let mut mol = builder.build();
-
+    // The graph-only supplier does not consume MOL property lines and has
+    // historically accepted EOF without `M  END`. Return immediately after
+    // the declared atom/bond blocks instead of scanning the remainder a
+    // second time; SDF field extraction already locates `M  END` separately.
     if !include_diagnostics {
         return Ok(MolReadReport {
-            mol,
+            mol: builder.build(),
             metadata,
             coords,
             stereo_diagnostics: Vec::new(),
@@ -960,6 +988,15 @@ fn read_mol_internal(
             square_planar_diagnostics: Vec::new(),
         });
     }
+
+    // Skip property lines until "M  END" (or EOF if absent).
+    for (_, l) in lines.by_ref() {
+        if l.trim_start().starts_with("M  END") {
+            break;
+        }
+    }
+
+    let mut mol = builder.build();
 
     // Tetrahedral parity first (raw wedge/hash still fully intact on
     // `bond.order`), THEN E/Z direction -- the E/Z stage only ever writes to
@@ -1142,13 +1179,76 @@ pub fn write_mol_with_coords(
     metadata: &MolMetadata,
     coords: &[(f64, f64)],
 ) -> String {
+    let mut out = String::new();
+    write_mol_with_coords_into(&mut out, mol, metadata, coords);
+    out
+}
+
+#[inline]
+fn push_right_aligned_u32(out: &mut String, mut value: u32, width: usize) {
+    let mut digits = [0_u8; 10];
+    let mut start = digits.len();
+    loop {
+        start -= 1;
+        digits[start] = b'0' + (value % 10) as u8;
+        value /= 10;
+        if value == 0 {
+            break;
+        }
+    }
+    let len = digits.len() - start;
+    for _ in len..width {
+        out.push(' ');
+    }
+    for &digit in &digits[start..] {
+        out.push(digit as char);
+    }
+}
+
+#[inline]
+fn push_right_aligned_i16(out: &mut String, value: i16, width: usize) {
+    let negative = value < 0;
+    let magnitude = value.unsigned_abs() as u32;
+    let digits = if magnitude < 10 {
+        1
+    } else if magnitude < 100 {
+        2
+    } else if magnitude < 1_000 {
+        3
+    } else if magnitude < 10_000 {
+        4
+    } else {
+        5
+    };
+    for _ in (digits + usize::from(negative))..width {
+        out.push(' ');
+    }
+    if negative {
+        out.push('-');
+    }
+    push_right_aligned_u32(out, magnitude, digits);
+}
+
+/// Serialize a MOL V2000 block into a reusable caller-owned buffer.
+///
+/// This is the allocation-amortized implementation used by streaming
+/// writers. The buffer is cleared first; on return it contains exactly the
+/// same bytes as [`write_mol_with_coords`].
+#[doc(hidden)]
+pub fn write_mol_with_coords_into(
+    out: &mut String,
+    mol: &Molecule,
+    metadata: &MolMetadata,
+    coords: &[(f64, f64)],
+) {
     use std::fmt::Write as _;
 
     // A MOL block is dominated by fixed-width atom and bond rows.  Reserve
     // the common-size output up front so serialization does not repeatedly
     // grow and copy the String for every row (the old empty String was a
     // noticeable cost when writing many small records).
-    let mut out = String::with_capacity(128 + mol.atom_count() * 80 + mol.bond_count() * 16);
+    out.clear();
+    out.reserve(128 + mol.atom_count() * 80 + mol.bond_count() * 16);
 
     // Header lines 1–3
     out.push_str(&metadata.name);
@@ -1160,12 +1260,9 @@ pub fn write_mol_with_coords(
     // Counts line (line 4)
     let natoms = mol.atom_count();
     let nbonds = mol.bond_count();
-    write!(
-        &mut out,
-        "{:>3}{:>3}  0  0  0  0  0  0  0  0999 V2000\n",
-        natoms, nbonds
-    )
-    .expect("writing to String cannot fail");
+    push_right_aligned_u32(out, natoms as u32, 3);
+    push_right_aligned_u32(out, nbonds as u32, 3);
+    out.push_str("  0  0  0  0  0  0  0  0999 V2000\n");
 
     // Atom block
     for (idx, atom) in mol.atoms() {
@@ -1173,9 +1270,9 @@ pub fn write_mol_with_coords(
         let charge_code = encode_charge(atom.charge);
         let mass_difference = encode_mass_difference(atom.element, atom.isotope).unwrap_or(0);
         if let Some(&(x, y)) = coords.get(idx.0 as usize) {
-            write!(
-                &mut out,
-                "{:>10.4}{:>10.4}{:>10.4} {:<3}{:>2}{:>3}  0  0  0  0  0  0  0  0  0\n",
+            writeln!(
+                out,
+                "{:>10.4}{:>10.4}{:>10.4} {:<3}{:>2}{:>3}  0  0  0  0  0  0  0  0  0",
                 x, y, 0.0_f64, sym, mass_difference, charge_code,
             )
             .expect("writing to String cannot fail");
@@ -1184,12 +1281,13 @@ pub fn write_mol_with_coords(
             // array. Avoid running the float formatter three times per atom
             // for a byte sequence that is known at compile time.
             out.push_str("    0.0000    0.0000    0.0000 ");
-            writeln!(
-                &mut out,
-                "{:<3}{:>2}{:>3}  0  0  0  0  0  0  0  0  0",
-                sym, mass_difference, charge_code,
-            )
-            .expect("writing to String cannot fail");
+            out.push_str(sym);
+            for _ in sym.len()..3 {
+                out.push(' ');
+            }
+            push_right_aligned_i16(out, mass_difference, 2);
+            push_right_aligned_u32(out, charge_code as u32, 3);
+            out.push_str("  0  0  0  0  0  0  0  0  0\n");
         }
     }
 
@@ -1217,14 +1315,15 @@ pub fn write_mol_with_coords(
             BondOrder::Down => 6,
             _ => 0,
         };
-        writeln!(&mut out, "{:>3}{:>3}{:>3}{:>3}", a1, a2, btype, stereo)
-            .expect("writing to String cannot fail");
+        push_right_aligned_u32(out, a1, 3);
+        push_right_aligned_u32(out, a2, 3);
+        push_right_aligned_u32(out, btype, 3);
+        push_right_aligned_u32(out, stereo, 3);
+        out.push('\n');
     }
 
     // Terminator
     out.push_str("M  END\n");
-
-    out
 }
 
 /// Serialize `mol` to MOL V2000 format using `conformer`'s real 3D
@@ -1632,9 +1731,26 @@ pub fn write_sdf_record(
     coords: &[(f64, f64)],
     props: &std::collections::HashMap<String, String>,
 ) -> String {
-    let mut out = write_mol_with_coords(mol, meta, coords);
-    append_sd_fields_and_delimiter(&mut out, props);
+    let mut out = String::new();
+    write_sdf_record_into(&mut out, mol, meta, coords, props);
     out
+}
+
+/// Serialize one SDF record into a reusable caller-owned buffer.
+///
+/// The buffer is cleared first. Reusing it across records amortizes the MOL
+/// block allocation while preserving byte-for-byte output compatibility with
+/// [`write_sdf_record`].
+#[doc(hidden)]
+pub fn write_sdf_record_into(
+    out: &mut String,
+    mol: &Molecule,
+    meta: &MolMetadata,
+    coords: &[(f64, f64)],
+    props: &std::collections::HashMap<String, String>,
+) {
+    write_mol_with_coords_into(out, mol, meta, coords);
+    append_sd_fields_and_delimiter(out, props);
 }
 
 /// Append visible SD fields and the record delimiter without allocating a
@@ -1733,6 +1849,38 @@ pub fn write_sdf_record_with_conformer_checked(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn fixed_width_integer_writers_match_rust_formatting() {
+        for (value, width) in [
+            (0_u32, 1_usize),
+            (0, 3),
+            (1, 3),
+            (12, 3),
+            (123, 3),
+            (1_234, 3),
+            (u32::MAX, 3),
+        ] {
+            let mut actual = String::new();
+            push_right_aligned_u32(&mut actual, value, width);
+            assert_eq!(actual, format!("{value:>width$}"));
+        }
+
+        for (value, width) in [
+            (i16::MIN, 2_usize),
+            (-123, 2),
+            (-12, 3),
+            (-1, 3),
+            (0, 3),
+            (12, 3),
+            (123, 3),
+            (i16::MAX, 2),
+        ] {
+            let mut actual = String::new();
+            push_right_aligned_i16(&mut actual, value, width);
+            assert_eq!(actual, format!("{value:>width$}"));
+        }
+    }
 
     /// Minimal ethanol MOL V2000 block (CCO, 3 atoms, 2 bonds).
     const ETHANOL_MOL: &str = "\
@@ -2141,6 +2289,28 @@ many_bonds
             Some("test")
         );
         assert!(!rec.properties.contains_key("_Name"));
+    }
+
+    #[test]
+    fn reusable_sdf_buffer_is_byte_identical_and_cleared() {
+        use std::collections::HashMap;
+
+        let (mol, meta) = parse_mol(ETHANOL_MOL).expect("parse");
+        let coords = vec![(0.0, 0.0), (1.5, 0.0), (3.0, 0.0)];
+        let props = HashMap::from([
+            ("Activity".to_string(), "7.2".to_string()),
+            ("Multiline".to_string(), "first\nsecond".to_string()),
+        ]);
+        let expected = write_sdf_record(&mol, &meta, &coords, &props);
+
+        let mut reused = String::from("stale bytes must be removed");
+        write_sdf_record_into(&mut reused, &mol, &meta, &coords, &props);
+        assert_eq!(reused, expected);
+
+        write_sdf_record_into(&mut reused, &mol, &meta, &[], &HashMap::new());
+        assert_eq!(reused, write_sdf_record(&mol, &meta, &[], &HashMap::new()));
+        assert!(!reused.contains("stale bytes"));
+        assert!(!reused.contains("Activity"));
     }
 
     // ── Issue #171: blank MOL name line must not be eaten as inter-record

@@ -1,7 +1,7 @@
 # RDKit comparison — chematic descriptor accuracy
 
 > Historical validation snapshot. These measurements were generated for
-> chematic **v0.4.20** and are not evidence for the current v1.0.3 release.
+> chematic **v0.4.20** and are not evidence for the current v1.0.4 release.
 > For current scope and evidence, see
 > [`docs/compatibility-scope.md`](../../docs/compatibility-scope.md),
 > [`docs/validation.md`](../../docs/validation.md), and

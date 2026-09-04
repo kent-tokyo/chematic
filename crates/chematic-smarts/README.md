@@ -1,14 +1,18 @@
 # chematic-smarts
 
-SMARTS parser, VF2 subgraph isomorphism, and maximum common subgraph (MCS) for Rust. Pure implementation, RDKit-compatible, WASM-compatible.
+SMARTS parser, VF2 subgraph isomorphism, and maximum common subgraph (MCS) for
+Rust. Pure Rust and WASM-compatible, with selected RDKit-oriented behavior.
 
 ## Features
 
-- **SMARTS parsing**: full OpenSMARTS syntax (atom/bond logical expressions, recursive SMARTS)
+- **SMARTS parsing**: documented OpenSMARTS subset including atom/bond logical
+  expressions and recursive SMARTS
 - **VF2 matching**: fast subgraph isomorphism detection (substructure search)
 - **Maximum Common Subgraph (MCS)**: find largest shared structure between two molecules
 - **Chirality-aware matching**: optional R/S and E/Z stereo consideration
-- **RDKit compatibility**: parses RDKit SMARTS, produces identical matches
+- **RDKit-oriented matching**: broad common-query coverage; aromaticity,
+  ring-count, match-order, and unsupported-extension differences remain
+  explicit. Compare match sets unless ordering is part of your contract.
 - **WASM-compatible**: zero C/C++ dependencies
 
 ## Quick Start

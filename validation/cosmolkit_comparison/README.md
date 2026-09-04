@@ -1,9 +1,10 @@
-# Direct comparison smoke harness
+# Legacy direct-comparison smoke harness
 
-This directory is the first checked-in slice of ROADMAP Phase 0. It defines a
-small public smoke corpus and a common JSONL result contract for chematic, RDKit,
-and a future COSMolKit adapter. It deliberately reports parse failures and
-unsupported operations separately from value mismatches.
+This retained harness defines a small public smoke corpus and a common JSONL
+result contract for chematic, RDKit, and optional external adapters. It
+deliberately reports parse failures and unsupported operations separately from
+value mismatches. COSMolKit is not part of the active roadmap; its name remains
+in the directory path only for compatibility with existing scripts and evidence.
 
 Run the two currently available engines from the repository root:
 
@@ -34,9 +35,9 @@ The `rdkit_morgan_bits` operation uses chematic's promoted RDKit-exact Morgan
 API when available; older installed chematic versions report it as
 `unsupported` instead of silently substituting native ECFP4.
 
-The COSMolKit runner is intentionally not bundled yet: its installation/access
-method is not resolved in the roadmap. An adapter must emit the same schema and
-must identify unsupported operations as `unsupported`, never as a passing value.
+No COSMolKit runner is bundled or planned. Any independently maintained
+external adapter must emit the same schema and identify unsupported operations
+as `unsupported`, never as a passing value.
 
 An external adapter can be plugged in without changing the harness:
 
@@ -50,7 +51,7 @@ python3 validation/cosmolkit_comparison/score.py \
 
 The adapter receives `--corpus PATH --engine NAME` and writes only common-schema
 JSONL records to stdout. This keeps competitor installation and API decisions
-outside the repository while making the eventual COSMolKit run reproducible.
+outside the repository while keeping optional comparison runs reproducible.
 The runner enforces a 120-second timeout by default (`--timeout-seconds` can
 adjust it), verifies that every emitted record names the requested engine, and
 publishes the output only after validation succeeds.

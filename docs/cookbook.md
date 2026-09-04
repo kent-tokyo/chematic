@@ -293,7 +293,7 @@ report.save("report.html")     # write to disk
 Each molecule card shows: 2D structure · MW / LogP / TPSA · HBD / HBA / QED · Lipinski / PAINS / Brenk badges.
 Cards are sorted by QED descending. No external CSS or JavaScript — the file opens standalone in any browser.
 
-Full example: [`examples/html_report.py`](../examples/html_report.py)
+Full example: [`examples/html_report.py`](https://github.com/kent-tokyo/chematic/blob/main/examples/html_report.py)
 
 ```python
 # Side-by-side comparison of two molecules

@@ -7,7 +7,9 @@ Fast molecular fingerprints for similarity search and clustering. ECFP4/6, RDKit
 - **ECFP fingerprints**: ECFP4 (default), ECFP6, and configurable radius
 - **MACCS 166-bit**: public pharmacophore-based bit vector
 - **Topological path**: branching-aware path enumeration
-- **RDKit-compatible Morgan**: identical to RDKit's default ECFP (FNV-1a 64-bit hash)
+- **Native and RDKit-oriented Morgan modes**: native ECFP uses chematic's own
+  identifiers; named compatibility APIs have separate validated contracts.
+  Do not mix native bit positions with RDKit fingerprints.
 - **Similarity metrics**: Tanimoto, Dice, complement similarity
 - **MAP4**: MinHashed Atom-Pair fingerprint (Minervini 2020) — `map4(mol, config)` / `tanimoto_map4(a, b)`
 - **MHFP / SECFP**: MinHash fingerprint for small molecules — `mhfp(mol, config)`

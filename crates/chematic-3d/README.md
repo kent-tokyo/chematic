@@ -125,14 +125,9 @@ let d = rmsd_no_align(&coords1, &coords2);
 println!("RMSD: {:.3} Å", d);
 ```
 
-## Performance
+## Performance and maturity
 
-| Task | Benzene | Naphthalene | Caffeine |
-|------|---------|-------------|----------|
-| Generate coords | ~20 µs | ~50 µs | ~100 µs |
-| DREIDING minimize | ~500 µs | ~2 ms | ~10 ms |
-| Constraint projection | ~150 µs | ~400 µs | ~700 µs |
-| 100-step MD | ~50 ms | ~100 ms | ~500 ms |
+3D generation and MMFF94 remain Experimental. Use typed pipeline outcomes and the documented soundness checks; do not infer conformational-quality parity from a successful result. Reproducible measurements are indexed in [`benchmarks/README.md`](../../benchmarks/README.md).
 
 ## WASM Compatibility
 
@@ -142,7 +137,7 @@ All functions compile to `wasm32-unknown-unknown` without modification.
 wasm-pack build --target web --release
 ```
 
-**Bundle Size**: ~550 KB (chematic-wasm including all dependencies)
+The full optimized `chematic-wasm` artifact was measured at 3.30 MB raw / 1.21 MB gzip for the v1.0.2 candidate; see the dated artifact record rather than treating this as a permanent size guarantee
 
 ## Crate Dependencies
 
@@ -167,29 +162,9 @@ See `examples/` directory:
 - `md_simulation.rs` — Molecular dynamics
 - `geometry_optimization.rs` — Force field minimization
 
-## Testing
+## Validation
 
-```bash
-cargo test --lib
-# 80+ tests covering all 3D operations
-```
-
-## Version History
-
-**v0.1.93** (2026-06-12):
-- Integrated with full multi-sphere CIP stereochemistry assignment
-- Correct R/S stereoisomer geometry in 3D
-
-**v0.1.32** (2026-06-07):
-- NEW: Constraint satisfaction algorithm with bond/angle enforcement
-- NEW: WASM RNG seeding fix (MD now uses cryptographic randomness in browser)
-- 12 new constraint tests
-- All 80 tests passing
-
-**v0.1.30** (2026-06-07):
-- DREIDING force field fix (correct VDW radii, combining rules)
-- MD velocity initialization fix (correct thermal velocities)
-- SPME Ewald summation (experimental)
+Run `cargo test -p chematic-3d`. Long-running Experimental lanes and reproduction commands are documented in [`docs/v1.0-local-release-gate.md`](../../docs/v1.0-local-release-gate.md). Release history is maintained in the repository [`CHANGELOG.md`](../../CHANGELOG.md).
 
 ## License
 

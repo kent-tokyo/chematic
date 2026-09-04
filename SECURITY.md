@@ -1,250 +1,108 @@
 # Security Policy
 
-## Supported Versions
+## Supported versions
 
 | Version | Supported | Status |
-|---------|-----------|--------|
-| v1.0.4 | Yes | Current release; bounded document and semantic APIs preserve the v1.0 security boundary |
-| v1.0.3 | Yes | Previous patch release; compatibility and security boundary unchanged from v1.0.0 |
-| v1.0.2 | Yes | Previous patch release; compatibility and security boundary unchanged from v1.0.0 |
-| v1.0.1 | Yes (partial registries) | Previous patch release; GitHub Release, crates.io, and PyPI published |
-| v1.0.0 | Yes (partial registries) | GitHub Release, crates.io, and PyPI published; npm publication is blocked by registry scope/token permissions |
-| v0.89.0 | Yes | Previous published release; release evidence verified |
-| v0.88.0 | Limited | Previous stable release — security fixes only |
-| < v0.88.0 | Limited | Security fixes only (limited) |
+|---|---|---|
+| v1.0.5 | Yes | Current release |
+| v1.0.4 | Security fixes only | Upgrade to v1.0.5 is recommended |
+| v1.0.0-v1.0.3 | Security fixes only | Upgrade to v1.0.5 is recommended |
+| v0.89.0 | Security fixes only | Previous published release |
+| Earlier versions | No | End of life |
+
+The current release is published on GitHub Releases, crates.io, PyPI, and npm.
+Release history belongs in [`CHANGELOG.md`](CHANGELOG.md); detailed historical
+security notes are archived in
+[`docs/archive/security-policy-through-v1.0.4.md`](docs/archive/security-policy-through-v1.0.4.md).
+
+## Reporting a vulnerability
+
+Use [GitHub private vulnerability reporting](https://github.com/kent-tokyo/chematic/security/advisories/new)
+for non-public reports. For sensitive coordination, contact
+`36805997+kent-tokyo@users.noreply.github.com`.
+
+Please include the affected package/version, impact, minimal reproducer, and
+whether untrusted input or an optional feature is required. Do not open a
+public issue before coordinated disclosure when exploitation details are
+sensitive.
+
+Expected handling:
+
+- initial response within seven days;
+- target fix within 30 days, depending on severity and reproducibility;
+- coordinated disclosure after a patched artifact is available;
+- reporter credit unless anonymity is requested.
+
+## Security boundary
+
+In scope:
+
+- memory unsafety or undefined behavior;
+- unbounded CPU, memory, recursion, or output growth on public untrusted-input
+  paths;
+- parser or serialization behavior that crosses a trust boundary;
+- command, path, network, credential, or supply-chain injection;
+- bypass of documented WASM, MCP, CLI, or binding resource limits.
+
+Usually handled as correctness issues rather than vulnerabilities:
+
+- chemistry accuracy or compatibility differences without a security impact;
+- unsupported RDKit/Open Babel behavior;
+- Experimental 3D/MMFF94 quality or convergence limitations;
+- model, method, or dataset quality claims.
+
+If a correctness defect can cause unsafe downstream action, denial of service,
+or a trust-boundary violation, report it privately so impact can be assessed.
+
+## Runtime and dependency model
+
+- The common Rust, Python, and WASM chemistry paths are pure Rust and perform
+  no implicit network access.
+- `chematic-mcp` is mostly local, but its explicit `name_to_smiles` tool calls
+  the PubChem REST API. Deployments must apply their own egress, privacy,
+  timeout, and availability policy to that tool.
+- The optional `native-inchi` feature uses a reviewed vendored C FFI boundary
+  and is unavailable to WASM. The default pure-Rust InChI path is approximate.
+- Filesystem access occurs only through APIs or commands that the caller
+  explicitly invokes. Applications remain responsible for path permissions,
+  quotas, and sandboxing.
+- Browser builds run inside the browser sandbox. Three-browser smoke and
+  adversarial tests cover representative malformed and oversized inputs, but
+  do not constitute a complete browser security audit.
+
+## Maintainer controls
+
+Repository-local controls include:
+
+- finite parser, search, binding, MCP, CLI, and serialization limits with
+  typed failures;
+- four fuzz targets and minimized regression corpora;
+- focused Miri and Linux ASan/LSan/TSan lanes;
+- Rust/Python/Node/WASM contract tests and Chromium/Firefox/WebKit smoke tests;
+- dependency and license checks, immutable GitHub Action pins, SBOM,
+  provenance, checksums, and release-key verification;
+- an unsafe-surface allowlist isolating the optional native-InChI boundary.
+
+Reproduction commands and evidence boundaries are documented in
+[`docs/v1.0-local-release-gate.md`](docs/v1.0-local-release-gate.md),
+[`docs/security-surface.md`](docs/security-surface.md), and
+[`docs/security-review/`](docs/security-review/). Independent non-maintainer
+review remains an external follow-up and is not claimed as completed.
+
+## User guidance
+
+- Use the latest patch release and pin dependencies and artifacts where
+  reproducibility matters.
+- Treat all molecular and document input as untrusted; keep default limits or
+  choose explicit lower limits for exposed services.
+- Validate chemistry output for the intended scientific or regulatory use.
+- Keep Experimental 3D/MMFF94 output behind the documented sanity and failure
+  checks.
+- Restrict or disable the PubChem-backed MCP tool when network access or data
+  disclosure is not acceptable.
+
+Copyright and third-party notices are in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+Implementation and patent/FTO boundaries are in
+[`docs/implementation-provenance.md`](docs/implementation-provenance.md).
 
-**Active Support**: v1.0.4 is the latest release.
-**Release evidence**: v0.89.0 was built from main commit `344e9dc2`; the
-release-key evidence workflow passed in run `33699428867`, including clean
-checkout signing and public-key verification.
-**End of Life**: Older versions receive no support.
-
-### v1.0 security boundary
-
-The v1.0 release requires repository-local fuzz, dependency, binding,
-focused-Miri, and sanitizer procedures. Independent external review, hosted
-CI execution, and external oracle campaigns are supplemental evidence and are
-not represented as completed audit work. See the
-[local release gate](docs/v1.0-local-release-gate.md) and the
-[compatibility boundary](docs/compatibility-scope.md).
-
----
-
-## Reporting a Vulnerability
-
-### For Non-Public Reports (Recommended)
-
-Please use **GitHub Security Advisories** to report vulnerabilities privately:
-
-1. Go to: https://github.com/kent-tokyo/chematic/security/advisories
-2. Click **Report a vulnerability** (or **New draft security advisory**)
-3. Fill in the vulnerability details:
-   - **Vulnerability type**: Choose from the dropdown
-   - **Package**: chematic (or specific sub-crate)
-   - **Severity**: High / Medium / Low
-   - **Description**: Clear reproduction steps and impact
-4. Submit the draft
-
-**GitHub will**:
-- Notify maintainers immediately
-- Allow collaborative discussion in a private space
-- Coordinate embargo if needed before public disclosure
-
-### For Sensitive Matters
-
-Email: **36805997+kent-tokyo@users.noreply.github.com**
-
----
-
-## Response Timeline
-
-- **Initial Response**: Within 7 days of report submission
-- **Security Fix**: Aim for 30 days or less
-- **Disclosure**: Coordinated disclosure after patch release (usually immediate)
-- **Credit**: Vulnerability reporter will be credited unless they request anonymity
-
----
-
-## Scope
-
-### In Scope
-
-Vulnerabilities affecting the security of chematic itself:
-
-- **Supply chain attacks**: Malicious dependencies (Dependabot monitors these)
-- **Memory safety**: Unsafe code blocks that could lead to UB
-- **Cryptographic flaws**: In hashing or data serialization
-- **Input validation**: Buffer overflows, panic on invalid SMILES/InChI
-- **Privilege escalation**: Not applicable to a library, but relevant for WASM sandbox
-
-### Out of Scope
-
-The following are **NOT** considered security vulnerabilities in chematic:
-
-- **Incorrect chemistry results**: Accuracy bugs (report as GitHub Issues instead)
-- **Missing RDKit features**: Partial implementation vs. RDKit (by design)
-- **Dependency vulnerabilities**: If a transitive dependency has a CVE, report to that project; we will update via Dependabot
-- **Third-party FFI exploits**: the default feature set has no C/C++ FFI; the
-  optional `native-inchi` feature uses a narrowly scoped vendored InChI FFI
-  boundary, which is separately reviewed and unavailable to WASM
-- **Transition metal chemistry**: Out of scope (atom valence model limitation, not a vulnerability)
-- **ML model attacks**: Cheminformatics is non-ML in chematic
-
----
-
-## Security Best Practices for Users
-
-### Dependency Updates
-
-This project uses **Dependabot** to automatically track security updates:
-
-- Cargo dependencies: Updated weekly
-- GitHub Actions: Updated weekly
-- All updates create pull requests for review before merge
-
-Subscribe to GitHub notifications for this repository to receive alerts about security updates.
-
-### Using chematic Safely
-
-1. **Keep chematic updated**: Use latest published version from npm/crates.io
-2. **Validate chemistry output**: This is a chemistry library — always validate results are chemically sensible
-3. **No network access**: chematic has zero network calls; it's safe for sandboxed/offline environments
-4. **No file I/O side effects**: WASM and Rust versions are side-effect-free (except explicit file operations you request)
-
----
-
-## Security Considerations by Use Case
-
-### Browser (WASM)
-
-- Safe: Runs in browser sandbox
-- Safe: No network calls
-- Note: SMILES/InChI parsing is complex; malformed input won't exploit chematic but may consume CPU
-- CI smoke coverage runs the static demo on Chromium, Firefox, and WebKit,
-  including an oversized-SMILES rejection check. This does not replace a full
-  browser adversarial assessment.
-
-### Node.js / Electron
-
-- Safe: Same as browser, plus npm registry security
-- Dependabot monitors npm dependencies
-- Note: Electron-specific sandbox rules apply (not chematic's responsibility)
-
-### Rust / Server
-
-- Safe by default: no FFI, no network calls, no file I/O unless you explicitly
-  request it. The optional native-InChI feature is the documented FFI
-  exception.
-- Dependabot monitors cargo.io registry
-- Note: If you use unsafe code interop with chematic, validate chemical outputs before use
-
----
-
-## Security Fix History
-
-### v1.0.4 verification status
-
-- The typed reaction, CDXML, and Markush/polymer adapters use the existing
-  bounded parser and JSON limits and reject lossy or ambiguous conversion.
-- UFF rescue now revalidates declared stereochemistry and constraints after
-  minimization rather than accepting a lower-energy invalid geometry.
-- Spectrophores and the proposed Issue #464 replacement are excluded pending
-  independent patent/FTO review. Dependency, provenance, and redistribution
-  notices are recorded in `THIRD_PARTY_NOTICES.md` and
-  `docs/implementation-provenance.md`.
-- Local release checks cover the workspace tests, binding contracts, release
-  documents, publish graph, unsafe surface, formatting, and clippy. Hosted
-  registry workflows remain separate publication evidence.
-
-### v1.0.3 verification status
-
-- This patch retained the v1.0.0 input and privilege boundary while adding
-  reusable MMFF94 topology preparation and scoped 3D benchmarks.
-
-### v1.0.2 verification status
-
-- This patch preserves the v1.0.0 security boundary and adds no new privilege
-  or unbounded-input boundary.
-- Explicit-hydrogen valence validation now rejects impossible bracket-atom
-  hydrogen counts. SDF fast reading retains strict malformed and non-finite Z
-  coordinate validation even when coordinate storage is skipped.
-- Canonical and SDF changes are performance-focused and remain covered by the
-  workspace, parser, binding, and release-document gates.
-
-### v1.0.1 verification status
-
-- This patch release preserves the v1.0.0 security boundary and adds no new
-  input or privilege boundary. The local release checks cover the bounded UFF
-  rescue change, documentation consistency, and the existing workspace gates.
-
-### v1.0.0 verification status
-
-- The GitHub Release workflow passed in run
-  [33739001369](https://github.com/kent-tokyo/chematic/actions/runs/33739001369).
-- The crates.io publication workflow passed on its retry in run
-  [33739001298](https://github.com/kent-tokyo/chematic/actions/runs/33739001298),
-  and the PyPI workflow passed in run
-  [33739001257](https://github.com/kent-tokyo/chematic/actions/runs/33739001257).
-- npm publication remains blocked by the registry returning HTTP 404 for the
-  scoped package; this is a scope/token permission issue, not a release-build
-  failure.
-- The PR gate passed focused Miri, ASan, LSan, TSan, CodeQL, dependency audit,
-  Rust/Python/WASM contracts, and Chromium/Firefox/WebKit browser smoke in
-  the successful checks for PR #453.
-
-### v0.89.0 verification status
-
-- GitHub Linux AddressSanitizer, LeakSanitizer, and ThreadSanitizer runs passed
-  on the core/parser scope in run [33568431894](https://github.com/kent-tokyo/chematic/actions/runs/33568431894).
-- Focused Miri tests passed in [33588355817](https://github.com/kent-tokyo/chematic/actions/runs/33588355817); the earlier full-library run was cancelled for excessive runtime.
-- The release also has retained SBOM/provenance evidence and a published
-  public-key fingerprint:
-  `f1147c10688e412d183cc6cc0f22017c67874327741815a971c40b362f06ac4e`.
-
-### v0.4.14 (2026-06-21)
-
-Seven security-relevant fixes shipped in this release:
-
-1. **KET parser: R-element silently mapped to carbon** — `starts_with('R')` was matching real elements (Ru, Rh, Re, Rn) and silently treating them as carbon. Fixed to only match actual R-group labels (R, R#, R1–R9), ensuring legitimate elements are parsed correctly.
-
-2. **KET parser: no atom/bond count limit (Memory-DoS)** — A crafted large KET file could allocate unbounded memory. Fixed with hard guards: `MAX_ATOMS = 10,000` and `MAX_BONDS = 20,000`; inputs exceeding these limits are rejected with an error.
-
-3. **KET parser: isotope u64→u16 silent truncation** — Isotope values larger than 65,535 were silently truncated to incorrect values. Fixed with an explicit bounds check that returns a parse error for out-of-range isotopes.
-
-4. **RInChI: malformed separator for empty products** — When a reaction had no products, the `!d-` separator token appeared as a second reactant, producing an incorrect InChI string. Fixed by only emitting the product block when it is non-empty.
-
-5. **SMIRKS transform: stereo_groups dropped** — `clear_orphaned_stereo_bonds` discarded ABS/OR/AND stereo groups on the transformed molecule. Fixed by restoring stereo groups via `set_stereo_groups()` after the orphan-bond sweep.
-
-6. **WASM docs: wrong GETAWAY vector size** — Public API documentation claimed 9 values for the GETAWAY descriptor (actual: 19) and 19 for the combined vector (actual: 29). Corrected docstrings prevent callers from allocating undersized buffers.
-
-7. **Hosoya index: exponential recursion (CPU-DoS)** — No guard on molecule size allowed the public API to hang on large inputs due to exponential recursive matching. Fixed with an `n > 40` sentinel that returns early, bounding computation.
-
-### Prior Releases
-
-- **Prng fixed seed (Weyl counter)** — PRNG seeding used a fixed Weyl counter, reducing entropy. Fixed to use a properly varied seed source.
-- **MCP DoS** — `find_mcs` lacked a timeout and atom-count limit, and `name_to_smiles` did not URL-encode user input. Both fixed with appropriate guards and encoding.
-- **CIF parser safety** — Division-by-zero and missing unit-cell parameter checks in the CIF parser could panic on malformed crystallographic files. Fixed with explicit validation.
-- **SMARTS atom map fixes** — Atom-map handling in SMARTS patterns produced incorrect match results in edge cases. Fixed to correctly propagate atom maps through the VF2 isomorphism engine.
-
----
-
-## Acknowledgments
-
-Security researchers who responsibly disclose vulnerabilities help keep chematic safe for everyone. We appreciate their efforts and will credit them publicly (unless they prefer anonymity).
-
----
-
-## GitHub Security Settings
-
-This repository has the following GitHub security features enabled:
-
-- Secret scanning: Alerts if credentials are accidentally pushed
-- Dependabot alerts: Weekly dependency updates
-- Dependabot security updates: Automatic PR creation for vulnerabilities
-- Code scanning: Cargo audit in CI (via GitHub Actions)
-- Private vulnerability reporting: This security policy file enables it
-
----
-
-**Last Updated**: 2026-06-27  
-**Security Contact**: 36805997+kent-tokyo@users.noreply.github.com
+Last updated: 2026-09-05.

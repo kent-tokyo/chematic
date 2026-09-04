@@ -160,29 +160,9 @@ portable across native and `wasm32-unknown-unknown`
 precision across every JS engine, only that the value is finite, non-negative,
 and enforced correctly on all of them.
 
-## Version History
-
-**v0.1.94** (2026-06-12):
-- SA Score corpus expanded: 188 FDA molecules (1415 unique fragments)
-- Enhanced fingerprints: True MHFP, True ERG, path FP with bond types
-- Full multi-sphere CIP stereochemistry for R/S assignment
-- InChI stereo layer round-trip support (tetrahedral and E/Z)
-
-**v0.1.93** (2026-06-12):
-- Full multi-sphere CIP priority rules
-- Correct stereochemistry assignment for complex chiral centers
-
-**v0.1.92** (2026-06-12):
-- InChI stereo layer parsing (tetrahedral `/t` and E/Z `/b`)
-- Path fingerprint with bond type interleaving
-
-**v0.1.91** (2026-06-12):
-- True MHFP (structural fragment hashing)
-- True ERG (Ertl 2017 functional group detection)
-
 ## Bundle Size
 
-~500 KB gzip / ~1.3 MB raw (reduced from ~819 KB gzip in v0.4.17, -38.5%).
+The optimized v1.0.2-candidate artifact was measured at **3.30 MB raw / 1.21 MB gzip**. Bundle size depends on features and toolchain; see [`benchmarks/2026-09-04-wasm-size.md`](../../benchmarks/2026-09-04-wasm-size.md) for exact tools, digest, and reproduction steps.
 
 PNG rasterization (`tiny_skia`) is excluded from the WASM build — use SVG output instead. All SVG depiction APIs remain fully available.
 

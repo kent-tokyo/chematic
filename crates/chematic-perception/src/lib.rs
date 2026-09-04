@@ -1,7 +1,7 @@
 //! `chematic-perception` — molecular perception algorithms.
 //!
 //! Provides:
-//! - [`sssr`]: Smallest Set of Smallest Rings (SSSR) via Balducci-Pearlman algorithm.
+//! - [`sssr`]: Smallest Set of Smallest Rings (SSSR) via a Horton minimum cycle basis.
 //! - [`aromaticity`]: Hückel aromaticity perception for kekulized molecules.
 
 #![forbid(unsafe_code)]

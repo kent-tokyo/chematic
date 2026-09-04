@@ -370,6 +370,7 @@ impl SdMolSupplier {
 #[pyclass(name = "SDWriter")]
 pub struct SdWriter {
     writer: Option<std::io::BufWriter<std::fs::File>>,
+    record_buffer: String,
     props_filter: Option<Vec<String>>,
     force_v3000: bool,
     compute_2d: bool,
@@ -384,6 +385,7 @@ impl SdWriter {
             .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
         Ok(SdWriter {
             writer: Some(std::io::BufWriter::new(file)),
+            record_buffer: String::new(),
             props_filter: None,
             force_v3000: false,
             compute_2d: compute2d,
@@ -413,12 +415,19 @@ impl SdWriter {
                 .collect()
         });
         let props = filtered_props.as_ref().unwrap_or(&mol.props);
-        let record = if self.force_v3000 {
-            chematic_mol::write_sdf_record_v3000(&mol.inner, &meta, &coords, props)
+        if self.force_v3000 {
+            self.record_buffer =
+                chematic_mol::write_sdf_record_v3000(&mol.inner, &meta, &coords, props);
         } else {
-            chematic_mol::write_sdf_record(&mol.inner, &meta, &coords, props)
-        };
-        w.write_all(record.as_bytes())
+            chematic_mol::mol2000::write_sdf_record_into(
+                &mut self.record_buffer,
+                &mol.inner,
+                &meta,
+                &coords,
+                props,
+            );
+        }
+        w.write_all(self.record_buffer.as_bytes())
             .map_err(|e| pyo3::exceptions::PyIOError::new_err(e.to_string()))
     }
 

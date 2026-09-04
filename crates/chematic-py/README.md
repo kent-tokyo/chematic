@@ -96,7 +96,10 @@ except chematic.PipelineV2Error as e:
 
 - **Zero C/C++ dependencies** — pure Rust, no RDKit or OpenBabel required
 - **SMILES / MOL / SDF / ChemicalJSON** parsing and writing
-- **190+ descriptor values** (71 functions; MQN returns 42 values, BCUT2D / autocorr2d / geary / moran return multi-value arrays): MW, LogP (±0.01, 96.5% of 4,999-mol ChEMBL subset), TPSA (±0.1 Å², 98.1%), QED, Fsp3, SA Score, HBD (100% vs RDKit, incl. S-H), `vabc`, `schultz_mti`, `gutman_mti`, `gravitational_index`
+- **190+ descriptor values** (70+ functions; several return vectors): MW,
+  LogP, TPSA, QED, Fsp3, SA Score, HBD, `vabc`, `schultz_mti`,
+  `gutman_mti`, and `gravitational_index`. RDKit agreement is metric-specific;
+  see the [validation report](../../docs/validation.md).
 - **14 fingerprint algorithms**: ECFP2/4/6, FCFP4/6, MACCS, AtomPair, Torsion, …
 - **pKa prediction** (15 SMARTS rules — unique to chematic)
 - **ADMET profile**: BBB, Caco-2, hERG, CYP3A4

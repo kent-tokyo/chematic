@@ -239,8 +239,8 @@ fn compare_molecules<'py>(smiles: Vec<String>, py: Python<'py>) -> PyResult<Boun
 ///
 /// ```python
 /// chematic.doctor()
-/// # chematic v0.4.21
-/// # Python 3.13  |  darwin arm64
+/// # chematic v1.0.5
+/// # Python 3.13.x  |  darwin arm64
 /// # ...
 /// ```
 #[pyfunction]
@@ -255,13 +255,15 @@ fn doctor(py: Python<'_>) {
     println!("chematic v{ver}");
     println!("Python {py_ver}  |  {platform} {arch}");
     println!();
-    println!("Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3):");
-    println!("  MW / HBA / HBD / ARC  100.0% (4,999-mol ChEMBL subset)");
+    println!("Descriptor validation (2026-08-23, v0.18.0 vs RDKit 2026.03.4):");
+    println!("  MW                     99.82% (4,999-mol, ±0.01 Da)");
+    println!("  HBA / HBD / ARC        100.0% (4,999-mol ChEMBL subset)");
     println!("  TPSA                  100.0% (4,999-mol, ±0.1 Å²)");
     println!("  LogP (Crippen)        100.0% (4,999-mol, max Δ = 1.1×10⁻¹³)");
     println!("  Stereocenters         99.96% legacy / 98.6% new CIP (4,999-mol)");
-    println!("  ECFP4 throughput      ~78 µs/mol  (2-3x faster than RDKit, diverse corpus)");
-    println!("  WASM bundle           719 KB gzip");
+    println!("  CIP R/S/E/Z           99.74% (opt-in accurate engine vs rdCIPLabeler)");
+    println!("  ECFP4 throughput      54.7 vs 94.3 µs/mol (v0.18.0/RDKit, 5,000-mol)");
+    println!("  WASM bundle           3.30 MB raw / 1.21 MB gzip (v1.0.2 candidate)");
     println!();
     println!("Feature stability:");
     println!("  Stable      SMILES · MW/HBA/HBD/TPSA/LogP · ECFP4/MACCS · SDF/MOL · SMARTS");

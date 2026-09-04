@@ -6,6 +6,7 @@ Periodic performance snapshots. Each file is a date-stamped record of throughput
 
 | Date | Version | Notes |
 |------|---------|-------|
+| [2026-09-05 hot-path follow-up](2026-09-05-hot-path-follow-up.md) | v1.0.4-based unreleased source | Additional 1.10x gate: canonical SMILES 1.115x, file-backed SDF read 1.130x, V2000 SDF serialization 3.042x; output and full-workspace gates included |
 | [2026-09-04 MMFF94/3D](2026-09-04-mmff94-3d.md) | v1.0.3 | Prepared MMFF94 energy, L-BFGS minimization, ETKDG generation, and 3D minimization microbenchmarks on macOS arm64 |
 | [2026-09-04 streaming formats](2026-09-04-streaming-formats.md) | v1.0.3 | File-backed chematic SDF/MOL/XYZ streaming runner and explicitly non-equivalent RDKit block-parser reference |
 | [2026-09-04 RDKit/Open Babel](2026-09-04-rdkit-openbabel.md) | v1.0.3 wheel + v1.0.4 source follow-up | Speed comparison with Open Babel 3.2.1 CLI plus source-level canonical and SDF writer A/B checks; CLI conversion remains separate from in-process measurements |
