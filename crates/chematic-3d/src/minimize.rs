@@ -8,12 +8,12 @@ use std::collections::HashSet;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 use chematic_ff::{
-    EnergyBreakdown, MinimizerError, NumericTypeError, OOP_SP2_TYPES, UffType, angle_type_for,
-    assign_mmff94_numeric_types_with_view, assign_uff_types, bond_type_for,
-    is_angle_in_ring_of_size_3_or_4, minimize_mmff94_lbfgs, minimize_uff as ff_minimize_uff,
-    mmff94_angle_energy_resolved, mmff94_bond_energy_resolved, mmff94_energy_breakdown, mmff94_oop,
-    mmff94_stbn, mmff94_torsion_energy, mmff94_total_energy, stretch_bend_type_for,
-    torsion_no_term_by_design, torsion_type_for, uff_total_energy,
+    EnergyBreakdown, MinimizerError, Mmff94EnergyModel, NumericTypeError, OOP_SP2_TYPES, UffType,
+    angle_type_for, assign_mmff94_numeric_types_with_view, assign_uff_types, bond_type_for,
+    is_angle_in_ring_of_size_3_or_4, minimize_uff as ff_minimize_uff,
+    minimize_uff_with_constraint as ff_minimize_uff_with_constraint, mmff94_angle_energy_resolved,
+    mmff94_bond_energy_resolved, mmff94_oop, mmff94_stbn, mmff94_torsion_energy,
+    stretch_bend_type_for, torsion_no_term_by_design, torsion_type_for, uff_total_energy,
 };
 use chematic_ff::{
     assign_dreiding_types, assign_mmff94_types, dreiding_angle, dreiding_bond_len, dreiding_vdw,
@@ -1956,20 +1956,14 @@ fn run_mmff94_bridge(
     }
 
     let coord_vec = coords_to_vec(coords, n);
-    let energy_before = mmff94_energy_breakdown(mol, &coord_vec)?;
+    let energy_model = Mmff94EnergyModel::new(mol)?;
+    let energy_before = energy_model.energy_breakdown(&coord_vec);
 
     let mut work = coord_vec.clone();
-    let result = minimize_mmff94_lbfgs(mol, &mut work, max_iter)?;
+    let result = energy_model.minimize_lbfgs(&mut work, max_iter)?;
 
-    let energy_after = mmff94_energy_breakdown(mol, &work)?;
-    let max_residual_force = fd_max_gradient(
-        &work,
-        |c| {
-            mmff94_total_energy(mol, c)
-                .expect("mmff94_total_energy must not fail after a successful energy_breakdown/minimize call on the same molecule/coords")
-        },
-        1e-4,
-    );
+    let energy_after = energy_model.energy_breakdown(&work);
+    let max_residual_force = fd_max_gradient(&work, |c| energy_model.energy(c), 1e-4);
 
     check_minimization_soundness(
         mol,
@@ -2080,8 +2074,8 @@ fn run_uff_bridge(
 /// A retry is only accepted as a real rescue if it is BOTH geometrically
 /// sound AND preserves every declared stereocenter/E-Z bond
 /// ([`crate::stereo_constraints::verify_stereo`]) — measured directly, not
-/// assumed. UFF itself is chirality-blind, so a sound retry is given one
-/// existing `repair_stereo` pass before the final check. A rescue that fixed
+/// assumed. UFF itself is chirality-blind, so a sound retry is given a bounded
+/// existing `repair_stereo` reconciliation loop before the final check. A rescue that fixed
 /// a bond-length blowup while silently destroying declared stereochemistry
 /// is a worse outcome than the honest failure it replaced, so this bridge
 /// still returns the original failure when repair and re-verification do not
@@ -2109,16 +2103,14 @@ fn run_uff_bridge(
 /// declared-stereo molecule's existing pass/fail-and-stereo-check outcome,
 /// unchanged), and one of #210's 5 named residual molecules
 /// (`atorvastatin_fragment`) newly succeeds with stereo preserved.
-/// `naproxen_S`/`ibuprofen_S`/`testosterone`/`cholesterol` remain unfixed —
-/// this bridge has no post-minimization repair-and-reverify step (UFF
-/// minimization is chirality-blind and can walk a stereo-satisfied embed
-/// back across a declared boundary, same class of problem issue #291's
-/// `pipeline_v2.rs` stage 11 exists to catch and retry; this simpler
-/// embed→minimize→verify bridge just falls through to the original failure
-/// instead, which is correct/safe, not a bug) — closing that residual would
-/// need adding an equivalent repair step here. The rescue now makes a bounded,
-/// deterministic three-seed search, but that is a robustness retry and not a
-/// claim of complete stereochemical convergence for every topology.
+/// `naproxen_S`/`ibuprofen_S`/`testosterone`/`cholesterol` remain candidates for
+/// further work — UFF minimization is chirality-blind and can walk a
+/// stereo-satisfied embed back across a declared boundary. The bounded repair
+/// loop below can reconcile interacting repairs when a fixed point is reachable,
+/// but it deliberately falls through to the original failure when it is not.
+/// The rescue also makes a bounded, deterministic three-seed search, but that is
+/// a robustness retry and not a claim of complete stereochemical convergence for
+/// every topology.
 ///
 /// If `embed_distance_geometry_v2` itself fails, or the retry is unsound or
 /// stereo-violating, the ORIGINAL failure is returned unchanged except for
@@ -2165,21 +2157,45 @@ fn rescue_with_distance_geometry_v2(
         // back to if the rescue doesn't pan out) -- it has no place in a successful
         // `UffBridgeRun`, which reports on the geometry that actually produced it.
         let retry_energy_before = uff_total_energy(mol, types, &retry_coord_vec);
-        let retry = ff_minimize_uff(mol, types, retry_coord_vec, max_iter);
+        let retry = if has_stereo && verify_stereo(mol, &v2_coords).is_fully_satisfied() {
+            ff_minimize_uff_with_constraint(mol, types, retry_coord_vec, max_iter, |candidate| {
+                verify_stereo(mol, &vec_to_coords(candidate)).is_fully_satisfied()
+            })
+        } else {
+            ff_minimize_uff(mol, types, retry_coord_vec, max_iter)
+        };
         let retry_coords_typed = vec_to_coords(&retry.coords);
         let mut accepted_coords = retry_coords_typed.clone();
         let mut stereo_verification = verify_stereo(mol, &accepted_coords);
-        if !stereo_verification.is_fully_satisfied()
-            && let Ok(repaired) = crate::stereo_constraints::repair_stereo(mol, &accepted_coords)
-        {
-            let repaired_verification = verify_stereo(mol, &repaired.coords);
-            let repaired_vec = coords_to_vec(&repaired.coords, n);
-            if repaired_vec.iter().all(|p| p.iter().all(|x| x.is_finite()))
-                && worst_bond_length_vec(mol, &repaired_vec) <= MAX_SANE_BOND_LENGTH
-                && repaired_verification.is_fully_satisfied()
+        if !stereo_verification.is_fully_satisfied() {
+            // `repair_stereo` deliberately reports the partial geometry when
+            // one repair disturbs another declared center. Feed that geometry
+            // back through a small, bounded number of reconciliation passes.
+            // This is the same fail-closed contract as the single-pass caller:
+            // only a fully re-verified and geometrically sound result is ever
+            // accepted; otherwise the original typed minimization failure is
+            // returned below. The cap prevents pathological repair cycles from
+            // turning a rescue into an unbounded operation.
+            const MAX_STEREO_REPAIR_PASSES: usize = 3;
+            for _ in 0..MAX_STEREO_REPAIR_PASSES {
+                if stereo_verification.is_fully_satisfied() {
+                    break;
+                }
+                accepted_coords =
+                    match crate::stereo_constraints::repair_stereo(mol, &accepted_coords) {
+                        Ok(repaired) => repaired.coords,
+                        Err(failure) => failure.partial_coords,
+                    };
+                stereo_verification = verify_stereo(mol, &accepted_coords);
+            }
+        }
+        if stereo_verification.is_fully_satisfied() {
+            let accepted_vec = coords_to_vec(&accepted_coords, n);
+            if !accepted_vec.iter().all(|p| p.iter().all(|x| x.is_finite()))
+                || worst_bond_length_vec(mol, &accepted_vec) > MAX_SANE_BOND_LENGTH
             {
-                accepted_coords = repaired.coords;
-                stereo_verification = repaired_verification;
+                stereo_verification = verify_stereo(mol, &retry_coords_typed);
+                accepted_coords = retry_coords_typed.clone();
             }
         }
         let accepted_vec = coords_to_vec(&accepted_coords, n);
@@ -2861,7 +2877,7 @@ mod tests {
 mod policy_bridge_tests {
     use super::*;
     use crate::dg::generate_coords;
-    use chematic_ff::{assign_mmff94_numeric_types, mmff94_bond_energy};
+    use chematic_ff::{assign_mmff94_numeric_types, mmff94_bond_energy, mmff94_total_energy};
     use chematic_smiles::parse;
 
     // --- Coords3D <-> Vec<[f64; 3]> bridge plumbing -------------------------

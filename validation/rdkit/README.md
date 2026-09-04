@@ -1,7 +1,14 @@
 # RDKit comparison — chematic descriptor accuracy
 
+> Historical validation snapshot. These measurements were generated for
+> chematic **v0.4.20** and are not evidence for the current v1.0.3 release.
+> For current scope and evidence, see
+> [`docs/compatibility-scope.md`](../../docs/compatibility-scope.md),
+> [`docs/validation.md`](../../docs/validation.md), and
+> [`docs/benchmark.md`](../../docs/benchmark.md).
+
 Reference tool: **RDKit 2026.03.3**  
-chematic version: **v0.4.20**  
+Historical chematic version: **v0.4.20**
 Corpus: `scripts/rdkit_ref_properties.tsv` (175 drug-like molecules)  
 Full accuracy history: [benchmarks/](../../benchmarks/)
 

@@ -6,6 +6,9 @@ Reaction SMILES and SMIRKS parser for Rust. Parses chemical transformations (rea
 
 - **Reaction SMILES parsing**: parse reaction equations (e.g., `CC(C)C>>CC(C)[O]`)
 - **SMIRKS parsing**: transform patterns for reaction template matching (`run_reactants`, `run_reactants_strict`)
+- **Prepared templates**: compile a SMIRKS once with `PreparedReaction` and
+  reuse it across targets; optional `RingSet` inputs avoid repeating ring
+  perception in high-throughput template banks
 - **Atom mapping**: track which atoms in reactants map to which atoms in products
 - **Reaction properties**: count reactants, products, and agents
 - **Stereo-selective SMIRKS**: `@`/`@@` in reactant templates filter by absolute configuration using
@@ -39,6 +42,28 @@ for mol in rxn.reactants() {
 }
 ```
 
+### Reusing a compiled SMIRKS
+
+For repeated application of one template, construct `PreparedReaction` once.
+Its fields are private and the value is `Send + Sync`, so an immutable instance
+can be shared by workers. The legacy string APIs remain available and preserve
+their existing output order.
+
+```rust
+use chematic_rxn::PreparedReaction;
+use chematic_smiles::parse;
+
+let template = PreparedReaction::new("[C:1](=[O:2])[O:3][C:4]>>[C:1](=[O:2])O.[O:3][C:4]")?;
+let target = parse("CCOC(=O)C")?;
+let products = template.run_reactants(&[&target])?;
+assert!(!products.is_empty());
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
+For target banks, precompute one `RingSet` per target and use
+`run_reactants_with_rings` (or its `_and_limits` variant) to reuse ring
+perception.
+
 ## API Overview
 
 ### Parsing
@@ -69,6 +94,8 @@ for r in &results {
 - `Reaction` — contains reactants, agents, products, and optional atom mappings
 - `Molecule` — each reactant/product is a standard Molecule
 - `ReactionPattern` — SMIRKS pattern for template matching
+- `PreparedReaction` — immutable compiled SMIRKS template for repeated use
+- `ReactionTransformLimits` — match/combinatorial resource bounds
 
 ### Properties
 

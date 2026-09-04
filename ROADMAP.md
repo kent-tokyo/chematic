@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Status: strategic roadmap, revised 2026-09-04. v1.0.2 is the current patch release;
+> Status: strategic roadmap, revised 2026-09-04. v1.0.4 is the current release;
 > the next work remains version-locked until a new release decision.
 
 ## North star
@@ -46,6 +46,91 @@ The goal is not to win by copying package names or making unsupported claims.
 Each track needs a public conformance corpus, a clean-install/throughput
 benchmark, and a documented “where to use which tool” migration guide.
 
+## Competitive execution phases (priority order)
+
+This program targets named workflows rather than a single undifferentiated
+feature-count claim. RDKit remains the broadest and most mature reference;
+Open Babel remains the format-conversion breadth reference; CDK remains the
+reaction/SMARTS/QSAR reference; sdfrust remains the Rust dataset/ML reference;
+and kekule remains a reference for polymer and molecular-modeling workflows.
+COSMolKit is intentionally out of scope for this comparison program.
+
+| Priority | Phase | Competitive wedge | Exit evidence | Weight |
+| --- | --- | --- | --- | --- |
+| P0 | Trust and measurement | Reproducible, typed, bounded behavior | Version-pinned matrix, corpus hashes, unsupported/failure separation, clean local validator | Critical / light |
+| P1 | Interchange throughput | SDF/MOL/XYZ streaming with loss-preserving records | Same-input records/s, bytes/s, RSS, first-error latency, round-trip and malformed-file gates | Critical / heavy |
+| P2 | Identity and ML primitives | Stable canonical keys, descriptors, fingerprints, explanations | Held-out differential corpus, cross-binding fixtures, stable-key fail-closed contract, bit explanations | Critical / heavy |
+| P3 | Portable production surface | Rust/Python/Node/WASM parity with low deployment friction | Same fixture/config result across bindings, clean-install matrix, size/startup and batch manifests | High / heavy |
+| P4 | Chemistry workflow depth | Reactions, SMARTS/MCS, standardization, scaffold and medicinal-chemistry reports | Curated reaction/query corpus, typed ambiguity outcomes, deterministic provenance reports | High / heavy |
+| P5 | 3D and materials | Safe conformers, MMFF/UFF, crystals and volumetric interchange | Soundness gates, per-class quality/failure rates, unit/frame round trips, independent references | Medium / heavy |
+| P6 | Ecosystem durability | Extensions, migration tooling, browser/agent workflows | Public compatibility dashboard, contributor corpus policy, downstream reproduction reports | Medium / external |
+
+Execution rule: complete the highest-priority local slice that has a
+reproducible gate before starting a lower-priority breadth feature. Heavy or
+external work is prepared with contracts and fixtures first; it is not called
+complete until the required measurement or external reproduction exists.
+
+### P0 — Trust and measurement (current)
+
+- [x] Keep competitor capability states separate from measured results and
+  exclude COSMolKit from the active comparison scope.
+- [x] Pin the current release, benchmark protocol, corpus hashes, and local
+  validators; preserve historical measurements as historical records.
+- [x] Add a checked-in capability matrix for RDKit, Open Babel, CDK, sdfrust,
+  kekule, and chematic with `supported`, `partial`, `unsupported`, and
+  `not_measured` states per operation.
+- [x] Add an offline capability-matrix validator that rejects stale or
+  incomplete engine inventories and invalid status values.
+- [ ] Add a scorecard validator that rejects stale release versions, missing
+  corpus/configuration metadata, and claims derived from unsupported rows.
+
+### P1 — Interchange throughput and safety
+
+- [ ] Extend the resumable benchmark to SDF/MOL V2000/V3000, XYZ, MOL2, CML,
+  CDXML, PDB/mmCIF, and gzip, including malformed and oversized inputs.
+- [x] Add a local file-backed `XyzFileReader` and a reproducible SDF/MOL/XYZ
+  streaming benchmark fixture/runner; comparative runs remain separate until
+  the same corpus is available in each engine.
+- [x] Add a reproducible RDKit block-parser comparator with an explicit note
+  that its Python API is not equivalent to chematic's file-backed streaming
+  boundary.
+- [ ] Implement bounded streaming batch APIs with cancellation, backpressure,
+  deterministic ordering, and an explicit partial-result manifest.
+- [ ] Measure chematic against RDKit and Open Babel only where both are
+  installed under identical input/configuration; report sdfrust separately
+  for dataset-oriented operations.
+
+### P2 — Identity and ML primitives
+
+- [ ] Finish canonical atom-order/E-Z invariance for the supported domain and
+  keep `canonical_smiles_stable_key()` as the only dedup/cache recommendation.
+- [ ] Inventory and stabilize descriptor/fingerprint shapes, sparse/count
+  semantics, configuration, provenance, and explanation APIs.
+- [x] Reject Issue #464 for the v1.0 product surface: the proposed
+  geometry-aware spectral fingerprint is not shipped while patent/FTO review
+  is incomplete. No implementation, dependency, trained artifact, or
+  benchmark claim is part of the release.
+- [ ] Add held-out parity reports for Morgan/ECFP, MACCS, topological, torsion,
+  descriptor, and standardization operations across Rust/Python/WASM.
+
+### P3 — Portable production surface
+
+- [ ] Make the Rust/Python/Node/WASM contract suite consume one fixture schema
+  and one versioned expected-result manifest.
+- [ ] Publish clean-install, cold-start, throughput, peak-memory, and WASM
+  size evidence with explicit platform/configuration metadata.
+- [ ] Add browser/agent adversarial cases for limits, cancellation, malformed
+  records, and JSON error stability.
+
+### P4–P6 — Breadth after the trust lanes
+
+- [ ] Add reaction/SMARTS/medicinal-chemistry breadth only after P0–P3 gates
+  have current evidence and shared graph primitives are stable.
+- [ ] Expand 3D/materials and polymer workflows behind soundness, unit, and
+  topology contracts; never trade bounded failure for plausible output.
+- [ ] Add extension points, migration guides, and public dashboards only after
+  measurements are reproducible by a clean checkout.
+
 ### D-track — Dataset processing and ML pipeline
 
 #### D0 — Dataset contract and benchmark
@@ -73,6 +158,27 @@ benchmark, and a documented “where to use which tool” migration guide.
   on two independent 5,000-molecule corpora; chematic leads RDKit by 2.5% and
   1.47× at the respective medians on the recorded macOS arm64 environment.
   These are scoped results, not a cross-platform or all-corpus claim.
+- [x] Reconfirm the canonical-SMILES 1.1× target on the current v1.0.3 wheel:
+  seven independent 1,000-row process runs measured 23.70 us/mol for chematic
+  and 26.37 us/mol for RDKit at the median (1.11×). Two allocation-oriented
+  experiments regressed by 1–2% and were rejected rather than shipped.
+- [x] Further reduce canonical automorphism feasibility overhead without
+  changing traversal or output: maintain the inverse mapping in O(1) and use
+  compact `u32` sentinel maps. Focused 5,000-record engine checks reduced the
+  inverse-map run by 8.7%, followed by a 1.6% repeated-run median improvement
+  from sentinel compaction; all 122 canonical tests, including the randomized
+  brute-force oracle, pass.
+- [x] Remove per-property temporary allocations from SDF record serialization
+  across V2000, V3000, and 3D writers. The checked-in same-process A/B runner
+  verifies byte identity and measured a 1.248× median speedup over five
+  invocations on the 365-record `egfr.sdf` corpus (all runs at least 1.145×).
+- [x] Package the retained reaction/CDXML/polymer/crystal, UFF-safety,
+  canonical/SDF performance, provenance, and patent-boundary work as v1.0.4;
+  keep historical v1.0.2/v1.0.3 measurements labeled with their actual source
+  revisions rather than relabeling them as fresh v1.0.4 runs.
+- [x] Add local MMFF94 and 3D pipeline benchmarks covering prepared energy,
+  one-shot energy, ETKDG generation, and L-BFGS minimization; record the
+  measurements in the 1.0.3 changelog entry.
 
 - Define a lossless record model for molecule, coordinates, SD properties,
   source location, parse status, diagnostics, units, and provenance.
@@ -559,10 +665,11 @@ local macOS/ASan evidence; Linux sanitizer and Miri evidence remain separate.
 **Exit gate:** dependency/CI audit に未評価の high/critical finding がなく、同じ
   source revision から artifact、SBOM、checksum、provenance を再生成・照合できる。
 
-**Supply-chain audit evidence (2026-09-02):**
+**Supply-chain audit evidence (refreshed 2026-09-04 for v1.0.4):**
 
-- [x] `cargo audit` scanned 308 locked dependencies with zero vulnerability
-  findings.
+- [x] `cargo audit` scanned 286 locked dependencies with zero vulnerability
+  findings; the two explicitly accepted unmaintained rendering-chain notices
+  remain non-vulnerability findings.
 - [x] `cargo deny check` passed advisories, bans, licenses, and sources.
 - [x] Copyright attribution is normalized to `Kentaro Tanabe (kent-tokyo)` across the
   license texts, Cargo/Python metadata, citation, README translations, and a
@@ -713,6 +820,22 @@ building block.
 - [x] Freeze the proposed v1.0 compatibility contract: bounded CDXML/polymer
   scope, partial Python `RWMol`, fail-closed canonical identity, explicit
   aromaticity/CIP modes, and Experimental 3D/MMFF94 boundaries.
+- [x] Add the typed, loss-aware reaction-document contract with explicit
+  agents, coefficients, conditions, provenance, atom-map identity, and
+  multi-step preservation; legacy RXN export rejects unsupported richness
+  instead of flattening it (Issue #460).
+- [x] Add the document-level CDXML contract: bounded multi-page summaries,
+  opaque presentation-object preservation, and JSON command edits shared by
+  Rust, Python, WASM, and Node bindings (Issue #461).
+- [x] Add the typed Markush/polymer semantic JSON contract with explicit
+  alternative selection, bounded expansion, and source-to-expanded mapping
+  across Rust, Python, WASM, and Node bindings (Issue #462).
+- [x] Add occupancy-aware deterministic `PeriodicStructure::composition()`
+  summaries with zero-occupancy and explicit-supercell coverage (Issue #463).
+- [x] Reject Issues #465-#468 for the v1.0 product surface. These research
+  proposals depend on unresolved patent/FTO review or source-license
+  boundaries; no related implementation, paper-derived artifact, dataset,
+  benchmark claim, or public API is shipped.
 - Finish canonical SMILES invariance across atom order, equivalent spellings,
   isotope/charge/stereo state, and directional bond systems.
 - Make standardization and Parent identity configurable, bounded, and

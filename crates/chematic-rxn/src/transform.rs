@@ -5,8 +5,10 @@ use chematic_core::{
     AtomIdx, BondIdx, BondOrder, Chirality, Molecule, MoleculeBuilder, STEREO_H_SENTINEL,
     validate_valence,
 };
+use chematic_perception::RingSet;
 use chematic_smarts::{
     AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule, find_matches,
+    find_matches_with_rings,
 };
 
 use crate::reaction::{RxnError, parse_reaction};
@@ -126,13 +128,7 @@ fn run_reactants_impl(
     carry_substituents: bool,
     limits: &ReactionTransformLimits,
 ) -> Result<Vec<Vec<Molecule>>, TransformError> {
-    crate::perf_counters::record_run_reactants_call();
-    let prepared = prepare_reaction(smirks)?;
-    let matches = find_matches_impl(&prepared, reactants, limits)?;
-    Ok(matches
-        .iter()
-        .filter_map(|m| apply_match_impl(&prepared, reactants, m, carry_substituents))
-        .collect())
+    PreparedReaction::new(smirks)?.run_reactants_impl(reactants, carry_substituents, limits)
 }
 
 /// One accepted match of `smirks`'s reactant-side pattern(s) against a set of
@@ -189,8 +185,7 @@ pub fn find_reaction_matches_with_limits(
     reactants: &[&Molecule],
     limits: &ReactionTransformLimits,
 ) -> Result<Vec<ReactionMatch>, TransformError> {
-    let prepared = prepare_reaction(smirks)?;
-    find_matches_impl(&prepared, reactants, limits)
+    PreparedReaction::new(smirks)?.find_matches_with_limits(reactants, limits)
 }
 
 /// Apply the reaction for exactly one match (as returned by
@@ -203,40 +198,22 @@ pub fn find_reaction_matches_with_limits(
 /// [`find_reaction_matches`] already applied — `m` is expected to be one
 /// of the matches it returned (or otherwise already known to satisfy
 /// them). Re-parses `smirks`, matching [`run_reactants`]'s own existing
-/// per-call behavior.
+/// per-call behavior. Use [`PreparedReaction::apply_match`] to reuse an
+/// already compiled template.
 pub fn apply_reaction_match(
     smirks: &str,
     reactants: &[&Molecule],
     m: &ReactionMatch,
     carry_substituents: bool,
 ) -> Result<Option<Vec<Molecule>>, TransformError> {
-    let prepared = prepare_reaction(smirks)?;
-    let n_templates = prepared.rxn.reactants.len();
-    if reactants.len() != n_templates {
-        return Err(TransformError::ReactantCountMismatch {
-            expected: n_templates,
-            got: reactants.len(),
-        });
-    }
-    if m.per_reactant.len() != n_templates {
-        return Err(TransformError::ReactantCountMismatch {
-            expected: n_templates,
-            got: m.per_reactant.len(),
-        });
-    }
-    Ok(apply_match_impl(
-        &prepared,
-        reactants,
-        m,
-        carry_substituents,
-    ))
+    PreparedReaction::new(smirks)?.apply_match(reactants, m, carry_substituents)
 }
 
 /// Parsed SMIRKS plus everything derived from it that matching needs —
 /// shared by [`run_reactants_impl`], [`find_reaction_matches`], and
 /// [`apply_reaction_match`] so the three can never compute it
 /// inconsistently.
-struct PreparedReaction {
+pub struct PreparedReaction {
     rxn: crate::reaction::Reaction,
     queries: Vec<QueryMolecule>,
     template_atom_maps: Vec<Vec<Option<u16>>>,
@@ -244,38 +221,218 @@ struct PreparedReaction {
     has_ez_stereo: bool,
 }
 
-fn prepare_reaction(smirks: &str) -> Result<PreparedReaction, TransformError> {
-    crate::perf_counters::record_reaction_parse_call();
-    let rxn = parse_reaction(smirks)?;
+impl PreparedReaction {
+    /// Parse and compile one SMIRKS template for repeated matching and
+    /// application. The returned value owns all query state, is safe to share
+    /// between threads, and never reparses the template during its methods.
+    pub fn new(smirks: &str) -> Result<Self, TransformError> {
+        crate::perf_counters::record_reaction_parse_call();
+        let rxn = parse_reaction(smirks)?;
 
-    // Build a QueryMolecule from each reactant template, and record the
-    // atom-map number for each query atom index.
-    let queries: Vec<QueryMolecule> = rxn.reactants.iter().map(mol_to_query).collect();
-    let template_atom_maps = template_atom_maps_of(&rxn);
+        // Build a QueryMolecule from each reactant template, and record the
+        // atom-map number for each query atom index.
+        let queries: Vec<QueryMolecule> = rxn.reactants.iter().map(mol_to_query).collect();
+        let template_atom_maps = template_atom_maps_of(&rxn);
 
-    // Detect whether any reactant template carries @/@@ stereo, so we can apply
-    // the parity-aware post-check after VF2 completes.  Chirality is NOT encoded
-    // into the VF2 query because the raw flag comparison in eval_chirality is
-    // SMILES-write-order-dependent; the correct check requires the full mapping
-    // (see smirks_chirality_ok below).
-    let has_stereo = rxn
-        .reactants
-        .iter()
-        .any(|r| r.atoms().any(|(_, a)| a.chirality != Chirality::None));
-    // Similarly, E/Z double-bond stereo (/ and \) is NOT encoded into the VF2
-    // query; it is checked post-VF2 via smirks_ez_stereo_ok.
-    let has_ez_stereo = rxn.reactants.iter().any(|r| {
-        r.bonds()
-            .any(|(_, b)| matches!(b.order, BondOrder::Up | BondOrder::Down))
-    });
+        // Detect whether any reactant template carries @/@@ stereo, so we can apply
+        // the parity-aware post-check after VF2 completes.  Chirality is NOT encoded
+        // into the VF2 query because the raw flag comparison in eval_chirality is
+        // SMILES-write-order-dependent; the correct check requires the full mapping
+        // (see smirks_chirality_ok below).
+        let has_stereo = rxn
+            .reactants
+            .iter()
+            .any(|r| r.atoms().any(|(_, a)| a.chirality != Chirality::None));
+        // Similarly, E/Z double-bond stereo (/ and \) is NOT encoded into the VF2
+        // query; it is checked post-VF2 via smirks_ez_stereo_ok.
+        let has_ez_stereo = rxn.reactants.iter().any(|r| {
+            r.bonds()
+                .any(|(_, b)| matches!(b.order, BondOrder::Up | BondOrder::Down))
+        });
 
-    Ok(PreparedReaction {
-        rxn,
-        queries,
-        template_atom_maps,
-        has_stereo,
-        has_ez_stereo,
-    })
+        Ok(Self {
+            rxn,
+            queries,
+            template_atom_maps,
+            has_stereo,
+            has_ez_stereo,
+        })
+    }
+
+    /// Apply this compiled template, carrying unmapped substituents through.
+    pub fn run_reactants(
+        &self,
+        reactants: &[&Molecule],
+    ) -> Result<Vec<Vec<Molecule>>, TransformError> {
+        self.run_reactants_with_limits(reactants, &ReactionTransformLimits::default())
+    }
+
+    /// Apply this compiled template with an explicit accepted-match limit.
+    pub fn run_reactants_with_limits(
+        &self,
+        reactants: &[&Molecule],
+        limits: &ReactionTransformLimits,
+    ) -> Result<Vec<Vec<Molecule>>, TransformError> {
+        crate::perf_counters::record_run_reactants_call();
+        self.run_reactants_impl(reactants, true, limits)
+    }
+
+    /// Apply this compiled template without carrying unmapped substituents.
+    pub fn run_reactants_strict(
+        &self,
+        reactants: &[&Molecule],
+    ) -> Result<Vec<Vec<Molecule>>, TransformError> {
+        self.run_reactants_strict_with_limits(reactants, &ReactionTransformLimits::default())
+    }
+
+    /// Strict application with an explicit accepted-match limit.
+    pub fn run_reactants_strict_with_limits(
+        &self,
+        reactants: &[&Molecule],
+        limits: &ReactionTransformLimits,
+    ) -> Result<Vec<Vec<Molecule>>, TransformError> {
+        crate::perf_counters::record_run_reactants_call();
+        self.run_reactants_impl(reactants, false, limits)
+    }
+
+    fn run_reactants_impl(
+        &self,
+        reactants: &[&Molecule],
+        carry_substituents: bool,
+        limits: &ReactionTransformLimits,
+    ) -> Result<Vec<Vec<Molecule>>, TransformError> {
+        self.run_reactants_impl_with_rings(reactants, carry_substituents, limits, None)
+    }
+
+    fn run_reactants_impl_with_rings(
+        &self,
+        reactants: &[&Molecule],
+        carry_substituents: bool,
+        limits: &ReactionTransformLimits,
+        rings: Option<&[&RingSet]>,
+    ) -> Result<Vec<Vec<Molecule>>, TransformError> {
+        let matches = find_matches_impl(self, reactants, limits, rings)?;
+        Ok(matches
+            .iter()
+            .filter_map(|m| apply_match_impl(self, reactants, m, carry_substituents))
+            .collect())
+    }
+
+    /// Enumerate accepted matches without applying the transformation.
+    pub fn find_matches(
+        &self,
+        reactants: &[&Molecule],
+    ) -> Result<Vec<ReactionMatch>, TransformError> {
+        self.find_matches_with_limits(reactants, &ReactionTransformLimits::default())
+    }
+
+    /// Enumerate accepted matches with an explicit accepted-match limit.
+    pub fn find_matches_with_limits(
+        &self,
+        reactants: &[&Molecule],
+        limits: &ReactionTransformLimits,
+    ) -> Result<Vec<ReactionMatch>, TransformError> {
+        find_matches_impl(self, reactants, limits, None)
+    }
+
+    /// Apply this compiled template while reusing ring perception already
+    /// computed for each reactant molecule.
+    pub fn run_reactants_with_rings(
+        &self,
+        reactants: &[&Molecule],
+        rings: &[&RingSet],
+    ) -> Result<Vec<Vec<Molecule>>, TransformError> {
+        self.run_reactants_with_rings_and_limits(
+            reactants,
+            rings,
+            &ReactionTransformLimits::default(),
+        )
+    }
+
+    /// Apply this compiled template with caller-provided ring perception and
+    /// an explicit accepted-match limit.
+    pub fn run_reactants_with_rings_and_limits(
+        &self,
+        reactants: &[&Molecule],
+        rings: &[&RingSet],
+        limits: &ReactionTransformLimits,
+    ) -> Result<Vec<Vec<Molecule>>, TransformError> {
+        crate::perf_counters::record_run_reactants_call();
+        self.run_reactants_impl_with_rings(reactants, true, limits, Some(rings))
+    }
+
+    /// Apply this compiled template in strict mode with caller-provided ring
+    /// perception.
+    pub fn run_reactants_strict_with_rings(
+        &self,
+        reactants: &[&Molecule],
+        rings: &[&RingSet],
+    ) -> Result<Vec<Vec<Molecule>>, TransformError> {
+        self.run_reactants_strict_with_rings_and_limits(
+            reactants,
+            rings,
+            &ReactionTransformLimits::default(),
+        )
+    }
+
+    /// Strict application with caller-provided ring perception and an
+    /// explicit accepted-match limit.
+    pub fn run_reactants_strict_with_rings_and_limits(
+        &self,
+        reactants: &[&Molecule],
+        rings: &[&RingSet],
+        limits: &ReactionTransformLimits,
+    ) -> Result<Vec<Vec<Molecule>>, TransformError> {
+        crate::perf_counters::record_run_reactants_call();
+        self.run_reactants_impl_with_rings(reactants, false, limits, Some(rings))
+    }
+
+    /// Enumerate accepted matches while reusing precomputed ring perception.
+    pub fn find_matches_with_rings(
+        &self,
+        reactants: &[&Molecule],
+        rings: &[&RingSet],
+    ) -> Result<Vec<ReactionMatch>, TransformError> {
+        self.find_matches_with_rings_and_limits(
+            reactants,
+            rings,
+            &ReactionTransformLimits::default(),
+        )
+    }
+
+    /// Enumerate accepted matches using caller-provided ring perception and an
+    /// explicit accepted-match limit.
+    pub fn find_matches_with_rings_and_limits(
+        &self,
+        reactants: &[&Molecule],
+        rings: &[&RingSet],
+        limits: &ReactionTransformLimits,
+    ) -> Result<Vec<ReactionMatch>, TransformError> {
+        find_matches_impl(self, reactants, limits, Some(rings))
+    }
+
+    /// Apply this template for exactly one previously accepted match.
+    pub fn apply_match(
+        &self,
+        reactants: &[&Molecule],
+        m: &ReactionMatch,
+        carry_substituents: bool,
+    ) -> Result<Option<Vec<Molecule>>, TransformError> {
+        let n_templates = self.rxn.reactants.len();
+        if reactants.len() != n_templates {
+            return Err(TransformError::ReactantCountMismatch {
+                expected: n_templates,
+                got: reactants.len(),
+            });
+        }
+        if m.per_reactant.len() != n_templates {
+            return Err(TransformError::ReactantCountMismatch {
+                expected: n_templates,
+                got: m.per_reactant.len(),
+            });
+        }
+        Ok(apply_match_impl(self, reactants, m, carry_substituents))
+    }
 }
 
 fn template_atom_maps_of(rxn: &crate::reaction::Reaction) -> Vec<Vec<Option<u16>>> {
@@ -316,6 +473,7 @@ fn find_matches_impl(
     prepared: &PreparedReaction,
     reactants: &[&Molecule],
     limits: &ReactionTransformLimits,
+    rings: Option<&[&RingSet]>,
 ) -> Result<Vec<ReactionMatch>, TransformError> {
     let n_templates = prepared.rxn.reactants.len();
     if reactants.len() != n_templates {
@@ -324,14 +482,26 @@ fn find_matches_impl(
             got: reactants.len(),
         });
     }
+    if let Some(rings) = rings
+        && rings.len() != n_templates
+    {
+        return Err(TransformError::ReactantCountMismatch {
+            expected: n_templates,
+            got: rings.len(),
+        });
+    }
 
     // VF2 match: for each (template_query, input_mol) pair.
     let all_match_sets: Vec<Vec<FxHashMap<usize, AtomIdx>>> = prepared
         .queries
         .iter()
         .zip(reactants.iter())
-        .map(|(q, mol)| {
-            let matches = find_matches(q, mol);
+        .enumerate()
+        .map(|(index, (q, mol))| {
+            let matches = match rings {
+                Some(rings) => find_matches_with_rings(q, mol, rings[index]),
+                None => find_matches(q, mol),
+            };
             crate::perf_counters::record_reactant_query_match_call(matches.len());
             if matches.len() > limits.max_matches {
                 return Err(TransformError::ResourceLimit {
@@ -1234,6 +1404,10 @@ mod tests {
         chematic_smiles::canonical_smiles(mol)
     }
 
+    fn canonical_set(set: Vec<Molecule>) -> Vec<String> {
+        set.into_iter().map(|mol| canonical(&mol)).collect()
+    }
+
     #[test]
     fn identity_single_atom() {
         let mol = parse("C").unwrap();
@@ -1241,6 +1415,94 @@ mod tests {
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].len(), 1);
         assert_eq!(results[0][0].atom_count(), 1);
+    }
+
+    #[test]
+    fn prepared_reaction_is_send_sync_and_matches_legacy_output() {
+        fn assert_send_sync<T: Send + Sync>() {}
+        assert_send_sync::<PreparedReaction>();
+
+        let mol = parse("CCOC(=O)C").unwrap();
+        let smirks = "[C:1](=[O:2])[O:3][C:4]>>[C:1](=[O:2])O.[O:3][C:4]";
+        let prepared = PreparedReaction::new(smirks).unwrap();
+        let legacy = run_reactants(smirks, &[&mol]).unwrap();
+        let reused = prepared.run_reactants(&[&mol]).unwrap();
+        let rings = chematic_perception::find_sssr(&mol);
+        let reused_with_rings = prepared
+            .run_reactants_with_rings(&[&mol], &[&rings])
+            .unwrap();
+        let canonical_sets = |sets: Vec<Vec<Molecule>>| {
+            sets.into_iter()
+                .map(|set| set.into_iter().map(|m| canonical(&m)).collect::<Vec<_>>())
+                .collect::<Vec<_>>()
+        };
+        let legacy = canonical_sets(legacy);
+        assert_eq!(canonical_sets(reused), legacy);
+        assert_eq!(canonical_sets(reused_with_rings), legacy);
+
+        let strict = prepared
+            .run_reactants_strict_with_rings(&[&mol], &[&rings])
+            .unwrap();
+        let strict_limited = prepared
+            .run_reactants_strict_with_rings_and_limits(
+                &[&mol],
+                &[&rings],
+                &ReactionTransformLimits::default(),
+            )
+            .unwrap();
+        assert_eq!(canonical_sets(strict), canonical_sets(strict_limited));
+        assert_eq!(
+            prepared
+                .find_matches_with_rings_and_limits(
+                    &[&mol],
+                    &[&rings],
+                    &ReactionTransformLimits::default(),
+                )
+                .unwrap(),
+            prepared
+                .find_matches_with_rings(&[&mol], &[&rings])
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn prepared_reaction_validates_once_and_preserves_limit_errors() {
+        assert!(PreparedReaction::new("not-smirks").is_err());
+        let mol = parse("CC").unwrap();
+        let prepared = PreparedReaction::new("[C:1]>>[C:1]").unwrap();
+        let err = match prepared
+            .run_reactants_with_limits(&[&mol], &ReactionTransformLimits { max_matches: 0 })
+        {
+            Ok(_) => panic!("zero match limit must reject the first match set"),
+            Err(err) => err,
+        };
+        assert!(matches!(
+            err,
+            TransformError::ResourceLimit {
+                resource: "reaction matches",
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn prepared_find_and_apply_match_legacy_split_api() {
+        let mol = parse("NCCN").unwrap();
+        let smirks = "[N:1]>>[N:1]";
+        let prepared = PreparedReaction::new(smirks).unwrap();
+
+        let legacy_matches = find_reaction_matches(smirks, &[&mol]).unwrap();
+        let prepared_matches = prepared.find_matches(&[&mol]).unwrap();
+        assert_eq!(prepared_matches, legacy_matches);
+        for m in &prepared_matches {
+            let legacy = apply_reaction_match(smirks, &[&mol], m, true).unwrap();
+            let reused = prepared.apply_match(&[&mol], m, true).unwrap();
+            assert_eq!(
+                reused.map(canonical_set),
+                legacy.map(canonical_set),
+                "prepared match application must preserve legacy output"
+            );
+        }
     }
 
     #[test]

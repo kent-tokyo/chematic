@@ -6,6 +6,9 @@ Periodic performance snapshots. Each file is a date-stamped record of throughput
 
 | Date | Version | Notes |
 |------|---------|-------|
+| [2026-09-04 MMFF94/3D](2026-09-04-mmff94-3d.md) | v1.0.3 | Prepared MMFF94 energy, L-BFGS minimization, ETKDG generation, and 3D minimization microbenchmarks on macOS arm64 |
+| [2026-09-04 streaming formats](2026-09-04-streaming-formats.md) | v1.0.3 | File-backed chematic SDF/MOL/XYZ streaming runner and explicitly non-equivalent RDKit block-parser reference |
+| [2026-09-04 RDKit/Open Babel](2026-09-04-rdkit-openbabel.md) | v1.0.3 wheel + v1.0.4 source follow-up | Speed comparison with Open Babel 3.2.1 CLI plus source-level canonical and SDF writer A/B checks; CLI conversion remains separate from in-process measurements |
 | [2026-09-04 WASM](2026-09-04-wasm-size.md) | v1.0.2 release candidate | Optimized web artifact size, gzip size, SHA-256 digest, tool versions, and exact reproduction commands |
 | [2026-09-04 canonical](2026-09-04-canonical-fast-path.md) | v1.0.2 code, measured before metadata bump | Canonical SMILES comparisons on two 5,000-molecule corpora; chematic leads RDKit by 2.5% and 1.47× at the respective medians on the recorded macOS arm64 environment |
 | [2026-09-04 SDF](2026-09-04-sdf-fast-path.md) | v1.0.2 code, measured before metadata bump | Graph/property read and serialization-only write improved 1.26× and 1.33× over the preceding chematic implementation; scoped RDKit comparison included |

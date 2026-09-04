@@ -7,9 +7,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [1.0.4] - 2026-09-04
 
-No unreleased changes.
+### Added
+
+- Added `chematic_rxn::PreparedReaction`, an immutable, thread-safe compiled
+  SMIRKS representation for repeated reaction matching and application without
+  reparsing the template. It can also consume caller-provided SSSR ring sets so
+  many templates can share target ring perception. Existing string-based APIs
+  remain compatible wrappers.
+- Added typed, loss-aware reaction documents and RXN V2000 adapters. Agents,
+  coefficients, conditions, provenance, atom maps, and multi-step data are
+  preserved by the document model; RXN export rejects unrepresentable richness
+  instead of silently flattening it.
+- Added bounded document-level CDXML page inspection and loss-preserving JSON
+  edits, plus typed Markush/polymer selection and expansion with
+  source-to-expanded atom mappings. The Rust, Python, WASM, and Node surfaces
+  share the same serialized contracts.
+- Added deterministic, occupancy-weighted crystal composition summaries and a
+  file-backed SDF/MOL/XYZ streaming benchmark lane.
+
+### Fixed
+
+- Reconciled declared stereochemistry during bounded UFF rescue and added a
+  constraint-aware UFF line search so post-minimization steps cannot silently
+  accept a lower-energy but constraint-violating geometry.
+- Corrected the crates.io publish graph after v1.0.3 by synchronizing all
+  intra-workspace dependency pins.
+
+### Removed
+
+- Removed the Spectrophores Rust and Python APIs while their patent/FTO status
+  remains independently uncleared. This is an intentional source-compatibility
+  break made to keep the public release surface within the documented
+  provenance boundary; no replacement spectral fingerprint from Issue #464 is
+  shipped.
+
+### Performance
+
+- Reduced canonical automorphism feasibility overhead by maintaining the
+  inverse atom mapping in O(1) and storing both maps as compact `u32`
+  sentinel arrays. Canonical output and search traversal remain unchanged.
+- Removed per-property temporary `String` allocations from V2000, V3000, and
+  3D SDF record writing, with a same-process A/B benchmark for reproducible
+  serializer-only measurements.
+- The focused canonical engine checks reduced elapsed time by approximately
+  10% across the retained inverse-map and compact-sentinel changes. The SDF
+  serializer A/B measured a 1.248x median speedup over five invocations, with
+  byte-identical output in every comparison. These are scoped local results,
+  not cross-platform claims.
+
+### Release engineering and documentation
+
+- Made npm publication idempotent by checking the exact package version before
+  publishing, and expanded the competitor capability, benchmark, provenance,
+  license, and compatibility records for the v1.0.4 release boundary.
+
+## [1.0.3] - 2026-09-04
+
+### Added
+
+- Added reusable MMFF94 topology preparation for repeated energy evaluation and
+  L-BFGS minimization, including cached bonded terms and non-bonded pair
+  exclusions.
+- Added Criterion benchmarks for MMFF94 energy evaluation, minimization, ETKDG
+  generation, and the 3D pipeline.
+
+### Performance
+
+- The local six-molecule prepared-energy benchmark measured 22.5 µs versus
+  365 µs for one-shot evaluation; the five-molecule 3D benchmark measured
+  388 ms for MMFF94 minimization. These are macOS arm64 local measurements,
+  not cross-platform or RDKit replacement claims.
 
 ## [1.0.2] - 2026-09-04
 

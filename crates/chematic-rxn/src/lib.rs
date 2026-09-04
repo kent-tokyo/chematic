@@ -7,6 +7,8 @@
 //! - [`write_reaction`]: serialize back to reaction SMILES.
 //! - [`RxnError`]: parse error type.
 //! - [`run_reactants`]: apply a SMIRKS template to reactant molecules.
+//! - [`PreparedReaction`]: parse/compile a SMIRKS template once for repeated
+//!   application, including optional caller-provided ring perception.
 //! - [`find_reaction_matches`]/[`apply_reaction_match`]: enumerate matches and
 //!   apply one of them independently, for callers that need to accept/reject
 //!   individual matches rather than an entire `run_reactants` call.
@@ -14,6 +16,7 @@
 //! - [`enumerate_library`]: combinatorial library enumeration from SMIRKS + fragment sets.
 
 pub mod balance;
+pub mod document;
 pub mod enumerate;
 pub mod green;
 pub mod perf_counters;
@@ -23,6 +26,10 @@ pub mod retro;
 pub mod transform;
 
 pub use balance::{BalanceResult, balance_check};
+pub use document::{
+    ComponentRole, ContentOrigin, ProvenanceRecord, ReactionComponent, ReactionCondition,
+    ReactionDocument, ReactionDocumentError, ReactionLoss, ReactionStep,
+};
 pub use enumerate::{
     LibraryConfig, LibraryError, enumerate_library, enumerate_library_2way, enumerate_library_3way,
 };
@@ -40,7 +47,7 @@ pub use reaction::{
 };
 pub use retro::{DEFAULT_TEMPLATES, RetroClass, RetroResult, RetroTemplate, retro_disconnect};
 pub use transform::{
-    ReactionMatch, ReactionTransformLimits, TransformError, apply_reaction_match,
+    PreparedReaction, ReactionMatch, ReactionTransformLimits, TransformError, apply_reaction_match,
     find_reaction_matches, find_reaction_matches_with_limits, run_reactants, run_reactants_strict,
     run_reactants_strict_with_limits, run_reactants_with_limits,
 };

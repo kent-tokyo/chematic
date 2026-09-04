@@ -12,7 +12,7 @@ claims to be inferred as complete. v1.0 may ship with these limits when the
 documented supported paths, typed failures, and regression gates remain
 stable:
 
-- CDXML remains loss-preserving bounded editing, not a complete arbitrary
+- CDXML remains loss-preserving document-level bounded editing, not a complete arbitrary
   nested-object editor/writer; complex polymer/Markush expansion remains
   bounded and explicit rather than a general topology engine.
 - Python `RWMol` remains the documented mutation subset, not full RDKit
@@ -48,19 +48,24 @@ supported. Unsupported options fail explicitly.
 
 ## CDXML
 
-Supported: bounded molecular parsing with coordinates; loss-preserving
-`CdxmlDocument` parsing and exact-source `write()`; bounded page/object
-attribute edits, insertion/removal, replacement, and nested `ReplaceObjectPath`;
-and preservation of unknown attributes, unknown objects, and untouched XML.
+Supported: bounded molecular parsing with coordinates; loss-preserving,
+multi-page `CdxmlDocument` parsing and exact-source `write()`; page count/ID
+inspection; JSON command edits for page attributes and opaque presentation
+objects, including nested `ReplaceObjectPath`; and preservation of unknown
+attributes, unknown objects, and untouched XML across pages and bindings.
 
 This is not a complete ChemDraw editor/writer. Arbitrary semantic editing of
 every nested CDXML object, regeneration from an edited molecular graph, and
 full templates, reactions, Markush/R-group, polymer, query, and presentation
-semantics are not supported.
+semantics/rendering are not supported. Presentation objects are preserved and
+can be edited as opaque XML, but chematic does not claim to interpret every
+ChemDraw presentation semantic.
 
 ## Polymer and Markush expansion
 
-Expansion is bounded and explicit. A repeat requires a count and either a
+Expansion is bounded and explicit. The `chematic.semantic.v1` JSON contract
+supports validated Markush selection and explicit repeat expansion across the
+Rust, Python, WASM, and Node bindings. A repeat requires a count and either a
 `repeat_smiles` fragment with exactly two `[*]` linkage markers or two explicit
 `repeat_endpoint_atoms`. Expansion returns `ExpandedSemantic` with a
 `source_to_expanded` provenance mapping.

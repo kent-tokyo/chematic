@@ -691,6 +691,19 @@ impl PyPeriodicStructure {
         format_crystal_formula(&self.inner)
     }
 
+    /// Deterministic `(element_symbol, occupancy_weighted_amount)` entries
+    /// for the stored cell. Zero-occupancy species are retained; a supercell
+    /// reports its expanded amount rather than a normalized primitive-cell
+    /// composition.
+    #[getter]
+    fn composition(&self) -> Vec<(String, f64)> {
+        self.inner
+            .composition()
+            .iter()
+            .map(|(element, amount)| (element.symbol().to_string(), amount))
+            .collect()
+    }
+
     /// Write as CIF text. Raises `ValueError` if this structure's
     /// `symmetry_status.is_complete_cell` is `False` — see
     /// `CifSymmetryStatus`'s docs for why (writing would falsely declare a

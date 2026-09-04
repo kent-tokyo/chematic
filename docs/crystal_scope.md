@@ -18,7 +18,12 @@ living in this crate.
   occupancy) pairs per site, occupancy-sum validation, room for future
   disorder without a breaking change.
 - `PeriodicStructure`: lattice + sites, `validate()`, coordinate wrapping,
-  periodic-neighbor enumeration, diagonal supercell generation.
+  periodic-neighbor enumeration, diagonal supercell generation, and
+  occupancy-weighted `composition()` summaries.
+- `CompositionSummary`: deterministic atomic-number-ordered element amounts
+  per stored cell. Zero-occupancy species remain explicit, and a generated
+  supercell reports its expanded amount rather than normalizing to the source
+  cell. Same-coordinate sites are never deduplicated.
 - Exact PBC displacement/minimum-image (bounded exhaustive search derived
   from reciprocal vectors),
   verified against a from-scratch brute-force oracle, including triclinic

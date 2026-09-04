@@ -17,12 +17,12 @@ documentation = "https://docs.rs/chematic-3d"
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-chematic-core       = { path = "../chematic-core",       version = "1.0.2" }
-chematic-perception = { path = "../chematic-perception", version = "1.0.2" }
-chematic-ff         = { path = "../chematic-ff",         version = "1.0.2" }
-chematic-chem       = { path = "../chematic-chem",       version = "1.0.2" }
-chematic-fp         = { path = "../chematic-fp",         version = "1.0.2" }
-chematic-smarts     = { path = "../chematic-smarts",     version = "1.0.2" }
+chematic-core       = { path = "../chematic-core",       version = "1.0.4" }
+chematic-perception = { path = "../chematic-perception", version = "1.0.4" }
+chematic-ff         = { path = "../chematic-ff",         version = "1.0.4" }
+chematic-chem       = { path = "../chematic-chem",       version = "1.0.4" }
+chematic-fp         = { path = "../chematic-fp",         version = "1.0.4" }
+chematic-smarts     = { path = "../chematic-smarts",     version = "1.0.4" }
 serde_json          = "1.0"
 
 # std::time::Instant panics on wasm32-unknown-unknown (issue #219); web-time
@@ -32,7 +32,12 @@ serde_json          = "1.0"
 web-time = "1"
 
 [dev-dependencies]
+criterion = { version = "0.8", features = ["html_reports"] }
 # Path-only (no `version`): see chematic-smiles/Cargo.toml's dev-dependencies
 # comment -- a version-pinned dev-dependency must resolve against the
 # registry at `cargo publish` time, which a forward reference can't satisfy.
 chematic-smiles = { path = "../chematic-smiles" }
+
+[[bench]]
+name = "pipeline_3d_bench"
+harness = false

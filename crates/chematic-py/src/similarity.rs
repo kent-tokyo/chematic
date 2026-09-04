@@ -63,21 +63,6 @@ fn tanimoto_map4(a: Vec<u32>, b: Vec<u32>) -> f64 {
     chematic_fp::tanimoto_map4(&a, &b)
 }
 
-/// Tanimoto-like similarity between two Spectrophores fingerprints.
-///
-/// Uses the USR formula ``S = 1 / (1 + mean|a − b|)``, returning values in (0, 1].
-/// Both vectors must have the same length (typically 48).
-///
-///     coords1 = mol1.generate_3d()
-///     coords2 = mol2.generate_3d()
-///     fp1 = mol1.spectrophores(coords1)
-///     fp2 = mol2.spectrophores(coords2)
-///     sim = chematic.tanimoto_spectrophores(fp1, fp2)
-#[pyfunction]
-fn tanimoto_spectrophores(a: Vec<f64>, b: Vec<f64>) -> f64 {
-    chematic_3d::tanimoto_spectrophores(&a, &b)
-}
-
 /// Butina clustering — group molecules by ECFP4 Tanimoto similarity.
 ///
 /// Returns a list of clusters; each cluster is a list of SMILES indices (centroid first).
@@ -478,7 +463,6 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(tanimoto, m)?)?;
     m.add_function(wrap_pyfunction!(shape_screen, m)?)?;
     m.add_function(wrap_pyfunction!(tanimoto_map4, m)?)?;
-    m.add_function(wrap_pyfunction!(tanimoto_spectrophores, m)?)?;
     m.add_function(wrap_pyfunction!(butina_cluster, m)?)?;
     m.add_function(wrap_pyfunction!(maxmin_picks, m)?)?;
     m.add_function(wrap_pyfunction!(cosine_erg_vec, m)?)?;

@@ -54,6 +54,7 @@ use crate::canonical_partition::{CanonicalColoredGraph, Partition};
 /// call) while still bounding wall-clock to a small fraction of a second even
 /// in an unoptimized debug build.
 const MAX_EXTEND_MAPPING_STEPS: usize = 200_000;
+const UNMAPPED: u32 = u32::MAX;
 
 pub(crate) fn has_colored_automorphism_mapping(
     graph: &CanonicalColoredGraph,
@@ -72,13 +73,13 @@ pub(crate) fn has_colored_automorphism_mapping(
     }
 
     let n = graph.n();
-    let mut image: SmallVec<[Option<u32>; 64]> = smallvec![None; n];
-    let mut used: SmallVec<[bool; 64]> = smallvec![false; n];
-    image[from.0 as usize] = Some(to.0);
-    used[to.0 as usize] = true;
+    let mut image: SmallVec<[u32; 64]> = smallvec![UNMAPPED; n];
+    let mut preimage: SmallVec<[u32; 64]> = smallvec![UNMAPPED; n];
+    image[from.0 as usize] = to.0;
+    preimage[to.0 as usize] = from.0;
 
     let mut steps = 0usize;
-    if !extend_mapping(graph, coloring, &mut image, &mut used, &mut steps) {
+    if !extend_mapping(graph, coloring, &mut image, &mut preimage, &mut steps) {
         return false;
     }
 
@@ -88,8 +89,8 @@ pub(crate) fn has_colored_automorphism_mapping(
 fn extend_mapping(
     graph: &CanonicalColoredGraph,
     coloring: &Partition,
-    image: &mut [Option<u32>],
-    used: &mut [bool],
+    image: &mut [u32],
+    preimage: &mut [u32],
     steps: &mut usize,
 ) -> bool {
     *steps += 1;
@@ -97,7 +98,7 @@ fn extend_mapping(
         return false;
     }
     let n = image.len();
-    let Some(u) = (0..n).find(|&i| image[i].is_none()) else {
+    let Some(u) = (0..n).find(|&i| image[i] == UNMAPPED) else {
         return true;
     };
     let cell = coloring.cell_of[u];
@@ -119,23 +120,23 @@ fn extend_mapping(
     // dependency entirely.
     let candidates: SmallVec<[u32; 8]> = (0..n as u32)
         .filter(|&v| {
-            !used[v as usize]
+            preimage[v as usize] == UNMAPPED
                 && coloring.cell_of[v as usize] == cell
                 && graph.vertex_color(AtomIdx(v)) == u_color
         })
         .collect();
 
     for v in candidates {
-        if !feasible(graph, image, u as u32, v) {
+        if !feasible(graph, image, preimage, u as u32, v) {
             continue;
         }
-        image[u] = Some(v);
-        used[v as usize] = true;
-        if extend_mapping(graph, coloring, image, used, steps) {
+        image[u] = v;
+        preimage[v as usize] = u as u32;
+        if extend_mapping(graph, coloring, image, preimage, steps) {
             return true;
         }
-        image[u] = None;
-        used[v as usize] = false;
+        image[u] = UNMAPPED;
+        preimage[v as usize] = UNMAPPED;
     }
     false
 }
@@ -147,12 +148,19 @@ fn extend_mapping(
 /// must correspond to an edge from `u` to that vertex) -- both directions,
 /// so a missing/extra edge relative to any already-committed part of the
 /// mapping is caught immediately rather than only at final verification.
-fn feasible(graph: &CanonicalColoredGraph, image: &[Option<u32>], u: u32, v: u32) -> bool {
+fn feasible(
+    graph: &CanonicalColoredGraph,
+    image: &[u32],
+    preimage: &[u32],
+    u: u32,
+    v: u32,
+) -> bool {
     let ua = AtomIdx(u);
     let va = AtomIdx(v);
 
     for (nb, bidx) in graph.neighbors(ua) {
-        if let Some(mapped) = image[nb.0 as usize] {
+        let mapped = image[nb.0 as usize];
+        if mapped != UNMAPPED {
             let want = graph.edge_color(ua, bidx);
             let has = graph
                 .mol()
@@ -165,7 +173,8 @@ fn feasible(graph: &CanonicalColoredGraph, image: &[Option<u32>], u: u32, v: u32
     }
 
     for (nb, bidx) in graph.neighbors(va) {
-        if let Some(preimage) = (0..image.len() as u32).find(|&i| image[i as usize] == Some(nb.0)) {
+        let preimage = preimage[nb.0 as usize];
+        if preimage != UNMAPPED {
             let want = graph.edge_color(va, bidx);
             let has = graph
                 .mol()
@@ -185,13 +194,13 @@ fn feasible(graph: &CanonicalColoredGraph, image: &[Option<u32>], u: u32, v: u32
 /// preservation checked from every vertex's own perspective (so both
 /// directions of every edge are independently checked). Never accepts a
 /// partial or subgraph match -- every vertex of the graph must be mapped.
-fn verify_full_bijection(graph: &CanonicalColoredGraph, image: &[Option<u32>]) -> bool {
+fn verify_full_bijection(graph: &CanonicalColoredGraph, image: &[u32]) -> bool {
     let n = image.len();
     let mut seen: SmallVec<[bool; 64]> = smallvec![false; n];
-    for (i, &mapped) in image.iter().enumerate() {
-        let Some(v) = mapped else {
+    for (i, &v) in image.iter().enumerate() {
+        if v == UNMAPPED || v as usize >= n {
             return false;
-        };
+        }
         if seen[v as usize] {
             return false; // not injective
         }
@@ -205,12 +214,12 @@ fn verify_full_bijection(graph: &CanonicalColoredGraph, image: &[Option<u32>]) -
     }
 
     for i in 0..n {
-        let img_i = image[i].expect("fully assigned");
+        let img_i = image[i];
         if graph.mol().degree(AtomIdx(i as u32)) != graph.mol().degree(AtomIdx(img_i)) {
             return false;
         }
         for (nb, bidx) in graph.neighbors(AtomIdx(i as u32)) {
-            let img_nb = image[nb.0 as usize].expect("fully assigned");
+            let img_nb = image[nb.0 as usize];
             let want = graph.edge_color(AtomIdx(i as u32), bidx);
             match graph.mol().bond_between(AtomIdx(img_i), AtomIdx(img_nb)) {
                 Some((bidx2, _)) if graph.edge_color(AtomIdx(img_i), bidx2) == want => {}
@@ -348,8 +357,8 @@ mod tests {
         // (only maps 0 -> 1) and confirm verify_full_bijection rejects it.
         let mol = parse("c1ccccc1").unwrap();
         let graph = CanonicalColoredGraph::new(&mol);
-        let mut image = vec![None; graph.n()];
-        image[0] = Some(1);
+        let mut image = vec![UNMAPPED; graph.n()];
+        image[0] = 1;
         assert!(!verify_full_bijection(&graph, &image));
     }
 
@@ -358,9 +367,16 @@ mod tests {
         // Two source atoms mapped to the SAME target atom.
         let mol = parse("c1ccccc1").unwrap();
         let graph = CanonicalColoredGraph::new(&mol);
-        let mut image: Vec<Option<u32>> = (0..graph.n() as u32).map(Some).collect();
-        image[1] = Some(0); // 0 -> 0 and 1 -> 0: not injective
+        let mut image: Vec<u32> = (0..graph.n() as u32).collect();
+        image[1] = 0; // 0 -> 0 and 1 -> 0: not injective
         assert!(!verify_full_bijection(&graph, &image));
+    }
+
+    #[test]
+    fn out_of_range_mapping_never_panics_or_is_accepted() {
+        let mol = parse("CC").unwrap();
+        let graph = CanonicalColoredGraph::new(&mol);
+        assert!(!verify_full_bijection(&graph, &[0, graph.n() as u32]));
     }
 
     #[test]

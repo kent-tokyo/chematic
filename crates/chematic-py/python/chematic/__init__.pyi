@@ -953,33 +953,6 @@ class Mol:
         """
         ...
 
-    def spectrophores(
-        self,
-        coords: list[list[float]],
-        normalize: str = "none",
-    ) -> list[float]:
-        """Spectrophores 3D fingerprint — 48-element vector.
-
-        Encodes the 3D electrostatic, lipophilic, aromatic, and H-bond
-        character of the molecule's surface.  Requires 3D coordinates.
-
-        Args:
-            coords: ``[[x,y,z], ...]`` list (Å), one per heavy atom.
-            normalize: ``"none"`` (default), ``"zscore"``, or ``"l2"``.
-
-        Returns:
-            List of 48 floats (4 properties × 12 probe positions).
-
-        Example::
-
-            coords = mol.generate_3d()
-            fp = mol.spectrophores(coords)
-            sim = chematic.tanimoto_spectrophores(fp1, fp2)
-
-        Reference: Silicos-it Spectrophores (patent expired 2024).
-        """
-        ...
-
     # -- 3D file I/O ---------------------------------------------------------
 
     def to_pdb(self, coords: list[list[float]]) -> str:
@@ -2782,22 +2755,6 @@ def tanimoto_mhfp(a: list[int], b: list[int]) -> float:
     Example::
 
         sim = chematic.tanimoto_mhfp(mol1.mhfp(), mol2.mhfp())
-    """
-    ...
-
-def tanimoto_spectrophores(a: list[float], b: list[float]) -> float:
-    """Tanimoto-like similarity between two Spectrophores fingerprints.
-
-    Uses the USR formula ``S = 1 / (1 + mean|a − b|)``, returning values in (0, 1].
-    Both vectors must have the same length (typically 48).
-
-    Example::
-
-        coords1 = mol1.generate_3d()
-        coords2 = mol2.generate_3d()
-        fp1 = mol1.spectrophores(coords1)
-        fp2 = mol2.spectrophores(coords2)
-        sim = chematic.tanimoto_spectrophores(fp1, fp2)
     """
     ...
 

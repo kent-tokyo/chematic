@@ -17,7 +17,7 @@ documentation = "https://docs.rs/chematic-smiles"
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-chematic-core = { path = "../chematic-core", version = "1.0.2" }
+chematic-core = { path = "../chematic-core", version = "1.0.4" }
 # Production use: `compute_stereo_alkene_ends` (canonical.rs) needs SSSR ring
 # membership to exclude endocyclic small-ring double bonds from marker-carrier
 # candidacy (issue #149's ring-constrained residual, see
@@ -27,7 +27,7 @@ chematic-core = { path = "../chematic-core", version = "1.0.2" }
 # graph, only test binaries. Was previously a dev-only dependency of this
 # crate for a different reason (re-aromatizing test fixtures); now also a
 # real one.
-chematic-perception = { path = "../chematic-perception", version = "1.0.2" }
+chematic-perception = { path = "../chematic-perception", version = "1.0.4" }
 smallvec = "1"
 
 [features]

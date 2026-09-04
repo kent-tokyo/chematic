@@ -14,19 +14,22 @@
 Python・Rust・ブラウザ向けケモインフォマティクスライブラリ。
 
 **デフォルトで速く、設計で安全なケモインフォマティクス。**  
-Pure Rust · C/C++ ゼロ · Python · WebAssembly · [公式サイト](https://chematic.io/) · [ライブデモ](https://kent-tokyo.github.io/chematic/playground/)
+デフォルトはPure Rust · optional native InChI C FFI · Python · WebAssembly · [公式サイト](https://chematic.io/) · [ライブデモ](https://kent-tokyo.github.io/chematic/playground/)
 
-### v1.0.2 の対応範囲
+### v1.0.4 の対応範囲
 
-v1.0.2 は、v1.0.0 の対応範囲を維持し、bounded な CDXML/polymer API、部分的な Python `RWMol`
-互換、fail-closed canonical identity、明示的な aromaticity/CIP モード、
-Experimental の 3D/MMFF94 を公開契約とします。完全な任意構造 CDXML 編集、
+v1.0.4 は、v1.0.0 の bounded な互換性契約を維持しつつ、typed reaction
+document、document-level CDXML 編集、明示的で bounded な Markush/polymer
+展開、結晶組成集計、安全性を高めた UFF rescue、canonical/SDF
+ホットパス改善を追加します。完全な任意構造 CDXML 編集、
 複雑な Markush/polymer 展開、完全な RDKit `RWMol` 互換、3D の完全な
 ETKDG/MMFF94 互換は対象外です。再現可能なローカル gate は
 [v1.0 local release gate](docs/v1.0-local-release-gate.md) を参照してください。
-このパッチでは明示的水素の原子価検証を修正し、canonical SMILES と SDF
-読み書きのホットパスを高速化しました。測定条件と限定範囲は
-[ベンチマーク文書](docs/benchmark.md) に記録しています。
+アルゴリズムと第三者由来コードの境界は
+[実装 provenance](docs/implementation-provenance.md) に記録しています。
+Spectrophores は patent/FTO 状態が独立に確認されるまで Rust/Python API
+から意図的に撤去しています。測定条件と限定範囲は[ベンチマーク文書](docs/benchmark.md)
+に記録しています。
 
 | | chematic | RDKit (Python) | RDKit.js (WASM) |
 |---|---|---|---|
@@ -141,7 +144,7 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v1.0.2
+# chematic v1.0.4
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-06, v0.4.22 vs RDKit 2026.03.3 --
@@ -319,6 +322,17 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 ---
 
 ## 最近の開発
+
+**v1.0.4**（2026-09-04）: **loss-aware document、bounded semantic expansion、canonical/SDF高速化**
+- typed RXN document、multi-page CDXML 編集、source mapping 付きの bounded
+  Markush/polymer 展開、occupancy-aware 結晶組成集計を追加しました。
+- UFF rescue の制約保護、canonical automorphism、SDF property serialization
+  を改善し、実測条件を `benchmarks/` に記録しました。
+- patent/FTO の独立確認が済んでいない Spectrophores を公開APIから撤去しました。
+
+**v1.0.3**（2026-09-04）: **MMFF94 / 3D パイプラインのキャッシュ化と benchmark 追加**
+- MMFF94 の topology、bond/angle/torsion、非結合ペアを再利用する評価器を追加しました。
+- MMFF94、ETKDG、3D minimization のローカル Criterion benchmark を追加しました。
 
 **v1.0.2**（2026-09-04）: **canonical SMILES・SDF高速化と原子価契約の厳密化**
 - 2つの5,000分子corpusにおけるcanonical SMILESと、365-record SDFのgraph/property read・serialization-only writeを反復測定しました。数値はmacOS arm64上の限定された操作・corpusの結果であり、全環境での優位性主張ではありません。
@@ -528,7 +542,6 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 - `chematic-depict`: `depict_pdf()` / `depict_eps()` — PDF・EPS 出力（Pure Rust、外部ツール不要）
 - `chematic-mol`: **ChemicalJSON** — `parse_cjson()` / `write_cjson()` で Avogadro2 / MolSSI 相互運用
 - `chematic-chem`: 新記述子 4 件 — `schultz_mti()`, `gutman_mti()`, `vabc()`（Bondi vdW 体積）, `gravitational_index()`
-- `chematic-3d`: **Spectrophores** 3D フィンガープリント（ファーマコフォアシェルエンコーディング）
 - `chematic-py`: `mol.to_pdf()`, `mol.to_eps()`, `mol.to_cjson()`, `from_cjson()`；`bulk.substructure_match(smarts, mols)` 並列 VF2；`estate_all()` / `ring_bundle` を bulk に追加
 - **WASM バンドル: 819 → 504 KB gzip（−38.5%）** — `tiny_skia` オプション化、インライン SHA-256、`opt-level="z" lto=true codegen-units=1`
 

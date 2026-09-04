@@ -14,7 +14,7 @@
 A cheminformatics library for Python, Rust, and the browser.
 
 **Cheminformatics that's fast by default, safe by design.**  
-Pure Rust · Zero C/C++ · Python · WebAssembly · [Website](https://chematic.io/) · [Live Demo](https://kent-tokyo.github.io/chematic/playground/)
+Pure Rust by default · optional native InChI C FFI · Python · WebAssembly · [Website](https://chematic.io/) · [Live Demo](https://kent-tokyo.github.io/chematic/playground/)
 
 | | chematic | RDKit (Python) | RDKit.js (WASM) |
 |---|---|---|---|
@@ -55,16 +55,19 @@ can vary slightly by toolchain and build environment.
 | IUPAC name generation | Partial (25+ classes) |
 | Pure-Rust InChI | Approximate (enable `native-inchi` feature for exact) |
 
-### v1.0.2 release boundary
+### v1.0.4 release boundary
 
-The v1.0.2 patch release retains the v1.0.0 documented bounded
-CDXML/polymer API, partial Python `RWMol` compatibility, fail-closed canonical
-identity, explicit aromaticity/CIP modes, and Experimental 3D/MMFF94. It adds
-the explicit-hydrogen valence correction and canonical/SDF throughput
-improvements without changing that compatibility boundary. The
+The v1.0.4 release retains the v1.0.0 bounded compatibility contract while
+adding typed reaction documents, document-level CDXML edits, explicit bounded
+Markush/polymer expansion, crystal composition summaries, safer UFF rescue,
+and canonical/SDF hot-path improvements. Spectrophores is intentionally
+removed from the Rust and Python APIs while its patent/FTO status remains
+independently uncleared. The
 complete compatibility contract and reproducible local release gate are in
 [`docs/compatibility-scope.md`](docs/compatibility-scope.md) and
-[`docs/v1.0-local-release-gate.md`](docs/v1.0-local-release-gate.md).
+[`docs/v1.0-local-release-gate.md`](docs/v1.0-local-release-gate.md). The
+algorithm and third-party provenance boundary is recorded in
+[`docs/implementation-provenance.md`](docs/implementation-provenance.md).
 
 ---
 
@@ -220,7 +223,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v1.0.2
+# chematic v1.0.4
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-07-17, v0.4.29 vs RDKit 2026.03.3 --
@@ -418,6 +421,22 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 
 ## Recent Development
 
+**v1.0.4** (2026-09-04): **loss-aware documents, bounded semantic expansion, and faster canonical/SDF paths**
+- Added typed RXN reaction documents, loss-preserving multi-page CDXML edits,
+  bounded Markush/polymer expansion with source mappings, and occupancy-aware
+  crystal composition summaries across the documented bindings.
+- Added constraint-aware UFF rescue and reduced canonical automorphism and SDF
+  property-serialization overhead; exact scoped measurements are retained in
+  [`benchmarks/`](benchmarks/).
+- Removed Spectrophores from the public Rust/Python surface pending independent
+  patent/FTO clearance, and documented implementation provenance explicitly.
+
+**v1.0.3** (2026-09-04): **MMFF94 / 3D pipeline caching and reproducible benchmarks**
+- Added reusable MMFF94 topology state and cached bonded/non-bonded terms for
+  repeated energy and L-BFGS evaluation.
+- Added local Criterion benchmarks for MMFF94 and ETKDG. Results are scoped to
+  the recorded macOS arm64 environment.
+
 **v1.0.2** (2026-09-04): **canonical SMILES and SDF throughput, stricter valence integration**
 - Canonical SMILES leads RDKit by 2.5% and 1.47× on two recorded 5,000-molecule macOS arm64 runs; SDF graph/property read and serialization-only write are about 10.5× and 10.4× faster on the scoped 365-record run.
 - Explicit bracket-hydrogen valence validation now rejects impossible inputs; standardization and N-alkylation fixtures/templates were aligned with the stricter contract.
@@ -430,9 +449,9 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi  # +1
 - `chematic-py`/`chematic-wasm`: full `McsConfig`/`McsOutcome` exposed to `find_mcs` bindings (`match_charge`/`match_isotope`/`atom_compare`/`bond_compare`/`timeout_ms`/etc., previously Rust-only)
 - Full details in `CHANGELOG.md`'s `[0.23.0]` section
 
-Current development is tracked in [`CHANGELOG.md`](CHANGELOG.md). v1.0.2 keeps
-the v1.0 compatibility boundary while shipping the measured canonical/SDF
-hot-path improvements and explicit-hydrogen validation correction.
+Current development is tracked in [`CHANGELOG.md`](CHANGELOG.md). v1.0.4 keeps
+the documented v1.0 compatibility boundary except for the explicit
+Spectrophores removal described above.
 
 The older release notes below are retained as a short historical summary.
 
@@ -621,7 +640,7 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v1.0.2)
+├── Cargo.toml                    workspace root (v1.0.4)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -675,7 +694,7 @@ If you use chematic in academic or research work, please cite:
   author    = {Kentaro Tanabe (kent-tokyo)},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {1.0.2},
+  version   = {1.0.4},
   year      = {2026},
 }
 ```

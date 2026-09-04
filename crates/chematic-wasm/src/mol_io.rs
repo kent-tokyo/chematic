@@ -460,6 +460,28 @@ pub fn cdxml_document_json(cdxml: &str) -> Result<String, JsValue> {
     serde_json::to_string(&document.to_json()).map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
+/// Apply a loss-preserving page/presentation edit to a CDXML document.
+/// `edit_json` is a `CdxmlEdit` command object; unknown presentation XML is
+/// retained and the result is reparsed before it is returned.
+#[wasm_bindgen]
+pub fn edit_cdxml_document_json(cdxml: &str, edit_json: &str) -> Result<String, JsValue> {
+    if cdxml.len() > WASM_MAX_INPUT_BYTES || edit_json.len() > WASM_MAX_JSON_STRING_BYTES {
+        return Err(JsValue::from_str("CDXML input or edit JSON too large"));
+    }
+    let document = chematic_mol::CdxmlDocument::parse_with_limits(
+        cdxml,
+        &chematic_mol::CdxmlParseLimits {
+            max_input_bytes: WASM_MAX_INPUT_BYTES,
+            ..Default::default()
+        },
+    )
+    .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    document
+        .apply_json_edit(edit_json)
+        .map(|edited| edited.write())
+        .map_err(|e| JsValue::from_str(&e.to_string()))
+}
+
 /// Parse a MOL V2000 string and return 2D coordinates as a JSON array.
 ///
 /// Returns `[[x0,y0],[x1,y1],...]` in atom-insertion order.

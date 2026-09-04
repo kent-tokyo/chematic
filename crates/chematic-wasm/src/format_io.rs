@@ -85,6 +85,27 @@ fn check_json_len(label: &str, input: &str) -> Result<(), JsValue> {
     Ok(())
 }
 
+/// Parse an MDL RXN V2000 file into the typed reaction-document JSON
+/// contract shared with the Rust and Python bindings.
+#[wasm_bindgen]
+pub fn rxn_document_from_rxn(text: &str) -> Result<String, JsValue> {
+    check_input_len("RXN input", text)?;
+    let document = chematic_mol::parse_rxn_document(text)
+        .map_err(|error| JsValue::from_str(&error.to_string()))?;
+    serde_json::to_string(&document).map_err(|error| JsValue::from_str(&error.to_string()))
+}
+
+/// Write typed reaction-document JSON as MDL RXN V2000. Unsupported rich
+/// fields return an error instead of being silently discarded.
+#[wasm_bindgen]
+pub fn rxn_document_to_rxn(document_json: &str) -> Result<String, JsValue> {
+    check_json_len("RXN document JSON", document_json)?;
+    let document: chematic_rxn::ReactionDocument = serde_json::from_str(document_json)
+        .map_err(|error| JsValue::from_str(&format!("invalid reaction document JSON: {error}")))?;
+    chematic_mol::write_rxn_document(&document)
+        .map_err(|error| JsValue::from_str(&error.to_string()))
+}
+
 fn wasm_orca_input_limits() -> chematic_mol::OrcaInputParseLimits {
     chematic_mol::OrcaInputParseLimits {
         max_input_bytes: WASM_MAX_INPUT_BYTES,

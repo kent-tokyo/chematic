@@ -14,14 +14,17 @@
 面向 Python、Rust 和浏览器的化学信息学库。
 
 **默认快速，设计安全的化学信息学库。**  
-纯 Rust · 零 C/C++ · Python · WebAssembly · [官方网站](https://chematic.io/) · [在线演示](https://kent-tokyo.github.io/chematic/playground/)
+默认纯 Rust · 可选原生 InChI C FFI · Python · WebAssembly · [官方网站](https://chematic.io/) · [在线演示](https://kent-tokyo.github.io/chematic/playground/)
 
-### v1.0.2 范围
+### v1.0.4 范围
 
-v1.0.2 保持 v1.0.0 的兼容性边界，并加入显式氢价态校验修复以及
-canonical SMILES、SDF 热路径优化。CDXML/polymer、Python `RWMol`、
-aromaticity/CIP 与 Experimental 3D/MMFF94 的支持范围不变。基准数字仅适用于
-记录的语料、操作、硬件与配置；完整方法见[基准文档](docs/benchmark.md)。
+v1.0.4 保持 v1.0.0 的 bounded 兼容性边界，并加入 typed reaction document、
+document-level CDXML 编辑、显式且 bounded 的 Markush/polymer 展开、晶体组成汇总、
+更安全的 UFF rescue，以及 canonical/SDF 热路径优化。完整任意结构 CDXML 编辑、
+复杂拓扑 expansion、完整 RDKit `RWMol` 与完整 ETKDG/MMFF94 parity 仍不支持。
+Spectrophores 在 patent/FTO 状态得到独立确认前已从 Rust/Python API 中移除。
+基准数字仅适用于记录的语料、操作、硬件与配置；完整方法见[基准文档](docs/benchmark.md)。
+算法与第三方来源边界记录在[实现来源文档](docs/implementation-provenance.md)中。
 
 | | chematic | RDKit (Python) | RDKit.js (WASM) |
 |---|---|---|---|
@@ -299,6 +302,16 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 
 ## 近期开发
 
+**v1.0.4**（2026-09-04）：**loss-aware document、bounded semantic expansion 与 canonical/SDF 加速**
+- 增加 typed RXN document、多页 CDXML 编辑、带 source mapping 的 bounded
+  Markush/polymer 展开，以及 occupancy-aware 晶体组成汇总。
+- 改进 UFF rescue 约束、canonical automorphism 与 SDF property serialization。
+- 在独立 patent/FTO 审查完成前移除 Spectrophores 公共 API。
+
+**v1.0.3**（2026-09-04）：**MMFF94 / 3D 管线缓存与基准测试**
+- 增加可复用的 MMFF94 拓扑、bond/angle/torsion 与非键合 pair 缓存。
+- 增加 MMFF94、ETKDG 和 3D minimization 的本地 Criterion benchmark。
+
 **v1.0.2**（2026-09-04）：**canonical SMILES 与 SDF 加速、严格价态契约**
 - 在两个独立的 5,000 分子语料上重复测量 canonical SMILES，并单独测量 365 条记录的 SDF graph/property read 与 serialization-only write；结果仅代表记录的 macOS arm64 环境。
 - 修复显式氢价态校验，并使 standardization fixture 与 N-alkylation template 符合严格契约。
@@ -505,7 +518,6 @@ cargo test -p chematic-inchi --features native-inchi --test standard_inchi      
 - `chematic-depict`：`depict_pdf()` / `depict_eps()` — PDF 和 EPS 输出；纯 Rust，无需外部工具
 - `chematic-mol`：**ChemicalJSON** — `parse_cjson()` / `write_cjson()` 支持 Avogadro2 / MolSSI 互操作
 - `chematic-chem`：4 个新描述符 — `schultz_mti()`, `gutman_mti()`, `vabc()`（Bondi vdW 体积）, `gravitational_index()`
-- `chematic-3d`：**Spectrophores** 3D 指纹（药效团壳编码）
 - `chematic-py`：`mol.to_pdf()`, `mol.to_eps()`, `mol.to_cjson()`, `from_cjson()`；`bulk.substructure_match(smarts, mols)` 并行 VF2；`estate_all()` / `ring_bundle` 加入 bulk
 - **WASM 包：819 → 504 KB gzip（−38.5%）** — `tiny_skia` 改为可选、内联 SHA-256、`opt-level="z" lto=true codegen-units=1`
 

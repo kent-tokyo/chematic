@@ -55,7 +55,15 @@ let structure = PeriodicStructure::new(lattice, sites).unwrap();
 
 let neighbors = structure.neighbors_within(5.0).unwrap();
 let supercell = structure.make_supercell([2, 2, 2]).unwrap();
+let composition = supercell.composition();
+assert_eq!(composition.amount(Element::NA), 8.0);
 ```
+
+`PeriodicStructure::composition()` returns a deterministic,
+occupancy-weighted `CompositionSummary` for the stored cell. It retains
+zero-occupancy species as explicit zero entries, does not deduplicate sites at
+the same coordinate, and reports an explicitly generated supercell's expanded
+amount rather than reducing it to the source cell.
 
 See `examples/basic_structure.rs` (`cargo run -p chematic-crystal --example
 basic_structure`) for a runnable version with printed output.
