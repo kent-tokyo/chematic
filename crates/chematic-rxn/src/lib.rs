@@ -16,6 +16,7 @@
 //! - [`enumerate_library`]: combinatorial library enumeration from SMIRKS + fragment sets.
 
 pub mod balance;
+pub mod document;
 pub mod enumerate;
 pub mod green;
 pub mod perf_counters;
@@ -25,6 +26,10 @@ pub mod retro;
 pub mod transform;
 
 pub use balance::{BalanceResult, balance_check};
+pub use document::{
+    ComponentRole, ContentOrigin, ProvenanceRecord, ReactionComponent, ReactionCondition,
+    ReactionDocument, ReactionDocumentError, ReactionLoss, ReactionStep,
+};
 pub use enumerate::{
     LibraryConfig, LibraryError, enumerate_library, enumerate_library_2way, enumerate_library_3way,
 };

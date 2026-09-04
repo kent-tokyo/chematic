@@ -476,6 +476,8 @@ dependencies = [
  "chematic-smarts",
  "chematic-smiles",
  "rustc-hash",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

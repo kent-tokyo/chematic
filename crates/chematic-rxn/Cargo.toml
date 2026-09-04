@@ -28,8 +28,10 @@ chematic-perception = { path = "../chematic-perception", version = "1.0.3" }
 chematic-smiles = { path = "../chematic-smiles", version = "1.0.3" }
 chematic-smarts = { path = "../chematic-smarts", version = "1.0.3" }
 rustc-hash = "2"
+serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
+serde_json = "1.0"
 # Path-only (no `version`): mutual dev-dependency, matching the pattern in
 # chematic-smiles/Cargo.toml (avoids a cargo-publish version deadlock).
 chematic-chem = { path = "../chematic-chem" }
