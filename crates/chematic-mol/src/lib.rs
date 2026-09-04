@@ -161,8 +161,8 @@ pub use smiles_table::{
 pub use tdt::{TdtError, TdtReaderOptions, TdtRecordReader, TdtRecordWriter, TdtWriterOptions};
 pub use volumetric::{GridAtom, GridError, GridUnits, VolumetricGrid};
 pub use xyz::{
-    ExtxyzReader, ExtxyzWriter, XyzAtom, XyzError, XyzFrame, XyzParseLimits, XyzProperty,
-    XyzPropertyKind, XyzReader, XyzValue, XyzWriter, parse_extxyz, parse_extxyz_all,
+    ExtxyzReader, ExtxyzWriter, XyzAtom, XyzError, XyzFileReader, XyzFrame, XyzParseLimits,
+    XyzProperty, XyzPropertyKind, XyzReader, XyzValue, XyzWriter, parse_extxyz, parse_extxyz_all,
     parse_extxyz_with_limits, parse_xyz, parse_xyz_all, parse_xyz_all_with_limits,
     parse_xyz_with_limits, write_extxyz, write_xyz,
 };

@@ -539,6 +539,155 @@ impl<'a> Iterator for XyzReader<'a> {
     }
 }
 
+/// Streaming XYZ iterator over any [`std::io::BufRead`] source.
+///
+/// At most one frame is retained for parsing. The reader is therefore useful
+/// for trajectory files that do not fit in memory; the frame itself is still
+/// materialized as an [`XyzFrame`]. Input, line, atom, and frame limits are
+/// enforced before the frame is yielded.
+pub struct XyzFileReader<R: std::io::BufRead> {
+    reader: R,
+    block: String,
+    line: String,
+    limits: XyzParseLimits,
+    bytes_read: usize,
+    frames_read: usize,
+    done: bool,
+}
+
+impl<R: std::io::BufRead> XyzFileReader<R> {
+    /// Wrap a buffered XYZ source using the default resource limits.
+    pub fn new(reader: R) -> Self {
+        Self::with_limits(reader, XyzParseLimits::default())
+    }
+
+    /// Wrap a buffered XYZ source and enforce input, line, atom, and frame limits.
+    pub fn with_limits(reader: R, limits: XyzParseLimits) -> Self {
+        Self {
+            reader,
+            block: String::new(),
+            line: String::new(),
+            limits,
+            bytes_read: 0,
+            frames_read: 0,
+            done: false,
+        }
+    }
+
+    fn read_line(&mut self) -> Result<bool, XyzError> {
+        self.line.clear();
+        let bytes =
+            self.reader
+                .read_line(&mut self.line)
+                .map_err(|error| XyzError::InvalidAtomLine {
+                    line: 0,
+                    detail: format!("I/O error: {error}"),
+                })?;
+        if bytes == 0 {
+            return Ok(false);
+        }
+        self.bytes_read = self.bytes_read.saturating_add(bytes);
+        if self.bytes_read > self.limits.max_input_bytes {
+            return Err(XyzError::ResourceLimit {
+                resource: "input bytes",
+                actual: self.bytes_read,
+                limit: self.limits.max_input_bytes,
+            });
+        }
+        let length = self.line.trim_end_matches(['\n', '\r']).len();
+        if length > self.limits.max_line_bytes {
+            return Err(XyzError::ResourceLimit {
+                resource: "line bytes",
+                actual: length,
+                limit: self.limits.max_line_bytes,
+            });
+        }
+        Ok(true)
+    }
+}
+
+impl<R: std::io::BufRead> Iterator for XyzFileReader<R> {
+    type Item = Result<XyzFrame, XyzError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.done {
+            return None;
+        }
+
+        // Skip optional blank separators between trajectory frames.
+        loop {
+            match self.read_line() {
+                Ok(true) if !self.line.trim().is_empty() => break,
+                Ok(true) => continue,
+                Ok(false) => {
+                    self.done = true;
+                    return None;
+                }
+                Err(error) => {
+                    self.done = true;
+                    return Some(Err(error));
+                }
+            }
+        }
+
+        let count_line = self.line.clone();
+        let declared = match count_line.trim().parse::<usize>() {
+            Ok(count) => count,
+            Err(_) => {
+                self.done = true;
+                return Some(Err(XyzError::InvalidCountLine {
+                    line: 1,
+                    raw: count_line.trim_end().to_string(),
+                }));
+            }
+        };
+        if declared > self.limits.max_atoms_per_frame {
+            self.done = true;
+            return Some(Err(XyzError::ResourceLimit {
+                resource: "atoms per frame",
+                actual: declared,
+                limit: self.limits.max_atoms_per_frame,
+            }));
+        }
+        self.frames_read = self.frames_read.saturating_add(1);
+        if self.frames_read > self.limits.max_frames {
+            self.done = true;
+            return Some(Err(XyzError::ResourceLimit {
+                resource: "frames",
+                actual: self.frames_read,
+                limit: self.limits.max_frames,
+            }));
+        }
+
+        self.block.clear();
+        self.block.push_str(&count_line);
+        for _ in 0..declared.saturating_add(1) {
+            match self.read_line() {
+                Ok(true) => self.block.push_str(&self.line),
+                Ok(false) => {
+                    self.done = true;
+                    return Some(Err(XyzError::AtomCountMismatch {
+                        declared,
+                        found: self.block.lines().count().saturating_sub(2),
+                    }));
+                }
+                Err(error) => {
+                    self.done = true;
+                    return Some(Err(error));
+                }
+            }
+        }
+
+        match parse_one_frame(&self.block) {
+            Ok((frame, _)) => Some(Ok(frame)),
+            Err(error) => {
+                self.done = true;
+                Some(Err(error))
+            }
+        }
+    }
+}
+
 /// Parse every frame in a multi-frame XYZ string. Stops and returns an
 /// error on the first parse failure.
 pub fn parse_xyz_all(input: &str) -> Result<Vec<XyzFrame>, XyzError> {
@@ -1271,6 +1420,38 @@ mod tests {
         let via_reader: Vec<XyzFrame> = XyzReader::new(&traj).collect::<Result<_, _>>().unwrap();
         let via_all = parse_xyz_all(&traj).unwrap();
         assert_eq!(via_reader, via_all);
+    }
+
+    #[test]
+    fn file_reader_matches_in_memory_reader() {
+        use std::io::BufReader;
+
+        let traj = format!("\n{WATER_XYZ}\n{METHANE_XYZ}");
+        let via_file: Vec<XyzFrame> = XyzFileReader::new(BufReader::new(traj.as_bytes()))
+            .collect::<Result<_, _>>()
+            .unwrap();
+        let via_memory: Vec<XyzFrame> = XyzReader::new(&traj).collect::<Result<_, _>>().unwrap();
+        assert_eq!(via_file, via_memory);
+    }
+
+    #[test]
+    fn file_reader_enforces_frame_limit() {
+        use std::io::BufReader;
+
+        let traj = format!("{WATER_XYZ}{METHANE_XYZ}");
+        let limits = XyzParseLimits {
+            max_frames: 1,
+            ..XyzParseLimits::default()
+        };
+        let mut reader = XyzFileReader::with_limits(BufReader::new(traj.as_bytes()), limits);
+        assert!(reader.next().unwrap().is_ok());
+        assert!(matches!(
+            reader.next(),
+            Some(Err(XyzError::ResourceLimit {
+                resource: "frames",
+                ..
+            }))
+        ));
     }
 
     #[test]

@@ -88,6 +88,12 @@ complete until the required measurement or external reproduction exists.
 
 - [ ] Extend the resumable benchmark to SDF/MOL V2000/V3000, XYZ, MOL2, CML,
   CDXML, PDB/mmCIF, and gzip, including malformed and oversized inputs.
+- [x] Add a local file-backed `XyzFileReader` and a reproducible SDF/MOL/XYZ
+  streaming benchmark fixture/runner; comparative runs remain separate until
+  the same corpus is available in each engine.
+- [x] Add a reproducible RDKit block-parser comparator with an explicit note
+  that its Python API is not equivalent to chematic's file-backed streaming
+  boundary.
 - [ ] Implement bounded streaming batch APIs with cancellation, backpressure,
   deterministic ordering, and an explicit partial-result manifest.
 - [ ] Measure chematic against RDKit and Open Babel only where both are
