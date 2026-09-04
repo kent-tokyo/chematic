@@ -2073,8 +2073,8 @@ fn run_uff_bridge(
 /// A retry is only accepted as a real rescue if it is BOTH geometrically
 /// sound AND preserves every declared stereocenter/E-Z bond
 /// ([`crate::stereo_constraints::verify_stereo`]) — measured directly, not
-/// assumed. UFF itself is chirality-blind, so a sound retry is given one
-/// existing `repair_stereo` pass before the final check. A rescue that fixed
+/// assumed. UFF itself is chirality-blind, so a sound retry is given a bounded
+/// existing `repair_stereo` reconciliation loop before the final check. A rescue that fixed
 /// a bond-length blowup while silently destroying declared stereochemistry
 /// is a worse outcome than the honest failure it replaced, so this bridge
 /// still returns the original failure when repair and re-verification do not
@@ -2102,16 +2102,14 @@ fn run_uff_bridge(
 /// declared-stereo molecule's existing pass/fail-and-stereo-check outcome,
 /// unchanged), and one of #210's 5 named residual molecules
 /// (`atorvastatin_fragment`) newly succeeds with stereo preserved.
-/// `naproxen_S`/`ibuprofen_S`/`testosterone`/`cholesterol` remain unfixed —
-/// this bridge has no post-minimization repair-and-reverify step (UFF
-/// minimization is chirality-blind and can walk a stereo-satisfied embed
-/// back across a declared boundary, same class of problem issue #291's
-/// `pipeline_v2.rs` stage 11 exists to catch and retry; this simpler
-/// embed→minimize→verify bridge just falls through to the original failure
-/// instead, which is correct/safe, not a bug) — closing that residual would
-/// need adding an equivalent repair step here. The rescue now makes a bounded,
-/// deterministic three-seed search, but that is a robustness retry and not a
-/// claim of complete stereochemical convergence for every topology.
+/// `naproxen_S`/`ibuprofen_S`/`testosterone`/`cholesterol` remain candidates for
+/// further work — UFF minimization is chirality-blind and can walk a
+/// stereo-satisfied embed back across a declared boundary. The bounded repair
+/// loop below can reconcile interacting repairs when a fixed point is reachable,
+/// but it deliberately falls through to the original failure when it is not.
+/// The rescue also makes a bounded, deterministic three-seed search, but that is
+/// a robustness retry and not a claim of complete stereochemical convergence for
+/// every topology.
 ///
 /// If `embed_distance_geometry_v2` itself fails, or the retry is unsound or
 /// stereo-violating, the ORIGINAL failure is returned unchanged except for
@@ -2162,17 +2160,35 @@ fn rescue_with_distance_geometry_v2(
         let retry_coords_typed = vec_to_coords(&retry.coords);
         let mut accepted_coords = retry_coords_typed.clone();
         let mut stereo_verification = verify_stereo(mol, &accepted_coords);
-        if !stereo_verification.is_fully_satisfied()
-            && let Ok(repaired) = crate::stereo_constraints::repair_stereo(mol, &accepted_coords)
-        {
-            let repaired_verification = verify_stereo(mol, &repaired.coords);
-            let repaired_vec = coords_to_vec(&repaired.coords, n);
-            if repaired_vec.iter().all(|p| p.iter().all(|x| x.is_finite()))
-                && worst_bond_length_vec(mol, &repaired_vec) <= MAX_SANE_BOND_LENGTH
-                && repaired_verification.is_fully_satisfied()
+        if !stereo_verification.is_fully_satisfied() {
+            // `repair_stereo` deliberately reports the partial geometry when
+            // one repair disturbs another declared center. Feed that geometry
+            // back through a small, bounded number of reconciliation passes.
+            // This is the same fail-closed contract as the single-pass caller:
+            // only a fully re-verified and geometrically sound result is ever
+            // accepted; otherwise the original typed minimization failure is
+            // returned below. The cap prevents pathological repair cycles from
+            // turning a rescue into an unbounded operation.
+            const MAX_STEREO_REPAIR_PASSES: usize = 3;
+            for _ in 0..MAX_STEREO_REPAIR_PASSES {
+                if stereo_verification.is_fully_satisfied() {
+                    break;
+                }
+                accepted_coords =
+                    match crate::stereo_constraints::repair_stereo(mol, &accepted_coords) {
+                        Ok(repaired) => repaired.coords,
+                        Err(failure) => failure.partial_coords,
+                    };
+                stereo_verification = verify_stereo(mol, &accepted_coords);
+            }
+        }
+        if stereo_verification.is_fully_satisfied() {
+            let accepted_vec = coords_to_vec(&accepted_coords, n);
+            if !accepted_vec.iter().all(|p| p.iter().all(|x| x.is_finite()))
+                || worst_bond_length_vec(mol, &accepted_vec) > MAX_SANE_BOND_LENGTH
             {
-                accepted_coords = repaired.coords;
-                stereo_verification = repaired_verification;
+                stereo_verification = verify_stereo(mol, &retry_coords_typed);
+                accepted_coords = retry_coords_typed.clone();
             }
         }
         let accepted_vec = coords_to_vec(&accepted_coords, n);
