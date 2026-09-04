@@ -608,6 +608,32 @@ fn encode_charge(charge: i8) -> u8 {
     }
 }
 
+/// Decode the V2000 atom-line mass-difference field into chematic's isotope
+/// mass number. MDL stores the difference from the element's most abundant
+/// isotope; `Element::atomic_mass()` provides the corresponding rounded mass
+/// number used by the rest of the crate.
+fn decode_mass_difference(element: Element, field: &str) -> Option<u16> {
+    let difference = field.trim().parse::<i16>().ok()?;
+    if difference == 0 {
+        return None;
+    }
+    let mass = (element.atomic_mass().round() as i16).checked_add(difference)?;
+    (mass > 0).then_some(mass as u16)
+}
+
+/// Encode an isotope mass number for the fixed-width V2000 mass-difference
+/// field. The field is three characters wide; values outside that representable
+/// range cannot be faithfully written by V2000 and are left absent. Callers
+/// requiring arbitrary isotope masses should use V3000 (`MASS=`).
+fn encode_mass_difference(element: Element, isotope: Option<u16>) -> Option<i16> {
+    let isotope = isotope? as i32;
+    let base = element.atomic_mass().round() as i32;
+    let difference = isotope.checked_sub(base)?;
+    (i16::MIN as i32..=i16::MAX as i32)
+        .contains(&difference)
+        .then_some(difference as i16)
+}
+
 // ---------------------------------------------------------------------------
 // Parser
 // ---------------------------------------------------------------------------
@@ -810,8 +836,14 @@ fn read_mol_internal(
             .map(|ccc| decode_charge(ccc.trim().parse().unwrap_or(0)))
             .unwrap_or(0);
 
+        // V2000 mass difference: bytes 34–35 (two-character signed field).
+        let isotope = atom_line
+            .get(34..36)
+            .and_then(|field| decode_mass_difference(element, field));
+
         let mut atom = Atom::new(element);
         atom.charge = charge;
+        atom.isotope = isotope;
         builder.add_atom(atom);
     }
 
@@ -1139,11 +1171,12 @@ pub fn write_mol_with_coords(
     for (idx, atom) in mol.atoms() {
         let sym = atom.element.symbol();
         let charge_code = encode_charge(atom.charge);
+        let mass_difference = encode_mass_difference(atom.element, atom.isotope).unwrap_or(0);
         if let Some(&(x, y)) = coords.get(idx.0 as usize) {
             write!(
                 &mut out,
-                "{:>10.4}{:>10.4}{:>10.4} {:<3} 0{:>3}  0  0  0  0  0  0  0  0  0\n",
-                x, y, 0.0_f64, sym, charge_code,
+                "{:>10.4}{:>10.4}{:>10.4} {:<3}{:>2}{:>3}  0  0  0  0  0  0  0  0  0\n",
+                x, y, 0.0_f64, sym, mass_difference, charge_code,
             )
             .expect("writing to String cannot fail");
         } else {
@@ -1153,8 +1186,8 @@ pub fn write_mol_with_coords(
             out.push_str("    0.0000    0.0000    0.0000 ");
             writeln!(
                 &mut out,
-                "{:<3} 0{:>3}  0  0  0  0  0  0  0  0  0",
-                sym, charge_code,
+                "{:<3}{:>2}{:>3}  0  0  0  0  0  0  0  0  0",
+                sym, mass_difference, charge_code,
             )
             .expect("writing to String cannot fail");
         }
@@ -1242,14 +1275,15 @@ pub fn write_mol_with_conformer(
     for (idx, atom) in mol.atoms() {
         let sym = atom.element.symbol();
         let charge_code = encode_charge(atom.charge);
+        let mass_difference = encode_mass_difference(atom.element, atom.isotope).unwrap_or(0);
         let p = conformer
             .points
             .get(idx.0 as usize)
             .copied()
             .unwrap_or(Point3::zero());
         out.push_str(&format!(
-            "{:>10.4}{:>10.4}{:>10.4} {:<3} 0{:>3}  0  0  0  0  0  0  0  0  0\n",
-            p.x, p.y, p.z, sym, charge_code,
+            "{:>10.4}{:>10.4}{:>10.4} {:<3}{:>2}{:>3}  0  0  0  0  0  0  0  0  0\n",
+            p.x, p.y, p.z, sym, mass_difference, charge_code,
         ));
     }
 
@@ -1720,6 +1754,35 @@ M  END
         assert_eq!(atoms[0].1.element, Element::C);
         assert_eq!(atoms[1].1.element, Element::C);
         assert_eq!(atoms[2].1.element, Element::O);
+    }
+
+    #[test]
+    fn isotope_mass_difference_round_trips_through_v2000_and_sdf() {
+        for smiles in ["[13CH4]", "[15NH3]"] {
+            let mol = chematic_smiles::parse(smiles).expect("isotope SMILES");
+            let meta = MolMetadata::default().with_name("isotope");
+
+            let mol_block = write_mol(&mol, &meta);
+            let (roundtrip, _) = parse_mol(&mol_block).expect("V2000 round-trip");
+            assert_eq!(roundtrip.atom_count(), 1);
+            assert_eq!(
+                roundtrip.atom(AtomIdx(0)).isotope,
+                mol.atom(AtomIdx(0)).isotope
+            );
+
+            let sdf = write_sdf_record(
+                &mol,
+                &meta,
+                &[],
+                &std::collections::HashMap::new(),
+            );
+            let records = parse_sdf_with_coords(&sdf).expect("SDF round-trip");
+            assert_eq!(records.len(), 1);
+            assert_eq!(
+                records[0].0.atom(AtomIdx(0)).isotope,
+                mol.atom(AtomIdx(0)).isotope
+            );
+        }
     }
 
     #[test]
