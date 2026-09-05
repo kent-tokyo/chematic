@@ -108,6 +108,7 @@ fn main() {
             let accurate_reason = accurate_unresolved.map(|r| match r {
                 CipUnresolvedReason::Tied => "Tied",
                 CipUnresolvedReason::BudgetExceeded => "BudgetExceeded",
+                CipUnresolvedReason::OracleUnstable => "OracleUnstable",
             });
 
             println!(

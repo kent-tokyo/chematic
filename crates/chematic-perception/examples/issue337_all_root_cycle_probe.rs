@@ -156,10 +156,7 @@ fn gf2_rank(rows: &[BTreeSet<BondIdx>]) -> usize {
     let mut rank = 0;
     for row in rows {
         let mut current = row.clone();
-        loop {
-            let Some(&pivot) = current.iter().next_back() else {
-                break;
-            };
+        while let Some(&pivot) = current.iter().next_back() {
             if let Some(existing) = pivots.get(&pivot) {
                 let mut reduced = current;
                 for bond in existing {
@@ -202,6 +199,7 @@ fn enumerate_exact_cycles(
     target_len: usize,
     max_cycles: usize,
 ) -> (BTreeSet<Vec<u32>>, bool) {
+    #[allow(clippy::too_many_arguments)]
     fn dfs(
         mol: &chematic_core::Molecule,
         start: AtomIdx,
