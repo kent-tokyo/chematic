@@ -7,8 +7,8 @@ the repository's [`benchmarks/`](https://github.com/kent-tokyo/chematic/tree/mai
 
 ## Current status
 
-The published release is **v1.0.6**. The newest hot-path measurements were
-recorded before the release artifact was built and remain source-level evidence;
+The published release is **v1.0.7**. The newest hot-path measurements were
+recorded on the v1.0.6-to-v1.0.7 source comparison and remain source-level evidence;
 they must not be generalized beyond their named corpus and configuration.
 
 ### Published-source comparisons
@@ -26,7 +26,21 @@ not include automatic 2D layout. See the
 [canonical](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-canonical-fast-path.md) and
 [SDF](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-sdf-fast-path.md) records.
 
-### Unreleased source-level follow-up
+### v1.0.7 hot-path source comparison
+
+| Lane | v1.0.6 baseline | v1.0.7 candidate | Speedup |
+|---|---:|---:|---:|
+| Canonical SMILES, 5,000 molecules | 49.299 µs/mol | 43.680 µs/mol | **1.176x** |
+| File-backed SDF read, 365 records | 22.811 µs/record | 19.231 µs/record | **1.180x** |
+| Reused-buffer SDF serialization | 3.244 µs/record | 2.275 µs/record | **1.419x** |
+| SMILES parse, 5,000 molecules | 7.663 µs/mol | 6.858 µs/mol | 1.034x |
+
+The speedups are medians of seven alternating paired ratios. SMILES parsing
+did not meet the 1.10x target. Full protocol, raw pairs, exact-output checks,
+and host-load caveats are in
+[`benchmarks/2026-09-05-hotpath-110.md`](../benchmarks/2026-09-05-hotpath-110.md).
+
+### Historical source-level follow-up
 
 | Lane | v1.0.4 baseline | v1.0.5 source | Speedup |
 |---|---:|---:|---:|

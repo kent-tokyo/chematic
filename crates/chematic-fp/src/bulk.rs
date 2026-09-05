@@ -12,6 +12,7 @@
 //!   and to `vcnt` on ARM without unsafe code.
 
 use crate::bitvec::BitVec2048;
+use rayon::prelude::*;
 
 /// Compute Tanimoto similarity between `query` and every entry in `db`.
 ///
@@ -58,6 +59,32 @@ pub fn tanimoto_matrix(queries: &[BitVec2048], db: &[BitVec2048]) -> Vec<f32> {
         }
     }
     out
+}
+
+/// Compute an M×N Tanimoto matrix in parallel over query rows.
+///
+/// The output is byte-for-byte equivalent to [`tanimoto_matrix`] for the same
+/// inputs. Query rows are independent, so this avoids synchronization in the
+/// inner fingerprint loop while retaining the dense row-major contract.
+pub fn tanimoto_matrix_parallel(queries: &[BitVec2048], db: &[BitVec2048]) -> Vec<f32> {
+    let m = queries.len();
+    let n = db.len();
+    if m == 0 || n == 0 {
+        return vec![];
+    }
+    let q_counts: Vec<u32> = queries.iter().map(|q| q.popcount()).collect();
+    let d_counts: Vec<u32> = db.iter().map(|d| d.popcount()).collect();
+    let d_counts = d_counts.as_slice();
+
+    q_counts
+        .par_iter()
+        .enumerate()
+        .flat_map_iter(|(i, &q_count)| {
+            db.iter()
+                .enumerate()
+                .map(move |(j, d)| queries[i].tanimoto_with_counts(d, q_count, d_counts[j]))
+        })
+        .collect()
 }
 
 /// Return the `k` most similar entries in `db` to `query`, sorted by descending Tanimoto.
@@ -161,6 +188,18 @@ mod tests {
         let q = vec![fp("CC")];
         assert!(tanimoto_matrix(&q, &[]).is_empty());
         assert!(tanimoto_matrix(&[], &q).is_empty());
+    }
+
+    #[test]
+    fn test_tanimoto_matrix_parallel_matches_serial() {
+        let queries = vec![fp("CC"), fp("c1ccccc1"), fp("CCO")];
+        let db = vec![fp("CCO"), fp("c1ccccc1N"), fp("CCCC"), fp("CC")];
+        assert_eq!(
+            tanimoto_matrix_parallel(&queries, &db),
+            tanimoto_matrix(&queries, &db)
+        );
+        assert!(tanimoto_matrix_parallel(&queries, &[]).is_empty());
+        assert!(tanimoto_matrix_parallel(&[], &db).is_empty());
     }
 
     #[test]

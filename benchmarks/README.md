@@ -6,7 +6,16 @@ Periodic performance snapshots. Each file is a date-stamped record of throughput
 
 | Date | Version | Notes |
 |------|---------|-------|
+| [2026-09-05 hot-path 1.10x gate](2026-09-05-hotpath-110.md) | v1.0.6 local source | Seven alternating A/B pairs: canonical 1.176x, SDF read 1.180x, reused-buffer write 1.419x; parse 1.034x remains below target; exact-output checks and load caveats |
 | [2026-09-05 descriptor/streaming](2026-09-05-descriptor-streaming.md) | v1.0.6 release source | Shared descriptor provenance and Rust/Python/Node/WASM fixture contract; 4,999-molecule core parity; 2,000-pass SDF/MOL/XYZ streaming evidence |
+| [2026-09-05 prepared index](2026-09-05-prepared-index.md) | v1.0.6 local source | Exact reusable fingerprint index; 7.30x repeated-query speedup on the pinned ten-molecule fixture |
+| [2026-09-05 parallel Tanimoto](2026-09-05-tanimoto-parallel.md) | v1.0.6 local source | Row-wise parallel dense matrix with serial parity; 1.21x on the pinned 256x256 lane |
+| [2026-09-05 descriptor topology](2026-09-05-descriptor-topology.md) | v1.0.6 local source | Shared Wiener/Kappa/Chi topology context with scalar parity and lazy single-group fallback |
+| [2026-09-05 distance descriptors](2026-09-05-distance-descriptors.md) | v1.0.6 local source | Shared AutoCorr2D/Moran/Geary distance matrix with exact scalar parity |
+| [2026-09-05 descriptor scaling](2026-09-05-descriptor-scaling.md) | v1.0.6 local source | `descriptors_array` 3/8/all column contract, deterministic digest, and Python-visible allocation record |
+| [2026-09-05 MMFF94 prepared nonbonded](2026-09-05-mmff94-prepared-nonbonded.md) | v1.0.6 local source | Prepared vdW parameters and electrostatic charge products with energy parity; analytic gradients remain open |
+| [2026-09-05 MMFF94 parallel gradient](2026-09-05-mmff94-gradient-parallel.md) | v1.0.6 local source | Large-molecule finite-difference probes use bounded parallelism with deterministic gradient ordering |
+| [2026-09-05 RDKit/Open Babel speed](2026-09-05-rdkit-openbabel-speed.md) | v1.0.6 local wheel | Three-sample in-process chematic/RDKit remeasurement and separate Open Babel CLI boundary lane |
 | [2026-09-05 hot-path follow-up](2026-09-05-hot-path-follow-up.md) | v1.0.4-based unreleased source | Additional 1.10x gate: canonical SMILES 1.115x, file-backed SDF read 1.130x, V2000 SDF serialization 3.042x; output and full-workspace gates included |
 | [2026-09-04 MMFF94/3D](2026-09-04-mmff94-3d.md) | v1.0.3 | Prepared MMFF94 energy, L-BFGS minimization, ETKDG generation, and 3D minimization microbenchmarks on macOS arm64 |
 | [2026-09-04 streaming formats](2026-09-04-streaming-formats.md) | v1.0.3 | File-backed chematic SDF/MOL/XYZ streaming runner and explicitly non-equivalent RDKit block-parser reference |

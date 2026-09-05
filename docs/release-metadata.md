@@ -22,13 +22,18 @@ Validate the checked-in document locally:
 python3 scripts/check_release_metadata.py
 ```
 
+Operation-level comparison scorecards are separately validated by the
+dependency-free `scripts/validate_scorecard.py`; it rejects stale target
+versions, missing corpus/engine provenance, and claims based on unsupported,
+failed, missing, or not-measured rows.
+
 Generate a release asset manually (the workflow supplies these values from the
 tag):
 
 ```bash
 python3 scripts/generate_release_metadata.py \
-  --version 1.0.6 \
-  --commit "$(git rev-list -1 v1.0.6)" \
-  --released-at "$(git show -s --format=%cI v1.0.6)" \
+  --version 1.0.7 \
+  --commit "$(git rev-list -1 v1.0.7)" \
+  --released-at "$(git show -s --format=%cI v1.0.7)" \
   --output /tmp/chematic-release-metadata.json
 ```

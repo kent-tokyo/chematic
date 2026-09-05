@@ -1,0 +1,17 @@
+{
+  "n": 5000,
+  "corpus_size": 5000,
+  "chematic": {
+    "total_ms": 522.8,
+    "us_per_mol": 104.55,
+    "mol_per_sec": 9564,
+    "canonicalized_ok": 5000
+  },
+  "rdkit": {
+    "total_ms": 126.2,
+    "us_per_mol": 25.24,
+    "mol_per_sec": 39623,
+    "canonicalized_ok": 5000
+  },
+  "speedup_x": 0.2
+}

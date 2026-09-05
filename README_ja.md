@@ -16,9 +16,9 @@ Python・Rust・ブラウザ向けケモインフォマティクスライブラ�
 **デフォルトで速く、設計で安全なケモインフォマティクス。**  
 デフォルトはPure Rust · optional native InChI C FFI · Python · WebAssembly · [公式サイト](https://chematic.io/) · [ライブデモ](https://kent-tokyo.github.io/chematic/playground/)
 
-### v1.0.6 の対応範囲
+### v1.0.7 の対応範囲
 
-v1.0.6 は、v1.0.0 の bounded な互換性契約を維持しつつ、typed reaction
+v1.0.7 は、v1.0.0 の bounded な互換性契約を維持しつつ、typed reaction
 document、document-level CDXML 編集、明示的で bounded な Markush/polymer
 展開、結晶組成集計、安全性を高めた UFF rescue、canonical/SDF
 ホットパス改善を追加します。完全な任意構造 CDXML 編集、
@@ -144,7 +144,7 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v1.0.6
+# chematic v1.0.7
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (2026-08-23, v0.18.0 vs RDKit 2026.03.4):
@@ -257,7 +257,7 @@ const picks = JSON.parse(maxmin_picks_ecfp4_json('["CC","c1ccccc1","CCO","CCCC"]
 
 **未リリース:** #210 のlegacy UFF stereo rescue残差を解消し、canonical SMILESとSDFのhot pathを改善しました。固定条件の測定は[benchmarks](benchmarks/)に記録しています。
 
-**v1.0.6（2026-09-05）:** descriptor provenance と Rust/Python/Node/WASM 共通契約、fused/non-alternant aromaticity と held-out CIP 境界を強化し、#149/#337 の残差を fail-closed または診断専用として固定しました。v1.0.5 の機能も現行リリースに含まれます。Spectrophores は独立した patent/FTO 確認まで公開 API から除外しています。
+**v1.0.7（2026-09-05）:** descriptor provenance と Rust/Python/Node/WASM 共通契約、fused/non-alternant aromaticity と held-out CIP 境界を強化し、#149/#337 の残差を fail-closed または診断専用として固定しました。v1.0.5 の機能も現行リリースに含まれます。Spectrophores は独立した patent/FTO 確認まで公開 API から除外しています。
 
 公開リリースの要約は[CHANGELOG](CHANGELOG.md)を参照してください。詳細な開発記録は、
 そこからリンクされたarchiveに保持しています。

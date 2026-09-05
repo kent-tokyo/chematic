@@ -25,11 +25,11 @@ rustdoc-args = ["--cfg", "docsrs"]
 crystal = ["dep:chematic-crystal"]
 
 [dependencies]
-chematic-core        = { path = "../chematic-core",        version = "1.0.6" }
-chematic-rxn         = { path = "../chematic-rxn",         version = "1.0.6" }
-chematic-perception  = { path = "../chematic-perception",  version = "1.0.6" }
-chematic-smiles      = { path = "../chematic-smiles",      version = "1.0.6" }
-chematic-crystal     = { path = "../chematic-crystal",     version = "1.0.6", optional = true }
+chematic-core        = { path = "../chematic-core",        version = "1.0.7" }
+chematic-rxn         = { path = "../chematic-rxn",         version = "1.0.7" }
+chematic-perception  = { path = "../chematic-perception",  version = "1.0.7" }
+chematic-smiles      = { path = "../chematic-smiles",      version = "1.0.7" }
+chematic-crystal     = { path = "../chematic-crystal",     version = "1.0.7", optional = true }
 serde_json           = "1.0"
 serde                = { version = "1.0", features = ["derive"] }
 

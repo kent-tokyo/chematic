@@ -613,6 +613,9 @@ fn encode_charge(charge: i8) -> u8 {
 /// isotope; `Element::atomic_mass()` provides the corresponding rounded mass
 /// number used by the rest of the crate.
 fn decode_mass_difference(element: Element, field: &str) -> Option<u16> {
+    if field == " 0" {
+        return None;
+    }
     let difference = field.trim().parse::<i16>().ok()?;
     if difference == 0 {
         return None;
@@ -662,6 +665,23 @@ fn parse_field3(
 /// (such as a leading `+`) fall back to `str::parse` at the call site.
 #[inline]
 fn parse_unsigned_ascii(field: &str) -> Option<usize> {
+    // Common fixed-width fields: avoid a checked multiply per digit.
+    // Every other spelling still takes the original parser/fallback path.
+    if let [a, b, c] = *field.as_bytes()
+        && c.is_ascii_digit()
+    {
+        let last = (c - b'0') as usize;
+        if a == b' ' {
+            if b == b' ' {
+                return Some(last);
+            }
+            if b.is_ascii_digit() {
+                return Some((b - b'0') as usize * 10 + last);
+            }
+        } else if a.is_ascii_digit() && b.is_ascii_digit() {
+            return Some((a - b'0') as usize * 100 + (b - b'0') as usize * 10 + last);
+        }
+    }
     let mut value = 0usize;
     let mut saw_digit = false;
     for &byte in field.as_bytes() {
@@ -795,6 +815,7 @@ fn read_mol_internal(
         // and coordinate storage are diagnostic-path work.
         let z: f64 = match atom_line.get(20..30) {
             None => 0.0,
+            Some("    0.0000") => 0.0,
             Some(raw) => {
                 let trimmed = raw.trim();
                 if trimmed.is_empty() {
@@ -843,18 +864,27 @@ fn read_mol_internal(
 
         // Element symbol: bytes 31–33 (3 chars, left-padded with a space in
         // the spec, but writers vary; trim both ends).
-        let sym = atom_line
-            .get(31..34)
-            .ok_or_else(|| {
-                make_atom_err(
-                    raw_lineno,
-                    format!("atom line {atom_i} too short for element field"),
-                )
-            })?
-            .trim();
+        let sym = atom_line.get(31..34).ok_or_else(|| {
+            make_atom_err(
+                raw_lineno,
+                format!("atom line {atom_i} too short for element field"),
+            )
+        })?;
 
-        let element = Element::from_symbol(sym).ok_or_else(|| MolParseError::UnknownElement {
-            symbol: sym.to_string(),
+        let element = match sym {
+            "C  " => Some(Element::C),
+            "N  " => Some(Element::N),
+            "O  " => Some(Element::O),
+            "H  " => Some(Element::H),
+            "S  " => Some(Element::S),
+            "P  " => Some(Element::P),
+            "F  " => Some(Element::F),
+            "Cl " => Some(Element::CL),
+            "Br " => Some(Element::BR),
+            _ => Element::from_symbol(sym.trim()),
+        }
+        .ok_or_else(|| MolParseError::UnknownElement {
+            symbol: sym.trim().to_string(),
             line: raw_lineno,
         })?;
 
@@ -862,6 +892,9 @@ fn read_mol_internal(
         let charge = atom_line
             .get(36..39)
             .map(|ccc| {
+                if ccc == "  0" {
+                    return 0;
+                }
                 let code = parse_unsigned_ascii(ccc)
                     .and_then(|value| i8::try_from(value).ok())
                     .unwrap_or_else(|| ccc.trim().parse().unwrap_or(0));
@@ -1186,6 +1219,41 @@ pub fn write_mol_with_coords(
 
 #[inline]
 fn push_right_aligned_u32(out: &mut String, mut value: u32, width: usize) {
+    // V2000 counts and bond fields are almost always three columns wide.
+    // Append the entire field in one operation, retaining the general path
+    // for widths/values outside the fixed-width format.
+    if width == 3 && value < 1000 {
+        static FIELDS: [[u8; 3]; 1000] = {
+            let mut fields = [[b' '; 3]; 1000];
+            let mut n = 0;
+            while n < fields.len() {
+                if n >= 100 {
+                    fields[n][0] = b'0' + (n / 100) as u8;
+                }
+                if n >= 10 {
+                    fields[n][1] = b'0' + (n / 10 % 10) as u8;
+                }
+                fields[n][2] = b'0' + (n % 10) as u8;
+                n += 1;
+            }
+            fields
+        };
+        // Validate ASCII at compile time, not at every emitted field.
+        static TEXT: [&str; 1000] = {
+            let mut text = [""; 1000];
+            let mut n = 0;
+            while n < text.len() {
+                text[n] = match std::str::from_utf8(&FIELDS[n]) {
+                    Ok(s) => s,
+                    Err(_) => panic!("ASCII decimal field"),
+                };
+                n += 1;
+            }
+            text
+        };
+        out.push_str(TEXT[value as usize]);
+        return;
+    }
     let mut digits = [0_u8; 10];
     let mut start = digits.len();
     loop {
@@ -1285,8 +1353,12 @@ pub fn write_mol_with_coords_into(
             for _ in sym.len()..3 {
                 out.push(' ');
             }
-            push_right_aligned_i16(out, mass_difference, 2);
-            push_right_aligned_u32(out, charge_code as u32, 3);
+            if mass_difference == 0 && charge_code == 0 {
+                out.push_str(" 0  0");
+            } else {
+                push_right_aligned_i16(out, mass_difference, 2);
+                push_right_aligned_u32(out, charge_code as u32, 3);
+            }
             out.push_str("  0  0  0  0  0  0  0  0  0\n");
         }
     }
@@ -1851,7 +1923,40 @@ mod tests {
     use super::*;
 
     #[test]
+    fn three_column_parser_matches_legacy_spelling_contract() {
+        // All ASCII triples cover whitespace, signs, malformed fields and
+        // every 0..999 value, including fallback-accepted "+12" and "1  ".
+        for a in 0..128_u8 {
+            for b in 0..128_u8 {
+                for c in 0..128_u8 {
+                    let bytes = [a, b, c];
+                    let field = std::str::from_utf8(&bytes).unwrap();
+                    let expected = field.trim().parse::<usize>().ok();
+                    let actual = parse_field3(field, 0, 1, |line, detail| {
+                        MolParseError::InvalidCountLine { line, detail }
+                    })
+                    .ok();
+                    assert_eq!(actual, expected, "field={field:?}");
+                }
+            }
+        }
+        for field in ["é1", "1é", "\u{2000}"] {
+            assert!(
+                parse_field3(field, 0, 1, |line, detail| {
+                    MolParseError::InvalidCountLine { line, detail }
+                })
+                .is_err()
+            );
+        }
+    }
+
+    #[test]
     fn fixed_width_integer_writers_match_rust_formatting() {
+        for value in 0..=1001 {
+            let mut actual = String::new();
+            push_right_aligned_u32(&mut actual, value, 3);
+            assert_eq!(actual, format!("{value:>3}"));
+        }
         for (value, width) in [
             (0_u32, 1_usize),
             (0, 3),

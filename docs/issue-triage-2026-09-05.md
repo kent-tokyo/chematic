@@ -16,7 +16,7 @@ checkout. GitHub issue state is intentionally not changed by this document.
 | P2 performance | #372 canonical Boc/tBu symmetry | Local minimized-equivalent lane and stage counters are now recorded in `validation/results/canonical_issue372_local_2026-09-05.md`; correctness remains green | Obtain the exact RENKIN held-out witness, then compare it against the already-safe exact twin/orbit path; do not claim the preferred 2x target from the local proxy |
 | P2 layout | #255, #256 | New connectivity-ordered path contains regression coverage; legacy `generate_coords` remains compatibility behavior | Do not claim legacy defects closed until the legacy API itself is changed or explicitly retained as a documented residual |
 | P3 scope | #460–#463, #473 | Bounded typed APIs and downstream boundary documentation exist; full rich semantics remain intentionally unsupported | Keep the bounded contract; split any future full RXN/CDXML/polymer/biopolymer work into separate schemas and fixtures |
-| P1 release hygiene | #474 | Versioned release metadata schema, v1.0.5 document, no-dependency validator, and tag-driven GitHub Release attachment are implemented and included in the v1.0.6 release path | Verify the v1.0.6 attached asset and keep registry/artifact measurements explicitly version-pinned |
+| P1 release hygiene | #474 | Versioned release metadata schema, v1.0.7 document, no-dependency validator, and tag-driven GitHub Release attachment are implemented and included in the v1.0.7 release path | Verify the v1.0.7 attached asset and keep registry/artifact measurements explicitly version-pinned |
 
 ## Already present and verified locally
 

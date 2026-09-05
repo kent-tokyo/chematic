@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "protocol": "competitive-benchmark",
+  "target_version": "1.0.3",
+  "environment": {
+    "chematic_version": "1.0.3"
+  },
+  "status": "complete",
+  "started_at_utc": "2026-09-04T12:33:19.323284Z",
+  "host": {
+    "os": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "python": "3.13.6"
+  },
+  "operations": {
+    "startup_import": {
+      "status": "measured",
+      "command": [
+        "python3",
+        "scripts/bench_startup.py",
+        "--rdkit",
+        "--json",
+        "--runs",
+        "10"
+      ],
+      "command_text": "python3 scripts/bench_startup.py --rdkit --json --runs 10",
+      "log": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/competitive-benchmark-rdkit-openbabel-2026-09-04/startup_import.log",
+      "started_at_utc": "2026-09-04T12:33:19.354199Z",
+      "exit_code": 0,
+      "duration_seconds": 6.515,
+      "finished_at_utc": "2026-09-04T12:33:25.869872Z"
+    },
+    "smiles_parse": {
+      "status": "measured",
+      "command": [
+        "python3",
+        "scripts/bench_smiles_parse.py",
+        "scripts/descriptor_census_corpus.smi",
+        "--rdkit",
+        "--n",
+        "5000",
+        "--json"
+      ],
+      "command_text": "python3 scripts/bench_smiles_parse.py scripts/descriptor_census_corpus.smi --rdkit --n 5000 --json",
+      "log": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/competitive-benchmark-rdkit-openbabel-2026-09-04/smiles_parse.log",
+      "started_at_utc": "2026-09-04T12:33:25.870641Z",
+      "exit_code": 0,
+      "duration_seconds": 0.783,
+      "finished_at_utc": "2026-09-04T12:33:26.654515Z"
+    },
+    "canonical_smiles": {
+      "status": "measured",
+      "command": [
+        "python3",
+        "scripts/bench_canonical.py",
+        "scripts/descriptor_census_corpus.smi",
+        "--rdkit",
+        "--n",
+        "5000",
+        "--json"
+      ],
+      "command_text": "python3 scripts/bench_canonical.py scripts/descriptor_census_corpus.smi --rdkit --n 5000 --json",
+      "log": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/competitive-benchmark-rdkit-openbabel-2026-09-04/canonical_smiles.log",
+      "started_at_utc": "2026-09-04T12:33:26.655281Z",
+      "exit_code": 0,
+      "duration_seconds": 1.499,
+      "finished_at_utc": "2026-09-04T12:33:28.155407Z"
+    },
+    "ecfp4": {
+      "status": "measured",
+      "command": [
+        "python3",
+        "scripts/benchmark_vs_rdkit.py",
+        "--rdkit",
+        "--corpus",
+        "scripts/descriptor_census_corpus.smi",
+        "--repeats",
+        "5"
+      ],
+      "command_text": "python3 scripts/benchmark_vs_rdkit.py --rdkit --corpus scripts/descriptor_census_corpus.smi --repeats 5",
+      "log": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/competitive-benchmark-rdkit-openbabel-2026-09-04/ecfp4.log",
+      "started_at_utc": "2026-09-04T12:33:28.156298Z",
+      "exit_code": 0,
+      "duration_seconds": 13.517,
+      "finished_at_utc": "2026-09-04T12:33:41.674283Z"
+    },
+    "format_parse": {
+      "status": "measured",
+      "command": [
+        "python3",
+        "scripts/bench_sdf.py",
+        "--rdkit",
+        "--json"
+      ],
+      "command_text": "python3 scripts/bench_sdf.py --rdkit --json",
+      "log": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/competitive-benchmark-rdkit-openbabel-2026-09-04/format_parse.log",
+      "started_at_utc": "2026-09-04T12:33:41.682111Z",
+      "exit_code": 0,
+      "duration_seconds": 1.183,
+      "finished_at_utc": "2026-09-04T12:33:42.881456Z"
+    }
+  },
+  "finished_at_utc": "2026-09-04T12:33:42.882676Z"
+}

@@ -193,12 +193,14 @@ pub fn descriptors<'py>(py: Python<'py>, smiles: Vec<String>) -> PyResult<Vec<Bo
         .map(|mol| {
             let m = &mol;
             // Pre-compute shared data: ring_bundle (1 SSSR), logp+MR (1 Crippen pass),
-            // kappa (1 heavy_indices), chi (1 heavy_indices), estate (1 BFS pass), pKa (1 scan).
+            // topology (1 heavy-atom extraction for Wiener/Kappa/Chi), estate (1 BFS
+            // pass), and pKa (1 scan).
             let rb_data = chematic_chem::ring_bundle(m);
+            let topology = chematic_chem::topology_bundle(m);
             let (pka_a, pka_b) = chematic_chem::pka_both(m);
             let (logp_val, mr_val) = chematic_chem::logp_and_mr(m);
-            let (k1, k2, k3) = chematic_chem::kappa_all(m);
-            let (c0, c1, c2, c3, c4, c0v, c1v, c2v, c3v, c4v) = chematic_chem::chi_all(m);
+            let (k1, k2, k3) = topology.kappa;
+            let (c0, c1, c2, c3, c4, c0v, c1v, c2v, c3v, c4v) = topology.chi;
             let (sum_e, max_e, min_e) = chematic_chem::estate_all(m);
             Desc {
                 mw: chematic_chem::molecular_weight(m),
@@ -435,6 +437,76 @@ pub fn descriptors_array<'py>(
         }
     }
 
+    // Compile the requested columns into dependency flags once.  The previous
+    // implementation calculated every descriptor for every molecule and only
+    // selected columns while materializing the NumPy arrays.  That made a
+    // request such as ["mw", "tpsa"] pay for pKa, SMARTS alerts, QED, SA,
+    // topology matrices, and all ADMET descriptors as well.
+    let want = |name: &str| columns.iter().any(|column| column == name);
+    let want_any = |names: &[&str]| names.iter().any(|name| want(name));
+    let need_qed = want("qed");
+    let need_sa = want("sa_score");
+    let need_pka = want_any(&["pka_acid", "pka_base"]);
+    let need_logp = want_any(&[
+        "logp",
+        "molar_refractivity",
+        "qed",
+        "bbb_score",
+        "caco2",
+        "herg_risk",
+        "cyp3a4_risk",
+        "lipinski_passes",
+        "egan_passes",
+        "ghose_passes",
+        "reos_passes",
+    ]);
+    let need_mr = want_any(&["molar_refractivity", "ghose_passes"]);
+    let need_tpsa = want_any(&[
+        "tpsa",
+        "qed",
+        "bbb_score",
+        "bbb_passes",
+        "caco2",
+        "veber_passes",
+        "egan_passes",
+    ]);
+    let need_hbd = want_any(&["hbd", "qed", "bbb_passes", "lipinski_passes", "reos_passes"]);
+    let need_ring_bundle = want_any(&[
+        "hba",
+        "rotatable_bonds",
+        "ring_count",
+        "aromatic_ring_count",
+        "num_spiro_atoms",
+        "num_bridgehead_atoms",
+        "num_aromatic_heterocycles",
+        "num_aliphatic_heterocycles",
+        "num_saturated_rings",
+        "num_aliphatic_rings",
+        "qed",
+        "sa_score",
+        "cyp3a4_risk",
+        "lipinski_passes",
+        "reos_passes",
+    ]);
+    let need_kappa = want_any(&["kappa1", "kappa2", "kappa3"]);
+    let need_chi = want_any(&[
+        "chi0", "chi1", "chi2", "chi3", "chi4", "chi0v", "chi1v", "chi2v", "chi3v", "chi4v",
+    ]);
+    let need_estate = want_any(&["sum_estate", "max_estate", "min_estate"]);
+    let need_mw = want_any(&[
+        "mw",
+        "bbb_passes",
+        "bbb_score",
+        "herg_risk",
+        "cyp3a4_risk",
+        "lipinski_passes",
+        "ghose_passes",
+        "reos_passes",
+    ]);
+    let need_hac = want_any(&["heavy_atoms", "ghose_passes", "reos_passes"]);
+    let need_fc = want_any(&["formal_charge", "reos_passes"]);
+    let need_aromatic_heterocycles = want("cyp3a4_risk");
+
     struct Row {
         // floats (int fields cast to f64 for uniform storage)
         mw: f64,
@@ -506,35 +578,133 @@ pub fn descriptors_array<'py>(
         .filter_map(|s| chematic_smiles::parse(s).ok())
         .map(|mol| {
             let m = &mol;
-            let rb_data = chematic_chem::ring_bundle(m);
-            let (pka_a, pka_b) = chematic_chem::pka_both(m);
-            let (logp_val, mr_val) = chematic_chem::logp_and_mr(m);
-            let (k1, k2, k3) = chematic_chem::kappa_all(m);
-            let (c0, c1, c2, c3, c4, c0v, c1v, c2v, c3v, c4v) = chematic_chem::chi_all(m);
-            let (sum_e, max_e, min_e) = chematic_chem::estate_all(m);
+            let rb_data = need_ring_bundle.then(|| chematic_chem::ring_bundle(m));
+            let rb = rb_data.as_ref();
+            let (pka_a, pka_b) = if need_pka || want("herg_risk") {
+                chematic_chem::pka_both(m)
+            } else {
+                (None, None)
+            };
+            let (logp_val, mr_val) = if need_logp || need_mr {
+                chematic_chem::logp_and_mr(m)
+            } else {
+                (0.0, 0.0)
+            };
+            let topology_requests = [need_kappa, need_chi, want("wiener_index")]
+                .into_iter()
+                .filter(|requested| *requested)
+                .count();
+            let topology = (topology_requests >= 2).then(|| chematic_chem::topology_bundle(m));
+            let (k1, k2, k3) = if need_kappa {
+                topology
+                    .as_ref()
+                    .map(|bundle| bundle.kappa)
+                    .unwrap_or_else(|| chematic_chem::kappa_all(m))
+            } else {
+                (0.0, 0.0, 0.0)
+            };
+            let (c0, c1, c2, c3, c4, c0v, c1v, c2v, c3v, c4v) = if need_chi {
+                topology
+                    .as_ref()
+                    .map(|bundle| bundle.chi)
+                    .unwrap_or_else(|| chematic_chem::chi_all(m))
+            } else {
+                (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+            };
+            let (sum_e, max_e, min_e) = if need_estate {
+                chematic_chem::estate_all(m)
+            } else {
+                (0.0, 0.0, 0.0)
+            };
+            let mw = if need_mw || want("mw") {
+                chematic_chem::molecular_weight(m)
+            } else {
+                0.0
+            };
+            let tpsa = if need_tpsa {
+                chematic_chem::tpsa(m)
+            } else {
+                0.0
+            };
+            let hbd = if need_hbd {
+                chematic_chem::hbd_count(m)
+            } else {
+                0
+            };
+            let hba = rb.map_or(0, |data| data.hba_count);
+            let rb_count = rb.map_or(0, |data| data.rotatable_bond_count);
+            let hac = if need_hac {
+                chematic_chem::heavy_atom_count(m)
+            } else {
+                0
+            };
+            let fc = if need_fc {
+                chematic_chem::formal_charge_sum(m)
+            } else {
+                0
+            };
             Row {
-                mw: chematic_chem::molecular_weight(m),
-                exact_mass: chematic_chem::exact_mass(m),
-                tpsa: chematic_chem::tpsa(m),
+                mw,
+                exact_mass: if want("exact_mass") {
+                    chematic_chem::exact_mass(m)
+                } else {
+                    0.0
+                },
+                tpsa,
                 logp: logp_val,
                 mr: mr_val,
-                hbd: chematic_chem::hbd_count(m) as f64,
-                hba: rb_data.hba_count as f64,
-                rb: rb_data.rotatable_bond_count as f64,
-                hac: chematic_chem::heavy_atom_count(m) as f64,
-                rc: rb_data.ring_count as f64,
-                arc: rb_data.aromatic_ring_count as f64,
-                nh: chematic_chem::num_heteroatoms(m) as f64,
-                nsc: chematic_chem::num_stereocenters(m) as f64,
-                nsp: rb_data.num_spiro_atoms as f64,
-                nbh: rb_data.num_bridgehead_atoms as f64,
-                fsp3: chematic_chem::fsp3(m),
-                qed: chematic_chem::qed(m),
-                sa: chematic_chem::sa_score(m),
-                fc: chematic_chem::formal_charge_sum(m) as f64,
-                asa: chematic_chem::labute_asa(m),
-                bertz: chematic_chem::bertz_ct(m),
-                wi: chematic_chem::wiener_index(m) as f64,
+                hbd: hbd as f64,
+                hba: hba as f64,
+                rb: rb_count as f64,
+                hac: hac as f64,
+                rc: rb.map_or(0, |data| data.ring_count) as f64,
+                arc: rb.map_or(0, |data| data.aromatic_ring_count) as f64,
+                nh: if want("num_heteroatoms") {
+                    chematic_chem::num_heteroatoms(m)
+                } else {
+                    0
+                } as f64,
+                nsc: if want("num_stereocenters") {
+                    chematic_chem::num_stereocenters(m)
+                } else {
+                    0
+                } as f64,
+                nsp: rb.map_or(0, |data| data.num_spiro_atoms) as f64,
+                nbh: rb.map_or(0, |data| data.num_bridgehead_atoms) as f64,
+                fsp3: if want("fsp3") {
+                    chematic_chem::fsp3(m)
+                } else {
+                    0.0
+                },
+                qed: if need_qed {
+                    chematic_chem::qed_with_bundle(m, rb.expect("QED requires ring bundle"))
+                } else {
+                    0.0
+                },
+                sa: if need_sa {
+                    chematic_chem::sa_score_with_bundle(m, rb.expect("SA requires ring bundle"))
+                } else {
+                    0.0
+                },
+                fc: fc as f64,
+                asa: if want("labute_asa") {
+                    chematic_chem::labute_asa(m)
+                } else {
+                    0.0
+                },
+                bertz: if want("bertz_ct") {
+                    chematic_chem::bertz_ct(m)
+                } else {
+                    0.0
+                },
+                wi: if want("wiener_index") {
+                    topology
+                        .as_ref()
+                        .map(|bundle| bundle.wiener)
+                        .unwrap_or_else(|| chematic_chem::wiener_index(m))
+                } else {
+                    0.0
+                },
                 k1,
                 k2,
                 k3,
@@ -548,29 +718,111 @@ pub fn descriptors_array<'py>(
                 c2v,
                 c3v,
                 c4v,
-                n_ah: rb_data.num_aromatic_heterocycles as f64,
-                n_alh: rb_data.num_aliphatic_heterocycles as f64,
-                n_sr: rb_data.num_saturated_rings as f64,
-                n_ar: rb_data.num_aliphatic_rings as f64,
-                n_usc: chematic_chem::num_unspecified_stereocenters(m) as f64,
+                n_ah: rb.map_or(0, |data| data.num_aromatic_heterocycles) as f64,
+                n_alh: rb.map_or(0, |data| data.num_aliphatic_heterocycles) as f64,
+                n_sr: rb.map_or(0, |data| data.num_saturated_rings) as f64,
+                n_ar: rb.map_or(0, |data| data.num_aliphatic_rings) as f64,
+                n_usc: if want("num_unspecified_stereocenters") {
+                    chematic_chem::num_unspecified_stereocenters(m)
+                } else {
+                    0
+                } as f64,
                 sum_e,
                 max_e,
                 min_e,
-                bbb: chematic_chem::bbb_score(m),
-                caco: chematic_chem::caco2_permeability(m),
-                herg: chematic_chem::herg_risk_score(m),
-                cyp: chematic_chem::cyp3a4_inhibition_risk(m),
-                schultz: chematic_chem::schultz_mti(m) as f64,
-                gutman: chematic_chem::gutman_mti(m) as f64,
-                vabc: chematic_chem::vabc(m),
-                grav: chematic_chem::gravitational_index(m),
-                lip: chematic_chem::lipinski_passes(m),
-                veb: chematic_chem::veber_passes(m),
-                egan: chematic_chem::egan_passes(m),
-                ghose: chematic_chem::ghose_passes(m),
-                reos: chematic_chem::reos_passes(m),
-                pains: chematic_chem::pains_passes(m),
-                bbp: chematic_chem::bbb_passes(m),
+                bbb: if want("bbb_score") {
+                    chematic_chem::bbb_score_from_parts(tpsa, logp_val)
+                } else {
+                    0.0
+                },
+                caco: if want("caco2") {
+                    chematic_chem::caco2_precomputed(tpsa, logp_val)
+                } else {
+                    0.0
+                },
+                herg: if want("herg_risk") {
+                    chematic_chem::herg_risk_precomputed(m, logp_val, mw)
+                } else {
+                    0.0
+                },
+                cyp: if want("cyp3a4_risk") {
+                    chematic_chem::cyp3a4_precomputed(
+                        mw,
+                        logp_val,
+                        if need_aromatic_heterocycles {
+                            chematic_chem::num_aromatic_heterocycles(m)
+                        } else {
+                            0
+                        },
+                        hba,
+                    )
+                } else {
+                    0.0
+                },
+                schultz: if want("schultz_mti") {
+                    chematic_chem::schultz_mti(m) as f64
+                } else {
+                    0.0
+                },
+                gutman: if want("gutman_mti") {
+                    chematic_chem::gutman_mti(m) as f64
+                } else {
+                    0.0
+                },
+                vabc: if want("vabc") {
+                    chematic_chem::vabc(m)
+                } else {
+                    0.0
+                },
+                grav: if want("gravitational_index") {
+                    chematic_chem::gravitational_index(m)
+                } else {
+                    0.0
+                },
+                lip: if want("lipinski_passes") {
+                    mw <= 500.0 && hbd <= 5 && hba <= 10 && logp_val <= 5.0
+                } else {
+                    false
+                },
+                veb: if want("veber_passes") {
+                    tpsa <= 140.0 && rb_count <= 10
+                } else {
+                    false
+                },
+                egan: if want("egan_passes") {
+                    tpsa <= 131.6 && logp_val <= 5.88
+                } else {
+                    false
+                },
+                ghose: if want("ghose_passes") {
+                    (160.0..=480.0).contains(&mw)
+                        && (-0.4..=5.6).contains(&logp_val)
+                        && (20.0..=70.0).contains(&(hac as f64))
+                        && (40.0..=130.0).contains(&mr_val)
+                } else {
+                    false
+                },
+                reos: if want("reos_passes") {
+                    (200.0..=500.0).contains(&mw)
+                        && (-5.0..=5.0).contains(&logp_val)
+                        && (0..=5).contains(&hbd)
+                        && (0..=10).contains(&hba)
+                        && (-2..=2).contains(&fc)
+                        && (0..=8).contains(&rb_count)
+                        && (15..=50).contains(&hac)
+                } else {
+                    false
+                },
+                pains: if want("pains_passes") {
+                    chematic_chem::pains_passes(m)
+                } else {
+                    false
+                },
+                bbp: if want("bbb_passes") {
+                    tpsa < 90.0 && mw < 400.0 && hbd <= 3
+                } else {
+                    false
+                },
                 pka_acid: pka_a,
                 pka_base: pka_b,
             }
@@ -719,7 +971,7 @@ pub fn tanimoto<'py>(
     }
 
     // Re-use the existing Rust bulk Tanimoto matrix (row-major flat Vec)
-    let flat = chematic_fp::bulk::tanimoto_matrix(&fps_a, &fps_b);
+    let flat = chematic_fp::bulk::tanimoto_matrix_parallel(&fps_a, &fps_b);
     Array2::from_shape_vec((m, n), flat)
         .expect("shape mismatch")
         .into_pyarray(py)
@@ -994,7 +1246,7 @@ pub fn tanimoto_matrix<'py>(py: Python<'py>, smiles: Vec<String>) -> Bound<'py, 
         return Array2::<f32>::zeros((0, 0)).into_pyarray(py);
     }
 
-    let flat = chematic_fp::bulk::tanimoto_matrix(&fps, &fps);
+    let flat = chematic_fp::bulk::tanimoto_matrix_parallel(&fps, &fps);
     Array2::from_shape_vec((n, n), flat)
         .expect("shape mismatch in tanimoto_matrix")
         .into_pyarray(py)

@@ -1,0 +1,115 @@
+Loaded 4999 SMILES from scripts/chembl_accuracy_corpus_4999.smi
+/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/bench5k.py:526: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  "generated_at": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+
+=========================================================
+  Molecules evaluated:       4999
+  RDKit parse failures:         0
+  chematic parse fails:         0
+  extended metrics skipped:    10  (rare elements RDKit lacks Gasteiger/valence params for)
+=========================================================
+  Molecular weight (±0.01):      99.8%  (4990/4999)
+    over  (ch>rd):       8  (0.2%)
+    under (ch<rd):       1  (0.0%)
+  HBA agreement:                100.0%  (4999/4999)
+  HBD agreement:                100.0%  (4999/4999)
+  Aromatic ring count:          100.0%  (4999/4999)
+  [nH] SMARTS overall:          100.0%
+    precision (no FP): 100.0%   recall (no FN): 100.0%
+    TP=467  TN=4532  FP=0  FN=0
+  TPSA (±0.1 Å²):               100.0%  (4999/4999)
+  LogP (±0.01):                 100.0%  (4999/4999)
+  MR   (±0.01):                 100.0%  (4999/4999)
+  Fsp3 (±0.001):                100.0%  (4999/4999)
+  Rotatable bonds:              100.0%  (4999/4999)
+  Heavy atom count:             100.0%  (4999/4999)
+  Num heteroatoms:              100.0%  (4999/4999)
+  Num stereocenters (legacy):   100.0%  (4997/4999)
+    over  (ch>rd):       0  (0.0%)
+    under (ch<rd):       2  (0.0%)
+  Num stereocenters (new CIP):   98.6%  (4929/4999)
+    over  (ch>rd):       0  (0.0%)
+    under (ch<rd):      70  (1.4%)
+  Num arom heterocycles:        100.0%  (4999/4999)
+  Num aliph heterocycles:       100.0%  (4999/4999)
+  Num sat  heterocycles:        100.0%  (4999/4999)
+  Num aliphatic rings:          100.0%  (4999/4999)
+  Num saturated rings:          100.0%  (4999/4999)
+  Num spiro atoms:              100.0%  (4999/4999)
+  Num bridgehead atoms:         100.0%  (4999/4999)
+  Num amide bonds:              100.0%  (4999/4999)
+=========================================================
+  Easy wins (untested, spot-checked exact):
+  Formal charge:                 99.8%  (4989/4999)
+  Num valence electrons:         99.6%  (4980/4999)
+    over  (ch>rd):       8  (0.2%)
+    under (ch<rd):       1  (0.0%)
+  Exact mass (±0.01):            99.8%  (4988/4999)
+    over  (ch>rd):       0  (0.0%)
+    under (ch<rd):       1  (0.0%)
+  HBA (Lipinski):                99.8%  (4989/4999)
+  Num unspecified stereocenters:    3.7%  (187/4999)
+    over  (ch>rd):    4802  (96.1%)
+    under (ch<rd):       0  (0.0%)
+  Ring count:                    98.7%  (4935/4999)
+    over  (ch>rd):       0  (0.0%)
+    under (ch<rd):      54  (1.1%)
+  Chi0 (±1e-6):                  99.8%  (4988/4999)
+    over  (ch>rd):       0  (0.0%)
+    under (ch<rd):       1  (0.0%)
+  Chi1 (±1e-6):                  99.8%  (4988/4999)
+    over  (ch>rd):       0  (0.0%)
+    under (ch<rd):       1  (0.0%)
+  Chi0v-Chi4v (±1e-6):           67.6%  (3380/4999)
+    over  (ch>rd):    1609  (32.2%)
+    under (ch<rd):       0  (0.0%)
+=========================================================
+  Named RDKit equivalents flagged divergent by spot-check (±0.01 unless noted):
+  Kappa1:                         2.9%  (144/4999)
+    over  (ch>rd):    3151  (63.0%)
+    under (ch<rd):    1694  (33.9%)
+  Kappa2:                         6.1%  (307/4999)
+    over  (ch>rd):    3068  (61.4%)
+    under (ch<rd):    1614  (32.3%)
+  Kappa3:                        10.8%  (540/4999)
+    over  (ch>rd):    3034  (60.7%)
+    under (ch<rd):    1415  (28.3%)
+  HallKierAlpha:                  2.7%  (137/4999)
+    over  (ch>rd):    3158  (63.2%)
+    under (ch<rd):    1694  (33.9%)
+  BertzCT:                        0.0%  (0/4999)
+    over  (ch>rd):       8  (0.2%)
+    under (ch<rd):    4981  (99.6%)
+  BalabanJ:                      99.8%  (4989/4999)
+  LabuteASA:                     59.0%  (2949/4999)
+    over  (ch>rd):    2040  (40.8%)
+    under (ch<rd):       0  (0.0%)
+  SA Score:                       0.0%  (0/4999)
+    over  (ch>rd):    4989  (99.8%)
+    under (ch<rd):       0  (0.0%)
+  QED:                           87.3%  (4365/4999)
+    over  (ch>rd):     499  (10.0%)
+    under (ch<rd):     125  (2.5%)
+  Max EState:                    73.8%  (3687/4999)
+    over  (ch>rd):    1293  (25.9%)
+    under (ch<rd):       9  (0.2%)
+  Min EState:                    70.7%  (3533/4999)
+    over  (ch>rd):     515  (10.3%)
+    under (ch<rd):     941  (18.8%)
+  Sum EState:                    67.6%  (3379/4999)
+    over  (ch>rd):       0  (0.0%)
+    under (ch<rd):    1610  (32.2%)
+=========================================================
+  PAINS (boolean agreement, corpus-wide):
+    agreement:   99.9%   TP=244 TN=4740 FP=5 FN=0
+=========================================================
+  Array families (aggregated across all sub-descriptors):
+  BCUT2D (8 values):              0.8%  (321/39912 molecule×sub-descriptor pairs)   worst sub-descriptor: bcut2d_mrhi (0.3%)
+  MQN (42 values):               23.1%  (48451/209538 molecule×sub-descriptor pairs)   worst sub-descriptor: MQN12 (0.0%)
+  SlogP_VSA (12 values):         42.9%  (25694/59868 molecule×sub-descriptor pairs)   worst sub-descriptor: SlogP_VSA6 (4.5%)
+  SMR_VSA (10 values):           44.3%  (22108/49890 molecule×sub-descriptor pairs)   worst sub-descriptor: SMR_VSA10 (0.0%)
+  PEOE_VSA (14 values):          44.1%  (30833/69846 molecule×sub-descriptor pairs)   worst sub-descriptor: PEOE_VSA7 (4.8%)
+  EState_VSA (11 values):        17.2%  (9457/54879 molecule×sub-descriptor pairs)   worst sub-descriptor: EState_VSA11 (0.0%)
+=========================================================
+
+JSON results written to /Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/competitive-benchmark/descriptor_agreement.json

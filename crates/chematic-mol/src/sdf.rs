@@ -449,7 +449,6 @@ pub fn read_sdf_conformer_ensembles(input: &str) -> Result<Vec<ConformerEnsemble
 pub struct SdfFileReader<R: std::io::BufRead> {
     reader: R,
     block: Vec<u8>,
-    line: Vec<u8>,
     done: bool,
     limits: SdfParseLimits,
     bytes_read: usize,
@@ -506,7 +505,6 @@ impl<R: std::io::BufRead> SdfFileReader<R> {
         Self {
             reader,
             block: Vec::with_capacity(2048),
-            line: Vec::new(),
             done: false,
             limits,
             bytes_read: 0,
@@ -527,8 +525,10 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
         self.block.clear();
 
         loop {
-            self.line.clear();
-            match self.reader.read_until(b'\n', &mut self.line) {
+            // Append directly into the reusable record buffer. The previous
+            // path copied each line from a second buffer into this one.
+            let line_start = self.block.len();
+            match self.reader.read_until(b'\n', &mut self.block) {
                 Err(e) => {
                     self.done = true;
                     return Some(Err(MolParseError::Io(e.to_string())));
@@ -543,15 +543,16 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
                     break;
                 }
                 Ok(_) => {
-                    if self.line.len() > self.limits.max_line_bytes {
+                    let line = &self.block[line_start..];
+                    if line.len() > self.limits.max_line_bytes {
                         self.done = true;
                         return Some(Err(MolParseError::ResourceLimit {
                             resource: "line bytes",
-                            actual: self.line.len(),
+                            actual: line.len(),
                             limit: self.limits.max_line_bytes,
                         }));
                     }
-                    self.bytes_read = self.bytes_read.saturating_add(self.line.len());
+                    self.bytes_read = self.bytes_read.saturating_add(line.len());
                     if self.bytes_read > self.limits.max_input_bytes {
                         self.done = true;
                         return Some(Err(MolParseError::ResourceLimit {
@@ -560,12 +561,12 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
                             limit: self.limits.max_input_bytes,
                         }));
                     }
-                    let trimmed = self.line.strip_suffix(b"\n").unwrap_or(&self.line);
+                    let trimmed = line.strip_suffix(b"\n").unwrap_or(line);
                     let trimmed = trimmed.strip_suffix(b"\r").unwrap_or(trimmed);
                     if trimmed == b"$$$$" {
+                        self.block.truncate(line_start);
                         break;
                     }
-                    self.block.extend_from_slice(&self.line);
                 }
             }
         }
@@ -778,6 +779,61 @@ $$$$
         assert_eq!(records.len(), 2);
         assert_eq!(records[0].mol.atom_count(), 2); // mol_a: 2 C atoms
         assert_eq!(records[1].mol.atom_count(), 3); // mol_b: C, N, O
+    }
+
+    #[test]
+    fn file_reader_direct_append_preserves_chunk_and_delimiter_boundaries() {
+        use std::io::{BufReader, Cursor};
+        for newline in ["\n", "\r\n"] {
+            for terminated in [false, true] {
+                let mut input = format!("$$$$\n{MOL_A}> <label>\n分子\n\n$$$$\n{MOL_B}");
+                if terminated {
+                    input.push_str("$$$$\n");
+                }
+                input = input.replace('\n', newline);
+                for capacity in [1, 2, 3, 7, 8192] {
+                    for diagnostics in [false, true] {
+                        let reader =
+                            BufReader::with_capacity(capacity, Cursor::new(input.as_bytes()));
+                        let mut records = SdfFileReader::with_limits_and_diagnostics(
+                            reader,
+                            SdfParseLimits::default(),
+                            diagnostics,
+                        );
+                        let first = records.next().unwrap().unwrap();
+                        assert_eq!(first.meta.name, "mol_a");
+                        assert_eq!(first.mol.atom_count(), 2);
+                        assert_eq!(
+                            first.properties.get("label").map(String::as_str),
+                            Some("分子")
+                        );
+                        let second = records.next().unwrap().unwrap();
+                        assert_eq!(second.meta.name, "mol_b");
+                        assert_eq!(second.mol.atom_count(), 3);
+                        assert!(records.next().is_none());
+                        assert!(records.next().is_none());
+                    }
+                }
+            }
+        }
+        let input = format!("{MOL_A}$$$$\n");
+        for overflow in [false, true] {
+            let limits = SdfParseLimits {
+                max_record_bytes: MOL_A.len(), // delimiter excluded
+                max_input_bytes: input.len() - usize::from(overflow), // delimiter included
+                ..SdfParseLimits::default()
+            };
+            let mut reader = SdfFileReader::with_limits(Cursor::new(input.as_bytes()), limits);
+            let result = reader.next().unwrap();
+            if overflow {
+                assert!(matches!(result, Err(MolParseError::ResourceLimit {
+                    resource: "input bytes", actual, limit
+                }) if actual == input.len() && limit == input.len() - 1));
+            } else {
+                assert!(result.is_ok());
+            }
+            assert!(reader.next().is_none());
+        }
     }
 
     #[test]

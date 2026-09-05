@@ -3,6 +3,9 @@
 //! [`nearest_neighbors`] computes fingerprints for every molecule in `db`,
 //! measures Tanimoto similarity against a query fingerprint, and returns the
 //! top-k results sorted by descending similarity.
+//!
+//! [`PreparedFingerprintIndex`] is the reusable path for repeated queries: it
+//! computes the database fingerprints once and reuses them for every search.
 
 use chematic_core::Molecule;
 
@@ -60,6 +63,54 @@ fn compute_fp(mol: &Molecule, fp_type: FpType) -> BitVec2048 {
     }
 }
 
+/// A reusable, in-memory fingerprint index for repeated nearest-neighbour
+/// queries over the same molecule database.
+///
+/// The index deliberately stores only fingerprints, not molecules. This keeps
+/// the hot query path independent of parsing and molecular graph traversal.
+/// Returned indices always refer to the order of the slice passed to [`new`].
+#[derive(Debug, Clone)]
+pub struct PreparedFingerprintIndex {
+    fp_type: FpType,
+    fingerprints: Vec<BitVec2048>,
+}
+
+impl PreparedFingerprintIndex {
+    /// Build an index by computing one fingerprint for each database molecule.
+    pub fn new(db: &[Molecule], fp_type: FpType) -> Self {
+        Self {
+            fp_type,
+            fingerprints: db.iter().map(|mol| compute_fp(mol, fp_type)).collect(),
+        }
+    }
+
+    /// Fingerprint family used by this index.
+    pub fn fp_type(&self) -> FpType {
+        self.fp_type
+    }
+
+    /// Number of indexed molecules.
+    pub fn len(&self) -> usize {
+        self.fingerprints.len()
+    }
+
+    /// Whether the index contains no molecules.
+    pub fn is_empty(&self) -> bool {
+        self.fingerprints.is_empty()
+    }
+
+    /// Search the prepared database with a molecule query.
+    pub fn search(&self, query: &Molecule, k: usize) -> Vec<(usize, f64)> {
+        let query_fp = compute_fp(query, self.fp_type);
+        nearest_neighbors_from_fp(&query_fp, &self.fingerprints, k)
+    }
+
+    /// Search the prepared database with an already computed fingerprint.
+    pub fn search_fp(&self, query_fp: &BitVec2048, k: usize) -> Vec<(usize, f64)> {
+        nearest_neighbors_from_fp(query_fp, &self.fingerprints, k)
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -80,21 +131,7 @@ pub fn nearest_neighbors(
         return vec![];
     }
 
-    let query_fp = compute_fp(query, fp_type);
-
-    let mut scores: Vec<(usize, f64)> = db
-        .iter()
-        .enumerate()
-        .map(|(i, mol)| {
-            let fp = compute_fp(mol, fp_type);
-            (i, query_fp.tanimoto(&fp))
-        })
-        .filter(|(_, t)| *t > 0.0)
-        .collect();
-
-    scores.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-    scores.truncate(k);
-    scores
+    PreparedFingerprintIndex::new(db, fp_type).search(query, k)
 }
 
 /// Like [`nearest_neighbors`] but accepts a pre-computed query fingerprint.
@@ -203,6 +240,30 @@ mod tests {
         let results = nearest_neighbors_from_fp(&query_fp, &db_fps, 3);
         assert!(!results.is_empty());
         assert_eq!(results[0].0, 2, "benzene fp should match itself");
+    }
+
+    #[test]
+    fn prepared_index_matches_one_shot_search() {
+        let query = benzene();
+        let db = vec![ethane(), toluene(), benzene(), naphthalene()];
+        let expected = nearest_neighbors(&query, &db, 3, FpType::Ecfp4);
+        let index = PreparedFingerprintIndex::new(&db, FpType::Ecfp4);
+        assert_eq!(index.len(), db.len());
+        assert!(!index.is_empty());
+        assert_eq!(index.fp_type(), FpType::Ecfp4);
+        assert_eq!(index.search(&query, 3), expected);
+    }
+
+    #[test]
+    fn prepared_index_handles_empty_and_zero_k() {
+        let query = benzene();
+        let empty = PreparedFingerprintIndex::new(&[], FpType::Ecfp4);
+        assert!(empty.is_empty());
+        assert!(empty.search(&query, 5).is_empty());
+
+        let db = vec![benzene()];
+        let index = PreparedFingerprintIndex::new(&db, FpType::Ecfp4);
+        assert!(index.search(&query, 0).is_empty());
     }
 
     #[test]

@@ -52,20 +52,21 @@ pub use cip::{
     assign_cip, assign_cip_with_mode, ez_completeness, tetrahedral_stereo_neighbors,
 };
 pub use descriptors::{
-    Bcut2D, CarbonTypes, InformationContent, RingBundle, aromatic_ring_count, autocorr_2d,
-    balaban_j, bcut2d, calc_mol_formula, carbon_types, cns_mpo_from_parts, cns_mpo_score,
-    egan_passes, exact_mass, formal_charge_per_atom, formal_charge_sum, fraction_rotatable_bonds,
-    fsp3, geary_autocorr, ghose_passes, hall_kier_alpha, hba_count, hba_count_lipinski, hbd_count,
-    heavy_atom_count, hybridization_per_atom, implicit_hcount_per_atom, information_content, ipc,
-    lead_like_passes, lipinski_passes, logp_and_mr, logp_crippen, logp_crippen_per_atom,
-    mcf_passes, mde_carbon, mmff94_charges, molar_refractivity, molecular_weight, moran_autocorr,
-    mqn, mr_per_atom, num_aliphatic_heterocycles, num_aliphatic_rings, num_amide_bonds,
-    num_aromatic_heterocycles, num_bridgehead_atoms, num_bromines, num_carbons, num_chlorines,
-    num_ester_bonds, num_fluorines, num_heteroatoms, num_hydrogens, num_iodines, num_nitrogens,
-    num_oxygens, num_phosphorus, num_saturated_heterocycles, num_saturated_rings, num_spiro_atoms,
-    num_stereocenters, num_sulfurs, num_unspecified_stereocenters, pfizer_3_75_passes, reos_passes,
-    ring_bundle, ring_count, ring_system_count, ro3_passes, rotatable_bond_atom_pairs,
-    rotatable_bond_count, tpsa, tpsa_per_atom, usrcat, veber_passes,
+    Bcut2D, CarbonTypes, DistanceDescriptorBundle, InformationContent, RingBundle,
+    aromatic_ring_count, autocorr_2d, balaban_j, bcut2d, calc_mol_formula, carbon_types,
+    cns_mpo_from_parts, cns_mpo_score, distance_descriptor_bundle, egan_passes, exact_mass,
+    formal_charge_per_atom, formal_charge_sum, fraction_rotatable_bonds, fsp3, geary_autocorr,
+    ghose_passes, hall_kier_alpha, hba_count, hba_count_lipinski, hbd_count, heavy_atom_count,
+    hybridization_per_atom, implicit_hcount_per_atom, information_content, ipc, lead_like_passes,
+    lipinski_passes, logp_and_mr, logp_crippen, logp_crippen_per_atom, mcf_passes, mde_carbon,
+    mmff94_charges, molar_refractivity, molecular_weight, moran_autocorr, mqn, mr_per_atom,
+    num_aliphatic_heterocycles, num_aliphatic_rings, num_amide_bonds, num_aromatic_heterocycles,
+    num_bridgehead_atoms, num_bromines, num_carbons, num_chlorines, num_ester_bonds, num_fluorines,
+    num_heteroatoms, num_hydrogens, num_iodines, num_nitrogens, num_oxygens, num_phosphorus,
+    num_saturated_heterocycles, num_saturated_rings, num_spiro_atoms, num_stereocenters,
+    num_sulfurs, num_unspecified_stereocenters, pfizer_3_75_passes, reos_passes, ring_bundle,
+    ring_count, ring_system_count, ro3_passes, rotatable_bond_atom_pairs, rotatable_bond_count,
+    tpsa, tpsa_per_atom, usrcat, veber_passes,
 };
 pub use iupac_stereo::iupac_name_stereo;
 
@@ -132,11 +133,12 @@ pub use tautomer::{
     enumerate_tautomers, enumerate_tautomers_with_config, tautomer_parent,
 };
 pub use topo_descriptors::{
-    bertz_ct, chi_all, chi0, chi0v, chi1, chi1v, chi2, chi2v, chi3, chi3v, chi4, chi4v,
-    eccentric_connectivity_index, graph_diameter, graph_eccentricities, graph_radius,
+    TopologyBundle, bertz_ct, chi_all, chi0, chi0v, chi1, chi1v, chi2, chi2v, chi3, chi3v, chi4,
+    chi4v, eccentric_connectivity_index, graph_diameter, graph_eccentricities, graph_radius,
     gravitational_index, gutman_mti, hosoya_index, kappa_all, kappa1, kappa2, kappa3, labute_asa,
     labute_asa_per_atom, num_valence_electrons, padmakar_ivan_index, petitjean_index, randic_index,
-    schultz_mti, topological_distance_matrix, vabc, wiener_index, zagreb_index_m1, zagreb_index_m2,
+    schultz_mti, topological_distance_matrix, topology_bundle, vabc, wiener_index, zagreb_index_m1,
+    zagreb_index_m2,
 };
 pub use vsa::{estate_vsa, peoe_vsa, slogp_vsa, smr_vsa};
 pub use workflow::{

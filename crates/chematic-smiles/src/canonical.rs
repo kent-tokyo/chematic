@@ -372,7 +372,14 @@ pub(crate) fn refine_ranks(mol: &Molecule, mut ranks: Vec<u64>) -> Vec<u64> {
         old_distinct = new_distinct;
     }
 
-    normalize_ranks(ranks)
+    // The final distinct-count pass already sorted/deduplicated these exact
+    // ranks. Reuse its dictionary instead of sorting an index vector again.
+    for rank in &mut ranks {
+        *rank = distinct_scratch
+            .binary_search(rank)
+            .expect("rank in dictionary") as u64;
+    }
+    ranks
 }
 
 /// Safety cap on the number of discrete rank assignments
@@ -425,7 +432,7 @@ pub(crate) fn group_by_rank(ranks: &[u64]) -> Vec<Vec<usize>> {
 /// rank strictly between its class and the next-higher class, so a
 /// subsequent refinement pass can propagate the distinction through the rest
 /// of the graph. `ranks` must be gap-free ordinals (as produced by
-/// `refine_ranks`/`normalize_ranks`).
+/// `refine_ranks`).
 pub(crate) fn individualize(ranks: &[u64], atom_idx: usize) -> Vec<u64> {
     let v = ranks[atom_idx];
     ranks
@@ -538,25 +545,6 @@ fn count_distinct(ranks: &[u64], scratch: &mut Vec<u64>) -> usize {
     scratch.sort_unstable();
     scratch.dedup();
     scratch.len()
-}
-
-fn normalize_ranks(mut ranks: Vec<u64>) -> Vec<u64> {
-    let mut sorted: smallvec::SmallVec<[usize; 64]> = (0..ranks.len()).collect();
-    sorted.sort_unstable_by_key(|&idx| (ranks[idx], idx));
-
-    let mut current_rank: u64 = 0;
-    let mut prev_val = ranks[sorted[0]];
-
-    for idx in sorted {
-        let val = ranks[idx];
-        if val != prev_val {
-            current_rank += 1;
-            prev_val = val;
-        }
-        ranks[idx] = current_rank;
-    }
-
-    ranks
 }
 
 pub(crate) struct CanonicalWriter<'a> {

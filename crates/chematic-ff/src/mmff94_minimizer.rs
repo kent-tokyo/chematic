@@ -16,6 +16,7 @@ use std::collections::VecDeque;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 use chematic_perception::find_sssr;
+use rayon::prelude::*;
 
 use crate::mmff94_energy::{
     AngleEnergyParams, BondEnergyParams, TorsionEnergyParams, mmff94_angle_energy_resolved,
@@ -28,8 +29,8 @@ use crate::mmff94_numeric::{
 
 type CoordVec = Vec<[f64; 3]>;
 type LbfgsHistory = VecDeque<(CoordVec, CoordVec, f64)>;
-type VdwPairs = Vec<(usize, usize)>;
-type ElectrostaticPairs = Vec<(usize, usize, f64)>;
+type VdwPairs = Vec<PreparedVdwPair>;
+type ElectrostaticPairs = Vec<PreparedElectrostaticPair>;
 
 #[derive(Clone, Copy)]
 struct PreparedBond {
@@ -53,6 +54,21 @@ struct PreparedTorsion {
     k: usize,
     l: usize,
     params: TorsionEnergyParams,
+}
+
+#[derive(Clone, Copy)]
+struct PreparedVdwPair {
+    i: usize,
+    j: usize,
+    r_star: f64,
+    epsilon: f64,
+}
+
+#[derive(Clone, Copy)]
+struct PreparedElectrostaticPair {
+    i: usize,
+    j: usize,
+    scale_charge_product: f64,
 }
 
 // ─── Public types ────────────────────────────────────────────────────────────
@@ -116,10 +132,9 @@ pub struct EnergyBreakdown {
 pub struct Mmff94EnergyModel {
     types: Vec<u8>,
     mmff_mol: Molecule,
-    charges: Vec<f64>,
     rings: Vec<Vec<AtomIdx>>,
-    vdw_pairs: Vec<(usize, usize)>,
-    electrostatic_pairs: Vec<(usize, usize, f64)>,
+    vdw_pairs: VdwPairs,
+    electrostatic_pairs: ElectrostaticPairs,
     bonds: Vec<PreparedBond>,
     angles: Vec<PreparedAngle>,
     torsions: Vec<PreparedTorsion>,
@@ -131,14 +146,13 @@ impl Mmff94EnergyModel {
         let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
         let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
         let rings = find_sssr(mol).rings().to_vec();
-        let (vdw_pairs, electrostatic_pairs) = build_nonbonded_pairs(mol);
+        let (vdw_pairs, electrostatic_pairs) = build_nonbonded_pairs(mol, &types, &charges);
         let bonds = build_bond_terms(&mmff_mol, &types);
         let angles = build_angle_terms(&mmff_mol, &types, &rings);
         let torsions = build_torsion_terms(&mmff_mol, &types);
         Ok(Self {
             types,
             mmff_mol,
-            charges,
             rings,
             vdw_pairs,
             electrostatic_pairs,
@@ -210,11 +224,11 @@ impl Mmff94EnergyModel {
     }
 
     fn vdw_energy(&self, coords: &[[f64; 3]]) -> f64 {
-        vdw_energy_pairs(coords, &self.types, &self.vdw_pairs)
+        vdw_energy_pairs(coords, &self.vdw_pairs)
     }
 
     fn electrostatic_energy(&self, coords: &[[f64; 3]]) -> f64 {
-        electrostatic_energy_pairs(coords, &self.charges, &self.electrostatic_pairs)
+        electrostatic_energy_pairs(coords, &self.electrostatic_pairs)
     }
 }
 
@@ -634,17 +648,32 @@ fn compute_gradient(
 ) -> Vec<[f64; 3]> {
     let n = coords.len();
     let mut grad = vec![[0.0_f64; 3]; n];
-    let mut work = coords.to_vec();
-    for i in 0..n {
-        for axis in 0..3 {
+    if n < 16 {
+        let mut work = coords.to_vec();
+        for i in 0..n {
+            for axis in 0..3 {
+                work[i][axis] += delta;
+                let ep = total_energy(mol, &work, types, charges, rings);
+                work[i][axis] -= 2.0 * delta;
+                let em = total_energy(mol, &work, types, charges, rings);
+                work[i][axis] += delta;
+                grad[i][axis] = (ep - em) / (2.0 * delta);
+            }
+        }
+        return grad;
+    }
+
+    grad.par_iter_mut().enumerate().for_each(|(i, atom_grad)| {
+        let mut work = coords.to_vec();
+        for (axis, component) in atom_grad.iter_mut().enumerate() {
             work[i][axis] += delta;
             let ep = total_energy(mol, &work, types, charges, rings);
             work[i][axis] -= 2.0 * delta;
             let em = total_energy(mol, &work, types, charges, rings);
             work[i][axis] += delta;
-            grad[i][axis] = (ep - em) / (2.0 * delta);
+            *component = (ep - em) / (2.0 * delta);
         }
-    }
+    });
     grad
 }
 
@@ -655,17 +684,35 @@ fn compute_gradient_prepared(
 ) -> Vec<[f64; 3]> {
     let n = coords.len();
     let mut grad = vec![[0.0_f64; 3]; n];
-    let mut work = coords.to_vec();
-    for i in 0..n {
-        for axis in 0..3 {
+    // Large molecules benefit from independent atom probes. Keep small
+    // molecules on the allocation-light sequential path to avoid rayon
+    // scheduling and one coordinate-buffer clone per worker.
+    if n < 16 {
+        let mut work = coords.to_vec();
+        for i in 0..n {
+            for axis in 0..3 {
+                work[i][axis] += delta;
+                let ep = model.energy(&work);
+                work[i][axis] -= 2.0 * delta;
+                let em = model.energy(&work);
+                work[i][axis] += delta;
+                grad[i][axis] = (ep - em) / (2.0 * delta);
+            }
+        }
+        return grad;
+    }
+
+    grad.par_iter_mut().enumerate().for_each(|(i, atom_grad)| {
+        let mut work = coords.to_vec();
+        for (axis, component) in atom_grad.iter_mut().enumerate() {
             work[i][axis] += delta;
             let ep = model.energy(&work);
             work[i][axis] -= 2.0 * delta;
             let em = model.energy(&work);
             work[i][axis] += delta;
-            grad[i][axis] = (ep - em) / (2.0 * delta);
+            *component = (ep - em) / (2.0 * delta);
         }
-    }
+    });
     grad
 }
 
@@ -803,7 +850,11 @@ fn prepared_torsion_energy(coords: &[[f64; 3]], terms: &[PreparedTorsion]) -> f6
         .sum()
 }
 
-fn build_nonbonded_pairs(mol: &Molecule) -> (VdwPairs, ElectrostaticPairs) {
+fn build_nonbonded_pairs(
+    mol: &Molecule,
+    types: &[u8],
+    charges: &[f64],
+) -> (VdwPairs, ElectrostaticPairs) {
     let n = mol.atom_count();
     let mut excluded = std::collections::HashSet::new();
     for (_, bond) in mol.bonds() {
@@ -849,49 +900,55 @@ fn build_nonbonded_pairs(mol: &Molecule) -> (VdwPairs, ElectrostaticPairs) {
             if excluded.contains(&(i, j)) {
                 continue;
             }
-            vdw_pairs.push((i, j));
+            if let Some((r_star, epsilon)) = mmff94_vdw_combined(types[i], types[j])
+                && r_star > 0.0
+                && epsilon > 0.0
+            {
+                vdw_pairs.push(PreparedVdwPair {
+                    i,
+                    j,
+                    r_star,
+                    epsilon,
+                });
+            }
             let scale = if one_four.contains(&(i, j)) {
                 0.75
             } else {
                 1.0
             };
-            electrostatic_pairs.push((i, j, scale));
+            electrostatic_pairs.push(PreparedElectrostaticPair {
+                i,
+                j,
+                scale_charge_product: scale * charges[i] * charges[j],
+            });
         }
     }
     (vdw_pairs, electrostatic_pairs)
 }
 
-fn vdw_energy_pairs(coords: &[[f64; 3]], types: &[u8], pairs: &[(usize, usize)]) -> f64 {
+fn vdw_energy_pairs(coords: &[[f64; 3]], pairs: &[PreparedVdwPair]) -> f64 {
     let mut energy = 0.0;
-    for &(i, j) in pairs {
-        let r = dist(coords[i], coords[j]);
+    for pair in pairs {
+        let r = dist(coords[pair.i], coords[pair.j]);
         if r > 10.0 {
             continue;
         }
-        if let Some((r_star, eps)) = mmff94_vdw_combined(types[i], types[j])
-            && r_star > 0.0
-            && eps > 0.0
-            && r > 0.01
-        {
-            let t = (1.07 * r_star) / (r + 0.07 * r_star);
+        if r > 0.01 {
+            let t = (1.07 * pair.r_star) / (r + 0.07 * pair.r_star);
             let t7 = t.powi(7);
-            energy += eps * t7 * (t7 - 2.0);
+            energy += pair.epsilon * t7 * (t7 - 2.0);
         }
     }
     energy
 }
 
-fn electrostatic_energy_pairs(
-    coords: &[[f64; 3]],
-    charges: &[f64],
-    pairs: &[(usize, usize, f64)],
-) -> f64 {
+fn electrostatic_energy_pairs(coords: &[[f64; 3]], pairs: &[PreparedElectrostaticPair]) -> f64 {
     const COULOMB: f64 = 332.0716;
     const DELTA: f64 = 0.05;
     pairs
         .iter()
-        .map(|&(i, j, scale)| {
-            scale * COULOMB * charges[i] * charges[j] / (dist(coords[i], coords[j]) + DELTA)
+        .map(|pair| {
+            pair.scale_charge_product * COULOMB / (dist(coords[pair.i], coords[pair.j]) + DELTA)
         })
         .sum()
 }

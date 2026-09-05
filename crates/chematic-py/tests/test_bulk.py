@@ -44,6 +44,19 @@ def test_bulk_descriptors_rows():
         assert "tpsa" in row
 
 
+def test_bulk_descriptors_array_selected_columns():
+    import numpy as np
+
+    result = chematic.bulk.descriptors_array(SMILES_LIST, ["mw", "tpsa", "hbd"])
+    assert set(result) == {"mw", "tpsa", "hbd"}
+    assert result["mw"].shape == (4,)
+    assert result["mw"].dtype == np.float64
+    assert result["hbd"].shape == (4,)
+
+    with pytest.raises(ValueError, match="unknown column"):
+        chematic.bulk.descriptors_array(SMILES_LIST, ["not_a_descriptor"])
+
+
 def test_bulk_tanimoto_matrix():
     import numpy as np
     sim_matrix = chematic.bulk.tanimoto_matrix(SMILES_LIST)

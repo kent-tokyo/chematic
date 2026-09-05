@@ -74,5 +74,24 @@ fn lbfgs_minimize(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, prepared_energy, one_shot_energy, lbfgs_minimize);
+fn lbfgs_minimize_large(c: &mut Criterion) {
+    let mol = parse("CCCCCCCCCCCCCCCCCCCCCCCC").unwrap();
+    let initial: Vec<[f64; 3]> = (0..mol.atom_count())
+        .map(|i| [i as f64 * 1.2, 0.1, 0.0])
+        .collect();
+    c.bench_function("mmff94_lbfgs_large_24atom_2iter", |b| {
+        b.iter(|| {
+            let mut coords = initial.clone();
+            black_box(minimize_mmff94_lbfgs(&mol, &mut coords, 2).unwrap());
+        })
+    });
+}
+
+criterion_group!(
+    benches,
+    prepared_energy,
+    one_shot_energy,
+    lbfgs_minimize,
+    lbfgs_minimize_large
+);
 criterion_main!(benches);

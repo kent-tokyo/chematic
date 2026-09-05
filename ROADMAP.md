@@ -1,7 +1,7 @@
 # chematic roadmap
 
-> Revised 2026-09-05. The current published release is v1.0.6. The workspace
-> version is fixed at 1.0.6 for this release.
+> Revised 2026-09-05. The current published release is v1.0.7. The workspace
+> version is fixed at 1.0.7 for this release.
 
 The detailed roadmap and completed gate-by-gate evidence through 2026-09-05 is
 retained in
@@ -22,7 +22,7 @@ part of the active comparison program.
 
 ## Current candidate
 
-Completed on the v1.0.6 release tree:
+Completed on the v1.0.7 release tree:
 
 - [x] Close #210's five named legacy-coordinate UFF stereo-rescue residuals.
   Every returned geometry is finite, bond-sane, and independently checked
@@ -75,8 +75,9 @@ documentation, and required measurement agree.
   Release attachment. The schema, versioned raw JSON, validator, and historical
   benchmark separation are checked in under `docs/`, `release-metadata/`, and
   `scripts/`.
-- [ ] Add a scorecard validator that rejects stale release versions, missing
-  corpus/configuration metadata, and claims derived from unsupported rows.
+- [x] Add a scorecard validator that rejects stale release versions, missing
+  corpus/configuration metadata, and claims derived from unsupported rows;
+  `scripts/validate_scorecard.py` is dependency-free and fail-closed.
 
 ## P1 — Interchange throughput and safety
 
@@ -128,6 +129,60 @@ documentation, and required measurement agree.
   descriptor fixture; run the 4,999-molecule MW/TPSA/HBD/HBA/heavy-atom lane.
 - [ ] Add held-out parity reports for Morgan/ECFP, MACCS, topological,
   torsion, descriptors, and standardization across Rust/Python/WASM.
+
+### Performance acceleration track
+
+Prioritize measured, semantics-preserving speedups before invasive force-field
+work. Expected multipliers are hypotheses until a pinned release-mode lane
+records them.
+
+- [x] Precompute MAP4 circular environment hashes once per atom/radius instead
+  of rescanning and sorting the whole molecule inside every atom-pair loop;
+  preserve the shingle set and MinHash output byte-for-byte.
+- [x] Make `bulk.descriptors_array(smiles, columns)` execute only the selected
+  descriptor dependency groups, including shared ring/logP/pKa values and
+  precomputed ADMET/filter formulas; retain the full `bulk.descriptors()` API
+  as the explicit all-fields path.
+- [x] Add release-mode scaling benchmarks for MAP4 and selected descriptor
+  columns (3, 8, and all fields), with Python-visible allocation and
+  deterministic output-digest checks; native allocation accounting remains
+  explicitly outside `tracemalloc` scope.
+- [x] Add a prepared fingerprint index for repeated database queries; exact
+  top-k search now reuses database fingerprints while preserving original
+  indices through the Python binding.
+- [x] Add a parallel row-wise Tanimoto matrix path with serial output parity;
+  tiled/threshold-aware search remains open.
+- [x] Share descriptor topology context so heavy-atom extraction and topology
+  membership are computed once across related Wiener/Kappa/Chi groups; single
+  selected columns retain lazy scalar computation.
+- [x] Add a shared distance descriptor bundle for AutoCorr2D, Moran, and
+  Geary; retain lazy single-family APIs and exact scalar parity.
+- [x] Prepare MMFF94 nonbonded parameter combinations and electrostatic charge
+  products once per topology; preserve finite-difference output parity and
+  record a release-mode energy/minimization lane. Analytic gradients and
+  coordinate-dependent neighbor lists remain separate experimental gates.
+- [x] Parallelize independent prepared MMFF94 finite-difference atom probes
+  for molecules with at least 16 atoms while retaining the allocation-light
+  sequential path for small molecules; retain exact scalar parity.
+- [x] Apply the same bounded finite-difference probe parallelism to the public
+  steepest-descent MMFF94 path; keep its existing step size and convergence
+  semantics unchanged.
+- [x] Optimize canonical rank normalization and V2000/SDF hot paths with
+  frozen-binary output parity and resumable alternating A/B evidence. On the
+  v1.0.6 local-source lane, median paired speedups are canonical 1.176x,
+  SDF graph/property read 1.180x and reused-buffer serialization 1.419x;
+  [protocol and load caveats](benchmarks/2026-09-05-hotpath-110.md).
+- [x] Replace SMILES ring hashing with bounded direct indexing and inline
+  partner storage; validate all labels, reuse and stereo-buffer spill.
+- [ ] Confirm at least 1.10x additional SMILES parse throughput under a
+  low-noise controlled run; current paired median is 1.034x, not a pass.
+- [ ] Replace MD/UFF/MMFF94 finite-difference force paths with prepared
+  topology, analytic gradients, and bounded neighbor lists. This is a heavy
+  experimental-3D task and requires energy/gradient/stereo soundness gates.
+- [ ] Replace periodic neighbor all-pairs enumeration and Ewald real-space
+  all-pairs evaluation with validated cell-list/cutoff paths.
+- [ ] Optimize symmetry-heavy canonical search and SMARTS VF2 state only after
+  exact-output and budget-exhaustion parity gates are expanded.
 
 - [x] Make VF2 query expansion prefer mapped-neighbor and higher-degree atoms,
   preserving exhaustive semantics while resolving the known symmetric PAINS

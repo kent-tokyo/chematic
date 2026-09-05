@@ -26,7 +26,7 @@
 //!    This is true of `exact_refine`'s *own* iterations. Its *starting
 //!    point* (`initial_partition`'s `ranks` component) is a different story:
 //!    `ranks` comes from `crate::canonical`'s pre-existing, unchanged
-//!    `individualize`/`refine_ranks`, and the latter's `normalize_ranks`
+//!    `individualize`/`refine_ranks`, and the latter's rank normalization
 //!    step does group by raw FNV-1a hash-value equality. See
 //!    `canonical_search::exact_orbit_representatives`'s doc comment for the
 //!    full account of what that means for this module's callers (in short:
@@ -498,7 +498,7 @@ pub(crate) fn exact_refine(graph: &CanonicalColoredGraph, mut partition: Partiti
 /// `atom.chirality`); the two agree on orbit *structure* on every case this
 /// PR's test suite checked, including the meso-compound case. The
 /// difference this function is for: `equivalent_atom_classes` is built on
-/// `morgan_ranks`/`refine_ranks`, whose own `normalize_ranks` step groups by
+/// `morgan_ranks`/`refine_ranks`, whose own rank normalization step groups by
 /// raw FNV-1a hash-value equality (see this module's top-of-file doc
 /// comment) -- a real, if practically negligible, hash-collision risk. This
 /// function is built on `exact_refine`, which never merges two cells on
@@ -598,7 +598,7 @@ pub fn topological_equivalence_classes(mol: &Molecule) -> Vec<usize> {
     // correct from-scratch starting point for a whole-molecule query (as
     // opposed to `canonical_search.rs`'s use, which seeds from the current
     // search node's already-partially-individualized `ranks`). This also
-    // sidesteps `crate::canonical::normalize_ranks`'s raw-FNV-1a-hash-value
+    // sidesteps `crate::canonical::refine_ranks`'s raw-FNV-1a-hash-value
     // grouping entirely (see this module's own top-of-file doc comment) --
     // `exact_refine`'s own iterations never rely on anything but real
     // `Eq`/`Ord` signature comparison.

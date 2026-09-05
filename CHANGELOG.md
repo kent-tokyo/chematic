@@ -11,6 +11,28 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 No unreleased changes.
 
+## [1.0.7] - 2026-09-05
+
+### Performance
+
+- Optimized canonical rank normalization, SMILES ring-label handling, and
+  V2000/SDF parsing and serialization while preserving output bytes.
+- Added a resumable alternating A/B benchmark with exact-output checks. On
+  the recorded v1.0.6-to-v1.0.7 source comparison, canonical SMILES improved
+  1.176x, SDF graph/property read 1.180x, and reusable-buffer SDF write
+  1.419x at the median of seven paired ratios. SMILES parse improved 1.034x
+  and remains below the 1.10x target.
+
+### Validation
+
+- Added bounded ring-label and stereo-partner regressions, direct-append SDF
+  streaming boundary tests, and benchmark-runner interruption/resume tests.
+- Recorded exact output parity on two 5,000-input SMILES corpora and the
+  365-record SDF fixture. The measurements remain local-source evidence and
+  are not universal cross-platform guarantees.
+- Updated the release, security, benchmark, and roadmap documents to the
+  v1.0.7 publication boundary.
+
 ## [1.0.6] - 2026-09-05
 
 ### Fixed
@@ -172,7 +194,8 @@ The authoritative list of published tags and release artifacts is the
 historical implementation notes remain available in the archived detailed
 history and Git history.
 
-[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.6...HEAD
+[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.7...HEAD
+[1.0.7]: https://github.com/kent-tokyo/chematic/compare/v1.0.6...v1.0.7
 [1.0.6]: https://github.com/kent-tokyo/chematic/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/kent-tokyo/chematic/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/kent-tokyo/chematic/compare/v1.0.3...v1.0.4

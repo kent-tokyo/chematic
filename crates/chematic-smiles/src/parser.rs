@@ -89,6 +89,10 @@ const MAX_BRANCH_DEPTH: usize = 500;
 /// Maximum number of atoms allowed in a SMILES molecule (prevents memory exhaustion).
 const MAX_ATOMS: usize = 100_000;
 
+// OpenSMILES ring tokens are a digit or exactly two digits after `%`.
+// Direct indexing avoids hashing/allocating on every ordinary ring closure.
+type OpenRings = [Option<(AtomIdx, Option<ParsedBond>, u32)>; 100];
+
 /// An entry in the stereo neighbor sequence accumulated during parsing.
 #[derive(Clone, Copy)]
 enum StereoEntry {
@@ -115,10 +119,12 @@ struct Parser<'a> {
     /// `PendingRing`). Monotonically increasing, never reused, so it uniquely
     /// identifies one specific open/close pair regardless of ring-digit reuse.
     next_ring_slot: u32,
+    /// Number of currently open labels (at most 100).
+    open_ring_count: u8,
     /// slot id → index in `stereo_records` for records with an unresolved `PendingRing(slot)`.
     pending_ring_stereo: HashMap<u32, usize>,
     /// slot id → close_atom, populated when rings close, for final resolution.
-    ring_close_partners: HashMap<u32, AtomIdx>,
+    ring_close_partners: smallvec::SmallVec<[Option<AtomIdx>; 8]>,
 }
 
 impl<'a> Parser<'a> {
@@ -130,8 +136,9 @@ impl<'a> Parser<'a> {
             stereo_records: Vec::new(),
             current_stereo: None,
             next_ring_slot: 0,
+            open_ring_count: 0,
             pending_ring_stereo: HashMap::new(),
-            ring_close_partners: HashMap::new(),
+            ring_close_partners: smallvec::SmallVec::new(),
         }
     }
 
@@ -181,7 +188,7 @@ impl<'a> Parser<'a> {
 
     fn parse_smiles(&mut self) -> Result<Molecule, SmilesError> {
         let mut mol = MoleculeBuilder::new();
-        let mut open_rings: HashMap<u8, (AtomIdx, Option<ParsedBond>, u32)> = HashMap::new();
+        let mut open_rings: OpenRings = [None; 100];
 
         // Parse the first fragment
         self.parse_chain(&mut mol, None, None, &mut open_rings)?;
@@ -193,9 +200,11 @@ impl<'a> Parser<'a> {
         }
 
         // Trailing unmatched ring closures are errors
-        if let Some((&num, _)) = open_rings.iter().next() {
+        if self.open_ring_count != 0
+            && let Some(num) = open_rings.iter().position(Option::is_some)
+        {
             return Err(SmilesError::UnmatchedRingClosure {
-                ring_num: num,
+                ring_num: num as u8,
                 pos: self.pos,
             });
         }
@@ -214,7 +223,7 @@ impl<'a> Parser<'a> {
         for (_, entries) in &mut self.stereo_records {
             for entry in entries.iter_mut() {
                 if let StereoEntry::PendingRing(rn) = entry
-                    && let Some(&partner) = self.ring_close_partners.get(rn)
+                    && let Some(&Some(partner)) = self.ring_close_partners.get(*rn as usize)
                 {
                     *entry = StereoEntry::Atom(partner);
                 }
@@ -245,7 +254,7 @@ impl<'a> Parser<'a> {
         mol: &mut MoleculeBuilder,
         attach_to: Option<AtomIdx>,
         attach_bond: Option<ParsedBond>,
-        open_rings: &mut HashMap<u8, (AtomIdx, Option<ParsedBond>, u32)>,
+        open_rings: &mut OpenRings,
     ) -> Result<Option<AtomIdx>, SmilesError> {
         // Parse the first atom of this chain
         let first_atom = match self.try_parse_atom()? {
@@ -443,7 +452,7 @@ impl<'a> Parser<'a> {
         mol: &mut MoleculeBuilder,
         attach_to: AtomIdx,
         explicit_bond: Option<ParsedBond>,
-        open_rings: &mut HashMap<u8, (AtomIdx, Option<ParsedBond>, u32)>,
+        open_rings: &mut OpenRings,
     ) -> Result<Option<AtomIdx>, SmilesError> {
         if self.depth >= MAX_BRANCH_DEPTH {
             return Err(SmilesError::NestingTooDeep { pos: self.pos });
@@ -476,9 +485,10 @@ impl<'a> Parser<'a> {
         current: AtomIdx,
         ring_num: u8,
         ring_bond: Option<ParsedBond>,
-        open_rings: &mut HashMap<u8, (AtomIdx, Option<ParsedBond>, u32)>,
+        open_rings: &mut OpenRings,
     ) -> Result<StereoEntry, SmilesError> {
-        if let Some((open_atom, open_bond, slot)) = open_rings.remove(&ring_num) {
+        if let Some((open_atom, open_bond, slot)) = open_rings[ring_num as usize].take() {
+            self.open_ring_count -= 1;
             // A directional marker (`/`, `\`) is read "toward" the ring digit
             // from wherever it's written. At the OPENING occurrence (e.g.
             // "C/1..."), that's already the open->close direction, matching
@@ -526,7 +536,7 @@ impl<'a> Parser<'a> {
             // Record the close partner for final PendingRing resolution, keyed
             // by this occurrence's unique slot -- NOT the ring digit, which
             // may be reused by an unrelated ring later in the same SMILES.
-            self.ring_close_partners.insert(slot, current);
+            self.ring_close_partners[slot as usize] = Some(current);
             // Also resolve PendingRing(slot) if the opener's stereo record was
             // already finalized (e.g. the closer is NOT nested inside the
             // opener's own branch). If the opener's record is still open (the
@@ -550,7 +560,9 @@ impl<'a> Parser<'a> {
         } else {
             let slot = self.next_ring_slot;
             self.next_ring_slot += 1;
-            open_rings.insert(ring_num, (current, ring_bond, slot));
+            self.ring_close_partners.push(None);
+            open_rings[ring_num as usize] = Some((current, ring_bond, slot));
+            self.open_ring_count += 1;
             // Return: we opened a ring; partner not yet known.
             Ok(StereoEntry::PendingRing(slot))
         }
@@ -997,6 +1009,36 @@ mod tests {
         let mol = parse("C").unwrap();
         assert_eq!(mol.atom_count(), 1);
         assert_eq!(mol.bond_count(), 0);
+    }
+
+    #[test]
+    fn every_two_digit_ring_label_and_reuse_preserve_graph_and_stereo() {
+        let expected = crate::canonical_smiles(&parse("N[C@]1(F)CCCC1").unwrap());
+        for label in 0..100 {
+            let token = format!("%{label:02}");
+            let smiles = format!("N[C@]{token}(F)CCCC{token}");
+            let mol = parse(&smiles).unwrap();
+            assert_eq!(crate::canonical_smiles(&mol), expected, "{smiles}");
+            let repeated = parse(&format!("C{token}CC{token}.C{token}CC{token}")).unwrap();
+            assert_eq!(repeated.atom_count(), 6);
+            assert_eq!(repeated.bond_count(), 6);
+            assert!(matches!(parse(&format!("C{token}CC")),
+                Err(SmilesError::UnmatchedRingClosure { ring_num, .. }) if ring_num == label));
+        }
+        for malformed in ["C%", "C%1", "C%1a", "C%a1", "C1C1"] {
+            assert!(parse(malformed).is_err(), "{malformed}");
+        }
+        // Spill the inline close-partner buffer and reuse labels before a
+        // chiral ring opening: slot ids must still resolve the right partner.
+        let prefix = "C1CC1.".repeat(20);
+        let mol = parse(&format!("{prefix}N[C@]1(F)CCCC1")).unwrap();
+        assert_eq!(mol.atom_count(), 67);
+        assert_eq!(mol.bond_count(), 67);
+        let alternative = parse(&format!("{prefix}N[C@]%99(F)CCCC%99")).unwrap();
+        assert_eq!(
+            crate::canonical_smiles(&mol),
+            crate::canonical_smiles(&alternative)
+        );
     }
 
     #[test]

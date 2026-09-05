@@ -239,7 +239,7 @@ fn compare_molecules<'py>(smiles: Vec<String>, py: Python<'py>) -> PyResult<Boun
 ///
 /// ```python
 /// chematic.doctor()
-/// # chematic v1.0.6
+/// # chematic v1.0.7
 /// # Python 3.13.x  |  darwin arm64
 /// # ...
 /// ```

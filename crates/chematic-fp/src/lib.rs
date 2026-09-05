@@ -50,7 +50,7 @@ pub mod topo_path;
 pub use atom_pair::{atom_pair_fp, torsion_fp};
 pub use avalon::{AvalonConfig, avalon_fp, avalon_fp_with_config, tanimoto_avalon};
 pub use bitvec::{BitVec2048, BitVecN};
-pub use bulk::{tanimoto_matrix, tanimoto_slice, top_k_similar};
+pub use bulk::{tanimoto_matrix, tanimoto_matrix_parallel, tanimoto_slice, top_k_similar};
 pub use ecfp::{
     EcfpConfig, EcfpInvariantMode, atom_invariants, ecfp, ecfp_with_bitinfo,
     ecfp_with_bitinfo_and_mode, ecfp_with_bitinfo_rdkit_environment_experimental,
@@ -102,5 +102,5 @@ pub use reaction_fp::{
     ReactionFingerprint, ReactionFpConfig, reaction_fp, reaction_fp_ecfp4, reaction_fp_with_config,
     tanimoto_reaction_fp,
 };
-pub use search::{FpType, nearest_neighbors, nearest_neighbors_from_fp};
+pub use search::{FpType, PreparedFingerprintIndex, nearest_neighbors, nearest_neighbors_from_fp};
 pub use topo_path::{TopoPathConfig, tanimoto_topo_path, topo_path};
