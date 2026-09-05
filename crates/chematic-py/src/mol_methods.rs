@@ -3151,7 +3151,8 @@ impl Mol {
 
     /// Atoms :meth:`cip_stereo`\ (``mode="accurate"``) could not resolve a tetrahedral
     /// R/S for — list of ``{"atom_idx": int, "reason": str}`` dicts, ``reason`` is
-    /// ``"tied"`` (a genuine CIP-rule tie, not a missing rule) or ``"budget_exceeded"``.
+    /// ``"tied"`` (a genuine CIP-rule tie, not a missing rule),
+    /// ``"budget_exceeded"``, or ``"oracle_unstable"``.
     /// Always empty for ``mode="legacy"`` (that engine never reports "I don't know").
     fn cip_stereo_unresolved<'py>(&self, py: Python<'py>) -> PyResult<Vec<Bound<'py, PyDict>>> {
         let result =
@@ -3166,6 +3167,7 @@ impl Mol {
                 let label = match reason {
                     chematic_chem::CipUnresolvedReason::Tied => "tied",
                     chematic_chem::CipUnresolvedReason::BudgetExceeded => "budget_exceeded",
+                    chematic_chem::CipUnresolvedReason::OracleUnstable => "oracle_unstable",
                 };
                 d.set_item("reason", label)?;
                 Ok(d)

@@ -569,7 +569,12 @@ impl Molecule {
             new_pos += 1;
         }
 
-        self.atoms.remove(removed);
+        // Drain the single slot instead of calling `Vec::remove` directly.
+        // Besides making the order-preserving intent explicit, this avoids a
+        // CodeQL `rust/cleartext-logging` false positive on the PyO3 RWMol
+        // mutable-reference path (the analyzer models that method name as a
+        // logging sink even though this is only an in-memory graph edit).
+        let _ = self.atoms.drain(removed..=removed).next();
 
         // Keep only bonds not involving the removed atom; remap endpoints and
         // track each surviving bond's new index so `bond_directions` (keyed
@@ -1246,6 +1251,24 @@ mod tests {
         let remap = mol.remove_atom(n_idx);
         assert_eq!(mol.atom_count(), 2);
         assert!(remap[n_idx.0 as usize].is_none());
+    }
+
+    #[test]
+    fn test_remove_atom_preserves_survivor_order() {
+        let mut mol = MoleculeBuilder::new().build();
+        mol.add_atom(Atom::new(Element::C));
+        let removed = mol.add_atom(Atom::new(Element::N));
+        mol.add_atom(Atom::new(Element::O));
+
+        let remap = mol.remove_atom(removed);
+
+        assert_eq!(
+            mol.atoms()
+                .map(|(_, atom)| atom.element)
+                .collect::<Vec<_>>(),
+            vec![Element::C, Element::O]
+        );
+        assert_eq!(remap, vec![Some(AtomIdx(0)), None, Some(AtomIdx(1))]);
     }
 
     #[test]

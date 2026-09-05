@@ -1136,14 +1136,14 @@ fn rule5_phosphorus_ties_stay_tied_across_renumbering_worst_of_30() {
                 "original atom {atom_idx} (trial {trial}, new idx {new_idx}): \
                  phosphorus must never resolve to a label"
             );
-            let tied = assignment
+            let declined = assignment
                 .skipped
                 .iter()
-                .any(|(idx, reason)| idx.0 == new_idx && *reason == SkipReason::Tied);
+                .any(|(idx, reason)| idx.0 == new_idx && *reason == SkipReason::OracleUnstable);
             assert!(
-                tied,
+                declined,
                 "original atom {atom_idx} (trial {trial}, new idx {new_idx}): \
-                 expected SkipReason::Tied under every renumbering, got {:?}",
+                 expected SkipReason::OracleUnstable under every renumbering, got {:?}",
                 assignment.skipped.iter().find(|(idx, _)| idx.0 == new_idx)
             );
             checked += 1;

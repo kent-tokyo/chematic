@@ -41,6 +41,7 @@ fn main() {
     let mut atoms_resolved_accurate = 0usize;
     let mut atoms_tied = 0usize;
     let mut atoms_budget_exceeded = 0usize;
+    let mut atoms_oracle_unstable = 0usize;
     let mut engine_errors = 0usize;
     let mut parse_errors = 0usize;
     let mut tied_examples: Vec<(String, u32, String)> = Vec::new();
@@ -96,6 +97,7 @@ fn main() {
                             tied_examples.push((smi.to_string(), idx.0, elem.to_string()));
                         }
                         CipUnresolvedReason::BudgetExceeded => atoms_budget_exceeded += 1,
+                        CipUnresolvedReason::OracleUnstable => atoms_oracle_unstable += 1,
                     }
                 }
             }
@@ -103,7 +105,7 @@ fn main() {
         }
     }
 
-    let unresolved_total = atoms_tied + atoms_budget_exceeded;
+    let unresolved_total = atoms_tied + atoms_budget_exceeded + atoms_oracle_unstable;
     let unresolved_rate = if atoms_resolved_accurate + unresolved_total > 0 {
         100.0 * unresolved_total as f64 / (atoms_resolved_accurate + unresolved_total) as f64
     } else {
@@ -125,6 +127,7 @@ fn main() {
     println!("atoms resolved:                      {atoms_resolved_accurate}");
     println!("atoms unresolved (Tied):             {atoms_tied}");
     println!("atoms unresolved (BudgetExceeded):   {atoms_budget_exceeded}");
+    println!("atoms unresolved (OracleUnstable):    {atoms_oracle_unstable}");
     println!("unresolved rate:                     {unresolved_rate:.3}%");
     println!("engine errors (should be 0):          {engine_errors}");
     println!();

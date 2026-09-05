@@ -68,6 +68,8 @@ pub enum RingAromaticity {
 ///
 /// Records which atoms and bonds belong to aromatic rings according to
 /// the Hückel 4n+2 rule applied to SSSR rings (with fused-ring propagation).
+/// The default model also has a deliberately narrow whole-envelope fallback
+/// for all-carbon odd/odd fused systems such as azulene.
 /// Also tracks antiaromatic rings (4n electrons) for chemical accuracy.
 #[derive(Debug, Clone)]
 pub struct AromaticityModel {
@@ -364,6 +366,19 @@ fn assign_aromaticity_ex_impl(
         }
     }
 
+    // A strict per-ring pass cannot seed azulene's 5+7 fused system because
+    // both constituent rings have an odd local count. Apply only the narrow,
+    // fail-closed all-carbon odd/odd envelope rule here; this does not route
+    // the default model through the broader RdkitLike implementation.
+    if algo == AromaticityAlgorithm::Huckel {
+        apply_huckel_nonalternant_fused_fallback(
+            mol,
+            &rings,
+            &mut aromatic_atoms,
+            &mut aromatic_bonds,
+        );
+    }
+
     // Build the public ring_classifications list (SSSR rings only, omitting augmented/indeterminate).
     let ring_classifications: Vec<(Vec<AtomIdx>, RingAromaticity, u32)> = rings
         .iter()
@@ -377,6 +392,59 @@ fn assign_aromaticity_ex_impl(
         aromatic_bonds,
         antiaromatic_rings,
         ring_classifications,
+    }
+}
+
+fn apply_huckel_nonalternant_fused_fallback(
+    mol: &Molecule,
+    rings: &[Vec<AtomIdx>],
+    aromatic_atoms: &mut FxHashSet<AtomIdx>,
+    aromatic_bonds: &mut FxHashSet<BondIdx>,
+) {
+    let families = crate::ring_family::find_ring_families_over(mol, rings);
+    let all_ring_bonds: FxHashSet<BondIdx> = rings
+        .iter()
+        .flat_map(|ring| ring_bond_set(mol, ring))
+        .collect();
+
+    for candidate in build_conjugated_components(
+        mol,
+        rings,
+        &families,
+        AromaticityAlgorithm::Huckel,
+        &all_ring_bonds,
+    ) {
+        if candidate.source_rings.len() < 2
+            || candidate
+                .source_rings
+                .iter()
+                .any(|&ring_idx| rings[ring_idx].len().is_multiple_of(2))
+            || !candidate.atoms.len().wrapping_sub(2).is_multiple_of(4)
+            || candidate
+                .atoms
+                .iter()
+                .any(|&atom_idx| mol.atom(atom_idx).element.atomic_number() != 6)
+        {
+            continue;
+        }
+
+        // Every eligible carbon contributes one electron in this narrow
+        // envelope. The size check above is therefore the 4n+2 test.
+        for &atom_idx in &candidate.atoms {
+            aromatic_atoms.insert(atom_idx);
+        }
+        for &atom_idx in &candidate.atoms {
+            for (neighbor, bond_idx) in mol.neighbors(atom_idx) {
+                if candidate.atoms.contains(&neighbor)
+                    && matches!(
+                        mol.bond(bond_idx).order,
+                        BondOrder::Double | BondOrder::Aromatic
+                    )
+                {
+                    aromatic_bonds.insert(bond_idx);
+                }
+            }
+        }
     }
 }
 
@@ -2994,26 +3062,14 @@ mod tests {
         // Pass 1, so neither is Aromatic nor Antiaromatic (both
         // `NonAromatic`), and Pass 2 never seeds because seeding requires
         // an ALREADY-aromatic adjacent ring, which neither ring is able to
-        // become on its own -- azulene's real 10pi system is a genuinely
-        // non-alternant, whole-perimeter delocalized system that this
-        // per-ring Pass 1/Pass 2 model was never designed to see (already
-        // documented; re-pinned here specifically because K2b's demotion
-        // fix makes this NOW VISIBLE as a flag mismatch for the first time
-        // -- previously the stale parser flag coincidentally matched
-        // RDKit). Distinct mechanism from the fused-diazine gap above: no
-        // ring here is misclassified `Antiaromatic` by a rule misfire, both
-        // rings are correctly `NonAromatic` given their own (wrong-for-this-
-        // whole-system) local electron count. Dominant pattern for 49/84
-        // corpus regressions.
+        // become on its own. The default model now applies a deliberately
+        // narrow all-carbon odd/odd fused-envelope fallback for this case.
         let mol = mol_kekulized("c1ccc2cccc-2cc1");
         let model = assign_aromaticity(&mol);
         assert_eq!(
             model.aromatic_atom_count(),
-            0,
-            "KNOWN GAP: azulene's non-alternant whole-perimeter aromaticity is not \
-             recognized by the per-ring Pass 1/Pass 2 model at all; RDKit says all \
-             10 atoms are aromatic. Not fixed by K2a or K2b -- see \
-             docs/rfcs/aromaticity_a1_rfc.md and the K2b PR description."
+            10,
+            "default Hückel's bounded fused-envelope fallback recognizes azulene"
         );
     }
 
@@ -3102,7 +3158,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "PROVISIONAL: regressed by the Horton SSSR fix, see comment below"]
     fn test_azulene_kekulized_aromatic() {
         // C1=CC2=CC=CC=CC2=C1 — non-alternant fused bicyclic, all 10 atoms
         // aromatic per RDKit. Regression coverage: this was previously
@@ -3126,11 +3181,8 @@ mod tests {
         // cycle straight to Pass 1 that included the whole perimeter,
         // papering over this gap by coincidence.
         //
-        // Fix belongs in the aromatic_context-removal PR (see
-        // greedy-hopping-crescent.md step 5: "candidate rings = SSSR ∪ fused
-        // envelopes"), not here — adding an envelope-candidate fallback in
-        // this PR would be compensating code that step 5's fixed-point
-        // ring-system evaluation subsumes and would need to delete anyway.
+        // The bounded all-carbon odd/odd fused-envelope fallback now handles
+        // this case without changing the broader default model.
         let mol = mol_kekulized("C1=CC2=CC=CC=CC2=C1");
         let model = assign_aromaticity(&mol);
         assert_eq!(

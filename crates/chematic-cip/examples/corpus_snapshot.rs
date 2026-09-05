@@ -49,6 +49,7 @@ fn skip_str(r: SkipReason) -> &'static str {
         SkipReason::NotFourSubstituents => "skip:not4",
         SkipReason::Tied => "skip:tied",
         SkipReason::BudgetExceeded => "skip:budget",
+        SkipReason::OracleUnstable => "skip:oracle-unstable",
     }
 }
 

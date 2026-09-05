@@ -9,6 +9,12 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# Keep the checked-in calibration contract parseable. The actual hosted
+# experiments remain a separate evidence gate; this only prevents fixture
+# drift from making the local arithmetic tests document-only.
+calibration_manifest="validation/criterion-gate-calibration.json"
+jq -e '.schema_version == 1 and (.cases | length) == 7' "$calibration_manifest" >/dev/null
+
 # Stub out run_point_estimate with fixed values keyed by binary path, so
 # cmd_run_blocks's block-assembly logic runs unmodified against known inputs.
 # (Extract to a real temp file rather than `source <(...)` -- macOS's bash
@@ -221,6 +227,18 @@ if cmd_ratio_summary "$stage2_too_few" 10 >/dev/null 2>&1; then
   echo "FAIL: 9-record Stage-2 file (expected 10) should error"; exit 1
 fi
 rm -f "$stage2_too_few"
+
+# The workflow-level null control must compare independently compiled main
+# checkouts, not pass the same executable on both sides. Keep this contract
+# checked locally so a future workflow edit cannot silently restore the old
+# same-binary control that missed build/codegen variance.
+workflow=.github/workflows/bench-pr-gate.yml
+grep -Fq 'path: main-null' "$workflow" \
+  || { echo "FAIL: Criterion workflow has no independent main-null checkout"; exit 1; }
+grep -Fq 'null_control_bin_b=$(bin_path main-null' "$workflow" \
+  || { echo "FAIL: Criterion workflow does not resolve the independent null binary"; exit 1; }
+grep -Fq '"$null_control_bin_a" "$null_control_bin_b" "parse_smiles_10mol"' "$workflow" \
+  || { echo "FAIL: Criterion workflow null control is not a two-build comparison"; exit 1; }
 
 # Note: this script unit-tests cmd_ratio_summary/cmd_check_threshold/
 # cmd_route_check's pure logic, including the exact incident data. The

@@ -20,9 +20,10 @@
   "axis1_summary": {
     "n_molecules_tested": 28,
     "n_skipped_rdkit_parse_failed": 0,
-    "n_divergent": 0,
+    "n_divergent": 3,
     "n_cross_correspondence_failures_total": 0
   },
+  "relabelings_per_molecule": 64,
   "axis2_applicability_note": "Axis 2 (single-end mark relocation) is measured here to be STRUCTURALLY incapable of testing any genuinely coupled 2-node component: relocating either end's mark necessarily strips the SHARED bond's own mark, which the other end depends on for its own geometry reading, so the reimplemented `alternate_ez_markings` helper's own geometry-preservation check rejects the move every time. Confirmed both mechanistically (traced against a real corpus example, see the RFC) and empirically (0 alternates survive for any of the 28 coupled corpus components, or for the never-corrupts calibration pair; only the singleton negative-control fixture produced any alternate at all, and it did not diverge). This is a structural property of single-end relocation, not an implementation gap specific to this audit -- it applies identically to production's own `alternate_ez_markings` test helper.",
   "n_axis2_alternates_generated_total": 1,
   "structural_classification_buckets": [
@@ -62,14 +63,15 @@
     },
     "pinned_pair_converges": true,
     "fresh_relabeling_stable": true,
+    "n_relabelings_tested": 64,
     "conclusion": "CONVERGES on current main (both the 2 pinned spellings and 10 fresh relabelings agree) -- the doc comment's 'does NOT resolve to one canonical string' claim appears STALE, most likely superseded by PR #229's joint-component solver without the comment being revisited. Flagged as a documentation-currency finding; not fixed by this diagnosis-only script (even a comment-only edit to canonical.rs is a change under crates/*/src/**, out of this PR's declared scope)."
   },
   "verdict": {
     "n_coupled_components_measured": 28,
-    "n_confirmed_divergent_by_axis1": 0,
+    "n_confirmed_divergent_by_axis1": 3,
     "mechanism_count": "one",
     "mechanism_note": "All measured coupled components have BOTH ends independently, genuinely RDKit-Specified (real stereocenters) -- the SAME shape as the 5 known-fine EZ_SHARED_CARRIER_FULLY_RESOLVED hydrazone-imine fixtures and the never-corrupts fixture (which itself converges, see calibration_check). A secondary, non-mechanism-changing structural split exists (ring/aromatic-stashed vs. acyclic/literal-marker representation), reported in bucket_summary.",
-    "verdict": "NEEDS-RESEARCH, leaning GO (already-likely-resolved)",
-    "verdict_reasoning": "0/28 coupled components show canonical-output divergence under axis 1 (RDKit relabeling, K=16, 0 cross-correspondence failures). Axis 2 cannot test coupled pairs at all (structural limitation, not a gap in this audit). The previously-cited never-corrupts calibration example -- itself an instance of this exact shape -- also converges. Together this points toward 'already resolved by the existing joint solver,' contradicting PR #351's own pessimistic '~90% unidentified mechanism' framing (which was a topological-presence count, not a confirmed-failure count). NOT treated as proof: K=16 relabeling is a sample, not exhaustive, and whether RDKit's own relabel-and-reserialize process ever varies which specific bond carries the mark for a SHARED bond specifically (as opposed to other, non-shared bonds) was not separately confirmed. Strongest available next step (not done here): hand-construct genuine alternate spellings that explicitly move the mark to the other candidate bond, in the style of the never-corrupts fixture's own a/b construction, for a sample of the measured components -- left as named follow-up work."
+    "verdict": "NEEDS-RESEARCH, confirmed residuals found",
+    "verdict_reasoning": "3/28 coupled components show canonical-output divergence under axis 1 (RDKit relabeling, K=64, 0 cross-correspondence failures). Axis 2 cannot test coupled pairs at all (structural limitation, not a gap in this audit). The previously-cited never-corrupts calibration example -- itself an instance of this exact shape -- still converges. The sampled residuals must remain open and are not treated as proof of a general mechanism: relabeling is finite, and RDKit's relabel-and-reserialize process does not guarantee every alternate carrier spelling. The next implementation step is to add these reproducible residuals as held-out regression fixtures before changing production ranking."
   }
 }

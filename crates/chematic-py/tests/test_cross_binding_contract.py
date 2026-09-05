@@ -15,6 +15,22 @@ _DOCUMENT = json.loads(_FIXTURE_PATH.read_text())
 def test_shared_fixture_schema_is_stable():
     assert _DOCUMENT["schema_version"] == 1
     assert len(_DOCUMENT["fixtures"]) == 4
+    assert _DOCUMENT["descriptor_contract"]["schema_version"] == 1
+    assert _DOCUMENT["descriptor_contract"]["fields"]["tpsa"]["unit"] == "A2"
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    _DOCUMENT["descriptor_contract"]["fixtures"],
+    ids=lambda item: item["id"],
+)
+def test_python_binding_matches_shared_descriptor_contract(fixture):
+    mol = chematic.from_smiles(fixture["smiles"])
+    assert mol.mw == pytest.approx(fixture["molecular_weight"], abs=1e-6)
+    assert mol.tpsa == pytest.approx(fixture["tpsa"], abs=1e-6)
+    assert mol.hbd == fixture["hbd"]
+    assert mol.hba == fixture["hba"]
+    assert mol.heavy_atoms == fixture["heavy_atoms"]
 
 
 @pytest.mark.parametrize("fixture", _DOCUMENT["fixtures"], ids=lambda item: item["id"])

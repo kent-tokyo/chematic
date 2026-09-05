@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/kent-tokyo/chematic/main/docs/release-metadata-schema.json",
+  "title": "chematic release metadata",
+  "type": "object",
+  "required": ["schema_version", "product", "release", "packages", "wasm", "mcp", "benchmarks", "generated_at"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "product": {"type": "string", "const": "chematic"},
+    "release": {
+      "type": "object",
+      "required": ["version", "tag", "commit", "released_at"],
+      "additionalProperties": false,
+      "properties": {
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "tag": {"type": "string", "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "commit": {"anyOf": [{"type": "string", "pattern": "^[0-9a-f]{40}$"}, {"type": "null"}]},
+        "commit_source": {"type": "string"},
+        "released_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "packages": {
+      "type": "object",
+      "required": ["rust", "python", "npm"],
+      "additionalProperties": false,
+      "properties": {
+        "rust": {"$ref": "#/$defs/package"},
+        "python": {"$ref": "#/$defs/package"},
+        "npm": {"$ref": "#/$defs/package"}
+      }
+    },
+    "wasm": {
+      "type": "object",
+      "required": ["artifact", "measurements"],
+      "additionalProperties": false,
+      "properties": {
+        "artifact": {"type": "string"},
+        "measurements": {"type": "array", "items": {"$ref": "#/$defs/wasm_measurement"}}
+      }
+    },
+    "mcp": {
+      "type": "object",
+      "required": ["tool_count", "transport", "network_enabled_tools"],
+      "additionalProperties": false,
+      "properties": {
+        "tool_count": {"type": "integer", "minimum": 0},
+        "transport": {"type": "array", "items": {"type": "string"}},
+        "network_enabled_tools": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "benchmarks": {
+      "type": "object",
+      "required": ["historical"],
+      "additionalProperties": false,
+      "properties": {
+        "historical": {"type": "array", "items": {"$ref": "#/$defs/benchmark"}}
+      }
+    },
+    "generated_at": {"type": "string", "format": "date-time"}
+  },
+  "$defs": {
+    "package": {
+      "type": "object",
+      "required": ["name", "version", "registry_url"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {"type": "string"},
+        "version": {"type": "string"},
+        "registry_url": {"type": "string", "format": "uri"}
+      }
+    },
+    "wasm_measurement": {
+      "type": "object",
+      "required": ["status", "release_or_snapshot", "raw_bytes", "compressed_bytes", "command", "runtime", "source"],
+      "additionalProperties": false,
+      "properties": {
+        "status": {"type": "string", "enum": ["historical", "current"]},
+        "release_or_snapshot": {"type": "string"},
+        "raw_bytes": {"type": "integer", "minimum": 0},
+        "compressed_bytes": {"type": "integer", "minimum": 0},
+        "command": {"type": "string"},
+        "runtime": {"type": "string"},
+        "source": {"type": "string"}
+      }
+    },
+    "benchmark": {
+      "type": "object",
+      "required": ["path", "status", "versions", "commit", "corpus", "hardware"],
+      "additionalProperties": false,
+      "properties": {
+        "path": {"type": "string"},
+        "status": {"type": "string", "const": "historical"},
+        "versions": {"type": "array", "items": {"type": "string"}},
+        "commit": {"type": "string"},
+        "corpus": {"type": "string"},
+        "hardware": {"type": "string"}
+      }
+    }
+  }
+}

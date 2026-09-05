@@ -269,18 +269,18 @@ pub fn canonical_smiles_stable_key(mol: &Molecule) -> Option<String> {
         return None;
     }
 
+    let has_direction = |bidx: BondIdx| {
+        matches!(reparsed.bond(bidx).order, BondOrder::Up | BondOrder::Down)
+            || reparsed.bond_direction(bidx).is_some()
+    };
     let ez_double_bonds = reparsed
         .bonds()
         .filter(|(_, bond)| bond.order == BondOrder::Double)
         .filter(|(double_idx, bond)| {
             [bond.atom1, bond.atom2].into_iter().all(|end| {
-                reparsed.neighbors(end).any(|(_, side_bond)| {
-                    side_bond != *double_idx
-                        && matches!(
-                            reparsed.bond(side_bond).order,
-                            BondOrder::Up | BondOrder::Down
-                        )
-                })
+                reparsed
+                    .neighbors(end)
+                    .any(|(_, side_bond)| side_bond != *double_idx && has_direction(side_bond))
             })
         })
         .count();
@@ -1198,6 +1198,17 @@ impl<'a> CanonicalWriter<'a> {
     ) -> Option<HashMap<BondIdx, BondOrder>> {
         let mut votes: HashMap<BondIdx, BondOrder> = HashMap::new();
         for (i, &end) in ordered.iter().enumerate() {
+            // A SMILES directional marker on a ring-closure bond is emitted
+            // only at the DFS open side.  The close side is deliberately
+            // suppressed because a ring digit cannot carry a second,
+            // conflicting direction token.  Never select that close-side
+            // occurrence as an E/Z carrier: the marker would be written at
+            // the remote endpoint (which is not adjacent to this alkene),
+            // and a re-parser would silently lose this stereochemistry.
+            let chosen_bidx = subs[i][choice[i]].1;
+            if self.ring_closure_is_close_side(chosen_bidx, end) {
+                return None;
+            }
             // A carrier election is not geometry-neutral when the losing
             // (demoted) candidate is itself load-bearing for a *different*
             // stereo double bond -- demoting it would silently strip that
@@ -1220,6 +1231,16 @@ impl<'a> CanonicalWriter<'a> {
             }
         }
         Some(votes)
+    }
+
+    /// Whether `bidx` is written at `end` as the suppressed side of a ring
+    /// closure. `find_ring_closures` populates both endpoint records before
+    /// E/Z carrier resolution, so this is a topology-only fact and remains
+    /// independent of the input atom ordering.
+    fn ring_closure_is_close_side(&self, bidx: BondIdx, end: AtomIdx) -> bool {
+        self.atom_ring_nums[end.0 as usize]
+            .iter()
+            .any(|&(_, is_open, _, ring_bidx)| ring_bidx == bidx && !is_open)
     }
 
     /// True if `bidx` (one of `owning_end`'s own two candidate substituent
@@ -1491,6 +1512,13 @@ impl<'a> CanonicalWriter<'a> {
     }
 
     pub(crate) fn write_all(mut self) -> String {
+        // Ring-closure side selection is independent of E/Z carrier choice,
+        // but carrier choice must know which endpoint is the suppressed close
+        // side. Discover the canonical DFS back-edges first so a directional
+        // marker is never assigned to an occurrence that cannot be emitted.
+        let starts = self.canonical_atom_list();
+        self.find_ring_closures(&starts);
+
         // Phase -1/0 only matter when the molecule actually carries a
         // directional bond (literal Up/Down or an aromatic-direction stash).
         // Avoid scanning for stereo alkene ends and building union-find
@@ -1502,12 +1530,6 @@ impl<'a> CanonicalWriter<'a> {
             self.resolve_ez_markers();
             self.build_ez_groups();
         }
-
-        // Phase 1: discover ring-closure back-edges using the SAME canonical DFS
-        // order that the writer will use. This ensures ring-closure numbers are
-        // stable across re-parses.
-        let starts = self.canonical_atom_list();
-        self.find_ring_closures(&starts);
 
         // Phase 2: canonical DFS serialization.
         let mut first = true;

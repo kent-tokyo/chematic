@@ -1,0 +1,294 @@
+{
+  "schema_version": 1,
+  "corpus": "scripts/chembl_accuracy_corpus_4999.smi",
+  "rows": 4999,
+  "parsed": 4999,
+  "parse_failures": 0,
+  "fields": {
+    "molecular_weight": {
+      "tolerance": 1e-06,
+      "published_tolerance": 0.01,
+      "matches": 3827,
+      "mismatches": 1172,
+      "published_matches": 4990
+    },
+    "tpsa": {
+      "tolerance": 1e-06,
+      "published_tolerance": 0.01,
+      "matches": 4999,
+      "mismatches": 0,
+      "published_matches": 4999
+    },
+    "hbd": {
+      "tolerance": 0,
+      "matches": 4999,
+      "mismatches": 0,
+      "published_matches": 4999
+    },
+    "hba": {
+      "tolerance": 0,
+      "matches": 4999,
+      "mismatches": 0,
+      "published_matches": 4999
+    },
+    "heavy_atoms": {
+      "tolerance": 0,
+      "matches": 4999,
+      "mismatches": 0,
+      "published_matches": 4999
+    }
+  },
+  "mismatch_examples": [
+    {
+      "smiles": "O=C(Nc1ccc(C[C@H](/N=c2/c(N3CCSCC3)c(O)c2=O)C(=O)O)cc1)c1c(Cl)cncc1Cl",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 535.4070000000002,
+          "rdkit": 535.4090000000002,
+          "delta": 0.002000000000066393
+        }
+      }
+    },
+    {
+      "smiles": "COc1ccc(Sc2ccc(-c3ncc[nH]3)cc2)cc1",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 282.36600000000004,
+          "rdkit": 282.36800000000005,
+          "delta": 0.0020000000000095497
+        }
+      }
+    },
+    {
+      "smiles": "O=C(O)CCc1c(Cc2ccccc2)ccc2c1CCC(NS(=O)(=O)c1ccc(Cl)cc1)C2",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 484.0150000000002,
+          "rdkit": 484.01700000000017,
+          "delta": 0.0019999999999527063
+        }
+      }
+    },
+    {
+      "smiles": "CSc1ccc(NC2=NCCN2)cc1",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 207.29999999999995,
+          "rdkit": 207.30199999999996,
+          "delta": 0.0020000000000095497
+        }
+      }
+    },
+    {
+      "smiles": "COc1ccc(Sc2ccc3c(c2)CN2CCNC2=N3)cc1",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 311.40799999999996,
+          "rdkit": 311.40999999999997,
+          "delta": 0.0020000000000095497
+        }
+      }
+    },
+    {
+      "smiles": "c1ccc2c(c1)sc1ccc(NC3=NCCN3)cc12",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 267.355,
+          "rdkit": 267.357,
+          "delta": 0.0020000000000095497
+        }
+      }
+    },
+    {
+      "smiles": "CSc1ccc2c(c1)N(CCC1CCCCN1C)c1ccccc1S2",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 370.58299999999997,
+          "rdkit": 370.587,
+          "delta": 0.004000000000019099
+        }
+      }
+    },
+    {
+      "smiles": "COc1ccnc(C[S+]([O-])c2nc3cc(OCC(F)(F)F)ccc3[nH]2)c1C",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 399.392,
+          "rdkit": 399.394,
+          "delta": 0.0020000000000095497
+        }
+      }
+    },
+    {
+      "smiles": "Cc1c(OCC(F)(F)F)ccnc1C[S+]([O-])c1nc2ccccc2[nH]1",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 369.3660000000001,
+          "rdkit": 369.3680000000001,
+          "delta": 0.0020000000000095497
+        }
+      }
+    },
+    {
+      "smiles": "COC(=O)C[C@@H](c1ccc(OC)nc1)N(C)C(=O)CCCCc1nc2c(cc1NS(C)(=O)=O)CCCN2",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 533.6490000000003,
+          "rdkit": 533.6510000000003,
+          "delta": 0.0019999999999527063
+        }
+      }
+    },
+    {
+      "smiles": "COc1ccc(Sc2ccccc2NC2=NCCN2)cc1",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 299.39700000000005,
+          "rdkit": 299.39900000000006,
+          "delta": 0.0020000000000095497
+        }
+      }
+    },
+    {
+      "smiles": "CC(C)C[C@H](NC(=O)[C@H](CCCN=C(N)N)NC(=O)[C@@H](N)CS)C(=O)N[C@@H](C)C(=O)N[C@@H](CCC(N)=O)C(=O)N[C@@H](CC(=O)O)C(=O)N[C@@H](CCC(=O)O)C(=O)N[C@@H](C)C(=O)N[C@@H](CC(=O)O)C(=O)N[C@H](C(=O)N[C@H](C(=O)N[C@@H](CCC(=O)O)C(=O)N[C@@H](Cc1ccc(O)cc1)C(=O)N[C@@H](CS)C(=O)O)[C@@H](C)O)C(C)C",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 1615.7610000000004,
+          "rdkit": 1615.7650000000003,
+          "delta": 0.0039999999999054126
+        }
+      }
+    },
+    {
+      "smiles": "c1cc(Sc2ccc3c(c2)OCCO3)ccc1NC1=NCCN1",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 327.40700000000004,
+          "rdkit": 327.409,
+          "delta": 0.0019999999999527063
+        }
+      }
+    },
+    {
+      "smiles": "COc1ccc(OC)c(Sc2ccc(NC3=NCCN3)cc2)c1",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 329.42300000000006,
+          "rdkit": 329.42500000000007,
+          "delta": 0.0020000000000095497
+        }
+      }
+    },
+    {
+      "smiles": "COc1cnc(C[S+]([O-])c2nc3cc(OC(F)F)ccc3[nH]2)c(C)c1OC",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 397.4010000000001,
+          "rdkit": 397.40300000000013,
+          "delta": 0.0020000000000095497
+        }
+      }
+    },
+    {
+      "smiles": "c1cc(SC2CCCCC2)ccc1NC1=NCCN1",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 275.419,
+          "rdkit": 275.421,
+          "delta": 0.0020000000000095497
+        }
+      }
+    },
+    {
+      "smiles": "COc1ccnc(C[S+]([O-])c2nc3cc(OC(F)(F)C(F)F)ccc3[nH]2)c1OC",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 433.38100000000003,
+          "rdkit": 433.38300000000004,
+          "delta": 0.0020000000000095497
+        }
+      }
+    },
+    {
+      "smiles": "COc1c(C)cnc(C[S+]([O-])c2nc3cc(OC(F)F)ccc3[nH]2)c1C",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 381.402,
+          "rdkit": 381.404,
+          "delta": 0.0020000000000095497
+        }
+      }
+    },
+    {
+      "smiles": "CS(=O)(=O)Nc1ccc(Sc2ccc(NC3=NCCN3)cc2)cc1",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 362.4760000000001,
+          "rdkit": 362.48000000000013,
+          "delta": 0.004000000000019099
+        }
+      }
+    },
+    {
+      "smiles": "COP(=O)(Nc1ccc(Nc2c3ccccc3nc3cc(S(C)(=O)=O)ccc23)cc1)OC",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 471.47300000000024,
+          "rdkit": 471.47500000000025,
+          "delta": 0.0020000000000095497
+        }
+      }
+    },
+    {
+      "smiles": "COc1cnc(C[S+]([O-])c2nc3cc(OCC(F)(F)F)ccc3[nH]2)c(C)c1OC",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 429.41800000000006,
+          "rdkit": 429.4200000000001,
+          "delta": 0.0020000000000095497
+        }
+      }
+    },
+    {
+      "smiles": "COc1ccnc(C[S+]([O-])c2nc3cc(OC(F)F)ccc3[nH]2)c1",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 353.348,
+          "rdkit": 353.35,
+          "delta": 0.0020000000000095497
+        }
+      }
+    },
+    {
+      "smiles": "COc1ccc(Sc2ccc(NC3=NC(C)CN3)cc2)cc1",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 313.424,
+          "rdkit": 313.426,
+          "delta": 0.0020000000000095497
+        }
+      }
+    },
+    {
+      "smiles": "COc1ccc(Sc2ccc(C3=NCCN3)cc2)cc1",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 284.382,
+          "rdkit": 284.384,
+          "delta": 0.0020000000000095497
+        }
+      }
+    },
+    {
+      "smiles": "COc1ccc(Sc2ccc(CC3=NCCN3)cc2)cc1",
+      "fields": {
+        "molecular_weight": {
+          "chematic": 298.409,
+          "rdkit": 298.411,
+          "delta": 0.0020000000000095497
+        }
+      }
+    }
+  ],
+  "comparison_boundary": "same SMILES inputs; chematic Python binding versus RDKit Python API"
+}

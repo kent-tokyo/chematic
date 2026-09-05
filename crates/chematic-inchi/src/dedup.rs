@@ -664,6 +664,9 @@ pub enum IdentityDiagnostic {
     /// The accurate CIP engine exceeded its recursion/size budget for a
     /// centre the legacy engine also could not rank.
     AccurateCipBudgetExceeded,
+    /// The accurate CIP engine could not establish a representation-independent
+    /// oracle for the centre. Identity recovery remains fail-closed.
+    AccurateCipOracleUnstable,
     /// The accurate CIP engine itself returned an error (not a tie/budget
     /// outcome). Never pooled with the tie/budget classes above -- an engine
     /// failure is a different thing from an explicit "no answer" (see
@@ -807,6 +810,9 @@ fn accurate_stereo_supplement(mol: &Molecule) -> Result<Vec<(u64, CipCode)>, Ide
                 chematic_chem::CipUnresolvedReason::Tied => IdentityDiagnostic::AccurateCipTied,
                 chematic_chem::CipUnresolvedReason::BudgetExceeded => {
                     IdentityDiagnostic::AccurateCipBudgetExceeded
+                }
+                chematic_chem::CipUnresolvedReason::OracleUnstable => {
+                    IdentityDiagnostic::AccurateCipOracleUnstable
                 }
             });
         }

@@ -131,6 +131,10 @@ pub enum SkipReason {
     Tied,
     /// The underlying digraph or comparator exceeded its budget for this atom.
     BudgetExceeded,
+    /// No representation-stable external oracle is established for this
+    /// phosphorus stereocenter. The accurate engine therefore fails closed
+    /// instead of emitting a plausible but unverified label.
+    OracleUnstable,
 }
 
 /// Result of the experimental tetrahedral-only assignment pass.
@@ -193,6 +197,15 @@ fn assign_all(
         let idx = AtomIdx(i as u32);
         let atom = mol.atom(idx);
         if !atom.chirality.is_tetrahedral() {
+            continue;
+        }
+
+        // The held-out phosphorus corpus contains neutral Kekulé respellings
+        // for which both RDKit CIP labelers flip R/S while InChI confirms the
+        // molecule is unchanged. Until a representation-independent P oracle
+        // is available, never turn those cases into confident output.
+        if atom.element == Element::P {
+            result.skipped.push((idx, SkipReason::OracleUnstable));
             continue;
         }
 

@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "product": "chematic",
+  "release": {
+    "version": "1.0.5",
+    "tag": "v1.0.5",
+    "commit": "a0a6ec2efccfd462ade0d3c93c6333f59603cf02",
+    "released_at": "2026-09-05T07:55:01+09:00"
+  },
+  "packages": {
+    "rust": {"name": "chematic", "version": "1.0.5", "registry_url": "https://crates.io/crates/chematic/1.0.5"},
+    "python": {"name": "chematic", "version": "1.0.5", "registry_url": "https://pypi.org/project/chematic/1.0.5/"},
+    "npm": {"name": "@kent-tokyo/chematic", "version": "1.0.5", "registry_url": "https://www.npmjs.com/package/@kent-tokyo/chematic/v/1.0.5"}
+  },
+  "wasm": {
+    "artifact": "crates/chematic-wasm/pkg/chematic_wasm_bg.wasm",
+    "measurements": [{
+      "status": "historical",
+      "release_or_snapshot": "v1.0.2 release candidate",
+      "raw_bytes": 3300452,
+      "compressed_bytes": 1213008,
+      "command": "wasm-pack 0.13.1; wasm-opt 130 -O3; gzip -9",
+      "runtime": "macOS arm64",
+      "source": "benchmarks/2026-09-04-wasm-size.md"
+    }]
+  },
+  "mcp": {"tool_count": 20, "transport": ["stdio"], "network_enabled_tools": ["pubchem_lookup"]},
+  "benchmarks": {
+    "historical": [
+      {"path": "benchmarks/2026-09-04-wasm-size.md", "status": "historical", "versions": ["v1.0.2 release candidate"], "commit": "not recorded in the source benchmark", "corpus": "optimized chematic WASM artifact", "hardware": "macOS arm64"},
+      {"path": "benchmarks/2026-09-04-streaming-formats.md", "status": "historical", "versions": ["chematic 1.0.3", "RDKit 2025.09.3"], "commit": "not recorded in the source benchmark", "corpus": "checked-in two-record SDF and two-frame XYZ fixtures", "hardware": "macOS arm64"}
+    ]
+  },
+  "generated_at": "2026-09-05T00:00:00Z"
+}

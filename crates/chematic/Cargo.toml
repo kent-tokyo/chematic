@@ -54,16 +54,16 @@ rustdoc-args = ["--cfg", "docsrs"]
 targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
 [dependencies]
-chematic-core       = { path = "../chematic-core",       version = "1.0.5", optional = true }
-chematic-smiles     = { path = "../chematic-smiles",     version = "1.0.5", optional = true }
-chematic-perception = { path = "../chematic-perception", version = "1.0.5", optional = true }
-chematic-mol        = { path = "../chematic-mol",        version = "1.0.5", optional = true }
-chematic-depict     = { path = "../chematic-depict",     version = "1.0.5", optional = true }
-chematic-chem       = { path = "../chematic-chem",       version = "1.0.5", optional = true }
-chematic-fp         = { path = "../chematic-fp",         version = "1.0.5", optional = true }
-chematic-smarts     = { path = "../chematic-smarts",     version = "1.0.5", optional = true }
-chematic-rxn        = { path = "../chematic-rxn",        version = "1.0.5", optional = true }
-chematic-3d         = { path = "../chematic-3d",         version = "1.0.5", optional = true }
-chematic-inchi      = { path = "../chematic-inchi",      version = "1.0.5", optional = true }
-chematic-iupac      = { path = "../chematic-iupac",      version = "1.0.5", optional = true }
-chematic-crystal    = { path = "../chematic-crystal",    version = "1.0.5", optional = true }
+chematic-core       = { path = "../chematic-core",       version = "1.0.6", optional = true }
+chematic-smiles     = { path = "../chematic-smiles",     version = "1.0.6", optional = true }
+chematic-perception = { path = "../chematic-perception", version = "1.0.6", optional = true }
+chematic-mol        = { path = "../chematic-mol",        version = "1.0.6", optional = true }
+chematic-depict     = { path = "../chematic-depict",     version = "1.0.6", optional = true }
+chematic-chem       = { path = "../chematic-chem",       version = "1.0.6", optional = true }
+chematic-fp         = { path = "../chematic-fp",         version = "1.0.6", optional = true }
+chematic-smarts     = { path = "../chematic-smarts",     version = "1.0.6", optional = true }
+chematic-rxn        = { path = "../chematic-rxn",        version = "1.0.6", optional = true }
+chematic-3d         = { path = "../chematic-3d",         version = "1.0.6", optional = true }
+chematic-inchi      = { path = "../chematic-inchi",      version = "1.0.6", optional = true }
+chematic-iupac      = { path = "../chematic-iupac",      version = "1.0.6", optional = true }
+chematic-crystal    = { path = "../chematic-crystal",    version = "1.0.6", optional = true }

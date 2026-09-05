@@ -18,6 +18,11 @@ opinion.
 - 3D descriptors identify their literature or standard source in module
   documentation where applicable. No paper text, figures, datasets, or
   trained artifacts are distributed as implementation material.
+- Core descriptor provenance and tolerance semantics are checked in at
+  `validation/cross_binding_contract.json`; the same fixtures are consumed by
+  Rust, Python, and Node/WASM contract tests. Standard format support is
+  documented in `docs/format-capabilities.md` and does not imply byte-level
+  or proprietary compatibility.
 
 ## Explicit exclusions
 

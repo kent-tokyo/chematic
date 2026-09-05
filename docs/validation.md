@@ -67,7 +67,7 @@ oracle by `scripts/cip_accurate_full_corpus_report.py`:
 
 | Oracle | Agreement | Count |
 |---|---|---|
-| Modern `rdCIPLabeler` | **99.74%** | 4175/4186 |
+| Modern `rdCIPLabeler` | **99.64%** | 4171/4186; 15 phosphorus rows fail closed as representation-unstable |
 
 A supplementary spot-check against RDKit's older `AssignStereochemistry`/`_CIPCode`
 algorithm (R/S atom stereocenters only, not the E/Z bond stereocenters `rdCIPLabeler`

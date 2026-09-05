@@ -2454,8 +2454,8 @@ mod tests {
         );
     }
 
-    /// Pins the accepted false-positive tradeoff for `ALERT_MAX_VISIT_BUDGET`
-    /// on a common, ordinary scaffold -- so it can't silently change again.
+    /// Pins the bounded negative result for a formerly expensive symmetric
+    /// scaffold so the VF2 ordering improvement cannot silently regress.
     ///
     /// `CC(C)(C)c1cc(C(=O)/C=C/c2ccsc2)cc(C(C)(C)C)c1O` is a 2,6-di-tert-
     /// -butylphenol (BHT-class antioxidant) with a thienyl chalcone
@@ -2463,39 +2463,19 @@ mod tests {
     /// macrocycle. Its two tert-butyl groups give the `tert_butyl_B(1)`
     /// PAINS pattern's search enough local symmetry (each tert-butyl's 3
     /// methyls, each methyl's 3 H's, both tert-butyl groups mutually
-    /// symmetric under the ring) to blow up VF2 the same way the reported
-    /// macrocycle does, just via gem-dimethyl/tert-butyl symmetry instead of
-    /// ring symmetry.
+    /// symmetric under the ring) to blow up the old lowest-index VF2 order.
     ///
-    /// Verified against the true unpatched (no budget at all) baseline: the
-    /// correct answer is `NotFound` (`tert_butyl_B` genuinely does not
-    /// match), but proving that takes ~19s. At `ALERT_MAX_VISIT_BUDGET`
-    /// (1,000,000), the search hasn't resolved either way yet -- this is
-    /// `MatchOutcome::BudgetExhausted`, folded (per the documented,
-    /// deliberately fail-safe policy on `ALERT_MAX_VISIT_BUDGET`) into
-    /// `pains_matches`'s output as if it *had* matched. That is a real,
-    /// accepted false positive (and, via `drug_score::f_tox`, a halved
-    /// `drug_score` for this molecule) -- explicitly signed off on in favour
-    /// of staying fast and never silently reporting "clean" on a cutoff. A
-    /// real fix (symmetry-aware VF2 match ordering to prune automorphic
-    /// branches before they're re-explored) would eliminate this false
-    /// positive without the 19s cost, but is a separate, larger project.
+    /// The correct answer is `NotFound` (`tert_butyl_B` genuinely does not
+    /// match). The constrained-query VF2 ordering now proves that negative
+    /// within the production budget, removing the former fail-safe false
+    /// positive without changing the conservative treatment of genuine
+    /// budget exhaustion.
     ///
-    /// This test intentionally exercises the *real* production budget, so
-    /// it is genuinely slow in debug builds (observed ~25-35s locally) --
-    /// that slowness is itself part of what's being pinned, not a mistake.
-    /// `#[ignore]`d so it doesn't add permanent latency (or flakiness under
-    /// concurrent-CI CPU contention) to the default suite -- run explicitly
-    /// with `cargo test -p chematic-chem --lib -- --ignored
-    /// test_pains_di_tert_butylphenol_is_accepted_false_positive`. See
-    /// `checked_matches_zero_budget_is_deterministic_budget_exhausted` below
-    /// for the fast, deterministic test of the same fold behaviour that
-    /// *does* run by default.
+    /// This test intentionally exercises the real production budget. It is a
+    /// bounded regression for #139, so it runs in the default suite and keeps
+    /// the measured path visible to CI.
     #[test]
-    #[ignore = "slow real-budget VF2 calibration (~25-35s debug) -- pins a \
-                known, accepted false positive on a common symmetric \
-                scaffold; run explicitly, see doc comment above"]
-    fn test_pains_di_tert_butylphenol_is_accepted_false_positive() {
+    fn test_pains_di_tert_butylphenol_resolves_negative_within_budget() {
         let smiles = "CC(C)(C)c1cc(C(=O)/C=C/c2ccsc2)cc(C(C)(C)C)c1O";
         let start = std::time::Instant::now();
         let checked = pains_matches_checked(&mol(smiles));
@@ -2507,27 +2487,21 @@ mod tests {
             .map(|(_, outcome)| *outcome);
         assert_eq!(
             outcome,
-            Some(MatchOutcome::BudgetExhausted),
-            "tert_butyl_B(1) is expected to hit the visit budget on this \
-             molecule -- if this changed to Found/NotFound, either the \
-             budget, the pattern, or the VF2 search order changed and this \
-             pin needs re-evaluating, not silently updating"
+            Some(MatchOutcome::NotFound),
+            "the constrained VF2 order should prove this known negative \
+             within the production budget"
         );
 
-        // The documented fail-safe fold: BudgetExhausted still surfaces
-        // wherever pains_matches() would surface a real Found. Checked via
-        // fold_conservative directly (not a second pains_matches() call) so
-        // this test doesn't re-run the same ~30s search twice.
+        // A proven negative must not be surfaced as a conservative alert.
         assert!(
-            fold_conservative(checked.clone()).contains(&"tert_butyl_B(1)"),
-            "BudgetExhausted must fold into pains_matches() as flagged, not \
-             silently disappear as if NotFound"
+            !fold_conservative(checked.clone()).contains(&"tert_butyl_B(1)"),
+            "a proven NotFound must not be surfaced as a PAINS alert"
         );
 
         assert!(
-            elapsed < std::time::Duration::from_secs(90),
-            "expected this to fail fast within the visit budget (bounded, \
-             just not free) -- took {elapsed:?}, expected well under 90s"
+            elapsed < std::time::Duration::from_secs(10),
+            "expected the constrained search to resolve within 10s -- took \
+             {elapsed:?}"
         );
     }
 

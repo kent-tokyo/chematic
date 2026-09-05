@@ -21,6 +21,17 @@ jobs:
           OLD=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null | sed 's/^v//' || echo '0.0.0')
           python3 scripts/make_release_notes.py --old "$OLD" --notes-file /tmp/release_notes.md
 
+      - name: Generate machine-readable release metadata
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          COMMIT="$(git rev-list -1 "$GITHUB_REF_NAME")"
+          RELEASED_AT="$(git show -s --format=%cI "$GITHUB_REF_NAME")"
+          python3 scripts/generate_release_metadata.py \
+            --version "$VERSION" \
+            --commit "$COMMIT" \
+            --released-at "$RELEASED_AT" \
+            --output "/tmp/chematic-release-metadata-${VERSION}.json"
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -28,4 +39,5 @@ jobs:
           gh release create "${{ github.ref_name }}" \
             --title "${{ github.ref_name }}" \
             --notes-file /tmp/release_notes.md \
-            --verify-tag
+            --verify-tag \
+            "/tmp/chematic-release-metadata-${GITHUB_REF_NAME#v}.json"

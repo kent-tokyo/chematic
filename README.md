@@ -55,9 +55,9 @@ can vary slightly by toolchain and build environment.
 | IUPAC name generation | Partial (25+ classes) |
 | Pure-Rust InChI | Approximate (enable `native-inchi` feature for exact) |
 
-### v1.0.5 release boundary
+### v1.0.6 release boundary
 
-The v1.0.5 release retains the v1.0.0 bounded compatibility contract while
+The v1.0.6 release retains the v1.0.0 bounded compatibility contract while
 adding typed reaction documents, document-level CDXML edits, explicit bounded
 Markush/polymer expansion, crystal composition summaries, safer UFF rescue,
 and canonical/SDF hot-path improvements. Spectrophores is intentionally
@@ -223,7 +223,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v1.0.5
+# chematic v1.0.6
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-08-23, v0.18.0 vs RDKit 2026.03.4):
@@ -232,7 +232,7 @@ chematic.doctor()
 #   TPSA                  100%   within ±0.1 Å²
 #   LogP (Crippen)        100%*  (max Δ = 1.1×10⁻¹³)
 #   Stereocenter count    99.96% (legacy) / 98.6% (new CIP FindPotentialStereo)
-#   CIP R/S/E/Z labels    99.74% (opt-in accurate engine vs rdCIPLabeler)
+#   CIP R/S/E/Z labels    99.64% stable-oracle agreement (15 P rows fail closed)
 # ...
 ```
 
@@ -317,7 +317,7 @@ Chromium, Firefox, and WebKit are covered by the browser CI lane.
 | SDF serialization-only write | 7.62 vs 79.54 µs/mol | chematic/RDKit, same corpus, layout disabled |
 | Molecular weight | 99.82% within ±0.01 Da | 4,999-molecule ChEMBL-derived corpus |
 | HBA/HBD/TPSA/LogP | 100% at documented tolerances | same corpus |
-| CIP R/S/E/Z | 99.74% | opt-in accurate engine vs modern `rdCIPLabeler` |
+| CIP R/S/E/Z | 99.64% | opt-in accurate engine; 15 representation-unstable P rows fail closed |
 | WASM artifact | 3.30 MB raw / 1.21 MB gzip | v1.0.2 candidate, dated build |
 
 These are dated, operation-specific measurements rather than universal performance or parity claims. See the [benchmark guide](docs/benchmark.md), [validation report](docs/validation.md), and [dated records](benchmarks/) for versions, corpus hashes, hardware, tolerances, and commands.
@@ -397,7 +397,7 @@ See [format capabilities](docs/format-capabilities.md), [language bindings](docs
 
 **Unreleased:** closed the remaining #210 legacy UFF stereo-rescue cases and continued canonical SMILES and SDF hot-path work. The fixed-version measurements are recorded in [benchmarks](benchmarks/).
 
-**v1.0.5 (2026-09-05):** closed the #210 legacy-coordinate UFF stereo-rescue cases and added canonical SMILES and SDF hot-path improvements with deterministic regression evidence. The v1.0.4 features remain part of the current release. Spectrophores remains excluded pending independent patent/FTO review.
+**v1.0.6 (2026-09-05):** adds descriptor provenance and shared cross-binding contracts, strengthens fused/non-alternant aromaticity and held-out CIP boundaries, and records the #149/#337 residuals as fail-closed or diagnostic-only contracts. The v1.0.5 features remain part of the current release. Spectrophores remains excluded pending independent patent/FTO review.
 
 For public release summaries, see the [changelog](CHANGELOG.md); detailed
 development notes are retained in its linked archive.
@@ -442,8 +442,12 @@ Full benchmark methodology → [validation/](validation/) · History → [benchm
 
 ## Known Limitations
 
-- `canonical_smiles()` is a representation, not a cache or deduplication key. Use the fail-closed `canonical_smiles_stable_key()` and handle `None`.
-- Aromaticity and CIP have explicit default and opt-in models; fused/non-alternant rings, symmetric cages, and unresolved ties are not claimed as universal RDKit parity.
+- `canonical_smiles()` is a representation, not a cache or deduplication key. Use the fail-closed `canonical_smiles_stable_key()` and handle `None`; coupled E/Z systems using aromatic direction stashes are intentionally rejected until their spelling stability is proven.
+- Aromaticity and CIP have explicit default and opt-in models; the default
+  Hückel path has a bounded all-carbon odd/odd fused-envelope fallback, while
+  other fused/non-alternant rings and symmetric cages are not claimed as
+  universal RDKit parity. Accurate phosphorus CIP is fail-closed when the
+  oracle is representation-unstable.
 - 3D generation and MMFF94 are Experimental. Successful output is sanity-checked but does not promise ETKDGv3 quality or complete force-field coverage.
 - Python `RWMol`, CDXML editing, and Markush/polymer expansion intentionally expose bounded subsets, not complete RDKit or ChemDraw compatibility.
 - Pure-Rust InChI is approximate; enable `native-inchi` for standard IUPAC InChI.
@@ -456,7 +460,7 @@ See [compatibility scope](docs/compatibility-scope.md), [validation](docs/valida
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v1.0.5)
+├── Cargo.toml                    workspace root (v1.0.6)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -510,7 +514,7 @@ If you use chematic in academic or research work, please cite:
   author    = {Kentaro Tanabe (kent-tokyo)},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {1.0.5},
+  version   = {1.0.6},
   year      = {2026},
 }
 ```

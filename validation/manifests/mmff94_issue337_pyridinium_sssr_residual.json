@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "issue": 337,
+  "purpose": "Pinned local residual contract for the MMFF94 pyridinium/macrocycle SSSR boundary.",
+  "status": "open",
+  "interpretation": {
+    "root_cause": "The six molecules require a global minimum-cycle-basis tie-break before MMFF94 aromaticity re-perception can reproduce the RDKit oracle.",
+    "not_a_local_typing_rule": true,
+    "do_not_apply_heuristic_atom_type_override": true
+  },
+  "expected": {
+    "molecule_count": 6,
+    "residual_atom_count": 32,
+    "aromatic_ring_sizes": [6],
+    "chematic_only_macrocycle_ring_sizes": [28, 29, 30, 31, 32],
+    "type_pairs": [["CB(37)", "C=C(2)"], ["CB(37)", "C=O(3)"], ["NPD+(58)", "N+=C(54)"]]
+  },
+  "molecules": [
+    {"name": "chembl_tier_b_0009", "macrocycle_ring_size": 28, "residual_atoms": [13, 14, 15, 16, 35, 36, 37, 38]},
+    {"name": "chembl_tier_b_0023", "macrocycle_ring_size": 30, "residual_atoms": [24, 25, 26, 27]},
+    {"name": "chembl_tier_b_0028", "macrocycle_ring_size": 32, "residual_atoms": [9, 10, 11, 12, 31, 32, 33, 34]},
+    {"name": "chembl_tier_b_0029", "macrocycle_ring_size": 32, "residual_atoms": [26, 27, 28, 29]},
+    {"name": "chembl_tier_b_0030", "macrocycle_ring_size": 31, "residual_atoms": [25, 26, 27, 28]},
+    {"name": "chembl_tier_b_0034", "macrocycle_ring_size": 29, "residual_atoms": [25, 26, 27, 28]}
+  ],
+  "evidence": {
+    "type_parity": "validation/results/mmff94_type_parity_227_postfix.json",
+    "bucket_rows": "validation/results/mmff94_atom_type_bucket_evidence_227.jsonl",
+    "aromaticity_parity": "validation/results/mmff94_aromaticity_corpus_parity_227_summary.json"
+  }
+}

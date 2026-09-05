@@ -372,7 +372,7 @@ pub fn cip_assignments_accurate_json(mol: &MolHandle) -> String {
 
 /// Atoms the accurate CIP engine could not resolve a tetrahedral R/S for, as a JSON
 /// array of `{atomIdx, reason}` objects. `reason` is `"tied"` (a genuine CIP-rule tie,
-/// not a missing rule) or `"budgetExceeded"`. Always `[]` for the legacy engine (see
+/// not a missing rule), `"budgetExceeded"`, or `"oracleUnstable"`. Always `[]` for the legacy engine (see
 /// [`cip_assignments_json`]) -- it never reports "I don't know". Returns `"null"` on
 /// an internal engine error.
 #[wasm_bindgen]
@@ -386,6 +386,7 @@ pub fn cip_unresolved_json(mol: &MolHandle) -> String {
                     let reason_str = match reason {
                         chematic_chem::CipUnresolvedReason::Tied => "tied",
                         chematic_chem::CipUnresolvedReason::BudgetExceeded => "budgetExceeded",
+                        chematic_chem::CipUnresolvedReason::OracleUnstable => "oracleUnstable",
                     };
                     format!("{{\"atomIdx\":{},\"reason\":\"{}\"}}", idx.0, reason_str)
                 })
