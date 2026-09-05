@@ -6,6 +6,7 @@ Periodic performance snapshots. Each file is a date-stamped record of throughput
 
 | Date | Version | Notes |
 |------|---------|-------|
+| [2026-09-05 descriptor/streaming](2026-09-05-descriptor-streaming.md) | v1.0.6 release source | Shared descriptor provenance and Rust/Python/Node/WASM fixture contract; 4,999-molecule core parity; 2,000-pass SDF/MOL/XYZ streaming evidence |
 | [2026-09-05 hot-path follow-up](2026-09-05-hot-path-follow-up.md) | v1.0.4-based unreleased source | Additional 1.10x gate: canonical SMILES 1.115x, file-backed SDF read 1.130x, V2000 SDF serialization 3.042x; output and full-workspace gates included |
 | [2026-09-04 MMFF94/3D](2026-09-04-mmff94-3d.md) | v1.0.3 | Prepared MMFF94 energy, L-BFGS minimization, ETKDG generation, and 3D minimization microbenchmarks on macOS arm64 |
 | [2026-09-04 streaming formats](2026-09-04-streaming-formats.md) | v1.0.3 | File-backed chematic SDF/MOL/XYZ streaming runner and explicitly non-equivalent RDKit block-parser reference |

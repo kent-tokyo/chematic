@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "issue": 149,
+  "purpose": "Held-out residual contract for coupled E/Z canonicalization with aromatic direction stashes.",
+  "status": "open",
+  "interpretation": {
+    "correspondence_failures": 0,
+    "canonical_outputs_are_cosmetic_variants": true,
+    "stable_key_must_fail_closed": true,
+    "do_not_select_a_winner_by_atom_or_bond_index": true
+  },
+  "families": [
+    {
+      "input": "CC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+      "canonical_outputs": [
+        "c/3(c(/c(c3=N\\CC)=N\\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+        "c3(c(c(/c3=N/CC)=N\\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O"
+      ]
+    },
+    {
+      "input": "CCCC(C)/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+      "canonical_outputs": [
+        "c/1(c(/c(c1=N\\[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\\C(C)CCC)O)O",
+        "c1(c(c(/c1=N/[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\\C(C)CCC)O)O"
+      ]
+    },
+    {
+      "input": "COCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+      "canonical_outputs": [
+        "c/1(O)c(O)/c(=N\\[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)c1=N\\CCOC",
+        "c1(O)c(O)c(=N/[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)\\c1=N\\CCOC"
+      ]
+    }
+  ],
+  "evidence": "validation/results/ez_shared_carrier_coupling_mechanism_audit_summary.json"
+}

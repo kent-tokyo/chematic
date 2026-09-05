@@ -5,6 +5,10 @@ This is the v1.0 compatibility boundary and public contract.
 contract; it does not mean that chematic is a drop-in reimplementation of
 RDKit or ChemDraw.
 
+The issue-specific matrix for rich RXN, CDXML presentation, Markush/polymer,
+and nucleic-acid boundaries is maintained in
+[`docs/issue-473-rich-document-boundary.md`](issue-473-rich-document-boundary.md).
+
 ## v1.0 release contract
 
 The following boundaries are intentional release decisions, not unfinished
@@ -19,7 +23,8 @@ stable:
   `RWMol` compatibility.
 - `canonical_smiles()` is a representation, not a deduplication/cache key.
   `canonical_smiles_stable_key()` is the recommended identity API and may
-  return `None` when stability is not proven.
+  return `None` when stability is not proven, including coupled E/Z systems
+  represented through aromatic direction stashes.
 - Aromaticity model selection and CIP mode are explicit compatibility choices;
   neither claims universal RDKit parity, and unresolved CIP is not guessed.
 - 3D generation and MMFF94 remain Experimental; successful output does not
@@ -90,11 +95,13 @@ algorithmic identity.
 ## Aromaticity and CIP
 
 The default aromaticity path is the compatibility-preserving per-SSSR Hückel
-model. `AromaticityAlgorithm::RdkitLike` is an explicit opt-in whole-graph
+path with a bounded all-carbon odd/odd fused-envelope fallback (for example,
+azulene). `AromaticityAlgorithm::RdkitLike` is an explicit opt-in whole-graph
 model for fused and non-alternant systems. Purine and azulene are covered by
 the RDKit-like regression gate, but the two models intentionally remain
 distinct; neither mode claims universal RDKit aromaticity parity. Known
-bridgehead-N and other fused-ring gaps remain documented residuals.
+bridgehead-N and other fused-ring gaps remain documented residuals. Accurate
+phosphorus CIP is fail-closed as `OracleUnstable` until a stable oracle exists.
 
 The default CIP path remains the fast legacy assignment. Accurate hierarchical
 CIP is opt-in through `CipMode::Accurate` (and its named Python/WASM binding

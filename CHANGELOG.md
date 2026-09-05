@@ -11,6 +11,39 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 No unreleased changes.
 
+## [1.0.6] - 2026-09-05
+
+### Fixed
+
+- Added descriptor provenance metadata and a shared descriptor contract fixture
+  consumed by Rust, Python, and Node/WASM tests.
+- Added a reproducible 4,999-molecule core descriptor parity lane and a
+  2,000-pass SDF/MOL/XYZ streaming benchmark record. The report keeps the
+  file-backed streaming and Python block-parser boundaries explicit.
+
+- Prevented canonical SMILES E/Z carrier selection from choosing the
+  suppressed (ring-closure close-side) occurrence. Ring-adjacent stereobonds
+  now retain their directional marker when the canonical output is reparsed.
+  The coupled-E/Z fail-closed boundary remains unchanged.
+- Added a bounded default-Hückel fused/non-alternant fallback for all-carbon
+  odd/odd envelopes (including azulene), while retaining the separate
+  `RdkitLike` model and its holdout gate for broader parity work.
+- Made the accurate CIP held-out suite assert zero wrong confident labels and
+  zero regressions for the non-phosphorus scope: 140/140 cases currently
+  match the modern RDKit oracle. The 15 phosphorus cases remain separately
+  reported and now fail closed as `OracleUnstable`; no confident phosphorus
+  label is emitted until a representation-independent oracle exists.
+
+- Strengthened fused/non-alternant aromaticity handling and added explicit
+  residual manifests for canonical E/Z and MMFF94 cycle diagnostics.
+
+### Added
+
+- Added descriptor provenance and a shared Rust/Python/Node/WASM descriptor
+  contract fixture with a reproducible 4,999-molecule parity lane.
+- Added versioned machine-readable release metadata, schema validation, and a
+  tag-driven GitHub Release asset for downstream integrations.
+
 ## [1.0.5] - 2026-09-05
 
 ### Fixed
@@ -139,7 +172,8 @@ The authoritative list of published tags and release artifacts is the
 historical implementation notes remain available in the archived detailed
 history and Git history.
 
-[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.5...HEAD
+[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.6...HEAD
+[1.0.6]: https://github.com/kent-tokyo/chematic/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/kent-tokyo/chematic/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/kent-tokyo/chematic/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/kent-tokyo/chematic/compare/v1.0.2...v1.0.3

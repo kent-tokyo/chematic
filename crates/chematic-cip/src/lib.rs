@@ -11,10 +11,11 @@
 //!
 //! Full milestone history in `docs/rfcs/cip_accurate_rfc.md` at the workspace root: this
 //! crate now builds a provenance-carrying digraph, ranks substituents (Rules 1a/1b/2/4b/5),
-//! and assigns R/S — the current residual-corpus report estimates 99.74% agreement
-//! against modern RDKit `rdCIPLabeler` on the project's full validation corpus,
-//! with the remaining phosphorus cases kept unresolved when independent respellings
-//! disagree. It does not replace
+//! and assigns R/S — the current residual-corpus report estimates 99.64%
+//! stable-oracle agreement (4171/4186) against modern RDKit `rdCIPLabeler` on
+//! the project's full validation corpus,
+//! with the remaining phosphorus cases surfaced as `OracleUnstable` when the
+//! independent oracle is representation-unstable. It does not replace
 //! `chematic_chem::assign_cip()`'s default (legacy) path, which is unaffected.
 //!
 //! The motivation is a real, proven limitation in `chematic-chem`'s existing engine:

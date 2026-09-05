@@ -48,8 +48,9 @@ The 4,999-molecule descriptor snapshot reports:
   metrics: 100% at their stated tolerances;
 - stereocenter count: 99.96% against the legacy oracle and 98.6% against
   `FindPotentialStereo`;
-- opt-in accurate CIP R/S/E/Z labels: 99.74% against modern
-  `rdCIPLabeler` for shared assignments.
+- opt-in accurate CIP R/S/E/Z labels: 99.64% stable-oracle agreement against
+  modern `rdCIPLabeler`; 15 phosphorus rows are excluded from confident output
+  as representation-unstable.
 
 These figures cover a subset of the full descriptor surface. Kappa,
 Hall-Kier, Bertz, Balaban, BCUT2D, VSA, MQN, SA Score, and other similarly

@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "runner": "scripts/descriptor_core_parity.py",
+  "corpus": "scripts/chembl_accuracy_corpus_4999.smi",
+  "fields": ["molecular_weight", "tpsa", "hbd", "hba", "heavy_atoms"],
+  "comparison": "same SMILES inputs; chematic Python binding versus RDKit Python API",
+  "result": "validation/results/descriptor-core-parity-4999.json"
+}

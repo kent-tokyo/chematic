@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "purpose": "Synthetic calibration contract for issue #70 Criterion routing.",
+  "scope": "Arithmetic and routing fixtures only; this is not hosted CI execution evidence.",
+  "thresholds": {
+    "stage1_route_ratio": 1.04,
+    "stage2_fail_ratio": 1.04,
+    "stage1_blocks": 3,
+    "stage2_blocks": 10
+  },
+  "cases": [
+    {
+      "id": "plus5",
+      "stage": 1,
+      "median_ratio": 1.069,
+      "expected_route": "route",
+      "expected_gate": "eligible_for_stage2"
+    },
+    {
+      "id": "plus10",
+      "stage": 1,
+      "median_ratio": 1.135,
+      "expected_route": "route",
+      "expected_gate": "eligible_for_stage2"
+    },
+    {
+      "id": "plus6",
+      "stage": 1,
+      "median_ratio": 1.06,
+      "expected_route": "route",
+      "expected_gate": "eligible_for_stage2"
+    },
+    {
+      "id": "clean_noop",
+      "stage": 1,
+      "median_ratio": 1.0004,
+      "expected_route": "no-route",
+      "expected_gate": "inconclusive"
+    },
+    {
+      "id": "stage2_build_noise",
+      "stage": 2,
+      "median_ratio": 1.022,
+      "sign_test": "fail",
+      "environment_contaminated": false,
+      "expected_gate": "inconclusive"
+    },
+    {
+      "id": "stage2_real_effect",
+      "stage": 2,
+      "median_ratio": 1.06,
+      "sign_test": "fail",
+      "environment_contaminated": false,
+      "expected_gate": "fail"
+    },
+    {
+      "id": "stage2_contaminated",
+      "stage": 2,
+      "median_ratio": 1.06,
+      "sign_test": "fail",
+      "environment_contaminated": true,
+      "expected_gate": "inconclusive"
+    }
+  ]
+}

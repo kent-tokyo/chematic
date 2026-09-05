@@ -151,9 +151,11 @@ bridgehead-heavy structures (azulene, purine). Root cause is documented as
 an `aromatic_context` bypass mechanism in the default compatibility path.
 
 The opt-in `AromaticityAlgorithm::RdkitLike` model is covered by a public
-regression gate for purine (9 aromatic atoms) and azulene (10). The default
-per-SSSR Hückel model remains compatibility-preserving and intentionally
-model-distinct; select and record the RDKit-like model when parity is needed.
+regression gate for three fused macrocycle holdouts, purine (9 aromatic atoms),
+and azulene (10). The default Hückel model now has a deliberately narrow
+all-carbon odd/odd fused-envelope fallback (including azulene), but remains
+model-distinct from the broader RDKit-like path; select and record the
+RDKit-like model when parity is needed.
 This gate is a supported regression boundary, not a claim of universal RDKit
 parity: bridgehead-N and other fused/non-alternant topologies remain known
 residuals in both model comparisons.
@@ -174,7 +176,11 @@ accurate engine is opt-in through `CipMode::Accurate` (and the named Python
 and WASM binding endpoints). It improves agreement on many structures, but
 is not a universal guarantee: symmetric cages, tied Rule 4b/pseudoasymmetric
 cases, and unsupported or budget-limited structures may remain unresolved.
-Unresolved CIP is represented as unresolved, never as a guessed R/S label.
+The current frozen 155-case residual report resolves 140/140 non-phosphorus
+cases with no wrong confident labels or regressions. Fifteen phosphorus rows
+remain a separate representation-unstable oracle class and are now surfaced
+as typed `OracleUnstable` results; unresolved CIP is represented as unresolved,
+never as a guessed R/S label.
 
 ## Conformer generation
 

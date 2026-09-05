@@ -130,6 +130,9 @@ pub enum CipUnresolvedReason {
     Tied,
     /// The digraph/comparator exceeded its size or recursion budget for this atom.
     BudgetExceeded,
+    /// The available phosphorus oracle is representation-unstable; no label is
+    /// emitted until a representation-independent oracle is established.
+    OracleUnstable,
 }
 
 /// Result of [`assign_cip_with_mode`]. Distinct from [`CipAssignment`] -- carries an
@@ -192,7 +195,9 @@ pub fn assign_cip_with_mode(
                 .filter(|(_, r)| {
                     matches!(
                         r,
-                        chematic_cip::SkipReason::Tied | chematic_cip::SkipReason::BudgetExceeded
+                        chematic_cip::SkipReason::Tied
+                            | chematic_cip::SkipReason::BudgetExceeded
+                            | chematic_cip::SkipReason::OracleUnstable
                     )
                 })
                 .map(|(idx, _)| *idx)
@@ -219,6 +224,9 @@ pub fn assign_cip_with_mode(
                     chematic_cip::SkipReason::Tied => Some((idx, CipUnresolvedReason::Tied)),
                     chematic_cip::SkipReason::BudgetExceeded => {
                         Some((idx, CipUnresolvedReason::BudgetExceeded))
+                    }
+                    chematic_cip::SkipReason::OracleUnstable => {
+                        Some((idx, CipUnresolvedReason::OracleUnstable))
                     }
                     chematic_cip::SkipReason::NotFourSubstituents => None,
                 })
@@ -1763,8 +1771,9 @@ mod tests {
         // guard (see `crates/chematic-cip/src/assign.rs` module docs, "Element-level
         // guard: phosphorus stays tied"): it only ever emits a resolved label for a
         // carbon stereocenter, so these 2 phosphorus atoms fall back to
-        // `SkipReason::Tied` -> `CipUnresolvedReason::Tied`, exactly their pre-fix
-        // behavior, never an unverified label.
+        // `SkipReason::OracleUnstable` -> `CipUnresolvedReason::OracleUnstable`:
+        // the public Accurate API now reports the reason explicitly, never an
+        // unverified label.
         let smi = "CNP1(NC)=N[P@](NC)(N2CC2)=NP(NC)(NC)=N[P@@](NC)(N2CC2)=N1";
         let mol = chematic_smiles::parse(smi).expect("valid SMILES");
         let result = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
@@ -1776,11 +1785,10 @@ mod tests {
                 "atom={atom_idx}: phosphorus stereocenter must NOT get an unverified label"
             );
             assert!(
-                result
-                    .unresolved
-                    .iter()
-                    .any(|(i, reason)| *i == idx && *reason == CipUnresolvedReason::Tied),
-                "atom={atom_idx} must be reported unresolved (Tied): {:?}",
+                result.unresolved.iter().any(|(i, reason)| {
+                    *i == idx && *reason == CipUnresolvedReason::OracleUnstable
+                }),
+                "atom={atom_idx} must be reported unresolved (OracleUnstable): {:?}",
                 result.unresolved
             );
         }
@@ -1849,15 +1857,16 @@ mod tests {
     }
 
     #[test]
-    fn cip_mode_accurate_does_not_hide_oracle_unstable_answers() {
-        // The 9 M4C-0 rows are chematic's own stable, confident (if oracle-disputed)
-        // answer -- Accurate mode must still report them, not silently drop or
-        // "unresolve" them. Being oracle-unstable is a property of the RDKit oracle
-        // used for scoring, not a property chematic itself detects or reacts to.
+    fn cip_mode_accurate_fails_closed_for_oracle_unstable_phosphorus() {
+        // Accurate mode must not expose a phosphorus label while the external
+        // oracle is representation-unstable under neutral Kekulé respelling.
         let mol = chematic_smiles::parse("N[P@]1(Cl)=NP(N2CC2)(N2CC2)=N[P@](N)(Cl)=N1")
             .expect("valid SMILES");
         let result = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
-        assert_eq!(result.get(AtomIdx(12)), Some(CipCode::S));
+        assert_eq!(result.get(AtomIdx(12)), None);
+        assert!(result.unresolved.iter().any(|(idx, reason)| {
+            *idx == AtomIdx(12) && *reason == CipUnresolvedReason::OracleUnstable
+        }));
     }
 
     #[test]

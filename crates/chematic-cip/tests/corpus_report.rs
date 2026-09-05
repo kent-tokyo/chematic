@@ -44,6 +44,7 @@ struct BucketStats {
     accurate_wrong: usize,
     accurate_tied: usize,
     accurate_budget_exceeded: usize,
+    accurate_oracle_unstable: usize,
     accurate_no_assignment: usize,
     /// FastApproximate matched `modern`, AccurateExperimental didn't -- the failure
     /// mode a comparator rewrite must never introduce.
@@ -122,6 +123,7 @@ fn corpus_report_fast_vs_accurate_vs_modern_oracle() {
             match reason {
                 SkipReason::Tied => stats.accurate_tied += 1,
                 SkipReason::BudgetExceeded => stats.accurate_budget_exceeded += 1,
+                SkipReason::OracleUnstable => stats.accurate_oracle_unstable += 1,
                 SkipReason::NotFourSubstituents => stats.accurate_no_assignment += 1,
             }
             if fast_matches {
@@ -147,13 +149,14 @@ fn corpus_report_fast_vs_accurate_vs_modern_oracle() {
                 + stats.accurate_wrong
                 + stats.accurate_tied
                 + stats.accurate_budget_exceeded
+                + stats.accurate_oracle_unstable
                 + stats.accurate_no_assignment,
             stats.total,
             "{name}: every case must be accounted for in exactly one outcome bucket"
         );
         println!(
             "{name:20} total={:3}  fast={:3}/{total} ({:5.1}%)  accurate={:3}/{total} ({:5.1}%)  \
-             wrong={:3}  tied={:3}  budget={:3}  no_assign={:3}  regressions={:3}",
+            wrong={:3}  tied={:3}  budget={:3}  oracle_unstable={:3}  no_assign={:3}  regressions={:3}",
             stats.total,
             stats.fast_match,
             100.0 * stats.fast_match as f64 / stats.total as f64,
@@ -162,6 +165,7 @@ fn corpus_report_fast_vs_accurate_vs_modern_oracle() {
             stats.accurate_wrong,
             stats.accurate_tied,
             stats.accurate_budget_exceeded,
+            stats.accurate_oracle_unstable,
             stats.accurate_no_assignment,
             stats.regressions.len(),
             total = stats.total,
@@ -172,11 +176,40 @@ fn corpus_report_fast_vs_accurate_vs_modern_oracle() {
         overall.accurate_wrong += stats.accurate_wrong;
         overall.accurate_tied += stats.accurate_tied;
         overall.accurate_budget_exceeded += stats.accurate_budget_exceeded;
+        overall.accurate_oracle_unstable += stats.accurate_oracle_unstable;
         overall.accurate_no_assignment += stats.accurate_no_assignment;
+
+        if name == "phosphorus" {
+            assert_eq!(
+                stats.accurate_wrong, 0,
+                "phosphorus: no confident wrong labels"
+            );
+            assert_eq!(
+                stats.accurate_oracle_unstable, stats.total,
+                "phosphorus: every held-out row must fail closed"
+            );
+        }
+
+        // The non-phosphorus held-out scope is now a hard parity contract.
+        // Phosphorus remains deliberately separate because its RDKit label is
+        // representation-unstable under neutral Kekule respellings (see the
+        // corpus manifest and cip_oracle_instability.jsonl).
+        if name != "phosphorus" {
+            assert_eq!(
+                stats.accurate_match, stats.total,
+                "{name}: accurate CIP must match the held-out oracle"
+            );
+            assert_eq!(stats.accurate_wrong, 0, "{name}: no wrong confident labels");
+            assert_eq!(
+                stats.regressions.len(),
+                0,
+                "{name}: no fast-path regressions"
+            );
+        }
     }
     println!(
         "\n{:20} total={:3}  fast={:3}/{total} ({:5.1}%)  accurate={:3}/{total} ({:5.1}%)  \
-         wrong={:3}  tied={:3}  budget={:3}  no_assign={:3}",
+         wrong={:3}  tied={:3}  budget={:3}  oracle_unstable={:3}  no_assign={:3}",
         "OVERALL",
         overall.total,
         overall.fast_match,
@@ -186,6 +219,7 @@ fn corpus_report_fast_vs_accurate_vs_modern_oracle() {
         overall.accurate_wrong,
         overall.accurate_tied,
         overall.accurate_budget_exceeded,
+        overall.accurate_oracle_unstable,
         overall.accurate_no_assignment,
         total = overall.total,
     );

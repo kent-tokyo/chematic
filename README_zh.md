@@ -16,9 +16,9 @@
 **默认快速，设计安全的化学信息学库。**  
 默认纯 Rust · 可选原生 InChI C FFI · Python · WebAssembly · [官方网站](https://chematic.io/) · [在线演示](https://kent-tokyo.github.io/chematic/playground/)
 
-### v1.0.5 范围
+### v1.0.6 范围
 
-v1.0.5 保持 v1.0.0 的 bounded 兼容性边界，并加入 typed reaction document、
+v1.0.6 保持 v1.0.0 的 bounded 兼容性边界，并加入 typed reaction document、
 document-level CDXML 编辑、显式且 bounded 的 Markush/polymer 展开、晶体组成汇总、
 更安全的 UFF rescue，以及 canonical/SDF 热路径优化。完整任意结构 CDXML 编辑、
 复杂拓扑 expansion、完整 RDKit `RWMol` 与完整 ETKDG/MMFF94 parity 仍不支持。
@@ -235,7 +235,7 @@ const picks = JSON.parse(maxmin_picks_ecfp4_json('["CC","c1ccccc1","CCO","CCCC"]
 
 **未发布:** 解决 #210 的legacy UFF stereo rescue残差，并继续优化canonical SMILES与SDF hot path。固定条件的测量记录在[benchmarks](benchmarks/)中。
 
-**v1.0.5（2026-09-05）:** 解决 #210 legacy UFF stereo-rescue 残差，并改进 canonical SMILES 与 SDF hot path；v1.0.4 的功能仍包含在当前发布中。Spectrophores 在完成独立 patent/FTO 审查前不属于公共 API。
+**v1.0.6（2026-09-05）:** 增加 descriptor provenance 与 Rust/Python/Node/WASM 共用契约，强化 fused/non-alternant aromaticity 与 held-out CIP 边界，并将 #149/#337 残差固定为 fail-closed 或诊断专用。v1.0.5 的功能仍包含在当前发布中。Spectrophores 在完成独立 patent/FTO 审查前不属于公共 API。
 
 公开发布摘要见[CHANGELOG](CHANGELOG.md)；详细开发记录保存在其中链接的archive。
 

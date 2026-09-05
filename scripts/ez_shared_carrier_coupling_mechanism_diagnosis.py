@@ -29,8 +29,9 @@ for the full narrative and results):
    either pre-existing example in this file's family, both of which predate
    PR #351 and still report the pre-fix topology): how many coupled
    components (size >= 2) exist in the corpus *today*.
-3. Axis 1 (RDKit relabeling, K=16, seeded/reproducible): does chematic's own
-   canonical output stay identical across 16 independent relabelings of each
+3. Axis 1 (RDKit relabeling, K=64 by default, seeded/reproducible): does chematic's own
+   canonical output stay identical across the configured independent
+   relabelings of each
    coupled molecule? A real chematic-internal-self-consistency probe (RDKit
    only supplies alternate valid spellings; RDKit agreement is not what's
    measured).
@@ -57,7 +58,7 @@ for the full narrative and results):
    (canonical.rs) is checked directly -- its own doc comment claims its two
    pinned spellings do NOT converge to one canonical string. This script
    finds (see RFC) that they DO converge today, on both the two pinned
-   spellings and 10 fresh relabelings -- flagged as a likely-stale doc claim
+   spellings and the configured fresh relabelings -- flagged as a likely-stale doc claim
    (a documentation-currency finding, not something this diagnosis-only
    script fixes).
 
@@ -131,7 +132,7 @@ EZ_NEVER_CORRUPTS_B = "OC(=O)[C@H](Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)/N=c\\1c(/c(c
 # necessary-but-not-sufficient finding) -- the negative control for axis 2.
 NEGATIVE_CONTROL = r"CC1=C2CC[C@H](/C=N/N=C(N)N)[C@@]2(C)CC/C1=N\N=C(N)N"
 
-N_RELABELINGS_PER_MOLECULE = 16
+N_RELABELINGS_PER_MOLECULE = 64
 
 
 # ---------------------------------------------------------------------------
@@ -270,7 +271,7 @@ def current_topology(corpus_path):
     }, coupled, by_smiles_ends
 
 
-def axis1_divergence(coupled_smiles):
+def axis1_divergence(coupled_smiles, relabelings_per_molecule=N_RELABELINGS_PER_MOLECULE):
     """Writes a temp TSV of (original, relabeled) pairs, runs the Rust
     example's `axis1` subcommand, and reports per-molecule whether
     chematic's own canonical output stays identical across all K
@@ -278,7 +279,7 @@ def axis1_divergence(coupled_smiles):
     lines = []
     skipped = []
     for smi in coupled_smiles:
-        relabelings = rdkit_relabelings(smi)
+        relabelings = rdkit_relabelings(smi, relabelings_per_molecule)
         if relabelings is None:
             skipped.append(smi)
             continue
@@ -310,6 +311,7 @@ def axis1_divergence(coupled_smiles):
             "n_relabelings_tested": len(vs),
             "n_cross_correspondence_failures": cross_fail,
             "n_distinct_canonical_outputs": len(canons),
+            "distinct_canonical_outputs": sorted(canons),
             "divergent": divergent,
         }
 
@@ -385,9 +387,9 @@ def structural_classification(coupled_smiles, by_smiles_ends, axis1_result):
     return bucket_summary, per_component_detail
 
 
-def calibration_check():
+def calibration_check(relabelings_per_molecule=N_RELABELINGS_PER_MOLECULE):
     """Checks the never-corrupts fixture's two pinned spellings directly,
-    plus 10 fresh RDKit relabelings of spelling A -- reports whether they
+    plus the configured fresh RDKit relabelings of spelling A -- reports whether they
     converge (a finding either way, not assumed from the doc comment)."""
     rows = run_chematic_example("scan")
     canons = {}
@@ -396,15 +398,18 @@ def calibration_check():
             canons[r["smiles"]] = r["canonical_smiles"]
     pinned_pair_converges = len(set(canons.values())) == 1 if len(canons) == 2 else None
 
-    relabel_result = axis1_divergence([EZ_NEVER_CORRUPTS_A])
+    relabel_result = axis1_divergence([EZ_NEVER_CORRUPTS_A], relabelings_per_molecule)
     fresh_relabeling_stable = not relabel_result["per_molecule"].get(EZ_NEVER_CORRUPTS_A, {}).get("divergent", True)
 
     return {
         "pinned_pair_canonical_outputs": canons,
         "pinned_pair_converges": pinned_pair_converges,
         "fresh_relabeling_stable": fresh_relabeling_stable,
+        "n_relabelings_tested": relabel_result["per_molecule"].get(
+            EZ_NEVER_CORRUPTS_A, {}
+        ).get("n_relabelings_tested", 0),
         "conclusion": (
-            "CONVERGES on current main (both the 2 pinned spellings and 10 fresh "
+            f"CONVERGES on current main (both the 2 pinned spellings and {relabelings_per_molecule} fresh "
             "relabelings agree) -- the doc comment's 'does NOT resolve to one "
             "canonical string' claim appears STALE, most likely superseded by "
             "PR #229's joint-component solver without the comment being revisited. "
@@ -437,7 +442,13 @@ def axis2_applicability_note():
     )
 
 
-def verdict(n_coupled, axis1_result, bucket_summary, calibration):
+def verdict(
+    n_coupled,
+    axis1_result,
+    bucket_summary,
+    calibration,
+    relabelings_per_molecule=N_RELABELINGS_PER_MOLECULE,
+):
     all_both_specified = all(
         "both_rdkit_specified" in b["feature_tuple"] for b in bucket_summary
     )
@@ -456,26 +467,23 @@ def verdict(n_coupled, axis1_result, bucket_summary, calibration):
             "split exists (ring/aromatic-stashed vs. acyclic/literal-marker "
             "representation), reported in bucket_summary."
         ) if one_mechanism else "Buckets differ in RDKit stereogenicity signature -- see bucket_summary.",
-        "verdict": "NEEDS-RESEARCH, leaning GO (already-likely-resolved)",
+        "verdict": (
+            "NEEDS-RESEARCH, confirmed residuals found"
+            if axis1_result["n_divergent"]
+            else "NEEDS-RESEARCH, leaning GO (no sampled residuals)"
+        ),
         "verdict_reasoning": (
-            f"0/{n_coupled} coupled components show canonical-output divergence "
-            f"under axis 1 (RDKit relabeling, K={N_RELABELINGS_PER_MOLECULE}, 0 "
-            "cross-correspondence failures). Axis 2 cannot test coupled pairs at "
+            f"{axis1_result['n_divergent']}/{n_coupled} coupled components show canonical-output divergence "
+            f"under axis 1 (RDKit relabeling, K={relabelings_per_molecule}, 0 "
+            f"cross-correspondence failures). Axis 2 cannot test coupled pairs at "
             "all (structural limitation, not a gap in this audit). The "
             "previously-cited never-corrupts calibration example -- itself an "
-            "instance of this exact shape -- also converges. Together this points "
-            "toward 'already resolved by the existing joint solver,' contradicting "
-            "PR #351's own pessimistic '~90% unidentified mechanism' framing "
-            "(which was a topological-presence count, not a confirmed-failure "
-            "count). NOT treated as proof: K=16 relabeling is a sample, not "
-            "exhaustive, and whether RDKit's own relabel-and-reserialize process "
-            "ever varies which specific bond carries the mark for a SHARED bond "
-            "specifically (as opposed to other, non-shared bonds) was not "
-            "separately confirmed. Strongest available next step (not done here): "
-            "hand-construct genuine alternate spellings that explicitly move the "
-            "mark to the other candidate bond, in the style of the never-corrupts "
-            "fixture's own a/b construction, for a sample of the measured "
-            "components -- left as named follow-up work."
+            "instance of this exact shape -- still converges. The sampled "
+            "residuals must remain open and are not treated as proof of a general "
+            "mechanism: relabeling is finite, and RDKit's relabel-and-reserialize "
+            "process does not guarantee every alternate carrier spelling. The "
+            "next implementation step is to add these reproducible residuals as "
+            "held-out regression fixtures before changing production ranking."
         ),
     }
 
@@ -537,6 +545,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("corpus", nargs="?", default=DEFAULT_CORPUS)
     parser.add_argument("--self-test", action="store_true")
+    parser.add_argument(
+        "--relabelings",
+        type=int,
+        default=N_RELABELINGS_PER_MOLECULE,
+        help="seeded RDKit atom relabelings per coupled molecule (default: 64)",
+    )
     parser.add_argument("--out-jsonl", default=OUT_JSONL)
     parser.add_argument("--out-summary", default=OUT_SUMMARY)
     args = parser.parse_args()
@@ -552,7 +566,9 @@ def main():
     print(f"provenance gate: {provenance}")
     print(f"topology: {topology}")
 
-    axis1_result = axis1_divergence(coupled_smiles)
+    if args.relabelings < 1:
+        parser.error("--relabelings must be >= 1")
+    axis1_result = axis1_divergence(coupled_smiles, args.relabelings)
     print(f"axis1: {axis1_result['n_divergent']}/{axis1_result['n_molecules_tested']} divergent, "
           f"{axis1_result['n_cross_correspondence_failures_total']} cross-correspondence failures")
 
@@ -562,8 +578,14 @@ def main():
           f"{len(axis2_all)} molecules (see axis2_applicability_note)")
 
     bucket_summary, per_component_detail = structural_classification(coupled_smiles, by_smiles_ends, axis1_result)
-    calibration = calibration_check()
-    final_verdict = verdict(len(coupled_smiles), axis1_result, bucket_summary, calibration)
+    calibration = calibration_check(args.relabelings)
+    final_verdict = verdict(
+        len(coupled_smiles),
+        axis1_result,
+        bucket_summary,
+        calibration,
+        args.relabelings,
+    )
 
     os.makedirs(os.path.dirname(args.out_jsonl), exist_ok=True)
     with open(args.out_jsonl, "w") as f:
@@ -580,6 +602,7 @@ def main():
         "provenance_gate": provenance,
         "topology": topology,
         "axis1_summary": {k: v for k, v in axis1_result.items() if k != "per_molecule"},
+        "relabelings_per_molecule": args.relabelings,
         "axis2_applicability_note": axis2_applicability_note(),
         "n_axis2_alternates_generated_total": n_axis2_alternates,
         "structural_classification_buckets": bucket_summary,

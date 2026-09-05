@@ -1,7 +1,7 @@
 # chematic roadmap
 
-> Revised 2026-09-05. The current published release is v1.0.5. The workspace
-> version is fixed at 1.0.5 for this release.
+> Revised 2026-09-05. The current published release is v1.0.6. The workspace
+> version is fixed at 1.0.6 for this release.
 
 The detailed roadmap and completed gate-by-gate evidence through 2026-09-05 is
 retained in
@@ -22,7 +22,7 @@ part of the active comparison program.
 
 ## Current candidate
 
-Completed on the v1.0.5 release tree:
+Completed on the v1.0.6 release tree:
 
 - [x] Close #210's five named legacy-coordinate UFF stereo-rescue residuals.
   Every returned geometry is finite, bond-sane, and independently checked
@@ -65,6 +65,16 @@ documentation, and required measurement agree.
 - [x] Maintain a capability matrix for RDKit, Open Babel, CDK, sdfrust,
   kekule, and chematic.
 - [x] Exclude COSMolKit from the active comparison scope.
+- [x] Add a two-build Criterion null-control: independently compile `main` and
+  `main-null` and compare them through the same process-level pipeline, so
+  build/codegen variance is measured before a real regression can block.
+- [x] Check in the #70 synthetic calibration contract for +5%, +10%,
+  sub-threshold build noise, and contamination routing; hosted real-run
+  evidence remains a separate gate.
+- [x] Add versioned machine-readable release metadata and a tag-driven GitHub
+  Release attachment. The schema, versioned raw JSON, validator, and historical
+  benchmark separation are checked in under `docs/`, `release-metadata/`, and
+  `scripts/`.
 - [ ] Add a scorecard validator that rejects stale release versions, missing
   corpus/configuration metadata, and claims derived from unsupported rows.
 
@@ -73,6 +83,8 @@ documentation, and required measurement agree.
 - [x] Add file-backed SDF/MOL/XYZ benchmark fixtures and a resumable runner.
 - [x] Keep the RDKit block-parser comparator explicitly separate from
   chematic's file-backed streaming boundary.
+- [x] Record a 2,000-pass SDF/MOL/XYZ streaming lane with zero malformed
+  fixture failures and explicit cross-engine boundary notes.
 - [ ] Extend the common benchmark to V2000/V3000, XYZ, MOL2, CML, CDXML,
   PDB/mmCIF, and gzip, including malformed and oversized inputs.
 - [ ] Add bounded streaming batch APIs with cancellation, backpressure,
@@ -83,16 +95,43 @@ documentation, and required measurement agree.
 ## P2 — Identity and ML primitives
 
 - [x] Make `canonical_smiles_stable_key()` the only recommended dedup/cache
-  path; it fails closed when stability is not proven.
+  path; it fails closed when stability is not proven, including coupled E/Z
+  systems using aromatic direction stashes.
 - [x] Keep native and RDKit-compatible fingerprint modes separate in API names
   and documentation.
 - [x] Exclude Spectrophores and Issue #464's proposed replacement pending
   independent patent/FTO review.
 - [ ] Finish canonical atom-order and E/Z invariance for the supported domain.
+- [x] Prevent ring-closure close-side carrier selection from erasing an E/Z
+  marker; the regression fixture and focused canonical suite are green. This
+  is a bounded residual fix, not completion of the full corpus gate.
+- [x] Resolve coupled E/Z carrier choices jointly across shared physical
+  bonds, with 19 permutation-invariance fixtures; retain fail-closed
+  abstention when no conflict-free assignment is proven.
+- [x] Re-audit the committed 5,000-line carrier corpus with 64 seeded
+  relabelings per coupled molecule: 28 coupled components, all size 2, and 0
+  correspondence failures. The audit now reproducibly exposes 3 residual
+  molecules with two canonical outputs; keep #149 open until their aromatic
+  carrier/stereo traversal is normalized.
+- [x] Add a bounded default-Hückel fused/non-alternant fallback for
+  all-carbon odd/odd envelopes, with azulene regression coverage; keep the
+  broader `RdkitLike` model separately gated.
+- [x] Add a held-out CIP parity gate requiring zero wrong confident labels and
+  zero regressions in the non-phosphorus scope (140/140 current cases), and
+  fail closed for all 15 representation-unstable phosphorus rows.
 - [ ] Freeze descriptor/fingerprint shape, sparse/count, configuration,
   provenance, and explanation contracts.
+- [x] Record a local #372 canonical-symmetry proxy with per-fixture nodes,
+  orbit tests, leaves, pruning, timing, and old/new correctness checks; keep
+  the exact downstream RENKIN witness as an external held-out gate.
+- [x] Add descriptor field provenance and a shared Rust/Python/Node/WASM core
+  descriptor fixture; run the 4,999-molecule MW/TPSA/HBD/HBA/heavy-atom lane.
 - [ ] Add held-out parity reports for Morgan/ECFP, MACCS, topological,
   torsion, descriptors, and standardization across Rust/Python/WASM.
+
+- [x] Make VF2 query expansion prefer mapped-neighbor and higher-degree atoms,
+  preserving exhaustive semantics while resolving the known symmetric PAINS
+  negative within the production visit budget; keep the typed budget outcome.
 
 ## P3 — Portable production surface
 
@@ -113,6 +152,9 @@ documentation, and required measurement agree.
   commands, and bounded semantic Markush/polymer expansion.
 - [x] Preserve agents, coefficients, conditions, atom maps, source mappings,
   and unsupported-richness errors instead of flattening them.
+- [x] Publish the issue #473 downstream capability matrix, including the
+  explicit first-class nucleic-acid/biopolymer non-support boundary and the
+  Rust/Python/WASM/Node entry points.
 - [ ] Expand reaction/SMARTS/medicinal-chemistry coverage only after P0-P3
   gates have current evidence.
 - [ ] Add curated reaction/query precision, recall, invalid-product, timeout,
@@ -127,7 +169,19 @@ documentation, and required measurement agree.
 - [x] Add crystal composition and materials-format foundations without
   conflating periodic structures with molecular bond graphs.
 - [ ] Close MMFF94/UFF typing, charge, parameter, convergence, and stereo gaps
-  with independent oracle and soundness gates.
+  with independent oracle and soundness gates. The six-molecule/32-atom
+  pyridinium/macrocycle residual boundary is pinned in
+  `validation/manifests/mmff94_issue337_pyridinium_sssr_residual.json`; do not
+  replace this with a local atom-type heuristic.
+- [x] Measure the #337 D2-root hypothesis with an all-root diagnostic; the
+  six residual molecules have identical D2/all-root candidate sets, so root
+  enumeration is not treated as the fix.
+- [x] Probe equal-length macrocycle edge exchanges for #337; all 6 residuals
+  yield same-size GF(2)-exchangeable alternatives. The candidate population
+  is intentionally not promoted until a permutation-invariant representative
+  tie-break is validated.
+- [x] Specify the bounded #337 relevant-cycle selector boundary and fail-closed
+  acceptance gates in `docs/rfcs/mmff94_relevant_cycle_selector.md`.
 - [ ] Measure deterministic ensemble diversity, class-level failure rates,
   symmetry-aware RMSD/TFD, and energy sanity.
 
@@ -135,6 +189,8 @@ documentation, and required measurement agree.
 
 - [x] Publish compatibility, provenance, licensing, security, benchmark, and
   migration documents that state unsupported scope explicitly.
+- [x] Record the open-issue triage and distinguish implemented bounded APIs
+  from unresolved correctness, safety, performance, and CI work.
 - [ ] Add stable extension points and a contributor corpus policy covering
   provenance, licensing, minimization, and oracle versioning.
 - [ ] Publish a reproducible compatibility dashboard only after a clean

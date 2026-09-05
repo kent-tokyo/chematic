@@ -178,6 +178,15 @@ jobs:
           ref: main
           path: main
 
+      # Independent second checkout for the Criterion null-control. The
+      # separate target directory forces a second compilation and exercises
+      # build/codegen variance that a same-binary control cannot observe.
+      - name: Checkout main branch (independent null build)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          path: main-null
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
 
@@ -189,6 +198,7 @@ jobs:
             ~/.cargo/git
             pr/target
             main/target
+            main-null/target
           key: ${{ runner.os }}-cargo-criterion-gate-${{ hashFiles('pr/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-criterion-gate-
@@ -203,6 +213,7 @@ jobs:
       - name: Build Criterion benchmarks (no run)
         run: |
           (cd main && cargo bench --workspace --no-run)
+          (cd main-null && CARGO_TARGET_DIR="$PWD/target" cargo bench --workspace --no-run)
           (cd pr && cargo bench --workspace --no-run)
 
       # Process-level redesign (issue #70): the old approach paired one
@@ -257,16 +268,13 @@ jobs:
       # (STAGE2_FAIL_THRESHOLD). A sign-test fail below that threshold is
       # reported as small-effect-inconclusive, not blocking -- a
       # statistically-consistent-but-small difference is expected build
-      # noise, not evidence of a real regression. The same-binary null
-      # control cannot catch this class by construction (it compares main
-      # against itself -- literally one binary -- so it never exercises the
-      # two-independently-compiled-binaries comparison a real no-op PR
-      # produces); a null control that compiled main twice from separate
-      # checkouts would measure the true codegen noise floor, but that is
-      # not implemented here.
+      # noise, not evidence of a real regression. The two-build null control
+      # below now compiles main twice from separate checkouts and measures
+      # this build/codegen noise floor directly.
       #
-      # A same-binary null control (main vs itself, run through the exact
-      # same pipeline) runs once per stage. If IT shows a biased verdict,
+      # A two-build null control (main vs independently compiled main-null,
+      # run through the exact same pipeline) runs once per gate run. If it
+      # shows a biased verdict,
       # the whole run's environment is suspect -- every real "fail" that
       # stage is downgraded to `environment-inconclusive` and never blocks,
       # rather than trusting any individual benchmark's verdict.
@@ -277,19 +285,20 @@ jobs:
 
           bin_path() { pr/scripts/criterion_gate.sh bin-path "$1" "$2" "$3"; }
 
-          # Same-binary null control: main's own binary on both sides, run
-          # through the identical pipeline, once per stage. `parse_smiles_10mol`
-          # is the fastest benchmark in the suite -- cheap to run repeatedly as
-          # a canary.
-          null_control_bin=$(bin_path main chematic-smiles parse_bench)
+          # Two-build null control: independently compiled main checkouts on
+          # both sides, run through the identical pipeline. This is the
+          # fastest benchmark in the suite -- cheap to run as a canary while
+          # still exercising build/codegen variance.
+          null_control_bin_a=$(bin_path main chematic-smiles parse_bench)
+          null_control_bin_b=$(bin_path main-null chematic-smiles parse_bench)
           run_null_control() {
             local n_blocks="$1" order="$2" out="$3"
-            if [ -z "$null_control_bin" ]; then
-              echo "::warning::null control: parse_bench missing on main, skipping contamination check this stage" >&2
+            if [ -z "$null_control_bin_a" ] || [ -z "$null_control_bin_b" ]; then
+              echo "::error::null control: parse_bench missing from one of the independent main builds" >&2
               return 1
             fi
             pr/scripts/criterion_gate.sh run-blocks \
-              "$null_control_bin" "$null_control_bin" "parse_smiles_10mol" \
+              "$null_control_bin_a" "$null_control_bin_b" "parse_smiles_10mol" \
               "$n_blocks" 0.5 1 15 "$order" "$out"
             veridict compare "$out" --metric sign-test --confidence 0.95 --min-effect 0.2 \
               --report-json "${out%.jsonl}_report.json"
@@ -403,7 +412,7 @@ jobs:
           echo "=== null control: exit $null_code ==="
           environment_contaminated=0
           if [ "$null_code" -eq 1 ] || [ "$null_code" -eq 3 ]; then
-            echo "::error::null control (main vs itself) shows a biased verdict -- this run's environment is contaminated. No individual benchmark fail is trustworthy this run."
+            echo "::error::two-build null control (main vs independently compiled main-null) shows a biased verdict -- this run's build/environment noise floor is too high. No individual benchmark fail is trustworthy this run."
             environment_contaminated=1
           fi
 

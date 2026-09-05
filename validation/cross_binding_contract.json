@@ -7,6 +7,23 @@
     {"id": "formic-acid", "smiles": "C(=O)O", "canonical_smiles": "C(=O)O", "heavy_atoms": 3},
     {"id": "acetic-acid", "smiles": "CC(=O)O", "canonical_smiles": "CC(O)=O", "heavy_atoms": 4}
   ],
+  "descriptor_contract": {
+    "schema_version": 1,
+    "semantics": "Values are computed from the parsed molecular graph; floats are compared within the declared tolerance.",
+    "fields": {
+      "molecular_weight": {"unit": "Da", "source": "chematic_chem::molecular_weight", "tolerance": 0.000001},
+      "tpsa": {"unit": "A2", "source": "Ertl 2000 implementation in chematic-chem", "tolerance": 0.000001},
+      "hbd": {"unit": "count", "source": "chematic_chem::hbd_count", "tolerance": 0},
+      "hba": {"unit": "count", "source": "chematic_chem::hba_count", "tolerance": 0},
+      "heavy_atoms": {"unit": "count", "source": "molecular graph explicit atom count", "tolerance": 0}
+    },
+    "fixtures": [
+      {"id": "ethanol", "smiles": "CCO", "molecular_weight": 46.069, "tpsa": 20.23, "hbd": 1, "hba": 1, "heavy_atoms": 3},
+      {"id": "benzene", "smiles": "c1ccccc1", "molecular_weight": 78.114, "tpsa": 0.0, "hbd": 0, "hba": 0, "heavy_atoms": 6},
+      {"id": "aspirin", "smiles": "CC(=O)Oc1ccccc1C(=O)O", "molecular_weight": 180.159, "tpsa": 63.6, "hbd": 1, "hba": 3, "heavy_atoms": 13},
+      {"id": "caffeine", "smiles": "Cn1cnc2c1c(=O)n(c(=O)n2C)C", "molecular_weight": 194.194, "tpsa": 61.82, "hbd": 0, "hba": 6, "heavy_atoms": 14}
+    ]
+  },
   "adversarial": [
     {"id": "smiles-unclosed-ring", "format": "smiles", "input": "C1CC"},
     {"id": "mol-v2000-truncated", "format": "mol", "input": "broken mol block"},

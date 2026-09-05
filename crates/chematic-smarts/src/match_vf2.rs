@@ -325,9 +325,26 @@ fn run_match_recursive(
 // Recursive VF2 search
 // ---------------------------------------------------------------------------
 
-/// Returns the index of the smallest unmapped query atom.
-fn next_unmapped(mapping: &FxHashMap<usize, AtomIdx>, query_len: usize) -> usize {
-    (0..query_len).find(|i| !mapping.contains_key(i)).unwrap() // safe: caller guarantees mapping.len() < query_len
+/// Select the next query atom with the strongest currently usable constraints.
+///
+/// A plain lowest-index walk is correct, but it can defer a highly connected
+/// query atom until after a large symmetric region has already been explored.
+/// Prefer atoms adjacent to the current partial mapping, then higher query
+/// degree.  The final tie-break is the lowest index, so traversal remains
+/// deterministic.  This is only an ordering change: every candidate is still
+/// enumerated and the returned mappings retain their original query indices.
+fn next_unmapped(mapping: &FxHashMap<usize, AtomIdx>, query: &QueryMolecule) -> usize {
+    (0..query.atoms.len())
+        .filter(|i| !mapping.contains_key(i))
+        .max_by_key(|&i| {
+            let mapped_neighbors = query.adj[i]
+                .iter()
+                .filter(|&&(_, neighbor)| mapping.contains_key(&neighbor))
+                .count();
+            // Reverse the index tie-break without requiring a second sort.
+            (mapped_neighbors, query.adj[i].len(), usize::MAX - i)
+        })
+        .unwrap() // safe: caller guarantees mapping.len() < query.atoms.len()
 }
 
 fn match_recursive(
@@ -356,8 +373,8 @@ fn match_recursive(
         return;
     }
 
-    // Pick the next unmapped query atom (smallest index not yet in mapping).
-    let q_next = next_unmapped(mapping, query.atoms.len());
+    // Pick the most constrained unmapped query atom.
+    let q_next = next_unmapped(mapping, query);
 
     // Collect the set of target atoms already used in this mapping so we can
     // enforce injectivity.
@@ -612,8 +629,8 @@ fn has_match_recursive(
         return true;
     }
 
-    // Pick the next unmapped query atom.
-    let q_next = next_unmapped(mapping, query.atoms.len());
+    // Pick the most constrained unmapped query atom.
+    let q_next = next_unmapped(mapping, query);
 
     let used_targets: FxHashSet<AtomIdx> = mapping.values().copied().collect();
 

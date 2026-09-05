@@ -239,7 +239,7 @@ fn compare_molecules<'py>(smiles: Vec<String>, py: Python<'py>) -> PyResult<Boun
 ///
 /// ```python
 /// chematic.doctor()
-/// # chematic v1.0.5
+/// # chematic v1.0.6
 /// # Python 3.13.x  |  darwin arm64
 /// # ...
 /// ```
@@ -261,7 +261,7 @@ fn doctor(py: Python<'_>) {
     println!("  TPSA                  100.0% (4,999-mol, ±0.1 Å²)");
     println!("  LogP (Crippen)        100.0% (4,999-mol, max Δ = 1.1×10⁻¹³)");
     println!("  Stereocenters         99.96% legacy / 98.6% new CIP (4,999-mol)");
-    println!("  CIP R/S/E/Z           99.74% (opt-in accurate engine vs rdCIPLabeler)");
+    println!("  CIP R/S/E/Z           99.64% stable-oracle agreement (P rows fail closed)");
     println!("  ECFP4 throughput      54.7 vs 94.3 µs/mol (v0.18.0/RDKit, 5,000-mol)");
     println!("  WASM bundle           3.30 MB raw / 1.21 MB gzip (v1.0.2 candidate)");
     println!();
