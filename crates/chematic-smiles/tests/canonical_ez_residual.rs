@@ -68,8 +68,15 @@ fn aromatic_stash_residual_outputs_are_fail_closed_variants() {
     for (input, expected_variants) in fixtures {
         let mol = parse(input).expect("fixture parses");
         let output = canonical_smiles(&mol);
-        assert!(expected_variants.contains(&output.as_str()), "unexpected residual output: {output}");
-        assert_eq!(canonical_smiles_stable_key(&mol), None, "residual must stay fail-closed: {input}");
+        assert!(
+            expected_variants.contains(&output.as_str()),
+            "unexpected residual output: {output}"
+        );
+        assert_eq!(
+            canonical_smiles_stable_key(&mol),
+            None,
+            "residual must stay fail-closed: {input}"
+        );
     }
 }
 

@@ -121,7 +121,10 @@ fn edge_exchange_same_size_cycles(
 
 fn ring_bonds(mol: &chematic_core::Molecule, ring: &[AtomIdx]) -> BTreeSet<BondIdx> {
     (0..ring.len())
-        .filter_map(|i| mol.bond_between(ring[i], ring[(i + 1) % ring.len()]).map(|(b, _)| b))
+        .filter_map(|i| {
+            mol.bond_between(ring[i], ring[(i + 1) % ring.len()])
+                .map(|(b, _)| b)
+        })
         .collect()
 }
 
@@ -247,14 +250,7 @@ fn enumerate_exact_cycles(
         let mut seen = vec![false; mol.atom_count()];
         seen[raw] = true;
         if dfs(
-            mol,
-            start,
-            start,
-            target_len,
-            &mut path,
-            &mut seen,
-            &mut found,
-            max_cycles,
+            mol, start, start, target_len, &mut path, &mut seen, &mut found, max_cycles,
         ) {
             capped = true;
             break;
@@ -271,12 +267,12 @@ fn main() {
         let all = all_root_candidates(&mol);
         let d2 = d2_root_candidates(&mol);
         let missing_from_d2: BTreeSet<_> = all.difference(&d2).cloned().collect();
-        let base_sets: BTreeSet<_> = base.rings().iter().map(|ring| canonical_atom_set(ring)).collect();
-        let base_macrocycles: Vec<_> = base
+        let base_sets: BTreeSet<_> = base
             .rings()
             .iter()
-            .filter(|ring| ring.len() >= 9)
+            .map(|ring| canonical_atom_set(ring))
             .collect();
+        let base_macrocycles: Vec<_> = base.rings().iter().filter(|ring| ring.len() >= 9).collect();
         let exchanged: BTreeSet<_> = base_macrocycles
             .iter()
             .flat_map(|ring| edge_exchange_same_size_cycles(&mol, ring))
@@ -284,7 +280,9 @@ fn main() {
             .collect();
         let accepted_exchanged: Vec<_> = exchanged
             .iter()
-            .filter(|candidate| accepted_by_existing_symmetrized_contract(&mol, base.rings(), candidate))
+            .filter(|candidate| {
+                accepted_by_existing_symmetrized_contract(&mol, base.rings(), candidate)
+            })
             .map(|candidate| candidate.len())
             .collect();
         let mut exact_cycle_counts = Vec::new();
@@ -297,13 +295,21 @@ fn main() {
                 .collect();
             let accepted = alternatives
                 .iter()
-                .filter(|candidate| accepted_by_existing_symmetrized_contract(&mol, base.rings(), candidate))
+                .filter(|candidate| {
+                    accepted_by_existing_symmetrized_contract(&mol, base.rings(), candidate)
+                })
                 .count();
             let basis_exchange = alternatives
                 .iter()
                 .filter(|candidate| has_basis_exchange(&mol, base.rings(), candidate))
                 .count();
-            exact_cycle_counts.push((ring.len(), cycles.len(), alternatives.len(), accepted, basis_exchange));
+            exact_cycle_counts.push((
+                ring.len(),
+                cycles.len(),
+                alternatives.len(),
+                accepted,
+                basis_exchange,
+            ));
             exact_cycle_capped |= capped;
         }
         let new_same_size: Vec<_> = missing_from_d2
@@ -316,7 +322,10 @@ fn main() {
             d2.len(),
             all.len(),
             missing_from_d2.len(),
-            new_same_size.iter().map(|ring| ring.len()).collect::<Vec<_>>(),
+            new_same_size
+                .iter()
+                .map(|ring| ring.len())
+                .collect::<Vec<_>>(),
             exchanged.iter().map(|ring| ring.len()).collect::<Vec<_>>(),
             accepted_exchanged,
             exact_cycle_counts,
