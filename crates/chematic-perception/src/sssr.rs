@@ -593,6 +593,14 @@ pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
         return base;
     }
 
+    // Keep the opt-in symmetry expansion bounded.  A large number of
+    // shortest-cycle candidates is evidence that this graph needs a more
+    // explicit relevant-cycle model, not a reason to return an arbitrary
+    // partial family.  Fall back to the complete Horton basis below when the
+    // cap is reached; callers therefore never observe a truncated candidate
+    // set (RFC: mmff94_relevant_cycle_selector.md).
+    const MAX_SYMMETRIZED_EXTRA_RINGS: usize = 256;
+
     let base_bonds: Vec<FxHashSet<BondIdx>> = base
         .rings()
         .iter()
@@ -608,9 +616,14 @@ pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
     let base_keys: FxHashSet<Vec<u32>> = base_bonds.iter().map(bond_set_key).collect();
     let mut seen = base_keys.clone();
     let mut rings = base.rings().to_vec();
+    let mut cap_exhausted = false;
     let d2_roots = select_permutation_invariant_d2_roots(mol);
 
     let mut accept_candidate = |candidate: Vec<AtomIdx>| {
+        if rings.len().saturating_sub(base.ring_count()) >= MAX_SYMMETRIZED_EXTRA_RINGS {
+            cap_exhausted = true;
+            return false;
+        }
         let candidate_bonds = ring_bond_set(mol, &candidate);
         let key = bond_set_key(&candidate_bonds);
         if base_keys.contains(&key) || !seen.insert(key) {
@@ -702,6 +715,15 @@ pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
 
     #[allow(clippy::drop_non_drop)]
     drop(accept_candidate);
+    if cap_exhausted
+        || rings
+            .len()
+            .saturating_sub(base.ring_count())
+            .saturating_add(direct_replacements.len())
+            > MAX_SYMMETRIZED_EXTRA_RINGS
+    {
+        return base;
+    }
     for replacement in direct_replacements {
         let key = bond_set_key(&ring_bond_set(mol, &replacement));
         if seen.insert(key)
