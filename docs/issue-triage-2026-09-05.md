@@ -50,6 +50,8 @@ repository retains historical issue references.
 - The Criterion block artifact now persists execution order, UTC start/end timestamps,
   load average, CPU model, and `/proc/stat` steal ticks when available; the local
   contract test asserts these fields without changing baseline/candidate values.
+  Each record is schema version 2 and explicitly identifies one Criterion process
+  point estimate as its measurement unit.
 - `cargo test -p chematic-rxn --offline` — 193 passed.
 - `cargo test -p chematic-mol --lib --offline` — 538 passed.
 - `cargo test -p chematic-smiles --lib ez_shared_carrier --offline` — passed.

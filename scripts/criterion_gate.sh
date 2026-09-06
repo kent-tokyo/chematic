@@ -98,6 +98,8 @@ cmd_run_blocks() {
       --arg finished_at "$finished_at" --arg loadavg "$loadavg" \
       --arg cpu_model "$cpu_model" --arg steal_time "$steal_time" '
       {
+        schema_version: 2,
+        measurement_unit: "criterion_process_point_estimate",
         id: $id,
         baseline: (-(($a1 * $a2) | sqrt)),
         candidate: (-(($b1 * $b2) | sqrt)),

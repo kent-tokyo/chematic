@@ -49,6 +49,9 @@ jq -e '.finished_at | strings and length > 0' <<<"$record" >/dev/null \
 jq -e '.environment | has("loadavg") and has("cpu_model") and has("proc_stat_steal_ticks")' \
   <<<"$record" >/dev/null \
   || { echo "FAIL: environment metadata was not persisted"; exit 1; }
+jq -e '.schema_version == 2 and .measurement_unit == "criterion_process_point_estimate"' \
+  <<<"$record" >/dev/null \
+  || { echo "FAIL: process-level artifact schema metadata was not persisted"; exit 1; }
 
 cmd_run_blocks fast slow bench_name 1 0 0 1 baab "$out"
 record_baab=$(cat "$out")
