@@ -206,15 +206,32 @@ jobs:
       - name: Install veridict
         run: cargo install --git https://github.com/kent-tokyo/veridict --locked --quiet
 
-      # Compile both sides fully before any timing-sensitive run, so on-demand
-      # compilation (which happens before Criterion's clock starts, and so
-      # never lands in sample.json) can't stretch the wall-clock gap between
-      # a benchmark's main and PR measurement.
+      # Compile every benchmark target used below before any timing-sensitive
+      # run, so on-demand compilation (which happens before Criterion's clock
+      # starts, and so never lands in sample.json) cannot stretch the
+      # wall-clock gap between a benchmark's main and PR measurement. Keep this
+      # list scoped to the measured targets: `--workspace --no-run` also
+      # builds unrelated examples and tests and previously made this hosted
+      # calibration job spend its budget in compilation before producing one
+      # measurement.
       - name: Build Criterion benchmarks (no run)
         run: |
-          (cd main && cargo bench --workspace --no-run)
-          (cd main-null && CARGO_TARGET_DIR="$PWD/target" cargo bench --workspace --no-run)
-          (cd pr && cargo bench --workspace --no-run)
+          for checkout in main main-null pr; do
+            for target in \
+              'chematic-smarts:smarts_bench' \
+              'chematic-smiles:parse_bench' \
+              'chematic-fp:ecfp_bench' \
+              'chematic-chem:descriptor_bench' \
+              'chematic-perception:sssr_bench'; do
+              crate="${target%%:*}"
+              bench="${target##*:}"
+              if [ "$checkout" = "main-null" ]; then
+                (cd "$checkout" && CARGO_TARGET_DIR="$PWD/target" cargo bench -p "$crate" --bench "$bench" --no-run)
+              else
+                (cd "$checkout" && cargo bench -p "$crate" --bench "$bench" --no-run)
+              fi
+            done
+          done
 
       # Process-level redesign (issue #70): the old approach paired one
       # Criterion process's ~100 internal batch samples as if they were 100
