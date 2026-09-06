@@ -31,13 +31,9 @@
 //! improvement on issue #277's real-molecule population with zero new
 //! breakage anywhere measured, gross clash and stereo-violation counts do
 //! not regress, wall time is comparable, and quality is atom-order-stable.
-//! Promoted from `pub(crate)` to `pub` on that basis -- **but `generate_coords`
-//! itself, and every production caller that uses it
-//! (`generate_coords_etkdg`, `embed_pipeline_v2`, ...), is deliberately
-//! unchanged.** This module ships as an available, independently-selectable
-//! alternative (RFC §5 Phase 3 option (c)), not a default-behavior switch or
-//! topology-based routing (options (a)/(b)) -- those remain separate,
-//! not-yet-made decisions.
+//! Promoted from `pub(crate)` to `pub` on that basis. The public
+//! `generate_coords` entry point now routes here, while the previous builder
+//! remains crate-private as an internal differential baseline.
 
 use core::f64::consts::PI;
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
@@ -782,12 +778,9 @@ fn place_component_connectivity_ordered(
 /// connectivity-ordered placement engine.
 ///
 /// Same contract as [`crate::dg::generate_coords`] (non-degenerate,
-/// ideal-bond-length-approximating, not physically minimised) -- an
-/// independently-selectable alternative implementation, not the default: no
-/// existing production caller (`generate_coords_etkdg`, `embed_pipeline_v2`,
-/// ...) is routed through this engine. See this module's doc for the
-/// measured comparison against `generate_coords` and the go/no-go criteria
-/// this engine cleared before being made public.
+/// ideal-bond-length-approximating, not physically minimised). This is the
+/// production implementation behind the public entry point; callers may also
+/// select it explicitly when the engine name is useful in diagnostics.
 pub fn generate_coords_connectivity_ordered(mol: &Molecule) -> Coords3D {
     let n = mol.atom_count();
     let mut coords = Coords3D::new_zeroed(n);

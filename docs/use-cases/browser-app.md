@@ -6,9 +6,9 @@ You want to ship a chemistry tool to users who won't install anything — a web 
 
 ## Solution
 
-chematic compiles to WebAssembly at **3.30 MB raw / 1.21 MB gzip** (v1.0.2 candidate,
-measured 2026-09-04 with `wasm-pack 0.13.1` + `wasm-opt 130 -O3`; see the
-[artifact record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-wasm-size.md)) — roughly 2.1× smaller than the
+chematic compiles to WebAssembly at **3.58 MB raw / 1.31 MB gzip** (v1.0.8 candidate,
+measured 2026-09-06 with `wasm-pack 0.13.1` + `wasm-opt 130`; see the
+[artifact record](../../benchmarks/2026-09-06-wasm-size-v1.0.8.md)) — roughly 2.0× smaller than the
 pinned RDKit.js raw-size comparator. No server required: descriptor calculation, fingerprint
 generation, and similarity search run entirely in the browser, offline-capable after first load.
 
@@ -135,10 +135,10 @@ document.getElementById("file-input").addEventListener("change", async (e) => {
 
 | Task | chematic WASM | RDKit.js |
 |------|--------------|----------|
-| Bundle size | 3.30 MB raw / 1.21 MB gzip | 6.91 MB raw (`RDKit_minimal.wasm`; gzip not independently measured) |
+| Bundle size | 3.54 MB raw / 1.29 MB gzip | 6.91 MB raw (`RDKit_minimal.wasm`; gzip not independently measured) |
 
-The chematic bundle was measured 2026-09-04 from the v1.0.2 candidate (see the
-[artifact record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-wasm-size.md)). Per-operation, in-browser timings
+The chematic bundle was measured 2026-09-06 from the v1.0.8 release candidate (see the
+[artifact record](../../benchmarks/2026-09-06-wasm-size-v1.0.8.md)). Per-operation, in-browser timings
 (SMILES parse, ECFP4, Tanimoto)
 previously listed here were never independently reconfirmed and have been removed rather than
 repeated as fact — see [`benchmarks/2026-07-17.md`](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-07-17.md)'s own notes,

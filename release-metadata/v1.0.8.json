@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "product": "chematic",
+  "release": {
+    "version": "1.0.8",
+    "tag": "v1.0.8",
+    "commit": null,
+    "commit_source": "The attached GitHub Release asset is generated from the exact v1.0.8 tag commit.",
+    "released_at": "2026-09-06T00:00:00Z"
+  },
+  "packages": {
+    "rust": {"name": "chematic", "version": "1.0.8", "registry_url": "https://crates.io/crates/chematic/1.0.8"},
+    "python": {"name": "chematic", "version": "1.0.8", "registry_url": "https://pypi.org/project/chematic/1.0.8/"},
+    "npm": {"name": "@kent-tokyo/chematic", "version": "1.0.8", "registry_url": "https://www.npmjs.com/package/@kent-tokyo/chematic/v/1.0.8"}
+  },
+  "wasm": {
+    "artifact": "crates/chematic-wasm/pkg/chematic_wasm_bg.wasm",
+    "measurements": [{
+      "status": "candidate",
+      "release_or_snapshot": "v1.0.8 release candidate",
+      "raw_bytes": 3576000,
+      "compressed_bytes": 1305765,
+      "command": "wasm-pack 0.13.1; wasm-opt 130; gzip -9",
+      "runtime": "macOS arm64",
+      "source": "benchmarks/2026-09-06-wasm-size-v1.0.8.md"
+    }]
+  },
+  "mcp": {"tool_count": 20, "transport": ["stdio"], "network_enabled_tools": ["pubchem_lookup"]},
+  "benchmarks": {"historical": [
+    {"path": "benchmarks/2026-09-05-hotpath-110.md", "status": "historical", "versions": ["v1.0.6 source", "v1.0.7 source"], "commit": "local source A/B; tag commit not applicable to baseline", "corpus": "5,000 SMILES and 365-record SDF fixtures", "hardware": "Apple M4 macOS 26.5.2"}
+  ]},
+  "generated_at": "2026-09-06T00:00:00Z"
+}

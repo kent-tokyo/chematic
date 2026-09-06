@@ -13,10 +13,12 @@
 //!    chosen to approximate ideal bond angles and staggered dihedrals.
 //! 4. Each component is offset along the X axis to avoid overlap.
 //!
-//! [`crate::dg_connectivity_ordered`] is a separate, independently-selectable
-//! placement engine (issues #256/#255) living in its own module -- this
-//! module's own `generate_coords` and its helpers below are completely
-//! unaffected by it and untouched by that engine's own development.
+//! [`crate::dg_connectivity_ordered`] contains the connectivity-ordered
+//! placement engine for issues #256/#255. The public `generate_coords` entry
+//! point routes through that engine; the previous implementation remains as a
+//! crate-private compatibility baseline for differential tests.
+
+#![allow(dead_code)]
 
 use core::f64::consts::PI;
 use std::collections::VecDeque;
@@ -158,13 +160,16 @@ pub(crate) fn connected_components(mol: &Molecule) -> Vec<Vec<AtomIdx>> {
 // Main entry point
 // ---------------------------------------------------------------------------
 
-/// Generate 3D coordinates for all heavy atoms in `mol` using a rule-based
-/// bond-angle-dihedral placement strategy.
-///
-/// The output coordinates are non-degenerate (no two atoms share the same
-/// position) and approximate ideal bond lengths, but are not physically
-/// minimised.
+/// Generate 3D coordinates through the validated connectivity-ordered engine.
+/// The output is non-degenerate and approximates ideal bond lengths, but is
+/// not physically minimised.
 pub fn generate_coords(mol: &Molecule) -> Coords3D {
+    crate::dg_connectivity_ordered::generate_coords_connectivity_ordered(mol)
+}
+
+/// Previous placement implementation retained for internal differential
+/// evaluation and regression diagnosis.
+pub(crate) fn generate_coords_legacy(mol: &Molecule) -> Coords3D {
     let n = mol.atom_count();
     let mut coords = Coords3D::new_zeroed(n);
 
@@ -1010,17 +1015,7 @@ mod tests {
         let n = mol.atom_count();
         assert_eq!(n, 14, "bibenzyl has 14 heavy atoms");
         let coords = generate_coords(&mol);
-        let worst = mol
-            .bonds()
-            .map(|(_, b)| coords.get(b.atom1).distance(&coords.get(b.atom2)))
-            .fold(0.0_f64, f64::max);
-        assert!(
-            worst > 5.0,
-            "expected this known-broken chain-bridged case to still have a grossly \
-             stretched bond (last measured 8.7358 \u{c5}); got worst bond {worst:.4} \u{c5} -- \
-             if this now passes, the chain-bridged ring-island limitation documented above \
-             was fixed and this test should be replaced with a sane-bond-length assertion"
-        );
+        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
     }
 
     #[test]
@@ -1043,18 +1038,7 @@ mod tests {
         let n = mol.atom_count();
         assert_eq!(n, 10, "naphthalene has 10 heavy atoms");
         let coords = generate_coords(&mol);
-        let worst = mol
-            .bonds()
-            .map(|(_, b)| coords.get(b.atom1).distance(&coords.get(b.atom2)))
-            .fold(0.0_f64, f64::max);
-        assert!(
-            worst > 2.0,
-            "expected this known-broken 2-ring fusion case to still have a distorted \
-             bond (last measured 2.2644 \u{c5} vs. ~1.40 \u{c5} ideal aromatic C-C); got \
-             worst bond {worst:.4} \u{c5} -- if this now passes, issue #255's fusion-seam \
-             limitation was fixed and this test should be replaced with an \
-             `assert_bonded_pairs_sane` call instead of deleting it"
-        );
+        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
     }
 
     #[test]
@@ -1070,17 +1054,7 @@ mod tests {
         let n = mol.atom_count();
         assert_eq!(n, 10, "quinoline has 10 heavy atoms");
         let coords = generate_coords(&mol);
-        let worst = mol
-            .bonds()
-            .map(|(_, b)| coords.get(b.atom1).distance(&coords.get(b.atom2)))
-            .fold(0.0_f64, f64::max);
-        assert!(
-            worst > 2.0,
-            "expected this known-broken fused-heterocycle case to still have a distorted \
-             bond (last measured 2.2644 \u{c5}); got worst bond {worst:.4} \u{c5} -- if this \
-             now passes, issue #255's fusion-seam limitation was fixed and this test \
-             should be replaced with an `assert_bonded_pairs_sane` call instead of deleting it"
-        );
+        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
     }
 
     #[test]
@@ -1101,18 +1075,7 @@ mod tests {
         let n = mol.atom_count();
         assert_eq!(n, 14, "phenanthrene has 14 heavy atoms");
         let coords = generate_coords(&mol);
-        let worst = mol
-            .bonds()
-            .map(|(_, b)| coords.get(b.atom1).distance(&coords.get(b.atom2)))
-            .fold(0.0_f64, f64::max);
-        assert!(
-            worst > 3.0,
-            "expected this known-broken angular-fusion case to still have a distorted \
-             bond (last measured 3.3856 \u{c5}); got worst bond {worst:.4} \u{c5} -- if this \
-             now passes, issue #255's fusion-seam limitation was fixed for angular fusion \
-             and this test should be replaced with an `assert_bonded_pairs_sane` call \
-             instead of deleting it"
-        );
+        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
     }
 
     #[test]
@@ -1127,18 +1090,7 @@ mod tests {
         let n = mol.atom_count();
         assert_eq!(n, 16, "pyrene has 16 heavy atoms");
         let coords = generate_coords(&mol);
-        let worst = mol
-            .bonds()
-            .map(|(_, b)| coords.get(b.atom1).distance(&coords.get(b.atom2)))
-            .fold(0.0_f64, f64::max);
-        assert!(
-            worst > 3.5,
-            "expected this known-broken multi-ring-fusion case to still have a distorted \
-             bond (last measured 3.8974 \u{c5}); got worst bond {worst:.4} \u{c5} -- if this \
-             now passes, issue #255's fusion-seam limitation was fixed for multi-ring \
-             fusion and this test should be replaced with an `assert_bonded_pairs_sane` \
-             call instead of deleting it"
-        );
+        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
     }
 
     #[test]
@@ -1155,18 +1107,7 @@ mod tests {
         let n = mol.atom_count();
         assert_eq!(n, 13, "diphenylmethane has 13 heavy atoms");
         let coords = generate_coords(&mol);
-        let worst = mol
-            .bonds()
-            .map(|(_, b)| coords.get(b.atom1).distance(&coords.get(b.atom2)))
-            .fold(0.0_f64, f64::max);
-        assert!(
-            worst > 6.0,
-            "expected this known-broken chain-bridged case (bridge length 1) to still have \
-             a grossly stretched bond (last measured 8.0738 \u{c5}); got worst bond \
-             {worst:.4} \u{c5} -- if this now passes, issue #256's chain-bridged \
-             ring-island limitation was fixed and this test should be replaced with an \
-             `assert_bonded_pairs_sane` call instead of deleting it"
-        );
+        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
     }
 
     #[test]
@@ -1181,18 +1122,7 @@ mod tests {
         let n = mol.atom_count();
         assert_eq!(n, 15, "1,3-diphenylpropane has 15 heavy atoms");
         let coords = generate_coords(&mol);
-        let worst = mol
-            .bonds()
-            .map(|(_, b)| coords.get(b.atom1).distance(&coords.get(b.atom2)))
-            .fold(0.0_f64, f64::max);
-        assert!(
-            worst > 6.0,
-            "expected this known-broken chain-bridged case (bridge length 3) to still have \
-             a grossly stretched bond (last measured 8.9731 \u{c5}); got worst bond \
-             {worst:.4} \u{c5} -- if this now passes, issue #256's chain-bridged \
-             ring-island limitation was fixed and this test should be replaced with an \
-             `assert_bonded_pairs_sane` call instead of deleting it"
-        );
+        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
     }
 
     #[test]
@@ -1205,18 +1135,7 @@ mod tests {
         let n = mol.atom_count();
         assert_eq!(n, 16, "1,4-diphenylbutane has 16 heavy atoms");
         let coords = generate_coords(&mol);
-        let worst = mol
-            .bonds()
-            .map(|(_, b)| coords.get(b.atom1).distance(&coords.get(b.atom2)))
-            .fold(0.0_f64, f64::max);
-        assert!(
-            worst > 6.0,
-            "expected this known-broken chain-bridged case (bridge length 4) to still have \
-             a grossly stretched bond (last measured 8.7060 \u{c5}); got worst bond \
-             {worst:.4} \u{c5} -- if this now passes, issue #256's chain-bridged \
-             ring-island limitation was fixed and this test should be replaced with an \
-             `assert_bonded_pairs_sane` call instead of deleting it"
-        );
+        assert_bonded_pairs_sane(&mol, &coords, 1.0, 1.8);
     }
 
     #[test]

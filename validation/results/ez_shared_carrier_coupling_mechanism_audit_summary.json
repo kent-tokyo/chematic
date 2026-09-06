@@ -64,7 +64,7 @@
     "pinned_pair_converges": true,
     "fresh_relabeling_stable": true,
     "n_relabelings_tested": 64,
-    "conclusion": "CONVERGES on current main (both the 2 pinned spellings and 10 fresh relabelings agree) -- the doc comment's 'does NOT resolve to one canonical string' claim appears STALE, most likely superseded by PR #229's joint-component solver without the comment being revisited. Flagged as a documentation-currency finding; not fixed by this diagnosis-only script (even a comment-only edit to canonical.rs is a change under crates/*/src/**, out of this PR's declared scope)."
+    "conclusion": "CONVERGES on current main (both the 2 pinned spellings and 64 fresh relabelings agree) -- the doc comment's 'does NOT resolve to one canonical string' claim appears STALE, most likely superseded by PR #229's joint-component solver without the comment being revisited. Flagged as a documentation-currency finding; not fixed by this diagnosis-only script (even a comment-only edit to canonical.rs is a change under crates/*/src/**, out of this PR's declared scope)."
   },
   "verdict": {
     "n_coupled_components_measured": 28,

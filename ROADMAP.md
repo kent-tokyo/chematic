@@ -1,7 +1,7 @@
 # chematic roadmap
 
-> Revised 2026-09-05. The current published release is v1.0.7. The workspace
-> version is fixed at 1.0.7 for this release.
+> Revised 2026-09-06. The current release candidate is v1.0.8. The workspace
+> version is fixed at 1.0.8 for this release.
 
 The detailed roadmap and completed gate-by-gate evidence through 2026-09-05 is
 retained in
@@ -22,7 +22,7 @@ part of the active comparison program.
 
 ## Current candidate
 
-Completed on the v1.0.7 release tree:
+Completed on the v1.0.8 release candidate tree:
 
 - [x] Close #210's five named legacy-coordinate UFF stereo-rescue residuals.
   Every returned geometry is finite, bond-sane, and independently checked
@@ -35,6 +35,32 @@ Completed on the v1.0.7 release tree:
 - [x] Reorganize public documentation: concise README files, release-focused
   CHANGELOG, active ROADMAP, corrected publication status, and archived
   detailed development evidence.
+- [x] Close the bounded #246 bridged-bicyclic 2D layout residual: anchored
+  ring placement now evaluates already-placed shared atoms and keeps every
+  named regression bond near `BOND_LEN`; the full depiction test suite passes.
+- [x] Add the bounded `PeriodicStructure::identity_digest()` API over the
+  versioned exact-identity bytes, with a dependency-free SHA-256 implementation
+  and deterministic/change-sensitive regression tests; this remains an exact
+  stored-representation key, not symmetry canonicalization.
+- [x] Implement #478's deterministic `chematic-smiles` batch canonicalization
+  API: lazy input-order results, reusable parser limits, retained source text,
+  and per-record accepted/rejected diagnostics without batch aborts.
+- [x] Add the #478 newline-delimited `BufRead` adapter with the same result
+  contract; parse failures remain ordered records and underlying I/O failures
+  remain explicit `io::Error` items.
+- [x] Add the #478 compiled exact-identity index over
+  `canonical_smiles_stable_key()`, preserving duplicate input positions and
+  fail-closed rejected records.
+- [x] Add a shared #478 batch-canonicalization fixture consumed by Rust,
+  Python, and Node/WASM bindings, including deterministic accepted/rejected
+  ordering and canonical output expectations.
+- [x] Wrap the #478 Python/WASM batch JSON APIs in the common versioned
+  partial-result envelope (`schema_version`, `operation`, `status`, and
+  `record_count`) while retaining per-record diagnostics.
+- [x] Extend the SDF/MOL/XYZ streaming benchmark runner with explicit input,
+  record, line, frame, and atom limits, and record effective limits in JSON;
+  V3000/MOL2/CML/CDXML/mmCIF parser coverage is now included as explicitly
+  materialized one-shot rows; PDB/gzip and true streaming parity remain open.
 
 The performance figures are source-level measurements recorded before the
 release artifact was built; they remain scoped to their named corpus and
@@ -90,6 +116,13 @@ documentation, and required measurement agree.
   PDB/mmCIF, and gzip, including malformed and oversized inputs.
 - [ ] Add bounded streaming batch APIs with cancellation, backpressure,
   deterministic ordering, and an explicit partial-result manifest.
+- [x] Add a versioned partial-result manifest envelope to every CLI batch
+  operation. It preserves input-order records and exposes the operation,
+  status, record count, and effective input limits; cancellation and
+  backpressure remain separate open gates for the streaming API.
+- [x] Harden the Python file-backed SDF batch iterator with bounded batch
+  sizes, explicit cancellation, deterministic progress manifests, and lazy
+  input-order emission; full cross-language streaming parity remains open.
 - [ ] Measure only equivalent operations against installed RDKit and Open
   Babel versions on identical inputs; report sdfrust separately.
 
@@ -122,6 +155,10 @@ documentation, and required measurement agree.
   fail closed for all 15 representation-unstable phosphorus rows.
 - [ ] Freeze descriptor/fingerprint shape, sparse/count, configuration,
   provenance, and explanation contracts.
+- [x] Freeze the core bit-packed ECFP4/MACCS shape, configuration, bit order,
+  and implementation provenance in `validation/cross_binding_contract.json`,
+  with Rust/Python/Node/WASM shape tests. Sparse/count and explanation
+  contracts remain open for the held-out parity phase.
 - [x] Record a local #372 canonical-symmetry proxy with per-fixture nodes,
   orbit tests, leaves, pruning, timing, and old/new correctness checks; keep
   the exact downstream RENKIN witness as an external held-out gate.
@@ -196,8 +233,16 @@ records them.
   published v1.0 boundary.
 - [ ] Make Rust, Python, Node, and WASM consume one fixture schema and one
   versioned expected-result manifest for every shared stable operation.
+- [x] Extend the shared versioned manifest to cover the core ECFP4/MACCS
+  fingerprint shapes and configurations across Rust, Python, and Node/WASM.
+- [x] Add versioned deterministic exact-identity serialization for
+  `PeriodicStructure`, preserving validated lattice/site/species/occupancy and
+  label data without introducing a digest dependency.
 - [ ] Publish current clean-install, cold-start, throughput, peak-memory, and
   WASM-size evidence with explicit platform/configuration metadata.
+- [x] Publish the v1.0.8 WASM-size snapshot with toolchain, target, digest, and
+  reproduction metadata; clean-install, cold-start, throughput, and
+  peak-memory evidence remain separate open lanes.
 - [ ] Extend browser and agent adversarial cases for cancellation, malformed
   records, limits, and stable JSON errors.
 

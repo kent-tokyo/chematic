@@ -7,7 +7,7 @@ the repository's [`benchmarks/`](https://github.com/kent-tokyo/chematic/tree/mai
 
 ## Current status
 
-The published release is **v1.0.7**. The newest hot-path measurements were
+The release candidate is **v1.0.8**. The newest hot-path measurements were
 recorded on the v1.0.6-to-v1.0.7 source comparison and remain source-level evidence;
 they must not be generalized beyond their named corpus and configuration.
 
@@ -62,15 +62,16 @@ have separate contracts in [`compatibility-scope.md`](compatibility-scope.md).
 
 ## Artifact size
 
-The optimized v1.0.2-candidate WASM artifact was measured at **3.30 MB raw /
-1.21 MB gzip** with `wasm-pack 0.13.1` and `wasm-opt 130 -O3`. This is a dated
-artifact measurement, not a permanent bundle-size guarantee. Exact hashes and
-commands are in the [WASM artifact record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-wasm-size.md).
+The optimized v1.0.8 WASM artifact was measured at **3.58 MB raw / 1.31 MB
+gzip** with `wasm-pack 0.13.1` and `wasm-opt 130`. This is a dated artifact
+measurement, not a permanent bundle-size guarantee. Exact hashes and commands
+are in the [WASM artifact record](../benchmarks/2026-09-06-wasm-size-v1.0.8.md).
 
 ## Reproduction index
 
 | Record | Purpose |
 |---|---|
+| [2026-09-06 WASM v1.0.8](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-06-wasm-size-v1.0.8.md) | Release-candidate artifact size, digest, and reproduction commands |
 | [2026-09-05 hot paths](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-05-hot-path-follow-up.md) | Fixed-version source A/B for canonical and SDF |
 | [2026-09-04 RDKit/Open Babel](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-rdkit-openbabel.md) | In-process and CLI comparisons kept separate |
 | [2026-09-04 canonical](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-canonical-fast-path.md) | Two 5,000-molecule canonical runs |

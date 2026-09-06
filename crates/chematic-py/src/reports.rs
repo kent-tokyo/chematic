@@ -263,7 +263,7 @@ fn doctor(py: Python<'_>) {
     println!("  Stereocenters         99.96% legacy / 98.6% new CIP (4,999-mol)");
     println!("  CIP R/S/E/Z           99.64% stable-oracle agreement (P rows fail closed)");
     println!("  ECFP4 throughput      54.7 vs 94.3 µs/mol (v0.18.0/RDKit, 5,000-mol)");
-    println!("  WASM bundle           3.30 MB raw / 1.21 MB gzip (v1.0.2 candidate)");
+    println!("  WASM bundle           3.54 MB raw / 1.29 MB gzip (v1.0.7, measured 2026-09-06)");
     println!();
     println!("Feature stability:");
     println!("  Stable      SMILES · MW/HBA/HBD/TPSA/LogP · ECFP4/MACCS · SDF/MOL · SMARTS");

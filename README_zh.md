@@ -16,9 +16,9 @@
 **默认快速，设计安全的化学信息学库。**  
 默认纯 Rust · 可选原生 InChI C FFI · Python · WebAssembly · [官方网站](https://chematic.io/) · [在线演示](https://kent-tokyo.github.io/chematic/playground/)
 
-### v1.0.7 范围
+### v1.0.8 范围
 
-v1.0.7 保持 v1.0.0 的 bounded 兼容性边界，并加入 typed reaction document、
+v1.0.8 保持 v1.0.0 的 bounded 兼容性边界，并加入 typed reaction document、
 document-level CDXML 编辑、显式且 bounded 的 Markush/polymer 展开、晶体组成汇总、
 更安全的 UFF rescue，以及 canonical/SDF 热路径优化。完整任意结构 CDXML 编辑、
 复杂拓扑 expansion、完整 RDKit `RWMol` 与完整 ETKDG/MMFF94 parity 仍不支持。
@@ -29,7 +29,7 @@ Spectrophores 在 patent/FTO 状态得到独立确认前已从 Rust/Python API �
 | | chematic | RDKit (Python) | RDKit.js (WASM) |
 |---|---|---|---|
 | **快速上手** | `pip install chematic` | `pip install rdkit`（官方预编译 wheel）或 conda | `npm install @rdkit/rdkit`，无 Python 绑定 |
-| **浏览器包体积** | **raw 3.30 MB / gzip 1.21 MB** | 不适用（Python/C++ 库） | raw 6.91 MB* |
+| **浏览器包体积** | **raw 3.58 MB / gzip 1.31 MB** | 不适用（Python/C++ 库） | raw 6.91 MB* |
 | **ECFP4批量** | **54.7 µs/mol** | 94.3 µs/mol | — |
 | **Canonical SMILES** | **24.95 / 18.27 µs/mol** | 25.58 / 26.82 µs/mol | — |
 | **SDF graph read / serialization-only write** | **9.48 / 7.62 µs/mol** | 99.96 / 79.54 µs/mol | — |
@@ -41,13 +41,13 @@ Spectrophores 在 patent/FTO 状态得到独立确认前已从 Rust/Python API �
 
 canonical/SDF 行是 2026-09-04 macOS arm64 的中位数，仅适用于所记录的语料和
 操作边界。参阅[基准测试详情](https://kent-tokyo.github.io/chematic/benchmark/)。
-chematic WASM 包体积于 2026-09-04 使用 `wasm-pack 0.13.1` + `wasm-opt 130 -O3`
-从 v1.0.2 发布候选构建并测量：**raw 3.30 MB**（**gzip 1.21 MB**）。固定的历史比较项为
+chematic WASM 包体积于 2026-09-06 使用 `wasm-pack 0.13.1` + `wasm-opt 130`
+从 v1.0.8 release candidate 构建并测量：**raw 3.58 MB**（**gzip 1.31 MB**）。固定的历史比较项为
 RDKit.js **6.91 MB**
 （`@rdkit/rdkit@2025.3.4-1.0.0` 的 `RDKit_minimal.wasm`，经 unpkg.com 确认）· Indigo（Ketcher
 构建版）**11.24 MB**（`indigo-ketcher@1.45.1` 的主 `.wasm`，经 jsDelivr 确认）—— 以 raw 对 raw
 比较，chematic 目前比 RDKit.js 小约 2.1 倍，比 Indigo 的 Ketcher 构建版小约 3.8 倍。
-详见 [artifact 记录](benchmarks/2026-09-04-wasm-size.md)。
+详见 [v1.0.8 artifact 记录](benchmarks/2026-09-06-wasm-size-v1.0.8.md)。
 
 **功能成熟度一览：**
 
@@ -65,7 +65,7 @@ RDKit.js **6.91 MB**
 
 **适合使用 chematic 的场景：**
 
-- 需要在浏览器中运行化学计算（WASM，1.21 MB gzip，无需服务器）
+- 需要在浏览器中运行化学计算（WASM，1.29 MB gzip，无需服务器）
 - 需要纯 Rust 技术栈，不依赖 C++ 工具链
 - 部署到难以安装或不支持 RDKit 的环境（Cloudflare Workers、Lambda、嵌入式设备 ——
   RDKit 本身已提供官方 `pip install rdkit` wheel，但仍需标准 CPython 环境）
@@ -171,7 +171,7 @@ chematic 提供用于本地AI代理集成的 **MCP（模型上下文协议）服
 
 常用化学核心采用safe Rust，公开的非可信输入路径具有有限默认值与typed error。`native-inchi`是使用IUPAC InChI C library的显式opt-in FFI例外；依赖crate自身的unsafe code属于单独边界。详见[SECURITY](SECURITY.md)。
 
-记录的v0.18.0 ECFP4批处理中位数，在同一5,000分子语料与Apple M4环境下为54.7 µs/mol，RDKit为94.3 µs/mol。v1.0.2候选WASM artifact为3.30 MB raw / 1.21 MB gzip。两者均为固定日期与条件的测量，不是普遍性能保证。
+历史v0.18.0 ECFP4批处理中位数，在同一5,000分子语料与Apple M4环境下为54.7 µs/mol，v1.0.8候选WASM artifact为3.58 MB raw / 1.31 MB gzip。两者均为固定日期与条件的测量，不是普遍性能保证。
 
 ## 比较原则
 
@@ -188,7 +188,7 @@ chematic 提供用于本地AI代理集成的 **MCP（模型上下文协议）服
 
 ## JavaScript / TypeScript（WebAssembly）
 
-**1.21 MB gzip — 与 RDKit.js 的 raw WASM 相比约小 2.3 倍。** 无需 Emscripten 或 cmake，可直接在浏览器和 Node.js 中使用。
+**1.31 MB gzip — 与 RDKit.js 的 raw WASM 相比约小 2.0 倍。** 无需 Emscripten 或 cmake，可直接在浏览器和 Node.js 中使用。
 
 ```sh
 npm install @kent-tokyo/chematic
@@ -235,7 +235,7 @@ const picks = JSON.parse(maxmin_picks_ecfp4_json('["CC","c1ccccc1","CCO","CCCC"]
 
 **未发布:** 解决 #210 的legacy UFF stereo rescue残差，并继续优化canonical SMILES与SDF hot path。固定条件的测量记录在[benchmarks](benchmarks/)中。
 
-**v1.0.7（2026-09-05）:** 增加 descriptor provenance 与 Rust/Python/Node/WASM 共用契约，强化 fused/non-alternant aromaticity 与 held-out CIP 边界，并将 #149/#337 残差固定为 fail-closed 或诊断专用。v1.0.5 的功能仍包含在当前发布中。Spectrophores 在完成独立 patent/FTO 审查前不属于公共 API。
+**v1.0.8（2026-09-06）:** 延续 v1.0.7 的 descriptor provenance 与跨绑定契约，增加 ECFP4/MACCS 形状契约以及 `PeriodicStructure::identity_bytes()` 的确定性 identity 序列化。#149/#337 残差仍固定为 fail-closed 或诊断专用。Spectrophores 在完成独立 patent/FTO 审查前不属于公共 API。
 
 公开发布摘要见[CHANGELOG](CHANGELOG.md)；详细开发记录保存在其中链接的archive。
 

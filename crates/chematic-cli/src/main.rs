@@ -345,6 +345,32 @@ fn batch_lines<'a>(text: &'a str, limits: &BatchLimits) -> Result<Vec<&'a str>, 
     Ok(lines)
 }
 
+/// Add the stable envelope shared by every line-oriented batch command.
+///
+/// Records remain in input order and operation-specific fields remain at the
+/// top level for backwards compatibility. The envelope makes a partial-result
+/// manifest explicit: callers can persist the operation, applied limits, and
+/// completion status without inferring them from record counts.
+fn add_batch_manifest(value: &mut serde_json::Value, operation: &str, limits: &BatchLimits) {
+    let Some(object) = value.as_object_mut() else {
+        return;
+    };
+    object.insert("schema_version".to_string(), serde_json::json!(1));
+    object.insert("operation".to_string(), serde_json::json!(operation));
+    object.insert("status".to_string(), serde_json::json!("complete"));
+    object.insert(
+        "limits".to_string(),
+        serde_json::json!({
+            "max_input_bytes": limits.max_input_bytes,
+            "max_records": limits.max_records,
+            "max_line_bytes": limits.max_line_bytes,
+        }),
+    );
+    if let Some(records) = object.get("records").and_then(serde_json::Value::as_array) {
+        object.insert("record_count".to_string(), serde_json::json!(records.len()));
+    }
+}
+
 fn write_output(path: Option<&PathBuf>, text: &str) -> Result<(), String> {
     if text.len() > MAX_OUTPUT_BYTES {
         return Err(format!(
@@ -633,7 +659,9 @@ fn reaction_similarity_json(reaction_a: &str, reaction_b: &str) -> Result<String
 fn batch_report_json(text: &str, limits: &BatchLimits) -> Result<String, String> {
     let smiles = batch_lines(text, limits)?;
     let refs: Vec<&str> = smiles.clone();
-    let report = chematic_chem::screen_smiles(&refs);
+    let mut report = serde_json::to_value(chematic_chem::screen_smiles(&refs))
+        .map_err(|e| format!("serialize batch report: {e}"))?;
+    add_batch_manifest(&mut report, "report", limits);
     serde_json::to_string(&report).map_err(|e| format!("serialize batch report: {e}"))
 }
 
@@ -662,12 +690,13 @@ fn batch_descriptors_json(text: &str, limits: &BatchLimits) -> Result<String, St
             })),
         }
     }
-    Ok(serde_json::json!({
+    let mut output = serde_json::json!({
         "records": records,
         "valid_count": valid_count,
         "error_count": smiles.len() - valid_count,
-    })
-    .to_string())
+    });
+    add_batch_manifest(&mut output, "descriptors", limits);
+    Ok(output.to_string())
 }
 
 fn batch_fingerprints_json(
@@ -699,13 +728,14 @@ fn batch_fingerprints_json(
             })),
         }
     }
-    Ok(serde_json::json!({
+    let mut output = serde_json::json!({
         "algorithm": algorithm.to_ascii_lowercase(),
         "records": records,
         "valid_count": valid_count,
         "error_count": smiles.len() - valid_count,
-    })
-    .to_string())
+    });
+    add_batch_manifest(&mut output, "fingerprints", limits);
+    Ok(output.to_string())
 }
 
 fn batch_standardize_json(text: &str, limits: &BatchLimits) -> Result<String, String> {
@@ -733,12 +763,13 @@ fn batch_standardize_json(text: &str, limits: &BatchLimits) -> Result<String, St
             })),
         }
     }
-    Ok(serde_json::json!({
+    let mut output = serde_json::json!({
         "records": records,
         "valid_count": valid_count,
         "error_count": smiles.len() - valid_count,
-    })
-    .to_string())
+    });
+    add_batch_manifest(&mut output, "standardize", limits);
+    Ok(output.to_string())
 }
 
 fn batch_similarity_json(
@@ -777,13 +808,14 @@ fn batch_similarity_json(
             })),
         }
     }
-    Ok(serde_json::json!({
+    let mut output = serde_json::json!({
         "algorithm": algorithm.to_ascii_lowercase(),
         "records": records,
         "valid_count": valid_count,
         "error_count": lines.len() - valid_count,
-    })
-    .to_string())
+    });
+    add_batch_manifest(&mut output, "similarity", limits);
+    Ok(output.to_string())
 }
 
 fn batch_substructure_json(text: &str, limits: &BatchLimits) -> Result<String, String> {
@@ -816,12 +848,13 @@ fn batch_substructure_json(text: &str, limits: &BatchLimits) -> Result<String, S
             })),
         }
     }
-    Ok(serde_json::json!({
+    let mut output = serde_json::json!({
         "records": records,
         "valid_count": valid_count,
         "error_count": lines.len() - valid_count,
-    })
-    .to_string())
+    });
+    add_batch_manifest(&mut output, "substructure", limits);
+    Ok(output.to_string())
 }
 
 fn batch_reactions_json(text: &str, limits: &BatchLimits) -> Result<String, String> {
@@ -849,12 +882,13 @@ fn batch_reactions_json(text: &str, limits: &BatchLimits) -> Result<String, Stri
             })),
         }
     }
-    Ok(serde_json::json!({
+    let mut output = serde_json::json!({
         "records": records,
         "valid_count": valid_count,
         "error_count": lines.len() - valid_count,
-    })
-    .to_string())
+    });
+    add_batch_manifest(&mut output, "reactions", limits);
+    Ok(output.to_string())
 }
 
 fn run(cli: Cli) -> Result<(), String> {
@@ -1241,6 +1275,10 @@ mod tests {
             &batch_report_json("CCO\nC1CC\n# comment\nCCN\n", &default_batch_limits()).unwrap(),
         )
         .unwrap();
+        assert_eq!(json["schema_version"], 1);
+        assert_eq!(json["operation"], "report");
+        assert_eq!(json["status"], "complete");
+        assert_eq!(json["record_count"], 3);
         let records = json["records"].as_array().unwrap();
         assert_eq!(records.len(), 3);
         assert_eq!(records[0]["input_index"], 0);
@@ -1259,6 +1297,14 @@ mod tests {
         .unwrap();
         assert_eq!(json["valid_count"], 2);
         assert_eq!(json["error_count"], 1);
+        assert_eq!(json["schema_version"], 1);
+        assert_eq!(json["operation"], "descriptors");
+        assert_eq!(json["status"], "complete");
+        assert_eq!(json["record_count"], 3);
+        assert_eq!(
+            json["limits"]["max_records"],
+            default_batch_limits().max_records
+        );
         let records = json["records"].as_array().unwrap();
         assert!(records[0]["descriptors"].is_object());
         assert!(records[1]["error"].as_str().is_some());

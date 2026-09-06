@@ -4079,6 +4079,20 @@ mod tests {
         );
     }
 
+    #[test]
+    fn issue149_aromatic_stash_matches_exhaustive_oracle() {
+        for input in [
+            r"CC/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+            r"CCCC(C)/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+            r"COCC/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+        ] {
+            let mol = crate::parser::parse(input).expect("residual parses");
+            let current = canonical_smiles(&mol);
+            let oracle = canonical_smiles_exhaustive_oracle(&mol);
+            assert_eq!(current, oracle, "search/oracle mismatch for {input}");
+        }
+    }
+
     /// White-box probe of the tie-abstain path, and a genuine (not assumed)
     /// finding about why it cannot be exercised through a size-2 component
     /// -- the ONLY size ever observed in real molecules (measured, see

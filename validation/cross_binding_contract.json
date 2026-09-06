@@ -1,6 +1,15 @@
 {
   "schema_version": 1,
   "description": "Shared Rust/Python/Node/WASM contract fixtures for parse, canonical SMILES, and heavy-atom invariants.",
+  "batch_canonicalization_contract": {
+    "schema_version": 1,
+    "inputs": ["OCC", "C1CC", "CCN"],
+    "expected": [
+      {"input_index": 0, "input": "OCC", "status": "accepted", "canonical_smiles": "C(C)O"},
+      {"input_index": 1, "input": "C1CC", "status": "rejected"},
+      {"input_index": 2, "input": "CCN", "status": "accepted", "canonical_smiles": "C(C)N"}
+    ]
+  },
   "fixtures": [
     {"id": "ethanol-order-variant", "smiles": "OCC", "canonical_smiles": "C(C)O", "heavy_atoms": 3},
     {"id": "benzene-kekule-context", "smiles": "c1ccccc1", "canonical_smiles": "c1ccccc1", "heavy_atoms": 6},
@@ -22,6 +31,36 @@
       {"id": "benzene", "smiles": "c1ccccc1", "molecular_weight": 78.114, "tpsa": 0.0, "hbd": 0, "hba": 0, "heavy_atoms": 6},
       {"id": "aspirin", "smiles": "CC(=O)Oc1ccccc1C(=O)O", "molecular_weight": 180.159, "tpsa": 63.6, "hbd": 1, "hba": 3, "heavy_atoms": 13},
       {"id": "caffeine", "smiles": "Cn1cnc2c1c(=O)n(c(=O)n2C)C", "molecular_weight": 194.194, "tpsa": 61.82, "hbd": 0, "hba": 6, "heavy_atoms": 14}
+    ]
+  },
+  "fingerprint_contract": {
+    "schema_version": 1,
+    "semantics": "Byte arrays are bit-packed with the least-significant bit first; shape and configuration are stable across bindings.",
+    "operations": {
+      "ecfp4": {
+        "source": "chematic_fp::ecfp",
+        "representation": "bit-packed bytes",
+        "bits": 2048,
+        "bytes": 256,
+        "bit_order": "LSB-first",
+        "sparse_counts": false,
+        "configuration": {"radius": 2, "nbits": 2048, "use_chirality": false, "use_double_fold": false}
+      },
+      "maccs": {
+        "source": "chematic_fp::maccs",
+        "representation": "bit-packed bytes",
+        "bits": 166,
+        "bytes": 21,
+        "bit_order": "LSB-first",
+        "sparse_counts": false,
+        "configuration": {"keys": 166}
+      }
+    },
+    "fixtures": [
+      {"id": "ethanol", "smiles": "CCO"},
+      {"id": "benzene", "smiles": "c1ccccc1"},
+      {"id": "aspirin", "smiles": "CC(=O)Oc1ccccc1C(=O)O"},
+      {"id": "caffeine", "smiles": "Cn1cnc2c1c(=O)n(c(=O)n2C)C"}
     ]
   },
   "adversarial": [

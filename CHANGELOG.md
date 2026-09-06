@@ -1,8 +1,8 @@
 # Changelog
 
 This file records public releases and the current unreleased changes to
-`chematic`. Detailed development notes are retained in
-[`docs/archive/detailed-development-history.md`](docs/archive/detailed-development-history.md).
+`chematic`. Historical roadmap and audit notes are retained in
+[`docs/archive/README.md`](docs/archive/README.md).
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -10,6 +10,22 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 ## [Unreleased]
 
 No unreleased changes.
+
+## [1.0.8] - 2026-09-06
+
+- Added a versioned cross-binding fingerprint contract for core ECFP4 and
+  MACCS outputs, including bit width, packed-byte shape, bit order,
+  configuration, sparse/count semantics, and implementation provenance.
+- Added Rust, Python, and Node/WASM contract tests for the shared fingerprint
+  shape and non-empty output boundary. Held-out value parity and explanation
+  contracts remain separate follow-up gates.
+- Added `PeriodicStructure::identity_bytes()` with a versioned deterministic
+  binary representation for exact cache keys and content-addressed storage.
+  The representation preserves validated lattice/site/species/occupancy and
+  label data without adding a digest dependency.
+
+- Updated the release documentation and package metadata to the v1.0.8
+  publication boundary.
 
 ## [1.0.7] - 2026-09-05
 
@@ -194,7 +210,8 @@ The authoritative list of published tags and release artifacts is the
 historical implementation notes remain available in the archived detailed
 history and Git history.
 
-[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.7...HEAD
+[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.8...HEAD
+[1.0.8]: https://github.com/kent-tokyo/chematic/compare/v1.0.7...v1.0.8
 [1.0.7]: https://github.com/kent-tokyo/chematic/compare/v1.0.6...v1.0.7
 [1.0.6]: https://github.com/kent-tokyo/chematic/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/kent-tokyo/chematic/compare/v1.0.4...v1.0.5

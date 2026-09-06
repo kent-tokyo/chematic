@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RELEASE_VERSION = "1.0.7"
+RELEASE_VERSION = "1.0.8"
 DOCS = (
     ROOT / "README.md",
     ROOT / "README_ja.md",

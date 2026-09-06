@@ -151,14 +151,34 @@ pub fn iter_sdf(path: &str) -> PyResult<SdfFileIter> {
 ///     for batch in chematic.iter_sdf_batched("large.sdf", batch_size=1000):
 ///         smiles = [r.smiles for r in batch]
 ///         descs = chematic.bulk.descriptors(smiles)
+///
+///     stream = chematic.iter_sdf_batched("large.sdf", batch_size=1000)
+///     batch = next(stream, None)
+///     stream.cancel()                 # stop before reading another batch
+///     print(stream.manifest_json())    # deterministic progress/status JSON
 #[pyfunction]
 #[pyo3(signature = (path, batch_size=1000))]
 pub fn iter_sdf_batched(path: &str, batch_size: usize) -> PyResult<SdfBatchIter> {
+    if batch_size == 0 {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "batch_size must be greater than zero",
+        ));
+    }
+    const MAX_BATCH_SIZE: usize = 10_000;
+    if batch_size > MAX_BATCH_SIZE {
+        return Err(pyo3::exceptions::PyValueError::new_err(format!(
+            "batch_size exceeds maximum ({MAX_BATCH_SIZE})"
+        )));
+    }
     let file = std::fs::File::open(path)
         .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
     Ok(SdfBatchIter {
         inner: chematic_mol::SdfFileReader::new(std::io::BufReader::new(file)),
         batch_size,
+        cancelled: false,
+        exhausted: false,
+        records_emitted: 0,
+        batches_emitted: 0,
     })
 }
 
@@ -238,6 +258,10 @@ impl SdfFileIter {
 pub struct SdfBatchIter {
     inner: chematic_mol::SdfFileReader<std::io::BufReader<std::fs::File>>,
     batch_size: usize,
+    cancelled: bool,
+    exhausted: bool,
+    records_emitted: usize,
+    batches_emitted: usize,
 }
 
 #[pymethods]
@@ -246,14 +270,48 @@ impl SdfBatchIter {
         slf
     }
 
+    /// Stop reading at the next iterator boundary.
+    ///
+    /// Dropping the iterator also stops reading, but this explicit method lets
+    /// a producer communicate cancellation to a consumer before it releases
+    /// the iterator and makes the state visible through ``manifest_json``.
+    fn cancel(&mut self) {
+        self.cancelled = true;
+    }
+
+    /// Return a deterministic JSON progress manifest for this stream.
+    fn manifest_json(&self) -> String {
+        let status = if self.cancelled {
+            "cancelled"
+        } else if self.exhausted {
+            "complete"
+        } else {
+            "running"
+        };
+        serde_json::json!({
+            "schema_version": 1,
+            "status": status,
+            "batch_size": self.batch_size,
+            "records_emitted": self.records_emitted,
+            "batches_emitted": self.batches_emitted,
+        })
+        .to_string()
+    }
+
     fn __next__(&mut self) -> PyResult<Option<Vec<PySdfRecord>>> {
+        if self.cancelled || self.exhausted {
+            return Ok(None);
+        }
         let mut batch = Vec::with_capacity(self.batch_size);
         loop {
             if batch.len() >= self.batch_size {
                 break;
             }
             match self.inner.next() {
-                None => break,
+                None => {
+                    self.exhausted = true;
+                    break;
+                }
                 Some(Ok(rec)) => {
                     batch.push(PySdfRecord {
                         mol: Mol {
@@ -274,6 +332,8 @@ impl SdfBatchIter {
         if batch.is_empty() {
             Ok(None)
         } else {
+            self.records_emitted += batch.len();
+            self.batches_emitted += 1;
             Ok(Some(batch))
         }
     }

@@ -199,6 +199,12 @@ transform (diagonal `[nx, ny, nz]` only). No spatial-partitioning neighbor-
 search optimization -- the baseline is an exact bounded enumeration, not
 necessarily the fastest possible one.
 
+`PeriodicStructure::identity_bytes()` provides a versioned, deterministic
+exact-identity byte representation for cache keys and content-addressed
+storage. It preserves lattice bits, site/species order, occupancy bits, and
+labels; the version byte is
+`PeriodicStructure::IDENTITY_SERIALIZATION_VERSION`.
+
 `mikiwame` (explainable materials diagnostics) and `gugen` (materials
 synthesis/process planning) are separate downstream projects layered on top
 of this crate; neither is implemented here. Full list:

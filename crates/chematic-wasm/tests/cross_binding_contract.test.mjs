@@ -16,6 +16,22 @@ assert.equal(fixture.schema_version, 1);
 assert.equal(fixture.fixtures.length, 4);
 assert.equal(fixture.descriptor_contract.schema_version, 1);
 assert.equal(fixture.descriptor_contract.fields.tpsa.unit, "A2");
+assert.equal(fixture.fingerprint_contract.schema_version, 1);
+assert.equal(fixture.fingerprint_contract.operations.ecfp4.bytes, 256);
+assert.equal(fixture.fingerprint_contract.operations.maccs.bytes, 21);
+assert.equal(fixture.batch_canonicalization_contract.schema_version, 1);
+
+const batchInputs = fixture.batch_canonicalization_contract.inputs.join("\n");
+const batchManifest = JSON.parse(wasm.canonicalize_smiles_batch_json(batchInputs, "\n"));
+assert.equal(batchManifest.schema_version, 1);
+assert.equal(batchManifest.operation, "canonicalize_smiles");
+assert.equal(batchManifest.status, "complete");
+assert.equal(batchManifest.record_count, fixture.batch_canonicalization_contract.expected.length);
+const batchActual = batchManifest.records;
+assert.deepEqual(
+  batchActual.map(({ error, ...record }) => record),
+  fixture.batch_canonicalization_contract.expected,
+);
 
 for (const expected of fixture.fixtures) {
   const mol = wasm.parse_smiles(expected.smiles);
@@ -31,6 +47,17 @@ for (const expected of fixture.descriptor_contract.fixtures) {
   assert.equal(mol.hbd_count(), expected.hbd, expected.id);
   assert.equal(mol.hba_count(), expected.hba, expected.id);
   assert.equal(mol.heavy_atom_count(), expected.heavy_atoms, expected.id);
+  mol.free();
+}
+
+for (const expected of fixture.fingerprint_contract.fixtures) {
+  const mol = wasm.parse_smiles(expected.smiles);
+  const ecfp4 = wasm.ecfp4_bitvec(mol);
+  const maccs = wasm.maccs_bitvec(mol);
+  assert.equal(ecfp4.length, 256, `${expected.id} ECFP4 shape`);
+  assert.equal(maccs.length, 21, `${expected.id} MACCS shape`);
+  assert.ok(ecfp4.some((byte) => byte !== 0), `${expected.id} ECFP4 non-empty`);
+  assert.ok(maccs.some((byte) => byte !== 0), `${expected.id} MACCS non-empty`);
   mol.free();
 }
 

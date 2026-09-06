@@ -35,3 +35,33 @@ fn shared_parse_and_canonical_contract_matches() {
         );
     }
 }
+
+#[test]
+fn shared_batch_canonicalization_contract_matches() {
+    let document: Value = serde_json::from_str(FIXTURE).expect("fixture JSON must parse");
+    let contract = &document["batch_canonicalization_contract"];
+    assert_eq!(contract["schema_version"], 1);
+    let inputs: Vec<&str> = contract["inputs"]
+        .as_array()
+        .expect("batch inputs")
+        .iter()
+        .map(|value| value.as_str().unwrap())
+        .collect();
+    let actual = chematic_smiles::SmilesBatchCanonicalizer::default().canonicalize(inputs);
+    for (record, expected) in actual.iter().zip(contract["expected"].as_array().unwrap()) {
+        assert_eq!(
+            record.input_index,
+            expected["input_index"].as_u64().unwrap() as usize
+        );
+        match (&record.result, expected["status"].as_str().unwrap()) {
+            (chematic_smiles::BatchCanonicalization::Accepted { canonical_smiles }, "accepted") => {
+                assert_eq!(
+                    canonical_smiles,
+                    expected["canonical_smiles"].as_str().unwrap()
+                )
+            }
+            (chematic_smiles::BatchCanonicalization::Rejected { .. }, "rejected") => {}
+            (result, status) => panic!("unexpected batch result {result:?} for {status}"),
+        }
+    }
+}

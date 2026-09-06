@@ -397,8 +397,15 @@ fn place_ring_system(
             // Find the shared edge: two consecutive atoms in the ring that are both placed.
             let shared_edge = find_shared_edge(ring, placed);
 
-            // Fall back: use the first two placed atoms.
-            let (anchor1, anchor2) = shared_edge.unwrap_or((already_placed[0], already_placed[1]));
+            // A bridged ring can share several already-placed atoms without
+            // sharing a consecutive pair in this ring's traversal order.
+            // Choosing the first two then anchors the regular polygon to a
+            // long diagonal and stretches one or more real bonds. Use the
+            // closest placed pair as the geometric fallback; a true shared
+            // bond is the shortest available pair and this remains
+            // deterministic for equal distances.
+            let (anchor1, anchor2) =
+                shared_edge.unwrap_or_else(|| closest_placed_pair(&already_placed, placed));
 
             // Both anchors are confirmed placed (either from find_shared_edge or already_placed).
             let (Some(p1), Some(p2)) = (placed[anchor1.0 as usize], placed[anchor2.0 as usize])
@@ -436,6 +443,32 @@ fn find_shared_edge(ring: &[AtomIdx], placed: &[Option<Point>]) -> Option<(AtomI
         .map(|w| (w[0], w[1]))
         .chain(std::iter::once((ring[n - 1], ring[0])))
         .find(|&(a, b)| placed[a.0 as usize].is_some() && placed[b.0 as usize].is_some())
+}
+
+fn closest_placed_pair(atoms: &[AtomIdx], placed: &[Option<Point>]) -> (AtomIdx, AtomIdx) {
+    let mut best = (atoms[0], atoms[1]);
+    let mut best_distance = f64::INFINITY;
+    for (i, &a) in atoms.iter().enumerate() {
+        for &b in &atoms[i + 1..] {
+            let (Some(pa), Some(pb)) = (placed[a.0 as usize], placed[b.0 as usize]) else {
+                continue;
+            };
+            let distance = pa.dist(&pb);
+            let pair = if a <= b { (a, b) } else { (b, a) };
+            let best_pair = if best.0 <= best.1 {
+                (best.0, best.1)
+            } else {
+                (best.1, best.0)
+            };
+            if distance < best_distance - 1e-9
+                || ((distance - best_distance).abs() <= 1e-9 && pair < best_pair)
+            {
+                best = (a, b);
+                best_distance = distance;
+            }
+        }
+    }
+    best
 }
 
 /// Place atoms of a ring as a regular polygon centered at the origin.
@@ -499,56 +532,65 @@ fn place_ring_anchored(
     // Apothem: distance from midpoint of an edge to the center of a regular n-gon.
     let apothem = radius * (std::f64::consts::PI / n as f64).cos();
 
-    // Centroid of the *entire* already-placed structure so far (not just this
-    // ring's own anchor atoms). Using only this ring's placed atoms is wrong:
-    // before this ring is placed, its only placed members are the two shared
-    // anchor atoms, whose centroid is always exactly `mid` (the edge
-    // midpoint) — equidistant from both `cand1`/`cand2` by construction, so
-    // that comparison degenerates into an arbitrary tie instead of actually
-    // picking the side away from the existing ring system.
-    let existing_center = centroid_of_placed(placed).unwrap_or(mid);
-
-    // Choose the candidate center farther from the existing ring centroid.
     let cand1 = Point::new(mid.x + perp_x * apothem, mid.y + perp_y * apothem);
     let cand2 = Point::new(mid.x - perp_x * apothem, mid.y - perp_y * apothem);
-    let new_center = if cand1.dist(&existing_center) > cand2.dist(&existing_center) {
-        cand1
-    } else {
-        cand2
-    };
-
-    // Angle from new_center to anchor1.
-    let angle_to_a1 = (p1.y - new_center.y).atan2(p1.x - new_center.x);
-
-    // Determine the angular step direction:
-    // In the ring, going from idx1 to idx2 by +1 step in ring order should correspond to
-    // going from angle_to_a1 to angle_to_a2.  We choose the sign of angle_step
-    // so that the rotation from anchor1 to anchor2 (by 1 ring step) matches the geometry.
     let steps_forward = (idx2 + n - idx1) % n; // steps from idx1 to idx2 in ring order.
-    let angle_to_a2 = (p2.y - new_center.y).atan2(p2.x - new_center.x);
-
-    // Signed angle from a1 to a2 (normalized to -PI..PI).
-    let mut delta = angle_to_a2 - angle_to_a1;
-    while delta > std::f64::consts::PI {
-        delta -= 2.0 * std::f64::consts::PI;
-    }
-    while delta < -std::f64::consts::PI {
-        delta += 2.0 * std::f64::consts::PI;
-    }
-
-    // Expected angular step per ring step (2*PI/n in either direction).
-    // If going steps_forward ring steps gives delta angle, then:
-    //   angle_step = delta / steps_forward  (but might differ slightly from 2PI/n due to
-    //   the fixed radius; we use the sign of delta to pick CW vs CCW).
-    let angle_step = if steps_forward > 0 {
-        if delta >= 0.0 {
-            2.0 * std::f64::consts::PI / n as f64
-        } else {
+    let candidate_geometry = |center: Point| {
+        let angle_to_a1 = (p1.y - center.y).atan2(p1.x - center.x);
+        let angle_to_a2 = (p2.y - center.y).atan2(p2.x - center.x);
+        let mut delta = angle_to_a2 - angle_to_a1;
+        while delta > std::f64::consts::PI {
+            delta -= 2.0 * std::f64::consts::PI;
+        }
+        while delta < -std::f64::consts::PI {
+            delta += 2.0 * std::f64::consts::PI;
+        }
+        let angle_step = if steps_forward > 0 && delta < 0.0 {
             -(2.0 * std::f64::consts::PI / n as f64)
+        } else {
+            2.0 * std::f64::consts::PI / n as f64
+        };
+        (angle_to_a1, angle_step)
+    };
+    let placement_error = |center: Point| {
+        let (angle_to_a1, angle_step) = candidate_geometry(center);
+        ring.iter()
+            .enumerate()
+            .filter_map(|(ring_idx, &atom)| {
+                let actual = placed[atom.0 as usize]?;
+                if atom == anchor1 || atom == anchor2 {
+                    return None;
+                }
+                let steps = (ring_idx + n - idx1) % n;
+                let angle = angle_to_a1 + steps as f64 * angle_step;
+                let expected = Point::new(
+                    center.x + radius * angle.cos(),
+                    center.y + radius * angle.sin(),
+                );
+                Some(expected.dist(&actual))
+            })
+            .sum::<f64>()
+    };
+    let ring_has_extra_anchors = ring
+        .iter()
+        .any(|&atom| atom != anchor1 && atom != anchor2 && placed[atom.0 as usize].is_some());
+    let new_center = if ring_has_extra_anchors {
+        if placement_error(cand1) <= placement_error(cand2) {
+            cand1
+        } else {
+            cand2
         }
     } else {
-        2.0 * std::f64::consts::PI / n as f64
+        // With only the two anchors available, choose the side away from the
+        // existing layout to keep unrelated geometry separated.
+        let existing_center = centroid_of_placed(placed).unwrap_or(mid);
+        if cand1.dist(&existing_center) > cand2.dist(&existing_center) {
+            cand1
+        } else {
+            cand2
+        }
     };
+    let (angle_to_a1, angle_step) = candidate_geometry(new_center);
 
     // Place each unplaced atom.
     for step in 0..n {
@@ -1170,21 +1212,28 @@ mod tests {
         // The originally reported molecule: three separate phenyl-ring
         // substituents on a bridged bicyclic core, all landing on exactly
         // the same coordinates pre-fix (18 of 27 near-neighbor pairs at
-        // distance 0.0). Tier A only (no exact/near coincidence) -- the
-        // bridged core's OWN internal bond lengths have a separate,
-        // pre-existing bug (`find_shared_edge` only handles a 2-atom
-        // shared edge, not the 3-atom-shared case a true bridge produces --
-        // e.g. this molecule's atom5-atom6 bond, a real bond, lands ~108
-        // units apart instead of the expected `BOND_LEN` of 40), out of
-        // scope for this fix, so Tier B/C are not asserted here.
+        // distance 0.0). The bridged core shares a three-atom path between
+        // rings, so placement must use all already-known ring atoms to choose
+        // the correct side of the anchored regular polygon.
         use chematic_smiles::parse;
         let mol = parse("C1CC2CN(CC1N2c1ccccc1)c1cccc(c1)-c1ccccc1").unwrap();
         let layout = compute_layout(&mol);
-        let (min_non_bonded, _min_bonded, _max_bonded) = layout_distance_summary(&mol, &layout);
+        let (min_non_bonded, min_bonded, max_bonded) = layout_distance_summary(&mol, &layout);
         assert!(
             min_non_bonded > 1e-6,
             "no two atoms of unrelated ring systems should land on identical coordinates: \
              min_non_bonded={min_non_bonded}"
+        );
+        assert!(
+            min_bonded > 30.0 && max_bonded < 50.0,
+            "bridged-core bonds should stay near BOND_LEN: min={min_bonded}, max={max_bonded}; bonds={:?}",
+            mol.bonds()
+                .map(|(_, b)| (
+                    b.atom1.0,
+                    b.atom2.0,
+                    layout.get(b.atom1).dist(&layout.get(b.atom2))
+                ))
+                .collect::<Vec<_>>()
         );
     }
 

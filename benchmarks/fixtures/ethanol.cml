@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<molecule xmlns="http://www.xml-cml.org/schema">
+  <atomArray>
+    <atom id="a1" elementType="C" x2="0.0" y2="0.0"/>
+    <atom id="a2" elementType="C" x2="1.5" y2="0.0"/>
+    <atom id="a3" elementType="O" x2="3.0" y2="0.0"/>
+  </atomArray>
+  <bondArray>
+    <bond atomRefs2="a1 a2" order="1"/>
+    <bond atomRefs2="a2 a3" order="1"/>
+  </bondArray>
+</molecule>

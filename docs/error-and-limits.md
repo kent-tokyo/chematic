@@ -232,7 +232,9 @@ true streaming `Iterator`, while both the Python (`parse_lammps_dump_all`)
 and WASM (`lammps_trajectory_to_json`) bindings materialize the whole
 trajectory instead — a documented scope choice. MOL/SDF's `SdfFileReader<R:
 BufRead>` is a true streaming reader too, but this is not currently called
-called out separately. See
+called out separately. Python's `iter_sdf` and `iter_sdf_batched` now expose
+the file-backed reader; the batch iterator has bounded batch sizes, explicit
+cancellation, and a JSON progress manifest. See
 [`language-bindings.md`](language-bindings.md#streaming-vs-materialization-by-language)
 for the full per-format table.
 

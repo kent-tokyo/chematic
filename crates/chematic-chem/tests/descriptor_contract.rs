@@ -51,3 +51,42 @@ fn shared_descriptor_fixture_matches_rust_source_of_truth() {
         );
     }
 }
+
+#[test]
+fn shared_fingerprint_fixture_freezes_shape_and_configuration() {
+    let document: Value = serde_json::from_str(FIXTURE).expect("fixture JSON must parse");
+    let contract = &document["fingerprint_contract"];
+    assert_eq!(contract["schema_version"], 1);
+    assert_eq!(contract["operations"]["ecfp4"]["bits"], 2048);
+    assert_eq!(contract["operations"]["ecfp4"]["bytes"], 256);
+    assert_eq!(
+        contract["operations"]["ecfp4"]["configuration"]["radius"],
+        2
+    );
+    assert_eq!(contract["operations"]["maccs"]["bits"], 166);
+    assert_eq!(contract["operations"]["maccs"]["bytes"], 21);
+
+    for fixture in contract["fixtures"]
+        .as_array()
+        .expect("fingerprint fixtures")
+    {
+        let id = fixture["id"].as_str().unwrap();
+        let smiles = fixture["smiles"].as_str().unwrap();
+        let mol = chematic_smiles::parse(smiles)
+            .unwrap_or_else(|error| panic!("fingerprint fixture {id} must parse: {error}"));
+        let ecfp4 = chematic_fp::ecfp4(&mol);
+        let maccs = chematic_fp::maccs(&mol);
+        assert_eq!(ecfp4.to_bitvecn().bit_width(), 2048, "{id} ECFP4 shape");
+        assert_eq!(
+            maccs.to_bitvecn().bit_width(),
+            2048,
+            "{id} MACCS backing shape"
+        );
+        assert!(ecfp4.popcount() > 0, "{id} ECFP4 must not be empty");
+        assert!(maccs.popcount() > 0, "{id} MACCS must not be empty");
+        assert!(
+            (166..2048).all(|bit| !maccs.get(bit)),
+            "{id} MACCS upper bits"
+        );
+    }
+}

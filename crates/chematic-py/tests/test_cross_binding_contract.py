@@ -17,6 +17,30 @@ def test_shared_fixture_schema_is_stable():
     assert len(_DOCUMENT["fixtures"]) == 4
     assert _DOCUMENT["descriptor_contract"]["schema_version"] == 1
     assert _DOCUMENT["descriptor_contract"]["fields"]["tpsa"]["unit"] == "A2"
+    assert _DOCUMENT["fingerprint_contract"]["schema_version"] == 1
+    assert _DOCUMENT["fingerprint_contract"]["operations"]["ecfp4"]["bytes"] == 256
+    assert _DOCUMENT["fingerprint_contract"]["operations"]["maccs"]["bytes"] == 21
+    assert _DOCUMENT["batch_canonicalization_contract"]["schema_version"] == 1
+
+
+def test_python_binding_matches_shared_batch_canonicalization_contract():
+    contract = _DOCUMENT["batch_canonicalization_contract"]
+    actual = json.loads(chematic.canonicalize_smiles_batch_json(contract["inputs"]))
+    assert actual["schema_version"] == 1
+    assert actual["operation"] == "canonicalize_smiles"
+    assert actual["status"] == "complete"
+    assert actual["record_count"] == len(contract["expected"])
+    observed = []
+    for record in actual["records"]:
+        result = {
+            "input_index": record["input_index"],
+            "input": record["input"],
+            "status": record["status"],
+        }
+        if record["status"] == "accepted":
+            result["canonical_smiles"] = record["canonical_smiles"]
+        observed.append(result)
+    assert observed == contract["expected"]
 
 
 @pytest.mark.parametrize(
@@ -38,6 +62,19 @@ def test_python_binding_matches_shared_fixture(fixture):
     mol = chematic.from_smiles(fixture["smiles"])
     assert mol.smiles == fixture["canonical_smiles"]
     assert mol.heavy_atoms == fixture["heavy_atoms"]
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    _DOCUMENT["fingerprint_contract"]["fixtures"],
+    ids=lambda item: item["id"],
+)
+def test_python_binding_matches_shared_fingerprint_shape(fixture):
+    mol = chematic.from_smiles(fixture["smiles"])
+    assert len(mol.ecfp4()) == 256
+    assert len(mol.maccs()) == 21
+    assert any(mol.ecfp4())
+    assert any(mol.maccs())
 
 
 @pytest.mark.parametrize(

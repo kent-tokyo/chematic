@@ -162,7 +162,7 @@ and enforced correctly on all of them.
 
 ## Bundle Size
 
-The optimized v1.0.2-candidate artifact was measured at **3.30 MB raw / 1.21 MB gzip**. Bundle size depends on features and toolchain; see [`benchmarks/2026-09-04-wasm-size.md`](../../benchmarks/2026-09-04-wasm-size.md) for exact tools, digest, and reproduction steps.
+The optimized v1.0.8 candidate artifact was measured at **3.58 MB raw / 1.31 MB gzip**. Bundle size depends on features and toolchain; see [`benchmarks/2026-09-06-wasm-size-v1.0.8.md`](../../benchmarks/2026-09-06-wasm-size-v1.0.8.md) for exact tools, digest, and reproduction steps.
 
 PNG rasterization (`tiny_skia`) is excluded from the WASM build — use SVG output instead. All SVG depiction APIs remain fully available.
 

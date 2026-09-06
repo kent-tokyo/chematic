@@ -174,7 +174,7 @@ binding.
 
 | Format | Rust | Python | WASM |
 |---|---|---|---|
-| MOL/SDF | `SdfFileReader<R: BufRead>` — true streaming `Iterator` | materializes (no streaming reader bound) | materializes |
+| MOL/SDF | `SdfFileReader<R: BufRead>` — true streaming `Iterator` | `iter_sdf` and `iter_sdf_batched` are file-backed streaming iterators; batches are lazy, cancellable, and expose a progress manifest | materializes |
 | LAMMPS dump/trajectory | `LammpsDumpReader<R: BufRead>` — true streaming `Iterator` | `parse_lammps_dump_all` materializes the whole trajectory as a list (disclosed scope choice, not a silently dropped capability) | `lammps_trajectory_to_json` materializes (same disclosed choice) |
 | Gaussian Cube | `CubeFileReader<R: BufRead>` streams the *input reading* only — the returned `VolumetricGrid.values` is still one fully-materialized `Vec<f64>` (single-dataset format, nothing to iterate across) | via `VolumetricGrid.from_cube()`, materializes | materializes |
 | Other documented formats | no `BufRead`-backed streaming reader type exists | materializes | materializes |

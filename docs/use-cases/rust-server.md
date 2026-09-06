@@ -23,7 +23,7 @@ $ curl -s -X POST http://localhost:3000/descriptors \
 ```toml
 # Cargo.toml
 [dependencies]
-chematic = { version = "1.0.7", features = ["chem", "fp", "smarts"] }
+chematic = { version = "1.0.8", features = ["chem", "fp", "smarts"] }
 axum      = "0.7"
 serde     = { version = "1", features = ["derive"] }
 tokio     = { version = "1", features = ["full"] }
@@ -140,4 +140,4 @@ fn process_sdf(path: &str) -> Vec<DescriptorOutput> {
 - `chematic_chem::{molecular_weight, logp_and_mr, tpsa, hbd_count, ring_bundle}` — descriptor functions
 - `chematic_fp::ecfp4(&mol)` / `tanimoto_bitvec(&fp1, &fp2)` — fingerprints + similarity
 - `chematic_mol::SdfReader` — streaming SDF parser
-- `chematic = { version = "1.0.7", features = ["chem", "fp", "smarts"] }` — minimal feature set for a descriptor API
+- `chematic = { version = "1.0.8", features = ["chem", "fp", "smarts"] }` — minimal feature set for a descriptor API

@@ -528,6 +528,57 @@ pub fn select_rdkit_d2_roots(mol: &Molecule) -> Vec<AtomIdx> {
     roots
 }
 
+/// Select D2 roots for the symmetrized-ring pass without using the first raw
+/// atom in a component as a chemical tie-break.  All minimum-rank roots are
+/// retained when a component is genuinely symmetric; callers must therefore
+/// treat this as a candidate set, not as a single representative.
+fn select_permutation_invariant_d2_roots(mol: &Molecule) -> Vec<AtomIdx> {
+    let ranks = canonical_atom_ranks(mol);
+    let degree2: Vec<bool> = (0..mol.atom_count())
+        .map(|raw| {
+            mol.neighbors(AtomIdx(raw as u32))
+                .filter(|(_, bond)| is_ring_eligible(mol.bond(*bond).order))
+                .count()
+                == 2
+        })
+        .collect();
+    let mut seen = vec![false; mol.atom_count()];
+    let mut roots = Vec::new();
+    for raw in 0..mol.atom_count() {
+        if !degree2[raw] || seen[raw] {
+            continue;
+        }
+        let mut stack = vec![AtomIdx(raw as u32)];
+        let mut component = Vec::new();
+        seen[raw] = true;
+        while let Some(atom) = stack.pop() {
+            component.push(atom);
+            for (neighbor, bond) in mol.neighbors(atom) {
+                let neighbor_i = neighbor.0 as usize;
+                if degree2[neighbor_i]
+                    && is_ring_eligible(mol.bond(bond).order)
+                    && !seen[neighbor_i]
+                {
+                    seen[neighbor_i] = true;
+                    stack.push(neighbor);
+                }
+            }
+        }
+        let min_rank = component
+            .iter()
+            .map(|atom| ranks[atom.0 as usize])
+            .min()
+            .expect("degree-2 component is non-empty");
+        roots.extend(
+            component
+                .into_iter()
+                .filter(|atom| ranks[atom.0 as usize] == min_rank),
+        );
+    }
+    roots.sort_by_key(|atom| (ranks[atom.0 as usize], atom.0));
+    roots
+}
+
 /// Build the symmetrized smallest-ring set from the Horton basis and the
 /// root-centered Figueras candidates.
 ///
@@ -557,7 +608,7 @@ pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
     let base_keys: FxHashSet<Vec<u32>> = base_bonds.iter().map(bond_set_key).collect();
     let mut seen = base_keys.clone();
     let mut rings = base.rings().to_vec();
-    let d2_roots = select_rdkit_d2_roots(mol);
+    let d2_roots = select_permutation_invariant_d2_roots(mol);
 
     let mut accept_candidate = |candidate: Vec<AtomIdx>| {
         let candidate_bonds = ring_bond_set(mol, &candidate);
@@ -668,10 +719,10 @@ pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
     // degenerate fused/bridged system; collapsing them to one representative
     // loses the active ring context needed by MMFF94 aromaticity.
     let mut extras = rings.split_off(base.ring_count());
-    extras.sort_by_key(|ring| basis_exchange_key(mol, ring, &base_bonds));
+    let ranks = canonical_atom_ranks(mol);
+    extras.sort_by_key(|ring| basis_exchange_key(mol, ring, &base_bonds, &ranks));
     rings.extend(extras);
 
-    let ranks = canonical_atom_ranks(mol);
     rings.sort_by_cached_key(|ring| (ring.len(), canonical_cycle_key(ring, &ranks)));
     RingSet(rings)
 }
@@ -701,13 +752,29 @@ fn basis_exchange_key(
     mol: &Molecule,
     candidate: &[AtomIdx],
     base_bonds: &[FxHashSet<BondIdx>],
-) -> Vec<Vec<u32>> {
+    ranks: &[u64],
+) -> Vec<Vec<(u64, u64, u8)>> {
     let candidate_set = ring_bond_set(mol, candidate);
-    let candidate_key = bond_set_key(&candidate_set);
+    let candidate_key = canonical_bond_set_key(mol, &candidate_set, ranks);
     let candidate_len = candidate.len();
-    let mut best: Option<Vec<Vec<u32>>> = None;
+    let mut best: Option<Vec<Vec<(u64, u64, u8)>>> = None;
     for (replace_idx, base_ring) in base_bonds.iter().enumerate() {
         if base_ring.len() != candidate_len {
+            continue;
+        }
+        let rank_rows = base_bonds
+            .iter()
+            .enumerate()
+            .map(|(idx, set)| {
+                let source = if idx == replace_idx {
+                    &candidate_set
+                } else {
+                    set
+                };
+                bond_set_key(source)
+            })
+            .collect::<Vec<_>>();
+        if gf2_rank(&rank_rows) != base_bonds.len() {
             continue;
         }
         let mut rows = base_bonds
@@ -717,19 +784,39 @@ fn basis_exchange_key(
                 if idx == replace_idx {
                     candidate_key.clone()
                 } else {
-                    bond_set_key(set)
+                    canonical_bond_set_key(mol, set, ranks)
                 }
             })
             .collect::<Vec<_>>();
-        if gf2_rank(&rows) != base_bonds.len() {
-            continue;
-        }
         rows.sort_unstable();
         if best.as_ref().is_none_or(|current| rows < *current) {
             best = Some(rows);
         }
     }
     best.unwrap_or_else(|| vec![candidate_key])
+}
+
+/// Canonical, input-order-independent representation of a bond set.
+///
+/// This is used only for ordering alternative basis exchanges. Raw bond
+/// indices are intentionally excluded: they are storage artifacts and would
+/// make symmetrized-ring selection depend on atom/bond insertion order.
+fn canonical_bond_set_key(
+    mol: &Molecule,
+    bonds: &FxHashSet<BondIdx>,
+    ranks: &[u64],
+) -> Vec<(u64, u64, u8)> {
+    let mut key = bonds
+        .iter()
+        .map(|&bidx| {
+            let bond = mol.bond(bidx);
+            let a = ranks[bond.atom1.0 as usize];
+            let b = ranks[bond.atom2.0 as usize];
+            (a.min(b), a.max(b), bond.order.order_int())
+        })
+        .collect::<Vec<_>>();
+    key.sort_unstable();
+    key
 }
 
 fn gf2_rank(rows: &[Vec<u32>]) -> usize {
@@ -1121,6 +1208,36 @@ mod tests {
     fn rdkit_d2_root_selection_collapses_degree2_chains() {
         let roots = select_rdkit_d2_roots(&benzene());
         assert_eq!(roots, vec![AtomIdx(0)]);
+    }
+
+    #[test]
+    fn symmetrized_d2_root_candidates_are_permutation_invariant() {
+        let base = naphthalene();
+        let base_ranks = canonical_atom_ranks(&base);
+        let mut expected: Vec<u64> = select_permutation_invariant_d2_roots(&base)
+            .into_iter()
+            .map(|atom| base_ranks[atom.0 as usize])
+            .collect();
+        expected.sort_unstable();
+
+        let n = base.atom_count();
+        for perm in [(0..n).rev().collect::<Vec<_>>(), {
+            let mut rotated: Vec<usize> = (0..n).collect();
+            rotated.rotate_left(3);
+            rotated
+        }] {
+            let permuted = permute_molecule(&base, &perm);
+            let ranks = canonical_atom_ranks(&permuted);
+            let mut actual: Vec<u64> = select_permutation_invariant_d2_roots(&permuted)
+                .into_iter()
+                .map(|atom| ranks[atom.0 as usize])
+                .collect();
+            actual.sort_unstable();
+            assert_eq!(
+                actual, expected,
+                "D2 root candidate ranks changed: {perm:?}"
+            );
+        }
     }
 
     #[test]
@@ -1561,6 +1678,41 @@ mod tests {
                     orig_sizes, perm_sizes,
                     "{name}: SSSR ring-size multiset changed under atom permutation {perm:?}"
                 );
+            }
+        }
+    }
+
+    #[test]
+    fn symmetrized_sssr_order_is_permutation_invariant() {
+        let cases = [
+            naphthalene(),
+            chematic_smiles::parse("C12C3C4C1C5C4C3C25").expect("cubane SMILES"),
+        ];
+
+        for mol in cases {
+            let ranks = canonical_atom_ranks(&mol);
+            let mut expected: Vec<_> = find_symmetrized_sssr(&mol)
+                .rings()
+                .iter()
+                .map(|ring| (ring.len(), canonical_cycle_key(ring, &ranks)))
+                .collect();
+            expected.sort_unstable();
+
+            let n = mol.atom_count();
+            for perm in [(0..n).rev().collect::<Vec<_>>(), {
+                let mut rotated: Vec<usize> = (0..n).collect();
+                rotated.rotate_left(3.min(n));
+                rotated
+            }] {
+                let permuted = permute_molecule(&mol, &perm);
+                let ranks = canonical_atom_ranks(&permuted);
+                let mut actual: Vec<_> = find_symmetrized_sssr(&permuted)
+                    .rings()
+                    .iter()
+                    .map(|ring| (ring.len(), canonical_cycle_key(ring, &ranks)))
+                    .collect();
+                actual.sort_unstable();
+                assert_eq!(actual, expected, "symmetrized SSSR changed under {perm:?}");
             }
         }
     }

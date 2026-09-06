@@ -234,7 +234,7 @@ perception artifact for a specific fused, macrocyclic ring topology (a
 pyridinium-conjugated exocyclic-amine scaffold) rather than a locally-
 statable atom-typing rule gap — 32/6,693 type-mismatched and 56/6,693
 charge-mismatched atoms remain on the 264-molecule reference corpus. See
-the [detailed development archive](https://github.com/kent-tokyo/chematic/blob/main/docs/archive/detailed-development-history.md)
+the [archived roadmap and audit notes](archive/README.md)
 and the public force-field documentation
 for the full writeup; this page does not re-derive it.
 
@@ -334,10 +334,10 @@ formats" claim.
 **Not applicable to RDKit's core package** — RDKit has no first-party
 Python-style WASM bindings; RDKit.js is a separate community project.
 chematic ships `chematic-wasm` directly from the same Rust source as the
-Python bindings. Measured 2026-09-04 from the v1.0.2 release candidate (see the
-[artifact record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-wasm-size.md)): chematic's WASM bundle is
-**3.30 MB raw / 1.21 MB gzip**, versus RDKit.js's `RDKit_minimal.wasm` at
-**6.91 MB raw** (gzip not independently measured) — about 2.1× smaller on a
+Python bindings. Measured 2026-09-06 from the v1.0.8 release candidate (see the
+[artifact record](../benchmarks/2026-09-06-wasm-size-v1.0.8.md)): chematic's WASM bundle is
+**3.58 MB raw / 1.31 MB gzip**, versus RDKit.js's `RDKit_minimal.wasm` at
+**6.91 MB raw** (gzip not independently measured) — about 2.0× smaller on a
 raw-to-raw basis. See [`format-capabilities.md`](format-capabilities.md)
 for exactly which formats are and are not exposed at the WASM layer (plain
 CIF, notably, is not).

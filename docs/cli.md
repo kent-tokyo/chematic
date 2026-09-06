@@ -194,3 +194,11 @@ per-record error. For example:
 chematic batch-descriptors --max-records 10000 --max-line-bytes 65536 \
   --input molecules.smi
 ```
+
+Every batch command also includes a versioned partial-result envelope while
+retaining its existing top-level operation fields. The envelope contains
+`schema_version`, `operation`, `status`, `record_count`, and the effective
+`limits`. Records remain in input order, and malformed records remain inline
+with their index and error. `status: "complete"` means processing completed
+within the declared bounds; cancellation and backpressure are separate future
+streaming gates and are not implied by this envelope.

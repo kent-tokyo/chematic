@@ -23,6 +23,10 @@ opinion.
   Rust, Python, and Node/WASM contract tests. Standard format support is
   documented in `docs/format-capabilities.md` and does not imply byte-level
   or proprietary compatibility.
+- Core ECFP4 and MACCS fingerprints use the same manifest for packed-byte
+  shape, bit order, configuration, sparse/count semantics, and implementation
+  provenance. This freezes the binding boundary without claiming RDKit value
+  parity; held-out parity and explanations are separate contracts.
 
 ## Explicit exclusions
 

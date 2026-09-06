@@ -19,7 +19,8 @@ living in this crate.
   disorder without a breaking change.
 - `PeriodicStructure`: lattice + sites, `validate()`, coordinate wrapping,
   periodic-neighbor enumeration, diagonal supercell generation, and
-  occupancy-weighted `composition()` summaries.
+  occupancy-weighted `composition()` summaries. It also provides a versioned
+  deterministic exact-identity byte serialization for cache keys.
 - `CompositionSummary`: deterministic atomic-number-ordered element amounts
   per stored cell. Zero-occupancy species remain explicit, and a generated
   supercell reports its expanded amount rather than normalizing to the source

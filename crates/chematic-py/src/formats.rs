@@ -77,6 +77,43 @@ fn from_smiles(smiles: &str) -> PyResult<Mol> {
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
+/// Canonicalize a list of SMILES without aborting on an invalid record.
+///
+/// Returns a JSON array containing `input_index`, `input`, `status`, and
+/// either `canonical_smiles` or `error` for each record. The Rust batch API
+/// remains the source of truth for ordering and parser limits.
+#[pyfunction]
+fn canonicalize_smiles_batch_json(smiles: Vec<String>) -> PyResult<String> {
+    let canonicalizer = chematic_smiles::SmilesBatchCanonicalizer::default();
+    let records = canonicalizer
+        .iter(smiles.iter())
+        .map(|record| match record.result {
+            chematic_smiles::BatchCanonicalization::Accepted { canonical_smiles } => {
+                serde_json::json!({
+                    "input_index": record.input_index,
+                    "input": record.input,
+                    "status": "accepted",
+                    "canonical_smiles": canonical_smiles,
+                })
+            }
+            chematic_smiles::BatchCanonicalization::Rejected { error } => serde_json::json!({
+                "input_index": record.input_index,
+                "input": record.input,
+                "status": "rejected",
+                "error": error,
+            }),
+        });
+    let records = records.collect::<Vec<_>>();
+    serde_json::to_string(&serde_json::json!({
+        "schema_version": 1,
+        "operation": "canonicalize_smiles",
+        "status": "complete",
+        "record_count": records.len(),
+        "records": records,
+    }))
+    .map_err(|error| PyValueError::new_err(error.to_string()))
+}
+
 /// Parse a CXSMILES string and return the molecule with CX metadata.
 ///
 /// Returns a 2-tuple ``(mol, cx)`` where ``cx`` is a dict with:
@@ -2336,6 +2373,7 @@ fn write_atomic_result(result: &Bound<PyDict>) -> PyResult<String> {
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(from_smiles, m)?)?;
+    m.add_function(wrap_pyfunction!(canonicalize_smiles_batch_json, m)?)?;
     m.add_function(wrap_pyfunction!(from_cxsmiles, m)?)?;
     m.add_function(wrap_pyfunction!(from_condensed, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol_block, m)?)?;

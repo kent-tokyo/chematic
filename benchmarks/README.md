@@ -6,6 +6,8 @@ Periodic performance snapshots. Each file is a date-stamped record of throughput
 
 | Date | Version | Notes |
 |------|---------|-------|
+| [2026-09-06 WASM artifact](2026-09-06-wasm-size-v1.0.7.md) | v1.0.7 tag | Optimized WASM raw/gzip size, SHA-256, toolchain, target, and reproduction command |
+| [2026-09-06 WASM v1.0.8 artifact](2026-09-06-wasm-size-v1.0.8.md) | v1.0.8 release candidate | Optimized WASM raw/gzip size, SHA-256, toolchain, target, and reproduction command |
 | [2026-09-05 hot-path 1.10x gate](2026-09-05-hotpath-110.md) | v1.0.6 local source | Seven alternating A/B pairs: canonical 1.176x, SDF read 1.180x, reused-buffer write 1.419x; parse 1.034x remains below target; exact-output checks and load caveats |
 | [2026-09-05 descriptor/streaming](2026-09-05-descriptor-streaming.md) | v1.0.6 release source | Shared descriptor provenance and Rust/Python/Node/WASM fixture contract; 4,999-molecule core parity; 2,000-pass SDF/MOL/XYZ streaming evidence |
 | [2026-09-05 prepared index](2026-09-05-prepared-index.md) | v1.0.6 local source | Exact reusable fingerprint index; 7.30x repeated-query speedup on the pinned ten-molecule fixture |

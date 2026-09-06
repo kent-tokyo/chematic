@@ -166,6 +166,54 @@ pub fn screen_smiles_json(smiles_batch: &str, delimiter: &str) -> String {
         .unwrap_or_else(|_| "{\"error\": \"JSON serialization failed\"}".to_string())
 }
 
+/// Canonicalize a bounded delimiter-separated SMILES batch.
+///
+/// Each result retains its input index and original text. Invalid records are
+/// returned inline with `status: "rejected"`; later records are still
+/// processed in deterministic input order.
+#[wasm_bindgen]
+pub fn canonicalize_smiles_batch_json(
+    smiles_batch: &str,
+    delimiter: &str,
+) -> Result<String, JsValue> {
+    let smiles_vec = split_bounded_batch(smiles_batch, delimiter, "smiles_batch")?;
+    let canonicalizer = chematic_smiles::SmilesBatchCanonicalizer::default();
+    let output: Vec<serde_json::Value> = canonicalizer
+        .iter(smiles_vec)
+        .map(|record| match record.result {
+            chematic_smiles::BatchCanonicalization::Accepted { canonical_smiles } => {
+                serde_json::json!({
+                    "input_index": record.input_index,
+                    "input": record.input,
+                    "status": "accepted",
+                    "canonical_smiles": canonical_smiles,
+                })
+            }
+            chematic_smiles::BatchCanonicalization::Rejected { error } => serde_json::json!({
+                "input_index": record.input_index,
+                "input": record.input,
+                "status": "rejected",
+                "error": error,
+            }),
+        })
+        .collect();
+    let manifest = serde_json::json!({
+        "schema_version": 1,
+        "operation": "canonicalize_smiles",
+        "status": "complete",
+        "record_count": output.len(),
+        "records": output,
+    });
+    let json = serde_json::to_string(&manifest)
+        .map_err(|error| JsValue::from_str(&format!("JSON serialization failed: {error}")))?;
+    if json.len() > WORKFLOW_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str(
+            "batch result exceeds maximum output size",
+        ));
+    }
+    Ok(json)
+}
+
 /// Generate 3D coordinates from SMILES (raw distance geometry, no minimization).
 /// Returns PDB format string with atoms positioned in 3D space.
 ///

@@ -16,7 +16,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_METADATA = ROOT / "release-metadata" / "v1.0.7.json"
+DEFAULT_METADATA = ROOT / "release-metadata" / "v1.0.8.json"
 BAD_STATUSES = {"unsupported", "failure", "failed", "not_measured", "missing"}
 GOOD_STATUSES = {"ok", "supported", "match"}
 

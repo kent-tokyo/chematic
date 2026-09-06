@@ -4,9 +4,9 @@
 
 | Version | Supported | Status |
 |---|---|---|
-| v1.0.7 | Yes | Current release |
-| v1.0.6 | Security fixes only | Upgrade to v1.0.7 is recommended |
-| v1.0.0-v1.0.5 | Security fixes only | Upgrade to v1.0.7 is recommended |
+| v1.0.8 | Yes | Current release |
+| v1.0.7 | Security fixes only | Upgrade to v1.0.8 is recommended |
+| v1.0.0-v1.0.6 | Security fixes only | Upgrade to v1.0.8 is recommended |
 | v0.89.0 | Security fixes only | Previous published release |
 | Earlier versions | No | End of life |
 

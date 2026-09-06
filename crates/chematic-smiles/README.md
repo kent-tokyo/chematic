@@ -6,6 +6,7 @@ OpenSMILES parser and writer for Rust. Parses arbitrary SMILES strings into a mo
 
 - **SMILES parsing**: read OpenSMILES syntax (aromatic, charges, bonds, isotopes, stereo)
 - **Canonical SMILES**: deterministic round-trip generation with sorted atom ordering
+- **Deterministic batches**: lazy `SmilesBatchCanonicalizer` results retain input order and per-record parse errors
 - **Stereo chemistry**: Up/Down bonds for 3D chirality, E/Z double bonds
 - **Aromaticity perception**: automatic aromatic ring detection (Hückel 4n+2)
 - **Hydrogen handling**: implicit/explicit hydrogens, valence checks
@@ -39,6 +40,11 @@ for (_bond_idx, bond) in mol.bonds() {
 
 - `parse(smiles: &str) -> Result<Molecule, ParseError>` — parse SMILES string
 - `canonical_smiles(mol: &Molecule) -> String` — generate canonical SMILES
+- `SmilesBatchCanonicalizer` — lazily canonicalize an iterator without aborting on malformed records
+- `SmilesBatchCanonicalizer::reader` — lazily consume newline-delimited SMILES from any `BufRead`
+- `SmilesBatchCanonicalizer::build_identity_index` — build a stable-key index while retaining rejected records
+- `BatchCanonicalRecord` / `BatchCanonicalization` — input index, original text, and accepted/rejected result
+- `SmilesIdentityIndex` — deterministic duplicate-preserving exact-identity lookup
 - `Molecule` — molecular graph with atoms, bonds, and bond orders
 - `Atom`, `Bond` — low-level types for graph data
 

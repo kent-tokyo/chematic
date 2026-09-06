@@ -321,15 +321,21 @@ impl<'a> CanonicalColoredGraph<'a> {
     pub(crate) fn edge_color(&self, from: AtomIdx, bidx: BondIdx) -> EdgeColor {
         let bond = self.mol.bond(bidx);
         let from_is_donor = bond.order == BondOrder::Dative && bond.atom1 == from;
-        // `Up`/`Down` are E/Z direction markers on an otherwise-single
-        // bond; in topological mode they collapse to plain `Single`, same
-        // as every other stereo device this struct excludes there.
-        let order =
-            if !self.canonical_fidelity && matches!(bond.order, BondOrder::Up | BondOrder::Down) {
-                BondOrder::Single
-            } else {
-                bond.order
-            };
+        // In canonical-fidelity mode, a separately stashed direction is
+        // writer-visible even when the physical bond remains Aromatic or
+        // Single (the parser uses this for an E/Z marker adjacent to an
+        // aromatic atom). Treat it like the corresponding directional edge
+        // during automorphism pruning; otherwise two mappings that differ in
+        // the actual E/Z geometry can be incorrectly considered equivalent.
+        // Topological equivalence deliberately ignores all such stereo
+        // devices and keeps the physical bond order only.
+        let order = if self.canonical_fidelity {
+            self.mol.bond_direction(bidx).unwrap_or(bond.order)
+        } else if matches!(bond.order, BondOrder::Up | BondOrder::Down) {
+            BondOrder::Single
+        } else {
+            bond.order
+        };
         EdgeColor {
             order_class: order_class(order),
             from_is_donor,
@@ -564,21 +570,17 @@ pub(crate) fn exact_refine(graph: &CanonicalColoredGraph, mut partition: Partiti
 ///   canonicalization-fidelity coloring (map numbers must round-trip
 ///   through the writer) but the same class here (see
 ///   `atom_map_number_alone_does_not_split_the_class` below).
-/// - **Stereo (bond direction)**: `new`'s `edge_color` reads an `Up`/`Down`
-///   bond order literally -- the E/Z direction marker (`/`/`\`) on what is
-///   chemically a single bond -- as a distinct edge color from plain
-///   `Single`. Same category of device as atom parity above, same fix:
-///   `CanonicalColoredGraph::new_topological` collapses `Up`/`Down` to
-///   `Single` there. Verified empirically: `F/C=C\F` (cis-1,2-
-///   difluoroethene, real mirror symmetry across the two `=CF` ends) came
-///   back as 4 singleton classes before this collapse was added, 2 merged
-///   pairs after (see `ez_bond_direction_marker_alone_does_not_split_the_class`
-///   below). Note `edge_color` only ever reads `bond.order` -- the
-///   separately-stashed `Molecule::bond_direction` (`bond_has_direction_info`'s
-///   doc comment: used for a ring bond next to an exocyclic stereo double
-///   bond) is not part of `EdgeColor` in either mode, so there is nothing
-///   to exclude there today; if a future change ever folds it in, it needs
-///   the same `canonical_fidelity` gate.
+/// - **Stereo (bond direction)**: `new`'s `edge_color` preserves literal
+///   `Up`/`Down` bond orders and the separately stashed
+///   `Molecule::bond_direction` used for aromatic bonds adjacent to an
+///   exocyclic stereo double bond. These are writer-visible markers, so
+///   canonical-fidelity coloring preserves them while topological coloring
+///   ignores them.
+///
+/// The topological path collapses `Up`/`Down` to `Single` and does not read
+/// the stash. Verified empirically: `F/C=C\\F` (cis-1,2-difluoroethene)
+/// retains the expected merged classes in topological mode (see
+/// `ez_bond_direction_marker_alone_does_not_split_the_class` below).
 ///
 /// `CanonicalColoredGraph::new_topological` therefore omits all four,
 /// using the *effective* H count (`implicit_hcount`, matching
