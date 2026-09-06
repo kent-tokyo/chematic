@@ -40,6 +40,15 @@ candidate=$(echo "$record" | jq '.candidate')
 # fast=100 both runs -> geomean 100 -> negated -100; slow=200 both runs -> geomean 200 -> negated -200
 [ "$baseline" = "-100" ] || { echo "FAIL: expected baseline -100, got $baseline"; exit 1; }
 [ "$candidate" = "-200" ] || { echo "FAIL: expected candidate -200, got $candidate"; exit 1; }
+[ "$(echo "$record" | jq -r '.execution_order')" = "abba" ] \
+  || { echo "FAIL: block execution order metadata was not persisted"; exit 1; }
+jq -e '.started_at | strings and length > 0' <<<"$record" >/dev/null \
+  || { echo "FAIL: block start timestamp metadata was not persisted"; exit 1; }
+jq -e '.finished_at | strings and length > 0' <<<"$record" >/dev/null \
+  || { echo "FAIL: block finish timestamp metadata was not persisted"; exit 1; }
+jq -e '.environment | has("loadavg") and has("cpu_model") and has("proc_stat_steal_ticks")' \
+  <<<"$record" >/dev/null \
+  || { echo "FAIL: environment metadata was not persisted"; exit 1; }
 
 cmd_run_blocks fast slow bench_name 1 0 0 1 baab "$out"
 record_baab=$(cat "$out")

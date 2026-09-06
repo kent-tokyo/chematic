@@ -58,6 +58,26 @@ cmd_run_blocks() {
   local warm_up="$5" measurement="$6" sample_size="$7" order="$8" out="$9"
   : > "$out"
   for i in $(seq 1 "$n_blocks"); do
+    local started_at finished_at loadavg cpu_model steal_time
+    started_at=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+    if [ -r /proc/loadavg ]; then
+      loadavg=$(awk '{print $1}' /proc/loadavg)
+    elif command -v sysctl >/dev/null 2>&1; then
+      loadavg=$(sysctl -n vm.loadavg 2>/dev/null | awk '{gsub(/[{}]/, ""); print $1}')
+    else
+      loadavg="unavailable"
+    fi
+    if [ -r /proc/cpuinfo ]; then
+      cpu_model=$(awk -F: '/model name|Hardware|chip type/ {gsub(/^ +/, "", $2); print $2; exit}' /proc/cpuinfo)
+    elif command -v sysctl >/dev/null 2>&1; then
+      cpu_model=$(sysctl -n machdep.cpu.brand_string 2>/dev/null || true)
+    fi
+    cpu_model=${cpu_model:-unavailable}
+    if [ -r /proc/stat ]; then
+      steal_time=$(awk '/^cpu / {print $9; exit}' /proc/stat)
+    else
+      steal_time="unavailable"
+    fi
     local a1 b1 b2 a2
     if [ "$order" = "baab" ]; then
       b1=$(run_point_estimate "$bin_b" "$bench_name" "$warm_up" "$measurement" "$sample_size")
@@ -72,11 +92,23 @@ cmd_run_blocks() {
     fi
     # Negate: veridict's mean-diff/sign-test treat a larger candidate-baseline
     # as an improvement, but for latency lower is better.
-    jq -c -n --argjson a1 "$a1" --argjson a2 "$a2" --argjson b1 "$b1" --argjson b2 "$b2" --arg id "$i" '
+    finished_at=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+    jq -c -n --argjson a1 "$a1" --argjson a2 "$a2" --argjson b1 "$b1" --argjson b2 "$b2" \
+      --arg id "$i" --arg order "$order" --arg started_at "$started_at" \
+      --arg finished_at "$finished_at" --arg loadavg "$loadavg" \
+      --arg cpu_model "$cpu_model" --arg steal_time "$steal_time" '
       {
         id: $id,
         baseline: (-(($a1 * $a2) | sqrt)),
-        candidate: (-(($b1 * $b2) | sqrt))
+        candidate: (-(($b1 * $b2) | sqrt)),
+        execution_order: $order,
+        started_at: $started_at,
+        finished_at: $finished_at,
+        environment: {
+          loadavg: $loadavg,
+          cpu_model: $cpu_model,
+          proc_stat_steal_ticks: $steal_time
+        }
       }
     ' >> "$out"
   done
