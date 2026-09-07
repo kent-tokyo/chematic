@@ -153,8 +153,10 @@ documentation, and required measurement agree.
 - [x] Re-audit the committed 5,000-line carrier corpus with 64 seeded
   relabelings per coupled molecule: 28 coupled components, all size 2, and 0
   correspondence failures. The audit now reproducibly exposes 3 residual
-  molecules with two canonical outputs; keep #149 open until their aromatic
-  carrier/stereo traversal is normalized.
+  molecules with two canonical outputs; those three inputs and their observed
+  output pairs now have held-out Rust regression coverage, and
+  `canonical_smiles_stable_key()` remains fail-closed for each. Keep #149 open
+  until their aromatic carrier/stereo traversal is normalized.
 - [x] Add a bounded default-Hückel fused/non-alternant fallback for
   all-carbon odd/odd envelopes, with azulene regression coverage; keep the
   broader `RdkitLike` model separately gated.
