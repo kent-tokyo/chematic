@@ -16,9 +16,9 @@
 **默认快速，设计安全的化学信息学库。**  
 默认纯 Rust · 可选原生 InChI C FFI · Python · WebAssembly · [官方网站](https://chematic.io/) · [在线演示](https://kent-tokyo.github.io/chematic/playground/)
 
-### v1.0.8 范围
+### v1.0.9 范围
 
-v1.0.8 保持 v1.0.0 的 bounded 兼容性边界，并加入 typed reaction document、
+v1.0.9 保持 v1.0.0 的 bounded 兼容性边界，并加入 typed reaction document、
 document-level CDXML 编辑、显式且 bounded 的 Markush/polymer 展开、晶体组成汇总、
 更安全的 UFF rescue，以及 canonical/SDF 热路径优化。完整任意结构 CDXML 编辑、
 复杂拓扑 expansion、完整 RDKit `RWMol` 与完整 ETKDG/MMFF94 parity 仍不支持。
@@ -41,13 +41,15 @@ Spectrophores 在 patent/FTO 状态得到独立确认前已从 Rust/Python API �
 
 canonical/SDF 行是 2026-09-04 macOS arm64 的中位数，仅适用于所记录的语料和
 操作边界。参阅[基准测试详情](https://kent-tokyo.github.io/chematic/benchmark/)。
-chematic WASM 包体积于 2026-09-06 使用 `wasm-pack 0.13.1` + `wasm-opt 130`
-从 v1.0.8 release candidate 构建并测量：**raw 3.58 MB**（**gzip 1.31 MB**）。固定的历史比较项为
+chematic WASM 包体积于 2026-09-07 使用 `wasm-pack 0.13.1` + `wasm-opt 130`
+从 v1.0.9 release candidate 构建并测量：**raw 3.58 MB**（**gzip 1.31 MB**）。固定的历史比较项为
 RDKit.js **6.91 MB**
 （`@rdkit/rdkit@2025.3.4-1.0.0` 的 `RDKit_minimal.wasm`，经 unpkg.com 确认）· Indigo（Ketcher
 构建版）**11.24 MB**（`indigo-ketcher@1.45.1` 的主 `.wasm`，经 jsDelivr 确认）—— 以 raw 对 raw
 比较，chematic 目前比 RDKit.js 小约 2.1 倍，比 Indigo 的 Ketcher 构建版小约 3.8 倍。
-详见 [v1.0.8 artifact 记录](benchmarks/2026-09-06-wasm-size-v1.0.8.md)。
+详见 [v1.0.9 artifact 记录](benchmarks/2026-09-07-wasm-size-v1.0.9.md)。
+
+**v1.0.9（2026-09-07）：** 延续 v1.0.8 的 descriptor provenance、共享契约与 streaming safety gate，加入 held-out parity 报告整合验证、扩展格式 malformed gate、WASM batch/screening JSON 错误契约，并同步当前 web artifact。#149/#337 残差仍保持 fail-closed 或诊断专用。
 
 **功能成熟度一览：**
 

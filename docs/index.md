@@ -37,9 +37,9 @@ no backend of their own. (This describes chematic's own browser tools; if you bu
 on top of chematic-wasm that calls other network APIs, that's your own code's choice, not
 something chematic does on your behalf.)
 
-**Lightweight deployment.** The v1.0.8 candidate WASM bundle is **3.58 MB raw / 1.31 MB gzip**, measured
-2026-09-06 with `wasm-pack 0.13.1` + `wasm-opt 130` — see the
-[artifact record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-06-wasm-size-v1.0.8.md)
+**Lightweight deployment.** The v1.0.9 candidate WASM bundle is **3.58 MB raw / 1.31 MB gzip**, measured
+2026-09-07 with `wasm-pack 0.13.1` + `wasm-opt 130` — see the
+[artifact record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-07-wasm-size-v1.0.9.md)
 for the digest and reproduction commands.
 
 **One Rust core, multiple interfaces.** The same `chematic-*` Rust crates back the native Rust
@@ -150,7 +150,7 @@ Full worked examples → [Use cases](use-cases/)
 | AI agent / MCP integration | Built-in, 20 tools (stdio only) | — | — |
 | Ecosystem maturity | Growing (2024–) | Established (2006–) | Established, but the WASM distribution specifically is community-maintained |
 
-The chematic bundle was measured 2026-09-06 from the v1.0.8 release candidate; RDKit.js is a
+The chematic bundle was measured 2026-09-07 from the v1.0.9 release candidate; RDKit.js is a
 pinned historical raw-size comparator because its gzip-over-the-wire size was not independently
 measured. Full detail, including where chematic is weaker: [Detailed RDKit comparison](rdkit-comparison.md).
 

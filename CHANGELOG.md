@@ -11,6 +11,17 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 No unreleased changes.
 
+## [1.0.9] - 2026-09-07
+
+- Expanded the streaming format safety gate to 27 malformed cases across nine
+  supported formats, with explicit oversized-input and gzip limit coverage.
+- Added arithmetic and version consistency validation for held-out parity
+  reports, keeping measured, not-measured, and mismatch states distinct.
+- Hardened Node/WASM batch and screening JSON contracts for malformed records,
+  continuation, delimiter errors, and resource limits.
+- Synchronized the browser demo's web-target WASM artifact, cache-buster, and
+  displayed version with the 1.0.9 release candidate.
+
 ## [1.0.8] - 2026-09-06
 
 - Added a versioned cross-binding fingerprint contract for core ECFP4 and
@@ -210,7 +221,8 @@ The authoritative list of published tags and release artifacts is the
 historical implementation notes remain available in the archived detailed
 history and Git history.
 
-[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.8...HEAD
+[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.9...HEAD
+[1.0.9]: https://github.com/kent-tokyo/chematic/compare/v1.0.8...v1.0.9
 [1.0.8]: https://github.com/kent-tokyo/chematic/compare/v1.0.7...v1.0.8
 [1.0.7]: https://github.com/kent-tokyo/chematic/compare/v1.0.6...v1.0.7
 [1.0.6]: https://github.com/kent-tokyo/chematic/compare/v1.0.5...v1.0.6

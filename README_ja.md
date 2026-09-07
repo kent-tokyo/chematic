@@ -16,9 +16,9 @@ Python・Rust・ブラウザ向けケモインフォマティクスライブラ�
 **デフォルトで速く、設計で安全なケモインフォマティクス。**  
 デフォルトはPure Rust · optional native InChI C FFI · Python · WebAssembly · [公式サイト](https://chematic.io/) · [ライブデモ](https://kent-tokyo.github.io/chematic/playground/)
 
-### v1.0.8 の対応範囲
+### v1.0.9 の対応範囲
 
-v1.0.8 は、v1.0.0 の bounded な互換性契約を維持しつつ、typed reaction
+v1.0.9 は、v1.0.0 の bounded な互換性契約を維持しつつ、typed reaction
 document、document-level CDXML 編集、明示的で bounded な Markush/polymer
 展開、結晶組成集計、安全性を高めた UFF rescue、canonical/SDF
 ホットパス改善を追加します。完全な任意構造 CDXML 編集、
@@ -46,13 +46,13 @@ Spectrophores は patent/FTO 状態が独立に確認されるまで Rust/Python
 
 canonical/SDF の行は 2026-09-04 macOS arm64 の中央値であり、記録した corpus と
 処理境界に限定されます。[ベンチマーク詳細](https://kent-tokyo.github.io/chematic/benchmark/)を参照。
-chematic の WASM サイズは v1.0.8 release candidate を `wasm-pack 0.13.1` +
-`wasm-opt 130` でビルドして 2026-09-06 に計測: **3.58 MB raw**(**1.31 MB gzip**)。
+chematic の WASM サイズは v1.0.9 release candidate を `wasm-pack 0.13.1` +
+`wasm-opt 130` でビルドして 2026-09-07 に計測: **3.58 MB raw**(**1.31 MB gzip**)。
 比較対象は履歴として固定した RDKit.js **6.91 MB**
 (`@rdkit/rdkit@2025.3.4-1.0.0`の`RDKit_minimal.wasm`、unpkg.com で確認) · Indigo(Ketcher向けビルド)
 **11.24 MB**(`indigo-ketcher@1.45.1`のメイン`.wasm`、jsDelivr で確認) — chematic の raw WASM
 バイナリは現在、RDKit.js よりおよそ2.1倍、Indigo の Ketcher向けビルドよりおよそ3.8倍小さい
-(raw同士の比較)。詳細は[v1.0.8 artifact 記録](benchmarks/2026-09-06-wasm-size-v1.0.8.md)を参照。
+(raw同士の比較)。詳細は[v1.0.9 artifact 記録](benchmarks/2026-09-07-wasm-size-v1.0.9.md)を参照。
 
 **機能の成熟度（早見表）：**
 
@@ -144,7 +144,7 @@ Rust・JavaScript の詳細な使用例は [ドキュメント](https://kent-tok
 ```python
 import chematic
 chematic.doctor()
-# chematic v1.0.8
+# chematic v1.0.9
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (2026-08-23, v0.18.0 vs RDKit 2026.03.4):
@@ -256,6 +256,8 @@ const picks = JSON.parse(maxmin_picks_ecfp4_json('["CC","c1ccccc1","CCO","CCCC"]
 ## 最近の開発
 
 **未リリース:** #210 のlegacy UFF stereo rescue残差を解消し、canonical SMILESとSDFのhot pathを改善しました。固定条件の測定は[benchmarks](benchmarks/)に記録しています。
+
+**v1.0.9（2026-09-07）:** v1.0.8 の descriptor provenance、共通契約、streaming safety gate を引き継ぎ、held-out parity レポートの整合性検証、形式別 malformed gate の拡張、WASM batch/screening JSON エラー契約、現行web artifactの同期を追加しました。#149/#337 の残差は引き続き fail-closed または診断専用です。
 
 **v1.0.8（2026-09-06）:** v1.0.7 の descriptor provenance と共通契約を引き継ぎ、ECFP4/MACCS の形状契約と `PeriodicStructure::identity_bytes()` による決定的な identity serialization を追加しました。#149/#337 の残差は引き続き fail-closed または診断専用です。Spectrophores は独立した patent/FTO 確認まで公開 API から除外しています。
 

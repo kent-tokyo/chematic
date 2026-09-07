@@ -79,11 +79,11 @@ states parity. See [`validation.md`](validation.md).
 
 ## WASM artifact size
 
-The optimized chematic v1.0.8 candidate artifact was **3.58 MB raw / 1.31 MB gzip**. The
+The optimized chematic v1.0.9 candidate artifact was **3.58 MB raw / 1.31 MB gzip**. The
 pinned RDKit.js comparator was **6.91 MB raw**; its gzip size was
 not independently measured. These builds have different feature surfaces, so
 size is a deployment observation rather than a feature-normalized benchmark.
-See the [artifact record](../benchmarks/2026-09-06-wasm-size-v1.0.8.md).
+See the [artifact record](../benchmarks/2026-09-07-wasm-size-v1.0.9.md).
 
 ## Interpretation rule
 
