@@ -941,6 +941,37 @@ $$$$
     }
 
     #[test]
+    fn file_backed_reader_matches_in_memory_parse_contract() {
+        use std::io::{BufReader, Cursor};
+
+        let sdf = two_mol_sdf();
+        let in_memory = parse_sdf_with_limits(&sdf, SdfParseLimits::default()).unwrap();
+        let streamed: Vec<_> = SdfFileReader::new(BufReader::new(Cursor::new(sdf.into_bytes())))
+            .map(|result| result.expect("streamed record"))
+            .collect();
+
+        assert_eq!(streamed.len(), in_memory.len());
+        for (streamed, (memory_mol, memory_meta)) in streamed.iter().zip(in_memory.iter()) {
+            assert_eq!(streamed.mol.atom_count(), memory_mol.atom_count());
+            assert_eq!(streamed.mol.bond_count(), memory_mol.bond_count());
+            for ((streamed_idx, streamed_atom), (memory_idx, memory_atom)) in
+                streamed.mol.atoms().zip(memory_mol.atoms())
+            {
+                assert_eq!(streamed_idx, memory_idx);
+                assert_eq!(streamed_atom, memory_atom);
+            }
+            for ((streamed_idx, streamed_bond), (memory_idx, memory_bond)) in
+                streamed.mol.bonds().zip(memory_mol.bonds())
+            {
+                assert_eq!(streamed_idx, memory_idx);
+                assert_eq!(streamed_bond, memory_bond);
+            }
+            assert_eq!(&streamed.meta, memory_meta);
+            assert!(streamed.properties.is_empty());
+        }
+    }
+
+    #[test]
     fn sdf_batch_reader_preserves_order_and_progress() {
         use std::io::{BufReader, Cursor};
 

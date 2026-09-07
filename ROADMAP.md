@@ -89,6 +89,10 @@ Completed on the v1.0.9 release candidate tree:
 - [x] Extend issue #500's gzip safety gate to XYZ. The gate now verifies both
   SDF and XYZ gzip controls plus post-decompression input limits (4 gzip cases
   total), preserving the explicit decompressed-limit boundary.
+- [x] Add issue #501's same-process SDF parity contract: `SdfFileReader` and
+  `parse_sdf_with_limits` now compare molecule atoms, bonds, metadata, and
+  property shape on the shared two-record fixture. This closes the bounded
+  Rust streaming/materialized slice while cross-language parity remains open.
 
 - [x] Close #210's five named legacy-coordinate UFF stereo-rescue residuals.
   Every returned geometry is finite, bond-sane, and independently checked
