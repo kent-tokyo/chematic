@@ -129,7 +129,10 @@ documentation, and required measurement agree.
   sizes, explicit cancellation, deterministic progress manifests, and lazy
   input-order emission; full cross-language streaming parity remains open.
 - [ ] Measure only equivalent operations against installed RDKit and Open
-  Babel versions on identical inputs; report sdfrust separately.
+  Babel versions on identical inputs; report sdfrust separately. A local
+  file-backed SDF report now covers chematic and RDKit on the same fixture;
+  Open Babel is recorded separately because only its CLI boundary is
+  installed, and same-process cross-engine equivalence remains open.
 
 ## P2 — Identity and ML primitives
 
