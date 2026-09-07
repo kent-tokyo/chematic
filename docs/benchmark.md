@@ -77,6 +77,7 @@ are in the [WASM artifact record](../benchmarks/2026-09-06-wasm-size-v1.0.8.md).
 | [2026-09-04 canonical](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-canonical-fast-path.md) | Two 5,000-molecule canonical runs |
 | [2026-09-04 SDF](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-sdf-fast-path.md) | Graph/property read and serialization-only write |
 | [2026-09-04 streaming formats](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-streaming-formats.md) | File-backed SDF/MOL/XYZ runner |
+| [2026-09-08 same-input streaming contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-cross-engine.md) | Same-input SDF record/failure agreement across chematic, RDKit, and Open Babel |
 | [2026-09-04 MMFF94/3D](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-mmff94-3d.md) | Experimental local microbenchmarks |
 | [2026-09-04 WASM](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-wasm-size.md) | Artifact size and digest |
 | [2026-09-03 competitive](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-03-competitive.md) | Resumable six-operation v1.0.1 run |

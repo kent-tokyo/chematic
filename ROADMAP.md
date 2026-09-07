@@ -29,6 +29,10 @@ Completed on the v1.0.9 release candidate tree:
   gate now validates the corpus schema and exact nine-format/three-case shape
   before running the 27 negative cases; lenient CML/CDXML/PDB boundaries remain
   explicit rather than being reported as chemistry-malformed parity.
+- [x] Add issue #487's same-input SDF record/failure contract across chematic,
+  RDKit, and Open Babel. The 2026-09-08 report records 40/40 valid records,
+  zero failures, fixture digest, and each parser/process boundary; it does not
+  promote those differently scoped runs into a speed or semantic-parity claim.
 
 - [x] Close #210's five named legacy-coordinate UFF stereo-rescue residuals.
   Every returned geometry is finite, bond-sane, and independently checked
