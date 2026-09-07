@@ -163,8 +163,11 @@ documentation, and required measurement agree.
 - [x] Add a held-out CIP parity gate requiring zero wrong confident labels and
   zero regressions in the non-phosphorus scope (140/140 current cases), and
   fail closed for all 15 representation-unstable phosphorus rows.
-- [ ] Freeze descriptor/fingerprint shape, sparse/count, configuration,
-  provenance, and explanation contracts.
+- [x] Freeze descriptor/fingerprint shape, sparse/count, configuration,
+  provenance, and explanation contracts. The shared contract now covers the
+  RDKit-exact ECFP4 detail operation (folded bytes, sparse counts, and raw /
+  folded atom-radius provenance) across Rust, Python, Node, and WASM; held-out
+  parity reports remain a separate open item.
 - [x] Freeze the core bit-packed ECFP4/MACCS shape, configuration, bit order,
   and implementation provenance in `validation/cross_binding_contract.json`,
   with Rust/Python/Node/WASM shape tests. Sparse/count and explanation

@@ -20,6 +20,8 @@ def test_shared_fixture_schema_is_stable():
     assert _DOCUMENT["fingerprint_contract"]["schema_version"] == 1
     assert _DOCUMENT["fingerprint_contract"]["operations"]["ecfp4"]["bytes"] == 256
     assert _DOCUMENT["fingerprint_contract"]["operations"]["maccs"]["bytes"] == 21
+    assert _DOCUMENT["fingerprint_detail_contract"]["schema_version"] == 1
+    assert _DOCUMENT["fingerprint_detail_contract"]["operations"]["rdkit_ecfp4_detail"]["configuration"]["radius"] == 2
     assert _DOCUMENT["batch_canonicalization_contract"]["schema_version"] == 1
 
 
@@ -75,6 +77,24 @@ def test_python_binding_matches_shared_fingerprint_shape(fixture):
     assert len(mol.maccs()) == 21
     assert any(mol.ecfp4())
     assert any(mol.maccs())
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    _DOCUMENT["fingerprint_detail_contract"]["fixtures"],
+    ids=lambda item: item["id"],
+)
+def test_python_binding_matches_shared_fingerprint_detail_contract(fixture):
+    mol = chematic.from_smiles(fixture["smiles"])
+    fp, sparse_counts, raw_bit_info, folded_bit_info = mol.rdkit_ecfp4_detail()
+    assert len(fp) == 256
+    assert sparse_counts
+    assert raw_bit_info
+    assert folded_bit_info
+    for provenance in list(raw_bit_info.values()) + list(folded_bit_info.values()):
+        for atom, radius in provenance:
+            assert 0 <= atom < mol.heavy_atoms
+            assert 0 <= radius <= 2
 
 
 @pytest.mark.parametrize(

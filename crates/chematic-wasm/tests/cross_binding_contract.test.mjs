@@ -19,6 +19,11 @@ assert.equal(fixture.descriptor_contract.fields.tpsa.unit, "A2");
 assert.equal(fixture.fingerprint_contract.schema_version, 1);
 assert.equal(fixture.fingerprint_contract.operations.ecfp4.bytes, 256);
 assert.equal(fixture.fingerprint_contract.operations.maccs.bytes, 21);
+assert.equal(fixture.fingerprint_detail_contract.schema_version, 1);
+assert.equal(
+  fixture.fingerprint_detail_contract.operations.rdkit_ecfp4_detail.configuration.radius,
+  2,
+);
 assert.equal(fixture.batch_canonicalization_contract.schema_version, 1);
 
 const batchInputs = fixture.batch_canonicalization_contract.inputs.join("\n");
@@ -58,6 +63,24 @@ for (const expected of fixture.fingerprint_contract.fixtures) {
   assert.equal(maccs.length, 21, `${expected.id} MACCS shape`);
   assert.ok(ecfp4.some((byte) => byte !== 0), `${expected.id} ECFP4 non-empty`);
   assert.ok(maccs.some((byte) => byte !== 0), `${expected.id} MACCS non-empty`);
+  mol.free();
+}
+
+for (const expected of fixture.fingerprint_detail_contract.fixtures) {
+  const mol = wasm.parse_smiles(expected.smiles);
+  const detail = JSON.parse(wasm.rdkit_ecfp4_detail_json(mol));
+  assert.equal(detail.fingerprint.length, 256, `${expected.id} detail shape`);
+  assert.ok(Object.keys(detail.sparseCounts).length > 0, `${expected.id} sparse counts`);
+  assert.ok(Object.keys(detail.rawBitInfo).length > 0, `${expected.id} raw explanation`);
+  assert.ok(Object.keys(detail.foldedBitInfo).length > 0, `${expected.id} folded explanation`);
+  for (const provenance of [detail.rawBitInfo, detail.foldedBitInfo]) {
+    for (const pairs of Object.values(provenance)) {
+      for (const [atom, radius] of pairs) {
+        assert.ok(atom >= 0 && atom < mol.atom_count(), `${expected.id} atom provenance`);
+        assert.ok(radius >= 0 && radius <= 2, `${expected.id} radius provenance`);
+      }
+    }
+  }
   mol.free();
 }
 

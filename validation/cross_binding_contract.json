@@ -63,6 +63,43 @@
       {"id": "caffeine", "smiles": "Cn1cnc2c1c(=O)n(c(=O)n2C)C"}
     ]
   },
+  "fingerprint_detail_contract": {
+    "schema_version": 1,
+    "semantics": "RDKit-exact Morgan detail preserves the folded bit vector together with unfolded sparse multiplicities and atom/radius provenance; it is distinct from the native FNV-1a fingerprint contract.",
+    "operations": {
+      "rdkit_ecfp4_detail": {
+        "source": "chematic_fp::rdkit_morgan_ecfp4_experimental",
+        "bindings": ["rust", "python", "node", "wasm"],
+        "representation": "bit-packed bytes plus sparse and provenance maps",
+        "bits": 2048,
+        "bytes": 256,
+        "bit_order": "LSB-first",
+        "configuration": {
+          "radius": 2,
+          "nbits": 2048,
+          "include_chirality": false,
+          "use_bond_types": true,
+          "include_redundant_environments": false
+        },
+        "sparse_counts": {
+          "key": "u32 raw environment identifier",
+          "value": "u32 emitted-environment count",
+          "semantics": "RDKit GetSparseCountFingerprint lifecycle"
+        },
+        "explanation": {
+          "raw_bit_info": "raw environment identifier -> [atom_index, radius] pairs",
+          "folded_bit_info": "folded bit index -> [atom_index, radius] pairs",
+          "radius_range": [0, 2]
+        }
+      }
+    },
+    "fixtures": [
+      {"id": "ethanol", "smiles": "CCO"},
+      {"id": "benzene", "smiles": "c1ccccc1"},
+      {"id": "aspirin", "smiles": "CC(=O)Oc1ccccc1C(=O)O"},
+      {"id": "caffeine", "smiles": "Cn1cnc2c1c(=O)n(c(=O)n2C)C"}
+    ]
+  },
   "adversarial": [
     {"id": "smiles-unclosed-ring", "format": "smiles", "input": "C1CC"},
     {"id": "mol-v2000-truncated", "format": "mol", "input": "broken mol block"},
