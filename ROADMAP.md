@@ -58,6 +58,11 @@ Completed on the v1.0.9 release candidate tree:
   failures, identical 7,660 source bytes, fixture digest, and the materialized
   Rust versus CLI boundary; it does not claim same-process parity or speed
   equivalence.
+- [x] Add issue #494's same-input CDXML record/failure contract across chematic
+  and Open Babel. The 2026-09-08 report records 20/20 valid records, zero
+  failures, identical 5,960 source bytes, fixture digest, and the materialized
+  Rust versus CLI boundary; it does not claim same-process parity or speed
+  equivalence.
 - [x] Expand issue #489's checked-in streaming safety corpus to four cases per
   format (36/36 negative cases), retaining explicit line-limit handling for
   lenient CML/CDXML/PDB readers and the existing 9 oversized plus 2 gzip gates.
