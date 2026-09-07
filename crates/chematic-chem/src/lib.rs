@@ -22,6 +22,7 @@ pub mod esol;
 pub mod estate;
 pub mod formula;
 pub mod gasteiger;
+pub mod genotox;
 pub mod hash;
 pub mod hydrogen;
 pub mod ifg;
@@ -95,6 +96,10 @@ pub use esol::esol_solubility;
 pub use estate::{estate_all, estate_indices, max_estate, min_estate, sum_estate};
 pub use formula::{FormulaParseError, parse_formula};
 pub use gasteiger::gasteiger_charges;
+pub use genotox::{
+    GenotoxApplicability, GenotoxConfidence, GenotoxFinding, GenotoxMotifKind,
+    GenotoxReactivityReport, genotox_reactivity,
+};
 pub use hash::{are_identical, mol_hash, stable_are_identical};
 pub use hydrogen::{add_hydrogens, remove_hydrogens};
 pub use ifg::{FunctionalGroup, identify_functional_groups};
