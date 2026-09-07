@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check record/failure agreement for one identical file-backed SDF input.
+"""Check record/failure agreement for one identical file-backed SDF or XYZ input.
 
 This is a contract check, not a throughput ranking. The three engines use
 different parser and process boundaries; the report keeps those boundaries
@@ -25,9 +25,11 @@ def run_json(command: list[str]) -> object:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--format", choices=("sdf", "xyz"), default="sdf")
     parser.add_argument("--sdf", type=Path, default=Path("benchmarks/fixtures/streaming.sdf"))
+    parser.add_argument("--xyz", type=Path, default=Path("benchmarks/fixtures/streaming.xyz"))
     parser.add_argument("--repeats", type=int, default=20)
-    parser.add_argument("--openbabel", default="obabel")
+    parser.add_argument("--openbabel", default="obabel", help="Open Babel executable; used only for SDF")
     parser.add_argument(
         "--binary",
         nargs="+",
@@ -38,39 +40,44 @@ def main() -> int:
     args = parser.parse_args()
     if args.repeats <= 0:
         raise SystemExit("--repeats must be positive")
-    sdf = args.sdf if args.sdf.is_absolute() else ROOT / args.sdf
-    payload = sdf.read_bytes()
+    path = (args.sdf if args.format == "sdf" else args.xyz)
+    path = path if path.is_absolute() else ROOT / path
+    payload = path.read_bytes()
+    if args.format == "xyz":
+        expected_records = 2 * args.repeats
+    else:
+        expected_records = 2 * args.repeats
     digest = hashlib.sha256(payload).hexdigest()
-    expected_records = 2 * args.repeats
     chematic = run_json(
         [
             *args.binary,
             "--format",
-            "sdf",
+            args.format,
             "--path",
-            str(sdf),
+            str(path),
             "--repeats",
             str(args.repeats),
         ]
     )
-    comparator = run_json(
-        [
-            "python3",
-            "scripts/bench_streaming_formats.py",
-            "--mode",
-            "file-backed",
-            "--sdf",
-            str(sdf),
-            "--repeats",
-            str(args.repeats),
-            "--openbabel",
-            args.openbabel,
-        ]
-    )
-    if not isinstance(comparator, list) or len(comparator) != 2:
-        raise SystemExit("comparison runner did not return RDKit and Open Babel rows")
-    rdkit, openbabel = comparator
-    rows = {"chematic": chematic, "rdkit": rdkit, "openbabel": openbabel}
+    comparator_command = [
+        "python3",
+        "scripts/bench_streaming_formats.py",
+        "--mode",
+        "file-backed" if args.format == "sdf" else "xyz-file-backed",
+        "--sdf" if args.format == "sdf" else "--xyz",
+        str(path),
+        "--repeats",
+        str(args.repeats),
+    ]
+    if args.format == "sdf":
+        comparator_command.extend(["--openbabel", args.openbabel])
+    comparator = run_json(comparator_command)
+    expected_comparators = 2 if args.format == "sdf" else 1
+    if not isinstance(comparator, list) or len(comparator) != expected_comparators:
+        raise SystemExit("comparison runner returned an unexpected row count")
+    rows = {"chematic": chematic, "rdkit": comparator[0]}
+    if args.format == "sdf":
+        rows["openbabel"] = comparator[1]
     errors: list[str] = []
     for engine, row in rows.items():
         if not isinstance(row, dict):
@@ -83,14 +90,15 @@ def main() -> int:
     report = {
         "schema_version": 1,
         "target_version": "1.0.9",
-        "fixture": {"path": str(sdf.relative_to(ROOT)), "bytes": len(payload), "sha256": digest},
+        "format": args.format,
+        "fixture": {"path": str(path.relative_to(ROOT)), "bytes": len(payload), "sha256": digest},
         "repeats": args.repeats,
         "expected_records": expected_records,
         "rows": rows,
         "comparison_boundary": {
-            "chematic": "Rust SdfFileReader over file-backed BufRead",
-            "rdkit": "RDKit ForwardSDMolSupplier in one Python process",
-            "openbabel": "Open Babel CLI conversion per repetition, including process startup",
+            "chematic": f"Rust {args.format.upper()} file-backed BufRead reader",
+            "rdkit": "RDKit Python block parser over frames split from the identical file",
+            **({"openbabel": "Open Babel CLI conversion per repetition, including process startup"} if args.format == "sdf" else {}),
         },
     }
     if errors:

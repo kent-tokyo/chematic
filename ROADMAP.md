@@ -33,6 +33,11 @@ Completed on the v1.0.9 release candidate tree:
   RDKit, and Open Babel. The 2026-09-08 report records 40/40 valid records,
   zero failures, fixture digest, and each parser/process boundary; it does not
   promote those differently scoped runs into a speed or semantic-parity claim.
+- [x] Add issue #488's same-input XYZ record/failure contract across chematic
+  and RDKit. The 2026-09-08 report records 40/40 valid records, zero failures,
+  identical 3,220 input bytes, fixture digest, and the file-backed Rust versus
+  Python block-parser boundary; it does not claim same-process parity or speed
+  equivalence.
 
 - [x] Close #210's five named legacy-coordinate UFF stereo-rescue residuals.
   Every returned geometry is finite, bond-sane, and independently checked

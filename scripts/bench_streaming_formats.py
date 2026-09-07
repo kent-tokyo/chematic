@@ -103,6 +103,35 @@ def measure_rdkit_file_backed_sdf(path: Path, repeats: int) -> dict[str, object]
     }
 
 
+def measure_rdkit_file_backed_xyz(path: Path, repeats: int) -> dict[str, object]:
+    started = time.perf_counter()
+    records = 0
+    failures = 0
+    payload = path.read_text()
+    frames = xyz_frames(payload)
+    for _ in range(repeats):
+        for frame in frames:
+            if Chem.MolFromXYZBlock(frame) is None:
+                failures += 1
+            else:
+                records += 1
+    elapsed = time.perf_counter() - started
+    total_bytes = path.stat().st_size * repeats
+    return {
+        "engine": "rdkit",
+        "format": "xyz",
+        "mode": "file_backed_block_parser",
+        "repeats": repeats,
+        "records": records,
+        "failures": failures,
+        "input_bytes": total_bytes,
+        "seconds": round(elapsed, 6),
+        "records_per_second": round(records / elapsed, 2),
+        "bytes_per_second": round(total_bytes / elapsed, 2),
+        "comparison_boundary": "RDKit MolFromXYZBlock after Python frame splitting, not the Rust BufRead parser",
+    }
+
+
 def measure_openbabel_sdf(path: Path, repeats: int, executable: str) -> dict[str, object]:
     started = time.perf_counter()
     records = 0
@@ -148,15 +177,18 @@ def main() -> None:
     parser.add_argument("--repeats", type=int, default=200)
     parser.add_argument(
         "--mode",
-        choices=("block", "file-backed"),
+        choices=("block", "file-backed", "xyz-file-backed"),
         default="block",
-        help="RDKit block constructors or file-backed SDF suppliers",
+        help="RDKit block constructors, file-backed SDF suppliers, or XYZ blocks over a file",
     )
     parser.add_argument("--openbabel", help="also measure Open Babel's file-backed SDF CLI")
     args = parser.parse_args()
     if args.repeats <= 0:
         raise SystemExit("--repeats must be positive")
-    if args.mode == "file-backed":
+    if args.mode in ("file-backed", "xyz-file-backed"):
+        if args.mode == "xyz-file-backed":
+            print(json.dumps([measure_rdkit_file_backed_xyz(args.xyz, args.repeats)], indent=2))
+            return
         results: list[dict[str, object]] = [
             measure_rdkit_file_backed_sdf(args.sdf, args.repeats),
         ]
