@@ -25,7 +25,7 @@ def run_json(command: list[str]) -> object:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--format", choices=("sdf", "xyz"), default="sdf")
+    parser.add_argument("--format", choices=("sdf", "mol", "xyz"), default="sdf")
     parser.add_argument("--sdf", type=Path, default=Path("benchmarks/fixtures/streaming.sdf"))
     parser.add_argument("--xyz", type=Path, default=Path("benchmarks/fixtures/streaming.xyz"))
     parser.add_argument("--repeats", type=int, default=20)
@@ -40,13 +40,10 @@ def main() -> int:
     args = parser.parse_args()
     if args.repeats <= 0:
         raise SystemExit("--repeats must be positive")
-    path = (args.sdf if args.format == "sdf" else args.xyz)
+    path = (args.sdf if args.format in ("sdf", "mol") else args.xyz)
     path = path if path.is_absolute() else ROOT / path
     payload = path.read_bytes()
-    if args.format == "xyz":
-        expected_records = 2 * args.repeats
-    else:
-        expected_records = 2 * args.repeats
+    expected_records = 2 * args.repeats
     digest = hashlib.sha256(payload).hexdigest()
     chematic = run_json(
         [
@@ -63,8 +60,8 @@ def main() -> int:
         "python3",
         "scripts/bench_streaming_formats.py",
         "--mode",
-        "file-backed" if args.format == "sdf" else "xyz-file-backed",
-        "--sdf" if args.format == "sdf" else "--xyz",
+        "file-backed" if args.format == "sdf" else ("mol-block" if args.format == "mol" else "xyz-file-backed"),
+        "--sdf" if args.format in ("sdf", "mol") else "--xyz",
         str(path),
         "--repeats",
         str(args.repeats),
@@ -97,7 +94,7 @@ def main() -> int:
         "rows": rows,
         "comparison_boundary": {
             "chematic": f"Rust {args.format.upper()} file-backed BufRead reader",
-            "rdkit": "RDKit Python block parser over frames split from the identical file",
+            "rdkit": "RDKit Python block parser over blocks split from the identical file",
             **({"openbabel": "Open Babel CLI conversion per repetition, including process startup"} if args.format == "sdf" else {}),
         },
     }

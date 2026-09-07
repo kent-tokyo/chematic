@@ -46,7 +46,7 @@ def xyz_frames(text: str) -> list[str]:
     return frames
 
 
-def measure(label: str, blocks: list[str], repeats: int) -> dict[str, object]:
+def measure(label: str, blocks: list[str], repeats: int, source_bytes: int | None = None) -> dict[str, object]:
     started = time.perf_counter()
     records = 0
     for _ in range(repeats):
@@ -54,7 +54,7 @@ def measure(label: str, blocks: list[str], repeats: int) -> dict[str, object]:
             if (Chem.MolFromXYZBlock(block) if label == "xyz" else Chem.MolFromMolBlock(block)) is not None:
                 records += 1
     elapsed = time.perf_counter() - started
-    total_bytes = sum(len(block.encode()) for block in blocks) * repeats
+    total_bytes = (source_bytes if source_bytes is not None else sum(len(block.encode()) for block in blocks)) * repeats
     return {
         "engine": "rdkit",
         "format": label,
@@ -177,7 +177,7 @@ def main() -> None:
     parser.add_argument("--repeats", type=int, default=200)
     parser.add_argument(
         "--mode",
-        choices=("block", "file-backed", "xyz-file-backed"),
+        choices=("block", "mol-block", "file-backed", "xyz-file-backed"),
         default="block",
         help="RDKit block constructors, file-backed SDF suppliers, or XYZ blocks over a file",
     )
@@ -198,6 +198,9 @@ def main() -> None:
         return
     sdf = sdf_blocks(args.sdf.read_text())
     xyz = xyz_frames(args.xyz.read_text())
+    if args.mode == "mol-block":
+        print(json.dumps([measure("mol", sdf, args.repeats, args.sdf.stat().st_size)], indent=2))
+        return
     print(json.dumps([
         measure("sdf", sdf, args.repeats),
         measure("mol", sdf, args.repeats),
