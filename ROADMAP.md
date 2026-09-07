@@ -282,7 +282,9 @@ records them.
   records, limits, and stable JSON errors. The Node/WASM shared contract now
   covers malformed inline records, later-record continuation, empty-delimiter
   rejection, batch-count limits, input-size limits, and screening error
-  envelopes; browser cancellation and the broader agent matrix remain open.
+  envelopes. The current `1.0.8` web-target artifact is regenerated into
+  `demo/pkg` and passes the real-WASM `initSync` smoke (success and typed
+  timeout); browser cancellation and the broader agent matrix remain open.
 
 ## P4 — Chemistry workflow depth
 

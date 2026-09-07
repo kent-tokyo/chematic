@@ -585,6 +585,15 @@ export function canonical_tautomer(mol: MolHandle): MolHandle;
 export function canonical_tautomer_with_blocked_atoms_json(mol: MolHandle, blocked_atom_indices_json: string): string;
 
 /**
+ * Canonicalize a bounded delimiter-separated SMILES batch.
+ *
+ * Each result retains its input index and original text. Invalid records are
+ * returned inline with `status: "rejected"`; later records are still
+ * processed in deterministic input order.
+ */
+export function canonicalize_smiles_batch_json(smiles_batch: string, delimiter: string): string;
+
+/**
  * Parse a CDXML document while preserving page and presentation objects.
  * The returned JSON contains an opaque `raw_xml` for each object so unknown
  * ChemDraw extensions are never silently discarded.
@@ -638,7 +647,7 @@ export function cip_assignments_json(mol: MolHandle): string;
 /**
  * Atoms the accurate CIP engine could not resolve a tetrahedral R/S for, as a JSON
  * array of `{atomIdx, reason}` objects. `reason` is `"tied"` (a genuine CIP-rule tie,
- * not a missing rule) or `"budgetExceeded"`. Always `[]` for the legacy engine (see
+ * not a missing rule), `"budgetExceeded"`, or `"oracleUnstable"`. Always `[]` for the legacy engine (see
  * [`cip_assignments_json`]) -- it never reports "I don't know". Returns `"null"` on
  * an internal engine error.
  */
@@ -855,6 +864,13 @@ export function ecfp6_bitvec_with_chirality(mol: MolHandle, use_chirality: boole
  * atom hash. When `false` (default), chirality is ignored.
  */
 export function ecfp_bitvec_custom(mol: MolHandle, radius: number, nbits: number, use_chirality: boolean): Uint8Array;
+
+/**
+ * Apply a loss-preserving page/presentation edit to a CDXML document.
+ * `edit_json` is a `CdxmlEdit` command object; unknown presentation XML is
+ * retained and the result is reparsed before it is returned.
+ */
+export function edit_cdxml_document_json(cdxml: string, edit_json: string): string;
 
 /**
  * Run `embed_ensemble_v2` on `mol`'s own atom order (never canonicalizes/
@@ -2153,6 +2169,18 @@ export function ring_families_json(mol: MolHandle): string;
 export function run_reactants(smirks: string, reactants_smiles: string): string;
 
 /**
+ * Parse an MDL RXN V2000 file into the typed reaction-document JSON
+ * contract shared with the Rust and Python bindings.
+ */
+export function rxn_document_from_rxn(text: string): string;
+
+/**
+ * Write typed reaction-document JSON as MDL RXN V2000. Unsupported rich
+ * fields return an error instead of being silently discarded.
+ */
+export function rxn_document_to_rxn(document_json: string): string;
+
+/**
  * Synthetic Accessibility Score (1 = easy, 10 = hard).
  */
 export function sa_score(mol: MolHandle): number;
@@ -2217,6 +2245,22 @@ export function sdf_to_records_json(sdf: string): string;
  * Invalid records are represented as `null` in the array.
  */
 export function sdf_to_smiles_json(sdf: string): string;
+
+/**
+ * Apply an explicit Markush selection command to a semantic model JSON.
+ */
+export function semantic_apply_json_command(model_json: string, command_json: string): string;
+
+/**
+ * Expand a validated semantic model against a base SMILES and return the
+ * expanded graph plus source-to-expanded atom mapping.
+ */
+export function semantic_expand_json(base_smiles: string, model_json: string): string;
+
+/**
+ * Validate and normalize a typed Markush/polymer semantic model JSON.
+ */
+export function semantic_model_json(model_json: string): string;
 
 /**
  * Set dihedral angle A—B—C—D and return PDB block with modified coordinates.
@@ -2629,6 +2673,7 @@ export interface InitOutput {
     readonly butina_cluster_ecfp4_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly canonical_tautomer: (a: number) => number;
     readonly canonical_tautomer_with_blocked_atoms_json: (a: number, b: number, c: number) => [number, number];
+    readonly canonicalize_smiles_batch_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly cdxml_document_json: (a: number, b: number) => [number, number, number, number];
     readonly cdxml_to_smiles_json: (a: number, b: number) => [number, number, number, number];
     readonly charge_parent_json: (a: number) => [number, number];
@@ -2681,6 +2726,7 @@ export interface InitOutput {
     readonly ecfp6_bitvec: (a: number) => [number, number];
     readonly ecfp6_bitvec_with_chirality: (a: number, b: number) => [number, number];
     readonly ecfp_bitvec_custom: (a: number, b: number, c: number, d: number) => [number, number];
+    readonly edit_cdxml_document_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly embed_ensemble_v2_json: (a: number, b: number, c: number) => [number, number];
     readonly embed_pipeline_v2_json: (a: number, b: number, c: number) => [number, number];
     readonly enumerate_library_2way: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
@@ -2778,6 +2824,7 @@ export interface InitOutput {
     readonly molecule_report_json: (a: number, b: number) => [number, number, number, number];
     readonly molhandle_aromatic_ring_count: (a: number) => number;
     readonly molhandle_assign_cip_json: (a: number) => [number, number];
+    readonly molhandle_atom_count: (a: number) => number;
     readonly molhandle_bbb_passes: (a: number) => number;
     readonly molhandle_bbb_score: (a: number) => number;
     readonly molhandle_bertz_ct: (a: number) => number;
@@ -2890,11 +2937,16 @@ export interface InitOutput {
     readonly rgroup_decompose_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly ring_families_json: (a: number) => [number, number, number, number];
     readonly run_reactants: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly rxn_document_from_rxn: (a: number, b: number) => [number, number, number, number];
+    readonly rxn_document_to_rxn: (a: number, b: number) => [number, number, number, number];
     readonly sa_score: (a: number) => number;
     readonly screen_smiles_json: (a: number, b: number, c: number, d: number) => [number, number];
     readonly sdf_from_records_json: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
     readonly sdf_to_records_json: (a: number, b: number) => [number, number];
     readonly sdf_to_smiles_json: (a: number, b: number) => [number, number];
+    readonly semantic_apply_json_command: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly semantic_expand_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly semantic_model_json: (a: number, b: number) => [number, number, number, number];
     readonly set_dihedral_json: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number, number];
     readonly shape_descriptors_json: (a: number) => [number, number];
     readonly slogp_vsa_json: (a: number) => [number, number];
@@ -2908,6 +2960,7 @@ export interface InitOutput {
     readonly sssr_rings_json: (a: number) => [number, number];
     readonly standardize_smiles: (a: number, b: number) => [number, number];
     readonly standardize_smiles_report_json: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];
+    readonly start: () => void;
     readonly stereo_parent_json: (a: number) => [number, number];
     readonly super_parent_json: (a: number, b: number, c: number, d: number, e: bigint) => [number, number];
     readonly super_parent_report_json: (a: number, b: number, c: number, d: number, e: bigint) => [number, number];
@@ -2946,8 +2999,6 @@ export interface InitOutput {
     readonly write_smiles: (a: number) => [number, number];
     readonly xlogp3_json: (a: number) => [number, number];
     readonly xlogp3_per_atom_json: (a: number) => [number, number];
-    readonly molhandle_atom_count: (a: number) => number;
-    readonly start: () => void;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __externref_table_alloc: () => number;
