@@ -93,6 +93,12 @@ Completed on the v1.0.9 release candidate tree:
   `parse_sdf_with_limits` now compare molecule atoms, bonds, metadata, and
   property shape on the shared two-record fixture. This closes the bounded
   Rust streaming/materialized slice while cross-language parity remains open.
+- [x] Add issue #502's reproducible all-format benchmark matrix:
+  `scripts/benchmark_streaming_matrix.py` now measures all nine runner formats
+  in plain and optional gzip modes, records fixture hashes and parser boundary
+  metadata, and fails on unexpected record/failure counts. A local 18-row run
+  (9 formats × 2 compression modes, one repeat) is green; this is measurement
+  coverage, not a cross-engine speed claim.
 
 - [x] Close #210's five named legacy-coordinate UFF stereo-rescue residuals.
   Every returned geometry is finite, bond-sane, and independently checked
