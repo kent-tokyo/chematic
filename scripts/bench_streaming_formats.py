@@ -46,12 +46,22 @@ def xyz_frames(text: str) -> list[str]:
     return frames
 
 
+def mol2_blocks(text: str) -> list[str]:
+    return ["@<TRIPOS>MOLECULE\n" + block.strip() + "\n" for block in text.split("@<TRIPOS>MOLECULE") if block.strip()]
+
+
 def measure(label: str, blocks: list[str], repeats: int, source_bytes: int | None = None) -> dict[str, object]:
     started = time.perf_counter()
     records = 0
     for _ in range(repeats):
         for block in blocks:
-            if (Chem.MolFromXYZBlock(block) if label == "xyz" else Chem.MolFromMolBlock(block)) is not None:
+            if label == "xyz":
+                molecule = Chem.MolFromXYZBlock(block)
+            elif label == "mol2":
+                molecule = Chem.MolFromMol2Block(block, sanitize=False, cleanupSubstructures=False)
+            else:
+                molecule = Chem.MolFromMolBlock(block)
+            if molecule is not None:
                 records += 1
     elapsed = time.perf_counter() - started
     total_bytes = (source_bytes if source_bytes is not None else sum(len(block.encode()) for block in blocks)) * repeats
@@ -177,7 +187,7 @@ def main() -> None:
     parser.add_argument("--repeats", type=int, default=200)
     parser.add_argument(
         "--mode",
-        choices=("block", "mol-block", "v3000-block", "file-backed", "xyz-file-backed"),
+        choices=("block", "mol-block", "v3000-block", "mol2-block", "file-backed", "xyz-file-backed"),
         default="block",
         help="RDKit block constructors, file-backed SDF suppliers, or XYZ blocks over a file",
     )
@@ -198,10 +208,19 @@ def main() -> None:
         return
     sdf = sdf_blocks(args.sdf.read_text())
     xyz = xyz_frames(args.xyz.read_text())
-    if args.mode in ("mol-block", "v3000-block"):
+    if args.mode in ("mol-block", "v3000-block", "mol2-block"):
         if args.mode == "v3000-block":
             sdf = [args.sdf.read_text()]
-        print(json.dumps([measure("mol", sdf, args.repeats, args.sdf.stat().st_size)], indent=2))
+            label = "mol"
+            source = args.sdf.stat().st_size
+        elif args.mode == "mol2-block":
+            sdf = mol2_blocks(args.sdf.read_text())
+            label = "mol2"
+            source = args.sdf.stat().st_size
+        else:
+            label = "mol"
+            source = args.sdf.stat().st_size
+        print(json.dumps([measure(label, sdf, args.repeats, source)], indent=2))
         return
     print(json.dumps([
         measure("sdf", sdf, args.repeats),
