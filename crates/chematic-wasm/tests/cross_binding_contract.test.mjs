@@ -15,6 +15,7 @@ const wasm = await import(path.join(repoRoot, "crates/chematic-wasm/pkg-node/che
 assert.equal(fixture.schema_version, 1);
 assert.equal(fixture.fixtures.length, 4);
 assert.equal(fixture.descriptor_contract.schema_version, 1);
+assert.equal(fixture.standardization_contract.schema_version, 1);
 assert.equal(fixture.descriptor_contract.fields.tpsa.unit, "A2");
 assert.equal(fixture.fingerprint_contract.schema_version, 1);
 assert.equal(fixture.fingerprint_contract.operations.ecfp4.bytes, 256);
@@ -53,6 +54,13 @@ for (const expected of fixture.descriptor_contract.fixtures) {
   assert.equal(mol.hba_count(), expected.hba, expected.id);
   assert.equal(mol.heavy_atom_count(), expected.heavy_atoms, expected.id);
   mol.free();
+}
+
+for (const expected of fixture.standardization_contract.fixtures) {
+  const actual = JSON.parse(
+    wasm.standardize_smiles_report_json(expected.smiles, true, true, true, true),
+  );
+  assert.equal(actual.smiles, expected.output_smiles, expected.id);
 }
 
 for (const expected of fixture.fingerprint_contract.fixtures) {

@@ -53,6 +53,33 @@ fn shared_descriptor_fixture_matches_rust_source_of_truth() {
 }
 
 #[test]
+fn shared_standardization_profile_matches_rust_source_of_truth() {
+    let document: Value = serde_json::from_str(FIXTURE).expect("fixture JSON must parse");
+    let contract = &document["standardization_contract"];
+    assert_eq!(contract["schema_version"], 1);
+    assert_eq!(contract["profile"]["largest_fragment_only"], true);
+    for fixture in contract["fixtures"]
+        .as_array()
+        .expect("standardization fixtures")
+    {
+        let id = fixture["id"].as_str().unwrap();
+        let smiles = fixture["smiles"].as_str().unwrap();
+        let mol = chematic_smiles::parse(smiles)
+            .unwrap_or_else(|error| panic!("standardization fixture {id} must parse: {error}"));
+        let options = chematic_chem::StandardizeOptions {
+            largest_fragment_only: true,
+            ..Default::default()
+        };
+        let output = chematic_chem::standardize(&mol, &options);
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&output),
+            fixture["output_smiles"].as_str().unwrap(),
+            "{id}"
+        );
+    }
+}
+
+#[test]
 fn shared_fingerprint_fixture_freezes_shape_and_configuration() {
     let document: Value = serde_json::from_str(FIXTURE).expect("fixture JSON must parse");
     let contract = &document["fingerprint_contract"];

@@ -33,6 +33,20 @@
       {"id": "caffeine", "smiles": "Cn1cnc2c1c(=O)n(c(=O)n2C)C", "molecular_weight": 194.194, "tpsa": 61.82, "hbd": 0, "hba": 6, "heavy_atoms": 14}
     ]
   },
+  "standardization_contract": {
+    "schema_version": 1,
+    "profile": {
+      "largest_fragment_only": true,
+      "neutralize_charges": true,
+      "remove_explicit_h": true,
+      "canonical_tautomer": true
+    },
+    "semantics": "The explicit largest-fragment profile is opt-in; default standardization preserves disconnected fragments.",
+    "fixtures": [
+      {"id": "largest-fragment", "smiles": "CC.CCC", "output_smiles": "CCC"},
+      {"id": "single-fragment-ethanol", "smiles": "CCO", "output_smiles": "C(C)O"}
+    ]
+  },
   "fingerprint_contract": {
     "schema_version": 1,
     "semantics": "Byte arrays are bit-packed with the least-significant bit first; shape and configuration are stable across bindings.",
