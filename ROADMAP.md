@@ -185,8 +185,9 @@ documentation, and required measurement agree.
 - [ ] Add held-out parity reports for Morgan/ECFP, MACCS, topological,
   torsion, descriptors, and standardization across Rust/Python/WASM. The
   v1.0.8 coverage ledger is now validated by
-  `scripts/validate_held_out_parity_manifest.py`: Morgan/ECFP and the five
-  core descriptors have named reports, and MACCS now has a Rust-CLI report
+  `scripts/validate_held_out_parity_manifest.py`, including report-internal
+  row/count arithmetic: Morgan/ECFP and the five core descriptors have named
+  reports, and MACCS now has a Rust-CLI report
   (4,714/5,000 exact bit-set matches, 94.28%). The RDKit-compatible
   topological `rdkit_rdk` lane is also measured by the Rust CLI (5,000/5,000
   exact bit-set matches). The RDKit-compatible hashed topological torsion lane

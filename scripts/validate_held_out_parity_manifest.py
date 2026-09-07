@@ -28,6 +28,90 @@ STATUSES = {"measured", "not_measured"}
 BINDINGS = {"rust", "python", "node", "wasm"}
 
 
+def validate_report(name: str, report_path: Path, target_version: str) -> list[str]:
+    """Validate arithmetic invariants in a measured report.
+
+    The reports intentionally use operation-specific field names, so this is
+    a small explicit schema gate rather than a permissive duck-typing check.
+    It catches stale or hand-edited headline counts without declaring parity
+    successful merely because a JSON file exists.
+    """
+    errors: list[str] = []
+    try:
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return [f"operation {name!r} report is not valid JSON: {exc}"]
+    if not isinstance(report, dict):
+        return [f"operation {name!r} report must be a JSON object"]
+    report_version = report.get("target_version")
+    if report_version is not None and report_version != target_version:
+        errors.append(
+            f"operation {name!r} report target_version {report_version!r} "
+            f"does not match {target_version!r}"
+        )
+
+    if name == "morgan_ecfp":
+        total = report.get("total_inputs")
+        success = report.get("success_count")
+        error_count = report.get("error_count")
+        exact = report.get("exact_match_among_success")
+        if not all(isinstance(value, int) for value in (total, success, error_count, exact)):
+            return [f"operation {name!r} headline counts must be integers"]
+        if total != success + error_count:
+            errors.append(f"operation {name!r} total_inputs != success_count + error_count")
+        if exact != success:
+            errors.append(f"operation {name!r} exact_match must equal success_count")
+        if report.get("gate_passed") is not True or report.get("gate_failures") != []:
+            errors.append(f"operation {name!r} parity gate is not passed")
+        return errors
+
+    if name == "descriptors":
+        parsed = report.get("parsed")
+        if not isinstance(parsed, int):
+            return [f"operation {name!r} parsed must be an integer"]
+        fields = report.get("fields")
+        if not isinstance(fields, dict):
+            return [f"operation {name!r} fields must be an object"]
+        for field, values in fields.items():
+            if not isinstance(values, dict) or not all(
+                isinstance(values.get(key), int) for key in ("matches", "mismatches")
+            ) or values["matches"] + values["mismatches"] != parsed:
+                errors.append(f"operation {name!r} field {field!r} counts do not equal parsed")
+        return errors
+
+    rows = report.get("rows")
+    if not isinstance(rows, int):
+        return [f"operation {name!r} rows must be an integer"]
+    if name == "standardization":
+        valid = report.get("valid")
+        error_count = report.get("errors")
+        matches = report.get("matches")
+        mismatches = report.get("mismatches")
+        if not all(isinstance(value, int) for value in (valid, error_count, matches, mismatches)):
+            return [f"operation {name!r} standardization counts must be integers"]
+        if valid + error_count != rows:
+            errors.append(f"operation {name!r} valid + errors != rows")
+        if matches + mismatches != valid:
+            errors.append(f"operation {name!r} matches + mismatches != valid")
+        return errors
+
+    schematic_failures = report.get("chematic_failures")
+    rdkit_failures = report.get("rdkit_failures")
+    exact_matches = report.get("exact_matches")
+    exact_mismatches = report.get("exact_mismatches")
+    if not all(
+        isinstance(value, int)
+        for value in (schematic_failures, rdkit_failures, exact_matches, exact_mismatches)
+    ):
+        return [f"operation {name!r} comparison counts must be integers"]
+    common_success = rows - schematic_failures - rdkit_failures
+    if exact_matches + exact_mismatches != common_success:
+        errors.append(
+            f"operation {name!r} exact matches + mismatches != common successful rows"
+        )
+    return errors
+
+
 def validate(document: dict, root: Path = ROOT) -> list[str]:
     errors: list[str] = []
     if document.get("schema_version") != 1:
@@ -63,6 +147,8 @@ def validate(document: dict, root: Path = ROOT) -> list[str]:
                 errors.append(f"measured operation {name!r} is missing report")
             elif not (root / report).is_file():
                 errors.append(f"measured operation {name!r} report does not exist: {report}")
+            else:
+                errors.extend(validate_report(name, root / report, document["target_version"]))
         elif "report" in record:
             errors.append(f"not_measured operation {name!r} must not declare report")
     return errors
