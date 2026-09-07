@@ -148,8 +148,8 @@ pub use rxn::{
     parse_rxn_file_with_limits, write_rxn_document, write_rxn_file,
 };
 pub use sdf::{
-    ConformerEnsemble, SdfFileReader, SdfParseLimits, SdfReader, SdfRecord, SdfRecordReader,
-    parse_sdf_with_limits, read_sdf_conformer_ensembles,
+    ConformerEnsemble, SdfBatch, SdfBatchProgress, SdfBatchReader, SdfFileReader, SdfParseLimits,
+    SdfReader, SdfRecord, SdfRecordReader, parse_sdf_with_limits, read_sdf_conformer_ensembles,
 };
 pub use semantic::{
     AtomRef, ExpandedSemantic, PolymerRepeatUnit, RGroupDefinition, SemanticCommand, SemanticError,

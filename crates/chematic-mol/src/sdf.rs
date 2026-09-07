@@ -648,6 +648,165 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
 }
 
 // ---------------------------------------------------------------------------
+// SdfBatchReader — bounded pull-based batches
+// ---------------------------------------------------------------------------
+
+/// One bounded, input-ordered batch from [`SdfBatchReader`].
+///
+/// Parse failures stay in their input position instead of being silently
+/// discarded. This makes a batch safe to hand to a downstream worker while
+/// retaining enough information to build a resumable partial-result record.
+pub struct SdfBatch {
+    /// Zero-based batch sequence number.
+    pub sequence: usize,
+    /// Records in source order. `Err` entries are malformed or resource-limit
+    /// records; later records may still be present when the reader can safely
+    /// continue.
+    pub records: Vec<Result<SdfRecord, MolParseError>>,
+}
+
+impl SdfBatch {
+    /// Number of records, including rejected records, in this batch.
+    pub fn len(&self) -> usize {
+        self.records.len()
+    }
+
+    /// Whether this batch contains no records.
+    pub fn is_empty(&self) -> bool {
+        self.records.is_empty()
+    }
+}
+
+/// Deterministic progress snapshot for a bounded SDF batch stream.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+pub struct SdfBatchProgress {
+    /// Version of this progress JSON contract.
+    pub schema_version: u32,
+    /// `running`, `complete`, or `cancelled`.
+    pub status: &'static str,
+    pub batch_size: usize,
+    /// Number of source records emitted, including rejected records.
+    pub records_emitted: usize,
+    pub batches_emitted: usize,
+}
+
+/// Pull-based bounded batch reader over any [`std::io::BufRead`] source.
+///
+/// Each call to [`Iterator::next`] reads at most `batch_size` records and
+/// retains source order. Because the consumer pulls the next batch, this is a
+/// natural backpressure boundary: no background worker or unbounded queue is
+/// created. Call [`Self::cancel`] to stop at the next batch boundary.
+pub struct SdfBatchReader<R: std::io::BufRead> {
+    inner: SdfFileReader<R>,
+    batch_size: usize,
+    cancelled: bool,
+    exhausted: bool,
+    records_emitted: usize,
+    batches_emitted: usize,
+}
+
+impl<R: std::io::BufRead> SdfBatchReader<R> {
+    /// Construct a batch reader using the default SDF limits and diagnostics.
+    ///
+    /// # Panics
+    ///
+    /// Panics when `batch_size` is zero. Use a positive, caller-controlled
+    /// size so memory remains bounded by the batch and one parsed record.
+    pub fn new(reader: R, batch_size: usize) -> Self {
+        assert!(batch_size > 0, "batch_size must be greater than zero");
+        Self::with_limits(reader, batch_size, SdfParseLimits::default())
+    }
+
+    /// Construct a batch reader with explicit input and record limits.
+    pub fn with_limits(reader: R, batch_size: usize, limits: SdfParseLimits) -> Self {
+        assert!(batch_size > 0, "batch_size must be greater than zero");
+        Self {
+            inner: SdfFileReader::with_limits(reader, limits),
+            batch_size,
+            cancelled: false,
+            exhausted: false,
+            records_emitted: 0,
+            batches_emitted: 0,
+        }
+    }
+
+    /// Construct a batch reader using the lightweight parsing path.
+    pub fn fast(reader: R, batch_size: usize) -> Self {
+        assert!(batch_size > 0, "batch_size must be greater than zero");
+        Self {
+            inner: SdfFileReader::fast(reader),
+            batch_size,
+            cancelled: false,
+            exhausted: false,
+            records_emitted: 0,
+            batches_emitted: 0,
+        }
+    }
+
+    /// Stop reading before the next batch is started.
+    pub fn cancel(&mut self) {
+        self.cancelled = true;
+    }
+
+    /// Return whether cancellation has been requested.
+    pub fn is_cancelled(&self) -> bool {
+        self.cancelled
+    }
+
+    /// Return deterministic progress suitable for a resumable manifest.
+    pub fn progress(&self) -> SdfBatchProgress {
+        SdfBatchProgress {
+            schema_version: 1,
+            status: if self.cancelled {
+                "cancelled"
+            } else if self.exhausted {
+                "complete"
+            } else {
+                "running"
+            },
+            batch_size: self.batch_size,
+            records_emitted: self.records_emitted,
+            batches_emitted: self.batches_emitted,
+        }
+    }
+
+    /// Serialize [`Self::progress`] as stable JSON.
+    pub fn manifest_json(&self) -> String {
+        serde_json::to_string(&self.progress()).expect("SDF progress is serializable")
+    }
+}
+
+impl<R: std::io::BufRead> Iterator for SdfBatchReader<R> {
+    type Item = SdfBatch;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.cancelled || self.exhausted {
+            return None;
+        }
+
+        let mut records = Vec::with_capacity(self.batch_size);
+        while records.len() < self.batch_size {
+            match self.inner.next() {
+                Some(record) => records.push(record),
+                None => {
+                    self.exhausted = true;
+                    break;
+                }
+            }
+        }
+
+        if records.is_empty() {
+            return None;
+        }
+
+        let sequence = self.batches_emitted;
+        self.records_emitted += records.len();
+        self.batches_emitted += 1;
+        Some(SdfBatch { sequence, records })
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -779,6 +938,61 @@ $$$$
         assert_eq!(records.len(), 2);
         assert_eq!(records[0].mol.atom_count(), 2); // mol_a: 2 C atoms
         assert_eq!(records[1].mol.atom_count(), 3); // mol_b: C, N, O
+    }
+
+    #[test]
+    fn sdf_batch_reader_preserves_order_and_progress() {
+        use std::io::{BufReader, Cursor};
+
+        let sdf = format!("{MOL_A}$$$$\n{MOL_B}$$$$\n{MOL_A}$$$$\n");
+        let mut reader = SdfBatchReader::new(BufReader::new(Cursor::new(sdf)), 2);
+
+        assert_eq!(reader.progress().status, "running");
+        let first = reader.next().expect("first batch");
+        assert_eq!(first.sequence, 0);
+        assert_eq!(first.len(), 2);
+        assert_eq!(first.records[0].as_ref().unwrap().meta.name, "mol_a");
+        assert_eq!(first.records[1].as_ref().unwrap().meta.name, "mol_b");
+        assert_eq!(reader.progress().records_emitted, 2);
+
+        let second = reader.next().expect("second batch");
+        assert_eq!(second.sequence, 1);
+        assert_eq!(second.len(), 1);
+        assert_eq!(second.records[0].as_ref().unwrap().meta.name, "mol_a");
+        assert_eq!(reader.progress().status, "complete");
+        assert_eq!(reader.progress().batches_emitted, 2);
+        assert!(reader.next().is_none());
+    }
+
+    #[test]
+    fn sdf_batch_reader_retains_rejected_record_positions() {
+        use std::io::{BufReader, Cursor};
+
+        let malformed = "broken\n  prog\n\n  NOTNUM  0  0 V2000\nM  END\n";
+        let sdf = format!("{MOL_A}$$$$\n{malformed}$$$$\n{MOL_B}$$$$\n");
+        let batch = SdfBatchReader::new(BufReader::new(Cursor::new(sdf)), 3)
+            .next()
+            .expect("batch");
+        assert!(batch.records[0].is_ok());
+        assert!(batch.records[1].is_err());
+        assert!(batch.records[2].is_ok());
+    }
+
+    #[test]
+    fn sdf_batch_reader_cancels_at_batch_boundary() {
+        use std::io::{BufReader, Cursor};
+
+        let sdf = format!("{MOL_A}$$$$\n{MOL_B}$$$$\n");
+        let mut reader = SdfBatchReader::new(BufReader::new(Cursor::new(sdf)), 1);
+        assert_eq!(reader.next().unwrap().len(), 1);
+        reader.cancel();
+        assert!(reader.next().is_none());
+        assert!(reader.is_cancelled());
+        let json: serde_json::Value = serde_json::from_str(&reader.manifest_json()).unwrap();
+        assert_eq!(json["schema_version"], 1);
+        assert_eq!(json["status"], "cancelled");
+        assert_eq!(json["records_emitted"], 1);
+        assert_eq!(json["batches_emitted"], 1);
     }
 
     #[test]

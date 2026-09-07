@@ -191,7 +191,11 @@ Notes on the cells above that need qualification:
 - **Python**: `from_mol_block`, `from_mol_block_with_coords`, `from_mol_block_with_diagnostics`, `parse_sdf_with_coords`, `from_mol_v3000[_with_coords|_with_diagnostics]`.
 - **WASM**: `mol_from_v3000_block`, `mol_from_sdf_block`, `to_mol_block`, `to_mol_v3000_block`, `sdf_to_smiles_json`, `sdf_to_records_json`, `sdf_from_records_json`, `mol_block_stereo_diagnostics_json`, `mol_v3000_stereo_diagnostics_json`, `mol_block_coords_json`.
 - **Streaming**: `SdfFileReader<R: BufRead>` is a true I/O-streaming `Iterator`
-  (does not require the whole file in memory up front). `SdfReader`/
+  (does not require the whole file in memory up front). `SdfBatchReader<R>` is
+  the bounded pull-based variant: each item contains at most the configured
+  batch size, preserves source order, retains rejected records, and can be
+  cancelled at a batch boundary. Pulling the next item is the backpressure
+  contract; no background queue is created. `SdfReader`/
   `SdfRecordReader` are lazy iterators over an already-loaded `&str` (do not
   eagerly collect every record into a `Vec`, but do require the full text in
   memory). Python and WASM bindings materialize (no streaming reader is
