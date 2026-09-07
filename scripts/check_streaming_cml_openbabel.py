@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check CML/CDXML/mmCIF record accounting against Open Babel's CLI boundary."""
+"""Check CML/CDXML/mmCIF/PDB record accounting against Open Babel's CLI boundary."""
 
 from __future__ import annotations
 
@@ -15,17 +15,18 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--format", choices=("cml", "cdxml", "mmcif"), default="cml")
+    parser.add_argument("--format", choices=("cml", "cdxml", "mmcif", "pdb"), default="cml")
     parser.add_argument("--cml", type=Path, default=Path("benchmarks/fixtures/ethanol.cml"))
     parser.add_argument("--cdxml", type=Path, default=Path("benchmarks/fixtures/ethanol.cdxml"))
     parser.add_argument("--mmcif", type=Path, default=Path("benchmarks/fixtures/minimal.mmcif"))
+    parser.add_argument("--pdb", type=Path, default=Path("benchmarks/fixtures/minimal.pdb"))
     parser.add_argument("--repeats", type=int, default=20)
     parser.add_argument("--openbabel", default="obabel")
     parser.add_argument("--binary", nargs="+", default=["cargo", "run", "-p", "chematic-mol", "--example", "streaming_benchmark", "--offline", "--"])
     args = parser.parse_args()
     if args.repeats <= 0:
         raise SystemExit("--repeats must be positive")
-    path = {"cml": args.cml, "cdxml": args.cdxml, "mmcif": args.mmcif}[args.format]
+    path = {"cml": args.cml, "cdxml": args.cdxml, "mmcif": args.mmcif, "pdb": args.pdb}[args.format]
     path = path if path.is_absolute() else ROOT / path
     payload = path.read_bytes()
     expected = args.repeats
