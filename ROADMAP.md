@@ -78,6 +78,11 @@ Completed on the v1.0.9 release candidate tree:
   gzip input and RDKit over the decompressed fixture, while keeping compressed
   and decompressed byte stages distinct; it does not claim same-process parity
   or speed equivalence.
+- [x] Extend issue #499's deterministic gzip contract to XYZ. The 2026-09-08
+  report records 40/40 valid records and zero failures for chematic gzip input
+  and RDKit over decompressed frames, while keeping compressed and decompressed
+  byte stages distinct; it does not claim same-process parity or speed
+  equivalence.
 - [x] Expand issue #489's checked-in streaming safety corpus to four cases per
   format (36/36 negative cases), retaining explicit line-limit handling for
   lenient CML/CDXML/PDB readers and the existing 9 oversized plus 2 gzip gates.
