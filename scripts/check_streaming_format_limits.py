@@ -53,15 +53,30 @@ def main() -> int:
     args = parser.parse_args()
 
     malformed = {
-        "sdf": "broken\n  chematic\n\n  NOTNUM  0  0 V2000\nM  END\n$$$$\n",
-        "mol": "broken\n  chematic\n\n  NOTNUM  0  0 V2000\nM  END\n$$$$\n",
-        "xyz": "2\nmissing second atom\nC 0 0 0\n",
-        "v3000": "not a V3000 mol block\n",
-        "mol2": "@<TRIPOS>MOLECULE\nmissing atom and bond sections\n",
-        "cml": '<cml><molecule><atomArray><atom id="a1" elementType="C"/><atom id="a2" elementType="C"/></atomArray><bondArray><bond atomRefs2="a1 a2" order="bogus"/></bondArray></molecule></cml>',
-        "cdxml": '<CDXML><page><fragment><n id="1" Element="6"/><b id="1"/></fragment></page></CDXML>',
-        "mmcif": "data_empty\n",
-        "pdb": "ATOM\n",
+        "sdf": [
+            "broken\n  chematic\n\n  NOTNUM  0  0 V2000\nM  END\n$$$$\n",
+            "broken\n  chematic\n\n  1  0  0  0  0  0            999 V2000\nthis is not an atom line\nM  END\n$$$$\n",
+        ],
+        "mol": [
+            "broken\n  chematic\n\n  NOTNUM  0  0 V2000\nM  END\n$$$$\n",
+            "broken\n  chematic\n\n  1  0  0  0  0  0            999 V2000\nthis is not an atom line\nM  END\n$$$$\n",
+        ],
+        "xyz": ["2\nmissing second atom\nC 0 0 0\n", "not-a-count\ncomment\nC 0 0 0\n"],
+        "v3000": ["not a V3000 mol block\n", "M  V30 COUNTS not-numbers\nM  END\n"],
+        "mol2": [
+            "@<TRIPOS>MOLECULE\nmissing atom and bond sections\n",
+            "@<TRIPOS>MOLECULE\nname\n1 1 0 0 0\n@<TRIPOS>ATOM\nnot-an-atom\n",
+        ],
+        "cml": [
+            '<cml><molecule><atomArray><atom id="a1" elementType="C"/><atom id="a2" elementType="C"/></atomArray><bondArray><bond atomRefs2="a1 a2" order="bogus"/></bondArray></molecule></cml>',
+            "<cml><molecule><atomArray>",
+        ],
+        "cdxml": [
+            '<CDXML><page><fragment><n id="1" Element="6"/><b id="1"/></fragment></page></CDXML>',
+            "<CDXML><page><fragment>",
+        ],
+        "mmcif": ["data_empty\n", "data_empty\nloop_\n_atom_site.id\n"],
+        "pdb": ["ATOM\n", "ATOM      1  BAD\n"],
     }
     # CML/CDXML are deliberately lenient about unknown/empty structure and
     # PDB ignores non-record lines. Exercise their typed safety boundary with
@@ -87,15 +102,18 @@ def main() -> int:
     errors: list[str] = []
     with tempfile.TemporaryDirectory(prefix="chematic-streaming-limits-") as directory:
         temp = Path(directory)
-        for fmt, content in malformed.items():
-            path = temp / f"malformed.{fmt}"
-            path.write_text(content, encoding="utf-8")
-            result = run_runner(args.binary, fmt, path, *malformed_options.get(fmt, ()))
-            require(
-                result["records"] == 0 and result["failures"] == 1,
-                f"{fmt} malformed case did not fail exactly once: {result}",
-                errors,
-            )
+        malformed_count = 0
+        for fmt, cases in malformed.items():
+            for case_index, content in enumerate(cases):
+                path = temp / f"malformed-{case_index}.{fmt}"
+                path.write_text(content, encoding="utf-8")
+                result = run_runner(args.binary, fmt, path, *malformed_options.get(fmt, ()))
+                malformed_count += 1
+                require(
+                    result["records"] == 0 and result["failures"] == 1,
+                    f"{fmt} malformed case {case_index} did not fail exactly once: {result}",
+                    errors,
+                )
 
         for fmt, path in valid.items():
             result = run_runner(args.binary, fmt, path, "--max-input-bytes", "1")
@@ -125,7 +143,7 @@ def main() -> int:
         print("streaming format limit failures:", file=sys.stderr)
         print("\n".join(errors), file=sys.stderr)
         return 1
-    print("streaming format limits OK: 9 negative, 9 oversized, 2 gzip cases")
+    print(f"streaming format limits OK: {malformed_count} negative, 9 oversized, 2 gzip cases")
     return 0
 
 

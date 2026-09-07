@@ -83,8 +83,8 @@ TMPDIR=/private/tmp python3 scripts/check_streaming_format_limits.py \
   --binary target/debug/examples/streaming_benchmark
 ```
 
-It checks one malformed or typed resource-limit rejection and one input-size
+It checks two malformed or typed resource-limit rejections and one input-size
 rejection for every runner format, plus gzip control and decompressed-limit
-cases. CML, CDXML, and PDB use their explicit line-limit boundary because
+cases (18 negative, 9 oversized, 2 gzip cases). CML, CDXML, and PDB use their explicit line-limit boundary because
 those readers intentionally accept some unknown/non-record structure instead
 of exposing a strict malformed-record error.
