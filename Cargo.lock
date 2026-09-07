@@ -431,6 +431,7 @@ dependencies = [
  "chematic-rxn",
  "chematic-smarts",
  "chematic-smiles",
+ "flate2",
  "serde",
  "serde_json",
 ]

@@ -46,8 +46,9 @@ MOL, and XYZ boundaries reproducible without changing parser code. The runner
 also accepts V3000, MOL2, CML, CDXML, and mmCIF as explicitly reported
 `execution_mode: "materialized_one_shot"` parser rows. They are not
 file-backed streaming or cross-engine throughput evidence. PDB is now included
-through the bounded `chematic-3d` parser path; gzip remains separate
-format-adapter work.
+through the bounded `chematic-3d` parser path. The runner also accepts
+`--gzip` for SDF/XYZ file-backed decoding through `flate2`; input limits apply
+to decompressed bytes and the JSON records the compression mode.
 
 Example bounded runs:
 
@@ -69,4 +70,8 @@ cargo run -p chematic-mol --example streaming_benchmark --release --offline -- -
 cargo run -p chematic-mol --example streaming_benchmark --release --offline -- --format cdxml --path benchmarks/fixtures/ethanol.cdxml --repeats 1
 cargo run -p chematic-mol --example streaming_benchmark --release --offline -- --format mmcif --path benchmarks/fixtures/minimal.mmcif --repeats 1
 cargo run -p chematic-mol --example streaming_benchmark --release --offline -- --format pdb --path benchmarks/fixtures/minimal.pdb --repeats 1
+
+# For a gzip input produced from the same fixture:
+gzip -c benchmarks/fixtures/streaming.sdf > /tmp/streaming.sdf.gz
+cargo run -p chematic-mol --example streaming_benchmark --release --offline -- --format sdf --gzip --path /tmp/streaming.sdf.gz --repeats 1
 ```

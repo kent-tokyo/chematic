@@ -115,7 +115,8 @@ documentation, and required measurement agree.
 - [ ] Extend the common benchmark to V2000/V3000, XYZ, MOL2, CML, CDXML,
   PDB/mmCIF, and gzip, including malformed and oversized inputs. The local
   runner now covers PDB and applies explicit parser limits to MOL2, CML,
-  CDXML, and mmCIF; gzip and full malformed-corpus coverage remain open.
+  CDXML, and mmCIF, and supports bounded gzip SDF/XYZ decoding; full
+  malformed-corpus coverage remains open.
 - [x] Add bounded Rust streaming batch APIs with cancellation, pull-based
   backpressure, deterministic ordering, and an explicit partial-result
   manifest (`SdfBatchReader`); cross-language streaming parity remains open.
