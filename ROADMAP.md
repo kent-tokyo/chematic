@@ -126,7 +126,7 @@ Completed on the v1.0.9 release candidate tree:
 - [x] Extend the SDF/MOL/XYZ streaming benchmark runner with explicit input,
   record, line, frame, and atom limits, and record effective limits in JSON;
   V3000/MOL2/CML/CDXML/mmCIF parser coverage is now included as explicitly
-  materialized one-shot rows; PDB/gzip and true streaming parity remain open.
+  materialized one-shot rows; true same-process streaming parity remains open.
 
 The performance figures are source-level measurements recorded before the
 release artifact was built; they remain scoped to their named corpus and

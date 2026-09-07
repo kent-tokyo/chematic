@@ -33,7 +33,7 @@ checkout. GitHub issue state is intentionally not changed by this document.
 - The SDF/MOL/XYZ benchmark runner now accepts explicit resource limits and
   records them in JSON; a bounded input-limit run produced 0 records and 1
   failure as expected. V3000/MOL2/CML/CDXML/mmCIF parser rows are now covered
-  as `materialized_one_shot`; PDB/gzip and true streaming parity remain open.
+  as `materialized_one_shot`; true same-process streaming parity remains open.
 - #463: occupancy-aware `PeriodicStructure::composition()` and its disorder,
   zero-occupancy, deterministic-order, and explicit-supercell tests exist;
   GitHub issue closed after review of the current checkout.
