@@ -45,8 +45,9 @@ effective limits in its JSON output. This makes malformed and oversized SDF,
 MOL, and XYZ boundaries reproducible without changing parser code. The runner
 also accepts V3000, MOL2, CML, CDXML, and mmCIF as explicitly reported
 `execution_mode: "materialized_one_shot"` parser rows. They are not
-file-backed streaming or cross-engine throughput evidence; PDB and gzip remain
-separate format-adapter work.
+file-backed streaming or cross-engine throughput evidence. PDB is now included
+through the bounded `chematic-3d` parser path; gzip remains separate
+format-adapter work.
 
 Example bounded runs:
 
@@ -67,4 +68,5 @@ cargo run -p chematic-mol --example streaming_benchmark --release --offline -- -
 cargo run -p chematic-mol --example streaming_benchmark --release --offline -- --format cml --path benchmarks/fixtures/ethanol.cml --repeats 1
 cargo run -p chematic-mol --example streaming_benchmark --release --offline -- --format cdxml --path benchmarks/fixtures/ethanol.cdxml --repeats 1
 cargo run -p chematic-mol --example streaming_benchmark --release --offline -- --format mmcif --path benchmarks/fixtures/minimal.mmcif --repeats 1
+cargo run -p chematic-mol --example streaming_benchmark --release --offline -- --format pdb --path benchmarks/fixtures/minimal.pdb --repeats 1
 ```

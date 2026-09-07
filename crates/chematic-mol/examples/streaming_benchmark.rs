@@ -41,7 +41,7 @@ fn main() {
     let max_atoms = arg_usize("--max-atoms", 1_000_000);
     let materialized = matches!(
         format.as_str(),
-        "v3000" | "mol2" | "cml" | "cdxml" | "mmcif"
+        "v3000" | "mol2" | "cml" | "cdxml" | "mmcif" | "pdb"
     );
     let bytes = std::fs::metadata(&path)
         .expect("benchmark input must exist")
@@ -91,10 +91,52 @@ fn main() {
                 }
                 let parsed = match format.as_str() {
                     "v3000" => chematic_mol::parse_mol_v3000(&text).is_ok(),
-                    "mol2" => chematic_mol::parse_mol2(&text).is_ok(),
-                    "cml" => chematic_mol::parse_cml(&text).is_ok(),
-                    "cdxml" => chematic_mol::parse_cdxml(&text).is_ok(),
-                    "mmcif" => chematic_mol::parse_mmcif(&text).is_ok(),
+                    "mol2" => chematic_mol::parse_mol2_with_limits(
+                        &text,
+                        &chematic_mol::Mol2ParseLimits {
+                            max_input_bytes,
+                            max_line_bytes,
+                            max_lines: max_records,
+                            max_atoms,
+                            max_bonds: max_atoms.saturating_mul(2),
+                            ..chematic_mol::Mol2ParseLimits::default()
+                        },
+                    )
+                    .is_ok(),
+                    "cml" => chematic_mol::parse_cml_with_limits(
+                        &text,
+                        &chematic_mol::CmlParseLimits {
+                            max_input_bytes,
+                            max_line_bytes,
+                            max_lines: max_records,
+                            max_atoms,
+                            max_bonds: max_atoms.saturating_mul(2),
+                            max_xml_elements: max_records.saturating_mul(4),
+                        },
+                    )
+                    .is_ok(),
+                    "cdxml" => chematic_mol::parse_cdxml_with_limits(
+                        &text,
+                        &chematic_mol::CdxmlParseLimits {
+                            max_input_bytes,
+                            max_line_bytes,
+                            max_lines: max_records,
+                            max_attribute_bytes: max_line_bytes,
+                            max_atoms,
+                            max_bonds: max_atoms.saturating_mul(2),
+                            max_fragments: max_records,
+                        },
+                    )
+                    .is_ok(),
+                    "mmcif" => chematic_mol::parse_mmcif_with_limits(
+                        &text,
+                        &chematic_mol::MmcifParseLimits {
+                            max_input_bytes,
+                            max_atoms,
+                            max_line_len: max_line_bytes,
+                        },
+                    )
+                    .is_ok(),
                     _ => unreachable!(),
                 };
                 if parsed {
@@ -103,8 +145,31 @@ fn main() {
                     failures += 1;
                 }
             }
+            "pdb" => {
+                let text = std::fs::read_to_string(&path)
+                    .unwrap_or_else(|error| panic!("read PDB input: {error}"));
+                if text.len() > max_input_bytes || max_records == 0 {
+                    failures += 1;
+                    continue;
+                }
+                let parsed = chematic_3d::parse_pdb_atoms_with_limits(
+                    &text,
+                    &chematic_3d::PdbParseLimits {
+                        max_input_bytes,
+                        max_line_bytes,
+                        max_atoms,
+                        max_models: max_records,
+                    },
+                )
+                .is_ok();
+                if parsed {
+                    records += 1;
+                } else {
+                    failures += 1;
+                }
+            }
             other => panic!(
-                "unsupported format {other}; choose sdf, mol, xyz, v3000, mol2, cml, cdxml, or mmcif"
+                "unsupported format {other}; choose sdf, mol, xyz, v3000, mol2, cml, cdxml, mmcif, or pdb"
             ),
         }
     }

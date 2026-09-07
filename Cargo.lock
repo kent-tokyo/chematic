@@ -422,6 +422,7 @@ dependencies = [
 name = "chematic-mol"
 version = "1.0.8"
 dependencies = [
+ "chematic-3d",
  "chematic-chem",
  "chematic-core",
  "chematic-crystal",

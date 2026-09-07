@@ -26,6 +26,7 @@ crystal = ["dep:chematic-crystal"]
 
 [dependencies]
 chematic-core        = { path = "../chematic-core",        version = "1.0.8" }
+chematic-3d           = { path = "../chematic-3d",           version = "1.0.8" }
 chematic-rxn         = { path = "../chematic-rxn",         version = "1.0.8" }
 chematic-perception  = { path = "../chematic-perception",  version = "1.0.8" }
 chematic-smiles      = { path = "../chematic-smiles",      version = "1.0.8" }
