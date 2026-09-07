@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check CML/CDXML record accounting against Open Babel's CLI boundary."""
+"""Check CML/CDXML/mmCIF record accounting against Open Babel's CLI boundary."""
 
 from __future__ import annotations
 
@@ -15,20 +15,21 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--format", choices=("cml", "cdxml"), default="cml")
+    parser.add_argument("--format", choices=("cml", "cdxml", "mmcif"), default="cml")
     parser.add_argument("--cml", type=Path, default=Path("benchmarks/fixtures/ethanol.cml"))
     parser.add_argument("--cdxml", type=Path, default=Path("benchmarks/fixtures/ethanol.cdxml"))
+    parser.add_argument("--mmcif", type=Path, default=Path("benchmarks/fixtures/minimal.mmcif"))
     parser.add_argument("--repeats", type=int, default=20)
     parser.add_argument("--openbabel", default="obabel")
     parser.add_argument("--binary", nargs="+", default=["cargo", "run", "-p", "chematic-mol", "--example", "streaming_benchmark", "--offline", "--"])
     args = parser.parse_args()
     if args.repeats <= 0:
         raise SystemExit("--repeats must be positive")
-    path = args.cml if args.format == "cml" else args.cdxml
+    path = {"cml": args.cml, "cdxml": args.cdxml, "mmcif": args.mmcif}[args.format]
     path = path if path.is_absolute() else ROOT / path
     payload = path.read_bytes()
     expected = args.repeats
-    chematic = json.loads(subprocess.run([*args.binary, "--format", "cml", "--path", str(path), "--repeats", str(args.repeats)], cwd=ROOT, check=True, text=True, capture_output=True).stdout)
+    chematic = json.loads(subprocess.run([*args.binary, "--format", args.format, "--path", str(path), "--repeats", str(args.repeats)], cwd=ROOT, check=True, text=True, capture_output=True).stdout)
     started = subprocess.run
     converted = 0
     failures = 0
@@ -48,7 +49,7 @@ def main() -> int:
             errors.append(f"{name} input byte mismatch: {row.get('input_bytes')}")
     report = {"schema_version": 1, "target_version": "1.0.9", "format": args.format, "fixture": {"path": str(path.relative_to(ROOT)), "bytes": len(payload), "sha256": hashlib.sha256(payload).hexdigest()}, "repeats": args.repeats, "expected_records": expected, "rows": {"chematic": chematic, "openbabel": {"records": converted, "failures": failures, "input_bytes": len(payload) * args.repeats, "comparison_boundary": "Open Babel CLI process per repetition; startup and conversion included"}}, "comparison_boundary": {"chematic": f"Rust {args.format.upper()} materialized one-shot parser", "openbabel": f"Open Babel {args.format.upper()} CLI conversion per repetition"}}
     if errors:
-        print("streaming CML contract failures:", *errors, sep="\n")
+        print(f"streaming {args.format.upper()} contract failures:", *errors, sep="\n")
         return 1
     print(json.dumps(report, indent=2))
     return 0

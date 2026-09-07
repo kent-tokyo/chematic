@@ -84,6 +84,7 @@ are in the [WASM artifact record](../benchmarks/2026-09-06-wasm-size-v1.0.8.md).
 | [2026-09-08 same-input MOL2 streaming contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-cross-engine-mol2.md) | Same-input MOL2 record/failure agreement across chematic and RDKit |
 | [2026-09-08 same-input CML streaming contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-cross-engine-cml.md) | Same-input CML record/failure agreement across chematic and Open Babel |
 | [2026-09-08 same-input CDXML streaming contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-cross-engine-cdxml.md) | Same-input CDXML record/failure agreement across chematic and Open Babel |
+| [2026-09-08 same-input mmCIF streaming contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-cross-engine-mmcif.md) | Same-input mmCIF record/failure agreement across chematic and Open Babel |
 | [2026-09-04 MMFF94/3D](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-mmff94-3d.md) | Experimental local microbenchmarks |
 | [2026-09-04 WASM](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-wasm-size.md) | Artifact size and digest |
 | [2026-09-03 competitive](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-03-competitive.md) | Resumable six-operation v1.0.1 run |
