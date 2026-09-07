@@ -186,9 +186,9 @@ documentation, and required measurement agree.
   topological `rdkit_rdk` lane is also measured by the Rust CLI (5,000/5,000
   exact bit-set matches). The RDKit-compatible hashed topological torsion lane
   is measured by the Rust CLI as well (4,248/5,000 exact bit-set matches,
-  84.96%); native `topo_path` and standardization remain explicitly
-  `not_measured`, and cross-binding parity for the measured operations remains
-  open. The explicit Rust CLI standardization profile is measured against the
+  84.96%); native `topo_path` remains explicitly `not_measured`, and
+  cross-binding parity for the measured operations remains open. The explicit
+  Rust CLI standardization profile is measured against the
   10 committed Phase 1 holdouts (8/10 expected fragment identities, 80%); two
   acetate cases differ after charge neutralization and remain disclosed
   mismatches.

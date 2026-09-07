@@ -1201,6 +1201,17 @@ mod tests {
     }
 
     #[test]
+    fn standardize_fragment_profile_is_explicit_and_default_preserves_fragments() {
+        let default: serde_json::Value =
+            serde_json::from_str(&standardize_json("CC.CCC", false).unwrap()).unwrap();
+        let profile: serde_json::Value =
+            serde_json::from_str(&standardize_json("CC.CCC", true).unwrap()).unwrap();
+        assert!(default["output_smiles"].as_str().unwrap().contains('.'));
+        assert!(!profile["output_smiles"].as_str().unwrap().contains('.'));
+        assert_ne!(default["output"]["atoms"], profile["output"]["atoms"]);
+    }
+
+    #[test]
     fn report_emits_complete_machine_readable_analysis() {
         let json: serde_json::Value =
             serde_json::from_str(&report_json("CC(=O)Oc1ccccc1C(=O)O").unwrap()).unwrap();
