@@ -156,7 +156,10 @@ documentation, and required measurement agree.
   relabelings per coupled molecule: 28 coupled components, all size 2, and 0
   correspondence failures. The audit now reproducibly exposes 3 residual
   molecules with two canonical outputs; those three inputs and their observed
-  output pairs now have held-out Rust regression coverage, and
+  output pairs now have held-out Rust regression coverage. The Rust gate also
+  replays 64 deterministic atom relabelings per residual, verifies that the
+  relabeling-only axis preserves one output, then combines it with the two
+  measured aromatic-stash spellings to retain exactly two outputs;
   `canonical_smiles_stable_key()` remains fail-closed for each. Keep #149 open
   until their aromatic carrier/stereo traversal is normalized.
 - [x] Add a bounded default-Hückel fused/non-alternant fallback for

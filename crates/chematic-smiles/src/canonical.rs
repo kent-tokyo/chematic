@@ -3830,6 +3830,86 @@ mod tests {
         }
     }
 
+    /// Re-run the held-out Wave 3 residuals through the same deterministic
+    /// relabeling axis used by the corpus audit.  The residual is expected to
+    /// remain observable as exactly two canonical spellings; accepting one
+    /// winner here would silently turn an order-dependent traversal into a
+    /// cache/deduplication key.
+    #[test]
+    fn ez_shared_carrier_held_out_residuals_remain_two_way_under_relabeling() {
+        let observed_pairs = [
+            (
+                r"c/3(c(/c(c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+                r"c3(c(c(/c3=N/CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+            ),
+            (
+                r"c/1(c(/c(c1=N\[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+                r"c1(c(c(/c1=N/[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+            ),
+            (
+                r"c/1(O)c(O)/c(=N\[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)c1=N\CCOC",
+                r"c1(O)c(O)c(=N/[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)\c1=N\CCOC",
+            ),
+        ];
+
+        for (&input, &(observed_a, observed_b)) in EZ_SHARED_CARRIER_HELD_OUT_RESIDUALS
+            .iter()
+            .zip(observed_pairs.iter())
+        {
+            let mol = parse(input).unwrap_or_else(|e| panic!("parse '{input}': {e}"));
+            let before_geo = geometry_fingerprint(&mol);
+            let n = mol.atom_count();
+            let mut variants = vec![
+                relabel_molecule_preserving_ez(&mol, &(0..n).collect::<Vec<_>>()),
+                relabel_molecule_preserving_ez(&mol, &(0..n).rev().collect::<Vec<_>>()),
+            ];
+            for seed in 0..64u64 {
+                variants.push(relabel_molecule_preserving_ez(
+                    &mol,
+                    &deterministic_permutation(n, seed),
+                ));
+            }
+
+            let relabeled_outputs: HashSet<String> = variants
+                .iter()
+                .map(|variant| {
+                    assert_eq!(
+                        geometry_fingerprint(variant),
+                        before_geo,
+                        "'{input}': relabeling changed the encoded E/Z geometry"
+                    );
+                    canonical_smiles(variant)
+                })
+                .collect();
+            assert_eq!(
+                relabeled_outputs.len(),
+                1,
+                "'{input}': relabeling-only audit must remain deterministic"
+            );
+
+            let mut outputs = relabeled_outputs;
+            for observed in [observed_a, observed_b] {
+                let observed_mol = parse(observed)
+                    .unwrap_or_else(|e| panic!("parse observed residual '{observed}': {e}"));
+                assert_eq!(
+                    geometry_fingerprint(&observed_mol),
+                    before_geo,
+                    "'{input}': observed residual spelling changed E/Z geometry"
+                );
+                outputs.insert(canonical_smiles(&observed_mol));
+            }
+            assert_eq!(
+                outputs.len(),
+                2,
+                "'{input}': 64-seed residual audit must retain exactly two outputs"
+            );
+            assert!(
+                canonical_smiles_stable_key(&mol).is_none(),
+                "'{input}': two-way residual must remain fail-closed"
+            );
+        }
+    }
+
     /// Proves all 19 [`EZ_SHARED_CARRIER_FULLY_RESOLVED`] fixtures are
     /// genuinely, fully permutation-invariant -- not just under the one
     /// relabeling a weaker test might check. Per fixture: the original
