@@ -184,9 +184,11 @@ documentation, and required measurement agree.
   core descriptors have named reports, and MACCS now has a Rust-CLI report
   (4,714/5,000 exact bit-set matches, 94.28%). The RDKit-compatible
   topological `rdkit_rdk` lane is also measured by the Rust CLI (5,000/5,000
-  exact bit-set matches); native `topo_path`, torsion, and standardization
-  remain explicitly `not_measured`, and cross-binding parity for the measured
-  operations remains open.
+  exact bit-set matches). The RDKit-compatible hashed topological torsion lane
+  is measured by the Rust CLI as well (4,248/5,000 exact bit-set matches,
+  84.96%); native `topo_path` and standardization remain explicitly
+  `not_measured`, and cross-binding parity for the measured operations remains
+  open.
 
 ### Performance acceleration track
 

@@ -25,9 +25,11 @@
       "boundary": "RDKit-compatible RDKFingerprint configuration on 5,000 identical SMILES inputs; Rust CLI versus RDKit with exact bit-set comparison; native topo_path remains a separate algorithm"
     },
     "torsion": {
-      "status": "not_measured",
-      "bindings": ["rust", "python", "node", "wasm"],
-      "boundary": "No held-out cross-binding parity report is committed"
+      "status": "measured",
+      "report": "validation/results/rdkit-torsion-parity-4999.json",
+      "bindings": ["rust"],
+      "oracle": "RDKit 2025.09.3",
+      "boundary": "RDKit-compatible hashed topological torsion fingerprint on 5,000 identical SMILES inputs; Rust CLI versus RDKit with exact bit-set comparison"
     },
     "descriptors": {
       "status": "measured",
