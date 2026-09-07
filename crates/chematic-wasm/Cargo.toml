@@ -47,4 +47,4 @@ chematic-iupac      = { path = "../chematic-iupac",      version = "1.0.6" }
 chematic-ff         = { path = "../chematic-ff",         version = "1.0.6" }
 
 [dev-dependencies]
-wasm-bindgen-test = "0.2"
+wasm-bindgen-test = "0.3"
