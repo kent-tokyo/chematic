@@ -1,7 +1,7 @@
 # chematic roadmap
 
-> Revised 2026-09-06. The current release candidate is v1.0.8. The workspace
-> version is fixed at 1.0.8 for this release.
+> Revised 2026-09-08. The current development candidate is the v1.0.9 post-release tree. The workspace
+> version remains fixed at 1.0.9 for this development cycle.
 
 The detailed roadmap and completed gate-by-gate evidence through 2026-09-05 is
 retained in
@@ -22,7 +22,13 @@ part of the active comparison program.
 
 ## Current candidate
 
-Completed on the v1.0.8 release candidate tree:
+Completed on the v1.0.9 release candidate tree:
+
+- [x] Promote issue #486's streaming safety cases into the checked-in
+  `validation/streaming_format_safety_cases.json` corpus. The dependency-free
+  gate now validates the corpus schema and exact nine-format/three-case shape
+  before running the 27 negative cases; lenient CML/CDXML/PDB boundaries remain
+  explicit rather than being reported as chemistry-malformed parity.
 
 - [x] Close #210's five named legacy-coordinate UFF stereo-rescue residuals.
   Every returned geometry is finite, bond-sane, and independently checked
@@ -275,14 +281,14 @@ records them.
   label data without introducing a digest dependency.
 - [ ] Publish current clean-install, cold-start, throughput, peak-memory, and
   WASM-size evidence with explicit platform/configuration metadata.
-- [x] Publish the v1.0.8 WASM-size snapshot with toolchain, target, digest, and
+- [x] Publish the v1.0.9 WASM-size snapshot with toolchain, target, digest, and
   reproduction metadata; clean-install, cold-start, throughput, and
   peak-memory evidence remain separate open lanes.
 - [ ] Extend browser and agent adversarial cases for cancellation, malformed
   records, limits, and stable JSON errors. The Node/WASM shared contract now
   covers malformed inline records, later-record continuation, empty-delimiter
   rejection, batch-count limits, input-size limits, and screening error
-  envelopes. The current `1.0.8` web-target artifact is regenerated into
+  envelopes. The current `1.0.9` web-target artifact is regenerated into
   `demo/pkg` and passes the real-WASM `initSync` smoke (success and typed
   timeout); browser cancellation and the broader agent matrix remain open.
 

@@ -2,8 +2,8 @@
 """Run the common streaming benchmark's negative-input format gate.
 
 This is intentionally a small negative-input contract, not a throughput
-benchmark. Every format accepted by ``streaming_benchmark`` gets three malformed
-or resource-limit rejections and one input-size rejection. The gzip case
+benchmark. Every format accepted by ``streaming_benchmark`` gets three cases
+from the checked-in corpus and one input-size rejection. The gzip case
 additionally proves that the limit is applied after decompression.
 """
 
@@ -20,6 +20,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "benchmarks" / "fixtures"
+SAFETY_CORPUS = ROOT / "validation" / "streaming_format_safety_cases.json"
 
 
 def run_runner(binary: list[str], fmt: str, path: Path, *extra: str) -> dict[str, object]:
@@ -99,6 +100,23 @@ def main() -> int:
             "HETATM not-a-pdb-record\n",
         ],
     }
+    try:
+        corpus = json.loads(SAFETY_CORPUS.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"streaming safety corpus read failure: {exc}", file=sys.stderr)
+        return 1
+    expected_formats = {"sdf", "mol", "xyz", "v3000", "mol2", "cml", "cdxml", "mmcif", "pdb"}
+    if corpus.get("schema_version") != 1 or set(corpus.get("cases", {})) != expected_formats:
+        print("streaming safety corpus has an invalid schema or format set", file=sys.stderr)
+        return 1
+    malformed = corpus["cases"]
+    if any(
+        not isinstance(cases, list) or len(cases) != 3 or any(not isinstance(case, str) for case in cases)
+        for cases in malformed.values()
+    ):
+        print("streaming safety corpus must contain exactly three string cases for every format", file=sys.stderr)
+        return 1
+
     # CML/CDXML are deliberately lenient about unknown/empty structure and
     # PDB ignores non-record lines. Exercise their typed safety boundary with
     # an explicit line limit instead of claiming a malformed-record contract
