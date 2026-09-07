@@ -260,7 +260,10 @@ records them.
 - [x] Run Chromium, Firefox, and WebKit smoke/adversarial lanes for the
   published v1.0 boundary.
 - [ ] Make Rust, Python, Node, and WASM consume one fixture schema and one
-  versioned expected-result manifest for every shared stable operation.
+  versioned expected-result manifest for every shared stable operation. The
+  standardization profile is now included in the shared contract and the Node
+  contract test passes after the documented current-source wasm-pack rebuild;
+  the broader all-stable-operation manifest remains open.
 - [x] Extend the shared versioned manifest to cover the core ECFP4/MACCS
   fingerprint shapes and configurations across Rust, Python, and Node/WASM.
 - [x] Add versioned deterministic exact-identity serialization for
