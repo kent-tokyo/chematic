@@ -55,6 +55,26 @@ pub struct ReactionTransformLimits {
     pub max_matches: usize,
 }
 
+/// Bounded accounting for one reaction-template application.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ReactionTransformDiagnostics {
+    /// Number of matches accepted by the matcher and stereo post-checks.
+    pub accepted_matches: usize,
+    /// Number of accepted matches that produced a valence-valid product set.
+    pub applied_products: usize,
+    /// Number of accepted matches rejected by product valence validation.
+    pub valence_rejected_matches: usize,
+    /// Always false for the current fail-on-limit policy; reserved for a future
+    /// truncating mode so consumers can distinguish partial reports.
+    pub truncated_matches: bool,
+}
+
+/// Products and bounded per-match accounting from a reaction transformation.
+pub struct ReactionTransformReport {
+    pub products: Vec<Vec<Molecule>>,
+    pub diagnostics: ReactionTransformDiagnostics,
+}
+
 impl Default for ReactionTransformLimits {
     fn default() -> Self {
         Self {
@@ -96,6 +116,15 @@ pub fn run_reactants_with_limits(
     limits: &ReactionTransformLimits,
 ) -> Result<Vec<Vec<Molecule>>, TransformError> {
     run_reactants_impl(smirks, reactants, true, limits)
+}
+
+/// Apply a SMIRKS template and retain bounded accounting for filtered matches.
+pub fn run_reactants_with_diagnostics(
+    smirks: &str,
+    reactants: &[&Molecule],
+    limits: &ReactionTransformLimits,
+) -> Result<ReactionTransformReport, TransformError> {
+    PreparedReaction::new(smirks)?.run_reactants_with_diagnostics(reactants, limits)
 }
 
 /// Like [`run_reactants`] but **does not carry through substituents**.
@@ -311,11 +340,47 @@ impl PreparedReaction {
         limits: &ReactionTransformLimits,
         rings: Option<&[&RingSet]>,
     ) -> Result<Vec<Vec<Molecule>>, TransformError> {
+        Ok(self
+            .run_reactants_with_diagnostics_impl(reactants, carry_substituents, limits, rings)?
+            .products)
+    }
+
+    fn run_reactants_with_diagnostics_impl(
+        &self,
+        reactants: &[&Molecule],
+        carry_substituents: bool,
+        limits: &ReactionTransformLimits,
+        rings: Option<&[&RingSet]>,
+    ) -> Result<ReactionTransformReport, TransformError> {
         let matches = find_matches_impl(self, reactants, limits, rings)?;
-        Ok(matches
-            .iter()
-            .filter_map(|m| apply_match_impl(self, reactants, m, carry_substituents))
-            .collect())
+        let accepted_matches = matches.len();
+        let mut products = Vec::with_capacity(accepted_matches);
+        let mut valence_rejected_matches = 0;
+        for m in &matches {
+            match apply_match_impl(self, reactants, m, carry_substituents) {
+                Some(product_set) => products.push(product_set),
+                None => valence_rejected_matches += 1,
+            }
+        }
+        Ok(ReactionTransformReport {
+            diagnostics: ReactionTransformDiagnostics {
+                accepted_matches,
+                applied_products: products.len(),
+                valence_rejected_matches,
+                truncated_matches: false,
+            },
+            products,
+        })
+    }
+
+    /// Apply this compiled template and retain bounded accounting for filtered matches.
+    pub fn run_reactants_with_diagnostics(
+        &self,
+        reactants: &[&Molecule],
+        limits: &ReactionTransformLimits,
+    ) -> Result<ReactionTransformReport, TransformError> {
+        crate::perf_counters::record_run_reactants_call();
+        self.run_reactants_with_diagnostics_impl(reactants, true, limits, None)
     }
 
     /// Enumerate accepted matches without applying the transformation.
@@ -359,6 +424,17 @@ impl PreparedReaction {
     ) -> Result<Vec<Vec<Molecule>>, TransformError> {
         crate::perf_counters::record_run_reactants_call();
         self.run_reactants_impl_with_rings(reactants, true, limits, Some(rings))
+    }
+
+    /// Apply this compiled template with caller-provided rings and diagnostics.
+    pub fn run_reactants_with_rings_and_limits_with_diagnostics(
+        &self,
+        reactants: &[&Molecule],
+        rings: &[&RingSet],
+        limits: &ReactionTransformLimits,
+    ) -> Result<ReactionTransformReport, TransformError> {
+        crate::perf_counters::record_run_reactants_call();
+        self.run_reactants_with_diagnostics_impl(reactants, true, limits, Some(rings))
     }
 
     /// Apply this compiled template in strict mode with caller-provided ring
@@ -2791,6 +2867,44 @@ mod tests {
             applied.is_none(),
             "over-valenced product must come back as Ok(None), not Some(..) or Err(..)"
         );
+    }
+
+    #[test]
+    fn diagnostics_classify_valence_filtered_match_without_changing_products() {
+        let ethanol = parse("CCO").unwrap();
+        let smirks = "[O:1]>>[O:1](C)C";
+        let report = run_reactants_with_diagnostics(
+            smirks,
+            &[&ethanol],
+            &ReactionTransformLimits::default(),
+        )
+        .unwrap();
+        assert_eq!(report.products.len(), 0);
+        assert_eq!(report.diagnostics.accepted_matches, 1);
+        assert_eq!(report.diagnostics.applied_products, 0);
+        assert_eq!(report.diagnostics.valence_rejected_matches, 1);
+        assert!(!report.diagnostics.truncated_matches);
+        assert!(run_reactants(smirks, &[&ethanol]).unwrap().is_empty());
+    }
+
+    #[test]
+    fn diagnostics_match_ring_aware_products_and_counts() {
+        let mol = parse("C1CCCCC1").unwrap();
+        let rings = chematic_perception::find_sssr(&mol);
+        let prepared = PreparedReaction::new("[C:1]>>[C:1]").unwrap();
+        let report = prepared
+            .run_reactants_with_rings_and_limits_with_diagnostics(
+                &[&mol],
+                &[&rings],
+                &ReactionTransformLimits::default(),
+            )
+            .unwrap();
+        assert_eq!(
+            report.diagnostics.accepted_matches,
+            report.diagnostics.applied_products
+        );
+        assert_eq!(report.diagnostics.valence_rejected_matches, 0);
+        assert_eq!(report.products.len(), report.diagnostics.applied_products);
     }
 
     /// `find_reaction_matches` and `apply_reaction_match` must propagate

@@ -47,7 +47,8 @@ pub use reaction::{
 };
 pub use retro::{DEFAULT_TEMPLATES, RetroClass, RetroResult, RetroTemplate, retro_disconnect};
 pub use transform::{
-    PreparedReaction, ReactionMatch, ReactionTransformLimits, TransformError, apply_reaction_match,
-    find_reaction_matches, find_reaction_matches_with_limits, run_reactants, run_reactants_strict,
-    run_reactants_strict_with_limits, run_reactants_with_limits,
+    PreparedReaction, ReactionMatch, ReactionTransformDiagnostics, ReactionTransformLimits,
+    ReactionTransformReport, TransformError, apply_reaction_match, find_reaction_matches,
+    find_reaction_matches_with_limits, run_reactants, run_reactants_strict,
+    run_reactants_strict_with_limits, run_reactants_with_diagnostics, run_reactants_with_limits,
 };
