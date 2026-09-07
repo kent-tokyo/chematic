@@ -4215,15 +4215,42 @@ mod tests {
 
     #[test]
     fn issue149_aromatic_stash_matches_exhaustive_oracle() {
-        for input in [
-            r"CC/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
-            r"CCCC(C)/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
-            r"COCC/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
-        ] {
-            let mol = crate::parser::parse(input).expect("residual parses");
-            let current = canonical_smiles(&mol);
-            let oracle = canonical_smiles_exhaustive_oracle(&mol);
-            assert_eq!(current, oracle, "search/oracle mismatch for {input}");
+        let fixtures = [
+            (
+                r"CC/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+                [
+                    r"c/3(c(/c(c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+                    r"c3(c(c(/c3=N/CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+                ],
+            ),
+            (
+                r"CCCC(C)/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+                [
+                    r"c/1(c(/c(c1=N\[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+                    r"c1(c(c(/c1=N/[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+                ],
+            ),
+            (
+                r"COCC/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+                [
+                    r"c/1(O)c(O)/c(=N\[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)c1=N\CCOC",
+                    r"c1(O)c(O)c(=N/[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)\c1=N\CCOC",
+                ],
+            ),
+        ];
+
+        // The exhaustive oracle must agree not only for the corpus spelling,
+        // but also for both independently observed aromatic-stash spellings.
+        // This proves that orbit pruning has not introduced a second source
+        // of disagreement; it deliberately does not choose between the two
+        // representation-dependent winners.
+        for (input, observed_variants) in fixtures {
+            for spelling in std::iter::once(input).chain(observed_variants) {
+                let mol = crate::parser::parse(spelling).expect("residual parses");
+                let current = canonical_smiles(&mol);
+                let oracle = canonical_smiles_exhaustive_oracle(&mol);
+                assert_eq!(current, oracle, "search/oracle mismatch for {spelling}");
+            }
         }
     }
 

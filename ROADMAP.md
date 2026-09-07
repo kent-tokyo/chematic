@@ -172,6 +172,12 @@ documentation, and required measurement agree.
   measured aromatic-stash spellings to retain exactly two outputs;
   `canonical_smiles_stable_key()` remains fail-closed for each. Keep #149 open
   until their aromatic carrier/stereo traversal is normalized.
+- [x] Extend the #149 residual oracle gate across the corpus spelling and both
+  observed aromatic-stash output variants for all three held-out molecules.
+  The orbit-pruned search agrees with the unpruned exhaustive oracle for all
+  nine spellings; the two representation-dependent canonical outputs remain
+  intentionally distinct and fail-closed rather than receiving an
+  index-based winner.
 - [x] Add a bounded default-Hückel fused/non-alternant fallback for
   all-carbon odd/odd envelopes, with azulene regression coverage; keep the
   broader `RdkitLike` model separately gated.
