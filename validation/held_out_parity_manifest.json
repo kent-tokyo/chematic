@@ -18,9 +18,11 @@
       "boundary": "166 logical MACCS keys on 5,000 identical SMILES inputs; Rust CLI versus RDKit, with the documented unused RDKit bit 0 mapping"
     },
     "topological": {
-      "status": "not_measured",
-      "bindings": ["rust", "python", "node", "wasm"],
-      "boundary": "No held-out cross-binding parity report is committed"
+      "status": "measured",
+      "report": "validation/results/rdkit-rdk-parity-4999.json",
+      "bindings": ["rust"],
+      "oracle": "RDKit 2025.09.3",
+      "boundary": "RDKit-compatible RDKFingerprint configuration on 5,000 identical SMILES inputs; Rust CLI versus RDKit with exact bit-set comparison; native topo_path remains a separate algorithm"
     },
     "torsion": {
       "status": "not_measured",

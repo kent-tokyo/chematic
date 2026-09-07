@@ -182,9 +182,11 @@ documentation, and required measurement agree.
   v1.0.8 coverage ledger is now validated by
   `scripts/validate_held_out_parity_manifest.py`: Morgan/ECFP and the five
   core descriptors have named reports, and MACCS now has a Rust-CLI report
-  (4,714/5,000 exact bit-set matches, 94.28%); topological/torsion/
-  standardization remain explicitly `not_measured`, and cross-binding parity
-  for the measured operations remains open.
+  (4,714/5,000 exact bit-set matches, 94.28%). The RDKit-compatible
+  topological `rdkit_rdk` lane is also measured by the Rust CLI (5,000/5,000
+  exact bit-set matches); native `topo_path`, torsion, and standardization
+  remain explicitly `not_measured`, and cross-binding parity for the measured
+  operations remains open.
 
 ### Performance acceleration track
 

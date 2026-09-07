@@ -80,7 +80,7 @@ enum Command {
     Fingerprint {
         /// SMILES to analyze.
         smiles: String,
-        /// Algorithm: ecfp4, ecfp6, or maccs.
+        /// Algorithm: ecfp4, ecfp6, maccs, or rdkit_rdk.
         #[arg(long, default_value = "ecfp4")]
         algorithm: String,
     },
@@ -90,7 +90,7 @@ enum Command {
         smiles_a: String,
         /// Second SMILES to analyze.
         smiles_b: String,
-        /// Algorithm: ecfp4, ecfp6, or maccs.
+        /// Algorithm: ecfp4, ecfp6, maccs, or rdkit_rdk.
         #[arg(long, default_value = "ecfp4")]
         algorithm: String,
     },
@@ -164,7 +164,7 @@ enum Command {
         /// Read line-delimited SMILES from this file instead of stdin.
         #[arg(short, long)]
         input: Option<PathBuf>,
-        /// Algorithm: ecfp4, ecfp6, or maccs.
+        /// Algorithm: ecfp4, ecfp6, maccs, or rdkit_rdk.
         #[arg(long, default_value = "ecfp4")]
         algorithm: String,
         #[command(flatten)]
@@ -183,7 +183,7 @@ enum Command {
         /// Read tab-separated pairs from this file instead of stdin.
         #[arg(short, long)]
         input: Option<PathBuf>,
-        /// Algorithm: ecfp4, ecfp6, or maccs.
+        /// Algorithm: ecfp4, ecfp6, maccs, or rdkit_rdk.
         #[arg(long, default_value = "ecfp4")]
         algorithm: String,
         #[command(flatten)]
@@ -422,6 +422,7 @@ fn fingerprint_json(smiles: &str, algorithm: &str) -> Result<String, String> {
         "ecfp4" => chematic_fp::ecfp4(&mol),
         "ecfp6" => chematic_fp::ecfp6(&mol),
         "maccs" => chematic_fp::maccs(&mol),
+        "rdkit_rdk" => chematic_fp::rdkit_rdk_fp(&mol),
         _ => return Err(format!("unsupported fingerprint algorithm: {algorithm}")),
     };
     let bits: Vec<usize> = (0..2048).filter(|&bit| fp.get(bit)).collect();
@@ -443,6 +444,7 @@ fn fingerprint_for(
         "ecfp4" => Ok(chematic_fp::ecfp4(mol)),
         "ecfp6" => Ok(chematic_fp::ecfp6(mol)),
         "maccs" => Ok(chematic_fp::maccs(mol)),
+        "rdkit_rdk" => Ok(chematic_fp::rdkit_rdk_fp(mol)),
         other => Err(format!("unsupported fingerprint algorithm: {other}")),
     }
 }
@@ -1098,6 +1100,15 @@ mod tests {
                 .unwrap_err()
                 .contains("unsupported fingerprint algorithm")
         );
+    }
+
+    #[test]
+    fn fingerprint_supports_rdkit_rdk_algorithm() {
+        let json: serde_json::Value =
+            serde_json::from_str(&fingerprint_json("CCO", "rdkit_rdk").unwrap()).unwrap();
+        assert_eq!(json["algorithm"], "rdkit_rdk");
+        assert_eq!(json["n_bits"], 2048);
+        assert!(json["popcount"].as_u64().unwrap() > 0);
     }
 
     #[test]
