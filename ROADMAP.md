@@ -181,9 +181,10 @@ documentation, and required measurement agree.
   torsion, descriptors, and standardization across Rust/Python/WASM. The
   v1.0.8 coverage ledger is now validated by
   `scripts/validate_held_out_parity_manifest.py`: Morgan/ECFP and the five
-  core descriptors have named reports, while MACCS/topological/torsion/
-  standardization remain explicitly `not_measured` until their parity runs
-  exist.
+  core descriptors have named reports, and MACCS now has a Rust-CLI report
+  (4,714/5,000 exact bit-set matches, 94.28%); topological/torsion/
+  standardization remain explicitly `not_measured`, and cross-binding parity
+  for the measured operations remains open.
 
 ### Performance acceleration track
 

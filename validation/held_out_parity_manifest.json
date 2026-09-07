@@ -11,10 +11,11 @@
       "boundary": "RDKit-exact ECFP4 sparse counts, folded bits, and raw/folded provenance on the committed oracle corpus"
     },
     "maccs": {
-      "status": "not_measured",
-      "evidence": "validation/cross_binding_contract.json",
-      "bindings": ["rust", "python", "node", "wasm"],
-      "boundary": "Shape and configuration are frozen; held-out semantic parity is not yet measured"
+      "status": "measured",
+      "report": "validation/results/maccs-parity-4999.json",
+      "bindings": ["rust"],
+      "oracle": "RDKit 2025.09.3",
+      "boundary": "166 logical MACCS keys on 5,000 identical SMILES inputs; Rust CLI versus RDKit, with the documented unused RDKit bit 0 mapping"
     },
     "topological": {
       "status": "not_measured",
