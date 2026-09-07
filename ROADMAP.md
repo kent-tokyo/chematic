@@ -281,8 +281,8 @@ records them.
 - [ ] Extend browser and agent adversarial cases for cancellation, malformed
   records, limits, and stable JSON errors. The Node/WASM shared contract now
   covers malformed inline records, later-record continuation, empty-delimiter
-  rejection, batch-count limits, and input-size limits; browser cancellation
-  and the broader agent matrix remain open.
+  rejection, batch-count limits, input-size limits, and screening error
+  envelopes; browser cancellation and the broader agent matrix remain open.
 
 ## P4 — Chemistry workflow depth
 

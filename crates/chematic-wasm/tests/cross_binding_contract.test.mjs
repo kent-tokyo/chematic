@@ -60,6 +60,19 @@ assert.throws(() => wasm.canonicalize_smiles_batch_json("CC", ""));
 assert.throws(() => wasm.canonicalize_smiles_batch_json("CC\n".repeat(1024), "\n"));
 assert.throws(() => wasm.canonicalize_smiles_batch_json("C".repeat(1_000_001), "\n"));
 
+const screeningBatch = JSON.parse(wasm.screen_smiles_json("CC\nC1CC\nCCO", "\n"));
+assert.equal(screeningBatch.records.length, 3);
+assert.equal(screeningBatch.records[0].error, null);
+assert.equal(screeningBatch.records[1].report, null);
+assert.match(screeningBatch.records[1].error, /SMILES parse failed/);
+assert.equal(screeningBatch.records[2].error, null);
+assert.deepEqual(JSON.parse(wasm.screen_smiles_json("CC", "")), {
+  error: "delimiter must not be empty",
+});
+assert.deepEqual(JSON.parse(wasm.screen_smiles_json("CC\n".repeat(1024), "\n")), {
+  error: "smiles_batch exceeds maximum item count (1025 > 1024)",
+});
+
 for (const expected of fixture.fixtures) {
   const mol = wasm.parse_smiles(expected.smiles);
   assert.equal(mol.canonical_smiles(), expected.canonical_smiles, expected.id);
