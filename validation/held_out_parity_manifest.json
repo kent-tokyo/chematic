@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.8",
+  "purpose": "Held-out parity coverage ledger; measured and not_measured are intentionally distinct.",
+  "operations": {
+    "morgan_ecfp": {
+      "status": "measured",
+      "report": "validation/ecfp_rdkit_morgan_ecfp4_parity_summary.json",
+      "bindings": ["rust", "python", "node", "wasm"],
+      "oracle": "RDKit 2026.03.3",
+      "boundary": "RDKit-exact ECFP4 sparse counts, folded bits, and raw/folded provenance on the committed oracle corpus"
+    },
+    "maccs": {
+      "status": "not_measured",
+      "evidence": "validation/cross_binding_contract.json",
+      "bindings": ["rust", "python", "node", "wasm"],
+      "boundary": "Shape and configuration are frozen; held-out semantic parity is not yet measured"
+    },
+    "topological": {
+      "status": "not_measured",
+      "bindings": ["rust", "python", "node", "wasm"],
+      "boundary": "No held-out cross-binding parity report is committed"
+    },
+    "torsion": {
+      "status": "not_measured",
+      "bindings": ["rust", "python", "node", "wasm"],
+      "boundary": "No held-out cross-binding parity report is committed"
+    },
+    "descriptors": {
+      "status": "measured",
+      "report": "validation/results/descriptor-core-parity-4999.json",
+      "bindings": ["python"],
+      "oracle": "RDKit Python API",
+      "boundary": "MW, TPSA, HBD, HBA, and heavy-atom count on the 4,999-row corpus; Python binding versus RDKit, not a full all-binding claim"
+    },
+    "standardization": {
+      "status": "not_measured",
+      "evidence": "validation/standardization_phase1_holdout.jsonl",
+      "bindings": ["rust", "python", "node", "wasm"],
+      "boundary": "Held-out fixtures exist, but cross-binding parity outcomes are not yet measured"
+    }
+  }
+}

@@ -178,7 +178,12 @@ documentation, and required measurement agree.
 - [x] Add descriptor field provenance and a shared Rust/Python/Node/WASM core
   descriptor fixture; run the 4,999-molecule MW/TPSA/HBD/HBA/heavy-atom lane.
 - [ ] Add held-out parity reports for Morgan/ECFP, MACCS, topological,
-  torsion, descriptors, and standardization across Rust/Python/WASM.
+  torsion, descriptors, and standardization across Rust/Python/WASM. The
+  v1.0.8 coverage ledger is now validated by
+  `scripts/validate_held_out_parity_manifest.py`: Morgan/ECFP and the five
+  core descriptors have named reports, while MACCS/topological/torsion/
+  standardization remain explicitly `not_measured` until their parity runs
+  exist.
 
 ### Performance acceleration track
 
