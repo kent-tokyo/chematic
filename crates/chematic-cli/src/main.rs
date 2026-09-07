@@ -105,6 +105,9 @@ enum Command {
     Standardize {
         /// SMILES to standardize.
         smiles: String,
+        /// Keep only the largest connected fragment (Phase 1 fragment-selection profile).
+        #[arg(long)]
+        largest_fragment_only: bool,
     },
     /// Generate a complete single-molecule analysis report as JSON.
     Report {
@@ -175,6 +178,9 @@ enum Command {
         /// Read line-delimited SMILES from this file instead of stdin.
         #[arg(short, long)]
         input: Option<PathBuf>,
+        /// Keep only the largest connected fragment (Phase 1 fragment-selection profile).
+        #[arg(long)]
+        largest_fragment_only: bool,
         #[command(flatten)]
         limits: BatchLimits,
     },
@@ -490,10 +496,14 @@ fn substructure_json(smiles: &str, smarts: &str) -> Result<String, String> {
     .to_string())
 }
 
-fn standardize_json(smiles: &str) -> Result<String, String> {
+fn standardize_json(smiles: &str, largest_fragment_only: bool) -> Result<String, String> {
     let mol = parse_cli_smiles(smiles)?;
     let input_smiles = chematic_smiles::canonical_smiles(&mol);
-    let (standardized, report) = chematic_chem::StandardizationPipeline::default().run(&mol);
+    let options = chematic_chem::StandardizeOptions {
+        largest_fragment_only,
+        ..Default::default()
+    };
+    let (standardized, report) = chematic_chem::StandardizationPipeline::new(options).run(&mol);
     let output_smiles = chematic_smiles::canonical_smiles(&standardized);
     let status = match report.status {
         chematic_chem::PipelineStatus::Unchanged => "unchanged",
@@ -742,12 +752,16 @@ fn batch_fingerprints_json(
     Ok(output.to_string())
 }
 
-fn batch_standardize_json(text: &str, limits: &BatchLimits) -> Result<String, String> {
+fn batch_standardize_json(
+    text: &str,
+    largest_fragment_only: bool,
+    limits: &BatchLimits,
+) -> Result<String, String> {
     let smiles = batch_lines(text, limits)?;
     let mut records = Vec::with_capacity(smiles.len());
     let mut valid_count = 0usize;
     for (input_index, input_smiles) in smiles.iter().enumerate() {
-        match standardize_json(input_smiles).and_then(|json| {
+        match standardize_json(input_smiles, largest_fragment_only).and_then(|json| {
             serde_json::from_str::<serde_json::Value>(&json).map_err(|e| e.to_string())
         }) {
             Ok(standardization) => {
@@ -932,8 +946,11 @@ fn run(cli: Cli) -> Result<(), String> {
             let json = substructure_json(&smiles, &smarts)?;
             write_output(None, &format!("{json}\n"))
         }
-        Command::Standardize { smiles } => {
-            let json = standardize_json(&smiles)?;
+        Command::Standardize {
+            smiles,
+            largest_fragment_only,
+        } => {
+            let json = standardize_json(&smiles, largest_fragment_only)?;
             write_output(None, &format!("{json}\n"))
         }
         Command::Report { smiles } => {
@@ -988,9 +1005,13 @@ fn run(cli: Cli) -> Result<(), String> {
             let json = batch_fingerprints_json(&text, &algorithm, &limits)?;
             write_output(None, &format!("{json}\n"))
         }
-        Command::BatchStandardize { input, limits } => {
+        Command::BatchStandardize {
+            input,
+            largest_fragment_only,
+            limits,
+        } => {
             let text = read_limited_input(input.as_ref(), limits.max_input_bytes)?;
-            let json = batch_standardize_json(&text, &limits)?;
+            let json = batch_standardize_json(&text, largest_fragment_only, &limits)?;
             write_output(None, &format!("{json}\n"))
         }
         Command::BatchSimilarity {
@@ -1164,7 +1185,7 @@ mod tests {
     #[test]
     fn standardize_reports_pipeline_and_canonical_output() {
         let json: serde_json::Value =
-            serde_json::from_str(&standardize_json("C[NH3+]").unwrap()).unwrap();
+            serde_json::from_str(&standardize_json("C[NH3+]", false).unwrap()).unwrap();
         assert_eq!(json["input_smiles"], "C[NH3+]");
         assert_eq!(json["status"], "modified");
         assert!(json["changed"].as_bool().unwrap());
@@ -1358,7 +1379,8 @@ mod tests {
     #[test]
     fn batch_standardize_retains_audit_reports_and_errors() {
         let json: serde_json::Value = serde_json::from_str(
-            &batch_standardize_json("C[NH3+]\nC1CC\nCCO\n", &default_batch_limits()).unwrap(),
+            &batch_standardize_json("C[NH3+]\nC1CC\nCCO\n", false, &default_batch_limits())
+                .unwrap(),
         )
         .unwrap();
         assert_eq!(json["valid_count"], 2);

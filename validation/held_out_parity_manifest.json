@@ -39,10 +39,11 @@
       "boundary": "MW, TPSA, HBD, HBA, and heavy-atom count on the 4,999-row corpus; Python binding versus RDKit, not a full all-binding claim"
     },
     "standardization": {
-      "status": "not_measured",
-      "evidence": "validation/standardization_phase1_holdout.jsonl",
-      "bindings": ["rust", "python", "node", "wasm"],
-      "boundary": "Held-out fixtures exist, but cross-binding parity outcomes are not yet measured"
+      "status": "measured",
+      "report": "validation/results/standardization-phase1-holdout-1.0.8.json",
+      "bindings": ["rust"],
+      "oracle": "Committed Phase 1 expected fragments; RDKit canonical identity comparison",
+      "boundary": "10 held-out fixtures through the explicit Rust CLI --largest-fragment-only profile; 8/10 expected fragment identities match, with two disclosed charge-neutralization differences; cross-binding parity remains open"
     }
   }
 }
