@@ -279,7 +279,10 @@ records them.
   reproduction metadata; clean-install, cold-start, throughput, and
   peak-memory evidence remain separate open lanes.
 - [ ] Extend browser and agent adversarial cases for cancellation, malformed
-  records, limits, and stable JSON errors.
+  records, limits, and stable JSON errors. The Node/WASM shared contract now
+  covers malformed inline records, later-record continuation, empty-delimiter
+  rejection, batch-count limits, and input-size limits; browser cancellation
+  and the broader agent matrix remain open.
 
 ## P4 — Chemistry workflow depth
 

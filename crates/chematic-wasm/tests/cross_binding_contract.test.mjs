@@ -39,6 +39,27 @@ assert.deepEqual(
   fixture.batch_canonicalization_contract.expected,
 );
 
+// The batch boundary is deliberately a stable JSON manifest: malformed
+// records stay inline, later records are processed, and input/shape limits
+// reject before parsing rather than returning an ambiguous partial result.
+const malformedBatch = JSON.parse(
+  wasm.canonicalize_smiles_batch_json("CC\nC1CC\nCCO", "\n"),
+);
+assert.equal(malformedBatch.status, "complete");
+assert.equal(malformedBatch.record_count, 3);
+assert.deepEqual(
+  malformedBatch.records.map(({ input_index: inputIndex, status }) => ({ inputIndex, status })),
+  [
+    { inputIndex: 0, status: "accepted" },
+    { inputIndex: 1, status: "rejected" },
+    { inputIndex: 2, status: "accepted" },
+  ],
+);
+assert.equal(typeof malformedBatch.records[1].error, "string");
+assert.throws(() => wasm.canonicalize_smiles_batch_json("CC", ""));
+assert.throws(() => wasm.canonicalize_smiles_batch_json("CC\n".repeat(1024), "\n"));
+assert.throws(() => wasm.canonicalize_smiles_batch_json("C".repeat(1_000_001), "\n"));
+
 for (const expected of fixture.fixtures) {
   const mol = wasm.parse_smiles(expected.smiles);
   assert.equal(mol.canonical_smiles(), expected.canonical_smiles, expected.id);
