@@ -2,8 +2,8 @@
 """Run the common streaming benchmark's negative-input format gate.
 
 This is intentionally a small negative-input contract, not a throughput
-benchmark. Every format accepted by ``streaming_benchmark`` gets one malformed
-or resource-limit rejection and one input-size rejection. The gzip case
+benchmark. Every format accepted by ``streaming_benchmark`` gets three malformed
+or resource-limit rejections and one input-size rejection. The gzip case
 additionally proves that the limit is applied after decompression.
 """
 
@@ -56,27 +56,48 @@ def main() -> int:
         "sdf": [
             "broken\n  chematic\n\n  NOTNUM  0  0 V2000\nM  END\n$$$$\n",
             "broken\n  chematic\n\n  1  0  0  0  0  0            999 V2000\nthis is not an atom line\nM  END\n$$$$\n",
+            "broken\n  chematic\n\n  1  1  0  0  0  0            999 V2000\n  0.0  0.0  0.0  C\nM  END\n$$$$\n",
         ],
         "mol": [
             "broken\n  chematic\n\n  NOTNUM  0  0 V2000\nM  END\n$$$$\n",
             "broken\n  chematic\n\n  1  0  0  0  0  0            999 V2000\nthis is not an atom line\nM  END\n$$$$\n",
+            "broken\n  chematic\n\n  1  1  0  0  0  0            999 V2000\n  0.0  0.0  0.0  C\nM  END\n$$$$\n",
         ],
-        "xyz": ["2\nmissing second atom\nC 0 0 0\n", "not-a-count\ncomment\nC 0 0 0\n"],
-        "v3000": ["not a V3000 mol block\n", "M  V30 COUNTS not-numbers\nM  END\n"],
+        "xyz": [
+            "2\nmissing second atom\nC 0 0 0\n",
+            "not-a-count\ncomment\nC 0 0 0\n",
+            "-1\nnegative atom count\n",
+        ],
+        "v3000": [
+            "not a V3000 mol block\n",
+            "M  V30 COUNTS not-numbers\nM  END\n",
+            "M  V30 BEGIN CTAB\nM  V30 COUNTS 1 1 0 0 0\nM  V30 END CTAB\n",
+        ],
         "mol2": [
             "@<TRIPOS>MOLECULE\nmissing atom and bond sections\n",
             "@<TRIPOS>MOLECULE\nname\n1 1 0 0 0\n@<TRIPOS>ATOM\nnot-an-atom\n",
+            "@<TRIPOS>MOLECULE\nname\n-1 0 0 0 0\n",
         ],
         "cml": [
             '<cml><molecule><atomArray><atom id="a1" elementType="C"/><atom id="a2" elementType="C"/></atomArray><bondArray><bond atomRefs2="a1 a2" order="bogus"/></bondArray></molecule></cml>',
             "<cml><molecule><atomArray>",
+            "<cml><molecule><atomArray><atom id=\"a1\" elementType=\"Xx\"/>",
         ],
         "cdxml": [
             '<CDXML><page><fragment><n id="1" Element="6"/><b id="1"/></fragment></page></CDXML>',
             "<CDXML><page><fragment>",
+            '<CDXML><fragment><n id="1" Element="999" p="0 0"/></fragment></CDXML>',
         ],
-        "mmcif": ["data_empty\n", "data_empty\nloop_\n_atom_site.id\n"],
-        "pdb": ["ATOM\n", "ATOM      1  BAD\n"],
+        "mmcif": [
+            "data_empty\n",
+            "data_empty\nloop_\n_atom_site.id\n",
+            "data_empty\nloop_\n_atom_site.id\n1\n_atom_site.type_symbol\n",
+        ],
+        "pdb": [
+            "ATOM\n",
+            "ATOM      1  BAD\n",
+            "HETATM not-a-pdb-record\n",
+        ],
     }
     # CML/CDXML are deliberately lenient about unknown/empty structure and
     # PDB ignores non-record lines. Exercise their typed safety boundary with

@@ -117,9 +117,9 @@ documentation, and required measurement agree.
   runner now covers PDB and applies explicit parser limits to MOL2, CML,
   CDXML, and mmCIF, and supports bounded gzip SDF/XYZ decoding; full
   strict malformed-corpus coverage remains open. The dependency-free gate
-  passes two negative cases for every runner format (18/18), one oversized case
-  for every runner format (9/9), plus two gzip cases; broader malformed corpus
-  coverage remains open.
+  passes three negative cases for every runner format (27/27), one oversized
+  case for every runner format (9/9), plus two gzip cases; broader malformed
+  corpus coverage remains open.
 - [x] Add bounded Rust streaming batch APIs with cancellation, pull-based
   backpressure, deterministic ordering, and an explicit partial-result
   manifest (`SdfBatchReader`); cross-language streaming parity remains open.
