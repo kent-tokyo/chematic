@@ -689,8 +689,8 @@ class Mol:
 
     # -- Transformations -----------------------------------------------------
 
-    def standardize(self) -> Mol:
-        """Return the standardized molecule (largest fragment, charges neutralized, tautomer canonicalized)."""
+    def standardize(self, largest_fragment_only: bool = False) -> Mol:
+        """Standardize the molecule; optionally retain only the largest fragment."""
         ...
 
     def scaffold(self) -> Mol:

@@ -1904,10 +1904,13 @@ impl Mol {
     // Transformations
     // -----------------------------------------------------------------------
 
-    /// Return the standardized molecule (largest fragment, charges neutralized,
-    /// tautomer canonicalized, isotopes/stereo preserved by default).
-    fn standardize(&self) -> Mol {
-        let opts = chematic_chem::StandardizeOptions::default();
+    /// Return the standardized molecule with an optional largest-fragment profile.
+    #[pyo3(signature = (largest_fragment_only = false))]
+    fn standardize(&self, largest_fragment_only: bool) -> Mol {
+        let opts = chematic_chem::StandardizeOptions {
+            largest_fragment_only,
+            ..Default::default()
+        };
         Mol {
             inner: Arc::new(chematic_chem::standardize(&self.inner, &opts)),
             props: Default::default(),
