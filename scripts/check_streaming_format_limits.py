@@ -178,11 +178,27 @@ def main() -> int:
             errors,
         )
 
+        gzip_xyz_path = temp / "streaming.xyz.gz"
+        with gzip.open(gzip_xyz_path, "wb") as output:
+            output.write(valid["xyz"].read_bytes())
+        result = run_runner(args.binary, "xyz", gzip_xyz_path, "--gzip")
+        require(
+            result["records"] == 2 and result["failures"] == 0,
+            f"gzip XYZ control case did not parse two frames: {result}",
+            errors,
+        )
+        result = run_runner(args.binary, "xyz", gzip_xyz_path, "--gzip", "--max-input-bytes", "1")
+        require(
+            result["records"] == 0 and result["failures"] == 1,
+            f"gzip XYZ decompressed input limit was not enforced: {result}",
+            errors,
+        )
+
     if errors:
         print("streaming format limit failures:", file=sys.stderr)
         print("\n".join(errors), file=sys.stderr)
         return 1
-    print(f"streaming format limits OK: {malformed_count} negative, 9 oversized, 2 gzip cases")
+    print(f"streaming format limits OK: {malformed_count} negative, 9 oversized, 4 gzip cases")
     return 0
 
 

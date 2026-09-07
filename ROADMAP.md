@@ -85,7 +85,10 @@ Completed on the v1.0.9 release candidate tree:
   equivalence.
 - [x] Expand issue #489's checked-in streaming safety corpus to four cases per
   format (36/36 negative cases), retaining explicit line-limit handling for
-  lenient CML/CDXML/PDB readers and the existing 9 oversized plus 2 gzip gates.
+  lenient CML/CDXML/PDB readers and the existing 9 oversized plus 4 gzip gates.
+- [x] Extend issue #500's gzip safety gate to XYZ. The gate now verifies both
+  SDF and XYZ gzip controls plus post-decompression input limits (4 gzip cases
+  total), preserving the explicit decompressed-limit boundary.
 
 - [x] Close #210's five named legacy-coordinate UFF stereo-rescue residuals.
   Every returned geometry is finite, bond-sane, and independently checked
