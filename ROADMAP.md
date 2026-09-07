@@ -26,8 +26,8 @@ Completed on the v1.0.9 release candidate tree:
 
 - [x] Promote issue #486's streaming safety cases into the checked-in
   `validation/streaming_format_safety_cases.json` corpus. The dependency-free
-  gate now validates the corpus schema and exact nine-format/three-case shape
-  before running the 27 negative cases; lenient CML/CDXML/PDB boundaries remain
+  gate now validates the corpus schema and exact nine-format/four-case shape
+  before running the 36 negative cases; lenient CML/CDXML/PDB boundaries remain
   explicit rather than being reported as chemistry-malformed parity.
 - [x] Add issue #487's same-input SDF record/failure contract across chematic,
   RDKit, and Open Babel. The 2026-09-08 report records 40/40 valid records,
@@ -38,6 +38,9 @@ Completed on the v1.0.9 release candidate tree:
   identical 3,220 input bytes, fixture digest, and the file-backed Rust versus
   Python block-parser boundary; it does not claim same-process parity or speed
   equivalence.
+- [x] Expand issue #489's checked-in streaming safety corpus to four cases per
+  format (36/36 negative cases), retaining explicit line-limit handling for
+  lenient CML/CDXML/PDB readers and the existing 9 oversized plus 2 gzip gates.
 
 - [x] Close #210's five named legacy-coordinate UFF stereo-rescue residuals.
   Every returned geometry is finite, bond-sane, and independently checked
@@ -132,7 +135,7 @@ documentation, and required measurement agree.
   runner now covers PDB and applies explicit parser limits to MOL2, CML,
   CDXML, and mmCIF, and supports bounded gzip SDF/XYZ decoding; full
   strict malformed-corpus coverage remains open. The dependency-free gate
-  passes three negative cases for every runner format (27/27), one oversized
+  passes four negative cases for every runner format (36/36), one oversized
   case for every runner format (9/9), plus two gzip cases; broader malformed
   corpus coverage remains open.
 - [x] Add bounded Rust streaming batch APIs with cancellation, pull-based

@@ -2,7 +2,7 @@
 """Run the common streaming benchmark's negative-input format gate.
 
 This is intentionally a small negative-input contract, not a throughput
-benchmark. Every format accepted by ``streaming_benchmark`` gets three cases
+benchmark. Every format accepted by ``streaming_benchmark`` gets four cases
 from the checked-in corpus and one input-size rejection. The gzip case
 additionally proves that the limit is applied after decompression.
 """
@@ -111,10 +111,10 @@ def main() -> int:
         return 1
     malformed = corpus["cases"]
     if any(
-        not isinstance(cases, list) or len(cases) != 3 or any(not isinstance(case, str) for case in cases)
+        not isinstance(cases, list) or len(cases) != 4 or any(not isinstance(case, str) for case in cases)
         for cases in malformed.values()
     ):
-        print("streaming safety corpus must contain exactly three string cases for every format", file=sys.stderr)
+        print("streaming safety corpus must contain exactly four string cases for every format", file=sys.stderr)
         return 1
 
     # CML/CDXML are deliberately lenient about unknown/empty structure and
