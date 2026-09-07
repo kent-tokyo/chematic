@@ -177,7 +177,7 @@ def main() -> None:
     parser.add_argument("--repeats", type=int, default=200)
     parser.add_argument(
         "--mode",
-        choices=("block", "mol-block", "file-backed", "xyz-file-backed"),
+        choices=("block", "mol-block", "v3000-block", "file-backed", "xyz-file-backed"),
         default="block",
         help="RDKit block constructors, file-backed SDF suppliers, or XYZ blocks over a file",
     )
@@ -198,7 +198,9 @@ def main() -> None:
         return
     sdf = sdf_blocks(args.sdf.read_text())
     xyz = xyz_frames(args.xyz.read_text())
-    if args.mode == "mol-block":
+    if args.mode in ("mol-block", "v3000-block"):
+        if args.mode == "v3000-block":
+            sdf = [args.sdf.read_text()]
         print(json.dumps([measure("mol", sdf, args.repeats, args.sdf.stat().st_size)], indent=2))
         return
     print(json.dumps([
