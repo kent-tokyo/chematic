@@ -48,6 +48,7 @@ jobs:
           - { package: chematic-chem, target: issue415_fused_heteroaromatic_holdout }
           - { package: chematic-chem, target: metal_disconnect_holdout }
           - { package: chematic-chem, target: rdkit_reference }
+          - { package: chematic-chem, target: descriptor_contract }
           - { package: chematic-chem, target: standardize_stereo_table_preservation }
           - { package: chematic-cip, target: corpus_report }
           - { package: chematic-cip, target: corpus_smoke }
