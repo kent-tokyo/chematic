@@ -116,7 +116,8 @@ documentation, and required measurement agree.
   PDB/mmCIF, and gzip, including malformed and oversized inputs. The local
   runner now covers PDB and applies explicit parser limits to MOL2, CML,
   CDXML, and mmCIF, and supports bounded gzip SDF/XYZ decoding; full
-  malformed-corpus coverage remains open.
+  strict malformed-corpus coverage remains open. A dependency-free gate now
+  checks one negative and one oversized case for every runner format.
 - [x] Add bounded Rust streaming batch APIs with cancellation, pull-based
   backpressure, deterministic ordering, and an explicit partial-result
   manifest (`SdfBatchReader`); cross-language streaming parity remains open.

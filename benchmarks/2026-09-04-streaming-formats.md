@@ -75,3 +75,16 @@ cargo run -p chematic-mol --example streaming_benchmark --release --offline -- -
 gzip -c benchmarks/fixtures/streaming.sdf > /tmp/streaming.sdf.gz
 cargo run -p chematic-mol --example streaming_benchmark --release --offline -- --format sdf --gzip --path /tmp/streaming.sdf.gz --repeats 1
 ```
+
+The dependency-free negative-input gate is reproducible with:
+
+```text
+TMPDIR=/private/tmp python3 scripts/check_streaming_format_limits.py \
+  --binary target/debug/examples/streaming_benchmark
+```
+
+It checks one malformed or typed resource-limit rejection and one input-size
+rejection for every runner format, plus gzip control and decompressed-limit
+cases. CML, CDXML, and PDB use their explicit line-limit boundary because
+those readers intentionally accept some unknown/non-record structure instead
+of exposing a strict malformed-record error.
