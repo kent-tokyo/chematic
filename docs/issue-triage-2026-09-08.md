@@ -64,6 +64,16 @@ selection improvement, not an RDKit parity claim; the observed six-fixture
 macrocycle counts remain the pinned boundary until the representative policy
 is independently validated.
 
+The latest candidate audit confirms the remaining mismatch is representative
+selection rather than failure to enumerate a cycle family. In particular,
+`chembl_tier_b_0028` returns four 32-member macrocycles from the bounded
+selector, while the pinned RDKit result returns three. The extra candidate is
+not removed by the existing GF(2) independence check because it can replace a
+same-size basis member. A future selector therefore needs the RDL
+representative-family rule, not an arbitrary lexicographic deletion or a
+reduced independence test. Current RDKit's `FindRings.cpp` obtains SSSR cycles
+through `RDL_getSSSR`; its legacy Figueras symmetrization path is separate.
+
 Evidence:
 
 - `cargo test -p chematic-perception --lib --offline` — 204 passed, 1 ignored.
