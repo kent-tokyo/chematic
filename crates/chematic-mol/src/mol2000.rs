@@ -906,10 +906,18 @@ fn read_mol_internal(
         let isotope = atom_line
             .get(34..36)
             .and_then(|field| decode_mass_difference(element, field));
+        // V2000 atom-atom mapping number (columns 61-63, zero-based
+        // 60..63). Zero means that the atom is not mapped.
+        let atom_map = atom_line
+            .get(60..63)
+            .and_then(parse_unsigned_ascii)
+            .and_then(|value| u16::try_from(value).ok())
+            .filter(|&value| value != 0);
 
         let mut atom = Atom::new(element);
         atom.charge = charge;
         atom.isotope = isotope;
+        atom.atom_map = atom_map;
         builder.add_atom(atom);
     }
 
@@ -1337,11 +1345,12 @@ pub fn write_mol_with_coords_into(
         let sym = atom.element.symbol();
         let charge_code = encode_charge(atom.charge);
         let mass_difference = encode_mass_difference(atom.element, atom.isotope).unwrap_or(0);
+        let atom_map = atom.atom_map.unwrap_or(0);
         if let Some(&(x, y)) = coords.get(idx.0 as usize) {
             writeln!(
                 out,
-                "{:>10.4}{:>10.4}{:>10.4} {:<3}{:>2}{:>3}  0  0  0  0  0  0  0  0  0",
-                x, y, 0.0_f64, sym, mass_difference, charge_code,
+                "{:>10.4}{:>10.4}{:>10.4} {:<3}{:>2}{:>3}  0  0  0  0  0  0  0 {:>3}  0",
+                x, y, 0.0_f64, sym, mass_difference, charge_code, atom_map,
             )
             .expect("writing to String cannot fail");
         } else {
@@ -1359,7 +1368,9 @@ pub fn write_mol_with_coords_into(
                 push_right_aligned_i16(out, mass_difference, 2);
                 push_right_aligned_u32(out, charge_code as u32, 3);
             }
-            out.push_str("  0  0  0  0  0  0  0  0  0\n");
+            out.push_str("  0  0  0  0  0  0  0");
+            push_right_aligned_u32(out, atom_map as u32, 3);
+            out.push_str("  0\n");
         }
     }
 
@@ -1447,14 +1458,15 @@ pub fn write_mol_with_conformer(
         let sym = atom.element.symbol();
         let charge_code = encode_charge(atom.charge);
         let mass_difference = encode_mass_difference(atom.element, atom.isotope).unwrap_or(0);
+        let atom_map = atom.atom_map.unwrap_or(0);
         let p = conformer
             .points
             .get(idx.0 as usize)
             .copied()
             .unwrap_or(Point3::zero());
         out.push_str(&format!(
-            "{:>10.4}{:>10.4}{:>10.4} {:<3}{:>2}{:>3}  0  0  0  0  0  0  0  0  0\n",
-            p.x, p.y, p.z, sym, mass_difference, charge_code,
+            "{:>10.4}{:>10.4}{:>10.4} {:<3}{:>2}{:>3}  0  0  0  0  0  0  0 {:>3}  0\n",
+            p.x, p.y, p.z, sym, mass_difference, charge_code, atom_map,
         ));
     }
 
@@ -2040,6 +2052,14 @@ M  END
                 mol.atom(AtomIdx(0)).isotope
             );
         }
+    }
+
+    #[test]
+    fn atom_map_round_trips_through_v2000() {
+        let mol = chematic_smiles::parse("[CH3:7]").expect("mapped SMILES");
+        let written = write_mol(&mol, &MolMetadata::default());
+        let (roundtrip, _) = parse_mol(&written).expect("V2000 round-trip");
+        assert_eq!(roundtrip.atom(AtomIdx(0)).atom_map, Some(7));
     }
 
     #[test]

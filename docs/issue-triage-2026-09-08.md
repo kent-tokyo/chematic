@@ -131,6 +131,9 @@ map number and component-local atom index. Derived documents populate these
 from their SMILES, while authored documents that provide the field must match
 the serialized molecule exactly; this makes atom-map identity explicit without
 breaking older JSON that omits the additive field.
+The V2000 MOL atom-map field is now read and written for three-digit values,
+and the RXN adapter returns a typed loss for larger map numbers instead of
+producing a shifted fixed-width field.
 
 This is validation hardening only. Full upstream-backed RXN dialect support,
 including any format-specific metadata beyond the current loss-aware V2000
@@ -139,7 +142,7 @@ adapter, remains open.
 Evidence:
 
 - `cargo test -p chematic-rxn document --offline` — 9 passed.
-- `cargo test -p chematic-mol rxn --offline` — 9 passed.
+- `cargo test -p chematic-mol rxn --offline` — 11 passed.
 - `git diff --check` — passed.
 
 ## Issue #461 — CDXML document attribute safety boundary

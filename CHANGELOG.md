@@ -19,6 +19,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Rich reaction components now expose optional, validated atom-map identities
   (map number plus component-local atom index), populated by RXN/SMILES-derived
   documents without breaking older authored JSON.
+- V2000 MOL/RXN atom-map fields now round-trip for three-digit values and fail
+  closed with a typed loss for values the fixed-width RXN dialect cannot hold.
 - Added an experimental, bounded periodic-structure geometry fingerprint with
   deterministic stored-representation semantics, provenance, JSON Schema, and
   WASM validation/fingerprint support.

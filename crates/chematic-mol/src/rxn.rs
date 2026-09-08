@@ -188,6 +188,16 @@ pub fn write_rxn_document(document: &ReactionDocument) -> Result<String, RxnDocu
                 detail: "RXN V2000 has no agent channel".to_string(),
             });
         }
+        if component
+            .atom_maps
+            .iter()
+            .any(|atom_map| atom_map.map_number > 999)
+        {
+            losses.push(ReactionLoss {
+                field: format!("{}.atom_maps", component.id),
+                detail: "RXN V2000 atom-map fields are limited to three digits".to_string(),
+            });
+        }
     }
     if !losses.is_empty() {
         return Err(RxnDocumentError::Document(ReactionDocumentError::Losses(
@@ -489,6 +499,36 @@ mod tests {
         let written = write_rxn_document(&document).unwrap();
         let decoded = parse_rxn_document(&written).unwrap();
         assert_eq!(decoded.steps[0].components.len(), 2);
+    }
+
+    #[test]
+    fn rxn_document_adapter_preserves_atom_map_identities() {
+        let document = ReactionDocument::from_reaction_smiles("[CH3:7]>>[CH3:7]").unwrap();
+        let written = write_rxn_document(&document).unwrap();
+        let decoded = parse_rxn_document(&written).unwrap();
+        assert_eq!(
+            decoded.steps[0]
+                .components
+                .iter()
+                .map(|component| component.atom_maps.clone())
+                .collect::<Vec<_>>(),
+            document.steps[0]
+                .components
+                .iter()
+                .map(|component| component.atom_maps.clone())
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn rxn_document_rejects_v2000_atom_map_overflow() {
+        let document = ReactionDocument::from_reaction_smiles("[CH3:1000]>>[CH3:1000]").unwrap();
+        let error = write_rxn_document(&document).unwrap_err();
+        assert!(matches!(
+            error,
+            RxnDocumentError::Document(ReactionDocumentError::Losses(losses))
+                if losses.iter().any(|loss| loss.field.ends_with(".atom_maps"))
+        ));
     }
 
     #[test]
