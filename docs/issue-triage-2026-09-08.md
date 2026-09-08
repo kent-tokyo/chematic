@@ -108,10 +108,14 @@ Evidence: `validation/results/mmff94_coverage_227_term_audit_summary.json`,
 the provenance decision in `scripts/mmff94_provenance/PROVENANCE.md`.
 
 The workspace verification on this checkout also passes after the P-typing
-change. The remaining angle is intentionally still fail-closed: its
-`N(8)-S(18)-C(63)` tuple has no direct or equivalent parameter row, so adding
-an inferred fallback would be an unvalidated energy-model change rather than
-coverage work.
+change. A fresh Tier B audit still reports one final unresolved angle,
+`(angle_type=0, type_i=43, type_j=18, type_k=63)`. It is intentionally
+fail-closed: type 63 is absent from the checked-in eqLevel definition for the
+required substitution path, so adding an inferred fallback would be an
+unvalidated energy-model change rather than coverage work. The audit summary
+is therefore pinned as `total=265`, `bond+angle-gate-would-fail=1`,
+`bonds_final_unresolved=0`, `angles_final_unresolved=1`,
+`torsions_missing=24`, and `stbn_final_unresolved=0`.
 
 ## Issue #303 — bounded structural slice completed
 
