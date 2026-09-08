@@ -338,6 +338,8 @@ documentation, and required measurement agree.
   sparse/explanation parity as separate gates.
 - [x] Add the matching 5,000-row native MACCS 166-bit binding-parity lane;
   keep the RDKit key mapping as a separate accuracy gate.
+- [x] Add a 5,000-row native `topo_path` binding-parity lane across Rust,
+  Python, and Node/WASM; keep RDKit-compatible path parity separate.
 - [ ] Add held-out parity reports for Morgan/ECFP, MACCS, topological,
   torsion, descriptors, and standardization across Rust/Python/WASM. The
   v1.0.8 coverage ledger is now validated by

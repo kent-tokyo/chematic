@@ -36,6 +36,15 @@ machine-readable evidence is
 The external RDKit key mapping and remaining fingerprint parity gates stay
 separate and open.
 
+## P2 native topological-path binding parity — bounded completion
+
+The native `topo_path` 2,048-bit representation was replayed over the same
+5,000-row corpus through Rust, Python, and Node/WASM. All bindings produced
+5,000/5,000 successful records with identical LSB-first bytes. Evidence is
+recorded in `validation/results/topo-path-cross-binding-parity-5000-v1.0.9.json`.
+RDKit-compatible path accuracy and the remaining torsion/standardization gates
+remain separate.
+
 ## Issues #149 and #503 — aromatic E/Z stash residual boundary
 
 The current joint carrier resolver and canonical-fidelity partition remain

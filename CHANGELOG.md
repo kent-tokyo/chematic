@@ -13,6 +13,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   Node/WASM, with the exact 2,048-bit representation and corpus hash recorded.
 - Added the corresponding native MACCS 166-bit binding-parity report across
   Rust, Python, and Node/WASM, while keeping RDKit key mapping separate.
+- Added a 5,000-row native `topo_path` binding-parity report across Rust,
+  Python, and Node/WASM, separate from RDKit-compatible path accuracy.
 - Added a reproducible 5,000-row Rust/Python/Node-WASM descriptor binding
   parity report. All bindings parsed the same corpus and agreed on MW, TPSA,
   HBD, HBA, and heavy-atom count; the report explicitly remains separate from
