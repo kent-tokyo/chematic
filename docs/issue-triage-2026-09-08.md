@@ -456,6 +456,19 @@ Extended XYZ benchmark/safety extension. Cross-language
 streaming parity, equivalent cross-engine throughput, and broader parser
 semantics remain separate open roadmap gates.
 
+## P1 common streaming matrix — completed local runner slice
+
+`scripts/benchmark_streaming_matrix.py` now normalizes temporary gzip paths to
+fixture-relative paths before writing its report. The committed
+`benchmarks/2026-09-08-streaming-matrix-v1.0.9.json` covers ten formats in
+plain and gzip stages, records parser limits and fixture digests, and runs 20
+repetitions per row. All 20 rows returned their expected record counts with
+zero failures.
+
+This is Rust-only runner evidence with the file-backed/materialized boundary
+explicit; it does not close equivalent RDKit/Open Babel throughput or
+same-process parity.
+
 ## P1 cross-language streaming parity — completed local Python slice
 
 The Python binding now exposes `iter_xyz_batched` and `iter_extxyz_batched`,

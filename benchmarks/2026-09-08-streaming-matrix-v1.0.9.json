@@ -1,0 +1,640 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.9",
+  "repeats": 20,
+  "formats": [
+    "sdf",
+    "mol",
+    "xyz",
+    "extxyz",
+    "v3000",
+    "mol2",
+    "cml",
+    "cdxml",
+    "mmcif",
+    "pdb"
+  ],
+  "rows": [
+    {
+      "format": "sdf",
+      "compression": "none",
+      "fixture": {
+        "path": "benchmarks/fixtures/streaming.sdf",
+        "bytes": 633,
+        "sha256": "627e7814694f7d00a9212712ec697f2174d30327b459d983d2a10f717cae0465",
+        "compressed_bytes": null
+      },
+      "expected_records": 40,
+      "runner": {
+        "format": "sdf",
+        "compression": "none",
+        "execution_mode": "file_backed_bufread",
+        "path": "benchmarks/fixtures/streaming.sdf",
+        "repeats": 20,
+        "records": 40,
+        "failures": 0,
+        "input_bytes": 12660,
+        "limits": {
+          "max_input_bytes": 1073741824,
+          "max_record_bytes": 16777216,
+          "max_line_bytes": 16777216,
+          "max_records": 100000,
+          "max_atoms": 1000000
+        },
+        "seconds": 0.005147,
+        "records_per_second": 7771.83,
+        "bytes_per_second": 2459785.14
+      }
+    },
+    {
+      "format": "sdf",
+      "compression": "gzip",
+      "fixture": {
+        "path": "benchmarks/fixtures/streaming.sdf",
+        "bytes": 633,
+        "sha256": "627e7814694f7d00a9212712ec697f2174d30327b459d983d2a10f717cae0465",
+        "compressed_bytes": 138
+      },
+      "expected_records": 40,
+      "runner": {
+        "format": "sdf",
+        "compression": "gzip",
+        "execution_mode": "file_backed_bufread",
+        "path": "benchmarks/fixtures/streaming.sdf.gz",
+        "repeats": 20,
+        "records": 40,
+        "failures": 0,
+        "input_bytes": 2760,
+        "limits": {
+          "max_input_bytes": 1073741824,
+          "max_record_bytes": 16777216,
+          "max_line_bytes": 16777216,
+          "max_records": 100000,
+          "max_atoms": 1000000
+        },
+        "seconds": 0.002711,
+        "records_per_second": 14753.34,
+        "bytes_per_second": 1017980.64
+      }
+    },
+    {
+      "format": "mol",
+      "compression": "none",
+      "fixture": {
+        "path": "benchmarks/fixtures/streaming.sdf",
+        "bytes": 633,
+        "sha256": "627e7814694f7d00a9212712ec697f2174d30327b459d983d2a10f717cae0465",
+        "compressed_bytes": null
+      },
+      "expected_records": 40,
+      "runner": {
+        "format": "mol",
+        "compression": "none",
+        "execution_mode": "file_backed_bufread",
+        "path": "benchmarks/fixtures/streaming.sdf",
+        "repeats": 20,
+        "records": 40,
+        "failures": 0,
+        "input_bytes": 12660,
+        "limits": {
+          "max_input_bytes": 1073741824,
+          "max_record_bytes": 16777216,
+          "max_line_bytes": 16777216,
+          "max_records": 100000,
+          "max_atoms": 1000000
+        },
+        "seconds": 0.001199,
+        "records_per_second": 33362.3,
+        "bytes_per_second": 10559168.88
+      }
+    },
+    {
+      "format": "mol",
+      "compression": "gzip",
+      "fixture": {
+        "path": "benchmarks/fixtures/streaming.sdf",
+        "bytes": 633,
+        "sha256": "627e7814694f7d00a9212712ec697f2174d30327b459d983d2a10f717cae0465",
+        "compressed_bytes": 138
+      },
+      "expected_records": 40,
+      "runner": {
+        "format": "mol",
+        "compression": "gzip",
+        "execution_mode": "file_backed_bufread",
+        "path": "benchmarks/fixtures/streaming.sdf.gz",
+        "repeats": 20,
+        "records": 40,
+        "failures": 0,
+        "input_bytes": 2760,
+        "limits": {
+          "max_input_bytes": 1073741824,
+          "max_record_bytes": 16777216,
+          "max_line_bytes": 16777216,
+          "max_records": 100000,
+          "max_atoms": 1000000
+        },
+        "seconds": 0.002513,
+        "records_per_second": 15916.44,
+        "bytes_per_second": 1098234.27
+      }
+    },
+    {
+      "format": "xyz",
+      "compression": "none",
+      "fixture": {
+        "path": "benchmarks/fixtures/streaming.xyz",
+        "bytes": 161,
+        "sha256": "3c717e4520a3e1b7b90ace86b72e73cce4dda38de7ae29aa811733d2ec227221",
+        "compressed_bytes": null
+      },
+      "expected_records": 40,
+      "runner": {
+        "format": "xyz",
+        "compression": "none",
+        "execution_mode": "file_backed_bufread",
+        "path": "benchmarks/fixtures/streaming.xyz",
+        "repeats": 20,
+        "records": 40,
+        "failures": 0,
+        "input_bytes": 3220,
+        "limits": {
+          "max_input_bytes": 1073741824,
+          "max_record_bytes": 16777216,
+          "max_line_bytes": 16777216,
+          "max_records": 100000,
+          "max_atoms": 1000000
+        },
+        "seconds": 0.000771,
+        "records_per_second": 51903.09,
+        "bytes_per_second": 4178198.88
+      }
+    },
+    {
+      "format": "xyz",
+      "compression": "gzip",
+      "fixture": {
+        "path": "benchmarks/fixtures/streaming.xyz",
+        "bytes": 161,
+        "sha256": "3c717e4520a3e1b7b90ace86b72e73cce4dda38de7ae29aa811733d2ec227221",
+        "compressed_bytes": 69
+      },
+      "expected_records": 40,
+      "runner": {
+        "format": "xyz",
+        "compression": "gzip",
+        "execution_mode": "file_backed_bufread",
+        "path": "benchmarks/fixtures/streaming.xyz.gz",
+        "repeats": 20,
+        "records": 40,
+        "failures": 0,
+        "input_bytes": 1380,
+        "limits": {
+          "max_input_bytes": 1073741824,
+          "max_record_bytes": 16777216,
+          "max_line_bytes": 16777216,
+          "max_records": 100000,
+          "max_atoms": 1000000
+        },
+        "seconds": 0.001766,
+        "records_per_second": 22653.26,
+        "bytes_per_second": 781537.59
+      }
+    },
+    {
+      "format": "extxyz",
+      "compression": "none",
+      "fixture": {
+        "path": "benchmarks/fixtures/streaming.extxyz",
+        "bytes": 268,
+        "sha256": "0094ab92ea84aa6acd826004e1849f2f2cb750c81d02e061c4156dc25c2830c7",
+        "compressed_bytes": null
+      },
+      "expected_records": 40,
+      "runner": {
+        "format": "extxyz",
+        "compression": "none",
+        "execution_mode": "file_backed_bufread",
+        "path": "benchmarks/fixtures/streaming.extxyz",
+        "repeats": 20,
+        "records": 40,
+        "failures": 0,
+        "input_bytes": 5360,
+        "limits": {
+          "max_input_bytes": 1073741824,
+          "max_record_bytes": 16777216,
+          "max_line_bytes": 16777216,
+          "max_records": 100000,
+          "max_atoms": 1000000
+        },
+        "seconds": 0.001247,
+        "records_per_second": 32072.69,
+        "bytes_per_second": 4297740.4
+      }
+    },
+    {
+      "format": "extxyz",
+      "compression": "gzip",
+      "fixture": {
+        "path": "benchmarks/fixtures/streaming.extxyz",
+        "bytes": 268,
+        "sha256": "0094ab92ea84aa6acd826004e1849f2f2cb750c81d02e061c4156dc25c2830c7",
+        "compressed_bytes": 120
+      },
+      "expected_records": 40,
+      "runner": {
+        "format": "extxyz",
+        "compression": "gzip",
+        "execution_mode": "file_backed_bufread",
+        "path": "benchmarks/fixtures/streaming.extxyz.gz",
+        "repeats": 20,
+        "records": 40,
+        "failures": 0,
+        "input_bytes": 2400,
+        "limits": {
+          "max_input_bytes": 1073741824,
+          "max_record_bytes": 16777216,
+          "max_line_bytes": 16777216,
+          "max_records": 100000,
+          "max_atoms": 1000000
+        },
+        "seconds": 0.002235,
+        "records_per_second": 17893.75,
+        "bytes_per_second": 1073625.19
+      }
+    },
+    {
+      "format": "v3000",
+      "compression": "none",
+      "fixture": {
+        "path": "benchmarks/fixtures/ethanol.v3000",
+        "bytes": 298,
+        "sha256": "64ac11b3de1c186deae555d54d6a47e7f3c72607ef0a90b0d93f467496bbd3ad",
+        "compressed_bytes": null
+      },
+      "expected_records": 20,
+      "runner": {
+        "format": "v3000",
+        "compression": "none",
+        "execution_mode": "materialized_one_shot",
+        "path": "benchmarks/fixtures/ethanol.v3000",
+        "repeats": 20,
+        "records": 20,
+        "failures": 0,
+        "input_bytes": 5960,
+        "limits": {
+          "max_input_bytes": 1073741824,
+          "max_record_bytes": 16777216,
+          "max_line_bytes": 16777216,
+          "max_records": 100000,
+          "max_atoms": 1000000
+        },
+        "seconds": 0.001116,
+        "records_per_second": 17918.47,
+        "bytes_per_second": 5339702.75
+      }
+    },
+    {
+      "format": "v3000",
+      "compression": "gzip",
+      "fixture": {
+        "path": "benchmarks/fixtures/ethanol.v3000",
+        "bytes": 298,
+        "sha256": "64ac11b3de1c186deae555d54d6a47e7f3c72607ef0a90b0d93f467496bbd3ad",
+        "compressed_bytes": 156
+      },
+      "expected_records": 20,
+      "runner": {
+        "format": "v3000",
+        "compression": "gzip",
+        "execution_mode": "materialized_one_shot",
+        "path": "benchmarks/fixtures/ethanol.v3000.gz",
+        "repeats": 20,
+        "records": 20,
+        "failures": 0,
+        "input_bytes": 3120,
+        "limits": {
+          "max_input_bytes": 1073741824,
+          "max_record_bytes": 16777216,
+          "max_line_bytes": 16777216,
+          "max_records": 100000,
+          "max_atoms": 1000000
+        },
+        "seconds": 0.002117,
+        "records_per_second": 9446.96,
+        "bytes_per_second": 1473725.88
+      }
+    },
+    {
+      "format": "mol2",
+      "compression": "none",
+      "fixture": {
+        "path": "benchmarks/fixtures/ethanol.mol2",
+        "bytes": 361,
+        "sha256": "80144aad97332e2f58eb42bb2da1472587a9dfc2466f9d2fe081eb9834c2224d",
+        "compressed_bytes": null
+      },
+      "expected_records": 20,
+      "runner": {
+        "format": "mol2",
+        "compression": "none",
+        "execution_mode": "materialized_one_shot",
+        "path": "benchmarks/fixtures/ethanol.mol2",
+        "repeats": 20,
+        "records": 20,
+        "failures": 0,
+        "input_bytes": 7220,
+        "limits": {
+          "max_input_bytes": 1073741824,
+          "max_record_bytes": 16777216,
+          "max_line_bytes": 16777216,
+          "max_records": 100000,
+          "max_atoms": 1000000
+        },
+        "seconds": 0.001452,
+        "records_per_second": 13776.48,
+        "bytes_per_second": 4973308.08
+      }
+    },
+    {
+      "format": "mol2",
+      "compression": "gzip",
+      "fixture": {
+        "path": "benchmarks/fixtures/ethanol.mol2",
+        "bytes": 361,
+        "sha256": "80144aad97332e2f58eb42bb2da1472587a9dfc2466f9d2fe081eb9834c2224d",
+        "compressed_bytes": 166
+      },
+      "expected_records": 20,
+      "runner": {
+        "format": "mol2",
+        "compression": "gzip",
+        "execution_mode": "materialized_one_shot",
+        "path": "benchmarks/fixtures/ethanol.mol2.gz",
+        "repeats": 20,
+        "records": 20,
+        "failures": 0,
+        "input_bytes": 3320,
+        "limits": {
+          "max_input_bytes": 1073741824,
+          "max_record_bytes": 16777216,
+          "max_line_bytes": 16777216,
+          "max_records": 100000,
+          "max_atoms": 1000000
+        },
+        "seconds": 0.002449,
+        "records_per_second": 8166.6,
+        "bytes_per_second": 1355655.37
+      }
+    },
+    {
+      "format": "cml",
+      "compression": "none",
+      "fixture": {
+        "path": "benchmarks/fixtures/ethanol.cml",
+        "bytes": 383,
+        "sha256": "0d89c3e1250890147debd2ae097b27f8128f73b8d44bb60cbe3279242053e06c",
+        "compressed_bytes": null
+      },
+      "expected_records": 20,
+      "runner": {
+        "format": "cml",
+        "compression": "none",
+        "execution_mode": "materialized_one_shot",
+        "path": "benchmarks/fixtures/ethanol.cml",
+        "repeats": 20,
+        "records": 20,
+        "failures": 0,
+        "input_bytes": 7660,
+        "limits": {
+          "max_input_bytes": 1073741824,
+          "max_record_bytes": 16777216,
+          "max_line_bytes": 16777216,
+          "max_records": 100000,
+          "max_atoms": 1000000
+        },
+        "seconds": 0.001551,
+        "records_per_second": 12891.45,
+        "bytes_per_second": 4937424.91
+      }
+    },
+    {
+      "format": "cml",
+      "compression": "gzip",
+      "fixture": {
+        "path": "benchmarks/fixtures/ethanol.cml",
+        "bytes": 383,
+        "sha256": "0d89c3e1250890147debd2ae097b27f8128f73b8d44bb60cbe3279242053e06c",
+        "compressed_bytes": 208
+      },
+      "expected_records": 20,
+      "runner": {
+        "format": "cml",
+        "compression": "gzip",
+        "execution_mode": "materialized_one_shot",
+        "path": "benchmarks/fixtures/ethanol.cml.gz",
+        "repeats": 20,
+        "records": 20,
+        "failures": 0,
+        "input_bytes": 4160,
+        "limits": {
+          "max_input_bytes": 1073741824,
+          "max_record_bytes": 16777216,
+          "max_line_bytes": 16777216,
+          "max_records": 100000,
+          "max_atoms": 1000000
+        },
+        "seconds": 0.002817,
+        "records_per_second": 7099.75,
+        "bytes_per_second": 1476748.31
+      }
+    },
+    {
+      "format": "cdxml",
+      "compression": "none",
+      "fixture": {
+        "path": "benchmarks/fixtures/ethanol.cdxml",
+        "bytes": 298,
+        "sha256": "788130936f9a9cf46bb2c64d54e05bb9da39a707e04199f8ec4ae97416436857",
+        "compressed_bytes": null
+      },
+      "expected_records": 20,
+      "runner": {
+        "format": "cdxml",
+        "compression": "none",
+        "execution_mode": "materialized_one_shot",
+        "path": "benchmarks/fixtures/ethanol.cdxml",
+        "repeats": 20,
+        "records": 20,
+        "failures": 0,
+        "input_bytes": 5960,
+        "limits": {
+          "max_input_bytes": 1073741824,
+          "max_record_bytes": 16777216,
+          "max_line_bytes": 16777216,
+          "max_records": 100000,
+          "max_atoms": 1000000
+        },
+        "seconds": 0.001569,
+        "records_per_second": 12743.59,
+        "bytes_per_second": 3797590.95
+      }
+    },
+    {
+      "format": "cdxml",
+      "compression": "gzip",
+      "fixture": {
+        "path": "benchmarks/fixtures/ethanol.cdxml",
+        "bytes": 298,
+        "sha256": "788130936f9a9cf46bb2c64d54e05bb9da39a707e04199f8ec4ae97416436857",
+        "compressed_bytes": 181
+      },
+      "expected_records": 20,
+      "runner": {
+        "format": "cdxml",
+        "compression": "gzip",
+        "execution_mode": "materialized_one_shot",
+        "path": "benchmarks/fixtures/ethanol.cdxml.gz",
+        "repeats": 20,
+        "records": 20,
+        "failures": 0,
+        "input_bytes": 3620,
+        "limits": {
+          "max_input_bytes": 1073741824,
+          "max_record_bytes": 16777216,
+          "max_line_bytes": 16777216,
+          "max_records": 100000,
+          "max_atoms": 1000000
+        },
+        "seconds": 0.002541,
+        "records_per_second": 7871.82,
+        "bytes_per_second": 1424799.14
+      }
+    },
+    {
+      "format": "mmcif",
+      "compression": "none",
+      "fixture": {
+        "path": "benchmarks/fixtures/minimal.mmcif",
+        "bytes": 698,
+        "sha256": "d583d8047758d0e804c98729796d76eea3fa87f3b5b8ed85962717e784e98998",
+        "compressed_bytes": null
+      },
+      "expected_records": 20,
+      "runner": {
+        "format": "mmcif",
+        "compression": "none",
+        "execution_mode": "materialized_one_shot",
+        "path": "benchmarks/fixtures/minimal.mmcif",
+        "repeats": 20,
+        "records": 20,
+        "failures": 0,
+        "input_bytes": 13960,
+        "limits": {
+          "max_input_bytes": 1073741824,
+          "max_record_bytes": 16777216,
+          "max_line_bytes": 16777216,
+          "max_records": 100000,
+          "max_atoms": 1000000
+        },
+        "seconds": 0.002851,
+        "records_per_second": 7015.9,
+        "bytes_per_second": 4897099.52
+      }
+    },
+    {
+      "format": "mmcif",
+      "compression": "gzip",
+      "fixture": {
+        "path": "benchmarks/fixtures/minimal.mmcif",
+        "bytes": 698,
+        "sha256": "d583d8047758d0e804c98729796d76eea3fa87f3b5b8ed85962717e784e98998",
+        "compressed_bytes": 271
+      },
+      "expected_records": 20,
+      "runner": {
+        "format": "mmcif",
+        "compression": "gzip",
+        "execution_mode": "materialized_one_shot",
+        "path": "benchmarks/fixtures/minimal.mmcif.gz",
+        "repeats": 20,
+        "records": 20,
+        "failures": 0,
+        "input_bytes": 5420,
+        "limits": {
+          "max_input_bytes": 1073741824,
+          "max_record_bytes": 16777216,
+          "max_line_bytes": 16777216,
+          "max_records": 100000,
+          "max_atoms": 1000000
+        },
+        "seconds": 0.004278,
+        "records_per_second": 4674.85,
+        "bytes_per_second": 1266885.57
+      }
+    },
+    {
+      "format": "pdb",
+      "compression": "none",
+      "fixture": {
+        "path": "benchmarks/fixtures/minimal.pdb",
+        "bytes": 286,
+        "sha256": "69d1e5a2d6cbdb39377325cbbf077face011ef0893718e28b42d0563901ad15b",
+        "compressed_bytes": null
+      },
+      "expected_records": 20,
+      "runner": {
+        "format": "pdb",
+        "compression": "none",
+        "execution_mode": "materialized_one_shot",
+        "path": "benchmarks/fixtures/minimal.pdb",
+        "repeats": 20,
+        "records": 20,
+        "failures": 0,
+        "input_bytes": 5720,
+        "limits": {
+          "max_input_bytes": 1073741824,
+          "max_record_bytes": 16777216,
+          "max_line_bytes": 16777216,
+          "max_records": 100000,
+          "max_atoms": 1000000
+        },
+        "seconds": 0.000669,
+        "records_per_second": 29873.04,
+        "bytes_per_second": 8543689.32
+      }
+    },
+    {
+      "format": "pdb",
+      "compression": "gzip",
+      "fixture": {
+        "path": "benchmarks/fixtures/minimal.pdb",
+        "bytes": 286,
+        "sha256": "69d1e5a2d6cbdb39377325cbbf077face011ef0893718e28b42d0563901ad15b",
+        "compressed_bytes": 127
+      },
+      "expected_records": 20,
+      "runner": {
+        "format": "pdb",
+        "compression": "gzip",
+        "execution_mode": "materialized_one_shot",
+        "path": "benchmarks/fixtures/minimal.pdb.gz",
+        "repeats": 20,
+        "records": 20,
+        "failures": 0,
+        "input_bytes": 2540,
+        "limits": {
+          "max_input_bytes": 1073741824,
+          "max_record_bytes": 16777216,
+          "max_line_bytes": 16777216,
+          "max_records": 100000,
+          "max_atoms": 1000000
+        },
+        "seconds": 0.001942,
+        "records_per_second": 10300.87,
+        "bytes_per_second": 1308210.2
+      }
+    }
+  ],
+  "comparison_boundary": "chematic Rust runner only; file-backed BufRead for SDF/MOL/XYZ, materialized one-shot parsing for V3000/MOL2/CML/CDXML/mmCIF/PDB; gzip rows measure compressed input while parser limits apply after decompression"
+}

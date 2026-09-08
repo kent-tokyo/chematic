@@ -275,6 +275,9 @@ documentation, and required measurement agree.
   installed; the 20-repetition SDF, V3000, and MOL2 lanes now record matching
   counts and zero failures for all three available engines with those
   boundaries explicit.
+  The Rust-only common matrix now records 20 plain/gzip rows across all ten
+  runner formats with normalized fixture-relative paths; same-process
+  cross-engine equivalence remains open.
   Deterministic gzip record/failure contracts now cover SDF, XYZ,
   Extended XYZ, V3000, MOL2, CML, CDXML, mmCIF, and PDB with
   compressed/decompressed byte stages explicit; same-

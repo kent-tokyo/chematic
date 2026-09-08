@@ -73,6 +73,10 @@ def main() -> int:
                 expected_records = records_per_pass * args.repeats
                 if row.get("records") != expected_records or row.get("failures") != 0:
                     errors.append(f"{fmt} {'gzip' if compressed else 'plain'} count mismatch: {row}")
+                # The compressed case lives in a temporary directory. Keep the
+                # report reproducible by replacing that host-specific path with
+                # the logical checked-in fixture path before serializing it.
+                row["path"] = f"{relative_fixture}.gz" if compressed else str(relative_fixture)
                 rows.append(
                     {
                         "format": fmt,
