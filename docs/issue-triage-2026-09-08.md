@@ -712,16 +712,17 @@ Implemented a bounded upstream compatibility slice for reaction application.
 \`[#N:map]\`, retains the map suffix, emits deterministic aliphatic/aromatic
 alternatives for aromatic-capable elements, and rejects compound primitives or
 more than 256 variants with typed errors. \`run_reactants\` and its strict
-variant apply each normalized candidate through the existing matcher and
-valence gate.
+variant, diagnostics, and PreparedReaction application apply each normalized
+candidate through the existing matcher and valence gate.
 
 Evidence:
 
-- \`cargo test -p chematic-rxn --lib\` — 205 passed.
+- \`cargo test -p chematic-rxn --lib --offline\` — 206 passed.
 - Regression coverage includes the reported \`[#7:1][C:2](=[O:3])\` identity
   template, map-position preservation after normalization, aromatic/aliphatic
-  expansion order, and fail-closed compound primitives.
+  expansion order, direct PreparedReaction application, and fail-closed
+  compound primitives.
 
 This is intentionally a bounded compatibility path, not full query-aware
-SMIRKS. Prepared-reaction reuse, structured per-variant diagnostics, and
-compound SMARTS primitives remain open for the broader #510 scope.
+SMIRKS. Structured per-variant diagnostics and compound SMARTS primitives
+remain open for the broader #510 scope.

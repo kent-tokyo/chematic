@@ -264,6 +264,10 @@ pub struct PreparedReaction {
     template_atom_maps: Vec<Vec<Option<u16>>>,
     has_stereo: bool,
     has_ez_stereo: bool,
+    /// Compiled SMILES-compatible variants for supported atomic-number
+    /// primitives. The first variant remains the compatibility view for
+    /// existing match/apply helpers; application methods dispatch to all.
+    variants: Option<Vec<PreparedReaction>>,
 }
 
 impl PreparedReaction {
@@ -271,6 +275,20 @@ impl PreparedReaction {
     /// application. The returned value owns all query state, is safe to share
     /// between threads, and never reparses the template during its methods.
     pub fn new(smirks: &str) -> Result<Self, TransformError> {
+        let variants = crate::reaction::expand_atomic_number_primitives(smirks)?;
+        if variants.len() > 1 || variants.first().is_none_or(|variant| variant != smirks) {
+            let mut compiled = Vec::with_capacity(variants.len());
+            for variant in &variants {
+                compiled.push(Self::new_normalized(variant)?);
+            }
+            let mut primary = Self::new_normalized(&variants[0])?;
+            primary.variants = Some(compiled);
+            return Ok(primary);
+        }
+        Self::new_normalized(smirks)
+    }
+
+    fn new_normalized(smirks: &str) -> Result<Self, TransformError> {
         crate::perf_counters::record_reaction_parse_call();
         let rxn = parse_reaction(smirks)?;
 
@@ -301,6 +319,7 @@ impl PreparedReaction {
             template_atom_maps,
             has_stereo,
             has_ez_stereo,
+            variants: None,
         })
     }
 
@@ -319,6 +338,13 @@ impl PreparedReaction {
         limits: &ReactionTransformLimits,
     ) -> Result<Vec<Vec<Molecule>>, TransformError> {
         crate::perf_counters::record_run_reactants_call();
+        if let Some(variants) = &self.variants {
+            let mut products = Vec::new();
+            for variant in variants {
+                products.extend(variant.run_reactants_impl(reactants, true, limits)?);
+            }
+            return Ok(products);
+        }
         self.run_reactants_impl(reactants, true, limits)
     }
 
@@ -337,6 +363,13 @@ impl PreparedReaction {
         limits: &ReactionTransformLimits,
     ) -> Result<Vec<Vec<Molecule>>, TransformError> {
         crate::perf_counters::record_run_reactants_call();
+        if let Some(variants) = &self.variants {
+            let mut products = Vec::new();
+            for variant in variants {
+                products.extend(variant.run_reactants_impl(reactants, false, limits)?);
+            }
+            return Ok(products);
+        }
         self.run_reactants_impl(reactants, false, limits)
     }
 
@@ -396,6 +429,9 @@ impl PreparedReaction {
         limits: &ReactionTransformLimits,
     ) -> Result<ReactionTransformReport, TransformError> {
         crate::perf_counters::record_run_reactants_call();
+        if let Some(variants) = &self.variants {
+            return aggregate_variant_reports(variants, reactants, limits, true, None);
+        }
         self.run_reactants_with_diagnostics_impl(reactants, true, limits, None)
     }
 
@@ -439,6 +475,18 @@ impl PreparedReaction {
         limits: &ReactionTransformLimits,
     ) -> Result<Vec<Vec<Molecule>>, TransformError> {
         crate::perf_counters::record_run_reactants_call();
+        if let Some(variants) = &self.variants {
+            let mut products = Vec::new();
+            for variant in variants {
+                products.extend(variant.run_reactants_impl_with_rings(
+                    reactants,
+                    true,
+                    limits,
+                    Some(rings),
+                )?);
+            }
+            return Ok(products);
+        }
         self.run_reactants_impl_with_rings(reactants, true, limits, Some(rings))
     }
 
@@ -450,6 +498,9 @@ impl PreparedReaction {
         limits: &ReactionTransformLimits,
     ) -> Result<ReactionTransformReport, TransformError> {
         crate::perf_counters::record_run_reactants_call();
+        if let Some(variants) = &self.variants {
+            return aggregate_variant_reports(variants, reactants, limits, true, Some(rings));
+        }
         self.run_reactants_with_diagnostics_impl(reactants, true, limits, Some(rings))
     }
 
@@ -476,6 +527,18 @@ impl PreparedReaction {
         limits: &ReactionTransformLimits,
     ) -> Result<Vec<Vec<Molecule>>, TransformError> {
         crate::perf_counters::record_run_reactants_call();
+        if let Some(variants) = &self.variants {
+            let mut products = Vec::new();
+            for variant in variants {
+                products.extend(variant.run_reactants_impl_with_rings(
+                    reactants,
+                    false,
+                    limits,
+                    Some(rings),
+                )?);
+            }
+            return Ok(products);
+        }
         self.run_reactants_impl_with_rings(reactants, false, limits, Some(rings))
     }
 
@@ -525,6 +588,39 @@ impl PreparedReaction {
         }
         Ok(apply_match_impl(self, reactants, m, carry_substituents))
     }
+}
+
+fn aggregate_variant_reports(
+    variants: &[PreparedReaction],
+    reactants: &[&Molecule],
+    limits: &ReactionTransformLimits,
+    carry_substituents: bool,
+    rings: Option<&[&RingSet]>,
+) -> Result<ReactionTransformReport, TransformError> {
+    let mut products = Vec::new();
+    let mut diagnostics = ReactionTransformDiagnostics {
+        accepted_matches: 0,
+        applied_products: 0,
+        valence_rejected_matches: 0,
+        truncated_matches: false,
+    };
+    for variant in variants {
+        let report = variant.run_reactants_with_diagnostics_impl(
+            reactants,
+            carry_substituents,
+            limits,
+            rings,
+        )?;
+        diagnostics.accepted_matches += report.diagnostics.accepted_matches;
+        diagnostics.applied_products += report.diagnostics.applied_products;
+        diagnostics.valence_rejected_matches += report.diagnostics.valence_rejected_matches;
+        diagnostics.truncated_matches |= report.diagnostics.truncated_matches;
+        products.extend(report.products);
+    }
+    Ok(ReactionTransformReport {
+        products,
+        diagnostics,
+    })
 }
 
 fn template_atom_maps_of(rxn: &crate::reaction::Reaction) -> Vec<Vec<Option<u16>>> {
@@ -1529,6 +1625,15 @@ mod tests {
         assert!(!results.is_empty(), "atomic-number SMIRKS must apply");
         let product = &results[0][0];
         assert_eq!(product.atom_count(), 3);
+    }
+
+    #[test]
+    fn prepared_reaction_applies_atomic_number_smirks_variants() {
+        let reactant = parse("NC=O").unwrap();
+        let prepared = PreparedReaction::new("[#7:1][C:2](=[O:3])>>[#7:1][C:2](=[O:3])").unwrap();
+        let products = prepared.run_reactants(&[&reactant]).unwrap();
+        assert_eq!(products.len(), 2, "both normalized variants are retained");
+        assert!(products.iter().all(|set| set.len() == 1));
     }
 
     #[test]

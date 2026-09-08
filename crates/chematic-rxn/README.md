@@ -10,7 +10,9 @@ WASM-compatible, with selected RDKit-oriented behavior.
 - **SMIRKS parsing**: transform patterns for reaction template matching (`run_reactants`, `run_reactants_strict`)
 - **Prepared templates**: compile a SMIRKS once with `PreparedReaction` and
   reuse it across targets; optional `RingSet` inputs avoid repeating ring
-  perception in high-throughput template banks
+  perception in high-throughput template banks. Simple `[#N]` and `[#N:map]`
+  atomic-number primitives are expanded deterministically across the same
+  reusable application paths.
 - **Atom mapping**: track which atoms in reactants map to which atoms in products
 - **Reaction properties**: count reactants, products, and agents
 - **Stereo-selective SMIRKS**: `@`/`@@` in reactant templates filter by absolute configuration using
