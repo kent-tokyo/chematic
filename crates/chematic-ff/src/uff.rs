@@ -798,6 +798,10 @@ mod tests {
             result.sound,
             "an ordinary small molecule minimizing normally should report sound"
         );
+        assert!(
+            result.worst_bond_length <= MAX_SANE_UFF_BOND_LENGTH,
+            "sound result must expose a bond length within the soundness limit"
+        );
     }
 
     #[test]
@@ -814,6 +818,10 @@ mod tests {
         assert!(
             !result.sound,
             "a 5.0 Å C-C bond must be reported unsound regardless of `converged`"
+        );
+        assert!(
+            result.worst_bond_length > MAX_SANE_UFF_BOND_LENGTH,
+            "unsound result must expose the stretched bond measurement"
         );
     }
 
