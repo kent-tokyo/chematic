@@ -613,6 +613,28 @@ Evidence:
 This is one shared stable-operation fixture, not completion of the broader
 all-stable-operation Rust/Python/Node/WASM manifest.
 
+## P3 shared XYZ batch recovery fixture — completed local slice
+
+`validation/cross_binding_contract.json` now carries versioned plain XYZ and
+Extended XYZ malformed-frame recovery cases. The Rust/WASM binding tests and
+the Python file-backed batch iterator consume the same input and expected
+rejected/accepted counts; the contract also checks the accepted frame's
+coordinates.
+
+Evidence:
+
+- `cargo test -p chematic-wasm --offline xyz_batch_manifest` — 6 passed,
+  including both shared-contract cases.
+- A clean offline maturin wheel plus isolated pytest run of
+  `test_cross_binding_contract.py -k 'xyz_batch_recovery or shared_fixture_schema'`
+  — 3 passed.
+- The Node source contract test now exercises the same cases, but the
+  checked-in `pkg-node` artifact does not yet export the new batch functions;
+  `wasm-pack` artifact regeneration remains a separate gate.
+
+This is a bounded shared-contract slice, not completion of the broader
+all-stable-operation manifest.
+
 ## P3 shared semantic expansion fixture — completed local slice
 
 `validation/cross_binding_contract.json` now owns the Markush R-group and

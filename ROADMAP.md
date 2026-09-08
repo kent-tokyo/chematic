@@ -453,7 +453,9 @@ records them.
   contract test passes after the documented current-source wasm-pack rebuild.
   The shared manifest now also covers Extended XYZ parsing, the typed RXN
   document round-trip, and Markush/polymer semantic expansion across Rust,
-  Python, and Node/WASM; the broader
+  Python, and Node/WASM. It now also carries the bounded XYZ/Extended XYZ
+  batch-recovery contract, verified by Rust/WASM and a clean Python wheel;
+  the checked-in Node artifact lacks the new exports, so the broader
   all-stable-operation manifest remains open.
 - [x] Extend the shared versioned manifest to cover the core ECFP4/MACCS
   fingerprint shapes and configurations across Rust, Python, and Node/WASM.

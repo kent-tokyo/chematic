@@ -25,6 +25,7 @@ def test_shared_fixture_schema_is_stable():
     assert _DOCUMENT["fingerprint_detail_contract"]["operations"]["rdkit_ecfp4_detail"]["configuration"]["radius"] == 2
     assert _DOCUMENT["batch_canonicalization_contract"]["schema_version"] == 1
     assert _DOCUMENT["extxyz_contract"]["schema_version"] == 1
+    assert _DOCUMENT["xyz_batch_contract"]["schema_version"] == 1
     assert _DOCUMENT["rxn_document_contract"]["schema_version"] == 1
     assert _DOCUMENT["semantic_expansion_contract"]["schema_version"] == 1
 
@@ -78,6 +79,28 @@ def test_python_binding_matches_shared_batch_canonicalization_contract():
             result["canonical_smiles"] = record["canonical_smiles"]
         observed.append(result)
     assert observed == contract["expected"]
+
+
+@pytest.mark.parametrize("format_name", ["xyz", "extxyz"])
+def test_python_binding_matches_shared_xyz_batch_recovery_contract(tmp_path, format_name):
+    contract = _DOCUMENT["xyz_batch_contract"]
+    fixture = contract[format_name]
+    path = tmp_path / f"recovery.{format_name}"
+    path.write_text(fixture["input"])
+    iterator = (
+        chematic.iter_xyz_batched(str(path), batch_size=contract["batch_size"])
+        if format_name == "xyz"
+        else chematic.iter_extxyz_batched(str(path), batch_size=contract["batch_size"])
+    )
+    batches = list(iterator)
+    expected = fixture["expected"]
+    assert len(batches) == 1
+    assert len(batches[0]) == 1
+    manifest = json.loads(iterator.manifest_json())
+    assert manifest["status"] == expected["status"]
+    assert manifest["frames_seen"] == expected["record_count"]
+    assert manifest["frames_emitted"] == 1
+    assert manifest["rejected_frames"] == expected["rejected_count"]
 
 
 @pytest.mark.parametrize(

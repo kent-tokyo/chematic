@@ -27,6 +27,7 @@ assert.equal(
 );
 assert.equal(fixture.batch_canonicalization_contract.schema_version, 1);
 assert.equal(fixture.extxyz_contract.schema_version, 1);
+assert.equal(fixture.xyz_batch_contract.schema_version, 1);
 
 const extxyz = fixture.extxyz_contract;
 const extxyzActual = JSON.parse(wasm.extxyz_frame_json(extxyz.input));
@@ -34,6 +35,21 @@ assert.deepEqual(extxyzActual.coords, extxyz.expected.coords);
 assert.deepEqual(extxyzActual.lattice, extxyz.expected.lattice);
 assert.deepEqual(extxyzActual.properties, extxyz.expected.properties);
 assert.deepEqual(extxyzActual.info, extxyz.expected.info);
+
+for (const format of ["xyz", "extxyz"]) {
+  const contract = fixture.xyz_batch_contract[format];
+  const batch = format === "xyz"
+    ? wasm.xyz_frames_batch_json(contract.input, fixture.xyz_batch_contract.batch_size)
+    : wasm.extxyz_frames_batch_json(contract.input, fixture.xyz_batch_contract.batch_size);
+  const actual = JSON.parse(batch);
+  assert.equal(actual.format, format);
+  assert.equal(actual.status, contract.expected.status);
+  assert.equal(actual.record_count, contract.expected.record_count);
+  assert.equal(actual.rejected_count, contract.expected.rejected_count);
+  assert.equal(actual.records[0].status, "rejected");
+  assert.equal(actual.records[1].status, "accepted");
+  assert.deepEqual(actual.records[1].frame.coords, contract.expected.records[1].coords);
+}
 
 const batchInputs = fixture.batch_canonicalization_contract.inputs.join("\n");
 const batchManifest = JSON.parse(wasm.canonicalize_smiles_batch_json(batchInputs, "\n"));

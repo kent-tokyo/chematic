@@ -1,5 +1,10 @@
 use super::*;
 
+const SHARED_CROSS_BINDING_FIXTURE: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../validation/cross_binding_contract.json"
+));
+
 fn parse(s: &str) -> MolHandle {
     MolHandle {
         inner: std::rc::Rc::new(chematic_smiles::parse(s).unwrap()),
@@ -2763,6 +2768,40 @@ fn extxyz_batch_manifest_recovers_after_malformed_frame() {
     assert_eq!(manifest["records"][0]["status"], "rejected");
     assert_eq!(manifest["records"][1]["status"], "accepted");
     assert_eq!(manifest["records"][1]["input_index"], 1);
+}
+
+#[test]
+fn xyz_batch_manifest_matches_shared_cross_binding_contract() {
+    let document: serde_json::Value = serde_json::from_str(SHARED_CROSS_BINDING_FIXTURE).unwrap();
+    let contract = &document["xyz_batch_contract"];
+    assert_eq!(contract["schema_version"], 1);
+    for format in ["xyz", "extxyz"] {
+        let fixture = &contract[format];
+        let input = fixture["input"].as_str().unwrap();
+        let manifest_text = if format == "xyz" {
+            xyz_frames_batch_json(input, 0, contract["batch_size"].as_u64().unwrap() as usize)
+        } else {
+            extxyz_frames_batch_json(input, 0, contract["batch_size"].as_u64().unwrap() as usize)
+        }
+        .unwrap();
+        let manifest: serde_json::Value = serde_json::from_str(&manifest_text).unwrap();
+        assert_eq!(manifest["format"], format);
+        assert_eq!(manifest["status"], fixture["expected"]["status"]);
+        assert_eq!(
+            manifest["record_count"],
+            fixture["expected"]["record_count"]
+        );
+        assert_eq!(
+            manifest["rejected_count"],
+            fixture["expected"]["rejected_count"]
+        );
+        assert_eq!(manifest["records"][0]["status"], "rejected");
+        assert_eq!(manifest["records"][1]["status"], "accepted");
+        assert_eq!(
+            manifest["records"][1]["frame"]["coords"],
+            fixture["expected"]["records"][1]["coords"]
+        );
+    }
 }
 
 #[test]

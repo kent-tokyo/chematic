@@ -23,6 +23,36 @@
       "info": {"energy": "-76.4", "pbc": "T T T"}
     }
   },
+  "xyz_batch_contract": {
+    "schema_version": 1,
+    "batch_size": 2,
+    "xyz": {
+      "input": "not-a-count\ncomment\nC 0 0 0\n1\nvalid\nC 2 0 0\n",
+      "expected": {
+        "format": "xyz",
+        "status": "complete",
+        "record_count": 2,
+        "rejected_count": 1,
+        "records": [
+          {"input_index": 0, "status": "rejected"},
+          {"input_index": 1, "status": "accepted", "atom_count": 1, "coords": [[2.0, 0.0, 0.0]]}
+        ]
+      }
+    },
+    "extxyz": {
+      "input": "not-a-count\ncomment\nC 0 0 0\n1\nProperties=species:S:1:pos:R:3\nC 2 0 0\n",
+      "expected": {
+        "format": "extxyz",
+        "status": "complete",
+        "record_count": 2,
+        "rejected_count": 1,
+        "records": [
+          {"input_index": 0, "status": "rejected"},
+          {"input_index": 1, "status": "accepted", "atom_count": 1, "coords": [[2.0, 0.0, 0.0]]}
+        ]
+      }
+    }
+  },
   "rxn_document_contract": {
     "schema_version": 1,
     "document": {
