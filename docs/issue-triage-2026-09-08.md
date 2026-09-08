@@ -463,13 +463,16 @@ matching the existing SDF file-backed batch surface: bounded batch sizes,
 lazy input-order emission, batch-boundary cancellation, and a deterministic
 `manifest_json()` status envelope. Plain XYZ and Extended XYZ both return the
 existing frame-dict shape used by `from_extxyz`, including coordinates,
-lattice, per-atom properties, and frame metadata. Malformed frames are
-counted as `rejected_frames` and do not escape as partial records.
+lattice, per-atom properties, and frame metadata. The Python batch reader now
+groups malformed count-line content until the next unambiguous count-line,
+counts it as one `rejected_frames` entry, and continues with later frames.
 
 Evidence from the current checkout:
 
 - `cargo check -p chematic-py --offline` — passed.
 - `cargo test -p chematic-py --offline --no-run` — passed.
+- `cargo test -p chematic-py --offline` — 2 recovery tests passed for XYZ and
+  Extended XYZ continuation after a malformed frame.
 - Python regression coverage added for SDF batch cancellation, XYZ ordering
   and batch boundaries, and Extended XYZ metadata plus cancellation.
 

@@ -194,6 +194,19 @@ def test_iter_xyz_batched_preserves_order_and_boundaries(tmp_path):
     assert '"frames_emitted":2' in manifest
 
 
+def test_iter_xyz_batched_recovers_after_malformed_frame(tmp_path):
+    path = tmp_path / "malformed-then-valid.xyz"
+    path.write_text("not-a-count\ncomment\nC 0 0 0\n1\nvalid\nC 2 0 0\n")
+    stream = chematic.iter_xyz_batched(str(path), batch_size=1)
+    batches = list(stream)
+    assert len(batches) == 1
+    assert len(batches[0]) == 1
+    manifest = stream.manifest_json()
+    assert '"status":"complete"' in manifest
+    assert '"frames_seen":2' in manifest
+    assert '"rejected_frames":1' in manifest
+
+
 def test_iter_extxyz_batched_cancel_and_metadata(tmp_path):
     path = tmp_path / "trajectory.extxyz"
     path.write_text(EXTXYZ_WATER + EXTXYZ_WATER)
@@ -205,6 +218,22 @@ def test_iter_extxyz_batched_cancel_and_metadata(tmp_path):
     manifest = stream.manifest_json()
     assert '"format":"extxyz"' in manifest
     assert '"status":"cancelled"' in manifest
+
+
+def test_iter_extxyz_batched_recovers_after_malformed_frame(tmp_path):
+    path = tmp_path / "malformed-then-valid.extxyz"
+    path.write_text(
+        "not-a-count\ncomment\nC 0 0 0\n"
+        "1\nProperties=species:S:1:pos:R:3\nC 2 0 0\n"
+    )
+    stream = chematic.iter_extxyz_batched(str(path), batch_size=1)
+    batches = list(stream)
+    assert len(batches) == 1
+    assert len(batches[0]) == 1
+    manifest = stream.manifest_json()
+    assert '"status":"complete"' in manifest
+    assert '"frames_seen":2' in manifest
+    assert '"rejected_frames":1' in manifest
 
 
 def test_from_extxyz_parses_lattice_properties_and_info():

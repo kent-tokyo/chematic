@@ -3375,7 +3375,11 @@ def iter_sdf_str(content: str) -> SdfIter:
     ...
 
 class XyzBatchIter:
-    """Bounded, input-ordered stream of XYZ or Extended XYZ frame dicts."""
+    """Bounded, input-ordered stream of XYZ or Extended XYZ frame dicts.
+
+    Malformed frames are counted in ``manifest_json()`` and recovery continues
+    after an unambiguous subsequent atom-count line.
+    """
 
     def __iter__(self) -> Iterator[list[dict[str, object]]]: ...
     def __next__(self) -> list[dict[str, object]]: ...
@@ -3387,11 +3391,11 @@ def iter_sdf_batched(path: str, batch_size: int = 1000) -> Iterator[list[SdfReco
     ...
 
 def iter_xyz_batched(path: str, batch_size: int = 1000) -> XyzBatchIter:
-    """Stream plain XYZ frames in bounded batches."""
+    """Stream plain XYZ frames in bounded batches with malformed-frame recovery."""
     ...
 
 def iter_extxyz_batched(path: str, batch_size: int = 1000) -> XyzBatchIter:
-    """Stream Extended XYZ frames in bounded batches."""
+    """Stream Extended XYZ frames in bounded batches with malformed-frame recovery."""
     ...
 
 # ---------------------------------------------------------------------------

@@ -262,11 +262,11 @@ documentation, and required measurement agree.
   input-order emission; full cross-language streaming parity remains open.
 - [x] Extend the Python file-backed batch contract to plain XYZ and Extended
   XYZ frames. Both bindings preserve input order and batch boundaries, expose
-  cancellation and deterministic progress manifests, and count rejected
-  frames; WASM now has bounded resumable SDF/XYZ/Extended XYZ manifest slices
-  plus bounded recovery after malformed frames at an unambiguous count-line
-  boundary. Browser-artifact parity and broader error-recovery semantics
-  remain open.
+  cancellation and deterministic progress manifests, count rejected frames,
+  and recover after malformed content at an unambiguous count-line boundary;
+  WASM now has bounded resumable SDF/XYZ/Extended XYZ manifest slices plus the
+  same bounded recovery rule. Browser-artifact parity and broader
+  error-recovery semantics remain open.
 - [ ] Measure only equivalent operations against installed RDKit and Open
   Babel versions on identical inputs; report sdfrust separately. Local
   file-backed reports now cover SDF, V2000/V3000 MOL, MOL2, XYZ, Extended XYZ,
