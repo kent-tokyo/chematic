@@ -511,6 +511,29 @@ Evidence:
 This is a bounded gzip/Extended XYZ slice; equivalent-operation throughput,
 same-process parity, and the broader strict malformed corpus remain open.
 
+## P1 gzip V3000/MOL2 Open Babel contracts — completed local slice
+
+The gzip safety contract now also covers SDF, V3000, and MOL2. chematic reads the
+gzip wrapper, while Open Babel 3.2.1 reads the byte-identical decompressed
+payload because that CLI does not accept the gzip wrapper as a format input.
+The report deliberately compares record/failure accounting only and records
+the compressed/decompressed boundary.
+
+Evidence:
+
+- `python3 scripts/check_streaming_gzip_openbabel.py --format v3000 --repeats 20`
+  — chematic 20/0 and Open Babel 20/0.
+- `python3 scripts/check_streaming_gzip_openbabel.py --format mol2 --repeats 20`
+  — chematic 20/0 and Open Babel 20/0.
+- `python3 scripts/check_streaming_gzip_openbabel.py --format sdf --repeats 20`
+  — chematic 40/0 and Open Babel 40/0.
+- Reports: `benchmarks/2026-09-08-streaming-gzip-openbabel-sdf.md`,
+  `benchmarks/2026-09-08-streaming-gzip-openbabel-v3000.md`, and
+  `benchmarks/2026-09-08-streaming-gzip-openbabel-mol2.md`.
+
+This does not claim compressed-input support in Open Babel, same-process
+parity, or equivalent-operation throughput.
+
 ## P2 exact MACCS binding fixture — completed local slice
 
 The shared binding manifest now carries exact 2048-bit ECFP4 bit positions and
