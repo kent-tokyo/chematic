@@ -1185,8 +1185,8 @@ fn from_rxn_document_json(text: &str) -> PyResult<String> {
 /// of being silently discarded.
 #[pyfunction]
 fn to_rxn_document_json(document_json: &str) -> PyResult<String> {
-    let document: chematic_rxn::ReactionDocument = serde_json::from_str(document_json)
-        .map_err(|e| PyValueError::new_err(format!("invalid reaction document JSON: {e}")))?;
+    let document = chematic_rxn::ReactionDocument::from_json_str(document_json)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
     chematic_mol::write_rxn_document(&document).map_err(|e| PyValueError::new_err(e.to_string()))
 }
 

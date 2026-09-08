@@ -122,6 +122,20 @@ impl ReactionDocumentError {
 }
 
 impl ReactionDocument {
+    /// Deserialize and validate a typed reaction document from JSON.
+    ///
+    /// `serde_json::from_str::<ReactionDocument>` remains available for
+    /// callers that need raw serde behaviour, but format and binding
+    /// boundaries should use this constructor so malformed documents cannot
+    /// bypass the model's invariants.
+    pub fn from_json_str(s: &str) -> Result<Self, ReactionDocumentError> {
+        let document: Self = serde_json::from_str(s).map_err(|error| {
+            ReactionDocumentError::InvalidDocument(format!("invalid JSON: {error}"))
+        })?;
+        document.validate()?;
+        Ok(document)
+    }
+
     /// Parse a legacy reaction SMILES into a one-step derived document.
     pub fn from_reaction_smiles(s: &str) -> Result<Self, ReactionDocumentError> {
         let reaction = parse_reaction(s)
@@ -330,6 +344,19 @@ mod tests {
         let json = serde_json::to_string(&document).unwrap();
         let decoded: ReactionDocument = serde_json::from_str(&json).unwrap();
         assert_eq!(decoded, document);
+        assert_eq!(ReactionDocument::from_json_str(&json).unwrap(), document);
+    }
+
+    #[test]
+    fn checked_json_constructor_rejects_invalid_component() {
+        let document = ReactionDocument::from_reaction_smiles("CC>>CC").unwrap();
+        let mut value = serde_json::to_value(document).unwrap();
+        value["steps"][0]["components"][0]["smiles"] = serde_json::json!("C>C");
+
+        let error =
+            ReactionDocument::from_json_str(&serde_json::to_string(&value).unwrap()).unwrap_err();
+        assert!(matches!(error, ReactionDocumentError::Parse(_)));
+        assert!(error.to_string().contains("invalid component"));
     }
 
     #[test]
@@ -380,6 +407,8 @@ mod tests {
             },
         ];
         let error = document.validate().unwrap_err();
-        assert!(matches!(error, ReactionDocumentError::InvalidDocument(message) if message.contains("unique")));
+        assert!(
+            matches!(error, ReactionDocumentError::InvalidDocument(message) if message.contains("unique"))
+        );
     }
 }

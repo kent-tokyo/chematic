@@ -120,6 +120,10 @@ Typed condition and provenance records now reject missing identifying fields,
 so JSON-authored metadata cannot enter the model in an ambiguous state.
 Condition keys are also unique within each step, preventing ordered JSON
 records from silently overwriting or ambiguously merging the same condition.
+The public `ReactionDocument::from_json_str` constructor now combines serde
+deserialization with model validation. Python and WASM RXN-document writers
+use this checked constructor, so binding callers cannot bypass component,
+coefficient, ID, or metadata validation by supplying JSON directly.
 
 This is validation hardening only. Full upstream-backed RXN dialect support,
 including any format-specific metadata beyond the current loss-aware V2000
@@ -127,7 +131,7 @@ adapter, remains open.
 
 Evidence:
 
-- `cargo test -p chematic-rxn document --offline` — 6 passed.
+- `cargo test -p chematic-rxn document --offline` — 7 passed.
 - `cargo test -p chematic-mol rxn --offline` — 9 passed.
 - `git diff --check` — passed.
 

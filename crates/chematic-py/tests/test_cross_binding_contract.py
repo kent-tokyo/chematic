@@ -207,3 +207,8 @@ def test_python_rxn_document_contract_is_loss_aware():
     document["steps"][0]["conditions"] = [{"key": "temperature", "value": "25 C"}]
     with pytest.raises(ValueError):
         chematic.to_rxn_document_json(json.dumps(document))
+
+    document["steps"][0]["conditions"] = []
+    document["steps"][0]["components"][0]["smiles"] = "C>C"
+    with pytest.raises(ValueError, match="invalid component"):
+        chematic.to_rxn_document_json(json.dumps(document))
