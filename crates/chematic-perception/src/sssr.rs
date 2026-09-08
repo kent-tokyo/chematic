@@ -53,27 +53,58 @@ fn is_ring_eligible(order: BondOrder) -> bool {
 /// Each ring is stored as a sequence of `AtomIdx` values listed in ring order.
 /// The first atom is not repeated at the end.
 #[derive(Debug, Clone)]
-pub struct RingSet(Vec<Vec<AtomIdx>>);
+pub struct RingSet {
+    rings: Vec<Vec<AtomIdx>>,
+    atom_membership: Vec<bool>,
+}
 
 impl RingSet {
+    fn from_rings(rings: Vec<Vec<AtomIdx>>, atom_count: usize) -> Self {
+        let mut atom_membership = vec![false; atom_count];
+        for ring in &rings {
+            for &atom in ring {
+                if let Some(member) = atom_membership.get_mut(atom.0 as usize) {
+                    *member = true;
+                }
+            }
+        }
+        Self {
+            rings,
+            atom_membership,
+        }
+    }
+
+    fn empty() -> Self {
+        Self {
+            rings: Vec::new(),
+            atom_membership: Vec::new(),
+        }
+    }
+
     /// All rings as slices of atom indices.
     pub fn rings(&self) -> &[Vec<AtomIdx>] {
-        &self.0
+        &self.rings
     }
 
     /// Number of rings in the SSSR.
     pub fn ring_count(&self) -> usize {
-        self.0.len()
+        self.rings.len()
     }
 
     /// Whether atom `atom` is a member of at least one ring.
     pub fn contains_atom(&self, atom: AtomIdx) -> bool {
-        self.0.iter().any(|ring| ring.contains(&atom))
+        self.atom_membership
+            .get(atom.0 as usize)
+            .copied()
+            .unwrap_or(false)
     }
 
     /// Number of rings that atom `atom` belongs to.
     pub fn atoms_in_ring_count(&self, atom: AtomIdx) -> usize {
-        self.0.iter().filter(|ring| ring.contains(&atom)).count()
+        self.rings
+            .iter()
+            .filter(|ring| ring.contains(&atom))
+            .count()
     }
 }
 
@@ -129,7 +160,7 @@ pub fn find_sssr(mol: &Molecule) -> RingSet {
         .count();
 
     if v == 0 || e == 0 {
-        return RingSet(Vec::new());
+        return RingSet::empty();
     }
 
     // Component count only (the parent tree itself isn't used any more —
@@ -138,9 +169,17 @@ pub fn find_sssr(mol: &Molecule) -> RingSet {
     let r = (e as isize) - (v as isize) + (components as isize);
 
     if r <= 0 {
-        return RingSet(Vec::new());
+        return RingSet::empty();
     }
     let r = r as usize;
+
+    // With cycle rank one there is exactly one cycle in the graph. Strip
+    // acyclic tails and walk the remaining degree-2 cycle directly. This is
+    // equivalent to the Horton basis result, but avoids running a BFS from
+    // every atom for the common single-ring case.
+    if r == 1 {
+        return single_cycle_sssr(mol);
+    }
 
     let ring_bonds: Vec<(BondIdx, AtomIdx, AtomIdx)> = mol
         .bonds()
@@ -201,7 +240,69 @@ pub fn find_sssr(mol: &Molecule) -> RingSet {
 
     // Sort output rings by length for output consistency.
     selected_atoms.sort_by_key(|ring| ring.len());
-    RingSet(selected_atoms)
+    RingSet::from_rings(selected_atoms, v)
+}
+
+fn single_cycle_sssr(mol: &Molecule) -> RingSet {
+    let n = mol.atom_count();
+    let mut degree = vec![0usize; n];
+    for (_, bond) in mol.bonds() {
+        if is_ring_eligible(bond.order) {
+            degree[bond.atom1.0 as usize] += 1;
+            degree[bond.atom2.0 as usize] += 1;
+        }
+    }
+
+    let mut queue = VecDeque::new();
+    let mut removed = vec![false; n];
+    for (idx, &d) in degree.iter().enumerate() {
+        if d < 2 {
+            queue.push_back(idx);
+        }
+    }
+    while let Some(idx) = queue.pop_front() {
+        if removed[idx] {
+            continue;
+        }
+        removed[idx] = true;
+        for (neighbor, bond_idx) in mol.neighbors(AtomIdx(idx as u32)) {
+            if !is_ring_eligible(mol.bond(bond_idx).order) {
+                continue;
+            }
+            let neighbor = neighbor.0 as usize;
+            if !removed[neighbor] {
+                degree[neighbor] = degree[neighbor].saturating_sub(1);
+                if degree[neighbor] < 2 {
+                    queue.push_back(neighbor);
+                }
+            }
+        }
+    }
+
+    let Some(start) = (0..n).find(|&idx| !removed[idx]) else {
+        return RingSet::empty();
+    };
+    let mut ring = Vec::new();
+    let mut current = start;
+    let mut previous = None;
+    loop {
+        ring.push(AtomIdx(current as u32));
+        let next = mol
+            .neighbors(AtomIdx(current as u32))
+            .filter(|&(_, bond_idx)| is_ring_eligible(mol.bond(bond_idx).order))
+            .map(|(neighbor, _)| neighbor.0 as usize)
+            .filter(|&neighbor| !removed[neighbor] && Some(neighbor) != previous)
+            .find(|&neighbor| neighbor == start || !ring.contains(&AtomIdx(neighbor as u32)));
+        let Some(next) = next else {
+            return RingSet::empty();
+        };
+        if next == start {
+            break;
+        }
+        previous = Some(current);
+        current = next;
+    }
+    RingSet::from_rings(vec![ring], n)
 }
 
 // ---------------------------------------------------------------------------
@@ -814,7 +915,7 @@ pub fn find_symmetrized_sssr_with_diagnostics(mol: &Molecule) -> SymmetrizedSssr
 
     rings.sort_by_cached_key(|ring| (ring.len(), canonical_cycle_key(ring, &ranks)));
     SymmetrizedSssrResult {
-        ring_set: RingSet(rings),
+        ring_set: RingSet::from_rings(rings, mol.atom_count()),
         status: SymmetrizedSssrStatus::Complete,
     }
 }

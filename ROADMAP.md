@@ -1,7 +1,7 @@
 # chematic roadmap
 
-> Revised 2026-09-08. The current development candidate is the v1.0.9 post-release tree. The workspace
-> version remains fixed at 1.0.9 for this development cycle.
+> Revised 2026-09-09. The current development candidate is the v1.0.10 post-release tree. The workspace
+> version remains fixed at 1.0.10 for this development cycle.
 
 The detailed roadmap and completed gate-by-gate evidence through 2026-09-05 is
 retained in

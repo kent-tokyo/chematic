@@ -10,7 +10,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-METADATA = ROOT / "release-metadata" / "v1.0.9.json"
+METADATA = ROOT / "release-metadata" / "v1.0.10.json"
 SCHEMA = ROOT / "docs" / "release-metadata-schema.json"
 
 
@@ -33,7 +33,7 @@ def main() -> int:
     require(document.get("product") == "chematic", "product must be chematic", errors)
     release = document.get("release", {})
     version = release.get("version")
-    require(version == "1.0.9", "checked-in metadata must describe v1.0.9", errors)
+    require(version == "1.0.10", "checked-in metadata must describe v1.0.10", errors)
     require(release.get("tag") == f"v{version}", "release tag/version mismatch", errors)
     commit = release.get("commit")
     require(

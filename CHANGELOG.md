@@ -9,6 +9,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+No changes yet.
+
+## [1.0.10] - 2026-09-09
+
 - Added a versioned `MoleculeExtension`/`ExtensionRegistry` contract in
   `chematic-core` and documented contributor corpus provenance, licensing,
   minimization, and oracle-version requirements.
@@ -346,7 +350,8 @@ The authoritative list of published tags and release artifacts is the
 historical implementation notes remain available in the archived detailed
 history and Git history.
 
-[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.9...HEAD
+[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.10...HEAD
+[1.0.10]: https://github.com/kent-tokyo/chematic/compare/v1.0.9...v1.0.10
 [1.0.9]: https://github.com/kent-tokyo/chematic/compare/v1.0.8...v1.0.9
 [1.0.8]: https://github.com/kent-tokyo/chematic/compare/v1.0.7...v1.0.8
 [1.0.7]: https://github.com/kent-tokyo/chematic/compare/v1.0.6...v1.0.7

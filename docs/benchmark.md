@@ -7,7 +7,7 @@ the repository's [`benchmarks/`](https://github.com/kent-tokyo/chematic/tree/mai
 
 ## Current status
 
-The release candidate is **v1.0.9**. The newest hot-path measurements were
+The release candidate is **v1.0.10**. The newest hot-path measurements were
 recorded on the v1.0.6-to-v1.0.7 source comparison and remain source-level evidence;
 they must not be generalized beyond their named corpus and configuration.
 

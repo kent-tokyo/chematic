@@ -91,11 +91,19 @@ impl BitVec2048 {
     /// the per-pair allocation of `self.and(other).popcount()`.
     #[inline]
     pub fn intersection_popcount(&self, other: &Self) -> u32 {
-        self.words
-            .iter()
-            .zip(other.words.iter())
-            .map(|(a, b)| (a & b).count_ones())
-            .sum()
+        // Keep four independent accumulators so the CPU can overlap the
+        // count-ones latency across the fixed 32-word fingerprint.
+        let mut c0 = 0u32;
+        let mut c1 = 0u32;
+        let mut c2 = 0u32;
+        let mut c3 = 0u32;
+        for i in (0..32).step_by(4) {
+            c0 += (self.words[i] & other.words[i]).count_ones();
+            c1 += (self.words[i + 1] & other.words[i + 1]).count_ones();
+            c2 += (self.words[i + 2] & other.words[i + 2]).count_ones();
+            c3 += (self.words[i + 3] & other.words[i + 3]).count_ones();
+        }
+        c0 + c1 + c2 + c3
     }
 
     /// Tanimoto similarity given precomputed popcounts, returning `f32`.

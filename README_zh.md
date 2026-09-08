@@ -16,9 +16,9 @@
 **默认快速，设计安全的化学信息学库。**  
 默认纯 Rust · 可选原生 InChI C FFI · Python · WebAssembly · [官方网站](https://chematic.io/) · [在线演示](https://kent-tokyo.github.io/chematic/playground/)
 
-### v1.0.9 范围
+### v1.0.10 范围
 
-v1.0.9 保持 v1.0.0 的 bounded 兼容性边界，并加入 typed reaction document、
+v1.0.10 保持 v1.0.0 的 bounded 兼容性边界，并加入 typed reaction document、
 document-level CDXML 编辑、显式且 bounded 的 Markush/polymer 展开、晶体组成汇总、
 更安全的 UFF rescue，以及 canonical/SDF 热路径优化。完整任意结构 CDXML 编辑、
 复杂拓扑 expansion、完整 RDKit `RWMol` 与完整 ETKDG/MMFF94 parity 仍不支持。
@@ -49,7 +49,7 @@ RDKit.js **6.91 MB**
 比较，chematic 目前比 RDKit.js 小约 2.1 倍，比 Indigo 的 Ketcher 构建版小约 3.8 倍。
 详见 [v1.0.9 artifact 记录](benchmarks/2026-09-07-wasm-size-v1.0.9.md)。
 
-**v1.0.9（2026-09-07）：** 延续 v1.0.8 的 descriptor provenance、共享契约与 streaming safety gate，加入 held-out parity 报告整合验证、扩展格式 malformed gate、WASM batch/screening JSON 错误契约，并同步当前 web artifact。#149/#337 残差仍保持 fail-closed 或诊断专用。
+**v1.0.10（2026-09-09）：** 延续 v1.0.9 的 descriptor provenance、共享契约与 streaming safety gate，加入 fingerprint 生成和环归属判定的安全热路径优化，同时保持既有搜索结果与排序契约。#149/#337 残差仍保持 fail-closed 或诊断专用。
 
 **功能成熟度一览：**
 

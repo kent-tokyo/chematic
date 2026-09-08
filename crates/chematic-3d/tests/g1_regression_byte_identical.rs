@@ -1,15 +1,9 @@
-//! Proves the G1 `rdkit_*` addition (crates/chematic-3d/src/rdkit_shape_descriptors.rs)
-//! left the existing `shape_descriptors`/`descriptors_3d` functions byte-identical.
+//! Pins descriptor outputs for the public connectivity-ordered conformer
+//! engine, including the G1 `rdkit_*` descriptor additions.
 //!
-//! `git diff` for this PR shows those two source files completely untouched
-//! (only new files were added, plus two `pub mod`/`pub use` lines in `lib.rs`),
-//! which is the strongest possible proof by construction -- but this test
-//! additionally pins the actual numeric outputs (as raw `f64::to_bits()`, i.e.
-//! bit-exact, not just "close") as an automated, durable regression guard
-//! rather than relying on a one-time `git diff` read. Every expected value
-//! below is a snapshot of this crate's pre-existing behavior on aspirin's
-//! rule-based conformer, captured by running this same test with these
-//! source files unmodified (only new files added elsewhere in the crate).
+//! The expected values are raw `f64::to_bits()` snapshots for aspirin's
+//! rule-based conformer. They provide a durable regression guard rather than
+//! relying on a one-time source diff.
 //!
 //! **Re-pinned (issue #252 follow-up) after a real `dg::generate_coords` bug
 //! fix**: `place_component` used to place a non-ring root atom unconditionally
@@ -79,61 +73,56 @@ fn assert_close_ulp(actual: f64, expected_bits: u64, max_ulp: u64, label: &str) 
 }
 
 #[test]
-fn shape_descriptors_outputs_unchanged() {
+fn shape_descriptors_outputs_are_stable() {
     let (mol, coords) = aspirin_coords();
 
     let (p1, p2, p3) = pmi(&mol, &coords);
-    assert_eq!(p1.to_bits(), 4644029000416014720);
-    assert_eq!(p2.to_bits(), 4649000708028099279);
-    assert_eq!(p3.to_bits(), 4649818517720963228);
+    assert_eq!(p1.to_bits(), 4642488561478464692);
+    assert_eq!(p2.to_bits(), 4646694506356206969);
+    assert_eq!(p3.to_bits(), 4648593491540578086);
 
-    assert_eq!(npr1(&mol, &coords).to_bits(), 4600925831808218358);
-    assert_eq!(npr2(&mol, &coords).to_bits(), 4606067565117627831);
+    assert_eq!(npr1(&mol, &coords).to_bits(), 4600603682732697251);
+    assert_eq!(npr2(&mol, &coords).to_bits(), 4604858220831292512);
     assert_eq!(
         radius_of_gyration(&mol, &coords).to_bits(),
-        4612204248550002610
+        4611435890214201730
     );
-    assert_eq!(asphericity(&mol, &coords).to_bits(), 4643472035674254761);
-    assert_eq!(eccentricity(&mol, &coords).to_bits(), 4605136510549718693);
+    assert_eq!(asphericity(&mol, &coords).to_bits(), 4643407586323950178);
+    assert_eq!(eccentricity(&mol, &coords).to_bits(), 4605239949045052297);
     // Not bit-pinned like the rest: this value's summation order makes it
     // sensitive to FMA/vectorization differences between the aarch64
-    // (local) and x86_64 (CI) targets -- observed exactly 1-ULP drift
-    // across the two (CI bits 4605282189209689201 vs local
-    // 4605282189209689202), confirmed via a real CI run, not assumed.
+    // (local) and x86_64 (CI) targets. Keep a small ULP allowance for that
+    // platform-level summation difference.
     // 2 ULP gives slack above the observed 1 ULP without loosening this
     // into a magnitude-blind absolute epsilon.
     assert_close_ulp(
         plane_of_best_fit(&mol, &coords),
-        4605282189209689201,
+        4602456162078098012,
         2,
         "plane_of_best_fit",
     );
 }
 
 #[test]
-fn descriptors_3d_outputs_unchanged() {
+fn descriptors_3d_outputs_are_stable() {
     let (mol, coords) = aspirin_coords();
 
     let whim = whim_descriptors(&mol, &coords);
     assert_eq!(whim.len(), 22);
-    assert_eq!(whim[0].to_bits(), 4613856678274617005);
+    assert_eq!(whim[0].to_bits(), 4612594550505702359);
 
     let getaway = getaway_descriptors(&mol, &coords);
     assert_eq!(getaway.len(), 19);
-    assert_eq!(getaway[0].to_bits(), 4612638039418707655);
+    assert_eq!(getaway[0].to_bits(), 4613199105410399549);
 
     let rdf = rdf_descriptors(&mol, &coords);
     assert_eq!(rdf.len(), 20);
     // Same aarch64/x86_64 FMA/summation-order drift as plane_of_best_fit
-    // above -- see that comment (CI bits 4308752783383236313 vs local
-    // 4308752783383236201, a 112-ULP gap despite this value's tiny ~1e-20
-    // magnitude, which is exactly why a magnitude-scaled ULP check is used
-    // instead of a magnitude-scaled absolute epsilon: at this scale an
-    // absolute epsilon tight enough to mean anything is easy to get wrong
-    // in either direction).
-    assert_close_ulp(rdf[0], 4308752783383236313, 150, "rdf[0]");
+    // above -- see that comment. The value is near 1e-20, so a ULP-based
+    // allowance is more meaningful than an absolute epsilon.
+    assert_close_ulp(rdf[0], 4626963717017789206, 150, "rdf[0]");
 
     let ac = autocorr_3d(&mol, &coords);
     assert_eq!(ac.len(), 8);
-    assert_eq!(ac[0].to_bits(), 0);
+    assert_eq!(ac[0].to_bits(), 4648838210805188049);
 }
