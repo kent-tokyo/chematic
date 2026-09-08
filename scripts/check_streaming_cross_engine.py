@@ -23,6 +23,17 @@ def run_json(command: list[str]) -> object:
     return json.loads(completed.stdout)
 
 
+def executable_version(executable: str) -> str:
+    completed = subprocess.run(
+        [executable, "-V"],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    output = (completed.stdout or completed.stderr).strip()
+    return output.splitlines()[0] if output else "unknown"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--format", choices=("sdf", "mol", "v3000", "mol2", "xyz", "extxyz"), default="sdf")
@@ -101,6 +112,8 @@ def main() -> int:
             **({"openbabel": "Open Babel CLI conversion per repetition, including process startup"} if args.format == "sdf" else {}),
         },
     }
+    if args.format == "sdf":
+        report["tool_versions"] = {"openbabel": executable_version(args.openbabel)}
     if errors:
         print("streaming cross-engine contract failures:", *errors, sep="\n", flush=True)
         return 1

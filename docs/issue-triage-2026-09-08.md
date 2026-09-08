@@ -489,6 +489,8 @@ record-accounting run. The identical 633-byte fixture produced 40 records and
 zero failures in chematic, RDKit, and Open Babel. The report keeps chematic's
 Rust `BufRead`, RDKit's Python supplier, and Open Babel's per-repetition CLI
 startup as separate boundaries, so it does not claim same-condition speed.
+The report also records the Open Babel executable version in machine-readable
+`tool_versions` metadata.
 
 Evidence: `benchmarks/2026-09-08-streaming-cross-engine-openbabel.md`.
 

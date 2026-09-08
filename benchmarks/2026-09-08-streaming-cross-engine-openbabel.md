@@ -14,6 +14,7 @@ process for each repetition.
 - Repetitions: 20
 - Expected records: 40
 - Command: `python3 scripts/check_streaming_cross_engine.py --format sdf --repeats 20 --openbabel obabel`
+- Open Babel: `Open Babel 3.2.1 -- Jul 11 2026`
 
 ## Results
 
