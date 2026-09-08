@@ -83,12 +83,14 @@ Completed on the v1.0.9 release candidate tree:
   and RDKit over decompressed frames, while keeping compressed and decompressed
   byte stages distinct; it does not claim same-process parity or speed
   equivalence.
-- [x] Expand issue #489's checked-in streaming safety corpus to four cases per
-  format (36/36 negative cases), retaining explicit line-limit handling for
-  lenient CML/CDXML/PDB readers and the existing 9 oversized plus 4 gzip gates.
-- [x] Extend issue #500's gzip safety gate to XYZ. The gate now verifies both
-  SDF and XYZ gzip controls plus post-decompression input limits (4 gzip cases
-  total), preserving the explicit decompressed-limit boundary.
+- [x] Expand issue #489's checked-in streaming safety corpus to an initial four
+  cases per format (36/36 negative cases), retaining explicit line-limit
+  handling for lenient CML/CDXML/PDB readers and the initial 9 oversized plus 4
+  gzip gates.
+- [x] Extend issue #500's gzip safety gate to XYZ. This established the SDF
+  and XYZ gzip controls plus post-decompression input limits, preserving the
+  explicit decompressed-limit boundary; issue #504 later generalized it to all
+  nine runner formats.
 - [x] Add issue #501's same-process SDF parity contract: `SdfFileReader` and
   `parse_sdf_with_limits` now compare molecule atoms, bonds, metadata, and
   property shape on the shared two-record fixture. This closes the bounded
@@ -103,6 +105,10 @@ Completed on the v1.0.9 release candidate tree:
   dependency-free gate now checks one valid gzip control and one
   post-decompression `max-input-bytes` rejection for each of the nine formats
   (18 gzip cases total), while malformed-corpus breadth remains separate.
+- [x] Add issue #505's second malformed case pair for every runner format. The
+  corpus and dependency-free gate now cover six cases per format (54/54
+  negative cases), while the typed line-limit boundary remains explicit for
+  lenient CML/CDXML/PDB readers.
 
 - [x] Close #210's five named legacy-coordinate UFF stereo-rescue residuals.
   Every returned geometry is finite, bond-sane, and independently checked
@@ -197,8 +203,8 @@ documentation, and required measurement agree.
   runner now covers PDB and applies explicit parser limits to MOL2, CML,
   CDXML, and mmCIF, and supports bounded gzip decoding for every runner
   format; full strict malformed-corpus coverage remains open. The
-  dependency-free gate passes four negative cases for every runner format
-  (36/36), one oversized case for every runner format (9/9), plus nine gzip
+  dependency-free gate passes six negative cases for every runner format
+  (54/54), one oversized case for every runner format (9/9), plus nine gzip
   controls and nine post-decompression limit cases; broader malformed corpus
   coverage remains open.
 - [x] Add bounded Rust streaming batch APIs with cancellation, pull-based
