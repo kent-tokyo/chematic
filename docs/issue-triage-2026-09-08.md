@@ -407,6 +407,11 @@ Evidence:
 - This is a four-fixture cross-binding contract; it does not close the 5,000
   molecule held-out parity report or establish RDKit semantic parity.
 
+The same manifest now also covers native `topo_path` bit positions. WASM has a
+new `topo_path_bitvec` entry point so the native operation is directly
+observable in all three binding test suites; this remains distinct from the
+RDKit-compatible `rdkit_rdk` held-out lane.
+
 ## P3 shared Extended XYZ fixture — completed local slice
 
 `validation/cross_binding_contract.json` now contains a versioned

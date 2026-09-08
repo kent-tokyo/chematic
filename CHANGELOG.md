@@ -69,6 +69,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Strengthened the shared ECFP4/MACCS binding contract with exact outputs for
   four fixtures across Rust, Python, and Node/WASM; the full held-out parity
   corpus remains separate.
+- Added a WASM `topo_path_bitvec` entry point and exact native topological-path
+  bit fixtures across Rust, Python, and Node/WASM.
 
 ## [1.0.9] - 2026-09-07
 

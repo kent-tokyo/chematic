@@ -102,6 +102,7 @@ fn shared_fingerprint_fixture_freezes_shape_and_configuration() {
         let mol = chematic_smiles::parse(smiles)
             .unwrap_or_else(|error| panic!("fingerprint fixture {id} must parse: {error}"));
         let ecfp4 = chematic_fp::ecfp4(&mol);
+        let topo_path = chematic_fp::topo_path(&mol, &chematic_fp::TopoPathConfig::default());
         let maccs = chematic_fp::maccs(&mol);
         assert_eq!(ecfp4.to_bitvecn().bit_width(), 2048, "{id} ECFP4 shape");
         assert_eq!(
@@ -112,14 +113,20 @@ fn shared_fingerprint_fixture_freezes_shape_and_configuration() {
         assert!(ecfp4.popcount() > 0, "{id} ECFP4 must not be empty");
         assert!(maccs.popcount() > 0, "{id} MACCS must not be empty");
         let expected_ecfp4_bits = fixture["ecfp4_bits"].as_array().unwrap();
-        let actual_ecfp4_bits: Vec<usize> = (0..2048)
-            .filter(|&bit| ecfp4.get(bit))
-            .collect();
+        let actual_ecfp4_bits: Vec<usize> = (0..2048).filter(|&bit| ecfp4.get(bit)).collect();
         let expected_ecfp4_bits: Vec<usize> = expected_ecfp4_bits
             .iter()
             .map(|bit| bit.as_u64().unwrap() as usize)
             .collect();
         assert_eq!(actual_ecfp4_bits, expected_ecfp4_bits, "{id} ECFP4 bits");
+        let expected_topo_bits: Vec<usize> = fixture["topo_path_bits"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|bit| bit.as_u64().unwrap() as usize)
+            .collect();
+        let actual_topo_bits: Vec<usize> = (0..2048).filter(|&bit| topo_path.get(bit)).collect();
+        assert_eq!(actual_topo_bits, expected_topo_bits, "{id} topo_path bits");
         assert!(
             (166..2048).all(|bit| !maccs.get(bit)),
             "{id} MACCS upper bits"

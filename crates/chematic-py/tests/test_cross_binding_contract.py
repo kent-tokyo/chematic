@@ -110,6 +110,9 @@ def test_python_binding_matches_shared_fingerprint_shape(fixture):
     ecfp4 = mol.ecfp4()
     assert len(ecfp4) == 256
     assert [i for i in range(2048) if ecfp4[i // 8] & (1 << (i % 8))] == fixture["ecfp4_bits"]
+    topo_path = mol.topo_path_fp()
+    assert len(topo_path) == 256
+    assert [i for i in range(2048) if topo_path[i // 8] & (1 << (i % 8))] == fixture["topo_path_bits"]
     maccs = mol.maccs()
     assert len(maccs) == 21
     assert maccs.hex() == fixture["maccs_hex"]
