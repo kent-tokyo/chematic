@@ -463,6 +463,25 @@ This is a bounded shared-contract slice. It does not close the broader
 all-stable-operation manifest item or the rich Markush/polymer/biomolecule
 Issue #462.
 
+## P2 standardization cross-binding fixture — completed local slice
+
+The shared `standardization_contract` now contains all ten committed Phase 1
+holdouts. Rust, Python, and Node/WASM apply the explicit largest-fragment
+profile to the same inputs and compare the same returned SMILES. The external
+held-out report remains separate: eight of ten expected fragment identities
+match, while the two acetate cases intentionally disclose the charge-
+neutralization difference.
+
+Evidence:
+
+- `cargo test -p chematic-chem --test descriptor_contract --offline` — 4
+  passed.
+- `node crates/chematic-wasm/tests/cross_binding_contract.test.mjs` — passed.
+- Current-source Python extension direct check — 10/10 shared fixtures passed.
+
+This closes only the ten-fixture cross-binding contract slice; the broader
+5,000-row standardization parity and its external identity policy remain open.
+
 ## Issue #460 — shared typed RXN document contract slice
 
 The versioned cross-binding manifest now also owns the minimal authored

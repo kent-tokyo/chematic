@@ -124,8 +124,16 @@
     },
     "semantics": "The explicit largest-fragment profile is opt-in; default standardization preserves disconnected fragments.",
     "fixtures": [
-      {"id": "largest-fragment", "smiles": "CC.CCC", "output_smiles": "CCC"},
-      {"id": "single-fragment-ethanol", "smiles": "CCO", "output_smiles": "C(C)O"}
+      {"id": "std-p1-holdout-01-dopamine-sulfate-threshold", "smiles": "CC(N)Cc1ccc(O)c(O)c1.OS(=O)(=O)O", "output_smiles": "Oc1c(O)ccc(c1)CC(N)C"},
+      {"id": "std-p1-holdout-02-phosphoric-acid-outranks-small-amine", "smiles": "NCCO.OP(=O)(O)O", "output_smiles": "P(O)(O)(O)=O"},
+      {"id": "std-p1-holdout-03-calcium-diacetate-always-strip-extension", "smiles": "CC(=O)[O-].CC(=O)[O-].[Ca+2]", "output_smiles": "CC(O)=O"},
+      {"id": "std-p1-holdout-04-lithium-acetate", "smiles": "CC(=O)[O-].[Li+]", "output_smiles": "CC(O)=O"},
+      {"id": "std-p1-holdout-05-phenethylamine-hf-neutral", "smiles": "c1ccc(cc1)CCN.F", "output_smiles": "c1c(CCN)cccc1"},
+      {"id": "std-p1-holdout-06-caffeine-dihydrate", "smiles": "Cn1cnc2c1c(=O)n(C)c(=O)n2C.O.O", "output_smiles": "n2(C)c(=O)n(C)c1c(c2=O)n(cn1)C"},
+      {"id": "std-p1-holdout-07-three-fragment-amine-acid-hcl", "smiles": "CN1CCC(CC1)Nc1ccccc1.OC(=O)c1ccccc1O.Cl", "output_smiles": "N(c2ccccc2)C1CCN(CC1)C"},
+      {"id": "std-p1-holdout-08-13c-labeled-sugar-hydrate-generalization", "smiles": "OC[C@H]1O[C@@H]([13OH])[C@H](O)[C@@H](O)[C@@H]1O.O", "output_smiles": "[C@@H]1([C@@H](O[C@H](CO)[C@H]([C@@H]1O)O)[13OH])O"},
+      {"id": "std-p1-holdout-09-ethane-decane-unambiguous-nontie", "smiles": "CC.CCCCCCCCCC", "output_smiles": "CCCCCCCCCC"},
+      {"id": "std-p1-holdout-10-pentane-butane-close-nontie", "smiles": "CCCCC.CCCC", "output_smiles": "CCCCC"}
     ]
   },
   "fingerprint_contract": {

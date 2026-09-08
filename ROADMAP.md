@@ -340,10 +340,11 @@ documentation, and required measurement agree.
   native torsion and RDKit-compatible torsion bit positions are now checked
   across Rust, Python, and Node/WASM for four shared fixtures; cross-binding
   parity for the held-out measured operations remains open. The explicit
-  Rust CLI standardization profile is measured against the
-  10 committed Phase 1 holdouts (8/10 expected fragment identities, 80%); two
-  acetate cases differ after charge neutralization and remain disclosed
-  mismatches.
+  Rust CLI standardization profile is measured against the 10 committed Phase
+  1 holdouts (8/10 expected fragment identities, 80%); Rust, Python, and
+  Node/WASM now share and reproduce the ten returned largest-fragment outputs.
+  Two acetate cases still differ from the external expected identities after
+  charge neutralization and remain disclosed mismatches.
 
 ### Performance acceleration track
 
