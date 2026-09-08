@@ -63,10 +63,13 @@ cmd_run_blocks() {
     if [ -r /proc/loadavg ]; then
       loadavg=$(awk '{print $1}' /proc/loadavg)
     elif command -v sysctl >/dev/null 2>&1; then
-      loadavg=$(sysctl -n vm.loadavg 2>/dev/null | awk '{gsub(/[{}]/, ""); print $1}')
+      loadavg=$(sysctl -n vm.loadavg 2>/dev/null | awk '{gsub(/[{}]/, ""); print $1}' || true)
     else
       loadavg="unavailable"
     fi
+    # macOS may expose sysctl but deny this read in a sandboxed runner. Keep
+    # the artifact schema honest without aborting the measurement block.
+    loadavg=${loadavg:-unavailable}
     if [ -r /proc/cpuinfo ]; then
       cpu_model=$(awk -F: '/model name|Hardware|chip type/ {gsub(/^ +/, "", $2); print $2; exit}' /proc/cpuinfo)
     elif command -v sysctl >/dev/null 2>&1; then
