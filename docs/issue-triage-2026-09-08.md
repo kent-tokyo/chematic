@@ -4,6 +4,25 @@ This snapshot records the bounded completion of issue #507. It does not turn
 format-specific safety cases into a throughput, compatibility, or universal
 parser claim.
 
+## Issues #149 and #503 — aromatic E/Z stash residual boundary
+
+The current joint carrier resolver and canonical-fidelity partition remain
+green on the held-out residual suite, but the three measured aromatic-stash
+families still produce two valid canonical spellings and therefore remain
+fail-closed by `canonical_smiles_stable_key()`. The coupled-carrier audit was
+re-run against the committed 5,000-line corpus: 31 coupling components were
+found, all of size 2, with no cycle or zero-private-substituent component.
+This confirms the residual is not an unbounded coupling-graph case. A safe
+fix still needs a representation-independent aromatic carrier/stereo traversal
+rule; no index-based winner was introduced, and both issues remain open.
+
+Evidence:
+
+- `cargo test -p chematic-smiles --lib --offline` — 221 passed.
+- `cargo run -p chematic-smiles --release --example
+  ez_shared_carrier_component_audit -- scripts/descriptor_census_corpus.smi`
+  — 5,000 parsed, 31 size-2 components, maximum size 2.
+
 ## Issue #70 — Criterion gate local runner boundary
 
 The process-level block arithmetic, ABBA/BAAB metadata, routing fixtures, and
