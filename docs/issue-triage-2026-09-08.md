@@ -144,6 +144,9 @@ typed resource-limit error instead of being parsed without the advertised
 bound.
 Document edits also reject empty or non-element replacement/insertion
 payloads before mutating the source representation.
+The parser now rejects unmatched closing pages and nested page elements with
+typed invalid-document errors, keeping the ordered page model aligned with
+the source structure rather than silently dropping or overwriting a page.
 Attribute-edit commands now validate attribute names before serialization, so
 quotes, whitespace, and markup characters cannot create malformed XML.
 Edits preserve the source's CRLF/LF convention and whether the source ended
@@ -167,7 +170,7 @@ outside the current adapter contract.
 
 Evidence:
 
-- `cargo test -p chematic-mol cdxml_document --offline` — 15 passed.
+- `cargo test -p chematic-mol cdxml_document --offline` — 16 passed.
 - `git diff --check` — passed.
 
 ## Issue #337 — typed symmetrized-ring cap outcome

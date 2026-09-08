@@ -136,6 +136,11 @@ impl CdxmlDocument {
                         "page element is outside the CDXML root".into(),
                     ));
                 }
+                if current.is_some() {
+                    return Err(CdxmlError::InvalidDocument(
+                        "nested page elements are not supported".into(),
+                    ));
+                }
                 if pages.len() >= limits.max_fragments {
                     return Err(CdxmlError::ResourceLimit {
                         resource: "pages",
@@ -155,9 +160,12 @@ impl CdxmlDocument {
                     children: Vec::new(),
                 });
             } else if is_close_tag(line, "page") {
-                if let Some(page) = current.take() {
-                    pages.push(page);
-                }
+                let Some(page) = current.take() else {
+                    return Err(CdxmlError::InvalidDocument(
+                        "page closing element has no matching page".into(),
+                    ));
+                };
+                pages.push(page);
             } else if let Some(page) = current.as_mut()
                 && line.starts_with('<')
                     && !line.starts_with("</")
@@ -636,6 +644,19 @@ mod tests {
     #[test]
     fn rejects_missing_or_ambiguous_document_root() {
         for input in ["garbage", "<CDXMLFoo/>", "<CDXML>"] {
+            assert!(matches!(
+                CdxmlDocument::parse(input),
+                Err(CdxmlError::InvalidDocument(_))
+            ));
+        }
+    }
+
+    #[test]
+    fn rejects_malformed_page_nesting() {
+        for input in [
+            "<CDXML>\n</page>\n</CDXML>",
+            "<CDXML>\n<page id=\"p1\">\n<page id=\"p2\">\n</page>\n</page>\n</CDXML>",
+        ] {
             assert!(matches!(
                 CdxmlDocument::parse(input),
                 Err(CdxmlError::InvalidDocument(_))

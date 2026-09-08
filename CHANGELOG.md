@@ -12,6 +12,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Added a checked `ReactionDocument::from_json_str` boundary and routed the
   Python/WASM RXN-document writers through it, preventing invalid typed
   documents from bypassing component and metadata validation.
+- CDXML document parsing now rejects unmatched and nested page elements with
+  typed invalid-document errors instead of silently changing page structure.
 - Added an experimental, bounded periodic-structure geometry fingerprint with
   deterministic stored-representation semantics, provenance, JSON Schema, and
   WASM validation/fingerprint support.
