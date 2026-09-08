@@ -41,6 +41,15 @@ two-way residual probe did not converge. The bias was reverted because it
 changed canonical spellings without establishing representation-independent
 stereo resolution.
 
+A fourth experiment removed the index-derived uniqueness pin from structural
+alkene endpoints adjacent to aromatic direction stashes. It did not reduce
+the three held-out residuals, and it regressed the existing ring-closure stash
+round-trip: the canonical output reparsed with the opposite aromatic ring
+direction (`N(/C)=c\\1...` versus `N(/C)=c/1...`). The endpoint pin is therefore
+retained and the experiment was reverted; a future fix must provide an
+intrinsic stereo color or a traversal proof rather than simply unpinning the
+endpoint.
+
 Evidence:
 
 - `cargo test -p chematic-smiles --lib --offline` — 221 passed.
