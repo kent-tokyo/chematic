@@ -666,6 +666,7 @@ where
             .collect();
 
         let new_energy = uff_total_energy(mol, types, &new_coords);
+        let geometry_sound = is_sound_uff_geometry(mol, &new_coords);
         // Energy descent alone is not a sufficient acceptance criterion:
         // the incomplete UFF potential can lower its energy by walking into
         // a stationary geometry with a catastrophically stretched covalent
@@ -674,14 +675,14 @@ where
         // search reduce the step instead. This preserves the existing
         // fail-closed `sound` contract while preventing the optimizer from
         // knowingly propagating an unsound intermediate.
-        if new_energy < energy && is_sound_uff_geometry(mol, &new_coords) && accept(&new_coords) {
+        if new_energy < energy && geometry_sound && accept(&new_coords) {
             coords = new_coords;
             if energy - new_energy < prev_energy * 1e-7 {
                 step *= 1.2;
             }
             prev_energy = energy;
         } else {
-            if new_energy < energy {
+            if new_energy < energy && !geometry_sound {
                 rejected_unsound_step = true;
             }
             step *= 0.5;
@@ -792,6 +793,10 @@ mod tests {
         assert_eq!(result.coords, initial);
         assert_eq!(result.energy, uff_total_energy(&mol, &types, &initial));
         assert!(!result.converged);
+        assert!(
+            !result.rejected_unsound_step,
+            "a caller constraint rejection must not be reported as an unsound UFF step"
+        );
     }
 
     #[test]

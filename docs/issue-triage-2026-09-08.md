@@ -263,6 +263,12 @@ This is diagnostic/safety-surface work only. UFF torsion and out-of-plane terms
 remain unimplemented, so the fused-aromatic stationary-point residual and #185
 itself remain open.
 
+The `rejected_unsound_step` diagnostic now records only energy-decreasing
+proposals rejected by the UFF geometry soundness gate. A caller-supplied
+constraint may still reject a proposal, but that is no longer misreported as a
+UFF unsoundness event; the distinction is covered by the constrained-minimizer
+regression test.
+
 ## Issue #372 — canonical Boc/tBu symmetry performance
 
 The exact twin/orbit path was re-run with the checked-in Tier A/B harness and
