@@ -480,6 +480,9 @@ records them.
 - [x] Publish the issue #473 downstream capability matrix, including the
   explicit first-class nucleic-acid/biopolymer non-support boundary and the
   Rust/Python/WASM/Node entry points.
+- [x] Add the bounded #510 reaction-application bridge for \`[#N]\` and
+  \`[#N:map]\`, with deterministic aromatic/aliphatic expansion, map-preserving
+  normalization, explicit unsupported-primitive errors, and regression tests.
 - [ ] Expand reaction/SMARTS/medicinal-chemistry coverage only after P0-P3
   gates have current evidence.
 - [ ] Add curated reaction/query precision, recall, invalid-product, timeout,

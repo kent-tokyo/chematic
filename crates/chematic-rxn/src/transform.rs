@@ -157,7 +157,23 @@ fn run_reactants_impl(
     carry_substituents: bool,
     limits: &ReactionTransformLimits,
 ) -> Result<Vec<Vec<Molecule>>, TransformError> {
-    PreparedReaction::new(smirks)?.run_reactants_impl(reactants, carry_substituents, limits)
+    let variants = crate::reaction::expand_atomic_number_primitives(smirks)?;
+    let mut products = Vec::new();
+    for variant in variants {
+        products.extend(PreparedReaction::new(&variant)?.run_reactants_impl(
+            reactants,
+            carry_substituents,
+            limits,
+        )?);
+        if products.len() > limits.max_matches {
+            return Err(TransformError::ResourceLimit {
+                resource: "reaction products",
+                actual: products.len(),
+                limit: limits.max_matches,
+            });
+        }
+    }
+    Ok(products)
 }
 
 /// One accepted match of `smirks`'s reactant-side pattern(s) against a set of
@@ -1491,6 +1507,40 @@ mod tests {
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].len(), 1);
         assert_eq!(results[0][0].atom_count(), 1);
+    }
+
+    #[test]
+    fn applies_atomic_number_smirks_and_keeps_atom_maps() {
+        let reactant = parse("NC=O").unwrap();
+        let smirks = "[#7:1][C:2](=[O:3])>>[#7:1][C:2](=[O:3])";
+        let normalized = crate::reaction::expand_atomic_number_primitives(smirks)
+            .unwrap()
+            .into_iter()
+            .next()
+            .unwrap();
+        let matches = find_reaction_matches(&normalized, &[&reactant]).unwrap();
+        assert_eq!(matches.len(), 1);
+        assert_eq!(
+            matches[0].atom_map_positions(&normalized).unwrap().len(),
+            3,
+            "map identity must survive query matching"
+        );
+        let results = run_reactants(smirks, &[&reactant]).unwrap();
+        assert!(!results.is_empty(), "atomic-number SMIRKS must apply");
+        let product = &results[0][0];
+        assert_eq!(product.atom_count(), 3);
+    }
+
+    #[test]
+    fn atomic_number_smirks_rejects_unsupported_compound_primitive() {
+        let reactant = parse("N").unwrap();
+        let err = run_reactants("[#7;H1]>>[#7;H1]", &[&reactant]);
+        assert!(matches!(
+            err,
+            Err(TransformError::SmirksParse(
+                crate::reaction::RxnError::UnsupportedAtomicNumberPrimitive { .. }
+            ))
+        ));
     }
 
     #[test]

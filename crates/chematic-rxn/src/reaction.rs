@@ -47,6 +47,10 @@ pub enum RxnError {
     },
     /// A SMILES component failed to parse.
     SmilesParse { part: String, source: String },
+    /// An atomic-number SMARTS primitive could not be expanded safely.
+    UnsupportedAtomicNumberPrimitive { primitive: String },
+    /// Expanding aromatic/aliphatic alternatives would exceed the safety cap.
+    AtomicNumberExpansionLimit { actual: usize, limit: usize },
 }
 
 impl core::fmt::Display for RxnError {
@@ -64,8 +68,111 @@ impl core::fmt::Display for RxnError {
             Self::SmilesParse { part, source } => {
                 write!(f, "failed to parse SMILES '{part}': {source}")
             }
+            Self::UnsupportedAtomicNumberPrimitive { primitive } => write!(
+                f,
+                "unsupported atomic-number SMARTS primitive '{primitive}'; expected [#N] or [#N:map]"
+            ),
+            Self::AtomicNumberExpansionLimit { actual, limit } => write!(
+                f,
+                "atomic-number SMARTS expansion exceeds limit {limit} (got {actual})"
+            ),
         }
     }
+}
+
+/// Expand simple atomic-number SMARTS atoms into SMILES-compatible variants.
+///
+/// Reaction application uses the SMILES parser for template construction, while
+/// the SMARTS parser already accepts query atoms such as \`[#7:2]\`. This helper
+/// is the explicit compatibility boundary between those representations. Each
+/// primitive is expanded to its aliphatic form and, where chemically valid, its
+/// aromatic form (for example \`[#7:2]\` becomes \`[N:2]\` and \`[n:2]\`). The atom
+/// map is retained verbatim. The returned order is deterministic.
+///
+/// Only the intentionally narrow \`[#number]\` and \`[#number:map]\` forms are
+/// expanded. More complex primitives must remain on the SMARTS query path and
+/// return an explicit error rather than silently changing semantics.
+pub fn expand_atomic_number_primitives(s: &str) -> Result<Vec<String>, RxnError> {
+    const MAX_VARIANTS: usize = 256;
+    let mut variants = vec![String::new()];
+    let bytes = s.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] != b'[' {
+            for value in &mut variants {
+                value.push(bytes[i] as char);
+            }
+            i += 1;
+            continue;
+        }
+        let start = i;
+        let Some(end_rel) = s[i + 1..].find(']') else {
+            for value in &mut variants {
+                value.push_str(&s[i..]);
+            }
+            break;
+        };
+        let end = i + 1 + end_rel;
+        let primitive = &s[start..=end];
+        let inner = &s[start + 1..end];
+        if !inner.starts_with('#') {
+            for value in &mut variants {
+                value.push_str(primitive);
+            }
+            i = end + 1;
+            continue;
+        }
+        let number_end = inner[1..]
+            .bytes()
+            .position(|b| !b.is_ascii_digit())
+            .map(|p| p + 1)
+            .unwrap_or(inner.len());
+        let number_text = &inner[1..number_end];
+        let suffix = &inner[number_end..];
+        let valid_suffix = suffix.is_empty()
+            || (suffix.starts_with(':')
+                && suffix.len() > 1
+                && suffix[1..].bytes().all(|b| b.is_ascii_digit()));
+        if number_text.is_empty() || !valid_suffix {
+            return Err(RxnError::UnsupportedAtomicNumberPrimitive {
+                primitive: primitive.to_string(),
+            });
+        }
+        let atomic_number = number_text.parse::<u8>().ok();
+        let Some(atomic_number) = atomic_number.filter(|n| (1..=118).contains(n)) else {
+            return Err(RxnError::UnsupportedAtomicNumberPrimitive {
+                primitive: primitive.to_string(),
+            });
+        };
+        let Some(element) = chematic_core::Element::from_atomic_number(atomic_number) else {
+            return Err(RxnError::UnsupportedAtomicNumberPrimitive {
+                primitive: primitive.to_string(),
+            });
+        };
+        let symbol = element.symbol();
+        let mut replacements = vec![format!("[{symbol}{suffix}]")];
+        if matches!(atomic_number, 5 | 6 | 7 | 8 | 15 | 16) {
+            replacements.push(format!("[{}{}]", symbol.to_ascii_lowercase(), suffix));
+        }
+        let next_len = variants.len().saturating_mul(replacements.len());
+        if next_len > MAX_VARIANTS {
+            return Err(RxnError::AtomicNumberExpansionLimit {
+                actual: next_len,
+                limit: MAX_VARIANTS,
+            });
+        }
+        let previous = std::mem::take(&mut variants);
+        variants = previous
+            .into_iter()
+            .flat_map(|prefix| {
+                replacements
+                    .iter()
+                    .map(move |replacement| format!("{prefix}{replacement}"))
+            })
+            .collect();
+        i = end + 1;
+    }
+    Ok(variants)
 }
 
 impl std::error::Error for RxnError {}
@@ -454,6 +561,28 @@ mod tests {
                 resource: "atoms per molecule",
                 ..
             })
+        ));
+    }
+
+    #[test]
+    fn expands_atomic_number_primitives_and_preserves_maps() {
+        let variants = expand_atomic_number_primitives("[#7:2][#6]").unwrap();
+        assert_eq!(
+            variants,
+            vec![
+                "[N:2][C]".to_string(),
+                "[N:2][c]".to_string(),
+                "[n:2][C]".to_string(),
+                "[n:2][c]".to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn rejects_compound_atomic_number_primitives() {
+        assert!(matches!(
+            expand_atomic_number_primitives("[#7;H1]>>[#7;H1]"),
+            Err(RxnError::UnsupportedAtomicNumberPrimitive { .. })
         ));
     }
 }

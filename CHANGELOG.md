@@ -9,6 +9,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Added a bounded reaction-application compatibility path for simple SMARTS
+  atomic-number primitives (\`[#N]\` and \`[#N:map]\`). It deterministically
+  preserves map text, distinguishes valid aliphatic/aromatic alternatives, and
+  fails closed for compound primitives or expansion blow-ups.
 - Added a 5,000-row native ECFP4 byte-parity report across Rust, Python, and
   Node/WASM, with the exact 2,048-bit representation and corpus hash recorded.
 - Added the corresponding native MACCS 166-bit binding-parity report across
