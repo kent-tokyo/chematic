@@ -715,14 +715,19 @@ more than 256 variants with typed errors. \`run_reactants\` and its strict
 variant, diagnostics, and PreparedReaction application apply each normalized
 candidate through the existing matcher and valence gate.
 
+\`PreparedReaction::run_reactants_with_variant_diagnostics\` additionally
+returns the normalized template, stable variant index, and accepted/applied/
+valence-rejected counts for each candidate without changing the aggregate
+report contract.
+
 Evidence:
 
 - \`cargo test -p chematic-rxn --lib --offline\` — 206 passed.
 - Regression coverage includes the reported \`[#7:1][C:2](=[O:3])\` identity
   template, map-position preservation after normalization, aromatic/aliphatic
-  expansion order, direct PreparedReaction application, and fail-closed
-  compound primitives.
+  expansion order, direct PreparedReaction application, per-variant
+  diagnostics, and fail-closed compound primitives.
 
 This is intentionally a bounded compatibility path, not full query-aware
-SMIRKS. Structured per-variant diagnostics and compound SMARTS primitives
-remain open for the broader #510 scope.
+SMIRKS. Compound SMARTS primitives and richer query-aware semantics remain
+open for the broader #510 scope.

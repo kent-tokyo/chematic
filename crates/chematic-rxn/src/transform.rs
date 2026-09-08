@@ -75,6 +75,16 @@ pub struct ReactionTransformReport {
     pub diagnostics: ReactionTransformDiagnostics,
 }
 
+/// Diagnostics for one normalized atomic-number variant.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReactionVariantDiagnostics {
+    /// Stable zero-based order in the deterministic expansion.
+    pub variant_index: usize,
+    /// SMILES-compatible reaction template used for this variant.
+    pub normalized_smirks: String,
+    pub diagnostics: ReactionTransformDiagnostics,
+}
+
 impl Default for ReactionTransformLimits {
     fn default() -> Self {
         Self {
@@ -260,6 +270,7 @@ pub fn apply_reaction_match(
 /// inconsistently.
 pub struct PreparedReaction {
     rxn: crate::reaction::Reaction,
+    normalized_smirks: String,
     queries: Vec<QueryMolecule>,
     template_atom_maps: Vec<Vec<Option<u16>>>,
     has_stereo: bool,
@@ -315,6 +326,7 @@ impl PreparedReaction {
 
         Ok(Self {
             rxn,
+            normalized_smirks: smirks.to_string(),
             queries,
             template_atom_maps,
             has_stereo,
@@ -433,6 +445,33 @@ impl PreparedReaction {
             return aggregate_variant_reports(variants, reactants, limits, true, None);
         }
         self.run_reactants_with_diagnostics_impl(reactants, true, limits, None)
+    }
+
+    /// Apply this compiled template and return diagnostics separately for
+    /// every normalized atomic-number variant. This is additive to the
+    /// aggregate report and keeps variant identity explicit for callers that
+    /// need to explain aromatic/aliphatic alternatives.
+    pub fn run_reactants_with_variant_diagnostics(
+        &self,
+        reactants: &[&Molecule],
+        limits: &ReactionTransformLimits,
+    ) -> Result<Vec<ReactionVariantDiagnostics>, TransformError> {
+        crate::perf_counters::record_run_reactants_call();
+        let mut reports = Vec::new();
+        if let Some(variants) = &self.variants {
+            for (variant_index, variant) in variants.iter().enumerate() {
+                reports.push(variant_diagnostics(
+                    variant,
+                    variant_index,
+                    reactants,
+                    limits,
+                    None,
+                )?);
+            }
+        } else {
+            reports.push(variant_diagnostics(self, 0, reactants, limits, None)?);
+        }
+        Ok(reports)
     }
 
     /// Enumerate accepted matches without applying the transformation.
@@ -620,6 +659,21 @@ fn aggregate_variant_reports(
     Ok(ReactionTransformReport {
         products,
         diagnostics,
+    })
+}
+
+fn variant_diagnostics(
+    variant: &PreparedReaction,
+    variant_index: usize,
+    reactants: &[&Molecule],
+    limits: &ReactionTransformLimits,
+    rings: Option<&[&RingSet]>,
+) -> Result<ReactionVariantDiagnostics, TransformError> {
+    let report = variant.run_reactants_with_diagnostics_impl(reactants, true, limits, rings)?;
+    Ok(ReactionVariantDiagnostics {
+        variant_index,
+        normalized_smirks: variant.normalized_smirks.clone(),
+        diagnostics: report.diagnostics,
     })
 }
 
@@ -1634,6 +1688,26 @@ mod tests {
         let products = prepared.run_reactants(&[&reactant]).unwrap();
         assert_eq!(products.len(), 2, "both normalized variants are retained");
         assert!(products.iter().all(|set| set.len() == 1));
+    }
+
+    #[test]
+    fn prepared_reaction_reports_each_atomic_number_variant() {
+        let reactant = parse("NC=O").unwrap();
+        let prepared = PreparedReaction::new("[#7:1][C:2](=[O:3])>>[#7:1][C:2](=[O:3])").unwrap();
+        let reports = prepared
+            .run_reactants_with_variant_diagnostics(
+                &[&reactant],
+                &ReactionTransformLimits::default(),
+            )
+            .unwrap();
+        assert_eq!(reports.len(), 4);
+        assert_eq!(reports[0].variant_index, 0);
+        assert_eq!(reports[3].variant_index, 3);
+        assert!(reports[0].normalized_smirks.contains("[N:1]"));
+        assert!(reports[3].normalized_smirks.contains("[n:1]"));
+        assert!(reports[0].diagnostics.accepted_matches > 0);
+        assert!(reports[0].diagnostics.applied_products > 0);
+        assert!(reports[2].diagnostics.accepted_matches == 0);
     }
 
     #[test]
