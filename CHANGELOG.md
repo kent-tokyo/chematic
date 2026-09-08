@@ -14,6 +14,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   exact source-to-expanded atom mappings.
 - Expanded the shared standardization contract to the ten Phase 1 holdouts,
   with Rust, Python, and Node/WASM checking the same largest-fragment outputs.
+- Added a same-input 20-repetition SDF record-accounting run for chematic,
+  RDKit, and the installed Open Babel CLI, with process boundaries and zero
+  failures recorded separately.
 - Added an Explorer browser smoke contract for malformed pasted records,
   cancellation, and the 2,000-record display cap, with a Chromium-local run
   and a CI matrix hook for the existing browser lanes.

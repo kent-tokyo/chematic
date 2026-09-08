@@ -482,6 +482,16 @@ Evidence:
 This closes only the ten-fixture cross-binding contract slice; the broader
 5,000-row standardization parity and its external identity policy remain open.
 
+## P1 same-input SDF cross-engine accounting — completed local slice
+
+The installed Open Babel CLI was added to the checked-in 20-repetition SDF
+record-accounting run. The identical 633-byte fixture produced 40 records and
+zero failures in chematic, RDKit, and Open Babel. The report keeps chematic's
+Rust `BufRead`, RDKit's Python supplier, and Open Babel's per-repetition CLI
+startup as separate boundaries, so it does not claim same-condition speed.
+
+Evidence: `benchmarks/2026-09-08-streaming-cross-engine-openbabel.md`.
+
 ## Issue #460 — shared typed RXN document contract slice
 
 The versioned cross-binding manifest now also owns the minimal authored

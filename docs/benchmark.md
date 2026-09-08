@@ -78,6 +78,7 @@ are in the [WASM artifact record](../benchmarks/2026-09-06-wasm-size-v1.0.8.md).
 | [2026-09-04 SDF](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-sdf-fast-path.md) | Graph/property read and serialization-only write |
 | [2026-09-04 streaming formats](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-streaming-formats.md) | File-backed SDF/MOL/XYZ runner |
 | [2026-09-08 same-input streaming contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-cross-engine.md) | Same-input SDF record/failure agreement across chematic, RDKit, and Open Babel |
+| [2026-09-08 same-input SDF Open Babel run](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-cross-engine-openbabel.md) | 20-repetition SDF record accounting with explicit Rust/Python/CLI boundaries |
 | [2026-09-08 same-input XYZ streaming contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-cross-engine-xyz.md) | Same-input XYZ record/failure agreement across chematic and RDKit |
 | [2026-09-08 same-input Extended XYZ streaming contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-cross-engine-extxyz.md) | Same-input Extended XYZ frame/failure agreement across chematic and RDKit |
 | [2026-09-08 same-input V2000 MOL streaming contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-cross-engine-mol.md) | Same-input V2000 MOL record/failure agreement across chematic and RDKit |
