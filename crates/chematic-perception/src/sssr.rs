@@ -77,6 +77,40 @@ impl RingSet {
     }
 }
 
+/// Outcome of the bounded symmetrized-ring expansion.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SymmetrizedSssrStatus {
+    /// The candidate search completed without exceeding its safety cap.
+    Complete,
+    /// Candidate generation exceeded the safety cap and the returned rings
+    /// are the complete Horton basis, not a partial symmetrized family.
+    CapExhausted,
+}
+
+/// Symmetrized SSSR together with the bounded-search outcome.
+#[derive(Debug, Clone)]
+pub struct SymmetrizedSssrResult {
+    ring_set: RingSet,
+    status: SymmetrizedSssrStatus,
+}
+
+impl SymmetrizedSssrResult {
+    /// Return the selected ring set.
+    pub fn rings(&self) -> &RingSet {
+        &self.ring_set
+    }
+
+    /// Return the bounded-search outcome.
+    pub fn status(&self) -> SymmetrizedSssrStatus {
+        self.status
+    }
+
+    /// Consume the result and return its ring set.
+    pub fn into_ring_set(self) -> RingSet {
+        self.ring_set
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Main entry point
 // ---------------------------------------------------------------------------
@@ -587,10 +621,13 @@ fn select_permutation_invariant_d2_roots(mol: &Molecule) -> Vec<AtomIdx> {
 /// the basis ring. These are RDKit's duplicate-ring acceptance conditions.
 /// The existing [`find_sssr`] result remains the base and this function is a
 /// separate opt-in model for consumers that need symmetry-equivalent rings.
-pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
+pub fn find_symmetrized_sssr_with_diagnostics(mol: &Molecule) -> SymmetrizedSssrResult {
     let base = find_sssr(mol);
     if base.rings().is_empty() {
-        return base;
+        return SymmetrizedSssrResult {
+            ring_set: base,
+            status: SymmetrizedSssrStatus::Complete,
+        };
     }
 
     // Keep the opt-in symmetry expansion bounded.  A large number of
@@ -745,7 +782,10 @@ pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
             .saturating_add(direct_replacements.len())
             > MAX_SYMMETRIZED_EXTRA_RINGS
     {
-        return base;
+        return SymmetrizedSssrResult {
+            ring_set: base,
+            status: SymmetrizedSssrStatus::CapExhausted,
+        };
     }
     for replacement in direct_replacements {
         let candidate_bonds = ring_bond_set(mol, &replacement);
@@ -771,7 +811,17 @@ pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
     rings.extend(extras);
 
     rings.sort_by_cached_key(|ring| (ring.len(), canonical_cycle_key(ring, &ranks)));
-    RingSet(rings)
+    SymmetrizedSssrResult {
+        ring_set: RingSet(rings),
+        status: SymmetrizedSssrStatus::Complete,
+    }
+}
+
+/// Compute the bounded symmetrized SSSR, preserving the historical ring-only
+/// API. Call [`find_symmetrized_sssr_with_diagnostics`] when callers need to
+/// distinguish a complete family from a fail-closed Horton-basis fallback.
+pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
+    find_symmetrized_sssr_with_diagnostics(mol).into_ring_set()
 }
 
 fn ring_bond_set(mol: &Molecule, ring: &[AtomIdx]) -> FxHashSet<BondIdx> {
@@ -1606,6 +1656,9 @@ mod tests {
     fn test_symmetrized_sssr_adds_only_verified_duplicate_faces() {
         let benzene = chematic_smiles::parse("c1ccccc1").expect("benzene SMILES");
         assert_eq!(find_symmetrized_sssr(&benzene).ring_count(), 1);
+        let diagnostic = find_symmetrized_sssr_with_diagnostics(&benzene);
+        assert_eq!(diagnostic.status(), SymmetrizedSssrStatus::Complete);
+        assert_eq!(diagnostic.rings().ring_count(), 1);
 
         let cubane = chematic_smiles::parse("C12C3C4C1C5C4C3C25").expect("cubane SMILES");
         assert_eq!(find_symmetrized_sssr(&cubane).ring_count(), 6);

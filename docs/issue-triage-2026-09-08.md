@@ -4,6 +4,24 @@ This snapshot records the bounded completion of issue #507. It does not turn
 format-specific safety cases into a throughput, compatibility, or universal
 parser claim.
 
+## Issue #337 — typed symmetrized-ring cap outcome
+
+The bounded symmetrized-SSSR path now exposes
+`find_symmetrized_sssr_with_diagnostics()`. It returns the selected ring set
+with `SymmetrizedSssrStatus::Complete` or `CapExhausted`; cap exhaustion keeps
+the complete Horton basis and never exposes a partial candidate family. The
+existing `find_symmetrized_sssr()` API remains a compatibility wrapper.
+
+This completes the fail-closed diagnostic boundary from
+`docs/rfcs/mmff94_relevant_cycle_selector.md`, but does not close #337: the
+permutation-invariant relevant-cycle representative policy and the six-fixture
+MMFF94/RDKit parity gate remain open.
+
+Evidence:
+
+- `cargo test -p chematic-perception --lib --offline` — 204 passed, 1 ignored.
+- `cargo test -p chematic-ff --lib --offline` — 202 passed.
+
 ## Issue #303 — bounded structural slice completed
 
 The explainable reactivity API now retains the existing epoxide, aziridine,

@@ -464,6 +464,9 @@ records them.
   tie-break is validated.
 - [x] Specify the bounded #337 relevant-cycle selector boundary and fail-closed
   acceptance gates in `docs/rfcs/mmff94_relevant_cycle_selector.md`.
+- [x] Expose the bounded #337 selector's cap outcome as a typed diagnostic;
+  `find_symmetrized_sssr_with_diagnostics()` returns the complete Horton basis
+  with `CapExhausted` instead of exposing a partial candidate family.
 - [ ] Measure deterministic ensemble diversity, class-level failure rates,
   symmetry-aware RMSD/TFD, and energy sanity.
 
