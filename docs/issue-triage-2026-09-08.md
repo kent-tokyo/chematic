@@ -22,6 +22,8 @@ Evidence:
 - `cargo run -p chematic-smiles --release --example
   ez_shared_carrier_component_audit -- scripts/descriptor_census_corpus.smi`
   — 5,000 parsed, 31 size-2 components, maximum size 2.
+- `cargo test --workspace --offline` — all workspace unit, integration, and
+  doctests passed; known ignored tests remain unchanged.
 
 ## Issue #70 — Criterion gate local runner boundary
 
@@ -94,6 +96,12 @@ open.
 Evidence: `validation/results/mmff94_coverage_227_term_audit_summary.json`,
 `validation/results/mmff94_coverage_227_root_cause_classification.json`, and
 the provenance decision in `scripts/mmff94_provenance/PROVENANCE.md`.
+
+The workspace verification on this checkout also passes after the P-typing
+change. The remaining angle is intentionally still fail-closed: its
+`N(8)-S(18)-C(63)` tuple has no direct or equivalent parameter row, so adding
+an inferred fallback would be an unvalidated energy-model change rather than
+coverage work.
 
 ## Issue #303 — bounded structural slice completed
 
