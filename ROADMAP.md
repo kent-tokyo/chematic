@@ -332,6 +332,10 @@ documentation, and required measurement agree.
   across Rust, Python, and Node/WASM. The committed report records the corpus
   SHA-256, parse-status counts, and exact agreement for MW/TPSA/HBD/HBA and
   heavy atoms; this is a binding contract, not an RDKit accuracy claim.
+- [x] Add a reproducible 5,000-row native ECFP4 binding-parity lane across
+  Rust, Python, and Node/WASM. The committed report checks the complete
+  2,048-bit LSB-first byte representation and keeps RDKit-compatible and
+  sparse/explanation parity as separate gates.
 - [ ] Add held-out parity reports for Morgan/ECFP, MACCS, topological,
   torsion, descriptors, and standardization across Rust/Python/WASM. The
   v1.0.8 coverage ledger is now validated by

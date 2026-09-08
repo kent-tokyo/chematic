@@ -16,6 +16,16 @@ This closes only the same-source binding agreement slice; the broader held-out
 fingerprint, topology, torsion, and standardization parity reports remain open,
 as does external RDKit accuracy beyond their separately measured reports.
 
+## P2 native ECFP4 binding parity — bounded completion
+
+The native 2,048-bit ECFP4 representation was replayed on the same 5,000-row
+corpus through the Rust crate example, PyO3 extension, and Node/WASM package.
+All three bindings produced 5,000/5,000 successful records and identical
+LSB-first 256-byte values. Evidence is recorded in
+`validation/results/ecfp4-cross-binding-parity-5000-v1.0.9.json`.
+This does not close RDKit-compatible ECFP4 accuracy, sparse/count provenance,
+or the remaining held-out fingerprint operations.
+
 ## Issues #149 and #503 — aromatic E/Z stash residual boundary
 
 The current joint carrier resolver and canonical-fidelity partition remain
