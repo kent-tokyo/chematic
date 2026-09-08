@@ -29,6 +29,25 @@ Evidence:
 - `cargo test -p chematic-perception --lib --offline` — 204 passed, 1 ignored.
 - `cargo test -p chematic-ff --lib --offline` — 202 passed.
 
+## Issue #227 — MMFF94 coverage audit boundary
+
+The checked-in 265-molecule audit separates classification errors from final
+parameter resolution and must not be summarized as a single coverage number.
+The current production stretch-bend path has no final unresolved rows in the
+audit, while its type-only diagnostic still records 427 routing candidates
+and 1,680 genuine table-gap rows. Bond, angle, and torsion gaps remain
+separate deferred axes; the dominant aromatic typing residual is coupled to
+the #337 symmetrized-ring/aromaticity boundary.
+
+The audit therefore remains evidence for follow-up work, not a closure of
+#227. In particular, a context-blind numeric-type substitution is explicitly
+rejected because the checked-in negative simulation regresses furan. Any next
+typing change requires a coordinated C/N/O/S oracle-parity gate.
+
+Evidence: `validation/results/mmff94_coverage_227_term_audit_summary.json`,
+`validation/results/mmff94_coverage_227_root_cause_classification.json`, and
+the provenance decision in `scripts/mmff94_provenance/PROVENANCE.md`.
+
 ## Issue #303 — bounded structural slice completed
 
 The explainable reactivity API now retains the existing epoxide, aziridine,
