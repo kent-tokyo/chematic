@@ -375,6 +375,25 @@ Evidence:
 This does not close equivalent-operation throughput or same-process parity;
 those remain open as required by the P1 completion contract.
 
+## P3 shared Extended XYZ fixture — completed local slice
+
+`validation/cross_binding_contract.json` now contains a versioned
+`extxyz_contract`. Rust `parse_extxyz`, Python `from_extxyz`, and Node/WASM
+`extxyz_frame_json` consume the same input and check the same coordinates,
+lattice, typed per-atom properties, and frame metadata.
+
+Evidence:
+
+- `cargo test -p chematic-mol --test cross_binding_adversarial --offline` — 2
+  passed, including the shared Extended XYZ contract.
+- `node crates/chematic-wasm/tests/cross_binding_contract.test.mjs` — passed.
+- Python contract test source and fixture syntax compile; the full pytest
+  collection remains affected by the known pytest/pytest-asyncio environment
+  mismatch.
+
+This is one shared stable-operation fixture, not completion of the broader
+all-stable-operation Rust/Python/Node/WASM manifest.
+
 ## Issue #185 — UFF soundness observability
 
 The existing fail-closed `sound` result is now accompanied by

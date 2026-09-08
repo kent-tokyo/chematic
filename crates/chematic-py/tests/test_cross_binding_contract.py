@@ -24,6 +24,17 @@ def test_shared_fixture_schema_is_stable():
     assert _DOCUMENT["fingerprint_detail_contract"]["schema_version"] == 1
     assert _DOCUMENT["fingerprint_detail_contract"]["operations"]["rdkit_ecfp4_detail"]["configuration"]["radius"] == 2
     assert _DOCUMENT["batch_canonicalization_contract"]["schema_version"] == 1
+    assert _DOCUMENT["extxyz_contract"]["schema_version"] == 1
+
+
+def test_python_binding_matches_shared_extxyz_contract():
+    contract = _DOCUMENT["extxyz_contract"]
+    actual = chematic.from_extxyz(contract["input"])
+    expected = contract["expected"]
+    assert actual["coords"] == pytest.approx(expected["coords"])
+    assert actual["lattice"] == expected["lattice"]
+    assert actual["properties"] == expected["properties"]
+    assert actual["info"] == expected["info"]
 
 
 @pytest.mark.parametrize(

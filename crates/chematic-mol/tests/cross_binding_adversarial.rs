@@ -38,3 +38,59 @@ fn every_common_topology_parser_rejects_shared_adversarial_inputs() {
         assert!(!accepted, "adversarial fixture was accepted: {id}");
     }
 }
+
+#[test]
+fn extxyz_binding_contract_matches_shared_fixture() {
+    let document: Value = serde_json::from_str(FIXTURE).expect("fixture JSON must parse");
+    let contract = &document["extxyz_contract"];
+    assert_eq!(contract["schema_version"], 1);
+    let frame = chematic_mol::parse_extxyz(contract["input"].as_str().unwrap()).unwrap();
+    let expected = &contract["expected"];
+
+    let expected_coords: Vec<Vec<f64>> =
+        serde_json::from_value(expected["coords"].clone()).unwrap();
+    let expected_coords = expected_coords
+        .into_iter()
+        .map(|row| (row[0], row[1], row[2]))
+        .collect::<Vec<_>>();
+    assert_eq!(frame.coords(), expected_coords);
+    assert_eq!(
+        frame.lattice.map(|lattice| lattice.to_vec()),
+        Some(serde_json::from_value(expected["lattice"].clone()).unwrap())
+    );
+    let expected_info: Vec<(String, String)> = expected["info"]
+        .as_object()
+        .unwrap()
+        .iter()
+        .map(|(key, value)| (key.clone(), value.as_str().unwrap().to_string()))
+        .collect();
+    assert_eq!(frame.info, expected_info);
+
+    let forces = frame
+        .properties
+        .iter()
+        .find(|property| property.name == "forces")
+        .unwrap();
+    assert_eq!(forces.values.len(), 3);
+    assert_eq!(
+        forces.values[0],
+        vec![
+            chematic_mol::XyzValue::Real(0.1),
+            chematic_mol::XyzValue::Real(0.0),
+            chematic_mol::XyzValue::Real(0.0)
+        ]
+    );
+    let tags = frame
+        .properties
+        .iter()
+        .find(|property| property.name == "tag")
+        .unwrap();
+    assert_eq!(
+        tags.values,
+        vec![
+            vec![chematic_mol::XyzValue::Integer(1)],
+            vec![chematic_mol::XyzValue::Integer(2)],
+            vec![chematic_mol::XyzValue::Integer(2)],
+        ]
+    );
+}

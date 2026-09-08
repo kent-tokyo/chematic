@@ -54,6 +54,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Added the same-input Extended XYZ record/failure contract report for
   chematic and RDKit, with source-byte accounting and explicit parser-boundary
   notes; it is not a same-process parity or speed claim.
+- Added an Extended XYZ parse fixture to the shared Rust/Python/Node/WASM
+  contract manifest, checking coordinates, lattice, typed per-atom properties,
+  and frame metadata in each binding.
 
 ## [1.0.9] - 2026-09-07
 

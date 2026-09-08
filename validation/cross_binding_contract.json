@@ -10,6 +10,19 @@
       {"input_index": 2, "input": "CCN", "status": "accepted", "canonical_smiles": "C(C)N"}
     ]
   },
+  "extxyz_contract": {
+    "schema_version": 1,
+    "input": "3\nLattice=\"10.0 0.0 0.0 0.0 10.0 0.0 0.0 0.0 10.0\" Properties=species:S:1:pos:R:3:forces:R:3:tag:I:1 energy=-76.4 pbc=\"T T T\"\nO 0.0 0.0 0.0 0.1 0.0 0.0 1\nH 0.7586 0.0 0.504284 0.0 0.1 0.0 2\nH 0.7586 0.0 -0.504284 0.0 -0.1 0.0 2\n",
+    "expected": {
+      "coords": [[0.0, 0.0, 0.0], [0.7586, 0.0, 0.504284], [0.7586, 0.0, -0.504284]],
+      "lattice": [10.0, 0.0, 0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 10.0],
+      "properties": {
+        "forces": [[0.1, 0.0, 0.0], [0.0, 0.1, 0.0], [0.0, -0.1, 0.0]],
+        "tag": [[1], [2], [2]]
+      },
+      "info": {"energy": "-76.4", "pbc": "T T T"}
+    }
+  },
   "fixtures": [
     {"id": "ethanol-order-variant", "smiles": "OCC", "canonical_smiles": "C(C)O", "heavy_atoms": 3},
     {"id": "benzene-kekule-context", "smiles": "c1ccccc1", "canonical_smiles": "c1ccccc1", "heavy_atoms": 6},

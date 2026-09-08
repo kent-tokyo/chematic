@@ -26,6 +26,14 @@ assert.equal(
   2,
 );
 assert.equal(fixture.batch_canonicalization_contract.schema_version, 1);
+assert.equal(fixture.extxyz_contract.schema_version, 1);
+
+const extxyz = fixture.extxyz_contract;
+const extxyzActual = JSON.parse(wasm.extxyz_frame_json(extxyz.input));
+assert.deepEqual(extxyzActual.coords, extxyz.expected.coords);
+assert.deepEqual(extxyzActual.lattice, extxyz.expected.lattice);
+assert.deepEqual(extxyzActual.properties, extxyz.expected.properties);
+assert.deepEqual(extxyzActual.info, extxyz.expected.info);
 
 const batchInputs = fixture.batch_canonicalization_contract.inputs.join("\n");
 const batchManifest = JSON.parse(wasm.canonicalize_smiles_batch_json(batchInputs, "\n"));
