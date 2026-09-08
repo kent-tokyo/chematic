@@ -45,6 +45,14 @@ recorded in `validation/results/topo-path-cross-binding-parity-5000-v1.0.9.json`
 RDKit-compatible path accuracy and the remaining torsion/standardization gates
 remain separate.
 
+## P2 native torsion binding parity — bounded completion
+
+The native 2,048-bit torsion representation was replayed over the same
+5,000-row corpus through Rust, Python, and Node/WASM. All bindings produced
+5,000/5,000 successful records with identical LSB-first bytes. Evidence is
+recorded in `validation/results/torsion-cross-binding-parity-5000-v1.0.9.json`.
+RDKit-compatible torsion accuracy remains a separate gate.
+
 ## Issues #149 and #503 — aromatic E/Z stash residual boundary
 
 The current joint carrier resolver and canonical-fidelity partition remain
