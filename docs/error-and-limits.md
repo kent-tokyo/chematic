@@ -30,7 +30,7 @@ unbounded substructure, or simply have not had a limits type added yet.
 | OpenDX | `OpenDxParseLimits` | `max_input_bytes`, `max_grid_points` (no `max_atoms` — the format has no atom section) |
 | SMILES | none | — |
 | SMARTS | none | — |
-| MOL/SDF | none | — |
+| MOL/SDF | `SdfParseLimits` | `max_input_bytes`, `max_record_bytes`, `max_line_bytes`, `max_records` |
 | PDB | none | — |
 | CIF (plain) | none | — |
 | XYZ / Extended XYZ | `chematic_3d::XyzParseLimits`, `chematic_mol::XyzParseLimits` | 3D XYZ: `max_input_bytes`, `max_atoms`, `max_line_bytes`; extended XYZ: input/atom/frame/line/property limits |
