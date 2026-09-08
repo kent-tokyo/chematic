@@ -25,7 +25,9 @@ python3 scripts/check_release_metadata.py
 Operation-level comparison scorecards are separately validated by the
 dependency-free `scripts/validate_scorecard.py`; it rejects stale target
 versions, missing corpus/engine provenance, and claims based on unsupported,
-failed, missing, or not-measured rows.
+failed, missing, or not-measured rows. Claims must identify an engine with a
+positive status row, and scorecards must include positive corpus-record and
+configuration metadata.
 
 Generate a release asset manually (the workflow supplies these values from the
 tag):

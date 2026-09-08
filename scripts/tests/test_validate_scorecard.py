@@ -14,13 +14,15 @@ def scorecard():
         "schema_version": 1,
         "target_version": "1.0.7",
         "corpus_sha256": "0" * 64,
+        "corpus_records": 1,
+        "configuration": {"profile": "default"},
         "engines": {
             "chematic": {"engine_version": "1.0.7", "source_commits": ["abcdef1"]},
         },
         "operations": {
             "mw": {"status_counts": {"chematic": {"ok": 1, "unsupported": 2}}},
         },
-        "claims": [{"operation": "mw", "status": "ok"}],
+        "claims": [{"operation": "mw", "engine": "chematic", "status": "ok"}],
     }
 
 
@@ -35,3 +37,22 @@ def test_rejects_stale_version_and_non_positive_claim():
     errors = MODULE.validate(document, "1.0.7")
     assert any("target_version" in error for error in errors)
     assert any("non-positive status" in error for error in errors)
+
+
+def test_rejects_claim_that_has_no_positive_engine_row():
+    document = scorecard()
+    document["operations"]["mw"]["status_counts"]["chematic"] = {
+        "ok": 0,
+        "unsupported": 2,
+    }
+    errors = MODULE.validate(document, "1.0.7")
+    assert any("no 'ok' row" in error for error in errors)
+
+
+def test_rejects_missing_corpus_and_configuration_metadata():
+    document = scorecard()
+    del document["corpus_records"]
+    del document["configuration"]
+    errors = MODULE.validate(document, "1.0.7")
+    assert any("corpus_records" in error for error in errors)
+    assert any("configuration" in error for error in errors)

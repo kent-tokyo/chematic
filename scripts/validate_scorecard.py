@@ -31,6 +31,12 @@ def validate(document: dict, expected_version: str) -> list[str]:
     corpus = document.get("corpus_sha256")
     if not isinstance(corpus, str) or not re.fullmatch(r"[0-9a-f]{64}", corpus):
         errors.append("corpus_sha256 must be a lowercase SHA-256 digest")
+    corpus_records = document.get("corpus_records")
+    if not isinstance(corpus_records, int) or isinstance(corpus_records, bool) or corpus_records <= 0:
+        errors.append("corpus_records must be a positive integer")
+    configuration = document.get("configuration")
+    if not isinstance(configuration, dict) or not configuration:
+        errors.append("configuration must be a non-empty mapping")
 
     engines = document.get("engines")
     if not isinstance(engines, dict) or not engines:
@@ -77,6 +83,19 @@ def validate(document: dict, expected_version: str) -> list[str]:
         operation = claim.get("operation")
         if not isinstance(operations, dict) or operation not in operations:
             errors.append(f"claim {index} references unknown operation {operation!r}")
+            continue
+        engine = claim.get("engine")
+        if not isinstance(engine, str) or not engine:
+            errors.append(f"claim {index} is missing engine")
+            continue
+        counts = operations[operation].get("status_counts", {}).get(engine)
+        if not isinstance(counts, dict):
+            errors.append(f"claim {index} references missing engine row {engine!r}")
+            continue
+        if counts.get(status, 0) <= 0:
+            errors.append(
+                f"claim {index} has no {status!r} row for operation {operation!r} and engine {engine!r}"
+            )
     return errors
 
 
