@@ -109,9 +109,11 @@ for (const expected of fixture.fingerprint_contract.fixtures) {
   const mol = wasm.parse_smiles(expected.smiles);
   const ecfp4 = wasm.ecfp4_bitvec(mol);
   const topoPath = wasm.topo_path_bitvec(mol);
+  const torsion = wasm.torsion_bitvec(mol);
   const maccs = wasm.maccs_bitvec(mol);
   assert.equal(ecfp4.length, 256, `${expected.id} ECFP4 shape`);
   assert.equal(topoPath.length, 256, `${expected.id} topo_path shape`);
+  assert.equal(torsion.length, 256, `${expected.id} torsion shape`);
   assert.equal(maccs.length, 21, `${expected.id} MACCS shape`);
   assert.deepEqual(
     Array.from({ length: 2048 }, (_, bit) => (ecfp4[bit >> 3] >> (bit & 7)) & 1 ? bit : null).filter((bit) => bit !== null),
@@ -122,6 +124,11 @@ for (const expected of fixture.fingerprint_contract.fixtures) {
     Array.from({ length: 2048 }, (_, bit) => (topoPath[bit >> 3] >> (bit & 7)) & 1 ? bit : null).filter((bit) => bit !== null),
     expected.topo_path_bits,
     `${expected.id} topo_path bits`,
+  );
+  assert.deepEqual(
+    Array.from({ length: 2048 }, (_, bit) => (torsion[bit >> 3] >> (bit & 7)) & 1 ? bit : null).filter((bit) => bit !== null),
+    expected.torsion_bits,
+    `${expected.id} torsion bits`,
   );
   assert.equal(Buffer.from(maccs).toString("hex"), expected.maccs_hex, `${expected.id} MACCS bytes`);
   assert.ok(ecfp4.some((byte) => byte !== 0), `${expected.id} ECFP4 non-empty`);

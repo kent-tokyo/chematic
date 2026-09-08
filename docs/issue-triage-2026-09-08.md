@@ -412,6 +412,10 @@ new `topo_path_bitvec` entry point so the native operation is directly
 observable in all three binding test suites; this remains distinct from the
 RDKit-compatible `rdkit_rdk` held-out lane.
 
+The same exact-fixture contract now covers native topological torsion bits as
+well. The native torsion operation is distinct from the RDKit-compatible
+hashed torsion held-out report, whose 5,000-molecule parity remains open.
+
 ## P3 shared Extended XYZ fixture — completed local slice
 
 `validation/cross_binding_contract.json` now contains a versioned

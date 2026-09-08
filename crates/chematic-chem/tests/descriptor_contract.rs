@@ -103,6 +103,7 @@ fn shared_fingerprint_fixture_freezes_shape_and_configuration() {
             .unwrap_or_else(|error| panic!("fingerprint fixture {id} must parse: {error}"));
         let ecfp4 = chematic_fp::ecfp4(&mol);
         let topo_path = chematic_fp::topo_path(&mol, &chematic_fp::TopoPathConfig::default());
+        let torsion = chematic_fp::torsion_fp(&mol);
         let maccs = chematic_fp::maccs(&mol);
         assert_eq!(ecfp4.to_bitvecn().bit_width(), 2048, "{id} ECFP4 shape");
         assert_eq!(
@@ -127,6 +128,17 @@ fn shared_fingerprint_fixture_freezes_shape_and_configuration() {
             .collect();
         let actual_topo_bits: Vec<usize> = (0..2048).filter(|&bit| topo_path.get(bit)).collect();
         assert_eq!(actual_topo_bits, expected_topo_bits, "{id} topo_path bits");
+        let expected_torsion_bits: Vec<usize> = fixture["torsion_bits"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|bit| bit.as_u64().unwrap() as usize)
+            .collect();
+        let actual_torsion_bits: Vec<usize> = (0..2048).filter(|&bit| torsion.get(bit)).collect();
+        assert_eq!(
+            actual_torsion_bits, expected_torsion_bits,
+            "{id} torsion bits"
+        );
         assert!(
             (166..2048).all(|bit| !maccs.get(bit)),
             "{id} MACCS upper bits"
