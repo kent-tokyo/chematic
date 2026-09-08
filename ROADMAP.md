@@ -342,6 +342,9 @@ documentation, and required measurement agree.
   Python, and Node/WASM; keep RDKit-compatible path parity separate.
 - [x] Add a 5,000-row native torsion binding-parity lane across Rust, Python,
   and Node/WASM; keep RDKit-compatible torsion separate.
+- [x] Replay the explicit standardization profile on 5,000 rows across Rust,
+  Python, and Node/WASM; keep the ten expected-identity holdouts as the
+  separate external accuracy boundary.
 - [ ] Add held-out parity reports for Morgan/ECFP, MACCS, topological,
   torsion, descriptors, and standardization across Rust/Python/WASM. The
   v1.0.8 coverage ledger is now validated by

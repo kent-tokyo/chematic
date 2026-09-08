@@ -53,6 +53,16 @@ The native 2,048-bit torsion representation was replayed over the same
 recorded in `validation/results/torsion-cross-binding-parity-5000-v1.0.9.json`.
 RDKit-compatible torsion accuracy remains a separate gate.
 
+## P2 standardization binding parity — bounded completion
+
+The explicit shared profile (largest fragment, charge neutralization, explicit
+hydrogen removal, and canonical tautomer) was replayed over 5,000 corpus rows
+through Rust, Python, and Node/WASM. All bindings produced 5,000/5,000
+successful records with identical canonical outputs. Evidence is recorded in
+`validation/results/standardization-cross-binding-parity-5000-v1.0.9.json`.
+The ten Phase-1 expected-identity holdouts and external standardization quality
+remain separate gates.
+
 ## Issues #149 and #503 — aromatic E/Z stash residual boundary
 
 The current joint carrier resolver and canonical-fidelity partition remain
