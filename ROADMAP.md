@@ -260,6 +260,10 @@ documentation, and required measurement agree.
 - [x] Harden the Python file-backed SDF batch iterator with bounded batch
   sizes, explicit cancellation, deterministic progress manifests, and lazy
   input-order emission; full cross-language streaming parity remains open.
+- [x] Extend the Python file-backed batch contract to plain XYZ and Extended
+  XYZ frames. Both bindings preserve input order and batch boundaries, expose
+  cancellation and deterministic progress manifests, and count rejected
+  frames; WASM/browser parity and richer error-recovery semantics remain open.
 - [ ] Measure only equivalent operations against installed RDKit and Open
   Babel versions on identical inputs; report sdfrust separately. A local
   file-backed SDF report now covers chematic and RDKit on the same fixture;

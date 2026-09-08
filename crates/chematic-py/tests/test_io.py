@@ -1,4 +1,4 @@
-"""Tests for SDF I/O: iter_sdf, iter_sdf_str, SdfRecord, SdfIter."""
+"""Tests for streaming SDF and XYZ I/O."""
 import pytest
 import chematic
 
@@ -109,6 +109,17 @@ def test_iter_sdf_from_file(tmp_path):
     assert all(isinstance(r.mol, chematic.Mol) for r in records)
 
 
+def test_iter_sdf_batched_contract(tmp_path):
+    sdf_path = tmp_path / "test.sdf"
+    sdf_path.write_text(MINIMAL_SDF)
+    stream = chematic.iter_sdf_batched(str(sdf_path), batch_size=1)
+    assert len(next(stream)) == 1
+    assert '"records_emitted":1' in stream.manifest_json()
+    stream.cancel()
+    assert next(stream, None) is None
+    assert '"status":"cancelled"' in stream.manifest_json()
+
+
 # ── parse_sdf_with_coords: issue #171 (blank MOL name line) ─────────────────
 
 MOL_A = """mol_a
@@ -166,6 +177,34 @@ EXTXYZ_WATER = (
 )
 
 PLAIN_XYZ_WATER = "3\nwater\nO 0.0 0.0 0.0\nH 0.7586 0.0 0.504284\nH 0.7586 0.0 -0.504284\n"
+
+
+def test_iter_xyz_batched_preserves_order_and_boundaries(tmp_path):
+    xyz_path = tmp_path / "trajectory.xyz"
+    xyz_path.write_text(PLAIN_XYZ_WATER + PLAIN_XYZ_WATER.replace("water", "second"))
+    stream = chematic.iter_xyz_batched(str(xyz_path), batch_size=1)
+    batches = list(stream)
+    assert [len(batch) for batch in batches] == [1, 1]
+    assert [batch[0]["coords"] for batch in batches] == [
+        chematic.from_extxyz(PLAIN_XYZ_WATER)["coords"],
+        chematic.from_extxyz(PLAIN_XYZ_WATER)["coords"],
+    ]
+    manifest = stream.manifest_json()
+    assert '"status":"complete"' in manifest
+    assert '"frames_emitted":2' in manifest
+
+
+def test_iter_extxyz_batched_cancel_and_metadata(tmp_path):
+    path = tmp_path / "trajectory.extxyz"
+    path.write_text(EXTXYZ_WATER + EXTXYZ_WATER)
+    stream = chematic.iter_extxyz_batched(str(path), batch_size=1)
+    first = next(stream)
+    assert first[0]["info"] == {"energy": "-76.4", "pbc": "T T T"}
+    stream.cancel()
+    assert next(stream, None) is None
+    manifest = stream.manifest_json()
+    assert '"format":"extxyz"' in manifest
+    assert '"status":"cancelled"' in manifest
 
 
 def test_from_extxyz_parses_lattice_properties_and_info():

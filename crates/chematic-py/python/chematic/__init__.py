@@ -20,7 +20,10 @@ from .chematic import (
     run_smirks,
     find_mcs,
     iter_sdf,
+    iter_sdf_batched,
     iter_sdf_str,
+    iter_xyz_batched,
+    iter_extxyz_batched,
 )
 from .chematic import (
     Lattice,

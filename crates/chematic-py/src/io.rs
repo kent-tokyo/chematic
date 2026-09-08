@@ -352,6 +352,154 @@ impl SdfBatchIter {
 }
 
 // ---------------------------------------------------------------------------
+// XyzBatchIter — streaming XYZ / Extended XYZ batches
+// ---------------------------------------------------------------------------
+
+enum XyzStreamReader {
+    Xyz(chematic_mol::XyzFileReader<std::io::BufReader<std::fs::File>>),
+    Extxyz(chematic_mol::ExtxyzFileReader<std::io::BufReader<std::fs::File>>),
+}
+
+impl XyzStreamReader {
+    fn next_frame(&mut self) -> Option<Result<chematic_mol::XyzFrame, chematic_mol::XyzError>> {
+        match self {
+            Self::Xyz(reader) => reader.next(),
+            Self::Extxyz(reader) => reader.next(),
+        }
+    }
+}
+
+/// Streaming XYZ or Extended XYZ batch iterator.
+///
+/// Both formats share the SDF batch contract: source order is preserved,
+/// batches are bounded, ``cancel()`` stops at a batch boundary, and
+/// ``manifest_json()`` reports deterministic progress. Invalid frames are
+/// skipped and counted in ``rejected_frames``.
+#[pyclass]
+pub struct XyzBatchIter {
+    inner: XyzStreamReader,
+    format: &'static str,
+    batch_size: usize,
+    cancelled: bool,
+    exhausted: bool,
+    frames_seen: usize,
+    frames_emitted: usize,
+    batches_emitted: usize,
+    rejected_frames: usize,
+}
+
+fn open_xyz_batch(path: &str, batch_size: usize, extxyz: bool) -> PyResult<XyzBatchIter> {
+    if batch_size == 0 {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "batch_size must be greater than zero",
+        ));
+    }
+    const MAX_BATCH_SIZE: usize = 10_000;
+    if batch_size > MAX_BATCH_SIZE {
+        return Err(pyo3::exceptions::PyValueError::new_err(format!(
+            "batch_size exceeds maximum ({MAX_BATCH_SIZE})"
+        )));
+    }
+    let file = std::fs::File::open(path)
+        .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
+    let reader = std::io::BufReader::new(file);
+    Ok(XyzBatchIter {
+        inner: if extxyz {
+            XyzStreamReader::Extxyz(chematic_mol::ExtxyzFileReader::new(reader))
+        } else {
+            XyzStreamReader::Xyz(chematic_mol::XyzFileReader::new(reader))
+        },
+        format: if extxyz { "extxyz" } else { "xyz" },
+        batch_size,
+        cancelled: false,
+        exhausted: false,
+        frames_seen: 0,
+        frames_emitted: 0,
+        batches_emitted: 0,
+        rejected_frames: 0,
+    })
+}
+
+/// Iterate over bounded batches of plain XYZ frames from a file.
+#[pyfunction]
+#[pyo3(signature = (path, batch_size=1000))]
+pub fn iter_xyz_batched(path: &str, batch_size: usize) -> PyResult<XyzBatchIter> {
+    open_xyz_batch(path, batch_size, false)
+}
+
+/// Iterate over bounded batches of Extended XYZ frames from a file.
+#[pyfunction]
+#[pyo3(signature = (path, batch_size=1000))]
+pub fn iter_extxyz_batched(path: &str, batch_size: usize) -> PyResult<XyzBatchIter> {
+    open_xyz_batch(path, batch_size, true)
+}
+
+#[pymethods]
+impl XyzBatchIter {
+    fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    fn cancel(&mut self) {
+        self.cancelled = true;
+    }
+
+    fn manifest_json(&self) -> String {
+        let status = if self.cancelled {
+            "cancelled"
+        } else if self.exhausted {
+            "complete"
+        } else {
+            "running"
+        };
+        serde_json::json!({
+            "schema_version": 1,
+            "format": self.format,
+            "status": status,
+            "batch_size": self.batch_size,
+            "frames_seen": self.frames_seen,
+            "frames_emitted": self.frames_emitted,
+            "rejected_frames": self.rejected_frames,
+            "batches_emitted": self.batches_emitted,
+        })
+        .to_string()
+    }
+
+    fn __next__(&mut self, py: Python<'_>) -> PyResult<Option<Vec<Py<PyAny>>>> {
+        if self.cancelled || self.exhausted {
+            return Ok(None);
+        }
+        let mut batch = Vec::with_capacity(self.batch_size);
+        while batch.len() < self.batch_size {
+            match self.inner.next_frame() {
+                None => {
+                    self.exhausted = true;
+                    break;
+                }
+                Some(Ok(frame)) => {
+                    self.frames_seen += 1;
+                    let value = crate::formats::extxyz_frame_to_pydict(py, &frame)?;
+                    batch.push(value.into_any().unbind());
+                }
+                Some(Err(_)) => {
+                    self.frames_seen += 1;
+                    self.rejected_frames += 1;
+                    self.exhausted = true;
+                    break;
+                }
+            }
+        }
+        if batch.is_empty() {
+            Ok(None)
+        } else {
+            self.frames_emitted += batch.len();
+            self.batches_emitted += 1;
+            Ok(Some(batch))
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // SDMolSupplier — RDKit-compatible streaming SDF reader
 // ---------------------------------------------------------------------------
 
@@ -1043,6 +1191,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<SdfIter>()?;
     m.add_class::<SdfFileIter>()?;
     m.add_class::<SdfBatchIter>()?;
+    m.add_class::<XyzBatchIter>()?;
     m.add_class::<SdMolSupplier>()?;
     m.add_class::<SdWriter>()?;
     m.add_class::<PySmilesMolSupplier>()?;
@@ -1052,5 +1201,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(iter_sdf, m)?)?;
     m.add_function(wrap_pyfunction!(iter_sdf_str, m)?)?;
     m.add_function(wrap_pyfunction!(iter_sdf_batched, m)?)?;
+    m.add_function(wrap_pyfunction!(iter_xyz_batched, m)?)?;
+    m.add_function(wrap_pyfunction!(iter_extxyz_batched, m)?)?;
     Ok(())
 }

@@ -44,6 +44,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Promoted the connectivity-ordered 3D coordinate engine to the default
   `generate_coords` path, covering fused-ring seam and chain-bridged ring-island
   layouts with deterministic ring-entry placement.
+- Extended the Python file-backed streaming batch contract from SDF to plain
+  XYZ and Extended XYZ trajectories. The new iterators preserve input order
+  and bounded batch boundaries, support cancellation, and expose deterministic
+  progress manifests with rejected-frame counts.
 
 ## [1.0.9] - 2026-09-07
 

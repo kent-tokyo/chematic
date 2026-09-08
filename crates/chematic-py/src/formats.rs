@@ -837,7 +837,7 @@ fn from_xyz(xyz_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>)> {
 
 /// Build the Python dict returned by [`from_extxyz`]/[`from_extxyz_all`] for
 /// one parsed [`chematic_mol::XyzFrame`].
-fn extxyz_frame_to_pydict<'py>(
+pub(crate) fn extxyz_frame_to_pydict<'py>(
     py: Python<'py>,
     frame: &chematic_mol::XyzFrame,
 ) -> PyResult<Bound<'py, PyDict>> {

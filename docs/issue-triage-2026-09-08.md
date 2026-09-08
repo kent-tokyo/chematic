@@ -336,6 +336,27 @@ This closes the bounded malformed-corpus expansion in #507. Cross-language
 streaming parity, equivalent cross-engine throughput, and broader parser
 semantics remain separate open roadmap gates.
 
+## P1 cross-language streaming parity — completed local Python slice
+
+The Python binding now exposes `iter_xyz_batched` and `iter_extxyz_batched`,
+matching the existing SDF file-backed batch surface: bounded batch sizes,
+lazy input-order emission, batch-boundary cancellation, and a deterministic
+`manifest_json()` status envelope. Plain XYZ and Extended XYZ both return the
+existing frame-dict shape used by `from_extxyz`, including coordinates,
+lattice, per-atom properties, and frame metadata. Malformed frames are
+counted as `rejected_frames` and do not escape as partial records.
+
+Evidence from the current checkout:
+
+- `cargo check -p chematic-py --offline` — passed.
+- `cargo test -p chematic-py --offline --no-run` — passed.
+- Python regression coverage added for SDF batch cancellation, XYZ ordering
+  and batch boundaries, and Extended XYZ metadata plus cancellation.
+
+This is a local Python parity slice only. WASM/browser streaming bindings,
+shared cross-language fixture execution, and recovery after a malformed frame
+remain open gates.
+
 ## Issue #185 — UFF soundness observability
 
 The existing fail-closed `sound` result is now accompanied by
