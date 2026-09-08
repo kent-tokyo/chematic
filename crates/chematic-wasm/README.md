@@ -25,7 +25,9 @@ npm install @kent-tokyo/chematic
 - BRICS fragment count
 - SDF/MOL block parsing, including bounded resumable `sdf_records_batch_json`,
   `xyz_frames_batch_json`, and `extxyz_frames_batch_json` manifests with
-  deterministic input indices and partial/complete status
+  deterministic input indices and partial/complete status; bounded malformed
+  XYZ frames remain inline as rejected records when a later count-line boundary
+  is recoverable (core file-backed readers remain fail-stop)
 - PDBx/mmCIF, PQR, QCSchema JSON, ORCA input/output, Gaussian Cube, OpenDX,
   and LAMMPS data/dump I/O (JSON-based bindings; see `format_io.rs`)
 - Topological descriptors: Wiener index, Hall-Kier κ, χ connectivity indices, Bertz CT

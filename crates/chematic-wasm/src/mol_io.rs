@@ -829,6 +829,42 @@ where
     bounded_json_string(&manifest)
 }
 
+/// Split a text trajectory at count-line boundaries before parsing each
+/// frame. Unlike the core streaming readers, this bounded WASM convenience
+/// path can resume after a malformed frame because the complete input string
+/// is already available and each valid count line declares its frame extent.
+fn recoverable_xyz_frames(
+    text: &str,
+    extxyz: bool,
+) -> Vec<Result<chematic_mol::XyzFrame, chematic_mol::XyzError>> {
+    let lines: Vec<&str> = text.lines().collect();
+    let mut frames = Vec::new();
+    let mut offset = 0usize;
+    while offset < lines.len() {
+        while offset < lines.len() && lines[offset].trim().is_empty() {
+            offset += 1;
+        }
+        if offset >= lines.len() {
+            break;
+        }
+        let end = match lines[offset].trim().parse::<usize>() {
+            Ok(atom_count) => offset
+                .saturating_add(atom_count)
+                .saturating_add(2)
+                .min(lines.len()),
+            Err(_) => offset.saturating_add(1),
+        };
+        let block = format!("{}\n", lines[offset..end].join("\n"));
+        frames.push(if extxyz {
+            chematic_mol::parse_extxyz(&block)
+        } else {
+            chematic_mol::parse_xyz(&block)
+        });
+        offset = end.max(offset.saturating_add(1));
+    }
+    frames
+}
+
 /// Return one deterministic, resumable plain-XYZ batch as a JSON manifest.
 /// Stopping before requesting the next offset is the cancellation boundary.
 #[wasm_bindgen]
@@ -845,8 +881,12 @@ pub fn xyz_frames_batch_json(
             "XYZ batch size must be between 1 and {WASM_MAX_BATCH_ITEMS}"
         )));
     }
-    let reader = chematic_mol::XyzFileReader::new(std::io::Cursor::new(text.as_bytes()));
-    xyz_frames_batch_manifest(reader, "xyz", offset, batch_size)
+    xyz_frames_batch_manifest(
+        recoverable_xyz_frames(text, false).into_iter(),
+        "xyz",
+        offset,
+        batch_size,
+    )
 }
 
 /// Return one deterministic, resumable Extended-XYZ batch as a JSON manifest.
@@ -865,8 +905,12 @@ pub fn extxyz_frames_batch_json(
             "Extended XYZ batch size must be between 1 and {WASM_MAX_BATCH_ITEMS}"
         )));
     }
-    let reader = chematic_mol::ExtxyzFileReader::new(std::io::Cursor::new(text.as_bytes()));
-    xyz_frames_batch_manifest(reader, "extxyz", offset, batch_size)
+    xyz_frames_batch_manifest(
+        recoverable_xyz_frames(text, true).into_iter(),
+        "extxyz",
+        offset,
+        batch_size,
+    )
 }
 
 /// Build the [`chematic_mol::XyzFrame`] for [`to_extxyz_json`] from its raw
