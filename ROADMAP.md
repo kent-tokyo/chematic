@@ -143,6 +143,12 @@ Completed on the v1.0.9 release candidate tree:
   (90/90 negative cases), while the nine oversized and 18 gzip controls remain
   green; lenient CML/CDXML/PDB inputs continue to use the explicit line-limit
   safety boundary.
+- [x] Complete the bounded first slice of issue #303: retain explainable
+  epoxide, aziridine, and Michael-acceptor findings; add source-referenced
+  PubChem structure fixtures; and report at most 64 deterministic pairs of
+  independent electrophilic sites with a topological spacer estimate. No
+  biological label, genotoxicity score, 3D claim, or external validation is
+  implied; broader category coverage remains open.
 
 - [x] Close #210's five named legacy-coordinate UFF stereo-rescue residuals.
   Every returned geometry is finite, bond-sane, and independently checked

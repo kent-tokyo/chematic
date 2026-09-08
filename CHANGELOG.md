@@ -25,6 +25,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Expanded the streaming malformed-input safety corpus to ten cases for each
   of the nine runner formats (90/90 negative cases), preserving the separate
   oversized-input and 18-case gzip controls.
+- Added a bounded, explainable genotoxicity-reactivity slice: source-referenced
+  PubChem structure fixtures, epoxide/aziridine/Michael-acceptor checks, and a
+  deterministic two-site electrophile heuristic with topological spacer data.
+  This remains structural triage only, not a biological predictor or score.
 
 ## [1.0.9] - 2026-09-07
 
