@@ -17,6 +17,15 @@ This completes the fail-closed diagnostic boundary from
 permutation-invariant relevant-cycle representative policy and the six-fixture
 MMFF94/RDKit parity gate remain open.
 
+The upstream boundary is now explicit: current RDKit's default
+`GetSymmSSSR` selects `atomRelevantCycles()` from its RDL ring-family
+calculation; its legacy Figueras replacement path is separate. The current
+schematic selector is a bounded, deterministic legacy-style expansion, so its
+`Complete` diagnostic means local candidate enumeration completed, not that
+the selected representative family is RDKit-equivalent. A production fix
+still requires an independent relevant-cycle implementation or a validated
+equivalence proof.
+
 The candidate tie-break refinement is now bond-order aware and runs for eight
 WL rounds, reducing accidental ties between chemically distinct paths while
 retaining the existing permutation-stability contract. This is a deterministic
