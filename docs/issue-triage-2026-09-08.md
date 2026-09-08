@@ -115,6 +115,28 @@ corpus produced identical 2,048-bit values across all three bindings. Evidence
 is recorded in `validation/results/rdkit-path-cross-binding-parity-5000-v1.0.9.json`;
 native `topo_path` remains a separate operation.
 
+## P2 held-out cross-binding parity manifest — completed v1.0.9 slice
+
+The previously v1.0.8-only held-out ledger now has a versioned v1.0.9
+manifest at `validation/held_out_parity_manifest-v1.0.9.json`. It covers
+Morgan/ECFP, MACCS, RDKit-compatible topological and torsion fingerprints,
+descriptors, and standardization across Rust, Python, and Node/WASM. Each
+operation points to a 5,000-row report with zero pairwise binding mismatches;
+the topological lane now includes the new `rdkit_rdk_bitvec` WASM export.
+
+Evidence:
+
+- `python3 scripts/validate_held_out_parity_manifest.py` — legacy v1.0.8
+  ledger valid.
+- `python3 scripts/validate_held_out_parity_manifest.py
+  validation/held_out_parity_manifest-v1.0.9.json` — 6 measured, 0 open.
+- `python3 scripts/rdkit_rdk_cross_binding_parity.py` — 5,000 rows,
+  Rust/Python/Node-WASM gate passed.
+
+This closes cross-binding agreement for the listed operations only. It does
+not claim independent RDKit accuracy, native-versus-compatible equivalence,
+or standardization identity quality against external expected structures.
+
 ## Issues #149 and #503 — aromatic E/Z stash residual boundary
 
 The current joint carrier resolver and canonical-fidelity partition remain

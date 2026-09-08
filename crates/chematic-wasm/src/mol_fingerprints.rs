@@ -152,6 +152,25 @@ pub fn rdkit_path_bitvec(mol: &MolHandle) -> Vec<u8> {
         .collect()
 }
 
+/// Compute the RDKit-compatible RDKFingerprint as a bit-packed byte vector
+/// (256 bytes = 2048 bits). This is separate from both the native
+/// `topo_path_bitvec` operation and the RDKit-compatible path operation.
+#[wasm_bindgen]
+pub fn rdkit_rdk_bitvec(mol: &MolHandle) -> Vec<u8> {
+    let fp = chematic_fp::rdkit_rdk_fp(&mol.inner);
+    (0..256usize)
+        .map(|byte_idx| {
+            let mut byte = 0u8;
+            for bit in 0..8usize {
+                if fp.get(byte_idx * 8 + bit) {
+                    byte |= 1 << bit;
+                }
+            }
+            byte
+        })
+        .collect()
+}
+
 // ---------------------------------------------------------------------------
 // Sprint Q: IFG, VSA descriptors, Gasteiger charges, SA Score, Diversity
 // ---------------------------------------------------------------------------

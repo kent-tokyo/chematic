@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the v1.0.8 held-out parity coverage ledger without dependencies.
+"""Validate the versioned held-out parity coverage ledger without dependencies.
 
 The ledger is deliberately conservative: ``not_measured`` is a valid state,
 but it cannot be mistaken for a completed parity report. A measured operation
@@ -26,6 +26,7 @@ REQUIRED_OPERATIONS = {
 }
 STATUSES = {"measured", "not_measured"}
 BINDINGS = {"rust", "python", "node", "wasm"}
+SUPPORTED_TARGET_VERSIONS = {"1.0.8", "1.0.9"}
 
 
 def validate_report(name: str, report_path: Path, target_version: str) -> list[str]:
@@ -49,6 +50,26 @@ def validate_report(name: str, report_path: Path, target_version: str) -> list[s
             f"operation {name!r} report target_version {report_version!r} "
             f"does not match {target_version!r}"
         )
+
+    if target_version == "1.0.9":
+        rows = report.get("corpus", {}).get("rows")
+        pairwise = report.get("pairwise")
+        if not isinstance(rows, int) or rows <= 0:
+            errors.append(f"operation {name!r} v1.0.9 corpus.rows must be a positive integer")
+        if not isinstance(pairwise, dict) or not pairwise:
+            errors.append(f"operation {name!r} v1.0.9 pairwise results are missing")
+        else:
+            for axis, result in pairwise.items():
+                if not isinstance(result, dict) or result.get("rows") != rows:
+                    errors.append(f"operation {name!r} pairwise axis {axis!r} has wrong row count")
+                elif result.get("mismatches") != 0:
+                    errors.append(f"operation {name!r} pairwise axis {axis!r} has mismatches")
+        if report.get("gate_passed") is not True:
+            errors.append(f"operation {name!r} v1.0.9 parity gate is not passed")
+        status_counts = report.get("binding_status_counts")
+        if not isinstance(status_counts, dict) or not {"rust", "python", "node_wasm"}.issubset(status_counts):
+            errors.append(f"operation {name!r} v1.0.9 binding status counts are incomplete")
+        return errors
 
     if name == "morgan_ecfp":
         total = report.get("total_inputs")
@@ -116,8 +137,9 @@ def validate(document: dict, root: Path = ROOT) -> list[str]:
     errors: list[str] = []
     if document.get("schema_version") != 1:
         errors.append("schema_version must be 1")
-    if document.get("target_version") != "1.0.8":
-        errors.append("target_version must be 1.0.8")
+    target_version = document.get("target_version")
+    if target_version not in SUPPORTED_TARGET_VERSIONS:
+        errors.append(f"target_version must be one of {sorted(SUPPORTED_TARGET_VERSIONS)}")
     operations = document.get("operations")
     if not isinstance(operations, dict):
         return ["operations must be an object"]
@@ -148,7 +170,7 @@ def validate(document: dict, root: Path = ROOT) -> list[str]:
             elif not (root / report).is_file():
                 errors.append(f"measured operation {name!r} report does not exist: {report}")
             else:
-                errors.extend(validate_report(name, root / report, document["target_version"]))
+                errors.extend(validate_report(name, root / report, target_version))
         elif "report" in record:
             errors.append(f"not_measured operation {name!r} must not declare report")
     return errors

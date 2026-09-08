@@ -369,9 +369,9 @@ documentation, and required measurement agree.
   Rust, Python, and Node/WASM.
 - [x] Add a 5,000-row RDKit-compatible path fingerprint binding-parity report
   across Rust, Python, and Node/WASM; keep native `topo_path` separate.
-- [ ] Add held-out parity reports for Morgan/ECFP, MACCS, topological,
+- [x] Add held-out parity reports for Morgan/ECFP, MACCS, topological,
   torsion, descriptors, and standardization across Rust/Python/WASM. The
-  v1.0.8 coverage ledger is now validated by
+  v1.0.8 coverage ledger remains validated by
   `scripts/validate_held_out_parity_manifest.py`, including report-internal
   row/count arithmetic: Morgan/ECFP and the five core descriptors have named
   reports, and MACCS now has a Rust-CLI report
@@ -383,7 +383,10 @@ documentation, and required measurement agree.
   exact ECFP4 bit positions, MACCS bytes, native `topo_path` bit positions, and
   native torsion and RDKit-compatible torsion bit positions are now checked
   across Rust, Python, and Node/WASM for four shared fixtures; cross-binding
-  parity for the held-out measured operations remains open. The explicit
+  parity for the held-out measured operations is recorded in the v1.0.9
+  `validation/held_out_parity_manifest-v1.0.9.json` and passes its validator.
+  External RDKit accuracy, native-vs-compatible semantic equivalence, and the
+  four-fixture bit-position contract remain separate gates. The explicit
   Rust CLI standardization profile is measured against the 10 committed Phase
   1 holdouts (8/10 expected fragment identities, 80%); Rust, Python, and
   Node/WASM now share and reproduce the ten returned largest-fragment outputs.

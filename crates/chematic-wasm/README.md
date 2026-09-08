@@ -21,7 +21,8 @@ npm install @kent-tokyo/chematic
 - SA score: synthetic accessibility estimate [1, 10]
 - Functional group identification (Ertl 2017 IFG)
 - Canonical SMILES generation
-- ECFP4/6, AtomPair, Torsion, and path fingerprints with Tanimoto similarity
+- ECFP4/6, AtomPair, Torsion, path, and RDKit-compatible RDK fingerprints
+  with Tanimoto similarity
 - BRICS fragment count
 - SDF/MOL block parsing, including bounded resumable `sdf_records_batch_json`,
   `xyz_frames_batch_json`, and `extxyz_frames_batch_json` manifests with

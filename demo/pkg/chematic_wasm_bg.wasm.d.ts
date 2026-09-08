@@ -281,6 +281,7 @@ export const rdkit_ecfp_config_chiral_bitvec: (a: number, b: number, c: number) 
 export const rdkit_ecfp_config_chiral_detail_json: (a: number, b: number, c: number) => [number, number, number, number];
 export const rdkit_ecfp_config_detail_json: (a: number, b: number, c: number) => [number, number, number, number];
 export const rdkit_path_bitvec: (a: number) => [number, number];
+export const rdkit_rdk_bitvec: (a: number) => [number, number];
 export const rdkit_torsion_bitvec: (a: number) => [number, number];
 export const remove_hydrogens: (a: number) => number;
 export const retro_disconnect_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];

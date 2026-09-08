@@ -5395,6 +5395,21 @@ export function rdkit_path_bitvec(mol) {
 }
 
 /**
+ * Compute the RDKit-compatible RDKFingerprint as a bit-packed byte vector
+ * (256 bytes = 2048 bits). This is separate from both the native
+ * `topo_path_bitvec` operation and the RDKit-compatible path operation.
+ * @param {MolHandle} mol
+ * @returns {Uint8Array}
+ */
+export function rdkit_rdk_bitvec(mol) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.rdkit_rdk_bitvec(mol.__wbg_ptr);
+    var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v1;
+}
+
+/**
  * Compute the opt-in RDKit-compatible hashed topological-torsion fingerprint
  * as a bit-packed byte vector (256 bytes = 2048 bits). This remains separate
  * from the native `torsion_bitvec` operation and its similarity semantics.

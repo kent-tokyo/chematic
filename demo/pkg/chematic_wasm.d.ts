@@ -2130,6 +2130,13 @@ export function rdkit_ecfp_config_detail_json(mol: MolHandle, radius: number, nb
 export function rdkit_path_bitvec(mol: MolHandle): Uint8Array;
 
 /**
+ * Compute the RDKit-compatible RDKFingerprint as a bit-packed byte vector
+ * (256 bytes = 2048 bits). This is separate from both the native
+ * `topo_path_bitvec` operation and the RDKit-compatible path operation.
+ */
+export function rdkit_rdk_bitvec(mol: MolHandle): Uint8Array;
+
+/**
  * Compute the opt-in RDKit-compatible hashed topological-torsion fingerprint
  * as a bit-packed byte vector (256 bytes = 2048 bits). This remains separate
  * from the native `torsion_bitvec` operation and its similarity semantics.
@@ -3003,6 +3010,7 @@ export interface InitOutput {
     readonly rdkit_ecfp_config_chiral_detail_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly rdkit_ecfp_config_detail_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly rdkit_path_bitvec: (a: number) => [number, number];
+    readonly rdkit_rdk_bitvec: (a: number) => [number, number];
     readonly rdkit_torsion_bitvec: (a: number) => [number, number];
     readonly remove_hydrogens: (a: number) => number;
     readonly retro_disconnect_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];

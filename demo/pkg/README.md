@@ -21,7 +21,8 @@ npm install @kent-tokyo/chematic
 - SA score: synthetic accessibility estimate [1, 10]
 - Functional group identification (Ertl 2017 IFG)
 - Canonical SMILES generation
-- ECFP4/6, AtomPair, Torsion, and path fingerprints with Tanimoto similarity
+- ECFP4/6, AtomPair, Torsion, path, and RDKit-compatible RDK fingerprints
+  with Tanimoto similarity
 - BRICS fragment count
 - SDF/MOL block parsing, including bounded resumable `sdf_records_batch_json`,
   `xyz_frames_batch_json`, and `extxyz_frames_batch_json` manifests with
@@ -166,7 +167,7 @@ and enforced correctly on all of them.
 
 ## Bundle Size
 
-The optimized v1.0.9 candidate artifact was measured at **3.71 MB raw / 1.35 MB gzip**. Bundle size depends on features and toolchain; see [`benchmarks/2026-09-07-wasm-size-v1.0.9.md`](../../benchmarks/2026-09-07-wasm-size-v1.0.9.md) for exact tools, digest, and reproduction steps.
+The optimized v1.0.9 candidate artifact was measured at **3.73 MB raw / 1.36 MB gzip**. Bundle size depends on features and toolchain; see [`benchmarks/2026-09-07-wasm-size-v1.0.9.md`](../../benchmarks/2026-09-07-wasm-size-v1.0.9.md) for exact tools, digest, and reproduction steps.
 
 PNG rasterization (`tiny_skia`) is excluded from the WASM build — use SVG output instead. All SVG depiction APIs remain fully available.
 
