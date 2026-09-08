@@ -236,7 +236,9 @@ BufRead>` is a true streaming reader too. Rust callers can use
 and a versioned progress manifest; rejected records remain in their position
 within each batch. Python's `iter_sdf` and `iter_sdf_batched` now expose the
 file-backed reader; the batch iterator has bounded batch sizes, explicit
-cancellation, and a JSON progress manifest. See
+cancellation, and a JSON progress manifest including records seen, emitted,
+and rejected. Malformed records remain excluded from yielded Python records
+but are counted explicitly in that manifest. See
 [`language-bindings.md`](language-bindings.md#streaming-vs-materialization-by-language)
 for the full per-format table.
 

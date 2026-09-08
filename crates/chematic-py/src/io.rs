@@ -179,6 +179,8 @@ pub fn iter_sdf_batched(path: &str, batch_size: usize) -> PyResult<SdfBatchIter>
         exhausted: false,
         records_emitted: 0,
         batches_emitted: 0,
+        records_seen: 0,
+        rejected_records: 0,
     })
 }
 
@@ -262,6 +264,8 @@ pub struct SdfBatchIter {
     exhausted: bool,
     records_emitted: usize,
     batches_emitted: usize,
+    records_seen: usize,
+    rejected_records: usize,
 }
 
 #[pymethods]
@@ -292,7 +296,9 @@ impl SdfBatchIter {
             "schema_version": 1,
             "status": status,
             "batch_size": self.batch_size,
+            "records_seen": self.records_seen,
             "records_emitted": self.records_emitted,
+            "rejected_records": self.rejected_records,
             "batches_emitted": self.batches_emitted,
         })
         .to_string()
@@ -313,6 +319,7 @@ impl SdfBatchIter {
                     break;
                 }
                 Some(Ok(rec)) => {
+                    self.records_seen += 1;
                     batch.push(PySdfRecord {
                         mol: Mol {
                             inner: Arc::new(rec.mol),
@@ -324,9 +331,14 @@ impl SdfBatchIter {
                     });
                 }
                 Some(Err(chematic_mol::MolParseError::Io(msg))) => {
+                    self.records_seen += 1;
                     return Err(pyo3::exceptions::PyIOError::new_err(msg));
                 }
-                Some(Err(_)) => continue, // skip malformed
+                Some(Err(_)) => {
+                    self.records_seen += 1;
+                    self.rejected_records += 1;
+                    continue;
+                }
             }
         }
         if batch.is_empty() {
