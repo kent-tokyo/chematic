@@ -160,6 +160,31 @@ def test_python_semantic_markush_contract_expands_with_mapping():
     assert expanded["source_to_expanded"]["r1"] == [2]
 
 
+def test_python_semantic_polymer_repeat_command_preserves_shared_json_contract():
+    model = {
+        "schema": "chematic.semantic.v1",
+        "atom_ids": ["a1", "a2"],
+        "bond_ids": [],
+        "r_groups": [],
+        "polymer_units": [{
+            "id": "p1",
+            "attachment_atoms": ["a1", "a2"],
+            "end_groups": [],
+            "repeat_count": None,
+            "repeat_smiles": "[*]CC[*]",
+            "repeat_endpoint_atoms": None,
+        }],
+        "extensions": {},
+    }
+    selected = chematic.semantic_apply_json_command(
+        json.dumps(model), json.dumps({"unit_id": "p1", "repeat_count": 3})
+    )
+    selected_model = json.loads(selected)
+    assert selected_model["polymer_units"][0]["repeat_count"] == 3
+    expanded = json.loads(chematic.semantic_expand_json("CC", selected))
+    assert expanded["source_to_expanded"]["p1"] == [2, 3, 4, 5, 6, 7]
+
+
 def test_python_rxn_document_contract_is_loss_aware():
     document = {
         "id": "rxn-contract",

@@ -77,6 +77,27 @@ synthetic routing/incident fixtures returned the expected route or no-route
 decisions. This confirms the local shell contract, not the hosted sensitivity
 calibration or required-adjacent trust gate.
 
+## Issue #462 — polymer repeat editing boundary
+
+The typed semantic command surface now includes
+`SetPolymerRepeatCount { unit_id, repeat_count }`. A polymer unit with
+`repeat_count: null` is accepted as a valid unselected editing state, remains
+non-expandable until selected, and can then be updated through the shared JSON
+command used by Rust, Python, and WASM. The expansion mapping remains
+deterministic: the three-repeat `[*]CC[*]` fixture maps six generated atoms to
+the source unit.
+
+This advances only the edit-to-expansion boundary. Nested Markush choices,
+polymer contraction, and the broader typed R-group/polymer/biomolecule API
+surface remain open, so #462 is not closed.
+
+Evidence:
+
+- `cargo test -p chematic-mol --offline` — semantic and polymer regression
+  tests passed.
+- Python and Node/WASM cross-binding contract tests cover the same null-state
+  JSON and explicit repeat-count command.
+
 ## Issue #337 — typed symmetrized-ring cap outcome
 
 The bounded symmetrized-SSSR path now exposes

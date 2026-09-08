@@ -27,3 +27,26 @@ const selected = wasm.semantic_apply_json_command(
 const expanded = JSON.parse(wasm.semantic_expand_json("CC", selected));
 assert.equal(expanded.schema, "chematic.semantic-expanded.v1");
 assert.deepEqual(expanded.source_to_expanded.r1, [2]);
+
+const polymerModel = {
+  schema: "chematic.semantic.v1",
+  atom_ids: ["a1", "a2"],
+  bond_ids: [],
+  r_groups: [],
+  polymer_units: [{
+    id: "p1",
+    attachment_atoms: ["a1", "a2"],
+    end_groups: [],
+    repeat_count: null,
+    repeat_smiles: "[*]CC[*]",
+    repeat_endpoint_atoms: null,
+  }],
+  extensions: {},
+};
+const polymerSelected = wasm.semantic_apply_json_command(
+  JSON.stringify(polymerModel),
+  JSON.stringify({ unit_id: "p1", repeat_count: 3 }),
+);
+assert.equal(JSON.parse(polymerSelected).polymer_units[0].repeat_count, 3);
+const polymerExpanded = JSON.parse(wasm.semantic_expand_json("CC", polymerSelected));
+assert.deepEqual(polymerExpanded.source_to_expanded.p1, [2, 3, 4, 5, 6, 7]);

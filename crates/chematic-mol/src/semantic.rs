@@ -100,6 +100,10 @@ pub enum SemanticCommand {
         group_id: SemanticId,
         alternative: usize,
     },
+    SetPolymerRepeatCount {
+        unit_id: SemanticId,
+        repeat_count: u32,
+    },
 }
 
 impl SemanticModel {
@@ -238,6 +242,21 @@ impl SemanticModel {
 
     /// Decode and apply a JSON command using the same contract as the Rust API.
     pub fn apply_json_command(&self, value: &Value) -> Result<Self, SemanticError> {
+        if let Some(unit_id) = value.get("unit_id").and_then(Value::as_str) {
+            let repeat_count = value
+                .get("repeat_count")
+                .and_then(Value::as_u64)
+                .and_then(|count| u32::try_from(count).ok())
+                .ok_or_else(|| {
+                    SemanticError::InvalidJson(
+                        "repeat_count must be a positive u32 integer".into(),
+                    )
+                })?;
+            return self.apply(&SemanticCommand::SetPolymerRepeatCount {
+                unit_id: unit_id.into(),
+                repeat_count,
+            });
+        }
         let group_id = value
             .get("group_id")
             .and_then(Value::as_str)
@@ -245,8 +264,8 @@ impl SemanticModel {
         let alternative = value
             .get("alternative")
             .and_then(Value::as_u64)
-            .ok_or_else(|| SemanticError::InvalidJson("alternative must be an integer".into()))?
-            as usize;
+            .and_then(|index| usize::try_from(index).ok())
+            .ok_or_else(|| SemanticError::InvalidJson("alternative must be an integer".into()))?;
         self.apply(&SemanticCommand::SelectRGroupAlternative {
             group_id: group_id.into(),
             alternative,
@@ -273,6 +292,26 @@ impl SemanticModel {
                     return Err(SemanticError::MissingAlternative(group_id.clone()));
                 }
                 group.selected_alternative = Some(*alternative);
+            }
+            SemanticCommand::SetPolymerRepeatCount {
+                unit_id,
+                repeat_count,
+            } => {
+                let unit = next
+                    .polymer_units
+                    .iter_mut()
+                    .find(|unit| &unit.id == unit_id)
+                    .ok_or_else(|| SemanticError::InvalidExpansion {
+                        id: unit_id.clone(),
+                        reason: "unknown polymer unit".into(),
+                    })?;
+                if *repeat_count == 0 {
+                    return Err(SemanticError::InvalidExpansion {
+                        id: unit_id.clone(),
+                        reason: "repeat count must be greater than zero".into(),
+                    });
+                }
+                unit.repeat_count = Some(*repeat_count);
             }
         }
         next.validate()?;
@@ -602,12 +641,6 @@ impl SemanticModel {
             if unit.attachment_atoms.len() != 2 {
                 return Err(SemanticError::AmbiguousAttachment(unit.id.clone()));
             }
-            if unit.repeat_count.is_none() {
-                return Err(SemanticError::Unsupported {
-                    construct: unit.id.clone(),
-                    reason: "repeat count must be explicit".into(),
-                });
-            }
             if unit.repeat_count == Some(0) {
                 return Err(SemanticError::InvalidExpansion {
                     id: unit.id.clone(),
@@ -798,6 +831,40 @@ mod tests {
         let expanded = selected.expand(&base).unwrap();
         assert_eq!(expanded.molecule.atom_count(), 3);
         assert_eq!(expanded.source_to_expanded["r1"].len(), 1);
+    }
+
+    #[test]
+    fn command_selects_polymer_repeat_count_from_unselected_json_state() {
+        let base = chematic_smiles::parse("CC").unwrap();
+        let model = SemanticModel {
+            atom_ids: vec!["a1".into(), "a2".into()],
+            polymer_units: vec![PolymerRepeatUnit {
+                id: "p1".into(),
+                attachment_atoms: vec![
+                    AtomRef { atom_id: "a1".into() },
+                    AtomRef { atom_id: "a2".into() },
+                ],
+                end_groups: vec![],
+                repeat_count: None,
+                repeat_smiles: Some("[*]CC[*]".into()),
+                repeat_endpoint_atoms: None,
+            }],
+            ..Default::default()
+        };
+        let model = SemanticModel::from_json(&model.to_json()).unwrap();
+        model.validate().unwrap();
+        assert!(matches!(model.expand(&base), Err(SemanticError::Unsupported { .. })));
+
+        let selected = model
+            .apply_json_command(&serde_json::json!({
+                "unit_id": "p1",
+                "repeat_count": 3
+            }))
+            .unwrap();
+        assert_eq!(selected.polymer_units[0].repeat_count, Some(3));
+        let expanded = selected.expand(&base).unwrap();
+        assert_eq!(expanded.molecule.atom_count(), 8);
+        assert_eq!(expanded.source_to_expanded["p1"].len(), 6);
     }
 
     #[test]
