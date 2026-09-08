@@ -17,6 +17,13 @@ This completes the fail-closed diagnostic boundary from
 permutation-invariant relevant-cycle representative policy and the six-fixture
 MMFF94/RDKit parity gate remain open.
 
+The candidate tie-break refinement is now bond-order aware and runs for eight
+WL rounds, reducing accidental ties between chemically distinct paths while
+retaining the existing permutation-stability contract. This is a deterministic
+selection improvement, not an RDKit parity claim; the observed six-fixture
+macrocycle counts remain the pinned boundary until the representative policy
+is independently validated.
+
 Evidence:
 
 - `cargo test -p chematic-perception --lib --offline` — 204 passed, 1 ignored.

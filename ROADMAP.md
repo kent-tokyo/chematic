@@ -467,6 +467,8 @@ records them.
 - [x] Expose the bounded #337 selector's cap outcome as a typed diagnostic;
   `find_symmetrized_sssr_with_diagnostics()` returns the complete Horton basis
   with `CapExhausted` instead of exposing a partial candidate family.
+- [x] Make the #337 candidate tie-break bond-order aware across eight WL
+  rounds; retain the parity gate as a separate, still-open completion item.
 - [ ] Measure deterministic ensemble diversity, class-level failure rates,
   symmetry-aware RMSD/TFD, and energy sanity.
 

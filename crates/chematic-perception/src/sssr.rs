@@ -1075,7 +1075,8 @@ fn path_to_root(start: AtomIdx, parent: &[Option<AtomIdx>]) -> Vec<AtomIdx> {
 /// regardless of how its atoms happen to be numbered by the parser (SMILES
 /// traversal order, SDF atom-block order, etc). This is a local
 /// Weisfeiler-Leman-style refinement (seed on (element, degree, charge,
-/// aromatic), then repeatedly fold in each atom's sorted neighbor keys) —
+/// aromatic), then repeatedly fold in each atom's sorted bond-aware neighbor
+/// keys) —
 /// it does not aim for full canonical-labeling discriminating power (ties
 /// among genuinely symmetric atoms are expected and fine; the point is
 /// input-order-independence, not maximal refinement).
@@ -1093,13 +1094,17 @@ fn canonical_atom_ranks(mol: &Molecule) -> Vec<u64> {
         })
         .collect();
 
-    const ROUNDS: usize = 3;
+    const ROUNDS: usize = 8;
     for _ in 0..ROUNDS {
         let mut next = Vec::with_capacity(n);
         for i in 0..n {
             let mut neighbor_keys: Vec<u64> = mol
                 .neighbors(AtomIdx(i as u32))
-                .map(|(nb, _)| keys[nb.0 as usize])
+                .map(|(nb, bidx)| {
+                    keys[nb.0 as usize]
+                        .wrapping_mul(257)
+                        .wrapping_add(mol.bond(bidx).order.order_int() as u64)
+                })
                 .collect();
             neighbor_keys.sort_unstable();
             let mut h = keys[i];
