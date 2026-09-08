@@ -680,6 +680,11 @@ declared 2048-bit/256-byte shape. This closes one previously unconnected
 stable binding operation; the broader all-stable-operation manifest remains
 open.
 
+The same bounded contract now covers the RDKit-compatible `path_fp` operation
+as well, with a 2048-bit/256-byte ethanol fixture and exact bit positions
+verified by Rust, Python, and Node/WASM. This remains separate from native
+`topo_path` and from the held-out 5,000-molecule parity reports.
+
 ## P3 shared Extended XYZ fixture — completed local slice
 
 `validation/cross_binding_contract.json` now contains a versioned

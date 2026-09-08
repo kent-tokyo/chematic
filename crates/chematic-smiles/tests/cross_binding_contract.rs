@@ -88,3 +88,24 @@ fn shared_rdkit_rdk_fingerprint_contract_matches() {
         assert_eq!(actual, expected, "RDK fingerprint mismatch for {}", fixture["id"]);
     }
 }
+
+#[test]
+fn shared_rdkit_path_fingerprint_contract_matches() {
+    let document: Value = serde_json::from_str(FIXTURE).expect("fixture JSON must parse");
+    assert_eq!(document["fingerprint_contract"]["operations"]["rdkit_path"]["bytes"], 256);
+    for fixture in document["fingerprint_contract"]["rdkit_path_fixtures"]
+        .as_array()
+        .expect("path fixtures")
+    {
+        let molecule = chematic_smiles::parse(fixture["smiles"].as_str().unwrap()).unwrap();
+        let fp = chematic_fp::rdkit_path_fp(&molecule);
+        let expected: Vec<usize> = fixture["rdkit_path_bits"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|bit| bit.as_u64().unwrap() as usize)
+            .collect();
+        let actual: Vec<usize> = (0..2048).filter(|&bit| fp.get(bit)).collect();
+        assert_eq!(actual, expected, "path fingerprint mismatch for {}", fixture["id"]);
+    }
+}

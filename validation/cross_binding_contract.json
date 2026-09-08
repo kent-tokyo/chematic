@@ -223,6 +223,15 @@
         "bit_order": "LSB-first",
         "sparse_counts": false,
         "configuration": {"min_path": 1, "max_path": 7, "n_bits": 2048}
+      },
+      "rdkit_path": {
+        "source": "chematic_fp::rdkit_path_fp",
+        "representation": "bit-packed bytes",
+        "bits": 2048,
+        "bytes": 256,
+        "bit_order": "LSB-first",
+        "sparse_counts": false,
+        "configuration": {"min_path": 1, "max_path": 7, "n_bits": 2048}
       }
     },
     "fixtures": [
@@ -233,6 +242,9 @@
     ],
     "rdkit_rdk_fixtures": [
       {"id": "ethanol", "smiles": "CCO", "rdkit_rdk_bits": [562, 1183, 1308, 1339, 1728, 1772]}
+    ],
+    "rdkit_path_fixtures": [
+      {"id": "ethanol", "smiles": "CCO", "rdkit_path_bits": [187, 362, 416, 1356, 1571]}
     ]
   },
   "fingerprint_detail_contract": {

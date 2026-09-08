@@ -22,6 +22,7 @@ def test_shared_fixture_schema_is_stable():
     assert _DOCUMENT["fingerprint_contract"]["operations"]["ecfp4"]["bytes"] == 256
     assert _DOCUMENT["fingerprint_contract"]["operations"]["maccs"]["bytes"] == 21
     assert _DOCUMENT["fingerprint_contract"]["operations"]["rdkit_rdk"]["bytes"] == 256
+    assert _DOCUMENT["fingerprint_contract"]["operations"]["rdkit_path"]["bytes"] == 256
     assert _DOCUMENT["fingerprint_detail_contract"]["schema_version"] == 1
     assert _DOCUMENT["fingerprint_detail_contract"]["operations"]["rdkit_ecfp4_detail"]["configuration"]["radius"] == 2
     assert _DOCUMENT["batch_canonicalization_contract"]["schema_version"] == 1
@@ -164,6 +165,18 @@ def test_python_binding_matches_shared_rdkit_rdk_contract(fixture):
     actual = mol.rdkit_rdk_fp()
     assert len(actual) == 256
     assert [i for i in range(2048) if actual[i // 8] & (1 << (i % 8))] == fixture["rdkit_rdk_bits"]
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    _DOCUMENT["fingerprint_contract"]["rdkit_path_fixtures"],
+    ids=lambda item: item["id"],
+)
+def test_python_binding_matches_shared_rdkit_path_contract(fixture):
+    mol = chematic.from_smiles(fixture["smiles"])
+    actual = mol.path_fp()
+    assert len(actual) == 256
+    assert [i for i in range(2048) if actual[i // 8] & (1 << (i % 8))] == fixture["rdkit_path_bits"]
 
 
 @pytest.mark.parametrize(
