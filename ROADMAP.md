@@ -336,9 +336,9 @@ documentation, and required measurement agree.
   exact bit-set matches). The RDKit-compatible hashed topological torsion lane
   is measured by the Rust CLI as well (4,248/5,000 exact bit-set matches,
   84.96%); native `topo_path` remains explicitly `not_measured`, and
-  exact MACCS bytes are now checked across Rust, Python, and Node/WASM for four
-  shared fixtures; cross-binding parity for the held-out measured operations
-  remains open. The explicit
+  exact ECFP4 bit positions and MACCS bytes are now checked across Rust,
+  Python, and Node/WASM for four shared fixtures; cross-binding parity for the
+  held-out measured operations remains open. The explicit
   Rust CLI standardization profile is measured against the
   10 committed Phase 1 holdouts (8/10 expected fragment identities, 80%); two
   acetate cases differ after charge neutralization and remain disclosed

@@ -111,6 +111,11 @@ for (const expected of fixture.fingerprint_contract.fixtures) {
   const maccs = wasm.maccs_bitvec(mol);
   assert.equal(ecfp4.length, 256, `${expected.id} ECFP4 shape`);
   assert.equal(maccs.length, 21, `${expected.id} MACCS shape`);
+  assert.deepEqual(
+    Array.from({ length: 2048 }, (_, bit) => (ecfp4[bit >> 3] >> (bit & 7)) & 1 ? bit : null).filter((bit) => bit !== null),
+    expected.ecfp4_bits,
+    `${expected.id} ECFP4 bits`,
+  );
   assert.equal(Buffer.from(maccs).toString("hex"), expected.maccs_hex, `${expected.id} MACCS bytes`);
   assert.ok(ecfp4.some((byte) => byte !== 0), `${expected.id} ECFP4 non-empty`);
   assert.ok(maccs.some((byte) => byte !== 0), `${expected.id} MACCS non-empty`);

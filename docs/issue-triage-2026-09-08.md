@@ -394,16 +394,16 @@ same-process parity, and the broader strict malformed corpus remain open.
 
 ## P2 exact MACCS binding fixture — completed local slice
 
-The shared binding manifest now carries exact 166-bit MACCS bytes for the four
-small fingerprint fixtures. Rust, Python, and Node/WASM compare the same
-least-significant-bit-first byte representation rather than only checking
-length and non-emptiness.
+The shared binding manifest now carries exact 2048-bit ECFP4 bit positions and
+166-bit MACCS bytes for the four small fingerprint fixtures. Rust, Python, and
+Node/WASM compare the same least-significant-bit-first representation rather
+than only checking length and non-emptiness.
 
 Evidence:
 
 - Rust `descriptor_contract` test, Python `test_cross_binding_contract.py`,
   and Node/WASM `cross_binding_contract.test.mjs` consume the same
-  `maccs_hex` values.
+  `ecfp4_bits` and `maccs_hex` values.
 - This is a four-fixture cross-binding contract; it does not close the 5,000
   molecule held-out parity report or establish RDKit semantic parity.
 

@@ -111,6 +111,15 @@ fn shared_fingerprint_fixture_freezes_shape_and_configuration() {
         );
         assert!(ecfp4.popcount() > 0, "{id} ECFP4 must not be empty");
         assert!(maccs.popcount() > 0, "{id} MACCS must not be empty");
+        let expected_ecfp4_bits = fixture["ecfp4_bits"].as_array().unwrap();
+        let actual_ecfp4_bits: Vec<usize> = (0..2048)
+            .filter(|&bit| ecfp4.get(bit))
+            .collect();
+        let expected_ecfp4_bits: Vec<usize> = expected_ecfp4_bits
+            .iter()
+            .map(|bit| bit.as_u64().unwrap() as usize)
+            .collect();
+        assert_eq!(actual_ecfp4_bits, expected_ecfp4_bits, "{id} ECFP4 bits");
         assert!(
             (166..2048).all(|bit| !maccs.get(bit)),
             "{id} MACCS upper bits"

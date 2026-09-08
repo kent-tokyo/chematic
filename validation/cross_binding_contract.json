@@ -83,7 +83,7 @@
   },
   "fingerprint_contract": {
     "schema_version": 1,
-    "semantics": "Byte arrays are bit-packed with the least-significant bit first; shape, configuration, and the four-fixture MACCS bytes are stable across bindings.",
+    "semantics": "Byte arrays are bit-packed with the least-significant bit first; shape, configuration, and the four-fixture ECFP4/MACCS outputs are stable across bindings.",
     "operations": {
       "ecfp4": {
         "source": "chematic_fp::ecfp",
@@ -105,10 +105,10 @@
       }
     },
     "fixtures": [
-      {"id": "ethanol", "smiles": "CCO", "maccs_hex": "000000000000000000000200001002000004009508"},
-      {"id": "benzene", "smiles": "c1ccccc1", "maccs_hex": "000000000000000000000000000000000000000016"},
-      {"id": "aspirin", "smiles": "CC(=O)Oc1ccccc1C(=O)O", "maccs_hex": "0000000000000000000000010000016480cca2d21e"},
-      {"id": "caffeine", "smiles": "Cn1cnc2c1c(=O)n(c(=O)n2C)C", "maccs_hex": "000000003000000001d414d91323915380f138ea1f"}
+      {"id": "ethanol", "smiles": "CCO", "maccs_hex": "000000000000000000000200001002000004009508", "ecfp4_bits": [296, 332, 493, 874, 894, 1371, 1395, 1650, 2011]},
+      {"id": "benzene", "smiles": "c1ccccc1", "maccs_hex": "000000000000000000000000000000000000000016", "ecfp4_bits": [974, 1024, 1154]},
+      {"id": "aspirin", "smiles": "CC(=O)Oc1ccccc1C(=O)O", "maccs_hex": "0000000000000000000000010000016480cca2d21e", "ecfp4_bits": [67, 231, 259, 371, 373, 429, 464, 470, 586, 742, 844, 870, 897, 960, 974, 984, 1024, 1080, 1153, 1395, 1479, 1530, 1584, 1589, 1701, 1710, 1935, 1982, 2011]},
+      {"id": "caffeine", "smiles": "Cn1cnc2c1c(=O)n(c(=O)n2C)C", "maccs_hex": "000000003000000001d414d91323915380f138ea1f", "ecfp4_bits": [88, 154, 205, 450, 558, 560, 618, 628, 792, 816, 843, 844, 848, 974, 998, 1035, 1092, 1105, 1216, 1281, 1373, 1376, 1377, 1395, 1470, 1530, 1546, 1769, 1917]}
     ]
   },
   "fingerprint_detail_contract": {

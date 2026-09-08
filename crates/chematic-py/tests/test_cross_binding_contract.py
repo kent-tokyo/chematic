@@ -107,7 +107,9 @@ def test_python_binding_matches_shared_fixture(fixture):
 )
 def test_python_binding_matches_shared_fingerprint_shape(fixture):
     mol = chematic.from_smiles(fixture["smiles"])
-    assert len(mol.ecfp4()) == 256
+    ecfp4 = mol.ecfp4()
+    assert len(ecfp4) == 256
+    assert [i for i in range(2048) if ecfp4[i // 8] & (1 << (i % 8))] == fixture["ecfp4_bits"]
     maccs = mol.maccs()
     assert len(maccs) == 21
     assert maccs.hex() == fixture["maccs_hex"]

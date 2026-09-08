@@ -66,7 +66,7 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Extended the deterministic gzip streaming record/failure contract to
   Extended XYZ, keeping compressed Rust input bytes separate from decompressed
   RDKit frame-parser bytes.
-- Strengthened the shared MACCS binding contract with exact 166-bit bytes for
+- Strengthened the shared ECFP4/MACCS binding contract with exact outputs for
   four fixtures across Rust, Python, and Node/WASM; the full held-out parity
   corpus remains separate.
 
