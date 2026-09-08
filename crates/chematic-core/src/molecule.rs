@@ -1035,6 +1035,7 @@ impl MoleculeBuilder {
     /// instead (see `Molecule::with_bond_removed`).
     pub fn copy_bond_directions_from(&mut self, mol: &Molecule) {
         self.bond_directions = mol.bond_directions.clone();
+        self.bond_direction_anchors = mol.bond_direction_anchors.clone();
     }
 
     /// Read-only reference to an atom already added to the builder.
@@ -1235,6 +1236,7 @@ mod tests {
         b.add_bond(bb, c, BondOrder::Single).unwrap(); // bond 1
         let cd = b.add_bond(c, d, BondOrder::Single).unwrap(); // bond 2
         b.set_bond_direction(cd, BondOrder::Up);
+        b.set_bond_direction_anchor(cd, c);
         (b.build(), cd)
     }
 
@@ -1246,6 +1248,7 @@ mod tests {
         assert_eq!(mol.bond_count(), 2);
         // The stash must have followed C-D to its new index...
         assert_eq!(mol.bond_direction(BondIdx(1)), Some(BondOrder::Up));
+        assert_eq!(mol.bond_direction_anchor(BondIdx(1)), Some(AtomIdx(2)));
         // ...and must NOT have leaked onto the bond that shifted into the
         // old numeric slot 2 (which no longer exists) or onto B-C (index 0
         // after the shift), which never had a direction.
