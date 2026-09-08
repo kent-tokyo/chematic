@@ -311,7 +311,9 @@ disambiguate by crate, not by name alone:
   with input order, cancellation, and a versioned progress manifest.
   `XyzReader`/`ExtxyzReader` remain lazy iterators over an already-loaded
   `&str`. `ExtxyzFileReader<R: BufRead>` provides the same file-backed frame
-  boundary for Extended XYZ. Python/WASM still materialize XYZ frames.
+  boundary for Extended XYZ, and `ExtxyzBatchReader<R: BufRead>` provides the
+  corresponding bounded batch contract. Python/WASM still materialize XYZ
+  frames.
 - **Coordinate units**: Ångström (standard XYZ/extended-XYZ convention).
 - **Connectivity**: `chematic_3d::parse_xyz` infers bonds by distance;
   `chematic_mol::parse_xyz`/`parse_extxyz` never do (no `Molecule` is even
