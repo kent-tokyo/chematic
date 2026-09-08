@@ -33,6 +33,14 @@ converge. The close-side safety rule is therefore retained; the next viable
 fix must choose a representation-independent traversal/open-side arrangement
 for shared carrier bonds, with a round-trip geometry gate.
 
+A third experiment biased canonical DFS toward topology-derived shared carrier
+bonds so that those bonds would more often remain on the spanning tree. The
+smiles residual suite stayed green only after accepting a newly formatted
+variant, while the held-out boundary remained fail-closed and the private
+two-way residual probe did not converge. The bias was reverted because it
+changed canonical spellings without establishing representation-independent
+stereo resolution.
+
 Evidence:
 
 - `cargo test -p chematic-smiles --lib --offline` — 221 passed.
