@@ -51,6 +51,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Extended the common Rust streaming benchmark and safety gate to Extended
   XYZ, including plain/gzip controls, ten malformed cases, and an oversized
   post-decompression limit check.
+- Added the same-input Extended XYZ record/failure contract report for
+  chematic and RDKit, with source-byte accounting and explicit parser-boundary
+  notes; it is not a same-process parity or speed claim.
 
 ## [1.0.9] - 2026-09-07
 

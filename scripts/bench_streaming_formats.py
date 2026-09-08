@@ -113,7 +113,7 @@ def measure_rdkit_file_backed_sdf(path: Path, repeats: int) -> dict[str, object]
     }
 
 
-def measure_rdkit_file_backed_xyz(path: Path, repeats: int) -> dict[str, object]:
+def measure_rdkit_file_backed_xyz(path: Path, repeats: int, label: str = "xyz") -> dict[str, object]:
     started = time.perf_counter()
     records = 0
     failures = 0
@@ -129,7 +129,7 @@ def measure_rdkit_file_backed_xyz(path: Path, repeats: int) -> dict[str, object]
     total_bytes = path.stat().st_size * repeats
     return {
         "engine": "rdkit",
-        "format": "xyz",
+        "format": label,
         "mode": "file_backed_block_parser",
         "repeats": repeats,
         "records": records,
@@ -184,10 +184,11 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--sdf", type=Path, default=Path("benchmarks/fixtures/streaming.sdf"))
     parser.add_argument("--xyz", type=Path, default=Path("benchmarks/fixtures/streaming.xyz"))
+    parser.add_argument("--extxyz", type=Path, default=Path("benchmarks/fixtures/streaming.extxyz"))
     parser.add_argument("--repeats", type=int, default=200)
     parser.add_argument(
         "--mode",
-        choices=("block", "mol-block", "v3000-block", "mol2-block", "file-backed", "xyz-file-backed"),
+        choices=("block", "mol-block", "v3000-block", "mol2-block", "file-backed", "xyz-file-backed", "extxyz-file-backed"),
         default="block",
         help="RDKit block constructors, file-backed SDF suppliers, or XYZ blocks over a file",
     )
@@ -195,9 +196,11 @@ def main() -> None:
     args = parser.parse_args()
     if args.repeats <= 0:
         raise SystemExit("--repeats must be positive")
-    if args.mode in ("file-backed", "xyz-file-backed"):
-        if args.mode == "xyz-file-backed":
-            print(json.dumps([measure_rdkit_file_backed_xyz(args.xyz, args.repeats)], indent=2))
+    if args.mode in ("file-backed", "xyz-file-backed", "extxyz-file-backed"):
+        if args.mode in ("xyz-file-backed", "extxyz-file-backed"):
+            path = args.extxyz if args.mode == "extxyz-file-backed" else args.xyz
+            label = "extxyz" if args.mode == "extxyz-file-backed" else "xyz"
+            print(json.dumps([measure_rdkit_file_backed_xyz(path, args.repeats, label)], indent=2))
             return
         results: list[dict[str, object]] = [
             measure_rdkit_file_backed_sdf(args.sdf, args.repeats),

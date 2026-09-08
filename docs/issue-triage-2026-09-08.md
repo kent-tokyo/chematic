@@ -358,6 +358,23 @@ This is a local Python parity slice only. WASM/browser streaming bindings,
 shared cross-language fixture execution, and recovery after a malformed frame
 remain open gates.
 
+## P1 same-input Extended XYZ cross-engine contract — completed local slice
+
+The existing cross-engine checker now accepts Extended XYZ and compares the
+same checked-in two-frame fixture against RDKit's `MolFromXYZBlock` lane. The
+contract requires equal valid-frame counts, zero failures, and identical
+source-byte accounting while keeping the Rust file-backed `BufRead` boundary
+separate from Python frame splitting.
+
+Evidence:
+
+- `python3 scripts/check_streaming_cross_engine.py --format extxyz --repeats 20`
+  — chematic 40/0 and RDKit 40/0, both 5,360 source bytes.
+- Report: `benchmarks/2026-09-08-streaming-cross-engine-extxyz.md`.
+
+This does not close equivalent-operation throughput or same-process parity;
+those remain open as required by the P1 completion contract.
+
 ## Issue #185 — UFF soundness observability
 
 The existing fail-closed `sound` result is now accompanied by

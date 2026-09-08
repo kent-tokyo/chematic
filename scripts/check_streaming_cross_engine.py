@@ -25,11 +25,12 @@ def run_json(command: list[str]) -> object:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--format", choices=("sdf", "mol", "v3000", "mol2", "xyz"), default="sdf")
+    parser.add_argument("--format", choices=("sdf", "mol", "v3000", "mol2", "xyz", "extxyz"), default="sdf")
     parser.add_argument("--sdf", type=Path, default=Path("benchmarks/fixtures/streaming.sdf"))
     parser.add_argument("--v3000", type=Path, default=Path("benchmarks/fixtures/ethanol.v3000"))
     parser.add_argument("--mol2", type=Path, default=Path("benchmarks/fixtures/ethanol.mol2"))
     parser.add_argument("--xyz", type=Path, default=Path("benchmarks/fixtures/streaming.xyz"))
+    parser.add_argument("--extxyz", type=Path, default=Path("benchmarks/fixtures/streaming.extxyz"))
     parser.add_argument("--repeats", type=int, default=20)
     parser.add_argument("--openbabel", default="obabel", help="Open Babel executable; used only for SDF")
     parser.add_argument(
@@ -42,7 +43,7 @@ def main() -> int:
     args = parser.parse_args()
     if args.repeats <= 0:
         raise SystemExit("--repeats must be positive")
-    path = (args.sdf if args.format in ("sdf", "mol") else (args.v3000 if args.format == "v3000" else (args.mol2 if args.format == "mol2" else args.xyz)))
+    path = (args.sdf if args.format in ("sdf", "mol") else (args.v3000 if args.format == "v3000" else (args.mol2 if args.format == "mol2" else (args.extxyz if args.format == "extxyz" else args.xyz))))
     path = path if path.is_absolute() else ROOT / path
     payload = path.read_bytes()
     expected_records = (1 if args.format in ("v3000", "mol2") else 2) * args.repeats
@@ -62,8 +63,8 @@ def main() -> int:
         "python3",
         "scripts/bench_streaming_formats.py",
         "--mode",
-        "file-backed" if args.format == "sdf" else ("mol-block" if args.format == "mol" else ("v3000-block" if args.format == "v3000" else ("mol2-block" if args.format == "mol2" else "xyz-file-backed"))),
-        "--sdf" if args.format in ("sdf", "mol", "v3000") else ("--sdf" if args.format == "mol2" else "--xyz"),
+        "file-backed" if args.format == "sdf" else ("mol-block" if args.format == "mol" else ("v3000-block" if args.format == "v3000" else ("mol2-block" if args.format == "mol2" else ("extxyz-file-backed" if args.format == "extxyz" else "xyz-file-backed")))),
+        "--sdf" if args.format in ("sdf", "mol", "v3000") else ("--sdf" if args.format == "mol2" else ("--extxyz" if args.format == "extxyz" else "--xyz")),
         str(path),
         "--repeats",
         str(args.repeats),

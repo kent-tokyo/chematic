@@ -265,9 +265,10 @@ documentation, and required measurement agree.
   cancellation and deterministic progress manifests, and count rejected
   frames; WASM/browser parity and richer error-recovery semantics remain open.
 - [ ] Measure only equivalent operations against installed RDKit and Open
-  Babel versions on identical inputs; report sdfrust separately. A local
-  file-backed SDF report now covers chematic and RDKit on the same fixture;
-  Open Babel is recorded separately because only its CLI boundary is
+  Babel versions on identical inputs; report sdfrust separately. Local
+  file-backed reports now cover SDF, V2000/V3000 MOL, MOL2, XYZ, Extended XYZ,
+  CML, CDXML, mmCIF, and PDB with explicit parser/process boundaries. Open
+  Babel remains recorded separately because only its CLI boundary is
   installed, and same-process cross-engine equivalence remains open.
 
 ## P2 — Identity and ML primitives
