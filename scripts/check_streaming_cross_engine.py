@@ -43,7 +43,10 @@ def main() -> int:
     parser.add_argument("--xyz", type=Path, default=Path("benchmarks/fixtures/streaming.xyz"))
     parser.add_argument("--extxyz", type=Path, default=Path("benchmarks/fixtures/streaming.extxyz"))
     parser.add_argument("--repeats", type=int, default=20)
-    parser.add_argument("--openbabel", default="obabel", help="Open Babel executable; used only for SDF")
+    parser.add_argument(
+        "--openbabel",
+        help="Open Babel executable; supported for SDF, MOL, V3000, and MOL2",
+    )
     parser.add_argument(
         "--binary",
         nargs="+",
@@ -54,6 +57,8 @@ def main() -> int:
     args = parser.parse_args()
     if args.repeats <= 0:
         raise SystemExit("--repeats must be positive")
+    if args.openbabel and args.format not in ("sdf", "mol", "v3000", "mol2"):
+        raise SystemExit("--openbabel is supported only for sdf, mol, v3000, and mol2")
     path = (args.sdf if args.format in ("sdf", "mol") else (args.v3000 if args.format == "v3000" else (args.mol2 if args.format == "mol2" else (args.extxyz if args.format == "extxyz" else args.xyz))))
     path = path if path.is_absolute() else ROOT / path
     payload = path.read_bytes()
@@ -80,14 +85,14 @@ def main() -> int:
         "--repeats",
         str(args.repeats),
     ]
-    if args.format == "sdf":
+    if args.openbabel:
         comparator_command.extend(["--openbabel", args.openbabel])
     comparator = run_json(comparator_command)
-    expected_comparators = 2 if args.format == "sdf" else 1
+    expected_comparators = 2 if args.openbabel else 1
     if not isinstance(comparator, list) or len(comparator) != expected_comparators:
         raise SystemExit("comparison runner returned an unexpected row count")
     rows = {"chematic": chematic, "rdkit": comparator[0]}
-    if args.format == "sdf":
+    if args.openbabel:
         rows["openbabel"] = comparator[1]
     errors: list[str] = []
     for engine, row in rows.items():
@@ -109,10 +114,10 @@ def main() -> int:
         "comparison_boundary": {
             "chematic": f"Rust {args.format.upper()} file-backed BufRead reader",
             "rdkit": "RDKit Python block parser over blocks split from the identical file",
-            **({"openbabel": "Open Babel CLI conversion per repetition, including process startup"} if args.format == "sdf" else {}),
+            **({"openbabel": "Open Babel CLI conversion per repetition, including process startup"} if args.openbabel else {}),
         },
     }
-    if args.format == "sdf":
+    if args.openbabel:
         report["tool_versions"] = {"openbabel": executable_version(args.openbabel)}
     if errors:
         print("streaming cross-engine contract failures:", *errors, sep="\n", flush=True)

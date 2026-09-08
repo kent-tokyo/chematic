@@ -494,6 +494,12 @@ The report also records the Open Babel executable version in machine-readable
 
 Evidence: `benchmarks/2026-09-08-streaming-cross-engine-openbabel.md`.
 
+The same runner now covers V3000 and MOL2 single-record fixtures, including
+Open Babel's singular `molecule converted` output and pinned executable
+version. The new reports are
+`benchmarks/2026-09-08-streaming-cross-engine-openbabel-v3000.md` and
+`benchmarks/2026-09-08-streaming-cross-engine-openbabel-mol2.md`.
+
 ## Issue #460 — shared typed RXN document contract slice
 
 The versioned cross-binding manifest now also owns the minimal authored

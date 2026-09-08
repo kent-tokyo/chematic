@@ -142,14 +142,16 @@ def measure_rdkit_file_backed_xyz(path: Path, repeats: int, label: str = "xyz") 
     }
 
 
-def measure_openbabel_sdf(path: Path, repeats: int, executable: str) -> dict[str, object]:
+def measure_openbabel_file(
+    path: Path, repeats: int, executable: str, input_format: str
+) -> dict[str, object]:
     started = time.perf_counter()
     records = 0
     failures = 0
-    converted_pattern = re.compile(r"^(\d+) molecules converted$")
+    converted_pattern = re.compile(r"^(\d+) molecule(?:s)? converted$")
     for _ in range(repeats):
         completed = subprocess.run(
-            [executable, "-isdf", str(path), "-osmi", "-O", "/dev/null"],
+            [executable, f"-i{input_format}", str(path), "-osmi", "-O", "/dev/null"],
             check=False,
             text=True,
             stdout=subprocess.DEVNULL,
@@ -167,7 +169,7 @@ def measure_openbabel_sdf(path: Path, repeats: int, executable: str) -> dict[str
     total_bytes = path.stat().st_size * repeats
     return {
         "engine": "openbabel",
-        "format": "sdf",
+        "format": input_format,
         "mode": "file_backed_cli",
         "repeats": repeats,
         "records": records,
@@ -178,6 +180,10 @@ def measure_openbabel_sdf(path: Path, repeats: int, executable: str) -> dict[str
         "bytes_per_second": round(total_bytes / elapsed, 2),
         "comparison_boundary": "Open Babel CLI process per repetition; startup and conversion included",
     }
+
+
+def measure_openbabel_sdf(path: Path, repeats: int, executable: str) -> dict[str, object]:
+    return measure_openbabel_file(path, repeats, executable, "sdf")
 
 
 def main() -> None:
@@ -192,7 +198,10 @@ def main() -> None:
         default="block",
         help="RDKit block constructors, file-backed SDF suppliers, or XYZ blocks over a file",
     )
-    parser.add_argument("--openbabel", help="also measure Open Babel's file-backed SDF CLI")
+    parser.add_argument(
+        "--openbabel",
+        help="also measure Open Babel's file-backed CLI for SDF, MOL, V3000, or MOL2",
+    )
     args = parser.parse_args()
     if args.repeats <= 0:
         raise SystemExit("--repeats must be positive")
@@ -223,7 +232,11 @@ def main() -> None:
         else:
             label = "mol"
             source = args.sdf.stat().st_size
-        print(json.dumps([measure(label, sdf, args.repeats, source)], indent=2))
+        results = [measure(label, sdf, args.repeats, source)]
+        if args.openbabel:
+            input_format = "mol2" if args.mode == "mol2-block" else "mol"
+            results.append(measure_openbabel_file(args.sdf, args.repeats, args.openbabel, input_format))
+        print(json.dumps(results, indent=2))
         return
     print(json.dumps([
         measure("sdf", sdf, args.repeats),

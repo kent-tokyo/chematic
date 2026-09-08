@@ -269,8 +269,9 @@ documentation, and required measurement agree.
   file-backed reports now cover SDF, V2000/V3000 MOL, MOL2, XYZ, Extended XYZ,
   CML, CDXML, mmCIF, and PDB with explicit parser/process boundaries. Open
   Babel remains recorded separately because only its CLI boundary is
-  installed; the 20-repetition SDF lane now records 40/40 records and zero
-  failures for all three available engines with those boundaries explicit.
+  installed; the 20-repetition SDF, V3000, and MOL2 lanes now record matching
+  counts and zero failures for all three available engines with those
+  boundaries explicit.
   Deterministic gzip record/failure contracts now cover SDF, XYZ,
   and Extended XYZ with compressed/decompressed byte stages explicit; same-
   process cross-engine equivalence remains open.
