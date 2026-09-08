@@ -212,7 +212,11 @@ impl CdxmlDocument {
 
     /// Apply a bounded edit and reparse, so indexes/attributes stay consistent.
     pub fn apply(&self, edit: &CdxmlEdit) -> Result<Self, CdxmlError> {
-        let mut lines: Vec<String> = self.raw_xml.lines().map(str::to_owned).collect();
+        let mut lines: Vec<String> = if needs_logical_edit_lines(&self.raw_xml) {
+            logical_cdxml_lines(&self.raw_xml)
+        } else {
+            self.raw_xml.lines().map(str::to_owned).collect()
+        };
         match edit {
             CdxmlEdit::SetPageAttribute { key, .. }
             | CdxmlEdit::SetObjectAttribute { key, .. } => {
@@ -407,6 +411,8 @@ impl CdxmlDocument {
     fn parse_edited_lines(&self, lines: Vec<String>) -> Result<Self, CdxmlError> {
         let separator = if self.raw_xml.contains("\r\n") {
             "\r\n"
+        } else if !self.raw_xml.contains(['\r', '\n']) {
+            ""
         } else {
             "\n"
         };
@@ -472,6 +478,10 @@ fn logical_cdxml_lines(input: &str) -> Vec<String> {
         }
     }
     records
+}
+
+fn needs_logical_edit_lines(input: &str) -> bool {
+    input.lines().any(|line| logical_cdxml_lines(line).len() > 1)
 }
 
 fn check_attribute_budget(
@@ -583,6 +593,22 @@ mod tests {
         assert_eq!(doc.page_ids(), vec![Some("p1")]);
         assert_eq!(doc.pages[0].children[0].tag, "arrow");
         assert_eq!(doc.write(), input);
+    }
+
+    #[test]
+    fn edits_minified_cdxml_without_expanding_its_layout() {
+        let input = "<CDXML><page id=\"p1\"><arrow id=\"a1\"/></page></CDXML>";
+        let doc = CdxmlDocument::parse(input).unwrap();
+        let edited = doc
+            .apply(&CdxmlEdit::SetPageAttribute {
+                page_id: "p1".into(),
+                key: "title".into(),
+                value: "Page 1".into(),
+            })
+            .unwrap();
+        assert!(!edited.write().contains('\n'));
+        assert!(edited.write().contains("title=\"Page 1\""));
+        assert_eq!(edited.page_count(), 1);
     }
 
     #[test]
