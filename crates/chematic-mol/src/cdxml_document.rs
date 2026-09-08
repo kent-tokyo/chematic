@@ -211,6 +211,13 @@ impl CdxmlDocument {
     pub fn apply(&self, edit: &CdxmlEdit) -> Result<Self, CdxmlError> {
         let mut lines: Vec<String> = self.raw_xml.lines().map(str::to_owned).collect();
         match edit {
+            CdxmlEdit::SetPageAttribute { key, .. }
+            | CdxmlEdit::SetObjectAttribute { key, .. } => {
+                validate_attribute_name(key)?;
+            }
+            _ => {}
+        }
+        match edit {
             CdxmlEdit::ReplaceObject { raw_xml, .. }
             | CdxmlEdit::InsertObject { raw_xml, .. }
             | CdxmlEdit::ReplaceObjectPath { raw_xml, .. } => {
@@ -457,6 +464,25 @@ fn validate_object_fragment(raw_xml: &str) -> Result<(), CdxmlError> {
     Ok(())
 }
 
+fn validate_attribute_name(name: &str) -> Result<(), CdxmlError> {
+    let mut chars = name.chars();
+    let Some(first) = chars.next() else {
+        return Err(CdxmlError::InvalidCoords(
+            "edited attribute name must not be empty".into(),
+        ));
+    };
+    let valid_start = first.is_ascii_alphabetic() || first == '_';
+    let valid_rest = chars.all(|ch| {
+        ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | ':' | '.')
+    });
+    if !valid_start || !valid_rest {
+        return Err(CdxmlError::InvalidCoords(format!(
+            "invalid edited attribute name: {name:?}"
+        )));
+    }
+    Ok(())
+}
+
 fn page_id_for(edit: &CdxmlEdit) -> &str {
     match edit {
         CdxmlEdit::SetPageAttribute { page_id, .. }
@@ -583,6 +609,21 @@ mod tests {
                 page_id: "p1".into(),
                 object_index: 0,
                 raw_xml: "not xml".into(),
+            })
+            .unwrap_err();
+        assert!(matches!(error, CdxmlError::InvalidCoords(_)));
+    }
+
+    #[test]
+    fn rejects_invalid_attribute_names_in_edits() {
+        let input = "<CDXML>\n<page id=\"p1\">\n<arrow id=\"a1\"/>\n</page>\n</CDXML>";
+        let doc = CdxmlDocument::parse(input).unwrap();
+        let error = doc
+            .apply(&CdxmlEdit::SetObjectAttribute {
+                page_id: "p1".into(),
+                object_index: 0,
+                key: "bad\" key".into(),
+                value: "value".into(),
             })
             .unwrap_err();
         assert!(matches!(error, CdxmlError::InvalidCoords(_)));
