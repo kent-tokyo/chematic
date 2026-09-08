@@ -26,6 +26,16 @@ LSB-first 256-byte values. Evidence is recorded in
 This does not close RDKit-compatible ECFP4 accuracy, sparse/count provenance,
 or the remaining held-out fingerprint operations.
 
+## P2 native MACCS binding parity — bounded completion
+
+The native 166-key MACCS representation was replayed over the same 5,000-row
+corpus through Rust, Python, and Node/WASM. The three bindings produced
+5,000/5,000 successful records and identical 21-byte LSB-first values. The
+machine-readable evidence is
+`validation/results/maccs-cross-binding-parity-5000-v1.0.9.json`.
+The external RDKit key mapping and remaining fingerprint parity gates stay
+separate and open.
+
 ## Issues #149 and #503 — aromatic E/Z stash residual boundary
 
 The current joint carrier resolver and canonical-fidelity partition remain

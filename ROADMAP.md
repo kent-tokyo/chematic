@@ -336,6 +336,8 @@ documentation, and required measurement agree.
   Rust, Python, and Node/WASM. The committed report checks the complete
   2,048-bit LSB-first byte representation and keeps RDKit-compatible and
   sparse/explanation parity as separate gates.
+- [x] Add the matching 5,000-row native MACCS 166-bit binding-parity lane;
+  keep the RDKit key mapping as a separate accuracy gate.
 - [ ] Add held-out parity reports for Morgan/ECFP, MACCS, topological,
   torsion, descriptors, and standardization across Rust/Python/WASM. The
   v1.0.8 coverage ledger is now validated by
