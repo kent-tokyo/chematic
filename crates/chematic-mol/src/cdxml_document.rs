@@ -92,7 +92,7 @@ impl CdxmlDocument {
         let mut document_attributes = BTreeMap::new();
         let mut pages = Vec::new();
         let mut current: Option<CdxmlPage> = None;
-        for (line_no, raw) in input.lines().enumerate() {
+        for (line_no, raw) in logical_cdxml_lines(input).into_iter().enumerate() {
             if line_no >= limits.max_lines {
                 return Err(CdxmlError::ResourceLimit {
                     resource: "lines",
@@ -444,6 +444,36 @@ fn xml_escape(value: &str) -> String {
         .replace('>', "&gt;")
 }
 
+/// Split markup boundaries that share one physical line into parser records.
+/// CDXML is XML, so a producer may legally emit a minified document. Attribute
+/// values can contain `>`; those bytes must not be treated as tag boundaries.
+fn logical_cdxml_lines(input: &str) -> Vec<String> {
+    let mut records = Vec::new();
+    for physical_line in input.lines() {
+        let mut start = 0usize;
+        let mut quote = None;
+        for (offset, ch) in physical_line.char_indices() {
+            match (quote, ch) {
+                (None, '\"') | (None, '\'') => quote = Some(ch),
+                (Some(q), ch) if q == ch => quote = None,
+                (None, '>') => {
+                    let end = offset + ch.len_utf8();
+                    let record = &physical_line[start..end];
+                    if !record.trim().is_empty() {
+                        records.push(record.to_string());
+                    }
+                    start = end;
+                }
+                _ => {}
+            }
+        }
+        if !physical_line[start..].trim().is_empty() {
+            records.push(physical_line[start..].to_string());
+        }
+    }
+    records
+}
+
 fn check_attribute_budget(
     attributes: &std::collections::HashMap<String, String>,
     limits: &CdxmlParseLimits,
@@ -542,6 +572,16 @@ mod tests {
             doc.pages[0].children[1].attributes["Head3"],
             Value::String("yes".into())
         );
+        assert_eq!(doc.write(), input);
+    }
+
+    #[test]
+    fn extracts_pages_from_minified_cdxml_without_changing_source() {
+        let input = "<CDXML><page id=\"p1\"><arrow id=\"a1\"/></page></CDXML>";
+        let doc = CdxmlDocument::parse(input).unwrap();
+        assert_eq!(doc.page_count(), 1);
+        assert_eq!(doc.page_ids(), vec![Some("p1")]);
+        assert_eq!(doc.pages[0].children[0].tag, "arrow");
         assert_eq!(doc.write(), input);
     }
 

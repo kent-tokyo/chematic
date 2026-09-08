@@ -141,6 +141,8 @@ Documents parsed with explicit resource limits retain those limits for later
 edits and revalidation, so an edit cannot silently fall back to defaults.
 If a document contains duplicate page IDs, edits now reject that ambiguous
 target instead of silently modifying the first matching page.
+The structural scanner also recognizes minified one-line CDXML while keeping
+the original source representation byte-for-byte available through `write()`.
 
 This is a resource-safety slice only. Full ChemDraw presentation semantics,
 including every style, geometry, grouping, and annotation dialect, remain
@@ -148,7 +150,7 @@ outside the current adapter contract.
 
 Evidence:
 
-- `cargo test -p chematic-mol cdxml_document --offline` — 11 passed.
+- `cargo test -p chematic-mol cdxml_document --offline` — 12 passed.
 - `git diff --check` — passed.
 
 ## Issue #337 — typed symmetrized-ring cap outcome
