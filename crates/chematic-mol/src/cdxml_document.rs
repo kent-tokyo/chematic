@@ -32,6 +32,8 @@ pub struct CdxmlPage {
 pub struct CdxmlDocument {
     pub document_attributes: BTreeMap<String, CdxmlValue>,
     pub pages: Vec<CdxmlPage>,
+    #[serde(skip)]
+    limits: CdxmlParseLimits,
     raw_xml: String,
 }
 
@@ -175,6 +177,7 @@ impl CdxmlDocument {
         Ok(Self {
             document_attributes,
             pages,
+            limits: *limits,
             raw_xml: input.to_string(),
         })
     }
@@ -221,7 +224,7 @@ impl CdxmlDocument {
             CdxmlEdit::ReplaceObject { raw_xml, .. }
             | CdxmlEdit::InsertObject { raw_xml, .. }
             | CdxmlEdit::ReplaceObjectPath { raw_xml, .. } => {
-                validate_object_fragment(raw_xml)?;
+                validate_object_fragment(raw_xml, &self.limits)?;
             }
             _ => {}
         }
@@ -405,7 +408,7 @@ impl CdxmlDocument {
         if self.raw_xml.ends_with(['\n', '\r']) {
             edited.push_str(separator);
         }
-        Self::parse(&edited)
+        Self::parse_with_limits(&edited, &self.limits)
     }
 
     /// A JSON-safe structural summary for editor and binding layers.
@@ -453,7 +456,10 @@ fn check_attribute_budget(
     Ok(())
 }
 
-fn validate_object_fragment(raw_xml: &str) -> Result<(), CdxmlError> {
+fn validate_object_fragment(
+    raw_xml: &str,
+    limits: &CdxmlParseLimits,
+) -> Result<(), CdxmlError> {
     let fragment = raw_xml.trim();
     if fragment.is_empty()
         || !fragment.starts_with('<')
@@ -468,7 +474,7 @@ fn validate_object_fragment(raw_xml: &str) -> Result<(), CdxmlError> {
     let wrapped = format!(
         "<CDXML>\n<page id=\"__edit__\">\n{fragment}\n</page>\n</CDXML>"
     );
-    let parsed = CdxmlDocument::parse(&wrapped)?;
+    let parsed = CdxmlDocument::parse_with_limits(&wrapped, limits)?;
     if parsed.pages.len() != 1 || parsed.pages[0].children.is_empty() {
         return Err(CdxmlError::InvalidCoords(
             "edited object must contain at least one element".into(),
@@ -656,6 +662,31 @@ mod tests {
         assert!(edited.write().contains("\r\n"));
         assert!(!edited.write().replace("\r\n", "").contains('\n'));
         assert!(!edited.write().ends_with('\n'));
+    }
+
+    #[test]
+    fn edits_reuse_the_document_resource_limits() {
+        let input = "<CDXML>\n<page id=\"p1\">\n<arrow id=\"a1\"/>\n</page>\n</CDXML>";
+        let limits = CdxmlParseLimits {
+            max_attribute_bytes: 12,
+            ..Default::default()
+        };
+        let doc = CdxmlDocument::parse_with_limits(input, &limits).unwrap();
+        let error = doc
+            .apply(&CdxmlEdit::SetObjectAttribute {
+                page_id: "p1".into(),
+                object_index: 0,
+                key: "label".into(),
+                value: "this value exceeds the original limit".into(),
+            })
+            .unwrap_err();
+        assert!(matches!(
+            error,
+            CdxmlError::ResourceLimit {
+                resource: "attributes",
+                ..
+            }
+        ));
     }
 
     #[test]
