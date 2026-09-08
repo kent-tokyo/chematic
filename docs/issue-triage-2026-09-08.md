@@ -73,6 +73,14 @@ status rather than unstable error text. Evidence is recorded in
 Independent RDKit accuracy and sparse/count/bitInfo parity remain separate
 gates.
 
+## P2 RDKit-compatible torsion binding parity — bounded completion
+
+The RDKit-compatible hashed torsion implementation was replayed on 5,000
+shared SMILES through Rust, Python, and Node/WASM. Successful records are
+compared by exact 2,048-bit value and failures by typed status. Evidence is
+recorded in `validation/results/rdkit-torsion-cross-binding-parity-5000-v1.0.9.json`.
+Independent RDKit accuracy remains a separate gate.
+
 ## Issues #149 and #503 — aromatic E/Z stash residual boundary
 
 The current joint carrier resolver and canonical-fidelity partition remain
