@@ -517,6 +517,10 @@ records fixture SHA-256 digests, tool versions, expected records, and failures:
 every available lane returned the expected count and zero failures.
 
 Evidence: `benchmarks/2026-09-08-streaming-cross-engine-matrix-v1.0.9.json`.
+The checked-in report is now fail-closed by
+`scripts/validate_streaming_cross_engine_matrix.py`, which verifies the ten
+format rows, fixture digests, expected counts, zero failures, required chematic
+lane, and explicit parser/process boundaries.
 The report intentionally does not claim throughput parity: chematic uses the
 Rust runner, RDKit uses Python supplier/block APIs, and Open Babel includes a
 fresh CLI process per repetition. Same-process equivalent-operation speed and
