@@ -9,6 +9,7 @@ and Open Babel starts a CLI process for each repetition.
 - SHA-256: `64ac11b3de1c186deae555d54d6a47e7f3c72607ef0a90b0d93f467496bbd3ad`
 - Repetitions: 20; expected records: 20; source bytes: 298 per repetition
 - Open Babel: `Open Babel 3.2.1 -- Jul 11 2026`
+- RDKit: `2025.09.3`
 
 | Engine | Records | Failures | Seconds | Records/s |
 | --- | ---: | ---: | ---: | ---: |

@@ -34,6 +34,14 @@ def executable_version(executable: str) -> str:
     return output.splitlines()[0] if output else "unknown"
 
 
+def rdkit_version() -> str:
+    try:
+        from rdkit import rdBase
+    except ImportError:
+        return "unavailable"
+    return rdBase.rdkitVersion
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--format", choices=("sdf", "mol", "v3000", "mol2", "xyz", "extxyz"), default="sdf")
@@ -117,8 +125,9 @@ def main() -> int:
             **({"openbabel": "Open Babel CLI conversion per repetition, including process startup"} if args.openbabel else {}),
         },
     }
+    report["tool_versions"] = {"rdkit": rdkit_version()}
     if args.openbabel:
-        report["tool_versions"] = {"openbabel": executable_version(args.openbabel)}
+        report["tool_versions"]["openbabel"] = executable_version(args.openbabel)
     if errors:
         print("streaming cross-engine contract failures:", *errors, sep="\n", flush=True)
         return 1

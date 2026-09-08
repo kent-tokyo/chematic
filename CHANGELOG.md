@@ -20,6 +20,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   version in machine-readable metadata.
 - Extended the same-input Open Babel accounting runner to V3000 and MOL2,
   including singular-record conversion output and version-pinned reports.
+- The same-input runner now records the installed RDKit version alongside the
+  Open Babel version in every machine-readable comparison report.
 - Extended the Explorer browser smoke with the stable empty-paste error and
   recovery path before the cancellation/display-cap workload, and made the
   Cancel assertion wait for its asynchronous hidden transition.

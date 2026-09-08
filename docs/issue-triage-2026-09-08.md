@@ -499,6 +499,8 @@ Open Babel's singular `molecule converted` output and pinned executable
 version. The new reports are
 `benchmarks/2026-09-08-streaming-cross-engine-openbabel-v3000.md` and
 `benchmarks/2026-09-08-streaming-cross-engine-openbabel-mol2.md`.
+The machine-readable runner now also records RDKit `2025.09.3` beside the
+Open Babel version.
 
 ## Issue #460 — shared typed RXN document contract slice
 
