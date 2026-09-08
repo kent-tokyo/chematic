@@ -569,7 +569,8 @@ Evidence:
   existing Chromium, Firefox, and WebKit matrix entries.
 - A local HTTP in-app browser replay also verified the exact empty-paste error
   (`No SMILES found in the pasted text.`) and recovery to `1 molecule loaded.`;
-  the direct Playwright script invocation remains dependency-gated locally.
+  the direct Playwright Chromium smoke also passes after waiting for the
+  asynchronous Cancel button transition.
 
 This closes only the local Explorer cancellation/malformed-record/display-limit
 and stable empty-paste recovery slice. It does not claim local Firefox/WebKit

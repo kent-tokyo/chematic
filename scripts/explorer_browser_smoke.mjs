@@ -46,6 +46,7 @@ try {
       await status.waitFor({ hasText: /Showing the first 2000 of 2001 records/ });
       await page.locator("#explorer-cancel").click();
       await status.waitFor({ hasText: /Cancelled after/ });
+      await page.locator("#explorer-cancel").waitFor({ state: "hidden" });
       assert.equal(await page.locator("#explorer-cancel").isVisible(), false);
       const cancelledCount = Number((await page.locator("#explorer-result-count").innerText()).match(/\d+/)?.[0]);
       assert.ok(cancelledCount < 2000, `cancel should stop before the display cap: ${cancelledCount}`);
