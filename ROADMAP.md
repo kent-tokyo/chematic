@@ -352,6 +352,8 @@ documentation, and required measurement agree.
   binding-parity report across Rust, Python, and Node/WASM.
 - [x] Add a 5,000-row RDKit-compatible ECFP4 sparse identifier/count parity
   report across Rust, Python, and Node/WASM; keep raw/folded bitInfo separate.
+- [x] Add a 5,000-row RDKit-compatible ECFP4 folded bitInfo parity report
+  across Rust, Python, and Node/WASM.
 - [ ] Add held-out parity reports for Morgan/ECFP, MACCS, topological,
   torsion, descriptors, and standardization across Rust/Python/WASM. The
   v1.0.8 coverage ledger is now validated by

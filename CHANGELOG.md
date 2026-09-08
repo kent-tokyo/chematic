@@ -25,6 +25,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   across Rust, Python, and Node/WASM.
 - Added a 5,000-row RDKit-compatible ECFP4 sparse identifier/count parity
   report across Rust, Python, and Node/WASM.
+- Added a 5,000-row RDKit-compatible ECFP4 folded bitInfo provenance parity
+  report across Rust, Python, and Node/WASM.
 - Added a reproducible 5,000-row Rust/Python/Node-WASM descriptor binding
   parity report. All bindings parsed the same corpus and agreed on MW, TPSA,
   HBD, HBA, and heavy-atom count; the report explicitly remains separate from

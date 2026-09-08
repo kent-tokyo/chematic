@@ -90,6 +90,15 @@ compared by typed status. Evidence is recorded in
 `validation/results/rdkit-ecfp4-sparse-cross-binding-parity-5000-v1.0.9.json`.
 Raw/folded bitInfo provenance remains a separate gate.
 
+## P2 RDKit-compatible ECFP4 folded bitInfo parity — bounded completion
+
+The folded bit-to-atom/radius provenance map behind RDKit-compatible ECFP4 was
+replayed on 5,000 shared SMILES through Rust, Python, and Node/WASM. Successful
+maps matched exactly after deterministic sorting, and preprocessing failures
+were compared by typed status. Evidence is recorded in
+`validation/results/rdkit-ecfp4-bitinfo-cross-binding-parity-5000-v1.0.9.json`.
+Raw identifier bitInfo remains separate.
+
 ## Issues #149 and #503 — aromatic E/Z stash residual boundary
 
 The current joint carrier resolver and canonical-fidelity partition remain
