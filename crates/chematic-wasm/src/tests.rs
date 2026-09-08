@@ -1424,6 +1424,12 @@ fn torsion_bitvec_length_256() {
 }
 
 #[test]
+fn rdkit_path_bitvec_length_256() {
+    let mol = parse("CCCCC");
+    assert_eq!(rdkit_path_bitvec(&mol).len(), 256);
+}
+
+#[test]
 fn tanimoto_fcfp6_identical_is_one() {
     let mol = parse("c1ccccc1");
     assert!((tanimoto_fcfp6(&mol, &mol) - 1.0).abs() < 1e-9);

@@ -132,6 +132,26 @@ pub fn topo_path_bitvec(mol: &MolHandle) -> Vec<u8> {
         .collect()
 }
 
+/// Compute the RDKit-compatible Daylight-like path fingerprint as a bit-packed
+/// byte vector (256 bytes = 2048 bits). This is the WASM counterpart of the
+/// Python `path_fp` operation and is intentionally separate from native
+/// `topo_path_bitvec`.
+#[wasm_bindgen]
+pub fn rdkit_path_bitvec(mol: &MolHandle) -> Vec<u8> {
+    let fp = chematic_fp::rdkit_path_fp(&mol.inner);
+    (0..256usize)
+        .map(|byte_idx| {
+            let mut byte = 0u8;
+            for bit in 0..8usize {
+                if fp.get(byte_idx * 8 + bit) {
+                    byte |= 1 << bit;
+                }
+            }
+            byte
+        })
+        .collect()
+}
+
 // ---------------------------------------------------------------------------
 // Sprint Q: IFG, VSA descriptors, Gasteiger charges, SA Score, Diversity
 // ---------------------------------------------------------------------------

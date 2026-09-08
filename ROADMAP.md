@@ -356,6 +356,8 @@ documentation, and required measurement agree.
   across Rust, Python, and Node/WASM.
 - [x] Add a 5,000-row RDKit-compatible ECFP4 raw bitInfo parity report across
   Rust, Python, and Node/WASM.
+- [x] Add a 5,000-row RDKit-compatible path fingerprint binding-parity report
+  across Rust, Python, and Node/WASM; keep native `topo_path` separate.
 - [ ] Add held-out parity reports for Morgan/ECFP, MACCS, topological,
   torsion, descriptors, and standardization across Rust/Python/WASM. The
   v1.0.8 coverage ledger is now validated by

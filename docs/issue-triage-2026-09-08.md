@@ -107,6 +107,14 @@ Successful maps matched exactly after deterministic sorting; preprocessing
 failures were compared by typed status. Evidence is recorded in
 `validation/results/rdkit-ecfp4-raw-bitinfo-cross-binding-parity-5000-v1.0.9.json`.
 
+## P2 RDKit-compatible path binding parity — bounded completion
+
+The RDKit-compatible path fingerprint now has an explicit WASM byte-vector
+entry point matching the existing Rust and Python APIs. The same 5,000-row
+corpus produced identical 2,048-bit values across all three bindings. Evidence
+is recorded in `validation/results/rdkit-path-cross-binding-parity-5000-v1.0.9.json`;
+native `topo_path` remains a separate operation.
+
 ## Issues #149 and #503 — aromatic E/Z stash residual boundary
 
 The current joint carrier resolver and canonical-fidelity partition remain
