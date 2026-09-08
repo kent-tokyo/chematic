@@ -1591,6 +1591,75 @@ mod tests {
     }
 
     #[test]
+    fn issue337_macrocycle_boundary_is_bounded_and_permutation_stable() {
+        let cases = [
+            (
+                "0009",
+                "c1cc2cc(c1)-c1cccc(c1)C[n+]1ccc(c3ccccc31)NCCCCCCCCCCNc1cc[n+](c3ccccc13)C2",
+                2,
+            ),
+            (
+                "0023",
+                "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)-c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+                4,
+            ),
+            (
+                "0028",
+                "C1=C\\c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCNc2cc[n+](c3ccccc23)Cc2ccc/1cc2",
+                4,
+            ),
+            (
+                "0029",
+                "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)CCc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+                4,
+            ),
+            (
+                "0030",
+                "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)Cc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+                4,
+            ),
+            (
+                "0034",
+                "c1ccc2c(c1)c1cc[n+]2Cc2ccc3c(c2)Cc2cc(ccc2-3)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+                2,
+            ),
+        ];
+
+        for (name, smiles, expected_macrocycles) in cases {
+            let mol = chematic_smiles::parse(smiles).expect(name);
+            let macrocycle_count = find_symmetrized_sssr(&mol)
+                .rings()
+                .iter()
+                .filter(|ring| ring.len() >= 20)
+                .count();
+            assert_eq!(
+                macrocycle_count, expected_macrocycles,
+                "{name}: diagnostic symmetrized-ring boundary changed"
+            );
+
+            let reversed = permute_molecule(&mol, &(0..mol.atom_count()).rev().collect::<Vec<_>>());
+            let mut original_sizes: Vec<_> = find_symmetrized_sssr(&mol)
+                .rings()
+                .iter()
+                .filter(|ring| ring.len() >= 20)
+                .map(Vec::len)
+                .collect();
+            let mut reversed_sizes: Vec<_> = find_symmetrized_sssr(&reversed)
+                .rings()
+                .iter()
+                .filter(|ring| ring.len() >= 20)
+                .map(Vec::len)
+                .collect();
+            original_sizes.sort_unstable();
+            reversed_sizes.sort_unstable();
+            assert_eq!(
+                original_sizes, reversed_sizes,
+                "{name}: macrocycle sizes changed under relabeling"
+            );
+        }
+    }
+
+    #[test]
     fn test_cubane_sssr() {
         // Cubane C8H8 — a cage molecule with 12 C-C bonds and 8 vertices.
         // Cycle rank = E - V + 1 = 12 - 8 + 1 = 5.
