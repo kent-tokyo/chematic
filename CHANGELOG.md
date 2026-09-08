@@ -57,6 +57,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Added an Extended XYZ parse fixture to the shared Rust/Python/Node/WASM
   contract manifest, checking coordinates, lattice, typed per-atom properties,
   and frame metadata in each binding.
+- Added the typed RXN document round-trip to the shared binding contract,
+  covering authored component roles and SMILES across Rust, Python, and
+  Node/WASM while retaining the legacy V2000 loss boundary.
 
 ## [1.0.9] - 2026-09-07
 

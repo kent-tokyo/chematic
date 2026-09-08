@@ -23,6 +23,27 @@
       "info": {"energy": "-76.4", "pbc": "T T T"}
     }
   },
+  "rxn_document_contract": {
+    "schema_version": 1,
+    "document": {
+      "id": "rxn-contract",
+      "steps": [{
+        "id": "step-1",
+        "components": [
+          {"id": "reactant-1", "role": "reactant", "smiles": "CC", "coefficient": 1, "origin": "authored"},
+          {"id": "product-1", "role": "product", "smiles": "CC", "coefficient": 1, "origin": "authored"}
+        ],
+        "conditions": [],
+        "provenance": [],
+        "origin": "authored"
+      }],
+      "provenance": []
+    },
+    "expected_components": [
+      {"role": "reactant", "smiles": "CC"},
+      {"role": "product", "smiles": "CC"}
+    ]
+  },
   "fixtures": [
     {"id": "ethanol-order-variant", "smiles": "OCC", "canonical_smiles": "C(C)O", "heavy_atoms": 3},
     {"id": "benzene-kekule-context", "smiles": "c1ccccc1", "canonical_smiles": "c1ccccc1", "heavy_atoms": 6},

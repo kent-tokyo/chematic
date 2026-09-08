@@ -25,6 +25,7 @@ def test_shared_fixture_schema_is_stable():
     assert _DOCUMENT["fingerprint_detail_contract"]["operations"]["rdkit_ecfp4_detail"]["configuration"]["radius"] == 2
     assert _DOCUMENT["batch_canonicalization_contract"]["schema_version"] == 1
     assert _DOCUMENT["extxyz_contract"]["schema_version"] == 1
+    assert _DOCUMENT["rxn_document_contract"]["schema_version"] == 1
 
 
 def test_python_binding_matches_shared_extxyz_contract():
@@ -35,6 +36,17 @@ def test_python_binding_matches_shared_extxyz_contract():
     assert actual["lattice"] == expected["lattice"]
     assert actual["properties"] == expected["properties"]
     assert actual["info"] == expected["info"]
+
+
+def test_python_binding_matches_shared_rxn_document_contract():
+    contract = _DOCUMENT["rxn_document_contract"]
+    rxn = chematic.to_rxn_document_json(json.dumps(contract["document"]))
+    decoded = json.loads(chematic.from_rxn_document_json(rxn))
+    observed = [
+        {"role": component["role"], "smiles": component["smiles"]}
+        for component in decoded["steps"][0]["components"]
+    ]
+    assert observed == contract["expected_components"]
 
 
 @pytest.mark.parametrize(

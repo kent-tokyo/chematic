@@ -394,6 +394,26 @@ Evidence:
 This is one shared stable-operation fixture, not completion of the broader
 all-stable-operation Rust/Python/Node/WASM manifest.
 
+## Issue #460 — shared typed RXN document contract slice
+
+The versioned cross-binding manifest now also owns the minimal authored
+reaction-document fixture. Rust `ReactionDocument::from_json_str`, Python's
+`to_rxn_document_json`/`from_rxn_document_json`, and Node/WASM's
+`rxn_document_to_rxn`/`rxn_document_from_rxn` all consume the same document and
+assert the same ordered reactant/product roles and SMILES after the V2000
+round-trip.
+
+Evidence:
+
+- `cargo test -p chematic-rxn --test cross_binding_contract --offline` — 1
+  passed.
+- `node crates/chematic-wasm/tests/rxn_document_contract.test.mjs` — passed.
+- Python contract test source and manifest syntax compile.
+
+This strengthens the binding contract but does not close #460: full upstream
+rich RXN dialect coverage, multi-step preservation, and broader loss fixtures
+remain open.
+
 ## Issue #185 — UFF soundness observability
 
 The existing fail-closed `sound` result is now accompanied by
