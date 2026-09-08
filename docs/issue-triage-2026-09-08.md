@@ -69,6 +69,14 @@ preserving the metadata schema. This is local portability evidence only;
 hosted +5%, +10%, and contamination calibration remains required before #70
 can close.
 
+The same local contract was re-run on 2026-09-08 after the schema-v2 artifact
+and environment fields were checked in: both ABBA and BAAB fixtures emitted
+`measurement_unit=criterion_process_point_estimate`, timestamps, execution
+order, load average, CPU model, and `/proc/stat` steal-tick fields, and the
+synthetic routing/incident fixtures returned the expected route or no-route
+decisions. This confirms the local shell contract, not the hosted sensitivity
+calibration or required-adjacent trust gate.
+
 ## Issue #337 — typed symmetrized-ring cap outcome
 
 The bounded symmetrized-SSSR path now exposes
