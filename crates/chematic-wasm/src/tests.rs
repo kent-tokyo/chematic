@@ -1751,6 +1751,32 @@ fn sdf_to_records_json_parses_properties() {
 }
 
 #[test]
+fn sdf_records_batch_json_is_ordered_and_resumable() {
+    let sdf = concat!(
+        "first\n  chematic\n\n",
+        "  1  0  0  0  0  0  0  0  0  0  0 V2000\n",
+        "    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n",
+        "M  END\n$$$$\n",
+        "second\n  chematic\n\n",
+        "  1  0  0  0  0  0  0  0  0  0  0 V2000\n",
+        "    0.0000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n",
+        "M  END\n$$$$\n",
+    );
+    let first: serde_json::Value =
+        serde_json::from_str(&sdf_records_batch_json(sdf, 0, 1).unwrap()).unwrap();
+    assert_eq!(first["status"], "partial");
+    assert_eq!(first["next_offset"], 1);
+    assert_eq!(first["records"][0]["input_index"], 0);
+    assert_eq!(first["records"][0]["record"]["smiles"], "C");
+
+    let second: serde_json::Value =
+        serde_json::from_str(&sdf_records_batch_json(sdf, 1, 1).unwrap()).unwrap();
+    assert_eq!(second["status"], "complete");
+    assert_eq!(second["records"][0]["input_index"], 1);
+    assert_eq!(second["records"][0]["record"]["smiles"], "N");
+}
+
+#[test]
 fn sdf_to_records_json_escapes_special_chars() {
     let sdf = concat!(
         "mol\n",

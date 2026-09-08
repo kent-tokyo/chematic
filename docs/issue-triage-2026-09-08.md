@@ -473,9 +473,20 @@ Evidence from the current checkout:
 - Python regression coverage added for SDF batch cancellation, XYZ ordering
   and batch boundaries, and Extended XYZ metadata plus cancellation.
 
-This is a local Python parity slice only. WASM/browser streaming bindings,
-shared cross-language fixture execution, and recovery after a malformed frame
-remain open gates.
+This is a local Python parity slice. The WASM binding now adds a bounded,
+resumable SDF manifest API, `sdf_records_batch_json`, with deterministic input
+indices, partial/complete status, and an explicit stop-before-next-offset
+cancellation boundary. WASM/browser artifact execution, shared cross-language
+fixture execution, and recovery after a malformed frame remain open gates.
+
+Evidence:
+
+- `cargo test -p chematic-wasm --offline` — 309 passed, including ordered
+  two-batch SDF resume coverage.
+- `wasm-pack build crates/chematic-wasm --target nodejs --out-dir pkg-node
+  --release` reached the Rust release build but could not regenerate the
+  Node artifact because the local wasm-bindgen CLI/download fallback was
+  unavailable; no stale artifact result is claimed.
 
 ## P1 same-input Extended XYZ cross-engine contract — completed local slice
 

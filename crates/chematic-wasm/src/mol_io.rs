@@ -262,6 +262,80 @@ pub fn sdf_to_records_json(sdf: &str) -> String {
     format!("[{}]", entries.join(","))
 }
 
+/// Return one deterministic, resumable SDF batch as a JSON manifest.
+///
+/// `offset` is the zero-based input record to start at and `batch_size` is
+/// bounded by [`crate::WASM_MAX_BATCH_ITEMS`]. Invalid records stay inline as
+/// `status: "rejected"`; callers can stop requesting later batches to cancel
+/// work without a background queue or hidden buffering.
+#[wasm_bindgen]
+pub fn sdf_records_batch_json(
+    sdf: &str,
+    offset: usize,
+    batch_size: usize,
+) -> Result<String, JsValue> {
+    if sdf.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str(&format!(
+            "SDF input too large ({} > {WASM_MAX_INPUT_BYTES} bytes)",
+            sdf.len()
+        )));
+    }
+    if batch_size == 0 || batch_size > WASM_MAX_BATCH_ITEMS {
+        return Err(JsValue::from_str(&format!(
+            "SDF batch size must be between 1 and {WASM_MAX_BATCH_ITEMS}"
+        )));
+    }
+    let mut records = Vec::with_capacity(batch_size);
+    let mut has_more = false;
+    for (input_index, result) in chematic_mol::SdfRecordReader::new(sdf).enumerate() {
+        if input_index < offset {
+            continue;
+        }
+        if records.len() == batch_size {
+            has_more = true;
+            break;
+        }
+        let value = match result {
+            Ok(rec) => {
+                let properties = rec
+                    .properties
+                    .into_iter()
+                    .map(|(key, value)| (key, serde_json::Value::String(value)))
+                    .collect::<serde_json::Map<_, _>>();
+                serde_json::json!({
+                    "input_index": input_index,
+                    "status": "accepted",
+                    "record": {
+                        "smiles": chematic_smiles::canonical_smiles(&rec.mol),
+                        "name": rec.meta.name,
+                        "properties": properties,
+                        "stereo_diagnostics": serde_json::from_str::<serde_json::Value>(
+                            &stereo_diagnostics_json(&rec.stereo_diagnostics)
+                        ).unwrap_or_else(|_| serde_json::Value::Array(Vec::new())),
+                    },
+                })
+            }
+            Err(_) => serde_json::json!({
+                "input_index": input_index,
+                "status": "rejected",
+                "record": serde_json::Value::Null,
+            }),
+        };
+        records.push(value);
+    }
+    let next_offset = offset.saturating_add(records.len());
+    let manifest = serde_json::json!({
+        "schema_version": 1,
+        "operation": "sdf_records_batch",
+        "status": if has_more { "partial" } else { "complete" },
+        "offset": offset,
+        "next_offset": next_offset,
+        "record_count": records.len(),
+        "records": records,
+    });
+    bounded_json_string(&manifest)
+}
+
 /// Serialise a JSON array of SMILES to an SDF string.
 ///
 /// Generates 2D coordinates for each molecule.  Property data can be
