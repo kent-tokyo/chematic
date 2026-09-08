@@ -567,7 +567,11 @@ Evidence:
 - `node scripts/explorer_browser_smoke.mjs chromium` — passed.
 - `.github/workflows/browser-compat.yml` now runs the same smoke for the
   existing Chromium, Firefox, and WebKit matrix entries.
+- A local HTTP in-app browser replay also verified the exact empty-paste error
+  (`No SMILES found in the pasted text.`) and recovery to `1 molecule loaded.`;
+  the direct Playwright script invocation remains dependency-gated locally.
 
 This closes only the local Explorer cancellation/malformed-record/display-limit
-slice. It does not claim local Firefox/WebKit execution, full error-envelope
-coverage, or completion of the broader agent adversarial matrix.
+and stable empty-paste recovery slice. It does not claim local Firefox/WebKit
+execution, full error-envelope coverage, or completion of the broader agent
+adversarial matrix.

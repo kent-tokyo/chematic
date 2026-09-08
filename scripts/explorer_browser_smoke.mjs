@@ -30,6 +30,16 @@ try {
   assert.equal(await page.locator("#explorer-result-count").innerText(), "3 of 3 shown");
   assert.equal(await error.isVisible(), false);
 
+  await input.fill("   \n\t");
+  await page.locator("#explorer-btn-parse-paste").click();
+  await error.waitFor({ state: "visible" });
+  assert.equal(await error.innerText(), "No SMILES found in the pasted text.");
+
+  await input.fill("CCO");
+  await page.locator("#explorer-btn-parse-paste").click();
+  await status.waitFor({ hasText: /1 loaded, 0 failed/ });
+  assert.equal(await error.isVisible(), false);
+
       const largeInput = Array.from({ length: 2001 }, () => "CCO").join("\n");
       await input.fill(largeInput);
       await page.locator("#explorer-btn-parse-paste").click();
