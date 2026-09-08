@@ -133,6 +133,8 @@ Document edits also reject empty or non-element replacement/insertion
 payloads before mutating the source representation.
 Attribute-edit commands now validate attribute names before serialization, so
 quotes, whitespace, and markup characters cannot create malformed XML.
+Edits preserve the source's CRLF/LF convention and whether the source ended
+with a newline, avoiding unrelated representation churn.
 
 This is a resource-safety slice only. Full ChemDraw presentation semantics,
 including every style, geometry, grouping, and annotation dialect, remain
@@ -140,7 +142,7 @@ outside the current adapter contract.
 
 Evidence:
 
-- `cargo test -p chematic-mol cdxml_document --offline` — 8 passed.
+- `cargo test -p chematic-mol cdxml_document --offline` — 9 passed.
 - `git diff --check` — passed.
 
 ## Issue #337 — typed symmetrized-ring cap outcome

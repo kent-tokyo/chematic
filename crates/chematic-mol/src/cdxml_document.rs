@@ -274,7 +274,7 @@ impl CdxmlDocument {
                 *sibling_counts.last_mut().unwrap_or(&mut 0) += 1;
                 if object_path == *path {
                     lines[i] = raw_xml.clone();
-                    return Self::parse(&format!("{}\n", lines.join("\n")));
+                    return self.parse_edited_lines(lines);
                 }
                 if !trimmed.ends_with("/>") {
                     open_paths.push(object_path);
@@ -311,7 +311,7 @@ impl CdxmlDocument {
                         && seen_objects == *target
                     {
                         lines.remove(i);
-                        return Self::parse(&format!("{}\n", lines.join("\n")));
+                        return self.parse_edited_lines(lines);
                     }
                     seen_objects += 1;
                 } else if in_target && trimmed.starts_with("</page") {
@@ -323,7 +323,7 @@ impl CdxmlDocument {
                         && seen_objects == *target
                     {
                         lines.insert(i, raw_xml.clone());
-                        return Self::parse(&format!("{}\n", lines.join("\n")));
+                        return self.parse_edited_lines(lines);
                     }
                     current_page += 1;
                     in_target = false;
@@ -392,7 +392,20 @@ impl CdxmlDocument {
                 page_index += 1;
             }
         }
-        Self::parse(&format!("{}\n", lines.join("\n")))
+        self.parse_edited_lines(lines)
+    }
+
+    fn parse_edited_lines(&self, lines: Vec<String>) -> Result<Self, CdxmlError> {
+        let separator = if self.raw_xml.contains("\r\n") {
+            "\r\n"
+        } else {
+            "\n"
+        };
+        let mut edited = lines.join(separator);
+        if self.raw_xml.ends_with(['\n', '\r']) {
+            edited.push_str(separator);
+        }
+        Self::parse(&edited)
     }
 
     /// A JSON-safe structural summary for editor and binding layers.
@@ -627,6 +640,22 @@ mod tests {
             })
             .unwrap_err();
         assert!(matches!(error, CdxmlError::InvalidCoords(_)));
+    }
+
+    #[test]
+    fn edits_preserve_line_ending_and_trailing_newline_style() {
+        let input = "<CDXML>\r\n<page id=\"p1\">\r\n<arrow id=\"a1\"/>\r\n</page>\r\n</CDXML>";
+        let doc = CdxmlDocument::parse(input).unwrap();
+        let edited = doc
+            .apply(&CdxmlEdit::SetPageAttribute {
+                page_id: "p1".into(),
+                key: "title".into(),
+                value: "Page 1".into(),
+            })
+            .unwrap();
+        assert!(edited.write().contains("\r\n"));
+        assert!(!edited.write().replace("\r\n", "").contains('\n'));
+        assert!(!edited.write().ends_with('\n'));
     }
 
     #[test]
