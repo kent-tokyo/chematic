@@ -506,6 +506,7 @@ name = "chematic-smiles"
 version = "1.0.9"
 dependencies = [
  "chematic-core",
+ "chematic-fp",
  "chematic-perception",
  "criterion",
  "serde_json",

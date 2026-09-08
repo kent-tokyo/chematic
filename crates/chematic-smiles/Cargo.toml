@@ -40,6 +40,7 @@ canonical-search-instrumentation = []
 [dev-dependencies]
 criterion = { version = "0.8", features = ["html_reports"] }
 serde_json = "1.0"
+chematic-fp = { path = "../chematic-fp", version = "1.0.9" }
 
 [[bench]]
 name = "parse_bench"

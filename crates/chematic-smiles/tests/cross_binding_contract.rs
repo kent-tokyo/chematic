@@ -65,3 +65,26 @@ fn shared_batch_canonicalization_contract_matches() {
         }
     }
 }
+
+#[test]
+fn shared_rdkit_rdk_fingerprint_contract_matches() {
+    let document: Value = serde_json::from_str(FIXTURE).expect("fixture JSON must parse");
+    let operation = &document["fingerprint_contract"]["operations"]["rdkit_rdk"];
+    assert_eq!(operation["bits"], 2048);
+    assert_eq!(operation["bytes"], 256);
+    for fixture in document["fingerprint_contract"]["rdkit_rdk_fixtures"]
+        .as_array()
+        .expect("RDK fixtures")
+    {
+        let molecule = chematic_smiles::parse(fixture["smiles"].as_str().unwrap()).unwrap();
+        let fp = chematic_fp::rdkit_rdk_fp(&molecule);
+        let expected: Vec<usize> = fixture["rdkit_rdk_bits"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|bit| bit.as_u64().unwrap() as usize)
+            .collect();
+        let actual: Vec<usize> = (0..2048).filter(|&bit| fp.get(bit)).collect();
+        assert_eq!(actual, expected, "RDK fingerprint mismatch for {}", fixture["id"]);
+    }
+}

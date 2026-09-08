@@ -20,6 +20,7 @@ assert.equal(fixture.descriptor_contract.fields.tpsa.unit, "A2");
 assert.equal(fixture.fingerprint_contract.schema_version, 1);
 assert.equal(fixture.fingerprint_contract.operations.ecfp4.bytes, 256);
 assert.equal(fixture.fingerprint_contract.operations.maccs.bytes, 21);
+assert.equal(fixture.fingerprint_contract.operations.rdkit_rdk.bytes, 256);
 assert.equal(fixture.fingerprint_detail_contract.schema_version, 1);
 assert.equal(
   fixture.fingerprint_detail_contract.operations.rdkit_ecfp4_detail.configuration.radius,
@@ -156,6 +157,18 @@ for (const expected of fixture.fingerprint_contract.fixtures) {
   assert.equal(Buffer.from(maccs).toString("hex"), expected.maccs_hex, `${expected.id} MACCS bytes`);
   assert.ok(ecfp4.some((byte) => byte !== 0), `${expected.id} ECFP4 non-empty`);
   assert.ok(maccs.some((byte) => byte !== 0), `${expected.id} MACCS non-empty`);
+  mol.free();
+}
+
+for (const expected of fixture.fingerprint_contract.rdkit_rdk_fixtures) {
+  const mol = wasm.parse_smiles(expected.smiles);
+  const actual = wasm.rdkit_rdk_bitvec(mol);
+  assert.equal(actual.length, 256, `${expected.id} RDKit RDK shape`);
+  assert.deepEqual(
+    Array.from({ length: 2048 }, (_, bit) => (actual[bit >> 3] >> (bit & 7)) & 1 ? bit : null).filter((bit) => bit !== null),
+    expected.rdkit_rdk_bits,
+    `${expected.id} RDKit RDK bits`,
+  );
   mol.free();
 }
 

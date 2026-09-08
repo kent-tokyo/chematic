@@ -673,6 +673,13 @@ WASM exposes this separately as `rdkit_torsion_bitvec`. This four-fixture
 binding contract does not change the held-out 5,000-molecule result or its
 known residual boundaries.
 
+The bounded shared contract now also includes the RDKit-compatible
+`rdkit_rdk` path fingerprint. Rust, Python, and Node/WASM verify the exact
+least-significant-bit-first bit positions for the ethanol fixture and the
+declared 2048-bit/256-byte shape. This closes one previously unconnected
+stable binding operation; the broader all-stable-operation manifest remains
+open.
+
 ## P3 shared Extended XYZ fixture — completed local slice
 
 `validation/cross_binding_contract.json` now contains a versioned
