@@ -111,6 +111,8 @@ the actual `$MOL` block count. Missing and extra blocks are surfaced as a
 typed parse error rather than being silently synthesized or discarded.
 Malformed or negative reactant/product counts are likewise rejected instead
 of being coerced to zero.
+The block scanner accepts both LF and CRLF marker lines while only scanning
+the section after the header count.
 
 This is validation hardening only. Full upstream-backed RXN dialect support,
 including any format-specific metadata beyond the current loss-aware V2000
@@ -119,7 +121,7 @@ adapter, remains open.
 Evidence:
 
 - `cargo test -p chematic-rxn document --offline` — 4 passed.
-- `cargo test -p chematic-mol rxn --offline` — 8 passed.
+- `cargo test -p chematic-mol rxn --offline` — 9 passed.
 - `git diff --check` — passed.
 
 ## Issue #461 — CDXML document attribute safety boundary

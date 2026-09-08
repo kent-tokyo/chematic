@@ -263,34 +263,31 @@ pub fn parse_rxn_file_with_limits(
         });
     }
 
-    // Work directly on the remaining text to find "$MOL" blocks.
-    // Find the position of the first "$MOL" in the original text.
-    let first_mol_pos = match text.find("$MOL") {
-        Some(p) => p,
-        None => {
-            if declared_molecules != 0 {
-                return Err(RxnParseError::BlockCountMismatch {
-                    declared: declared_molecules,
-                    actual: 0,
-                });
+    // Extract marker lines from the text after the count line.  Looking at
+    // complete lines handles both LF and CRLF RXN files and avoids treating a
+    // `$MOL` string in the header as a molecule marker.
+    let mut mol_blocks = Vec::new();
+    let mut current_block: Option<String> = None;
+    for line in lines {
+        if line.trim() == "$MOL" {
+            if let Some(block) = current_block.take() {
+                mol_blocks.push(block);
             }
-            return Ok(Reaction {
-                reactants: vec![],
-                agents: vec![],
-                products: vec![],
-            });
+            current_block = Some(String::new());
+        } else if let Some(block) = current_block.as_mut() {
+            block.push_str(line);
+            block.push('\n');
         }
-    };
-    let mol_section = &text[first_mol_pos..];
-
-    // Split on "$MOL\n" to get individual MOL blocks.
-    let mol_blocks = mol_section.split("$MOL\n").skip(1);
+    }
+    if let Some(block) = current_block {
+        mol_blocks.push(block);
+    }
 
     let mut reactants = Vec::with_capacity(n_reactants);
     let mut products = Vec::with_capacity(n_products);
     let mut actual_molecules = 0usize;
 
-    for (i, block) in mol_blocks.enumerate() {
+    for (i, block) in mol_blocks.into_iter().enumerate() {
         actual_molecules = i.saturating_add(1);
         if i >= limits.max_molecules {
             return Err(RxnParseError::ResourceLimit {
@@ -300,7 +297,7 @@ pub fn parse_rxn_file_with_limits(
             });
         }
         // Each block is already a valid MOL V2000 block (3 header lines + data).
-        let (mol, _meta) = parse_mol(block)?;
+        let (mol, _meta) = parse_mol(&block)?;
         if i < n_reactants {
             reactants.push(mol);
         } else if i < declared_molecules {
@@ -387,6 +384,14 @@ mod tests {
         assert_eq!(rxn.products.len(), 1);
         assert_eq!(rxn.reactants[0].atom_count(), 2); // ethane
         assert_eq!(rxn.products[0].atom_count(), 3); // ethanol
+    }
+
+    #[test]
+    fn test_parse_rxn_file_accepts_crlf_markers() {
+        let source = minimal_rxn_block().replace('\n', "\r\n");
+        let rxn = parse_rxn_file(&source).unwrap();
+        assert_eq!(rxn.reactants.len(), 1);
+        assert_eq!(rxn.products.len(), 1);
     }
 
     #[test]
