@@ -138,10 +138,28 @@ fn stereo_sensitive_atoms(mol: &Molecule) -> SmallVec<[bool; 64]> {
     }
     for bidx in 0..mol.bond_count() {
         let bidx = BondIdx(bidx as u32);
-        if matches!(mol.bond(bidx).order, BondOrder::Up | BondOrder::Down)
-            || mol.bond_direction(bidx).is_some()
-        {
-            let bond = mol.bond(bidx);
+        let bond = mol.bond(bidx);
+        if matches!(bond.order, BondOrder::Up | BondOrder::Down) {
+            sensitive[bond.atom1.0 as usize] = true;
+            sensitive[bond.atom2.0 as usize] = true;
+        } else if bond.order == BondOrder::Aromatic && mol.bond_direction(bidx).is_some() {
+            // A direction stashed on an aromatic edge is only a carrier
+            // spelling for an adjacent exocyclic double bond. Pinning the
+            // two aromatic endpoints directly makes the canonical partition
+            // depend on which equivalent ring edge happened to carry the
+            // stash. Pin the structural double-bond endpoint(s) instead;
+            // equivalent stash spellings then expose the same stereo-sensitive
+            // neighborhood while literal directional bonds retain the legacy
+            // endpoint behavior above.
+            for endpoint in [bond.atom1, bond.atom2] {
+                if mol
+                    .neighbors(endpoint)
+                    .any(|(_, nb)| nb != bidx && mol.bond(nb).order == BondOrder::Double)
+                {
+                    sensitive[endpoint.0 as usize] = true;
+                }
+            }
+        } else if mol.bond_direction(bidx).is_some() {
             sensitive[bond.atom1.0 as usize] = true;
             sensitive[bond.atom2.0 as usize] = true;
         }
@@ -783,6 +801,20 @@ mod tests {
         assert_eq!(
             classes[1], classes[2],
             "the two mirror-equivalent C: {classes:?}"
+        );
+    }
+
+    #[test]
+    fn aromatic_stash_sensitivity_follows_exocyclic_double_bond() {
+        let variants = [
+            r"c/3(c(/c(c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+            r"c3(c(c(/c3=N/CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+        ];
+        let first = stereo_sensitive_atoms(&parse(variants[0]).unwrap());
+        let second = stereo_sensitive_atoms(&parse(variants[1]).unwrap());
+        assert_eq!(
+            first, second,
+            "equivalent aromatic carrier spellings must expose the same structural stereo neighborhood"
         );
     }
 

@@ -41,9 +41,12 @@ Completed on the v1.0.9 release candidate tree:
   coloring: a parser-side carrier keeps the physical bond's Aromatic edge class
   instead of becoming a directional edge class. The exhaustive oracle,
   existing stereo checks, and fail-closed stable-key boundary remain green.
-  The three held-out families still produce two valid spellings after this
-  conservative step, so full E/Z convergence remains explicitly open and #503
-  is not marked complete.
+  Canonical partition sensitivity now follows the adjacent structural
+  exocyclic double-bond endpoint rather than the input-selected aromatic edge;
+  equivalent carrier spellings therefore expose the same stereo-sensitive
+  neighborhood. The three held-out families still produce two valid spellings
+  after this bounded step, so full E/Z convergence remains explicitly open.
+  Issue #503 is not marked complete.
 - [x] Add issue #495's versioned, bounded NMR interchange contract. Rust types,
   deterministic validation, opaque vendor metadata preservation, the checked-in
   JSON Schema, and WASM `validate_nmr_spectrum_json` are available. This is an

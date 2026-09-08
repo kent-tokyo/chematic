@@ -24,12 +24,26 @@ claimed.
 | P1 chemical correctness | #337 MMFF94 typing residual | Isothiocyanate/CSP sub-bug is fixed and tested; the remaining 6 pyridinium/macrocycle molecules and 32 atoms are pinned in `validation/manifests/mmff94_issue337_pyridinium_sssr_residual.json`. The all-root probe found 0 candidates missing from the existing D2-root population, so D2 root enumeration is not the cause. The symmetrized-ring path now uses a permutation-invariant candidate-root set, basis-exchange ordering no longer uses raw bond indices, and expansion now fails closed to the complete Horton basis at a 256-extra-ring cap rather than returning a partial family. A new six-fixture regression pins the current macrocycle-count boundary and relabeling stability; the fresh type/aromaticity residual remains unresolved | Independently validate the relevant-cycle / minimum-cycle-basis representative family against the six-molecule oracle; do not claim #337 resolved from the safety cap or tie-break determinism alone |
 | P1 safety | #185, #210 UFF/3D residuals | #210 closed for the five named legacy-coordinate witnesses. #185's bounded slice is implemented: UFF rejects unsound line-search proposals and exposes additive `sound` state through the Rust result, Python binding, and WASM JSON; full UFF torsion/OOP terms remain open | Keep unsupported experimental cases typed and fail-closed; do not equate `converged` with geometrical soundness |
 | P2 performance | #372 canonical Boc/tBu symmetry | Local minimized-equivalent lane and stage counters are now recorded in `validation/results/canonical_issue372_local_2026-09-05.md`; correctness remains green | Obtain the exact RENKIN held-out witness, then compare it against the already-safe exact twin/orbit path; do not claim the preferred 2x target from the local proxy |
+
 | P2 chemistry diagnostics | #303 genotoxic structural diagnostics | First bounded slice is implemented: explainable epoxide, aziridine, and Michael-acceptor findings expose matched atoms, evidence, interpretation, pattern-only confidence, and applicability; no score or biological classifier is produced | Add cited external fixtures and the bifunctional heuristic only after their contracts and licensing are reviewed; keep biological validation and genotoxicity prediction out of scope |
 | P2 layout | #246, #255, #256 | #246 resolved in this checkout: bridged-ring anchoring now scores both regular-polygon sides against all already-placed ring atoms, and uses a deterministic closest-pair fallback when no shared edge exists. #255/#256 remain resolved via the connectivity-ordered 3D engine; fresh 33-molecule evaluation remains raw sound 33/33, deterministic 33/33, and UFF-only success 33/33 | Keep the bridged-ring bond-length regression and the 3D differential harness before future placement changes |
 | P3 scope | #460–#463, #473 | Bounded typed APIs and downstream boundary documentation exist; full rich semantics remain intentionally unsupported | Keep the bounded contract; split any future full RXN/CDXML/polymer/biopolymer work into separate schemas and fixtures |
 | P1 release hygiene | #474 | Versioned release metadata schema, v1.0.8 document, no-dependency validator, and tag-driven GitHub Release attachment are implemented and included in the v1.0.8 release path | Keep registry/artifact measurements explicitly version-pinned; retain the v1.0.8 attached asset as the current release evidence |
 | P3 crystal identity | #477 | Resolved in this checkout: added versioned `PeriodicStructure::identity_bytes()` plus a pure-Rust SHA-256 `identity_digest()` for deterministic exact-identity cache/provenance keys; crystal tests pass | Keep the version byte in the hashed identity bytes; the digest is not symmetry canonicalization or a material-similarity score |
 | P1 ingestion | #478 | Resolved in this checkout: `chematic-smiles::SmilesBatchCanonicalizer` provides lazy iterator and newline-delimited `BufRead` results with reusable parser limits and per-record accepted/rejected diagnostics; `build_identity_index()` uses only `canonical_smiles_stable_key()`, preserves duplicate positions, and fails closed for unstable identities. Shared Rust/Python/Node/WASM fixtures and versioned partial-result envelopes now cover the JSON wrappers | Add optional parallel execution only with equivalent ordering/error fixtures |
+
+## Follow-up evidence — 2026-09-08
+
+The #149/#503 follow-up now treats an aromatic direction stash as a carrier
+spelling, not as the sensitive ring edge itself. `stereo_sensitive_atoms` pins
+the adjacent exocyclic double-bond endpoint for an aromatic stash, and the
+regression `aromatic_stash_sensitivity_follows_exocyclic_double_bond` confirms
+that two equivalent held-out carrier spellings expose the same structural
+stereo neighborhood. The focused held-out tests and the full 221-test
+`chematic-smiles` library suite remain green. This removes one source of
+input-edge-dependent partitioning, but does not select a canonical winner for
+the three residual coupled E/Z families; `canonical_smiles_stable_key()` stays
+fail-closed and both issues remain open.
 
 ## Already present and verified locally
 
