@@ -1760,6 +1760,26 @@ mod tests {
                 canonical_family(&reversed),
                 "{name}: canonical macrocycle family changed under relabeling"
             );
+
+            let expected_family = canonical_family(&mol);
+            for seed in 0..64_u64 {
+                let perm = seeded_permutation(mol.atom_count(), seed ^ 0x337);
+                let permuted = permute_molecule(&mol, &perm);
+                let macrocycle_count = find_symmetrized_sssr(&permuted)
+                    .rings()
+                    .iter()
+                    .filter(|ring| ring.len() >= 20)
+                    .count();
+                assert_eq!(
+                    macrocycle_count, expected_macrocycles,
+                    "{name}: representative count changed under seeded relabeling {seed}"
+                );
+                assert_eq!(
+                    canonical_family(&permuted),
+                    expected_family,
+                    "{name}: canonical family changed under seeded relabeling {seed}"
+                );
+            }
         }
     }
 
@@ -1828,6 +1848,19 @@ mod tests {
             let _ = builder.add_bond(a, b, bond.order);
         }
         builder.build()
+    }
+
+    fn seeded_permutation(len: usize, seed: u64) -> Vec<usize> {
+        let mut permutation: Vec<usize> = (0..len).collect();
+        let mut state = seed.wrapping_add(1);
+        for index in (1..len).rev() {
+            state = state
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1_442_695_040_888_963_407);
+            let swap_index = (state as usize) % (index + 1);
+            permutation.swap(index, swap_index);
+        }
+        permutation
     }
 
     /// find_sssr's ring-size multiset must not depend on atom insertion order.

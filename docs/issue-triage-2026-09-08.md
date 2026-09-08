@@ -145,7 +145,7 @@ Evidence:
 A follow-up removed raw `BondIdx` from the ordering of direct replacement
 candidates and kept it only for exact edge-set identity and GF(2) rank
 calculation. The six-fixture boundary and canonical macrocycle family remain
-stable under the existing relabeling probe. An attempted replacement of edge
+stable across 64 seeded atom relabelings per fixture. An attempted replacement of edge
 identity itself with canonical rank keys was rejected immediately because it
 collapsed distinct symmetric cycles (`chembl_tier_b_0023` changed from four
 to two representatives); that change was reverted. The remaining identity
