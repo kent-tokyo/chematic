@@ -115,6 +115,17 @@ fn shared_fingerprint_fixture_freezes_shape_and_configuration() {
             (166..2048).all(|bit| !maccs.get(bit)),
             "{id} MACCS upper bits"
         );
+        let expected_hex = fixture["maccs_hex"].as_str().unwrap();
+        assert_eq!(expected_hex.len(), 42, "{id} MACCS hex length");
+        for bit in 0..166 {
+            let byte = u8::from_str_radix(&expected_hex[2 * (bit / 8)..2 * (bit / 8) + 2], 16)
+                .expect("MACCS fixture hex");
+            assert_eq!(
+                maccs.get(bit),
+                (byte & (1 << (bit % 8))) != 0,
+                "{id} MACCS bit {bit}"
+            );
+        }
     }
 }
 

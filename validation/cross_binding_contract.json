@@ -83,7 +83,7 @@
   },
   "fingerprint_contract": {
     "schema_version": 1,
-    "semantics": "Byte arrays are bit-packed with the least-significant bit first; shape and configuration are stable across bindings.",
+    "semantics": "Byte arrays are bit-packed with the least-significant bit first; shape, configuration, and the four-fixture MACCS bytes are stable across bindings.",
     "operations": {
       "ecfp4": {
         "source": "chematic_fp::ecfp",
@@ -105,10 +105,10 @@
       }
     },
     "fixtures": [
-      {"id": "ethanol", "smiles": "CCO"},
-      {"id": "benzene", "smiles": "c1ccccc1"},
-      {"id": "aspirin", "smiles": "CC(=O)Oc1ccccc1C(=O)O"},
-      {"id": "caffeine", "smiles": "Cn1cnc2c1c(=O)n(c(=O)n2C)C"}
+      {"id": "ethanol", "smiles": "CCO", "maccs_hex": "000000000000000000000200001002000004009508"},
+      {"id": "benzene", "smiles": "c1ccccc1", "maccs_hex": "000000000000000000000000000000000000000016"},
+      {"id": "aspirin", "smiles": "CC(=O)Oc1ccccc1C(=O)O", "maccs_hex": "0000000000000000000000010000016480cca2d21e"},
+      {"id": "caffeine", "smiles": "Cn1cnc2c1c(=O)n(c(=O)n2C)C", "maccs_hex": "000000003000000001d414d91323915380f138ea1f"}
     ]
   },
   "fingerprint_detail_contract": {

@@ -108,9 +108,11 @@ def test_python_binding_matches_shared_fixture(fixture):
 def test_python_binding_matches_shared_fingerprint_shape(fixture):
     mol = chematic.from_smiles(fixture["smiles"])
     assert len(mol.ecfp4()) == 256
-    assert len(mol.maccs()) == 21
+    maccs = mol.maccs()
+    assert len(maccs) == 21
+    assert maccs.hex() == fixture["maccs_hex"]
     assert any(mol.ecfp4())
-    assert any(mol.maccs())
+    assert any(maccs)
 
 
 @pytest.mark.parametrize(
