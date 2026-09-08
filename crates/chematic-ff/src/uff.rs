@@ -533,6 +533,12 @@ fn uff_gradient(
 const MAX_SANE_UFF_BOND_LENGTH: f64 = 3.0;
 
 fn worst_uff_bond_length(mol: &Molecule, coords: &[[f64; 3]]) -> f64 {
+    if coords
+        .iter()
+        .any(|point| point.iter().any(|value| !value.is_finite()))
+    {
+        return f64::INFINITY;
+    }
     let dist = |a: [f64; 3], b: [f64; 3]| {
         let d = [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
         (d[0] * d[0] + d[1] * d[1] + d[2] * d[2]).sqrt()
@@ -832,6 +838,10 @@ mod tests {
         let coords: Vec<[f64; 3]> = vec![[0.0, 0.0, 0.0], [f64::NAN, 0.0, 0.0], [2.5, 1.2, 0.0]];
         let result = minimize_uff(&mol, &types, coords, 0);
         assert!(!result.sound, "non-finite coordinates must be unsound");
+        assert!(
+            result.worst_bond_length.is_infinite(),
+            "non-finite geometry must fail closed in the exposed bond metric"
+        );
     }
 
     /// Propane skeleton (C0-C1-C2, heavy atoms only — implicit H fills
