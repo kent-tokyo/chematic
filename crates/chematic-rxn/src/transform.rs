@@ -543,6 +543,41 @@ impl PreparedReaction {
         self.run_reactants_with_diagnostics_impl(reactants, true, limits, Some(rings))
     }
 
+    /// Apply this compiled template with caller-provided rings and return
+    /// diagnostics separately for every normalized atomic-number variant.
+    /// This preserves the same variant identity contract as
+    /// [`Self::run_reactants_with_variant_diagnostics`] while reusing the
+    /// caller's ring perception.
+    pub fn run_reactants_with_rings_and_limits_with_variant_diagnostics(
+        &self,
+        reactants: &[&Molecule],
+        rings: &[&RingSet],
+        limits: &ReactionTransformLimits,
+    ) -> Result<Vec<ReactionVariantDiagnostics>, TransformError> {
+        crate::perf_counters::record_run_reactants_call();
+        let mut reports = Vec::new();
+        if let Some(variants) = &self.variants {
+            for (variant_index, variant) in variants.iter().enumerate() {
+                reports.push(variant_diagnostics(
+                    variant,
+                    variant_index,
+                    reactants,
+                    limits,
+                    Some(rings),
+                )?);
+            }
+        } else {
+            reports.push(variant_diagnostics(
+                self,
+                0,
+                reactants,
+                limits,
+                Some(rings),
+            )?);
+        }
+        Ok(reports)
+    }
+
     /// Apply this compiled template in strict mode with caller-provided ring
     /// perception.
     pub fn run_reactants_strict_with_rings(
@@ -3134,6 +3169,37 @@ mod tests {
         );
         assert_eq!(report.diagnostics.valence_rejected_matches, 0);
         assert_eq!(report.products.len(), report.diagnostics.applied_products);
+    }
+
+    #[test]
+    fn variant_diagnostics_match_ring_aware_application() {
+        let mol = parse("C1CCCCC1").unwrap();
+        let rings = chematic_perception::find_sssr(&mol);
+        let prepared = PreparedReaction::new("[#6:1]>>[#6:1]").unwrap();
+        let reports = prepared
+            .run_reactants_with_rings_and_limits_with_variant_diagnostics(
+                &[&mol],
+                &[&rings],
+                &ReactionTransformLimits::default(),
+            )
+            .unwrap();
+        assert_eq!(reports.len(), 4);
+        assert_eq!(reports[0].variant_index, 0);
+        assert!(reports[0].diagnostics.accepted_matches > 0);
+        assert_eq!(
+            reports
+                .iter()
+                .map(|report| report.diagnostics.applied_products)
+                .sum::<usize>(),
+            prepared
+                .run_reactants_with_rings_and_limits(
+                    &[&mol],
+                    &[&rings],
+                    &ReactionTransformLimits::default(),
+                )
+                .unwrap()
+                .len()
+        );
     }
 
     /// `find_reaction_matches` and `apply_reaction_match` must propagate

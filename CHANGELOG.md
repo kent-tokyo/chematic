@@ -15,6 +15,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   applies them through reusable \`PreparedReaction\` and ring-aware paths, and
   exposes additive per-variant diagnostics, and fails closed for compound
   primitives or expansion blow-ups.
+- The per-variant diagnostics also cover caller-provided ring perception,
+  without changing product enumeration.
 - Added a 5,000-row native ECFP4 byte-parity report across Rust, Python, and
   Node/WASM, with the exact 2,048-bit representation and corpus hash recorded.
 - Added the corresponding native MACCS 166-bit binding-parity report across

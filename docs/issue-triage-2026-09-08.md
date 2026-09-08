@@ -718,11 +718,13 @@ candidate through the existing matcher and valence gate.
 \`PreparedReaction::run_reactants_with_variant_diagnostics\` additionally
 returns the normalized template, stable variant index, and accepted/applied/
 valence-rejected counts for each candidate without changing the aggregate
-report contract.
+report contract. The same per-variant accounting is available through
+`run_reactants_with_rings_and_limits_with_variant_diagnostics` when callers
+reuse precomputed ring perception; product enumeration remains unchanged.
 
 Evidence:
 
-- \`cargo test -p chematic-rxn --lib --offline\` — 206 passed.
+- \`cargo test -p chematic-rxn --lib --offline\` — 208 passed.
 - Regression coverage includes the reported \`[#7:1][C:2](=[O:3])\` identity
   template, map-position preservation after normalization, aromatic/aliphatic
   expansion order, direct PreparedReaction application, per-variant

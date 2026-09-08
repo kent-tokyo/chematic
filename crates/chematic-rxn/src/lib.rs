@@ -9,6 +9,8 @@
 //! - [`run_reactants`]: apply a SMIRKS template to reactant molecules.
 //! - [`PreparedReaction`]: parse/compile a SMIRKS template once for repeated
 //!   application, including optional caller-provided ring perception.
+//!   Variant-level diagnostics are available for both ordinary and
+//!   caller-provided-ring application paths.
 //! - [`find_reaction_matches`]/[`apply_reaction_match`]: enumerate matches and
 //!   apply one of them independently, for callers that need to accept/reject
 //!   individual matches rather than an entire `run_reactants` call.

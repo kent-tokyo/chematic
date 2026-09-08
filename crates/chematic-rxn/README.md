@@ -14,6 +14,8 @@ WASM-compatible, with selected RDKit-oriented behavior.
   atomic-number primitives are expanded deterministically across the same
   reusable application paths. `run_reactants_with_variant_diagnostics` keeps
   per-variant normalized templates and match/application counts available.
+  `run_reactants_with_rings_and_limits_with_variant_diagnostics` provides the
+  same accounting while reusing caller-provided ring perception.
 - **Atom mapping**: track which atoms in reactants map to which atoms in products
 - **Reaction properties**: count reactants, products, and agents
 - **Stereo-selective SMIRKS**: `@`/`@@` in reactant templates filter by absolute configuration using
