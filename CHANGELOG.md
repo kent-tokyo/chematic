@@ -73,6 +73,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   bit fixtures across Rust, Python, and Node/WASM.
 - Extended the shared native fingerprint contract with exact topological-torsion
   bit positions across Rust, Python, and Node/WASM.
+- Added a WASM `rdkit_torsion_bitvec` entry point and exact four-fixture bits
+  for the RDKit-compatible hashed torsion operation.
 
 ## [1.0.9] - 2026-09-07
 

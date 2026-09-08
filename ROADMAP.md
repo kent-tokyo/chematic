@@ -337,9 +337,9 @@ documentation, and required measurement agree.
   is measured by the Rust CLI as well (4,248/5,000 exact bit-set matches,
   84.96%); native `topo_path` remains explicitly `not_measured`, and
   exact ECFP4 bit positions, MACCS bytes, native `topo_path` bit positions, and
-  native torsion bit positions are now checked across Rust, Python, and
-  Node/WASM for four shared fixtures; cross-binding parity for the held-out
-  measured operations remains open. The explicit
+  native torsion and RDKit-compatible torsion bit positions are now checked
+  across Rust, Python, and Node/WASM for four shared fixtures; cross-binding
+  parity for the held-out measured operations remains open. The explicit
   Rust CLI standardization profile is measured against the
   10 committed Phase 1 holdouts (8/10 expected fragment identities, 80%); two
   acetate cases differ after charge neutralization and remain disclosed

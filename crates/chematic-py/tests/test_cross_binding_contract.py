@@ -116,6 +116,9 @@ def test_python_binding_matches_shared_fingerprint_shape(fixture):
     torsion = mol.torsion_fp()
     assert len(torsion) == 256
     assert [i for i in range(2048) if torsion[i // 8] & (1 << (i % 8))] == fixture["torsion_bits"]
+    rdkit_torsion = mol.rdkit_torsion_fp()
+    assert len(rdkit_torsion) == 256
+    assert [i for i in range(2048) if rdkit_torsion[i // 8] & (1 << (i % 8))] == fixture["rdkit_torsion_bits"]
     maccs = mol.maccs()
     assert len(maccs) == 21
     assert maccs.hex() == fixture["maccs_hex"]

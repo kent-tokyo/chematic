@@ -416,6 +416,11 @@ The same exact-fixture contract now covers native topological torsion bits as
 well. The native torsion operation is distinct from the RDKit-compatible
 hashed torsion held-out report, whose 5,000-molecule parity remains open.
 
+The shared fixture also now checks the RDKit-compatible hashed torsion bits;
+WASM exposes this separately as `rdkit_torsion_bitvec`. This four-fixture
+binding contract does not change the held-out 5,000-molecule result or its
+known residual boundaries.
+
 ## P3 shared Extended XYZ fixture — completed local slice
 
 `validation/cross_binding_contract.json` now contains a versioned

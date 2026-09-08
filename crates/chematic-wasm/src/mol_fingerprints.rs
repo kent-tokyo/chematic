@@ -375,6 +375,25 @@ pub fn torsion_bitvec(mol: &MolHandle) -> Vec<u8> {
         .collect()
 }
 
+/// Compute the opt-in RDKit-compatible hashed topological-torsion fingerprint
+/// as a bit-packed byte vector (256 bytes = 2048 bits). This remains separate
+/// from the native `torsion_bitvec` operation and its similarity semantics.
+#[wasm_bindgen]
+pub fn rdkit_torsion_bitvec(mol: &MolHandle) -> Vec<u8> {
+    let fp = chematic_fp::rdkit_torsion_fp(&mol.inner);
+    (0..256usize)
+        .map(|byte_idx| {
+            let mut byte = 0u8;
+            for bit in 0..8usize {
+                if fp.get(byte_idx * 8 + bit) {
+                    byte |= 1 << bit;
+                }
+            }
+            byte
+        })
+        .collect()
+}
+
 /// Tanimoto similarity between `a` and `b` using FCFP6 (radius-3 pharmacophore) fingerprints.
 #[wasm_bindgen]
 pub fn tanimoto_fcfp6(a: &MolHandle, b: &MolHandle) -> f64 {
