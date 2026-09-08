@@ -81,6 +81,15 @@ compared by exact 2,048-bit value and failures by typed status. Evidence is
 recorded in `validation/results/rdkit-torsion-cross-binding-parity-5000-v1.0.9.json`.
 Independent RDKit accuracy remains a separate gate.
 
+## P2 RDKit-compatible ECFP4 sparse-count parity — bounded completion
+
+The raw sparse identifier/count map behind RDKit-compatible ECFP4 was replayed
+on 5,000 shared SMILES through Rust, Python, and Node/WASM. Successful maps
+matched exactly after deterministic numeric-key sorting, and failures remain
+compared by typed status. Evidence is recorded in
+`validation/results/rdkit-ecfp4-sparse-cross-binding-parity-5000-v1.0.9.json`.
+Raw/folded bitInfo provenance remains a separate gate.
+
 ## Issues #149 and #503 — aromatic E/Z stash residual boundary
 
 The current joint carrier resolver and canonical-fidelity partition remain
