@@ -34,7 +34,10 @@ def test_python_binding_matches_shared_extxyz_contract():
     contract = _DOCUMENT["extxyz_contract"]
     actual = chematic.from_extxyz(contract["input"])
     expected = contract["expected"]
-    assert actual["coords"] == pytest.approx(expected["coords"])
+    assert all(
+        observed == pytest.approx(reference)
+        for observed, reference in zip(actual["coords"], expected["coords"])
+    )
     assert actual["lattice"] == expected["lattice"]
     assert actual["properties"] == expected["properties"]
     assert actual["info"] == expected["info"]

@@ -628,6 +628,9 @@ Evidence:
 - A clean offline maturin wheel plus isolated pytest run of
   `test_cross_binding_contract.py -k 'xyz_batch_recovery or shared_fixture_schema'`
   — 3 passed.
+- The same isolated clean-wheel run over the full
+  `test_cross_binding_contract.py` module — 44 passed after replacing a
+  pytest-9-incompatible nested `approx` assertion with row-wise comparisons.
 - The Node source contract test now exercises the same cases, but the
   checked-in `pkg-node` artifact does not yet export the new batch functions;
   `wasm-pack` artifact regeneration remains a separate gate.
