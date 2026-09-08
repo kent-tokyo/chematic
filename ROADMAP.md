@@ -39,6 +39,11 @@ Completed on the v1.0.9 release candidate tree:
   The three held-out families still produce two valid spellings after this
   conservative step, so full E/Z convergence remains explicitly open and #503
   is not marked complete.
+- [x] Add issue #495's versioned, bounded NMR interchange contract. Rust types,
+  deterministic validation, opaque vendor metadata preservation, the checked-in
+  JSON Schema, and WASM `validate_nmr_spectrum_json` are available. This is an
+  interchange/visualization model only; vendor parsing, peak picking,
+  assignment, prediction, and spectral-accuracy claims remain out of scope.
 - [x] Promote issue #486's streaming safety cases into the checked-in
   `validation/streaming_format_safety_cases.json` corpus. The dependency-free
   gate now validates the corpus schema and exact nine-format/four-case shape

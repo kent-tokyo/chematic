@@ -3,6 +3,17 @@
 use crate::{MolHandle, WASM_MAX_ATOMS, WASM_MAX_INPUT_BYTES, json_error};
 use wasm_bindgen::prelude::*;
 
+/// Validate a vendor-neutral NMR spectrum JSON document without parsing a
+/// vendor-specific raw file or predicting peaks.
+#[wasm_bindgen]
+pub fn validate_nmr_spectrum_json(json: &str) -> String {
+    serde_json::to_string(&chematic_chem::validate_nmr_json(
+        json,
+        &chematic_chem::NmrLimits::default(),
+    ))
+    .expect("NMR validation is serializable")
+}
+
 /// Per-atom EState values as a JSON array of f64.
 ///
 /// Indices match `mol.atoms()` order.  Hydrogen atoms get 0.0.

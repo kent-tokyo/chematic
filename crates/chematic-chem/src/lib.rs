@@ -33,6 +33,8 @@ pub mod mlp;
 pub mod mmff94_bci;
 pub mod mmp;
 pub mod named_groups;
+#[cfg(feature = "serde")]
+pub mod nmr;
 pub mod parent;
 pub mod pka;
 pub mod qed;
@@ -70,6 +72,8 @@ pub use descriptors::{
     tpsa, tpsa_per_atom, usrcat, veber_passes,
 };
 pub use iupac_stereo::iupac_name_stereo;
+#[cfg(feature = "serde")]
+pub use nmr::{NmrDiagnostic, NmrLimits, NmrPeak, NmrSpectrum, NmrValidation, validate_nmr_json};
 
 pub use abbreviations::{abbreviations, expand_abbreviation};
 pub use activity_cliff::{ActivityCliff, activity_cliffs};

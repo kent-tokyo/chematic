@@ -16,6 +16,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Normalized parser-side aromatic E/Z direction stashes during canonical orbit
   coloring without changing the physical aromatic bond order. The remaining
   three held-out representation-dependent outputs continue to fail closed.
+- Added a versioned, bounded NMR spectrum interchange contract with finite peak
+  validation, explicit normalization, opaque vendor metadata, stable
+  diagnostics, JSON Schema, and a WASM validation entry point.
 
 ## [1.0.9] - 2026-09-07
 
