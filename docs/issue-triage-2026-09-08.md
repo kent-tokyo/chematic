@@ -189,9 +189,15 @@ spellings receive identical individualized canonical-rank vectors, but their
 carrier bonds. The current molecule graph preserves the stash direction value
 on the aromatic bond, not the source endpoint that anchored that value during
 parsing. A rank-only tie-break therefore cannot recover the lost representation
-context without changing the core stereo carrier model. No such metadata change
-is introduced here because it would require a new parser/writer round-trip
-contract and a broader corruption gate; #149/#503 remain open and fail-closed.
+context without changing the core stereo carrier model; #149/#503 remain open
+and fail-closed.
+
+The next bounded implementation slice now preserves that parser-side source
+endpoint as `Molecule::bond_direction_anchor`, including bond-index and atom-index
+remapping during molecule edits and canonical relabeling. The direction value and
+existing writer behavior are unchanged; this is metadata groundwork only, not a
+claim that the three residual families converge. The focused residual suite and
+core suite remain green after the change.
 
 Evidence:
 

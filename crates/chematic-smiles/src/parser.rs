@@ -287,6 +287,7 @@ impl<'a> Parser<'a> {
                     })?;
             if let Some(dir) = stash {
                 mol.set_bond_direction(new_bond_idx, dir);
+                mol.set_bond_direction_anchor(new_bond_idx, a1);
             }
         }
 
@@ -385,6 +386,7 @@ impl<'a> Parser<'a> {
                                 })?;
                                 if let Some(dir) = stashed_direction {
                                     mol.set_bond_direction(new_bond_idx, dir);
+                                    mol.set_bond_direction_anchor(new_bond_idx, a1);
                                 }
                                 // next_idx is the last stereo entry for `current`.
                                 self.stereo_push(current, StereoEntry::Atom(next_idx));
@@ -532,6 +534,7 @@ impl<'a> Parser<'a> {
                     })?;
             if let Some(dir) = stash {
                 mol.set_bond_direction(new_bond_idx, dir);
+                mol.set_bond_direction_anchor(new_bond_idx, a1);
             }
             // Record the close partner for final PendingRing resolution, keyed
             // by this occurrence's unique slot -- NOT the ring digit, which
@@ -1302,6 +1305,11 @@ mod tests {
         assert!(
             mol.bond_direction(bidx).is_some(),
             "{path_label}: the direction must be stashed on the side channel"
+        );
+        assert_eq!(
+            mol.bond_direction_anchor(bidx),
+            Some(bond.atom1),
+            "{path_label}: the stash anchor must follow the parser-side source endpoint"
         );
     }
 

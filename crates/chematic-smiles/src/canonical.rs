@@ -2176,7 +2176,10 @@ mod tests {
                 .add_bond(a, b, bond.order)
                 .expect("relabeling a valid molecule's own bonds cannot fail");
             if let Some(dir) = mol.bond_direction(bidx) {
-                direction_stash.push((new_bidx, dir));
+                let anchor = mol
+                    .bond_direction_anchor(bidx)
+                    .map(|old| AtomIdx(old_to_new[old.0 as usize]));
+                direction_stash.push((new_bidx, dir, anchor));
             }
         }
         // Tetrahedral chirality (`Atom.chirality`) is meaningless without
@@ -2201,8 +2204,11 @@ mod tests {
             }
         }
         let mut relabeled = builder.build();
-        for (bidx, dir) in direction_stash {
+        for (bidx, dir, anchor) in direction_stash {
             relabeled.set_bond_direction(bidx, dir);
+            if let Some(anchor) = anchor {
+                relabeled.set_bond_direction_anchor(bidx, anchor);
+            }
         }
         relabeled
     }
