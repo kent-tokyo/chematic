@@ -473,6 +473,10 @@ Evidence from the current checkout:
 - `cargo test -p chematic-py --offline --no-run` — passed.
 - `cargo test -p chematic-py --offline` — 2 recovery tests passed for XYZ and
   Extended XYZ continuation after a malformed frame.
+- Clean `maturin build --release --offline` wheel installed into an isolated
+  temporary environment; `tests/test_io.py -k recovers_after_malformed` —
+  2 passed against the freshly built CPython 3.13 extension. The system
+  site-package was not used.
 - Python regression coverage added for SDF batch cancellation, XYZ ordering
   and batch boundaries, and Extended XYZ metadata plus cancellation.
 
