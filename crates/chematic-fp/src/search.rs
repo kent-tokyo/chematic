@@ -73,14 +73,18 @@ fn compute_fp(mol: &Molecule, fp_type: FpType) -> BitVec2048 {
 pub struct PreparedFingerprintIndex {
     fp_type: FpType,
     fingerprints: Vec<BitVec2048>,
+    popcounts: Vec<u32>,
 }
 
 impl PreparedFingerprintIndex {
     /// Build an index by computing one fingerprint for each database molecule.
     pub fn new(db: &[Molecule], fp_type: FpType) -> Self {
+        let fingerprints: Vec<_> = db.iter().map(|mol| compute_fp(mol, fp_type)).collect();
+        let popcounts = fingerprints.iter().map(BitVec2048::popcount).collect();
         Self {
             fp_type,
-            fingerprints: db.iter().map(|mol| compute_fp(mol, fp_type)).collect(),
+            fingerprints,
+            popcounts,
         }
     }
 
@@ -102,12 +106,12 @@ impl PreparedFingerprintIndex {
     /// Search the prepared database with a molecule query.
     pub fn search(&self, query: &Molecule, k: usize) -> Vec<(usize, f64)> {
         let query_fp = compute_fp(query, self.fp_type);
-        nearest_neighbors_from_fp(&query_fp, &self.fingerprints, k)
+        self.search_fp(&query_fp, k)
     }
 
     /// Search the prepared database with an already computed fingerprint.
     pub fn search_fp(&self, query_fp: &BitVec2048, k: usize) -> Vec<(usize, f64)> {
-        nearest_neighbors_from_fp(query_fp, &self.fingerprints, k)
+        nearest_neighbors_from_prepared_fp(query_fp, &self.fingerprints, &self.popcounts, k)
     }
 }
 
@@ -147,16 +151,59 @@ pub fn nearest_neighbors_from_fp(
         return vec![];
     }
 
+    let query_popcount = query_fp.popcount();
     let mut scores: Vec<(usize, f64)> = db_fps
         .iter()
         .enumerate()
-        .map(|(i, fp)| (i, query_fp.tanimoto(fp)))
+        .map(|(i, fp)| {
+            (
+                i,
+                query_fp.tanimoto_with_counts_f64(fp, query_popcount, fp.popcount()),
+            )
+        })
         .filter(|(_, t)| *t > 0.0)
         .collect();
 
-    scores.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-    scores.truncate(k);
+    rank_top_k(&mut scores, k);
     scores
+}
+
+fn nearest_neighbors_from_prepared_fp(
+    query_fp: &BitVec2048,
+    db_fps: &[BitVec2048],
+    db_popcounts: &[u32],
+    k: usize,
+) -> Vec<(usize, f64)> {
+    if k == 0 || db_fps.is_empty() {
+        return vec![];
+    }
+
+    let query_popcount = query_fp.popcount();
+    let mut scores: Vec<(usize, f64)> = db_fps
+        .iter()
+        .zip(db_popcounts.iter().copied())
+        .enumerate()
+        .map(|(i, (fp, popcount))| {
+            (
+                i,
+                query_fp.tanimoto_with_counts_f64(fp, query_popcount, popcount),
+            )
+        })
+        .filter(|(_, t)| *t > 0.0)
+        .collect();
+    rank_top_k(&mut scores, k);
+    scores
+}
+
+/// Keep the exact top-k set while avoiding a full sort of the candidate list.
+/// The final top-k sort preserves the public descending-score ordering. Ties
+/// intentionally retain the existing unstable ordering contract.
+fn rank_top_k(scores: &mut Vec<(usize, f64)>, k: usize) {
+    if scores.len() > k {
+        scores.select_nth_unstable_by(k - 1, |a, b| b.1.partial_cmp(&a.1).unwrap());
+        scores.truncate(k);
+    }
+    scores.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
 }
 
 // ---------------------------------------------------------------------------

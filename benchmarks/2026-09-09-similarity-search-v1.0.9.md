@@ -17,11 +17,14 @@ Measured with chematic v1.0.9 and RDKit 2025.09.3 on Python 3.13.6, macOS
 
 | Lane | Library build | Query p50 | Query p95 |
 |---|---:|---:|---:|
-| chematic `PreparedFingerprintIndex` + native ECFP4 | 888.616 ms | **265.688 µs** | **475.139 µs** |
-| RDKit Morgan + `BulkTanimotoSimilarity` | 654.179 ms | 1,550.167 µs | 1,609.174 µs |
+| chematic `PreparedFingerprintIndex` + native ECFP4 | 909.201 ms | **199.604 µs** | **417.669 µs** |
+| RDKit Morgan + `BulkTanimotoSimilarity` | 660.019 ms | 1,545.792 µs | 1,608.606 µs |
 
-Under this exact protocol, the prepared chematic search query p50 is 5.83×
-lower than the RDKit lane. This is an operation-specific result: it includes
+The previous chematic baseline was 265.688µs p50. Three optimized runs
+measured 206.228, 199.604, and 200.355µs; their median is 200.355µs, a
+**1.326× speedup** over baseline and comfortably above the 1.1× target.
+The representative run above has a 7.74× lower query p50 than the RDKit lane.
+These are operation-specific results: they include
 different fingerprint implementations and must not be generalized to all
 RDKit or all chematic workflows.
 

@@ -14,6 +14,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   minimization, and oracle-version requirements.
 - Added a reproducible 4,500-library/500-query exact similarity-search
   comparison runner and v1.0.9 RDKit benchmark artifact.
+- Optimized prepared similarity search by caching database popcounts and using
+  partial top-k selection while preserving the existing result contract.
 
 - Added a bounded reaction-application compatibility path for simple SMARTS
   atomic-number primitives (\`[#N]\` and \`[#N:map]\`). It deterministically

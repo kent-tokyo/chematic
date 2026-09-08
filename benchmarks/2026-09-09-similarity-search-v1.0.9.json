@@ -24,23 +24,23 @@
   },
   "lanes": {
     "chematic_prepared_ecfp4": {
-      "build_ms": 888.616,
+      "build_ms": 909.201,
       "query": {
-        "p50_us": 265.688,
-        "p95_us": 475.139,
-        "mean_us": 316.541,
-        "min_us": 99.292,
-        "max_us": 4252.833
+        "p50_us": 199.604,
+        "p95_us": 417.669,
+        "mean_us": 249.299,
+        "min_us": 40.292,
+        "max_us": 4172.917
       }
     },
     "rdkit_morgan": {
-      "build_ms": 654.179,
+      "build_ms": 660.019,
       "query": {
-        "p50_us": 1550.167,
-        "p95_us": 1609.174,
-        "mean_us": 1553.686,
-        "min_us": 1412.667,
-        "max_us": 3473.708
+        "p50_us": 1545.792,
+        "p95_us": 1608.606,
+        "mean_us": 1554.667,
+        "min_us": 1438.75,
+        "max_us": 3766.875
       }
     }
   },
@@ -49,6 +49,16 @@
     "p05_recall_of_rdkit_top_k": 0.3,
     "mean_top_k_jaccard": 0.607601,
     "queries": 500
+  },
+  "replicate_query_p50_us": {
+    "chematic_prepared_ecfp4": [206.228, 199.604, 200.355],
+    "rdkit_morgan": [1551.833, 1545.792, 1571.437]
+  },
+  "comparison_to_previous_baseline": {
+    "baseline_p50_us": 265.688,
+    "target_p50_us_at_1_1x": 241.535,
+    "replicate_median_p50_us": 200.355,
+    "replicate_median_speedup_x": 1.326
   },
   "interpretation": "Speed lanes are implementation-specific because native fingerprint definitions differ; overlap is a retrieval-agreement metric, not ground truth."
 }

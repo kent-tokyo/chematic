@@ -119,6 +119,20 @@ impl BitVec2048 {
         if union == 0.0 { 1.0 } else { inter / union }
     }
 
+    /// Tanimoto similarity with precomputed popcounts, preserving the `f64`
+    /// result type of [`Self::tanimoto`].
+    #[inline]
+    pub fn tanimoto_with_counts_f64(
+        &self,
+        other: &Self,
+        self_popcount: u32,
+        other_popcount: u32,
+    ) -> f64 {
+        let inter = self.intersection_popcount(other) as f64;
+        let union = self_popcount as f64 + other_popcount as f64 - inter;
+        if union == 0.0 { 1.0 } else { inter / union }
+    }
+
     /// Tanimoto similarity: `|A & B| / |A | B|`.
     ///
     /// Returns `1.0` when both vectors are all-zero (the empty-set convention).
