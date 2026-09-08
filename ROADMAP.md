@@ -269,7 +269,9 @@ documentation, and required measurement agree.
   file-backed reports now cover SDF, V2000/V3000 MOL, MOL2, XYZ, Extended XYZ,
   CML, CDXML, mmCIF, and PDB with explicit parser/process boundaries. Open
   Babel remains recorded separately because only its CLI boundary is
-  installed, and same-process cross-engine equivalence remains open.
+  installed. Deterministic gzip record/failure contracts now cover SDF, XYZ,
+  and Extended XYZ with compressed/decompressed byte stages explicit; same-
+  process cross-engine equivalence remains open.
 
 ## P2 — Identity and ML primitives
 

@@ -375,6 +375,23 @@ Evidence:
 This does not close equivalent-operation throughput or same-process parity;
 those remain open as required by the P1 completion contract.
 
+## P1 gzip Extended XYZ cross-engine contract — completed local slice
+
+The deterministic gzip contract now accepts Extended XYZ in addition to SDF
+and XYZ. It feeds the same decompressed two-frame fixture to RDKit's XYZ block
+parser while chematic consumes the gzip stream through its file-backed reader.
+The report keeps compressed and decompressed byte stages explicit and checks
+only record/failure accounting.
+
+Evidence:
+
+- `python3 scripts/check_streaming_gzip_contract.py --format extxyz --repeats 20`
+  — 40/0 for chematic and RDKit.
+- Report: `benchmarks/2026-09-08-streaming-gzip-extxyz-contract.md`.
+
+This is a bounded gzip/Extended XYZ slice; equivalent-operation throughput,
+same-process parity, and the broader strict malformed corpus remain open.
+
 ## P3 shared Extended XYZ fixture — completed local slice
 
 `validation/cross_binding_contract.json` now contains a versioned

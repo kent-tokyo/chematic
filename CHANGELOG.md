@@ -63,6 +63,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Added the typed RXN document round-trip to the shared binding contract,
   covering authored component roles and SMILES across Rust, Python, and
   Node/WASM while retaining the legacy V2000 loss boundary.
+- Extended the deterministic gzip streaming record/failure contract to
+  Extended XYZ, keeping compressed Rust input bytes separate from decompressed
+  RDKit frame-parser bytes.
 
 ## [1.0.9] - 2026-09-07
 
