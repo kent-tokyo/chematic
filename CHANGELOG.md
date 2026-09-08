@@ -9,9 +9,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-- Added an Explorer browser smoke contract for malformed pasted records and
-  cancellation, with a Chromium-local run and a CI matrix hook for the
-  existing browser lanes.
+- Added an Explorer browser smoke contract for malformed pasted records,
+  cancellation, and the 2,000-record display cap, with a Chromium-local run
+  and a CI matrix hook for the existing browser lanes.
 - Added a checked `ReactionDocument::from_json_str` boundary and routed the
   Python/WASM RXN-document writers through it, preventing invalid typed
   documents from bypassing component and metadata validation.

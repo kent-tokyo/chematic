@@ -30,15 +30,15 @@ try {
   assert.equal(await page.locator("#explorer-result-count").innerText(), "3 of 3 shown");
   assert.equal(await error.isVisible(), false);
 
-  const largeInput = Array.from({ length: 2000 }, () => "CCO").join("\n");
-  await input.fill(largeInput);
-  await page.locator("#explorer-btn-parse-paste").click();
-  await status.waitFor({ hasText: /Parsing/ });
-  await page.locator("#explorer-cancel").click();
-  await status.waitFor({ hasText: /Cancelled after/ });
-  assert.equal(await page.locator("#explorer-cancel").isVisible(), false);
-  const cancelledCount = Number((await page.locator("#explorer-result-count").innerText()).match(/\d+/)?.[0]);
-  assert.ok(cancelledCount < 2000, `cancel should stop before all records: ${cancelledCount}`);
+      const largeInput = Array.from({ length: 2001 }, () => "CCO").join("\n");
+      await input.fill(largeInput);
+      await page.locator("#explorer-btn-parse-paste").click();
+      await status.waitFor({ hasText: /Showing the first 2000 of 2001 records/ });
+      await page.locator("#explorer-cancel").click();
+      await status.waitFor({ hasText: /Cancelled after/ });
+      assert.equal(await page.locator("#explorer-cancel").isVisible(), false);
+      const cancelledCount = Number((await page.locator("#explorer-result-count").innerText()).match(/\d+/)?.[0]);
+      assert.ok(cancelledCount < 2000, `cancel should stop before the display cap: ${cancelledCount}`);
   assert.deepEqual(errors, []);
 } finally {
   await browser.close();

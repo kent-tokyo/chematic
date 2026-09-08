@@ -459,7 +459,8 @@ Added `scripts/explorer_browser_smoke.mjs` and attached it to the existing
 browser compatibility workflow. The smoke loads the Explorer over HTTP in a
 real headless browser, submits valid and malformed pasted records, checks the
 stable `2 loaded, 1 failed` status and result count, then starts a bounded
-2,000-record parse and verifies that the Cancel action stops before completion
+  2,001-record parse and verifies that the 2,000-record display cap is reported,
+  then the Cancel action stops before the capped workload completes
 without page or console errors.
 
 Evidence:
@@ -468,6 +469,6 @@ Evidence:
 - `.github/workflows/browser-compat.yml` now runs the same smoke for the
   existing Chromium, Firefox, and WebKit matrix entries.
 
-This closes only the local Explorer cancellation/malformed-record slice. It
-does not claim local Firefox/WebKit execution, full limit/error-envelope
+This closes only the local Explorer cancellation/malformed-record/display-limit
+slice. It does not claim local Firefox/WebKit execution, full error-envelope
 coverage, or completion of the broader agent adversarial matrix.
