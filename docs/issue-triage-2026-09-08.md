@@ -120,3 +120,21 @@ calculation or mistake `converged` for geometrical validity.
 This is diagnostic/safety-surface work only. UFF torsion and out-of-plane terms
 remain unimplemented, so the fused-aromatic stationary-point residual and #185
 itself remain open.
+
+## Issue #372 — canonical Boc/tBu symmetry performance
+
+The exact twin/orbit path was re-run with the checked-in Tier A/B harness and
+the canonical-search instrumentation feature. The run had zero old/new
+correctness mismatches, zero search-budget exhaustions, and an 8.48x Tier A
+geometric-mean speedup (Tier B negative control: 2.33x). Across Tier A the
+exhaustive engine visited 6,186 leaves while the orbit-pruned engine wrote 13
+leaves, visited 62 nodes, and performed 46 orbit tests; the repeated multi-Boc
+and multi-pivaloyl fixtures each collapsed to one leaf from 432 exhaustive
+leaves.
+
+This is local proxy evidence only. The exact RENKIN witness and its preferred
+2x acceptance target are external to this checkout, so #372 remains open and
+no downstream throughput claim is made.
+
+Evidence: `cargo run --release -p chematic-smiles --features
+canonical-search-instrumentation --example canonical_orbit_perf`.
