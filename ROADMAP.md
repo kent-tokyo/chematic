@@ -263,8 +263,9 @@ documentation, and required measurement agree.
 - [x] Extend the Python file-backed batch contract to plain XYZ and Extended
   XYZ frames. Both bindings preserve input order and batch boundaries, expose
   cancellation and deterministic progress manifests, and count rejected
-  frames; WASM now has a bounded resumable SDF manifest slice, while
-  browser-artifact parity and richer error-recovery semantics remain open.
+  frames; WASM now has bounded resumable SDF/XYZ/Extended XYZ manifest slices,
+  while browser-artifact parity and richer error-recovery semantics remain
+  open.
 - [ ] Measure only equivalent operations against installed RDKit and Open
   Babel versions on identical inputs; report sdfrust separately. Local
   file-backed reports now cover SDF, V2000/V3000 MOL, MOL2, XYZ, Extended XYZ,

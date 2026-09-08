@@ -23,8 +23,9 @@ npm install @kent-tokyo/chematic
 - Canonical SMILES generation
 - ECFP4/6, AtomPair, Torsion, and path fingerprints with Tanimoto similarity
 - BRICS fragment count
-- SDF/MOL block parsing, including bounded resumable `sdf_records_batch_json`
-  manifests with deterministic input indices and partial/complete status
+- SDF/MOL block parsing, including bounded resumable `sdf_records_batch_json`,
+  `xyz_frames_batch_json`, and `extxyz_frames_batch_json` manifests with
+  deterministic input indices and partial/complete status
 - PDBx/mmCIF, PQR, QCSchema JSON, ORCA input/output, Gaussian Cube, OpenDX,
   and LAMMPS data/dump I/O (JSON-based bindings; see `format_io.rs`)
 - Topological descriptors: Wiener index, Hall-Kier κ, χ connectivity indices, Bertz CT

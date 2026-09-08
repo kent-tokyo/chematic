@@ -2681,6 +2681,45 @@ fn test_extxyz_frame_json_plain_xyz_has_null_lattice_and_empty_properties() {
 }
 
 #[test]
+fn xyz_batch_manifests_are_ordered_and_resumable() {
+    let xyz = "1\nfirst\nC 0 0 0\n1\nsecond\nN 1 0 0\n";
+    let first: serde_json::Value =
+        serde_json::from_str(&xyz_frames_batch_json(xyz, 0, 1).unwrap()).unwrap();
+    assert_eq!(first["format"], "xyz");
+    assert_eq!(first["status"], "partial");
+    assert_eq!(first["records"][0]["input_index"], 0);
+    assert_eq!(
+        first["records"][0]["frame"]["coords"][0],
+        serde_json::json!([0.0, 0.0, 0.0])
+    );
+
+    let second: serde_json::Value =
+        serde_json::from_str(&xyz_frames_batch_json(xyz, 1, 1).unwrap()).unwrap();
+    assert_eq!(second["status"], "complete");
+    assert_eq!(second["records"][0]["input_index"], 1);
+    assert_eq!(
+        second["records"][0]["frame"]["coords"][0],
+        serde_json::json!([1.0, 0.0, 0.0])
+    );
+}
+
+#[test]
+fn extxyz_batch_manifest_preserves_frame_metadata() {
+    let extxyz = concat!(
+        "1\nProperties=species:S:1:pos:R:3:charge:I:1 energy=2\n",
+        "C 0 0 0 0\n",
+        "1\nProperties=species:S:1:pos:R:3:charge:I:1 energy=3\n",
+        "N 1 0 0 -1\n",
+    );
+    let manifest: serde_json::Value =
+        serde_json::from_str(&extxyz_frames_batch_json(extxyz, 0, 2).unwrap()).unwrap();
+    assert_eq!(manifest["format"], "extxyz");
+    assert_eq!(manifest["status"], "complete");
+    assert_eq!(manifest["record_count"], 2);
+    assert_eq!(manifest["records"][1]["frame"]["info"]["energy"], "3");
+}
+
+#[test]
 fn test_mol_from_extxyz_rejects_malformed_input() {
     // mol_from_extxyz/extxyz_frame_json are thin Result<_, JsValue> wrappers
     // around chematic_mol::parse_extxyz -- tested via the underlying fn

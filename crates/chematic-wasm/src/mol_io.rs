@@ -778,6 +778,97 @@ pub fn extxyz_frame_json(text: &str) -> Result<String, JsValue> {
     bounded_json_string(&extxyz_frame_to_json_value(&frame))
 }
 
+fn xyz_frames_batch_manifest<I>(
+    frames: I,
+    format: &'static str,
+    offset: usize,
+    batch_size: usize,
+) -> Result<String, JsValue>
+where
+    I: Iterator<Item = Result<chematic_mol::XyzFrame, chematic_mol::XyzError>>,
+{
+    let mut records = Vec::with_capacity(batch_size);
+    let mut rejected_count = 0usize;
+    let mut has_more = false;
+    for (input_index, result) in frames.enumerate() {
+        if input_index < offset {
+            continue;
+        }
+        if records.len() == batch_size {
+            has_more = true;
+            break;
+        }
+        let value = match result {
+            Ok(frame) if frame.atoms.len() <= WASM_MAX_ATOMS => serde_json::json!({
+                "input_index": input_index,
+                "status": "accepted",
+                "frame": extxyz_frame_to_json_value(&frame),
+            }),
+            Ok(_) | Err(_) => {
+                rejected_count += 1;
+                serde_json::json!({
+                    "input_index": input_index,
+                    "status": "rejected",
+                    "frame": serde_json::Value::Null,
+                })
+            }
+        };
+        records.push(value);
+    }
+    let manifest = serde_json::json!({
+        "schema_version": 1,
+        "operation": "xyz_frames_batch",
+        "format": format,
+        "status": if has_more { "partial" } else { "complete" },
+        "offset": offset,
+        "next_offset": offset.saturating_add(records.len()),
+        "record_count": records.len(),
+        "rejected_count": rejected_count,
+        "records": records,
+    });
+    bounded_json_string(&manifest)
+}
+
+/// Return one deterministic, resumable plain-XYZ batch as a JSON manifest.
+/// Stopping before requesting the next offset is the cancellation boundary.
+#[wasm_bindgen]
+pub fn xyz_frames_batch_json(
+    text: &str,
+    offset: usize,
+    batch_size: usize,
+) -> Result<String, JsValue> {
+    if text.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str("xyz input too large"));
+    }
+    if batch_size == 0 || batch_size > WASM_MAX_BATCH_ITEMS {
+        return Err(JsValue::from_str(&format!(
+            "XYZ batch size must be between 1 and {WASM_MAX_BATCH_ITEMS}"
+        )));
+    }
+    let reader = chematic_mol::XyzFileReader::new(std::io::Cursor::new(text.as_bytes()));
+    xyz_frames_batch_manifest(reader, "xyz", offset, batch_size)
+}
+
+/// Return one deterministic, resumable Extended-XYZ batch as a JSON manifest.
+/// Stopping before requesting the next offset is the cancellation boundary.
+#[wasm_bindgen]
+pub fn extxyz_frames_batch_json(
+    text: &str,
+    offset: usize,
+    batch_size: usize,
+) -> Result<String, JsValue> {
+    if text.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str("extxyz input too large"));
+    }
+    if batch_size == 0 || batch_size > WASM_MAX_BATCH_ITEMS {
+        return Err(JsValue::from_str(&format!(
+            "Extended XYZ batch size must be between 1 and {WASM_MAX_BATCH_ITEMS}"
+        )));
+    }
+    let reader = chematic_mol::ExtxyzFileReader::new(std::io::Cursor::new(text.as_bytes()));
+    xyz_frames_batch_manifest(reader, "extxyz", offset, batch_size)
+}
+
 /// Build the [`chematic_mol::XyzFrame`] for [`to_extxyz_json`] from its raw
 /// string arguments, with a plain `String` error -- kept separate from the
 /// `#[wasm_bindgen]` wrapper (which maps `Err` to `JsValue::from_str` at the
