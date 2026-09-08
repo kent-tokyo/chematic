@@ -32,6 +32,13 @@ claimed.
 | P3 crystal identity | #477 | Resolved in this checkout: added versioned `PeriodicStructure::identity_bytes()` plus a pure-Rust SHA-256 `identity_digest()` for deterministic exact-identity cache/provenance keys; crystal tests pass | Keep the version byte in the hashed identity bytes; the digest is not symmetry canonicalization or a material-similarity score |
 | P1 ingestion | #478 | Resolved in this checkout: `chematic-smiles::SmilesBatchCanonicalizer` provides lazy iterator and newline-delimited `BufRead` results with reusable parser limits and per-record accepted/rejected diagnostics; `build_identity_index()` uses only `canonical_smiles_stable_key()`, preserves duplicate positions, and fails closed for unstable identities. Shared Rust/Python/Node/WASM fixtures and versioned partial-result envelopes now cover the JSON wrappers | Add optional parallel execution only with equivalent ordering/error fixtures |
 
+The #337 opt-in symmetrized-ring path now rechecks GF(2) basis independence
+for direct replacements as well as ordinary accepted candidates. The complete
+`chematic-perception` (204 passed, 1 ignored) and `chematic-ff` (202 passed)
+library suites remain green; the six-fixture macrocycle counts remain
+`[2, 4, 4, 4, 4, 2]`. This closes a safety gap in candidate admission but not
+the remaining relevant-cycle representative selection or MMFF94 parity gate.
+
 ## Follow-up evidence — 2026-09-08
 
 The #149/#503 follow-up now treats an aromatic direction stash as a carrier

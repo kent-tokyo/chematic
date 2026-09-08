@@ -618,6 +618,28 @@ pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
     let mut rings = base.rings().to_vec();
     let mut cap_exhausted = false;
     let d2_roots = select_permutation_invariant_d2_roots(mol);
+    let preserves_basis_independence = |candidate: &FxHashSet<BondIdx>| {
+        base_bonds
+            .iter()
+            .enumerate()
+            .any(|(replace_idx, base_ring)| {
+                if base_ring.len() != candidate.len() {
+                    return false;
+                }
+                let rows = base_bonds
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, ring)| {
+                        if idx == replace_idx {
+                            bond_set_key(candidate)
+                        } else {
+                            bond_set_key(ring)
+                        }
+                    })
+                    .collect::<Vec<_>>();
+                gf2_rank(&rows) == base_bonds.len()
+            })
+    };
 
     let mut accept_candidate = |candidate: Vec<AtomIdx>| {
         if rings.len().saturating_sub(base.ring_count()) >= MAX_SYMMETRIZED_EXTRA_RINGS {
@@ -637,6 +659,7 @@ pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
                 })
         });
         if accepted
+            && preserves_basis_independence(&candidate_bonds)
             && base
                 .rings()
                 .iter()
@@ -725,8 +748,10 @@ pub fn find_symmetrized_sssr(mol: &Molecule) -> RingSet {
         return base;
     }
     for replacement in direct_replacements {
-        let key = bond_set_key(&ring_bond_set(mol, &replacement));
-        if seen.insert(key)
+        let candidate_bonds = ring_bond_set(mol, &replacement);
+        let key = bond_set_key(&candidate_bonds);
+        if preserves_basis_independence(&candidate_bonds)
+            && seen.insert(key)
             && base
                 .rings()
                 .iter()
