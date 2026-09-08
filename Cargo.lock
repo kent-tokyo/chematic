@@ -519,6 +519,7 @@ dependencies = [
  "chematic-3d",
  "chematic-chem",
  "chematic-core",
+ "chematic-crystal",
  "chematic-depict",
  "chematic-ff",
  "chematic-fp",
