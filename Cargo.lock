@@ -339,6 +339,8 @@ dependencies = [
  "chematic-perception",
  "chematic-rxn",
  "chematic-smiles",
+ "serde",
+ "serde_json",
  "svg2pdf",
  "tiny-skia 0.12.0",
 ]

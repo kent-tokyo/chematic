@@ -24,6 +24,14 @@ part of the active comparison program.
 
 Completed on the v1.0.9 release candidate tree:
 
+- [x] Resolve issue #508 with an opt-in, typed SVG publication preflight in
+  `chematic-depict`. The report has stable object paths, deterministic
+  diagnostics for invalid geometry, clipping, label/atom overlap, crossings,
+  degenerate bonds, and resource limits, plus a deterministic input/style
+  fingerprint. Rust and JSON callers share the same implementation, and the
+  WASM binding exposes `preflight_smiles_json` with the existing 1 MiB and
+  10,000-atom input bounds. Font metrics are explicitly conservative and
+  renderer-authoritative; no PDF dependency is added.
 - [x] Promote issue #486's streaming safety cases into the checked-in
   `validation/streaming_format_safety_cases.json` corpus. The dependency-free
   gate now validates the corpus schema and exact nine-format/four-case shape

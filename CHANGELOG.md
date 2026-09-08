@@ -9,7 +9,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No unreleased changes.
+- Added opt-in deterministic SVG publication preflight diagnostics for Rust,
+  JSON, and WASM consumers. The conservative contract reports stable paths for
+  invalid geometry, clipping, overlaps, crossings, degenerate bonds, and
+  resource limits, and includes a reproducible input/style fingerprint.
 
 ## [1.0.9] - 2026-09-07
 

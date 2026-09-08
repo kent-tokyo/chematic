@@ -456,6 +456,43 @@ pub fn depict_data_json(mol: &MolHandle) -> String {
     )
 }
 
+/// Run deterministic SVG publication preflight for a SMILES string.
+///
+/// Returns a JSON `PreflightReport` with stable diagnostic paths and a
+/// deterministic input fingerprint. Font metrics are conservative estimates;
+/// the final browser/renderer remains authoritative for pixel-level validation.
+/// The input is capped at the same 1 MiB/10,000-atom limits as other WASM APIs.
+#[wasm_bindgen]
+pub fn preflight_smiles_json(smiles: &str, width: u32, height: u32) -> String {
+    if smiles.len() > WASM_MAX_INPUT_BYTES {
+        return r#"{"error":"input exceeds maximum size"}"#.to_string();
+    }
+    let mol = match chematic_smiles::parse(smiles) {
+        Ok(mol) => mol,
+        Err(error) => {
+            return format!(
+                r#"{{"error":"{}"}}"#,
+                escape_json_string(&error.to_string())
+            );
+        }
+    };
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return format!(r#"{{"error":"molecule exceeds maximum atom count ({WASM_MAX_ATOMS})"}}"#);
+    }
+    let layout = chematic_depict::compute_layout(&mol);
+    let opts = chematic_depict::RenderOptions {
+        width: Some(width),
+        height: Some(height),
+        ..Default::default()
+    };
+    chematic_depict::preflight_svg_json(
+        &mol,
+        &layout,
+        &opts,
+        &chematic_depict::PreflightLimits::default(),
+    )
+}
+
 // ---------------------------------------------------------------------------
 // CPK colors
 // ---------------------------------------------------------------------------
