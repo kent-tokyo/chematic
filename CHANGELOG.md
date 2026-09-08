@@ -9,6 +9,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Added a versioned `MoleculeExtension`/`ExtensionRegistry` contract in
+  `chematic-core` and documented contributor corpus provenance, licensing,
+  minimization, and oracle-version requirements.
+
 - Added a bounded reaction-application compatibility path for simple SMARTS
   atomic-number primitives (\`[#N]\` and \`[#N:map]\`). It deterministically
   preserves map text, distinguishes valid aliphatic/aromatic alternatives,

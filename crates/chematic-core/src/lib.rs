@@ -18,6 +18,7 @@ pub mod atom;
 pub mod bond;
 pub mod coords3d;
 pub mod element;
+pub mod extension;
 pub mod kekulization;
 pub mod molecule;
 pub mod stereo_geometry;
@@ -29,6 +30,7 @@ pub use atom::{Atom, Chirality, CipCode, SquarePlanarPermutation};
 pub use bond::{BondEntry, BondOrder};
 pub use coords3d::{Coords3D, Point3};
 pub use element::Element;
+pub use extension::{ExtensionError, ExtensionRegistry, ExtensionValue, MoleculeExtension};
 pub use kekulization::{KekuleError, KekuleResult, apply_kekule, kekulize};
 pub use molecule::{AtomIdx, BondIdx, MolError, Molecule, MoleculeBuilder, STEREO_H_SENTINEL};
 // `StereoConfiguration`/`CanonicalStereoConfiguration`/`canonicalize_configuration`/

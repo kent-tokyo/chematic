@@ -549,9 +549,9 @@ records them.
   migration documents that state unsupported scope explicitly.
 - [x] Record the open-issue triage and distinguish implemented bounded APIs
   from unresolved correctness, safety, performance, and CI work.
-- [ ] Add stable extension points and a contributor corpus policy covering
+- [x] Add stable extension points and a contributor corpus policy covering
   provenance, licensing, minimization, and oracle versioning.
-- [ ] Publish a reproducible compatibility dashboard only after a clean
+- [x] Publish a reproducible compatibility dashboard only after a clean
   checkout can regenerate it.
 
 ## Security and release gates
