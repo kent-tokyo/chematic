@@ -25,6 +25,7 @@
 //! - Deterministic output ordering everywhere (no float-keyed sorts).
 
 pub mod error;
+pub mod fingerprint;
 pub mod lattice;
 pub mod neighbor;
 pub mod periodic;
@@ -35,6 +36,9 @@ pub mod supercell;
 pub mod validation;
 
 pub use error::CrystalError;
+pub use fingerprint::{
+    FingerprintError, FingerprintLimits, GeometryFingerprint, geometry_fingerprint,
+};
 pub use lattice::Lattice;
 pub use neighbor::PeriodicNeighbor;
 pub use periodic::{PeriodicDisplacement, minimum_image};

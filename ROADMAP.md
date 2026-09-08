@@ -24,6 +24,11 @@ part of the active comparison program.
 
 Completed on the v1.0.9 release candidate tree:
 
+- [x] Add issue #509's experimental bounded geometry fingerprint for
+  `chematic-crystal`, including deterministic lattice/site/species/occupancy/
+  fractional-coordinate hashing, provenance/schema fields, missing-structure
+  and resource-limit errors, JSON serialization, and a WASM entry point. It is
+  explicitly not symmetry, polymorph, property, or retrieval equivalence.
 - [x] Resolve issue #508 with an opt-in, typed SVG publication preflight in
   `chematic-depict`. The report has stable object paths, deterministic
   diagnostics for invalid geometry, clipping, label/atom overlap, crossings,

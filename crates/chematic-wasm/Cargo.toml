@@ -36,6 +36,7 @@ chematic-core       = { path = "../chematic-core",       version = "1.0.9" }
 chematic-smiles     = { path = "../chematic-smiles",     version = "1.0.9" }
 chematic-perception = { path = "../chematic-perception", version = "1.0.9" }
 chematic-chem       = { path = "../chematic-chem",       version = "1.0.9", features = ["serde"] }
+chematic-crystal    = { path = "../chematic-crystal",    version = "1.0.9", features = ["serde"] }
 chematic-fp         = { path = "../chematic-fp",         version = "1.0.9" }
 chematic-depict     = { path = "../chematic-depict",     version = "1.0.9", default-features = false, features = [] }
 chematic-rxn        = { path = "../chematic-rxn",        version = "1.0.9" }

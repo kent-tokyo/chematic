@@ -9,6 +9,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Added an experimental, bounded periodic-structure geometry fingerprint with
+  deterministic stored-representation semantics, provenance, JSON Schema, and
+  WASM validation/fingerprint support.
 - Added opt-in deterministic SVG publication preflight diagnostics for Rust,
   JSON, and WASM consumers. The conservative contract reports stable paths for
   invalid geometry, clipping, overlaps, crossings, degenerate bonds, and
