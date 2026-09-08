@@ -161,6 +161,16 @@ retained and the experiment was reverted; a future fix must provide an
 intrinsic stereo color or a traversal proof rather than simply unpinning the
 endpoint.
 
+The latest residual trace adds one implementation boundary: the two divergent
+spellings receive identical individualized canonical-rank vectors, but their
+`resolve_ez_markers` plans attach the aromatic stash to opposite physical
+carrier bonds. The current molecule graph preserves the stash direction value
+on the aromatic bond, not the source endpoint that anchored that value during
+parsing. A rank-only tie-break therefore cannot recover the lost representation
+context without changing the core stereo carrier model. No such metadata change
+is introduced here because it would require a new parser/writer round-trip
+contract and a broader corruption gate; #149/#503 remain open and fail-closed.
+
 Evidence:
 
 - `cargo test -p chematic-smiles --lib --offline` — 221 passed.
