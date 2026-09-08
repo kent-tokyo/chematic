@@ -440,6 +440,8 @@ records them.
 
 - [x] Keep 3D generation and MMFF94 Experimental, with typed failure and
   explicit force-field/fallback provenance.
+- [x] Expose UFF `worst_bond_length` alongside its independent `sound` result
+  in Rust, Python, and WASM; keep `converged` separate from geometry validity.
 - [x] Complete the connectivity-ordered placement slice for issues #255 and
   #256: route `generate_coords` through the validated engine, repair fused-ring
   seams and chain-bridged ring islands, and retain deterministic direct-bond

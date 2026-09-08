@@ -89,3 +89,15 @@ empty, or non-record input.
 This closes the bounded malformed-corpus expansion in #507. Cross-language
 streaming parity, equivalent cross-engine throughput, and broader parser
 semantics remain separate open roadmap gates.
+
+## Issue #185 — UFF soundness observability
+
+The existing fail-closed `sound` result is now accompanied by
+`worst_bond_length` in `UffMinimizeResult`, Python `Mol.minimize_uff()`, and
+WASM `minimize_uff_json()`. The value is computed from the same final geometry
+used by the soundness gate, so callers do not need to duplicate the bond-length
+calculation or mistake `converged` for geometrical validity.
+
+This is diagnostic/safety-surface work only. UFF torsion and out-of-plane terms
+remain unimplemented, so the fused-aromatic stationary-point residual and #185
+itself remain open.

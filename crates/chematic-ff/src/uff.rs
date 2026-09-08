@@ -580,6 +580,10 @@ pub struct UffMinimizeResult {
     /// torsion/out-of-plane-incomplete potential, not slow convergence) had
     /// occurred.
     pub sound: bool,
+    /// Longest covalent bond in the returned geometry (Å). This is the
+    /// measurement behind `sound` and lets bindings explain a rejected
+    /// result without reimplementing the soundness gate.
+    pub worst_bond_length: f64,
     /// True when line search rejected an energy-decreasing proposal because
     /// it would have produced an unsound covalent bond length. Callers can
     /// distinguish this bounded rescue signal from an ordinary high-residual
@@ -636,12 +640,14 @@ where
 
         if rms < 0.01 {
             let sound = is_sound_uff_geometry(mol, &coords);
+            let worst_bond_length = worst_uff_bond_length(mol, &coords);
             return UffMinimizeResult {
                 coords,
                 energy,
                 iterations: iter,
                 converged: true,
                 sound,
+                worst_bond_length,
                 rejected_unsound_step,
             };
         }
@@ -675,12 +681,14 @@ where
             step *= 0.5;
             if step < 1e-8 {
                 let sound = is_sound_uff_geometry(mol, &coords);
+                let worst_bond_length = worst_uff_bond_length(mol, &coords);
                 return UffMinimizeResult {
                     coords,
                     energy,
                     iterations: iter,
                     converged: false,
                     sound,
+                    worst_bond_length,
                     rejected_unsound_step,
                 };
             }
@@ -689,12 +697,14 @@ where
 
     let energy = uff_total_energy(mol, types, &coords);
     let sound = is_sound_uff_geometry(mol, &coords);
+    let worst_bond_length = worst_uff_bond_length(mol, &coords);
     UffMinimizeResult {
         coords,
         energy,
         iterations: max_iter,
         converged: false,
         sound,
+        worst_bond_length,
         rejected_unsound_step,
     }
 }
