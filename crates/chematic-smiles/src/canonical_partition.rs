@@ -100,21 +100,6 @@ fn order_class(order: BondOrder) -> u8 {
     }
 }
 
-/// `true` when `bidx` carries any real-or-potential stereo direction
-/// information: a literal `Up`/`Down` bond order, or a stashed direction
-/// (`Molecule::bond_direction`, used e.g. for a ring bond next to an
-/// exocyclic stereo double bond). Mirrors the raw-direction check
-/// `crate::canonical::CanonicalWriter::raw_input_direction`/`crate::writer::
-/// raw_bond_direction` use, minus the `resolve_ez_markers` carrier-choice
-/// overlay (which depends on fully-resolved ranks, not available yet at
-/// vertex-color-construction time -- irrelevant here since this function
-/// only needs to decide "is this atom stereo-sensitive at all", not which
-/// specific bond ends up carrying the marker).
-fn bond_has_direction_info(mol: &Molecule, bidx: BondIdx) -> bool {
-    matches!(mol.bond(bidx).order, BondOrder::Up | BondOrder::Down)
-        || mol.bond_direction(bidx).is_some()
-}
-
 /// Every atom whose stereo meaning is not handled by this PR's exact
 /// automorphism machinery, so it (and, critically, its direct neighbors)
 /// must never be merged with any other atom -- see `VertexColor::
@@ -153,7 +138,9 @@ fn stereo_sensitive_atoms(mol: &Molecule) -> SmallVec<[bool; 64]> {
     }
     for bidx in 0..mol.bond_count() {
         let bidx = BondIdx(bidx as u32);
-        if bond_has_direction_info(mol, bidx) {
+        if matches!(mol.bond(bidx).order, BondOrder::Up | BondOrder::Down)
+            || mol.bond_direction(bidx).is_some()
+        {
             let bond = mol.bond(bidx);
             sensitive[bond.atom1.0 as usize] = true;
             sensitive[bond.atom2.0 as usize] = true;
@@ -250,7 +237,7 @@ pub(crate) struct CanonicalColoredGraph<'a> {
     vcolor: Vec<VertexColor>,
     /// See `new`/`new_topological`. Also gates `edge_color`: an `Up`/`Down`
     /// bond order is itself an E/Z *direction* marker on what is
-    /// chemically a single bond (`bond_has_direction_info`'s doc comment),
+    /// chemically a single bond (the literal `Up`/`Down` case),
     /// so it is exactly as canonicalization-only as the vertex-side stereo
     /// devices `vertex_color` documents -- omitted here for the same
     /// reason. Caught empirically, not by inspection alone: an earlier
@@ -321,16 +308,21 @@ impl<'a> CanonicalColoredGraph<'a> {
     pub(crate) fn edge_color(&self, from: AtomIdx, bidx: BondIdx) -> EdgeColor {
         let bond = self.mol.bond(bidx);
         let from_is_donor = bond.order == BondOrder::Dative && bond.atom1 == from;
-        // In canonical-fidelity mode, a separately stashed direction is
-        // writer-visible even when the physical bond remains Aromatic or
-        // Single (the parser uses this for an E/Z marker adjacent to an
-        // aromatic atom). Treat it like the corresponding directional edge
-        // during automorphism pruning; otherwise two mappings that differ in
-        // the actual E/Z geometry can be incorrectly considered equivalent.
-        // Topological equivalence deliberately ignores all such stereo
-        // devices and keeps the physical bond order only.
+        // In canonical-fidelity mode, a separately stashed direction on a
+        // physical Single bond remains an edge-level stereo discriminator.
+        // An Aromatic stash is different: it records an E/Z carrier spelling
+        // on a physical aromatic edge, not a directional aromatic bond. Using
+        // it as the edge color makes the orbit partition depend on which
+        // equivalent aromatic edge happened to carry the parser-side stash.
+        // Endpoint/neighbor pins retain the stereo-sensitive neighborhood; the
+        // writer's rank-based resolver chooses the carrier deterministically.
+        // Topological equivalence deliberately ignores all such stereo devices.
         let order = if self.canonical_fidelity {
-            self.mol.bond_direction(bidx).unwrap_or(bond.order)
+            if bond.order == BondOrder::Aromatic {
+                BondOrder::Aromatic
+            } else {
+                self.mol.bond_direction(bidx).unwrap_or(bond.order)
+            }
         } else if matches!(bond.order, BondOrder::Up | BondOrder::Down) {
             BondOrder::Single
         } else {

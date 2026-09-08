@@ -32,6 +32,13 @@ Completed on the v1.0.9 release candidate tree:
   WASM binding exposes `preflight_smiles_json` with the existing 1 MiB and
   10,000-atom input bounds. Font metrics are explicitly conservative and
   renderer-authoritative; no PDF dependency is added.
+- [x] Normalize issue #503's aromatic direction stash in canonical orbit edge
+  coloring: a parser-side carrier keeps the physical bond's Aromatic edge class
+  instead of becoming a directional edge class. The exhaustive oracle,
+  existing stereo checks, and fail-closed stable-key boundary remain green.
+  The three held-out families still produce two valid spellings after this
+  conservative step, so full E/Z convergence remains explicitly open and #503
+  is not marked complete.
 - [x] Promote issue #486's streaming safety cases into the checked-in
   `validation/streaming_format_safety_cases.json` corpus. The dependency-free
   gate now validates the corpus schema and exact nine-format/four-case shape

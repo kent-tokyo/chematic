@@ -13,6 +13,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   JSON, and WASM consumers. The conservative contract reports stable paths for
   invalid geometry, clipping, overlaps, crossings, degenerate bonds, and
   resource limits, and includes a reproducible input/style fingerprint.
+- Normalized parser-side aromatic E/Z direction stashes during canonical orbit
+  coloring without changing the physical aromatic bond order. The remaining
+  three held-out representation-dependent outputs continue to fail closed.
 
 ## [1.0.9] - 2026-09-07
 
