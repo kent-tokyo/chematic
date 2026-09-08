@@ -469,6 +469,21 @@ This is Rust-only runner evidence with the file-backed/materialized boundary
 explicit; it does not close equivalent RDKit/Open Babel throughput or
 same-process parity.
 
+## P1 same-input all-format cross-engine matrix — completed local contract slice
+
+`scripts/check_streaming_cross_engine_matrix.py` now runs the same ten pinned
+fixtures through chematic and the installed comparison lanes. RDKit covers
+SDF, V2000 MOL, XYZ, V3000, and MOL2; Open Babel covers all ten formats,
+including Extended XYZ, CML, CDXML, mmCIF, and PDB. The 20-repetition report
+records fixture SHA-256 digests, tool versions, expected records, and failures:
+every available lane returned the expected count and zero failures.
+
+Evidence: `benchmarks/2026-09-08-streaming-cross-engine-matrix-v1.0.9.json`.
+The report intentionally does not claim throughput parity: chematic uses the
+Rust runner, RDKit uses Python supplier/block APIs, and Open Babel includes a
+fresh CLI process per repetition. Same-process equivalent-operation speed and
+broader malformed cross-engine corpora remain open.
+
 ## P1 cross-language streaming parity — completed local Python slice
 
 The Python binding now exposes `iter_xyz_batched` and `iter_extxyz_batched`,

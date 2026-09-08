@@ -277,7 +277,11 @@ documentation, and required measurement agree.
   boundaries explicit.
   The Rust-only common matrix now records 20 plain/gzip rows across all ten
   runner formats with normalized fixture-relative paths; same-process
-  cross-engine equivalence remains open.
+  cross-engine equivalence remains open. A 20-repetition same-input matrix
+  now records matching record counts and zero failures for all ten formats
+  across chematic and the installed RDKit/Open Babel lanes where available;
+  this is contract evidence only because the parser and process boundaries
+  are not equivalent.
   Deterministic gzip record/failure contracts now cover SDF, XYZ,
   Extended XYZ, V3000, MOL2, CML, CDXML, mmCIF, and PDB with
   compressed/decompressed byte stages explicit; same-
