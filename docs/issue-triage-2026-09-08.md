@@ -122,6 +122,23 @@ Evidence:
 - `cargo test -p chematic-mol rxn --offline` — 8 passed.
 - `git diff --check` — passed.
 
+## Issue #461 — CDXML document attribute safety boundary
+
+The loss-preserving CDXML document adapter now applies its configured
+`max_attribute_bytes` limit consistently to document, page, and object
+attributes. Oversized presentation metadata is rejected with the existing
+typed resource-limit error instead of being parsed without the advertised
+bound.
+
+This is a resource-safety slice only. Full ChemDraw presentation semantics,
+including every style, geometry, grouping, and annotation dialect, remain
+outside the current adapter contract.
+
+Evidence:
+
+- `cargo test -p chematic-mol cdxml_document --offline` — 6 passed.
+- `git diff --check` — passed.
+
 ## Issue #337 — typed symmetrized-ring cap outcome
 
 The bounded symmetrized-SSSR path now exposes

@@ -115,6 +115,7 @@ impl CdxmlDocument {
                     });
                 }
                 let attrs = parse_xml_attrs(line);
+                check_attribute_budget(&attrs, limits)?;
                 let id = attrs.get("id").cloned();
                 current = Some(CdxmlPage {
                     id,
@@ -147,7 +148,9 @@ impl CdxmlDocument {
                             limit: limits.max_bonds.saturating_add(limits.max_atoms),
                         });
                     }
-                    let attrs = parse_xml_attrs(line)
+                    let parsed_attrs = parse_xml_attrs(line);
+                    check_attribute_budget(&parsed_attrs, limits)?;
+                    let attrs = parsed_attrs
                         .into_iter()
                         .map(|(k, v)| (k, Value::String(v)))
                         .collect();
@@ -158,7 +161,9 @@ impl CdxmlDocument {
                     });
                 }
             } else if line.starts_with("<CDXML") {
-                document_attributes = parse_xml_attrs(line)
+                let attrs = parse_xml_attrs(line);
+                check_attribute_budget(&attrs, limits)?;
+                document_attributes = attrs
                     .into_iter()
                     .map(|(k, v)| (k, Value::String(v)))
                     .collect();
@@ -402,6 +407,24 @@ fn xml_escape(value: &str) -> String {
         .replace('>', "&gt;")
 }
 
+fn check_attribute_budget(
+    attributes: &std::collections::HashMap<String, String>,
+    limits: &CdxmlParseLimits,
+) -> Result<(), CdxmlError> {
+    let actual = attributes
+        .iter()
+        .map(|(key, value)| key.len().saturating_add(value.len()))
+        .fold(0usize, usize::saturating_add);
+    if actual > limits.max_attribute_bytes {
+        return Err(CdxmlError::ResourceLimit {
+            resource: "attributes",
+            actual,
+            limit: limits.max_attribute_bytes,
+        });
+    }
+    Ok(())
+}
+
 fn page_id_for(edit: &CdxmlEdit) -> &str {
     match edit {
         CdxmlEdit::SetPageAttribute { page_id, .. }
@@ -450,6 +473,22 @@ mod tests {
             CdxmlDocument::parse_with_limits(input, &limits),
             Err(CdxmlError::ResourceLimit {
                 resource: "pages",
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn rejects_attribute_budget() {
+        let input = "<CDXML root_attr=\"1234567890\">\n<page id=\"p1\" page_attr=\"1234567890\">\n<arrow id=\"a1\" object_attr=\"1234567890\"/>\n</page>\n</CDXML>";
+        let limits = CdxmlParseLimits {
+            max_attribute_bytes: 8,
+            ..Default::default()
+        };
+        assert!(matches!(
+            CdxmlDocument::parse_with_limits(input, &limits),
+            Err(CdxmlError::ResourceLimit {
+                resource: "attributes",
                 ..
             })
         ));
