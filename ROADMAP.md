@@ -437,6 +437,12 @@ records them.
 
 - [x] Keep 3D generation and MMFF94 Experimental, with typed failure and
   explicit force-field/fallback provenance.
+- [x] Complete the connectivity-ordered placement slice for issues #255 and
+  #256: route `generate_coords` through the validated engine, repair fused-ring
+  seams and chain-bridged ring islands, and retain deterministic direct-bond
+  new-island anchoring. The 33-molecule evaluation is raw sound 33/33,
+  deterministic 33/33, and UFF-only success 33/33; this does not close the
+  separate MMFF94/UFF force-field residuals below.
 - [x] Separate long-running 3D and corpus-scale canonical tests into explicit
   ignored lanes and retain their execution manifest.
 - [x] Add crystal composition and materials-format foundations without

@@ -29,6 +29,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   PubChem structure fixtures, epoxide/aziridine/Michael-acceptor checks, and a
   deterministic two-site electrophile heuristic with topological spacer data.
   This remains structural triage only, not a biological predictor or score.
+- Promoted the connectivity-ordered 3D coordinate engine to the default
+  `generate_coords` path, covering fused-ring seam and chain-bridged ring-island
+  layouts with deterministic ring-entry placement.
 
 ## [1.0.9] - 2026-09-07
 

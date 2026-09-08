@@ -26,6 +26,21 @@ the manifest carries provenance rather than a biological ground-truth label.
 - The broader genotoxicity predictor, additional structural categories,
   biological fixtures, and licensing review remain outside this bounded slice.
 
+## Issues #255 and #256 — completed placement slice
+
+`generate_coords` now routes through the connectivity-ordered engine. The
+engine repairs fused-ring seam placement and ring-chain-ring bridges, while
+retaining deterministic new-island direct-bond anchoring. The existing
+33-molecule evaluation records raw soundness 33/33, deterministic output
+33/33, and UFF-only success 33/33.
+
+Evidence from the current checkout:
+
+- `cargo test -p chematic-3d --lib generate_coords_ --offline` — 30 passed.
+- `cargo test -p chematic-3d --lib --offline` — 589 passed, 10 ignored.
+- The remaining experimental MMFF94/UFF force-field residuals are separate
+  from this coordinate-placement slice.
+
 ## Issue #507 — completed
 
 The checked-in `validation/streaming_format_safety_cases.json` corpus now has
