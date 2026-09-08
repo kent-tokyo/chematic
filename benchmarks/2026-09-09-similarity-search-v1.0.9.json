@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.9",
+  "corpus": {
+    "path": "scripts/descriptor_census_corpus.smi",
+    "sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c",
+    "total_rows": 5000,
+    "library_rows": 4500,
+    "query_rows": 500,
+    "split": "library=first rows; queries=following rows"
+  },
+  "configuration": {
+    "fingerprint": "ECFP4/Morgan radius=2, nBits=2048",
+    "k": 10,
+    "warmup_queries": 10,
+    "ordering": "similarity descending, original index ascending on ties"
+  },
+  "environment": {
+    "python": "3.13.6",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "chematic": "1.0.9",
+    "rdkit": "2025.09.3"
+  },
+  "lanes": {
+    "chematic_prepared_ecfp4": {
+      "build_ms": 888.616,
+      "query": {
+        "p50_us": 265.688,
+        "p95_us": 475.139,
+        "mean_us": 316.541,
+        "min_us": 99.292,
+        "max_us": 4252.833
+      }
+    },
+    "rdkit_morgan": {
+      "build_ms": 654.179,
+      "query": {
+        "p50_us": 1550.167,
+        "p95_us": 1609.174,
+        "mean_us": 1553.686,
+        "min_us": 1412.667,
+        "max_us": 3473.708
+      }
+    }
+  },
+  "ranking_overlap": {
+    "mean_recall_of_rdkit_top_k": 0.726,
+    "p05_recall_of_rdkit_top_k": 0.3,
+    "mean_top_k_jaccard": 0.607601,
+    "queries": 500
+  },
+  "interpretation": "Speed lanes are implementation-specific because native fingerprint definitions differ; overlap is a retrieval-agreement metric, not ground truth."
+}

@@ -12,6 +12,7 @@ Periodic performance snapshots. Each file is a date-stamped record of throughput
 | [2026-09-05 descriptor/streaming](2026-09-05-descriptor-streaming.md) | v1.0.6 release source | Shared descriptor provenance and Rust/Python/Node/WASM fixture contract; 4,999-molecule core parity; 2,000-pass SDF/MOL/XYZ streaming evidence |
 | [2026-09-05 prepared index](2026-09-05-prepared-index.md) | v1.0.6 local source | Exact reusable fingerprint index; 7.30x repeated-query speedup on the pinned ten-molecule fixture |
 | [2026-09-05 parallel Tanimoto](2026-09-05-tanimoto-parallel.md) | v1.0.6 local source | Row-wise parallel dense matrix with serial parity; 1.21x on the pinned 256x256 lane |
+| [2026-09-09 similarity search vs RDKit](2026-09-09-similarity-search-v1.0.9.md) | v1.0.9 local source | Same 4,500-library/500-query exact top-k protocol; prepared-search latency and ranking overlap reported separately |
 | [2026-09-05 descriptor topology](2026-09-05-descriptor-topology.md) | v1.0.6 local source | Shared Wiener/Kappa/Chi topology context with scalar parity and lazy single-group fallback |
 | [2026-09-05 distance descriptors](2026-09-05-distance-descriptors.md) | v1.0.6 local source | Shared AutoCorr2D/Moran/Geary distance matrix with exact scalar parity |
 | [2026-09-05 descriptor scaling](2026-09-05-descriptor-scaling.md) | v1.0.6 local source | `descriptors_array` 3/8/all column contract, deterministic digest, and Python-visible allocation record |
