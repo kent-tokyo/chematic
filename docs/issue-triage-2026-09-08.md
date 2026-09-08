@@ -24,6 +24,15 @@ held-out families still retained their two output variants. The experiment was
 therefore reverted: it did not provide a convergence rule, and changing the
 literal-carrier semantics would expand the risk without satisfying #503.
 
+Additional solver tracing distinguishes the remaining failure mode from a
+rank tie: in two of the held-out spellings, every joint carrier assignment is
+rejected because the available non-shared carriers are on the DFS ring
+close-side (and the shared assignment conflicts or is likewise not writable).
+Temporarily allowing close-side candidates did not make the three families
+converge. The close-side safety rule is therefore retained; the next viable
+fix must choose a representation-independent traversal/open-side arrangement
+for shared carrier bonds, with a round-trip geometry gate.
+
 Evidence:
 
 - `cargo test -p chematic-smiles --lib --offline` — 221 passed.
