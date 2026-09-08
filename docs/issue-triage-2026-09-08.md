@@ -16,6 +16,14 @@ This confirms the residual is not an unbounded coupling-graph case. A safe
 fix still needs a representation-independent aromatic carrier/stereo traversal
 rule; no index-based winner was introduced, and both issues remain open.
 
+The follow-up experiment also treated literal `/` and `\\` carrier edges
+adjacent to a double bond as non-discriminating during orbit coloring, while
+pinning the structural alkene endpoint. The focused residual suite (6/6) and
+the `chematic-smiles` library suite (221/221) stayed green, but the three
+held-out families still retained their two output variants. The experiment was
+therefore reverted: it did not provide a convergence rule, and changing the
+literal-carrier semantics would expand the risk without satisfying #503.
+
 Evidence:
 
 - `cargo test -p chematic-smiles --lib --offline` — 221 passed.
