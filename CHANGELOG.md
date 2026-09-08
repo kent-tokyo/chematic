@@ -9,6 +9,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Added a reproducible 5,000-row Rust/Python/Node-WASM descriptor binding
+  parity report. All bindings parsed the same corpus and agreed on MW, TPSA,
+  HBD, HBA, and heavy-atom count; the report explicitly remains separate from
+  the external RDKit accuracy ledger.
 - Added a shared semantic-expansion fixture contract for Markush selection and
   polymer repeat commands, consumed by Rust, Python, and Node/WASM tests with
   exact source-to-expanded atom mappings.

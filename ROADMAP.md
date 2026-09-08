@@ -327,7 +327,11 @@ documentation, and required measurement agree.
   orbit tests, leaves, pruning, timing, and old/new correctness checks; keep
   the exact downstream RENKIN witness as an external held-out gate.
 - [x] Add descriptor field provenance and a shared Rust/Python/Node/WASM core
-  descriptor fixture; run the 4,999-molecule MW/TPSA/HBD/HBA/heavy-atom lane.
+  descriptor fixture; run the 5,000-row MW/TPSA/HBD/HBA/heavy-atom lane.
+- [x] Add a reproducible 5,000-row same-source descriptor binding-parity lane
+  across Rust, Python, and Node/WASM. The committed report records the corpus
+  SHA-256, parse-status counts, and exact agreement for MW/TPSA/HBD/HBA and
+  heavy atoms; this is a binding contract, not an RDKit accuracy claim.
 - [ ] Add held-out parity reports for Morgan/ECFP, MACCS, topological,
   torsion, descriptors, and standardization across Rust/Python/WASM. The
   v1.0.8 coverage ledger is now validated by

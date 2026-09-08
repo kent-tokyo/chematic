@@ -4,6 +4,18 @@ This snapshot records the bounded completion of issue #507. It does not turn
 format-specific safety cases into a throughput, compatibility, or universal
 parser claim.
 
+## P2 descriptor binding parity — bounded completion
+
+The 5,000-row descriptor contract was replayed from the committed SMILES
+corpus across the Rust crate example, the PyO3 extension, and the Node/WASM
+package. All three bindings parsed 5,000/5,000 rows and matched exactly for
+MW, TPSA, HBD, HBA, and heavy-atom count (floating-point tolerance 1e-9).
+The machine-readable evidence is
+`validation/results/descriptor-cross-binding-parity-5000-v1.0.9.json`.
+This closes only the same-source binding agreement slice; the broader held-out
+fingerprint, topology, torsion, and standardization parity reports remain open,
+as does external RDKit accuracy beyond their separately measured reports.
+
 ## Issues #149 and #503 — aromatic E/Z stash residual boundary
 
 The current joint carrier resolver and canonical-fidelity partition remain
