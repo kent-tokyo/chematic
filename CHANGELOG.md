@@ -22,6 +22,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   including singular-record conversion output and version-pinned reports.
 - The same-input runner now records the installed RDKit version alongside the
   Open Babel version in every machine-readable comparison report.
+- Preserved the existing implicit Open Babel SDF comparison when no executable
+  flag is supplied, while keeping new V3000/MOL2 comparisons opt-in.
 - Extended the Explorer browser smoke with the stable empty-paste error and
   recovery path before the cancellation/display-cap workload, and made the
   Cancel assertion wait for its asynchronous hidden transition.

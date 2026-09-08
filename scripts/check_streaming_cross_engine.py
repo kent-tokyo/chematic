@@ -63,6 +63,12 @@ def main() -> int:
     )
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
+    # Preserve the established SDF command contract: before the multi-format
+    # extension, SDF implicitly included the installed Open Babel CLI. New
+    # V3000/MOL2 comparisons remain opt-in so their existing RDKit-only
+    # commands do not silently change boundaries.
+    if args.format == "sdf" and args.openbabel is None:
+        args.openbabel = "obabel"
     if args.repeats <= 0:
         raise SystemExit("--repeats must be positive")
     if args.openbabel and args.format not in ("sdf", "mol", "v3000", "mol2"):
