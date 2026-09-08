@@ -138,6 +138,11 @@ Completed on the v1.0.9 release candidate tree:
   corpus and dependency-free gate now cover eight cases per format (72/72
   negative cases), retaining the explicit typed line-limit boundary for
   lenient CML/CDXML/PDB readers.
+- [x] Complete issue #507's fourth malformed case pair for every runner
+  format. The corpus and dependency-free gate now cover ten cases per format
+  (90/90 negative cases), while the nine oversized and 18 gzip controls remain
+  green; lenient CML/CDXML/PDB inputs continue to use the explicit line-limit
+  safety boundary.
 
 - [x] Close #210's five named legacy-coordinate UFF stereo-rescue residuals.
   Every returned geometry is finite, bond-sane, and independently checked

@@ -22,6 +22,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Added a versioned, bounded NMR spectrum interchange contract with finite peak
   validation, explicit normalization, opaque vendor metadata, stable
   diagnostics, JSON Schema, and a WASM validation entry point.
+- Expanded the streaming malformed-input safety corpus to ten cases for each
+  of the nine runner formats (90/90 negative cases), preserving the separate
+  oversized-input and 18-case gzip controls.
 
 ## [1.0.9] - 2026-09-07
 
