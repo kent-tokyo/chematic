@@ -94,3 +94,35 @@ fn extxyz_binding_contract_matches_shared_fixture() {
         ]
     );
 }
+
+#[test]
+fn semantic_expansion_binding_contract_matches_shared_fixture() {
+    let document: Value = serde_json::from_str(FIXTURE).expect("fixture JSON must parse");
+    let contract = &document["semantic_expansion_contract"];
+    assert_eq!(contract["schema_version"], 1);
+
+    for case in contract["cases"].as_array().unwrap() {
+        let model = chematic_mol::SemanticModel::from_json(&case["model"]).unwrap();
+        let selected = model.apply_json_command(&case["command"]).unwrap();
+        if let Some(expected) = case.get("expected_selected_alternative") {
+            assert_eq!(
+                selected.to_json()["r_groups"][0]["selected_alternative"],
+                *expected
+            );
+        }
+        if let Some(expected) = case.get("expected_repeat_count") {
+            assert_eq!(
+                selected.to_json()["polymer_units"][0]["repeat_count"],
+                *expected
+            );
+        }
+        let base = chematic_smiles::parse(case["base_smiles"].as_str().unwrap()).unwrap();
+        let expanded = selected.expand(&base).unwrap();
+        assert_eq!(
+            expanded.to_json()["source_to_expanded"],
+            case["expected_source_to_expanded"],
+            "{}",
+            case["id"].as_str().unwrap()
+        );
+    }
+}

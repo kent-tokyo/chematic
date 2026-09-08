@@ -413,8 +413,9 @@ records them.
   versioned expected-result manifest for every shared stable operation. The
   standardization profile is now included in the shared contract and the Node
   contract test passes after the documented current-source wasm-pack rebuild.
-  The shared manifest now also covers Extended XYZ parsing and the typed RXN
-  document round-trip across Rust, Python, and Node/WASM; the broader
+  The shared manifest now also covers Extended XYZ parsing, the typed RXN
+  document round-trip, and Markush/polymer semantic expansion across Rust,
+  Python, and Node/WASM; the broader
   all-stable-operation manifest remains open.
 - [x] Extend the shared versioned manifest to cover the core ECFP4/MACCS
   fingerprint shapes and configurations across Rust, Python, and Node/WASM.

@@ -44,6 +44,53 @@
       {"role": "product", "smiles": "CC"}
     ]
   },
+  "semantic_expansion_contract": {
+    "schema_version": 1,
+    "cases": [
+      {
+        "id": "markush-r-group-selection",
+        "base_smiles": "CC",
+        "model": {
+          "schema": "chematic.semantic.v1",
+          "atom_ids": ["a1", "a2"],
+          "bond_ids": [],
+          "r_groups": [{
+            "id": "r1",
+            "attachment_atoms": ["a2"],
+            "alternatives": ["[*]O"],
+            "selected_alternative": null
+          }],
+          "polymer_units": [],
+          "extensions": {}
+        },
+        "command": {"group_id": "r1", "alternative": 0},
+        "expected_selected_alternative": 0,
+        "expected_source_to_expanded": {"a1": [0], "a2": [1], "r1": [2]}
+      },
+      {
+        "id": "polymer-repeat-selection",
+        "base_smiles": "CC",
+        "model": {
+          "schema": "chematic.semantic.v1",
+          "atom_ids": ["a1", "a2"],
+          "bond_ids": [],
+          "r_groups": [],
+          "polymer_units": [{
+            "id": "p1",
+            "attachment_atoms": ["a1", "a2"],
+            "end_groups": [],
+            "repeat_count": null,
+            "repeat_smiles": "[*]CC[*]",
+            "repeat_endpoint_atoms": null
+          }],
+          "extensions": {}
+        },
+        "command": {"unit_id": "p1", "repeat_count": 3},
+        "expected_repeat_count": 3,
+        "expected_source_to_expanded": {"a1": [0], "a2": [1], "p1": [2, 3, 4, 5, 6, 7]}
+      }
+    ]
+  },
   "fixtures": [
     {"id": "ethanol-order-variant", "smiles": "OCC", "canonical_smiles": "C(C)O", "heavy_atoms": 3},
     {"id": "benzene-kekule-context", "smiles": "c1ccccc1", "canonical_smiles": "c1ccccc1", "heavy_atoms": 6},

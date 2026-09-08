@@ -26,6 +26,7 @@ def test_shared_fixture_schema_is_stable():
     assert _DOCUMENT["batch_canonicalization_contract"]["schema_version"] == 1
     assert _DOCUMENT["extxyz_contract"]["schema_version"] == 1
     assert _DOCUMENT["rxn_document_contract"]["schema_version"] == 1
+    assert _DOCUMENT["semantic_expansion_contract"]["schema_version"] == 1
 
 
 def test_python_binding_matches_shared_extxyz_contract():
@@ -174,51 +175,23 @@ def test_python_cdxml_document_edit_preserves_multi_page_presentation():
     assert '<arrow id="a1"/>' in edited
 
 
-def test_python_semantic_markush_contract_expands_with_mapping():
-    model = {
-        "schema": "chematic.semantic.v1",
-        "atom_ids": ["a1", "a2"],
-        "bond_ids": [],
-        "r_groups": [{
-            "id": "r1",
-            "attachment_atoms": ["a2"],
-            "alternatives": ["[*]O"],
-            "selected_alternative": None,
-        }],
-        "polymer_units": [],
-        "extensions": {},
-    }
+@pytest.mark.parametrize(
+    "case",
+    _DOCUMENT["semantic_expansion_contract"]["cases"],
+    ids=lambda item: item["id"],
+)
+def test_python_semantic_expansion_matches_shared_contract(case):
     selected = chematic.semantic_apply_json_command(
-        json.dumps(model), json.dumps({"group_id": "r1", "alternative": 0})
-    )
-    expanded = json.loads(chematic.semantic_expand_json("CC", selected))
-    assert expanded["schema"] == "chematic.semantic-expanded.v1"
-    assert expanded["source_to_expanded"]["r1"] == [2]
-
-
-def test_python_semantic_polymer_repeat_command_preserves_shared_json_contract():
-    model = {
-        "schema": "chematic.semantic.v1",
-        "atom_ids": ["a1", "a2"],
-        "bond_ids": [],
-        "r_groups": [],
-        "polymer_units": [{
-            "id": "p1",
-            "attachment_atoms": ["a1", "a2"],
-            "end_groups": [],
-            "repeat_count": None,
-            "repeat_smiles": "[*]CC[*]",
-            "repeat_endpoint_atoms": None,
-        }],
-        "extensions": {},
-    }
-    selected = chematic.semantic_apply_json_command(
-        json.dumps(model), json.dumps({"unit_id": "p1", "repeat_count": 3})
+        json.dumps(case["model"]), json.dumps(case["command"])
     )
     selected_model = json.loads(selected)
-    assert selected_model["polymer_units"][0]["repeat_count"] == 3
-    expanded = json.loads(chematic.semantic_expand_json("CC", selected))
-    assert expanded["source_to_expanded"]["p1"] == [2, 3, 4, 5, 6, 7]
+    if "expected_selected_alternative" in case:
+        assert selected_model["r_groups"][0]["selected_alternative"] == case["expected_selected_alternative"]
+    if "expected_repeat_count" in case:
+        assert selected_model["polymer_units"][0]["repeat_count"] == case["expected_repeat_count"]
+    expanded = json.loads(chematic.semantic_expand_json(case["base_smiles"], selected))
+    assert expanded["schema"] == "chematic.semantic-expanded.v1"
+    assert expanded["source_to_expanded"] == case["expected_source_to_expanded"]
 
 
 def test_python_rxn_document_contract_is_loss_aware():

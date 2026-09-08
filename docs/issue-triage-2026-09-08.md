@@ -441,6 +441,28 @@ Evidence:
 This is one shared stable-operation fixture, not completion of the broader
 all-stable-operation Rust/Python/Node/WASM manifest.
 
+## P3 shared semantic expansion fixture — completed local slice
+
+`validation/cross_binding_contract.json` now owns the Markush R-group and
+polymer-repeat semantic cases, including the selected command result and the
+complete source-to-expanded atom mapping. Rust `SemanticModel`, the Python
+semantic functions, and the Node/WASM semantic functions consume the same two
+cases.
+
+Evidence:
+
+- `cargo test -p chematic-mol --test cross_binding_adversarial --offline` — 3
+  passed, including both semantic cases.
+- `node crates/chematic-wasm/tests/semantic_expansion_contract.test.mjs` —
+  passed after rebuilding the current-source Node/WASM package.
+- The Python semantic assertions are wired to the same fixture; the focused
+  pytest invocation remains affected by the known pytest/pytest-asyncio
+  collection mismatch in the local environment.
+
+This is a bounded shared-contract slice. It does not close the broader
+all-stable-operation manifest item or the rich Markush/polymer/biomolecule
+Issue #462.
+
 ## Issue #460 — shared typed RXN document contract slice
 
 The versioned cross-binding manifest now also owns the minimal authored

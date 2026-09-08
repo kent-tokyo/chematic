@@ -9,6 +9,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Added a shared semantic-expansion fixture contract for Markush selection and
+  polymer repeat commands, consumed by Rust, Python, and Node/WASM tests with
+  exact source-to-expanded atom mappings.
 - Added an Explorer browser smoke contract for malformed pasted records,
   cancellation, and the 2,000-record display cap, with a Chromium-local run
   and a CI matrix hook for the existing browser lanes.
