@@ -89,6 +89,8 @@ the source unit.
 JSON decoding now uses checked conversions for `u32` repeat counts and
 platform-sized selected-alternative indices, rejecting out-of-range numeric
 values instead of allowing integer truncation.
+Polymer `repeat_endpoint_atoms` now applies the same checked `u32` conversion,
+so oversized endpoint indices are rejected rather than truncated.
 
 This advances only the edit-to-expansion boundary. Nested Markush choices,
 polymer contraction, and the broader typed R-group/polymer/biomolecule API

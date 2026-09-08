@@ -14,6 +14,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   documents from bypassing component and metadata validation.
 - CDXML document parsing now rejects unmatched and nested page elements with
   typed invalid-document errors instead of silently changing page structure.
+- Semantic polymer JSON parsing now rejects repeat endpoint indices outside
+  the `u32` contract instead of truncating them during deserialization.
 - Added an experimental, bounded periodic-structure geometry fingerprint with
   deterministic stored-representation semantics, provenance, JSON Schema, and
   WASM validation/fingerprint support.

@@ -204,18 +204,17 @@ impl SemanticModel {
                                 "repeat_endpoint_atoms must contain two indices".into(),
                             ));
                         }
-                        Ok([
-                            values[0].as_u64().ok_or_else(|| {
-                                SemanticError::InvalidJson(
-                                    "endpoint indices must be integers".into(),
-                                )
-                            })? as u32,
-                            values[1].as_u64().ok_or_else(|| {
-                                SemanticError::InvalidJson(
-                                    "endpoint indices must be integers".into(),
-                                )
-                            })? as u32,
-                        ])
+                        let endpoint = |value: &Value| {
+                            value
+                                .as_u64()
+                                .and_then(|index| u32::try_from(index).ok())
+                                .ok_or_else(|| {
+                                    SemanticError::InvalidJson(
+                                        "endpoint indices must be u32 integers".into(),
+                                    )
+                                })
+                        };
+                        Ok([endpoint(&values[0])?, endpoint(&values[1])?])
                     }?),
                 };
                 Ok(PolymerRepeatUnit {
@@ -892,6 +891,28 @@ mod tests {
             SemanticModel::from_json(&value),
             Err(SemanticError::InvalidJson(message))
                 if message.contains("repeat_count")
+        ));
+    }
+
+    #[test]
+    fn rejects_json_repeat_endpoint_that_exceeds_u32() {
+        let value = serde_json::json!({
+            "schema": "chematic.semantic.v1",
+            "atom_ids": ["a1", "a2"],
+            "bond_ids": [],
+            "r_groups": [],
+            "polymer_units": [{
+                "id": "p1",
+                "attachment_atoms": ["a1", "a2"],
+                "end_groups": [],
+                "repeat_smiles": "CC",
+                "repeat_endpoint_atoms": [4294967296u64, 1]
+            }]
+        });
+        assert!(matches!(
+            SemanticModel::from_json(&value),
+            Err(SemanticError::InvalidJson(message))
+                if message.contains("endpoint indices")
         ));
     }
 
