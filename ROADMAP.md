@@ -427,7 +427,9 @@ records them.
   rejection, batch-count limits, input-size limits, and screening error
   envelopes. The current `1.0.9` web-target artifact is regenerated into
   `demo/pkg` and passes the real-WASM `initSync` smoke (success and typed
-  timeout); browser cancellation and the broader agent matrix remain open.
+  timeout). The Explorer browser smoke now covers malformed pasted records and
+  cancellation locally and is wired into the Chromium/Firefox/WebKit CI
+  matrix; the broader agent matrix and full browser evidence remain open.
 
 ## P4 — Chemistry workflow depth
 

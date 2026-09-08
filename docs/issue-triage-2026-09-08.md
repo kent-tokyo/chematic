@@ -452,3 +452,22 @@ no downstream throughput claim is made.
 
 Evidence: `cargo run --release -p chematic-smiles --features
 canonical-search-instrumentation --example canonical_orbit_perf`.
+
+## P3 Explorer browser adversarial smoke — completed local slice
+
+Added `scripts/explorer_browser_smoke.mjs` and attached it to the existing
+browser compatibility workflow. The smoke loads the Explorer over HTTP in a
+real headless browser, submits valid and malformed pasted records, checks the
+stable `2 loaded, 1 failed` status and result count, then starts a bounded
+2,000-record parse and verifies that the Cancel action stops before completion
+without page or console errors.
+
+Evidence:
+
+- `node scripts/explorer_browser_smoke.mjs chromium` — passed.
+- `.github/workflows/browser-compat.yml` now runs the same smoke for the
+  existing Chromium, Firefox, and WebKit matrix entries.
+
+This closes only the local Explorer cancellation/malformed-record slice. It
+does not claim local Firefox/WebKit execution, full limit/error-envelope
+coverage, or completion of the broader agent adversarial matrix.
