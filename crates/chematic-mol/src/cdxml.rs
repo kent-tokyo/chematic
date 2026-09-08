@@ -87,6 +87,8 @@ pub enum CdxmlError {
     UnknownAtomicNumber(u32),
     /// A bond referenced an atom id that was not defined.
     UnknownAtomRef(String),
+    /// An edit referenced a page ID that occurs more than once.
+    AmbiguousPageId(String),
     /// A `<b>` bond element is missing a `B` or `E` attribute.
     MissingBondEndpoint,
     /// The `p` coordinate attribute could not be parsed.
@@ -106,6 +108,7 @@ impl std::fmt::Display for CdxmlError {
         match self {
             CdxmlError::UnknownAtomicNumber(n) => write!(f, "unknown atomic number: {n}"),
             CdxmlError::UnknownAtomRef(s) => write!(f, "unknown atom ref: {s}"),
+            CdxmlError::AmbiguousPageId(s) => write!(f, "ambiguous page id: {s}"),
             CdxmlError::MissingBondEndpoint => write!(f, "bond missing B or E attribute"),
             CdxmlError::InvalidCoords(s) => write!(f, "invalid p coords: {s}"),
             CdxmlError::TooManyAtoms(n) => write!(f, "CDXML document exceeds atom limit ({n})"),

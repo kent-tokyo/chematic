@@ -229,11 +229,17 @@ impl CdxmlDocument {
             _ => {}
         }
         let page_id = page_id_for(edit);
-        let page = self
+        let matching_pages: Vec<usize> = self
             .pages
             .iter()
-            .position(|p| p.id.as_deref() == Some(page_id))
-            .ok_or_else(|| CdxmlError::UnknownAtomRef("unknown page id".into()))?;
+            .enumerate()
+            .filter_map(|(index, p)| (p.id.as_deref() == Some(page_id)).then_some(index))
+            .collect();
+        let page = match matching_pages.as_slice() {
+            [] => return Err(CdxmlError::UnknownAtomRef("unknown page id".into())),
+            [page] => *page,
+            _ => return Err(CdxmlError::AmbiguousPageId(page_id.to_string())),
+        };
         if let CdxmlEdit::ReplaceObjectPath { path, raw_xml, .. } = edit {
             if path.is_empty() {
                 return Err(CdxmlError::UnknownAtomRef("object path is empty".into()));
@@ -687,6 +693,20 @@ mod tests {
                 ..
             }
         ));
+    }
+
+    #[test]
+    fn edits_reject_ambiguous_page_ids() {
+        let input = "<CDXML>\n<page id=\"p1\">\n<arrow id=\"a1\"/>\n</page>\n<page id=\"p1\">\n<arrow id=\"a2\"/>\n</page>\n</CDXML>";
+        let doc = CdxmlDocument::parse(input).unwrap();
+        let error = doc
+            .apply(&CdxmlEdit::SetPageAttribute {
+                page_id: "p1".into(),
+                key: "title".into(),
+                value: "ambiguous".into(),
+            })
+            .unwrap_err();
+        assert!(matches!(error, CdxmlError::AmbiguousPageId(ref id) if id == "p1"));
     }
 
     #[test]
