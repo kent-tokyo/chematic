@@ -86,6 +86,9 @@ non-expandable until selected, and can then be updated through the shared JSON
 command used by Rust, Python, and WASM. The expansion mapping remains
 deterministic: the three-repeat `[*]CC[*]` fixture maps six generated atoms to
 the source unit.
+JSON decoding now uses checked conversions for `u32` repeat counts and
+platform-sized selected-alternative indices, rejecting out-of-range numeric
+values instead of allowing integer truncation.
 
 This advances only the edit-to-expansion boundary. Nested Markush choices,
 polymer contraction, and the broader typed R-group/polymer/biomolecule API

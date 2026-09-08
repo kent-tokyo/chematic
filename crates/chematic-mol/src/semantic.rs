@@ -144,7 +144,10 @@ impl SemanticModel {
                 let selected_alternative = match group.get("selected_alternative") {
                     None | Some(Value::Null) => None,
                     Some(value) => {
-                        Some(value.as_u64().map(|index| index as usize).ok_or_else(|| {
+                        Some(value
+                            .as_u64()
+                            .and_then(|index| usize::try_from(index).ok())
+                            .ok_or_else(|| {
                             SemanticError::InvalidJson(
                                 "selected_alternative must be an integer or null".into(),
                             )
@@ -174,7 +177,10 @@ impl SemanticModel {
                 let repeat_count = match unit.get("repeat_count") {
                     None | Some(Value::Null) => None,
                     Some(value) => {
-                        Some(value.as_u64().map(|count| count as u32).ok_or_else(|| {
+                        Some(value
+                            .as_u64()
+                            .and_then(|count| u32::try_from(count).ok())
+                            .ok_or_else(|| {
                             SemanticError::InvalidJson(
                                 "repeat_count must be an integer or null".into(),
                             )
@@ -865,6 +871,28 @@ mod tests {
         let expanded = selected.expand(&base).unwrap();
         assert_eq!(expanded.molecule.atom_count(), 8);
         assert_eq!(expanded.source_to_expanded["p1"].len(), 6);
+    }
+
+    #[test]
+    fn rejects_json_repeat_count_that_exceeds_u32() {
+        let value = serde_json::json!({
+            "schema": "chematic.semantic.v1",
+            "atom_ids": ["a1", "a2"],
+            "bond_ids": [],
+            "r_groups": [],
+            "polymer_units": [{
+                "id": "p1",
+                "attachment_atoms": ["a1", "a2"],
+                "end_groups": [],
+                "repeat_count": 4294967296u64,
+                "repeat_smiles": "[*]CC[*]"
+            }]
+        });
+        assert!(matches!(
+            SemanticModel::from_json(&value),
+            Err(SemanticError::InvalidJson(message))
+                if message.contains("repeat_count")
+        ));
     }
 
     #[test]
