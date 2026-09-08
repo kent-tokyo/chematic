@@ -685,6 +685,17 @@ as well, with a 2048-bit/256-byte ethanol fixture and exact bit positions
 verified by Rust, Python, and Node/WASM. This remains separate from native
 `topo_path` and from the held-out 5,000-molecule parity reports.
 
+## P3 clean-install and cold-start local slice
+
+The current v1.0.9 source tree builds a CPython 3.13 arm64 wheel offline and
+installs into a fresh virtual environment with `--no-deps`. Import and `CCO`
+first-parse smoke pass; ten fresh-process samples report 13.0 ms median import
+and 12.9 ms median import-plus-first-parse. This is local platform evidence
+only; publication, throughput, peak-memory, and cross-platform availability
+remain separate gates.
+
+Evidence: `benchmarks/2026-09-09-clean-install-cold-start-v1.0.9.md`.
+
 ## P3 shared Extended XYZ fixture — completed local slice
 
 `validation/cross_binding_contract.json` now contains a versioned
