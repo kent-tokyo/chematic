@@ -494,6 +494,15 @@ Extended XYZ benchmark/safety extension. Cross-language
 streaming parity, equivalent cross-engine throughput, and broader parser
 semantics remain separate open roadmap gates.
 
+## P1 supplemental malformed parser-path slice
+
+The same gate now also exercises the parser-path cases that had previously
+been declared in the runner but were not combined with the checked-in corpus.
+These cases cover the direct SDF/MOL/XYZ/Extended XYZ/V3000/MOL2/CML/CDXML/
+mmCIF/PDB branches without changing the versioned 12-case-per-format corpus.
+The combined gate currently passes 157 negative cases, 10 oversized cases, and
+20 gzip cases; the broader malformed corpus remains open.
+
 ## P1 common streaming matrix — completed local runner slice
 
 `scripts/benchmark_streaming_matrix.py` now normalizes temporary gzip paths to

@@ -3,7 +3,8 @@
 
 This is intentionally a bounded negative-input contract, not a throughput
 benchmark. Every format accepted by ``streaming_benchmark`` gets twelve cases
-from the checked-in corpus and one input-size rejection. The gzip cases
+from the checked-in corpus plus parser-path supplemental cases and one
+input-size rejection. The gzip cases
 additionally prove that the limit is applied after decompression for every
 runner format.
 """
@@ -54,7 +55,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    malformed = {
+    additional_malformed = {
         "sdf": [
             "broken\n  chematic\n\n  NOTNUM  0  0 V2000\nM  END\n$$$$\n",
             "broken\n  chematic\n\n  1  0  0  0  0  0            999 V2000\nthis is not an atom line\nM  END\n$$$$\n",
@@ -125,10 +126,14 @@ def main() -> int:
     malformed = corpus["cases"]
     if any(
         not isinstance(cases, list) or len(cases) != 12 or any(not isinstance(case, str) for case in cases)
-        for cases in malformed.values()
+        for cases in corpus["cases"].values()
     ):
         print("streaming safety corpus must contain exactly twelve string cases for every format", file=sys.stderr)
         return 1
+    malformed = {
+        fmt: [*corpus["cases"][fmt], *additional_malformed.get(fmt, [])]
+        for fmt in expected_formats
+    }
 
     # CML/CDXML are deliberately lenient about unknown/empty structure and
     # PDB ignores non-record lines. Exercise their typed safety boundary with
