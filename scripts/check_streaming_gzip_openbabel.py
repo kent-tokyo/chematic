@@ -26,10 +26,18 @@ def version(executable: str) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--format", choices=("sdf", "v3000", "mol2"), default="sdf")
+    parser.add_argument(
+        "--format",
+        choices=("sdf", "v3000", "mol2", "cml", "cdxml", "mmcif", "pdb"),
+        default="sdf",
+    )
     parser.add_argument("--sdf", type=Path, default=Path("benchmarks/fixtures/streaming.sdf"))
     parser.add_argument("--v3000", type=Path, default=Path("benchmarks/fixtures/ethanol.v3000"))
     parser.add_argument("--mol2", type=Path, default=Path("benchmarks/fixtures/ethanol.mol2"))
+    parser.add_argument("--cml", type=Path, default=Path("benchmarks/fixtures/ethanol.cml"))
+    parser.add_argument("--cdxml", type=Path, default=Path("benchmarks/fixtures/ethanol.cdxml"))
+    parser.add_argument("--mmcif", type=Path, default=Path("benchmarks/fixtures/minimal.mmcif"))
+    parser.add_argument("--pdb", type=Path, default=Path("benchmarks/fixtures/minimal.pdb"))
     parser.add_argument("--repeats", type=int, default=20)
     parser.add_argument("--openbabel", default="obabel")
     parser.add_argument("--binary", nargs="+", default=[
@@ -40,11 +48,27 @@ def main() -> int:
     if args.repeats <= 0:
         raise SystemExit("--repeats must be positive")
 
-    source = {"sdf": args.sdf, "v3000": args.v3000, "mol2": args.mol2}[args.format]
+    source = {
+        "sdf": args.sdf,
+        "v3000": args.v3000,
+        "mol2": args.mol2,
+        "cml": args.cml,
+        "cdxml": args.cdxml,
+        "mmcif": args.mmcif,
+        "pdb": args.pdb,
+    }[args.format]
     source = source if source.is_absolute() else ROOT / source
     payload = source.read_bytes()
     compressed = gzip.compress(payload, mtime=0)
-    openbabel_format = "sdf" if args.format == "sdf" else ("mol" if args.format == "v3000" else "mol2")
+    openbabel_format = {
+        "sdf": "sdf",
+        "v3000": "mol",
+        "mol2": "mol2",
+        "cml": "cml",
+        "cdxml": "cdxml",
+        "mmcif": "mmcif",
+        "pdb": "pdb",
+    }[args.format]
     expected_records = (2 if args.format == "sdf" else 1) * args.repeats
 
     with tempfile.TemporaryDirectory(prefix="chematic-gzip-openbabel-") as directory:

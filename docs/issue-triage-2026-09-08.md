@@ -513,7 +513,8 @@ same-process parity, and the broader strict malformed corpus remain open.
 
 ## P1 gzip V3000/MOL2 Open Babel contracts — completed local slice
 
-The gzip safety contract now also covers SDF, V3000, and MOL2. chematic reads the
+The gzip safety contract now also covers SDF, V3000, MOL2, CML, CDXML, mmCIF,
+and PDB. chematic reads the
 gzip wrapper, while Open Babel 3.2.1 reads the byte-identical decompressed
 payload because that CLI does not accept the gzip wrapper as a format input.
 The report deliberately compares record/failure accounting only and records
@@ -527,9 +528,13 @@ Evidence:
   — chematic 20/0 and Open Babel 20/0.
 - `python3 scripts/check_streaming_gzip_openbabel.py --format sdf --repeats 20`
   — chematic 40/0 and Open Babel 40/0.
+- `python3 scripts/check_streaming_gzip_openbabel.py --format cml --repeats 20`,
+  `--format cdxml`, `--format mmcif`, and `--format pdb` — chematic 20/0 and
+  Open Babel 20/0 for each format.
 - Reports: `benchmarks/2026-09-08-streaming-gzip-openbabel-sdf.md`,
-  `benchmarks/2026-09-08-streaming-gzip-openbabel-v3000.md`, and
-  `benchmarks/2026-09-08-streaming-gzip-openbabel-mol2.md`.
+  `benchmarks/2026-09-08-streaming-gzip-openbabel-v3000.md`,
+  `benchmarks/2026-09-08-streaming-gzip-openbabel-mol2.md`, and the CML,
+  CDXML, mmCIF, and PDB reports with the same prefix.
 
 This does not claim compressed-input support in Open Babel, same-process
 parity, or equivalent-operation throughput.

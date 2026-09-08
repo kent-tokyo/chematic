@@ -273,8 +273,8 @@ documentation, and required measurement agree.
   counts and zero failures for all three available engines with those
   boundaries explicit.
   Deterministic gzip record/failure contracts now cover SDF, XYZ,
-  Extended XYZ, V3000, and MOL2 with compressed/decompressed byte stages
-  explicit; same-
+  Extended XYZ, V3000, MOL2, CML, CDXML, mmCIF, and PDB with
+  compressed/decompressed byte stages explicit; same-
   process cross-engine equivalence remains open.
 
 ## P2 — Identity and ML primitives
