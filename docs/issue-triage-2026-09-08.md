@@ -4,6 +4,16 @@ This snapshot records the bounded completion of issue #507. It does not turn
 format-specific safety cases into a throughput, compatibility, or universal
 parser claim.
 
+## Issue #70 — Criterion gate local runner boundary
+
+The process-level block arithmetic, ABBA/BAAB metadata, routing fixtures, and
+strict malformed-input checks pass with `bash scripts/test_criterion_gate.sh`.
+The runner now treats a sandbox-denied macOS `sysctl vm.loadavg` read as
+`loadavg: "unavailable"` instead of aborting the measurement block, while
+preserving the metadata schema. This is local portability evidence only;
+hosted +5%, +10%, and contamination calibration remains required before #70
+can close.
+
 ## Issue #337 — typed symmetrized-ring cap outcome
 
 The bounded symmetrized-SSSR path now exposes
