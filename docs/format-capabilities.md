@@ -306,10 +306,11 @@ disambiguate by crate, not by name alone:
 - **WASM**: `mol_from_xyz`/`to_xyz` use `chematic_3d`'s version.
   `mol_from_extxyz`/`extxyz_frame_json`/`to_extxyz_json` use
   `chematic_mol`'s version.
-- **Streaming**: `XyzReader`/`ExtxyzReader` are lazy iterators over an
-  already-loaded `&str` (same category as `SdfReader`, not a `BufRead`-based
-  reader). No `BufRead`-backed streaming type exists for XYZ. Python/WASM
-  materialize.
+- **Streaming**: `XyzFileReader<R: BufRead>` is a true file-backed streaming
+  iterator, and `XyzBatchReader<R: BufRead>` adds bounded pull-based batches
+  with input order, cancellation, and a versioned progress manifest.
+  `XyzReader`/`ExtxyzReader` remain lazy iterators over an already-loaded
+  `&str`. Python/WASM still materialize XYZ frames.
 - **Coordinate units**: Ångström (standard XYZ/extended-XYZ convention).
 - **Connectivity**: `chematic_3d::parse_xyz` infers bonds by distance;
   `chematic_mol::parse_xyz`/`parse_extxyz` never do (no `Molecule` is even

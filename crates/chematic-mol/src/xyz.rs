@@ -688,6 +688,122 @@ impl<R: std::io::BufRead> Iterator for XyzFileReader<R> {
     }
 }
 
+/// One bounded, input-ordered batch from [`XyzBatchReader`].
+pub struct XyzBatch {
+    /// Zero-based batch sequence number.
+    pub sequence: usize,
+    /// Frames in source order; parse failures are retained in place.
+    pub frames: Vec<Result<XyzFrame, XyzError>>,
+}
+
+impl XyzBatch {
+    pub fn len(&self) -> usize {
+        self.frames.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.frames.is_empty()
+    }
+}
+
+/// Deterministic progress snapshot for a bounded XYZ batch stream.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+pub struct XyzBatchProgress {
+    pub schema_version: u32,
+    /// `running`, `complete`, or `cancelled`.
+    pub status: &'static str,
+    pub batch_size: usize,
+    pub frames_emitted: usize,
+    pub batches_emitted: usize,
+}
+
+/// Pull-based bounded batch reader over any [`std::io::BufRead`] XYZ source.
+///
+/// Pulling the next item is the backpressure boundary: no background queue is
+/// created. Cancellation stops before the next batch is read.
+pub struct XyzBatchReader<R: std::io::BufRead> {
+    inner: XyzFileReader<R>,
+    batch_size: usize,
+    cancelled: bool,
+    exhausted: bool,
+    frames_emitted: usize,
+    batches_emitted: usize,
+}
+
+impl<R: std::io::BufRead> XyzBatchReader<R> {
+    pub fn new(reader: R, batch_size: usize) -> Self {
+        assert!(batch_size > 0, "batch_size must be greater than zero");
+        Self::with_limits(reader, batch_size, XyzParseLimits::default())
+    }
+
+    pub fn with_limits(reader: R, batch_size: usize, limits: XyzParseLimits) -> Self {
+        assert!(batch_size > 0, "batch_size must be greater than zero");
+        Self {
+            inner: XyzFileReader::with_limits(reader, limits),
+            batch_size,
+            cancelled: false,
+            exhausted: false,
+            frames_emitted: 0,
+            batches_emitted: 0,
+        }
+    }
+
+    pub fn cancel(&mut self) {
+        self.cancelled = true;
+    }
+
+    pub fn is_cancelled(&self) -> bool {
+        self.cancelled
+    }
+
+    pub fn progress(&self) -> XyzBatchProgress {
+        XyzBatchProgress {
+            schema_version: 1,
+            status: if self.cancelled {
+                "cancelled"
+            } else if self.exhausted {
+                "complete"
+            } else {
+                "running"
+            },
+            batch_size: self.batch_size,
+            frames_emitted: self.frames_emitted,
+            batches_emitted: self.batches_emitted,
+        }
+    }
+
+    pub fn manifest_json(&self) -> String {
+        serde_json::to_string(&self.progress()).expect("XYZ progress is serializable")
+    }
+}
+
+impl<R: std::io::BufRead> Iterator for XyzBatchReader<R> {
+    type Item = XyzBatch;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.cancelled || self.exhausted {
+            return None;
+        }
+        let mut frames = Vec::with_capacity(self.batch_size);
+        while frames.len() < self.batch_size {
+            match self.inner.next() {
+                Some(frame) => frames.push(frame),
+                None => {
+                    self.exhausted = true;
+                    break;
+                }
+            }
+        }
+        if frames.is_empty() {
+            return None;
+        }
+        let sequence = self.batches_emitted;
+        self.frames_emitted += frames.len();
+        self.batches_emitted += 1;
+        Some(XyzBatch { sequence, frames })
+    }
+}
+
 /// Parse every frame in a multi-frame XYZ string. Stops and returns an
 /// error on the first parse failure.
 pub fn parse_xyz_all(input: &str) -> Result<Vec<XyzFrame>, XyzError> {
@@ -1452,6 +1568,43 @@ mod tests {
                 ..
             }))
         ));
+    }
+
+    #[test]
+    fn xyz_batch_reader_preserves_order_and_progress() {
+        use std::io::BufReader;
+
+        let traj = format!("{WATER_XYZ}{METHANE_XYZ}{WATER_XYZ}");
+        let mut reader = XyzBatchReader::new(BufReader::new(traj.as_bytes()), 2);
+        assert_eq!(reader.progress().status, "running");
+        let first = reader.next().unwrap();
+        assert_eq!(first.sequence, 0);
+        assert_eq!(first.len(), 2);
+        assert_eq!(first.frames[0].as_ref().unwrap().atoms.len(), 3);
+        assert_eq!(first.frames[1].as_ref().unwrap().atoms.len(), 5);
+        assert_eq!(reader.progress().frames_emitted, 2);
+        let second = reader.next().unwrap();
+        assert_eq!(second.sequence, 1);
+        assert_eq!(second.len(), 1);
+        assert_eq!(reader.progress().status, "complete");
+        assert_eq!(reader.progress().batches_emitted, 2);
+        assert!(reader.next().is_none());
+    }
+
+    #[test]
+    fn xyz_batch_reader_cancels_at_batch_boundary() {
+        use std::io::BufReader;
+
+        let traj = format!("{WATER_XYZ}{METHANE_XYZ}");
+        let mut reader = XyzBatchReader::new(BufReader::new(traj.as_bytes()), 1);
+        assert_eq!(reader.next().unwrap().len(), 1);
+        reader.cancel();
+        assert!(reader.next().is_none());
+        let json: serde_json::Value = serde_json::from_str(&reader.manifest_json()).unwrap();
+        assert_eq!(json["schema_version"], 1);
+        assert_eq!(json["status"], "cancelled");
+        assert_eq!(json["frames_emitted"], 1);
+        assert_eq!(json["batches_emitted"], 1);
     }
 
     #[test]
