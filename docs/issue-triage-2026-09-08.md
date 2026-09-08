@@ -63,6 +63,16 @@ successful records with identical canonical outputs. Evidence is recorded in
 The ten Phase-1 expected-identity holdouts and external standardization quality
 remain separate gates.
 
+## P2 RDKit-compatible ECFP4 binding parity — bounded completion
+
+The RDKit-compatible ECFP4 implementation was replayed on 5,000 shared
+SMILES through Rust, Python, and Node/WASM. The report compares exact
+2,048-bit values for successful preprocessing and compares failures by typed
+status rather than unstable error text. Evidence is recorded in
+`validation/results/rdkit-ecfp4-cross-binding-parity-5000-v1.0.9.json`.
+Independent RDKit accuracy and sparse/count/bitInfo parity remain separate
+gates.
+
 ## Issues #149 and #503 — aromatic E/Z stash residual boundary
 
 The current joint carrier resolver and canonical-fidelity partition remain

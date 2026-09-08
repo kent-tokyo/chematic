@@ -19,6 +19,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   and Node/WASM, separate from RDKit-compatible torsion accuracy.
 - Added a 5,000-row explicit standardization-profile parity report across
   Rust, Python, and Node/WASM, separate from expected-identity accuracy.
+- Added a 5,000-row RDKit-compatible ECFP4 binding-parity report across Rust,
+  Python, and Node/WASM, including typed preprocessing-failure accounting.
 - Added a reproducible 5,000-row Rust/Python/Node-WASM descriptor binding
   parity report. All bindings parsed the same corpus and agreed on MW, TPSA,
   HBD, HBA, and heavy-atom count; the report explicitly remains separate from
