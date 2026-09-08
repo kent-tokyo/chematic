@@ -138,7 +138,7 @@ adapter, remains open.
 
 Evidence:
 
-- `cargo test -p chematic-rxn document --offline` — 7 passed.
+- `cargo test -p chematic-rxn document --offline` — 9 passed.
 - `cargo test -p chematic-mol rxn --offline` — 9 passed.
 - `git diff --check` — passed.
 
