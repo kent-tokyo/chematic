@@ -2717,6 +2717,19 @@ fn xyz_batch_manifest_recovers_after_malformed_frame() {
 }
 
 #[test]
+fn xyz_batch_manifest_groups_malformed_count_line_until_next_frame() {
+    let xyz = "not-a-count\ncomment\nC 0 0 0\n1\nvalid\nC 2 0 0\n";
+    let manifest: serde_json::Value =
+        serde_json::from_str(&xyz_frames_batch_json(xyz, 0, 2).unwrap()).unwrap();
+    assert_eq!(manifest["status"], "complete");
+    assert_eq!(manifest["record_count"], 2);
+    assert_eq!(manifest["rejected_count"], 1);
+    assert_eq!(manifest["records"][0]["status"], "rejected");
+    assert_eq!(manifest["records"][1]["status"], "accepted");
+    assert_eq!(manifest["records"][1]["input_index"], 1);
+}
+
+#[test]
 fn extxyz_batch_manifest_preserves_frame_metadata() {
     let extxyz = concat!(
         "1\nProperties=species:S:1:pos:R:3:charge:I:1 energy=2\n",
@@ -2730,6 +2743,26 @@ fn extxyz_batch_manifest_preserves_frame_metadata() {
     assert_eq!(manifest["status"], "complete");
     assert_eq!(manifest["record_count"], 2);
     assert_eq!(manifest["records"][1]["frame"]["info"]["energy"], "3");
+}
+
+#[test]
+fn extxyz_batch_manifest_recovers_after_malformed_frame() {
+    let extxyz = concat!(
+        "not-a-count\n",
+        "comment\n",
+        "C 0 0 0\n",
+        "1\n",
+        "Properties=species:S:1:pos:R:3\n",
+        "C 2 0 0\n",
+    );
+    let manifest: serde_json::Value =
+        serde_json::from_str(&extxyz_frames_batch_json(extxyz, 0, 2).unwrap()).unwrap();
+    assert_eq!(manifest["status"], "complete");
+    assert_eq!(manifest["record_count"], 2);
+    assert_eq!(manifest["rejected_count"], 1);
+    assert_eq!(manifest["records"][0]["status"], "rejected");
+    assert_eq!(manifest["records"][1]["status"], "accepted");
+    assert_eq!(manifest["records"][1]["input_index"], 1);
 }
 
 #[test]

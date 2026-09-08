@@ -478,17 +478,18 @@ resumable SDF, plain XYZ, and Extended XYZ manifest APIs
 (`sdf_records_batch_json`, `xyz_frames_batch_json`, and
 `extxyz_frames_batch_json`) with deterministic input indices, partial/complete
 status, and an explicit stop-before-next-offset cancellation boundary. The
-bounded WASM convenience path also retains malformed frames as rejected
-records and continues after an unambiguous subsequent count-line boundary;
+bounded WASM convenience path groups malformed count-line content into one
+rejected record and continues after an unambiguous subsequent count-line
+boundary;
 core file-backed readers remain fail-stop by design. WASM/browser artifact
 execution, shared cross-language fixture execution, and broader recovery
 semantics remain open gates.
 
 Evidence:
 
-- `cargo test -p chematic-wasm --offline` — 312 passed, including ordered
+- `cargo test -p chematic-wasm --offline` — 314 passed, including ordered
   two-batch SDF/XYZ resume, Extended XYZ metadata coverage, and malformed
-  XYZ recovery with an inline rejected record.
+  XYZ/Extended XYZ recovery with grouped inline rejected records.
 - `wasm-pack build crates/chematic-wasm --target nodejs --out-dir pkg-node
   --release` reached the Rust release build but could not regenerate the
   Node artifact because the local wasm-bindgen CLI/download fallback was

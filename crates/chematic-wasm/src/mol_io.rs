@@ -852,7 +852,18 @@ fn recoverable_xyz_frames(
                 .saturating_add(atom_count)
                 .saturating_add(2)
                 .min(lines.len()),
-            Err(_) => offset.saturating_add(1),
+            Err(_) => lines
+                .iter()
+                .enumerate()
+                .skip(offset.saturating_add(1))
+                .find_map(|(candidate, line)| {
+                    line.trim()
+                        .parse::<usize>()
+                        .ok()
+                        .filter(|_| candidate.saturating_add(2) <= lines.len())
+                        .map(|_| candidate)
+                })
+                .unwrap_or(lines.len()),
         };
         let block = format!("{}\n", lines[offset..end].join("\n"));
         frames.push(if extxyz {
