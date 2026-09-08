@@ -387,7 +387,8 @@ Evidence:
 - `cargo test -p chematic-mol --test cross_binding_adversarial --offline` — 2
   passed, including the shared Extended XYZ contract.
 - `node crates/chematic-wasm/tests/cross_binding_contract.test.mjs` — passed.
-- Python contract test source and fixture syntax compile; the full pytest
+- A clean offline maturin wheel smoke imported the current 1.0.9 binding and
+  executed the shared RXN/Extended XYZ assertions successfully. Full pytest
   collection remains affected by the known pytest/pytest-asyncio environment
   mismatch.
 
@@ -408,7 +409,9 @@ Evidence:
 - `cargo test -p chematic-rxn --test cross_binding_contract --offline` — 1
   passed.
 - `node crates/chematic-wasm/tests/rxn_document_contract.test.mjs` — passed.
-- Python contract test source and manifest syntax compile.
+- A clean offline maturin wheel smoke executed the shared RXN assertions;
+  full pytest collection remains affected by the known pytest/pytest-asyncio
+  environment mismatch.
 
 This strengthens the binding contract but does not close #460: full upstream
 rich RXN dialect coverage, multi-step preservation, and broader loss fixtures
