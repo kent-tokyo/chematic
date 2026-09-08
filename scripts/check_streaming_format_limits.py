@@ -70,6 +70,18 @@ def main() -> int:
             "not-a-count\ncomment\nC 0 0 0\n",
             "-1\nnegative atom count\n",
         ],
+        "extxyz": [
+            "2\nProperties=species:S:1:pos:R:3\nC 0 0 0\n",
+            "not-a-count\ncomment\nC 0 0 0\n",
+            "1\nProperties=species:S:1:pos:R:3\nXx 0 0 0\n",
+            "1\nProperties=species:S:1:pos:R:3\nC nan 0 0\n",
+            "1\nProperties=species:S:1:pos:R:3:charge:R:1\nC 0 0 0 nope\n",
+            "1\nProperties=species:S:1:pos:R:3\nC 0 0\n",
+            "1\nProperties=species:S:1:pos:R:3\nC 0e 0 0\n",
+            "1\nLattice=\"1 2 3\"\nC 0 0 0\n",
+            "1\nProperties=species:S:1:pos:R\nC 0 0 0\n",
+            "1\nProperties=species:S:1:pos:R:3\nC 0 0\nC 1 1 1\n",
+        ],
         "v3000": [
             "not a V3000 mol block\n",
             "M  V30 COUNTS not-numbers\nM  END\n",
@@ -106,7 +118,7 @@ def main() -> int:
     except (OSError, json.JSONDecodeError) as exc:
         print(f"streaming safety corpus read failure: {exc}", file=sys.stderr)
         return 1
-    expected_formats = {"sdf", "mol", "xyz", "v3000", "mol2", "cml", "cdxml", "mmcif", "pdb"}
+    expected_formats = {"sdf", "mol", "xyz", "extxyz", "v3000", "mol2", "cml", "cdxml", "mmcif", "pdb"}
     if corpus.get("schema_version") != 1 or set(corpus.get("cases", {})) != expected_formats:
         print("streaming safety corpus has an invalid schema or format set", file=sys.stderr)
         return 1
@@ -131,6 +143,7 @@ def main() -> int:
         "sdf": FIXTURES / "streaming.sdf",
         "mol": FIXTURES / "streaming.sdf",
         "xyz": FIXTURES / "streaming.xyz",
+        "extxyz": FIXTURES / "streaming.extxyz",
         "v3000": FIXTURES / "ethanol.v3000",
         "mol2": FIXTURES / "ethanol.mol2",
         "cml": FIXTURES / "ethanol.cml",
@@ -167,6 +180,7 @@ def main() -> int:
             "sdf": 2,
             "mol": 2,
             "xyz": 2,
+            "extxyz": 2,
             "v3000": 1,
             "mol2": 1,
             "cml": 1,
@@ -198,7 +212,7 @@ def main() -> int:
         print("streaming format limit failures:", file=sys.stderr)
         print("\n".join(errors), file=sys.stderr)
         return 1
-    print(f"streaming format limits OK: {malformed_count} negative, 9 oversized, {gzip_cases} gzip cases")
+    print(f"streaming format limits OK: {malformed_count} negative, 10 oversized, {gzip_cases} gzip cases")
     return 0
 
 

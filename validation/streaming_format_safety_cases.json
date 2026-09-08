@@ -38,6 +38,18 @@
       "1\nmalformed coordinate\nC 0e 0 0\n",
       "1\nmalformed z coordinate\nC 0 0 nope\n"
     ],
+    "extxyz": [
+      "2\nProperties=species:S:1:pos:R:3\nC 0 0 0\n",
+      "not-a-count\ncomment\nC 0 0 0\n",
+      "1\nProperties=species:S:1:pos:R:3\nXx 0 0 0\n",
+      "1\nProperties=species:S:1:pos:R:3\nC nan 0 0\n",
+      "1\nProperties=species:S:1:pos:R:3:charge:R:1\nC 0 0 0 nope\n",
+      "1\nProperties=species:S:1:pos:R:3\nC 0 0\n",
+      "1\nProperties=species:S:1:pos:R:3\nC 0e 0 0\n",
+      "1\nLattice=\"1 2 3\"\nC 0 0 0\n",
+      "1\nProperties=species:S:1:pos:R\nC 0 0 0\n",
+      "1\nProperties=species:S:1:pos:R:3\nC 0 0\nC 1 1 1\n"
+    ],
     "v3000": [
       "not a V3000 mol block\n",
       "M  V30 COUNTS not-numbers\nM  END\n",

@@ -1,4 +1,4 @@
-//! Measure file-backed SDF/MOL/XYZ record streaming in the current workspace.
+//! Measure file-backed SDF/MOL/XYZ/Extended XYZ record streaming in the current workspace.
 //!
 //! Usage:
 //! `cargo run -p chematic-mol --example streaming_benchmark -- --format sdf path`
@@ -9,7 +9,7 @@ use std::io::{BufRead, BufReader, Read};
 use std::path::Path;
 use std::time::Instant;
 
-use chematic_mol::{SdfFileReader, XyzFileReader};
+use chematic_mol::{ExtxyzFileReader, SdfFileReader, XyzFileReader};
 use flate2::read::GzDecoder;
 
 fn arg(name: &str, default: &str) -> String {
@@ -61,6 +61,16 @@ fn count_sdf<R: BufRead>(reader: R, limits: chematic_mol::SdfParseLimits) -> (us
 
 fn count_xyz<R: BufRead>(reader: R, limits: chematic_mol::XyzParseLimits) -> (usize, usize) {
     XyzFileReader::with_limits(reader, limits).fold((0, 0), |(records, failures), result| {
+        if result.is_ok() {
+            (records + 1, failures)
+        } else {
+            (records, failures + 1)
+        }
+    })
+}
+
+fn count_extxyz<R: BufRead>(reader: R, limits: chematic_mol::XyzParseLimits) -> (usize, usize) {
+    ExtxyzFileReader::with_limits(reader, limits).fold((0, 0), |(records, failures), result| {
         if result.is_ok() {
             (records + 1, failures)
         } else {
@@ -123,6 +133,22 @@ fn main() {
                     count_xyz(BufReader::new(GzDecoder::new(input)), limits)
                 } else {
                     count_xyz(BufReader::new(input), limits)
+                };
+                records += ok;
+                failures += bad;
+            }
+            "extxyz" => {
+                let input = File::open(&path).expect("open Extended XYZ input");
+                let limits = chematic_mol::XyzParseLimits {
+                    max_input_bytes,
+                    max_atoms_per_frame: max_atoms,
+                    max_frames: max_records,
+                    max_line_bytes,
+                };
+                let (ok, bad) = if gzip {
+                    count_extxyz(BufReader::new(GzDecoder::new(input)), limits)
+                } else {
+                    count_extxyz(BufReader::new(input), limits)
                 };
                 records += ok;
                 failures += bad;
@@ -218,7 +244,7 @@ fn main() {
                 }
             }
             other => panic!(
-                "unsupported format {other}; choose sdf, mol, xyz, v3000, mol2, cml, cdxml, mmcif, or pdb"
+                "unsupported format {other}; choose sdf, mol, xyz, extxyz, v3000, mol2, cml, cdxml, mmcif, or pdb"
             ),
         }
     }

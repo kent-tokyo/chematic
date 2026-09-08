@@ -22,6 +22,7 @@ FORMATS = {
     "sdf": (Path("benchmarks/fixtures/streaming.sdf"), 2),
     "mol": (Path("benchmarks/fixtures/streaming.sdf"), 2),
     "xyz": (Path("benchmarks/fixtures/streaming.xyz"), 2),
+    "extxyz": (Path("benchmarks/fixtures/streaming.extxyz"), 2),
     "v3000": (Path("benchmarks/fixtures/ethanol.v3000"), 1),
     "mol2": (Path("benchmarks/fixtures/ethanol.mol2"), 1),
     "cml": (Path("benchmarks/fixtures/ethanol.cml"), 1),

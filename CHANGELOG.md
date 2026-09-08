@@ -35,8 +35,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   validation, explicit normalization, opaque vendor metadata, stable
   diagnostics, JSON Schema, and a WASM validation entry point.
 - Expanded the streaming malformed-input safety corpus to ten cases for each
-  of the nine runner formats (90/90 negative cases), preserving the separate
-  oversized-input and 18-case gzip controls.
+  of the ten runner formats, including Extended XYZ (100/100 negative cases),
+  preserving the separate oversized-input and 20-case gzip controls.
 - Added a bounded, explainable genotoxicity-reactivity slice: source-referenced
   PubChem structure fixtures, epoxide/aziridine/Michael-acceptor checks, and a
   deterministic two-site electrophile heuristic with topological spacer data.
@@ -48,6 +48,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   XYZ and Extended XYZ trajectories. The new iterators preserve input order
   and bounded batch boundaries, support cancellation, and expose deterministic
   progress manifests with rejected-frame counts.
+- Extended the common Rust streaming benchmark and safety gate to Extended
+  XYZ, including plain/gzip controls, ten malformed cases, and an oversized
+  post-decompression limit check.
 
 ## [1.0.9] - 2026-09-07
 
