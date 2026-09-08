@@ -462,8 +462,9 @@ records them.
   document round-trip, and Markush/polymer semantic expansion across Rust,
   Python, and Node/WASM. It now also carries the bounded XYZ/Extended XYZ
   batch-recovery contract, verified by Rust/WASM and a clean Python wheel;
-  the checked-in Node artifact lacks the new exports, so the broader
-  all-stable-operation manifest remains open.
+  a fresh current-source wasm-pack Node artifact now exports the same batch
+  functions and passes the Node contract smoke; the broader all-stable-
+  operation manifest remains open.
 - [x] Extend the shared versioned manifest to cover the core ECFP4/MACCS
   fingerprint shapes and configurations across Rust, Python, and Node/WASM.
 - [x] Add versioned deterministic exact-identity serialization for

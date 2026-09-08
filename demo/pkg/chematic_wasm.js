@@ -2378,6 +2378,35 @@ export function extxyz_frame_json(text) {
 }
 
 /**
+ * Return one deterministic, resumable Extended-XYZ batch as a JSON manifest.
+ * Stopping before requesting the next offset is the cancellation boundary.
+ * @param {string} text
+ * @param {number} offset
+ * @param {number} batch_size
+ * @returns {string}
+ */
+export function extxyz_frames_batch_json(text, offset, batch_size) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.extxyz_frames_batch_json(ptr0, len0, offset, batch_size);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * FCFP4 (pharmacophore, radius-2) fingerprint as a bit-packed byte vector (256 bytes).
  * @param {MolHandle} mol
  * @returns {Uint8Array}
@@ -3551,7 +3580,7 @@ export function minimize_mmff94_lbfgs_json(mol, max_iter) {
  * `coords_json` — JSON array of `[x,y,z]` arrays (Å), one per atom.
  * `max_iter` — maximum iterations (0 = default 500).
  *
- * Returns JSON: `{"coords":[[x,y,z],...], "energy":float, "iterations":int, "converged":bool, "sound":bool}`
+ * Returns JSON: `{"coords":[[x,y,z],...], "energy":float, "iterations":int, "converged":bool, "sound":bool, "worst_bond_length":float}`
  * or `{"error":"<msg>"}` on failure. `sound` is all-finite coordinates and
  * no bond stretched past a sane covalent-bond length — independent of
  * `converged`, since steepest descent often reports `converged:false` on
@@ -4801,6 +4830,30 @@ export function peoe_vsa_json(mol) {
 }
 
 /**
+ * Fingerprint a serialized `PeriodicStructure`; invalid or oversized input
+ * returns a stable JSON error rather than being treated as a retrieval hit.
+ * @param {string} json
+ * @param {string} source
+ * @returns {string}
+ */
+export function periodic_structure_fingerprint_json(json, source) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.periodic_structure_fingerprint_json(ptr0, len0, ptr1, len1);
+        deferred3_0 = ret[0];
+        deferred3_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Detect pharmacophore features for virtual screening and lead optimization.
  * Returns JSON array of features: [{type, atom_idx, neighbor_count}, ...]
  * @param {MolHandle} mol
@@ -4998,6 +5051,33 @@ export function predict_pka_json(smiles) {
         const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.predict_pka_json(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Run deterministic SVG publication preflight for a SMILES string.
+ *
+ * Returns a JSON `PreflightReport` with stable diagnostic paths and a
+ * deterministic input fingerprint. Font metrics are conservative estimates;
+ * the final browser/renderer remains authoritative for pixel-level validation.
+ * The input is capped at the same 1 MiB/10,000-atom limits as other WASM APIs.
+ * @param {string} smiles
+ * @param {number} width
+ * @param {number} height
+ * @returns {string}
+ */
+export function preflight_smiles_json(smiles, width, height) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.preflight_smiles_json(ptr0, len0, width, height);
         deferred2_0 = ret[0];
         deferred2_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
@@ -5296,6 +5376,37 @@ export function rdkit_ecfp_config_detail_json(mol, radius, nbits) {
     } finally {
         wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
     }
+}
+
+/**
+ * Compute the RDKit-compatible Daylight-like path fingerprint as a bit-packed
+ * byte vector (256 bytes = 2048 bits). This is the WASM counterpart of the
+ * Python `path_fp` operation and is intentionally separate from native
+ * `topo_path_bitvec`.
+ * @param {MolHandle} mol
+ * @returns {Uint8Array}
+ */
+export function rdkit_path_bitvec(mol) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.rdkit_path_bitvec(mol.__wbg_ptr);
+    var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v1;
+}
+
+/**
+ * Compute the opt-in RDKit-compatible hashed topological-torsion fingerprint
+ * as a bit-packed byte vector (256 bytes = 2048 bits). This remains separate
+ * from the native `torsion_bitvec` operation and its similarity semantics.
+ * @param {MolHandle} mol
+ * @returns {Uint8Array}
+ */
+export function rdkit_torsion_bitvec(mol) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.rdkit_torsion_bitvec(mol.__wbg_ptr);
+    var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v1;
 }
 
 /**
@@ -5609,6 +5720,39 @@ export function sdf_from_records_json(smiles_json, names_json, props_json) {
         return getStringFromWasm0(ptr4, len4);
     } finally {
         wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
+    }
+}
+
+/**
+ * Return one deterministic, resumable SDF batch as a JSON manifest.
+ *
+ * `offset` is the zero-based input record to start at and `batch_size` is
+ * bounded by [`crate::WASM_MAX_BATCH_ITEMS`]. Invalid records stay inline as
+ * `status: "rejected"`; callers can stop requesting later batches to cancel
+ * work without a background queue or hidden buffering.
+ * @param {string} sdf
+ * @param {number} offset
+ * @param {number} batch_size
+ * @returns {string}
+ */
+export function sdf_records_batch_json(sdf, offset, batch_size) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(sdf, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.sdf_records_batch_json(ptr0, len0, offset, batch_size);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
     }
 }
 
@@ -6569,6 +6713,22 @@ export function to_xyz(mol) {
 }
 
 /**
+ * Compute the native topological path fingerprint as a bit-packed byte vector
+ * (256 bytes = 2048 bits), using the default [`chematic_fp::TopoPathConfig`].
+ * This is the native `topo_path` operation, not the RDKit-compatible path
+ * fingerprint exposed by the separate `path_fp` Python method.
+ * @param {MolHandle} mol
+ * @returns {Uint8Array}
+ */
+export function topo_path_bitvec(mol) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.topo_path_bitvec(mol.__wbg_ptr);
+    var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v1;
+}
+
+/**
  * Torsion fingerprint as a bit-packed byte vector (256 bytes = 2048 bits).
  * @param {MolHandle} mol
  * @returns {Uint8Array}
@@ -6579,6 +6739,27 @@ export function torsion_bitvec(mol) {
     var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
     wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
     return v1;
+}
+
+/**
+ * Validate a vendor-neutral NMR spectrum JSON document without parsing a
+ * vendor-specific raw file or predicting peaks.
+ * @param {string} json
+ * @returns {string}
+ */
+export function validate_nmr_spectrum_json(json) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.validate_nmr_spectrum_json(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
 }
 
 /**
@@ -6982,6 +7163,35 @@ export function xlogp3_per_atom_json(mol) {
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
         wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Return one deterministic, resumable plain-XYZ batch as a JSON manifest.
+ * Stopping before requesting the next offset is the cancellation boundary.
+ * @param {string} text
+ * @param {number} offset
+ * @param {number} batch_size
+ * @returns {string}
+ */
+export function xyz_frames_batch_json(text, offset, batch_size) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.xyz_frames_batch_json(ptr0, len0, offset, batch_size);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
     }
 }
 function __wbg_get_imports() {

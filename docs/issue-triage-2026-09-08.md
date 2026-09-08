@@ -535,10 +535,11 @@ Evidence:
 - `cargo test -p chematic-wasm --offline` — 314 passed, including ordered
   two-batch SDF/XYZ resume, Extended XYZ metadata coverage, and malformed
   XYZ/Extended XYZ recovery with grouped inline rejected records.
-- `wasm-pack build crates/chematic-wasm --target nodejs --out-dir pkg-node
-  --release` reached the Rust release build but could not regenerate the
-  Node artifact because the local wasm-bindgen CLI/download fallback was
-  unavailable; no stale artifact result is claimed.
+- `wasm-pack build crates/chematic-wasm --target web --release` and
+  `--target nodejs --release` both completed with wasm-bindgen/wasm-opt;
+  the regenerated web artifact's `initSync` and XYZ/Extended XYZ smoke
+  passed, and `node crates/chematic-wasm/tests/cross_binding_contract.test.mjs`
+  passed against the regenerated Node artifact.
 
 ## P1 same-input Extended XYZ cross-engine contract — completed local slice
 
@@ -669,9 +670,10 @@ Evidence:
 - The same isolated clean-wheel run over the full
   `test_cross_binding_contract.py` module — 44 passed after replacing a
   pytest-9-incompatible nested `approx` assertion with row-wise comparisons.
-- The Node source contract test now exercises the same cases, but the
-  checked-in `pkg-node` artifact does not yet export the new batch functions;
-  `wasm-pack` artifact regeneration remains a separate gate.
+- The Node source contract test now exercises the same cases against a fresh
+  current-source `pkg-node` build. The Node package remains a generated CI
+  artifact rather than a tracked release file; the broader all-stable-operation
+  manifest remains open.
 
 This is a bounded shared-contract slice, not completion of the broader
 all-stable-operation manifest.

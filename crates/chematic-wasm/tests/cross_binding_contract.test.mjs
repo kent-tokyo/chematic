@@ -39,8 +39,8 @@ assert.deepEqual(extxyzActual.info, extxyz.expected.info);
 for (const format of ["xyz", "extxyz"]) {
   const contract = fixture.xyz_batch_contract[format];
   const batch = format === "xyz"
-    ? wasm.xyz_frames_batch_json(contract.input, fixture.xyz_batch_contract.batch_size)
-    : wasm.extxyz_frames_batch_json(contract.input, fixture.xyz_batch_contract.batch_size);
+    ? wasm.xyz_frames_batch_json(contract.input, 0, fixture.xyz_batch_contract.batch_size)
+    : wasm.extxyz_frames_batch_json(contract.input, 0, fixture.xyz_batch_contract.batch_size);
   const actual = JSON.parse(batch);
   assert.equal(actual.format, format);
   assert.equal(actual.status, contract.expected.status);
