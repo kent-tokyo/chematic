@@ -210,6 +210,14 @@ impl CdxmlDocument {
     /// Apply a bounded edit and reparse, so indexes/attributes stay consistent.
     pub fn apply(&self, edit: &CdxmlEdit) -> Result<Self, CdxmlError> {
         let mut lines: Vec<String> = self.raw_xml.lines().map(str::to_owned).collect();
+        match edit {
+            CdxmlEdit::ReplaceObject { raw_xml, .. }
+            | CdxmlEdit::InsertObject { raw_xml, .. }
+            | CdxmlEdit::ReplaceObjectPath { raw_xml, .. } => {
+                validate_object_fragment(raw_xml)?;
+            }
+            _ => {}
+        }
         let page_id = page_id_for(edit);
         let page = self
             .pages
@@ -425,6 +433,30 @@ fn check_attribute_budget(
     Ok(())
 }
 
+fn validate_object_fragment(raw_xml: &str) -> Result<(), CdxmlError> {
+    let fragment = raw_xml.trim();
+    if fragment.is_empty()
+        || !fragment.starts_with('<')
+        || fragment.starts_with("</")
+        || fragment.starts_with("<?")
+        || fragment.starts_with("<!")
+    {
+        return Err(CdxmlError::InvalidCoords(
+            "edited object must contain an element fragment".into(),
+        ));
+    }
+    let wrapped = format!(
+        "<CDXML>\n<page id=\"__edit__\">\n{fragment}\n</page>\n</CDXML>"
+    );
+    let parsed = CdxmlDocument::parse(&wrapped)?;
+    if parsed.pages.len() != 1 || parsed.pages[0].children.is_empty() {
+        return Err(CdxmlError::InvalidCoords(
+            "edited object must contain at least one element".into(),
+        ));
+    }
+    Ok(())
+}
+
 fn page_id_for(edit: &CdxmlEdit) -> &str {
     match edit {
         CdxmlEdit::SetPageAttribute { page_id, .. }
@@ -540,6 +572,20 @@ mod tests {
             })
             .unwrap();
         assert!(!doc.write().contains("<graphic id=\"g1\"/>"));
+    }
+
+    #[test]
+    fn rejects_non_element_object_edits() {
+        let input = "<CDXML>\n<page id=\"p1\">\n<arrow id=\"a1\"/>\n</page>\n</CDXML>";
+        let doc = CdxmlDocument::parse(input).unwrap();
+        let error = doc
+            .apply(&CdxmlEdit::ReplaceObject {
+                page_id: "p1".into(),
+                object_index: 0,
+                raw_xml: "not xml".into(),
+            })
+            .unwrap_err();
+        assert!(matches!(error, CdxmlError::InvalidCoords(_)));
     }
 
     #[test]
