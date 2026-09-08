@@ -4,11 +4,21 @@ This is a repository-local triage snapshot. An issue is marked **implemented**
 only when the corresponding code and tests are present in the current
 checkout. GitHub issue state is intentionally not changed by this document.
 
+## Follow-up verification — 2026-09-08
+
+The #503 aromatic-stash normalization experiment was replayed against the
+three held-out families and the relabeling gate. A carrier-side absolute E/Z
+normalization made one family appear converged, but produced two outputs under
+the existing atom-relabeling determinism test. That change was reverted. The
+current branch therefore retains the safe joint component resolver and its
+fail-closed stable-key boundary; no representation-dependent winner is
+claimed.
+
 ## Priority order
 
 | Priority | Issue | Status in this checkout | Next action |
 | --- | --- | --- | --- |
-| P0 correctness | #149 shared E/Z carrier resolution | Wave 3 audit remains 3/28 divergent after 64 seeded RDKit relabelings per molecule (0 correspondence failures). Canonical-search edge coloring preserves writer-visible aromatic direction stashes during automorphism checks; the related coloring documentation is now synchronized with that contract. All 213 crate tests and 6 residual tests pass, but the divergence count is unchanged, so the residual remains open and `canonical_smiles_stable_key()` still fails closed | Continue with a component-level canonical winner proof for aromatic stash carriers; do not choose a winner by atom/bond index or claim resolution from the edge-color hardening |
+| P0 correctness | #149 shared E/Z carrier resolution | Wave 3 audit remains 3/28 divergent after 64 seeded RDKit relabelings per molecule (0 correspondence failures). Canonical-search edge coloring preserves writer-visible aromatic direction stashes during automorphism checks; the joint component resolver and the held-out fail-closed gate remain green. The #503 carrier-side absolute-sign experiment failed the relabeling determinism gate and was reverted, so the residual remains open and `canonical_smiles_stable_key()` still fails closed | Continue with a component-level canonical winner proof for aromatic stash carriers; do not choose a winner by atom/bond index, carrier position, or a relabeling-unstable absolute-sign rule |
 | P1 search performance | #139 VF2 automorphism pruning | Closed on GitHub after constrained-query ordering proved the known symmetric negative within the 1,000,000-visit budget | Retain the typed budget contract and regression fixture |
 | P1 CI reliability | #70 Criterion process-level gate | Process-level observations, ABBA/BAAB ordering, two-build null-control, strict ratio gates, and per-block artifact metadata (timestamps, execution order, load average, CPU model, and steal ticks) are implemented; local contract passes. Hosted run `34032659044` completed successfully: Python gate passed, all 16 Rust stage-1 benchmarks were `no-route`, and the two-build null-control was `inconclusive/noise` (exit 2), not contaminated | Hosted calibration remains incomplete: run real +5%, +10%, and contamination experiments before closing #70 |
 | P1 chemical correctness | #337 MMFF94 typing residual | Isothiocyanate/CSP sub-bug is fixed and tested; the remaining 6 pyridinium/macrocycle molecules and 32 atoms are pinned in `validation/manifests/mmff94_issue337_pyridinium_sssr_residual.json`. The all-root probe found 0 candidates missing from the existing D2-root population, so D2 root enumeration is not the cause. The symmetrized-ring path now uses a permutation-invariant candidate-root set, basis-exchange ordering no longer uses raw bond indices, and expansion now fails closed to the complete Horton basis at a 256-extra-ring cap rather than returning a partial family. Full symmetrized-ring ordering is regression-tested under relabeling, but a fresh six-fixture comparison still shows the same aromaticity/type residuals | Independently validate the relevant-cycle / minimum-cycle-basis representative family against the six-molecule oracle; do not claim #337 resolved from the safety cap or tie-break determinism alone |
@@ -66,6 +76,7 @@ repository retains historical issue references.
 - `cargo test -p chematic-smiles --test canonical_ez_residual --offline` — 5 passed; the three-family aromatic-stash residual is now rejected by `canonical_smiles_stable_key()` rather than accepted as a dedup/cache key.
 - `cargo test -p chematic-smiles --test canonical_ez_residual --offline` — now includes the three-family exact-output/fail-closed residual contract.
 - `cargo test -p chematic-smiles --lib issue149_aromatic_stash_matches_exhaustive_oracle --offline` — the orbit-pruned search matches the unpruned exhaustive oracle for the three corpus spellings plus both observed aromatic-stash variants of each (9 spellings total); the two representation-dependent winners remain deliberately unresolved.
+- `cargo test -p chematic-smiles --lib ez_shared_carrier_held_out_residuals --offline` — the focused #503 held-out fail-closed and relabeling-determinism tests pass after reverting the unstable carrier-side normalization experiment.
 - `python3 scripts/check_streaming_cross_engine.py --format xyz --repeats 20` — issue #488's same-input XYZ contract passes: chematic and RDKit both report 40 records, 0 failures, and 3,220 input bytes; boundaries remain Rust file-backed `BufRead` versus RDKit Python block parsing.
 - `python3 scripts/check_streaming_cross_engine.py --format mol --repeats 20` — issue #490's same-input V2000 MOL contract passes: chematic and RDKit both report 40 records, 0 failures, and 12,660 source bytes; boundaries remain Rust file-backed `BufRead` versus RDKit Python block parsing.
 - `python3 scripts/check_streaming_cross_engine.py --format v3000 --repeats 20` — issue #491's same-input V3000 contract passes: chematic and RDKit both report 20 records, 0 failures, and 5,960 source bytes; chematic's current path is explicitly materialized while RDKit uses a Python block parser.
