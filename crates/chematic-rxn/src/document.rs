@@ -174,6 +174,20 @@ impl ReactionDocument {
                     "step IDs must be non-empty and unique".to_string(),
                 ));
             }
+            for condition in &step.conditions {
+                if condition.key.is_empty() {
+                    return Err(ReactionDocumentError::InvalidDocument(
+                        "reaction condition keys must be non-empty".to_string(),
+                    ));
+                }
+            }
+            for provenance in &step.provenance {
+                if provenance.source.is_empty() || provenance.kind.is_empty() {
+                    return Err(ReactionDocumentError::InvalidDocument(
+                        "step provenance source and kind must be non-empty".to_string(),
+                    ));
+                }
+            }
             for component in &step.components {
                 if component.id.is_empty() || !ids.insert(component.id.clone()) {
                     return Err(ReactionDocumentError::InvalidDocument(
@@ -197,6 +211,13 @@ impl ReactionDocument {
                         component.id
                     )))
                 })?;
+            }
+        }
+        for provenance in &self.provenance {
+            if provenance.source.is_empty() || provenance.kind.is_empty() {
+                return Err(ReactionDocumentError::InvalidDocument(
+                    "document provenance source and kind must be non-empty".to_string(),
+                ));
             }
         }
         Ok(())
@@ -313,5 +334,29 @@ mod tests {
         let error = document.validate().unwrap_err();
         assert!(matches!(error, ReactionDocumentError::Parse(_)));
         assert!(error.to_string().contains("invalid component"));
+    }
+
+    #[test]
+    fn validation_rejects_unidentifiable_metadata() {
+        let mut document = ReactionDocument::from_reaction_smiles("CC>>CC").unwrap();
+        document.steps[0].conditions.push(ReactionCondition {
+            key: String::new(),
+            value: "25 C".into(),
+        });
+        assert!(matches!(
+            document.validate(),
+            Err(ReactionDocumentError::InvalidDocument(_))
+        ));
+
+        let mut document = ReactionDocument::from_reaction_smiles("CC>>CC").unwrap();
+        document.provenance.push(ProvenanceRecord {
+            source: "source-id".into(),
+            kind: String::new(),
+            note: None,
+        });
+        assert!(matches!(
+            document.validate(),
+            Err(ReactionDocumentError::InvalidDocument(_))
+        ));
     }
 }
