@@ -63,6 +63,15 @@ The audit therefore remains evidence for follow-up work, not a closure of
 rejected because the checked-in negative simulation regresses furan. Any next
 typing change requires a coordinated C/N/O/S oracle-parity gate.
 
+The current audit also caught and fixed an independent P-typing collision:
+the generic phosphorus path returned numeric type 20, whose registry entry is
+the carbon-only CR4R type. The corrected path returns registry type 26 for
+tricoordinate P and type 75 for P=C; the constructed phosphonium-ylide probe
+now passes the semantic-compatibility invariant. The re-run removes the
+typing error and reduces the bond/angle gate-would-fail count from 2 to 1,
+but leaves one final unresolved angle and 24 torsion misses, so #227 remains
+open.
+
 Evidence: `validation/results/mmff94_coverage_227_term_audit_summary.json`,
 `validation/results/mmff94_coverage_227_root_cause_classification.json`, and
 the provenance decision in `scripts/mmff94_provenance/PROVENANCE.md`.
