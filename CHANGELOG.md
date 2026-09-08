@@ -16,6 +16,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   typed invalid-document errors instead of silently changing page structure.
 - Semantic polymer JSON parsing now rejects repeat endpoint indices outside
   the `u32` contract instead of truncating them during deserialization.
+- Rich reaction components now expose optional, validated atom-map identities
+  (map number plus component-local atom index), populated by RXN/SMILES-derived
+  documents without breaking older authored JSON.
 - Added an experimental, bounded periodic-structure geometry fingerprint with
   deterministic stored-representation semantics, provenance, JSON Schema, and
   WASM validation/fingerprint support.

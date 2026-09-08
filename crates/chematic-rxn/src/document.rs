@@ -35,11 +35,26 @@ pub struct ReactionComponent {
     pub role: ComponentRole,
     /// Canonical or source SMILES for the component.
     pub smiles: String,
+    /// Explicit atom-map identities in the component's serialized atom order.
+    ///
+    /// This is additive metadata for document consumers that need stable
+    /// references without reparsing SMILES. An omitted/empty list preserves
+    /// compatibility with older authored JSON; adapters that populate it must
+    /// agree with the map annotations in `smiles`.
+    #[serde(default)]
+    pub atom_maps: Vec<ReactionAtomMap>,
     /// Positive stoichiometric coefficient.
     #[serde(default = "one")]
     pub coefficient: u32,
     #[serde(default = "default_origin")]
     pub origin: ContentOrigin,
+}
+
+/// An atom-map number and its stable zero-based position within one component.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ReactionAtomMap {
+    pub map_number: u16,
+    pub atom_index: u32,
 }
 
 /// A named reaction condition, kept ordered for deterministic serialization.
@@ -152,10 +167,12 @@ impl ReactionDocument {
             (ComponentRole::Product, &reaction.products),
         ] {
             for (index, molecule) in molecules.iter().enumerate() {
+                let smiles = chematic_smiles::write(molecule);
                 components.push(ReactionComponent {
                     id: format!("{}-{}", role_name(role), index + 1),
                     role,
-                    smiles: chematic_smiles::write(molecule),
+                    atom_maps: atom_maps_for_smiles(&smiles),
+                    smiles,
                     coefficient: 1,
                     origin: ContentOrigin::Derived,
                 });
@@ -225,12 +242,46 @@ impl ReactionDocument {
                 // to split into three parseable sections.  Keep this boundary
                 // loss-aware by validating the payload with the molecule
                 // parser directly.
-                chematic_smiles::parse(&component.smiles).map_err(|e| {
+                let molecule = chematic_smiles::parse(&component.smiles).map_err(|e| {
                     ReactionDocumentError::Parse(RxnErrorMessage(format!(
                         "invalid component '{}': {e}",
                         component.id
                     )))
                 })?;
+                if !component.atom_maps.is_empty() {
+                    let mut seen = std::collections::HashSet::new();
+                    for atom_map in &component.atom_maps {
+                        if atom_map.atom_index as usize >= molecule.atom_count() {
+                            return Err(ReactionDocumentError::InvalidDocument(format!(
+                                "atom-map index {} is outside component '{}'",
+                                atom_map.atom_index, component.id
+                            )));
+                        }
+                        if !seen.insert(atom_map.map_number) {
+                            return Err(ReactionDocumentError::InvalidDocument(format!(
+                                "atom-map number {} is duplicated in component '{}'",
+                                atom_map.map_number, component.id
+                            )));
+                        }
+                        if molecule
+                            .atom(chematic_core::AtomIdx(atom_map.atom_index))
+                            .atom_map
+                            != Some(atom_map.map_number)
+                        {
+                            return Err(ReactionDocumentError::InvalidDocument(format!(
+                                "atom-map identity {}:{} does not match component '{}' SMILES",
+                                atom_map.map_number, atom_map.atom_index, component.id
+                            )));
+                        }
+                    }
+                    let expected = atom_maps_for_molecule(&molecule);
+                    if component.atom_maps != expected {
+                        return Err(ReactionDocumentError::InvalidDocument(format!(
+                            "atom-map identities do not cover component '{}' SMILES",
+                            component.id
+                        )));
+                    }
+                }
             }
         }
         for provenance in &self.provenance {
@@ -301,6 +352,25 @@ impl ReactionDocument {
     }
 }
 
+fn atom_maps_for_molecule(molecule: &chematic_core::Molecule) -> Vec<ReactionAtomMap> {
+    molecule
+        .atoms()
+        .map(|(index, atom)| (index.0, atom))
+        .filter_map(|(atom_index, atom)| {
+            atom.atom_map.map(|map_number| ReactionAtomMap {
+                map_number,
+                atom_index,
+            })
+        })
+        .collect()
+}
+
+fn atom_maps_for_smiles(smiles: &str) -> Vec<ReactionAtomMap> {
+    chematic_smiles::parse(smiles)
+        .map(|molecule| atom_maps_for_molecule(&molecule))
+        .unwrap_or_default()
+}
+
 fn one() -> u32 {
     1
 }
@@ -357,6 +427,36 @@ mod tests {
             ReactionDocument::from_json_str(&serde_json::to_string(&value).unwrap()).unwrap_err();
         assert!(matches!(error, ReactionDocumentError::Parse(_)));
         assert!(error.to_string().contains("invalid component"));
+    }
+
+    #[test]
+    fn derived_document_exposes_atom_map_identities() {
+        let document = ReactionDocument::from_reaction_smiles("[CH3:7]>>[CH3:7]").unwrap();
+        assert_eq!(
+            document.steps[0].components[0].atom_maps,
+            vec![ReactionAtomMap {
+                map_number: 7,
+                atom_index: 0,
+            }]
+        );
+        assert_eq!(
+            document.steps[0].components[1].atom_maps,
+            vec![ReactionAtomMap {
+                map_number: 7,
+                atom_index: 0,
+            }]
+        );
+        document.validate().unwrap();
+    }
+
+    #[test]
+    fn validation_rejects_atom_map_identity_mismatch() {
+        let mut document = ReactionDocument::from_reaction_smiles("[CH3:7]>>[CH3:7]").unwrap();
+        document.steps[0].components[0].atom_maps[0].map_number = 8;
+        let error = document.validate().unwrap_err();
+        assert!(
+            matches!(error, ReactionDocumentError::InvalidDocument(message) if message.contains("atom-map identity"))
+        );
     }
 
     #[test]

@@ -27,8 +27,8 @@ pub mod transform;
 
 pub use balance::{BalanceResult, balance_check};
 pub use document::{
-    ComponentRole, ContentOrigin, ProvenanceRecord, ReactionComponent, ReactionCondition,
-    ReactionDocument, ReactionDocumentError, ReactionLoss, ReactionStep,
+    ComponentRole, ContentOrigin, ProvenanceRecord, ReactionAtomMap, ReactionComponent,
+    ReactionCondition, ReactionDocument, ReactionDocumentError, ReactionLoss, ReactionStep,
 };
 pub use enumerate::{
     LibraryConfig, LibraryError, enumerate_library, enumerate_library_2way, enumerate_library_3way,

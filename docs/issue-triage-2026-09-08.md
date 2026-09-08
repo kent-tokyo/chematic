@@ -126,6 +126,11 @@ The public `ReactionDocument::from_json_str` constructor now combines serde
 deserialization with model validation. Python and WASM RXN-document writers
 use this checked constructor, so binding callers cannot bypass component,
 coefficient, ID, or metadata validation by supplying JSON directly.
+Components now also expose optional `atom_maps` identities containing the
+map number and component-local atom index. Derived documents populate these
+from their SMILES, while authored documents that provide the field must match
+the serialized molecule exactly; this makes atom-map identity explicit without
+breaking older JSON that omits the additive field.
 
 This is validation hardening only. Full upstream-backed RXN dialect support,
 including any format-specific metadata beyond the current loss-aware V2000
