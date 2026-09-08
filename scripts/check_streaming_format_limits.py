@@ -112,10 +112,10 @@ def main() -> int:
         return 1
     malformed = corpus["cases"]
     if any(
-        not isinstance(cases, list) or len(cases) != 6 or any(not isinstance(case, str) for case in cases)
+        not isinstance(cases, list) or len(cases) != 8 or any(not isinstance(case, str) for case in cases)
         for cases in malformed.values()
     ):
-        print("streaming safety corpus must contain exactly six string cases for every format", file=sys.stderr)
+        print("streaming safety corpus must contain exactly eight string cases for every format", file=sys.stderr)
         return 1
 
     # CML/CDXML are deliberately lenient about unknown/empty structure and

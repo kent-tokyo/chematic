@@ -109,6 +109,10 @@ Completed on the v1.0.9 release candidate tree:
   corpus and dependency-free gate now cover six cases per format (54/54
   negative cases), while the typed line-limit boundary remains explicit for
   lenient CML/CDXML/PDB readers.
+- [x] Add issue #506's third malformed case pair for every runner format. The
+  corpus and dependency-free gate now cover eight cases per format (72/72
+  negative cases), retaining the explicit typed line-limit boundary for
+  lenient CML/CDXML/PDB readers.
 
 - [x] Close #210's five named legacy-coordinate UFF stereo-rescue residuals.
   Every returned geometry is finite, bond-sane, and independently checked
@@ -203,8 +207,8 @@ documentation, and required measurement agree.
   runner now covers PDB and applies explicit parser limits to MOL2, CML,
   CDXML, and mmCIF, and supports bounded gzip decoding for every runner
   format; full strict malformed-corpus coverage remains open. The
-  dependency-free gate passes six negative cases for every runner format
-  (54/54), one oversized case for every runner format (9/9), plus nine gzip
+  dependency-free gate passes eight negative cases for every runner format
+  (72/72), one oversized case for every runner format (9/9), plus nine gzip
   controls and nine post-decompression limit cases; broader malformed corpus
   coverage remains open.
 - [x] Add bounded Rust streaming batch APIs with cancellation, pull-based
