@@ -98,6 +98,23 @@ Evidence:
 - Python and Node/WASM cross-binding contract tests cover the same null-state
   JSON and explicit repeat-count command.
 
+## Issue #460 — rich RXN document validation boundary
+
+The existing typed reaction-document foundation now validates each component
+as one molecule with the molecule parser directly. This keeps the component
+boundary distinct from the three-section reaction parser and reports the
+component ID in the typed parse error. A regression test rejects a reaction
+payload placed where a single component SMILES is required.
+
+This is validation hardening only. Full upstream-backed RXN dialect support,
+including any format-specific metadata beyond the current loss-aware V2000
+adapter, remains open.
+
+Evidence:
+
+- `cargo test -p chematic-rxn document --offline` — 4 passed.
+- `git diff --check` — passed.
+
 ## Issue #337 — typed symmetrized-ring cap outcome
 
 The bounded symmetrized-SSSR path now exposes

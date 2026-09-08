@@ -185,8 +185,18 @@ impl ReactionDocument {
                         "component SMILES and positive coefficient are required".to_string(),
                     ));
                 }
-                parse_reaction(&format!("{}>>{}", component.smiles, component.smiles))
-                    .map_err(|e| ReactionDocumentError::Parse(RxnErrorMessage(e.to_string())))?;
+                // A component is one molecule, not a reaction section.  Going
+                // through `parse_reaction` here could accidentally accept a
+                // payload containing `>` when the surrounding text happened
+                // to split into three parseable sections.  Keep this boundary
+                // loss-aware by validating the payload with the molecule
+                // parser directly.
+                chematic_smiles::parse(&component.smiles).map_err(|e| {
+                    ReactionDocumentError::Parse(RxnErrorMessage(format!(
+                        "invalid component '{}': {e}",
+                        component.id
+                    )))
+                })?;
             }
         }
         Ok(())
@@ -293,5 +303,15 @@ mod tests {
         let json = serde_json::to_string(&document).unwrap();
         let decoded: ReactionDocument = serde_json::from_str(&json).unwrap();
         assert_eq!(decoded, document);
+    }
+
+    #[test]
+    fn component_validation_rejects_reaction_payloads() {
+        let mut document = ReactionDocument::from_reaction_smiles("CC>>CC").unwrap();
+        document.steps[0].components[0].smiles = "C>C".to_string();
+
+        let error = document.validate().unwrap_err();
+        assert!(matches!(error, ReactionDocumentError::Parse(_)));
+        assert!(error.to_string().contains("invalid component"));
     }
 }
