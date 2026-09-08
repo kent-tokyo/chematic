@@ -99,6 +99,10 @@ Completed on the v1.0.9 release candidate tree:
   metadata, and fails on unexpected record/failure counts. A local 18-row run
   (9 formats × 2 compression modes, one repeat) is green; this is measurement
   coverage, not a cross-engine speed claim.
+- [x] Add issue #504's gzip safety coverage for every runner format. The
+  dependency-free gate now checks one valid gzip control and one
+  post-decompression `max-input-bytes` rejection for each of the nine formats
+  (18 gzip cases total), while malformed-corpus breadth remains separate.
 
 - [x] Close #210's five named legacy-coordinate UFF stereo-rescue residuals.
   Every returned geometry is finite, bond-sane, and independently checked
@@ -191,11 +195,12 @@ documentation, and required measurement agree.
 - [ ] Extend the common benchmark to V2000/V3000, XYZ, MOL2, CML, CDXML,
   PDB/mmCIF, and gzip, including malformed and oversized inputs. The local
   runner now covers PDB and applies explicit parser limits to MOL2, CML,
-  CDXML, and mmCIF, and supports bounded gzip SDF/XYZ decoding; full
-  strict malformed-corpus coverage remains open. The dependency-free gate
-  passes four negative cases for every runner format (36/36), one oversized
-  case for every runner format (9/9), plus two gzip cases; broader malformed
-  corpus coverage remains open.
+  CDXML, and mmCIF, and supports bounded gzip decoding for every runner
+  format; full strict malformed-corpus coverage remains open. The
+  dependency-free gate passes four negative cases for every runner format
+  (36/36), one oversized case for every runner format (9/9), plus nine gzip
+  controls and nine post-decompression limit cases; broader malformed corpus
+  coverage remains open.
 - [x] Add bounded Rust streaming batch APIs with cancellation, pull-based
   backpressure, deterministic ordering, and an explicit partial-result
   manifest (`SdfBatchReader`); cross-language streaming parity remains open.

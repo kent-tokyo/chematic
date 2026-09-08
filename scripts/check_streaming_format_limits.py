@@ -3,8 +3,9 @@
 
 This is intentionally a small negative-input contract, not a throughput
 benchmark. Every format accepted by ``streaming_benchmark`` gets four cases
-from the checked-in corpus and one input-size rejection. The gzip case
-additionally proves that the limit is applied after decompression.
+from the checked-in corpus and one input-size rejection. The gzip cases
+additionally prove that the limit is applied after decompression for every
+runner format.
 """
 
 from __future__ import annotations
@@ -162,43 +163,42 @@ def main() -> int:
                 errors,
             )
 
-        gzip_path = temp / "streaming.sdf.gz"
-        with gzip.open(gzip_path, "wb") as output:
-            output.write(valid["sdf"].read_bytes())
-        result = run_runner(args.binary, "sdf", gzip_path, "--gzip")
-        require(
-            result["records"] == 2 and result["failures"] == 0,
-            f"gzip control case did not parse two records: {result}",
-            errors,
-        )
-        result = run_runner(args.binary, "sdf", gzip_path, "--gzip", "--max-input-bytes", "1")
-        require(
-            result["records"] == 0 and result["failures"] == 1,
-            f"gzip decompressed input limit was not enforced: {result}",
-            errors,
-        )
-
-        gzip_xyz_path = temp / "streaming.xyz.gz"
-        with gzip.open(gzip_xyz_path, "wb") as output:
-            output.write(valid["xyz"].read_bytes())
-        result = run_runner(args.binary, "xyz", gzip_xyz_path, "--gzip")
-        require(
-            result["records"] == 2 and result["failures"] == 0,
-            f"gzip XYZ control case did not parse two frames: {result}",
-            errors,
-        )
-        result = run_runner(args.binary, "xyz", gzip_xyz_path, "--gzip", "--max-input-bytes", "1")
-        require(
-            result["records"] == 0 and result["failures"] == 1,
-            f"gzip XYZ decompressed input limit was not enforced: {result}",
-            errors,
-        )
+        expected_records = {
+            "sdf": 2,
+            "mol": 2,
+            "xyz": 2,
+            "v3000": 1,
+            "mol2": 1,
+            "cml": 1,
+            "cdxml": 1,
+            "mmcif": 1,
+            "pdb": 1,
+        }
+        gzip_cases = 0
+        for fmt, source in valid.items():
+            gzip_path = temp / f"{fmt}.gz"
+            with gzip.open(gzip_path, "wb") as output:
+                output.write(source.read_bytes())
+            result = run_runner(args.binary, fmt, gzip_path, "--gzip")
+            gzip_cases += 1
+            require(
+                result["records"] == expected_records[fmt] and result["failures"] == 0,
+                f"gzip {fmt} control case did not parse expected records: {result}",
+                errors,
+            )
+            result = run_runner(args.binary, fmt, gzip_path, "--gzip", "--max-input-bytes", "1")
+            gzip_cases += 1
+            require(
+                result["records"] == 0 and result["failures"] == 1,
+                f"gzip {fmt} decompressed input limit was not enforced: {result}",
+                errors,
+            )
 
     if errors:
         print("streaming format limit failures:", file=sys.stderr)
         print("\n".join(errors), file=sys.stderr)
         return 1
-    print(f"streaming format limits OK: {malformed_count} negative, 9 oversized, 4 gzip cases")
+    print(f"streaming format limits OK: {malformed_count} negative, 9 oversized, {gzip_cases} gzip cases")
     return 0
 
 
