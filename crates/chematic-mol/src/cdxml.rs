@@ -83,6 +83,8 @@ impl Default for CdxmlParseLimits {
 /// Error returned when parsing a CDXML document fails.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CdxmlError {
+    /// The input did not contain one well-formed CDXML document root.
+    InvalidDocument(String),
     /// An atom `Element` attribute contained an unknown atomic number.
     UnknownAtomicNumber(u32),
     /// A bond referenced an atom id that was not defined.
@@ -106,6 +108,7 @@ pub enum CdxmlError {
 impl std::fmt::Display for CdxmlError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            CdxmlError::InvalidDocument(s) => write!(f, "invalid CDXML document: {s}"),
             CdxmlError::UnknownAtomicNumber(n) => write!(f, "unknown atomic number: {n}"),
             CdxmlError::UnknownAtomRef(s) => write!(f, "unknown atom ref: {s}"),
             CdxmlError::AmbiguousPageId(s) => write!(f, "ambiguous page id: {s}"),

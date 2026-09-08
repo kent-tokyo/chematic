@@ -147,6 +147,10 @@ The structural scanner also recognizes minified one-line CDXML while keeping
 the original source representation byte-for-byte available through `write()`.
 The edit path uses the same logical tag records for minified input, preserving
 its compact layout while applying page and object edits.
+The parser now requires exactly one opened and closed `<CDXML>` root with an
+exact tag-name boundary. Garbage input, `<CDXMLFoo>`, and an unterminated root
+are rejected as invalid documents rather than being accepted as empty
+documents; pages outside the root are rejected as well.
 
 This is a resource-safety slice only. Full ChemDraw presentation semantics,
 including every style, geometry, grouping, and annotation dialect, remain
@@ -154,7 +158,7 @@ outside the current adapter contract.
 
 Evidence:
 
-- `cargo test -p chematic-mol cdxml_document --offline` — 13 passed.
+- `cargo test -p chematic-mol cdxml_document --offline` — 15 passed.
 - `git diff --check` — passed.
 
 ## Issue #337 — typed symmetrized-ring cap outcome

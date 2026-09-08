@@ -92,6 +92,8 @@ impl CdxmlDocument {
         let mut document_attributes = BTreeMap::new();
         let mut pages = Vec::new();
         let mut current: Option<CdxmlPage> = None;
+        let mut saw_root = false;
+        let mut root_closed = false;
         for (line_no, raw) in logical_cdxml_lines(input).into_iter().enumerate() {
             if line_no >= limits.max_lines {
                 return Err(CdxmlError::ResourceLimit {
@@ -108,7 +110,32 @@ impl CdxmlDocument {
                 });
             }
             let line = raw.trim();
-            if line.starts_with("<page") && !line.starts_with("</page") {
+            if is_open_tag(line, "CDXML") {
+                if saw_root || root_closed {
+                    return Err(CdxmlError::InvalidDocument(
+                        "duplicate CDXML root element".into(),
+                    ));
+                }
+                saw_root = true;
+                let attrs = parse_xml_attrs(line);
+                check_attribute_budget(&attrs, limits)?;
+                document_attributes = attrs
+                    .into_iter()
+                    .map(|(k, v)| (k, Value::String(v)))
+                    .collect();
+            } else if is_close_tag(line, "CDXML") {
+                if !saw_root || root_closed || current.is_some() {
+                    return Err(CdxmlError::InvalidDocument(
+                        "invalid CDXML root closing element".into(),
+                    ));
+                }
+                root_closed = true;
+            } else if is_open_tag(line, "page") {
+                if !saw_root || root_closed {
+                    return Err(CdxmlError::InvalidDocument(
+                        "page element is outside the CDXML root".into(),
+                    ));
+                }
                 if pages.len() >= limits.max_fragments {
                     return Err(CdxmlError::ResourceLimit {
                         resource: "pages",
@@ -127,52 +154,49 @@ impl CdxmlDocument {
                         .collect(),
                     children: Vec::new(),
                 });
-            } else if line.starts_with("</page") {
+            } else if is_close_tag(line, "page") {
                 if let Some(page) = current.take() {
                     pages.push(page);
                 }
-            } else if let Some(page) = current.as_mut() {
-                if line.starts_with('<')
+            } else if let Some(page) = current.as_mut()
+                && line.starts_with('<')
                     && !line.starts_with("</")
                     && !line.starts_with("<?")
                     && !line.starts_with("<!")
-                {
-                    let tag = line
-                        .trim_start_matches('<')
-                        .split(|c: char| c.is_whitespace() || c == '>' || c == '/')
-                        .next()
-                        .unwrap_or_default()
-                        .to_string();
-                    if page.children.len() >= limits.max_bonds.saturating_add(limits.max_atoms) {
-                        return Err(CdxmlError::ResourceLimit {
-                            resource: "objects",
-                            actual: page.children.len() + 1,
-                            limit: limits.max_bonds.saturating_add(limits.max_atoms),
-                        });
-                    }
-                    let parsed_attrs = parse_xml_attrs(line);
-                    check_attribute_budget(&parsed_attrs, limits)?;
-                    let attrs = parsed_attrs
-                        .into_iter()
-                        .map(|(k, v)| (k, Value::String(v)))
-                        .collect();
-                    page.children.push(CdxmlObject {
-                        tag,
-                        attributes: attrs,
-                        raw_xml: raw.to_string(),
+            {
+                let tag = line
+                    .trim_start_matches('<')
+                    .split(|c: char| c.is_whitespace() || c == '>' || c == '/')
+                    .next()
+                    .unwrap_or_default()
+                    .to_string();
+                if page.children.len() >= limits.max_bonds.saturating_add(limits.max_atoms) {
+                    return Err(CdxmlError::ResourceLimit {
+                        resource: "objects",
+                        actual: page.children.len() + 1,
+                        limit: limits.max_bonds.saturating_add(limits.max_atoms),
                     });
                 }
-            } else if line.starts_with("<CDXML") {
-                let attrs = parse_xml_attrs(line);
-                check_attribute_budget(&attrs, limits)?;
-                document_attributes = attrs
+                let parsed_attrs = parse_xml_attrs(line);
+                check_attribute_budget(&parsed_attrs, limits)?;
+                let attrs = parsed_attrs
                     .into_iter()
                     .map(|(k, v)| (k, Value::String(v)))
                     .collect();
+                page.children.push(CdxmlObject {
+                    tag,
+                    attributes: attrs,
+                    raw_xml: raw.to_string(),
+                });
             }
         }
         if current.is_some() {
             return Err(CdxmlError::InvalidCoords("unterminated page".into()));
+        }
+        if !saw_root || !root_closed {
+            return Err(CdxmlError::InvalidDocument(
+                "missing or unterminated CDXML root element".into(),
+            ));
         }
         Ok(Self {
             document_attributes,
@@ -502,6 +526,30 @@ fn check_attribute_budget(
     Ok(())
 }
 
+fn is_open_tag(line: &str, name: &str) -> bool {
+    let Some(rest) = line.strip_prefix('<') else {
+        return false;
+    };
+    let Some(tail) = rest.strip_prefix(name) else {
+        return false;
+    };
+    tail.is_empty()
+        || tail
+            .chars()
+            .next()
+            .is_some_and(|ch| ch.is_whitespace() || ch == '>' || ch == '/')
+}
+
+fn is_close_tag(line: &str, name: &str) -> bool {
+    let Some(rest) = line.strip_prefix("</") else {
+        return false;
+    };
+    let Some(tail) = rest.strip_prefix(name) else {
+        return false;
+    };
+    tail.is_empty() || tail.starts_with('>')
+}
+
 fn validate_object_fragment(
     raw_xml: &str,
     limits: &CdxmlParseLimits,
@@ -583,6 +631,22 @@ mod tests {
             Value::String("yes".into())
         );
         assert_eq!(doc.write(), input);
+    }
+
+    #[test]
+    fn rejects_missing_or_ambiguous_document_root() {
+        for input in ["garbage", "<CDXMLFoo/>", "<CDXML>"] {
+            assert!(matches!(
+                CdxmlDocument::parse(input),
+                Err(CdxmlError::InvalidDocument(_))
+            ));
+        }
+    }
+
+    #[test]
+    fn accepts_empty_document_with_exact_root_name() {
+        let doc = CdxmlDocument::parse("<CDXML></CDXML>").unwrap();
+        assert_eq!(doc.page_count(), 0);
     }
 
     #[test]
