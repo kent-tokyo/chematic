@@ -63,6 +63,8 @@ pub enum RxnParseError {
     MissingHeader,
     /// The reactant/product count line could not be parsed.
     BadCountLine,
+    /// The declared number of MOL blocks does not match the file contents.
+    BlockCountMismatch { declared: usize, actual: usize },
     /// A MOL block inside the RXN file failed to parse.
     MolParse(MolParseError),
 }
@@ -109,6 +111,10 @@ impl core::fmt::Display for RxnParseError {
             } => write!(f, "RXN {resource} exceeds limit {limit} (got {actual})"),
             Self::MissingHeader => write!(f, "RXN file must start with $RXN"),
             Self::BadCountLine => write!(f, "cannot parse reactant/product count line"),
+            Self::BlockCountMismatch { declared, actual } => write!(
+                f,
+                "RXN declares {declared} MOL block(s), but contains {actual}"
+            ),
             Self::MolParse(e) => write!(f, "MOL parse error in RXN: {e}"),
         }
     }
@@ -259,6 +265,12 @@ pub fn parse_rxn_file_with_limits(
     let first_mol_pos = match text.find("$MOL") {
         Some(p) => p,
         None => {
+            if declared_molecules != 0 {
+                return Err(RxnParseError::BlockCountMismatch {
+                    declared: declared_molecules,
+                    actual: 0,
+                });
+            }
             return Ok(Reaction {
                 reactants: vec![],
                 agents: vec![],
@@ -273,12 +285,14 @@ pub fn parse_rxn_file_with_limits(
 
     let mut reactants = Vec::with_capacity(n_reactants);
     let mut products = Vec::with_capacity(n_products);
+    let mut actual_molecules = 0usize;
 
     for (i, block) in mol_blocks.enumerate() {
+        actual_molecules = i.saturating_add(1);
         if i >= limits.max_molecules {
             return Err(RxnParseError::ResourceLimit {
                 resource: "molecules",
-                actual: i.saturating_add(1),
+                actual: actual_molecules,
                 limit: limits.max_molecules,
             });
         }
@@ -289,6 +303,13 @@ pub fn parse_rxn_file_with_limits(
         } else if i < declared_molecules {
             products.push(mol);
         }
+    }
+
+    if actual_molecules != declared_molecules {
+        return Err(RxnParseError::BlockCountMismatch {
+            declared: declared_molecules,
+            actual: actual_molecules,
+        });
     }
 
     Ok(Reaction {
@@ -414,6 +435,29 @@ mod tests {
         let rxn2 = parse_rxn_file(&written).unwrap();
         assert_eq!(rxn2.reactants.len(), 1);
         assert_eq!(rxn2.products.len(), 1);
+    }
+
+    #[test]
+    fn rxn_rejects_declared_block_count_mismatch() {
+        let source = minimal_rxn_block();
+        let missing = source.replace("$MOL\n", "");
+        assert!(matches!(
+            parse_rxn_file(&missing),
+            Err(RxnParseError::BlockCountMismatch {
+                declared: 2,
+                actual: 0
+            })
+        ));
+
+        let first_block = source.split("$MOL\n").nth(1).unwrap();
+        let extra = format!("{source}$MOL\n{first_block}");
+        assert!(matches!(
+            parse_rxn_file(&extra),
+            Err(RxnParseError::BlockCountMismatch {
+                declared: 2,
+                actual: 3
+            })
+        ));
     }
 
     #[test]
