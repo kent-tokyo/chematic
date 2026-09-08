@@ -174,10 +174,16 @@ impl ReactionDocument {
                     "step IDs must be non-empty and unique".to_string(),
                 ));
             }
+            let mut condition_keys = std::collections::HashSet::new();
             for condition in &step.conditions {
                 if condition.key.is_empty() {
                     return Err(ReactionDocumentError::InvalidDocument(
                         "reaction condition keys must be non-empty".to_string(),
+                    ));
+                }
+                if !condition_keys.insert(&condition.key) {
+                    return Err(ReactionDocumentError::InvalidDocument(
+                        "reaction condition keys must be unique within a step".to_string(),
                     ));
                 }
             }
@@ -358,5 +364,22 @@ mod tests {
             document.validate(),
             Err(ReactionDocumentError::InvalidDocument(_))
         ));
+    }
+
+    #[test]
+    fn validation_rejects_duplicate_condition_keys() {
+        let mut document = ReactionDocument::from_reaction_smiles("CC>>CC").unwrap();
+        document.steps[0].conditions = vec![
+            ReactionCondition {
+                key: "temperature".into(),
+                value: "20 C".into(),
+            },
+            ReactionCondition {
+                key: "temperature".into(),
+                value: "25 C".into(),
+            },
+        ];
+        let error = document.validate().unwrap_err();
+        assert!(matches!(error, ReactionDocumentError::InvalidDocument(message) if message.contains("unique")));
     }
 }
