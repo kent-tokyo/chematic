@@ -650,6 +650,7 @@ pub fn find_symmetrized_sssr_with_diagnostics(mol: &Molecule) -> SymmetrizedSssr
         }
     }
 
+    let ranks = canonical_atom_ranks(mol);
     let base_keys: FxHashSet<Vec<u32>> = base_bonds.iter().map(bond_set_key).collect();
     let mut seen = base_keys.clone();
     let mut rings = base.rings().to_vec();
@@ -766,7 +767,9 @@ pub fn find_symmetrized_sssr_with_diagnostics(mol: &Molecule) -> SymmetrizedSssr
             if let Some(min_size) = replacements.iter().map(Vec::len).min() {
                 replacements.retain(|candidate| candidate.len() == min_size);
             }
-            replacements.sort_by_key(|candidate| bond_set_key(&ring_bond_set(mol, candidate)));
+            replacements.sort_by_key(|candidate| {
+                canonical_bond_set_key(mol, &ring_bond_set(mol, candidate), &ranks)
+            });
             for replacement in replacements {
                 direct_replacements.push(replacement);
             }
@@ -806,7 +809,6 @@ pub fn find_symmetrized_sssr_with_diagnostics(mol: &Molecule) -> SymmetrizedSssr
     // degenerate fused/bridged system; collapsing them to one representative
     // loses the active ring context needed by MMFF94 aromaticity.
     let mut extras = rings.split_off(base.ring_count());
-    let ranks = canonical_atom_ranks(mol);
     extras.sort_by_key(|ring| basis_exchange_key(mol, ring, &base_bonds, &ranks));
     rings.extend(extras);
 
@@ -1738,6 +1740,25 @@ mod tests {
             assert_eq!(
                 original_sizes, reversed_sizes,
                 "{name}: macrocycle sizes changed under relabeling"
+            );
+
+            let canonical_family = |candidate: &Molecule| {
+                let ranks = canonical_atom_ranks(candidate);
+                let mut keys: Vec<_> = find_symmetrized_sssr(candidate)
+                    .rings()
+                    .iter()
+                    .filter(|ring| ring.len() >= 20)
+                    .map(|ring| {
+                        canonical_bond_set_key(candidate, &ring_bond_set(candidate, ring), &ranks)
+                    })
+                    .collect();
+                keys.sort_unstable();
+                keys
+            };
+            assert_eq!(
+                canonical_family(&mol),
+                canonical_family(&reversed),
+                "{name}: canonical macrocycle family changed under relabeling"
             );
         }
     }
