@@ -228,15 +228,18 @@ pub fn parse_rxn_file_with_limits(
 
     // Line 5: "  nreactants  nproducts  …"
     let count_line = lines.next().unwrap_or("");
-    let counts: Vec<i64> = count_line
-        .split_whitespace()
-        .filter_map(|s| s.parse().ok())
-        .collect();
-    if counts.len() < 2 {
+    let count_tokens: Vec<&str> = count_line.split_whitespace().collect();
+    if count_tokens.len() < 2 {
         return Err(RxnParseError::BadCountLine);
     }
-    let n_reactants = counts[0].max(0) as usize;
-    let n_products = counts[1].max(0) as usize;
+    // Do not coerce malformed or negative counts to zero: doing so can make
+    // a truncated or hostile RXN appear to have a valid empty side.
+    let n_reactants = count_tokens[0]
+        .parse::<usize>()
+        .map_err(|_| RxnParseError::BadCountLine)?;
+    let n_products = count_tokens[1]
+        .parse::<usize>()
+        .map_err(|_| RxnParseError::BadCountLine)?;
     if n_reactants > limits.max_reactants {
         return Err(RxnParseError::ResourceLimit {
             resource: "reactants",
@@ -424,6 +427,18 @@ mod tests {
                 ..
             })
         ));
+    }
+
+    #[test]
+    fn rxn_rejects_malformed_or_negative_counts() {
+        let source = minimal_rxn_block();
+        for bad_count in ["-1 1", "one 1", "1 nope"] {
+            let malformed = source.replacen("  1  1", bad_count, 1);
+            assert!(matches!(
+                parse_rxn_file(&malformed),
+                Err(RxnParseError::BadCountLine)
+            ));
+        }
     }
 
     #[test]
