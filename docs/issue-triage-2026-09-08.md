@@ -386,6 +386,14 @@ is therefore pinned as `total=265`, `bond+angle-gate-would-fail=1`,
 `bonds_final_unresolved=0`, `angles_final_unresolved=1`,
 `torsions_missing=24`, and `stbn_final_unresolved=0`.
 
+The production strict-policy remeasurement was also rerun after the P-typing
+correction with `cargo run --release -p chematic-3d --example
+mmff94_strict_gate_remeasure_227 --offline`: all 265 molecules parsed, 264
+completed the bond+angle strict path, and only `chembl_tier_b_0022` remained
+fail-closed on the same `N(43)-S(18)-C(63)` angle. This confirms the issue's
+original 216/265 unsupported count is no longer current, but does not close
+#227 because the final tuple still lacks a source-validated parameter route.
+
 ## Issue #303 — bounded structural slice completed
 
 The explainable reactivity API now retains the existing epoxide, aziridine,
