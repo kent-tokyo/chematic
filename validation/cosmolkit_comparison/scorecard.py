@@ -111,6 +111,10 @@ def main() -> None:
         "corpus_sha256": next(iter(corpus_hashes)),
         "corpus_records": len(reference),
         "reference_engine": args.reference,
+        "configuration": {
+            "reference_engine": args.reference,
+            "operations": operations,
+        },
         "engines": engines,
         "operations": scorecard_operations,
     }
