@@ -12,6 +12,7 @@ use chematic_smarts::{
 };
 
 use crate::reaction::{RxnError, parse_reaction};
+use crate::requirements::ReactionRequirements;
 
 /// Error type for SMIRKS transformation.
 #[derive(Debug)]
@@ -279,6 +280,7 @@ pub struct PreparedReaction {
     /// primitives. The first variant remains the compatibility view for
     /// existing match/apply helpers; application methods dispatch to all.
     variants: Option<Vec<PreparedReaction>>,
+    requirements: ReactionRequirements,
 }
 
 impl PreparedReaction {
@@ -294,6 +296,10 @@ impl PreparedReaction {
             }
             let mut primary = Self::new_normalized(&variants[0])?;
             primary.variants = Some(compiled);
+            primary.requirements.element_lower_bounds.clear();
+            primary.requirements.aromatic_element_lower_bounds.clear();
+            primary.requirements.aliphatic_element_lower_bounds.clear();
+            primary.requirements.bond_lower_bounds.clear();
             return Ok(primary);
         }
         Self::new_normalized(smirks)
@@ -306,6 +312,7 @@ impl PreparedReaction {
         // Build a QueryMolecule from each reactant template, and record the
         // atom-map number for each query atom index.
         let queries: Vec<QueryMolecule> = rxn.reactants.iter().map(mol_to_query).collect();
+        let requirements = ReactionRequirements::from_queries(&queries);
         let template_atom_maps = template_atom_maps_of(&rxn);
 
         // Detect whether any reactant template carries @/@@ stereo, so we can apply
@@ -332,7 +339,18 @@ impl PreparedReaction {
             has_stereo,
             has_ez_stereo,
             variants: None,
+            requirements,
         })
+    }
+
+    /// Conservative lower bounds derived from the compiled reactant queries.
+    pub fn requirements(&self) -> &ReactionRequirements {
+        &self.requirements
+    }
+
+    /// Apply the cheap requirements-only prefilter without running VF2.
+    pub fn could_match(&self, reactants: &[&Molecule]) -> bool {
+        self.requirements.could_match(reactants)
     }
 
     /// Apply this compiled template, carrying unmapped substituents through.
