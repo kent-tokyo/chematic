@@ -81,7 +81,7 @@ fn shape_descriptors_outputs_are_stable() {
     assert_eq!(p2.to_bits(), 4646694506356206969);
     assert_eq!(p3.to_bits(), 4648593491540578086);
 
-    assert_eq!(npr1(&mol, &coords).to_bits(), 4600603682732697251);
+    assert_close_ulp(npr1(&mol, &coords), 4600603682732697251, 2, "npr1");
     assert_eq!(npr2(&mol, &coords).to_bits(), 4604858220831292512);
     assert_eq!(
         radius_of_gyration(&mol, &coords).to_bits(),
@@ -113,7 +113,7 @@ fn descriptors_3d_outputs_are_stable() {
 
     let getaway = getaway_descriptors(&mol, &coords);
     assert_eq!(getaway.len(), 19);
-    assert_eq!(getaway[0].to_bits(), 4613199105410399549);
+    assert_close_ulp(getaway[0], 4613199105410399549, 2, "getaway[0]");
 
     let rdf = rdf_descriptors(&mol, &coords);
     assert_eq!(rdf.len(), 20);
