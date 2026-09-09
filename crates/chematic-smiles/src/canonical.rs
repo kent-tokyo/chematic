@@ -680,6 +680,18 @@ impl<'a> CanonicalWriter<'a> {
         }
     }
 
+    /// Return the endpoint from which a raw direction was originally read.
+    /// Literal `Up`/`Down` orders are stored relative to the bond's atom1;
+    /// aromatic direction stashes retain the parser-side source endpoint
+    /// separately. Carrier selection must use the latter or two equivalent
+    /// spellings can encode the same geometry with opposite internal bond
+    /// orientation.
+    fn raw_direction_anchor(&self, bidx: BondIdx) -> AtomIdx {
+        self.mol
+            .bond_direction_anchor(bidx)
+            .unwrap_or(self.mol.bond(bidx).atom1)
+    }
+
     /// Maximum coupled-component size [`Self::resolve_component_jointly`]
     /// will attempt to jointly resolve via bounded enumeration
     /// (`2^size` candidate assignments). Measured, not guessed, and fully
@@ -1155,14 +1167,14 @@ impl<'a> CanonicalWriter<'a> {
         if let Some(dir) = self.raw_input_direction(reference.1) {
             Some(Self::direction_is_up(
                 dir,
-                self.mol.bond(reference.1).atom1,
+                self.raw_direction_anchor(reference.1),
                 alkene_end,
             ))
         } else {
             let dir = self.raw_input_direction(sibling.1)?;
             Some(!Self::direction_is_up(
                 dir,
-                self.mol.bond(sibling.1).atom1,
+                self.raw_direction_anchor(sibling.1),
                 alkene_end,
             ))
         }
@@ -3869,7 +3881,7 @@ mod tests {
                 relabel_molecule_preserving_ez(&mol, &(0..n).collect::<Vec<_>>()),
                 relabel_molecule_preserving_ez(&mol, &(0..n).rev().collect::<Vec<_>>()),
             ];
-            for seed in 0..64u64 {
+            for seed in 0..256u64 {
                 variants.push(relabel_molecule_preserving_ez(
                     &mol,
                     &deterministic_permutation(n, seed),
@@ -3907,7 +3919,7 @@ mod tests {
             assert_eq!(
                 outputs.len(),
                 2,
-                "'{input}': 64-seed residual audit must retain exactly two outputs"
+                "'{input}': 256-seed residual audit must retain exactly two outputs"
             );
             assert!(
                 canonical_smiles_stable_key(&mol).is_none(),

@@ -816,6 +816,33 @@ fn from_pdb(pdb_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>)> {
     ))
 }
 
+/// Parse a PDB string with fixed-column validation and return ``(Mol, coords)``.
+///
+/// Unlike :func:`from_pdb`, this opt-in API rejects ATOM/HETATM records with
+/// missing, non-numeric, or non-finite serial, residue sequence, or XYZ fields.
+/// Non-atom records remain ignored and the same finite resource limits as the
+/// Rust core are applied.
+#[pyfunction]
+fn from_pdb_strict(pdb_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>)> {
+    let atoms =
+        chematic_3d::parse_pdb_atoms_strict(pdb_str, &chematic_3d::PdbParseLimits::default())
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    if atoms.is_empty() {
+        return Err(PyValueError::new_err(
+            "no ATOM/HETATM records found in PDB input",
+        ));
+    }
+    let (mol, c3d) = chematic_3d::pdb_to_molecule(&atoms);
+    let coords = c3d.points.iter().map(|p| vec![p.x, p.y, p.z]).collect();
+    Ok((
+        Mol {
+            inner: Arc::new(mol),
+            props: Default::default(),
+        },
+        coords,
+    ))
+}
+
 /// Parse an XYZ string and return ``(Mol, coords)`` where coords is a list of ``[x,y,z]``.
 ///
 /// Bond information is inferred from inter-atom distances.
@@ -2404,6 +2431,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(is_valid_smarts, m)?)?;
     m.add_function(wrap_pyfunction!(from_inchi, m)?)?;
     m.add_function(wrap_pyfunction!(from_pdb, m)?)?;
+    m.add_function(wrap_pyfunction!(from_pdb_strict, m)?)?;
     m.add_function(wrap_pyfunction!(from_xyz, m)?)?;
     m.add_function(wrap_pyfunction!(from_extxyz, m)?)?;
     m.add_function(wrap_pyfunction!(from_extxyz_all, m)?)?;

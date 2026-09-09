@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "status": "local-verified-source-only",
+  "scope": "PDBQT topology and coordinate/charge parsing contract",
+  "fixture": "validation/cross_binding_contract.json#/pdbqt_contract",
+  "bindings": {
+    "rust": {"status": "pass", "tests": 1},
+    "wasm_source": {"status": "pass", "tests": 1},
+    "python": {"status": "pass", "tests": 1, "extension": "schematic 1.0.10 local wheel"},
+    "node_generated_artifact": {"status": "not_available", "reason": "checked-in artifact does not export mol_from_pdbqt"}
+  },
+  "commands": [
+    "cargo test -p chematic-wasm --offline pdbqt_contract_matches_shared_source_only_fixture",
+    "PYTHONPATH=/private/tmp/chematic-py-v110/lib/python3.13/site-packages PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest crates/chematic-py/tests/test_cross_binding_contract.py -q",
+    "python3 scripts/check_cross_binding_manifest.py"
+  ],
+  "expected": {
+    "atom_count": 2,
+    "coords": [[0.0, 0.0, 0.0], [1.4, 0.0, 0.0]],
+    "charges": [0.1, -0.2],
+    "malformed_input_rejected": true
+  },
+  "result": "Rust/WASM source and Python extension agree on the checked-in PDBQT fixture; Node generated-artifact parity remains explicitly open."
+}

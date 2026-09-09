@@ -486,7 +486,17 @@ pub(crate) fn resolve_is_r_from_groups(
     // can share a physical position's group, and that position's rank_of lookup below
     // must still resolve. Highest-priority group first (rank_children's own convention)
     // -> rank N down to rank 1, matching assign_tetrahedral's swap-counting convention.
-    let n = groups.len() as u8;
+    // This helper is normally reached only after the digraph has supplied four
+    // physical positions and at least one rank group. Keep the boundary explicit,
+    // though: this is an internal fallback path and must decline malformed state
+    // rather than panic on an unchecked map/index conversion.
+    if position_nodes.len() != 4 {
+        return None;
+    }
+    let n = u8::try_from(groups.len()).ok()?;
+    if n == 0 {
+        return None;
+    }
     let mut rank_of: HashMap<NodeId, u8> = HashMap::new();
     for (group_idx, group) in groups.iter().enumerate() {
         for &node in group {
@@ -494,7 +504,10 @@ pub(crate) fn resolve_is_r_from_groups(
         }
     }
 
-    let raw_ranks: Vec<u8> = position_nodes.iter().map(|node| rank_of[node]).collect();
+    let raw_ranks: Vec<u8> = position_nodes
+        .iter()
+        .map(|node| rank_of.get(node).copied())
+        .collect::<Option<_>>()?;
     // Dense-remap to 1..=4: a duplicate sibling (e.g. from a double bond at the
     // stereocenter itself) can occupy a rank slot between two physical positions, so
     // their raw ranks aren't necessarily {1,2,3,4} contiguously.
@@ -592,4 +605,42 @@ fn swap_parity(remaining_ranks: &[u8]) -> Option<bool> {
         }
     }
     Some(swaps % 2 == 1)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::resolve_is_r_from_groups;
+    use chematic_core::Chirality;
+
+    use crate::node::NodeId;
+
+    #[test]
+    fn resolve_is_r_declines_malformed_position_state() {
+        let four_positions = [NodeId(1), NodeId(2), NodeId(3), NodeId(4)];
+        let complete_groups = four_positions
+            .iter()
+            .map(|&node| vec![node])
+            .collect::<Vec<_>>();
+
+        assert!(
+            resolve_is_r_from_groups(&complete_groups, &four_positions, Chirality::Clockwise,)
+                .is_some()
+        );
+        assert_eq!(
+            resolve_is_r_from_groups(&complete_groups, &four_positions[..3], Chirality::Clockwise,),
+            None
+        );
+        assert_eq!(
+            resolve_is_r_from_groups(
+                &complete_groups,
+                &[NodeId(1), NodeId(2), NodeId(3), NodeId(99)],
+                Chirality::Clockwise,
+            ),
+            None
+        );
+        assert_eq!(
+            resolve_is_r_from_groups(&[], &four_positions, Chirality::Clockwise),
+            None
+        );
+    }
 }

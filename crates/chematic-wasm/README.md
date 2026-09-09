@@ -29,6 +29,8 @@ npm install @kent-tokyo/chematic
   deterministic input indices and partial/complete status; bounded malformed
   XYZ frames are grouped inline as rejected records when a later count-line
   boundary is recoverable (core file-backed readers remain fail-stop)
+- Bounded topology parsing for CML, ChemicalJSON (`mol_from_cjson`), MolJSON,
+  CDXML, MOL2, and PDB/mmCIF
 - PDBx/mmCIF, PQR, QCSchema JSON, ORCA input/output, Gaussian Cube, OpenDX,
   and LAMMPS data/dump I/O (JSON-based bindings; see `format_io.rs`)
 - Topological descriptors: Wiener index, Hall-Kier κ, χ connectivity indices, Bertz CT
@@ -73,7 +75,7 @@ console.log(mol.qed());                // drug-likeness score [0, 1]
 console.log(mol.exact_mass());         // ~180.042
 console.log(mol.hbd_count());          // 1
 console.log(mol.hba_count());          // 4
-console.log(mol.rotatable_bond_count()); // 3
+console.log(mol.rotatable_bond_count()); // 2 (RDKit Lipinski definition)
 console.log(mol.aromatic_ring_count()); // 1
 console.log(mol.lipinski_passes());     // true
 console.log(mol.canonical_smiles());    // canonical SMILES string
@@ -167,7 +169,7 @@ and enforced correctly on all of them.
 
 ## Bundle Size
 
-The optimized v1.0.9 candidate artifact was measured at **3.58 MB raw / 1.31 MB gzip**. Bundle size depends on features and toolchain; see [`benchmarks/2026-09-07-wasm-size-v1.0.9.md`](../../benchmarks/2026-09-07-wasm-size-v1.0.9.md) for exact tools, digest, and reproduction steps.
+The optimized v1.0.10 candidate artifact was measured at **3.73 MB raw / 1.36 MB gzip**. Bundle size depends on features and toolchain; see [`benchmarks/2026-09-09-wasm-size-v1.0.10.md`](../../benchmarks/2026-09-09-wasm-size-v1.0.10.md) for exact tools, digest, and reproduction steps.
 
 PNG rasterization (`tiny_skia`) is excluded from the WASM build — use SVG output instead. All SVG depiction APIs remain fully available.
 

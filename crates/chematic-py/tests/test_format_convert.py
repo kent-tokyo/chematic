@@ -71,6 +71,21 @@ def test_convert_rejects_oversized_input_before_parsing():
         chematic.convert_format("C" * (16 * 1024 * 1024 + 1), "smiles", "mol")
 
 
+def test_pdb_strict_parser_is_opt_in():
+    valid = (
+        "ATOM      1  CA  ALA A   1      10.000  11.000  12.000  1.00 20.00           C  "
+    )
+    mol, coords = chematic.from_pdb_strict(valid)
+    assert isinstance(mol, chematic.Mol)
+    assert coords == [[10.0, 11.0, 12.0]]
+
+    malformed = "ATOM      1  CA  ALA A   1      10.000  11.000\n"
+    # Compatibility mode retains the partial record, while strict mode fails.
+    assert len(chematic.from_pdb(malformed)[1]) == 1
+    with pytest.raises(ValueError, match="invalid PDB z field"):
+        chematic.from_pdb_strict(malformed)
+
+
 def test_smiles_batch_rejects_oversized_input_before_parallel_parse():
     with pytest.raises(ValueError, match="maximum item count"):
         chematic.from_smiles_list(["C"] * 100_001)

@@ -143,16 +143,16 @@ impl SemanticModel {
                 let alternatives = json_string_array(group, "alternatives")?;
                 let selected_alternative = match group.get("selected_alternative") {
                     None | Some(Value::Null) => None,
-                    Some(value) => {
-                        Some(value
+                    Some(value) => Some(
+                        value
                             .as_u64()
                             .and_then(|index| usize::try_from(index).ok())
                             .ok_or_else(|| {
-                            SemanticError::InvalidJson(
-                                "selected_alternative must be an integer or null".into(),
-                            )
-                        })?)
-                    }
+                                SemanticError::InvalidJson(
+                                    "selected_alternative must be an integer or null".into(),
+                                )
+                            })?,
+                    ),
                 };
                 Ok(RGroupDefinition {
                     id,
@@ -176,16 +176,16 @@ impl SemanticModel {
                 let end_groups = json_string_array(unit, "end_groups")?;
                 let repeat_count = match unit.get("repeat_count") {
                     None | Some(Value::Null) => None,
-                    Some(value) => {
-                        Some(value
+                    Some(value) => Some(
+                        value
                             .as_u64()
                             .and_then(|count| u32::try_from(count).ok())
                             .ok_or_else(|| {
-                            SemanticError::InvalidJson(
-                                "repeat_count must be an integer or null".into(),
-                            )
-                        })?)
-                    }
+                                SemanticError::InvalidJson(
+                                    "repeat_count must be an integer or null".into(),
+                                )
+                            })?,
+                    ),
                 };
                 let repeat_smiles = unit
                     .get("repeat_smiles")
@@ -253,9 +253,7 @@ impl SemanticModel {
                 .and_then(Value::as_u64)
                 .and_then(|count| u32::try_from(count).ok())
                 .ok_or_else(|| {
-                    SemanticError::InvalidJson(
-                        "repeat_count must be a positive u32 integer".into(),
-                    )
+                    SemanticError::InvalidJson("repeat_count must be a positive u32 integer".into())
                 })?;
             return self.apply(&SemanticCommand::SetPolymerRepeatCount {
                 unit_id: unit_id.into(),
@@ -846,8 +844,12 @@ mod tests {
             polymer_units: vec![PolymerRepeatUnit {
                 id: "p1".into(),
                 attachment_atoms: vec![
-                    AtomRef { atom_id: "a1".into() },
-                    AtomRef { atom_id: "a2".into() },
+                    AtomRef {
+                        atom_id: "a1".into(),
+                    },
+                    AtomRef {
+                        atom_id: "a2".into(),
+                    },
                 ],
                 end_groups: vec![],
                 repeat_count: None,
@@ -858,7 +860,10 @@ mod tests {
         };
         let model = SemanticModel::from_json(&model.to_json()).unwrap();
         model.validate().unwrap();
-        assert!(matches!(model.expand(&base), Err(SemanticError::Unsupported { .. })));
+        assert!(matches!(
+            model.expand(&base),
+            Err(SemanticError::Unsupported { .. })
+        ));
 
         let selected = model
             .apply_json_command(&serde_json::json!({

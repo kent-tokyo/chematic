@@ -129,6 +129,10 @@ Notes on the cells above that need qualification:
 - **Parse limits**: `PdbParseLimits` bounds input bytes, physical line length,
   ATOM/HETATM records, and MODEL records; use
   `parse_pdb_atoms_with_limits` for a typed resource-limit error contract.
+- **Strict validation**: `parse_pdb_atoms_strict` is an opt-in fixed-column
+  validator. It rejects missing, non-numeric, or non-finite serial, residue
+  sequence, and XYZ fields with `PdbStrictError`; the compatibility parser
+  remains lenient by design.
 
 ### PDBQT
 
@@ -168,6 +172,8 @@ Notes on the cells above that need qualification:
 ### ChemicalJSON
 
 - **Rust**: `chematic_mol::{parse_cjson, parse_cjson_with_limits, write_cjson, CjsonError, CjsonParseLimits}`.
+- **WASM**: `mol_from_cjson` provides the bounded topology-handle entry point;
+  coordinates and CJSON metadata remain on the format conversion path.
 - **Parse limits**: `CjsonParseLimits` bounds JSON input bytes/depth,
   array/string resources, and atom/bond records. The existing parser uses
   finite defaults and rejects numeric type/range truncation.
@@ -220,12 +226,14 @@ Notes on the cells above that need qualification:
 
 ### PDB
 
-- **Rust**: `chematic_3d::{PdbAtom, parse_pdb_atoms, pdb_to_molecule, write_pdb}` —
+- **Rust**: `chematic_3d::{PdbAtom, parse_pdb_atoms, parse_pdb_atoms_strict, pdb_to_molecule, write_pdb}` —
   this format lives in `chematic-3d`, not `chematic-mol`; the one exception
   among these 15.
-- **Python**: `from_pdb` (delegates to `chematic_3d`) for reading;
+- **Python**: `from_pdb` (lenient) and `from_pdb_strict` (fixed-column
+  validation) for reading; both delegate to `chematic_3d`;
   `Mol.to_pdb(coords)` for writing.
-- **WASM**: `mol_from_pdb`, `pdb_coords_json` for reading. Writing is
+- **WASM**: `mol_from_pdb` (lenient), `mol_from_pdb_strict` (fixed-column
+  validation), and `pdb_coords_json` for reading. Writing is
   exposed as a method, not a free function:
   `ConformerHandle.get_conformer_pdb(idx)` returns conformer `idx` as a PDB
   string (or `null` if `idx` is out of range), delegating to

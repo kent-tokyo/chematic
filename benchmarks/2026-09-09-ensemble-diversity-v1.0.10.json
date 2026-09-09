@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "status": "local-current-candidate",
+  "gate": "distance_geometry_v2_gap_check",
+  "environment": {
+    "platform": "macOS arm64",
+    "rust": "1.97.0",
+    "execution": "cargo run --release -p chematic-3d --example distance_geometry_v2_gap_check",
+    "seed_count": 8,
+    "alignment": "Kabsch RMSD"
+  },
+  "reproducibility": {
+    "corpus_molecules_reproduced": 58,
+    "corpus_molecules_checked": 58,
+    "coordinate_mismatches": 0,
+    "different_seed_non_aliasing": 58,
+    "different_seed_checked": 58
+  },
+  "diversity_angstrom": [
+    {"molecule": "decane", "min_pairwise_rmsd": 0.7099, "mean_pairwise_rmsd": 1.4885, "max_pairwise_rmsd": 2.0473},
+    {"molecule": "diphenhydramine", "min_pairwise_rmsd": 0.9670, "mean_pairwise_rmsd": 1.8131, "max_pairwise_rmsd": 2.4630},
+    {"molecule": "hexadecane", "min_pairwise_rmsd": 1.0724, "mean_pairwise_rmsd": 2.1435, "max_pairwise_rmsd": 2.8972}
+  ],
+  "interpretation": "Local deterministic-seed and geometric-diversity evidence only. This does not establish force-field energy soundness, class-level failure rates, or external-oracle parity."
+}

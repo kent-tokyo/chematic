@@ -1748,7 +1748,7 @@ mod tests {
     #[test]
     fn atomic_number_smirks_rejects_unsupported_compound_primitive() {
         let reactant = parse("N").unwrap();
-        let err = run_reactants("[#7;H1]>>[#7;H1]", &[&reactant]);
+        let err = run_reactants("[#7;H2]>>[#7;H2]", &[&reactant]);
         assert!(matches!(
             err,
             Err(TransformError::SmirksParse(

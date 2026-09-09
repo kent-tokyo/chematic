@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-10",
+  "target_version": "1.0.10",
+  "status": "environment-blocked",
+  "command": "cargo test -p chematic-wasm --target wasm32-unknown-unknown --no-run --offline --quiet",
+  "target": "wasm32-unknown-unknown",
+  "observed_error": "No space left on device",
+  "available_bytes_at_probe": 123731968,
+  "workspace_target_size_at_probe": "8.6G",
+  "interpretation": "The native WASM source contract passes, but target-specific compilation could not complete because the local filesystem was full. This is environment evidence, not a source correctness failure."
+}

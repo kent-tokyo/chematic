@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-10",
+  "target_version": "1.0.10",
+  "command": "python3 scripts/check_roadmap_disposition.py",
+  "unchecked_area_count": 13,
+  "classified_classes": ["local-open", "local-toolchain", "external", "historical"],
+  "result": "passed",
+  "interpretation": "Every unchecked ROADMAP item has a corresponding disposition marker and dependency classification. Historical abandoned performance work is retained for traceability and is not treated as an active completion gate."
+}

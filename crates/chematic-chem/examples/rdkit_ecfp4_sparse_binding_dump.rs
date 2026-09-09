@@ -16,13 +16,21 @@ fn main() {
     for (index, line) in io::stdin().lock().lines().enumerate() {
         let smiles = line.expect("read corpus line");
         let smiles = smiles.trim();
-        if smiles.is_empty() { continue; }
+        if smiles.is_empty() {
+            continue;
+        }
         let record = match chematic_smiles::parse(smiles) {
             Ok(mol) => match chematic_fp::rdkit_morgan_ecfp4_experimental(&mol) {
-                Ok(_) => json!({"index": index, "smiles": smiles, "status": "ok", "sparse_counts": sparse_counts(&mol)}),
-                Err(error) => json!({"index": index, "smiles": smiles, "status": "error", "error": error.to_string()}),
+                Ok(_) => {
+                    json!({"index": index, "smiles": smiles, "status": "ok", "sparse_counts": sparse_counts(&mol)})
+                }
+                Err(error) => {
+                    json!({"index": index, "smiles": smiles, "status": "error", "error": error.to_string()})
+                }
             },
-            Err(error) => json!({"index": index, "smiles": smiles, "status": "error", "error": error.to_string()}),
+            Err(error) => {
+                json!({"index": index, "smiles": smiles, "status": "error", "error": error.to_string()})
+            }
         };
         serde_json::to_writer(&mut out, &record).expect("serialize sparse count record");
         writeln!(out).expect("write sparse count record");

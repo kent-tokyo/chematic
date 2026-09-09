@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "status": "local-verified",
+  "gate": "same_process_pdb_semantic_contract",
+  "fixture": {
+    "path": "benchmarks/fixtures/minimal.pdb",
+    "bytes": 286,
+    "sha256": "69d1e5a2d6cbdb39377325cbbf077face011ef0893718e28b42d0563901ad15b"
+  },
+  "repeats": 20,
+  "rows": {
+    "chematic": {
+      "records": 20,
+      "failures": 0,
+      "seconds": 0.00226,
+      "boundary": "schematic.from_pdb in the current process"
+    },
+    "rdkit": {
+      "records": 20,
+      "failures": 0,
+      "seconds": 1.024408,
+      "boundary": "RDKit MolFromPDBBlock in the current process"
+    }
+  },
+  "comparison": {
+    "expected_records": 20,
+    "signature": "total atoms, heavy atoms, finite coordinates",
+    "signature_mismatch_repetitions": 0,
+    "malformed_cases": {
+      "bad_atom": {
+        "chematic": {
+          "records": 1,
+          "failures": 0
+        },
+        "rdkit": {
+          "records": 0,
+          "failures": 1
+        }
+      },
+      "bad_coordinate": {
+        "chematic": {
+          "records": 1,
+          "failures": 0
+        },
+        "rdkit": {
+          "records": 0,
+          "failures": 1
+        }
+      }
+    },
+    "malformed_rejection_mismatches": [
+      "bad_atom",
+      "bad_coordinate"
+    ],
+    "malformed_contract": "reported only; schematic PDB parser is intentionally lenient",
+    "bond_parity": "not claimed",
+    "speed_is_non_ranking_context": true
+  },
+  "tool_versions": {
+    "rdkit": "2025.09.3"
+  },
+  "errors": []
+}

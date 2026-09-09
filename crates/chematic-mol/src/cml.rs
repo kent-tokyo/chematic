@@ -608,6 +608,25 @@ mod tests {
     }
 
     #[test]
+    fn shared_cml_roundtrip_contract_matches() {
+        let document: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../validation/cross_binding_contract.json"
+        )))
+        .expect("contract JSON");
+        let contract = &document["cml_contract"];
+        let (mol, coords) = parse_cml(contract["input"].as_str().unwrap()).unwrap();
+        let serialized = write_cml(&mol, Some(&coords));
+        let (roundtripped, roundtripped_coords) = parse_cml(&serialized).unwrap();
+        assert_eq!(
+            roundtripped.atom_count(),
+            contract["expected"]["atom_count"]
+        );
+        assert_eq!(roundtripped.bond_count(), 2);
+        assert_eq!(roundtripped_coords.len(), coords.len());
+    }
+
+    #[test]
     fn write_cml_no_coords() {
         use chematic_core::MoleculeBuilder;
         let mut b = MoleculeBuilder::new();

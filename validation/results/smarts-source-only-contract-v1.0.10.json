@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "date": "2026-09-09",
+  "scope": "source-only SMARTS validity contract",
+  "fixture": "validation/cross_binding_contract.json#smarts_validity_contract",
+  "operations": ["smarts_validity"],
+  "bindings": {
+    "rust": {"status": "pass", "tests": 1, "command": "cargo test -p chematic-smarts --test cross_binding_contract --offline"},
+    "python": {"status": "pass", "tests": 8, "command": "PYTHONPATH=/private/tmp/chematic-py-v110/lib/python3.13/site-packages PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest crates/chematic-py/tests/test_cross_binding_contract.py -q -k smarts_validity_source_only_contract"},
+    "wasm_source": {"status": "pass", "tests": 1, "command": "cargo test -p chematic-wasm --lib --offline smarts_validity_contract_matches_shared_source_only_fixture"},
+    "node_generated_artifact": {"status": "not_available", "reason": "checked-in artifact has no is_valid_smarts export and remains version-drifted at 0.23.0"}
+  },
+  "fixture_cases": {"accepted": 4, "rejected": 4},
+  "result": "source-only SMARTS validity contract passes; Node generated-artifact parity remains open"
+}

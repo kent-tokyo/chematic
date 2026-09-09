@@ -1,0 +1,18 @@
+{
+  "date": "2026-09-09",
+  "workspace_version": "1.0.10",
+  "scope": "local exact-output, budget-exhaustion, and fail-closed identity gate",
+  "commands": [
+    "CARGO_TARGET_DIR=/private/tmp/chematic-target-identity-budget cargo test -p chematic-smarts --offline --lib",
+    "CARGO_TARGET_DIR=/private/tmp/chematic-target-identity-budget cargo test -p chematic-smiles --offline --lib canonical::tests"
+  ],
+  "checks": {
+    "chematic_smarts_lib": {"tests": 184, "passed": 184},
+    "chematic_smiles_canonical_module": {"tests": 79, "passed": 79}
+  },
+  "total_tests": 263,
+  "passed": 263,
+  "failed": 0,
+  "result": "pass",
+  "boundary": "This validates exact-output, budget-exhaustion, and fail-closed local tests for SMARTS VF2/MCS/ring-model paths and the current canonical module. It does not close full canonical atom-order/E/Z invariance, the three aromatic-stash residuals, or all-stable-operation manifest coverage."
+}

@@ -38,8 +38,9 @@ pub use enumerate::{
 pub use green::{atom_economy, e_factor, pmi_rxn, reaction_mass_efficiency};
 pub use perf_counters::PerfCounters;
 pub use query::{
-    BatchQueryLimits, BatchQueryResults, ReactionPatternLibrary, ReactionQuery, ReactionQueryError,
-    batch_query_reactions, batch_query_reactions_with_limits, batch_query_with_library,
+    AgentMatches, BatchQueryLimits, BatchQueryResults, ReactionPatternLibrary, ReactionQuery,
+    ReactionQueryError, ReactionSmartsMatch, batch_query_reactions,
+    batch_query_reactions_with_limits, batch_query_with_library,
     batch_query_with_library_with_limits, has_reaction_substructure_match, parse_reaction_query,
     query_reaction,
 };

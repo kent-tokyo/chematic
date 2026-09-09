@@ -12,6 +12,15 @@ const wasm = await import(path.join(repoRoot, "crates/chematic-wasm/pkg-node/che
 const fixture = JSON.parse(
   readFileSync(path.join(repoRoot, "validation/cross_binding_contract.json"), "utf8"),
 ).rxn_document_contract;
+const application = JSON.parse(
+  readFileSync(path.join(repoRoot, "validation/cross_binding_contract.json"), "utf8"),
+).reaction_application_contract;
+const balance = JSON.parse(
+  readFileSync(path.join(repoRoot, "validation/cross_binding_contract.json"), "utf8"),
+).reaction_balance_contract;
+const center = JSON.parse(
+  readFileSync(path.join(repoRoot, "validation/cross_binding_contract.json"), "utf8"),
+).reaction_center_contract;
 
 assert.equal(fixture.schema_version, 1);
 const document = fixture.document;
@@ -30,3 +39,34 @@ assert.throws(
     steps: [{ ...document.steps[0], conditions: [{ key: "temperature", value: "25 C" }] }],
   })),
 );
+
+const products = JSON.parse(wasm.run_reactants(application.smirks, application.reactants.join("|")));
+assert.ok(products.length >= application.expected.minimum_product_sets);
+const product = wasm.parse_smiles(products[0][0]);
+assert.equal(product.atom_count(), application.expected.product_atom_count);
+product.free();
+for (const testCase of application.additional_cases) {
+  const additionalProducts = JSON.parse(wasm.run_reactants(testCase.smirks, testCase.reactants.join("|")));
+  assert.ok(additionalProducts.length >= testCase.minimum_product_sets);
+  const additionalProduct = wasm.parse_smiles(additionalProducts[0][0]);
+  assert.equal(additionalProduct.atom_count(), testCase.product_atom_count);
+  additionalProduct.free();
+}
+for (const testCase of application.negative_cases) {
+  assert.throws(() => wasm.run_reactants(testCase.smirks, testCase.reactants.join("|")));
+}
+
+for (const testCase of balance.cases) {
+  assert.deepEqual(JSON.parse(wasm.balance_check_json(testCase.reaction)), {
+    balanced: testCase.balanced,
+    diff: testCase.diff,
+  });
+}
+
+for (const testCase of center.cases) {
+  assert.deepEqual(JSON.parse(wasm.find_reaction_center_json(testCase.reaction)), {
+    broken: testCase.broken_bonds,
+    formed: testCase.formed_bonds,
+    changed: testCase.changed_atoms,
+  });
+}

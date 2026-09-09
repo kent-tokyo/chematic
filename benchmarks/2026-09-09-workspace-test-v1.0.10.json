@@ -1,0 +1,11 @@
+{
+  "date": "2026-09-09",
+  "target_version": "1.0.10",
+  "scope": "workspace-wide Rust test and doctest verification",
+  "source_state": "current working tree, intentionally dirty",
+  "command": "CARGO_BUILD_JOBS=2 cargo test --workspace --offline",
+  "result_lines": 94,
+  "tests": {"passed": 4849, "failed": 0, "ignored": 34, "measured": 0, "filtered_out": 0},
+  "result": "pass",
+  "boundary": "This verifies the local Rust workspace only. Browser artifact generation, external review, registry publication, and future release actions are not covered."
+}

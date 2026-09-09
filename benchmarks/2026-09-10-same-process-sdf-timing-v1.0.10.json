@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "status": "local-verified",
+  "gate": "same_process_sdf_equivalent_timing",
+  "fixture": {
+    "path": "benchmarks/fixtures/streaming.sdf",
+    "bytes": 633,
+    "sha256": "627e7814694f7d00a9212712ec697f2174d30327b459d983d2a10f717cae0465"
+  },
+  "repeats": 40,
+  "inner_iterations": 25,
+  "timing": {
+    "unit": "nanoseconds per parse operation",
+    "chematic": {
+      "p50": 14176.7,
+      "p95": 16825
+    },
+    "rdkit": {
+      "p50": 374594.2,
+      "p95": 501886
+    },
+    "rdkit_over_schematic_p50": 26.4233
+  },
+  "semantic_contract": {
+    "chematic_records": 2,
+    "rdkit_records": 2,
+    "failure_count": 0
+  },
+  "boundaries": [
+    "same CPython process and same fixture bytes",
+    "chematic uses the current source-built Python extension and file-backed iterator",
+    "RDKit uses ForwardSDMolSupplier over the same bytes",
+    "single SDF fixture; timing is context, not a general ranking"
+  ],
+  "tool_versions": {
+    "rdkit": "2025.09.3",
+    "chematic": "1.0.10"
+  }
+}

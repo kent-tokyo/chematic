@@ -168,9 +168,9 @@ impl CdxmlDocument {
                 pages.push(page);
             } else if let Some(page) = current.as_mut()
                 && line.starts_with('<')
-                    && !line.starts_with("</")
-                    && !line.starts_with("<?")
-                    && !line.starts_with("<!")
+                && !line.starts_with("</")
+                && !line.starts_with("<?")
+                && !line.starts_with("<!")
             {
                 let tag = line
                     .trim_start_matches('<')
@@ -250,8 +250,7 @@ impl CdxmlDocument {
             self.raw_xml.lines().map(str::to_owned).collect()
         };
         match edit {
-            CdxmlEdit::SetPageAttribute { key, .. }
-            | CdxmlEdit::SetObjectAttribute { key, .. } => {
+            CdxmlEdit::SetPageAttribute { key, .. } | CdxmlEdit::SetObjectAttribute { key, .. } => {
                 validate_attribute_name(key)?;
             }
             _ => {}
@@ -513,7 +512,9 @@ fn logical_cdxml_lines(input: &str) -> Vec<String> {
 }
 
 fn needs_logical_edit_lines(input: &str) -> bool {
-    input.lines().any(|line| logical_cdxml_lines(line).len() > 1)
+    input
+        .lines()
+        .any(|line| logical_cdxml_lines(line).len() > 1)
 }
 
 fn check_attribute_budget(
@@ -558,10 +559,7 @@ fn is_close_tag(line: &str, name: &str) -> bool {
     tail.is_empty() || tail.starts_with('>')
 }
 
-fn validate_object_fragment(
-    raw_xml: &str,
-    limits: &CdxmlParseLimits,
-) -> Result<(), CdxmlError> {
+fn validate_object_fragment(raw_xml: &str, limits: &CdxmlParseLimits) -> Result<(), CdxmlError> {
     let fragment = raw_xml.trim();
     if fragment.is_empty()
         || !fragment.starts_with('<')
@@ -573,9 +571,7 @@ fn validate_object_fragment(
             "edited object must contain an element fragment".into(),
         ));
     }
-    let wrapped = format!(
-        "<CDXML>\n<page id=\"__edit__\">\n{fragment}\n</page>\n</CDXML>"
-    );
+    let wrapped = format!("<CDXML>\n<page id=\"__edit__\">\n{fragment}\n</page>\n</CDXML>");
     let parsed = CdxmlDocument::parse_with_limits(&wrapped, limits)?;
     if parsed.pages.len() != 1 || parsed.pages[0].children.is_empty() {
         return Err(CdxmlError::InvalidCoords(
@@ -593,9 +589,8 @@ fn validate_attribute_name(name: &str) -> Result<(), CdxmlError> {
         ));
     };
     let valid_start = first.is_ascii_alphabetic() || first == '_';
-    let valid_rest = chars.all(|ch| {
-        ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | ':' | '.')
-    });
+    let valid_rest =
+        chars.all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | ':' | '.'));
     if !valid_start || !valid_rest {
         return Err(CdxmlError::InvalidCoords(format!(
             "invalid edited attribute name: {name:?}"

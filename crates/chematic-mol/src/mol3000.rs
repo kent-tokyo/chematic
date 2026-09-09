@@ -122,6 +122,162 @@ fn parse_kv(tokens: &[&str], key: &str) -> Option<String> {
     None
 }
 
+/// Parse one V3000 atom record and append it to the parser's parallel state.
+fn parse_v3000_atom_line(
+    tokens: &[&str],
+    line: usize,
+    builder: &mut MoleculeBuilder,
+    atom_idx_map: &mut Vec<(u32, AtomIdx)>,
+    coords: &mut Vec<(f64, f64)>,
+    raw_z: &mut Vec<f64>,
+) -> Result<(), MolParseError> {
+    // Atom line: <idx> <symbol> <x> <y> <z> <aamap> [KEY=VAL ...]
+    if tokens.len() < 6 {
+        return Err(MolParseError::InvalidAtomLine {
+            line,
+            detail: format!(
+                "V3000 atom line needs at least 6 fields, got {}",
+                tokens.len()
+            ),
+        });
+    }
+
+    let v3k_idx = tokens[0]
+        .parse::<u32>()
+        .map_err(|_| MolParseError::InvalidAtomLine {
+            line,
+            detail: format!("cannot parse atom index from '{}'", tokens[0]),
+        })?;
+
+    // Strip bracket notation e.g. "[OH]" -> "OH".
+    let sym = tokens[1].trim_start_matches('[').trim_end_matches(']');
+    let element = Element::from_symbol(sym).ok_or_else(|| MolParseError::UnknownElement {
+        symbol: sym.to_string(),
+        line,
+    })?;
+
+    // Keep the historical V3000 behavior for x/y: malformed values default to 0.0.
+    let x: f64 = tokens[2].parse().unwrap_or(0.0);
+    let y: f64 = tokens[3].parse().unwrap_or(0.0);
+
+    // Unlike x/y, z is retained as 3D input and therefore must be a finite number.
+    let z: f64 = tokens[4]
+        .parse()
+        .map_err(|_| MolParseError::InvalidAtomLine {
+            line,
+            detail: format!("cannot parse z coordinate from '{}'", tokens[4]),
+        })?;
+    if !z.is_finite() {
+        return Err(MolParseError::InvalidAtomLine {
+            line,
+            detail: format!("z coordinate is not finite (NaN/Infinite): '{}'", tokens[4]),
+        });
+    }
+
+    let aamap_raw = tokens[5].parse::<u16>().unwrap_or(0);
+    let atom_map = (aamap_raw != 0).then_some(aamap_raw);
+    let kv_tokens = tokens.get(6..).unwrap_or(&[]);
+    let charge: i8 = parse_kv(kv_tokens, "CHG")
+        .and_then(|v| v.parse::<i8>().ok())
+        .unwrap_or(0);
+    let isotope = parse_kv(kv_tokens, "MASS").and_then(|v| v.parse::<u16>().ok());
+    let hydrogen_count = parse_kv(kv_tokens, "HCOUNT").and_then(|v| {
+        let n: i32 = v.parse().ok()?;
+        if n < 0 { None } else { Some(n as u8) }
+    });
+
+    let mut atom = Atom::new(element);
+    atom.charge = charge;
+    atom.isotope = isotope;
+    atom.hydrogen_count = hydrogen_count;
+    atom.atom_map = atom_map;
+
+    let builder_idx = builder.add_atom(atom);
+    atom_idx_map.push((v3k_idx, builder_idx));
+    coords.push((x, y));
+    raw_z.push(z);
+    Ok(())
+}
+
+/// Parse one V3000 bond record and append it to the molecule builder.
+fn parse_v3000_bond_line(
+    tokens: &[&str],
+    line: usize,
+    builder: &mut MoleculeBuilder,
+    atom_idx_map: &[(u32, AtomIdx)],
+    explicitly_unspecified_ez: &mut std::collections::HashSet<BondIdx>,
+) -> Result<(), MolParseError> {
+    // Bond line: <idx> <type> <atom1> <atom2> [KEY=VAL ...]
+    if tokens.len() < 4 {
+        return Err(MolParseError::InvalidBondLine {
+            line,
+            detail: format!(
+                "V3000 bond line needs at least 4 fields, got {}",
+                tokens.len()
+            ),
+        });
+    }
+
+    let btype_raw = tokens[1]
+        .parse::<u8>()
+        .map_err(|_| MolParseError::InvalidBondLine {
+            line,
+            detail: format!("cannot parse bond type from '{}'", tokens[1]),
+        })?;
+    let a1_v3k = tokens[2]
+        .parse::<u32>()
+        .map_err(|_| MolParseError::InvalidBondLine {
+            line,
+            detail: format!("cannot parse atom1 index from '{}'", tokens[2]),
+        })?;
+    let a2_v3k = tokens[3]
+        .parse::<u32>()
+        .map_err(|_| MolParseError::InvalidBondLine {
+            line,
+            detail: format!("cannot parse atom2 index from '{}'", tokens[3]),
+        })?;
+    let a1 =
+        resolve_atom_idx(a1_v3k, atom_idx_map).ok_or_else(|| MolParseError::InvalidBondLine {
+            line,
+            detail: format!("atom index {a1_v3k} not found in atom block"),
+        })?;
+    let a2 =
+        resolve_atom_idx(a2_v3k, atom_idx_map).ok_or_else(|| MolParseError::InvalidBondLine {
+            line,
+            detail: format!("atom index {a2_v3k} not found in atom block"),
+        })?;
+
+    let kv_tokens = tokens.get(4..).unwrap_or(&[]);
+    let order = match btype_raw {
+        0 => BondOrder::Zero,
+        1 => match parse_kv(kv_tokens, "CFG").as_deref() {
+            Some("1") => BondOrder::Up,
+            Some("3") => BondOrder::Down,
+            _ => BondOrder::Single,
+        },
+        2 => BondOrder::Double,
+        3 => BondOrder::Triple,
+        4 => BondOrder::Aromatic,
+        5 => BondOrder::QuerySingleOrDouble,
+        6 => BondOrder::QuerySingleOrAromatic,
+        7 => BondOrder::QueryDoubleOrAromatic,
+        8 => BondOrder::QueryAny,
+        9 => BondOrder::Dative,
+        _ => BondOrder::Single,
+    };
+
+    let bidx = builder
+        .add_bond(a1, a2, order)
+        .map_err(|e| MolParseError::InvalidBondLine {
+            line,
+            detail: e.to_string(),
+        })?;
+    if btype_raw == 2 && parse_kv(kv_tokens, "CFG").as_deref() == Some("2") {
+        explicitly_unspecified_ez.insert(bidx);
+    }
+    Ok(())
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -282,98 +438,14 @@ pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, Mol
                     continue;
                 }
 
-                // Atom line: <idx> <symbol> <x> <y> <z> <aamap> [KEY=VAL ...]
-                if tokens.len() < 6 {
-                    return Err(MolParseError::InvalidAtomLine {
-                        line: lnum,
-                        detail: format!(
-                            "V3000 atom line needs at least 6 fields, got {}",
-                            tokens.len()
-                        ),
-                    });
-                }
-
-                let v3k_idx =
-                    tokens[0]
-                        .parse::<u32>()
-                        .map_err(|_| MolParseError::InvalidAtomLine {
-                            line: lnum,
-                            detail: format!("cannot parse atom index from '{}'", tokens[0]),
-                        })?;
-
-                // Strip bracket notation e.g. "[OH]" → "OH", "[R]" → "R".
-                let sym = tokens[1].trim_start_matches('[').trim_end_matches(']');
-
-                let element =
-                    Element::from_symbol(sym).ok_or_else(|| MolParseError::UnknownElement {
-                        symbol: sym.to_string(),
-                        line: lnum,
-                    })?;
-
-                // Parse x, y coordinates (tokens[2] and tokens[3]) --
-                // unchanged, still lenient (a malformed x/y silently
-                // defaults to 0.0, matching pre-existing behavior).
-                let x: f64 = tokens[2].parse().unwrap_or(0.0);
-                let y: f64 = tokens[3].parse().unwrap_or(0.0);
-
-                // z coordinate (tokens[4]): previously silently discarded
-                // entirely -- root cause of the 3D-coordinate-loss bug this
-                // PR fixes. Unlike x/y above, a garbled or non-finite z is a
-                // typed error rather than a silent 0.0 default: nothing
-                // downstream reads z today, so a malformed value can only be
-                // file corruption. The token always exists syntactically
-                // (the `tokens.len() < 6` check above already guarantees
-                // it), so unlike V2000's "line too short" leniency, there is
-                // no "missing field" case here to default instead of error.
-                let z: f64 = tokens[4]
-                    .parse()
-                    .map_err(|_| MolParseError::InvalidAtomLine {
-                        line: lnum,
-                        detail: format!("cannot parse z coordinate from '{}'", tokens[4]),
-                    })?;
-                if !z.is_finite() {
-                    return Err(MolParseError::InvalidAtomLine {
-                        line: lnum,
-                        detail: format!(
-                            "z coordinate is not finite (NaN/Infinite): '{}'",
-                            tokens[4]
-                        ),
-                    });
-                }
-
-                // Atom-map number (positional field 6, 0 = no mapping).
-                let aamap_raw = tokens[5].parse::<u16>().unwrap_or(0);
-                let atom_map = if aamap_raw == 0 {
-                    None
-                } else {
-                    Some(aamap_raw)
-                };
-
-                let kv_tokens = tokens.get(6..).unwrap_or(&[]);
-
-                let charge: i8 = parse_kv(kv_tokens, "CHG")
-                    .and_then(|v| v.parse::<i8>().ok())
-                    .unwrap_or(0);
-
-                let isotope: Option<u16> =
-                    parse_kv(kv_tokens, "MASS").and_then(|v| v.parse::<u16>().ok());
-
-                // HCOUNT: -1 means unspecified; treat as None.
-                let hydrogen_count: Option<u8> = parse_kv(kv_tokens, "HCOUNT").and_then(|v| {
-                    let n: i32 = v.parse().ok()?;
-                    if n < 0 { None } else { Some(n as u8) }
-                });
-
-                let mut atom = Atom::new(element);
-                atom.charge = charge;
-                atom.isotope = isotope;
-                atom.hydrogen_count = hydrogen_count;
-                atom.atom_map = atom_map;
-
-                let builder_idx = builder.add_atom(atom);
-                atom_idx_map.push((v3k_idx, builder_idx));
-                coords.push((x, y));
-                raw_z.push(z);
+                parse_v3000_atom_line(
+                    &tokens,
+                    lnum,
+                    &mut builder,
+                    &mut atom_idx_map,
+                    &mut coords,
+                    &mut raw_z,
+                )?;
             }
 
             State::AfterAtomBlock => {
@@ -390,100 +462,13 @@ pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, Mol
                     continue;
                 }
 
-                // Bond line: <idx> <type> <atom1> <atom2> [KEY=VAL ...]
-                if tokens.len() < 4 {
-                    return Err(MolParseError::InvalidBondLine {
-                        line: lnum,
-                        detail: format!(
-                            "V3000 bond line needs at least 4 fields, got {}",
-                            tokens.len()
-                        ),
-                    });
-                }
-
-                let btype_raw =
-                    tokens[1]
-                        .parse::<u8>()
-                        .map_err(|_| MolParseError::InvalidBondLine {
-                            line: lnum,
-                            detail: format!("cannot parse bond type from '{}'", tokens[1]),
-                        })?;
-
-                let a1_v3k =
-                    tokens[2]
-                        .parse::<u32>()
-                        .map_err(|_| MolParseError::InvalidBondLine {
-                            line: lnum,
-                            detail: format!("cannot parse atom1 index from '{}'", tokens[2]),
-                        })?;
-
-                let a2_v3k =
-                    tokens[3]
-                        .parse::<u32>()
-                        .map_err(|_| MolParseError::InvalidBondLine {
-                            line: lnum,
-                            detail: format!("cannot parse atom2 index from '{}'", tokens[3]),
-                        })?;
-
-                let a1 = resolve_atom_idx(a1_v3k, &atom_idx_map).ok_or_else(|| {
-                    MolParseError::InvalidBondLine {
-                        line: lnum,
-                        detail: format!("atom index {a1_v3k} not found in atom block"),
-                    }
-                })?;
-
-                let a2 = resolve_atom_idx(a2_v3k, &atom_idx_map).ok_or_else(|| {
-                    MolParseError::InvalidBondLine {
-                        line: lnum,
-                        detail: format!("atom index {a2_v3k} not found in atom block"),
-                    }
-                })?;
-
-                let kv_tokens = tokens.get(4..).unwrap_or(&[]);
-
-                let order = match btype_raw {
-                    0 => BondOrder::Zero,
-                    // Bond CFG (wedge direction): 1=Up, 3=Down, 2=Either --
-                    // only meaningful for a single bond, mirroring V2000's
-                    // own gating. CFG=2 ("either"/unspecified) is left as
-                    // Single -- a defined wedge/hash needs a definite
-                    // direction, not "unknown" (same policy as V2000's own
-                    // code-4 handling).
-                    1 => match parse_kv(kv_tokens, "CFG").as_deref() {
-                        Some("1") => BondOrder::Up,
-                        Some("3") => BondOrder::Down,
-                        _ => BondOrder::Single,
-                    },
-                    2 => BondOrder::Double,
-                    3 => BondOrder::Triple,
-                    4 => BondOrder::Aromatic,
-                    5 => BondOrder::QuerySingleOrDouble,
-                    6 => BondOrder::QuerySingleOrAromatic,
-                    7 => BondOrder::QueryDoubleOrAromatic,
-                    8 => BondOrder::QueryAny,
-                    // 9 = dative/coordinate bond. This is how RDKit itself
-                    // writes `Bond::BondType::DATIVE` in V3000 (it cannot
-                    // represent a dative bond in V2000 at all, so it upgrades
-                    // automatically) -- `a1`/`a2` are already in the same
-                    // donor/acceptor order the file encodes, matching
-                    // `BondOrder::Dative`'s documented atom1(donor) ->
-                    // atom2(acceptor) convention. Previously fell through to
-                    // `Single`, silently discarding coordination bonds from
-                    // any RDKit- (or other-tool-) generated V3000 molfile.
-                    9 => BondOrder::Dative,
-                    _ => BondOrder::Single,
-                };
-
-                let bidx = builder.add_bond(a1, a2, order).map_err(|e| {
-                    MolParseError::InvalidBondLine {
-                        line: lnum,
-                        detail: e.to_string(),
-                    }
-                })?;
-
-                if btype_raw == 2 && parse_kv(kv_tokens, "CFG").as_deref() == Some("2") {
-                    explicitly_unspecified_ez.insert(bidx);
-                }
+                parse_v3000_bond_line(
+                    &tokens,
+                    lnum,
+                    &mut builder,
+                    &atom_idx_map,
+                    &mut explicitly_unspecified_ez,
+                )?;
             }
 
             State::AfterBondBlock => {
@@ -1084,6 +1069,24 @@ M  END
         assert_eq!(rt_bonds[0].1.order, BondOrder::Dative);
         assert_eq!(rt_mol.atom(rt_bonds[0].1.atom1).element, Element::N);
         assert_eq!(rt_mol.atom(rt_bonds[0].1.atom2).element, Element::PT);
+    }
+
+    #[test]
+    fn shared_mol_v3000_roundtrip_contract_matches() {
+        let document: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../validation/cross_binding_contract.json"
+        )))
+        .expect("contract JSON");
+        let contract = &document["mol_v3000_contract"];
+        let (mol, meta) = parse_mol_v3000(contract["input"].as_str().unwrap()).unwrap();
+        let serialized = write_mol_v3000(&mol, &meta, &[]);
+        let (roundtripped, _) = parse_mol_v3000(&serialized).unwrap();
+        assert_eq!(
+            roundtripped.atom_count(),
+            contract["expected"]["atom_count"]
+        );
+        assert_eq!(roundtripped.bond_count(), 1);
     }
 
     // -----------------------------------------------------------------------

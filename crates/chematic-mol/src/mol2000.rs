@@ -1999,6 +1999,24 @@ mod tests {
         }
     }
 
+    #[test]
+    fn shared_mol_v2000_roundtrip_contract_matches() {
+        let document: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../validation/cross_binding_contract.json"
+        )))
+        .expect("contract JSON");
+        let contract = &document["mol_v2000_contract"];
+        let (mol, _) = parse_mol(contract["input"].as_str().unwrap()).unwrap();
+        let serialized = write_mol(&mol, &MolMetadata::default());
+        let (roundtripped, _) = parse_mol(&serialized).unwrap();
+        assert_eq!(
+            roundtripped.atom_count(),
+            contract["expected"]["atom_count"]
+        );
+        assert_eq!(roundtripped.bond_count(), 1);
+    }
+
     /// Minimal ethanol MOL V2000 block (CCO, 3 atoms, 2 bonds).
     const ETHANOL_MOL: &str = "\
 ethanol

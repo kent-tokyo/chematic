@@ -645,6 +645,8 @@ fn reaction_fingerprint_json(reaction_smiles: &str, mode: &str) -> Result<String
     };
     let reactant_bits = set_bits(&fingerprint.reactant_fp);
     let product_bits = set_bits(&fingerprint.product_fp);
+    let formed_bits = set_bits(&fingerprint.formed_fp);
+    let broken_bits = set_bits(&fingerprint.broken_fp);
     let combined_bits = set_bits(&fingerprint.combined_fp);
     Ok(serde_json::json!({
         "reaction_smiles": chematic_rxn::write_reaction(&reaction),
@@ -652,7 +654,11 @@ fn reaction_fingerprint_json(reaction_smiles: &str, mode: &str) -> Result<String
         "n_bits": 2048,
         "reactant_popcount": reactant_bits.len(),
         "product_popcount": product_bits.len(),
+        "formed_popcount": formed_bits.len(),
+        "broken_popcount": broken_bits.len(),
         "popcount": combined_bits.len(),
+        "formed_bits": formed_bits,
+        "broken_bits": broken_bits,
         "set_bits": combined_bits,
     })
     .to_string())

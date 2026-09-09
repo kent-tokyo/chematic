@@ -14,6 +14,8 @@ import json
 import subprocess
 from pathlib import Path
 
+from benchmark_version import workspace_version
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -119,7 +121,7 @@ def main() -> int:
             errors.append(f"{engine} input byte mismatch: {row.get('input_bytes')}")
     report = {
         "schema_version": 1,
-        "target_version": "1.0.9",
+        "target_version": workspace_version(ROOT),
         "format": args.format,
         "fixture": {"path": str(path.relative_to(ROOT)), "bytes": len(payload), "sha256": digest},
         "repeats": args.repeats,

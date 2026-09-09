@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "status": "local-current-candidate",
+  "gate": "workspace_clippy_all_targets",
+  "command": "CARGO_TARGET_DIR=/private/tmp/chematic-target-clippy cargo clippy --workspace --all-targets --offline -- -D warnings",
+  "result": "pass",
+  "boundary": "This is a local Rust lint gate. It does not cover Python packaging, browser/WASM runtime parity, external review, registry publication, or future release actions."
+}

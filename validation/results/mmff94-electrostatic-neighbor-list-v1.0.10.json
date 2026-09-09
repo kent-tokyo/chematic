@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "status": "local-verified",
+  "gate": "mmff94_electrostatic_neighbor_list",
+  "cutoff_angstrom": 10.0,
+  "boundary": "strict distance <= 10.0 A; non-finite coordinates fall back to the prepared all-pair list",
+  "fixtures": {
+    "boundary_pair_cases": "1 test",
+    "gradient_cases": "ethanol, 9 atoms; combined prepared MMFF94 butane objective"
+  },
+  "checks": {
+    "candidate_set_matches_all_pair_cutoff_reference": true,
+    "cutoff_energy_matches_all_pair_cutoff_reference": true,
+    "analytic_gradient_matches_central_difference": true,
+    "cutoff_analytic_minimizer_objective_integrated": true,
+    "compatibility_default_all_pair_path_unchanged": true
+  },
+  "reproduction": [
+    "cargo test -p chematic-ff --offline --lib coordinate_dependent_electrostatic_neighbor_list_matches_cutoff_reference --quiet",
+    "cargo test -p chematic-ff --offline --lib cutoff_nonbonded_gradient_matches_cutoff_energy_finite_difference --quiet",
+    "cargo test -p chematic-ff --offline --lib cutoff_bounded_analytic_gradient_matches_cutoff_total_energy --quiet"
+  ],
+  "interpretation": "This is an opt-in prepared-model cutoff slice, including a consistent analytic-objective integration boundary. It is not a claim that the compatibility-default MMFF94 electrostatic path should use a 10 A cutoff, nor a full production minimizer or periodic electrostatics gate."
+}

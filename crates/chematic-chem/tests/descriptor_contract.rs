@@ -2,7 +2,10 @@
 
 use serde_json::Value;
 
-use chematic_chem::{hba_count, hbd_count, molecular_weight, tpsa};
+use chematic_chem::{
+    aromatic_ring_count, calc_mol_formula, exact_mass, hba_count, hbd_count, molecular_weight,
+    rotatable_bond_count, tpsa,
+};
 
 const FIXTURE: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -15,6 +18,8 @@ fn shared_descriptor_fixture_matches_rust_source_of_truth() {
     let contract = &document["descriptor_contract"];
     assert_eq!(contract["schema_version"], 1);
     assert_eq!(contract["fields"]["molecular_weight"]["unit"], "Da");
+    assert_eq!(contract["fields"]["exact_mass"]["unit"], "Da");
+    assert_eq!(contract["fields"]["formula"]["unit"], "Hill notation");
     assert_eq!(contract["fields"]["tpsa"]["unit"], "A2");
 
     for fixture in contract["fixtures"]
@@ -33,6 +38,12 @@ fn shared_descriptor_fixture_matches_rust_source_of_truth() {
             );
         };
         close(molecular_weight(&mol), "molecular_weight");
+        close(exact_mass(&mol), "exact_mass");
+        assert_eq!(
+            calc_mol_formula(&mol),
+            fixture["formula"].as_str().unwrap(),
+            "{id} formula"
+        );
         close(tpsa(&mol), "tpsa");
         assert_eq!(
             hbd_count(&mol),
@@ -43,6 +54,16 @@ fn shared_descriptor_fixture_matches_rust_source_of_truth() {
             hba_count(&mol),
             fixture["hba"].as_u64().unwrap() as usize,
             "{id} hba"
+        );
+        assert_eq!(
+            aromatic_ring_count(&mol),
+            fixture["aromatic_ring_count"].as_u64().unwrap() as usize,
+            "{id} aromatic_ring_count"
+        );
+        assert_eq!(
+            rotatable_bond_count(&mol),
+            fixture["rotatable_bonds"].as_u64().unwrap() as usize,
+            "{id} rotatable_bonds"
         );
         assert_eq!(
             chematic_chem::heavy_atom_count(&mol),

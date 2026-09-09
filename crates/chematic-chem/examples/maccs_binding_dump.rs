@@ -30,8 +30,12 @@ fn main() {
             continue;
         }
         let record = match chematic_smiles::parse(smiles) {
-            Ok(mol) => json!({"index": index, "smiles": smiles, "status": "ok", "maccs_hex": bytes_hex(&mol)}),
-            Err(error) => json!({"index": index, "smiles": smiles, "status": "error", "error": error.to_string()}),
+            Ok(mol) => {
+                json!({"index": index, "smiles": smiles, "status": "ok", "maccs_hex": bytes_hex(&mol)})
+            }
+            Err(error) => {
+                json!({"index": index, "smiles": smiles, "status": "error", "error": error.to_string()})
+            }
         };
         serde_json::to_writer(&mut out, &record).expect("serialize MACCS record");
         writeln!(out).expect("write MACCS record");

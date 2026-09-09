@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-10",
+  "target_version": "1.0.10",
+  "scope": "deterministic and seeded triclinic periodic-neighbor cell-list candidate sweep",
+  "status": "local-verified",
+  "fixture": "crates/chematic-crystal/tests/neighbor.rs::triclinic_matches_brute_force_oracle, triclinic_sweep_matches_brute_force_oracle, and seeded_triclinic_sweep_matches_brute_force_oracle",
+  "command": "cargo test -p chematic-crystal --offline --test neighbor --quiet",
+  "candidate": {
+    "change": "enable the Cartesian replicated-image cell-list for non-orthorhombic lattices",
+    "cutoffs_angstrom": [1.5, 1.75, 2.0, 2.75, 3.25, 4.0, 4.25, 5.5, 5.75, 6.0],
+    "fixtures": 16,
+    "seed": "0x9e3779b97f4a7c15",
+    "seeded_fixtures": 12,
+    "result": "periodic neighbor sets match the independent fractional-delta brute-force oracle across four hand-selected fixtures and twelve fixed-seed generated fixtures, covering all declared cutoffs"
+  },
+  "boundary": "The final distance check uses fractional delta plus integer image arithmetic, matching the independent oracle at cutoff boundaries; allocation-cap overflow retains the reciprocal-vector fallback.",
+  "historical_rejection": "validation/results/periodic-neighbor-triclinic-cell-list-rejected-v1.0.10.json",
+  "interpretation": "The earlier candidate was rejected because Cartesian subtraction rounded a cutoff-boundary pair differently from the oracle. Recomputing fractional delta plus image before the final distance check repairs that mismatch. The hand-selected and fixed-seed sweeps broaden skew direction, lattice lengths, angle combinations, and fractional-site coverage, but this remains correctness evidence rather than a broad performance claim."
+}

@@ -821,18 +821,12 @@ pub fn find_symmetrized_sssr_with_diagnostics(mol: &Molecule) -> SymmetrizedSssr
     } else {
         let mut duplicate_groups: FxHashMap<Vec<u32>, (Vec<AtomIdx>, Vec<AtomIdx>)> =
             FxHashMap::default();
-        let mut active_blocked = FxHashSet::default();
         for &root in &d2_roots {
-            let candidates = find_smallest_rings_bfs_with_blocked_bonds(mol, root, &active_blocked);
-            if candidates.is_empty() {
-                for (_, bond) in mol.neighbors(root) {
-                    if is_ring_eligible(mol.bond(bond).order) {
-                        active_blocked.insert(bond);
-                    }
-                }
-                active_blocked = trim_ring_bonds(mol, &active_blocked);
-                continue;
-            }
+            // Collect each root's shortest candidates from the same immutable
+            // graph. Sharing a progressively blocked bond mask made the
+            // candidate family depend on root iteration order, which is a
+            // storage-order artifact for symmetric degree-2 components.
+            let candidates = find_smallest_rings_bfs(mol, root);
             for candidate in candidates {
                 let key = bond_set_key(&ring_bond_set(mol, &candidate));
                 let entry = duplicate_groups
@@ -1863,7 +1857,7 @@ mod tests {
             );
 
             let expected_family = canonical_family(&mol);
-            for seed in 0..64_u64 {
+            for seed in 0..256_u64 {
                 let perm = seeded_permutation(mol.atom_count(), seed ^ 0x337);
                 let permuted = permute_molecule(&mol, &perm);
                 let macrocycle_count = find_symmetrized_sssr(&permuted)

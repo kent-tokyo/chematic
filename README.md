@@ -19,7 +19,7 @@ Pure Rust by default · optional native InChI C FFI · Python · WebAssembly · 
 | | chematic | RDKit (Python) | RDKit.js (WASM) |
 |---|---|---|---|
 | **Get started** | `pip install chematic` | `pip install rdkit` (official prebuilt wheels) or conda | `npm install @rdkit/rdkit`, no Python bindings |
-| **Browser bundle** | **3.58 MB raw / 1.31 MB gzip** | not applicable (Python/C++ library) | 6.91 MB raw* |
+| **Browser bundle** | **3.73 MB raw / 1.36 MB gzip** | not applicable (Python/C++ library) | 6.91 MB raw* |
 | **ECFP4 batch** | **54.7 µs/mol** | 94.3 µs/mol | — |
 | **Canonical SMILES** | **24.95 / 18.27 µs/mol** | 25.58 / 26.82 µs/mol | — |
 | **SDF graph read / serialization-only write** | **9.48 / 7.62 µs/mol** | 99.96 / 79.54 µs/mol | — |
@@ -33,13 +33,13 @@ current status).
 The canonical and SDF rows are scoped 2026-09-04 macOS arm64 medians, not
 cross-platform claims; see the exact corpora and operation boundaries in the
 [benchmark details](docs/benchmark.md).
-The current chematic WASM artifact was measured 2026-09-07 from the v1.0.10 release candidate with
-`wasm-pack 0.13.1` + `wasm-opt 130`: **3.58 MB raw** (**1.31 MB gzip**). The pinned
+The current chematic WASM artifact was measured 2026-09-09 from the v1.0.10 release candidate with
+`wasm-pack 0.13.1` + `wasm-opt 130`: **3.73 MB raw** (**1.36 MB gzip**). The pinned
 historical comparators are RDKit.js **6.91 MB**
 (`@rdkit/rdkit@2025.3.4-1.0.0`'s `RDKit_minimal.wasm`, via unpkg.com) · Indigo (Ketcher build)
 **11.24 MB** (`indigo-ketcher@1.45.1`'s main `.wasm`, via jsDelivr) — chematic's raw WASM binary
-is currently about 2.1× smaller than RDKit.js's and about 3.8× smaller than Indigo's Ketcher-oriented
-build, on a raw-to-raw basis. See the [v1.0.9 artifact record](benchmarks/2026-09-07-wasm-size-v1.0.9.md),
+is currently about 1.9× smaller than RDKit.js's and about 3.0× smaller than Indigo's Ketcher-oriented
+build, on a raw-to-raw basis. See the [v1.0.10 artifact record](benchmarks/2026-09-09-wasm-size-v1.0.10.md),
 the latest measured artifact record for this release line.
 
 The separate 2026-08-23 benchmark rebuild reports 2.98 MB raw / 1.11 MB gzip;
@@ -56,9 +56,9 @@ can vary slightly by toolchain and build environment.
 | IUPAC name generation | Partial (25+ classes) |
 | Pure-Rust InChI | Approximate (enable `native-inchi` feature for exact) |
 
-### v1.0.10 release boundary
+### v1.0.11 release boundary
 
-The v1.0.10 release retains the v1.0.0 bounded compatibility contract while
+The v1.0.11 release retains the v1.0.0 bounded compatibility contract while
 adding typed reaction documents, document-level CDXML edits, explicit bounded
 Markush/polymer expansion, crystal composition summaries, safer UFF rescue,
 and canonical/SDF hot-path improvements. Spectrophores is intentionally
@@ -107,7 +107,7 @@ cmp.save("compare.html")
 | **Drug screening** | 190+ descriptors, ADMET, PAINS/Brenk, QED — batch over thousands of compounds |
 | **Molecule search** | ECFP4/MACCS fingerprints, opt-in RDKit-compatible chiral Morgan fingerprints, Tanimoto, LSH approximate nearest-neighbour |
 | **AI agent / MCP** | Built-in MCP server — Claude Desktop can call chemistry tools directly |
-| **Browser app** | 1.31 MB gzip WASM bundle, zero backend required, React/Vue/Svelte ready |
+| **Browser app** | 1.36 MB gzip WASM bundle, zero backend required, React/Vue/Svelte ready |
 | **Jupyter notebook** | `mol` renders SVG inline; `descriptors_df()` returns a pandas DataFrame |
 | **Batch analysis** | Rayon-parallel descriptor/fingerprint/3D pipelines; SDF/CSV in, CSV out |
 | **Rust server** | Pure-Rust crates with no C/C++ toolchain; Axum/Actix compatible |
@@ -120,7 +120,7 @@ Full worked examples → [Use cases](https://kent-tokyo.github.io/chematic/use-c
 
 **Use chematic if:**
 
-- You want chemistry in the browser (WASM, 1.31 MB gzip, no server required)
+- You want chemistry in the browser (WASM, 1.36 MB gzip, no server required)
 - You need a pure Rust stack with no C++ toolchain dependencies
 - You deploy to environments where installing RDKit is impractical or unsupported (Cloudflare Workers, Lambda, embedded — RDKit itself ships official `pip install rdkit` wheels, but those still assume a standard CPython environment)
 - You build AI agents and want native MCP tool integration
@@ -224,7 +224,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v1.0.10
+# chematic v1.0.11
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-08-23, v0.18.0 vs RDKit 2026.03.4):
@@ -302,8 +302,8 @@ surface gate for the exact boundary.
 ### Anywhere
 
 Pure Rust compiles to `wasm32-unknown-unknown` natively — no Emscripten, no `cmake`,
-no `clang`. The npm package `@kent-tokyo/chematic` is **1.31 MB gzip** (3.58 MB raw) —
-roughly 2.1× smaller than RDKit.js's `RDKit_minimal.wasm` (6.91 MB raw) on a like-for-like
+no `clang`. The npm package `@kent-tokyo/chematic` is **1.36 MB gzip** (3.73 MB raw) —
+roughly 1.9× smaller than RDKit.js's `RDKit_minimal.wasm` (6.91 MB raw) on a like-for-like
 raw-size basis. One codebase targets Linux, macOS, Windows, and browser WASM;
 Chromium, Firefox, and WebKit are covered by the browser CI lane.
 
@@ -319,7 +319,7 @@ Chromium, Firefox, and WebKit are covered by the browser CI lane.
 | Molecular weight | 99.82% within ±0.01 Da | 4,999-molecule ChEMBL-derived corpus |
 | HBA/HBD/TPSA/LogP | 100% at documented tolerances | same corpus |
 | CIP R/S/E/Z | 99.64% | opt-in accurate engine; 15 representation-unstable P rows fail closed |
-| WASM artifact | 3.58 MB raw / 1.31 MB gzip | v1.0.10 release candidate, measured 2026-09-07 |
+| WASM artifact | 3.73 MB raw / 1.36 MB gzip | v1.0.10 release candidate, measured 2026-09-09 |
 
 These are dated, operation-specific measurements rather than universal performance or parity claims. See the [benchmark guide](docs/benchmark.md), [validation report](docs/validation.md), and [dated records](benchmarks/) for versions, corpus hashes, hardware, tolerances, and commands.
 
@@ -330,7 +330,7 @@ These are dated, operation-specific measurements rather than universal performan
 | Feature                 | **chematic**                              | RDKit (rdkit-sys)  | OpenBabel FFI  | RDKit.js (WASM)    |
 |-------------------------|-------------------------------------------|--------------------|----------------|--------------------|
 | **C/C++ dependencies**  | **None (default)**†                       | Extensive C++      | Extensive C++  | C++ via Emscripten |
-| **WASM binary size**    | **3.58 MB raw** (1.31 MB gzip)             | N/A (no WASM)      | N/A (no WASM)  | 6.91 MB raw        |
+| **WASM binary size**    | **3.73 MB raw** (1.36 MB gzip)             | N/A (no WASM)      | N/A (no WASM)  | 6.91 MB raw        |
 | **Build requirement**   | `cargo build` only                        | cmake + clang      | cmake + clang  | Emscripten SDK     |
 | **WASM target support** | **Full (native)**                         | No                 | No             | Yes (Emscripten)   |
 | **Python bindings**     | **Yes** (`pip install chematic`, PyO3)    | Yes (rdkit-sys)    | Yes            | No                 |
@@ -345,7 +345,7 @@ differences; detailed feature claims belong in those maintained pages.
 
 ## JavaScript / TypeScript (WebAssembly)
 
-**1.31 MB gzip — roughly 2.0× smaller than RDKit.js's raw WASM.** No Emscripten, no cmake. Drop-in for browser or Node.js.
+**1.36 MB gzip — roughly 1.9× smaller than RDKit.js's raw WASM.** No Emscripten, no cmake. Drop-in for browser or Node.js.
 
 ```sh
 npm install @kent-tokyo/chematic
@@ -398,12 +398,14 @@ See [format capabilities](docs/format-capabilities.md), [language bindings](docs
 
 **Unreleased:** closed the remaining #210 legacy UFF stereo-rescue cases and continued canonical SMILES and SDF hot-path work. The fixed-version measurements are recorded in [benchmarks](benchmarks/).
 
-**v1.0.10 (2026-09-09):** carries forward the v1.0.9 descriptor provenance,
+**v1.0.11 (2026-09-10):** carries forward the v1.0.10 descriptor provenance,
 shared cross-binding contracts, streaming safety gates, and browser-target
 WASM synchronization. It strengthens held-out parity report validation,
 expands malformed format coverage, and hardens WASM batch/screening JSON
-error contracts. It also includes safe fingerprint hot-path improvements while
-retaining the established result and ranking contract.
+error contracts. It also includes safe fingerprint hot-path improvements,
+V3000 parser and 3D pipeline responsibility splits, and fail-closed CIP
+malformed-state handling while retaining the established result and ranking
+contract.
 
 **v1.0.8 (2026-09-06):** carries forward the v1.0.7 descriptor provenance,
 shared cross-binding contracts, fused/non-alternant aromaticity and held-out
@@ -474,7 +476,7 @@ See [compatibility scope](docs/compatibility-scope.md), [validation](docs/valida
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v1.0.10)
+├── Cargo.toml                    workspace root (v1.0.11)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -528,7 +530,7 @@ If you use chematic in academic or research work, please cite:
   author    = {Kentaro Tanabe (kent-tokyo)},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {1.0.10},
+  version   = {1.0.11},
   year      = {2026},
 }
 ```

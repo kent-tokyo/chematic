@@ -1,0 +1,20 @@
+{
+  "date": "2026-09-09",
+  "workspace_version": "1.0.10",
+  "scope": "bounded pipeline_v2 force-field energy sanity",
+  "corpus": {
+    "name": "pipeline_v2_integration_gate CORPUS",
+    "molecules": 63,
+    "identity": "frozen 58-molecule corpus plus five specification stress cases"
+  },
+  "command": "cargo run --release -p chematic-3d --example pipeline_v2_integration_gate",
+  "arms": {
+    "E_mmff94_strict": {"attempted": 63, "successful": 61, "finite": 61, "non_increasing": 61},
+    "F_mmff94_widened": {"attempted": 63, "successful": 61, "finite": 61, "non_increasing": 61},
+    "G_mmff94_uff_fb": {"attempted": 63, "successful": 61, "finite": 61, "non_increasing": 61},
+    "H_dreiding": {"attempted": 63, "successful": 61, "finite": 61, "non_increasing": 61}
+  },
+  "tolerance": 0.000001,
+  "result": "pass",
+  "boundary": "This proves finite, non-increasing accepted force-field energy for successful cases in this local corpus. It does not prove complete MMFF94/UFF typing, parameter, convergence, stereo, analytic-gradient, or independent-oracle coverage."
+}

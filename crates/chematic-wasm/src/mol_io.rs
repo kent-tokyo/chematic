@@ -454,6 +454,29 @@ pub fn mol_from_moljson(json: &str) -> Result<MolHandle, JsValue> {
     })
 }
 
+/// Parse a ChemicalJSON (CJSON) string into a `MolHandle`.
+///
+/// Coordinates and CJSON-specific metadata are intentionally not retained by
+/// this topology handle; use `convert_common_format` when a serialized CJSON
+/// round trip is required.
+#[wasm_bindgen]
+pub fn mol_from_cjson(json: &str) -> Result<MolHandle, JsValue> {
+    if json.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str("CJSON input too large"));
+    }
+    let (mol, _) =
+        chematic_mol::parse_cjson(json).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!(
+            "molecule too large (max {} atoms)",
+            WASM_MAX_ATOMS
+        )));
+    }
+    Ok(MolHandle {
+        inner: std::rc::Rc::new(mol),
+    })
+}
+
 /// Serialise a `MolHandle` to a MolJSON string (pretty-printed).
 ///
 /// Atom IDs are assigned as `"a1"`, `"a2"`, … in molecule atom order.
@@ -1100,6 +1123,22 @@ pub(crate) fn parse_pdb_molecule_and_coords(
     Ok((mol, flat))
 }
 
+/// Strict counterpart to `parse_pdb_molecule_and_coords` for callers that
+/// need fixed-column validation rather than compatibility recovery.
+pub(crate) fn parse_pdb_molecule_and_coords_strict(
+    pdb: &str,
+) -> Result<(chematic_core::Molecule, Vec<[f64; 3]>), String> {
+    let limits = chematic_3d::PdbParseLimits {
+        max_input_bytes: WASM_MAX_JSON_STRING_BYTES,
+        max_atoms: WASM_MAX_ATOMS,
+        ..Default::default()
+    };
+    let atoms = chematic_3d::parse_pdb_atoms_strict(pdb, &limits).map_err(|e| e.to_string())?;
+    let (mol, coords) = chematic_3d::pdb_to_molecule(&atoms);
+    let flat = coords.points.iter().map(|p| [p.x, p.y, p.z]).collect();
+    Ok((mol, flat))
+}
+
 /// Parse a PDB file and return a `MolHandle` (topology only; coordinates are
 /// discarded -- use [`pdb_coords_json`] to recover them in the SAME atom
 /// order, and [`mmff94_energy_breakdown_from_coords_json`] to score them
@@ -1117,6 +1156,40 @@ pub fn mol_from_pdb(pdb: &str) -> MolHandle {
             inner: std::rc::Rc::new(chematic_core::MoleculeBuilder::new().build()),
         },
     }
+}
+
+/// Strict PDB parser. Unlike [`mol_from_pdb`], malformed ATOM/HETATM fields
+/// return an error instead of producing a partially recovered molecule.
+#[wasm_bindgen]
+pub fn mol_from_pdb_strict(pdb: &str) -> Result<MolHandle, JsValue> {
+    let (mol, _coords) =
+        parse_pdb_molecule_and_coords_strict(pdb).map_err(|error| JsValue::from_str(&error))?;
+    Ok(MolHandle {
+        inner: std::rc::Rc::new(mol),
+    })
+}
+
+/// Parse an AutoDock PDBQT block into a topology handle.
+///
+/// Coordinates and partial charges are intentionally discarded, matching the
+/// Python `from_pdbqt` binding; use the Rust parser when those arrays are
+/// needed. Invalid records return a JS error instead of a partial molecule.
+#[wasm_bindgen]
+pub fn mol_from_pdbqt(pdbqt: &str) -> Result<MolHandle, JsValue> {
+    if pdbqt.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str("PDBQT input too large"));
+    }
+    let (mol, _coords, _charges) =
+        chematic_mol::parse_pdbqt(pdbqt).map_err(|error| JsValue::from_str(&error.to_string()))?;
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!(
+            "molecule too large (max {} atoms)",
+            WASM_MAX_ATOMS
+        )));
+    }
+    Ok(MolHandle {
+        inner: std::rc::Rc::new(mol),
+    })
 }
 
 /// Extract the atomic coordinates from a PDB block, in the SAME atom order

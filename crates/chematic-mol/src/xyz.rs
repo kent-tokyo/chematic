@@ -838,13 +838,13 @@ impl<R: std::io::BufRead> ExtxyzFileReader<R> {
 
     fn read_line(&mut self) -> Result<bool, XyzError> {
         self.line.clear();
-        let bytes = self
-            .reader
-            .read_line(&mut self.line)
-            .map_err(|error| XyzError::InvalidAtomLine {
-                line: 0,
-                detail: format!("I/O error: {error}"),
-            })?;
+        let bytes =
+            self.reader
+                .read_line(&mut self.line)
+                .map_err(|error| XyzError::InvalidAtomLine {
+                    line: 0,
+                    detail: format!("I/O error: {error}"),
+                })?;
         if bytes == 0 {
             return Ok(false);
         }

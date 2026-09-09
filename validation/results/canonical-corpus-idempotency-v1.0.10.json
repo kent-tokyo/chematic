@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "status": "local-current-candidate",
+  "gate": "canonical_idempotency_corpus_standardized",
+  "execution": "cargo test -p chematic-chem --test canonical_idempotency_corpus_standardized --offline -- --ignored",
+  "platform": "macOS arm64",
+  "duration_seconds": 637.30,
+  "tests": {
+    "nci_first_5k_corpus_standardized_is_canonically_idempotent": "passed",
+    "descriptor_census_corpus_standardized_is_canonically_idempotent": "passed",
+    "chembl_accuracy_corpus_standardized_is_canonically_idempotent": "passed"
+  },
+  "summary": {
+    "passed": 3,
+    "failed": 0,
+    "ignored": 1
+  },
+  "interpretation": "This proves canonical idempotency for the three standardized corpus lanes. It does not prove atom-order invariance or eliminate the three held-out aromatic-stash representation residuals; those remain fail-closed open work."
+}

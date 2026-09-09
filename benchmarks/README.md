@@ -1,94 +1,199 @@
-# chematic Benchmarks
+# chematic benchmark records
 
-Periodic performance snapshots. Each file is a date-stamped record of throughput and accuracy metrics at that version.
+This directory contains dated, reproducible measurement records. Numbers are
+scoped to the source revision, package versions, corpus, hardware, runtime,
+and operation boundary written in each record. They are not universal speed,
+accuracy, or compatibility claims.
 
-## Entries
+## Start here
 
-| Date | Version | Notes |
-|------|---------|-------|
-| [2026-09-06 WASM artifact](2026-09-06-wasm-size-v1.0.7.md) | v1.0.7 tag | Optimized WASM raw/gzip size, SHA-256, toolchain, target, and reproduction command |
-| [2026-09-06 WASM v1.0.8 artifact](2026-09-06-wasm-size-v1.0.8.md) | v1.0.8 release candidate | Optimized WASM raw/gzip size, SHA-256, toolchain, target, and reproduction command |
-| [2026-09-05 hot-path 1.10x gate](2026-09-05-hotpath-110.md) | v1.0.6 local source | Seven alternating A/B pairs: canonical 1.176x, SDF read 1.180x, reused-buffer write 1.419x; parse 1.034x remains below target; exact-output checks and load caveats |
-| [2026-09-05 descriptor/streaming](2026-09-05-descriptor-streaming.md) | v1.0.6 release source | Shared descriptor provenance and Rust/Python/Node/WASM fixture contract; 4,999-molecule core parity; 2,000-pass SDF/MOL/XYZ streaming evidence |
-| [2026-09-05 prepared index](2026-09-05-prepared-index.md) | v1.0.6 local source | Exact reusable fingerprint index; 7.30x repeated-query speedup on the pinned ten-molecule fixture |
-| [2026-09-05 parallel Tanimoto](2026-09-05-tanimoto-parallel.md) | v1.0.6 local source | Row-wise parallel dense matrix with serial parity; 1.21x on the pinned 256x256 lane |
-| [2026-09-09 similarity search vs RDKit](2026-09-09-similarity-search-v1.0.9.md) | v1.0.9 local source | Same 4,500-library/500-query exact top-k protocol; prepared-search latency and ranking overlap reported separately |
-| [2026-09-05 descriptor topology](2026-09-05-descriptor-topology.md) | v1.0.6 local source | Shared Wiener/Kappa/Chi topology context with scalar parity and lazy single-group fallback |
-| [2026-09-05 distance descriptors](2026-09-05-distance-descriptors.md) | v1.0.6 local source | Shared AutoCorr2D/Moran/Geary distance matrix with exact scalar parity |
-| [2026-09-05 descriptor scaling](2026-09-05-descriptor-scaling.md) | v1.0.6 local source | `descriptors_array` 3/8/all column contract, deterministic digest, and Python-visible allocation record |
-| [2026-09-05 MMFF94 prepared nonbonded](2026-09-05-mmff94-prepared-nonbonded.md) | v1.0.6 local source | Prepared vdW parameters and electrostatic charge products with energy parity; analytic gradients remain open |
-| [2026-09-05 MMFF94 parallel gradient](2026-09-05-mmff94-gradient-parallel.md) | v1.0.6 local source | Large-molecule finite-difference probes use bounded parallelism with deterministic gradient ordering |
-| [2026-09-05 RDKit/Open Babel speed](2026-09-05-rdkit-openbabel-speed.md) | v1.0.6 local wheel | Three-sample in-process chematic/RDKit remeasurement and separate Open Babel CLI boundary lane |
-| [2026-09-05 hot-path follow-up](2026-09-05-hot-path-follow-up.md) | v1.0.4-based unreleased source | Additional 1.10x gate: canonical SMILES 1.115x, file-backed SDF read 1.130x, V2000 SDF serialization 3.042x; output and full-workspace gates included |
-| [2026-09-04 MMFF94/3D](2026-09-04-mmff94-3d.md) | v1.0.3 | Prepared MMFF94 energy, L-BFGS minimization, ETKDG generation, and 3D minimization microbenchmarks on macOS arm64 |
-| [2026-09-04 streaming formats](2026-09-04-streaming-formats.md) | v1.0.3 | File-backed chematic SDF/MOL/XYZ streaming runner and explicitly non-equivalent RDKit block-parser reference |
-| [2026-09-07 file-backed streaming comparison](2026-09-07-streaming-equivalent.md) | v1.0.8 release candidate | Same-input chematic/RDKit file-backed SDF ingestion plus separately scoped Open Babel CLI evidence |
-| [2026-09-08 same-input streaming contract](2026-09-08-streaming-cross-engine.md) | v1.0.9 development candidate | Same-input SDF record/failure contract across chematic, RDKit, and Open Babel with explicit parser/process boundaries |
-| [2026-09-08 same-input XYZ streaming contract](2026-09-08-streaming-cross-engine-xyz.md) | v1.0.9 development candidate | Same-input XYZ record/failure contract across chematic and RDKit with explicit file-backed/block-parser boundaries |
-| [2026-09-08 same-input V2000 MOL streaming contract](2026-09-08-streaming-cross-engine-mol.md) | v1.0.9 development candidate | Same-input V2000 MOL record/failure contract across chematic and RDKit with explicit file-backed/block-parser boundaries |
-| [2026-09-08 same-input V3000 streaming contract](2026-09-08-streaming-cross-engine-v3000.md) | v1.0.9 development candidate | Same-input V3000 record/failure contract across chematic and RDKit with explicit materialized/block-parser boundaries |
-| [2026-09-08 same-input MOL2 streaming contract](2026-09-08-streaming-cross-engine-mol2.md) | v1.0.9 development candidate | Same-input MOL2 record/failure contract across chematic and RDKit with explicit materialized/block-parser boundaries |
-| [2026-09-08 same-input CML streaming contract](2026-09-08-streaming-cross-engine-cml.md) | v1.0.9 development candidate | Same-input CML record/failure contract across chematic and Open Babel with explicit materialized/CLI boundaries |
-| [2026-09-08 same-input CDXML streaming contract](2026-09-08-streaming-cross-engine-cdxml.md) | v1.0.9 development candidate | Same-input CDXML record/failure contract across chematic and Open Babel with explicit materialized/CLI boundaries |
-| [2026-09-08 same-input mmCIF streaming contract](2026-09-08-streaming-cross-engine-mmcif.md) | v1.0.9 development candidate | Same-input mmCIF record/failure contract across chematic and Open Babel with explicit materialized/CLI boundaries |
-| [2026-09-08 same-input PDB streaming contract](2026-09-08-streaming-cross-engine-pdb.md) | v1.0.9 development candidate | Same-input PDB record/failure contract across chematic and Open Babel with explicit materialized/CLI boundaries |
-| [2026-09-08 streaming matrix](2026-09-08-streaming-matrix-v1.0.9.json) | v1.0.9 development candidate | Reproducible Rust-only matrix for 10 formats, plain/gzip stages, parser limits, fixture digests, and 20 repetitions; all 20 rows returned expected records with zero failures |
-| [2026-09-08 cross-engine streaming matrix](2026-09-08-streaming-cross-engine-matrix-v1.0.9.json) | v1.0.9 development candidate | Same-input record/failure agreement for all 10 formats across chematic and installed RDKit/Open Babel lanes; parser/process boundaries remain explicit |
-| [2026-09-08 gzip SDF streaming contract](2026-09-08-streaming-gzip-contract.md) | v1.0.9 development candidate | Deterministic gzip SDF record/failure contract with compressed/decompressed byte stages made explicit |
-| [2026-09-08 gzip XYZ streaming contract](2026-09-08-streaming-gzip-xyz-contract.md) | v1.0.9 development candidate | Deterministic gzip XYZ record/failure contract with compressed/decompressed byte stages made explicit |
-| [2026-09-08 gzip Extended XYZ streaming contract](2026-09-08-streaming-gzip-extxyz-contract.md) | v1.0.9 development candidate | Deterministic gzip Extended XYZ record/failure contract with compressed/decompressed byte stages made explicit |
-| [2026-09-08 same-input streaming contract](2026-09-08-streaming-cross-engine.md) | v1.0.9 development candidate | Same-input SDF record/failure agreement across chematic, RDKit, and Open Babel with explicit parser boundaries |
-| [2026-09-04 RDKit/Open Babel](2026-09-04-rdkit-openbabel.md) | v1.0.3 wheel + v1.0.4 source follow-up | Speed comparison with Open Babel 3.2.1 CLI plus source-level canonical and SDF writer A/B checks; CLI conversion remains separate from in-process measurements |
-| [2026-09-04 WASM](2026-09-04-wasm-size.md) | v1.0.2 release candidate | Optimized web artifact size, gzip size, SHA-256 digest, tool versions, and exact reproduction commands |
-| [2026-09-04 canonical](2026-09-04-canonical-fast-path.md) | v1.0.2 code, measured before metadata bump | Canonical SMILES comparisons on two 5,000-molecule corpora; chematic leads RDKit by 2.5% and 1.47× at the respective medians on the recorded macOS arm64 environment |
-| [2026-09-04 SDF](2026-09-04-sdf-fast-path.md) | v1.0.2 code, measured before metadata bump | Graph/property read and serialization-only write improved 1.26× and 1.33× over the preceding chematic implementation; scoped RDKit comparison included |
-| [2026-09-03](2026-09-03-competitive.md) | v1.0.1 | Resumable six-operation competitive run for chematic and RDKit; Open Babel not installed |
-| [2026-08-23](2026-08-23.md) | v0.18.0 (commit `24a9239`) | v0.19.0 release-prep re-measurement; corpus now committed (`scripts/chembl_accuracy_corpus_4999.smi`); real MW check added; diverse-corpus ECFP4 now reproducible via `benchmark_vs_rdkit.py --corpus`; WASM size rebuilt clean; CIP R/S/E/Z label agreement re-measured (96%→99.7%+) |
-| [2026-07-17](2026-07-17.md) | v0.4.29 | Hardware moved to Apple M4; throughput headline (5–14×) did not reproduce even on the same fixture — see file for details; descriptor accuracy holds |
-| [2026-06-25](2026-06-25.md) | v0.4.20 | Baseline: ECFP4, descriptor batch, WASM size, RDKit accuracy |
+| Need | Start with |
+|---|---|
+| Understand the rules and how to report a result | [`docs/benchmark.md`](../docs/benchmark.md) |
+| Compare current similarity search with RDKit | [`2026-09-09-similarity-search-v1.0.9.md`](2026-09-09-similarity-search-v1.0.9.md) |
+| Reproduce the 1.10x hot-path gate | [`2026-09-05-hotpath-110.md`](2026-09-05-hotpath-110.md) |
+| Check file-streaming contracts | [v1.0.10 validation matrix](../validation/results/cross-engine-matrix-v1.0.10.json) |
+| Check current streaming safety gate | [`2026-09-09-streaming-safety-v1.0.10.md`](2026-09-09-streaming-safety-v1.0.10.md) |
+| Check WASM artifact size | [`2026-09-09-wasm-size-v1.0.10.md`](2026-09-09-wasm-size-v1.0.10.md) |
+| Find older measurements | [Historical snapshots](#historical-snapshots) |
 
-## How to reproduce
+The current published release is v1.0.10. The newest checked-in performance
+records are still versioned historical records where their headers say so;
+the v1.0.10 release does not imply that an older measurement was rerun.
 
-### Throughput (Python)
+## Performance and scaling
 
-```bash
-# Corpus is committed — scripts/chembl_accuracy_corpus_4999.smi
-pip install chematic rdkit
-python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi
-python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --detail   # show mismatches
-```
+### Search and fingerprint paths
 
-### Accuracy vs RDKit (4,999-mol ChEMBL-derived corpus)
+| Record | Scope |
+|---|---|
+| [`2026-09-09-similarity-search-v1.0.9.md`](2026-09-09-similarity-search-v1.0.9.md) | 4,500-entry library / 500-query exact top-k comparison with RDKit; latency and ranking overlap are separate axes |
+| [`2026-09-09-similarity-search-v1.0.9.json`](2026-09-09-similarity-search-v1.0.9.json) | Machine-readable similarity-search measurements and ranking checks |
+| [`2026-09-09-wasm-rdkit-gate.md`](2026-09-09-wasm-rdkit-gate.md) | Same-corpus Node/WASM comparison with the installed official RDKit.js package |
+| [`2026-09-09-wasm-rdkit-gate.json`](2026-09-09-wasm-rdkit-gate.json) | Machine-readable WASM comparison output and exact fingerprint parity count |
+| [`2026-09-09-wasm-rdkit-paired.md`](2026-09-09-wasm-rdkit-paired.md) | Same-process paired Node/WASM timing follow-up |
+| [`2026-09-09-wasm-rdkit-paired.json`](2026-09-09-wasm-rdkit-paired.json) | Machine-readable paired timing and fingerprint parity output |
+| [`2026-09-05-prepared-index.md`](2026-09-05-prepared-index.md) | Reusable prepared fingerprint index on the pinned ten-molecule fixture |
+| [`2026-09-05-tanimoto-parallel.md`](2026-09-05-tanimoto-parallel.md) | Serial/parallel dense Tanimoto matrix parity and scaling |
+| [`2026-09-05-hotpath-110.md`](2026-09-05-hotpath-110.md) | Alternating source A/B gate for canonical SMILES, SDF, and parsing |
+| [`2026-09-05-hot-path-follow-up.md`](2026-09-05-hot-path-follow-up.md) | Historical follow-up gate with rejected experiments and exact-output checks |
 
-`scripts/rdkit_benchmark.py` measures RDKit-side timing only (see its own docstring) — it
-does not perform an accuracy comparison, despite an earlier version of this file pointing to
-it for that purpose. The actual, current accuracy-reproduction path is:
+### Parsing, descriptors, and chemistry workloads
 
-```bash
-pip install chematic rdkit
-python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --json /tmp/bench5k.json
-python scripts/gen_validation_report.py /tmp/bench5k.json
-```
+| Record | Scope |
+|---|---|
+| [`2026-09-04-canonical-fast-path.md`](2026-09-04-canonical-fast-path.md) | Canonical SMILES on two 5,000-molecule corpora |
+| [`2026-09-04-sdf-fast-path.md`](2026-09-04-sdf-fast-path.md) | SDF graph/property read and serialization-only write |
+| [`2026-09-04-rdkit-openbabel.md`](2026-09-04-rdkit-openbabel.md) | Earlier RDKit/Open Babel comparison with explicit operation boundaries |
+| [`2026-09-04-wasm-size.md`](2026-09-04-wasm-size.md) | Earlier WASM artifact-size measurement |
+| [`2026-09-05-descriptor-scaling.md`](2026-09-05-descriptor-scaling.md) | `descriptors_array` column selection, digest, and allocation contract |
+| [`2026-09-05-descriptor-streaming.md`](2026-09-05-descriptor-streaming.md) | Descriptor provenance and streaming fixture contract |
+| [`2026-09-05-descriptor-topology.md`](2026-09-05-descriptor-topology.md) | Wiener/Kappa/Chi topology descriptors |
+| [`2026-09-05-distance-descriptors.md`](2026-09-05-distance-descriptors.md) | AutoCorr2D, Moran, and Geary distance descriptors |
+| [`2026-09-05-rdkit-openbabel-speed.md`](2026-09-05-rdkit-openbabel-speed.md) | In-process chematic/RDKit and separately scoped Open Babel CLI timing |
+| [`2026-09-05-hotpath-110.json`](2026-09-05-hotpath-110.json) | Machine-readable hot-path gate output |
+| [`2026-09-05-mmff94-prepared-nonbonded.md`](2026-09-05-mmff94-prepared-nonbonded.md) | Prepared MMFF94 nonbonded terms and energy parity |
+| [`2026-09-05-mmff94-gradient-parallel.md`](2026-09-05-mmff94-gradient-parallel.md) | Bounded parallel finite-difference gradient probes |
+| [`2026-09-09-mmff94-nonbonded-gradient-v1.0.10.md`](2026-09-09-mmff94-nonbonded-gradient-v1.0.10.md) | Prepared MMFF94 vdW/electrostatic analytic-gradient parity |
+| [`2026-09-09-uff-prepared-topology-v1.0.10.md`](2026-09-09-uff-prepared-topology-v1.0.10.md) | UFF prepared topology, all 45 declared type-parameter soundness, and analytic-gradient parity |
+| [v1.0.10 RDKit MMFF94 availability oracle](../validation/results/mmff94-rdkit-availability-oracle-v1.0.10.json) | Independent 265-molecule parse, embed, force-field construction, and finite-energy availability boundary |
+| [`2026-09-09-streaming-safety-v1.0.10.md`](2026-09-09-streaming-safety-v1.0.10.md) | Bounded ten-format malformed, oversized, gzip, and generated parser-entry safety gate |
+| [v1.0.10 reaction SMARTS contract](../validation/results/reaction-smarts-bounded-contract-v1.0.10.json) | Bounded 20-case aromatic, bond-order, mapped-agent, agent-OR, disconnected-component assignment/rejection, hydrogen-count, pipe-alternative, and embedding-selection presence contract |
 
-See [`docs/validation.md`](../docs/validation.md) for the canonical, regeneratable report
-this produces.
+## Streaming and cross-engine contracts
 
-### WASM bundle size
+These records primarily measure record accounting, failure behavior, and
+boundary semantics. They must not be read as like-for-like throughput claims
+unless the record explicitly says that the APIs and process boundaries match.
 
-```bash
-# Requires wasm-pack
-cd crates/chematic-wasm
-wasm-pack build --target web --release
-ls -lh pkg/chematic_wasm_bg.wasm
-gzip -k pkg/chematic_wasm_bg.wasm && ls -lh pkg/chematic_wasm_bg.wasm.gz
-```
+### Aggregate matrices
 
-## Hardware reference
+| Record | Scope |
+|---|---|
+| [`2026-09-08-streaming-matrix-v1.0.9.json`](2026-09-08-streaming-matrix-v1.0.9.json) | Rust-only ten-format matrix, plain/gzip stages, limits, digests, and repetitions |
+| [`2026-09-08-streaming-cross-engine-matrix-v1.0.9.json`](2026-09-08-streaming-cross-engine-matrix-v1.0.9.json) | Same-input ten-format agreement across chematic and installed RDKit/Open Babel lanes |
+| [`2026-09-09-streaming-cross-engine-matrix-v1.0.10.md`](2026-09-09-streaming-cross-engine-matrix-v1.0.10.md) | v1.0.10 same-input contract refresh with explicitly non-ranking throughput context |
+| [`2026-09-09-streaming-cross-engine-matrix-v1.0.10.json`](2026-09-09-streaming-cross-engine-matrix-v1.0.10.json) | Machine-readable current ten-format contract matrix |
+| [v1.0.10 validation matrix](../validation/results/cross-engine-matrix-v1.0.10.json) | Current 2026-09-10 ten-format matrix used by the fail-closed validator |
+| [`2026-09-09-same-process-sdf-contract-v1.0.10.md`](2026-09-09-same-process-sdf-contract-v1.0.10.md) | Same-process schematic/RDKit SDF semantic contract |
+| [`2026-09-09-same-process-sdf-contract-v1.0.10.json`](2026-09-09-same-process-sdf-contract-v1.0.10.json) | Machine-readable same-process SDF evidence |
+| [`2026-09-09-same-process-v2000-mol-contract-v1.0.10.md`](2026-09-09-same-process-v2000-mol-contract-v1.0.10.md) | Same-process schematic/RDKit V2000 MOL semantic contract |
+| [`2026-09-09-same-process-v2000-mol-contract-v1.0.10.json`](2026-09-09-same-process-v2000-mol-contract-v1.0.10.json) | Machine-readable same-process V2000 MOL evidence |
+| [`2026-09-09-same-process-v3000-mol-contract-v1.0.10.md`](2026-09-09-same-process-v3000-mol-contract-v1.0.10.md) | Same-process schematic/RDKit V3000 MOL semantic contract |
+| [`2026-09-09-same-process-v3000-mol-contract-v1.0.10.json`](2026-09-09-same-process-v3000-mol-contract-v1.0.10.json) | Machine-readable same-process V3000 MOL evidence |
+| [`2026-09-09-same-process-mol2-contract-v1.0.10.md`](2026-09-09-same-process-mol2-contract-v1.0.10.md) | Same-process schematic/RDKit MOL2 semantic contract |
+| [`2026-09-09-same-process-mol2-contract-v1.0.10.json`](2026-09-09-same-process-mol2-contract-v1.0.10.json) | Machine-readable same-process MOL2 evidence |
+| [`2026-09-09-same-process-xyz-contract-v1.0.10.md`](2026-09-09-same-process-xyz-contract-v1.0.10.md) | Same-process schematic/RDKit XYZ frame contract |
+| [`2026-09-09-same-process-xyz-contract-v1.0.10.json`](2026-09-09-same-process-xyz-contract-v1.0.10.json) | Machine-readable same-process XYZ evidence |
+| [`2026-09-09-same-process-extxyz-contract-v1.0.10.md`](2026-09-09-same-process-extxyz-contract-v1.0.10.md) | Same-process schematic/RDKit Extended XYZ frame contract |
+| [`2026-09-09-same-process-extxyz-contract-v1.0.10.json`](2026-09-09-same-process-extxyz-contract-v1.0.10.json) | Machine-readable same-process Extended XYZ evidence |
+| [`2026-09-09-same-process-pdb-contract-v1.0.10.md`](2026-09-09-same-process-pdb-contract-v1.0.10.md) | Same-process schematic/RDKit PDB semantic contract |
+| [`2026-09-09-same-process-pdb-contract-v1.0.10.json`](2026-09-09-same-process-pdb-contract-v1.0.10.json) | Machine-readable same-process PDB evidence |
+| [`2026-09-10-same-process-sdf-contract-v1.0.10.json`](2026-09-10-same-process-sdf-contract-v1.0.10.json) | Re-run same-process SDF contract against the current v1.0.10 source extension |
+| [`2026-09-10-same-process-v2000-mol-contract-v1.0.10.json`](2026-09-10-same-process-v2000-mol-contract-v1.0.10.json) | Re-run same-process V2000 MOL contract |
+| [`2026-09-10-same-process-v3000-mol-contract-v1.0.10.json`](2026-09-10-same-process-v3000-mol-contract-v1.0.10.json) | Re-run same-process V3000 MOL contract |
+| [`2026-09-10-same-process-mol2-contract-v1.0.10.json`](2026-09-10-same-process-mol2-contract-v1.0.10.json) | Re-run same-process MOL2 contract |
+| [`2026-09-10-same-process-xyz-contract-v1.0.10.json`](2026-09-10-same-process-xyz-contract-v1.0.10.json) | Re-run same-process XYZ frame contract |
+| [`2026-09-10-same-process-extxyz-contract-v1.0.10.json`](2026-09-10-same-process-extxyz-contract-v1.0.10.json) | Re-run same-process Extended XYZ contract with property boundary |
+| [`2026-09-10-same-process-pdb-contract-v1.0.10.json`](2026-09-10-same-process-pdb-contract-v1.0.10.json) | Re-run same-process PDB contract with explicit lenient-parser boundary |
+| [`2026-09-10-same-process-cdxml-contract-v1.0.10.json`](2026-09-10-same-process-cdxml-contract-v1.0.10.json) | Re-run same-process CDXML contract with explicit lenient-parser boundary |
+| [`2026-09-10-same-process-contract-bundle-v1.0.10.md`](2026-09-10-same-process-contract-bundle-v1.0.10.md) | Reproduction notes and boundaries for the eight-format same-process bundle |
+| [`2026-09-10-same-process-sdf-timing-v1.0.10.md`](2026-09-10-same-process-sdf-timing-v1.0.10.md) | Same-process equivalent SDF timing context against RDKit 2025.09.3 |
+| [`2026-09-10-same-process-sdf-timing-v1.0.10.json`](2026-09-10-same-process-sdf-timing-v1.0.10.json) | Machine-readable paired SDF timing and semantic evidence |
+| [`2026-09-10-mmff94-electrostatic-neighbor-list-v1.0.10.md`](2026-09-10-mmff94-electrostatic-neighbor-list-v1.0.10.md) | Opt-in MMFF94 electrostatic cutoff neighbor-list slice |
+| [`../validation/results/mmff94-electrostatic-neighbor-list-v1.0.10.json`](../validation/results/mmff94-electrostatic-neighbor-list-v1.0.10.json) | Machine-readable opt-in MMFF94 electrostatic cutoff evidence |
+| [`../validation/results/streaming-failure-taxonomy-v1.0.10.json`](../validation/results/streaming-failure-taxonomy-v1.0.10.json) | Bounded ten-format parser failure variant taxonomy |
+| [`2026-09-07-streaming-equivalent.md`](2026-09-07-streaming-equivalent.md) | Same-input SDF ingestion with separately scoped Open Babel evidence |
+| [`2026-09-04-streaming-formats.md`](2026-09-04-streaming-formats.md) | Original file-backed SDF/MOL/XYZ runner and non-equivalent RDKit reference |
 
-Hardware varies by snapshot — see each dated file's header. 2026-06 was measured on Apple M2
-(8-core, 8 GB RAM) / macOS 14; 2026-07 moved to Apple M4 (10-core, 16 GB RAM) / macOS 26.
-Rust `cargo bench` numbers are from the same machine as the Python numbers in a given snapshot.
+### Same-input format contracts
 
-Results vary by CPU, load, and corpus/fixture choice — treat numbers as order-of-magnitude
-references, not SLA guarantees. The 2026-07 snapshot found the headline throughput ratio is
-fixture-sensitive; read the Notes section of each file before quoting a number.
+| Format | Record |
+|---|---|
+| SDF | [`2026-09-08-streaming-cross-engine.md`](2026-09-08-streaming-cross-engine.md) |
+| XYZ / Extended XYZ | [`2026-09-08-streaming-cross-engine-xyz.md`](2026-09-08-streaming-cross-engine-xyz.md) · [`2026-09-08-streaming-cross-engine-extxyz.md`](2026-09-08-streaming-cross-engine-extxyz.md) |
+| V2000 / V3000 MOL | [`2026-09-08-streaming-cross-engine-mol.md`](2026-09-08-streaming-cross-engine-mol.md) · [`2026-09-08-streaming-cross-engine-v3000.md`](2026-09-08-streaming-cross-engine-v3000.md) |
+| MOL2 | [`2026-09-08-streaming-cross-engine-mol2.md`](2026-09-08-streaming-cross-engine-mol2.md) · [`2026-09-08-streaming-cross-engine-openbabel-mol2.md`](2026-09-08-streaming-cross-engine-openbabel-mol2.md) |
+| Open Babel supplemental | [`2026-09-08-streaming-cross-engine-openbabel.md`](2026-09-08-streaming-cross-engine-openbabel.md) · [`2026-09-08-streaming-cross-engine-openbabel-v3000.md`](2026-09-08-streaming-cross-engine-openbabel-v3000.md) |
+| CML / CDXML | [`2026-09-08-streaming-cross-engine-cml.md`](2026-09-08-streaming-cross-engine-cml.md) · [`2026-09-08-streaming-cross-engine-cdxml.md`](2026-09-08-streaming-cross-engine-cdxml.md) |
+| mmCIF / PDB | [`2026-09-08-streaming-cross-engine-mmcif.md`](2026-09-08-streaming-cross-engine-mmcif.md) · [`2026-09-08-streaming-cross-engine-pdb.md`](2026-09-08-streaming-cross-engine-pdb.md) |
+
+### Gzip contracts
+
+| Input | Record |
+|---|---|
+| SDF | [`2026-09-08-streaming-gzip-contract.md`](2026-09-08-streaming-gzip-contract.md) · [`2026-09-08-streaming-gzip-openbabel-sdf.md`](2026-09-08-streaming-gzip-openbabel-sdf.md) |
+| XYZ / Extended XYZ | [`2026-09-08-streaming-gzip-xyz-contract.md`](2026-09-08-streaming-gzip-xyz-contract.md) · [`2026-09-08-streaming-gzip-extxyz-contract.md`](2026-09-08-streaming-gzip-extxyz-contract.md) |
+| V3000 MOL / MOL2 | [`2026-09-08-streaming-gzip-openbabel-v3000.md`](2026-09-08-streaming-gzip-openbabel-v3000.md) · [`2026-09-08-streaming-gzip-openbabel-mol2.md`](2026-09-08-streaming-gzip-openbabel-mol2.md) |
+| CML / CDXML | [`2026-09-08-streaming-gzip-openbabel-cml.md`](2026-09-08-streaming-gzip-openbabel-cml.md) · [`2026-09-08-streaming-gzip-openbabel-cdxml.md`](2026-09-08-streaming-gzip-openbabel-cdxml.md) |
+| mmCIF / PDB | [`2026-09-08-streaming-gzip-openbabel-mmcif.md`](2026-09-08-streaming-gzip-openbabel-mmcif.md) · [`2026-09-08-streaming-gzip-openbabel-pdb.md`](2026-09-08-streaming-gzip-openbabel-pdb.md) |
+
+## Artifacts and environment-sensitive records
+
+| Record | Scope |
+|---|---|
+| [`2026-09-07-wasm-size-v1.0.9.md`](2026-09-07-wasm-size-v1.0.9.md) | v1.0.9 candidate WASM raw/gzip size, digest, toolchain, and commands |
+| [`2026-09-09-wasm-size-v1.0.10.md`](2026-09-09-wasm-size-v1.0.10.md) | v1.0.10 current-candidate WASM raw/gzip size, digest, toolchain, and commands |
+| [`2026-09-09-wasm-size-v1.0.10.json`](2026-09-09-wasm-size-v1.0.10.json) | Machine-readable v1.0.10 WASM artifact evidence |
+| [`2026-09-06-wasm-size-v1.0.8.md`](2026-09-06-wasm-size-v1.0.8.md) | v1.0.8 candidate artifact snapshot |
+| [`2026-09-06-wasm-size-v1.0.7.md`](2026-09-06-wasm-size-v1.0.7.md) | v1.0.7 tagged artifact snapshot |
+| [`2026-09-09-clean-install-cold-start-v1.0.9.md`](2026-09-09-clean-install-cold-start-v1.0.9.md) | Isolated CPython 3.13 arm64 wheel build/install/import and cold-start evidence |
+| [`2026-09-09-clean-install-cold-start-v1.0.10.md`](2026-09-09-clean-install-cold-start-v1.0.10.md) | v1.0.10 clean install, cold start, SMILES throughput, and peak RSS evidence |
+| [`2026-09-09-clean-install-cold-start-v1.0.10.json`](2026-09-09-clean-install-cold-start-v1.0.10.json) | Machine-readable v1.0.10 Python evidence |
+| [`2026-09-09-ensemble-diversity-v1.0.10.md`](2026-09-09-ensemble-diversity-v1.0.10.md) | Deterministic multi-seed ensemble reproduction and flexible-molecule diversity evidence |
+| [`2026-09-09-ensemble-diversity-v1.0.10.json`](2026-09-09-ensemble-diversity-v1.0.10.json) | Machine-readable deterministic ensemble diversity evidence |
+| [`2026-09-09-streaming-safety-v1.0.10.md`](2026-09-09-streaming-safety-v1.0.10.md) | Current ten-format malformed, oversized, and gzip safety gate |
+| [`2026-09-09-streaming-safety-v1.0.10.json`](2026-09-09-streaming-safety-v1.0.10.json) | Machine-readable streaming safety gate evidence |
+| [`2026-09-09-3d-class-failure-rates-v1.0.10.md`](2026-09-09-3d-class-failure-rates-v1.0.10.md) | 3D status-class failure rates for the current 58-molecule gate |
+| [`2026-09-09-3d-class-failure-rates-v1.0.10.json`](2026-09-09-3d-class-failure-rates-v1.0.10.json) | Machine-readable 3D class-level failure evidence |
+| [`2026-09-09-3d-energy-sanity-v1.0.10.md`](2026-09-09-3d-energy-sanity-v1.0.10.md) | Finite and non-increasing force-field energy checks on the bounded 63-molecule pipeline gate |
+| [`2026-09-09-3d-energy-sanity-v1.0.10.json`](2026-09-09-3d-energy-sanity-v1.0.10.json) | Machine-readable force-field energy sanity evidence |
+| [`2026-09-09-symmetric-torsion-distance-v1.0.10.md`](2026-09-09-symmetric-torsion-distance-v1.0.10.md) | Local automorphism-aware torsion-distance invariants |
+| [`2026-09-09-symmetric-torsion-distance-v1.0.10.json`](2026-09-09-symmetric-torsion-distance-v1.0.10.json) | Machine-readable symmetry-aware torsion-distance evidence |
+| [`2026-09-09-symmetric-rmsd-oracle-v1.0.10.md`](2026-09-09-symmetric-rmsd-oracle-v1.0.10.md) | Automorphism-aware RMSD against an independent RDKit oracle |
+| [`2026-09-09-symmetric-rmsd-oracle-v1.0.10.json`](2026-09-09-symmetric-rmsd-oracle-v1.0.10.json) | Machine-readable symmetry-aware RMSD oracle evidence |
+| [`2026-09-09-rxn-atomic-number-h1-v1.0.10.md`](2026-09-09-rxn-atomic-number-h1-v1.0.10.md) | Bounded `[#N;H1]` reaction compatibility bridge |
+| [`2026-09-09-rxn-atomic-number-h1-v1.0.10.json`](2026-09-09-rxn-atomic-number-h1-v1.0.10.json) | Machine-readable atomic-number H1 bridge evidence |
+| [`2026-09-09-rxn-atomic-number-h1-v1.0.10.md`](2026-09-09-rxn-atomic-number-h1-v1.0.10.md) | Bounded `[#N;H1]` reaction compatibility bridge |
+| [`2026-09-09-workspace-test-v1.0.10.md`](2026-09-09-workspace-test-v1.0.10.md) | Offline workspace-wide Rust unit, integration, and doctest gate |
+| [`2026-09-09-workspace-test-v1.0.10.json`](2026-09-09-workspace-test-v1.0.10.json) | Machine-readable workspace test evidence |
+| [`2026-09-09-node-wasm-contract-v1.0.10.md`](2026-09-09-node-wasm-contract-v1.0.10.md) | Node/WASM contract smoke with explicit stale-artifact version boundary |
+| [`2026-09-09-node-wasm-contract-v1.0.10.json`](2026-09-09-node-wasm-contract-v1.0.10.json) | Machine-readable Node/WASM contract and artifact-version evidence |
+| [`2026-09-04-mmff94-3d.md`](2026-09-04-mmff94-3d.md) | Experimental MMFF94, ETKDG, and 3D local microbenchmarks |
+
+## Historical snapshots
+
+These records are retained for provenance and trend context; their versions
+and hardware must be read from the record before comparing them with current
+results.
+
+| Record | Scope |
+|---|---|
+| [`2026-09-03-competitive.md`](2026-09-03-competitive.md) | v1.0.1 six-operation competitive run |
+| [`2026-08-23.md`](2026-08-23.md) | v0.18.0 accuracy, corpus, WASM, and CIP remeasurement |
+| [`2026-07-17.md`](2026-07-17.md) | v0.4.29 throughput non-reproduction and descriptor accuracy |
+| [`2026-06-25.md`](2026-06-25.md) | v0.4.20 baseline |
+
+## Reproduction and reporting rules
+
+Every new record must include:
+
+- source revision and package versions;
+- corpus identity and hash;
+- hardware, OS, language/runtime, and build profile;
+- exact operation boundary and configuration;
+- warm-up, repetitions, aggregation, failure policy, and raw output location;
+- correctness, ranking, or byte-equivalence checks relevant to the operation.
+
+Do not relabel source-level A/B data as a published artifact result, compare a
+streaming API with a materializing API without saying so, or generalize one
+corpus to all chemistry workloads. For the canonical reproduction commands,
+see [`docs/benchmark.md`](../docs/benchmark.md).
+- [2026-09-09 canonical identity focused gate (JSON)](2026-09-09-canonical-identity-focused-v1.0.10.json) / [report](2026-09-09-canonical-identity-focused-v1.0.10.md)
+- [2026-09-09 identity budget gate (JSON)](2026-09-09-identity-budget-gate-v1.0.10.json) / [report](2026-09-09-identity-budget-gate-v1.0.10.md)
+- [2026-09-09 reaction and 3D focused gate (JSON)](2026-09-09-reaction-3d-focus-v1.0.10.json) / [report](2026-09-09-reaction-3d-focus-v1.0.10.md)
+- [2026-09-09 RDKit TFD evidence boundary](2026-09-09-tfd-oracle-evidence-v1.0.10.md) / [machine result](../validation/results/tfd-oracle-evidence-v1.0.10.json)
+- [2026-09-09 Ewald real-space cell-list parity](2026-09-09-ewald-cell-list-v1.0.10.md) / [machine result](../validation/results/ewald-cell-list-v1.0.10.json)
+- [2026-09-09 orthorhombic periodic-neighbor cell-list parity](2026-09-09-periodic-neighbor-cell-list-v1.0.10.md) / [machine result](../validation/results/periodic-neighbor-cell-list-v1.0.10.json)
+- [2026-09-09 UFF prepared-energy topology](2026-09-09-uff-prepared-topology-v1.0.10.md) / [machine result](../validation/results/uff-prepared-topology-v1.0.10.json)
+- [2026-09-09 workspace unit/integration gate (JSON)](2026-09-09-workspace-unit-integration-v1.0.10.json) / [report](2026-09-09-workspace-unit-integration-v1.0.10.md)

@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "status": "local-verified",
+  "gate": "same_process_v3000_mol_semantic_contract",
+  "fixture": {
+    "path": "benchmarks/fixtures/ethanol.v3000",
+    "bytes": 298,
+    "sha256": "64ac11b3de1c186deae555d54d6a47e7f3c72607ef0a90b0d93f467496bbd3ad"
+  },
+  "repeats": 20,
+  "rows": {
+    "chematic": {
+      "records": 20,
+      "failures": 0,
+      "seconds": 0.001314,
+      "boundary": "schematic.from_mol_v3000 in the current process"
+    },
+    "rdkit": {
+      "records": 20,
+      "failures": 0,
+      "seconds": 1.902109,
+      "boundary": "RDKit MolFromMolBlock in the current process"
+    }
+  },
+  "comparison": {
+    "expected_records": 20,
+    "canonical_smiles_mismatch_repetitions": 0,
+    "malformed_cases": {
+      "bad_counts": {
+        "chematic": {
+          "records": 0,
+          "failures": 1
+        },
+        "rdkit": {
+          "records": 0,
+          "failures": 1
+        }
+      },
+      "bad_atom": {
+        "chematic": {
+          "records": 0,
+          "failures": 1
+        },
+        "rdkit": {
+          "records": 0,
+          "failures": 1
+        }
+      }
+    },
+    "speed_is_non_ranking_context": true
+  },
+  "tool_versions": {
+    "rdkit": "2025.09.3"
+  },
+  "errors": []
+}

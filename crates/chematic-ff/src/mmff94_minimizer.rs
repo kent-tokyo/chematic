@@ -12,7 +12,7 @@
 //! - **vdW**: buffered 14-7 potential with Slater-Kirkwood combining rule (Halgren MMFF.I eq. 2)
 //! - **Electrostatic**: Coulomb with δ buffer (Halgren MMFF.V eq. 14)
 
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 use chematic_perception::find_sssr;
@@ -48,12 +48,33 @@ struct PreparedAngle {
 }
 
 #[derive(Clone, Copy)]
+struct PreparedStretchBend {
+    i: usize,
+    j: usize,
+    k: usize,
+    kba_ij: f64,
+    kba_kj: f64,
+    r0_ij: f64,
+    r0_kj: f64,
+    theta0: f64,
+}
+
+#[derive(Clone, Copy)]
 struct PreparedTorsion {
     i: usize,
     j: usize,
     k: usize,
     l: usize,
     params: TorsionEnergyParams,
+}
+
+#[derive(Clone, Copy)]
+struct PreparedOop {
+    i: usize,
+    j: usize,
+    k: usize,
+    l: usize,
+    koop: f64,
 }
 
 #[derive(Clone, Copy)]
@@ -130,14 +151,14 @@ pub struct EnergyBreakdown {
 /// caller evaluates many nearby geometries, as finite-difference gradients do.
 #[derive(Clone)]
 pub struct Mmff94EnergyModel {
-    types: Vec<u8>,
     mmff_mol: Molecule,
-    rings: Vec<Vec<AtomIdx>>,
     vdw_pairs: VdwPairs,
     electrostatic_pairs: ElectrostaticPairs,
     bonds: Vec<PreparedBond>,
     angles: Vec<PreparedAngle>,
+    stretch_bends: Vec<PreparedStretchBend>,
     torsions: Vec<PreparedTorsion>,
+    oops: Vec<PreparedOop>,
 }
 
 impl Mmff94EnergyModel {
@@ -149,16 +170,18 @@ impl Mmff94EnergyModel {
         let (vdw_pairs, electrostatic_pairs) = build_nonbonded_pairs(mol, &types, &charges);
         let bonds = build_bond_terms(&mmff_mol, &types);
         let angles = build_angle_terms(&mmff_mol, &types, &rings);
+        let stretch_bends = build_stretch_bend_terms(&mmff_mol, &types, &rings);
         let torsions = build_torsion_terms(&mmff_mol, &types);
+        let oops = build_oop_terms(&mmff_mol, &types);
         Ok(Self {
-            types,
             mmff_mol,
-            rings,
             vdw_pairs,
             electrostatic_pairs,
             bonds,
             angles,
+            stretch_bends,
             torsions,
+            oops,
         })
     }
 
@@ -171,6 +194,17 @@ impl Mmff94EnergyModel {
             + self.oop_energy(coords)
             + self.vdw_energy(coords)
             + self.electrostatic_energy(coords)
+    }
+
+    fn energy_cutoff_nonbonded(&self, coords: &[[f64; 3]]) -> f64 {
+        let (vdw, electrostatic) = self.cutoff_nonbonded_energy(coords);
+        self.bond_energy(coords)
+            + self.angle_energy(coords)
+            + self.stretch_bend_energy(coords)
+            + self.torsion_energy(coords)
+            + self.oop_energy(coords)
+            + vdw
+            + electrostatic
     }
 
     /// Evaluate all MMFF94 energy terms without rebuilding topology state.
@@ -194,6 +228,114 @@ impl Mmff94EnergyModel {
         }
     }
 
+    /// Analytic gradient for the prepared non-bonded terms.
+    ///
+    /// This is intentionally exposed as a bounded building block: bonded,
+    /// torsional, out-of-plane, and stretch-bend terms still have separate
+    /// gradient gates in the minimizer.
+    pub fn nonbonded_gradient(&self, coords: &[[f64; 3]]) -> Vec<[f64; 3]> {
+        prepared_nonbonded_gradient(coords, &self.vdw_pairs, &self.electrostatic_pairs)
+    }
+
+    /// Evaluate the prepared non-bonded terms with the bounded 10 Å cutoff.
+    ///
+    /// This is opt-in because the compatibility-default MMFF94 evaluator
+    /// retains its historical all-pair electrostatic path.  The returned
+    /// tuple is `(vdw, electrostatic)` in kcal/mol; both components use the
+    /// same coordinate-dependent cutoff boundary.
+    pub fn cutoff_nonbonded_energy(&self, coords: &[[f64; 3]]) -> (f64, f64) {
+        (
+            vdw_energy_pairs(coords, &self.vdw_pairs),
+            electrostatic_energy_cutoff_pairs(coords, &self.electrostatic_pairs),
+        )
+    }
+
+    /// Analytic gradient for the bounded-cutoff non-bonded terms.
+    ///
+    /// This pairs [`Self::cutoff_nonbonded_energy`] with the same strict
+    /// `distance <= 10 Å` inclusion rule.  It is experimental and does not
+    /// alter [`Self::nonbonded_gradient`].
+    pub fn cutoff_nonbonded_gradient(&self, coords: &[[f64; 3]]) -> Vec<[f64; 3]> {
+        prepared_cutoff_nonbonded_gradient(coords, &self.vdw_pairs, &self.electrostatic_pairs)
+    }
+
+    /// Analytic gradient for the prepared bond and angle terms.
+    ///
+    /// Torsion, out-of-plane, and stretch-bend terms are deliberately kept
+    /// outside this bounded building block until their singular geometries
+    /// have dedicated soundness gates.
+    pub fn bond_angle_gradient(&self, coords: &[[f64; 3]]) -> Vec<[f64; 3]> {
+        prepared_bond_angle_gradient(coords, &self.bonds, &self.angles)
+    }
+
+    /// Analytic gradient for the prepared stretch-bend coupling terms.
+    pub fn stretch_bend_gradient(&self, coords: &[[f64; 3]]) -> Vec<[f64; 3]> {
+        prepared_stretch_bend_gradient(coords, &self.stretch_bends)
+    }
+
+    /// Analytic gradient for prepared torsion terms.
+    ///
+    /// Collinear or zero-area dihedrals are skipped because their signed
+    /// angle has no stable Cartesian derivative.  The existing minimizer
+    /// continues to use its finite-difference gradient until the remaining
+    /// out-of-plane and singular-geometry gates are complete.
+    pub fn torsion_gradient(&self, coords: &[[f64; 3]]) -> Vec<[f64; 3]> {
+        prepared_torsion_gradient(coords, &self.torsions)
+    }
+
+    /// Analytic gradient for prepared, non-singular Wilson out-of-plane terms.
+    pub fn oop_gradient(&self, coords: &[[f64; 3]]) -> Vec<[f64; 3]> {
+        prepared_oop_gradient(coords, &self.oops)
+    }
+
+    /// Combine the currently soundness-gated analytic term gradients.
+    ///
+    /// The prepared neighbor pairs are intentionally fixed for this bounded
+    /// evaluator. The public minimizer still uses finite differences until a
+    /// coordinate-dependent neighbor-list and full integration gate exists.
+    pub fn bounded_analytic_gradient(&self, coords: &[[f64; 3]]) -> Vec<[f64; 3]> {
+        self.bounded_analytic_gradient_with_nonbonded(false, coords)
+    }
+
+    /// Analytic gradient with the bounded 10 Å coordinate-dependent
+    /// non-bonded neighbor lists enabled.
+    ///
+    /// This is an experimental opt-in path. It keeps the compatibility
+    /// default in [`Self::bounded_analytic_gradient`] unchanged while making
+    /// the cutoff list usable by the analytic minimizer as one consistent
+    /// energy/gradient pair.
+    pub fn bounded_analytic_gradient_cutoff(&self, coords: &[[f64; 3]]) -> Vec<[f64; 3]> {
+        self.bounded_analytic_gradient_with_nonbonded(true, coords)
+    }
+
+    fn bounded_analytic_gradient_with_nonbonded(
+        &self,
+        use_cutoff_nonbonded: bool,
+        coords: &[[f64; 3]],
+    ) -> Vec<[f64; 3]> {
+        let nonbonded = if use_cutoff_nonbonded {
+            self.cutoff_nonbonded_gradient(coords)
+        } else {
+            self.nonbonded_gradient(coords)
+        };
+        let components = [
+            self.bond_angle_gradient(coords),
+            self.stretch_bend_gradient(coords),
+            self.torsion_gradient(coords),
+            self.oop_gradient(coords),
+            nonbonded,
+        ];
+        let mut gradient = vec![[0.0; 3]; coords.len()];
+        for component in components {
+            for (total, part) in gradient.iter_mut().zip(component) {
+                for axis in 0..3 {
+                    total[axis] += part[axis];
+                }
+            }
+        }
+        gradient
+    }
+
     /// Minimize coordinates using the prepared MMFF94 topology state.
     pub fn minimize_lbfgs(
         &self,
@@ -201,6 +343,33 @@ impl Mmff94EnergyModel {
         max_iter: usize,
     ) -> Result<MinimizeResult, MinimizerError> {
         minimize_mmff94_lbfgs_prepared(self, coords, max_iter)
+    }
+
+    /// Experimental L-BFGS path using the bounded prepared analytic gradient.
+    ///
+    /// This is opt-in because prepared non-bonded pairs are fixed and
+    /// singular geometries fail closed. The established finite-difference
+    /// [`Self::minimize_lbfgs`] path remains the compatibility default.
+    pub fn minimize_lbfgs_bounded_analytic(
+        &self,
+        coords: &mut [[f64; 3]],
+        max_iter: usize,
+    ) -> Result<MinimizeResult, MinimizerError> {
+        minimize_mmff94_lbfgs_prepared_with_mode(self, coords, max_iter, true, false)
+    }
+
+    /// Experimental analytic L-BFGS using the bounded 10 Å coordinate-
+    /// dependent non-bonded neighbor lists.
+    ///
+    /// The cutoff energy and gradient are switched together, so line search
+    /// and curvature updates see one consistent objective. The established
+    /// finite-difference and non-cutoff analytic methods remain unchanged.
+    pub fn minimize_lbfgs_bounded_analytic_cutoff(
+        &self,
+        coords: &mut [[f64; 3]],
+        max_iter: usize,
+    ) -> Result<MinimizeResult, MinimizerError> {
+        minimize_mmff94_lbfgs_prepared_with_mode(self, coords, max_iter, true, true)
     }
 
     fn bond_energy(&self, coords: &[[f64; 3]]) -> f64 {
@@ -212,7 +381,7 @@ impl Mmff94EnergyModel {
     }
 
     fn stretch_bend_energy(&self, coords: &[[f64; 3]]) -> f64 {
-        stretch_bend_energy(&self.mmff_mol, coords, &self.types, &self.rings)
+        prepared_stretch_bend_energy(coords, &self.stretch_bends)
     }
 
     fn torsion_energy(&self, coords: &[[f64; 3]]) -> f64 {
@@ -220,7 +389,7 @@ impl Mmff94EnergyModel {
     }
 
     fn oop_energy(&self, coords: &[[f64; 3]]) -> f64 {
-        oop_energy(&self.mmff_mol, coords, &self.types)
+        prepared_oop_energy(coords, &self.oops)
     }
 
     fn vdw_energy(&self, coords: &[[f64; 3]]) -> f64 {
@@ -444,6 +613,16 @@ fn minimize_mmff94_lbfgs_prepared(
     coords: &mut [[f64; 3]],
     max_iter: usize,
 ) -> Result<MinimizeResult, MinimizerError> {
+    minimize_mmff94_lbfgs_prepared_with_mode(model, coords, max_iter, false, false)
+}
+
+fn minimize_mmff94_lbfgs_prepared_with_mode(
+    model: &Mmff94EnergyModel,
+    coords: &mut [[f64; 3]],
+    max_iter: usize,
+    use_analytic_gradient: bool,
+    use_cutoff_nonbonded: bool,
+) -> Result<MinimizeResult, MinimizerError> {
     const M: usize = 5; // L-BFGS history size
     const DELTA: f64 = 1e-4; // finite-difference step (Å)
     const CONVERGENCE: f64 = 1e-4; // max |gradient| threshold
@@ -465,8 +644,20 @@ fn minimize_mmff94_lbfgs_prepared(
     // Circular history buffer: (s_k = Δx, y_k = Δg, ρ_k = 1/(y·s))
     let mut history: LbfgsHistory = VecDeque::new();
 
-    let mut g = compute_gradient_prepared(model, coords, DELTA);
-    let mut f0 = model.energy(coords);
+    let mut g = if use_analytic_gradient {
+        if use_cutoff_nonbonded {
+            model.bounded_analytic_gradient_cutoff(coords)
+        } else {
+            model.bounded_analytic_gradient(coords)
+        }
+    } else {
+        compute_gradient_prepared(model, coords, DELTA)
+    };
+    let mut f0 = if use_cutoff_nonbonded {
+        model.energy_cutoff_nonbonded(coords)
+    } else {
+        model.energy(coords)
+    };
 
     let mut iters = 0usize;
     let mut converged = false;
@@ -503,7 +694,11 @@ fn minimize_mmff94_lbfgs_prepared(
                     ]
                 })
                 .collect();
-            let f_trial = model.energy(&trial);
+            let f_trial = if use_cutoff_nonbonded {
+                model.energy_cutoff_nonbonded(&trial)
+            } else {
+                model.energy(&trial)
+            };
             if f_trial <= f0 + C_ARMIJO * alpha * gp {
                 break (trial, f_trial);
             }
@@ -522,13 +717,25 @@ fn minimize_mmff94_lbfgs_prepared(
                         ]
                     })
                     .collect();
-                let f_trial = model.energy(&trial);
+                let f_trial = if use_cutoff_nonbonded {
+                    model.energy_cutoff_nonbonded(&trial)
+                } else {
+                    model.energy(&trial)
+                };
                 break (trial, f_trial);
             }
         };
 
         // Compute new gradient
-        let g_new = compute_gradient_prepared(model, &new_coords, DELTA);
+        let g_new = if use_analytic_gradient {
+            if use_cutoff_nonbonded {
+                model.bounded_analytic_gradient_cutoff(&new_coords)
+            } else {
+                model.bounded_analytic_gradient(&new_coords)
+            }
+        } else {
+            compute_gradient_prepared(model, &new_coords, DELTA)
+        };
         // `f_new` is the accepted line-search energy above; do not evaluate
         // the same coordinates a second time after computing the gradient.
 
@@ -807,6 +1014,100 @@ fn build_torsion_terms(mol: &Molecule, types: &[u8]) -> Vec<PreparedTorsion> {
     terms
 }
 
+fn build_oop_terms(mol: &Molecule, types: &[u8]) -> Vec<PreparedOop> {
+    let mut terms = Vec::new();
+    for j in 0..mol.atom_count() {
+        if OOP_SP2_TYPES.binary_search(&types[j]).is_err() {
+            continue;
+        }
+        let neighbors: Vec<usize> = mol
+            .neighbors(AtomIdx(j as u32))
+            .map(|(nb, _)| nb.0 as usize)
+            .collect();
+        if neighbors.len() != 3 {
+            continue;
+        }
+        if let Some(koop) = mmff94_oop(
+            types[j],
+            types[neighbors[0]],
+            types[neighbors[1]],
+            types[neighbors[2]],
+        ) {
+            terms.push(PreparedOop {
+                i: neighbors[0],
+                j,
+                k: neighbors[1],
+                l: neighbors[2],
+                koop,
+            });
+        }
+    }
+    terms
+}
+
+fn build_stretch_bend_terms(
+    mol: &Molecule,
+    types: &[u8],
+    rings: &[Vec<AtomIdx>],
+) -> Vec<PreparedStretchBend> {
+    let mut terms = Vec::new();
+    for j_idx in 0..mol.atom_count() {
+        let j = AtomIdx(j_idx as u32);
+        let neighbors: Vec<usize> = mol.neighbors(j).map(|(nb, _)| nb.0 as usize).collect();
+        for (ii, &i) in neighbors.iter().enumerate() {
+            for &k in &neighbors[ii + 1..] {
+                let at = angle_type_for(mol, rings, i, j_idx, k, types);
+                let bt_ij =
+                    bond_type_for(types[i], types[j_idx], bond_order_between(mol, i, j_idx));
+                let bt_kj =
+                    bond_type_for(types[k], types[j_idx], bond_order_between(mol, k, j_idx));
+                let Some((kba_ij, kba_kj)) = mmff94_stbn(
+                    stretch_bend_type_for(at, types[i], types[k], bt_ij, bt_kj),
+                    types[i],
+                    types[j_idx],
+                    types[k],
+                    mol.atom(AtomIdx(i as u32)).element.atomic_number(),
+                    mol.atom(AtomIdx(j_idx as u32)).element.atomic_number(),
+                    mol.atom(AtomIdx(k as u32)).element.atomic_number(),
+                ) else {
+                    continue;
+                };
+                let Some((bond_ij, _)) = mmff94_bond_energy_resolved(bt_ij, types[i], types[j_idx])
+                else {
+                    continue;
+                };
+                let Some((bond_kj, _)) = mmff94_bond_energy_resolved(bt_kj, types[k], types[j_idx])
+                else {
+                    continue;
+                };
+                let ring_size = is_angle_in_ring_of_size_3_or_4(mol, i, j_idx, k);
+                let Some((angle, _)) = mmff94_angle_energy_resolved(
+                    at,
+                    types[i],
+                    types[j_idx],
+                    types[k],
+                    bond_ij.r0,
+                    bond_kj.r0,
+                    ring_size,
+                ) else {
+                    continue;
+                };
+                terms.push(PreparedStretchBend {
+                    i,
+                    j: j_idx,
+                    k,
+                    kba_ij,
+                    kba_kj,
+                    r0_ij: bond_ij.r0,
+                    r0_kj: bond_kj.r0,
+                    theta0: angle.theta0,
+                });
+            }
+        }
+    }
+    terms
+}
+
 fn prepared_bond_energy(coords: &[[f64; 3]], terms: &[PreparedBond]) -> f64 {
     const KB_CONV: f64 = 143.9325;
     const CS: f64 = 2.0;
@@ -833,6 +1134,22 @@ fn prepared_angle_energy(coords: &[[f64; 3]], terms: &[PreparedAngle]) -> f64 {
         .sum()
 }
 
+fn prepared_stretch_bend_energy(coords: &[[f64; 3]], terms: &[PreparedStretchBend]) -> f64 {
+    const CONV: f64 = 2.51210;
+    const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+    terms
+        .iter()
+        .map(|term| {
+            let dr_ij = dist(coords[term.i], coords[term.j]) - term.r0_ij;
+            let dr_kj = dist(coords[term.k], coords[term.j]) - term.r0_kj;
+            let dtheta = cos_angle(coords[term.i], coords[term.j], coords[term.k]).acos()
+                * RAD_TO_DEG
+                - term.theta0;
+            CONV * (term.kba_ij * dr_ij + term.kba_kj * dr_kj) * dtheta
+        })
+        .sum()
+}
+
 fn prepared_torsion_energy(coords: &[[f64; 3]], terms: &[PreparedTorsion]) -> f64 {
     terms
         .iter()
@@ -848,6 +1165,99 @@ fn prepared_torsion_energy(coords: &[[f64; 3]], terms: &[PreparedTorsion]) -> f6
                 + 0.5 * term.params.v3 * (1.0 + (3.0 * phi).cos())
         })
         .sum()
+}
+
+fn prepared_torsion_gradient(coords: &[[f64; 3]], terms: &[PreparedTorsion]) -> Vec<[f64; 3]> {
+    let mut gradient = vec![[0.0; 3]; coords.len()];
+    for term in terms {
+        let p1 = coords[term.i];
+        let p2 = coords[term.j];
+        let p3 = coords[term.k];
+        let p4 = coords[term.l];
+        let b1 = sub3(p1, p2);
+        let b2 = sub3(p3, p2);
+        let b3 = sub3(p4, p3);
+        let n1 = cross(b1, b2);
+        let n2 = cross(b2, b3);
+        let b2_sq = dot3(b2, b2);
+        let b2_len = b2_sq.sqrt();
+        let n1_sq = dot3(n1, n1);
+        let n2_sq = dot3(n2, n2);
+        if b2_len < 1e-12 || n1_sq < 1e-24 || n2_sq < 1e-24 {
+            continue;
+        }
+
+        let phi = dihedral(p1, p2, p3, p4);
+        let d_ed_phi = -0.5 * term.params.v1 * phi.sin() + term.params.v2 * (2.0 * phi).sin()
+            - 1.5 * term.params.v3 * (3.0 * phi).sin();
+        let dphi = dual_dihedral(p1, p2, p3, p4);
+        for atom in 0..4 {
+            let target = &mut gradient[[term.i, term.j, term.k, term.l][atom]];
+            for (axis, component) in target.iter_mut().enumerate() {
+                *component += d_ed_phi * dphi.grad[atom * 3 + axis];
+            }
+        }
+    }
+    gradient
+}
+
+fn prepared_oop_energy(coords: &[[f64; 3]], terms: &[PreparedOop]) -> f64 {
+    const CONV: f64 = 0.043844;
+    const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+    terms
+        .iter()
+        .map(|term| {
+            let n = cross(
+                sub3(coords[term.i], coords[term.j]),
+                sub3(coords[term.k], coords[term.j]),
+            );
+            let l = sub3(coords[term.l], coords[term.j]);
+            let n_len = dot3(n, n).sqrt();
+            let l_len = dot3(l, l).sqrt();
+            if n_len < 1e-12 || l_len < 1e-12 {
+                return 0.0;
+            }
+            let chi = (dot3(n, l) / (n_len * l_len)).clamp(-1.0, 1.0).asin();
+            (CONV * term.koop / 2.0) * (chi * RAD_TO_DEG).powi(2)
+        })
+        .sum()
+}
+
+fn prepared_oop_gradient(coords: &[[f64; 3]], terms: &[PreparedOop]) -> Vec<[f64; 3]> {
+    const CONV: f64 = 0.043844;
+    const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+    let mut gradient = vec![[0.0; 3]; coords.len()];
+    for term in terms {
+        let n = cross(
+            sub3(coords[term.i], coords[term.j]),
+            sub3(coords[term.k], coords[term.j]),
+        );
+        let l = sub3(coords[term.l], coords[term.j]);
+        if dot3(n, n).sqrt() < 1e-12 || dot3(l, l).sqrt() < 1e-12 {
+            continue;
+        }
+        let nd = dual_cross(
+            dual_sub(dual_point(coords[term.i], 0), dual_point(coords[term.j], 3)),
+            dual_sub(dual_point(coords[term.k], 6), dual_point(coords[term.j], 3)),
+        );
+        let ld = dual_sub(dual_point(coords[term.l], 9), dual_point(coords[term.j], 3));
+        let denominator = dual_mul(dual_sqrt(dual_dot(nd, nd)), dual_sqrt(dual_dot(ld, ld)));
+        let sin_chi = dual_div(dual_dot(nd, ld), denominator);
+        // asin(sin χ) has an unbounded Cartesian derivative as |sin χ|→1;
+        // fail closed at the Wilson angle's ±90° branch point.
+        if sin_chi.value.abs() >= 1.0 - 1e-10 {
+            continue;
+        }
+        let chi = dual_asin_clamped(sin_chi);
+        let d_ed_chi = CONV * term.koop * RAD_TO_DEG * RAD_TO_DEG * chi.value;
+        for atom in 0..4 {
+            let target = &mut gradient[[term.i, term.j, term.k, term.l][atom]];
+            for (axis, component) in target.iter_mut().enumerate() {
+                *component += d_ed_chi * chi.grad[atom * 3 + axis];
+            }
+        }
+    }
+    gradient
 }
 
 fn build_nonbonded_pairs(
@@ -926,9 +1336,72 @@ fn build_nonbonded_pairs(
     (vdw_pairs, electrostatic_pairs)
 }
 
+/// Rebuild the coordinate-dependent vdW candidate list for one evaluation.
+///
+/// The topology-prepared pair map remains immutable; only spatial bin
+/// membership changes with coordinates. A two-bin halo is conservative for
+/// the 10 Å cutoff even at floating-point cell boundaries. Non-finite input
+/// deliberately falls back to the reference all-pair traversal so error
+/// behavior is not changed by integer bin conversion.
+fn prepared_vdw_neighbor_list<'a>(
+    coords: &[[f64; 3]],
+    pairs: &'a [PreparedVdwPair],
+) -> Vec<&'a PreparedVdwPair> {
+    const CUTOFF: f64 = 10.0;
+    let valid = coords
+        .iter()
+        .all(|point| point.iter().all(|value| value.is_finite()));
+    if !valid {
+        return pairs.iter().collect();
+    }
+    let cell_size = CUTOFF * (1.0 + 1e-12);
+    let mut bins: HashMap<[i64; 3], Vec<usize>> = HashMap::new();
+    for (index, point) in coords.iter().enumerate() {
+        let key = [
+            (point[0] / cell_size).floor() as i64,
+            (point[1] / cell_size).floor() as i64,
+            (point[2] / cell_size).floor() as i64,
+        ];
+        bins.entry(key).or_default().push(index);
+    }
+    let mut pair_map: HashMap<(usize, usize), &PreparedVdwPair> = HashMap::new();
+    for pair in pairs {
+        pair_map.insert((pair.i, pair.j), pair);
+    }
+    let mut active = Vec::new();
+    for (i, point) in coords.iter().enumerate() {
+        let key = [
+            (point[0] / cell_size).floor() as i64,
+            (point[1] / cell_size).floor() as i64,
+            (point[2] / cell_size).floor() as i64,
+        ];
+        for dx in -2..=2 {
+            for dy in -2..=2 {
+                for dz in -2..=2 {
+                    let Some(indices) = bins.get(&[key[0] + dx, key[1] + dy, key[2] + dz]) else {
+                        continue;
+                    };
+                    for &j in indices {
+                        if j <= i {
+                            continue;
+                        }
+                        if let Some(pair) = pair_map.get(&(i, j)) {
+                            let r = dist(*point, coords[j]);
+                            if r <= CUTOFF {
+                                active.push(*pair);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    active
+}
+
 fn vdw_energy_pairs(coords: &[[f64; 3]], pairs: &[PreparedVdwPair]) -> f64 {
     let mut energy = 0.0;
-    for pair in pairs {
+    for pair in prepared_vdw_neighbor_list(coords, pairs) {
         let r = dist(coords[pair.i], coords[pair.j]);
         if r > 10.0 {
             continue;
@@ -951,6 +1424,314 @@ fn electrostatic_energy_pairs(coords: &[[f64; 3]], pairs: &[PreparedElectrostati
             pair.scale_charge_product * COULOMB / (dist(coords[pair.i], coords[pair.j]) + DELTA)
         })
         .sum()
+}
+
+fn prepared_electrostatic_neighbor_list<'a>(
+    coords: &[[f64; 3]],
+    pairs: &'a [PreparedElectrostaticPair],
+) -> Vec<&'a PreparedElectrostaticPair> {
+    const CUTOFF: f64 = 10.0;
+    let valid = coords
+        .iter()
+        .all(|point| point.iter().all(|value| value.is_finite()));
+    if !valid {
+        return pairs.iter().collect();
+    }
+    let cell_size = CUTOFF * (1.0 + 1e-12);
+    let mut bins: HashMap<[i64; 3], Vec<usize>> = HashMap::new();
+    for (index, point) in coords.iter().enumerate() {
+        let key = [
+            (point[0] / cell_size).floor() as i64,
+            (point[1] / cell_size).floor() as i64,
+            (point[2] / cell_size).floor() as i64,
+        ];
+        bins.entry(key).or_default().push(index);
+    }
+    let mut pair_map: HashMap<(usize, usize), &PreparedElectrostaticPair> = HashMap::new();
+    for pair in pairs {
+        pair_map.insert((pair.i, pair.j), pair);
+    }
+    let mut active = Vec::new();
+    for (i, point) in coords.iter().enumerate() {
+        let key = [
+            (point[0] / cell_size).floor() as i64,
+            (point[1] / cell_size).floor() as i64,
+            (point[2] / cell_size).floor() as i64,
+        ];
+        for dx in -2..=2 {
+            for dy in -2..=2 {
+                for dz in -2..=2 {
+                    let Some(indices) = bins.get(&[key[0] + dx, key[1] + dy, key[2] + dz]) else {
+                        continue;
+                    };
+                    for &j in indices {
+                        if j <= i {
+                            continue;
+                        }
+                        if let Some(pair) = pair_map.get(&(i, j))
+                            && dist(*point, coords[j]) <= CUTOFF
+                        {
+                            active.push(*pair);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    active
+}
+
+fn electrostatic_energy_cutoff_pairs(
+    coords: &[[f64; 3]],
+    pairs: &[PreparedElectrostaticPair],
+) -> f64 {
+    const COULOMB: f64 = 332.0716;
+    const DELTA: f64 = 0.05;
+    prepared_electrostatic_neighbor_list(coords, pairs)
+        .iter()
+        .map(|pair| {
+            pair.scale_charge_product * COULOMB / (dist(coords[pair.i], coords[pair.j]) + DELTA)
+        })
+        .sum()
+}
+
+fn prepared_cutoff_nonbonded_gradient(
+    coords: &[[f64; 3]],
+    vdw_pairs: &[PreparedVdwPair],
+    electrostatic_pairs: &[PreparedElectrostaticPair],
+) -> Vec<[f64; 3]> {
+    const COULOMB: f64 = 332.0716;
+    const DELTA: f64 = 0.05;
+    let mut result = vec![[0.0; 3]; coords.len()];
+    let add_pair =
+        |gradient: &mut [[f64; 3]], i: usize, j: usize, radial: f64, delta: [f64; 3], r: f64| {
+            if r <= 1e-12 {
+                return;
+            }
+            let value = [
+                radial * delta[0] / r,
+                radial * delta[1] / r,
+                radial * delta[2] / r,
+            ];
+            for axis in 0..3 {
+                gradient[i][axis] += value[axis];
+                gradient[j][axis] -= value[axis];
+            }
+        };
+    for pair in prepared_vdw_neighbor_list(coords, vdw_pairs) {
+        let delta = [
+            coords[pair.i][0] - coords[pair.j][0],
+            coords[pair.i][1] - coords[pair.j][1],
+            coords[pair.i][2] - coords[pair.j][2],
+        ];
+        let r = dist(coords[pair.i], coords[pair.j]);
+        if r > 0.01 && r <= 10.0 {
+            let denominator = r + 0.07 * pair.r_star;
+            let t = (1.07 * pair.r_star) / denominator;
+            let radial = -14.0 * pair.epsilon * t.powi(7) * (t.powi(7) - 1.0) / denominator;
+            add_pair(&mut result, pair.i, pair.j, radial, delta, r);
+        }
+    }
+    for pair in prepared_electrostatic_neighbor_list(coords, electrostatic_pairs) {
+        let delta = [
+            coords[pair.i][0] - coords[pair.j][0],
+            coords[pair.i][1] - coords[pair.j][1],
+            coords[pair.i][2] - coords[pair.j][2],
+        ];
+        let r = dist(coords[pair.i], coords[pair.j]);
+        let radial = -pair.scale_charge_product * COULOMB / (r + DELTA).powi(2);
+        add_pair(&mut result, pair.i, pair.j, radial, delta, r);
+    }
+    result
+}
+
+fn prepared_nonbonded_gradient(
+    coords: &[[f64; 3]],
+    vdw_pairs: &[PreparedVdwPair],
+    electrostatic_pairs: &[PreparedElectrostaticPair],
+) -> Vec<[f64; 3]> {
+    const COULOMB: f64 = 332.0716;
+    const DELTA: f64 = 0.05;
+    let mut gradient = vec![[0.0; 3]; coords.len()];
+    let add_pair =
+        |gradient: &mut [[f64; 3]], i: usize, j: usize, radial: f64, delta: [f64; 3], r: f64| {
+            if r <= 1e-12 {
+                return;
+            }
+            let value = [
+                radial * delta[0] / r,
+                radial * delta[1] / r,
+                radial * delta[2] / r,
+            ];
+            for axis in 0..3 {
+                gradient[i][axis] += value[axis];
+                gradient[j][axis] -= value[axis];
+            }
+        };
+    for pair in prepared_vdw_neighbor_list(coords, vdw_pairs) {
+        let delta = [
+            coords[pair.i][0] - coords[pair.j][0],
+            coords[pair.i][1] - coords[pair.j][1],
+            coords[pair.i][2] - coords[pair.j][2],
+        ];
+        let r = dist(coords[pair.i], coords[pair.j]);
+        if r > 0.01 && r <= 10.0 {
+            let denominator = r + 0.07 * pair.r_star;
+            let t = (1.07 * pair.r_star) / denominator;
+            let radial = -14.0 * pair.epsilon * t.powi(7) * (t.powi(7) - 1.0) / denominator;
+            add_pair(&mut gradient, pair.i, pair.j, radial, delta, r);
+        }
+    }
+    for pair in electrostatic_pairs {
+        let delta = [
+            coords[pair.i][0] - coords[pair.j][0],
+            coords[pair.i][1] - coords[pair.j][1],
+            coords[pair.i][2] - coords[pair.j][2],
+        ];
+        let r = dist(coords[pair.i], coords[pair.j]);
+        let radial = -pair.scale_charge_product * COULOMB / (r + DELTA).powi(2);
+        add_pair(&mut gradient, pair.i, pair.j, radial, delta, r);
+    }
+    gradient
+}
+
+fn prepared_bond_angle_gradient(
+    coords: &[[f64; 3]],
+    bonds: &[PreparedBond],
+    angles: &[PreparedAngle],
+) -> Vec<[f64; 3]> {
+    const KB_CONV: f64 = 143.9325;
+    const CS: f64 = 2.0;
+    const KA_CONV: f64 = 0.043844;
+    const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+    let mut gradient = vec![[0.0; 3]; coords.len()];
+    let add_pair =
+        |gradient: &mut [[f64; 3]], i: usize, j: usize, radial: f64, delta: [f64; 3], r: f64| {
+            if r <= 1e-12 {
+                return;
+            }
+            for axis in 0..3 {
+                let value = radial * delta[axis] / r;
+                gradient[i][axis] += value;
+                gradient[j][axis] -= value;
+            }
+        };
+    for term in bonds {
+        let delta = [
+            coords[term.i][0] - coords[term.j][0],
+            coords[term.i][1] - coords[term.j][1],
+            coords[term.i][2] - coords[term.j][2],
+        ];
+        let r = dist(coords[term.i], coords[term.j]);
+        let dr = r - term.params.r0;
+        let prefactor = KB_CONV * term.params.kb / 2.0;
+        let radial =
+            prefactor * (2.0 * dr - 3.0 * CS * dr * dr + (7.0 / 3.0) * CS * CS * dr * dr * dr);
+        add_pair(&mut gradient, term.i, term.j, radial, delta, r);
+    }
+    for term in angles {
+        let u = [
+            coords[term.i][0] - coords[term.j][0],
+            coords[term.i][1] - coords[term.j][1],
+            coords[term.i][2] - coords[term.j][2],
+        ];
+        let v = [
+            coords[term.k][0] - coords[term.j][0],
+            coords[term.k][1] - coords[term.j][1],
+            coords[term.k][2] - coords[term.j][2],
+        ];
+        let u2 = u[0] * u[0] + u[1] * u[1] + u[2] * u[2];
+        let v2 = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
+        let lu = u2.sqrt();
+        let lv = v2.sqrt();
+        if lu <= 1e-12 || lv <= 1e-12 {
+            continue;
+        }
+        let cos_theta = cos_angle(coords[term.i], coords[term.j], coords[term.k]);
+        let sin_theta = (1.0 - cos_theta * cos_theta).max(0.0).sqrt();
+        if sin_theta <= 1e-12 {
+            continue;
+        }
+        let theta = cos_theta.acos() * RAD_TO_DEG;
+        let dt = theta - term.params.theta0;
+        let prefactor = KA_CONV * term.params.ka / 2.0;
+        let d_e_d_theta = prefactor * (2.0 * dt - 3.0 * 0.007 * dt * dt);
+        let d_e_d_cos = -RAD_TO_DEG * d_e_d_theta / sin_theta;
+        let inv = 1.0 / (lu * lv);
+        let dcos_di = [
+            v[0] * inv - cos_theta * u[0] / u2,
+            v[1] * inv - cos_theta * u[1] / u2,
+            v[2] * inv - cos_theta * u[2] / u2,
+        ];
+        let dcos_dk = [
+            u[0] * inv - cos_theta * v[0] / v2,
+            u[1] * inv - cos_theta * v[1] / v2,
+            u[2] * inv - cos_theta * v[2] / v2,
+        ];
+        for axis in 0..3 {
+            let gi = d_e_d_cos * dcos_di[axis];
+            let gk = d_e_d_cos * dcos_dk[axis];
+            gradient[term.i][axis] += gi;
+            gradient[term.k][axis] += gk;
+            gradient[term.j][axis] -= gi + gk;
+        }
+    }
+    gradient
+}
+
+fn prepared_stretch_bend_gradient(
+    coords: &[[f64; 3]],
+    terms: &[PreparedStretchBend],
+) -> Vec<[f64; 3]> {
+    const CONV: f64 = 2.51210;
+    const RAD_TO_DEG: f64 = 180.0 / std::f64::consts::PI;
+    let mut gradient = vec![[0.0; 3]; coords.len()];
+    for term in terms {
+        let a = coords[term.i];
+        let center = coords[term.j];
+        let c = coords[term.k];
+        let u = [a[0] - center[0], a[1] - center[1], a[2] - center[2]];
+        let v = [c[0] - center[0], c[1] - center[1], c[2] - center[2]];
+        let u2 = dot3(u, u);
+        let v2 = dot3(v, v);
+        let lu = u2.sqrt();
+        let lv = v2.sqrt();
+        if lu <= 1e-12 || lv <= 1e-12 {
+            continue;
+        }
+        let r_ij = lu;
+        let r_kj = lv;
+        let cos_theta = dot3(u, v) / (lu * lv);
+        let sin_theta = (1.0 - cos_theta * cos_theta).max(0.0).sqrt();
+        if sin_theta <= 1e-12 {
+            continue;
+        }
+        let dtheta = cos_theta.acos() * RAD_TO_DEG - term.theta0;
+        let stretch = term.kba_ij * (r_ij - term.r0_ij) + term.kba_kj * (r_kj - term.r0_kj);
+        let d_e_d_r = CONV * dtheta;
+        let d_e_d_theta = CONV * stretch;
+        let d_e_d_cos = -RAD_TO_DEG * d_e_d_theta / sin_theta;
+        let dcos_di = [
+            v[0] / (lu * lv) - cos_theta * u[0] / u2,
+            v[1] / (lu * lv) - cos_theta * u[1] / u2,
+            v[2] / (lu * lv) - cos_theta * u[2] / u2,
+        ];
+        let dcos_dk = [
+            u[0] / (lu * lv) - cos_theta * v[0] / v2,
+            u[1] / (lu * lv) - cos_theta * v[1] / v2,
+            u[2] / (lu * lv) - cos_theta * v[2] / v2,
+        ];
+        let mut gi = [0.0; 3];
+        let mut gk = [0.0; 3];
+        for axis in 0..3 {
+            gi[axis] = d_e_d_r * term.kba_ij * u[axis] / r_ij + d_e_d_cos * dcos_di[axis];
+            gk[axis] = d_e_d_r * term.kba_kj * v[axis] / r_kj + d_e_d_cos * dcos_dk[axis];
+            gradient[term.i][axis] += gi[axis];
+            gradient[term.k][axis] += gk[axis];
+            gradient[term.j][axis] -= gi[axis] + gk[axis];
+        }
+    }
+    gradient
 }
 
 // ─── Energy components ───────────────────────────────────────────────────────
@@ -1338,6 +2119,113 @@ fn dihedral(i: [f64; 3], j: [f64; 3], k: [f64; 3], l: [f64; 3]) -> f64 {
     y.atan2(x)
 }
 
+#[derive(Clone, Copy)]
+struct Dual12 {
+    value: f64,
+    grad: [f64; 12],
+}
+
+fn dual_point(point: [f64; 3], offset: usize) -> [Dual12; 3] {
+    std::array::from_fn(|axis| {
+        let mut grad = [0.0; 12];
+        grad[offset + axis] = 1.0;
+        Dual12 {
+            value: point[axis],
+            grad,
+        }
+    })
+}
+
+fn dual_sub(a: [Dual12; 3], b: [Dual12; 3]) -> [Dual12; 3] {
+    std::array::from_fn(|axis| Dual12 {
+        value: a[axis].value - b[axis].value,
+        grad: std::array::from_fn(|i| a[axis].grad[i] - b[axis].grad[i]),
+    })
+}
+
+fn dual_cross(a: [Dual12; 3], b: [Dual12; 3]) -> [Dual12; 3] {
+    [
+        dual_sub_scalar(dual_mul(a[1], b[2]), dual_mul(a[2], b[1])),
+        dual_sub_scalar(dual_mul(a[2], b[0]), dual_mul(a[0], b[2])),
+        dual_sub_scalar(dual_mul(a[0], b[1]), dual_mul(a[1], b[0])),
+    ]
+}
+
+fn dual_dot(a: [Dual12; 3], b: [Dual12; 3]) -> Dual12 {
+    dual_add(
+        dual_add(dual_mul(a[0], b[0]), dual_mul(a[1], b[1])),
+        dual_mul(a[2], b[2]),
+    )
+}
+
+fn dual_add(a: Dual12, b: Dual12) -> Dual12 {
+    Dual12 {
+        value: a.value + b.value,
+        grad: std::array::from_fn(|i| a.grad[i] + b.grad[i]),
+    }
+}
+
+fn dual_sub_scalar(a: Dual12, b: Dual12) -> Dual12 {
+    Dual12 {
+        value: a.value - b.value,
+        grad: std::array::from_fn(|i| a.grad[i] - b.grad[i]),
+    }
+}
+
+fn dual_mul(a: Dual12, b: Dual12) -> Dual12 {
+    Dual12 {
+        value: a.value * b.value,
+        grad: std::array::from_fn(|i| a.grad[i] * b.value + a.value * b.grad[i]),
+    }
+}
+
+fn dual_div(a: Dual12, b: Dual12) -> Dual12 {
+    let inv = 1.0 / b.value;
+    Dual12 {
+        value: a.value * inv,
+        grad: std::array::from_fn(|i| (a.grad[i] * b.value - a.value * b.grad[i]) * inv * inv),
+    }
+}
+
+fn dual_sqrt(a: Dual12) -> Dual12 {
+    let value = a.value.sqrt();
+    Dual12 {
+        value,
+        grad: std::array::from_fn(|i| a.grad[i] / (2.0 * value)),
+    }
+}
+
+fn dual_atan2(y: Dual12, x: Dual12) -> Dual12 {
+    let denominator = x.value * x.value + y.value * y.value;
+    Dual12 {
+        value: y.value.atan2(x.value),
+        grad: std::array::from_fn(|i| (x.value * y.grad[i] - y.value * x.grad[i]) / denominator),
+    }
+}
+
+fn dual_asin_clamped(a: Dual12) -> Dual12 {
+    let value = a.value.clamp(-1.0, 1.0).asin();
+    let denominator = (1.0 - a.value * a.value).max(1e-24).sqrt();
+    Dual12 {
+        value,
+        grad: std::array::from_fn(|i| a.grad[i] / denominator),
+    }
+}
+
+fn dual_dihedral(i: [f64; 3], j: [f64; 3], k: [f64; 3], l: [f64; 3]) -> Dual12 {
+    let b1 = dual_sub(dual_point(i, 0), dual_point(j, 3));
+    let b2 = dual_sub(dual_point(k, 6), dual_point(j, 3));
+    let b3 = dual_sub(dual_point(l, 9), dual_point(k, 6));
+    let n1 = dual_cross(b1, b2);
+    let n2 = dual_cross(b2, b3);
+    let x = dual_dot(n1, n2);
+    let y = dual_div(
+        dual_dot(dual_cross(n1, b2), n2),
+        dual_sqrt(dual_dot(b2, b2)),
+    );
+    dual_atan2(y, x)
+}
+
 #[inline]
 fn cross(a: [f64; 3], b: [f64; 3]) -> [f64; 3] {
     [
@@ -1345,6 +2233,11 @@ fn cross(a: [f64; 3], b: [f64; 3]) -> [f64; 3] {
         a[2] * b[0] - a[0] * b[2],
         a[0] * b[1] - a[1] * b[0],
     ]
+}
+
+#[inline]
+fn sub3(a: [f64; 3], b: [f64; 3]) -> [f64; 3] {
+    [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
 }
 
 #[inline]
@@ -2668,6 +3561,38 @@ mod tests {
     }
 
     #[test]
+    fn bounded_analytic_lbfgs_reduces_energy_for_butane() {
+        let mol = chematic_smiles::parse("CCCC").expect("butane");
+        let model = Mmff94EnergyModel::new(&mol).expect("MMFF94 preparation");
+        let mut coords = vec![
+            [0.0, 0.0, 0.0],
+            [1.54, 0.1, 0.0],
+            [2.95, 0.85, 0.2],
+            [4.25, 0.15, 1.05],
+            [0.0, 1.05, 0.8],
+            [1.55, -0.9, -0.75],
+            [1.55, 0.25, 1.05],
+            [2.95, 1.9, -0.55],
+            [2.95, 1.05, 1.25],
+            [4.2, -0.8, 1.45],
+            [4.2, 0.0, 2.05],
+            [4.9, 0.35, 0.35],
+            [4.0, 0.95, 0.05],
+            [4.6, 0.35, 1.55],
+        ];
+        let before = model.energy(&coords);
+        let result = model
+            .minimize_lbfgs_bounded_analytic(&mut coords, 100)
+            .expect("bounded analytic L-BFGS");
+        assert!(result.energy.is_finite());
+        assert!(
+            result.energy <= before,
+            "analytic L-BFGS should reduce energy: {before} -> {}",
+            result.energy
+        );
+    }
+
+    #[test]
     fn lbfgs_converges_in_fewer_iters_than_sd() {
         let (mol, _) = methane_mol();
         // Moderately distorted — both should converge but L-BFGS faster
@@ -2941,5 +3866,452 @@ mod tests {
             "stretched bond energy should be positive: {}",
             bd.bond
         );
+    }
+
+    #[test]
+    fn prepared_nonbonded_gradient_matches_finite_difference() {
+        let mol = chematic_smiles::parse("CCC").expect("propane");
+        let model = Mmff94EnergyModel::new(&mol).expect("MMFF94 preparation");
+        let coords = vec![
+            [0.0, 0.0, 0.0],
+            [1.54, 0.1, 0.0],
+            [3.08, 0.0, 0.2],
+            [-0.4, 0.9, 0.8],
+            [-0.4, -0.9, -0.8],
+            [1.54, 1.0, 0.9],
+            [1.54, -1.0, -0.9],
+            [3.48, 0.8, 0.8],
+            [3.48, -0.8, -0.8],
+            [3.08, 0.0, 1.2],
+            [3.08, 0.0, -0.8],
+        ];
+        let actual = model.nonbonded_gradient(&coords);
+        let vdw_only = prepared_nonbonded_gradient(&coords, &model.vdw_pairs, &[]);
+        let electrostatic_only =
+            prepared_nonbonded_gradient(&coords, &[], &model.electrostatic_pairs);
+        let delta = 1e-5;
+        let mut work = coords.clone();
+        for (i, row) in actual.iter().enumerate() {
+            for (axis, &value) in row.iter().enumerate() {
+                work[i][axis] += delta;
+                let ep = model.vdw_energy(&work) + model.electrostatic_energy(&work);
+                work[i][axis] -= 2.0 * delta;
+                let em = model.vdw_energy(&work) + model.electrostatic_energy(&work);
+                work[i][axis] += delta;
+                let expected = (ep - em) / (2.0 * delta);
+                assert!((value - expected).abs() < 1e-6 * (1.0 + expected.abs()));
+
+                let mut plus = coords.clone();
+                let mut minus = coords.clone();
+                plus[i][axis] += delta;
+                minus[i][axis] -= delta;
+                let expected_vdw =
+                    (model.vdw_energy(&plus) - model.vdw_energy(&minus)) / (2.0 * delta);
+                let expected_electrostatic = (model.electrostatic_energy(&plus)
+                    - model.electrostatic_energy(&minus))
+                    / (2.0 * delta);
+                assert!(
+                    (vdw_only[i][axis] - expected_vdw).abs() < 1e-6 * (1.0 + expected_vdw.abs()),
+                    "vdW gradient mismatch at atom {i}, axis {axis}: actual={}, expected={expected_vdw}",
+                    vdw_only[i][axis]
+                );
+                assert!(
+                    (electrostatic_only[i][axis] - expected_electrostatic).abs()
+                        < 1e-6 * (1.0 + expected_electrostatic.abs()),
+                    "electrostatic gradient mismatch at atom {i}, axis {axis}: actual={}, expected={expected_electrostatic}",
+                    electrostatic_only[i][axis]
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn coordinate_dependent_vdw_neighbor_list_matches_cutoff_reference() {
+        let mol = chematic_smiles::parse("CCCC").expect("butane");
+        let model = Mmff94EnergyModel::new(&mol).expect("MMFF94 preparation");
+        let coords = vec![
+            [0.0, 0.0, 0.0],
+            [1.54, 0.1, 0.0],
+            [2.95, 0.85, 0.2],
+            [4.25, 0.15, 1.05],
+            [0.0, 1.05, 0.8],
+            [1.55, -0.9, -0.75],
+            [1.55, 0.25, 1.05],
+            [2.95, 1.9, -0.55],
+            [2.95, 1.05, 1.25],
+            [4.2, -0.8, 1.45],
+            [4.2, 0.0, 2.05],
+            [4.9, 0.35, 0.35],
+            [4.0, 0.95, 0.05],
+            [4.6, 0.35, 1.55],
+        ];
+        let active = prepared_vdw_neighbor_list(&coords, &model.vdw_pairs);
+        let actual: std::collections::HashSet<_> =
+            active.iter().map(|pair| (pair.i, pair.j)).collect();
+        let expected: std::collections::HashSet<_> = model
+            .vdw_pairs
+            .iter()
+            .filter(|pair| dist(coords[pair.i], coords[pair.j]) <= 10.0)
+            .map(|pair| (pair.i, pair.j))
+            .collect();
+        assert_eq!(actual, expected);
+        assert_eq!(
+            vdw_energy_pairs(&coords, &model.vdw_pairs),
+            model.vdw_pairs.iter().fold(0.0, |total, pair| {
+                let r = dist(coords[pair.i], coords[pair.j]);
+                if r > 10.0 || r <= 0.01 {
+                    total
+                } else {
+                    let t = (1.07 * pair.r_star) / (r + 0.07 * pair.r_star);
+                    let t7 = t.powi(7);
+                    total + pair.epsilon * t7 * (t7 - 2.0)
+                }
+            })
+        );
+    }
+
+    #[test]
+    fn coordinate_dependent_vdw_neighbor_list_handles_boundaries_and_negative_coordinates() {
+        let coords = vec![
+            [-10.0, -0.0, 0.0],
+            [-0.00000000001, 0.0, 0.0],
+            [0.0, 0.0, 0.0],
+            [9.99999999999, 0.0, 0.0],
+            [10.0, 0.0, 0.0],
+            [10.00000000001, 0.0, 0.0],
+            [19.99999999999, 0.0, 0.0],
+            [20.0, 0.0, 0.0],
+            [-5.0, 8.0, -6.0],
+        ];
+        let pairs: Vec<_> = (0..coords.len())
+            .flat_map(|i| {
+                (i + 1..coords.len()).map(move |j| PreparedVdwPair {
+                    i,
+                    j,
+                    r_star: 1.0,
+                    epsilon: 1.0,
+                })
+            })
+            .collect();
+        let active: std::collections::HashSet<_> = prepared_vdw_neighbor_list(&coords, &pairs)
+            .iter()
+            .map(|pair| (pair.i, pair.j))
+            .collect();
+        let expected: std::collections::HashSet<_> = pairs
+            .iter()
+            .filter(|pair| dist(coords[pair.i], coords[pair.j]) <= 10.0)
+            .map(|pair| (pair.i, pair.j))
+            .collect();
+        assert_eq!(active, expected);
+    }
+
+    #[test]
+    fn coordinate_dependent_vdw_neighbor_list_falls_back_for_non_finite_coordinates() {
+        let coords = vec![[0.0, 0.0, 0.0], [f64::NAN, 0.0, 0.0]];
+        let pairs = vec![PreparedVdwPair {
+            i: 0,
+            j: 1,
+            r_star: 1.0,
+            epsilon: 1.0,
+        }];
+        let active = prepared_vdw_neighbor_list(&coords, &pairs);
+        assert_eq!(active.len(), pairs.len());
+        assert_eq!((active[0].i, active[0].j), (0, 1));
+    }
+
+    #[test]
+    fn coordinate_dependent_electrostatic_neighbor_list_matches_cutoff_reference() {
+        let coords = vec![
+            [-10.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0],
+            [10.0, 0.0, 0.0],
+            [10.0 + 1e-10, 0.0, 0.0],
+            [-5.0, 8.0, -6.0],
+        ];
+        let pairs: Vec<_> = (0..coords.len())
+            .flat_map(|i| {
+                (i + 1..coords.len()).map(move |j| PreparedElectrostaticPair {
+                    i,
+                    j,
+                    scale_charge_product: 1.0,
+                })
+            })
+            .collect();
+        let active: std::collections::HashSet<_> =
+            prepared_electrostatic_neighbor_list(&coords, &pairs)
+                .iter()
+                .map(|pair| (pair.i, pair.j))
+                .collect();
+        let expected: std::collections::HashSet<_> = pairs
+            .iter()
+            .filter(|pair| dist(coords[pair.i], coords[pair.j]) <= 10.0)
+            .map(|pair| (pair.i, pair.j))
+            .collect();
+        assert_eq!(active, expected);
+        let reference: f64 = pairs
+            .iter()
+            .filter(|pair| dist(coords[pair.i], coords[pair.j]) <= 10.0)
+            .map(|pair| 332.0716 / (dist(coords[pair.i], coords[pair.j]) + 0.05))
+            .sum();
+        assert_eq!(
+            electrostatic_energy_cutoff_pairs(&coords, &pairs),
+            reference
+        );
+    }
+
+    #[test]
+    fn cutoff_nonbonded_gradient_matches_cutoff_energy_finite_difference() {
+        let mol = chematic_smiles::parse("CCO").expect("ethanol");
+        let model = Mmff94EnergyModel::new(&mol).expect("MMFF94 preparation");
+        let coords = vec![
+            [0.0, 0.0, 0.0],
+            [1.52, 0.1, 0.0],
+            [2.9, 0.0, 0.2],
+            [-0.4, 0.9, 0.8],
+            [-0.4, -0.9, -0.8],
+            [1.52, 1.0, 0.9],
+            [1.52, -1.0, -0.9],
+            [2.9, 0.8, 0.9],
+            [2.9, -0.8, -0.7],
+        ];
+        let actual = model.cutoff_nonbonded_gradient(&coords);
+        let delta = 1e-5;
+        for (i, row) in actual.iter().enumerate() {
+            for (axis, &value) in row.iter().enumerate() {
+                let mut plus = coords.clone();
+                let mut minus = coords.clone();
+                plus[i][axis] += delta;
+                minus[i][axis] -= delta;
+                let ep = model.cutoff_nonbonded_energy(&plus);
+                let em = model.cutoff_nonbonded_energy(&minus);
+                let expected = ((ep.0 + ep.1) - (em.0 + em.1)) / (2.0 * delta);
+                assert!(
+                    (value - expected).abs() < 1e-5 * (1.0 + expected.abs()),
+                    "cutoff nonbonded gradient mismatch at atom {i}, axis {axis}: actual={value}, expected={expected}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn prepared_bond_angle_gradient_matches_finite_difference() {
+        let (mol, coords) = methane_mol();
+        let model = Mmff94EnergyModel::new(&mol).expect("MMFF94 preparation");
+        let actual = model.bond_angle_gradient(&coords);
+        let delta = 1e-5;
+        let mut work = coords.clone();
+        for (i, row) in actual.iter().enumerate() {
+            for (axis, &value) in row.iter().enumerate() {
+                work[i][axis] += delta;
+                let ep = model.bond_energy(&work) + model.angle_energy(&work);
+                work[i][axis] -= 2.0 * delta;
+                let em = model.bond_energy(&work) + model.angle_energy(&work);
+                work[i][axis] += delta;
+                let expected = (ep - em) / (2.0 * delta);
+                assert!(
+                    (value - expected).abs() < 2e-5 * (1.0 + expected.abs()),
+                    "bond/angle gradient mismatch at atom {i}, axis {axis}: actual={value}, expected={expected}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn prepared_stretch_bend_gradient_matches_finite_difference() {
+        let mol = chematic_smiles::parse("CCC").expect("propane");
+        let model = Mmff94EnergyModel::new(&mol).expect("MMFF94 preparation");
+        let coords = vec![
+            [0.0, 0.0, 0.0],
+            [1.54, 0.1, 0.0],
+            [3.08, 0.0, 0.2],
+            [-0.4, 0.9, 0.8],
+            [-0.4, -0.9, -0.8],
+            [1.54, 1.0, 0.9],
+            [1.54, -1.0, -0.9],
+            [3.48, 0.8, 0.8],
+            [3.48, -0.8, -0.8],
+            [3.08, 0.0, 1.2],
+            [3.08, 0.0, -0.8],
+        ];
+        let actual = model.stretch_bend_gradient(&coords);
+        let delta = 1e-5;
+        let mut nonzero = false;
+        for (i, row) in actual.iter().enumerate() {
+            for (axis, &value) in row.iter().enumerate() {
+                let mut plus = coords.clone();
+                let mut minus = coords.clone();
+                plus[i][axis] += delta;
+                minus[i][axis] -= delta;
+                let expected = (model.stretch_bend_energy(&plus)
+                    - model.stretch_bend_energy(&minus))
+                    / (2.0 * delta);
+                assert!(
+                    (value - expected).abs() < 2e-5 * (1.0 + expected.abs()),
+                    "stretch-bend gradient mismatch at atom {i}, axis {axis}: actual={value}, expected={expected}"
+                );
+                nonzero |= value.abs() > 1e-8;
+            }
+        }
+
+        assert!(nonzero, "propane stretch-bend probe must exercise a term");
+    }
+
+    #[test]
+    fn prepared_torsion_gradient_matches_finite_difference() {
+        let mol = chematic_smiles::parse("CCCC").expect("butane");
+        let model = Mmff94EnergyModel::new(&mol).expect("MMFF94 preparation");
+        assert!(!model.torsions.is_empty(), "butane should prepare torsions");
+        let coords = vec![
+            [0.0, 0.0, 0.0],
+            [1.54, 0.1, 0.0],
+            [2.95, 0.85, 0.2],
+            [4.25, 0.15, 1.05],
+            [0.0, 1.05, 0.8],
+            [1.55, -0.9, -0.75],
+            [1.55, 0.25, 1.05],
+            [2.95, 1.9, -0.55],
+            [2.95, 1.05, 1.25],
+            [4.2, -0.8, 1.45],
+            [4.2, 0.0, 2.05],
+            [4.9, 0.35, 0.35],
+            [4.0, 0.95, 0.05],
+            [4.6, 0.35, 1.55],
+        ];
+        let actual = model.torsion_gradient(&coords);
+        let delta = 1e-5;
+        let mut work = coords.clone();
+        for (i, row) in actual.iter().enumerate() {
+            for (axis, &value) in row.iter().enumerate() {
+                work[i][axis] += delta;
+                let ep = model.torsion_energy(&work);
+                work[i][axis] -= 2.0 * delta;
+                let em = model.torsion_energy(&work);
+                work[i][axis] += delta;
+                let expected = (ep - em) / (2.0 * delta);
+                assert!(
+                    (value - expected).abs() < 2e-5 * (1.0 + expected.abs()),
+                    "torsion gradient mismatch at atom {i}, axis {axis}: actual={value}, expected={expected}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn prepared_oop_gradient_matches_finite_difference() {
+        let mol = chematic_smiles::parse("C=C(C)C").expect("isobutene");
+        let model = Mmff94EnergyModel::new(&mol).expect("MMFF94 preparation");
+        assert!(!model.oops.is_empty(), "trigonal center should prepare OOP");
+        let coords = vec![
+            [0.0, 0.0, 0.0],
+            [1.34, 0.1, 0.0],
+            [1.85, 1.35, 0.45],
+            [1.95, -1.15, 0.25],
+        ];
+        let actual = model.oop_gradient(&coords);
+        let delta = 1e-5;
+        let mut work = coords.clone();
+        for (i, row) in actual.iter().enumerate() {
+            for (axis, &value) in row.iter().enumerate() {
+                work[i][axis] += delta;
+                let ep = model.oop_energy(&work);
+                work[i][axis] -= 2.0 * delta;
+                let em = model.oop_energy(&work);
+                work[i][axis] += delta;
+                let expected = (ep - em) / (2.0 * delta);
+                assert!(
+                    (value - expected).abs() < 3e-5 * (1.0 + expected.abs()),
+                    "OOP gradient mismatch at atom {i}, axis {axis}: actual={value}, expected={expected}"
+                );
+            }
+        }
+        let term = model.oops[0];
+        let mut singular = vec![[0.0; 3]; mol.atom_count()];
+        singular[term.j] = [0.0, 0.0, 0.0];
+        singular[term.i] = [1.0, 0.0, 0.0];
+        singular[term.k] = [0.0, 1.0, 0.0];
+        singular[term.l] = [0.0, 0.0, 1.0];
+        let guarded = model.oop_gradient(&singular);
+        assert!(
+            guarded.iter().flatten().all(|value| value.abs() < 1e-12),
+            "OOP gradient must fail closed at the asin branch point"
+        );
+    }
+
+    #[test]
+    fn bounded_analytic_gradient_matches_prepared_total_energy() {
+        let mol = chematic_smiles::parse("CCCC").expect("butane");
+        let model = Mmff94EnergyModel::new(&mol).expect("MMFF94 preparation");
+        let coords = vec![
+            [0.0, 0.0, 0.0],
+            [1.54, 0.1, 0.0],
+            [2.95, 0.85, 0.2],
+            [4.25, 0.15, 1.05],
+            [0.0, 1.05, 0.8],
+            [1.55, -0.9, -0.75],
+            [1.55, 0.25, 1.05],
+            [2.95, 1.9, -0.55],
+            [2.95, 1.05, 1.25],
+            [4.2, -0.8, 1.45],
+            [4.2, 0.0, 2.05],
+            [4.9, 0.35, 0.35],
+            [4.0, 0.95, 0.05],
+            [4.6, 0.35, 1.55],
+        ];
+        let actual = model.bounded_analytic_gradient(&coords);
+        let delta = 1e-5;
+        let mut work = coords.clone();
+        for (i, row) in actual.iter().enumerate() {
+            for (axis, &value) in row.iter().enumerate() {
+                work[i][axis] += delta;
+                let ep = model.energy(&work);
+                work[i][axis] -= 2.0 * delta;
+                let em = model.energy(&work);
+                work[i][axis] += delta;
+                let expected = (ep - em) / (2.0 * delta);
+                assert!(
+                    (value - expected).abs() < 4e-5 * (1.0 + expected.abs()),
+                    "combined prepared gradient mismatch at atom {i}, axis {axis}: actual={value}, expected={expected}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn cutoff_bounded_analytic_gradient_matches_cutoff_total_energy() {
+        let mol = chematic_smiles::parse("CCCC").expect("butane");
+        let model = Mmff94EnergyModel::new(&mol).expect("MMFF94 preparation");
+        let coords = vec![
+            [0.0, 0.0, 0.0],
+            [1.54, 0.1, 0.0],
+            [2.95, 0.85, 0.2],
+            [4.25, 0.15, 1.05],
+            [0.0, 1.05, 0.8],
+            [1.55, -0.9, -0.75],
+            [1.55, 0.25, 1.05],
+            [2.95, 1.9, -0.55],
+            [2.95, 1.05, 1.25],
+            [4.2, -0.8, 1.45],
+            [4.2, 0.0, 2.05],
+            [4.9, 0.35, 0.35],
+            [4.0, 0.95, 0.05],
+            [4.6, 0.35, 1.55],
+        ];
+        let actual = model.bounded_analytic_gradient_cutoff(&coords);
+        let delta = 1e-5;
+        let mut work = coords.clone();
+        for (i, row) in actual.iter().enumerate() {
+            for (axis, &value) in row.iter().enumerate() {
+                work[i][axis] += delta;
+                let ep = model.energy_cutoff_nonbonded(&work);
+                work[i][axis] -= 2.0 * delta;
+                let em = model.energy_cutoff_nonbonded(&work);
+                work[i][axis] += delta;
+                let expected = (ep - em) / (2.0 * delta);
+                assert!(
+                    (value - expected).abs() < 4e-5 * (1.0 + expected.abs()),
+                    "cutoff combined gradient mismatch at atom {i}, axis {axis}: actual={value}, expected={expected}"
+                );
+            }
+        }
     }
 }

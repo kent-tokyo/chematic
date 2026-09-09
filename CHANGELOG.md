@@ -11,6 +11,17 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 No changes yet.
 
+## [1.0.11] - 2026-09-10
+
+- Split V3000 MOL atom and bond record parsing from the state-machine driver,
+  preserving the existing format, stereo, coordinate, and error contracts.
+- Split pipeline configuration, torsion configuration, and authoritative final
+  stereo verification helpers from the 3D embedding orchestration path.
+- Hardened the experimental CIP resolver so malformed internal rank/position
+  state fails closed instead of panicking, with a regression test.
+- Added a repository-wide code audit record and revalidated the standard local
+  release gates.
+
 ## [1.0.10] - 2026-09-09
 
 - Added a versioned `MoleculeExtension`/`ExtensionRegistry` contract in
@@ -350,7 +361,8 @@ The authoritative list of published tags and release artifacts is the
 historical implementation notes remain available in the archived detailed
 history and Git history.
 
-[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.10...HEAD
+[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.11...HEAD
+[1.0.11]: https://github.com/kent-tokyo/chematic/compare/v1.0.10...v1.0.11
 [1.0.10]: https://github.com/kent-tokyo/chematic/compare/v1.0.9...v1.0.10
 [1.0.9]: https://github.com/kent-tokyo/chematic/compare/v1.0.8...v1.0.9
 [1.0.8]: https://github.com/kent-tokyo/chematic/compare/v1.0.7...v1.0.8

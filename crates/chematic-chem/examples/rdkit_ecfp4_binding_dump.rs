@@ -29,10 +29,16 @@ fn main() {
         }
         let record = match chematic_smiles::parse(smiles) {
             Ok(mol) => match chematic_fp::rdkit_morgan_ecfp4_experimental(&mol) {
-                Ok(_) => json!({"index": index, "smiles": smiles, "status": "ok", "ecfp4_hex": bytes_hex(&mol)}),
-                Err(error) => json!({"index": index, "smiles": smiles, "status": "error", "error": error.to_string()}),
+                Ok(_) => {
+                    json!({"index": index, "smiles": smiles, "status": "ok", "ecfp4_hex": bytes_hex(&mol)})
+                }
+                Err(error) => {
+                    json!({"index": index, "smiles": smiles, "status": "error", "error": error.to_string()})
+                }
             },
-            Err(error) => json!({"index": index, "smiles": smiles, "status": "error", "error": error.to_string()}),
+            Err(error) => {
+                json!({"index": index, "smiles": smiles, "status": "error", "error": error.to_string()})
+            }
         };
         serde_json::to_writer(&mut out, &record).expect("serialize RDKit ECFP4 record");
         writeln!(out).expect("write RDKit ECFP4 record");

@@ -13,11 +13,21 @@ import hashlib
 import json
 from pathlib import Path
 
+from benchmark_version import workspace_version
+
 
 ROOT = Path(__file__).resolve().parent.parent
 CONTRACT = ROOT / "validation" / "cross_binding_contract.json"
-STREAMING = ROOT / "benchmarks" / "2026-09-08-streaming-cross-engine-matrix-v1.0.9.json"
 DEFAULT_OUTPUT = ROOT / "docs" / "compatibility-dashboard.md"
+
+
+def current_streaming_matrix() -> Path:
+    """Select the checked-in matrix for the current workspace version."""
+    version = workspace_version(ROOT)
+    candidates = sorted(ROOT.glob(f"benchmarks/*-streaming-cross-engine-matrix-v{version}.json"))
+    if not candidates:
+        raise FileNotFoundError(f"no streaming matrix for workspace version {version}")
+    return candidates[-1]
 
 
 def load(path: Path) -> dict:
@@ -35,6 +45,7 @@ def binding_rows(contract: dict) -> list[tuple[str, int]]:
         "standardization_contract",
         "fingerprint_contract",
         "fingerprint_detail_contract",
+        "reaction_application_contract",
         "adversarial",
     )
     rows = []
@@ -48,9 +59,9 @@ def binding_rows(contract: dict) -> list[tuple[str, int]]:
     return rows
 
 
-def render(contract: dict, streaming: dict) -> str:
+def render(contract: dict, streaming: dict, streaming_path: Path) -> str:
     contract_path = "validation/cross_binding_contract.json"
-    streaming_path = "benchmarks/2026-09-08-streaming-cross-engine-matrix-v1.0.9.json"
+    streaming_display_path = streaming_path.relative_to(ROOT).as_posix()
     lines = [
         "# Compatibility dashboard",
         "",
@@ -60,9 +71,11 @@ def render(contract: dict, streaming: dict) -> str:
         f"- Target version: `{streaming['target_version']}`",
         "- Regeneration: deterministic, offline, clean-checkout compatible",
         f"- Contract manifest: `{contract_path}` (SHA-256 `{digest(CONTRACT)}`)",
-        f"- Streaming matrix: `{streaming_path}` (SHA-256 `{digest(STREAMING)}`)",
+        f"- Streaming matrix: `{streaming_display_path}` (SHA-256 `{digest(streaming_path)}`)",
         "",
         "## Shared binding contract",
+        "",
+        f"Operation inventory: `{len(contract['operation_manifest']['operations'])}` currently shared operations; validate with `python3 scripts/check_cross_binding_manifest.py`.",
         "",
         "| Area | Checked-in assertions | Status |",
         "|---|---:|---|",
@@ -101,7 +114,8 @@ def main() -> int:
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     args = parser.parse_args()
     output = args.output if args.output.is_absolute() else ROOT / args.output
-    output.write_text(render(load(CONTRACT), load(STREAMING)), encoding="utf-8")
+    streaming_path = current_streaming_matrix()
+    output.write_text(render(load(CONTRACT), load(streaming_path), streaming_path), encoding="utf-8")
     print(output)
     return 0
 

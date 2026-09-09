@@ -752,6 +752,44 @@ fn main() {
         }
     }
 
+    // Energy sanity is deliberately a separate, small gate from convergence and
+    // geometry validity.  A successful force-field arm must report finite values
+    // and must not accept an energy-increasing proposal.  Keep the counts in a
+    // machine-readable line so the bounded corpus result can be archived without
+    // scraping the human summary above.
+    println!("\n=== FORCE-FIELD ENERGY SANITY ===");
+    for (i, arm_name) in ARM_NAMES.iter().enumerate() {
+        if !matches!(
+            *arm_name,
+            "E_mmff94_strict" | "F_mmff94_widened" | "G_mmff94_uff_fb" | "H_dreiding"
+        ) {
+            continue;
+        }
+        let outcomes = &per_arm[i];
+        let successful: Vec<&ArmOutcome> = outcomes.values().filter(|o| o.success).collect();
+        let finite = successful
+            .iter()
+            .filter(|o| o.ff_energy_before.is_finite() && o.ff_energy_after.is_finite())
+            .count();
+        let non_increasing = successful
+            .iter()
+            .filter(|o| o.ff_energy_after <= o.ff_energy_before + 1e-6)
+            .count();
+        println!(
+            "energy_sanity arm={arm_name} attempted={} successful={} finite={} non_increasing={} tolerance=1e-6",
+            outcomes.len(),
+            successful.len(),
+            finite,
+            non_increasing
+        );
+        assert_eq!(finite, successful.len(), "{arm_name}: non-finite FF energy");
+        assert_eq!(
+            non_increasing,
+            successful.len(),
+            "{arm_name}: accepted FF energy increase"
+        );
+    }
+
     // =========================================================================
     // Arm I / Arm J discriminating checks (spec §13's core claim).
     // =========================================================================

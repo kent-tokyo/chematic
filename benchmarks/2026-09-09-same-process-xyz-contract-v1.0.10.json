@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "status": "local-verified",
+  "gate": "same_process_xyz_semantic_contract",
+  "fixture": {
+    "path": "benchmarks/fixtures/streaming.xyz",
+    "bytes": 161,
+    "sha256": "3c717e4520a3e1b7b90ace86b72e73cce4dda38de7ae29aa811733d2ec227221"
+  },
+  "repeats": 20,
+  "input_frames_per_repeat": 2,
+  "rows": {
+    "chematic": {
+      "records": 40,
+      "failures": 0,
+      "seconds": 0.009138,
+      "boundary": "schematic.from_xyz in the current process"
+    },
+    "rdkit": {
+      "records": 40,
+      "failures": 0,
+      "seconds": 1.074898,
+      "boundary": "RDKit MolFromXYZBlock in the current process"
+    }
+  },
+  "comparison": {
+    "expected_records": 40,
+    "frame_signature_mismatch_repetitions": 0,
+    "malformed_cases": {
+      "missing_atom": {
+        "chematic": {
+          "records": 0,
+          "failures": 1
+        },
+        "rdkit": {
+          "records": 0,
+          "failures": 1
+        }
+      },
+      "bad_coordinate": {
+        "chematic": {
+          "records": 0,
+          "failures": 1
+        },
+        "rdkit": {
+          "records": 0,
+          "failures": 1
+        }
+      }
+    },
+    "bond_parity": "not claimed",
+    "speed_is_non_ranking_context": true
+  },
+  "tool_versions": {
+    "rdkit": "2025.09.3"
+  },
+  "errors": []
+}

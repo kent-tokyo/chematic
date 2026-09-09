@@ -3437,7 +3437,8 @@ impl Mol {
         bitvec2048_to_bytes(&chematic_3d::pharmacophore_fp_3d(&self.inner, &c3d))
     }
 
-    /// Reaction fingerprint — ``(reactant_fp, product_fp, combined_fp)`` as bytes.
+    /// Reaction fingerprint — ``(reactant_fp, product_fp, formed_fp, broken_fp,
+    /// combined_fp)`` as bytes.
     ///
     /// Each component is 256 bytes (2048 bits). The combined FP captures the full
     /// transformation and is suitable for reaction similarity search.
@@ -3457,6 +3458,8 @@ impl Mol {
         let d = PyDict::new(py);
         d.set_item("reactant_fp", bitvec2048_to_bytes(&rfp.reactant_fp))?;
         d.set_item("product_fp", bitvec2048_to_bytes(&rfp.product_fp))?;
+        d.set_item("formed_fp", bitvec2048_to_bytes(&rfp.formed_fp))?;
+        d.set_item("broken_fp", bitvec2048_to_bytes(&rfp.broken_fp))?;
         d.set_item("combined_fp", bitvec2048_to_bytes(&rfp.combined_fp))?;
         Ok(d)
     }

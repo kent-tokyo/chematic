@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-10",
+  "target_version": "1.0.10",
+  "scope": "bounded independent RDKit MMFF94 availability oracle",
+  "command": "python3 scripts/mmff94_rdkit_type_oracle.py > /private/tmp/mmff94_rdkit_type_oracle-current.jsonl",
+  "rdkit_version": "2025.09.3",
+  "corpus": {
+    "manifest_a": "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_a.json",
+    "manifest_b": "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_b.json",
+    "molecules": 265,
+    "tiers": {"A": 65, "B": 200}
+  },
+  "results": {
+    "parse_ok": 265,
+    "embedding_ok": 265,
+    "mmff_properties_available": 265,
+    "force_field_constructed": 265,
+    "finite_energy": 265,
+    "minimize_return_code_0": 142,
+    "minimize_return_code_1": 123
+  },
+  "result": "pass",
+  "boundary": "This is an independent RDKit availability and construction oracle for the pinned corpus. It does not establish chematic parameter parity, convergence parity, stereo correctness, or overall force-field quality."
+}

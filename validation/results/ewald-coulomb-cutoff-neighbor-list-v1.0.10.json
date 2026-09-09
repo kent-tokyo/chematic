@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-10",
+  "target_version": "1.0.10",
+  "scope": "non-periodic direct Coulomb cutoff neighbor-list traversal",
+  "implementation": "direct_coulomb_cutoff uses a uniform coordinate cell list for finite positive cutoffs and falls back to the previous all-pair path for invalid/non-finite inputs",
+  "boundary": "strict r < r_cut and r > 1e-6",
+  "command": "cargo test -p chematic-ewald --offline --lib real::tests --quiet",
+  "tests": 6,
+  "passed": 6,
+  "result": "pass",
+  "interpretation": "The cell-list result matches an independent all-pair reference on a fixture containing negative coordinates, cell boundaries, and out-of-cutoff pairs. This does not close periodic triclinic, long-range reciprocal, or full MMFF94 minimizer integration."
+}

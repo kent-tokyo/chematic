@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-10",
+  "target_version": "1.0.10",
+  "scope": "experimental triclinic periodic-neighbor cell-list candidate",
+  "status": "rejected",
+  "fixture": "crates/chematic-crystal/tests/neighbor.rs::triclinic_matches_brute_force_oracle",
+  "command": "cargo test -p chematic-crystal --offline --test neighbor --quiet",
+  "candidate": {
+    "change": "enable the current Cartesian replicated-image cell-list for non-orthorhombic lattices",
+    "result": "independent brute-force neighbor set mismatch at cutoff 6.0 Angstrom (candidate 23 entries vs oracle 22; one extra entry)"
+  },
+  "accepted_path": "retain reciprocal-vector bounded search for triclinic lattices",
+  "interpretation": "The candidate was re-tested against the current source and reverted again. No triclinic cell-list speed or correctness claim is made until the replicated-image and Cartesian-bin completeness proof is repaired and revalidated."
+}

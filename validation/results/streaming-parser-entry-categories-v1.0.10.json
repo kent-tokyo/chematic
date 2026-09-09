@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-10",
+  "target_version": "1.0.10",
+  "scope": "generated malformed parser-entry category coverage",
+  "command": "python3 scripts/check_streaming_format_limits.py",
+  "formats": 10,
+  "generated_cases": 480,
+  "cases_per_format": 48,
+  "families_per_format": 8,
+  "cases_per_family": 6,
+  "categories": {
+    "sdf": ["record_prefix", "terminator_prefix", "free_text_prefix", "truncated_record", "numeric_or_element", "metadata_boundary", "parser_tail", "blank_prefix"],
+    "mol": ["record_prefix", "terminator_prefix", "free_text_prefix", "truncated_record", "numeric_or_element", "metadata_boundary", "parser_tail", "blank_prefix"],
+    "xyz": ["count_prefix", "negative_count_prefix", "numeric_prefix", "truncated_frame", "numeric_or_element", "frame_boundary", "parser_tail", "blank_prefix"],
+    "extxyz": ["count_prefix", "property_prefix", "numeric_prefix", "truncated_frame", "numeric_or_element", "frame_boundary", "parser_tail", "blank_prefix"],
+    "v3000": ["counts_prefix", "section_prefix", "bond_prefix", "truncated_ctab", "numeric_or_element", "ctab_boundary", "parser_tail", "blank_prefix"],
+    "mol2": ["text_prefix", "atom_prefix", "bond_prefix", "truncated_molecule", "numeric_or_element", "section_boundary", "parser_tail", "blank_prefix"],
+    "cml": ["root_prefix", "molecule_prefix", "atom_prefix", "truncated_xml", "numeric_or_schema", "xml_boundary", "parser_tail", "blank_prefix"],
+    "cdxml": ["root_prefix", "fragment_prefix", "node_prefix", "truncated_xml", "numeric_or_schema", "xml_boundary", "parser_tail", "blank_prefix"],
+    "mmcif": ["cell_prefix", "loop_prefix", "atom_site_prefix", "truncated_loop", "numeric_or_schema", "data_boundary", "parser_tail", "blank_prefix"],
+    "pdb": ["pdb_prefix", "atom_prefix", "hetatm_prefix", "truncated_record", "numeric_or_layout", "record_boundary", "parser_tail", "blank_prefix"]
+  },
+  "unique_generated_cases": 480,
+  "duplicate_reuses": 0,
+  "result": "pass",
+  "interpretation": "The bounded generated wave contains all eight declared parser-entry families for every runner format, including format-shaped truncation, numeric-or-vocabulary corruption, record/metadata boundary failures, parser-tail boundaries, and leading-blank record boundaries. This strengthens category coverage but does not claim exhaustive malformed parser-state coverage."
+}

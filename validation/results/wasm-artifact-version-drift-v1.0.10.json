@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "status": "drift",
+  "scope": "checked-in Node/WASM artifact runtime version versus current workspace",
+  "workspace_version": "1.0.10",
+  "python_wheel_version": "1.0.10",
+  "checked_in_node_artifact": {
+    "path": "crates/chematic-wasm/pkg/chematic_wasm.js",
+    "runtime_version": "0.23.0",
+    "package_metadata_version": "0.23.0"
+  },
+  "commands": [
+    "node --input-type=module -e 'import * as w from \"./crates/chematic-wasm/pkg/chematic_wasm.js\"; console.log(w.chematic_version())'",
+    "PYTHONPATH=/private/tmp/chematic-py-v110/lib/python3.13/site-packages python3 -c 'import chematic; print(chematic.__version__)'"
+  ],
+  "interpretation": "The checked-in Node artifact is stale relative to the current 1.0.10 source. It must be regenerated with the local wasm-bindgen CLI before Node artifact parity or release readiness can be claimed; the artifact was not hand-edited."
+}

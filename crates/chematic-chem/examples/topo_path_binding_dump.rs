@@ -29,8 +29,12 @@ fn main() {
             continue;
         }
         let record = match chematic_smiles::parse(smiles) {
-            Ok(mol) => json!({"index": index, "smiles": smiles, "status": "ok", "topo_path_hex": bytes_hex(&mol)}),
-            Err(error) => json!({"index": index, "smiles": smiles, "status": "error", "error": error.to_string()}),
+            Ok(mol) => {
+                json!({"index": index, "smiles": smiles, "status": "ok", "topo_path_hex": bytes_hex(&mol)})
+            }
+            Err(error) => {
+                json!({"index": index, "smiles": smiles, "status": "error", "error": error.to_string()})
+            }
         };
         serde_json::to_writer(&mut out, &record).expect("serialize topo-path record");
         writeln!(out).expect("write topo-path record");

@@ -8,6 +8,8 @@ import hashlib
 import json
 from pathlib import Path
 
+from benchmark_version import workspace_version
+
 
 ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_FORMATS = ["sdf", "mol", "xyz", "extxyz", "v3000", "mol2", "cml", "cdxml", "mmcif", "pdb"]
@@ -19,14 +21,22 @@ def fail(message: str) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("manifest", type=Path)
+    parser.add_argument(
+        "manifest",
+        type=Path,
+        nargs="?",
+        help="matrix JSON (defaults to the current workspace-versioned result)",
+    )
     args = parser.parse_args()
-    path = args.manifest if args.manifest.is_absolute() else ROOT / args.manifest
+    manifest = args.manifest or Path(
+        "validation/results"
+    ) / f"cross-engine-matrix-v{workspace_version(ROOT)}.json"
+    path = manifest if manifest.is_absolute() else ROOT / manifest
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
         fail(f"cannot read JSON: {error}")
-    if data.get("schema_version") != 1 or data.get("target_version") != "1.0.9":
+    if data.get("schema_version") != 1 or data.get("target_version") != workspace_version(ROOT):
         fail("schema or target version is stale")
     repeats = data.get("repeats")
     if not isinstance(repeats, int) or repeats <= 0:

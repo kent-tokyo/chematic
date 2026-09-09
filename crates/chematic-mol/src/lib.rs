@@ -164,8 +164,7 @@ pub use volumetric::{GridAtom, GridError, GridUnits, VolumetricGrid};
 pub use xyz::{
     ExtxyzBatch, ExtxyzBatchProgress, ExtxyzBatchReader, ExtxyzFileReader, ExtxyzReader,
     ExtxyzWriter, XyzAtom, XyzBatch, XyzBatchProgress, XyzBatchReader, XyzError, XyzFileReader,
-    XyzFrame, XyzParseLimits,
-    XyzProperty, XyzPropertyKind, XyzReader, XyzValue, XyzWriter, parse_extxyz, parse_extxyz_all,
-    parse_extxyz_with_limits, parse_xyz, parse_xyz_all, parse_xyz_all_with_limits,
-    parse_xyz_with_limits, write_extxyz, write_xyz,
+    XyzFrame, XyzParseLimits, XyzProperty, XyzPropertyKind, XyzReader, XyzValue, XyzWriter,
+    parse_extxyz, parse_extxyz_all, parse_extxyz_with_limits, parse_xyz, parse_xyz_all,
+    parse_xyz_all_with_limits, parse_xyz_with_limits, write_extxyz, write_xyz,
 };

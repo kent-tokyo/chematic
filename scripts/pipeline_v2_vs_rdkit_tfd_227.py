@@ -24,6 +24,7 @@ Usage:
         > <output>.jsonl
 """
 
+import argparse
 import json
 import sys
 
@@ -77,7 +78,17 @@ def mol_with_conformer(smiles, coords):
 
 
 def main():
-    chematic_path, rdkit_path, chematic_arm, rdkit_arm = sys.argv[1:5]
+    parser = argparse.ArgumentParser()
+    parser.add_argument("chematic_path")
+    parser.add_argument("rdkit_path")
+    parser.add_argument("chematic_arm")
+    parser.add_argument("rdkit_arm")
+    parser.add_argument("--output", help="also write the JSONL rows to this path")
+    args = parser.parse_args()
+    chematic_path = args.chematic_path
+    rdkit_path = args.rdkit_path
+    chematic_arm = args.chematic_arm
+    rdkit_arm = args.rdkit_arm
     smiles_by_name = load_manifest_smiles()
     chematic_rows = load_jsonl(chematic_path)
     rdkit_rows = load_jsonl(rdkit_path)
@@ -85,45 +96,81 @@ def main():
     ch_coords = coords_by_key(chematic_rows, chematic_arm)
     rd_coords = coords_by_key(rdkit_rows, rdkit_arm)
 
+    output_rows = []
     n_ok = 0
     n_fail = 0
+
+    def emit(row):
+        output_rows.append(row)
+        print(json.dumps(row))
+
     for tier, name in sorted(ch_coords):
         if (tier, name) not in rd_coords:
             continue
         smiles = smiles_by_name.get(tier, {}).get(name)
         if smiles is None:
-            print(json.dumps({"tier": tier, "name": name, "status": "integrity_error",
-                               "reason": "smiles_not_found_in_manifest"}))
+            emit({"tier": tier, "name": name, "status": "integrity_error",
+                  "reason": "smiles_not_found_in_manifest"})
             n_fail += 1
             continue
 
         mol_ch, err_ch = mol_with_conformer(smiles, ch_coords[(tier, name)])
         mol_rd, err_rd = mol_with_conformer(smiles, rd_coords[(tier, name)])
         if err_ch or err_rd:
-            print(json.dumps({"tier": tier, "name": name, "status": "integrity_error",
-                               "reason": f"chematic:{err_ch} rdkit:{err_rd}"}))
+            emit({"tier": tier, "name": name, "status": "integrity_error",
+                  "reason": f"chematic:{err_ch} rdkit:{err_rd}"})
+            n_fail += 1
+            continue
+
+        # RDKit's TFD helper expects at least one rotatable torsion.  Small
+        # tetrahedral probes (and other rigid fragments) have no torsion list;
+        # classify these as not applicable instead of turning a valid corpus
+        # boundary into an opaque ``list index out of range`` exception.
+        ch_torsions, _ = TorsionFingerprints.CalculateTorsionLists(mol_ch)
+        rd_torsions, _ = TorsionFingerprints.CalculateTorsionLists(mol_rd)
+        if not ch_torsions and not rd_torsions:
+            emit({
+                "tier": tier,
+                "name": name,
+                "chematic_arm": chematic_arm,
+                "rdkit_arm": rdkit_arm,
+                "status": "not_applicable",
+                "reason": "no_rotatable_torsions",
+            })
+            continue
+        if not ch_torsions or not rd_torsions:
+            emit({
+                "tier": tier,
+                "name": name,
+                "status": "integrity_error",
+                "reason": "torsion_list_mismatch",
+            })
             n_fail += 1
             continue
 
         try:
             tfd = TorsionFingerprints.GetTFDBetweenMolecules(mol_ch, mol_rd)
         except Exception as e:  # noqa: BLE001 -- typed, recorded, not swallowed
-            print(json.dumps({"tier": tier, "name": name, "status": "tfd_exception",
-                               "reason": str(e)}))
+            emit({"tier": tier, "name": name, "status": "tfd_exception",
+                  "reason": str(e)})
             n_fail += 1
             continue
 
-        print(json.dumps({
+        emit({
             "tier": tier,
             "name": name,
             "chematic_arm": chematic_arm,
             "rdkit_arm": rdkit_arm,
             "status": "paired_tfd",
             "tfd": tfd,
-        }))
+        })
         n_ok += 1
 
     print(f"tfd_ok={n_ok} tfd_fail={n_fail}", file=sys.stderr)
+    if args.output:
+        with open(args.output, "w", encoding="utf-8") as handle:
+            for row in output_rows:
+                handle.write(json.dumps(row) + "\n")
 
 
 if __name__ == "__main__":

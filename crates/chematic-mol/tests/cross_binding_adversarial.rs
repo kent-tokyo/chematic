@@ -96,6 +96,19 @@ fn extxyz_binding_contract_matches_shared_fixture() {
 }
 
 #[test]
+fn extxyz_writer_binding_contract_roundtrips_shared_fixture() {
+    let document: Value = serde_json::from_str(FIXTURE).expect("fixture JSON must parse");
+    let contract = &document["extxyz_contract"];
+    let frame = chematic_mol::parse_extxyz(contract["input"].as_str().unwrap()).unwrap();
+    let written = chematic_mol::write_extxyz(&frame).expect("extxyz writer");
+    let reparsed = chematic_mol::parse_extxyz(&written).expect("reparse writer output");
+    assert_eq!(reparsed.coords(), frame.coords());
+    assert_eq!(reparsed.lattice, frame.lattice);
+    assert_eq!(reparsed.properties, frame.properties);
+    assert_eq!(reparsed.info, frame.info);
+}
+
+#[test]
 fn semantic_expansion_binding_contract_matches_shared_fixture() {
     let document: Value = serde_json::from_str(FIXTURE).expect("fixture JSON must parse");
     let contract = &document["semantic_expansion_contract"];

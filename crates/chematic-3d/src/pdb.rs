@@ -112,6 +112,163 @@ impl std::fmt::Display for PdbResourceLimitError {
 
 impl std::error::Error for PdbResourceLimitError {}
 
+/// Error returned by the opt-in strict PDB parser.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PdbParseError {
+    /// One-based input line containing the invalid ATOM/HETATM record.
+    pub line: usize,
+    /// Fixed-column field that could not be decoded.
+    pub field: &'static str,
+}
+
+impl std::fmt::Display for PdbParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "invalid PDB {} field on line {}", self.field, self.line)
+    }
+}
+
+impl std::error::Error for PdbParseError {}
+
+/// Parse PDB atoms with fixed-column validation.
+///
+/// Non-atom records are ignored, matching [`parse_pdb_atoms`]. Unlike the
+/// compatibility parser, an ATOM/HETATM record must contain valid serial,
+/// residue sequence, and finite XYZ fields. Resource limits are applied
+/// before decoding. The default [`parse_pdb_atoms`] remains intentionally
+/// lenient for legacy and partially recovered structures.
+pub fn parse_pdb_atoms_strict(
+    input: &str,
+    limits: &PdbParseLimits,
+) -> Result<Vec<PdbAtom>, PdbStrictError> {
+    if input.len() > limits.max_input_bytes {
+        return Err(PdbStrictError::Resource(PdbResourceLimitError {
+            resource: "input bytes",
+            actual: input.len(),
+            limit: limits.max_input_bytes,
+        }));
+    }
+    let mut atom_count = 0usize;
+    let mut model_count = 0usize;
+    for line in input.lines() {
+        if line.len() > limits.max_line_bytes {
+            return Err(PdbStrictError::Resource(PdbResourceLimitError {
+                resource: "line bytes",
+                actual: line.len(),
+                limit: limits.max_line_bytes,
+            }));
+        }
+        let record = line.get(0..6).unwrap_or("").trim_end();
+        if record == "MODEL" {
+            model_count = model_count.saturating_add(1);
+            if model_count > limits.max_models {
+                return Err(PdbStrictError::Resource(PdbResourceLimitError {
+                    resource: "models",
+                    actual: model_count,
+                    limit: limits.max_models,
+                }));
+            }
+        } else if record == "ATOM" || record == "HETATM" {
+            atom_count = atom_count.saturating_add(1);
+            if atom_count > limits.max_atoms {
+                return Err(PdbStrictError::Resource(PdbResourceLimitError {
+                    resource: "atoms",
+                    actual: atom_count,
+                    limit: limits.max_atoms,
+                }));
+            }
+        }
+    }
+    let mut atoms = Vec::with_capacity(atom_count);
+    for (line_index, line) in input.lines().enumerate() {
+        let record = line.get(0..6).unwrap_or("").trim_end();
+        if record != "ATOM" && record != "HETATM" {
+            continue;
+        }
+        let field = |start: usize, end: usize| -> Option<&str> {
+            line.get(start..end)
+                .filter(|value| !value.trim().is_empty())
+        };
+        let parse = |name: &'static str, start: usize, end: usize| {
+            field(start, end).ok_or(PdbStrictError::Parse(PdbParseError {
+                line: line_index + 1,
+                field: name,
+            }))
+        };
+        let serial = parse("serial", 6, 11)?.trim().parse().map_err(|_| {
+            PdbStrictError::Parse(PdbParseError {
+                line: line_index + 1,
+                field: "serial",
+            })
+        })?;
+        let res_seq = parse("residue sequence", 22, 26)?
+            .trim()
+            .parse()
+            .map_err(|_| {
+                PdbStrictError::Parse(PdbParseError {
+                    line: line_index + 1,
+                    field: "residue sequence",
+                })
+            })?;
+        let coordinate = |name: &'static str, start: usize, end: usize| {
+            let value: f64 = parse(name, start, end)?.trim().parse().map_err(|_| {
+                PdbStrictError::Parse(PdbParseError {
+                    line: line_index + 1,
+                    field: name,
+                })
+            })?;
+            if value.is_finite() {
+                Ok(value)
+            } else {
+                Err(PdbStrictError::Parse(PdbParseError {
+                    line: line_index + 1,
+                    field: name,
+                }))
+            }
+        };
+        atoms.push(PdbAtom {
+            serial,
+            name: line.get(12..16).unwrap_or("").to_string(),
+            res_name: line.get(17..20).unwrap_or("").trim().to_string(),
+            chain_id: line
+                .get(21..22)
+                .and_then(|s| s.chars().next())
+                .unwrap_or(' '),
+            res_seq,
+            x: coordinate("x", 30, 38)?,
+            y: coordinate("y", 38, 46)?,
+            z: coordinate("z", 46, 54)?,
+            occupancy: line
+                .get(54..60)
+                .and_then(|s| s.trim().parse().ok())
+                .unwrap_or(1.0),
+            temp_factor: line
+                .get(60..66)
+                .and_then(|s| s.trim().parse().ok())
+                .unwrap_or(0.0),
+            element: line.get(76..78).unwrap_or("").trim().to_string(),
+        });
+    }
+    Ok(atoms)
+}
+
+/// Failure from [`parse_pdb_atoms_strict`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PdbStrictError {
+    Resource(PdbResourceLimitError),
+    Parse(PdbParseError),
+}
+
+impl std::fmt::Display for PdbStrictError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Resource(error) => error.fmt(f),
+            Self::Parse(error) => error.fmt(f),
+        }
+    }
+}
+
+impl std::error::Error for PdbStrictError {}
+
 /// Parse PDB atoms while enforcing input, line, atom, and model limits.
 pub fn parse_pdb_atoms_with_limits(
     input: &str,
@@ -322,7 +479,10 @@ pub fn write_pdb(mol: &Molecule, coords: &Coords3D) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{PdbParseLimits, PdbResourceLimitError, parse_pdb_atoms_with_limits};
+    use super::{
+        PdbParseError, PdbParseLimits, PdbResourceLimitError, PdbStrictError,
+        parse_pdb_atoms_strict, parse_pdb_atoms_with_limits,
+    };
 
     const ATOM: &str =
         "ATOM      1  CA  ALA A   1      10.000  11.000  12.000  1.00 20.00           C  ";
@@ -375,6 +535,43 @@ mod tests {
                 resource: "models",
                 ..
             })
+        ));
+    }
+
+    #[test]
+    fn strict_parser_accepts_valid_atom_and_rejects_truncated_record() {
+        let atoms = parse_pdb_atoms_strict(ATOM, &PdbParseLimits::default()).unwrap();
+        assert_eq!(atoms.len(), 1);
+        assert_eq!(atoms[0].serial, 1);
+        assert_eq!(atoms[0].x, 10.0);
+
+        let error = parse_pdb_atoms_strict(
+            "ATOM      1  CA  ALA A   1      10.000  11.000\n",
+            &PdbParseLimits::default(),
+        )
+        .unwrap_err();
+        assert!(matches!(
+            error,
+            PdbStrictError::Parse(PdbParseError {
+                field: "z",
+                line: 1
+            })
+        ));
+
+        let non_finite = format!("{ATOM}\n").replacen("  10.000", "     NaN", 1);
+        assert!(matches!(
+            parse_pdb_atoms_strict(&non_finite, &PdbParseLimits::default()),
+            Err(PdbStrictError::Parse(PdbParseError { field: "x", .. }))
+        ));
+    }
+
+    #[test]
+    fn strict_parser_keeps_legacy_parser_leniency_explicit() {
+        let malformed = "ATOM      1  CA  ALA A   1      10.000  11.000\n";
+        assert_eq!(super::parse_pdb_atoms(malformed).len(), 1);
+        assert!(matches!(
+            parse_pdb_atoms_strict(malformed, &PdbParseLimits::default()),
+            Err(PdbStrictError::Parse(PdbParseError { field: "z", .. }))
         ));
     }
 }

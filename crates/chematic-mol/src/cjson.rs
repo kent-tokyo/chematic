@@ -648,6 +648,39 @@ mod tests {
     }
 
     #[test]
+    fn shared_cjson_contract_rejects_malformed_input() {
+        let document: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../validation/cross_binding_contract.json"
+        )))
+        .expect("contract JSON");
+        let malformed = document["cjson_contract"]["malformed_input"]
+            .as_str()
+            .unwrap();
+        assert!(parse_cjson(malformed).is_err());
+    }
+
+    #[test]
+    fn shared_cjson_roundtrip_contract_matches() {
+        let document: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../validation/cross_binding_contract.json"
+        )))
+        .expect("contract JSON");
+        let contract = &document["cjson_contract"];
+        let (mol, coords) = parse_cjson(contract["input"].as_str().unwrap()).unwrap();
+        let roundtripped = write_cjson(&mol, &coords);
+        let (reparsed, reparsed_coords) = parse_cjson(&roundtripped).unwrap();
+        assert_eq!(reparsed.atom_count(), contract["expected"]["atom_count"]);
+        assert_eq!(reparsed.bond_count(), contract["expected"]["bond_count"]);
+        assert_eq!(reparsed_coords, coords);
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&reparsed),
+            chematic_smiles::canonical_smiles(&mol)
+        );
+    }
+
+    #[test]
     fn bond_order_roundtrip() {
         for &(order, expected_float) in &[
             (BondOrder::Single, 1.0_f64),

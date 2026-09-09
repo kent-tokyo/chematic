@@ -1,0 +1,21 @@
+{
+  "date": "2026-09-09",
+  "workspace_version": "1.0.10",
+  "scope": "local symmetry-aware torsion-distance diagnostic contract",
+  "command": "cargo test -p chematic-3d --offline --lib torsion_motif::tests::symmetric_torsion_distance",
+  "checks": {
+    "terminal_atom_automorphism_distance": {"tests": 1, "passed": 1},
+    "changed_torsion_bounded_distance": {"tests": 1, "passed": 1},
+    "changed_torsion_corpus": {"fixtures": 10, "measured": 10, "tests": 1, "passed": 1}
+  },
+  "result": "pass",
+  "crate_regression": {
+    "command": "cargo test -p chematic-3d --offline --quiet",
+    "unit_and_integration_passed": 594,
+    "failed": 0,
+    "ignored": 10,
+    "doctest_failed": 0
+  },
+  "metric": "minimum mean circular dihedral difference over topology-preserving self-mappings, normalized by 180 degrees",
+  "boundary": "This is a deterministic, bounded TFD-like local diagnostic. The corpus gate exercises ten flexible molecules and measures four or more valid rotatable cases. It is not claimed to be numerically identical to RDKit TFD and does not close the broader symmetry-aware TFD corpus gate."
+}

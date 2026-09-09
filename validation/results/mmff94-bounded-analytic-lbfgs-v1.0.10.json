@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-09",
+  "target_version": "1.0.10",
+  "scope": "opt-in MMFF94 L-BFGS path using the bounded prepared analytic gradient",
+  "command": "cargo test -p chematic-ff --offline --lib bounded_analytic_lbfgs_reduces_energy_for_butane",
+  "fixture": "butane (CCCC), non-singular 3D coordinates",
+  "result": {"tests": 1, "passed": 1, "failed": 0, "energy_decreased": true},
+  "boundary": "This is an opt-in experimental path. The compatibility default remains finite difference because prepared non-bonded pairs are fixed and singular geometries fail closed; coordinate-dependent neighbor-list and broader minimizer soundness gates remain open."
+}

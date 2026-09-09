@@ -16,6 +16,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from benchmark_version import workspace_version
+
 
 ROOT = Path(__file__).resolve().parents[1]
 FORMATS = {
@@ -94,7 +96,7 @@ def main() -> int:
 
     report = {
         "schema_version": 1,
-        "target_version": "1.0.9",
+        "target_version": workspace_version(ROOT),
         "repeats": args.repeats,
         "formats": list(FORMATS),
         "rows": rows,

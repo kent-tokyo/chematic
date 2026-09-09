@@ -10,7 +10,9 @@ fn bytes_hex(mol: &chematic_core::Molecule) -> String {
         .map(|byte_idx| {
             let mut byte = 0u8;
             for bit in 0..8usize {
-                if fp.get(byte_idx * 8 + bit) { byte |= 1 << bit; }
+                if fp.get(byte_idx * 8 + bit) {
+                    byte |= 1 << bit;
+                }
             }
             format!("{byte:02x}")
         })
@@ -23,10 +25,16 @@ fn main() {
     for (index, line) in io::stdin().lock().lines().enumerate() {
         let smiles = line.expect("read corpus line");
         let smiles = smiles.trim();
-        if smiles.is_empty() { continue; }
+        if smiles.is_empty() {
+            continue;
+        }
         let record = match chematic_smiles::parse(smiles) {
-            Ok(mol) => json!({"index": index, "smiles": smiles, "status": "ok", "torsion_hex": bytes_hex(&mol)}),
-            Err(error) => json!({"index": index, "smiles": smiles, "status": "error", "error": error.to_string()}),
+            Ok(mol) => {
+                json!({"index": index, "smiles": smiles, "status": "ok", "torsion_hex": bytes_hex(&mol)})
+            }
+            Err(error) => {
+                json!({"index": index, "smiles": smiles, "status": "error", "error": error.to_string()})
+            }
         };
         serde_json::to_writer(&mut out, &record).expect("serialize RDKit torsion record");
         writeln!(out).expect("write RDKit torsion record");

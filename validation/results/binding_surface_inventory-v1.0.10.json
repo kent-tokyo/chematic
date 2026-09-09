@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "status": "local-current-candidate",
+  "gate": "static_binding_surface_inventory",
+  "execution": "python3 scripts/check_binding_surface.py",
+  "scope": "Rust source declarations only; this is not semantic parity evidence",
+  "results": {
+    "wasm_export_count": 251,
+    "python_pyfunction_count": 132,
+    "python_registered_count": 149,
+    "python_declared_without_registration": [],
+    "surface_sha256": "ff3a65b5d08734934e1de3eb14d0897044360f009e339fda997a5474d3e25b52"
+  }
+}

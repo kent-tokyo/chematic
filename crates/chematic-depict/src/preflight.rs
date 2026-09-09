@@ -348,8 +348,10 @@ mod tests {
         let layout = Layout {
             coords: vec![Point::new(0.0, 0.0), Point::new(0.0, 0.0)],
         };
-        let mut opts = RenderOptions::default();
-        opts.padding = -1.0;
+        let opts = RenderOptions {
+            padding: -1.0,
+            ..RenderOptions::default()
+        };
         let report = preflight_svg(&mol, &layout, &opts, &PreflightLimits::default());
         assert!(
             report

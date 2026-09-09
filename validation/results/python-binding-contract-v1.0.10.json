@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "status": "local-verified",
+  "gate": "python_cross_binding_contract",
+  "test_file": "crates/chematic-py/tests/test_cross_binding_contract.py",
+  "tests_collected": 945,
+  "tests_passed": 945,
+  "tests_failed": 0,
+  "tests_skipped": 0,
+  "python": "3.13.6",
+  "pytest": "9.1.1",
+  "wheel": {
+    "path": "/private/tmp/chematic-py-or-alternatives-wheel/chematic-1.0.10-cp313-cp313-macosx_11_0_arm64.whl",
+    "sha256": "b6df45d5aa0ec699152f15266f38daf291c61e1ac85633c1459a574140b43c1a"
+  },
+  "command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 PYTHONPATH=/private/tmp/chematic-py-or-alternatives-extracted /Library/Frameworks/Python.framework/Versions/3.13/bin/python3.13 -m pytest crates/chematic-py/tests/ -q",
+  "notes": [
+    "The wheel was built from the workspace manifest without network access.",
+    "The extracted wheel avoids the stale user-site chematic v1.0.3 installation.",
+    "The full Python test suite, including the 20-case reaction SMARTS contract, was executed.",
+    "The wheel and temporary environment are not release artifacts."
+  ]
+}

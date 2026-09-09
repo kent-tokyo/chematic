@@ -37,9 +37,9 @@ no backend of their own. (This describes chematic's own browser tools; if you bu
 on top of chematic-wasm that calls other network APIs, that's your own code's choice, not
 something chematic does on your behalf.)
 
-**Lightweight deployment.** The v1.0.9 candidate WASM bundle is **3.58 MB raw / 1.31 MB gzip**, measured
-2026-09-07 with `wasm-pack 0.13.1` + `wasm-opt 130` — see the
-[artifact record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-07-wasm-size-v1.0.9.md)
+**Lightweight deployment.** The latest measured release-line WASM bundle is **3.73 MB raw / 1.36 MB gzip**, measured
+2026-09-09 with `wasm-pack 0.13.1` + `wasm-opt 130` — see the
+[artifact record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-09-wasm-size-v1.0.10.md)
 for the digest and reproduction commands.
 
 **One Rust core, multiple interfaces.** The same `chematic-*` Rust crates back the native Rust
@@ -129,7 +129,7 @@ API, the Python bindings (`pip install chematic`), and the WASM/JavaScript bindi
 | Scenario | How chematic helps |
 |---|---|
 | **Local compound triage** | [Local Compound Explorer](https://kent-tokyo.github.io/chematic/explorer/) — load a CSV/SDF, filter, sort, and export, entirely client-side |
-| **Browser app** | 1.31 MB gzip WASM bundle, zero backend required, React/Vue/Svelte ready |
+| **Browser app** | 1.36 MB gzip WASM bundle, zero backend required, React/Vue/Svelte ready |
 | **Drug screening** | 190+ descriptor values, ADMET, PAINS/Brenk, QED — batch over thousands of compounds |
 | **AI agent / MCP** | Built-in MCP server — Claude Desktop can call chemistry tools directly |
 | **Batch analysis** | Rayon-parallel descriptor/fingerprint/3D pipelines; SDF/CSV in, CSV out |
@@ -145,12 +145,13 @@ Full worked examples → [Use cases](use-cases/)
 |---|---|---|---|
 | Install | `pip install chematic` | `pip install rdkit` (official prebuilt wheels) or conda | `npm install @rdkit/rdkit`, no Python bindings |
 | C/C++ toolchain | Not required, even building from source | Not required for the prebuilt wheel; required building from source | Not required by consumers of the published package |
-| Browser / WASM | Yes — 3.58 MB raw / 1.31 MB gzip | Not applicable (Python/C++ library) | Yes — 6.91 MB raw (`RDKit_minimal.wasm`; a separate community project, currently in a maintainer transition) |
+| Browser / WASM | Yes — 3.73 MB raw / 1.36 MB gzip | Not applicable (Python/C++ library) | Yes — 6.91 MB raw (`RDKit_minimal.wasm`; a separate community project, currently in a maintainer transition) |
 | pKa / ADMET prediction | Built-in, rule-based screening — not for clinical use | External tool required | External tool required |
 | AI agent / MCP integration | Built-in, 20 tools (stdio only) | — | — |
 | Ecosystem maturity | Growing (2024–) | Established (2006–) | Established, but the WASM distribution specifically is community-maintained |
 
-The chematic bundle was measured 2026-09-07 from the v1.0.9 release candidate; RDKit.js is a
+The chematic bundle was measured 2026-09-09 from the v1.0.10 release line; the v1.0.11 release retains this
+historical artifact measurement. RDKit.js is a
 pinned historical raw-size comparator because its gzip-over-the-wire size was not independently
 measured. Full detail, including where chematic is weaker: [Detailed RDKit comparison](rdkit-comparison.md).
 
@@ -169,7 +170,7 @@ oracle. Full breakdown, known residuals, and reproduction commands:
 
 ## When to use chematic
 
-- You want chemistry in the browser (WASM, 1.31 MB gzip, no server required)
+- You want chemistry in the browser (WASM, 1.36 MB gzip, no server required)
 - You need a pure Rust stack with no C++ toolchain dependencies
 - You deploy to environments where installing RDKit is impractical (Cloudflare Workers, Lambda, embedded)
 - You build AI agents and want native MCP tool integration

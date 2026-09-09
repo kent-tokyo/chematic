@@ -5,10 +5,12 @@ This is a compatibility-contract dashboard, not a universal RDKit parity or spee
 
 - Target version: `1.0.10`
 - Regeneration: deterministic, offline, clean-checkout compatible
-- Contract manifest: `validation/cross_binding_contract.json` (SHA-256 `ec2c56613507be39eefc662974237b4dc1817501a98aa8c2db819f76e744eecf`)
-- Streaming matrix: `benchmarks/2026-09-08-streaming-cross-engine-matrix-v1.0.9.json` (SHA-256 `a5a845e0a695dc5fa084ad85edb4034685e2783061cb1b409f0462e5660ab006`)
+- Contract manifest: `validation/cross_binding_contract.json` (SHA-256 `b3f75bbf987787dcc9e76e0bb5acd1ed31f9107d9826b331363b16d1d786b0eb`)
+- Streaming matrix: `benchmarks/2026-09-09-streaming-cross-engine-matrix-v1.0.10.json` (SHA-256 `57553b435484219a7d4adc8ef25f0306538e5e7381bc78e632fa1af051236d56`)
 
 ## Shared binding contract
+
+Operation inventory: `50` currently shared operations; validate with `python3 scripts/check_cross_binding_manifest.py`.
 
 | Area | Checked-in assertions | Status |
 |---|---:|---|
@@ -17,6 +19,7 @@ This is a compatibility-contract dashboard, not a universal RDKit parity or spee
 | `standardization_contract` | 10 | covered by versioned fixture contract |
 | `fingerprint_contract` | 6 | covered by versioned fixture contract |
 | `fingerprint_detail_contract` | 4 | covered by versioned fixture contract |
+| `reaction_application_contract` | 12 | covered by versioned fixture contract |
 | `adversarial` | 8 | covered by versioned fixture contract |
 
 ## Streaming record/failure contract

@@ -2,119 +2,105 @@
 
 Benchmark claims in chematic are operation-, corpus-, version-, and machine-
 specific. Unsupported operations, failures, and non-equivalent APIs are never
-counted as wins. Dated raw summaries and reproduction commands live in
-the repository's [`benchmarks/`](https://github.com/kent-tokyo/chematic/tree/main/benchmarks) directory.
+counted as wins. Dated raw records are indexed in
+[`benchmarks/README.md`](../benchmarks/README.md).
 
 ## Current status
 
-The release candidate is **v1.0.10**. The newest hot-path measurements were
-recorded on the v1.0.6-to-v1.0.7 source comparison and remain source-level evidence;
-they must not be generalized beyond their named corpus and configuration.
+The current published release is **v1.0.11**. The newest checked-in performance
+records are historical source-level or release-line measurements; they
+must not be presented as v1.0.11 measurements unless explicitly rerun.
 
-### Published-source comparisons
+The current records cover four separate evidence types:
+
+1. performance: operation timing, scaling, and source A/B comparisons;
+2. compatibility: record accounting, failure behavior, and cross-engine contracts;
+3. artifacts: WASM size, wheel installation, and other release-adjacent evidence;
+4. validation: chemistry parity and correctness, which is not interchangeable with speed.
+
+## Published-source timing summary
 
 | Operation | chematic | RDKit | Scope |
 |---|---:|---:|---|
-| Canonical SMILES | 24.95 µs/mol | 25.58 µs/mol | v1.0.2 code, 5,000-molecule descriptor corpus, medians, macOS arm64 |
-| Canonical SMILES | 18.27 µs/mol | 26.82 µs/mol | v1.0.2 code, independent 5,000-entry ChEMBL-derived corpus |
-| SDF graph/property read | 9.48 µs/mol | 99.96 µs/mol | v1.0.2 code, 365-record `egfr.sdf`, graph-only supplier |
-| SDF serialization-only write | 7.62 µs/mol | 79.54 µs/mol | v1.0.2 code, same corpus, layout disabled |
+| Canonical SMILES | 24.95 µs/mol | 25.58 µs/mol | v1.0.2 code, 5,000-molecule corpus, macOS arm64 |
+| Canonical SMILES | 18.27 µs/mol | 26.82 µs/mol | Independent 5,000-entry ChEMBL-derived corpus |
+| SDF graph/property read | 9.48 µs/mol | 99.96 µs/mol | 365-record `egfr.sdf`, graph-only supplier |
+| SDF serialization-only write | 7.62 µs/mol | 79.54 µs/mol | Same corpus; automatic 2D layout excluded |
 
-These measurements show a lead only for the stated operations and environment.
-Canonical strings need not match RDKit's spelling, and the SDF writer row does
-not include automatic 2D layout. See the
-[canonical](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-canonical-fast-path.md) and
-[SDF](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-sdf-fast-path.md) records.
+These rows show a lead only for the named operation and environment. Canonical
+strings need not match RDKit's spelling, and a writer-only measurement is not a
+full depiction or export benchmark. See the dated canonical and SDF records.
 
-### v1.0.7 hot-path source comparison
+## Source A/B timing summary
 
-| Lane | v1.0.6 baseline | v1.0.7 candidate | Speedup |
-|---|---:|---:|---:|
-| Canonical SMILES, 5,000 molecules | 49.299 µs/mol | 43.680 µs/mol | **1.176x** |
-| File-backed SDF read, 365 records | 22.811 µs/record | 19.231 µs/record | **1.180x** |
-| Reused-buffer SDF serialization | 3.244 µs/record | 2.275 µs/record | **1.419x** |
-| SMILES parse, 5,000 molecules | 7.663 µs/mol | 6.858 µs/mol | 1.034x |
+The v1.0.7 hot-path record reports alternating paired medians:
 
-The speedups are medians of seven alternating paired ratios. SMILES parsing
-did not meet the 1.10x target. Full protocol, raw pairs, exact-output checks,
-and host-load caveats are in
-[`benchmarks/2026-09-05-hotpath-110.md`](../benchmarks/2026-09-05-hotpath-110.md).
+| Lane | Speedup |
+|---|---:|
+| Canonical SMILES | 1.176x |
+| File-backed SDF read | 1.180x |
+| Reused-buffer SDF serialization | 1.419x |
+| SMILES parse | 1.034x; below the 1.10x target |
 
-### Historical source-level follow-up
+The historical v1.0.5 follow-up reports separate canonical, SDF-read, and
+V2000-write A/B results. Rejected experiments, raw pairs, exact-output checks,
+and load caveats remain in the linked records; do not merge their numbers with
+the current release summary.
 
-| Lane | v1.0.4 baseline | v1.0.5 source | Speedup |
-|---|---:|---:|---:|
-| Canonical SMILES, 5,000 molecules | 120.74 ms | 108.28 ms | **1.115x** |
-| File-backed SDF read, 365 records x 50 | 145.949 ms | 129.201 ms | **1.130x** |
-| V2000 SDF serialization, returned `String` | 3.669 µs/record | 1.206 µs/record | **3.042x** |
-| V2000 SDF serialization, reusable buffer | 3.669 µs/record | 1.169 µs/record | **3.139x** |
+## Similarity search
 
-The [follow-up record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-05-hot-path-follow-up.md) contains
-the exact A/B protocol, rejected experiments, output checks, and commands.
-
-The [2026-09-09 similarity-search comparison](../benchmarks/2026-09-09-similarity-search-v1.0.9.md)
-uses a fixed 4,500-entry library and 500-query split against RDKit. Search
-latency and top-k ranking overlap are reported separately because native
-chematic ECFP4 and RDKit Morgan fingerprints are not bit-identical.
+The [2026-09-09 similarity-search record](../benchmarks/2026-09-09-similarity-search-v1.0.9.md)
+is a v1.0.9 historical source measurement using a fixed 4,500-entry library and
+500-query split against RDKit. Search latency and top-k ranking overlap are
+reported separately because native chematic ECFP4 and RDKit Morgan fingerprints
+are not bit-identical. The result is not a claim that one engine is universally
+faster or more accurate.
 
 ## Accuracy and compatibility
-
-The deterministic repository-local compatibility summary is generated by
-[`scripts/generate_compatibility_dashboard.py`](https://github.com/kent-tokyo/chematic/blob/main/scripts/generate_compatibility_dashboard.py)
-and recorded in [`compatibility-dashboard.md`](compatibility-dashboard.md).
-It summarizes checked-in contracts only; it is not a universal parity claim.
 
 Performance does not establish chemistry parity. The 4,999-molecule
 ChEMBL-derived descriptor suite reports metric-specific agreement and known
 residuals in [`validation.md`](validation.md). Canonical identity,
-aromaticity/CIP modes, fingerprint definitions, and Experimental 3D/MMFF94
-have separate contracts in [`compatibility-scope.md`](compatibility-scope.md).
+aromaticity/CIP modes, fingerprint definitions, and Experimental 3D/MMFF94 have
+separate contracts in [`compatibility-scope.md`](compatibility-scope.md).
+
+Streaming records primarily measure record accounting, failure behavior, and
+boundary semantics. The ten-format Rust and cross-engine matrices, including
+plain/gzip stages, are indexed under
+[`Streaming and cross-engine contracts`](../benchmarks/README.md#streaming-and-cross-engine-contracts).
+Use [`scripts/validate_streaming_cross_engine_matrix.py`](../scripts/validate_streaming_cross_engine_matrix.py)
+for the fail-closed matrix check.
 
 ## Artifact size
 
-The optimized v1.0.8 WASM artifact was measured at **3.58 MB raw / 1.31 MB
-gzip** with `wasm-pack 0.13.1` and `wasm-opt 130`. This is a dated artifact
-measurement, not a permanent bundle-size guarantee. Exact hashes and commands
-are in the [WASM artifact record](../benchmarks/2026-09-06-wasm-size-v1.0.8.md).
+The optimized v1.0.10 release-line WASM artifact was measured at **3.73 MB raw /
+1.36 MB gzip** with `wasm-pack 0.13.1` and `wasm-opt 130`. This is a dated
+artifact measurement, not a permanent release bundle-size guarantee. Exact
+hashes and commands are in the
+[WASM artifact record](../benchmarks/2026-09-09-wasm-size-v1.0.10.md).
 
-## Reproduction index
+## Reproduction entry points
 
-| Record | Purpose |
+| Purpose | Entry point |
 |---|---|
-| [2026-09-06 WASM v1.0.8](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-06-wasm-size-v1.0.8.md) | Release-candidate artifact size, digest, and reproduction commands |
-| [2026-09-05 hot paths](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-05-hot-path-follow-up.md) | Fixed-version source A/B for canonical and SDF |
-| [2026-09-04 RDKit/Open Babel](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-rdkit-openbabel.md) | In-process and CLI comparisons kept separate |
-| [2026-09-04 canonical](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-canonical-fast-path.md) | Two 5,000-molecule canonical runs |
-| [2026-09-04 SDF](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-sdf-fast-path.md) | Graph/property read and serialization-only write |
-| [2026-09-04 streaming formats](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-streaming-formats.md) | File-backed SDF/MOL/XYZ runner |
-| [2026-09-09 clean install and cold start](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-09-clean-install-cold-start-v1.0.9.md) | Local CPython 3.13 arm64 wheel build, isolated install/import smoke, and 10-sample cold-start evidence |
-| [2026-09-08 same-input streaming contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-cross-engine.md) | Same-input SDF record/failure agreement across chematic, RDKit, and Open Babel |
-| [2026-09-08 same-input SDF Open Babel run](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-cross-engine-openbabel.md) | 20-repetition SDF record accounting with explicit Rust/Python/CLI boundaries |
-| [2026-09-08 same-input V3000 Open Babel run](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-cross-engine-openbabel-v3000.md) | 20-repetition V3000 record accounting with explicit Rust/Python/CLI boundaries |
-| [2026-09-08 same-input MOL2 Open Babel run](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-cross-engine-openbabel-mol2.md) | 20-repetition MOL2 record accounting with explicit Rust/Python/CLI boundaries |
-| [2026-09-08 same-input XYZ streaming contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-cross-engine-xyz.md) | Same-input XYZ record/failure agreement across chematic and RDKit |
-| [2026-09-08 same-input Extended XYZ streaming contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-cross-engine-extxyz.md) | Same-input Extended XYZ frame/failure agreement across chematic and RDKit |
-| [2026-09-08 same-input V2000 MOL streaming contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-cross-engine-mol.md) | Same-input V2000 MOL record/failure agreement across chematic and RDKit |
-| [2026-09-08 same-input V3000 streaming contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-cross-engine-v3000.md) | Same-input V3000 record/failure agreement across chematic and RDKit |
-| [2026-09-08 same-input MOL2 streaming contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-cross-engine-mol2.md) | Same-input MOL2 record/failure agreement across chematic and RDKit |
-| [2026-09-08 same-input CML streaming contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-cross-engine-cml.md) | Same-input CML record/failure agreement across chematic and Open Babel |
-| [2026-09-08 same-input CDXML streaming contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-cross-engine-cdxml.md) | Same-input CDXML record/failure agreement across chematic and Open Babel |
-| [2026-09-08 same-input mmCIF streaming contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-cross-engine-mmcif.md) | Same-input mmCIF record/failure agreement across chematic and Open Babel |
-| [2026-09-08 same-input PDB streaming contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-cross-engine-pdb.md) | Same-input PDB record/failure agreement across chematic and Open Babel |
-| [2026-09-08 cross-engine matrix validator](https://github.com/kent-tokyo/chematic/blob/main/scripts/validate_streaming_cross_engine_matrix.py) | Fail-closed validation of the checked-in ten-format matrix, fixture digests, counts, failures, and boundaries |
-| [2026-09-08 gzip SDF streaming contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-gzip-contract.md) | Gzip SDF record/failure agreement with compressed/decompressed stages separated |
-| [2026-09-08 gzip SDF Open Babel contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-gzip-openbabel-sdf.md) | Gzip SDF record accounting against Open Babel on the identical decompressed payload |
-| [2026-09-08 gzip XYZ streaming contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-gzip-xyz-contract.md) | Gzip XYZ record/failure agreement with compressed/decompressed stages separated |
-| [2026-09-08 gzip V3000 Open Babel contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-gzip-openbabel-v3000.md) | Gzip V3000 record accounting against Open Babel on the identical decompressed payload |
-| [2026-09-08 gzip MOL2 Open Babel contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-gzip-openbabel-mol2.md) | Gzip MOL2 record accounting against Open Babel on the identical decompressed payload |
-| [2026-09-08 gzip CML Open Babel contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-gzip-openbabel-cml.md) | Gzip CML record accounting against Open Babel on the identical decompressed payload |
-| [2026-09-08 gzip CDXML Open Babel contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-gzip-openbabel-cdxml.md) | Gzip CDXML record accounting against Open Babel on the identical decompressed payload |
-| [2026-09-08 gzip mmCIF Open Babel contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-gzip-openbabel-mmcif.md) | Gzip mmCIF record accounting against Open Babel on the identical decompressed payload |
-| [2026-09-08 gzip PDB Open Babel contract](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-08-streaming-gzip-openbabel-pdb.md) | Gzip PDB record accounting against Open Babel on the identical decompressed payload |
-| [2026-09-04 MMFF94/3D](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-mmff94-3d.md) | Experimental local microbenchmarks |
-| [2026-09-04 WASM](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-04-wasm-size.md) | Artifact size and digest |
-| [2026-09-03 competitive](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-03-competitive.md) | Resumable six-operation v1.0.1 run |
-| [Older snapshots](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md) | Earlier versioned measurements and hardware notes |
+| Accuracy vs RDKit | `pip install chematic rdkit`; `python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --json /tmp/bench5k.json`; `python scripts/gen_validation_report.py /tmp/bench5k.json` |
+| Similarity search | [`2026-09-09-similarity-search-v1.0.9.md`](../benchmarks/2026-09-09-similarity-search-v1.0.9.md) |
+| Hot-path A/B | [`2026-09-05-hotpath-110.md`](../benchmarks/2026-09-05-hotpath-110.md) |
+| File streaming | [`2026-09-04-streaming-formats.md`](../benchmarks/2026-09-04-streaming-formats.md) |
+| Cross-engine contracts | [`benchmarks/README.md`](../benchmarks/README.md#streaming-and-cross-engine-contracts) |
+| WASM artifact | [`2026-09-09-wasm-size-v1.0.10.md`](../benchmarks/2026-09-09-wasm-size-v1.0.10.md) |
+| Full inventory | [`benchmarks/README.md`](../benchmarks/README.md) |
+
+## Hardware and interpretation
+
+Hardware varies by snapshot; read each record's header. The 2026-06 records
+used Apple M2 / macOS 14, while later records moved to Apple M4 / macOS 26.
+Rust `cargo bench` numbers are comparable to Python numbers only when the
+record says the machine, corpus, and operation boundary match.
+
+Results vary by CPU, load, corpus, and fixture choice. Treat them as scoped
+measurements, not SLA guarantees. The 2026-07 snapshot demonstrated that a
+headline throughput ratio can be fixture-sensitive.
 
 ## Rules for new results
 
@@ -125,8 +111,20 @@ Every new result must record:
 - hardware, OS, language/runtime, and build profile;
 - exact operation boundary and configuration;
 - warm-up, repetitions, aggregation, failure policy, and raw output location;
-- correctness or byte-equivalence checks relevant to the optimization.
+- correctness, ranking, or byte-equivalence checks relevant to the operation.
 
 Do not relabel source-level A/B data as a published artifact result, compare a
 streaming API with a materializing API without saying so, or generalize one
 corpus to all chemistry workloads.
+### Streaming parser failure taxonomy
+
+`streaming_benchmark` reports a deterministic `failure_kinds` object for all
+ten supported formats. For parser errors, the keys are the Rust parser error
+variant names and the values are counts accumulated across repetitions;
+resource-limit failures are recorded as `ResourceLimit`. This field is
+diagnostic coverage evidence, not a claim of exhaustive parser-state coverage
+or cross-engine error taxonomy parity.
+The 120-case bounded taxonomy result is stored in
+[`validation/results/streaming-failure-taxonomy-v1.0.10.json`](../validation/results/streaming-failure-taxonomy-v1.0.10.json)
+and can be regenerated with `python3 scripts/check_streaming_failure_taxonomy.py`
+after building the streaming example.

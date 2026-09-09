@@ -192,12 +192,25 @@ parsing. A rank-only tie-break therefore cannot recover the lost representation
 context without changing the core stereo carrier model; #149/#503 remain open
 and fail-closed.
 
+The next local probe now consumes that parser-side source endpoint when reading
+the raw direction for carrier geometry. This is the correct metadata
+interpretation and preserves the existing ring-closure behavior, but it does
+not collapse the three measured residual families: the focused residual suite
+still passes with the same two-way fail-closed boundary. The anchor-aware
+change is therefore retained as groundwork, not reported as a resolution.
+
 The next bounded implementation slice now preserves that parser-side source
 endpoint as `Molecule::bond_direction_anchor`, including bond-index and atom-index
 remapping during molecule edits and canonical relabeling. The direction value and
 existing writer behavior are unchanged; this is metadata groundwork only, not a
 claim that the three residual families converge. The focused residual suite and
 core suite remain green after the change.
+
+The #337 D2 candidate pass now collects each permutation-invariant root against
+the same immutable bond graph before grouping duplicate bond sets. This removes
+the former progressively blocked, root-order-dependent collection path. The
+change is a determinism improvement only: the six-fixture RDKit representative
+family mismatch remains an open parity gate.
 
 Evidence:
 
@@ -379,7 +392,7 @@ Evidence:
 A follow-up removed raw `BondIdx` from the ordering of direct replacement
 candidates and kept it only for exact edge-set identity and GF(2) rank
 calculation. The six-fixture boundary and canonical macrocycle family remain
-stable across 64 seeded atom relabelings per fixture. An attempted replacement of edge
+stable across 256 seeded atom relabelings per fixture. An attempted replacement of edge
 identity itself with canonical rank keys was rejected immediately because it
 collapsed distinct symmetric cycles (`chembl_tier_b_0023` changed from four
 to two representatives); that change was reverted. The remaining identity

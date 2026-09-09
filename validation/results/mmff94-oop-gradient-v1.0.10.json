@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-09",
+  "target_version": "1.0.10",
+  "scope": "prepared MMFF94 Wilson out-of-plane energy and analytic gradient",
+  "command": "cargo test -p chematic-ff --offline --lib prepared_oop_gradient_matches_finite_difference",
+  "fixture": "isobutene (C=C(C)C), non-singular trigonal center",
+  "method": "prepared topology plus 12-component forward-mode differentiation of the Wilson asin(dot(normal, substituent)/(norms)) expression",
+  "result": {
+    "tests": 1,
+    "passed": 1,
+    "failed": 0,
+    "central_difference_step_angstrom": 0.00001,
+    "tolerance": "3e-5 * (1 + abs(reference))"
+  },
+  "boundary": "This closes only the non-singular prepared OOP-gradient building block; the implementation fails closed near zero-area planes/vectors and the asin ±1 branch point. Full minimizer integration, coordinate-dependent neighbor lists, and independent force-field parity remain open."
+}

@@ -89,9 +89,10 @@ impl core::fmt::Display for RxnError {
 /// aromatic form (for example \`[#7:2]\` becomes \`[N:2]\` and \`[n:2]\`). The atom
 /// map is retained verbatim. The returned order is deterministic.
 ///
-/// Only the intentionally narrow \`[#number]\` and \`[#number:map]\` forms are
-/// expanded. More complex primitives must remain on the SMARTS query path and
-/// return an explicit error rather than silently changing semantics.
+/// The supported forms are \`[#number]\`, \`[#number:map]\`, and the common
+/// explicit-single-hydrogen forms \`[#number;H1]\` / \`[#number;H1:map]\`.
+/// More complex primitives must remain on the SMARTS query path and return an
+/// explicit error rather than silently changing semantics.
 pub fn expand_atomic_number_primitives(s: &str) -> Result<Vec<String>, RxnError> {
     const MAX_VARIANTS: usize = 256;
     let mut variants = vec![String::new()];
@@ -129,11 +130,26 @@ pub fn expand_atomic_number_primitives(s: &str) -> Result<Vec<String>, RxnError>
             .unwrap_or(inner.len());
         let number_text = &inner[1..number_end];
         let suffix = &inner[number_end..];
-        let valid_suffix = suffix.is_empty()
-            || (suffix.starts_with(':')
-                && suffix.len() > 1
-                && suffix[1..].bytes().all(|b| b.is_ascii_digit()));
-        if number_text.is_empty() || !valid_suffix {
+        let (hydrogen_count, map_suffix) = if suffix.is_empty() {
+            (None, "")
+        } else if suffix.starts_with(':')
+            && suffix.len() > 1
+            && suffix[1..].bytes().all(|b| b.is_ascii_digit())
+        {
+            (None, suffix)
+        } else if let Some(map) = suffix.strip_prefix(";H1:")
+            && !map.is_empty()
+            && map.bytes().all(|b| b.is_ascii_digit())
+        {
+            (Some(1_u8), &suffix[3..])
+        } else if suffix == ";H1" {
+            (Some(1_u8), "")
+        } else {
+            (None, "")
+        };
+        if number_text.is_empty()
+            || (hydrogen_count.is_none() && map_suffix.is_empty() && !suffix.is_empty())
+        {
             return Err(RxnError::UnsupportedAtomicNumberPrimitive {
                 primitive: primitive.to_string(),
             });
@@ -150,9 +166,15 @@ pub fn expand_atomic_number_primitives(s: &str) -> Result<Vec<String>, RxnError>
             });
         };
         let symbol = element.symbol();
-        let mut replacements = vec![format!("[{symbol}{suffix}]")];
+        let hydrogen = hydrogen_count.map_or("", |_| "H");
+        let mut replacements = vec![format!("[{symbol}{hydrogen}{map_suffix}]")];
         if matches!(atomic_number, 5 | 6 | 7 | 8 | 15 | 16) {
-            replacements.push(format!("[{}{}]", symbol.to_ascii_lowercase(), suffix));
+            replacements.push(format!(
+                "[{}{}{}]",
+                symbol.to_ascii_lowercase(),
+                hydrogen,
+                map_suffix
+            ));
         }
         let next_len = variants.len().saturating_mul(replacements.len());
         if next_len > MAX_VARIANTS {
@@ -581,8 +603,22 @@ mod tests {
     #[test]
     fn rejects_compound_atomic_number_primitives() {
         assert!(matches!(
-            expand_atomic_number_primitives("[#7;H1]>>[#7;H1]"),
+            expand_atomic_number_primitives("[#7;H2]>>[#7;H2]"),
             Err(RxnError::UnsupportedAtomicNumberPrimitive { .. })
         ));
+    }
+
+    #[test]
+    fn expands_single_hydrogen_constraint_and_preserves_maps() {
+        let variants = expand_atomic_number_primitives("[#7;H1:2][#6;H1]").unwrap();
+        assert_eq!(
+            variants,
+            vec![
+                "[NH:2][CH]".to_string(),
+                "[NH:2][cH]".to_string(),
+                "[nH:2][CH]".to_string(),
+                "[nH:2][cH]".to_string(),
+            ]
+        );
     }
 }
