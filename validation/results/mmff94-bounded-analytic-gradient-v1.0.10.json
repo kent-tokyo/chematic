@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-09",
+  "target_version": "1.0.10",
+  "scope": "prepared MMFF94 bounded analytic-gradient aggregate",
+  "command": "cargo test -p chematic-ff --offline --lib bounded_analytic_gradient_matches_prepared_total_energy",
+  "fixture": "butane (CCCC), non-singular 3D coordinates",
+  "components": ["bond_angle", "stretch_bend", "torsion", "oop", "vdw_electrostatic"],
+  "result": {
+    "tests": 1,
+    "passed": 1,
+    "failed": 0,
+    "central_difference_step_angstrom": 0.00001,
+    "tolerance": "4e-5 * (1 + abs(reference))"
+  },
+  "boundary": "The aggregate is an opt-in prepared evaluator with fixed topology pairs. It does not replace the public finite-difference minimizer until coordinate-dependent neighbor-list, singular-geometry, and broader soundness gates are complete."
+}

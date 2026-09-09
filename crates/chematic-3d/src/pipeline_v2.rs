@@ -785,23 +785,7 @@ pub fn embed_pipeline_v2(
     // `embed_distance_geometry_v2_detail`, which have no such stage, until a
     // follow-up either threads H-materialization through this pipeline's own stages
     // or removes `phantom_neighbor_position`'s dependency on an estimated position.
-    if config.embed.materialize_implicit_h_for_chirality {
-        timings.total_ms = overall_start.elapsed().as_millis() as u64;
-        return Err(evidence.fail(
-            PipelineV2FailureCause::InvalidConfiguration,
-            PipelineStage::ValidateConfig,
-            timings,
-        ));
-    }
-
-    // Revised (issue #291 real implementation): `expand_implicit_h_through_pipeline`
-    // is the follow-up the comment above points to -- see its own doc comment on
-    // `PipelineV2Config` and the stage-4 shadow below for what it actually does.
-    // Requires `enforce_chirality` for the same reason every other flag here that
-    // only matters combined with it does: without `enforce_chirality`, nothing
-    // downstream ever checks declared stereo during embedding, so materializing
-    // H for that purpose would just be wasted cost.
-    if config.expand_implicit_h_through_pipeline && !config.embed.enforce_chirality {
+    if pipeline_config_is_invalid(config) {
         timings.total_ms = overall_start.elapsed().as_millis() as u64;
         return Err(evidence.fail(
             PipelineV2FailureCause::InvalidConfiguration,
@@ -813,13 +797,7 @@ pub fn embed_pipeline_v2(
     // -----------------------------------------------------------------
     // Stage 2: build torsion knowledge.
     // -----------------------------------------------------------------
-    let torsion_config = TorsionKnowledgeConfig {
-        use_exp_torsions: config.embed.use_exp_torsions,
-        use_small_ring_torsions: config.embed.use_small_ring_torsions,
-        use_macrocycle_torsions: config.embed.use_macrocycle_torsions,
-        use_macrocycle_14_bounds: config.embed.use_macrocycle_14_bounds,
-        include_legacy_heuristic: config.include_legacy_torsion_heuristic,
-    };
+    let torsion_config = torsion_knowledge_config(config);
     let t0 = Instant::now();
     let torsion_knowledge_report = build_torsion_knowledge(mol, &torsion_config);
     timings.torsion_knowledge_ms = t0.elapsed().as_millis() as u64;
@@ -1127,17 +1105,14 @@ pub fn embed_pipeline_v2(
     // success/failure either way: truncate-then-verify-against-the-original-
     // molecule when expanded, otherwise byte-identical to the plain
     // `verify_stereo(mol, coords)` call this replaced.
-    let authoritative_final_stereo = |coords: &Coords3D| -> StereoVerification {
-        if use_expanded_geometry {
-            let truncated = truncate_coords(coords, original_atom_count);
-            verify_stereo(orig_mol, &truncated)
-        } else {
-            verify_stereo(mol, coords)
-        }
-    };
-
     let t0 = Instant::now();
-    let mut final_stereo = authoritative_final_stereo(&force_field.coords);
+    let mut final_stereo = verify_authoritative_final_stereo(
+        orig_mol,
+        mol,
+        &force_field.coords,
+        use_expanded_geometry,
+        original_atom_count,
+    );
     timings.final_stereo_verify_ms = t0.elapsed().as_millis() as u64;
     evidence.final_stereo = Some(final_stereo.clone());
     // Output geometry from here on -- starts as the force field's own,
@@ -1215,7 +1190,13 @@ pub fn embed_pipeline_v2(
                         failures: Vec::new(),
                     });
                     out_coords = repaired_coords;
-                    final_stereo = authoritative_final_stereo(&out_coords);
+                    final_stereo = verify_authoritative_final_stereo(
+                        orig_mol,
+                        mol,
+                        &out_coords,
+                        use_expanded_geometry,
+                        original_atom_count,
+                    );
                 }
             }
             timings.post_min_stereo_repair_ms = repair_t0.elapsed().as_millis() as u64;
@@ -1332,6 +1313,42 @@ pub fn embed_pipeline_v2(
 // ---------------------------------------------------------------------------
 // Final geometry validation helper
 // ---------------------------------------------------------------------------
+
+fn pipeline_config_is_invalid(config: &PipelineV2Config) -> bool {
+    config.embed.materialize_implicit_h_for_chirality
+        || (config.expand_implicit_h_through_pipeline && !config.embed.enforce_chirality)
+}
+
+fn torsion_knowledge_config(config: &PipelineV2Config) -> TorsionKnowledgeConfig {
+    TorsionKnowledgeConfig {
+        use_exp_torsions: config.embed.use_exp_torsions,
+        use_small_ring_torsions: config.embed.use_small_ring_torsions,
+        use_macrocycle_torsions: config.embed.use_macrocycle_torsions,
+        use_macrocycle_14_bounds: config.embed.use_macrocycle_14_bounds,
+        include_legacy_heuristic: config.include_legacy_torsion_heuristic,
+    }
+}
+
+/// Verify the geometry using the coordinate view exposed by the pipeline contract.
+///
+/// Embedding may temporarily operate on a molecule with materialized implicit
+/// hydrogens, while returned coordinates are always sized for the original molecule.
+/// Keeping that rule here prevents final-stereo checks from validating a different
+/// coordinate view than the one returned to the caller.
+fn verify_authoritative_final_stereo(
+    original_mol: &Molecule,
+    internal_mol: &Molecule,
+    coords: &Coords3D,
+    use_expanded_geometry: bool,
+    original_atom_count: usize,
+) -> StereoVerification {
+    if use_expanded_geometry {
+        let truncated = truncate_coords(coords, original_atom_count);
+        verify_stereo(original_mol, &truncated)
+    } else {
+        verify_stereo(internal_mol, coords)
+    }
+}
 
 fn worst_bond_length(mol: &Molecule, coords: &Coords3D) -> f64 {
     mol.bonds()

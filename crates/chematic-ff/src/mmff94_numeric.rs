@@ -2185,7 +2185,13 @@ fn assign_p_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
     if is_bonded_to(mol, idx, Element::O, BondOrder::Double) {
         return Ok(25); // PO4
     }
-    Ok(20) // P generic sp3
+    // P=C has its own registry entry (type 75). Do not use the historical
+    // numeric value 20 here: type 20 is CR4R, a carbon-only cyclobutyl type,
+    // and the semantic-compatibility invariant correctly rejects it for P.
+    if is_bonded_to(mol, idx, Element::C, BondOrder::Double) {
+        return Ok(75); // P doubly bonded to C
+    }
+    Ok(26) // tricoordinate P
 }
 
 // ── H type assignment ────────────────────────────────────────────────────────
@@ -3279,6 +3285,27 @@ mod tests {
                 assert_eq!(types_s2[i], 18, "DMSO2 S should be type 18 (SO2)");
             }
         }
+    }
+
+    #[test]
+    fn phosphorus_types_are_element_compatible() {
+        let generic = mol("P(C)(C)C");
+        let generic_types = assign_mmff94_numeric_types(&generic).unwrap();
+        let generic_p = generic
+            .atoms()
+            .find(|(_, atom)| atom.element == Element::P)
+            .map(|(idx, _)| generic_types[idx.0 as usize])
+            .expect("generic P atom");
+        assert_eq!(generic_p, 26, "tricoordinate P should use registry type 26");
+
+        let ylide = mol("[P](C)(C)(C)=C");
+        let ylide_types = assign_mmff94_numeric_types(&ylide).unwrap();
+        let ylide_p = ylide
+            .atoms()
+            .find(|(_, atom)| atom.element == Element::P)
+            .map(|(idx, _)| ylide_types[idx.0 as usize])
+            .expect("P=C atom");
+        assert_eq!(ylide_p, 75, "P=C should use registry type 75");
     }
 
     // ── Issue #227: nitrile/sulfonamide/nitro/azide/charged-sulfoxide

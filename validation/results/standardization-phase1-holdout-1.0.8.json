@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.8",
+  "fixture": "validation/standardization_phase1_holdout.jsonl",
+  "operation": "standardize_largest_fragment_only",
+  "comparison_boundary": "10 committed Phase 1 standardization holdouts; v1.0.8 Rust CLI explicit --largest-fragment-only profile, with RDKit canonical identity used only to compare expected and returned fragment",
+  "rows": 10,
+  "valid": 10,
+  "errors": 0,
+  "matches": 8,
+  "mismatches": 2,
+  "match_pct": 80.0,
+  "outcomes": [
+    {
+      "id": "std-p1-holdout-01-dopamine-sulfate-threshold",
+      "input": "CC(N)Cc1ccc(O)c(O)c1.OS(=O)(=O)O",
+      "expected_kept_fragment": "CC(N)Cc1ccc(O)c(O)c1",
+      "output_smiles": "Oc1c(O)ccc(c1)CC(N)C",
+      "expected_canonical_rdkit": "CC(N)Cc1ccc(O)c(O)c1",
+      "output_canonical_rdkit": "CC(N)Cc1ccc(O)c(O)c1",
+      "match": true,
+      "status": "modified",
+      "error": null
+    },
+    {
+      "id": "std-p1-holdout-02-phosphoric-acid-outranks-small-amine",
+      "input": "NCCO.OP(=O)(O)O",
+      "expected_kept_fragment": "OP(=O)(O)O",
+      "output_smiles": "P(O)(O)(O)=O",
+      "expected_canonical_rdkit": "O=P(O)(O)O",
+      "output_canonical_rdkit": "O=P(O)(O)O",
+      "match": true,
+      "status": "modified",
+      "error": null
+    },
+    {
+      "id": "std-p1-holdout-03-calcium-diacetate-always-strip-extension",
+      "input": "CC(=O)[O-].CC(=O)[O-].[Ca+2]",
+      "expected_kept_fragment": "CC(=O)[O-]",
+      "output_smiles": "CC(O)=O",
+      "expected_canonical_rdkit": "CC(=O)[O-]",
+      "output_canonical_rdkit": "CC(=O)O",
+      "match": false,
+      "status": "modified",
+      "error": null
+    },
+    {
+      "id": "std-p1-holdout-04-lithium-acetate",
+      "input": "CC(=O)[O-].[Li+]",
+      "expected_kept_fragment": "CC(=O)[O-]",
+      "output_smiles": "CC(O)=O",
+      "expected_canonical_rdkit": "CC(=O)[O-]",
+      "output_canonical_rdkit": "CC(=O)O",
+      "match": false,
+      "status": "modified",
+      "error": null
+    },
+    {
+      "id": "std-p1-holdout-05-phenethylamine-hf-neutral",
+      "input": "c1ccc(cc1)CCN.F",
+      "expected_kept_fragment": "c1ccc(cc1)CCN",
+      "output_smiles": "c1c(CCN)cccc1",
+      "expected_canonical_rdkit": "NCCc1ccccc1",
+      "output_canonical_rdkit": "NCCc1ccccc1",
+      "match": true,
+      "status": "modified",
+      "error": null
+    },
+    {
+      "id": "std-p1-holdout-06-caffeine-dihydrate",
+      "input": "Cn1cnc2c1c(=O)n(C)c(=O)n2C.O.O",
+      "expected_kept_fragment": "Cn1cnc2c1c(=O)n(C)c(=O)n2C",
+      "output_smiles": "n2(C)c(=O)n(C)c1c(c2=O)n(cn1)C",
+      "expected_canonical_rdkit": "Cn1c(=O)c2c(ncn2C)n(C)c1=O",
+      "output_canonical_rdkit": "Cn1c(=O)c2c(ncn2C)n(C)c1=O",
+      "match": true,
+      "status": "modified",
+      "error": null
+    },
+    {
+      "id": "std-p1-holdout-07-three-fragment-amine-acid-hcl",
+      "input": "CN1CCC(CC1)Nc1ccccc1.OC(=O)c1ccccc1O.Cl",
+      "expected_kept_fragment": "CN1CCC(CC1)Nc1ccccc1",
+      "output_smiles": "N(c2ccccc2)C1CCN(CC1)C",
+      "expected_canonical_rdkit": "CN1CCC(Nc2ccccc2)CC1",
+      "output_canonical_rdkit": "CN1CCC(Nc2ccccc2)CC1",
+      "match": true,
+      "status": "modified",
+      "error": null
+    },
+    {
+      "id": "std-p1-holdout-08-13c-labeled-sugar-hydrate-generalization",
+      "input": "OC[C@H]1O[C@@H]([13OH])[C@H](O)[C@@H](O)[C@@H]1O.O",
+      "expected_kept_fragment": "OC[C@H]1O[C@@H]([13OH])[C@H](O)[C@@H](O)[C@@H]1O",
+      "output_smiles": "[C@@H]1([C@@H](O[C@H](CO)[C@H]([C@@H]1O)O)[13OH])O",
+      "expected_canonical_rdkit": "OC[C@H]1O[C@@H]([13OH])[C@H](O)[C@@H](O)[C@@H]1O",
+      "output_canonical_rdkit": "OC[C@H]1O[C@@H]([13OH])[C@H](O)[C@@H](O)[C@@H]1O",
+      "match": true,
+      "status": "modified",
+      "error": null
+    },
+    {
+      "id": "std-p1-holdout-09-ethane-decane-unambiguous-nontie",
+      "input": "CC.CCCCCCCCCC",
+      "expected_kept_fragment": "CCCCCCCCCC",
+      "output_smiles": "CCCCCCCCCC",
+      "expected_canonical_rdkit": "CCCCCCCCCC",
+      "output_canonical_rdkit": "CCCCCCCCCC",
+      "match": true,
+      "status": "modified",
+      "error": null
+    },
+    {
+      "id": "std-p1-holdout-10-pentane-butane-close-nontie",
+      "input": "CCCCC.CCCC",
+      "expected_kept_fragment": "CCCCC",
+      "output_smiles": "CCCCC",
+      "expected_canonical_rdkit": "CCCCC",
+      "output_canonical_rdkit": "CCCCC",
+      "match": true,
+      "status": "modified",
+      "error": null
+    }
+  ]
+}

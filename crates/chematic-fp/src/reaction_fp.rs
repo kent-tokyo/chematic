@@ -1,6 +1,7 @@
 //! C-Series Phase 1: Reaction fingerprints for chemical transformation encoding.
 //!
-//! **NOTE**: Current implementation uses OR of reactant/product ECFP4 fingerprints.
+//! **NOTE**: The legacy `use_xor: false` mode uses OR of reactant/product
+//! ECFP4 fingerprints.
 //! This captures the structural components but not the actual transformation.
 //!
 //! True structural reaction fingerprint (RDKit CreateStructuralFingerprintForReaction)
@@ -15,10 +16,9 @@
 //! - Reaction database filtering
 //! - Basic reaction clustering
 //!
-//! TODO (v0.1.90+): Upgrade to true structural reaction FP by:
-//! 1. Compute XOR of reactant and product fingerprints
-//! 2. Separate formed vs broken structures
-//! 3. Weight transformations by chemical significance
+//! The XOR mode is a bounded structural-difference approximation. It also
+//! exposes formed and broken bit sets separately; it is not claimed to be
+//! RDKit's full structural reaction fingerprint implementation.
 
 use crate::bitvec::BitVec2048;
 use crate::ecfp::ecfp4;
@@ -43,6 +43,10 @@ pub struct ReactionFingerprint {
     pub reactant_fp: BitVec2048,
     /// Fingerprint of product ensemble
     pub product_fp: BitVec2048,
+    /// Bits present only in products (a formed structural signal).
+    pub formed_fp: BitVec2048,
+    /// Bits present only in reactants (a broken structural signal).
+    pub broken_fp: BitVec2048,
     /// Combined fingerprint (XOR-like via OR for multi-molecule reactions)
     pub combined_fp: BitVec2048,
 }
@@ -94,6 +98,22 @@ fn compute_structural_difference(reactant_fp: &BitVec2048, product_fp: &BitVec20
     result
 }
 
+fn compute_directed_difference(
+    reactant_fp: &BitVec2048,
+    product_fp: &BitVec2048,
+) -> (BitVec2048, BitVec2048) {
+    let mut formed = BitVec2048::new();
+    let mut broken = BitVec2048::new();
+    for i in 0..2048 {
+        match (reactant_fp.get(i), product_fp.get(i)) {
+            (false, true) => formed.set(i),
+            (true, false) => broken.set(i),
+            _ => {}
+        }
+    }
+    (formed, broken)
+}
+
 /// Generate a reaction fingerprint from a reaction.
 ///
 /// Uses XOR-based structural difference encoding by default (RDKit-equivalent):
@@ -111,6 +131,7 @@ pub fn reaction_fp_with_config(
 ) -> ReactionFingerprint {
     let reactant_fp = combine_fps_or(&rxn.reactants.iter().map(ecfp4).collect::<Vec<_>>());
     let product_fp = combine_fps_or(&rxn.products.iter().map(ecfp4).collect::<Vec<_>>());
+    let (formed_fp, broken_fp) = compute_directed_difference(&reactant_fp, &product_fp);
     let combined_fp = if config.use_xor {
         compute_structural_difference(&reactant_fp, &product_fp)
     } else {
@@ -119,6 +140,8 @@ pub fn reaction_fp_with_config(
     ReactionFingerprint {
         reactant_fp,
         product_fp,
+        formed_fp,
+        broken_fp,
         combined_fp,
     }
 }
@@ -246,6 +269,16 @@ mod tests {
 
         // Difference should encode bond formation
         assert!(fp.combined_fp.popcount() > 0);
+    }
+
+    #[test]
+    fn directed_difference_partitions_the_xor_signal() {
+        let fp = reaction_fp(&create_test_reaction("CC>>C"));
+        assert_eq!(
+            fp.combined_fp.popcount(),
+            fp.formed_fp.or(&fp.broken_fp).popcount()
+        );
+        assert_eq!(fp.formed_fp.and(&fp.broken_fp).popcount(), 0);
     }
 
     #[test]

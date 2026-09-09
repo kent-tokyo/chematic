@@ -11,7 +11,10 @@ pub mod pme;
 pub mod real;
 
 pub use pme::reciprocal_space_energy;
-pub use real::{K_COULOMB, direct_coulomb, direct_coulomb_cutoff, direct_coulomb_damped};
+pub use real::{
+    K_COULOMB, direct_coulomb, direct_coulomb_cutoff, direct_coulomb_damped,
+    direct_coulomb_damped_cutoff,
+};
 
 /// Error type for SPME calculations.
 #[derive(Debug, Clone, PartialEq)]
@@ -139,7 +142,7 @@ pub fn spme_energy(
     };
 
     // Real-space: short-range damped Coulomb
-    let real = real::direct_coulomb_damped(coords, charges, alpha);
+    let real = real::direct_coulomb_damped_cutoff(coords, charges, alpha, config.r_cut);
 
     // Reciprocal-space: FFT-based long-range
     let reciprocal = pme::reciprocal_space_energy(coords, charges, box_vecs, config)?;

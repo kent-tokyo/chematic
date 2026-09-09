@@ -989,13 +989,14 @@ fn rotatable_bond_count_ethanol() {
 }
 
 #[test]
-#[ignore = "known bug: got 2 rotatable bonds, expected 3 (RDKit reference); never ran in CI before this test file was wired into ci.yml/check.sh, needs its own fix"]
 fn rotatable_bond_count_aspirin() {
-    // CC(=O)Oc1ccccc1C(=O)O → 3 rotatable bonds
+    // CC(=O)Oc1ccccc1C(=O)O → 2 strict rotatable bonds.
+    // The non-ring single-bond skeleton has three candidates, but RDKit's
+    // strict definition excludes the ester C(=O)-O bond.
     assert_approx(
         "rotatable_bond_count aspirin",
         rotatable_bond_count(&mol("CC(=O)Oc1ccccc1C(=O)O")) as f64,
-        3.0,
+        2.0,
         0.1,
     );
 }

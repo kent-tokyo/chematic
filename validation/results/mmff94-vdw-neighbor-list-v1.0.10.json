@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-09",
+  "target_version": "1.0.10",
+  "scope": "coordinate-dependent MMFF94 vdW neighbor-list slice",
+  "command": "cargo test -p chematic-ff --offline --lib coordinate_dependent_vdw_neighbor_list",
+  "fixture": "butane (CCCC), prepared topology and non-singular 3D coordinates",
+  "cutoff_angstrom": 10.0,
+  "method": "Cartesian bins with a two-bin conservative halo, followed by topology-pair lookup and exact distance filtering",
+  "result": {
+    "tests": 3,
+    "passed": 3,
+    "failed": 0,
+    "pair_key_set_matches_all_pair_cutoff_reference": true,
+    "energy_matches_all_pair_cutoff_reference": true,
+    "boundary_and_negative_coordinate_sweep": true,
+    "non_finite_coordinate_fallback": "reference all-pair traversal verified"
+  },
+  "boundary": "This validates only the MMFF94 vdW slice. Electrostatic pairs remain all-pair, fixed topology pairs are rebuilt per evaluation, and broader numerical/performance and triclinic periodic-neighbor gates remain open."
+}

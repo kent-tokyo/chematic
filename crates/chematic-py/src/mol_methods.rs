@@ -382,7 +382,7 @@ impl Mol {
     ///     steepest descent often reports ``converged=False`` on geometries
     ///     that are perfectly fine but simply haven't hit the tight
     ///     RMS-gradient threshold yet. Check this, not just ``converged``,
-    ///     before trusting a result).
+    ///     before trusting a result), and ``worst_bond_length`` (float, Å).
     ///
     /// Example::
     ///
@@ -405,6 +405,7 @@ impl Mol {
         d.set_item("iterations", result.iterations)?;
         d.set_item("converged", result.converged)?;
         d.set_item("sound", result.sound)?;
+        d.set_item("worst_bond_length", result.worst_bond_length)?;
         Ok(d)
     }
 
@@ -1904,10 +1905,13 @@ impl Mol {
     // Transformations
     // -----------------------------------------------------------------------
 
-    /// Return the standardized molecule (largest fragment, charges neutralized,
-    /// tautomer canonicalized, isotopes/stereo preserved by default).
-    fn standardize(&self) -> Mol {
-        let opts = chematic_chem::StandardizeOptions::default();
+    /// Return the standardized molecule with an optional largest-fragment profile.
+    #[pyo3(signature = (largest_fragment_only = false))]
+    fn standardize(&self, largest_fragment_only: bool) -> Mol {
+        let opts = chematic_chem::StandardizeOptions {
+            largest_fragment_only,
+            ..Default::default()
+        };
         Mol {
             inner: Arc::new(chematic_chem::standardize(&self.inner, &opts)),
             props: Default::default(),
@@ -3433,7 +3437,8 @@ impl Mol {
         bitvec2048_to_bytes(&chematic_3d::pharmacophore_fp_3d(&self.inner, &c3d))
     }
 
-    /// Reaction fingerprint — ``(reactant_fp, product_fp, combined_fp)`` as bytes.
+    /// Reaction fingerprint — ``(reactant_fp, product_fp, formed_fp, broken_fp,
+    /// combined_fp)`` as bytes.
     ///
     /// Each component is 256 bytes (2048 bits). The combined FP captures the full
     /// transformation and is suitable for reaction similarity search.
@@ -3453,6 +3458,8 @@ impl Mol {
         let d = PyDict::new(py);
         d.set_item("reactant_fp", bitvec2048_to_bytes(&rfp.reactant_fp))?;
         d.set_item("product_fp", bitvec2048_to_bytes(&rfp.product_fp))?;
+        d.set_item("formed_fp", bitvec2048_to_bytes(&rfp.formed_fp))?;
+        d.set_item("broken_fp", bitvec2048_to_bytes(&rfp.broken_fp))?;
         d.set_item("combined_fp", bitvec2048_to_bytes(&rfp.combined_fp))?;
         Ok(d)
     }

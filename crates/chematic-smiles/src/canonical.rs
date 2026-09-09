@@ -372,7 +372,14 @@ pub(crate) fn refine_ranks(mol: &Molecule, mut ranks: Vec<u64>) -> Vec<u64> {
         old_distinct = new_distinct;
     }
 
-    normalize_ranks(ranks)
+    // The final distinct-count pass already sorted/deduplicated these exact
+    // ranks. Reuse its dictionary instead of sorting an index vector again.
+    for rank in &mut ranks {
+        *rank = distinct_scratch
+            .binary_search(rank)
+            .expect("rank in dictionary") as u64;
+    }
+    ranks
 }
 
 /// Safety cap on the number of discrete rank assignments
@@ -425,7 +432,7 @@ pub(crate) fn group_by_rank(ranks: &[u64]) -> Vec<Vec<usize>> {
 /// rank strictly between its class and the next-higher class, so a
 /// subsequent refinement pass can propagate the distinction through the rest
 /// of the graph. `ranks` must be gap-free ordinals (as produced by
-/// `refine_ranks`/`normalize_ranks`).
+/// `refine_ranks`).
 pub(crate) fn individualize(ranks: &[u64], atom_idx: usize) -> Vec<u64> {
     let v = ranks[atom_idx];
     ranks
@@ -538,25 +545,6 @@ fn count_distinct(ranks: &[u64], scratch: &mut Vec<u64>) -> usize {
     scratch.sort_unstable();
     scratch.dedup();
     scratch.len()
-}
-
-fn normalize_ranks(mut ranks: Vec<u64>) -> Vec<u64> {
-    let mut sorted: smallvec::SmallVec<[usize; 64]> = (0..ranks.len()).collect();
-    sorted.sort_unstable_by_key(|&idx| (ranks[idx], idx));
-
-    let mut current_rank: u64 = 0;
-    let mut prev_val = ranks[sorted[0]];
-
-    for idx in sorted {
-        let val = ranks[idx];
-        if val != prev_val {
-            current_rank += 1;
-            prev_val = val;
-        }
-        ranks[idx] = current_rank;
-    }
-
-    ranks
 }
 
 pub(crate) struct CanonicalWriter<'a> {
@@ -690,6 +678,18 @@ impl<'a> CanonicalWriter<'a> {
         } else {
             BondOrder::Down
         }
+    }
+
+    /// Return the endpoint from which a raw direction was originally read.
+    /// Literal `Up`/`Down` orders are stored relative to the bond's atom1;
+    /// aromatic direction stashes retain the parser-side source endpoint
+    /// separately. Carrier selection must use the latter or two equivalent
+    /// spellings can encode the same geometry with opposite internal bond
+    /// orientation.
+    fn raw_direction_anchor(&self, bidx: BondIdx) -> AtomIdx {
+        self.mol
+            .bond_direction_anchor(bidx)
+            .unwrap_or(self.mol.bond(bidx).atom1)
     }
 
     /// Maximum coupled-component size [`Self::resolve_component_jointly`]
@@ -1167,14 +1167,14 @@ impl<'a> CanonicalWriter<'a> {
         if let Some(dir) = self.raw_input_direction(reference.1) {
             Some(Self::direction_is_up(
                 dir,
-                self.mol.bond(reference.1).atom1,
+                self.raw_direction_anchor(reference.1),
                 alkene_end,
             ))
         } else {
             let dir = self.raw_input_direction(sibling.1)?;
             Some(!Self::direction_is_up(
                 dir,
-                self.mol.bond(sibling.1).atom1,
+                self.raw_direction_anchor(sibling.1),
                 alkene_end,
             ))
         }
@@ -2188,7 +2188,10 @@ mod tests {
                 .add_bond(a, b, bond.order)
                 .expect("relabeling a valid molecule's own bonds cannot fail");
             if let Some(dir) = mol.bond_direction(bidx) {
-                direction_stash.push((new_bidx, dir));
+                let anchor = mol
+                    .bond_direction_anchor(bidx)
+                    .map(|old| AtomIdx(old_to_new[old.0 as usize]));
+                direction_stash.push((new_bidx, dir, anchor));
             }
         }
         // Tetrahedral chirality (`Atom.chirality`) is meaningless without
@@ -2213,8 +2216,11 @@ mod tests {
             }
         }
         let mut relabeled = builder.build();
-        for (bidx, dir) in direction_stash {
+        for (bidx, dir, anchor) in direction_stash {
             relabeled.set_bond_direction(bidx, dir);
+            if let Some(anchor) = anchor {
+                relabeled.set_bond_direction_anchor(bidx, anchor);
+            }
         }
         relabeled
     }
@@ -3788,6 +3794,140 @@ mod tests {
         r"OC(=O)[C@H](Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)/N=c1/c(c(c1O)O)=N/CCCCC",
     ];
 
+    /// Three held-out issue #149 residuals measured by the 2026-09-06
+    /// 64-relabeling audit. Each is a genuine coupled E/Z system whose
+    /// aromatic direction-stash carriers can still produce two valid,
+    /// semantically identical canonical spellings. Keep these separate from
+    /// [`EZ_SHARED_CARRIER_FULLY_RESOLVED`]: they are deliberately not a
+    /// claim that the general ranking problem is solved.
+    const EZ_SHARED_CARRIER_HELD_OUT_RESIDUALS: &[&str] = &[
+        r"CC/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+        r"CCCC(C)/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+        r"COCC/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+    ];
+
+    /// Keep the measured residuals reproducible while the general aromatic
+    /// carrier traversal remains open. The stable-key API must reject them;
+    /// silently selecting one of the two traversal-dependent spellings would
+    /// make a deduplication/cache key depend on input atom order.
+    #[test]
+    fn ez_shared_carrier_held_out_residuals_remain_fail_closed() {
+        let observed_pairs = [
+            (
+                r"c/3(c(/c(c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+                r"c3(c(c(/c3=N/CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+            ),
+            (
+                r"c/1(c(/c(c1=N\[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+                r"c1(c(c(/c1=N/[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+            ),
+            (
+                r"c/1(O)c(O)/c(=N\[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)c1=N\CCOC",
+                r"c1(O)c(O)c(=N/[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)\c1=N\CCOC",
+            ),
+        ];
+
+        for (&s, &(a, b)) in EZ_SHARED_CARRIER_HELD_OUT_RESIDUALS
+            .iter()
+            .zip(observed_pairs.iter())
+        {
+            let mol = parse(s).unwrap_or_else(|e| panic!("parse '{s}': {e}"));
+            let outputs: HashSet<String> = [a, b]
+                .into_iter()
+                .map(|variant| canonical_smiles(&parse(variant).unwrap()))
+                .collect();
+            assert_eq!(
+                outputs.len(),
+                2,
+                "'{s}': the held-out audit residual must remain reproducible"
+            );
+            assert!(
+                canonical_smiles_stable_key(&mol).is_none(),
+                "'{s}': unstable coupled E/Z residual must not become a cache key"
+            );
+        }
+    }
+
+    /// Re-run the held-out Wave 3 residuals through the same deterministic
+    /// relabeling axis used by the corpus audit.  The residual is expected to
+    /// remain observable as exactly two canonical spellings; accepting one
+    /// winner here would silently turn an order-dependent traversal into a
+    /// cache/deduplication key.
+    #[test]
+    fn ez_shared_carrier_held_out_residuals_remain_two_way_under_relabeling() {
+        let observed_pairs = [
+            (
+                r"c/3(c(/c(c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+                r"c3(c(c(/c3=N/CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+            ),
+            (
+                r"c/1(c(/c(c1=N\[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+                r"c1(c(c(/c1=N/[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+            ),
+            (
+                r"c/1(O)c(O)/c(=N\[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)c1=N\CCOC",
+                r"c1(O)c(O)c(=N/[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)\c1=N\CCOC",
+            ),
+        ];
+
+        for (&input, &(observed_a, observed_b)) in EZ_SHARED_CARRIER_HELD_OUT_RESIDUALS
+            .iter()
+            .zip(observed_pairs.iter())
+        {
+            let mol = parse(input).unwrap_or_else(|e| panic!("parse '{input}': {e}"));
+            let before_geo = geometry_fingerprint(&mol);
+            let n = mol.atom_count();
+            let mut variants = vec![
+                relabel_molecule_preserving_ez(&mol, &(0..n).collect::<Vec<_>>()),
+                relabel_molecule_preserving_ez(&mol, &(0..n).rev().collect::<Vec<_>>()),
+            ];
+            for seed in 0..256u64 {
+                variants.push(relabel_molecule_preserving_ez(
+                    &mol,
+                    &deterministic_permutation(n, seed),
+                ));
+            }
+
+            let relabeled_outputs: HashSet<String> = variants
+                .iter()
+                .map(|variant| {
+                    assert_eq!(
+                        geometry_fingerprint(variant),
+                        before_geo,
+                        "'{input}': relabeling changed the encoded E/Z geometry"
+                    );
+                    canonical_smiles(variant)
+                })
+                .collect();
+            assert_eq!(
+                relabeled_outputs.len(),
+                1,
+                "'{input}': relabeling-only audit must remain deterministic"
+            );
+
+            let mut outputs = relabeled_outputs;
+            for observed in [observed_a, observed_b] {
+                let observed_mol = parse(observed)
+                    .unwrap_or_else(|e| panic!("parse observed residual '{observed}': {e}"));
+                assert_eq!(
+                    geometry_fingerprint(&observed_mol),
+                    before_geo,
+                    "'{input}': observed residual spelling changed E/Z geometry"
+                );
+                outputs.insert(canonical_smiles(&observed_mol));
+            }
+            assert_eq!(
+                outputs.len(),
+                2,
+                "'{input}': 256-seed residual audit must retain exactly two outputs"
+            );
+            assert!(
+                canonical_smiles_stable_key(&mol).is_none(),
+                "'{input}': two-way residual must remain fail-closed"
+            );
+        }
+    }
+
     /// Proves all 19 [`EZ_SHARED_CARRIER_FULLY_RESOLVED`] fixtures are
     /// genuinely, fully permutation-invariant -- not just under the one
     /// relabeling a weaker test might check. Per fixture: the original
@@ -4089,6 +4229,47 @@ mod tests {
             "test setup sanity: with distinct ranks, the solver should \
              resolve rather than abstain"
         );
+    }
+
+    #[test]
+    fn issue149_aromatic_stash_matches_exhaustive_oracle() {
+        let fixtures = [
+            (
+                r"CC/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+                [
+                    r"c/3(c(/c(c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+                    r"c3(c(c(/c3=N/CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+                ],
+            ),
+            (
+                r"CCCC(C)/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+                [
+                    r"c/1(c(/c(c1=N\[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+                    r"c1(c(c(/c1=N/[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+                ],
+            ),
+            (
+                r"COCC/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+                [
+                    r"c/1(O)c(O)/c(=N\[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)c1=N\CCOC",
+                    r"c1(O)c(O)c(=N/[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)\c1=N\CCOC",
+                ],
+            ),
+        ];
+
+        // The exhaustive oracle must agree not only for the corpus spelling,
+        // but also for both independently observed aromatic-stash spellings.
+        // This proves that orbit pruning has not introduced a second source
+        // of disagreement; it deliberately does not choose between the two
+        // representation-dependent winners.
+        for (input, observed_variants) in fixtures {
+            for spelling in std::iter::once(input).chain(observed_variants) {
+                let mol = crate::parser::parse(spelling).expect("residual parses");
+                let current = canonical_smiles(&mol);
+                let oracle = canonical_smiles_exhaustive_oracle(&mol);
+                assert_eq!(current, oracle, "search/oracle mismatch for {spelling}");
+            }
+        }
     }
 
     /// White-box probe of the tie-abstain path, and a genuine (not assumed)

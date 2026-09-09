@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "date": "2026-09-09",
+  "scope": "source-only strict PDB contract",
+  "fixture": "validation/cross_binding_contract.json#pdb_strict_contract",
+  "bindings": {
+    "rust": {"status": "pass", "command": "cargo test -p chematic-3d --offline --lib strict_parser"},
+    "python": {"status": "pass", "tests": 1, "command": "python -m pytest -p no:asyncio -q crates/chematic-py/tests/test_cross_binding_contract.py -k pdb_strict_contract"},
+    "wasm_source": {"status": "pass", "tests": 1, "command": "cargo test -p chematic-wasm --offline --lib pdb_strict_contract"},
+    "node_generated_artifact": {"status": "not_available", "reason": "checked-in artifact does not export mol_from_pdb_strict"}
+  },
+  "assertions": [
+    "one valid fixed-column atom record yields one atom and exact coordinates",
+    "a truncated z field is rejected by strict parsing",
+    "compatibility parsing remains intentionally separate and lenient"
+  ],
+  "result": "source-only contract passes; Node generated-artifact parity remains open"
+}

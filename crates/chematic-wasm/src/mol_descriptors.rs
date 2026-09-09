@@ -3,6 +3,41 @@
 use crate::{MolHandle, WASM_MAX_ATOMS, WASM_MAX_INPUT_BYTES, json_error};
 use wasm_bindgen::prelude::*;
 
+/// Validate a vendor-neutral NMR spectrum JSON document without parsing a
+/// vendor-specific raw file or predicting peaks.
+#[wasm_bindgen]
+pub fn validate_nmr_spectrum_json(json: &str) -> String {
+    serde_json::to_string(&chematic_chem::validate_nmr_json(
+        json,
+        &chematic_chem::NmrLimits::default(),
+    ))
+    .expect("NMR validation is serializable")
+}
+
+/// Fingerprint a serialized `PeriodicStructure`; invalid or oversized input
+/// returns a stable JSON error rather than being treated as a retrieval hit.
+#[wasm_bindgen]
+pub fn periodic_structure_fingerprint_json(json: &str, source: &str) -> String {
+    if json.len() > WASM_MAX_INPUT_BYTES {
+        return r#"{"error":"input exceeds maximum size"}"#.into();
+    }
+    match serde_json::from_str::<chematic_crystal::PeriodicStructure>(json) {
+        Ok(structure) => match chematic_crystal::geometry_fingerprint(
+            Some(&structure),
+            source,
+            Default::default(),
+        ) {
+            Ok(result) => serde_json::to_string(&result)
+                .unwrap_or_else(|_| r#"{"error":"serialization failed"}"#.into()),
+            Err(error) => format!(r#"{{"error":"{error:?}"}}"#),
+        },
+        Err(error) => format!(
+            r#"{{"error":"{}"}}"#,
+            crate::escape_json_string(&error.to_string())
+        ),
+    }
+}
+
 /// Per-atom EState values as a JSON array of f64.
 ///
 /// Indices match `mol.atoms()` order.  Hydrogen atoms get 0.0.

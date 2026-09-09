@@ -32,6 +32,8 @@ pub struct CdxmlPage {
 pub struct CdxmlDocument {
     pub document_attributes: BTreeMap<String, CdxmlValue>,
     pub pages: Vec<CdxmlPage>,
+    #[serde(skip)]
+    limits: CdxmlParseLimits,
     raw_xml: String,
 }
 
@@ -90,7 +92,9 @@ impl CdxmlDocument {
         let mut document_attributes = BTreeMap::new();
         let mut pages = Vec::new();
         let mut current: Option<CdxmlPage> = None;
-        for (line_no, raw) in input.lines().enumerate() {
+        let mut saw_root = false;
+        let mut root_closed = false;
+        for (line_no, raw) in logical_cdxml_lines(input).into_iter().enumerate() {
             if line_no >= limits.max_lines {
                 return Err(CdxmlError::ResourceLimit {
                     resource: "lines",
@@ -106,7 +110,37 @@ impl CdxmlDocument {
                 });
             }
             let line = raw.trim();
-            if line.starts_with("<page") && !line.starts_with("</page") {
+            if is_open_tag(line, "CDXML") {
+                if saw_root || root_closed {
+                    return Err(CdxmlError::InvalidDocument(
+                        "duplicate CDXML root element".into(),
+                    ));
+                }
+                saw_root = true;
+                let attrs = parse_xml_attrs(line);
+                check_attribute_budget(&attrs, limits)?;
+                document_attributes = attrs
+                    .into_iter()
+                    .map(|(k, v)| (k, Value::String(v)))
+                    .collect();
+            } else if is_close_tag(line, "CDXML") {
+                if !saw_root || root_closed || current.is_some() {
+                    return Err(CdxmlError::InvalidDocument(
+                        "invalid CDXML root closing element".into(),
+                    ));
+                }
+                root_closed = true;
+            } else if is_open_tag(line, "page") {
+                if !saw_root || root_closed {
+                    return Err(CdxmlError::InvalidDocument(
+                        "page element is outside the CDXML root".into(),
+                    ));
+                }
+                if current.is_some() {
+                    return Err(CdxmlError::InvalidDocument(
+                        "nested page elements are not supported".into(),
+                    ));
+                }
                 if pages.len() >= limits.max_fragments {
                     return Err(CdxmlError::ResourceLimit {
                         resource: "pages",
@@ -115,6 +149,7 @@ impl CdxmlDocument {
                     });
                 }
                 let attrs = parse_xml_attrs(line);
+                check_attribute_budget(&attrs, limits)?;
                 let id = attrs.get("id").cloned();
                 current = Some(CdxmlPage {
                     id,
@@ -124,52 +159,57 @@ impl CdxmlDocument {
                         .collect(),
                     children: Vec::new(),
                 });
-            } else if line.starts_with("</page") {
-                if let Some(page) = current.take() {
-                    pages.push(page);
-                }
-            } else if let Some(page) = current.as_mut() {
-                if line.starts_with('<')
-                    && !line.starts_with("</")
-                    && !line.starts_with("<?")
-                    && !line.starts_with("<!")
-                {
-                    let tag = line
-                        .trim_start_matches('<')
-                        .split(|c: char| c.is_whitespace() || c == '>' || c == '/')
-                        .next()
-                        .unwrap_or_default()
-                        .to_string();
-                    if page.children.len() >= limits.max_bonds.saturating_add(limits.max_atoms) {
-                        return Err(CdxmlError::ResourceLimit {
-                            resource: "objects",
-                            actual: page.children.len() + 1,
-                            limit: limits.max_bonds.saturating_add(limits.max_atoms),
-                        });
-                    }
-                    let attrs = parse_xml_attrs(line)
-                        .into_iter()
-                        .map(|(k, v)| (k, Value::String(v)))
-                        .collect();
-                    page.children.push(CdxmlObject {
-                        tag,
-                        attributes: attrs,
-                        raw_xml: raw.to_string(),
+            } else if is_close_tag(line, "page") {
+                let Some(page) = current.take() else {
+                    return Err(CdxmlError::InvalidDocument(
+                        "page closing element has no matching page".into(),
+                    ));
+                };
+                pages.push(page);
+            } else if let Some(page) = current.as_mut()
+                && line.starts_with('<')
+                && !line.starts_with("</")
+                && !line.starts_with("<?")
+                && !line.starts_with("<!")
+            {
+                let tag = line
+                    .trim_start_matches('<')
+                    .split(|c: char| c.is_whitespace() || c == '>' || c == '/')
+                    .next()
+                    .unwrap_or_default()
+                    .to_string();
+                if page.children.len() >= limits.max_bonds.saturating_add(limits.max_atoms) {
+                    return Err(CdxmlError::ResourceLimit {
+                        resource: "objects",
+                        actual: page.children.len() + 1,
+                        limit: limits.max_bonds.saturating_add(limits.max_atoms),
                     });
                 }
-            } else if line.starts_with("<CDXML") {
-                document_attributes = parse_xml_attrs(line)
+                let parsed_attrs = parse_xml_attrs(line);
+                check_attribute_budget(&parsed_attrs, limits)?;
+                let attrs = parsed_attrs
                     .into_iter()
                     .map(|(k, v)| (k, Value::String(v)))
                     .collect();
+                page.children.push(CdxmlObject {
+                    tag,
+                    attributes: attrs,
+                    raw_xml: raw.to_string(),
+                });
             }
         }
         if current.is_some() {
             return Err(CdxmlError::InvalidCoords("unterminated page".into()));
         }
+        if !saw_root || !root_closed {
+            return Err(CdxmlError::InvalidDocument(
+                "missing or unterminated CDXML root element".into(),
+            ));
+        }
         Ok(Self {
             document_attributes,
             pages,
+            limits: *limits,
             raw_xml: input.to_string(),
         })
     }
@@ -204,13 +244,37 @@ impl CdxmlDocument {
 
     /// Apply a bounded edit and reparse, so indexes/attributes stay consistent.
     pub fn apply(&self, edit: &CdxmlEdit) -> Result<Self, CdxmlError> {
-        let mut lines: Vec<String> = self.raw_xml.lines().map(str::to_owned).collect();
+        let mut lines: Vec<String> = if needs_logical_edit_lines(&self.raw_xml) {
+            logical_cdxml_lines(&self.raw_xml)
+        } else {
+            self.raw_xml.lines().map(str::to_owned).collect()
+        };
+        match edit {
+            CdxmlEdit::SetPageAttribute { key, .. } | CdxmlEdit::SetObjectAttribute { key, .. } => {
+                validate_attribute_name(key)?;
+            }
+            _ => {}
+        }
+        match edit {
+            CdxmlEdit::ReplaceObject { raw_xml, .. }
+            | CdxmlEdit::InsertObject { raw_xml, .. }
+            | CdxmlEdit::ReplaceObjectPath { raw_xml, .. } => {
+                validate_object_fragment(raw_xml, &self.limits)?;
+            }
+            _ => {}
+        }
         let page_id = page_id_for(edit);
-        let page = self
+        let matching_pages: Vec<usize> = self
             .pages
             .iter()
-            .position(|p| p.id.as_deref() == Some(page_id))
-            .ok_or_else(|| CdxmlError::UnknownAtomRef("unknown page id".into()))?;
+            .enumerate()
+            .filter_map(|(index, p)| (p.id.as_deref() == Some(page_id)).then_some(index))
+            .collect();
+        let page = match matching_pages.as_slice() {
+            [] => return Err(CdxmlError::UnknownAtomRef("unknown page id".into())),
+            [page] => *page,
+            _ => return Err(CdxmlError::AmbiguousPageId(page_id.to_string())),
+        };
         if let CdxmlEdit::ReplaceObjectPath { path, raw_xml, .. } = edit {
             if path.is_empty() {
                 return Err(CdxmlError::UnknownAtomRef("object path is empty".into()));
@@ -254,7 +318,7 @@ impl CdxmlDocument {
                 *sibling_counts.last_mut().unwrap_or(&mut 0) += 1;
                 if object_path == *path {
                     lines[i] = raw_xml.clone();
-                    return Self::parse(&format!("{}\n", lines.join("\n")));
+                    return self.parse_edited_lines(lines);
                 }
                 if !trimmed.ends_with("/>") {
                     open_paths.push(object_path);
@@ -291,7 +355,7 @@ impl CdxmlDocument {
                         && seen_objects == *target
                     {
                         lines.remove(i);
-                        return Self::parse(&format!("{}\n", lines.join("\n")));
+                        return self.parse_edited_lines(lines);
                     }
                     seen_objects += 1;
                 } else if in_target && trimmed.starts_with("</page") {
@@ -303,7 +367,7 @@ impl CdxmlDocument {
                         && seen_objects == *target
                     {
                         lines.insert(i, raw_xml.clone());
-                        return Self::parse(&format!("{}\n", lines.join("\n")));
+                        return self.parse_edited_lines(lines);
                     }
                     current_page += 1;
                     in_target = false;
@@ -372,7 +436,22 @@ impl CdxmlDocument {
                 page_index += 1;
             }
         }
-        Self::parse(&format!("{}\n", lines.join("\n")))
+        self.parse_edited_lines(lines)
+    }
+
+    fn parse_edited_lines(&self, lines: Vec<String>) -> Result<Self, CdxmlError> {
+        let separator = if self.raw_xml.contains("\r\n") {
+            "\r\n"
+        } else if !self.raw_xml.contains(['\r', '\n']) {
+            ""
+        } else {
+            "\n"
+        };
+        let mut edited = lines.join(separator);
+        if self.raw_xml.ends_with(['\n', '\r']) {
+            edited.push_str(separator);
+        }
+        Self::parse_with_limits(&edited, &self.limits)
     }
 
     /// A JSON-safe structural summary for editor and binding layers.
@@ -400,6 +479,124 @@ fn xml_escape(value: &str) -> String {
         .replace('"', "&quot;")
         .replace('<', "&lt;")
         .replace('>', "&gt;")
+}
+
+/// Split markup boundaries that share one physical line into parser records.
+/// CDXML is XML, so a producer may legally emit a minified document. Attribute
+/// values can contain `>`; those bytes must not be treated as tag boundaries.
+fn logical_cdxml_lines(input: &str) -> Vec<String> {
+    let mut records = Vec::new();
+    for physical_line in input.lines() {
+        let mut start = 0usize;
+        let mut quote = None;
+        for (offset, ch) in physical_line.char_indices() {
+            match (quote, ch) {
+                (None, '\"') | (None, '\'') => quote = Some(ch),
+                (Some(q), ch) if q == ch => quote = None,
+                (None, '>') => {
+                    let end = offset + ch.len_utf8();
+                    let record = &physical_line[start..end];
+                    if !record.trim().is_empty() {
+                        records.push(record.to_string());
+                    }
+                    start = end;
+                }
+                _ => {}
+            }
+        }
+        if !physical_line[start..].trim().is_empty() {
+            records.push(physical_line[start..].to_string());
+        }
+    }
+    records
+}
+
+fn needs_logical_edit_lines(input: &str) -> bool {
+    input
+        .lines()
+        .any(|line| logical_cdxml_lines(line).len() > 1)
+}
+
+fn check_attribute_budget(
+    attributes: &std::collections::HashMap<String, String>,
+    limits: &CdxmlParseLimits,
+) -> Result<(), CdxmlError> {
+    let actual = attributes
+        .iter()
+        .map(|(key, value)| key.len().saturating_add(value.len()))
+        .fold(0usize, usize::saturating_add);
+    if actual > limits.max_attribute_bytes {
+        return Err(CdxmlError::ResourceLimit {
+            resource: "attributes",
+            actual,
+            limit: limits.max_attribute_bytes,
+        });
+    }
+    Ok(())
+}
+
+fn is_open_tag(line: &str, name: &str) -> bool {
+    let Some(rest) = line.strip_prefix('<') else {
+        return false;
+    };
+    let Some(tail) = rest.strip_prefix(name) else {
+        return false;
+    };
+    tail.is_empty()
+        || tail
+            .chars()
+            .next()
+            .is_some_and(|ch| ch.is_whitespace() || ch == '>' || ch == '/')
+}
+
+fn is_close_tag(line: &str, name: &str) -> bool {
+    let Some(rest) = line.strip_prefix("</") else {
+        return false;
+    };
+    let Some(tail) = rest.strip_prefix(name) else {
+        return false;
+    };
+    tail.is_empty() || tail.starts_with('>')
+}
+
+fn validate_object_fragment(raw_xml: &str, limits: &CdxmlParseLimits) -> Result<(), CdxmlError> {
+    let fragment = raw_xml.trim();
+    if fragment.is_empty()
+        || !fragment.starts_with('<')
+        || fragment.starts_with("</")
+        || fragment.starts_with("<?")
+        || fragment.starts_with("<!")
+    {
+        return Err(CdxmlError::InvalidCoords(
+            "edited object must contain an element fragment".into(),
+        ));
+    }
+    let wrapped = format!("<CDXML>\n<page id=\"__edit__\">\n{fragment}\n</page>\n</CDXML>");
+    let parsed = CdxmlDocument::parse_with_limits(&wrapped, limits)?;
+    if parsed.pages.len() != 1 || parsed.pages[0].children.is_empty() {
+        return Err(CdxmlError::InvalidCoords(
+            "edited object must contain at least one element".into(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_attribute_name(name: &str) -> Result<(), CdxmlError> {
+    let mut chars = name.chars();
+    let Some(first) = chars.next() else {
+        return Err(CdxmlError::InvalidCoords(
+            "edited attribute name must not be empty".into(),
+        ));
+    };
+    let valid_start = first.is_ascii_alphabetic() || first == '_';
+    let valid_rest =
+        chars.all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | ':' | '.'));
+    if !valid_start || !valid_rest {
+        return Err(CdxmlError::InvalidCoords(format!(
+            "invalid edited attribute name: {name:?}"
+        )));
+    }
+    Ok(())
 }
 
 fn page_id_for(edit: &CdxmlEdit) -> &str {
@@ -440,6 +637,61 @@ mod tests {
     }
 
     #[test]
+    fn rejects_missing_or_ambiguous_document_root() {
+        for input in ["garbage", "<CDXMLFoo/>", "<CDXML>"] {
+            assert!(matches!(
+                CdxmlDocument::parse(input),
+                Err(CdxmlError::InvalidDocument(_))
+            ));
+        }
+    }
+
+    #[test]
+    fn rejects_malformed_page_nesting() {
+        for input in [
+            "<CDXML>\n</page>\n</CDXML>",
+            "<CDXML>\n<page id=\"p1\">\n<page id=\"p2\">\n</page>\n</page>\n</CDXML>",
+        ] {
+            assert!(matches!(
+                CdxmlDocument::parse(input),
+                Err(CdxmlError::InvalidDocument(_))
+            ));
+        }
+    }
+
+    #[test]
+    fn accepts_empty_document_with_exact_root_name() {
+        let doc = CdxmlDocument::parse("<CDXML></CDXML>").unwrap();
+        assert_eq!(doc.page_count(), 0);
+    }
+
+    #[test]
+    fn extracts_pages_from_minified_cdxml_without_changing_source() {
+        let input = "<CDXML><page id=\"p1\"><arrow id=\"a1\"/></page></CDXML>";
+        let doc = CdxmlDocument::parse(input).unwrap();
+        assert_eq!(doc.page_count(), 1);
+        assert_eq!(doc.page_ids(), vec![Some("p1")]);
+        assert_eq!(doc.pages[0].children[0].tag, "arrow");
+        assert_eq!(doc.write(), input);
+    }
+
+    #[test]
+    fn edits_minified_cdxml_without_expanding_its_layout() {
+        let input = "<CDXML><page id=\"p1\"><arrow id=\"a1\"/></page></CDXML>";
+        let doc = CdxmlDocument::parse(input).unwrap();
+        let edited = doc
+            .apply(&CdxmlEdit::SetPageAttribute {
+                page_id: "p1".into(),
+                key: "title".into(),
+                value: "Page 1".into(),
+            })
+            .unwrap();
+        assert!(!edited.write().contains('\n'));
+        assert!(edited.write().contains("title=\"Page 1\""));
+        assert_eq!(edited.page_count(), 1);
+    }
+
+    #[test]
     fn rejects_page_budget() {
         let input = "<CDXML>\n<page id=\"p1\"></page>\n</CDXML>";
         let limits = CdxmlParseLimits {
@@ -450,6 +702,22 @@ mod tests {
             CdxmlDocument::parse_with_limits(input, &limits),
             Err(CdxmlError::ResourceLimit {
                 resource: "pages",
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn rejects_attribute_budget() {
+        let input = "<CDXML root_attr=\"1234567890\">\n<page id=\"p1\" page_attr=\"1234567890\">\n<arrow id=\"a1\" object_attr=\"1234567890\"/>\n</page>\n</CDXML>";
+        let limits = CdxmlParseLimits {
+            max_attribute_bytes: 8,
+            ..Default::default()
+        };
+        assert!(matches!(
+            CdxmlDocument::parse_with_limits(input, &limits),
+            Err(CdxmlError::ResourceLimit {
+                resource: "attributes",
                 ..
             })
         ));
@@ -501,6 +769,90 @@ mod tests {
             })
             .unwrap();
         assert!(!doc.write().contains("<graphic id=\"g1\"/>"));
+    }
+
+    #[test]
+    fn rejects_non_element_object_edits() {
+        let input = "<CDXML>\n<page id=\"p1\">\n<arrow id=\"a1\"/>\n</page>\n</CDXML>";
+        let doc = CdxmlDocument::parse(input).unwrap();
+        let error = doc
+            .apply(&CdxmlEdit::ReplaceObject {
+                page_id: "p1".into(),
+                object_index: 0,
+                raw_xml: "not xml".into(),
+            })
+            .unwrap_err();
+        assert!(matches!(error, CdxmlError::InvalidCoords(_)));
+    }
+
+    #[test]
+    fn rejects_invalid_attribute_names_in_edits() {
+        let input = "<CDXML>\n<page id=\"p1\">\n<arrow id=\"a1\"/>\n</page>\n</CDXML>";
+        let doc = CdxmlDocument::parse(input).unwrap();
+        let error = doc
+            .apply(&CdxmlEdit::SetObjectAttribute {
+                page_id: "p1".into(),
+                object_index: 0,
+                key: "bad\" key".into(),
+                value: "value".into(),
+            })
+            .unwrap_err();
+        assert!(matches!(error, CdxmlError::InvalidCoords(_)));
+    }
+
+    #[test]
+    fn edits_preserve_line_ending_and_trailing_newline_style() {
+        let input = "<CDXML>\r\n<page id=\"p1\">\r\n<arrow id=\"a1\"/>\r\n</page>\r\n</CDXML>";
+        let doc = CdxmlDocument::parse(input).unwrap();
+        let edited = doc
+            .apply(&CdxmlEdit::SetPageAttribute {
+                page_id: "p1".into(),
+                key: "title".into(),
+                value: "Page 1".into(),
+            })
+            .unwrap();
+        assert!(edited.write().contains("\r\n"));
+        assert!(!edited.write().replace("\r\n", "").contains('\n'));
+        assert!(!edited.write().ends_with('\n'));
+    }
+
+    #[test]
+    fn edits_reuse_the_document_resource_limits() {
+        let input = "<CDXML>\n<page id=\"p1\">\n<arrow id=\"a1\"/>\n</page>\n</CDXML>";
+        let limits = CdxmlParseLimits {
+            max_attribute_bytes: 12,
+            ..Default::default()
+        };
+        let doc = CdxmlDocument::parse_with_limits(input, &limits).unwrap();
+        let error = doc
+            .apply(&CdxmlEdit::SetObjectAttribute {
+                page_id: "p1".into(),
+                object_index: 0,
+                key: "label".into(),
+                value: "this value exceeds the original limit".into(),
+            })
+            .unwrap_err();
+        assert!(matches!(
+            error,
+            CdxmlError::ResourceLimit {
+                resource: "attributes",
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    fn edits_reject_ambiguous_page_ids() {
+        let input = "<CDXML>\n<page id=\"p1\">\n<arrow id=\"a1\"/>\n</page>\n<page id=\"p1\">\n<arrow id=\"a2\"/>\n</page>\n</CDXML>";
+        let doc = CdxmlDocument::parse(input).unwrap();
+        let error = doc
+            .apply(&CdxmlEdit::SetPageAttribute {
+                page_id: "p1".into(),
+                key: "title".into(),
+                value: "ambiguous".into(),
+            })
+            .unwrap_err();
+        assert!(matches!(error, CdxmlError::AmbiguousPageId(ref id) if id == "p1"));
     }
 
     #[test]

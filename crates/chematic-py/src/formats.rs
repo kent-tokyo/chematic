@@ -77,6 +77,43 @@ fn from_smiles(smiles: &str) -> PyResult<Mol> {
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
+/// Canonicalize a list of SMILES without aborting on an invalid record.
+///
+/// Returns a JSON array containing `input_index`, `input`, `status`, and
+/// either `canonical_smiles` or `error` for each record. The Rust batch API
+/// remains the source of truth for ordering and parser limits.
+#[pyfunction]
+fn canonicalize_smiles_batch_json(smiles: Vec<String>) -> PyResult<String> {
+    let canonicalizer = chematic_smiles::SmilesBatchCanonicalizer::default();
+    let records = canonicalizer
+        .iter(smiles.iter())
+        .map(|record| match record.result {
+            chematic_smiles::BatchCanonicalization::Accepted { canonical_smiles } => {
+                serde_json::json!({
+                    "input_index": record.input_index,
+                    "input": record.input,
+                    "status": "accepted",
+                    "canonical_smiles": canonical_smiles,
+                })
+            }
+            chematic_smiles::BatchCanonicalization::Rejected { error } => serde_json::json!({
+                "input_index": record.input_index,
+                "input": record.input,
+                "status": "rejected",
+                "error": error,
+            }),
+        });
+    let records = records.collect::<Vec<_>>();
+    serde_json::to_string(&serde_json::json!({
+        "schema_version": 1,
+        "operation": "canonicalize_smiles",
+        "status": "complete",
+        "record_count": records.len(),
+        "records": records,
+    }))
+    .map_err(|error| PyValueError::new_err(error.to_string()))
+}
+
 /// Parse a CXSMILES string and return the molecule with CX metadata.
 ///
 /// Returns a 2-tuple ``(mol, cx)`` where ``cx`` is a dict with:
@@ -779,6 +816,33 @@ fn from_pdb(pdb_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>)> {
     ))
 }
 
+/// Parse a PDB string with fixed-column validation and return ``(Mol, coords)``.
+///
+/// Unlike :func:`from_pdb`, this opt-in API rejects ATOM/HETATM records with
+/// missing, non-numeric, or non-finite serial, residue sequence, or XYZ fields.
+/// Non-atom records remain ignored and the same finite resource limits as the
+/// Rust core are applied.
+#[pyfunction]
+fn from_pdb_strict(pdb_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>)> {
+    let atoms =
+        chematic_3d::parse_pdb_atoms_strict(pdb_str, &chematic_3d::PdbParseLimits::default())
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+    if atoms.is_empty() {
+        return Err(PyValueError::new_err(
+            "no ATOM/HETATM records found in PDB input",
+        ));
+    }
+    let (mol, c3d) = chematic_3d::pdb_to_molecule(&atoms);
+    let coords = c3d.points.iter().map(|p| vec![p.x, p.y, p.z]).collect();
+    Ok((
+        Mol {
+            inner: Arc::new(mol),
+            props: Default::default(),
+        },
+        coords,
+    ))
+}
+
 /// Parse an XYZ string and return ``(Mol, coords)`` where coords is a list of ``[x,y,z]``.
 ///
 /// Bond information is inferred from inter-atom distances.
@@ -800,7 +864,7 @@ fn from_xyz(xyz_str: &str) -> PyResult<(Mol, Vec<Vec<f64>>)> {
 
 /// Build the Python dict returned by [`from_extxyz`]/[`from_extxyz_all`] for
 /// one parsed [`chematic_mol::XyzFrame`].
-fn extxyz_frame_to_pydict<'py>(
+pub(crate) fn extxyz_frame_to_pydict<'py>(
     py: Python<'py>,
     frame: &chematic_mol::XyzFrame,
 ) -> PyResult<Bound<'py, PyDict>> {
@@ -1148,8 +1212,8 @@ fn from_rxn_document_json(text: &str) -> PyResult<String> {
 /// of being silently discarded.
 #[pyfunction]
 fn to_rxn_document_json(document_json: &str) -> PyResult<String> {
-    let document: chematic_rxn::ReactionDocument = serde_json::from_str(document_json)
-        .map_err(|e| PyValueError::new_err(format!("invalid reaction document JSON: {e}")))?;
+    let document = chematic_rxn::ReactionDocument::from_json_str(document_json)
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
     chematic_mol::write_rxn_document(&document).map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
@@ -2336,6 +2400,7 @@ fn write_atomic_result(result: &Bound<PyDict>) -> PyResult<String> {
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(from_smiles, m)?)?;
+    m.add_function(wrap_pyfunction!(canonicalize_smiles_batch_json, m)?)?;
     m.add_function(wrap_pyfunction!(from_cxsmiles, m)?)?;
     m.add_function(wrap_pyfunction!(from_condensed, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol_block, m)?)?;
@@ -2366,6 +2431,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(is_valid_smarts, m)?)?;
     m.add_function(wrap_pyfunction!(from_inchi, m)?)?;
     m.add_function(wrap_pyfunction!(from_pdb, m)?)?;
+    m.add_function(wrap_pyfunction!(from_pdb_strict, m)?)?;
     m.add_function(wrap_pyfunction!(from_xyz, m)?)?;
     m.add_function(wrap_pyfunction!(from_extxyz, m)?)?;
     m.add_function(wrap_pyfunction!(from_extxyz_all, m)?)?;

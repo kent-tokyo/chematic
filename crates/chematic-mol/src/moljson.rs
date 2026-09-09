@@ -407,6 +407,27 @@ mod tests {
     }
 
     #[test]
+    fn shared_moljson_roundtrip_contract_matches() {
+        let document: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../validation/cross_binding_contract.json"
+        )))
+        .expect("shared contract JSON");
+        let contract = &document["moljson_contract"];
+        let mol = parse_moljson(contract["input"].as_str().unwrap()).unwrap();
+        let roundtripped = parse_moljson(&write_moljson(&mol)).unwrap();
+        let expected = &contract["expected"];
+        assert_eq!(
+            mol.atom_count(),
+            expected["atom_count"].as_u64().unwrap() as usize
+        );
+        assert_eq!(
+            canonical_smiles(&roundtripped),
+            expected["canonical_smiles"].as_str().unwrap()
+        );
+    }
+
+    #[test]
     fn roundtrip_benzene() {
         let cs = smiles_roundtrip("c1ccccc1");
         assert_eq!(cs, canonical_smiles(&parse("c1ccccc1").unwrap()));

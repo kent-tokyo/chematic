@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "source": "validation/results/pipeline_v2_vs_rdkit_tfd_current-v1.0.10.jsonl",
+  "validator": "scripts/check_tfd_oracle_evidence.py",
+  "corpus_rows": 250,
+  "paired_tfd_rows": 201,
+  "not_applicable_rows": 49,
+  "not_applicable_reason": "zero rotatable torsions in the pinned RDKit molecule",
+  "duplicate_rows": 0,
+  "invalid_tfd_values": 0,
+  "result": "pass",
+  "boundary": "This closes the local RDKit TFD measurement boundary for the pinned 250-molecule corpus, including explicit rigid-probe classification. It does not close independent force-field correctness, conformer-quality parity, or external/browser gates."
+}

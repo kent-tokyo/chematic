@@ -1,0 +1,17 @@
+{
+  "schema_version": "1",
+  "date": "2026-09-09",
+  "version": "1.0.10",
+  "scope": "prepared MMFF94 bond, angle, van der Waals, and electrostatic gradients",
+  "corpus": "methane bond/angle and propane nonbonded coordinate fixtures",
+  "finite_difference_delta_angstrom": 0.00001,
+  "commands": [
+    "CARGO_TARGET_DIR=/private/tmp/chematic-target-mmff94-gradient cargo test -p chematic-ff mmff94_minimizer --offline --lib --quiet",
+    "CARGO_TARGET_DIR=/private/tmp/chematic-target-mmff94-gradient cargo clippy -p chematic-ff --offline --all-targets -- -D warnings"
+  ],
+  "tests_passed": 47,
+  "componentwise_check": "The nonbonded regression compares the combined gradient and the vdW-only/electrostatic-only gradients independently against central differences.",
+  "clippy": "passed",
+  "result": "passed",
+  "boundary": "The prepared L-BFGS path still uses its existing finite-difference gradient. Torsion, out-of-plane, stretch-bend, coordinate-dependent neighbor lists, full MMFF94 analytic-gradient integration, and independent oracle parity remain open."
+}

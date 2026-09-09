@@ -49,9 +49,10 @@ pub mod diagnostics {
     pub use crate::rdkit_parity::rdkit_parity_aromaticity;
 }
 pub use sssr::{
-    RingSet, find_smallest_rings_bfs, find_smallest_rings_bfs_with_blocked_bonds,
-    find_smallest_rings_bfs_with_rdkit_tree, find_smallest_rings_bfs_with_trimmed_bonds, find_sssr,
-    find_symmetrized_sssr, select_rdkit_d2_roots, trim_ring_bonds,
+    RingSet, SymmetrizedSssrResult, SymmetrizedSssrStatus, find_smallest_rings_bfs,
+    find_smallest_rings_bfs_with_blocked_bonds, find_smallest_rings_bfs_with_rdkit_tree,
+    find_smallest_rings_bfs_with_trimmed_bonds, find_sssr, find_symmetrized_sssr,
+    find_symmetrized_sssr_with_diagnostics, select_rdkit_d2_roots, trim_ring_bonds,
 };
 pub use stereo_validation::{
     StereoCompleteness, StereoError, StereoErrorKind, stereo_centers, stereo_completeness,

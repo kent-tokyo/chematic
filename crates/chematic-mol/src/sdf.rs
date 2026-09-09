@@ -449,7 +449,6 @@ pub fn read_sdf_conformer_ensembles(input: &str) -> Result<Vec<ConformerEnsemble
 pub struct SdfFileReader<R: std::io::BufRead> {
     reader: R,
     block: Vec<u8>,
-    line: Vec<u8>,
     done: bool,
     limits: SdfParseLimits,
     bytes_read: usize,
@@ -506,7 +505,6 @@ impl<R: std::io::BufRead> SdfFileReader<R> {
         Self {
             reader,
             block: Vec::with_capacity(2048),
-            line: Vec::new(),
             done: false,
             limits,
             bytes_read: 0,
@@ -527,8 +525,10 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
         self.block.clear();
 
         loop {
-            self.line.clear();
-            match self.reader.read_until(b'\n', &mut self.line) {
+            // Append directly into the reusable record buffer. The previous
+            // path copied each line from a second buffer into this one.
+            let line_start = self.block.len();
+            match self.reader.read_until(b'\n', &mut self.block) {
                 Err(e) => {
                     self.done = true;
                     return Some(Err(MolParseError::Io(e.to_string())));
@@ -543,15 +543,16 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
                     break;
                 }
                 Ok(_) => {
-                    if self.line.len() > self.limits.max_line_bytes {
+                    let line = &self.block[line_start..];
+                    if line.len() > self.limits.max_line_bytes {
                         self.done = true;
                         return Some(Err(MolParseError::ResourceLimit {
                             resource: "line bytes",
-                            actual: self.line.len(),
+                            actual: line.len(),
                             limit: self.limits.max_line_bytes,
                         }));
                     }
-                    self.bytes_read = self.bytes_read.saturating_add(self.line.len());
+                    self.bytes_read = self.bytes_read.saturating_add(line.len());
                     if self.bytes_read > self.limits.max_input_bytes {
                         self.done = true;
                         return Some(Err(MolParseError::ResourceLimit {
@@ -560,12 +561,12 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
                             limit: self.limits.max_input_bytes,
                         }));
                     }
-                    let trimmed = self.line.strip_suffix(b"\n").unwrap_or(&self.line);
+                    let trimmed = line.strip_suffix(b"\n").unwrap_or(line);
                     let trimmed = trimmed.strip_suffix(b"\r").unwrap_or(trimmed);
                     if trimmed == b"$$$$" {
+                        self.block.truncate(line_start);
                         break;
                     }
-                    self.block.extend_from_slice(&self.line);
                 }
             }
         }
@@ -643,6 +644,165 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
             geometry_rank: report.geometry_rank,
             stereo3d_diagnostics: report.stereo3d_diagnostics,
         }))
+    }
+}
+
+// ---------------------------------------------------------------------------
+// SdfBatchReader — bounded pull-based batches
+// ---------------------------------------------------------------------------
+
+/// One bounded, input-ordered batch from [`SdfBatchReader`].
+///
+/// Parse failures stay in their input position instead of being silently
+/// discarded. This makes a batch safe to hand to a downstream worker while
+/// retaining enough information to build a resumable partial-result record.
+pub struct SdfBatch {
+    /// Zero-based batch sequence number.
+    pub sequence: usize,
+    /// Records in source order. `Err` entries are malformed or resource-limit
+    /// records; later records may still be present when the reader can safely
+    /// continue.
+    pub records: Vec<Result<SdfRecord, MolParseError>>,
+}
+
+impl SdfBatch {
+    /// Number of records, including rejected records, in this batch.
+    pub fn len(&self) -> usize {
+        self.records.len()
+    }
+
+    /// Whether this batch contains no records.
+    pub fn is_empty(&self) -> bool {
+        self.records.is_empty()
+    }
+}
+
+/// Deterministic progress snapshot for a bounded SDF batch stream.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+pub struct SdfBatchProgress {
+    /// Version of this progress JSON contract.
+    pub schema_version: u32,
+    /// `running`, `complete`, or `cancelled`.
+    pub status: &'static str,
+    pub batch_size: usize,
+    /// Number of source records emitted, including rejected records.
+    pub records_emitted: usize,
+    pub batches_emitted: usize,
+}
+
+/// Pull-based bounded batch reader over any [`std::io::BufRead`] source.
+///
+/// Each call to [`Iterator::next`] reads at most `batch_size` records and
+/// retains source order. Because the consumer pulls the next batch, this is a
+/// natural backpressure boundary: no background worker or unbounded queue is
+/// created. Call [`Self::cancel`] to stop at the next batch boundary.
+pub struct SdfBatchReader<R: std::io::BufRead> {
+    inner: SdfFileReader<R>,
+    batch_size: usize,
+    cancelled: bool,
+    exhausted: bool,
+    records_emitted: usize,
+    batches_emitted: usize,
+}
+
+impl<R: std::io::BufRead> SdfBatchReader<R> {
+    /// Construct a batch reader using the default SDF limits and diagnostics.
+    ///
+    /// # Panics
+    ///
+    /// Panics when `batch_size` is zero. Use a positive, caller-controlled
+    /// size so memory remains bounded by the batch and one parsed record.
+    pub fn new(reader: R, batch_size: usize) -> Self {
+        assert!(batch_size > 0, "batch_size must be greater than zero");
+        Self::with_limits(reader, batch_size, SdfParseLimits::default())
+    }
+
+    /// Construct a batch reader with explicit input and record limits.
+    pub fn with_limits(reader: R, batch_size: usize, limits: SdfParseLimits) -> Self {
+        assert!(batch_size > 0, "batch_size must be greater than zero");
+        Self {
+            inner: SdfFileReader::with_limits(reader, limits),
+            batch_size,
+            cancelled: false,
+            exhausted: false,
+            records_emitted: 0,
+            batches_emitted: 0,
+        }
+    }
+
+    /// Construct a batch reader using the lightweight parsing path.
+    pub fn fast(reader: R, batch_size: usize) -> Self {
+        assert!(batch_size > 0, "batch_size must be greater than zero");
+        Self {
+            inner: SdfFileReader::fast(reader),
+            batch_size,
+            cancelled: false,
+            exhausted: false,
+            records_emitted: 0,
+            batches_emitted: 0,
+        }
+    }
+
+    /// Stop reading before the next batch is started.
+    pub fn cancel(&mut self) {
+        self.cancelled = true;
+    }
+
+    /// Return whether cancellation has been requested.
+    pub fn is_cancelled(&self) -> bool {
+        self.cancelled
+    }
+
+    /// Return deterministic progress suitable for a resumable manifest.
+    pub fn progress(&self) -> SdfBatchProgress {
+        SdfBatchProgress {
+            schema_version: 1,
+            status: if self.cancelled {
+                "cancelled"
+            } else if self.exhausted {
+                "complete"
+            } else {
+                "running"
+            },
+            batch_size: self.batch_size,
+            records_emitted: self.records_emitted,
+            batches_emitted: self.batches_emitted,
+        }
+    }
+
+    /// Serialize [`Self::progress`] as stable JSON.
+    pub fn manifest_json(&self) -> String {
+        serde_json::to_string(&self.progress()).expect("SDF progress is serializable")
+    }
+}
+
+impl<R: std::io::BufRead> Iterator for SdfBatchReader<R> {
+    type Item = SdfBatch;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.cancelled || self.exhausted {
+            return None;
+        }
+
+        let mut records = Vec::with_capacity(self.batch_size);
+        while records.len() < self.batch_size {
+            match self.inner.next() {
+                Some(record) => records.push(record),
+                None => {
+                    self.exhausted = true;
+                    break;
+                }
+            }
+        }
+
+        if records.is_empty() {
+            return None;
+        }
+
+        let sequence = self.batches_emitted;
+        self.records_emitted += records.len();
+        self.batches_emitted += 1;
+        Some(SdfBatch { sequence, records })
     }
 }
 
@@ -778,6 +938,147 @@ $$$$
         assert_eq!(records.len(), 2);
         assert_eq!(records[0].mol.atom_count(), 2); // mol_a: 2 C atoms
         assert_eq!(records[1].mol.atom_count(), 3); // mol_b: C, N, O
+    }
+
+    #[test]
+    fn file_backed_reader_matches_in_memory_parse_contract() {
+        use std::io::{BufReader, Cursor};
+
+        let sdf = two_mol_sdf();
+        let in_memory = parse_sdf_with_limits(&sdf, SdfParseLimits::default()).unwrap();
+        let streamed: Vec<_> = SdfFileReader::new(BufReader::new(Cursor::new(sdf.into_bytes())))
+            .map(|result| result.expect("streamed record"))
+            .collect();
+
+        assert_eq!(streamed.len(), in_memory.len());
+        for (streamed, (memory_mol, memory_meta)) in streamed.iter().zip(in_memory.iter()) {
+            assert_eq!(streamed.mol.atom_count(), memory_mol.atom_count());
+            assert_eq!(streamed.mol.bond_count(), memory_mol.bond_count());
+            for ((streamed_idx, streamed_atom), (memory_idx, memory_atom)) in
+                streamed.mol.atoms().zip(memory_mol.atoms())
+            {
+                assert_eq!(streamed_idx, memory_idx);
+                assert_eq!(streamed_atom, memory_atom);
+            }
+            for ((streamed_idx, streamed_bond), (memory_idx, memory_bond)) in
+                streamed.mol.bonds().zip(memory_mol.bonds())
+            {
+                assert_eq!(streamed_idx, memory_idx);
+                assert_eq!(streamed_bond, memory_bond);
+            }
+            assert_eq!(&streamed.meta, memory_meta);
+            assert!(streamed.properties.is_empty());
+        }
+    }
+
+    #[test]
+    fn sdf_batch_reader_preserves_order_and_progress() {
+        use std::io::{BufReader, Cursor};
+
+        let sdf = format!("{MOL_A}$$$$\n{MOL_B}$$$$\n{MOL_A}$$$$\n");
+        let mut reader = SdfBatchReader::new(BufReader::new(Cursor::new(sdf)), 2);
+
+        assert_eq!(reader.progress().status, "running");
+        let first = reader.next().expect("first batch");
+        assert_eq!(first.sequence, 0);
+        assert_eq!(first.len(), 2);
+        assert_eq!(first.records[0].as_ref().unwrap().meta.name, "mol_a");
+        assert_eq!(first.records[1].as_ref().unwrap().meta.name, "mol_b");
+        assert_eq!(reader.progress().records_emitted, 2);
+
+        let second = reader.next().expect("second batch");
+        assert_eq!(second.sequence, 1);
+        assert_eq!(second.len(), 1);
+        assert_eq!(second.records[0].as_ref().unwrap().meta.name, "mol_a");
+        assert_eq!(reader.progress().status, "complete");
+        assert_eq!(reader.progress().batches_emitted, 2);
+        assert!(reader.next().is_none());
+    }
+
+    #[test]
+    fn sdf_batch_reader_retains_rejected_record_positions() {
+        use std::io::{BufReader, Cursor};
+
+        let malformed = "broken\n  prog\n\n  NOTNUM  0  0 V2000\nM  END\n";
+        let sdf = format!("{MOL_A}$$$$\n{malformed}$$$$\n{MOL_B}$$$$\n");
+        let batch = SdfBatchReader::new(BufReader::new(Cursor::new(sdf)), 3)
+            .next()
+            .expect("batch");
+        assert!(batch.records[0].is_ok());
+        assert!(batch.records[1].is_err());
+        assert!(batch.records[2].is_ok());
+    }
+
+    #[test]
+    fn sdf_batch_reader_cancels_at_batch_boundary() {
+        use std::io::{BufReader, Cursor};
+
+        let sdf = format!("{MOL_A}$$$$\n{MOL_B}$$$$\n");
+        let mut reader = SdfBatchReader::new(BufReader::new(Cursor::new(sdf)), 1);
+        assert_eq!(reader.next().unwrap().len(), 1);
+        reader.cancel();
+        assert!(reader.next().is_none());
+        assert!(reader.is_cancelled());
+        let json: serde_json::Value = serde_json::from_str(&reader.manifest_json()).unwrap();
+        assert_eq!(json["schema_version"], 1);
+        assert_eq!(json["status"], "cancelled");
+        assert_eq!(json["records_emitted"], 1);
+        assert_eq!(json["batches_emitted"], 1);
+    }
+
+    #[test]
+    fn file_reader_direct_append_preserves_chunk_and_delimiter_boundaries() {
+        use std::io::{BufReader, Cursor};
+        for newline in ["\n", "\r\n"] {
+            for terminated in [false, true] {
+                let mut input = format!("$$$$\n{MOL_A}> <label>\n分子\n\n$$$$\n{MOL_B}");
+                if terminated {
+                    input.push_str("$$$$\n");
+                }
+                input = input.replace('\n', newline);
+                for capacity in [1, 2, 3, 7, 8192] {
+                    for diagnostics in [false, true] {
+                        let reader =
+                            BufReader::with_capacity(capacity, Cursor::new(input.as_bytes()));
+                        let mut records = SdfFileReader::with_limits_and_diagnostics(
+                            reader,
+                            SdfParseLimits::default(),
+                            diagnostics,
+                        );
+                        let first = records.next().unwrap().unwrap();
+                        assert_eq!(first.meta.name, "mol_a");
+                        assert_eq!(first.mol.atom_count(), 2);
+                        assert_eq!(
+                            first.properties.get("label").map(String::as_str),
+                            Some("分子")
+                        );
+                        let second = records.next().unwrap().unwrap();
+                        assert_eq!(second.meta.name, "mol_b");
+                        assert_eq!(second.mol.atom_count(), 3);
+                        assert!(records.next().is_none());
+                        assert!(records.next().is_none());
+                    }
+                }
+            }
+        }
+        let input = format!("{MOL_A}$$$$\n");
+        for overflow in [false, true] {
+            let limits = SdfParseLimits {
+                max_record_bytes: MOL_A.len(), // delimiter excluded
+                max_input_bytes: input.len() - usize::from(overflow), // delimiter included
+                ..SdfParseLimits::default()
+            };
+            let mut reader = SdfFileReader::with_limits(Cursor::new(input.as_bytes()), limits);
+            let result = reader.next().unwrap();
+            if overflow {
+                assert!(matches!(result, Err(MolParseError::ResourceLimit {
+                    resource: "input bytes", actual, limit
+                }) if actual == input.len() && limit == input.len() - 1));
+            } else {
+                assert!(result.is_ok());
+            }
+            assert!(reader.next().is_none());
+        }
     }
 
     #[test]

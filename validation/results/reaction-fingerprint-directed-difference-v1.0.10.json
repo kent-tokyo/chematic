@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "status": "local-verified",
+  "scope": "bounded reaction fingerprint directed difference",
+  "implementation": {
+    "formed_fp": "bits present only in the product ensemble",
+    "broken_fp": "bits present only in the reactant ensemble",
+    "combined_fp": "legacy XOR symmetric difference when use_xor is true",
+    "public_surfaces": ["Rust", "Python Mol.reaction_fp", "CLI reaction-fingerprint JSON"]
+  },
+  "invariants": [
+    "formed and broken bit sets are disjoint",
+    "formed OR broken equals combined in XOR mode",
+    "legacy OR composition mode remains available"
+  ],
+  "command": "cargo test -p chematic-fp --offline --lib reaction_fp --quiet; cargo run -p chematic-cli --offline -- reaction-fingerprint 'CC>>C'",
+  "result": {"tests": 11, "passed": 11, "failed": 0, "cli_probe": {"mode": "xor", "formed_popcount": 3, "broken_popcount": 3, "popcount": 6}},
+  "boundary": "This is a bounded ECFP4 difference signal; it is not claimed to reproduce RDKit's full structural reaction fingerprint or chemical-significance weighting."
+}

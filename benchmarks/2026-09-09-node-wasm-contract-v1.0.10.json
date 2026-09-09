@@ -1,0 +1,15 @@
+{
+  "date": "2026-09-09",
+  "workspace_version": "1.0.10",
+  "scope": "checked-in Node/WASM contract smoke",
+  "commands": [
+    "node crates/chematic-wasm/tests/cross_binding_contract.test.mjs",
+    "node crates/chematic-wasm/tests/semantic_expansion_contract.test.mjs",
+    "node crates/chematic-wasm/tests/pipeline_v2.test.mjs"
+  ],
+  "node_runtime": "v24.5.0",
+  "contract_result": "pass",
+  "artifact_reported_version": "1.0.9",
+  "artifact_boundary": "The checked-in pkg-node artifact is stale relative to the 1.0.10 workspace; it must not be presented as a current 1.0.10 release artifact.",
+  "result": "local-contract-pass-artifact-version-mismatch"
+}

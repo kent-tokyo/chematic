@@ -400,127 +400,230 @@ fn cos_angle(a: [f64; 3], b: [f64; 3], c: [f64; 3]) -> f64 {
     (dot / denom).clamp(-1.0, 1.0)
 }
 
-/// Compute UFF total energy (bond + angle + vdW) in kcal/mol.
-pub fn uff_total_energy(mol: &Molecule, types: &[(AtomIdx, UffType)], coords: &[[f64; 3]]) -> f64 {
-    let type_map: std::collections::HashMap<AtomIdx, UffType> =
-        types.iter().map(|&(a, t)| (a, t)).collect();
-    let get_type = |idx: AtomIdx| type_map.get(&idx).copied().unwrap_or(UffType::Unknown);
-    let get_coord = |idx: AtomIdx| coords[idx.0 as usize];
+#[derive(Clone, Copy)]
+struct UffBondTerm {
+    a: AtomIdx,
+    b: AtomIdx,
+    r0: f64,
+    k: f64,
+}
 
-    let mut energy = 0.0;
+#[derive(Clone, Copy)]
+struct UffAngleTerm {
+    a: AtomIdx,
+    center: AtomIdx,
+    c: AtomIdx,
+    cos0: f64,
+    k: f64,
+}
 
-    // ── Bond stretching ───────────────────────────────────────────────────
-    // E_bond = k_ij/2 * (r - r0)^2   with k_ij = 664.12 * Z*_i * Z*_j / r0^3
-    for (_, bond) in mol.bonds() {
-        let ti = get_type(bond.atom1);
-        let tj = get_type(bond.atom2);
-        let n = bond_order_f64(bond.order);
-        let r0 = uff_bond_length(ti, tj, n);
-        let r = dist(get_coord(bond.atom1), get_coord(bond.atom2));
-        // Force constant: simplified Badger's rule
-        let k = 664.12 / (r0 * r0 * r0);
-        energy += 0.5 * k * (r - r0) * (r - r0);
-    }
+#[derive(Clone, Copy)]
+struct UffVdwTerm {
+    a: AtomIdx,
+    b: AtomIdx,
+    x: f64,
+    d: f64,
+}
 
-    // ── Angle bending ─────────────────────────────────────────────────────
-    // For sp3 / sp2 / sp centres use different Fourier expansion
-    for (center_idx, center_type) in types {
-        let theta0_deg = center_type.theta0();
-        let theta0 = theta0_deg.to_radians();
-        let cos0 = theta0.cos();
-        let sin0 = theta0.sin();
+struct PreparedUffEnergy {
+    bonds: Vec<UffBondTerm>,
+    angles: Vec<UffAngleTerm>,
+    vdw: Vec<UffVdwTerm>,
+}
 
-        let neighbors: Vec<AtomIdx> = mol.neighbors(*center_idx).map(|(nb, _)| nb).collect();
-        for i in 0..neighbors.len() {
-            for j in (i + 1)..neighbors.len() {
-                let cos_theta = cos_angle(
-                    get_coord(neighbors[i]),
-                    get_coord(*center_idx),
-                    get_coord(neighbors[j]),
+impl PreparedUffEnergy {
+    fn new(mol: &Molecule, types: &[(AtomIdx, UffType)]) -> Self {
+        let type_map: std::collections::HashMap<AtomIdx, UffType> =
+            types.iter().map(|&(a, t)| (a, t)).collect();
+        let get_type = |idx: AtomIdx| type_map.get(&idx).copied().unwrap_or(UffType::Unknown);
+
+        let bonds = mol
+            .bonds()
+            .map(|(_, bond)| {
+                let r0 = uff_bond_length(
+                    get_type(bond.atom1),
+                    get_type(bond.atom2),
+                    bond_order_f64(bond.order),
                 );
-                // Fourier: E = k/n^2 * C0 + C1*cos + C2*cos(2θ)
-                // Simplified harmonic in cos space:
-                let delta = cos_theta - cos0;
-                let k_angle = 0.5 * 332.06 / (sin0 * sin0 + 1e-10);
-                energy += 0.5 * k_angle * delta * delta;
+                UffBondTerm {
+                    a: bond.atom1,
+                    b: bond.atom2,
+                    r0,
+                    k: 664.12 / (r0 * r0 * r0),
+                }
+            })
+            .collect();
+
+        let mut angles = Vec::new();
+        for &(center, center_type) in types {
+            let theta0 = center_type.theta0().to_radians();
+            let sin0 = theta0.sin();
+            let neighbors: Vec<AtomIdx> = mol.neighbors(center).map(|(nb, _)| nb).collect();
+            for i in 0..neighbors.len() {
+                for j in (i + 1)..neighbors.len() {
+                    angles.push(UffAngleTerm {
+                        a: neighbors[i],
+                        center,
+                        c: neighbors[j],
+                        cos0: theta0.cos(),
+                        k: 0.5 * 332.06 / (sin0 * sin0 + 1e-10),
+                    });
+                }
             }
         }
-    }
 
-    // ── van der Waals (Lennard-Jones 12-6) ────────────────────────────────
-    // Only 1-4+ pairs get vdW (1-2 bonded and 1-3 angle-bonded pairs are
-    // excluded). `(i+2)..n` is an atom-*index* heuristic and only matches a
-    // graph-based 1-3 exclusion for an unbranched chain visited in bond
-    // order; build the real exclusion set from the bond graph instead
-    // (mirrors `mmff94_minimizer.rs`'s `vdw_energy`, which already does this
-    // correctly): every bonded pair, plus every pair that shares a common
-    // bonded neighbor (i.e. is an angle apex away from each other).
-    let atom_indices: Vec<AtomIdx> = mol.atoms().map(|(idx, _)| idx).collect();
-    let n = atom_indices.len();
-    let mut excl: std::collections::HashSet<(usize, usize)> = std::collections::HashSet::new();
-    for (_, bond) in mol.bonds() {
-        let i = bond.atom1.0 as usize;
-        let j = bond.atom2.0 as usize;
-        excl.insert((i.min(j), i.max(j)));
-        for (nb_i, _) in mol.neighbors(bond.atom1) {
-            let ni = nb_i.0 as usize;
-            excl.insert((ni.min(j), ni.max(j)));
-        }
-        for (nb_j, _) in mol.neighbors(bond.atom2) {
-            let nj = nb_j.0 as usize;
-            excl.insert((i.min(nj), i.max(nj)));
-        }
-    }
-    for i in 0..n {
-        for j in (i + 1)..n {
-            let ai = atom_indices[i];
-            let aj = atom_indices[j];
-            let (ai_u, aj_u) = (ai.0 as usize, aj.0 as usize);
-            if excl.contains(&(ai_u.min(aj_u), ai_u.max(aj_u))) {
-                continue;
+        let atom_indices: Vec<AtomIdx> = mol.atoms().map(|(idx, _)| idx).collect();
+        let mut excl: std::collections::HashSet<(usize, usize)> = std::collections::HashSet::new();
+        for (_, bond) in mol.bonds() {
+            let i = bond.atom1.0 as usize;
+            let j = bond.atom2.0 as usize;
+            excl.insert((i.min(j), i.max(j)));
+            for (nb_i, _) in mol.neighbors(bond.atom1) {
+                let ni = nb_i.0 as usize;
+                excl.insert((ni.min(j), ni.max(j)));
             }
+            for (nb_j, _) in mol.neighbors(bond.atom2) {
+                let nj = nb_j.0 as usize;
+                excl.insert((i.min(nj), i.max(nj)));
+            }
+        }
+        let mut vdw = Vec::new();
+        for i in 0..atom_indices.len() {
+            for j in (i + 1)..atom_indices.len() {
+                let a = atom_indices[i];
+                let b = atom_indices[j];
+                let key = (a.0 as usize, b.0 as usize);
+                if excl.contains(&key) {
+                    continue;
+                }
+                let ta = get_type(a);
+                let tb = get_type(b);
+                vdw.push(UffVdwTerm {
+                    a,
+                    b,
+                    x: (ta.x1() * tb.x1()).sqrt(),
+                    d: (ta.d1() * tb.d1()).sqrt(),
+                });
+            }
+        }
 
-            let ti = get_type(ai);
-            let tj = get_type(aj);
+        Self { bonds, angles, vdw }
+    }
 
-            // UFF combining rules: x_ij = sqrt(x_i * x_j), D_ij = sqrt(D_i * D_j)
-            let x_ij = (ti.x1() * tj.x1()).sqrt();
-            let d_ij = (ti.d1() * tj.d1()).sqrt();
-
-            let r = dist(get_coord(ai), get_coord(aj)).max(0.5);
-            let ratio = x_ij / r;
+    fn energy(&self, coords: &[[f64; 3]]) -> f64 {
+        let get_coord = |idx: AtomIdx| coords[idx.0 as usize];
+        let mut energy = 0.0;
+        for term in &self.bonds {
+            let r = dist(get_coord(term.a), get_coord(term.b));
+            energy += 0.5 * term.k * (r - term.r0) * (r - term.r0);
+        }
+        for term in &self.angles {
+            let delta =
+                cos_angle(get_coord(term.a), get_coord(term.center), get_coord(term.c)) - term.cos0;
+            energy += 0.5 * term.k * delta * delta;
+        }
+        for term in &self.vdw {
+            let r = dist(get_coord(term.a), get_coord(term.b)).max(0.5);
+            let ratio = term.x / r;
             let ratio6 = ratio.powi(6);
             let ratio12 = ratio6 * ratio6;
-            energy += d_ij * (ratio12 - 2.0 * ratio6);
+            energy += term.d * (ratio12 - 2.0 * ratio6);
         }
+        energy
     }
 
-    energy
+    fn analytic_gradient(&self, coords: &[[f64; 3]]) -> Vec<[f64; 3]> {
+        let mut gradient = vec![[0.0; 3]; coords.len()];
+        let add = |slot: &mut [f64; 3], value: [f64; 3]| {
+            slot[0] += value[0];
+            slot[1] += value[1];
+            slot[2] += value[2];
+        };
+        for term in &self.bonds {
+            let a = coords[term.a.0 as usize];
+            let b = coords[term.b.0 as usize];
+            let delta = [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+            let r = dist(a, b);
+            if r > 1e-12 {
+                let scale = term.k * (r - term.r0) / r;
+                let value = [scale * delta[0], scale * delta[1], scale * delta[2]];
+                add(&mut gradient[term.a.0 as usize], value);
+                add(
+                    &mut gradient[term.b.0 as usize],
+                    [-value[0], -value[1], -value[2]],
+                );
+            }
+        }
+        for term in &self.angles {
+            let a = coords[term.a.0 as usize];
+            let center = coords[term.center.0 as usize];
+            let c = coords[term.c.0 as usize];
+            let u = [a[0] - center[0], a[1] - center[1], a[2] - center[2]];
+            let v = [c[0] - center[0], c[1] - center[1], c[2] - center[2]];
+            let lu2 = u[0] * u[0] + u[1] * u[1] + u[2] * u[2];
+            let lv2 = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
+            let lu = lu2.sqrt();
+            let lv = lv2.sqrt();
+            if lu <= 1e-12 || lv <= 1e-12 {
+                continue;
+            }
+            let cos_theta = cos_angle(a, center, c);
+            let scale = term.k * (cos_theta - term.cos0);
+            let inv = 1.0 / (lu * lv);
+            let da = [
+                v[0] * inv - cos_theta * u[0] / lu2,
+                v[1] * inv - cos_theta * u[1] / lu2,
+                v[2] * inv - cos_theta * u[2] / lu2,
+            ];
+            let dc = [
+                u[0] * inv - cos_theta * v[0] / lv2,
+                u[1] * inv - cos_theta * v[1] / lv2,
+                u[2] * inv - cos_theta * v[2] / lv2,
+            ];
+            let da = [scale * da[0], scale * da[1], scale * da[2]];
+            let dc = [scale * dc[0], scale * dc[1], scale * dc[2]];
+            add(&mut gradient[term.a.0 as usize], da);
+            add(&mut gradient[term.c.0 as usize], dc);
+            add(
+                &mut gradient[term.center.0 as usize],
+                [-da[0] - dc[0], -da[1] - dc[1], -da[2] - dc[2]],
+            );
+        }
+        for term in &self.vdw {
+            let a = coords[term.a.0 as usize];
+            let b = coords[term.b.0 as usize];
+            let delta = [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+            let r = dist(a, b);
+            if r <= 0.5 || r <= 1e-12 {
+                continue;
+            }
+            let ratio6 = (term.x / r).powi(6);
+            let radial = 12.0 * term.d * (ratio6 - ratio6 * ratio6) / r;
+            let value = [
+                radial * delta[0] / r,
+                radial * delta[1] / r,
+                radial * delta[2] / r,
+            ];
+            add(&mut gradient[term.a.0 as usize], value);
+            add(
+                &mut gradient[term.b.0 as usize],
+                [-value[0], -value[1], -value[2]],
+            );
+        }
+        gradient
+    }
+}
+
+/// Compute UFF total energy (bond + angle + vdW) in kcal/mol.
+pub fn uff_total_energy(mol: &Molecule, types: &[(AtomIdx, UffType)], coords: &[[f64; 3]]) -> f64 {
+    PreparedUffEnergy::new(mol, types).energy(coords)
 }
 
 // ── Gradient + L-BFGS minimizer ───────────────────────────────────────────────
 
-/// Numerical gradient of UFF total energy with step δ = 1e-4 Å.
-fn uff_gradient(
-    mol: &Molecule,
-    types: &[(AtomIdx, UffType)],
-    coords: &[[f64; 3]],
-) -> Vec<[f64; 3]> {
-    const DELTA: f64 = 1e-4;
-    let n = coords.len();
-    let mut grad = vec![[0.0_f64; 3]; n];
-    let mut perturbed = coords.to_vec();
-    for i in 0..n {
-        for k in 0..3 {
-            perturbed[i][k] += DELTA;
-            let ep = uff_total_energy(mol, types, &perturbed);
-            perturbed[i][k] -= 2.0 * DELTA;
-            let em = uff_total_energy(mol, types, &perturbed);
-            perturbed[i][k] += DELTA;
-            grad[i][k] = (ep - em) / (2.0 * DELTA);
-        }
-    }
-    grad
+/// Analytic gradient of the prepared UFF energy terms.
+fn uff_gradient(prepared: &PreparedUffEnergy, coords: &[[f64; 3]]) -> Vec<[f64; 3]> {
+    prepared.analytic_gradient(coords)
 }
 
 /// No legitimate covalent bond stretches anywhere near this length; a
@@ -533,6 +636,12 @@ fn uff_gradient(
 const MAX_SANE_UFF_BOND_LENGTH: f64 = 3.0;
 
 fn worst_uff_bond_length(mol: &Molecule, coords: &[[f64; 3]]) -> f64 {
+    if coords
+        .iter()
+        .any(|point| point.iter().any(|value| !value.is_finite()))
+    {
+        return f64::INFINITY;
+    }
     let dist = |a: [f64; 3], b: [f64; 3]| {
         let d = [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
         (d[0] * d[0] + d[1] * d[1] + d[2] * d[2]).sqrt()
@@ -580,6 +689,10 @@ pub struct UffMinimizeResult {
     /// torsion/out-of-plane-incomplete potential, not slow convergence) had
     /// occurred.
     pub sound: bool,
+    /// Longest covalent bond in the returned geometry (Å). This is the
+    /// measurement behind `sound` and lets bindings explain a rejected
+    /// result without reimplementing the soundness gate.
+    pub worst_bond_length: f64,
     /// True when line search rejected an energy-decreasing proposal because
     /// it would have produced an unsound covalent bond length. Callers can
     /// distinguish this bounded rescue signal from an ordinary high-residual
@@ -619,14 +732,15 @@ pub fn minimize_uff_with_constraint<F>(
 where
     F: Fn(&[[f64; 3]]) -> bool,
 {
+    let prepared = PreparedUffEnergy::new(mol, types);
     let mut coords = initial_coords;
     let mut step = 0.05_f64;
     let mut prev_energy = f64::MAX;
     let mut rejected_unsound_step = false;
 
     for iter in 0..max_iter {
-        let energy = uff_total_energy(mol, types, &coords);
-        let grad = uff_gradient(mol, types, &coords);
+        let energy = prepared.energy(&coords);
+        let grad = uff_gradient(&prepared, &coords);
 
         // RMS gradient norm
         let rms: f64 = {
@@ -636,12 +750,14 @@ where
 
         if rms < 0.01 {
             let sound = is_sound_uff_geometry(mol, &coords);
+            let worst_bond_length = worst_uff_bond_length(mol, &coords);
             return UffMinimizeResult {
                 coords,
                 energy,
                 iterations: iter,
                 converged: true,
                 sound,
+                worst_bond_length,
                 rejected_unsound_step,
             };
         }
@@ -653,7 +769,8 @@ where
             .map(|(c, g)| [c[0] - step * g[0], c[1] - step * g[1], c[2] - step * g[2]])
             .collect();
 
-        let new_energy = uff_total_energy(mol, types, &new_coords);
+        let new_energy = prepared.energy(&new_coords);
+        let geometry_sound = is_sound_uff_geometry(mol, &new_coords);
         // Energy descent alone is not a sufficient acceptance criterion:
         // the incomplete UFF potential can lower its energy by walking into
         // a stationary geometry with a catastrophically stretched covalent
@@ -662,25 +779,27 @@ where
         // search reduce the step instead. This preserves the existing
         // fail-closed `sound` contract while preventing the optimizer from
         // knowingly propagating an unsound intermediate.
-        if new_energy < energy && is_sound_uff_geometry(mol, &new_coords) && accept(&new_coords) {
+        if new_energy < energy && geometry_sound && accept(&new_coords) {
             coords = new_coords;
             if energy - new_energy < prev_energy * 1e-7 {
                 step *= 1.2;
             }
             prev_energy = energy;
         } else {
-            if new_energy < energy {
+            if new_energy < energy && !geometry_sound {
                 rejected_unsound_step = true;
             }
             step *= 0.5;
             if step < 1e-8 {
                 let sound = is_sound_uff_geometry(mol, &coords);
+                let worst_bond_length = worst_uff_bond_length(mol, &coords);
                 return UffMinimizeResult {
                     coords,
                     energy,
                     iterations: iter,
                     converged: false,
                     sound,
+                    worst_bond_length,
                     rejected_unsound_step,
                 };
             }
@@ -689,12 +808,14 @@ where
 
     let energy = uff_total_energy(mol, types, &coords);
     let sound = is_sound_uff_geometry(mol, &coords);
+    let worst_bond_length = worst_uff_bond_length(mol, &coords);
     UffMinimizeResult {
         coords,
         energy,
         iterations: max_iter,
         converged: false,
         sound,
+        worst_bond_length,
         rejected_unsound_step,
     }
 }
@@ -776,6 +897,10 @@ mod tests {
         assert_eq!(result.coords, initial);
         assert_eq!(result.energy, uff_total_energy(&mol, &types, &initial));
         assert!(!result.converged);
+        assert!(
+            !result.rejected_unsound_step,
+            "a caller constraint rejection must not be reported as an unsound UFF step"
+        );
     }
 
     #[test]
@@ -787,6 +912,10 @@ mod tests {
         assert!(
             result.sound,
             "an ordinary small molecule minimizing normally should report sound"
+        );
+        assert!(
+            result.worst_bond_length <= MAX_SANE_UFF_BOND_LENGTH,
+            "sound result must expose a bond length within the soundness limit"
         );
     }
 
@@ -805,6 +934,10 @@ mod tests {
             !result.sound,
             "a 5.0 Å C-C bond must be reported unsound regardless of `converged`"
         );
+        assert!(
+            result.worst_bond_length > MAX_SANE_UFF_BOND_LENGTH,
+            "unsound result must expose the stretched bond measurement"
+        );
     }
 
     #[test]
@@ -814,6 +947,10 @@ mod tests {
         let coords: Vec<[f64; 3]> = vec![[0.0, 0.0, 0.0], [f64::NAN, 0.0, 0.0], [2.5, 1.2, 0.0]];
         let result = minimize_uff(&mol, &types, coords, 0);
         assert!(!result.sound, "non-finite coordinates must be unsound");
+        assert!(
+            result.worst_bond_length.is_infinite(),
+            "non-finite geometry must fail closed in the exposed bond metric"
+        );
     }
 
     /// Propane skeleton (C0-C1-C2, heavy atoms only — implicit H fills
@@ -907,14 +1044,12 @@ mod tests {
 
     #[test]
     fn uff_gradient_is_descent_direction_for_closed_angle_propane() {
-        // Gradient check following this crate's existing pattern (finite-
-        // difference gradient, no analytic gradient exists in chematic-ff —
-        // see PR #169's own finding on this): at a strained, closed-angle
-        // propane geometry, stepping a small distance along -gradient must
-        // lower the energy.
+        // At a strained, closed-angle propane geometry, stepping a small
+        // distance along the analytic -gradient must lower the energy.
         let (mol, types, coords) = propane_at_angle(60.0);
         let e0 = uff_total_energy(&mol, &types, &coords);
-        let grad = uff_gradient(&mol, &types, &coords);
+        let prepared = PreparedUffEnergy::new(&mol, &types);
+        let grad = uff_gradient(&prepared, &coords);
         let grad_norm: f64 = grad
             .iter()
             .flat_map(|g| g.iter())
@@ -940,6 +1075,70 @@ mod tests {
     }
 
     #[test]
+    fn analytic_uff_gradient_matches_finite_difference_reference() {
+        let (mol, types, coords) = propane_at_angle(75.0);
+        let prepared = PreparedUffEnergy::new(&mol, &types);
+        let actual = prepared.analytic_gradient(&coords);
+        let delta = 1e-5;
+        for atom in 0..coords.len() {
+            for axis in 0..3 {
+                let mut plus = coords.clone();
+                let mut minus = coords.clone();
+                plus[atom][axis] += delta;
+                minus[atom][axis] -= delta;
+                let expected = (prepared.energy(&plus) - prepared.energy(&minus)) / (2.0 * delta);
+                assert!(
+                    (actual[atom][axis] - expected).abs() < 2e-3,
+                    "gradient mismatch at atom {atom}, axis {axis}: actual={}, expected={expected}",
+                    actual[atom][axis]
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn analytic_uff_gradient_matches_vdw_14_finite_difference_reference() {
+        use chematic_core::{Atom, Element, MoleculeBuilder};
+        let mut builder = MoleculeBuilder::new();
+        let atoms = [
+            builder.add_atom(Atom::new(Element::C)),
+            builder.add_atom(Atom::new(Element::C)),
+            builder.add_atom(Atom::new(Element::C)),
+            builder.add_atom(Atom::new(Element::C)),
+        ];
+        for pair in atoms.windows(2) {
+            builder
+                .add_bond(pair[0], pair[1], BondOrder::Single)
+                .expect("butane probe bond should be valid");
+        }
+        let mol = builder.build();
+        let types = assign_uff_types(&mol);
+        let prepared = PreparedUffEnergy::new(&mol, &types);
+        let coords = [
+            [0.0, 0.0, 0.0],
+            [1.52, 0.1, 0.0],
+            [3.01, 0.45, 0.2],
+            [4.30, 0.85, 0.55],
+        ];
+        let actual = prepared.analytic_gradient(&coords);
+        let delta = 1e-5;
+        for atom in 0..coords.len() {
+            for axis in 0..3 {
+                let mut plus = coords;
+                let mut minus = coords;
+                plus[atom][axis] += delta;
+                minus[atom][axis] -= delta;
+                let expected = (prepared.energy(&plus) - prepared.energy(&minus)) / (2.0 * delta);
+                assert!(
+                    (actual[atom][axis] - expected).abs() < 2e-3,
+                    "1-4 vdW gradient mismatch at atom {atom}, axis {axis}: actual={}, expected={expected}",
+                    actual[atom][axis]
+                );
+            }
+        }
+    }
+
+    #[test]
     fn uff_handles_zinc_complex() {
         // Zinc as a metal centre — UFF should assign Zn type
         use chematic_core::{Atom, BondOrder, Element, MoleculeBuilder};
@@ -953,5 +1152,164 @@ mod tests {
         let types = assign_uff_types(&mol);
         let zn_type = types.iter().find(|(_, t)| *t == UffType::Zn);
         assert!(zn_type.is_some(), "Zn should get UffType::Zn");
+    }
+
+    #[test]
+    fn uff_supported_metal_and_halogen_types_have_finite_prepared_energy() {
+        // This is a local soundness probe for the explicit element-to-UFF
+        // dispatch table. It does not claim reference-parameter parity or
+        // chemical validity for arbitrary metal coordination geometries.
+        use chematic_core::{Atom, Element, MoleculeBuilder};
+
+        let elements = [
+            Element::LI,
+            Element::NA,
+            Element::K,
+            Element::MG,
+            Element::CA,
+            Element::AL,
+            Element::SI,
+            Element::FE,
+            Element::CO,
+            Element::NI,
+            Element::CU,
+            Element::ZN,
+            Element::AG,
+            Element::AU,
+            Element::HG,
+            Element::CL,
+            Element::BR,
+            Element::I,
+        ];
+        for element in elements {
+            let mut builder = MoleculeBuilder::new();
+            let first = builder.add_atom(Atom::new(element));
+            let second = builder.add_atom(Atom::new(Element::C));
+            builder
+                .add_bond(first, second, BondOrder::Single)
+                .expect("two-atom probe bond should be valid");
+            let mol = builder.build();
+            let types = assign_uff_types(&mol);
+            let prepared = PreparedUffEnergy::new(&mol, &types);
+            let coords = [[0.0, 0.0, 0.0], [1.8, 0.2, 0.1]];
+            let energy = prepared.energy(&coords);
+            let gradient = prepared.analytic_gradient(&coords);
+            assert!(energy.is_finite(), "{element:?} energy must be finite");
+            assert!(
+                gradient.iter().flatten().all(|value| value.is_finite()),
+                "{element:?} gradient must be finite: {gradient:?}"
+            );
+            let delta = 1e-5;
+            for atom in 0..coords.len() {
+                for axis in 0..3 {
+                    let mut plus = coords;
+                    let mut minus = coords;
+                    plus[atom][axis] += delta;
+                    minus[atom][axis] -= delta;
+                    let expected =
+                        (prepared.energy(&plus) - prepared.energy(&minus)) / (2.0 * delta);
+                    assert!(
+                        (gradient[atom][axis] - expected).abs() < 2e-3,
+                        "{element:?} gradient mismatch at atom {atom}, axis {axis}: actual={}, expected={expected}",
+                        gradient[atom][axis]
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn every_uff_type_has_finite_prepared_energy_and_gradient() {
+        // Dispatch coverage above exercises elements that are commonly
+        // reached through the public assigner. This table additionally keeps
+        // every declared UffType parameter bundle executable, including
+        // hybridization-specific and fallback-only variants.
+        use chematic_core::{Atom, BondOrder, Element, MoleculeBuilder};
+
+        let all_types = [
+            UffType::C_3,
+            UffType::C_2,
+            UffType::C_1,
+            UffType::C_R,
+            UffType::N_3,
+            UffType::N_2,
+            UffType::N_1,
+            UffType::N_R,
+            UffType::O_3,
+            UffType::O_2,
+            UffType::O_1,
+            UffType::O_R,
+            UffType::S_3,
+            UffType::S_2,
+            UffType::S_R,
+            UffType::P_3,
+            UffType::P_R,
+            UffType::H_,
+            UffType::F_,
+            UffType::Cl,
+            UffType::Br,
+            UffType::I_,
+            UffType::Li,
+            UffType::Na,
+            UffType::K,
+            UffType::Ca,
+            UffType::Mg,
+            UffType::Fe,
+            UffType::Co,
+            UffType::Ni,
+            UffType::Cu,
+            UffType::Zn,
+            UffType::Mn,
+            UffType::Cr,
+            UffType::V_,
+            UffType::Mo,
+            UffType::W_,
+            UffType::Pd,
+            UffType::Pt,
+            UffType::Au,
+            UffType::Ag,
+            UffType::Hg,
+            UffType::Al,
+            UffType::Si,
+            UffType::Unknown,
+        ];
+        assert_eq!(all_types.len(), 45);
+
+        let mut builder = MoleculeBuilder::new();
+        let first = builder.add_atom(Atom::new(Element::C));
+        let second = builder.add_atom(Atom::new(Element::C));
+        builder
+            .add_bond(first, second, BondOrder::Single)
+            .expect("two-atom probe bond should be valid");
+        let mol = builder.build();
+        let coords = [[0.0, 0.0, 0.0], [1.8, 0.2, 0.1]];
+        let delta = 1e-5;
+
+        for uff_type in all_types {
+            let types = vec![(first, uff_type), (second, UffType::C_3)];
+            let prepared = PreparedUffEnergy::new(&mol, &types);
+            let energy = prepared.energy(&coords);
+            let gradient = prepared.analytic_gradient(&coords);
+            assert!(energy.is_finite(), "{uff_type:?} energy must be finite");
+            assert!(
+                gradient.iter().flatten().all(|value| value.is_finite()),
+                "{uff_type:?} gradient must be finite: {gradient:?}"
+            );
+            for atom in 0..coords.len() {
+                for axis in 0..3 {
+                    let mut plus = coords;
+                    let mut minus = coords;
+                    plus[atom][axis] += delta;
+                    minus[atom][axis] -= delta;
+                    let expected =
+                        (prepared.energy(&plus) - prepared.energy(&minus)) / (2.0 * delta);
+                    assert!(
+                        (gradient[atom][axis] - expected).abs() < 2e-3,
+                        "{uff_type:?} gradient mismatch at atom {atom}, axis {axis}: actual={}, expected={expected}",
+                        gradient[atom][axis]
+                    );
+                }
+            }
+        }
     }
 }

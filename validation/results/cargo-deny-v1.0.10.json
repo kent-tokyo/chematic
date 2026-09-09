@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "status": "local-current-candidate",
+  "tool": "cargo-deny 0.19.9",
+  "command": "cargo deny check -c deny-local.toml --disable-fetch",
+  "advisory_database": {
+    "source": "rustsec/advisory-db",
+    "revision": "5a0ebedfe8bdd2e295b171f4162f8c977bcad9a5",
+    "path_mode": "writable temporary copy"
+  },
+  "checks": {
+    "advisories": "ok",
+    "bans": "ok",
+    "licenses": "ok",
+    "sources": "ok"
+  },
+  "revalidation_2026_09_09": {
+    "command": "bash scripts/check_cargo_deny_local.sh",
+    "result": "pass",
+    "advisories": "ok",
+    "bans": "ok",
+    "licenses": "ok",
+    "sources": "ok"
+  },
+  "interpretation": "The repository dependency policy passes against the pinned local advisory snapshot. The default workspace run remains environment-limited because ~/.cargo/advisory-db is read-only in the managed runner; scripts/check.sh now detects only that advisory-lock failure and reruns scripts/check_cargo_deny_local.sh against a writable temporary copy. Other cargo-deny failures remain hard failures."
+}

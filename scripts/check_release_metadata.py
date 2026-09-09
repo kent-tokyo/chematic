@@ -10,8 +10,15 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-METADATA = ROOT / "release-metadata" / "v1.0.6.json"
 SCHEMA = ROOT / "docs" / "release-metadata-schema.json"
+
+
+def workspace_version() -> str:
+    cargo = (ROOT / "Cargo.toml").read_text(encoding="utf-8")
+    match = re.search(r'^version\s*=\s*"([^"]+)"\s*$', cargo, re.MULTILINE)
+    if match is None:
+        raise ValueError("workspace version is missing from Cargo.toml")
+    return match.group(1)
 
 
 def require(condition: bool, message: str, errors: list[str]) -> None:
@@ -22,7 +29,13 @@ def require(condition: bool, message: str, errors: list[str]) -> None:
 def main() -> int:
     errors: list[str] = []
     try:
-        document = json.loads(METADATA.read_text(encoding="utf-8"))
+        expected_version = workspace_version()
+    except (OSError, ValueError) as exc:
+        print(f"workspace version read failure: {exc}", file=sys.stderr)
+        return 1
+    metadata = ROOT / "release-metadata" / f"v{expected_version}.json"
+    try:
+        document = json.loads(metadata.read_text(encoding="utf-8"))
         schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         print(f"release metadata read failure: {exc}", file=sys.stderr)
@@ -33,7 +46,7 @@ def main() -> int:
     require(document.get("product") == "chematic", "product must be chematic", errors)
     release = document.get("release", {})
     version = release.get("version")
-    require(version == "1.0.6", "checked-in metadata must describe v1.0.6", errors)
+    require(version == expected_version, f"checked-in metadata must describe v{expected_version}", errors)
     require(release.get("tag") == f"v{version}", "release tag/version mismatch", errors)
     commit = release.get("commit")
     require(
@@ -58,7 +71,7 @@ def main() -> int:
         print("release metadata validation failures:", file=sys.stderr)
         print("\n".join(errors), file=sys.stderr)
         return 1
-    print(f"release metadata OK: {METADATA.relative_to(ROOT)}")
+    print(f"release metadata OK: {metadata.relative_to(ROOT)}")
     return 0
 
 

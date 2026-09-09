@@ -13,6 +13,20 @@ cargo clippy --workspace -- -D warnings
 
 No C compiler, no Python, no external tools required for the core crates.
 
+## Stable extension points and validation corpus
+
+Ecosystem integrations should implement `chematic_core::MoleculeExtension` and
+register operations through `ExtensionRegistry`. Use a namespaced, versioned
+ID such as `vendor.operation.v1`; do not overload an existing ID or change the
+meaning of a published result without incrementing its contract version. The
+interface is read-only and returns only scalar, vector, or text values so it
+can be adapted consistently by native, WASM, and binding consumers.
+
+Before adding a fixture or corpus, follow the repository policy in
+[`docs/contributor-corpus-policy.md`](docs/contributor-corpus-policy.md).
+Fixtures without provenance, redistribution terms, minimization notes, and a
+pinned oracle version are not eligible for checked-in validation.
+
 ## Where to contribute
 
 | Area | Crate | Difficulty |

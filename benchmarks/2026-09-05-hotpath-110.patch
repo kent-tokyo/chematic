@@ -1,0 +1,583 @@
+diff --git a/crates/chematic-mol/src/mol2000.rs b/crates/chematic-mol/src/mol2000.rs
+index 627719c4..e85eaf6e 100644
+--- a/crates/chematic-mol/src/mol2000.rs
++++ b/crates/chematic-mol/src/mol2000.rs
+@@ -613,6 +613,9 @@ fn encode_charge(charge: i8) -> u8 {
+ /// isotope; `Element::atomic_mass()` provides the corresponding rounded mass
+ /// number used by the rest of the crate.
+ fn decode_mass_difference(element: Element, field: &str) -> Option<u16> {
++    if field == " 0" {
++        return None;
++    }
+     let difference = field.trim().parse::<i16>().ok()?;
+     if difference == 0 {
+         return None;
+@@ -662,6 +665,23 @@ fn parse_field3(
+ /// (such as a leading `+`) fall back to `str::parse` at the call site.
+ #[inline]
+ fn parse_unsigned_ascii(field: &str) -> Option<usize> {
++    // Common fixed-width fields: avoid a checked multiply per digit.
++    // Every other spelling still takes the original parser/fallback path.
++    if let [a, b, c] = *field.as_bytes()
++        && c.is_ascii_digit()
++    {
++        let last = (c - b'0') as usize;
++        if a == b' ' {
++            if b == b' ' {
++                return Some(last);
++            }
++            if b.is_ascii_digit() {
++                return Some((b - b'0') as usize * 10 + last);
++            }
++        } else if a.is_ascii_digit() && b.is_ascii_digit() {
++            return Some((a - b'0') as usize * 100 + (b - b'0') as usize * 10 + last);
++        }
++    }
+     let mut value = 0usize;
+     let mut saw_digit = false;
+     for &byte in field.as_bytes() {
+@@ -795,6 +815,7 @@ fn read_mol_internal(
+         // and coordinate storage are diagnostic-path work.
+         let z: f64 = match atom_line.get(20..30) {
+             None => 0.0,
++            Some("    0.0000") => 0.0,
+             Some(raw) => {
+                 let trimmed = raw.trim();
+                 if trimmed.is_empty() {
+@@ -843,18 +864,27 @@ fn read_mol_internal(
+ 
+         // Element symbol: bytes 31–33 (3 chars, left-padded with a space in
+         // the spec, but writers vary; trim both ends).
+-        let sym = atom_line
+-            .get(31..34)
+-            .ok_or_else(|| {
+-                make_atom_err(
+-                    raw_lineno,
+-                    format!("atom line {atom_i} too short for element field"),
+-                )
+-            })?
+-            .trim();
++        let sym = atom_line.get(31..34).ok_or_else(|| {
++            make_atom_err(
++                raw_lineno,
++                format!("atom line {atom_i} too short for element field"),
++            )
++        })?;
+ 
+-        let element = Element::from_symbol(sym).ok_or_else(|| MolParseError::UnknownElement {
+-            symbol: sym.to_string(),
++        let element = match sym {
++            "C  " => Some(Element::C),
++            "N  " => Some(Element::N),
++            "O  " => Some(Element::O),
++            "H  " => Some(Element::H),
++            "S  " => Some(Element::S),
++            "P  " => Some(Element::P),
++            "F  " => Some(Element::F),
++            "Cl " => Some(Element::CL),
++            "Br " => Some(Element::BR),
++            _ => Element::from_symbol(sym.trim()),
++        }
++        .ok_or_else(|| MolParseError::UnknownElement {
++            symbol: sym.trim().to_string(),
+             line: raw_lineno,
+         })?;
+ 
+@@ -862,6 +892,9 @@ fn read_mol_internal(
+         let charge = atom_line
+             .get(36..39)
+             .map(|ccc| {
++                if ccc == "  0" {
++                    return 0;
++                }
+                 let code = parse_unsigned_ascii(ccc)
+                     .and_then(|value| i8::try_from(value).ok())
+                     .unwrap_or_else(|| ccc.trim().parse().unwrap_or(0));
+@@ -1186,6 +1219,41 @@ pub fn write_mol_with_coords(
+ 
+ #[inline]
+ fn push_right_aligned_u32(out: &mut String, mut value: u32, width: usize) {
++    // V2000 counts and bond fields are almost always three columns wide.
++    // Append the entire field in one operation, retaining the general path
++    // for widths/values outside the fixed-width format.
++    if width == 3 && value < 1000 {
++        static FIELDS: [[u8; 3]; 1000] = {
++            let mut fields = [[b' '; 3]; 1000];
++            let mut n = 0;
++            while n < fields.len() {
++                if n >= 100 {
++                    fields[n][0] = b'0' + (n / 100) as u8;
++                }
++                if n >= 10 {
++                    fields[n][1] = b'0' + (n / 10 % 10) as u8;
++                }
++                fields[n][2] = b'0' + (n % 10) as u8;
++                n += 1;
++            }
++            fields
++        };
++        // Validate ASCII at compile time, not at every emitted field.
++        static TEXT: [&str; 1000] = {
++            let mut text = [""; 1000];
++            let mut n = 0;
++            while n < text.len() {
++                text[n] = match std::str::from_utf8(&FIELDS[n]) {
++                    Ok(s) => s,
++                    Err(_) => panic!("ASCII decimal field"),
++                };
++                n += 1;
++            }
++            text
++        };
++        out.push_str(TEXT[value as usize]);
++        return;
++    }
+     let mut digits = [0_u8; 10];
+     let mut start = digits.len();
+     loop {
+@@ -1285,8 +1353,12 @@ pub fn write_mol_with_coords_into(
+             for _ in sym.len()..3 {
+                 out.push(' ');
+             }
+-            push_right_aligned_i16(out, mass_difference, 2);
+-            push_right_aligned_u32(out, charge_code as u32, 3);
++            if mass_difference == 0 && charge_code == 0 {
++                out.push_str(" 0  0");
++            } else {
++                push_right_aligned_i16(out, mass_difference, 2);
++                push_right_aligned_u32(out, charge_code as u32, 3);
++            }
+             out.push_str("  0  0  0  0  0  0  0  0  0\n");
+         }
+     }
+@@ -1850,8 +1922,41 @@ pub fn write_sdf_record_with_conformer_checked(
+ mod tests {
+     use super::*;
+ 
++    #[test]
++    fn three_column_parser_matches_legacy_spelling_contract() {
++        // All ASCII triples cover whitespace, signs, malformed fields and
++        // every 0..999 value, including fallback-accepted "+12" and "1  ".
++        for a in 0..128_u8 {
++            for b in 0..128_u8 {
++                for c in 0..128_u8 {
++                    let bytes = [a, b, c];
++                    let field = std::str::from_utf8(&bytes).unwrap();
++                    let expected = field.trim().parse::<usize>().ok();
++                    let actual = parse_field3(field, 0, 1, |line, detail| {
++                        MolParseError::InvalidCountLine { line, detail }
++                    })
++                    .ok();
++                    assert_eq!(actual, expected, "field={field:?}");
++                }
++            }
++        }
++        for field in ["é1", "1é", "\u{2000}"] {
++            assert!(
++                parse_field3(field, 0, 1, |line, detail| {
++                    MolParseError::InvalidCountLine { line, detail }
++                })
++                .is_err()
++            );
++        }
++    }
++
+     #[test]
+     fn fixed_width_integer_writers_match_rust_formatting() {
++        for value in 0..=1001 {
++            let mut actual = String::new();
++            push_right_aligned_u32(&mut actual, value, 3);
++            assert_eq!(actual, format!("{value:>3}"));
++        }
+         for (value, width) in [
+             (0_u32, 1_usize),
+             (0, 3),
+diff --git a/crates/chematic-mol/src/sdf.rs b/crates/chematic-mol/src/sdf.rs
+index 47376d68..095c7ecb 100644
+--- a/crates/chematic-mol/src/sdf.rs
++++ b/crates/chematic-mol/src/sdf.rs
+@@ -449,7 +449,6 @@ pub fn read_sdf_conformer_ensembles(input: &str) -> Result<Vec<ConformerEnsemble
+ pub struct SdfFileReader<R: std::io::BufRead> {
+     reader: R,
+     block: Vec<u8>,
+-    line: Vec<u8>,
+     done: bool,
+     limits: SdfParseLimits,
+     bytes_read: usize,
+@@ -506,7 +505,6 @@ impl<R: std::io::BufRead> SdfFileReader<R> {
+         Self {
+             reader,
+             block: Vec::with_capacity(2048),
+-            line: Vec::new(),
+             done: false,
+             limits,
+             bytes_read: 0,
+@@ -527,8 +525,10 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
+         self.block.clear();
+ 
+         loop {
+-            self.line.clear();
+-            match self.reader.read_until(b'\n', &mut self.line) {
++            // Append directly into the reusable record buffer. The previous
++            // path copied each line from a second buffer into this one.
++            let line_start = self.block.len();
++            match self.reader.read_until(b'\n', &mut self.block) {
+                 Err(e) => {
+                     self.done = true;
+                     return Some(Err(MolParseError::Io(e.to_string())));
+@@ -543,15 +543,16 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
+                     break;
+                 }
+                 Ok(_) => {
+-                    if self.line.len() > self.limits.max_line_bytes {
++                    let line = &self.block[line_start..];
++                    if line.len() > self.limits.max_line_bytes {
+                         self.done = true;
+                         return Some(Err(MolParseError::ResourceLimit {
+                             resource: "line bytes",
+-                            actual: self.line.len(),
++                            actual: line.len(),
+                             limit: self.limits.max_line_bytes,
+                         }));
+                     }
+-                    self.bytes_read = self.bytes_read.saturating_add(self.line.len());
++                    self.bytes_read = self.bytes_read.saturating_add(line.len());
+                     if self.bytes_read > self.limits.max_input_bytes {
+                         self.done = true;
+                         return Some(Err(MolParseError::ResourceLimit {
+@@ -560,12 +561,12 @@ impl<R: std::io::BufRead> Iterator for SdfFileReader<R> {
+                             limit: self.limits.max_input_bytes,
+                         }));
+                     }
+-                    let trimmed = self.line.strip_suffix(b"\n").unwrap_or(&self.line);
++                    let trimmed = line.strip_suffix(b"\n").unwrap_or(line);
+                     let trimmed = trimmed.strip_suffix(b"\r").unwrap_or(trimmed);
+                     if trimmed == b"$$$$" {
++                        self.block.truncate(line_start);
+                         break;
+                     }
+-                    self.block.extend_from_slice(&self.line);
+                 }
+             }
+         }
+@@ -780,6 +781,61 @@ $$$$
+         assert_eq!(records[1].mol.atom_count(), 3); // mol_b: C, N, O
+     }
+ 
++    #[test]
++    fn file_reader_direct_append_preserves_chunk_and_delimiter_boundaries() {
++        use std::io::{BufReader, Cursor};
++        for newline in ["\n", "\r\n"] {
++            for terminated in [false, true] {
++                let mut input = format!("$$$$\n{MOL_A}> <label>\n分子\n\n$$$$\n{MOL_B}");
++                if terminated {
++                    input.push_str("$$$$\n");
++                }
++                input = input.replace('\n', newline);
++                for capacity in [1, 2, 3, 7, 8192] {
++                    for diagnostics in [false, true] {
++                        let reader =
++                            BufReader::with_capacity(capacity, Cursor::new(input.as_bytes()));
++                        let mut records = SdfFileReader::with_limits_and_diagnostics(
++                            reader,
++                            SdfParseLimits::default(),
++                            diagnostics,
++                        );
++                        let first = records.next().unwrap().unwrap();
++                        assert_eq!(first.meta.name, "mol_a");
++                        assert_eq!(first.mol.atom_count(), 2);
++                        assert_eq!(
++                            first.properties.get("label").map(String::as_str),
++                            Some("分子")
++                        );
++                        let second = records.next().unwrap().unwrap();
++                        assert_eq!(second.meta.name, "mol_b");
++                        assert_eq!(second.mol.atom_count(), 3);
++                        assert!(records.next().is_none());
++                        assert!(records.next().is_none());
++                    }
++                }
++            }
++        }
++        let input = format!("{MOL_A}$$$$\n");
++        for overflow in [false, true] {
++            let limits = SdfParseLimits {
++                max_record_bytes: MOL_A.len(), // delimiter excluded
++                max_input_bytes: input.len() - usize::from(overflow), // delimiter included
++                ..SdfParseLimits::default()
++            };
++            let mut reader = SdfFileReader::with_limits(Cursor::new(input.as_bytes()), limits);
++            let result = reader.next().unwrap();
++            if overflow {
++                assert!(matches!(result, Err(MolParseError::ResourceLimit {
++                    resource: "input bytes", actual, limit
++                }) if actual == input.len() && limit == input.len() - 1));
++            } else {
++                assert!(result.is_ok());
++            }
++            assert!(reader.next().is_none());
++        }
++    }
++
+     #[test]
+     fn sdf_file_reader_rejects_invalid_utf8_record() {
+         use std::io::{BufReader, Cursor};
+diff --git a/crates/chematic-smiles/src/canonical.rs b/crates/chematic-smiles/src/canonical.rs
+index 810a522a..ac4701ce 100644
+--- a/crates/chematic-smiles/src/canonical.rs
++++ b/crates/chematic-smiles/src/canonical.rs
+@@ -372,7 +372,14 @@ pub(crate) fn refine_ranks(mol: &Molecule, mut ranks: Vec<u64>) -> Vec<u64> {
+         old_distinct = new_distinct;
+     }
+ 
+-    normalize_ranks(ranks)
++    // The final distinct-count pass already sorted/deduplicated these exact
++    // ranks. Reuse its dictionary instead of sorting an index vector again.
++    for rank in &mut ranks {
++        *rank = distinct_scratch
++            .binary_search(rank)
++            .expect("rank in dictionary") as u64;
++    }
++    ranks
+ }
+ 
+ /// Safety cap on the number of discrete rank assignments
+@@ -425,7 +432,7 @@ pub(crate) fn group_by_rank(ranks: &[u64]) -> Vec<Vec<usize>> {
+ /// rank strictly between its class and the next-higher class, so a
+ /// subsequent refinement pass can propagate the distinction through the rest
+ /// of the graph. `ranks` must be gap-free ordinals (as produced by
+-/// `refine_ranks`/`normalize_ranks`).
++/// `refine_ranks`).
+ pub(crate) fn individualize(ranks: &[u64], atom_idx: usize) -> Vec<u64> {
+     let v = ranks[atom_idx];
+     ranks
+@@ -540,25 +547,6 @@ fn count_distinct(ranks: &[u64], scratch: &mut Vec<u64>) -> usize {
+     scratch.len()
+ }
+ 
+-fn normalize_ranks(mut ranks: Vec<u64>) -> Vec<u64> {
+-    let mut sorted: smallvec::SmallVec<[usize; 64]> = (0..ranks.len()).collect();
+-    sorted.sort_unstable_by_key(|&idx| (ranks[idx], idx));
+-
+-    let mut current_rank: u64 = 0;
+-    let mut prev_val = ranks[sorted[0]];
+-
+-    for idx in sorted {
+-        let val = ranks[idx];
+-        if val != prev_val {
+-            current_rank += 1;
+-            prev_val = val;
+-        }
+-        ranks[idx] = current_rank;
+-    }
+-
+-    ranks
+-}
+-
+ pub(crate) struct CanonicalWriter<'a> {
+     mol: &'a Molecule,
+     ranks: &'a [u64],
+diff --git a/crates/chematic-smiles/src/canonical_partition.rs b/crates/chematic-smiles/src/canonical_partition.rs
+index 917bfb9e..727a2227 100644
+--- a/crates/chematic-smiles/src/canonical_partition.rs
++++ b/crates/chematic-smiles/src/canonical_partition.rs
+@@ -26,7 +26,7 @@
+ //!    This is true of `exact_refine`'s *own* iterations. Its *starting
+ //!    point* (`initial_partition`'s `ranks` component) is a different story:
+ //!    `ranks` comes from `crate::canonical`'s pre-existing, unchanged
+-//!    `individualize`/`refine_ranks`, and the latter's `normalize_ranks`
++//!    `individualize`/`refine_ranks`, and the latter's rank normalization
+ //!    step does group by raw FNV-1a hash-value equality. See
+ //!    `canonical_search::exact_orbit_representatives`'s doc comment for the
+ //!    full account of what that means for this module's callers (in short:
+@@ -498,7 +498,7 @@ pub(crate) fn exact_refine(graph: &CanonicalColoredGraph, mut partition: Partiti
+ /// `atom.chirality`); the two agree on orbit *structure* on every case this
+ /// PR's test suite checked, including the meso-compound case. The
+ /// difference this function is for: `equivalent_atom_classes` is built on
+-/// `morgan_ranks`/`refine_ranks`, whose own `normalize_ranks` step groups by
++/// `morgan_ranks`/`refine_ranks`, whose own rank normalization step groups by
+ /// raw FNV-1a hash-value equality (see this module's top-of-file doc
+ /// comment) -- a real, if practically negligible, hash-collision risk. This
+ /// function is built on `exact_refine`, which never merges two cells on
+@@ -598,7 +598,7 @@ pub fn topological_equivalence_classes(mol: &Molecule) -> Vec<usize> {
+     // correct from-scratch starting point for a whole-molecule query (as
+     // opposed to `canonical_search.rs`'s use, which seeds from the current
+     // search node's already-partially-individualized `ranks`). This also
+-    // sidesteps `crate::canonical::normalize_ranks`'s raw-FNV-1a-hash-value
++    // sidesteps `crate::canonical::refine_ranks`'s raw-FNV-1a-hash-value
+     // grouping entirely (see this module's own top-of-file doc comment) --
+     // `exact_refine`'s own iterations never rely on anything but real
+     // `Eq`/`Ord` signature comparison.
+diff --git a/crates/chematic-smiles/src/canonical_search.rs b/crates/chematic-smiles/src/canonical_search.rs
+index 5d0e7ed9..2d6b2d05 100644
+--- a/crates/chematic-smiles/src/canonical_search.rs
++++ b/crates/chematic-smiles/src/canonical_search.rs
+@@ -407,7 +407,7 @@ fn search_canonical(
+ /// the atom it distinguishes provably gets a rank no other atom in the
+ /// vector holds, zero collision risk. But `refine_ranks` immediately
+ /// re-hashes from that point (`fnv_hash_sequence`, pre-existing, unchanged
+-/// by this PR) and `normalize_ranks` groups by raw hash-value *equality* --
++/// by this PR) and rank normalization groups by raw hash-value *equality* --
+ /// so a genuine 64-bit FNV-1a collision there could in principle re-merge
+ /// an already-individualized atom back in with a formerly-tied sibling,
+ /// and `coloring` would inherit that error (nothing downstream re-derives
+diff --git a/crates/chematic-smiles/src/parser.rs b/crates/chematic-smiles/src/parser.rs
+index 503a8582..fcc629a8 100644
+--- a/crates/chematic-smiles/src/parser.rs
++++ b/crates/chematic-smiles/src/parser.rs
+@@ -89,6 +89,10 @@ const MAX_BRANCH_DEPTH: usize = 500;
+ /// Maximum number of atoms allowed in a SMILES molecule (prevents memory exhaustion).
+ const MAX_ATOMS: usize = 100_000;
+ 
++// OpenSMILES ring tokens are a digit or exactly two digits after `%`.
++// Direct indexing avoids hashing/allocating on every ordinary ring closure.
++type OpenRings = [Option<(AtomIdx, Option<ParsedBond>, u32)>; 100];
++
+ /// An entry in the stereo neighbor sequence accumulated during parsing.
+ #[derive(Clone, Copy)]
+ enum StereoEntry {
+@@ -115,10 +119,12 @@ struct Parser<'a> {
+     /// `PendingRing`). Monotonically increasing, never reused, so it uniquely
+     /// identifies one specific open/close pair regardless of ring-digit reuse.
+     next_ring_slot: u32,
++    /// Number of currently open labels (at most 100).
++    open_ring_count: u8,
+     /// slot id → index in `stereo_records` for records with an unresolved `PendingRing(slot)`.
+     pending_ring_stereo: HashMap<u32, usize>,
+     /// slot id → close_atom, populated when rings close, for final resolution.
+-    ring_close_partners: HashMap<u32, AtomIdx>,
++    ring_close_partners: smallvec::SmallVec<[Option<AtomIdx>; 8]>,
+ }
+ 
+ impl<'a> Parser<'a> {
+@@ -130,8 +136,9 @@ impl<'a> Parser<'a> {
+             stereo_records: Vec::new(),
+             current_stereo: None,
+             next_ring_slot: 0,
++            open_ring_count: 0,
+             pending_ring_stereo: HashMap::new(),
+-            ring_close_partners: HashMap::new(),
++            ring_close_partners: smallvec::SmallVec::new(),
+         }
+     }
+ 
+@@ -181,7 +188,7 @@ impl<'a> Parser<'a> {
+ 
+     fn parse_smiles(&mut self) -> Result<Molecule, SmilesError> {
+         let mut mol = MoleculeBuilder::new();
+-        let mut open_rings: HashMap<u8, (AtomIdx, Option<ParsedBond>, u32)> = HashMap::new();
++        let mut open_rings: OpenRings = [None; 100];
+ 
+         // Parse the first fragment
+         self.parse_chain(&mut mol, None, None, &mut open_rings)?;
+@@ -193,9 +200,11 @@ impl<'a> Parser<'a> {
+         }
+ 
+         // Trailing unmatched ring closures are errors
+-        if let Some((&num, _)) = open_rings.iter().next() {
++        if self.open_ring_count != 0
++            && let Some(num) = open_rings.iter().position(Option::is_some)
++        {
+             return Err(SmilesError::UnmatchedRingClosure {
+-                ring_num: num,
++                ring_num: num as u8,
+                 pos: self.pos,
+             });
+         }
+@@ -214,7 +223,7 @@ impl<'a> Parser<'a> {
+         for (_, entries) in &mut self.stereo_records {
+             for entry in entries.iter_mut() {
+                 if let StereoEntry::PendingRing(rn) = entry
+-                    && let Some(&partner) = self.ring_close_partners.get(rn)
++                    && let Some(&Some(partner)) = self.ring_close_partners.get(*rn as usize)
+                 {
+                     *entry = StereoEntry::Atom(partner);
+                 }
+@@ -245,7 +254,7 @@ impl<'a> Parser<'a> {
+         mol: &mut MoleculeBuilder,
+         attach_to: Option<AtomIdx>,
+         attach_bond: Option<ParsedBond>,
+-        open_rings: &mut HashMap<u8, (AtomIdx, Option<ParsedBond>, u32)>,
++        open_rings: &mut OpenRings,
+     ) -> Result<Option<AtomIdx>, SmilesError> {
+         // Parse the first atom of this chain
+         let first_atom = match self.try_parse_atom()? {
+@@ -443,7 +452,7 @@ impl<'a> Parser<'a> {
+         mol: &mut MoleculeBuilder,
+         attach_to: AtomIdx,
+         explicit_bond: Option<ParsedBond>,
+-        open_rings: &mut HashMap<u8, (AtomIdx, Option<ParsedBond>, u32)>,
++        open_rings: &mut OpenRings,
+     ) -> Result<Option<AtomIdx>, SmilesError> {
+         if self.depth >= MAX_BRANCH_DEPTH {
+             return Err(SmilesError::NestingTooDeep { pos: self.pos });
+@@ -476,9 +485,10 @@ impl<'a> Parser<'a> {
+         current: AtomIdx,
+         ring_num: u8,
+         ring_bond: Option<ParsedBond>,
+-        open_rings: &mut HashMap<u8, (AtomIdx, Option<ParsedBond>, u32)>,
++        open_rings: &mut OpenRings,
+     ) -> Result<StereoEntry, SmilesError> {
+-        if let Some((open_atom, open_bond, slot)) = open_rings.remove(&ring_num) {
++        if let Some((open_atom, open_bond, slot)) = open_rings[ring_num as usize].take() {
++            self.open_ring_count -= 1;
+             // A directional marker (`/`, `\`) is read "toward" the ring digit
+             // from wherever it's written. At the OPENING occurrence (e.g.
+             // "C/1..."), that's already the open->close direction, matching
+@@ -526,7 +536,7 @@ impl<'a> Parser<'a> {
+             // Record the close partner for final PendingRing resolution, keyed
+             // by this occurrence's unique slot -- NOT the ring digit, which
+             // may be reused by an unrelated ring later in the same SMILES.
+-            self.ring_close_partners.insert(slot, current);
++            self.ring_close_partners[slot as usize] = Some(current);
+             // Also resolve PendingRing(slot) if the opener's stereo record was
+             // already finalized (e.g. the closer is NOT nested inside the
+             // opener's own branch). If the opener's record is still open (the
+@@ -550,7 +560,9 @@ impl<'a> Parser<'a> {
+         } else {
+             let slot = self.next_ring_slot;
+             self.next_ring_slot += 1;
+-            open_rings.insert(ring_num, (current, ring_bond, slot));
++            self.ring_close_partners.push(None);
++            open_rings[ring_num as usize] = Some((current, ring_bond, slot));
++            self.open_ring_count += 1;
+             // Return: we opened a ring; partner not yet known.
+             Ok(StereoEntry::PendingRing(slot))
+         }
+@@ -999,6 +1011,36 @@ mod tests {
+         assert_eq!(mol.bond_count(), 0);
+     }
+ 
++    #[test]
++    fn every_two_digit_ring_label_and_reuse_preserve_graph_and_stereo() {
++        let expected = crate::canonical_smiles(&parse("N[C@]1(F)CCCC1").unwrap());
++        for label in 0..100 {
++            let token = format!("%{label:02}");
++            let smiles = format!("N[C@]{token}(F)CCCC{token}");
++            let mol = parse(&smiles).unwrap();
++            assert_eq!(crate::canonical_smiles(&mol), expected, "{smiles}");
++            let repeated = parse(&format!("C{token}CC{token}.C{token}CC{token}")).unwrap();
++            assert_eq!(repeated.atom_count(), 6);
++            assert_eq!(repeated.bond_count(), 6);
++            assert!(matches!(parse(&format!("C{token}CC")),
++                Err(SmilesError::UnmatchedRingClosure { ring_num, .. }) if ring_num == label));
++        }
++        for malformed in ["C%", "C%1", "C%1a", "C%a1", "C1C1"] {
++            assert!(parse(malformed).is_err(), "{malformed}");
++        }
++        // Spill the inline close-partner buffer and reuse labels before a
++        // chiral ring opening: slot ids must still resolve the right partner.
++        let prefix = "C1CC1.".repeat(20);
++        let mol = parse(&format!("{prefix}N[C@]1(F)CCCC1")).unwrap();
++        assert_eq!(mol.atom_count(), 67);
++        assert_eq!(mol.bond_count(), 67);
++        let alternative = parse(&format!("{prefix}N[C@]%99(F)CCCC%99")).unwrap();
++        assert_eq!(
++            crate::canonical_smiles(&mol),
++            crate::canonical_smiles(&alternative)
++        );
++    }
++
+     #[test]
+     fn test_parse_ethane() {
+         let mol = parse("CC").unwrap();

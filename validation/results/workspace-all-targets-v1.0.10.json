@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-09",
+  "target_version": "1.0.10",
+  "scope": "workspace-wide Rust unit, integration, example, and benchmark-target test verification",
+  "source_state": "current working tree, intentionally dirty",
+  "command": "CARGO_BUILD_JOBS=2 CARGO_TARGET_DIR=/private/tmp/chematic-target-xyz cargo test --workspace --all-targets --offline --quiet",
+  "result_lines": 184,
+  "tests": {
+    "passed": 4848,
+    "failed": 0,
+    "ignored": 15,
+    "measured": 0,
+    "filtered_out": 0
+  },
+  "result": "pass",
+  "boundary": "This is the current all-targets Rust evidence. Doctests are represented separately by the workspace test gate; browser artifact generation, external review, registry publication, and future release actions are not covered."
+}

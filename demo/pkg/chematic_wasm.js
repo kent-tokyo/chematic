@@ -1369,6 +1369,39 @@ export function canonical_tautomer_with_blocked_atoms_json(mol, blocked_atom_ind
 }
 
 /**
+ * Canonicalize a bounded delimiter-separated SMILES batch.
+ *
+ * Each result retains its input index and original text. Invalid records are
+ * returned inline with `status: "rejected"`; later records are still
+ * processed in deterministic input order.
+ * @param {string} smiles_batch
+ * @param {string} delimiter
+ * @returns {string}
+ */
+export function canonicalize_smiles_batch_json(smiles_batch, delimiter) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles_batch, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(delimiter, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.canonicalize_smiles_batch_json(ptr0, len0, ptr1, len1);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+    }
+}
+
+/**
  * Parse a CDXML document while preserving page and presentation objects.
  * The returned JSON contains an opaque `raw_xml` for each object so unknown
  * ChemDraw extensions are never silently discarded.
@@ -1518,7 +1551,7 @@ export function cip_assignments_json(mol) {
 /**
  * Atoms the accurate CIP engine could not resolve a tetrahedral R/S for, as a JSON
  * array of `{atomIdx, reason}` objects. `reason` is `"tied"` (a genuine CIP-rule tie,
- * not a missing rule) or `"budgetExceeded"`. Always `[]` for the legacy engine (see
+ * not a missing rule), `"budgetExceeded"`, or `"oracleUnstable"`. Always `[]` for the legacy engine (see
  * [`cip_assignments_json`]) -- it never reports "I don't know". Returns `"null"` on
  * an internal engine error.
  * @param {MolHandle} mol
@@ -2068,6 +2101,37 @@ export function ecfp_bitvec_custom(mol, radius, nbits, use_chirality) {
 }
 
 /**
+ * Apply a loss-preserving page/presentation edit to a CDXML document.
+ * `edit_json` is a `CdxmlEdit` command object; unknown presentation XML is
+ * retained and the result is reparsed before it is returned.
+ * @param {string} cdxml
+ * @param {string} edit_json
+ * @returns {string}
+ */
+export function edit_cdxml_document_json(cdxml, edit_json) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        const ptr0 = passStringToWasm0(cdxml, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(edit_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.edit_cdxml_document_json(ptr0, len0, ptr1, len1);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+    }
+}
+
+/**
  * Run `embed_ensemble_v2` on `mol`'s own atom order (never canonicalizes/
  * reparses, same convention as `embed_pipeline_v2_json`). See the module doc
  * for the config JSON shape and the success/failure envelope shape.
@@ -2299,6 +2363,35 @@ export function extxyz_frame_json(text) {
         const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.extxyz_frame_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Return one deterministic, resumable Extended-XYZ batch as a JSON manifest.
+ * Stopping before requesting the next offset is the cancellation boundary.
+ * @param {string} text
+ * @param {number} offset
+ * @param {number} batch_size
+ * @returns {string}
+ */
+export function extxyz_frames_batch_json(text, offset, batch_size) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.extxyz_frames_batch_json(ptr0, len0, offset, batch_size);
         var ptr2 = ret[0];
         var len2 = ret[1];
         if (ret[3]) {
@@ -3487,7 +3580,7 @@ export function minimize_mmff94_lbfgs_json(mol, max_iter) {
  * `coords_json` — JSON array of `[x,y,z]` arrays (Å), one per atom.
  * `max_iter` — maximum iterations (0 = default 500).
  *
- * Returns JSON: `{"coords":[[x,y,z],...], "energy":float, "iterations":int, "converged":bool, "sound":bool}`
+ * Returns JSON: `{"coords":[[x,y,z],...], "energy":float, "iterations":int, "converged":bool, "sound":bool, "worst_bond_length":float}`
  * or `{"error":"<msg>"}` on failure. `sound` is all-finite coordinates and
  * no bond stretched past a sane covalent-bond length — independent of
  * `converged`, since steepest descent often reports `converged:false` on
@@ -4737,6 +4830,30 @@ export function peoe_vsa_json(mol) {
 }
 
 /**
+ * Fingerprint a serialized `PeriodicStructure`; invalid or oversized input
+ * returns a stable JSON error rather than being treated as a retrieval hit.
+ * @param {string} json
+ * @param {string} source
+ * @returns {string}
+ */
+export function periodic_structure_fingerprint_json(json, source) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.periodic_structure_fingerprint_json(ptr0, len0, ptr1, len1);
+        deferred3_0 = ret[0];
+        deferred3_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Detect pharmacophore features for virtual screening and lead optimization.
  * Returns JSON array of features: [{type, atom_idx, neighbor_count}, ...]
  * @param {MolHandle} mol
@@ -4934,6 +5051,33 @@ export function predict_pka_json(smiles) {
         const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.predict_pka_json(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Run deterministic SVG publication preflight for a SMILES string.
+ *
+ * Returns a JSON `PreflightReport` with stable diagnostic paths and a
+ * deterministic input fingerprint. Font metrics are conservative estimates;
+ * the final browser/renderer remains authoritative for pixel-level validation.
+ * The input is capped at the same 1 MiB/10,000-atom limits as other WASM APIs.
+ * @param {string} smiles
+ * @param {number} width
+ * @param {number} height
+ * @returns {string}
+ */
+export function preflight_smiles_json(smiles, width, height) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.preflight_smiles_json(ptr0, len0, width, height);
         deferred2_0 = ret[0];
         deferred2_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
@@ -5235,6 +5379,52 @@ export function rdkit_ecfp_config_detail_json(mol, radius, nbits) {
 }
 
 /**
+ * Compute the RDKit-compatible Daylight-like path fingerprint as a bit-packed
+ * byte vector (256 bytes = 2048 bits). This is the WASM counterpart of the
+ * Python `path_fp` operation and is intentionally separate from native
+ * `topo_path_bitvec`.
+ * @param {MolHandle} mol
+ * @returns {Uint8Array}
+ */
+export function rdkit_path_bitvec(mol) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.rdkit_path_bitvec(mol.__wbg_ptr);
+    var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v1;
+}
+
+/**
+ * Compute the RDKit-compatible RDKFingerprint as a bit-packed byte vector
+ * (256 bytes = 2048 bits). This is separate from both the native
+ * `topo_path_bitvec` operation and the RDKit-compatible path operation.
+ * @param {MolHandle} mol
+ * @returns {Uint8Array}
+ */
+export function rdkit_rdk_bitvec(mol) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.rdkit_rdk_bitvec(mol.__wbg_ptr);
+    var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v1;
+}
+
+/**
+ * Compute the opt-in RDKit-compatible hashed topological-torsion fingerprint
+ * as a bit-packed byte vector (256 bytes = 2048 bits). This remains separate
+ * from the native `torsion_bitvec` operation and its similarity semantics.
+ * @param {MolHandle} mol
+ * @returns {Uint8Array}
+ */
+export function rdkit_torsion_bitvec(mol) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.rdkit_torsion_bitvec(mol.__wbg_ptr);
+    var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v1;
+}
+
+/**
  * Return a copy of the molecule with all explicit hydrogen atoms removed.
  * @param {MolHandle} mol
  * @returns {MolHandle}
@@ -5402,6 +5592,60 @@ export function run_reactants(smirks, reactants_smiles) {
 }
 
 /**
+ * Parse an MDL RXN V2000 file into the typed reaction-document JSON
+ * contract shared with the Rust and Python bindings.
+ * @param {string} text
+ * @returns {string}
+ */
+export function rxn_document_from_rxn(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.rxn_document_from_rxn(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Write typed reaction-document JSON as MDL RXN V2000. Unsupported rich
+ * fields return an error instead of being silently discarded.
+ * @param {string} document_json
+ * @returns {string}
+ */
+export function rxn_document_to_rxn(document_json) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(document_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.rxn_document_to_rxn(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Synthetic Accessibility Score (1 = easy, 10 = hard).
  * @param {MolHandle} mol
  * @returns {number}
@@ -5495,6 +5739,39 @@ export function sdf_from_records_json(smiles_json, names_json, props_json) {
 }
 
 /**
+ * Return one deterministic, resumable SDF batch as a JSON manifest.
+ *
+ * `offset` is the zero-based input record to start at and `batch_size` is
+ * bounded by [`crate::WASM_MAX_BATCH_ITEMS`]. Invalid records stay inline as
+ * `status: "rejected"`; callers can stop requesting later batches to cancel
+ * work without a background queue or hidden buffering.
+ * @param {string} sdf
+ * @param {number} offset
+ * @param {number} batch_size
+ * @returns {string}
+ */
+export function sdf_records_batch_json(sdf, offset, batch_size) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(sdf, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.sdf_records_batch_json(ptr0, len0, offset, batch_size);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Parse an SDF string and return a JSON array of record objects.
  *
  * Each record has the shape:
@@ -5545,6 +5822,91 @@ export function sdf_to_smiles_json(sdf) {
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
         wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Apply an explicit Markush selection command to a semantic model JSON.
+ * @param {string} model_json
+ * @param {string} command_json
+ * @returns {string}
+ */
+export function semantic_apply_json_command(model_json, command_json) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        const ptr0 = passStringToWasm0(model_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(command_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.semantic_apply_json_command(ptr0, len0, ptr1, len1);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+    }
+}
+
+/**
+ * Expand a validated semantic model against a base SMILES and return the
+ * expanded graph plus source-to-expanded atom mapping.
+ * @param {string} base_smiles
+ * @param {string} model_json
+ * @returns {string}
+ */
+export function semantic_expand_json(base_smiles, model_json) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        const ptr0 = passStringToWasm0(base_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passStringToWasm0(model_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.semantic_expand_json(ptr0, len0, ptr1, len1);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+    }
+}
+
+/**
+ * Validate and normalize a typed Markush/polymer semantic model JSON.
+ * @param {string} model_json
+ * @returns {string}
+ */
+export function semantic_model_json(model_json) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(model_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.semantic_model_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
     }
 }
 
@@ -6366,6 +6728,22 @@ export function to_xyz(mol) {
 }
 
 /**
+ * Compute the native topological path fingerprint as a bit-packed byte vector
+ * (256 bytes = 2048 bits), using the default [`chematic_fp::TopoPathConfig`].
+ * This is the native `topo_path` operation, not the RDKit-compatible path
+ * fingerprint exposed by the separate `path_fp` Python method.
+ * @param {MolHandle} mol
+ * @returns {Uint8Array}
+ */
+export function topo_path_bitvec(mol) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.topo_path_bitvec(mol.__wbg_ptr);
+    var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    return v1;
+}
+
+/**
  * Torsion fingerprint as a bit-packed byte vector (256 bytes = 2048 bits).
  * @param {MolHandle} mol
  * @returns {Uint8Array}
@@ -6376,6 +6754,27 @@ export function torsion_bitvec(mol) {
     var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
     wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
     return v1;
+}
+
+/**
+ * Validate a vendor-neutral NMR spectrum JSON document without parsing a
+ * vendor-specific raw file or predicting peaks.
+ * @param {string} json
+ * @returns {string}
+ */
+export function validate_nmr_spectrum_json(json) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.validate_nmr_spectrum_json(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
 }
 
 /**
@@ -6781,14 +7180,43 @@ export function xlogp3_per_atom_json(mol) {
         wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
     }
 }
+
+/**
+ * Return one deterministic, resumable plain-XYZ batch as a JSON manifest.
+ * Stopping before requesting the next offset is the cancellation boundary.
+ * @param {string} text
+ * @param {number} offset
+ * @param {number} batch_size
+ * @returns {string}
+ */
+export function xyz_frames_batch_json(text, offset, batch_size) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.xyz_frames_batch_json(ptr0, len0, offset, batch_size);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
 function __wbg_get_imports() {
     const import0 = {
         __proto__: null,
-        __wbg___wbindgen_is_undefined_6cff064c44e0d823: function(arg0) {
+        __wbg___wbindgen_is_undefined_8c687d0b90d5b524: function(arg0) {
             const ret = arg0 === undefined;
             return ret;
         },
-        __wbg___wbindgen_string_get_d154f1e671052120: function(arg0, arg1) {
+        __wbg___wbindgen_string_get_92ab86bb19cbc12f: function(arg0, arg1) {
             const obj = arg1;
             const ret = typeof(obj) === 'string' ? obj : undefined;
             var ptr1 = isLikeNone(ret) ? 0 : passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
@@ -6796,18 +7224,18 @@ function __wbg_get_imports() {
             getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
             getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
         },
-        __wbg___wbindgen_throw_bb96b2010945f0bc: function(arg0, arg1) {
+        __wbg___wbindgen_throw_5d9e815e6fdf150f: function(arg0, arg1) {
             throw new Error(getStringFromWasm0(arg0, arg1));
         },
-        __wbg_error_dd408a7b3cb542dd: function(arg0) {
+        __wbg_error_756c5934221e6fee: function(arg0) {
             console.error(arg0);
         },
-        __wbg_new_from_slice_8aed4f0384605526: function(arg0, arg1) {
-            const ret = new Uint32Array(getArrayU32FromWasm0(arg0, arg1));
+        __wbg_new_from_slice_3b4c7f1456059f80: function(arg0, arg1) {
+            const ret = new Float64Array(getArrayF64FromWasm0(arg0, arg1));
             return ret;
         },
-        __wbg_new_from_slice_f6e95bc2809a2b07: function(arg0, arg1) {
-            const ret = new Float64Array(getArrayF64FromWasm0(arg0, arg1));
+        __wbg_new_from_slice_a500ec81601be48f: function(arg0, arg1) {
+            const ret = new Uint32Array(getArrayU32FromWasm0(arg0, arg1));
             return ret;
         },
         __wbg_now_e7c6795a7f81e10f: function(arg0) {
@@ -6818,28 +7246,28 @@ function __wbg_get_imports() {
             const ret = arg0.performance;
             return ret;
         },
-        __wbg_static_accessor_GLOBAL_THIS_466428f93b4eaa76: function() {
-            const ret = typeof globalThis === 'undefined' ? null : globalThis;
-            return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
-        },
-        __wbg_static_accessor_GLOBAL_c7aea38d4de089bc: function() {
+        __wbg_static_accessor_GLOBAL_8eb4cd83130a11a0: function() {
             const ret = typeof global === 'undefined' ? null : global;
             return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
         },
-        __wbg_static_accessor_SELF_42d4fae05e59267a: function() {
+        __wbg_static_accessor_GLOBAL_THIS_1e7044f654e934db: function() {
+            const ret = typeof globalThis === 'undefined' ? null : globalThis;
+            return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
+        },
+        __wbg_static_accessor_SELF_d8b50611246a6d92: function() {
             const ret = typeof self === 'undefined' ? null : self;
             return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
         },
-        __wbg_static_accessor_WINDOW_e0db14a0eba6a812: function() {
+        __wbg_static_accessor_WINDOW_fd0bc376bf0f8b42: function() {
             const ret = typeof window === 'undefined' ? null : window;
             return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
         },
-        __wbindgen_cast_0000000000000001: function(arg0) {
+        __wbindgen_generic_0000000000000001: function(arg0) {
             // Cast intrinsic for `F64 -> Externref`.
             const ret = arg0;
             return ret;
         },
-        __wbindgen_cast_0000000000000002: function(arg0, arg1) {
+        __wbindgen_generic_0000000000000002: function(arg0, arg1) {
             // Cast intrinsic for `Ref(String) -> Externref`.
             const ret = getStringFromWasm0(arg0, arg1);
             return ret;

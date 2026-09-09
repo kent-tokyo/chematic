@@ -262,6 +262,7 @@ fn main() {
     for &(name, smiles) in FIXTURES {
         let mol = chematic_smiles::parse(smiles).unwrap_or_else(|err| panic!("{name}: {err}"));
         let base = find_sssr(&mol);
+        let symm = chematic_perception::find_symmetrized_sssr(&mol);
         let all = all_root_candidates(&mol);
         let d2 = d2_root_candidates(&mol);
         let missing_from_d2: BTreeSet<_> = all.difference(&d2).cloned().collect();
@@ -315,8 +316,10 @@ fn main() {
             .filter(|candidate| base_sets.iter().any(|base| base.len() == candidate.len()))
             .collect();
         println!(
-            "{name}: base_sizes={:?} d2_candidates={} all_root_candidates={} missing_from_d2={} missing_same_size={:?} edge_exchange_same_size={:?} accepted_by_existing_contract={:?} exact_cycle_counts={:?} exact_cycle_capped={exact_cycle_capped}",
+            "{name}: base_sizes={:?} symm_count={} symm_sizes={:?} d2_candidates={} all_root_candidates={} missing_from_d2={} missing_same_size={:?} edge_exchange_same_size={:?} accepted_by_existing_contract={:?} exact_cycle_counts={:?} exact_cycle_capped={exact_cycle_capped}",
             base.rings().iter().map(Vec::len).collect::<Vec<_>>(),
+            symm.ring_count(),
+            symm.rings().iter().map(Vec::len).collect::<Vec<_>>(),
             d2.len(),
             all.len(),
             missing_from_d2.len(),

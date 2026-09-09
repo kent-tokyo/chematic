@@ -689,8 +689,8 @@ class Mol:
 
     # -- Transformations -----------------------------------------------------
 
-    def standardize(self) -> Mol:
-        """Return the standardized molecule (largest fragment, charges neutralized, tautomer canonicalized)."""
+    def standardize(self, largest_fragment_only: bool = False) -> Mol:
+        """Standardize the molecule; optionally retain only the largest fragment."""
         ...
 
     def scaffold(self) -> Mol:
@@ -3305,6 +3305,19 @@ class SimilarityIndex:
     def __len__(self) -> int: ...
     def __repr__(self) -> str: ...
 
+
+class PreparedFingerprintIndex:
+    """Exact reusable top-k fingerprint search over a fixed SMILES library."""
+
+    @staticmethod
+    def from_smiles(
+        smiles: list[str], fp: str = "ecfp4"
+    ) -> PreparedFingerprintIndex: ...
+    def search(self, query: str, k: int = 10) -> list[tuple[int, float]]: ...
+    def get_smiles(self, index: int) -> str: ...
+    def __len__(self) -> int: ...
+    def __repr__(self) -> str: ...
+
 # ---------------------------------------------------------------------------
 # SDF I/O
 # ---------------------------------------------------------------------------
@@ -3359,6 +3372,30 @@ def iter_sdf(path: str) -> SdfIter:
 
 def iter_sdf_str(content: str) -> SdfIter:
     """Lazily iterate over records in an SDF string (already loaded into memory)."""
+    ...
+
+class XyzBatchIter:
+    """Bounded, input-ordered stream of XYZ or Extended XYZ frame dicts.
+
+    Malformed frames are counted in ``manifest_json()`` and recovery continues
+    after an unambiguous subsequent atom-count line.
+    """
+
+    def __iter__(self) -> Iterator[list[dict[str, object]]]: ...
+    def __next__(self) -> list[dict[str, object]]: ...
+    def cancel(self) -> None: ...
+    def manifest_json(self) -> str: ...
+
+def iter_sdf_batched(path: str, batch_size: int = 1000) -> Iterator[list[SdfRecord]]:
+    """Stream SDF records in bounded batches with cancellation and progress."""
+    ...
+
+def iter_xyz_batched(path: str, batch_size: int = 1000) -> XyzBatchIter:
+    """Stream plain XYZ frames in bounded batches with malformed-frame recovery."""
+    ...
+
+def iter_extxyz_batched(path: str, batch_size: int = 1000) -> XyzBatchIter:
+    """Stream Extended XYZ frames in bounded batches with malformed-frame recovery."""
     ...
 
 # ---------------------------------------------------------------------------

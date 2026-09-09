@@ -30,7 +30,7 @@ unbounded substructure, or simply have not had a limits type added yet.
 | OpenDX | `OpenDxParseLimits` | `max_input_bytes`, `max_grid_points` (no `max_atoms` — the format has no atom section) |
 | SMILES | none | — |
 | SMARTS | none | — |
-| MOL/SDF | none | — |
+| MOL/SDF | `SdfParseLimits` | `max_input_bytes`, `max_record_bytes`, `max_line_bytes`, `max_records` |
 | PDB | none | — |
 | CIF (plain) | none | — |
 | XYZ / Extended XYZ | `chematic_3d::XyzParseLimits`, `chematic_mol::XyzParseLimits` | 3D XYZ: `max_input_bytes`, `max_atoms`, `max_line_bytes`; extended XYZ: input/atom/frame/line/property limits |
@@ -231,8 +231,14 @@ streaming-vs-materializing distinction: `LammpsDumpReader<R: BufRead>` is a
 true streaming `Iterator`, while both the Python (`parse_lammps_dump_all`)
 and WASM (`lammps_trajectory_to_json`) bindings materialize the whole
 trajectory instead — a documented scope choice. MOL/SDF's `SdfFileReader<R:
-BufRead>` is a true streaming reader too, but this is not currently called
-called out separately. See
+BufRead>` is a true streaming reader too. Rust callers can use
+`SdfBatchReader` for bounded, input-ordered batches with explicit cancellation
+and a versioned progress manifest; rejected records remain in their position
+within each batch. Python's `iter_sdf` and `iter_sdf_batched` now expose the
+file-backed reader; the batch iterator has bounded batch sizes, explicit
+cancellation, and a JSON progress manifest including records seen, emitted,
+and rejected. Malformed records remain excluded from yielded Python records
+but are counted explicitly in that manifest. See
 [`language-bindings.md`](language-bindings.md#streaming-vs-materialization-by-language)
 for the full per-format table.
 

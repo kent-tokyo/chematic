@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "status": "local-evidence-validated",
+  "gate": "scripts/check_3d_quality_evidence.py",
+  "inputs": [
+    "benchmarks/2026-09-09-3d-class-failure-rates-v1.0.10.json",
+    "benchmarks/2026-09-09-3d-energy-sanity-v1.0.10.json",
+    "benchmarks/2026-09-09-ensemble-diversity-v1.0.10.json",
+    "benchmarks/2026-09-09-symmetric-rmsd-oracle-v1.0.10.json",
+    "benchmarks/2026-09-09-symmetric-torsion-distance-v1.0.10.json"
+  ],
+  "checks": {
+    "class_failure_rates": "58/58 new distance-geometry successes",
+    "energy_sanity": "4 arms, 61/61 finite and non-increasing successful outcomes",
+    "ensemble_diversity": "58/58 same-seed reproductions and 58/58 adjacent-seed non-aliasing checks",
+    "symmetric_rmsd": "5/6 within tolerance, 1 documented acetate gap, 0 unexplained mismatches",
+    "symmetric_torsion_distance": "10/10 changed-torsion measurements"
+  },
+  "result": "pass",
+  "boundary": "This validates the local evidence bundle only. It does not close independent force-field oracle coverage, full RDKit TFD parity, or the broader P5 quality item."
+}

@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-09",
+  "target_version": "1.0.10",
+  "scope": "UFF prepared energy and analytic-gradient dispatch/soundness probe",
+  "fixture": "crates/chematic-ff/src/uff.rs::uff_supported_metal_and_halogen_types_have_finite_prepared_energy",
+  "elements_probed": ["Li", "Na", "K", "Mg", "Ca", "Al", "Si", "Fe", "Co", "Ni", "Cu", "Zn", "Ag", "Au", "Hg", "Cl", "Br", "I"],
+  "declared_uff_types_probed": 45,
+  "declared_uff_type_fixture": "crates/chematic-ff/src/uff.rs::every_uff_type_has_finite_prepared_energy_and_gradient",
+  "geometry": "two-atom single-bond probe at [0,0,0] and [1.8,0.2,0.1] Angstrom",
+  "command": "cargo test -p chematic-ff --offline --lib --quiet",
+  "tests_passed": 217,
+  "additional_fixture": "four-carbon chain with a genuine 1-4 prepared vdW pair, checked against central differences",
+  "result": "passed",
+  "gradient_check": "central difference delta 1e-5 Angstrom; maximum absolute error below 2e-3 kcal/mol/Angstrom for every probed coordinate",
+  "boundary": "This verifies local finite energy and gradient consistency for the 18 public element dispatch probes and all 45 declared UffType variants; it does not establish independent UFF parameter parity, coordination-geometry validity, convergence, or stereo correctness."
+}

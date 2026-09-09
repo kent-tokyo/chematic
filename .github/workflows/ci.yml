@@ -32,6 +32,10 @@ jobs:
             ${{ runner.os }}-cargo-test-
       - name: Unit tests
         run: cargo test --workspace --lib --quiet
+      - name: Shared cross-binding manifest
+        run: python3 scripts/check_cross_binding_manifest.py
+      - name: Static binding surface inventory
+        run: python3 scripts/check_binding_surface.py > /dev/null
 
   test-integration:
     name: Integration tests (${{ matrix.package }} / ${{ matrix.target }})
@@ -48,6 +52,7 @@ jobs:
           - { package: chematic-chem, target: issue415_fused_heteroaromatic_holdout }
           - { package: chematic-chem, target: metal_disconnect_holdout }
           - { package: chematic-chem, target: rdkit_reference }
+          - { package: chematic-chem, target: descriptor_contract }
           - { package: chematic-chem, target: standardize_stereo_table_preservation }
           - { package: chematic-cip, target: corpus_report }
           - { package: chematic-cip, target: corpus_smoke }
@@ -240,3 +245,13 @@ jobs:
           python-version: "3.12"
       - run: pip install cffconvert --quiet
       - run: cffconvert --validate
+
+  validate-benchmark-index:
+    name: Validate benchmark index
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+      - run: python3 scripts/check_benchmark_index.py

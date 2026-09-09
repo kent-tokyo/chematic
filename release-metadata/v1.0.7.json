@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "product": "chematic",
+  "release": {
+    "version": "1.0.7",
+    "tag": "v1.0.7",
+    "commit": null,
+    "commit_source": "The attached GitHub Release asset is generated from the exact v1.0.7 tag commit.",
+    "released_at": "2026-09-05T00:00:00Z"
+  },
+  "packages": {
+    "rust": {"name": "chematic", "version": "1.0.7", "registry_url": "https://crates.io/crates/chematic/1.0.7"},
+    "python": {"name": "chematic", "version": "1.0.7", "registry_url": "https://pypi.org/project/chematic/1.0.7/"},
+    "npm": {"name": "@kent-tokyo/chematic", "version": "1.0.7", "registry_url": "https://www.npmjs.com/package/@kent-tokyo/chematic/v/1.0.7"}
+  },
+  "wasm": {
+    "artifact": "crates/chematic-wasm/pkg/chematic_wasm_bg.wasm",
+    "measurements": [{
+      "status": "historical",
+      "release_or_snapshot": "v1.0.2 release candidate",
+      "raw_bytes": 3300452,
+      "compressed_bytes": 1213008,
+      "command": "wasm-pack 0.13.1; wasm-opt 130 -O3; gzip -9",
+      "runtime": "macOS arm64",
+      "source": "benchmarks/2026-09-04-wasm-size.md"
+    }]
+  },
+  "mcp": {"tool_count": 20, "transport": ["stdio"], "network_enabled_tools": ["pubchem_lookup"]},
+  "benchmarks": {
+    "historical": [
+      {"path": "benchmarks/2026-09-04-wasm-size.md", "status": "historical", "versions": ["v1.0.2 release candidate"], "commit": "not recorded in the source benchmark", "corpus": "optimized chematic WASM artifact", "hardware": "macOS arm64"},
+      {"path": "benchmarks/2026-09-04-streaming-formats.md", "status": "historical", "versions": ["chematic 1.0.3", "RDKit 2025.09.3"], "commit": "not recorded in the source benchmark", "corpus": "checked-in two-record SDF and two-frame XYZ fixtures", "hardware": "macOS arm64"},
+      {"path": "benchmarks/2026-09-05-hotpath-110.md", "status": "historical", "versions": ["v1.0.6 source", "v1.0.7 source"], "commit": "local source A/B; tag commit not applicable to baseline", "corpus": "5,000 SMILES and 365-record SDF fixtures", "hardware": "Apple M4 macOS 26.5.2"}
+    ]
+  },
+  "generated_at": "2026-09-05T00:00:00Z"
+}

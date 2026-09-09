@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "date": "2026-09-10",
+  "scope": "local cross-engine runtime availability",
+  "python_same_process": {
+    "rdkit": {"status": "available", "version": "2025.09.3"},
+    "openbabel": {"status": "unavailable", "error": "ModuleNotFoundError"},
+    "pybel": {"status": "unavailable", "error": "ModuleNotFoundError"}
+  },
+  "cli": {
+    "obabel": {"status": "available", "path": "/opt/homebrew/bin/obabel"}
+  },
+  "interpretation": "Same-process RDKit contracts are locally executable. Open Babel remains CLI-bound in this environment, so its existing comparisons are explicitly subprocess/CLI boundary evidence rather than same-process parity evidence."
+}

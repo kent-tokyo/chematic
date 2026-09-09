@@ -174,7 +174,7 @@ binding.
 
 | Format | Rust | Python | WASM |
 |---|---|---|---|
-| MOL/SDF | `SdfFileReader<R: BufRead>` — true streaming `Iterator` | materializes (no streaming reader bound) | materializes |
+| MOL/SDF | `SdfFileReader<R: BufRead>` — true streaming `Iterator` | `iter_sdf` and `iter_sdf_batched` are file-backed streaming iterators; batches are lazy, cancellable, and expose a progress manifest with seen/emitted/rejected counts. The Python XYZ/Extended XYZ batch readers use the same file-backed, one-line look-ahead recovery boundary and count malformed frames without stopping later frames. WASM additionally exposes bounded resumable `sdf_records_batch_json`, `xyz_frames_batch_json`, and `extxyz_frames_batch_json` over in-memory strings; stopping before the next offset is the cancellation boundary, not file-backed streaming. The WASM XYZ convenience path groups malformed count-line content into one rejected frame and continues only when a later count-line boundary is unambiguous; core Rust file-backed readers remain fail-stop. | materializes |
 | LAMMPS dump/trajectory | `LammpsDumpReader<R: BufRead>` — true streaming `Iterator` | `parse_lammps_dump_all` materializes the whole trajectory as a list (disclosed scope choice, not a silently dropped capability) | `lammps_trajectory_to_json` materializes (same disclosed choice) |
 | Gaussian Cube | `CubeFileReader<R: BufRead>` streams the *input reading* only — the returned `VolumetricGrid.values` is still one fully-materialized `Vec<f64>` (single-dataset format, nothing to iterate across) | via `VolumetricGrid.from_cube()`, materializes | materializes |
 | Other documented formats | no `BufRead`-backed streaming reader type exists | materializes | materializes |

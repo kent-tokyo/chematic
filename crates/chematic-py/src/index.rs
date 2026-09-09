@@ -1,6 +1,20 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
+fn parse_fp_type(name: &str) -> PyResult<chematic_fp::FpType> {
+    match name {
+        "ecfp4" => Ok(chematic_fp::FpType::Ecfp4),
+        "ecfp6" => Ok(chematic_fp::FpType::Ecfp6),
+        "ecfp4_chiral" => Ok(chematic_fp::FpType::Ecfp4Chiral),
+        "fcfp4" => Ok(chematic_fp::FpType::Fcfp4),
+        "maccs" => Ok(chematic_fp::FpType::Maccs),
+        "topo_path" => Ok(chematic_fp::FpType::TopoPath),
+        _ => Err(PyValueError::new_err(format!(
+            "unknown fingerprint type {name:?}; expected ecfp4, ecfp6, ecfp4_chiral, fcfp4, maccs, or topo_path"
+        ))),
+    }
+}
+
 // ---------------------------------------------------------------------------
 // SimilarityIndex — MinHash LSH index for fast similarity search
 // ---------------------------------------------------------------------------
@@ -119,10 +133,84 @@ impl PySimilarityIndex {
 }
 
 // ---------------------------------------------------------------------------
+// PreparedFingerprintIndex — exact reusable top-k search
+// ---------------------------------------------------------------------------
+
+/// Exact top-k fingerprint search with one-time database preparation.
+///
+/// Unlike :class:`SimilarityIndex`, this class computes the selected
+/// fingerprint for each database molecule once. It is intended for workloads
+/// with many queries against a fixed library.
+#[pyclass(name = "PreparedFingerprintIndex")]
+pub struct PyPreparedFingerprintIndex {
+    inner: chematic_fp::PreparedFingerprintIndex,
+    original_indices: Vec<usize>,
+    smiles: Vec<String>,
+}
+
+#[pymethods]
+impl PyPreparedFingerprintIndex {
+    /// Build an exact reusable index from SMILES.
+    ///
+    /// Invalid SMILES are skipped; returned indices refer to the original
+    /// input list. ``fp`` defaults to ``"ecfp4"``.
+    #[staticmethod]
+    #[pyo3(signature = (smiles, fp = "ecfp4"))]
+    fn from_smiles(smiles: Vec<String>, fp: &str) -> PyResult<Self> {
+        let fp_type = parse_fp_type(fp)?;
+        let mut molecules = Vec::new();
+        let mut original_indices = Vec::new();
+        let mut valid_smiles = Vec::new();
+        for (index, smi) in smiles.into_iter().enumerate() {
+            if let Ok(mol) = chematic_smiles::parse(&smi) {
+                molecules.push(mol);
+                original_indices.push(index);
+                valid_smiles.push(smi);
+            }
+        }
+        Ok(Self {
+            inner: chematic_fp::PreparedFingerprintIndex::new(&molecules, fp_type),
+            original_indices,
+            smiles: valid_smiles,
+        })
+    }
+
+    /// Search the prepared database and return ``(original_index, score)``.
+    #[pyo3(signature = (query, k = 10))]
+    fn search(&self, query: &str, k: usize) -> PyResult<Vec<(usize, f64)>> {
+        let query_mol =
+            chematic_smiles::parse(query).map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok(self
+            .inner
+            .search(&query_mol, k)
+            .into_iter()
+            .map(|(index, score)| (self.original_indices[index], score))
+            .collect())
+    }
+
+    /// Return the valid SMILES stored by the index, in compact index order.
+    fn get_smiles(&self, index: usize) -> PyResult<&str> {
+        self.smiles
+            .get(index)
+            .map(String::as_str)
+            .ok_or_else(|| PyValueError::new_err(format!("index {index} out of range")))
+    }
+
+    fn __len__(&self) -> usize {
+        self.inner.len()
+    }
+
+    fn __repr__(&self) -> String {
+        format!("PreparedFingerprintIndex(n={})", self.inner.len())
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Register
 // ---------------------------------------------------------------------------
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PySimilarityIndex>()?;
+    m.add_class::<PyPreparedFingerprintIndex>()?;
     Ok(())
 }

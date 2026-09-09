@@ -9,6 +9,7 @@ pub mod grid;
 pub mod layout;
 #[cfg(feature = "png")]
 pub mod png;
+pub mod preflight;
 pub mod similarity_map;
 pub mod svg;
 
@@ -21,6 +22,10 @@ pub use layout::{
 };
 #[cfg(feature = "png")]
 pub use png::{render_png, render_png_opts};
+pub use preflight::{
+    PreflightCode, PreflightDiagnostic, PreflightLimits, PreflightReport, PreflightStyle,
+    preflight_svg, preflight_svg_json,
+};
 pub use reaction_svg::{depict_reaction_svg, depict_reaction_svg_opts};
 pub use svg::{
     AtomLabel, HPosition, RenderOptions, atom_color, atom_color_rgb, atom_display_label,

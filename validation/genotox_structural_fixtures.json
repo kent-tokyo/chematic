@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "purpose": "Source-referenced structural smoke fixtures for explainable genotoxicity-reactivity triage; this manifest is not biological validation.",
+  "source": "PubChem PUG REST",
+  "source_policy": "The recorded structures are provenance anchors. Downstream users must review source and redistribution terms before republishing the fixture data.",
+  "fixtures": [
+    {
+      "id": "mitomycin-c",
+      "name": "Mitomycin C",
+      "pubchem_cid": 5746,
+      "isomeric_smiles": "CC1=C(C(=O)C2=C(C1=O)N3C[C@H]4[C@@H]([C@@]3([C@@H]2COC(=O)N)OC)N4)N",
+      "expected_motifs": ["aziridine"],
+      "source_url": "https://pubchem.ncbi.nlm.nih.gov/compound/5746",
+      "pug_rest_url": "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/5746/property/IsomericSMILES/JSON"
+    },
+    {
+      "id": "aflatoxin-b1-exo-8-9-epoxide",
+      "name": "Aflatoxin B1 8,9-epoxide",
+      "pubchem_cid": 104756,
+      "isomeric_smiles": "COC1=C2C3=C(C(=O)CC3)C(=O)OC2=C4[C@@H]5[C@@H]6[C@@H](O6)O[C@@H]5OC4=C1",
+      "expected_motifs": ["epoxide"],
+      "source_url": "https://pubchem.ncbi.nlm.nih.gov/compound/Aflatoxin-B1-2_3-oxide",
+      "pug_rest_url": "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/104756/property/IsomericSMILES/JSON"
+    },
+    {
+      "id": "anti-bpde",
+      "name": "(+)-anti-benzo[a]pyrene-7,8-diol-9,10-epoxide",
+      "pubchem_cid": 42879,
+      "isomeric_smiles": "C1=CC2=C3C(=C1)C=CC4=C3C(=CC5=C4[C@H]6[C@H](O6)[C@@H]([C@H]5O)O)C=C2",
+      "expected_motifs": ["epoxide"],
+      "source_url": "https://pubchem.ncbi.nlm.nih.gov/compound/42879",
+      "pug_rest_url": "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/42879/property/IsomericSMILES/JSON"
+    }
+  ]
+}

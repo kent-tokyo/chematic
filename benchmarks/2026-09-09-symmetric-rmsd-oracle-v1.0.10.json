@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "scope": "automorphism-aware conformer RMSD against an independent RDKit oracle",
+  "command": "cargo run --release -p chematic-3d --example rmsd_symmetric_oracle_dump --offline > /private/tmp/rmsd_symmetric_oracle_dump-v1010.jsonl && python3 scripts/rmsd_symmetric_oracle_check.py /private/tmp/rmsd_symmetric_oracle_dump-v1010.jsonl",
+  "tolerance_angstrom": 0.001,
+  "cases": [
+    {"name": "propane", "chematic": 0.0, "rdkit": 0.0, "difference": 0.0, "status": "ok"},
+    {"name": "cf3_ethane", "chematic": 0.0, "rdkit": 0.000002, "difference": 0.000002, "status": "ok"},
+    {"name": "neopentane", "chematic": 0.0, "rdkit": 0.0, "difference": 0.0, "status": "ok"},
+    {"name": "benzene", "chematic": 1.143095, "rdkit": 1.143095, "difference": 0.0, "status": "ok"},
+    {"name": "acetate", "chematic": 0.356340, "rdkit": 0.0, "difference": 0.356340, "status": "known_symmetrization_gap"},
+    {"name": "ibuprofen", "chematic": 0.0, "rdkit": 0.0, "difference": 0.0, "status": "ok"}
+  ],
+  "summary": {"total": 6, "within_tolerance": 5, "known_gap": 1, "unexplained_mismatches": 0},
+  "boundary": "The acetate discrepancy is the documented unported symmetrizeConjugatedTerminalGroups behavior; this is not a claim of full force-field or conformer-quality parity."
+}

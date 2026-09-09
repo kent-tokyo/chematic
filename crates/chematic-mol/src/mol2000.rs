@@ -613,6 +613,9 @@ fn encode_charge(charge: i8) -> u8 {
 /// isotope; `Element::atomic_mass()` provides the corresponding rounded mass
 /// number used by the rest of the crate.
 fn decode_mass_difference(element: Element, field: &str) -> Option<u16> {
+    if field == " 0" {
+        return None;
+    }
     let difference = field.trim().parse::<i16>().ok()?;
     if difference == 0 {
         return None;
@@ -662,6 +665,23 @@ fn parse_field3(
 /// (such as a leading `+`) fall back to `str::parse` at the call site.
 #[inline]
 fn parse_unsigned_ascii(field: &str) -> Option<usize> {
+    // Common fixed-width fields: avoid a checked multiply per digit.
+    // Every other spelling still takes the original parser/fallback path.
+    if let [a, b, c] = *field.as_bytes()
+        && c.is_ascii_digit()
+    {
+        let last = (c - b'0') as usize;
+        if a == b' ' {
+            if b == b' ' {
+                return Some(last);
+            }
+            if b.is_ascii_digit() {
+                return Some((b - b'0') as usize * 10 + last);
+            }
+        } else if a.is_ascii_digit() && b.is_ascii_digit() {
+            return Some((a - b'0') as usize * 100 + (b - b'0') as usize * 10 + last);
+        }
+    }
     let mut value = 0usize;
     let mut saw_digit = false;
     for &byte in field.as_bytes() {
@@ -795,6 +815,7 @@ fn read_mol_internal(
         // and coordinate storage are diagnostic-path work.
         let z: f64 = match atom_line.get(20..30) {
             None => 0.0,
+            Some("    0.0000") => 0.0,
             Some(raw) => {
                 let trimmed = raw.trim();
                 if trimmed.is_empty() {
@@ -843,18 +864,27 @@ fn read_mol_internal(
 
         // Element symbol: bytes 31–33 (3 chars, left-padded with a space in
         // the spec, but writers vary; trim both ends).
-        let sym = atom_line
-            .get(31..34)
-            .ok_or_else(|| {
-                make_atom_err(
-                    raw_lineno,
-                    format!("atom line {atom_i} too short for element field"),
-                )
-            })?
-            .trim();
+        let sym = atom_line.get(31..34).ok_or_else(|| {
+            make_atom_err(
+                raw_lineno,
+                format!("atom line {atom_i} too short for element field"),
+            )
+        })?;
 
-        let element = Element::from_symbol(sym).ok_or_else(|| MolParseError::UnknownElement {
-            symbol: sym.to_string(),
+        let element = match sym {
+            "C  " => Some(Element::C),
+            "N  " => Some(Element::N),
+            "O  " => Some(Element::O),
+            "H  " => Some(Element::H),
+            "S  " => Some(Element::S),
+            "P  " => Some(Element::P),
+            "F  " => Some(Element::F),
+            "Cl " => Some(Element::CL),
+            "Br " => Some(Element::BR),
+            _ => Element::from_symbol(sym.trim()),
+        }
+        .ok_or_else(|| MolParseError::UnknownElement {
+            symbol: sym.trim().to_string(),
             line: raw_lineno,
         })?;
 
@@ -862,6 +892,9 @@ fn read_mol_internal(
         let charge = atom_line
             .get(36..39)
             .map(|ccc| {
+                if ccc == "  0" {
+                    return 0;
+                }
                 let code = parse_unsigned_ascii(ccc)
                     .and_then(|value| i8::try_from(value).ok())
                     .unwrap_or_else(|| ccc.trim().parse().unwrap_or(0));
@@ -873,10 +906,18 @@ fn read_mol_internal(
         let isotope = atom_line
             .get(34..36)
             .and_then(|field| decode_mass_difference(element, field));
+        // V2000 atom-atom mapping number (columns 61-63, zero-based
+        // 60..63). Zero means that the atom is not mapped.
+        let atom_map = atom_line
+            .get(60..63)
+            .and_then(parse_unsigned_ascii)
+            .and_then(|value| u16::try_from(value).ok())
+            .filter(|&value| value != 0);
 
         let mut atom = Atom::new(element);
         atom.charge = charge;
         atom.isotope = isotope;
+        atom.atom_map = atom_map;
         builder.add_atom(atom);
     }
 
@@ -1186,6 +1227,41 @@ pub fn write_mol_with_coords(
 
 #[inline]
 fn push_right_aligned_u32(out: &mut String, mut value: u32, width: usize) {
+    // V2000 counts and bond fields are almost always three columns wide.
+    // Append the entire field in one operation, retaining the general path
+    // for widths/values outside the fixed-width format.
+    if width == 3 && value < 1000 {
+        static FIELDS: [[u8; 3]; 1000] = {
+            let mut fields = [[b' '; 3]; 1000];
+            let mut n = 0;
+            while n < fields.len() {
+                if n >= 100 {
+                    fields[n][0] = b'0' + (n / 100) as u8;
+                }
+                if n >= 10 {
+                    fields[n][1] = b'0' + (n / 10 % 10) as u8;
+                }
+                fields[n][2] = b'0' + (n % 10) as u8;
+                n += 1;
+            }
+            fields
+        };
+        // Validate ASCII at compile time, not at every emitted field.
+        static TEXT: [&str; 1000] = {
+            let mut text = [""; 1000];
+            let mut n = 0;
+            while n < text.len() {
+                text[n] = match std::str::from_utf8(&FIELDS[n]) {
+                    Ok(s) => s,
+                    Err(_) => panic!("ASCII decimal field"),
+                };
+                n += 1;
+            }
+            text
+        };
+        out.push_str(TEXT[value as usize]);
+        return;
+    }
     let mut digits = [0_u8; 10];
     let mut start = digits.len();
     loop {
@@ -1269,11 +1345,12 @@ pub fn write_mol_with_coords_into(
         let sym = atom.element.symbol();
         let charge_code = encode_charge(atom.charge);
         let mass_difference = encode_mass_difference(atom.element, atom.isotope).unwrap_or(0);
+        let atom_map = atom.atom_map.unwrap_or(0);
         if let Some(&(x, y)) = coords.get(idx.0 as usize) {
             writeln!(
                 out,
-                "{:>10.4}{:>10.4}{:>10.4} {:<3}{:>2}{:>3}  0  0  0  0  0  0  0  0  0",
-                x, y, 0.0_f64, sym, mass_difference, charge_code,
+                "{:>10.4}{:>10.4}{:>10.4} {:<3}{:>2}{:>3}  0  0  0  0  0  0  0 {:>3}  0",
+                x, y, 0.0_f64, sym, mass_difference, charge_code, atom_map,
             )
             .expect("writing to String cannot fail");
         } else {
@@ -1285,9 +1362,15 @@ pub fn write_mol_with_coords_into(
             for _ in sym.len()..3 {
                 out.push(' ');
             }
-            push_right_aligned_i16(out, mass_difference, 2);
-            push_right_aligned_u32(out, charge_code as u32, 3);
-            out.push_str("  0  0  0  0  0  0  0  0  0\n");
+            if mass_difference == 0 && charge_code == 0 {
+                out.push_str(" 0  0");
+            } else {
+                push_right_aligned_i16(out, mass_difference, 2);
+                push_right_aligned_u32(out, charge_code as u32, 3);
+            }
+            out.push_str("  0  0  0  0  0  0  0");
+            push_right_aligned_u32(out, atom_map as u32, 3);
+            out.push_str("  0\n");
         }
     }
 
@@ -1375,14 +1458,15 @@ pub fn write_mol_with_conformer(
         let sym = atom.element.symbol();
         let charge_code = encode_charge(atom.charge);
         let mass_difference = encode_mass_difference(atom.element, atom.isotope).unwrap_or(0);
+        let atom_map = atom.atom_map.unwrap_or(0);
         let p = conformer
             .points
             .get(idx.0 as usize)
             .copied()
             .unwrap_or(Point3::zero());
         out.push_str(&format!(
-            "{:>10.4}{:>10.4}{:>10.4} {:<3}{:>2}{:>3}  0  0  0  0  0  0  0  0  0\n",
-            p.x, p.y, p.z, sym, mass_difference, charge_code,
+            "{:>10.4}{:>10.4}{:>10.4} {:<3}{:>2}{:>3}  0  0  0  0  0  0  0 {:>3}  0\n",
+            p.x, p.y, p.z, sym, mass_difference, charge_code, atom_map,
         ));
     }
 
@@ -1851,7 +1935,40 @@ mod tests {
     use super::*;
 
     #[test]
+    fn three_column_parser_matches_legacy_spelling_contract() {
+        // All ASCII triples cover whitespace, signs, malformed fields and
+        // every 0..999 value, including fallback-accepted "+12" and "1  ".
+        for a in 0..128_u8 {
+            for b in 0..128_u8 {
+                for c in 0..128_u8 {
+                    let bytes = [a, b, c];
+                    let field = std::str::from_utf8(&bytes).unwrap();
+                    let expected = field.trim().parse::<usize>().ok();
+                    let actual = parse_field3(field, 0, 1, |line, detail| {
+                        MolParseError::InvalidCountLine { line, detail }
+                    })
+                    .ok();
+                    assert_eq!(actual, expected, "field={field:?}");
+                }
+            }
+        }
+        for field in ["é1", "1é", "\u{2000}"] {
+            assert!(
+                parse_field3(field, 0, 1, |line, detail| {
+                    MolParseError::InvalidCountLine { line, detail }
+                })
+                .is_err()
+            );
+        }
+    }
+
+    #[test]
     fn fixed_width_integer_writers_match_rust_formatting() {
+        for value in 0..=1001 {
+            let mut actual = String::new();
+            push_right_aligned_u32(&mut actual, value, 3);
+            assert_eq!(actual, format!("{value:>3}"));
+        }
         for (value, width) in [
             (0_u32, 1_usize),
             (0, 3),
@@ -1880,6 +1997,24 @@ mod tests {
             push_right_aligned_i16(&mut actual, value, width);
             assert_eq!(actual, format!("{value:>width$}"));
         }
+    }
+
+    #[test]
+    fn shared_mol_v2000_roundtrip_contract_matches() {
+        let document: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../validation/cross_binding_contract.json"
+        )))
+        .expect("contract JSON");
+        let contract = &document["mol_v2000_contract"];
+        let (mol, _) = parse_mol(contract["input"].as_str().unwrap()).unwrap();
+        let serialized = write_mol(&mol, &MolMetadata::default());
+        let (roundtripped, _) = parse_mol(&serialized).unwrap();
+        assert_eq!(
+            roundtripped.atom_count(),
+            contract["expected"]["atom_count"]
+        );
+        assert_eq!(roundtripped.bond_count(), 1);
     }
 
     /// Minimal ethanol MOL V2000 block (CCO, 3 atoms, 2 bonds).
@@ -1935,6 +2070,14 @@ M  END
                 mol.atom(AtomIdx(0)).isotope
             );
         }
+    }
+
+    #[test]
+    fn atom_map_round_trips_through_v2000() {
+        let mol = chematic_smiles::parse("[CH3:7]").expect("mapped SMILES");
+        let written = write_mol(&mol, &MolMetadata::default());
+        let (roundtrip, _) = parse_mol(&written).expect("V2000 round-trip");
+        assert_eq!(roundtrip.atom(AtomIdx(0)).atom_map, Some(7));
     }
 
     #[test]

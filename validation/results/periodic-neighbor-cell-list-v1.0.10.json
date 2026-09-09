@@ -1,0 +1,29 @@
+{
+  "schema_version": "1",
+  "date": "2026-09-09",
+  "version": "1.0.10",
+  "scope": "chematic-crystal orthorhombic periodic neighbors",
+  "implementation": {
+    "index": "Cartesian uniform cell list over replicated site images",
+    "query_cells": 125,
+    "distance_predicate": "distance <= cutoff",
+    "fallback": "reciprocal-vector bounded search for triclinic or oversized cases"
+  },
+  "parity": {
+    "result_keys": "exact",
+    "displacement_and_distance_tolerance": 1e-12,
+    "ordering": "deterministic public sort key"
+  },
+  "command": "CARGO_TARGET_DIR=/private/tmp/chematic-target-crystal-cell cargo test -p chematic-crystal --offline --lib --tests",
+  "result": "passed",
+  "test_counts": {
+    "unit": 95,
+    "integration": 4,
+    "additional_targets": 9
+  },
+  "performance_claim": false,
+  "remaining_scope": [
+    "triclinic periodic cell-list path",
+    "broader numerical and throughput gate"
+  ]
+}

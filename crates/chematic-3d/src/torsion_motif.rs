@@ -42,7 +42,11 @@
 
 use std::f64::consts::PI;
 
-use chematic_core::{AtomIdx, Molecule};
+use chematic_core::{AtomIdx, BondOrder, Molecule};
+use chematic_smarts::{
+    AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, MatchConfig, QueryMolecule,
+    find_matches_with_config,
+};
 
 use crate::conformer::ConformerEnsemble;
 use crate::coords::Coords3D;
@@ -134,6 +138,96 @@ pub fn motif_angles_deg(ensemble: &ConformerEnsemble, motif: &TorsionMotif) -> V
         .filter_map(|i| ensemble.get_conformer(i))
         .filter_map(|coords| get_dihedral_deg(coords, a, b, c, d))
         .collect()
+}
+
+/// Return a symmetry-aware normalized torsion-angle distance for two
+/// geometries of the same molecule.
+///
+/// The result is the minimum mean circular angular difference over all
+/// topology-preserving self-mappings, divided by 180, so it is in `[0, 1]`.
+/// This is a deterministic, bounded TFD-like diagnostic for local comparisons;
+/// it is not claimed to be numerically identical to RDKit's torsion fingerprint
+/// implementation.  Degenerate torsions are omitted from the mean.  If no
+/// rotatable torsions are defined, the distance is zero.
+pub fn torsion_distance_symmetric(mol: &Molecule, coords_a: &Coords3D, coords_b: &Coords3D) -> f64 {
+    let motifs = extract_torsion_motifs(mol, coords_a);
+    if motifs.is_empty() {
+        return 0.0;
+    }
+    let query = molecule_self_query(mol);
+    let matches = find_matches_with_config(
+        &query,
+        mol,
+        &MatchConfig {
+            uniquify: false,
+            ..MatchConfig::default()
+        },
+    );
+    let mut best = f64::INFINITY;
+    for mapping in matches {
+        let mut total = 0.0;
+        let mut count = 0usize;
+        for motif in &motifs {
+            let [a, b, c, d] = motif.atoms;
+            let mapped = [
+                mapping[&(a.0 as usize)],
+                mapping[&(b.0 as usize)],
+                mapping[&(c.0 as usize)],
+                mapping[&(d.0 as usize)],
+            ];
+            let Some(angle_a) = get_dihedral_deg(coords_a, a, b, c, d) else {
+                continue;
+            };
+            let Some(angle_b) =
+                get_dihedral_deg(coords_b, mapped[0], mapped[1], mapped[2], mapped[3])
+            else {
+                continue;
+            };
+            total += circular_angle_difference_deg(angle_a, angle_b);
+            count += 1;
+        }
+        if count > 0 {
+            best = best.min(total / count as f64 / 180.0);
+        }
+    }
+    if best.is_finite() { best.min(1.0) } else { 0.0 }
+}
+
+fn circular_angle_difference_deg(a: f64, b: f64) -> f64 {
+    let mut d = (a - b).abs() % 360.0;
+    if d > 180.0 {
+        d = 360.0 - d;
+    }
+    d
+}
+
+fn molecule_self_query(mol: &Molecule) -> QueryMolecule {
+    let mut query = QueryMolecule::new();
+    for i in 0..mol.atom_count() {
+        let atom = mol.atom(AtomIdx(i as u32));
+        query.add_atom(AtomQuery::And(
+            Box::new(AtomQuery::Primitive(AtomPrimitive::AtomicNum(
+                atom.element.atomic_number(),
+            ))),
+            Box::new(AtomQuery::Primitive(AtomPrimitive::Charge(atom.charge))),
+        ));
+    }
+    for i in 0..mol.bond_count() {
+        let bond = mol.bond(chematic_core::BondIdx(i as u32));
+        let primitive = match bond.order {
+            BondOrder::Single => BondPrimitive::Single,
+            BondOrder::Double => BondPrimitive::Double,
+            BondOrder::Triple => BondPrimitive::Triple,
+            BondOrder::Aromatic => BondPrimitive::Aromatic,
+            _ => BondPrimitive::Any,
+        };
+        query.add_bond(
+            bond.atom1.0 as usize,
+            bond.atom2.0 as usize,
+            BondQuery::Primitive(primitive),
+        );
+    }
+    query
 }
 
 // ─── Environment label ─────────────────────────────────────────────────────
@@ -640,6 +734,109 @@ mod tests {
         let angles = motif_angles_deg(&ensemble, &motif);
         assert_eq!(angles.len(), 2);
         assert!((angles[0] - angles[1]).abs() < 1e-9);
+    }
+
+    #[test]
+    fn symmetric_torsion_distance_is_zero_for_terminal_swap() {
+        let mol = parse("CCC").unwrap();
+        let a = generate_coords(&mol);
+        let mut b = a.clone();
+        let first = a.get(AtomIdx(0));
+        let last = a.get(AtomIdx(2));
+        b.set(AtomIdx(0), last);
+        b.set(AtomIdx(2), first);
+        assert!(
+            torsion_distance_symmetric(&mol, &a, &b) < 1e-12,
+            "terminal-atom automorphism must make the torsion distance zero"
+        );
+    }
+
+    #[test]
+    fn symmetric_torsion_distance_is_bounded_and_detects_change() {
+        let mol = parse("CCCC").unwrap();
+        let a = generate_coords(&mol);
+        let motif = extract_torsion_motifs(&mol, &a).remove(0);
+        let angle = get_dihedral_deg(
+            &a,
+            motif.atoms[0],
+            motif.atoms[1],
+            motif.atoms[2],
+            motif.atoms[3],
+        )
+        .unwrap();
+        let b = crate::mol_transforms::set_dihedral(
+            &a,
+            &mol,
+            motif.atoms[0],
+            motif.atoms[1],
+            motif.atoms[2],
+            motif.atoms[3],
+            (angle + 60.0).to_radians(),
+        );
+        let distance = torsion_distance_symmetric(&mol, &a, &b);
+        assert!(
+            distance > 0.1,
+            "changed torsion should be detected: {distance}"
+        );
+        assert!(
+            distance <= 1.0,
+            "normalized distance must be bounded: {distance}"
+        );
+    }
+
+    #[test]
+    fn symmetric_torsion_distance_corpus_is_bounded_and_change_sensitive() {
+        // Keep this corpus deliberately small and dependency-free: it is a
+        // local invariant gate for the diagnostic, not an RDKit parity claim.
+        let smiles = [
+            "CCCCC",
+            "CCOC(C)C",
+            "CCNCC",
+            "CCCOC",
+            "CC(C)CC(C)C",
+            "CCOC(=O)CC",
+            "CCCCCC",
+            "CC(C)COC",
+            "CCOC(C)CC",
+            "CCN(CC)CC",
+        ];
+        let mut measured = 0usize;
+        for smiles in smiles {
+            let mol = parse(smiles).unwrap_or_else(|err| panic!("{smiles}: {err}"));
+            let coords = generate_coords(&mol);
+            let Some(motif) = extract_torsion_motifs(&mol, &coords).into_iter().next() else {
+                continue;
+            };
+            let angle = get_dihedral_deg(
+                &coords,
+                motif.atoms[0],
+                motif.atoms[1],
+                motif.atoms[2],
+                motif.atoms[3],
+            )
+            .expect("selected corpus motif must have a defined dihedral");
+            let changed = crate::mol_transforms::set_dihedral(
+                &coords,
+                &mol,
+                motif.atoms[0],
+                motif.atoms[1],
+                motif.atoms[2],
+                motif.atoms[3],
+                (angle + 45.0).to_radians(),
+            );
+            let distance = torsion_distance_symmetric(&mol, &coords, &changed);
+            assert!(distance.is_finite(), "{smiles}: distance must be finite");
+            assert!((0.0..=1.0).contains(&distance), "{smiles}: {distance}");
+            assert!(
+                distance > 0.05,
+                "{smiles}: changed torsion was not detected: {distance}"
+            );
+            measured += 1;
+        }
+        assert!(
+            measured >= 4,
+            "corpus must exercise at least four rotatable molecules"
+        );
     }
 
     // ── TorsionHistogram: circular correctness ─────────────────────────────

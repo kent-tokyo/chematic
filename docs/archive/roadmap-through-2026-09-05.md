@@ -81,7 +81,7 @@ complete until the required measurement or external reproduction exists.
   `not_measured` states per operation.
 - [x] Add an offline capability-matrix validator that rejects stale or
   incomplete engine inventories and invalid status values.
-- [ ] Add a scorecard validator that rejects stale release versions, missing
+- [x] Add a scorecard validator that rejects stale release versions, missing
   corpus/configuration metadata, and claims derived from unsupported rows.
 
 ### P1 — Interchange throughput and safety

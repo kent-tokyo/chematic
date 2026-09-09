@@ -17,19 +17,20 @@ documentation = "https://docs.rs/chematic-chem"
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-chematic-core       = { path = "../chematic-core",       version = "1.0.6" }
+chematic-core       = { path = "../chematic-core",       version = "1.0.11" }
 rustc-hash          = "2"
-chematic-perception = { path = "../chematic-perception", version = "1.0.6" }
-chematic-smiles     = { path = "../chematic-smiles",     version = "1.0.6" }
-chematic-smarts     = { path = "../chematic-smarts",     version = "1.0.6" }
-chematic-fp         = { path = "../chematic-fp",         version = "1.0.6" }
-chematic-iupac      = { path = "../chematic-iupac",      version = "1.0.6" }
-chematic-cip        = { path = "../chematic-cip",        version = "1.0.6" }
+chematic-perception = { path = "../chematic-perception", version = "1.0.11" }
+chematic-smiles     = { path = "../chematic-smiles",     version = "1.0.11" }
+chematic-smarts     = { path = "../chematic-smarts",     version = "1.0.11" }
+chematic-fp         = { path = "../chematic-fp",         version = "1.0.11" }
+chematic-iupac      = { path = "../chematic-iupac",      version = "1.0.11" }
+chematic-cip        = { path = "../chematic-cip",        version = "1.0.11" }
 serde               = { version = "1.0", features = ["derive"], optional = true }
+serde_json          = { version = "1.0", optional = true }
 miniz_oxide         = { version = "0.9", optional = true, default-features = false, features = ["with-alloc"] }
 
 [features]
-serde = ["dep:serde"]
+serde = ["dep:serde", "dep:serde_json"]
 trained-solubility-mlp = []
 # Compress PAINS/Brenk SMARTS patterns in binary; inflate at first use.
 # Saves ~41 KB binary size. Enable in WASM builds.

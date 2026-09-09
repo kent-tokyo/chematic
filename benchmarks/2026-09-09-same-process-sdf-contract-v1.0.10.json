@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "status": "local-verified",
+  "gate": "same_process_sdf_semantic_contract",
+  "fixture": {
+    "path": "benchmarks/fixtures/streaming.sdf",
+    "bytes": 633,
+    "sha256": "627e7814694f7d00a9212712ec697f2174d30327b459d983d2a10f717cae0465"
+  },
+  "repeats": 20,
+  "rows": {
+    "chematic": {
+      "records": 40,
+      "failures": 0,
+      "seconds": 0.001385,
+      "boundary": "schematic Python extension in the current process"
+    },
+    "rdkit": {
+      "records": 40,
+      "failures": 0,
+      "seconds": 0.445298,
+      "boundary": "RDKit ForwardSDMolSupplier in the current process"
+    }
+  },
+  "comparison": {
+    "expected_records": 40,
+    "canonical_smiles_mismatch_repetitions": 0,
+    "malformed_cases": {
+      "bad_atom_line": {
+        "chematic": {
+          "records": 0,
+          "failures": 1
+        },
+        "rdkit": {
+          "records": 0,
+          "failures": 1
+        }
+      },
+      "bad_coordinate": {
+        "chematic": {
+          "records": 0,
+          "failures": 1
+        },
+        "rdkit": {
+          "records": 0,
+          "failures": 1
+        }
+      }
+    },
+    "malformed_failure_count_mismatches": [],
+    "malformed_rejection_contract": "zero accepted records; failure-count semantics are reported, not normalized",
+    "speed_is_non_ranking_context": true
+  },
+  "tool_versions": {
+    "rdkit": "2025.09.3"
+  },
+  "errors": []
+}

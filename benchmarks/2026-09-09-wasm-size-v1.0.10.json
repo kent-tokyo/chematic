@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "status": "local-current-candidate",
+  "environment": {
+    "platform": "macOS arm64",
+    "wasm_pack": "0.13.1",
+    "wasm_opt": "130",
+    "profile": "release",
+    "target": "web"
+  },
+  "artifact": {
+    "file": "demo/pkg/chematic_wasm_bg.wasm",
+    "raw_bytes": 3726056,
+    "gzip9_bytes": 1357428,
+    "sha256": "26e78553c5dd929b22b130bc1f0a700689256876099b13d4df63c1a5edb27468"
+  },
+  "interpretation": "Artifact-size evidence only; it does not establish runtime performance or browser memory behavior."
+}

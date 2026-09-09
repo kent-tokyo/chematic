@@ -38,3 +38,53 @@ These rows are a parser reference only: they do not measure RDKit's file
 supplier or a common streaming interface. A fair comparison requires a
 larger identical corpus, equivalent file-backed APIs, repeated independent
 runs, RSS/allocation capture, and malformed/oversized cases.
+
+The runner now accepts explicit `--max-input-bytes`, `--max-record-bytes`,
+`--max-line-bytes`, `--max-records`, and `--max-atoms` limits and records the
+effective limits in its JSON output. This makes malformed and oversized SDF,
+MOL, and XYZ boundaries reproducible without changing parser code. The runner
+also accepts V3000, MOL2, CML, CDXML, and mmCIF as explicitly reported
+`execution_mode: "materialized_one_shot"` parser rows. They are not
+file-backed streaming or cross-engine throughput evidence. PDB is now included
+through the bounded `chematic-3d` parser path. The runner also accepts
+`--gzip` for SDF/XYZ file-backed decoding through `flate2`; input limits apply
+to decompressed bytes and the JSON records the compression mode.
+
+Example bounded runs:
+
+```text
+cargo run -p chematic-mol --example streaming_benchmark --release --offline -- \
+  --format sdf --path benchmarks/fixtures/streaming.sdf --repeats 1 \
+  --max-input-bytes 1024 --max-record-bytes 4096 --max-line-bytes 1024 --max-records 2
+cargo run -p chematic-mol --example streaming_benchmark --release --offline -- \
+  --format xyz --path benchmarks/fixtures/streaming.xyz --repeats 1 \
+  --max-input-bytes 1024 --max-line-bytes 1024 --max-records 2 --max-atoms 100
+```
+
+Example format-parser coverage:
+
+```text
+cargo run -p chematic-mol --example streaming_benchmark --release --offline -- --format v3000 --path benchmarks/fixtures/ethanol.v3000 --repeats 1
+cargo run -p chematic-mol --example streaming_benchmark --release --offline -- --format mol2 --path benchmarks/fixtures/ethanol.mol2 --repeats 1
+cargo run -p chematic-mol --example streaming_benchmark --release --offline -- --format cml --path benchmarks/fixtures/ethanol.cml --repeats 1
+cargo run -p chematic-mol --example streaming_benchmark --release --offline -- --format cdxml --path benchmarks/fixtures/ethanol.cdxml --repeats 1
+cargo run -p chematic-mol --example streaming_benchmark --release --offline -- --format mmcif --path benchmarks/fixtures/minimal.mmcif --repeats 1
+cargo run -p chematic-mol --example streaming_benchmark --release --offline -- --format pdb --path benchmarks/fixtures/minimal.pdb --repeats 1
+
+# For a gzip input produced from the same fixture:
+gzip -c benchmarks/fixtures/streaming.sdf > /tmp/streaming.sdf.gz
+cargo run -p chematic-mol --example streaming_benchmark --release --offline -- --format sdf --gzip --path /tmp/streaming.sdf.gz --repeats 1
+```
+
+The dependency-free negative-input gate is reproducible with:
+
+```text
+TMPDIR=/private/tmp python3 scripts/check_streaming_format_limits.py \
+  --binary target/debug/examples/streaming_benchmark
+```
+
+It checks four malformed or typed resource-limit rejections and one input-size
+rejection for every runner format, plus gzip control and decompressed-limit
+cases (36 negative, 9 oversized, 4 gzip cases). CML, CDXML, and PDB use their explicit line-limit boundary because
+those readers intentionally accept some unknown/non-record structure instead
+of exposing a strict malformed-record error.

@@ -66,3 +66,19 @@ def test_add_and_search():
     idx.add("c1ccccc1")
     results = idx.search("c1ccccc1", threshold=0.0)
     assert len(results) == 1
+
+
+def test_prepared_fingerprint_index_reuses_database():
+    idx = chematic.PreparedFingerprintIndex.from_smiles(
+        ["invalid", *SMILES_LIST], fp="ecfp4"
+    )
+    assert len(idx) == len(SMILES_LIST)
+    results = idx.search("c1ccccc1", k=3)
+    assert results[0][0] == 1  # original-list index after the invalid entry
+    assert results[0][1] == pytest.approx(1.0)
+    assert idx.get_smiles(0) == "c1ccccc1"
+
+
+def test_prepared_fingerprint_index_rejects_unknown_fp():
+    with pytest.raises(ValueError, match="unknown fingerprint type"):
+        chematic.PreparedFingerprintIndex.from_smiles(SMILES_LIST, fp="unknown")

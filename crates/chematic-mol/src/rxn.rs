@@ -63,6 +63,8 @@ pub enum RxnParseError {
     MissingHeader,
     /// The reactant/product count line could not be parsed.
     BadCountLine,
+    /// The declared number of MOL blocks does not match the file contents.
+    BlockCountMismatch { declared: usize, actual: usize },
     /// A MOL block inside the RXN file failed to parse.
     MolParse(MolParseError),
 }
@@ -109,6 +111,10 @@ impl core::fmt::Display for RxnParseError {
             } => write!(f, "RXN {resource} exceeds limit {limit} (got {actual})"),
             Self::MissingHeader => write!(f, "RXN file must start with $RXN"),
             Self::BadCountLine => write!(f, "cannot parse reactant/product count line"),
+            Self::BlockCountMismatch { declared, actual } => write!(
+                f,
+                "RXN declares {declared} MOL block(s), but contains {actual}"
+            ),
             Self::MolParse(e) => write!(f, "MOL parse error in RXN: {e}"),
         }
     }
@@ -182,6 +188,16 @@ pub fn write_rxn_document(document: &ReactionDocument) -> Result<String, RxnDocu
                 detail: "RXN V2000 has no agent channel".to_string(),
             });
         }
+        if component
+            .atom_maps
+            .iter()
+            .any(|atom_map| atom_map.map_number > 999)
+        {
+            losses.push(ReactionLoss {
+                field: format!("{}.atom_maps", component.id),
+                detail: "RXN V2000 atom-map fields are limited to three digits".to_string(),
+            });
+        }
     }
     if !losses.is_empty() {
         return Err(RxnDocumentError::Document(ReactionDocumentError::Losses(
@@ -222,15 +238,18 @@ pub fn parse_rxn_file_with_limits(
 
     // Line 5: "  nreactants  nproducts  …"
     let count_line = lines.next().unwrap_or("");
-    let counts: Vec<i64> = count_line
-        .split_whitespace()
-        .filter_map(|s| s.parse().ok())
-        .collect();
-    if counts.len() < 2 {
+    let count_tokens: Vec<&str> = count_line.split_whitespace().collect();
+    if count_tokens.len() < 2 {
         return Err(RxnParseError::BadCountLine);
     }
-    let n_reactants = counts[0].max(0) as usize;
-    let n_products = counts[1].max(0) as usize;
+    // Do not coerce malformed or negative counts to zero: doing so can make
+    // a truncated or hostile RXN appear to have a valid empty side.
+    let n_reactants = count_tokens[0]
+        .parse::<usize>()
+        .map_err(|_| RxnParseError::BadCountLine)?;
+    let n_products = count_tokens[1]
+        .parse::<usize>()
+        .map_err(|_| RxnParseError::BadCountLine)?;
     if n_reactants > limits.max_reactants {
         return Err(RxnParseError::ResourceLimit {
             resource: "reactants",
@@ -254,41 +273,53 @@ pub fn parse_rxn_file_with_limits(
         });
     }
 
-    // Work directly on the remaining text to find "$MOL" blocks.
-    // Find the position of the first "$MOL" in the original text.
-    let first_mol_pos = match text.find("$MOL") {
-        Some(p) => p,
-        None => {
-            return Ok(Reaction {
-                reactants: vec![],
-                agents: vec![],
-                products: vec![],
-            });
+    // Extract marker lines from the text after the count line.  Looking at
+    // complete lines handles both LF and CRLF RXN files and avoids treating a
+    // `$MOL` string in the header as a molecule marker.
+    let mut mol_blocks = Vec::new();
+    let mut current_block: Option<String> = None;
+    for line in lines {
+        if line.trim() == "$MOL" {
+            if let Some(block) = current_block.take() {
+                mol_blocks.push(block);
+            }
+            current_block = Some(String::new());
+        } else if let Some(block) = current_block.as_mut() {
+            block.push_str(line);
+            block.push('\n');
         }
-    };
-    let mol_section = &text[first_mol_pos..];
-
-    // Split on "$MOL\n" to get individual MOL blocks.
-    let mol_blocks = mol_section.split("$MOL\n").skip(1);
+    }
+    if let Some(block) = current_block {
+        mol_blocks.push(block);
+    }
 
     let mut reactants = Vec::with_capacity(n_reactants);
     let mut products = Vec::with_capacity(n_products);
+    let mut actual_molecules = 0usize;
 
-    for (i, block) in mol_blocks.enumerate() {
+    for (i, block) in mol_blocks.into_iter().enumerate() {
+        actual_molecules = i.saturating_add(1);
         if i >= limits.max_molecules {
             return Err(RxnParseError::ResourceLimit {
                 resource: "molecules",
-                actual: i.saturating_add(1),
+                actual: actual_molecules,
                 limit: limits.max_molecules,
             });
         }
         // Each block is already a valid MOL V2000 block (3 header lines + data).
-        let (mol, _meta) = parse_mol(block)?;
+        let (mol, _meta) = parse_mol(&block)?;
         if i < n_reactants {
             reactants.push(mol);
         } else if i < declared_molecules {
             products.push(mol);
         }
+    }
+
+    if actual_molecules != declared_molecules {
+        return Err(RxnParseError::BlockCountMismatch {
+            declared: declared_molecules,
+            actual: actual_molecules,
+        });
     }
 
     Ok(Reaction {
@@ -366,6 +397,14 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_rxn_file_accepts_crlf_markers() {
+        let source = minimal_rxn_block().replace('\n', "\r\n");
+        let rxn = parse_rxn_file(&source).unwrap();
+        assert_eq!(rxn.reactants.len(), 1);
+        assert_eq!(rxn.products.len(), 1);
+    }
+
+    #[test]
     fn test_parse_rxn_missing_header() {
         let err = parse_rxn_file("not a rxn file\n");
         assert!(matches!(err, Err(RxnParseError::MissingHeader)));
@@ -406,6 +445,18 @@ mod tests {
     }
 
     #[test]
+    fn rxn_rejects_malformed_or_negative_counts() {
+        let source = minimal_rxn_block();
+        for bad_count in ["-1 1", "one 1", "1 nope"] {
+            let malformed = source.replacen("  1  1", bad_count, 1);
+            assert!(matches!(
+                parse_rxn_file(&malformed),
+                Err(RxnParseError::BadCountLine)
+            ));
+        }
+    }
+
+    #[test]
     fn test_write_rxn_file_roundtrip() {
         let rxn = parse_rxn_file(&minimal_rxn_block()).unwrap();
         let written = write_rxn_file(&rxn);
@@ -417,6 +468,29 @@ mod tests {
     }
 
     #[test]
+    fn rxn_rejects_declared_block_count_mismatch() {
+        let source = minimal_rxn_block();
+        let missing = source.replace("$MOL\n", "");
+        assert!(matches!(
+            parse_rxn_file(&missing),
+            Err(RxnParseError::BlockCountMismatch {
+                declared: 2,
+                actual: 0
+            })
+        ));
+
+        let first_block = source.split("$MOL\n").nth(1).unwrap();
+        let extra = format!("{source}$MOL\n{first_block}");
+        assert!(matches!(
+            parse_rxn_file(&extra),
+            Err(RxnParseError::BlockCountMismatch {
+                declared: 2,
+                actual: 3
+            })
+        ));
+    }
+
+    #[test]
     fn rxn_document_adapter_round_trips_through_upstream_parser() {
         let source = minimal_rxn_block();
         let document = parse_rxn_document(&source).unwrap();
@@ -425,6 +499,36 @@ mod tests {
         let written = write_rxn_document(&document).unwrap();
         let decoded = parse_rxn_document(&written).unwrap();
         assert_eq!(decoded.steps[0].components.len(), 2);
+    }
+
+    #[test]
+    fn rxn_document_adapter_preserves_atom_map_identities() {
+        let document = ReactionDocument::from_reaction_smiles("[CH3:7]>>[CH3:7]").unwrap();
+        let written = write_rxn_document(&document).unwrap();
+        let decoded = parse_rxn_document(&written).unwrap();
+        assert_eq!(
+            decoded.steps[0]
+                .components
+                .iter()
+                .map(|component| component.atom_maps.clone())
+                .collect::<Vec<_>>(),
+            document.steps[0]
+                .components
+                .iter()
+                .map(|component| component.atom_maps.clone())
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn rxn_document_rejects_v2000_atom_map_overflow() {
+        let document = ReactionDocument::from_reaction_smiles("[CH3:1000]>>[CH3:1000]").unwrap();
+        let error = write_rxn_document(&document).unwrap_err();
+        assert!(matches!(
+            error,
+            RxnDocumentError::Document(ReactionDocumentError::Losses(losses))
+                if losses.iter().any(|loss| loss.field.ends_with(".atom_maps"))
+        ));
     }
 
     #[test]

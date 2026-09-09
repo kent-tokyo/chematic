@@ -446,6 +446,27 @@ GASTEIGER
     }
 
     #[test]
+    fn shared_mol2_roundtrip_contract_matches() {
+        let document: serde_json::Value = serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../validation/cross_binding_contract.json"
+        )))
+        .expect("contract JSON");
+        let contract = &document["mol2_contract"];
+        let (mol, coords) = parse_mol2(contract["input"].as_str().unwrap()).unwrap();
+        let serialized = write_mol2(&mol, &coords);
+        let (roundtripped, _) = parse_mol2(&serialized).unwrap();
+        assert_eq!(
+            roundtripped.atom_count(),
+            contract["expected"]["atom_count"]
+        );
+        assert_eq!(
+            roundtripped.bond_count(),
+            contract["expected"]["bond_count"]
+        );
+    }
+
+    #[test]
     fn test_aromatic_bond_type() {
         let benzene_mol2 = "\
 @<TRIPOS>MOLECULE

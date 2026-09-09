@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-10",
+  "target_version": "1.0.10",
+  "scope": "local_node_wasm_artifact_rebuild_attempt",
+  "command": "wasm-pack build crates/chematic-wasm --target nodejs --out-dir /private/tmp/chematic-wasm-pkg-node-current --release --mode no-install",
+  "rust_wasm_compile": "pass",
+  "rust_wasm_artifact": {
+    "path": "target/wasm32-unknown-unknown/release/chematic_wasm.wasm",
+    "bytes": 5458098,
+    "sha256": "08f2a5b994118ae92b40a96593f4c3bafc598306445bcc09e42b406ae43cc00b"
+  },
+  "js_binding_generation": "blocked",
+  "blocker": {
+    "kind": "missing_local_toolchain",
+    "tool": "wasm-bindgen CLI",
+    "observed_error": "Not able to find or install a local wasm-bindgen.",
+    "network_or_external_install": "not attempted"
+  },
+  "existing_node_artifact_surface": {
+    "source_export_count": 251,
+    "artifact_export_count": 247,
+    "missing_from_artifact": ["mol_from_cjson", "mol_from_pdb_strict", "mol_from_pdbqt", "reaction_smarts_match"],
+    "stale_in_artifact": []
+  },
+  "version_drift": {
+    "workspace": "1.0.10",
+    "checked_in_node_runtime": "0.23.0",
+    "checked_in_node_package_metadata": "0.23.0",
+    "status": "drift"
+  },
+  "interpretation": "The current Rust WASM source compiles, but the generated Node artifact cannot be refreshed in this environment. This is an environment/toolchain dependency, not evidence that the missing exports are implemented in the artifact."
+}

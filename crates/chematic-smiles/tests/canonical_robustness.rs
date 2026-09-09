@@ -182,6 +182,22 @@ fn platform_independence_topology() {
     );
 }
 
+/// Resonance-stabilized anions must not acquire an atom-order-dependent
+/// canonical spelling.  This is a small regression probe for the charged
+/// conjugated-ring class called out by the RDKit CIP/Mancude audit.
+#[test]
+fn platform_independence_charged_resonance_ring() {
+    let variants = ["[CH-]1C=CC=C1", "C1=C[CH-]C=C1", "C1=CC=C[CH-]1"];
+    let outputs: Vec<_> = variants
+        .iter()
+        .map(|input| canonical_smiles(&parse(input).expect("charged resonance fixture parses")))
+        .collect();
+    assert!(
+        outputs.windows(2).all(|pair| pair[0] == pair[1]),
+        "charged resonance canonicalization changed with atom order: {outputs:?}"
+    );
+}
+
 /// Regression test for bridged/fused/spiro ring-closure ordering
 /// permutation-invariance (`docs/rfcs/canonical_smiles_residual_rfc.md`'s
 /// "Update (C2)" correction).

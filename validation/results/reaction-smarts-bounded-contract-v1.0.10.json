@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-10",
+  "target_version": "1.0.10",
+  "scope": "bounded reaction SMARTS presence matching",
+  "fixture": "validation/cross_binding_contract.json::reaction_smarts_contract",
+  "cases": 38,
+  "atom_map_policy": "When target molecules carry atom maps, mapped query atoms must resolve to the same map number; unmapped targets retain compatibility behavior.",
+  "surfaces": {
+    "rust": {"command": "cargo test -p chematic-rxn --offline --lib query --quiet && cargo test -p chematic-rxn --offline --test cross_binding_contract --quiet", "passed": 69, "contract_cases": 38},
+    "python": {"command": "maturin build --release -m crates/chematic-py/Cargo.toml -o /private/tmp/chematic-py-current-wheel && python3 -m pip install --no-deps --target /private/tmp/chematic-py-current /private/tmp/chematic-py-current-wheel/chematic-1.0.10-cp313-cp313-macosx_11_0_arm64.whl && PYTHONPATH=/private/tmp/chematic-py-current python3 -c 'import json, chematic; d=json.load(open(\"validation/cross_binding_contract.json\")); c=d[\"reaction_smarts_contract\"][\"cases\"]; assert [chematic.reaction_smarts_match(x[\"smarts\"],x[\"reaction\"]) for x in c] == [x[\"matches\"] for x in c]'", "passed": 1, "contract_cases": 38},
+    "wasm": {"command": "cargo test -p chematic-wasm --offline --lib reaction_smarts_source_contract_matches_fixture --quiet", "passed": 1, "contract_cases": 38}
+  },
+  "result": "pass",
+  "boundary": "This covers bounded presence matching, including disconnected component assignment without target-molecule reuse, reactant/product and agent alternatives with OR semantics, detailed matched-agent reporting, and map-aware matching when target maps are present. Query-aware product construction remains outside this contract."
+}

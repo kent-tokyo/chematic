@@ -129,6 +129,10 @@ Notes on the cells above that need qualification:
 - **Parse limits**: `PdbParseLimits` bounds input bytes, physical line length,
   ATOM/HETATM records, and MODEL records; use
   `parse_pdb_atoms_with_limits` for a typed resource-limit error contract.
+- **Strict validation**: `parse_pdb_atoms_strict` is an opt-in fixed-column
+  validator. It rejects missing, non-numeric, or non-finite serial, residue
+  sequence, and XYZ fields with `PdbStrictError`; the compatibility parser
+  remains lenient by design.
 
 ### PDBQT
 
@@ -168,6 +172,8 @@ Notes on the cells above that need qualification:
 ### ChemicalJSON
 
 - **Rust**: `chematic_mol::{parse_cjson, parse_cjson_with_limits, write_cjson, CjsonError, CjsonParseLimits}`.
+- **WASM**: `mol_from_cjson` provides the bounded topology-handle entry point;
+  coordinates and CJSON metadata remain on the format conversion path.
 - **Parse limits**: `CjsonParseLimits` bounds JSON input bytes/depth,
   array/string resources, and atom/bond records. The existing parser uses
   finite defaults and rejects numeric type/range truncation.
@@ -188,14 +194,18 @@ Notes on the cells above that need qualification:
 
 - **Rust read**: `parse_mol`, `parse_mol_with_coords`, `read_mol_with_diagnostics`, `parse_mol_v3000*`, `SdfReader`, `SdfFileReader`, `SdfRecordReader`.
 - **Rust write**: `write_mol`, `write_mol_with_conformer[_checked]`, `write_sdf*`, `write_mol_v3000*`.
-- **Python**: `from_mol_block`, `from_mol_block_with_coords`, `from_mol_block_with_diagnostics`, `parse_sdf_with_coords`, `from_mol_v3000[_with_coords|_with_diagnostics]`.
+- **Python**: `from_mol_block`, `from_mol_block_with_coords`, `from_mol_block_with_diagnostics`, `parse_sdf_with_coords`, `from_mol_v3000[_with_coords|_with_diagnostics]`, `iter_sdf`, and `iter_sdf_batched`.
 - **WASM**: `mol_from_v3000_block`, `mol_from_sdf_block`, `to_mol_block`, `to_mol_v3000_block`, `sdf_to_smiles_json`, `sdf_to_records_json`, `sdf_from_records_json`, `mol_block_stereo_diagnostics_json`, `mol_v3000_stereo_diagnostics_json`, `mol_block_coords_json`.
 - **Streaming**: `SdfFileReader<R: BufRead>` is a true I/O-streaming `Iterator`
-  (does not require the whole file in memory up front). `SdfReader`/
+  (does not require the whole file in memory up front). `SdfBatchReader<R>` is
+  the bounded pull-based variant: each item contains at most the configured
+  batch size, preserves source order, retains rejected records, and can be
+  cancelled at a batch boundary. Pulling the next item is the backpressure
+  contract; no background queue is created. `SdfReader`/
   `SdfRecordReader` are lazy iterators over an already-loaded `&str` (do not
   eagerly collect every record into a `Vec`, but do require the full text in
-  memory). Python and WASM bindings materialize (no streaming reader is
-  bound in either language).
+  memory). Python exposes file-backed `iter_sdf` and bounded
+  `iter_sdf_batched`; WASM bindings still materialize SDF input.
 - **Coordinate units**: Ångström, per the Ctab standard.
 - **Connectivity**: native Ctab bond table.
 - **Round-trip**: semantic, not byte-identical — `write_mol` regenerates a
@@ -216,12 +226,14 @@ Notes on the cells above that need qualification:
 
 ### PDB
 
-- **Rust**: `chematic_3d::{PdbAtom, parse_pdb_atoms, pdb_to_molecule, write_pdb}` —
+- **Rust**: `chematic_3d::{PdbAtom, parse_pdb_atoms, parse_pdb_atoms_strict, pdb_to_molecule, write_pdb}` —
   this format lives in `chematic-3d`, not `chematic-mol`; the one exception
   among these 15.
-- **Python**: `from_pdb` (delegates to `chematic_3d`) for reading;
+- **Python**: `from_pdb` (lenient) and `from_pdb_strict` (fixed-column
+  validation) for reading; both delegate to `chematic_3d`;
   `Mol.to_pdb(coords)` for writing.
-- **WASM**: `mol_from_pdb`, `pdb_coords_json` for reading. Writing is
+- **WASM**: `mol_from_pdb` (lenient), `mol_from_pdb_strict` (fixed-column
+  validation), and `pdb_coords_json` for reading. Writing is
   exposed as a method, not a free function:
   `ConformerHandle.get_conformer_pdb(idx)` returns conformer `idx` as a PDB
   string (or `null` if `idx` is out of range), delegating to
@@ -302,10 +314,14 @@ disambiguate by crate, not by name alone:
 - **WASM**: `mol_from_xyz`/`to_xyz` use `chematic_3d`'s version.
   `mol_from_extxyz`/`extxyz_frame_json`/`to_extxyz_json` use
   `chematic_mol`'s version.
-- **Streaming**: `XyzReader`/`ExtxyzReader` are lazy iterators over an
-  already-loaded `&str` (same category as `SdfReader`, not a `BufRead`-based
-  reader). No `BufRead`-backed streaming type exists for XYZ. Python/WASM
-  materialize.
+- **Streaming**: `XyzFileReader<R: BufRead>` is a true file-backed streaming
+  iterator, and `XyzBatchReader<R: BufRead>` adds bounded pull-based batches
+  with input order, cancellation, and a versioned progress manifest.
+  `XyzReader`/`ExtxyzReader` remain lazy iterators over an already-loaded
+  `&str`. `ExtxyzFileReader<R: BufRead>` provides the same file-backed frame
+  boundary for Extended XYZ, and `ExtxyzBatchReader<R: BufRead>` provides the
+  corresponding bounded batch contract. Python/WASM still materialize XYZ
+  frames.
 - **Coordinate units**: Ångström (standard XYZ/extended-XYZ convention).
 - **Connectivity**: `chematic_3d::parse_xyz` infers bonds by distance;
   `chematic_mol::parse_xyz`/`parse_extxyz` never do (no `Molecule` is even

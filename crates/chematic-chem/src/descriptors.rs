@@ -2698,8 +2698,11 @@ pub fn autocorr_2d(mol: &Molecule) -> Vec<f64> {
     if mol.atom_count() < 2 {
         return vec![0.0; 7];
     }
-
     let dist = topo_dist_usize(mol);
+    autocorr_2d_with_dist(mol, &dist)
+}
+
+fn autocorr_2d_with_dist(mol: &Molecule, dist: &[Vec<usize>]) -> Vec<f64> {
     let n = mol.atom_count();
     let mut result = vec![0.0; 7];
 
@@ -2738,6 +2741,10 @@ pub fn moran_autocorr(mol: &Molecule) -> Vec<f64> {
         return vec![0.0; 7];
     }
     let dist = topo_dist_usize(mol);
+    moran_autocorr_with_dist(mol, &dist)
+}
+
+fn moran_autocorr_with_dist(mol: &Molecule, dist: &[Vec<usize>]) -> Vec<f64> {
     let n = mol.atom_count();
     let vals: Vec<f64> = (0..n)
         .map(|i| atomic_valence(mol, AtomIdx(i as u32)))
@@ -2780,6 +2787,10 @@ pub fn geary_autocorr(mol: &Molecule) -> Vec<f64> {
         return vec![1.0; 7];
     }
     let dist = topo_dist_usize(mol);
+    geary_autocorr_with_dist(mol, &dist)
+}
+
+fn geary_autocorr_with_dist(mol: &Molecule, dist: &[Vec<usize>]) -> Vec<f64> {
     let n = mol.atom_count();
     let vals: Vec<f64> = (0..n)
         .map(|i| atomic_valence(mol, AtomIdx(i as u32)))
@@ -2808,6 +2819,35 @@ pub fn geary_autocorr(mol: &Molecule) -> Vec<f64> {
             }
         })
         .collect()
+}
+
+/// Distance-matrix-backed descriptor values computed with one BFS matrix.
+///
+/// Individual descriptor functions retain their lazy behavior. Use this
+/// bundle when two or more distance-based families are requested for the same
+/// molecule to avoid rebuilding the identical topological distance matrix.
+#[derive(Debug, Clone, PartialEq)]
+pub struct DistanceDescriptorBundle {
+    pub autocorr_2d: Vec<f64>,
+    pub moran: Vec<f64>,
+    pub geary: Vec<f64>,
+}
+
+/// Compute AutoCorr2D, Moran, and Geary descriptors from one shared matrix.
+pub fn distance_descriptor_bundle(mol: &Molecule) -> DistanceDescriptorBundle {
+    if mol.atom_count() < 2 {
+        return DistanceDescriptorBundle {
+            autocorr_2d: vec![0.0; 7],
+            moran: vec![0.0; 7],
+            geary: vec![1.0; 7],
+        };
+    }
+    let dist = topo_dist_usize(mol);
+    DistanceDescriptorBundle {
+        autocorr_2d: autocorr_2d_with_dist(mol, &dist),
+        moran: moran_autocorr_with_dist(mol, &dist),
+        geary: geary_autocorr_with_dist(mol, &dist),
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -5231,6 +5271,17 @@ mod tests {
             v.iter().all(|x| x.is_finite()),
             "all Geary values must be finite: {v:?}"
         );
+    }
+
+    #[test]
+    fn distance_descriptor_bundle_matches_lazy_apis() {
+        for smi in ["CC", "c1ccccc1", "CC(=O)Oc1ccccc1C(=O)O"] {
+            let m = mol(smi);
+            let bundle = distance_descriptor_bundle(&m);
+            assert_eq!(bundle.autocorr_2d, autocorr_2d(&m), "{smi}: AutoCorr");
+            assert_eq!(bundle.moran, moran_autocorr(&m), "{smi}: Moran");
+            assert_eq!(bundle.geary, geary_autocorr(&m), "{smi}: Geary");
+        }
     }
 
     #[test]

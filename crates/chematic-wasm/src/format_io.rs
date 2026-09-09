@@ -100,8 +100,8 @@ pub fn rxn_document_from_rxn(text: &str) -> Result<String, JsValue> {
 #[wasm_bindgen]
 pub fn rxn_document_to_rxn(document_json: &str) -> Result<String, JsValue> {
     check_json_len("RXN document JSON", document_json)?;
-    let document: chematic_rxn::ReactionDocument = serde_json::from_str(document_json)
-        .map_err(|error| JsValue::from_str(&format!("invalid reaction document JSON: {error}")))?;
+    let document = chematic_rxn::ReactionDocument::from_json_str(document_json)
+        .map_err(|error| JsValue::from_str(&error.to_string()))?;
     chematic_mol::write_rxn_document(&document)
         .map_err(|error| JsValue::from_str(&error.to_string()))
 }

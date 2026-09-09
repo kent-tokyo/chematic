@@ -407,7 +407,7 @@ fn search_canonical(
 /// the atom it distinguishes provably gets a rank no other atom in the
 /// vector holds, zero collision risk. But `refine_ranks` immediately
 /// re-hashes from that point (`fnv_hash_sequence`, pre-existing, unchanged
-/// by this PR) and `normalize_ranks` groups by raw hash-value *equality* --
+/// by this PR) and rank normalization groups by raw hash-value *equality* --
 /// so a genuine 64-bit FNV-1a collision there could in principle re-merge
 /// an already-individualized atom back in with a formerly-tied sibling,
 /// and `coloring` would inherit that error (nothing downstream re-derives

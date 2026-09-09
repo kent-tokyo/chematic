@@ -262,6 +262,80 @@ pub fn sdf_to_records_json(sdf: &str) -> String {
     format!("[{}]", entries.join(","))
 }
 
+/// Return one deterministic, resumable SDF batch as a JSON manifest.
+///
+/// `offset` is the zero-based input record to start at and `batch_size` is
+/// bounded by [`crate::WASM_MAX_BATCH_ITEMS`]. Invalid records stay inline as
+/// `status: "rejected"`; callers can stop requesting later batches to cancel
+/// work without a background queue or hidden buffering.
+#[wasm_bindgen]
+pub fn sdf_records_batch_json(
+    sdf: &str,
+    offset: usize,
+    batch_size: usize,
+) -> Result<String, JsValue> {
+    if sdf.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str(&format!(
+            "SDF input too large ({} > {WASM_MAX_INPUT_BYTES} bytes)",
+            sdf.len()
+        )));
+    }
+    if batch_size == 0 || batch_size > WASM_MAX_BATCH_ITEMS {
+        return Err(JsValue::from_str(&format!(
+            "SDF batch size must be between 1 and {WASM_MAX_BATCH_ITEMS}"
+        )));
+    }
+    let mut records = Vec::with_capacity(batch_size);
+    let mut has_more = false;
+    for (input_index, result) in chematic_mol::SdfRecordReader::new(sdf).enumerate() {
+        if input_index < offset {
+            continue;
+        }
+        if records.len() == batch_size {
+            has_more = true;
+            break;
+        }
+        let value = match result {
+            Ok(rec) => {
+                let properties = rec
+                    .properties
+                    .into_iter()
+                    .map(|(key, value)| (key, serde_json::Value::String(value)))
+                    .collect::<serde_json::Map<_, _>>();
+                serde_json::json!({
+                    "input_index": input_index,
+                    "status": "accepted",
+                    "record": {
+                        "smiles": chematic_smiles::canonical_smiles(&rec.mol),
+                        "name": rec.meta.name,
+                        "properties": properties,
+                        "stereo_diagnostics": serde_json::from_str::<serde_json::Value>(
+                            &stereo_diagnostics_json(&rec.stereo_diagnostics)
+                        ).unwrap_or_else(|_| serde_json::Value::Array(Vec::new())),
+                    },
+                })
+            }
+            Err(_) => serde_json::json!({
+                "input_index": input_index,
+                "status": "rejected",
+                "record": serde_json::Value::Null,
+            }),
+        };
+        records.push(value);
+    }
+    let next_offset = offset.saturating_add(records.len());
+    let manifest = serde_json::json!({
+        "schema_version": 1,
+        "operation": "sdf_records_batch",
+        "status": if has_more { "partial" } else { "complete" },
+        "offset": offset,
+        "next_offset": next_offset,
+        "record_count": records.len(),
+        "records": records,
+    });
+    bounded_json_string(&manifest)
+}
+
 /// Serialise a JSON array of SMILES to an SDF string.
 ///
 /// Generates 2D coordinates for each molecule.  Property data can be
@@ -369,6 +443,29 @@ pub fn mol_from_moljson(json: &str) -> Result<MolHandle, JsValue> {
         return Err(JsValue::from_str("MolJSON input too large"));
     }
     let mol = chematic_mol::parse_moljson(json).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!(
+            "molecule too large (max {} atoms)",
+            WASM_MAX_ATOMS
+        )));
+    }
+    Ok(MolHandle {
+        inner: std::rc::Rc::new(mol),
+    })
+}
+
+/// Parse a ChemicalJSON (CJSON) string into a `MolHandle`.
+///
+/// Coordinates and CJSON-specific metadata are intentionally not retained by
+/// this topology handle; use `convert_common_format` when a serialized CJSON
+/// round trip is required.
+#[wasm_bindgen]
+pub fn mol_from_cjson(json: &str) -> Result<MolHandle, JsValue> {
+    if json.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str("CJSON input too large"));
+    }
+    let (mol, _) =
+        chematic_mol::parse_cjson(json).map_err(|e| JsValue::from_str(&e.to_string()))?;
     if mol.atom_count() > WASM_MAX_ATOMS {
         return Err(JsValue::from_str(&format!(
             "molecule too large (max {} atoms)",
@@ -704,6 +801,152 @@ pub fn extxyz_frame_json(text: &str) -> Result<String, JsValue> {
     bounded_json_string(&extxyz_frame_to_json_value(&frame))
 }
 
+fn xyz_frames_batch_manifest<I>(
+    frames: I,
+    format: &'static str,
+    offset: usize,
+    batch_size: usize,
+) -> Result<String, JsValue>
+where
+    I: Iterator<Item = Result<chematic_mol::XyzFrame, chematic_mol::XyzError>>,
+{
+    let mut records = Vec::with_capacity(batch_size);
+    let mut rejected_count = 0usize;
+    let mut has_more = false;
+    for (input_index, result) in frames.enumerate() {
+        if input_index < offset {
+            continue;
+        }
+        if records.len() == batch_size {
+            has_more = true;
+            break;
+        }
+        let value = match result {
+            Ok(frame) if frame.atoms.len() <= WASM_MAX_ATOMS => serde_json::json!({
+                "input_index": input_index,
+                "status": "accepted",
+                "frame": extxyz_frame_to_json_value(&frame),
+            }),
+            Ok(_) | Err(_) => {
+                rejected_count += 1;
+                serde_json::json!({
+                    "input_index": input_index,
+                    "status": "rejected",
+                    "frame": serde_json::Value::Null,
+                })
+            }
+        };
+        records.push(value);
+    }
+    let manifest = serde_json::json!({
+        "schema_version": 1,
+        "operation": "xyz_frames_batch",
+        "format": format,
+        "status": if has_more { "partial" } else { "complete" },
+        "offset": offset,
+        "next_offset": offset.saturating_add(records.len()),
+        "record_count": records.len(),
+        "rejected_count": rejected_count,
+        "records": records,
+    });
+    bounded_json_string(&manifest)
+}
+
+/// Split a text trajectory at count-line boundaries before parsing each
+/// frame. Unlike the core streaming readers, this bounded WASM convenience
+/// path can resume after a malformed frame because the complete input string
+/// is already available and each valid count line declares its frame extent.
+fn recoverable_xyz_frames(
+    text: &str,
+    extxyz: bool,
+) -> Vec<Result<chematic_mol::XyzFrame, chematic_mol::XyzError>> {
+    let lines: Vec<&str> = text.lines().collect();
+    let mut frames = Vec::new();
+    let mut offset = 0usize;
+    while offset < lines.len() {
+        while offset < lines.len() && lines[offset].trim().is_empty() {
+            offset += 1;
+        }
+        if offset >= lines.len() {
+            break;
+        }
+        let end = match lines[offset].trim().parse::<usize>() {
+            Ok(atom_count) => offset
+                .saturating_add(atom_count)
+                .saturating_add(2)
+                .min(lines.len()),
+            Err(_) => lines
+                .iter()
+                .enumerate()
+                .skip(offset.saturating_add(1))
+                .find_map(|(candidate, line)| {
+                    line.trim()
+                        .parse::<usize>()
+                        .ok()
+                        .filter(|_| candidate.saturating_add(2) <= lines.len())
+                        .map(|_| candidate)
+                })
+                .unwrap_or(lines.len()),
+        };
+        let block = format!("{}\n", lines[offset..end].join("\n"));
+        frames.push(if extxyz {
+            chematic_mol::parse_extxyz(&block)
+        } else {
+            chematic_mol::parse_xyz(&block)
+        });
+        offset = end.max(offset.saturating_add(1));
+    }
+    frames
+}
+
+/// Return one deterministic, resumable plain-XYZ batch as a JSON manifest.
+/// Stopping before requesting the next offset is the cancellation boundary.
+#[wasm_bindgen]
+pub fn xyz_frames_batch_json(
+    text: &str,
+    offset: usize,
+    batch_size: usize,
+) -> Result<String, JsValue> {
+    if text.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str("xyz input too large"));
+    }
+    if batch_size == 0 || batch_size > WASM_MAX_BATCH_ITEMS {
+        return Err(JsValue::from_str(&format!(
+            "XYZ batch size must be between 1 and {WASM_MAX_BATCH_ITEMS}"
+        )));
+    }
+    xyz_frames_batch_manifest(
+        recoverable_xyz_frames(text, false).into_iter(),
+        "xyz",
+        offset,
+        batch_size,
+    )
+}
+
+/// Return one deterministic, resumable Extended-XYZ batch as a JSON manifest.
+/// Stopping before requesting the next offset is the cancellation boundary.
+#[wasm_bindgen]
+pub fn extxyz_frames_batch_json(
+    text: &str,
+    offset: usize,
+    batch_size: usize,
+) -> Result<String, JsValue> {
+    if text.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str("extxyz input too large"));
+    }
+    if batch_size == 0 || batch_size > WASM_MAX_BATCH_ITEMS {
+        return Err(JsValue::from_str(&format!(
+            "Extended XYZ batch size must be between 1 and {WASM_MAX_BATCH_ITEMS}"
+        )));
+    }
+    xyz_frames_batch_manifest(
+        recoverable_xyz_frames(text, true).into_iter(),
+        "extxyz",
+        offset,
+        batch_size,
+    )
+}
+
 /// Build the [`chematic_mol::XyzFrame`] for [`to_extxyz_json`] from its raw
 /// string arguments, with a plain `String` error -- kept separate from the
 /// `#[wasm_bindgen]` wrapper (which maps `Err` to `JsValue::from_str` at the
@@ -880,6 +1123,22 @@ pub(crate) fn parse_pdb_molecule_and_coords(
     Ok((mol, flat))
 }
 
+/// Strict counterpart to `parse_pdb_molecule_and_coords` for callers that
+/// need fixed-column validation rather than compatibility recovery.
+pub(crate) fn parse_pdb_molecule_and_coords_strict(
+    pdb: &str,
+) -> Result<(chematic_core::Molecule, Vec<[f64; 3]>), String> {
+    let limits = chematic_3d::PdbParseLimits {
+        max_input_bytes: WASM_MAX_JSON_STRING_BYTES,
+        max_atoms: WASM_MAX_ATOMS,
+        ..Default::default()
+    };
+    let atoms = chematic_3d::parse_pdb_atoms_strict(pdb, &limits).map_err(|e| e.to_string())?;
+    let (mol, coords) = chematic_3d::pdb_to_molecule(&atoms);
+    let flat = coords.points.iter().map(|p| [p.x, p.y, p.z]).collect();
+    Ok((mol, flat))
+}
+
 /// Parse a PDB file and return a `MolHandle` (topology only; coordinates are
 /// discarded -- use [`pdb_coords_json`] to recover them in the SAME atom
 /// order, and [`mmff94_energy_breakdown_from_coords_json`] to score them
@@ -897,6 +1156,40 @@ pub fn mol_from_pdb(pdb: &str) -> MolHandle {
             inner: std::rc::Rc::new(chematic_core::MoleculeBuilder::new().build()),
         },
     }
+}
+
+/// Strict PDB parser. Unlike [`mol_from_pdb`], malformed ATOM/HETATM fields
+/// return an error instead of producing a partially recovered molecule.
+#[wasm_bindgen]
+pub fn mol_from_pdb_strict(pdb: &str) -> Result<MolHandle, JsValue> {
+    let (mol, _coords) =
+        parse_pdb_molecule_and_coords_strict(pdb).map_err(|error| JsValue::from_str(&error))?;
+    Ok(MolHandle {
+        inner: std::rc::Rc::new(mol),
+    })
+}
+
+/// Parse an AutoDock PDBQT block into a topology handle.
+///
+/// Coordinates and partial charges are intentionally discarded, matching the
+/// Python `from_pdbqt` binding; use the Rust parser when those arrays are
+/// needed. Invalid records return a JS error instead of a partial molecule.
+#[wasm_bindgen]
+pub fn mol_from_pdbqt(pdbqt: &str) -> Result<MolHandle, JsValue> {
+    if pdbqt.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str("PDBQT input too large"));
+    }
+    let (mol, _coords, _charges) =
+        chematic_mol::parse_pdbqt(pdbqt).map_err(|error| JsValue::from_str(&error.to_string()))?;
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!(
+            "molecule too large (max {} atoms)",
+            WASM_MAX_ATOMS
+        )));
+    }
+    Ok(MolHandle {
+        inner: std::rc::Rc::new(mol),
+    })
 }
 
 /// Extract the atomic coordinates from a PDB block, in the SAME atom order

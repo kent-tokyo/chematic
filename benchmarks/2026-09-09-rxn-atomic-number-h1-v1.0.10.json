@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "status": "local-verified",
+  "gate": "atomic_number_h1_normalization",
+  "scope": "chematic-rxn deterministic compatibility bridge",
+  "supported_forms": ["[#N]", "[#N:map]", "[#N;H1]", "[#N;H1:map]"],
+  "unsupported_forms_remain_fail_closed": ["[#N;H2]", "compound SMARTS outside the listed forms"],
+  "evidence": {
+    "command": "cargo test -p chematic-rxn --offline --test cross_binding_contract && cargo test -p chematic-rxn --offline --lib atomic_number_smirks",
+    "cross_binding_contract_tests_passed": 2,
+    "focused_library_tests_passed": 3,
+    "rust_full_package_tests_passed": 209,
+    "failure_count": 0
+  },
+  "reproduction_notes": "Python and Node/WASM contract fixtures use the same H2 fail-closed control; browser and independent SMARTS-engine parity remain separate open gates."
+}

@@ -1,0 +1,16 @@
+{
+  "date": "2026-09-09",
+  "target_version": "1.0.10",
+  "scope": "workspace-wide Rust library and integration test targets",
+  "source_state": "current working tree, intentionally dirty",
+  "commands": [
+    "CARGO_TARGET_DIR=/private/tmp/chematic-target-workspace-check cargo test --workspace --lib --quiet",
+    "CARGO_TARGET_DIR=/private/tmp/chematic-target-workspace-check cargo test --workspace --tests --quiet"
+  ],
+  "results": {
+    "library_targets": "all executed suites passed; ignored tests remained ignored",
+    "integration_targets": "all executed suites passed; ignored tests remained ignored"
+  },
+  "result": "pass",
+  "boundary": "This is local Rust workspace evidence. It does not cover Python wheel installation, browser artifact/runtime parity, external review, registry publication, or future release actions."
+}

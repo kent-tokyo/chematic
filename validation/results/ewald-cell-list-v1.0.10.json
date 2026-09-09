@@ -1,0 +1,26 @@
+{
+  "schema_version": "1",
+  "date": "2026-09-09",
+  "version": "1.0.10",
+  "scope": "schematic-ewald real-space damped Coulomb cutoff",
+  "implementation": {
+    "function": "direct_coulomb_damped_cutoff",
+    "cell_edge_angstrom": "r_cut",
+    "neighbor_cells": 27,
+    "fallback": "direct path for non-finite coordinates or invalid cutoff"
+  },
+  "checks": [
+    "direct-reference parity",
+    "negative coordinates",
+    "cell boundary coordinates",
+    "strict r < r_cut boundary",
+    "overlap guard r > 1e-6"
+  ],
+  "command": "CARGO_TARGET_DIR=/private/tmp/chematic-target-ewald-cell cargo test -p chematic-ewald --offline --lib",
+  "result": "passed",
+  "performance_claim": false,
+  "remaining_scope": [
+    "periodic schematic-crystal neighbor cell-list path",
+    "broader numerical parity and performance gate"
+  ]
+}

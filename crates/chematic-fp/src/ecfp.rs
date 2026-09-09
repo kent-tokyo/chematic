@@ -16,10 +16,14 @@ const FNV_PRIME: u64 = 1099511628211;
 pub(crate) fn fnv1a(bytes: &[u8]) -> u64 {
     let mut h = FNV_OFFSET;
     for &b in bytes {
-        h ^= b as u64;
-        h = h.wrapping_mul(FNV_PRIME);
+        h = fnv1a_byte(h, b);
     }
     h
+}
+
+#[inline]
+fn fnv1a_byte(h: u64, byte: u8) -> u64 {
+    (h ^ byte as u64).wrapping_mul(FNV_PRIME)
 }
 
 /// Hash one atom's neighbourhood at iteration `r` of the Morgan expansion.
@@ -40,15 +44,61 @@ pub(crate) fn expand_atom_id(mol: &Molecule, i: usize, r: u32, ids: &[u64]) -> u
         .collect();
     neighbor_info.sort_unstable();
 
-    // 1 (radius) + 8 (self id) + up to 6 × 9 (bond_type + nb_id) = 63 bytes max on stack.
-    let mut bytes: SmallVec<[u8; 64]> = SmallVec::new();
-    bytes.push(r as u8);
-    bytes.extend_from_slice(&ids[i].to_le_bytes());
-    for (btype, nb_id) in &neighbor_info {
-        bytes.push(*btype);
-        bytes.extend_from_slice(&nb_id.to_le_bytes());
+    // Feed the exact byte layout directly into FNV instead of materializing a
+    // second SmallVec. This is hot: every atom at every Morgan radius hashes
+    // one such record. The byte order and sequence intentionally match the
+    // former `[r, self_id, (bond_type, nb_id)*]` buffer exactly.
+    let mut hash = fnv1a_byte(FNV_OFFSET, r as u8);
+    for byte in ids[i].to_le_bytes() {
+        hash = fnv1a_byte(hash, byte);
     }
-    fnv1a(&bytes)
+    for (btype, nb_id) in &neighbor_info {
+        hash = fnv1a_byte(hash, *btype);
+        for byte in nb_id.to_le_bytes() {
+            hash = fnv1a_byte(hash, byte);
+        }
+    }
+    hash
+}
+
+type NeighborDescriptor = SmallVec<[(u8, usize); 6]>;
+
+fn neighbor_descriptors(mol: &Molecule) -> Vec<NeighborDescriptor> {
+    (0..mol.atom_count())
+        .map(|i| {
+            mol.neighbors(AtomIdx(i as u32))
+                .map(|(nb_idx, bond_idx)| {
+                    (bond_type_int(mol.bond(bond_idx).order), nb_idx.0 as usize)
+                })
+                .collect()
+        })
+        .collect()
+}
+
+#[inline]
+fn expand_atom_id_with_descriptors(
+    i: usize,
+    r: u32,
+    ids: &[u64],
+    descriptors: &NeighborDescriptor,
+) -> u64 {
+    let mut neighbor_info: SmallVec<[(u8, u64); 6]> = descriptors
+        .iter()
+        .map(|&(bond_type, neighbor)| (bond_type, ids[neighbor]))
+        .collect();
+    neighbor_info.sort_unstable();
+
+    let mut hash = fnv1a_byte(FNV_OFFSET, r as u8);
+    for byte in ids[i].to_le_bytes() {
+        hash = fnv1a_byte(hash, byte);
+    }
+    for (btype, nb_id) in &neighbor_info {
+        hash = fnv1a_byte(hash, *btype);
+        for byte in nb_id.to_le_bytes() {
+            hash = fnv1a_byte(hash, byte);
+        }
+    }
+    hash
 }
 
 /// Which atom-invariant definition [`initial_atom_id`] (and everything built on
@@ -339,6 +389,7 @@ pub fn ecfp_with_invariant_mode(
     }
 
     let ring_set = find_sssr(mol);
+    let descriptors = neighbor_descriptors(mol);
 
     // Step 1: initial atom identifiers (iteration 0).
     let mut ids: Vec<u64> = Vec::with_capacity(n);
@@ -356,7 +407,7 @@ pub fn ecfp_with_invariant_mode(
     let mut new_ids: Vec<u64> = vec![0u64; n];
     for r in 1..=config.radius {
         for (i, slot) in new_ids.iter_mut().enumerate() {
-            let new_id = expand_atom_id(mol, i, r, &ids);
+            let new_id = expand_atom_id_with_descriptors(i, r, &ids, &descriptors[i]);
             *slot = new_id;
             fp.set((new_id % nbits as u64) as usize);
             if config.use_double_fold {

@@ -1,5 +1,10 @@
 use super::*;
 
+const SHARED_CROSS_BINDING_FIXTURE: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../validation/cross_binding_contract.json"
+));
+
 fn parse(s: &str) -> MolHandle {
     MolHandle {
         inner: std::rc::Rc::new(chematic_smiles::parse(s).unwrap()),
@@ -360,6 +365,22 @@ fn is_valid_smiles_rejects_oversized_input_before_parse() {
 }
 
 #[test]
+fn shared_smiles_validity_contract_matches() {
+    let document: serde_json::Value =
+        serde_json::from_str(SHARED_CROSS_BINDING_FIXTURE).expect("fixture JSON");
+    let contract = &document["smiles_validity_contract"];
+    assert_eq!(contract["schema_version"], 1);
+    for value in contract["accepted"].as_array().unwrap() {
+        let smiles = value.as_str().unwrap();
+        assert!(is_valid_smiles(smiles), "accepted: {smiles}");
+    }
+    for value in contract["rejected"].as_array().unwrap() {
+        let smiles = value.as_str().unwrap();
+        assert!(!is_valid_smiles(smiles), "rejected: {smiles}");
+    }
+}
+
+#[test]
 fn inchi_helpers_reject_oversized_input_before_parse() {
     let smiles = "C".repeat(super::WASM_MAX_INPUT_BYTES + 1);
     assert!(inchi_from_smiles(&smiles).starts_with("error:SMILES exceeds maximum input size"));
@@ -604,6 +625,28 @@ fn smarts_parse_invalid_is_err() {
         chematic_smarts::parse_smarts("[invalid").is_err(),
         "invalid SMARTS should return Err from parse_smarts"
     );
+}
+
+#[test]
+fn smarts_validity_contract_matches_shared_source_only_fixture() {
+    let document: serde_json::Value =
+        serde_json::from_str(SHARED_CROSS_BINDING_FIXTURE).expect("fixture JSON");
+    let contract = &document["smarts_validity_contract"];
+    assert_eq!(contract["schema_version"], 1);
+    for value in contract["accepted"].as_array().unwrap() {
+        let smarts = value.as_str().unwrap();
+        assert!(
+            chematic_smarts::parse_smarts(smarts).is_ok(),
+            "accepted: {smarts}"
+        );
+    }
+    for value in contract["rejected"].as_array().unwrap() {
+        let smarts = value.as_str().unwrap();
+        assert!(
+            chematic_smarts::parse_smarts(smarts).is_err(),
+            "rejected: {smarts}"
+        );
+    }
 }
 
 // ── Sprint P: SDF I/O, EState, topo path FP ─────────────────────────────
@@ -1289,6 +1332,32 @@ fn normalize_reaction_smiles_roundtrip() {
     );
 }
 
+#[test]
+fn reaction_smarts_source_contract_matches_fixture() {
+    let document: serde_json::Value = serde_json::from_str(SHARED_CROSS_BINDING_FIXTURE).unwrap();
+    let cases = document["reaction_smarts_contract"]["cases"]
+        .as_array()
+        .unwrap();
+    for case in cases {
+        let observed = reaction_smarts_match(
+            case["smarts"].as_str().unwrap(),
+            case["reaction"].as_str().unwrap(),
+        )
+        .unwrap();
+        assert_eq!(observed, case["matches"].as_bool().unwrap());
+    }
+    assert_eq!(cases.len(), 38);
+}
+
+#[test]
+#[cfg(target_arch = "wasm32")]
+fn reaction_smarts_source_api_fails_closed_on_invalid_input() {
+    assert!(reaction_smarts_match("not valid", "CC>>CC").is_err());
+    assert!(reaction_smarts_match("[C]>>[C]", "not a reaction").is_err());
+    let oversized = "C".repeat(1_000_001);
+    assert!(reaction_smarts_match("[C]>>[C]", &oversized).is_err());
+}
+
 // Sprint Z
 #[test]
 fn brics_fragments_json_aspirin() {
@@ -1424,6 +1493,18 @@ fn torsion_bitvec_length_256() {
 }
 
 #[test]
+fn rdkit_path_bitvec_length_256() {
+    let mol = parse("CCCCC");
+    assert_eq!(rdkit_path_bitvec(&mol).len(), 256);
+}
+
+#[test]
+fn rdkit_rdk_bitvec_length_256() {
+    let mol = parse("CCCCC");
+    assert_eq!(rdkit_rdk_bitvec(&mol).len(), 256);
+}
+
+#[test]
 fn tanimoto_fcfp6_identical_is_one() {
     let mol = parse("c1ccccc1");
     assert!((tanimoto_fcfp6(&mol, &mol) - 1.0).abs() < 1e-9);
@@ -1493,6 +1574,22 @@ fn mol_from_pdb_returns_handle() {
     // pdb_to_molecule with no atoms gives empty molecule.
     let h = mol_from_pdb("");
     assert_eq!(h.atom_count(), 0);
+}
+
+#[test]
+fn mol_from_pdb_strict_rejects_truncated_atom_record() {
+    let valid = "ATOM      1  CA  ALA A   1      10.000  11.000  12.000  1.00 20.00           C  ";
+    assert_eq!(
+        parse_pdb_molecule_and_coords_strict(valid)
+            .unwrap()
+            .0
+            .atom_count(),
+        1
+    );
+    let malformed = "ATOM      1  CA  ALA A   1      10.000  11.000\n";
+    assert!(parse_pdb_molecule_and_coords_strict(malformed).is_err());
+    // The compatibility entry point remains intentionally lenient.
+    assert_eq!(mol_from_pdb(malformed).atom_count(), 1);
 }
 
 #[test]
@@ -1742,6 +1839,32 @@ fn sdf_to_records_json_parses_properties() {
         json.contains("\"Source\":\"ChEMBL\""),
         "Source missing: {json}"
     );
+}
+
+#[test]
+fn sdf_records_batch_json_is_ordered_and_resumable() {
+    let sdf = concat!(
+        "first\n  chematic\n\n",
+        "  1  0  0  0  0  0  0  0  0  0  0 V2000\n",
+        "    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n",
+        "M  END\n$$$$\n",
+        "second\n  chematic\n\n",
+        "  1  0  0  0  0  0  0  0  0  0  0 V2000\n",
+        "    0.0000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n",
+        "M  END\n$$$$\n",
+    );
+    let first: serde_json::Value =
+        serde_json::from_str(&sdf_records_batch_json(sdf, 0, 1).unwrap()).unwrap();
+    assert_eq!(first["status"], "partial");
+    assert_eq!(first["next_offset"], 1);
+    assert_eq!(first["records"][0]["input_index"], 0);
+    assert_eq!(first["records"][0]["record"]["smiles"], "C");
+
+    let second: serde_json::Value =
+        serde_json::from_str(&sdf_records_batch_json(sdf, 1, 1).unwrap()).unwrap();
+    assert_eq!(second["status"], "complete");
+    assert_eq!(second["records"][0]["input_index"], 1);
+    assert_eq!(second["records"][0]["record"]["smiles"], "N");
 }
 
 #[test]
@@ -2639,6 +2762,62 @@ fn test_mol_from_extxyz_and_extxyz_frame_json_share_atom_order() {
 }
 
 #[test]
+fn test_mol_from_cjson_enforces_topology_contract() {
+    let document: serde_json::Value =
+        serde_json::from_str(SHARED_CROSS_BINDING_FIXTURE).expect("fixture JSON");
+    let contract = &document["cjson_contract"];
+    assert_eq!(contract["schema_version"], 1);
+    let mol = mol_from_cjson(contract["input"].as_str().unwrap()).expect("mol_from_cjson");
+    assert_eq!(mol.atom_count(), contract["expected"]["atom_count"]);
+    assert_eq!(mol.bond_count(), contract["expected"]["bond_count"]);
+    assert_eq!(
+        mol.canonical_smiles(),
+        contract["expected"]["canonical_smiles"]
+    );
+    assert!(chematic_mol::parse_cjson(contract["malformed_input"].as_str().unwrap()).is_err());
+}
+
+#[test]
+fn test_cjson_roundtrip_contract() {
+    let document: serde_json::Value =
+        serde_json::from_str(SHARED_CROSS_BINDING_FIXTURE).expect("fixture JSON");
+    let contract = &document["cjson_contract"];
+    let cjson = convert_common_format(contract["input"].as_str().unwrap(), "cjson", "cjson")
+        .expect("CJSON conversion");
+    let mol = mol_from_cjson(&cjson).expect("round-tripped CJSON");
+    assert_eq!(mol.atom_count(), contract["expected"]["atom_count"]);
+    assert_eq!(mol.bond_count(), contract["expected"]["bond_count"]);
+    assert_eq!(
+        mol.canonical_smiles(),
+        contract["expected"]["canonical_smiles"]
+    );
+}
+
+#[test]
+fn test_shared_mol_block_contracts_match() {
+    let document: serde_json::Value = serde_json::from_str(SHARED_CROSS_BINDING_FIXTURE).unwrap();
+    for (section, parser) in [
+        (
+            "mol_v2000_contract",
+            mol_from_sdf_block as fn(&str) -> Result<MolHandle, JsValue>,
+        ),
+        (
+            "mol_v3000_contract",
+            mol_from_v3000_block as fn(&str) -> Result<MolHandle, JsValue>,
+        ),
+    ] {
+        let contract = &document[section];
+        assert_eq!(contract["schema_version"], 1);
+        let mol = parser(contract["input"].as_str().unwrap()).expect("shared MOL contract");
+        assert_eq!(mol.atom_count(), contract["expected"]["atom_count"]);
+        assert_eq!(
+            mol.canonical_smiles(),
+            contract["expected"]["canonical_smiles"]
+        );
+    }
+}
+
+#[test]
 fn test_extxyz_frame_json_plain_xyz_has_null_lattice_and_empty_properties() {
     let plain = "3\nwater\nO 0.0 0.0 0.0\nH 0.7586 0.0 0.504284\nH 0.7586 0.0 -0.504284\n";
     let json = extxyz_frame_json(plain).expect("extxyz_frame_json");
@@ -2646,6 +2825,337 @@ fn test_extxyz_frame_json_plain_xyz_has_null_lattice_and_empty_properties() {
     assert!(v["lattice"].is_null());
     assert_eq!(v["properties"].as_object().unwrap().len(), 0);
     assert_eq!(v["info"].as_object().unwrap().len(), 0);
+}
+
+#[test]
+fn xyz_batch_manifests_are_ordered_and_resumable() {
+    let xyz = "1\nfirst\nC 0 0 0\n1\nsecond\nN 1 0 0\n";
+    let first: serde_json::Value =
+        serde_json::from_str(&xyz_frames_batch_json(xyz, 0, 1).unwrap()).unwrap();
+    assert_eq!(first["format"], "xyz");
+    assert_eq!(first["status"], "partial");
+    assert_eq!(first["records"][0]["input_index"], 0);
+    assert_eq!(
+        first["records"][0]["frame"]["coords"][0],
+        serde_json::json!([0.0, 0.0, 0.0])
+    );
+
+    let second: serde_json::Value =
+        serde_json::from_str(&xyz_frames_batch_json(xyz, 1, 1).unwrap()).unwrap();
+    assert_eq!(second["status"], "complete");
+    assert_eq!(second["records"][0]["input_index"], 1);
+    assert_eq!(
+        second["records"][0]["frame"]["coords"][0],
+        serde_json::json!([1.0, 0.0, 0.0])
+    );
+}
+
+#[test]
+fn xyz_batch_manifest_recovers_after_malformed_frame() {
+    let xyz = "1\nmissing atom\nnot-an-atom\n1\nvalid\nC 2 0 0\n";
+    let manifest: serde_json::Value =
+        serde_json::from_str(&xyz_frames_batch_json(xyz, 0, 2).unwrap()).unwrap();
+    assert_eq!(manifest["status"], "complete");
+    assert_eq!(manifest["record_count"], 2);
+    assert_eq!(manifest["rejected_count"], 1);
+    assert_eq!(manifest["records"][0]["status"], "rejected");
+    assert_eq!(manifest["records"][1]["status"], "accepted");
+    assert_eq!(manifest["records"][1]["input_index"], 1);
+}
+
+#[test]
+fn xyz_batch_manifest_groups_malformed_count_line_until_next_frame() {
+    let xyz = "not-a-count\ncomment\nC 0 0 0\n1\nvalid\nC 2 0 0\n";
+    let manifest: serde_json::Value =
+        serde_json::from_str(&xyz_frames_batch_json(xyz, 0, 2).unwrap()).unwrap();
+    assert_eq!(manifest["status"], "complete");
+    assert_eq!(manifest["record_count"], 2);
+    assert_eq!(manifest["rejected_count"], 1);
+    assert_eq!(manifest["records"][0]["status"], "rejected");
+    assert_eq!(manifest["records"][1]["status"], "accepted");
+    assert_eq!(manifest["records"][1]["input_index"], 1);
+}
+
+#[test]
+fn extxyz_batch_manifest_preserves_frame_metadata() {
+    let extxyz = concat!(
+        "1\nProperties=species:S:1:pos:R:3:charge:I:1 energy=2\n",
+        "C 0 0 0 0\n",
+        "1\nProperties=species:S:1:pos:R:3:charge:I:1 energy=3\n",
+        "N 1 0 0 -1\n",
+    );
+    let manifest: serde_json::Value =
+        serde_json::from_str(&extxyz_frames_batch_json(extxyz, 0, 2).unwrap()).unwrap();
+    assert_eq!(manifest["format"], "extxyz");
+    assert_eq!(manifest["status"], "complete");
+    assert_eq!(manifest["record_count"], 2);
+    assert_eq!(manifest["records"][1]["frame"]["info"]["energy"], "3");
+}
+
+#[test]
+fn extxyz_batch_manifest_recovers_after_malformed_frame() {
+    let extxyz = concat!(
+        "not-a-count\n",
+        "comment\n",
+        "C 0 0 0\n",
+        "1\n",
+        "Properties=species:S:1:pos:R:3\n",
+        "C 2 0 0\n",
+    );
+    let manifest: serde_json::Value =
+        serde_json::from_str(&extxyz_frames_batch_json(extxyz, 0, 2).unwrap()).unwrap();
+    assert_eq!(manifest["status"], "complete");
+    assert_eq!(manifest["record_count"], 2);
+    assert_eq!(manifest["rejected_count"], 1);
+    assert_eq!(manifest["records"][0]["status"], "rejected");
+    assert_eq!(manifest["records"][1]["status"], "accepted");
+    assert_eq!(manifest["records"][1]["input_index"], 1);
+}
+
+#[test]
+fn xyz_batch_manifest_matches_shared_cross_binding_contract() {
+    let document: serde_json::Value = serde_json::from_str(SHARED_CROSS_BINDING_FIXTURE).unwrap();
+    let contract = &document["xyz_batch_contract"];
+    assert_eq!(contract["schema_version"], 1);
+    for format in ["xyz", "extxyz"] {
+        let fixture = &contract[format];
+        let input = fixture["input"].as_str().unwrap();
+        let manifest_text = if format == "xyz" {
+            xyz_frames_batch_json(input, 0, contract["batch_size"].as_u64().unwrap() as usize)
+        } else {
+            extxyz_frames_batch_json(input, 0, contract["batch_size"].as_u64().unwrap() as usize)
+        }
+        .unwrap();
+        let manifest: serde_json::Value = serde_json::from_str(&manifest_text).unwrap();
+        assert_eq!(manifest["format"], format);
+        assert_eq!(manifest["status"], fixture["expected"]["status"]);
+        assert_eq!(
+            manifest["record_count"],
+            fixture["expected"]["record_count"]
+        );
+        assert_eq!(
+            manifest["rejected_count"],
+            fixture["expected"]["rejected_count"]
+        );
+        assert_eq!(manifest["records"][0]["status"], "rejected");
+        assert_eq!(manifest["records"][1]["status"], "accepted");
+        assert_eq!(
+            manifest["records"][1]["frame"]["coords"],
+            fixture["expected"]["records"][1]["coords"]
+        );
+    }
+}
+
+#[test]
+fn pdb_contract_matches_shared_cross_binding_fixture() {
+    let document: serde_json::Value = serde_json::from_str(SHARED_CROSS_BINDING_FIXTURE).unwrap();
+    let contract = &document["pdb_contract"];
+    let input = contract["input"].as_str().unwrap();
+    let (mol, coords) = match parse_pdb_molecule_and_coords(input) {
+        Ok(value) => value,
+        Err(_) => panic!("shared PDB fixture must parse"),
+    };
+    assert_eq!(
+        mol.atom_count(),
+        contract["expected"]["atom_count"].as_u64().unwrap() as usize
+    );
+    let expected: Vec<[f64; 3]> =
+        serde_json::from_value(contract["expected"]["coords"].clone()).unwrap();
+    assert_eq!(coords, expected);
+}
+
+#[test]
+fn pdb_strict_contract_matches_shared_source_only_fixture() {
+    let document: serde_json::Value = serde_json::from_str(SHARED_CROSS_BINDING_FIXTURE).unwrap();
+    let contract = &document["pdb_strict_contract"];
+    assert_eq!(contract["schema_version"], 1);
+    let input = contract["input"].as_str().unwrap();
+    let (mol, coords) =
+        parse_pdb_molecule_and_coords_strict(input).expect("shared strict PDB fixture must parse");
+    assert_eq!(
+        mol.atom_count(),
+        contract["expected"]["atom_count"].as_u64().unwrap() as usize
+    );
+    let expected: Vec<[f64; 3]> =
+        serde_json::from_value(contract["expected"]["coords"].clone()).unwrap();
+    assert_eq!(coords, expected);
+    assert!(
+        parse_pdb_molecule_and_coords_strict(contract["malformed_input"].as_str().unwrap())
+            .is_err()
+    );
+}
+
+#[test]
+fn pdbqt_contract_matches_shared_source_only_fixture() {
+    let document: serde_json::Value = serde_json::from_str(SHARED_CROSS_BINDING_FIXTURE).unwrap();
+    let contract = &document["pdbqt_contract"];
+    assert_eq!(contract["schema_version"], 1);
+    let input = contract["input"].as_str().unwrap();
+    let (mol, coords, charges) =
+        chematic_mol::parse_pdbqt(input).expect("shared PDBQT fixture must parse");
+    assert_eq!(mol.atom_count(), contract["expected"]["atom_count"]);
+    assert_eq!(coords, vec![(0.0, 0.0, 0.0), (1.4, 0.0, 0.0)]);
+    assert_eq!(charges, vec![0.1, -0.2]);
+    assert!(chematic_mol::parse_pdbqt(contract["malformed_input"].as_str().unwrap()).is_err());
+}
+
+#[test]
+fn qcschema_contract_matches_shared_fixture() {
+    let document: serde_json::Value = serde_json::from_str(SHARED_CROSS_BINDING_FIXTURE).unwrap();
+    let contract = &document["qcschema_contract"];
+    let qc = chematic_mol::parse_qcschema_molecule(contract["input"].as_str().unwrap()).unwrap();
+    let view = chematic_mol::qc_molecule_to_chematic(&qc).unwrap();
+    assert_eq!(view.molecule.atom_count(), 3);
+    assert_eq!(view.molecular_charge, 0.0);
+    assert_eq!(view.molecular_multiplicity, 1);
+    let expected: Vec<[f64; 3]> =
+        serde_json::from_value(contract["expected"]["coords_angstrom"].clone()).unwrap();
+    for (index, [x, y, z]) in expected.into_iter().enumerate() {
+        let actual = view.coords.get(chematic_core::AtomIdx(index as u32));
+        assert!((actual.x - x).abs() < 1e-12);
+        assert!((actual.y - y).abs() < 1e-12);
+        assert!((actual.z - z).abs() < 1e-12);
+    }
+}
+
+#[test]
+fn qcschema_atomic_input_contract_matches_shared_fixture() {
+    let document: serde_json::Value = serde_json::from_str(SHARED_CROSS_BINDING_FIXTURE).unwrap();
+    let contract = &document["qcschema_atomic_input_contract"];
+    let input = chematic_mol::parse_atomic_input(contract["input"].as_str().unwrap()).unwrap();
+    assert_eq!(input.driver, chematic_mol::Driver::Energy);
+    assert_eq!(input.model.method, "b3lyp");
+    assert_eq!(input.molecule.symbols.len(), 3);
+    let output: serde_json::Value =
+        serde_json::from_str(&chematic_mol::write_atomic_input(&input)).unwrap();
+    assert_eq!(output["extras"]["contract_marker"], true);
+    assert_eq!(output["vendor_extension"], "preserve-me");
+}
+
+#[test]
+fn qcschema_atomic_result_contract_matches_shared_fixture() {
+    let document: serde_json::Value = serde_json::from_str(SHARED_CROSS_BINDING_FIXTURE).unwrap();
+    let contract = &document["qcschema_atomic_result_contract"];
+    let result = chematic_mol::parse_atomic_result(contract["input"].as_str().unwrap()).unwrap();
+    assert!(result.success);
+    assert_eq!(result.molecule.symbols.len(), 3);
+    assert_eq!(result.properties["calcinfo_natom"], 3);
+    assert_eq!(result.unknown_fields["vendor_result_marker"], 42);
+    let output: serde_json::Value =
+        serde_json::from_str(&chematic_mol::write_atomic_result(&result)).unwrap();
+    assert_eq!(output["return_result"], -76.4);
+    assert_eq!(output["success"], true);
+    assert_eq!(output["vendor_result_marker"], 42);
+}
+
+#[test]
+fn orca_input_contract_matches_shared_fixture() {
+    let document: serde_json::Value = serde_json::from_str(SHARED_CROSS_BINDING_FIXTURE).unwrap();
+    let contract = &document["orca_input_contract"];
+    let input = chematic_mol::parse_orca_input(contract["input"].as_str().unwrap()).unwrap();
+    assert_eq!(input.keywords, vec!["B3LYP", "def2-SVP", "Opt", "Freq"]);
+    let coords = input.coords.unwrap().to_molecule().unwrap();
+    assert_eq!(coords.0.atom_count(), 1);
+    assert_eq!(
+        coords.0.atom(chematic_core::AtomIdx(0)).element.symbol(),
+        "O"
+    );
+    assert_eq!(coords.2, 0);
+    assert_eq!(coords.3, 1);
+}
+
+#[test]
+fn orca_output_contract_matches_shared_fixture() {
+    let document: serde_json::Value = serde_json::from_str(SHARED_CROSS_BINDING_FIXTURE).unwrap();
+    let contract = &document["orca_output_contract"];
+    let output = chematic_mol::parse_orca_output(contract["input"].as_str().unwrap()).unwrap();
+    assert_eq!(output.charge, Some(0));
+    assert_eq!(output.multiplicity, Some(1));
+    assert_eq!(output.final_energy_hartree, Some(-76.025678123456));
+    assert!(matches!(
+        output.termination,
+        chematic_mol::OrcaTermination::Normal
+    ));
+    assert!(matches!(
+        output.optimization_convergence,
+        chematic_mol::OrcaOptConvergence::NotRequested
+    ));
+    assert!(output.trajectory.is_empty());
+    assert!(
+        chematic_mol::parse_orca_output(contract["malformed_input"].as_str().unwrap()).is_err()
+    );
+}
+
+#[test]
+fn mol2_contract_matches_shared_cross_binding_fixture() {
+    let document: serde_json::Value = serde_json::from_str(SHARED_CROSS_BINDING_FIXTURE).unwrap();
+    let contract = &document["mol2_contract"];
+    let input = contract["input"].as_str().unwrap();
+    let (mol, _coords) = chematic_mol::parse_mol2(input).expect("shared MOL2 fixture must parse");
+    assert_eq!(mol.atom_count(), contract["expected"]["atom_count"]);
+}
+
+#[test]
+fn cml_contract_matches_shared_cross_binding_fixture() {
+    let document: serde_json::Value = serde_json::from_str(SHARED_CROSS_BINDING_FIXTURE).unwrap();
+    let contract = &document["cml_contract"];
+    let input = contract["input"].as_str().unwrap();
+    let (mol, _coords) = chematic_mol::parse_cml(input).expect("shared CML fixture must parse");
+    assert_eq!(mol.atom_count(), contract["expected"]["atom_count"]);
+}
+
+#[test]
+fn cdxml_contract_matches_shared_cross_binding_fixture() {
+    let document: serde_json::Value = serde_json::from_str(SHARED_CROSS_BINDING_FIXTURE).unwrap();
+    let contract = &document["cdxml_contract"];
+    let input = contract["input"].as_str().unwrap();
+    let (mol, _coords) = chematic_mol::parse_cdxml(input).expect("shared CDXML fixture must parse");
+    assert_eq!(mol.atom_count(), contract["expected"]["atom_count"]);
+}
+
+#[test]
+fn cdxml_roundtrip_matches_shared_cross_binding_fixture() {
+    let document: serde_json::Value = serde_json::from_str(SHARED_CROSS_BINDING_FIXTURE).unwrap();
+    let contract = &document["cdxml_contract"];
+    let input = contract["input"].as_str().unwrap();
+    let mol = mol_from_cdxml(input).expect("shared CDXML fixture must parse");
+    let serialized = convert_common_format(input, "cdxml", "cdxml").unwrap();
+    let roundtripped = mol_from_cdxml(&serialized).expect("written CDXML must parse");
+    assert_eq!(
+        roundtripped.atom_count(),
+        contract["expected"]["atom_count"]
+    );
+    drop(mol);
+    drop(roundtripped);
+}
+
+#[test]
+fn mmcif_contract_matches_shared_cross_binding_fixture() {
+    let document: serde_json::Value = serde_json::from_str(SHARED_CROSS_BINDING_FIXTURE).unwrap();
+    let contract = &document["mmcif_contract"];
+    let input = contract["input"].as_str().unwrap();
+    let result = chematic_mol::parse_mmcif(input).expect("shared mmCIF fixture must parse");
+    let (_mol, coords) = result.to_molecule();
+    let expected: Vec<[f64; 3]> =
+        serde_json::from_value(contract["expected"]["coords"].clone()).unwrap();
+    let expected = expected
+        .into_iter()
+        .map(|[x, y, z]| (x, y, z))
+        .collect::<Vec<_>>();
+    assert_eq!(coords, expected);
+}
+
+#[test]
+fn moljson_contract_matches_shared_cross_binding_fixture() {
+    let document: serde_json::Value = serde_json::from_str(SHARED_CROSS_BINDING_FIXTURE).unwrap();
+    let contract = &document["moljson_contract"];
+    let input = contract["input"].as_str().unwrap();
+    let mol = chematic_mol::parse_moljson(input).expect("shared MolJSON fixture must parse");
+    assert_eq!(mol.atom_count(), contract["expected"]["atom_count"]);
+    assert_eq!(
+        chematic_smiles::canonical_smiles(&mol),
+        contract["expected"]["canonical_smiles"]
+    );
 }
 
 #[test]

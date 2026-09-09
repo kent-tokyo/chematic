@@ -1,0 +1,19 @@
+{
+  "date": "2026-09-09",
+  "workspace_version": "1.0.10",
+  "scope": "local reaction transformation and 3D library regression gate",
+  "commands": [
+    "CARGO_TARGET_DIR=/private/tmp/chematic-target-roadmap-focus cargo test -p chematic-rxn --offline --lib",
+    "CARGO_TARGET_DIR=/private/tmp/chematic-target-roadmap-focus cargo test -p chematic-3d --offline --lib"
+  ],
+  "checks": {
+    "chematic_rxn_lib": {"tests": 209, "passed": 209, "ignored": 0},
+    "chematic_3d_lib": {"tests": 606, "passed": 596, "ignored": 10}
+  },
+  "executed_tests": 815,
+  "passed": 805,
+  "ignored": 10,
+  "failed": 0,
+  "result": "pass",
+  "boundary": "This is local Rust regression evidence. Ignored 3D tests are explicitly experimental long-run lanes; this does not close curated reaction/query quality reports, independent force-field oracle coverage, full RDKit TFD parity, or external/browser gates."
+}

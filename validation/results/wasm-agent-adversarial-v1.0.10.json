@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "status": "local-verified",
+  "scope": "Node-hosted WASM agent-side adversarial contracts",
+  "commands": [
+    "node --test crates/chematic-wasm/tests/pipeline_v2.test.mjs crates/chematic-wasm/tests/mcs.test.mjs"
+  ],
+  "suites": {
+    "pipeline_v2": {
+      "status": "pass",
+      "checks": [
+        "success envelope shape",
+        "typed ring-torsion failure envelope",
+        "malformed/incomplete config fail-closed",
+        "nullable timeout fields",
+        "typed zero-timeout failure",
+        "oversized config rejection",
+        "atom-count limit",
+        "finite/count/order checks across four fixtures",
+        "Python reference parity across eight fixtures"
+      ]
+    },
+  "mcs": {
+      "status": "pass",
+      "assertions": "all assertions passed"
+    }
+  },
+  "browser_environment_probe_2026_09_10": {
+    "commands": [
+      "python3 -m playwright install --list",
+      "python3 -c 'from playwright.async_api import async_playwright; ... browser.launch(executable_path=...)'",
+      "python3 -m http.server 8765 --directory ."
+    ],
+    "python_playwright": "available",
+    "node_playwright": "unavailable",
+    "chromium_wrapper": "/opt/homebrew/bin/chromium",
+    "chromium_launch": "blocked: wrapper targets missing /Applications/Chromium.app/Contents/MacOS/Chromium; Playwright cached headless shell also exits with macOS MachPortRendezvous permission denied",
+    "local_http_server_bind": "blocked: PermissionError on port 8765",
+    "status": "environment-blocked"
+  },
+  "boundary": "This is Node-hosted WASM evidence. Browser-engine execution, browser memory, and the broader agent matrix remain open; no browser parity or external-review claim is made."
+}

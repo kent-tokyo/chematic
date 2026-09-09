@@ -7,7 +7,6 @@ index.
 
 | File | Retained content |
 |---|---|
-| [`detailed-development-history.md`](detailed-development-history.md) | Full pre-cleanup changelog and unreleased engineering notes |
 | [`roadmap-through-2026-09-05.md`](roadmap-through-2026-09-05.md) | Completed phase-by-phase roadmap and gate history |
 | [`security-policy-through-v1.0.4.md`](security-policy-through-v1.0.4.md) | Detailed historical security controls and evidence notes |
 | [`benchmark-guide-through-v1.0.4.md`](benchmark-guide-through-v1.0.4.md) | Long-form benchmark narrative and historical tables |
@@ -21,3 +20,7 @@ for maintained information.
 Archived measurements remain scoped to their recorded source revision,
 dependency versions, corpus, hardware, and configuration. They must not be
 presented as current-release evidence without a fresh run.
+
+The former `detailed-development-history.md` was removed on 2026-09-06. Its
+release facts are covered by `CHANGELOG.md`; its completed roadmap and audit
+material remain in the archive files listed above and in Git history.

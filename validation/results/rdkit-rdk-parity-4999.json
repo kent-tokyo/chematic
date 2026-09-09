@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.8",
+  "corpus": "scripts/chembl_accuracy_corpus_4999.smi",
+  "corpus_sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+  "operation": "rdkit_rdk",
+  "comparison_boundary": "same SMILES inputs; v1.0.8 Rust CLI versus RDKit Chem.RDKFingerprint",
+  "configuration": {
+    "minPath": 1,
+    "maxPath": 7,
+    "useHs": true,
+    "branchedPaths": true,
+    "useBondOrder": true,
+    "fpSize": 2048,
+    "numBitsPerFeature": 2
+  },
+  "rows": 5000,
+  "chematic_valid": 5000,
+  "chematic_failures": 0,
+  "rdkit_failures": 0,
+  "exact_matches": 5000,
+  "exact_mismatches": 0,
+  "exact_match_pct_of_common_success": 100.0,
+  "rdkit_version": "2025.09.3",
+  "mismatch_examples": []
+}

@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-09",
+  "target_version": "1.0.10",
+  "scope": "prepared MMFF94 torsion energy and analytic gradient",
+  "command": "cargo test -p chematic-ff --offline --lib prepared_torsion_gradient_matches_finite_difference",
+  "fixture": "butane (CCCC), non-singular 3D coordinates",
+  "method": "12-component forward-mode differentiation of the existing atan2/cross/norm dihedral expression, followed by the analytic Fourier dE/dphi",
+  "result": {
+    "tests": 1,
+    "passed": 1,
+    "failed": 0,
+    "central_difference_step_angstrom": 0.00001,
+    "tolerance": "2e-5 * (1 + abs(reference))"
+  },
+  "boundary": "This closes only the non-singular prepared torsion-gradient building block. Singular dihedrals, out-of-plane gradients, coordinate-dependent neighbor lists, full minimizer integration, and independent force-field parity remain open."
+}

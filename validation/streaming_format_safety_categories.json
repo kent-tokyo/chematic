@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "purpose": "Category labels for the twelve checked-in base cases in the streaming format safety corpus. Supplemental parser-path cases remain separately counted by the runner.",
+  "formats": {
+    "sdf": {
+      "required_categories": ["header_or_counts", "atom_record", "bond_record", "metadata_or_terminator", "element_or_numeric", "topology_reference"],
+      "categories": ["header_or_counts", "atom_record", "atom_record", "metadata_or_terminator", "header_or_counts", "bond_record", "metadata_or_terminator", "header_or_counts", "element_or_numeric", "bond_record", "element_or_numeric", "topology_reference"]
+    },
+    "mol": {
+      "required_categories": ["header_or_counts", "atom_record", "bond_record", "metadata_or_terminator", "element_or_numeric", "topology_reference"],
+      "categories": ["header_or_counts", "atom_record", "atom_record", "metadata_or_terminator", "header_or_counts", "bond_record", "metadata_or_terminator", "header_or_counts", "element_or_numeric", "bond_record", "element_or_numeric", "topology_reference"]
+    },
+    "xyz": {
+      "required_categories": ["frame_header", "atom_record", "element", "coordinate_numeric", "frame_boundary", "layout"],
+      "categories": ["frame_boundary", "frame_header", "frame_header", "atom_record", "coordinate_numeric", "element", "layout", "atom_record", "coordinate_numeric", "coordinate_numeric", "coordinate_numeric", "coordinate_numeric"]
+    },
+    "extxyz": {
+      "required_categories": ["frame_header", "properties_schema", "atom_record", "element", "coordinate_numeric", "property_numeric", "metadata", "layout"],
+      "categories": ["frame_boundary", "frame_header", "element", "coordinate_numeric", "property_numeric", "atom_record", "coordinate_numeric", "metadata", "properties_schema", "frame_boundary", "layout", "property_numeric"]
+    },
+    "v3000": {
+      "required_categories": ["header_or_counts", "section_boundary", "atom_record", "bond_record", "element_or_numeric", "structure_terminator"],
+      "categories": ["header_or_counts", "header_or_counts", "section_boundary", "atom_record", "element_or_numeric", "atom_record", "bond_record", "section_boundary", "structure_terminator", "atom_record", "header_or_counts", "bond_record"]
+    },
+    "mol2": {
+      "required_categories": ["section_boundary", "counts", "atom_record", "bond_record", "element_or_numeric", "bond_type_or_charge"],
+      "categories": ["section_boundary", "atom_record", "counts", "atom_record", "bond_record", "element_or_numeric", "element_or_numeric", "bond_record", "coordinate_numeric", "bond_record", "counts", "bond_type_or_charge"]
+    },
+    "cml": {
+      "required_categories": ["xml_syntax", "atom_schema", "bond_schema", "reference", "structure_boundary", "identifier"],
+      "categories": ["bond_schema", "xml_syntax", "atom_schema", "reference", "structure_boundary", "reference", "xml_syntax", "bond_schema", "structure_boundary", "xml_syntax", "atom_schema", "identifier"]
+    },
+    "cdxml": {
+      "required_categories": ["xml_syntax", "atom_schema", "bond_schema", "reference", "structure_boundary", "identifier"],
+      "categories": ["bond_schema", "xml_syntax", "atom_schema", "coordinate_numeric", "reference", "identifier", "xml_syntax", "bond_schema", "structure_boundary", "xml_syntax", "atom_schema", "identifier"]
+    },
+    "mmcif": {
+      "required_categories": ["data_or_loop", "tag_schema", "row_arity", "numeric", "quote", "unknown_tag"],
+      "categories": ["data_or_loop", "data_or_loop", "tag_schema", "row_arity", "numeric", "row_arity", "row_arity", "quote", "row_arity", "quote", "unknown_tag", "row_arity"]
+    },
+    "pdb": {
+      "required_categories": ["record_layout", "record_type", "serial", "coordinate_numeric", "line_structure"],
+      "categories": ["line_structure", "record_layout", "record_type", "serial", "record_type", "record_type", "record_layout", "coordinate_numeric", "record_layout", "line_structure", "coordinate_numeric", "coordinate_numeric"]
+    }
+  }
+}

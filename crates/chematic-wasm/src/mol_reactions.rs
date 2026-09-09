@@ -1119,6 +1119,25 @@ pub fn normalize_reaction_smiles(rxn_smiles: &str) -> Result<String, JsValue> {
     Ok(chematic_rxn::write_reaction(&rxn))
 }
 
+/// Check whether a reaction SMILES matches a reaction SMARTS query.
+///
+/// The middle section of the query supports agent alternatives separated by
+/// `|`. This source-level API remains bounded and returns a typed JS error for
+/// invalid input; the generated Node artifact is updated separately when the
+/// wasm-bindgen toolchain is available.
+#[wasm_bindgen]
+pub fn reaction_smarts_match(smarts: &str, reaction_smiles: &str) -> Result<bool, JsValue> {
+    enforce_wasm_input_len("reaction SMARTS", smarts)?;
+    enforce_wasm_input_len("reaction SMILES", reaction_smiles)?;
+    let query = chematic_rxn::parse_reaction_query(smarts)
+        .map_err(|e| JsValue::from_str(&format!("invalid reaction SMARTS: {e}")))?;
+    let reaction = parse_wasm_reaction(reaction_smiles)
+        .map_err(|e| JsValue::from_str(&format!("invalid reaction SMILES: {e}")))?;
+    Ok(chematic_rxn::has_reaction_substructure_match(
+        &reaction, &query,
+    ))
+}
+
 /// Validate and normalize a typed Markush/polymer semantic model JSON.
 #[wasm_bindgen]
 pub fn semantic_model_json(model_json: &str) -> Result<String, JsValue> {

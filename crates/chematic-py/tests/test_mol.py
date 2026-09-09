@@ -249,6 +249,12 @@ def test_standardize_returns_mol(aspirin):
     assert isinstance(std, chematic.Mol)
 
 
+def test_standardize_largest_fragment_profile_is_explicit():
+    mol = chematic.from_smiles("CC.CCC")
+    assert "." in mol.standardize().smiles
+    assert "." not in mol.standardize(largest_fragment_only=True).smiles
+
+
 def test_scaffold(aspirin):
     sc = aspirin.scaffold()
     assert isinstance(sc, chematic.Mol)

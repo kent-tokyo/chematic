@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.9",
+  "contract": "same chematic source SMILES, RDKit-compatible path 2048-bit LSB-first bytes",
+  "corpus": {
+    "path": "scripts/chembl_accuracy_corpus_4999.smi",
+    "rows": 5000,
+    "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e"
+  },
+  "binding_status_counts": {
+    "rust": {
+      "ok": 5000,
+      "error": 0
+    },
+    "python": {
+      "ok": 5000,
+      "error": 0
+    },
+    "node_wasm": {
+      "ok": 5000,
+      "error": 0
+    }
+  },
+  "pairwise": {
+    "rust_vs_python": {
+      "rows": 5000,
+      "matches": 5000,
+      "mismatches": 0,
+      "examples": []
+    },
+    "rust_vs_node_wasm": {
+      "rows": 5000,
+      "matches": 5000,
+      "mismatches": 0,
+      "examples": []
+    },
+    "python_vs_node_wasm": {
+      "rows": 5000,
+      "matches": 5000,
+      "mismatches": 0,
+      "examples": []
+    }
+  },
+  "gate_passed": true,
+  "boundary": [
+    "This is cross-binding parity for chematic's RDKit-compatible path implementation, not an independent RDKit oracle run.",
+    "Native topo_path remains a separate operation."
+  ]
+}

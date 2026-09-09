@@ -159,11 +159,20 @@ fn chi_dfs(
 /// Returns undirected path count (each path counted once).
 fn count_paths(mol: &Molecule, heavy: &[usize], length: usize) -> usize {
     let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
+    count_paths_with_set(mol, heavy, &heavy_set, length)
+}
+
+fn count_paths_with_set(
+    mol: &Molecule,
+    heavy: &[usize],
+    heavy_set: &FxHashSet<usize>,
+    length: usize,
+) -> usize {
     let mut total = 0usize;
     for &start in heavy {
         let mut visited = vec![false; mol.atom_count()];
         visited[start] = true;
-        total += count_paths_dfs(mol, start, length, 0, &mut visited, &heavy_set);
+        total += count_paths_dfs(mol, start, length, 0, &mut visited, heavy_set);
     }
     total / 2
 }
@@ -241,9 +250,17 @@ fn chi_n(mol: &Molecule, n: usize, use_valence: bool) -> f64 {
 pub fn wiener_index(mol: &Molecule) -> f64 {
     let heavy = heavy_indices(mol);
     let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
+    wiener_index_with_topology(mol, &heavy, &heavy_set)
+}
+
+fn wiener_index_with_topology(
+    mol: &Molecule,
+    heavy: &[usize],
+    heavy_set: &FxHashSet<usize>,
+) -> f64 {
     let mut sum = 0u64;
     for i in 0..heavy.len() {
-        let row = bfs_from(mol, heavy[i], &heavy_set);
+        let row = bfs_from(mol, heavy[i], heavy_set);
         for j in (i + 1)..heavy.len() {
             let d = row[heavy[j]];
             if d != usize::MAX {
@@ -395,12 +412,21 @@ pub fn kappa3(mol: &Molecule) -> f64 {
 /// three redundant `heavy_indices` computations.
 pub fn kappa_all(mol: &Molecule) -> (f64, f64, f64) {
     let heavy = heavy_indices(mol);
+    let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
+    kappa_all_with_topology(mol, &heavy, &heavy_set)
+}
+
+fn kappa_all_with_topology(
+    mol: &Molecule,
+    heavy: &[usize],
+    heavy_set: &FxHashSet<usize>,
+) -> (f64, f64, f64) {
     let n = heavy.len();
     let alpha = crate::descriptors::hall_kier_alpha(mol);
     let a = n as f64 + alpha;
 
     let k1 = if n >= 2 {
-        let p1 = count_paths(mol, &heavy, 1);
+        let p1 = count_paths_with_set(mol, heavy, heavy_set, 1);
         if p1 == 0 {
             0.0
         } else {
@@ -412,7 +438,7 @@ pub fn kappa_all(mol: &Molecule) -> (f64, f64, f64) {
     };
 
     let k2 = if n >= 3 {
-        let p2 = count_paths(mol, &heavy, 2);
+        let p2 = count_paths_with_set(mol, heavy, heavy_set, 2);
         if p2 == 0 {
             0.0
         } else {
@@ -424,7 +450,7 @@ pub fn kappa_all(mol: &Molecule) -> (f64, f64, f64) {
     };
 
     let k3 = if n >= 4 {
-        let p3 = count_paths(mol, &heavy, 3);
+        let p3 = count_paths_with_set(mol, heavy, heavy_set, 3);
         if p3 == 0 {
             0.0
         } else {
@@ -518,11 +544,18 @@ pub fn chi4v(mol: &Molecule) -> f64 {
 pub fn chi_all(mol: &Molecule) -> (f64, f64, f64, f64, f64, f64, f64, f64, f64, f64) {
     let heavy = heavy_indices(mol);
     let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
+    chi_all_with_topology(mol, &heavy, &heavy_set)
+}
 
+fn chi_all_with_topology(
+    mol: &Molecule,
+    heavy: &[usize],
+    heavy_set: &FxHashSet<usize>,
+) -> (f64, f64, f64, f64, f64, f64, f64, f64, f64, f64) {
     let c0 = heavy
         .iter()
         .map(|&i| {
-            let d = delta(mol, AtomIdx(i as u32), &heavy_set);
+            let d = delta(mol, AtomIdx(i as u32), heavy_set);
             if d > 0.0 { d.powf(-0.5) } else { 0.0 }
         })
         .sum();
@@ -536,16 +569,40 @@ pub fn chi_all(mol: &Molecule) -> (f64, f64, f64, f64, f64, f64, f64, f64, f64, 
 
     (
         c0,
-        chi_n_with(mol, &heavy, &heavy_set, 1, false),
-        chi_n_with(mol, &heavy, &heavy_set, 2, false),
-        chi_n_with(mol, &heavy, &heavy_set, 3, false),
-        chi_n_with(mol, &heavy, &heavy_set, 4, false),
+        chi_n_with(mol, heavy, heavy_set, 1, false),
+        chi_n_with(mol, heavy, heavy_set, 2, false),
+        chi_n_with(mol, heavy, heavy_set, 3, false),
+        chi_n_with(mol, heavy, heavy_set, 4, false),
         c0v,
-        chi_n_with(mol, &heavy, &heavy_set, 1, true),
-        chi_n_with(mol, &heavy, &heavy_set, 2, true),
-        chi_n_with(mol, &heavy, &heavy_set, 3, true),
-        chi_n_with(mol, &heavy, &heavy_set, 4, true),
+        chi_n_with(mol, heavy, heavy_set, 1, true),
+        chi_n_with(mol, heavy, heavy_set, 2, true),
+        chi_n_with(mol, heavy, heavy_set, 3, true),
+        chi_n_with(mol, heavy, heavy_set, 4, true),
     )
+}
+
+/// Shared topology-derived descriptor values for one molecule.
+///
+/// Bulk descriptor callers should compute this once when requesting multiple
+/// topology descriptors. The contained values preserve the existing scalar
+/// function results while sharing heavy-atom extraction, topology membership,
+/// and path-count preparation.
+#[derive(Debug, Clone, PartialEq)]
+pub struct TopologyBundle {
+    pub wiener: f64,
+    pub kappa: (f64, f64, f64),
+    pub chi: (f64, f64, f64, f64, f64, f64, f64, f64, f64, f64),
+}
+
+/// Compute the shared topology descriptor bundle for one molecule.
+pub fn topology_bundle(mol: &Molecule) -> TopologyBundle {
+    let heavy = heavy_indices(mol);
+    let heavy_set: FxHashSet<usize> = heavy.iter().copied().collect();
+    TopologyBundle {
+        wiener: wiener_index_with_topology(mol, &heavy, &heavy_set),
+        kappa: kappa_all_with_topology(mol, &heavy, &heavy_set),
+        chi: chi_all_with_topology(mol, &heavy, &heavy_set),
+    }
 }
 
 // ─── Bertz Complexity ────────────────────────────────────────────────────────
@@ -1720,6 +1777,17 @@ mod tests {
             assert!((c2v - chi2v(&m)).abs() < 1e-10, "{smi}: chi2v mismatch");
             assert!((c3v - chi3v(&m)).abs() < 1e-10, "{smi}: chi3v mismatch");
             assert!((c4v - chi4v(&m)).abs() < 1e-10, "{smi}: chi4v mismatch");
+        }
+    }
+
+    #[test]
+    fn topology_bundle_matches_existing_scalar_apis() {
+        for smi in ["CC", "CCC", "c1ccccc1", "CC(=O)Oc1ccccc1C(=O)O"] {
+            let m = mol(smi);
+            let bundle = topology_bundle(&m);
+            assert_eq!(bundle.wiener, wiener_index(&m), "{smi}: Wiener mismatch");
+            assert_eq!(bundle.kappa, kappa_all(&m), "{smi}: Kappa mismatch");
+            assert_eq!(bundle.chi, chi_all(&m), "{smi}: Chi mismatch");
         }
     }
 }

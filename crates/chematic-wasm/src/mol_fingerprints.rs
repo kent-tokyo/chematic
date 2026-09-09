@@ -112,6 +112,65 @@ pub fn tanimoto_topo_path(a: &MolHandle, b: &MolHandle) -> f64 {
     chematic_fp::tanimoto_topo_path(&a.inner, &b.inner)
 }
 
+/// Compute the native topological path fingerprint as a bit-packed byte vector
+/// (256 bytes = 2048 bits), using the default [`chematic_fp::TopoPathConfig`].
+/// This is the native `topo_path` operation, not the RDKit-compatible path
+/// fingerprint exposed by the separate `path_fp` Python method.
+#[wasm_bindgen]
+pub fn topo_path_bitvec(mol: &MolHandle) -> Vec<u8> {
+    let fp = chematic_fp::topo_path(&mol.inner, &chematic_fp::TopoPathConfig::default());
+    (0..256usize)
+        .map(|byte_idx| {
+            let mut byte = 0u8;
+            for bit in 0..8usize {
+                if fp.get(byte_idx * 8 + bit) {
+                    byte |= 1 << bit;
+                }
+            }
+            byte
+        })
+        .collect()
+}
+
+/// Compute the RDKit-compatible Daylight-like path fingerprint as a bit-packed
+/// byte vector (256 bytes = 2048 bits). This is the WASM counterpart of the
+/// Python `path_fp` operation and is intentionally separate from native
+/// `topo_path_bitvec`.
+#[wasm_bindgen]
+pub fn rdkit_path_bitvec(mol: &MolHandle) -> Vec<u8> {
+    let fp = chematic_fp::rdkit_path_fp(&mol.inner);
+    (0..256usize)
+        .map(|byte_idx| {
+            let mut byte = 0u8;
+            for bit in 0..8usize {
+                if fp.get(byte_idx * 8 + bit) {
+                    byte |= 1 << bit;
+                }
+            }
+            byte
+        })
+        .collect()
+}
+
+/// Compute the RDKit-compatible RDKFingerprint as a bit-packed byte vector
+/// (256 bytes = 2048 bits). This is separate from both the native
+/// `topo_path_bitvec` operation and the RDKit-compatible path operation.
+#[wasm_bindgen]
+pub fn rdkit_rdk_bitvec(mol: &MolHandle) -> Vec<u8> {
+    let fp = chematic_fp::rdkit_rdk_fp(&mol.inner);
+    (0..256usize)
+        .map(|byte_idx| {
+            let mut byte = 0u8;
+            for bit in 0..8usize {
+                if fp.get(byte_idx * 8 + bit) {
+                    byte |= 1 << bit;
+                }
+            }
+            byte
+        })
+        .collect()
+}
+
 // ---------------------------------------------------------------------------
 // Sprint Q: IFG, VSA descriptors, Gasteiger charges, SA Score, Diversity
 // ---------------------------------------------------------------------------
@@ -342,6 +401,25 @@ pub fn atom_pair_bitvec(mol: &MolHandle) -> Vec<u8> {
 #[wasm_bindgen]
 pub fn torsion_bitvec(mol: &MolHandle) -> Vec<u8> {
     let fp = chematic_fp::torsion_fp(&mol.inner);
+    (0..256usize)
+        .map(|byte_idx| {
+            let mut byte = 0u8;
+            for bit in 0..8usize {
+                if fp.get(byte_idx * 8 + bit) {
+                    byte |= 1 << bit;
+                }
+            }
+            byte
+        })
+        .collect()
+}
+
+/// Compute the opt-in RDKit-compatible hashed topological-torsion fingerprint
+/// as a bit-packed byte vector (256 bytes = 2048 bits). This remains separate
+/// from the native `torsion_bitvec` operation and its similarity semantics.
+#[wasm_bindgen]
+pub fn rdkit_torsion_bitvec(mol: &MolHandle) -> Vec<u8> {
+    let fp = chematic_fp::rdkit_torsion_fp(&mol.inner);
     (0..256usize)
         .map(|byte_idx| {
             let mut byte = 0u8;

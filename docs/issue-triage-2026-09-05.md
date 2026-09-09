@@ -4,25 +4,67 @@ This is a repository-local triage snapshot. An issue is marked **implemented**
 only when the corresponding code and tests are present in the current
 checkout. GitHub issue state is intentionally not changed by this document.
 
+## Follow-up verification — 2026-09-08
+
+The #503 aromatic-stash normalization experiment was replayed against the
+three held-out families and the relabeling gate. A carrier-side absolute E/Z
+normalization made one family appear converged, but produced two outputs under
+the existing atom-relabeling determinism test. That change was reverted. The
+current branch therefore retains the safe joint component resolver and its
+fail-closed stable-key boundary; no representation-dependent winner is
+claimed.
+
 ## Priority order
 
 | Priority | Issue | Status in this checkout | Next action |
 | --- | --- | --- | --- |
-| P0 correctness | #149 shared E/Z carrier resolution | Wave 3 audit strengthened to 64 seeded RDKit relabelings per molecule and found 3/28 coupled components with two canonical outputs (0 correspondence failures); exact variants are pinned in `validation/manifests/canonical_issue149_aromatic_stash_residual.json`, and `canonical_smiles_stable_key()` rejects them | Normalize aromatic direction-stash interpretation/carrier election independently of input spelling; do not choose a winner by atom/bond index |
+| P0 correctness | #149 shared E/Z carrier resolution | Wave 3 audit remains 3/28 divergent after 64 seeded RDKit relabelings per molecule (0 correspondence failures). Canonical-search edge coloring preserves writer-visible aromatic direction stashes during automorphism checks; the joint component resolver and the held-out fail-closed gate remain green. The #503 carrier-side absolute-sign experiment failed the relabeling determinism gate and was reverted, so the residual remains open and `canonical_smiles_stable_key()` still fails closed | Continue with a component-level canonical winner proof for aromatic stash carriers; do not choose a winner by atom/bond index, carrier position, or a relabeling-unstable absolute-sign rule |
 | P1 search performance | #139 VF2 automorphism pruning | Closed on GitHub after constrained-query ordering proved the known symmetric negative within the 1,000,000-visit budget | Retain the typed budget contract and regression fixture |
-| P1 CI reliability | #70 Criterion process-level gate | Two-build null-control and checked-in synthetic calibration manifest are implemented; local contract passes | Hosted calibration remains required: real +5%, +10%, and contamination experiments |
-| P1 chemical correctness | #337 MMFF94 typing residual | Isothiocyanate/CSP sub-bug is fixed and tested; the remaining 6 pyridinium/macrocycle molecules and 32 atoms are pinned in `validation/manifests/mmff94_issue337_pyridinium_sssr_residual.json`. The all-root probe found 0 candidates missing from the existing D2-root population, so D2 root enumeration is not the cause | Keep out of atom-typing fixes and root-set expansion; implement and independently validate a relevant-cycle / minimum-cycle-basis tie-break |
-| P1 safety | #185, #210 UFF/3D residuals | #210 closed for the five named legacy-coordinate witnesses; broader experimental 3D/MMFF94 scope remains separate | Keep unsupported experimental cases typed and fail-closed |
+| P1 CI reliability | #70 Criterion process-level gate | Process-level observations, ABBA/BAAB ordering, two-build null-control, strict ratio gates, and per-block artifact metadata (timestamps, execution order, load average, CPU model, and steal ticks) are implemented; local contract passes. Hosted run `34032659044` completed successfully: Python gate passed, all 16 Rust stage-1 benchmarks were `no-route`, and the two-build null-control was `inconclusive/noise` (exit 2), not contaminated | Hosted calibration remains incomplete: run real +5%, +10%, and contamination experiments before closing #70 |
+| P1 chemical correctness | #337 MMFF94 typing residual | Isothiocyanate/CSP sub-bug is fixed and tested; the remaining 6 pyridinium/macrocycle molecules and 32 atoms are pinned in `validation/manifests/mmff94_issue337_pyridinium_sssr_residual.json`. The all-root probe found 0 candidates missing from the existing D2-root population, so D2 root enumeration is not the cause. The symmetrized-ring path now uses a permutation-invariant candidate-root set, basis-exchange ordering no longer uses raw bond indices, and expansion now fails closed to the complete Horton basis at a 256-extra-ring cap rather than returning a partial family. A new six-fixture regression pins the current macrocycle-count boundary and relabeling stability; the fresh type/aromaticity residual remains unresolved | Independently validate the relevant-cycle / minimum-cycle-basis representative family against the six-molecule oracle; do not claim #337 resolved from the safety cap or tie-break determinism alone |
+| P1 safety | #185, #210 UFF/3D residuals | #210 closed for the five named legacy-coordinate witnesses. #185's bounded slice is implemented: UFF rejects unsound line-search proposals and exposes additive `sound` state through the Rust result, Python binding, and WASM JSON; full UFF torsion/OOP terms remain open | Keep unsupported experimental cases typed and fail-closed; do not equate `converged` with geometrical soundness |
 | P2 performance | #372 canonical Boc/tBu symmetry | Local minimized-equivalent lane and stage counters are now recorded in `validation/results/canonical_issue372_local_2026-09-05.md`; correctness remains green | Obtain the exact RENKIN held-out witness, then compare it against the already-safe exact twin/orbit path; do not claim the preferred 2x target from the local proxy |
-| P2 layout | #255, #256 | New connectivity-ordered path contains regression coverage; legacy `generate_coords` remains compatibility behavior | Do not claim legacy defects closed until the legacy API itself is changed or explicitly retained as a documented residual |
+
+| P2 chemistry diagnostics | #303 genotoxic structural diagnostics | First bounded slice is implemented: explainable epoxide, aziridine, and Michael-acceptor findings expose matched atoms, evidence, interpretation, pattern-only confidence, and applicability; no score or biological classifier is produced | Add cited external fixtures and the bifunctional heuristic only after their contracts and licensing are reviewed; keep biological validation and genotoxicity prediction out of scope |
+| P2 layout | #246, #255, #256 | #246 resolved in this checkout: bridged-ring anchoring now scores both regular-polygon sides against all already-placed ring atoms, and uses a deterministic closest-pair fallback when no shared edge exists. #255/#256 remain resolved via the connectivity-ordered 3D engine; fresh 33-molecule evaluation remains raw sound 33/33, deterministic 33/33, and UFF-only success 33/33 | Keep the bridged-ring bond-length regression and the 3D differential harness before future placement changes |
 | P3 scope | #460–#463, #473 | Bounded typed APIs and downstream boundary documentation exist; full rich semantics remain intentionally unsupported | Keep the bounded contract; split any future full RXN/CDXML/polymer/biopolymer work into separate schemas and fixtures |
-| P1 release hygiene | #474 | Versioned release metadata schema, v1.0.5 document, no-dependency validator, and tag-driven GitHub Release attachment are implemented and included in the v1.0.6 release path | Verify the v1.0.6 attached asset and keep registry/artifact measurements explicitly version-pinned |
+| P1 release hygiene | #474 | Versioned release metadata schema, v1.0.8 document, no-dependency validator, and tag-driven GitHub Release attachment are implemented and included in the v1.0.8 release path | Keep registry/artifact measurements explicitly version-pinned; retain the v1.0.8 attached asset as the current release evidence |
+| P3 crystal identity | #477 | Resolved in this checkout: added versioned `PeriodicStructure::identity_bytes()` plus a pure-Rust SHA-256 `identity_digest()` for deterministic exact-identity cache/provenance keys; crystal tests pass | Keep the version byte in the hashed identity bytes; the digest is not symmetry canonicalization or a material-similarity score |
+| P1 ingestion | #478 | Resolved in this checkout: `chematic-smiles::SmilesBatchCanonicalizer` provides lazy iterator and newline-delimited `BufRead` results with reusable parser limits and per-record accepted/rejected diagnostics; `build_identity_index()` uses only `canonical_smiles_stable_key()`, preserves duplicate positions, and fails closed for unstable identities. Shared Rust/Python/Node/WASM fixtures and versioned partial-result envelopes now cover the JSON wrappers | Add optional parallel execution only with equivalent ordering/error fixtures |
+
+The #337 opt-in symmetrized-ring path now rechecks GF(2) basis independence
+for direct replacements as well as ordinary accepted candidates. The complete
+`chematic-perception` (204 passed, 1 ignored) and `chematic-ff` (202 passed)
+library suites remain green; the six-fixture macrocycle counts remain
+`[2, 4, 4, 4, 4, 2]`. This closes a safety gap in candidate admission but not
+the remaining relevant-cycle representative selection or MMFF94 parity gate.
+
+## Follow-up evidence — 2026-09-08
+
+The #149/#503 follow-up now treats an aromatic direction stash as a carrier
+spelling, not as the sensitive ring edge itself. `stereo_sensitive_atoms` pins
+the adjacent exocyclic double-bond endpoint for an aromatic stash, and the
+regression `aromatic_stash_sensitivity_follows_exocyclic_double_bond` confirms
+that two equivalent held-out carrier spellings expose the same structural
+stereo neighborhood. The focused held-out tests and the full 221-test
+`chematic-smiles` library suite remain green. This removes one source of
+input-edge-dependent partitioning, but does not select a canonical winner for
+the three residual coupled E/Z families; `canonical_smiles_stable_key()` stays
+fail-closed and both issues remain open.
 
 ## Already present and verified locally
 
 - #299: batch fingerprint CLI and partial per-record error manifest exist in
-  `chematic-cli`, with CLI tests and documentation; GitHub issue closed after
-  review of the current checkout.
+  `chematic-cli`, with CLI tests and documentation; the common versioned
+  envelope now covers every batch operation while preserving input order and
+  effective limits. GitHub issue closed after review of the current checkout.
+- The Python SDF batch iterator now rejects zero/oversized batch sizes,
+  supports explicit cancellation, and exposes deterministic progress JSON;
+  WASM and cross-language streaming parity remain open rather than inferred.
+- The SDF/MOL/XYZ benchmark runner now accepts explicit resource limits and
+  records them in JSON; a bounded input-limit run produced 0 records and 1
+  failure as expected. V3000/MOL2/CML/CDXML/mmCIF parser rows are now covered
+  as `materialized_one_shot`; true same-process streaming parity remains open.
 - #463: occupancy-aware `PeriodicStructure::composition()` and its disorder,
   zero-occupancy, deterministic-order, and explicit-supercell tests exist;
   GitHub issue closed after review of the current checkout.
@@ -37,6 +79,11 @@ repository retains historical issue references.
 ## Local evidence run for this triage
 
 - `bash scripts/test_criterion_gate.sh` — passed.
+- The Criterion block artifact now persists execution order, UTC start/end timestamps,
+  load average, CPU model, and `/proc/stat` steal ticks when available; the local
+  contract test asserts these fields without changing baseline/candidate values.
+  Each record is schema version 2 and explicitly identifies one Criterion process
+  point estimate as its measurement unit.
 - `cargo test -p chematic-rxn --offline` — 193 passed.
 - `cargo test -p chematic-mol --lib --offline` — 538 passed.
 - `cargo test -p chematic-smiles --lib ez_shared_carrier --offline` — passed.
@@ -44,12 +91,30 @@ repository retains historical issue references.
 - `cargo test -p chematic-chem --lib --offline` — 840 passed, 1 ignored.
 - `cargo test -p chematic-chem --lib test_pains_di_tert_butylphenol_resolves_negative_within_budget --offline -- --nocapture` — passed in 1.66s; `NotFound` within the production budget.
 - `TMPDIR=/private/tmp bash scripts/test_criterion_gate.sh` — passed, including the two-build null-control workflow contract checks.
+- Hosted workflow `34032659044` — completed successfully after scoping the prebuild to the five measured bench targets; all 16 Rust stage-1 routes were `no-route`, the null-control returned `inconclusive/noise` (exit 2), and the Python gate passed. This is one clean real-run observation, not the synthetic calibration set.
 - `validation/criterion-gate-calibration.json` — checked-in synthetic +5%/+10%/noise/contamination expectations; this is a contract fixture, not hosted execution evidence.
 - `PYTHONDONTWRITEBYTECODE=1 python3 scripts/ez_shared_carrier_coupling_mechanism_diagnosis.py --relabelings 64 scripts/descriptor_census_corpus.smi` — current Wave 3 audit: 522 component rows, 28 coupled components, all size 2, 550 ends, 0 correspondence failures, and 3 coupled molecules with two canonical outputs.
 - `cargo test -p chematic-smiles --test canonical_ez_residual --offline` — 5 passed; the three-family aromatic-stash residual is now rejected by `canonical_smiles_stable_key()` rather than accepted as a dedup/cache key.
 - `cargo test -p chematic-smiles --test canonical_ez_residual --offline` — now includes the three-family exact-output/fail-closed residual contract.
+- `cargo test -p chematic-smiles --lib issue149_aromatic_stash_matches_exhaustive_oracle --offline` — the orbit-pruned search matches the unpruned exhaustive oracle for the three corpus spellings plus both observed aromatic-stash variants of each (9 spellings total); the two representation-dependent winners remain deliberately unresolved.
+- `cargo test -p chematic-smiles --lib ez_shared_carrier_held_out_residuals --offline` — the focused #503 held-out fail-closed and relabeling-determinism tests pass after reverting the unstable carrier-side normalization experiment.
+- `cargo test -p chematic-perception --lib issue337_macrocycle_boundary_is_bounded_and_permutation_stable --offline` — all six pinned #337 fixtures retain the current macrocycle representative counts and macrocycle-size multiset under atom relabeling; this is a regression guard, not an RDKit-parity result.
+- `python3 scripts/check_streaming_cross_engine.py --format xyz --repeats 20` — issue #488's same-input XYZ contract passes: chematic and RDKit both report 40 records, 0 failures, and 3,220 input bytes; boundaries remain Rust file-backed `BufRead` versus RDKit Python block parsing.
+- `python3 scripts/check_streaming_cross_engine.py --format mol --repeats 20` — issue #490's same-input V2000 MOL contract passes: chematic and RDKit both report 40 records, 0 failures, and 12,660 source bytes; boundaries remain Rust file-backed `BufRead` versus RDKit Python block parsing.
+- `python3 scripts/check_streaming_cross_engine.py --format v3000 --repeats 20` — issue #491's same-input V3000 contract passes: chematic and RDKit both report 20 records, 0 failures, and 5,960 source bytes; chematic's current path is explicitly materialized while RDKit uses a Python block parser.
+- `python3 scripts/check_streaming_cross_engine.py --format mol2 --repeats 20` — issue #492's same-input MOL2 contract passes: chematic and RDKit both report 20 records, 0 failures, and 7,220 source bytes; chematic's current path is explicitly materialized while RDKit uses a Python block parser.
+- `python3 scripts/check_streaming_cml_openbabel.py --repeats 20` — issue #493's same-input CML contract passes: chematic and Open Babel both report 20 records, 0 failures, and 7,660 source bytes; boundaries remain Rust materialized parsing versus Open Babel CLI conversion.
+- `python3 scripts/check_streaming_cml_openbabel.py --format cdxml --repeats 20` — issue #494's same-input CDXML contract passes: chematic and Open Babel both report 20 records, 0 failures, and 5,960 source bytes; boundaries remain Rust materialized parsing versus Open Babel CLI conversion.
+- `python3 scripts/check_streaming_cml_openbabel.py --format mmcif --repeats 20` — issue #496's same-input mmCIF contract passes: chematic and Open Babel both report 20 records, 0 failures, and 13,960 source bytes; boundaries remain Rust materialized parsing versus Open Babel CLI conversion.
+- `python3 scripts/check_streaming_cml_openbabel.py --format pdb --repeats 20` — issue #497's same-input PDB contract passes: chematic and Open Babel both report 20 records, 0 failures, and 5,720 source bytes; boundaries remain Rust materialized parsing versus Open Babel CLI conversion.
+- `python3 scripts/check_streaming_gzip_contract.py --repeats 20` — issue #498's gzip SDF contract passes: both lanes report 40 records and 0 failures; chematic accounts 2,680 compressed bytes while RDKit accounts 12,660 decompressed bytes, explicitly separating stages.
+- `python3 scripts/check_streaming_gzip_contract.py --format xyz --repeats 20` — issue #499's gzip XYZ contract passes: both lanes report 40 records and 0 failures; chematic accounts 1,300 compressed bytes while RDKit accounts 3,220 decompressed bytes, explicitly separating stages.
+- `python3 scripts/check_streaming_format_limits.py --binary target/debug/examples/streaming_benchmark` — issue #506 gate passes 72 negative cases (eight per format), 9 oversized cases, and 18 gzip cases: one valid control plus one post-decompression input-limit rejection for each of the nine runner formats.
+- `python3 scripts/benchmark_streaming_matrix.py --repeats 1 --gzip` — issue #502 matrix gate passes 18 rows (SDF, MOL, XYZ, V3000, MOL2, CML, CDXML, mmCIF, and PDB in plain/gzip modes), with expected record counts and zero failures; the report keeps file-backed, materialized, and post-decompression boundaries explicit.
+- `cargo test -p chematic-mol file_backed_reader_matches_in_memory_parse_contract --offline` — issue #501 same-process parity gate passes: file-backed and in-memory SDF paths agree on atoms, bonds, metadata, and property shape for both records.
 - `validation/manifests/mmff94_issue337_pyridinium_sssr_residual.json` — checked-in six-molecule/32-atom residual contract; this is a local fixture, not an RDKit re-run or a claim that #337 is resolved.
-- `validation/results/mmff94_issue337_all_root_cycle_probe_2026-09-05.md` — D2-root versus all-root diagnostic: all six residual molecules had identical candidate sets and zero missing same-size candidates.
+- `validation/results/mmff94_issue337_all_root_cycle_probe_2026-09-05.md` — D2-root versus all-root diagnostic: all six residual molecules had identical candidate sets and zero missing same-size candidates; a fresh 2026-09-06 run reproduced the same boundary (`symm_count` 8/10/10/10/10/9 and no missing same-size candidates).
 - `validation/results/mmff94_issue337_edge_exchange_probe_2026-09-05.md` — bounded relevant-cycle probe: all 6 residuals expose same-size GF(2)-exchangeable alternatives; exact-cycle populations (4 or 16) exceed the RDKit representative populations (2–4), so a permutation-invariant relevant-cycle selector is still required.
+- `cargo test -p chematic-perception --lib --offline` and `cargo test -p chematic-ff --lib --offline` — passed after adding the bounded symmetrized-ring fallback; these are local regression results, not #337 resolution evidence.
 - `docs/rfcs/mmff94_relevant_cycle_selector.md` — selector boundary and acceptance gates fixed before any production candidate-family change.
 - `validation/results/canonical_issue372_local_2026-09-05.md` — local multi-Boc/multi-pivaloyl proxy: 432 exhaustive leaves to 1 orbit-pruned leaf, 8 nodes, and zero old/new correctness mismatches; the exact RENKIN witness remains external.

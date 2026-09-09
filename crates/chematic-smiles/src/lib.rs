@@ -26,6 +26,7 @@
 //! - Single-pass recursive-descent parser; no separate lexer phase.
 //! - WASM-compatible (no filesystem I/O, no threads).
 
+pub mod batch;
 pub mod canonical;
 mod canonical_automorphism;
 mod canonical_partition;
@@ -37,6 +38,10 @@ pub mod random_smiles;
 pub mod smi_file;
 pub mod writer;
 
+pub use batch::{
+    BatchCanonicalRecord, BatchCanonicalization, IdentityIndexBuild, SmilesBatchCanonicalizer,
+    SmilesBatchReader, SmilesIdentityIndex,
+};
 pub use canonical::are_atoms_equivalent;
 pub use canonical::{
     canonical_atom_order, canonical_smiles, canonical_smiles_stable_key, equivalent_atom_classes,

@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.8",
+  "purpose": "Held-out parity coverage ledger; measured and not_measured are intentionally distinct.",
+  "operations": {
+    "morgan_ecfp": {
+      "status": "measured",
+      "report": "validation/ecfp_rdkit_morgan_ecfp4_parity_summary.json",
+      "bindings": ["rust", "python", "node", "wasm"],
+      "oracle": "RDKit 2026.03.3",
+      "boundary": "RDKit-exact ECFP4 sparse counts, folded bits, and raw/folded provenance on the committed oracle corpus"
+    },
+    "maccs": {
+      "status": "measured",
+      "report": "validation/results/maccs-parity-4999.json",
+      "bindings": ["rust"],
+      "oracle": "RDKit 2025.09.3",
+      "boundary": "166 logical MACCS keys on 5,000 identical SMILES inputs; Rust CLI versus RDKit, with the documented unused RDKit bit 0 mapping"
+    },
+    "topological": {
+      "status": "measured",
+      "report": "validation/results/rdkit-rdk-parity-4999.json",
+      "bindings": ["rust"],
+      "oracle": "RDKit 2025.09.3",
+      "boundary": "RDKit-compatible RDKFingerprint configuration on 5,000 identical SMILES inputs; Rust CLI versus RDKit with exact bit-set comparison; native topo_path remains a separate algorithm"
+    },
+    "torsion": {
+      "status": "measured",
+      "report": "validation/results/rdkit-torsion-parity-4999.json",
+      "bindings": ["rust"],
+      "oracle": "RDKit 2025.09.3",
+      "boundary": "RDKit-compatible hashed topological torsion fingerprint on 5,000 identical SMILES inputs; Rust CLI versus RDKit with exact bit-set comparison"
+    },
+    "descriptors": {
+      "status": "measured",
+      "report": "validation/results/descriptor-core-parity-4999.json",
+      "bindings": ["python"],
+      "oracle": "RDKit Python API",
+      "boundary": "MW, TPSA, HBD, HBA, and heavy-atom count on the 4,999-row corpus; Python binding versus RDKit, not a full all-binding claim"
+    },
+    "standardization": {
+      "status": "measured",
+      "report": "validation/results/standardization-phase1-holdout-1.0.8.json",
+      "bindings": ["rust"],
+      "oracle": "Committed Phase 1 expected fragments; RDKit canonical identity comparison",
+      "boundary": "10 held-out fixtures through the explicit Rust CLI --largest-fragment-only profile; 8/10 expected fragment identities match, with two disclosed charge-neutralization differences; cross-binding parity remains open"
+    }
+  }
+}

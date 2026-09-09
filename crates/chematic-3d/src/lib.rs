@@ -74,8 +74,8 @@ pub use mol_transforms::{
 };
 pub use o3a::{O3AError, O3AResult, o3a_align};
 pub use pdb::{
-    PdbAtom, PdbParseLimits, PdbResourceLimitError, parse_pdb_atoms, parse_pdb_atoms_with_limits,
-    pdb_to_molecule, write_pdb,
+    PdbAtom, PdbParseError, PdbParseLimits, PdbResourceLimitError, PdbStrictError, parse_pdb_atoms,
+    parse_pdb_atoms_strict, parse_pdb_atoms_with_limits, pdb_to_molecule, write_pdb,
 };
 pub use pharmacophore_fp_3d::{pharmacophore_fp_3d, tanimoto_pharmacophore_3d};
 pub use pipeline_v2::{
@@ -100,8 +100,8 @@ pub use shape_descriptors::{
 pub use stereo3d::{StereoAssignment3D, assign_stereo_from_3d};
 pub use torsion_motif::{
     TorsionEnvironment, TorsionHistogram, TorsionMotif, TorsionProfileFit, VonMisesComponent,
-    extract_torsion_motifs, fit_von_mises_mixture, motif_angles_deg, torsion_profile_distance,
-    torsion_profile_to_json,
+    extract_torsion_motifs, fit_von_mises_mixture, motif_angles_deg, torsion_distance_symmetric,
+    torsion_profile_distance, torsion_profile_to_json,
 };
 pub use usr::{shape_screen, usr_descriptors, usr_from_dg, usr_similarity};
 pub use xyz::{XyzError, XyzParseLimits, parse_xyz, parse_xyz_with_limits, write_xyz};

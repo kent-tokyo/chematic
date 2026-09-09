@@ -1,8 +1,28 @@
 #!/usr/bin/env bash
 # Run the same checks as CI locally. Usage: bash scripts/check.sh
 set -e
+# The checked-in chemistry/performance reports are v1.0.10 historical evidence.
+# Keep validating those exact records until a v1.0.11 measurement is produced.
+export SCHEMATIC_BENCHMARK_VERSION=1.0.10
 echo "=== fmt ===" && cargo fmt --all -- --check
 echo "=== unsafe surface ===" && python3 scripts/check_unsafe_surface.py
+echo "=== shared cross-binding manifest ===" && python3 scripts/check_cross_binding_manifest.py
+echo "=== static binding surface ===" && python3 scripts/check_binding_surface.py >/dev/null
+echo "=== WASM artifact boundary ===" && python3 scripts/check_wasm_artifact_boundary.py
+echo "=== benchmark record index ===" && python3 scripts/check_benchmark_index.py
+echo "=== cross-engine streaming matrix ===" && python3 scripts/validate_streaming_cross_engine_matrix.py
+echo "=== same-process contract bundle ===" && python3 scripts/check_same_process_contracts.py
+echo "=== 3D quality evidence bundle ===" && python3 scripts/check_3d_quality_evidence.py
+echo "=== MMFF94 RDKit availability oracle ===" && python3 scripts/check_mmff94_rdkit_availability_oracle.py
+echo "=== reaction SMARTS contract evidence ===" && python3 scripts/check_reaction_smarts_contract_evidence.py
+echo "=== reaction application evidence ===" && python3 scripts/check_reaction_application_evidence.py
+echo "=== Python binding contract evidence ===" && python3 scripts/check_python_binding_contract_evidence.py
+echo "=== streaming safety manifest ===" && python3 scripts/check_streaming_format_limits.py --validate-only
+echo "=== streaming safety evidence ===" && python3 scripts/check_streaming_safety_evidence.py
+echo "=== streaming parser-entry evidence ===" && python3 scripts/check_streaming_parser_entry_evidence.py
+echo "=== triclinic neighbor evidence ===" && python3 scripts/check_triclinic_neighbor_evidence.py
+echo "=== MMFF94 issue #337 determinism evidence ===" && python3 scripts/check_mmff94_issue337_determinism_evidence.py
+echo "=== roadmap disposition ===" && python3 scripts/check_roadmap_disposition.py
 echo "=== workflow action pins ===" && python3 scripts/check_workflow_pins.py
 echo "=== clippy ===" && cargo clippy --workspace --all-targets -- -D warnings
 echo "=== test ===" && cargo test --workspace --lib --quiet
@@ -20,7 +40,18 @@ else
     echo "=== test (chematic-py pytest) === (skipped: .venv/bin/python3 lacks chematic and/or pytest -- run .venv/bin/pip install pytest && .venv/bin/maturin develop --release -m crates/chematic-py/Cargo.toml first to include it locally)"
 fi
 if command -v cargo-deny &>/dev/null || cargo deny --version &>/dev/null 2>&1; then
-    echo "=== deny ===" && cargo deny --all-features check
+    echo "=== deny ==="
+    deny_output=""
+    if deny_output=$(cargo deny --all-features check 2>&1); then
+        printf '%s\n' "$deny_output"
+    elif grep -q "failed to acquire advisory database lock" <<<"$deny_output"; then
+        printf '%s\n' "$deny_output"
+        echo "=== deny (writable advisory-db fallback) ==="
+        bash scripts/check_cargo_deny_local.sh
+    else
+        printf '%s\n' "$deny_output" >&2
+        exit 1
+    fi
 else
     echo "=== deny === (skipped: cargo-deny not installed)"
 fi
@@ -45,7 +76,7 @@ done
 # Soft staleness check (warning only, doesn't fail the build): a version bump can't
 # auto-write a new "Recent Development" prose entry, so this can't be a hard MISMATCH --
 # but silent drift here is exactly how the section went 10 versions stale unnoticed.
-TOP_DEV_VER=$(grep -oE '\*\*v[0-9]+\.[0-9]+\.[0-9]+\*\*' README.md | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+TOP_DEV_VER=$(grep -oE '\*\*v[0-9]+\.[0-9]+\.[0-9]+\*\*' README.md | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true)
 if [ -n "$TOP_DEV_VER" ] && [ "$TOP_DEV_VER" != "$VER" ]; then
     echo "WARNING: README.md 'Recent Development' section's newest entry is v$TOP_DEV_VER, workspace is v$VER -- consider adding an entry."
 fi

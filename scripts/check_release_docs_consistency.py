@@ -9,7 +9,6 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RELEASE_VERSION = "1.0.6"
 DOCS = (
     ROOT / "README.md",
     ROOT / "README_ja.md",
@@ -28,9 +27,11 @@ DOCS = (
 def main() -> int:
     errors: list[str] = []
     cargo = (ROOT / "Cargo.toml").read_text(encoding="utf-8")
-    version_pattern = rf'^version\s*=\s*"{re.escape(RELEASE_VERSION)}"\s*$'
-    if not re.search(version_pattern, cargo, re.MULTILINE):
-        errors.append(f"Cargo.toml does not declare workspace version {RELEASE_VERSION}")
+    version_match = re.search(r'^version\s*=\s*"([^"]+)"\s*$', cargo, re.MULTILINE)
+    if version_match is None:
+        print("Release documentation consistency failure: workspace version is missing", file=sys.stderr)
+        return 1
+    release_version = version_match.group(1)
 
     for path in DOCS:
         try:
@@ -60,7 +61,7 @@ def main() -> int:
         ROOT / "crates" / "chematic-mcp" / "README.md",
         ROOT / "crates" / "chematic-inchi" / "README.md",
     ):
-        expected = f'version = "{RELEASE_VERSION}"'
+        expected = f'version = "{release_version}"'
         if expected not in path.read_text(encoding="utf-8"):
             errors.append(
                 f"{path.relative_to(ROOT)}: current dependency example is not v{RELEASE_VERSION}"

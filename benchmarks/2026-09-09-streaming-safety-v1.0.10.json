@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "status": "local-current-candidate",
+  "gate": "streaming_format_limits",
+  "environment": {
+    "platform": "macOS arm64",
+    "runner": "cargo run -p chematic-mol --example streaming_benchmark --offline",
+    "execution": "python3 scripts/check_streaming_format_limits.py",
+    "category_manifest": "validation/streaming_format_safety_categories.json",
+    "formats": ["sdf", "mol", "xyz", "extxyz", "v3000", "mol2", "cml", "cdxml", "mmcif", "pdb"]
+  },
+  "results": {
+    "malformed_negative_cases": 800,
+    "malformed_unique_payloads": 800,
+    "malformed_duplicate_reuses": 0,
+    "generated_parser_entry_cases": 480,
+    "generated_parser_entry_cases_per_format": 48,
+    "generated_parser_entry_families_per_format": 8,
+    "generated_parser_entry_cases_per_family": 6,
+    "generated_parser_entry_duplicate_reuses": 0,
+    "malformed_cases_per_format": {
+      "cdxml": 80,
+      "cml": 80,
+      "extxyz": 80,
+      "mmcif": 80,
+      "mol": 80,
+      "mol2": 80,
+      "pdb": 80,
+      "sdf": 80,
+      "v3000": 80,
+      "xyz": 80
+    },
+    "oversized_input_cases": 10,
+    "gzip_cases": 20,
+    "failures": 0,
+    "minimum_malformed_cases_per_format": 50,
+    "base_case_category_gate": "passed",
+    "base_case_count_per_format": 12,
+    "required_category_presence": "all required categories present for every format",
+    "base_category_counts": {
+      "cdxml": {"atom_schema": 2, "bond_schema": 2, "coordinate_numeric": 1, "identifier": 2, "reference": 1, "structure_boundary": 1, "xml_syntax": 3},
+      "cml": {"atom_schema": 2, "bond_schema": 2, "identifier": 1, "reference": 2, "structure_boundary": 2, "xml_syntax": 3},
+      "extxyz": {"atom_record": 1, "coordinate_numeric": 2, "element": 1, "frame_boundary": 2, "frame_header": 1, "layout": 1, "metadata": 1, "properties_schema": 1, "property_numeric": 2},
+      "mmcif": {"data_or_loop": 2, "numeric": 1, "quote": 2, "row_arity": 5, "tag_schema": 1, "unknown_tag": 1},
+      "mol": {"atom_record": 2, "bond_record": 2, "element_or_numeric": 2, "header_or_counts": 3, "metadata_or_terminator": 2, "topology_reference": 1},
+      "mol2": {"atom_record": 2, "bond_record": 3, "bond_type_or_charge": 1, "coordinate_numeric": 1, "counts": 2, "element_or_numeric": 2, "section_boundary": 1},
+      "pdb": {"coordinate_numeric": 3, "line_structure": 2, "record_layout": 3, "record_type": 3, "serial": 1},
+      "sdf": {"atom_record": 2, "bond_record": 2, "element_or_numeric": 2, "header_or_counts": 3, "metadata_or_terminator": 2, "topology_reference": 1},
+      "v3000": {"atom_record": 3, "bond_record": 2, "element_or_numeric": 1, "header_or_counts": 3, "section_boundary": 2, "structure_terminator": 1},
+      "xyz": {"atom_record": 2, "coordinate_numeric": 5, "element": 1, "frame_boundary": 1, "frame_header": 2, "layout": 1}
+    }
+  },
+  "interpretation": "Bounded local parser safety evidence. The generated wave includes eight format-shaped parser-entry families, including truncated records, numeric-or-vocabulary corruption, record/metadata boundary failures, parser-tail boundaries, and leading-blank record boundaries. This does not claim exhaustive malformed-corpus coverage or cross-engine equivalence."
+}

@@ -1,6 +1,7 @@
 //! Reaction SMARTS querying for chemical reaction matching.
 
 use chematic_smarts::{MatchConfig, QueryMolecule, find_matches_with_config, parse_smarts};
+use rustc_hash::FxHashMap;
 use std::collections::HashSet;
 
 use crate::reaction::Reaction;
@@ -10,8 +11,16 @@ use crate::reaction::Reaction;
 pub struct ReactionQuery {
     /// SMARTS queries for reactant pattern matching.
     pub reactant_patterns: Vec<QueryMolecule>,
+    /// Disconnected SMARTS components grouped by `|` alternative.
+    pub reactant_components: Vec<Vec<QueryMolecule>>,
+    /// SMARTS queries for agent pattern matching.
+    pub agent_patterns: Vec<QueryMolecule>,
+    /// Disconnected agent components grouped by `|` alternative.
+    pub agent_components: Vec<Vec<QueryMolecule>>,
     /// SMARTS queries for product pattern matching.
     pub product_patterns: Vec<QueryMolecule>,
+    /// Disconnected SMARTS components grouped by `|` alternative.
+    pub product_components: Vec<Vec<QueryMolecule>>,
 }
 
 /// A reaction SMARTS pattern with atom mapping and agent support.
@@ -19,10 +28,16 @@ pub struct ReactionQuery {
 pub struct ReactionSmartsPattern {
     /// SMARTS queries for reactant pattern matching.
     pub reactant_patterns: Vec<QueryMolecule>,
+    /// Disconnected reactant components grouped by `|` alternative.
+    pub reactant_components: Vec<Vec<QueryMolecule>>,
     /// SMARTS queries for agent pattern matching (optional middle section).
     pub agent_patterns: Vec<QueryMolecule>,
+    /// Disconnected agent components grouped by `|` alternative.
+    pub agent_components: Vec<Vec<QueryMolecule>>,
     /// SMARTS queries for product pattern matching.
     pub product_patterns: Vec<QueryMolecule>,
+    /// Disconnected product components grouped by `|` alternative.
+    pub product_components: Vec<Vec<QueryMolecule>>,
     /// Metadata about atom map numbers (e.g., :1, :2, etc.)
     pub map_number_info: MapNumberInfo,
 }
@@ -97,11 +112,39 @@ impl ProductMatches {
     }
 }
 
+/// Detailed information about agent pattern matches in a reaction.
+///
+/// Agent patterns separated by `|` are alternatives. A non-empty list is
+/// therefore considered satisfied when at least one pattern has a match.
+#[derive(Clone, Debug)]
+pub struct AgentMatches {
+    /// Matches for each agent alternative pattern.
+    pub pattern_matches: Vec<Vec<MoleculeMatch>>,
+}
+
+impl AgentMatches {
+    /// Get all molecules that matched a specific agent pattern.
+    pub fn get_pattern_matches(&self, pattern_index: usize) -> Option<&[MoleculeMatch]> {
+        self.pattern_matches
+            .get(pattern_index)
+            .map(|v| v.as_slice())
+    }
+
+    /// Check if at least one agent alternative matched.
+    pub fn any_pattern_matched(&self) -> bool {
+        self.pattern_matches
+            .iter()
+            .any(|matches| !matches.is_empty())
+    }
+}
+
 /// Detailed match information for a reaction against a SMARTS pattern.
 #[derive(Clone, Debug)]
 pub struct ReactionSmartsMatch {
     /// Reactant pattern matches (all patterns must have at least one match for overall match).
     pub reactant_matches: ReactantMatches,
+    /// Agent alternative matches (`|` uses OR semantics).
+    pub agent_matches: AgentMatches,
     /// Product pattern matches (all patterns must have at least one match for overall match).
     pub product_matches: ProductMatches,
     /// Whether all patterns matched (true if reaction is valid against the query).
@@ -372,7 +415,9 @@ pub mod rdkit_compat {
 /// Parse a reaction SMARTS pattern with agents section and atom mapping support.
 ///
 /// Format: `"reactants>[agents]>products"` (new) or `"reactants>>products"` (legacy)
-/// where each section is a pipe-separated (|) list of SMARTS patterns.
+/// where each section is a pipe-separated (|) list of SMARTS alternatives;
+/// each alternative may contain dot-separated (.) components that are matched
+/// to distinct reaction molecules.
 ///
 /// Validates atom map numbers for consistency between reactants and products.
 ///
@@ -412,20 +457,22 @@ pub fn parse_reaction_smarts(
         }
     };
 
-    let reactant_patterns = parse_patterns(reactant_strs)?;
-    let product_patterns = parse_patterns(product_strs)?;
-    let agent_patterns = if agent_strs.is_empty() {
-        Vec::new()
-    } else {
-        parse_patterns(agent_strs)?
-    };
+    let reactant_components = parse_pattern_components(reactant_strs)?;
+    let product_components = parse_pattern_components(product_strs)?;
+    let agent_components = parse_pattern_components(agent_strs)?;
+    let reactant_patterns = flatten_pattern_components(&reactant_components);
+    let product_patterns = flatten_pattern_components(&product_components);
+    let agent_patterns = flatten_pattern_components(&agent_components);
 
     let map_number_info = extract_map_numbers(smarts_str)?;
 
     Ok(ReactionSmartsPattern {
         reactant_patterns,
+        reactant_components,
         agent_patterns,
+        agent_components,
         product_patterns,
+        product_components,
         map_number_info,
     })
 }
@@ -553,40 +600,51 @@ fn extract_map_numbers_from_section(smarts: &str) -> Vec<u16> {
     map_numbers
 }
 
-/// Helper to parse pipe-separated SMARTS patterns.
-fn parse_patterns(side: &str) -> Result<Vec<QueryMolecule>, ReactionQueryError> {
+/// Parse pipe-separated alternatives and dot-separated components.
+fn parse_pattern_components(side: &str) -> Result<Vec<Vec<QueryMolecule>>, ReactionQueryError> {
     if side.is_empty() {
         return Ok(Vec::new());
     }
     side.split('|')
         .filter(|p| !p.is_empty())
-        .map(|p| {
-            parse_smarts(p).map_err(|e| ReactionQueryError::SmartsParseError {
-                smarts: p.to_string(),
-                source: e.to_string(),
-            })
+        .map(|alternative| {
+            alternative
+                .split('.')
+                .filter(|component| !component.is_empty())
+                .map(|component| {
+                    parse_smarts(component).map_err(|e| ReactionQueryError::SmartsParseError {
+                        smarts: component.to_string(),
+                        source: e.to_string(),
+                    })
+                })
+                .collect()
         })
+        .collect()
+}
+
+fn flatten_pattern_components(components: &[Vec<QueryMolecule>]) -> Vec<QueryMolecule> {
+    components
+        .iter()
+        .flat_map(|group| group.iter().cloned())
         .collect()
 }
 
 /// Parse a reaction SMARTS query with reactant and product patterns.
 ///
 /// Format: `"reactant_smarts>>product_smarts"`
-/// where each side is a pipe-separated (|) list of SMARTS patterns.
+/// where each side is a pipe-separated (|) list of SMARTS alternatives and
+/// each alternative may contain dot-separated (.) components.
 ///
 /// Example: `"[C:1]([#6])[C:2]>>[C:1][C:2]"` matches reactions that break and reform C-C bonds.
 pub fn parse_reaction_query(s: &str) -> Result<ReactionQuery, ReactionQueryError> {
-    let parts: Vec<&str> = s.splitn(2, ">>").collect();
-    if parts.len() != 2 {
-        return Err(ReactionQueryError::SmartsParseError {
-            smarts: s.to_string(),
-            source: "reaction query must contain '>>'".to_string(),
-        });
-    }
-
+    let pattern = parse_reaction_smarts(s)?;
     Ok(ReactionQuery {
-        reactant_patterns: parse_patterns(parts[0])?,
-        product_patterns: parse_patterns(parts[1])?,
+        reactant_patterns: pattern.reactant_patterns,
+        reactant_components: pattern.reactant_components,
+        agent_patterns: pattern.agent_patterns,
+        agent_components: pattern.agent_components,
+        product_patterns: pattern.product_patterns,
+        product_components: pattern.product_components,
     })
 }
 
@@ -600,49 +658,119 @@ fn first_match_config() -> MatchConfig {
     }
 }
 
+/// Return an embedding that satisfies both the SMARTS query and, when the
+/// target molecule carries maps, the query's atom-map metadata.
+///
+/// Unmapped target reactions intentionally retain the historical behavior:
+/// map labels in a query are metadata and cannot be checked against absent
+/// target labels. Once target maps are present, accepting an embedding with a
+/// different map would make reaction-side correspondence meaningless.
+fn reaction_match_embedding(
+    pattern: &QueryMolecule,
+    mol: &chematic_core::Molecule,
+) -> Option<FxHashMap<usize, chematic_core::AtomIdx>> {
+    let query_has_maps = pattern.atoms.iter().any(|atom| atom.atom_map.is_some());
+    let target_has_maps = mol.atoms().any(|(_, atom)| atom.atom_map.is_some());
+    let mut config = first_match_config();
+    if query_has_maps && target_has_maps {
+        // The first VF2 embedding may use the right topology but the wrong
+        // map labels. Inspect all bounded embeddings before failing closed.
+        config.max_matches = Some(10_000);
+    }
+    find_matches_with_config(pattern, mol, &config)
+        .into_iter()
+        .find(|embedding| {
+            if !query_has_maps || !target_has_maps {
+                return true;
+            }
+            pattern
+                .atoms
+                .iter()
+                .enumerate()
+                .all(|(query_index, query_atom)| {
+                    query_atom.atom_map.is_none_or(|map| {
+                        embedding.get(&query_index).is_some_and(|target_index| {
+                            mol.atom(*target_index).atom_map == Some(map)
+                        })
+                    })
+                })
+        })
+}
+
+/// Match every disconnected component in one alternative to a distinct target
+/// molecule. A single-component group is intentionally equivalent to the
+/// historical per-pattern check.
+fn match_distinct_components(
+    components: &[QueryMolecule],
+    molecules: &[chematic_core::Molecule],
+    component_index: usize,
+    used: &mut [bool],
+) -> bool {
+    if component_index == components.len() {
+        return true;
+    }
+    molecules
+        .iter()
+        .enumerate()
+        .any(|(molecule_index, molecule)| {
+            !used[molecule_index]
+                && reaction_match_embedding(&components[component_index], molecule).is_some()
+                && {
+                    used[molecule_index] = true;
+                    let matched =
+                        match_distinct_components(components, molecules, component_index + 1, used);
+                    used[molecule_index] = false;
+                    matched
+                }
+        })
+}
+
+fn match_component_groups(
+    groups: &[Vec<QueryMolecule>],
+    molecules: &[chematic_core::Molecule],
+) -> bool {
+    // Pipe-separated groups are alternatives for every reaction section.
+    // Within one group, dot-separated components still require an injective
+    // assignment to distinct target molecules. Keeping these levels separate
+    // means `C|N` requires either C or N, while `C.N` requires both.
+    groups.is_empty()
+        || groups.iter().any(|components| {
+            let mut used = vec![false; molecules.len()];
+            match_distinct_components(components, molecules, 0, &mut used)
+        })
+}
+
 /// Check if a reaction matches the given query pattern.
 ///
 /// Returns `true` if:
-/// - All reactant patterns match at least one reactant molecule, AND
-/// - All product patterns match at least one product molecule
+/// - At least one reactant alternative matches its required components, AND
+/// - At least one agent pattern matches when agent alternatives are present, AND
+/// - At least one product alternative matches its required components
 ///
 /// If the query has no patterns (empty reaction query), returns `true` (trivial match).
 pub fn has_reaction_substructure_match(rxn: &Reaction, query: &ReactionQuery) -> bool {
-    // Check if all reactant patterns are satisfied
-    for pattern in &query.reactant_patterns {
-        let mut matched = false;
-        for mol in &rxn.reactants {
-            if !find_matches_with_config(pattern, mol, &first_match_config()).is_empty() {
-                matched = true;
-                break;
-            }
-        }
-        if !matched {
-            return false;
-        }
+    if !match_component_groups(&query.reactant_components, &rxn.reactants) {
+        return false;
     }
 
-    // Check if all product patterns are satisfied
-    for pattern in &query.product_patterns {
-        let mut matched = false;
-        for mol in &rxn.products {
-            if !find_matches_with_config(pattern, mol, &first_match_config()).is_empty() {
-                matched = true;
-                break;
-            }
-        }
-        if !matched {
-            return false;
-        }
+    // Agent patterns are matched against the middle reaction section. An
+    // empty agent section remains a valid legacy query and requires no match.
+    if !query.agent_components.is_empty()
+        && !query.agent_components.iter().any(|components| {
+            let mut used = vec![false; rxn.agents.len()];
+            match_distinct_components(components, &rxn.agents, 0, &mut used)
+        })
+    {
+        return false;
     }
 
-    true
+    match_component_groups(&query.product_components, &rxn.products)
 }
 
 /// Get detailed match information for a reaction against a query pattern.
 ///
 /// Returns a `ReactionSmartsMatch` containing:
-/// - All matched atoms for each pattern
+/// - All matched atoms for each reactant/product pattern
 /// - Which molecules matched which patterns
 /// - Overall match status
 ///
@@ -653,9 +781,9 @@ pub fn get_reaction_smarts_matches(rxn: &Reaction, query: &ReactionQuery) -> Rea
     for (pattern_idx, pattern) in query.reactant_patterns.iter().enumerate() {
         let mut matches_for_pattern = Vec::new();
         for (mol_idx, mol) in rxn.reactants.iter().enumerate() {
-            let atom_matches = find_matches_with_config(pattern, mol, &first_match_config());
+            let atom_matches = reaction_match_embedding(pattern, mol);
             // Use first match if any exist (we only care that it matched)
-            if let Some(first_match) = atom_matches.first() {
+            if let Some(first_match) = atom_matches.as_ref() {
                 let atom_indices: Vec<usize> = first_match
                     .values()
                     .map(|atom_idx| atom_idx.0 as usize)
@@ -670,14 +798,35 @@ pub fn get_reaction_smarts_matches(rxn: &Reaction, query: &ReactionQuery) -> Rea
         reactant_pattern_matches.push(matches_for_pattern);
     }
 
+    // Collect all agent alternative matches. Keep every matching alternative
+    // in the detailed result even though only one is required for completion.
+    let mut agent_pattern_matches = Vec::new();
+    for (pattern_idx, pattern) in query.agent_patterns.iter().enumerate() {
+        let mut matches_for_pattern = Vec::new();
+        for (mol_idx, mol) in rxn.agents.iter().enumerate() {
+            if let Some(first_match) = reaction_match_embedding(pattern, mol).as_ref() {
+                let atom_indices: Vec<usize> = first_match
+                    .values()
+                    .map(|atom_idx| atom_idx.0 as usize)
+                    .collect();
+                matches_for_pattern.push(MoleculeMatch {
+                    molecule_index: mol_idx,
+                    pattern_index: pattern_idx,
+                    atom_indices,
+                });
+            }
+        }
+        agent_pattern_matches.push(matches_for_pattern);
+    }
+
     // Collect all product pattern matches
     let mut product_pattern_matches = Vec::new();
     for (pattern_idx, pattern) in query.product_patterns.iter().enumerate() {
         let mut matches_for_pattern = Vec::new();
         for (mol_idx, mol) in rxn.products.iter().enumerate() {
-            let atom_matches = find_matches_with_config(pattern, mol, &first_match_config());
+            let atom_matches = reaction_match_embedding(pattern, mol);
             // Use first match if any exist (we only care that it matched)
-            if let Some(first_match) = atom_matches.first() {
+            if let Some(first_match) = atom_matches.as_ref() {
                 let atom_indices: Vec<usize> = first_match
                     .values()
                     .map(|atom_idx| atom_idx.0 as usize)
@@ -693,13 +842,21 @@ pub fn get_reaction_smarts_matches(rxn: &Reaction, query: &ReactionQuery) -> Rea
     }
 
     // Check if all patterns matched
-    let all_reactants_matched = reactant_pattern_matches.iter().all(|m| !m.is_empty());
-    let all_products_matched = product_pattern_matches.iter().all(|m| !m.is_empty());
-    let is_complete_match = all_reactants_matched && all_products_matched;
+    let all_reactants_matched = match_component_groups(&query.reactant_components, &rxn.reactants);
+    let all_products_matched = match_component_groups(&query.product_components, &rxn.products);
+    let all_agents_matched = query.agent_components.is_empty()
+        || query.agent_components.iter().any(|components| {
+            let mut used = vec![false; rxn.agents.len()];
+            match_distinct_components(components, &rxn.agents, 0, &mut used)
+        });
+    let is_complete_match = all_reactants_matched && all_agents_matched && all_products_matched;
 
     ReactionSmartsMatch {
         reactant_matches: ReactantMatches {
             pattern_matches: reactant_pattern_matches,
+        },
+        agent_matches: AgentMatches {
+            pattern_matches: agent_pattern_matches,
         },
         product_matches: ProductMatches {
             pattern_matches: product_pattern_matches,
@@ -824,7 +981,11 @@ pub fn query_reaction(
     // Convert ReactionSmartsPattern to ReactionQuery for matching
     let query = ReactionQuery {
         reactant_patterns: pattern.reactant_patterns,
+        reactant_components: pattern.reactant_components,
+        agent_patterns: pattern.agent_patterns,
+        agent_components: pattern.agent_components,
         product_patterns: pattern.product_patterns,
+        product_components: pattern.product_components,
     };
     Ok(get_reaction_smarts_matches(rxn, &query))
 }
@@ -853,7 +1014,11 @@ pub fn batch_query_reactions_with_limits(
     let pattern = parse_reaction_smarts(smarts)?;
     let query = ReactionQuery {
         reactant_patterns: pattern.reactant_patterns,
+        reactant_components: pattern.reactant_components,
+        agent_patterns: pattern.agent_patterns,
+        agent_components: pattern.agent_components,
         product_patterns: pattern.product_patterns,
+        product_components: pattern.product_components,
     };
 
     let mut matches = Vec::new();
@@ -892,7 +1057,11 @@ pub fn batch_query_with_library(
     for (pattern_name, pattern) in &library.patterns {
         let query = ReactionQuery {
             reactant_patterns: pattern.reactant_patterns.clone(),
+            reactant_components: pattern.reactant_components.clone(),
+            agent_patterns: pattern.agent_patterns.clone(),
+            agent_components: pattern.agent_components.clone(),
             product_patterns: pattern.product_patterns.clone(),
+            product_components: pattern.product_components.clone(),
         };
 
         let mut matches = Vec::new();
@@ -952,7 +1121,11 @@ pub fn batch_query_with_library_with_limits(
     for (pattern_name, pattern) in &library.patterns {
         let query = ReactionQuery {
             reactant_patterns: pattern.reactant_patterns.clone(),
+            reactant_components: pattern.reactant_components.clone(),
+            agent_patterns: pattern.agent_patterns.clone(),
+            agent_components: pattern.agent_components.clone(),
             product_patterns: pattern.product_patterns.clone(),
+            product_components: pattern.product_components.clone(),
         };
         let mut matches = Vec::with_capacity(reactions.len());
         let mut matching_count = 0;
@@ -1031,11 +1204,59 @@ mod tests {
     }
 
     #[test]
+    fn test_reaction_query_matches_agent_section() {
+        let rxn = rxn("CC>[Pd]>CC");
+        let query = parse_reaction_query("[#6]>[Pd]>[#6]").unwrap();
+        assert!(has_reaction_substructure_match(&rxn, &query));
+
+        let non_matching = parse_reaction_query("[#6]>[Ni]>[#6]").unwrap();
+        assert!(!has_reaction_substructure_match(&rxn, &non_matching));
+    }
+
+    #[test]
+    fn test_reaction_query_agent_alternatives_use_or_semantics() {
+        let reaction = rxn("CC>[Ni]>CC");
+        let query = parse_reaction_query("[#6]>[Pd]|[Ni]>[#6]").unwrap();
+        assert!(has_reaction_substructure_match(&reaction, &query));
+
+        let absent = rxn("CC>[Cu]>CC");
+        assert!(!has_reaction_substructure_match(&absent, &query));
+    }
+
+    #[test]
+    fn test_reaction_query_respects_target_atom_maps_when_present() {
+        let mapped = rxn("[C:1][C:2]>>[C:1][C:2]");
+        let query = parse_reaction_query("[C:1][C:2]>>[C:1][C:2]").unwrap();
+        assert!(has_reaction_substructure_match(&mapped, &query));
+
+        let differently_mapped = rxn("[C:9][C:10]>>[C:9][C:10]");
+        assert!(!has_reaction_substructure_match(
+            &differently_mapped,
+            &query
+        ));
+    }
+
+    #[test]
     fn test_has_reaction_substructure_match_empty_query() {
         // Empty query should match any reaction (trivial)
         let rxn = rxn("CC>>C");
         let query = parse_reaction_query(">>").unwrap();
         assert!(has_reaction_substructure_match(&rxn, &query));
+    }
+
+    #[test]
+    fn test_reaction_query_matches_disconnected_components_without_reuse() {
+        let query = parse_reaction_query("[#6].[#7]>>[#6].[#7]").unwrap();
+        assert!(has_reaction_substructure_match(&rxn("C.N>>C.N"), &query));
+        assert!(!has_reaction_substructure_match(&rxn("C>>C"), &query));
+    }
+
+    #[test]
+    fn test_reaction_query_pipe_alternatives_are_or_on_reactant_and_product_sides() {
+        let query = parse_reaction_query("[#6]|[#7]>>[#8]|[#9]").unwrap();
+        assert!(has_reaction_substructure_match(&rxn("C>>O"), &query));
+        assert!(has_reaction_substructure_match(&rxn("N>>F"), &query));
+        assert!(!has_reaction_substructure_match(&rxn("C>>N"), &query));
     }
 
     // ===== Phase 1: Agents Section Support =====
@@ -1172,6 +1393,19 @@ mod tests {
     }
 
     #[test]
+    fn test_get_reaction_smarts_matches_reports_agent_alternatives() {
+        let reaction = rxn("CC>[Ni]>CC");
+        let query = parse_reaction_query("[#6]>[Pd]|[Ni]>[#6]").unwrap();
+        let matches = get_reaction_smarts_matches(&reaction, &query);
+
+        assert!(matches.is_complete_match);
+        assert_eq!(matches.agent_matches.pattern_matches.len(), 2);
+        assert!(matches.agent_matches.pattern_matches[0].is_empty());
+        assert_eq!(matches.agent_matches.pattern_matches[1].len(), 1);
+        assert!(matches.agent_matches.any_pattern_matched());
+    }
+
+    #[test]
     fn test_get_reaction_smarts_matches_multiple_reactants() {
         // Multiple reactants: C + C >> CC
         let rxn = rxn("C.C>>CC");
@@ -1289,8 +1523,8 @@ mod tests {
         assert!(matches.product_matches.pattern_matched(0)); // [#6]
         assert!(!matches.product_matches.pattern_matched(1)); // [#8] - no oxygen
 
-        // Overall match should be false (nitrogen pattern in reactants didn't match)
-        assert!(!matches.is_complete_match);
+        // Overall match is true because each side has one satisfied alternative.
+        assert!(matches.is_complete_match);
     }
 
     #[test]

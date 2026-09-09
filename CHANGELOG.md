@@ -1,15 +1,206 @@
 # Changelog
 
 This file records public releases and the current unreleased changes to
-`chematic`. Detailed development notes are retained in
-[`docs/archive/detailed-development-history.md`](docs/archive/detailed-development-history.md).
+`chematic`. Historical roadmap and audit notes are retained in
+[`docs/archive/README.md`](docs/archive/README.md).
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-No unreleased changes.
+No changes yet.
+
+## [1.0.11] - 2026-09-10
+
+- Split V3000 MOL atom and bond record parsing from the state-machine driver,
+  preserving the existing format, stereo, coordinate, and error contracts.
+- Split pipeline configuration, torsion configuration, and authoritative final
+  stereo verification helpers from the 3D embedding orchestration path.
+- Hardened the experimental CIP resolver so malformed internal rank/position
+  state fails closed instead of panicking, with a regression test.
+- Added a repository-wide code audit record and revalidated the standard local
+  release gates.
+- Published the v1.0.11 Rust crates to crates.io and the WASM package to npm;
+  the PyPI publication workflow remains in progress.
+
+## [1.0.10] - 2026-09-09
+
+- Added a versioned `MoleculeExtension`/`ExtensionRegistry` contract in
+  `chematic-core` and documented contributor corpus provenance, licensing,
+  minimization, and oracle-version requirements.
+- Added a reproducible 4,500-library/500-query exact similarity-search
+  comparison runner and v1.0.9 RDKit benchmark artifact.
+- Optimized prepared similarity search by caching database popcounts and using
+  partial top-k selection while preserving the existing result contract.
+
+- Added a bounded reaction-application compatibility path for simple SMARTS
+  atomic-number primitives (\`[#N]\` and \`[#N:map]\`). It deterministically
+  preserves map text, distinguishes valid aliphatic/aromatic alternatives,
+  applies them through reusable \`PreparedReaction\` and ring-aware paths, and
+  exposes additive per-variant diagnostics, and fails closed for compound
+  primitives or expansion blow-ups.
+- The per-variant diagnostics also cover caller-provided ring perception,
+  without changing product enumeration.
+- Added a 5,000-row native ECFP4 byte-parity report across Rust, Python, and
+  Node/WASM, with the exact 2,048-bit representation and corpus hash recorded.
+- Added the corresponding native MACCS 166-bit binding-parity report across
+  Rust, Python, and Node/WASM, while keeping RDKit key mapping separate.
+- Added a 5,000-row native `topo_path` binding-parity report across Rust,
+  Python, and Node/WASM, separate from RDKit-compatible path accuracy.
+- Added a 5,000-row native torsion binding-parity report across Rust, Python,
+  and Node/WASM, separate from RDKit-compatible torsion accuracy.
+- Added a 5,000-row explicit standardization-profile parity report across
+  Rust, Python, and Node/WASM, separate from expected-identity accuracy.
+- Added a 5,000-row RDKit-compatible ECFP4 binding-parity report across Rust,
+  Python, and Node/WASM, including typed preprocessing-failure accounting.
+- Added a 5,000-row RDKit-compatible hashed torsion binding-parity report
+  across Rust, Python, and Node/WASM.
+- Added a 5,000-row RDKit-compatible ECFP4 sparse identifier/count parity
+  report across Rust, Python, and Node/WASM.
+- Added a 5,000-row RDKit-compatible ECFP4 folded bitInfo provenance parity
+  report across Rust, Python, and Node/WASM.
+- Added a 5,000-row RDKit-compatible ECFP4 raw bitInfo provenance parity
+  report across Rust, Python, and Node/WASM.
+- Added a 5,000-row RDKit-compatible path fingerprint parity report and a
+  corresponding WASM `rdkit_path_bitvec` API, separate from native `topo_path`.
+- Added a reproducible 5,000-row Rust/Python/Node-WASM descriptor binding
+  parity report. All bindings parsed the same corpus and agreed on MW, TPSA,
+  HBD, HBA, and heavy-atom count; the report explicitly remains separate from
+  the external RDKit accuracy ledger.
+- Added a shared semantic-expansion fixture contract for Markush selection and
+  polymer repeat commands, consumed by Rust, Python, and Node/WASM tests with
+  exact source-to-expanded atom mappings.
+- Expanded the shared standardization contract to the ten Phase 1 holdouts,
+  with Rust, Python, and Node/WASM checking the same largest-fragment outputs.
+- Added a same-input 20-repetition SDF record-accounting run for chematic,
+  RDKit, and the installed Open Babel CLI, with process boundaries and zero
+  failures recorded separately; the report now pins the Open Babel executable
+  version in machine-readable metadata.
+- Extended the same-input Open Babel accounting runner to V3000 and MOL2,
+  including singular-record conversion output and version-pinned reports.
+- The same-input runner now records the installed RDKit version alongside the
+  Open Babel version in every machine-readable comparison report.
+- Preserved the existing implicit Open Babel SDF comparison when no executable
+  flag is supplied, while keeping new V3000/MOL2 comparisons opt-in.
+- Extended the Explorer browser smoke with the stable empty-paste error and
+  recovery path before the cancellation/display-cap workload, and made the
+  Cancel assertion wait for its asynchronous hidden transition.
+- Added an Explorer browser smoke contract for malformed pasted records,
+  cancellation, and the 2,000-record display cap, with a Chromium-local run
+  and a CI matrix hook for the existing browser lanes.
+- Added a checked `ReactionDocument::from_json_str` boundary and routed the
+  Python/WASM RXN-document writers through it, preventing invalid typed
+  documents from bypassing component and metadata validation.
+- CDXML document parsing now rejects unmatched and nested page elements with
+  typed invalid-document errors instead of silently changing page structure.
+- Semantic polymer JSON parsing now rejects repeat endpoint indices outside
+  the `u32` contract instead of truncating them during deserialization.
+- Rich reaction components now expose optional, validated atom-map identities
+  (map number plus component-local atom index), populated by RXN/SMILES-derived
+  documents without breaking older authored JSON.
+- V2000 MOL/RXN atom-map fields now round-trip for three-digit values and fail
+  closed with a typed loss for values the fixed-width RXN dialect cannot hold.
+- Added an experimental, bounded periodic-structure geometry fingerprint with
+  deterministic stored-representation semantics, provenance, JSON Schema, and
+  WASM validation/fingerprint support.
+- Added opt-in deterministic SVG publication preflight diagnostics for Rust,
+  JSON, and WASM consumers. The conservative contract reports stable paths for
+  invalid geometry, clipping, overlaps, crossings, degenerate bonds, and
+  resource limits, and includes a reproducible input/style fingerprint.
+- Normalized parser-side aromatic E/Z direction stashes during canonical orbit
+  coloring without changing the physical aromatic bond order. The remaining
+  three held-out representation-dependent outputs continue to fail closed.
+- Added a versioned, bounded NMR spectrum interchange contract with finite peak
+  validation, explicit normalization, opaque vendor metadata, stable
+  diagnostics, JSON Schema, and a WASM validation entry point.
+- Expanded the streaming malformed-input safety corpus to ten cases for each
+  of the ten runner formats, including Extended XYZ (100/100 negative cases),
+  preserving the separate oversized-input and 20-case gzip controls.
+- Added a bounded, explainable genotoxicity-reactivity slice: source-referenced
+  PubChem structure fixtures, epoxide/aziridine/Michael-acceptor checks, and a
+  deterministic two-site electrophile heuristic with topological spacer data.
+  This remains structural triage only, not a biological predictor or score.
+- Promoted the connectivity-ordered 3D coordinate engine to the default
+  `generate_coords` path, covering fused-ring seam and chain-bridged ring-island
+  layouts with deterministic ring-entry placement.
+- Extended the Python file-backed streaming batch contract from SDF to plain
+  XYZ and Extended XYZ trajectories. The new iterators preserve input order
+  and bounded batch boundaries, support cancellation, and expose deterministic
+  progress manifests with rejected-frame counts.
+- Extended the common Rust streaming benchmark and safety gate to Extended
+  XYZ, including plain/gzip controls, ten malformed cases, and an oversized
+  post-decompression limit check.
+- Added the same-input Extended XYZ record/failure contract report for
+  chematic and RDKit, with source-byte accounting and explicit parser-boundary
+  notes; it is not a same-process parity or speed claim.
+- Added an Extended XYZ parse fixture to the shared Rust/Python/Node/WASM
+  contract manifest, checking coordinates, lattice, typed per-atom properties,
+  and frame metadata in each binding.
+- Added the typed RXN document round-trip to the shared binding contract,
+  covering authored component roles and SMILES across Rust, Python, and
+  Node/WASM while retaining the legacy V2000 loss boundary.
+- Extended the deterministic gzip streaming record/failure contract to
+  Extended XYZ, keeping compressed Rust input bytes separate from decompressed
+  RDKit frame-parser bytes.
+- Strengthened the shared ECFP4/MACCS binding contract with exact outputs for
+  four fixtures across Rust, Python, and Node/WASM; the full held-out parity
+  corpus remains separate.
+- Added a WASM `topo_path_bitvec` entry point and exact native topological-path
+  bit fixtures across Rust, Python, and Node/WASM.
+- Extended the shared native fingerprint contract with exact topological-torsion
+  bit positions across Rust, Python, and Node/WASM.
+- Added a WASM `rdkit_torsion_bitvec` entry point and exact four-fixture bits
+  for the RDKit-compatible hashed torsion operation.
+
+## [1.0.9] - 2026-09-07
+
+- Expanded the streaming format safety gate to 27 malformed cases across nine
+  supported formats, with explicit oversized-input and gzip limit coverage.
+- Added arithmetic and version consistency validation for held-out parity
+  reports, keeping measured, not-measured, and mismatch states distinct.
+- Hardened Node/WASM batch and screening JSON contracts for malformed records,
+  continuation, delimiter errors, and resource limits.
+- Synchronized the browser demo's web-target WASM artifact, cache-buster, and
+  displayed version with the 1.0.9 release candidate.
+
+## [1.0.8] - 2026-09-06
+
+- Added a versioned cross-binding fingerprint contract for core ECFP4 and
+  MACCS outputs, including bit width, packed-byte shape, bit order,
+  configuration, sparse/count semantics, and implementation provenance.
+- Added Rust, Python, and Node/WASM contract tests for the shared fingerprint
+  shape and non-empty output boundary. Held-out value parity and explanation
+  contracts remain separate follow-up gates.
+- Added `PeriodicStructure::identity_bytes()` with a versioned deterministic
+  binary representation for exact cache keys and content-addressed storage.
+  The representation preserves validated lattice/site/species/occupancy and
+  label data without adding a digest dependency.
+
+- Updated the release documentation and package metadata to the v1.0.8
+  publication boundary.
+
+## [1.0.7] - 2026-09-05
+
+### Performance
+
+- Optimized canonical rank normalization, SMILES ring-label handling, and
+  V2000/SDF parsing and serialization while preserving output bytes.
+- Added a resumable alternating A/B benchmark with exact-output checks. On
+  the recorded v1.0.6-to-v1.0.7 source comparison, canonical SMILES improved
+  1.176x, SDF graph/property read 1.180x, and reusable-buffer SDF write
+  1.419x at the median of seven paired ratios. SMILES parse improved 1.034x
+  and remains below the 1.10x target.
+
+### Validation
+
+- Added bounded ring-label and stereo-partner regressions, direct-append SDF
+  streaming boundary tests, and benchmark-runner interruption/resume tests.
+- Recorded exact output parity on two 5,000-input SMILES corpora and the
+  365-record SDF fixture. The measurements remain local-source evidence and
+  are not universal cross-platform guarantees.
+- Updated the release, security, benchmark, and roadmap documents to the
+  v1.0.7 publication boundary.
 
 ## [1.0.6] - 2026-09-05
 
@@ -172,7 +363,12 @@ The authoritative list of published tags and release artifacts is the
 historical implementation notes remain available in the archived detailed
 history and Git history.
 
-[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.6...HEAD
+[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.11...HEAD
+[1.0.11]: https://github.com/kent-tokyo/chematic/compare/v1.0.10...v1.0.11
+[1.0.10]: https://github.com/kent-tokyo/chematic/compare/v1.0.9...v1.0.10
+[1.0.9]: https://github.com/kent-tokyo/chematic/compare/v1.0.8...v1.0.9
+[1.0.8]: https://github.com/kent-tokyo/chematic/compare/v1.0.7...v1.0.8
+[1.0.7]: https://github.com/kent-tokyo/chematic/compare/v1.0.6...v1.0.7
 [1.0.6]: https://github.com/kent-tokyo/chematic/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/kent-tokyo/chematic/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/kent-tokyo/chematic/compare/v1.0.3...v1.0.4

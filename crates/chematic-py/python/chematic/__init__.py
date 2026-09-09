@@ -1,5 +1,13 @@
 from .chematic import *
-from .chematic import __version__, Mol, SimilarityIndex, SdfRecord, SdfIter, bulk
+from .chematic import (
+    __version__,
+    Mol,
+    SimilarityIndex,
+    PreparedFingerprintIndex,
+    SdfRecord,
+    SdfIter,
+    bulk,
+)
 from .chematic import (
     from_smiles,
     from_mol_block,
@@ -12,7 +20,10 @@ from .chematic import (
     run_smirks,
     find_mcs,
     iter_sdf,
+    iter_sdf_batched,
     iter_sdf_str,
+    iter_xyz_batched,
+    iter_extxyz_batched,
 )
 from .chematic import (
     Lattice,

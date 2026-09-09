@@ -75,6 +75,11 @@ fn collect_shingles(mol: &Molecule, max_radius: usize) -> Vec<u64> {
     let n = mol.atom_count();
     // Precompute BFS distances between all pairs (Floyd-Warshall on adjacency)
     let dist = bfs_all_pairs(mol);
+    // An atom/radius environment is independent of the other atom in the
+    // pair.  Computing it inside the pair/radius loops made the old path
+    // repeat a full atom scan and sort O(n² * (r+1)²) times.  Keep the exact
+    // hash construction, but materialize each environment once.
+    let env_hashes = precompute_environment_hashes(mol, max_radius, &dist);
 
     let mut hashes = Vec::new();
 
@@ -86,8 +91,8 @@ fn collect_shingles(mol: &Molecule, max_radius: usize) -> Vec<u64> {
             }
             for r_a in 0..=max_radius {
                 for r_b in 0..=max_radius {
-                    let env_a = circular_env_hash(mol, a, r_a, &dist);
-                    let env_b = circular_env_hash(mol, b, r_b, &dist);
+                    let env_a = env_hashes[a][r_a];
+                    let env_b = env_hashes[b][r_b];
                     // Canonical: sort envs so order of (a,b) doesn't matter
                     let (ea, eb) = if env_a <= env_b {
                         (env_a, env_b)
@@ -106,6 +111,20 @@ fn collect_shingles(mol: &Molecule, max_radius: usize) -> Vec<u64> {
     hashes.sort_unstable();
     hashes.dedup();
     hashes
+}
+
+fn precompute_environment_hashes(
+    mol: &Molecule,
+    max_radius: usize,
+    dist: &[Vec<usize>],
+) -> Vec<Vec<u64>> {
+    (0..mol.atom_count())
+        .map(|center| {
+            (0..=max_radius)
+                .map(|radius| circular_env_hash(mol, center, radius, dist))
+                .collect()
+        })
+        .collect()
 }
 
 /// Hash for the circular environment of `center` at `radius`.
@@ -207,6 +226,50 @@ fn fnv1a_mix(h: u64, seed: u64) -> u64 {
 mod tests {
     use super::*;
     use chematic_smiles::parse;
+
+    fn collect_shingles_reference(mol: &Molecule, max_radius: usize) -> Vec<u64> {
+        let n = mol.atom_count();
+        let dist = bfs_all_pairs(mol);
+        let mut hashes = Vec::new();
+        for a in 0..n {
+            for b in a..n {
+                let d = dist[a][b];
+                if d == usize::MAX {
+                    continue;
+                }
+                for r_a in 0..=max_radius {
+                    for r_b in 0..=max_radius {
+                        let env_a = circular_env_hash(mol, a, r_a, &dist);
+                        let env_b = circular_env_hash(mol, b, r_b, &dist);
+                        let (ea, eb) = if env_a <= env_b {
+                            (env_a, env_b)
+                        } else {
+                            (env_b, env_a)
+                        };
+                        let mut h = fnv1a(ea.to_le_bytes().as_ref());
+                        h = fnv1a_extend(h, eb.to_le_bytes().as_ref());
+                        h = fnv1a_extend(h, &(d as u64).to_le_bytes());
+                        hashes.push(h);
+                    }
+                }
+            }
+        }
+        hashes.sort_unstable();
+        hashes.dedup();
+        hashes
+    }
+
+    #[test]
+    fn precomputed_environment_shingles_match_reference() {
+        for smiles in ["C", "CCO", "c1ccccc1", "CC(C)Cc1ccc(cc1)C(C)C(=O)O"] {
+            let mol = parse(smiles).expect("parse fixture");
+            assert_eq!(
+                collect_shingles(&mol, 2),
+                collect_shingles_reference(&mol, 2),
+                "MAP4 shingle set changed for {smiles}"
+            );
+        }
+    }
 
     #[test]
     fn map4_same_molecule_identical() {

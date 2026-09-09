@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.9",
+  "purpose": "Held-out cross-binding parity coverage ledger; external oracle accuracy remains a separate gate.",
+  "operations": {
+    "morgan_ecfp": {
+      "status": "measured",
+      "report": "validation/results/rdkit-ecfp4-cross-binding-parity-5000-v1.0.9.json",
+      "bindings": ["rust", "python", "node", "wasm"],
+      "oracle": "None; cross-binding agreement only",
+      "boundary": "RDKit-compatible ECFP4 bytes and typed preprocessing status across the three chematic binding implementations"
+    },
+    "maccs": {
+      "status": "measured",
+      "report": "validation/results/maccs-cross-binding-parity-5000-v1.0.9.json",
+      "bindings": ["rust", "python", "node", "wasm"],
+      "oracle": "None; cross-binding agreement only",
+      "boundary": "Native 166-key MACCS bytes across Rust, Python, and Node/WASM"
+    },
+    "topological": {
+      "status": "measured",
+      "report": "validation/results/rdkit-rdk-cross-binding-parity-5000-v1.0.9.json",
+      "bindings": ["rust", "python", "node", "wasm"],
+      "oracle": "None; cross-binding agreement only",
+      "boundary": "RDKit-compatible RDKFingerprint bytes across Rust, Python, and Node/WASM"
+    },
+    "torsion": {
+      "status": "measured",
+      "report": "validation/results/rdkit-torsion-cross-binding-parity-5000-v1.0.9.json",
+      "bindings": ["rust", "python", "node", "wasm"],
+      "oracle": "None; cross-binding agreement only",
+      "boundary": "RDKit-compatible hashed topological-torsion bytes across Rust, Python, and Node/WASM"
+    },
+    "descriptors": {
+      "status": "measured",
+      "report": "validation/results/descriptor-cross-binding-parity-5000-v1.0.9.json",
+      "bindings": ["rust", "python", "node", "wasm"],
+      "oracle": "None; cross-binding agreement only",
+      "boundary": "Shared descriptor outputs and typed status across Rust, Python, and Node/WASM"
+    },
+    "standardization": {
+      "status": "measured",
+      "report": "validation/results/standardization-cross-binding-parity-5000-v1.0.9.json",
+      "bindings": ["rust", "python", "node", "wasm"],
+      "oracle": "None; cross-binding agreement only",
+      "boundary": "Explicit largest-fragment, charge-neutralization, hydrogen-removal, and tautomer profile outputs across Rust, Python, and Node/WASM"
+    }
+  }
+}

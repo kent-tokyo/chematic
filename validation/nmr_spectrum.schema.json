@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kent-tokyo.github.io/chematic/schema/nmr-spectrum-v1.json",
+  "title": "chematic NMR spectrum interchange v1",
+  "type": "object",
+  "required": ["schema_version", "nucleus", "peaks", "normalization", "vendor_metadata"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "nucleus": {"type": "string", "minLength": 1},
+    "solvent": {"type": ["string", "null"]},
+    "frequency_mhz": {"type": ["number", "null"]},
+    "temperature_k": {"type": ["number", "null"]},
+    "source": {"type": ["string", "null"]},
+    "peaks": {"type": "array", "items": {"$ref": "#/$defs/peak"}},
+    "normalization": {"enum": ["raw", "max_one", "sum_one"]},
+    "vendor_metadata": {}
+  },
+  "$defs": {
+    "peak": {
+      "type": "object",
+      "required": ["shift", "intensity", "coupling_hz"],
+      "properties": {
+        "shift": {"type": "number"},
+        "intensity": {"type": "number", "minimum": 0},
+        "assignment": {"type": ["string", "null"]},
+        "multiplicity": {"type": ["string", "null"]},
+        "coupling_hz": {"type": "array", "items": {"type": "number", "minimum": 0}}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

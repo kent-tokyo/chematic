@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "status": "local-current-candidate",
+  "gate": "distance_geometry_v2_gap_check",
+  "environment": {
+    "platform": "macOS arm64",
+    "corpus_size": 58,
+    "execution": "cargo run --release -p chematic-3d --example distance_geometry_v2_gap_check",
+    "classification": "row status == ok"
+  },
+  "by_category": {
+    "rigid_ring": {"checked": 8, "new_ok": 8, "new_failures": 0, "legacy_dg_ok": 6, "legacy_dg_failures": 2},
+    "fused_aromatic": {"checked": 7, "new_ok": 7, "new_failures": 0, "legacy_dg_ok": 7, "legacy_dg_failures": 0},
+    "flexible_chain": {"checked": 6, "new_ok": 6, "new_failures": 0, "legacy_dg_ok": 2, "legacy_dg_failures": 4},
+    "macrocycle": {"checked": 3, "new_ok": 3, "new_failures": 0, "legacy_dg_ok": 3, "legacy_dg_failures": 0},
+    "stereocenter_implicit_h": {"checked": 10, "new_ok": 10, "new_failures": 0, "legacy_dg_ok": 10, "legacy_dg_failures": 0},
+    "stereocenter_quaternary": {"checked": 6, "new_ok": 6, "new_failures": 0, "legacy_dg_ok": 6, "legacy_dg_failures": 0},
+    "alkene_ez": {"checked": 8, "new_ok": 8, "new_failures": 0, "legacy_dg_ok": 8, "legacy_dg_failures": 0},
+    "druglike": {"checked": 7, "new_ok": 7, "new_failures": 0, "legacy_dg_ok": 6, "legacy_dg_failures": 1},
+    "druglike_rigid": {"checked": 1, "new_ok": 1, "new_failures": 0, "legacy_dg_ok": 1, "legacy_dg_failures": 0},
+    "druglike_stress": {"checked": 2, "new_ok": 2, "new_failures": 0, "legacy_dg_ok": 1, "legacy_dg_failures": 1}
+  },
+  "totals": {"checked": 58, "new_ok": 58, "new_failures": 0, "legacy_dg_ok": 50, "legacy_dg_failures": 8},
+  "interpretation": "One reproducible local corpus run. This records status-class failure rates, not force-field soundness, external-oracle parity, or statistical generalization."
+}

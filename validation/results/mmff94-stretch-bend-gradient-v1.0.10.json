@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-09",
+  "target_version": "1.0.10",
+  "scope": "prepared MMFF94 stretch-bend energy and analytic gradient",
+  "fixture": "propane with explicit hydrogen coordinates",
+  "command": "cargo test -p chematic-ff --offline prepared_stretch_bend_gradient_matches_finite_difference --quiet",
+  "tests_passed": 1,
+  "finite_difference_delta_angstrom": 0.00001,
+  "result": "passed",
+  "boundary": "The prepared stretch-bend building block is verified locally; torsion and out-of-plane gradients, coordinate-dependent neighbor lists, full analytic-gradient integration, and independent force-field parity remain open."
+}

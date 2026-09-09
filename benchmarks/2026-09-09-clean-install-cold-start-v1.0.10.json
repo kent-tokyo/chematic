@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "status": "local-current-candidate",
+  "environment": {
+    "platform": "macOS arm64",
+    "python": "3.13",
+    "rust": "1.97.0",
+    "maturin": "1.13.3",
+    "install": "fresh venv, pip install --no-deps"
+  },
+  "wheel": {
+    "filename": "chematic-1.0.10-cp313-cp313-macosx_11_0_arm64.whl",
+    "bytes": 4947923,
+    "import_version": "1.0.10",
+    "first_parse": "CCO -> C(C)O"
+  },
+  "startup_ms": {
+    "runs": 10,
+    "import_median": 35.6,
+    "import_first_parse_median": 35.7
+  },
+  "throughput": {
+    "corpus": "scripts/descriptor_census_corpus.smi",
+    "rows": 5000,
+    "parsed_ok": 5000,
+    "total_ms": 32.4,
+    "microseconds_per_molecule": 6.48,
+    "molecules_per_second": 154220
+  },
+  "peak_rss_bytes": 25051136,
+  "pytest": {
+    "command": "PYTHONPATH=<venv>/lib/python3.13/site-packages:/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages <venv>/bin/python -m pytest -p no:asyncio crates/chematic-py/tests --tb=short",
+    "collected": 864,
+    "passed": 864,
+    "failed": 0,
+    "duration_seconds": 6.27
+  },
+  "interpretation": "Local CPython evidence only; not a published-wheel, browser-memory, or million-molecule claim."
+}

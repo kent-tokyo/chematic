@@ -65,6 +65,10 @@ pub struct Molecule {
     /// bond index; value is `BondOrder::Up` or `BondOrder::Down`. Absent for
     /// bonds whose direction is already carried directly by `order`.
     bond_directions: std::collections::HashMap<u32, BondOrder>,
+    /// Parser-side anchor endpoint for a directional marker stashed on an
+    /// aromatic bond. This preserves which endpoint introduced the marker
+    /// when atom/bond indices are rebuilt during canonical search.
+    bond_direction_anchors: std::collections::HashMap<u32, AtomIdx>,
 }
 
 impl Molecule {
@@ -606,6 +610,15 @@ impl Molecule {
                 self.bond_directions.insert(*new_key, direction);
             }
         }
+        let old_bond_anchors = std::mem::take(&mut self.bond_direction_anchors);
+        for (old_key, atom) in old_bond_anchors {
+            if let (Some(Some(new_key)), Some(new_atom)) = (
+                bond_remap.get(old_key as usize),
+                remap.get(atom.0 as usize).and_then(|r| *r),
+            ) {
+                self.bond_direction_anchors.insert(*new_key, new_atom);
+            }
+        }
 
         // Rebuild adjacency from scratch.
         let new_n = self.atoms.len();
@@ -701,6 +714,16 @@ impl Molecule {
                     self.bond_directions.insert(old_key - 1, direction);
                 }
             }
+        }
+        let old_bond_anchors = std::mem::take(&mut self.bond_direction_anchors);
+        for (old_key, atom) in old_bond_anchors {
+            let old = old_key as usize;
+            let new_key = match old.cmp(&removed) {
+                std::cmp::Ordering::Less => old_key,
+                std::cmp::Ordering::Equal => continue,
+                std::cmp::Ordering::Greater => old_key - 1,
+            };
+            self.bond_direction_anchors.insert(new_key, atom);
         }
         // Rebuild adjacency with renumbered bond indices.
         let n = self.atoms.len();
@@ -809,9 +832,20 @@ impl Molecule {
         self.bond_directions.get(&idx.0).copied()
     }
 
+    /// Return the endpoint that anchored a parser-side aromatic direction
+    /// stash, if one was recorded.
+    pub fn bond_direction_anchor(&self, idx: BondIdx) -> Option<AtomIdx> {
+        self.bond_direction_anchors.get(&idx.0).copied()
+    }
+
     /// Stash a directional marker for bond `idx` (see [`Self::bond_direction`]).
     pub fn set_bond_direction(&mut self, idx: BondIdx, direction: BondOrder) {
         self.bond_directions.insert(idx.0, direction);
+    }
+
+    /// Set the endpoint that anchored a parser-side aromatic direction stash.
+    pub fn set_bond_direction_anchor(&mut self, idx: BondIdx, atom: AtomIdx) {
+        self.bond_direction_anchors.insert(idx.0, atom);
     }
 }
 
@@ -909,6 +943,7 @@ pub struct MoleculeBuilder {
     stereo_groups: Vec<StereoGroup>,
     stereo_neighbor_order: std::collections::HashMap<u32, Vec<u32>>,
     bond_directions: std::collections::HashMap<u32, BondOrder>,
+    bond_direction_anchors: std::collections::HashMap<u32, AtomIdx>,
 }
 
 impl MoleculeBuilder {
@@ -929,6 +964,7 @@ impl MoleculeBuilder {
             stereo_groups: Vec::new(),
             stereo_neighbor_order: std::collections::HashMap::new(),
             bond_directions: std::collections::HashMap::new(),
+            bond_direction_anchors: std::collections::HashMap::new(),
         }
     }
 
@@ -947,6 +983,7 @@ impl MoleculeBuilder {
         b.stereo_groups = mol.stereo_groups.clone();
         b.stereo_neighbor_order = mol.stereo_neighbor_order.clone();
         b.bond_directions = mol.bond_directions.clone();
+        b.bond_direction_anchors = mol.bond_direction_anchors.clone();
         b
     }
 
@@ -984,6 +1021,11 @@ impl MoleculeBuilder {
         self.bond_directions.insert(idx.0, direction);
     }
 
+    /// Set the parser-side endpoint that anchored a stashed direction.
+    pub fn set_bond_direction_anchor(&mut self, idx: BondIdx, atom: AtomIdx) {
+        self.bond_direction_anchors.insert(idx.0, atom);
+    }
+
     /// Copy all bond-direction entries from `mol` into this builder verbatim.
     ///
     /// Only valid when bond indices are unchanged from `mol` (atoms/bonds
@@ -993,6 +1035,7 @@ impl MoleculeBuilder {
     /// instead (see `Molecule::with_bond_removed`).
     pub fn copy_bond_directions_from(&mut self, mol: &Molecule) {
         self.bond_directions = mol.bond_directions.clone();
+        self.bond_direction_anchors = mol.bond_direction_anchors.clone();
     }
 
     /// Read-only reference to an atom already added to the builder.
@@ -1071,6 +1114,7 @@ impl MoleculeBuilder {
             stereo_groups: self.stereo_groups,
             stereo_neighbor_order: self.stereo_neighbor_order,
             bond_directions: self.bond_directions,
+            bond_direction_anchors: self.bond_direction_anchors,
         }
     }
 }
@@ -1192,6 +1236,7 @@ mod tests {
         b.add_bond(bb, c, BondOrder::Single).unwrap(); // bond 1
         let cd = b.add_bond(c, d, BondOrder::Single).unwrap(); // bond 2
         b.set_bond_direction(cd, BondOrder::Up);
+        b.set_bond_direction_anchor(cd, c);
         (b.build(), cd)
     }
 
@@ -1203,6 +1248,7 @@ mod tests {
         assert_eq!(mol.bond_count(), 2);
         // The stash must have followed C-D to its new index...
         assert_eq!(mol.bond_direction(BondIdx(1)), Some(BondOrder::Up));
+        assert_eq!(mol.bond_direction_anchor(BondIdx(1)), Some(AtomIdx(2)));
         // ...and must NOT have leaked onto the bond that shifted into the
         // old numeric slot 2 (which no longer exists) or onto B-C (index 0
         // after the shift), which never had a direction.

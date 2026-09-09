@@ -1,0 +1,33 @@
+{
+  "source": "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages/rdkit/Contrib/PBF/testData/egfr.sdf",
+  "read": {
+    "chematic": {
+      "total_ms": 10.5,
+      "us_per_mol": 28.7,
+      "mol_per_sec": 34841,
+      "n": 365
+    },
+    "rdkit": {
+      "total_ms": 127.3,
+      "us_per_mol": 348.67,
+      "mol_per_sec": 2868,
+      "n": 365
+    },
+    "speedup_x": 12.1
+  },
+  "write": {
+    "chematic": {
+      "total_ms": 5.4,
+      "us_per_mol": 14.72,
+      "mol_per_sec": 67931,
+      "n": 365
+    },
+    "rdkit": {
+      "total_ms": 84.4,
+      "us_per_mol": 231.35,
+      "mol_per_sec": 4322,
+      "n": 365
+    },
+    "speedup_x": 15.6
+  }
+}

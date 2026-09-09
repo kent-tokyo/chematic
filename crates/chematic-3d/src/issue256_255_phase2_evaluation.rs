@@ -1,6 +1,6 @@
 //! Issue #256/#255 Phase 2: differential evaluation of `generate_coords_connectivity_ordered`
 //! (now [`crate::dg_connectivity_ordered::generate_coords_connectivity_ordered`], `pub`)
-//! against legacy `generate_coords` (RFC `docs/rfcs/dg_connectivity_ordered_placement_rfc.md`
+//! against legacy `generate_coords_legacy` (RFC `docs/rfcs/dg_connectivity_ordered_placement_rfc.md`
 //! §5's Phase 2, spec given directly by the user 2026-08-25).
 //!
 //! Originally written while the engine was still `pub(crate)` (it had a
@@ -17,8 +17,9 @@
 //! `ForceFieldPolicy::UffOnly`, new-engine → `ForceFieldPolicy::UffOnly` (same
 //! post-processing applied to both engines' output, so any difference in the
 //! minimized result traces back to the starting geometry, not to a different
-//! force-field path). `generate_coords` itself is not modified anywhere in
-//! this crate by this module -- purely a read-only measurement.
+//! force-field path). `generate_coords_legacy` is retained only as the
+//! read-only comparison baseline; production `generate_coords` routes to the
+//! validated engine.
 //!
 //! Population: #277's own 17-molecule regression set
 //! (`chembl_tier_b_0003/_0008/_0010/_0021/_0025/_0026/_0027/_0035/_0065/_0066/
@@ -57,7 +58,7 @@ use chematic_core::{AtomIdx, Molecule, MoleculeBuilder};
 use chematic_smiles::parse;
 
 use crate::Coords3D;
-use crate::dg::generate_coords;
+use crate::dg::generate_coords_legacy;
 use crate::dg_connectivity_ordered::generate_coords_connectivity_ordered;
 use crate::dg_fft::ideal_bond_length;
 use crate::minimize::{
@@ -325,7 +326,7 @@ fn issue256_255_phase2_differential_evaluation() {
         };
 
         let t0 = Instant::now();
-        let old_raw = generate_coords(&mol);
+        let old_raw = generate_coords_legacy(&mol);
         wall_old += t0.elapsed();
 
         let t1 = Instant::now();

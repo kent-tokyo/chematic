@@ -1,0 +1,17 @@
+{
+  "date": "2026-09-09",
+  "workspace_version": "1.0.10",
+  "scope": "local canonical atom-order, E/Z, idempotency, and fail-closed identity suite",
+  "command": "CARGO_TARGET_DIR=/private/tmp/chematic-target-canonical-audit cargo test -p chematic-smiles --offline --test canonical_robustness --test canonical_ez_residual --test canonical_idempotency_corpus --test kekule_s0_stereo_invariance",
+  "checks": {
+    "canonical_ez_residual": {"tests": 6, "passed": 6},
+    "canonical_idempotency_corpus": {"tests": 2, "passed": 2},
+    "canonical_robustness": {"tests": 24, "passed": 24},
+    "kekule_s0_stereo_invariance": {"tests": 4, "passed": 4}
+  },
+  "total_tests": 36,
+  "passed": 36,
+  "failed": 0,
+  "result": "pass",
+  "boundary": "This closes the focused local regression and fail-closed gate for the checked-in domain. It does not claim full atom-order/E/Z invariance: the three aromatic-stash residuals remain intentionally fail-closed and the broader corpus gate remains open."
+}

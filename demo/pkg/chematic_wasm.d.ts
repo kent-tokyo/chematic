@@ -585,6 +585,15 @@ export function canonical_tautomer(mol: MolHandle): MolHandle;
 export function canonical_tautomer_with_blocked_atoms_json(mol: MolHandle, blocked_atom_indices_json: string): string;
 
 /**
+ * Canonicalize a bounded delimiter-separated SMILES batch.
+ *
+ * Each result retains its input index and original text. Invalid records are
+ * returned inline with `status: "rejected"`; later records are still
+ * processed in deterministic input order.
+ */
+export function canonicalize_smiles_batch_json(smiles_batch: string, delimiter: string): string;
+
+/**
  * Parse a CDXML document while preserving page and presentation objects.
  * The returned JSON contains an opaque `raw_xml` for each object so unknown
  * ChemDraw extensions are never silently discarded.
@@ -638,7 +647,7 @@ export function cip_assignments_json(mol: MolHandle): string;
 /**
  * Atoms the accurate CIP engine could not resolve a tetrahedral R/S for, as a JSON
  * array of `{atomIdx, reason}` objects. `reason` is `"tied"` (a genuine CIP-rule tie,
- * not a missing rule) or `"budgetExceeded"`. Always `[]` for the legacy engine (see
+ * not a missing rule), `"budgetExceeded"`, or `"oracleUnstable"`. Always `[]` for the legacy engine (see
  * [`cip_assignments_json`]) -- it never reports "I don't know". Returns `"null"` on
  * an internal engine error.
  */
@@ -857,6 +866,13 @@ export function ecfp6_bitvec_with_chirality(mol: MolHandle, use_chirality: boole
 export function ecfp_bitvec_custom(mol: MolHandle, radius: number, nbits: number, use_chirality: boolean): Uint8Array;
 
 /**
+ * Apply a loss-preserving page/presentation edit to a CDXML document.
+ * `edit_json` is a `CdxmlEdit` command object; unknown presentation XML is
+ * retained and the result is reparsed before it is returned.
+ */
+export function edit_cdxml_document_json(cdxml: string, edit_json: string): string;
+
+/**
  * Run `embed_ensemble_v2` on `mol`'s own atom order (never canonicalizes/
  * reparses, same convention as `embed_pipeline_v2_json`). See the module doc
  * for the config JSON shape and the success/failure envelope shape.
@@ -957,6 +973,12 @@ export function estate_indices_json(mol: MolHandle): string;
  * atom-count limit.
  */
 export function extxyz_frame_json(text: string): string;
+
+/**
+ * Return one deterministic, resumable Extended-XYZ batch as a JSON manifest.
+ * Stopping before requesting the next offset is the cancellation boundary.
+ */
+export function extxyz_frames_batch_json(text: string, offset: number, batch_size: number): string;
 
 /**
  * FCFP4 (pharmacophore, radius-2) fingerprint as a bit-packed byte vector (256 bytes).
@@ -1434,7 +1456,7 @@ export function minimize_mmff94_lbfgs_json(mol: MolHandle, max_iter: number): st
  * `coords_json` — JSON array of `[x,y,z]` arrays (Å), one per atom.
  * `max_iter` — maximum iterations (0 = default 500).
  *
- * Returns JSON: `{"coords":[[x,y,z],...], "energy":float, "iterations":int, "converged":bool, "sound":bool}`
+ * Returns JSON: `{"coords":[[x,y,z],...], "energy":float, "iterations":int, "converged":bool, "sound":bool, "worst_bond_length":float}`
  * or `{"error":"<msg>"}` on failure. `sound` is all-finite coordinates and
  * no bond stretched past a sane covalent-bond length — independent of
  * `converged`, since steepest descent often reports `converged:false` on
@@ -1908,6 +1930,12 @@ export function pdb_coords_json(pdb: string): string;
 export function peoe_vsa_json(mol: MolHandle): string;
 
 /**
+ * Fingerprint a serialized `PeriodicStructure`; invalid or oversized input
+ * returns a stable JSON error rather than being treated as a retrieval hit.
+ */
+export function periodic_structure_fingerprint_json(json: string, source: string): string;
+
+/**
  * Detect pharmacophore features for virtual screening and lead optimization.
  * Returns JSON array of features: [{type, atom_idx, neighbor_count}, ...]
  */
@@ -1977,6 +2005,16 @@ export function pqr_to_json(text: string): string;
  * Returns `[]` if no ionizable sites are found, or `{"error":"..."}` on parse failure.
  */
 export function predict_pka_json(smiles: string): string;
+
+/**
+ * Run deterministic SVG publication preflight for a SMILES string.
+ *
+ * Returns a JSON `PreflightReport` with stable diagnostic paths and a
+ * deterministic input fingerprint. Font metrics are conservative estimates;
+ * the final browser/renderer remains authoritative for pixel-level validation.
+ * The input is capped at the same 1 MiB/10,000-atom limits as other WASM APIs.
+ */
+export function preflight_smiles_json(smiles: string, width: number, height: number): string;
 
 /**
  * Coordinates (Å) plus molecular charge/multiplicity from a QCSchema
@@ -2084,6 +2122,28 @@ export function rdkit_ecfp_config_chiral_detail_json(mol: MolHandle, radius: num
 export function rdkit_ecfp_config_detail_json(mol: MolHandle, radius: number, nbits: number): string;
 
 /**
+ * Compute the RDKit-compatible Daylight-like path fingerprint as a bit-packed
+ * byte vector (256 bytes = 2048 bits). This is the WASM counterpart of the
+ * Python `path_fp` operation and is intentionally separate from native
+ * `topo_path_bitvec`.
+ */
+export function rdkit_path_bitvec(mol: MolHandle): Uint8Array;
+
+/**
+ * Compute the RDKit-compatible RDKFingerprint as a bit-packed byte vector
+ * (256 bytes = 2048 bits). This is separate from both the native
+ * `topo_path_bitvec` operation and the RDKit-compatible path operation.
+ */
+export function rdkit_rdk_bitvec(mol: MolHandle): Uint8Array;
+
+/**
+ * Compute the opt-in RDKit-compatible hashed topological-torsion fingerprint
+ * as a bit-packed byte vector (256 bytes = 2048 bits). This remains separate
+ * from the native `torsion_bitvec` operation and its similarity semantics.
+ */
+export function rdkit_torsion_bitvec(mol: MolHandle): Uint8Array;
+
+/**
  * Return a copy of the molecule with all explicit hydrogen atoms removed.
  */
 export function remove_hydrogens(mol: MolHandle): MolHandle;
@@ -2153,6 +2213,18 @@ export function ring_families_json(mol: MolHandle): string;
 export function run_reactants(smirks: string, reactants_smiles: string): string;
 
 /**
+ * Parse an MDL RXN V2000 file into the typed reaction-document JSON
+ * contract shared with the Rust and Python bindings.
+ */
+export function rxn_document_from_rxn(text: string): string;
+
+/**
+ * Write typed reaction-document JSON as MDL RXN V2000. Unsupported rich
+ * fields return an error instead of being silently discarded.
+ */
+export function rxn_document_to_rxn(document_json: string): string;
+
+/**
  * Synthetic Accessibility Score (1 = easy, 10 = hard).
  */
 export function sa_score(mol: MolHandle): number;
@@ -2195,6 +2267,16 @@ export function screen_smiles_json(smiles_batch: string, delimiter: string): str
 export function sdf_from_records_json(smiles_json: string, names_json: string, props_json: string): string;
 
 /**
+ * Return one deterministic, resumable SDF batch as a JSON manifest.
+ *
+ * `offset` is the zero-based input record to start at and `batch_size` is
+ * bounded by [`crate::WASM_MAX_BATCH_ITEMS`]. Invalid records stay inline as
+ * `status: "rejected"`; callers can stop requesting later batches to cancel
+ * work without a background queue or hidden buffering.
+ */
+export function sdf_records_batch_json(sdf: string, offset: number, batch_size: number): string;
+
+/**
  * Parse an SDF string and return a JSON array of record objects.
  *
  * Each record has the shape:
@@ -2217,6 +2299,22 @@ export function sdf_to_records_json(sdf: string): string;
  * Invalid records are represented as `null` in the array.
  */
 export function sdf_to_smiles_json(sdf: string): string;
+
+/**
+ * Apply an explicit Markush selection command to a semantic model JSON.
+ */
+export function semantic_apply_json_command(model_json: string, command_json: string): string;
+
+/**
+ * Expand a validated semantic model against a base SMILES and return the
+ * expanded graph plus source-to-expanded atom mapping.
+ */
+export function semantic_expand_json(base_smiles: string, model_json: string): string;
+
+/**
+ * Validate and normalize a typed Markush/polymer semantic model JSON.
+ */
+export function semantic_model_json(model_json: string): string;
 
 /**
  * Set dihedral angle A—B—C—D and return PDB block with modified coordinates.
@@ -2487,9 +2585,23 @@ export function to_qcschema_molecule_json(mol: MolHandle, coords_json: string, c
 export function to_xyz(mol: MolHandle): string;
 
 /**
+ * Compute the native topological path fingerprint as a bit-packed byte vector
+ * (256 bytes = 2048 bits), using the default [`chematic_fp::TopoPathConfig`].
+ * This is the native `topo_path` operation, not the RDKit-compatible path
+ * fingerprint exposed by the separate `path_fp` Python method.
+ */
+export function topo_path_bitvec(mol: MolHandle): Uint8Array;
+
+/**
  * Torsion fingerprint as a bit-packed byte vector (256 bytes = 2048 bits).
  */
 export function torsion_bitvec(mol: MolHandle): Uint8Array;
+
+/**
+ * Validate a vendor-neutral NMR spectrum JSON document without parsing a
+ * vendor-specific raw file or predicting peaks.
+ */
+export function validate_nmr_spectrum_json(json: string): string;
 
 /**
  * Virtual screen a query SMILES against a database of SMILES using ECFP4 Tanimoto.
@@ -2608,6 +2720,12 @@ export function xlogp3_json(mol: MolHandle): string;
  */
 export function xlogp3_per_atom_json(mol: MolHandle): string;
 
+/**
+ * Return one deterministic, resumable plain-XYZ batch as a JSON manifest.
+ * Stopping before requesting the next offset is the cancellation boundary.
+ */
+export function xyz_frames_batch_json(text: string, offset: number, batch_size: number): string;
+
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
@@ -2629,6 +2747,7 @@ export interface InitOutput {
     readonly butina_cluster_ecfp4_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly canonical_tautomer: (a: number) => number;
     readonly canonical_tautomer_with_blocked_atoms_json: (a: number, b: number, c: number) => [number, number];
+    readonly canonicalize_smiles_batch_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly cdxml_document_json: (a: number, b: number) => [number, number, number, number];
     readonly cdxml_to_smiles_json: (a: number, b: number) => [number, number, number, number];
     readonly charge_parent_json: (a: number) => [number, number];
@@ -2681,6 +2800,7 @@ export interface InitOutput {
     readonly ecfp6_bitvec: (a: number) => [number, number];
     readonly ecfp6_bitvec_with_chirality: (a: number, b: number) => [number, number];
     readonly ecfp_bitvec_custom: (a: number, b: number, c: number, d: number) => [number, number];
+    readonly edit_cdxml_document_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly embed_ensemble_v2_json: (a: number, b: number, c: number) => [number, number];
     readonly embed_pipeline_v2_json: (a: number, b: number, c: number) => [number, number];
     readonly enumerate_library_2way: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
@@ -2689,6 +2809,7 @@ export interface InitOutput {
     readonly erg_vec_json: (a: number) => [number, number];
     readonly estate_indices_json: (a: number) => [number, number];
     readonly extxyz_frame_json: (a: number, b: number) => [number, number, number, number];
+    readonly extxyz_frames_batch_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly fcfp4_bitvec: (a: number) => [number, number];
     readonly fcfp6_bitvec: (a: number) => [number, number];
     readonly find_reaction_center_json: (a: number, b: number) => [number, number];
@@ -2778,6 +2899,7 @@ export interface InitOutput {
     readonly molecule_report_json: (a: number, b: number) => [number, number, number, number];
     readonly molhandle_aromatic_ring_count: (a: number) => number;
     readonly molhandle_assign_cip_json: (a: number) => [number, number];
+    readonly molhandle_atom_count: (a: number) => number;
     readonly molhandle_bbb_passes: (a: number) => number;
     readonly molhandle_bbb_score: (a: number) => number;
     readonly molhandle_bertz_ct: (a: number) => number;
@@ -2867,6 +2989,7 @@ export interface InitOutput {
     readonly parse_smiles: (a: number, b: number) => [number, number, number];
     readonly pdb_coords_json: (a: number, b: number) => [number, number];
     readonly peoe_vsa_json: (a: number) => [number, number];
+    readonly periodic_structure_fingerprint_json: (a: number, b: number, c: number, d: number) => [number, number];
     readonly pharmacophore_features_json: (a: number) => [number, number];
     readonly pharmacophore_fp_2d_summary: (a: number) => [number, number];
     readonly pharmacophore_fp_3d_summary: (a: number) => [number, number];
@@ -2875,6 +2998,7 @@ export interface InitOutput {
     readonly pqr_infer_element: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];
     readonly pqr_to_json: (a: number, b: number) => [number, number, number, number];
     readonly predict_pka_json: (a: number, b: number) => [number, number];
+    readonly preflight_smiles_json: (a: number, b: number, c: number, d: number) => [number, number];
     readonly qcschema_molecule_coords_json: (a: number, b: number) => [number, number, number, number];
     readonly qcschema_validate_atomic_input: (a: number, b: number) => [number, number, number, number];
     readonly qcschema_validate_atomic_result: (a: number, b: number) => [number, number, number, number];
@@ -2885,16 +3009,25 @@ export interface InitOutput {
     readonly rdkit_ecfp_config_chiral_bitvec: (a: number, b: number, c: number) => [number, number, number, number];
     readonly rdkit_ecfp_config_chiral_detail_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly rdkit_ecfp_config_detail_json: (a: number, b: number, c: number) => [number, number, number, number];
+    readonly rdkit_path_bitvec: (a: number) => [number, number];
+    readonly rdkit_rdk_bitvec: (a: number) => [number, number];
+    readonly rdkit_torsion_bitvec: (a: number) => [number, number];
     readonly remove_hydrogens: (a: number) => number;
     readonly retro_disconnect_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly rgroup_decompose_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly ring_families_json: (a: number) => [number, number, number, number];
     readonly run_reactants: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly rxn_document_from_rxn: (a: number, b: number) => [number, number, number, number];
+    readonly rxn_document_to_rxn: (a: number, b: number) => [number, number, number, number];
     readonly sa_score: (a: number) => number;
     readonly screen_smiles_json: (a: number, b: number, c: number, d: number) => [number, number];
     readonly sdf_from_records_json: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number, number, number];
+    readonly sdf_records_batch_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly sdf_to_records_json: (a: number, b: number) => [number, number];
     readonly sdf_to_smiles_json: (a: number, b: number) => [number, number];
+    readonly semantic_apply_json_command: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly semantic_expand_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly semantic_model_json: (a: number, b: number) => [number, number, number, number];
     readonly set_dihedral_json: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number, number];
     readonly shape_descriptors_json: (a: number) => [number, number];
     readonly slogp_vsa_json: (a: number) => [number, number];
@@ -2908,6 +3041,7 @@ export interface InitOutput {
     readonly sssr_rings_json: (a: number) => [number, number];
     readonly standardize_smiles: (a: number, b: number) => [number, number];
     readonly standardize_smiles_report_json: (a: number, b: number, c: number, d: number, e: number, f: number) => [number, number];
+    readonly start: () => void;
     readonly stereo_parent_json: (a: number) => [number, number];
     readonly super_parent_json: (a: number, b: number, c: number, d: number, e: bigint) => [number, number];
     readonly super_parent_report_json: (a: number, b: number, c: number, d: number, e: bigint) => [number, number];
@@ -2930,7 +3064,9 @@ export interface InitOutput {
     readonly to_moljson: (a: number) => [number, number];
     readonly to_qcschema_molecule_json: (a: number, b: number, c: number, d: number, e: bigint) => [number, number, number, number];
     readonly to_xyz: (a: number) => [number, number];
+    readonly topo_path_bitvec: (a: number) => [number, number];
     readonly torsion_bitvec: (a: number) => [number, number];
+    readonly validate_nmr_spectrum_json: (a: number, b: number) => [number, number];
     readonly virtual_screen_ecfp4_json: (a: number, b: number, c: number, d: number, e: number) => [number, number];
     readonly whim_descriptors_json: (a: number) => [number, number];
     readonly whim_getaway_combined_json: (a: number) => [number, number];
@@ -2946,8 +3082,7 @@ export interface InitOutput {
     readonly write_smiles: (a: number) => [number, number];
     readonly xlogp3_json: (a: number) => [number, number];
     readonly xlogp3_per_atom_json: (a: number) => [number, number];
-    readonly molhandle_atom_count: (a: number) => number;
-    readonly start: () => void;
+    readonly xyz_frames_batch_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __externref_table_alloc: () => number;

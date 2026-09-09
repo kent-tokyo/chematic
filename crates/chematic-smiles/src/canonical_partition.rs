@@ -26,7 +26,7 @@
 //!    This is true of `exact_refine`'s *own* iterations. Its *starting
 //!    point* (`initial_partition`'s `ranks` component) is a different story:
 //!    `ranks` comes from `crate::canonical`'s pre-existing, unchanged
-//!    `individualize`/`refine_ranks`, and the latter's `normalize_ranks`
+//!    `individualize`/`refine_ranks`, and the latter's rank normalization
 //!    step does group by raw FNV-1a hash-value equality. See
 //!    `canonical_search::exact_orbit_representatives`'s doc comment for the
 //!    full account of what that means for this module's callers (in short:
@@ -100,21 +100,6 @@ fn order_class(order: BondOrder) -> u8 {
     }
 }
 
-/// `true` when `bidx` carries any real-or-potential stereo direction
-/// information: a literal `Up`/`Down` bond order, or a stashed direction
-/// (`Molecule::bond_direction`, used e.g. for a ring bond next to an
-/// exocyclic stereo double bond). Mirrors the raw-direction check
-/// `crate::canonical::CanonicalWriter::raw_input_direction`/`crate::writer::
-/// raw_bond_direction` use, minus the `resolve_ez_markers` carrier-choice
-/// overlay (which depends on fully-resolved ranks, not available yet at
-/// vertex-color-construction time -- irrelevant here since this function
-/// only needs to decide "is this atom stereo-sensitive at all", not which
-/// specific bond ends up carrying the marker).
-fn bond_has_direction_info(mol: &Molecule, bidx: BondIdx) -> bool {
-    matches!(mol.bond(bidx).order, BondOrder::Up | BondOrder::Down)
-        || mol.bond_direction(bidx).is_some()
-}
-
 /// Every atom whose stereo meaning is not handled by this PR's exact
 /// automorphism machinery, so it (and, critically, its direct neighbors)
 /// must never be merged with any other atom -- see `VertexColor::
@@ -153,8 +138,28 @@ fn stereo_sensitive_atoms(mol: &Molecule) -> SmallVec<[bool; 64]> {
     }
     for bidx in 0..mol.bond_count() {
         let bidx = BondIdx(bidx as u32);
-        if bond_has_direction_info(mol, bidx) {
-            let bond = mol.bond(bidx);
+        let bond = mol.bond(bidx);
+        if matches!(bond.order, BondOrder::Up | BondOrder::Down) {
+            sensitive[bond.atom1.0 as usize] = true;
+            sensitive[bond.atom2.0 as usize] = true;
+        } else if bond.order == BondOrder::Aromatic && mol.bond_direction(bidx).is_some() {
+            // A direction stashed on an aromatic edge is only a carrier
+            // spelling for an adjacent exocyclic double bond. Pinning the
+            // two aromatic endpoints directly makes the canonical partition
+            // depend on which equivalent ring edge happened to carry the
+            // stash. Pin the structural double-bond endpoint(s) instead;
+            // equivalent stash spellings then expose the same stereo-sensitive
+            // neighborhood while literal directional bonds retain the legacy
+            // endpoint behavior above.
+            for endpoint in [bond.atom1, bond.atom2] {
+                if mol
+                    .neighbors(endpoint)
+                    .any(|(_, nb)| nb != bidx && mol.bond(nb).order == BondOrder::Double)
+                {
+                    sensitive[endpoint.0 as usize] = true;
+                }
+            }
+        } else if mol.bond_direction(bidx).is_some() {
             sensitive[bond.atom1.0 as usize] = true;
             sensitive[bond.atom2.0 as usize] = true;
         }
@@ -250,7 +255,7 @@ pub(crate) struct CanonicalColoredGraph<'a> {
     vcolor: Vec<VertexColor>,
     /// See `new`/`new_topological`. Also gates `edge_color`: an `Up`/`Down`
     /// bond order is itself an E/Z *direction* marker on what is
-    /// chemically a single bond (`bond_has_direction_info`'s doc comment),
+    /// chemically a single bond (the literal `Up`/`Down` case),
     /// so it is exactly as canonicalization-only as the vertex-side stereo
     /// devices `vertex_color` documents -- omitted here for the same
     /// reason. Caught empirically, not by inspection alone: an earlier
@@ -321,15 +326,26 @@ impl<'a> CanonicalColoredGraph<'a> {
     pub(crate) fn edge_color(&self, from: AtomIdx, bidx: BondIdx) -> EdgeColor {
         let bond = self.mol.bond(bidx);
         let from_is_donor = bond.order == BondOrder::Dative && bond.atom1 == from;
-        // `Up`/`Down` are E/Z direction markers on an otherwise-single
-        // bond; in topological mode they collapse to plain `Single`, same
-        // as every other stereo device this struct excludes there.
-        let order =
-            if !self.canonical_fidelity && matches!(bond.order, BondOrder::Up | BondOrder::Down) {
-                BondOrder::Single
+        // In canonical-fidelity mode, a separately stashed direction on a
+        // physical Single bond remains an edge-level stereo discriminator.
+        // An Aromatic stash is different: it records an E/Z carrier spelling
+        // on a physical aromatic edge, not a directional aromatic bond. Using
+        // it as the edge color makes the orbit partition depend on which
+        // equivalent aromatic edge happened to carry the parser-side stash.
+        // Endpoint/neighbor pins retain the stereo-sensitive neighborhood; the
+        // writer's rank-based resolver chooses the carrier deterministically.
+        // Topological equivalence deliberately ignores all such stereo devices.
+        let order = if self.canonical_fidelity {
+            if bond.order == BondOrder::Aromatic {
+                BondOrder::Aromatic
             } else {
-                bond.order
-            };
+                self.mol.bond_direction(bidx).unwrap_or(bond.order)
+            }
+        } else if matches!(bond.order, BondOrder::Up | BondOrder::Down) {
+            BondOrder::Single
+        } else {
+            bond.order
+        };
         EdgeColor {
             order_class: order_class(order),
             from_is_donor,
@@ -498,7 +514,7 @@ pub(crate) fn exact_refine(graph: &CanonicalColoredGraph, mut partition: Partiti
 /// `atom.chirality`); the two agree on orbit *structure* on every case this
 /// PR's test suite checked, including the meso-compound case. The
 /// difference this function is for: `equivalent_atom_classes` is built on
-/// `morgan_ranks`/`refine_ranks`, whose own `normalize_ranks` step groups by
+/// `morgan_ranks`/`refine_ranks`, whose own rank normalization step groups by
 /// raw FNV-1a hash-value equality (see this module's top-of-file doc
 /// comment) -- a real, if practically negligible, hash-collision risk. This
 /// function is built on `exact_refine`, which never merges two cells on
@@ -564,21 +580,17 @@ pub(crate) fn exact_refine(graph: &CanonicalColoredGraph, mut partition: Partiti
 ///   canonicalization-fidelity coloring (map numbers must round-trip
 ///   through the writer) but the same class here (see
 ///   `atom_map_number_alone_does_not_split_the_class` below).
-/// - **Stereo (bond direction)**: `new`'s `edge_color` reads an `Up`/`Down`
-///   bond order literally -- the E/Z direction marker (`/`/`\`) on what is
-///   chemically a single bond -- as a distinct edge color from plain
-///   `Single`. Same category of device as atom parity above, same fix:
-///   `CanonicalColoredGraph::new_topological` collapses `Up`/`Down` to
-///   `Single` there. Verified empirically: `F/C=C\F` (cis-1,2-
-///   difluoroethene, real mirror symmetry across the two `=CF` ends) came
-///   back as 4 singleton classes before this collapse was added, 2 merged
-///   pairs after (see `ez_bond_direction_marker_alone_does_not_split_the_class`
-///   below). Note `edge_color` only ever reads `bond.order` -- the
-///   separately-stashed `Molecule::bond_direction` (`bond_has_direction_info`'s
-///   doc comment: used for a ring bond next to an exocyclic stereo double
-///   bond) is not part of `EdgeColor` in either mode, so there is nothing
-///   to exclude there today; if a future change ever folds it in, it needs
-///   the same `canonical_fidelity` gate.
+/// - **Stereo (bond direction)**: `new`'s `edge_color` preserves literal
+///   `Up`/`Down` bond orders and the separately stashed
+///   `Molecule::bond_direction` used for aromatic bonds adjacent to an
+///   exocyclic stereo double bond. These are writer-visible markers, so
+///   canonical-fidelity coloring preserves them while topological coloring
+///   ignores them.
+///
+/// The topological path collapses `Up`/`Down` to `Single` and does not read
+/// the stash. Verified empirically: `F/C=C\\F` (cis-1,2-difluoroethene)
+/// retains the expected merged classes in topological mode (see
+/// `ez_bond_direction_marker_alone_does_not_split_the_class` below).
 ///
 /// `CanonicalColoredGraph::new_topological` therefore omits all four,
 /// using the *effective* H count (`implicit_hcount`, matching
@@ -598,7 +610,7 @@ pub fn topological_equivalence_classes(mol: &Molecule) -> Vec<usize> {
     // correct from-scratch starting point for a whole-molecule query (as
     // opposed to `canonical_search.rs`'s use, which seeds from the current
     // search node's already-partially-individualized `ranks`). This also
-    // sidesteps `crate::canonical::normalize_ranks`'s raw-FNV-1a-hash-value
+    // sidesteps `crate::canonical::refine_ranks`'s raw-FNV-1a-hash-value
     // grouping entirely (see this module's own top-of-file doc comment) --
     // `exact_refine`'s own iterations never rely on anything but real
     // `Eq`/`Ord` signature comparison.
@@ -789,6 +801,20 @@ mod tests {
         assert_eq!(
             classes[1], classes[2],
             "the two mirror-equivalent C: {classes:?}"
+        );
+    }
+
+    #[test]
+    fn aromatic_stash_sensitivity_follows_exocyclic_double_bond() {
+        let variants = [
+            r"c/3(c(/c(c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+            r"c3(c(c(/c3=N/CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+        ];
+        let first = stereo_sensitive_atoms(&parse(variants[0]).unwrap());
+        let second = stereo_sensitive_atoms(&parse(variants[1]).unwrap());
+        assert_eq!(
+            first, second,
+            "equivalent aromatic carrier spellings must expose the same structural stereo neighborhood"
         );
     }
 

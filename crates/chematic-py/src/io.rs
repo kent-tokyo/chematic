@@ -1,5 +1,6 @@
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
+use std::io::BufRead;
 use std::sync::Arc;
 
 use crate::Mol;
@@ -151,14 +152,36 @@ pub fn iter_sdf(path: &str) -> PyResult<SdfFileIter> {
 ///     for batch in chematic.iter_sdf_batched("large.sdf", batch_size=1000):
 ///         smiles = [r.smiles for r in batch]
 ///         descs = chematic.bulk.descriptors(smiles)
+///
+///     stream = chematic.iter_sdf_batched("large.sdf", batch_size=1000)
+///     batch = next(stream, None)
+///     stream.cancel()                 # stop before reading another batch
+///     print(stream.manifest_json())    # deterministic progress/status JSON
 #[pyfunction]
 #[pyo3(signature = (path, batch_size=1000))]
 pub fn iter_sdf_batched(path: &str, batch_size: usize) -> PyResult<SdfBatchIter> {
+    if batch_size == 0 {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "batch_size must be greater than zero",
+        ));
+    }
+    const MAX_BATCH_SIZE: usize = 10_000;
+    if batch_size > MAX_BATCH_SIZE {
+        return Err(pyo3::exceptions::PyValueError::new_err(format!(
+            "batch_size exceeds maximum ({MAX_BATCH_SIZE})"
+        )));
+    }
     let file = std::fs::File::open(path)
         .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
     Ok(SdfBatchIter {
         inner: chematic_mol::SdfFileReader::new(std::io::BufReader::new(file)),
         batch_size,
+        cancelled: false,
+        exhausted: false,
+        records_emitted: 0,
+        batches_emitted: 0,
+        records_seen: 0,
+        rejected_records: 0,
     })
 }
 
@@ -238,6 +261,12 @@ impl SdfFileIter {
 pub struct SdfBatchIter {
     inner: chematic_mol::SdfFileReader<std::io::BufReader<std::fs::File>>,
     batch_size: usize,
+    cancelled: bool,
+    exhausted: bool,
+    records_emitted: usize,
+    batches_emitted: usize,
+    records_seen: usize,
+    rejected_records: usize,
 }
 
 #[pymethods]
@@ -246,15 +275,52 @@ impl SdfBatchIter {
         slf
     }
 
+    /// Stop reading at the next iterator boundary.
+    ///
+    /// Dropping the iterator also stops reading, but this explicit method lets
+    /// a producer communicate cancellation to a consumer before it releases
+    /// the iterator and makes the state visible through ``manifest_json``.
+    fn cancel(&mut self) {
+        self.cancelled = true;
+    }
+
+    /// Return a deterministic JSON progress manifest for this stream.
+    fn manifest_json(&self) -> String {
+        let status = if self.cancelled {
+            "cancelled"
+        } else if self.exhausted {
+            "complete"
+        } else {
+            "running"
+        };
+        serde_json::json!({
+            "schema_version": 1,
+            "status": status,
+            "batch_size": self.batch_size,
+            "records_seen": self.records_seen,
+            "records_emitted": self.records_emitted,
+            "rejected_records": self.rejected_records,
+            "batches_emitted": self.batches_emitted,
+        })
+        .to_string()
+    }
+
     fn __next__(&mut self) -> PyResult<Option<Vec<PySdfRecord>>> {
+        if self.cancelled || self.exhausted {
+            return Ok(None);
+        }
         let mut batch = Vec::with_capacity(self.batch_size);
         loop {
             if batch.len() >= self.batch_size {
                 break;
             }
             match self.inner.next() {
-                None => break,
+                None => {
+                    self.exhausted = true;
+                    break;
+                }
                 Some(Ok(rec)) => {
+                    self.records_seen += 1;
                     batch.push(PySdfRecord {
                         mol: Mol {
                             inner: Arc::new(rec.mol),
@@ -266,14 +332,268 @@ impl SdfBatchIter {
                     });
                 }
                 Some(Err(chematic_mol::MolParseError::Io(msg))) => {
+                    self.records_seen += 1;
                     return Err(pyo3::exceptions::PyIOError::new_err(msg));
                 }
-                Some(Err(_)) => continue, // skip malformed
+                Some(Err(_)) => {
+                    self.records_seen += 1;
+                    self.rejected_records += 1;
+                    continue;
+                }
             }
         }
         if batch.is_empty() {
             Ok(None)
         } else {
+            self.records_emitted += batch.len();
+            self.batches_emitted += 1;
+            Ok(Some(batch))
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// XyzBatchIter — streaming XYZ / Extended XYZ batches
+// ---------------------------------------------------------------------------
+
+/// File-backed XYZ reader with bounded recovery at an unambiguous count-line
+/// boundary. The core readers remain fail-stop because they cannot safely
+/// resynchronize an arbitrary `BufRead`; this Python batch surface owns the
+/// frame boundary policy, keeps only one look-ahead line, and caps one
+/// recovery block at the normal 16 MiB XYZ line/input safety boundary.
+struct RecoverableXyzReader<R> {
+    reader: R,
+    extxyz: bool,
+    pending_line: Option<String>,
+    finished: bool,
+}
+
+const MAX_RECOVERY_FRAME_BYTES: usize = 16 << 20;
+const MAX_RECOVERY_ATOMS: usize = 1_000_000;
+
+impl<R: BufRead> RecoverableXyzReader<R> {
+    fn read_line(&mut self) -> std::io::Result<Option<String>> {
+        if let Some(line) = self.pending_line.take() {
+            return Ok(Some(line));
+        }
+        let mut line = String::new();
+        if self.reader.read_line(&mut line)? == 0 {
+            return Ok(None);
+        }
+        Ok(Some(line))
+    }
+
+    fn next_frame(
+        &mut self,
+    ) -> std::io::Result<Option<Result<chematic_mol::XyzFrame, chematic_mol::XyzError>>> {
+        if self.finished {
+            return Ok(None);
+        }
+        let start = loop {
+            match self.read_line()? {
+                Some(line) if !line.trim().is_empty() => break line,
+                Some(_) => continue,
+                None => {
+                    self.finished = true;
+                    return Ok(None);
+                }
+            }
+        };
+        let mut block = start.clone();
+        let append_line = |block: &mut String, line: String| {
+            if block.len().saturating_add(line.len()) <= MAX_RECOVERY_FRAME_BYTES {
+                block.push_str(&line);
+            }
+        };
+        if let Some(atom_count) = start
+            .trim()
+            .parse::<usize>()
+            .ok()
+            .filter(|count| *count <= MAX_RECOVERY_ATOMS)
+        {
+            for _ in 0..=atom_count {
+                match self.read_line()? {
+                    Some(line) => append_line(&mut block, line),
+                    None => {
+                        self.finished = true;
+                        break;
+                    }
+                }
+            }
+        } else {
+            loop {
+                match self.read_line()? {
+                    Some(line) if line.trim().parse::<usize>().is_ok() => {
+                        self.pending_line = Some(line);
+                        break;
+                    }
+                    Some(line) => append_line(&mut block, line),
+                    None => {
+                        self.finished = true;
+                        break;
+                    }
+                }
+            }
+        }
+        let parsed = if self.extxyz {
+            chematic_mol::parse_extxyz(&block)
+        } else {
+            chematic_mol::parse_xyz(&block)
+        };
+        Ok(Some(parsed))
+    }
+}
+
+enum XyzStreamReader {
+    Xyz(RecoverableXyzReader<std::io::BufReader<std::fs::File>>),
+    Extxyz(RecoverableXyzReader<std::io::BufReader<std::fs::File>>),
+}
+
+impl XyzStreamReader {
+    fn next_frame(
+        &mut self,
+    ) -> PyResult<Option<Result<chematic_mol::XyzFrame, chematic_mol::XyzError>>> {
+        let result = match self {
+            Self::Xyz(reader) | Self::Extxyz(reader) => reader.next_frame(),
+        };
+        result.map_err(|error| pyo3::exceptions::PyIOError::new_err(error.to_string()))
+    }
+}
+
+/// Streaming XYZ or Extended XYZ batch iterator.
+///
+/// Both formats share the SDF batch contract: source order is preserved,
+/// batches are bounded, ``cancel()`` stops at a batch boundary, and
+/// ``manifest_json()`` reports deterministic progress. Invalid frames are
+/// skipped and counted in ``rejected_frames``.
+#[pyclass]
+pub struct XyzBatchIter {
+    inner: XyzStreamReader,
+    format: &'static str,
+    batch_size: usize,
+    cancelled: bool,
+    exhausted: bool,
+    frames_seen: usize,
+    frames_emitted: usize,
+    batches_emitted: usize,
+    rejected_frames: usize,
+}
+
+fn open_xyz_batch(path: &str, batch_size: usize, extxyz: bool) -> PyResult<XyzBatchIter> {
+    if batch_size == 0 {
+        return Err(pyo3::exceptions::PyValueError::new_err(
+            "batch_size must be greater than zero",
+        ));
+    }
+    const MAX_BATCH_SIZE: usize = 10_000;
+    if batch_size > MAX_BATCH_SIZE {
+        return Err(pyo3::exceptions::PyValueError::new_err(format!(
+            "batch_size exceeds maximum ({MAX_BATCH_SIZE})"
+        )));
+    }
+    let file = std::fs::File::open(path)
+        .map_err(|e| pyo3::exceptions::PyIOError::new_err(format!("{path}: {e}")))?;
+    let reader = std::io::BufReader::new(file);
+    Ok(XyzBatchIter {
+        inner: if extxyz {
+            XyzStreamReader::Extxyz(RecoverableXyzReader {
+                reader,
+                extxyz: true,
+                pending_line: None,
+                finished: false,
+            })
+        } else {
+            XyzStreamReader::Xyz(RecoverableXyzReader {
+                reader,
+                extxyz: false,
+                pending_line: None,
+                finished: false,
+            })
+        },
+        format: if extxyz { "extxyz" } else { "xyz" },
+        batch_size,
+        cancelled: false,
+        exhausted: false,
+        frames_seen: 0,
+        frames_emitted: 0,
+        batches_emitted: 0,
+        rejected_frames: 0,
+    })
+}
+
+/// Iterate over bounded batches of plain XYZ frames from a file.
+#[pyfunction]
+#[pyo3(signature = (path, batch_size=1000))]
+pub fn iter_xyz_batched(path: &str, batch_size: usize) -> PyResult<XyzBatchIter> {
+    open_xyz_batch(path, batch_size, false)
+}
+
+/// Iterate over bounded batches of Extended XYZ frames from a file.
+#[pyfunction]
+#[pyo3(signature = (path, batch_size=1000))]
+pub fn iter_extxyz_batched(path: &str, batch_size: usize) -> PyResult<XyzBatchIter> {
+    open_xyz_batch(path, batch_size, true)
+}
+
+#[pymethods]
+impl XyzBatchIter {
+    fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    fn cancel(&mut self) {
+        self.cancelled = true;
+    }
+
+    fn manifest_json(&self) -> String {
+        let status = if self.cancelled {
+            "cancelled"
+        } else if self.exhausted {
+            "complete"
+        } else {
+            "running"
+        };
+        serde_json::json!({
+            "schema_version": 1,
+            "format": self.format,
+            "status": status,
+            "batch_size": self.batch_size,
+            "frames_seen": self.frames_seen,
+            "frames_emitted": self.frames_emitted,
+            "rejected_frames": self.rejected_frames,
+            "batches_emitted": self.batches_emitted,
+        })
+        .to_string()
+    }
+
+    fn __next__(&mut self, py: Python<'_>) -> PyResult<Option<Vec<Py<PyAny>>>> {
+        if self.cancelled || self.exhausted {
+            return Ok(None);
+        }
+        let mut batch = Vec::with_capacity(self.batch_size);
+        while batch.len() < self.batch_size {
+            match self.inner.next_frame()? {
+                None => {
+                    self.exhausted = true;
+                    break;
+                }
+                Some(Ok(frame)) => {
+                    self.frames_seen += 1;
+                    let value = crate::formats::extxyz_frame_to_pydict(py, &frame)?;
+                    batch.push(value.into_any().unbind());
+                }
+                Some(Err(_)) => {
+                    self.frames_seen += 1;
+                    self.rejected_frames += 1;
+                    continue;
+                }
+            }
+        }
+        if batch.is_empty() {
+            Ok(None)
+        } else {
+            self.frames_emitted += batch.len();
+            self.batches_emitted += 1;
             Ok(Some(batch))
         }
     }
@@ -971,6 +1291,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<SdfIter>()?;
     m.add_class::<SdfFileIter>()?;
     m.add_class::<SdfBatchIter>()?;
+    m.add_class::<XyzBatchIter>()?;
     m.add_class::<SdMolSupplier>()?;
     m.add_class::<SdWriter>()?;
     m.add_class::<PySmilesMolSupplier>()?;
@@ -980,5 +1301,44 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(iter_sdf, m)?)?;
     m.add_function(wrap_pyfunction!(iter_sdf_str, m)?)?;
     m.add_function(wrap_pyfunction!(iter_sdf_batched, m)?)?;
+    m.add_function(wrap_pyfunction!(iter_xyz_batched, m)?)?;
+    m.add_function(wrap_pyfunction!(iter_extxyz_batched, m)?)?;
     Ok(())
+}
+
+#[cfg(test)]
+mod xyz_recovery_tests {
+    use super::RecoverableXyzReader;
+    use std::io::Cursor;
+
+    #[test]
+    fn malformed_xyz_frame_is_rejected_and_following_frame_is_read() {
+        let input = "not-a-count\ncomment\nC 0 0 0\n1\nvalid\nC 2 0 0\n";
+        let mut reader = RecoverableXyzReader {
+            reader: Cursor::new(input.as_bytes()),
+            extxyz: false,
+            pending_line: None,
+            finished: false,
+        };
+        assert!(reader.next_frame().unwrap().unwrap().is_err());
+        assert!(reader.next_frame().unwrap().unwrap().is_ok());
+        assert!(reader.next_frame().unwrap().is_none());
+    }
+
+    #[test]
+    fn malformed_extxyz_frame_is_rejected_and_following_frame_is_read() {
+        let input = concat!(
+            "not-a-count\ncomment\nC 0 0 0\n",
+            "1\nProperties=species:S:1:pos:R:3\nC 2 0 0\n",
+        );
+        let mut reader = RecoverableXyzReader {
+            reader: Cursor::new(input.as_bytes()),
+            extxyz: true,
+            pending_line: None,
+            finished: false,
+        };
+        assert!(reader.next_frame().unwrap().unwrap().is_err());
+        assert!(reader.next_frame().unwrap().unwrap().is_ok());
+        assert!(reader.next_frame().unwrap().is_none());
+    }
 }

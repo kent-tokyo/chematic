@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.10",
+  "status": "local-verified-source-only",
+  "operations": ["parse_cjson", "cjson_roundtrip"],
+  "fixture": "validation/cross_binding_contract.json#cjson_contract",
+  "verified_bindings": ["rust", "python", "wasm"],
+  "missing_binding": "node-generated-artifact",
+  "results": {
+    "rust_core_cjson_tests": {"passed": 13, "failed": 0},
+    "wasm_library_tests": {"passed": 324, "failed": 0},
+    "python_contract_tests": {"passed": 64, "failed": 0}
+  },
+  "commands": [
+    "cargo test -p chematic-mol --offline --quiet cjson",
+    "cargo test -p chematic-wasm --lib --offline --quiet",
+    "PYTHONPATH=/private/tmp/chematic-py-v110/lib/python3.13/site-packages PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest crates/chematic-py/tests/test_cross_binding_contract.py -q"
+  ],
+  "roundtrip": {"valid_topology_cases": 1, "rust": "passed", "python": "passed", "wasm": "passed"},
+  "negative_cases": {"malformed_input": 1, "rust": "rejected", "python": "rejected", "wasm_source_parser": "rejected"},
+  "interpretation": "The source-level CJSON contract now covers one valid topology case, one parse/serialize/parse roundtrip, and one malformed-input rejection on three source-level binding surfaces. Node cannot be included until the generated WASM artifact is rebuilt with a local wasm-bindgen CLI."
+}

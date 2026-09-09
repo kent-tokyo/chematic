@@ -177,3 +177,63 @@ pub fn write_xyz(mol: &Molecule, coords: &Coords3D, comment: &str) -> String {
 
     out
 }
+
+#[cfg(test)]
+mod shared_contract_tests {
+    use super::{parse_xyz, write_xyz};
+    use chematic_smiles::canonical_smiles;
+    use serde_json::Value;
+
+    const CONTRACT: &str = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../validation/cross_binding_contract.json"
+    ));
+
+    #[test]
+    fn shared_xyz_contract_matches() {
+        let document: Value = serde_json::from_str(CONTRACT).expect("contract JSON");
+        let contract = &document["xyz_contract"];
+        assert_eq!(contract["schema_version"], 1);
+        let (mol, coords) = parse_xyz(contract["input"].as_str().unwrap()).unwrap();
+        let expected = &contract["expected"];
+        assert_eq!(
+            mol.atom_count(),
+            expected["atom_count"].as_u64().unwrap() as usize
+        );
+        assert_eq!(
+            canonical_smiles(&mol),
+            expected["canonical_smiles"].as_str().unwrap()
+        );
+        for (point, expected_point) in coords
+            .points
+            .iter()
+            .zip(expected["coords"].as_array().unwrap())
+        {
+            let values = expected_point.as_array().unwrap();
+            assert!((point.x - values[0].as_f64().unwrap()).abs() < 1e-9);
+            assert!((point.y - values[1].as_f64().unwrap()).abs() < 1e-9);
+            assert!((point.z - values[2].as_f64().unwrap()).abs() < 1e-9);
+        }
+    }
+
+    #[test]
+    fn shared_xyz_roundtrip_contract_matches() {
+        let document: Value = serde_json::from_str(CONTRACT).expect("contract JSON");
+        let contract = &document["xyz_contract"];
+        let (mol, coords) = parse_xyz(contract["input"].as_str().unwrap()).unwrap();
+        let serialized = write_xyz(&mol, &coords, "shared-contract-roundtrip");
+        let (roundtripped, roundtripped_coords) = parse_xyz(&serialized).unwrap();
+        let expected = &contract["expected"];
+        assert_eq!(roundtripped.atom_count(), expected["atom_count"]);
+        assert_eq!(
+            canonical_smiles(&roundtripped),
+            expected["canonical_smiles"].as_str().unwrap()
+        );
+        assert_eq!(roundtripped_coords.points.len(), coords.points.len());
+        for (actual, original) in roundtripped_coords.points.iter().zip(coords.points.iter()) {
+            assert!((actual.x - original.x).abs() < 1e-6);
+            assert!((actual.y - original.y).abs() < 1e-6);
+            assert!((actual.z - original.z).abs() < 1e-6);
+        }
+    }
+}

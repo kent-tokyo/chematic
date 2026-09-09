@@ -7,6 +7,7 @@ on:
     paths:
       - 'demo/**'
       - 'scripts/browser_smoke.mjs'
+      - 'scripts/explorer_browser_smoke.mjs'
       - '.github/workflows/browser-compat.yml'
 
 permissions:
@@ -39,3 +40,5 @@ jobs:
         run: python3 -m http.server 8765 --directory demo >/tmp/chematic-browser-server.log 2>&1 &
       - name: Run browser smoke
         run: node scripts/browser_smoke.mjs "${{ matrix.browser }}"
+      - name: Run Explorer browser smoke
+        run: node scripts/explorer_browser_smoke.mjs "${{ matrix.browser }}"

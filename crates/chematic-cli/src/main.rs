@@ -80,7 +80,7 @@ enum Command {
     Fingerprint {
         /// SMILES to analyze.
         smiles: String,
-        /// Algorithm: ecfp4, ecfp6, or maccs.
+        /// Algorithm: ecfp4, ecfp6, maccs, rdkit_rdk, or rdkit_torsion.
         #[arg(long, default_value = "ecfp4")]
         algorithm: String,
     },
@@ -90,7 +90,7 @@ enum Command {
         smiles_a: String,
         /// Second SMILES to analyze.
         smiles_b: String,
-        /// Algorithm: ecfp4, ecfp6, or maccs.
+        /// Algorithm: ecfp4, ecfp6, maccs, rdkit_rdk, or rdkit_torsion.
         #[arg(long, default_value = "ecfp4")]
         algorithm: String,
     },
@@ -105,6 +105,9 @@ enum Command {
     Standardize {
         /// SMILES to standardize.
         smiles: String,
+        /// Keep only the largest connected fragment (Phase 1 fragment-selection profile).
+        #[arg(long)]
+        largest_fragment_only: bool,
     },
     /// Generate a complete single-molecule analysis report as JSON.
     Report {
@@ -164,7 +167,7 @@ enum Command {
         /// Read line-delimited SMILES from this file instead of stdin.
         #[arg(short, long)]
         input: Option<PathBuf>,
-        /// Algorithm: ecfp4, ecfp6, or maccs.
+        /// Algorithm: ecfp4, ecfp6, maccs, rdkit_rdk, or rdkit_torsion.
         #[arg(long, default_value = "ecfp4")]
         algorithm: String,
         #[command(flatten)]
@@ -175,6 +178,9 @@ enum Command {
         /// Read line-delimited SMILES from this file instead of stdin.
         #[arg(short, long)]
         input: Option<PathBuf>,
+        /// Keep only the largest connected fragment (Phase 1 fragment-selection profile).
+        #[arg(long)]
+        largest_fragment_only: bool,
         #[command(flatten)]
         limits: BatchLimits,
     },
@@ -183,7 +189,7 @@ enum Command {
         /// Read tab-separated pairs from this file instead of stdin.
         #[arg(short, long)]
         input: Option<PathBuf>,
-        /// Algorithm: ecfp4, ecfp6, or maccs.
+        /// Algorithm: ecfp4, ecfp6, maccs, rdkit_rdk, or rdkit_torsion.
         #[arg(long, default_value = "ecfp4")]
         algorithm: String,
         #[command(flatten)]
@@ -345,6 +351,32 @@ fn batch_lines<'a>(text: &'a str, limits: &BatchLimits) -> Result<Vec<&'a str>, 
     Ok(lines)
 }
 
+/// Add the stable envelope shared by every line-oriented batch command.
+///
+/// Records remain in input order and operation-specific fields remain at the
+/// top level for backwards compatibility. The envelope makes a partial-result
+/// manifest explicit: callers can persist the operation, applied limits, and
+/// completion status without inferring them from record counts.
+fn add_batch_manifest(value: &mut serde_json::Value, operation: &str, limits: &BatchLimits) {
+    let Some(object) = value.as_object_mut() else {
+        return;
+    };
+    object.insert("schema_version".to_string(), serde_json::json!(1));
+    object.insert("operation".to_string(), serde_json::json!(operation));
+    object.insert("status".to_string(), serde_json::json!("complete"));
+    object.insert(
+        "limits".to_string(),
+        serde_json::json!({
+            "max_input_bytes": limits.max_input_bytes,
+            "max_records": limits.max_records,
+            "max_line_bytes": limits.max_line_bytes,
+        }),
+    );
+    if let Some(records) = object.get("records").and_then(serde_json::Value::as_array) {
+        object.insert("record_count".to_string(), serde_json::json!(records.len()));
+    }
+}
+
 fn write_output(path: Option<&PathBuf>, text: &str) -> Result<(), String> {
     if text.len() > MAX_OUTPUT_BYTES {
         return Err(format!(
@@ -396,6 +428,8 @@ fn fingerprint_json(smiles: &str, algorithm: &str) -> Result<String, String> {
         "ecfp4" => chematic_fp::ecfp4(&mol),
         "ecfp6" => chematic_fp::ecfp6(&mol),
         "maccs" => chematic_fp::maccs(&mol),
+        "rdkit_rdk" => chematic_fp::rdkit_rdk_fp(&mol),
+        "rdkit_torsion" => chematic_fp::rdkit_torsion_fp(&mol),
         _ => return Err(format!("unsupported fingerprint algorithm: {algorithm}")),
     };
     let bits: Vec<usize> = (0..2048).filter(|&bit| fp.get(bit)).collect();
@@ -417,6 +451,8 @@ fn fingerprint_for(
         "ecfp4" => Ok(chematic_fp::ecfp4(mol)),
         "ecfp6" => Ok(chematic_fp::ecfp6(mol)),
         "maccs" => Ok(chematic_fp::maccs(mol)),
+        "rdkit_rdk" => Ok(chematic_fp::rdkit_rdk_fp(mol)),
+        "rdkit_torsion" => Ok(chematic_fp::rdkit_torsion_fp(mol)),
         other => Err(format!("unsupported fingerprint algorithm: {other}")),
     }
 }
@@ -460,10 +496,14 @@ fn substructure_json(smiles: &str, smarts: &str) -> Result<String, String> {
     .to_string())
 }
 
-fn standardize_json(smiles: &str) -> Result<String, String> {
+fn standardize_json(smiles: &str, largest_fragment_only: bool) -> Result<String, String> {
     let mol = parse_cli_smiles(smiles)?;
     let input_smiles = chematic_smiles::canonical_smiles(&mol);
-    let (standardized, report) = chematic_chem::StandardizationPipeline::default().run(&mol);
+    let options = chematic_chem::StandardizeOptions {
+        largest_fragment_only,
+        ..Default::default()
+    };
+    let (standardized, report) = chematic_chem::StandardizationPipeline::new(options).run(&mol);
     let output_smiles = chematic_smiles::canonical_smiles(&standardized);
     let status = match report.status {
         chematic_chem::PipelineStatus::Unchanged => "unchanged",
@@ -605,6 +645,8 @@ fn reaction_fingerprint_json(reaction_smiles: &str, mode: &str) -> Result<String
     };
     let reactant_bits = set_bits(&fingerprint.reactant_fp);
     let product_bits = set_bits(&fingerprint.product_fp);
+    let formed_bits = set_bits(&fingerprint.formed_fp);
+    let broken_bits = set_bits(&fingerprint.broken_fp);
     let combined_bits = set_bits(&fingerprint.combined_fp);
     Ok(serde_json::json!({
         "reaction_smiles": chematic_rxn::write_reaction(&reaction),
@@ -612,7 +654,11 @@ fn reaction_fingerprint_json(reaction_smiles: &str, mode: &str) -> Result<String
         "n_bits": 2048,
         "reactant_popcount": reactant_bits.len(),
         "product_popcount": product_bits.len(),
+        "formed_popcount": formed_bits.len(),
+        "broken_popcount": broken_bits.len(),
         "popcount": combined_bits.len(),
+        "formed_bits": formed_bits,
+        "broken_bits": broken_bits,
         "set_bits": combined_bits,
     })
     .to_string())
@@ -633,7 +679,9 @@ fn reaction_similarity_json(reaction_a: &str, reaction_b: &str) -> Result<String
 fn batch_report_json(text: &str, limits: &BatchLimits) -> Result<String, String> {
     let smiles = batch_lines(text, limits)?;
     let refs: Vec<&str> = smiles.clone();
-    let report = chematic_chem::screen_smiles(&refs);
+    let mut report = serde_json::to_value(chematic_chem::screen_smiles(&refs))
+        .map_err(|e| format!("serialize batch report: {e}"))?;
+    add_batch_manifest(&mut report, "report", limits);
     serde_json::to_string(&report).map_err(|e| format!("serialize batch report: {e}"))
 }
 
@@ -662,12 +710,13 @@ fn batch_descriptors_json(text: &str, limits: &BatchLimits) -> Result<String, St
             })),
         }
     }
-    Ok(serde_json::json!({
+    let mut output = serde_json::json!({
         "records": records,
         "valid_count": valid_count,
         "error_count": smiles.len() - valid_count,
-    })
-    .to_string())
+    });
+    add_batch_manifest(&mut output, "descriptors", limits);
+    Ok(output.to_string())
 }
 
 fn batch_fingerprints_json(
@@ -699,21 +748,26 @@ fn batch_fingerprints_json(
             })),
         }
     }
-    Ok(serde_json::json!({
+    let mut output = serde_json::json!({
         "algorithm": algorithm.to_ascii_lowercase(),
         "records": records,
         "valid_count": valid_count,
         "error_count": smiles.len() - valid_count,
-    })
-    .to_string())
+    });
+    add_batch_manifest(&mut output, "fingerprints", limits);
+    Ok(output.to_string())
 }
 
-fn batch_standardize_json(text: &str, limits: &BatchLimits) -> Result<String, String> {
+fn batch_standardize_json(
+    text: &str,
+    largest_fragment_only: bool,
+    limits: &BatchLimits,
+) -> Result<String, String> {
     let smiles = batch_lines(text, limits)?;
     let mut records = Vec::with_capacity(smiles.len());
     let mut valid_count = 0usize;
     for (input_index, input_smiles) in smiles.iter().enumerate() {
-        match standardize_json(input_smiles).and_then(|json| {
+        match standardize_json(input_smiles, largest_fragment_only).and_then(|json| {
             serde_json::from_str::<serde_json::Value>(&json).map_err(|e| e.to_string())
         }) {
             Ok(standardization) => {
@@ -733,12 +787,13 @@ fn batch_standardize_json(text: &str, limits: &BatchLimits) -> Result<String, St
             })),
         }
     }
-    Ok(serde_json::json!({
+    let mut output = serde_json::json!({
         "records": records,
         "valid_count": valid_count,
         "error_count": smiles.len() - valid_count,
-    })
-    .to_string())
+    });
+    add_batch_manifest(&mut output, "standardize", limits);
+    Ok(output.to_string())
 }
 
 fn batch_similarity_json(
@@ -777,13 +832,14 @@ fn batch_similarity_json(
             })),
         }
     }
-    Ok(serde_json::json!({
+    let mut output = serde_json::json!({
         "algorithm": algorithm.to_ascii_lowercase(),
         "records": records,
         "valid_count": valid_count,
         "error_count": lines.len() - valid_count,
-    })
-    .to_string())
+    });
+    add_batch_manifest(&mut output, "similarity", limits);
+    Ok(output.to_string())
 }
 
 fn batch_substructure_json(text: &str, limits: &BatchLimits) -> Result<String, String> {
@@ -816,12 +872,13 @@ fn batch_substructure_json(text: &str, limits: &BatchLimits) -> Result<String, S
             })),
         }
     }
-    Ok(serde_json::json!({
+    let mut output = serde_json::json!({
         "records": records,
         "valid_count": valid_count,
         "error_count": lines.len() - valid_count,
-    })
-    .to_string())
+    });
+    add_batch_manifest(&mut output, "substructure", limits);
+    Ok(output.to_string())
 }
 
 fn batch_reactions_json(text: &str, limits: &BatchLimits) -> Result<String, String> {
@@ -849,12 +906,13 @@ fn batch_reactions_json(text: &str, limits: &BatchLimits) -> Result<String, Stri
             })),
         }
     }
-    Ok(serde_json::json!({
+    let mut output = serde_json::json!({
         "records": records,
         "valid_count": valid_count,
         "error_count": lines.len() - valid_count,
-    })
-    .to_string())
+    });
+    add_batch_manifest(&mut output, "reactions", limits);
+    Ok(output.to_string())
 }
 
 fn run(cli: Cli) -> Result<(), String> {
@@ -894,8 +952,11 @@ fn run(cli: Cli) -> Result<(), String> {
             let json = substructure_json(&smiles, &smarts)?;
             write_output(None, &format!("{json}\n"))
         }
-        Command::Standardize { smiles } => {
-            let json = standardize_json(&smiles)?;
+        Command::Standardize {
+            smiles,
+            largest_fragment_only,
+        } => {
+            let json = standardize_json(&smiles, largest_fragment_only)?;
             write_output(None, &format!("{json}\n"))
         }
         Command::Report { smiles } => {
@@ -950,9 +1011,13 @@ fn run(cli: Cli) -> Result<(), String> {
             let json = batch_fingerprints_json(&text, &algorithm, &limits)?;
             write_output(None, &format!("{json}\n"))
         }
-        Command::BatchStandardize { input, limits } => {
+        Command::BatchStandardize {
+            input,
+            largest_fragment_only,
+            limits,
+        } => {
             let text = read_limited_input(input.as_ref(), limits.max_input_bytes)?;
-            let json = batch_standardize_json(&text, &limits)?;
+            let json = batch_standardize_json(&text, largest_fragment_only, &limits)?;
             write_output(None, &format!("{json}\n"))
         }
         Command::BatchSimilarity {
@@ -1067,6 +1132,23 @@ mod tests {
     }
 
     #[test]
+    fn fingerprint_supports_rdkit_rdk_algorithm() {
+        let json: serde_json::Value =
+            serde_json::from_str(&fingerprint_json("CCO", "rdkit_rdk").unwrap()).unwrap();
+        assert_eq!(json["algorithm"], "rdkit_rdk");
+        assert_eq!(json["n_bits"], 2048);
+        assert!(json["popcount"].as_u64().unwrap() > 0);
+    }
+
+    #[test]
+    fn fingerprint_supports_rdkit_torsion_algorithm() {
+        let json: serde_json::Value =
+            serde_json::from_str(&fingerprint_json("CCO", "rdkit_torsion").unwrap()).unwrap();
+        assert_eq!(json["algorithm"], "rdkit_torsion");
+        assert_eq!(json["n_bits"], 2048);
+    }
+
+    #[test]
     fn similarity_is_one_for_identical_molecules() {
         let json: serde_json::Value =
             serde_json::from_str(&similarity_json("CCO", "CCO", "ecfp4").unwrap()).unwrap();
@@ -1109,7 +1191,7 @@ mod tests {
     #[test]
     fn standardize_reports_pipeline_and_canonical_output() {
         let json: serde_json::Value =
-            serde_json::from_str(&standardize_json("C[NH3+]").unwrap()).unwrap();
+            serde_json::from_str(&standardize_json("C[NH3+]", false).unwrap()).unwrap();
         assert_eq!(json["input_smiles"], "C[NH3+]");
         assert_eq!(json["status"], "modified");
         assert!(json["changed"].as_bool().unwrap());
@@ -1122,6 +1204,17 @@ mod tests {
                 .any(|step| step["step"] == "neutralize_charges" && step["changed"] == true)
         );
         assert!(json["warnings"].is_array());
+    }
+
+    #[test]
+    fn standardize_fragment_profile_is_explicit_and_default_preserves_fragments() {
+        let default: serde_json::Value =
+            serde_json::from_str(&standardize_json("CC.CCC", false).unwrap()).unwrap();
+        let profile: serde_json::Value =
+            serde_json::from_str(&standardize_json("CC.CCC", true).unwrap()).unwrap();
+        assert!(default["output_smiles"].as_str().unwrap().contains('.'));
+        assert!(!profile["output_smiles"].as_str().unwrap().contains('.'));
+        assert_ne!(default["output"]["atoms"], profile["output"]["atoms"]);
     }
 
     #[test]
@@ -1241,6 +1334,10 @@ mod tests {
             &batch_report_json("CCO\nC1CC\n# comment\nCCN\n", &default_batch_limits()).unwrap(),
         )
         .unwrap();
+        assert_eq!(json["schema_version"], 1);
+        assert_eq!(json["operation"], "report");
+        assert_eq!(json["status"], "complete");
+        assert_eq!(json["record_count"], 3);
         let records = json["records"].as_array().unwrap();
         assert_eq!(records.len(), 3);
         assert_eq!(records[0]["input_index"], 0);
@@ -1259,6 +1356,14 @@ mod tests {
         .unwrap();
         assert_eq!(json["valid_count"], 2);
         assert_eq!(json["error_count"], 1);
+        assert_eq!(json["schema_version"], 1);
+        assert_eq!(json["operation"], "descriptors");
+        assert_eq!(json["status"], "complete");
+        assert_eq!(json["record_count"], 3);
+        assert_eq!(
+            json["limits"]["max_records"],
+            default_batch_limits().max_records
+        );
         let records = json["records"].as_array().unwrap();
         assert!(records[0]["descriptors"].is_object());
         assert!(records[1]["error"].as_str().is_some());
@@ -1291,7 +1396,8 @@ mod tests {
     #[test]
     fn batch_standardize_retains_audit_reports_and_errors() {
         let json: serde_json::Value = serde_json::from_str(
-            &batch_standardize_json("C[NH3+]\nC1CC\nCCO\n", &default_batch_limits()).unwrap(),
+            &batch_standardize_json("C[NH3+]\nC1CC\nCCO\n", false, &default_batch_limits())
+                .unwrap(),
         )
         .unwrap();
         assert_eq!(json["valid_count"], 2);

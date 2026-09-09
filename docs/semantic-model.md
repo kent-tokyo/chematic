@@ -12,7 +12,9 @@ one or more `[*]` linkage placeholders; placeholders are paired with
 `attachment_atoms` in source order and are never copied into the expanded
 graph. A polymer repeat is expandable only when it has an explicit repeat
 count and either a `repeat_smiles` value with exactly two `[*]` linkage
-placeholders or two explicit `repeat_endpoint_atoms`.
+placeholders or two explicit `repeat_endpoint_atoms`. A null `repeat_count`
+is a valid unselected editing state and can be set with the typed
+`SetPolymerRepeatCount` command; expansion rejects it until selected.
 
 When `polymer_units[].end_groups` is non-empty it must contain exactly two
 SMILES fragments, ordered `[left, right]`. Each fragment must contain exactly
