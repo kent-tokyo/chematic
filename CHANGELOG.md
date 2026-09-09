@@ -21,6 +21,8 @@ No changes yet.
   state fails closed instead of panicking, with a regression test.
 - Added a repository-wide code audit record and revalidated the standard local
   release gates.
+- Published the v1.0.11 Rust crates to crates.io and the WASM package to npm;
+  the PyPI publication workflow remains in progress.
 
 ## [1.0.10] - 2026-09-09
 
