@@ -326,10 +326,17 @@ fn sha256(input: &[u8]) -> [u8; 32] {
     }
     padded.extend_from_slice(&bit_len.to_be_bytes());
 
-    for chunk in padded.chunks_exact(64) {
+    for chunk in padded.chunks(64) {
+        debug_assert_eq!(chunk.len(), 64);
         let mut w = [0u32; 64];
-        for (i, word) in chunk.chunks_exact(4).take(16).enumerate() {
-            w[i] = u32::from_be_bytes([word[0], word[1], word[2], word[3]]);
+        for (i, slot) in w.iter_mut().enumerate().take(16) {
+            let offset = i * 4;
+            *slot = u32::from_be_bytes([
+                chunk[offset],
+                chunk[offset + 1],
+                chunk[offset + 2],
+                chunk[offset + 3],
+            ]);
         }
         for i in 16..64 {
             let s0 = w[i - 15].rotate_right(7) ^ w[i - 15].rotate_right(18) ^ (w[i - 15] >> 3);
