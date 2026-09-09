@@ -28,6 +28,7 @@ pub mod query;
 pub mod reaction;
 pub mod requirements;
 pub mod retro;
+pub mod stoichiometry;
 pub mod transform;
 
 pub use balance::{BalanceResult, balance_check};
@@ -53,6 +54,12 @@ pub use reaction::{
 };
 pub use requirements::{ReactionBondKind, ReactionBondLowerBound, ReactionRequirements};
 pub use retro::{DEFAULT_TEMPLATES, RetroClass, RetroResult, RetroTemplate, retro_disconnect};
+pub use stoichiometry::{
+    AtomInventory, ChemicalCompleteness, ComponentEvidence, DiagnosticSeverity,
+    StepStoichiometryReport, StoichiometryComponent, StoichiometryDiagnostic, StoichiometryError,
+    StoichiometryEvidenceScope, StoichiometryIssueCode, StoichiometryReport, StoichiometryStatus,
+    StoichiometryStep, analyze_components, analyze_reaction_document, analyze_reaction_step,
+};
 pub use transform::{
     PreparedReaction, ReactionMatch, ReactionTransformDiagnostics, ReactionTransformLimits,
     ReactionTransformReport, ReactionVariantDiagnostics, TransformError, apply_reaction_match,

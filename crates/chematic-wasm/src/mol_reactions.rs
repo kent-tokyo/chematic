@@ -1569,6 +1569,27 @@ pub fn balance_check_json(reaction_smiles: &str) -> String {
     )
 }
 
+/// Analyze a rich reaction document's explicit atom/isotope inventory and
+/// formal charges. The returned JSON includes evidence scope, per-step
+/// diagnostics, and a status that does not imply chemical completeness.
+/// Returns `error:<msg>` when the document or a component is invalid.
+#[wasm_bindgen]
+pub fn stoichiometry_report_json(document_json: &str) -> String {
+    let document = match chematic_rxn::ReactionDocument::from_json_str(document_json) {
+        Ok(document) => document,
+        Err(error) => return format!("error:{error}"),
+    };
+    match chematic_rxn::analyze_reaction_document(&document).and_then(|report| {
+        serde_json::to_string(&report).map_err(|error| chematic_rxn::StoichiometryError::Parse {
+            path: "/report".into(),
+            message: error.to_string(),
+        })
+    }) {
+        Ok(json) => json,
+        Err(error) => format!("error:{error}"),
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Nearest-neighbour similarity search
 // ---------------------------------------------------------------------------

@@ -33,6 +33,17 @@ fn common_format_name_rejects_unknown_values_without_wasm_runtime() {
     assert_eq!(common_format_name("unknown"), None);
 }
 
+#[test]
+fn stoichiometry_report_json_exposes_evidence_scope_and_status() {
+    let document = r#"{"id":"rxn-1","steps":[{"id":"step-1","components":[{"id":"r-1","role":"reactant","smiles":"CC","coefficient":1},{"id":"p-1","role":"product","smiles":"CC","coefficient":1}]}]}"#;
+    let value: serde_json::Value =
+        serde_json::from_str(&stoichiometry_report_json(document)).unwrap();
+    assert_eq!(value["status"], "balanced");
+    assert_eq!(value["evidence_scope"], "explicit_atom_inventory");
+    assert_eq!(value["chemical_completeness"], "not_evaluated");
+    assert_eq!(value["steps"][0]["status"], "balanced");
+}
+
 // --- logd / isotope / topological index tests ---------------------------
 
 #[test]
