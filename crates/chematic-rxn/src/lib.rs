@@ -11,6 +11,8 @@
 //!   application, including optional caller-provided ring perception.
 //!   Variant-level diagnostics are available for both ordinary and
 //!   caller-provided-ring application paths.
+//! - [`ReactionRequirements`]: conservative lower bounds for fail-open
+//!   candidate prefilters derived from a prepared template.
 //! - [`find_reaction_matches`]/[`apply_reaction_match`]: enumerate matches and
 //!   apply one of them independently, for callers that need to accept/reject
 //!   individual matches rather than an entire `run_reactants` call.
@@ -24,6 +26,7 @@ pub mod green;
 pub mod perf_counters;
 pub mod query;
 pub mod reaction;
+pub mod requirements;
 pub mod retro;
 pub mod transform;
 
@@ -48,6 +51,7 @@ pub use reaction::{
     Reaction, ReactionCenter, ReactionParseLimits, RxnError, expand_atomic_number_primitives,
     find_reaction_center, parse_reaction, parse_reaction_with_limits, write_reaction,
 };
+pub use requirements::{ReactionBondKind, ReactionBondLowerBound, ReactionRequirements};
 pub use retro::{DEFAULT_TEMPLATES, RetroClass, RetroResult, RetroTemplate, retro_disconnect};
 pub use transform::{
     PreparedReaction, ReactionMatch, ReactionTransformDiagnostics, ReactionTransformLimits,

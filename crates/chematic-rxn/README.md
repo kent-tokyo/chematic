@@ -16,6 +16,9 @@ WASM-compatible, with selected RDKit-oriented behavior.
   per-variant normalized templates and match/application counts available.
   `run_reactants_with_rings_and_limits_with_variant_diagnostics` provides the
   same accounting while reusing caller-provided ring perception.
+  `PreparedReaction::requirements()` exposes conservative lower bounds for
+  cheap fail-open candidate prefilters, and `could_match()` applies those
+  bounds without running the graph matcher.
 - **Atom mapping**: track which atoms in reactants map to which atoms in products
 - **Reaction properties**: count reactants, products, and agents
 - **Stereo-selective SMIRKS**: `@`/`@@` in reactant templates filter by absolute configuration using
@@ -104,6 +107,8 @@ for r in &results {
 - `Molecule` — each reactant/product is a standard Molecule
 - `ReactionPattern` — SMIRKS pattern for template matching
 - `PreparedReaction` — immutable compiled SMIRKS template for repeated use
+- `ReactionRequirements` — conservative atom, bond, element, aromaticity, and
+  bond-pair lower bounds derived from a prepared template
 - `ReactionTransformLimits` — match/combinatorial resource bounds
 
 ### Properties
