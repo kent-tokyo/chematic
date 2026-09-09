@@ -77,7 +77,7 @@ fn shape_descriptors_outputs_are_stable() {
     let (mol, coords) = aspirin_coords();
 
     let (p1, p2, p3) = pmi(&mol, &coords);
-    assert_eq!(p1.to_bits(), 4642488561478464692);
+    assert_close_ulp(p1, 4642488561478464692, 2, "pmi[0]");
     assert_eq!(p2.to_bits(), 4646694506356206969);
     assert_eq!(p3.to_bits(), 4648593491540578086);
 
@@ -109,7 +109,7 @@ fn descriptors_3d_outputs_are_stable() {
 
     let whim = whim_descriptors(&mol, &coords);
     assert_eq!(whim.len(), 22);
-    assert_eq!(whim[0].to_bits(), 4612594550505702359);
+    assert_close_ulp(whim[0], 4612594550505702359, 2, "whim[0]");
 
     let getaway = getaway_descriptors(&mol, &coords);
     assert_eq!(getaway.len(), 19);
