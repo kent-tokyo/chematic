@@ -33,6 +33,12 @@ def main() -> int:
         return 1
     release_version = version_match.group(1)
 
+    release_headings = {
+        Path("README.md"): f"### v{release_version} release boundary",
+        Path("README_ja.md"): f"### v{release_version} の対応範囲",
+        Path("README_zh.md"): f"### v{release_version} 范围",
+    }
+
     for path in DOCS:
         try:
             text = path.read_text(encoding="utf-8")
@@ -44,6 +50,9 @@ def main() -> int:
             errors.append(f"{relative}: stale SCHEMATIC release-key secret name")
         if relative != Path("README_ja.md") and "chematic" not in text:
             errors.append(f"{relative}: missing chematic product name")
+        expected_heading = release_headings.get(relative)
+        if expected_heading is not None and expected_heading not in text:
+            errors.append(f"{relative}: missing current release boundary heading {expected_heading}")
 
     custody = (ROOT / "docs" / "release-key-custody.md").read_text(encoding="utf-8")
     if "CHEMATIC_RELEASE_PRIVATE_KEY" not in custody:
