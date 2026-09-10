@@ -224,6 +224,7 @@ impl Mol {
         let metadata = chematic_mol::MolMetadata {
             name: name.unwrap_or("").to_string(),
             comment: String::new(),
+            ..Default::default()
         };
         let coords_2d: Vec<(f64, f64)> = coords.iter().map(|c| (c[0], c[1])).collect();
         chematic_mol::write_mol_with_coords(&self.inner, &metadata, &coords_2d)
@@ -243,6 +244,7 @@ impl Mol {
         let metadata = chematic_mol::MolMetadata {
             name: name.unwrap_or("").to_string(),
             comment: String::new(),
+            ..Default::default()
         };
         let coords_2d: Vec<(f64, f64)> = coords.iter().map(|c| (c[0], c[1])).collect();
         chematic_mol::write_mol_v3000(&self.inner, &metadata, &coords_2d)

@@ -317,7 +317,11 @@ pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, Mol
     let line2_raw = all_lines[1].1;
     let comment = all_lines[2].1.to_string();
 
-    let metadata = MolMetadata { name, comment };
+    let mut metadata = MolMetadata {
+        name,
+        comment,
+        v3000_sgroups: Vec::new(),
+    };
 
     // -- Counts line (line 4) — verify V3000 tag ----------------------------
 
@@ -367,12 +371,14 @@ pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, Mol
         InBondBlock,
         AfterBondBlock,
         InCollection,
+        InSgroup,
         Done,
     }
 
     let mut state = State::BeforeCtab;
     let mut expected_atoms: usize = 0;
     let mut stereo_groups: Vec<StereoGroup> = Vec::new();
+    let mut sgroups: Vec<String> = Vec::new();
     // Double bonds whose `CFG=2` marks explicitly unspecified E/Z (the same
     // token V3000 also uses for a single bond's "either" wedge) -- confirmed
     // against a live RDKit 2026.03.3 oracle (B0 diagnosis): RDKit's own
@@ -475,10 +481,7 @@ pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, Mol
                 if is_marker(&tokens, "BEGIN", "COLLECTION") {
                     state = State::InCollection;
                 } else if is_marker(&tokens, "BEGIN", "SGROUP") {
-                    return Err(v3k_err(
-                        lnum,
-                        "SGROUP blocks are not represented by Molecule; refusing lossy parse",
-                    ));
+                    state = State::InSgroup;
                 } else if is_marker(&tokens, "END", "CTAB") {
                     state = State::Done;
                 }
@@ -489,6 +492,19 @@ pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, Mol
                     state = State::AfterBondBlock;
                 } else if let Some(group) = parse_stereo_group_line(payload, &atom_idx_map) {
                     stereo_groups.push(group);
+                }
+            }
+
+            State::InSgroup => {
+                if is_marker(&tokens, "END", "SGROUP") {
+                    state = State::AfterBondBlock;
+                } else {
+                    // Preserve the logical payload without pretending to
+                    // understand polymer/query semantics. The writer restores
+                    // the standard V30 prefix and emits this block before
+                    // COLLECTION, matching the interoperability ordering used
+                    // by current reference writers.
+                    sgroups.push(payload.to_string());
                 }
             }
 
@@ -517,6 +533,7 @@ pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, Mol
     }
 
     let mut mol = builder.build();
+    metadata.v3000_sgroups = sgroups;
     if !stereo_groups.is_empty() {
         mol.set_stereo_groups(stereo_groups);
     }
@@ -1215,6 +1232,16 @@ pub fn write_mol_v3000(mol: &Molecule, metadata: &MolMetadata, coords: &[(f64, f
     }
     out.push_str("M  V30 END BOND\n");
 
+    if !metadata.v3000_sgroups.is_empty() {
+        out.push_str("M  V30 BEGIN SGROUP\n");
+        for line in &metadata.v3000_sgroups {
+            out.push_str("M  V30 ");
+            out.push_str(line);
+            out.push('\n');
+        }
+        out.push_str("M  V30 END SGROUP\n");
+    }
+
     // Optional COLLECTION block for enhanced stereo groups.
     let groups = mol.stereo_groups();
     if !groups.is_empty() {
@@ -1341,6 +1368,16 @@ pub fn write_mol_v3000_with_conformer(
     }
     out.push_str("M  V30 END BOND\n");
 
+    if !metadata.v3000_sgroups.is_empty() {
+        out.push_str("M  V30 BEGIN SGROUP\n");
+        for line in &metadata.v3000_sgroups {
+            out.push_str("M  V30 ");
+            out.push_str(line);
+            out.push('\n');
+        }
+        out.push_str("M  V30 END SGROUP\n");
+    }
+
     let groups = mol.stereo_groups();
     if !groups.is_empty() {
         out.push_str("M  V30 BEGIN COLLECTION\n");
@@ -1410,6 +1447,7 @@ mod write_tests {
         let meta = MolMetadata {
             name: "ethanol".into(),
             comment: String::new(),
+            ..Default::default()
         };
         let v3k = write_mol_v3000(&mol, &meta, &[]);
         let (mol2, meta2) = parse_mol_v3000(&v3k).expect("round-trip parse");
@@ -1451,6 +1489,7 @@ mod write_tests {
         let meta = MolMetadata {
             name: "stereo_test".into(),
             comment: String::new(),
+            ..Default::default()
         };
         let v3k = write_mol_v3000(&mol, &meta, &[]);
 
@@ -1531,9 +1570,10 @@ M  V30 END COLLECTION\nM  V30 END CTAB\nM  END\n";
     }
 
     #[test]
-    fn v3000_sgroup_is_rejected_instead_of_silently_dropped() {
-        // SGroup/polymer semantics are not represented in Molecule yet. A V3000
-        // reader must not claim a successful round trip after discarding them.
+    fn v3000_sgroup_is_preserved_as_opaque_metadata() {
+        // SGroup/polymer semantics are not represented in Molecule yet. Preserve
+        // their logical lines opaquely so a core parse/write round trip does not
+        // discard them or claim a typed interpretation that does not exist.
         let v3k = "\n\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\n\
 M  V30 BEGIN CTAB\n\
 M  V30 COUNTS 2 1 0 0 0\n\
@@ -1549,15 +1589,19 @@ M  V30 1 SUP 0 ATOMS=(2 1 2)\n\
 M  V30 END SGROUP\n\
 M  V30 END CTAB\nM  END\n";
 
-        let error = match parse_mol_v3000(v3k) {
-            Ok(_) => panic!("unsupported SGroup must fail closed"),
-            Err(error) => error,
-        };
-        assert!(
-            error
-                .to_string()
-                .contains("SGROUP blocks are not represented"),
-            "unexpected error: {error}"
+        let (mol, metadata) = parse_mol_v3000(v3k).expect("opaque SGroup should parse");
+        assert_eq!(metadata.v3000_sgroups, vec!["1 SUP 0 ATOMS=(2 1 2)"]);
+        let rewritten = write_mol_v3000(&mol, &metadata, &[]);
+        assert!(rewritten.contains("M  V30 BEGIN SGROUP"));
+        assert!(rewritten.contains("M  V30 1 SUP 0 ATOMS=(2 1 2)"));
+        assert!(rewritten.find("BEGIN SGROUP").unwrap() < rewritten.find("END CTAB").unwrap());
+
+        let with_collection = v3k.replace(
+            "M  V30 END CTAB",
+            "M  V30 BEGIN COLLECTION\nM  V30 MDLV30/STEABS ATOMS=(1 1)\nM  V30 END COLLECTION\nM  V30 END CTAB",
         );
+        let (_, collection_metadata) =
+            parse_mol_v3000(&with_collection).expect("SGROUP and COLLECTION should compose");
+        assert_eq!(collection_metadata.v3000_sgroups.len(), 1);
     }
 }

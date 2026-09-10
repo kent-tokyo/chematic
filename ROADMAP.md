@@ -61,10 +61,28 @@ failure boundaries:
 
 The next candidate should ship only the local portions of P0–P2 that have
 reproducible evidence. Missing stable packages, browser engines, or
-cross-platform runners remain environment-dependent evidence gaps rather than
-successful competitor claims.
+   cross-platform runners remain environment-dependent evidence gaps rather than
+   successful competitor claims.
 
 ## Current candidate
+
+Competitive-response gate status (2026-09-10):
+
+- [x] Official `@rdkit/rdkit` Node and Playwright Chromium comparison, pinned
+  package/artifact digests, 1,000-row ECFP4/Morgan parity, and separate size,
+  startup, throughput, and memory evidence.
+- [x] Negative-charge resonance CIP corpus with four checked-in cases and
+  deterministic atom-order permutations; labels remain invariant in the
+  declared scope.
+- [x] Browser API/package contract covering malformed input, stable limits,
+  resumable batches, serialization, TypeScript declaration digest, and a
+  generated-artifact install-to-first-result path.
+- [x] V3000 `SGROUP`/`COLLECTION` local interoperability slice: opaque SGROUP
+  preservation, either input order, SGROUP-before-COLLECTION output, strict
+  topology-handle rejection, and generated Web-WASM execution evidence.
+- [ ] Broader CIP generated permutations and independent oracle corpus.
+- [ ] Exact canonical-SMILES parity, typed SGROUP semantics, and Indigo/RDKit
+  cross-engine V3000 fixtures.
 
 Completed through the v1.0.11 release tree (with historical v1.0.10 and v1.0.9
 milestones retained below):

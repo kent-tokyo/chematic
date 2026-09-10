@@ -14,9 +14,9 @@
   "artifacts": {
     "schematic_wasm": {
       "file": "chematic_wasm_bg.wasm",
-      "raw_bytes": 3726056,
-      "gzip_bytes": 1357406,
-      "sha256": "26e78553c5dd929b22b130bc1f0a700689256876099b13d4df63c1a5edb27468"
+      "raw_bytes": 3832165,
+      "gzip_bytes": 1394374,
+      "sha256": "32b8ca353355b613082105ec661b3f8c278dd16c8cd90a1ae8c6cb6371a5846b"
     },
     "rdkit_minimal_wasm": {
       "file": "RDKit_minimal.wasm",
@@ -45,46 +45,46 @@
     "platform": "MacIntel"
   },
   "schematic": {
-    "init_ms": 75.19999998807907,
+    "init_ms": 71.90000000596046,
     "parse": {
       "count": 1000,
       "p50_ms": 0,
-      "p95_ms": 0.09999999403953552,
-      "mean_ms": 0.006799999982118606
+      "p95_ms": 0,
+      "mean_ms": 0.004299999982118607
     },
     "smiles_write": {
       "count": 1000,
       "p50_ms": 0,
       "p95_ms": 0.10000002384185791,
-      "mean_ms": 0.028599999994039536
+      "mean_ms": 0.02830000001192093
     },
     "rdkit_compatible_ecfp4": {
       "count": 1000,
       "p50_ms": 0.20000001788139343,
-      "p95_ms": 1.300000011920929,
-      "mean_ms": 0.399
+      "p95_ms": 1,
+      "mean_ms": 0.37519999998807907
     }
   },
   "rdkit": {
     "version": "2025.03.4",
-    "init_ms": 144.90000000596046,
+    "init_ms": 146.7999999821186,
     "parse": {
       "count": 1000,
       "p50_ms": 0.20000001788139343,
       "p95_ms": 0.5,
-      "mean_ms": 0.23900000002980232
+      "mean_ms": 0.24710000002384186
     },
     "smiles_write": {
       "count": 1000,
-      "p50_ms": 0.29999998211860657,
+      "p50_ms": 0.30000001192092896,
       "p95_ms": 0.699999988079071,
-      "mean_ms": 0.3217999999523163
+      "mean_ms": 0.32930000001192095
     },
     "morgan_radius2_2048": {
       "count": 1000,
       "p50_ms": 0.30000001192092896,
-      "p95_ms": 0.699999988079071,
-      "mean_ms": 0.3668000000119209
+      "p95_ms": 0.7000000178813934,
+      "mean_ms": 0.37580000001192093
     }
   },
   "fingerprint_parity": {
@@ -120,7 +120,9 @@
         "moljson_canonical_smiles": "C(C)O"
       },
       "v3000_metadata": {
-        "status": "not_in_checked_artifact"
+        "status": "passed",
+        "sgroup_preserved": true,
+        "sgroup_before_collection": true
       }
     },
     "rdkit": {

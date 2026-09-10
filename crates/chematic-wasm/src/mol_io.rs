@@ -105,8 +105,13 @@ pub fn mol_from_v3000_block(block: &str) -> Result<MolHandle, JsValue> {
     if block.len() > WASM_MAX_INPUT_BYTES {
         return Err(JsValue::from_str("V3000 block too large"));
     }
-    let (mol, _meta) =
+    let (mol, meta) =
         chematic_mol::parse_mol_v3000(block).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if !meta.v3000_sgroups.is_empty() {
+        return Err(JsValue::from_str(
+            "V3000 SGROUP metadata requires roundtrip_mol_v3000_block",
+        ));
+    }
     if mol.atom_count() > WASM_MAX_ATOMS {
         return Err(JsValue::from_str(&format!(
             "molecule too large (max {} atoms)",
@@ -392,6 +397,29 @@ pub fn to_mol_v3000_block(mol: &MolHandle) -> String {
     chematic_mol::write_mol_v3000(&mol.inner, &meta, &coords)
 }
 
+/// Parse and serialize a V3000 block while preserving opaque V3000 metadata.
+///
+/// Unlike the topology-only [`mol_from_v3000_block`] + [`to_mol_v3000_block`]
+/// pair, this explicit round-trip API retains `SGROUP` logical lines and
+/// `COLLECTION` stereo groups. SGROUP semantics remain opaque until the core
+/// molecule model grows a typed representation; the API therefore preserves
+/// bytes at the logical-line level without claiming polymer/query semantics.
+#[wasm_bindgen]
+pub fn roundtrip_mol_v3000_block(block: &str) -> Result<String, JsValue> {
+    if block.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str("V3000 block too large"));
+    }
+    let (mol, metadata, coords) = chematic_mol::parse_mol_v3000_with_coords(block)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!(
+            "molecule too large (max {} atoms)",
+            WASM_MAX_ATOMS
+        )));
+    }
+    Ok(chematic_mol::write_mol_v3000(&mol, &metadata, &coords))
+}
+
 // ---------------------------------------------------------------------------
 // DepictData
 // ---------------------------------------------------------------------------
@@ -656,6 +684,7 @@ pub fn sdf_from_records_json(
         let meta = chematic_mol::MolMetadata {
             name: names_list[i].clone(),
             comment: String::new(),
+            ..Default::default()
         };
         sdf.push_str(&chematic_mol::write_mol_with_coords(&mol, &meta, &coords));
 

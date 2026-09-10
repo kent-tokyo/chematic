@@ -1800,6 +1800,30 @@ fn mol_from_v3000_block_parses_atom_count() {
 }
 
 #[test]
+fn roundtrip_mol_v3000_block_preserves_sgroup_metadata() {
+    let block = "\n\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\n\
+M  V30 BEGIN CTAB\n\
+M  V30 COUNTS 2 1 0 0 0\n\
+M  V30 BEGIN ATOM\n\
+M  V30 1 C 0 0 0 0\n\
+M  V30 2 C 1 0 0 0\n\
+M  V30 END ATOM\n\
+M  V30 BEGIN BOND\n\
+M  V30 1 1 1 2\n\
+M  V30 END BOND\n\
+M  V30 BEGIN COLLECTION\n\
+M  V30 MDLV30/STEABS ATOMS=(1 1)\n\
+M  V30 END COLLECTION\n\
+M  V30 BEGIN SGROUP\n\
+M  V30 1 SUP 0 ATOMS=(2 1 2)\n\
+M  V30 END SGROUP\n\
+M  V30 END CTAB\nM  END\n";
+    let rewritten = roundtrip_mol_v3000_block(block).expect("V3000 round trip");
+    assert!(rewritten.contains("M  V30 1 SUP 0 ATOMS=(2 1 2)"));
+    assert!(rewritten.find("BEGIN SGROUP") < rewritten.find("BEGIN COLLECTION"));
+}
+
+#[test]
 fn generate_3d_minimized_pdb_nonzero_coords() {
     let mol = parse("CCCC"); // butane — flexible, benefits from minimization
     let pdb = generate_3d_minimized_pdb(&mol);

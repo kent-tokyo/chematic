@@ -132,6 +132,31 @@ const run = async () => {
   v2000Roundtrip.free();
   v3000Roundtrip.free();
   molJsonRoundtrip.free();
+  const v3000MetadataContract = typeof schematicModule.roundtrip_mol_v3000_block === "function"
+    ? (() => {
+      const source = parse_smiles("CC");
+      const newline = String.fromCharCode(10);
+      const input = to_mol_v3000_block(source).replace(
+        "M  V30 END CTAB",
+        [
+          "M  V30 BEGIN COLLECTION",
+          "M  V30 MDLV30/STEABS ATOMS=(1 1)",
+          "M  V30 END COLLECTION",
+          "M  V30 BEGIN SGROUP",
+          "M  V30 1 SUP 0 ATOMS=(2 1 2)",
+          "M  V30 END SGROUP",
+          "M  V30 END CTAB",
+        ].join(newline),
+      );
+      const output = schematicModule.roundtrip_mol_v3000_block(input);
+      source.free();
+      return {
+        status: "passed",
+        sgroup_preserved: output.includes("M  V30 1 SUP 0 ATOMS=(2 1 2)"),
+        sgroup_before_collection: output.indexOf("BEGIN SGROUP") < output.indexOf("BEGIN COLLECTION"),
+      };
+    })()
+    : { status: "not_in_checked_artifact" };
   const schematicApiContract = {
     malformed_parse: malformed,
     malformed_batch: {
@@ -148,6 +173,7 @@ const run = async () => {
       cancellation_boundary: firstSdfBatch.status === "partial" && firstSdfBatch.next_offset > 0,
     },
     serialization: schematicSerialization,
+    v3000_metadata: v3000MetadataContract,
   };
 
   const rdkitStart = performance.now();

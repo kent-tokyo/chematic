@@ -33,6 +33,11 @@ pub struct MolMetadata {
     pub name: String,
     /// Comment string from header line 3.
     pub comment: String,
+    /// Opaque V3000 SGROUP logical lines preserved across a core V3000
+    /// parse/write round trip. The molecule model does not interpret these
+    /// polymer/query semantics; callers must not treat this as a typed SGroup
+    /// representation.
+    pub v3000_sgroups: Vec<String>,
 }
 
 impl MolMetadata {
@@ -746,7 +751,11 @@ fn read_mol_internal(
     let (_, line2_raw) = next_line()?;
     let comment = next_line()?.1.to_string();
 
-    let metadata = MolMetadata { name, comment };
+    let metadata = MolMetadata {
+        name,
+        comment,
+        v3000_sgroups: Vec::new(),
+    };
 
     // -- Counts line (line 4) -----------------------------------------------
 
