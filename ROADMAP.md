@@ -86,6 +86,9 @@ Competitive-response gate status (2026-09-10):
 - [x] Add typed CDXML text/caption style access for font, size, and alignment,
   with finite-number validation and regression coverage. Full ChemDraw style
   inheritance and rendering semantics remain outside the bounded contract.
+- [x] Add typed CDXML page `BoundingBox` access with finite-number and arity
+  validation; full page-layout/rendering semantics remain outside the bounded
+  contract.
 
 ### Next priority: compatible similarity search
 

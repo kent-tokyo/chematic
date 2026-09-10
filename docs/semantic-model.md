@@ -56,7 +56,9 @@ lossless semantic contraction boundary.
 ## CDXML document contract
 
 `CdxmlDocument` preserves the original XML and exposes multi-page/page-object
-summaries, including presentation-only objects. `CdxmlDocument::diagnostics`
+summaries, including presentation-only objects. `CdxmlPage::bounding_box`
+provides the optional page dimensions as a typed `left, top, right, bottom`
+tuple and rejects malformed values. `CdxmlDocument::diagnostics`
 reports unknown presentation tags with page/object locations while retaining
 their raw XML. `CdxmlObject::transform` and `CdxmlObject::z_order` provide
 typed access to common `Matrix` and `ZOrder` attributes and reject malformed

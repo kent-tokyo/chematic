@@ -131,6 +131,26 @@ fn parse_finite_attribute(value: &CdxmlValue, name: &str) -> Result<f64, CdxmlEr
     Ok(parsed)
 }
 
+fn parse_finite_list_attribute(value: &CdxmlValue, name: &str) -> Result<Vec<f64>, CdxmlError> {
+    let text = value
+        .as_str()
+        .ok_or_else(|| CdxmlError::InvalidCoords(format!("CDXML {name} must be a string")))?;
+    text.split(|c: char| c.is_ascii_whitespace() || c == ',')
+        .filter(|part| !part.is_empty())
+        .map(|part| {
+            let parsed = part.parse::<f64>().map_err(|_| {
+                CdxmlError::InvalidCoords(format!("invalid CDXML {name} component: {part}"))
+            })?;
+            if !parsed.is_finite() {
+                return Err(CdxmlError::InvalidCoords(format!(
+                    "CDXML {name} components must be finite"
+                )));
+            }
+            Ok(parsed)
+        })
+        .collect()
+}
+
 /// A non-fatal presentation diagnostic. Unknown objects remain available via
 /// `raw_xml`; callers can use these diagnostics to decide whether their own
 /// editor can safely interpret the document.
@@ -151,6 +171,21 @@ pub struct CdxmlPage {
 }
 
 impl CdxmlPage {
+    /// Read the optional page `BoundingBox` as `left, top, right, bottom`.
+    pub fn bounding_box(&self) -> Result<Option<[f64; 4]>, CdxmlError> {
+        let Some(value) = self.attributes.get("BoundingBox") else {
+            return Ok(None);
+        };
+        let values = parse_finite_list_attribute(value, "BoundingBox")?;
+        let bounding_box: [f64; 4] = values.try_into().map_err(|values: Vec<f64>| {
+            CdxmlError::InvalidCoords(format!(
+                "CDXML BoundingBox must contain 4 components, got {}",
+                values.len()
+            ))
+        })?;
+        Ok(Some(bounding_box))
+    }
+
     /// Find an object by its parent-to-child sibling path.
     pub fn object_at_path(&self, path: &[usize]) -> Option<&CdxmlObject> {
         self.children.iter().find(|object| object.path == path)
@@ -905,6 +940,25 @@ mod tests {
         .unwrap();
         assert!(matches!(
             malformed.pages[0].children[0].text_style(),
+            Err(CdxmlError::InvalidCoords(_))
+        ));
+    }
+
+    #[test]
+    fn reads_typed_page_bounding_box_and_rejects_invalid_shape() {
+        let input = "<CDXML>\n<page id=\"p1\" BoundingBox=\"0 100 200 0\">\n</page>\n</CDXML>";
+        let doc = CdxmlDocument::parse(input).unwrap();
+        assert_eq!(
+            doc.pages[0].bounding_box().unwrap(),
+            Some([0.0, 100.0, 200.0, 0.0])
+        );
+
+        let malformed = CdxmlDocument::parse(
+            "<CDXML>\n<page id=\"p1\" BoundingBox=\"0 100 NaN 0\">\n</page>\n</CDXML>",
+        )
+        .unwrap();
+        assert!(matches!(
+            malformed.pages[0].bounding_box(),
             Err(CdxmlError::InvalidCoords(_))
         ));
     }
