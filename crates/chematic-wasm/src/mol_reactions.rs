@@ -1170,6 +1170,22 @@ pub fn semantic_apply_json_command(
 /// expanded graph plus source-to-expanded atom mapping.
 #[wasm_bindgen]
 pub fn semantic_expand_json(base_smiles: &str, model_json: &str) -> Result<String, JsValue> {
+    semantic_expand_json_with_limits(
+        base_smiles,
+        model_json,
+        chematic_mol::SemanticExpansionLimits::default().max_atoms as u32,
+        chematic_mol::SemanticExpansionLimits::default().max_repeat_count,
+    )
+}
+
+/// Expand a validated semantic model with explicit finite atom/repeat budgets.
+#[wasm_bindgen]
+pub fn semantic_expand_json_with_limits(
+    base_smiles: &str,
+    model_json: &str,
+    max_atoms: u32,
+    max_repeat_count: u32,
+) -> Result<String, JsValue> {
     let value: serde_json::Value = serde_json::from_str(model_json)
         .map_err(|e| JsValue::from_str(&format!("invalid semantic JSON: {e}")))?;
     let model = chematic_mol::SemanticModel::from_json(&value)
@@ -1177,7 +1193,13 @@ pub fn semantic_expand_json(base_smiles: &str, model_json: &str) -> Result<Strin
     let base =
         chematic_smiles::parse(base_smiles).map_err(|e| JsValue::from_str(&e.to_string()))?;
     let expanded = model
-        .expand(&base)
+        .expand_with_limits(
+            &base,
+            &chematic_mol::SemanticExpansionLimits {
+                max_atoms: max_atoms as usize,
+                max_repeat_count,
+            },
+        )
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
     serde_json::to_string(&expanded.to_json()).map_err(|e| JsValue::from_str(&e.to_string()))
 }

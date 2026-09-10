@@ -34,6 +34,9 @@ typed `SemanticError::ExpansionLimit` and is checked before each fragment is
 added to the output graph.
 The stable JSON contract can be decoded with `SemanticModel::from_json` and
 expanded through the Python and WASM/Node `semantic_expand_json` APIs.
+Those bindings also expose `semantic_expand_json_with_limits` with explicit
+`max_atoms` and `max_repeat_count` arguments; the legacy function continues to
+use the same finite defaults.
 Markush alternatives are selected explicitly via
 `semantic_apply_json_command`; no alternative is inferred.
 

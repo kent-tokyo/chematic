@@ -511,6 +511,22 @@ fn semantic_apply_json_command(model_json: &str, command_json: &str) -> PyResult
 /// Expand a validated semantic model against a base SMILES.
 #[pyfunction]
 fn semantic_expand_json(base_smiles: &str, model_json: &str) -> PyResult<String> {
+    semantic_expand_json_with_limits(
+        base_smiles,
+        model_json,
+        chematic_mol::SemanticExpansionLimits::default().max_atoms,
+        chematic_mol::SemanticExpansionLimits::default().max_repeat_count,
+    )
+}
+
+/// Expand a validated semantic model with explicit finite atom/repeat budgets.
+#[pyfunction]
+fn semantic_expand_json_with_limits(
+    base_smiles: &str,
+    model_json: &str,
+    max_atoms: usize,
+    max_repeat_count: u32,
+) -> PyResult<String> {
     let value: serde_json::Value = serde_json::from_str(model_json)
         .map_err(|e| PyValueError::new_err(format!("invalid semantic JSON: {e}")))?;
     let model = chematic_mol::SemanticModel::from_json(&value)
@@ -518,7 +534,13 @@ fn semantic_expand_json(base_smiles: &str, model_json: &str) -> PyResult<String>
     let base =
         chematic_smiles::parse(base_smiles).map_err(|e| PyValueError::new_err(e.to_string()))?;
     let expanded = model
-        .expand(&base)
+        .expand_with_limits(
+            &base,
+            &chematic_mol::SemanticExpansionLimits {
+                max_atoms,
+                max_repeat_count,
+            },
+        )
         .map_err(|e| PyValueError::new_err(e.to_string()))?;
     serde_json::to_string(&expanded.to_json()).map_err(|e| PyValueError::new_err(e.to_string()))
 }
@@ -2418,6 +2440,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(semantic_model_json, m)?)?;
     m.add_function(wrap_pyfunction!(semantic_apply_json_command, m)?)?;
     m.add_function(wrap_pyfunction!(semantic_expand_json, m)?)?;
+    m.add_function(wrap_pyfunction!(semantic_expand_json_with_limits, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol_v3000, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol_v3000_with_coords, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol_v3000_with_diagnostics, m)?)?;
