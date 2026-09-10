@@ -7,7 +7,7 @@ import { createServer } from "node:http";
 import { mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 
 const ROOT = resolve(join(resolve(fileURLToPath(import.meta.url), ".."), ".."));
 const DEFAULT_CORPUS = join(ROOT, "scripts", "descriptor_census_corpus.smi");
@@ -132,10 +132,49 @@ function serve(files) {
     };
     const route = routes[request.url];
     if (!route) { response.writeHead(404); response.end(); return; }
-    response.writeHead(200, { "Content-Type": route.type, "Cache-Control": "no-store" });
-    response.end(readFileSync(route.path));
+    const body = readFileSync(route.path);
+    response.writeHead(200, {
+      "Content-Type": route.type,
+      "Cache-Control": "no-store",
+      "Content-Length": body.length,
+      "Connection": "close",
+    });
+    response.end(body);
   });
   return server;
+}
+
+function runBrowser(chromium, args, timeoutMs) {
+  return new Promise((resolveBrowser, rejectBrowser) => {
+    const child = spawn(chromium, args, { encoding: "utf8" });
+    let stdout = "";
+    let stderr = "";
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      child.kill("SIGKILL");
+      rejectBrowser(new Error(`browser timed out after ${timeoutMs} ms\n${stderr || stdout}`));
+    }, timeoutMs);
+    child.stdout?.on("data", (chunk) => { stdout += chunk; });
+    child.stderr?.on("data", (chunk) => { stderr += chunk; });
+    child.once("error", (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      rejectBrowser(error);
+    });
+    child.once("close", (code, signal) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (code !== 0) {
+        rejectBrowser(new Error(stderr || stdout || `browser exited with code ${code} (${signal || "no signal"})`));
+        return;
+      }
+      resolveBrowser({ stdout, stderr });
+    });
+  });
 }
 
 async function main() {
@@ -165,9 +204,7 @@ async function main() {
     const chromium = option(args, "--chromium", "/opt/homebrew/bin/chromium");
     const browserTimeoutMs = Number(option(args, "--browser-timeout-ms", "60000"));
     const profile = mkdtempSync("/private/tmp/chematic-browser-gate-profile-");
-    const browser = spawnSync(chromium, ["--headless=new", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--no-first-run", `--user-data-dir=${profile}`, "--virtual-time-budget=30000", "--dump-dom", `http://127.0.0.1:${port}/`], { encoding: "utf8", maxBuffer: 10 * 1024 * 1024, timeout: browserTimeoutMs });
-    if (browser.error) throw browser.error;
-    if (browser.status !== 0) throw new Error(browser.stderr || "Chromium exited unsuccessfully");
+    const browser = await runBrowser(chromium, ["--headless=new", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--no-first-run", `--user-data-dir=${profile}`, "--virtual-time-budget=30000", "--dump-dom", `http://127.0.0.1:${port}/`], browserTimeoutMs);
     const marker = browser.stdout.match(/<pre id="result">([\s\S]*?)<\/pre>/);
     if (!marker) throw new Error(`Chromium did not return a result: ${browser.stdout.slice(-1000)}`);
     const measurement = JSON.parse(marker[1].replaceAll("&quot;", '"').replaceAll("&amp;", "&"));
