@@ -10,7 +10,9 @@ The schema marker `chematic.semantic.v1` is the public interchange contract.
 alternative is never selected implicitly. An R-group alternative may contain
 one or more `[*]` linkage placeholders; placeholders are paired with
 `attachment_atoms` in source order and are never copied into the expanded
-graph. A polymer repeat is expandable only when it has an explicit repeat
+graph. An R-group may contain typed `nested_groups`; nested choices are
+validated recursively, selected explicitly, and expanded in stable parent
+before-child order. A polymer repeat is expandable only when it has an explicit repeat
 count and either a `repeat_smiles` value with exactly two `[*]` linkage
 placeholders or two explicit `repeat_endpoint_atoms`. A null `repeat_count`
 is a valid unselected editing state and can be set with the typed
