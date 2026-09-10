@@ -58,6 +58,8 @@ Those bindings also expose `semantic_expand_json_with_limits` with explicit
 use the same finite defaults.
 Markush alternatives are selected explicitly via
 `semantic_apply_json_command`; no alternative is inferred.
+`ReplaceRGroupAlternatives` edits the allowed substituent set by stable group
+ID and clears any prior selection, requiring a fresh explicit selection.
 `ClearRGroupAlternative` restores the unselected Markush state and provides a
 lossless semantic contraction boundary.
 

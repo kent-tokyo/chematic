@@ -178,6 +178,11 @@ pub enum SemanticCommand {
         group_id: SemanticId,
         alternative: usize,
     },
+    /// Replace the explicitly allowed substituent set for an R-group.
+    ReplaceRGroupAlternatives {
+        group_id: SemanticId,
+        alternatives: Vec<String>,
+    },
     /// Clear a previously selected alternative so the model returns to an
     /// explicit, non-expandable Markush state.
     ClearRGroupAlternative { group_id: SemanticId },
@@ -348,6 +353,23 @@ impl SemanticModel {
 
     /// Decode and apply a JSON command using the same contract as the Rust API.
     pub fn apply_json_command(&self, value: &Value) -> Result<Self, SemanticError> {
+        if let Some(group_id) = value.get("replace_group_id").and_then(Value::as_str) {
+            let alternatives = value
+                .get("alternatives")
+                .and_then(Value::as_array)
+                .ok_or_else(|| SemanticError::InvalidJson("alternatives must be an array".into()))?
+                .iter()
+                .map(|alternative| {
+                    alternative.as_str().map(str::to_owned).ok_or_else(|| {
+                        SemanticError::InvalidJson("alternatives entries must be strings".into())
+                    })
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            return self.apply(&SemanticCommand::ReplaceRGroupAlternatives {
+                group_id: group_id.into(),
+                alternatives,
+            });
+        }
         if let Some(group_id) = value.get("s_group_id").and_then(Value::as_str) {
             let kind = value
                 .get("kind")
@@ -414,6 +436,19 @@ impl SemanticModel {
                     return Err(SemanticError::MissingAlternative(group_id.clone()));
                 }
                 group.selected_alternative = Some(*alternative);
+            }
+            SemanticCommand::ReplaceRGroupAlternatives {
+                group_id,
+                alternatives,
+            } => {
+                let group = find_r_group_mut(&mut next.r_groups, group_id).ok_or_else(|| {
+                    SemanticError::InvalidExpansion {
+                        id: group_id.clone(),
+                        reason: "unknown R-group".into(),
+                    }
+                })?;
+                group.alternatives = alternatives.clone();
+                group.selected_alternative = None;
             }
             SemanticCommand::ClearRGroupAlternative { group_id } => {
                 let group = find_r_group_mut(&mut next.r_groups, group_id).ok_or_else(|| {
@@ -1043,6 +1078,12 @@ fn validate_r_group(
             return Err(SemanticError::AmbiguousAttachment(group.id.clone()));
         }
     }
+    if group.alternatives.is_empty() {
+        return Err(SemanticError::InvalidAlternative {
+            id: group.id.clone(),
+            reason: "allowed substituent set must not be empty".into(),
+        });
+    }
     for pattern in &group.alternatives {
         if pattern.trim().is_empty() {
             return Err(SemanticError::InvalidAlternative {
@@ -1435,6 +1476,38 @@ mod tests {
         let expanded = selected.expand(&base).unwrap();
         assert_eq!(expanded.molecule.atom_count(), 3);
         assert_eq!(expanded.source_to_expanded["r1"].len(), 1);
+    }
+
+    #[test]
+    fn command_replaces_allowed_r_group_set_and_clears_selection() {
+        let model = SemanticModel {
+            atom_ids: vec!["a1".into()],
+            r_groups: vec![RGroupDefinition {
+                id: "r1".into(),
+                attachment_atoms: vec![AtomRef {
+                    atom_id: "a1".into(),
+                }],
+                alternatives: vec!["[*]O".into()],
+                selected_alternative: Some(0),
+                nested_groups: vec![],
+            }],
+            ..Default::default()
+        };
+        let changed = model
+            .apply_json_command(&serde_json::json!({
+                "replace_group_id": "r1",
+                "alternatives": ["[*]N", "[*]Cl"]
+            }))
+            .unwrap();
+        assert_eq!(changed.r_groups[0].alternatives, ["[*]N", "[*]Cl"]);
+        assert_eq!(changed.r_groups[0].selected_alternative, None);
+        assert!(matches!(
+            model.apply_json_command(&serde_json::json!({
+                "replace_group_id": "r1",
+                "alternatives": []
+            })),
+            Err(SemanticError::InvalidAlternative { .. })
+        ));
     }
 
     #[test]

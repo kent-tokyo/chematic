@@ -28,6 +28,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   biomolecule payloads.
 - Added S-group and polymer-linkage source-to-expanded provenance mappings to
   semantic expansion results.
+- Added stable-ID editing for R-group allowed substituent sets, with selection
+  reset and validation of the replacement set.
 
 ## [1.0.12] - 2026-09-11
 

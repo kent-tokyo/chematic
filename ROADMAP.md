@@ -120,6 +120,8 @@ Competitive-response gate status (2026-09-10):
   first-class biomolecule expansion remains a separate future schema.
 - [x] Include S-group and polymer-linkage IDs in expansion provenance mappings
   so downstream editors can address their source atoms deterministically.
+- [x] Add stable-ID editing for R-group allowed substituent sets; replacement
+  clears selection and revalidation remains fail-closed.
 
 Completed through the v1.0.11 release tree (with historical v1.0.10 and v1.0.9
 milestones retained below):
