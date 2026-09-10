@@ -932,3 +932,28 @@ Evidence:
 This is intentionally a bounded compatibility path, not full query-aware
 SMIRKS. Compound SMARTS primitives and richer query-aware semantics remain
 open for the broader #510 scope.
+
+## Issues #461 and #462 — document presentation and semantic editing closure
+
+The follow-up implementation now provides the bounded, loss-aware contracts
+requested by these issues. CDXML keeps the original source byte-for-byte,
+retains page order and opaque presentation metadata, exposes typed page bounds,
+object kinds, text styles, transforms, z-order, nested paths, and unsupported
+diagnostics, and accepts empty self-closing pages. Semantic JSON now covers
+nested Markush groups, multiple attachments, polymer repeat/end-group data,
+typed S-groups and polymer linkages, stable-ID editing, deterministic bounded
+expansion, source-to-expanded provenance, and provenance-backed contraction.
+Biomolecule payloads are rejected explicitly until a dedicated typed schema is
+available.
+
+Evidence from the final local audit:
+
+- `cargo test -p chematic-mol --locked --offline` — 591 tests passed,
+  including CDXML, semantic, and shared binding fixtures.
+- `cargo check -p chematic-py -p chematic-wasm --locked --offline` — passed.
+- `cargo fmt --all`, `git diff --check`, and modified-crate clippy — passed.
+- Relevant implementation commits: `ef01152d`, `26e31465`, `3577faf5`,
+  `39e26b1e`, `b92fbf24`.
+
+The issues are closed against this bounded contract; full ChemDraw rendering
+inheritance and a future first-class biomolecule schema remain separate scope.
