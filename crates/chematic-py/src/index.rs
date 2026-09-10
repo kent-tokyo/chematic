@@ -4,13 +4,14 @@ use pyo3::prelude::*;
 fn parse_fp_type(name: &str) -> PyResult<chematic_fp::FpType> {
     match name {
         "ecfp4" => Ok(chematic_fp::FpType::Ecfp4),
+        "rdkit_ecfp4" => Ok(chematic_fp::FpType::RdkitEcfp4),
         "ecfp6" => Ok(chematic_fp::FpType::Ecfp6),
         "ecfp4_chiral" => Ok(chematic_fp::FpType::Ecfp4Chiral),
         "fcfp4" => Ok(chematic_fp::FpType::Fcfp4),
         "maccs" => Ok(chematic_fp::FpType::Maccs),
         "topo_path" => Ok(chematic_fp::FpType::TopoPath),
         _ => Err(PyValueError::new_err(format!(
-            "unknown fingerprint type {name:?}; expected ecfp4, ecfp6, ecfp4_chiral, fcfp4, maccs, or topo_path"
+            "unknown fingerprint type {name:?}; expected ecfp4, rdkit_ecfp4, ecfp6, ecfp4_chiral, fcfp4, maccs, or topo_path"
         ))),
     }
 }
@@ -146,14 +147,17 @@ pub struct PyPreparedFingerprintIndex {
     inner: chematic_fp::PreparedFingerprintIndex,
     original_indices: Vec<usize>,
     smiles: Vec<String>,
+    failed_indices: Vec<usize>,
 }
 
 #[pymethods]
 impl PyPreparedFingerprintIndex {
     /// Build an exact reusable index from SMILES.
     ///
-    /// Invalid SMILES are skipped; returned indices refer to the original
-    /// input list. ``fp`` defaults to ``"ecfp4"``.
+    /// Invalid SMILES or RDKit-compatible preprocessing failures are skipped;
+    /// their original positions are available through ``failed_indices()``.
+    /// Returned search indices refer to the original input list. ``fp``
+    /// defaults to ``"ecfp4"`` and also accepts ``"rdkit_ecfp4"``.
     #[staticmethod]
     #[pyo3(signature = (smiles, fp = "ecfp4"))]
     fn from_smiles(smiles: Vec<String>, fp: &str) -> PyResult<Self> {
@@ -161,17 +165,29 @@ impl PyPreparedFingerprintIndex {
         let mut molecules = Vec::new();
         let mut original_indices = Vec::new();
         let mut valid_smiles = Vec::new();
+        let mut failed_indices = Vec::new();
         for (index, smi) in smiles.into_iter().enumerate() {
             if let Ok(mol) = chematic_smiles::parse(&smi) {
-                molecules.push(mol);
-                original_indices.push(index);
-                valid_smiles.push(smi);
+                if fp_type == chematic_fp::FpType::RdkitEcfp4
+                    && chematic_fp::rdkit_morgan_ecfp4_experimental(&mol).is_err()
+                {
+                    failed_indices.push(index);
+                } else {
+                    molecules.push(mol);
+                    original_indices.push(index);
+                    valid_smiles.push(smi);
+                }
+            } else {
+                failed_indices.push(index);
             }
         }
+        let inner = chematic_fp::PreparedFingerprintIndex::try_new(&molecules, fp_type)
+            .map_err(|error| PyValueError::new_err(error.to_string()))?;
         Ok(Self {
-            inner: chematic_fp::PreparedFingerprintIndex::new(&molecules, fp_type),
+            inner,
             original_indices,
             smiles: valid_smiles,
+            failed_indices,
         })
     }
 
@@ -180,12 +196,15 @@ impl PyPreparedFingerprintIndex {
     fn search(&self, query: &str, k: usize) -> PyResult<Vec<(usize, f64)>> {
         let query_mol =
             chematic_smiles::parse(query).map_err(|e| PyValueError::new_err(e.to_string()))?;
-        Ok(self
-            .inner
-            .search(&query_mol, k)
-            .into_iter()
-            .map(|(index, score)| (self.original_indices[index], score))
-            .collect())
+        self.inner
+            .try_search(&query_mol, k)
+            .map_err(|error| PyValueError::new_err(error.to_string()))
+            .map(|results| {
+                results
+                    .into_iter()
+                    .map(|(index, score)| (self.original_indices[index], score))
+                    .collect()
+            })
     }
 
     /// Return the valid SMILES stored by the index, in compact index order.
@@ -198,6 +217,12 @@ impl PyPreparedFingerprintIndex {
 
     fn __len__(&self) -> usize {
         self.inner.len()
+    }
+
+    /// Return original input positions rejected during parsing or fingerprint
+    /// preprocessing. The list is stable and sorted by input order.
+    fn failed_indices(&self) -> Vec<usize> {
+        self.failed_indices.clone()
     }
 
     fn __repr__(&self) -> String {

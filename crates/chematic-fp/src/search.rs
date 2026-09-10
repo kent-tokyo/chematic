@@ -11,6 +11,7 @@ use chematic_core::Molecule;
 
 use crate::bitvec::BitVec2048;
 use crate::ecfp::{EcfpConfig, ecfp};
+use crate::rdkit_morgan_ecfp4::{RdkitMorganError, rdkit_morgan_ecfp4_experimental};
 
 // ---------------------------------------------------------------------------
 // Fingerprint type selector
@@ -32,10 +33,13 @@ pub enum FpType {
     Maccs,
     /// Topological path FP (max_len=7, 2048 bits).
     TopoPath,
+    /// RDKit Morgan radius-2, 2048-bit compatible ECFP4. This profile is
+    /// fallible because RDKit-parity aromaticity preprocessing can fail.
+    RdkitEcfp4,
 }
 
-fn compute_fp(mol: &Molecule, fp_type: FpType) -> BitVec2048 {
-    match fp_type {
+fn compute_fp(mol: &Molecule, fp_type: FpType) -> Result<BitVec2048, RdkitMorganError> {
+    let fingerprint = match fp_type {
         FpType::Ecfp4 => ecfp(mol, &EcfpConfig::default()),
         FpType::Ecfp6 => ecfp(
             mol,
@@ -60,8 +64,39 @@ fn compute_fp(mol: &Molecule, fp_type: FpType) -> BitVec2048 {
         FpType::TopoPath => {
             crate::topo_path::topo_path(mol, &crate::topo_path::TopoPathConfig::default())
         }
+        FpType::RdkitEcfp4 => return Ok(rdkit_morgan_ecfp4_experimental(mol)?.fingerprint),
+    };
+    Ok(fingerprint)
+}
+
+/// A fingerprint preparation or query failure. The index never falls back to
+/// a different fingerprint profile after this error.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PreparedFingerprintError {
+    Database {
+        index: usize,
+        source: RdkitMorganError,
+    },
+    Query {
+        source: RdkitMorganError,
+    },
+}
+
+impl std::fmt::Display for PreparedFingerprintError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Database { index, source } => {
+                write!(
+                    f,
+                    "fingerprint preparation failed at database index {index}: {source}"
+                )
+            }
+            Self::Query { source } => write!(f, "fingerprint query failed: {source}"),
+        }
     }
 }
+
+impl std::error::Error for PreparedFingerprintError {}
 
 /// A reusable, in-memory fingerprint index for repeated nearest-neighbour
 /// queries over the same molecule database.
@@ -79,13 +114,25 @@ pub struct PreparedFingerprintIndex {
 impl PreparedFingerprintIndex {
     /// Build an index by computing one fingerprint for each database molecule.
     pub fn new(db: &[Molecule], fp_type: FpType) -> Self {
-        let fingerprints: Vec<_> = db.iter().map(|mol| compute_fp(mol, fp_type)).collect();
+        Self::try_new(db, fp_type).expect("non-fallible fingerprint profile failed")
+    }
+
+    /// Build an index with explicit failure reporting for fallible profiles.
+    pub fn try_new(db: &[Molecule], fp_type: FpType) -> Result<Self, PreparedFingerprintError> {
+        let fingerprints: Vec<_> = db
+            .iter()
+            .enumerate()
+            .map(|(index, mol)| {
+                compute_fp(mol, fp_type)
+                    .map_err(|source| PreparedFingerprintError::Database { index, source })
+            })
+            .collect::<Result<_, _>>()?;
         let popcounts = fingerprints.iter().map(BitVec2048::popcount).collect();
-        Self {
+        Ok(Self {
             fp_type,
             fingerprints,
             popcounts,
-        }
+        })
     }
 
     /// Fingerprint family used by this index.
@@ -105,8 +152,20 @@ impl PreparedFingerprintIndex {
 
     /// Search the prepared database with a molecule query.
     pub fn search(&self, query: &Molecule, k: usize) -> Vec<(usize, f64)> {
-        let query_fp = compute_fp(query, self.fp_type);
+        let query_fp =
+            compute_fp(query, self.fp_type).expect("non-fallible fingerprint profile failed");
         self.search_fp(&query_fp, k)
+    }
+
+    /// Search using a fallible fingerprint profile without fallback.
+    pub fn try_search(
+        &self,
+        query: &Molecule,
+        k: usize,
+    ) -> Result<Vec<(usize, f64)>, PreparedFingerprintError> {
+        let query_fp = compute_fp(query, self.fp_type)
+            .map_err(|source| PreparedFingerprintError::Query { source })?;
+        Ok(self.search_fp(&query_fp, k))
     }
 
     /// Search the prepared database with an already computed fingerprint.
@@ -136,6 +195,20 @@ pub fn nearest_neighbors(
     }
 
     PreparedFingerprintIndex::new(db, fp_type).search(query, k)
+}
+
+/// Fallible nearest-neighbour search for profiles such as RDKit-compatible
+/// ECFP4. No alternate fingerprint profile is used after a failure.
+pub fn try_nearest_neighbors(
+    query: &Molecule,
+    db: &[Molecule],
+    k: usize,
+    fp_type: FpType,
+) -> Result<Vec<(usize, f64)>, PreparedFingerprintError> {
+    if k == 0 || db.is_empty() {
+        return Ok(vec![]);
+    }
+    PreparedFingerprintIndex::try_new(db, fp_type)?.try_search(query, k)
 }
 
 /// Like [`nearest_neighbors`] but accepts a pre-computed query fingerprint.
@@ -347,5 +420,16 @@ mod tests {
         let results = nearest_neighbors(&query, &db, 3, FpType::Ecfp4);
         assert_eq!(results[0].0, 1);
         assert_eq!(results[1].0, 2);
+    }
+
+    #[test]
+    fn prepared_index_supports_fallible_rdkit_ecfp4_profile() {
+        let query = benzene();
+        let db = vec![ethane(), benzene(), toluene()];
+        let index = PreparedFingerprintIndex::try_new(&db, FpType::RdkitEcfp4).unwrap();
+        assert_eq!(index.fp_type(), FpType::RdkitEcfp4);
+        let results = index.try_search(&query, 3).unwrap();
+        assert_eq!(results[0].0, 1);
+        assert!((results[0].1 - 1.0).abs() < 1e-9);
     }
 }

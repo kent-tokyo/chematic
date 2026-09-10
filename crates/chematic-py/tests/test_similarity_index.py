@@ -79,6 +79,16 @@ def test_prepared_fingerprint_index_reuses_database():
     assert idx.get_smiles(0) == "c1ccccc1"
 
 
+def test_prepared_fingerprint_index_supports_rdkit_compatible_profile():
+    idx = chematic.PreparedFingerprintIndex.from_smiles(
+        ["invalid", "c1ccccc1", "CC"], fp="rdkit_ecfp4"
+    )
+    assert idx.failed_indices() == [0]
+    results = idx.search("c1ccccc1", k=2)
+    assert results[0][0] == 1
+    assert results[0][1] == pytest.approx(1.0)
+
+
 def test_prepared_fingerprint_index_rejects_unknown_fp():
     with pytest.raises(ValueError, match="unknown fingerprint type"):
         chematic.PreparedFingerprintIndex.from_smiles(SMILES_LIST, fp="unknown")

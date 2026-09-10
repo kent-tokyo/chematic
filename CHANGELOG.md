@@ -30,6 +30,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   semantic expansion results.
 - Added stable-ID editing for R-group allowed substituent sets, with selection
   reset and validation of the replacement set.
+- Added the fallible `rdkit_ecfp4` profile to `PreparedFingerprintIndex`,
+  including original-index failure reporting and deterministic top-k ties.
+- Added the three-lane native/native, RDKit-compatible/RDKit, and cross-profile
+  top-10 comparison gate; the v1.0.12 valid-input run reached 100% mean recall
+  in the compatible lane and reports preprocessing failures separately.
 
 ## [1.0.12] - 2026-09-11
 

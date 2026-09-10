@@ -10,7 +10,7 @@ accuracy, or compatibility claims.
 | Need | Start with |
 |---|---|
 | Understand the rules and how to report a result | [`docs/benchmark.md`](../docs/benchmark.md) |
-| Compare current similarity search with RDKit | [`2026-09-09-similarity-search-v1.0.9.md`](2026-09-09-similarity-search-v1.0.9.md) |
+| Compare current similarity search with RDKit | [`2026-09-11-similarity-search-v1.0.12.md`](2026-09-11-similarity-search-v1.0.12.md) |
 | Reproduce the 1.10x hot-path gate | [`2026-09-05-hotpath-110.md`](2026-09-05-hotpath-110.md) |
 | Check file-streaming contracts | [v1.0.10 validation matrix](../validation/results/cross-engine-matrix-v1.0.10.json) |
 | Check current streaming safety gate | [`2026-09-09-streaming-safety-v1.0.10.md`](2026-09-09-streaming-safety-v1.0.10.md) |
@@ -19,9 +19,9 @@ accuracy, or compatibility claims.
 | Check WASM artifact size | [`2026-09-09-wasm-size-v1.0.10.md`](2026-09-09-wasm-size-v1.0.10.md) |
 | Find older measurements | [Historical snapshots](#historical-snapshots) |
 
-The current release line is v1.0.11. The newest checked-in performance
-records are still versioned historical records where their headers say so;
-the v1.0.10 release does not imply that an older measurement was rerun.
+The current release line is v1.0.12. Older records remain versioned historical
+measurements where their headers say so; a release does not imply that an older
+measurement was rerun.
 
 ## Performance and scaling
 
@@ -31,6 +31,8 @@ the v1.0.10 release does not imply that an older measurement was rerun.
 |---|---|
 | [`2026-09-09-similarity-search-v1.0.9.md`](2026-09-09-similarity-search-v1.0.9.md) | 4,500-entry library / 500-query exact top-k comparison with RDKit; latency and ranking overlap are separate axes |
 | [`2026-09-09-similarity-search-v1.0.9.json`](2026-09-09-similarity-search-v1.0.9.json) | Machine-readable similarity-search measurements and ranking checks |
+| [`2026-09-11-similarity-search-v1.0.12.md`](2026-09-11-similarity-search-v1.0.12.md) | Three-lane native/native, RDKit-compatible/RDKit, and cross-profile top-10 gate with separate failure accounting |
+| [`2026-09-11-similarity-search-v1.0.12.json`](2026-09-11-similarity-search-v1.0.12.json) | Machine-readable v1.0.12 similarity-search gate |
 | [`2026-09-09-wasm-rdkit-gate.md`](2026-09-09-wasm-rdkit-gate.md) | Same-corpus Node/WASM comparison with the installed official RDKit.js package |
 | [`2026-09-09-wasm-rdkit-gate.json`](2026-09-09-wasm-rdkit-gate.json) | Machine-readable WASM comparison output and exact fingerprint parity count |
 | [`2026-09-09-wasm-rdkit-paired.md`](2026-09-09-wasm-rdkit-paired.md) | Same-process paired Node/WASM timing follow-up |

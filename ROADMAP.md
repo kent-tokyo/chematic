@@ -98,17 +98,18 @@ Competitive-response gate status (2026-09-10):
 
 ### Next priority: compatible similarity search
 
-- [ ] Add a fallible `rdkit_ecfp4` prepared-search profile alongside the fast
-  native `ecfp4` default. It must use the existing RDKit-bit-exact Morgan
-  implementation, preserve original input indices, and report preprocessing
+- [x] Add a fallible `rdkit_ecfp4` prepared-search profile alongside the fast
+  native `ecfp4` default. It uses the existing RDKit-bit-exact Morgan
+  implementation, preserves original input indices, and reports preprocessing
   failures instead of silently falling back.
-- [ ] Make top-k tie ordering deterministic (`score` descending, original
+- [x] Make top-k tie ordering deterministic (`score` descending, original
   index ascending) across native and compatible search lanes.
-- [ ] Re-run the 4,500-library/500-query top-10 gate with native/native,
+- [x] Re-run the 4,500-library/500-query top-10 gate with native/native,
   compatible/RDKit, and cross-profile lanes kept separate. Treat the existing
   72.6% native-vs-RDKit overlap as a disclosed cross-profile diagnostic, not
-  an RDKit-compatibility score; target at least 99% compatible top-10 recall
-  on the valid-input scope and publish failure counts separately.
+  an RDKit-compatibility score. The v1.0.12 gate reached 100% compatible
+  top-10 recall on 4480 valid library rows and 498 valid queries; 20 library
+  and 2 query failures remain separately reported in the dated benchmark.
 
 - [x] Expose the exact provenance-backed contraction graph in semantic
   expansion JSON (`contracted_smiles`) across the existing Python and

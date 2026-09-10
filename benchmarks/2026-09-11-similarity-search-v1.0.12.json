@@ -1,0 +1,135 @@
+{
+  "schema_version": 2,
+  "target_version": "1.0.12",
+  "corpus": {
+    "path": "scripts/descriptor_census_corpus.smi",
+    "sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c",
+    "total_rows": 5000,
+    "library_rows": 4500,
+    "query_rows": 500,
+    "valid_library_rows": 4480,
+    "valid_query_rows": 498,
+    "split": "library=first rows; queries=following rows"
+  },
+  "configuration": {
+    "fingerprint_native": "chematic ECFP4, 2048 bits",
+    "fingerprint_compatible": "RDKit Morgan radius=2, nBits=2048",
+    "k": 10,
+    "warmup_queries": 10,
+    "ordering": "similarity descending, original input index ascending on ties"
+  },
+  "environment": {
+    "python": "3.13.6",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "chematic": "1.0.12",
+    "rdkit": "2026.03.6"
+  },
+  "failures": {
+    "library": {
+      "chematic_native": [],
+      "chematic_compatible": [
+        1206,
+        1213,
+        1214,
+        1231,
+        1238,
+        1287,
+        1370,
+        1371,
+        1829,
+        1830,
+        1843,
+        1975,
+        2007,
+        2018,
+        2079,
+        2080,
+        2103,
+        4385,
+        4471,
+        4498
+      ],
+      "rdkit": [],
+      "shared_excluded_count": 20
+    },
+    "queries": {
+      "shared_excluded_indices": [
+        3,
+        28
+      ],
+      "count": 2
+    }
+  },
+  "lanes": {
+    "native_native": {
+      "implementation": "PreparedFingerprintIndex(ecfp4) vs byte-fingerprint brute-force",
+      "prepared_build_ms": 810.39,
+      "prepared_query": {
+        "p50_us": 219.666,
+        "p95_us": 427.714,
+        "mean_us": 260.312,
+        "min_us": 49.541,
+        "max_us": 3021.167
+      },
+      "reference_query": {
+        "p50_us": 1562.062,
+        "p95_us": 1841.958,
+        "mean_us": 1604.951,
+        "min_us": 1263.417,
+        "max_us": 4328.625
+      },
+      "top10_recall": {
+        "reference": "native byte-fingerprint reference",
+        "mean_top10_recall": 0.995984,
+        "p05_top10_recall": 1.0,
+        "mean_top10_jaccard": 0.993433,
+        "queries": 498
+      }
+    },
+    "rdkit_compatible": {
+      "implementation": "PreparedFingerprintIndex(rdkit_ecfp4) vs RDKit Morgan + BulkTanimotoSimilarity",
+      "prepared_build_ms": 3398.7,
+      "prepared_query": {
+        "p50_us": 406.438,
+        "p95_us": 841.298,
+        "mean_us": 482.039,
+        "min_us": 63.667,
+        "max_us": 6093.667
+      },
+      "reference_build_ms": 79.374,
+      "reference_query": {
+        "p50_us": 1585.522,
+        "p95_us": 1664.739,
+        "mean_us": 1587.767,
+        "min_us": 1352.333,
+        "max_us": 1854.25
+      },
+      "top10_recall": {
+        "reference": "RDKit Morgan",
+        "mean_top10_recall": 1.0,
+        "p05_top10_recall": 1.0,
+        "mean_top10_jaccard": 1.0,
+        "queries": 498
+      }
+    },
+    "cross_profile": {
+      "implementation": "chematic native ECFP4 vs RDKit-compatible Morgan",
+      "top10_recall": {
+        "reference": "RDKit Morgan diagnostic",
+        "mean_top10_recall": 0.726506,
+        "p05_top10_recall": 0.3,
+        "mean_top10_jaccard": 0.608575,
+        "queries": 498
+      },
+      "interpretation": "diagnostic cross-profile retrieval agreement, not a compatibility score"
+    }
+  },
+  "gate": {
+    "name": "rdkit_compatible_top10_recall",
+    "target": 0.99,
+    "measured": 1.0,
+    "passed": true,
+    "scope": "shared valid library/query inputs"
+  }
+}

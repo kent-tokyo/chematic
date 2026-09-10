@@ -7,11 +7,10 @@ counted as wins. Dated raw records are indexed in
 
 ## Current status
 
-The current published release is **v1.0.11**. The newest checked-in performance
-records include the v1.0.11 generated-browser API/V3000 gate; operation timing
-and published-size rows below remain explicitly pinned to their recorded
-v1.0.10 or earlier source/release-line versions and must not be presented as
-v1.0.11 measurements unless explicitly rerun.
+The current release line is **v1.0.12**. The newest checked-in performance
+records include the v1.0.12 three-lane similarity-search gate; older operation
+timing and published-size rows remain explicitly pinned to their recorded
+source/release-line versions.
 
 The current records cover four separate evidence types:
 
@@ -51,11 +50,11 @@ the current release summary.
 
 ## Similarity search
 
-The [2026-09-09 similarity-search record](../benchmarks/2026-09-09-similarity-search-v1.0.9.md)
-is a v1.0.9 historical source measurement using a fixed 4,500-entry library and
-500-query split against RDKit. Search latency and top-k ranking overlap are
-reported separately because native chematic ECFP4 and RDKit Morgan fingerprints
-are not bit-identical. The result is not a claim that one engine is universally
+The [2026-09-11 similarity-search record](../benchmarks/2026-09-11-similarity-search-v1.0.12.md)
+is the current three-lane gate using a fixed 4,500-entry library and 500-query
+split. Native/native, RDKit-compatible/RDKit, and cross-profile overlap are
+reported separately; failures are excluded from the valid-input scope and
+counted independently. The result is not a claim that one engine is universally
 faster or more accurate.
 
 ## Accuracy and compatibility
@@ -86,7 +85,7 @@ hashes and commands are in the
 | Purpose | Entry point |
 |---|---|
 | Accuracy vs RDKit | `pip install chematic rdkit`; `python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --json /tmp/bench5k.json`; `python scripts/gen_validation_report.py /tmp/bench5k.json` |
-| Similarity search | [`2026-09-09-similarity-search-v1.0.9.md`](../benchmarks/2026-09-09-similarity-search-v1.0.9.md) |
+| Similarity search | [`2026-09-11-similarity-search-v1.0.12.md`](../benchmarks/2026-09-11-similarity-search-v1.0.12.md) |
 | Hot-path A/B | [`2026-09-05-hotpath-110.md`](../benchmarks/2026-09-05-hotpath-110.md) |
 | File streaming | [`2026-09-04-streaming-formats.md`](../benchmarks/2026-09-04-streaming-formats.md) |
 | Cross-engine contracts | [`benchmarks/README.md`](../benchmarks/README.md#streaming-and-cross-engine-contracts) |
