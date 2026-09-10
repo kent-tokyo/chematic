@@ -153,7 +153,7 @@ pub use sdf::{
 };
 pub use semantic::{
     AtomRef, ExpandedSemantic, PolymerRepeatUnit, RGroupDefinition, SemanticCommand, SemanticError,
-    SemanticId, SemanticModel,
+    SemanticExpansionLimits, SemanticId, SemanticModel,
 };
 pub use smiles_table::{
     Delimiter, SmilesReaderOptions, SmilesRecordReader, SmilesRecordWriter, SmilesTableError,
