@@ -13,11 +13,31 @@ No changes yet.
 
 ## [1.0.12] - 2026-09-11
 
-- Synchronized the current README, roadmap, benchmark, compatibility, and
-  binding documentation with the v1.0.11 release and bounded #510/#513
-  reaction API scope.
-- Corrected stale WASM size/date references in current-facing documentation
-  while preserving historical benchmark records and their pinned versions.
+- Added bounded reaction requirements and stoichiometry analysis for
+  `PreparedReaction`, including conservative prefiltering and explicit
+  diagnostics for unsupported or oversized queries (#510, #513).
+- Added reaction application support for the documented atomic-number query
+  subset across Rust, Python, and Node/WASM bindings, with fail-closed errors
+  for unsupported SMARTS and regression coverage for product enumeration.
+- Preserved opaque V3000 `SGROUP` metadata through MOL parsing and writing,
+  including the WASM round-trip boundary, and added generated V3000 gate
+  coverage for binding behavior.
+- Added shared semantic expansion fixtures and APIs for Markush selections
+  and polymer repeat commands, with exact source-to-expanded atom mappings and
+  explicit limits for bounded expansion.
+- Added CIP regression coverage for negative-charge resonance systems and
+  atom-order shuffling, ensuring that resolved labels remain invariant to
+  input atom order and malformed internal state fails closed.
+- Added reproducible browser/WASM comparison gates against RDKit.js, covering
+  artifact size, initialization, SMILES parsing/writing, ECFP4, and memory
+  accounting; recorded the generated and official RDKit.js comparison
+  artifacts separately from native parity results.
+- Updated the browser compatibility workflow and release evidence manifests
+  so WASM validation, benchmark provenance, and publishable package versions
+  are checked together.
+- Synchronized current README, roadmap, benchmark, compatibility, and binding
+  documentation with the implementation and corrected stale WASM size/date
+  references while preserving historical records and their pinned versions.
 
 ## [1.0.11] - 2026-09-10
 
