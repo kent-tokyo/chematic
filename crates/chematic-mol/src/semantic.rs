@@ -145,6 +145,9 @@ pub enum SemanticCommand {
     /// Clear a previously selected alternative so the model returns to an
     /// explicit, non-expandable Markush state.
     ClearRGroupAlternative { group_id: SemanticId },
+    /// Clear a polymer repeat count so the model returns to an explicit,
+    /// non-expandable editing state.
+    ClearPolymerRepeatCount { unit_id: SemanticId },
     SetPolymerRepeatCount {
         unit_id: SemanticId,
         repeat_count: u32,
@@ -297,6 +300,11 @@ impl SemanticModel {
                 group_id: group_id.into(),
             });
         }
+        if let Some(unit_id) = value.get("clear_unit_id").and_then(Value::as_str) {
+            return self.apply(&SemanticCommand::ClearPolymerRepeatCount {
+                unit_id: unit_id.into(),
+            });
+        }
         if let Some(unit_id) = value.get("unit_id").and_then(Value::as_str) {
             let repeat_count = value
                 .get("repeat_count")
@@ -356,6 +364,17 @@ impl SemanticModel {
                         reason: "unknown R-group".into(),
                     })?;
                 group.selected_alternative = None;
+            }
+            SemanticCommand::ClearPolymerRepeatCount { unit_id } => {
+                let unit = next
+                    .polymer_units
+                    .iter_mut()
+                    .find(|unit| &unit.id == unit_id)
+                    .ok_or_else(|| SemanticError::InvalidExpansion {
+                        id: unit_id.clone(),
+                        reason: "unknown polymer unit".into(),
+                    })?;
+                unit.repeat_count = None;
             }
             SemanticCommand::SetPolymerRepeatCount {
                 unit_id,
@@ -1031,6 +1050,33 @@ mod tests {
         let expanded = selected.expand(&base).unwrap();
         assert_eq!(expanded.molecule.atom_count(), 8);
         assert_eq!(expanded.source_to_expanded["p1"].len(), 6);
+    }
+
+    #[test]
+    fn command_clears_polymer_repeat_count_for_lossless_contraction() {
+        let model = SemanticModel {
+            atom_ids: vec!["a1".into(), "a2".into()],
+            polymer_units: vec![PolymerRepeatUnit {
+                id: "p1".into(),
+                attachment_atoms: vec![
+                    AtomRef { atom_id: "a1".into() },
+                    AtomRef { atom_id: "a2".into() },
+                ],
+                end_groups: vec![],
+                repeat_count: Some(2),
+                repeat_smiles: Some("[*]CC[*]".into()),
+                repeat_endpoint_atoms: None,
+            }],
+            ..Default::default()
+        };
+        let contracted = model
+            .apply_json_command(&serde_json::json!({"clear_unit_id": "p1"}))
+            .unwrap();
+        assert_eq!(contracted.polymer_units[0].repeat_count, None);
+        assert!(matches!(
+            contracted.expand(&chematic_smiles::parse("CC").unwrap()),
+            Err(SemanticError::Unsupported { .. })
+        ));
     }
 
     #[test]
