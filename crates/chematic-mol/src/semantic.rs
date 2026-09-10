@@ -142,6 +142,9 @@ pub enum SemanticCommand {
         group_id: SemanticId,
         alternative: usize,
     },
+    /// Clear a previously selected alternative so the model returns to an
+    /// explicit, non-expandable Markush state.
+    ClearRGroupAlternative { group_id: SemanticId },
     SetPolymerRepeatCount {
         unit_id: SemanticId,
         repeat_count: u32,
@@ -289,6 +292,11 @@ impl SemanticModel {
 
     /// Decode and apply a JSON command using the same contract as the Rust API.
     pub fn apply_json_command(&self, value: &Value) -> Result<Self, SemanticError> {
+        if let Some(group_id) = value.get("clear_group_id").and_then(Value::as_str) {
+            return self.apply(&SemanticCommand::ClearRGroupAlternative {
+                group_id: group_id.into(),
+            });
+        }
         if let Some(unit_id) = value.get("unit_id").and_then(Value::as_str) {
             let repeat_count = value
                 .get("repeat_count")
@@ -337,6 +345,17 @@ impl SemanticModel {
                     return Err(SemanticError::MissingAlternative(group_id.clone()));
                 }
                 group.selected_alternative = Some(*alternative);
+            }
+            SemanticCommand::ClearRGroupAlternative { group_id } => {
+                let group = next
+                    .r_groups
+                    .iter_mut()
+                    .find(|g| &g.id == group_id)
+                    .ok_or_else(|| SemanticError::InvalidExpansion {
+                        id: group_id.clone(),
+                        reason: "unknown R-group".into(),
+                    })?;
+                group.selected_alternative = None;
             }
             SemanticCommand::SetPolymerRepeatCount {
                 unit_id,
@@ -947,6 +966,30 @@ mod tests {
         let expanded = selected.expand(&base).unwrap();
         assert_eq!(expanded.molecule.atom_count(), 3);
         assert_eq!(expanded.source_to_expanded["r1"].len(), 1);
+    }
+
+    #[test]
+    fn command_clears_r_group_selection_for_lossless_contraction() {
+        let model = SemanticModel {
+            atom_ids: vec!["a1".into()],
+            r_groups: vec![RGroupDefinition {
+                id: "r1".into(),
+                attachment_atoms: vec![AtomRef {
+                    atom_id: "a1".into(),
+                }],
+                alternatives: vec!["[*]O".into()],
+                selected_alternative: Some(0),
+            }],
+            ..Default::default()
+        };
+        let contracted = model
+            .apply_json_command(&serde_json::json!({"clear_group_id": "r1"}))
+            .unwrap();
+        assert_eq!(contracted.r_groups[0].selected_alternative, None);
+        assert!(matches!(
+            contracted.expand(&chematic_smiles::parse("C").unwrap()),
+            Err(SemanticError::Unsupported { .. })
+        ));
     }
 
     #[test]
