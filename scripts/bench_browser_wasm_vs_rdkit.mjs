@@ -86,7 +86,14 @@ const time = async (values, fn) => {
 };
 const run = async () => {
   const schematicModule = await withTimeout(import("/schematic/chematic_wasm.js"), "schematic JS module load");
-  const { default: initSchematic, parse_smiles, rdkit_ecfp4_bitvec } = schematicModule;
+  const {
+    default: initSchematic,
+    canonicalize_smiles_batch_json,
+    mol_block_from_smiles,
+    parse_smiles,
+    rdkit_ecfp4_bitvec,
+    sdf_records_batch_json,
+  } = schematicModule;
   const schematicStart = performance.now();
   await withTimeout(initSchematic("/schematic/chematic_wasm_bg.wasm"), "chematic WASM initialization");
   const schematicInit = performance.now() - schematicStart;
@@ -95,6 +102,33 @@ const run = async () => {
   const schematicFp = await time(smiles, (value) => { const mol = parse_smiles(value); rdkit_ecfp4_bitvec(mol); mol.free(); });
   const schematicHashes = [];
   for (const value of smiles) { const mol = parse_smiles(value); schematicHashes.push(packedBits(rdkit_ecfp4_bitvec(mol))); mol.free(); }
+
+  const malformed = { status: "unknown", error: null };
+  try { parse_smiles("C1CC"); malformed.status = "accepted"; }
+  catch (error) { malformed.status = "rejected"; malformed.error = String(error); }
+  const malformedBatch = JSON.parse(canonicalize_smiles_batch_json("CC\\nC1CC\\nCCO", "\\n"));
+  let batchLimitError = null;
+  try { canonicalize_smiles_batch_json("CC", ""); }
+  catch (error) { batchLimitError = String(error); }
+  const sdf = mol_block_from_smiles("CC") + "$$$$\\n" + mol_block_from_smiles("CCO") + "$$$$\\n";
+  const firstSdfBatch = JSON.parse(sdf_records_batch_json(sdf, 0, 1));
+  const secondSdfBatch = JSON.parse(sdf_records_batch_json(sdf, firstSdfBatch.next_offset, 1));
+  const schematicApiContract = {
+    malformed_parse: malformed,
+    malformed_batch: {
+      status: malformedBatch.status,
+      record_statuses: malformedBatch.records.map(({ status }) => status),
+      inline_error: typeof malformedBatch.records[1].error === "string",
+    },
+    stable_limit_error: batchLimitError,
+    resumable_batch: {
+      first_status: firstSdfBatch.status,
+      first_record_count: firstSdfBatch.record_count,
+      next_status: secondSdfBatch.status,
+      next_record_count: secondSdfBatch.record_count,
+      cancellation_boundary: firstSdfBatch.status === "partial" && firstSdfBatch.next_offset > 0,
+    },
+  };
 
   const rdkitStart = performance.now();
   const RDKit = await withTimeout(window.initRDKitModule({ locateFile: (name) => name.endsWith(".wasm") ? "/rdkit/RDKit_minimal.wasm" : name }), "RDKit WASM initialization");
@@ -105,11 +139,18 @@ const run = async () => {
   const rdkitFp = await time(smiles, (value) => { const mol = getMol(value); mol.get_morgan_fp(JSON.stringify({ radius: 2, nBits: 2048 })); mol.delete(); });
   const rdkitHashes = [];
   for (const value of smiles) { const mol = getMol(value); rdkitHashes.push(mol.get_morgan_fp(JSON.stringify({ radius: 2, nBits: 2048 }))); mol.delete(); }
+  const rdkitMalformed = RDKit.get_mol("C1CC");
+  const rdkitApiContract = {
+    malformed_parse: { status: rdkitMalformed ? "accepted" : "rejected" },
+    version: RDKit.version(),
+  };
+  if (rdkitMalformed) rdkitMalformed.delete();
   out.textContent = JSON.stringify({
     environment: { user_agent: navigator.userAgent, platform: navigator.platform },
     schematic: { init_ms: schematicInit, parse: schematicParse, smiles_write: schematicWrite, rdkit_compatible_ecfp4: schematicFp },
     rdkit: { version: RDKit.version(), init_ms: rdkitInit, parse: rdkitParse, smiles_write: rdkitWrite, morgan_radius2_2048: rdkitFp },
     fingerprint_parity: { compared_rows: smiles.length, exact_matches: schematicHashes.filter((v, i) => v === rdkitHashes[i]).length },
+    api_contract: { schematic: schematicApiContract, rdkit: rdkitApiContract },
   });
 };
 run().catch((error) => { out.textContent = JSON.stringify({ error: String(error), stack: error.stack }); });

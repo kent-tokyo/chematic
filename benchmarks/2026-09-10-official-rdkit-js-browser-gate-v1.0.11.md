@@ -10,11 +10,20 @@ warm-up rows, Morgan radius 2, and 2,048 bits.
 |---|---:|---:|
 | WASM raw | 3,726,056 bytes | 6,914,823 bytes |
 | WASM gzip-9 | 1,357,406 bytes | 2,045,412 bytes |
-| Initialization | 66.900 ms | 163.800 ms |
+| Initialization | 68.900 ms | 175.400 ms |
 | Parse p50 | below 0.1 ms/mol | 0.2 ms/mol |
 | SMILES write p50 | below 0.1 ms/mol | 0.3 ms/mol |
 | ECFP4/Morgan p50 | 0.2 ms/mol | 0.4 ms/mol |
 | Exact fingerprint matches | 1,000 / 1,000 | 1,000 / 1,000 |
+
+The browser API contract also passed for schematic: malformed SMILES are
+rejected with a JS error, malformed batch records remain inline while later
+records continue, an invalid delimiter returns the stable `delimiter must not
+be empty` error, and the resumable SDF batch reports `partial` before the
+caller-defined cancellation boundary and `complete` on the next offset.
+RDKit.js rejected the same malformed SMILES in this lane. RDKit.js does not
+expose an equivalent resumable batch contract in the tested package, so this
+is an API-shape comparison rather than a claim of feature parity.
 
 The browser timing resolution rounds very small values to zero in the raw
 report; the mean values remain available in the machine-readable result. This
