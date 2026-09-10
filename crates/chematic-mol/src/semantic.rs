@@ -129,6 +129,7 @@ pub struct SemanticModel {
 pub struct ExpandedSemantic {
     pub molecule: Molecule,
     pub source_to_expanded: BTreeMap<SemanticId, Vec<AtomIdx>>,
+    base_molecule: Molecule,
 }
 
 /// Resource limits for semantic expansion.
@@ -742,6 +743,7 @@ impl SemanticModel {
         Ok(ExpandedSemantic {
             molecule,
             source_to_expanded: mapping,
+            base_molecule: base.clone(),
         })
     }
 }
@@ -950,6 +952,13 @@ fn r_group_to_json(group: &RGroupDefinition) -> Value {
 }
 
 impl ExpandedSemantic {
+    /// Contract the expansion back to the exact base graph supplied to
+    /// [`SemanticModel::expand`]. This is deliberately provenance-backed rather
+    /// than inferred by deleting atoms from an arbitrary edited graph.
+    pub fn contract(&self) -> Molecule {
+        self.base_molecule.clone()
+    }
+
     /// Serialize the expanded graph and its source mapping for binding use.
     pub fn to_json(&self) -> Value {
         serde_json::json!({
@@ -1100,6 +1109,13 @@ mod tests {
         assert_eq!(expanded.molecule.atom_count(), 4);
         assert_eq!(expanded.source_to_expanded["r1"].len(), 1);
         assert_eq!(expanded.source_to_expanded["r1a"].len(), 1);
+        let contracted = expanded.contract();
+        assert_eq!(contracted.atom_count(), base.atom_count());
+        assert_eq!(contracted.bond_count(), base.bond_count());
+        assert_eq!(
+            chematic_smiles::canonical_smiles(&contracted),
+            chematic_smiles::canonical_smiles(&base)
+        );
     }
 
     #[test]
