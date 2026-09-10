@@ -42,7 +42,8 @@ typed `SemanticError::ExpansionLimit` and is checked before each fragment is
 added to the output graph.
 `ExpandedSemantic::contract` returns the exact base graph captured at
 expansion time; it does not attempt to infer a base graph from an arbitrary
-edited expansion.
+edited expansion. Binding JSON includes the same provenance-backed graph as
+`contracted_smiles`, so callers can restore the source graph without guessing.
 The stable JSON contract can be decoded with `SemanticModel::from_json` and
 expanded through the Python and WASM/Node `semantic_expand_json` APIs.
 Those bindings also expose `semantic_expand_json_with_limits` with explicit

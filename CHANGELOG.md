@@ -14,6 +14,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   preserved.
 - Added typed CDXML page `BoundingBox` access with finite-number and arity
   validation.
+- Added provenance-backed `contracted_smiles` to semantic expansion JSON so
+  Python and WASM callers can restore the exact expansion base graph.
 
 ## [1.0.12] - 2026-09-11
 

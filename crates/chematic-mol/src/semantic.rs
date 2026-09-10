@@ -964,6 +964,7 @@ impl ExpandedSemantic {
         serde_json::json!({
             "schema": "chematic.semantic-expanded.v1",
             "smiles": chematic_smiles::write(&self.molecule),
+            "contracted_smiles": chematic_smiles::write(&self.base_molecule),
             "source_to_expanded": self.source_to_expanded.iter().map(|(id, atoms)|
                 (id.clone(), atoms.iter().map(|atom| atom.0).collect::<Vec<_>>())
             ).collect::<BTreeMap<_, _>>(),
@@ -1387,6 +1388,7 @@ mod tests {
         let expanded = decoded.expand(&base).unwrap();
         assert_eq!(expanded.molecule.atom_count(), 3);
         assert_eq!(expanded.to_json()["source_to_expanded"]["r1"][0], 2);
+        assert_eq!(expanded.to_json()["contracted_smiles"], "CC");
     }
 
     #[test]

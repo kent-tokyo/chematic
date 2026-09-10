@@ -104,6 +104,11 @@ Competitive-response gate status (2026-09-10):
   an RDKit-compatibility score; target at least 99% compatible top-10 recall
   on the valid-input scope and publish failure counts separately.
 
+- [x] Expose the exact provenance-backed contraction graph in semantic
+  expansion JSON (`contracted_smiles`) across the existing Python and
+  WASM/Node entry points; inference from edited expanded graphs remains
+  rejected by design.
+
 Completed through the v1.0.11 release tree (with historical v1.0.10 and v1.0.9
 milestones retained below):
 
