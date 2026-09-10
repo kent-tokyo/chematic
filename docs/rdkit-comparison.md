@@ -13,7 +13,7 @@ the [compatibility contract](compatibility-scope.md) for stable boundaries.
 | Area | chematic | RDKit |
 |---|---|---|
 | Core implementation | Rust; no C/C++ toolchain on the common path | C++ with Python bindings |
-| Browser | Native `wasm32-unknown-unknown` package | RDKit.js is a separate community distribution |
+| Browser | Native `wasm32-unknown-unknown` package | Official `@rdkit/rdkit` JavaScript/WASM distribution path |
 | Python | Prebuilt `chematic` wheels and a selected RDKit-style subset | Broad, mature reference API |
 | Canonical identity | Fail-closed stable-key API; canonical spelling is not a cache-key guarantee | Mature canonicalization with its own conventions |
 | Descriptors/fingerprints | Broad native set plus named compatibility modes; parity is metric-specific | Broad reference implementations and ecosystem |

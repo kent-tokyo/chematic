@@ -135,7 +135,7 @@ function serve(files) {
 async function main() {
   const args = process.argv.slice(2);
   if (args.includes("--help") || args.includes("-h")) {
-    console.log("Usage: node scripts/bench_browser_wasm_vs_rdkit.mjs --rdkit-package PATH --output PATH [--rows N] [--warmup N] [--chromium PATH]");
+    console.log("Usage: node scripts/bench_browser_wasm_vs_rdkit.mjs --rdkit-package PATH --output PATH [--rows N] [--warmup N] [--chromium PATH] [--browser-timeout-ms N]");
     return;
   }
   const corpusPath = resolve(option(args, "--corpus", DEFAULT_CORPUS));
@@ -156,8 +156,9 @@ async function main() {
   const port = server.address().port;
   try {
     const chromium = option(args, "--chromium", "/opt/homebrew/bin/chromium");
+    const browserTimeoutMs = Number(option(args, "--browser-timeout-ms", "60000"));
     const profile = mkdtempSync("/private/tmp/chematic-browser-gate-profile-");
-    const browser = spawnSync(chromium, ["--headless=new", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--no-first-run", `--user-data-dir=${profile}`, "--virtual-time-budget=30000", "--dump-dom", `http://127.0.0.1:${port}/`], { encoding: "utf8", maxBuffer: 10 * 1024 * 1024 });
+    const browser = spawnSync(chromium, ["--headless=new", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--no-first-run", `--user-data-dir=${profile}`, "--virtual-time-budget=30000", "--dump-dom", `http://127.0.0.1:${port}/`], { encoding: "utf8", maxBuffer: 10 * 1024 * 1024, timeout: browserTimeoutMs });
     if (browser.error) throw browser.error;
     if (browser.status !== 0) throw new Error(browser.stderr || "Chromium exited unsuccessfully");
     const marker = browser.stdout.match(/<pre id="result">([\s\S]*?)<\/pre>/);

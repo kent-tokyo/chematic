@@ -474,6 +474,11 @@ pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, Mol
             State::AfterBondBlock => {
                 if is_marker(&tokens, "BEGIN", "COLLECTION") {
                     state = State::InCollection;
+                } else if is_marker(&tokens, "BEGIN", "SGROUP") {
+                    return Err(v3k_err(
+                        lnum,
+                        "SGROUP blocks are not represented by Molecule; refusing lossy parse",
+                    ));
                 } else if is_marker(&tokens, "END", "CTAB") {
                     state = State::Done;
                 }
@@ -1522,6 +1527,37 @@ M  V30 END COLLECTION\nM  V30 END CTAB\nM  END\n";
         assert!(
             group.atom_indices.contains(&AtomIdx(1)),
             "atom 1 must be in group"
+        );
+    }
+
+    #[test]
+    fn v3000_sgroup_is_rejected_instead_of_silently_dropped() {
+        // SGroup/polymer semantics are not represented in Molecule yet. A V3000
+        // reader must not claim a successful round trip after discarding them.
+        let v3k = "\n\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\n\
+M  V30 BEGIN CTAB\n\
+M  V30 COUNTS 2 1 0 0 0\n\
+M  V30 BEGIN ATOM\n\
+M  V30 1 C 0 0 0 0\n\
+M  V30 2 C 1 0 0 0\n\
+M  V30 END ATOM\n\
+M  V30 BEGIN BOND\n\
+M  V30 1 1 1 2\n\
+M  V30 END BOND\n\
+M  V30 BEGIN SGROUP\n\
+M  V30 1 SUP 0 ATOMS=(2 1 2)\n\
+M  V30 END SGROUP\n\
+M  V30 END CTAB\nM  END\n";
+
+        let error = match parse_mol_v3000(v3k) {
+            Ok(_) => panic!("unsupported SGroup must fail closed"),
+            Err(error) => error,
+        };
+        assert!(
+            error
+                .to_string()
+                .contains("SGROUP blocks are not represented"),
+            "unexpected error: {error}"
         );
     }
 }

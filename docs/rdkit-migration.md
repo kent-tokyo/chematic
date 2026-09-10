@@ -331,8 +331,8 @@ formats" claim.
 
 ## WASM / browser usage
 
-**Not applicable to RDKit's core package** — RDKit has no first-party
-Python-style WASM bindings; RDKit.js is a separate community project.
+**Not applicable to RDKit's core Python package** — browser consumers use
+RDKit's official JavaScript/WASM distribution path, `@rdkit/rdkit`.
 chematic ships `chematic-wasm` directly from the same Rust source as the
 Python bindings. Measured 2026-09-09 from the v1.0.10 release candidate (see the
 [artifact record](../benchmarks/2026-09-09-wasm-size-v1.0.10.md)): chematic's WASM bundle is

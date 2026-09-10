@@ -237,6 +237,40 @@ fn test_rule_1a_renumbering_invariance() {
 }
 
 #[test]
+fn negative_charge_resonance_branch_is_renumbering_invariant() {
+    // The anionic cyclohexadienyl branch exercises the charged resonance
+    // neighborhood that can make CIP ranking depend on atom insertion order.
+    // The map tag identifies the same tetrahedral center after permutation;
+    // this assertion deliberately checks chematic's own invariant, not merely
+    // agreement with one external oracle spelling.
+    let mol = parse("[C@@H:1](O)(C)[CH-]2C=CC=C2").expect("valid resonance case");
+    let center = find_atom_by_map(&mol, 1);
+    let baseline = assign_cip_accurate_experimental(&mol, CipBudget::default_budget())
+        .expect("assignment succeeds")
+        .assignments
+        .into_iter()
+        .find(|(idx, _)| *idx == center)
+        .map(|(_, code)| code)
+        .expect("mapped center must receive a CIP label");
+
+    let permutation: Vec<usize> = (0..mol.atom_count()).rev().collect();
+    let (permuted, old_to_new) = permute_molecule(&mol, &permutation);
+    let permuted_center = AtomIdx(old_to_new[center.0 as usize]);
+    let permuted_code = assign_cip_accurate_experimental(&permuted, CipBudget::default_budget())
+        .expect("permuted assignment succeeds")
+        .assignments
+        .into_iter()
+        .find(|(idx, _)| *idx == permuted_center)
+        .map(|(_, code)| code)
+        .expect("permuted mapped center must receive a CIP label");
+
+    assert_eq!(
+        baseline, permuted_code,
+        "charged resonance ranking must not flap under renumbering"
+    );
+}
+
+#[test]
 fn test_rule_1b_duplicate_resolves_via_1a_alone() {
     // CHO branch (real-O + duplicate-O at rank 2) vs CH2OH branch (real-O + H at rank
     // 2) -- Rule 1a alone decides this, per the worked trace in compare.rs's module

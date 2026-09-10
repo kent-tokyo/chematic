@@ -20,6 +20,50 @@ conversion reference, CDK a reaction/SMARTS/QSAR reference, sdfrust a Rust
 dataset reference, and kekule a polymer/modeling reference. COSMolKit is not
 part of the active comparison program.
 
+## Competitive response: official RDKit.js
+
+RDKit now maintains an official JavaScript/WASM distribution path through
+`@rdkit/rdkit`, with the MinimalLib WASM artifact and TypeScript-facing package
+surface released from the RDKit source tree. This removes much of the former
+browser-installation friction. The official distribution is therefore the
+primary browser comparator for the next candidate; the existing v1.0.10
+comparison artifacts remain historical measurements, not a claim about every
+future RDKit.js release. See the [RDKit MinimalLib README](https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/README.md)
+and the [rdkit-js repository](https://github.com/rdkit/rdkit-js).
+
+The competitive objective is not feature-count parity. It is to make a named,
+reproducible browser workload measurably better while retaining explicit
+failure boundaries:
+
+1. **P0 — official comparison gate.** Pin the first stable `@rdkit/rdkit`
+   release, record package/WASM/type-definition digests, and rerun the same
+   corpus and harness for raw/gzip size, cold initialization, SMILES parse and
+   write, ECFP4/Morgan, peak RSS, and browser-engine timing. Keep cold-start,
+   steady-state throughput, and memory as separate dimensions.
+2. **P1 — correctness moat.** Add negative-charge resonance CIP cases,
+   including `[CH-]1C=CC=C1`, with atom-order shuffles and equivalent-operation
+   checks. A result is accepted only when labels are invariant or the API
+   returns a documented fail-closed outcome; RDKit agreement alone is not the
+   invariant.
+3. **P1 — browser developer experience.** Compare the smallest useful API
+   surface: initialization, typed errors, cancellation, limits, JSON
+   serialization, and generated TypeScript declarations. Publish a single
+   install-to-first-result example for both packages and measure its startup
+   path.
+4. **P2 — interoperability wedge.** Add V3000 `SGROUP`/`COLLECTION` ordering
+   round trips and preserve unsupported richness. Keep strict parsing separate
+   from a future relaxed preview mode; incomplete editor input must never be
+   silently accepted by the normal API.
+5. **P2 — positioning gate.** Update public comparison claims only after the
+   preceding measurements are checked in. Claims may say “smaller”, “faster”,
+   or “more compatible” only for a pinned version, corpus, runtime, hardware,
+   and failure policy.
+
+The next candidate should ship only the local portions of P0–P2 that have
+reproducible evidence. Missing stable packages, browser engines, or
+cross-platform runners remain environment-dependent evidence gaps rather than
+successful competitor claims.
+
 ## Current candidate
 
 Completed through the v1.0.11 release tree (with historical v1.0.10 and v1.0.9

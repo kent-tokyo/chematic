@@ -66,6 +66,7 @@ function fileSizes(path) {
     file: basename(path),
     raw_bytes: bytes.length,
     gzip_bytes: gzipSync(bytes, { level: 9 }).length,
+    sha256: digest(bytes),
   };
 }
 
@@ -89,7 +90,23 @@ function findRdkitFiles(packagePath) {
     try { return statSync(path).isFile(); } catch { return false; }
   });
   if (!js || !wasm) throw new Error(`could not locate RDKit_minimal.js/.wasm under ${candidate}`);
-  return { js, wasm };
+  const packageJsonCandidates = [join(candidate, "package.json"), join(dirname(js), "..", "package.json")];
+  const packageJson = packageJsonCandidates.find((path) => {
+    try { return statSync(path).isFile(); } catch { return false; }
+  });
+  let packageVersion = null;
+  if (packageJson) {
+    try { packageVersion = JSON.parse(readFileSync(packageJson, "utf8")).version ?? null; } catch { /* digest remains authoritative */ }
+  }
+  const declarationCandidates = [
+    join(candidate, "dist", "index.d.ts"),
+    join(candidate, "dist", "RDKit_minimal.d.ts"),
+    join(candidate, "index.d.ts"),
+  ];
+  const declaration = declarationCandidates.find((path) => {
+    try { return statSync(path).isFile(); } catch { return false; }
+  });
+  return { js, wasm, packageJson, packageVersion, declaration };
 }
 
 function packedBits(bytes) {
@@ -102,6 +119,10 @@ function packedBits(bytes) {
 
 function digest(value) {
   return createHash("sha256").update(value).digest("hex");
+}
+
+function fileDigest(path) {
+  return path ? digest(readFileSync(path)) : null;
 }
 
 async function runSchematic(args, smiles, warmup) {
@@ -184,6 +205,7 @@ async function runRdkit(args, smiles, warmup) {
   return {
     implementation: "rdkit",
     version: typeof RDKit.version === "function" ? RDKit.version() : "unknown",
+    package_version: files.packageVersion,
     package_dir: basename(dirname(files.js)),
     wasm_file: basename(files.wasm),
     init_ms: Number(initMs.toFixed(6)),
@@ -257,6 +279,8 @@ async function main() {
       schematic_wasm: fileSizes(schematicWasm),
       rdkit_minimal_wasm: fileSizes(rdkitFiles.wasm),
       rdkit_minimal_js: fileSizes(rdkitFiles.js),
+      rdkit_package_json: rdkitFiles.packageJson ? { file: rdkitFiles.packageJson, sha256: fileDigest(rdkitFiles.packageJson) } : null,
+      rdkit_typescript_declarations: rdkitFiles.declaration ? { file: rdkitFiles.declaration, sha256: fileDigest(rdkitFiles.declaration) } : null,
     },
     fingerprint_parity: {
       compared_rows: rows,

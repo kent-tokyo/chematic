@@ -34,8 +34,11 @@ def main() -> None:
     required_metadata = set(data.get("required_metadata", []))
     if len(required_metadata) < 10:
         fail("required_metadata is too small")
-    if len(data.get("engines", [])) < 2:
+    engine_ids = {engine.get("id") for engine in data.get("engines", [])}
+    if len(engine_ids) < 2 or "chematic" not in engine_ids:
         fail("at least chematic and one comparison engine are required")
+    if "rdkit_js" not in engine_ids:
+        fail("official rdkit_js engine must be declared")
 
     for corpus in data.get("corpora", []):
         path = ROOT / corpus.get("path", "")

@@ -1,11 +1,12 @@
 {
   "schema_version": 1,
   "status": "prepared",
-  "target_version": "1.0.3",
-  "purpose": "Operation-level competitive benchmark; preparation only, no new measured claim.",
+  "target_version": "1.0.11",
+  "purpose": "Operation-level competitive benchmark for the v1.0.11 candidate; preparation only, no new measured claim.",
   "engines": [
     {"id": "chematic", "required": true, "version_source": "workspace Cargo.toml"},
     {"id": "rdkit", "required": false, "version_source": "python package metadata"},
+    {"id": "rdkit_js", "required": false, "version_source": "official @rdkit/rdkit package metadata"},
     {"id": "openbabel", "required": false, "version_source": "obabel --version"}
   ],
   "required_metadata": [
@@ -21,6 +22,8 @@
     "Pin engine versions and configuration; do not compare debug builds with release builds.",
     "Report median and dispersion over independent repetitions, not a single fastest run.",
     "Keep accuracy, throughput, memory, startup, binary size, and feature coverage as separate metrics.",
+    "Treat official @rdkit/rdkit as the browser comparator; a community RDKit.js artifact is not equivalent evidence.",
+    "Record package, JavaScript, WASM, and TypeScript declaration digests before making a release-line comparison.",
     "Do not publish a superiority claim until the result file and reproduction command are checked in."
   ],
   "corpora": [

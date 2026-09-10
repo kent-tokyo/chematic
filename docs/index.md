@@ -145,10 +145,10 @@ Full worked examples → [Use cases](use-cases/)
 |---|---|---|---|
 | Install | `pip install chematic` | `pip install rdkit` (official prebuilt wheels) or conda | `npm install @rdkit/rdkit`, no Python bindings |
 | C/C++ toolchain | Not required, even building from source | Not required for the prebuilt wheel; required building from source | Not required by consumers of the published package |
-| Browser / WASM | Yes — 3.73 MB raw / 1.36 MB gzip | Not applicable (Python/C++ library) | Yes — 6.91 MB raw (`RDKit_minimal.wasm`; a separate community project, currently in a maintainer transition) |
+| Browser / WASM | Yes — 3.73 MB raw / 1.36 MB gzip | Not applicable (Python/C++ library) | Yes — 6.91 MB raw (`RDKit_minimal.wasm`; pinned historical measurement) |
 | pKa / ADMET prediction | Built-in, rule-based screening — not for clinical use | External tool required | External tool required |
 | AI agent / MCP integration | Built-in, 20 tools (stdio only) | — | — |
-| Ecosystem maturity | Growing (2024–) | Established (2006–) | Established, but the WASM distribution specifically is community-maintained |
+| Ecosystem maturity | Growing (2024–) | Established (2006–) | Established; official JavaScript/WASM distribution path |
 
 The chematic bundle was measured 2026-09-09 from the v1.0.10 release line; the v1.0.11 release retains this
 historical artifact measurement. RDKit.js is a

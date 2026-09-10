@@ -2,7 +2,7 @@
 
 ## Problem
 
-You want to ship a chemistry tool to users who won't install anything — a web app for medicinal chemists, a public screening tool, or an internal dashboard. Server-side chemistry APIs add latency, infrastructure cost, and data-privacy concerns. RDKit.js (`@rdkit/rdkit`, a separate community project from RDKit itself) is a heavier download — its `RDKit_minimal.wasm` is 6.91 MB raw.
+You want to ship a chemistry tool to users who won't install anything — a web app for medicinal chemists, a public screening tool, or an internal dashboard. Server-side chemistry APIs add latency, infrastructure cost, and data-privacy concerns. RDKit's official JavaScript/WASM package (`@rdkit/rdkit`) is a browser comparator; the pinned historical `RDKit_minimal.wasm` measurement is 6.91 MB raw.
 
 ## Solution
 
