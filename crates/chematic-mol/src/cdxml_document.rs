@@ -21,6 +21,18 @@ pub struct CdxmlObject {
     pub raw_xml: String,
 }
 
+/// A non-fatal presentation diagnostic. Unknown objects remain available via
+/// `raw_xml`; callers can use these diagnostics to decide whether their own
+/// editor can safely interpret the document.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CdxmlDiagnostic {
+    pub code: String,
+    pub page_index: usize,
+    pub object_index: usize,
+    pub tag: String,
+    pub message: String,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CdxmlPage {
     pub id: Option<String>,
@@ -229,6 +241,28 @@ impl CdxmlDocument {
     /// cannot accidentally address a page using an invented identifier.
     pub fn page_ids(&self) -> Vec<Option<&str>> {
         self.pages.iter().map(|page| page.id.as_deref()).collect()
+    }
+
+    /// Report presentation objects outside the small typed object vocabulary.
+    /// The original XML is still preserved and returned by [`Self::write`].
+    pub fn diagnostics(&self) -> Vec<CdxmlDiagnostic> {
+        self.pages
+            .iter()
+            .enumerate()
+            .flat_map(|(page_index, page)| {
+                page.children
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, object)| !is_known_presentation_tag(&object.tag))
+                    .map(move |(object_index, object)| CdxmlDiagnostic {
+                        code: "unsupported_presentation_object".into(),
+                        page_index,
+                        object_index,
+                        tag: object.tag.clone(),
+                        message: "object is preserved opaquely; typed presentation semantics are unavailable".into(),
+                    })
+            })
+            .collect()
     }
 
     /// Apply a JSON-encoded document edit and return the reparsed document.
@@ -469,7 +503,12 @@ impl CdxmlDocument {
                 })
             })
             .collect::<Vec<_>>();
-        serde_json::json!({ "schema": "chematic.cdxml-document.v1", "document_attributes": self.document_attributes, "pages": pages })
+        serde_json::json!({
+            "schema": "chematic.cdxml-document.v1",
+            "document_attributes": self.document_attributes,
+            "pages": pages,
+            "diagnostics": self.diagnostics(),
+        })
     }
 }
 
@@ -599,6 +638,23 @@ fn validate_attribute_name(name: &str) -> Result<(), CdxmlError> {
     Ok(())
 }
 
+fn is_known_presentation_tag(tag: &str) -> bool {
+    matches!(
+        tag,
+        "n" | "b"
+            | "fragment"
+            | "group"
+            | "arrow"
+            | "text"
+            | "caption"
+            | "graphic"
+            | "curve"
+            | "table"
+            | "scheme"
+            | "bracket_attachment"
+    )
+}
+
 fn page_id_for(edit: &CdxmlEdit) -> &str {
     match edit {
         CdxmlEdit::SetPageAttribute { page_id, .. }
@@ -633,7 +689,22 @@ mod tests {
             doc.pages[0].children[1].attributes["Head3"],
             Value::String("yes".into())
         );
+        assert!(doc.diagnostics().is_empty());
         assert_eq!(doc.write(), input);
+    }
+
+    #[test]
+    fn reports_unknown_presentation_objects_without_dropping_them() {
+        let input = "<CDXML>\n<page id=\"p1\">\n<customGraphic id=\"g1\"/>\n</page>\n</CDXML>";
+        let doc = CdxmlDocument::parse(input).unwrap();
+        let diagnostics = doc.diagnostics();
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].code, "unsupported_presentation_object");
+        assert_eq!(diagnostics[0].page_index, 0);
+        assert_eq!(diagnostics[0].object_index, 0);
+        assert_eq!(diagnostics[0].tag, "customGraphic");
+        assert_eq!(doc.write(), input);
+        assert_eq!(doc.to_json()["diagnostics"].as_array().unwrap().len(), 1);
     }
 
     #[test]
