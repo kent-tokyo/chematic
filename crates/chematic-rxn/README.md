@@ -21,6 +21,10 @@ WASM-compatible, with selected RDKit-oriented behavior.
   bounds without running the graph matcher.
 - **Atom mapping**: track which atoms in reactants map to which atoms in products
 - **Reaction properties**: count reactants, products, and agents
+- **Evidence-scoped stoichiometry**: `analyze_reaction_document` and
+  `analyze_components` report explicit atom/isotope inventory and formal-charge
+  diagnostics with stable paths. This is not a claim of chemical completeness,
+  mechanism correctness, or product prediction.
 - **Stereo-selective SMIRKS**: `@`/`@@` in reactant templates filter by absolute configuration using
   permutation-parity comparison (write-order independent — the same enantiomer is matched regardless
   of how the reactant SMILES was written)
@@ -109,6 +113,8 @@ for r in &results {
 - `PreparedReaction` — immutable compiled SMIRKS template for repeated use
 - `ReactionRequirements` — conservative atom, bond, element, aromaticity, and
   bond-pair lower bounds derived from a prepared template
+- `StoichiometryReport` — per-step, serializable evidence-scoped inventory
+  diagnostics with preserve-or-warn-or-reject status
 - `ReactionTransformLimits` — match/combinatorial resource bounds
 
 ### Properties
