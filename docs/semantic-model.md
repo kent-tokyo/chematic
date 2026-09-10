@@ -30,6 +30,10 @@ For typed interchange, `polymer_units[].end_group_definitions` accepts exactly
 two `PolymerEndGroup` records (`id`, `smiles`) in left/right order; their IDs
 are used as stable `source_to_expanded` keys. The legacy `end_groups` and typed
 form cannot be supplied together.
+`s_groups` exposes typed S-group membership and optional repeat-unit and
+polymer-linkage references. A linkage has stable ID, two distinct source atom
+references, and a validated bond order; unknown S-group kinds remain explicit
+strings and are not silently expanded.
 
 `SemanticModel::apply` returns a new model for command-style editing. Expansion
 returns `ExpandedSemantic`, including a `source_to_expanded` mapping for undo,
@@ -59,7 +63,9 @@ lossless semantic contraction boundary.
 `CdxmlDocument` preserves the original XML and exposes multi-page/page-object
 summaries, including presentation-only objects. `CdxmlPage::bounding_box`
 provides the optional page dimensions as a typed `left, top, right, bottom`
-tuple and rejects malformed values. `CdxmlDocument::diagnostics`
+tuple and rejects malformed values. `CdxmlObject::kind` classifies known atom,
+bond, group, arrow, text, caption, and drawing objects while retaining an
+`Unsupported` kind for unknown tags. `CdxmlDocument::diagnostics`
 reports unknown presentation tags with page/object locations while retaining
 their raw XML. `CdxmlObject::transform` and `CdxmlObject::z_order` provide
 typed access to common `Matrix` and `ZOrder` attributes and reject malformed

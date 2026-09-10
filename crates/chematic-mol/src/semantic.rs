@@ -56,6 +56,26 @@ pub struct PolymerEndGroup {
     pub smiles: String,
 }
 
+/// A typed linkage between two source atoms in a polymer/S-group definition.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PolymerLinkage {
+    pub id: SemanticId,
+    pub left_atom: AtomRef,
+    pub right_atom: AtomRef,
+    pub bond_order: u8,
+}
+
+/// A loss-aware S-group definition. Unsupported S-group chemistry remains
+/// explicit in `kind` instead of being flattened into the base molecule.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SemanticSGroup {
+    pub id: SemanticId,
+    pub kind: String,
+    pub member_atoms: Vec<AtomRef>,
+    pub repeat_unit_id: Option<SemanticId>,
+    pub linkage: Option<PolymerLinkage>,
+}
+
 /// Loss/unsupported reason returned by validation or expansion.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SemanticError {
@@ -121,6 +141,7 @@ pub struct SemanticModel {
     pub bond_ids: Vec<SemanticId>,
     pub r_groups: Vec<RGroupDefinition>,
     pub polymer_units: Vec<PolymerRepeatUnit>,
+    pub s_groups: Vec<SemanticSGroup>,
     pub extensions: BTreeMap<String, Value>,
 }
 
@@ -286,6 +307,18 @@ impl SemanticModel {
                 })
             })
             .collect::<Result<Vec<_>, SemanticError>>()?;
+        let s_groups = value
+            .get("s_groups")
+            .map(|groups| {
+                groups
+                    .as_array()
+                    .ok_or_else(|| SemanticError::InvalidJson("s_groups must be an array".into()))?
+                    .iter()
+                    .map(parse_s_group)
+                    .collect::<Result<Vec<_>, SemanticError>>()
+            })
+            .transpose()?
+            .unwrap_or_default();
         let extensions = value
             .get("extensions")
             .and_then(Value::as_object)
@@ -298,6 +331,7 @@ impl SemanticModel {
             bond_ids,
             r_groups,
             polymer_units,
+            s_groups,
             extensions,
         };
         model.validate()?;
@@ -842,6 +876,55 @@ impl SemanticModel {
                 }
             }
         }
+        for group in &self.s_groups {
+            if !ids.insert(group.id.clone()) {
+                return Err(SemanticError::DuplicateId(group.id.clone()));
+            }
+            if group.kind.trim().is_empty() {
+                return Err(SemanticError::Unsupported {
+                    construct: "S-group".into(),
+                    reason: format!("S-group {} has an empty kind", group.id),
+                });
+            }
+            if group.member_atoms.is_empty() {
+                return Err(SemanticError::InvalidExpansion {
+                    id: group.id.clone(),
+                    reason: "S-group must contain at least one member atom".into(),
+                });
+            }
+            for atom in &group.member_atoms {
+                if !self.atom_ids.contains(&atom.atom_id) {
+                    return Err(SemanticError::MissingAtom(atom.atom_id.clone()));
+                }
+            }
+            if let Some(unit_id) = &group.repeat_unit_id
+                && !self.polymer_units.iter().any(|unit| &unit.id == unit_id)
+            {
+                return Err(SemanticError::InvalidExpansion {
+                    id: group.id.clone(),
+                    reason: format!("unknown repeat unit reference: {unit_id}"),
+                });
+            }
+            if let Some(linkage) = &group.linkage {
+                if linkage.id.trim().is_empty() || !ids.insert(linkage.id.clone()) {
+                    return Err(SemanticError::DuplicateId(linkage.id.clone()));
+                }
+                for atom in [&linkage.left_atom, &linkage.right_atom] {
+                    if !self.atom_ids.contains(&atom.atom_id) {
+                        return Err(SemanticError::MissingAtom(atom.atom_id.clone()));
+                    }
+                }
+                if linkage.left_atom.atom_id == linkage.right_atom.atom_id {
+                    return Err(SemanticError::AmbiguousAttachment(linkage.id.clone()));
+                }
+                if !matches!(linkage.bond_order, 1..=4) {
+                    return Err(SemanticError::Unsupported {
+                        construct: "polymer linkage".into(),
+                        reason: format!("unsupported bond order: {}", linkage.bond_order),
+                    });
+                }
+            }
+        }
         Ok(())
     }
 
@@ -872,6 +955,10 @@ impl SemanticModel {
             })).collect::<Vec<_>>(),
             "repeat_smiles": u.repeat_smiles, "repeat_endpoint_atoms": u.repeat_endpoint_atoms
         })).collect()));
+        root.insert(
+            "s_groups".into(),
+            Value::Array(self.s_groups.iter().map(s_group_to_json).collect()),
+        );
         root.insert(
             "extensions".into(),
             Value::Object(self.extensions.clone().into_iter().collect()),
@@ -917,6 +1004,60 @@ fn validate_r_group(
         validate_r_group(nested, atom_ids, ids)?;
     }
     Ok(())
+}
+
+fn parse_s_group(group: &Value) -> Result<SemanticSGroup, SemanticError> {
+    let member_atoms = json_string_array(group, "member_atoms")?
+        .into_iter()
+        .map(|atom_id| AtomRef { atom_id })
+        .collect();
+    let linkage = group
+        .get("linkage")
+        .map(|value| {
+            let bond_order = value
+                .get("bond_order")
+                .and_then(Value::as_u64)
+                .and_then(|order| u8::try_from(order).ok())
+                .ok_or_else(|| {
+                    SemanticError::InvalidJson("linkage bond_order must be a u8".into())
+                })?;
+            Ok(PolymerLinkage {
+                id: json_string(value, "id")?,
+                left_atom: AtomRef {
+                    atom_id: json_string(value, "left_atom")?,
+                },
+                right_atom: AtomRef {
+                    atom_id: json_string(value, "right_atom")?,
+                },
+                bond_order,
+            })
+        })
+        .transpose()?;
+    Ok(SemanticSGroup {
+        id: json_string(group, "id")?,
+        kind: json_string(group, "kind")?,
+        member_atoms,
+        repeat_unit_id: group
+            .get("repeat_unit_id")
+            .and_then(Value::as_str)
+            .map(str::to_owned),
+        linkage,
+    })
+}
+
+fn s_group_to_json(group: &SemanticSGroup) -> Value {
+    serde_json::json!({
+        "id": group.id,
+        "kind": group.kind,
+        "member_atoms": group.member_atoms.iter().map(|atom| &atom.atom_id).collect::<Vec<_>>(),
+        "repeat_unit_id": group.repeat_unit_id,
+        "linkage": group.linkage.as_ref().map(|linkage| serde_json::json!({
+            "id": linkage.id,
+            "left_atom": linkage.left_atom.atom_id,
+            "right_atom": linkage.right_atom.atom_id,
+            "bond_order": linkage.bond_order,
+        })),
+    })
 }
 
 fn find_r_group_mut<'a>(
@@ -1079,6 +1220,52 @@ mod tests {
         };
         model.validate().unwrap();
         assert_eq!(model.to_json()["schema"], "chematic.semantic.v1");
+    }
+
+    #[test]
+    fn typed_s_group_linkage_round_trips_and_validates_references() {
+        let model = SemanticModel {
+            atom_ids: vec!["a1".into(), "a2".into()],
+            s_groups: vec![SemanticSGroup {
+                id: "sg1".into(),
+                kind: "SRU".into(),
+                member_atoms: vec![AtomRef {
+                    atom_id: "a1".into(),
+                }],
+                repeat_unit_id: None,
+                linkage: Some(PolymerLinkage {
+                    id: "link1".into(),
+                    left_atom: AtomRef {
+                        atom_id: "a1".into(),
+                    },
+                    right_atom: AtomRef {
+                        atom_id: "a2".into(),
+                    },
+                    bond_order: 1,
+                }),
+            }],
+            ..Default::default()
+        };
+        model.validate().unwrap();
+        let decoded = SemanticModel::from_json(&model.to_json()).unwrap();
+        assert_eq!(decoded, model);
+
+        let invalid = SemanticModel {
+            s_groups: vec![SemanticSGroup {
+                id: "sg1".into(),
+                kind: "SRU".into(),
+                member_atoms: vec![AtomRef {
+                    atom_id: "missing".into(),
+                }],
+                repeat_unit_id: None,
+                linkage: None,
+            }],
+            ..model
+        };
+        assert!(matches!(
+            invalid.validate(),
+            Err(SemanticError::MissingAtom(id)) if id == "missing"
+        ));
     }
 
     #[test]

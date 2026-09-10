@@ -59,8 +59,8 @@ pub use cdxml::{
     parse_cdxml_with_options_and_limits, write_cdxml,
 };
 pub use cdxml_document::{
-    CdxmlDiagnostic, CdxmlDocument, CdxmlEdit, CdxmlObject, CdxmlPage, CdxmlTextStyle,
-    CdxmlTransform, CdxmlValue,
+    CdxmlDiagnostic, CdxmlDocument, CdxmlEdit, CdxmlObject, CdxmlObjectKind, CdxmlPage,
+    CdxmlTextStyle, CdxmlTransform, CdxmlValue,
 };
 pub use cif::{
     CifError, CifParseLimits, CifResult, UnitCell, parse_cif, parse_cif_with_limits, write_cif,
@@ -155,8 +155,9 @@ pub use sdf::{
     SdfReader, SdfRecord, SdfRecordReader, parse_sdf_with_limits, read_sdf_conformer_ensembles,
 };
 pub use semantic::{
-    AtomRef, ExpandedSemantic, PolymerEndGroup, PolymerRepeatUnit, RGroupDefinition,
-    SemanticCommand, SemanticError, SemanticExpansionLimits, SemanticId, SemanticModel,
+    AtomRef, ExpandedSemantic, PolymerEndGroup, PolymerLinkage, PolymerRepeatUnit,
+    RGroupDefinition, SemanticCommand, SemanticError, SemanticExpansionLimits, SemanticId,
+    SemanticModel, SemanticSGroup,
 };
 pub use smiles_table::{
     Delimiter, SmilesReaderOptions, SmilesRecordReader, SmilesRecordWriter, SmilesTableError,

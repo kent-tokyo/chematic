@@ -89,6 +89,8 @@ Competitive-response gate status (2026-09-10):
 - [x] Add typed CDXML page `BoundingBox` access with finite-number and arity
   validation; full page-layout/rendering semantics remain outside the bounded
   contract.
+- [x] Add typed CDXML object classification with an explicit unsupported
+  variant, preserving unknown raw XML and diagnostics.
 
 ### Next priority: compatible similarity search
 
@@ -108,6 +110,8 @@ Competitive-response gate status (2026-09-10):
   expansion JSON (`contracted_smiles`) across the existing Python and
   WASM/Node entry points; inference from edited expanded graphs remains
   rejected by design.
+- [x] Add typed S-group membership and polymer-linkage definitions to the
+  semantic JSON contract, including stable IDs and source-reference checks.
 
 Completed through the v1.0.11 release tree (with historical v1.0.10 and v1.0.9
 milestones retained below):
