@@ -59,11 +59,6 @@ const withTimeout = (promise, label) => Promise.race([
   promise,
   new Promise((_, reject) => setTimeout(() => reject(new Error(label + " timed out after " + initTimeoutMs + " ms")), initTimeoutMs)),
 ]);
-const digest = async (value) => {
-  const bytes = typeof value === "string" ? new TextEncoder().encode(value) : value;
-  const hash = await crypto.subtle.digest("SHA-256", bytes);
-  return [...new Uint8Array(hash)].map((v) => v.toString(16).padStart(2, "0")).join("");
-};
 const packedBits = (bytes) => {
   let result = "";
   for (const byte of bytes) for (let bit = 0; bit < 8; bit += 1) result += (byte >> bit) & 1;
@@ -99,7 +94,7 @@ const run = async () => {
   const schematicWrite = await time(smiles, (value) => { const mol = parse_smiles(value); mol.canonical_smiles(); mol.free(); });
   const schematicFp = await time(smiles, (value) => { const mol = parse_smiles(value); rdkit_ecfp4_bitvec(mol); mol.free(); });
   const schematicHashes = [];
-  for (const value of smiles) { const mol = parse_smiles(value); schematicHashes.push(await digest(packedBits(rdkit_ecfp4_bitvec(mol)))); mol.free(); }
+  for (const value of smiles) { const mol = parse_smiles(value); schematicHashes.push(packedBits(rdkit_ecfp4_bitvec(mol))); mol.free(); }
 
   const rdkitStart = performance.now();
   const RDKit = await withTimeout(window.initRDKitModule({ locateFile: (name) => name.endsWith(".wasm") ? "/rdkit/RDKit_minimal.wasm" : name }), "RDKit WASM initialization");
@@ -109,7 +104,7 @@ const run = async () => {
   const rdkitWrite = await time(smiles, (value) => { const mol = getMol(value); mol.get_smiles(); mol.delete(); });
   const rdkitFp = await time(smiles, (value) => { const mol = getMol(value); mol.get_morgan_fp(JSON.stringify({ radius: 2, nBits: 2048 })); mol.delete(); });
   const rdkitHashes = [];
-  for (const value of smiles) { const mol = getMol(value); rdkitHashes.push(await digest(mol.get_morgan_fp(JSON.stringify({ radius: 2, nBits: 2048 })))); mol.delete(); }
+  for (const value of smiles) { const mol = getMol(value); rdkitHashes.push(mol.get_morgan_fp(JSON.stringify({ radius: 2, nBits: 2048 }))); mol.delete(); }
   out.textContent = JSON.stringify({
     environment: { user_agent: navigator.userAgent, platform: navigator.platform },
     schematic: { init_ms: schematicInit, parse: schematicParse, smiles_write: schematicWrite, rdkit_compatible_ecfp4: schematicFp },
@@ -197,6 +192,12 @@ async function main() {
   const output = resolve(required(args, "--output"));
   const htmlPath = "/private/tmp/chematic-browser-benchmark-runner.html";
   writeFileSync(htmlPath, html({ corpus, schematicDir: schematic, rdkitDir: rdkit, warmup, initTimeoutMs }));
+  const htmlOutput = option(args, "--html-output");
+  if (htmlOutput) {
+    writeFileSync(resolve(htmlOutput), readFileSync(htmlPath));
+    console.log(`Browser benchmark HTML written to ${resolve(htmlOutput)}`);
+    return;
+  }
   const server = serve({ html: htmlPath, schematic, rdkit });
   await new Promise((resolveServer) => server.listen(0, "127.0.0.1", resolveServer));
   const port = server.address().port;

@@ -90,6 +90,7 @@ hashes and commands are in the
 | Cross-engine contracts | [`benchmarks/README.md`](../benchmarks/README.md#streaming-and-cross-engine-contracts) |
 | WASM artifact | [`2026-09-09-wasm-size-v1.0.10.md`](../benchmarks/2026-09-09-wasm-size-v1.0.10.md) |
 | Official RDKit.js gate | [`2026-09-10-official-rdkit-js-gate-v1.0.11.md`](../benchmarks/2026-09-10-official-rdkit-js-gate-v1.0.11.md) |
+| Official RDKit.js browser gate | [`2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md`](../benchmarks/2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md) |
 | Full inventory | [`benchmarks/README.md`](../benchmarks/README.md) |
 
 ## Hardware and interpretation
