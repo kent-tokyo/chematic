@@ -729,7 +729,7 @@ impl CdxmlDocument {
                     "id": p.id,
                     "attributes": p.attributes,
                     "children": p.children.iter().map(|o| serde_json::json!({
-                        "tag": o.tag, "attributes": o.attributes, "raw_xml": o.raw_xml,
+                        "tag": o.tag, "kind": o.kind(), "attributes": o.attributes, "raw_xml": o.raw_xml,
                         "path": o.path
                     })).collect::<Vec<_>>()
                 })
@@ -923,6 +923,7 @@ mod tests {
             Value::String("yes".into())
         );
         assert!(doc.diagnostics().is_empty());
+        assert_eq!(doc.to_json()["pages"][0]["children"][1]["kind"], "Arrow");
         assert_eq!(doc.write(), input);
     }
 
@@ -939,6 +940,10 @@ mod tests {
         assert_eq!(
             doc.pages[0].children[0].kind(),
             CdxmlObjectKind::Unsupported("customGraphic".into())
+        );
+        assert_eq!(
+            doc.to_json()["pages"][0]["children"][0]["kind"],
+            serde_json::json!({"Unsupported": "customGraphic"})
         );
         assert_eq!(doc.write(), input);
         assert_eq!(doc.to_json()["diagnostics"].as_array().unwrap().len(), 1);

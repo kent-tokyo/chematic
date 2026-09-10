@@ -93,6 +93,8 @@ Competitive-response gate status (2026-09-10):
   variant, preserving unknown raw XML and diagnostics.
 - [x] Accept self-closing empty CDXML pages while preserving page order and
   source representation.
+- [x] Expose serialized CDXML object kinds in the binding-neutral document JSON
+  summary, including explicit `Unsupported` values.
 
 ### Next priority: compatible similarity search
 

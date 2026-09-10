@@ -80,7 +80,8 @@ page-attribute or opaque-object replacements and re-parses the result before
 returning it; `apply_json_edit` is the binding-neutral command boundary.
 `ReplaceObjectPath` addresses a multiline nested object by its parent-to-child
 sibling path (for example, `[0, 1]` is the second child of the first page-level
-object), while retaining unknown attributes and all untouched objects in
+object); the JSON summary also includes the serialized object `kind`. Unknown
+attributes and all untouched objects are retained in
 `write()` output. Python exposes `parse_cdxml_document_json` and
 `edit_cdxml_document_json`; WASM/Node expose the corresponding
 `cdxml_document_json` and `edit_cdxml_document_json` functions. The binding
