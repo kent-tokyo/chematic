@@ -253,6 +253,11 @@ platform-sized selected-alternative indices, rejecting out-of-range numeric
 values instead of allowing integer truncation.
 Polymer `repeat_endpoint_atoms` now applies the same checked `u32` conversion,
 so oversized endpoint indices are rejected rather than truncated.
+Semantic expansion now has an explicit `SemanticExpansionLimits` contract. The
+default `expand` path caps each polymer unit at 10,000 repeats and the output
+graph at 100,000 atoms; `expand_with_limits` allows a trusted caller to choose
+a smaller or larger finite budget. Atom and repeat overages return the typed
+`ExpansionLimit` error before the next fragment is added.
 
 This advances only the edit-to-expansion boundary. Nested Markush choices,
 polymer contraction, and the broader typed R-group/polymer/biomolecule API
@@ -262,6 +267,8 @@ Evidence:
 
 - `cargo test -p chematic-mol --offline` — semantic and polymer regression
   tests passed.
+- `cargo fmt --all` and `git diff --check` — formatting and whitespace checks
+  passed.
 - Python and Node/WASM cross-binding contract tests cover the same null-state
   JSON and explicit repeat-count command.
 

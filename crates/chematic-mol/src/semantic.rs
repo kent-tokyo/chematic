@@ -48,11 +48,26 @@ pub enum SemanticError {
     DuplicateId(String),
     MissingAtom(String),
     MissingAlternative(String),
-    InvalidAlternative { id: String, reason: String },
+    InvalidAlternative {
+        id: String,
+        reason: String,
+    },
     AmbiguousAttachment(String),
-    Unsupported { construct: String, reason: String },
+    Unsupported {
+        construct: String,
+        reason: String,
+    },
     InvalidJson(String),
-    InvalidExpansion { id: String, reason: String },
+    InvalidExpansion {
+        id: String,
+        reason: String,
+    },
+    ExpansionLimit {
+        id: String,
+        resource: &'static str,
+        requested: usize,
+        limit: usize,
+    },
 }
 
 impl std::fmt::Display for SemanticError {
@@ -70,6 +85,15 @@ impl std::fmt::Display for SemanticError {
             }
             Self::InvalidJson(reason) => write!(f, "invalid semantic JSON: {reason}"),
             Self::InvalidExpansion { id, reason } => write!(f, "cannot expand {id}: {reason}"),
+            Self::ExpansionLimit {
+                id,
+                resource,
+                requested,
+                limit,
+            } => write!(
+                f,
+                "expansion {id} needs {requested} {resource}, limit is {limit}"
+            ),
         }
     }
 }
@@ -91,6 +115,24 @@ pub struct SemanticModel {
 pub struct ExpandedSemantic {
     pub molecule: Molecule,
     pub source_to_expanded: BTreeMap<SemanticId, Vec<AtomIdx>>,
+}
+
+/// Resource limits for semantic expansion.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SemanticExpansionLimits {
+    /// Maximum atom count in the expanded molecule.
+    pub max_atoms: usize,
+    /// Maximum repeat count for an individual polymer unit.
+    pub max_repeat_count: u32,
+}
+
+impl Default for SemanticExpansionLimits {
+    fn default() -> Self {
+        Self {
+            max_atoms: 100_000,
+            max_repeat_count: 10_000,
+        }
+    }
 }
 
 /// Immutable, auditable edits to a semantic model.
@@ -324,6 +366,21 @@ impl SemanticModel {
     /// Expand only explicitly selected R-groups. No alternative is guessed.
     /// Supported alternatives use a leading `[*]` attachment placeholder.
     pub fn expand(&self, base: &Molecule) -> Result<ExpandedSemantic, SemanticError> {
+        self.expand_with_limits(base, &SemanticExpansionLimits::default())
+    }
+
+    /// Expand with an explicit atom and repeat budget.
+    pub fn expand_with_limits(
+        &self,
+        base: &Molecule,
+        limits: &SemanticExpansionLimits,
+    ) -> Result<ExpandedSemantic, SemanticError> {
+        if limits.max_atoms == 0 || limits.max_repeat_count == 0 {
+            return Err(SemanticError::InvalidExpansion {
+                id: "model".into(),
+                reason: "expansion limits must be greater than zero".into(),
+            });
+        }
         self.validate()?;
         if self.atom_ids.len() != base.atom_count() {
             return Err(SemanticError::InvalidExpansion {
@@ -365,6 +422,12 @@ impl SemanticModel {
                     ),
                 });
             }
+            ensure_atom_budget(
+                &molecule,
+                fragment.atom_count() - wildcards.len(),
+                limits,
+                &group.id,
+            )?;
             let base_atoms = group
                 .attachment_atoms
                 .iter()
@@ -434,6 +497,14 @@ impl SemanticModel {
                     construct: unit.id.clone(),
                     reason: "repeat count must be explicit".into(),
                 })?;
+            if repeats > limits.max_repeat_count {
+                return Err(SemanticError::ExpansionLimit {
+                    id: unit.id.clone(),
+                    resource: "repeats",
+                    requested: repeats as usize,
+                    limit: limits.max_repeat_count as usize,
+                });
+            }
             let left = AtomIdx(
                 self.atom_ids
                     .iter()
@@ -488,6 +559,13 @@ impl SemanticModel {
                     }
                     (AtomIdx(left), AtomIdx(right), None)
                 };
+                let excluded_atoms = if excluded.is_some() { 2 } else { 0 };
+                ensure_atom_budget(
+                    &molecule,
+                    fragment.atom_count() - excluded_atoms,
+                    limits,
+                    &unit.id,
+                )?;
                 let mut remap = BTreeMap::new();
                 for (idx, atom) in fragment.atoms() {
                     if excluded.is_none_or(|(a, b)| idx != a && idx != b) {
@@ -546,6 +624,7 @@ impl SemanticModel {
                         reason: format!("end-group {side} requires exactly one [*] marker"),
                     });
                 }
+                ensure_atom_budget(&molecule, fragment.atom_count() - 1, limits, &unit.id)?;
                 let wildcard = wildcards[0];
                 let neighbors = fragment.neighbors(wildcard).collect::<Vec<_>>();
                 if neighbors.len() != 1 {
@@ -742,6 +821,32 @@ impl ExpandedSemantic {
             ).collect::<BTreeMap<_, _>>(),
         })
     }
+}
+
+fn ensure_atom_budget(
+    molecule: &Molecule,
+    additional: usize,
+    limits: &SemanticExpansionLimits,
+    id: &str,
+) -> Result<(), SemanticError> {
+    let requested = molecule
+        .atom_count()
+        .checked_add(additional)
+        .ok_or_else(|| SemanticError::ExpansionLimit {
+            id: id.into(),
+            resource: "atoms",
+            requested: usize::MAX,
+            limit: limits.max_atoms,
+        })?;
+    if requested > limits.max_atoms {
+        return Err(SemanticError::ExpansionLimit {
+            id: id.into(),
+            resource: "atoms",
+            requested,
+            limit: limits.max_atoms,
+        });
+    }
+    Ok(())
 }
 
 fn json_string(value: &Value, key: &str) -> Result<String, SemanticError> {
@@ -1074,6 +1179,73 @@ mod tests {
         assert!(matches!(
             model.validate(),
             Err(SemanticError::InvalidExpansion { .. })
+        ));
+    }
+
+    #[test]
+    fn rejects_repeat_expansion_over_explicit_budget_before_allocating() {
+        let base = chematic_smiles::parse("CC").unwrap();
+        let model = SemanticModel {
+            atom_ids: vec!["a1".into(), "a2".into()],
+            polymer_units: vec![PolymerRepeatUnit {
+                id: "p1".into(),
+                attachment_atoms: vec![
+                    AtomRef {
+                        atom_id: "a1".into(),
+                    },
+                    AtomRef {
+                        atom_id: "a2".into(),
+                    },
+                ],
+                end_groups: vec![],
+                repeat_count: Some(11),
+                repeat_smiles: Some("[*]CC[*]".into()),
+                repeat_endpoint_atoms: None,
+            }],
+            ..Default::default()
+        };
+        let limits = SemanticExpansionLimits {
+            max_atoms: 100,
+            max_repeat_count: 10,
+        };
+        assert!(matches!(
+            model.expand_with_limits(&base, &limits),
+            Err(SemanticError::ExpansionLimit {
+                resource: "repeats",
+                requested: 11,
+                limit: 10,
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn rejects_atom_expansion_over_budget_before_mutation() {
+        let base = chematic_smiles::parse("CC").unwrap();
+        let model = SemanticModel {
+            atom_ids: vec!["a1".into(), "a2".into()],
+            r_groups: vec![RGroupDefinition {
+                id: "r1".into(),
+                attachment_atoms: vec![AtomRef {
+                    atom_id: "a2".into(),
+                }],
+                alternatives: vec!["[*]CCCC".into()],
+                selected_alternative: Some(0),
+            }],
+            ..Default::default()
+        };
+        let limits = SemanticExpansionLimits {
+            max_atoms: 4,
+            max_repeat_count: 10,
+        };
+        assert!(matches!(
+            model.expand_with_limits(&base, &limits),
+            Err(SemanticError::ExpansionLimit {
+                resource: "atoms",
+                requested: 6,
+                limit: 4,
+                ..
+            })
         ));
     }
 }

@@ -27,6 +27,11 @@ topologies remain explicitly rejected with `SemanticError`.
 returns `ExpandedSemantic`, including a `source_to_expanded` mapping for undo,
 re-edit, and provenance display. Unsupported or ambiguous input returns a
 typed `SemanticError`; callers must not treat it as a best-effort molecule.
+Expansion is bounded by `SemanticExpansionLimits`: `expand` uses the default
+10,000 repeats per polymer unit and 100,000 output atoms, while trusted callers
+can use `expand_with_limits` with an explicit budget. A limit failure is a
+typed `SemanticError::ExpansionLimit` and is checked before each fragment is
+added to the output graph.
 The stable JSON contract can be decoded with `SemanticModel::from_json` and
 expanded through the Python and WASM/Node `semantic_expand_json` APIs.
 Markush alternatives are selected explicitly via
