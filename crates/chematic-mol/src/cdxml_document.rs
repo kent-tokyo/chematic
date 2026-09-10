@@ -30,7 +30,46 @@ pub struct CdxmlTransform {
     pub matrix: [f64; 6],
 }
 
+/// Common typed text/presentation attributes used by CDXML text objects.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct CdxmlTextStyle {
+    pub font: Option<String>,
+    pub size: Option<f64>,
+    pub alignment: Option<String>,
+}
+
 impl CdxmlObject {
+    /// Read common text/caption presentation attributes. The method is
+    /// intentionally available for any object so extensions can opt in, while
+    /// non-text objects simply return `None` when no style attributes exist.
+    pub fn text_style(&self) -> Result<Option<CdxmlTextStyle>, CdxmlError> {
+        let font = self
+            .attributes
+            .get("Font")
+            .and_then(Value::as_str)
+            .map(str::to_owned);
+        let size = self
+            .attributes
+            .get("Size")
+            .map(|value| parse_finite_attribute(value, "Size"))
+            .transpose()?;
+        let alignment = self
+            .attributes
+            .get("Justification")
+            .or_else(|| self.attributes.get("Alignment"))
+            .and_then(Value::as_str)
+            .map(str::to_owned);
+        if font.is_none() && size.is_none() && alignment.is_none() {
+            Ok(None)
+        } else {
+            Ok(Some(CdxmlTextStyle {
+                font,
+                size,
+                alignment,
+            }))
+        }
+    }
+
     /// Read the optional CDXML `Matrix` attribute without guessing malformed
     /// values. The translation components are in the final two positions.
     pub fn transform(&self) -> Result<Option<CdxmlTransform>, CdxmlError> {
@@ -75,6 +114,21 @@ impl CdxmlObject {
             .map(Some)
             .map_err(|_| CdxmlError::InvalidCoords(format!("invalid CDXML ZOrder value: {text}")))
     }
+}
+
+fn parse_finite_attribute(value: &CdxmlValue, name: &str) -> Result<f64, CdxmlError> {
+    let text = value
+        .as_str()
+        .ok_or_else(|| CdxmlError::InvalidCoords(format!("CDXML {name} must be a string")))?;
+    let parsed = text
+        .parse::<f64>()
+        .map_err(|_| CdxmlError::InvalidCoords(format!("invalid CDXML {name} value: {text}")))?;
+    if !parsed.is_finite() {
+        return Err(CdxmlError::InvalidCoords(format!(
+            "CDXML {name} must be finite"
+        )));
+    }
+    Ok(parsed)
 }
 
 /// A non-fatal presentation diagnostic. Unknown objects remain available via
@@ -828,6 +882,29 @@ mod tests {
         .unwrap();
         assert!(matches!(
             malformed.pages[0].children[0].transform(),
+            Err(CdxmlError::InvalidCoords(_))
+        ));
+    }
+
+    #[test]
+    fn reads_typed_text_style_and_rejects_invalid_size() {
+        let input = "<CDXML>\n<page id=\"p1\">\n<text Font=\"Helvetica\" Size=\"12.5\" Justification=\"center\"/>\n</page>\n</CDXML>";
+        let doc = CdxmlDocument::parse(input).unwrap();
+        assert_eq!(
+            doc.pages[0].children[0].text_style().unwrap(),
+            Some(CdxmlTextStyle {
+                font: Some("Helvetica".into()),
+                size: Some(12.5),
+                alignment: Some("center".into()),
+            })
+        );
+
+        let malformed = CdxmlDocument::parse(
+            "<CDXML>\n<page id=\"p1\">\n<caption Size=\"NaN\"/>\n</page>\n</CDXML>",
+        )
+        .unwrap();
+        assert!(matches!(
+            malformed.pages[0].children[0].text_style(),
             Err(CdxmlError::InvalidCoords(_))
         ));
     }

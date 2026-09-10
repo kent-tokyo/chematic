@@ -60,7 +60,10 @@ summaries, including presentation-only objects. `CdxmlDocument::diagnostics`
 reports unknown presentation tags with page/object locations while retaining
 their raw XML. `CdxmlObject::transform` and `CdxmlObject::z_order` provide
 typed access to common `Matrix` and `ZOrder` attributes and reject malformed
-values. `CdxmlEdit` applies bounded
+values. `CdxmlObject::text_style` provides typed access to common text/caption
+font, size, and alignment attributes; malformed or non-finite sizes are
+rejected. Unknown attributes remain available in the object attribute map.
+`CdxmlEdit` applies bounded
 page-attribute or opaque-object replacements and re-parses the result before
 returning it; `apply_json_edit` is the binding-neutral command boundary.
 `ReplaceObjectPath` addresses a multiline nested object by its parent-to-child

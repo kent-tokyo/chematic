@@ -9,7 +9,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No changes yet.
+- Added typed CDXML text/caption style access for font, size, and alignment,
+  with non-finite numeric values rejected and unknown presentation attributes
+  preserved.
 
 ## [1.0.12] - 2026-09-11
 

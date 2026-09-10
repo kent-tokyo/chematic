@@ -83,6 +83,9 @@ Competitive-response gate status (2026-09-10):
 - [ ] Broader CIP generated permutations and independent oracle corpus.
 - [ ] Exact canonical-SMILES parity, typed SGROUP semantics, and Indigo/RDKit
   cross-engine V3000 fixtures.
+- [x] Add typed CDXML text/caption style access for font, size, and alignment,
+  with finite-number validation and regression coverage. Full ChemDraw style
+  inheritance and rendering semantics remain outside the bounded contract.
 
 ### Next priority: compatible similarity search
 
