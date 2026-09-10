@@ -58,6 +58,11 @@ fn find_atom_by_map(mol: &Molecule, map_num: u16) -> AtomIdx {
         .expect("atom map tag not found")
 }
 
+const NEGATIVE_RESONANCE_CORPUS: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../validation/cip_negative_resonance_order_invariance.jsonl"
+));
+
 #[test]
 fn test_atom_renumbering_invariance() {
     // A molecule with a ring, a branch, and an ester -- enough shape to be a
@@ -238,47 +243,55 @@ fn test_rule_1a_renumbering_invariance() {
 
 #[test]
 fn negative_charge_resonance_branch_is_renumbering_invariant() {
-    // The anionic cyclohexadienyl branch exercises the charged resonance
+    // These anionic cyclohexadienyl branches exercise the charged resonance
     // neighborhood that can make CIP ranking depend on atom insertion order.
-    // The map tag identifies the same tetrahedral center after permutation;
-    // this assertion deliberately checks chematic's own invariant, not merely
-    // agreement with one external oracle spelling.
-    let mol = parse("[C@@H:1](O)(C)[CH-]2C=CC=C2").expect("valid resonance case");
-    let center = find_atom_by_map(&mol, 1);
-    let baseline = assign_cip_accurate_experimental(&mol, CipBudget::default_budget())
-        .expect("assignment succeeds")
-        .assignments
-        .into_iter()
-        .find(|(idx, _)| *idx == center)
-        .map(|(_, code)| code)
-        .expect("mapped center must receive a CIP label");
+    // The checked-in corpus keeps the cases reviewable and the map tag identifies
+    // the same tetrahedral center after every permutation. This deliberately checks
+    // chematic's own invariant, not merely agreement with one external spelling.
+    let mut cases = 0;
+    for line in NEGATIVE_RESONANCE_CORPUS.lines() {
+        let case: serde_json::Value = serde_json::from_str(line).expect("valid corpus JSON");
+        let smiles = case["smiles"].as_str().expect("corpus SMILES");
+        let center_map = case["center_map"].as_u64().expect("center map") as u16;
+        let mol = parse(smiles).expect("valid resonance case");
+        let center = find_atom_by_map(&mol, center_map);
+        let baseline = assign_cip_accurate_experimental(&mol, CipBudget::default_budget())
+            .expect("assignment succeeds")
+            .assignments
+            .into_iter()
+            .find(|(idx, _)| *idx == center)
+            .map(|(_, code)| code)
+            .expect("mapped center must receive a CIP label");
 
-    let n = mol.atom_count();
-    let permutations = [
-        (0..n).rev().collect::<Vec<_>>(),
-        (1..n).chain(0..1).collect::<Vec<_>>(),
-        (0..n)
-            .step_by(2)
-            .chain((1..n).step_by(2))
-            .collect::<Vec<_>>(),
-    ];
-    for permutation in permutations {
-        let (permuted, old_to_new) = permute_molecule(&mol, &permutation);
-        let permuted_center = AtomIdx(old_to_new[center.0 as usize]);
-        let permuted_code =
-            assign_cip_accurate_experimental(&permuted, CipBudget::default_budget())
-                .expect("permuted assignment succeeds")
-                .assignments
-                .into_iter()
-                .find(|(idx, _)| *idx == permuted_center)
-                .map(|(_, code)| code)
-                .expect("permuted mapped center must receive a CIP label");
+        let n = mol.atom_count();
+        let permutations = [
+            (0..n).rev().collect::<Vec<_>>(),
+            (1..n).chain(0..1).collect::<Vec<_>>(),
+            (0..n)
+                .step_by(2)
+                .chain((1..n).step_by(2))
+                .collect::<Vec<_>>(),
+        ];
+        for permutation in permutations {
+            let (permuted, old_to_new) = permute_molecule(&mol, &permutation);
+            let permuted_center = AtomIdx(old_to_new[center.0 as usize]);
+            let permuted_code =
+                assign_cip_accurate_experimental(&permuted, CipBudget::default_budget())
+                    .expect("permuted assignment succeeds")
+                    .assignments
+                    .into_iter()
+                    .find(|(idx, _)| *idx == permuted_center)
+                    .map(|(_, code)| code)
+                    .expect("permuted mapped center must receive a CIP label");
 
-        assert_eq!(
-            baseline, permuted_code,
-            "charged resonance ranking must not flap under renumbering"
-        );
+            assert_eq!(
+                baseline, permuted_code,
+                "charged resonance ranking must not flap under renumbering: {smiles}"
+            );
+        }
+        cases += 1;
     }
+    assert_eq!(cases, 4, "corpus size must remain explicit");
 }
 
 #[test]

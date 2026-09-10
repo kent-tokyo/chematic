@@ -89,10 +89,16 @@ const run = async () => {
   const {
     default: initSchematic,
     canonicalize_smiles_batch_json,
+    mol_from_moljson,
     mol_block_from_smiles,
+    mol_from_sdf_block,
+    mol_from_v3000_block,
     parse_smiles,
     rdkit_ecfp4_bitvec,
     sdf_records_batch_json,
+    to_mol_block,
+    to_mol_v3000_block,
+    to_moljson,
   } = schematicModule;
   const schematicStart = performance.now();
   await withTimeout(initSchematic("/schematic/chematic_wasm_bg.wasm"), "chematic WASM initialization");
@@ -113,6 +119,19 @@ const run = async () => {
   const sdf = mol_block_from_smiles("CC") + "$$$$\\n" + mol_block_from_smiles("CCO") + "$$$$\\n";
   const firstSdfBatch = JSON.parse(sdf_records_batch_json(sdf, 0, 1));
   const secondSdfBatch = JSON.parse(sdf_records_batch_json(sdf, firstSdfBatch.next_offset, 1));
+  const serializationSource = parse_smiles("CCO");
+  const v2000Roundtrip = mol_from_sdf_block(to_mol_block(serializationSource));
+  const v3000Roundtrip = mol_from_v3000_block(to_mol_v3000_block(serializationSource));
+  const molJsonRoundtrip = mol_from_moljson(to_moljson(serializationSource));
+  const schematicSerialization = {
+    v2000_canonical_smiles: v2000Roundtrip.canonical_smiles(),
+    v3000_canonical_smiles: v3000Roundtrip.canonical_smiles(),
+    moljson_canonical_smiles: molJsonRoundtrip.canonical_smiles(),
+  };
+  serializationSource.free();
+  v2000Roundtrip.free();
+  v3000Roundtrip.free();
+  molJsonRoundtrip.free();
   const schematicApiContract = {
     malformed_parse: malformed,
     malformed_batch: {
@@ -128,6 +147,7 @@ const run = async () => {
       next_record_count: secondSdfBatch.record_count,
       cancellation_boundary: firstSdfBatch.status === "partial" && firstSdfBatch.next_offset > 0,
     },
+    serialization: schematicSerialization,
   };
 
   const rdkitStart = performance.now();
@@ -140,11 +160,21 @@ const run = async () => {
   const rdkitHashes = [];
   for (const value of smiles) { const mol = getMol(value); rdkitHashes.push(mol.get_morgan_fp(JSON.stringify({ radius: 2, nBits: 2048 }))); mol.delete(); }
   const rdkitMalformed = RDKit.get_mol("C1CC");
+  const rdkitSerializationSource = getMol("CCO");
+  const rdkitV2000 = getMol(rdkitSerializationSource.get_molblock());
+  const rdkitV3000 = getMol(rdkitSerializationSource.get_v3Kmolblock());
   const rdkitApiContract = {
     malformed_parse: { status: rdkitMalformed ? "accepted" : "rejected" },
     version: RDKit.version(),
+    serialization: {
+      v2000_canonical_smiles: rdkitV2000.get_smiles(),
+      v3000_canonical_smiles: rdkitV3000.get_smiles(),
+    },
   };
   if (rdkitMalformed) rdkitMalformed.delete();
+  rdkitSerializationSource.delete();
+  rdkitV2000.delete();
+  rdkitV3000.delete();
   out.textContent = JSON.stringify({
     environment: { user_agent: navigator.userAgent, platform: navigator.platform },
     schematic: { init_ms: schematicInit, parse: schematicParse, smiles_write: schematicWrite, rdkit_compatible_ecfp4: schematicFp },

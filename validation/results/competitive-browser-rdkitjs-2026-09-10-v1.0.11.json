@@ -45,46 +45,46 @@
     "platform": "MacIntel"
   },
   "schematic": {
-    "init_ms": 68.90000000596046,
+    "init_ms": 71.40000000596046,
     "parse": {
       "count": 1000,
       "p50_ms": 0,
       "p95_ms": 0,
-      "mean_ms": 0.004100000023841858
+      "mean_ms": 0.004099999994039536
     },
     "smiles_write": {
       "count": 1000,
       "p50_ms": 0,
       "p95_ms": 0.10000002384185791,
-      "mean_ms": 0.027800000011920928
+      "mean_ms": 0.02739999997615814
     },
     "rdkit_compatible_ecfp4": {
       "count": 1000,
       "p50_ms": 0.20000001788139343,
-      "p95_ms": 1.2999999821186066,
-      "mean_ms": 0.3936000000238419
+      "p95_ms": 1.2000000178813934,
+      "mean_ms": 0.395
     }
   },
   "rdkit": {
     "version": "2025.03.4",
-    "init_ms": 175.40000000596046,
+    "init_ms": 161.90000000596046,
     "parse": {
       "count": 1000,
       "p50_ms": 0.20000001788139343,
       "p95_ms": 0.5,
-      "mean_ms": 0.23910000002384185
+      "mean_ms": 0.2382999999523163
     },
     "smiles_write": {
       "count": 1000,
       "p50_ms": 0.29999998211860657,
       "p95_ms": 0.699999988079071,
-      "mean_ms": 0.3205
+      "mean_ms": 0.31930000001192094
     },
     "morgan_radius2_2048": {
       "count": 1000,
       "p50_ms": 0.30000001192092896,
       "p95_ms": 0.699999988079071,
-      "mean_ms": 0.3667000000178814
+      "mean_ms": 0.36469999998807906
     }
   },
   "fingerprint_parity": {
@@ -113,13 +113,22 @@
         "next_status": "complete",
         "next_record_count": 1,
         "cancellation_boundary": true
+      },
+      "serialization": {
+        "v2000_canonical_smiles": "C(C)O",
+        "v3000_canonical_smiles": "C(C)O",
+        "moljson_canonical_smiles": "C(C)O"
       }
     },
     "rdkit": {
       "malformed_parse": {
         "status": "rejected"
       },
-      "version": "2025.03.4"
+      "version": "2025.03.4",
+      "serialization": {
+        "v2000_canonical_smiles": "CCO",
+        "v3000_canonical_smiles": "CCO"
+      }
     }
   },
   "interpretation": "Browser measurements exclude peak RSS and are not equivalent to Node process measurements; they are a Playwright Chromium-specific WASM/API comparison."

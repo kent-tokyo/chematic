@@ -25,6 +25,12 @@ RDKit.js rejected the same malformed SMILES in this lane. RDKit.js does not
 expose an equivalent resumable batch contract in the tested package, so this
 is an API-shape comparison rather than a claim of feature parity.
 
+The serialization probe round-tripped ethanol through schematic V2000, V3000,
+and MolJSON, and through RDKit.js V2000 and V3000. All lanes preserved a valid
+ethanol graph, but schematic emitted `C(C)O` while RDKit.js emitted `CCO` for
+the canonical-smiles display. This is recorded as a spelling difference, not
+as a graph-loss claim; exact canonical-string parity remains open.
+
 The browser timing resolution rounds very small values to zero in the raw
 report; the mean values remain available in the machine-readable result. This
 is browser-engine evidence only and must not be mixed with the Node process
