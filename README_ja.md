@@ -46,13 +46,13 @@ Spectrophores は patent/FTO 状態が独立に確認されるまで Rust/Python
 
 canonical/SDF の行は 2026-09-04 macOS arm64 の中央値であり、記録した corpus と
 処理境界に限定されます。[ベンチマーク詳細](https://kent-tokyo.github.io/chematic/benchmark/)を参照。
-chematic の WASM サイズは v1.0.9 release candidate を `wasm-pack 0.13.1` +
-`wasm-opt 130` でビルドして 2026-09-07 に計測: **3.58 MB raw**(**1.31 MB gzip**)。
+chematic の WASM サイズは v1.0.10 release candidate を `wasm-pack 0.13.1` +
+`wasm-opt 130` でビルドして 2026-09-09 に計測: **3.73 MB raw**（**1.36 MB gzip**）。
 比較対象は履歴として固定した RDKit.js **6.91 MB**
 (`@rdkit/rdkit@2025.3.4-1.0.0`の`RDKit_minimal.wasm`、unpkg.com で確認) · Indigo(Ketcher向けビルド)
 **11.24 MB**(`indigo-ketcher@1.45.1`のメイン`.wasm`、jsDelivr で確認) — chematic の raw WASM
-バイナリは現在、RDKit.js よりおよそ2.1倍、Indigo の Ketcher向けビルドよりおよそ3.8倍小さい
-(raw同士の比較)。詳細は[v1.0.9 artifact 記録](benchmarks/2026-09-07-wasm-size-v1.0.9.md)を参照。
+バイナリは現在、RDKit.js よりおよそ1.9倍、Indigo の Ketcher向けビルドよりおよそ3.0倍小さい
+(raw同士の比較)。詳細は[v1.0.10 artifact 記録](benchmarks/2026-09-09-wasm-size-v1.0.10.md)を参照。
 
 **機能の成熟度（早見表）：**
 

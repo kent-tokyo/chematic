@@ -41,13 +41,13 @@ Spectrophores 在 patent/FTO 状态得到独立确认前已从 Rust/Python API �
 
 canonical/SDF 行是 2026-09-04 macOS arm64 的中位数，仅适用于所记录的语料和
 操作边界。参阅[基准测试详情](https://kent-tokyo.github.io/chematic/benchmark/)。
-chematic WASM 包体积于 2026-09-07 使用 `wasm-pack 0.13.1` + `wasm-opt 130`
-从 v1.0.9 release candidate 构建并测量：**raw 3.58 MB**（**gzip 1.31 MB**）。固定的历史比较项为
+chematic WASM 包体积于 2026-09-09 使用 `wasm-pack 0.13.1` + `wasm-opt 130`
+从 v1.0.10 release candidate 构建并测量：**raw 3.73 MB**（**gzip 1.36 MB**）。固定的历史比较项为
 RDKit.js **6.91 MB**
 （`@rdkit/rdkit@2025.3.4-1.0.0` 的 `RDKit_minimal.wasm`，经 unpkg.com 确认）· Indigo（Ketcher
 构建版）**11.24 MB**（`indigo-ketcher@1.45.1` 的主 `.wasm`，经 jsDelivr 确认）—— 以 raw 对 raw
-比较，chematic 目前比 RDKit.js 小约 2.1 倍，比 Indigo 的 Ketcher 构建版小约 3.8 倍。
-详见 [v1.0.9 artifact 记录](benchmarks/2026-09-07-wasm-size-v1.0.9.md)。
+比较，chematic 目前比 RDKit.js 小约 1.9 倍，比 Indigo 的 Ketcher 构建版小约 3.0 倍。
+详见 [v1.0.10 artifact 记录](benchmarks/2026-09-09-wasm-size-v1.0.10.md)。
 
 **v1.0.11（2026-09-10）：** 延续 v1.0.10 的 descriptor provenance、共享契约与 streaming safety gate，加入 V3000 parser 与 3D pipeline 责任分离，以及 CIP 异常状态的 fail-closed 处理，同时保持既有搜索结果与排序契约。#149/#337 残差仍保持 fail-closed 或诊断专用。
 
