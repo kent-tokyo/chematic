@@ -1059,8 +1059,12 @@ mod tests {
             polymer_units: vec![PolymerRepeatUnit {
                 id: "p1".into(),
                 attachment_atoms: vec![
-                    AtomRef { atom_id: "a1".into() },
-                    AtomRef { atom_id: "a2".into() },
+                    AtomRef {
+                        atom_id: "a1".into(),
+                    },
+                    AtomRef {
+                        atom_id: "a2".into(),
+                    },
                 ],
                 end_groups: vec![],
                 repeat_count: Some(2),
