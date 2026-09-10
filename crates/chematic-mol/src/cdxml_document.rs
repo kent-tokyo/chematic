@@ -96,6 +96,24 @@ pub struct CdxmlPage {
     pub children: Vec<CdxmlObject>,
 }
 
+impl CdxmlPage {
+    /// Find an object by its parent-to-child sibling path.
+    pub fn object_at_path(&self, path: &[usize]) -> Option<&CdxmlObject> {
+        self.children.iter().find(|object| object.path == path)
+    }
+
+    /// Return the direct object children of a group/path in source order.
+    /// Pass an empty path to obtain page-level objects.
+    pub fn child_objects(&self, parent_path: &[usize]) -> Vec<&CdxmlObject> {
+        self.children
+            .iter()
+            .filter(|object| {
+                object.path.len() == parent_path.len() + 1 && object.path.starts_with(parent_path)
+            })
+            .collect()
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CdxmlDocument {
     pub document_attributes: BTreeMap<String, CdxmlValue>,
@@ -1039,6 +1057,9 @@ mod tests {
         let doc = CdxmlDocument::parse(input).unwrap();
         assert_eq!(doc.pages[0].children[0].path, vec![0]);
         assert_eq!(doc.pages[0].children[1].path, vec![0, 0]);
+        assert_eq!(doc.pages[0].child_objects(&[]).len(), 1);
+        assert_eq!(doc.pages[0].child_objects(&[0])[0].tag, "arrow");
+        assert_eq!(doc.pages[0].object_at_path(&[0, 0]).unwrap().tag, "arrow");
         let doc = doc
             .apply(&CdxmlEdit::ReplaceObjectPath {
                 page_id: "p1".into(),
