@@ -181,6 +181,8 @@ pub enum SemanticCommand {
     /// Clear a previously selected alternative so the model returns to an
     /// explicit, non-expandable Markush state.
     ClearRGroupAlternative { group_id: SemanticId },
+    /// Change a typed S-group kind while retaining its stable identity.
+    SetSGroupKind { group_id: SemanticId, kind: String },
     /// Clear a polymer repeat count so the model returns to an explicit,
     /// non-expandable editing state.
     ClearPolymerRepeatCount { unit_id: SemanticId },
@@ -319,6 +321,12 @@ impl SemanticModel {
             })
             .transpose()?
             .unwrap_or_default();
+        if value.get("biomolecules").is_some() {
+            return Err(SemanticError::Unsupported {
+                construct: "biomolecule".into(),
+                reason: "typed biomolecule semantics are not implemented".into(),
+            });
+        }
         let extensions = value
             .get("extensions")
             .and_then(Value::as_object)
@@ -340,6 +348,16 @@ impl SemanticModel {
 
     /// Decode and apply a JSON command using the same contract as the Rust API.
     pub fn apply_json_command(&self, value: &Value) -> Result<Self, SemanticError> {
+        if let Some(group_id) = value.get("s_group_id").and_then(Value::as_str) {
+            let kind = value
+                .get("kind")
+                .and_then(Value::as_str)
+                .ok_or_else(|| SemanticError::InvalidJson("kind must be a string".into()))?;
+            return self.apply(&SemanticCommand::SetSGroupKind {
+                group_id: group_id.into(),
+                kind: kind.into(),
+            });
+        }
         if let Some(group_id) = value.get("clear_group_id").and_then(Value::as_str) {
             return self.apply(&SemanticCommand::ClearRGroupAlternative {
                 group_id: group_id.into(),
@@ -405,6 +423,17 @@ impl SemanticModel {
                     }
                 })?;
                 group.selected_alternative = None;
+            }
+            SemanticCommand::SetSGroupKind { group_id, kind } => {
+                let group = next
+                    .s_groups
+                    .iter_mut()
+                    .find(|group| &group.id == group_id)
+                    .ok_or_else(|| SemanticError::InvalidExpansion {
+                        id: group_id.clone(),
+                        reason: "unknown S-group".into(),
+                    })?;
+                group.kind = kind.clone();
             }
             SemanticCommand::ClearPolymerRepeatCount { unit_id } => {
                 let unit = next
@@ -1260,11 +1289,36 @@ mod tests {
                 repeat_unit_id: None,
                 linkage: None,
             }],
-            ..model
+            ..model.clone()
         };
         assert!(matches!(
             invalid.validate(),
             Err(SemanticError::MissingAtom(id)) if id == "missing"
+        ));
+
+        let renamed = model
+            .apply_json_command(&serde_json::json!({
+                "s_group_id": "sg1",
+                "kind": "CROSSLINK"
+            }))
+            .unwrap();
+        assert_eq!(renamed.s_groups[0].kind, "CROSSLINK");
+    }
+
+    #[test]
+    fn rejects_unimplemented_biomolecule_json_explicitly() {
+        let input = serde_json::json!({
+            "schema": "chematic.semantic.v1",
+            "atom_ids": [],
+            "bond_ids": [],
+            "r_groups": [],
+            "polymer_units": [],
+            "biomolecules": [],
+            "extensions": {}
+        });
+        assert!(matches!(
+            SemanticModel::from_json(&input),
+            Err(SemanticError::Unsupported { construct, .. }) if construct == "biomolecule"
         ));
     }
 

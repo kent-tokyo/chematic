@@ -21,6 +21,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Added typed semantic S-group and polymer-linkage definitions with stable IDs,
   source-atom validation, repeat-unit references, and explicit unsupported-kind
   handling.
+- Added stable-ID S-group kind editing and explicit rejection of unimplemented
+  biomolecule payloads.
 
 ## [1.0.12] - 2026-09-11
 

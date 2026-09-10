@@ -112,6 +112,8 @@ Competitive-response gate status (2026-09-10):
   rejected by design.
 - [x] Add typed S-group membership and polymer-linkage definitions to the
   semantic JSON contract, including stable IDs and source-reference checks.
+- [x] Add stable-ID S-group kind editing and fail-closed biomolecule boundary;
+  first-class biomolecule expansion remains a separate future schema.
 
 Completed through the v1.0.11 release tree (with historical v1.0.10 and v1.0.9
 milestones retained below):

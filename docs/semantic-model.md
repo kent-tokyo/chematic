@@ -33,7 +33,8 @@ form cannot be supplied together.
 `s_groups` exposes typed S-group membership and optional repeat-unit and
 polymer-linkage references. A linkage has stable ID, two distinct source atom
 references, and a validated bond order; unknown S-group kinds remain explicit
-strings and are not silently expanded.
+strings and are not silently expanded. `SetSGroupKind` edits a group by stable
+ID. Biomolecule payloads are explicitly rejected until a typed API exists.
 
 `SemanticModel::apply` returns a new model for command-style editing. Expansion
 returns `ExpandedSemantic`, including a `source_to_expanded` mapping for undo,
