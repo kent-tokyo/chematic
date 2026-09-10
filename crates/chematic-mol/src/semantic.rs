@@ -388,6 +388,14 @@ impl SemanticModel {
                 reason: "atom_ids must match base molecule atom count".into(),
             });
         }
+        if base.atom_count() > limits.max_atoms {
+            return Err(SemanticError::ExpansionLimit {
+                id: "model".into(),
+                resource: "atoms",
+                requested: base.atom_count(),
+                limit: limits.max_atoms,
+            });
+        }
         let mut molecule = base.clone();
         let mut mapping: BTreeMap<SemanticId, Vec<AtomIdx>> = self
             .atom_ids
@@ -1244,6 +1252,28 @@ mod tests {
                 resource: "atoms",
                 requested: 6,
                 limit: 4,
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn rejects_base_molecule_over_budget_without_semantic_additions() {
+        let base = chematic_smiles::parse("CCCC").unwrap();
+        let model = SemanticModel {
+            atom_ids: vec!["a1".into(), "a2".into(), "a3".into(), "a4".into()],
+            ..Default::default()
+        };
+        let limits = SemanticExpansionLimits {
+            max_atoms: 3,
+            max_repeat_count: 10,
+        };
+        assert!(matches!(
+            model.expand_with_limits(&base, &limits),
+            Err(SemanticError::ExpansionLimit {
+                resource: "atoms",
+                requested: 4,
+                limit: 3,
                 ..
             })
         ));
