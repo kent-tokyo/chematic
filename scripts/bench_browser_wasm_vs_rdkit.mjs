@@ -51,7 +51,6 @@ function html({ corpus, schematicDir, rdkitDir, warmup, initTimeoutMs }) {
 <pre id="result">running</pre>
 <script src="/rdkit/RDKit_minimal.js"></script>
 <script type="module">
-import initSchematic, { parse_smiles, rdkit_ecfp4_bitvec } from "/schematic/chematic_wasm.js";
 const smiles = ${corpusJson};
 const warmup = ${warmup};
 const initTimeoutMs = ${initTimeoutMs};
@@ -91,6 +90,8 @@ const time = async (values, fn) => {
   return summary(samples);
 };
 const run = async () => {
+  const schematicModule = await withTimeout(import("/schematic/chematic_wasm.js"), "schematic JS module load");
+  const { default: initSchematic, parse_smiles, rdkit_ecfp4_bitvec } = schematicModule;
   const schematicStart = performance.now();
   await withTimeout(initSchematic("/schematic/chematic_wasm_bg.wasm"), "chematic WASM initialization");
   const schematicInit = performance.now() - schematicStart;
