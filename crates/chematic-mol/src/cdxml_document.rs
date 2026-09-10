@@ -376,6 +376,10 @@ impl CdxmlDocument {
                 open_paths.clear();
                 sibling_counts.clear();
                 sibling_counts.push(0);
+                if line.ends_with("/>") {
+                    pages.push(current.take().expect("page was just initialized"));
+                    sibling_counts.clear();
+                }
             } else if is_close_tag(line, "page") {
                 if !open_paths.is_empty() {
                     return Err(CdxmlError::InvalidDocument(
@@ -388,8 +392,6 @@ impl CdxmlDocument {
                     ));
                 };
                 pages.push(page);
-            } else if is_close_tag(line, "page") {
-                unreachable!("page close is handled above")
             } else if line.starts_with("</") {
                 if open_paths.pop().is_none() {
                     return Err(CdxmlError::InvalidDocument(
@@ -1032,6 +1034,13 @@ mod tests {
     fn accepts_empty_document_with_exact_root_name() {
         let doc = CdxmlDocument::parse("<CDXML></CDXML>").unwrap();
         assert_eq!(doc.page_count(), 0);
+    }
+
+    #[test]
+    fn accepts_self_closing_empty_page() {
+        let doc = CdxmlDocument::parse("<CDXML><page id=\"empty\"/></CDXML>").unwrap();
+        assert_eq!(doc.page_ids(), vec![Some("empty")]);
+        assert!(doc.pages[0].children.is_empty());
     }
 
     #[test]
