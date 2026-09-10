@@ -21,6 +21,59 @@ pub struct CdxmlObject {
     pub raw_xml: String,
 }
 
+/// A 2D affine transform in CDXML's `a b c d e f` order.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct CdxmlTransform {
+    pub matrix: [f64; 6],
+}
+
+impl CdxmlObject {
+    /// Read the optional CDXML `Matrix` attribute without guessing malformed
+    /// values. The translation components are in the final two positions.
+    pub fn transform(&self) -> Result<Option<CdxmlTransform>, CdxmlError> {
+        let Some(value) = self.attributes.get("Matrix") else {
+            return Ok(None);
+        };
+        let text = value
+            .as_str()
+            .ok_or_else(|| CdxmlError::InvalidCoords("CDXML Matrix must be a string".into()))?;
+        let values = text
+            .split(|c: char| c.is_ascii_whitespace() || c == ',')
+            .filter(|part| !part.is_empty())
+            .map(|part| {
+                part.parse::<f64>().map_err(|_| {
+                    CdxmlError::InvalidCoords(format!("invalid CDXML Matrix component: {part}"))
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let matrix: [f64; 6] = values.try_into().map_err(|values: Vec<f64>| {
+            CdxmlError::InvalidCoords(format!(
+                "CDXML Matrix must contain 6 components, got {}",
+                values.len()
+            ))
+        })?;
+        if matrix.iter().any(|value| !value.is_finite()) {
+            return Err(CdxmlError::InvalidCoords(
+                "CDXML Matrix components must be finite".into(),
+            ));
+        }
+        Ok(Some(CdxmlTransform { matrix }))
+    }
+
+    /// Read the optional integer z-order used by presentation objects.
+    pub fn z_order(&self) -> Result<Option<i64>, CdxmlError> {
+        let Some(value) = self.attributes.get("ZOrder") else {
+            return Ok(None);
+        };
+        let text = value
+            .as_str()
+            .ok_or_else(|| CdxmlError::InvalidCoords("CDXML ZOrder must be a string".into()))?;
+        text.parse::<i64>()
+            .map(Some)
+            .map_err(|_| CdxmlError::InvalidCoords(format!("invalid CDXML ZOrder value: {text}")))
+    }
+}
+
 /// A non-fatal presentation diagnostic. Unknown objects remain available via
 /// `raw_xml`; callers can use these diagnostics to decide whether their own
 /// editor can safely interpret the document.
@@ -705,6 +758,27 @@ mod tests {
         assert_eq!(diagnostics[0].tag, "customGraphic");
         assert_eq!(doc.write(), input);
         assert_eq!(doc.to_json()["diagnostics"].as_array().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn reads_typed_transform_and_z_order_without_guessing() {
+        let input = "<CDXML>\n<page id=\"p1\">\n<graphic Matrix=\"1 0 0 1 12.5 -3\" ZOrder=\"7\"/>\n</page>\n</CDXML>";
+        let doc = CdxmlDocument::parse(input).unwrap();
+        let object = &doc.pages[0].children[0];
+        assert_eq!(
+            object.transform().unwrap().unwrap().matrix,
+            [1.0, 0.0, 0.0, 1.0, 12.5, -3.0]
+        );
+        assert_eq!(object.z_order().unwrap(), Some(7));
+
+        let malformed = CdxmlDocument::parse(
+            "<CDXML>\n<page id=\"p1\">\n<graphic Matrix=\"1 0\"/>\n</page>\n</CDXML>",
+        )
+        .unwrap();
+        assert!(matches!(
+            malformed.pages[0].children[0].transform(),
+            Err(CdxmlError::InvalidCoords(_))
+        ));
     }
 
     #[test]

@@ -59,7 +59,7 @@ pub use cdxml::{
     parse_cdxml_with_options_and_limits, write_cdxml,
 };
 pub use cdxml_document::{
-    CdxmlDiagnostic, CdxmlDocument, CdxmlEdit, CdxmlObject, CdxmlPage, CdxmlValue,
+    CdxmlDiagnostic, CdxmlDocument, CdxmlEdit, CdxmlObject, CdxmlPage, CdxmlTransform, CdxmlValue,
 };
 pub use cif::{
     CifError, CifParseLimits, CifResult, UnitCell, parse_cif, parse_cif_with_limits, write_cif,
