@@ -253,21 +253,32 @@ fn negative_charge_resonance_branch_is_renumbering_invariant() {
         .map(|(_, code)| code)
         .expect("mapped center must receive a CIP label");
 
-    let permutation: Vec<usize> = (0..mol.atom_count()).rev().collect();
-    let (permuted, old_to_new) = permute_molecule(&mol, &permutation);
-    let permuted_center = AtomIdx(old_to_new[center.0 as usize]);
-    let permuted_code = assign_cip_accurate_experimental(&permuted, CipBudget::default_budget())
-        .expect("permuted assignment succeeds")
-        .assignments
-        .into_iter()
-        .find(|(idx, _)| *idx == permuted_center)
-        .map(|(_, code)| code)
-        .expect("permuted mapped center must receive a CIP label");
+    let n = mol.atom_count();
+    let permutations = [
+        (0..n).rev().collect::<Vec<_>>(),
+        (1..n).chain(0..1).collect::<Vec<_>>(),
+        (0..n)
+            .step_by(2)
+            .chain((1..n).step_by(2))
+            .collect::<Vec<_>>(),
+    ];
+    for permutation in permutations {
+        let (permuted, old_to_new) = permute_molecule(&mol, &permutation);
+        let permuted_center = AtomIdx(old_to_new[center.0 as usize]);
+        let permuted_code =
+            assign_cip_accurate_experimental(&permuted, CipBudget::default_budget())
+                .expect("permuted assignment succeeds")
+                .assignments
+                .into_iter()
+                .find(|(idx, _)| *idx == permuted_center)
+                .map(|(_, code)| code)
+                .expect("permuted mapped center must receive a CIP label");
 
-    assert_eq!(
-        baseline, permuted_code,
-        "charged resonance ranking must not flap under renumbering"
-    );
+        assert_eq!(
+            baseline, permuted_code,
+            "charged resonance ranking must not flap under renumbering"
+        );
+    }
 }
 
 #[test]
