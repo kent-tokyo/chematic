@@ -803,6 +803,33 @@ impl SemanticModel {
             }
             mapping.insert(unit.id.clone(), unit_atoms);
         }
+        for group in &self.s_groups {
+            let members = group
+                .member_atoms
+                .iter()
+                .map(|atom| {
+                    self.atom_ids
+                        .iter()
+                        .position(|id| id == &atom.atom_id)
+                        .map(|index| AtomIdx(index as u32))
+                        .ok_or_else(|| SemanticError::MissingAtom(atom.atom_id.clone()))
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            mapping.insert(group.id.clone(), members);
+            if let Some(linkage) = &group.linkage {
+                let endpoints = [&linkage.left_atom, &linkage.right_atom]
+                    .into_iter()
+                    .map(|atom| {
+                        self.atom_ids
+                            .iter()
+                            .position(|id| id == &atom.atom_id)
+                            .map(|index| AtomIdx(index as u32))
+                            .ok_or_else(|| SemanticError::MissingAtom(atom.atom_id.clone()))
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
+                mapping.insert(linkage.id.clone(), endpoints);
+            }
+        }
         Ok(ExpandedSemantic {
             molecule,
             source_to_expanded: mapping,

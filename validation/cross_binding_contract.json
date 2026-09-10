@@ -477,7 +477,7 @@
         },
         "command": {"group_id": "r1", "alternative": 0},
         "expected_selected_alternative": 0,
-        "expected_source_to_expanded": {"a1": [0], "a2": [1], "r1": [2]}
+        "expected_source_to_expanded": {"a1": [0], "a2": [1], "r1": [2], "sg1": [0, 1], "link1": [0, 1]}
       },
       {
         "id": "polymer-repeat-selection",
