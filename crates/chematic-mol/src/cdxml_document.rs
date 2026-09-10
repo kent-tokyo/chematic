@@ -14,6 +14,24 @@ use crate::cml::parse_xml_attrs;
 
 pub type CdxmlValue = Value;
 
+/// Known CDXML document/presentation object classes.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum CdxmlObjectKind {
+    Atom,
+    Bond,
+    Fragment,
+    Group,
+    Arrow,
+    Text,
+    Caption,
+    Graphic,
+    Curve,
+    Table,
+    Scheme,
+    BracketAttachment,
+    Unsupported(String),
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CdxmlObject {
     pub tag: String,
@@ -39,6 +57,25 @@ pub struct CdxmlTextStyle {
 }
 
 impl CdxmlObject {
+    /// Classify an object without discarding unsupported XML.
+    pub fn kind(&self) -> CdxmlObjectKind {
+        match self.tag.as_str() {
+            "n" => CdxmlObjectKind::Atom,
+            "b" => CdxmlObjectKind::Bond,
+            "fragment" => CdxmlObjectKind::Fragment,
+            "group" => CdxmlObjectKind::Group,
+            "arrow" => CdxmlObjectKind::Arrow,
+            "text" => CdxmlObjectKind::Text,
+            "caption" => CdxmlObjectKind::Caption,
+            "graphic" => CdxmlObjectKind::Graphic,
+            "curve" => CdxmlObjectKind::Curve,
+            "table" => CdxmlObjectKind::Table,
+            "scheme" => CdxmlObjectKind::Scheme,
+            "bracket_attachment" => CdxmlObjectKind::BracketAttachment,
+            tag => CdxmlObjectKind::Unsupported(tag.to_owned()),
+        }
+    }
+
     /// Read common text/caption presentation attributes. The method is
     /// intentionally available for any object so extensions can opt in, while
     /// non-text objects simply return `None` when no style attributes exist.
@@ -878,6 +915,7 @@ mod tests {
         assert_eq!(doc.pages.len(), 1);
         assert_eq!(doc.pages[0].id.as_deref(), Some("p2"));
         assert_eq!(doc.pages[0].children[1].tag, "arrow");
+        assert_eq!(doc.pages[0].children[1].kind(), CdxmlObjectKind::Arrow);
         assert_eq!(
             doc.pages[0].children[1].attributes["Head3"],
             Value::String("yes".into())
@@ -896,6 +934,10 @@ mod tests {
         assert_eq!(diagnostics[0].page_index, 0);
         assert_eq!(diagnostics[0].object_index, 0);
         assert_eq!(diagnostics[0].tag, "customGraphic");
+        assert_eq!(
+            doc.pages[0].children[0].kind(),
+            CdxmlObjectKind::Unsupported("customGraphic".into())
+        );
         assert_eq!(doc.write(), input);
         assert_eq!(doc.to_json()["diagnostics"].as_array().unwrap().len(), 1);
     }
