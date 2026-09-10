@@ -16,6 +16,7 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   validation.
 - Added typed CDXML object classification for atoms, bonds, groups, arrows,
   captions, text, and drawing objects, with an explicit unsupported variant.
+- Fixed loss-preserving CDXML parsing for valid self-closing empty pages.
 - Added provenance-backed `contracted_smiles` to semantic expansion JSON so
   Python and WASM callers can restore the exact expansion base graph.
 - Added typed semantic S-group and polymer-linkage definitions with stable IDs,

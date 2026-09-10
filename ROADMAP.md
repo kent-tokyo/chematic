@@ -91,6 +91,8 @@ Competitive-response gate status (2026-09-10):
   contract.
 - [x] Add typed CDXML object classification with an explicit unsupported
   variant, preserving unknown raw XML and diagnostics.
+- [x] Accept self-closing empty CDXML pages while preserving page order and
+  source representation.
 
 ### Next priority: compatible similarity search
 
