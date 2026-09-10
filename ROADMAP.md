@@ -116,6 +116,8 @@ Competitive-response gate status (2026-09-10):
   semantic JSON contract, including stable IDs and source-reference checks.
 - [x] Add stable-ID S-group kind editing and fail-closed biomolecule boundary;
   first-class biomolecule expansion remains a separate future schema.
+- [x] Include S-group and polymer-linkage IDs in expansion provenance mappings
+  so downstream editors can address their source atoms deterministically.
 
 Completed through the v1.0.11 release tree (with historical v1.0.10 and v1.0.9
 milestones retained below):

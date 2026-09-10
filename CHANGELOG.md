@@ -24,6 +24,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   handling.
 - Added stable-ID S-group kind editing and explicit rejection of unimplemented
   biomolecule payloads.
+- Added S-group and polymer-linkage source-to-expanded provenance mappings to
+  semantic expansion results.
 
 ## [1.0.12] - 2026-09-11
 

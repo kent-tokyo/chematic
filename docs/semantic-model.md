@@ -35,6 +35,8 @@ polymer-linkage references. A linkage has stable ID, two distinct source atom
 references, and a validated bond order; unknown S-group kinds remain explicit
 strings and are not silently expanded. `SetSGroupKind` edits a group by stable
 ID. Biomolecule payloads are explicitly rejected until a typed API exists.
+Expanded provenance maps S-group and linkage IDs to their source atom indices,
+alongside the existing atom, Markush, polymer, and end-group mappings.
 
 `SemanticModel::apply` returns a new model for command-style editing. Expansion
 returns `ExpandedSemantic`, including a `source_to_expanded` mapping for undo,
