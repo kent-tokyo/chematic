@@ -461,6 +461,18 @@
             "selected_alternative": null
           }],
           "polymer_units": [],
+          "s_groups": [{
+            "id": "sg1",
+            "kind": "SRU",
+            "member_atoms": ["a1", "a2"],
+            "repeat_unit_id": null,
+            "linkage": {
+              "id": "link1",
+              "left_atom": "a1",
+              "right_atom": "a2",
+              "bond_order": 1
+            }
+          }],
           "extensions": {}
         },
         "command": {"group_id": "r1", "alternative": 0},

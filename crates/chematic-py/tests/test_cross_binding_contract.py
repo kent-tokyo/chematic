@@ -663,6 +663,7 @@ def test_python_semantic_expansion_matches_shared_contract(case):
     expanded = json.loads(chematic.semantic_expand_json(case["base_smiles"], selected))
     assert expanded["schema"] == "chematic.semantic-expanded.v1"
     assert expanded["source_to_expanded"] == case["expected_source_to_expanded"]
+    assert expanded["contracted_smiles"] == case["base_smiles"]
 
 
 def test_python_rxn_document_contract_is_loss_aware():
