@@ -106,16 +106,22 @@ pub(crate) fn direction_from(
     from_atom: AtomIdx,
 ) -> BondOrder {
     let bond = mol.bond(bidx);
+    // A parser-side aromatic direction stash is relative to the endpoint
+    // where the `/` or `\\` token was read, not necessarily to the bond's
+    // internal `atom1`.  Use the preserved anchor whenever one exists so a
+    // canonical DFS cannot reinterpret the same carrier merely because the
+    // molecule was rebuilt with the bond endpoints reversed.
+    let direction_atom = mol.bond_direction_anchor(bidx).unwrap_or(bond.atom1);
     match dir {
         BondOrder::Up => {
-            if bond.atom1 == from_atom {
+            if direction_atom == from_atom {
                 BondOrder::Up
             } else {
                 BondOrder::Down
             }
         }
         BondOrder::Down => {
-            if bond.atom1 == from_atom {
+            if direction_atom == from_atom {
                 BondOrder::Down
             } else {
                 BondOrder::Up
@@ -925,6 +931,25 @@ mod tests {
         // Seen from c1 (!= atom1): Up flips to Down.
         assert_eq!(
             direction_from(&mol, bidx, BondOrder::Up, c1),
+            BondOrder::Down
+        );
+    }
+
+    #[test]
+    fn test_direction_from_uses_aromatic_stash_anchor() {
+        let mut b = MoleculeBuilder::new();
+        let c1 = b.add_atom(Atom::aromatic(Element::C));
+        let c2 = b.add_atom(Atom::aromatic(Element::C));
+        let bidx = b.add_bond(c2, c1, BondOrder::Aromatic).unwrap();
+        let mut mol = b.build();
+        mol.set_bond_direction(bidx, BondOrder::Up);
+        mol.set_bond_direction_anchor(bidx, c1);
+
+        // The stored bond orientation is c2 -> c1, but the parser-side
+        // marker was read at c1. Reorientation must follow that anchor.
+        assert_eq!(direction_from(&mol, bidx, BondOrder::Up, c1), BondOrder::Up);
+        assert_eq!(
+            direction_from(&mol, bidx, BondOrder::Up, c2),
             BondOrder::Down
         );
     }
