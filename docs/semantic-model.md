@@ -26,6 +26,10 @@ one `[*]` marker with one neighbor. The marker is replaced by a bond to the
 corresponding polymer attachment atom; the mapping exposes the stable keys
 `<unit>.end_group_left` and `<unit>.end_group_right`. Other Markush/polymer
 topologies remain explicitly rejected with `SemanticError`.
+For typed interchange, `polymer_units[].end_group_definitions` accepts exactly
+two `PolymerEndGroup` records (`id`, `smiles`) in left/right order; their IDs
+are used as stable `source_to_expanded` keys. The legacy `end_groups` and typed
+form cannot be supplied together.
 
 `SemanticModel::apply` returns a new model for command-style editing. Expansion
 returns `ExpandedSemantic`, including a `source_to_expanded` mapping for undo,

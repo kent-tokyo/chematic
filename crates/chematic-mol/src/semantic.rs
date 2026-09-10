@@ -36,6 +36,10 @@ pub struct PolymerRepeatUnit {
     pub id: SemanticId,
     pub attachment_atoms: Vec<AtomRef>,
     pub end_groups: Vec<String>,
+    /// Optional typed end-group definitions. When present, exactly two
+    /// entries are required in left/right order and their IDs are retained in
+    /// expansion provenance.
+    pub end_group_definitions: Vec<PolymerEndGroup>,
     pub repeat_count: Option<u32>,
     /// Optional SMILES repeat fragment. It may use `[*]` at both ends, or use
     /// `repeat_endpoint_atoms` to identify two explicit endpoint atoms.
@@ -43,6 +47,13 @@ pub struct PolymerRepeatUnit {
     /// Zero-based atom indices in `repeat_smiles` used when no `[*]` markers
     /// are present. Exactly two distinct endpoints are required.
     pub repeat_endpoint_atoms: Option<[u32; 2]>,
+}
+
+/// A stable, typed polymer end-group definition.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PolymerEndGroup {
+    pub id: SemanticId,
+    pub smiles: String,
 }
 
 /// Loss/unsupported reason returned by validation or expansion.
@@ -199,6 +210,27 @@ impl SemanticModel {
                     .map(|atom_id| AtomRef { atom_id })
                     .collect();
                 let end_groups = json_string_array(unit, "end_groups")?;
+                let end_group_definitions = unit
+                    .get("end_group_definitions")
+                    .map(|value| {
+                        value
+                            .as_array()
+                            .ok_or_else(|| {
+                                SemanticError::InvalidJson(
+                                    "end_group_definitions must be an array".into(),
+                                )
+                            })?
+                            .iter()
+                            .map(|definition| {
+                                Ok(PolymerEndGroup {
+                                    id: json_string(definition, "id")?,
+                                    smiles: json_string(definition, "smiles")?,
+                                })
+                            })
+                            .collect::<Result<Vec<_>, SemanticError>>()
+                    })
+                    .transpose()?
+                    .unwrap_or_default();
                 let repeat_count = match unit.get("repeat_count") {
                     None | Some(Value::Null) => None,
                     Some(value) => Some(
@@ -246,6 +278,7 @@ impl SemanticModel {
                     id,
                     attachment_atoms,
                     end_groups,
+                    end_group_definitions,
                     repeat_count,
                     repeat_smiles,
                     repeat_endpoint_atoms,
@@ -628,7 +661,29 @@ impl SemanticModel {
                     previous_right = Some(current_right);
                 }
             }
-            for (side, end_group) in unit.end_groups.iter().enumerate() {
+            let end_group_specs: Vec<(String, String)> = if unit.end_group_definitions.is_empty() {
+                unit.end_groups
+                    .iter()
+                    .cloned()
+                    .enumerate()
+                    .map(|(side, smiles)| {
+                        (
+                            format!(
+                                "{}.end_group_{}",
+                                unit.id,
+                                if side == 0 { "left" } else { "right" }
+                            ),
+                            smiles,
+                        )
+                    })
+                    .collect()
+            } else {
+                unit.end_group_definitions
+                    .iter()
+                    .map(|definition| (definition.id.clone(), definition.smiles.clone()))
+                    .collect()
+            };
+            for (side, (mapping_id, end_group)) in end_group_specs.iter().enumerate() {
                 let fragment = chematic_smiles::parse(end_group).map_err(|e| {
                     SemanticError::InvalidExpansion {
                         id: unit.id.clone(),
@@ -680,14 +735,7 @@ impl SemanticModel {
                         id: unit.id.clone(),
                         reason: e.to_string(),
                     })?;
-                mapping.insert(
-                    format!(
-                        "{}.end_group_{}",
-                        unit.id,
-                        if side == 0 { "left" } else { "right" }
-                    ),
-                    remap.values().copied().collect(),
-                );
+                mapping.insert(mapping_id.clone(), remap.values().copied().collect());
             }
             mapping.insert(unit.id.clone(), unit_atoms);
         }
@@ -728,6 +776,29 @@ impl SemanticModel {
                     id: unit.id.clone(),
                     reason: "end_groups must contain exactly [left, right] when provided".into(),
                 });
+            }
+            if !unit.end_group_definitions.is_empty() {
+                if !unit.end_groups.is_empty() || unit.end_group_definitions.len() != 2 {
+                    return Err(SemanticError::InvalidExpansion {
+                        id: unit.id.clone(),
+                        reason: "use exactly two typed end_group_definitions or legacy end_groups, not both".into(),
+                    });
+                }
+                let mut end_group_ids = std::collections::BTreeSet::new();
+                for definition in &unit.end_group_definitions {
+                    if definition.id.trim().is_empty() || !end_group_ids.insert(&definition.id) {
+                        return Err(SemanticError::DuplicateId(definition.id.clone()));
+                    }
+                    if !ids.insert(definition.id.clone()) {
+                        return Err(SemanticError::DuplicateId(definition.id.clone()));
+                    }
+                    if definition.smiles.trim().is_empty() {
+                        return Err(SemanticError::InvalidExpansion {
+                            id: definition.id.clone(),
+                            reason: "end-group SMILES must not be empty".into(),
+                        });
+                    }
+                }
             }
             for end_group in &unit.end_groups {
                 if end_group.trim().is_empty() {
@@ -794,6 +865,9 @@ impl SemanticModel {
         root.insert("polymer_units".into(), Value::Array(self.polymer_units.iter().map(|u| serde_json::json!({
             "id": u.id, "attachment_atoms": u.attachment_atoms.iter().map(|a| &a.atom_id).collect::<Vec<_>>(),
             "end_groups": u.end_groups, "repeat_count": u.repeat_count,
+            "end_group_definitions": u.end_group_definitions.iter().map(|definition| serde_json::json!({
+                "id": definition.id, "smiles": definition.smiles
+            })).collect::<Vec<_>>(),
             "repeat_smiles": u.repeat_smiles, "repeat_endpoint_atoms": u.repeat_endpoint_atoms
         })).collect()));
         root.insert(
@@ -1038,6 +1112,7 @@ mod tests {
                     atom_id: "missing".into(),
                 }],
                 end_groups: vec![],
+                end_group_definitions: vec![],
                 repeat_count: None,
                 repeat_smiles: None,
                 repeat_endpoint_atoms: None,
@@ -1118,6 +1193,7 @@ mod tests {
                     },
                 ],
                 end_groups: vec![],
+                end_group_definitions: vec![],
                 repeat_count: None,
                 repeat_smiles: Some("[*]CC[*]".into()),
                 repeat_endpoint_atoms: None,
@@ -1158,6 +1234,7 @@ mod tests {
                     },
                 ],
                 end_groups: vec![],
+                end_group_definitions: vec![],
                 repeat_count: Some(2),
                 repeat_smiles: Some("[*]CC[*]".into()),
                 repeat_endpoint_atoms: None,
@@ -1234,6 +1311,7 @@ mod tests {
                     },
                 ],
                 end_groups: vec![],
+                end_group_definitions: vec![],
                 repeat_count: Some(2),
                 repeat_smiles: Some("[*]CC[*]".into()),
                 repeat_endpoint_atoms: None,
@@ -1261,6 +1339,7 @@ mod tests {
                     },
                 ],
                 end_groups: vec![],
+                end_group_definitions: vec![],
                 repeat_count: Some(2),
                 repeat_smiles: Some("CCO".into()),
                 repeat_endpoint_atoms: Some([0, 2]),
@@ -1336,6 +1415,7 @@ mod tests {
                     },
                 ],
                 end_groups: vec!["[*]O".into(), "[*]N".into()],
+                end_group_definitions: vec![],
                 repeat_count: Some(1),
                 repeat_smiles: Some("[*]CC[*]".into()),
                 repeat_endpoint_atoms: None,
@@ -1347,6 +1427,44 @@ mod tests {
         assert_eq!(expanded.source_to_expanded["p1"].len(), 4);
         assert_eq!(expanded.source_to_expanded["p1.end_group_left"].len(), 1);
         assert_eq!(expanded.source_to_expanded["p1.end_group_right"].len(), 1);
+    }
+
+    #[test]
+    fn expands_typed_polymer_end_groups_with_named_provenance() {
+        let base = chematic_smiles::parse("CC").unwrap();
+        let model = SemanticModel {
+            atom_ids: vec!["a1".into(), "a2".into()],
+            polymer_units: vec![PolymerRepeatUnit {
+                id: "p1".into(),
+                attachment_atoms: vec![
+                    AtomRef {
+                        atom_id: "a1".into(),
+                    },
+                    AtomRef {
+                        atom_id: "a2".into(),
+                    },
+                ],
+                end_groups: vec![],
+                end_group_definitions: vec![
+                    PolymerEndGroup {
+                        id: "cap-left".into(),
+                        smiles: "[*]O".into(),
+                    },
+                    PolymerEndGroup {
+                        id: "cap-right".into(),
+                        smiles: "[*]N".into(),
+                    },
+                ],
+                repeat_count: Some(1),
+                repeat_smiles: Some("[*]CC[*]".into()),
+                repeat_endpoint_atoms: None,
+            }],
+            ..Default::default()
+        };
+        let decoded = SemanticModel::from_json(&model.to_json()).unwrap();
+        let expanded = decoded.expand(&base).unwrap();
+        assert_eq!(expanded.source_to_expanded["cap-left"].len(), 1);
+        assert_eq!(expanded.source_to_expanded["cap-right"].len(), 1);
     }
 
     #[test]
@@ -1364,6 +1482,7 @@ mod tests {
                     },
                 ],
                 end_groups: vec![],
+                end_group_definitions: vec![],
                 repeat_count: Some(0),
                 repeat_smiles: Some("[*]CC[*]".into()),
                 repeat_endpoint_atoms: None,
@@ -1392,6 +1511,7 @@ mod tests {
                     },
                 ],
                 end_groups: vec![],
+                end_group_definitions: vec![],
                 repeat_count: Some(11),
                 repeat_smiles: Some("[*]CC[*]".into()),
                 repeat_endpoint_atoms: None,
