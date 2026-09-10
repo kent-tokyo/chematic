@@ -196,14 +196,20 @@ fn nearest_neighbors_from_prepared_fp(
 }
 
 /// Keep the exact top-k set while avoiding a full sort of the candidate list.
-/// The final top-k sort preserves the public descending-score ordering. Ties
-/// intentionally retain the existing unstable ordering contract.
+/// Both selection and final ordering use the public deterministic contract:
+/// similarity descending, then database index ascending.
 fn rank_top_k(scores: &mut Vec<(usize, f64)>, k: usize) {
     if scores.len() > k {
-        scores.select_nth_unstable_by(k - 1, |a, b| b.1.partial_cmp(&a.1).unwrap());
+        scores.select_nth_unstable_by(k - 1, compare_rank);
         scores.truncate(k);
     }
-    scores.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+    scores.sort_unstable_by(compare_rank);
+}
+
+fn compare_rank(a: &(usize, f64), b: &(usize, f64)) -> std::cmp::Ordering {
+    b.1.partial_cmp(&a.1)
+        .unwrap_or(std::cmp::Ordering::Equal)
+        .then_with(|| a.0.cmp(&b.0))
 }
 
 // ---------------------------------------------------------------------------
@@ -332,5 +338,14 @@ mod tests {
             results[0].1 > 0.5,
             "top MACCS hit should have Tanimoto > 0.5"
         );
+    }
+
+    #[test]
+    fn top_k_ties_are_ordered_by_database_index() {
+        let query = benzene();
+        let db = vec![ethane(), benzene(), benzene(), toluene()];
+        let results = nearest_neighbors(&query, &db, 3, FpType::Ecfp4);
+        assert_eq!(results[0].0, 1);
+        assert_eq!(results[1].0, 2);
     }
 }

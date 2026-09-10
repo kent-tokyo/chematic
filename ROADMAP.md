@@ -1,7 +1,7 @@
 # chematic roadmap
 
-> Revised 2026-09-10. The current release is v1.0.11. The workspace version is
-> 1.0.11; checked-in v1.0.10 benchmark artifacts remain historical evidence.
+> Revised 2026-09-11. The current release is v1.0.12. The workspace version is
+> 1.0.12; checked-in benchmark artifacts retain their measured version.
 
 The detailed roadmap and completed gate-by-gate evidence through 2026-09-05 is
 retained in
@@ -83,6 +83,20 @@ Competitive-response gate status (2026-09-10):
 - [ ] Broader CIP generated permutations and independent oracle corpus.
 - [ ] Exact canonical-SMILES parity, typed SGROUP semantics, and Indigo/RDKit
   cross-engine V3000 fixtures.
+
+### Next priority: compatible similarity search
+
+- [ ] Add a fallible `rdkit_ecfp4` prepared-search profile alongside the fast
+  native `ecfp4` default. It must use the existing RDKit-bit-exact Morgan
+  implementation, preserve original input indices, and report preprocessing
+  failures instead of silently falling back.
+- [ ] Make top-k tie ordering deterministic (`score` descending, original
+  index ascending) across native and compatible search lanes.
+- [ ] Re-run the 4,500-library/500-query top-10 gate with native/native,
+  compatible/RDKit, and cross-profile lanes kept separate. Treat the existing
+  72.6% native-vs-RDKit overlap as a disclosed cross-profile diagnostic, not
+  an RDKit-compatibility score; target at least 99% compatible top-10 recall
+  on the valid-input scope and publish failure counts separately.
 
 Completed through the v1.0.11 release tree (with historical v1.0.10 and v1.0.9
 milestones retained below):
