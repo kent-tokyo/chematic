@@ -44,7 +44,7 @@ function summary(values) {
   };
 }
 
-function html({ corpus, schematicDir, rdkitDir, warmup }) {
+function html({ corpus, schematicDir, rdkitDir, warmup, initTimeoutMs }) {
   const corpusJson = JSON.stringify(corpus).replace(/</g, "\\u003c");
   return `<!doctype html>
 <meta charset="utf-8">
@@ -54,7 +54,12 @@ function html({ corpus, schematicDir, rdkitDir, warmup }) {
 import initSchematic, { parse_smiles, rdkit_ecfp4_bitvec } from "/schematic/chematic_wasm.js";
 const smiles = ${corpusJson};
 const warmup = ${warmup};
+const initTimeoutMs = ${initTimeoutMs};
 const out = document.querySelector("#result");
+const withTimeout = (promise, label) => Promise.race([
+  promise,
+  new Promise((_, reject) => setTimeout(() => reject(new Error(label + " timed out after " + initTimeoutMs + " ms")), initTimeoutMs)),
+]);
 const digest = async (value) => {
   const bytes = typeof value === "string" ? new TextEncoder().encode(value) : value;
   const hash = await crypto.subtle.digest("SHA-256", bytes);
@@ -87,7 +92,7 @@ const time = async (values, fn) => {
 };
 const run = async () => {
   const schematicStart = performance.now();
-  await initSchematic("/schematic/chematic_wasm_bg.wasm");
+  await withTimeout(initSchematic("/schematic/chematic_wasm_bg.wasm"), "chematic WASM initialization");
   const schematicInit = performance.now() - schematicStart;
   const schematicParse = await time(smiles, (value) => { const mol = parse_smiles(value); mol.free(); });
   const schematicWrite = await time(smiles, (value) => { const mol = parse_smiles(value); mol.canonical_smiles(); mol.free(); });
@@ -96,7 +101,7 @@ const run = async () => {
   for (const value of smiles) { const mol = parse_smiles(value); schematicHashes.push(await digest(packedBits(rdkit_ecfp4_bitvec(mol)))); mol.free(); }
 
   const rdkitStart = performance.now();
-  const RDKit = await window.initRDKitModule({ locateFile: (name) => name.endsWith(".wasm") ? "/rdkit/RDKit_minimal.wasm" : name });
+  const RDKit = await withTimeout(window.initRDKitModule({ locateFile: (name) => name.endsWith(".wasm") ? "/rdkit/RDKit_minimal.wasm" : name }), "RDKit WASM initialization");
   const rdkitInit = performance.now() - rdkitStart;
   const getMol = (value) => { const mol = RDKit.get_mol(value); if (!mol) throw new Error("RDKit rejected " + value); return mol; };
   const rdkitParse = await time(smiles, (value) => { getMol(value).delete(); });
@@ -141,6 +146,7 @@ async function main() {
   const corpusPath = resolve(option(args, "--corpus", DEFAULT_CORPUS));
   const rows = Number(option(args, "--rows", "1000"));
   const warmup = Number(option(args, "--warmup", "20"));
+  const initTimeoutMs = Number(option(args, "--init-timeout-ms", "10000"));
   const corpusBytes = readFileSync(corpusPath);
   const corpus = corpusBytes.toString("utf8").split(/\r?\n/).map((line) => line.trim()).filter(Boolean).slice(0, rows);
   if (corpus.length !== rows) throw new Error(`corpus contains ${corpus.length} rows, expected ${rows}`);
@@ -150,7 +156,7 @@ async function main() {
   if (!statSync(join(rdkit, "RDKit_minimal.js")).isFile()) throw new Error(`RDKit dist not found: ${rdkit}`);
   const output = resolve(required(args, "--output"));
   const htmlPath = "/private/tmp/chematic-browser-benchmark-runner.html";
-  writeFileSync(htmlPath, html({ corpus, schematicDir: schematic, rdkitDir: rdkit, warmup }));
+  writeFileSync(htmlPath, html({ corpus, schematicDir: schematic, rdkitDir: rdkit, warmup, initTimeoutMs }));
   const server = serve({ html: htmlPath, schematic, rdkit });
   await new Promise((resolveServer) => server.listen(0, "127.0.0.1", resolveServer));
   const port = server.address().port;
