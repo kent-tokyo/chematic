@@ -19,6 +19,9 @@ pub struct CdxmlObject {
     pub tag: String,
     pub attributes: BTreeMap<String, CdxmlValue>,
     pub raw_xml: String,
+    /// Parent-to-child sibling path. A page-level object has a one-element
+    /// path; nested objects retain their full structural address.
+    pub path: Vec<usize>,
 }
 
 /// A 2D affine transform in CDXML's `a b c d e f` order.
@@ -157,6 +160,8 @@ impl CdxmlDocument {
         let mut document_attributes = BTreeMap::new();
         let mut pages = Vec::new();
         let mut current: Option<CdxmlPage> = None;
+        let mut open_paths: Vec<Vec<usize>> = Vec::new();
+        let mut sibling_counts: Vec<usize> = Vec::new();
         let mut saw_root = false;
         let mut root_closed = false;
         for (line_no, raw) in logical_cdxml_lines(input).into_iter().enumerate() {
@@ -224,13 +229,30 @@ impl CdxmlDocument {
                         .collect(),
                     children: Vec::new(),
                 });
+                open_paths.clear();
+                sibling_counts.clear();
+                sibling_counts.push(0);
             } else if is_close_tag(line, "page") {
+                if !open_paths.is_empty() {
+                    return Err(CdxmlError::InvalidDocument(
+                        "page closed with unterminated object".into(),
+                    ));
+                }
                 let Some(page) = current.take() else {
                     return Err(CdxmlError::InvalidDocument(
                         "page closing element has no matching page".into(),
                     ));
                 };
                 pages.push(page);
+            } else if is_close_tag(line, "page") {
+                unreachable!("page close is handled above")
+            } else if line.starts_with("</") {
+                if open_paths.pop().is_none() {
+                    return Err(CdxmlError::InvalidDocument(
+                        "object closing element has no matching object".into(),
+                    ));
+                }
+                sibling_counts.pop();
             } else if let Some(page) = current.as_mut()
                 && line.starts_with('<')
                 && !line.starts_with("</")
@@ -256,11 +278,21 @@ impl CdxmlDocument {
                     .into_iter()
                     .map(|(k, v)| (k, Value::String(v)))
                     .collect();
+                let mut path = open_paths.last().cloned().unwrap_or_default();
+                path.push(sibling_counts.last().copied().unwrap_or(0));
+                if let Some(count) = sibling_counts.last_mut() {
+                    *count += 1;
+                }
                 page.children.push(CdxmlObject {
                     tag,
                     attributes: attrs,
                     raw_xml: raw.to_string(),
+                    path: path.clone(),
                 });
+                if !line.ends_with("/>") {
+                    open_paths.push(path);
+                    sibling_counts.push(0);
+                }
             }
         }
         if current.is_some() {
@@ -551,7 +583,8 @@ impl CdxmlDocument {
                     "id": p.id,
                     "attributes": p.attributes,
                     "children": p.children.iter().map(|o| serde_json::json!({
-                        "tag": o.tag, "attributes": o.attributes, "raw_xml": o.raw_xml
+                        "tag": o.tag, "attributes": o.attributes, "raw_xml": o.raw_xml,
+                        "path": o.path
                     })).collect::<Vec<_>>()
                 })
             })
@@ -1004,6 +1037,8 @@ mod tests {
     fn replaces_nested_object_by_loss_preserving_path() {
         let input = "<CDXML>\n<page id=\"p1\">\n<group id=\"g1\" unknown=\"keep\">\n<arrow id=\"a1\" Custom=\"keep\"/>\n</group>\n</page>\n</CDXML>";
         let doc = CdxmlDocument::parse(input).unwrap();
+        assert_eq!(doc.pages[0].children[0].path, vec![0]);
+        assert_eq!(doc.pages[0].children[1].path, vec![0, 0]);
         let doc = doc
             .apply(&CdxmlEdit::ReplaceObjectPath {
                 page_id: "p1".into(),
