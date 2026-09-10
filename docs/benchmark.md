@@ -8,8 +8,10 @@ counted as wins. Dated raw records are indexed in
 ## Current status
 
 The current published release is **v1.0.11**. The newest checked-in performance
-records are historical source-level or release-line measurements; they
-must not be presented as v1.0.11 measurements unless explicitly rerun.
+records include the v1.0.11 generated-browser API/V3000 gate; operation timing
+and published-size rows below remain explicitly pinned to their recorded
+v1.0.10 or earlier source/release-line versions and must not be presented as
+v1.0.11 measurements unless explicitly rerun.
 
 The current records cover four separate evidence types:
 

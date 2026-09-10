@@ -11,6 +11,14 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 No changes yet.
 
+## [1.0.12] - 2026-09-11
+
+- Synchronized the current README, roadmap, benchmark, compatibility, and
+  binding documentation with the v1.0.11 release and bounded #510/#513
+  reaction API scope.
+- Corrected stale WASM size/date references in current-facing documentation
+  while preserving historical benchmark records and their pinned versions.
+
 ## [1.0.11] - 2026-09-10
 
 - Split V3000 MOL atom and bond record parsing from the state-machine driver,
@@ -23,6 +31,12 @@ No changes yet.
   release gates.
 - Published the v1.0.11 Rust crates to crates.io and the WASM package to npm;
   the PyPI publication workflow remains in progress.
+- Added bounded #510 reaction-template application for supported atomic-number
+  primitives, with explicit unsupported-query failures and cross-binding tests.
+- Added the #513 `ReactionRequirements` API derived from `PreparedReaction`,
+  including conservative lower bounds and a fail-open `could_match()` prefilter.
+- Added opaque V3000 `SGROUP` metadata round-tripping and the explicit WASM
+  `roundtrip_mol_v3000_block` boundary.
 
 ## [1.0.10] - 2026-09-09
 
@@ -363,7 +377,8 @@ The authoritative list of published tags and release artifacts is the
 historical implementation notes remain available in the archived detailed
 history and Git history.
 
-[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.11...HEAD
+[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.12...HEAD
+[1.0.12]: https://github.com/kent-tokyo/chematic/compare/v1.0.11...v1.0.12
 [1.0.11]: https://github.com/kent-tokyo/chematic/compare/v1.0.10...v1.0.11
 [1.0.10]: https://github.com/kent-tokyo/chematic/compare/v1.0.9...v1.0.10
 [1.0.9]: https://github.com/kent-tokyo/chematic/compare/v1.0.8...v1.0.9

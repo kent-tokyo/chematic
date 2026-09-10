@@ -73,7 +73,7 @@ def main() -> int:
         expected = f'version = "{release_version}"'
         if expected not in path.read_text(encoding="utf-8"):
             errors.append(
-                f"{path.relative_to(ROOT)}: current dependency example is not v{RELEASE_VERSION}"
+                f"{path.relative_to(ROOT)}: current dependency example is not v{release_version}"
             )
 
     if errors:

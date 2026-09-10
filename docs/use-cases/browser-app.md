@@ -7,7 +7,7 @@ You want to ship a chemistry tool to users who won't install anything — a web 
 ## Solution
 
 chematic compiles to WebAssembly at **3.73 MB raw / 1.36 MB gzip** (latest measured v1.0.10 release-line artifact,
-measured 2026-09-07 with `wasm-pack 0.13.1` + `wasm-opt 130`; see the
+measured 2026-09-09 with `wasm-pack 0.13.1` + `wasm-opt 130`; see the
 [artifact record](../../benchmarks/2026-09-09-wasm-size-v1.0.10.md)) — roughly 2.0× smaller than the
 pinned RDKit.js raw-size comparator. No server required: descriptor calculation, fingerprint
 generation, and similarity search run entirely in the browser, offline-capable after first load.

@@ -16,11 +16,12 @@
 **默认快速，设计安全的化学信息学库。**  
 默认纯 Rust · 可选原生 InChI C FFI · Python · WebAssembly · [官方网站](https://chematic.io/) · [在线演示](https://kent-tokyo.github.io/chematic/playground/)
 
-### v1.0.11 范围
+### v1.0.12 范围
 
 v1.0.11 保持 v1.0.0 的 bounded 兼容性边界，并加入 typed reaction document、
 document-level CDXML 编辑、显式且 bounded 的 Markush/polymer 展开、晶体组成汇总、
-更安全的 UFF rescue，以及 canonical/SDF 热路径优化。完整任意结构 CDXML 编辑、
+更安全的 UFF rescue、canonical/SDF 热路径优化、bounded 原子序数反应模板应用、
+`PreparedReaction` 保守预过滤要求，以及 V3000 `SGROUP` opaque metadata 往返保存。完整任意结构 CDXML 编辑、
 复杂拓扑 expansion、完整 RDKit `RWMol` 与完整 ETKDG/MMFF94 parity 仍不支持。
 Spectrophores 在 patent/FTO 状态得到独立确认前已从 Rust/Python API 中移除。
 基准数字仅适用于记录的语料、操作、硬件与配置；完整方法见[基准文档](docs/benchmark.md)。
@@ -29,7 +30,7 @@ Spectrophores 在 patent/FTO 状态得到独立确认前已从 Rust/Python API �
 | | chematic | RDKit (Python) | RDKit.js (WASM) |
 |---|---|---|---|
 | **快速上手** | `pip install chematic` | `pip install rdkit`（官方预编译 wheel）或 conda | `npm install @rdkit/rdkit`，无 Python 绑定 |
-| **浏览器包体积** | **raw 3.58 MB / gzip 1.31 MB** | 不适用（Python/C++ 库） | raw 6.91 MB* |
+| **浏览器包体积** | **raw 3.73 MB / gzip 1.36 MB** | 不适用（Python/C++ 库） | raw 6.91 MB* |
 | **ECFP4批量** | **54.7 µs/mol** | 94.3 µs/mol | — |
 | **Canonical SMILES** | **24.95 / 18.27 µs/mol** | 25.58 / 26.82 µs/mol | — |
 | **SDF graph read / serialization-only write** | **9.48 / 7.62 µs/mol** | 99.96 / 79.54 µs/mol | — |
@@ -173,7 +174,7 @@ chematic 提供用于本地AI代理集成的 **MCP（模型上下文协议）服
 
 常用化学核心采用safe Rust，公开的非可信输入路径具有有限默认值与typed error。`native-inchi`是使用IUPAC InChI C library的显式opt-in FFI例外；依赖crate自身的unsafe code属于单独边界。详见[SECURITY](SECURITY.md)。
 
-历史v0.18.0 ECFP4批处理中位数，在同一5,000分子语料与Apple M4环境下为54.7 µs/mol，v1.0.8候选WASM artifact为3.58 MB raw / 1.31 MB gzip。两者均为固定日期与条件的测量，不是普遍性能保证。
+历史v0.18.0 ECFP4批处理中位数，在同一5,000分子语料与Apple M4环境下为54.7 µs/mol，v1.0.10 release-line WASM artifact为3.73 MB raw / 1.36 MB gzip。两者均为固定日期与条件的测量，不是普遍性能保证。
 
 ## 比较原则
 
@@ -190,7 +191,7 @@ chematic 提供用于本地AI代理集成的 **MCP（模型上下文协议）服
 
 ## JavaScript / TypeScript（WebAssembly）
 
-**1.31 MB gzip — 与 RDKit.js 的 raw WASM 相比约小 2.0 倍。** 无需 Emscripten 或 cmake，可直接在浏览器和 Node.js 中使用。
+**1.36 MB gzip — 与 RDKit.js 的 raw WASM 相比约小 2.0 倍。** 无需 Emscripten 或 cmake，可直接在浏览器和 Node.js 中使用。
 
 ```sh
 npm install @kent-tokyo/chematic

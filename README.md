@@ -33,14 +33,16 @@ current status).
 The canonical and SDF rows are scoped 2026-09-04 macOS arm64 medians, not
 cross-platform claims; see the exact corpora and operation boundaries in the
 [benchmark details](docs/benchmark.md).
-The current chematic WASM artifact was measured 2026-09-09 from the v1.0.10 release candidate with
+The current published release is v1.0.11. The published-size baseline was measured 2026-09-09 from
+the v1.0.10 release candidate with
 `wasm-pack 0.13.1` + `wasm-opt 130`: **3.73 MB raw** (**1.36 MB gzip**). The pinned
 historical comparators are RDKit.js **6.91 MB**
 (`@rdkit/rdkit@2025.3.4-1.0.0`'s `RDKit_minimal.wasm`, via unpkg.com) · Indigo (Ketcher build)
 **11.24 MB** (`indigo-ketcher@1.45.1`'s main `.wasm`, via jsDelivr) — chematic's raw WASM binary
 is currently about 1.9× smaller than RDKit.js's and about 3.0× smaller than Indigo's Ketcher-oriented
-build, on a raw-to-raw basis. See the [v1.0.10 artifact record](benchmarks/2026-09-09-wasm-size-v1.0.10.md),
-the latest measured artifact record for this release line.
+build, on a raw-to-raw basis. See the [v1.0.10 artifact record](benchmarks/2026-09-09-wasm-size-v1.0.10.md)
+for the published-size baseline and the [v1.0.11 generated browser gate](benchmarks/2026-09-10-generated-wasm-v3000-gate-v1.0.11.md)
+for generated-artifact API and V3000 evidence. These are separate artifact claims.
 
 The separate 2026-08-23 benchmark rebuild reports 2.98 MB raw / 1.11 MB gzip;
 both figures are retained with their measurement dates because build outputs
@@ -56,12 +58,14 @@ can vary slightly by toolchain and build environment.
 | IUPAC name generation | Partial (25+ classes) |
 | Pure-Rust InChI | Approximate (enable `native-inchi` feature for exact) |
 
-### v1.0.11 release boundary
+### v1.0.12 release boundary
 
 The v1.0.11 release retains the v1.0.0 bounded compatibility contract while
 adding typed reaction documents, document-level CDXML edits, explicit bounded
 Markush/polymer expansion, crystal composition summaries, safer UFF rescue,
-and canonical/SDF hot-path improvements. Spectrophores is intentionally
+canonical/SDF hot-path improvements, bounded atomic-number reaction-template
+application, conservative `PreparedReaction` prefilter requirements, and
+opaque V3000 `SGROUP` metadata round-tripping. Spectrophores is intentionally
 removed from the Rust and Python APIs while its patent/FTO status remains
 independently uncleared. The
 complete compatibility contract and reproducible local release gate are in
@@ -224,7 +228,7 @@ differential-validation results vs RDKit, and runnable examples.
 ```python
 import chematic
 chematic.doctor()
-# chematic v1.0.11
+# chematic v1.0.12
 # Python 3.12.x  |  darwin arm64
 #
 # Descriptor accuracy (benchmark 2026-08-23, v0.18.0 vs RDKit 2026.03.4):
@@ -405,7 +409,9 @@ expands malformed format coverage, and hardens WASM batch/screening JSON
 error contracts. It also includes safe fingerprint hot-path improvements,
 V3000 parser and 3D pipeline responsibility splits, and fail-closed CIP
 malformed-state handling while retaining the established result and ranking
-contract.
+contract. The release also contains the bounded #510 atomic-number reaction
+application path, the #513 `PreparedReaction` requirements prefilter API, and
+opaque V3000 `SGROUP` metadata round-tripping.
 
 **v1.0.8 (2026-09-06):** carries forward the v1.0.7 descriptor provenance,
 shared cross-binding contracts, fused/non-alternant aromaticity and held-out
@@ -476,7 +482,7 @@ See [compatibility scope](docs/compatibility-scope.md), [validation](docs/valida
 
 ```
 chematic/
-├── Cargo.toml                    workspace root (v1.0.11)
+├── Cargo.toml                    workspace root (v1.0.12)
 ├── CHANGELOG.md
 ├── crates/
 │   ├── chematic-core/            Atom, Bond, Molecule, Element, kekulization (4-pass + blossom)
@@ -530,7 +536,7 @@ If you use chematic in academic or research work, please cite:
   author    = {Kentaro Tanabe (kent-tokyo)},
   title     = {chematic: A pure-Rust cheminformatics toolkit},
   url       = {https://github.com/kent-tokyo/chematic},
-  version   = {1.0.11},
+  version   = {1.0.12},
   year      = {2026},
 }
 ```
