@@ -839,7 +839,11 @@ records them.
 - [ ] Expand reaction/SMARTS/medicinal-chemistry coverage only after P0-P3
   gates have current evidence.
 - [ ] Add curated reaction/query precision, recall, invalid-product, timeout,
-  and ambiguity reports.
+  and ambiguity reports. A bounded v1.0.12 contract now covers one
+  over-valent-product rejection and one multiple-match ambiguity enumeration
+  case across Rust and generated Node/WASM, recorded in
+  `validation/results/reaction-quality-boundary-v1.0.12.json`; precision,
+  recall, timeout, and independent-oracle quality remain open.
 
 ## P5 — 3D and materials
 

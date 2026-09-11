@@ -378,7 +378,9 @@
       {"smirks": "[C:1][O:2]>>[C:1].[O:2]", "reactants": ["CO"], "minimum_product_sets": 1, "product_atom_count": 1},
       {"smirks": "[C:1][Br:2].[O:3]>>[C:1][O:3].[Br:2]", "reactants": ["CBr", "O"], "minimum_product_sets": 1, "product_atom_count": 2},
       {"smirks": "[N:1][C:2]>>[N:1].[C:2]", "reactants": ["NC"], "minimum_product_sets": 1, "product_atom_count": 1},
-      {"smirks": "[N:1]>>[N+:1]", "reactants": ["N"], "minimum_product_sets": 1, "product_atom_count": 1}
+      {"smirks": "[N:1]>>[N+:1]", "reactants": ["N"], "minimum_product_sets": 1, "product_atom_count": 1},
+      {"smirks": "[O:1]>>[O:1](C)C", "reactants": ["CCO"], "expected_product_sets": 0, "quality_boundary": "invalid_product_filtered"},
+      {"smirks": "[N:1]>>[N:1]", "reactants": ["NCCN"], "minimum_product_sets": 2, "product_atom_count": 4, "quality_boundary": "ambiguous_multiple_matches_enumerated"}
     ],
     "negative_cases": [
       {"smirks": "[#7;H2]>>[#7;H2]", "reactants": ["N"], "error": "unsupported compound primitive"}

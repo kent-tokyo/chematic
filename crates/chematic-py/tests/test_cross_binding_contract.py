@@ -447,6 +447,9 @@ def test_python_binding_matches_shared_reaction_application_contract():
     for case in contract["additional_cases"]:
         reactants = [chematic.from_smiles(smiles) for smiles in case["reactants"]]
         products = chematic.run_smirks(case["smirks"], reactants)
+        if "expected_product_sets" in case:
+            assert len(products) == case["expected_product_sets"]
+            continue
         assert len(products) >= case["minimum_product_sets"]
         assert products[0][0].heavy_atoms == case["product_atom_count"]
 

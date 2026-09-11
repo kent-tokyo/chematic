@@ -47,6 +47,10 @@ assert.equal(product.atom_count(), application.expected.product_atom_count);
 product.free();
 for (const testCase of application.additional_cases) {
   const additionalProducts = JSON.parse(wasm.run_reactants(testCase.smirks, testCase.reactants.join("|")));
+  if ("expected_product_sets" in testCase) {
+    assert.equal(additionalProducts.length, testCase.expected_product_sets);
+    continue;
+  }
   assert.ok(additionalProducts.length >= testCase.minimum_product_sets);
   const additionalProduct = wasm.parse_smiles(additionalProducts[0][0]);
   assert.equal(additionalProduct.atom_count(), testCase.product_atom_count);
