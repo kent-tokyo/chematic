@@ -566,11 +566,10 @@ fn hba_count_from_set(
                     //   h > 0 → [nH] pyrrole-type: lone pair participates in the
                     //           aromatic pi system.
                     // Only pyridine-like aromatic nitrogen is an acceptor.
-                    // An aromatic N with an exocyclic substituent (degree 3)
-                    // is an imide/pyrrole-like nitrogen whose lone pair is
-                    // part of the conjugated system.  The older rule treated
-                    // every substituted aromatic [n] as an acceptor, which
-                    // over-counted caffeine (6 instead of RDKit's Ertl HBA=3).
+                    // Native mode keeps the historical degree-2 restriction.
+                    // The opt-in RDKit profile accepts degree-3 aromatic n
+                    // when it is neutral and H0; this is the documented
+                    // source of the known native/profile difference.
                     h == 0 && (rdkit_aromatic_n || mol.degree(*idx) == 2)
                 } else {
                     // Non-aromatic N: must have formal valence 3 ([N;v3] in SMARTS);
@@ -3814,6 +3813,13 @@ mod tests {
         let caffeine = mol("Cn1cnc2c1c(=O)n(c(=O)n2C)C");
         assert_eq!(hba_count(&caffeine), 3);
         assert_eq!(rdkit_hba_count(&caffeine), 6);
+    }
+
+    #[test]
+    fn rdkit_hba_minimal_reproduction_for_corpus_difference() {
+        let nucleoside = mol("Nc1nc(N)c2ncn(C3CC(O)C(O)C(CO)O3)c2n1");
+        assert_eq!(hba_count(&nucleoside), 9);
+        assert_eq!(rdkit_hba_count(&nucleoside), 10);
     }
 
     // -- Test 3: ethanol molecular weight -----------------------------------
