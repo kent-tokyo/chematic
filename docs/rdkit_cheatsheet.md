@@ -301,7 +301,7 @@ df = pd.DataFrame(chematic.bulk.descriptors(smiles_list))
 
 - **pKa prediction** — built-in rule-based screening, no external tools (not for clinical use)
 - **ADMET profile** — built-in rule-based screening, BBB/Caco-2/hERG/CYP3A4 in a single call (not for clinical use)
-- **WASM support** — runs in the browser (3.73 MB raw / 1.36 MB gzip bundle, v1.0.10 candidate measured 2026-09-09)
+- **WASM support** — runs in the browser (3.93 MB raw / 1.43 MB gzip bundle, v1.0.12 measured 2026-09-11)
 - **MCP server** — direct integration with AI agents
 - **Pure Rust** — no conda, works in Docker / serverless / CI without extra setup
 - **Atropisomer detection** — `mol.atropisomers()` detects biaryl and allene axes

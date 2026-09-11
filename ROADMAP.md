@@ -1,7 +1,7 @@
 # chematic roadmap
 
-> Revised 2026-09-11. The current release is v1.0.12. The workspace version is
-> 1.0.12; checked-in benchmark artifacts retain their measured version.
+> Revised 2026-09-11. The current release is v1.0.13. The workspace version is
+> 1.0.13; checked-in benchmark artifacts retain their measured version.
 
 The detailed roadmap and completed gate-by-gate evidence through 2026-09-05 is
 retained in

@@ -24,14 +24,14 @@ diagnostics = []
 
 [dependencies]
 rayon = "1"
-chematic-core = { path = "../chematic-core", version = "1.0.12" }
-chematic-cip = { path = "../chematic-cip", version = "1.0.12" }
+chematic-core = { path = "../chematic-core", version = "1.0.13" }
+chematic-cip = { path = "../chematic-cip", version = "1.0.13" }
 rustc-hash = "2"
 smallvec = "1"
-chematic-perception = { path = "../chematic-perception", version = "1.0.12" }
-chematic-rxn = { path = "../chematic-rxn", version = "1.0.12" }
-chematic-smarts = { path = "../chematic-smarts", version = "1.0.12" }
-chematic-smiles = { path = "../chematic-smiles", version = "1.0.12" }
+chematic-perception = { path = "../chematic-perception", version = "1.0.13" }
+chematic-rxn = { path = "../chematic-rxn", version = "1.0.13" }
+chematic-smarts = { path = "../chematic-smarts", version = "1.0.13" }
+chematic-smiles = { path = "../chematic-smiles", version = "1.0.13" }
 
 [dev-dependencies]
 criterion = { version = "0.8", features = ["html_reports"] }

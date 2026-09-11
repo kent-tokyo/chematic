@@ -334,11 +334,11 @@ formats" claim.
 **Not applicable to RDKit's core Python package** — browser consumers use
 RDKit's official JavaScript/WASM distribution path, `@rdkit/rdkit`.
 chematic ships `chematic-wasm` directly from the same Rust source as the
-Python bindings. Measured 2026-09-09 from the v1.0.10 release candidate (see the
-[artifact record](../benchmarks/2026-09-09-wasm-size-v1.0.10.md)): chematic's WASM bundle is
-**3.73 MB raw / 1.36 MB gzip**, versus RDKit.js's `RDKit_minimal.wasm` at
-**6.91 MB raw** (gzip not independently measured) — about 2.0× smaller on a
-raw-to-raw basis. See [`format-capabilities.md`](format-capabilities.md)
+Python bindings. Measured 2026-09-11 in the v1.0.12 Node/WASM gate (see the
+[artifact record](../benchmarks/2026-09-11-official-rdkit-js-v1.0.12.md)): chematic's WASM bundle is
+**3.93 MB raw / 1.43 MB gzip**, versus RDKit.js at
+**6.91 MB raw / 2.05 MB gzip** — about 1.8× smaller raw and 1.4× smaller gzip.
+See [`format-capabilities.md`](format-capabilities.md)
 for exactly which formats are and are not exposed at the WASM layer (plain
 CIF, notably, is not).
 

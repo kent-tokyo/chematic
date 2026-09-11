@@ -19,6 +19,9 @@ Pure Rust molecular file format reader/writer — **SDF, MOL V2000/V3000, CML, C
 
 ### CML (Chemical Markup Language)
 - **Parse/Write**: XML-based molecular format
+- **Strict parsing**: `parse_cml_strict` is opt-in and rejects empty molecules,
+  unbalanced/multiple-root documents, and unterminated lexical sections;
+  `parse_cml` retains its historical lenient behavior.
 - **Y-Coordinate System** (DOCUMENTED in v0.1.32):
   - CML uses **chemical Y-up** (Y increases upward)
   - SVG rendering requires Y-negation: `svg_y = -cml_y`

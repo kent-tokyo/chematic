@@ -155,7 +155,12 @@ Notes on the cells above that need qualification:
 
 ### CML
 
-- **Rust**: `chematic_mol::{parse_cml, parse_cml_with_limits, write_cml, CmlError, CmlParseLimits}`.
+- **Rust**: `chematic_mol::{parse_cml, parse_cml_strict, parse_cml_with_limits, parse_cml_strict_with_limits, write_cml, CmlError, CmlParseLimits}`.
+- **Strict boundary**: `parse_cml_strict` is opt-in; it requires a non-empty
+  molecule, balanced XML-ish elements, exactly one root element, and rejects
+  unterminated quoted attributes, comments, CDATA sections, and processing
+  instructions. The historical `parse_cml` path remains lenient for
+  compatibility.
 - **Coordinate units**: Ångström in returned 2D coordinates.
 - **Connectivity**: native CML bond elements.
 - **Parse limits**: `CmlParseLimits` bounds input bytes, physical line

@@ -3,7 +3,7 @@
   "description": "A bounded, typed cheminformatics runtime with SMILES/SMARTS parsing, molecular descriptors, fingerprints, substructure search, selected chemical formats, Python and WebAssembly bindings, and MCP integration.",
   "upload_type": "software",
   "license": "MIT",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "publication_date": "2026-09-10",
   "keywords": [
     "cheminformatics",
