@@ -294,7 +294,57 @@ fn split_cml_tags(input: &str) -> String {
     let mut output = String::with_capacity(input.len() + input.len() / 8);
     let mut in_tag = false;
     let mut quote = None;
-    for character in input.chars() {
+    let mut cursor = 0usize;
+    while cursor < input.len() {
+        // Comments, CDATA, and processing instructions may contain `>` (and
+        // comments/CDATA may contain `<`) as ordinary content. Keep each
+        // construct intact so the line-oriented compatibility reader never
+        // interprets markup inside it as a molecule element. The strict
+        // validator has already checked that the terminator exists.
+        if !in_tag && input[cursor..].starts_with("<!--") {
+            let end = input[cursor + 4..]
+                .find("-->")
+                .map(|offset| cursor + 4 + offset + 3)
+                .unwrap_or(input.len());
+            if !output.is_empty() && !output.ends_with('\n') {
+                output.push('\n');
+            }
+            output.push_str(&input[cursor..end]);
+            output.push('\n');
+            cursor = end;
+            continue;
+        }
+        if !in_tag && input[cursor..].starts_with("<![CDATA[") {
+            let end = input[cursor + 9..]
+                .find("]]>")
+                .map(|offset| cursor + 9 + offset + 3)
+                .unwrap_or(input.len());
+            if !output.is_empty() && !output.ends_with('\n') {
+                output.push('\n');
+            }
+            output.push_str(&input[cursor..end]);
+            output.push('\n');
+            cursor = end;
+            continue;
+        }
+        if !in_tag && input[cursor..].starts_with("<?") {
+            let end = input[cursor + 2..]
+                .find("?>")
+                .map(|offset| cursor + 2 + offset + 2)
+                .unwrap_or(input.len());
+            if !output.is_empty() && !output.ends_with('\n') {
+                output.push('\n');
+            }
+            output.push_str(&input[cursor..end]);
+            output.push('\n');
+            cursor = end;
+            continue;
+        }
+
+        let character = input[cursor..]
+            .chars()
+            .next()
+            .expect("cursor is a valid non-empty UTF-8 boundary");
         if character == '<' && !in_tag {
             if !output.is_empty() && !output.ends_with('\n') {
                 output.push('\n');
@@ -314,6 +364,7 @@ fn split_cml_tags(input: &str) -> String {
                 output.push('\n');
             }
         }
+        cursor += character.len_utf8();
     }
     output
 }
@@ -515,6 +566,32 @@ fn validate_strict_cml_structure(input: &str) -> Result<(), CmlError> {
     let mut cursor = 0usize;
     while let Some(relative_start) = input[cursor..].find('<') {
         let start = cursor + relative_start;
+        if input[start..].starts_with("<!--") {
+            let end = input[start + 4..]
+                .find("-->")
+                .map(|offset| start + 4 + offset + 3)
+                .ok_or_else(|| CmlError::MalformedXml("unterminated comment".to_string()))?;
+            cursor = end;
+            continue;
+        }
+        if input[start..].starts_with("<![CDATA[") {
+            let end = input[start + 9..]
+                .find("]]>")
+                .map(|offset| start + 9 + offset + 3)
+                .ok_or_else(|| CmlError::MalformedXml("unterminated CDATA section".to_string()))?;
+            cursor = end;
+            continue;
+        }
+        if input[start..].starts_with("<?") {
+            let end = input[start + 2..]
+                .find("?>")
+                .map(|offset| start + 2 + offset + 2)
+                .ok_or_else(|| {
+                    CmlError::MalformedXml("unterminated processing instruction".to_string())
+                })?;
+            cursor = end;
+            continue;
+        }
         let relative_end = find_strict_tag_end(&input[start..]).ok_or_else(|| {
             CmlError::MalformedXml("unterminated tag or quoted attribute".to_string())
         })?;
@@ -775,6 +852,32 @@ mod tests {
             "<molecule><atomArray><atom id=\"a1 elementType=\"C\"/></atomArray></molecule>";
         assert!(matches!(
             parse_cml_strict(malformed),
+            Err(CmlError::MalformedXml(_))
+        ));
+    }
+
+    #[test]
+    fn strict_cml_does_not_parse_markup_inside_comment_or_cdata() {
+        let input = concat!(
+            "<?xml version=\"1.0\"?>",
+            "<molecule>",
+            "<!-- <atom id=\"fake\" elementType=\"N\"/> > -->",
+            "<atomArray><atom id=\"a1\" elementType=\"C\"/></atomArray>",
+            "<metadata><![CDATA[<atom id=\"also-fake\"/> >]]></metadata>",
+            "<bondArray/></molecule>"
+        );
+        let (mol, _) = parse_cml_strict(input).unwrap();
+        assert_eq!(mol.atom_count(), 1);
+    }
+
+    #[test]
+    fn strict_cml_rejects_unterminated_comment_and_cdata() {
+        assert!(matches!(
+            parse_cml_strict("<molecule><!-- <atom id=\"a1\"/>"),
+            Err(CmlError::MalformedXml(_))
+        ));
+        assert!(matches!(
+            parse_cml_strict("<molecule><![CDATA[unfinished"),
             Err(CmlError::MalformedXml(_))
         ));
     }
