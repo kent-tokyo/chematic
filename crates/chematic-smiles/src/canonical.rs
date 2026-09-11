@@ -79,6 +79,64 @@ pub fn canonical_atom_order(mol: &Molecule) -> Vec<usize> {
 /// output. `CanonicalizationError::SearchBudgetExceeded` cannot occur here
 /// since `unbounded()` never checks either budget.
 fn winning_individualized_ranks(mol: &Molecule) -> (Vec<u64>, String) {
+    let mut best = winning_individualized_ranks_single(mol);
+    for alternate in alternate_ez_carrier_spellings(mol) {
+        let candidate = winning_individualized_ranks_single(&alternate);
+        if candidate.1 < best.1 {
+            best = candidate;
+        }
+    }
+    best
+}
+
+/// Return geometrically equivalent spellings that move one plain E/Z marker
+/// to the sibling substituent at the same alkene end.  SMILES permits either
+/// substituent to carry the marker; choosing the lexicographically smallest
+/// result across both spellings removes the last input-carrier dependency in
+/// cyclic conjugated systems.
+///
+/// A marked bond is not moved when its far endpoint is the sole carrier for a
+/// different stereogenic double bond.  That conservative guard prevents this
+/// normalization from stripping unrelated E/Z information.  Coupled ends
+/// remain handled by the writer's joint resolver.
+fn alternate_ez_carrier_spellings(mol: &Molecule) -> Vec<Molecule> {
+    let ranks = morgan_ranks(mol);
+    let writer = CanonicalWriter::new(mol, &ranks);
+    let mut alternates = Vec::new();
+    for end in CanonicalWriter::compute_stereo_alkene_ends(mol) {
+        let subs = CanonicalWriter::substituents(mol, end);
+        if subs.len() != 2 {
+            continue;
+        }
+        for i in 0..2 {
+            let marked = subs[i];
+            let sibling = subs[1 - i];
+            let Some(direction) = writer.raw_input_direction(marked.1) else {
+                continue;
+            };
+            if !matches!(direction, BondOrder::Up | BondOrder::Down)
+                || mol.bond(sibling.1).order != BondOrder::Single
+                || writer.is_load_bearing_elsewhere(marked.1, end)
+            {
+                continue;
+            }
+            let up = CanonicalWriter::direction_is_up(
+                direction,
+                writer.raw_direction_anchor(marked.1),
+                end,
+            );
+            let sibling_direction =
+                CanonicalWriter::direction_for_up(writer.raw_direction_anchor(sibling.1), end, !up);
+            alternates.push(
+                mol.with_bond_order(marked.1, BondOrder::Single)
+                    .with_bond_order(sibling.1, sibling_direction),
+            );
+        }
+    }
+    alternates
+}
+
+fn winning_individualized_ranks_single(mol: &Molecule) -> (Vec<u64>, String) {
     match crate::canonical_search::winning_individualized_ranks_with_limits(
         mol,
         &crate::canonical_search::CanonicalizationLimits::unbounded(),
@@ -3411,6 +3469,27 @@ mod tests {
             "genuine exocyclic-double-bond-adjacent aromatic stash must \
              still emit a directional token: got '{out}'"
         );
+    }
+
+    #[test]
+    fn cyclic_imine_carrier_normalization_is_input_order_invariant() {
+        let fixtures = [
+            (
+                r"C[C@]12CC/C(=N\N=C(N)N)C=C1CC[C@@H]2CO",
+                r"C1(=N/N=C(N)N)\C=C2CC[C@H](CO)[C@@]2(C)CC1",
+            ),
+            (
+                r"C[C@]12CC/C(=N\N=C(N)N)C=C1CC[C@@H]2/C=C/[N+](=O)[O-]",
+                r"C[C@@]12[C@@H](/C=C/[N+](=O)[O-])CCC1=C/C(=N/N=C(N)N)CC2",
+            ),
+        ];
+        for (a, b) in fixtures {
+            assert_eq!(
+                canonical_smiles(&parse(a).unwrap()),
+                canonical_smiles(&parse(b).unwrap()),
+                "equivalent cyclic-imine carrier spellings must converge"
+            );
+        }
     }
 
     // ── E/Z marker-carrier normalization (fix/canonical-ez-carrier-
