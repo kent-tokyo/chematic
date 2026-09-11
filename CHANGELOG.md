@@ -9,6 +9,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Rejected multiple top-level elements in the opt-in strict CML parser while
+  preserving the historical lenient parser behavior.
+- Added the multiple-root rejection to the shared Rust/Python/Node/WASM CML
+  contract so all supported bindings exercise the same fail-closed boundary.
 - Added typed CDXML text/caption style access for font, size, and alignment,
   with non-finite numeric values rejected and unknown presentation attributes
   preserved.

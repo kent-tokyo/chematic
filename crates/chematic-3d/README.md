@@ -137,8 +137,8 @@ All functions compile to `wasm32-unknown-unknown` without modification.
 wasm-pack build --target web --release
 ```
 
-The published-size baseline for the optimized `chematic-wasm` artifact is 3.73 MB raw / 1.36 MB gzip,
-measured from the v1.0.10 release line; see the dated artifact record rather than treating this as a
+The current measured optimized `chematic-wasm` artifact is 3.93 MB raw / 1.43 MB gzip,
+measured in the v1.0.12 Node/WASM gate; see the dated artifact record rather than treating this as a
 permanent size guarantee.
 
 ## Crate Dependencies

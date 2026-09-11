@@ -69,20 +69,12 @@ passed. The default advisory `deny` step cannot acquire its lock because the
 Cargo advisory database is under a read-only path, but a writable-copy rerun
 against advisory-db revision `5a0ebedfe8bdd2e295b171f4162f8c977bcad9a5`
 passes advisories, bans, licenses, and sources; see
-`validation/results/cargo-deny-v1.0.10.json`. Python pytest remains
-toolchain-skipped because the local virtualenv does not contain the package and
-test dependencies. With the system extension and plugin autoload disabled, the
-six current shared-format binding checks (PDB, MOL2, CML, CDXML, mmCIF,
-MolJSON) pass. The interpreter used for that probe imported the installed
-`chematic` v1.0.3 from the user site-packages directory rather than the
-workspace v1.0.10 extension; the broader Python contract file therefore still
-has stale-install API-surface failures outside those format checks. A clean
-workspace extension install is now locally reproducible: a v1.0.10 wheel was
-built offline into a temporary environment and all 945 Python tests passed with
-zero failures or skips. The same freshly built wheel also passes the 38-case
-reaction SMARTS contract directly. The wheel is a local candidate only and is
-not published or installed into the normal user environment. Neither condition
-is promoted to a completed roadmap item.
+`validation/results/cargo-deny-v1.0.10.json`. A source-built v1.0.12 wheel is
+also reproducible offline in the project virtual environment; the strict CML
+shared contract passes after rebuilding the wheel, while the system Python
+installation is not treated as workspace evidence. The wheel is a local
+candidate only and is not published or installed into the normal user
+environment. Neither condition is promoted to a completed roadmap item.
 
 The P1 streaming safety runner was also rerun against the current v1.0.12 workspace:
 800 malformed-input attempts (800 unique payloads; 80 per format), 10

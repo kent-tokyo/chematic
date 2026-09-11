@@ -10,7 +10,7 @@ This is a compatibility-contract dashboard, not a universal RDKit parity or spee
 
 ## Shared binding contract
 
-Operation inventory: `56` currently shared operations; validate with `python3 scripts/check_cross_binding_manifest.py`.
+Operation inventory: `57` currently shared operations; validate with `python3 scripts/check_cross_binding_manifest.py`.
 
 | Area | Checked-in assertions | Status |
 |---|---:|---|

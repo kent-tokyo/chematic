@@ -38,9 +38,9 @@ no backend of their own. (This describes chematic's own browser tools; if you bu
 on top of chematic-wasm that calls other network APIs, that's your own code's choice, not
 something chematic does on your behalf.)
 
-**Lightweight deployment.** The latest measured release-line WASM bundle is **3.73 MB raw / 1.36 MB gzip**, measured
-2026-09-09 with `wasm-pack 0.13.1` + `wasm-opt 130` — see the
-[artifact record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-09-wasm-size-v1.0.10.md)
+**Lightweight deployment.** The current v1.0.12 Node/WASM bundle is **3.93 MB raw / 1.43 MB gzip**, measured
+2026-09-11 with `wasm-pack 0.13.1`, `wasm-bindgen 0.2.121`, and `wasm-opt 130` — see the
+[official RDKit.js comparison](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-11-official-rdkit-js-v1.0.12.md)
 for the digest and reproduction commands.
 
 **One Rust core, multiple interfaces.** The same `chematic-*` Rust crates back the native Rust
@@ -146,7 +146,7 @@ Full worked examples → [Use cases](use-cases/)
 |---|---|---|---|
 | Install | `pip install chematic` | `pip install rdkit` (official prebuilt wheels) or conda | `npm install @rdkit/rdkit`, no Python bindings |
 | C/C++ toolchain | Not required, even building from source | Not required for the prebuilt wheel; required building from source | Not required by consumers of the published package |
-| Browser / WASM | Yes — 3.73 MB raw / 1.36 MB gzip | Not applicable (Python/C++ library) | Yes — 6.91 MB raw (`RDKit_minimal.wasm`; pinned historical measurement) |
+| Browser / WASM | Yes — 3.93 MB raw / 1.43 MB gzip (v1.0.12 Node gate) | Not applicable (Python/C++ library) | Yes — 6.91 MB raw / 2.05 MB gzip (same-condition Node gate) |
 | pKa / ADMET prediction | Built-in, rule-based screening — not for clinical use | External tool required | External tool required |
 | AI agent / MCP integration | Built-in, 20 tools (stdio only) | — | — |
 | Ecosystem maturity | Growing (2024–) | Established (2006–) | Established; official JavaScript/WASM distribution path |
