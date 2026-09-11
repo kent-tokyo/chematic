@@ -1,0 +1,97 @@
+{
+  "boundary": "aggregate rejection remains the safety contract; failure_kinds is diagnostic variant evidence only",
+  "corpus": {
+    "cases_per_format": 12,
+    "formats": 10,
+    "path": "validation/streaming_format_safety_cases.json",
+    "sha256": "955f4911315066c0d447f6018f03595d3a4369caed01a3d11a8695b55d28bec5",
+    "total_cases": 120
+  },
+  "errors": [],
+  "gate": "streaming_failure_taxonomy",
+  "rows": {
+    "cdxml": {
+      "cases": 12,
+      "failure_kinds": {
+        "ResourceLimit": 12
+      }
+    },
+    "cml": {
+      "cases": 12,
+      "failure_kinds": {
+        "ResourceLimit": 12
+      }
+    },
+    "extxyz": {
+      "cases": 12,
+      "failure_kinds": {
+        "AtomCountMismatch": 1,
+        "InvalidAtomLine": 1,
+        "InvalidCountLine": 1,
+        "InvalidLattice": 1,
+        "InvalidProperties": 1,
+        "InvalidPropertyValue": 2,
+        "NonFiniteCoordinate": 1,
+        "PropertyColumnMismatch": 3,
+        "UnknownElement": 1
+      }
+    },
+    "mmcif": {
+      "cases": 12,
+      "failure_kinds": {
+        "MissingCoordinateColumns": 8,
+        "MissingTypeSymbolColumn": 2,
+        "NoAtomSiteLoop": 2
+      }
+    },
+    "mol": {
+      "cases": 12,
+      "failure_kinds": {
+        "InvalidAtomLine": 9,
+        "InvalidBondLine": 1,
+        "InvalidCountLine": 2
+      }
+    },
+    "mol2": {
+      "cases": 12,
+      "failure_kinds": {
+        "InvalidAtomLine": 10,
+        "MissingSection": 2
+      }
+    },
+    "pdb": {
+      "cases": 12,
+      "failure_kinds": {
+        "PdbResourceLimitError": 12
+      }
+    },
+    "sdf": {
+      "cases": 12,
+      "failure_kinds": {
+        "InvalidAtomLine": 9,
+        "InvalidBondLine": 1,
+        "InvalidCountLine": 2
+      }
+    },
+    "v3000": {
+      "cases": 12,
+      "failure_kinds": {
+        "InvalidCountLine": 8,
+        "UnexpectedEnd": 4
+      }
+    },
+    "xyz": {
+      "cases": 12,
+      "failure_kinds": {
+        "AtomCountMismatch": 2,
+        "InvalidAtomLine": 4,
+        "InvalidCountLine": 2,
+        "NonFiniteCoordinate": 3,
+        "UnknownElement": 1
+      }
+    }
+  },
+  "schema_version": 1,
+  "status": "local-verified",
+  "target_version": "1.0.12"
+}

@@ -15,9 +15,11 @@ from pathlib import Path
 import subprocess
 import tempfile
 
+from benchmark_version import workspace_version
+
 ROOT = Path(__file__).resolve().parents[1]
 CORPUS = ROOT / "validation" / "streaming_format_safety_cases.json"
-DEFAULT_OUTPUT = ROOT / "validation" / "results" / "streaming-failure-taxonomy-v1.0.10.json"
+DEFAULT_OUTPUT = ROOT / "validation" / "results" / f"streaming-failure-taxonomy-v{workspace_version(ROOT)}.json"
 FORMATS = ("sdf", "mol", "xyz", "extxyz", "v3000", "mol2", "cml", "cdxml", "mmcif", "pdb")
 
 
@@ -67,7 +69,7 @@ def main() -> int:
 
     report = {
         "schema_version": 1,
-        "target_version": "1.0.10",
+        "target_version": workspace_version(ROOT),
         "status": "local-verified" if not errors else "failed",
         "gate": "streaming_failure_taxonomy",
         "corpus": {
