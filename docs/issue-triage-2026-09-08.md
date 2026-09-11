@@ -863,14 +863,14 @@ regression test.
 
 ## Issue #372 — canonical Boc/tBu symmetry performance
 
-The exact twin/orbit path was re-run with the checked-in Tier A/B harness and
-the canonical-search instrumentation feature. The run had zero old/new
-correctness mismatches, zero search-budget exhaustions, and an 8.19x Tier A
-geometric-mean speedup (Tier B negative control: 2.47x). Across Tier A the
-exhaustive engine visited 6,186 leaves while the orbit-pruned engine wrote 13
-leaves, visited 62 nodes, and performed 46 orbit tests; the repeated multi-Boc
-and multi-pivaloyl fixtures each collapsed to one leaf from 432 exhaustive
-leaves.
+The exact twin/orbit path was re-run on 2026-09-11 with the checked-in Tier A/B
+harness and the canonical-search instrumentation feature. The run had zero
+old/new correctness mismatches, zero search-budget exhaustions, and an 8.16x
+Tier A geometric-mean speedup (Tier B negative control: 2.48x). Across Tier A
+the exhaustive engine visited 6,186 leaves while the orbit-pruned engine wrote
+13 leaves, visited 62 nodes, and performed 46 orbit tests; the repeated
+multi-Boc and multi-pivaloyl fixtures each collapsed to one leaf from 432
+exhaustive leaves.
 
 This is local proxy evidence only. The exact RENKIN witness and its preferred
 2x acceptance target are external to this checkout, so #372 remains open and
