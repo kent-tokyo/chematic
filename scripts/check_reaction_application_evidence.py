@@ -87,8 +87,9 @@ def main() -> int:
         fail("quality-boundary Rust result must be passed")
     if quality_bindings.get("node_wasm", {}).get("status") != "pass":
         fail("quality-boundary Node/WASM result must be passed")
-    if quality_bindings.get("python", {}).get("status") != "environment_blocked":
-        fail("quality-boundary Python environment boundary must be explicit")
+    python_status = quality_bindings.get("python", {}).get("status")
+    if python_status not in {"pass", "environment_blocked"}:
+        fail("quality-boundary Python result must be pass or an explicit environment boundary")
     print(
         f"reaction application evidence OK: {positive_count} historical positive, "
         f"{len(quality_cases)} supplemental quality cases, {len(negative)} negative; "
