@@ -417,8 +417,10 @@ documentation, and required measurement agree.
   lenient `parse_cml` path and opt-in strict Rust/Python/WASM entry points.
   Strict parsing rejects missing or empty molecules and mismatched/unclosed
   XML elements; the focused Rust suite covers acceptance, rejection, and
-  lenient compatibility. Full cross-binding generated-artifact execution and
-  exhaustive CML parser-state coverage remain open.
+  lenient compatibility. The regenerated Node/WASM artifact also executes the
+  strict valid case and rejects missing, empty, unbalanced, and mismatched-tag
+  cases. Broader strict fixtures and exhaustive CML parser-state coverage
+  remain open.
 - [ ] Measure only equivalent operations against installed RDKit and Open
   Babel versions on identical inputs; report sdfrust separately. A same-
   process Python SDF semantic contract now confirms record/failure counts and
