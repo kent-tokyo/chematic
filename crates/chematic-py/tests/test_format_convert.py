@@ -1,8 +1,15 @@
 """Tests for the common format conversion bridge."""
 
+import json
+from pathlib import Path
+
 import pytest
 
 import chematic
+
+
+_FIXTURE_PATH = Path(__file__).parents[3] / "validation" / "cross_binding_contract.json"
+_PDB_STRICT_CONTRACT = json.loads(_FIXTURE_PATH.read_text())["pdb_strict_contract"]
 
 
 def test_convert_graph_formats_round_trip():
@@ -87,21 +94,12 @@ def test_pdb_strict_parser_is_opt_in():
 
 
 @pytest.mark.parametrize(
-    ("start", "end", "replacement", "field"),
-    [
-        (6, 11, " nope", "serial"),
-        (22, 26, "nope", "residue sequence"),
-        (30, 38, "   nope", "x"),
-        (38, 46, "   nope", "y"),
-        (46, 54, "   nope", "z"),
-    ],
+    "case", _PDB_STRICT_CONTRACT["fixed_column_cases"], ids=lambda case: case["field"]
 )
-def test_pdb_strict_parser_reports_each_fixed_column(start, end, replacement, field):
-    valid = (
-        "ATOM      1  CA  ALA A   1      10.000  11.000  12.000  1.00 20.00           C  "
-    )
-    malformed = valid[:start] + replacement + valid[end:]
-    with pytest.raises(ValueError, match=rf"invalid PDB {field} field"):
+def test_pdb_strict_parser_reports_each_fixed_column(case):
+    valid = _PDB_STRICT_CONTRACT["input"].rstrip("\n")
+    malformed = valid[: case["start"]] + case["replacement"] + valid[case["end"] :]
+    with pytest.raises(ValueError, match=rf"invalid PDB {case['field']} field"):
         chematic.from_pdb_strict(malformed)
 
 

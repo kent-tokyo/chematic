@@ -38,6 +38,19 @@ def main() -> int:
         return fail("valid fixture expectation changed unexpectedly")
     if contract.get("malformed_error_field") != "z":
         return fail("baseline malformed field must remain z")
+    cases = contract.get("fixed_column_cases")
+    if not isinstance(cases, list) or [case.get("field") for case in cases] != [
+        "serial", "residue sequence", "x", "y", "z"
+    ]:
+        return fail("fixed-column case list is incomplete or reordered")
+    if any(
+        not isinstance(case.get("start"), int)
+        or not isinstance(case.get("end"), int)
+        or not isinstance(case.get("replacement"), str)
+        or case["end"] - case["start"] != len(case["replacement"])
+        for case in cases
+    ):
+        return fail("fixed-column case offsets and replacement widths are invalid")
 
     checks = {
         ROOT / "crates/chematic-3d/src/pdb.rs": r"pub fn parse_pdb_atoms_strict",
@@ -46,7 +59,7 @@ def main() -> int:
         r"test_pdb_strict_parser_reports_each_fixed_column",
         ROOT / "crates/chematic-wasm/src/mol_io.rs": r"pub fn mol_from_pdb_strict",
         ROOT / "crates/chematic-wasm/tests/source_only_contract.test.mjs":
-        r"strictPdbFields",
+        r"fixed_column_cases",
         ROOT / "crates/chematic-wasm/pkg-node/chematic_wasm.js":
         r"exports\.mol_from_pdb_strict",
         ROOT / "crates/chematic-wasm/pkg-node/chematic_wasm.d.ts":
