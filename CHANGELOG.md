@@ -35,6 +35,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Added the three-lane native/native, RDKit-compatible/RDKit, and cross-profile
   top-10 comparison gate; the v1.0.12 valid-input run reached 100% mean recall
   in the compatible lane and reports preprocessing failures separately.
+- Added versioned WASM/JS document-binding APIs for rich reaction and CDXML
+  JSON, bounded stable-ID/page edits, exact CDXML source reserialization, and
+  structured error categories with paths.
 
 ## [1.0.12] - 2026-09-11
 

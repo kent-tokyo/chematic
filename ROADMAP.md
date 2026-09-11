@@ -96,6 +96,17 @@ Competitive-response gate status (2026-09-10):
 - [x] Expose serialized CDXML object kinds in the binding-neutral document JSON
   summary, including explicit `Unsupported` values.
 
+### Stable document binding boundary (#520)
+
+- [x] Add versioned WASM/JS JSON boundaries for rich reaction documents and
+  CDXML documents, including exact-source CDXML reserialization.
+- [x] Add bounded stable-ID reaction edits and CDXML page/object edits that
+  reparse before returning, preventing ID/path drift.
+- [x] Return structured `code`, `path`, and `message` diagnostics for malformed
+  input, resource limits, unsupported constructs, and serialization failures;
+  retain the existing legacy adapters and their explicit loss boundary.
+- [x] Verify parse → serialize → edit → reopen in a real Node/WASM fixture.
+
 ### Next priority: compatible similarity search
 
 - [x] Add a fallible `rdkit_ecfp4` prepared-search profile alongside the fast
