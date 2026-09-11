@@ -276,11 +276,46 @@ pub fn parse_cml_strict_with_limits(
     limits: &CmlParseLimits,
 ) -> Result<(Molecule, Vec<(f64, f64)>), CmlError> {
     validate_strict_cml_structure(input)?;
-    let parsed = parse_cml_with_limits(input, limits)?;
+    let normalized = split_cml_tags(input);
+    let parsed = parse_cml_with_limits(&normalized, limits)?;
     if parsed.0.atom_count() == 0 {
         return Err(CmlError::EmptyMolecule);
     }
     Ok(parsed)
+}
+
+/// Make the lightweight line-oriented reader usable with compact XML too.
+///
+/// The legacy parser intentionally only inspects one tag per input line. The
+/// strict entry point can normalize tag boundaries without changing the
+/// legacy parser's compatibility behavior. A quote-aware scan avoids splitting
+/// an attribute value that happens to contain `>`.
+fn split_cml_tags(input: &str) -> String {
+    let mut output = String::with_capacity(input.len() + input.len() / 8);
+    let mut in_tag = false;
+    let mut quote = None;
+    for character in input.chars() {
+        if character == '<' && !in_tag {
+            if !output.is_empty() && !output.ends_with('\n') {
+                output.push('\n');
+            }
+            in_tag = true;
+        }
+        output.push(character);
+        if in_tag {
+            if let Some(active_quote) = quote {
+                if character == active_quote {
+                    quote = None;
+                }
+            } else if character == '\'' || character == '"' {
+                quote = Some(character);
+            } else if character == '>' {
+                in_tag = false;
+                output.push('\n');
+            }
+        }
+    }
+    output
 }
 
 /// Parse CML with explicit resource limits.
@@ -696,6 +731,14 @@ mod tests {
         let (mol, coords) = parse_cml_strict(ETHANOL_CML).unwrap();
         assert_eq!(mol.atom_count(), 3);
         assert_eq!(coords.len(), 3);
+    }
+
+    #[test]
+    fn strict_cml_accepts_compact_xml() {
+        let compact = "<molecule><atomArray><atom id=\"a1\" elementType=\"C\"/></atomArray><bondArray/></molecule>";
+        let (mol, coords) = parse_cml_strict(compact).unwrap();
+        assert_eq!(mol.atom_count(), 1);
+        assert_eq!(coords, vec![(0.0, 0.0)]);
     }
 
     #[test]
