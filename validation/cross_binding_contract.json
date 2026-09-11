@@ -249,14 +249,7 @@
     "scope": "opt_in_structural_non_empty_cml",
     "valid_input": "<molecule><atomArray><atom id=\"a1\" elementType=\"C\"/></atomArray><bondArray/></molecule>",
     "expected_atom_count": 1,
-    "rejected_inputs": ["<cml/>", "<molecule><atomArray>", "<molecule><atomArray/></molecule>"]
-  },
-  "cml_strict_contract": {
-    "schema_version": 1,
-    "scope": "opt_in_structural_non_empty_cml",
-    "valid_input": "<molecule><atomArray><atom id=\"a1\" elementType=\"C\"/></atomArray><bondArray/></molecule>",
-    "expected_atom_count": 1,
-    "rejected_inputs": ["<cml/>", "<molecule><atomArray>", "<molecule><atomArray/></molecule>"]
+    "rejected_inputs": ["<cml/>", "<molecule><atomArray>", "<molecule><atomArray/></molecule>", "<molecule><atomArray></molecule></atomArray>"]
   },
   "cdxml_contract": {
     "schema_version": 1,
