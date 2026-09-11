@@ -110,7 +110,8 @@ pub use mol2000::{
     write_sdf_record_with_conformer_checked, write_sdf_with_charges,
 };
 pub use mol3000::{
-    parse_mol_v3000, parse_mol_v3000_with_coords, read_mol_v3000_with_diagnostics, write_mol_v3000,
+    V3000SGroup, V3000SGroupKind, parse_mol_v3000, parse_mol_v3000_with_coords,
+    parse_v3000_sgroup_line, read_mol_v3000_with_diagnostics, write_mol_v3000,
     write_mol_v3000_with_conformer, write_mol_v3000_with_conformer_checked,
 };
 pub use moljson::{

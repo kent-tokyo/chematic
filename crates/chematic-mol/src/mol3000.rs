@@ -621,6 +621,104 @@ fn resolve_atom_idx(v3k_idx: u32, map: &[(u32, AtomIdx)]) -> Option<AtomIdx> {
     map.iter().find(|&&(k, _)| k == v3k_idx).map(|&(_, v)| v)
 }
 
+/// The semantic type token of a V3000 SGROUP record.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum V3000SGroupKind {
+    Sup,
+    Gen,
+    Cop,
+    Dat,
+    Ext,
+    Other(String),
+}
+
+/// A validated, typed view of one V3000 SGROUP logical line.
+///
+/// The original logical line remains in [`MolMetadata::v3000_sgroups`] for
+/// lossless writing. Atom references stay as the file's 1-based V3000 IDs;
+/// this view does not claim polymer expansion semantics.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct V3000SGroup {
+    pub id: u32,
+    pub kind: V3000SGroupKind,
+    pub parent_id: Option<u32>,
+    pub atom_ids: Vec<u32>,
+    pub attributes: Vec<(String, String)>,
+}
+
+/// Parse and validate one V3000 SGROUP logical line.
+pub fn parse_v3000_sgroup_line(line: &str) -> Result<V3000SGroup, MolParseError> {
+    let tokens: Vec<&str> = line.split_whitespace().collect();
+    if tokens.len() < 3 {
+        return Err(v3k_err(0, "SGROUP line needs id, type, and parent"));
+    }
+    let id = tokens[0]
+        .parse::<u32>()
+        .map_err(|_| v3k_err(0, "SGROUP id is not a non-negative integer"))?;
+    if id == 0 {
+        return Err(v3k_err(0, "SGROUP id must be non-zero"));
+    }
+    let kind = match tokens[1] {
+        "SUP" => V3000SGroupKind::Sup,
+        "GEN" => V3000SGroupKind::Gen,
+        "COP" => V3000SGroupKind::Cop,
+        "DAT" => V3000SGroupKind::Dat,
+        "EXT" => V3000SGroupKind::Ext,
+        other => V3000SGroupKind::Other(other.to_owned()),
+    };
+    let parent_raw = tokens[2]
+        .parse::<u32>()
+        .map_err(|_| v3k_err(0, "SGROUP parent is not a non-negative integer"))?;
+    let atoms_start = line
+        .find("ATOMS=(")
+        .ok_or_else(|| v3k_err(0, "SGROUP line is missing ATOMS=(...)"))?;
+    let atoms_value_start = atoms_start + "ATOMS=(".len();
+    let close = line[atoms_value_start..]
+        .find(')')
+        .map(|offset| atoms_value_start + offset)
+        .ok_or_else(|| v3k_err(0, "SGROUP ATOMS value is not closed"))?;
+    let atoms_inner = &line[atoms_value_start..close];
+    let mut atom_values = atoms_inner.split_whitespace();
+    let declared = atom_values
+        .next()
+        .ok_or_else(|| v3k_err(0, "SGROUP ATOMS value is missing its count"))?
+        .parse::<usize>()
+        .map_err(|_| v3k_err(0, "SGROUP ATOMS count is not an integer"))?;
+    let atom_ids: Result<Vec<u32>, MolParseError> = atom_values
+        .map(|value| {
+            let id = value
+                .parse::<u32>()
+                .map_err(|_| v3k_err(0, "SGROUP ATOMS contains a non-integer atom id"))?;
+            if id == 0 {
+                return Err(v3k_err(0, "SGROUP ATOMS contains atom id zero"));
+            }
+            Ok(id)
+        })
+        .collect();
+    let atom_ids = atom_ids?;
+    if atom_ids.len() != declared {
+        return Err(v3k_err(
+            0,
+            format!(
+                "SGROUP ATOMS declares {declared} ids but contains {}",
+                atom_ids.len()
+            ),
+        ));
+    }
+    let attributes = line[close + 1..]
+        .split_whitespace()
+        .filter_map(|token| token.split_once('='))
+        .map(|(key, value)| (key.to_owned(), value.to_owned()))
+        .collect();
+    Ok(V3000SGroup {
+        id,
+        kind,
+        parent_id: (parent_raw != 0).then_some(parent_raw),
+        atom_ids,
+        attributes,
+    })
+}
+
 /// Parse a V3000 COLLECTION line into a [`StereoGroup`].
 ///
 /// Expected formats:
@@ -1603,5 +1701,34 @@ M  V30 END CTAB\nM  END\n";
         let (_, collection_metadata) =
             parse_mol_v3000(&with_collection).expect("SGROUP and COLLECTION should compose");
         assert_eq!(collection_metadata.v3000_sgroups.len(), 1);
+    }
+
+    #[test]
+    fn v3000_sgroup_has_strict_typed_view_without_losing_source_line() {
+        let typed = parse_v3000_sgroup_line("1 COP 0 ATOMS=(2 1 2) LABEL=polymer BRKXYZ=foo")
+            .expect("valid SGROUP should have a typed view");
+        assert_eq!(typed.id, 1);
+        assert_eq!(typed.kind, V3000SGroupKind::Cop);
+        assert_eq!(typed.parent_id, None);
+        assert_eq!(typed.atom_ids, vec![1, 2]);
+        assert_eq!(
+            typed.attributes,
+            vec![
+                ("LABEL".into(), "polymer".into()),
+                ("BRKXYZ".into(), "foo".into())
+            ]
+        );
+    }
+
+    #[test]
+    fn v3000_sgroup_typed_view_rejects_count_and_id_errors() {
+        for line in [
+            "0 SUP 0 ATOMS=(1 1)",
+            "1 SUP 0 ATOMS=(2 1)",
+            "1 SUP 0 ATOMS=(1 0)",
+            "1 SUP 0 LABEL=missing_atoms",
+        ] {
+            assert!(parse_v3000_sgroup_line(line).is_err(), "must reject {line}");
+        }
     }
 }

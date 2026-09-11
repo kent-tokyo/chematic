@@ -41,6 +41,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Added a deterministic 155-row CIP oracle-corpus atom-order gate with eight
   generated permutations per row (1,240 checks); resolved labels and explicit
   fail-closed skip reasons must remain invariant after target remapping.
+- Added a bounded typed V3000 SGROUP syntax view for ID, parent, kind, atom
+  references, and attributes while retaining the original logical line for
+  lossless writing; polymer expansion and cross-engine semantics remain
+  explicitly outside this contract.
 
 ## [1.0.12] - 2026-09-11
 
