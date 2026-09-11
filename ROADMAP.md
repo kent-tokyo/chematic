@@ -748,6 +748,14 @@ records them.
 - [x] Make VF2 query expansion prefer mapped-neighbor and higher-degree atoms,
   preserving exhaustive semantics while resolving the known symmetric PAINS
   negative within the production visit budget; keep the typed budget outcome.
+- [x] Resolve issue #531 with an immutable `ReactionMatchContext` for repeated
+  single-reactant prepared-template matching. The context owns a target
+  snapshot (including its adjacency/atom/bond state) and a reusable `RingSet`,
+  is `Send + Sync`, preserves existing match ordering, maps, stereo/E/Z checks,
+  limits, and errors, and has an equivalence regression against the existing
+  ring-aware API. Context construction remains a separately measurable step;
+  no throughput claim is made until a dedicated repeated-query benchmark is
+  checked in.
 
 ## P3 — Portable production surface
 

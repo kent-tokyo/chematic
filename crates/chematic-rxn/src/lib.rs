@@ -62,8 +62,9 @@ pub use stoichiometry::{
     StoichiometryStep, analyze_components, analyze_reaction_document, analyze_reaction_step,
 };
 pub use transform::{
-    PreparedReaction, ReactionMatch, ReactionTransformDiagnostics, ReactionTransformLimits,
-    ReactionTransformReport, ReactionVariantDiagnostics, TransformError, apply_reaction_match,
-    find_reaction_matches, find_reaction_matches_with_limits, run_reactants, run_reactants_strict,
-    run_reactants_strict_with_limits, run_reactants_with_diagnostics, run_reactants_with_limits,
+    PreparedReaction, ReactionMatch, ReactionMatchContext, ReactionTransformDiagnostics,
+    ReactionTransformLimits, ReactionTransformReport, ReactionVariantDiagnostics, TransformError,
+    apply_reaction_match, find_reaction_matches, find_reaction_matches_with_limits, run_reactants,
+    run_reactants_strict, run_reactants_strict_with_limits, run_reactants_with_diagnostics,
+    run_reactants_with_limits,
 };
