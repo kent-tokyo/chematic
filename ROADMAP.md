@@ -500,10 +500,16 @@ documentation, and required measurement agree.
 - [x] Exclude Spectrophores and Issue #464's proposed replacement pending
   independent patent/FTO review.
 - [ ] Finish canonical atom-order and E/Z invariance for the supported domain.
-  The 2026-09-09 offline standardized NCI-5k, descriptor-census, and ChEMBL
-  idempotency lanes all pass (3/3, 637.30s); this strengthens round-trip
-  evidence but does not close atom-order invariance or the three held-out
-  aromatic-stash representation residuals.
+  The current source-built Python gate (RDKit 2025.09.3, 5,000-line pinned
+  ChEMBL-derived corpus, eight seeded relabelings plus idempotency) now passes
+  permutation invariance for 4,998/5,000 molecules (99.96%) and idempotency
+  for 5,000/5,000. The two remaining cyclic-imine cases are chemically
+  identical under RDKit but emit two valid marker-carrier spellings; the
+  exhaustive canonical oracle reproduces the same residual, so this is not an
+  orbit-pruning regression. Keep the item open until the carrier choice is
+  canonical across equivalent input spellings. The earlier three held-out
+  aromatic-stash residuals remain covered by their dedicated regression
+  fixtures.
 - [x] Add a charged-conjugated-ring atom-order regression probe for
   `[CH-]1C=CC=C1` and two equivalent spellings; all three canonicalize to one
   output. This is a targeted invariant case, not completion of the full
