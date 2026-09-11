@@ -569,7 +569,7 @@
       {"id": "ethanol", "smiles": "CCO", "formula": "C2H6O", "molecular_weight": 46.069, "exact_mass": 46.04188, "tpsa": 20.23, "hbd": 1, "hba": 1, "aromatic_ring_count": 0, "rotatable_bonds": 0, "heavy_atoms": 3},
       {"id": "benzene", "smiles": "c1ccccc1", "formula": "C6H6", "molecular_weight": 78.114, "exact_mass": 78.04698, "tpsa": 0.0, "hbd": 0, "hba": 0, "aromatic_ring_count": 1, "rotatable_bonds": 0, "heavy_atoms": 6},
       {"id": "aspirin", "smiles": "CC(=O)Oc1ccccc1C(=O)O", "formula": "C9H8O4", "molecular_weight": 180.159, "exact_mass": 180.04224, "tpsa": 63.6, "hbd": 1, "hba": 3, "aromatic_ring_count": 1, "rotatable_bonds": 2, "heavy_atoms": 13},
-      {"id": "caffeine", "smiles": "Cn1cnc2c1c(=O)n(c(=O)n2C)C", "formula": "C8H10N4O2", "molecular_weight": 194.194, "exact_mass": 194.08050, "tpsa": 61.82, "hbd": 0, "hba": 6, "aromatic_ring_count": 2, "rotatable_bonds": 0, "heavy_atoms": 14}
+      {"id": "caffeine", "smiles": "Cn1cnc2c1c(=O)n(c(=O)n2C)C", "formula": "C8H10N4O2", "molecular_weight": 194.194, "exact_mass": 194.08050, "tpsa": 61.82, "hbd": 0, "hba": 3, "aromatic_ring_count": 2, "rotatable_bonds": 0, "heavy_atoms": 14}
     ]
   },
   "standardization_contract": {
