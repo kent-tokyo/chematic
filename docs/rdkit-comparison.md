@@ -41,6 +41,15 @@ the [benchmark guide](benchmark.md).
 
 ## Accuracy and parity
 
+The opt-in `Mol.rdkit_mw` profile uses the pinned RDKit average atomic-mass
+values for the currently divergent B, S, and Se entries without changing the
+native `Mol.mw` default. In the v1.0.13 source-built gate it matched RDKit's
+`Descriptors.MolWt` for 4,999 unlabelled rows; the one remaining row was an
+explicit-isotope case and is intentionally fail-closed. The full per-field
+distribution and 12-case structural holdout are recorded in
+[`descriptor-rdkit-diagnostics-v1.0.13.json`](../validation/results/descriptor-rdkit-diagnostics-v1.0.13.json)
+and [`descriptor-rdkit-holdout-v1.0.13.json`](../validation/results/descriptor-rdkit-holdout-v1.0.13.json).
+
 The 4,999-molecule descriptor snapshot reports:
 
 - molecular weight: 99.82% within ±0.01 Da;

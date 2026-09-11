@@ -283,6 +283,20 @@ fn avg_mass(element: Element) -> f64 {
         .unwrap_or(an as f64)
 }
 
+/// Average atomic mass used by the pinned RDKit compatibility profile.
+///
+/// The native table intentionally retains its historical values.  RDKit's
+/// periodic table differs for B, S, and Se, so compatibility callers must opt
+/// into this profile instead of silently changing the native descriptor.
+fn rdkit_avg_mass(element: Element) -> f64 {
+    match element.atomic_number() {
+        5 => 10.812,  // B; RDKit PeriodicTable
+        16 => 32.067, // S; RDKit PeriodicTable
+        34 => 78.960, // Se; RDKit PeriodicTable
+        _ => avg_mass(element),
+    }
+}
+
 /// Monoisotopic (most-abundant-isotope) mass table (Da), indexed the same
 /// way as [`AVG_MASS_TABLE`] -- see its doc comment for provenance, the bug
 /// this replaced, and why the pre-existing ~12 covered elements keep their
@@ -434,6 +448,29 @@ pub fn molecular_weight(mol: &Molecule) -> f64 {
         mw += avg_mass(atom.element);
         let h = implicit_hcount(mol, idx);
         mw += h as f64 * 1.008;
+    }
+    mw
+}
+
+/// Compute molecular weight with the pinned RDKit average-mass convention.
+///
+/// This is deliberately separate from [`molecular_weight`].  It matches the
+/// RDKit periodic-table values for the supported unlabelled-atom profile while
+/// retaining chematic's native defaults for existing callers.  Explicit
+/// isotope-labelled atoms are not silently approximated by this profile and
+/// are rejected by the caller-facing compatibility gates until isotope-table
+/// parity is available.
+pub fn rdkit_molecular_weight(mol: &Molecule) -> f64 {
+    let mut mw = 0.0f64;
+    for (idx, atom) in mol.atoms() {
+        if atom.wildcard {
+            continue;
+        }
+        if atom.isotope.is_some() {
+            return f64::NAN;
+        }
+        mw += rdkit_avg_mass(atom.element);
+        mw += implicit_hcount(mol, idx) as f64 * 1.008;
     }
     mw
 }
@@ -3735,6 +3772,30 @@ mod tests {
             "water MW = {}",
             molecular_weight(&m)
         );
+    }
+
+    #[test]
+    fn rdkit_mw_uses_rdkit_periodic_table_without_changing_native_mw() {
+        let sulfur = mol("CS");
+        let selenium = mol("[Se]");
+        assert!(
+            approx(rdkit_molecular_weight(&sulfur), 48.110, 1e-12),
+            "rdkit profile = {}",
+            rdkit_molecular_weight(&sulfur)
+        );
+        assert!(
+            approx(molecular_weight(&sulfur), 48.108, 1e-12),
+            "native = {}",
+            molecular_weight(&sulfur)
+        );
+        assert!(approx(rdkit_molecular_weight(&selenium), 78.96, 1e-12));
+        assert!(approx(molecular_weight(&selenium), 78.971, 1e-12));
+    }
+
+    #[test]
+    fn rdkit_mw_fails_closed_for_explicit_isotopes() {
+        let isotope = mol("[13C]");
+        assert!(rdkit_molecular_weight(&isotope).is_nan());
     }
 
     // -- Test 3: ethanol molecular weight -----------------------------------

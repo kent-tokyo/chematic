@@ -608,6 +608,32 @@ documentation, and required measurement agree.
   Two acetate cases still differ from the external expected identities after
   charge neutralization and remain disclosed mismatches.
 
+- [x] Add an opt-in RDKit-compatible descriptor profile without changing the
+  native defaults. Start with molecular weight using an RDKit-matched average
+  atomic-mass table, then extend the profile to Crippen LogP/molar refractivity,
+  Fsp3, and ring metrics only where the semantic contract is explicit. The
+  unlabelled molecular-weight profile is exposed as `Mol.rdkit_mw`; isotope
+  labels fail closed until isotope-table parity is implemented.
+- [x] Record per-descriptor error distributions against a pinned RDKit release:
+  exact match, MAE, median absolute error, p95, maximum error, and agreement at
+  the published and stricter tolerances. Keep corpus, RDKit version, and parser
+  status counts in machine-readable evidence. The 5,000-row scorecard is
+  `validation/results/descriptor-rdkit-diagnostics-v1.0.13.json`.
+- [x] Classify every descriptor mismatch by its first known cause: atomic-mass
+  table, implicit hydrogen, aromaticity, charge/valence, Crippen contribution,
+  or ring-perception convention. Do not promote a classification without a
+  reproducible diagnostic case. The diagnostic runner records the first
+  deterministic class and representative SMILES for each mismatch.
+- [x] Add a descriptor holdout corpus for charged atoms, metals, aromatic and
+  fused/bridged rings, macrocycles, isotopes, and unusual valence states. Require
+  the compatibility profile to improve the declared RDKit metrics without
+  regressing the native descriptor and cross-binding contracts. The 12-case
+  holdout and its 12/12 result are checked in under `validation/`.
+- [ ] Define the promotion gate for the compatibility profile: publish the
+  versioned scorecard, require no new high-severity mismatch class, preserve
+  native-output compatibility by default, and only change the default profile
+  after a release-scoped regression review.
+
 ### Performance acceleration track
 
 Prioritize measured, semantics-preserving speedups before invasive force-field

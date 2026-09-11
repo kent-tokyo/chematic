@@ -10,6 +10,27 @@ version, commit, corpus, and commands shown here.
 
 ---
 
+## Current RDKit compatibility profile gate (v1.0.13)
+
+This source-built measurement is separate from the historical 4,999-row
+snapshot below. Using the committed 5,000-row SMILES corpus, molecular weight
+matched for 4,999 unlabelled rows (100% at both 0.01 Da and 1e-6 Da); one
+explicit-isotope row was rejected by design. HBD, TPSA, LogP, MR, and Fsp3
+also matched at strict tolerances. HBA had 3,641/5,000 exact matches and
+aromatic ring count had 4,940/5,000; these remaining mismatch classes are
+recorded rather than presented as full compatibility.
+
+The structural holdout covers charged atoms, a metal, aromatic/fused/bridged
+rings, a macrocycle, an isotope, and unusual atom cases: 12/12 checks passed.
+The scorecards include median, p95, maximum error, published and strict
+agreement, parser counts, and representative first-cause classes.
+
+See [`descriptor-rdkit-diagnostics-v1.0.13.json`](../validation/results/descriptor-rdkit-diagnostics-v1.0.13.json)
+and [`descriptor-rdkit-holdout-v1.0.13.json`](../validation/results/descriptor-rdkit-holdout-v1.0.13.json)
+for the machine-readable evidence.
+
+---
+
 ## Descriptor Accuracy (4,999-molecule ChEMBL subset)
 
 | Descriptor | Agreement | Tolerance | Notes |

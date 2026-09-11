@@ -425,6 +425,14 @@ impl Mol {
         chematic_chem::molecular_weight(&self.inner)
     }
 
+    /// RDKit-compatible average molecular weight for the unlabelled-atom
+    /// profile. Returns ``nan`` for explicit isotope labels until the
+    /// compatibility isotope table is implemented.
+    #[getter]
+    fn rdkit_mw(&self) -> f64 {
+        chematic_chem::rdkit_molecular_weight(&self.inner)
+    }
+
     /// Monoisotopic (exact) mass.
     #[getter]
     fn exact_mass(&self) -> f64 {

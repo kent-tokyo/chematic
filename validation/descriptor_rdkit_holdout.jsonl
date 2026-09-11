@@ -1,0 +1,12 @@
+{"id":"boron","smiles":"B","category":"atomic_mass_table"}
+{"id":"sulfur","smiles":"CS","category":"atomic_mass_table"}
+{"id":"selenium","smiles":"[Se]","category":"atomic_mass_table"}
+{"id":"isotope","smiles":"[13C]","category":"isotope_table"}
+{"id":"charged_oxygen","smiles":"C(=O)[O-]","category":"charge_or_valence"}
+{"id":"charged_nitrogen","smiles":"C[N+](C)(C)C","category":"charge_or_valence"}
+{"id":"benzene","smiles":"c1ccccc1","category":"aromaticity"}
+{"id":"naphthalene","smiles":"c1ccc2ccccc2c1","category":"fused_ring"}
+{"id":"bridged_ring","smiles":"C1CC2CCC1C2","category":"bridged_ring"}
+{"id":"macrocycle","smiles":"C1CCCCCCCCCCC1","category":"macrocycle"}
+{"id":"iron","smiles":"[Fe]","category":"metal"}
+{"id":"pyridine","smiles":"c1ccncc1","category":"aromaticity"}
