@@ -1035,7 +1035,7 @@ impl<'a> CanonicalWriter<'a> {
                 };
                 let chosen_bond = pair[chosen].1;
                 let chosen_order =
-                    Self::direction_for_up(self.mol.bond(chosen_bond).atom1, end, chosen_up);
+                    Self::direction_for_up(self.raw_direction_anchor(chosen_bond), end, chosen_up);
                 self.ez_marker.insert(chosen_bond, chosen_order);
                 self.ez_marker
                     .insert(demoted, Self::plain_order(self.mol.bond(demoted).order));
@@ -1320,7 +1320,8 @@ impl<'a> CanonicalWriter<'a> {
         } else {
             !ref_up
         };
-        let picked = Self::direction_for_up(self.mol.bond(chosen.1).atom1, alkene_end, chosen_up);
+        let picked =
+            Self::direction_for_up(self.raw_direction_anchor(chosen.1), alkene_end, chosen_up);
         vec![
             (chosen.1, picked),
             (other.1, Self::plain_order(self.mol.bond(other.1).order)),
@@ -1442,8 +1443,8 @@ impl<'a> CanonicalWriter<'a> {
         let flip = if let Some(&f) = self.ez_flip.get(&root) {
             f
         } else {
-            let bond_atom1 = self.mol.bond(bidx).atom1;
-            let printed = Self::reorient_for_write(bond_atom1, from_atom, order);
+            let direction_anchor = self.raw_direction_anchor(bidx);
+            let printed = Self::reorient_for_write(direction_anchor, from_atom, order);
             let seed = printed == BondOrder::Down;
             self.ez_flip.insert(root, seed);
             seed
@@ -1459,23 +1460,27 @@ impl<'a> CanonicalWriter<'a> {
         }
     }
 
-    /// Re-orient a mol-relative (`atom1`->`atom2`) directional order for
-    /// reading "from `from_atom` toward the bond's other endpoint" -- the
+    /// Re-orient a directional order relative to its stored direction anchor
+    /// for reading "from `from_atom` toward the bond's other endpoint" -- the
     /// per-occurrence step every [`Self::normalize_ez`] caller must apply to
     /// its return value. Mirrors `crate::writer::direction_from` exactly
     /// (kept as a second copy since this one only ever runs after
     /// `normalize_ez`, which has no equivalent in the plain writer).
-    fn reorient_for_write(bond_atom1: AtomIdx, from_atom: AtomIdx, order: BondOrder) -> BondOrder {
+    fn reorient_for_write(
+        direction_anchor: AtomIdx,
+        from_atom: AtomIdx,
+        order: BondOrder,
+    ) -> BondOrder {
         match order {
             BondOrder::Up => {
-                if bond_atom1 == from_atom {
+                if direction_anchor == from_atom {
                     BondOrder::Up
                 } else {
                     BondOrder::Down
                 }
             }
             BondOrder::Down => {
-                if bond_atom1 == from_atom {
+                if direction_anchor == from_atom {
                     BondOrder::Down
                 } else {
                     BondOrder::Up
@@ -1701,7 +1706,7 @@ impl<'a> CanonicalWriter<'a> {
                 // `normalize_ez`'s doc comment for why).
                 let bond_order = if is_open {
                     let normalized = self.normalize_ez(bidx, atom);
-                    Self::reorient_for_write(self.mol.bond(bidx).atom1, atom, normalized)
+                    Self::reorient_for_write(self.raw_direction_anchor(bidx), atom, normalized)
                 } else {
                     match self.effective_order(bidx) {
                         BondOrder::Up | BondOrder::Down => {
@@ -1780,7 +1785,7 @@ impl<'a> CanonicalWriter<'a> {
             // re-orienting for `atom`'s write direction, never after -- see
             // its doc comment.
             let normalized = self.normalize_ez(bidx, atom);
-            let bond_order = Self::reorient_for_write(self.mol.bond(bidx).atom1, atom, normalized);
+            let bond_order = Self::reorient_for_write(self.raw_direction_anchor(bidx), atom, normalized);
             let bond_order = suppress_standalone_wedge(self.mol, bidx, bond_order);
             let is_last = i == n - 1;
             let parent_arom = self.mol.atom(atom).aromatic;
@@ -3500,6 +3505,34 @@ mod tests {
     /// substituent) and never touch that shared bond on the ketone's
     /// account, or it can move/erase the imine's own marker -- this pin
     /// exercises that guard too, not just the ring-closure/stash mechanism.
+    #[test]
+    fn canonical_reorient_for_write_uses_stash_anchor() {
+        use chematic_core::{Atom, Element, MoleculeBuilder};
+
+        let mut builder = MoleculeBuilder::new();
+        let c1 = builder.add_atom(Atom::aromatic(Element::C));
+        let c2 = builder.add_atom(Atom::aromatic(Element::C));
+        let bidx = builder.add_bond(c2, c1, BondOrder::Aromatic).unwrap();
+        let mut mol = builder.build();
+        mol.set_bond_direction(bidx, BondOrder::Up);
+        mol.set_bond_direction_anchor(bidx, c1);
+
+        let writer = CanonicalWriter::new(&mol, &[]);
+        assert_eq!(
+            writer.raw_direction_anchor(bidx),
+            c1,
+            "the parser-side stash anchor must survive reversed atom storage"
+        );
+        assert_eq!(
+            CanonicalWriter::reorient_for_write(writer.raw_direction_anchor(bidx), c1, BondOrder::Up),
+            BondOrder::Up
+        );
+        assert_eq!(
+            CanonicalWriter::reorient_for_write(writer.raw_direction_anchor(bidx), c2, BondOrder::Up),
+            BondOrder::Down
+        );
+    }
+
     #[test]
     fn ez_carrier_aromatic_stash_ring_closure() {
         assert_ez_carrier_pair_resolved(
