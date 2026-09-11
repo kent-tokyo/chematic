@@ -60,7 +60,8 @@ scripts/check.sh` for the static and unit lanes, followed by
 for the integration lane after reclaiming the repository's regenerable
 `target/debug` cache. All Rust unit and integration targets completed with zero
 failures, and the static,
-format, clippy, binding-manifest, benchmark-index, streaming-safety-manifest,
+format, clippy, binding-manifest, strict-PDB-binding, benchmark-index,
+streaming-safety-manifest,
 cross-engine streaming matrix, MMFF94 RDKit availability oracle,
 roadmap-disposition, and workflow-pin checks
 passed. The default advisory `deny` step cannot acquire its lock because the

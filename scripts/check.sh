@@ -8,6 +8,7 @@ HISTORICAL_VERSION=1.0.10
 echo "=== fmt ===" && cargo fmt --all -- --check
 echo "=== unsafe surface ===" && python3 scripts/check_unsafe_surface.py
 echo "=== shared cross-binding manifest ===" && python3 scripts/check_cross_binding_manifest.py
+echo "=== strict PDB binding contract ===" && python3 scripts/check_pdb_strict_binding_contract.py
 echo "=== static binding surface ===" && python3 scripts/check_binding_surface.py >/dev/null
 echo "=== WASM artifact boundary ===" && SCHEMATIC_BENCHMARK_VERSION=1.0.12 python3 scripts/check_wasm_artifact_boundary.py
 echo "=== benchmark record index ===" && python3 scripts/check_benchmark_index.py
