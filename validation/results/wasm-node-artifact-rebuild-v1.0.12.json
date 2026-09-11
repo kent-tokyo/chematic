@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-11",
+  "target_version": "1.0.12",
+  "scope": "checked_in_node_wasm_artifact_export_surface",
+  "rust_wasm_compile": "not_rebuilt_in_this_check",
+  "checked_in_node_artifact": {
+    "js_path": "crates/chematic-wasm/pkg-node/chematic_wasm.js",
+    "wasm_path": "crates/chematic-wasm/pkg-node/chematic_wasm_bg.wasm",
+    "js_sha256": "57f3925e7f211ecdb7d98dad3ba32cc7fa3eb7972eabd246f359c4541f278fcb",
+    "wasm_sha256": "e57d38f35580dab7d378e8f591d1b54c0f9ba584c936bd79a9854942fd7c5fa0",
+    "runtime_version": "1.0.12",
+    "package_metadata_version": "1.0.12"
+  },
+  "existing_node_artifact_surface": {
+    "source_export_count": 262,
+    "artifact_export_count": 262,
+    "missing_from_artifact": [],
+    "stale_in_artifact": []
+  },
+  "status": "match",
+  "interpretation": "The checked-in v1.0.12 Node/WASM artifact exposes the complete current declared export surface. Source/artifact export parity is a separate claim from cross-platform regeneration and browser-memory evidence."
+}
