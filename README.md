@@ -92,6 +92,14 @@ key; use the fail-closed `canonical_smiles_stable_key()` API where required.
 See [compatibility scope](docs/compatibility-scope.md), [validation](docs/validation.md),
 and [error and resource limits](docs/error-and-limits.md) for exact guarantees.
 
+## For research software users
+
+Use the [researcher guide](docs/researchers.md) for a short path from
+installation to a reproducible result. It explains which APIs are stable,
+which comparisons are version- and corpus-pinned, how unsupported cases are
+reported, and how to cite a specific release. The [benchmark index](docs/benchmark.md)
+keeps performance claims separate from correctness and compatibility evidence.
+
 ## MCP server
 
 `chematic-mcp` provides local chemistry tools over stdio for MCP-compatible

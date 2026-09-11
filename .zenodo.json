@@ -1,0 +1,30 @@
+{
+  "title": "chematic: pure-Rust cheminformatics for Python, Rust, WebAssembly, and MCP",
+  "description": "A bounded, typed cheminformatics runtime with SMILES/SMARTS parsing, molecular descriptors, fingerprints, substructure search, selected chemical formats, Python and WebAssembly bindings, and MCP integration.",
+  "upload_type": "software",
+  "license": "MIT",
+  "version": "1.0.12",
+  "publication_date": "2026-09-10",
+  "keywords": [
+    "cheminformatics",
+    "chemistry",
+    "Rust",
+    "Python",
+    "WebAssembly",
+    "molecular descriptors",
+    "drug discovery"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/kent-tokyo/chematic",
+      "relation": "isIdenticalTo",
+      "scheme": "url"
+    }
+  ],
+  "creators": [
+    {
+      "name": "Kentaro Tanabe",
+      "affiliation": "kent-tokyo"
+    }
+  ]
+}

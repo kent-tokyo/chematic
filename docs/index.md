@@ -15,6 +15,7 @@ same codebase. No backend required for supported browser workflows.</p>
 <p class="chm-links-row">
   <a href="https://github.com/kent-tokyo/chematic">View on GitHub</a>
   <a href="use-cases/browser-app/">Read the browser integration guide</a>
+  <a href="researchers/">Read the researcher guide</a>
   <a href="rdkit-comparison/#wasm-artifact-size">View benchmark methodology</a>
 </p>
 
