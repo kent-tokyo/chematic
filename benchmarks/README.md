@@ -13,7 +13,7 @@ accuracy, or compatibility claims.
 | Compare current similarity search with RDKit | [`2026-09-11-similarity-search-v1.0.12.md`](2026-09-11-similarity-search-v1.0.12.md) |
 | Reproduce the 1.10x hot-path gate | [`2026-09-05-hotpath-110.md`](2026-09-05-hotpath-110.md) |
 | Check file-streaming contracts | [v1.0.12 validation matrix](../validation/results/cross-engine-matrix-v1.0.12.json) |
-| Check current streaming safety gate | [`2026-09-09-streaming-safety-v1.0.10.md`](2026-09-09-streaming-safety-v1.0.10.md) |
+| Check current streaming safety gate | [`2026-09-11-streaming-safety-v1.0.12.md`](2026-09-11-streaming-safety-v1.0.12.md) |
 | Check official RDKit.js comparison gate | [`2026-09-10-official-rdkit-js-gate-v1.0.11.md`](2026-09-10-official-rdkit-js-gate-v1.0.11.md) |
 | Check official RDKit.js browser gate | [`2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md`](2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md) |
 | Check WASM artifact size | [`2026-09-09-wasm-size-v1.0.10.md`](2026-09-09-wasm-size-v1.0.10.md) |
@@ -68,7 +68,8 @@ measurement was rerun.
 | [`2026-09-09-mmff94-nonbonded-gradient-v1.0.10.md`](2026-09-09-mmff94-nonbonded-gradient-v1.0.10.md) | Prepared MMFF94 vdW/electrostatic analytic-gradient parity |
 | [`2026-09-09-uff-prepared-topology-v1.0.10.md`](2026-09-09-uff-prepared-topology-v1.0.10.md) | UFF prepared topology, all 45 declared type-parameter soundness, and analytic-gradient parity |
 | [v1.0.10 RDKit MMFF94 availability oracle](../validation/results/mmff94-rdkit-availability-oracle-v1.0.10.json) | Independent 265-molecule parse, embed, force-field construction, and finite-energy availability boundary |
-| [`2026-09-09-streaming-safety-v1.0.10.md`](2026-09-09-streaming-safety-v1.0.10.md) | Bounded ten-format malformed, oversized, gzip, and generated parser-entry safety gate |
+| [`2026-09-11-streaming-safety-v1.0.12.md`](2026-09-11-streaming-safety-v1.0.12.md) | Current v1.0.12 ten-format malformed, oversized, gzip, and generated parser-entry safety gate |
+| [`2026-09-11-streaming-safety-v1.0.12.json`](2026-09-11-streaming-safety-v1.0.12.json) | Machine-readable current streaming safety gate evidence |
 | [v1.0.10 reaction SMARTS contract](../validation/results/reaction-smarts-bounded-contract-v1.0.10.json) | Bounded 20-case aromatic, bond-order, mapped-agent, agent-OR, disconnected-component assignment/rejection, hydrogen-count, pipe-alternative, and embedding-selection presence contract |
 
 ## Streaming and cross-engine contracts
@@ -87,6 +88,14 @@ unless the record explicitly says that the APIs and process boundaries match.
 | [`2026-09-09-streaming-cross-engine-matrix-v1.0.10.json`](2026-09-09-streaming-cross-engine-matrix-v1.0.10.json) | Machine-readable current ten-format contract matrix |
 | [`2026-09-11-streaming-cross-engine-matrix-v1.0.12.md`](2026-09-11-streaming-cross-engine-matrix-v1.0.12.md) | v1.0.12 same-input contract refresh with explicit parser/process boundaries |
 | [v1.0.12 validation matrix](../validation/results/cross-engine-matrix-v1.0.12.json) | Machine-readable current ten-format contract matrix |
+| [`2026-09-11-same-process-sdf-contract-v1.0.12.json`](2026-09-11-same-process-sdf-contract-v1.0.12.json) | v1.0.12 same-process SDF semantic contract |
+| [`2026-09-11-same-process-v2000-mol-contract-v1.0.12.json`](2026-09-11-same-process-v2000-mol-contract-v1.0.12.json) | v1.0.12 same-process V2000 MOL semantic contract |
+| [`2026-09-11-same-process-v3000-mol-contract-v1.0.12.json`](2026-09-11-same-process-v3000-mol-contract-v1.0.12.json) | v1.0.12 same-process V3000 MOL structural contract |
+| [`2026-09-11-same-process-mol2-contract-v1.0.12.json`](2026-09-11-same-process-mol2-contract-v1.0.12.json) | v1.0.12 same-process MOL2 structural contract |
+| [`2026-09-11-same-process-xyz-contract-v1.0.12.json`](2026-09-11-same-process-xyz-contract-v1.0.12.json) | v1.0.12 same-process XYZ coordinate contract |
+| [`2026-09-11-same-process-extxyz-contract-v1.0.12.json`](2026-09-11-same-process-extxyz-contract-v1.0.12.json) | v1.0.12 same-process Extended XYZ coordinate contract |
+| [`2026-09-11-same-process-pdb-contract-v1.0.12.json`](2026-09-11-same-process-pdb-contract-v1.0.12.json) | v1.0.12 same-process PDB coordinate/signature contract |
+| [`2026-09-11-same-process-cdxml-contract-v1.0.12.json`](2026-09-11-same-process-cdxml-contract-v1.0.12.json) | v1.0.12 same-process CDXML signature contract |
 | [v1.0.10 validation matrix](../validation/results/cross-engine-matrix-v1.0.10.json) | Current 2026-09-10 ten-format matrix used by the fail-closed validator |
 | [`2026-09-09-same-process-sdf-contract-v1.0.10.md`](2026-09-09-same-process-sdf-contract-v1.0.10.md) | Same-process schematic/RDKit SDF semantic contract |
 | [`2026-09-09-same-process-sdf-contract-v1.0.10.json`](2026-09-09-same-process-sdf-contract-v1.0.10.json) | Machine-readable same-process SDF evidence |

@@ -383,19 +383,19 @@ documentation, and required measurement agree.
   hide a format-specific gap. Its twelve checked-in base cases per format now
   also carry a versioned category manifest, and the gate requires every
   format-specific malformed category to be represented before supplemental
-  parser-path cases run. The generated parser-entry wave now also requires
-  eight declared six-case entry families per format, including format-shaped
-  truncation and numeric-or-vocabulary corruption; the result is recorded
-  in `validation/results/streaming-parser-entry-categories-v1.0.10.json`.
-  The generated wave also records a non-empty typed failure variant for all
+  parser-path cases run. The current v1.0.12 run also records all eight
+  declared six-case entry families per format, including format-shaped
+  truncation and numeric-or-vocabulary corruption, in
+  `validation/results/streaming-parser-entry-categories-v1.0.12.json`.
+  The generated wave records a non-empty typed failure variant for all
   80 format/category combinations in
-  `validation/results/streaming-parser-entry-failure-kinds-v1.0.10.json`.
+  `validation/results/streaming-parser-entry-failure-kinds-v1.0.12.json`.
   Exhaustive malformed-corpus coverage remains a separate open item.
-- [x] Record the current v1.0.10 bounded streaming safety gate with 800
+- [x] Record the current v1.0.12 bounded streaming safety gate with 800
   malformed, 10 oversized, and 20 gzip cases passing across the ten runner
-  formats. The 120-case base corpus also has reproducible error-variant
-  taxonomy output for all ten formats; exhaustive malformed-corpus and parser-
-  state coverage remain separate open items.
+  formats. The machine-readable result is
+  `benchmarks/2026-09-11-streaming-safety-v1.0.12.json`; exhaustive
+  malformed-corpus and parser-state coverage remain separate open items.
 - [x] Add bounded Rust streaming batch APIs with cancellation, pull-based
   backpressure, deterministic ordering, and an explicit partial-result
   manifest (`SdfBatchReader`); cross-language streaming parity remains open.

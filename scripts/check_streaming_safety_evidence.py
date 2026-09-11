@@ -20,14 +20,21 @@ def fail(message: str) -> None:
 
 
 def main() -> int:
-    report_path = ROOT / "benchmarks" / f"2026-09-09-streaming-safety-v{workspace_version(ROOT)}.json"
+    version = workspace_version(ROOT)
+    candidates = sorted((ROOT / "benchmarks").glob(f"*-streaming-safety-v{version}.json"))
+    if len(candidates) != 1:
+        fail(
+            f"expected exactly one current streaming safety report for v{version}, "
+            f"found {len(candidates)}"
+        )
+    report_path = candidates[0]
     try:
         report = json.loads(report_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
         fail(f"cannot read report: {error}")
     if report.get("schema_version") != 1:
         fail("schema_version must be 1")
-    if report.get("target_version") != workspace_version(ROOT):
+    if report.get("target_version") != version:
         fail("target version is stale")
     if report.get("status") != "local-current-candidate":
         fail("report is not for the current local candidate")
