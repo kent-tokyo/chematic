@@ -416,9 +416,10 @@ fn hba_paracetamol() {
 
 #[test]
 fn hba_caffeine() {
-    // All four neutral ring nitrogens and both carbonyl oxygens are acceptors.
-    // RDKit CalcNumHBA counts the substituted aromatic [n] atoms as acceptors.
-    assert_eq!(hba_count(&mol("Cn1cnc2c1c(=O)n(c(=O)n2C)C")), 6);
+    // RDKit's Ertl HBA definition counts one pyridine-like ring nitrogen and
+    // both carbonyl oxygens. The three substituted imide nitrogens are not
+    // acceptors.
+    assert_eq!(hba_count(&mol("Cn1cnc2c1c(=O)n(c(=O)n2C)C")), 3);
 }
 
 #[test]
