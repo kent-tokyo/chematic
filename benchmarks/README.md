@@ -14,7 +14,7 @@ accuracy, or compatibility claims.
 | Reproduce the 1.10x hot-path gate | [`2026-09-05-hotpath-110.md`](2026-09-05-hotpath-110.md) |
 | Check file-streaming contracts | [v1.0.12 validation matrix](../validation/results/cross-engine-matrix-v1.0.12.json) |
 | Check current streaming safety gate | [`2026-09-11-streaming-safety-v1.0.12.md`](2026-09-11-streaming-safety-v1.0.12.md) |
-| Check official RDKit.js comparison gate | [`2026-09-10-official-rdkit-js-gate-v1.0.11.md`](2026-09-10-official-rdkit-js-gate-v1.0.11.md) |
+| Check official RDKit.js comparison gate | [`2026-09-11-official-rdkit-js-v1.0.12.md`](2026-09-11-official-rdkit-js-v1.0.12.md) |
 | Current v1.0.12 official RDKit.js Node rerun | [`../validation/results/competitive-benchmark-rdkitjs-2026-09-11-v1.0.12.json`](../validation/results/competitive-benchmark-rdkitjs-2026-09-11-v1.0.12.json) |
 | Current v1.0.12 official RDKit.js Node report | [`2026-09-11-official-rdkit-js-v1.0.12.md`](2026-09-11-official-rdkit-js-v1.0.12.md) |
 | Check official RDKit.js browser gate | [`2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md`](2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md) |
@@ -39,8 +39,8 @@ measurement was rerun.
 | [`2026-09-09-wasm-rdkit-gate.json`](2026-09-09-wasm-rdkit-gate.json) | Machine-readable WASM comparison output and exact fingerprint parity count |
 | [`2026-09-09-wasm-rdkit-paired.md`](2026-09-09-wasm-rdkit-paired.md) | Same-process paired Node/WASM timing follow-up |
 | [`2026-09-09-wasm-rdkit-paired.json`](2026-09-09-wasm-rdkit-paired.json) | Machine-readable paired timing and fingerprint parity output |
-| [`2026-09-10-official-rdkit-js-gate-v1.0.11.md`](2026-09-10-official-rdkit-js-gate-v1.0.11.md) | v1.0.11 same-process Node comparison against `@rdkit/rdkit@2025.3.4-1.0.0`, including artifact digests |
-| [`../validation/results/competitive-benchmark-rdkitjs-2026-09-10-v1.0.11.json`](../validation/results/competitive-benchmark-rdkitjs-2026-09-10-v1.0.11.json) | Machine-readable official RDKit.js comparison result |
+| [`2026-09-11-official-rdkit-js-v1.0.12.md`](2026-09-11-official-rdkit-js-v1.0.12.md) | v1.0.12 same-process Node comparison against `@rdkit/rdkit@2025.3.4-1.0.0`, including artifact digests |
+| [`../validation/results/competitive-benchmark-rdkitjs-2026-09-11-v1.0.12.json`](../validation/results/competitive-benchmark-rdkitjs-2026-09-11-v1.0.12.json) | Machine-readable official RDKit.js comparison result |
 | [`2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md`](2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md) | Real Playwright Chromium comparison against the official package |
 | [`../validation/results/competitive-browser-rdkitjs-2026-09-10-v1.0.11.json`](../validation/results/competitive-browser-rdkitjs-2026-09-10-v1.0.11.json) | Machine-readable browser comparison result |
 | [`2026-09-10-generated-wasm-v3000-gate-v1.0.11.md`](2026-09-10-generated-wasm-v3000-gate-v1.0.11.md) | Generated Web-WASM V3000 metadata preservation gate |
