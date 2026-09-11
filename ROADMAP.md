@@ -881,9 +881,10 @@ records them.
   RDKit representative-family parity gate as a separate, still-open completion
   item.
 - [x] Record the #337 local determinism boundary as a machine-readable result;
-  `validation/results/mmff94-issue337-determinism-v1.0.10.json` captures six
+  the current v1.0.12 report
+  `validation/results/mmff94-issue337-determinism-v1.0.12.json` captures six
   fixtures and 1,536 seeded relabeling checks while keeping RDKit representative
-  family parity explicitly open.
+  family parity explicitly open. The v1.0.10 report remains historical.
 - [x] Measure deterministic ensemble diversity, class-level failure rates,
   symmetry-aware RMSD/TFD, and energy sanity. The local deterministic-diversity
   slice is now recorded for 58/58 same-seed reproductions, 58/58 adjacent-seed
