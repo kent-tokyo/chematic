@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "issue": 503,
+  "measured_at": "2026-09-11",
+  "experiment": "allow aromatic direction-stash candidates on ring-closure close-side",
+  "baseline": {
+    "relabelings_per_molecule": 1024,
+    "divergent_components": 4,
+    "coupled_components": 28
+  },
+  "experiment_result": {
+    "divergent_components": 7,
+    "coupled_components": 28,
+    "cross_correspondence_failures": 0
+  },
+  "status": "rejected",
+  "conclusion": "Relaxing the close-side rejection for aromatic direction stashes worsens the atom-relabeling residual from 4/28 to 7/28. It is not a safe fix and must not be promoted. The existing close-side guard remains in production."
+}
