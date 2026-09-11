@@ -151,8 +151,8 @@ Full worked examples → [Use cases](use-cases/)
 | AI agent / MCP integration | Built-in, 20 tools (stdio only) | — | — |
 | Ecosystem maturity | Growing (2024–) | Established (2006–) | Established; official JavaScript/WASM distribution path |
 
-The chematic bundle was measured 2026-09-09 from the v1.0.10 release line; the v1.0.11 release retains this
-historical artifact measurement. RDKit.js is a
+The chematic bundle was measured in the v1.0.12 Node/WASM gate on 2026-09-11;
+the older v1.0.10 size record remains available as historical evidence. RDKit.js is a
 pinned historical raw-size comparator because its gzip-over-the-wire size was not independently
 measured. Full detail, including where chematic is weaker: [Detailed RDKit comparison](rdkit-comparison.md).
 

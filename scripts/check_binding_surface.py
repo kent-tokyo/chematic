@@ -16,7 +16,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-REPORT = ROOT / "validation" / "results" / "binding_surface_inventory-v1.0.10.json"
+REPORT = ROOT / "validation" / "results" / "binding_surface_inventory-v1.0.12.json"
 WASM = ROOT / "crates" / "chematic-wasm" / "src"
 PY = ROOT / "crates" / "chematic-py" / "src"
 DECL_RE = re.compile(

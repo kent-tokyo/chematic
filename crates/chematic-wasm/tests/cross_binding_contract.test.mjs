@@ -14,10 +14,10 @@ const wasm = await import(path.join(repoRoot, "crates/chematic-wasm/pkg-node/che
 
 assert.equal(fixture.schema_version, 1);
 assert.equal(fixture.fixtures.length, 4);
-assert.equal(fixture.operation_manifest.operations.length, 56);
+assert.equal(fixture.operation_manifest.operations.length, 57);
 assert.equal(
   new Set(fixture.operation_manifest.operations.map(({ id }) => id)).size,
-  56,
+  57,
 );
 
 const orcaOutput = fixture.orca_output_contract;
@@ -279,6 +279,14 @@ const cmlRoundtrip = wasm.mol_from_cml(wasm.to_cml(cmlMol));
 assert.equal(cmlRoundtrip.atom_count(), cml.expected.atom_count);
 cmlRoundtrip.free();
 cmlMol.free();
+
+const strictCml = fixture.cml_strict_contract;
+const strictCmlMol = wasm.mol_from_cml_strict(strictCml.valid_input);
+assert.equal(strictCmlMol.atom_count(), strictCml.expected_atom_count);
+strictCmlMol.free();
+for (const input of strictCml.rejected_inputs) {
+  assert.throws(() => wasm.mol_from_cml_strict(input), undefined, input);
+}
 
 const cdxml = fixture.cdxml_contract;
 const cdxmlMol = wasm.mol_from_cdxml(cdxml.input);

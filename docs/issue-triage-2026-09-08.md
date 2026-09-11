@@ -239,6 +239,12 @@ synthetic routing/incident fixtures returned the expected route or no-route
 decisions. This confirms the local shell contract, not the hosted sensitivity
 calibration or required-adjacent trust gate.
 
+On 2026-09-11, `scripts/check_criterion_gate_calibration.py` was added to
+validate the seven-case calibration manifest, the 1.04 thresholds, and the
+workflow rule that contaminated runs are reported as inconclusive rather than
+blocking. This strengthens the local contract only; it is not hosted
+calibration evidence and does not close #70.
+
 ## Issue #462 — polymer repeat editing boundary
 
 The typed semantic command surface now includes
@@ -865,8 +871,8 @@ regression test.
 
 The exact twin/orbit path was re-run on 2026-09-11 with the checked-in Tier A/B
 harness and the canonical-search instrumentation feature. The run had zero
-old/new correctness mismatches, zero search-budget exhaustions, and an 8.16x
-Tier A geometric-mean speedup (Tier B negative control: 2.48x). Across Tier A
+old/new correctness mismatches, zero search-budget exhaustions, and an 8.19x
+Tier A geometric-mean speedup (Tier B negative control: 2.44x). Across Tier A
 the exhaustive engine visited 6,186 leaves while the orbit-pruned engine wrote
 13 leaves, visited 62 nodes, and performed 46 orbit tests; the repeated
 multi-Boc and multi-pivaloyl fixtures each collapsed to one leaf from 432
@@ -876,7 +882,8 @@ This is local proxy evidence only. The exact RENKIN witness and its preferred
 2x acceptance target are external to this checkout, so #372 remains open and
 no downstream throughput claim is made.
 
-Evidence: `cargo run --release -p chematic-smiles --features
+Evidence: `validation/results/canonical-orbit-perf-v1.0.12.json` and
+`cargo run --release -p chematic-smiles --features
 canonical-search-instrumentation --example canonical_orbit_perf`.
 
 ## P3 Explorer browser adversarial smoke — completed local slice

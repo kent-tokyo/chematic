@@ -1,0 +1,26 @@
+{
+  "target_version": "1.0.12",
+  "measured_at": "2026-09-11",
+  "command": "cargo run --release -p chematic-smiles --features canonical-search-instrumentation --example canonical_orbit_perf",
+  "tier_a": {
+    "fixtures": 13,
+    "correctness_mismatches": 0,
+    "parse_failures": 0,
+    "empty_outputs": 0,
+    "budget_exhaustions": 0,
+    "old_leaves": 6186,
+    "new_leaves": 13,
+    "new_nodes_visited": 62,
+    "new_orbit_tests": 46,
+    "geomean_speedup": 8.19
+  },
+  "tier_b": {
+    "fixtures": 6,
+    "correctness_mismatches": 0,
+    "parse_failures": 0,
+    "empty_outputs": 0,
+    "budget_exhaustions": 0,
+    "geomean_speedup": 2.44
+  },
+  "scope": "Local Tier A/B proxy only. The exact RENKIN witness and downstream end-to-end throughput remain unmeasured and are required before closing issue #372."
+}

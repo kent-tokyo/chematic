@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the intentional source-vs-checked-in Node/WASM boundary."""
+"""Validate the source-vs-checked-in Node/WASM export boundary."""
 
 from __future__ import annotations
 
@@ -39,8 +39,6 @@ def main() -> int:
         errors.append("recorded missing export list is stale")
     if recorded.get("stale_in_artifact") != stale:
         errors.append("recorded stale export list is stale")
-    if not missing and not stale:
-        errors.append("boundary unexpectedly claims no artifact drift")
     if errors:
         print("WASM artifact boundary failures:", file=sys.stderr)
         print("\n".join(errors), file=sys.stderr)

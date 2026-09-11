@@ -66,11 +66,16 @@ reproducible evidence. Missing stable packages, browser engines, or
 
 ## Current candidate
 
-Competitive-response gate status (2026-09-10):
+Competitive-response gate status (2026-09-11):
 
 - [x] Official `@rdkit/rdkit` Node and Playwright Chromium comparison, pinned
   package/artifact digests, 1,000-row ECFP4/Morgan parity, and separate size,
   startup, throughput, and memory evidence.
+- [x] Re-run the official Node comparison against the current v1.0.12
+  `pkg-node` artifact. The same-process 1,000-row lane records 1,000/1,000
+  RDKit-compatible ECFP4/Morgan matches and current artifact/package digests in
+  `validation/results/competitive-benchmark-rdkitjs-2026-09-11-v1.0.12.json`;
+  browser-engine evidence remains the separate historical slice above.
 - [x] Negative-charge resonance CIP corpus with four checked-in cases and
   deterministic atom-order permutations; labels remain invariant in the
   declared scope.
@@ -413,6 +418,14 @@ documentation, and required measurement agree.
   WASM now has bounded resumable SDF/XYZ/Extended XYZ manifest slices plus the
   same bounded recovery rule. Browser-artifact parity and broader
   error-recovery semantics remain open.
+- [x] Separate the CML structural boundary into the backwards-compatible
+  lenient `parse_cml` path and opt-in strict Rust/Python/WASM entry points.
+  Strict parsing rejects missing or empty molecules and mismatched/unclosed
+  XML elements; the focused Rust suite covers acceptance, rejection, and
+  lenient compatibility. The regenerated Node/WASM artifact also executes the
+  strict valid case and rejects missing, empty, unbalanced, and mismatched-tag
+  cases. Broader strict fixtures and exhaustive CML parser-state coverage
+  remain open.
 - [ ] Measure only equivalent operations against installed RDKit and Open
   Babel versions on identical inputs; report sdfrust separately. A same-
   process Python SDF semantic contract now confirms record/failure counts and
@@ -513,6 +526,10 @@ documentation, and required measurement agree.
   nine spellings; the two representation-dependent canonical outputs remain
   intentionally distinct and fail-closed rather than receiving an
   index-based winner.
+- [x] Add a fail-closed evidence validator for the Issue #503 residual audit.
+  It verifies the 1024-relabeling 4/28 boundary, zero correspondence failures,
+  and the rejected close-side experiment's worsened 7/28 result without
+  treating either as completion of canonical invariance.
 - [x] Add a bounded default-Hückel fused/non-alternant fallback for
   all-carbon odd/odd envelopes, with azulene regression coverage; keep the
   broader `RdkitLike` model separately gated.
@@ -701,11 +718,11 @@ records them.
   published v1.0 boundary.
 - [x] Make Rust, Python, Node, and WASM consume one fixture schema and one
   versioned expected-result manifest for the currently shared stable surface.
-  The manifest has an explicit, CI-validated inventory of 56 shared operations
+  The manifest has an explicit, CI-validated inventory of 57 shared operations
   with four declared binding surfaces and checked-in test anchors; the former
   source-only contracts (CJSON, strict PDB, PDBQT, SMARTS validity, and
   reaction SMARTS) now have generated Node/WASM runtime coverage. The current
-  source/artifact WASM export audit is 262/262 with no missing or stale names.
+  source/artifact WASM export audit is 263/263 with no missing or stale names.
   This closes the declared current shared surface; it does not claim that
   every public API is already shared across all four bindings.
   This inventory is deliberately scoped to the covered surface and does not
@@ -727,7 +744,7 @@ records them.
   boundary rather than claiming a Node molecule-handle API.
   MolJSON now also has an explicit four-binding parse/serialize/parse round-trip
   contract; serialization output is checked semantically rather than byte-for-byte.
-  The current source/artifact WASM export audit is 262/262 with no missing or
+  The current source/artifact WASM export audit is 263/263 with no missing or
   stale names. The manifest also covers Extended XYZ, typed reaction-document
   round trips, Markush/polymer expansion, XYZ/Extended XYZ batch recovery,
   descriptors, standardization, fingerprints, CJSON, strict PDB, PDBQT,
@@ -968,12 +985,13 @@ See [`docs/compatibility-scope.md`](docs/compatibility-scope.md).
 
 ## Execution order
 
-1. Finish the P0 scorecard validator.
-2. Extend equivalent format-streaming benchmarks and input-safety fixtures.
-3. Close canonical E/Z invariance before broadening identity-dependent APIs.
-4. Unify stable cross-binding fixtures and expected results.
-5. Stabilize fingerprint/descriptor contracts and held-out reports.
-6. Advance reaction, 3D/materials, and ecosystem breadth only behind their
+1. Complete the remaining local P1 parser-state and malformed-corpus coverage.
+2. Close canonical E/Z invariance for the supported domain before broadening
+   identity-dependent APIs.
+3. Extend equivalent-operation measurements and unify stable cross-binding
+   fixtures with current-version evidence.
+4. Stabilize fingerprint/descriptor contracts and held-out reports.
+5. Advance reaction, 3D/materials, and ecosystem breadth only behind their
    respective correctness and measurement gates.
 
 Do not start broad feature expansion while a shared primitive has a known

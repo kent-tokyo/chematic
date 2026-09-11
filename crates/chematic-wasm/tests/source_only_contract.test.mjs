@@ -27,6 +27,17 @@ assert.equal(strictPdb.atom_count(), fixture.pdb_strict_contract.expected.atom_c
 strictPdb.free();
 assert.throws(() => wasm.mol_from_pdb_strict(fixture.pdb_strict_contract.malformed_input));
 
+for (const { start, end, replacement, field } of fixture.pdb_strict_contract.fixed_column_cases) {
+  const malformedField =
+    fixture.pdb_strict_contract.input.slice(0, start) +
+    replacement +
+    fixture.pdb_strict_contract.input.slice(end);
+  assert.throws(
+    () => wasm.mol_from_pdb_strict(malformedField),
+    new RegExp(`invalid PDB ${field} field`),
+  );
+}
+
 const pdbqt = wasm.mol_from_pdbqt(fixture.pdbqt_contract.input);
 assert.equal(pdbqt.atom_count(), fixture.pdbqt_contract.expected.atom_count);
 pdbqt.free();

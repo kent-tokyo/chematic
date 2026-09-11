@@ -541,6 +541,28 @@ pub fn mol_from_cml(cml: &str) -> Result<MolHandle, JsValue> {
     })
 }
 
+/// Parse a structurally valid, non-empty CML string into a `MolHandle`.
+///
+/// This opt-in strict boundary rejects missing/empty molecules and malformed
+/// XML while `mol_from_cml` retains its historical lenient behavior.
+#[wasm_bindgen]
+pub fn mol_from_cml_strict(cml: &str) -> Result<MolHandle, JsValue> {
+    if cml.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str("CML input too large"));
+    }
+    let (mol, _coords) =
+        chematic_mol::parse_cml_strict(cml).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!(
+            "molecule too large (max {} atoms)",
+            WASM_MAX_ATOMS
+        )));
+    }
+    Ok(MolHandle {
+        inner: std::rc::Rc::new(mol),
+    })
+}
+
 /// Serialise a `MolHandle` to a CML string with 2D coordinates.
 ///
 /// Coordinates are generated using the same 2D layout engine as `to_mol_block`.

@@ -3,16 +3,14 @@
 Generated from checked-in manifests by `python3 scripts/generate_compatibility_dashboard.py`.
 This is a compatibility-contract dashboard, not a universal RDKit parity or speed claim.
 
-- Reference release: `1.0.11`
-- Contract target: `1.0.10` (the checked-in manifest and streaming artifact
-  filenames are historical, version-pinned evidence)
+- Target version: `1.0.12`
 - Regeneration: deterministic, offline, clean-checkout compatible
-- Contract manifest: `validation/cross_binding_contract.json` (SHA-256 `b3f75bbf987787dcc9e76e0bb5acd1ed31f9107d9826b331363b16d1d786b0eb`)
-- Streaming matrix: `benchmarks/2026-09-09-streaming-cross-engine-matrix-v1.0.10.json` (SHA-256 `57553b435484219a7d4adc8ef25f0306538e5e7381bc78e632fa1af051236d56`)
+- Contract manifest: `validation/cross_binding_contract.json` (SHA-256 `223d37f4af3ef2a0b64141e75d8661fbeb72acb686603fb7d5fe0a5c813f404e`)
+- Streaming matrix: `validation/results/cross-engine-matrix-v1.0.12.json` (SHA-256 `fc8ad57ebfad30145436d98776363b0cf6852c5430f65c3f210074a15d580526`)
 
 ## Shared binding contract
 
-Operation inventory: `50` currently shared operations; validate with `python3 scripts/check_cross_binding_manifest.py`.
+Operation inventory: `56` currently shared operations; validate with `python3 scripts/check_cross_binding_manifest.py`.
 
 | Area | Checked-in assertions | Status |
 |---|---:|---|
@@ -21,7 +19,7 @@ Operation inventory: `50` currently shared operations; validate with `python3 sc
 | `standardization_contract` | 10 | covered by versioned fixture contract |
 | `fingerprint_contract` | 6 | covered by versioned fixture contract |
 | `fingerprint_detail_contract` | 4 | covered by versioned fixture contract |
-| `reaction_application_contract` | 12 | covered by versioned fixture contract |
+| `reaction_application_contract` | 18 | covered by versioned fixture contract |
 | `adversarial` | 8 | covered by versioned fixture contract |
 
 ## Streaming record/failure contract

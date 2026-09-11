@@ -1074,6 +1074,16 @@ fn mol_from_cml_ethanol() {
 }
 
 #[test]
+fn strict_cml_binding_boundary_rejects_empty_and_unbalanced_input() {
+    let valid =
+        "<molecule>\n<atomArray>\n<atom id=\"a1\" elementType=\"C\"/>\n</atomArray>\n</molecule>";
+    let (mol, _) = chematic_mol::parse_cml_strict(valid).unwrap();
+    assert_eq!(mol.atom_count(), 1);
+    assert!(chematic_mol::parse_cml_strict("<cml/>").is_err());
+    assert!(chematic_mol::parse_cml_strict("<molecule><atomArray>").is_err());
+}
+
+#[test]
 fn to_cml_contains_molecule_tag() {
     let mol = parse("CC(=O)O");
     let cml = to_cml(&mol);

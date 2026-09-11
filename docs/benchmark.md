@@ -74,11 +74,11 @@ for the fail-closed matrix check.
 
 ## Artifact size
 
-The optimized v1.0.10 release-line WASM artifact was measured at **3.73 MB raw /
-1.36 MB gzip** with `wasm-pack 0.13.1` and `wasm-opt 130`. This is a dated
-artifact measurement, not a permanent release bundle-size guarantee. Exact
-hashes and commands are in the
-[WASM artifact record](../benchmarks/2026-09-09-wasm-size-v1.0.10.md).
+The current v1.0.12 Node artifact was measured at **3.93 MB raw / 1.43 MB gzip**
+with `wasm-pack 0.13.1`, `wasm-bindgen 0.2.121`, and `wasm-opt 130`. This is a
+dated artifact measurement, not a permanent release bundle-size guarantee.
+Exact hashes and commands are in the
+[official RDKit.js comparison record](../benchmarks/2026-09-11-official-rdkit-js-v1.0.12.md).
 
 ## Reproduction entry points
 
@@ -89,9 +89,8 @@ hashes and commands are in the
 | Hot-path A/B | [`2026-09-05-hotpath-110.md`](../benchmarks/2026-09-05-hotpath-110.md) |
 | File streaming | [`2026-09-04-streaming-formats.md`](../benchmarks/2026-09-04-streaming-formats.md) |
 | Cross-engine contracts | [`benchmarks/README.md`](../benchmarks/README.md#streaming-and-cross-engine-contracts) |
-| WASM artifact | [`2026-09-09-wasm-size-v1.0.10.md`](../benchmarks/2026-09-09-wasm-size-v1.0.10.md) |
-| Official RDKit.js gate | [`2026-09-10-official-rdkit-js-gate-v1.0.11.md`](../benchmarks/2026-09-10-official-rdkit-js-gate-v1.0.11.md) |
-| Official RDKit.js browser gate | [`2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md`](../benchmarks/2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md) |
+| WASM artifact and official RDKit.js gate | [`2026-09-11-official-rdkit-js-v1.0.12.md`](../benchmarks/2026-09-11-official-rdkit-js-v1.0.12.md) |
+| Official RDKit.js browser gate | Historical v1.0.11 record; current browser rerun remains open |
 | Full inventory | [`benchmarks/README.md`](../benchmarks/README.md) |
 
 ## Hardware and interpretation

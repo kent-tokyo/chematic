@@ -2021,6 +2021,10 @@ def from_cml(cml_str: str) -> Mol:
     """
     ...
 
+def from_cml_strict(cml_str: str) -> Mol:
+    """Parse structurally valid, non-empty CML; reject malformed XML."""
+    ...
+
 def from_cdxml(cdxml_str: str) -> Mol:
     """Parse a ChemDraw XML (CDXML) string and return a :class:`Mol`.
 

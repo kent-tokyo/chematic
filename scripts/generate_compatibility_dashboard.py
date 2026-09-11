@@ -24,10 +24,18 @@ DEFAULT_OUTPUT = ROOT / "docs" / "compatibility-dashboard.md"
 def current_streaming_matrix() -> Path:
     """Select the checked-in matrix for the current workspace version."""
     version = workspace_version(ROOT)
-    candidates = sorted(ROOT.glob(f"benchmarks/*-streaming-cross-engine-matrix-v{version}.json"))
+    # Current matrix refreshes may be stored under validation/results when the
+    # record is a machine-readable gate rather than a dated benchmark note.
+    # Prefer the canonical validation result, then retain compatibility with
+    # older dated benchmark snapshots.
+    candidates = [
+        ROOT / "validation" / "results" / f"cross-engine-matrix-v{version}.json",
+        *sorted(ROOT.glob(f"benchmarks/*-streaming-cross-engine-matrix-v{version}.json")),
+    ]
+    candidates = [path for path in candidates if path.is_file()]
     if not candidates:
         raise FileNotFoundError(f"no streaming matrix for workspace version {version}")
-    return candidates[-1]
+    return candidates[0]
 
 
 def load(path: Path) -> dict:

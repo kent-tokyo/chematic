@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "issue": 503,
+  "measured_at": "2026-09-11",
+  "command": "python3 scripts/ez_shared_carrier_coupling_mechanism_diagnosis.py --relabelings 1024",
+  "corpus": "scripts/descriptor_census_corpus.smi",
+  "relabelings_per_molecule": 1024,
+  "coupled_components": 28,
+  "component_sizes": [2],
+  "component_shapes": ["path"],
+  "cross_correspondence_failures": 0,
+  "divergent_components": 4,
+  "divergent_inputs": [
+    "CC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+    "CCCC(C)/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+    "COCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+    "O=C(Nc1ccc(C[C@H](/N=c2\\c(O)c(O)\\c2=N/CCCC(F)(F)F)C(=O)O)cc1)c1c(Cl)cncc1Cl"
+  ],
+  "axis2_alternates_total": 1,
+  "status": "needs_research",
+  "interpretation": "The 1024-seed result reproduces the 256-seed result (4/28), so the four aromatic direction-stash residuals are stable under this relabeling sample rather than a small-sample fluctuation. No canonical winner is selected. The stable-key API remains fail-closed for affected coupled systems until a representation-independent carrier traversal is proven."
+}

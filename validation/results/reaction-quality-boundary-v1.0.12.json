@@ -19,9 +19,11 @@
     "rust": {"status": "pass", "command": "cargo test -p chematic-rxn --locked --offline --test cross_binding_contract"},
     "node_wasm": {"status": "pass", "command": "node --test crates/chematic-wasm/tests/rxn_document_contract.test.mjs"},
     "python": {
-      "status": "environment_blocked",
-      "command": "python3 -m pytest -p no:asyncio -q crates/chematic-py/tests/test_cross_binding_contract.py -k reaction_application_contract",
-      "reason": "the interpreter imported the installed schematic v1.0.3 package, which predates atomic-number SMIRKS primitives; no workspace-wheel result is claimed"
+      "status": "pass",
+      "command": "TMPDIR=/private/tmp VIRTUAL_ENV=.venv-v1gate .venv-v1gate/bin/pytest -q -p no:asyncio crates/chematic-py/tests/test_cross_binding_contract.py -k reaction_application_contract",
+      "tests": 1,
+      "tests_passed": 1,
+      "environment": "source-built workspace v1.0.12 extension"
     }
   },
   "not_claimed": [

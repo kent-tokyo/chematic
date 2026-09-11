@@ -34,6 +34,7 @@
       {"id": "mol2_roundtrip", "contract": "mol2_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-mol/src/mol2_tripos.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
       {"id": "parse_cml", "contract": "cml_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-mol/src/cml.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
       {"id": "cml_roundtrip", "contract": "cml_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-mol/src/cml.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
+      {"id": "parse_cml_strict", "contract": "cml_strict_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-mol/src/cml.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
       {"id": "parse_cdxml", "contract": "cdxml_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-mol/src/cdxml.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
       {"id": "cdxml_roundtrip", "contract": "cdxml_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-mol/src/cdxml.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
       {"id": "parse_mmcif", "contract": "mmcif_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-mol/src/mmcif.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
@@ -243,6 +244,13 @@
     "input": "<?xml version=\"1.0\"?>\n<molecule xmlns=\"http://www.xml-cml.org/schema\">\n  <atomArray>\n    <atom id=\"a1\" elementType=\"C\" x2=\"0.0\" y2=\"0.0\"/>\n    <atom id=\"a2\" elementType=\"C\" x2=\"1.5\" y2=\"0.0\"/>\n    <atom id=\"a3\" elementType=\"O\" x2=\"3.0\" y2=\"0.0\"/>\n  </atomArray>\n  <bondArray>\n    <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n    <bond atomRefs2=\"a2 a3\" order=\"1\"/>\n  </bondArray>\n</molecule>\n",
     "expected": {"atom_count": 3}
   },
+  "cml_strict_contract": {
+    "schema_version": 1,
+    "scope": "opt_in_structural_non_empty_cml",
+    "valid_input": "<molecule><atomArray><atom id=\"a1\" elementType=\"C\"/></atomArray><bondArray/></molecule>",
+    "expected_atom_count": 1,
+    "rejected_inputs": ["<cml/>", "<molecule><atomArray>", "<molecule><atomArray/></molecule>", "<molecule><atomArray></molecule></atomArray>"]
+  },
   "cdxml_contract": {
     "schema_version": 1,
     "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<fragment>\n<n id=\"1\" p=\"10.0 20.0\" Element=\"6\" NumHydrogens=\"3\"/>\n<n id=\"2\" p=\"25.0 20.0\" Element=\"6\" NumHydrogens=\"2\"/>\n<n id=\"3\" p=\"40.0 20.0\" Element=\"8\" NumHydrogens=\"1\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n<b B=\"2\" E=\"3\" Order=\"1\"/>\n</fragment>\n</CDXML>\n",
@@ -269,7 +277,14 @@
     "input": "ATOM      1  CA  ALA A   1      10.000  11.000  12.000  1.00 20.00           C  \n",
     "expected": {"atom_count": 1, "coords": [[10.0, 11.0, 12.0]]},
     "malformed_input": "ATOM      1  CA  ALA A   1      10.000  11.000\n",
-    "malformed_error_field": "z"
+    "malformed_error_field": "z",
+    "fixed_column_cases": [
+      {"start": 6, "end": 11, "replacement": " nope", "field": "serial"},
+      {"start": 22, "end": 26, "replacement": "nope", "field": "residue sequence"},
+      {"start": 30, "end": 38, "replacement": "    nope", "field": "x"},
+      {"start": 38, "end": 46, "replacement": "    nope", "field": "y"},
+      {"start": 46, "end": 54, "replacement": "    nope", "field": "z"}
+    ]
   },
   "pdbqt_contract": {
     "schema_version": 1,
@@ -554,7 +569,7 @@
       {"id": "ethanol", "smiles": "CCO", "formula": "C2H6O", "molecular_weight": 46.069, "exact_mass": 46.04188, "tpsa": 20.23, "hbd": 1, "hba": 1, "aromatic_ring_count": 0, "rotatable_bonds": 0, "heavy_atoms": 3},
       {"id": "benzene", "smiles": "c1ccccc1", "formula": "C6H6", "molecular_weight": 78.114, "exact_mass": 78.04698, "tpsa": 0.0, "hbd": 0, "hba": 0, "aromatic_ring_count": 1, "rotatable_bonds": 0, "heavy_atoms": 6},
       {"id": "aspirin", "smiles": "CC(=O)Oc1ccccc1C(=O)O", "formula": "C9H8O4", "molecular_weight": 180.159, "exact_mass": 180.04224, "tpsa": 63.6, "hbd": 1, "hba": 3, "aromatic_ring_count": 1, "rotatable_bonds": 2, "heavy_atoms": 13},
-      {"id": "caffeine", "smiles": "Cn1cnc2c1c(=O)n(c(=O)n2C)C", "formula": "C8H10N4O2", "molecular_weight": 194.194, "exact_mass": 194.08050, "tpsa": 61.82, "hbd": 0, "hba": 6, "aromatic_ring_count": 2, "rotatable_bonds": 0, "heavy_atoms": 14}
+      {"id": "caffeine", "smiles": "Cn1cnc2c1c(=O)n(c(=O)n2C)C", "formula": "C8H10N4O2", "molecular_weight": 194.194, "exact_mass": 194.08050, "tpsa": 61.82, "hbd": 0, "hba": 3, "aromatic_ring_count": 2, "rotatable_bonds": 0, "heavy_atoms": 14}
     ]
   },
   "standardization_contract": {
