@@ -66,11 +66,16 @@ reproducible evidence. Missing stable packages, browser engines, or
 
 ## Current candidate
 
-Competitive-response gate status (2026-09-10):
+Competitive-response gate status (2026-09-11):
 
 - [x] Official `@rdkit/rdkit` Node and Playwright Chromium comparison, pinned
   package/artifact digests, 1,000-row ECFP4/Morgan parity, and separate size,
   startup, throughput, and memory evidence.
+- [x] Re-run the official Node comparison against the current v1.0.12
+  `pkg-node` artifact. The same-process 1,000-row lane records 1,000/1,000
+  RDKit-compatible ECFP4/Morgan matches and current artifact/package digests in
+  `validation/results/competitive-benchmark-rdkitjs-2026-09-11-v1.0.12.json`;
+  browser-engine evidence remains the separate historical slice above.
 - [x] Negative-charge resonance CIP corpus with four checked-in cases and
   deterministic atom-order permutations; labels remain invariant in the
   declared scope.

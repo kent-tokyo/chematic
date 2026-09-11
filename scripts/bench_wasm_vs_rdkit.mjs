@@ -132,8 +132,15 @@ async function runSchematic(args, smiles, warmup) {
   const wasmPath = join(packageDir, "chematic_wasm_bg.wasm");
   if (typeof module.initSync === "function") {
     module.initSync({ module: readFileSync(wasmPath) });
-  } else {
+  } else if (typeof module.default === "function") {
     await module.default(pathToFileURL(wasmPath));
+  } else if (typeof module.parse_smiles === "function") {
+    // The wasm-pack `nodejs` target instantiates the module while it is
+    // imported and intentionally exports no default initializer.  Keep this
+    // path explicit so a missing or incompatible artifact cannot be mistaken
+    // for a successful initialization.
+  } else {
+    throw new Error("schematic WASM package exports neither an initializer nor parse_smiles");
   }
   const initMs = performance.now() - initStart;
   const parse = (value) => module.parse_smiles(value);

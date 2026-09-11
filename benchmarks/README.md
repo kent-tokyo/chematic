@@ -15,6 +15,8 @@ accuracy, or compatibility claims.
 | Check file-streaming contracts | [v1.0.12 validation matrix](../validation/results/cross-engine-matrix-v1.0.12.json) |
 | Check current streaming safety gate | [`2026-09-11-streaming-safety-v1.0.12.md`](2026-09-11-streaming-safety-v1.0.12.md) |
 | Check official RDKit.js comparison gate | [`2026-09-10-official-rdkit-js-gate-v1.0.11.md`](2026-09-10-official-rdkit-js-gate-v1.0.11.md) |
+| Current v1.0.12 official RDKit.js Node rerun | [`../validation/results/competitive-benchmark-rdkitjs-2026-09-11-v1.0.12.json`](../validation/results/competitive-benchmark-rdkitjs-2026-09-11-v1.0.12.json) |
+| Current v1.0.12 official RDKit.js Node report | [`2026-09-11-official-rdkit-js-v1.0.12.md`](2026-09-11-official-rdkit-js-v1.0.12.md) |
 | Check official RDKit.js browser gate | [`2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md`](2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md) |
 | Check WASM artifact size | [`2026-09-09-wasm-size-v1.0.10.md`](2026-09-09-wasm-size-v1.0.10.md) |
 | Find older measurements | [Historical snapshots](#historical-snapshots) |
