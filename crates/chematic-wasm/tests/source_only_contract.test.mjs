@@ -27,6 +27,24 @@ assert.equal(strictPdb.atom_count(), fixture.pdb_strict_contract.expected.atom_c
 strictPdb.free();
 assert.throws(() => wasm.mol_from_pdb_strict(fixture.pdb_strict_contract.malformed_input));
 
+const strictPdbFields = [
+  [6, 11, " nope", "serial"],
+  [22, 26, "nope", "residue sequence"],
+  [30, 38, "   nope", "x"],
+  [38, 46, "   nope", "y"],
+  [46, 54, "   nope", "z"],
+];
+for (const [start, end, replacement, field] of strictPdbFields) {
+  const malformedField =
+    fixture.pdb_strict_contract.input.slice(0, start) +
+    replacement +
+    fixture.pdb_strict_contract.input.slice(end);
+  assert.throws(
+    () => wasm.mol_from_pdb_strict(malformedField),
+    new RegExp(`invalid PDB ${field} field`),
+  );
+}
+
 const pdbqt = wasm.mol_from_pdbqt(fixture.pdbqt_contract.input);
 assert.equal(pdbqt.atom_count(), fixture.pdbqt_contract.expected.atom_count);
 pdbqt.free();

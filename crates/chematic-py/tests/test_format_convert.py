@@ -86,6 +86,25 @@ def test_pdb_strict_parser_is_opt_in():
         chematic.from_pdb_strict(malformed)
 
 
+@pytest.mark.parametrize(
+    ("start", "end", "replacement", "field"),
+    [
+        (6, 11, " nope", "serial"),
+        (22, 26, "nope", "residue sequence"),
+        (30, 38, "   nope", "x"),
+        (38, 46, "   nope", "y"),
+        (46, 54, "   nope", "z"),
+    ],
+)
+def test_pdb_strict_parser_reports_each_fixed_column(start, end, replacement, field):
+    valid = (
+        "ATOM      1  CA  ALA A   1      10.000  11.000  12.000  1.00 20.00           C  "
+    )
+    malformed = valid[:start] + replacement + valid[end:]
+    with pytest.raises(ValueError, match=rf"invalid PDB {field} field"):
+        chematic.from_pdb_strict(malformed)
+
+
 def test_smiles_batch_rejects_oversized_input_before_parallel_parse():
     with pytest.raises(ValueError, match="maximum item count"):
         chematic.from_smiles_list(["C"] * 100_001)
