@@ -421,7 +421,7 @@ documentation, and required measurement agree.
 - [x] Separate the CML structural boundary into the backwards-compatible
   lenient `parse_cml` path and opt-in strict Rust/Python/WASM entry points.
   Strict parsing rejects missing or empty molecules and mismatched/unclosed
-  XML elements, scans quoted attributes without treating `>` as a tag boundary,
+  XML elements and multiple root elements, scans quoted attributes without treating `>` as a tag boundary,
   preserves comment/CDATA contents as opaque markup, and fails closed on
   unterminated quoted attributes, comments, and CDATA sections; the focused
   Rust suite covers acceptance, rejection, lexical edge cases, and lenient
