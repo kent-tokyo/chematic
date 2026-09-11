@@ -799,7 +799,9 @@ records them.
   browser smoke now covers malformed pasted records and cancellation locally
   and is wired into the Chromium/Firefox/WebKit CI
   matrix. The current Node-hosted agent-side pipeline/MCS adversarial run is
-  recorded in `validation/results/wasm-agent-adversarial-v1.0.10.json`; the
+  recorded in `validation/results/wasm-agent-adversarial-v1.0.10.json`. The
+  current generated Node/WASM contract also exercises resumable SDF/XYZ pages,
+  invalid batch sizes, oversized SDF input, and later-page input indices; the
   broader agent matrix and full browser evidence remain open.
 - [x] Prepare a standalone Chromium Node/WASM comparison harness for the
   official RDKit.js package; browser timing/parity evidence remains open until

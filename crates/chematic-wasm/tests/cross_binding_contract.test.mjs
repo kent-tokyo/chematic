@@ -353,6 +353,25 @@ assert.throws(() => wasm.canonicalize_smiles_batch_json("CC", ""));
 assert.throws(() => wasm.canonicalize_smiles_batch_json("CC\n".repeat(1024), "\n"));
 assert.throws(() => wasm.canonicalize_smiles_batch_json("C".repeat(1_000_001), "\n"));
 
+const sdfInput = readFileSync(path.join(repoRoot, "benchmarks/fixtures/streaming.sdf"), "utf8");
+const sdfPage = JSON.parse(wasm.sdf_records_batch_json(sdfInput, 0, 1));
+assert.equal(sdfPage.status, "partial");
+assert.equal(sdfPage.record_count, 1);
+assert.equal(sdfPage.next_offset, 1);
+const sdfNextPage = JSON.parse(wasm.sdf_records_batch_json(sdfInput, sdfPage.next_offset, 1));
+assert.equal(sdfNextPage.offset, 1);
+assert.equal(sdfNextPage.records[0].input_index, 1);
+assert.throws(() => wasm.sdf_records_batch_json(sdfInput, 0, 0));
+assert.throws(() => wasm.sdf_records_batch_json("x".repeat(1_000_001), 0, 1));
+
+const xyzInput = "1\nfirst\nC 0 0 0\n1\nsecond\nO 1 0 0\n";
+const xyzPage = JSON.parse(wasm.xyz_frames_batch_json(xyzInput, 0, 1));
+assert.equal(xyzPage.status, "partial");
+assert.equal(xyzPage.records[0].input_index, 0);
+const xyzNextPage = JSON.parse(wasm.xyz_frames_batch_json(xyzInput, xyzPage.next_offset, 1));
+assert.equal(xyzNextPage.records[0].input_index, 1);
+assert.throws(() => wasm.xyz_frames_batch_json(xyzInput, 0, 0));
+
 const screeningBatch = JSON.parse(wasm.screen_smiles_json("CC\nC1CC\nCCO", "\n"));
 assert.equal(screeningBatch.records.length, 3);
 assert.equal(screeningBatch.records[0].error, null);
