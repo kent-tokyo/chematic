@@ -5,7 +5,8 @@
   "chematic_version": "1.0.13",
   "rows": 5000,
   "parsed": 5000,
-  "parse_failures": 1,
+  "parse_failures": 0,
+  "unsupported_values": 1,
   "profile": "rdkit_compat_unlabelled_v1",
   "fields": {
     "molecular_weight": {

@@ -99,7 +99,7 @@ def main() -> None:
         for name, (_, _, tol) in FIELDS.items()
     }
     causes: Counter[str] = Counter()
-    parsed = failures = 0
+    parsed = failures = unsupported_values = 0
     for smiles in smiles_values:
         if not smiles:
             continue
@@ -126,7 +126,7 @@ def main() -> None:
         for name, values in expected.items():
             value = actual[name]
             if isinstance(value, float) and math.isnan(value):
-                failures += 1
+                unsupported_values += 1
                 continue
             delta = abs(float(value) - float(values))
             item = stats[name]
@@ -155,6 +155,7 @@ def main() -> None:
               "rdkit_version": rdkit.__version__,
               "chematic_version": getattr(chematic, "__version__", "unknown"),
               "rows": len(smiles_values), "parsed": parsed, "parse_failures": failures,
+              "unsupported_values": unsupported_values,
               "profile": "rdkit_compat_unlabelled_v1", "fields": stats,
               "mismatch_causes": dict(sorted(causes.items()))}
     args.json.write_text(json.dumps(result, indent=2) + "\n")

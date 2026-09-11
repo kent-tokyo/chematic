@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "profile": "rdkit_compat_unlabelled_v1",
+  "decision": "adopted_opt_in",
+  "default_profile_changed": false,
+  "checks": {
+    "scorecard_schema": true,
+    "rdkit_version_recorded": true,
+    "parser_accounting": true,
+    "mw_compatibility": true,
+    "holdout_passes": true,
+    "native_default_preserved": true,
+    "unclassified_mismatches_absent": true
+  },
+  "known_residuals": {
+    "charge_or_valence_rule": 1359,
+    "ring_perception_or_aromaticity": 60
+  },
+  "evidence": {
+    "diagnostics": "validation/results/descriptor-rdkit-diagnostics-v1.0.13.json",
+    "holdout": "validation/results/descriptor-rdkit-holdout-v1.0.13.json"
+  }
+}
