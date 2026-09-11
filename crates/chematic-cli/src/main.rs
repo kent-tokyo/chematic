@@ -1076,6 +1076,16 @@ mod tests {
     }
 
     #[test]
+    fn converts_v3000_fixture_to_a_structurally_equivalent_smiles() {
+        let block = include_str!("../../../benchmarks/fixtures/ethanol.v3000");
+        let smiles = convert_text(block, "mol_v3000", "smiles").unwrap();
+        let converted = chematic_smiles::parse(&smiles).unwrap();
+        assert_eq!(converted.atom_count(), 3);
+        assert_eq!(converted.bond_count(), 2);
+        assert_eq!(converted.total_formula(), "C2H6O");
+    }
+
+    #[test]
     fn rejects_unknown_formats() {
         assert!(
             convert_text("CCO", "smiles", "nope")
