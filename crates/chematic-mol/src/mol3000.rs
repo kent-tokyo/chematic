@@ -648,7 +648,31 @@ pub struct V3000SGroup {
 
 /// Parse and validate one V3000 SGROUP logical line.
 pub fn parse_v3000_sgroup_line(line: &str) -> Result<V3000SGroup, MolParseError> {
-    let tokens: Vec<&str> = line.split_whitespace().collect();
+    // V3000 list values contain spaces, e.g. `ATOMS=(2 1 2)` and
+    // `BRKXYZ=(4 1 2 3 4)`, so whitespace is a separator only outside
+    // balanced parentheses.
+    let mut tokens = Vec::new();
+    let mut start = None;
+    let mut depth = 0usize;
+    for (offset, ch) in line.char_indices() {
+        if start.is_none() && !ch.is_whitespace() {
+            start = Some(offset);
+        }
+        match ch {
+            '(' => depth += 1,
+            ')' => depth = depth.saturating_sub(1),
+            _ => {}
+        }
+        if ch.is_whitespace()
+            && depth == 0
+            && let Some(begin) = start.take()
+        {
+            tokens.push(&line[begin..offset]);
+        }
+    }
+    if let Some(begin) = start {
+        tokens.push(&line[begin..]);
+    }
     if tokens.len() < 3 {
         return Err(v3k_err(0, "SGROUP line needs id, type, and parent"));
     }
@@ -705,9 +729,10 @@ pub fn parse_v3000_sgroup_line(line: &str) -> Result<V3000SGroup, MolParseError>
             ),
         ));
     }
-    let attributes = line[close + 1..]
-        .split_whitespace()
+    let attributes = tokens[3..]
+        .iter()
         .filter_map(|token| token.split_once('='))
+        .filter(|(key, _)| *key != "ATOMS")
         .map(|(key, value)| (key.to_owned(), value.to_owned()))
         .collect();
     Ok(V3000SGroup {
@@ -1705,8 +1730,9 @@ M  V30 END CTAB\nM  END\n";
 
     #[test]
     fn v3000_sgroup_has_strict_typed_view_without_losing_source_line() {
-        let typed = parse_v3000_sgroup_line("1 COP 0 ATOMS=(2 1 2) LABEL=polymer BRKXYZ=foo")
-            .expect("valid SGROUP should have a typed view");
+        let typed =
+            parse_v3000_sgroup_line("1 COP 0 ATOMS=(2 1 2) LABEL=polymer BRKXYZ=(4 1 2 3 4)")
+                .expect("valid SGROUP should have a typed view");
         assert_eq!(typed.id, 1);
         assert_eq!(typed.kind, V3000SGroupKind::Cop);
         assert_eq!(typed.parent_id, None);
@@ -1715,7 +1741,7 @@ M  V30 END CTAB\nM  END\n";
             typed.attributes,
             vec![
                 ("LABEL".into(), "polymer".into()),
-                ("BRKXYZ".into(), "foo".into())
+                ("BRKXYZ".into(), "(4 1 2 3 4)".into())
             ]
         );
     }
