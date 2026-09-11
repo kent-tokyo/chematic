@@ -249,7 +249,7 @@
     "scope": "opt_in_structural_non_empty_cml",
     "valid_input": "<molecule><atomArray><atom id=\"a1\" elementType=\"C\"/></atomArray><bondArray/></molecule>",
     "expected_atom_count": 1,
-    "rejected_inputs": ["<cml/>", "<molecule><atomArray>", "<molecule><atomArray/></molecule>", "<molecule><atomArray></molecule></atomArray>"]
+    "rejected_inputs": ["<cml/>", "<molecule><atomArray>", "<molecule><atomArray/></molecule>", "<molecule><atomArray></molecule></atomArray>", "<molecule><atomArray><atom id=\"a1\" elementType=\"C\"/></atomArray></molecule><molecule><atomArray><atom id=\"a2\" elementType=\"N\"/></atomArray></molecule>"]
   },
   "cdxml_contract": {
     "schema_version": 1,
