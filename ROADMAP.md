@@ -80,7 +80,11 @@ Competitive-response gate status (2026-09-10):
 - [x] V3000 `SGROUP`/`COLLECTION` local interoperability slice: opaque SGROUP
   preservation, either input order, SGROUP-before-COLLECTION output, strict
   topology-handle rejection, and generated Web-WASM execution evidence.
-- [ ] Broader CIP generated permutations and independent oracle corpus.
+- [x] Broader CIP generated permutations over the independent RDKit-labelled
+  155-row corpus: eight deterministic permutations per row, 1,240 outcome
+  checks, comparing assigned CIP codes or explicit `SkipReason` after target
+  remapping. The checked-in result is
+  `validation/results/cip-order-invariance-v1.0.12.json`.
 - [ ] Exact canonical-SMILES parity, typed SGROUP semantics, and Indigo/RDKit
   cross-engine V3000 fixtures.
 - [x] Add typed CDXML text/caption style access for font, size, and alignment,

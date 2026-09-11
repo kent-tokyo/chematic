@@ -38,6 +38,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Added versioned WASM/JS document-binding APIs for rich reaction and CDXML
   JSON, bounded stable-ID/page edits, exact CDXML source reserialization, and
   structured error categories with paths.
+- Added a deterministic 155-row CIP oracle-corpus atom-order gate with eight
+  generated permutations per row (1,240 checks); resolved labels and explicit
+  fail-closed skip reasons must remain invariant after target remapping.
 
 ## [1.0.12] - 2026-09-11
 

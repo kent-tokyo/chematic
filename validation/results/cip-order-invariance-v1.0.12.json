@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "version": "1.0.12",
+  "corpus": {
+    "path": "validation/cip_label_corpus.jsonl",
+    "rows": 155,
+    "manifest": {
+      "rdkit_version": "2026.03.3",
+      "total_stereocenters": 4186,
+      "mismatches": 155
+    }
+  },
+  "permutations_per_row": 8,
+  "checks": 1240,
+  "resolved_or_skipped_outcome_invariant": true,
+  "oracle_labels_used_as_invariant": false,
+  "command": "cargo test -p chematic-cip --locked --offline full_oracle_corpus_is_invariant_under_generated_atom_permutations",
+  "result": "passed"
+}
