@@ -86,7 +86,10 @@ Competitive-response gate status (2026-09-10):
   remapping. The checked-in result is
   `validation/results/cip-order-invariance-v1.0.12.json`.
 - [ ] Exact canonical-SMILES parity and Indigo/RDKit cross-engine V3000
-  fixtures.
+  fixtures. The bounded v1.0.12 ethanol probe records semantic agreement
+  across schematic, RDKit, and Open Babel while making the algorithm-specific
+  canonical-string difference explicit; Indigo is not installed locally and
+  SGROUP semantic cross-engine coverage remains open.
 - [x] Add a bounded typed V3000 SGROUP syntax view while preserving the
   original logical lines losslessly: validated ID/parent/`ATOMS` fields and
   molecule/group reference integrity,

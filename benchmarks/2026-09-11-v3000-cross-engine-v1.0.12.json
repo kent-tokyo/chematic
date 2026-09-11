@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.12",
+  "fixture": {
+    "path": "benchmarks/fixtures/ethanol.v3000",
+    "sha256": "64ac11b3de1c186deae555d54d6a47e7f3c72607ef0a90b0d93f467496bbd3ad",
+    "atom_count": 3,
+    "bond_count": 2
+  },
+  "engines": {
+    "chematic": {"version": "1.0.12", "canonical_smiles": "C(C)O"},
+    "rdkit": {"version": "2025.09.3", "canonical_smiles": "CCO"},
+    "openbabel": {"version": "3.2.1", "canonical_smiles": "CCO"}
+  },
+  "finding": "Canonical strings differ by engine, but schematic output is RDKit-parseable and has the same canonical RDKit structure as the input.",
+  "indigo": {"status": "not_installed", "claim": null},
+  "scope": "semantic V3000 topology probe; exact canonical-string parity and SGROUP cross-engine semantics remain open",
+  "reproduction": {
+    "chematic": "cargo run -p chematic-cli --locked --offline -- convert --input-format mol_v3000 --output-format smiles --input benchmarks/fixtures/ethanol.v3000",
+    "rdkit": "python3 -c \"from rdkit import Chem; m=Chem.MolFromMolFile('benchmarks/fixtures/ethanol.v3000', removeHs=False); print(Chem.MolToSmiles(m, canonical=True, isomericSmiles=True))\"",
+    "openbabel": "obabel -imol_v3000 benchmarks/fixtures/ethanol.v3000 -osmi -O /dev/stdout"
+  }
+}
