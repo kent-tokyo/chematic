@@ -70,7 +70,7 @@ measurement was rerun.
 | [v1.0.10 RDKit MMFF94 availability oracle](../validation/results/mmff94-rdkit-availability-oracle-v1.0.10.json) | Independent 265-molecule parse, embed, force-field construction, and finite-energy availability boundary |
 | [`2026-09-11-streaming-safety-v1.0.12.md`](2026-09-11-streaming-safety-v1.0.12.md) | Current v1.0.12 ten-format malformed, oversized, gzip, and generated parser-entry safety gate |
 | [`2026-09-11-streaming-safety-v1.0.12.json`](2026-09-11-streaming-safety-v1.0.12.json) | Machine-readable current streaming safety gate evidence |
-| [v1.0.12 streaming failure taxonomy](../validation/results/streaming-failure-taxonomy-v1.0.12.json) | Machine-readable typed failure taxonomy for the 120-case base plus twelve Extended XYZ, mmCIF, and MOL2 supplemental cases |
+| [v1.0.12 streaming failure taxonomy](../validation/results/streaming-failure-taxonomy-v1.0.12.json) | Machine-readable typed failure taxonomy for the 120-case base plus twenty Extended XYZ, mmCIF, MOL2, CML, and CDXML supplemental cases |
 | [v1.0.10 reaction SMARTS contract](../validation/results/reaction-smarts-bounded-contract-v1.0.10.json) | Bounded 20-case aromatic, bond-order, mapped-agent, agent-OR, disconnected-component assignment/rejection, hydrogen-count, pipe-alternative, and embedding-selection presence contract |
 
 ## Streaming and cross-engine contracts

@@ -5,26 +5,34 @@
     "formats": 10,
     "path": "validation/streaming_format_safety_cases.json",
     "sha256": "955f4911315066c0d447f6018f03595d3a4369caed01a3d11a8695b55d28bec5",
-    "total_cases": 132
+    "total_cases": 140
   },
   "errors": [],
   "gate": "streaming_failure_taxonomy",
   "rows": {
     "cdxml": {
       "base_cases": 12,
-      "cases": 12,
+      "cases": 15,
       "failure_kinds": {
-        "ResourceLimit": 12
+        "MissingBondEndpoint": 1,
+        "ResourceLimit": 12,
+        "UnknownAtomRef": 1,
+        "UnknownAtomicNumber": 1
       },
-      "supplemental_cases": 0
+      "supplemental_cases": 3
     },
     "cml": {
       "base_cases": 12,
-      "cases": 12,
+      "cases": 17,
       "failure_kinds": {
-        "ResourceLimit": 12
+        "InvalidAtomRefs2": 1,
+        "InvalidBondOrder": 1,
+        "NonFiniteCoordinate": 1,
+        "ResourceLimit": 12,
+        "UnknownAtomRef": 1,
+        "UnknownElement": 1
       },
-      "supplemental_cases": 0
+      "supplemental_cases": 5
     },
     "extxyz": {
       "base_cases": 12,

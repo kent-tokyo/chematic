@@ -38,8 +38,8 @@ SUPPLEMENTAL_CASES = {
 }
 
 
-def run(binary: list[str], fmt: str, path: Path) -> dict[str, object]:
-    options = ("--max-line-bytes", "1") if fmt in {"cml", "cdxml", "pdb"} else ()
+def run(binary: list[str], fmt: str, path: Path, line_limited: bool = True) -> dict[str, object]:
+    options = ("--max-line-bytes", "1") if line_limited and fmt in {"cml", "cdxml", "pdb"} else ()
     completed = subprocess.run(
         [*binary, "--format", fmt, "--path", str(path), "--repeats", "1", *options],
         cwd=ROOT,
@@ -60,6 +60,8 @@ def main() -> int:
         raise SystemExit("streaming safety corpus schema or format set is invalid")
     mmcif = (ROOT / "benchmarks" / "fixtures" / "minimal.mmcif").read_text(encoding="utf-8")
     mol2 = (ROOT / "benchmarks" / "fixtures" / "ethanol.mol2").read_text(encoding="utf-8")
+    cml = (ROOT / "benchmarks" / "fixtures" / "ethanol.cml").read_text(encoding="utf-8")
+    cdxml = (ROOT / "benchmarks" / "fixtures" / "ethanol.cdxml").read_text(encoding="utf-8")
     supplemental_cases = {
         **SUPPLEMENTAL_CASES,
         "mmcif": [
@@ -71,6 +73,18 @@ def main() -> int:
         "mol2": [
             mol2.replace("     1     1     2    1", "     1     1", 1),
             mol2.replace("C.3", "Xx", 1),
+        ],
+        "cml": [
+            cml.replace('elementType="C"', 'elementType="Xx"', 1),
+            cml.replace('atomRefs2="a1 a2"', 'atomRefs2="a1 z9"', 1),
+            cml.replace('atomRefs2="a1 a2"', 'atomRefs2="a1"', 1),
+            cml.replace('order="1"', 'order="wat"', 1),
+            cml.replace('x2="0.0"', 'x2="nan"', 1),
+        ],
+        "cdxml": [
+            cdxml.replace('Element="6"', 'Element="999"', 1),
+            cdxml.replace('E="3"', 'E="9"', 1),
+            cdxml.replace(' B="1" E="2"', ' B="1"', 1),
         ],
     }
 
@@ -85,7 +99,9 @@ def main() -> int:
             for index, content in enumerate(cases):
                 path = temp / f"case-{index}.{fmt}"
                 path.write_text(content, encoding="utf-8")
-                result = run(args.binary, fmt, path)
+                base_count = len(corpus["cases"][fmt])
+                line_limited = not (fmt in {"cml", "cdxml", "pdb"} and index >= base_count)
+                result = run(args.binary, fmt, path, line_limited=line_limited)
                 total += 1
                 if result.get("records") != 0 or result.get("failures") != 1:
                     errors.append(f"{fmt}[{index}] aggregate failure mismatch: {result}")
