@@ -22,6 +22,21 @@ CORPUS = ROOT / "validation" / "streaming_format_safety_cases.json"
 DEFAULT_OUTPUT = ROOT / "validation" / "results" / f"streaming-failure-taxonomy-v{workspace_version(ROOT)}.json"
 FORMATS = ("sdf", "mol", "xyz", "extxyz", "v3000", "mol2", "cml", "cdxml", "mmcif", "pdb")
 
+# The checked-in twelve-case corpus is intentionally stable. These additional
+# cases exercise Extended XYZ metadata branches that cannot be reached by the
+# old generic malformed shapes, while keeping the base-corpus hash and its
+# historical comparisons unchanged.
+SUPPLEMENTAL_CASES = {
+    "extxyz": [
+        "1\n",
+        "1\n=bad\nC 0 0 0\n",
+        "1\nfoo=\"bad\nC 0 0 0\n",
+        "1\nfoo=1 foo=2\nC 0 0 0\n",
+        "1\nLattice=\"1 2\"\nC 0 0 0\n",
+        "1\nProperties=species:S:1:pos:R\nC 0 0 0\n",
+    ]
+}
+
 
 def run(binary: list[str], fmt: str, path: Path) -> dict[str, object]:
     options = ("--max-line-bytes", "1") if fmt in {"cml", "cdxml", "pdb"} else ()
@@ -51,7 +66,7 @@ def main() -> int:
         temp = Path(directory)
         for fmt in FORMATS:
             counts: Counter[str] = Counter()
-            cases = corpus["cases"][fmt]
+            cases = [*corpus["cases"][fmt], *SUPPLEMENTAL_CASES.get(fmt, [])]
             for index, content in enumerate(cases):
                 path = temp / f"case-{index}.{fmt}"
                 path.write_text(content, encoding="utf-8")
@@ -65,7 +80,12 @@ def main() -> int:
                 else:
                     for kind, count in kinds.items():
                         counts[str(kind)] += int(count)
-            rows[fmt] = {"cases": len(cases), "failure_kinds": dict(sorted(counts.items()))}
+            rows[fmt] = {
+                "cases": len(cases),
+                "base_cases": len(corpus["cases"][fmt]),
+                "supplemental_cases": len(SUPPLEMENTAL_CASES.get(fmt, [])),
+                "failure_kinds": dict(sorted(counts.items())),
+            }
 
     report = {
         "schema_version": 1,
