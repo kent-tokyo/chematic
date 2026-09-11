@@ -723,43 +723,14 @@ records them.
   boundary rather than claiming a Node molecule-handle API.
   MolJSON now also has an explicit four-binding parse/serialize/parse round-trip
   contract; serialization output is checked semantically rather than byte-for-byte.
-  The current source audit covers 251 WASM and 132 Python exported names and
-  pins the set in `validation/results/binding_surface_inventory-v1.0.10.json`;
-  `scripts/check_wasm_artifact_surface.py` reports exactly four current source
-  exports absent from the checked-in Node artifact (`mol_from_cjson`,
-  `mol_from_pdb_strict`, `mol_from_pdbqt`, and `reaction_smarts_match`), with
-  no stale artifact exports.
-  The opt-in strict PDB path now has a shared source-only fixture and passing
-  Rust/Python/WASM tests; its evidence is recorded in
-  `validation/results/pdb-strict-source-only-contract-v1.0.10.json` while the
-  Node generated-artifact lane remains explicitly open.
-  SMARTS validity and reaction SMARTS matching now have separate source-only
-  Rust/Python/WASM contracts
-  contract with four accepted and four rejected cases; evidence is recorded in
-  `validation/results/smarts-source-only-contract-v1.0.10.json`. This is not a
-  four-binding claim because the checked-in Node artifact has no matching
-  `is_valid_smarts` export and is still version-drifted.
-  standardization profile is now included in the shared contract and the Node
-  contract test passes against the checked-in generated Node artifact; an
-  explicit version probe reports 1.0.9 while the workspace is 1.0.10, so this
-  is not current-candidate artifact evidence and the rebuild remains open.
-  The shared manifest now also covers Extended XYZ parsing, the typed RXN
-  document round-trip, and Markush/polymer semantic expansion across Rust,
-  Python, and Node/WASM. It now also carries the bounded XYZ/Extended XYZ
-  batch-recovery contract, verified by Rust/WASM and a clean Python wheel;
-  descriptor fixtures now additionally freeze exact mass and aromatic ring
-  count across the same four source surfaces;
-  the same descriptor contract now also freezes Hill-notation molecular
-  formula output and rotatable-bond counts;
-  the checked-in Node artifact exports the same batch functions and passes the
-  Node contract smoke; its explicit version probe reports 1.0.9, and the
-  broader all-stable-operation manifest remains open. Standardization now also
-  has four-binding contracts for InChI generation, fragment/charge/isotope/
-  stereo parents, canonical tautomer selection, charge neutralization, and
-  largest-fragment selection, budgeted tautomer/super-parent computation, and
-  explicit hydrogen addition/removal, and composed super-parent stage reports;
-  the current 50-operation result, six source-only contracts, and Python 106/106 evidence are recorded in
-  `validation/results/cross-binding-manifest-v1.0.10.json`.
+  The current source/artifact WASM export audit is 262/262 with no missing or
+  stale names. The manifest also covers Extended XYZ, typed reaction-document
+  round trips, Markush/polymer expansion, XYZ/Extended XYZ batch recovery,
+  descriptors, standardization, fingerprints, CJSON, strict PDB, PDBQT,
+  SMARTS validity, and reaction SMARTS. The current machine-readable manifest
+  and its Rust/Python/Node/WASM anchors are validated by
+  `scripts/check_cross_binding_manifest.py`; the current surface is complete
+  for its declared scope, while broader public-API coverage remains open.
 - [x] Extend the shared versioned manifest to cover the core ECFP4/MACCS
   fingerprint shapes and configurations across Rust, Python, and Node/WASM.
 - [x] Add versioned deterministic exact-identity serialization for
