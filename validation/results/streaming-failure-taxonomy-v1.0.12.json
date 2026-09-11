@@ -5,7 +5,7 @@
     "formats": 10,
     "path": "validation/streaming_format_safety_cases.json",
     "sha256": "955f4911315066c0d447f6018f03595d3a4369caed01a3d11a8695b55d28bec5",
-    "total_cases": 126
+    "total_cases": 132
   },
   "errors": [],
   "gate": "streaming_failure_taxonomy",
@@ -47,13 +47,16 @@
     },
     "mmcif": {
       "base_cases": 12,
-      "cases": 12,
+      "cases": 16,
       "failure_kinds": {
-        "MissingCoordinateColumns": 8,
+        "InvalidInteger": 1,
+        "InvalidNumber": 1,
+        "MissingCoordinateColumns": 9,
         "MissingTypeSymbolColumn": 2,
-        "NoAtomSiteLoop": 2
+        "NoAtomSiteLoop": 2,
+        "UnknownElement": 1
       },
-      "supplemental_cases": 0
+      "supplemental_cases": 4
     },
     "mol": {
       "base_cases": 12,
@@ -67,12 +70,14 @@
     },
     "mol2": {
       "base_cases": 12,
-      "cases": 12,
+      "cases": 14,
       "failure_kinds": {
         "InvalidAtomLine": 10,
-        "MissingSection": 2
+        "InvalidBondLine": 1,
+        "MissingSection": 2,
+        "UnknownElement": 1
       },
-      "supplemental_cases": 0
+      "supplemental_cases": 2
     },
     "pdb": {
       "base_cases": 12,

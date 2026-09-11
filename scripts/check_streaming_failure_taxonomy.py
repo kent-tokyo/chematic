@@ -34,7 +34,7 @@ SUPPLEMENTAL_CASES = {
         "1\nfoo=1 foo=2\nC 0 0 0\n",
         "1\nLattice=\"1 2\"\nC 0 0 0\n",
         "1\nProperties=species:S:1:pos:R\nC 0 0 0\n",
-    ]
+    ],
 }
 
 
@@ -58,6 +58,21 @@ def main() -> int:
     corpus = json.loads(CORPUS.read_text(encoding="utf-8"))
     if corpus.get("schema_version") != 1 or set(corpus.get("cases", {})) != set(FORMATS):
         raise SystemExit("streaming safety corpus schema or format set is invalid")
+    mmcif = (ROOT / "benchmarks" / "fixtures" / "minimal.mmcif").read_text(encoding="utf-8")
+    mol2 = (ROOT / "benchmarks" / "fixtures" / "ethanol.mol2").read_text(encoding="utf-8")
+    supplemental_cases = {
+        **SUPPLEMENTAL_CASES,
+        "mmcif": [
+            mmcif.replace("0.0 0.0 0.0", "nope 0.0 0.0", 1),
+            mmcif.replace("ATOM 1 C", "ATOM nope C", 1),
+            mmcif.replace("ATOM 1 C C1", "ATOM 1 Xx C1", 1),
+            mmcif.replace("_atom_site.Cartn_z\n", "", 1),
+        ],
+        "mol2": [
+            mol2.replace("     1     1     2    1", "     1     1", 1),
+            mol2.replace("C.3", "Xx", 1),
+        ],
+    }
 
     rows: dict[str, dict[str, object]] = {}
     errors: list[str] = []
@@ -66,7 +81,7 @@ def main() -> int:
         temp = Path(directory)
         for fmt in FORMATS:
             counts: Counter[str] = Counter()
-            cases = [*corpus["cases"][fmt], *SUPPLEMENTAL_CASES.get(fmt, [])]
+            cases = [*corpus["cases"][fmt], *supplemental_cases.get(fmt, [])]
             for index, content in enumerate(cases):
                 path = temp / f"case-{index}.{fmt}"
                 path.write_text(content, encoding="utf-8")
@@ -83,7 +98,7 @@ def main() -> int:
             rows[fmt] = {
                 "cases": len(cases),
                 "base_cases": len(corpus["cases"][fmt]),
-                "supplemental_cases": len(SUPPLEMENTAL_CASES.get(fmt, [])),
+                "supplemental_cases": len(supplemental_cases.get(fmt, [])),
                 "failure_kinds": dict(sorted(counts.items())),
             }
 
