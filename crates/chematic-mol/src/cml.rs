@@ -563,6 +563,7 @@ fn validate_strict_cml_structure(input: &str) -> Result<(), CmlError> {
     let mut stack: Vec<String> = Vec::new();
     let mut saw_molecule = false;
     let mut saw_atom = false;
+    let mut root_closed = false;
     let mut cursor = 0usize;
     while let Some(relative_start) = input[cursor..].find('<') {
         let start = cursor + relative_start;
@@ -613,10 +614,16 @@ fn validate_strict_cml_structure(input: &str) -> Result<(), CmlError> {
                     "closing tag </{name}> does not match <{open}>"
                 )));
             }
+            if stack.is_empty() {
+                root_closed = true;
+            }
             continue;
         }
         let self_closing = raw.ends_with('/');
         let name = tag_name(raw);
+        if stack.is_empty() && root_closed {
+            return Err(CmlError::MalformedXml("multiple root elements".to_string()));
+        }
         if name == "molecule" {
             saw_molecule = true;
         }
@@ -625,6 +632,8 @@ fn validate_strict_cml_structure(input: &str) -> Result<(), CmlError> {
         }
         if !self_closing {
             stack.push(name);
+        } else if stack.is_empty() {
+            root_closed = true;
         }
     }
     if !stack.is_empty() {
@@ -895,6 +904,18 @@ mod tests {
         assert!(matches!(
             parse_cml_strict("<molecule><atomArray/></molecule>"),
             Err(CmlError::EmptyMolecule)
+        ));
+    }
+
+    #[test]
+    fn strict_cml_rejects_multiple_root_elements() {
+        let input = concat!(
+            "<molecule><atomArray><atom id=\"a1\" elementType=\"C\"/></atomArray></molecule>",
+            "<molecule><atomArray><atom id=\"a2\" elementType=\"N\"/></atomArray></molecule>"
+        );
+        assert!(matches!(
+            parse_cml_strict(input),
+            Err(CmlError::MalformedXml(message)) if message == "multiple root elements"
         ));
     }
 
