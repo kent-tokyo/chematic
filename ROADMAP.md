@@ -441,8 +441,10 @@ documentation, and required measurement agree.
   runner formats with normalized fixture-relative paths. A 20-repetition
   same-input matrix now records matching record counts and zero failures for
   all ten formats across chematic and the installed RDKit/Open Babel lanes
-  where available; the reproducible result is
-  `validation/results/cross-engine-matrix-v1.0.10.json`. Open Babel is CLI-only
+  where available; the current v1.0.12 result is
+  `validation/results/cross-engine-matrix-v1.0.12.json` with reproduction notes
+  in `benchmarks/2026-09-11-streaming-cross-engine-matrix-v1.0.12.md`.
+  Open Babel is CLI-only
   here, so its rows are subprocess boundary evidence rather than same-process
   speed evidence. This is contract evidence only because the parser and
   process boundaries are not equivalent. The same-process semantic contracts

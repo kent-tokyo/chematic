@@ -12,7 +12,7 @@ accuracy, or compatibility claims.
 | Understand the rules and how to report a result | [`docs/benchmark.md`](../docs/benchmark.md) |
 | Compare current similarity search with RDKit | [`2026-09-11-similarity-search-v1.0.12.md`](2026-09-11-similarity-search-v1.0.12.md) |
 | Reproduce the 1.10x hot-path gate | [`2026-09-05-hotpath-110.md`](2026-09-05-hotpath-110.md) |
-| Check file-streaming contracts | [v1.0.10 validation matrix](../validation/results/cross-engine-matrix-v1.0.10.json) |
+| Check file-streaming contracts | [v1.0.12 validation matrix](../validation/results/cross-engine-matrix-v1.0.12.json) |
 | Check current streaming safety gate | [`2026-09-09-streaming-safety-v1.0.10.md`](2026-09-09-streaming-safety-v1.0.10.md) |
 | Check official RDKit.js comparison gate | [`2026-09-10-official-rdkit-js-gate-v1.0.11.md`](2026-09-10-official-rdkit-js-gate-v1.0.11.md) |
 | Check official RDKit.js browser gate | [`2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md`](2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md) |
@@ -83,6 +83,8 @@ unless the record explicitly says that the APIs and process boundaries match.
 | [`2026-09-08-streaming-cross-engine-matrix-v1.0.9.json`](2026-09-08-streaming-cross-engine-matrix-v1.0.9.json) | Same-input ten-format agreement across chematic and installed RDKit/Open Babel lanes |
 | [`2026-09-09-streaming-cross-engine-matrix-v1.0.10.md`](2026-09-09-streaming-cross-engine-matrix-v1.0.10.md) | v1.0.10 same-input contract refresh with explicitly non-ranking throughput context |
 | [`2026-09-09-streaming-cross-engine-matrix-v1.0.10.json`](2026-09-09-streaming-cross-engine-matrix-v1.0.10.json) | Machine-readable current ten-format contract matrix |
+| [`2026-09-11-streaming-cross-engine-matrix-v1.0.12.md`](2026-09-11-streaming-cross-engine-matrix-v1.0.12.md) | v1.0.12 same-input contract refresh with explicit parser/process boundaries |
+| [v1.0.12 validation matrix](../validation/results/cross-engine-matrix-v1.0.12.json) | Machine-readable current ten-format contract matrix |
 | [v1.0.10 validation matrix](../validation/results/cross-engine-matrix-v1.0.10.json) | Current 2026-09-10 ten-format matrix used by the fail-closed validator |
 | [`2026-09-09-same-process-sdf-contract-v1.0.10.md`](2026-09-09-same-process-sdf-contract-v1.0.10.md) | Same-process schematic/RDKit SDF semantic contract |
 | [`2026-09-09-same-process-sdf-contract-v1.0.10.json`](2026-09-09-same-process-sdf-contract-v1.0.10.json) | Machine-readable same-process SDF evidence |
