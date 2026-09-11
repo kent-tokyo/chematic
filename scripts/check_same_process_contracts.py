@@ -30,15 +30,16 @@ EXPECTED_GATES = {
     "pdb": "same_process_pdb_semantic_contract",
     "cdxml": "same_process_cdxml_semantic_contract",
 }
+REPORT_DATE = "2026-09-11"
 
 
 def main() -> int:
     errors: list[str] = []
     version = workspace_version(ROOT)
     for fmt, gate in EXPECTED_GATES.items():
-        relative = f"benchmarks/2026-09-10-same-process-{fmt}-contract-v{version}.json"
+        relative = f"benchmarks/{REPORT_DATE}-same-process-{fmt}-contract-v{version}.json"
         if fmt in {"v2000", "v3000"}:
-            relative = f"benchmarks/2026-09-10-same-process-{fmt}-mol-contract-v{version}.json"
+            relative = f"benchmarks/{REPORT_DATE}-same-process-{fmt}-mol-contract-v{version}.json"
         path = ROOT / relative
         try:
             report = json.loads(path.read_text(encoding="utf-8"))

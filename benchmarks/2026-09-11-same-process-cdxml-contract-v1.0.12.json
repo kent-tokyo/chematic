@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.12",
+  "status": "local-verified",
+  "gate": "same_process_cdxml_semantic_contract",
+  "fixture": {
+    "path": "benchmarks/fixtures/ethanol.cdxml",
+    "bytes": 321,
+    "sha256": "b74560cfaf369e4bc32d5c710f7b488ded05e801c54934d7a709013825ce290c"
+  },
+  "repeats": 20,
+  "rows": {
+    "chematic": {
+      "records": 20,
+      "failures": 0,
+      "seconds": 0.136084,
+      "boundary": "chematic.from_cdxml in the current process"
+    },
+    "rdkit": {
+      "records": 20,
+      "failures": 0,
+      "seconds": 0.003263,
+      "boundary": "RDKit MolsFromCDXML in the current process"
+    }
+  },
+  "comparison": {
+    "expected_records": 20,
+    "signature": "total atoms, heavy atoms, canonical SMILES; RDKit coordinates finite",
+    "signature_mismatch_repetitions": 0,
+    "malformed_cases": {
+      "unknown_element": {
+        "chematic": {
+          "records": 1,
+          "failures": 0
+        },
+        "rdkit": {
+          "records": 0,
+          "failures": 1
+        }
+      },
+      "truncated_fragment": {
+        "chematic": {
+          "records": 1,
+          "failures": 0
+        },
+        "rdkit": {
+          "records": 0,
+          "failures": 1
+        }
+      }
+    },
+    "malformed_rejection_mismatches": [
+      "unknown_element",
+      "truncated_fragment"
+    ],
+    "malformed_contract": "reported only; schematic CDXML parser is intentionally lenient",
+    "speed_is_non_ranking_context": true
+  },
+  "tool_versions": {
+    "rdkit": "2025.09.3"
+  },
+  "errors": []
+}

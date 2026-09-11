@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.12",
+  "status": "local-verified",
+  "gate": "same_process_mol2_semantic_contract",
+  "fixture": {
+    "path": "benchmarks/fixtures/ethanol.mol2",
+    "bytes": 361,
+    "sha256": "80144aad97332e2f58eb42bb2da1472587a9dfc2466f9d2fe081eb9834c2224d"
+  },
+  "repeats": 20,
+  "rows": {
+    "chematic": {
+      "records": 20,
+      "failures": 0,
+      "seconds": 0.001681,
+      "boundary": "schematic.from_mol2 in the current process"
+    },
+    "rdkit": {
+      "records": 20,
+      "failures": 0,
+      "seconds": 0.162495,
+      "boundary": "RDKit MolFromMol2Block in the current process"
+    }
+  },
+  "comparison": {
+    "expected_records": 20,
+    "structural_signature_mismatch_repetitions": 0,
+    "malformed_cases": {
+      "missing_sections": {
+        "chematic": {
+          "records": 0,
+          "failures": 1
+        },
+        "rdkit": {
+          "records": 0,
+          "failures": 1
+        }
+      },
+      "bad_atom": {
+        "chematic": {
+          "records": 0,
+          "failures": 1
+        },
+        "rdkit": {
+          "records": 0,
+          "failures": 1
+        }
+      }
+    },
+    "charge_and_smiles_parity": "not claimed",
+    "speed_is_non_ranking_context": true
+  },
+  "tool_versions": {
+    "rdkit": "2025.09.3"
+  },
+  "errors": []
+}

@@ -453,6 +453,10 @@ documentation, and required measurement agree.
   process boundaries are not equivalent. The same-process semantic contracts
   currently cover SDF, V2000/V3000 MOL, MOL2, XYZ, Extended XYZ, PDB, and CDXML;
   `scripts/check_same_process_contracts.py` validates the complete eight-format evidence bundle, current-version metadata, malformed-case reports, and explicit non-ranking timing boundary;
+  the bundle was refreshed for workspace v1.0.12 on 2026-09-11 using the
+  source-built CPython 3.13 arm64 extension and RDKit 2025.09.3, with all
+  eight reports at 20 repetitions and zero semantic/signature mismatches;
+  PDB and CDXML lenient-parser differences remain explicitly reported.
   Same-process timing fields are now required for all eight semantic-contract
   reports by `scripts/check_same_process_contracts.py`; the dedicated SDF
   context run on 2026-09-10 used a locally built v1.0.10 Python extension and
