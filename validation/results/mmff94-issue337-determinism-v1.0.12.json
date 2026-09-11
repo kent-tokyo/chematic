@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.12",
+  "issue": 337,
+  "result": "pass",
+  "fixture": "validation/manifests/mmff94_issue337_pyridinium_sssr_residual.json",
+  "command": "cargo test -p chematic-perception --offline --lib issue337_macrocycle_boundary_is_bounded_and_permutation_stable --quiet",
+  "fixtures": 6,
+  "seeded_relabelings_per_fixture": 256,
+  "seeded_relabeling_checks": 1536,
+  "checks": [
+    "macrocycle_count_boundary",
+    "macrocycle_size_multiset",
+    "canonical_family",
+    "geometry_fingerprint_preservation",
+    "permutation_invariant_d2_candidate_collection"
+  ],
+  "observed_macrocycle_ring_sizes": [28, 30, 32, 32, 31, 29],
+  "rdkit_representative_family_parity": "open",
+  "boundary": "Determinism and safety evidence only; this does not claim RDKit representative-family parity or MMFF94 typing completion."
+}
