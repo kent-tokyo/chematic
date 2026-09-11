@@ -524,10 +524,13 @@ fn hba_count_from_set(mol: &Molecule, ring_bonds: &FxHashSet<BondIdx>) -> usize 
                     // Excluded case:
                     //   h > 0 → [nH] pyrrole-type: lone pair participates in the
                     //           aromatic pi system.
-                    // Aromatic [n] remains an acceptor even when substituted or
-                    // fused (e.g. caffeine's N-methyl imide nitrogens), matching
-                    // RDKit's CalcNumHBA semantics.
-                    h == 0
+                    // Only pyridine-like aromatic nitrogen is an acceptor.
+                    // An aromatic N with an exocyclic substituent (degree 3)
+                    // is an imide/pyrrole-like nitrogen whose lone pair is
+                    // part of the conjugated system.  The older rule treated
+                    // every substituted aromatic [n] as an acceptor, which
+                    // over-counted caffeine (6 instead of RDKit's Ertl HBA=3).
+                    h == 0 && mol.degree(*idx) == 2
                 } else {
                     // Non-aromatic N: must have formal valence 3 ([N;v3] in SMARTS);
                     // this excludes radical N (C[N]C, valence 2) and unusual species.
@@ -4239,10 +4242,11 @@ mod tests {
 
     #[test]
     fn test_hba_caffeine_matches_rdkit_for_substituted_aromatic_n() {
-        // RDKit counts caffeine's four aromatic nitrogens and two carbonyl
-        // oxygens as acceptors, including the substituted degree-3 [n] atoms.
+        // RDKit's Ertl HBA definition counts one pyridine-like N and the two
+        // carbonyl oxygens.  The three degree-3 N-methyl/imide nitrogens are
+        // not acceptors.
         let m = mol("Cn1cnc2c1c(=O)n(C)c(=O)n2C");
-        assert_eq!(hba_count(&m), 6);
+        assert_eq!(hba_count(&m), 3);
     }
 
     // -- formal_charge_sum tests -------------------------------------------

@@ -24,7 +24,7 @@ from chematic.rdkit_compat import Descriptors, rdMolDescriptors, DataStructs
 
 CORPUS = [
     "CCO", "c1ccccc1", "c1ccncc1", "CC(=O)O", "CC(=O)Oc1ccccc1C(=O)O",
-    "Cn1cnc2c1c(=O)n(C)c(=O)n2C",  # caffeine
+    "Cn1cnc2c1c(=O)n(C)c(=O)n2C",  # caffeine (Ertl HBA=3)
     "c1ccc2ccccc2c1",              # naphthalene
     "CC(C)Cc1ccc(C(C)C(=O)O)cc1",  # ibuprofen
     "C1CCCCC1", "CCN(CC)CC", "OCC(O)CO", "c1ccc(O)cc1",
