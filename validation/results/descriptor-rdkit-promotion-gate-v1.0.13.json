@@ -12,9 +12,7 @@
     "native_default_preserved": true,
     "unclassified_mismatches_absent": true
   },
-  "known_residuals": {
-    "ring_perception_or_aromaticity": 60
-  },
+  "known_residuals": {},
   "evidence": {
     "diagnostics": "validation/results/descriptor-rdkit-diagnostics-v1.0.13.json",
     "holdout": "validation/results/descriptor-rdkit-holdout-v1.0.13.json"

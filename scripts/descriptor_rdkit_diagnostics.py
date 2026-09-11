@@ -25,7 +25,7 @@ FIELDS = {
     "logp": ("logp", "logp", 0.01),
     "molar_refractivity": ("molar_refractivity", "mr", 0.01),
     "fsp3": ("fsp3", "fsp3", 0.001),
-    "aromatic_ring_count": ("aromatic_ring_count", "aromatic_ring_count", 0.0),
+    "aromatic_ring_count": ("rdkit_aromatic_ring_count", "aromatic_ring_count", 0.0),
 }
 STRICT_TOLERANCES = {
     "molecular_weight": 1e-6,

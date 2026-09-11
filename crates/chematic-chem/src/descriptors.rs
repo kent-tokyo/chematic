@@ -1552,6 +1552,12 @@ pub fn aromatic_ring_count(mol: &Molecule) -> usize {
     count_aromatic_rings(mol)
 }
 
+/// Count aromatic rings after applying the opt-in RDKit aromaticity model.
+/// Native aromatic flags and native ring counts are left untouched.
+pub fn rdkit_aromatic_ring_count(mol: &Molecule) -> usize {
+    chematic_perception::aromatic_ring_list(mol).len()
+}
+
 // ---------------------------------------------------------------------------
 // 11. Formal charge sum
 // ---------------------------------------------------------------------------
@@ -3820,6 +3826,13 @@ mod tests {
         let nucleoside = mol("Nc1nc(N)c2ncn(C3CC(O)C(O)C(CO)O3)c2n1");
         assert_eq!(hba_count(&nucleoside), 9);
         assert_eq!(rdkit_hba_count(&nucleoside), 10);
+    }
+
+    #[test]
+    fn rdkit_aromatic_ring_profile_uses_rdkit_aromaticity_without_changing_native() {
+        let fused = mol("Cn1c2nc(=O)[nH]c(=O)c-2nc2ccccc21");
+        assert_eq!(aromatic_ring_count(&fused), 3);
+        assert_eq!(rdkit_aromatic_ring_count(&fused), 1);
     }
 
     // -- Test 3: ethanol molecular weight -----------------------------------

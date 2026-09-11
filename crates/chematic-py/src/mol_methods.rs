@@ -577,6 +577,12 @@ impl Mol {
         chematic_chem::aromatic_ring_count(&self.inner)
     }
 
+    /// RDKit-compatible aromatic ring count using the opt-in aromaticity model.
+    #[getter]
+    fn rdkit_aromatic_ring_count(&self) -> usize {
+        chematic_chem::rdkit_aromatic_ring_count(&self.inner)
+    }
+
     /// Apply aromaticity perception and return a new Mol.
     ///
     /// Args:
