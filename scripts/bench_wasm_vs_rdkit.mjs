@@ -127,8 +127,8 @@ function fileDigest(path) {
 
 async function runSchematic(args, smiles, warmup) {
   const packageDir = resolve(option(args, "--schematic-dir", join(ROOT, "demo", "pkg")));
-  const module = await import(pathToFileURL(join(packageDir, "chematic_wasm.js")));
   const initStart = performance.now();
+  const module = await import(pathToFileURL(join(packageDir, "chematic_wasm.js")));
   const wasmPath = join(packageDir, "chematic_wasm_bg.wasm");
   if (typeof module.initSync === "function") {
     module.initSync({ module: readFileSync(wasmPath) });

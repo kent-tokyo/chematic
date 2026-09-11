@@ -11,11 +11,11 @@ with 2,048 bits. The machine-readable result is
 |---|---:|---:|
 | WASM raw | 3,934,713 bytes | 6,914,823 bytes |
 | WASM gzip-9 | 1,434,786 bytes | 2,045,412 bytes |
-| Initialization | 0.043 ms | 41.545917 ms |
-| Parse p50 | 0.003375 ms/mol | 0.233792 ms/mol |
-| SMILES write p50 | 0.018542 ms/mol | 0.321708 ms/mol |
-| ECFP4/Morgan p50 | 0.225437 ms/mol | 0.391333 ms/mol |
-| Peak RSS | 109,772,800 bytes | 145,866,752 bytes |
+| Initialization | 17.565667 ms | 35.824875 ms |
+| Parse p50 | 0.003417 ms/mol | 0.235604 ms/mol |
+| SMILES write p50 | 0.018667 ms/mol | 0.324792 ms/mol |
+| ECFP4/Morgan p50 | 0.223917 ms/mol | 0.419104 ms/mol |
+| Peak RSS | 111,722,496 bytes | 146,997,248 bytes |
 | Exact fingerprint matches | 1,000 / 1,000 | 1,000 / 1,000 |
 
 Reproduction:
