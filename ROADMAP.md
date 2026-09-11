@@ -513,6 +513,10 @@ documentation, and required measurement agree.
   nine spellings; the two representation-dependent canonical outputs remain
   intentionally distinct and fail-closed rather than receiving an
   index-based winner.
+- [x] Add a fail-closed evidence validator for the Issue #503 residual audit.
+  It verifies the 1024-relabeling 4/28 boundary, zero correspondence failures,
+  and the rejected close-side experiment's worsened 7/28 result without
+  treating either as completion of canonical invariance.
 - [x] Add a bounded default-Hückel fused/non-alternant fallback for
   all-carbon odd/odd envelopes, with azulene regression coverage; keep the
   broader `RdkitLike` model separately gated.
