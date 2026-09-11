@@ -1,0 +1,27 @@
+{
+  "issue": 227,
+  "target_version": "1.0.12",
+  "measured_at": "2026-09-11",
+  "commit": "806a780ab329da24733a75ae70da1700d3212227",
+  "corpus_total": 265,
+  "corpus": "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_{a,b}.json",
+  "harness": "cargo run --release -p chematic-3d --example mmff94_strict_gate_remeasure_227",
+  "method": "Production minimize_with_policy(Mmff94BondAngleStrict) over dg::generate_coords output; this is the low-level strict bond+angle boundary and is not a replacement for the full pipeline_v2 embedding benchmark.",
+  "status_counts": {
+    "ok": 264,
+    "missing_parameters": 1,
+    "unsupported_atom_type": 0,
+    "minimization_failed": 0,
+    "parse_or_other": 0
+  },
+  "remaining_missing_parameter": {
+    "name": "chembl_tier_b_0022",
+    "tier": "B",
+    "smiles": "COc1cc2nc(N3CCN(S(=O)(=O)c4cccs4)CC3)nc(N)c2cc1OC",
+    "angles_missing": 1,
+    "known_tuple": [43, 18, 63],
+    "resolution": "fail_closed",
+    "reason": "The existing oracle audit could not attribute the RDKit result for this tuple to a defined MMFF94 eqLevel path; inserting guessed parameters would risk an unvalidated energy regression."
+  },
+  "interpretation": "The low-level production boundary is 99.6% successful on the pinned corpus. The single remaining gap is intentionally preserved as a fail-closed research residual. This evidence does not claim full pipeline_v2 success parity or complete MMFF94 parameter parity with RDKit."
+}
