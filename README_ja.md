@@ -23,6 +23,13 @@ npm install @kent-tokyo/chematic
 
 Python版はC/C++コンパイラなしで導入できます。
 
+### v1.0.12 の対応範囲
+
+反応、V3000、入力安全性、CIP、各バインディングの検証を拡張しました。
+RDKit互換フィンガープリント、Markush/polymer意味論、ブラウザartifactの
+完全な同等性はbounded scopeです。詳細は[互換性範囲](docs/compatibility-scope.md)と
+[CHANGELOG](CHANGELOG.md)を参照してください。
+
 ## Python
 
 ```python

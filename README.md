@@ -21,6 +21,13 @@ npm install @kent-tokyo/chematic
 
 Python needs no C/C++ compiler. Rust and WebAssembly builds use the same core.
 
+### v1.0.12 release boundary
+
+This release records expanded reaction, V3000, parser-safety, CIP, and
+cross-binding validation. RDKit-compatible fingerprints, Markush/polymer
+semantics, and browser artifact parity remain bounded; see the [compatibility
+scope](docs/compatibility-scope.md) and [CHANGELOG](CHANGELOG.md).
+
 ## Python
 
 ```python
