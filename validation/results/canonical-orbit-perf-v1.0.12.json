@@ -12,7 +12,7 @@
     "new_leaves": 13,
     "new_nodes_visited": 62,
     "new_orbit_tests": 46,
-    "geomean_speedup": 8.19
+    "geomean_speedup": 8.26
   },
   "tier_b": {
     "fixtures": 6,
@@ -20,7 +20,7 @@
     "parse_failures": 0,
     "empty_outputs": 0,
     "budget_exhaustions": 0,
-    "geomean_speedup": 2.44
+    "geomean_speedup": 2.45
   },
   "scope": "Local Tier A/B proxy only. The exact RENKIN witness and downstream end-to-end throughput remain unmeasured and are required before closing issue #372."
 }
