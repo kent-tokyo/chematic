@@ -264,7 +264,7 @@ fn negative_charge_resonance_branch_is_renumbering_invariant() {
             .expect("mapped center must receive a CIP label");
 
         let n = mol.atom_count();
-        let permutations = [
+        let mut permutations = vec![
             (0..n).rev().collect::<Vec<_>>(),
             (1..n).chain(0..1).collect::<Vec<_>>(),
             (0..n)
@@ -272,6 +272,22 @@ fn negative_charge_resonance_branch_is_renumbering_invariant() {
                 .chain((1..n).step_by(2))
                 .collect::<Vec<_>>(),
         ];
+        // Keep this corpus small and reviewable while adding seeded coverage for
+        // arbitrary insertion orders. The fixed permutations above cover simple
+        // traversal shapes; these shuffles exercise the same invariant against
+        // less predictable atom numbering without making the test nondeterministic.
+        let mut state = 0xD1B5_4A32_D192_ED03_u64 ^ u64::from(center_map);
+        for _ in 0..13 {
+            let mut permutation: Vec<usize> = (0..n).collect();
+            for index in (1..n).rev() {
+                state ^= state << 13;
+                state ^= state >> 7;
+                state ^= state << 17;
+                let other = (state as usize) % (index + 1);
+                permutation.swap(index, other);
+            }
+            permutations.push(permutation);
+        }
         for permutation in permutations {
             let (permuted, old_to_new) = permute_molecule(&mol, &permutation);
             let permuted_center = AtomIdx(old_to_new[center.0 as usize]);
