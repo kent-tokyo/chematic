@@ -17,11 +17,11 @@ DISPOSITION = ROOT / "docs" / "roadmap-open-work.md"
 AREA_MARKERS = {
     "equivalent-operation": ("equivalent operations", "P1"),
     "canonical-identity": ("canonical atom-order", "P2"),
+    "v3000-parity": ("Exact canonical-SMILES", "P2"),
     "performance-stretch": ("1.10x", "Performance stretch target"),
     "force-fields": ("MD/UFF/MMFF94", "P2"),
     "periodic-neighbors": ("periodic neighbor", "P2"),
     "symmetry-search": ("symmetry-heavy", "P2"),
-    "binding-manifest": ("one fixture schema", "P3"),
     "browser-agent": ("browser and agent", "P3"),
     "reaction-breadth": ("reaction/SMARTS/medicinal", "P4"),
     "reaction-quality": ("curated reaction/query", "P4"),
