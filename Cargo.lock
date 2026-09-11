@@ -489,6 +489,7 @@ dependencies = [
  "chematic-perception",
  "chematic-smarts",
  "chematic-smiles",
+ "criterion",
  "rustc-hash",
  "serde",
  "serde_json",

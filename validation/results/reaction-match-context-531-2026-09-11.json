@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "issue": 531,
+  "target_version": "1.0.13",
+  "status": "local-verified",
+  "gate": "prepared_reaction_target_context",
+  "workload": {
+    "target": "CC(=O)Oc1ccccc1C(=O)O",
+    "prepared_templates": 10,
+    "queries_per_iteration": 10,
+    "matching_mode": "single-reactant",
+    "criterion_samples": 100
+  },
+  "host": {
+    "os": "macOS 26.5.2",
+    "arch": "arm64",
+    "rustc": "1.97.0 (2d8144b78 2026-07-07)"
+  },
+  "measurements": {
+    "context_build": {
+      "median_ns": 1000.3,
+      "range_ns": [960.81, 1034.1]
+    },
+    "prepared_ring_aware_10_queries": {
+      "median_us": 33.875,
+      "range_us": [33.119, 34.611]
+    },
+    "prepared_context_10_queries": {
+      "median_us": 33.636,
+      "range_us": [32.282, 34.970]
+    }
+  },
+  "derived": {
+    "context_vs_ring_aware_speedup": 1.0071,
+    "context_build_break_even_queries": 42,
+    "interpretation": "The context path is equivalent and marginally faster on this small target; broader throughput claims require a corpus-weighted benchmark."
+  },
+  "equivalence": {
+    "rust_test": "prepared_reaction_is_send_sync_and_matches_legacy_output",
+    "result": "passed",
+    "ordering_maps_stereo_ez_limits_and_errors": "unchanged"
+  },
+  "commands": [
+    "cargo test -p chematic-rxn --offline",
+    "cargo bench -p chematic-rxn --bench reaction_match_context --offline -- --noplot"
+  ]
+}

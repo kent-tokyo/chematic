@@ -753,9 +753,11 @@ records them.
   snapshot (including its adjacency/atom/bond state) and a reusable `RingSet`,
   is `Send + Sync`, preserves existing match ordering, maps, stereo/E/Z checks,
   limits, and errors, and has an equivalence regression against the existing
-  ring-aware API. Context construction remains a separately measurable step;
-  no throughput claim is made until a dedicated repeated-query benchmark is
-  checked in.
+  ring-aware API. Context construction and repeated-query cost are measured
+  separately in
+  `validation/results/reaction-match-context-531-2026-09-11.json`; the fixed
+  small-target workload shows 1.007x versus the ring-aware baseline, while a
+  corpus-wide throughput claim remains intentionally open.
 
 ## P3 — Portable production surface
 
