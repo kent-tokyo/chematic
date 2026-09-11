@@ -14,10 +14,10 @@ const wasm = await import(path.join(repoRoot, "crates/chematic-wasm/pkg-node/che
 
 assert.equal(fixture.schema_version, 1);
 assert.equal(fixture.fixtures.length, 4);
-assert.equal(fixture.operation_manifest.operations.length, 50);
+assert.equal(fixture.operation_manifest.operations.length, 56);
 assert.equal(
   new Set(fixture.operation_manifest.operations.map(({ id }) => id)).size,
-  50,
+  56,
 );
 
 const orcaOutput = fixture.orca_output_contract;

@@ -16,7 +16,7 @@ def test_shared_fixture_schema_is_stable():
     assert _DOCUMENT["schema_version"] == 1
     assert len(_DOCUMENT["fixtures"]) == 4
     operations = _DOCUMENT["operation_manifest"]["operations"]
-    assert len(operations) == 50
+    assert len(operations) == 56
     assert len({operation["id"] for operation in operations}) == len(operations)
     assert all(len(operation["bindings"]) == 4 for operation in operations)
     assert all(operation["test_anchors"] for operation in operations)

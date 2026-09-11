@@ -697,9 +697,11 @@ records them.
   published v1.0 boundary.
 - [ ] Make Rust, Python, Node, and WASM consume one fixture schema and one
   versioned expected-result manifest for every shared stable operation. The
-  manifest now has an explicit, CI-validated inventory of 50 currently shared
+  manifest now has an explicit, CI-validated inventory of 56 currently shared
   operations with four declared binding surfaces and checked-in test anchors;
-  this inventory is deliberately scoped to the covered surface and does not
+  the former six source-only contracts (CJSON, strict PDB, PDBQT, SMARTS
+  validity, and reaction SMARTS) now have generated Node/WASM runtime coverage.
+  This inventory is deliberately scoped to the covered surface and does not
   yet claim completeness for every public stable API.
   The single-frame XYZ parser is now included as a four-binding contract with
   explicit coordinates and the hydrogen/``heavy_atoms`` counting boundary.
