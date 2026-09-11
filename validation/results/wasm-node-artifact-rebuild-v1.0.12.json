@@ -3,21 +3,21 @@
   "date": "2026-09-11",
   "target_version": "1.0.12",
   "scope": "checked_in_node_wasm_artifact_export_surface",
-  "rust_wasm_compile": "release_compile_passed; wasm-bindgen CLI installation blocked",
+  "rust_wasm_compile": "release_compile_and_bindgen_passed",
   "checked_in_node_artifact": {
     "js_path": "crates/chematic-wasm/pkg-node/chematic_wasm.js",
     "wasm_path": "crates/chematic-wasm/pkg-node/chematic_wasm_bg.wasm",
-    "js_sha256": "57f3925e7f211ecdb7d98dad3ba32cc7fa3eb7972eabd246f359c4541f278fcb",
-    "wasm_sha256": "e57d38f35580dab7d378e8f591d1b54c0f9ba584c936bd79a9854942fd7c5fa0",
+    "js_sha256": "f225189aeb05dbaeed0f676db04ae51de1aa75625b1fc2c95ec00c66aa3df759",
+    "wasm_sha256": "06cfe57299eb31eb4634fbe529cfdf6322c8bf438a3d17510bed833c20339dff",
     "runtime_version": "1.0.12",
     "package_metadata_version": "1.0.12"
   },
   "existing_node_artifact_surface": {
     "source_export_count": 263,
-    "artifact_export_count": 262,
-    "missing_from_artifact": ["mol_from_cml_strict"],
+    "artifact_export_count": 263,
+    "missing_from_artifact": [],
     "stale_in_artifact": []
   },
-  "status": "source_ahead_of_checked_in_artifact",
-  "interpretation": "The release Rust/WASM compile passed, but wasm-pack could not run wasm-bindgen because the matching CLI was unavailable and its automatic installation was blocked. The checked-in artifact therefore intentionally remains one export behind source: mol_from_cml_strict. Source/artifact export parity is not claimed until a generated artifact is captured."
+  "status": "match",
+  "interpretation": "The v1.0.12 Node/WASM artifact was regenerated with wasm-pack 0.13.1, wasm-bindgen 0.2.121, and wasm-opt 130. It exposes the complete declared source export surface, including mol_from_cml_strict. This is local generated-artifact evidence; cross-platform and browser-memory evidence remain separate."
 }

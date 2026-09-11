@@ -34,6 +34,7 @@
       {"id": "mol2_roundtrip", "contract": "mol2_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-mol/src/mol2_tripos.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
       {"id": "parse_cml", "contract": "cml_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-mol/src/cml.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
       {"id": "cml_roundtrip", "contract": "cml_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-mol/src/cml.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
+      {"id": "parse_cml_strict", "contract": "cml_strict_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-mol/src/cml.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
       {"id": "parse_cdxml", "contract": "cdxml_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-mol/src/cdxml.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
       {"id": "cdxml_roundtrip", "contract": "cdxml_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-mol/src/cdxml.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
       {"id": "parse_mmcif", "contract": "mmcif_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-mol/src/mmcif.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
@@ -63,9 +64,7 @@
       {"id": "reaction_smarts_match", "contract": "reaction_smarts_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-rxn/tests/cross_binding_contract.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/source_only_contract.test.mjs"]}
     ]
   },
-  "source_only_operations": [
-    {"id": "parse_cml_strict", "contract": "cml_strict_contract", "bindings": ["rust", "python", "wasm"], "missing_binding": "node-generated-artifact", "test_anchors": ["crates/chematic-mol/src/cml.rs", "crates/chematic-py/src/formats.rs", "crates/chematic-wasm/src/mol_io.rs", "crates/chematic-wasm/src/tests.rs"]}
-  ],
+  "source_only_operations": [],
   "batch_canonicalization_contract": {
     "schema_version": 1,
     "inputs": ["OCC", "C1CC", "CCN"],
@@ -244,6 +243,13 @@
     "schema_version": 1,
     "input": "<?xml version=\"1.0\"?>\n<molecule xmlns=\"http://www.xml-cml.org/schema\">\n  <atomArray>\n    <atom id=\"a1\" elementType=\"C\" x2=\"0.0\" y2=\"0.0\"/>\n    <atom id=\"a2\" elementType=\"C\" x2=\"1.5\" y2=\"0.0\"/>\n    <atom id=\"a3\" elementType=\"O\" x2=\"3.0\" y2=\"0.0\"/>\n  </atomArray>\n  <bondArray>\n    <bond atomRefs2=\"a1 a2\" order=\"1\"/>\n    <bond atomRefs2=\"a2 a3\" order=\"1\"/>\n  </bondArray>\n</molecule>\n",
     "expected": {"atom_count": 3}
+  },
+  "cml_strict_contract": {
+    "schema_version": 1,
+    "scope": "opt_in_structural_non_empty_cml",
+    "valid_input": "<molecule><atomArray><atom id=\"a1\" elementType=\"C\"/></atomArray><bondArray/></molecule>",
+    "expected_atom_count": 1,
+    "rejected_inputs": ["<cml/>", "<molecule><atomArray>", "<molecule><atomArray/></molecule>"]
   },
   "cml_strict_contract": {
     "schema_version": 1,

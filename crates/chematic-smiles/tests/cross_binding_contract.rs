@@ -20,7 +20,7 @@ fn shared_parse_and_canonical_contract_matches() {
     let operations = document["operation_manifest"]["operations"]
         .as_array()
         .expect("operation manifest operations");
-    assert_eq!(operations.len(), 56);
+    assert_eq!(operations.len(), 57);
     let mut operation_ids = std::collections::HashSet::new();
     for operation in operations {
         let id = operation["id"].as_str().expect("operation id");

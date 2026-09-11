@@ -47,6 +47,7 @@ CONTRACT_SECTIONS = {
     "orca_output_contract",
     "mol2_contract",
     "cml_contract",
+    "cml_strict_contract",
     "cdxml_contract",
     "mmcif_contract",
     "moljson_contract",
