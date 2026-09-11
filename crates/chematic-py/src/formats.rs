@@ -374,6 +374,20 @@ fn from_cml(cml_str: &str) -> PyResult<Mol> {
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
+/// Parse a structurally valid, non-empty CML string into a ``Mol`` object.
+///
+/// Unlike :func:`from_cml`, this opt-in entry point rejects missing molecules,
+/// empty molecules, and mismatched or unclosed XML elements.
+#[pyfunction]
+fn from_cml_strict(cml_str: &str) -> PyResult<Mol> {
+    chematic_mol::parse_cml_strict(cml_str)
+        .map(|(mol, _coords)| Mol {
+            inner: Arc::new(mol),
+            props: Default::default(),
+        })
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+}
+
 /// Parse a ChemAxon Marvin (.mrv) string into a ``Mol`` object.
 ///
 /// S-groups, polymers, reactions, multicenter bonds, query atoms/bonds,
@@ -2430,6 +2444,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(from_mol_block_with_diagnostics, m)?)?;
     m.add_function(wrap_pyfunction!(parse_sdf_with_coords, m)?)?;
     m.add_function(wrap_pyfunction!(from_cml, m)?)?;
+    m.add_function(wrap_pyfunction!(from_cml_strict, m)?)?;
     m.add_function(wrap_pyfunction!(from_mrv_block, m)?)?;
     m.add_function(wrap_pyfunction!(from_mrv_block_with_coords, m)?)?;
     m.add_function(wrap_pyfunction!(from_cjson, m)?)?;

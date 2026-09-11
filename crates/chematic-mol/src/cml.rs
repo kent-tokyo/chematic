@@ -59,6 +59,12 @@ impl Default for CmlParseLimits {
 /// Error returned when parsing a CML document fails.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CmlError {
+    /// A strict parse did not contain a `<molecule>` element.
+    MissingMolecule,
+    /// A strict parse contained a molecule but no atom elements.
+    EmptyMolecule,
+    /// A strict parse found mismatched or unclosed XML elements.
+    MalformedXml(String),
     /// An atom referenced `elementType` that is not a known element symbol.
     UnknownElement(String),
     /// A `<bond>` element referenced an atom id that was not defined.
@@ -80,6 +86,9 @@ pub enum CmlError {
 impl std::fmt::Display for CmlError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            CmlError::MissingMolecule => write!(f, "CML: missing molecule element"),
+            CmlError::EmptyMolecule => write!(f, "CML: molecule contains no atom elements"),
+            CmlError::MalformedXml(s) => write!(f, "malformed CML XML: {s}"),
             CmlError::UnknownElement(s) => write!(f, "unknown element symbol: {s}"),
             CmlError::UnknownAtomRef(s) => write!(f, "unknown atom ref: {s}"),
             CmlError::InvalidAtomRefs2(s) => write!(f, "invalid atomRefs2: {s}"),
@@ -249,6 +258,29 @@ struct CmlAtomData {
 /// ```
 pub fn parse_cml(input: &str) -> Result<(Molecule, Vec<(f64, f64)>), CmlError> {
     parse_cml_with_limits(input, &CmlParseLimits::default())
+}
+
+/// Parse a structurally valid, non-empty CML molecule.
+///
+/// This is the strict counterpart to [`parse_cml`]. The default parser keeps
+/// its historical lenient behavior for compatibility (including an empty
+/// molecule when no `<molecule>`/`<atom>` elements are found). Strict callers
+/// opt into XML nesting checks and a non-empty molecule boundary.
+pub fn parse_cml_strict(input: &str) -> Result<(Molecule, Vec<(f64, f64)>), CmlError> {
+    parse_cml_strict_with_limits(input, &CmlParseLimits::default())
+}
+
+/// Parse CML with explicit limits and the strict structural boundary.
+pub fn parse_cml_strict_with_limits(
+    input: &str,
+    limits: &CmlParseLimits,
+) -> Result<(Molecule, Vec<(f64, f64)>), CmlError> {
+    validate_strict_cml_structure(input)?;
+    let parsed = parse_cml_with_limits(input, limits)?;
+    if parsed.0.atom_count() == 0 {
+        return Err(CmlError::EmptyMolecule);
+    }
+    Ok(parsed)
 }
 
 /// Parse CML with explicit resource limits.
@@ -441,6 +473,72 @@ pub fn parse_cml_with_limits(
     Ok((builder.build(), coords))
 }
 
+fn validate_strict_cml_structure(input: &str) -> Result<(), CmlError> {
+    let mut stack: Vec<String> = Vec::new();
+    let mut saw_molecule = false;
+    let mut saw_atom = false;
+    let mut cursor = 0usize;
+    while let Some(relative_start) = input[cursor..].find('<') {
+        let start = cursor + relative_start;
+        let relative_end = input[start..]
+            .find('>')
+            .ok_or_else(|| CmlError::MalformedXml("unterminated tag".to_string()))?;
+        let end = start + relative_end;
+        let raw = input[start + 1..end].trim();
+        cursor = end + 1;
+        if raw.is_empty() || raw.starts_with('!') || raw.starts_with('?') {
+            continue;
+        }
+        if let Some(name) = raw.strip_prefix('/') {
+            let name = tag_name(name);
+            let Some(open) = stack.pop() else {
+                return Err(CmlError::MalformedXml(format!(
+                    "unexpected closing tag </{name}>"
+                )));
+            };
+            if open != name {
+                return Err(CmlError::MalformedXml(format!(
+                    "closing tag </{name}> does not match <{open}>"
+                )));
+            }
+            continue;
+        }
+        let self_closing = raw.ends_with('/');
+        let name = tag_name(raw);
+        if name == "molecule" {
+            saw_molecule = true;
+        }
+        if name == "atom" {
+            saw_atom = true;
+        }
+        if !self_closing {
+            stack.push(name);
+        }
+    }
+    if !stack.is_empty() {
+        return Err(CmlError::MalformedXml(format!(
+            "unclosed tag <{}>",
+            stack.last().expect("non-empty stack")
+        )));
+    }
+    if !saw_molecule {
+        return Err(CmlError::MissingMolecule);
+    }
+    if !saw_atom {
+        return Err(CmlError::EmptyMolecule);
+    }
+    Ok(())
+}
+
+fn tag_name(raw: &str) -> String {
+    raw.trim_start_matches('/')
+        .trim_end_matches('/')
+        .split_whitespace()
+        .next()
+        .unwrap_or("")
+        .to_ascii_lowercase()
+}
+
 /// True if `line` starts the opening tag for the given element name
 /// (case-insensitive on the element name, as some writers vary case).
 fn is_element_tag(line: &str, name: &str) -> bool {
@@ -591,6 +689,36 @@ mod tests {
             matches!(result, Err(CmlError::UnknownElement(_))),
             "unknown element should return Err"
         );
+    }
+
+    #[test]
+    fn strict_cml_accepts_writer_output() {
+        let (mol, coords) = parse_cml_strict(ETHANOL_CML).unwrap();
+        assert_eq!(mol.atom_count(), 3);
+        assert_eq!(coords.len(), 3);
+    }
+
+    #[test]
+    fn strict_cml_rejects_empty_and_unbalanced_documents() {
+        assert!(matches!(
+            parse_cml_strict("<cml/>"),
+            Err(CmlError::MissingMolecule)
+        ));
+        assert!(matches!(
+            parse_cml_strict("<molecule><atomArray>"),
+            Err(CmlError::MalformedXml(_))
+        ));
+        assert!(matches!(
+            parse_cml_strict("<molecule><atomArray/></molecule>"),
+            Err(CmlError::EmptyMolecule)
+        ));
+    }
+
+    #[test]
+    fn lenient_cml_boundary_remains_compatible() {
+        let (mol, coords) = parse_cml("<cml/>").unwrap();
+        assert_eq!(mol.atom_count(), 0);
+        assert!(coords.is_empty());
     }
 
     #[test]
