@@ -22,6 +22,7 @@ echo "=== Python binding contract evidence ===" && SCHEMATIC_BENCHMARK_VERSION="
 echo "=== streaming safety manifest ===" && python3 scripts/check_streaming_format_limits.py --validate-only
 echo "=== streaming safety evidence ===" && python3 scripts/check_streaming_safety_evidence.py
 echo "=== streaming parser-entry evidence ===" && python3 scripts/check_streaming_parser_entry_evidence.py
+echo "=== streaming failure taxonomy evidence ===" && python3 scripts/check_streaming_failure_taxonomy_evidence.py
 echo "=== triclinic neighbor evidence ===" && SCHEMATIC_BENCHMARK_VERSION="$HISTORICAL_VERSION" python3 scripts/check_triclinic_neighbor_evidence.py
 echo "=== MMFF94 issue #337 determinism evidence ===" && SCHEMATIC_BENCHMARK_VERSION="$HISTORICAL_VERSION" python3 scripts/check_mmff94_issue337_determinism_evidence.py
 echo "=== Issue #503 E/Z residual evidence ===" && python3 scripts/check_ez_residual_evidence.py
