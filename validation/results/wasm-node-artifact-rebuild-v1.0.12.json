@@ -13,9 +13,9 @@
     "package_metadata_version": "1.0.12"
   },
   "existing_node_artifact_surface": {
-    "source_export_count": 262,
+    "source_export_count": 263,
     "artifact_export_count": 262,
-    "missing_from_artifact": [],
+    "missing_from_artifact": ["mol_from_cml_strict"],
     "stale_in_artifact": []
   },
   "status": "match",
