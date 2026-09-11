@@ -438,17 +438,14 @@ fn v3000_sgroup_kind_json(kind: &chematic_mol::V3000SGroupKind) -> (String, Opti
 /// 1-based `atomIds`, and source-ordered `attributes`. This API does not
 /// expand polymers or infer query chemistry. Unknown kind tokens are returned
 /// as `kind: "other"` plus `kindToken` so callers can preserve their meaning.
-#[wasm_bindgen]
-pub fn v3000_sgroups_json(block: &str) -> Result<String, JsValue> {
+pub(crate) fn v3000_sgroups_json_inner(block: &str) -> Result<String, String> {
     if block.len() > WASM_MAX_INPUT_BYTES {
-        return Err(JsValue::from_str("V3000 block too large"));
+        return Err("V3000 block too large".to_string());
     }
-    let (_, metadata) =
-        chematic_mol::parse_mol_v3000(block).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let (_, metadata) = chematic_mol::parse_mol_v3000(block).map_err(|e| e.to_string())?;
     let mut records = Vec::with_capacity(metadata.v3000_sgroups.len());
     for line in metadata.v3000_sgroups {
-        let group = chematic_mol::parse_v3000_sgroup_line(&line)
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let group = chematic_mol::parse_v3000_sgroup_line(&line).map_err(|e| e.to_string())?;
         let (kind, kind_token) = v3000_sgroup_kind_json(&group.kind);
         let atoms = group
             .atom_ids
@@ -481,9 +478,14 @@ pub fn v3000_sgroups_json(block: &str) -> Result<String, JsValue> {
     }
     let output = format!("[{}]", records.join(","));
     if output.len() > WASM_MAX_OUTPUT_BYTES {
-        return Err(JsValue::from_str("V3000 SGROUP JSON output too large"));
+        return Err("V3000 SGROUP JSON output too large".to_string());
     }
     Ok(output)
+}
+
+#[wasm_bindgen]
+pub fn v3000_sgroups_json(block: &str) -> Result<String, JsValue> {
+    v3000_sgroups_json_inner(block).map_err(|error| JsValue::from_str(&error))
 }
 
 // ---------------------------------------------------------------------------
