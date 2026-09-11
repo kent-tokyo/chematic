@@ -695,12 +695,15 @@ records them.
   adversarial fixtures.
 - [x] Run Chromium, Firefox, and WebKit smoke/adversarial lanes for the
   published v1.0 boundary.
-- [ ] Make Rust, Python, Node, and WASM consume one fixture schema and one
-  versioned expected-result manifest for every shared stable operation. The
-  manifest now has an explicit, CI-validated inventory of 56 currently shared
-  operations with four declared binding surfaces and checked-in test anchors;
-  the former six source-only contracts (CJSON, strict PDB, PDBQT, SMARTS
-  validity, and reaction SMARTS) now have generated Node/WASM runtime coverage.
+- [x] Make Rust, Python, Node, and WASM consume one fixture schema and one
+  versioned expected-result manifest for the currently shared stable surface.
+  The manifest has an explicit, CI-validated inventory of 56 shared operations
+  with four declared binding surfaces and checked-in test anchors; the former
+  source-only contracts (CJSON, strict PDB, PDBQT, SMARTS validity, and
+  reaction SMARTS) now have generated Node/WASM runtime coverage. The current
+  source/artifact WASM export audit is 262/262 with no missing or stale names.
+  This closes the declared current shared surface; it does not claim that
+  every public API is already shared across all four bindings.
   This inventory is deliberately scoped to the covered surface and does not
   yet claim completeness for every public stable API.
   The single-frame XYZ parser is now included as a four-binding contract with
