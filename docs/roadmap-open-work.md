@@ -63,6 +63,7 @@ failures, and the static,
 format, clippy, binding-manifest, strict-PDB-binding, benchmark-index,
 streaming-safety-manifest,
 cross-engine streaming matrix, MMFF94 RDKit availability oracle,
+streaming failure taxonomy, Issue #503 E/Z residual evidence,
 roadmap-disposition, and workflow-pin checks
 passed. The default advisory `deny` step cannot acquire its lock because the
 Cargo advisory database is under a read-only path, but a writable-copy rerun
