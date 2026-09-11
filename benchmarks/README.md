@@ -195,6 +195,7 @@ results.
 | Record | Scope |
 |---|---|
 | [`2026-09-03-competitive.md`](2026-09-03-competitive.md) | v1.0.1 six-operation competitive run |
+| [`2026-09-10-official-rdkit-js-gate-v1.0.11.md`](2026-09-10-official-rdkit-js-gate-v1.0.11.md) | Historical v1.0.11 same-process official RDKit.js comparison |
 | [`2026-08-23.md`](2026-08-23.md) | v0.18.0 accuracy, corpus, WASM, and CIP remeasurement |
 | [`2026-07-17.md`](2026-07-17.md) | v0.4.29 throughput non-reproduction and descriptor accuracy |
 | [`2026-06-25.md`](2026-06-25.md) | v0.4.20 baseline |
