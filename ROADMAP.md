@@ -90,7 +90,8 @@ Competitive-response gate status (2026-09-10):
 - [x] Add a bounded typed V3000 SGROUP syntax view while preserving the
   original logical lines losslessly: validated ID/parent/`ATOMS` fields,
   known/unknown kind tokens, and source-ordered attributes. Polymer expansion
-  semantics and cross-engine fixtures remain open.
+  semantics and cross-engine fixtures remain open; the same syntax view is
+  now exposed as bounded WASM JSON for browser consumers.
 - [x] Add typed CDXML text/caption style access for font, size, and alignment,
   with finite-number validation and regression coverage. Full ChemDraw style
   inheritance and rendering semantics remain outside the bounded contract.

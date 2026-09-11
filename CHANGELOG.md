@@ -45,6 +45,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   references, and attributes while retaining the original logical line for
   lossless writing; polymer expansion and cross-engine semantics remain
   explicitly outside this contract.
+- Exposed the typed V3000 SGROUP syntax view through a bounded WASM JSON API,
+  including explicit handling for unknown kind tokens and output-size limits.
 
 ## [1.0.12] - 2026-09-11
 

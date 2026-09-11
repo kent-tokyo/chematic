@@ -1824,6 +1824,32 @@ M  V30 END CTAB\nM  END\n";
 }
 
 #[test]
+fn v3000_sgroups_json_exposes_typed_syntax_without_expansion() {
+    let block = "\n\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\n\
+M  V30 BEGIN CTAB\n\
+M  V30 COUNTS 2 1 0 0 0\n\
+M  V30 BEGIN ATOM\n\
+M  V30 1 C 0 0 0 0\n\
+M  V30 2 C 1 0 0 0\n\
+M  V30 END ATOM\n\
+M  V30 BEGIN BOND\n\
+M  V30 1 1 1 2\n\
+M  V30 END BOND\n\
+M  V30 BEGIN SGROUP\n\
+M  V30 1 COP 0 ATOMS=(2 1 2) BRKXYZ=(4 1 2 3 4)\n\
+M  V30 END SGROUP\n\
+M  V30 END CTAB\nM  END\n";
+    let value: serde_json::Value =
+        serde_json::from_str(&v3000_sgroups_json(block).expect("typed SGROUP JSON"))
+            .expect("valid JSON");
+    assert_eq!(value[0]["id"], 1);
+    assert_eq!(value[0]["kind"], "cop");
+    assert_eq!(value[0]["parentId"], serde_json::Value::Null);
+    assert_eq!(value[0]["atomIds"], serde_json::json!([1, 2]));
+    assert_eq!(value[0]["attributes"][0]["key"], "BRKXYZ");
+}
+
+#[test]
 fn generate_3d_minimized_pdb_nonzero_coords() {
     let mol = parse("CCCC"); // butane — flexible, benefits from minimization
     let pdb = generate_3d_minimized_pdb(&mol);

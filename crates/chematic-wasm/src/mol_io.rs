@@ -2,8 +2,9 @@
 
 use crate::{
     MolHandle, WASM_MAX_ATOMS, WASM_MAX_BATCH_ITEMS, WASM_MAX_INPUT_BYTES,
-    WASM_MAX_JSON_STRING_BYTES, bounded_json_string, enforce_wasm_molecule_size,
-    escape_json_string, parse_smiles_json_array, parse_wasm_string_json_array,
+    WASM_MAX_JSON_STRING_BYTES, WASM_MAX_OUTPUT_BYTES, bounded_json_string,
+    enforce_wasm_molecule_size, escape_json_string, parse_smiles_json_array,
+    parse_wasm_string_json_array,
 };
 use wasm_bindgen::prelude::*;
 
@@ -397,13 +398,13 @@ pub fn to_mol_v3000_block(mol: &MolHandle) -> String {
     chematic_mol::write_mol_v3000(&mol.inner, &meta, &coords)
 }
 
-/// Parse and serialize a V3000 block while preserving opaque V3000 metadata.
+/// Parse and serialize a V3000 block while preserving V3000 metadata.
 ///
 /// Unlike the topology-only [`mol_from_v3000_block`] + [`to_mol_v3000_block`]
 /// pair, this explicit round-trip API retains `SGROUP` logical lines and
-/// `COLLECTION` stereo groups. SGROUP semantics remain opaque until the core
-/// molecule model grows a typed representation; the API therefore preserves
-/// bytes at the logical-line level without claiming polymer/query semantics.
+/// `COLLECTION` stereo groups. SGROUP polymer/query expansion is still out of
+/// scope, but the typed syntax view is available through
+/// [`v3000_sgroups_json`].
 #[wasm_bindgen]
 pub fn roundtrip_mol_v3000_block(block: &str) -> Result<String, JsValue> {
     if block.len() > WASM_MAX_INPUT_BYTES {
@@ -418,6 +419,71 @@ pub fn roundtrip_mol_v3000_block(block: &str) -> Result<String, JsValue> {
         )));
     }
     Ok(chematic_mol::write_mol_v3000(&mol, &metadata, &coords))
+}
+
+fn v3000_sgroup_kind_json(kind: &chematic_mol::V3000SGroupKind) -> (String, Option<String>) {
+    match kind {
+        chematic_mol::V3000SGroupKind::Sup => ("sup".to_string(), None),
+        chematic_mol::V3000SGroupKind::Gen => ("gen".to_string(), None),
+        chematic_mol::V3000SGroupKind::Cop => ("cop".to_string(), None),
+        chematic_mol::V3000SGroupKind::Dat => ("dat".to_string(), None),
+        chematic_mol::V3000SGroupKind::Ext => ("ext".to_string(), None),
+        chematic_mol::V3000SGroupKind::Other(token) => ("other".to_string(), Some(token.clone())),
+    }
+}
+
+/// Return the validated V3000 SGROUP syntax view as JSON.
+///
+/// The result is an array of objects containing `id`, `kind`, `parentId`,
+/// 1-based `atomIds`, and source-ordered `attributes`. This API does not
+/// expand polymers or infer query chemistry. Unknown kind tokens are returned
+/// as `kind: "other"` plus `kindToken` so callers can preserve their meaning.
+#[wasm_bindgen]
+pub fn v3000_sgroups_json(block: &str) -> Result<String, JsValue> {
+    if block.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str("V3000 block too large"));
+    }
+    let (_, metadata) =
+        chematic_mol::parse_mol_v3000(block).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let mut records = Vec::with_capacity(metadata.v3000_sgroups.len());
+    for line in metadata.v3000_sgroups {
+        let group = chematic_mol::parse_v3000_sgroup_line(&line)
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let (kind, kind_token) = v3000_sgroup_kind_json(&group.kind);
+        let atoms = group
+            .atom_ids
+            .iter()
+            .map(u32::to_string)
+            .collect::<Vec<_>>()
+            .join(",");
+        let attributes = group
+            .attributes
+            .iter()
+            .map(|(key, value)| {
+                format!(
+                    "{{\"key\":\"{}\",\"value\":\"{}\"}}",
+                    escape_json_string(key),
+                    escape_json_string(value)
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+        let kind_token_field = kind_token
+            .map(|token| format!(",\"kindToken\":\"{}\"", escape_json_string(&token)))
+            .unwrap_or_default();
+        let parent = group
+            .parent_id
+            .map_or_else(|| "null".to_string(), |value| value.to_string());
+        records.push(format!(
+            "{{\"id\":{},\"kind\":\"{}\",\"parentId\":{},\"atomIds\":[{}],\"attributes\":[{}]{} }}",
+            group.id, kind, parent, atoms, attributes, kind_token_field
+        ));
+    }
+    let output = format!("[{}]", records.join(","));
+    if output.len() > WASM_MAX_OUTPUT_BYTES {
+        return Err(JsValue::from_str("V3000 SGROUP JSON output too large"));
+    }
+    Ok(output)
 }
 
 // ---------------------------------------------------------------------------
