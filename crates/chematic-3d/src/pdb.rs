@@ -587,12 +587,14 @@ mod tests {
         for (range, replacement, field) in cases {
             let mut malformed = ATOM.to_string();
             malformed.replace_range(range, replacement);
-            assert!(matches!(
-                parse_pdb_atoms_strict(&malformed, &PdbParseLimits::default()),
-                Err(PdbStrictError::Parse(PdbParseError { field: actual, .. }))
-                    if actual == field
-            ),
-            "strict PDB must identify the malformed {field} field");
+            assert!(
+                matches!(
+                    parse_pdb_atoms_strict(&malformed, &PdbParseLimits::default()),
+                    Err(PdbStrictError::Parse(PdbParseError { field: actual, .. }))
+                        if actual == field
+                ),
+                "strict PDB must identify the malformed {field} field"
+            );
         }
     }
 }

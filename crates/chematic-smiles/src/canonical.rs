@@ -1785,7 +1785,8 @@ impl<'a> CanonicalWriter<'a> {
             // re-orienting for `atom`'s write direction, never after -- see
             // its doc comment.
             let normalized = self.normalize_ez(bidx, atom);
-            let bond_order = Self::reorient_for_write(self.raw_direction_anchor(bidx), atom, normalized);
+            let bond_order =
+                Self::reorient_for_write(self.raw_direction_anchor(bidx), atom, normalized);
             let bond_order = suppress_standalone_wedge(self.mol, bidx, bond_order);
             let is_last = i == n - 1;
             let parent_arom = self.mol.atom(atom).aromatic;
@@ -3524,11 +3525,19 @@ mod tests {
             "the parser-side stash anchor must survive reversed atom storage"
         );
         assert_eq!(
-            CanonicalWriter::reorient_for_write(writer.raw_direction_anchor(bidx), c1, BondOrder::Up),
+            CanonicalWriter::reorient_for_write(
+                writer.raw_direction_anchor(bidx),
+                c1,
+                BondOrder::Up
+            ),
             BondOrder::Up
         );
         assert_eq!(
-            CanonicalWriter::reorient_for_write(writer.raw_direction_anchor(bidx), c2, BondOrder::Up),
+            CanonicalWriter::reorient_for_write(
+                writer.raw_direction_anchor(bidx),
+                c2,
+                BondOrder::Up
+            ),
             BondOrder::Down
         );
     }
