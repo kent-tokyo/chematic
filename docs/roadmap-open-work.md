@@ -10,7 +10,7 @@ The opt-in analytic L-BFGS objective now switches the cutoff energy and gradient
 together; the production-default minimizer remains unchanged.
 
 This document is the current disposition of unchecked roadmap items for the
-v1.0.12 release tree. An item
+v1.0.13 release tree. An item
 is not complete merely because a narrower local slice has evidence.
 
 | Roadmap area | Open work | Disposition |

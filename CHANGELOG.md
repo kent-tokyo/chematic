@@ -9,6 +9,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+No unreleased changes.
+
+## [1.0.13] - 2026-09-11
+
 - Rejected multiple top-level elements in the opt-in strict CML parser while
   preserving the historical lenient parser behavior.
 - Added the multiple-root rejection to the shared Rust/Python/Node/WASM CML
@@ -440,7 +444,8 @@ The authoritative list of published tags and release artifacts is the
 historical implementation notes remain available in the archived detailed
 history and Git history.
 
-[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.12...HEAD
+[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.13...HEAD
+[1.0.13]: https://github.com/kent-tokyo/chematic/compare/v1.0.12...v1.0.13
 [1.0.12]: https://github.com/kent-tokyo/chematic/compare/v1.0.11...v1.0.12
 [1.0.11]: https://github.com/kent-tokyo/chematic/compare/v1.0.10...v1.0.11
 [1.0.10]: https://github.com/kent-tokyo/chematic/compare/v1.0.9...v1.0.10

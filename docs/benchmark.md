@@ -7,7 +7,7 @@ counted as wins. Dated raw records are indexed in
 
 ## Current status
 
-The current release line is **v1.0.12**. The newest checked-in performance
+The current release line is **v1.0.13**. The newest checked-in performance
 records include the v1.0.12 three-lane similarity-search gate; older operation
 timing and published-size rows remain explicitly pinned to their recorded
 source/release-line versions.
