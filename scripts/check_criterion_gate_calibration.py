@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -37,12 +38,15 @@ def main() -> int:
     }:
         return fail("threshold or block contract changed")
     cases = manifest.get("cases")
-    if not isinstance(cases, list) or {case.get("id") for case in cases} != {
+    expected_ids = {
         "plus5", "plus10", "plus6", "clean_noop", "stage2_build_noise",
         "stage2_real_effect", "stage2_contaminated",
-    }:
+    }
+    if not isinstance(cases, list) or len(cases) != len(expected_ids) or {case.get("id") for case in cases} != expected_ids:
         return fail("calibration case set is incomplete")
     by_id = {case["id"]: case for case in cases}
+    if any(not isinstance(case.get("median_ratio"), (int, float)) or not math.isfinite(case["median_ratio"]) or case["median_ratio"] <= 0 for case in cases):
+        return fail("every calibration case needs a finite positive median_ratio")
     for case_id in ("plus5", "plus10", "plus6"):
         case = by_id[case_id]
         if case.get("stage") != 1 or case.get("expected_route") != "route" or case.get("expected_gate") != "eligible_for_stage2":
