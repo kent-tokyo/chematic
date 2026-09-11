@@ -515,9 +515,9 @@ fn validate_strict_cml_structure(input: &str) -> Result<(), CmlError> {
     let mut cursor = 0usize;
     while let Some(relative_start) = input[cursor..].find('<') {
         let start = cursor + relative_start;
-        let relative_end = input[start..]
-            .find('>')
-            .ok_or_else(|| CmlError::MalformedXml("unterminated tag".to_string()))?;
+        let relative_end = find_strict_tag_end(&input[start..]).ok_or_else(|| {
+            CmlError::MalformedXml("unterminated tag or quoted attribute".to_string())
+        })?;
         let end = start + relative_end;
         let raw = input[start + 1..end].trim();
         cursor = end + 1;
@@ -563,6 +563,26 @@ fn validate_strict_cml_structure(input: &str) -> Result<(), CmlError> {
         return Err(CmlError::EmptyMolecule);
     }
     Ok(())
+}
+
+/// Find the end of one XML-ish tag without treating a `>` inside a quoted
+/// attribute as the tag boundary.  The strict parser is intentionally a small
+/// structural gate rather than a general XML implementation, but its boundary
+/// scanner must agree with [`split_cml_tags`] on this basic lexical rule.
+fn find_strict_tag_end(input: &str) -> Option<usize> {
+    let mut quote = None;
+    for (offset, character) in input.char_indices().skip(1) {
+        if let Some(active_quote) = quote {
+            if character == active_quote {
+                quote = None;
+            }
+        } else if character == '\'' || character == '"' {
+            quote = Some(character);
+        } else if character == '>' {
+            return Some(offset);
+        }
+    }
+    None
 }
 
 fn tag_name(raw: &str) -> String {
@@ -739,6 +759,24 @@ mod tests {
         let (mol, coords) = parse_cml_strict(compact).unwrap();
         assert_eq!(mol.atom_count(), 1);
         assert_eq!(coords, vec![(0.0, 0.0)]);
+    }
+
+    #[test]
+    fn strict_cml_scanner_keeps_greater_than_inside_quoted_attribute() {
+        let compact = "<molecule><atomArray><atom id=\"a>1\" elementType=\"C\"/></atomArray><bondArray/></molecule>";
+        let (mol, coords) = parse_cml_strict(compact).unwrap();
+        assert_eq!(mol.atom_count(), 1);
+        assert_eq!(coords.len(), 1);
+    }
+
+    #[test]
+    fn strict_cml_scanner_rejects_unterminated_quoted_attribute() {
+        let malformed =
+            "<molecule><atomArray><atom id=\"a1 elementType=\"C\"/></atomArray></molecule>";
+        assert!(matches!(
+            parse_cml_strict(malformed),
+            Err(CmlError::MalformedXml(_))
+        ));
     }
 
     #[test]
