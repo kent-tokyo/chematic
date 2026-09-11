@@ -41,12 +41,12 @@ the [benchmark guide](benchmark.md).
 
 ## Accuracy and parity
 
-The opt-in `Mol.rdkit_mw` profile uses the pinned RDKit average atomic-mass
-values for the currently divergent B, S, and Se entries without changing the
-native `Mol.mw` default. In the v1.0.13 source-built gate it matched RDKit's
-`Descriptors.MolWt` for 4,999 unlabelled rows; the one remaining row was an
-explicit-isotope case and is intentionally fail-closed. The full per-field
-distribution and 12-case structural holdout are recorded in
+The opt-in `Mol.rdkit_mw` and `Mol.rdkit_hba` profiles use pinned RDKit
+conventions without changing the native `Mol.mw` or `Mol.hba` defaults. In the
+v1.0.13 source-built gate they matched `Descriptors.MolWt` on 4,999 unlabelled
+rows and `NumHAcceptors` on all 5,000 rows; the one MW isotope row is
+intentionally fail-closed. The full per-field distribution and 12-case
+structural holdout are recorded in
 [`descriptor-rdkit-diagnostics-v1.0.13.json`](../validation/results/descriptor-rdkit-diagnostics-v1.0.13.json)
 and [`descriptor-rdkit-holdout-v1.0.13.json`](../validation/results/descriptor-rdkit-holdout-v1.0.13.json).
 

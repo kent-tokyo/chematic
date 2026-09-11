@@ -612,8 +612,9 @@ documentation, and required measurement agree.
   native defaults. Start with molecular weight using an RDKit-matched average
   atomic-mass table, then extend the profile to Crippen LogP/molar refractivity,
   Fsp3, and ring metrics only where the semantic contract is explicit. The
-  unlabelled molecular-weight profile is exposed as `Mol.rdkit_mw`; isotope
-  labels fail closed until isotope-table parity is implemented.
+  unlabelled molecular-weight and HBA profiles are exposed as `Mol.rdkit_mw`
+  and `Mol.rdkit_hba`; isotope labels fail closed until isotope-table parity is
+  implemented.
 - [x] Record per-descriptor error distributions against a pinned RDKit release:
   exact match, MAE, median absolute error, p95, maximum error, and agreement at
   the published and stricter tolerances. Keep corpus, RDKit version, and parser

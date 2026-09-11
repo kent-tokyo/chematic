@@ -19,7 +19,7 @@ from pathlib import Path
 
 FIELDS = {
     "molecular_weight": ("rdkit_mw", "mw", 0.01),
-    "hba": ("hba", "hba", 0.0),
+    "hba": ("rdkit_hba", "hba", 0.0),
     "hbd": ("hbd", "hbd", 0.0),
     "tpsa": ("tpsa", "tpsa", 0.1),
     "logp": ("logp", "logp", 0.01),

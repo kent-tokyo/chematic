@@ -546,7 +546,11 @@ pub fn hbd_count(mol: &Molecule) -> usize {
 /// - O with H bonded to a C=O carbon (carboxylic/ester OH).
 /// - O with H bonded to oxidized S with S=O (sulfonic/sulfonamide acid OH).
 /// - Oxidized S (degree > 2 or has S=O bonds): lone pair engaged in S=O resonance.
-fn hba_count_from_set(mol: &Molecule, ring_bonds: &FxHashSet<BondIdx>) -> usize {
+fn hba_count_from_set(
+    mol: &Molecule,
+    ring_bonds: &FxHashSet<BondIdx>,
+    rdkit_aromatic_n: bool,
+) -> usize {
     mol.atoms()
         .filter(|(idx, atom)| {
             let an = atom.element.atomic_number();
@@ -567,7 +571,7 @@ fn hba_count_from_set(mol: &Molecule, ring_bonds: &FxHashSet<BondIdx>) -> usize 
                     // part of the conjugated system.  The older rule treated
                     // every substituted aromatic [n] as an acceptor, which
                     // over-counted caffeine (6 instead of RDKit's Ertl HBA=3).
-                    h == 0 && mol.degree(*idx) == 2
+                    h == 0 && (rdkit_aromatic_n || mol.degree(*idx) == 2)
                 } else {
                     // Non-aromatic N: must have formal valence 3 ([N;v3] in SMARTS);
                     // this excludes radical N (C[N]C, valence 2) and unusual species.
@@ -642,7 +646,14 @@ fn hba_count_from_set(mol: &Molecule, ring_bonds: &FxHashSet<BondIdx>) -> usize 
 }
 
 pub fn hba_count(mol: &Molecule) -> usize {
-    hba_count_from_set(mol, &ring_bond_indices(mol))
+    hba_count_from_set(mol, &ring_bond_indices(mol), false)
+}
+
+/// Count hydrogen-bond acceptors using the pinned RDKit aromatic-nitrogen
+/// compatibility rule. This is opt-in because the native descriptor retains
+/// its historical conservative treatment of substituted aromatic nitrogen.
+pub fn rdkit_hba_count(mol: &Molecule) -> usize {
+    hba_count_from_set(mol, &ring_bond_indices(mol), true)
 }
 
 /// True if any heavy-atom neighbor of `idx` itself carries a double bond to
@@ -2038,7 +2049,7 @@ pub fn ring_bundle(mol: &Molecule) -> RingBundle {
     let aromatic_ring_count = aromatic_ring_list(mol).len();
 
     let rotatable_bond_count = rotatable_bond_count_from_set(mol, &ring_bonds);
-    let hba_count = hba_count_from_set(mol, &ring_bonds);
+    let hba_count = hba_count_from_set(mol, &ring_bonds, false);
     let hac = heavy_atom_count(mol);
     let fraction_rotatable_bonds = if hac == 0 {
         0.0
@@ -3796,6 +3807,13 @@ mod tests {
     fn rdkit_mw_fails_closed_for_explicit_isotopes() {
         let isotope = mol("[13C]");
         assert!(rdkit_molecular_weight(&isotope).is_nan());
+    }
+
+    #[test]
+    fn rdkit_hba_profile_accepts_substituted_aromatic_n_without_changing_native() {
+        let caffeine = mol("Cn1cnc2c1c(=O)n(c(=O)n2C)C");
+        assert_eq!(hba_count(&caffeine), 3);
+        assert_eq!(rdkit_hba_count(&caffeine), 6);
     }
 
     // -- Test 3: ethanol molecular weight -----------------------------------

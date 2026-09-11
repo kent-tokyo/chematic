@@ -484,6 +484,12 @@ impl Mol {
         chematic_chem::hba_count(&self.inner)
     }
 
+    /// RDKit-compatible hydrogen-bond acceptor count.
+    #[getter]
+    fn rdkit_hba(&self) -> usize {
+        chematic_chem::rdkit_hba_count(&self.inner)
+    }
+
     /// Number of rotatable bonds.
     #[getter]
     fn rotatable_bonds(&self) -> usize {
