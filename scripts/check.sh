@@ -26,6 +26,7 @@ echo "=== streaming failure taxonomy evidence ===" && python3 scripts/check_stre
 echo "=== triclinic neighbor evidence ===" && SCHEMATIC_BENCHMARK_VERSION="$HISTORICAL_VERSION" python3 scripts/check_triclinic_neighbor_evidence.py
 echo "=== MMFF94 issue #337 determinism evidence ===" && SCHEMATIC_BENCHMARK_VERSION="$HISTORICAL_VERSION" python3 scripts/check_mmff94_issue337_determinism_evidence.py
 echo "=== Issue #503 E/Z residual evidence ===" && python3 scripts/check_ez_residual_evidence.py
+echo "=== Criterion calibration contract ===" && python3 scripts/check_criterion_gate_calibration.py
 echo "=== roadmap disposition ===" && SCHEMATIC_BENCHMARK_VERSION="$HISTORICAL_VERSION" python3 scripts/check_roadmap_disposition.py
 echo "=== workflow action pins ===" && python3 scripts/check_workflow_pins.py
 echo "=== clippy ===" && cargo clippy --workspace --all-targets -- -D warnings
