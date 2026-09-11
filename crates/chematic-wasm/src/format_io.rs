@@ -106,6 +106,248 @@ pub fn rxn_document_to_rxn(document_json: &str) -> Result<String, JsValue> {
         .map_err(|error| JsValue::from_str(&error.to_string()))
 }
 
+/// Convert a rich reaction document to legacy RXN V2000 with structured loss
+/// reporting. A lossy projection is never returned as if it were complete.
+#[wasm_bindgen]
+pub fn reaction_document_to_rxn_v1(document_json: &str) -> Result<String, JsValue> {
+    check_json_len("reaction document JSON", document_json)?;
+    let document =
+        chematic_rxn::ReactionDocument::from_json_str(document_json).map_err(|error| {
+            JsValue::from_str(&binding_error_json(
+                "malformed_input",
+                "/",
+                error.to_string(),
+            ))
+        })?;
+    chematic_mol::write_rxn_document(&document).map_err(|error| {
+        let code = if matches!(
+            error,
+            chematic_mol::rxn::RxnDocumentError::Document(
+                chematic_rxn::ReactionDocumentError::Losses(_)
+            )
+        ) {
+            "lossy_conversion"
+        } else {
+            "unsupported_construct"
+        };
+        JsValue::from_str(&binding_error_json(code, "/", error.to_string()))
+    })
+}
+
+fn binding_error_json(code: &str, path: &str, message: impl Into<String>) -> String {
+    serde_json::json!({
+        "ok": false,
+        "error": { "code": code, "path": path, "message": message.into() }
+    })
+    .to_string()
+}
+
+/// Validate and deterministically serialize a rich reaction document JSON.
+///
+/// This is the versioned JSON boundary for WASM consumers. It preserves IDs,
+/// metadata, and provenance, and rejects malformed documents before returning
+/// JSON. Use [`edit_reaction_document_json_v1`] for bounded ID-addressed edits.
+#[wasm_bindgen]
+pub fn reaction_document_json_v1(document_json: &str) -> Result<String, JsValue> {
+    check_json_len("reaction document JSON", document_json)?;
+    let document =
+        chematic_rxn::ReactionDocument::from_json_str(document_json).map_err(|error| {
+            JsValue::from_str(&binding_error_json(
+                "malformed_input",
+                "/",
+                error.to_string(),
+            ))
+        })?;
+    serde_json::to_string(&document).map_err(|error| {
+        JsValue::from_str(&binding_error_json(
+            "serialization_error",
+            "/",
+            error.to_string(),
+        ))
+    })
+}
+
+/// Apply a bounded, stable-ID reaction-document edit and return canonical JSON.
+#[wasm_bindgen]
+pub fn edit_reaction_document_json_v1(
+    document_json: &str,
+    edit_json: &str,
+) -> Result<String, JsValue> {
+    check_json_len("reaction document JSON", document_json)?;
+    check_json_len("reaction edit JSON", edit_json)?;
+    let document =
+        chematic_rxn::ReactionDocument::from_json_str(document_json).map_err(|error| {
+            JsValue::from_str(&binding_error_json(
+                "malformed_input",
+                "/",
+                error.to_string(),
+            ))
+        })?;
+    let edited = document.apply_json_edit(edit_json).map_err(|error| {
+        JsValue::from_str(&binding_error_json(
+            "unsupported_construct",
+            "/edit",
+            error.to_string(),
+        ))
+    })?;
+    serde_json::to_string(&edited).map_err(|error| {
+        JsValue::from_str(&binding_error_json(
+            "serialization_error",
+            "/",
+            error.to_string(),
+        ))
+    })
+}
+
+/// Return a loss-preserving, versioned JSON envelope for a CDXML document.
+///
+/// `source` is retained for exact re-serialization; `document` is the stable
+/// structural summary used by editors. Unknown objects remain in the summary
+/// and are listed under `document.diagnostics`.
+#[wasm_bindgen]
+pub fn cdxml_document_json_v1(cdxml: &str) -> Result<String, JsValue> {
+    check_input_len("CDXML input", cdxml)?;
+    let document = chematic_mol::CdxmlDocument::parse_with_limits(
+        cdxml,
+        &chematic_mol::CdxmlParseLimits {
+            max_input_bytes: WASM_MAX_INPUT_BYTES,
+            ..Default::default()
+        },
+    )
+    .map_err(|error| {
+        let code = if matches!(error, chematic_mol::CdxmlError::ResourceLimit { .. }) {
+            "resource_limit"
+        } else {
+            "malformed_input"
+        };
+        JsValue::from_str(&binding_error_json(code, "/", error.to_string()))
+    })?;
+    let result = serde_json::json!({
+        "schema": "chematic.cdxml-binding.v1",
+        "source": document.write(),
+        "document": document.to_json(),
+    });
+    let json = result.to_string();
+    if json.len() > WASM_MAX_OUTPUT_BYTES {
+        return Err(JsValue::from_str(&binding_error_json(
+            "resource_limit",
+            "/",
+            "CDXML binding JSON exceeds output limit",
+        )));
+    }
+    Ok(json)
+}
+
+/// Project a CDXML document to its first molecular fragment only when no
+/// presentation data would be lost. Unknown/presentation objects are reported
+/// as an explicit lossy conversion instead of being silently dropped.
+#[wasm_bindgen]
+pub fn cdxml_document_projection_json_v1(cdxml: &str) -> Result<String, JsValue> {
+    check_input_len("CDXML input", cdxml)?;
+    let document = chematic_mol::CdxmlDocument::parse_with_limits(
+        cdxml,
+        &chematic_mol::CdxmlParseLimits {
+            max_input_bytes: WASM_MAX_INPUT_BYTES,
+            ..Default::default()
+        },
+    )
+    .map_err(|error| {
+        let code = if matches!(error, chematic_mol::CdxmlError::ResourceLimit { .. }) {
+            "resource_limit"
+        } else {
+            "malformed_input"
+        };
+        JsValue::from_str(&binding_error_json(code, "/", error.to_string()))
+    })?;
+    let diagnostics = document.diagnostics();
+    if !diagnostics.is_empty() {
+        return Err(JsValue::from_str(&binding_error_json(
+            "lossy_conversion",
+            "/document/diagnostics",
+            "CDXML presentation objects cannot be represented by the molecule projection",
+        )));
+    }
+    let (molecule, _) = chematic_mol::parse_cdxml_with_limits(
+        cdxml,
+        &chematic_mol::CdxmlParseLimits {
+            max_input_bytes: WASM_MAX_INPUT_BYTES,
+            ..Default::default()
+        },
+    )
+    .map_err(|error| {
+        JsValue::from_str(&binding_error_json(
+            "malformed_input",
+            "/",
+            error.to_string(),
+        ))
+    })?;
+    Ok(serde_json::json!({
+        "ok": true,
+        "smiles": chematic_smiles::canonical_smiles(&molecule),
+    })
+    .to_string())
+}
+
+/// Validate a versioned CDXML JSON envelope and serialize its exact source.
+#[wasm_bindgen]
+pub fn cdxml_document_from_json_v1(document_json: &str) -> Result<String, JsValue> {
+    check_json_len("CDXML binding JSON", document_json)?;
+    let value: serde_json::Value = serde_json::from_str(document_json).map_err(|error| {
+        JsValue::from_str(&binding_error_json(
+            "malformed_input",
+            "/",
+            error.to_string(),
+        ))
+    })?;
+    if value.get("schema").and_then(serde_json::Value::as_str) != Some("chematic.cdxml-binding.v1")
+    {
+        return Err(JsValue::from_str(&binding_error_json(
+            "unsupported_construct",
+            "/schema",
+            "unsupported CDXML binding schema",
+        )));
+    }
+    let source = value
+        .get("source")
+        .and_then(serde_json::Value::as_str)
+        .ok_or_else(|| {
+            JsValue::from_str(&binding_error_json(
+                "malformed_input",
+                "/source",
+                "source is required",
+            ))
+        })?;
+    check_input_len("CDXML source", source)?;
+    let document = chematic_mol::CdxmlDocument::parse_with_limits(
+        source,
+        &chematic_mol::CdxmlParseLimits {
+            max_input_bytes: WASM_MAX_INPUT_BYTES,
+            ..Default::default()
+        },
+    )
+    .map_err(|error| {
+        JsValue::from_str(&binding_error_json(
+            "malformed_input",
+            "/source",
+            error.to_string(),
+        ))
+    })?;
+    Ok(document.write())
+}
+
+/// Apply a bounded CDXML edit to a versioned JSON envelope and return the
+/// updated envelope. The source is reparsed after editing, so paths and
+/// diagnostics cannot drift from the returned document summary.
+#[wasm_bindgen]
+pub fn edit_cdxml_document_json_v1(
+    document_json: &str,
+    edit_json: &str,
+) -> Result<String, JsValue> {
+    let source = cdxml_document_from_json_v1(document_json)?;
+    let edited = crate::edit_cdxml_document_json(&source, edit_json)?;
+    cdxml_document_json_v1(&edited)
+}
+
 fn wasm_orca_input_limits() -> chematic_mol::OrcaInputParseLimits {
     chematic_mol::OrcaInputParseLimits {
         max_input_bytes: WASM_MAX_INPUT_BYTES,

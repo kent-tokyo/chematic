@@ -1800,6 +1800,95 @@ fn mol_from_v3000_block_parses_atom_count() {
 }
 
 #[test]
+fn roundtrip_mol_v3000_block_preserves_sgroup_metadata() {
+    let block = "\n\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\n\
+M  V30 BEGIN CTAB\n\
+M  V30 COUNTS 2 1 0 0 0\n\
+M  V30 BEGIN ATOM\n\
+M  V30 1 C 0 0 0 0\n\
+M  V30 2 C 1 0 0 0\n\
+M  V30 END ATOM\n\
+M  V30 BEGIN BOND\n\
+M  V30 1 1 1 2\n\
+M  V30 END BOND\n\
+M  V30 BEGIN COLLECTION\n\
+M  V30 MDLV30/STEABS ATOMS=(1 1)\n\
+M  V30 END COLLECTION\n\
+M  V30 BEGIN SGROUP\n\
+M  V30 1 SUP 0 ATOMS=(2 1 2)\n\
+M  V30 END SGROUP\n\
+M  V30 END CTAB\nM  END\n";
+    let rewritten = roundtrip_mol_v3000_block(block).expect("V3000 round trip");
+    assert!(rewritten.contains("M  V30 1 SUP 0 ATOMS=(2 1 2)"));
+    assert!(rewritten.find("BEGIN SGROUP") < rewritten.find("BEGIN COLLECTION"));
+}
+
+#[test]
+fn v3000_sgroups_json_exposes_typed_syntax_without_expansion() {
+    let block = "\n\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\n\
+M  V30 BEGIN CTAB\n\
+M  V30 COUNTS 2 1 0 0 0\n\
+M  V30 BEGIN ATOM\n\
+M  V30 1 C 0 0 0 0\n\
+M  V30 2 C 1 0 0 0\n\
+M  V30 END ATOM\n\
+M  V30 BEGIN BOND\n\
+M  V30 1 1 1 2\n\
+M  V30 END BOND\n\
+M  V30 BEGIN SGROUP\n\
+M  V30 1 COP 0 ATOMS=(2 1 2) BRKXYZ=(4 1 2 3 4)\n\
+M  V30 END SGROUP\n\
+M  V30 END CTAB\nM  END\n";
+    let value: serde_json::Value =
+        serde_json::from_str(&v3000_sgroups_json(block).expect("typed SGROUP JSON"))
+            .expect("valid JSON");
+    assert_eq!(value[0]["id"], 1);
+    assert_eq!(value[0]["kind"], "cop");
+    assert_eq!(value[0]["parentId"], serde_json::Value::Null);
+    assert_eq!(value[0]["atomIds"], serde_json::json!([1, 2]));
+    assert_eq!(value[0]["attributes"][0]["key"], "BRKXYZ");
+}
+
+#[test]
+fn v3000_sgroups_json_preserves_unknown_kind_and_rejects_bad_atoms() {
+    let base = "\n\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\n\
+M  V30 BEGIN CTAB\n\
+M  V30 COUNTS 1 0 0 0 0\n\
+M  V30 BEGIN ATOM\n\
+M  V30 1 C 0 0 0 0\n\
+M  V30 END ATOM\n\
+M  V30 BEGIN BOND\n\
+M  V30 END BOND\n\
+M  V30 BEGIN SGROUP\n\
+M  V30 1 VENDORX 0 ATOMS=(1 1)\n\
+M  V30 END SGROUP\n\
+M  V30 END CTAB\nM  END\n";
+    let value: serde_json::Value =
+        serde_json::from_str(&v3000_sgroups_json(base).expect("unknown kind is retained"))
+            .expect("valid JSON");
+    assert_eq!(value[0]["kind"], "other");
+    assert_eq!(value[0]["kindToken"], "VENDORX");
+
+    let malformed = base.replace("ATOMS=(1 1)", "ATOMS=(2 1)");
+    assert!(
+        super::mol_io::v3000_sgroups_json_inner(&malformed).is_err(),
+        "typed boundary must reject a wrong ATOMS count"
+    );
+
+    let missing_atom = base.replace("ATOMS=(1 1)", "ATOMS=(1 2)");
+    assert!(
+        super::mol_io::v3000_sgroups_json_inner(&missing_atom).is_err(),
+        "typed boundary must reject an atom reference outside the molecule"
+    );
+
+    let missing_parent = base.replace("1 VENDORX 0", "1 VENDORX 2");
+    assert!(
+        super::mol_io::v3000_sgroups_json_inner(&missing_parent).is_err(),
+        "typed boundary must reject a missing parent SGROUP"
+    );
+}
+
+#[test]
 fn generate_3d_minimized_pdb_nonzero_coords() {
     let mol = parse("CCCC"); // butane — flexible, benefits from minimization
     let pdb = generate_3d_minimized_pdb(&mol);

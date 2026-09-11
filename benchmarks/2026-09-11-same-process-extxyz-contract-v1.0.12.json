@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.12",
+  "status": "local-verified",
+  "gate": "same_process_extxyz_semantic_contract",
+  "fixture": {
+    "path": "benchmarks/fixtures/streaming.extxyz",
+    "bytes": 268,
+    "sha256": "0094ab92ea84aa6acd826004e1849f2f2cb750c81d02e061c4156dc25c2830c7"
+  },
+  "repeats": 20,
+  "input_frames_per_repeat": 2,
+  "rows": {
+    "chematic": {
+      "records": 40,
+      "failures": 0,
+      "seconds": 0.001752,
+      "boundary": "schematic.from_extxyz in the current process"
+    },
+    "rdkit": {
+      "records": 40,
+      "failures": 0,
+      "seconds": 0.136932,
+      "boundary": "RDKit MolFromXYZBlock over the coordinate projection in the current process"
+    }
+  },
+  "comparison": {
+    "expected_records": 40,
+    "frame_signature_mismatch_repetitions": 0,
+    "malformed_cases": {
+      "missing_atom": {
+        "chematic": {
+          "records": 0,
+          "failures": 1
+        },
+        "rdkit": {
+          "records": 0,
+          "failures": 1
+        }
+      },
+      "bad_coordinate": {
+        "chematic": {
+          "records": 0,
+          "failures": 1
+        },
+        "rdkit": {
+          "records": 0,
+          "failures": 1
+        }
+      }
+    },
+    "extended_properties": "schematic-only; RDKit coordinate projection does not claim property parity",
+    "speed_is_non_ranking_context": true
+  },
+  "tool_versions": {
+    "rdkit": "2025.09.3"
+  },
+  "errors": []
+}

@@ -9,7 +9,74 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No changes yet.
+- Added typed CDXML text/caption style access for font, size, and alignment,
+  with non-finite numeric values rejected and unknown presentation attributes
+  preserved.
+- Added typed CDXML page `BoundingBox` access with finite-number and arity
+  validation.
+- Added typed CDXML object classification for atoms, bonds, groups, arrows,
+  captions, text, and drawing objects, with an explicit unsupported variant.
+- Fixed loss-preserving CDXML parsing for valid self-closing empty pages.
+- Included typed CDXML object kinds in the document JSON summary for binding
+  consumers.
+- Added provenance-backed `contracted_smiles` to semantic expansion JSON so
+  Python and WASM callers can restore the exact expansion base graph.
+- Added typed semantic S-group and polymer-linkage definitions with stable IDs,
+  source-atom validation, repeat-unit references, and explicit unsupported-kind
+  handling.
+- Added stable-ID S-group kind editing and explicit rejection of unimplemented
+  biomolecule payloads.
+- Added S-group and polymer-linkage source-to-expanded provenance mappings to
+  semantic expansion results.
+- Added stable-ID editing for R-group allowed substituent sets, with selection
+  reset and validation of the replacement set.
+- Added the fallible `rdkit_ecfp4` profile to `PreparedFingerprintIndex`,
+  including original-index failure reporting and deterministic top-k ties.
+- Added the three-lane native/native, RDKit-compatible/RDKit, and cross-profile
+  top-10 comparison gate; the v1.0.12 valid-input run reached 100% mean recall
+  in the compatible lane and reports preprocessing failures separately.
+- Added versioned WASM/JS document-binding APIs for rich reaction and CDXML
+  JSON, bounded stable-ID/page edits, exact CDXML source reserialization, and
+  structured error categories with paths.
+- Added a deterministic 155-row CIP oracle-corpus atom-order gate with eight
+  generated permutations per row (1,240 checks); resolved labels and explicit
+  fail-closed skip reasons must remain invariant after target remapping.
+- Added a bounded typed V3000 SGROUP syntax view for ID, parent, kind, atom
+  references, and attributes while retaining the original logical line for
+  lossless writing; polymer expansion and cross-engine semantics remain
+  explicitly outside this contract.
+- Exposed the typed V3000 SGROUP syntax view through a bounded WASM JSON API,
+  including explicit handling for unknown kind tokens and output-size limits.
+- Added fail-closed validation for V3000 SGROUP duplicate IDs, missing parent
+  groups, and atom references outside the parsed molecule.
+
+## [1.0.12] - 2026-09-11
+
+- Added bounded reaction requirements and stoichiometry analysis for
+  `PreparedReaction`, including conservative prefiltering and explicit
+  diagnostics for unsupported or oversized queries (#510, #513).
+- Added reaction application support for the documented atomic-number query
+  subset across Rust, Python, and Node/WASM bindings, with fail-closed errors
+  for unsupported SMARTS and regression coverage for product enumeration.
+- Preserved opaque V3000 `SGROUP` metadata through MOL parsing and writing,
+  including the WASM round-trip boundary, and added generated V3000 gate
+  coverage for binding behavior.
+- Added shared semantic expansion fixtures and APIs for Markush selections
+  and polymer repeat commands, with exact source-to-expanded atom mappings and
+  explicit limits for bounded expansion.
+- Added CIP regression coverage for negative-charge resonance systems and
+  atom-order shuffling, ensuring that resolved labels remain invariant to
+  input atom order and malformed internal state fails closed.
+- Added reproducible browser/WASM comparison gates against RDKit.js, covering
+  artifact size, initialization, SMILES parsing/writing, ECFP4, and memory
+  accounting; recorded the generated and official RDKit.js comparison
+  artifacts separately from native parity results.
+- Updated the browser compatibility workflow and release evidence manifests
+  so WASM validation, benchmark provenance, and publishable package versions
+  are checked together.
+- Synchronized current README, roadmap, benchmark, compatibility, and binding
+  documentation with the implementation and corrected stale WASM size/date
+  references while preserving historical records and their pinned versions.
 
 ## [1.0.11] - 2026-09-10
 
@@ -23,6 +90,12 @@ No changes yet.
   release gates.
 - Published the v1.0.11 Rust crates to crates.io and the WASM package to npm;
   the PyPI publication workflow remains in progress.
+- Added bounded #510 reaction-template application for supported atomic-number
+  primitives, with explicit unsupported-query failures and cross-binding tests.
+- Added the #513 `ReactionRequirements` API derived from `PreparedReaction`,
+  including conservative lower bounds and a fail-open `could_match()` prefilter.
+- Added opaque V3000 `SGROUP` metadata round-tripping and the explicit WASM
+  `roundtrip_mol_v3000_block` boundary.
 
 ## [1.0.10] - 2026-09-09
 
@@ -363,7 +436,8 @@ The authoritative list of published tags and release artifacts is the
 historical implementation notes remain available in the archived detailed
 history and Git history.
 
-[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.11...HEAD
+[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.12...HEAD
+[1.0.12]: https://github.com/kent-tokyo/chematic/compare/v1.0.11...v1.0.12
 [1.0.11]: https://github.com/kent-tokyo/chematic/compare/v1.0.10...v1.0.11
 [1.0.10]: https://github.com/kent-tokyo/chematic/compare/v1.0.9...v1.0.10
 [1.0.9]: https://github.com/kent-tokyo/chematic/compare/v1.0.8...v1.0.9

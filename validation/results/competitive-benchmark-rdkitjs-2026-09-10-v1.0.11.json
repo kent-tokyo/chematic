@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "gate": "wasm-vs-rdkit-node-paired",
+  "environment": {
+    "node": "v24.5.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "corpus": {
+    "path": "scripts/descriptor_census_corpus.smi",
+    "rows": 1000,
+    "sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c"
+  },
+  "configuration": {
+    "warmup_rows": 20,
+    "morgan_radius": 2,
+    "fingerprint_bits": 2048,
+    "timing": "both implementations loaded and measured in one Node process"
+  },
+  "schematic": {
+    "implementation": "chematic",
+    "package_dir": "pkg",
+    "init_ms": 3.766875,
+    "parse": {
+      "count": 1000,
+      "p50_ms": 0.003167,
+      "p95_ms": 0.011625,
+      "mean_ms": 0.00493,
+      "min_ms": 0.000917,
+      "max_ms": 0.415916
+    },
+    "canonical_smiles": {
+      "count": 1000,
+      "p50_ms": 0.017312,
+      "p95_ms": 0.089861,
+      "mean_ms": 0.033709,
+      "min_ms": 0.002833,
+      "max_ms": 2.296875
+    },
+    "rdkit_compatible_ecfp4": {
+      "count": 1000,
+      "p50_ms": 0.228542,
+      "p95_ms": 1.361815,
+      "mean_ms": 0.422546,
+      "min_ms": 0.01525,
+      "max_ms": 11.726125
+    },
+    "peak_rss_bytes": 107151360
+  },
+  "rdkit": {
+    "implementation": "rdkit",
+    "version": "2025.03.4",
+    "package_version": "2025.3.4-1.0.0",
+    "package_dir": "dist",
+    "wasm_file": "RDKit_minimal.wasm",
+    "init_ms": 31.762125,
+    "parse": {
+      "count": 1000,
+      "p50_ms": 0.237437,
+      "p95_ms": 0.576734,
+      "mean_ms": 0.282189,
+      "min_ms": 0.054167,
+      "max_ms": 1.331083
+    },
+    "smiles_write": {
+      "count": 1000,
+      "p50_ms": 0.320313,
+      "p95_ms": 0.792026,
+      "mean_ms": 0.376065,
+      "min_ms": 0.092333,
+      "max_ms": 1.768875
+    },
+    "morgan_radius2_2048": {
+      "count": 1000,
+      "p50_ms": 0.401084,
+      "p95_ms": 0.802892,
+      "mean_ms": 0.451634,
+      "min_ms": 0.188,
+      "max_ms": 1.714917
+    },
+    "peak_rss_bytes": 142557184
+  },
+  "artifacts": {
+    "schematic_wasm": {
+      "file": "chematic_wasm_bg.wasm",
+      "raw_bytes": 3726056,
+      "gzip_bytes": 1357406,
+      "sha256": "26e78553c5dd929b22b130bc1f0a700689256876099b13d4df63c1a5edb27468"
+    },
+    "rdkit_minimal_wasm": {
+      "file": "RDKit_minimal.wasm",
+      "raw_bytes": 6914823,
+      "gzip_bytes": 2045412,
+      "sha256": "e0967d44fed59e44a2d07bfc08f3a86821c54a14c95bb7e6e392fe867333b8c8"
+    },
+    "rdkit_minimal_js": {
+      "file": "RDKit_minimal.js",
+      "raw_bytes": 128073,
+      "gzip_bytes": 30168,
+      "sha256": "58d3c996ade7e0b0137d4f9363ff6c204b545689428fa0898eeaed579ef788d9"
+    },
+    "rdkit_package_json": {
+      "file": "/private/tmp/chematic-rdkitjs-gate/node_modules/@rdkit/rdkit/package.json",
+      "sha256": "c9029cad92384253cd6f885818ec5a357c045fdbda9ec196dc772e7db6df98fb"
+    },
+    "rdkit_typescript_declarations": {
+      "file": "/private/tmp/chematic-rdkitjs-gate/node_modules/@rdkit/rdkit/dist/index.d.ts",
+      "sha256": "2744d98da7f92fdd77d7dbae6434a9346ad381e5c5c41096030311d01b2882be"
+    }
+  },
+  "fingerprint_parity": {
+    "compared_rows": 1000,
+    "exact_matches": 1000,
+    "definition": "chematic rdkit_ecfp4_bitvec vs RDKit.js Morgan radius=2, 2048-bit binary text"
+  },
+  "interpretation": "Node/WASM measurements are implementation and artifact comparisons. They do not establish chemistry accuracy or universal browser performance."
+}

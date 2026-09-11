@@ -1,0 +1,133 @@
+{
+  "boundary": "aggregate rejection remains the safety contract; failure_kinds is diagnostic variant evidence only",
+  "corpus": {
+    "cases_per_format": 12,
+    "formats": 10,
+    "path": "validation/streaming_format_safety_cases.json",
+    "sha256": "955f4911315066c0d447f6018f03595d3a4369caed01a3d11a8695b55d28bec5",
+    "total_cases": 140
+  },
+  "errors": [],
+  "gate": "streaming_failure_taxonomy",
+  "rows": {
+    "cdxml": {
+      "base_cases": 12,
+      "cases": 15,
+      "failure_kinds": {
+        "MissingBondEndpoint": 1,
+        "ResourceLimit": 12,
+        "UnknownAtomRef": 1,
+        "UnknownAtomicNumber": 1
+      },
+      "supplemental_cases": 3
+    },
+    "cml": {
+      "base_cases": 12,
+      "cases": 17,
+      "failure_kinds": {
+        "InvalidAtomRefs2": 1,
+        "InvalidBondOrder": 1,
+        "NonFiniteCoordinate": 1,
+        "ResourceLimit": 12,
+        "UnknownAtomRef": 1,
+        "UnknownElement": 1
+      },
+      "supplemental_cases": 5
+    },
+    "extxyz": {
+      "base_cases": 12,
+      "cases": 18,
+      "failure_kinds": {
+        "AtomCountMismatch": 2,
+        "DuplicateInfoKey": 1,
+        "InvalidAtomLine": 1,
+        "InvalidCountLine": 1,
+        "InvalidInfoField": 1,
+        "InvalidLattice": 2,
+        "InvalidProperties": 2,
+        "InvalidPropertyValue": 2,
+        "NonFiniteCoordinate": 1,
+        "PropertyColumnMismatch": 3,
+        "UnknownElement": 1,
+        "UnterminatedQuote": 1
+      },
+      "supplemental_cases": 6
+    },
+    "mmcif": {
+      "base_cases": 12,
+      "cases": 16,
+      "failure_kinds": {
+        "InvalidInteger": 1,
+        "InvalidNumber": 1,
+        "MissingCoordinateColumns": 9,
+        "MissingTypeSymbolColumn": 2,
+        "NoAtomSiteLoop": 2,
+        "UnknownElement": 1
+      },
+      "supplemental_cases": 4
+    },
+    "mol": {
+      "base_cases": 12,
+      "cases": 12,
+      "failure_kinds": {
+        "InvalidAtomLine": 9,
+        "InvalidBondLine": 1,
+        "InvalidCountLine": 2
+      },
+      "supplemental_cases": 0
+    },
+    "mol2": {
+      "base_cases": 12,
+      "cases": 14,
+      "failure_kinds": {
+        "InvalidAtomLine": 10,
+        "InvalidBondLine": 1,
+        "MissingSection": 2,
+        "UnknownElement": 1
+      },
+      "supplemental_cases": 2
+    },
+    "pdb": {
+      "base_cases": 12,
+      "cases": 12,
+      "failure_kinds": {
+        "PdbResourceLimitError": 12
+      },
+      "supplemental_cases": 0
+    },
+    "sdf": {
+      "base_cases": 12,
+      "cases": 12,
+      "failure_kinds": {
+        "InvalidAtomLine": 9,
+        "InvalidBondLine": 1,
+        "InvalidCountLine": 2
+      },
+      "supplemental_cases": 0
+    },
+    "v3000": {
+      "base_cases": 12,
+      "cases": 12,
+      "failure_kinds": {
+        "InvalidCountLine": 8,
+        "UnexpectedEnd": 4
+      },
+      "supplemental_cases": 0
+    },
+    "xyz": {
+      "base_cases": 12,
+      "cases": 12,
+      "failure_kinds": {
+        "AtomCountMismatch": 2,
+        "InvalidAtomLine": 4,
+        "InvalidCountLine": 2,
+        "NonFiniteCoordinate": 3,
+        "UnknownElement": 1
+      },
+      "supplemental_cases": 0
+    }
+  },
+  "schema_version": 1,
+  "status": "local-verified",
+  "target_version": "1.0.12"
+}

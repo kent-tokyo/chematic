@@ -574,4 +574,27 @@ mod tests {
             Err(PdbStrictError::Parse(PdbParseError { field: "z", .. }))
         ));
     }
+
+    #[test]
+    fn strict_parser_reports_each_required_fixed_column() {
+        let cases = [
+            (6..11, " nope", "serial"),
+            (22..26, "nope", "residue sequence"),
+            (30..38, "     nope", "x"),
+            (38..46, "     nope", "y"),
+            (46..54, "     nope", "z"),
+        ];
+        for (range, replacement, field) in cases {
+            let mut malformed = ATOM.to_string();
+            malformed.replace_range(range, replacement);
+            assert!(
+                matches!(
+                    parse_pdb_atoms_strict(&malformed, &PdbParseLimits::default()),
+                    Err(PdbStrictError::Parse(PdbParseError { field: actual, .. }))
+                        if actual == field
+                ),
+                "strict PDB must identify the malformed {field} field"
+            );
+        }
+    }
 }

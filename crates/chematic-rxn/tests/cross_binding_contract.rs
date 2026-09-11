@@ -59,6 +59,10 @@ fn reaction_application_contract_expands_atomic_number_primitives() {
         let refs: Vec<_> = reactants.iter().collect();
         let products =
             chematic_rxn::run_reactants(case["smirks"].as_str().unwrap(), &refs).unwrap();
+        if let Some(expected) = case["expected_product_sets"].as_u64() {
+            assert_eq!(products.len(), expected as usize);
+            continue;
+        }
         assert!(products.len() >= case["minimum_product_sets"].as_u64().unwrap() as usize);
         assert_eq!(products[0][0].atom_count(), case["product_atom_count"]);
     }

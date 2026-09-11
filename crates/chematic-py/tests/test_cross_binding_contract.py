@@ -16,7 +16,7 @@ def test_shared_fixture_schema_is_stable():
     assert _DOCUMENT["schema_version"] == 1
     assert len(_DOCUMENT["fixtures"]) == 4
     operations = _DOCUMENT["operation_manifest"]["operations"]
-    assert len(operations) == 50
+    assert len(operations) == 56
     assert len({operation["id"] for operation in operations}) == len(operations)
     assert all(len(operation["bindings"]) == 4 for operation in operations)
     assert all(operation["test_anchors"] for operation in operations)
@@ -447,6 +447,9 @@ def test_python_binding_matches_shared_reaction_application_contract():
     for case in contract["additional_cases"]:
         reactants = [chematic.from_smiles(smiles) for smiles in case["reactants"]]
         products = chematic.run_smirks(case["smirks"], reactants)
+        if "expected_product_sets" in case:
+            assert len(products) == case["expected_product_sets"]
+            continue
         assert len(products) >= case["minimum_product_sets"]
         assert products[0][0].heavy_atoms == case["product_atom_count"]
 
@@ -663,6 +666,7 @@ def test_python_semantic_expansion_matches_shared_contract(case):
     expanded = json.loads(chematic.semantic_expand_json(case["base_smiles"], selected))
     assert expanded["schema"] == "chematic.semantic-expanded.v1"
     assert expanded["source_to_expanded"] == case["expected_source_to_expanded"]
+    assert expanded["contracted_smiles"] == case["base_smiles"]
 
 
 def test_python_rxn_document_contract_is_loss_aware():

@@ -1,0 +1,4 @@
+{"id":"cyclohexadienyl_oxygen","smiles":"[C@@H:1](O)(C)[CH-]2C=CC=C2","center_map":1}
+{"id":"cyclohexadienyl_nitrogen","smiles":"[C@H:1](N)(C)[CH-]2C=CC=C2","center_map":1}
+{"id":"cyclohexadienyl_fluorine","smiles":"[C@@H:1](F)(C)[CH-]2C=CC=C2","center_map":1}
+{"id":"cyclohexadienyl_sulfur","smiles":"[C@H:1](S)(C)[CH-]2C=CC=C2","center_map":1}

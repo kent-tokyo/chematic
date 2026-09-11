@@ -1,7 +1,7 @@
 # chematic roadmap
 
-> Revised 2026-09-10. The current release is v1.0.11. The workspace version is
-> 1.0.11; checked-in v1.0.10 benchmark artifacts remain historical evidence.
+> Revised 2026-09-11. The current release is v1.0.12. The workspace version is
+> 1.0.12; checked-in benchmark artifacts retain their measured version.
 
 The detailed roadmap and completed gate-by-gate evidence through 2026-09-05 is
 retained in
@@ -20,7 +20,133 @@ conversion reference, CDK a reaction/SMARTS/QSAR reference, sdfrust a Rust
 dataset reference, and kekule a polymer/modeling reference. COSMolKit is not
 part of the active comparison program.
 
+## Competitive response: official RDKit.js
+
+RDKit now maintains an official JavaScript/WASM distribution path through
+`@rdkit/rdkit`, with the MinimalLib WASM artifact and TypeScript-facing package
+surface released from the RDKit source tree. This removes much of the former
+browser-installation friction. The official distribution is therefore the
+primary browser comparator for the next candidate; the existing v1.0.10
+comparison artifacts remain historical measurements, not a claim about every
+future RDKit.js release. See the [RDKit MinimalLib README](https://github.com/rdkit/rdkit/blob/master/Code/MinimalLib/README.md)
+and the [rdkit-js repository](https://github.com/rdkit/rdkit-js).
+
+The competitive objective is not feature-count parity. It is to make a named,
+reproducible browser workload measurably better while retaining explicit
+failure boundaries:
+
+1. **P0 — official comparison gate.** Pin the first stable `@rdkit/rdkit`
+   release, record package/WASM/type-definition digests, and rerun the same
+   corpus and harness for raw/gzip size, cold initialization, SMILES parse and
+   write, ECFP4/Morgan, peak RSS, and browser-engine timing. Keep cold-start,
+   steady-state throughput, and memory as separate dimensions.
+2. **P1 — correctness moat.** Add negative-charge resonance CIP cases,
+   including `[CH-]1C=CC=C1`, with atom-order shuffles and equivalent-operation
+   checks. A result is accepted only when labels are invariant or the API
+   returns a documented fail-closed outcome; RDKit agreement alone is not the
+   invariant.
+3. **P1 — browser developer experience.** Compare the smallest useful API
+   surface: initialization, typed errors, cancellation, limits, JSON
+   serialization, and generated TypeScript declarations. Publish a single
+   install-to-first-result example for both packages and measure its startup
+   path.
+4. **P2 — interoperability wedge.** Add V3000 `SGROUP`/`COLLECTION` ordering
+   round trips and preserve unsupported richness. Keep strict parsing separate
+   from a future relaxed preview mode; incomplete editor input must never be
+   silently accepted by the normal API.
+5. **P2 — positioning gate.** Update public comparison claims only after the
+   preceding measurements are checked in. Claims may say “smaller”, “faster”,
+   or “more compatible” only for a pinned version, corpus, runtime, hardware,
+   and failure policy.
+
+The next candidate should ship only the local portions of P0–P2 that have
+reproducible evidence. Missing stable packages, browser engines, or
+   cross-platform runners remain environment-dependent evidence gaps rather than
+   successful competitor claims.
+
 ## Current candidate
+
+Competitive-response gate status (2026-09-10):
+
+- [x] Official `@rdkit/rdkit` Node and Playwright Chromium comparison, pinned
+  package/artifact digests, 1,000-row ECFP4/Morgan parity, and separate size,
+  startup, throughput, and memory evidence.
+- [x] Negative-charge resonance CIP corpus with four checked-in cases and
+  deterministic atom-order permutations; labels remain invariant in the
+  declared scope.
+- [x] Browser API/package contract covering malformed input, stable limits,
+  resumable batches, serialization, TypeScript declaration digest, and a
+  generated-artifact install-to-first-result path.
+- [x] V3000 `SGROUP`/`COLLECTION` local interoperability slice: opaque SGROUP
+  preservation, either input order, SGROUP-before-COLLECTION output, strict
+  topology-handle rejection, and generated Web-WASM execution evidence.
+- [x] Broader CIP generated permutations over the independent RDKit-labelled
+  155-row corpus: eight deterministic permutations per row, 1,240 outcome
+  checks, comparing assigned CIP codes or explicit `SkipReason` after target
+  remapping. The checked-in result is
+  `validation/results/cip-order-invariance-v1.0.12.json`.
+- [ ] Exact canonical-SMILES parity and Indigo/RDKit cross-engine V3000
+  fixtures. The bounded v1.0.12 ethanol probe records semantic agreement
+  across schematic, RDKit, and Open Babel while making the algorithm-specific
+  canonical-string difference explicit; Indigo is not installed locally and
+  SGROUP semantic cross-engine coverage remains open.
+- [x] Add a bounded typed V3000 SGROUP syntax view while preserving the
+  original logical lines losslessly: validated ID/parent/`ATOMS` fields and
+  molecule/group reference integrity,
+  known/unknown kind tokens, and source-ordered attributes. Polymer expansion
+  semantics and cross-engine fixtures remain open; the same syntax view is
+  now exposed as bounded WASM JSON for browser consumers.
+- [x] Add typed CDXML text/caption style access for font, size, and alignment,
+  with finite-number validation and regression coverage. Full ChemDraw style
+  inheritance and rendering semantics remain outside the bounded contract.
+- [x] Add typed CDXML page `BoundingBox` access with finite-number and arity
+  validation; full page-layout/rendering semantics remain outside the bounded
+  contract.
+- [x] Add typed CDXML object classification with an explicit unsupported
+  variant, preserving unknown raw XML and diagnostics.
+- [x] Accept self-closing empty CDXML pages while preserving page order and
+  source representation.
+- [x] Expose serialized CDXML object kinds in the binding-neutral document JSON
+  summary, including explicit `Unsupported` values.
+
+### Stable document binding boundary (#520)
+
+- [x] Add versioned WASM/JS JSON boundaries for rich reaction documents and
+  CDXML documents, including exact-source CDXML reserialization.
+- [x] Add bounded stable-ID reaction edits and CDXML page/object edits that
+  reparse before returning, preventing ID/path drift.
+- [x] Return structured `code`, `path`, and `message` diagnostics for malformed
+  input, resource limits, unsupported constructs, and serialization failures;
+  retain the existing legacy adapters and their explicit loss boundary.
+- [x] Verify parse → serialize → edit → reopen in a real Node/WASM fixture.
+
+### Next priority: compatible similarity search
+
+- [x] Add a fallible `rdkit_ecfp4` prepared-search profile alongside the fast
+  native `ecfp4` default. It uses the existing RDKit-bit-exact Morgan
+  implementation, preserves original input indices, and reports preprocessing
+  failures instead of silently falling back.
+- [x] Make top-k tie ordering deterministic (`score` descending, original
+  index ascending) across native and compatible search lanes.
+- [x] Re-run the 4,500-library/500-query top-10 gate with native/native,
+  compatible/RDKit, and cross-profile lanes kept separate. Treat the existing
+  72.6% native-vs-RDKit overlap as a disclosed cross-profile diagnostic, not
+  an RDKit-compatibility score. The v1.0.12 gate reached 100% compatible
+  top-10 recall on 4480 valid library rows and 498 valid queries; 20 library
+  and 2 query failures remain separately reported in the dated benchmark.
+
+- [x] Expose the exact provenance-backed contraction graph in semantic
+  expansion JSON (`contracted_smiles`) across the existing Python and
+  WASM/Node entry points; inference from edited expanded graphs remains
+  rejected by design.
+- [x] Add typed S-group membership and polymer-linkage definitions to the
+  semantic JSON contract, including stable IDs and source-reference checks.
+- [x] Add stable-ID S-group kind editing and fail-closed biomolecule boundary;
+  first-class biomolecule expansion remains a separate future schema.
+- [x] Include S-group and polymer-linkage IDs in expansion provenance mappings
+  so downstream editors can address their source atoms deterministically.
+- [x] Add stable-ID editing for R-group allowed substituent sets; replacement
+  clears selection and revalidation remains fail-closed.
 
 Completed through the v1.0.11 release tree (with historical v1.0.10 and v1.0.9
 milestones retained below):
@@ -257,19 +383,19 @@ documentation, and required measurement agree.
   hide a format-specific gap. Its twelve checked-in base cases per format now
   also carry a versioned category manifest, and the gate requires every
   format-specific malformed category to be represented before supplemental
-  parser-path cases run. The generated parser-entry wave now also requires
-  eight declared six-case entry families per format, including format-shaped
-  truncation and numeric-or-vocabulary corruption; the result is recorded
-  in `validation/results/streaming-parser-entry-categories-v1.0.10.json`.
-  The generated wave also records a non-empty typed failure variant for all
+  parser-path cases run. The current v1.0.12 run also records all eight
+  declared six-case entry families per format, including format-shaped
+  truncation and numeric-or-vocabulary corruption, in
+  `validation/results/streaming-parser-entry-categories-v1.0.12.json`.
+  The generated wave records a non-empty typed failure variant for all
   80 format/category combinations in
-  `validation/results/streaming-parser-entry-failure-kinds-v1.0.10.json`.
+  `validation/results/streaming-parser-entry-failure-kinds-v1.0.12.json`.
   Exhaustive malformed-corpus coverage remains a separate open item.
-- [x] Record the current v1.0.10 bounded streaming safety gate with 800
+- [x] Record the current v1.0.12 bounded streaming safety gate with 800
   malformed, 10 oversized, and 20 gzip cases passing across the ten runner
-  formats. The 120-case base corpus also has reproducible error-variant
-  taxonomy output for all ten formats; exhaustive malformed-corpus and parser-
-  state coverage remain separate open items.
+  formats. The machine-readable result is
+  `benchmarks/2026-09-11-streaming-safety-v1.0.12.json`; exhaustive
+  malformed-corpus and parser-state coverage remain separate open items.
 - [x] Add bounded Rust streaming batch APIs with cancellation, pull-based
   backpressure, deterministic ordering, and an explicit partial-result
   manifest (`SdfBatchReader`); cross-language streaming parity remains open.
@@ -318,13 +444,19 @@ documentation, and required measurement agree.
   runner formats with normalized fixture-relative paths. A 20-repetition
   same-input matrix now records matching record counts and zero failures for
   all ten formats across chematic and the installed RDKit/Open Babel lanes
-  where available; the reproducible result is
-  `validation/results/cross-engine-matrix-v1.0.10.json`. Open Babel is CLI-only
+  where available; the current v1.0.12 result is
+  `validation/results/cross-engine-matrix-v1.0.12.json` with reproduction notes
+  in `benchmarks/2026-09-11-streaming-cross-engine-matrix-v1.0.12.md`.
+  Open Babel is CLI-only
   here, so its rows are subprocess boundary evidence rather than same-process
   speed evidence. This is contract evidence only because the parser and
   process boundaries are not equivalent. The same-process semantic contracts
   currently cover SDF, V2000/V3000 MOL, MOL2, XYZ, Extended XYZ, PDB, and CDXML;
   `scripts/check_same_process_contracts.py` validates the complete eight-format evidence bundle, current-version metadata, malformed-case reports, and explicit non-ranking timing boundary;
+  the bundle was refreshed for workspace v1.0.12 on 2026-09-11 using the
+  source-built CPython 3.13 arm64 extension and RDKit 2025.09.3, with all
+  eight reports at 20 repetitions and zero semantic/signature mismatches;
+  PDB and CDXML lenient-parser differences remain explicitly reported.
   Same-process timing fields are now required for all eight semantic-contract
   reports by `scripts/check_same_process_contracts.py`; the dedicated SDF
   context run on 2026-09-10 used a locally built v1.0.10 Python extension and
@@ -567,11 +699,16 @@ records them.
   adversarial fixtures.
 - [x] Run Chromium, Firefox, and WebKit smoke/adversarial lanes for the
   published v1.0 boundary.
-- [ ] Make Rust, Python, Node, and WASM consume one fixture schema and one
-  versioned expected-result manifest for every shared stable operation. The
-  manifest now has an explicit, CI-validated inventory of 50 currently shared
-  operations with four declared binding surfaces and checked-in test anchors;
-  this inventory is deliberately scoped to the covered surface and does not
+- [x] Make Rust, Python, Node, and WASM consume one fixture schema and one
+  versioned expected-result manifest for the currently shared stable surface.
+  The manifest has an explicit, CI-validated inventory of 56 shared operations
+  with four declared binding surfaces and checked-in test anchors; the former
+  source-only contracts (CJSON, strict PDB, PDBQT, SMARTS validity, and
+  reaction SMARTS) now have generated Node/WASM runtime coverage. The current
+  source/artifact WASM export audit is 262/262 with no missing or stale names.
+  This closes the declared current shared surface; it does not claim that
+  every public API is already shared across all four bindings.
+  This inventory is deliberately scoped to the covered surface and does not
   yet claim completeness for every public stable API.
   The single-frame XYZ parser is now included as a four-binding contract with
   explicit coordinates and the hydrogen/``heavy_atoms`` counting boundary.
@@ -590,43 +727,14 @@ records them.
   boundary rather than claiming a Node molecule-handle API.
   MolJSON now also has an explicit four-binding parse/serialize/parse round-trip
   contract; serialization output is checked semantically rather than byte-for-byte.
-  The current source audit covers 251 WASM and 132 Python exported names and
-  pins the set in `validation/results/binding_surface_inventory-v1.0.10.json`;
-  `scripts/check_wasm_artifact_surface.py` reports exactly four current source
-  exports absent from the checked-in Node artifact (`mol_from_cjson`,
-  `mol_from_pdb_strict`, `mol_from_pdbqt`, and `reaction_smarts_match`), with
-  no stale artifact exports.
-  The opt-in strict PDB path now has a shared source-only fixture and passing
-  Rust/Python/WASM tests; its evidence is recorded in
-  `validation/results/pdb-strict-source-only-contract-v1.0.10.json` while the
-  Node generated-artifact lane remains explicitly open.
-  SMARTS validity and reaction SMARTS matching now have separate source-only
-  Rust/Python/WASM contracts
-  contract with four accepted and four rejected cases; evidence is recorded in
-  `validation/results/smarts-source-only-contract-v1.0.10.json`. This is not a
-  four-binding claim because the checked-in Node artifact has no matching
-  `is_valid_smarts` export and is still version-drifted.
-  standardization profile is now included in the shared contract and the Node
-  contract test passes against the checked-in generated Node artifact; an
-  explicit version probe reports 1.0.9 while the workspace is 1.0.10, so this
-  is not current-candidate artifact evidence and the rebuild remains open.
-  The shared manifest now also covers Extended XYZ parsing, the typed RXN
-  document round-trip, and Markush/polymer semantic expansion across Rust,
-  Python, and Node/WASM. It now also carries the bounded XYZ/Extended XYZ
-  batch-recovery contract, verified by Rust/WASM and a clean Python wheel;
-  descriptor fixtures now additionally freeze exact mass and aromatic ring
-  count across the same four source surfaces;
-  the same descriptor contract now also freezes Hill-notation molecular
-  formula output and rotatable-bond counts;
-  the checked-in Node artifact exports the same batch functions and passes the
-  Node contract smoke; its explicit version probe reports 1.0.9, and the
-  broader all-stable-operation manifest remains open. Standardization now also
-  has four-binding contracts for InChI generation, fragment/charge/isotope/
-  stereo parents, canonical tautomer selection, charge neutralization, and
-  largest-fragment selection, budgeted tautomer/super-parent computation, and
-  explicit hydrogen addition/removal, and composed super-parent stage reports;
-  the current 50-operation result, six source-only contracts, and Python 106/106 evidence are recorded in
-  `validation/results/cross-binding-manifest-v1.0.10.json`.
+  The current source/artifact WASM export audit is 262/262 with no missing or
+  stale names. The manifest also covers Extended XYZ, typed reaction-document
+  round trips, Markush/polymer expansion, XYZ/Extended XYZ batch recovery,
+  descriptors, standardization, fingerprints, CJSON, strict PDB, PDBQT,
+  SMARTS validity, and reaction SMARTS. The current machine-readable manifest
+  and its Rust/Python/Node/WASM anchors are validated by
+  `scripts/check_cross_binding_manifest.py`; the current surface is complete
+  for its declared scope, while broader public-API coverage remains open.
 - [x] Extend the shared versioned manifest to cover the core ECFP4/MACCS
   fingerprint shapes and configurations across Rust, Python, and Node/WASM.
 - [x] Add versioned deterministic exact-identity serialization for
@@ -669,7 +777,9 @@ records them.
   browser smoke now covers malformed pasted records and cancellation locally
   and is wired into the Chromium/Firefox/WebKit CI
   matrix. The current Node-hosted agent-side pipeline/MCS adversarial run is
-  recorded in `validation/results/wasm-agent-adversarial-v1.0.10.json`; the
+  recorded in `validation/results/wasm-agent-adversarial-v1.0.10.json`. The
+  current generated Node/WASM contract also exercises resumable SDF/XYZ pages,
+  invalid batch sizes, oversized SDF input, and later-page input indices; the
   broader agent matrix and full browser evidence remain open.
 - [x] Prepare a standalone Chromium Node/WASM comparison harness for the
   official RDKit.js package; browser timing/parity evidence remains open until
@@ -704,7 +814,11 @@ records them.
 - [ ] Expand reaction/SMARTS/medicinal-chemistry coverage only after P0-P3
   gates have current evidence.
 - [ ] Add curated reaction/query precision, recall, invalid-product, timeout,
-  and ambiguity reports.
+  and ambiguity reports. A bounded v1.0.12 contract now covers one
+  over-valent-product rejection and one multiple-match ambiguity enumeration
+  case across Rust and generated Node/WASM, recorded in
+  `validation/results/reaction-quality-boundary-v1.0.12.json`; precision,
+  recall, timeout, and independent-oracle quality remain open.
 
 ## P5 — 3D and materials
 

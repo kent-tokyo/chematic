@@ -34,4 +34,5 @@ for (const expected of fixture.semantic_expansion_contract.cases) {
   const expanded = JSON.parse(wasm.semantic_expand_json(expected.base_smiles, selected));
   assert.equal(expanded.schema, "chematic.semantic-expanded.v1", expected.id);
   assert.deepEqual(expanded.source_to_expanded, expected.expected_source_to_expanded, expected.id);
+  assert.equal(expanded.contracted_smiles, expected.base_smiles, expected.id);
 }

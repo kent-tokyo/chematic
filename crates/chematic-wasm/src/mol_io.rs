@@ -2,8 +2,9 @@
 
 use crate::{
     MolHandle, WASM_MAX_ATOMS, WASM_MAX_BATCH_ITEMS, WASM_MAX_INPUT_BYTES,
-    WASM_MAX_JSON_STRING_BYTES, bounded_json_string, enforce_wasm_molecule_size,
-    escape_json_string, parse_smiles_json_array, parse_wasm_string_json_array,
+    WASM_MAX_JSON_STRING_BYTES, WASM_MAX_OUTPUT_BYTES, bounded_json_string,
+    enforce_wasm_molecule_size, escape_json_string, parse_smiles_json_array,
+    parse_wasm_string_json_array,
 };
 use wasm_bindgen::prelude::*;
 
@@ -105,8 +106,13 @@ pub fn mol_from_v3000_block(block: &str) -> Result<MolHandle, JsValue> {
     if block.len() > WASM_MAX_INPUT_BYTES {
         return Err(JsValue::from_str("V3000 block too large"));
     }
-    let (mol, _meta) =
+    let (mol, meta) =
         chematic_mol::parse_mol_v3000(block).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if !meta.v3000_sgroups.is_empty() {
+        return Err(JsValue::from_str(
+            "V3000 SGROUP metadata requires roundtrip_mol_v3000_block",
+        ));
+    }
     if mol.atom_count() > WASM_MAX_ATOMS {
         return Err(JsValue::from_str(&format!(
             "molecule too large (max {} atoms)",
@@ -392,6 +398,124 @@ pub fn to_mol_v3000_block(mol: &MolHandle) -> String {
     chematic_mol::write_mol_v3000(&mol.inner, &meta, &coords)
 }
 
+/// Parse and serialize a V3000 block while preserving V3000 metadata.
+///
+/// Unlike the topology-only [`mol_from_v3000_block`] + [`to_mol_v3000_block`]
+/// pair, this explicit round-trip API retains `SGROUP` logical lines and
+/// `COLLECTION` stereo groups. SGROUP polymer/query expansion is still out of
+/// scope, but the typed syntax view is available through
+/// [`v3000_sgroups_json`].
+#[wasm_bindgen]
+pub fn roundtrip_mol_v3000_block(block: &str) -> Result<String, JsValue> {
+    if block.len() > WASM_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str("V3000 block too large"));
+    }
+    let (mol, metadata, coords) = chematic_mol::parse_mol_v3000_with_coords(block)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    if mol.atom_count() > WASM_MAX_ATOMS {
+        return Err(JsValue::from_str(&format!(
+            "molecule too large (max {} atoms)",
+            WASM_MAX_ATOMS
+        )));
+    }
+    Ok(chematic_mol::write_mol_v3000(&mol, &metadata, &coords))
+}
+
+fn v3000_sgroup_kind_json(kind: &chematic_mol::V3000SGroupKind) -> (String, Option<String>) {
+    match kind {
+        chematic_mol::V3000SGroupKind::Sup => ("sup".to_string(), None),
+        chematic_mol::V3000SGroupKind::Gen => ("gen".to_string(), None),
+        chematic_mol::V3000SGroupKind::Cop => ("cop".to_string(), None),
+        chematic_mol::V3000SGroupKind::Dat => ("dat".to_string(), None),
+        chematic_mol::V3000SGroupKind::Ext => ("ext".to_string(), None),
+        chematic_mol::V3000SGroupKind::Other(token) => ("other".to_string(), Some(token.clone())),
+    }
+}
+
+/// Return the validated V3000 SGROUP syntax view as JSON.
+///
+/// The result is an array of objects containing `id`, `kind`, `parentId`,
+/// 1-based `atomIds`, and source-ordered `attributes`. This API does not
+/// expand polymers or infer query chemistry. Unknown kind tokens are returned
+/// as `kind: "other"` plus `kindToken` so callers can preserve their meaning.
+pub(crate) fn v3000_sgroups_json_inner(block: &str) -> Result<String, String> {
+    if block.len() > WASM_MAX_INPUT_BYTES {
+        return Err("V3000 block too large".to_string());
+    }
+    let (mol, metadata) = chematic_mol::parse_mol_v3000(block).map_err(|e| e.to_string())?;
+    let groups: Vec<_> = metadata
+        .v3000_sgroups
+        .into_iter()
+        .map(|line| chematic_mol::parse_v3000_sgroup_line(&line).map_err(|e| e.to_string()))
+        .collect::<Result<_, _>>()?;
+    let mut group_ids = std::collections::HashSet::with_capacity(groups.len());
+    for group in &groups {
+        if !group_ids.insert(group.id) {
+            return Err(format!("duplicate V3000 SGROUP id {}", group.id));
+        }
+        if let Some(parent_id) = group.parent_id
+            && !groups.iter().any(|parent| parent.id == parent_id)
+        {
+            return Err(format!(
+                "V3000 SGROUP {} references missing parent {}",
+                group.id, parent_id
+            ));
+        }
+        if let Some(atom_id) = group
+            .atom_ids
+            .iter()
+            .find(|&&atom_id| atom_id > mol.atom_count() as u32)
+        {
+            return Err(format!(
+                "V3000 SGROUP {} references missing atom {}",
+                group.id, atom_id
+            ));
+        }
+    }
+    let mut records = Vec::with_capacity(groups.len());
+    for group in groups {
+        let (kind, kind_token) = v3000_sgroup_kind_json(&group.kind);
+        let atoms = group
+            .atom_ids
+            .iter()
+            .map(u32::to_string)
+            .collect::<Vec<_>>()
+            .join(",");
+        let attributes = group
+            .attributes
+            .iter()
+            .map(|(key, value)| {
+                format!(
+                    "{{\"key\":\"{}\",\"value\":\"{}\"}}",
+                    escape_json_string(key),
+                    escape_json_string(value)
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(",");
+        let kind_token_field = kind_token
+            .map(|token| format!(",\"kindToken\":\"{}\"", escape_json_string(&token)))
+            .unwrap_or_default();
+        let parent = group
+            .parent_id
+            .map_or_else(|| "null".to_string(), |value| value.to_string());
+        records.push(format!(
+            "{{\"id\":{},\"kind\":\"{}\",\"parentId\":{},\"atomIds\":[{}],\"attributes\":[{}]{} }}",
+            group.id, kind, parent, atoms, attributes, kind_token_field
+        ));
+    }
+    let output = format!("[{}]", records.join(","));
+    if output.len() > WASM_MAX_OUTPUT_BYTES {
+        return Err("V3000 SGROUP JSON output too large".to_string());
+    }
+    Ok(output)
+}
+
+#[wasm_bindgen]
+pub fn v3000_sgroups_json(block: &str) -> Result<String, JsValue> {
+    v3000_sgroups_json_inner(block).map_err(|error| JsValue::from_str(&error))
+}
+
 // ---------------------------------------------------------------------------
 // DepictData
 // ---------------------------------------------------------------------------
@@ -656,6 +780,7 @@ pub fn sdf_from_records_json(
         let meta = chematic_mol::MolMetadata {
             name: names_list[i].clone(),
             comment: String::new(),
+            ..Default::default()
         };
         sdf.push_str(&chematic_mol::write_mol_with_coords(&mol, &meta, &coords));
 

@@ -1,0 +1,277 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-11",
+  "target_version": "1.0.12",
+  "scope": "generated malformed parser-entry failure-kind coverage",
+  "command": "python3 scripts/check_streaming_format_limits.py --write-evidence",
+  "generated_cases": 480,
+  "formats": 10,
+  "families_per_format": 8,
+  "cases_per_family": 6,
+  "failure_cases": 480,
+  "empty_categories": 0,
+  "result": "pass",
+  "category_failure_kinds": {
+    "sdf": {
+      "record_prefix": [
+        "UnexpectedEnd"
+      ],
+      "terminator_prefix": [
+        "UnexpectedEnd"
+      ],
+      "free_text_prefix": [
+        "UnexpectedEnd"
+      ],
+      "truncated_record": [
+        "InvalidAtomLine"
+      ],
+      "numeric_or_element": [
+        "InvalidAtomLine"
+      ],
+      "metadata_boundary": [
+        "UnexpectedEnd"
+      ],
+      "parser_tail": [
+        "UnexpectedEnd"
+      ],
+      "blank_prefix": [
+        "UnexpectedEnd"
+      ]
+    },
+    "mol": {
+      "record_prefix": [
+        "UnexpectedEnd"
+      ],
+      "terminator_prefix": [
+        "UnexpectedEnd"
+      ],
+      "free_text_prefix": [
+        "UnexpectedEnd"
+      ],
+      "truncated_record": [
+        "InvalidAtomLine"
+      ],
+      "numeric_or_element": [
+        "InvalidAtomLine"
+      ],
+      "metadata_boundary": [
+        "UnexpectedEnd"
+      ],
+      "parser_tail": [
+        "UnexpectedEnd"
+      ],
+      "blank_prefix": [
+        "UnexpectedEnd"
+      ]
+    },
+    "xyz": {
+      "count_prefix": [
+        "InvalidCountLine"
+      ],
+      "negative_count_prefix": [
+        "InvalidCountLine"
+      ],
+      "numeric_prefix": [
+        "InvalidCountLine"
+      ],
+      "truncated_frame": [
+        "InvalidAtomLine"
+      ],
+      "numeric_or_element": [
+        "InvalidAtomLine"
+      ],
+      "frame_boundary": [
+        "AtomCountMismatch"
+      ],
+      "parser_tail": [
+        "AtomCountMismatch"
+      ],
+      "blank_prefix": [
+        "InvalidCountLine"
+      ]
+    },
+    "extxyz": {
+      "count_prefix": [
+        "InvalidCountLine"
+      ],
+      "property_prefix": [
+        "InvalidCountLine"
+      ],
+      "numeric_prefix": [
+        "InvalidCountLine"
+      ],
+      "truncated_frame": [
+        "PropertyColumnMismatch"
+      ],
+      "numeric_or_element": [
+        "InvalidAtomLine"
+      ],
+      "frame_boundary": [
+        "AtomCountMismatch"
+      ],
+      "parser_tail": [
+        "PropertyColumnMismatch"
+      ],
+      "blank_prefix": [
+        "InvalidCountLine"
+      ]
+    },
+    "v3000": {
+      "counts_prefix": [
+        "UnexpectedEnd"
+      ],
+      "section_prefix": [
+        "UnexpectedEnd"
+      ],
+      "bond_prefix": [
+        "UnexpectedEnd"
+      ],
+      "truncated_ctab": [
+        "UnexpectedEnd"
+      ],
+      "numeric_or_element": [
+        "InvalidCountLine"
+      ],
+      "ctab_boundary": [
+        "InvalidCountLine"
+      ],
+      "parser_tail": [
+        "UnexpectedEnd"
+      ],
+      "blank_prefix": [
+        "UnexpectedEnd"
+      ]
+    },
+    "mol2": {
+      "text_prefix": [
+        "MissingSection"
+      ],
+      "atom_prefix": [
+        "MissingSection"
+      ],
+      "bond_prefix": [
+        "MissingSection"
+      ],
+      "truncated_molecule": [
+        "MissingSection"
+      ],
+      "numeric_or_element": [
+        "InvalidAtomLine"
+      ],
+      "section_boundary": [
+        "MissingSection"
+      ],
+      "parser_tail": [
+        "MissingSection"
+      ],
+      "blank_prefix": [
+        "MissingSection"
+      ]
+    },
+    "cml": {
+      "root_prefix": [
+        "ResourceLimit"
+      ],
+      "molecule_prefix": [
+        "ResourceLimit"
+      ],
+      "atom_prefix": [
+        "ResourceLimit"
+      ],
+      "truncated_xml": [
+        "ResourceLimit"
+      ],
+      "numeric_or_schema": [
+        "ResourceLimit"
+      ],
+      "xml_boundary": [
+        "ResourceLimit"
+      ],
+      "parser_tail": [
+        "ResourceLimit"
+      ],
+      "blank_prefix": [
+        "ResourceLimit"
+      ]
+    },
+    "cdxml": {
+      "root_prefix": [
+        "ResourceLimit"
+      ],
+      "fragment_prefix": [
+        "ResourceLimit"
+      ],
+      "node_prefix": [
+        "ResourceLimit"
+      ],
+      "truncated_xml": [
+        "ResourceLimit"
+      ],
+      "numeric_or_schema": [
+        "ResourceLimit"
+      ],
+      "xml_boundary": [
+        "ResourceLimit"
+      ],
+      "parser_tail": [
+        "ResourceLimit"
+      ],
+      "blank_prefix": [
+        "ResourceLimit"
+      ]
+    },
+    "mmcif": {
+      "cell_prefix": [
+        "NoAtomSiteLoop"
+      ],
+      "loop_prefix": [
+        "NoAtomSiteLoop"
+      ],
+      "atom_site_prefix": [
+        "NoAtomSiteLoop"
+      ],
+      "truncated_loop": [
+        "MissingTypeSymbolColumn"
+      ],
+      "numeric_or_schema": [
+        "NoAtomSiteLoop"
+      ],
+      "data_boundary": [
+        "MissingTypeSymbolColumn"
+      ],
+      "parser_tail": [
+        "MissingTypeSymbolColumn"
+      ],
+      "blank_prefix": [
+        "NoAtomSiteLoop"
+      ]
+    },
+    "pdb": {
+      "pdb_prefix": [
+        "PdbResourceLimitError"
+      ],
+      "atom_prefix": [
+        "PdbResourceLimitError"
+      ],
+      "hetatm_prefix": [
+        "PdbResourceLimitError"
+      ],
+      "truncated_record": [
+        "PdbResourceLimitError"
+      ],
+      "numeric_or_layout": [
+        "PdbResourceLimitError"
+      ],
+      "record_boundary": [
+        "PdbResourceLimitError"
+      ],
+      "parser_tail": [
+        "PdbResourceLimitError"
+      ],
+      "blank_prefix": [
+        "PdbResourceLimitError"
+      ]
+    }
+  },
+  "interpretation": "Every generated parser-entry family has observed typed failure kinds; exhaustive malformed coverage remains open."
+}

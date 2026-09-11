@@ -58,7 +58,10 @@ pub use cdxml::{
     parse_cdxml_all_with_options_and_limits, parse_cdxml_with_limits, parse_cdxml_with_options,
     parse_cdxml_with_options_and_limits, write_cdxml,
 };
-pub use cdxml_document::{CdxmlDocument, CdxmlEdit, CdxmlObject, CdxmlPage, CdxmlValue};
+pub use cdxml_document::{
+    CdxmlDiagnostic, CdxmlDocument, CdxmlEdit, CdxmlObject, CdxmlObjectKind, CdxmlPage,
+    CdxmlTextStyle, CdxmlTransform, CdxmlValue,
+};
 pub use cif::{
     CifError, CifParseLimits, CifResult, UnitCell, parse_cif, parse_cif_with_limits, write_cif,
 };
@@ -107,7 +110,8 @@ pub use mol2000::{
     write_sdf_record_with_conformer_checked, write_sdf_with_charges,
 };
 pub use mol3000::{
-    parse_mol_v3000, parse_mol_v3000_with_coords, read_mol_v3000_with_diagnostics, write_mol_v3000,
+    V3000SGroup, V3000SGroupKind, parse_mol_v3000, parse_mol_v3000_with_coords,
+    parse_v3000_sgroup_line, read_mol_v3000_with_diagnostics, write_mol_v3000,
     write_mol_v3000_with_conformer, write_mol_v3000_with_conformer_checked,
 };
 pub use moljson::{
@@ -152,8 +156,9 @@ pub use sdf::{
     SdfReader, SdfRecord, SdfRecordReader, parse_sdf_with_limits, read_sdf_conformer_ensembles,
 };
 pub use semantic::{
-    AtomRef, ExpandedSemantic, PolymerRepeatUnit, RGroupDefinition, SemanticCommand, SemanticError,
-    SemanticId, SemanticModel,
+    AtomRef, ExpandedSemantic, PolymerEndGroup, PolymerLinkage, PolymerRepeatUnit,
+    RGroupDefinition, SemanticCommand, SemanticError, SemanticExpansionLimits, SemanticId,
+    SemanticModel, SemanticSGroup,
 };
 pub use smiles_table::{
     Delimiter, SmilesReaderOptions, SmilesRecordReader, SmilesRecordWriter, SmilesTableError,

@@ -102,5 +102,8 @@ pub use reaction_fp::{
     ReactionFingerprint, ReactionFpConfig, reaction_fp, reaction_fp_ecfp4, reaction_fp_with_config,
     tanimoto_reaction_fp,
 };
-pub use search::{FpType, PreparedFingerprintIndex, nearest_neighbors, nearest_neighbors_from_fp};
+pub use search::{
+    FpType, PreparedFingerprintError, PreparedFingerprintIndex, nearest_neighbors,
+    nearest_neighbors_from_fp, try_nearest_neighbors,
+};
 pub use topo_path::{TopoPathConfig, tanimoto_topo_path, topo_path};

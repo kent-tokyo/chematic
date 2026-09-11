@@ -137,5 +137,6 @@ fn semantic_expansion_binding_contract_matches_shared_fixture() {
             "{}",
             case["id"].as_str().unwrap()
         );
+        assert_eq!(expanded.to_json()["contracted_smiles"], case["base_smiles"]);
     }
 }

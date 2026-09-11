@@ -253,6 +253,10 @@ platform-sized selected-alternative indices, rejecting out-of-range numeric
 values instead of allowing integer truncation.
 Polymer `repeat_endpoint_atoms` now applies the same checked `u32` conversion,
 so oversized endpoint indices are rejected rather than truncated.
+The binding surfaces now also expose `semantic_expand_json_with_limits` with
+explicit `max_atoms` and `max_repeat_count` arguments. The existing
+`semantic_expand_json` entry point remains compatible and uses the finite Rust
+defaults.
 
 This advances only the edit-to-expansion boundary. Nested Markush choices,
 polymer contraction, and the broader typed R-group/polymer/biomolecule API
@@ -859,14 +863,14 @@ regression test.
 
 ## Issue #372 — canonical Boc/tBu symmetry performance
 
-The exact twin/orbit path was re-run with the checked-in Tier A/B harness and
-the canonical-search instrumentation feature. The run had zero old/new
-correctness mismatches, zero search-budget exhaustions, and an 8.19x Tier A
-geometric-mean speedup (Tier B negative control: 2.47x). Across Tier A the
-exhaustive engine visited 6,186 leaves while the orbit-pruned engine wrote 13
-leaves, visited 62 nodes, and performed 46 orbit tests; the repeated multi-Boc
-and multi-pivaloyl fixtures each collapsed to one leaf from 432 exhaustive
-leaves.
+The exact twin/orbit path was re-run on 2026-09-11 with the checked-in Tier A/B
+harness and the canonical-search instrumentation feature. The run had zero
+old/new correctness mismatches, zero search-budget exhaustions, and an 8.16x
+Tier A geometric-mean speedup (Tier B negative control: 2.48x). Across Tier A
+the exhaustive engine visited 6,186 leaves while the orbit-pruned engine wrote
+13 leaves, visited 62 nodes, and performed 46 orbit tests; the repeated
+multi-Boc and multi-pivaloyl fixtures each collapsed to one leaf from 432
+exhaustive leaves.
 
 This is local proxy evidence only. The exact RENKIN witness and its preferred
 2x acceptance target are external to this checkout, so #372 remains open and
@@ -928,3 +932,28 @@ Evidence:
 This is intentionally a bounded compatibility path, not full query-aware
 SMIRKS. Compound SMARTS primitives and richer query-aware semantics remain
 open for the broader #510 scope.
+
+## Issues #461 and #462 — document presentation and semantic editing closure
+
+The follow-up implementation now provides the bounded, loss-aware contracts
+requested by these issues. CDXML keeps the original source byte-for-byte,
+retains page order and opaque presentation metadata, exposes typed page bounds,
+object kinds, text styles, transforms, z-order, nested paths, and unsupported
+diagnostics, and accepts empty self-closing pages. Semantic JSON now covers
+nested Markush groups, multiple attachments, polymer repeat/end-group data,
+typed S-groups and polymer linkages, stable-ID editing, deterministic bounded
+expansion, source-to-expanded provenance, and provenance-backed contraction.
+Biomolecule payloads are rejected explicitly until a dedicated typed schema is
+available.
+
+Evidence from the final local audit:
+
+- `cargo test -p chematic-mol --locked --offline` — 591 tests passed,
+  including CDXML, semantic, and shared binding fixtures.
+- `cargo check -p chematic-py -p chematic-wasm --locked --offline` — passed.
+- `cargo fmt --all`, `git diff --check`, and modified-crate clippy — passed.
+- Relevant implementation commits: `ef01152d`, `26e31465`, `3577faf5`,
+  `39e26b1e`, `b92fbf24`.
+
+The issues are closed against this bounded contract; full ChemDraw rendering
+inheritance and a future first-class biomolecule schema remain separate scope.

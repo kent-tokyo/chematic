@@ -54,17 +54,16 @@
       {"id": "qcschema_atomic_result", "contract": "qcschema_atomic_result_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-mol/src/qcschema.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
       {"id": "orca_input_parse", "contract": "orca_input_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-mol/src/orca.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
       {"id": "orca_output_parse", "contract": "orca_output_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-mol/src/orca.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
-      {"id": "adversarial_format_rejection", "contract": "adversarial", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]}
+      {"id": "adversarial_format_rejection", "contract": "adversarial", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
+      {"id": "parse_cjson", "contract": "cjson_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-mol/src/cjson.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/source_only_contract.test.mjs"]},
+      {"id": "cjson_roundtrip", "contract": "cjson_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-mol/src/cjson.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/source_only_contract.test.mjs"]},
+      {"id": "parse_pdb_strict", "contract": "pdb_strict_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-3d/src/pdb.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/source_only_contract.test.mjs"]},
+      {"id": "parse_pdbqt", "contract": "pdbqt_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-mol/src/pdbqt.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/source_only_contract.test.mjs"]},
+      {"id": "smarts_validity", "contract": "smarts_validity_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-smarts/tests/cross_binding_contract.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/source_only_contract.test.mjs"]},
+      {"id": "reaction_smarts_match", "contract": "reaction_smarts_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-rxn/tests/cross_binding_contract.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/source_only_contract.test.mjs"]}
     ]
   },
-  "source_only_operations": [
-    {"id": "parse_cjson", "contract": "cjson_contract", "bindings": ["rust", "python", "wasm"], "test_anchors": ["crates/chematic-mol/src/cjson.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/src/tests.rs"], "missing_binding": "node-generated-artifact"},
-    {"id": "cjson_roundtrip", "contract": "cjson_contract", "bindings": ["rust", "python", "wasm"], "test_anchors": ["crates/chematic-mol/src/cjson.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/src/tests.rs"], "missing_binding": "node-generated-artifact"},
-    {"id": "parse_pdb_strict", "contract": "pdb_strict_contract", "bindings": ["rust", "python", "wasm"], "test_anchors": ["crates/chematic-3d/src/pdb.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/src/tests.rs"], "missing_binding": "node-generated-artifact"},
-    {"id": "parse_pdbqt", "contract": "pdbqt_contract", "bindings": ["rust", "python", "wasm"], "test_anchors": ["crates/chematic-mol/src/pdbqt.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/src/tests.rs"], "missing_binding": "node-generated-artifact"},
-    {"id": "smarts_validity", "contract": "smarts_validity_contract", "bindings": ["rust", "python", "wasm"], "test_anchors": ["crates/chematic-smarts/tests/cross_binding_contract.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/src/tests.rs"], "missing_binding": "node-generated-artifact-and-export"},
-    {"id": "reaction_smarts_match", "contract": "reaction_smarts_contract", "bindings": ["rust", "python", "wasm"], "test_anchors": ["crates/chematic-rxn/tests/cross_binding_contract.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/src/tests.rs"], "missing_binding": "node-generated-artifact-and-export"}
-  ],
+  "source_only_operations": [],
   "batch_canonicalization_contract": {
     "schema_version": 1,
     "inputs": ["OCC", "C1CC", "CCN"],
@@ -379,7 +378,9 @@
       {"smirks": "[C:1][O:2]>>[C:1].[O:2]", "reactants": ["CO"], "minimum_product_sets": 1, "product_atom_count": 1},
       {"smirks": "[C:1][Br:2].[O:3]>>[C:1][O:3].[Br:2]", "reactants": ["CBr", "O"], "minimum_product_sets": 1, "product_atom_count": 2},
       {"smirks": "[N:1][C:2]>>[N:1].[C:2]", "reactants": ["NC"], "minimum_product_sets": 1, "product_atom_count": 1},
-      {"smirks": "[N:1]>>[N+:1]", "reactants": ["N"], "minimum_product_sets": 1, "product_atom_count": 1}
+      {"smirks": "[N:1]>>[N+:1]", "reactants": ["N"], "minimum_product_sets": 1, "product_atom_count": 1},
+      {"smirks": "[O:1]>>[O:1](C)C", "reactants": ["CCO"], "expected_product_sets": 0, "quality_boundary": "invalid_product_filtered"},
+      {"smirks": "[N:1]>>[N:1]", "reactants": ["NCCN"], "minimum_product_sets": 2, "product_atom_count": 4, "quality_boundary": "ambiguous_multiple_matches_enumerated"}
     ],
     "negative_cases": [
       {"smirks": "[#7;H2]>>[#7;H2]", "reactants": ["N"], "error": "unsupported compound primitive"}
@@ -461,11 +462,23 @@
             "selected_alternative": null
           }],
           "polymer_units": [],
+          "s_groups": [{
+            "id": "sg1",
+            "kind": "SRU",
+            "member_atoms": ["a1", "a2"],
+            "repeat_unit_id": null,
+            "linkage": {
+              "id": "link1",
+              "left_atom": "a1",
+              "right_atom": "a2",
+              "bond_order": 1
+            }
+          }],
           "extensions": {}
         },
         "command": {"group_id": "r1", "alternative": 0},
         "expected_selected_alternative": 0,
-        "expected_source_to_expanded": {"a1": [0], "a2": [1], "r1": [2]}
+        "expected_source_to_expanded": {"a1": [0], "a2": [1], "r1": [2], "sg1": [0, 1], "link1": [0, 1]}
       },
       {
         "id": "polymer-repeat-selection",
@@ -488,6 +501,32 @@
         "command": {"unit_id": "p1", "repeat_count": 3},
         "expected_repeat_count": 3,
         "expected_source_to_expanded": {"a1": [0], "a2": [1], "p1": [2, 3, 4, 5, 6, 7]}
+      },
+      {
+        "id": "nested-markush-selection",
+        "base_smiles": "CC",
+        "model": {
+          "schema": "chematic.semantic.v1",
+          "atom_ids": ["a1", "a2"],
+          "bond_ids": [],
+          "r_groups": [{
+            "id": "r1",
+            "attachment_atoms": ["a1"],
+            "alternatives": ["[*]O"],
+            "selected_alternative": 0,
+            "nested_groups": [{
+              "id": "r1a",
+              "attachment_atoms": ["a2"],
+              "alternatives": ["[*]N"],
+              "selected_alternative": null,
+              "nested_groups": []
+            }]
+          }],
+          "polymer_units": [],
+          "extensions": {}
+        },
+        "command": {"group_id": "r1a", "alternative": 0},
+        "expected_source_to_expanded": {"a1": [0], "a2": [1], "r1": [2], "r1a": [3]}
       }
     ]
   },

@@ -626,7 +626,7 @@ pub fn depict_data_with_coords_json(mol: &MolHandle, coords_json: &str) -> Strin
 /// `coords_json` — JSON array of `[x,y,z]` arrays (Å), one per atom.
 /// `max_iter` — maximum iterations (0 = default 500).
 ///
-/// Returns JSON: `{"coords":[[x,y,z],...], "energy":float, "iterations":int, "converged":bool, "sound":bool, "worst_bond_length":float}`
+/// Returns JSON: `{"coords":[[x,y,z],...], "energy":float, "iterations":int, "converged":bool, "sound":bool, "worst_bond_length":float, "rejected_unsound_step":bool}`
 /// or `{"error":"<msg>"}` on failure. `sound` is all-finite coordinates and
 /// no bond stretched past a sane covalent-bond length — independent of
 /// `converged`, since steepest descent often reports `converged:false` on
@@ -663,8 +663,13 @@ pub fn minimize_uff_json(smiles: &str, coords_json: &str, max_iter: u32) -> Stri
         .collect::<Vec<_>>()
         .join(",");
     format!(
-        "{{\"coords\":[{coords_str}],\"energy\":{:.4},\"iterations\":{},\"converged\":{},\"sound\":{},\"worst_bond_length\":{:.4}}}",
-        result.energy, result.iterations, result.converged, result.sound, result.worst_bond_length
+        "{{\"coords\":[{coords_str}],\"energy\":{:.4},\"iterations\":{},\"converged\":{},\"sound\":{},\"worst_bond_length\":{:.4},\"rejected_unsound_step\":{}}}",
+        result.energy,
+        result.iterations,
+        result.converged,
+        result.sound,
+        result.worst_bond_length,
+        result.rejected_unsound_step
     )
 }
 

@@ -58,6 +58,11 @@ fn find_atom_by_map(mol: &Molecule, map_num: u16) -> AtomIdx {
         .expect("atom map tag not found")
 }
 
+const NEGATIVE_RESONANCE_CORPUS: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../validation/cip_negative_resonance_order_invariance.jsonl"
+));
+
 #[test]
 fn test_atom_renumbering_invariance() {
     // A molecule with a ring, a branch, and an ester -- enough shape to be a
@@ -233,6 +238,170 @@ fn test_rule_1a_renumbering_invariance() {
     assert_eq!(
         a.assignments[0].1, b.assignments[0].1,
         "R/S must not depend on atom numbering"
+    );
+}
+
+#[test]
+fn negative_charge_resonance_branch_is_renumbering_invariant() {
+    // These anionic cyclohexadienyl branches exercise the charged resonance
+    // neighborhood that can make CIP ranking depend on atom insertion order.
+    // The checked-in corpus keeps the cases reviewable and the map tag identifies
+    // the same tetrahedral center after every permutation. This deliberately checks
+    // chematic's own invariant, not merely agreement with one external spelling.
+    let mut cases = 0;
+    for line in NEGATIVE_RESONANCE_CORPUS.lines() {
+        let case: serde_json::Value = serde_json::from_str(line).expect("valid corpus JSON");
+        let smiles = case["smiles"].as_str().expect("corpus SMILES");
+        let center_map = case["center_map"].as_u64().expect("center map") as u16;
+        let mol = parse(smiles).expect("valid resonance case");
+        let center = find_atom_by_map(&mol, center_map);
+        let baseline = assign_cip_accurate_experimental(&mol, CipBudget::default_budget())
+            .expect("assignment succeeds")
+            .assignments
+            .into_iter()
+            .find(|(idx, _)| *idx == center)
+            .map(|(_, code)| code)
+            .expect("mapped center must receive a CIP label");
+
+        let n = mol.atom_count();
+        let mut permutations = vec![
+            (0..n).rev().collect::<Vec<_>>(),
+            (1..n).chain(0..1).collect::<Vec<_>>(),
+            (0..n)
+                .step_by(2)
+                .chain((1..n).step_by(2))
+                .collect::<Vec<_>>(),
+        ];
+        // Keep this corpus small and reviewable while adding seeded coverage for
+        // arbitrary insertion orders. The fixed permutations above cover simple
+        // traversal shapes; these shuffles exercise the same invariant against
+        // less predictable atom numbering without making the test nondeterministic.
+        let mut state = 0xD1B5_4A32_D192_ED03_u64 ^ u64::from(center_map);
+        for _ in 0..13 {
+            let mut permutation: Vec<usize> = (0..n).collect();
+            for index in (1..n).rev() {
+                state ^= state << 13;
+                state ^= state >> 7;
+                state ^= state << 17;
+                let other = (state as usize) % (index + 1);
+                permutation.swap(index, other);
+            }
+            permutations.push(permutation);
+        }
+        for permutation in permutations {
+            let (permuted, old_to_new) = permute_molecule(&mol, &permutation);
+            let permuted_center = AtomIdx(old_to_new[center.0 as usize]);
+            let permuted_code =
+                assign_cip_accurate_experimental(&permuted, CipBudget::default_budget())
+                    .expect("permuted assignment succeeds")
+                    .assignments
+                    .into_iter()
+                    .find(|(idx, _)| *idx == permuted_center)
+                    .map(|(_, code)| code)
+                    .expect("permuted mapped center must receive a CIP label");
+
+            assert_eq!(
+                baseline, permuted_code,
+                "charged resonance ranking must not flap under renumbering: {smiles}"
+            );
+        }
+        cases += 1;
+    }
+    assert_eq!(cases, 4, "corpus size must remain explicit");
+}
+
+/// Run an independent, oracle-labelled corpus through generated atom-order
+/// permutations. The oracle labels are not used as a shortcut for the
+/// invariant: the baseline outcome (resolved code or explicit skip reason) is
+/// compared with every permutation after remapping the target atom identity.
+/// This catches order-dependent changes even when the external oracle happens
+/// to agree with both outputs.
+#[test]
+fn full_oracle_corpus_is_invariant_under_generated_atom_permutations() {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    enum Outcome {
+        Assigned(CipCode),
+        Skipped(SkipReason),
+    }
+
+    fn outcome(assignment: &crate::assign::AccurateCipAssignment, atom: AtomIdx) -> Outcome {
+        if let Some((_, code)) = assignment.assignments.iter().find(|(idx, _)| *idx == atom) {
+            Outcome::Assigned(*code)
+        } else if let Some((_, reason)) = assignment.skipped.iter().find(|(idx, _)| *idx == atom) {
+            Outcome::Skipped(*reason)
+        } else {
+            panic!("target atom {atom:?} was neither assigned nor explicitly skipped")
+        }
+    }
+
+    fn next(state: &mut u64) -> u64 {
+        *state ^= *state << 13;
+        *state ^= *state >> 7;
+        *state ^= *state << 17;
+        *state
+    }
+
+    fn shuffled(n: usize, state: &mut u64) -> Vec<usize> {
+        let mut permutation: Vec<usize> = (0..n).collect();
+        for index in (1..n).rev() {
+            let other = (next(state) as usize) % (index + 1);
+            permutation.swap(index, other);
+        }
+        permutation
+    }
+
+    const PERMUTATIONS_PER_CASE: usize = 8;
+    let mut seed = 0xD1B54A32D192ED03_u64;
+    let mut cases = 0usize;
+    let mut checks = 0usize;
+
+    for line in include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../validation/cip_label_corpus.jsonl"
+    ))
+    .lines()
+    {
+        let value: serde_json::Value = serde_json::from_str(line).expect("valid oracle JSONL");
+        let Some(smiles) = value.get("smiles").and_then(|value| value.as_str()) else {
+            continue;
+        };
+        let atom_index = value
+            .get("atom_idx")
+            .and_then(|value| value.as_u64())
+            .expect("oracle row atom_idx") as u32;
+        let molecule = parse(smiles).unwrap_or_else(|error| panic!("{smiles}: {error:?}"));
+        let baseline = assign_cip_accurate_experimental(&molecule, CipBudget::default_budget())
+            .expect("baseline assignment succeeds");
+        let expected = outcome(&baseline, AtomIdx(atom_index));
+
+        for trial in 0..PERMUTATIONS_PER_CASE {
+            let permutation = if trial == 0 {
+                (0..molecule.atom_count()).rev().collect()
+            } else {
+                shuffled(molecule.atom_count(), &mut seed)
+            };
+            let (permuted, old_to_new) = permute_molecule(&molecule, &permutation);
+            let new_atom = AtomIdx(old_to_new[atom_index as usize]);
+            let actual = assign_cip_accurate_experimental(&permuted, CipBudget::default_budget())
+                .expect("permuted assignment succeeds");
+            assert_eq!(
+                outcome(&actual, new_atom),
+                expected,
+                "CIP outcome changed under atom permutation: case={smiles}, trial={trial}"
+            );
+            checks += 1;
+        }
+        cases += 1;
+    }
+
+    assert_eq!(
+        cases, 155,
+        "the independent oracle corpus size must remain explicit"
+    );
+    assert_eq!(
+        checks,
+        cases * PERMUTATIONS_PER_CASE,
+        "every oracle row must receive every generated permutation"
     );
 }
 

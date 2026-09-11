@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "gate": "wasm-vs-rdkit-browser-playwright",
+  "configuration": {
+    "browser": "Playwright Chromium",
+    "timing": "same browser page, sequential lanes",
+    "timeout_ms": 60000
+  },
+  "corpus": {
+    "path": "scripts/descriptor_census_corpus.smi",
+    "rows": 1000,
+    "sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c"
+  },
+  "artifacts": {
+    "schematic_wasm": {
+      "file": "chematic_wasm_bg.wasm",
+      "raw_bytes": 3832165,
+      "gzip_bytes": 1394374,
+      "sha256": "32b8ca353355b613082105ec661b3f8c278dd16c8cd90a1ae8c6cb6371a5846b"
+    },
+    "rdkit_minimal_wasm": {
+      "file": "RDKit_minimal.wasm",
+      "raw_bytes": 6914823,
+      "gzip_bytes": 2045412,
+      "sha256": "e0967d44fed59e44a2d07bfc08f3a86821c54a14c95bb7e6e392fe867333b8c8"
+    },
+    "rdkit_minimal_js": {
+      "file": "RDKit_minimal.js",
+      "raw_bytes": 128073,
+      "gzip_bytes": 30168,
+      "sha256": "58d3c996ade7e0b0137d4f9363ff6c204b545689428fa0898eeaed579ef788d9"
+    },
+    "rdkit_package_json": {
+      "file": "/private/tmp/chematic-rdkitjs-gate/node_modules/@rdkit/rdkit/package.json",
+      "version": "2025.3.4-1.0.0",
+      "sha256": "c9029cad92384253cd6f885818ec5a357c045fdbda9ec196dc772e7db6df98fb"
+    },
+    "rdkit_typescript_declarations": {
+      "file": "/private/tmp/chematic-rdkitjs-gate/node_modules/@rdkit/rdkit/dist/index.d.ts",
+      "sha256": "2744d98da7f92fdd77d7dbae6434a9346ad381e5c5c41096030311d01b2882be"
+    }
+  },
+  "environment": {
+    "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+    "platform": "MacIntel"
+  },
+  "schematic": {
+    "init_ms": 71.90000000596046,
+    "parse": {
+      "count": 1000,
+      "p50_ms": 0,
+      "p95_ms": 0,
+      "mean_ms": 0.004299999982118607
+    },
+    "smiles_write": {
+      "count": 1000,
+      "p50_ms": 0,
+      "p95_ms": 0.10000002384185791,
+      "mean_ms": 0.02830000001192093
+    },
+    "rdkit_compatible_ecfp4": {
+      "count": 1000,
+      "p50_ms": 0.20000001788139343,
+      "p95_ms": 1,
+      "mean_ms": 0.37519999998807907
+    }
+  },
+  "rdkit": {
+    "version": "2025.03.4",
+    "init_ms": 146.7999999821186,
+    "parse": {
+      "count": 1000,
+      "p50_ms": 0.20000001788139343,
+      "p95_ms": 0.5,
+      "mean_ms": 0.24710000002384186
+    },
+    "smiles_write": {
+      "count": 1000,
+      "p50_ms": 0.30000001192092896,
+      "p95_ms": 0.699999988079071,
+      "mean_ms": 0.32930000001192095
+    },
+    "morgan_radius2_2048": {
+      "count": 1000,
+      "p50_ms": 0.30000001192092896,
+      "p95_ms": 0.7000000178813934,
+      "mean_ms": 0.37580000001192093
+    }
+  },
+  "fingerprint_parity": {
+    "compared_rows": 1000,
+    "exact_matches": 1000
+  },
+  "api_contract": {
+    "schematic": {
+      "malformed_parse": {
+        "status": "rejected",
+        "error": "unmatched ring closure 1 at position 4"
+      },
+      "malformed_batch": {
+        "status": "complete",
+        "record_statuses": [
+          "accepted",
+          "rejected",
+          "accepted"
+        ],
+        "inline_error": true
+      },
+      "stable_limit_error": "delimiter must not be empty",
+      "resumable_batch": {
+        "first_status": "partial",
+        "first_record_count": 1,
+        "next_status": "complete",
+        "next_record_count": 1,
+        "cancellation_boundary": true
+      },
+      "serialization": {
+        "v2000_canonical_smiles": "C(C)O",
+        "v3000_canonical_smiles": "C(C)O",
+        "moljson_canonical_smiles": "C(C)O"
+      },
+      "v3000_metadata": {
+        "status": "passed",
+        "sgroup_preserved": true,
+        "sgroup_before_collection": true
+      }
+    },
+    "rdkit": {
+      "malformed_parse": {
+        "status": "rejected"
+      },
+      "version": "2025.03.4",
+      "serialization": {
+        "v2000_canonical_smiles": "CCO",
+        "v3000_canonical_smiles": "CCO"
+      }
+    }
+  },
+  "interpretation": "Browser measurements exclude peak RSS and are not equivalent to Node process measurements; they are a Playwright Chromium-specific WASM/API comparison."
+}

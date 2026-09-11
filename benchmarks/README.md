@@ -10,16 +10,18 @@ accuracy, or compatibility claims.
 | Need | Start with |
 |---|---|
 | Understand the rules and how to report a result | [`docs/benchmark.md`](../docs/benchmark.md) |
-| Compare current similarity search with RDKit | [`2026-09-09-similarity-search-v1.0.9.md`](2026-09-09-similarity-search-v1.0.9.md) |
+| Compare current similarity search with RDKit | [`2026-09-11-similarity-search-v1.0.12.md`](2026-09-11-similarity-search-v1.0.12.md) |
 | Reproduce the 1.10x hot-path gate | [`2026-09-05-hotpath-110.md`](2026-09-05-hotpath-110.md) |
-| Check file-streaming contracts | [v1.0.10 validation matrix](../validation/results/cross-engine-matrix-v1.0.10.json) |
-| Check current streaming safety gate | [`2026-09-09-streaming-safety-v1.0.10.md`](2026-09-09-streaming-safety-v1.0.10.md) |
+| Check file-streaming contracts | [v1.0.12 validation matrix](../validation/results/cross-engine-matrix-v1.0.12.json) |
+| Check current streaming safety gate | [`2026-09-11-streaming-safety-v1.0.12.md`](2026-09-11-streaming-safety-v1.0.12.md) |
+| Check official RDKit.js comparison gate | [`2026-09-10-official-rdkit-js-gate-v1.0.11.md`](2026-09-10-official-rdkit-js-gate-v1.0.11.md) |
+| Check official RDKit.js browser gate | [`2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md`](2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md) |
 | Check WASM artifact size | [`2026-09-09-wasm-size-v1.0.10.md`](2026-09-09-wasm-size-v1.0.10.md) |
 | Find older measurements | [Historical snapshots](#historical-snapshots) |
 
-The current published release is v1.0.10. The newest checked-in performance
-records are still versioned historical records where their headers say so;
-the v1.0.10 release does not imply that an older measurement was rerun.
+The current release line is v1.0.12. Older records remain versioned historical
+measurements where their headers say so; a release does not imply that an older
+measurement was rerun.
 
 ## Performance and scaling
 
@@ -29,10 +31,19 @@ the v1.0.10 release does not imply that an older measurement was rerun.
 |---|---|
 | [`2026-09-09-similarity-search-v1.0.9.md`](2026-09-09-similarity-search-v1.0.9.md) | 4,500-entry library / 500-query exact top-k comparison with RDKit; latency and ranking overlap are separate axes |
 | [`2026-09-09-similarity-search-v1.0.9.json`](2026-09-09-similarity-search-v1.0.9.json) | Machine-readable similarity-search measurements and ranking checks |
+| [`2026-09-11-similarity-search-v1.0.12.md`](2026-09-11-similarity-search-v1.0.12.md) | Three-lane native/native, RDKit-compatible/RDKit, and cross-profile top-10 gate with separate failure accounting |
+| [`2026-09-11-similarity-search-v1.0.12.json`](2026-09-11-similarity-search-v1.0.12.json) | Machine-readable v1.0.12 similarity-search gate |
 | [`2026-09-09-wasm-rdkit-gate.md`](2026-09-09-wasm-rdkit-gate.md) | Same-corpus Node/WASM comparison with the installed official RDKit.js package |
 | [`2026-09-09-wasm-rdkit-gate.json`](2026-09-09-wasm-rdkit-gate.json) | Machine-readable WASM comparison output and exact fingerprint parity count |
 | [`2026-09-09-wasm-rdkit-paired.md`](2026-09-09-wasm-rdkit-paired.md) | Same-process paired Node/WASM timing follow-up |
 | [`2026-09-09-wasm-rdkit-paired.json`](2026-09-09-wasm-rdkit-paired.json) | Machine-readable paired timing and fingerprint parity output |
+| [`2026-09-10-official-rdkit-js-gate-v1.0.11.md`](2026-09-10-official-rdkit-js-gate-v1.0.11.md) | v1.0.11 same-process Node comparison against `@rdkit/rdkit@2025.3.4-1.0.0`, including artifact digests |
+| [`../validation/results/competitive-benchmark-rdkitjs-2026-09-10-v1.0.11.json`](../validation/results/competitive-benchmark-rdkitjs-2026-09-10-v1.0.11.json) | Machine-readable official RDKit.js comparison result |
+| [`2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md`](2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md) | Real Playwright Chromium comparison against the official package |
+| [`../validation/results/competitive-browser-rdkitjs-2026-09-10-v1.0.11.json`](../validation/results/competitive-browser-rdkitjs-2026-09-10-v1.0.11.json) | Machine-readable browser comparison result |
+| [`2026-09-10-generated-wasm-v3000-gate-v1.0.11.md`](2026-09-10-generated-wasm-v3000-gate-v1.0.11.md) | Generated Web-WASM V3000 metadata preservation gate |
+| [`2026-09-11-v3000-cross-engine-v1.0.12.md`](2026-09-11-v3000-cross-engine-v1.0.12.md) | Bounded V3000 canonical/semantic probe across schematic, RDKit, and Open Babel |
+| [`2026-09-11-v3000-cross-engine-v1.0.12.json`](2026-09-11-v3000-cross-engine-v1.0.12.json) | Machine-readable V3000 cross-engine probe and explicit Indigo availability boundary |
 | [`2026-09-05-prepared-index.md`](2026-09-05-prepared-index.md) | Reusable prepared fingerprint index on the pinned ten-molecule fixture |
 | [`2026-09-05-tanimoto-parallel.md`](2026-09-05-tanimoto-parallel.md) | Serial/parallel dense Tanimoto matrix parity and scaling |
 | [`2026-09-05-hotpath-110.md`](2026-09-05-hotpath-110.md) | Alternating source A/B gate for canonical SMILES, SDF, and parsing |
@@ -57,7 +68,9 @@ the v1.0.10 release does not imply that an older measurement was rerun.
 | [`2026-09-09-mmff94-nonbonded-gradient-v1.0.10.md`](2026-09-09-mmff94-nonbonded-gradient-v1.0.10.md) | Prepared MMFF94 vdW/electrostatic analytic-gradient parity |
 | [`2026-09-09-uff-prepared-topology-v1.0.10.md`](2026-09-09-uff-prepared-topology-v1.0.10.md) | UFF prepared topology, all 45 declared type-parameter soundness, and analytic-gradient parity |
 | [v1.0.10 RDKit MMFF94 availability oracle](../validation/results/mmff94-rdkit-availability-oracle-v1.0.10.json) | Independent 265-molecule parse, embed, force-field construction, and finite-energy availability boundary |
-| [`2026-09-09-streaming-safety-v1.0.10.md`](2026-09-09-streaming-safety-v1.0.10.md) | Bounded ten-format malformed, oversized, gzip, and generated parser-entry safety gate |
+| [`2026-09-11-streaming-safety-v1.0.12.md`](2026-09-11-streaming-safety-v1.0.12.md) | Current v1.0.12 ten-format malformed, oversized, gzip, and generated parser-entry safety gate |
+| [`2026-09-11-streaming-safety-v1.0.12.json`](2026-09-11-streaming-safety-v1.0.12.json) | Machine-readable current streaming safety gate evidence |
+| [v1.0.12 streaming failure taxonomy](../validation/results/streaming-failure-taxonomy-v1.0.12.json) | Machine-readable typed failure taxonomy for the 120-case base plus twenty Extended XYZ, mmCIF, MOL2, CML, and CDXML supplemental cases |
 | [v1.0.10 reaction SMARTS contract](../validation/results/reaction-smarts-bounded-contract-v1.0.10.json) | Bounded 20-case aromatic, bond-order, mapped-agent, agent-OR, disconnected-component assignment/rejection, hydrogen-count, pipe-alternative, and embedding-selection presence contract |
 
 ## Streaming and cross-engine contracts
@@ -74,6 +87,16 @@ unless the record explicitly says that the APIs and process boundaries match.
 | [`2026-09-08-streaming-cross-engine-matrix-v1.0.9.json`](2026-09-08-streaming-cross-engine-matrix-v1.0.9.json) | Same-input ten-format agreement across chematic and installed RDKit/Open Babel lanes |
 | [`2026-09-09-streaming-cross-engine-matrix-v1.0.10.md`](2026-09-09-streaming-cross-engine-matrix-v1.0.10.md) | v1.0.10 same-input contract refresh with explicitly non-ranking throughput context |
 | [`2026-09-09-streaming-cross-engine-matrix-v1.0.10.json`](2026-09-09-streaming-cross-engine-matrix-v1.0.10.json) | Machine-readable current ten-format contract matrix |
+| [`2026-09-11-streaming-cross-engine-matrix-v1.0.12.md`](2026-09-11-streaming-cross-engine-matrix-v1.0.12.md) | v1.0.12 same-input contract refresh with explicit parser/process boundaries |
+| [v1.0.12 validation matrix](../validation/results/cross-engine-matrix-v1.0.12.json) | Machine-readable current ten-format contract matrix |
+| [`2026-09-11-same-process-sdf-contract-v1.0.12.json`](2026-09-11-same-process-sdf-contract-v1.0.12.json) | v1.0.12 same-process SDF semantic contract |
+| [`2026-09-11-same-process-v2000-mol-contract-v1.0.12.json`](2026-09-11-same-process-v2000-mol-contract-v1.0.12.json) | v1.0.12 same-process V2000 MOL semantic contract |
+| [`2026-09-11-same-process-v3000-mol-contract-v1.0.12.json`](2026-09-11-same-process-v3000-mol-contract-v1.0.12.json) | v1.0.12 same-process V3000 MOL structural contract |
+| [`2026-09-11-same-process-mol2-contract-v1.0.12.json`](2026-09-11-same-process-mol2-contract-v1.0.12.json) | v1.0.12 same-process MOL2 structural contract |
+| [`2026-09-11-same-process-xyz-contract-v1.0.12.json`](2026-09-11-same-process-xyz-contract-v1.0.12.json) | v1.0.12 same-process XYZ coordinate contract |
+| [`2026-09-11-same-process-extxyz-contract-v1.0.12.json`](2026-09-11-same-process-extxyz-contract-v1.0.12.json) | v1.0.12 same-process Extended XYZ coordinate contract |
+| [`2026-09-11-same-process-pdb-contract-v1.0.12.json`](2026-09-11-same-process-pdb-contract-v1.0.12.json) | v1.0.12 same-process PDB coordinate/signature contract |
+| [`2026-09-11-same-process-cdxml-contract-v1.0.12.json`](2026-09-11-same-process-cdxml-contract-v1.0.12.json) | v1.0.12 same-process CDXML signature contract |
 | [v1.0.10 validation matrix](../validation/results/cross-engine-matrix-v1.0.10.json) | Current 2026-09-10 ten-format matrix used by the fail-closed validator |
 | [`2026-09-09-same-process-sdf-contract-v1.0.10.md`](2026-09-09-same-process-sdf-contract-v1.0.10.md) | Same-process schematic/RDKit SDF semantic contract |
 | [`2026-09-09-same-process-sdf-contract-v1.0.10.json`](2026-09-09-same-process-sdf-contract-v1.0.10.json) | Machine-readable same-process SDF evidence |

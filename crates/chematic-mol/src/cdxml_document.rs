@@ -14,11 +14,190 @@ use crate::cml::parse_xml_attrs;
 
 pub type CdxmlValue = Value;
 
+/// Known CDXML document/presentation object classes.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum CdxmlObjectKind {
+    Atom,
+    Bond,
+    Fragment,
+    Group,
+    Arrow,
+    Text,
+    Caption,
+    Graphic,
+    Curve,
+    Table,
+    Scheme,
+    BracketAttachment,
+    Unsupported(String),
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CdxmlObject {
     pub tag: String,
     pub attributes: BTreeMap<String, CdxmlValue>,
     pub raw_xml: String,
+    /// Parent-to-child sibling path. A page-level object has a one-element
+    /// path; nested objects retain their full structural address.
+    pub path: Vec<usize>,
+}
+
+/// A 2D affine transform in CDXML's `a b c d e f` order.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct CdxmlTransform {
+    pub matrix: [f64; 6],
+}
+
+/// Common typed text/presentation attributes used by CDXML text objects.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct CdxmlTextStyle {
+    pub font: Option<String>,
+    pub size: Option<f64>,
+    pub alignment: Option<String>,
+}
+
+impl CdxmlObject {
+    /// Classify an object without discarding unsupported XML.
+    pub fn kind(&self) -> CdxmlObjectKind {
+        match self.tag.as_str() {
+            "n" => CdxmlObjectKind::Atom,
+            "b" => CdxmlObjectKind::Bond,
+            "fragment" => CdxmlObjectKind::Fragment,
+            "group" => CdxmlObjectKind::Group,
+            "arrow" => CdxmlObjectKind::Arrow,
+            "text" => CdxmlObjectKind::Text,
+            "caption" => CdxmlObjectKind::Caption,
+            "graphic" => CdxmlObjectKind::Graphic,
+            "curve" => CdxmlObjectKind::Curve,
+            "table" => CdxmlObjectKind::Table,
+            "scheme" => CdxmlObjectKind::Scheme,
+            "bracket_attachment" => CdxmlObjectKind::BracketAttachment,
+            tag => CdxmlObjectKind::Unsupported(tag.to_owned()),
+        }
+    }
+
+    /// Read common text/caption presentation attributes. The method is
+    /// intentionally available for any object so extensions can opt in, while
+    /// non-text objects simply return `None` when no style attributes exist.
+    pub fn text_style(&self) -> Result<Option<CdxmlTextStyle>, CdxmlError> {
+        let font = self
+            .attributes
+            .get("Font")
+            .and_then(Value::as_str)
+            .map(str::to_owned);
+        let size = self
+            .attributes
+            .get("Size")
+            .map(|value| parse_finite_attribute(value, "Size"))
+            .transpose()?;
+        let alignment = self
+            .attributes
+            .get("Justification")
+            .or_else(|| self.attributes.get("Alignment"))
+            .and_then(Value::as_str)
+            .map(str::to_owned);
+        if font.is_none() && size.is_none() && alignment.is_none() {
+            Ok(None)
+        } else {
+            Ok(Some(CdxmlTextStyle {
+                font,
+                size,
+                alignment,
+            }))
+        }
+    }
+
+    /// Read the optional CDXML `Matrix` attribute without guessing malformed
+    /// values. The translation components are in the final two positions.
+    pub fn transform(&self) -> Result<Option<CdxmlTransform>, CdxmlError> {
+        let Some(value) = self.attributes.get("Matrix") else {
+            return Ok(None);
+        };
+        let text = value
+            .as_str()
+            .ok_or_else(|| CdxmlError::InvalidCoords("CDXML Matrix must be a string".into()))?;
+        let values = text
+            .split(|c: char| c.is_ascii_whitespace() || c == ',')
+            .filter(|part| !part.is_empty())
+            .map(|part| {
+                part.parse::<f64>().map_err(|_| {
+                    CdxmlError::InvalidCoords(format!("invalid CDXML Matrix component: {part}"))
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let matrix: [f64; 6] = values.try_into().map_err(|values: Vec<f64>| {
+            CdxmlError::InvalidCoords(format!(
+                "CDXML Matrix must contain 6 components, got {}",
+                values.len()
+            ))
+        })?;
+        if matrix.iter().any(|value| !value.is_finite()) {
+            return Err(CdxmlError::InvalidCoords(
+                "CDXML Matrix components must be finite".into(),
+            ));
+        }
+        Ok(Some(CdxmlTransform { matrix }))
+    }
+
+    /// Read the optional integer z-order used by presentation objects.
+    pub fn z_order(&self) -> Result<Option<i64>, CdxmlError> {
+        let Some(value) = self.attributes.get("ZOrder") else {
+            return Ok(None);
+        };
+        let text = value
+            .as_str()
+            .ok_or_else(|| CdxmlError::InvalidCoords("CDXML ZOrder must be a string".into()))?;
+        text.parse::<i64>()
+            .map(Some)
+            .map_err(|_| CdxmlError::InvalidCoords(format!("invalid CDXML ZOrder value: {text}")))
+    }
+}
+
+fn parse_finite_attribute(value: &CdxmlValue, name: &str) -> Result<f64, CdxmlError> {
+    let text = value
+        .as_str()
+        .ok_or_else(|| CdxmlError::InvalidCoords(format!("CDXML {name} must be a string")))?;
+    let parsed = text
+        .parse::<f64>()
+        .map_err(|_| CdxmlError::InvalidCoords(format!("invalid CDXML {name} value: {text}")))?;
+    if !parsed.is_finite() {
+        return Err(CdxmlError::InvalidCoords(format!(
+            "CDXML {name} must be finite"
+        )));
+    }
+    Ok(parsed)
+}
+
+fn parse_finite_list_attribute(value: &CdxmlValue, name: &str) -> Result<Vec<f64>, CdxmlError> {
+    let text = value
+        .as_str()
+        .ok_or_else(|| CdxmlError::InvalidCoords(format!("CDXML {name} must be a string")))?;
+    text.split(|c: char| c.is_ascii_whitespace() || c == ',')
+        .filter(|part| !part.is_empty())
+        .map(|part| {
+            let parsed = part.parse::<f64>().map_err(|_| {
+                CdxmlError::InvalidCoords(format!("invalid CDXML {name} component: {part}"))
+            })?;
+            if !parsed.is_finite() {
+                return Err(CdxmlError::InvalidCoords(format!(
+                    "CDXML {name} components must be finite"
+                )));
+            }
+            Ok(parsed)
+        })
+        .collect()
+}
+
+/// A non-fatal presentation diagnostic. Unknown objects remain available via
+/// `raw_xml`; callers can use these diagnostics to decide whether their own
+/// editor can safely interpret the document.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CdxmlDiagnostic {
+    pub code: String,
+    pub page_index: usize,
+    pub object_index: usize,
+    pub tag: String,
+    pub message: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -26,6 +205,39 @@ pub struct CdxmlPage {
     pub id: Option<String>,
     pub attributes: BTreeMap<String, CdxmlValue>,
     pub children: Vec<CdxmlObject>,
+}
+
+impl CdxmlPage {
+    /// Read the optional page `BoundingBox` as `left, top, right, bottom`.
+    pub fn bounding_box(&self) -> Result<Option<[f64; 4]>, CdxmlError> {
+        let Some(value) = self.attributes.get("BoundingBox") else {
+            return Ok(None);
+        };
+        let values = parse_finite_list_attribute(value, "BoundingBox")?;
+        let bounding_box: [f64; 4] = values.try_into().map_err(|values: Vec<f64>| {
+            CdxmlError::InvalidCoords(format!(
+                "CDXML BoundingBox must contain 4 components, got {}",
+                values.len()
+            ))
+        })?;
+        Ok(Some(bounding_box))
+    }
+
+    /// Find an object by its parent-to-child sibling path.
+    pub fn object_at_path(&self, path: &[usize]) -> Option<&CdxmlObject> {
+        self.children.iter().find(|object| object.path == path)
+    }
+
+    /// Return the direct object children of a group/path in source order.
+    /// Pass an empty path to obtain page-level objects.
+    pub fn child_objects(&self, parent_path: &[usize]) -> Vec<&CdxmlObject> {
+        self.children
+            .iter()
+            .filter(|object| {
+                object.path.len() == parent_path.len() + 1 && object.path.starts_with(parent_path)
+            })
+            .collect()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -92,6 +304,8 @@ impl CdxmlDocument {
         let mut document_attributes = BTreeMap::new();
         let mut pages = Vec::new();
         let mut current: Option<CdxmlPage> = None;
+        let mut open_paths: Vec<Vec<usize>> = Vec::new();
+        let mut sibling_counts: Vec<usize> = Vec::new();
         let mut saw_root = false;
         let mut root_closed = false;
         for (line_no, raw) in logical_cdxml_lines(input).into_iter().enumerate() {
@@ -159,13 +373,32 @@ impl CdxmlDocument {
                         .collect(),
                     children: Vec::new(),
                 });
+                open_paths.clear();
+                sibling_counts.clear();
+                sibling_counts.push(0);
+                if line.ends_with("/>") {
+                    pages.push(current.take().expect("page was just initialized"));
+                    sibling_counts.clear();
+                }
             } else if is_close_tag(line, "page") {
+                if !open_paths.is_empty() {
+                    return Err(CdxmlError::InvalidDocument(
+                        "page closed with unterminated object".into(),
+                    ));
+                }
                 let Some(page) = current.take() else {
                     return Err(CdxmlError::InvalidDocument(
                         "page closing element has no matching page".into(),
                     ));
                 };
                 pages.push(page);
+            } else if line.starts_with("</") {
+                if open_paths.pop().is_none() {
+                    return Err(CdxmlError::InvalidDocument(
+                        "object closing element has no matching object".into(),
+                    ));
+                }
+                sibling_counts.pop();
             } else if let Some(page) = current.as_mut()
                 && line.starts_with('<')
                 && !line.starts_with("</")
@@ -191,11 +424,21 @@ impl CdxmlDocument {
                     .into_iter()
                     .map(|(k, v)| (k, Value::String(v)))
                     .collect();
+                let mut path = open_paths.last().cloned().unwrap_or_default();
+                path.push(sibling_counts.last().copied().unwrap_or(0));
+                if let Some(count) = sibling_counts.last_mut() {
+                    *count += 1;
+                }
                 page.children.push(CdxmlObject {
                     tag,
                     attributes: attrs,
                     raw_xml: raw.to_string(),
+                    path: path.clone(),
                 });
+                if !line.ends_with("/>") {
+                    open_paths.push(path);
+                    sibling_counts.push(0);
+                }
             }
         }
         if current.is_some() {
@@ -229,6 +472,28 @@ impl CdxmlDocument {
     /// cannot accidentally address a page using an invented identifier.
     pub fn page_ids(&self) -> Vec<Option<&str>> {
         self.pages.iter().map(|page| page.id.as_deref()).collect()
+    }
+
+    /// Report presentation objects outside the small typed object vocabulary.
+    /// The original XML is still preserved and returned by [`Self::write`].
+    pub fn diagnostics(&self) -> Vec<CdxmlDiagnostic> {
+        self.pages
+            .iter()
+            .enumerate()
+            .flat_map(|(page_index, page)| {
+                page.children
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, object)| !is_known_presentation_tag(&object.tag))
+                    .map(move |(object_index, object)| CdxmlDiagnostic {
+                        code: "unsupported_presentation_object".into(),
+                        page_index,
+                        object_index,
+                        tag: object.tag.clone(),
+                        message: "object is preserved opaquely; typed presentation semantics are unavailable".into(),
+                    })
+            })
+            .collect()
     }
 
     /// Apply a JSON-encoded document edit and return the reparsed document.
@@ -464,12 +729,18 @@ impl CdxmlDocument {
                     "id": p.id,
                     "attributes": p.attributes,
                     "children": p.children.iter().map(|o| serde_json::json!({
-                        "tag": o.tag, "attributes": o.attributes, "raw_xml": o.raw_xml
+                        "tag": o.tag, "kind": o.kind(), "attributes": o.attributes, "raw_xml": o.raw_xml,
+                        "path": o.path
                     })).collect::<Vec<_>>()
                 })
             })
             .collect::<Vec<_>>();
-        serde_json::json!({ "schema": "chematic.cdxml-document.v1", "document_attributes": self.document_attributes, "pages": pages })
+        serde_json::json!({
+            "schema": "chematic.cdxml-document.v1",
+            "document_attributes": self.document_attributes,
+            "pages": pages,
+            "diagnostics": self.diagnostics(),
+        })
     }
 }
 
@@ -599,6 +870,23 @@ fn validate_attribute_name(name: &str) -> Result<(), CdxmlError> {
     Ok(())
 }
 
+fn is_known_presentation_tag(tag: &str) -> bool {
+    matches!(
+        tag,
+        "n" | "b"
+            | "fragment"
+            | "group"
+            | "arrow"
+            | "text"
+            | "caption"
+            | "graphic"
+            | "curve"
+            | "table"
+            | "scheme"
+            | "bracket_attachment"
+    )
+}
+
 fn page_id_for(edit: &CdxmlEdit) -> &str {
     match edit {
         CdxmlEdit::SetPageAttribute { page_id, .. }
@@ -629,11 +917,99 @@ mod tests {
         assert_eq!(doc.pages.len(), 1);
         assert_eq!(doc.pages[0].id.as_deref(), Some("p2"));
         assert_eq!(doc.pages[0].children[1].tag, "arrow");
+        assert_eq!(doc.pages[0].children[1].kind(), CdxmlObjectKind::Arrow);
         assert_eq!(
             doc.pages[0].children[1].attributes["Head3"],
             Value::String("yes".into())
         );
+        assert!(doc.diagnostics().is_empty());
+        assert_eq!(doc.to_json()["pages"][0]["children"][1]["kind"], "Arrow");
         assert_eq!(doc.write(), input);
+    }
+
+    #[test]
+    fn reports_unknown_presentation_objects_without_dropping_them() {
+        let input = "<CDXML>\n<page id=\"p1\">\n<customGraphic id=\"g1\"/>\n</page>\n</CDXML>";
+        let doc = CdxmlDocument::parse(input).unwrap();
+        let diagnostics = doc.diagnostics();
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].code, "unsupported_presentation_object");
+        assert_eq!(diagnostics[0].page_index, 0);
+        assert_eq!(diagnostics[0].object_index, 0);
+        assert_eq!(diagnostics[0].tag, "customGraphic");
+        assert_eq!(
+            doc.pages[0].children[0].kind(),
+            CdxmlObjectKind::Unsupported("customGraphic".into())
+        );
+        assert_eq!(
+            doc.to_json()["pages"][0]["children"][0]["kind"],
+            serde_json::json!({"Unsupported": "customGraphic"})
+        );
+        assert_eq!(doc.write(), input);
+        assert_eq!(doc.to_json()["diagnostics"].as_array().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn reads_typed_transform_and_z_order_without_guessing() {
+        let input = "<CDXML>\n<page id=\"p1\">\n<graphic Matrix=\"1 0 0 1 12.5 -3\" ZOrder=\"7\"/>\n</page>\n</CDXML>";
+        let doc = CdxmlDocument::parse(input).unwrap();
+        let object = &doc.pages[0].children[0];
+        assert_eq!(
+            object.transform().unwrap().unwrap().matrix,
+            [1.0, 0.0, 0.0, 1.0, 12.5, -3.0]
+        );
+        assert_eq!(object.z_order().unwrap(), Some(7));
+
+        let malformed = CdxmlDocument::parse(
+            "<CDXML>\n<page id=\"p1\">\n<graphic Matrix=\"1 0\"/>\n</page>\n</CDXML>",
+        )
+        .unwrap();
+        assert!(matches!(
+            malformed.pages[0].children[0].transform(),
+            Err(CdxmlError::InvalidCoords(_))
+        ));
+    }
+
+    #[test]
+    fn reads_typed_text_style_and_rejects_invalid_size() {
+        let input = "<CDXML>\n<page id=\"p1\">\n<text Font=\"Helvetica\" Size=\"12.5\" Justification=\"center\"/>\n</page>\n</CDXML>";
+        let doc = CdxmlDocument::parse(input).unwrap();
+        assert_eq!(
+            doc.pages[0].children[0].text_style().unwrap(),
+            Some(CdxmlTextStyle {
+                font: Some("Helvetica".into()),
+                size: Some(12.5),
+                alignment: Some("center".into()),
+            })
+        );
+
+        let malformed = CdxmlDocument::parse(
+            "<CDXML>\n<page id=\"p1\">\n<caption Size=\"NaN\"/>\n</page>\n</CDXML>",
+        )
+        .unwrap();
+        assert!(matches!(
+            malformed.pages[0].children[0].text_style(),
+            Err(CdxmlError::InvalidCoords(_))
+        ));
+    }
+
+    #[test]
+    fn reads_typed_page_bounding_box_and_rejects_invalid_shape() {
+        let input = "<CDXML>\n<page id=\"p1\" BoundingBox=\"0 100 200 0\">\n</page>\n</CDXML>";
+        let doc = CdxmlDocument::parse(input).unwrap();
+        assert_eq!(
+            doc.pages[0].bounding_box().unwrap(),
+            Some([0.0, 100.0, 200.0, 0.0])
+        );
+
+        let malformed = CdxmlDocument::parse(
+            "<CDXML>\n<page id=\"p1\" BoundingBox=\"0 100 NaN 0\">\n</page>\n</CDXML>",
+        )
+        .unwrap();
+        assert!(matches!(
+            malformed.pages[0].bounding_box(),
+            Err(CdxmlError::InvalidCoords(_))
+        ));
     }
 
     #[test]
@@ -663,6 +1039,13 @@ mod tests {
     fn accepts_empty_document_with_exact_root_name() {
         let doc = CdxmlDocument::parse("<CDXML></CDXML>").unwrap();
         assert_eq!(doc.page_count(), 0);
+    }
+
+    #[test]
+    fn accepts_self_closing_empty_page() {
+        let doc = CdxmlDocument::parse("<CDXML><page id=\"empty\"/></CDXML>").unwrap();
+        assert_eq!(doc.page_ids(), vec![Some("empty")]);
+        assert!(doc.pages[0].children.is_empty());
     }
 
     #[test]
@@ -859,6 +1242,11 @@ mod tests {
     fn replaces_nested_object_by_loss_preserving_path() {
         let input = "<CDXML>\n<page id=\"p1\">\n<group id=\"g1\" unknown=\"keep\">\n<arrow id=\"a1\" Custom=\"keep\"/>\n</group>\n</page>\n</CDXML>";
         let doc = CdxmlDocument::parse(input).unwrap();
+        assert_eq!(doc.pages[0].children[0].path, vec![0]);
+        assert_eq!(doc.pages[0].children[1].path, vec![0, 0]);
+        assert_eq!(doc.pages[0].child_objects(&[]).len(), 1);
+        assert_eq!(doc.pages[0].child_objects(&[0])[0].tag, "arrow");
+        assert_eq!(doc.pages[0].object_at_path(&[0, 0]).unwrap().tag, "arrow");
         let doc = doc
             .apply(&CdxmlEdit::ReplaceObjectPath {
                 page_id: "p1".into(),

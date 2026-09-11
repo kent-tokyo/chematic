@@ -15,12 +15,15 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+from datetime import date
 import gzip
 import json
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+from benchmark_version import workspace_version
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -87,6 +90,16 @@ def main() -> int:
         "--validate-only",
         action="store_true",
         help="validate the checked-in corpus and category manifest without running the parser",
+    )
+    parser.add_argument(
+        "--write-evidence",
+        action="store_true",
+        help="write current-version benchmark and parser-entry evidence after a passing run",
+    )
+    parser.add_argument(
+        "--evidence-date",
+        default=date.today().isoformat(),
+        help="date embedded in generated evidence (YYYY-MM-DD)",
     )
     args = parser.parse_args()
 
@@ -633,6 +646,89 @@ def main() -> int:
             for fmt, counts in sorted(base_category_counts.items())
         )
     )
+    if args.write_evidence:
+        version = workspace_version(ROOT)
+        report = {
+            "schema_version": 1,
+            "date": args.evidence_date,
+            "target_version": version,
+            "status": "local-current-candidate",
+            "gate": "streaming_format_limits",
+            "environment": {
+                "platform": "macOS arm64",
+                "runner": "cargo run -p chematic-mol --example streaming_benchmark --offline",
+                "execution": "python3 scripts/check_streaming_format_limits.py --write-evidence",
+                "category_manifest": "validation/streaming_format_safety_categories.json",
+                "formats": ["sdf", "mol", "xyz", "extxyz", "v3000", "mol2", "cml", "cdxml", "mmcif", "pdb"],
+            },
+            "results": {
+                "malformed_negative_cases": malformed_count,
+                "malformed_unique_payloads": unique_malformed_count,
+                "malformed_duplicate_reuses": duplicate_case_instances,
+                "generated_parser_entry_cases": sum(len(cases) for cases in generated_malformed.values()),
+                "generated_parser_entry_cases_per_format": MIN_GENERATED_PARSER_ENTRY_CASES_PER_FORMAT,
+                "generated_parser_entry_families_per_format": len(next(iter(GENERATED_PARSER_ENTRY_CATEGORIES.values()))),
+                "generated_parser_entry_cases_per_family": 6,
+                "generated_parser_entry_duplicate_reuses": sum(generated_duplicate_reuses.values()),
+                "malformed_cases_per_format": {fmt: len(cases) for fmt, cases in sorted(malformed.items())},
+                "oversized_input_cases": len(expected_formats),
+                "gzip_cases": gzip_cases,
+                "failures": 0,
+                "minimum_malformed_cases_per_format": MIN_MALFORMED_CASES_PER_FORMAT,
+                "base_case_category_gate": "passed",
+                "base_case_count_per_format": 12,
+                "required_category_presence": "all required categories present for every format",
+                "base_category_counts": base_category_counts,
+            },
+            "interpretation": "Bounded local parser safety evidence. This does not claim exhaustive malformed-corpus coverage or cross-engine equivalence.",
+        }
+        benchmark_path = ROOT / "benchmarks" / f"{args.evidence_date}-streaming-safety-v{version}.json"
+        benchmark_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+
+        category_report = {
+            "schema_version": 1,
+            "date": args.evidence_date,
+            "target_version": version,
+            "scope": "generated malformed parser-entry category coverage",
+            "command": "python3 scripts/check_streaming_format_limits.py --write-evidence",
+            "formats": len(GENERATED_PARSER_ENTRY_CATEGORIES),
+            "generated_cases": sum(len(cases) for cases in generated_malformed.values()),
+            "cases_per_format": MIN_GENERATED_PARSER_ENTRY_CASES_PER_FORMAT,
+            "families_per_format": len(next(iter(GENERATED_PARSER_ENTRY_CATEGORIES.values()))),
+            "cases_per_family": 6,
+            "categories": {fmt: list(categories) for fmt, categories in GENERATED_PARSER_ENTRY_CATEGORIES.items()},
+            "unique_generated_cases": sum(len(set(cases)) for cases in generated_malformed.values()),
+            "duplicate_reuses": sum(generated_duplicate_reuses.values()),
+            "result": "pass",
+            "interpretation": "The bounded generated wave covers all declared parser-entry families; exhaustive malformed parser-state coverage remains open.",
+        }
+        kinds_report = {
+            "schema_version": 1,
+            "date": args.evidence_date,
+            "target_version": version,
+            "scope": "generated malformed parser-entry failure-kind coverage",
+            "command": "python3 scripts/check_streaming_format_limits.py --write-evidence",
+            "generated_cases": sum(len(cases) for cases in generated_malformed.values()),
+            "formats": len(GENERATED_PARSER_ENTRY_CATEGORIES),
+            "families_per_format": len(next(iter(GENERATED_PARSER_ENTRY_CATEGORIES.values()))),
+            "cases_per_family": 6,
+            "failure_cases": sum(sum(counts.values()) for counts in generated_failure_case_counts.values()),
+            "empty_categories": 0,
+            "result": "pass",
+            "category_failure_kinds": {
+                fmt: {category: sorted(kinds) for category, kinds in categories.items()}
+                for fmt, categories in generated_failure_kinds.items()
+            },
+            "interpretation": "Every generated parser-entry family has observed typed failure kinds; exhaustive malformed coverage remains open.",
+        }
+        results_dir = ROOT / "validation" / "results"
+        (results_dir / f"streaming-parser-entry-categories-v{version}.json").write_text(
+            json.dumps(category_report, indent=2) + "\n", encoding="utf-8"
+        )
+        (results_dir / f"streaming-parser-entry-failure-kinds-v{version}.json").write_text(
+            json.dumps(kinds_report, indent=2) + "\n", encoding="utf-8"
+        )
+        print(f"wrote current evidence for v{version}: {benchmark_path.name}")
     return 0
 
 

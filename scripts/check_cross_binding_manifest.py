@@ -61,6 +61,11 @@ CONTRACT_SECTIONS = {
     "fingerprint_contract",
     "fingerprint_detail_contract",
     "adversarial",
+    "cjson_contract",
+    "pdb_strict_contract",
+    "pdbqt_contract",
+    "smarts_validity_contract",
+    "reaction_smarts_contract",
 }
 
 

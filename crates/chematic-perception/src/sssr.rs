@@ -838,7 +838,33 @@ pub fn find_symmetrized_sssr_with_diagnostics(mol: &Molecule) -> SymmetrizedSssr
             }
         }
 
-        for (_, (original_candidate, duplicate_roots)) in duplicate_groups {
+        // `FxHashMap` iteration order is intentionally not a contract. Sort
+        // the groups before expanding them so candidate-cap decisions and
+        // `seen` insertion order remain reproducible across processes. The
+        // ring set is sorted again below, but that cannot repair a different
+        // bounded-search path taken here.
+        let mut duplicate_groups: Vec<_> = duplicate_groups.into_iter().collect();
+        duplicate_groups.sort_by(|(key_a, _), (key_b, _)| {
+            let canonical_a = canonical_bond_set_key(
+                mol,
+                &key_a
+                    .iter()
+                    .map(|raw| BondIdx(*raw))
+                    .collect::<FxHashSet<_>>(),
+                &ranks,
+            );
+            let canonical_b = canonical_bond_set_key(
+                mol,
+                &key_b
+                    .iter()
+                    .map(|raw| BondIdx(*raw))
+                    .collect::<FxHashSet<_>>(),
+                &ranks,
+            );
+            canonical_a.cmp(&canonical_b).then_with(|| key_a.cmp(key_b))
+        });
+        for (_, (original_candidate, mut duplicate_roots)) in duplicate_groups {
+            duplicate_roots.sort_by_key(|root| (ranks[root.0 as usize], root.0));
             if duplicate_roots.len() < 2 {
                 accept_candidate(original_candidate);
                 continue;

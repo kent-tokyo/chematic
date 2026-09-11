@@ -66,6 +66,7 @@ nav:
   - Getting Started:
     - Installation: getting_started/installation.md
     - Quick Start: getting_started/quickstart.md
+  - For Researchers: researchers.md
   - Use Cases:
     - Python Notebook: use-cases/python-notebook.md
     - Batch Analysis: use-cases/batch-analysis.md

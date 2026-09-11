@@ -96,6 +96,24 @@ pub struct ReactionDocument {
     pub provenance: Vec<ProvenanceRecord>,
 }
 
+/// Bounded, ID-addressed edits exposed by document bindings.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "kind")]
+pub enum ReactionDocumentEdit {
+    SetDocumentId {
+        id: String,
+    },
+    SetStepCondition {
+        step_id: String,
+        key: String,
+        value: String,
+    },
+    SetComponentCoefficient {
+        component_id: String,
+        coefficient: u32,
+    },
+}
+
 /// Information that prevents a lossless conversion to a legacy format.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ReactionLoss {
@@ -189,6 +207,59 @@ impl ReactionDocument {
             }],
             provenance: Vec::new(),
         }
+    }
+
+    /// Apply one bounded edit, addressed by stable document IDs, and revalidate.
+    pub fn apply_json_edit(&self, edit_json: &str) -> Result<Self, ReactionDocumentError> {
+        let edit: ReactionDocumentEdit = serde_json::from_str(edit_json).map_err(|error| {
+            ReactionDocumentError::InvalidDocument(format!("invalid reaction edit JSON: {error}"))
+        })?;
+        let mut next = self.clone();
+        match edit {
+            ReactionDocumentEdit::SetDocumentId { id } => next.id = id,
+            ReactionDocumentEdit::SetStepCondition {
+                step_id,
+                key,
+                value,
+            } => {
+                let step = next
+                    .steps
+                    .iter_mut()
+                    .find(|step| step.id == step_id)
+                    .ok_or_else(|| {
+                        ReactionDocumentError::InvalidDocument(format!(
+                            "unknown step id '{step_id}'"
+                        ))
+                    })?;
+                if let Some(condition) = step
+                    .conditions
+                    .iter_mut()
+                    .find(|condition| condition.key == key)
+                {
+                    condition.value = value;
+                } else {
+                    step.conditions.push(ReactionCondition { key, value });
+                }
+            }
+            ReactionDocumentEdit::SetComponentCoefficient {
+                component_id,
+                coefficient,
+            } => {
+                let component = next
+                    .steps
+                    .iter_mut()
+                    .flat_map(|step| &mut step.components)
+                    .find(|component| component.id == component_id)
+                    .ok_or_else(|| {
+                        ReactionDocumentError::InvalidDocument(format!(
+                            "unknown component id '{component_id}'"
+                        ))
+                    })?;
+                component.coefficient = coefficient;
+            }
+        }
+        next.validate()?;
+        Ok(next)
     }
 
     /// Validate IDs, roles, coefficients, and non-empty SMILES payloads.
@@ -467,6 +538,48 @@ mod tests {
         let error = document.validate().unwrap_err();
         assert!(matches!(error, ReactionDocumentError::Parse(_)));
         assert!(error.to_string().contains("invalid component"));
+    }
+
+    #[test]
+    fn bounded_json_edit_preserves_stable_ids_and_metadata() {
+        let mut document = ReactionDocument::from_reaction_smiles("CC>>CC").unwrap();
+        document.provenance.push(ProvenanceRecord {
+            source: "fixture".into(),
+            kind: "authored".into(),
+            note: Some("keep".into()),
+        });
+        let edited = document
+            .apply_json_edit(r#"{"kind":"set_step_condition","step_id":"step-1","key":"temperature","value":"25 C"}"#)
+            .unwrap();
+        assert_eq!(edited.id, document.id);
+        assert_eq!(
+            edited.steps[0].components[0].id,
+            document.steps[0].components[0].id
+        );
+        assert_eq!(edited.provenance, document.provenance);
+        assert_eq!(edited.steps[0].conditions[0].value, "25 C");
+    }
+
+    #[test]
+    fn bounded_json_edit_rejects_unknown_ids_and_zero_coefficients() {
+        let document = ReactionDocument::from_reaction_smiles("CC>>CC").unwrap();
+        let unknown = document.apply_json_edit(
+            r#"{"kind":"set_component_coefficient","component_id":"missing","coefficient":2}"#,
+        );
+        assert!(
+            unknown
+                .unwrap_err()
+                .to_string()
+                .contains("unknown component id")
+        );
+        let zero = document.apply_json_edit(
+            r#"{"kind":"set_component_coefficient","component_id":"reactant-1","coefficient":0}"#,
+        );
+        assert!(
+            zero.unwrap_err()
+                .to_string()
+                .contains("positive coefficient")
+        );
     }
 
     #[test]

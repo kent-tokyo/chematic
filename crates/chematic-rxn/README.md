@@ -18,7 +18,9 @@ WASM-compatible, with selected RDKit-oriented behavior.
   same accounting while reusing caller-provided ring perception.
   `PreparedReaction::requirements()` exposes conservative lower bounds for
   cheap fail-open candidate prefilters, and `could_match()` applies those
-  bounds without running the graph matcher.
+  bounds without running the graph matcher. Unsupported or ambiguous query
+  primitives are omitted so the prefilter cannot create false negatives;
+  callers must still run the matcher for acceptance.
 - **Atom mapping**: track which atoms in reactants map to which atoms in products
 - **Reaction properties**: count reactants, products, and agents
 - **Evidence-scoped stoichiometry**: `analyze_reaction_document` and

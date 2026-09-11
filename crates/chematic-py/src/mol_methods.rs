@@ -224,6 +224,7 @@ impl Mol {
         let metadata = chematic_mol::MolMetadata {
             name: name.unwrap_or("").to_string(),
             comment: String::new(),
+            ..Default::default()
         };
         let coords_2d: Vec<(f64, f64)> = coords.iter().map(|c| (c[0], c[1])).collect();
         chematic_mol::write_mol_with_coords(&self.inner, &metadata, &coords_2d)
@@ -243,6 +244,7 @@ impl Mol {
         let metadata = chematic_mol::MolMetadata {
             name: name.unwrap_or("").to_string(),
             comment: String::new(),
+            ..Default::default()
         };
         let coords_2d: Vec<(f64, f64)> = coords.iter().map(|c| (c[0], c[1])).collect();
         chematic_mol::write_mol_v3000(&self.inner, &metadata, &coords_2d)
@@ -382,7 +384,10 @@ impl Mol {
     ///     steepest descent often reports ``converged=False`` on geometries
     ///     that are perfectly fine but simply haven't hit the tight
     ///     RMS-gradient threshold yet. Check this, not just ``converged``,
-    ///     before trusting a result), and ``worst_bond_length`` (float, Å).
+    ///     before trusting a result), ``worst_bond_length`` (float, Å), and
+    ///     ``rejected_unsound_step`` (bool — the line search rejected at
+    ///     least one energy-decreasing step for violating the bond-length
+    ///     soundness bound).
     ///
     /// Example::
     ///
@@ -406,6 +411,7 @@ impl Mol {
         d.set_item("converged", result.converged)?;
         d.set_item("sound", result.sound)?;
         d.set_item("worst_bond_length", result.worst_bond_length)?;
+        d.set_item("rejected_unsound_step", result.rejected_unsound_step)?;
         Ok(d)
     }
 

@@ -167,11 +167,53 @@ portable across native and `wasm32-unknown-unknown`
 precision across every JS engine, only that the value is finite, non-negative,
 and enforced correctly on all of them.
 
+## V3000 SGROUP syntax view
+
+`v3000_sgroups_json(block)` exposes bounded, typed SGROUP syntax without
+expanding polymer or Markush semantics. It preserves source order for unknown
+attributes and returns `kindToken` for unknown group kinds. Group IDs, parent
+references, atom references, and grouped-field counts are validated before
+JSON is returned.
+
+```js
+const groups = JSON.parse(v3000_sgroups_json(v3000Block));
+// [{ id, kind, parentId, atomIds, attributes, kindToken? }]
+```
+
+This is a syntax-level API; it does not claim polymer expansion, Markush
+interpretation, or cross-engine semantic compatibility.
+
 ## Bundle Size
 
-The optimized v1.0.10 candidate artifact was measured at **3.73 MB raw / 1.36 MB gzip**. Bundle size depends on features and toolchain; see [`benchmarks/2026-09-09-wasm-size-v1.0.10.md`](../../benchmarks/2026-09-09-wasm-size-v1.0.10.md) for exact tools, digest, and reproduction steps.
+The optimized v1.0.12 artifact was measured at **3.73 MB raw / 1.36 MB gzip**. Bundle size depends on features and toolchain; see [`benchmarks/2026-09-09-wasm-size-v1.0.10.md`](../../benchmarks/2026-09-09-wasm-size-v1.0.10.md) for exact tools, digest, and reproduction steps.
 
 PNG rasterization (`tiny_skia`) is excluded from the WASM build — use SVG output instead. All SVG depiction APIs remain fully available.
+
+## Versioned document binding boundary
+
+The `*_v1` document APIs provide a stable JSON boundary for downstream editors:
+
+```js
+const parsed = JSON.parse(reaction_document_json_v1(JSON.stringify(document)));
+const edited = JSON.parse(edit_reaction_document_json_v1(
+  JSON.stringify(parsed),
+  JSON.stringify({ kind: "set_step_condition", step_id: "step-1", key: "temperature", value: "25 C" }),
+));
+
+const cdxmlEnvelope = JSON.parse(cdxml_document_json_v1(cdxml));
+const cdxmlAgain = cdxml_document_from_json_v1(JSON.stringify(cdxmlEnvelope));
+```
+
+`cdxml_document_json_v1` retains the exact `source` string and returns a
+structural `document` summary with opaque objects and `diagnostics`. Use
+`edit_cdxml_document_json_v1` for bounded page/object edits; it reparses the
+result before returning. Errors are JSON-shaped with stable `code`, `path`, and
+`message` fields (`malformed_input`, `resource_limit`,
+`unsupported_construct`, `lossy_conversion`, or `serialization_error`).
+`reaction_document_to_rxn_v1` and `cdxml_document_projection_json_v1` reject
+lossy legacy projections with `lossy_conversion` diagnostics. These APIs do not claim
+mechanism correctness, product prediction, complete stoichiometry, or full
+ChemDraw/RXN compatibility.
 
 ## Building from source
 

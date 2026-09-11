@@ -728,6 +728,7 @@ impl SdWriter {
         let meta = chematic_mol::MolMetadata {
             name,
             comment: String::new(),
+            ..Default::default()
         };
         let filtered_props = self.props_filter.as_ref().map(|keys| {
             keys.iter()
