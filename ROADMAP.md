@@ -972,12 +972,13 @@ See [`docs/compatibility-scope.md`](docs/compatibility-scope.md).
 
 ## Execution order
 
-1. Finish the P0 scorecard validator.
-2. Extend equivalent format-streaming benchmarks and input-safety fixtures.
-3. Close canonical E/Z invariance before broadening identity-dependent APIs.
-4. Unify stable cross-binding fixtures and expected results.
-5. Stabilize fingerprint/descriptor contracts and held-out reports.
-6. Advance reaction, 3D/materials, and ecosystem breadth only behind their
+1. Complete the remaining local P1 parser-state and malformed-corpus coverage.
+2. Close canonical E/Z invariance for the supported domain before broadening
+   identity-dependent APIs.
+3. Extend equivalent-operation measurements and unify stable cross-binding
+   fixtures with current-version evidence.
+4. Stabilize fingerprint/descriptor contracts and held-out reports.
+5. Advance reaction, 3D/materials, and ecosystem breadth only behind their
    respective correctness and measurement gates.
 
 Do not start broad feature expansion while a shared primitive has a known
