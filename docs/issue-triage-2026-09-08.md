@@ -239,6 +239,12 @@ synthetic routing/incident fixtures returned the expected route or no-route
 decisions. This confirms the local shell contract, not the hosted sensitivity
 calibration or required-adjacent trust gate.
 
+On 2026-09-11, `scripts/check_criterion_gate_calibration.py` was added to
+validate the seven-case calibration manifest, the 1.04 thresholds, and the
+workflow rule that contaminated runs are reported as inconclusive rather than
+blocking. This strengthens the local contract only; it is not hosted
+calibration evidence and does not close #70.
+
 ## Issue #462 — polymer repeat editing boundary
 
 The typed semantic command surface now includes
