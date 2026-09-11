@@ -167,9 +167,25 @@ portable across native and `wasm32-unknown-unknown`
 precision across every JS engine, only that the value is finite, non-negative,
 and enforced correctly on all of them.
 
+## V3000 SGROUP syntax view
+
+`v3000_sgroups_json(block)` exposes bounded, typed SGROUP syntax without
+expanding polymer or Markush semantics. It preserves source order for unknown
+attributes and returns `kindToken` for unknown group kinds. Group IDs, parent
+references, atom references, and grouped-field counts are validated before
+JSON is returned.
+
+```js
+const groups = JSON.parse(v3000_sgroups_json(v3000Block));
+// [{ id, kind, parentId, atomIds, attributes, kindToken? }]
+```
+
+This is a syntax-level API; it does not claim polymer expansion, Markush
+interpretation, or cross-engine semantic compatibility.
+
 ## Bundle Size
 
-The optimized v1.0.10 candidate artifact was measured at **3.73 MB raw / 1.36 MB gzip**. Bundle size depends on features and toolchain; see [`benchmarks/2026-09-09-wasm-size-v1.0.10.md`](../../benchmarks/2026-09-09-wasm-size-v1.0.10.md) for exact tools, digest, and reproduction steps.
+The optimized v1.0.12 artifact was measured at **3.73 MB raw / 1.36 MB gzip**. Bundle size depends on features and toolchain; see [`benchmarks/2026-09-09-wasm-size-v1.0.10.md`](../../benchmarks/2026-09-09-wasm-size-v1.0.10.md) for exact tools, digest, and reproduction steps.
 
 PNG rasterization (`tiny_skia`) is excluded from the WASM build — use SVG output instead. All SVG depiction APIs remain fully available.
 
