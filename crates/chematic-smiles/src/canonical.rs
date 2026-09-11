@@ -102,8 +102,15 @@ fn winning_individualized_ranks(mol: &Molecule) -> (Vec<u64>, String) {
 fn alternate_ez_carrier_spellings(mol: &Molecule) -> Vec<Molecule> {
     let ranks = morgan_ranks(mol);
     let writer = CanonicalWriter::new(mol, &ranks);
+    let ends = CanonicalWriter::compute_stereo_alkene_ends(mol);
+    // Multi-end coupled systems have additional global carrier constraints;
+    // leave those to the writer's joint resolver until a complete equivalent
+    // spelling proof exists for that larger state space.
+    if ends.len() > 2 {
+        return Vec::new();
+    }
     let mut alternates = Vec::new();
-    for end in CanonicalWriter::compute_stereo_alkene_ends(mol) {
+    for end in ends {
         let subs = CanonicalWriter::substituents(mol, end);
         if subs.len() != 2 {
             continue;
