@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-11",
+  "issue": 503,
+  "scope": "issue_149_coupled_ez_aromatic_direction_stash_relabeling_audit",
+  "command": "python3 scripts/ez_shared_carrier_coupling_mechanism_diagnosis.py --relabelings 256",
+  "corpus": "scripts/descriptor_census_corpus.smi",
+  "relabelings_per_component": 256,
+  "components_tested": 28,
+  "component_sizes": [2],
+  "cross_correspondence_failures": 0,
+  "divergent_components": 4,
+  "divergent_inputs": [
+    "CC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+    "CCCC(C)/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+    "COCC/N=c1\\c(O)c(O)\\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
+    "O=C(Nc1ccc(C[C@H](/N=c2\\c(O)c(O)\\c2=N/CCCC(F)(F)F)C(=O)O)cc1)c1c(Cl)cncc1Cl"
+  ],
+  "axis2_alternates_generated": 1,
+  "status": "needs_research",
+  "interpretation": "The stronger finite relabeling audit still finds cosmetic canonical-output divergence, but the divergent set changes from the existing 64-relabeling sample (3/28) to 4/28. This is evidence that the residual population is sampling-sensitive, not evidence that exactly four molecules are the complete residual set. No production winner is selected; canonical_smiles_stable_key remains fail-closed for the affected coupled systems."
+}
