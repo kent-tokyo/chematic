@@ -1874,6 +1874,18 @@ M  V30 END CTAB\nM  END\n";
         super::mol_io::v3000_sgroups_json_inner(&malformed).is_err(),
         "typed boundary must reject a wrong ATOMS count"
     );
+
+    let missing_atom = base.replace("ATOMS=(1 1)", "ATOMS=(1 2)");
+    assert!(
+        super::mol_io::v3000_sgroups_json_inner(&missing_atom).is_err(),
+        "typed boundary must reject an atom reference outside the molecule"
+    );
+
+    let missing_parent = base.replace("1 VENDORX 0", "1 VENDORX 2");
+    assert!(
+        super::mol_io::v3000_sgroups_json_inner(&missing_parent).is_err(),
+        "typed boundary must reject a missing parent SGROUP"
+    );
 }
 
 #[test]

@@ -88,7 +88,8 @@ Competitive-response gate status (2026-09-10):
 - [ ] Exact canonical-SMILES parity and Indigo/RDKit cross-engine V3000
   fixtures.
 - [x] Add a bounded typed V3000 SGROUP syntax view while preserving the
-  original logical lines losslessly: validated ID/parent/`ATOMS` fields,
+  original logical lines losslessly: validated ID/parent/`ATOMS` fields and
+  molecule/group reference integrity,
   known/unknown kind tokens, and source-ordered attributes. Polymer expansion
   semantics and cross-engine fixtures remain open; the same syntax view is
   now exposed as bounded WASM JSON for browser consumers.

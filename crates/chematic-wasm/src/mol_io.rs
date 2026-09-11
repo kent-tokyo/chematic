@@ -442,10 +442,38 @@ pub(crate) fn v3000_sgroups_json_inner(block: &str) -> Result<String, String> {
     if block.len() > WASM_MAX_INPUT_BYTES {
         return Err("V3000 block too large".to_string());
     }
-    let (_, metadata) = chematic_mol::parse_mol_v3000(block).map_err(|e| e.to_string())?;
-    let mut records = Vec::with_capacity(metadata.v3000_sgroups.len());
-    for line in metadata.v3000_sgroups {
-        let group = chematic_mol::parse_v3000_sgroup_line(&line).map_err(|e| e.to_string())?;
+    let (mol, metadata) = chematic_mol::parse_mol_v3000(block).map_err(|e| e.to_string())?;
+    let groups: Vec<_> = metadata
+        .v3000_sgroups
+        .into_iter()
+        .map(|line| chematic_mol::parse_v3000_sgroup_line(&line).map_err(|e| e.to_string()))
+        .collect::<Result<_, _>>()?;
+    let mut group_ids = std::collections::HashSet::with_capacity(groups.len());
+    for group in &groups {
+        if !group_ids.insert(group.id) {
+            return Err(format!("duplicate V3000 SGROUP id {}", group.id));
+        }
+        if let Some(parent_id) = group.parent_id
+            && !groups.iter().any(|parent| parent.id == parent_id)
+        {
+            return Err(format!(
+                "V3000 SGROUP {} references missing parent {}",
+                group.id, parent_id
+            ));
+        }
+        if let Some(atom_id) = group
+            .atom_ids
+            .iter()
+            .find(|&&atom_id| atom_id > mol.atom_count() as u32)
+        {
+            return Err(format!(
+                "V3000 SGROUP {} references missing atom {}",
+                group.id, atom_id
+            ));
+        }
+    }
+    let mut records = Vec::with_capacity(groups.len());
+    for group in groups {
         let (kind, kind_token) = v3000_sgroup_kind_json(&group.kind);
         let atoms = group
             .atom_ids
