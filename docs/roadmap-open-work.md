@@ -54,8 +54,12 @@ Only `local-open` and `local-toolchain` work is in the autonomous scope. A
 available and its artifact or runtime evidence passes; an `external` item is
 never marked complete by local tests alone.
 
-The full local gate was rerun on 2026-09-10 with `bash scripts/check.sh`: all
-Rust unit and integration targets completed with zero failures, and the static,
+The full local gate was rerun on 2026-09-11 with `TMPDIR=/private/tmp bash
+scripts/check.sh` for the static and unit lanes, followed by
+`TMPDIR=/private/tmp CARGO_INCREMENTAL=0 cargo test --workspace --tests --quiet`
+for the integration lane after reclaiming the repository's regenerable
+`target/debug` cache. All Rust unit and integration targets completed with zero
+failures, and the static,
 format, clippy, binding-manifest, benchmark-index, streaming-safety-manifest,
 cross-engine streaming matrix, MMFF94 RDKit availability oracle,
 roadmap-disposition, and workflow-pin checks
