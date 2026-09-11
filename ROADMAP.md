@@ -711,11 +711,11 @@ records them.
   published v1.0 boundary.
 - [x] Make Rust, Python, Node, and WASM consume one fixture schema and one
   versioned expected-result manifest for the currently shared stable surface.
-  The manifest has an explicit, CI-validated inventory of 56 shared operations
+  The manifest has an explicit, CI-validated inventory of 57 shared operations
   with four declared binding surfaces and checked-in test anchors; the former
   source-only contracts (CJSON, strict PDB, PDBQT, SMARTS validity, and
   reaction SMARTS) now have generated Node/WASM runtime coverage. The current
-  source/artifact WASM export audit is 262/262 with no missing or stale names.
+  source/artifact WASM export audit is 263/263 with no missing or stale names.
   This closes the declared current shared surface; it does not claim that
   every public API is already shared across all four bindings.
   This inventory is deliberately scoped to the covered surface and does not
@@ -737,7 +737,7 @@ records them.
   boundary rather than claiming a Node molecule-handle API.
   MolJSON now also has an explicit four-binding parse/serialize/parse round-trip
   contract; serialization output is checked semantically rather than byte-for-byte.
-  The current source/artifact WASM export audit is 262/262 with no missing or
+  The current source/artifact WASM export audit is 263/263 with no missing or
   stale names. The manifest also covers Extended XYZ, typed reaction-document
   round trips, Markush/polymer expansion, XYZ/Extended XYZ batch recovery,
   descriptors, standardization, fingerprints, CJSON, strict PDB, PDBQT,
