@@ -36,7 +36,8 @@ pub use rdkit_parity_match::{
     RdkitParityConfig, find_matches_rdkit_parity, has_match_rdkit_parity_bounded,
 };
 pub use rdkit_ring_model::{
-    RdkitParityError, RdkitParityRingModel, RdkitRingModelBudget, build_rdkit_parity_ring_model,
+    RdkitParityError, RdkitParityRingModel, RdkitRingModelBudget,
+    build_rdkit_parity_ring_model, build_shared_symmetrized_ring_model,
 };
 
 #[cfg(test)]

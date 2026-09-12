@@ -1,0 +1,32 @@
+{
+  "status": "measured_not_gate",
+  "operation": "SMARTS match-set comparison",
+  "source_commit": "0d951486493f6baab8f3a645a0665987af335a79",
+  "corpus": {
+    "path": "scripts/descriptor_census_corpus.smi",
+    "rows": 5021,
+    "sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c"
+  },
+  "configuration": {
+    "queries": 31,
+    "match_order": "normalized_as_sets_of_sorted_atom_index_tuples",
+    "rdkit_version": "2025.09.3",
+    "rdkit_unsupported_policy": "[kN] SMARTS parse failures are counted separately",
+    "schematic_refusal_policy": "explicit refusals are retained separately"
+  },
+  "cells": 155651,
+  "counts": {
+    "agree": 145579,
+    "rdkit_smarts_unsupported": 10042,
+    "rust_refusal": 18,
+    "mismatch": 12
+  },
+  "comparable_cells": 145591,
+  "comparable_cells_including_refusals": 145609,
+  "comparable_agreement": 0.9999175910943586,
+  "notes": [
+    "This is a current-source diagnostic, not the sealed A0 evaluation.",
+    "The earlier unqualified 80000/80000 claim is not used for the full denominator.",
+    "The 12 residuals and 18 refusals remain open A4 work."
+  ]
+}

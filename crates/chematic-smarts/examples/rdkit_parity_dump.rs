@@ -148,15 +148,37 @@ fn dump_one(id: &str, smiles: &str, stdout: &mut impl Write) {
         };
         let default_matches = find_matches(query, &mol);
         let parity_result = find_matches_rdkit_parity(query, &mol, &RdkitParityConfig::default());
+        let shared_result = find_matches_rdkit_parity(
+            query,
+            &mol,
+            &RdkitParityConfig {
+                use_shared_symmetrized_sssr: true,
+                ..RdkitParityConfig::default()
+            },
+        );
         let entry = match parity_result {
             Ok((parity_matches, budget_exhausted)) => json!({
                 "default": match_set_json(&default_matches),
                 "parity": match_set_json(&parity_matches),
                 "parity_budget_exhausted": budget_exhausted,
+                "shared_symmetrized": match shared_result {
+                    Ok((matches, budget_exhausted)) => json!({
+                        "matches": match_set_json(&matches),
+                        "budget_exhausted": budget_exhausted,
+                    }),
+                    Err(e) => json!({"error": format!("{e:?}")}),
+                },
             }),
             Err(e) => json!({
                 "default": match_set_json(&default_matches),
                 "parity_error": format!("{e:?}"),
+                "shared_symmetrized": match shared_result {
+                    Ok((matches, budget_exhausted)) => json!({
+                        "matches": match_set_json(&matches),
+                        "budget_exhausted": budget_exhausted,
+                    }),
+                    Err(e) => json!({"error": format!("{e:?}")}),
+                },
             }),
         };
         per_pattern.insert((*pat).to_string(), entry);
