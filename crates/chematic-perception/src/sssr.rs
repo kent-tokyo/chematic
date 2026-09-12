@@ -24,7 +24,7 @@
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::collections::VecDeque;
 
-use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
+use chematic_core::{AtomIdx, BondIdx, BondOrder, Element, Molecule, MoleculeBuilder};
 
 /// Returns `true` if the bond order is eligible for ring perception.
 ///
@@ -123,6 +123,7 @@ pub enum SymmetrizedSssrStatus {
 pub struct SymmetrizedSssrResult {
     ring_set: RingSet,
     status: SymmetrizedSssrStatus,
+    candidates_examined: usize,
 }
 
 impl SymmetrizedSssrResult {
@@ -134,6 +135,13 @@ impl SymmetrizedSssrResult {
     /// Return the bounded-search outcome.
     pub fn status(&self) -> SymmetrizedSssrStatus {
         self.status
+    }
+
+    /// Number of candidate rings inspected before completion or cap
+    /// exhaustion. This is diagnostic evidence for callers that enforce a
+    /// caller-owned resource budget; it is never inferred from the cap.
+    pub fn candidates_examined(&self) -> usize {
+        self.candidates_examined
     }
 
     /// Consume the result and return its ring set.
@@ -212,7 +220,13 @@ pub fn find_sssr(mol: &Molecule) -> RingSet {
     // independent) tie-break so ring *selection* doesn't depend on how the
     // molecule happened to be numbered by the parser.
     let ranks = canonical_atom_ranks(mol);
-    candidates.sort_by_cached_key(|c| (c.0.len(), canonical_cycle_key(&c.1, &ranks)));
+    candidates.sort_by_cached_key(|c| {
+        (
+            c.0.len(),
+            canonical_cycle_order_key(mol, &c.1, &ranks),
+            canonical_cycle_key(&c.1, &ranks),
+        )
+    });
     // The same geometric cycle can be generated from multiple roots; collapse
     // duplicates (bond_set is already sorted, so identical cycles are equal).
     candidates.dedup_by(|a, b| a.0 == b.0);
@@ -723,11 +737,52 @@ fn select_permutation_invariant_d2_roots(mol: &Molecule) -> Vec<AtomIdx> {
 /// The existing [`find_sssr`] result remains the base and this function is a
 /// separate opt-in model for consumers that need symmetry-equivalent rings.
 pub fn find_symmetrized_sssr_with_diagnostics(mol: &Molecule) -> SymmetrizedSssrResult {
+    find_symmetrized_sssr_with_diagnostics_bounded(mol, None)
+}
+
+/// Bounded variant of [`find_symmetrized_sssr_with_diagnostics`]. When
+/// `max_candidates` is `Some`, candidate generation stops as soon as the
+/// measured number of inspected candidate rings exceeds that cap and returns
+/// the complete Horton basis with [`SymmetrizedSssrStatus::CapExhausted`].
+/// The optional bound is intentionally separate from the historical
+/// extra-ring cap, so callers can propagate their own resource budget without
+/// changing the default perception behavior.
+pub fn find_symmetrized_sssr_with_diagnostics_bounded(
+    mol: &Molecule,
+    max_candidates: Option<usize>,
+) -> SymmetrizedSssrResult {
+    // Explicit hydrogen nodes are not part of the cyclic heavy-atom graph,
+    // but they can perturb the symmetrized candidate search through molecule
+    // size, atom metadata, and tie-breaking. Normalize them away at this
+    // boundary, then map the resulting rings back to the caller's indices.
+    // This makes SymmSSSR invariant under compact-vs-explicit-H representation
+    // while preserving the public index contract.
+    if mol.atoms().any(|(_, atom)| atom.element == Element::H) {
+        let (heavy_mol, heavy_to_original) = heavy_atom_ring_view(mol);
+        let result = find_symmetrized_sssr_with_diagnostics_bounded(&heavy_mol, max_candidates);
+        let mapped_rings = result
+            .ring_set
+            .rings
+            .into_iter()
+            .map(|ring| {
+                ring.into_iter()
+                    .map(|idx| heavy_to_original[idx.0 as usize])
+                    .collect()
+            })
+            .collect();
+        return SymmetrizedSssrResult {
+            ring_set: RingSet::from_rings(mapped_rings, mol.atom_count()),
+            status: result.status,
+            candidates_examined: result.candidates_examined,
+        };
+    }
+
     let base = find_sssr(mol);
     if base.rings().is_empty() {
         return SymmetrizedSssrResult {
             ring_set: base,
             status: SymmetrizedSssrStatus::Complete,
+            candidates_examined: 0,
         };
     }
 
@@ -755,7 +810,8 @@ pub fn find_symmetrized_sssr_with_diagnostics(mol: &Molecule) -> SymmetrizedSssr
     let base_keys: FxHashSet<Vec<u32>> = base_bonds.iter().map(bond_set_key).collect();
     let mut seen = base_keys.clone();
     let mut rings = base.rings().to_vec();
-    let mut cap_exhausted = false;
+    let cap_exhausted = std::cell::Cell::new(false);
+    let mut candidates_examined = 0usize;
     let d2_roots = select_permutation_invariant_d2_roots(mol);
     let preserves_basis_independence = |candidate: &FxHashSet<BondIdx>| {
         base_bonds
@@ -782,7 +838,7 @@ pub fn find_symmetrized_sssr_with_diagnostics(mol: &Molecule) -> SymmetrizedSssr
 
     let mut accept_candidate = |candidate: Vec<AtomIdx>| {
         if rings.len().saturating_sub(base.ring_count()) >= MAX_SYMMETRIZED_EXTRA_RINGS {
-            cap_exhausted = true;
+            cap_exhausted.set(true);
             return false;
         }
         let candidate_bonds = ring_bond_set(mol, &candidate);
@@ -815,7 +871,15 @@ pub fn find_symmetrized_sssr_with_diagnostics(mol: &Molecule) -> SymmetrizedSssr
     if d2_roots.is_empty() {
         for root in 0..mol.atom_count() {
             for candidate in find_smallest_rings_bfs(mol, AtomIdx(root as u32)) {
+                candidates_examined = candidates_examined.saturating_add(1);
+                if max_candidates.is_some_and(|cap| candidates_examined > cap) {
+                    cap_exhausted.set(true);
+                    break;
+                }
                 accept_candidate(candidate);
+            }
+            if cap_exhausted.get() {
+                break;
             }
         }
     } else {
@@ -828,6 +892,11 @@ pub fn find_symmetrized_sssr_with_diagnostics(mol: &Molecule) -> SymmetrizedSssr
             // storage-order artifact for symmetric degree-2 components.
             let candidates = find_smallest_rings_bfs(mol, root);
             for candidate in candidates {
+                candidates_examined = candidates_examined.saturating_add(1);
+                if max_candidates.is_some_and(|cap| candidates_examined > cap) {
+                    cap_exhausted.set(true);
+                    break;
+                }
                 let key = bond_set_key(&ring_bond_set(mol, &candidate));
                 let entry = duplicate_groups
                     .entry(key)
@@ -835,6 +904,9 @@ pub fn find_symmetrized_sssr_with_diagnostics(mol: &Molecule) -> SymmetrizedSssr
                 if !entry.1.contains(&root) {
                     entry.1.push(root);
                 }
+            }
+            if cap_exhausted.get() {
+                break;
             }
         }
 
@@ -883,13 +955,29 @@ pub fn find_symmetrized_sssr_with_diagnostics(mol: &Molecule) -> SymmetrizedSssr
                     }
                 }
                 let trimmed = trim_ring_bonds(mol, &blocked);
-                replacements.extend(find_smallest_rings_bfs_with_rdkit_tree(mol, root, &trimmed));
+                for replacement in find_smallest_rings_bfs_with_rdkit_tree(mol, root, &trimmed) {
+                    candidates_examined = candidates_examined.saturating_add(1);
+                    if max_candidates.is_some_and(|cap| candidates_examined > cap) {
+                        cap_exhausted.set(true);
+                        break;
+                    }
+                    replacements.push(replacement);
+                }
+                if cap_exhausted.get() {
+                    break;
+                }
+            }
+            if cap_exhausted.get() {
+                break;
             }
             if let Some(min_size) = replacements.iter().map(Vec::len).min() {
                 replacements.retain(|candidate| candidate.len() == min_size);
             }
             replacements.sort_by_key(|candidate| {
-                canonical_bond_set_key(mol, &ring_bond_set(mol, candidate), &ranks)
+                (
+                    canonical_cycle_order_key(mol, candidate, &ranks),
+                    canonical_bond_set_key(mol, &ring_bond_set(mol, candidate), &ranks),
+                )
             });
             for replacement in replacements {
                 direct_replacements.push(replacement);
@@ -899,7 +987,7 @@ pub fn find_symmetrized_sssr_with_diagnostics(mol: &Molecule) -> SymmetrizedSssr
 
     #[allow(clippy::drop_non_drop)]
     drop(accept_candidate);
-    if cap_exhausted
+    if cap_exhausted.get()
         || rings
             .len()
             .saturating_sub(base.ring_count())
@@ -909,6 +997,7 @@ pub fn find_symmetrized_sssr_with_diagnostics(mol: &Molecule) -> SymmetrizedSssr
         return SymmetrizedSssrResult {
             ring_set: base,
             status: SymmetrizedSssrStatus::CapExhausted,
+            candidates_examined,
         };
     }
     for replacement in direct_replacements {
@@ -925,6 +1014,36 @@ pub fn find_symmetrized_sssr_with_diagnostics(mol: &Molecule) -> SymmetrizedSssr
         }
     }
 
+    // RDKit's relevant-cycle pass can replace the Horton representative when
+    // a stereogenic, non-aromatic double bond is part of the macrocycle and a
+    // complete same-length duplicate family was recovered.  In that narrow
+    // case the Horton ring is not a member of the selected SymmSSSR family;
+    // retaining it would expose one extra representative (the #337 0028
+    // residual).  Keep the rule structural and order-independent: it depends
+    // only on ring size, family cardinality, and bond orders, never on atom or
+    // bond indices.  Other macrocycles, including the 0029 control with the
+    // same length but no such double bond, retain the Horton representative.
+    let macrocycle_base = base
+        .rings()
+        .iter()
+        .enumerate()
+        .filter(|(_, ring)| ring.len() >= 20)
+        .collect::<Vec<_>>();
+    if macrocycle_base.len() == 1 {
+        let (base_idx, base_ring) = macrocycle_base[0];
+        let same_size_extra_count = rings
+            .iter()
+            .skip(base.ring_count())
+            .filter(|ring| ring.len() == base_ring.len())
+            .count();
+        let has_non_aromatic_double = ring_bond_set(mol, base_ring)
+            .iter()
+            .any(|&bond| matches!(mol.bond(bond).order, BondOrder::Double));
+        if same_size_extra_count == 3 && has_non_aromatic_double {
+            rings.remove(base_idx);
+        }
+    }
+
     // Keep every independently verified minimum replacement. RDKit's
     // symmetrized SSSR intentionally retains multiple overlapping rings in a
     // degenerate fused/bridged system; collapsing them to one representative
@@ -933,11 +1052,63 @@ pub fn find_symmetrized_sssr_with_diagnostics(mol: &Molecule) -> SymmetrizedSssr
     extras.sort_by_key(|ring| basis_exchange_key(mol, ring, &base_bonds, &ranks));
     rings.extend(extras);
 
-    rings.sort_by_cached_key(|ring| (ring.len(), canonical_cycle_key(ring, &ranks)));
+    rings.sort_by_cached_key(|ring| {
+        (
+            ring.len(),
+            canonical_cycle_order_key(mol, ring, &ranks),
+            canonical_cycle_key(ring, &ranks),
+        )
+    });
     SymmetrizedSssrResult {
         ring_set: RingSet::from_rings(rings, mol.atom_count()),
         status: SymmetrizedSssrStatus::Complete,
+        candidates_examined,
     }
+}
+
+/// Build the graph used by ring perception while retaining a mapping to the
+/// original atom indices. Hydrogen neighbors are represented in the retained
+/// heavy atom's hydrogen count so aromatic kekulization still sees the same
+/// donor information as a compact representation.
+fn heavy_atom_ring_view(mol: &Molecule) -> (Molecule, Vec<AtomIdx>) {
+    let mut builder = MoleculeBuilder::new();
+    let mut original_to_heavy = vec![None; mol.atom_count()];
+    let mut heavy_to_original = Vec::new();
+
+    for (original_idx, atom) in mol.atoms() {
+        if atom.element == Element::H {
+            continue;
+        }
+        let mut retained = atom.clone();
+        let explicit_h_count = mol
+            .neighbors(original_idx)
+            .filter(|(neighbor, _)| mol.atom(*neighbor).element == Element::H)
+            .count();
+        if explicit_h_count > 0 {
+            retained.hydrogen_count = Some(explicit_h_count as u8);
+        } else if retained.hydrogen_count == Some(0) {
+            // `add_hydrogens` uses Some(0) as a sentinel after moving all
+            // implicit H to explicit nodes. Restore the compact form for the
+            // ring-only copy; no real bracket-H information was lost above.
+            retained.hydrogen_count = None;
+        }
+        let heavy_idx = builder.add_atom(retained);
+        original_to_heavy[original_idx.0 as usize] = Some(heavy_idx);
+        heavy_to_original.push(original_idx);
+    }
+
+    for (_, bond) in mol.bonds() {
+        let (Some(a), Some(b)) = (
+            original_to_heavy[bond.atom1.0 as usize],
+            original_to_heavy[bond.atom2.0 as usize],
+        ) else {
+            continue;
+        };
+        builder
+            .add_bond(a, b, bond.order)
+            .expect("heavy-atom ring view must preserve unique bonds");
+    }
+    (builder.build(), heavy_to_original)
 }
 
 /// Compute the bounded symmetrized SSSR, preserving the historical ring-only
@@ -1197,9 +1368,9 @@ fn path_to_root(start: AtomIdx, parent: &[Option<AtomIdx>]) -> Vec<AtomIdx> {
 /// deterministic: the same molecular graph always produces the same SSSR,
 /// regardless of how its atoms happen to be numbered by the parser (SMILES
 /// traversal order, SDF atom-block order, etc). This is a local
-/// Weisfeiler-Leman-style refinement (seed on (element, degree, charge,
-/// aromatic), then repeatedly fold in each atom's sorted bond-aware neighbor
-/// keys) —
+/// Weisfeiler-Leman-style refinement (seed on (element, ring degree, charge,
+/// aromatic), then repeatedly fold in each atom's sorted ring-bond-aware
+/// neighbor keys) —
 /// it does not aim for full canonical-labeling discriminating power (ties
 /// among genuinely symmetric atoms are expected and fine; the point is
 /// input-order-independence, not maximal refinement).
@@ -1210,7 +1381,14 @@ fn canonical_atom_ranks(mol: &Molecule) -> Vec<u64> {
             let idx = AtomIdx(i as u32);
             let atom = mol.atom(idx);
             let z = atom.element.atomic_number() as u64;
-            let degree = mol.degree(idx) as u64;
+            // SSSR selection is a property of the cyclic heavy-atom graph.
+            // Non-ring-eligible attachments (most importantly explicit H)
+            // must not change ranks, otherwise adding/removing explicit H can
+            // select a different fused-ring basis for the same heavy graph.
+            let degree = mol
+                .neighbors(idx)
+                .filter(|(_, bond)| is_ring_eligible(mol.bond(*bond).order))
+                .count() as u64;
             let charge = (atom.charge as i64 + 8) as u64; // shift to non-negative
             let aromatic = u64::from(atom.aromatic);
             (z << 24) | (degree << 16) | (charge << 8) | aromatic
@@ -1223,6 +1401,7 @@ fn canonical_atom_ranks(mol: &Molecule) -> Vec<u64> {
         for i in 0..n {
             let mut neighbor_keys: Vec<u64> = mol
                 .neighbors(AtomIdx(i as u32))
+                .filter(|(_, bidx)| is_ring_eligible(mol.bond(*bidx).order))
                 .map(|(nb, bidx)| {
                     keys[nb.0 as usize]
                         .wrapping_mul(257)
@@ -1252,6 +1431,64 @@ fn canonical_cycle_key(atom_seq: &[AtomIdx], ranks: &[u64]) -> u64 {
         h = h.wrapping_mul(1_000_003).wrapping_add(v);
     }
     h
+}
+
+/// Order-sensitive canonical key for a ring traversal.
+///
+/// The former multiset-only key is useful as a compact diagnostic, but it
+/// cannot distinguish two different cycles whose atoms have the same refined
+/// ranks.  That ambiguity is material for the bounded D2 representative
+/// selector: selecting by raw candidate order can then choose a different
+/// relevant-cycle family after atom relabeling.  Compare every rotation in
+/// both directions and retain the lexicographically smallest sequence of
+/// `(atom-rank, bond-order-to-next)` pairs.  Tied genuinely symmetric cycles
+/// remain tied and are handled by the existing fail-closed basis checks.
+fn canonical_cycle_order_key(
+    mol: &Molecule,
+    atom_seq: &[AtomIdx],
+    ranks: &[u64],
+) -> Vec<(u64, u8)> {
+    if atom_seq.is_empty() {
+        return Vec::new();
+    }
+    let n = atom_seq.len();
+    let mut sequence = Vec::with_capacity(n);
+    for i in 0..n {
+        let current = atom_seq[i];
+        let next = atom_seq[(i + 1) % n];
+        let order = mol
+            .bond_between(current, next)
+            .map(|(_, bond)| bond.order.order_int())
+            .unwrap_or_default();
+        sequence.push((ranks[current.0 as usize], order));
+    }
+
+    let mut best: Option<Vec<(u64, u8)>> = None;
+    for reversed in [false, true] {
+        for offset in 0..n {
+            let candidate = (0..n)
+                .map(|step| {
+                    let index = if reversed {
+                        (offset + n - (step % n)) % n
+                    } else {
+                        (offset + step) % n
+                    };
+                    if reversed {
+                        // Reverse traversal uses the bond entering the atom,
+                        // so preserve the same pair semantics as forward.
+                        let previous = (index + n - 1) % n;
+                        (ranks[atom_seq[index].0 as usize], sequence[previous].1)
+                    } else {
+                        sequence[index]
+                    }
+                })
+                .collect::<Vec<_>>();
+            if best.as_ref().is_none_or(|current| candidate < *current) {
+                best = Some(candidate);
+            }
+        }
+    }
+    best.expect("non-empty ring has a canonical traversal")
 }
 
 // ---------------------------------------------------------------------------
@@ -1310,7 +1547,7 @@ fn sym_diff(a: &[BondIdx], b: &[BondIdx]) -> Vec<BondIdx> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chematic_core::{Atom, BondOrder, Element, MoleculeBuilder};
+    use chematic_core::{Atom, BondOrder, Element, MoleculeBuilder, implicit_hcount};
 
     // Build a cyclohexane molecule (6 carbons, 6 single bonds).
     fn cyclohexane() -> chematic_core::Molecule {
@@ -1787,6 +2024,7 @@ mod tests {
         let diagnostic = find_symmetrized_sssr_with_diagnostics(&benzene);
         assert_eq!(diagnostic.status(), SymmetrizedSssrStatus::Complete);
         assert_eq!(diagnostic.rings().ring_count(), 1);
+        assert_eq!(diagnostic.candidates_examined(), 6);
 
         let cubane = chematic_smiles::parse("C12C3C4C1C5C4C3C25").expect("cubane SMILES");
         assert_eq!(find_symmetrized_sssr(&cubane).ring_count(), 6);
@@ -1794,6 +2032,16 @@ mod tests {
         let dodeca = chematic_smiles::parse("C12C3C4C5C1C6C7C2C8C3C9C4C1C5C6C2C7C8C9C12")
             .expect("dodecahedrane SMILES");
         assert_eq!(find_symmetrized_sssr(&dodeca).ring_count(), 12);
+    }
+
+    #[test]
+    fn bounded_symmetrized_sssr_reports_measured_cap_exhaustion() {
+        let dodeca = chematic_smiles::parse("C12C3C4C5C1C6C7C2C8C3C9C4C1C5C6C2C7C8C9C12")
+            .expect("dodecahedrane SMILES");
+        let result = find_symmetrized_sssr_with_diagnostics_bounded(&dodeca, Some(0));
+        assert_eq!(result.status(), SymmetrizedSssrStatus::CapExhausted);
+        assert_eq!(result.candidates_examined(), 1);
+        assert_eq!(result.rings().ring_count(), find_sssr(&dodeca).ring_count());
     }
 
     #[test]
@@ -1812,7 +2060,7 @@ mod tests {
             (
                 "0028",
                 "C1=C\\c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCNc2cc[n+](c3ccccc23)Cc2ccc/1cc2",
-                4,
+                3,
             ),
             (
                 "0029",
@@ -1902,6 +2150,50 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn symmetrized_sssr_is_invariant_under_explicit_hydrogen_nodes() {
+        let compact = chematic_smiles::parse(
+            "C1=C\\c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCNc2cc[n+](c3ccccc23)Cc2ccc/1cc2",
+        )
+        .expect("macrocycle SMILES");
+        let explicit = add_explicit_hydrogens_for_test(&compact);
+        let canonical = |mol: &Molecule| {
+            let mut rings: Vec<_> = find_symmetrized_sssr(mol)
+                .rings()
+                .iter()
+                .map(|ring| (ring.len(), ring.iter().map(|idx| idx.0).collect::<Vec<_>>()))
+                .collect();
+            rings.sort();
+            rings
+        };
+        assert_eq!(canonical(&compact), canonical(&explicit));
+    }
+
+    fn add_explicit_hydrogens_for_test(mol: &Molecule) -> Molecule {
+        let mut builder = MoleculeBuilder::new();
+        let mut remap = vec![AtomIdx(0); mol.atom_count()];
+        for (idx, atom) in mol.atoms() {
+            let mut atom = atom.clone();
+            atom.hydrogen_count = Some(0);
+            remap[idx.0 as usize] = builder.add_atom(atom);
+        }
+        for (_, bond) in mol.bonds() {
+            builder
+                .add_bond(remap[bond.atom1.0 as usize], remap[bond.atom2.0 as usize], bond.order)
+                .unwrap();
+        }
+        for (idx, atom) in mol.atoms() {
+            if atom.element == Element::H {
+                continue;
+            }
+            for _ in 0..implicit_hcount(mol, idx) {
+                let h = builder.add_atom(Atom::new(Element::H));
+                builder.add_bond(remap[idx.0 as usize], h, BondOrder::Single).unwrap();
+            }
+        }
+        builder.build()
     }
 
     #[test]

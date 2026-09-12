@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.13",
+  "scope": "shared reaction application quality boundaries",
+  "fixture": "validation/cross_binding_contract.json#reaction_application_contract",
+  "new_boundaries": {
+    "invalid_product_filtered": "pass",
+    "ambiguous_multiple_matches_enumerated": "pass",
+    "no_match_is_empty": "pass"
+  },
+  "negative_boundaries": {
+    "reactant_count_mismatch_is_error": "pass",
+    "invalid_template_is_error": "pass"
+  },
+  "bindings": {
+    "rust": {"status": "pass", "tests": 5},
+    "node_wasm": {"status": "pass", "tests": 1},
+    "python": {"status": "pass", "tests": 1}
+  },
+  "not_claimed": [
+    "reaction precision",
+    "reaction recall",
+    "external-oracle equivalence",
+    "timeout quality",
+    "full medicinal-chemistry coverage"
+  ]
+}

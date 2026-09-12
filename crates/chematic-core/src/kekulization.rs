@@ -606,7 +606,15 @@ pub fn atom_must_be_matched(mol: &Molecule, idx: AtomIdx) -> bool {
         // N or P with explicit H ([nH], [pH]) is a lone-pair donor — *unless* protonated
         // (a positive charge consumes the lone pair, e.g. pyridinium's [nH+], which then
         // needs a double bond exactly like neutral pyridine's bare N).
-        7 | 15 if atom.charge <= 0 && matches!(atom.hydrogen_count, Some(h) if h > 0) => false,
+        7 | 15
+            if atom.charge <= 0
+                && (matches!(atom.hydrogen_count, Some(h) if h > 0)
+                    || mol.neighbors(idx).any(|(neighbor, _)| {
+                        mol.atom(neighbor).element.atomic_number() == 1
+                    })) =>
+        {
+            false
+        }
         // Anionic aromatic N/P ([n-]) also donates its lone pair; the extra electron
         // occupies the lone-pair slot rather than a ring π bond (same as [nH]).
         7 | 15 if atom.charge < 0 => false,
@@ -618,7 +626,10 @@ pub fn atom_must_be_matched(mol: &Molecule, idx: AtomIdx) -> bool {
             if atom.charge == 0
                 && mol
                     .neighbors(idx)
-                    .any(|(_, bidx)| mol.bond(bidx).order != BondOrder::Aromatic) =>
+                .any(|(neighbor, bidx)| {
+                    mol.atom(neighbor).element.atomic_number() != 1
+                        && mol.bond(bidx).order != BondOrder::Aromatic
+                }) =>
         {
             false
         }

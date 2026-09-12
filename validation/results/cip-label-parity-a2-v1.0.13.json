@@ -1,0 +1,404 @@
+{
+  "atom": {
+    "assigned": 487,
+    "exact": 155,
+    "mismatches": 26,
+    "oracle": 539
+  },
+  "atom_mismatch_classes": {
+    "oracle_unstable": 26
+  },
+  "atom_mismatch_elements": {
+    "P": 52
+  },
+  "atom_mismatch_oracle_labels": {
+    "R": 28,
+    "S": 24
+  },
+  "bond": {
+    "assigned": 14,
+    "exact": 181,
+    "mismatches": 0,
+    "oracle": 14
+  },
+  "compared_rows": 181,
+  "corpus": "validation/cip_residual_classification_corpus.jsonl",
+  "corpus_sha256": "df07a28558a9feb1c4b5b63114babef9e671b5bdd7f284cee6b66620fda08ff9",
+  "engine_failures": 0,
+  "gate_passed": false,
+  "input_rows": 181,
+  "mismatch_examples": [
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "11": "S",
+        "21": "R"
+      },
+      "row": 0,
+      "smiles": "C1CCN(P2(N3CCCC3)=N[P@@](N3CCCC3)(N3CC3)=N[P@](N3CCCC3)(N3CC3)=N2)C1",
+      "unresolved": {
+        "11": "oracle_unstable",
+        "21": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "17": "S",
+        "4": "R"
+      },
+      "row": 1,
+      "smiles": "C1CCN([P@@]2(N3CC3)=NP(N3CC3)(N3CC3)=N[P@@](N3CCCCC3)(N3CC3)=N2)CC1",
+      "unresolved": {
+        "17": "oracle_unstable",
+        "4": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "11": "S",
+        "22": "R"
+      },
+      "row": 2,
+      "smiles": "C1CN(P2(N3CCOCC3)=N[P@](N3CCOCC3)(N3CC3)=N[P@@](N3CCOCC3)(N3CC3)=N2)CCO1",
+      "unresolved": {
+        "11": "oracle_unstable",
+        "22": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "16": "R",
+        "3": "S"
+      },
+      "row": 3,
+      "smiles": "C1CN([P@@]2(N3CC3)=NP(N3CC3)(N3CC3)=N[P@@](N3CCOCC3)(N3CC3)=N2)CCO1",
+      "unresolved": {
+        "16": "oracle_unstable",
+        "3": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "16": "S",
+        "24": "R"
+      },
+      "row": 7,
+      "smiles": "CN(C)P1(N(C)C)=NP(N(C)C)(N(C)C)=N[P@@](N(C)C)(N2CC2)=N[P@](N(C)C)(N2CC2)=N1",
+      "unresolved": {
+        "16": "oracle_unstable",
+        "24": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "19": "S",
+        "6": "R"
+      },
+      "row": 8,
+      "smiles": "CNP1(NC)=N[P@](NC)(N2CC2)=NP(NC)(NC)=N[P@@](NC)(N2CC2)=N1",
+      "unresolved": {
+        "19": "oracle_unstable",
+        "6": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "19": "S",
+        "6": "R"
+      },
+      "row": 9,
+      "smiles": "CNP1(NC)=N[P@](NC)(N2CC2)=NP(NC)(NC)=N[P@@](NC)(N2CC2)=N1",
+      "unresolved": {
+        "19": "oracle_unstable",
+        "6": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "13": "R",
+        "6": "R"
+      },
+      "row": 10,
+      "smiles": "CNP1(NC)=N[P@](NC)(N2CC2)=N[P@](NC)(N2CC2)=N1",
+      "unresolved": {
+        "13": "oracle_unstable",
+        "6": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "13": "R",
+        "2": "S"
+      },
+      "row": 11,
+      "smiles": "CN[P@@]1(N)=NP(N2CC2)(N2CC2)=N[P@](N)(NC)=N1",
+      "unresolved": {
+        "13": "oracle_unstable",
+        "2": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "1": "S",
+        "16": "R"
+      },
+      "row": 15,
+      "smiles": "Cl[P@@]1(N2CCCC2)=NP(N2CC2)(N2CC2)=N[P@@](Cl)(N2CCCC2)=N1",
+      "unresolved": {
+        "1": "oracle_unstable",
+        "16": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "1": "S",
+        "12": "R"
+      },
+      "row": 16,
+      "smiles": "N[P@]1(Cl)=NP(N2CC2)(N2CC2)=N[P@](N)(Cl)=N1",
+      "unresolved": {
+        "1": "oracle_unstable",
+        "12": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "11": "S",
+        "21": "R"
+      },
+      "row": 27,
+      "smiles": "C1CCN(P2(N3CCCC3)=N[P@@](N3CCCC3)(N3CC3)=N[P@](N3CCCC3)(N3CC3)=N2)C1",
+      "unresolved": {
+        "11": "oracle_unstable",
+        "21": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "11": "S",
+        "21": "R"
+      },
+      "row": 28,
+      "smiles": "C1CCN(P2(N3CCCC3)=N[P@@](N3CCCC3)(N3CC3)=N[P@](N3CCCC3)(N3CC3)=N2)C1",
+      "unresolved": {
+        "11": "oracle_unstable",
+        "21": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "17": "S",
+        "4": "R"
+      },
+      "row": 29,
+      "smiles": "C1CCN([P@@]2(N3CC3)=NP(N3CC3)(N3CC3)=N[P@@](N3CCCCC3)(N3CC3)=N2)CC1",
+      "unresolved": {
+        "17": "oracle_unstable",
+        "4": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "17": "S",
+        "4": "R"
+      },
+      "row": 30,
+      "smiles": "C1CCN([P@@]2(N3CC3)=NP(N3CC3)(N3CC3)=N[P@@](N3CCCCC3)(N3CC3)=N2)CC1",
+      "unresolved": {
+        "17": "oracle_unstable",
+        "4": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "11": "S",
+        "22": "R"
+      },
+      "row": 31,
+      "smiles": "C1CN(P2(N3CCOCC3)=N[P@](N3CCOCC3)(N3CC3)=N[P@@](N3CCOCC3)(N3CC3)=N2)CCO1",
+      "unresolved": {
+        "11": "oracle_unstable",
+        "22": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "11": "S",
+        "22": "R"
+      },
+      "row": 32,
+      "smiles": "C1CN(P2(N3CCOCC3)=N[P@](N3CCOCC3)(N3CC3)=N[P@@](N3CCOCC3)(N3CC3)=N2)CCO1",
+      "unresolved": {
+        "11": "oracle_unstable",
+        "22": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "16": "R",
+        "3": "S"
+      },
+      "row": 33,
+      "smiles": "C1CN([P@@]2(N3CC3)=NP(N3CC3)(N3CC3)=N[P@@](N3CCOCC3)(N3CC3)=N2)CCO1",
+      "unresolved": {
+        "16": "oracle_unstable",
+        "3": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "16": "R",
+        "3": "S"
+      },
+      "row": 34,
+      "smiles": "C1CN([P@@]2(N3CC3)=NP(N3CC3)(N3CC3)=N[P@@](N3CCOCC3)(N3CC3)=N2)CCO1",
+      "unresolved": {
+        "16": "oracle_unstable",
+        "3": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "16": "S",
+        "24": "R"
+      },
+      "row": 96,
+      "smiles": "CN(C)P1(N(C)C)=NP(N(C)C)(N(C)C)=N[P@@](N(C)C)(N2CC2)=N[P@](N(C)C)(N2CC2)=N1",
+      "unresolved": {
+        "16": "oracle_unstable",
+        "24": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "19": "S",
+        "6": "R"
+      },
+      "row": 105,
+      "smiles": "CNP1(NC)=N[P@](NC)(N2CC2)=NP(NC)(NC)=N[P@@](NC)(N2CC2)=N1",
+      "unresolved": {
+        "19": "oracle_unstable",
+        "6": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "19": "S",
+        "6": "R"
+      },
+      "row": 106,
+      "smiles": "CNP1(NC)=N[P@](NC)(N2CC2)=NP(NC)(NC)=N[P@@](NC)(N2CC2)=N1",
+      "unresolved": {
+        "19": "oracle_unstable",
+        "6": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "13": "R",
+        "6": "R"
+      },
+      "row": 107,
+      "smiles": "CNP1(NC)=N[P@](NC)(N2CC2)=N[P@](NC)(N2CC2)=N1",
+      "unresolved": {
+        "13": "oracle_unstable",
+        "6": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "13": "R",
+        "2": "S"
+      },
+      "row": 108,
+      "smiles": "CN[P@@]1(N)=NP(N2CC2)(N2CC2)=N[P@](N)(NC)=N1",
+      "unresolved": {
+        "13": "oracle_unstable",
+        "2": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "1": "S",
+        "16": "R"
+      },
+      "row": 138,
+      "smiles": "Cl[P@@]1(N2CCCC2)=NP(N2CC2)(N2CC2)=N[P@@](Cl)(N2CCCC2)=N1",
+      "unresolved": {
+        "1": "oracle_unstable",
+        "16": "oracle_unstable"
+      }
+    },
+    {
+      "candidate": {},
+      "kind": "atom",
+      "oracle": {
+        "1": "S",
+        "12": "R"
+      },
+      "row": 146,
+      "smiles": "N[P@]1(Cl)=NP(N2CC2)(N2CC2)=N[P@](N)(Cl)=N1",
+      "unresolved": {
+        "1": "oracle_unstable",
+        "12": "oracle_unstable"
+      }
+    }
+  ],
+  "parse_failures": 0,
+  "profile": "A2-cip-label-parity",
+  "rdkit_version": "2025.09.3",
+  "schema_version": 1,
+  "unresolved_reasons": {
+    "oracle_unstable": 52,
+    "tied": 12
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "schema_version": 2,
+  "protocol": "rdkit-accuracy-v2",
+  "status": "development_not_sealed",
+  "comparator": {
+    "engine": "RDKit",
+    "version": "2025.09.3",
+    "version_source": "installed Python package at measurement time"
+  },
+  "operations": [
+    {
+      "id": "descriptor_eight_field",
+      "profile": "rdkit_compatibility",
+      "scope": "rdkit_descriptor_semantics_v1",
+      "corpus": {
+        "path": "scripts/chembl_accuracy_corpus_4999.smi",
+        "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+        "expected_rows": 5000
+      },
+      "split": "development",
+      "tolerances": {
+        "molecular_weight": 0.000001,
+        "hba": 0.0,
+        "hbd": 0.0,
+        "tpsa": 0.000001,
+        "logp": 0.000001,
+        "molar_refractivity": 0.000001,
+        "fsp3": 0.000001,
+        "aromatic_ring_count": 0.0
+      },
+      "artifacts": [
+        {
+          "role": "baseline_raw",
+          "path": "validation/results/descriptor-rdkit-diagnostics-v1.0.13-baseline-5aae7b23-raw.json",
+          "sha256": "6dcd2a14fbc21e31af49a4c638b21ff986fab371da60b8fcc456f71fcae6b035"
+        },
+        {
+          "role": "candidate_raw",
+          "path": "validation/results/descriptor-rdkit-diagnostics-v1.0.13-candidate-raw.json",
+          "sha256": "7096a4a6adc4f50c1fc6c25424e62c504faf88a88a547d4b4b2c88209dbc69d3"
+        }
+      ]
+    },
+    {
+      "id": "descriptor_unused_holdout_workflow",
+      "profile": "rdkit_compatibility",
+      "scope": "rdkit_descriptor_semantics_v1",
+      "corpus": {
+        "path": "validation/openeye_advantage_holdout.jsonl",
+        "sha256": "not_frozen_in_v2_development_manifest",
+        "expected_rows": 4
+      },
+      "split": "reserved_unused_workflow_probe",
+      "tolerances": {
+        "molecular_weight": 0.000001,
+        "hba": 0.0,
+        "hbd": 0.0,
+        "tpsa": 0.000001,
+        "logp": 0.000001,
+        "molar_refractivity": 0.000001,
+        "fsp3": 0.000001,
+        "aromatic_ring_count": 0.0
+      },
+      "artifacts": [
+        {
+          "role": "summary",
+          "path": "validation/results/descriptor-rdkit-unused-holdout-v1.0.13.json",
+          "sha256": "a4bb88c0ce77983a2d16298e99e404f5975910c6c050594dea8ab7a5d6f05bbf"
+        }
+      ]
+    },
+    {
+      "id": "descriptor_eight_field_binding_exposed",
+      "profile": "binding_consistency",
+      "scope": "rdkit_descriptor_binding_consistency_v1",
+      "corpus": {
+        "path": "validation/rdkit_accuracy_split_v2/exposed_holdout.smi",
+        "sha256": "a496eeccbe54dfaf9552c5ea91bc3578ce0f111c03ad67bab97f29fd86f75972",
+        "expected_rows": 7737
+      },
+      "split": "exposed_holdout_not_sealed",
+      "tolerances": {
+        "molecular_weight": 0.000001,
+        "hba": 0.0,
+        "hbd": 0.0,
+        "tpsa": 0.000001,
+        "logp": 0.000001,
+        "molar_refractivity": 0.000001,
+        "fsp3": 0.000001,
+        "aromatic_ring_count": 0.0
+      },
+      "artifacts": [
+        {
+          "role": "cross_binding_summary",
+          "path": "validation/results/descriptor-cross-binding-parity-7737-exposed-v1.0.13.json",
+          "sha256": "6c8ce3ef858362d884e72d9b7755f3422fc35360370d80adc5c7c82e876dd3b8"
+        }
+      ]
+    }
+  ],
+  "acceptance": {
+    "coverage_denominator": "all expected input rows",
+    "unsupported_policy": "report and count; never remove from denominator",
+    "sealed_evaluation_required": true,
+    "candidate_freeze_required": true
+  }
+}

@@ -17,6 +17,10 @@
 //!
 //! Run: `cargo run --release -p chematic-3d --example pipeline_v2_vs_rdkit_dump
 //!   > validation/results/pipeline_v2_vs_rdkit_chematic_rows.jsonl`
+//!
+//! For bounded/restartable corpus runs, pass `--tier A|B`, `--start N`, and
+//! `--count N`. `--only-arm NAME` restricts execution to one pipeline arm.
+//! The default remains the complete A+B corpus.
 
 use std::collections::HashMap;
 use std::panic::{self, AssertUnwindSafe};
@@ -26,19 +30,97 @@ use chematic_3d::coords::Coords3D;
 use chematic_3d::distance_geometry_v2::EmbedParameters;
 use chematic_3d::etkdg::generate_coords_etkdg;
 use chematic_3d::etkdg_knowledge::TorsionOptimizationConfig;
-use chematic_3d::minimize::ForceFieldPolicy;
+use chematic_3d::minimize::{EnergyReport, ForceFieldPolicy};
 use chematic_3d::pipeline_v2::{
     self as pv2, PipelineV2Config, PipelineV2FailureCause, RingTorsionApplicationPolicy,
     StereoPolicy,
 };
 use chematic_3d::{ConformerDisposition, EnsembleV2Config, embed_ensemble_v2};
 use chematic_core::Molecule;
+use chematic_ff::Mmff94EnergyModel;
 use serde_json::{Value, json};
 
 const EMBED_SEED: u64 = 20260801; // fixed for reproducibility; not a cross-platform bit-exactness claim
 const MAX_ATTEMPTS: usize = 8;
 const BEST_OF_N_ARM_NAME: &str = "chematic_pipeline_v2_uff_best_of_10";
 const BEST_OF_N_COUNT: usize = 10;
+
+fn energy_report_to_json(report: &EnergyReport) -> Value {
+    match report {
+        EnergyReport::Mmff94(b) => json!({
+            "model": "MMFF94",
+            "bond": b.bond,
+            "angle": b.angle,
+            "stretch_bend": b.stretch_bend,
+            "torsion": b.torsion,
+            "oop": b.oop,
+            "vdw": b.vdw,
+            "electrostatic": b.electrostatic,
+            "total": b.total,
+        }),
+        EnergyReport::Uff { total } => json!({"model": "UFF", "total": total}),
+        EnergyReport::Dreiding { total } => json!({"model": "Dreiding", "total": total}),
+        EnergyReport::None => Value::Null,
+    }
+}
+
+fn max_gradient_component(gradient: &[[f64; 3]]) -> f64 {
+    gradient
+        .iter()
+        .flat_map(|point| point.iter())
+        .map(|component| component.abs())
+        .fold(0.0, f64::max)
+}
+
+fn finite_difference_total_gradient(
+    model: &Mmff94EnergyModel,
+    coords: &[[f64; 3]],
+) -> Vec<[f64; 3]> {
+    const DELTA: f64 = 1e-4;
+    let mut gradient = vec![[0.0; 3]; coords.len()];
+    for (i, _) in coords.iter().enumerate() {
+        for axis in 0..3 {
+            let mut plus = coords.to_vec();
+            plus[i][axis] += DELTA;
+            let mut minus = coords.to_vec();
+            minus[i][axis] -= DELTA;
+            gradient[i][axis] = (model.energy(&plus) - model.energy(&minus)) / (2.0 * DELTA);
+        }
+    }
+    gradient
+}
+
+fn mmff_gradient_maxima(mol: &Molecule, coords: &Coords3D) -> Value {
+    let coordinates: Vec<[f64; 3]> = (0..coords.atom_count())
+        .map(|i| {
+            let point = coords.get(chematic_core::AtomIdx(i as u32));
+            [point.x, point.y, point.z]
+        })
+        .collect();
+    match Mmff94EnergyModel::new(mol) {
+        Ok(model) => json!({
+            "bond_angle": max_gradient_component(&model.bond_angle_gradient(&coordinates)),
+            "stretch_bend": max_gradient_component(&model.stretch_bend_gradient(&coordinates)),
+            "torsion": max_gradient_component(&model.torsion_gradient(&coordinates)),
+            "oop": max_gradient_component(&model.oop_gradient(&coordinates)),
+            "nonbonded": max_gradient_component(&model.nonbonded_gradient(&coordinates)),
+        }),
+        Err(error) => json!({"error": error.to_string()}),
+    }
+}
+
+fn mmff_total_gradient_dump(mol: &Molecule, coords: &Coords3D) -> Value {
+    let coordinates: Vec<[f64; 3]> = (0..coords.atom_count())
+        .map(|i| {
+            let point = coords.get(chematic_core::AtomIdx(i as u32));
+            [point.x, point.y, point.z]
+        })
+        .collect();
+    match Mmff94EnergyModel::new(mol) {
+        Ok(model) => json!(finite_difference_total_gradient(&model, &coordinates)),
+        Err(error) => json!({"error": error.to_string()}),
+    }
+}
 
 #[derive(Clone, Copy)]
 struct Arm {
@@ -213,7 +295,14 @@ fn base_config(
         stereo_policy,
         fail_on_unevaluable_stereo: false,
         force_field_policy: force_field,
-        force_field_max_iterations: 200,
+        // Diagnostic-only override for convergence triage. Production callers
+        // still use PipelineV2Config::minimal's 200-step default; keeping the
+        // override in this external benchmark runner lets us distinguish an
+        // exhausted iteration budget from a genuine stationary-point problem.
+        force_field_max_iterations: std::env::var("SCHEMATIC_MMFF94_MAX_ITERATIONS")
+            .ok()
+            .and_then(|value| value.parse().ok())
+            .unwrap_or(200),
         gate_mmff94_torsion_oop: gate_torsion_oop,
         gate_mmff94_stretch_bend: gate_stretch_bend,
         // DiagnosticOnly, not FailClosed: with use_small_ring_torsions/
@@ -421,6 +510,19 @@ fn run_pipeline_arm_with_config(mol: &Molecule, arm: &Arm, config: &PipelineV2Co
                 "force_field_fallback_reason": r.force_field.fallback_reason.as_ref().map(|e| format!("{e}")),
                 "force_field_converged": r.force_field.converged,
                 "force_field_iterations": r.force_field.iterations,
+                "force_field_max_residual_force": r.force_field.max_residual_force,
+                "force_field_energy_before": energy_report_to_json(&r.force_field.energy_before),
+                "force_field_energy_after": energy_report_to_json(&r.force_field.energy_after),
+                "force_field_gradient_maxima": if matches!(r.force_field.energy_after, EnergyReport::Mmff94(_)) {
+                    mmff_gradient_maxima(mol, &r.force_field.coords)
+                } else {
+                    Value::Null
+                },
+                "force_field_total_gradient": if std::env::var("SCHEMATIC_MMFF94_DUMP_GRADIENT").as_deref() == Ok("1") && matches!(r.force_field.energy_after, EnergyReport::Mmff94(_)) {
+                    mmff_total_gradient_dump(mol, &r.force_field.coords)
+                } else {
+                    Value::Null
+                },
                 // Only ever Some on a Mmff94WithUffFallback success-via-UFF
                 // (the original failed MMFF94 attempt's coverage report
                 // survives into the successful result specifically so a
@@ -645,6 +747,65 @@ fn load_manifest(path: &str) -> Value {
 }
 
 fn main() {
+    let mut tier_filter: Option<String> = None;
+    let mut start = 0usize;
+    let mut count = usize::MAX;
+    let mut only_arm: Option<String> = None;
+    let mut args = std::env::args().skip(1);
+    while let Some(arg) = args.next() {
+        match arg.as_str() {
+            "--tier" => {
+                tier_filter = Some(
+                    args.next()
+                        .unwrap_or_else(|| panic!("--tier requires A or B")),
+                );
+            }
+            "--start" => {
+                start = args
+                    .next()
+                    .unwrap_or_else(|| panic!("--start requires a non-negative integer"))
+                    .parse()
+                    .unwrap_or_else(|_| panic!("--start requires a non-negative integer"));
+            }
+            "--count" => {
+                count = args
+                    .next()
+                    .unwrap_or_else(|| panic!("--count requires a non-negative integer"))
+                    .parse()
+                    .unwrap_or_else(|_| panic!("--count requires a non-negative integer"));
+            }
+            "--only-arm" => {
+                only_arm = Some(
+                    args.next()
+                        .unwrap_or_else(|| panic!("--only-arm requires an arm name")),
+                );
+            }
+            "--help" | "-h" => {
+                eprintln!(
+                    "usage: pipeline_v2_vs_rdkit_dump [--tier A|B] [--start N] [--count N] [--only-arm NAME]"
+                );
+                return;
+            }
+            other => panic!("unknown argument {other:?}"),
+        }
+    }
+    if let Some(tier) = &tier_filter {
+        assert!(matches!(tier.as_str(), "A" | "B"), "--tier must be A or B");
+    }
+    let selected_arms: Vec<&Arm> = PIPELINE_ARMS
+        .iter()
+        .filter(|arm| {
+            only_arm
+                .as_deref()
+                .is_none_or(|wanted| wanted.trim() == arm.name)
+        })
+        .collect();
+    if let Some(wanted) = &only_arm {
+        assert!(
+            selected_arms.len() == 1,
+            "unknown --only-arm value {wanted:?}"
+        );
+    }
     let mut manifests: Vec<(String, Value)> = Vec::new();
     for (tier, path) in [
         (
@@ -680,10 +841,20 @@ fn main() {
          conformer, matching RDKit's EmbedMultipleConfs) rmsd_threshold=0.0 (pruning \
          disabled, for parity with RDKit's no-dedup best-of-N selection)"
     );
+    eprintln!(
+        "config_snapshot mmff94_max_iterations={} (override via SCHEMATIC_MMFF94_MAX_ITERATIONS; production default remains 200)",
+        std::env::var("SCHEMATIC_MMFF94_MAX_ITERATIONS")
+            .ok()
+            .and_then(|value| value.parse::<usize>().ok())
+            .unwrap_or(200)
+    );
 
     for (tier, manifest) in &manifests {
+        if tier_filter.as_deref().is_some_and(|filter| filter != tier) {
+            continue;
+        }
         let molecules = manifest["molecules"].as_array().expect("molecules array");
-        for m in molecules {
+        for m in molecules.iter().skip(start).take(count) {
             let name = m["name"].as_str().unwrap();
             let smiles = m["smiles"].as_str().unwrap();
             let primary_category = m["primary_category"].as_str().unwrap_or("unknown");
@@ -707,7 +878,7 @@ fn main() {
 
             let elements = heavy_atom_elements(&mol);
 
-            for arm in PIPELINE_ARMS {
+            for arm in &selected_arms {
                 let mut row = run_pipeline_arm(&mol, arm);
                 row["tier"] = json!(tier);
                 row["name"] = json!(name);
@@ -717,6 +888,9 @@ fn main() {
                 println!("{row}");
             }
 
+            if only_arm.is_some() {
+                continue;
+            }
             let mut legacy_row = run_legacy_arm(&mol);
             legacy_row["tier"] = json!(tier);
             legacy_row["name"] = json!(name);

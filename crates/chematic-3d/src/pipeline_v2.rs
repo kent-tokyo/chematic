@@ -163,7 +163,7 @@ use crate::distance_geometry_v2::{
 };
 use crate::etkdg_knowledge::{
     PairBoundAdjustment, TorsionKnowledgeConfig, TorsionKnowledgeError, TorsionKnowledgeReport,
-    TorsionKnowledgeSource, TorsionOptimizationConfig, TorsionOptimizationReport,
+    TorsionKnowledgeSource, TorsionOptimizationConfig, TorsionOptimizationReport, TorsionPotential,
     build_torsion_knowledge, evaluate_torsion_energy, is_bridge_bond,
     macrocycle_14_bound_adjustments, optimize_torsions,
 };
@@ -927,15 +927,11 @@ pub fn embed_pipeline_v2(
         potentials: torsion_knowledge_report
             .potentials
             .iter()
-            .map(|p| {
-                let (b, c) = p.central_bond;
-                let applied = mol.bond_between(b, c).is_some() && is_bridge_bond(mol, b, c);
-                PotentialApplicationEvidence {
-                    rule_id: p.rule_id.clone(),
-                    central_bond: p.central_bond,
-                    source: p.source,
-                    applied_to_geometry: applied,
-                }
+            .map(|p| PotentialApplicationEvidence {
+                rule_id: p.rule_id.clone(),
+                central_bond: p.central_bond,
+                source: p.source,
+                applied_to_geometry: ring_torsion_is_applicable(mol, p),
             })
             .collect(),
         diagnostic_only: config.ring_torsion_policy == RingTorsionApplicationPolicy::DiagnosticOnly,
@@ -952,12 +948,11 @@ pub fn embed_pipeline_v2(
     let ring_application_requested =
         config.embed.use_small_ring_torsions || config.embed.use_macrocycle_torsions;
     let has_unsupported_ring_potential = torsion_knowledge_report.potentials.iter().any(|p| {
-        let (b, c) = p.central_bond;
         matches!(
             p.source,
             TorsionKnowledgeSource::SmallRingExperimental
                 | TorsionKnowledgeSource::MacrocycleAdaptation
-        ) && !(mol.bond_between(b, c).is_some() && is_bridge_bond(mol, b, c))
+        ) && !ring_torsion_is_applicable(mol, p)
     });
     if ring_application_requested
         && has_unsupported_ring_potential
@@ -1317,6 +1312,14 @@ pub fn embed_pipeline_v2(
 fn pipeline_config_is_invalid(config: &PipelineV2Config) -> bool {
     config.embed.materialize_implicit_h_for_chirality
         || (config.expand_implicit_h_through_pipeline && !config.embed.enforce_chirality)
+}
+
+/// Whether a torsion-knowledge potential can be applied to the molecule's
+/// actual geometry. Keep this predicate shared by the evidence report and
+/// the fail-closed policy gate so they cannot drift apart.
+fn ring_torsion_is_applicable(mol: &Molecule, potential: &TorsionPotential) -> bool {
+    let (b, c) = potential.central_bond;
+    mol.bond_between(b, c).is_some() && is_bridge_bond(mol, b, c)
 }
 
 fn torsion_knowledge_config(config: &PipelineV2Config) -> TorsionKnowledgeConfig {

@@ -664,7 +664,29 @@ mod tests {
         let result = find_matches_rdkit_parity(&query, &mol, &config);
         assert!(matches!(
             result,
-            Err(RdkitParityError::RingModelBudgetExceeded { .. })
+            Err(RdkitParityError::RingModelBudgetExceeded {
+                candidates_examined: 1,
+                cap: 0,
+            })
+        ));
+    }
+
+    #[test]
+    fn shared_ring_model_propagates_measured_budget_exhaustion() {
+        let mol = parse("C12C3C4C1C5C4C3C25").unwrap();
+        let query = parse_smarts("[R3]").unwrap();
+        let config = RdkitParityConfig {
+            use_shared_symmetrized_sssr: true,
+            ring_model_budget: RdkitRingModelBudget { max_candidates: 0 },
+            ..RdkitParityConfig::default()
+        };
+        let result = find_matches_rdkit_parity(&query, &mol, &config);
+        assert!(matches!(
+            result,
+            Err(RdkitParityError::RingModelBudgetExceeded {
+                candidates_examined: 1,
+                cap: 0,
+            })
         ));
     }
 

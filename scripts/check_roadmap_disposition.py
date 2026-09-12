@@ -16,7 +16,7 @@ DISPOSITION = ROOT / "docs" / "roadmap-open-work.md"
 # disposition table and in one dependency class.
 AREA_MARKERS = {
     "equivalent-operation": ("equivalent operations", "P1"),
-    "canonical-identity": ("canonical atom-order", "P2"),
+    "canonical-identity": ("Exact canonical-SMILES", "P2"),
     "v3000-parity": ("Exact canonical-SMILES", "P2"),
     "performance-stretch": ("1.10x", "Performance stretch target"),
     "force-fields": ("MD/UFF/MMFF94", "P2"),
@@ -28,6 +28,13 @@ AREA_MARKERS = {
     "force-field-quality": ("MMFF94/UFF typing", "P5"),
     "independent-review": ("S5 independent", "S5"),
     "maintenance": ("S6 continuous", "S6"),
+    "accuracy-contract": ("A0 — Accuracy evidence contract", "A0 / P0"),
+    "accuracy-descriptors": ("A1 — Perception and descriptor", "A1 / P1/P2"),
+    "accuracy-stereo": ("A2 — Stereo and identity", "A2 / P2"),
+    "accuracy-retrieval": ("A3 — Fingerprint and retrieval", "A3 / P2/P3"),
+    "accuracy-workflows": ("A4 — Workflow accuracy", "A4 / P1/P4"),
+    "accuracy-gold": ("A5 — Independent accuracy", "A5 / P0/P6"),
+    "accuracy-3d": ("A6 — 3D accuracy", "A6 / P5"),
 }
 
 
@@ -49,10 +56,13 @@ def main() -> int:
         if required_class not in disposition:
             errors.append(f"dependency class {required_class} is missing")
 
-    if len(unchecked) != len(AREA_MARKERS):
-        errors.append(
-            f"unchecked roadmap count changed: expected {len(AREA_MARKERS)}, got {len(unchecked)}"
-        )
+    # Multiple stable area markers may intentionally live in one compound
+    # roadmap item (for example canonical output and cross-engine V3000
+    # fixtures).  The important invariant is that every unchecked item is
+    # represented in the disposition table, not a one-marker/one-line ratio.
+    for line in unchecked:
+        if not any(marker in line for marker, _ in AREA_MARKERS.values()):
+            errors.append(f"unchecked roadmap item has no disposition marker: {line}")
     if errors:
         print("roadmap disposition failures:")
         print("\n".join(f"- {error}" for error in errors))

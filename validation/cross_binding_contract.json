@@ -395,10 +395,13 @@
       {"smirks": "[N:1][C:2]>>[N:1].[C:2]", "reactants": ["NC"], "minimum_product_sets": 1, "product_atom_count": 1},
       {"smirks": "[N:1]>>[N+:1]", "reactants": ["N"], "minimum_product_sets": 1, "product_atom_count": 1},
       {"smirks": "[O:1]>>[O:1](C)C", "reactants": ["CCO"], "expected_product_sets": 0, "quality_boundary": "invalid_product_filtered"},
-      {"smirks": "[N:1]>>[N:1]", "reactants": ["NCCN"], "minimum_product_sets": 2, "product_atom_count": 4, "quality_boundary": "ambiguous_multiple_matches_enumerated"}
+      {"smirks": "[N:1]>>[N:1]", "reactants": ["NCCN"], "minimum_product_sets": 2, "product_atom_count": 4, "quality_boundary": "ambiguous_multiple_matches_enumerated"},
+      {"smirks": "[N:1]>>[N:1]", "reactants": ["CCO"], "expected_product_sets": 0, "quality_boundary": "no_match_is_empty"}
     ],
     "negative_cases": [
-      {"smirks": "[#7;H2]>>[#7;H2]", "reactants": ["N"], "error": "unsupported compound primitive"}
+      {"smirks": "[#7;H2]>>[#7;H2]", "reactants": ["N"], "error": "unsupported compound primitive"},
+      {"smirks": "[#6:1].[#8:2]>>[#6:1][#8:2]", "reactants": ["C"], "error": "reactant count mismatch"},
+      {"smirks": "not-a-reaction", "reactants": ["C"], "error": "invalid reaction template"}
     ]
   },
   "reaction_smarts_contract": {

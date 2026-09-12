@@ -38,7 +38,7 @@ no backend of their own. (This describes chematic's own browser tools; if you bu
 on top of chematic-wasm that calls other network APIs, that's your own code's choice, not
 something chematic does on your behalf.)
 
-**Lightweight deployment.** The current v1.0.12 Node/WASM bundle is **3.93 MB raw / 1.43 MB gzip**, measured
+**Lightweight deployment.** The latest measured Node/WASM bundle is **3.93 MB raw / 1.43 MB gzip** (v1.0.12 artifact, measured
 2026-09-11 with `wasm-pack 0.13.1`, `wasm-bindgen 0.2.121`, and `wasm-opt 130` — see the
 [official RDKit.js comparison](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-11-official-rdkit-js-v1.0.12.md)
 for the digest and reproduction commands.
@@ -189,7 +189,7 @@ oracle. Full breakdown, known residuals, and reproduction commands:
 ## Quick links
 
 - [Local Compound Explorer](https://kent-tokyo.github.io/chematic/explorer/) — analyze a batch of compounds entirely in your browser
-- [Playground](https://kent-tokyo.github.io/chematic/playground/) — interactive single-molecule WASM demo
+- [Playground](https://kent-tokyo.github.io/chematic/playground/) — guided browser lab for molecule analysis, similarity, reactions, reports, 3D, and materials formats
 - [Cookbook](cookbook.md) — 20 copy-paste-ready tasks
 - [Use cases](use-cases/) — AI agent workflows, notebooks, browser apps, Rust servers, batch analysis
 - [Benchmark](benchmark.md) — performance vs RDKit, descriptor accuracy

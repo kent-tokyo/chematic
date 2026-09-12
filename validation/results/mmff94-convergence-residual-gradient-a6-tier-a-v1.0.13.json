@@ -1,0 +1,37 @@
+{
+  "issue": 227,
+  "target_version": "1.0.13",
+  "measured_at": "2026-09-13",
+  "tier": "A",
+  "corpus_total": 65,
+  "arm": "chematic_pipeline_v2_mmff94_strict",
+  "max_iterations": 200,
+  "convergence_tolerance": "force_field_converged as reported by production PipelineV2Result",
+  "results": {
+    "success": 65,
+    "finite": 65,
+    "sound": 65,
+    "gross_clashes": 0,
+    "converged": 42,
+    "not_converged": 23
+  },
+  "residual_force_kcal_mol_a": {
+    "converged": {
+      "n": 42,
+      "median": 0.00008436202514339186,
+      "p90": 0.00009916086840533467,
+      "max": 0.00009998061045850985
+    },
+    "not_converged": {
+      "n": 23,
+      "min": 0.00028983961897210975,
+      "median": 0.07179364850173897,
+      "p90": 0.7712283407812492,
+      "max": 7.042116526605469
+    }
+  },
+  "interpretation": "The 23 non-converged rows are not a single numerical class: several are near the convergence boundary, while atorvastatin_fragment and other rows retain materially larger residual forces. All remain finite and sound under the current safety contract.",
+  "method": "Current Rust pipeline_v2 output with max residual force exposed by the diagnostic runner; no production default changed.",
+  "status": "candidate_diagnostic_not_release_gate",
+  "reproduction_input": "/tmp/chematic-mmff94-pipeline-tier-a-diagnostics.jsonl"
+}

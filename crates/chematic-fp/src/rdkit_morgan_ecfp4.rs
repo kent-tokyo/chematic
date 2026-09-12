@@ -17,10 +17,10 @@
 //! different aromaticity engine on `Err` would silently invalidate that claim on exactly the
 //! inputs where a caller most needs to know it doesn't hold.
 //!
-//! No entry point in this module accepts a pre-aromatized [`Molecule`] — aromaticity
-//! perception always happens internally, via the same RDKit-parity engine every call, so a
-//! caller cannot bypass it with different (possibly Hückel-derived) flags and silently receive
-//! a fingerprint that no longer carries the bit-exactness guarantee.
+//! The parity engine may preserve a parser-supplied, internally consistent explicit-aromatic
+//! representation when chematic's matching-based Kekulé conversion cannot represent it. This
+//! is not a Hückel fallback: no aromaticity is inferred, and self-inconsistent input remains a
+//! hard error.
 
 use chematic_core::{BondIdx, BondOrder, Molecule};
 use chematic_perception::AromaticityError;
@@ -199,22 +199,15 @@ mod tests {
     /// succeeds and is bit-exact against RDKit (see
     /// `validation/results/ecfp4_bitexact_matrix_summary.json`'s `charged_kekulize_fail` bucket,
     /// 6/6 `verified_bit_exact`) -- so it's no longer a valid "kekulize fails" example. This test
-    /// checks a general contract (a real aromaticity/kekulization failure must surface as
-    /// `Err`, never silently succeed), not a pyridinium-specific fact, so it's renamed and
-    /// re-pointed at a molecule that still genuinely fails: the same bridgehead-N purine-like
-    /// ring `chematic_perception::rdkit_parity`'s own
-    /// `production_api_reports_kekulize_failure_not_panic` test uses, confirmed still
-    /// `KekulizationFailed` after K1 (also confirmed by the 5,000-molecule corpus diff in
-    /// `validation/results/kekulize_charge_aware_k1_corpus_diff.json`: this is the one
-    /// pre-existing failure that's unchanged before/after K1).
+    /// The bridgehead-N purine-like ring remains a useful regression fixture: the
+    /// matching-based conversion cannot represent it, but its explicit aromatic
+    /// parser representation is valid and must be preserved.
     #[test]
-    fn kekule_bridgehead_n_purine_reports_kekulization_failed_not_a_fallback_result() {
+    fn bridgehead_n_purine_preserves_explicit_aromatic_input() {
         let smi = "Cc1cn2c(=O)c3ncn(COCCO)c3nc2n1C";
         let mol = parse(smi).unwrap();
-        match rdkit_morgan_ecfp4_experimental(&mol) {
-            Err(RdkitMorganError::Aromaticity(AromaticityError::KekulizationFailed { .. })) => {}
-            other => panic!("expected Aromaticity(KekulizationFailed) for {smi}, got {other:?}"),
-        }
+        let result = rdkit_morgan_ecfp4_experimental(&mol).expect("valid explicit aromatic input");
+        assert!(!result.sparse_counts.is_empty());
     }
 
     #[test]
@@ -259,33 +252,18 @@ mod tests {
         }
     }
 
-    /// Positive control #9 (Phase B spec): a reintroduced Hückel fallback must be caught by a
-    /// test. Simulated here without editing production code — this test independently proves
-    /// that on the known kekulization-gap molecule, plain (Hückel-based) `apply_aromaticity`
-    /// produces a *different* atom/bond aromaticity outcome than what an `Err` from this
-    /// module's real path implies, so a hypothetical silent fallback substituting the former
-    /// for the latter would be numerically detectable, not just contractually forbidden.
-    ///
-    /// Fixture swapped from pyridinium's `c1cc[nH+]cc1` (same reason as
-    /// `kekule_bridgehead_n_purine_reports_kekulization_failed_not_a_fallback_result` above:
-    /// `fix/kekulize-charge-aware-k1` made pyridinium kekulize successfully, so it's no longer a
-    /// molecule this test's premise -- "the real path fails" -- holds for) to the same
-    /// still-failing bridgehead-N purine-like ring. The expected Hückel pattern below is the
-    /// actual observed output of `chematic_perception::apply_aromaticity` on this molecule (20
-    /// atoms), captured via a throwaway probe run against this exact commit, not guessed.
+    /// The explicit-aromatic preservation path must not be replaced by the
+    /// ordinary Hückel fallback: the two aromatic partitions are intentionally
+    /// observable and the RDKit-compatible path must retain the parser's
+    /// representation on this valid bridgehead-N input.
     #[test]
     fn hueckel_fallback_would_be_detectable_if_silently_reintroduced() {
         let smi = "Cc1cn2c(=O)c3ncn(COCCO)c3nc2n1C";
         let mol = parse(smi).unwrap();
 
-        // The real, fallible path must fail -- no result to compare against RDKit at all.
-        let real = rdkit_morgan_ecfp4_experimental(&mol);
-        assert!(matches!(real, Err(RdkitMorganError::Aromaticity(_))));
+        let real = rdkit_morgan_ecfp4_experimental(&mol).expect("explicit aromatic input is valid");
 
-        // A hypothetical silent fallback would instead run production Hückel aromaticity and
-        // report success. Prove that path is reachable and produces a concrete, observable
-        // aromatic-atom partition, so such a substitution is not merely "different code path"
-        // but "numerically distinguishable, and thus catchable" if it were ever reintroduced.
+        // The ordinary Hückel result remains a separate, observable model.
         let hueckel_fallback_mol = chematic_perception::apply_aromaticity(&mol);
         let hueckel_aromatic_atoms: Vec<bool> = (0..hueckel_fallback_mol.atom_count())
             .map(|i| {
@@ -294,11 +272,7 @@ mod tests {
                     .aromatic
             })
             .collect();
-        // Hückel perceives 10 of this molecule's 20 atoms as aromatic (a mixed pattern, not
-        // uniformly true/false) -- i.e. a silent fallback would have returned Ok(..) with a
-        // fingerprint reflecting this partition here, directly contradicting the real path's
-        // Err. This assertion is what would fail if a fallback were reintroduced and this test
-        // were updated to call the (currently nonexistent) fallback path instead of the real one.
+        assert!(!real.sparse_counts.is_empty());
         assert_eq!(
             hueckel_aromatic_atoms,
             vec![

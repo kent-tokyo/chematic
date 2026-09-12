@@ -207,6 +207,33 @@ impl PyPreparedFingerprintIndex {
             })
     }
 
+    /// Search with an inclusive Tanimoto threshold and optional top-k limit.
+    /// ``threshold`` must be finite and between 0.0 and 1.0, inclusive.
+    #[pyo3(signature = (query, threshold, k = 10))]
+    fn search_threshold(
+        &self,
+        query: &str,
+        threshold: f64,
+        k: usize,
+    ) -> PyResult<Vec<(usize, f64)>> {
+        if !threshold.is_finite() || !(0.0..=1.0).contains(&threshold) {
+            return Err(PyValueError::new_err(
+                "threshold must be finite and between 0.0 and 1.0",
+            ));
+        }
+        let query_mol =
+            chematic_smiles::parse(query).map_err(|e| PyValueError::new_err(e.to_string()))?;
+        self.inner
+            .try_search_threshold(&query_mol, threshold, k)
+            .map_err(|error| PyValueError::new_err(error.to_string()))
+            .map(|results| {
+                results
+                    .into_iter()
+                    .map(|(index, score)| (self.original_indices[index], score))
+                    .collect()
+            })
+    }
+
     /// Return the valid SMILES stored by the index, in compact index order.
     fn get_smiles(&self, index: usize) -> PyResult<&str> {
         self.smiles

@@ -7,6 +7,7 @@ index.
 
 | File | Retained content |
 |---|---|
+| [`roadmap-through-2026-09-12.md`](roadmap-through-2026-09-12.md) | Full roadmap state before the active plan was condensed to current priorities |
 | [`roadmap-through-2026-09-05.md`](roadmap-through-2026-09-05.md) | Completed phase-by-phase roadmap and gate history |
 | [`security-policy-through-v1.0.4.md`](security-policy-through-v1.0.4.md) | Detailed historical security controls and evidence notes |
 | [`benchmark-guide-through-v1.0.4.md`](benchmark-guide-through-v1.0.4.md) | Long-form benchmark narrative and historical tables |

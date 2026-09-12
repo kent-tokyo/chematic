@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "profile": "rdkit_compat_unlabelled_v1",
+  "profile": "rdkit_compat_v2",
   "decision": "adopted_opt_in",
   "default_profile_changed": false,
   "checks": {
@@ -8,6 +8,8 @@
     "rdkit_version_recorded": true,
     "parser_accounting": true,
     "mw_compatibility": true,
+    "all_fields_strict": true,
+    "finite_error_metrics": true,
     "holdout_passes": true,
     "native_default_preserved": true,
     "unclassified_mismatches_absent": true

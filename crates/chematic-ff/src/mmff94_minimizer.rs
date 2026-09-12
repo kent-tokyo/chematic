@@ -111,6 +111,7 @@ pub struct MinimizeResult {
 #[derive(Debug)]
 pub enum MinimizerError {
     TypeAssignment(NumericTypeError),
+    ChargeCalculation(NumericTypeError),
 }
 
 impl From<NumericTypeError> for MinimizerError {
@@ -123,6 +124,9 @@ impl std::fmt::Display for MinimizerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             MinimizerError::TypeAssignment(e) => write!(f, "MMFF94 type assignment failed: {}", e),
+            MinimizerError::ChargeCalculation(e) => {
+                write!(f, "MMFF94 charge calculation failed: {}", e)
+            }
         }
     }
 }
@@ -165,7 +169,7 @@ impl Mmff94EnergyModel {
     /// Prepare the topology-dependent MMFF94 state once.
     pub fn new(mol: &Molecule) -> Result<Self, MinimizerError> {
         let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
-        let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
+        let charges = mmff94_charges_numeric(mol).map_err(MinimizerError::ChargeCalculation)?;
         let rings = find_sssr(mol).rings().to_vec();
         let (vdw_pairs, electrostatic_pairs) = build_nonbonded_pairs(mol, &types, &charges);
         let bonds = build_bond_terms(&mmff_mol, &types);
@@ -423,7 +427,7 @@ pub fn mmff94_torsion_scan(
     steps: usize,
 ) -> Result<Vec<(f64, f64)>, MinimizerError> {
     let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
-    let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
+    let charges = mmff94_charges_numeric(mol).map_err(MinimizerError::ChargeCalculation)?;
     let ring_set = find_sssr(mol);
     let n = mol.atom_count();
     let steps = steps.max(2);
@@ -530,7 +534,7 @@ pub fn minimize_mmff94_full(
     }
 
     let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
-    let charges = mmff94_charges_numeric(mol).unwrap_or_else(|_| vec![0.0; mol.atom_count()]);
+    let charges = mmff94_charges_numeric(mol).map_err(MinimizerError::ChargeCalculation)?;
     // Ring membership is a topology fact, not a geometry one: compute SSSR
     // once per minimization run rather than once per finite-difference probe
     // (`compute_gradient` alone calls `total_energy` ~6n times per step).
@@ -676,11 +680,21 @@ fn minimize_mmff94_lbfgs_prepared_with_mode(
             break;
         }
 
-        // Two-loop L-BFGS recursion → search direction p
-        let p = lbfgs_direction(&g, &history);
+        // Two-loop L-BFGS recursion → search direction p. Numerical noise in
+        // a nearly singular curvature update can occasionally produce a
+        // non-descent or non-finite direction. Feeding that direction to the
+        // Armijo loop causes repeated rejected objective evaluations (and can
+        // consume a pipeline timeout without making progress). Fall back to
+        // steepest descent, which is always a valid local descent direction
+        // for a finite, non-zero gradient.
+        let mut p = lbfgs_direction(&g, &history);
+        let mut gp: f64 = g.iter().zip(p.iter()).map(|(gi, pi)| dot3(*gi, *pi)).sum();
+        if !gp.is_finite() || gp >= 0.0 {
+            p = g.iter().map(|gi| [-gi[0], -gi[1], -gi[2]]).collect();
+            gp = -g.iter().map(|gi| dot3(*gi, *gi)).sum::<f64>();
+        }
 
         // Armijo backtracking line search along p
-        let gp: f64 = g.iter().zip(p.iter()).map(|(gi, pi)| dot3(*gi, *pi)).sum();
         let mut alpha = 1.0_f64;
         let (new_coords, f_new) = loop {
             let trial: Vec<[f64; 3]> = coords
@@ -1407,9 +1421,7 @@ fn vdw_energy_pairs(coords: &[[f64; 3]], pairs: &[PreparedVdwPair]) -> f64 {
             continue;
         }
         if r > 0.01 {
-            let t = (1.07 * pair.r_star) / (r + 0.07 * pair.r_star);
-            let t7 = t.powi(7);
-            energy += pair.epsilon * t7 * (t7 - 2.0);
+            energy += mmff94_vdw_energy_value(r, pair.r_star, pair.epsilon);
         }
     }
     energy
@@ -1526,9 +1538,7 @@ fn prepared_cutoff_nonbonded_gradient(
         ];
         let r = dist(coords[pair.i], coords[pair.j]);
         if r > 0.01 && r <= 10.0 {
-            let denominator = r + 0.07 * pair.r_star;
-            let t = (1.07 * pair.r_star) / denominator;
-            let radial = -14.0 * pair.epsilon * t.powi(7) * (t.powi(7) - 1.0) / denominator;
+            let radial = mmff94_vdw_radial_derivative(r, pair.r_star, pair.epsilon);
             add_pair(&mut result, pair.i, pair.j, radial, delta, r);
         }
     }
@@ -1576,9 +1586,7 @@ fn prepared_nonbonded_gradient(
         ];
         let r = dist(coords[pair.i], coords[pair.j]);
         if r > 0.01 && r <= 10.0 {
-            let denominator = r + 0.07 * pair.r_star;
-            let t = (1.07 * pair.r_star) / denominator;
-            let radial = -14.0 * pair.epsilon * t.powi(7) * (t.powi(7) - 1.0) / denominator;
+            let radial = mmff94_vdw_radial_derivative(r, pair.r_star, pair.epsilon);
             add_pair(&mut gradient, pair.i, pair.j, radial, delta, r);
         }
     }
@@ -1976,9 +1984,8 @@ fn torsion_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
     energy
 }
 
-/// Van der Waals: buffered 14-7 (Halgren MMFF.I eq. 2)
-/// t = (1.07 × r*) / (r + 0.07 × r*)
-/// E = ε × t⁷ × (t⁷ − 2)
+/// Van der Waals: buffered 14-7 (Halgren MMFF.I eq. 8).
+/// The potential implementation is shared with the prepared-pair path below.
 fn vdw_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
     let n = mol.atom_count();
     let mut excl = std::collections::HashSet::new();
@@ -2011,9 +2018,7 @@ fn vdw_energy(mol: &Molecule, coords: &[[f64; 3]], types: &[u8]) -> f64 {
                 && eps > 0.0
                 && r > 0.01
             {
-                let t = (1.07 * r_star) / (r + 0.07 * r_star);
-                let t7 = t.powi(7);
-                energy += eps * t7 * (t7 - 2.0);
+                energy += mmff94_vdw_energy_value(r, r_star, eps);
             }
         }
     }
@@ -2076,6 +2081,35 @@ fn elec_energy(mol: &Molecule, coords: &[[f64; 3]], charges: &[f64]) -> f64 {
         }
     }
     energy
+}
+
+// ─── MMFF94 buffered 14-7 helpers ───────────────────────────────────────────
+
+/// Evaluate Halgren's buffered 14-7 van der Waals potential.
+///
+/// The second factor is buffered independently from the first one.  It is
+/// tempting to write this as `t^7 * (t^7 - 2)`, but that is a different
+/// potential and causes large errors for close aromatic contacts.
+#[inline]
+fn mmff94_vdw_energy_value(r: f64, r_star: f64, epsilon: f64) -> f64 {
+    let first = (1.07 * r_star / (r + 0.07 * r_star)).powi(7);
+    let r_star_7 = r_star.powi(7);
+    let second = 1.12 * r_star_7 / (r.powi(7) + 0.12 * r_star_7) - 2.0;
+    epsilon * first * second
+}
+
+/// Radial derivative of [`mmff94_vdw_energy_value`], dE/dr.
+#[inline]
+fn mmff94_vdw_radial_derivative(r: f64, r_star: f64, epsilon: f64) -> f64 {
+    let buffered_denominator = r + 0.07 * r_star;
+    let first = (1.07 * r_star / buffered_denominator).powi(7);
+    let r_star_7 = r_star.powi(7);
+    let second_denominator = r.powi(7) + 0.12 * r_star_7;
+    let second = 1.12 * r_star_7 / second_denominator - 2.0;
+    let d_first = -7.0 * first / buffered_denominator;
+    let d_second = -7.0 * 1.12 * r_star_7 * r.powi(6)
+        / second_denominator.powi(2);
+    epsilon * (d_first * second + first * d_second)
 }
 
 // ─── Geometry helpers ─────────────────────────────────────────────────────────
@@ -2726,6 +2760,19 @@ mod tests {
         assert!(e_close.is_finite());
         assert!(e_far.is_finite());
         assert!(e_close > e_far, "close={} should > far={}", e_close, e_far);
+    }
+
+    #[test]
+    fn buffered_14_7_matches_rdkit_reference_pair() {
+        // RDKit MMFF94 type 37/37 at this shared-coordinate contact reports
+        // 4.2464853537 kcal/mol. The former t^7 * (t^7 - 2) shortcut returned
+        // 11.9247 and inflated aromatic non-bonded energies.
+        let energy = mmff94_vdw_energy_value(
+            2.7745809246687023,
+            4.193078986609192,
+            0.06779699304291385,
+        );
+        assert!((energy - 4.246485353735497).abs() < 1e-10);
     }
 
     /// First SSSR ring of exactly `size` atoms, in ring (bonded-consecutive)
@@ -3962,9 +4009,7 @@ mod tests {
                 if r > 10.0 || r <= 0.01 {
                     total
                 } else {
-                    let t = (1.07 * pair.r_star) / (r + 0.07 * pair.r_star);
-                    let t7 = t.powi(7);
-                    total + pair.epsilon * t7 * (t7 - 2.0)
+                    total + mmff94_vdw_energy_value(r, pair.r_star, pair.epsilon)
                 }
             })
         );

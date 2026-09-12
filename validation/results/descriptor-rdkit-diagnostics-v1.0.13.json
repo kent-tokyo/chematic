@@ -1,25 +1,25 @@
 {
   "schema_version": 1,
   "corpus": "scripts/chembl_accuracy_corpus_4999.smi",
-  "rdkit_version": "2025.09.3",
+  "rdkit_version": "2026.03.6",
   "chematic_version": "1.0.13",
   "rows": 5000,
   "parsed": 5000,
   "parse_failures": 0,
-  "unsupported_values": 1,
-  "profile": "rdkit_compat_unlabelled_v1",
+  "unsupported_values": 0,
+  "profile": "rdkit_compat_v2",
   "fields": {
     "molecular_weight": {
       "tolerance": 0.01,
       "strict_tolerance": 1e-06,
-      "parsed": 4999,
-      "matches": 4999,
-      "strict_matches": 4999,
+      "parsed": 5000,
+      "matches": 5000,
+      "strict_matches": 5000,
       "mismatches": 0,
-      "mae": 0.0,
+      "mae": 7.979906513355672e-13,
       "median_abs_error": 0.0,
       "p95_abs_error": 0.0,
-      "max_abs_error": 0.0,
+      "max_abs_error": 3.989953256677836e-09,
       "errors": []
     },
     "hba": {

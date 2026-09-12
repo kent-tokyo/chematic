@@ -83,6 +83,7 @@ nav:
   - Reliability:
     - Validation vs RDKit: validation.md
     - Detailed RDKit Comparison: rdkit-comparison.md
+    - RDKit Accuracy Plan: rdkit-accuracy-plan.md
     - RDKit Issue Lessons: rdkit_issue_lessons.md
   - RDKit Migration Guide: rdkit_cheatsheet.md
   - RDKit Feature Support Matrix: rdkit-migration.md

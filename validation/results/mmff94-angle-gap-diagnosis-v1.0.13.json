@@ -1,0 +1,15 @@
+{
+  "schema_version": "mmff94-angle-gap-diagnosis-v1",
+  "rdkit_commit": "e74e7b0a5a2fc4e7f77c04ec26a61d4b8edbf22f",
+  "corpus": "validation/results/mmff94_coverage_227_term_audit_v1.0.13.jsonl",
+  "angle_unique_tuples": 11,
+  "angle_empirical_rule_tuples": 10,
+  "angle_empirical_matches_live_oracle": 10,
+  "bond_unique_tuples": 2,
+  "bond_empirical_rule_tuples": 2,
+  "notes": [
+    "The previous 9/10 angle diagnostic was a checker defect: RDKit type 63 (C5A) was omitted from the extracted compact definition block.",
+    "The checker now uses the source-verified C5A ladder [63, 2, 1, 0] and reaches the RDKit wildcard row (0, 0, 18, 0).",
+    "This closes a measurement false positive; it is not a new broad MMFF94 parity claim."
+  ]
+}

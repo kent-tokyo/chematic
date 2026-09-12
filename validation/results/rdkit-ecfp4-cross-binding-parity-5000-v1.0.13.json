@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.13",
+  "contract": "same chematic source SMILES, RDKit-compatible ECFP4 2048-bit LSB-first bytes; failures compared by typed status",
+  "corpus": {
+    "path": "scripts/chembl_accuracy_corpus_4999.smi",
+    "rows": 5000,
+    "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e"
+  },
+  "binding_status_counts": {
+    "rust": {
+      "ok": 5000,
+      "error": 0
+    },
+    "python": {
+      "ok": 5000,
+      "error": 0
+    },
+    "node_wasm": {
+      "ok": 5000,
+      "error": 0
+    }
+  },
+  "python_provenance": {
+    "executable": "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3.13",
+    "package_version": "1.0.13",
+    "package_init": "/private/tmp/chematic-wheel-threshold/extracted/chematic/__init__.py",
+    "extension": "/private/tmp/chematic-wheel-threshold/extracted/chematic/chematic.cpython-313-darwin.so",
+    "extension_sha256": "bd0b241cae6222ed32bd1f628979c3b5fd1d191c09b856047aa9d64a9f43cb62",
+    "pythonpath": [
+      "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts",
+      "/tmp/chematic-wheel-threshold/extracted",
+      "/Library/Frameworks/Python.framework/Versions/3.13/lib/python313.zip",
+      "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13",
+      "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/lib-dynload",
+      "/Users/k_tanabe/Library/Python/3.13/lib/python/site-packages",
+      "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages"
+    ],
+    "workspace_path_visible": false,
+    "import_origin": "temporary_extracted_wheel"
+  },
+  "wasm_provenance": {
+    "entrypoint": "scripts/rdkit_ecfp4_binding_dump.mjs",
+    "artifact_js": "crates/chematic-wasm/pkg-node/chematic_wasm.js",
+    "artifact_wasm_sha256": "acb82917e75e26d9d5719dbf726303260441e1e5eeac63c3a6389b41d4f6a355"
+  },
+  "pairwise": {
+    "rust_vs_python": {
+      "rows": 5000,
+      "matches": 5000,
+      "mismatches": 0,
+      "examples": []
+    },
+    "rust_vs_node_wasm": {
+      "rows": 5000,
+      "matches": 5000,
+      "mismatches": 0,
+      "examples": []
+    },
+    "python_vs_node_wasm": {
+      "rows": 5000,
+      "matches": 5000,
+      "mismatches": 0,
+      "examples": []
+    }
+  },
+  "gate_passed": true,
+  "boundary": [
+    "This is cross-binding parity for chematic's RDKit-compatible implementation, not an independent RDKit oracle run.",
+    "Sparse/count/bitInfo parity remains a separate contract."
+  ]
+}

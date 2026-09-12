@@ -1,0 +1,141 @@
+{
+  "agreement": {
+    "matched": 7,
+    "total": 7
+  },
+  "case_file_sha256": "3ce93bd8af76b101e8ff6f1cb88ac163bf6d3d915b0f2ec61f437ee82e487331",
+  "cases": [
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CC[O-]"
+        ]
+      ],
+      "id": "alcohol_deprotonation",
+      "rdkit": [
+        [
+          "CC[O-]"
+        ]
+      ],
+      "reactants": [
+        "CCO"
+      ],
+      "smirks": "[OH:1]>>[O-:1]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CCO"
+        ]
+      ],
+      "id": "carbonyl_reduction_shape",
+      "rdkit": [
+        [
+          "CCO"
+        ]
+      ],
+      "reactants": [
+        "CC=O"
+      ],
+      "smirks": "[C:1]=[O:2]>>[C:1]-[O:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CC(N)=O"
+        ]
+      ],
+      "id": "amide_formation",
+      "rdkit": [
+        [
+          "CC(N)=O"
+        ]
+      ],
+      "reactants": [
+        "CC(=O)Cl",
+        "N"
+      ],
+      "smirks": "[C:1](=[O:2])Cl.[N:3]>>[C:1](=[O:2])[N:3]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "C",
+          "N"
+        ]
+      ],
+      "id": "mapped_bond_cleavage",
+      "rdkit": [
+        [
+          "C",
+          "N"
+        ]
+      ],
+      "reactants": [
+        "CN"
+      ],
+      "smirks": "[N:1][C:2]>>[N:1].[C:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "C",
+          "O"
+        ]
+      ],
+      "id": "mapped_fragment_split",
+      "rdkit": [
+        [
+          "C",
+          "O"
+        ]
+      ],
+      "reactants": [
+        "CO"
+      ],
+      "smirks": "[C:1]-[O:2]>>[C:1].[O:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CC(=O)[O-]"
+        ]
+      ],
+      "id": "carboxylate_deprotonation",
+      "rdkit": [
+        [
+          "CC(=O)[O-]"
+        ]
+      ],
+      "reactants": [
+        "CC(=O)O"
+      ],
+      "smirks": "[C:1](=[O:2])[O:3]>>[C:1](=[O:2])[O-:3]"
+    },
+    {
+      "agree": true,
+      "chematic": [],
+      "id": "no_match_empty",
+      "rdkit": [],
+      "reactants": [
+        "CC"
+      ],
+      "smirks": "[OH:1]>>[O-:1]"
+    }
+  ],
+  "not_claimed": [
+    "reaction yield",
+    "selectivity",
+    "broad reaction precision/recall",
+    "Indigo equivalence"
+  ],
+  "profile": "bounded_reaction_product_structure_parity",
+  "rdkit_version": "2025.09.3",
+  "schema_version": 1
+}

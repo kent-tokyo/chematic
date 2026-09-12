@@ -1,0 +1,23 @@
+{
+  "issue": 227,
+  "target_version": "1.0.13",
+  "measured_at": "2026-09-12",
+  "corpus_total": 265,
+  "corpus": "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_{a,b}.json",
+  "harness": "cargo run --release -p chematic-3d --example mmff94_strict_gate_remeasure_227 --offline",
+  "method": "Production minimize_with_policy(Mmff94BondAngleStrict) over generate_coords output; this is the low-level strict bond+angle boundary and is not a replacement for the full pipeline_v2 embedding benchmark.",
+  "status_counts": {
+    "ok": 265,
+    "missing_parameters": 0,
+    "unsupported_atom_type": 0,
+    "minimization_failed": 0,
+    "parse_or_other": 0
+  },
+  "resolved_residual": {
+    "molecule": "chembl_tier_b_0022",
+    "tuple": [43, 18, 63],
+    "mechanism": "registry-backed C5A equivalence ladder followed by the documented Halgren empirical angle rule",
+    "guessed_table_parameter": false
+  },
+  "remaining_scope": "The separate type-only torsion coverage audit still records 24 missing rows; this artifact does not claim full MMFF94 parameter parity or full pipeline_v2 parity."
+}

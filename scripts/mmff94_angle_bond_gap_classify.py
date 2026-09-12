@@ -112,6 +112,15 @@ def load_rdkit_tables():
             continue
         eqlevel.setdefault(atom_type, levels)
 
+    # RDKit's pinned source defines the aromatic five-membered-ring C5A type
+    # as `63 63 2 1 0`, but the generated string block exposed by some source
+    # layouts truncates the named-definition section before that row.  Keep
+    # this source-verified entry explicit so the diagnostic reaches the same
+    # wildcard angle row as RDKit (rather than misclassifying a real lookup as
+    # a from-scratch empirical rule).
+    eqlevel.setdefault(63, [63, 2, 1, 0])
+
+
     prop = {}
     for cols in parse_table(extract_cpp_string_block(cpp, "defaultMMFFProp"), 9):
         try:

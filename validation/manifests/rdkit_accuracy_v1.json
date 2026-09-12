@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "profile": "rdkit_compat_mass_v2",
+  "status": "development",
+  "purpose": "Fixed comparison contract for the A0-A6 accuracy program",
+  "comparator": {
+    "engine": "RDKit",
+    "version_policy": "record the installed version; do not infer it from documentation",
+    "profiles": ["native", "rdkit_compat", "independent_gold"]
+  },
+  "status_values": [
+    "ok",
+    "unsupported",
+    "invalid_input",
+    "error",
+    "timeout",
+    "not_measured"
+  ],
+  "descriptor_contract": {
+    "corpus": "scripts/chembl_accuracy_corpus_4999.smi",
+    "required_fields": [
+      "molecular_weight",
+      "hba",
+      "hbd",
+      "tpsa",
+      "logp",
+      "molar_refractivity",
+      "fsp3",
+      "aromatic_ring_count"
+    ],
+    "strict_tolerances": {
+      "molecular_weight": 0.000001,
+      "hba": 0.0,
+      "hbd": 0.0,
+      "tpsa": 0.000001,
+      "logp": 0.000001,
+      "molar_refractivity": 0.000001,
+      "fsp3": 0.000001,
+      "aromatic_ring_count": 0.0
+    },
+    "unsupported_policy": "count in the full denominator and report by cause"
+  },
+  "retrieval_contract": {
+    "fingerprint": "RDKit Morgan radius=2, nBits=2048",
+    "library_rows": 4500,
+    "query_rows": 500,
+    "k_values": [1, 10, 100],
+    "tie_break": "similarity descending, original input index ascending",
+    "excluded_rows": "never silently remove; preserve original indices and typed status"
+  },
+  "acceptance": {
+    "declared_compatibility_scope": "zero strict mismatches and 100% coverage on the frozen scope",
+    "independent_superiority": "paired scaffold-cluster evaluation with predeclared endpoint and uncertainty",
+    "wrong_confident_stereo": 0,
+    "silent_structure_loss": 0
+  }
+}

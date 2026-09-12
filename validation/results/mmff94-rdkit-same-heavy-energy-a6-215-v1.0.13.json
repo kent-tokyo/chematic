@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "protocol": "a6-rdkit-same-heavy-coordinate-energy-diagnostic-v1",
+  "status": "candidate_diagnostic_not_release_gate",
+  "comparator": {
+    "engine": "RDKit",
+    "version": "2025.09.3"
+  },
+  "source": {
+    "workspace_version": "1.0.13",
+    "rows": [
+      "/tmp/chematic-mmff94-hard-tier-a.jsonl",
+      "/tmp/chematic-mmff94-hard-tier-b.jsonl"
+    ],
+    "success_rows": 215,
+    "timeout_rows_excluded_from_numeric_comparison": 50,
+    "rdkit_force_field_unavailable": 0
+  },
+  "coordinate_protocol": "Use chematic successful heavy-atom coordinates as the RDKit conformer without AddHs; implicit hydrogens and term conventions are not normalized.",
+  "energy_delta": {
+    "definition": "schematic_mmff94_energy_after - rdkit_mmff94_energy_same_heavy_coordinates",
+    "comparable_rows": 215,
+    "mean_abs_kcal_mol": 35.49388991075173,
+    "median_abs_kcal_mol": 29.930206410070994,
+    "p90_abs_kcal_mol": 55.89235647234249,
+    "p99_abs_kcal_mol": 86.76531843052348,
+    "max_abs_kcal_mol": 920.3590178195388,
+    "within_1_kcal_mol": 29,
+    "within_5_kcal_mol": 43
+  },
+  "tier_summary": {
+    "A": {
+      "comparable_rows": 64,
+      "median_abs_kcal_mol": 1.4801015458327909,
+      "p90_abs_kcal_mol": 25.645219868694866
+    },
+    "B": {
+      "comparable_rows": 151,
+      "median_abs_kcal_mol": 36.67851763000347,
+      "p90_abs_kcal_mol": 56.77788129420922
+    }
+  },
+  "largest_abs_deltas": [
+    {"name": "chembl_tier_b_0082", "tier": "B", "abs_kcal_mol": 920.3590178195388},
+    {"name": "chembl_tier_b_0038", "tier": "B", "abs_kcal_mol": 754.537630365254},
+    {"name": "chembl_tier_b_0024", "tier": "B", "abs_kcal_mol": 87.78490895319561},
+    {"name": "chembl_tier_b_0025", "tier": "B", "abs_kcal_mol": 86.76531843052348},
+    {"name": "chembl_tier_b_0026", "tier": "B", "abs_kcal_mol": 86.20882619866325}
+  ],
+  "interpretation": "This diagnostic demonstrates a substantial unresolved numerical parity gap, especially in Tier B. It is not a final force-field comparison because explicit-H coordinates, charge provenance, atom-type mapping, and per-term conventions are not yet identical. The gap must remain visible and cannot be used as a release-quality or compatibility claim."
+}

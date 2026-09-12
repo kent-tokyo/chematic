@@ -23,7 +23,11 @@ Run:
 """
 
 import json
+import os
 import sys
+import tempfile
+import argparse
+import hashlib
 from collections import Counter
 from pathlib import Path
 
@@ -36,7 +40,7 @@ DUMP_PATH = ROOT / "validation" / "results" / "rdkit_ring_parity_dump.jsonl"
 SUMMARY_PATH = ROOT / "validation" / "results" / "rdkit_ring_parity_diagnosis_summary.json"
 
 RDKIT_PINNED_COMMIT = "8afba32ec539dcb2369bc84549d802aca3f7eb39"
-EXPECTED_RDKIT_VERSION = "2026.03.3"
+EXPECTED_RDKIT_VERSION = "2026.03.6"
 
 # `[RN]`-family patterns: the one primitive this mode's ring model actually
 # changes (see rdkit_ring_model.rs's module doc comment for the proof that
@@ -62,23 +66,66 @@ def match_set(matches):
     return frozenset(frozenset(m) for m in matches)
 
 
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def main():
-    if rdBase.rdkitVersion != EXPECTED_RDKIT_VERSION:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dump", type=Path, default=DUMP_PATH)
+    parser.add_argument("--summary", type=Path, default=SUMMARY_PATH)
+    parser.add_argument("--expected-rdkit-version", default=EXPECTED_RDKIT_VERSION)
+    parser.add_argument(
+        "--rdkit-pinned-source",
+        default=RDKIT_PINNED_COMMIT,
+        help="commit, package identifier, or other immutable comparator provenance",
+    )
+    args = parser.parse_args()
+    dump_path = args.dump.resolve()
+    summary_path = args.summary.resolve()
+
+    if rdBase.rdkitVersion != args.expected_rdkit_version:
         sys.exit(
-            f"FATAL: expected rdkit=={EXPECTED_RDKIT_VERSION}, got "
+            f"FATAL: expected rdkit=={args.expected_rdkit_version}, got "
             f"{rdBase.rdkitVersion}. Re-run in /tmp/chematic-smartsC-venv."
         )
 
-    if not DUMP_PATH.exists():
+    if not dump_path.exists():
         sys.exit(
-            f"FATAL: {DUMP_PATH} not found. Run:\n"
+            f"FATAL: {dump_path} not found. Run:\n"
             "  cargo run -p chematic-smarts --release --example rdkit_parity_dump "
-            f"-- ~/Downloads/SMILES.csv > {DUMP_PATH}"
+            f"-- ~/Downloads/SMILES.csv > {dump_path}"
         )
 
-    rows = [json.loads(line) for line in open(DUMP_PATH) if line.strip()]
-    if not rows:
-        sys.exit(f"FATAL: {DUMP_PATH} is empty")
+    records = [json.loads(line) for line in dump_path.open(encoding="utf-8") if line.strip()]
+    if not records:
+        sys.exit(f"FATAL: {dump_path} is empty")
+
+    footers = [record for record in records if record.get("record_type") == "footer"]
+    rows = [record for record in records if record.get("record_type", "molecule") == "molecule"]
+    if len(footers) != 1 or records[-1].get("record_type") != "footer":
+        sys.exit(
+            "FATAL: dump must end with exactly one completed footer; "
+            "a missing footer means the producer did not reach a clean exit"
+        )
+    footer = footers[0]
+    if footer.get("completed") is not True:
+        sys.exit("FATAL: dump footer is not marked completed")
+    if footer.get("emitted_molecule_rows") != len(rows):
+        sys.exit("FATAL: footer row count does not match molecule records")
+    expected_input_rows = footer.get("input_rows")
+    if not isinstance(expected_input_rows, int) or expected_input_rows < 0:
+        sys.exit("FATAL: footer input_rows is missing or invalid")
+    if footer.get("hand_corpus_rows") + expected_input_rows != len(rows):
+        sys.exit("FATAL: footer source accounting does not match molecule records")
+    source_path = Path(str(footer.get("source_path", "")))
+    if not source_path.is_absolute():
+        source_path = ROOT / source_path
+    source_corpus_sha256 = sha256(source_path) if source_path.is_file() else None
 
     ids_seen = set()
     for r in rows:
@@ -183,10 +230,28 @@ def main():
 
     total_cells = sum(bucket_counts.values())
 
+    def display_path(path: Path) -> str:
+        try:
+            return path.relative_to(ROOT).as_posix()
+        except ValueError:
+            return path.name
+
     summary = {
         "rdkit_version": rdBase.rdkitVersion,
-        "rdkit_pinned_source_commit": RDKIT_PINNED_COMMIT,
+        "rdkit_pinned_source": args.rdkit_pinned_source,
+        "dump_path": display_path(dump_path),
+        "dump_sha256": sha256(dump_path),
+        "source_corpus_path": display_path(source_path),
+        "source_corpus_sha256": source_corpus_sha256,
+        "source_corpus_rows": expected_input_rows,
+        "comparison_config": {
+            "match_set": "sorted atom-index sets",
+            "rdkit_uniquify": True,
+            "unsupported_policy": "count and report; never remove from denominator",
+            "requires_completed_footer": True,
+        },
         "n_rows_in_dump": len(rows),
+        "dump_footer": footer,
         "n_molecules_compared": n_molecules,
         "n_alignment_checked": n_alignment_checked,
         "n_alignment_failures": len(alignment_failures),
@@ -196,11 +261,19 @@ def main():
         "ring_count_pattern_bucket_counts": dict(ring_count_bucket_counts),
         "mismatch_examples": mismatch_examples,
     }
-    SUMMARY_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(SUMMARY_PATH, "w") as f:
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
+    # Do not truncate the last good diagnosis if serialization or the process
+    # is interrupted. A failed comparator run must not leave an empty artifact
+    # that can be mistaken for a completed measurement.
+    with tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", dir=summary_path.parent, prefix=f".{summary_path.name}.", delete=False
+    ) as f:
         json.dump(summary, f, indent=2)
+        f.write("\n")
+        temporary_path = Path(f.name)
+    os.replace(temporary_path, summary_path)
 
-    print(f"rdkit version: {rdBase.rdkitVersion}  (expected {EXPECTED_RDKIT_VERSION})")
+    print(f"rdkit version: {rdBase.rdkitVersion}  (expected {args.expected_rdkit_version})")
     print(f"molecules in dump: {len(rows)}, RDKit-parseable+aligned: {n_molecules}")
     print(f"alignment failures: {len(alignment_failures)}")
     print(f"total (molecule, pattern) cells compared: {total_cells}")
@@ -225,7 +298,11 @@ def main():
     print(f"parity-matcher agreement with rdkit:    {parity_agree}/{total_cells} "
           f"({100*parity_agree/total_cells:.4f}%)")
     print()
-    print(f"wrote {SUMMARY_PATH.relative_to(ROOT)}")
+    try:
+        display_summary = summary_path.relative_to(ROOT)
+    except ValueError:
+        display_summary = summary_path
+    print(f"wrote {display_summary}")
 
     # Fail-closed: parity_regresses must be zero or explicitly investigated --
     # this run does not assert exit(1) on it (a real regression may need a

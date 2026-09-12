@@ -10,9 +10,15 @@
 //! - **Bond stretching**: harmonic with natural bond order correction
 //! - **Angle bending**: Fourier cosine series (C_0 + C_1·cos + C_2·cos(2θ))
 //! - **van der Waals**: Lennard-Jones (12-6) with UFF combining rules
+//! - **Aromatic inversion**: a bounded planar-restraint term for trigonal
+//!   aromatic centers, preventing fused aromatic systems from settling into
+//!   non-planar stationary points of the incomplete potential
+//! - **Torsion**: bounded periodic terms for the common sp3/sp2 central-bond
+//!   classes, with a fail-closed zero contribution for unsupported classes
 //!
-//! Torsion and inversion terms are intentionally omitted here; they are less
-//! critical for initial 3D placement and can be added incrementally.
+//! Higher-coordinate metal torsion parameter parity remains intentionally
+//! deferred; the implemented organic classes are an incremental UFF slice,
+//! not a claim of complete RDKit energy parity.
 //!
 //! ## Usage
 //! ```rust,ignore
@@ -250,6 +256,67 @@ impl UffType {
             _ => 0.100,
         }
     }
+
+    /// UFF torsional barrier parameter V1 (kcal/mol).
+    ///
+    /// These are the atom-local values used by the UFF sp3--sp3 rule. A zero
+    /// value is intentional for atom classes whose torsion is determined by
+    /// the U1 sp2 rule instead.
+    fn v1(self) -> f64 {
+        match self {
+            Self::C_3 => 2.119,
+            Self::N_3 => 0.450,
+            Self::O_3 => 0.018,
+            Self::S_3 => 0.484,
+            _ => 0.0,
+        }
+    }
+
+    /// UFF torsional parameter U1 (kcal/mol), used by the sp2--sp2 rule.
+    fn u1(self) -> f64 {
+        match self {
+            Self::C_3
+            | Self::C_2
+            | Self::C_1
+            | Self::C_R
+            | Self::N_3
+            | Self::N_2
+            | Self::N_1
+            | Self::N_R
+            | Self::O_3
+            | Self::O_2
+            | Self::O_1
+            | Self::O_R
+            | Self::F_
+            | Self::Cl
+            | Self::Br
+            | Self::I_ => 2.0,
+            Self::S_3 | Self::S_2 | Self::S_R | Self::P_3 | Self::P_R => 1.25,
+            _ => 0.0,
+        }
+    }
+
+    fn is_sp3(self) -> bool {
+        matches!(
+            self,
+            Self::C_3 | Self::N_3 | Self::O_3 | Self::S_3 | Self::P_3
+        )
+    }
+
+    fn is_sp2(self) -> bool {
+        matches!(
+            self,
+            Self::C_2
+                | Self::C_R
+                | Self::N_2
+                | Self::N_R
+                | Self::O_2
+                | Self::O_R
+                | Self::S_2
+                | Self::S_R
+                | Self::P_R
+        )
+    }
 }
 
 // ── Type assignment ───────────────────────────────────────────────────────────
@@ -387,6 +454,30 @@ fn dist(a: [f64; 3], b: [f64; 3]) -> f64 {
     (dx * dx + dy * dy + dz * dz).sqrt()
 }
 
+fn sub(a: [f64; 3], b: [f64; 3]) -> [f64; 3] {
+    [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
+}
+
+fn dot(a: [f64; 3], b: [f64; 3]) -> f64 {
+    a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+}
+
+fn cross(a: [f64; 3], b: [f64; 3]) -> [f64; 3] {
+    [
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0],
+    ]
+}
+
+fn scale_vec(v: [f64; 3], scale: f64) -> [f64; 3] {
+    [v[0] * scale, v[1] * scale, v[2] * scale]
+}
+
+fn add_vec(a: [f64; 3], b: [f64; 3]) -> [f64; 3] {
+    [a[0] + b[0], a[1] + b[1], a[2] + b[2]]
+}
+
 fn cos_angle(a: [f64; 3], b: [f64; 3], c: [f64; 3]) -> f64 {
     let ba = [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
     let bc = [c[0] - b[0], c[1] - b[1], c[2] - b[2]];
@@ -425,10 +516,33 @@ struct UffVdwTerm {
     d: f64,
 }
 
+#[derive(Clone, Copy)]
+struct UffInversionTerm {
+    center: AtomIdx,
+    a: AtomIdx,
+    b: AtomIdx,
+    c: AtomIdx,
+    /// Force constant for the squared signed volume (kcal/mol/Å⁶).
+    k: f64,
+}
+
+#[derive(Clone, Copy)]
+struct UffTorsionTerm {
+    i: AtomIdx,
+    j: AtomIdx,
+    k: AtomIdx,
+    l: AtomIdx,
+    barrier: f64,
+    periodicity: u8,
+    phase_cosine: f64,
+}
+
 struct PreparedUffEnergy {
     bonds: Vec<UffBondTerm>,
     angles: Vec<UffAngleTerm>,
     vdw: Vec<UffVdwTerm>,
+    inversions: Vec<UffInversionTerm>,
+    torsions: Vec<UffTorsionTerm>,
 }
 
 impl PreparedUffEnergy {
@@ -455,6 +569,7 @@ impl PreparedUffEnergy {
             .collect();
 
         let mut angles = Vec::new();
+        let mut inversions = Vec::new();
         for &(center, center_type) in types {
             let theta0 = center_type.theta0().to_radians();
             let sin0 = theta0.sin();
@@ -467,6 +582,70 @@ impl PreparedUffEnergy {
                         c: neighbors[j],
                         cos0: theta0.cos(),
                         k: 0.5 * 332.06 / (sin0 * sin0 + 1e-10),
+                    });
+                }
+            }
+            // UFF inversion is relevant for trigonal aromatic centers. A
+            // squared signed volume is smooth at the planar minimum and has
+            // an exact Cartesian gradient, unlike an angle/atan2 formulation
+            // at the planar limit. Keep one term for each three-connected
+            // aromatic center; four-coordinate centers use a different UFF
+            // coordination model and are intentionally excluded here.
+            if matches!(center_type, UffType::C_R | UffType::N_R | UffType::S_R)
+                && neighbors.len() == 3
+            {
+                inversions.push(UffInversionTerm {
+                    center,
+                    a: neighbors[0],
+                    b: neighbors[1],
+                    c: neighbors[2],
+                    k: 0.5,
+                });
+            }
+        }
+
+        let mut torsions = Vec::new();
+        for (_, bond) in mol.bonds() {
+            let (j, k) = (bond.atom1, bond.atom2);
+            let tj = get_type(j);
+            let tk = get_type(k);
+            let (barrier, periodicity, phase_cosine) = if tj.is_sp3() && tk.is_sp3() {
+                ((tj.v1() * tk.v1()).sqrt(), 3, -1.0)
+            } else if tj.is_sp2() && tk.is_sp2() {
+                (
+                    5.0 * (tj.u1() * tk.u1()).sqrt()
+                        * (1.0 + 4.18 * bond_order_f64(bond.order).ln()),
+                    2,
+                    1.0,
+                )
+            } else if (tj.is_sp2() && tk.is_sp3()) || (tj.is_sp3() && tk.is_sp2()) {
+                (1.0, 6, 1.0)
+            } else {
+                (0.0, 0, 0.0)
+            };
+            if barrier <= 0.0 || !barrier.is_finite() {
+                continue;
+            }
+            let left: Vec<AtomIdx> = mol
+                .neighbors(j)
+                .map(|(idx, _)| idx)
+                .filter(|&idx| idx != k)
+                .collect();
+            let right: Vec<AtomIdx> = mol
+                .neighbors(k)
+                .map(|(idx, _)| idx)
+                .filter(|&idx| idx != j)
+                .collect();
+            for &i in &left {
+                for &l in &right {
+                    torsions.push(UffTorsionTerm {
+                        i,
+                        j,
+                        k,
+                        l,
+                        barrier,
+                        periodicity,
+                        phase_cosine,
                     });
                 }
             }
@@ -507,7 +686,76 @@ impl PreparedUffEnergy {
             }
         }
 
-        Self { bonds, angles, vdw }
+        Self {
+            bonds,
+            angles,
+            vdw,
+            inversions,
+            torsions,
+        }
+    }
+
+    fn inversion_volume(term: UffInversionTerm, coords: &[[f64; 3]]) -> f64 {
+        let center = coords[term.center.0 as usize];
+        let u = sub(coords[term.a.0 as usize], center);
+        let v = sub(coords[term.b.0 as usize], center);
+        let w = sub(coords[term.c.0 as usize], center);
+        dot(u, cross(v, w))
+    }
+
+    fn torsion_cosine(term: UffTorsionTerm, coords: &[[f64; 3]]) -> Option<f64> {
+        let b1 = sub(coords[term.j.0 as usize], coords[term.i.0 as usize]);
+        let b2 = sub(coords[term.k.0 as usize], coords[term.j.0 as usize]);
+        let b3 = sub(coords[term.l.0 as usize], coords[term.k.0 as usize]);
+        let n1 = cross(b1, b2);
+        let n2 = cross(b2, b3);
+        let n1_len = dot(n1, n1).sqrt();
+        let n2_len = dot(n2, n2).sqrt();
+        if n1_len <= 1e-12 || n2_len <= 1e-12 {
+            return None;
+        }
+        Some((dot(n1, n2) / (n1_len * n2_len)).clamp(-1.0, 1.0))
+    }
+
+    fn torsion_cosine_gradient(
+        term: UffTorsionTerm,
+        coords: &[[f64; 3]],
+    ) -> Option<(f64, [[f64; 3]; 4])> {
+        let b1 = sub(coords[term.j.0 as usize], coords[term.i.0 as usize]);
+        let b2 = sub(coords[term.k.0 as usize], coords[term.j.0 as usize]);
+        let b3 = sub(coords[term.l.0 as usize], coords[term.k.0 as usize]);
+        let n1 = cross(b1, b2);
+        let n2 = cross(b2, b3);
+        let n1_len = dot(n1, n1).sqrt();
+        let n2_len = dot(n2, n2).sqrt();
+        if n1_len <= 1e-12 || n2_len <= 1e-12 {
+            return None;
+        }
+        let c = (dot(n1, n2) / (n1_len * n2_len)).clamp(-1.0, 1.0);
+        let nh1 = scale_vec(n1, 1.0 / n1_len);
+        let nh2 = scale_vec(n2, 1.0 / n2_len);
+        let ga = scale_vec(sub(nh2, scale_vec(nh1, c)), 1.0 / n1_len);
+        let gb = scale_vec(sub(nh1, scale_vec(nh2, c)), 1.0 / n2_len);
+        let db1 = cross(b2, ga);
+        let db2 = add_vec(cross(ga, b1), cross(b3, gb));
+        let db3 = cross(gb, b2);
+        Some((c, [scale_vec(db1, -1.0), sub(db1, db2), sub(db2, db3), db3]))
+    }
+
+    fn torsion_energy(term: UffTorsionTerm, coords: &[[f64; 3]]) -> f64 {
+        let Some(cos_phi) = Self::torsion_cosine(term, coords) else {
+            return 0.0;
+        };
+        let cos_n_phi = match term.periodicity {
+            2 => 2.0 * cos_phi * cos_phi - 1.0,
+            3 => 4.0 * cos_phi.powi(3) - 3.0 * cos_phi,
+            6 => {
+                let cos_3 = 4.0 * cos_phi.powi(3) - 3.0 * cos_phi;
+                2.0 * cos_3 * cos_3 - 1.0
+            }
+            _ => return 0.0,
+        };
+        0.5 * term.barrier * (1.0 - term.phase_cosine * cos_n_phi)
     }
 
     fn energy(&self, coords: &[[f64; 3]]) -> f64 {
@@ -528,6 +776,13 @@ impl PreparedUffEnergy {
             let ratio6 = ratio.powi(6);
             let ratio12 = ratio6 * ratio6;
             energy += term.d * (ratio12 - 2.0 * ratio6);
+        }
+        for &term in &self.inversions {
+            let volume = Self::inversion_volume(term, coords);
+            energy += term.k * volume * volume;
+        }
+        for &term in &self.torsions {
+            energy += Self::torsion_energy(term, coords);
         }
         energy
     }
@@ -610,11 +865,52 @@ impl PreparedUffEnergy {
                 [-value[0], -value[1], -value[2]],
             );
         }
+        for &term in &self.inversions {
+            let center = coords[term.center.0 as usize];
+            let u = sub(coords[term.a.0 as usize], center);
+            let v = sub(coords[term.b.0 as usize], center);
+            let w = sub(coords[term.c.0 as usize], center);
+            let volume = dot(u, cross(v, w));
+            let scale = 2.0 * term.k * volume;
+            let da = scale_vec(cross(v, w), scale);
+            let db = scale_vec(cross(w, u), scale);
+            let dc = scale_vec(cross(u, v), scale);
+            add(&mut gradient[term.a.0 as usize], da);
+            add(&mut gradient[term.b.0 as usize], db);
+            add(&mut gradient[term.c.0 as usize], dc);
+            add(
+                &mut gradient[term.center.0 as usize],
+                [
+                    -da[0] - db[0] - dc[0],
+                    -da[1] - db[1] - dc[1],
+                    -da[2] - db[2] - dc[2],
+                ],
+            );
+        }
+        for &term in &self.torsions {
+            let Some((cos_phi, basis)) = Self::torsion_cosine_gradient(term, coords) else {
+                continue;
+            };
+            let d_cos_n = match term.periodicity {
+                2 => 4.0 * cos_phi,
+                3 => 12.0 * cos_phi * cos_phi - 3.0,
+                6 => 192.0 * cos_phi.powi(5) - 192.0 * cos_phi.powi(3) + 36.0 * cos_phi,
+                _ => continue,
+            };
+            let scale = -0.5 * term.barrier * term.phase_cosine * d_cos_n;
+            for (atom, direction) in [term.i, term.j, term.k, term.l].into_iter().zip(basis) {
+                let slot = &mut gradient[atom.0 as usize];
+                slot[0] += scale * direction[0];
+                slot[1] += scale * direction[1];
+                slot[2] += scale * direction[2];
+            }
+        }
         gradient
     }
 }
 
-/// Compute UFF total energy (bond + angle + vdW) in kcal/mol.
+/// Compute UFF total energy (bond + angle + torsion + inversion + vdW) in
+/// kcal/mol.
 pub fn uff_total_energy(mol: &Molecule, types: &[(AtomIdx, UffType)], coords: &[[f64; 3]]) -> f64 {
     PreparedUffEnergy::new(mol, types).energy(coords)
 }
@@ -652,7 +948,8 @@ fn worst_uff_bond_length(mol: &Molecule, coords: &[[f64; 3]]) -> f64 {
 }
 
 /// True iff every coordinate is finite and no bond exceeds
-/// [`MAX_SANE_UFF_BOND_LENGTH`]. Deliberately independent of `converged`:
+/// [`MAX_SANE_UFF_BOND_LENGTH`]. This is checked independently while the
+/// optimizer runs, and also gates the public `converged` result:
 /// steepest descent frequently reports `converged == false` on perfectly
 /// sound geometries that simply haven't hit the tight RMS-gradient
 /// threshold within `max_iter` (same rationale as `chematic-3d`'s
@@ -675,7 +972,10 @@ pub struct UffMinimizeResult {
     pub energy: f64,
     /// Number of iterations taken.
     pub iterations: usize,
-    /// True if the gradient norm converged below threshold.
+    /// True if the gradient norm converged below threshold on a geometrically
+    /// sound result. A low RMS gradient on an unsound stationary point is not
+    /// reported as convergence; inspect [`Self::sound`] and
+    /// [`Self::worst_bond_length`] for the diagnostic outcome.
     pub converged: bool,
     /// True if `coords` is a geometrically sound result (all-finite, no
     /// bond stretched past [`MAX_SANE_UFF_BOND_LENGTH`]) — independent of
@@ -755,7 +1055,12 @@ where
                 coords,
                 energy,
                 iterations: iter,
-                converged: true,
+                // Even with the bounded organic torsion and aromatic
+                // inversion terms, unsupported metal-class terms and other
+                // incomplete UFF coverage can leave a low-gradient but
+                // geometrically absurd stationary point. Do not expose that
+                // state as successful convergence to direct callers.
+                converged: sound,
                 sound,
                 worst_bond_length,
                 rejected_unsound_step,
@@ -868,6 +1173,114 @@ mod tests {
     }
 
     #[test]
+    fn fused_aromatic_uff_includes_planarity_terms() {
+        let mol = parse("c1ccc2ccccc2c1").expect("naphthalene");
+        let types = assign_uff_types(&mol);
+        let prepared = PreparedUffEnergy::new(&mol, &types);
+        assert!(
+            !prepared.inversions.is_empty(),
+            "fused aromatic trigonal centers must have UFF inversion terms"
+        );
+
+        let mut folded = vec![[0.0, 0.0, 0.0]; mol.atom_count()];
+        for (idx, point) in folded.iter_mut().enumerate() {
+            point[0] = idx as f64;
+            point[1] = (idx as f64 * 0.7).sin();
+            point[2] = if idx % 2 == 0 { 0.8 } else { -0.6 };
+        }
+        let mut planar = folded.clone();
+        for point in &mut planar {
+            point[2] = 0.0;
+        }
+        assert!(
+            prepared.energy(&planar) < prepared.energy(&folded),
+            "the aromatic inversion term must prefer a planar fused-ring geometry"
+        );
+    }
+
+    #[test]
+    fn butane_uff_includes_periodic_torsion_and_matches_energy_difference() {
+        let mol = parse("CCCC").expect("butane");
+        let types = assign_uff_types(&mol);
+        let prepared = PreparedUffEnergy::new(&mol, &types);
+        assert_eq!(prepared.torsions.len(), 1);
+        assert_eq!(prepared.torsions[0].periodicity, 3);
+        let anti = [
+            [0.0, 0.0, 0.0],
+            [1.54, 0.0, 0.0],
+            [2.95, 1.0, 0.0],
+            [4.35, 1.0, 0.0],
+        ];
+        let gauche = [
+            [0.0, 0.0, 0.0],
+            [1.54, 0.0, 0.0],
+            [2.95, 1.0, 0.0],
+            [3.80, 1.85, 0.85],
+        ];
+        assert_ne!(
+            PreparedUffEnergy::torsion_energy(prepared.torsions[0], &anti),
+            PreparedUffEnergy::torsion_energy(prepared.torsions[0], &gauche)
+        );
+        let gradient = prepared.analytic_gradient(&gauche);
+        let delta = 1e-5;
+        for atom in 0..gauche.len() {
+            for axis in 0..3 {
+                let mut plus = gauche;
+                let mut minus = gauche;
+                plus[atom][axis] += delta;
+                minus[atom][axis] -= delta;
+                let expected = (prepared.energy(&plus) - prepared.energy(&minus)) / (2.0 * delta);
+                assert!(
+                    (gradient[atom][axis] - expected).abs() < 3e-3,
+                    "torsion gradient mismatch at atom {atom}, axis {axis}: actual={}, expected={expected}",
+                    gradient[atom][axis]
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn uff_torsion_selects_sp2_and_mixed_central_bond_rules() {
+        let butadiene = parse("C=CC=C").expect("butadiene");
+        let butadiene_types = assign_uff_types(&butadiene);
+        let prepared = PreparedUffEnergy::new(&butadiene, &butadiene_types);
+        assert_eq!(prepared.torsions.len(), 1);
+        assert_eq!(prepared.torsions[0].periodicity, 2);
+        assert!(prepared.torsions[0].barrier.is_finite());
+
+        let allyl = parse("C=CCC").expect("allyl chain");
+        let allyl_types = assign_uff_types(&allyl);
+        let prepared = PreparedUffEnergy::new(&allyl, &allyl_types);
+        assert_eq!(prepared.torsions.len(), 1);
+        assert_eq!(prepared.torsions[0].periodicity, 6);
+        assert_eq!(prepared.torsions[0].barrier, 1.0);
+    }
+
+    #[test]
+    fn uff_torsion_does_not_depend_on_bond_endpoint_storage_order() {
+        use chematic_core::{Atom, Element, MoleculeBuilder};
+
+        let mut builder = MoleculeBuilder::new();
+        let atoms: Vec<_> = (0..4)
+            .map(|_| builder.add_atom(Atom::organic(Element::C)))
+            .collect();
+        for pair in [(1, 0), (2, 1), (3, 2)] {
+            builder
+                .add_bond(atoms[pair.0], atoms[pair.1], BondOrder::Single)
+                .unwrap();
+        }
+        let mol = builder.build();
+        let types = assign_uff_types(&mol);
+        let prepared = PreparedUffEnergy::new(&mol, &types);
+
+        assert_eq!(
+            prepared.torsions.len(),
+            1,
+            "a C-C-C-C torsion must be prepared even when every bond is stored in reverse endpoint order"
+        );
+    }
+
+    #[test]
     fn minimize_reduces_energy() {
         let mol = parse("CCO").unwrap();
         let types = assign_uff_types(&mol);
@@ -930,9 +1343,10 @@ mod tests {
         let types = assign_uff_types(&mol);
         let coords: Vec<[f64; 3]> = vec![[0.0, 0.0, 0.0], [5.0, 0.0, 0.0], [6.0, 1.2, 0.0]];
         let result = minimize_uff(&mol, &types, coords, 0);
+        assert!(!result.sound, "a 5.0 Å C-C bond must be reported unsound");
         assert!(
-            !result.sound,
-            "a 5.0 Å C-C bond must be reported unsound regardless of `converged`"
+            !result.converged,
+            "an unsound result must never be reported as converged"
         );
         assert!(
             result.worst_bond_length > MAX_SANE_UFF_BOND_LENGTH,

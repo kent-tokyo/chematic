@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "protocol": "rdkit-accuracy-split-v2",
+  "status": "exposed_holdout_not_sealed",
+  "sealed": false,
+  "reason": "Inputs are existing development/repository corpora; independent acquisition and freeze are still required.",
+  "deduplication": "exact SMILES, first occurrence wins",
+  "sources": [
+    {
+      "path": "scripts/descriptor_census_corpus.smi",
+      "sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c",
+      "input_rows": 5000,
+      "new_unique_rows": 5000
+    },
+    {
+      "path": "scripts/chembl_accuracy_corpus_4999.smi",
+      "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+      "input_rows": 5000,
+      "new_unique_rows": 4737
+    }
+  ],
+  "total_unique_rows": 9737,
+  "planned_sealed_rows": 8000,
+  "sealed_shortfall_rows": 263,
+  "splits": {
+    "development": {
+      "path": "validation/rdkit_accuracy_split_v2/development.smi",
+      "rows": 2000,
+      "sha256": "bd865889d0c1af84d15a14b1f81539cdf02fad20562e4e37305e704cc7d10529"
+    },
+    "exposed_holdout": {
+      "path": "validation/rdkit_accuracy_split_v2/exposed_holdout.smi",
+      "rows": 7737,
+      "sha256": "a496eeccbe54dfaf9552c5ea91bc3578ce0f111c03ad67bab97f29fd86f75972"
+    }
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "profile": "rdkit_descriptor_unused_holdout",
+  "status": "measured",
+  "source_manifest": "validation/openeye_advantage_holdout.jsonl",
+  "source_manifest_sha256": "0631d99acfb712842d6381387a256c57662de1e0d935ed2b3bf3e1f899827126",
+  "rows": 4,
+  "ids": [
+    "oe-holdout-01-large-macrocycle-natural-product",
+    "oe-holdout-02-flexible-macrocyclic-peptide",
+    "oe-holdout-03-conformer-ensemble-aromatic-heterocycle",
+    "oe-holdout-04-best-of-n-conformational-flexibility"
+  ],
+  "baseline": {
+    "source_commit": "5aae7b23",
+    "raw_rows_sha256": "ee751306c607d763b8daf62b71bec224ecbdb4c2b14ed4ed48a0327929235a35",
+    "profile": "rdkit_compat_v1_legacy",
+    "strict_matches": {
+      "molecular_weight": 4,
+      "hba": 2,
+      "hbd": 4,
+      "tpsa": 3,
+      "logp": 3,
+      "molar_refractivity": 3,
+      "fsp3": 4,
+      "aromatic_ring_count": 4
+    }
+  },
+  "candidate": {
+    "source": "working-tree-uncommitted",
+    "raw_rows_sha256": "402c45550df6d81f30b4e8238859bee7d425a3effff009392779faf4a884d495",
+    "profile": "rdkit_compat_v2",
+    "strict_matches": {
+      "molecular_weight": 4,
+      "hba": 3,
+      "hbd": 4,
+      "tpsa": 3,
+      "logp": 3,
+      "molar_refractivity": 3,
+      "fsp3": 4,
+      "aromatic_ring_count": 4
+    }
+  },
+  "boundary": "Four-row reserved holdout only; not the planned 8,000-row independent evaluation.",
+  "gate_passed": true
+}

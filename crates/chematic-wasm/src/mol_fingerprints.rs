@@ -550,6 +550,217 @@ pub fn nearest_neighbors_json(query_smiles: &str, db_smiles_json: &str, k: usize
     format!("[{}]", entries.join(","))
 }
 
+/// Find the k nearest neighbours using the RDKit-compatible Morgan/ECFP4
+/// profile. This is intentionally separate from [`nearest_neighbors_json`],
+/// whose historical contract uses chematic's native ECFP4 profile.
+///
+/// Returns JSON with the original database indices and six-decimal Tanimoto
+/// scores. Any RDKit-profile preprocessing failure is returned as an error;
+/// this API never falls back to the native profile.
+#[wasm_bindgen]
+pub fn rdkit_nearest_neighbors_json(query_smiles: &str, db_smiles_json: &str, k: usize) -> String {
+    if let Err(e) = enforce_wasm_input_len("query_smiles", query_smiles) {
+        return format!(
+            "error:{}",
+            e.as_string()
+                .unwrap_or_else(|| "input too large".to_string())
+        );
+    }
+    let query = match chematic_smiles::parse(query_smiles) {
+        Ok(m) => m,
+        Err(e) => return format!("error:query parse failed: {e}"),
+    };
+    if let Err(e) = enforce_wasm_molecule_size(&query) {
+        return format!(
+            "error:{}",
+            e.as_string()
+                .unwrap_or_else(|| "molecule too large".to_string())
+        );
+    }
+    let smiles_list = match parse_smiles_json_array(db_smiles_json) {
+        Ok(values) => values,
+        Err(e) => {
+            return format!(
+                "error:{}",
+                e.as_string()
+                    .unwrap_or_else(|| "db_smiles_json parse failed".to_string())
+            );
+        }
+    };
+    let mut db = Vec::with_capacity(smiles_list.len());
+    for (idx, smiles) in smiles_list.iter().enumerate() {
+        let mol = match chematic_smiles::parse(smiles) {
+            Ok(mol) => mol,
+            Err(e) => return format!("error:db parse failed at index {idx}: {e}"),
+        };
+        if let Err(e) = enforce_wasm_molecule_size(&mol) {
+            return format!(
+                "error:db molecule at index {idx}: {}",
+                e.as_string()
+                    .unwrap_or_else(|| "molecule too large".to_string())
+            );
+        }
+        db.push(mol);
+    }
+
+    let results =
+        match chematic_fp::try_nearest_neighbors(&query, &db, k, chematic_fp::FpType::RdkitEcfp4) {
+            Ok(results) => results,
+            Err(error) => return format!("error:{error}"),
+        };
+    let entries: Vec<String> = results
+        .iter()
+        .map(|(idx, score)| {
+            // Truncate rather than round at the JSON boundary so Rust's
+            // f64 formatter and Python/JS number formatting share one
+            // deterministic six-decimal contract at exact half-way values.
+            let score = (score * 1_000_000.0).floor() / 1_000_000.0;
+            format!("{{\"index\":{idx},\"tanimoto\":{score:.6}}}")
+        })
+        .collect();
+    format!("[{}]", entries.join(","))
+}
+
+/// Reusable prepared index for the RDKit-compatible Morgan profile.
+///
+/// Build one index per input chunk (the WASM batch limit is 1,024 molecules),
+/// then call [`RdkitSearchIndex::search_json`] for multiple queries without
+/// reparsing or refingerprinting the database.
+#[wasm_bindgen]
+pub struct RdkitSearchIndex {
+    inner: chematic_fp::PreparedFingerprintIndex,
+}
+
+fn rdkit_search_index_json(
+    index: &chematic_fp::PreparedFingerprintIndex,
+    query_smiles: &str,
+    k: usize,
+    truncate_score: bool,
+) -> String {
+    let query = match chematic_smiles::parse(query_smiles) {
+        Ok(mol) => mol,
+        Err(e) => return format!("error:query parse failed: {e}"),
+    };
+    if let Err(e) = enforce_wasm_molecule_size(&query) {
+        return format!(
+            "error:{}",
+            e.as_string()
+                .unwrap_or_else(|| "molecule too large".to_string())
+        );
+    }
+    let results = match index.try_search(&query, k) {
+        Ok(results) => results,
+        Err(error) => return format!("error:{error}"),
+    };
+    if truncate_score {
+        let entries: Vec<String> = results
+            .into_iter()
+            .map(|(idx, score)| {
+                let score = (score * 1_000_000.0).floor() / 1_000_000.0;
+                format!("{{\"index\":{idx},\"tanimoto\":{score:.6}}}")
+            })
+            .collect();
+        return format!("[{}]", entries.join(","));
+    }
+
+    let entries: Vec<serde_json::Value> = results
+        .into_iter()
+        .map(|(idx, score)| serde_json::json!({"index": idx, "tanimoto": score}))
+        .collect();
+    serde_json::to_string(&entries).expect("search result values are JSON-safe")
+}
+
+fn rdkit_search_index_threshold_json(
+    index: &chematic_fp::PreparedFingerprintIndex,
+    query_smiles: &str,
+    threshold: f64,
+    k: usize,
+) -> String {
+    if !threshold.is_finite() || !(0.0..=1.0).contains(&threshold) {
+        return "error:threshold must be finite and between 0.0 and 1.0".to_string();
+    }
+    let query = match chematic_smiles::parse(query_smiles) {
+        Ok(mol) => mol,
+        Err(e) => return format!("error:query parse failed: {e}"),
+    };
+    if let Err(e) = enforce_wasm_molecule_size(&query) {
+        return format!(
+            "error:{}",
+            e.as_string()
+                .unwrap_or_else(|| "molecule too large".to_string())
+        );
+    }
+    let results = match index.try_search_threshold(&query, threshold, k) {
+        Ok(results) => results,
+        Err(error) => return format!("error:{error}"),
+    };
+    let entries: Vec<serde_json::Value> = results
+        .into_iter()
+        .map(|(idx, score)| serde_json::json!({"index": idx, "tanimoto": score}))
+        .collect();
+    serde_json::to_string(&entries).expect("search result values are JSON-safe")
+}
+
+#[wasm_bindgen]
+impl RdkitSearchIndex {
+    /// Build an index from a JSON array of SMILES strings.
+    #[wasm_bindgen(constructor)]
+    pub fn new(db_smiles_json: &str) -> Result<RdkitSearchIndex, JsValue> {
+        let smiles_list = parse_smiles_json_array(db_smiles_json).map_err(|e| {
+            JsValue::from_str(
+                &e.as_string()
+                    .unwrap_or_else(|| "db_smiles_json parse failed".to_string()),
+            )
+        })?;
+        let mut db = Vec::with_capacity(smiles_list.len());
+        for (idx, smiles) in smiles_list.iter().enumerate() {
+            let mol = chematic_smiles::parse(smiles)
+                .map_err(|e| JsValue::from_str(&format!("db parse failed at index {idx}: {e}")))?;
+            enforce_wasm_molecule_size(&mol)?;
+            db.push(mol);
+        }
+        let inner =
+            chematic_fp::PreparedFingerprintIndex::try_new(&db, chematic_fp::FpType::RdkitEcfp4)
+                .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        Ok(Self { inner })
+    }
+
+    /// Search the prepared index with a query SMILES.
+    pub fn search_json(&self, query_smiles: &str, k: usize) -> String {
+        rdkit_search_index_json(&self.inner, query_smiles, k, true)
+    }
+
+    /// Search without the historical six-decimal JSON score truncation.
+    ///
+    /// This opt-in endpoint is for exact parity measurements. Callers that
+    /// need the stable historical wire format should continue using
+    /// RdkitSearchIndex::search_json.
+    pub fn search_json_precise(&self, query_smiles: &str, k: usize) -> String {
+        rdkit_search_index_json(&self.inner, query_smiles, k, false)
+    }
+
+    /// Search with an inclusive Tanimoto threshold and precise JSON scores.
+    /// A threshold of `0.0` includes zero-score candidates.
+    pub fn search_json_threshold_precise(
+        &self,
+        query_smiles: &str,
+        threshold: f64,
+        k: usize,
+    ) -> String {
+        rdkit_search_index_threshold_json(&self.inner, query_smiles, threshold, k)
+    }
+
+    /// Number of molecules in this chunk.
+    pub fn len(&self) -> usize {
+        self.inner.len()
+    }
+
+    /// Whether the prepared index contains no molecules.
+    pub fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+}
+
 /// Virtual screen a query SMILES against a database of SMILES using ECFP4 Tanimoto.
 ///
 /// `db_smiles_json`: JSON array of SMILES strings (max 1024 via WASM_MAX_BATCH_ITEMS).

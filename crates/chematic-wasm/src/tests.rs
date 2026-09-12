@@ -17,6 +17,21 @@ fn parse_benzene_atom_count() {
 }
 
 #[test]
+fn rdkit_search_precise_json_preserves_fractional_score() {
+    let index = RdkitSearchIndex::new(r#"["CCO","CCN"]"#).expect("search index");
+    assert_eq!(index.len(), 2);
+    assert!(!index.is_empty());
+    let precise: serde_json::Value =
+        serde_json::from_str(&index.search_json_precise("CCO", 2)).expect("precise JSON");
+    let historical: serde_json::Value =
+        serde_json::from_str(&index.search_json("CCO", 2)).expect("historical JSON");
+    assert_eq!(precise[0]["index"], 0);
+    assert_eq!(precise[1]["index"], 1);
+    assert_ne!(precise[1]["tanimoto"], historical[1]["tanimoto"]);
+    assert_eq!(historical[1]["tanimoto"], 0.333333);
+}
+
+#[test]
 fn common_format_conversion_uses_shared_aliases_and_preserves_graph() {
     let mol2 = convert_common_format("CCO", "smiles", "mol2").unwrap();
     assert!(mol2.contains("@<TRIPOS>MOLECULE"));
@@ -2343,6 +2358,26 @@ fn get_descriptors_json_keys() {
 }
 
 #[test]
+fn get_rdkit_descriptors_json_keeps_compatibility_profile_separate() {
+    let mol = parse("c1ccccc1");
+    let value: serde_json::Value =
+        serde_json::from_str(&get_rdkit_descriptors_json(&mol)).expect("valid JSON");
+    for key in [
+        "molecular_weight",
+        "hba",
+        "hbd",
+        "tpsa",
+        "logp",
+        "molar_refractivity",
+        "fsp3",
+        "aromatic_ring_count",
+    ] {
+        assert!(value.get(key).is_some(), "missing {key}: {value}");
+    }
+    assert_eq!(value["aromatic_ring_count"], 1);
+}
+
+#[test]
 fn slogp_vsa_json_length_12() {
     let h = parse("c1ccccc1");
     let json = slogp_vsa_json(&h);
@@ -2669,9 +2704,9 @@ fn test_mmff94_energy_breakdown_from_coords_json_matches_python_oracle_all_angle
             stretch_bend: -0.007350084252858442,
             torsion: 0.43499994978247686,
             oop: 0.0,
-            vdw: 14.519561102945316,
+            vdw: 4.86559715216583,
             electrostatic: 0.0,
-            total: 15.837948760022233,
+            total: 6.183984809242747,
         },
         EnergyOracle {
             dihedral_deg: 60.0,
@@ -2680,9 +2715,9 @@ fn test_mmff94_energy_breakdown_from_coords_json_matches_python_oracle_all_angle
             stretch_bend: -0.006857208726671617,
             torsion: 0.5878467445463341,
             oop: 0.0,
-            vdw: 1.9693600350541345,
+            vdw: 1.0696678488886122,
             electrostatic: 0.0,
-            total: 3.4456094915632987,
+            total: 2.5459173053977766,
         },
         EnergyOracle {
             dihedral_deg: 120.0,
@@ -2691,9 +2726,9 @@ fn test_mmff94_energy_breakdown_from_coords_json_matches_python_oracle_all_angle
             stretch_bend: -0.0076120012966454376,
             torsion: 0.8684749102195811,
             oop: 0.0,
-            vdw: -0.022709051177030738,
+            vdw: -0.03318537256496447,
             electrostatic: 0.0,
-            total: 1.7168476741303118,
+            total: 1.706371352742378,
         },
         EnergyOracle {
             dihedral_deg: 180.0,
@@ -2702,9 +2737,9 @@ fn test_mmff94_energy_breakdown_from_coords_json_matches_python_oracle_all_angle
             stretch_bend: -0.008439350718638324,
             torsion: 0.0,
             oop: 0.0,
-            vdw: -0.0670059041190226,
+            vdw: -0.06743117218961744,
             electrostatic: 0.0,
-            total: 0.8221277726934657,
+            total: 0.8217025046228709,
         },
         EnergyOracle {
             dihedral_deg: 240.0,
@@ -2713,9 +2748,9 @@ fn test_mmff94_energy_breakdown_from_coords_json_matches_python_oracle_all_angle
             stretch_bend: -0.009325393516517342,
             torsion: 0.8683134139870532,
             oop: 0.0,
-            vdw: -0.02299635476312685,
+            vdw: -0.03340525116801534,
             electrostatic: 0.0,
-            total: 1.7430544093191502,
+            total: 1.7326455129142615,
         },
         EnergyOracle {
             dihedral_deg: 300.0,
@@ -2724,9 +2759,9 @@ fn test_mmff94_energy_breakdown_from_coords_json_matches_python_oracle_all_angle
             stretch_bend: -0.008219837248585977,
             torsion: 0.5884635963691149,
             oop: 0.0,
-            vdw: 1.9670921081294108,
+            vdw: 1.068637661894278,
             electrostatic: 0.0,
-            total: 3.4533695780849367,
+            total: 2.554915131849804,
         },
     ];
 

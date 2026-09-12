@@ -11,13 +11,7 @@ for (const [index, raw] of input.split(/\r?\n/).entries()) {
       index,
       smiles,
       status: "ok",
-      descriptors: {
-        mw: mol.molecular_weight(),
-        tpsa: mol.tpsa(),
-        hbd: mol.hbd_count(),
-        hba: mol.hba_count(),
-        heavy_atoms: mol.heavy_atom_count(),
-      },
+      descriptors: JSON.parse(wasm.get_rdkit_descriptors_json(mol)),
     }));
     mol.free();
   } catch (error) {

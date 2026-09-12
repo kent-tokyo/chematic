@@ -60,7 +60,7 @@ use chematic_core::{AtomIdx, BondIdx, Molecule};
 use chematic_perception::{
     RingSet, SymmetrizedSssrStatus, find_smallest_rings_bfs,
     find_smallest_rings_bfs_with_blocked_bonds, find_smallest_rings_bfs_with_rdkit_tree, find_sssr,
-    find_symmetrized_sssr_with_diagnostics, select_rdkit_d2_roots, trim_ring_bonds,
+    find_symmetrized_sssr_with_diagnostics_bounded, select_rdkit_d2_roots, trim_ring_bonds,
 };
 
 /// Typed error for chematic-smarts's opt-in RDKit-parity matching mode.
@@ -407,16 +407,10 @@ pub fn build_shared_symmetrized_ring_model(
     sssr: &RingSet,
     budget: &RdkitRingModelBudget,
 ) -> Result<RdkitParityRingModel, RdkitParityError> {
-    if budget.max_candidates == 0 {
-        return Err(RdkitParityError::RingModelBudgetExceeded {
-            candidates_examined: 1,
-            cap: budget.max_candidates,
-        });
-    }
-    let result = find_symmetrized_sssr_with_diagnostics(mol);
+    let result = find_symmetrized_sssr_with_diagnostics_bounded(mol, Some(budget.max_candidates));
     if result.status() == SymmetrizedSssrStatus::CapExhausted {
         return Err(RdkitParityError::RingModelBudgetExceeded {
-            candidates_examined: budget.max_candidates.saturating_add(1),
+            candidates_examined: result.candidates_examined(),
             cap: budget.max_candidates,
         });
     }

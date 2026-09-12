@@ -20,7 +20,7 @@
   "axis1_summary": {
     "n_molecules_tested": 28,
     "n_skipped_rdkit_parse_failed": 0,
-    "n_divergent": 3,
+    "n_divergent": 0,
     "n_cross_correspondence_failures_total": 0
   },
   "relabelings_per_molecule": 64,
@@ -68,10 +68,10 @@
   },
   "verdict": {
     "n_coupled_components_measured": 28,
-    "n_confirmed_divergent_by_axis1": 3,
+    "n_confirmed_divergent_by_axis1": 0,
     "mechanism_count": "one",
     "mechanism_note": "All measured coupled components have BOTH ends independently, genuinely RDKit-Specified (real stereocenters) -- the SAME shape as the 5 known-fine EZ_SHARED_CARRIER_FULLY_RESOLVED hydrazone-imine fixtures and the never-corrupts fixture (which itself converges, see calibration_check). A secondary, non-mechanism-changing structural split exists (ring/aromatic-stashed vs. acyclic/literal-marker representation), reported in bucket_summary.",
-    "verdict": "NEEDS-RESEARCH, confirmed residuals found",
-    "verdict_reasoning": "3/28 coupled components show canonical-output divergence under axis 1 (RDKit relabeling, K=64, 0 cross-correspondence failures). Axis 2 cannot test coupled pairs at all (structural limitation, not a gap in this audit). The previously-cited never-corrupts calibration example -- itself an instance of this exact shape -- still converges. The sampled residuals must remain open and are not treated as proof of a general mechanism: relabeling is finite, and RDKit's relabel-and-reserialize process does not guarantee every alternate carrier spelling. The next implementation step is to add these reproducible residuals as held-out regression fixtures before changing production ranking."
+    "verdict": "PASS, no sampled residuals",
+    "verdict_reasoning": "0/28 coupled components show canonical-output divergence under axis 1 (RDKit relabeling, K=64, 0 cross-correspondence failures). Axis 2 cannot test coupled pairs at all (structural limitation, not a gap in this audit). The previously-cited never-corrupts calibration example -- itself an instance of this exact shape -- still converges. No sampled residuals were found under the configured relabeling gate. This is a bounded invariance result, not a proof for every possible carrier spelling; keep the fail-closed stable-key boundary until the independent holdout is expanded."
   }
 }

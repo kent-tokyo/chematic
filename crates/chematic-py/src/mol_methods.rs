@@ -613,10 +613,19 @@ impl Mol {
         })
     }
 
-    /// Number of assigned stereocenters (R/S).
+    /// Number of potential tetrahedral stereocenters (specified or unspecified).
     #[getter]
     fn num_stereocenters(&self) -> usize {
         chematic_chem::num_stereocenters(&self.inner)
+    }
+
+    /// Atom indices of potential tetrahedral stereocenters.
+    #[getter]
+    fn potential_stereocenter_indices(&self) -> Vec<usize> {
+        chematic_chem::potential_stereocenter_indices(&self.inner)
+            .into_iter()
+            .map(|idx| idx.0 as usize)
+            .collect()
     }
 
     // -----------------------------------------------------------------------
@@ -2673,6 +2682,15 @@ impl Mol {
             .collect()
     }
 
+    /// Symmetrized SSSR rings as atom-index lists for parity diagnostics.
+    fn symmetrized_sssr_atom_rings(&self) -> Vec<Vec<usize>> {
+        chematic_perception::find_symmetrized_sssr(&self.inner)
+            .rings()
+            .iter()
+            .map(|r| r.iter().map(|idx| idx.0 as usize).collect())
+            .collect()
+    }
+
     /// Isotopic distribution — list of ``(mass, relative_intensity)`` pairs.
     ///
     /// The highest-intensity peak is normalised to 1.0.
@@ -4001,6 +4019,43 @@ impl Mol {
     ///     charges = mol.mmff94_charges_typed()
     fn mmff94_charges_typed(&self) -> Vec<f64> {
         chematic_chem::mmff94_charges_typed(&self.inner)
+    }
+
+    /// MMFF94 partial charges from the numeric PBCI+CHG implementation used
+    /// internally by the force-field energy model.
+    ///
+    /// This is intentionally separate from ``mmff94_charges_typed``: the
+    /// latter is the public atom-typed BCI descriptor, while this method
+    /// exposes the force-field's RDKit-parity path for diagnostics.
+    fn mmff94_charges_numeric(&self) -> PyResult<Vec<f64>> {
+        chematic_ff::mmff94_charges_numeric(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// Return the numeric MMFF94 atom type id used by the force-field model.
+    ///
+    /// This is a parity diagnostic corresponding to RDKit's
+    /// ``GetMMFFAtomType``. It intentionally exposes numeric ids separately
+    /// from :meth:`mmff94_atom_types`, whose strings belong to the older
+    /// semantic typing API.
+    fn mmff94_numeric_atom_types(&self) -> PyResult<Vec<u8>> {
+        chematic_ff::assign_mmff94_numeric_types(&self.inner)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// Return the per-atom aromatic flags used by the MMFF94-specific view.
+    ///
+    /// This diagnostic makes representation-dependent aromaticity decisions
+    /// auditable without conflating them with chematic's general aromaticity.
+    fn mmff94_numeric_aromatic_flags(&self) -> PyResult<Vec<bool>> {
+        let rings = chematic_perception::find_symmetrized_sssr(&self.inner)
+            .rings()
+            .to_vec();
+        let view = chematic_ff::compute_mmff94_aromatic_view(&self.inner, &rings)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok((0..view.atom_count())
+            .map(|i| view.atom(chematic_core::AtomIdx(i as u32)).aromatic)
+            .collect())
     }
 
     /// Morgan canonical ranks for each heavy atom.

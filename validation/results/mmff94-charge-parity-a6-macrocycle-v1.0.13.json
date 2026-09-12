@@ -1,0 +1,31 @@
+{
+  "issue": 227,
+  "target_version": "1.0.13",
+  "measured_at": "2026-09-13",
+  "corpus_total": 265,
+  "corpus": "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_{a,b}.json",
+  "atom_rows": 6698,
+  "before": {
+    "exact_atoms": 6626,
+    "mismatched_atoms": 67,
+    "comparable_atoms": 6693,
+    "comparable_exact_rate": 0.9899895413088316,
+    "note": "Earlier published charge comparison over the 6,693 typed rows."
+  },
+  "after": {
+    "exact_atoms": 6665,
+    "mismatched_atoms": 33,
+    "comparable_atoms": 6693,
+    "comparable_mismatched_atoms": 28,
+    "comparable_exact_rate": 0.9958147325564004,
+    "molecules_with_any_mismatch": 4,
+    "comparable_residual_molecules": [
+      "chembl_tier_b_0009",
+      "chembl_tier_b_0029",
+      "chembl_tier_b_0030"
+    ],
+    "declared_unsupported": ["force_field_unsupported_probe"]
+  },
+  "method": "Current source-built schematic MMFF94 BCI charges joined by molecule and atom index against the pinned RDKit charge oracle.",
+  "status": "candidate_improvement_not_adopted_release"
+}

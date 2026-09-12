@@ -15,11 +15,13 @@ Two case families over a molecule corpus:
 Usage:
     python scripts/rdkit_compat_diff.py [SMILES.csv] [--limit N]
 
-Writes validation/results/rdkit_compat_diff.jsonl (one row per divergence).
+Writes validation/results/rdkit_compat_diff.jsonl (one row per divergence), or
+the path supplied with ``--output``.
 """
 import json
 import os
 import sys
+import tempfile
 
 from chematic import rdkit_compat as Chem
 
@@ -52,6 +54,9 @@ def main():
     limit = None
     if "--limit" in sys.argv:
         limit = int(sys.argv[sys.argv.index("--limit") + 1])
+    out_path = OUT
+    if "--output" in sys.argv:
+        out_path = os.path.abspath(sys.argv[sys.argv.index("--output") + 1])
 
     smis = [l.strip() for l in open(path) if l.strip()]
     if limit:
@@ -118,9 +123,17 @@ def main():
                          "chematic": cm_arom_bonds, "rdkit": rd_arom_bonds})
 
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    with open(OUT, "w") as f:
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    # Preserve the previous result if the process is interrupted while
+    # serializing. An empty divergence file can be a valid result, but a
+    # partially written file must never masquerade as a completed run.
+    with tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", dir=os.path.dirname(out_path), prefix=f".{os.path.basename(out_path)}.", delete=False
+    ) as f:
         for r in rows:
             f.write(json.dumps(r) + "\n")
+        temporary_path = f.name
+    os.replace(temporary_path, out_path)
 
     smarts_total = smarts_ok + smarts_mismatch + smarts_unsupported
     print(f"corpus (parsed by both):  {n_mol}")
@@ -133,7 +146,7 @@ def main():
           f"({100 * arom_atom_ok / max(n_mol, 1):.2f}%)  bad={arom_atom_bad}")
     print(f"aromatic-bond-count agreement: {arom_bond_ok}/{n_mol} "
           f"({100 * arom_bond_ok / max(n_mol, 1):.2f}%)  bad={arom_bond_bad}")
-    print(f"\nwrote {len(rows)} divergence rows to {os.path.relpath(OUT, ROOT)}")
+    print(f"\nwrote {len(rows)} divergence rows to {os.path.relpath(out_path, ROOT)}")
 
 
 if __name__ == "__main__":

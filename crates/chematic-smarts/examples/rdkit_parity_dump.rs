@@ -131,9 +131,17 @@ fn match_set_json(
     sets
 }
 
-fn dump_one(id: &str, smiles: &str, stdout: &mut impl Write) {
+fn dump_one(id: &str, smiles: &str, stdout: &mut impl Write) -> bool {
     let Ok(mol) = chematic_smiles::parse(smiles) else {
-        return;
+        let row = json!({
+            "record_type": "molecule",
+            "id": id,
+            "smiles": smiles,
+            "parse_error": "chematic_smiles_parse_failed",
+            "patterns": {},
+        });
+        writeln!(stdout, "{row}").expect("stdout write failed");
+        return false;
     };
     let compiled: Vec<(&str, Option<_>)> = PATTERNS
         .iter()
@@ -185,20 +193,27 @@ fn dump_one(id: &str, smiles: &str, stdout: &mut impl Write) {
     }
 
     let row = json!({
+        "record_type": "molecule",
         "id": id,
         "smiles": smiles,
         "atom_elements": atom_elements(&mol),
         "patterns": per_pattern,
     });
     writeln!(stdout, "{row}").expect("stdout write failed");
+    true
 }
 
 fn main() {
     let stdout = std::io::stdout();
     let mut out = stdout.lock();
 
+    let mut emitted_rows = 0usize;
+    let mut parse_failures = 0usize;
     for (id, smi) in HAND_CORPUS {
-        dump_one(id, smi, &mut out);
+        emitted_rows += 1;
+        if !dump_one(id, smi, &mut out) {
+            parse_failures += 1;
+        }
     }
 
     let path = std::env::args()
@@ -210,11 +225,26 @@ fn main() {
             if smi.is_empty() {
                 continue;
             }
-            dump_one(&format!("corpus_{i}"), smi, &mut out);
+            emitted_rows += 1;
+            if !dump_one(&format!("corpus_{i}"), smi, &mut out) {
+                parse_failures += 1;
+            }
         }
     } else {
-        eprintln!("warning: could not read corpus file {path}; only HAND_CORPUS was dumped");
+        eprintln!("error: could not read corpus file {path}; refusing hand-corpus fallback");
+        std::process::exit(2);
     }
+
+    let footer = json!({
+        "record_type": "footer",
+        "completed": true,
+        "source_path": path,
+        "hand_corpus_rows": HAND_CORPUS.len(),
+        "input_rows": emitted_rows.saturating_sub(HAND_CORPUS.len()),
+        "emitted_molecule_rows": emitted_rows,
+        "parse_failures": parse_failures,
+    });
+    writeln!(out, "{footer}").expect("stdout write failed");
 }
 
 /// Minimal `~` expansion (no shellexpand dependency for one path).

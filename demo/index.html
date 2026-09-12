@@ -245,6 +245,41 @@ section h2::before {
 }
 .preset-label { color: var(--muted); font-size: .82rem; align-self: center; }
 
+/* ── Guided workflows ───────────────────────────────────────────────── */
+.quickstart {
+  margin-bottom: 2rem;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, var(--surface)), var(--surface));
+}
+.quickstart-intro { color: var(--muted); font-size: .88rem; margin: -.65rem 0 1rem; }
+.quickstart-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: .65rem;
+}
+.quickstart-card {
+  min-height: 94px;
+  text-align: left;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  padding: .8rem;
+  transition: border-color .15s, transform .15s, background .15s;
+}
+.quickstart-card:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 9%, var(--bg));
+  transform: translateY(-2px);
+}
+.quickstart-card strong { display: block; font-size: .84rem; margin-bottom: .25rem; }
+.quickstart-card small { color: var(--muted); display: block; font-size: .72rem; line-height: 1.4; }
+.quickstart-guide { margin-top: 1rem; color: var(--muted); font-size: .8rem; }
+.quickstart-guide summary { cursor: pointer; color: var(--accent); font-weight: 600; }
+.quickstart-guide ol { margin: .65rem 0 0 1.2rem; display: grid; gap: .25rem; }
+@media (max-width: 800px) { .quickstart-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 520px) { .quickstart-grid { grid-template-columns: repeat(2, 1fr); } }
+
 /* ── Formats & Materials tab ─────────────────────────────────────────── */
 .format-mode-btn.active {
   background: var(--accent);
@@ -739,6 +774,42 @@ footer {
 
 <main>
 
+  <!-- Guided workflow launcher: make the breadth of the Playground discoverable. -->
+  <section class="quickstart" id="quickstart">
+    <h2 id="h-quickstart-title"></h2>
+    <p class="quickstart-intro" id="quickstart-intro"></p>
+    <div class="quickstart-grid">
+      <button class="quickstart-card" data-workflow="molecule" type="button">
+        <strong id="quickstart-molecule-title"></strong>
+        <small id="quickstart-molecule-desc"></small>
+      </button>
+      <button class="quickstart-card" data-workflow="similarity" type="button">
+        <strong id="quickstart-similarity-title"></strong>
+        <small id="quickstart-similarity-desc"></small>
+      </button>
+      <button class="quickstart-card" data-workflow="report" type="button">
+        <strong id="quickstart-report-title"></strong>
+        <small id="quickstart-report-desc"></small>
+      </button>
+      <button class="quickstart-card" data-workflow="reaction" type="button">
+        <strong id="quickstart-reaction-title"></strong>
+        <small id="quickstart-reaction-desc"></small>
+      </button>
+      <button class="quickstart-card" data-workflow="formats" type="button">
+        <strong id="quickstart-formats-title"></strong>
+        <small id="quickstart-formats-desc"></small>
+      </button>
+    </div>
+    <details class="quickstart-guide">
+      <summary id="quickstart-guide-summary"></summary>
+      <ol>
+        <li id="quickstart-guide-step1"></li>
+        <li id="quickstart-guide-step2"></li>
+        <li id="quickstart-guide-step3"></li>
+      </ol>
+    </details>
+  </section>
+
   <!-- Tab: 2D Viewer + Properties -->
   <div class="tab-panel active" id="tab-2d" role="tabpanel">
 
@@ -765,10 +836,12 @@ footer {
           <button class="btn-svg-ctrl" id="toggle-indices" title="Toggle atom indices">0..n</button>
           <button class="btn-svg-ctrl" id="btn-download-mol" title="Download MOL block">MOL↓</button>
           <button class="btn-svg-ctrl" id="btn-charge-map" title="MMFF94 partial charge color map" style="font-size:.75rem">±q</button>
+          <button class="btn-svg-ctrl" id="btn-share-molecule" title="Copy shareable molecule link">↗</button>
         </div>
         <button class="svg-zoom-reset" id="svg-zoom-reset" title="Reset zoom">1:1</button>
         <span class="svg-placeholder" id="svg-placeholder"></span>
       </div>
+      <p id="share-molecule-status" style="font-size:.75rem;color:var(--pass);min-height:1.2em;margin:-.45rem 0 .5rem"></p>
       <!-- Atom info bar -->
       <div id="atom-info-bar" class="atom-info-bar">
         <span id="atom-info-hint" style="color:var(--muted);font-size:.8rem"></span>
@@ -916,6 +989,10 @@ footer {
       <div id="error-report" class="error-banner hidden"></div>
       <div id="report-output" style="display:none;margin-top:1.5rem">
         <h3 id="report-canonical"></h3>
+        <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem">
+          <button id="btn-report-json" class="btn-outline" type="button"></button>
+          <span id="report-json-status" style="font-size:.75rem;color:var(--pass);min-height:1.2em"></span>
+        </div>
         <h4 style="margin-top:1rem;color:var(--muted)">Descriptors</h4>
         <div class="table-wrap">
           <table id="report-desc-table">
@@ -1313,6 +1390,23 @@ const T = {
   en: {
     'app.tagline':      'Pure-Rust Cheminformatics in Your Browser',
     'app.loading':      'Loading WASM…',
+    'quickstart.title': 'What do you want to try?',
+    'quickstart.intro': 'Start with a guided example — every calculation runs locally in your browser.',
+    'quickstart.molecule.title': 'Explore a molecule',
+    'quickstart.molecule.desc': 'Structure, descriptors, alerts, and functional groups',
+    'quickstart.similarity.title': 'Compare molecules',
+    'quickstart.similarity.desc': 'See how different fingerprint methods agree',
+    'quickstart.report.title': 'Generate a report',
+    'quickstart.report.desc': 'Create a compact, shareable property summary',
+    'quickstart.reaction.title': 'Try a reaction',
+    'quickstart.reaction.desc': 'Apply a SMIRKS template to example reactants',
+    'quickstart.formats.title': 'Inspect a file format',
+    'quickstart.formats.desc': 'Parse materials-science data without a server',
+    'quickstart.guide': 'New to cheminformatics? A 30-second tour',
+    'quickstart.step1': 'Pick a molecule or paste a SMILES string.',
+    'quickstart.step2': 'Read the structure, descriptors, and safety-rule results.',
+    'quickstart.step3': 'Move to similarity, reactions, or formats when you are ready.',
+    'share.copied': 'Share link copied',
     'desc.title':       'Descriptor Calculator',
     'desc.placeholder': 'Enter SMILES…',
     'desc.calculate':   'Calculate',
@@ -1371,6 +1465,8 @@ const T = {
     'report.title':     'Generate Comprehensive Molecular Report',
     'report.placeholder':'Enter SMILES for full report (descriptors, filters, etc.)',
     'report.button':    'Generate Report',
+    'report.copy_json': 'Copy JSON',
+    'report.copied':    'Report JSON copied',
     'sim.ecfp4':        'ECFP4',
     'sim.ecfp4_d':      'Circular FP, radius 2',
     'sim.fcfp4':        'FCFP4',
@@ -1551,6 +1647,23 @@ const T = {
   ja: {
     'app.tagline':      'ブラウザで動く純Rust化学情報処理ライブラリ',
     'app.loading':      'WASM を読み込み中…',
+    'quickstart.title': '何を試しますか？',
+    'quickstart.intro': '目的別の例から始められます。計算はすべてブラウザ内で完結します。',
+    'quickstart.molecule.title': '分子を調べる',
+    'quickstart.molecule.desc': '構造、記述子、アラート、官能基を確認',
+    'quickstart.similarity.title': '分子を比較する',
+    'quickstart.similarity.desc': '複数のフィンガープリント法を比較',
+    'quickstart.report.title': 'レポートを作る',
+    'quickstart.report.desc': '物性値の概要レポートを生成',
+    'quickstart.reaction.title': '反応を試す',
+    'quickstart.reaction.desc': 'SMIRKS を例の反応物に適用',
+    'quickstart.formats.title': 'ファイルを解析する',
+    'quickstart.formats.desc': '材料科学データをサーバーなしで解析',
+    'quickstart.guide': '初めての方へ：30秒で使い方を見る',
+    'quickstart.step1': '分子を選ぶか、SMILES を貼り付けます。',
+    'quickstart.step2': '構造、記述子、薬らしさルールの結果を確認します。',
+    'quickstart.step3': '慣れたら類似度、反応、ファイル解析へ進みます。',
+    'share.copied': '共有リンクをコピーしました',
     'desc.title':       '記述子計算機',
     'desc.placeholder': 'SMILES を入力…',
     'desc.calculate':   '計算',
@@ -1664,6 +1777,8 @@ const T = {
     'report.title':     '包括的な分子レポートを生成',
     'report.placeholder':'SMILES を入力して完全なレポートを生成（記述子、フィルタなど）',
     'report.button':    'レポート生成',
+    'report.copy_json': 'JSONをコピー',
+    'report.copied':    'レポートJSONをコピーしました',
     'tab.rxn':          '反応',
     'tab.sar':          'SAR 解析',
     'tab.3d':           '3D ビューア',
@@ -1789,6 +1904,23 @@ const T = {
   zh: {
     'app.tagline':      '纯Rust化学信息学库，运行于浏览器',
     'app.loading':      '正在加载 WASM…',
+    'quickstart.title': '想试试什么？',
+    'quickstart.intro': '从引导示例开始，所有计算都在浏览器本地完成。',
+    'quickstart.molecule.title': '探索分子',
+    'quickstart.molecule.desc': '查看结构、描述符、警报和官能团',
+    'quickstart.similarity.title': '比较分子',
+    'quickstart.similarity.desc': '比较不同指纹方法的结果',
+    'quickstart.report.title': '生成报告',
+    'quickstart.report.desc': '生成简洁的性质摘要',
+    'quickstart.reaction.title': '尝试反应',
+    'quickstart.reaction.desc': '将 SMIRKS 模板应用到示例反应物',
+    'quickstart.formats.title': '解析文件格式',
+    'quickstart.formats.desc': '无需服务器解析材料科学数据',
+    'quickstart.guide': '第一次使用？30秒快速入门',
+    'quickstart.step1': '选择一个分子或粘贴 SMILES 字符串。',
+    'quickstart.step2': '查看结构、描述符和类药性规则结果。',
+    'quickstart.step3': '准备好后继续体验相似度、反应或文件解析。',
+    'share.copied': '已复制分享链接',
     'desc.title':       '描述符计算器',
     'desc.placeholder': '输入 SMILES…',
     'desc.calculate':   '计算',
@@ -1902,6 +2034,8 @@ const T = {
     'report.title':     '生成综合分子报告',
     'report.placeholder':'输入 SMILES 以生成完整报告（描述符、过滤器等）',
     'report.button':    '生成报告',
+    'report.copy_json': '复制 JSON',
+    'report.copied':    '已复制报告 JSON',
     'tab.rxn':          '反应',
     'tab.sar':          'SAR 分析',
     'tab.3d':           '3D 查看器',
@@ -2031,6 +2165,22 @@ function t(key) { return (T[lang] && T[lang][key]) || T.en[key] || key; }
 
 const STATIC_IDS = {
   'tagline':            'app.tagline',
+  'h-quickstart-title': 'quickstart.title',
+  'quickstart-intro':   'quickstart.intro',
+  'quickstart-molecule-title': 'quickstart.molecule.title',
+  'quickstart-molecule-desc':  'quickstart.molecule.desc',
+  'quickstart-similarity-title': 'quickstart.similarity.title',
+  'quickstart-similarity-desc':  'quickstart.similarity.desc',
+  'quickstart-report-title': 'quickstart.report.title',
+  'quickstart-report-desc':  'quickstart.report.desc',
+  'quickstart-reaction-title': 'quickstart.reaction.title',
+  'quickstart-reaction-desc':  'quickstart.reaction.desc',
+  'quickstart-formats-title': 'quickstart.formats.title',
+  'quickstart-formats-desc':  'quickstart.formats.desc',
+  'quickstart-guide-summary': 'quickstart.guide',
+  'quickstart-guide-step1': 'quickstart.step1',
+  'quickstart-guide-step2': 'quickstart.step2',
+  'quickstart-guide-step3': 'quickstart.step3',
   'h-desc-title':       'desc.title',
   'btn-calc':           'desc.calculate',
   'presets-label':      'desc.presets',
@@ -2085,6 +2235,7 @@ const STATIC_IDS = {
   'tb-gallery':         'tab.gallery',
   'tb-formats':         'tab.formats',
   'tb-dynamics':        'tab.dynamics',
+  'btn-report-json':    'report.copy_json',
   'tc-structure':       'cat.structure',
   'tc-analysis':        'cat.analysis',
   'tc-reactions':       'cat.reactions',
@@ -2270,6 +2421,69 @@ function setCategory(catId) {
   if (firstBtn) switchTab(firstBtn.dataset.tab);
 }
 
+// A small set of task-oriented entry points makes the Playground useful to
+// people who do not yet know which chemistry API they need.
+function launchWorkflow(workflow) {
+  const aspirin = 'CC(=O)Oc1ccccc1C(=O)O';
+  const caffeine = 'Cn1cnc2c1c(=O)n(C)c(=O)n2C';
+  switch (workflow) {
+    case 'molecule':
+      setCategory('cat-structure');
+      document.getElementById('smiles-input').value = aspirin;
+      calculate();
+      break;
+    case 'similarity':
+      setCategory('cat-analysis');
+      switchTab('tab-sim');
+      document.getElementById('sim-a').value = aspirin;
+      document.getElementById('sim-b').value = caffeine;
+      compare();
+      break;
+    case 'report':
+      setCategory('cat-analysis');
+      switchTab('tab-report');
+      document.getElementById('report-smiles').value = aspirin;
+      document.getElementById('btn-report').click();
+      break;
+    case 'reaction':
+      setCategory('cat-reactions');
+      switchTab('tab-rxn');
+      document.getElementById('rxn-esterify')?.click();
+      break;
+    case 'formats':
+      setCategory('cat-data');
+      switchTab('tab-formats');
+      document.getElementById('btn-formats-example')?.click();
+      break;
+  }
+}
+
+function shareCurrentMolecule() {
+  const smiles = document.getElementById('smiles-input').value.trim();
+  if (!smiles) return;
+  const url = `${location.origin}${location.pathname}#smiles=${encodeURIComponent(smiles)}`;
+  history.replaceState(null, '', url);
+  const status = document.getElementById('share-molecule-status');
+  const done = () => {
+    status.textContent = t('share.copied');
+    setTimeout(() => { status.textContent = ''; }, 2200);
+  };
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(url).then(done).catch(() => { status.textContent = url; });
+  } else {
+    status.textContent = url;
+  }
+}
+
+function sharedMoleculeFromUrl() {
+  const prefix = '#smiles=';
+  if (!location.hash.startsWith(prefix)) return null;
+  try {
+    const smiles = decodeURIComponent(location.hash.slice(prefix.length));
+    return smiles.length > 0 && smiles.length <= 20000 ? smiles : null;
+  } catch (_) { return null; }
+}
+
 // ============================================================
 // State
 // ============================================================
@@ -2291,6 +2505,7 @@ let molFromOrcaInput, orcaInputToJson, orcaOutputToJson;
 let lammpsDataToJson, lammpsTrajectoryToJson;
 let lastMol = null;
 let lastSimResults = null;
+let lastReportJson = null;
 let highlightedAtoms = [];
 let highlightColor = '#4f8ef7';
 let showIndices = false;
@@ -3893,45 +4108,10 @@ function initFormatsTab() {
   await initWasm();
   document.getElementById('loading-overlay').classList.add('hidden');
 
-  // Auto-load aspirin on startup
-  document.getElementById('smiles-input').value = 'CC(=O)Oc1ccccc1C(=O)O';
+  // Auto-load the shared molecule when present; otherwise show a useful first
+  // example without making the user understand SMILES before seeing a result.
+  document.getElementById('smiles-input').value = sharedMoleculeFromUrl() || 'CC(=O)Oc1ccccc1C(=O)O';
   calculate();
-
-  // Report tab: molecule_report_json workflow API
-  document.getElementById('btn-report').addEventListener('click', async () => {
-    clearError('error-report');
-    const smiles = document.getElementById('report-smiles').value.trim();
-    if (!smiles) { showError('error-report', t('error.empty')); return; }
-    if (!wasmReady) { showError('error-report', t('error.wasm')); return; }
-
-    try {
-      if (typeof window.chemWasm.molecule_report_json !== 'function') {
-        showError('error-report', 'molecule_report_json not available in WASM bindings');
-        return;
-      }
-
-      const reportJson = window.chemWasm.molecule_report_json(smiles);
-      const report = JSON.parse(reportJson);
-
-      // Display canonical SMILES
-      const canonicalEl = document.getElementById('report-canonical');
-      canonicalEl.textContent = 'Canonical SMILES: ' + report.canonical_smiles;
-      canonicalEl.style.fontSize = '.95rem';
-      canonicalEl.style.fontWeight = '600';
-      canonicalEl.style.marginBottom = '1rem';
-
-      // Populate descriptors table
-      populateReportDescriptors(report);
-
-      // Populate drug-likeness filters grid
-      populateReportFilters(report);
-
-      // Show the output
-      document.getElementById('report-output').style.display = 'block';
-    } catch (e) {
-      showError('error-report', 'Report generation failed: ' + String(e));
-    }
-  });
 
   // Batch Report: generate downloadable HTML from multiple SMILES
   document.getElementById('btn-batch-report').addEventListener('click', () => {
@@ -4101,6 +4281,12 @@ function initFormatsTab() {
 
   // MOL download
   document.getElementById('btn-download-mol').addEventListener('click', downloadMol);
+  document.getElementById('btn-share-molecule').addEventListener('click', shareCurrentMolecule);
+
+  // Guided workflow cards
+  document.querySelectorAll('.quickstart-card').forEach(btn => {
+    btn.addEventListener('click', () => launchWorkflow(btn.dataset.workflow));
+  });
 
   // Atom index toggle
   document.getElementById('toggle-indices').addEventListener('click', () => {
@@ -4544,6 +4730,7 @@ function initFormatsTab() {
     try {
       const json = window.chemWasm.molecule_report_json(smiles);
       const report = JSON.parse(json);
+      lastReportJson = json;
 
       document.getElementById('report-canonical').textContent = `Canonical: ${report.canonical_smiles}`;
       populateReportDescriptors(report.descriptors);
@@ -4552,6 +4739,21 @@ function initFormatsTab() {
       document.getElementById('error-report').classList.add('hidden');
     } catch (e) {
       showError('error-report', `Error: ${e.message}`);
+    }
+  });
+
+  document.getElementById('btn-report-json').addEventListener('click', () => {
+    if (!lastReportJson) return;
+    const status = document.getElementById('report-json-status');
+    const copied = () => {
+      status.textContent = t('report.copied');
+      setTimeout(() => { status.textContent = ''; }, 2200);
+    };
+    const writePromise = navigator.clipboard?.writeText(JSON.stringify(JSON.parse(lastReportJson), null, 2));
+    if (writePromise) {
+      writePromise.then(copied).catch(() => { status.textContent = lastReportJson; });
+    } else {
+      status.textContent = lastReportJson;
     }
   });
 

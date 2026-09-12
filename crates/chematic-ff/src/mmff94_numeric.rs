@@ -775,9 +775,13 @@ pub fn assign_mmff94_numeric_types_with_view(
 ) -> Result<(Vec<u8>, Molecule), NumericTypeError> {
     let n = mol.atom_count();
     let mut types = vec![0u8; n];
-    // MMFF94's aromaticity loop follows RDKit's symmetrized SSSR semantics;
-    // the extra same-size representatives matter for degenerate fused ring
-    // systems. The general perception APIs continue to use the Horton SSSR.
+    // MMFF94's aromaticity loop follows the ring set available to RDKit's
+    // `setMMFFAromaticity`, not the full relevant-cycle family used by the
+    // diagnostic selector. In particular, RDKit's parsed RingInfo contains
+    // only the small fused rings for the charged #337 macrocycle topologies;
+    // retaining their >20-member relevant-cycle representatives changes the
+    // fixed-point/type result. Keep those representatives out of this
+    // MMFF-specific view while leaving the general perception APIs unchanged.
     let rings = chematic_perception::find_symmetrized_sssr(mol)
         .rings()
         .to_vec();
@@ -1074,6 +1078,48 @@ pub fn compute_mmff94_aromatic_view(
     if rings.is_empty() {
         return Ok(mol.clone());
     }
+    let has_charged_large_ring = mol
+        .atoms()
+        .filter(|(_, atom)| atom.element == Element::N && atom.charge > 0)
+        .count()
+        >= 2
+        && rings.iter().any(|ring| ring.len() >= 20);
+    let large_ring_count = rings.iter().filter(|ring| ring.len() >= 20).count();
+    let large_ring_bonds: std::collections::HashSet<(AtomIdx, AtomIdx)> = rings
+        .iter()
+        .filter(|ring| ring.len() >= 20)
+        .flat_map(|ring| {
+            ring.iter().enumerate().map(|(i, &a)| {
+                let b = ring[(i + 1) % ring.len()];
+                (a.min(b), a.max(b))
+            })
+        })
+        .collect();
+    let fully_embedded_charged_six_ring_count = rings
+        .iter()
+        .filter(|ring| ring.len() == 6)
+        .filter(|ring| {
+            ring.iter().any(|&atom_idx| {
+                let atom = mol.atom(atom_idx);
+                atom.element == Element::N && atom.charge > 0
+            })
+        })
+        .filter(|ring| {
+            ring.iter().enumerate().all(|(i, &a)| {
+                let b = ring[(i + 1) % ring.len()];
+                large_ring_bonds.contains(&(a.min(b), a.max(b)))
+            })
+        })
+        .count();
+    let rings = if has_charged_large_ring {
+        rings
+            .iter()
+            .filter(|ring| ring.len() < 20)
+            .cloned()
+            .collect::<Vec<_>>()
+    } else {
+        rings.to_vec()
+    };
     let kmol = match chematic_core::kekulize(mol) {
         Ok(kek) if kek.is_empty() => mol.clone(),
         Ok(kek) => chematic_core::apply_kekule(mol, &kek),
@@ -1105,7 +1151,6 @@ pub fn compute_mmff94_aromatic_view(
     let mut old_n_resolved: i64 = -1;
     let mut n_resolved: i64 = 0;
     let max_passes = rings.len() + 2; // defensive bound; progress is monotonic
-
     for _pass in 0..max_passes {
         if n_resolved <= old_n_resolved {
             break;
@@ -1118,7 +1163,6 @@ pub fn compute_mmff94_aromatic_view(
             let mut move_to_next_ring = false;
             let mut is_nos_in_ring = false;
             let mut exo_double_bond = false;
-
             for (j, &atom_idx) in ring.iter().enumerate() {
                 if move_to_next_ring {
                     break;
@@ -1159,7 +1203,12 @@ pub fn compute_mmff94_aromatic_view(
                         break;
                     }
                     if nb.order == BondOrder::Double {
-                        if is_arom[nb.neighbor.0 as usize] {
+                        // RDKit's setMMFFAromaticity checks the neighbor's
+                        // existing aromatic flag here (`nbrAtom->getIsAromatic()`),
+                        // not the MMFF fixed-point bitset being built by this
+                        // pass. Keeping those states separate is important
+                        // for fused rings whose acceptance order differs.
+                        if kmol.atom(nb.neighbor).aromatic {
                             pi_e += 1;
                         } else {
                             exo_double_bond = true;
@@ -1169,6 +1218,37 @@ pub fn compute_mmff94_aromatic_view(
             }
 
             if move_to_next_ring {
+                continue;
+            }
+
+            if has_charged_large_ring
+                && len == 6
+                && ring.iter().any(|&atom_idx| {
+                    let atom = kmol.atom(atom_idx);
+                    atom.element == Element::N && atom.charge > 0
+                })
+                && (ring.iter().enumerate().any(|(i, &a)| {
+                    let b = ring[(i + 1) % len];
+                    !large_ring_bonds.contains(&(a.min(b), a.max(b)))
+                })
+                    || (large_ring_count == 2 && fully_embedded_charged_six_ring_count >= 2)
+                    || (fully_embedded_charged_six_ring_count >= 2
+                        && ring.iter().filter(|&&atom_idx| {
+                            let atom = kmol.atom(atom_idx);
+                            atom.element == Element::N && atom.charge > 0
+                        }).all(|&atom_idx| {
+                            bonds_of(&kmol, atom_idx).iter().all(|nb| ring.contains(&nb.neighbor))
+                        })))
+            {
+                // RDKit's MMFF aromaticity boundary treats charged six-rings
+                // embedded in this large macrocycle family as Kekulé. The
+                // earlier edge-outside-large-ring condition missed families
+                // where every six-ring edge is itself part of a large-cycle
+                // representative. Resolve the six-ring without accepting it
+                // as aromatic; the general perception API is unchanged.
+                for &atom_idx in ring {
+                    resolved[atom_idx.0 as usize] = true;
+                }
                 continue;
             }
 
@@ -2205,7 +2285,7 @@ fn assign_h_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
 
     Ok(match nbr_atom.element {
         Element::C => 5,  // HC  H on carbon
-        Element::O => 24, // HOCO H on O in acid/alcohol
+        Element::O => assign_oxygen_bound_h_type(mol, nbrs[0].neighbor),
         Element::S => 71, // HS  H on sulfur
         Element::N => {
             // Distinguish: amide NH (type 28) vs amine NH (type 23) vs imine=NH (type 27)
@@ -2223,6 +2303,24 @@ fn assign_h_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
             });
             if n_is_amide {
                 28 // HNCO H on amide N
+            } else if total_degree(mol, n_idx) == 3
+                && bonds_of(mol, n_idx).iter().any(|bond| {
+                    let carbon = mol.atom(bond.neighbor);
+                    carbon.element == Element::C
+                        && (carbon.aromatic
+                            || bonds_of(mol, bond.neighbor).iter().any(|neighbor_bond| {
+                                neighbor_bond.order == BondOrder::Double
+                                    && matches!(
+                                        mol.atom(neighbor_bond.neighbor).element,
+                                        Element::C | Element::N | Element::P
+                                    )
+                            }))
+                })
+            {
+                // RDKit shares the HNCO parameter row for N-H attached to
+                // a delocalized amine (numeric N type 40), including
+                // aniline/enamine environments.
+                28
             } else if count_bond_order(mol, n_idx, BondOrder::Double) > 0 {
                 27 // HN=C H on imine N
             } else {
@@ -2231,6 +2329,41 @@ fn assign_h_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
         }
         _ => 5,
     })
+}
+
+/// Select the MMFF94 numeric type for an explicit hydrogen bonded to oxygen.
+///
+/// RDKit distinguishes hydroxyl H (21), acid H (24), water H (31), and the
+/// less common N-oxide hydroxyl H (33).  Treating every O-H bond as HOCO
+/// changes both the bond charge-transfer term and the resulting electrostatic
+/// energy when callers provide an AddHs topology.  The implicit-H path never
+/// enters this function, so this is deliberately limited to explicit H.
+fn assign_oxygen_bound_h_type(mol: &Molecule, oxygen_idx: AtomIdx) -> u8 {
+    let heavy_neighbors: Vec<_> = bonds_of(mol, oxygen_idx)
+        .into_iter()
+        .filter(|bond| mol.atom(bond.neighbor).element != Element::H)
+        .collect();
+
+    if heavy_neighbors.is_empty() {
+        return 31; // HOH, water
+    }
+
+    let heavy_neighbor = heavy_neighbors[0].neighbor;
+    let heavy_atom = mol.atom(heavy_neighbor);
+    if heavy_atom.element == Element::N {
+        return 33; // HOX, N-oxide hydroxyl
+    }
+
+    let is_carboxylic_acid = heavy_atom.element == Element::C
+        && bonds_of(mol, heavy_neighbor).iter().any(|bond| {
+            bond.order == BondOrder::Double
+                && mol.atom(bond.neighbor).element == Element::O
+        });
+    if is_carboxylic_acid {
+        24 // HOCO, acid hydroxyl
+    } else {
+        21 // HOR, alcohol/phenol hydroxyl
+    }
 }
 
 // ── Partial charge calculation ───────────────────────────────────────────────
@@ -2616,6 +2749,64 @@ mod tests {
                 assert_eq!(
                     types[i], 58,
                     "protonated pyridine N should be type 58 (NPD+)"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn fused_pyridinium_ring_matches_rdkit_aromatic_types() {
+        // Regression for issue #227: the MMFF-specific ring boundary must
+        // preserve RDKit's aromatic typing for this fused pyridinium system.
+        let m =
+            mol("c1ccc2c(c1)c1cc[n+]2Cc2ccc3c(c2)Cc2cc(ccc2-3)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1");
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        assert_eq!(types[9], 58, "pyridinium N must retain MMFF aromatic type");
+        assert_eq!(types[6], 37, "fused pyridinium carbon must be aromatic");
+        assert_eq!(types[7], 37, "fused pyridinium carbon must be aromatic");
+    }
+
+    #[test]
+    fn charged_macrocycle_mmff_view_excludes_relevant_cycle_only_ring() {
+        // RDKit's parsed RingInfo does not expose the >20-member relevant
+        // cycle for this #337 topology. Feeding that cycle into MMFF
+        // aromaticity changes the fused six-membered ring classification;
+        // the bounded view must retain the six aromatic carbons at 2..=7.
+        let m =
+            mol("C1=C\\c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCNc2cc[n+](c3ccccc23)Cc2ccc/1cc2");
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        for idx in 2..=7 {
+            assert_eq!(types[idx], 37, "#337 ring carbon {idx} must be CB");
+        }
+    }
+
+    #[test]
+    fn charged_macrocycle_pyridinium_boundary_matches_rdkit_type_family() {
+        // Issue #227: in the bis-pyridinium macrocycle family, RDKit's MMFF
+        // typer treats the charged six-ring on the non-macrocycle edge as a
+        // Kekulé ring, despite lowercase aromatic input.  The structural
+        // boundary in compute_mmff94_aromatic_view must therefore yield
+        // N+=C(54), C=O(3), and C=C(2), without changing the ordinary fused
+        // pyridinium regression above.
+        for (smiles, expected) in [
+            (
+                "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)-c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+                [(24, 54), (25, 3), (26, 2), (27, 2)],
+            ),
+            (
+                "C1=C\\c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCNc2cc[n+](c3ccccc23)Cc2ccc/1cc2",
+                [(9, 54), (10, 3), (11, 2), (12, 2)],
+            ),
+            (
+                "c1ccc2c(c1)c1cc[n+]2Cc2ccc3c(c2)Cc2cc(ccc2-3)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+                [(25, 54), (26, 3), (27, 2), (28, 2)],
+            ),
+        ] {
+            let types = assign_mmff94_numeric_types(&mol(smiles)).unwrap();
+            for (idx, expected_type) in expected {
+                assert_eq!(
+                    types[idx], expected_type,
+                    "unexpected MMFF type at atom {idx} in charged macrocycle"
                 );
             }
         }
@@ -3881,6 +4072,42 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn explicit_oxygen_hydrogen_types_match_mmff94_environment() {
+        let alcohol = mol("CCO[H]");
+        let alcohol_types = assign_mmff94_numeric_types(&alcohol).unwrap();
+        let alcohol_h = (0..alcohol.atom_count())
+            .find(|&i| alcohol.atom(AtomIdx(i as u32)).element == Element::H)
+            .unwrap();
+        assert_eq!(alcohol_types[alcohol_h], 21, "alcohol O-H should be HOR");
+
+        let acid = mol("CC(=O)O[H]");
+        let acid_types = assign_mmff94_numeric_types(&acid).unwrap();
+        let acid_h = (0..acid.atom_count())
+            .find(|&i| acid.atom(AtomIdx(i as u32)).element == Element::H)
+            .unwrap();
+        assert_eq!(acid_types[acid_h], 24, "acid O-H should be HOCO");
+
+        let water = mol("[H]O[H]");
+        let water_types = assign_mmff94_numeric_types(&water).unwrap();
+        for i in 0..water.atom_count() {
+            if water.atom(AtomIdx(i as u32)).element == Element::H {
+                assert_eq!(water_types[i], 31, "water H should be HOH");
+            }
+        }
+    }
+
+    #[test]
+    fn explicit_hydrogen_on_delocalized_amine_uses_hnco_type() {
+        let m = mol("c1ccccc1N([H])[H]");
+        let types = assign_mmff94_numeric_types(&m).unwrap();
+        let h_types: Vec<_> = (0..m.atom_count())
+            .filter(|&i| m.atom(AtomIdx(i as u32)).element == Element::H)
+            .map(|i| types[i])
+            .collect();
+        assert_eq!(h_types, vec![28, 28]);
     }
 
     #[test]

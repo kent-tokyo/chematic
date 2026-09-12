@@ -203,6 +203,14 @@ impl MolHandle {
         chematic_chem::num_stereocenters(&self.inner)
     }
 
+    /// Atom indices of potential tetrahedral stereocenters.
+    pub fn potential_stereocenter_indices(&self) -> Vec<u32> {
+        chematic_chem::potential_stereocenter_indices(&self.inner)
+            .into_iter()
+            .map(|idx| idx.0)
+            .collect()
+    }
+
     /// Returns `true` if the molecule has no PAINS structural alerts.
     pub fn pains_passes(&self) -> bool {
         chematic_chem::pains_passes(&self.inner)

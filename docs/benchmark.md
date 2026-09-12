@@ -7,8 +7,9 @@ counted as wins. Dated raw records are indexed in
 
 ## Current status
 
-The current release line is **v1.0.13**. The newest checked-in performance
-records include the v1.0.12 three-lane similarity-search gate; older operation
+The current release line is **v1.0.14**. The newest checked-in performance
+records include the v1.0.13 A3 similarity-search rerun and the v1.0.12
+three-lane gate; older operation
 timing and published-size rows remain explicitly pinned to their recorded
 source/release-line versions.
 
@@ -74,7 +75,7 @@ for the fail-closed matrix check.
 
 ## Artifact size
 
-The current v1.0.12 Node artifact was measured at **3.93 MB raw / 1.43 MB gzip**
+The latest measured Node artifact is **3.93 MB raw / 1.43 MB gzip** (v1.0.12 artifact)
 with `wasm-pack 0.13.1`, `wasm-bindgen 0.2.121`, and `wasm-opt 130`. This is a
 dated artifact measurement, not a permanent release bundle-size guarantee.
 Exact hashes and commands are in the
@@ -86,6 +87,7 @@ Exact hashes and commands are in the
 |---|---|
 | Accuracy vs RDKit | `pip install chematic rdkit`; `python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --json /tmp/bench5k.json`; `python scripts/gen_validation_report.py /tmp/bench5k.json` |
 | Similarity search | [`2026-09-11-similarity-search-v1.0.12.md`](../benchmarks/2026-09-11-similarity-search-v1.0.12.md) |
+| A3 similarity search rerun | [`2026-09-12-similarity-search-a3-v1.0.13.md`](../benchmarks/2026-09-12-similarity-search-a3-v1.0.13.md) |
 | Hot-path A/B | [`2026-09-05-hotpath-110.md`](../benchmarks/2026-09-05-hotpath-110.md) |
 | File streaming | [`2026-09-04-streaming-formats.md`](../benchmarks/2026-09-04-streaming-formats.md) |
 | Cross-engine contracts | [`benchmarks/README.md`](../benchmarks/README.md#streaming-and-cross-engine-contracts) |

@@ -1,0 +1,93 @@
+{
+  "profile": "A1-stereocenter-potential",
+  "version": "1.0.13",
+  "rdkit_version": "2025.09.3",
+  "corpus": "scripts/descriptor_census_corpus.smi",
+  "corpus_sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c",
+  "input_rows": 5000,
+  "compared": 5000,
+  "rdkit_parse_failures": 0,
+  "chematic_failures": 0,
+  "mismatch_count": 5,
+  "mismatch_examples": [
+    {
+      "index": 2757,
+      "smiles": "Cn1cc(C2=NC[C@]3(CN4CC[C@@H]3C4)O2)c2ccccc21",
+      "chematic": 2,
+      "rdkit": 3,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 2960,
+      "smiles": "Cn1cc(C2=NC[C@@]3(C[N@@]4CC[C@@H]3C4)O2)c2ccccc21",
+      "chematic": 2,
+      "rdkit": 3,
+      "assigned_rdkit": 3
+    },
+    {
+      "index": 2961,
+      "smiles": "Cn1cc(C2=NCC3(CCN4CCCC3C4)O2)c2ccccc21",
+      "chematic": 2,
+      "rdkit": 3,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 4342,
+      "smiles": "CC12NC(Cc3ccccc31)CC1CCCCC12",
+      "chematic": 2,
+      "rdkit": 4,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 4491,
+      "smiles": "CN1C2(C)c3ccccc3C1(C)C1CCCCC12",
+      "chematic": 2,
+      "rdkit": 4,
+      "assigned_rdkit": 0
+    }
+  ],
+  "mismatches": [
+    {
+      "index": 2757,
+      "smiles": "Cn1cc(C2=NC[C@]3(CN4CC[C@@H]3C4)O2)c2ccccc21",
+      "chematic": 2,
+      "rdkit": 3,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 2960,
+      "smiles": "Cn1cc(C2=NC[C@@]3(C[N@@]4CC[C@@H]3C4)O2)c2ccccc21",
+      "chematic": 2,
+      "rdkit": 3,
+      "assigned_rdkit": 3
+    },
+    {
+      "index": 2961,
+      "smiles": "Cn1cc(C2=NCC3(CCN4CCCC3C4)O2)c2ccccc21",
+      "chematic": 2,
+      "rdkit": 3,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 4342,
+      "smiles": "CC12NC(Cc3ccccc31)CC1CCCCC12",
+      "chematic": 2,
+      "rdkit": 4,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 4491,
+      "smiles": "CN1C2(C)c3ccccc3C1(C)C1CCCCC12",
+      "chematic": 2,
+      "rdkit": 4,
+      "assigned_rdkit": 0
+    }
+  ],
+  "mismatch_examples_truncated": false,
+  "error_count": 0,
+  "error_examples": [],
+  "error_examples_truncated": false,
+  "gate_passed": false,
+  "definition": "potential tetrahedral stereocenters; assigned and unspecified centers included",
+  "oracle": "rdMolDescriptors.CalcNumAtomStereoCenters"
+}

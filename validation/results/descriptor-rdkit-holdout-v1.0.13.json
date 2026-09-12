@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "profile": "rdkit_compat_unlabelled_v1",
+  "profile": "rdkit_compat_v2",
   "corpus": "validation/descriptor_rdkit_holdout.jsonl",
   "rows": 12,
   "passed": 12,
@@ -40,11 +40,11 @@
       "id": "isotope",
       "category": "isotope_table",
       "smiles": "[13C]",
-      "rule": "explicit isotope fails closed until isotope-table parity",
+      "rule": "known explicit isotope within 0.01 Da",
       "passed": true,
-      "chematic": NaN,
+      "chematic": 13.00335483507,
       "rdkit": 13.00335484,
-      "absolute_error": null
+      "absolute_error": 4.929999519731609e-09
     },
     {
       "id": "charged_oxygen",

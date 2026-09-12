@@ -1,0 +1,5845 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.13",
+  "scope": "bounded canonical spelling and semantic comparison",
+  "corpus": {
+    "path": "scripts/descriptor_census_corpus.smi",
+    "sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c",
+    "rows_requested": 200
+  },
+  "engines": {
+    "chematic": {
+      "status": "measured",
+      "version": "1.0.13"
+    },
+    "rdkit": {
+      "status": "measured",
+      "version": "2025.09.3"
+    },
+    "openbabel": {
+      "status": "measured",
+      "executable": "/opt/homebrew/bin/obabel",
+      "version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27"
+    },
+    "indigo": {
+      "status": "not_installed"
+    }
+  },
+  "counts": {
+    "rows_ok": 200,
+    "parse_or_engine_failures": 0,
+    "schematic_exact_string_matches": 0,
+    "schematic_semantic_matches": 200,
+    "openbabel_exact_string_matches": 1,
+    "openbabel_semantic_matches": 199,
+    "openbabel_inchi_matches": 199
+  },
+  "rows": [
+    {
+      "input_index": 0,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccccc1Cl",
+        "chematic": "O=c1cnn(-c2ccc(C(=O)c3ccccc3Cl)c(c2)C)c([nH]1)=O",
+        "openbabel": "O=c1cnn(c(=O)[nH]1)c1ccc(c(c1)C)C(=O)c1ccccc1Cl"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccccc1Cl",
+        "chematic": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccccc1Cl",
+        "openbabel": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccccc1Cl"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 1,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccc(C#N)cc1",
+        "chematic": "n1n(-c3cc(c(cc3)C(=O)c2ccc(C#N)cc2)C)c(=O)[nH]c(c1)=O",
+        "openbabel": "N#Cc1ccc(cc1)C(=O)c1ccc(cc1C)n1ncc(=O)[nH]c1=O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccc(C#N)cc1",
+        "chematic": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccc(C#N)cc1",
+        "openbabel": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccc(C#N)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 2,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cc1cc(-n2ncc(=O)[nH]c2=O)cc(C)c1C(O)c1ccc(Cl)cc1",
+        "chematic": "Cc2c(C(c3ccc(Cl)cc3)O)c(C)cc(c2)-n1ncc([nH]c1=O)=O",
+        "openbabel": "Clc1ccc(cc1)C(c1c(C)cc(cc1C)n1ncc(=O)[nH]c1=O)O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cc1cc(-n2ncc(=O)[nH]c2=O)cc(C)c1C(O)c1ccc(Cl)cc1",
+        "chematic": "Cc1cc(-n2ncc(=O)[nH]c2=O)cc(C)c1C(O)c1ccc(Cl)cc1",
+        "openbabel": "Cc1cc(-n2ncc(=O)[nH]c2=O)cc(C)c1C(O)c1ccc(Cl)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 3,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cc1ccc(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2)cc1",
+        "chematic": "O=C(c3ccc(cc3)-n2ncc(=O)[nH]c2=O)c1ccc(cc1)C",
+        "openbabel": "Cc1ccc(cc1)C(=O)c1ccc(cc1)n1ncc(=O)[nH]c1=O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cc1ccc(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2)cc1",
+        "chematic": "Cc1ccc(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2)cc1",
+        "openbabel": "Cc1ccc(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 4,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccc(Cl)cc1",
+        "chematic": "c3(=O)cnn(c([nH]3)=O)-c2cc(c(cc2)C(c1ccc(Cl)cc1)=O)C",
+        "openbabel": "Clc1ccc(cc1)C(=O)c1ccc(cc1C)n1ncc(=O)[nH]c1=O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccc(Cl)cc1",
+        "chematic": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccc(Cl)cc1",
+        "openbabel": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccc(Cl)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 5,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccccc1",
+        "chematic": "c1cccc(C(=O)c3c(cc(cc3)-n2ncc(=O)[nH]c2=O)C)c1",
+        "openbabel": "O=c1cnn(c(=O)[nH]1)c1ccc(c(c1)C)C(=O)c1ccccc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccccc1",
+        "chematic": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccccc1",
+        "openbabel": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccccc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 6,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cc1cc(Br)ccc1C(=O)c1ccc(-n2ncc(=O)[nH]c2=O)cc1Cl",
+        "chematic": "n1(-c2cc(Cl)c(C(=O)c3c(cc(Br)cc3)C)cc2)c([nH]c(cn1)=O)=O",
+        "openbabel": "Brc1ccc(c(c1)C)C(=O)c1ccc(cc1Cl)n1ncc(=O)[nH]c1=O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cc1cc(Br)ccc1C(=O)c1ccc(-n2ncc(=O)[nH]c2=O)cc1Cl",
+        "chematic": "Cc1cc(Br)ccc1C(=O)c1ccc(-n2ncc(=O)[nH]c2=O)cc1Cl",
+        "openbabel": "Cc1cc(Br)ccc1C(=O)c1ccc(-n2ncc(=O)[nH]c2=O)cc1Cl"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 7,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=C(c1ccc(Cl)cc1Cl)c1ccc(-n2ncc(=O)[nH]c2=O)cc1Cl",
+        "chematic": "Clc1cc(c(C(c3c(cc(cc3)-n2ncc(=O)[nH]c2=O)Cl)=O)cc1)Cl",
+        "openbabel": "Clc1ccc(c(c1)Cl)C(=O)c1ccc(cc1Cl)n1ncc(=O)[nH]c1=O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=C(c1ccc(Cl)cc1Cl)c1ccc(-n2ncc(=O)[nH]c2=O)cc1Cl",
+        "chematic": "O=C(c1ccc(Cl)cc1Cl)c1ccc(-n2ncc(=O)[nH]c2=O)cc1Cl",
+        "openbabel": "O=C(c1ccc(Cl)cc1Cl)c1ccc(-n2ncc(=O)[nH]c2=O)cc1Cl"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 8,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CS(=O)(=O)c1ccc(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2Cl)cc1",
+        "chematic": "c1(C(=O)c3ccc(cc3)S(C)(=O)=O)ccc(-n2c([nH]c(=O)cn2)=O)cc1Cl",
+        "openbabel": "Clc1cc(ccc1C(=O)c1ccc(cc1)S(=O)(=O)C)n1ncc(=O)[nH]c1=O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CS(=O)(=O)c1ccc(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2Cl)cc1",
+        "chematic": "CS(=O)(=O)c1ccc(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2Cl)cc1",
+        "openbabel": "CS(=O)(=O)c1ccc(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2Cl)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 9,
+      "status": "ok",
+      "engines": {
+        "rdkit": "c1cc2cc(c1)-c1cccc(c1)C[n+]1ccc(c3ccccc31)NCCCCCCCCCCNc1cc[n+](c3ccccc13)C2",
+        "chematic": "c45NCCCCCCCCCCNc2cc[n+](Cc3cc(-c7cc(ccc7)C[n+](c6ccccc56)cc4)ccc3)c1ccccc12",
+        "openbabel": "C1CCCCCNc2cc[n+](c3c2cccc3)Cc2cccc(-c3cc(C[n+]4ccc(NCCCC1)c1ccccc41)ccc3)c2"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "c1cc2cc(c1)-c1cccc(c1)C[n+]1ccc(c3ccccc31)NCCCCCCCCCCNc1cc[n+](c3ccccc13)C2",
+        "chematic": "c1cc2cc(c1)-c1cccc(c1)C[n+]1ccc(c3ccccc31)NCCCCCCCCCCNc1cc[n+](c3ccccc13)C2",
+        "openbabel": "c1cc2cc(c1)-c1cccc(c1)C[n+]1ccc(c3ccccc31)NCCCCCCCCCCNc1cc[n+](c3ccccc13)C2"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 10,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CSc1ccc(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2Cl)cc1",
+        "chematic": "c3c(ccc(c3)C(=O)c2ccc(cc2Cl)-n1c(=O)[nH]c(cn1)=O)SC",
+        "openbabel": "CSc1ccc(cc1)C(=O)c1ccc(cc1Cl)n1ncc(=O)[nH]c1=O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CSc1ccc(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2Cl)cc1",
+        "chematic": "CSc1ccc(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2Cl)cc1",
+        "openbabel": "CSc1ccc(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2Cl)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 11,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=C(c1ccc(Cl)cc1)c1ccc(-n2ncc(=O)[nH]c2=O)cc1Cl",
+        "chematic": "n3(ncc(=O)[nH]c3=O)-c1cc(Cl)c(C(c2ccc(Cl)cc2)=O)cc1",
+        "openbabel": "Clc1ccc(cc1)C(=O)c1ccc(cc1Cl)n1ncc(=O)[nH]c1=O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=C(c1ccc(Cl)cc1)c1ccc(-n2ncc(=O)[nH]c2=O)cc1Cl",
+        "chematic": "O=C(c1ccc(Cl)cc1)c1ccc(-n2ncc(=O)[nH]c2=O)cc1Cl",
+        "openbabel": "O=C(c1ccc(Cl)cc1)c1ccc(-n2ncc(=O)[nH]c2=O)cc1Cl"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 12,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=C1O/C(=C/Br)CCC1c1cccc2ccccc12",
+        "chematic": "c3cc2c(cccc2cc3)C1C(=O)OC(=C/Br)/CC1",
+        "openbabel": "Br/C=C/1\\CCC(C(=O)O1)c1cccc2c1cccc2"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=C1O/C(=C/Br)CCC1c1cccc2ccccc12",
+        "chematic": "O=C1O/C(=C/Br)CCC1c1cccc2ccccc12",
+        "openbabel": "O=C1O/C(=C/Br)CCC1c1cccc2ccccc12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 13,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=C1O/C(=C/I)CCC1c1cccc2ccccc12",
+        "chematic": "c3cc2c(cccc2cc3)C1C(O/C(=C/I)CC1)=O",
+        "openbabel": "I/C=C/1\\CCC(C(=O)O1)c1cccc2c1cccc2"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=C1O/C(=C/I)CCC1c1cccc2ccccc12",
+        "chematic": "O=C1O/C(=C/I)CCC1c1cccc2ccccc12",
+        "openbabel": "O=C1O/C(=C/I)CCC1c1cccc2ccccc12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 14,
+      "status": "ok",
+      "engines": {
+        "rdkit": "C#C/C=C1\\CCC(c2cccc3ccccc23)C(=O)O1",
+        "chematic": "c3cc2c(cccc2cc3)C1C(O/C(=C/C#C)CC1)=O",
+        "openbabel": "C#C/C=C/1\\CCC(C(=O)O1)c1cccc2c1cccc2"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "C#C/C=C1\\CCC(c2cccc3ccccc23)C(=O)O1",
+        "chematic": "C#C/C=C1\\CCC(c2cccc3ccccc23)C(=O)O1",
+        "openbabel": "C#C/C=C1\\CCC(c2cccc3ccccc23)C(=O)O1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 15,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=C1O/C(=C\\I)CCC1c1cccc2ccccc12",
+        "chematic": "c3cc2c(cccc2cc3)C1C(O/C(=C\\I)CC1)=O",
+        "openbabel": "I/C=C\\1/CCC(C(=O)O1)c1cccc2c1cccc2"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=C1O/C(=C\\I)CCC1c1cccc2ccccc12",
+        "chematic": "O=C1O/C(=C\\I)CCC1c1cccc2ccccc12",
+        "openbabel": "O=C1O/C(=C\\I)CCC1c1cccc2ccccc12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 16,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=C(c1ccccc1)c1ccc(-n2ncc(=O)[nH]c2=O)cc1",
+        "chematic": "[nH]3c(cnn(c3=O)-c1ccc(C(=O)c2ccccc2)cc1)=O",
+        "openbabel": "O=c1cnn(c(=O)[nH]1)c1ccc(cc1)C(=O)c1ccccc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=C(c1ccccc1)c1ccc(-n2ncc(=O)[nH]c2=O)cc1",
+        "chematic": "O=C(c1ccccc1)c1ccc(-n2ncc(=O)[nH]c2=O)cc1",
+        "openbabel": "O=C(c1ccccc1)c1ccc(-n2ncc(=O)[nH]c2=O)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 17,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=c1cnn(-c2ccc(C(O)c3ccc(Cl)cc3)c(Cl)c2)c(=O)[nH]1",
+        "chematic": "c3(=O)[nH]c(n(nc3)-c2ccc(c(c2)Cl)C(O)c1ccc(Cl)cc1)=O",
+        "openbabel": "Clc1ccc(cc1)C(c1ccc(cc1Cl)n1ncc(=O)[nH]c1=O)O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=c1cnn(-c2ccc(C(O)c3ccc(Cl)cc3)c(Cl)c2)c(=O)[nH]1",
+        "chematic": "O=c1cnn(-c2ccc(C(O)c3ccc(Cl)cc3)c(Cl)c2)c(=O)[nH]1",
+        "openbabel": "O=c1cnn(-c2ccc(C(O)c3ccc(Cl)cc3)c(Cl)c2)c(=O)[nH]1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 18,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=C(c1ccccc1)c1cc(-n2ncc(=O)[nH]c2=O)ccc1Cl",
+        "chematic": "[nH]1c(n(-c2cc(C(=O)c3ccccc3)c(cc2)Cl)ncc1=O)=O",
+        "openbabel": "Clc1ccc(cc1C(=O)c1ccccc1)n1ncc(=O)[nH]c1=O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=C(c1ccccc1)c1cc(-n2ncc(=O)[nH]c2=O)ccc1Cl",
+        "chematic": "O=C(c1ccccc1)c1cc(-n2ncc(=O)[nH]c2=O)ccc1Cl",
+        "openbabel": "O=C(c1ccccc1)c1cc(-n2ncc(=O)[nH]c2=O)ccc1Cl"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 19,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(O)c1ccccc1",
+        "chematic": "c1ccc(C(c2c(C)cc(-n3ncc([nH]c3=O)=O)cc2)O)cc1",
+        "openbabel": "O=c1cnn(c(=O)[nH]1)c1ccc(c(c1)C)C(c1ccccc1)O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(O)c1ccccc1",
+        "chematic": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(O)c1ccccc1",
+        "openbabel": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(O)c1ccccc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 20,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)C4CC4c4ccccc4)CC3)nc(N)c2cc1OC",
+        "chematic": "c4(nc5cc(OC)c(OC)cc5c(n4)N)N1CCN(C(=O)C3C(C3)c2ccccc2)CC1",
+        "openbabel": "COc1cc2nc(nc(c2cc1OC)N)N1CCN(CC1)C(=O)C1CC1c1ccccc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)C4CC4c4ccccc4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(C(=O)C4CC4c4ccccc4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(C(=O)C4CC4c4ccccc4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 21,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1ccc(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2)cc1",
+        "chematic": "O=C(c3ccc(OC)cc3)c2ccc(cc2)-n1c(=O)[nH]c(cn1)=O",
+        "openbabel": "COc1ccc(cc1)C(=O)c1ccc(cc1)n1ncc(=O)[nH]c1=O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1ccc(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2)cc1",
+        "chematic": "COc1ccc(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2)cc1",
+        "openbabel": "COc1ccc(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 22,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(S(=O)(=O)c4cccs4)CC3)nc(N)c2cc1OC",
+        "chematic": "n3c(nc(N)c4cc(c(cc34)OC)OC)N1CCN(S(=O)(=O)c2cccs2)CC1",
+        "openbabel": "COc1cc2nc(nc(c2cc1OC)N)N1CCN(CC1)S(=O)(=O)c1cccs1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(S(=O)(=O)c4cccs4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(S(=O)(=O)c4cccs4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(S(=O)(=O)c4cccs4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 23,
+      "status": "ok",
+      "engines": {
+        "rdkit": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)-c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+        "chematic": "c12c4cc[n+](Cc3ccc(-c7ccc(cc7)C[n+]6ccc(c5c6cccc5)NCCCCCCCCCCN4)cc3)c1cccc2",
+        "openbabel": "C1CCCCCNc2cc[n+](c3c2cccc3)Cc2ccc(-c3ccc(C[n+]4ccc(NCCCC1)c1ccccc41)cc3)cc2"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)-c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+        "chematic": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)-c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+        "openbabel": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)-c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 24,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Nc1cc[n+](Cc2cccc(-c3cccc(C[n+]4ccc(N)c5ccccc54)c3)c2)c2ccccc12",
+        "chematic": "Nc6c1ccccc1[n+](cc6)Cc5cccc(c5)-c4cccc(c4)C[n+]2ccc(c3ccccc23)N",
+        "openbabel": "Nc1cc[n+](c2c1cccc2)Cc1cccc(c1)c1cccc(c1)C[n+]1ccc(c2c1cccc2)N"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Nc1cc[n+](Cc2cccc(-c3cccc(C[n+]4ccc(N)c5ccccc54)c3)c2)c2ccccc12",
+        "chematic": "Nc1cc[n+](Cc2cccc(-c3cccc(C[n+]4ccc(N)c5ccccc54)c3)c2)c2ccccc12",
+        "openbabel": "Nc1cc[n+](Cc2cccc(-c3cccc(C[n+]4ccc(N)c5ccccc54)c3)c2)c2ccccc12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 25,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Nc1cc[n+](Cc2ccc(CCc3ccc(C[n+]4ccc(N)c5ccccc54)cc3)cc2)c2ccccc12",
+        "chematic": "c6(ccc(cc6)CCc3ccc(C[n+]4ccc(c5ccccc45)N)cc3)C[n+]2c1ccccc1c(N)cc2",
+        "openbabel": "Nc1cc[n+](c2c1cccc2)Cc1ccc(cc1)CCc1ccc(cc1)C[n+]1ccc(c2c1cccc2)N"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Nc1cc[n+](Cc2ccc(CCc3ccc(C[n+]4ccc(N)c5ccccc54)cc3)cc2)c2ccccc12",
+        "chematic": "Nc1cc[n+](Cc2ccc(CCc3ccc(C[n+]4ccc(N)c5ccccc54)cc3)cc2)c2ccccc12",
+        "openbabel": "Nc1cc[n+](Cc2ccc(CCc3ccc(C[n+]4ccc(N)c5ccccc54)cc3)cc2)c2ccccc12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 26,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Nc1cc[n+](Cc2ccc(/C=C\\c3ccc(C[n+]4ccc(N)c5ccccc54)cc3)cc2)c2ccccc12",
+        "chematic": "c6c(ccc(c6)/C=C\\c3ccc(C[n+]5ccc(N)c4ccccc45)cc3)C[n+]2ccc(N)c1ccccc12",
+        "openbabel": "Nc1cc[n+](c2c1cccc2)Cc1ccc(cc1)/C=C\\c1ccc(cc1)C[n+]1ccc(c2c1cccc2)N"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Nc1cc[n+](Cc2ccc(/C=C\\c3ccc(C[n+]4ccc(N)c5ccccc54)cc3)cc2)c2ccccc12",
+        "chematic": "Nc1cc[n+](Cc2ccc(/C=C\\c3ccc(C[n+]4ccc(N)c5ccccc54)cc3)cc2)c2ccccc12",
+        "openbabel": "Nc1cc[n+](Cc2ccc(/C=C\\c3ccc(C[n+]4ccc(N)c5ccccc54)cc3)cc2)c2ccccc12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 27,
+      "status": "ok",
+      "engines": {
+        "rdkit": "c1ccc(C[n+]2ccc(NCCCCCCCCCCNc3cc[n+](Cc4ccccc4)c4ccccc34)c3ccccc32)cc1",
+        "chematic": "c6c5[n+](ccc(c5ccc6)NCCCCCCCCCCNc3c2ccccc2[n+](Cc4ccccc4)cc3)Cc1ccccc1",
+        "openbabel": "C(CCCCNc1cc[n+](c2c1cccc2)Cc1ccccc1)CCCCCNc1cc[n+](c2c1cccc2)Cc1ccccc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "c1ccc(C[n+]2ccc(NCCCCCCCCCCNc3cc[n+](Cc4ccccc4)c4ccccc34)c3ccccc32)cc1",
+        "chematic": "c1ccc(C[n+]2ccc(NCCCCCCCCCCNc3cc[n+](Cc4ccccc4)c4ccccc34)c3ccccc32)cc1",
+        "openbabel": "c1ccc(C[n+]2ccc(NCCCCCCCCCCNc3cc[n+](Cc4ccccc4)c4ccccc34)c3ccccc32)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 28,
+      "status": "ok",
+      "engines": {
+        "rdkit": "C1=C\\c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCNc2cc[n+](c3ccccc23)Cc2ccc/1cc2",
+        "chematic": "c5cc4c3NCCCCCCCCCCNc6cc[n+](c7ccccc67)Cc1ccc(/C=C\\c2ccc(C[n+](c4cc5)cc3)cc2)cc1",
+        "openbabel": "C1CCCCCNc2cc[n+](c3c2cccc3)Cc2ccc(cc2)/C=C\\c2ccc(C[n+]3ccc(NCCCC1)c1ccccc31)cc2"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "C1=C\\c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCNc2cc[n+](c3ccccc23)Cc2ccc/1cc2",
+        "chematic": "C1=C\\c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCNc2cc[n+](c3ccccc23)Cc2ccc/1cc2",
+        "openbabel": "C1=C\\c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCNc2cc[n+](c3ccccc23)Cc2ccc/1cc2"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 29,
+      "status": "ok",
+      "engines": {
+        "rdkit": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)CCc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+        "chematic": "c17c(cccc7)c2cc[n+]1Cc6ccc(cc6)CCc5ccc(cc5)C[n+]3ccc(c4ccccc34)NCCCCCCCCCCN2",
+        "openbabel": "C1CCCCCNc2cc[n+](c3c2cccc3)Cc2ccc(cc2)CCc2ccc(C[n+]3ccc(NCCCC1)c1ccccc31)cc2"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)CCc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+        "chematic": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)CCc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+        "openbabel": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)CCc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 30,
+      "status": "ok",
+      "engines": {
+        "rdkit": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)Cc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+        "chematic": "c57ccc(cc7)C[n+]6c1ccccc1c(cc6)NCCCCCCCCCCNc3c2ccccc2[n+](Cc4ccc(C5)cc4)cc3",
+        "openbabel": "C1CCCCCNc2cc[n+](c3c2cccc3)Cc2ccc(cc2)Cc2ccc(C[n+]3ccc(NCCCC1)c1ccccc31)cc2"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)Cc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+        "chematic": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)Cc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+        "openbabel": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)Cc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 31,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Nc1cc[n+](Cc2ccc3c(c2)Cc2cc(C[n+]4ccc(N)c5ccccc54)ccc2-3)c2ccccc12",
+        "chematic": "c12c(N)cc[n+](Cc7cc6Cc5cc(ccc5-c6cc7)C[n+]3ccc(c4ccccc34)N)c1cccc2",
+        "openbabel": "Nc1cc[n+](c2c1cccc2)Cc1ccc2-c3c(Cc2c1)cc(cc3)C[n+]1ccc(c2c1cccc2)N"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Nc1cc[n+](Cc2ccc3c(c2)Cc2cc(C[n+]4ccc(N)c5ccccc54)ccc2-3)c2ccccc12",
+        "chematic": "Nc1cc[n+](Cc2ccc3c(c2)Cc2cc(C[n+]4ccc(N)c5ccccc54)ccc2-3)c2ccccc12",
+        "openbabel": "Nc1cc[n+](Cc2ccc3c(c2)Cc2cc(C[n+]4ccc(N)c5ccccc54)ccc2-3)c2ccccc12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 32,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Nc1cc[n+](Cc2ccc(-c3ccc(C[n+]4ccc(N)c5ccccc54)cc3)cc2)c2ccccc12",
+        "chematic": "c1cc(C[n+]5c6c(cccc6)c(cc5)N)ccc1-c2ccc(C[n+]4c3ccccc3c(N)cc4)cc2",
+        "openbabel": "Nc1cc[n+](c2c1cccc2)Cc1ccc(cc1)c1ccc(cc1)C[n+]1ccc(c2c1cccc2)N"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Nc1cc[n+](Cc2ccc(-c3ccc(C[n+]4ccc(N)c5ccccc54)cc3)cc2)c2ccccc12",
+        "chematic": "Nc1cc[n+](Cc2ccc(-c3ccc(C[n+]4ccc(N)c5ccccc54)cc3)cc2)c2ccccc12",
+        "openbabel": "Nc1cc[n+](Cc2ccc(-c3ccc(C[n+]4ccc(N)c5ccccc54)cc3)cc2)c2ccccc12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 33,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccc(Cl)cc1Cl",
+        "chematic": "O=c1cnn(-c2ccc(C(=O)c3ccc(Cl)cc3Cl)c(c2)C)c([nH]1)=O",
+        "openbabel": "Clc1ccc(c(c1)Cl)C(=O)c1ccc(cc1C)n1ncc(=O)[nH]c1=O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccc(Cl)cc1Cl",
+        "chematic": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccc(Cl)cc1Cl",
+        "openbabel": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccc(Cl)cc1Cl"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 34,
+      "status": "ok",
+      "engines": {
+        "rdkit": "c1ccc2c(c1)c1cc[n+]2Cc2ccc3c(c2)Cc2cc(ccc2-3)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+        "chematic": "c56Cc8c-7ccc(c8)C[n+]2ccc(NCCCCCCCCCCNc4cc[n+](Cc(ccc6-7)c5)c3ccccc34)c1ccccc12",
+        "openbabel": "C1CCCCCNc2cc[n+](c3c2cccc3)Cc2ccc3-c4ccc(C[n+]5ccc(NCCCC1)c1ccccc51)cc4Cc3c2"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "c1ccc2c(c1)c1cc[n+]2Cc2ccc3c(c2)Cc2cc(ccc2-3)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+        "chematic": "c1ccc2c(c1)c1cc[n+]2Cc2ccc3c(c2)Cc2cc(ccc2-3)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+        "openbabel": "c1ccc2c(c1)c1cc[n+]2Cc2ccc3c(c2)Cc2cc(ccc2-3)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 35,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Nc1cc[n+](Cc2ccc(Cc3ccc(C[n+]4ccc(N)c5ccccc54)cc3)cc2)c2ccccc12",
+        "chematic": "c6c5[n+](ccc(N)c5ccc6)Cc1ccc(Cc2ccc(C[n+]4ccc(c3ccccc34)N)cc2)cc1",
+        "openbabel": "Nc1cc[n+](c2c1cccc2)Cc1ccc(cc1)Cc1ccc(cc1)C[n+]1ccc(c2c1cccc2)N"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Nc1cc[n+](Cc2ccc(Cc3ccc(C[n+]4ccc(N)c5ccccc54)cc3)cc2)c2ccccc12",
+        "chematic": "Nc1cc[n+](Cc2ccc(Cc3ccc(C[n+]4ccc(N)c5ccccc54)cc3)cc2)c2ccccc12",
+        "openbabel": "Nc1cc[n+](Cc2ccc(Cc3ccc(C[n+]4ccc(N)c5ccccc54)cc3)cc2)c2ccccc12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 36,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COC(=O)/C=C/C(=O)Nc1ccc(CCCCC(=O)N2CCN(c3nc(N)c4cc(OC)c(OC)cc4n3)CC2)cc1",
+        "chematic": "c1cc(ccc1CCCCC(=O)N4CCN(CC4)c3nc(N)c2c(n3)cc(c(OC)c2)OC)NC(=O)/C=C/C(=O)OC",
+        "openbabel": "COC(=O)/C=C/C(=O)Nc1ccc(cc1)CCCCC(=O)N1CCN(CC1)c1nc(N)c2c(n1)cc(c(c2)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COC(=O)/C=C/C(=O)Nc1ccc(CCCCC(=O)N2CCN(c3nc(N)c4cc(OC)c(OC)cc4n3)CC2)cc1",
+        "chematic": "COC(=O)/C=C/C(=O)Nc1ccc(CCCCC(=O)N2CCN(c3nc(N)c4cc(OC)c(OC)cc4n3)CC2)cc1",
+        "openbabel": "COC(=O)/C=C/C(=O)Nc1ccc(CCCCC(=O)N2CCN(c3nc(N)c4cc(OC)c(OC)cc4n3)CC2)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 37,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)CCc4ccccc4)CC3)nc(N)c2cc1OC",
+        "chematic": "N3(C(=O)CCc4ccccc4)CCN(CC3)c1nc2c(cc(c(c2)OC)OC)c(n1)N",
+        "openbabel": "COc1cc2nc(nc(c2cc1OC)N)N1CCN(CC1)C(=O)CCc1ccccc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)CCc4ccccc4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(C(=O)CCc4ccccc4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(C(=O)CCc4ccccc4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 38,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1ccc(/C=C/C(=O)N2CCN(c3nc(N)c4cc(OC)c(OC)cc4n3)CC2)cc1",
+        "chematic": "C(N2CCN(c3nc4cc(c(OC)cc4c(n3)N)OC)CC2)(=O)/C=C/c1ccc(OC)cc1",
+        "openbabel": "COc1ccc(cc1)/C=C/C(=O)N1CCN(CC1)c1nc(N)c2c(n1)cc(c(c2)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1ccc(/C=C/C(=O)N2CCN(c3nc(N)c4cc(OC)c(OC)cc4n3)CC2)cc1",
+        "chematic": "COc1ccc(/C=C/C(=O)N2CCN(c3nc(N)c4cc(OC)c(OC)cc4n3)CC2)cc1",
+        "openbabel": "COc1ccc(/C=C/C(=O)N2CCN(c3nc(N)c4cc(OC)c(OC)cc4n3)CC2)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 39,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)/C=C/c4cccc(F)c4)CC3)nc(N)c2cc1OC",
+        "chematic": "C1CN(C(/C=C/c4cccc(c4)F)=O)CCN1c3nc(c2c(n3)cc(OC)c(c2)OC)N",
+        "openbabel": "COc1cc2nc(nc(c2cc1OC)N)N1CCN(CC1)C(=O)/C=C/c1cccc(c1)F"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)/C=C/c4cccc(F)c4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(C(=O)/C=C/c4cccc(F)c4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(C(=O)/C=C/c4cccc(F)c4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 40,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)C4CC5C=CC4C5)CC3)nc(N)c2cc1OC",
+        "chematic": "O=C(C4C5CC(C=C5)C4)N1CCN(c3nc2cc(c(cc2c(n3)N)OC)OC)CC1",
+        "openbabel": "COc1cc2nc(nc(c2cc1OC)N)N1CCN(CC1)C(=O)C1CC2CC1C=C2"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)C4CC5C=CC4C5)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(C(=O)C4CC5C=CC4C5)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(C(=O)C4CC5C=CC4C5)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 41,
+      "status": "ok",
+      "engines": {
+        "rdkit": "C/C=C/C=C/C(=O)N1CCN(c2nc(N)c3cc(OC)c(OC)cc3n2)CC1",
+        "chematic": "c2(N)nc(nc3c2cc(c(OC)c3)OC)N1CCN(C(/C=C/C=C/C)=O)CC1",
+        "openbabel": "C/C=C/C=C/C(=O)N1CCN(CC1)c1nc(N)c2c(n1)cc(c(c2)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "C/C=C/C=C/C(=O)N1CCN(c2nc(N)c3cc(OC)c(OC)cc3n2)CC1",
+        "chematic": "C/C=C/C=C/C(=O)N1CCN(c2nc(N)c3cc(OC)c(OC)cc3n2)CC1",
+        "openbabel": "C/C=C/C=C/C(=O)N1CCN(c2nc(N)c3cc(OC)c(OC)cc3n2)CC1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 42,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccccc4)CC3)nc(N)c2cc1OC",
+        "chematic": "C(=C/c4ccccc4)\\C(N3CCN(CC3)c1nc2cc(OC)c(cc2c(n1)N)OC)=O",
+        "openbabel": "COc1cc2nc(nc(c2cc1OC)N)N1CCN(CC1)C(=O)/C=C/c1ccccc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccccc4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccccc4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccccc4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 43,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(F)cc4)CC3)nc(N)c2cc1OC",
+        "chematic": "C4N(CCN(C4)c2nc3cc(c(OC)cc3c(N)n2)OC)C(=O)/C=C/c1ccc(F)cc1",
+        "openbabel": "COc1cc2c(N)nc(nc2cc1OC)N1CCN(CC1)C(=O)/C=C/c1ccc(cc1)F"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(F)cc4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(F)cc4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(F)cc4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 44,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(Cl)cc4)CC3)nc(N)c2cc1OC",
+        "chematic": "c4(OC)c(OC)cc3c(c4)c(N)nc(n3)N1CCN(C(=O)/C=C/c2ccc(cc2)Cl)CC1",
+        "openbabel": "COc1cc2c(N)nc(nc2cc1OC)N1CCN(CC1)C(=O)/C=C/c1ccc(cc1)Cl"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(Cl)cc4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(Cl)cc4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(Cl)cc4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 45,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)/C(F)=C/c4ccccc4)CC3)nc(N)c2cc1OC",
+        "chematic": "c1ccccc1/C=C(/C(=O)N2CCN(c3nc(N)c4c(cc(OC)c(OC)c4)n3)CC2)F",
+        "openbabel": "COc1cc2nc(nc(c2cc1OC)N)N1CCN(CC1)C(=O)/C(=C/c1ccccc1)/F"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)/C(F)=C/c4ccccc4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(C(=O)/C(F)=C/c4ccccc4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(C(=O)/C(F)=C/c4ccccc4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 46,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)Nc4ccccc4)CC3)nc(N)c2cc1OC",
+        "chematic": "c1c(OC)c(cc2c1c(nc(N4CCN(CC4)C(Nc3ccccc3)=O)n2)N)OC",
+        "openbabel": "COc1cc2nc(nc(c2cc1OC)N)N1CCN(CC1)C(=O)Nc1ccccc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)Nc4ccccc4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(C(=O)Nc4ccccc4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(C(=O)Nc4ccccc4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 47,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COC(=O)/C=C/C(=O)Nc1ccc(/C=C/C(=O)N2CCN(c3nc(N)c4cc(OC)c(OC)cc4n3)CC2)cc1",
+        "chematic": "C(=C/C(OC)=O)\\C(=O)Nc1ccc(/C=C/C(N4CCN(CC4)c2nc3cc(c(cc3c(n2)N)OC)OC)=O)cc1",
+        "openbabel": "COC(=O)/C=C/C(=O)Nc1ccc(cc1)/C=C/C(=O)N1CCN(CC1)c1nc(N)c2c(n1)cc(c(c2)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COC(=O)/C=C/C(=O)Nc1ccc(/C=C/C(=O)N2CCN(c3nc(N)c4cc(OC)c(OC)cc4n3)CC2)cc1",
+        "chematic": "COC(=O)/C=C/C(=O)Nc1ccc(/C=C/C(=O)N2CCN(c3nc(N)c4cc(OC)c(OC)cc4n3)CC2)cc1",
+        "openbabel": "COC(=O)/C=C/C(=O)Nc1ccc(/C=C/C(=O)N2CCN(c3nc(N)c4cc(OC)c(OC)cc4n3)CC2)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 48,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(/C(S)=N/C4CCCCC4)CC3)nc(N)c2cc1OC",
+        "chematic": "C1CCCCC1/N=C(/N4CCN(CC4)c3nc2c(c(n3)N)cc(OC)c(c2)OC)S",
+        "openbabel": "COc1cc2nc(nc(c2cc1OC)N)N1CCN(CC1)/C(=N/C1CCCCC1)/S"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(/C(S)=N/C4CCCCC4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(/C(S)=N/C4CCCCC4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(/C(S)=N/C4CCCCC4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 49,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)C4=CC5C=CC4CC5)CC3)nc(N)c2cc1OC",
+        "chematic": "C(=O)(N5CCN(CC5)c4nc(c3cc(c(cc3n4)OC)OC)N)C2=CC1CCC2C=C1",
+        "openbabel": "COc1cc2nc(nc(c2cc1OC)N)N1CCN(CC1)C(=O)C1=CC2CCC1C=C2"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)C4=CC5C=CC4CC5)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(C(=O)C4=CC5C=CC4CC5)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(C(=O)C4=CC5C=CC4CC5)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 50,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(S(=O)(=O)c4ccc(C)cc4)CC3)nc(N)c2cc1OC",
+        "chematic": "c1(OC)cc4c(nc(nc4N)N3CCN(CC3)S(=O)(=O)c2ccc(cc2)C)cc1OC",
+        "openbabel": "COc1cc2nc(nc(c2cc1OC)N)N1CCN(CC1)S(=O)(=O)c1ccc(cc1)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(S(=O)(=O)c4ccc(C)cc4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(S(=O)(=O)c4ccc(C)cc4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(S(=O)(=O)c4ccc(C)cc4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 51,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(/C(S)=N/c4ccccc4)CC3)nc(N)c2cc1OC",
+        "chematic": "n3c(nc(N)c4cc(OC)c(cc34)OC)N2CCN(CC2)/C(=N/c1ccccc1)S",
+        "openbabel": "COc1cc2nc(nc(c2cc1OC)N)N1CCN(CC1)/C(=N/c1ccccc1)/S"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(/C(S)=N/c4ccccc4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(/C(S)=N/c4ccccc4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(/C(S)=N/c4ccccc4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 52,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=C(c1ccc(-n2ncc(=O)[nH]c2=O)cc1)c1cccs1",
+        "chematic": "O=C(c3ccc(cc3)-n2c([nH]c(=O)cn2)=O)c1cccs1",
+        "openbabel": "O=C(c1cccs1)c1ccc(cc1)n1ncc(=O)[nH]c1=O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=C(c1ccc(-n2ncc(=O)[nH]c2=O)cc1)c1cccs1",
+        "chematic": "O=C(c1ccc(-n2ncc(=O)[nH]c2=O)cc1)c1cccs1",
+        "openbabel": "O=C(c1ccc(-n2ncc(=O)[nH]c2=O)cc1)c1cccs1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 53,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1Cc1ccccc1",
+        "chematic": "n3(ncc([nH]c3=O)=O)-c2cc(c(cc2)Cc1ccccc1)C",
+        "openbabel": "O=c1cnn(c(=O)[nH]1)c1ccc(c(c1)C)Cc1ccccc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1Cc1ccccc1",
+        "chematic": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1Cc1ccccc1",
+        "openbabel": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1Cc1ccccc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 54,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cc1cc(-n2ncc(=O)[nH]c2=O)cc(Cl)c1C(=O)c1ccc(Cl)cc1",
+        "chematic": "c1cc(C(c3c(cc(cc3Cl)-n2c(=O)[nH]c(cn2)=O)C)=O)ccc1Cl",
+        "openbabel": "Clc1ccc(cc1)C(=O)c1c(C)cc(cc1Cl)n1ncc(=O)[nH]c1=O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cc1cc(-n2ncc(=O)[nH]c2=O)cc(Cl)c1C(=O)c1ccc(Cl)cc1",
+        "chematic": "Cc1cc(-n2ncc(=O)[nH]c2=O)cc(Cl)c1C(=O)c1ccc(Cl)cc1",
+        "openbabel": "Cc1cc(-n2ncc(=O)[nH]c2=O)cc(Cl)c1C(=O)c1ccc(Cl)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 55,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=C(c1ccccc1)c1cccc(-n2ncc(=O)[nH]c2=O)c1",
+        "chematic": "[nH]3c(=O)cnn(c3=O)-c2cccc(c2)C(=O)c1ccccc1",
+        "openbabel": "O=c1cnn(c(=O)[nH]1)c1cccc(c1)C(=O)c1ccccc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=C(c1ccccc1)c1cccc(-n2ncc(=O)[nH]c2=O)c1",
+        "chematic": "O=C(c1ccccc1)c1cccc(-n2ncc(=O)[nH]c2=O)c1",
+        "openbabel": "O=C(c1ccccc1)c1cccc(-n2ncc(=O)[nH]c2=O)c1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 56,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cc1cc(-n2ncc(=O)[nH]c2=O)cc(C)c1C(=O)c1ccc(Cl)cc1",
+        "chematic": "c2c(cc(c(C(c3ccc(Cl)cc3)=O)c2C)C)-n1c(=O)[nH]c(=O)cn1",
+        "openbabel": "Clc1ccc(cc1)C(=O)c1c(C)cc(cc1C)n1ncc(=O)[nH]c1=O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cc1cc(-n2ncc(=O)[nH]c2=O)cc(C)c1C(=O)c1ccc(Cl)cc1",
+        "chematic": "Cc1cc(-n2ncc(=O)[nH]c2=O)cc(C)c1C(=O)c1ccc(Cl)cc1",
+        "openbabel": "Cc1cc(-n2ncc(=O)[nH]c2=O)cc(C)c1C(=O)c1ccc(Cl)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 57,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cc1cc(Cl)ccc1C(=O)c1ccc(-n2ncc(=O)[nH]c2=O)cc1C",
+        "chematic": "c1(C)cc(Cl)ccc1C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2C",
+        "openbabel": "Clc1ccc(c(c1)C)C(=O)c1ccc(cc1C)n1ncc(=O)[nH]c1=O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cc1cc(Cl)ccc1C(=O)c1ccc(-n2ncc(=O)[nH]c2=O)cc1C",
+        "chematic": "Cc1cc(Cl)ccc1C(=O)c1ccc(-n2ncc(=O)[nH]c2=O)cc1C",
+        "openbabel": "Cc1cc(Cl)ccc1C(=O)c1ccc(-n2ncc(=O)[nH]c2=O)cc1C"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 58,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CC(=O)c1ccc(-n2ncc(=O)[nH]c2=O)cc1Cl",
+        "chematic": "Clc2cc(ccc2C(C)=O)-n1c([nH]c(cn1)=O)=O",
+        "openbabel": "CC(=O)c1ccc(cc1Cl)n1ncc(=O)[nH]c1=O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CC(=O)c1ccc(-n2ncc(=O)[nH]c2=O)cc1Cl",
+        "chematic": "CC(=O)c1ccc(-n2ncc(=O)[nH]c2=O)cc1Cl",
+        "openbabel": "CC(=O)c1ccc(-n2ncc(=O)[nH]c2=O)cc1Cl"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 59,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=C(c1ccccc1)c1ccc(-n2ncc(=O)[nH]c2=O)cc1Cl",
+        "chematic": "c1(=O)cnn(-c3ccc(c(c3)Cl)C(=O)c2ccccc2)c([nH]1)=O",
+        "openbabel": "O=c1cnn(c(=O)[nH]1)c1ccc(c(c1)Cl)C(=O)c1ccccc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=C(c1ccccc1)c1ccc(-n2ncc(=O)[nH]c2=O)cc1Cl",
+        "chematic": "O=C(c1ccccc1)c1ccc(-n2ncc(=O)[nH]c2=O)cc1Cl",
+        "openbabel": "O=C(c1ccccc1)c1ccc(-n2ncc(=O)[nH]c2=O)cc1Cl"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 60,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cc1cc(C)c(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2)c(C)c1",
+        "chematic": "c3c(C)cc(c(c3C)C(=O)c1ccc(-n2ncc([nH]c2=O)=O)cc1)C",
+        "openbabel": "Cc1cc(C)c(c(c1)C)C(=O)c1ccc(cc1)n1ncc(=O)[nH]c1=O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cc1cc(C)c(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2)c(C)c1",
+        "chematic": "Cc1cc(C)c(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2)c(C)c1",
+        "openbabel": "Cc1cc(C)c(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2)c(C)c1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 61,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=C(c1ccc(Cl)cc1)c1ccc(-n2ncc(=O)[nH]c2=O)cc1",
+        "chematic": "c1cc(C(=O)c3ccc(cc3)Cl)ccc1-n2ncc(=O)[nH]c2=O",
+        "openbabel": "Clc1ccc(cc1)C(=O)c1ccc(cc1)n1ncc(=O)[nH]c1=O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=C(c1ccc(Cl)cc1)c1ccc(-n2ncc(=O)[nH]c2=O)cc1",
+        "chematic": "O=C(c1ccc(Cl)cc1)c1ccc(-n2ncc(=O)[nH]c2=O)cc1",
+        "openbabel": "O=C(c1ccc(Cl)cc1)c1ccc(-n2ncc(=O)[nH]c2=O)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 62,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(O)c1ccc(Cl)cc1",
+        "chematic": "c1(=O)cnn(-c3ccc(c(c3)C)C(c2ccc(Cl)cc2)O)c([nH]1)=O",
+        "openbabel": "Clc1ccc(cc1)C(c1ccc(cc1C)n1ncc(=O)[nH]c1=O)O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(O)c1ccc(Cl)cc1",
+        "chematic": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(O)c1ccc(Cl)cc1",
+        "openbabel": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(O)c1ccc(Cl)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 63,
+      "status": "ok",
+      "engines": {
+        "rdkit": "c1cncc(CN2CCN(CC3CCCCN3)CC2)c1",
+        "chematic": "C1CN(CC3CCCCN3)CCN1Cc2cnccc2",
+        "openbabel": "C1CCC(NC1)CN1CCN(CC1)Cc1cccnc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "c1cncc(CN2CCN(CC3CCCCN3)CC2)c1",
+        "chematic": "c1cncc(CN2CCN(CC3CCCCN3)CC2)c1",
+        "openbabel": "c1cncc(CN2CCN(CC3CCCCN3)CC2)c1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 64,
+      "status": "ok",
+      "engines": {
+        "rdkit": "c1cc(CN2CCN(CC3CCCCN3)CC2)ccn1",
+        "chematic": "c1(CN3CCN(CC3)CC2CCCCN2)ccncc1",
+        "openbabel": "C1CCC(NC1)CN1CCN(CC1)Cc1ccncc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "c1cc(CN2CCN(CC3CCCCN3)CC2)ccn1",
+        "chematic": "c1cc(CN2CCN(CC3CCCCN3)CC2)ccn1",
+        "openbabel": "c1cc(CN2CCN(CC3CCCCN3)CC2)ccn1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 65,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CN1CCCCC1CN1CCN(Cc2ccncc2)CC1",
+        "chematic": "C(N3CCN(CC3)Cc2ccncc2)C1CCCCN1C",
+        "openbabel": "CN1CCCCC1CN1CCN(CC1)Cc1ccncc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CN1CCCCC1CN1CCN(Cc2ccncc2)CC1",
+        "chematic": "CN1CCCCC1CN1CCN(Cc2ccncc2)CC1",
+        "openbabel": "CN1CCCCC1CN1CCN(Cc2ccncc2)CC1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 66,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CN1CCCCC1CN1CCN(Cc2cccnc2)CC1",
+        "chematic": "c1(CN3CCN(CC3)CC2CCCCN2C)cnccc1",
+        "openbabel": "CN1CCCCC1CN1CCN(CC1)Cc1cccnc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CN1CCCCC1CN1CCN(Cc2cccnc2)CC1",
+        "chematic": "CN1CCCCC1CN1CCN(Cc2cccnc2)CC1",
+        "openbabel": "CN1CCCCC1CN1CCN(Cc2cccnc2)CC1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 67,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(Br)cc4)CC3)nc(N)c2cc1OC",
+        "chematic": "O(C)c4c(OC)cc3nc(nc(N)c3c4)N2CCN(CC2)C(/C=C/c1ccc(Br)cc1)=O",
+        "openbabel": "COc1cc2c(N)nc(nc2cc1OC)N1CCN(CC1)C(=O)/C=C/c1ccc(cc1)Br"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(Br)cc4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(Br)cc4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(Br)cc4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 68,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCCC(=O)c1ccc(-n2ncc(=O)[nH]c2=O)cc1",
+        "chematic": "c2(n(ncc([nH]2)=O)-c1ccc(cc1)C(=O)CCC)=O",
+        "openbabel": "CCCC(=O)c1ccc(cc1)n1ncc(=O)[nH]c1=O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCCC(=O)c1ccc(-n2ncc(=O)[nH]c2=O)cc1",
+        "chematic": "CCCC(=O)c1ccc(-n2ncc(=O)[nH]c2=O)cc1",
+        "openbabel": "CCCC(=O)c1ccc(-n2ncc(=O)[nH]c2=O)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 69,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CC(=O)c1ccc(-n2ncc(=O)[nH]c2=O)cc1",
+        "chematic": "c1cc(-n2ncc([nH]c2=O)=O)ccc1C(=O)C",
+        "openbabel": "CC(=O)c1ccc(cc1)n1ncc(=O)[nH]c1=O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CC(=O)c1ccc(-n2ncc(=O)[nH]c2=O)cc1",
+        "chematic": "CC(=O)c1ccc(-n2ncc(=O)[nH]c2=O)cc1",
+        "openbabel": "CC(=O)c1ccc(-n2ncc(=O)[nH]c2=O)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 70,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=c1cnn(-c2ccc(-c3ccc4oc5ccc(Cl)cc5c(=O)c4c3)cc2)c(=O)[nH]1",
+        "chematic": "c3c1c(cc(-c5ccc(cc5)-n4ncc([nH]c4=O)=O)c3)c(=O)c2cc(Cl)ccc2o1",
+        "openbabel": "Clc1ccc2c(c1)c(=O)c1c(o2)ccc(c1)c1ccc(cc1)n1ncc(=O)[nH]c1=O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=c1cnn(-c2ccc(-c3ccc4oc5ccc(Cl)cc5c(=O)c4c3)cc2)c(=O)[nH]1",
+        "chematic": "O=c1cnn(-c2ccc(-c3ccc4oc5ccc(Cl)cc5c(=O)c4c3)cc2)c(=O)[nH]1",
+        "openbabel": "O=c1cnn(-c2ccc(-c3ccc4oc5ccc(Cl)cc5c(=O)c4c3)cc2)c(=O)[nH]1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 71,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)c4ccc(N=C=S)c(I)c4)CC3)nc(N)c2cc1OC",
+        "chematic": "c1c(c(N=C=S)ccc1C(N2CCN(c4nc(N)c3c(n4)cc(c(OC)c3)OC)CC2)=O)I",
+        "openbabel": "S=C=Nc1ccc(cc1I)C(=O)N1CCN(CC1)c1nc(N)c2c(n1)cc(c(c2)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)c4ccc(N=C=S)c(I)c4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(C(=O)c4ccc(N=C=S)c(I)c4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(C(=O)c4ccc(N=C=S)c(I)c4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 72,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(/C(S)=N/c4ccc(NC(=S)N5CC5)cc4)CC3)nc(N)c2cc1OC",
+        "chematic": "c1(NC(=S)N5CC5)ccc(/N=C(/N2CCN(c4nc3c(c(n4)N)cc(c(c3)OC)OC)CC2)S)cc1",
+        "openbabel": "COc1cc2nc(nc(c2cc1OC)N)N1CCN(CC1)/C(=N/c1ccc(cc1)NC(=S)N1CC1)/S"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(/C(S)=N/c4ccc(NC(=S)N5CC5)cc4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(/C(S)=N/c4ccc(NC(=S)N5CC5)cc4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(/C(S)=N/c4ccc(NC(=S)N5CC5)cc4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 73,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CN1CCC[C@H]1CN1CCN(Cc2ccncc2)CC1",
+        "chematic": "[C@@H]1(CN3CCN(CC3)Cc2ccncc2)CCCN1C",
+        "openbabel": "CN1CCC[C@H]1CN1CCN(CC1)Cc1ccncc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CN1CCC[C@H]1CN1CCN(Cc2ccncc2)CC1",
+        "chematic": "CN1CCC[C@H]1CN1CCN(Cc2ccncc2)CC1",
+        "openbabel": "CN1CCC[C@H]1CN1CCN(Cc2ccncc2)CC1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 74,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CN1CCC[C@H]1CN1CCN(Cc2cccnc2)CC1",
+        "chematic": "N1(C)CCC[C@H]1CN2CCN(Cc3cccnc3)CC2",
+        "openbabel": "CN1CCC[C@H]1CN1CCN(CC1)Cc1cccnc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CN1CCC[C@H]1CN1CCN(Cc2cccnc2)CC1",
+        "chematic": "CN1CCC[C@H]1CN1CCN(Cc2cccnc2)CC1",
+        "openbabel": "CN1CCC[C@H]1CN1CCN(Cc2cccnc2)CC1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 75,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)c4ccco4)CC3)nc(N)c2cc1OC",
+        "chematic": "O(C)c2cc1c(N)nc(N3CCN(C(c4occc4)=O)CC3)nc1cc2OC",
+        "openbabel": "COc1cc2nc(nc(c2cc1OC)N)N1CCN(CC1)C(=O)c1ccco1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)c4ccco4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(C(=O)c4ccco4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(C(=O)c4ccco4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 76,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COC(=O)/C=C/C=C/C(=O)N1CCN(c2nc(N)c3cc(OC)c(OC)cc3n2)CC1",
+        "chematic": "C(/C(=O)OC)=C\\C=C\\C(N3CCN(CC3)c2nc(N)c1cc(c(OC)cc1n2)OC)=O",
+        "openbabel": "COC(=O)/C=C/C=C/C(=O)N1CCN(CC1)c1nc(N)c2c(n1)cc(c(c2)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COC(=O)/C=C/C=C/C(=O)N1CCN(c2nc(N)c3cc(OC)c(OC)cc3n2)CC1",
+        "chematic": "COC(=O)/C=C/C=C/C(=O)N1CCN(c2nc(N)c3cc(OC)c(OC)cc3n2)CC1",
+        "openbabel": "COC(=O)/C=C/C=C/C(=O)N1CCN(c2nc(N)c3cc(OC)c(OC)cc3n2)CC1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 77,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)C4OC4c4ccccc4)CC3)nc(N)c2cc1OC",
+        "chematic": "N5(CCN(CC5)c4nc3c(c(n4)N)cc(OC)c(OC)c3)C(=O)C2OC2c1ccccc1",
+        "openbabel": "COc1cc2nc(nc(c2cc1OC)N)N1CCN(CC1)C(=O)C1OC1c1ccccc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)C4OC4c4ccccc4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(C(=O)C4OC4c4ccccc4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(C(=O)C4OC4c4ccccc4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 78,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)/C=C/C(=O)c4ccccc4)CC3)nc(N)c2cc1OC",
+        "chematic": "C2CN(CCN2c3nc4c(cc(OC)c(OC)c4)c(N)n3)C(/C=C/C(c1ccccc1)=O)=O",
+        "openbabel": "COc1cc2c(N)nc(nc2cc1OC)N1CCN(CC1)C(=O)/C=C/C(=O)c1ccccc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)/C=C/C(=O)c4ccccc4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(C(=O)/C=C/C(=O)c4ccccc4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(C(=O)/C=C/C(=O)c4ccccc4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 79,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)c4ccc5ccccc5c4)CC3)nc(N)c2cc1OC",
+        "chematic": "C1N(c5nc(N)c4c(n5)cc(OC)c(c4)OC)CCN(C(=O)c3cc2c(cc3)cccc2)C1",
+        "openbabel": "COc1cc2nc(nc(c2cc1OC)N)N1CCN(CC1)C(=O)c1ccc2c(c1)cccc2"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)c4ccc5ccccc5c4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(C(=O)c4ccc5ccccc5c4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(C(=O)c4ccc5ccccc5c4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 80,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(/C(S)=N/c4ccc(N=[N+]=[N-])cc4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc4c(cc3c(nc(nc3c4)N2CCN(CC2)/C(=N/c1ccc(N=[N+]=[N-])cc1)S)N)OC",
+        "openbabel": "[N-]=[N+]=Nc1ccc(cc1)/N=C(/N1CCN(CC1)c1nc(N)c2c(n1)cc(c(c2)OC)OC)\\S"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(/C(S)=N/c4ccc(N=[N+]=[N-])cc4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(/C(S)=N/c4ccc(N=[N+]=[N-])cc4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(/C(S)=N/c4ccc(N=[N+]=[N-])cc4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 81,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)c4cccc(CCl)c4)CC3)nc(N)c2cc1OC",
+        "chematic": "c4c(cc(CCl)cc4)C(=O)N1CCN(c3nc(c2cc(c(cc2n3)OC)OC)N)CC1",
+        "openbabel": "COc1cc2nc(nc(c2cc1OC)N)N1CCN(CC1)C(=O)c1cccc(c1)CCl"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)c4cccc(CCl)c4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(C(=O)c4cccc(CCl)c4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(C(=O)c4cccc(CCl)c4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 82,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(N=C=S)cc4)CC3)nc(N)c2cc1OC",
+        "chematic": "c1c(OC)c(OC)cc4c1nc(nc4N)N3CCN(CC3)C(/C=C/c2ccc(cc2)N=C=S)=O",
+        "openbabel": "S=C=Nc1ccc(cc1)/C=C/C(=O)N1CCN(CC1)c1nc(N)c2c(n1)cc(c(c2)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(N=C=S)cc4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(N=C=S)cc4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(N=C=S)cc4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 83,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(NC(=O)CBr)cc4)CC3)nc(N)c2cc1OC",
+        "chematic": "c4(NC(=O)CBr)ccc(cc4)/C=C/C(=O)N3CCN(CC3)c2nc1cc(OC)c(OC)cc1c(n2)N",
+        "openbabel": "BrCC(=O)Nc1ccc(cc1)/C=C/C(=O)N1CCN(CC1)c1nc(N)c2c(n1)cc(c(c2)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(NC(=O)CBr)cc4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(NC(=O)CBr)cc4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(NC(=O)CBr)cc4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 84,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=c1oc2c(O)c(O)ccc2c2ccc(O)cc12",
+        "chematic": "Oc3c1c(ccc3O)c2c(cc(cc2)O)c(o1)=O",
+        "openbabel": "Oc1ccc2c(c1)c(=O)oc1c2ccc(c1O)O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=c1oc2c(O)c(O)ccc2c2ccc(O)cc12",
+        "chematic": "O=c1oc2c(O)c(O)ccc2c2ccc(O)cc12",
+        "openbabel": "O=c1oc2c(O)c(O)ccc2c2ccc(O)cc12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 85,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=c1oc2ccccc2c2ccccc12",
+        "chematic": "c2cccc3oc(=O)c1ccccc1c23",
+        "openbabel": "O=c1oc2ccccc2c2c1cccc2"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=c1oc2ccccc2c2ccccc12",
+        "chematic": "O=c1oc2ccccc2c2ccccc12",
+        "openbabel": "O=c1oc2ccccc2c2ccccc12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 86,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=c1oc2c(O)c(O)ccc2c2ccccc12",
+        "chematic": "c12c(c(=O)oc3c(c(O)ccc23)O)cccc1",
+        "openbabel": "Oc1ccc2c(c1O)oc(=O)c1c2cccc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=c1oc2c(O)c(O)ccc2c2ccccc12",
+        "chematic": "O=c1oc2c(O)c(O)ccc2c2ccccc12",
+        "openbabel": "O=c1oc2c(O)c(O)ccc2c2ccccc12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 87,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=c1oc2ccccc2c2cc(O)c(O)cc12",
+        "chematic": "c2c(c(cc3c(oc1c(c23)cccc1)=O)O)O",
+        "openbabel": "Oc1cc2c(=O)oc3c(c2cc1O)cccc3"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=c1oc2ccccc2c2cc(O)c(O)cc12",
+        "chematic": "O=c1oc2ccccc2c2cc(O)c(O)cc12",
+        "openbabel": "O=c1oc2ccccc2c2cc(O)c(O)cc12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 88,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=c1oc2cc(O)c(O)cc2c2cc(O)c(O)cc12",
+        "chematic": "c1c(c(O)cc2c(=O)oc3cc(O)c(cc3c12)O)O",
+        "openbabel": "Oc1cc2oc(=O)c3c(c2cc1O)cc(c(c3)O)O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=c1oc2cc(O)c(O)cc2c2cc(O)c(O)cc12",
+        "chematic": "O=c1oc2cc(O)c(O)cc2c2cc(O)c(O)cc12",
+        "openbabel": "O=c1oc2cc(O)c(O)cc2c2cc(O)c(O)cc12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 89,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)COc4ccccc4)CC3)nc(N)c2cc1OC",
+        "chematic": "O=C(N4CCN(CC4)c3nc2cc(c(OC)cc2c(n3)N)OC)COc1ccccc1",
+        "openbabel": "COc1cc2nc(nc(c2cc1OC)N)N1CCN(CC1)C(=O)COc1ccccc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc2nc(N3CCN(C(=O)COc4ccccc4)CC3)nc(N)c2cc1OC",
+        "chematic": "COc1cc2nc(N3CCN(C(=O)COc4ccccc4)CC3)nc(N)c2cc1OC",
+        "openbabel": "COc1cc2nc(N3CCN(C(=O)COc4ccccc4)CC3)nc(N)c2cc1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 90,
+      "status": "ok",
+      "engines": {
+        "rdkit": "C=C(C=O)C[C@H]1C[C@H](O)[C@]2(C)O[C@@H]3C[C@@H]4O[C@@H]5C[C@]6(C)O[C@]7(C)CC[C@@H]8O[C@@H]9C[C@]%10(C)O[C@@H]%11C(C)=CC(=O)O[C@H]%11C[C@H]%10O[C@H]9C[C@@H](C)[C@H]8O[C@H]7C[C@H]6O[C@@]5(C)C/C=C\\[C@H]4O[C@H]3C[C@H]2O1",
+        "chematic": "C(C[C@H]%11C[C@H](O)[C@@]%10(O[C@H]1[C@H](C[C@H]%10O%11)O[C@H]/4[C@@H](O[C@@H]3C[C@]2(C)O[C@]5(C)CC[C@H]9[C@@H]([C@H](C)C[C@@H]8O[C@H]6[C@@](C[C@H]8O9)(C)O[C@H]7[C@@H](OC(=O)C=C7C)C6)O[C@H]5C[C@H]2O[C@]3(C/C=C4)C)C1)C)(C=O)=C",
+        "openbabel": "O=CC(=C)C[C@H]1C[C@H](O)[C@]2([C@H](O1)C[C@H]1[C@H](O2)C[C@H]2[C@H](O1)C=CC[C@]1([C@H](O2)C[C@]2(C)O[C@]3(C)CC[C@H]4[C@H](O[C@H]3C[C@H]2O1)[C@H](C)C[C@H]1[C@H](O4)C[C@]2(C)O[C@@H]3C(=CC(=O)O[C@H]3C[C@H]2O1)C)C)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "C=C(C=O)C[C@H]1C[C@H](O)[C@]2(C)O[C@@H]3C[C@@H]4O[C@@H]5C[C@]6(C)O[C@]7(C)CC[C@@H]8O[C@@H]9C[C@]%10(C)O[C@@H]%11C(C)=CC(=O)O[C@H]%11C[C@H]%10O[C@H]9C[C@@H](C)[C@H]8O[C@H]7C[C@H]6O[C@@]5(C)C/C=C\\[C@H]4O[C@H]3C[C@H]2O1",
+        "chematic": "C=C(C=O)C[C@H]1C[C@H](O)[C@]2(C)O[C@@H]3C[C@@H]4O[C@@H]5C[C@]6(C)O[C@]7(C)CC[C@@H]8O[C@@H]9C[C@]%10(C)O[C@@H]%11C(C)=CC(=O)O[C@H]%11C[C@H]%10O[C@H]9C[C@@H](C)[C@H]8O[C@H]7C[C@H]6O[C@@]5(C)C/C=C\\[C@H]4O[C@H]3C[C@H]2O1",
+        "openbabel": "C=C(C=O)C[C@H]1C[C@H](O)[C@]2(C)O[C@@H]3C[C@@H]4O[C@@H]5C[C@]6(C)O[C@]7(C)CC[C@@H]8O[C@@H]9C[C@]%10(C)O[C@@H]%11C(C)=CC(=O)O[C@H]%11C[C@H]%10O[C@H]9C[C@@H](C)[C@H]8O[C@H]7C[C@H]6O[C@@]5(C)CC=C[C@H]4O[C@H]3C[C@H]2O1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": false
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": false
+      }
+    },
+    {
+      "input_index": 91,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CN1CCC[C@H]1c1cccnc1",
+        "chematic": "n1cc([C@H]2N(CCC2)C)ccc1",
+        "openbabel": "CN1CCC[C@H]1c1cccnc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CN1CCC[C@H]1c1cccnc1",
+        "chematic": "CN1CCC[C@H]1c1cccnc1",
+        "openbabel": "CN1CCC[C@H]1c1cccnc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": true
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 92,
+      "status": "ok",
+      "engines": {
+        "rdkit": "c1cncc([C@@H]2CCCN2)c1",
+        "chematic": "C2CC[C@H](N2)c1cnccc1",
+        "openbabel": "C1CN[C@@H](C1)c1cccnc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "c1cncc([C@@H]2CCCN2)c1",
+        "chematic": "c1cncc([C@@H]2CCCN2)c1",
+        "openbabel": "c1cncc([C@@H]2CCCN2)c1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 93,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCC(C)(C)NC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "CCC(C)(C)NC(OCC2CN(CCN2C(c3cc(c(c(c3)OC)OC)OC)=O)C(c1cc(OC)c(c(c1)OC)OC)=O)=O",
+        "openbabel": "COc1c(OC)cc(cc1OC)C(=O)N1CCN(C(C1)COC(=O)NC(CC)(C)C)C(=O)c1cc(OC)c(c(c1)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCC(C)(C)NC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "CCC(C)(C)NC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "openbabel": "CCC(C)(C)NC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 94,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)NC(C)CC(C)C)C2)cc(OC)c1OC",
+        "chematic": "c3(cc(c(OC)c(c3)OC)OC)C(=O)N1CCN(C(=O)c2cc(c(OC)c(OC)c2)OC)C(C1)COC(NC(C)CC(C)C)=O",
+        "openbabel": "COc1c(OC)cc(cc1OC)C(=O)N1CCN(C(C1)COC(=O)NC(CC(C)C)C)C(=O)c1cc(OC)c(c(c1)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)NC(C)CC(C)C)C2)cc(OC)c1OC",
+        "chematic": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)NC(C)CC(C)C)C2)cc(OC)c1OC",
+        "openbabel": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)NC(C)CC(C)C)C2)cc(OC)c1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 95,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCCC(C)NC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "O(C(NC(C)CCC)=O)CC2N(C(=O)c3cc(c(OC)c(c3)OC)OC)CCN(C2)C(c1cc(c(OC)c(c1)OC)OC)=O",
+        "openbabel": "CCCC(NC(=O)OCC1CN(CCN1C(=O)c1cc(OC)c(c(c1)OC)OC)C(=O)c1cc(OC)c(c(c1)OC)OC)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCCC(C)NC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "CCCC(C)NC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "openbabel": "CCCC(C)NC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 96,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=C(C1CCCCN1)N1CCN(Cc2cccnc2)CC1",
+        "chematic": "c1c(CN2CCN(C(C3NCCCC3)=O)CC2)cccn1",
+        "openbabel": "O=C(C1CCCCN1)N1CCN(CC1)Cc1cccnc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=C(C1CCCCN1)N1CCN(Cc2cccnc2)CC1",
+        "chematic": "O=C(C1CCCCN1)N1CCN(Cc2cccnc2)CC1",
+        "openbabel": "O=C(C1CCCCN1)N1CCN(Cc2cccnc2)CC1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 97,
+      "status": "ok",
+      "engines": {
+        "rdkit": "c1cncc(CN2CCN(C[C@@H]3CCCN3)CC2)c1",
+        "chematic": "C1CN(C[C@@H]3CCCN3)CCN1Cc2cccnc2",
+        "openbabel": "C1CN[C@@H](C1)CN1CCN(CC1)Cc1cccnc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "c1cncc(CN2CCN(C[C@@H]3CCCN3)CC2)c1",
+        "chematic": "c1cncc(CN2CCN(C[C@@H]3CCCN3)CC2)c1",
+        "openbabel": "c1cncc(CN2CCN(C[C@@H]3CCCN3)CC2)c1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 98,
+      "status": "ok",
+      "engines": {
+        "rdkit": "c1cc(CN2CCN(C[C@@H]3CCCN3)CC2)ccn1",
+        "chematic": "c3nccc(c3)CN2CCN(CC2)C[C@@H]1CCCN1",
+        "openbabel": "C1CN[C@@H](C1)CN1CCN(CC1)Cc1ccncc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "c1cc(CN2CCN(C[C@@H]3CCCN3)CC2)ccn1",
+        "chematic": "c1cc(CN2CCN(C[C@@H]3CCCN3)CC2)ccn1",
+        "openbabel": "c1cc(CN2CCN(C[C@@H]3CCCN3)CC2)ccn1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 99,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=c1oc2c(O)c(O)ccc2c2cc(F)ccc12",
+        "chematic": "Oc1c(O)ccc2c3cc(F)ccc3c(oc12)=O",
+        "openbabel": "Fc1ccc2c(c1)c1ccc(c(c1oc2=O)O)O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=c1oc2c(O)c(O)ccc2c2cc(F)ccc12",
+        "chematic": "O=c1oc2c(O)c(O)ccc2c2cc(F)ccc12",
+        "openbabel": "O=c1oc2c(O)c(O)ccc2c2cc(F)ccc12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 100,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=c1oc2c(Cl)c(Cl)ccc2c2cc(O)c(O)cc12",
+        "chematic": "Clc1c3c(c2c(c(o3)=O)cc(O)c(c2)O)ccc1Cl",
+        "openbabel": "Oc1cc2c(cc1O)c(=O)oc1c2ccc(c1Cl)Cl"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=c1oc2c(Cl)c(Cl)ccc2c2cc(O)c(O)cc12",
+        "chematic": "O=c1oc2c(Cl)c(Cl)ccc2c2cc(O)c(O)cc12",
+        "openbabel": "O=c1oc2c(Cl)c(Cl)ccc2c2cc(O)c(O)cc12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 101,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cc1cc(O)c(O)c2oc(=O)c3ccc(F)cc3c12",
+        "chematic": "c12c(c3cc(ccc3c(o2)=O)F)c(cc(c1O)O)C",
+        "openbabel": "Fc1ccc2c(c1)c1c(C)cc(c(c1oc2=O)O)O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cc1cc(O)c(O)c2oc(=O)c3ccc(F)cc3c12",
+        "chematic": "Cc1cc(O)c(O)c2oc(=O)c3ccc(F)cc3c12",
+        "openbabel": "Cc1cc(O)c(O)c2oc(=O)c3ccc(F)cc3c12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 102,
+      "status": "ok",
+      "engines": {
+        "rdkit": "ONC1c2cc(O)c(O)cc2-c2cc(O)c(O)cc21",
+        "chematic": "N(C2c1cc(O)c(cc1-c3cc(c(O)cc23)O)O)O",
+        "openbabel": "ONC1c2cc(O)c(cc2-c2c1cc(O)c(c2)O)O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "ONC1c2cc(O)c(O)cc2-c2cc(O)c(O)cc21",
+        "chematic": "ONC1c2cc(O)c(O)cc2-c2cc(O)c(O)cc21",
+        "openbabel": "ONC1c2cc(O)c(O)cc2-c2cc(O)c(O)cc21"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 103,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=C1c2cc(O)c(O)cc2-c2cc(O)c(O)cc21",
+        "chematic": "c3(O)c(O)cc-1c(c3)C(=O)c2c-1cc(O)c(O)c2",
+        "openbabel": "O=C1c2cc(O)c(cc2-c2c1cc(O)c(c2)O)O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=C1c2cc(O)c(O)cc2-c2cc(O)c(O)cc21",
+        "chematic": "O=C1c2cc(O)c(O)cc2-c2cc(O)c(O)cc21",
+        "openbabel": "O=C1c2cc(O)c(O)cc2-c2cc(O)c(O)cc21"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 104,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=c1oc2c(F)c(F)ccc2c2cc(O)c(O)cc12",
+        "chematic": "c1cc(c(F)c2c1c3cc(c(O)cc3c(o2)=O)O)F",
+        "openbabel": "Oc1cc2c(cc1O)c(=O)oc1c2ccc(c1F)F"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=c1oc2c(F)c(F)ccc2c2cc(O)c(O)cc12",
+        "chematic": "O=c1oc2c(F)c(F)ccc2c2cc(O)c(O)cc12",
+        "openbabel": "O=c1oc2c(F)c(F)ccc2c2cc(O)c(O)cc12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 105,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=c1oc2cc(O)c(O)cc2c2cc(F)ccc12",
+        "chematic": "Oc3c(cc1c(c3)oc(=O)c2ccc(cc12)F)O",
+        "openbabel": "Fc1ccc2c(c1)c1cc(O)c(cc1oc2=O)O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=c1oc2cc(O)c(O)cc2c2cc(F)ccc12",
+        "chematic": "O=c1oc2cc(O)c(O)cc2c2cc(F)ccc12",
+        "openbabel": "O=c1oc2cc(O)c(O)cc2c2cc(F)ccc12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 106,
+      "status": "ok",
+      "engines": {
+        "rdkit": "C[C@]12CCC3C(CC=C4C[C@@H](O)[C@H]5COC[C@]43C5)C1CC[C@@H]2OC1CC1",
+        "chematic": "O[C@@H]1CC=6[C@]2(C4C(CC=6)C5CC[C@@H]([C@@]5(C)CC4)OC3CC3)COC[C@H]1C2",
+        "openbabel": "O[C@@H]1CC2=CCC3C([C@]42C[C@@H]1COC4)CC[C@]1(C3CC[C@@H]1OC1CC1)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "C[C@]12CCC3C(CC=C4C[C@@H](O)[C@H]5COC[C@]43C5)C1CC[C@@H]2OC1CC1",
+        "chematic": "C[C@]12CCC3C(CC=C4C[C@@H](O)[C@H]5COC[C@]43C5)C1CC[C@@H]2OC1CC1",
+        "openbabel": "C[C@]12CCC3C(CC=C4C[C@@H](O)[C@H]5COC[C@]43C5)C1CC[C@@H]2OC1CC1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 107,
+      "status": "ok",
+      "engines": {
+        "rdkit": "C[C@]12CCC(=O)C=C1C(=O)CC1C2CC[C@@]2(C)C1CC[C@@H]2OC1CC1",
+        "chematic": "[C@@]12(C)[C@@H](OC5CC5)CCC1C4C([C@]3(C)C(C(C4)=O)=CC(=O)CC3)CC2",
+        "openbabel": "O=C1CC[C@]2(C(=C1)C(=O)CC1C2CC[C@]2(C1CC[C@@H]2OC1CC1)C)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "C[C@]12CCC(=O)C=C1C(=O)CC1C2CC[C@@]2(C)C1CC[C@@H]2OC1CC1",
+        "chematic": "C[C@]12CCC(=O)C=C1C(=O)CC1C2CC[C@@]2(C)C1CC[C@@H]2OC1CC1",
+        "openbabel": "C[C@]12CCC(=O)C=C1C(=O)CC1C2CC[C@@]2(C)C1CC[C@@H]2OC1CC1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 108,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=c1oc2c(O)c(O)ccc2c2cc(O)c(O)cc12",
+        "chematic": "c3(O)cc2c1ccc(c(c1oc(=O)c2cc3O)O)O",
+        "openbabel": "Oc1cc2c(=O)oc3c(c2cc1O)ccc(c3O)O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=c1oc2c(O)c(O)ccc2c2cc(O)c(O)cc12",
+        "chematic": "O=c1oc2c(O)c(O)ccc2c2cc(O)c(O)cc12",
+        "openbabel": "O=c1oc2c(O)c(O)ccc2c2cc(O)c(O)cc12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 109,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)NCC(C)(C)C)C2)cc(OC)c1OC",
+        "chematic": "N1(C(c3cc(c(OC)c(c3)OC)OC)=O)C(COC(=O)NCC(C)(C)C)CN(C(c2cc(OC)c(c(c2)OC)OC)=O)CC1",
+        "openbabel": "COc1c(OC)cc(cc1OC)C(=O)N1CCN(C(C1)COC(=O)NCC(C)(C)C)C(=O)c1cc(OC)c(c(c1)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)NCC(C)(C)C)C2)cc(OC)c1OC",
+        "chematic": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)NCC(C)(C)C)C2)cc(OC)c1OC",
+        "openbabel": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)NCC(C)(C)C)C2)cc(OC)c1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 110,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)NC(C)(C)C)C2)cc(OC)c1OC",
+        "chematic": "O(c3c(cc(cc3OC)C(=O)N2C(CN(CC2)C(c1cc(OC)c(OC)c(OC)c1)=O)COC(NC(C)(C)C)=O)OC)C",
+        "openbabel": "COc1c(OC)cc(cc1OC)C(=O)N1CCN(C(C1)COC(=O)NC(C)(C)C)C(=O)c1cc(OC)c(c(c1)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)NC(C)(C)C)C2)cc(OC)c1OC",
+        "chematic": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)NC(C)(C)C)C2)cc(OC)c1OC",
+        "openbabel": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)NC(C)(C)C)C2)cc(OC)c1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 111,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCCCCCCC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "COc3c(OC)c(cc(c3)C(=O)N1CC(COC(=O)CCCCCCC)N(C(=O)c2cc(OC)c(c(c2)OC)OC)CC1)OC",
+        "openbabel": "CCCCCCCC(=O)OCC1CN(CCN1C(=O)c1cc(OC)c(c(c1)OC)OC)C(=O)c1cc(OC)c(c(c1)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCCCCCCC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "CCCCCCCC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "openbabel": "CCCCCCCC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 112,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCCCCCCCCC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "C(CCCCCCC(=O)OCC1CN(C(=O)c3cc(OC)c(OC)c(OC)c3)CCN1C(c2cc(c(OC)c(c2)OC)OC)=O)CC",
+        "openbabel": "CCCCCCCCCC(=O)OCC1CN(CCN1C(=O)c1cc(OC)c(c(c1)OC)OC)C(=O)c1cc(OC)c(c(c1)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCCCCCCCCC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "CCCCCCCCCC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "openbabel": "CCCCCCCCCC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 113,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(C)=O)C2)cc(OC)c1OC",
+        "chematic": "O(c1c(OC)c(cc(C(N3C(COC(C)=O)CN(CC3)C(=O)c2cc(OC)c(c(c2)OC)OC)=O)c1)OC)C",
+        "openbabel": "COc1c(OC)cc(cc1OC)C(=O)N1CCN(C(C1)COC(=O)C)C(=O)c1cc(OC)c(c(c1)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(C)=O)C2)cc(OC)c1OC",
+        "chematic": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(C)=O)C2)cc(OC)c1OC",
+        "openbabel": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(C)=O)C2)cc(OC)c1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 114,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCCCCCCCNC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "c3(c(OC)c(cc(c3)C(N1CCN(C(=O)c2cc(c(c(c2)OC)OC)OC)C(COC(=O)NCCCCCCCC)C1)=O)OC)OC",
+        "openbabel": "CCCCCCCCNC(=O)OCC1CN(CCN1C(=O)c1cc(OC)c(c(c1)OC)OC)C(=O)c1cc(OC)c(c(c1)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCCCCCCCNC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "CCCCCCCCNC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "openbabel": "CCCCCCCCNC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 115,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCCCCCCCCCCCCCCCCC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "C1CN(C(c3cc(c(OC)c(OC)c3)OC)=O)CC(COC(CCCCCCCCCCCCCCCCC)=O)N1C(c2cc(c(OC)c(c2)OC)OC)=O",
+        "openbabel": "CCCCCCCCCCCCCCCCCC(=O)OCC1CN(CCN1C(=O)c1cc(OC)c(c(c1)OC)OC)C(=O)c1cc(OC)c(c(c1)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCCCCCCCCCCCCCCCCC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "CCCCCCCCCCCCCCCCCC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "openbabel": "CCCCCCCCCCCCCCCCCC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 116,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cn1c(CC(=O)O)cc(CO)c1C(=O)c1ccc(Cl)cc1",
+        "chematic": "c1c(Cl)ccc(C(=O)c2n(C)c(cc2CO)CC(=O)O)c1",
+        "openbabel": "OCc1cc(n(c1C(=O)c1ccc(cc1)Cl)C)CC(=O)O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cn1c(CC(=O)O)cc(CO)c1C(=O)c1ccc(Cl)cc1",
+        "chematic": "Cn1c(CC(=O)O)cc(CO)c1C(=O)c1ccc(Cl)cc1",
+        "openbabel": "Cn1c(CC(=O)O)cc(CO)c1C(=O)c1ccc(Cl)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 117,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)COc3ccc(Cl)cc3)C2)cc(OC)c1OC",
+        "chematic": "c4(OC)c(OC)c(OC)cc(c4)C(N2CCN(C(COC(=O)COc3ccc(cc3)Cl)C2)C(c1cc(OC)c(OC)c(c1)OC)=O)=O",
+        "openbabel": "COc1cc(cc(c1OC)OC)C(=O)N1CCN(CC1COC(=O)COc1ccc(cc1)Cl)C(=O)c1cc(OC)c(c(c1)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)COc3ccc(Cl)cc3)C2)cc(OC)c1OC",
+        "chematic": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)COc3ccc(Cl)cc3)C2)cc(OC)c1OC",
+        "openbabel": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)COc3ccc(Cl)cc3)C2)cc(OC)c1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 118,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)COc3ccc(F)cc3)C2)cc(OC)c1OC",
+        "chematic": "c1cc(F)ccc1OCC(OCC4CN(CCN4C(=O)c3cc(c(c(c3)OC)OC)OC)C(c2cc(OC)c(c(OC)c2)OC)=O)=O",
+        "openbabel": "COc1cc(cc(c1OC)OC)C(=O)N1CCN(CC1COC(=O)COc1ccc(cc1)F)C(=O)c1cc(OC)c(c(c1)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)COc3ccc(F)cc3)C2)cc(OC)c1OC",
+        "chematic": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)COc3ccc(F)cc3)C2)cc(OC)c1OC",
+        "openbabel": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)COc3ccc(F)cc3)C2)cc(OC)c1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 119,
+      "status": "ok",
+      "engines": {
+        "rdkit": "C[C@]12CCC(=O)C=C1CCC1C2CC[C@@]2(C)C1CC[C@@H]2OC1CC1",
+        "chematic": "C3C[C@@]1(C)C(C4CCC5=CC(=O)CC[C@]5(C)C34)CC[C@@H]1OC2CC2",
+        "openbabel": "O=C1CC[C@]2(C(=C1)CCC1C2CC[C@]2(C1CC[C@@H]2OC1CC1)C)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "C[C@]12CCC(=O)C=C1CCC1C2CC[C@@]2(C)C1CC[C@@H]2OC1CC1",
+        "chematic": "C[C@]12CCC(=O)C=C1CCC1C2CC[C@@]2(C)C1CC[C@@H]2OC1CC1",
+        "openbabel": "C[C@]12CCC(=O)C=C1CCC1C2CC[C@@]2(C)C1CC[C@@H]2OC1CC1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 120,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CC1(C)C2=CCC3C(CC[C@@]4(C)C3CC[C@@H]4OC3CC3)[C@@]2(C)CC[C@@H]1O",
+        "chematic": "O[C@H]5CC[C@]4(C)C3C(CC=C4C5(C)C)C2[C@@](CC3)(C)[C@H](CC2)OC1CC1",
+        "openbabel": "O[C@H]1CC[C@]2(C(=CCC3C2CC[C@]2(C3CC[C@@H]2OC2CC2)C)C1(C)C)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CC1(C)C2=CCC3C(CC[C@@]4(C)C3CC[C@@H]4OC3CC3)[C@@]2(C)CC[C@@H]1O",
+        "chematic": "CC1(C)C2=CCC3C(CC[C@@]4(C)C3CC[C@@H]4OC3CC3)[C@@]2(C)CC[C@@H]1O",
+        "openbabel": "CC1(C)C2=CCC3C(CC[C@@]4(C)C3CC[C@@H]4OC3CC3)[C@@]2(C)CC[C@@H]1O"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 121,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CC1COc2c(N3CCN(C)CC3)c(F)cc3c(=O)c(C(=O)O)cn1c23",
+        "chematic": "N1(c4c(F)cc2c3n(C(C)COc34)cc(C(O)=O)c2=O)CCN(CC1)C",
+        "openbabel": "CN1CCN(CC1)c1c(F)cc2c3c1OCC(n3cc(c2=O)C(=O)O)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CC1COc2c(N3CCN(C)CC3)c(F)cc3c(=O)c(C(=O)O)cn1c23",
+        "chematic": "CC1COc2c(N3CCN(C)CC3)c(F)cc3c(=O)c(C(=O)O)cn1c23",
+        "openbabel": "CC1COc2c(N3CCN(C)CC3)c(F)cc3c(=O)c(C(=O)O)cn1c23"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 122,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCn1cc(C(=O)O)c(=O)c2ccc(C)nc21",
+        "chematic": "O=c1c2c(nc(cc2)C)n(cc1C(O)=O)CC",
+        "openbabel": "CCn1cc(C(=O)O)c(=O)c2c1nc(C)cc2"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCn1cc(C(=O)O)c(=O)c2ccc(C)nc21",
+        "chematic": "CCn1cc(C(=O)O)c(=O)c2ccc(C)nc21",
+        "openbabel": "CCn1cc(C(=O)O)c(=O)c2ccc(C)nc21"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 123,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=c1oc2c(O)c(O)cc3c(=O)oc4c(O)c(O)cc1c4c23",
+        "chematic": "Oc4c1oc(c3cc(c(c2oc(c(cc4O)c1c23)=O)O)O)=O",
+        "openbabel": "Oc1cc2c(=O)oc3c4c2c(c1O)oc(=O)c4cc(c3O)O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=c1oc2c(O)c(O)cc3c(=O)oc4c(O)c(O)cc1c4c23",
+        "chematic": "O=c1oc2c(O)c(O)cc3c(=O)oc4c(O)c(O)cc1c4c23",
+        "openbabel": "O=c1oc2c(O)c(O)cc3c(=O)oc4c(O)c(O)cc1c4c23"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 124,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cc1cc(O)c(O)c2oc(=O)c3cc(O)c(O)cc3c12",
+        "chematic": "Oc1cc(c2c(oc(c3cc(O)c(cc23)O)=O)c1O)C",
+        "openbabel": "Oc1cc2c(=O)oc3c(c2cc1O)c(C)cc(c3O)O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cc1cc(O)c(O)c2oc(=O)c3cc(O)c(O)cc3c12",
+        "chematic": "Cc1cc(O)c(O)c2oc(=O)c3cc(O)c(O)cc3c12",
+        "openbabel": "Cc1cc(O)c(O)c2oc(=O)c3cc(O)c(O)cc3c12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 125,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)C3CCCCC3)C2)cc(OC)c1OC",
+        "chematic": "COc1c(cc(C(=O)N4CCN(C(C4)COC(C3CCCCC3)=O)C(=O)c2cc(OC)c(c(c2)OC)OC)cc1OC)OC",
+        "openbabel": "COc1c(OC)cc(cc1OC)C(=O)N1CCN(C(C1)COC(=O)C1CCCCC1)C(=O)c1cc(OC)c(c(c1)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)C3CCCCC3)C2)cc(OC)c1OC",
+        "chematic": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)C3CCCCC3)C2)cc(OC)c1OC",
+        "openbabel": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)C3CCCCC3)C2)cc(OC)c1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 126,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCC(CC)C(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "C(C)C(C(OCC2CN(C(=O)c3cc(c(c(OC)c3)OC)OC)CCN2C(=O)c1cc(c(OC)c(c1)OC)OC)=O)CC",
+        "openbabel": "CCC(C(=O)OCC1CN(CCN1C(=O)c1cc(OC)c(c(c1)OC)OC)C(=O)c1cc(OC)c(c(c1)OC)OC)CC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCC(CC)C(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "CCC(CC)C(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "openbabel": "CCC(CC)C(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 127,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@@H]12",
+        "chematic": "S1(=O)(=O)C(C)(C)[C@H](C(=O)O)N2C(C([C@H]12)C/C=C/C(C)=O)=O",
+        "openbabel": "CC(=O)/C=C/CC1C(=O)N2[C@H]1S(=O)(=O)C([C@@H]2C(=O)O)(C)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@@H]12",
+        "chematic": "CC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@@H]12",
+        "openbabel": "CC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@@H]12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 128,
+      "status": "ok",
+      "engines": {
+        "rdkit": "C=Cn1cc(C(=O)O)c(=O)c2cc(F)c(N3CCC(CNCC)C3)c(F)c21",
+        "chematic": "O=c3c(cn(C=C)c2c(F)c(c(cc23)F)N1CC(CC1)CNCC)C(O)=O",
+        "openbabel": "CCNCC1CCN(C1)c1c(F)cc2c(c1F)n(C=C)cc(c2=O)C(=O)O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "C=Cn1cc(C(=O)O)c(=O)c2cc(F)c(N3CCC(CNCC)C3)c(F)c21",
+        "chematic": "C=Cn1cc(C(=O)O)c(=O)c2cc(F)c(N3CCC(CNCC)C3)c(F)c21",
+        "openbabel": "C=Cn1cc(C(=O)O)c(=O)c2cc(F)c(N3CCC(CNCC)C3)c(F)c21"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 129,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCN(CC)CCN(Cc1ccc(-c2ccc(C(F)(F)F)cc2)cc1)C(=O)Cn1c(SCc2ccc(F)cc2)nc(=O)c2c1CCC2",
+        "chematic": "C1CCc2c(=O)nc(SCc5ccc(F)cc5)n(CC(=O)N(Cc4ccc(cc4)-c3ccc(cc3)C(F)(F)F)CCN(CC)CC)c12",
+        "openbabel": "CCN(CCN(C(=O)Cn1c(SCc2ccc(cc2)F)nc(=O)c2c1CCC2)Cc1ccc(cc1)c1ccc(cc1)C(F)(F)F)CC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCN(CC)CCN(Cc1ccc(-c2ccc(C(F)(F)F)cc2)cc1)C(=O)Cn1c(SCc2ccc(F)cc2)nc(=O)c2c1CCC2",
+        "chematic": "CCN(CC)CCN(Cc1ccc(-c2ccc(C(F)(F)F)cc2)cc1)C(=O)Cn1c(SCc2ccc(F)cc2)nc(=O)c2c1CCC2",
+        "openbabel": "CCN(CC)CCN(Cc1ccc(-c2ccc(C(F)(F)F)cc2)cc1)C(=O)Cn1c(SCc2ccc(F)cc2)nc(=O)c2c1CCC2"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 130,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COCCc1ccc(OCC(O)CN(CC(O)COc2ccc(CCOC)cc2)C(C)COCC(C)OCC(C)OCC(C)N(CC(O)COc2ccc(CCOC)cc2)CC(O)COc2ccc(CCOC)cc2)cc1",
+        "chematic": "O(CC(C)OCC(C)OCC(C)N(CC(O)COc4ccc(CCOC)cc4)CC(COc3ccc(CCOC)cc3)O)CC(C)N(CC(O)COc2ccc(cc2)CCOC)CC(COc1ccc(cc1)CCOC)O",
+        "openbabel": "COCCc1ccc(cc1)OCC(CN(C(COCC(OCC(OCC(N(CC(COc1ccc(cc1)CCOC)O)CC(COc1ccc(cc1)CCOC)O)C)C)C)C)CC(COc1ccc(cc1)CCOC)O)O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COCCc1ccc(OCC(O)CN(CC(O)COc2ccc(CCOC)cc2)C(C)COCC(C)OCC(C)OCC(C)N(CC(O)COc2ccc(CCOC)cc2)CC(O)COc2ccc(CCOC)cc2)cc1",
+        "chematic": "COCCc1ccc(OCC(O)CN(CC(O)COc2ccc(CCOC)cc2)C(C)COCC(C)OCC(C)OCC(C)N(CC(O)COc2ccc(CCOC)cc2)CC(O)COc2ccc(CCOC)cc2)cc1",
+        "openbabel": "COCCc1ccc(OCC(O)CN(CC(O)COc2ccc(CCOC)cc2)C(C)COCC(C)OCC(C)OCC(C)N(CC(O)COc2ccc(CCOC)cc2)CC(O)COc2ccc(CCOC)cc2)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 131,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CC[C@H](NC(=O)[C@H](CC1CCCCC1)NC(=O)[C@@H](NC(=O)[C@H](CC(C)C)NC(=O)c1cnccn1)[C@@H](C)CC)C(=O)C(=O)N[C@@H](CCCCN)C(=O)O",
+        "chematic": "[C@H](NC(=O)[C@H]([C@H](CC)C)NC([C@@H](NC(c2cnccn2)=O)CC(C)C)=O)(CC1CCCCC1)C(=O)N[C@@H](CC)C(=O)C(=O)N[C@H](C(=O)O)CCCCN",
+        "openbabel": "NCCCC[C@@H](C(=O)O)NC(=O)C(=O)[C@@H](NC(=O)[C@@H](NC(=O)[C@H]([C@H](CC)C)NC(=O)[C@@H](NC(=O)c1nccnc1)CC(C)C)CC1CCCCC1)CC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CC[C@H](NC(=O)[C@H](CC1CCCCC1)NC(=O)[C@@H](NC(=O)[C@H](CC(C)C)NC(=O)c1cnccn1)[C@@H](C)CC)C(=O)C(=O)N[C@@H](CCCCN)C(=O)O",
+        "chematic": "CC[C@H](NC(=O)[C@H](CC1CCCCC1)NC(=O)[C@@H](NC(=O)[C@H](CC(C)C)NC(=O)c1cnccn1)[C@@H](C)CC)C(=O)C(=O)N[C@@H](CCCCN)C(=O)O",
+        "openbabel": "CC[C@H](NC(=O)[C@H](CC1CCCCC1)NC(=O)[C@@H](NC(=O)[C@H](CC(C)C)NC(=O)c1cnccn1)[C@@H](C)CC)C(=O)C(=O)N[C@@H](CCCCN)C(=O)O"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 132,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCCCCN(CCCCC)C(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "c1(OC)c(OC)cc(C(N2CC(COC(=O)N(CCCCC)CCCCC)N(C(c3cc(OC)c(OC)c(c3)OC)=O)CC2)=O)cc1OC",
+        "openbabel": "CCCCCN(C(=O)OCC1CN(CCN1C(=O)c1cc(OC)c(c(c1)OC)OC)C(=O)c1cc(OC)c(c(c1)OC)OC)CCCCC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCCCCN(CCCCC)C(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "CCCCCN(CCCCC)C(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "openbabel": "CCCCCN(CCCCC)C(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 133,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCCCN(CCCC)C(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "c3(cc(OC)c(OC)c(c3)OC)C(=O)N2C(CN(CC2)C(=O)c1cc(c(c(OC)c1)OC)OC)COC(=O)N(CCCC)CCCC",
+        "openbabel": "CCCCN(C(=O)OCC1CN(CCN1C(=O)c1cc(OC)c(c(c1)OC)OC)C(=O)c1cc(OC)c(c(c1)OC)OC)CCCC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCCCN(CCCC)C(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "CCCCN(CCCC)C(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "openbabel": "CCCCN(CCCC)C(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 134,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCCC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "c1(OC)c(cc(C(=O)N2CC(N(C(c3cc(OC)c(c(c3)OC)OC)=O)CC2)COC(=O)CCC)cc1OC)OC",
+        "openbabel": "CCCC(=O)OCC1CN(CCN1C(=O)c1cc(OC)c(c(c1)OC)OC)C(=O)c1cc(OC)c(c(c1)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCCC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "CCCC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "openbabel": "CCCC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 135,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCCN(CCC)C(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "O(c3c(OC)c(OC)cc(c3)C(=O)N2CC(N(CC2)C(c1cc(c(c(c1)OC)OC)OC)=O)COC(=O)N(CCC)CCC)C",
+        "openbabel": "CCCN(C(=O)OCC1CN(CCN1C(=O)c1cc(OC)c(c(c1)OC)OC)C(=O)c1cc(OC)c(c(c1)OC)OC)CCC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCCN(CCC)C(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "CCCN(CCC)C(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "openbabel": "CCCN(CCC)C(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 136,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCN(CC)C(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "N(CC)(C(OCC1N(C(c3cc(c(OC)c(OC)c3)OC)=O)CCN(C(c2cc(c(OC)c(OC)c2)OC)=O)C1)=O)CC",
+        "openbabel": "CCN(C(=O)OCC1CN(CCN1C(=O)c1cc(OC)c(c(c1)OC)OC)C(=O)c1cc(OC)c(c(c1)OC)OC)CC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCN(CC)C(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "CCN(CC)C(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "openbabel": "CCN(CC)C(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 137,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc(NC(=O)OCC2CN(C(=O)c3cc(OC)c(OC)c(OC)c3)CCN2C(=O)c2cc(OC)c(OC)c(OC)c2)cc(OC)c1OC",
+        "chematic": "COc4c(OC)c(OC)cc(c4)C(N2CCN(CC2COC(=O)Nc3cc(OC)c(c(c3)OC)OC)C(c1cc(OC)c(OC)c(c1)OC)=O)=O",
+        "openbabel": "COc1c(OC)cc(cc1OC)C(=O)N1CCN(CC1COC(=O)Nc1cc(OC)c(c(c1)OC)OC)C(=O)c1cc(OC)c(c(c1)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc(NC(=O)OCC2CN(C(=O)c3cc(OC)c(OC)c(OC)c3)CCN2C(=O)c2cc(OC)c(OC)c(OC)c2)cc(OC)c1OC",
+        "chematic": "COc1cc(NC(=O)OCC2CN(C(=O)c3cc(OC)c(OC)c(OC)c3)CCN2C(=O)c2cc(OC)c(OC)c(OC)c2)cc(OC)c1OC",
+        "openbabel": "COc1cc(NC(=O)OCC2CN(C(=O)c3cc(OC)c(OC)c(OC)c3)CCN2C(=O)c2cc(OC)c(OC)c(OC)c2)cc(OC)c1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 138,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCC(CC)NC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "COc1cc(C(N3CCN(CC3COC(=O)NC(CC)CC)C(=O)c2cc(OC)c(OC)c(c2)OC)=O)cc(c1OC)OC",
+        "openbabel": "CCC(NC(=O)OCC1CN(CCN1C(=O)c1cc(OC)c(c(c1)OC)OC)C(=O)c1cc(OC)c(c(c1)OC)OC)CC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCC(CC)NC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "CCC(CC)NC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "openbabel": "CCC(CC)NC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 139,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCC(C)CNC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "c3(cc(c(OC)c(c3)OC)OC)C(N1CCN(C(c2cc(c(c(c2)OC)OC)OC)=O)C(C1)COC(NCC(C)CC)=O)=O",
+        "openbabel": "CCC(CNC(=O)OCC1CN(CCN1C(=O)c1cc(OC)c(c(c1)OC)OC)C(=O)c1cc(OC)c(c(c1)OC)OC)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCC(C)CNC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "CCC(C)CNC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "openbabel": "CCC(C)CNC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 140,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCCCC(CC)CNC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "c3(OC)c(cc(cc3OC)C(N1CC(COC(=O)NCC(CC)CCCC)N(C(c2cc(c(OC)c(c2)OC)OC)=O)CC1)=O)OC",
+        "openbabel": "CCCCC(CNC(=O)OCC1CN(CCN1C(=O)c1cc(OC)c(c(c1)OC)OC)C(=O)c1cc(OC)c(c(c1)OC)OC)CC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCCCC(CC)CNC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "CCCCC(CC)CNC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "openbabel": "CCCCC(CC)CNC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 141,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)NCCC(C)C)C2)cc(OC)c1OC",
+        "chematic": "O=C(N3C(CN(CC3)C(c2cc(c(OC)c(c2)OC)OC)=O)COC(=O)NCCC(C)C)c1cc(c(c(c1)OC)OC)OC",
+        "openbabel": "COc1c(OC)cc(cc1OC)C(=O)N1CCN(C(C1)COC(=O)NCCC(C)C)C(=O)c1cc(OC)c(c(c1)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)NCCC(C)C)C2)cc(OC)c1OC",
+        "chematic": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)NCCC(C)C)C2)cc(OC)c1OC",
+        "openbabel": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)NCCC(C)C)C2)cc(OC)c1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 142,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)NC(C)C(C)C)C2)cc(OC)c1OC",
+        "chematic": "c1(OC)c(OC)c(OC)cc(C(=O)N3CCN(C(COC(NC(C)C(C)C)=O)C3)C(c2cc(c(OC)c(c2)OC)OC)=O)c1",
+        "openbabel": "COc1c(OC)cc(cc1OC)C(=O)N1CCN(C(C1)COC(=O)NC(C(C)C)C)C(=O)c1cc(OC)c(c(c1)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)NC(C)C(C)C)C2)cc(OC)c1OC",
+        "chematic": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)NC(C)C(C)C)C2)cc(OC)c1OC",
+        "openbabel": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)NC(C)C(C)C)C2)cc(OC)c1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 143,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)c3ccccc3Cl)C2)cc(OC)c1OC",
+        "chematic": "N2(C(=O)c4cc(c(OC)c(c4)OC)OC)CCN(C(=O)c3cc(c(c(c3)OC)OC)OC)C(C2)COC(c1ccccc1Cl)=O",
+        "openbabel": "COc1c(OC)cc(cc1OC)C(=O)N1CCN(C(C1)COC(=O)c1ccccc1Cl)C(=O)c1cc(OC)c(c(c1)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)c3ccccc3Cl)C2)cc(OC)c1OC",
+        "chematic": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)c3ccccc3Cl)C2)cc(OC)c1OC",
+        "openbabel": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)c3ccccc3Cl)C2)cc(OC)c1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 144,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCCCCC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "C2(COC(CCCCC)=O)CN(CCN2C(=O)c3cc(c(OC)c(OC)c3)OC)C(c1cc(c(c(c1)OC)OC)OC)=O",
+        "openbabel": "CCCCCC(=O)OCC1CN(CCN1C(=O)c1cc(OC)c(c(c1)OC)OC)C(=O)c1cc(OC)c(c(c1)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCCCCC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "CCCCCC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "openbabel": "CCCCCC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 145,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cc1nccn1CCCCc1ccc(CC(=O)N[C@H](CO)Cc2ccc(OCCC3CCCCC3)c(CCCN)c2)cc1",
+        "chematic": "c1cc(CCCCn4c(ncc4)C)ccc1CC(N[C@@H](Cc2ccc(OCCC3CCCCC3)c(c2)CCCN)CO)=O",
+        "openbabel": "NCCCc1cc(ccc1OCCC1CCCCC1)C[C@H](NC(=O)Cc1ccc(cc1)CCCCn1ccnc1C)CO"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cc1nccn1CCCCc1ccc(CC(=O)N[C@H](CO)Cc2ccc(OCCC3CCCCC3)c(CCCN)c2)cc1",
+        "chematic": "Cc1nccn1CCCCc1ccc(CC(=O)N[C@H](CO)Cc2ccc(OCCC3CCCCC3)c(CCCN)c2)cc1",
+        "openbabel": "Cc1nccn1CCCCc1ccc(CC(=O)N[C@H](CO)Cc2ccc(OCCC3CCCCC3)c(CCCN)c2)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 146,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)C(C)(C)C)C2)cc(OC)c1OC",
+        "chematic": "c3(OC)c(cc(cc3OC)C(N1CCN(C(=O)c2cc(OC)c(OC)c(OC)c2)CC1COC(=O)C(C)(C)C)=O)OC",
+        "openbabel": "COc1c(OC)cc(cc1OC)C(=O)N1CCN(C(C1)COC(=O)C(C)(C)C)C(=O)c1cc(OC)c(c(c1)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)C(C)(C)C)C2)cc(OC)c1OC",
+        "chematic": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)C(C)(C)C)C2)cc(OC)c1OC",
+        "openbabel": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)C(C)(C)C)C2)cc(OC)c1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 147,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1ccc2c(c1)c(CC(=O)O)c(C)n2C(=O)c1ccc(Cl)cc1",
+        "chematic": "n2(C(=O)c3ccc(cc3)Cl)c1c(c(c2C)CC(=O)O)cc(cc1)OC",
+        "openbabel": "COc1ccc2c(c1)c(CC(=O)O)c(n2C(=O)c1ccc(cc1)Cl)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1ccc2c(c1)c(CC(=O)O)c(C)n2C(=O)c1ccc(Cl)cc1",
+        "chematic": "COc1ccc2c(c1)c(CC(=O)O)c(C)n2C(=O)c1ccc(Cl)cc1",
+        "openbabel": "COc1ccc2c(c1)c(CC(=O)O)c(C)n2C(=O)c1ccc(Cl)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 148,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=C(C1CCCCN1)N1CCN(Cc2ccncc2)CC1",
+        "chematic": "N1CCCCC1C(N3CCN(CC3)Cc2ccncc2)=O",
+        "openbabel": "O=C(C1CCCCN1)N1CCN(CC1)Cc1ccncc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=C(C1CCCCN1)N1CCN(Cc2ccncc2)CC1",
+        "chematic": "O=C(C1CCCCN1)N1CCN(Cc2ccncc2)CC1",
+        "openbabel": "O=C(C1CCCCN1)N1CCN(Cc2ccncc2)CC1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 149,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=C(C1CCCCN1)N1CCN(Cc2ccccn2)CC1",
+        "chematic": "C3CC(NCC3)C(N2CCN(CC2)Cc1ncccc1)=O",
+        "openbabel": "O=C(C1CCCCN1)N1CCN(CC1)Cc1ccccn1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=C(C1CCCCN1)N1CCN(Cc2ccccn2)CC1",
+        "chematic": "O=C(C1CCCCN1)N1CCN(Cc2ccccn2)CC1",
+        "openbabel": "O=C(C1CCCCN1)N1CCN(Cc2ccccn2)CC1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 150,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=C([C@@H]1CCCN1)N1CCN(Cc2cccnc2)CC1",
+        "chematic": "C(=O)(N3CCN(CC3)Cc2cnccc2)[C@H]1NCCC1",
+        "openbabel": "O=C(N1CCN(CC1)Cc1cccnc1)[C@@H]1CCCN1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=C([C@@H]1CCCN1)N1CCN(Cc2cccnc2)CC1",
+        "chematic": "O=C([C@@H]1CCCN1)N1CCN(Cc2cccnc2)CC1",
+        "openbabel": "O=C([C@@H]1CCCN1)N1CCN(Cc2cccnc2)CC1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 151,
+      "status": "ok",
+      "engines": {
+        "rdkit": "O=C([C@@H]1CCCN1)N1CCN(Cc2ccccn2)CC1",
+        "chematic": "C3C[C@H](NC3)C(=O)N2CCN(CC2)Cc1ncccc1",
+        "openbabel": "O=C(N1CCN(CC1)Cc1ccccn1)[C@@H]1CCCN1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "O=C([C@@H]1CCCN1)N1CCN(Cc2ccccn2)CC1",
+        "chematic": "O=C([C@@H]1CCCN1)N1CCN(Cc2ccccn2)CC1",
+        "openbabel": "O=C([C@@H]1CCCN1)N1CCN(Cc2ccccn2)CC1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 152,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)CC(C)(C)C)C2)cc(OC)c1OC",
+        "chematic": "C1CN(C(=O)c3cc(OC)c(c(c3)OC)OC)C(CN1C(c2cc(c(OC)c(c2)OC)OC)=O)COC(CC(C)(C)C)=O",
+        "openbabel": "COc1c(OC)cc(cc1OC)C(=O)N1CCN(C(C1)COC(=O)CC(C)(C)C)C(=O)c1cc(OC)c(c(c1)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)CC(C)(C)C)C2)cc(OC)c1OC",
+        "chematic": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)CC(C)(C)C)C2)cc(OC)c1OC",
+        "openbabel": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)C(COC(=O)CC(C)(C)C)C2)cc(OC)c1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 153,
+      "status": "ok",
+      "engines": {
+        "rdkit": "C[C@]12CC[C@H](O)CC1=CCC1C2CC[C@@]2(C)C1CC[C@@H]2OC1CC1",
+        "chematic": "O[C@H]5CC[C@]4(C(C5)=CCC1C4CC[C@]2(C)[C@@H](OC3CC3)CCC12)C",
+        "openbabel": "O[C@H]1CC[C@]2(C(=CCC3C2CC[C@]2(C3CC[C@@H]2OC2CC2)C)C1)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "C[C@]12CC[C@H](O)CC1=CCC1C2CC[C@@]2(C)C1CC[C@@H]2OC1CC1",
+        "chematic": "C[C@]12CC[C@H](O)CC1=CCC1C2CC[C@@]2(C)C1CC[C@@H]2OC1CC1",
+        "openbabel": "C[C@]12CC[C@H](O)CC1=CCC1C2CC[C@@]2(C)C1CC[C@@H]2OC1CC1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 154,
+      "status": "ok",
+      "engines": {
+        "rdkit": "C[C@]12CCC3C(CCC4=CC(=O)[C@H]5COC[C@]43C5)C1CC[C@@H]2OC1CC1",
+        "chematic": "C5([C@H]6COC[C@]2(C6)C(=C5)CCC1C3CC[C@H](OC4CC4)[C@@]3(C)CCC12)=O",
+        "openbabel": "O=C1C=C2CCC3C([C@]42C[C@@H]1COC4)CC[C@]1(C3CC[C@@H]1OC1CC1)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "C[C@]12CCC3C(CCC4=CC(=O)[C@H]5COC[C@]43C5)C1CC[C@@H]2OC1CC1",
+        "chematic": "C[C@]12CCC3C(CCC4=CC(=O)[C@H]5COC[C@]43C5)C1CC[C@@H]2OC1CC1",
+        "openbabel": "C[C@]12CCC3C(CCC4=CC(=O)[C@H]5COC[C@]43C5)C1CC[C@@H]2OC1CC1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 155,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCC(CC)C(=O)OCC1CN(Cc2cc(OC)c(OC)c(OC)c2)CCN1Cc1cc(OC)c(OC)c(OC)c1",
+        "chematic": "c3(OC)c(OC)cc(cc3OC)CN2CCN(C(C2)COC(C(CC)CC)=O)Cc1cc(OC)c(c(c1)OC)OC",
+        "openbabel": "CCC(C(=O)OCC1CN(CCN1Cc1cc(OC)c(c(c1)OC)OC)Cc1cc(OC)c(c(c1)OC)OC)CC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCC(CC)C(=O)OCC1CN(Cc2cc(OC)c(OC)c(OC)c2)CCN1Cc1cc(OC)c(OC)c(OC)c1",
+        "chematic": "CCC(CC)C(=O)OCC1CN(Cc2cc(OC)c(OC)c(OC)c2)CCN1Cc1cc(OC)c(OC)c(OC)c1",
+        "openbabel": "CCC(CC)C(=O)OCC1CN(Cc2cc(OC)c(OC)c(OC)c2)CCN1Cc1cc(OC)c(OC)c(OC)c1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 156,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc(N2CCN(c3cc(OC)c(OC)c(OC)c3)CC2)cc(OC)c1OC",
+        "chematic": "c1(OC)c(cc(N2CCN(c3cc(c(OC)c(OC)c3)OC)CC2)cc1OC)OC",
+        "openbabel": "COc1cc(cc(c1OC)OC)N1CCN(CC1)c1cc(OC)c(c(c1)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc(N2CCN(c3cc(OC)c(OC)c(OC)c3)CC2)cc(OC)c1OC",
+        "chematic": "COc1cc(N2CCN(c3cc(OC)c(OC)c(OC)c3)CC2)cc(OC)c1OC",
+        "openbabel": "COc1cc(N2CCN(c3cc(OC)c(OC)c(OC)c3)CC2)cc(OC)c1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 157,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)CC2)cc(OC)c1OC",
+        "chematic": "C2CN(CCN2C(c3cc(c(c(c3)OC)OC)OC)=O)C(c1cc(OC)c(OC)c(OC)c1)=O",
+        "openbabel": "COc1cc(cc(c1OC)OC)C(=O)N1CCN(CC1)C(=O)c1cc(OC)c(c(c1)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)CC2)cc(OC)c1OC",
+        "chematic": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)CC2)cc(OC)c1OC",
+        "openbabel": "COc1cc(C(=O)N2CCN(C(=O)c3cc(OC)c(OC)c(OC)c3)CC2)cc(OC)c1OC"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 158,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cc1nccn1CCCCc1ccc(CC(=O)N[C@H](CO)Cc2ccc(OCCC3CCCCC3)c(CCCCN)c2)cc1",
+        "chematic": "C(O)[C@@H](NC(Cc3ccc(CCCCn4c(ncc4)C)cc3)=O)Cc1cc(CCCCN)c(OCCC2CCCCC2)cc1",
+        "openbabel": "NCCCCc1cc(ccc1OCCC1CCCCC1)C[C@H](NC(=O)Cc1ccc(cc1)CCCCn1ccnc1C)CO"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cc1nccn1CCCCc1ccc(CC(=O)N[C@H](CO)Cc2ccc(OCCC3CCCCC3)c(CCCCN)c2)cc1",
+        "chematic": "Cc1nccn1CCCCc1ccc(CC(=O)N[C@H](CO)Cc2ccc(OCCC3CCCCC3)c(CCCCN)c2)cc1",
+        "openbabel": "Cc1nccn1CCCCc1ccc(CC(=O)N[C@H](CO)Cc2ccc(OCCC3CCCCC3)c(CCCCN)c2)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 159,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cc1nccn1CCCCc1ccc(CC(=O)N[C@@H](CO)Cc2ccc(OCCC3CCCCC3)c(CCCN)c2)cc1",
+        "chematic": "c1cc(CCCCn4c(ncc4)C)ccc1CC(N[C@H](Cc2ccc(OCCC3CCCCC3)c(c2)CCCN)CO)=O",
+        "openbabel": "NCCCc1cc(ccc1OCCC1CCCCC1)C[C@@H](NC(=O)Cc1ccc(cc1)CCCCn1ccnc1C)CO"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cc1nccn1CCCCc1ccc(CC(=O)N[C@@H](CO)Cc2ccc(OCCC3CCCCC3)c(CCCN)c2)cc1",
+        "chematic": "Cc1nccn1CCCCc1ccc(CC(=O)N[C@@H](CO)Cc2ccc(OCCC3CCCCC3)c(CCCN)c2)cc1",
+        "openbabel": "Cc1nccn1CCCCc1ccc(CC(=O)N[C@@H](CO)Cc2ccc(OCCC3CCCCC3)c(CCCN)c2)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 160,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCCCNC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "C1(CN(C(=O)c3cc(c(c(c3)OC)OC)OC)CCN1C(=O)c2cc(c(c(OC)c2)OC)OC)COC(NCCCC)=O",
+        "openbabel": "CCCCNC(=O)OCC1CN(CCN1C(=O)c1cc(OC)c(c(c1)OC)OC)C(=O)c1cc(OC)c(c(c1)OC)OC"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCCCNC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "chematic": "CCCCNC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1",
+        "openbabel": "CCCCNC(=O)OCC1CN(C(=O)c2cc(OC)c(OC)c(OC)c2)CCN1C(=O)c1cc(OC)c(OC)c(OC)c1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 161,
+      "status": "ok",
+      "engines": {
+        "rdkit": "N[C@@H](CCC(=O)Nc1ccc([N+](=O)[O-])cc1)C(=O)O",
+        "chematic": "c1(NC(CC[C@H](N)C(O)=O)=O)ccc(cc1)[N+](=O)[O-]",
+        "openbabel": "O=C(Nc1ccc(cc1)[N+](=O)[O-])CC[C@@H](C(=O)O)N"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "N[C@@H](CCC(=O)Nc1ccc([N+](=O)[O-])cc1)C(=O)O",
+        "chematic": "N[C@@H](CCC(=O)Nc1ccc([N+](=O)[O-])cc1)C(=O)O",
+        "openbabel": "N[C@@H](CCC(=O)Nc1ccc([N+](=O)[O-])cc1)C(=O)O"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 162,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COC(=O)[C@@H](N)CO",
+        "chematic": "[C@H](CO)(C(OC)=O)N",
+        "openbabel": "COC(=O)[C@H](CO)N"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COC(=O)[C@@H](N)CO",
+        "chematic": "COC(=O)[C@@H](N)CO",
+        "openbabel": "COC(=O)[C@@H](N)CO"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 163,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CON(C)C(=O)/C=C/CC1C(=O)N2[C@@H]1[S+]([O-])C(C)(C)[C@@H]2C(=O)O",
+        "chematic": "[O-][S+]2[C@@H]1C(C(=O)N1[C@H](C2(C)C)C(=O)O)C/C=C/C(=O)N(C)OC",
+        "openbabel": "CON(C(=O)/C=C/CC1C(=O)N2[C@@H]1[S+]([O-])C([C@@H]2C(=O)O)(C)C)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CON(C)C(=O)/C=C/CC1C(=O)N2[C@@H]1[S+]([O-])C(C)(C)[C@@H]2C(=O)O",
+        "chematic": "CON(C)C(=O)/C=C/CC1C(=O)N2[C@@H]1[S+]([O-])C(C)(C)[C@@H]2C(=O)O",
+        "openbabel": "CON(C)C(=O)/C=C/CC1C(=O)N2[C@@H]1[S+]([O-])C(C)(C)[C@@H]2C(=O)O"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 164,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CC1(C)[C@H](C(=O)O)N2C(=O)C(C/C=C/C=O)[C@H]2S1(=O)=O",
+        "chematic": "O=C2C(C/C=C/C=O)[C@H]1S(=O)(=O)C(C)(C)[C@@H](N12)C(=O)O",
+        "openbabel": "O=C/C=C/CC1C(=O)N2[C@@H]1S(=O)(=O)C([C@@H]2C(=O)O)(C)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CC1(C)[C@H](C(=O)O)N2C(=O)C(C/C=C/C=O)[C@H]2S1(=O)=O",
+        "chematic": "CC1(C)[C@H](C(=O)O)N2C(=O)C(C/C=C/C=O)[C@H]2S1(=O)=O",
+        "openbabel": "CC1(C)[C@H](C(=O)O)N2C(=O)C(C/C=C/C=O)[C@H]2S1(=O)=O"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 165,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CC1(C)[C@H](C(=O)O)N2C(=O)C[C@H]2S1(=O)=O",
+        "chematic": "C(O)(=O)[C@H]1C(C)(C)S(=O)(=O)[C@@H]2CC(N12)=O",
+        "openbabel": "OC(=O)[C@@H]1N2C(=O)C[C@H]2S(=O)(=O)C1(C)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CC1(C)[C@H](C(=O)O)N2C(=O)C[C@H]2S1(=O)=O",
+        "chematic": "CC1(C)[C@H](C(=O)O)N2C(=O)C[C@H]2S1(=O)=O",
+        "openbabel": "CC1(C)[C@H](C(=O)O)N2C(=O)C[C@H]2S1(=O)=O"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 166,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(OC)c3c2F)C1",
+        "chematic": "O=c1c(C(O)=O)cn(c3c1cc(c(c3F)N2CC(CC2)CNCC)F)OC",
+        "openbabel": "CCNCC1CCN(C1)c1c(F)cc2c(c1F)n(OC)cc(c2=O)C(=O)O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(OC)c3c2F)C1",
+        "chematic": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(OC)c3c2F)C1",
+        "openbabel": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(OC)c3c2F)C1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 167,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C4CC4C)c3c2F)C1",
+        "chematic": "O=c4c2c(n(cc4C(O)=O)C3C(C3)C)c(F)c(c(c2)F)N1CC(CC1)CNCC",
+        "openbabel": "CCNCC1CCN(C1)c1c(F)cc2c(c1F)n(cc(c2=O)C(=O)O)C1CC1C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C4CC4C)c3c2F)C1",
+        "chematic": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C4CC4C)c3c2F)C1",
+        "openbabel": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C4CC4C)c3c2F)C1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 168,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CC(C)C[C@H](NC(=O)[C@H](C)N)C(=O)N[C@@H](Cc1ccc(O)cc1)C(=O)N[C@@H](C)C(=O)N[C@@H](CO)C(=O)N[C@@H](CCCCN)C(=O)N[C@@H](CC(C)C)C(=O)N[C@@H](CO)C(N)=O",
+        "chematic": "C[C@@H](C(=O)N[C@H](C(N[C@@H](CCCCN)C(=O)N[C@H](C(=O)N[C@H](C(=O)N)CO)CC(C)C)=O)CO)NC([C@@H](NC(=O)[C@H](CC(C)C)NC([C@@H](N)C)=O)Cc1ccc(O)cc1)=O",
+        "openbabel": "NCCCC[C@@H](C(=O)N[C@H](C(=O)N[C@H](C(=O)N)CO)CC(C)C)NC(=O)[C@@H](NC(=O)[C@@H](NC(=O)[C@H](Cc1ccc(cc1)O)NC(=O)[C@@H](NC(=O)[C@@H](N)C)CC(C)C)C)CO"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CC(C)C[C@H](NC(=O)[C@H](C)N)C(=O)N[C@@H](Cc1ccc(O)cc1)C(=O)N[C@@H](C)C(=O)N[C@@H](CO)C(=O)N[C@@H](CCCCN)C(=O)N[C@@H](CC(C)C)C(=O)N[C@@H](CO)C(N)=O",
+        "chematic": "CC(C)C[C@H](NC(=O)[C@H](C)N)C(=O)N[C@@H](Cc1ccc(O)cc1)C(=O)N[C@@H](C)C(=O)N[C@@H](CO)C(=O)N[C@@H](CCCCN)C(=O)N[C@@H](CC(C)C)C(=O)N[C@@H](CO)C(N)=O",
+        "openbabel": "CC(C)C[C@H](NC(=O)[C@H](C)N)C(=O)N[C@@H](Cc1ccc(O)cc1)C(=O)N[C@@H](C)C(=O)N[C@@H](CO)C(=O)N[C@@H](CCCCN)C(=O)N[C@@H](CC(C)C)C(=O)N[C@@H](CO)C(N)=O"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 169,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cc1nccn1CCCCc1ccc(CC(=O)N[C@@H](CO)C(=O)N[C@@H](CCCCN)C(=O)NCCC2CCCCC2)cc1",
+        "chematic": "c3(ccc(cc3)CC(=O)N[C@H](C(N[C@H](C(NCCC2CCCCC2)=O)CCCCN)=O)CO)CCCCn1c(ncc1)C",
+        "openbabel": "NCCCC[C@@H](C(=O)NCCC1CCCCC1)NC(=O)[C@@H](NC(=O)Cc1ccc(cc1)CCCCn1ccnc1C)CO"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cc1nccn1CCCCc1ccc(CC(=O)N[C@@H](CO)C(=O)N[C@@H](CCCCN)C(=O)NCCC2CCCCC2)cc1",
+        "chematic": "Cc1nccn1CCCCc1ccc(CC(=O)N[C@@H](CO)C(=O)N[C@@H](CCCCN)C(=O)NCCC2CCCCC2)cc1",
+        "openbabel": "Cc1nccn1CCCCc1ccc(CC(=O)N[C@@H](CO)C(=O)N[C@@H](CCCCN)C(=O)NCCC2CCCCC2)cc1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 170,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@H]12",
+        "chematic": "S1(=O)(=O)C(C)(C)[C@H](C(=O)O)N2C(C([C@@H]12)C/C=C/C(C)=O)=O",
+        "openbabel": "CC(=O)/C=C/CC1C(=O)N2[C@@H]1S(=O)(=O)C([C@@H]2C(=O)O)(C)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@H]12",
+        "chematic": "CC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@H]12",
+        "openbabel": "CC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@H]12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 171,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@H]12",
+        "chematic": "OC([C@H]2C(C)(C)S(=O)(=O)[C@@H]1C(C/C=C/C(OC)=O)C(=O)N12)=O",
+        "openbabel": "COC(=O)/C=C/CC1C(=O)N2[C@@H]1S(=O)(=O)C([C@@H]2C(=O)O)(C)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@H]12",
+        "chematic": "COC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@H]12",
+        "openbabel": "COC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@H]12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 172,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C(C)C)c3c2F)C1",
+        "chematic": "CC(n3cc(c(=O)c2cc(F)c(c(F)c23)N1CC(CC1)CNCC)C(=O)O)C",
+        "openbabel": "CCNCC1CCN(C1)c1c(F)cc2c(c1F)n(cc(c2=O)C(=O)O)C(C)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C(C)C)c3c2F)C1",
+        "chematic": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C(C)C)c3c2F)C1",
+        "openbabel": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C(C)C)c3c2F)C1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 173,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C4CCCC4)c3c2F)C1",
+        "chematic": "c3(N4CCC(C4)CNCC)c(F)c2n(cc(c(=O)c2cc3F)C(O)=O)C1CCCC1",
+        "openbabel": "CCNCC1CCN(C1)c1c(F)cc2c(c1F)n(cc(c2=O)C(=O)O)C1CCCC1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C4CCCC4)c3c2F)C1",
+        "chematic": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C4CCCC4)c3c2F)C1",
+        "openbabel": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C4CCCC4)c3c2F)C1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 174,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(-c4ccc(F)cc4)c3c2F)C1",
+        "chematic": "O=c2c(C(O)=O)cn(-c4ccc(cc4)F)c1c(c(N3CCC(CNCC)C3)c(cc12)F)F",
+        "openbabel": "CCNCC1CCN(C1)c1c(F)cc2c(c1F)n(cc(c2=O)C(=O)O)c1ccc(cc1)F"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(-c4ccc(F)cc4)c3c2F)C1",
+        "chematic": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(-c4ccc(F)cc4)c3c2F)C1",
+        "openbabel": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(-c4ccc(F)cc4)c3c2F)C1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 175,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CN1CCN(c2cc3c(cc2F)c(=O)c(C(=O)O)cn3-c2ccc(F)cc2)CC1",
+        "chematic": "c4c(F)ccc(c4)-n3c1c(c(=O)c(c3)C(O)=O)cc(F)c(N2CCN(C)CC2)c1",
+        "openbabel": "CN1CCN(CC1)c1cc2c(cc1F)c(=O)c(cn2c1ccc(cc1)F)C(=O)O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CN1CCN(c2cc3c(cc2F)c(=O)c(C(=O)O)cn3-c2ccc(F)cc2)CC1",
+        "chematic": "CN1CCN(c2cc3c(cc2F)c(=O)c(C(=O)O)cn3-c2ccc(F)cc2)CC1",
+        "openbabel": "CN1CCN(c2cc3c(cc2F)c(=O)c(C(=O)O)cn3-c2ccc(F)cc2)CC1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 176,
+      "status": "ok",
+      "engines": {
+        "rdkit": "C[C@]1(Cn2ccnn2)[C@H](C(=O)O)N2C(=O)C[C@H]2S1(=O)=O",
+        "chematic": "O=S2([C@@](Cn3nncc3)([C@H](C(O)=O)N1C(=O)C[C@H]12)C)=O",
+        "openbabel": "OC(=O)[C@@H]1N2C(=O)C[C@H]2S(=O)(=O)[C@@]1(C)Cn1ccnn1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "C[C@]1(Cn2ccnn2)[C@H](C(=O)O)N2C(=O)C[C@H]2S1(=O)=O",
+        "chematic": "C[C@]1(Cn2ccnn2)[C@H](C(=O)O)N2C(=O)C[C@H]2S1(=O)=O",
+        "openbabel": "C[C@]1(Cn2ccnn2)[C@H](C(=O)O)N2C(=O)C[C@H]2S1(=O)=O"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 177,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(CC4CCCN4)nn3)[C@H]2S1(=O)=O",
+        "chematic": "N12[C@@H]([C@H](Cc4cn(nn4)CC3NCCC3)C2=O)S(C([C@@H]1C(=O)O)(C)C)(=O)=O",
+        "openbabel": "OC(=O)[C@@H]1N2C(=O)[C@H]([C@H]2S(=O)(=O)C1(C)C)Cc1nnn(c1)CC1CCCN1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(CC4CCCN4)nn3)[C@H]2S1(=O)=O",
+        "chematic": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(CC4CCCN4)nn3)[C@H]2S1(=O)=O",
+        "openbabel": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(CC4CCCN4)nn3)[C@H]2S1(=O)=O"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 178,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccc(O)cc4)nn3)[C@H]2S1(=O)=O",
+        "chematic": "[C@H]4(N3[C@H](S(C4(C)C)(=O)=O)[C@@H](C3=O)Cc2cn(nn2)-c1ccc(O)cc1)C(=O)O",
+        "openbabel": "OC(=O)[C@@H]1N2C(=O)[C@H]([C@H]2S(=O)(=O)C1(C)C)Cc1nnn(c1)c1ccc(cc1)O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccc(O)cc4)nn3)[C@H]2S1(=O)=O",
+        "chematic": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccc(O)cc4)nn3)[C@H]2S1(=O)=O",
+        "openbabel": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccc(O)cc4)nn3)[C@H]2S1(=O)=O"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 179,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CN1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(CCF)c3c2F)CC1",
+        "chematic": "Fc2cc1c(c(c2N3CCN(C)CC3)F)n(cc(c1=O)C(O)=O)CCF",
+        "openbabel": "FCCn1cc(C(=O)O)c(=O)c2c1c(F)c(N1CCN(CC1)C)c(c2)F"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CN1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(CCF)c3c2F)CC1",
+        "chematic": "CN1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(CCF)c3c2F)CC1",
+        "openbabel": "CN1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(CCF)c3c2F)CC1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 180,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C)c3c2F)C1",
+        "chematic": "O=c1c3c(c(F)c(c(c3)F)N2CC(CC2)CNCC)n(C)cc1C(O)=O",
+        "openbabel": "CCNCC1CCN(C1)c1c(F)cc2c(c1F)n(C)cc(c2=O)C(=O)O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C)c3c2F)C1",
+        "chematic": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C)c3c2F)C1",
+        "openbabel": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C)c3c2F)C1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 181,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C4CCCCC4)c3c2F)C1",
+        "chematic": "c3(F)cc1c(c(F)c3N4CCC(C4)CNCC)n(C2CCCCC2)cc(c1=O)C(O)=O",
+        "openbabel": "CCNCC1CCN(C1)c1c(F)cc2c(c1F)n(cc(c2=O)C(=O)O)C1CCCCC1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C4CCCCC4)c3c2F)C1",
+        "chematic": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C4CCCCC4)c3c2F)C1",
+        "openbabel": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C4CCCCC4)c3c2F)C1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 182,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cn1cc(C2=C(c3cn(CCCSC(=N)N)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "chematic": "C3(C(=C(c5c4ccccc4n(c5)C)C(=O)N3)c1c2c(cccc2)n(c1)CCCSC(=N)N)=O",
+        "openbabel": "NC(=N)SCCCn1cc(c2c1cccc2)C1=C(C(=O)NC1=O)c1cn(c2c1cccc2)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cn1cc(C2=C(c3cn(CCCSC(=N)N)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "chematic": "Cn1cc(C2=C(c3cn(CCCSC(=N)N)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "openbabel": "Cn1cc(C2=C(c3cn(CCCSC(=N)N)c4ccccc34)C(=O)NC2=O)c2ccccc21"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 183,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccc(F)cc4)nn3)[C@H]2S1(=O)=O",
+        "chematic": "O=C2[C@@H](Cc3cn(-c4ccc(F)cc4)nn3)[C@@H]1N2[C@H](C(C)(C)S1(=O)=O)C(=O)O",
+        "openbabel": "OC(=O)[C@@H]1N2C(=O)[C@H]([C@H]2S(=O)(=O)C1(C)C)Cc1nnn(c1)c1ccc(cc1)F"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccc(F)cc4)nn3)[C@H]2S1(=O)=O",
+        "chematic": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccc(F)cc4)nn3)[C@H]2S1(=O)=O",
+        "openbabel": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccc(F)cc4)nn3)[C@H]2S1(=O)=O"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 184,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccc(N)cc4)nn3)[C@H]2S1(=O)=O",
+        "chematic": "[C@@H]4([C@@H]3N(C4=O)[C@H](C(S3(=O)=O)(C)C)C(O)=O)Cc2cn(nn2)-c1ccc(cc1)N",
+        "openbabel": "OC(=O)[C@@H]1N2C(=O)[C@H]([C@H]2S(=O)(=O)C1(C)C)Cc1nnn(c1)c1ccc(cc1)N"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccc(N)cc4)nn3)[C@H]2S1(=O)=O",
+        "chematic": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccc(N)cc4)nn3)[C@H]2S1(=O)=O",
+        "openbabel": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccc(N)cc4)nn3)[C@H]2S1(=O)=O"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 185,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(CC(N)Cc4ccc(O)cc4)nn3)[C@H]2S1(=O)=O",
+        "chematic": "[C@H]3(C(=O)N4[C@@H](C(O)=O)C(C)(C)S(=O)(=O)[C@H]34)Cc2nnn(c2)CC(Cc1ccc(O)cc1)N",
+        "openbabel": "NC(Cn1nnc(c1)C[C@@H]1C(=O)N2[C@@H]1S(=O)(=O)C([C@@H]2C(=O)O)(C)C)Cc1ccc(cc1)O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(CC(N)Cc4ccc(O)cc4)nn3)[C@H]2S1(=O)=O",
+        "chematic": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(CC(N)Cc4ccc(O)cc4)nn3)[C@H]2S1(=O)=O",
+        "openbabel": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(CC(N)Cc4ccc(O)cc4)nn3)[C@H]2S1(=O)=O"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 186,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cn1cc(C2=C(c3cn(CCC[N+](C)(C)C)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "chematic": "C(CC[N+](C)(C)C)n1cc(C5=C(C(NC5=O)=O)c3cn(c4ccccc34)C)c2c1cccc2",
+        "openbabel": "O=C1NC(=O)C(=C1c1cn(c2c1cccc2)CCC[N+](C)(C)C)c1cn(c2c1cccc2)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cn1cc(C2=C(c3cn(CCC[N+](C)(C)C)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "chematic": "Cn1cc(C2=C(c3cn(CCC[N+](C)(C)C)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "openbabel": "Cn1cc(C2=C(c3cn(CCC[N+](C)(C)C)c4ccccc34)C(=O)NC2=O)c2ccccc21"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 187,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cn1cc(C2=C(c3cn(CCCCC(=N)N)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "chematic": "C3(C(=C(c5c4ccccc4n(c5)C)C(=O)N3)c1cn(c2c1cccc2)CCCCC(=N)N)=O",
+        "openbabel": "NC(=N)CCCCn1cc(c2c1cccc2)C1=C(C(=O)NC1=O)c1cn(c2c1cccc2)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cn1cc(C2=C(c3cn(CCCCC(=N)N)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "chematic": "Cn1cc(C2=C(c3cn(CCCCC(=N)N)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "openbabel": "Cn1cc(C2=C(c3cn(CCCCC(=N)N)c4ccccc34)C(=O)NC2=O)c2ccccc21"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 188,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CN(C)CCCn1cc(C2=C(c3cn(C)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "chematic": "c5ccc1c(c5)n(cc1C=2C(=O)NC(=O)C=2c4cn(C)c3ccccc34)CCCN(C)C",
+        "openbabel": "CN(CCCn1cc(c2c1cccc2)C1=C(C(=O)NC1=O)c1cn(c2c1cccc2)C)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CN(C)CCCn1cc(C2=C(c3cn(C)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "chematic": "CN(C)CCCn1cc(C2=C(c3cn(C)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "openbabel": "CN(C)CCCn1cc(C2=C(c3cn(C)c4ccccc34)C(=O)NC2=O)c2ccccc21"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 189,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cn1cc(C2=C(c3cn(CCCN)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "chematic": "c5ccc4c(c5)n(CCCN)cc4C=1C(NC(=O)C=1c3c2ccccc2n(c3)C)=O",
+        "openbabel": "NCCCn1cc(c2c1cccc2)C1=C(C(=O)NC1=O)c1cn(c2c1cccc2)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cn1cc(C2=C(c3cn(CCCN)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "chematic": "Cn1cc(C2=C(c3cn(CCCN)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "openbabel": "Cn1cc(C2=C(c3cn(CCCN)c4ccccc34)C(=O)NC2=O)c2ccccc21"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 190,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(CC)c3c2F)C1",
+        "chematic": "O=c3c2c(n(cc3C(O)=O)CC)c(F)c(c(c2)F)N1CC(CC1)CNCC",
+        "openbabel": "CCNCC1CCN(C1)c1c(F)cc2c(c1F)n(CC)cc(c2=O)C(=O)O"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(CC)c3c2F)C1",
+        "chematic": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(CC)c3c2F)C1",
+        "openbabel": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(CC)c3c2F)C1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 191,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C4CC4)c3c2F)C1",
+        "chematic": "O=C(c3c(=O)c1cc(c(N4CCC(C4)CNCC)c(F)c1n(c3)C2CC2)F)O",
+        "openbabel": "CCNCC1CCN(C1)c1c(F)cc2c(c1F)n(cc(c2=O)C(=O)O)C1CC1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C4CC4)c3c2F)C1",
+        "chematic": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C4CC4)c3c2F)C1",
+        "openbabel": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(C4CC4)c3c2F)C1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 192,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cn1cc(C2=C(c3cn(CCCN=C(N)N)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "chematic": "N5C(=O)C(=C(C5=O)c4c3ccccc3n(CCCN=C(N)N)c4)c1cn(C)c2c1cccc2",
+        "openbabel": "NC(=NCCCn1cc(c2c1cccc2)C1=C(C(=O)NC1=O)c1cn(c2c1cccc2)C)N"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cn1cc(C2=C(c3cn(CCCN=C(N)N)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "chematic": "Cn1cc(C2=C(c3cn(CCCN=C(N)N)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "openbabel": "Cn1cc(C2=C(c3cn(CCCN=C(N)N)c4ccccc34)C(=O)NC2=O)c2ccccc21"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 193,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccccc4)nn3)[C@H]2S1(=O)=O",
+        "chematic": "C(=O)(O)[C@H]1C(C)(C)S(=O)(=O)[C@H]2N1C(=O)[C@H]2Cc4nnn(c4)-c3ccccc3",
+        "openbabel": "OC(=O)[C@@H]1N2C(=O)[C@H]([C@H]2S(=O)(=O)C1(C)C)Cc1nnn(c1)c1ccccc1"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccccc4)nn3)[C@H]2S1(=O)=O",
+        "chematic": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccccc4)nn3)[C@H]2S1(=O)=O",
+        "openbabel": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccccc4)nn3)[C@H]2S1(=O)=O"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 194,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CC1(C)[C@H](C(=O)O)N2C(=O)C(C/C=C/C#N)[C@@H]2S1(=O)=O",
+        "chematic": "C1(C/C=C/C#N)C(=O)N2[C@H](C(S(=O)(=O)[C@@H]12)(C)C)C(=O)O",
+        "openbabel": "N#C/C=C/CC1C(=O)N2[C@H]1S(=O)(=O)C([C@@H]2C(=O)O)(C)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CC1(C)[C@H](C(=O)O)N2C(=O)C(C/C=C/C#N)[C@@H]2S1(=O)=O",
+        "chematic": "CC1(C)[C@H](C(=O)O)N2C(=O)C(C/C=C/C#N)[C@@H]2S1(=O)=O",
+        "openbabel": "CC1(C)[C@H](C(=O)O)N2C(=O)C(C/C=C/C#N)[C@@H]2S1(=O)=O"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 195,
+      "status": "ok",
+      "engines": {
+        "rdkit": "COC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@@H]12",
+        "chematic": "OC([C@H]2C(C)(C)S(=O)(=O)[C@H]1C(C/C=C/C(OC)=O)C(=O)N12)=O",
+        "openbabel": "COC(=O)/C=C/CC1C(=O)N2[C@H]1S(=O)(=O)C([C@@H]2C(=O)O)(C)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "COC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@@H]12",
+        "chematic": "COC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@@H]12",
+        "openbabel": "COC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@@H]12"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 196,
+      "status": "ok",
+      "engines": {
+        "rdkit": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(CC(F)(F)F)c3c2F)C1",
+        "chematic": "C1CC(CNCC)CN1c2c(c3n(CC(F)(F)F)cc(C(=O)O)c(=O)c3cc2F)F",
+        "openbabel": "CCNCC1CCN(C1)c1c(F)cc2c(c1F)n(cc(c2=O)C(=O)O)CC(F)(F)F"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(CC(F)(F)F)c3c2F)C1",
+        "chematic": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(CC(F)(F)F)c3c2F)C1",
+        "openbabel": "CCNCC1CCN(c2c(F)cc3c(=O)c(C(=O)O)cn(CC(F)(F)F)c3c2F)C1"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 197,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cn1cc(C2=C(c3cn(CCO)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "chematic": "c1(C3=C(c5c4ccccc4n(c5)C)C(=O)NC3=O)cn(c2ccccc12)CCO",
+        "openbabel": "OCCn1cc(c2c1cccc2)C1=C(C(=O)NC1=O)c1cn(c2c1cccc2)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cn1cc(C2=C(c3cn(CCO)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "chematic": "Cn1cc(C2=C(c3cn(CCO)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "openbabel": "Cn1cc(C2=C(c3cn(CCO)c4ccccc34)C(=O)NC2=O)c2ccccc21"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 198,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cn1cc(C2=C(c3cn(CCCO)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "chematic": "c4cc5n(cc(c5cc4)C=1C(NC(=O)C=1c3c2ccccc2n(c3)C)=O)CCCO",
+        "openbabel": "OCCCn1cc(c2c1cccc2)C1=C(C(=O)NC1=O)c1cn(c2c1cccc2)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cn1cc(C2=C(c3cn(CCCO)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "chematic": "Cn1cc(C2=C(c3cn(CCCO)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "openbabel": "Cn1cc(C2=C(c3cn(CCCO)c4ccccc34)C(=O)NC2=O)c2ccccc21"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    },
+    {
+      "input_index": 199,
+      "status": "ok",
+      "engines": {
+        "rdkit": "Cn1cc(C2=C(c3cn(CCCCO)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "chematic": "C3(C(=C(c5c4ccccc4n(c5)C)C(=O)N3)c1c2c(cccc2)n(c1)CCCCO)=O",
+        "openbabel": "OCCCCn1cc(c2c1cccc2)C1=C(C(=O)NC1=O)c1cn(c2c1cccc2)C"
+      },
+      "rdkit_recanonicalized": {
+        "rdkit": "Cn1cc(C2=C(c3cn(CCCCO)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "chematic": "Cn1cc(C2=C(c3cn(CCCCO)c4ccccc34)C(=O)NC2=O)c2ccccc21",
+        "openbabel": "Cn1cc(C2=C(c3cn(CCCCO)c4ccccc34)C(=O)NC2=O)c2ccccc21"
+      },
+      "exact_string_match": {
+        "rdkit": true,
+        "chematic": false,
+        "openbabel": false
+      },
+      "semantic_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      },
+      "inchi_match_to_rdkit": {
+        "rdkit": true,
+        "chematic": true,
+        "openbabel": true
+      }
+    }
+  ],
+  "not_claimed": [
+    "Indigo parity",
+    "canonical string parity across algorithms",
+    "full corpus coverage"
+  ],
+  "generated_at_utc": "2026-09-12T10:55:01.105041+00:00"
+}

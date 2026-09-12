@@ -199,6 +199,13 @@ not collapse the three measured residual families: the focused residual suite
 still passes with the same two-way fail-closed boundary. The anchor-aware
 change is therefore retained as groundwork, not reported as a resolution.
 
+The current writer also compares bounded whole-component E/Z polarity choices
+when an aromatic direction stash is present. This removes a global-polarity
+choice without changing the ordinary non-stash path. It does not remove the
+carrier-location difference between the three held-out families; direct
+cross-spelling convergence remains unproven, so #149/#503 stay open and the
+stable-key fail-closed boundary is retained.
+
 The next bounded implementation slice now preserves that parser-side source
 endpoint as `Molecule::bond_direction_anchor`, including bond-index and atom-index
 remapping during molecule edits and canonical relabeling. The direction value and
@@ -409,6 +416,12 @@ to two representatives); that change was reverted. The remaining identity
 versus representative-orbit distinction is therefore explicit, but the RDKit
 representative-family parity gate is still open.
 
+An exact graph-automorphism deduplication experiment reached the same negative
+result: treating automorphism-equivalent cycles as duplicates also reduced
+`chembl_tier_b_0023` from four to two representatives. SymmSSSR parity therefore
+requires preserving the validated number of representatives within a family;
+one-cycle-per-orbit deduplication is not an acceptable production rule.
+
 ## Issue #227 — MMFF94 coverage audit boundary
 
 The checked-in 265-molecule audit separates classification errors from final
@@ -419,41 +432,56 @@ and 1,680 genuine table-gap rows. Bond, angle, and torsion gaps remain
 separate deferred axes; the dominant aromatic typing residual is coupled to
 the #337 symmetrized-ring/aromaticity boundary.
 
-The audit therefore remains evidence for follow-up work, not a closure of
-#227. In particular, a context-blind numeric-type substitution is explicitly
-rejected because the checked-in negative simulation regresses furan. Any next
-typing change requires a coordinated C/N/O/S oracle-parity gate.
+The audit remains evidence for follow-up work on torsion and full pipeline
+parity, but the original strict bond+angle gate is now complete. In particular,
+a context-blind numeric-type substitution is explicitly rejected because the
+checked-in negative simulation regresses furan. Any next typing change requires
+a coordinated C/N/O/S oracle-parity gate.
 
 The current audit also caught and fixed an independent P-typing collision:
 the generic phosphorus path returned numeric type 20, whose registry entry is
 the carbon-only CR4R type. The corrected path returns registry type 26 for
 tricoordinate P and type 75 for P=C; the constructed phosphonium-ylide probe
 now passes the semantic-compatibility invariant. The re-run removes the
-typing error and reduces the bond/angle gate-would-fail count from 2 to 1,
-but leaves one final unresolved angle and 24 torsion misses, so #227 remains
-open.
+typing error. Adding the registry-backed C5A equivalence row (`63 -> 2 -> 1 ->
+0`) then routes the previously unresolved `N(43)-S(18)-C(63)` angle through
+the documented Halgren empirical fallback. The production strict gate now
+reports 265/265 successful molecules with zero missing parameters, unsupported
+atom types, or minimization failures. The prior 24 type-only torsion misses
+were reduced to zero current `missing` rows; five linear-central-atom rows are
+now explicitly classified as `no_term_by_design`.
 
 Evidence: `validation/results/mmff94_coverage_227_term_audit_summary.json`,
 `validation/results/mmff94_coverage_227_root_cause_classification.json`, and
 the provenance decision in `scripts/mmff94_provenance/PROVENANCE.md`.
 
-The workspace verification on this checkout also passes after the P-typing
-change. A fresh Tier B audit still reports one final unresolved angle,
-`(angle_type=0, type_i=43, type_j=18, type_k=63)`. It is intentionally
-fail-closed: type 63 is absent from the checked-in eqLevel definition for the
-required substitution path, so adding an inferred fallback would be an
-unvalidated energy-model change rather than coverage work. The audit summary
-is therefore pinned as `total=265`, `bond+angle-gate-would-fail=1`,
-`bonds_final_unresolved=0`, `angles_final_unresolved=1`,
-`torsions_missing=24`, and `stbn_final_unresolved=0`.
+The workspace verification on this checkout also passes after the C5A
+equivalence correction. The updated production result is pinned as
+`total=265`, `bond+angle-gate-would-fail=0`, `bonds_final_unresolved=0`,
+`angles_final_unresolved=0`, `torsions_missing=0`, and
+`stbn_final_unresolved=0`. The angle is not assigned a guessed table value:
+the C5A registry row only enables the existing, documented empirical rule.
 
-The production strict-policy remeasurement was also rerun after the P-typing
-correction with `cargo run --release -p chematic-3d --example
-mmff94_strict_gate_remeasure_227 --offline`: all 265 molecules parsed, 264
-completed the bond+angle strict path, and only `chembl_tier_b_0022` remained
-fail-closed on the same `N(43)-S(18)-C(63)` angle. This confirms the issue's
-original 216/265 unsupported count is no longer current, but does not close
-#227 because the final tuple still lacks a source-validated parameter route.
+The subsequent current-tree audit (2026-09-12) found that the #337 charged
+macrocycle topology is sensitive to which relevant-cycle representatives feed
+the MMFF aromaticity loop. The implementation now applies a bounded,
+MMFF-only RingInfo-like filter: when a 20-member-plus ring contains at least
+two positively charged nitrogens, those large representatives are excluded
+from the MMFF view; ordinary macrocycles and the general perception API are
+unchanged. The earlier custom fused-pyridinium post-typing recovery was
+removed because it became redundant after this source-grounded boundary was
+introduced. Re-running the audit reports zero Torsion `missing` rows (five
+`no_term_by_design` rows remain, all with a linear central atom) and no new
+Bond/Angle missing rows. The low-level bond+angle strict gate remains 265/265;
+full pipeline parity and the remaining Bond/Angle routing/table-gap population
+remain open.
+
+The production strict-policy remeasurement was rerun with
+`cargo run --release -p chematic-3d --example
+mmff94_strict_gate_remeasure_227 --offline`: all 265 molecules parsed and
+completed the bond+angle strict path. This closes the bond+angle portion of
+#227; complete MMFF94 parity remains open because the type-only torsion
+coverage axis is still measured separately.
 
 ## Issue #303 — bounded structural slice completed
 
@@ -857,9 +885,20 @@ WASM `minimize_uff_json()`. The value is computed from the same final geometry
 used by the soundness gate, so callers do not need to duplicate the bond-length
 calculation or mistake `converged` for geometrical validity.
 
-This is diagnostic/safety-surface work only. UFF torsion and out-of-plane terms
-remain unimplemented, so the fused-aromatic stationary-point residual and #185
-itself remain open.
+The development line now also includes a bounded common-organic UFF torsion
+slice for sp3–sp3, sp2–sp2, and mixed central bonds. It has a butane energy
+and analytic-gradient regression checked against finite differences, and
+degenerate dihedrals fail closed with zero contribution. This is an
+incremental potential-surface improvement, not full RDKit UFF parity:
+metal-class torsion parameters and independent energy comparison remain open,
+so #185 remains open.
+
+The current development line also removes an endpoint-order guard that
+incorrectly skipped UFF torsions when a bond was stored as `atom1 > atom2`.
+Bond enumeration is already unique, so the guard made torsion coverage depend
+on molecule construction/relabeling order. A reversed-endpoint C-C-C-C
+regression now confirms that the torsion term is retained; this is a local
+correctness fix, not evidence of complete UFF parity.
 
 The `rejected_unsound_step` diagnostic now records only energy-decreasing
 proposals rejected by the UFF geometry soundness gate. A caller-supplied

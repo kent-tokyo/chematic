@@ -11,7 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CORPUS = ROOT / "scripts" / "chembl_accuracy_corpus_4999.smi"
-REPORT = ROOT / "validation" / "results" / "rdkit-ecfp4-cross-binding-parity-5000-v1.0.9.json"
+REPORT = ROOT / "validation" / "results" / "rdkit-ecfp4-cross-binding-parity-5000-v1.0.13.json"
 
 
 def jsonl(value: str) -> list[dict]:
@@ -37,6 +37,29 @@ def python_records(corpus: str) -> list[dict]:
         except Exception as error:
             rows.append({"index": index, "smiles": smiles, "status": "error", "error": str(error)})
     return rows
+
+
+def python_provenance() -> dict:
+    """Record the exact PyO3 package loaded by this process.
+
+    A global site-package can silently be older than the checked-out source;
+    the report must make that distinction visible instead of calling it
+    source-built parity by convention.
+    """
+    import chematic
+
+    package_dir = Path(chematic.__file__).resolve().parent
+    extension = next(package_dir.glob("chematic*.so"), None)
+    return {
+        "executable": str(Path(sys.executable).resolve()),
+        "package_version": getattr(chematic, "__version__", None),
+        "package_init": str(Path(chematic.__file__).resolve()),
+        "extension": str(extension) if extension else None,
+        "extension_sha256": hashlib.sha256(extension.read_bytes()).hexdigest() if extension else None,
+        "pythonpath": sys.path,
+        "workspace_path_visible": str(ROOT) in str(Path(chematic.__file__).resolve()),
+        "import_origin": "temporary_extracted_wheel" if "site-packages" not in str(Path(chematic.__file__).resolve()) else "site_package",
+    }
 
 
 def compare(left: list[dict], right: list[dict]) -> dict:
@@ -70,10 +93,16 @@ def main() -> int:
     }
     report = {
         "schema_version": 1,
-        "target_version": "1.0.9",
+        "target_version": "1.0.13",
         "contract": "same chematic source SMILES, RDKit-compatible ECFP4 2048-bit LSB-first bytes; failures compared by typed status",
         "corpus": {"path": str(CORPUS.relative_to(ROOT)), "rows": expected_rows, "sha256": hashlib.sha256(CORPUS.read_bytes()).hexdigest()},
         "binding_status_counts": {name: {status: sum(row["status"] == status for row in rows) for status in ("ok", "error")} for name, rows in bindings.items()},
+        "python_provenance": python_provenance(),
+        "wasm_provenance": {
+            "entrypoint": str((ROOT / "scripts" / "rdkit_ecfp4_binding_dump.mjs").relative_to(ROOT)),
+            "artifact_js": str((ROOT / "crates" / "chematic-wasm" / "pkg-node" / "chematic_wasm.js").relative_to(ROOT)),
+            "artifact_wasm_sha256": hashlib.sha256((ROOT / "crates" / "chematic-wasm" / "pkg-node" / "chematic_wasm_bg.wasm").read_bytes()).hexdigest(),
+        },
         "pairwise": pairwise,
         "gate_passed": all(pair["mismatches"] == 0 for pair in pairwise.values()),
         "boundary": ["This is cross-binding parity for chematic's RDKit-compatible implementation, not an independent RDKit oracle run.", "Sparse/count/bitInfo parity remains a separate contract."],

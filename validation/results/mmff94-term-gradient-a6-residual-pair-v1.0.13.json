@@ -1,0 +1,31 @@
+{
+  "issue": 227,
+  "target_version": "1.0.13",
+  "measured_at": "2026-09-13",
+  "arm": "chematic_pipeline_v2_mmff94_strict",
+  "method": "Current Rust source pipeline output followed by prepared MMFF94 term-gradient evaluation at the returned coordinates. Values are maximum absolute Cartesian components per term; they are not RDKit gradient parity.",
+  "molecules": {
+    "cholesterol": {
+      "pipeline_max_residual_force_kcal_mol_a": 0.06375198374541924,
+      "term_gradient_maxima_kcal_mol_a": {
+        "bond_angle": 19.824266977673933,
+        "stretch_bend": 11.783548012702925,
+        "torsion": 5.500763059367596,
+        "oop": 0.06216969763863963,
+        "nonbonded": 22.328558936662546
+      }
+    },
+    "atorvastatin_fragment": {
+      "pipeline_max_residual_force_kcal_mol_a": 7.042116526605469,
+      "term_gradient_maxima_kcal_mol_a": {
+        "bond_angle": 38.05846084231696,
+        "stretch_bend": 11.448016708761127,
+        "torsion": 6.130738563482905,
+        "oop": 2.8901680417860316,
+        "nonbonded": 37.98788758431604
+      }
+    }
+  },
+  "interpretation": "Large per-term gradients coexist with smaller total residual force, indicating cancellation between terms. Convergence remediation must inspect term gradients and energy consistency rather than merely relaxing the total-gradient threshold.",
+  "status": "candidate_diagnostic_not_release_gate"
+}

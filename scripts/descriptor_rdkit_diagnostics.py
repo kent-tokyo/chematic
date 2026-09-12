@@ -11,10 +11,15 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import math
+import sys
 from collections import Counter
 from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 FIELDS = {
@@ -26,6 +31,16 @@ FIELDS = {
     "molar_refractivity": ("molar_refractivity", "mr", 0.01),
     "fsp3": ("fsp3", "fsp3", 0.001),
     "aromatic_ring_count": ("rdkit_aromatic_ring_count", "aromatic_ring_count", 0.0),
+}
+LEGACY_FIELDS = {
+    "molecular_weight": ("rdkit_mw", "mw", 0.01),
+    "hba": ("hba", "hba", 0.0),
+    "hbd": ("hbd", "hbd", 0.0),
+    "tpsa": ("tpsa", "tpsa", 0.1),
+    "logp": ("logp", "logp", 0.01),
+    "molar_refractivity": ("molar_refractivity", "mr", 0.01),
+    "fsp3": ("fsp3", "fsp3", 0.001),
+    "aromatic_ring_count": ("aromatic_ring_count", "aromatic_ring_count", 0.0),
 }
 STRICT_TOLERANCES = {
     "molecular_weight": 1e-6,
@@ -72,10 +87,41 @@ def load_smiles(path: Path) -> list[str]:
     return [row[column].strip() for row in rows if row.get(column, "").strip()]
 
 
+def python_provenance(chematic) -> dict:
+    package_init = Path(chematic.__file__).resolve()
+    extension = next(package_init.parent.glob("chematic*.so"), None)
+    return {
+        "executable": str(Path(sys.executable).resolve()),
+        "package_version": getattr(chematic, "__version__", None),
+        "package_init": str(package_init),
+        "extension": str(extension) if extension else None,
+        "extension_sha256": hashlib.sha256(extension.read_bytes()).hexdigest()
+        if extension
+        else None,
+        "workspace_path_visible": str(ROOT) in str(package_init),
+        "import_origin": (
+            "temporary_extracted_wheel"
+            if "site-packages" not in str(package_init)
+            else "site_package"
+        ),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("smiles_csv", type=Path)
     parser.add_argument("--json", type=Path, required=True)
+    parser.add_argument(
+        "--native-regression",
+        type=Path,
+        default=Path("validation/results/native-descriptor-regression-v1.0.13.json"),
+        help="native-profile regression artifact used to prove the default API was preserved",
+    )
+    parser.add_argument(
+        "--legacy-api",
+        action="store_true",
+        help="use the v1 baseline attribute map and record it explicitly",
+    )
     args = parser.parse_args()
 
     from rdkit import Chem
@@ -84,6 +130,7 @@ def main() -> None:
     import chematic
 
     smiles_values = load_smiles(args.smiles_csv)
+    field_map = LEGACY_FIELDS if args.legacy_api else FIELDS
     try:
         probe = chematic.from_smiles("CS")
         if not hasattr(probe, "rdkit_mw"):
@@ -100,7 +147,8 @@ def main() -> None:
     }
     causes: Counter[str] = Counter()
     parsed = failures = unsupported_values = 0
-    for smiles in smiles_values:
+    raw_rows = []
+    for index, smiles in enumerate(smiles_values):
         if not smiles:
             continue
         rd_mol = Chem.MolFromSmiles(smiles)
@@ -110,6 +158,7 @@ def main() -> None:
             ch_mol = None
         if rd_mol is None or ch_mol is None:
             failures += 1
+            raw_rows.append({"index": index, "smiles": smiles, "status": "invalid_input"})
             continue
         parsed += 1
         expected = {
@@ -122,11 +171,13 @@ def main() -> None:
             "fsp3": rdMolDescriptors.CalcFractionCSP3(rd_mol),
             "aromatic_ring_count": rdMolDescriptors.CalcNumAromaticRings(rd_mol),
         }
-        actual = {name: getattr(ch_mol, attr) for name, (attr, _, _) in FIELDS.items()}
+        actual = {name: getattr(ch_mol, attr) for name, (attr, _, _) in field_map.items()}
+        raw_fields = {}
         for name, values in expected.items():
             value = actual[name]
-            if isinstance(value, float) and math.isnan(value):
+            if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(float(value)):
                 unsupported_values += 1
+                raw_fields[name] = {"status": "unsupported", "reason": "non_finite_or_non_numeric"}
                 continue
             delta = abs(float(value) - float(values))
             item = stats[name]
@@ -138,25 +189,49 @@ def main() -> None:
                 item["matches"] += 1
             if delta <= item["strict_tolerance"]:
                 item["strict_matches"] += 1
+                strict_passed = True
             else:
                 item["mismatches"] += 1
+                strict_passed = False
                 cause = classify(name, rd_mol, delta)
                 causes[cause] += 1
                 if len(item["errors"]) < 20:
                     item["errors"].append({"smiles": smiles, "delta": delta, "cause": cause,
                                             "chematic": value, "rdkit": values})
+            raw_fields[name] = {
+                "status": "ok",
+                "chematic": value,
+                "rdkit": values,
+                "absolute_error": delta,
+                "matched": delta <= item["tolerance"],
+                "strict_passed": strict_passed,
+            }
+        raw_rows.append({"index": index, "smiles": smiles, "status": "ok", "fields": raw_fields})
     for item in stats.values():
         deltas = sorted(item.pop("_deltas"))
         item["mae"] = item["mae"] / item["parsed"] if item["parsed"] else None
         if deltas:
             item["median_abs_error"] = deltas[(len(deltas) - 1) // 2]
             item["p95_abs_error"] = deltas[min(len(deltas) - 1, math.ceil(len(deltas) * 0.95) - 1)]
-    result = {"schema_version": 1, "corpus": str(args.smiles_csv),
+    native_regression = json.loads(args.native_regression.read_text())
+    raw_payload = json.dumps(raw_rows, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+    result = {"schema_version": 2, "corpus": str(args.smiles_csv),
+              "corpus_sha256": hashlib.sha256(args.smiles_csv.read_bytes()).hexdigest(),
               "rdkit_version": rdkit.__version__,
               "chematic_version": getattr(chematic, "__version__", "unknown"),
+              "python_provenance": python_provenance(chematic),
               "rows": len(smiles_values), "parsed": parsed, "parse_failures": failures,
               "unsupported_values": unsupported_values,
-              "profile": "rdkit_compat_unlabelled_v1", "fields": stats,
+              "native_default_preserved": native_regression.get("gate_passed") is True
+              and native_regression.get("failed") == 0,
+              "native_regression_artifact": str(args.native_regression),
+              "profile": "rdkit_compat_v1_legacy" if args.legacy_api else "rdkit_compat_v2",
+              "contract": "rdkit_descriptor_semantics_v1",
+              "api_profile": "legacy_native_attributes" if args.legacy_api else "rdkit_compat_attributes",
+              "field_attribute_map": {name: attrs[0] for name, attrs in field_map.items()},
+              "raw_rows": raw_rows,
+              "raw_rows_sha256": hashlib.sha256(raw_payload).hexdigest(),
+              "fields": stats,
               "mismatch_causes": dict(sorted(causes.items()))}
     args.json.write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps(result, indent=2))

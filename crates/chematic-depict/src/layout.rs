@@ -58,7 +58,13 @@ pub struct Layout {
 impl Layout {
     /// Get the coordinate of atom `idx`.
     pub fn get(&self, idx: AtomIdx) -> Point {
-        self.coords[idx.0 as usize]
+        // Caller-supplied layouts may intentionally omit trailing atoms;
+        // `depict_data_with_coords` documents that those atoms are placed at
+        // the origin. Keep every renderer on that same fail-safe contract.
+        self.coords
+            .get(idx.0 as usize)
+            .copied()
+            .unwrap_or_else(|| Point::new(0.0, 0.0))
     }
 
     /// Bounding box: (min_x, min_y, max_x, max_y).

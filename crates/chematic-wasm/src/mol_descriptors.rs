@@ -1,6 +1,6 @@
 //! Descriptor/ADMET/pKa/QSAR bindings.
 
-use crate::{MolHandle, WASM_MAX_ATOMS, WASM_MAX_INPUT_BYTES, json_error};
+use crate::{json_error, MolHandle, WASM_MAX_ATOMS, WASM_MAX_INPUT_BYTES};
 use wasm_bindgen::prelude::*;
 
 /// Validate a vendor-neutral NMR spectrum JSON document without parsing a
@@ -224,6 +224,29 @@ pub fn get_descriptors_json(mol: &MolHandle) -> String {
         acid = chematic_chem::pka_acid(m).map_or("null".to_string(), |v| format!("{v:.2}")),
         base = chematic_chem::pka_base(m).map_or("null".to_string(), |v| format!("{v:.2}")),
     )
+}
+
+/// RDKit-compatibility descriptor profile as JSON.
+///
+/// This is deliberately separate from [`get_descriptors_json`]: the latter is
+/// the historical native profile, while this profile uses the opt-in RDKit
+/// molecular-weight, HBA, and aromatic-ring implementations.  Keeping the
+/// boundary explicit prevents a compatibility correction from silently
+/// changing the browser's native descriptor contract.
+#[wasm_bindgen]
+pub fn get_rdkit_descriptors_json(mol: &MolHandle) -> String {
+    let m = &mol.inner;
+    serde_json::json!({
+        "molecular_weight": chematic_chem::rdkit_molecular_weight(m),
+        "hba": chematic_chem::rdkit_hba_count(m),
+        "hbd": chematic_chem::hbd_count(m),
+        "tpsa": chematic_chem::tpsa(m),
+        "logp": chematic_chem::logp_crippen(m),
+        "molar_refractivity": chematic_chem::molar_refractivity(m),
+        "fsp3": chematic_chem::fsp3(m),
+        "aromatic_ring_count": chematic_chem::rdkit_aromatic_ring_count(m),
+    })
+    .to_string()
 }
 
 // ---------------------------------------------------------------------------

@@ -4,6 +4,10 @@ WebAssembly bindings for [chematic](https://github.com/kent-tokyo/chematic), a p
 
 Published to npm as [`@kent-tokyo/chematic`](https://www.npmjs.com/package/@kent-tokyo/chematic).
 
+The current workspace line is 1.0.14. The binding keeps bounded parsing,
+typed failures, and opt-in `embed_pipeline_v2_json`; 3D/MMFF94 behavior remains
+Experimental and is not a claim of full RDKit parity.
+
 ## Installation
 
 ```sh
@@ -100,6 +104,11 @@ console.log(mol.labute_asa());                   // Labute approx. surface area 
 const charges = JSON.parse(gasteiger_charges_json(mol));
 console.log(charges); // [-0.08, 0.12, -0.43, ...]
 
+// Explicit RDKit-compatibility descriptor profile (kept separate from the
+// historical native get_descriptors_json() profile)
+const rdkitDescriptors = JSON.parse(get_rdkit_descriptors_json(mol));
+console.log(rdkitDescriptors.aromatic_ring_count);
+
 // VSA descriptor bins
 const slogpVsa = JSON.parse(slogp_vsa_json(mol));
 const smrVsa   = JSON.parse(smr_vsa_json(mol));
@@ -167,6 +176,17 @@ portable across native and `wasm32-unknown-unknown`
 `Performance.now()` in the browser); this does not claim identical wall-clock
 precision across every JS engine, only that the value is finite, non-negative,
 and enforced correctly on all of them.
+
+`nearest_neighbors_json` keeps its historical chematic-native ECFP4 profile.
+For the separately named RDKit-compatible Morgan profile, use
+`rdkit_nearest_neighbors_json(querySmiles, dbSmilesJson, k)`. It returns the
+same `{index, tanimoto}` shape and reports preprocessing failures without
+silently falling back to native ECFP4.
+
+For repeated queries, construct `new RdkitSearchIndex(dbSmilesJson)` once and
+call `index.search_json(querySmiles, k)`. The prepared index is intended for
+chunked libraries up to the WASM batch limit and applies the same fail-closed
+RDKit-compatible profile without rebuilding database fingerprints per query.
 
 ## V3000 SGROUP syntax view
 

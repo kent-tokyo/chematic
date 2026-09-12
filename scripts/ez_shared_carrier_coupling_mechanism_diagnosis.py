@@ -53,7 +53,7 @@ for the full narrative and results):
 6. Structural classification: group confirmed-residual/all-28 components by
    a measured feature tuple (ring membership, candidate-bond representation,
    RDKit stereogenicity) -- never a heuristic imposed ahead of measurement.
-7. Calibration cross-check: the permanent regression fixture
+   7. Calibration cross-check: the permanent regression fixture
    `ez_carrier_shared_bond_between_two_stereo_systems_never_corrupts`
    (canonical.rs) is checked directly -- its own doc comment claims its two
    pinned spellings do NOT converge to one canonical string. This script
@@ -71,6 +71,7 @@ Writes:
     validation/results/ez_shared_carrier_coupling_mechanism_audit_summary.json
 """
 import argparse
+import hashlib
 import json
 import os
 import random
@@ -96,6 +97,21 @@ def path_for_report(path):
     if abs_path.startswith(home):
         return "~" + abs_path[len(home) :]
     return abs_path
+
+
+def source_provenance(corpus_path):
+    """Record the source and input identity for a diagnosis-only run."""
+    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+    dirty = bool(subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True).strip())
+    diff = subprocess.check_output(["git", "diff", "--binary", "HEAD"], cwd=ROOT)
+    with open(corpus_path, "rb") as handle:
+        corpus_sha256 = hashlib.sha256(handle.read()).hexdigest()
+    return {
+        "source_commit": head,
+        "worktree_dirty": dirty,
+        "tracked_diff_sha256": hashlib.sha256(diff).hexdigest(),
+        "corpus_sha256": corpus_sha256,
+    }
 
 
 # Mirrors `canonical.rs`'s current, merged 18-entry `EZ_SHARED_CARRIER_
@@ -453,10 +469,25 @@ def verdict(
         "both_rdkit_specified" in b["feature_tuple"] for b in bucket_summary
     )
     one_mechanism = len(bucket_summary) <= 2 and all_both_specified  # ring-vs-acyclic split, same RDKit signature
+    divergent = axis1_result["n_divergent"]
+    if divergent:
+        verdict_text = "NEEDS-RESEARCH, confirmed residuals found"
+        conclusion = (
+            "The sampled residuals remain open and are not treated as proof of a general "
+            "mechanism: relabeling is finite, and no canonical winner is promoted."
+        )
+    else:
+        verdict_text = "PASS, no sampled residuals"
+        conclusion = (
+            "No sampled residuals were found under the configured relabeling gate. "
+            "This is a bounded invariance result, not a proof for every possible "
+            "carrier spelling; keep the fail-closed stable-key boundary until the "
+            "independent holdout is expanded."
+        )
 
     return {
         "n_coupled_components_measured": n_coupled,
-        "n_confirmed_divergent_by_axis1": axis1_result["n_divergent"],
+        "n_confirmed_divergent_by_axis1": divergent,
         "mechanism_count": "one" if one_mechanism else "several",
         "mechanism_note": (
             "All measured coupled components have BOTH ends independently, "
@@ -468,22 +499,16 @@ def verdict(
             "representation), reported in bucket_summary."
         ) if one_mechanism else "Buckets differ in RDKit stereogenicity signature -- see bucket_summary.",
         "verdict": (
-            "NEEDS-RESEARCH, confirmed residuals found"
-            if axis1_result["n_divergent"]
-            else "NEEDS-RESEARCH, leaning GO (no sampled residuals)"
+            verdict_text
         ),
         "verdict_reasoning": (
-            f"{axis1_result['n_divergent']}/{n_coupled} coupled components show canonical-output divergence "
+            f"{divergent}/{n_coupled} coupled components show canonical-output divergence "
             f"under axis 1 (RDKit relabeling, K={relabelings_per_molecule}, 0 "
             f"cross-correspondence failures). Axis 2 cannot test coupled pairs at "
             "all (structural limitation, not a gap in this audit). The "
             "previously-cited never-corrupts calibration example -- itself an "
-            "instance of this exact shape -- still converges. The sampled "
-            "residuals must remain open and are not treated as proof of a general "
-            "mechanism: relabeling is finite, and RDKit's relabel-and-reserialize "
-            "process does not guarantee every alternate carrier spelling. The "
-            "next implementation step is to add these reproducible residuals as "
-            "held-out regression fixtures before changing production ranking."
+            "instance of this exact shape -- still converges. "
+            f"{conclusion}"
         ),
     }
 
@@ -599,6 +624,7 @@ def main():
 
     summary = {
         "corpus": path_for_report(args.corpus),
+        "source_provenance": source_provenance(args.corpus),
         "provenance_gate": provenance,
         "topology": topology,
         "axis1_summary": {k: v for k, v in axis1_result.items() if k != "per_molecule"},

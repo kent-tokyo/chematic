@@ -1,0 +1,63 @@
+{
+  "issue": 227,
+  "target_version": "1.0.13",
+  "measured_at": "2026-09-13",
+  "arm": "chematic_pipeline_v2_mmff94_strict",
+  "harness": "pipeline_v2_vs_rdkit_dump --tier A --start 55 --count 2 --only-arm chematic_pipeline_v2_mmff94_strict",
+  "method": "Current Rust source pipeline output with the same MMFF94 energy function before and after minimization; this is a diagnostic, not RDKit energy parity.",
+  "molecules": {
+    "cholesterol": {
+      "status": "success",
+      "converged": false,
+      "iterations": 200,
+      "max_residual_force_kcal_mol_a": 0.06375198374541924,
+      "energy_before": {
+        "bond": 135.9024182653481,
+        "angle": 91.21106576799609,
+        "stretch_bend": -15.555853274115186,
+        "torsion": 43.15994328391328,
+        "oop": 0.726552677326372,
+        "vdw": 6.018288705269246,
+        "electrostatic": 8.893108783600045,
+        "total": 270.35552420933794
+      },
+      "energy_after": {
+        "bond": 3.896159793196458,
+        "angle": 14.308184430410266,
+        "stretch_bend": 1.3162557833370259,
+        "torsion": 23.04345989722162,
+        "oop": 0.00013498458894970624,
+        "vdw": 27.752227869927964,
+        "electrostatic": 8.61991405614136,
+        "total": 78.93633681482363
+      }
+    },
+    "atorvastatin_fragment": {
+      "status": "success",
+      "converged": false,
+      "iterations": 200,
+      "max_residual_force_kcal_mol_a": 7.042116526605469,
+      "energy_before": {
+        "bond": 294.0139917776023,
+        "angle": 128.3999911031218,
+        "stretch_bend": 2.9447353454034597,
+        "torsion": 126.3595190760716,
+        "oop": 4.912429683099438,
+        "vdw": 27.392093805871493,
+        "electrostatic": -8.931830003548543,
+        "total": 575.0909307876216
+      },
+      "energy_after": {
+        "bond": 24.750047082735016,
+        "angle": 8.466676295706844,
+        "stretch_bend": 0.44327693361008075,
+        "torsion": 23.9081250746002,
+        "oop": 0.08865736217692945,
+        "vdw": 85.40974013492401,
+        "electrostatic": -8.823520247238939,
+        "total": 134.24300263651412
+      }
+    }
+  },
+  "status": "candidate_diagnostic_not_release_gate"
+}

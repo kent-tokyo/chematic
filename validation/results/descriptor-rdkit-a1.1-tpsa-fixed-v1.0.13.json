@@ -1,0 +1,30 @@
+{
+  "status": "candidate_diagnostic",
+  "comparator": "RDKit 2025.09.3",
+  "operation": "rdkit_compat_attributes",
+  "fields": ["molecular_weight", "hba", "hbd", "tpsa", "logp", "molar_refractivity", "fsp3", "aromatic_ring_count"],
+  "corpora": [
+    {
+      "path": "scripts/descriptor_census_corpus.smi",
+      "rows": 5000,
+      "parsed": 5000,
+      "parse_failures": 0,
+      "unsupported_values": 0,
+      "strict_matches": 5000
+    },
+    {
+      "path": "scripts/chembl_accuracy_corpus_4999.smi",
+      "rows": 5000,
+      "parsed": 5000,
+      "parse_failures": 0,
+      "unsupported_values": 0,
+      "strict_matches": 5000
+    }
+  ],
+  "fixes": [
+    "P-H phosphonate TPSA contribution and P=O oxygen allocation",
+    "three-membered thioamide N environment",
+    "charged sulfur contribution"
+  ],
+  "caveat": "Same-input binding diagnostics against RDKit, not an independent chemical-correctness adjudication or sealed unused evaluation."
+}

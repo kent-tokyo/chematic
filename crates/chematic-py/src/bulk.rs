@@ -22,6 +22,175 @@ fn bitvec2048_to_bits(fp: &chematic_fp::bitvec::BitVec2048) -> Vec<u8> {
     (0..2048usize).map(|i| u8::from(fp.get(i))).collect()
 }
 
+/// Internal row representation used while computing `bulk.descriptors_array`.
+/// Keeping this at module scope lets the expensive row computation and the
+/// NumPy materialization live in separate, testable units.
+struct DescriptorRow {
+    // floats (int fields cast to f64 for uniform storage)
+    mw: f64,
+    exact_mass: f64,
+    tpsa: f64,
+    logp: f64,
+    mr: f64,
+    hbd: f64,
+    hba: f64,
+    rb: f64,
+    hac: f64,
+    rc: f64,
+    arc: f64,
+    nh: f64,
+    nsc: f64,
+    nsp: f64,
+    nbh: f64,
+    fsp3: f64,
+    qed: f64,
+    sa: f64,
+    fc: f64,
+    asa: f64,
+    bertz: f64,
+    wi: f64,
+    k1: f64,
+    k2: f64,
+    k3: f64,
+    c0: f64,
+    c1: f64,
+    c2: f64,
+    c3: f64,
+    c4: f64,
+    c0v: f64,
+    c1v: f64,
+    c2v: f64,
+    c3v: f64,
+    c4v: f64,
+    n_ah: f64,
+    n_alh: f64,
+    n_sr: f64,
+    n_ar: f64,
+    n_usc: f64,
+    sum_e: f64,
+    max_e: f64,
+    min_e: f64,
+    bbb: f64,
+    caco: f64,
+    herg: f64,
+    cyp: f64,
+    schultz: f64,
+    gutman: f64,
+    vabc: f64,
+    grav: f64,
+    // booleans
+    lip: bool,
+    veb: bool,
+    egan: bool,
+    ghose: bool,
+    reos: bool,
+    pains: bool,
+    bbp: bool,
+    // optional floats
+    pka_acid: Option<f64>,
+    pka_base: Option<f64>,
+}
+
+fn materialize_descriptor_columns<'py>(
+    py: Python<'py>,
+    rows: &[DescriptorRow],
+    columns: &[String],
+) -> PyResult<Bound<'py, PyDict>> {
+    let out = PyDict::new(py);
+
+    macro_rules! fcol {
+        ($name:literal, $field:ident) => {
+            if columns.iter().any(|column| column == $name) {
+                let arr = Array1::from(rows.iter().map(|r| r.$field).collect::<Vec<f64>>());
+                out.set_item($name, arr.into_pyarray(py))?;
+            }
+        };
+    }
+    macro_rules! bcol {
+        ($name:literal, $field:ident) => {
+            if columns.iter().any(|column| column == $name) {
+                let arr = Array1::from(rows.iter().map(|r| r.$field).collect::<Vec<bool>>());
+                out.set_item($name, arr.into_pyarray(py))?;
+            }
+        };
+    }
+    macro_rules! ocol {
+        ($name:literal, $field:ident) => {
+            if columns.iter().any(|column| column == $name) {
+                let arr = Array1::from(
+                    rows.iter()
+                        .map(|r| r.$field.unwrap_or(f64::NAN))
+                        .collect::<Vec<f64>>(),
+                );
+                out.set_item($name, arr.into_pyarray(py))?;
+            }
+        };
+    }
+
+    fcol!("mw", mw);
+    fcol!("exact_mass", exact_mass);
+    fcol!("tpsa", tpsa);
+    fcol!("logp", logp);
+    fcol!("molar_refractivity", mr);
+    fcol!("hbd", hbd);
+    fcol!("hba", hba);
+    fcol!("rotatable_bonds", rb);
+    fcol!("heavy_atoms", hac);
+    fcol!("ring_count", rc);
+    fcol!("aromatic_ring_count", arc);
+    fcol!("num_heteroatoms", nh);
+    fcol!("num_stereocenters", nsc);
+    fcol!("num_spiro_atoms", nsp);
+    fcol!("num_bridgehead_atoms", nbh);
+    fcol!("fsp3", fsp3);
+    fcol!("qed", qed);
+    fcol!("sa_score", sa);
+    fcol!("formal_charge", fc);
+    fcol!("labute_asa", asa);
+    fcol!("bertz_ct", bertz);
+    fcol!("wiener_index", wi);
+    fcol!("kappa1", k1);
+    fcol!("kappa2", k2);
+    fcol!("kappa3", k3);
+    fcol!("chi0", c0);
+    fcol!("chi1", c1);
+    fcol!("chi2", c2);
+    fcol!("chi3", c3);
+    fcol!("chi4", c4);
+    fcol!("chi0v", c0v);
+    fcol!("chi1v", c1v);
+    fcol!("chi2v", c2v);
+    fcol!("chi3v", c3v);
+    fcol!("chi4v", c4v);
+    fcol!("num_aromatic_heterocycles", n_ah);
+    fcol!("num_aliphatic_heterocycles", n_alh);
+    fcol!("num_saturated_rings", n_sr);
+    fcol!("num_aliphatic_rings", n_ar);
+    fcol!("num_unspecified_stereocenters", n_usc);
+    fcol!("sum_estate", sum_e);
+    fcol!("max_estate", max_e);
+    fcol!("min_estate", min_e);
+    fcol!("bbb_score", bbb);
+    fcol!("caco2", caco);
+    fcol!("herg_risk", herg);
+    fcol!("cyp3a4_risk", cyp);
+    fcol!("schultz_mti", schultz);
+    fcol!("gutman_mti", gutman);
+    fcol!("vabc", vabc);
+    fcol!("gravitational_index", grav);
+    bcol!("lipinski_passes", lip);
+    bcol!("veber_passes", veb);
+    bcol!("egan_passes", egan);
+    bcol!("ghose_passes", ghose);
+    bcol!("reos_passes", reos);
+    bcol!("pains_passes", pains);
+    bcol!("bbb_passes", bbp);
+    ocol!("pka_acid", pka_acid);
+    ocol!("pka_base", pka_base);
+
+    Ok(out)
+}
+
 // ---------------------------------------------------------------------------
 // bulk.parse — parallel SMILES parsing
 // ---------------------------------------------------------------------------
@@ -364,7 +533,6 @@ pub fn descriptors_array<'py>(
     smiles: Vec<String>,
     columns: Vec<String>,
 ) -> PyResult<Bound<'py, pyo3::types::PyDict>> {
-    use pyo3::types::PyDict;
     use rayon::iter::ParallelIterator;
 
     const VALID: &[&str] = &[
@@ -507,73 +675,7 @@ pub fn descriptors_array<'py>(
     let need_fc = want_any(&["formal_charge", "reos_passes"]);
     let need_aromatic_heterocycles = want("cyp3a4_risk");
 
-    struct Row {
-        // floats (int fields cast to f64 for uniform storage)
-        mw: f64,
-        exact_mass: f64,
-        tpsa: f64,
-        logp: f64,
-        mr: f64,
-        hbd: f64,
-        hba: f64,
-        rb: f64,
-        hac: f64,
-        rc: f64,
-        arc: f64,
-        nh: f64,
-        nsc: f64,
-        nsp: f64,
-        nbh: f64,
-        fsp3: f64,
-        qed: f64,
-        sa: f64,
-        fc: f64,
-        asa: f64,
-        bertz: f64,
-        wi: f64,
-        k1: f64,
-        k2: f64,
-        k3: f64,
-        c0: f64,
-        c1: f64,
-        c2: f64,
-        c3: f64,
-        c4: f64,
-        c0v: f64,
-        c1v: f64,
-        c2v: f64,
-        c3v: f64,
-        c4v: f64,
-        n_ah: f64,
-        n_alh: f64,
-        n_sr: f64,
-        n_ar: f64,
-        n_usc: f64,
-        sum_e: f64,
-        max_e: f64,
-        min_e: f64,
-        bbb: f64,
-        caco: f64,
-        herg: f64,
-        cyp: f64,
-        schultz: f64,
-        gutman: f64,
-        vabc: f64,
-        grav: f64,
-        // booleans
-        lip: bool,
-        veb: bool,
-        egan: bool,
-        ghose: bool,
-        reos: bool,
-        pains: bool,
-        bbp: bool,
-        // optional floats
-        pka_acid: Option<f64>,
-        pka_base: Option<f64>,
-    }
-
-    let rows: Vec<Row> = smiles
+    let rows: Vec<DescriptorRow> = smiles
         .par_iter()
         .filter_map(|s| chematic_smiles::parse(s).ok())
         .map(|mol| {
@@ -616,7 +718,7 @@ pub fn descriptors_array<'py>(
             } else {
                 (0.0, 0.0, 0.0)
             };
-            let mw = if need_mw || want("mw") {
+            let mw = if need_mw {
                 chematic_chem::molecular_weight(m)
             } else {
                 0.0
@@ -643,7 +745,7 @@ pub fn descriptors_array<'py>(
             } else {
                 0
             };
-            Row {
+            DescriptorRow {
                 mw,
                 exact_mass: if want("exact_mass") {
                     chematic_chem::exact_mass(m)
@@ -829,99 +931,7 @@ pub fn descriptors_array<'py>(
         })
         .collect();
 
-    let out = PyDict::new(py);
-
-    macro_rules! fcol {
-        ($name:literal, $field:ident) => {
-            if columns.contains(&$name.to_string()) {
-                let arr = Array1::from(rows.iter().map(|r| r.$field).collect::<Vec<f64>>());
-                out.set_item($name, arr.into_pyarray(py))?;
-            }
-        };
-    }
-    macro_rules! bcol {
-        ($name:literal, $field:ident) => {
-            if columns.contains(&$name.to_string()) {
-                let arr = Array1::from(rows.iter().map(|r| r.$field).collect::<Vec<bool>>());
-                out.set_item($name, arr.into_pyarray(py))?;
-            }
-        };
-    }
-    macro_rules! ocol {
-        ($name:literal, $field:ident) => {
-            if columns.contains(&$name.to_string()) {
-                let arr = Array1::from(
-                    rows.iter()
-                        .map(|r| r.$field.unwrap_or(f64::NAN))
-                        .collect::<Vec<f64>>(),
-                );
-                out.set_item($name, arr.into_pyarray(py))?;
-            }
-        };
-    }
-
-    fcol!("mw", mw);
-    fcol!("exact_mass", exact_mass);
-    fcol!("tpsa", tpsa);
-    fcol!("logp", logp);
-    fcol!("molar_refractivity", mr);
-    fcol!("hbd", hbd);
-    fcol!("hba", hba);
-    fcol!("rotatable_bonds", rb);
-    fcol!("heavy_atoms", hac);
-    fcol!("ring_count", rc);
-    fcol!("aromatic_ring_count", arc);
-    fcol!("num_heteroatoms", nh);
-    fcol!("num_stereocenters", nsc);
-    fcol!("num_spiro_atoms", nsp);
-    fcol!("num_bridgehead_atoms", nbh);
-    fcol!("fsp3", fsp3);
-    fcol!("qed", qed);
-    fcol!("sa_score", sa);
-    fcol!("formal_charge", fc);
-    fcol!("labute_asa", asa);
-    fcol!("bertz_ct", bertz);
-    fcol!("wiener_index", wi);
-    fcol!("kappa1", k1);
-    fcol!("kappa2", k2);
-    fcol!("kappa3", k3);
-    fcol!("chi0", c0);
-    fcol!("chi1", c1);
-    fcol!("chi2", c2);
-    fcol!("chi3", c3);
-    fcol!("chi4", c4);
-    fcol!("chi0v", c0v);
-    fcol!("chi1v", c1v);
-    fcol!("chi2v", c2v);
-    fcol!("chi3v", c3v);
-    fcol!("chi4v", c4v);
-    fcol!("num_aromatic_heterocycles", n_ah);
-    fcol!("num_aliphatic_heterocycles", n_alh);
-    fcol!("num_saturated_rings", n_sr);
-    fcol!("num_aliphatic_rings", n_ar);
-    fcol!("num_unspecified_stereocenters", n_usc);
-    fcol!("sum_estate", sum_e);
-    fcol!("max_estate", max_e);
-    fcol!("min_estate", min_e);
-    fcol!("bbb_score", bbb);
-    fcol!("caco2", caco);
-    fcol!("herg_risk", herg);
-    fcol!("cyp3a4_risk", cyp);
-    fcol!("schultz_mti", schultz);
-    fcol!("gutman_mti", gutman);
-    fcol!("vabc", vabc);
-    fcol!("gravitational_index", grav);
-    bcol!("lipinski_passes", lip);
-    bcol!("veber_passes", veb);
-    bcol!("egan_passes", egan);
-    bcol!("ghose_passes", ghose);
-    bcol!("reos_passes", reos);
-    bcol!("pains_passes", pains);
-    bcol!("bbb_passes", bbp);
-    ocol!("pka_acid", pka_acid);
-    ocol!("pka_base", pka_base);
-
-    Ok(out)
+    materialize_descriptor_columns(py, &rows, &columns)
 }
 
 // ---------------------------------------------------------------------------

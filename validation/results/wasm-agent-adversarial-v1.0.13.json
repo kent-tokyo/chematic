@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.13",
+  "measured_at": "2026-09-11",
+  "status": "local-verified",
+  "scope": "Node-hosted WASM agent-side adversarial contracts",
+  "environment": {
+    "node": "v24.5.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "command": "node --test crates/chematic-wasm/tests/pipeline_v2.test.mjs crates/chematic-wasm/tests/mcs.test.mjs",
+  "suites": {
+    "pipeline_v2": {
+      "status": "pass",
+      "checks": [
+        "success envelope shape",
+        "typed ring-torsion failure envelope",
+        "malformed/incomplete config fail-closed",
+        "nullable timeout fields",
+        "typed zero-timeout failure",
+        "oversized config rejection",
+        "atom-count limit",
+        "finite/count/order checks across four fixtures",
+        "Python reference parity across eight fixtures"
+      ]
+    },
+    "mcs": {
+      "status": "pass",
+      "assertions": "all assertions passed"
+    }
+  },
+  "boundary": "This is current Node-hosted WASM evidence. Browser-engine execution, browser memory, broader agent matrix, and external-review claims remain separate open work."
+}

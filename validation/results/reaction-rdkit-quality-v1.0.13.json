@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.13",
+  "scope": "bounded reaction-SMARTS presence matching",
+  "rdkit_version": "2026.03.6",
+  "chematic_binary": "target/debug/chematic",
+  "cases": [
+    {
+      "id": "carbon_match",
+      "reaction": "CCO>>CC=O",
+      "query": "[#6]>>[#6]",
+      "expected": true,
+      "rdkit": true,
+      "chematic": true,
+      "agree": true
+    },
+    {
+      "id": "nitrogen_negative",
+      "reaction": "CCO>>CC=O",
+      "query": "[#7]>>[#6]",
+      "expected": false,
+      "rdkit": false,
+      "chematic": false,
+      "agree": true
+    },
+    {
+      "id": "two_distinct_reactants",
+      "reaction": "C.C>>CC",
+      "query": "[#6].[#6]>>[#6]",
+      "expected": true,
+      "rdkit": true,
+      "chematic": true,
+      "agree": true
+    },
+    {
+      "id": "missing_distinct_reactant",
+      "reaction": "C>>CC",
+      "query": "[#6].[#6]>>[#6]",
+      "expected": false,
+      "rdkit": false,
+      "chematic": false,
+      "agree": true
+    },
+    {
+      "id": "agent_match",
+      "reaction": "CC>[Pd]>CC",
+      "query": "[#6]>[Pd]>[#6]",
+      "expected": true,
+      "rdkit": true,
+      "chematic": true,
+      "agree": true
+    },
+    {
+      "id": "agent_negative",
+      "reaction": "CC>[Ni]>CC",
+      "query": "[#6]>[Pd]>[#6]",
+      "expected": false,
+      "rdkit": false,
+      "chematic": false,
+      "agree": true
+    }
+  ],
+  "agreement": {
+    "matched": 6,
+    "total": 6
+  },
+  "not_claimed": [
+    "reaction yield",
+    "product prediction",
+    "precision/recall beyond this fixed presence corpus",
+    "Indigo equivalence"
+  ]
+}

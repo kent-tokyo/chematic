@@ -4,13 +4,18 @@
 
 import { createHash } from "node:crypto";
 import { createServer } from "node:http";
-import { mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 
 const ROOT = resolve(join(resolve(fileURLToPath(import.meta.url), ".."), ".."));
 const DEFAULT_CORPUS = join(ROOT, "scripts", "descriptor_census_corpus.smi");
+const DEFAULT_CHROMIUM_CANDIDATES = [
+  "/opt/homebrew/bin/chromium",
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "/Applications/Chromium.app/Contents/MacOS/Chromium",
+];
 
 function option(args, name, fallback = undefined) {
   const index = args.indexOf(name);
@@ -21,6 +26,10 @@ function required(args, name) {
   const value = option(args, name);
   if (!value) throw new Error(`${name} is required`);
   return value;
+}
+
+function defaultChromium() {
+  return DEFAULT_CHROMIUM_CANDIDATES.find((candidate) => existsSync(candidate)) ?? DEFAULT_CHROMIUM_CANDIDATES[0];
 }
 
 function sha256(value) {
@@ -55,6 +64,15 @@ const smiles = ${corpusJson};
 const warmup = ${warmup};
 const initTimeoutMs = ${initTimeoutMs};
 const out = document.querySelector("#result");
+const readMemory = () => {
+  if (!performance.memory) return { status: "unavailable", reason: "performance.memory is not exposed" };
+  return {
+    status: "measured",
+    used_js_heap_bytes: performance.memory.usedJSHeapSize,
+    total_js_heap_bytes: performance.memory.totalJSHeapSize,
+    js_heap_limit_bytes: performance.memory.jsHeapSizeLimit,
+  };
+};
 const withTimeout = (promise, label) => Promise.race([
   promise,
   new Promise((_, reject) => setTimeout(() => reject(new Error(label + " timed out after " + initTimeoutMs + " ms")), initTimeoutMs)),
@@ -85,6 +103,7 @@ const time = async (values, fn) => {
   return summary(samples);
 };
 const run = async () => {
+  const memory = { before_load: readMemory() };
   const schematicModule = await withTimeout(import("/schematic/chematic_wasm.js"), "schematic JS module load");
   const {
     default: initSchematic,
@@ -103,6 +122,7 @@ const run = async () => {
   const schematicStart = performance.now();
   await withTimeout(initSchematic("/schematic/chematic_wasm_bg.wasm"), "chematic WASM initialization");
   const schematicInit = performance.now() - schematicStart;
+  memory.after_schematic_init = readMemory();
   const schematicParse = await time(smiles, (value) => { const mol = parse_smiles(value); mol.free(); });
   const schematicWrite = await time(smiles, (value) => { const mol = parse_smiles(value); mol.canonical_smiles(); mol.free(); });
   const schematicFp = await time(smiles, (value) => { const mol = parse_smiles(value); rdkit_ecfp4_bitvec(mol); mol.free(); });
@@ -128,6 +148,7 @@ const run = async () => {
     v3000_canonical_smiles: v3000Roundtrip.canonical_smiles(),
     moljson_canonical_smiles: molJsonRoundtrip.canonical_smiles(),
   };
+  memory.after_schematic_workload = readMemory();
   serializationSource.free();
   v2000Roundtrip.free();
   v3000Roundtrip.free();
@@ -179,6 +200,7 @@ const run = async () => {
   const rdkitStart = performance.now();
   const RDKit = await withTimeout(window.initRDKitModule({ locateFile: (name) => name.endsWith(".wasm") ? "/rdkit/RDKit_minimal.wasm" : name }), "RDKit WASM initialization");
   const rdkitInit = performance.now() - rdkitStart;
+  memory.after_rdkit_init = readMemory();
   const getMol = (value) => { const mol = RDKit.get_mol(value); if (!mol) throw new Error("RDKit rejected " + value); return mol; };
   const rdkitParse = await time(smiles, (value) => { getMol(value).delete(); });
   const rdkitWrite = await time(smiles, (value) => { const mol = getMol(value); mol.get_smiles(); mol.delete(); });
@@ -201,11 +223,13 @@ const run = async () => {
   rdkitSerializationSource.delete();
   rdkitV2000.delete();
   rdkitV3000.delete();
+  memory.after_rdkit_workload = readMemory();
   out.textContent = JSON.stringify({
     environment: { user_agent: navigator.userAgent, platform: navigator.platform },
     schematic: { init_ms: schematicInit, parse: schematicParse, smiles_write: schematicWrite, rdkit_compatible_ecfp4: schematicFp },
     rdkit: { version: RDKit.version(), init_ms: rdkitInit, parse: rdkitParse, smiles_write: rdkitWrite, morgan_radius2_2048: rdkitFp },
     fingerprint_parity: { compared_rows: smiles.length, exact_matches: schematicHashes.filter((v, i) => v === rdkitHashes[i]).length },
+    browser_memory: memory,
     api_contract: { schematic: schematicApiContract, rdkit: rdkitApiContract },
   });
 };
@@ -299,7 +323,7 @@ async function main() {
   await new Promise((resolveServer) => server.listen(0, "127.0.0.1", resolveServer));
   const port = server.address().port;
   try {
-    const chromium = option(args, "--chromium", "/opt/homebrew/bin/chromium");
+    const chromium = option(args, "--chromium", defaultChromium());
     const browserTimeoutMs = Number(option(args, "--browser-timeout-ms", "60000"));
     const profile = mkdtempSync("/private/tmp/chematic-browser-gate-profile-");
     const browser = await runBrowser(chromium, ["--headless=new", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--no-first-run", `--user-data-dir=${profile}`, "--virtual-time-budget=30000", "--dump-dom", `http://127.0.0.1:${port}/`], browserTimeoutMs);

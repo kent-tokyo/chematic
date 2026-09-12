@@ -38,6 +38,11 @@ pub struct MolMetadata {
     /// polymer/query semantics; callers must not treat this as a typed SGroup
     /// representation.
     pub v3000_sgroups: Vec<String>,
+    /// Opaque V3000 bond-line attributes such as `ENDPTS=` and `ATTACH=`,
+    /// keyed by the file's 1-based bond id. Rich query/coordination semantics
+    /// are not interpreted by the core bond model, but are retained for a
+    /// lossless parse/write round trip.
+    pub v3000_bond_properties: Vec<(u32, String)>,
 }
 
 impl MolMetadata {
@@ -755,6 +760,7 @@ fn read_mol_internal(
         name,
         comment,
         v3000_sgroups: Vec::new(),
+        v3000_bond_properties: Vec::new(),
     };
 
     // -- Counts line (line 4) -----------------------------------------------

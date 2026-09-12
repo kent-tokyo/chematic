@@ -1,0 +1,34 @@
+{
+  "status": "candidate_diagnostic",
+  "operation": "standardize_then_canonicalize_idempotency",
+  "command": "cargo test -p chematic-chem --test canonical_idempotency_corpus_standardized --offline -- --ignored",
+  "source": "current_worktree",
+  "corpora": [
+    {
+      "path": "scripts/descriptor_census_corpus.smi",
+      "rows": 5000,
+      "checked": 5000,
+      "failures": 0,
+      "passed": true
+    },
+    {
+      "path": "scripts/chembl_accuracy_corpus_4999.smi",
+      "rows": 5000,
+      "checked": 5000,
+      "failures": 0,
+      "passed": true
+    },
+    {
+      "path": "scripts/nci_first_5k_smiles_only.smi",
+      "rows": 4999,
+      "checked": 4999,
+      "failures": 0,
+      "passed": true
+    }
+  ],
+  "total_rows": 14999,
+  "total_checked": 14999,
+  "total_failures": 0,
+  "duration_seconds": 922.09,
+  "caveat": "This is local standardize+canonicalize idempotency evidence, not independent chemical correctness or complete RDKit canonical-string parity. The inputs are exposed and the test's known-residual ceilings remain non-zero for regression protection."
+}

@@ -12,11 +12,10 @@ are simultaneously checking "does chematic match RDKit" (not just "do the three
 bindings agree with each other, possibly on a shared wrong answer").
 
 Fixture SMILES are drawn from the diagnosis workstream's
-`scripts/ecfp4_bitexact_matrix_fixtures.csv` (ids 1-33; same molecules, not the same
-file -- that CSV's tags reflect its own diagnosis-time classification, which changed
-after `fix/kekulize-charge-aware-k1` fixed 6 of them), plus one fixture (34) that still
-genuinely fails RDKit-parity aromaticity preprocessing on this branch -- required so
-the shared corpus has real error-path coverage, not just success-path coverage.
+`scripts/ecfp4_bitexact_matrix_fixtures.csv` (ids 1-34; same molecules, not the same
+file -- that CSV's tags reflect its own diagnosis-time classification). All 34 now
+exercise the success path; error-path coverage is retained by separate explicit
+failure fixtures in the API tests.
 
 Usage:
     .venv/bin/python scripts/gen_ecfp4_rdkit_stable_api_fixtures.py \\
@@ -82,15 +81,12 @@ SUCCESS_FIXTURES = [
     ("31", "C[C@@H](N)C(=O)O"),
     ("32", "C/C=C/C"),
     ("33", "C/C=C\\C"),
+    ("34", "Cc1cn2c(=O)c3ncn(COCCO)c3nc2n1C"),
 ]
 
-# Bridgehead-N purine-like ring -- the one pre-existing chematic_core::kekulize()
-# failure K1 did NOT fix (see rdkit_morgan_ecfp4.rs's
-# `kekule_bridgehead_n_purine_reports_kekulization_failed_not_a_fallback_result` test
-# and chematic_perception::rdkit_parity's own
-# `production_api_reports_kekulize_failure_not_panic`). Real error-path fixture -- not
-# a fabricated/synthetic failure.
-ERROR_FIXTURE = ("34", "Cc1cn2c(=O)c3ncn(COCCO)c3nc2n1C")
+# Query bonds have no RDKit BondType counterpart. This is a deliberate API
+# boundary fixture, not an aromaticity failure or a silent fallback case.
+ERROR_FIXTURES = [("35", "C~C")]
 
 
 def rd_parse(smi):
@@ -184,7 +180,7 @@ def build_error_fixture(fid, smi):
         "id": fid,
         "smiles": smi,
         "expect": "error",
-        "error_kind": "Aromaticity",
+        "error_kind": "UnsupportedBondOrder",
     }
 
 
@@ -194,7 +190,7 @@ def main():
     args = ap.parse_args()
 
     fixtures = [build_success_fixture(fid, smi) for fid, smi in SUCCESS_FIXTURES]
-    fixtures.append(build_error_fixture(*ERROR_FIXTURE))
+    fixtures.extend(build_error_fixture(fid, smi) for fid, smi in ERROR_FIXTURES)
 
     try:
         chematic_commit = subprocess.check_output(

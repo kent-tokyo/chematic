@@ -10,16 +10,15 @@ version, commit, corpus, and commands shown here.
 
 ---
 
-## Current RDKit compatibility profile gate (v1.0.13)
+## Current RDKit compatibility profile gate (v1.0.14)
 
-This source-built measurement is separate from the historical 4,999-row
-snapshot below. Using the committed 5,000-row SMILES corpus, molecular weight
-matched for 4,999 unlabelled rows (100% at both 0.01 Da and 1e-6 Da); one
-explicit-isotope row was rejected by design. The opt-in HBA and aromatic-ring
-profiles, HBD, TPSA, LogP, MR, and Fsp3 matched at strict tolerances. All
-comparable values therefore match RDKit; MW covers 4,999 unlabelled rows and
-the isotope row is fail-closed. The native descriptors remain unchanged and
-the profile is still opt-in.
+The current working-tree source-built remeasurement uses RDKit 2026.03.6 and
+the 5,000-row corpus: all eight core compatibility fields match 5,000/5,000 at
+their strict thresholds, including the known explicit-isotope row. The code
+supports a finite table of common explicit isotopes and rejects unknown isotope
+labels without approximation. Native descriptor behavior remains unchanged and
+the compatibility profile remains opt-in; native-regression and broader
+descriptor-family gates are still separate.
 
 The structural holdout covers charged atoms, a metal, aromatic/fused/bridged
 rings, a macrocycle, an isotope, and unusual atom cases: 12/12 checks passed.
@@ -36,10 +35,10 @@ for the machine-readable evidence.
 
 | Descriptor | Agreement | Tolerance | Notes |
 |---|---|---|---|
-| Molecular weight | **99.82%** (4990/4999) | ±0.01 Da | vs `Descriptors.MolWt` |
+| Molecular weight | **100%** (5000/5000) | ±0.01 Da | vs `Descriptors.MolWt`; current source-built v2 gate |
 | Heavy atom count | **100%** (4999/4999) | exact | |
 | H-bond donors (HBD) | **100%** (4999/4999) | exact | |
-| H-bond acceptors (HBA) | **100%** (4999/4999) | exact | |
+| H-bond acceptors (HBA) | **100%** (5000/5000) | exact | current source-built v2 gate |
 | TPSA | **100%** (4999/4999) | ±0.1 Å² | |
 | LogP (Crippen) | **100%** (4999/4999) | exact* | max Δ = 1.10e-13 |
 | MR (molar refractivity) | **100%** (4999/4999) | ±0.01 | |

@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.13",
+  "fixture": "benchmarks/fixtures/sgroup_collection.v3000",
+  "scope": "V3000 SGROUP/COLLECTION parse and core topology projection",
+  "engines": {
+    "chematic": {
+      "parse": "pass",
+      "smiles": "CC",
+      "atom_count": 2,
+      "bond_count": 1,
+      "typed_sgroup": "1 SUP 0 ATOMS=(2 1 2) LABEL=core"
+    },
+    "rdkit": {
+      "version": "2026.03.6",
+      "parse": "pass",
+      "smiles": "CC",
+      "atom_count": 2,
+      "bond_count": 1
+    }
+  },
+  "checks": {
+    "core_topology_equal": true,
+    "canonical_smiles_equal": true,
+    "schematic_reopen_typed_sgroup_preserved": true,
+    "rdkit_requires_nonzero_sgroup_count": true
+  },
+  "not_claimed": [
+    "Indigo equivalence",
+    "polymer expansion semantics",
+    "full SGROUP attribute equivalence across engines"
+  ]
+}

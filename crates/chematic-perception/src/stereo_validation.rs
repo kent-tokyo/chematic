@@ -11,7 +11,9 @@
 //!   equivalent to a neighbour (same Morgan rank), so the stereo specification
 //!   is chemically meaningless.
 
+use crate::find_sssr;
 use chematic_core::{AtomIdx, BondOrder, Chirality, Molecule};
+use std::collections::{HashSet, VecDeque};
 use std::fmt;
 
 // ---------------------------------------------------------------------------
@@ -71,7 +73,7 @@ pub struct StereoCompleteness {
 // ---------------------------------------------------------------------------
 
 /// Compute simple Morgan connectivity ranks for atoms in `mol`.
-/// Uses initial invariant = atomic_number * 1_000_000 + charge_term * 1000 + degree.
+/// Uses atom, charge, aromaticity, degree, and bond-order-aware neighbourhoods.
 fn simple_morgan_ranks(mol: &Molecule) -> Vec<u64> {
     let n = mol.atom_count();
     let mut ranks: Vec<u64> = (0..n)
@@ -93,16 +95,18 @@ fn simple_morgan_ranks(mol: &Molecule) -> Vec<u64> {
             // every representable i8 charge.
             let an = atom.element.atomic_number() as i64;
             let charge = atom.charge as i64;
-            (an * 1_000_000 + charge * 1000 + deg) as u64
+            (an * 1_000_000 + charge * 1000 + deg + i64::from(atom.aromatic)) as u64
         })
         .collect();
 
-    let hash_round = |r: u64, nbrs: &[u64]| -> u64 {
+    let hash_round = |r: u64, nbrs: &[(u8, u64)]| -> u64 {
         let mut h: u64 = 14695981039346656037u64;
         let prime: u64 = 1099511628211u64;
         h ^= r;
         h = h.wrapping_mul(prime);
-        for &nb in nbrs {
+        for &(bond_order, nb) in nbrs {
+            h ^= bond_order as u64;
+            h = h.wrapping_mul(prime);
             h ^= nb;
             h = h.wrapping_mul(prime);
         }
@@ -110,33 +114,38 @@ fn simple_morgan_ranks(mol: &Molecule) -> Vec<u64> {
     };
 
     for _ in 0..(n + 2) {
-        let old_distinct = {
-            let mut v = ranks.clone();
-            v.sort_unstable();
-            v.dedup();
-            v.len()
-        };
         let new_ranks: Vec<u64> = (0..n)
             .map(|i| {
                 let idx = AtomIdx(i as u32);
-                let mut nb_ranks: Vec<u64> = mol
+                let mut nb_ranks: Vec<(u8, u64)> = mol
                     .neighbors(idx)
-                    .map(|(nb, _)| ranks[nb.0 as usize])
+                    .map(|(nb, bond)| {
+                        let order = match mol.bond(bond).order {
+                            BondOrder::Single => 1,
+                            BondOrder::Double => 2,
+                            BondOrder::Triple => 3,
+                            BondOrder::Quadruple => 4,
+                            BondOrder::Aromatic => 5,
+                            BondOrder::Up => 6,
+                            BondOrder::Down => 7,
+                            BondOrder::Zero => 8,
+                            BondOrder::Dative => 9,
+                            BondOrder::QueryAny => 10,
+                            BondOrder::QuerySingleOrDouble => 11,
+                            BondOrder::QuerySingleOrAromatic => 12,
+                            BondOrder::QueryDoubleOrAromatic => 13,
+                        };
+                        (order, ranks[nb.0 as usize])
+                    })
                     .collect();
                 nb_ranks.sort_unstable();
                 hash_round(ranks[i], &nb_ranks)
             })
             .collect();
-        let new_distinct = {
-            let mut v = new_ranks.clone();
-            v.sort_unstable();
-            v.dedup();
-            v.len()
-        };
-        ranks = new_ranks;
-        if new_distinct <= old_distinct {
+        if new_ranks == ranks {
             break;
         }
+        ranks = new_ranks;
     }
 
     // Normalise to consecutive ordinals.
@@ -147,6 +156,87 @@ fn simple_morgan_ranks(mol: &Molecule) -> Vec<u64> {
         .iter()
         .map(|r| sorted.partition_point(|&u| u < *r) as u64)
         .collect()
+}
+
+/// Compare substituents from a center, retaining the root and ring-revisit
+/// context. Global atom colours can tie two branches in a fused/bridged ring
+/// even when the branches are distinct from the center's perspective.
+fn substituent_signatures_distinct(mol: &Molecule, center: AtomIdx, starts: &[AtomIdx]) -> bool {
+    let signatures: Vec<Vec<(u64, u8)>> = starts
+        .iter()
+        .map(|&start| {
+            let mut layers = Vec::new();
+            let mut queue = VecDeque::from([(start, center, 1usize, {
+                let mut visited = HashSet::new();
+                visited.insert(center);
+                visited.insert(start);
+                visited
+            })]);
+            while let Some((node, parent, depth, visited)) = queue.pop_front() {
+                if depth > 12 {
+                    continue;
+                }
+                let incoming_order = mol
+                    .bond_between(node, parent)
+                    .map(|(_, bond)| bond_order_key(bond.order))
+                    .unwrap_or(0);
+                layers.push((atom_key_for_rank(mol, node), incoming_order));
+                if depth == 12 {
+                    continue;
+                }
+                for (next, bond) in mol.neighbors(node) {
+                    if next == parent || next == center {
+                        continue;
+                    }
+                    let mut child_visited = visited.clone();
+                    if child_visited.insert(next) {
+                        queue.push_back((next, node, depth + 1, child_visited));
+                    } else {
+                        layers.push((
+                            atom_key_for_rank(mol, next),
+                            bond_order_key(mol.bond(bond).order),
+                        ));
+                    }
+                }
+            }
+            layers.sort_unstable();
+            layers
+        })
+        .collect();
+    for i in 0..signatures.len() {
+        for j in (i + 1)..signatures.len() {
+            if signatures[i] == signatures[j] {
+                return false;
+            }
+        }
+    }
+    true
+}
+
+fn atom_key_for_rank(mol: &Molecule, idx: AtomIdx) -> u64 {
+    let atom = mol.atom(idx);
+    (atom.element.atomic_number() as u64) * 1_000_000
+        + (atom.isotope.unwrap_or_default() as u64) * 1_000
+        + (atom.charge as i16 + 128) as u64 * 2
+        + u64::from(atom.aromatic)
+}
+
+fn bond_order_key(order: BondOrder) -> u8 {
+    match order {
+        BondOrder::Single => 1,
+        BondOrder::Double => 2,
+        BondOrder::Triple => 3,
+        BondOrder::Quadruple => 4,
+        BondOrder::Aromatic => 5,
+        BondOrder::Up => 6,
+        BondOrder::Down => 7,
+        BondOrder::Zero => 8,
+        BondOrder::Dative => 9,
+        BondOrder::QueryAny => 10,
+        BondOrder::QuerySingleOrDouble => 11,
+        BondOrder::QuerySingleOrAromatic => 12,
+        BondOrder::QueryDoubleOrAromatic => 13,
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -234,7 +324,7 @@ pub fn validate_stereo(mol: &Molecule) -> Vec<StereoError> {
 /// This is the single source of truth for stereocenter classification;
 /// [`stereo_completeness`] is defined in terms of it.
 pub fn stereo_centers(mol: &Molecule) -> Vec<(AtomIdx, bool)> {
-    let ranks = simple_morgan_ranks(mol);
+    let ring_set = find_sssr(mol);
     let mut centers = Vec::new();
 
     for (idx, atom) in mol.atoms() {
@@ -249,37 +339,29 @@ pub fn stereo_centers(mol: &Molecule) -> Vec<(AtomIdx, bool)> {
             .map(|(nb, _)| nb)
             .collect();
         let implicit_h = chematic_core::implicit_hcount(mol, idx) as usize;
-        let groups = heavy_nbs.len() + implicit_h;
+        let is_ring_nitrogen = atom.element.atomic_number() == 7
+            && heavy_nbs.len() == 3
+            && implicit_h == 0
+            && ring_set.contains_atom(idx);
+        let groups = heavy_nbs.len() + implicit_h + usize::from(is_ring_nitrogen);
 
         if groups != 4 {
             continue;
         } // only tetrahedral candidates
 
-        // Check all neighbours have distinct ranks (including implicit H as a
-        // sentinel rank). `simple_morgan_ranks` normalises to consecutive
-        // ordinals starting at 0 (see its tail: `partition_point(|&u| u <
-        // *r)`), so a real heavy-atom neighbour can legitimately carry rank
-        // 0 -- it's the ordinary "lowest invariant in the molecule" rank,
-        // not a reserved value. Using the literal `0` as the implicit-H
-        // sentinel therefore collided with real rank-0 neighbours (issue
-        // #267's follow-up bug): `dedup()` merged the two, `sorted.len()`
-        // dropped below 4, and a genuine 4-distinct-group stereocenter was
-        // silently skipped. The maximum normalised rank is (number of
-        // distinct invariants - 1), which is always <= atom_count() - 1, so
-        // `atom_count()` itself is never a reachable real rank and is safe
-        // to use as the sentinel here.
-        let implicit_h_rank_sentinel = mol.atom_count() as u64;
-        let mut nb_ranks: Vec<u64> = heavy_nbs.iter().map(|nb| ranks[nb.0 as usize]).collect();
-        if implicit_h > 0 {
-            nb_ranks.push(implicit_h_rank_sentinel);
-        }
-
-        let mut sorted = nb_ranks.clone();
-        sorted.sort_unstable();
-        sorted.dedup();
-        if sorted.len() < 4 {
+        // Compare heavy-atom branches from this center. Implicit H and the
+        // lone-pair group of a constrained ring nitrogen are fourth groups by
+        // construction and do not need a graph signature.
+        if !substituent_signatures_distinct(mol, idx, &heavy_nbs) {
             continue;
-        } // symmetric neighbours — not a stereocenter
+        }
+        if implicit_h > 0 && heavy_nbs.len() == 3 {
+            // An implicit H is a fourth group and is distinct from every
+            // heavy-atom branch. A ring nitrogen's fourth group is its lone
+            // pair, handled by the same branch-distinctness condition.
+        } else if heavy_nbs.len() != 4 && !is_ring_nitrogen {
+            continue;
+        }
 
         centers.push((idx, atom.chirality != Chirality::None));
     }

@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "protocol": "a5-independent-adjudication-v1",
+  "status": "prepared_external_review_required",
+  "primary_endpoint": "rule_backed_stereo_and_structure_correctness",
+  "rule_sources": [
+    {
+      "id": "iupac-blue-book-p9",
+      "uri": "https://iupac.qmul.ac.uk/BlueBook/P9.html",
+      "role": "CIP rule reference"
+    },
+    {
+      "id": "rdkit-cip-labeler-docs",
+      "uri": "https://www.rdkit.org/docs/source/rdkit.Chem.rdCIPLabeler.html",
+      "role": "comparator algorithm provenance, not truth definition"
+    }
+  ],
+  "gold_cases": [
+    {
+      "id": "negative_resonance_oxygen",
+      "input_ref": "validation/cip_negative_resonance_order_invariance.jsonl#cyclohexadienyl_oxygen",
+      "atom_mapping": {"center_map": 1},
+      "expected": {"label_invariant_under_atom_permutation": true},
+      "rationale": "CIP label must follow the mapped stereocenter, not input atom order.",
+      "reviewer": null,
+      "unresolved_reason": null
+    },
+    {
+      "id": "negative_resonance_nitrogen",
+      "input_ref": "validation/cip_negative_resonance_order_invariance.jsonl#cyclohexadienyl_nitrogen",
+      "atom_mapping": {"center_map": 1},
+      "expected": {"label_invariant_under_atom_permutation": true},
+      "rationale": "An anionic resonance branch must not make the assigned label depend on serialization order.",
+      "reviewer": null,
+      "unresolved_reason": null
+    },
+    {
+      "id": "canonical_ez_residual",
+      "input_ref": "validation/manifests/canonical_issue149_aromatic_stash_residual.json#families",
+      "atom_mapping": {"correspondence": "canonical_cross_engine_probe"},
+      "expected": {"semantic_structure_preserved": true, "stable_key_on_residual": "fail_closed"},
+      "rationale": "Cosmetic canonical spelling differences must not be promoted to distinct identity keys.",
+      "reviewer": null,
+      "unresolved_reason": "Issue #149 family still contains a documented residual."
+    },
+    {
+      "id": "v3000_sgroup_roundtrip",
+      "input_ref": "crates/chematic-mol/tests/v3000_semantic_interop.rs#both_v3000_block_orders_have_the_same_semantic_projection",
+      "atom_mapping": {"sgroup_atoms": [1, 2]},
+      "expected": {"semantic_projection_preserved": true},
+      "rationale": "SGROUP/COLLECTION ordering is a serialization detail; typed group membership must survive reopen.",
+      "reviewer": null,
+      "unresolved_reason": null
+    }
+  ],
+  "blind_cases": [
+    {
+      "id": "blind-cip-001",
+      "input_ref": "validation/cip_negative_resonance_order_invariance.jsonl#cyclohexadienyl_fluorine",
+      "input_digest": "sha256:7d33ede134541e49e21026e97e5be89af7475bd36bf4635c3057d7aa6a43d643",
+      "expected": null,
+      "rationale": null,
+      "reviewer": null,
+      "unresolved_reason": null
+    },
+    {
+      "id": "blind-structure-001",
+      "input_ref": "validation/cip_negative_resonance_order_invariance.jsonl#cyclohexadienyl_sulfur",
+      "input_digest": "sha256:07b76c180f433aef8b7075d9e115c7889792f9d88002a88ac952e3bc3bd3a136",
+      "expected": null,
+      "rationale": null,
+      "reviewer": null,
+      "unresolved_reason": null
+    }
+  ],
+  "decision_rules": {
+    "categories": ["both_correct", "chematic_only_correct", "rdkit_only_correct", "both_incorrect", "unresolved", "timeout", "unsupported"],
+    "cluster_unit": "scaffold",
+    "bootstrap_repetitions": 10000,
+    "equivalence_margin_percentage_points": 0.1,
+    "reviewer_must_be_non_maintainer": true,
+    "challenge_set_cannot_support_general_superiority": true
+  }
+}

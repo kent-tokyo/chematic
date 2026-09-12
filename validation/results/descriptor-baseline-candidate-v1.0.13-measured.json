@@ -1,0 +1,587 @@
+{
+  "schema_version": 1,
+  "profile": "rdkit_descriptor_baseline_candidate",
+  "contract": "rdkit_descriptor_semantics_v1",
+  "baseline": {
+    "schema_version": 1,
+    "role": "baseline",
+    "contract": "rdkit_descriptor_semantics_v1",
+    "profile": "rdkit_compat_v1_legacy",
+    "provenance": {
+      "source_commit": "5aae7b23",
+      "source_tree_sha256": "f24799f38e84793a74fd530891d762de63604f72603469840109e15131d11af4",
+      "artifact_sha256": "6f8fff385208c9e03077822826230258b6ab17277d00bf73c523f5ba9add29c2",
+      "rdkit_version": "2025.09.3",
+      "corpus_sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+      "corpus_rows": 5000
+    },
+    "fields": {
+      "molecular_weight": {
+        "tolerance": 0.01,
+        "strict_tolerance": 1e-06,
+        "parsed": 4999,
+        "matches": 4999,
+        "strict_matches": 4999,
+        "mismatches": 0,
+        "mae": 0.0,
+        "median_abs_error": 0.0,
+        "p95_abs_error": 0.0,
+        "max_abs_error": 0.0,
+        "errors": []
+      },
+      "hba": {
+        "tolerance": 0.0,
+        "strict_tolerance": 0.0,
+        "parsed": 5000,
+        "matches": 3641,
+        "strict_matches": 3641,
+        "mismatches": 1359,
+        "mae": 0.316,
+        "median_abs_error": 0.0,
+        "p95_abs_error": 1.0,
+        "max_abs_error": 5.0,
+        "errors": [
+          {
+            "smiles": "Nc1nc(N)c2ncn(C3CC(O)C(O)C(CO)O3)c2n1",
+            "delta": 1.0,
+            "cause": "charge_or_valence_rule",
+            "chematic": 9,
+            "rdkit": 10
+          },
+          {
+            "smiles": "CCc1ccc(OP(=O)(NC(C)C(=O)OC)OCC2OC(n3cc(C)c(=O)[nH]c3=O)CC2N=[N+]=[N-])cc1",
+            "delta": 1.0,
+            "cause": "charge_or_valence_rule",
+            "chematic": 9,
+            "rdkit": 10
+          },
+          {
+            "smiles": "OCC1OC(n2cnc3c(O)ncnc32)CC(O)C1O",
+            "delta": 1.0,
+            "cause": "charge_or_valence_rule",
+            "chematic": 8,
+            "rdkit": 9
+          },
+          {
+            "smiles": "Nc1ccn(C2CC(O)C(O)C(CO)O2)c(=O)n1",
+            "delta": 1.0,
+            "cause": "charge_or_valence_rule",
+            "chematic": 7,
+            "rdkit": 8
+          },
+          {
+            "smiles": "O=C1c2ccccc2CCCN1CCN1CCC(n2nnc3ccccc32)CC1",
+            "delta": 1.0,
+            "cause": "charge_or_valence_rule",
+            "chematic": 4,
+            "rdkit": 5
+          },
+          {
+            "smiles": "CN(C)CCNC(=O)c1cn(C)c(=O)c2cc3ccccc3nc12",
+            "delta": 1.0,
+            "cause": "charge_or_valence_rule",
+            "chematic": 4,
+            "rdkit": 5
+          },
+          {
+            "smiles": "CCc1c2c(nc3ccc(OC(=O)N4CCC(N5CCCCC5)CC4)cc13)-c1cc3c(c(=O)n1C2)COC(=O)[C@]3(O)CC",
+            "delta": 1.0,
+            "cause": "charge_or_valence_rule",
+            "chematic": 8,
+            "rdkit": 9
+          },
+          {
+            "smiles": "Cc1cccc2cc3c(=O)n(CCN(C)CCCN(C)CCn4cc(C(=O)NCCN(C)C)c5nc6c(C)cccc6cc5c4=O)cc(C(=O)NCCN(C)C)c3nc12",
+            "delta": 2.0,
+            "cause": "charge_or_valence_rule",
+            "chematic": 10,
+            "rdkit": 12
+          },
+          {
+            "smiles": "COC(=O)C(C)NP(=O)(OCC1OC(n2cc(C)c(=O)[nH]c2=O)CC1N=[N+]=[N-])Oc1ccc(OC)cc1",
+            "delta": 1.0,
+            "cause": "charge_or_valence_rule",
+            "chematic": 10,
+            "rdkit": 11
+          },
+          {
+            "smiles": "O=C1c2ccccc2CCCN1CCN1CCC(n2ccc3cc(F)ccc32)CC1",
+            "delta": 1.0,
+            "cause": "charge_or_valence_rule",
+            "chematic": 2,
+            "rdkit": 3
+          },
+          {
+            "smiles": "O=C1c2ccccc2CCCN1CCN1CCC(n2ccc3ccccc32)CC1",
+            "delta": 1.0,
+            "cause": "charge_or_valence_rule",
+            "chematic": 2,
+            "rdkit": 3
+          },
+          {
+            "smiles": "Cc1cn(C2CC(O)C(CNC(=O)CI)O2)c(=O)[nH]c1=O",
+            "delta": 1.0,
+            "cause": "charge_or_valence_rule",
+            "chematic": 5,
+            "rdkit": 6
+          },
+          {
+            "smiles": "Cc1cn(C2CC(O)C(CN(C)C(=O)CCl)O2)c(=O)[nH]c1=O",
+            "delta": 1.0,
+            "cause": "charge_or_valence_rule",
+            "chematic": 5,
+            "rdkit": 6
+          },
+          {
+            "smiles": "C[C@H](Cn1cnc2c(N)ncnc21)OCP(=O)(O)O",
+            "delta": 1.0,
+            "cause": "charge_or_valence_rule",
+            "chematic": 6,
+            "rdkit": 7
+          },
+          {
+            "smiles": "OCC1OC(n2cnc3c(O)ncnc32)CC1O",
+            "delta": 1.0,
+            "cause": "charge_or_valence_rule",
+            "chematic": 7,
+            "rdkit": 8
+          },
+          {
+            "smiles": "COC(=O)[C@@H](C)NP(=O)(CO[C@H](C)Cn1cnc2c(N)ncnc21)Oc1ccccc1",
+            "delta": 1.0,
+            "cause": "charge_or_valence_rule",
+            "chematic": 9,
+            "rdkit": 10
+          },
+          {
+            "smiles": "COC(=O)[C@H](C)NP(=O)(CO[C@H](C)Cn1cnc2c(N)ncnc21)Oc1ccccc1",
+            "delta": 1.0,
+            "cause": "charge_or_valence_rule",
+            "chematic": 9,
+            "rdkit": 10
+          },
+          {
+            "smiles": "Nc1ncnc2c1ncn2C1C=C(CO)C(O)C1O",
+            "delta": 1.0,
+            "cause": "charge_or_valence_rule",
+            "chematic": 7,
+            "rdkit": 8
+          },
+          {
+            "smiles": "Cc1cccc2cc3c(=O)n(C)cc(C(=O)NCCN(C)C)c3nc12",
+            "delta": 1.0,
+            "cause": "charge_or_valence_rule",
+            "chematic": 4,
+            "rdkit": 5
+          },
+          {
+            "smiles": "Cc1cccc2cc3c(=O)n(CCN(C)C)cc(C(=O)NCCN(C)C)c3nc12",
+            "delta": 1.0,
+            "cause": "charge_or_valence_rule",
+            "chematic": 5,
+            "rdkit": 6
+          }
+        ]
+      },
+      "hbd": {
+        "tolerance": 0.0,
+        "strict_tolerance": 0.0,
+        "parsed": 5000,
+        "matches": 5000,
+        "strict_matches": 5000,
+        "mismatches": 0,
+        "mae": 0.0,
+        "median_abs_error": 0.0,
+        "p95_abs_error": 0.0,
+        "max_abs_error": 0.0,
+        "errors": []
+      },
+      "tpsa": {
+        "tolerance": 0.1,
+        "strict_tolerance": 1e-06,
+        "parsed": 5000,
+        "matches": 5000,
+        "strict_matches": 5000,
+        "mismatches": 0,
+        "mae": 7.858602657506708e-16,
+        "median_abs_error": 0.0,
+        "p95_abs_error": 0.0,
+        "max_abs_error": 5.684341886080802e-14,
+        "errors": []
+      },
+      "logp": {
+        "tolerance": 0.01,
+        "strict_tolerance": 1e-06,
+        "parsed": 5000,
+        "matches": 5000,
+        "strict_matches": 5000,
+        "mismatches": 0,
+        "mae": 2.33205676991588e-15,
+        "median_abs_error": 1.7763568394002505e-15,
+        "p95_abs_error": 5.329070518200751e-15,
+        "max_abs_error": 1.1013412404281553e-13,
+        "errors": []
+      },
+      "molar_refractivity": {
+        "tolerance": 0.01,
+        "strict_tolerance": 1e-06,
+        "parsed": 5000,
+        "matches": 5000,
+        "strict_matches": 5000,
+        "mismatches": 0,
+        "mae": 8.730687284241867e-14,
+        "median_abs_error": 4.263256414560601e-14,
+        "p95_abs_error": 3.694822225952521e-13,
+        "max_abs_error": 2.7284841053187847e-12,
+        "errors": []
+      },
+      "fsp3": {
+        "tolerance": 0.001,
+        "strict_tolerance": 1e-06,
+        "parsed": 5000,
+        "matches": 5000,
+        "strict_matches": 5000,
+        "mismatches": 0,
+        "mae": 0.0,
+        "median_abs_error": 0.0,
+        "p95_abs_error": 0.0,
+        "max_abs_error": 0.0,
+        "errors": []
+      },
+      "aromatic_ring_count": {
+        "tolerance": 0.0,
+        "strict_tolerance": 0.0,
+        "parsed": 5000,
+        "matches": 4940,
+        "strict_matches": 4940,
+        "mismatches": 60,
+        "mae": 0.024,
+        "median_abs_error": 0.0,
+        "p95_abs_error": 0.0,
+        "max_abs_error": 2.0,
+        "errors": [
+          {
+            "smiles": "Cc1c2oc3c(C)ccc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(NCCCCCN)c1=O",
+            "delta": 2.0,
+            "cause": "ring_perception_or_aromaticity",
+            "chematic": 3,
+            "rdkit": 1
+          },
+          {
+            "smiles": "Cc1c2oc3c(C)ccc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(NCCCCN)c1=O",
+            "delta": 2.0,
+            "cause": "ring_perception_or_aromaticity",
+            "chematic": 3,
+            "rdkit": 1
+          },
+          {
+            "smiles": "Cc1c2oc3c(C)ccc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(NCCCN)c1=O",
+            "delta": 2.0,
+            "cause": "ring_perception_or_aromaticity",
+            "chematic": 3,
+            "rdkit": 1
+          },
+          {
+            "smiles": "CCCCCCCCCCCNc1c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c2nc3c(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)ccc(C)c3oc-2c(C)c1=O",
+            "delta": 2.0,
+            "cause": "ring_perception_or_aromaticity",
+            "chematic": 3,
+            "rdkit": 1
+          },
+          {
+            "smiles": "Cc1c2oc3c(C)c(O)c(N)c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c3nc-2c(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)cc1=O",
+            "delta": 2.0,
+            "cause": "ring_perception_or_aromaticity",
+            "chematic": 3,
+            "rdkit": 1
+          },
+          {
+            "smiles": "Cc1c2oc3c(C)ccc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(NCCCCCCCCCCN)c1=O",
+            "delta": 2.0,
+            "cause": "ring_perception_or_aromaticity",
+            "chematic": 3,
+            "rdkit": 1
+          },
+          {
+            "smiles": "Cc1c2oc3c(C)ccc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(NCCCCCCCCN)c1=O",
+            "delta": 2.0,
+            "cause": "ring_perception_or_aromaticity",
+            "chematic": 3,
+            "rdkit": 1
+          },
+          {
+            "smiles": "CCCCCCNc1c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c2nc3c(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)ccc(C)c3oc-2c(C)c1=O",
+            "delta": 2.0,
+            "cause": "ring_perception_or_aromaticity",
+            "chematic": 3,
+            "rdkit": 1
+          },
+          {
+            "smiles": "CCCCCNc1c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c2nc3c(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)ccc(C)c3oc-2c(C)c1=O",
+            "delta": 2.0,
+            "cause": "ring_perception_or_aromaticity",
+            "chematic": 3,
+            "rdkit": 1
+          },
+          {
+            "smiles": "CCCCCCOc1cc(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c2nc3c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c(N)c(=O)c(C)c-3oc2c1C",
+            "delta": 2.0,
+            "cause": "ring_perception_or_aromaticity",
+            "chematic": 3,
+            "rdkit": 1
+          },
+          {
+            "smiles": "Cc1c2oc3c(C)c(OCc4ccc(Cl)cc4)cc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(N)c1=O",
+            "delta": 2.0,
+            "cause": "ring_perception_or_aromaticity",
+            "chematic": 4,
+            "rdkit": 2
+          },
+          {
+            "smiles": "CCCOc1cc(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c2nc3c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c(N)c(=O)c(C)c-3oc2c1C",
+            "delta": 2.0,
+            "cause": "ring_perception_or_aromaticity",
+            "chematic": 3,
+            "rdkit": 1
+          },
+          {
+            "smiles": "CCCCOc1cc(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c2nc3c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c(N)c(=O)c(C)c-3oc2c1C",
+            "delta": 2.0,
+            "cause": "ring_perception_or_aromaticity",
+            "chematic": 3,
+            "rdkit": 1
+          },
+          {
+            "smiles": "Cc1c2oc3c(C)c(O)c(N)c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c3nc-2c(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c/c1=N/Cc1ccc[nH]1",
+            "delta": 2.0,
+            "cause": "ring_perception_or_aromaticity",
+            "chematic": 4,
+            "rdkit": 2
+          },
+          {
+            "smiles": "CCCCCCCCC/N=c1/cc(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c2nc3c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c(N)c(O)c(C)c3oc-2c1C",
+            "delta": 2.0,
+            "cause": "ring_perception_or_aromaticity",
+            "chematic": 3,
+            "rdkit": 1
+          },
+          {
+            "smiles": "Cc1c2oc3c(C)c(O)c(N)c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c3nc-2c(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c/c1=N/Cc1ccc(Cl)c(Cl)c1",
+            "delta": 2.0,
+            "cause": "ring_perception_or_aromaticity",
+            "chematic": 4,
+            "rdkit": 2
+          },
+          {
+            "smiles": "Cc1c2oc3c(C)c(OCc4ccc([N+](=O)[O-])cc4)cc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(N)c1=O",
+            "delta": 2.0,
+            "cause": "ring_perception_or_aromaticity",
+            "chematic": 4,
+            "rdkit": 2
+          },
+          {
+            "smiles": "CCCCCCCOc1cc(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c2nc3c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c(N)c(=O)c(C)c-3oc2c1C",
+            "delta": 2.0,
+            "cause": "ring_perception_or_aromaticity",
+            "chematic": 3,
+            "rdkit": 1
+          },
+          {
+            "smiles": "Cc1c2oc3c(C)c(O)c(N)c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c3nc-2c(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c/c1=N/Cc1ccccc1",
+            "delta": 2.0,
+            "cause": "ring_perception_or_aromaticity",
+            "chematic": 4,
+            "rdkit": 2
+          },
+          {
+            "smiles": "CCCCNc1c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c2nc3c(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)ccc(C)c3oc-2c(C)c1=O",
+            "delta": 2.0,
+            "cause": "ring_perception_or_aromaticity",
+            "chematic": 3,
+            "rdkit": 1
+          }
+        ]
+      }
+    }
+  },
+  "candidate": {
+    "schema_version": 1,
+    "role": "candidate",
+    "contract": "rdkit_descriptor_semantics_v1",
+    "profile": "rdkit_compat_v2",
+    "provenance": {
+      "source_commit": "working-tree-uncommitted",
+      "source_tree_sha256": "8bd8649e9665b00278586afd7cdf575d76eec10b693a4d10ec86a77bdab49b88",
+      "artifact_sha256": "7bd4f968bc1ec85b294c57ad952fb2d013713d7028df59f14ffd8b9d53d42027",
+      "rdkit_version": "2025.09.3",
+      "corpus_sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+      "corpus_rows": 5000
+    },
+    "fields": {
+      "molecular_weight": {
+        "tolerance": 0.01,
+        "strict_tolerance": 1e-06,
+        "parsed": 5000,
+        "matches": 5000,
+        "strict_matches": 5000,
+        "mismatches": 0,
+        "mae": 7.979906513355672e-13,
+        "median_abs_error": 0.0,
+        "p95_abs_error": 0.0,
+        "max_abs_error": 3.989953256677836e-09,
+        "errors": []
+      },
+      "hba": {
+        "tolerance": 0.0,
+        "strict_tolerance": 0.0,
+        "parsed": 5000,
+        "matches": 5000,
+        "strict_matches": 5000,
+        "mismatches": 0,
+        "mae": 0.0,
+        "median_abs_error": 0.0,
+        "p95_abs_error": 0.0,
+        "max_abs_error": 0.0,
+        "errors": []
+      },
+      "hbd": {
+        "tolerance": 0.0,
+        "strict_tolerance": 0.0,
+        "parsed": 5000,
+        "matches": 5000,
+        "strict_matches": 5000,
+        "mismatches": 0,
+        "mae": 0.0,
+        "median_abs_error": 0.0,
+        "p95_abs_error": 0.0,
+        "max_abs_error": 0.0,
+        "errors": []
+      },
+      "tpsa": {
+        "tolerance": 0.1,
+        "strict_tolerance": 1e-06,
+        "parsed": 5000,
+        "matches": 5000,
+        "strict_matches": 5000,
+        "mismatches": 0,
+        "mae": 7.858602657506708e-16,
+        "median_abs_error": 0.0,
+        "p95_abs_error": 0.0,
+        "max_abs_error": 5.684341886080802e-14,
+        "errors": []
+      },
+      "logp": {
+        "tolerance": 0.01,
+        "strict_tolerance": 1e-06,
+        "parsed": 5000,
+        "matches": 5000,
+        "strict_matches": 5000,
+        "mismatches": 0,
+        "mae": 2.33205676991588e-15,
+        "median_abs_error": 1.7763568394002505e-15,
+        "p95_abs_error": 5.329070518200751e-15,
+        "max_abs_error": 1.1013412404281553e-13,
+        "errors": []
+      },
+      "molar_refractivity": {
+        "tolerance": 0.01,
+        "strict_tolerance": 1e-06,
+        "parsed": 5000,
+        "matches": 5000,
+        "strict_matches": 5000,
+        "mismatches": 0,
+        "mae": 8.730687284241867e-14,
+        "median_abs_error": 4.263256414560601e-14,
+        "p95_abs_error": 3.694822225952521e-13,
+        "max_abs_error": 2.7284841053187847e-12,
+        "errors": []
+      },
+      "fsp3": {
+        "tolerance": 0.001,
+        "strict_tolerance": 1e-06,
+        "parsed": 5000,
+        "matches": 5000,
+        "strict_matches": 5000,
+        "mismatches": 0,
+        "mae": 0.0,
+        "median_abs_error": 0.0,
+        "p95_abs_error": 0.0,
+        "max_abs_error": 0.0,
+        "errors": []
+      },
+      "aromatic_ring_count": {
+        "tolerance": 0.0,
+        "strict_tolerance": 0.0,
+        "parsed": 5000,
+        "matches": 5000,
+        "strict_matches": 5000,
+        "mismatches": 0,
+        "mae": 0.0,
+        "median_abs_error": 0.0,
+        "p95_abs_error": 0.0,
+        "max_abs_error": 0.0,
+        "errors": []
+      }
+    }
+  },
+  "field_delta": {
+    "molecular_weight": {
+      "strict_matches_before": 4999,
+      "strict_matches_after": 5000,
+      "strict_delta": 1,
+      "mismatches_before": 0,
+      "mismatches_after": 0
+    },
+    "hba": {
+      "strict_matches_before": 3641,
+      "strict_matches_after": 5000,
+      "strict_delta": 1359,
+      "mismatches_before": 1359,
+      "mismatches_after": 0
+    },
+    "hbd": {
+      "strict_matches_before": 5000,
+      "strict_matches_after": 5000,
+      "strict_delta": 0,
+      "mismatches_before": 0,
+      "mismatches_after": 0
+    },
+    "tpsa": {
+      "strict_matches_before": 5000,
+      "strict_matches_after": 5000,
+      "strict_delta": 0,
+      "mismatches_before": 0,
+      "mismatches_after": 0
+    },
+    "logp": {
+      "strict_matches_before": 5000,
+      "strict_matches_after": 5000,
+      "strict_delta": 0,
+      "mismatches_before": 0,
+      "mismatches_after": 0
+    },
+    "molar_refractivity": {
+      "strict_matches_before": 5000,
+      "strict_matches_after": 5000,
+      "strict_delta": 0,
+      "mismatches_before": 0,
+      "mismatches_after": 0
+    },
+    "fsp3": {
+      "strict_matches_before": 5000,
+      "strict_matches_after": 5000,
+      "strict_delta": 0,
+      "mismatches_before": 0,
+      "mismatches_after": 0
+    },
+    "aromatic_ring_count": {
+      "strict_matches_before": 4940,
+      "strict_matches_after": 5000,
+      "strict_delta": 60,
+      "mismatches_before": 60,
+      "mismatches_after": 0
+    }
+  },
+  "status": "measured",
+  "gate_passed": true
+}

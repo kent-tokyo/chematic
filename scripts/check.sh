@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Run the same checks as CI locally. Usage: bash scripts/check.sh
 set -e
-# The workspace version is the default for current v1.0.12 evidence. A small
+# The workspace version is the default for current candidate evidence. A small
 # number of independent oracle/binding reports remain intentionally pinned to
-# v1.0.10; those checks opt into the historical version explicitly below.
+# historical versions; those checks opt into the historical version explicitly
+# below, while contract checkers report their own evidence version.
 HISTORICAL_VERSION=1.0.10
 echo "=== fmt ===" && cargo fmt --all -- --check
 echo "=== unsafe surface ===" && python3 scripts/check_unsafe_surface.py
@@ -27,6 +28,13 @@ echo "=== triclinic neighbor evidence ===" && SCHEMATIC_BENCHMARK_VERSION="$HIST
 echo "=== MMFF94 issue #337 determinism evidence ===" && SCHEMATIC_BENCHMARK_VERSION="$HISTORICAL_VERSION" python3 scripts/check_mmff94_issue337_determinism_evidence.py
 echo "=== Issue #503 E/Z residual evidence ===" && python3 scripts/check_ez_residual_evidence.py
 echo "=== Criterion calibration contract ===" && python3 scripts/check_criterion_gate_calibration.py
+if [ -f validation/results/rdkit-search-oracle-current-rerun.json ] \
+    && [ -f validation/results/rdkit-search-threshold-gate-v1.0.13.json ] \
+    && [ -f validation/results/rdkit-search-cross-binding-parity-v1.0.13.json ]; then
+    echo "=== RDKit search evidence packet ===" && python3 scripts/check_rdkit_search_reports.py
+else
+    echo "=== RDKit search evidence packet === (skipped: current reports are not generated)"
+fi
 echo "=== roadmap disposition ===" && SCHEMATIC_BENCHMARK_VERSION="$HISTORICAL_VERSION" python3 scripts/check_roadmap_disposition.py
 echo "=== workflow action pins ===" && python3 scripts/check_workflow_pins.py
 echo "=== clippy ===" && cargo clippy --workspace --all-targets -- -D warnings

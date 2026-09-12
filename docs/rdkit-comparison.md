@@ -44,8 +44,10 @@ the [benchmark guide](benchmark.md).
 The opt-in `Mol.rdkit_mw`, `Mol.rdkit_hba`, and
 `Mol.rdkit_aromatic_ring_count` profiles use pinned RDKit conventions without
 changing the native descriptor defaults. In the v1.0.13 source-built gate,
-all comparable descriptor values matched RDKit; MW matched 4,999 unlabelled
-rows and the one isotope row is intentionally fail-closed. The full per-field
+the current source-built v2 descriptor run matches RDKit for MW and HBA on
+5,000/5,000 rows, including the known explicit-isotope row. The current code
+supports a finite table of common explicit isotopes and rejects unknown labels
+without approximation. The full per-field
 distribution and 12-case structural holdout are recorded in
 [`descriptor-rdkit-diagnostics-v1.0.13.json`](../validation/results/descriptor-rdkit-diagnostics-v1.0.13.json)
 and [`descriptor-rdkit-holdout-v1.0.13.json`](../validation/results/descriptor-rdkit-holdout-v1.0.13.json).
@@ -88,7 +90,7 @@ states parity. See [`validation.md`](validation.md).
 
 ## WASM artifact size
 
-The current v1.0.12 Node/WASM gate measured chematic at **3.93 MB raw / 1.43 MB gzip**
+The latest measured v1.0.12 Node/WASM gate measured chematic at **3.93 MB raw / 1.43 MB gzip**
 and the pinned official RDKit.js comparator at **6.91 MB raw / 2.05 MB gzip**.
 These builds have different feature surfaces, so size is a deployment observation
 rather than a feature-normalized benchmark. See the

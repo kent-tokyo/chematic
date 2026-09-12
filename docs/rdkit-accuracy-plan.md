@@ -1,9 +1,10 @@
 # RDKit同等精度から、独立検証での優位性へ
 
-更新日: 2026-09-12。対象: chematic 1.0.13からの開発系列。
+更新日: 2026-09-13。対象: chematic 1.0.13からの開発系列。
 状態: **一部の既存コーパスは合格、A0–A6の全出口は未達**。
 [ROADMAP](../ROADMAP.md) の実行計画。P0–P6は製品領域、A0–A6は精度の作業単位として維持する。
-今回の更新はA1.Rの芳香族環数退行の回復、最新候補の再測定、計画と証拠範囲の同期を含む。
+短期実行順は[Trust Release計画](trust-release-plan.md)に集約する。
+今回の更新はSMARTS途中集計の訂正、予算契約の監査、互換性・配布・安全性ゲートの優先化を含む。
 リリース判定や独立評価の完了を意味しない。
 
 ## 1. 目標と優先順
@@ -13,7 +14,9 @@
 3Dは別プロファイルで完成させる。追加記述子はcore完了後に並行できるが、
 CIP・構造同一性の解決を全記述子の完成待ちにはしない。
 
-**直近はA0（P0の証拠契約・未使用評価）。A1.Rのopt-in候補受入れは影響範囲のbinding/workflow回帰を通過済み。その後はA1残項目 → A2 → A3 → A4 → A5最終判定 → A6。**
+**直近はT0（A0/A4の完了会計・予算契約）。T1互換性契約 → T2公開情報同期 → T3 WASM/T4安全性/T5立体 → T6独立評価・維持運用・既存3D gapへ進む。**
+T0–T6は実行順のIDであり、A0–A6の出口を置き換えない。
+A1.Rのopt-in候補受入れと全精度目標の未達は従来どおり区別する。
 A5のデータ設計・評価器はA0と並行し、新しいsilent corruptionは領域を問わず最優先とする。
 
 | 評価軸 | 判定基準 | 最終的に主張できる範囲 |
@@ -40,7 +43,7 @@ A5のデータ設計・評価器はA0と並行し、新しいsilent corruption�
 | A1拡張 | Strict rotatable bondsは5,000/5,000。branch provenance fallback後のpotential stereocentersは5,000/5,000。さらに7,737-row exposed holdoutでpotential centers 7,737/7,737、原子別FP=0/FN=0、未解決oracle行0。P=S、N+–O−–N、S(=O)(=S)、芳香族酸素橋の環境境界を追加し、fixes6では8記述子のうち7項目が7,737/7,737 strict、芳香族環数が7,736/7,737。混在芳香族性の広域修正fixes4は29残差へ退行したため採用せず、bounded chordless aromatic cycle候補を固定RDKit 2025.09.3で再測定した結果、8項目すべて7,737/7,737 strict、不一致原因0。promotion gateは`adopted_opt_in`、native defaultは維持。potential centersはfixes3時点の測定 | 未使用/sealed評価、共有認識・全bindingゲートの再検証、他のdescriptor family、独立goldでの確認 |
 | A2 | CIP履歴は4,171/4,186、P系15件は未確定。canonical意味比較200/200に加え、RDKit InChIを独立identity oracleとする5,000分子×4 randomized valid spellingの構造同一性は5,000/5,000、失敗0・oracle-invalid除外0。最新ソースの#503 K=1,024は4/28 divergent components、cross-correspondence failure 0。代表残差の内部診断では、共有carrierを選ぶと相手系の唯一の方向情報を失い、代替carrierはcanonical DFSのring-close側で出力できないため、現行solverは安全にabstainしている | 4残差を安定して解くcarrier/DFS表現、CIP独立ラベル、未使用評価、異性体の誤統合検査 |
 | A3 | Rust/source-built Python/Node-WASMのk=1/10/100が500クエリ×4,500ライブラリで丸め前スコアを含め0不一致。独立RDKit exhaustive oracleも全kで一致。RDKit oracle fixtureは34成功+1 unsupported-bond errorを全bindingで検証。`score >= threshold`の閾値APIと、RDKit由来の直上/同値/直下を含む96ケースのcross-bindingゲートが合格。さらにRDKit-parity芳香族性レーンで、チェックイン済み5,000行のraw Morgan residual 59件をすべて解消し、RDKit 2025.09.3と5,000/5,000 strict一致（前処理エラー0）となった | raw/provenance packetの保存、全binding・検索ゲートの再実行、実際に未使用の評価入力 |
-| A4 | 固定した過去のSMARTS診断では比較可能155,633セル中155,618一致（99.9904%）、全155,651セルでは155,618一致（99.9788%）。現行ソースの直接比較をmatch順序正規化後に再集計すると、16クエリ×5,000分子の155,651セル中、145,579一致、RDKit側unsupported 10,042、chematic明示拒否18、残差12。従来の80,000/80,000表記はこの全分母を表さないため採用しない。共有symmetrized-SSSR＋cage fallbackの実験的opt-in hybrid selectorは全SMARTS回帰と代表cageケースに合格したが、全コーパス再測定は未完了。反応presence 6/6、限定V3000往復、SMIRKS product set 7/7一致 | hybrid laneの全コーパス測定、12残差と18拒否の分類、supported/unsupported SMARTSポリシー固定、原子対応match集合、反応生成物、標準化の現行再測定、typed metadataの独立比較 |
+| A4 | 永続化したChEMBL 5,000行コーパスによるfooter検証済みSMARTS laneは5,021分子×31クエリ、155,651セル。原子index集合でのparity一致145,588、RDKit SMARTS parse error 10,042、残差21、RDKit原子整列失敗0。artifactは`validation/results/rdkit-smarts-direct-chembl-5000-footer-verified-v1.0.13.json`で、入力・dump SHA-256を保持。全embeddingの写像一致ではない。以前のprivate corpusの12残差と12→3誤集計は別母集団として採用しない。ビルド出自を凍結したbaseline/candidate packetは未作成。反応presence 6/6、51ケース/14テンプレートのproduct-set gate 51/51、別のstereo安全拒否1/1、限定V3000往復は維持 | T0で独立baseline/candidateと同条件再測定、21残差の分類、SMARTS対応ポリシー、原子対応match集合、反応生成物、標準化、typed metadataの比較を継続 |
 | A5 | 4件のgold候補、2件のblind欄、manifest構造検査 | 絶対正解、実際の未使用入力、非実装者レビュー、統計評価器。現状は独立評価未実施 |
 | A6 | MMFF94型IDは6,681/6,698（99.76%相当、unsupported probe 1件を除く比較対象6,697件中16残差）。現行候補のstrict bond+angleは265/265（tier A 65、tier B 200、失敗0）。BCI電荷は6,665/6,698 exact、unsupported probe除外の比較対象で6,665/6,693（99.58%、残差28原子） | 全エネルギー項・勾配・最適化・配座品質。型・電荷の残差解消と、265/265を全力場合格としない |
 
@@ -347,7 +350,9 @@ canonicalのcross-engine文字列の綴り一致は必須にしない。
 - [ ] **A4.1** fragment selection、中和、tautomerを個別API契約で再測定。
   履歴の標準化10件中酢酸塩2件を、現在のfragment_parent/charge_parentの規則に照らして判定。
   200件以上の層別fixture、冪等性、原子/電荷収支、塩の順序不変性を用意する。
-- [ ] **A4.2** SMARTSの18拒否・15残差を環モデル/芳香族性/写像に分類。
+- [ ] **A4.2** SMARTSの10,042件のRDKit parse errorと21残差セルを環モデル/芳香族性/写像/対応範囲に分類。
+  永続化した5,021分子×31クエリの現行laneでは、原子index集合のparity一致は145,588/155,651、整列失敗0。旧private corpusの12残差や12→3の部分出力は現行分母へ混ぜない。
+  T0で全件完了・実測予算・独立buildの比較を確立してから採否を決める。
   既存31 patternの全セルを維持し、100 pattern以上へ段階拡張。
   存在判定から原子対応match集合のFP/FNへ拡張し、recursive/立体/明示H/対称重複、
   `[R]`/`[r]`/`[k]`、探索打切りを検査する。入力順依存の特例で一致させない。
@@ -523,7 +528,11 @@ LogP/MRのRDKit一致は実測物性の予測精度ではない。
 
 ## 5. 実装順・候補版・運用
 
-### 5.1 最初の実装単位
+### 5.1 精度パッケージ内の依存順
+
+以下は精度パッケージ内の依存関係を維持した表。
+現在の着手順・週次レビュー・工数配分は[Trust Release計画](trust-release-plan.md)を優先し、
+A4のrunner/予算欠陥をT0へ繰り上げる。未使用群の取得とA5準備は初日から並行する。
 
 | 順番 | 変更単位 | 受入証拠 |
 |---|---|---|
@@ -545,6 +554,10 @@ A5ローカル5–10、A6 15–30実働日以上。残差の研究・データ�
 作業規模の見積りであり、納期や自律実行時間の約束ではない。
 
 ### 5.2 候補版の出口
+
+以下の従来条件は緩和しない。次のTrust RCには加えてT0–T2、T3の1万件ゲート、
+T4固定安全性corpus、T5公開suiteと既存安全回帰を要求する。
+4週目は受入監査の目安であり、未達ならRC化を延期する。
 
 | 区切り | 必須条件 | 主張 |
 |---|---|---|

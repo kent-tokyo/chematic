@@ -10,16 +10,20 @@ from __future__ import annotations
 
 import hashlib
 import json
+import argparse
 import subprocess
 import sys
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CORPUS = ROOT / "scripts" / "chembl_accuracy_corpus_4999.smi"
-REPORT = ROOT / "validation" / "results" / "descriptor-cross-binding-parity-5000-v1.0.9.json"
-FIELDS = ("mw", "tpsa", "hbd", "hba", "heavy_atoms")
-FLOAT_FIELDS = {"mw", "tpsa"}
+DEFAULT_CORPUS = ROOT / "scripts" / "chembl_accuracy_corpus_4999.smi"
+DEFAULT_REPORT = ROOT / "validation" / "results" / "descriptor-cross-binding-parity-5000-v1.0.13.json"
+FIELDS = (
+    "molecular_weight", "tpsa", "hbd", "hba", "logp",
+    "molar_refractivity", "fsp3", "aromatic_ring_count",
+)
+FLOAT_FIELDS = {"molecular_weight", "tpsa", "logp", "molar_refractivity", "fsp3"}
 FLOAT_TOLERANCE = 1e-9
 
 
@@ -47,11 +51,14 @@ def python_records(corpus: str) -> list[dict]:
                 "smiles": smiles,
                 "status": "ok",
                 "descriptors": {
-                    "mw": mol.mw,
+                    "molecular_weight": mol.rdkit_mw,
                     "tpsa": mol.tpsa,
                     "hbd": mol.hbd,
-                    "hba": mol.hba,
-                    "heavy_atoms": mol.heavy_atoms,
+                    "hba": mol.rdkit_hba,
+                    "logp": mol.logp,
+                    "molar_refractivity": mol.molar_refractivity,
+                    "fsp3": mol.fsp3,
+                    "aromatic_ring_count": mol.rdkit_aromatic_ring_count,
                 },
             })
         except Exception as error:  # Keep invalid-row accounting binding-stable.
@@ -80,9 +87,15 @@ def compare(left: list[dict], right: list[dict]) -> dict:
 
 
 def main() -> int:
-    corpus = CORPUS.read_text(encoding="utf-8")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--corpus", type=Path, default=DEFAULT_CORPUS)
+    parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
+    args = parser.parse_args()
+    corpus_path = args.corpus if args.corpus.is_absolute() else ROOT / args.corpus
+    report_path = args.report if args.report.is_absolute() else ROOT / args.report
+    corpus = corpus_path.read_text(encoding="utf-8")
     corpus_lines = [line for line in corpus.splitlines() if line.strip()]
-    corpus_sha256 = hashlib.sha256(CORPUS.read_bytes()).hexdigest()
+    corpus_sha256 = hashlib.sha256(corpus_path.read_bytes()).hexdigest()
     rust = run_jsonl(["cargo", "run", "-p", "chematic-chem", "--release", "--offline", "--example", "descriptor_binding_dump"], corpus)
     node = run_jsonl(["node", "scripts/descriptor_binding_dump.mjs"], corpus)
     python = python_records(corpus)
@@ -94,9 +107,9 @@ def main() -> int:
 
     report = {
         "schema_version": 1,
-        "target_version": "1.0.9",
+        "target_version": "1.0.13",
         "contract": "same chematic source SMILES, Rust/PyO3/Node-WASM binding agreement",
-        "corpus": {"path": str(CORPUS.relative_to(ROOT)), "rows": expected_rows, "sha256": corpus_sha256},
+        "corpus": {"path": str(corpus_path.relative_to(ROOT)), "rows": expected_rows, "sha256": corpus_sha256},
         "descriptor_fields": list(FIELDS),
         "float_tolerance": FLOAT_TOLERANCE,
         "binding_status_counts": {
@@ -122,8 +135,8 @@ def main() -> int:
             "Full held-out parity for fingerprints, topology, torsion, and standardization remains open.",
         ],
     }
-    REPORT.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps({"report": str(REPORT.relative_to(ROOT)), "gate_passed": report["gate_passed"], "rows": expected_rows}))
+    report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps({"report": str(report_path.relative_to(ROOT)), "gate_passed": report["gate_passed"], "rows": expected_rows}))
     return 0 if report["gate_passed"] else 1
 
 
