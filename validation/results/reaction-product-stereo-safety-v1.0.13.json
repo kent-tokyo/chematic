@@ -1,0 +1,29 @@
+{
+  "agreement": {
+    "safe_refusals": 1,
+    "total": 1
+  },
+  "case_file_sha256": "b90f7fbca52662278df9881fbb6c9baddefa890b4a4dbd90d32efb69022d8f3e",
+  "cases": [
+    {
+      "chematic_product_sets": [],
+      "expected_chematic_product_sets": [],
+      "id": "stereo_template_rejects_opposite_enantiomer",
+      "policy": "fail_closed_on_reactant_stereo_mismatch",
+      "rdkit_run_reactants_product_set_count": 1,
+      "reactants": [
+        "N[C@H](C)C(=O)O"
+      ],
+      "safe_refusal": true,
+      "smirks": "[N:1][C@@H:2](C)C(=O)O>>[N:1][C@@H:2](C)C(=O)O"
+    }
+  ],
+  "not_claimed": [
+    "RDKit reaction-runner stereo parity",
+    "reaction yield",
+    "selectivity"
+  ],
+  "profile": "reaction_product_stereo_fail_closed",
+  "rdkit_version": "2025.09.3",
+  "schema_version": 1
+}

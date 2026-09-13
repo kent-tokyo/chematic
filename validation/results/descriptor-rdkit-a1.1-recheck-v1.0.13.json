@@ -1,0 +1,59 @@
+{
+  "status": "candidate_diagnostic",
+  "comparator": "RDKit 2025.09.3",
+  "operation": "rdkit_compat_attributes",
+  "fields": [
+    "molecular_weight",
+    "tpsa",
+    "logp",
+    "molar_refractivity",
+    "fsp3",
+    "aromatic_ring_count"
+  ],
+  "strict_tolerance": {
+    "molecular_weight": 1e-6,
+    "tpsa": 1e-6,
+    "logp": 1e-6,
+    "molar_refractivity": 1e-6,
+    "fsp3": 1e-6,
+    "aromatic_ring_count": 0
+  },
+  "corpora": [
+    {
+      "path": "scripts/descriptor_census_corpus.smi",
+      "rows": 5000,
+      "parsed": 5000,
+      "parse_failures": 0,
+      "strict_matches": {
+        "molecular_weight": 5000,
+        "tpsa": 4995,
+        "logp": 5000,
+        "molar_refractivity": 5000,
+        "fsp3": 5000,
+        "aromatic_ring_count": 5000
+      },
+      "tpsa_residuals": 5
+    },
+    {
+      "path": "scripts/chembl_accuracy_corpus_4999.smi",
+      "rows": 5000,
+      "parsed": 5000,
+      "parse_failures": 0,
+      "strict_matches": {
+        "molecular_weight": 5000,
+        "tpsa": 5000,
+        "logp": 5000,
+        "molar_refractivity": 5000,
+        "fsp3": 5000,
+        "aromatic_ring_count": 5000
+      },
+      "tpsa_residuals": 0
+    }
+  ],
+  "isotope_boundary": {
+    "supported_nuclide_mass_regression": "pass",
+    "unknown_isotope_fail_closed_regression": "pass",
+    "scope": "schematic-chem unit test; not a corpus-wide isotope holdout"
+  },
+  "caveat": "These are same-input binding diagnostics against RDKit, not an independent chemical-correctness adjudication or sealed unused evaluation."
+}

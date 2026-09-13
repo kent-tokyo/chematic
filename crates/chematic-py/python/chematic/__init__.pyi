@@ -375,7 +375,12 @@ class Mol:
 
     @property
     def num_stereocenters(self) -> int:
-        """Number of assigned stereocenters (R/S)."""
+        """Number of potential tetrahedral stereocenters (specified or unspecified)."""
+        ...
+
+    @property
+    def potential_stereocenter_indices(self) -> list[int]:
+        """Atom indices of potential tetrahedral stereocenters."""
         ...
 
     # -- Drug-likeness rules -------------------------------------------------
@@ -1575,6 +1580,26 @@ class Mol:
         """
         ...
 
+    def mmff94_charges_numeric(self) -> list[float]:
+        """MMFF94 numeric PBCI+CHG charges used by the force-field energy model.
+
+        This diagnostic API is separate from :meth:`mmff94_charges_typed` and
+        exposes the force-field's numeric RDKit-parity charge path.
+        """
+        ...
+
+    def mmff94_numeric_atom_types(self) -> list[int]:
+        """Numeric MMFF94 atom type IDs used by the force-field model.
+
+        This is the parity diagnostic counterpart of RDKit's
+        ``GetMMFFAtomType`` and is separate from :meth:`mmff94_atom_types`.
+        """
+        ...
+
+    def mmff94_numeric_aromatic_flags(self) -> list[bool]:
+        """Per-atom aromatic flags in the MMFF94-specific re-perceived view."""
+        ...
+
     def erg_vec(self) -> list[float]:
         """ERG (Extended Reduced Graph) continuous feature vector (length 315).
 
@@ -1711,6 +1736,10 @@ class Mol:
             membership = mol.ring_membership()
             ring_idxs = membership[atom_i]
         """
+        ...
+
+    def symmetrized_sssr_atom_rings(self) -> list[list[int]]:
+        """Symmetrized SSSR rings as atom-index lists for parity diagnostics."""
         ...
 
     def ring_sizes_for_atom(self, atom_idx: int) -> list[int]:

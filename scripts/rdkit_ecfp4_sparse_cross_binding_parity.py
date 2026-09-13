@@ -11,7 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CORPUS = ROOT / "scripts" / "chembl_accuracy_corpus_4999.smi"
-REPORT = ROOT / "validation" / "results" / "rdkit-ecfp4-sparse-cross-binding-parity-5000-v1.0.9.json"
+REPORT = ROOT / "validation" / "results" / "rdkit-ecfp4-sparse-cross-binding-parity-5000-v1.0.13.json"
 
 
 def jsonl(value: str) -> list[dict]:
@@ -63,7 +63,7 @@ def main() -> int:
     pairwise = {"rust_vs_python": compare(bindings["rust"], bindings["python"]), "rust_vs_node_wasm": compare(bindings["rust"], bindings["node_wasm"]), "python_vs_node_wasm": compare(bindings["python"], bindings["node_wasm"])}
     report = {
         "schema_version": 1,
-        "target_version": "1.0.9",
+        "target_version": "1.0.13",
         "contract": "same chematic source SMILES, RDKit-compatible ECFP4 raw sparse identifier/count pairs",
         "corpus": {"path": str(CORPUS.relative_to(ROOT)), "rows": expected_rows, "sha256": hashlib.sha256(CORPUS.read_bytes()).hexdigest()},
         "binding_status_counts": {name: {status: sum(row["status"] == status for row in rows) for status in ("ok", "error")} for name, rows in bindings.items()},

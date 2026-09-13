@@ -7,9 +7,10 @@
 //! `setAromaticity(mol, AROMATICITY_RDKIT, ...)` calls).
 //!
 //! `AromaticityAlgorithm::RdkitLike` now routes through this engine when the
-//! input can be kekulized; the historical per-ring implementation remains as
-//! an infallible fallback for inputs that cannot satisfy the parity engine's
-//! precondition. `Huckel` remains the default and is unchanged. This module
+//! input can be kekulized; explicit, self-consistent aromatic input is preserved
+//! when no matching Kekulé assignment exists. The historical per-ring
+//! implementation remains an infallible fallback for inputs that cannot satisfy
+//! either representation. `Huckel` remains the default and is unchanged. This module
 //! also backs a separate, explicitly opt-in, fallible production API:
 //! [`assign_aromaticity_rdkit_parity_experimental`] and
 //! [`apply_aromaticity_rdkit_parity_experimental`], re-exported from the
@@ -47,8 +48,9 @@
 //! counts as a normal one-electron donor under RDKit's rule, not a
 //! zero-electron "spent on the exocyclic bond" donor.
 //!
-//! Requires pre-kekulized input (no `BondOrder::Aromatic`), matching RDKit's
-//! own pipeline (`Kekulize` always runs before `setAromaticity`).
+//! Prefers pre-kekulized input (no `BondOrder::Aromatic`), matching RDKit's own
+//! pipeline (`Kekulize` normally runs before `setAromaticity`), but retains a
+//! validated explicit-aromatic representation when that conversion is impossible.
 
 use rustc_hash::{FxHashMap, FxHashSet};
 
@@ -703,15 +705,55 @@ fn clear_aromatic_flags(mol: &Molecule) -> Molecule {
     builder.build()
 }
 
-/// Normalize `mol` to pure Kekulé form (this engine's precondition): clear
-/// stale aromatic flags, then kekulize. Returns an explicit error instead of
-/// falling back to another algorithm or leaving a partially-rewritten
-/// molecule behind -- `mol` itself is never mutated, only read.
+/// Preserve a parser-supplied aromatic representation when it is internally
+/// self-consistent. RDKit accepts some fused heteroaromatic SMILES whose
+/// aromatic graph has no single Kekulé assignment under chematic's matching
+/// model; discarding that representation would reject a valid RDKit input.
+/// This path is deliberately limited to the literal aromatic bond/endpoint
+/// annotation and never invents aromaticity for an aliphatic graph.
+fn preserve_explicit_aromaticity(mol: &Molecule) -> Option<Molecule> {
+    let aromatic_bonds: FxHashSet<BondIdx> = mol
+        .bonds()
+        .filter_map(|(idx, bond)| (bond.order == BondOrder::Aromatic).then_some(idx))
+        .collect();
+    if aromatic_bonds.is_empty() {
+        return None;
+    }
+    let aromatic_atoms: FxHashSet<AtomIdx> = mol
+        .atoms()
+        .filter_map(|(idx, atom)| atom.aromatic.then_some(idx))
+        .collect();
+    if aromatic_bonds.iter().any(|&idx| {
+        let bond = mol.bond(idx);
+        !aromatic_atoms.contains(&bond.atom1) || !aromatic_atoms.contains(&bond.atom2)
+    }) {
+        return None;
+    }
+    Some(mol.clone())
+}
+
+fn model_from_explicit_aromaticity(mol: &Molecule) -> AromaticityModel {
+    AromaticityModel::from_atom_bond_sets(
+        mol.atoms()
+            .filter_map(|(idx, atom)| atom.aromatic.then_some(idx))
+            .collect(),
+        mol.bonds()
+            .filter_map(|(idx, bond)| (bond.order == BondOrder::Aromatic).then_some(idx))
+            .collect(),
+    )
+}
+
+/// Normalize `mol` to pure Kekulé form (this engine's preferred path): clear
+/// stale aromatic flags, then kekulize. If the graph came from a self-
+/// consistent explicit aromatic representation that has no matching Kekulé
+/// form, preserve that representation instead. Otherwise return an explicit
+/// error and never leave a partially-rewritten molecule behind.
 fn kekulize_for_rdkit_parity(mol: &Molecule) -> Result<Molecule, AromaticityError> {
     let cleared = clear_aromatic_flags(mol);
     match chematic_core::kekulize(&cleared) {
         Ok(k) => Ok(chematic_core::apply_kekule(&cleared, &k)),
-        Err(e) => Err(AromaticityError::KekulizationFailed { reason: e.detail }),
+        Err(e) => preserve_explicit_aromaticity(mol)
+            .ok_or(AromaticityError::KekulizationFailed { reason: e.detail }),
     }
 }
 
@@ -771,6 +813,12 @@ pub fn assign_aromaticity_rdkit_parity_experimental(
     mol: &Molecule,
 ) -> Result<AromaticityModel, AromaticityError> {
     let kekulized = kekulize_for_rdkit_parity(mol)?;
+    if kekulized
+        .bonds()
+        .any(|(_, bond)| bond.order == BondOrder::Aromatic)
+    {
+        return Ok(model_from_explicit_aromaticity(&kekulized));
+    }
     assign_from_kekulized(&kekulized)
 }
 
@@ -785,6 +833,12 @@ pub fn apply_aromaticity_rdkit_parity_experimental(
     mol: &Molecule,
 ) -> Result<Molecule, AromaticityError> {
     let kekulized = kekulize_for_rdkit_parity(mol)?;
+    if kekulized
+        .bonds()
+        .any(|(_, bond)| bond.order == BondOrder::Aromatic)
+    {
+        return Ok(kekulized);
+    }
     let model = assign_from_kekulized(&kekulized)?;
     Ok(crate::aromaticity::build_molecule_from_model(
         &kekulized, &model,
@@ -972,30 +1026,22 @@ mod tests {
     }
 
     #[test]
-    fn production_api_reports_kekulize_failure_not_panic() {
-        // The one known-gap molecule from the full-corpus gate: RDKit itself
-        // parses this fine, but chematic's own `kekulize()` rejects a
-        // bridgehead N in this fused purine-like system. Must surface as
-        // `AromaticityError::KekulizationFailed`, not a panic and not a
-        // silent fallback to another algorithm.
+    fn production_api_preserves_valid_explicit_aromatic_input() {
+        // RDKit accepts this fused purine-like graph even though chematic's
+        // matching-based Kekule conversion cannot represent it. The explicit
+        // aromatic input is self-consistent, so it must be preserved rather
+        // than rejected or silently sent through the ordinary Hückel model.
         let smi = "Cc1cn2c(=O)c3ncn(COCCO)c3nc2n1C";
         let mol = chematic_smiles::parse(smi).expect("valid SMILES");
 
-        match assign_aromaticity_rdkit_parity_experimental(&mol) {
-            Err(AromaticityError::KekulizationFailed { .. }) => {}
-            other => panic!("expected KekulizationFailed, got {other:?}"),
-        }
-        // `Molecule` has no `Debug` impl, so match on the error shape only
-        // (discarding the `Ok(Molecule)` payload) rather than formatting
-        // the whole `Result` on failure.
-        match apply_aromaticity_rdkit_parity_experimental(&mol).map(|_| ()) {
-            Err(AromaticityError::KekulizationFailed { .. }) => {}
-            other => panic!("expected KekulizationFailed, got {other:?}"),
-        }
+        let model = assign_aromaticity_rdkit_parity_experimental(&mol).expect("valid input");
+        assert!(model.aromatic_atom_count() > 0);
+        let applied = apply_aromaticity_rdkit_parity_experimental(&mol).expect("valid input");
+        assert_eq!(applied.atom_count(), mol.atom_count());
     }
 
     #[test]
-    fn production_api_does_not_mutate_input_on_failure() {
+    fn production_api_does_not_mutate_input_on_explicit_aromatic_path() {
         // "元の分子を途中まで書き換えてから失敗する経路は作らないでください" --
         // `mol` is only ever taken by `&Molecule` throughout the fallible
         // path (`clear_aromatic_flags`/`kekulize`/`apply_kekule` all build
@@ -1009,10 +1055,7 @@ mod tests {
         let aromatic_before: Vec<bool> = mol.atoms().map(|(_, a)| a.aromatic).collect();
 
         let result = assign_aromaticity_rdkit_parity_experimental(&mol);
-        assert!(
-            result.is_err(),
-            "this molecule is a known kekulize-gap case"
-        );
+        assert!(result.is_ok(), "self-consistent explicit aromatic input");
 
         assert_eq!(mol.atom_count(), atom_count_before);
         assert_eq!(mol.bond_count(), bond_count_before);

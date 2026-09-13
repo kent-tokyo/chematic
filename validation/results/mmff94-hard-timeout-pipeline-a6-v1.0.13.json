@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "protocol": "a6-pipeline-v2-mmff94-strict-external-hard-timeout",
+  "status": "candidate_complete_bounded_evidence_not_release_gate",
+  "comparator": "none",
+  "source_version": "workspace v1.0.13",
+  "arm": "chematic_pipeline_v2_mmff94_strict",
+  "timeout": {
+    "external_timeout_seconds": 25,
+    "policy": "one child process per manifest row; timeout is retained as an explicit row"
+  },
+  "scope": {
+    "tier_a_rows": 65,
+    "tier_b_rows": 200,
+    "total_rows": 265,
+    "unique_names": 265
+  },
+  "status_counts": {
+    "success": 215,
+    "timeout": 50,
+    "runner_failure": 0,
+    "parse_failure": 0
+  },
+  "tier_summary": {
+    "A": {
+      "rows": 65,
+      "success": 64,
+      "timeout": 1,
+      "all_finite_success": 64,
+      "sound_success": 64,
+      "gross_clash_success": 0,
+      "force_field_converged": 42
+    },
+    "B": {
+      "rows": 200,
+      "success": 151,
+      "timeout": 49,
+      "all_finite_success": 151,
+      "sound_success": 151,
+      "gross_clash_success": 0,
+      "force_field_converged": 12
+    }
+  },
+  "all_success_summary": {
+    "success": 215,
+    "all_finite": 215,
+    "sound": 215,
+    "gross_clash": 0,
+    "force_field_converged": 54
+  },
+  "reproduction": {
+    "build": "CARGO_BUILD_JOBS=1 cargo build -p chematic-3d --example pipeline_v2_vs_rdkit_dump --offline",
+    "run": "python3 scripts/run_pipeline_hard_timeout.py --timeout-s 25 --output /tmp/chematic-mmff94-hard-combined.jsonl",
+    "tier_commands": [
+      "python3 scripts/run_pipeline_hard_timeout.py --tier A --timeout-s 25 --output /tmp/chematic-mmff94-hard-tier-a.jsonl",
+      "python3 scripts/run_pipeline_hard_timeout.py --tier B --timeout-s 25 --output /tmp/chematic-mmff94-hard-tier-b.jsonl"
+    ]
+  },
+  "interpretation": "Every declared row is represented and every successful row is finite and sound with zero gross clashes. The 50 timeout rows are failures for coverage purposes, not removed from the denominator. This is bounded local pipeline evidence; it does not establish RDKit energy/gradient parity, convergence non-inferiority, stereo parity, or conformer-quality parity."
+}

@@ -1,0 +1,30 @@
+{
+  "issue": 227,
+  "target_version": "1.0.13",
+  "measured_at": "2026-09-13",
+  "comparator": "RDKit 2025.09.3",
+  "method": "The current Rust pipeline's returned heavy-atom coordinates were loaded into an RDKit molecule parsed from the identical SMILES. MMFF94 energy and CalcGrad were evaluated at that shared heavy-atom coordinate set. This is a diagnostic same-heavy-topology comparison; implicit-H and term-convention equivalence still require a dedicated fixed-H protocol.",
+  "molecules": {
+    "cholesterol": {
+      "heavy_atoms": 28,
+      "chematic_total_energy_kcal_mol": 78.93633681482363,
+      "rdkit_total_energy_kcal_mol": 64.16833014660938,
+      "energy_delta_schematic_minus_rdkit": 14.768006668214253,
+      "chematic_max_gradient_kcal_mol_a": 0.06375198367436496,
+      "rdkit_max_gradient_kcal_mol_a": 13.693055153076493,
+      "gradient_max_absolute_difference_kcal_mol_a": 13.680601732452878,
+      "gradient_mean_absolute_difference_kcal_mol_a": 2.153681822338144
+    },
+    "atorvastatin_fragment": {
+      "heavy_atoms": 41,
+      "chematic_total_energy_kcal_mol": 134.24300263651412,
+      "rdkit_total_energy_kcal_mol": 82.47470571259213,
+      "energy_delta_schematic_minus_rdkit": 51.76829692392199,
+      "chematic_max_gradient_kcal_mol_a": 7.042116526605469,
+      "rdkit_max_gradient_kcal_mol_a": 26.56716745080237,
+      "gradient_max_absolute_difference_kcal_mol_a": 26.81021970134159,
+      "gradient_mean_absolute_difference_kcal_mol_a": 6.628150894114374
+    }
+  },
+  "status": "candidate_diagnostic_requires_fixed_h_protocol"
+}

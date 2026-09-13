@@ -23,11 +23,11 @@ npm install @kent-tokyo/chematic
 
 Python 版本无需 C/C++ 编译器。
 
-### v1.0.13 范围
+### v1.0.14 范围
 
-本版本扩展了反应、V3000、输入安全、CIP 和各绑定的验证。RDKit 兼容指纹、
-Markush/polymer 语义以及浏览器 artifact 的完全一致性仍属于 bounded scope。
-详见[兼容性范围](docs/compatibility-scope.md)和[CHANGELOG](CHANGELOG.md)。
+本版本强化了 RDKit-parity SMARTS、环探索预算、不足坐标绘图、MMFF94 电荷错误
+传播以及 Python 批量描述符输出。兼容性仍按操作和数据集限定，详见
+[兼容性范围](docs/compatibility-scope.md)和[CHANGELOG](CHANGELOG.md)。
 
 ## Python
 

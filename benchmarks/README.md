@@ -10,10 +10,10 @@ accuracy, or compatibility claims.
 | Need | Start with |
 |---|---|
 | Understand the rules and how to report a result | [`docs/benchmark.md`](../docs/benchmark.md) |
-| Compare current similarity search with RDKit | [`2026-09-11-similarity-search-v1.0.12.md`](2026-09-11-similarity-search-v1.0.12.md) |
+| Compare current similarity search with RDKit | [`2026-09-12-similarity-search-a3-v1.0.13.md`](2026-09-12-similarity-search-a3-v1.0.13.md) |
 | Reproduce the 1.10x hot-path gate | [`2026-09-05-hotpath-110.md`](2026-09-05-hotpath-110.md) |
 | Check file-streaming contracts | [v1.0.12 validation matrix](../validation/results/cross-engine-matrix-v1.0.12.json) |
-| Check current streaming safety gate | [`2026-09-11-streaming-safety-v1.0.12.md`](2026-09-11-streaming-safety-v1.0.12.md) |
+| Check current streaming safety gate | [`2026-09-11-streaming-safety-v1.0.13.json`](2026-09-11-streaming-safety-v1.0.13.json) |
 | Check official RDKit.js comparison gate | [`2026-09-11-official-rdkit-js-v1.0.12.md`](2026-09-11-official-rdkit-js-v1.0.12.md) |
 | Current v1.0.12 official RDKit.js Node rerun | [`../validation/results/competitive-benchmark-rdkitjs-2026-09-11-v1.0.12.json`](../validation/results/competitive-benchmark-rdkitjs-2026-09-11-v1.0.12.json) |
 | Current v1.0.12 official RDKit.js Node report | [`2026-09-11-official-rdkit-js-v1.0.12.md`](2026-09-11-official-rdkit-js-v1.0.12.md) |
@@ -21,7 +21,7 @@ accuracy, or compatibility claims.
 | Check WASM artifact size | [`2026-09-09-wasm-size-v1.0.10.md`](2026-09-09-wasm-size-v1.0.10.md) |
 | Find older measurements | [Historical snapshots](#historical-snapshots) |
 
-The current release line is v1.0.12. Older records remain versioned historical
+The current release line is v1.0.14. Older records remain versioned historical
 measurements where their headers say so; a release does not imply that an older
 measurement was rerun.
 
@@ -35,6 +35,18 @@ measurement was rerun.
 | [`2026-09-09-similarity-search-v1.0.9.json`](2026-09-09-similarity-search-v1.0.9.json) | Machine-readable similarity-search measurements and ranking checks |
 | [`2026-09-11-similarity-search-v1.0.12.md`](2026-09-11-similarity-search-v1.0.12.md) | Three-lane native/native, RDKit-compatible/RDKit, and cross-profile top-10 gate with separate failure accounting |
 | [`2026-09-11-similarity-search-v1.0.12.json`](2026-09-11-similarity-search-v1.0.12.json) | Machine-readable v1.0.12 similarity-search gate |
+| [`2026-09-12-similarity-search-a3-v1.0.13.md`](2026-09-12-similarity-search-a3-v1.0.13.md) | A3 rerun after explicit-aromatic recovery; 4,500/500 coverage and exact compatible top-10 gate |
+| [`2026-09-12-similarity-search-a3-v1.0.13.json`](2026-09-12-similarity-search-a3-v1.0.13.json) | Machine-readable A3 rerun |
+| [`rdkit-ecfp4-cross-binding-parity-5000-v1.0.13.json`](../validation/results/rdkit-ecfp4-cross-binding-parity-5000-v1.0.13.json) | Current Rust/Python/Node/WASM ECFP4 cross-binding gate: 5,000/5,000 |
+| [`rdkit-ecfp4-sparse-cross-binding-parity-5000-v1.0.13.json`](../validation/results/rdkit-ecfp4-sparse-cross-binding-parity-5000-v1.0.13.json) | Raw sparse identifier/count cross-binding gate: 5,000/5,000 |
+| [`rdkit-ecfp4-raw-bitinfo-cross-binding-parity-5000-v1.0.13.json`](../validation/results/rdkit-ecfp4-raw-bitinfo-cross-binding-parity-5000-v1.0.13.json) | Raw identifier bitInfo cross-binding gate: 5,000/5,000 |
+| [`rdkit-ecfp4-bitinfo-cross-binding-parity-5000-v1.0.13.json`](../validation/results/rdkit-ecfp4-bitinfo-cross-binding-parity-5000-v1.0.13.json) | Folded bitInfo cross-binding gate: 5,000/5,000 |
+| [`native-descriptor-regression-v1.0.13.json`](../validation/results/native-descriptor-regression-v1.0.13.json) | Native descriptor default regression gate: 4 fixed fixtures, 4/4 |
+| [`descriptor-rotatable-rdkit-parity-v1.0.13.json`](../validation/results/descriptor-rotatable-rdkit-parity-v1.0.13.json) | A1 additional-family gate: RDKit Strict rotatable bonds, 5,000/5,000, zero failures/unsupported rows |
+| [`descriptor-stereocenter-rdkit-parity-v1.0.13.json`](../validation/results/descriptor-stereocenter-rdkit-parity-v1.0.13.json) | A1 diagnostic potential-stereocenter gate: 5,000/5,000 compared, 4,995 exact; five bridged/ring-tied residuals remain unadopted |
+| [`rdkit-search-cross-binding-parity-v1.0.13.json`](../validation/results/rdkit-search-cross-binding-parity-v1.0.13.json) | Full chunked 500-query/4,500-entry RDKit-compatible top-k search contract across Rust/Python/Node/WASM; independent RDKit oracle is separate |
+| [`descriptor-cross-binding-parity-5000-v1.0.13.json`](../validation/results/descriptor-cross-binding-parity-5000-v1.0.13.json) | Five-field descriptor binding contract: 5,000/5,000 |
+| [`2026-09-11-canonical-orbit-perf-v1.0.13.md`](2026-09-11-canonical-orbit-perf-v1.0.13.md) | Current exact canonical-search/orbit-pruning differential and instrumentation for issue #372 |
 | [`2026-09-09-wasm-rdkit-gate.md`](2026-09-09-wasm-rdkit-gate.md) | Same-corpus Node/WASM comparison with the installed official RDKit.js package |
 | [`2026-09-09-wasm-rdkit-gate.json`](2026-09-09-wasm-rdkit-gate.json) | Machine-readable WASM comparison output and exact fingerprint parity count |
 | [`2026-09-09-wasm-rdkit-paired.md`](2026-09-09-wasm-rdkit-paired.md) | Same-process paired Node/WASM timing follow-up |
@@ -70,8 +82,9 @@ measurement was rerun.
 | [`2026-09-09-mmff94-nonbonded-gradient-v1.0.10.md`](2026-09-09-mmff94-nonbonded-gradient-v1.0.10.md) | Prepared MMFF94 vdW/electrostatic analytic-gradient parity |
 | [`2026-09-09-uff-prepared-topology-v1.0.10.md`](2026-09-09-uff-prepared-topology-v1.0.10.md) | UFF prepared topology, all 45 declared type-parameter soundness, and analytic-gradient parity |
 | [v1.0.10 RDKit MMFF94 availability oracle](../validation/results/mmff94-rdkit-availability-oracle-v1.0.10.json) | Independent 265-molecule parse, embed, force-field construction, and finite-energy availability boundary |
-| [`2026-09-11-streaming-safety-v1.0.12.md`](2026-09-11-streaming-safety-v1.0.12.md) | Current v1.0.12 ten-format malformed, oversized, gzip, and generated parser-entry safety gate |
-| [`2026-09-11-streaming-safety-v1.0.12.json`](2026-09-11-streaming-safety-v1.0.12.json) | Machine-readable current streaming safety gate evidence |
+| [`2026-09-11-streaming-safety-v1.0.12.md`](2026-09-11-streaming-safety-v1.0.12.md) | Historical v1.0.12 ten-format malformed, oversized, gzip, and generated parser-entry safety gate |
+| [`2026-09-11-streaming-safety-v1.0.12.json`](2026-09-11-streaming-safety-v1.0.12.json) | Machine-readable historical v1.0.12 streaming safety gate evidence |
+| [`2026-09-11-streaming-safety-v1.0.13.json`](2026-09-11-streaming-safety-v1.0.13.json) | Machine-readable current v1.0.13 streaming safety gate evidence |
 | [v1.0.12 streaming failure taxonomy](../validation/results/streaming-failure-taxonomy-v1.0.12.json) | Machine-readable typed failure taxonomy for the 120-case base plus twenty Extended XYZ, mmCIF, MOL2, CML, and CDXML supplemental cases |
 | [v1.0.10 reaction SMARTS contract](../validation/results/reaction-smarts-bounded-contract-v1.0.10.json) | Bounded 20-case aromatic, bond-order, mapped-agent, agent-OR, disconnected-component assignment/rejection, hydrogen-count, pipe-alternative, and embedding-selection presence contract |
 

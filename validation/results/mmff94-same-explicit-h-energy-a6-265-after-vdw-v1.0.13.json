@@ -1,0 +1,31 @@
+{
+  "status": "candidate_improvement_not_release_gate",
+  "protocol": "mmff94-same-explicit-h-coordinates",
+  "comparator": "RDKit MMFF94",
+  "source_manifests": [
+    "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_a.json",
+    "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_b.json"
+  ],
+  "seed": 20260913,
+  "rows": 265,
+  "status_counts": {
+    "ok": 262,
+    "embed_failure": 2,
+    "declared_unsupported": 1
+  },
+  "comparable_rows": 262,
+  "median_abs_delta_kcal_mol": 0.2621511437535702,
+  "p90_abs_delta_kcal_mol": 9.296793905009025,
+  "max_abs_delta_kcal_mol": 32.6704880864456,
+  "within_1_kcal_mol": 169,
+  "within_5_kcal_mol": 200,
+  "before": {
+    "median_abs_delta_kcal_mol": 101.39075069642067,
+    "p90_abs_delta_kcal_mol": 185.71272874710007,
+    "max_abs_delta_kcal_mol": 387.69409240277207,
+    "within_5_kcal_mol": 8
+  },
+  "change": "Replace the incorrect t^7 * (t^7 - 2) shortcut with Halgren buffered 14-7: t^7 * (1.12 R*^7 / (r^7 + 0.12 R*^7) - 2), including its analytic radial derivative.",
+  "caveat": "RDKit generated the shared explicit-H coordinates. This measures fixed-coordinate force-field parity, not conformer quality or minimization convergence; remaining macrocycle and stress residuals require further diagnosis.",
+  "reproduction": "PYTHONDONTWRITEBYTECODE=1 python3 scripts/mmff94_same_explicit_h_energy.py --output /tmp/mmff94-same-explicit-h-265-after-vdw.jsonl --summary /tmp/mmff94-same-explicit-h-265-after-vdw.json"
+}

@@ -79,6 +79,71 @@ pub fn canonical_atom_order(mol: &Molecule) -> Vec<usize> {
 /// output. `CanonicalizationError::SearchBudgetExceeded` cannot occur here
 /// since `unbounded()` never checks either budget.
 fn winning_individualized_ranks(mol: &Molecule) -> (Vec<u64>, String) {
+    let mut best = winning_individualized_ranks_single(mol);
+    for alternate in alternate_ez_carrier_spellings(mol) {
+        let candidate = winning_individualized_ranks_single(&alternate);
+        if candidate.1 < best.1 {
+            best = candidate;
+        }
+    }
+    best
+}
+
+/// Return geometrically equivalent spellings that move one plain E/Z marker
+/// to the sibling substituent at the same alkene end.  SMILES permits either
+/// substituent to carry the marker; choosing the lexicographically smallest
+/// result across both spellings removes the last input-carrier dependency in
+/// cyclic conjugated systems.
+///
+/// A marked bond is not moved when its far endpoint is the sole carrier for a
+/// different stereogenic double bond.  That conservative guard prevents this
+/// normalization from stripping unrelated E/Z information.  Coupled ends
+/// remain handled by the writer's joint resolver.
+fn alternate_ez_carrier_spellings(mol: &Molecule) -> Vec<Molecule> {
+    let ranks = morgan_ranks(mol);
+    let writer = CanonicalWriter::new(mol, &ranks);
+    let ends = CanonicalWriter::compute_stereo_alkene_ends(mol);
+    // Multi-end coupled systems have additional global carrier constraints;
+    // leave those to the writer's joint resolver until a complete equivalent
+    // spelling proof exists for that larger state space.
+    if ends.len() > 2 {
+        return Vec::new();
+    }
+    let mut alternates = Vec::new();
+    for end in ends {
+        let subs = CanonicalWriter::substituents(mol, end);
+        if subs.len() != 2 {
+            continue;
+        }
+        for i in 0..2 {
+            let marked = subs[i];
+            let sibling = subs[1 - i];
+            let Some(direction) = writer.raw_input_direction(marked.1) else {
+                continue;
+            };
+            if !matches!(direction, BondOrder::Up | BondOrder::Down)
+                || mol.bond(sibling.1).order != BondOrder::Single
+                || writer.is_load_bearing_elsewhere(marked.1, end)
+            {
+                continue;
+            }
+            let up = CanonicalWriter::direction_is_up(
+                direction,
+                writer.raw_direction_anchor(marked.1),
+                end,
+            );
+            let sibling_direction =
+                CanonicalWriter::direction_for_up(writer.raw_direction_anchor(sibling.1), end, !up);
+            alternates.push(
+                mol.with_bond_order(marked.1, BondOrder::Single)
+                    .with_bond_order(sibling.1, sibling_direction),
+            );
+        }
+    }
+    alternates
+}
+
+fn winning_individualized_ranks_single(mol: &Molecule) -> (Vec<u64>, String) {
     match crate::canonical_search::winning_individualized_ranks_with_limits(
         mol,
         &crate::canonical_search::CanonicalizationLimits::unbounded(),
@@ -547,6 +612,7 @@ fn count_distinct(ranks: &[u64], scratch: &mut Vec<u64>) -> usize {
     scratch.len()
 }
 
+#[derive(Clone)]
 pub(crate) struct CanonicalWriter<'a> {
     mol: &'a Molecule,
     ranks: &'a [u64],
@@ -570,6 +636,11 @@ pub(crate) struct CanonicalWriter<'a> {
     /// every remaining bond in the group is flipped so the first directional
     /// bond of each system is always `/`, regardless of input spelling.
     ez_flip: HashMap<BondIdx, bool>,
+    /// Optional component-level flip choices used when comparing equivalent
+    /// aromatic-stash spellings.  A connected E/Z component may be inverted
+    /// as a whole without changing its geometry; choosing the lexicographically
+    /// smallest serialized candidate removes input-carrier dependence.
+    forced_ez_flip: Option<HashMap<BondIdx, bool>>,
     /// Resolved "which bond carries the `/`/`\` marker" override, computed
     /// once up front by [`Self::resolve_ez_markers`] and consulted by every
     /// site that would otherwise read the bond's raw parse-time direction
@@ -607,6 +678,7 @@ impl<'a> CanonicalWriter<'a> {
             out: String::with_capacity(n.saturating_mul(4) + mol.bond_count().saturating_mul(2)),
             ez_group: HashMap::new(),
             ez_flip: HashMap::new(),
+            forced_ez_flip: None,
             ez_marker: HashMap::new(),
             #[cfg(test)]
             ez_shared_bond_abstains: Vec::new(),
@@ -1035,7 +1107,7 @@ impl<'a> CanonicalWriter<'a> {
                 };
                 let chosen_bond = pair[chosen].1;
                 let chosen_order =
-                    Self::direction_for_up(self.raw_direction_anchor(chosen_bond), end, chosen_up);
+                    Self::direction_for_up(self.mol.bond(chosen_bond).atom1, end, chosen_up);
                 self.ez_marker.insert(chosen_bond, chosen_order);
                 self.ez_marker
                     .insert(demoted, Self::plain_order(self.mol.bond(demoted).order));
@@ -1320,8 +1392,12 @@ impl<'a> CanonicalWriter<'a> {
         } else {
             !ref_up
         };
-        let picked =
-            Self::direction_for_up(self.raw_direction_anchor(chosen.1), alkene_end, chosen_up);
+        // The input-side anchor is used only to recover `ref_up`. Once a
+        // carrier has been selected, emit its direction in the stable
+        // molecule-relative atom1→atom2 frame. Reusing a parser stash anchor
+        // here would make the result depend on whether this physical bond
+        // happened to be the original carrier in the input spelling.
+        let picked = Self::direction_for_up(self.mol.bond(chosen.1).atom1, alkene_end, chosen_up);
         vec![
             (chosen.1, picked),
             (other.1, Self::plain_order(self.mol.bond(other.1).order)),
@@ -1442,6 +1518,10 @@ impl<'a> CanonicalWriter<'a> {
         };
         let flip = if let Some(&f) = self.ez_flip.get(&root) {
             f
+        } else if let Some(forced) = &self.forced_ez_flip {
+            let f = forced.get(&root).copied().unwrap_or(false);
+            self.ez_flip.insert(root, f);
+            f
         } else {
             let direction_anchor = self.raw_direction_anchor(bidx);
             let printed = Self::reorient_for_write(direction_anchor, from_atom, order);
@@ -1536,9 +1616,46 @@ impl<'a> CanonicalWriter<'a> {
             self.build_ez_groups();
         }
 
+        // Aromatic direction stashes can encode the same E/Z component with
+        // either global polarity.  Compare both polarities (bounded to eight
+        // components) before the normal write so the result does not depend
+        // on which physical aromatic edge the input happened to stash.
+        if self.has_aromatic_direction_stash() && !self.ez_group.is_empty() {
+            let roots = self.ez_group.values().copied().collect::<HashSet<_>>();
+            if roots.len() <= 8 {
+                let roots = roots.into_iter().collect::<Vec<_>>();
+                let mut best = None;
+                for mask in 0..(1usize << roots.len()) {
+                    let mut candidate = self.clone();
+                    candidate.forced_ez_flip = Some(
+                        roots
+                            .iter()
+                            .enumerate()
+                            .map(|(index, &root)| (root, (mask & (1 << index)) != 0))
+                            .collect(),
+                    );
+                    let output = candidate.serialize_prepared();
+                    if best.as_ref().is_none_or(|current| output < *current) {
+                        best = Some(output);
+                    }
+                }
+                return best.unwrap_or_default();
+            }
+        }
+
+        self.serialize_prepared()
+    }
+
+    fn has_aromatic_direction_stash(&self) -> bool {
+        self.mol.bonds().any(|(bidx, bond)| {
+            bond.order == BondOrder::Aromatic && self.mol.bond_direction(bidx).is_some()
+        })
+    }
+
+    fn serialize_prepared(mut self) -> String {
         // Phase 2: canonical DFS serialization.
         let mut first = true;
-        for start in starts {
+        for start in self.canonical_atom_list() {
             if self.written[start.0 as usize] {
                 continue;
             }
@@ -3411,6 +3528,27 @@ mod tests {
             "genuine exocyclic-double-bond-adjacent aromatic stash must \
              still emit a directional token: got '{out}'"
         );
+    }
+
+    #[test]
+    fn cyclic_imine_carrier_normalization_is_input_order_invariant() {
+        let fixtures = [
+            (
+                r"C[C@]12CC/C(=N\N=C(N)N)C=C1CC[C@@H]2CO",
+                r"C1(=N/N=C(N)N)\C=C2CC[C@H](CO)[C@@]2(C)CC1",
+            ),
+            (
+                r"C[C@]12CC/C(=N\N=C(N)N)C=C1CC[C@@H]2/C=C/[N+](=O)[O-]",
+                r"C[C@@]12[C@@H](/C=C/[N+](=O)[O-])CCC1=C/C(=N/N=C(N)N)CC2",
+            ),
+        ];
+        for (a, b) in fixtures {
+            assert_eq!(
+                canonical_smiles(&parse(a).unwrap()),
+                canonical_smiles(&parse(b).unwrap()),
+                "equivalent cyclic-imine carrier spellings must converge"
+            );
+        }
     }
 
     // ── E/Z marker-carrier normalization (fix/canonical-ez-carrier-

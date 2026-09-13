@@ -1,0 +1,723 @@
+{
+  "profile": "A1-stereocenter-potential",
+  "version": "1.0.13",
+  "rdkit_version": "2025.09.3",
+  "corpus": "scripts/descriptor_census_corpus.smi",
+  "corpus_sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c",
+  "input_rows": 5000,
+  "compared": 5000,
+  "rdkit_parse_failures": 0,
+  "chematic_failures": 0,
+  "mismatch_count": 116,
+  "mismatch_examples": [
+    {
+      "index": 127,
+      "smiles": "CC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@@H]12",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 163,
+      "smiles": "CON(C)C(=O)/C=C/CC1C(=O)N2[C@@H]1[S+]([O-])C(C)(C)[C@@H]2C(=O)O",
+      "chematic": 5,
+      "rdkit": 4,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 164,
+      "smiles": "CC1(C)[C@H](C(=O)O)N2C(=O)C(C/C=C/C=O)[C@H]2S1(=O)=O",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 165,
+      "smiles": "CC1(C)[C@H](C(=O)O)N2C(=O)C[C@H]2S1(=O)=O",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 170,
+      "smiles": "CC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@H]12",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 171,
+      "smiles": "COC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@H]12",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 176,
+      "smiles": "C[C@]1(Cn2ccnn2)[C@H](C(=O)O)N2C(=O)C[C@H]2S1(=O)=O",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 3
+    },
+    {
+      "index": 177,
+      "smiles": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(CC4CCCN4)nn3)[C@H]2S1(=O)=O",
+      "chematic": 5,
+      "rdkit": 4,
+      "assigned_rdkit": 3
+    },
+    {
+      "index": 178,
+      "smiles": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccc(O)cc4)nn3)[C@H]2S1(=O)=O",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 3
+    },
+    {
+      "index": 183,
+      "smiles": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccc(F)cc4)nn3)[C@H]2S1(=O)=O",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 3
+    },
+    {
+      "index": 184,
+      "smiles": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccc(N)cc4)nn3)[C@H]2S1(=O)=O",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 3
+    },
+    {
+      "index": 185,
+      "smiles": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(CC(N)Cc4ccc(O)cc4)nn3)[C@H]2S1(=O)=O",
+      "chematic": 5,
+      "rdkit": 4,
+      "assigned_rdkit": 3
+    },
+    {
+      "index": 193,
+      "smiles": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccccc4)nn3)[C@H]2S1(=O)=O",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 3
+    },
+    {
+      "index": 194,
+      "smiles": "CC1(C)[C@H](C(=O)O)N2C(=O)C(C/C=C/C#N)[C@@H]2S1(=O)=O",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 195,
+      "smiles": "COC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@@H]12",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 338,
+      "smiles": "CC(C)[C@@H]1NC(=O)CNC(=O)[C@H](CO)NC(=O)[C@@H]2CS[C@H]3CC[C@H](NC(=O)[C@@H](O)NC(=O)CNC(=O)[C@@H](C(C)C)NC(=O)[C@H](CC(=O)O)NC(=O)CNC(=O)[C@H](CCCN=C(N)N)NC(=O)[C@@H](C)NC1=O)C(=O)N32",
+      "chematic": 11,
+      "rdkit": 10,
+      "assigned_rdkit": 10
+    },
+    {
+      "index": 411,
+      "smiles": "COc1ccc(C2CN3CCN(C)CC3c3ccccc32)cc1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 416,
+      "smiles": "c1ccc(CN2CCN3CC(c4ccccc4)c4ccccc4C3C2)cc1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 417,
+      "smiles": "CN1CCN2CC(c3ccc([N+](=O)[O-])cc3)c3ccc([N+](=O)[O-])cc3C2C1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 418,
+      "smiles": "CN1CCN2CC(c3ccc(Cl)cc3)c3ccccc3C2C1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 419,
+      "smiles": "CN1CCN2CC(c3ccc([N+](=O)[O-])cc3)c3ccccc3C2C1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 429,
+      "smiles": "CN1CCN2CC(c3ccccc3)c3ccccc3C2C1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 430,
+      "smiles": "CCCN1CCN2CC(c3ccccc3)c3ccccc3C2C1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 458,
+      "smiles": "c1ccc(CCN2CCN3CC(c4ccccc4)c4ccccc4C3C2)cc1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 464,
+      "smiles": "CCCCCCN1CCN2CC(c3ccccc3)c3ccccc3C2C1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 480,
+      "smiles": "CN1CCN2c3ccccc3Cc3ccccc3C2C1",
+      "chematic": 2,
+      "rdkit": 1,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 511,
+      "smiles": "CCCCN1CCN2CC(c3ccccc3)c3ccccc3C2C1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 572,
+      "smiles": "CCN1CCN2CC(c3ccccc3)c3ccccc3C2C1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 573,
+      "smiles": "CN1CCN2CC(c3ccc(N)cc3)c3ccccc3C2C1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 574,
+      "smiles": "CN1CCN2CC(c3ccc(O)cc3)c3ccccc3C2C1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 578,
+      "smiles": "c1ccc(C2CN3CCNCC3c3ccccc32)cc1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 645,
+      "smiles": "c1ccc2c3c([nH]c2c1)C1=NCCN1CC3",
+      "chematic": 1,
+      "rdkit": 0,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 711,
+      "smiles": "CC1=C(C(=O)OC(C)(C)C)N2C(=O)/C(=C\\OC(=O)C(C)(C)C)[C@H]2S(=O)(=O)C1",
+      "chematic": 2,
+      "rdkit": 1,
+      "assigned_rdkit": 1
+    },
+    {
+      "index": 743,
+      "smiles": "CC1=C(C(=O)O)N2C(=O)[C@@H](NC(=O)C(N)c3ccccc3)[C@H]2SC1",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 772,
+      "smiles": "COc1cccc2c1C(=O)c1c(O)c3c(c(O)c1C2=O)C[C@@](O)(C(=O)CO)C[C@@H]3O[C@H]1C[C@H](NC(=O)OCC2=C(C(=O)OC(C)(C)C)N3C(=O)[C@@H](Cl)[C@@H]3S(=O)(=O)C2)[C@@H](O)[C@H](C)O1",
+      "chematic": 9,
+      "rdkit": 8,
+      "assigned_rdkit": 8
+    },
+    {
+      "index": 778,
+      "smiles": "CO[C@H]1C[C@@H]2CC[C@@H](C)[C@@](O)(O2)C(=O)C(=O)N2CCCC[C@H]2C(=O)O[C@H]([C@H](C)C[C@@H]2CC[C@@H](O)[C@H](OC)C2)CC(=O)[C@H](C)/C=C(\\C)[C@@H](O)[C@@H](OC)C(=O)[C@H](C)C[C@H](C)/C=C/C=C/C=C/1C",
+      "chematic": 16,
+      "rdkit": 15,
+      "assigned_rdkit": 15
+    },
+    {
+      "index": 779,
+      "smiles": "C=CC[C@@H]1/C=C(\\C)C[C@H](C)C[C@H](OC)[C@H]2O[C@@](O)(C(=O)C(=O)N3CCCC[C@H]3C(=O)O[C@H](/C(C)=C/[C@@H]3CC[C@@H](O)[C@H](OC)C3)[C@H](C)[C@@H](O)CC1=O)[C@H](C)C[C@@H]2OC",
+      "chematic": 15,
+      "rdkit": 14,
+      "assigned_rdkit": 14
+    },
+    {
+      "index": 795,
+      "smiles": "CCOC(=O)c1ncn2c1C1CCCN1C(=O)c1cc(Cl)ccc1-2",
+      "chematic": 2,
+      "rdkit": 1,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 913,
+      "smiles": "COc1cccc2c1C(=O)c1c(O)c3c(c(O)c1C2=O)C[C@@](O)(C(=O)CO)C[C@@H]3OC1C[C@H](NC(=O)OCC2=C(C(=O)OC(C)(C)C)N3C(=O)/C(=C/OC(=O)C(C)(C)C)[C@@H]3S(=O)(=O)C2)[C@@H](O)[C@H](C)O1",
+      "chematic": 8,
+      "rdkit": 7,
+      "assigned_rdkit": 6
+    },
+    {
+      "index": 944,
+      "smiles": "CC1=C(C(=O)OC(C)(C)C)N2C(=O)[C@H](Cl)[C@H]2S(=O)(=O)C1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 1244,
+      "smiles": "COc1ccc(S(=O)(=O)N2C[C@@H]3CCCN3C(=O)C[C@@H]2C(=O)NO)cc1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 1312,
+      "smiles": "CC1(C)S[C@@H]2[C@H](NC(=O)Cc3ccccc3)C(=O)N2[C@H]1C(=O)O",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 3
+    },
+    {
+      "index": 1836,
+      "smiles": "CN1C[C@H](C(=O)N[C@]2(C)O[C@@]3(O)[C@@H]4CCCN4C(=O)[C@H](Cc4ccccc4)N3C2=O)C=C2c3cccc4[nH]cc(c34)C[C@H]21",
+      "chematic": 8,
+      "rdkit": 6,
+      "assigned_rdkit": 6
+    },
+    {
+      "index": 2152,
+      "smiles": "Oc1cccc(C2=CCCN3CCCCC23)c1",
+      "chematic": 2,
+      "rdkit": 1,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 2162,
+      "smiles": "Oc1cccc(C2CCCN3CCCC23)c1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 2163,
+      "smiles": "Oc1cccc([C@@H]2CCCN3CCCC23)c1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 1
+    },
+    {
+      "index": 2182,
+      "smiles": "Oc1cccc(C2CCC3CCCCN3C2)c1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 2234,
+      "smiles": "Oc1cccc([C@H]2CCCN3CCCC23)c1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 1
+    },
+    {
+      "index": 2257,
+      "smiles": "Oc1cccc(C2CCCN3CCCCC23)c1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 2970,
+      "smiles": "CC[C@@H]1/C=C(\\C)C[C@H](C)C[C@H](OC)[C@H]2O[C@@](O)(C(=O)C(=O)N3CCCC[C@H]3C(=O)O[C@H](/C(C)=C/[C@@H]3CC[C@@H](Oc4ccc(C(F)(F)F)cc4)[C@H](OC)C3)[C@H](C)[C@@H](O)CC1=O)[C@H](C)C[C@@H]2OC",
+      "chematic": 15,
+      "rdkit": 14,
+      "assigned_rdkit": 14
+    }
+  ],
+  "mismatches": [
+    {
+      "index": 127,
+      "smiles": "CC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@@H]12",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 163,
+      "smiles": "CON(C)C(=O)/C=C/CC1C(=O)N2[C@@H]1[S+]([O-])C(C)(C)[C@@H]2C(=O)O",
+      "chematic": 5,
+      "rdkit": 4,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 164,
+      "smiles": "CC1(C)[C@H](C(=O)O)N2C(=O)C(C/C=C/C=O)[C@H]2S1(=O)=O",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 165,
+      "smiles": "CC1(C)[C@H](C(=O)O)N2C(=O)C[C@H]2S1(=O)=O",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 170,
+      "smiles": "CC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@H]12",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 171,
+      "smiles": "COC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@H]12",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 176,
+      "smiles": "C[C@]1(Cn2ccnn2)[C@H](C(=O)O)N2C(=O)C[C@H]2S1(=O)=O",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 3
+    },
+    {
+      "index": 177,
+      "smiles": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(CC4CCCN4)nn3)[C@H]2S1(=O)=O",
+      "chematic": 5,
+      "rdkit": 4,
+      "assigned_rdkit": 3
+    },
+    {
+      "index": 178,
+      "smiles": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccc(O)cc4)nn3)[C@H]2S1(=O)=O",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 3
+    },
+    {
+      "index": 183,
+      "smiles": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccc(F)cc4)nn3)[C@H]2S1(=O)=O",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 3
+    },
+    {
+      "index": 184,
+      "smiles": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccc(N)cc4)nn3)[C@H]2S1(=O)=O",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 3
+    },
+    {
+      "index": 185,
+      "smiles": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(CC(N)Cc4ccc(O)cc4)nn3)[C@H]2S1(=O)=O",
+      "chematic": 5,
+      "rdkit": 4,
+      "assigned_rdkit": 3
+    },
+    {
+      "index": 193,
+      "smiles": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccccc4)nn3)[C@H]2S1(=O)=O",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 3
+    },
+    {
+      "index": 194,
+      "smiles": "CC1(C)[C@H](C(=O)O)N2C(=O)C(C/C=C/C#N)[C@@H]2S1(=O)=O",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 195,
+      "smiles": "COC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@@H]12",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 338,
+      "smiles": "CC(C)[C@@H]1NC(=O)CNC(=O)[C@H](CO)NC(=O)[C@@H]2CS[C@H]3CC[C@H](NC(=O)[C@@H](O)NC(=O)CNC(=O)[C@@H](C(C)C)NC(=O)[C@H](CC(=O)O)NC(=O)CNC(=O)[C@H](CCCN=C(N)N)NC(=O)[C@@H](C)NC1=O)C(=O)N32",
+      "chematic": 11,
+      "rdkit": 10,
+      "assigned_rdkit": 10
+    },
+    {
+      "index": 411,
+      "smiles": "COc1ccc(C2CN3CCN(C)CC3c3ccccc32)cc1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 416,
+      "smiles": "c1ccc(CN2CCN3CC(c4ccccc4)c4ccccc4C3C2)cc1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 417,
+      "smiles": "CN1CCN2CC(c3ccc([N+](=O)[O-])cc3)c3ccc([N+](=O)[O-])cc3C2C1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 418,
+      "smiles": "CN1CCN2CC(c3ccc(Cl)cc3)c3ccccc3C2C1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 419,
+      "smiles": "CN1CCN2CC(c3ccc([N+](=O)[O-])cc3)c3ccccc3C2C1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 429,
+      "smiles": "CN1CCN2CC(c3ccccc3)c3ccccc3C2C1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 430,
+      "smiles": "CCCN1CCN2CC(c3ccccc3)c3ccccc3C2C1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 458,
+      "smiles": "c1ccc(CCN2CCN3CC(c4ccccc4)c4ccccc4C3C2)cc1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 464,
+      "smiles": "CCCCCCN1CCN2CC(c3ccccc3)c3ccccc3C2C1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 480,
+      "smiles": "CN1CCN2c3ccccc3Cc3ccccc3C2C1",
+      "chematic": 2,
+      "rdkit": 1,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 511,
+      "smiles": "CCCCN1CCN2CC(c3ccccc3)c3ccccc3C2C1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 572,
+      "smiles": "CCN1CCN2CC(c3ccccc3)c3ccccc3C2C1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 573,
+      "smiles": "CN1CCN2CC(c3ccc(N)cc3)c3ccccc3C2C1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 574,
+      "smiles": "CN1CCN2CC(c3ccc(O)cc3)c3ccccc3C2C1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 578,
+      "smiles": "c1ccc(C2CN3CCNCC3c3ccccc32)cc1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 645,
+      "smiles": "c1ccc2c3c([nH]c2c1)C1=NCCN1CC3",
+      "chematic": 1,
+      "rdkit": 0,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 711,
+      "smiles": "CC1=C(C(=O)OC(C)(C)C)N2C(=O)/C(=C\\OC(=O)C(C)(C)C)[C@H]2S(=O)(=O)C1",
+      "chematic": 2,
+      "rdkit": 1,
+      "assigned_rdkit": 1
+    },
+    {
+      "index": 743,
+      "smiles": "CC1=C(C(=O)O)N2C(=O)[C@@H](NC(=O)C(N)c3ccccc3)[C@H]2SC1",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 772,
+      "smiles": "COc1cccc2c1C(=O)c1c(O)c3c(c(O)c1C2=O)C[C@@](O)(C(=O)CO)C[C@@H]3O[C@H]1C[C@H](NC(=O)OCC2=C(C(=O)OC(C)(C)C)N3C(=O)[C@@H](Cl)[C@@H]3S(=O)(=O)C2)[C@@H](O)[C@H](C)O1",
+      "chematic": 9,
+      "rdkit": 8,
+      "assigned_rdkit": 8
+    },
+    {
+      "index": 778,
+      "smiles": "CO[C@H]1C[C@@H]2CC[C@@H](C)[C@@](O)(O2)C(=O)C(=O)N2CCCC[C@H]2C(=O)O[C@H]([C@H](C)C[C@@H]2CC[C@@H](O)[C@H](OC)C2)CC(=O)[C@H](C)/C=C(\\C)[C@@H](O)[C@@H](OC)C(=O)[C@H](C)C[C@H](C)/C=C/C=C/C=C/1C",
+      "chematic": 16,
+      "rdkit": 15,
+      "assigned_rdkit": 15
+    },
+    {
+      "index": 779,
+      "smiles": "C=CC[C@@H]1/C=C(\\C)C[C@H](C)C[C@H](OC)[C@H]2O[C@@](O)(C(=O)C(=O)N3CCCC[C@H]3C(=O)O[C@H](/C(C)=C/[C@@H]3CC[C@@H](O)[C@H](OC)C3)[C@H](C)[C@@H](O)CC1=O)[C@H](C)C[C@@H]2OC",
+      "chematic": 15,
+      "rdkit": 14,
+      "assigned_rdkit": 14
+    },
+    {
+      "index": 795,
+      "smiles": "CCOC(=O)c1ncn2c1C1CCCN1C(=O)c1cc(Cl)ccc1-2",
+      "chematic": 2,
+      "rdkit": 1,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 913,
+      "smiles": "COc1cccc2c1C(=O)c1c(O)c3c(c(O)c1C2=O)C[C@@](O)(C(=O)CO)C[C@@H]3OC1C[C@H](NC(=O)OCC2=C(C(=O)OC(C)(C)C)N3C(=O)/C(=C/OC(=O)C(C)(C)C)[C@@H]3S(=O)(=O)C2)[C@@H](O)[C@H](C)O1",
+      "chematic": 8,
+      "rdkit": 7,
+      "assigned_rdkit": 6
+    },
+    {
+      "index": 944,
+      "smiles": "CC1=C(C(=O)OC(C)(C)C)N2C(=O)[C@H](Cl)[C@H]2S(=O)(=O)C1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 1244,
+      "smiles": "COc1ccc(S(=O)(=O)N2C[C@@H]3CCCN3C(=O)C[C@@H]2C(=O)NO)cc1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 1312,
+      "smiles": "CC1(C)S[C@@H]2[C@H](NC(=O)Cc3ccccc3)C(=O)N2[C@H]1C(=O)O",
+      "chematic": 4,
+      "rdkit": 3,
+      "assigned_rdkit": 3
+    },
+    {
+      "index": 1836,
+      "smiles": "CN1C[C@H](C(=O)N[C@]2(C)O[C@@]3(O)[C@@H]4CCCN4C(=O)[C@H](Cc4ccccc4)N3C2=O)C=C2c3cccc4[nH]cc(c34)C[C@H]21",
+      "chematic": 8,
+      "rdkit": 6,
+      "assigned_rdkit": 6
+    },
+    {
+      "index": 2152,
+      "smiles": "Oc1cccc(C2=CCCN3CCCCC23)c1",
+      "chematic": 2,
+      "rdkit": 1,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 2162,
+      "smiles": "Oc1cccc(C2CCCN3CCCC23)c1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 2163,
+      "smiles": "Oc1cccc([C@@H]2CCCN3CCCC23)c1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 1
+    },
+    {
+      "index": 2182,
+      "smiles": "Oc1cccc(C2CCC3CCCCN3C2)c1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 2234,
+      "smiles": "Oc1cccc([C@H]2CCCN3CCCC23)c1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 1
+    },
+    {
+      "index": 2257,
+      "smiles": "Oc1cccc(C2CCCN3CCCCC23)c1",
+      "chematic": 3,
+      "rdkit": 2,
+      "assigned_rdkit": 0
+    },
+    {
+      "index": 2970,
+      "smiles": "CC[C@@H]1/C=C(\\C)C[C@H](C)C[C@H](OC)[C@H]2O[C@@](O)(C(=O)C(=O)N3CCCC[C@H]3C(=O)O[C@H](/C(C)=C/[C@@H]3CC[C@@H](Oc4ccc(C(F)(F)F)cc4)[C@H](OC)C3)[C@H](C)[C@@H](O)CC1=O)[C@H](C)C[C@@H]2OC",
+      "chematic": 15,
+      "rdkit": 14,
+      "assigned_rdkit": 14
+    }
+  ],
+  "mismatch_examples_truncated": true,
+  "error_count": 0,
+  "error_examples": [],
+  "error_examples_truncated": false,
+  "gate_passed": false,
+  "definition": "potential tetrahedral stereocenters; assigned and unspecified centers included",
+  "oracle": "rdMolDescriptors.CalcNumAtomStereoCenters"
+}

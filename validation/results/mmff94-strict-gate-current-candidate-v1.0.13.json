@@ -1,0 +1,25 @@
+{
+  "issue": 227,
+  "target_version": "1.0.13",
+  "measured_at": "2026-09-13",
+  "corpus_total": 265,
+  "corpus": "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_{a,b}.json",
+  "tier_counts": {
+    "A": 65,
+    "B": 200
+  },
+  "harness": "CARGO_BUILD_JOBS=1 cargo run -p chematic-3d --example mmff94_strict_gate_remeasure_227 --offline --quiet",
+  "method": "Production minimize_with_policy(Mmff94BondAngleStrict) over generate_coords output; this is the bounded bond+angle boundary and is not a replacement for the full pipeline_v2 embedding benchmark.",
+  "status_counts": {
+    "Ok": 265,
+    "missing_parameters": 0,
+    "unsupported_atom_type": 0,
+    "minimization_failed": 0,
+    "parse_or_other": 0
+  },
+  "failure_count": 0,
+  "candidate_scope": "Current source candidate with the A6 macrocycle aromaticity boundary; no release adoption or full MMFF94 parity claim.",
+  "status": "candidate_pass_bounded_strict_gate",
+  "reproduction_input": "/tmp/mmff94-strict-candidate.jsonl",
+  "regression": "cargo test -p chematic-ff --lib --quiet: 227 passed"
+}

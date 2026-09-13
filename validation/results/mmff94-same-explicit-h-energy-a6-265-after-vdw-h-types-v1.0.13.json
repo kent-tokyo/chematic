@@ -1,0 +1,26 @@
+{
+  "status": "candidate_diagnostic_not_release_gate",
+  "protocol": "mmff94-same-explicit-h-coordinates",
+  "comparator": "RDKit MMFF94",
+  "seed": 20260913,
+  "rows": 265,
+  "status_counts": {
+    "declared_unsupported": 1,
+    "embed_failure": 2,
+    "ok": 262
+  },
+  "comparable_rows": 262,
+  "median_abs_delta_kcal_mol": 0.25008414780406696,
+  "p90_abs_delta_kcal_mol": 9.239644511229784,
+  "max_abs_delta_kcal_mol": 32.6704880864456,
+  "within_1_kcal_mol": 193,
+  "within_5_kcal_mol": 213,
+  "change_from_previous_candidate": {
+    "previous_artifact": "validation/results/mmff94-same-explicit-h-energy-a6-265-after-vdw-v1.0.13.json",
+    "fix": "classify explicit O-H atoms as RDKit-compatible HOR/HOCO/HOH/HOX numeric types by local environment",
+    "median_abs_delta_kcal_mol": "0.2621511437535702 -> 0.25008414780406696",
+    "p90_abs_delta_kcal_mol": "9.296793905009025 -> 9.239644511229784",
+    "within_5_kcal_mol": "200/262 -> 213/262"
+  },
+  "caveat": "RDKit generated the shared explicit-H coordinates; this measures force-field energy parity, not conformer quality or minimization convergence. The artifact is diagnostic evidence, not a release gate."
+}

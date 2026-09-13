@@ -1,0 +1,24 @@
+{
+  "status": "candidate_diagnostic_not_release_gate",
+  "protocol": "mmff94-same-explicit-h-coordinates",
+  "comparator": "RDKit MMFF94",
+  "source_manifests": [
+    "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_a.json",
+    "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_b.json"
+  ],
+  "rows": 265,
+  "seed": 20260913,
+  "status_counts": {
+    "ok": 262,
+    "embed_failure": 2,
+    "schematic_unsupported": 1
+  },
+  "comparable_rows": 262,
+  "median_abs_delta_kcal_mol": 101.39075069642067,
+  "p90_abs_delta_kcal_mol": 185.71272874710007,
+  "max_abs_delta_kcal_mol": 387.69409240277207,
+  "within_1_kcal_mol": 6,
+  "within_5_kcal_mol": 8,
+  "interpretation": "RDKit generated one explicit-H coordinate set and both engines evaluated it with the same atom order. The large residual is therefore not a conformer-generation difference. This is a diagnostic of unresolved MMFF94 parameter/term parity, not evidence of release-level 3D compatibility.",
+  "reproduction": "PYTHONDONTWRITEBYTECODE=1 python3 scripts/mmff94_same_explicit_h_energy.py --output /tmp/mmff94-same-explicit-h-265.jsonl --summary /tmp/mmff94-same-explicit-h-265.json"
+}

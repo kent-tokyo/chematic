@@ -163,6 +163,10 @@ fn rdkit_morgan_ecfp4_experimental_matches_shared_rdkit_oracle_corpus() {
                 let result = chematic_fp::rdkit_morgan_ecfp4_experimental(&mol);
                 match (error_kind, &result) {
                     ("Aromaticity", Err(RdkitMorganError::Aromaticity(_))) => {}
+                    (
+                        "UnsupportedBondOrder",
+                        Err(RdkitMorganError::UnsupportedBondOrder { .. }),
+                    ) => {}
                     _ => panic!(
                         "fixture {id} ({smiles}) expected error kind {error_kind}, got {result:?}"
                     ),

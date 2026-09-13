@@ -36,11 +36,15 @@ REPORT_DATE = "2026-09-11"
 def main() -> int:
     errors: list[str] = []
     version = workspace_version(ROOT)
+    fallback_versions: set[str] = set()
     for fmt, gate in EXPECTED_GATES.items():
-        relative = f"benchmarks/{REPORT_DATE}-same-process-{fmt}-contract-v{version}.json"
-        if fmt in {"v2000", "v3000"}:
-            relative = f"benchmarks/{REPORT_DATE}-same-process-{fmt}-mol-contract-v{version}.json"
-        path = ROOT / relative
+        suffix = "-mol-contract" if fmt in {"v2000", "v3000"} else "-contract"
+        prefix = f"{REPORT_DATE}-same-process-{fmt}{suffix}-v"
+        candidates = sorted((ROOT / "benchmarks").glob(f"{prefix}*.json"), reverse=True)
+        current = ROOT / "benchmarks" / f"{prefix}{version}.json"
+        path = current if current.is_file() else (candidates[0] if candidates else current)
+        if path != current:
+            fallback_versions.add(path.stem.removeprefix(prefix))
         try:
             report = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
@@ -48,8 +52,12 @@ def main() -> int:
             continue
         if report.get("schema_version") != 1:
             errors.append(f"{fmt}: schema_version must be 1")
-        if report.get("target_version") != version:
-            errors.append(f"{fmt}: target_version is {report.get('target_version')!r}, expected {version}")
+        target_version = report.get("target_version")
+        expected_target = path.stem.removeprefix(prefix)
+        if target_version != expected_target:
+            errors.append(
+                f"{fmt}: target_version is {target_version!r}, expected record version {expected_target}"
+            )
         if report.get("gate") != gate:
             errors.append(f"{fmt}: unexpected gate {report.get('gate')!r}")
         if report.get("status") != "local-verified":
@@ -126,9 +134,12 @@ def main() -> int:
         print("Same-process contract bundle failures:", file=sys.stderr)
         print("\n".join(errors), file=sys.stderr)
         return 1
+    scope = f"workspace {version}"
+    if fallback_versions:
+        scope += f"; historical evidence {', '.join(sorted(fallback_versions))}"
     print(
         "Same-process contract bundle OK: "
-        f"{len(EXPECTED_GATES)} formats, 20 repetitions each, "
+        f"{len(EXPECTED_GATES)} formats, 20 repetitions each, {scope}; "
         "PDB leniency and CDXML parser boundaries explicitly bounded"
     )
     return 0

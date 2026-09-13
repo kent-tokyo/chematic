@@ -1,0 +1,99 @@
+{
+  "schema_version": 2,
+  "target_version": "1.0.13",
+  "contract": "same RDKit-compatible Morgan profile, database indices, full-precision scores, and tie ordering",
+  "corpus": {
+    "path": "scripts/descriptor_census_corpus.smi",
+    "sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c"
+  },
+  "configuration": {
+    "queries": 500,
+    "library_rows": 4500,
+    "chunk_size": 1000,
+    "chunks": 5,
+    "k_values": [
+      1,
+      10,
+      100
+    ],
+    "score_comparison": "JSON f64 values; no display rounding"
+  },
+  "provenance": {
+    "source_commit": "0d951486493f6baab8f3a645a0665987af335a79",
+    "dirty_worktree": true,
+    "tracked_diff_sha256": "887af6a5442d69caa158a67e0bf6893fae47b35139408b57bda60ac4b69506e3",
+    "untracked_source_sha256": "ec060f4849ac91729e5e64e8d87acfde054538fe2ab74961f5418a1634b57b04",
+    "untracked_source_files": 31,
+    "lockfile_sha256": "cb1ac26dfbece6958a53cd6a71c526f772e2e32200985257522f6d89aec9d05e",
+    "python_executable": "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "machine": "arm64"
+  },
+  "pairwise": {
+    "1": {
+      "rust_vs_python": {
+        "cases": 500,
+        "matches": 500,
+        "mismatches": 0,
+        "examples": []
+      },
+      "rust_vs_node_wasm": {
+        "cases": 500,
+        "matches": 500,
+        "mismatches": 0,
+        "examples": []
+      },
+      "python_vs_node_wasm": {
+        "cases": 500,
+        "matches": 500,
+        "mismatches": 0,
+        "examples": []
+      }
+    },
+    "10": {
+      "rust_vs_python": {
+        "cases": 500,
+        "matches": 500,
+        "mismatches": 0,
+        "examples": []
+      },
+      "rust_vs_node_wasm": {
+        "cases": 500,
+        "matches": 500,
+        "mismatches": 0,
+        "examples": []
+      },
+      "python_vs_node_wasm": {
+        "cases": 500,
+        "matches": 500,
+        "mismatches": 0,
+        "examples": []
+      }
+    },
+    "100": {
+      "rust_vs_python": {
+        "cases": 500,
+        "matches": 500,
+        "mismatches": 0,
+        "examples": []
+      },
+      "rust_vs_node_wasm": {
+        "cases": 500,
+        "matches": 500,
+        "mismatches": 0,
+        "examples": []
+      },
+      "python_vs_node_wasm": {
+        "cases": 500,
+        "matches": 500,
+        "mismatches": 0,
+        "examples": []
+      }
+    }
+  },
+  "gate_passed": true,
+  "boundary": [
+    "This is binding parity for the RDKit-compatible chematic profile, not an independent RDKit accuracy claim.",
+    "The independent RDKit oracle gate remains the separate benchmark evidence."
+  ]
+}

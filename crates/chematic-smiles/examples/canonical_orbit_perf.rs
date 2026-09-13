@@ -136,6 +136,14 @@ fn tier_a_high_symmetry() -> Vec<(&'static str, String)> {
             "multi-pivaloyl intermediate",
             "CC(C)(C)C(=O)NCC(CCNC(=O)C(C)(C)C)CNC(=O)C(C)(C)C".to_string(),
         ),
+        // Minimized RENKIN/#372 witness shape: a Boc carbamate with the
+        // locally symmetric tert-butyl group retained, but without the
+        // downstream reaction-scaffold context. Keep this separate from the
+        // larger multi-Boc fixture so its per-case timing remains visible.
+        (
+            "RENKIN-minimized Boc/tBu witness",
+            "CC(C)(C)OC(=O)NCC".to_string(),
+        ),
         (
             "repeated disconnected components",
             "CC(C)(C)C.CC(C)(C)C.CC(C)(C)C".to_string(),

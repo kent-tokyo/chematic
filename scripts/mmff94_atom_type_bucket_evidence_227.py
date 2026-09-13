@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Issue #227 Priority 1A-2, Phase 1.1 (originally): exhaustive per-atom
 evidence for the residual left after each fix in the Priority-1A/1A-2/1A-3
-sequence. As of Priority 1A-3, the residual is 42 atoms (down from the
+sequence. The current source-built residual is 39 comparable atoms (down from the
 1A-2-era 79): NC=C (129 atoms, PR #239), the C=C/C=O double-bond-partner
 umbrella (39 atoms, PR #239), and the O2CM terminal-oxygen umbrella (37
 atoms, Priority 1A-3) are all closed to 0 -- verified by corpus
@@ -28,7 +28,7 @@ RDKIT_ORACLE_PATH = "validation/results/mmff94_rdkit_type_oracle.jsonl"
 CHEMATIC_DUMP_PATH = "validation/results/mmff94_chematic_numeric_types.jsonl"
 
 # Bucket classification per (chematic_symbol, rdkit_symbol) group for the
-# 79-atom residual remaining after this PR's two fixes. See this PR's body
+# residual remaining after the current fixes. See the accuracy-plan evidence
 # for the full evidence trail (SSSR comparisons, minimal-fragment RDKit
 # probes, AtomTyper.cpp line citations) behind each entry.
 BUCKET_INFO = {
@@ -82,6 +82,12 @@ BUCKET_INFO = {
         responsible_rdkit_rule="same as CB-vs-C=C above",
         proposed_fix="same as CB-vs-C=C above",
         blast_radius=8,
+    ),
+    ("C=C", "CB"): dict(
+        bucket="charged_macrocycle_sssr_selector_tradeoff",
+        responsible_rdkit_rule="same #337 relevant-cycle/aromaticity boundary as the CB-vs-C=C group",
+        proposed_fix="not implemented -- the bounded #337 selector removes the Horton macrocycle for 0028 and recovers the RDKit representative family, but this six-atom inverse residual remains; any further change must preserve the five other fixture families and the existing type-58 regression",
+        blast_radius=6,
     ),
     ("N=C", "NSP"): dict(
         bucket="nitrile_n_approximation",
@@ -155,6 +161,12 @@ BUCKET_INFO = {
         "([S+]([O-])) in a beta-lactam/cephalosporin-like ring",
         proposed_fix="not implemented -- assign_s_type does not yet special-case "
         "charged sulfoxide sulfur",
+        blast_radius=1,
+    ),
+    ("-P=C", "PO4"): dict(
+        bucket="unsupported_probe_excluded_from_parity_target",
+        responsible_rdkit_rule="RDKit PO4 phosphorus typing is outside the supported production probe scope",
+        proposed_fix="not applicable -- retained only as an explicit unsupported capability probe",
         blast_radius=1,
     ),
 }

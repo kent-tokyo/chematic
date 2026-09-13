@@ -1,0 +1,471 @@
+{
+  "schema_version": 2,
+  "corpus": "/tmp/chematic-a0-unused.smi",
+  "corpus_sha256": "dcc0951f1b7c0da84fad6969eb818da8f3e13a50778b441a9116bbdec07f32f4",
+  "rdkit_version": "2025.09.3",
+  "chematic_version": "1.0.13",
+  "python_provenance": {
+    "executable": "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3.13",
+    "package_version": "1.0.13",
+    "package_init": "/private/tmp/chematic-a0-baseline-py/chematic/__init__.py",
+    "extension": "/private/tmp/chematic-a0-baseline-py/chematic/chematic.cpython-313-darwin.so",
+    "extension_sha256": "374ee5c6c7cabdc35a0c0225ba441d756a164b1fdbaff742394f336a64c336fa",
+    "workspace_path_visible": false,
+    "import_origin": "temporary_extracted_wheel"
+  },
+  "rows": 4,
+  "parsed": 4,
+  "parse_failures": 0,
+  "unsupported_values": 0,
+  "native_default_preserved": true,
+  "native_regression_artifact": "validation/results/native-descriptor-regression-v1.0.13.json",
+  "profile": "rdkit_compat_v1_legacy",
+  "contract": "rdkit_descriptor_semantics_v1",
+  "api_profile": "legacy_native_attributes",
+  "field_attribute_map": {
+    "molecular_weight": "rdkit_mw",
+    "hba": "hba",
+    "hbd": "hbd",
+    "tpsa": "tpsa",
+    "logp": "logp",
+    "molar_refractivity": "molar_refractivity",
+    "fsp3": "fsp3",
+    "aromatic_ring_count": "aromatic_ring_count"
+  },
+  "raw_rows": [
+    {
+      "index": 0,
+      "smiles": "CC1CCC2CC(C(=CC=CC=CC(CC(C(C(C(C(C(=O)O1)C)O)C)OC3CC(C(C(O3)C)O)(C)OC)C)C)C)OC(=O)C2",
+      "status": "ok",
+      "fields": {
+        "molecular_weight": {
+          "status": "ok",
+          "chematic": 634.8510000000001,
+          "rdkit": 634.8510000000001,
+          "absolute_error": 0.0,
+          "matched": true,
+          "strict_passed": true
+        },
+        "hba": {
+          "status": "ok",
+          "chematic": 9,
+          "rdkit": 9,
+          "absolute_error": 0.0,
+          "matched": true,
+          "strict_passed": true
+        },
+        "hbd": {
+          "status": "ok",
+          "chematic": 2,
+          "rdkit": 2,
+          "absolute_error": 0.0,
+          "matched": true,
+          "strict_passed": true
+        },
+        "tpsa": {
+          "status": "ok",
+          "chematic": 120.75000000000003,
+          "rdkit": 120.75000000000003,
+          "absolute_error": 0.0,
+          "matched": true,
+          "strict_passed": true
+        },
+        "logp": {
+          "status": "ok",
+          "chematic": 5.6739000000000015,
+          "rdkit": 5.673900000000006,
+          "absolute_error": 4.440892098500626e-15,
+          "matched": true,
+          "strict_passed": true
+        },
+        "molar_refractivity": {
+          "status": "ok",
+          "chematic": 171.9546,
+          "rdkit": 171.95459999999954,
+          "absolute_error": 4.547473508864641e-13,
+          "matched": true,
+          "strict_passed": true
+        },
+        "fsp3": {
+          "status": "ok",
+          "chematic": 0.7777777777777778,
+          "rdkit": 0.7777777777777778,
+          "absolute_error": 0.0,
+          "matched": true,
+          "strict_passed": true
+        },
+        "aromatic_ring_count": {
+          "status": "ok",
+          "chematic": 0,
+          "rdkit": 0,
+          "absolute_error": 0.0,
+          "matched": true,
+          "strict_passed": true
+        }
+      }
+    },
+    {
+      "index": 1,
+      "smiles": "O=C1NC(CC2=CC=CC=C2)C(=O)NC(CC(C)C)C(=O)NC(C(C)C)C(=O)NC(CO)C(=O)NC(CC3=CNC4=CC=CC=C34)C(=O)N1",
+      "status": "ok",
+      "fields": {
+        "molecular_weight": {
+          "status": "ok",
+          "chematic": 675.787,
+          "rdkit": 675.787,
+          "absolute_error": 0.0,
+          "matched": true,
+          "strict_passed": true
+        },
+        "hba": {
+          "status": "ok",
+          "chematic": 8,
+          "rdkit": 7,
+          "absolute_error": 1.0,
+          "matched": false,
+          "strict_passed": false
+        },
+        "hbd": {
+          "status": "ok",
+          "chematic": 8,
+          "rdkit": 8,
+          "absolute_error": 0.0,
+          "matched": true,
+          "strict_passed": true
+        },
+        "tpsa": {
+          "status": "ok",
+          "chematic": 206.85999999999999,
+          "rdkit": 210.61999999999998,
+          "absolute_error": 3.759999999999991,
+          "matched": false,
+          "strict_passed": false
+        },
+        "logp": {
+          "status": "ok",
+          "chematic": 0.5277999999999998,
+          "rdkit": 0.7947000000000051,
+          "absolute_error": 0.26690000000000524,
+          "matched": false,
+          "strict_passed": false
+        },
+        "molar_refractivity": {
+          "status": "ok",
+          "chematic": 181.68569999999994,
+          "rdkit": 181.71269999999964,
+          "absolute_error": 0.026999999999702595,
+          "matched": false,
+          "strict_passed": false
+        },
+        "fsp3": {
+          "status": "ok",
+          "chematic": 0.42857142857142855,
+          "rdkit": 0.42857142857142855,
+          "absolute_error": 0.0,
+          "matched": true,
+          "strict_passed": true
+        },
+        "aromatic_ring_count": {
+          "status": "ok",
+          "chematic": 3,
+          "rdkit": 3,
+          "absolute_error": 0.0,
+          "matched": true,
+          "strict_passed": true
+        }
+      }
+    },
+    {
+      "index": 2,
+      "smiles": "c1ccc2c(c1)ncn2CCN3CCN(CC3)c4ccccc4",
+      "status": "ok",
+      "fields": {
+        "molecular_weight": {
+          "status": "ok",
+          "chematic": 306.41299999999995,
+          "rdkit": 306.41299999999995,
+          "absolute_error": 0.0,
+          "matched": true,
+          "strict_passed": true
+        },
+        "hba": {
+          "status": "ok",
+          "chematic": 3,
+          "rdkit": 4,
+          "absolute_error": 1.0,
+          "matched": false,
+          "strict_passed": false
+        },
+        "hbd": {
+          "status": "ok",
+          "chematic": 0,
+          "rdkit": 0,
+          "absolute_error": 0.0,
+          "matched": true,
+          "strict_passed": true
+        },
+        "tpsa": {
+          "status": "ok",
+          "chematic": 24.300000000000004,
+          "rdkit": 24.300000000000004,
+          "absolute_error": 0.0,
+          "matched": true,
+          "strict_passed": true
+        },
+        "logp": {
+          "status": "ok",
+          "chematic": 2.858499999999999,
+          "rdkit": 2.858500000000001,
+          "absolute_error": 2.220446049250313e-15,
+          "matched": true,
+          "strict_passed": true
+        },
+        "molar_refractivity": {
+          "status": "ok",
+          "chematic": 94.82799999999999,
+          "rdkit": 94.82800000000005,
+          "absolute_error": 5.684341886080802e-14,
+          "matched": true,
+          "strict_passed": true
+        },
+        "fsp3": {
+          "status": "ok",
+          "chematic": 0.3157894736842105,
+          "rdkit": 0.3157894736842105,
+          "absolute_error": 0.0,
+          "matched": true,
+          "strict_passed": true
+        },
+        "aromatic_ring_count": {
+          "status": "ok",
+          "chematic": 3,
+          "rdkit": 3,
+          "absolute_error": 0.0,
+          "matched": true,
+          "strict_passed": true
+        }
+      }
+    },
+    {
+      "index": 3,
+      "smiles": "CCCCCCCCCCCCCCCC(=O)O",
+      "status": "ok",
+      "fields": {
+        "molecular_weight": {
+          "status": "ok",
+          "chematic": 256.4299999999999,
+          "rdkit": 256.4299999999999,
+          "absolute_error": 0.0,
+          "matched": true,
+          "strict_passed": true
+        },
+        "hba": {
+          "status": "ok",
+          "chematic": 1,
+          "rdkit": 1,
+          "absolute_error": 0.0,
+          "matched": true,
+          "strict_passed": true
+        },
+        "hbd": {
+          "status": "ok",
+          "chematic": 1,
+          "rdkit": 1,
+          "absolute_error": 0.0,
+          "matched": true,
+          "strict_passed": true
+        },
+        "tpsa": {
+          "status": "ok",
+          "chematic": 37.3,
+          "rdkit": 37.3,
+          "absolute_error": 0.0,
+          "matched": true,
+          "strict_passed": true
+        },
+        "logp": {
+          "status": "ok",
+          "chematic": 5.552300000000002,
+          "rdkit": 5.552300000000005,
+          "absolute_error": 3.552713678800501e-15,
+          "matched": true,
+          "strict_passed": true
+        },
+        "molar_refractivity": {
+          "status": "ok",
+          "chematic": 77.9478,
+          "rdkit": 77.94780000000007,
+          "absolute_error": 7.105427357601002e-14,
+          "matched": true,
+          "strict_passed": true
+        },
+        "fsp3": {
+          "status": "ok",
+          "chematic": 0.9375,
+          "rdkit": 0.9375,
+          "absolute_error": 0.0,
+          "matched": true,
+          "strict_passed": true
+        },
+        "aromatic_ring_count": {
+          "status": "ok",
+          "chematic": 0,
+          "rdkit": 0,
+          "absolute_error": 0.0,
+          "matched": true,
+          "strict_passed": true
+        }
+      }
+    }
+  ],
+  "raw_rows_sha256": "ee751306c607d763b8daf62b71bec224ecbdb4c2b14ed4ed48a0327929235a35",
+  "fields": {
+    "molecular_weight": {
+      "tolerance": 0.01,
+      "strict_tolerance": 1e-06,
+      "parsed": 4,
+      "matches": 4,
+      "strict_matches": 4,
+      "mismatches": 0,
+      "mae": 0.0,
+      "median_abs_error": 0.0,
+      "p95_abs_error": 0.0,
+      "max_abs_error": 0.0,
+      "errors": []
+    },
+    "hba": {
+      "tolerance": 0.0,
+      "strict_tolerance": 0.0,
+      "parsed": 4,
+      "matches": 2,
+      "strict_matches": 2,
+      "mismatches": 2,
+      "mae": 0.5,
+      "median_abs_error": 0.0,
+      "p95_abs_error": 1.0,
+      "max_abs_error": 1.0,
+      "errors": [
+        {
+          "smiles": "O=C1NC(CC2=CC=CC=C2)C(=O)NC(CC(C)C)C(=O)NC(C(C)C)C(=O)NC(CO)C(=O)NC(CC3=CNC4=CC=CC=C34)C(=O)N1",
+          "delta": 1.0,
+          "cause": "charge_or_valence_rule",
+          "chematic": 8,
+          "rdkit": 7
+        },
+        {
+          "smiles": "c1ccc2c(c1)ncn2CCN3CCN(CC3)c4ccccc4",
+          "delta": 1.0,
+          "cause": "charge_or_valence_rule",
+          "chematic": 3,
+          "rdkit": 4
+        }
+      ]
+    },
+    "hbd": {
+      "tolerance": 0.0,
+      "strict_tolerance": 0.0,
+      "parsed": 4,
+      "matches": 4,
+      "strict_matches": 4,
+      "mismatches": 0,
+      "mae": 0.0,
+      "median_abs_error": 0.0,
+      "p95_abs_error": 0.0,
+      "max_abs_error": 0.0,
+      "errors": []
+    },
+    "tpsa": {
+      "tolerance": 0.1,
+      "strict_tolerance": 1e-06,
+      "parsed": 4,
+      "matches": 3,
+      "strict_matches": 3,
+      "mismatches": 1,
+      "mae": 0.9399999999999977,
+      "median_abs_error": 0.0,
+      "p95_abs_error": 3.759999999999991,
+      "max_abs_error": 3.759999999999991,
+      "errors": [
+        {
+          "smiles": "O=C1NC(CC2=CC=CC=C2)C(=O)NC(CC(C)C)C(=O)NC(C(C)C)C(=O)NC(CO)C(=O)NC(CC3=CNC4=CC=CC=C34)C(=O)N1",
+          "delta": 3.759999999999991,
+          "cause": "charge_or_valence_rule",
+          "chematic": 206.85999999999999,
+          "rdkit": 210.61999999999998
+        }
+      ]
+    },
+    "logp": {
+      "tolerance": 0.01,
+      "strict_tolerance": 1e-06,
+      "parsed": 4,
+      "matches": 3,
+      "strict_matches": 3,
+      "mismatches": 1,
+      "mae": 0.06672500000000386,
+      "median_abs_error": 3.552713678800501e-15,
+      "p95_abs_error": 0.26690000000000524,
+      "max_abs_error": 0.26690000000000524,
+      "errors": [
+        {
+          "smiles": "O=C1NC(CC2=CC=CC=C2)C(=O)NC(CC(C)C)C(=O)NC(C(C)C)C(=O)NC(CO)C(=O)NC(CC3=CNC4=CC=CC=C34)C(=O)N1",
+          "delta": 0.26690000000000524,
+          "cause": "crippen_contribution_or_aromaticity",
+          "chematic": 0.5277999999999998,
+          "rdkit": 0.7947000000000051
+        }
+      ]
+    },
+    "molar_refractivity": {
+      "tolerance": 0.01,
+      "strict_tolerance": 1e-06,
+      "parsed": 4,
+      "matches": 3,
+      "strict_matches": 3,
+      "mismatches": 1,
+      "mae": 0.00675000000007131,
+      "median_abs_error": 7.105427357601002e-14,
+      "p95_abs_error": 0.026999999999702595,
+      "max_abs_error": 0.026999999999702595,
+      "errors": [
+        {
+          "smiles": "O=C1NC(CC2=CC=CC=C2)C(=O)NC(CC(C)C)C(=O)NC(C(C)C)C(=O)NC(CO)C(=O)NC(CC3=CNC4=CC=CC=C34)C(=O)N1",
+          "delta": 0.026999999999702595,
+          "cause": "crippen_contribution_or_aromaticity",
+          "chematic": 181.68569999999994,
+          "rdkit": 181.71269999999964
+        }
+      ]
+    },
+    "fsp3": {
+      "tolerance": 0.001,
+      "strict_tolerance": 1e-06,
+      "parsed": 4,
+      "matches": 4,
+      "strict_matches": 4,
+      "mismatches": 0,
+      "mae": 0.0,
+      "median_abs_error": 0.0,
+      "p95_abs_error": 0.0,
+      "max_abs_error": 0.0,
+      "errors": []
+    },
+    "aromatic_ring_count": {
+      "tolerance": 0.0,
+      "strict_tolerance": 0.0,
+      "parsed": 4,
+      "matches": 4,
+      "strict_matches": 4,
+      "mismatches": 0,
+      "mae": 0.0,
+      "median_abs_error": 0.0,
+      "p95_abs_error": 0.0,
+      "max_abs_error": 0.0,
+      "errors": []
+    }
+  },
+  "mismatch_causes": {
+    "charge_or_valence_rule": 3,
+    "crippen_contribution_or_aromaticity": 2
+  }
+}

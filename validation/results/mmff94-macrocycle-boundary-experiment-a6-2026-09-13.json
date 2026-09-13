@@ -1,0 +1,17 @@
+{
+  "status": "rejected_candidate",
+  "target": "chembl_tier_b_0029 and chembl_tier_b_0030 MMFF94 numeric atom types",
+  "baseline_condition": "large_ring_count == 2 && fully_embedded_charged_six_ring_count >= 2",
+  "experiment": "generalize large_ring_count == 2 to >= 2 for fully embedded charged six-rings",
+  "baseline_residual": {
+    "0029": {"mismatched_atoms": 4, "expected_types": [54, 3, 2, 2], "observed_types": [58, 37, 37, 37]},
+    "0030": {"mismatched_atoms": 4, "expected_types": [54, 3, 2, 2], "observed_types": [58, 37, 37, 37]}
+  },
+  "experiment_regression": {
+    "0029": {"newly_mismatched_atoms": [6, 7, 8, 9], "expected_types": [37, 37, 37, 58], "observed_types": [2, 2, 3, 54]},
+    "0030": {"newly_mismatched_atoms": [6, 7, 8, 9], "expected_types": [37, 37, 37, 58], "observed_types": [2, 2, 3, 54]}
+  },
+  "decision": "rejected",
+  "reason": "The generalized condition Kekulized both fully embedded charged six-rings, while RDKit selects only one side in this topology. No production change was retained.",
+  "validation": "After reverting the experiment, cargo test -p chematic-ff --offline passed 230/230 tests; the existing narrow boundary remains unchanged."
+}

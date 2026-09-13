@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.13",
+  "contract": "inclusive score >= threshold, descending score then original index, full-precision scores",
+  "corpus": {
+    "path": "scripts/descriptor_census_corpus.smi",
+    "sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c"
+  },
+  "configuration": {
+    "library_rows": 32,
+    "query_rows": 8,
+    "cases": 96,
+    "k": 128,
+    "epsilon": 1e-12
+  },
+  "provenance": {
+    "source_commit": "0d951486493f6baab8f3a645a0665987af335a79",
+    "dirty_worktree": true,
+    "tracked_diff_sha256": "887af6a5442d69caa158a67e0bf6893fae47b35139408b57bda60ac4b69506e3",
+    "untracked_source_sha256": "ec060f4849ac91729e5e64e8d87acfde054538fe2ab74961f5418a1634b57b04",
+    "untracked_source_files": 31,
+    "lockfile_sha256": "cb1ac26dfbece6958a53cd6a71c526f772e2e32200985257522f6d89aec9d05e",
+    "python_executable": "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "machine": "arm64"
+  },
+  "comparisons": {
+    "rust": {
+      "cases": 96,
+      "matches": 96,
+      "mismatches": 0,
+      "examples": []
+    },
+    "node_wasm": {
+      "cases": 96,
+      "matches": 96,
+      "mismatches": 0,
+      "examples": []
+    },
+    "python": {
+      "cases": 96,
+      "matches": 96,
+      "mismatches": 0,
+      "examples": []
+    }
+  },
+  "gate_passed": true,
+  "boundary": [
+    "RDKit 2025.09.3 oracle in this environment",
+    "zero-score candidates are included at threshold 0.0",
+    "invalid thresholds are covered by binding/unit tests"
+  ]
+}

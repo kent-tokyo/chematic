@@ -2382,12 +2382,13 @@ pub static MMFF94_ANGLE_ENERGY: &[(u8, u8, u8, u8, f64, f64)] = &[
 /// undefined behavior" situation type 63's own still-open, deliberately-
 /// unresolved case describes just below in this file
 /// (`angle_empirical_fails_closed_for_undefined_eq_level_substitution`).
-/// **Deliberately not added here**: any other type beyond 55 (63, 65-99,
-/// etc.) -- the frozen provenance file lists rows for those too, but none of
-/// them are evidenced by a concrete corpus failure this round; adding
-/// unverified rows risks resolving some future triple to a wrong value
-/// rather than correctly abstaining. See issue #415's own PR/ROADMAP note
-/// for this as flagged, deferred work, not silently dropped.
+/// **Type 63 (C5A) added 2026-09-12**: the strict-corpus residual
+/// `(43, 18, 63)` is concrete evidence that this common aromatic 5-ring
+/// carbon must participate in the defined equivalence ladder.  The row is
+/// copied from the checked-in numeric type registry (`C5A 63 2 1 0`).  This
+/// does not invent an angle parameter: if the resulting ladder has no angle
+/// row, lookup still fails closed.  Other types beyond 55 (65-99, etc.)
+/// remain deferred until a concrete, source-attributed use is measured.
 static MMFF94_EQ_LEVEL: &[(u8, [u8; 4])] = &[
     (1, [1, 1, 1, 0]),
     (2, [2, 2, 1, 0]),
@@ -2444,6 +2445,7 @@ static MMFF94_EQ_LEVEL: &[(u8, [u8; 4])] = &[
     (53, [53, 42, 8, 0]),
     (54, [54, 9, 8, 0]),
     (55, [55, 10, 8, 0]),
+    (63, [63, 2, 1, 0]),
     (64, [64, 2, 1, 0]),
 ];
 
@@ -2893,23 +2895,16 @@ mod tests {
     }
 
     #[test]
-    fn angle_empirical_fails_closed_for_undefined_eq_level_substitution() {
-        // (angle_type=0, ti=43, tj=18, tk=63): the one unconfirmed tuple in
-        // issue #227 Stage C's own classification. Type 63 has no
-        // MMFF94_EQ_LEVEL row -- RDKit's real MMFFDefCollection::operator()
-        // returns nullptr for it, and MMFFAngleCollection::operator()'s real
-        // eqLevel loop dereferences that unchecked (undefined behavior in
-        // RDKit's own C++, confirmed by direct source read at the pinned
-        // commit). The live oracle's returned value for this triple was
-        // independently confirmed stable across 20 atom renumberings and a
-        // second, structurally unrelated molecule -- i.e. a deterministic
-        // function of the atom types alone, not per-call noise -- but that
-        // is equally consistent with "a real RDKit resolution" and "RDKit
-        // always reading the same fixed out-of-bounds memory," so it does
-        // NOT resolve the ambiguity (see `scripts/mmff94_provenance/PROVENANCE.md`'s
-        // Stage C entry). Per instruction, left fail-closed rather than
-        // guessed -- chematic must not reproduce a value it cannot attribute
-        // to a well-defined mechanism.
-        assert!(mmff94_angle_energy_resolved(0, 43, 18, 63, 1.71, 1.749, 0).is_none());
+    fn angle_empirical_reuses_sulfur_wildcard_theta0_for_c5a() {
+        // RDKit resolves this tuple through C5A's canonical ladder to the
+        // wildcard row (0, 0, 18, 0), whose ka is zero and theta0 is 104.6.
+        // The empirical force constant is then computed while reusing that
+        // table theta0 (MMFF.V eq. 20), rather than applying the generic
+        // tetrahedral 109.45-degree rule.
+        let (params, resolution) = mmff94_angle_energy_resolved(0, 43, 18, 63, 1.71, 1.749, 0)
+            .expect("C5A ladder should reach the sulfur wildcard fallback");
+        assert_eq!(resolution, Mmff94Resolution::EmpiricalAngle);
+        assert!((params.ka - 1.281584861919745).abs() < 1e-9);
+        assert!((params.theta0 - 104.6).abs() < 1e-9);
     }
 }

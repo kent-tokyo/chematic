@@ -58,8 +58,9 @@ use rustc_hash::{FxHashMap, FxHashSet};
 
 use chematic_core::{AtomIdx, BondIdx, Molecule};
 use chematic_perception::{
-    RingSet, find_smallest_rings_bfs, find_smallest_rings_bfs_with_blocked_bonds,
-    find_smallest_rings_bfs_with_rdkit_tree, select_rdkit_d2_roots, trim_ring_bonds,
+    RingSet, SymmetrizedSssrStatus, find_smallest_rings_bfs,
+    find_smallest_rings_bfs_with_blocked_bonds, find_smallest_rings_bfs_with_rdkit_tree, find_sssr,
+    find_symmetrized_sssr_with_diagnostics_bounded, select_rdkit_d2_roots, trim_ring_bonds,
 };
 
 /// Typed error for chematic-smarts's opt-in RDKit-parity matching mode.
@@ -84,6 +85,16 @@ pub enum RdkitParityError {
         candidates_examined: usize,
         /// The configured cap ([`RdkitRingModelBudget::max_candidates`]).
         cap: usize,
+    },
+    /// The bounded SSSR-derived approximation is not safe to use for a
+    /// highly charged polyaromatic system. These graphs can have multiple
+    /// valid same-size replacement-ring families; returning a guessed
+    /// `[RN]` count would be worse than explicitly reducing coverage.
+    RingModelAmbiguous {
+        /// Number of aromatic positively charged atoms in the target.
+        aromatic_cations: usize,
+        /// Number of extra rings produced by the approximation.
+        extra_rings: usize,
     },
     /// RDKit-parity aromaticity preprocessing
     /// (`chematic_perception::apply_aromaticity_rdkit_parity_experimental`)
@@ -112,6 +123,14 @@ impl std::fmt::Display for RdkitParityError {
             RdkitParityError::Aromaticity(e) => {
                 write!(f, "RDKit-parity aromaticity preprocessing failed: {e}")
             }
+            RdkitParityError::RingModelAmbiguous {
+                aromatic_cations,
+                extra_rings,
+            } => write!(
+                f,
+                "RDKit-parity ring model is ambiguous for {aromatic_cations} aromatic cations \
+                 and {extra_rings} replacement rings; no ring-count result was produced"
+            ),
         }
     }
 }
@@ -376,6 +395,48 @@ pub fn build_rdkit_parity_ring_model(
         ring_count_by_atom,
         extra_ring_count: extra_rings.len(),
     })
+}
+
+/// Build an experimental ring-count model from perception's shared bounded
+/// symmetrized-SSSR result. This is intentionally separate from the current
+/// SMARTS parity model because its candidate selector has different behavior
+/// on bridged cages. Callers must opt in and keep its result in a separate
+/// comparison lane until the A4 corpus decides which selector is preferable.
+pub fn build_shared_symmetrized_ring_model(
+    mol: &Molecule,
+    sssr: &RingSet,
+    budget: &RdkitRingModelBudget,
+) -> Result<RdkitParityRingModel, RdkitParityError> {
+    let result = find_symmetrized_sssr_with_diagnostics_bounded(mol, Some(budget.max_candidates));
+    if result.status() == SymmetrizedSssrStatus::CapExhausted {
+        return Err(RdkitParityError::RingModelBudgetExceeded {
+            candidates_examined: result.candidates_examined(),
+            cap: budget.max_candidates,
+        });
+    }
+    let base_count = find_sssr(mol).ring_count();
+    let mut ring_count_by_atom: FxHashMap<AtomIdx, u8> = FxHashMap::default();
+    for ring in result.rings().rings() {
+        for &atom in ring {
+            *ring_count_by_atom.entry(atom).or_insert(0) += 1;
+        }
+    }
+    let shared_model = RdkitParityRingModel {
+        ring_count_by_atom,
+        extra_ring_count: result.rings().ring_count().saturating_sub(base_count),
+    };
+    // Some bridged cages are handled better by the original SMARTS-specific
+    // selector (notably bicyclo[2.2.2]octane), while large fused systems are
+    // handled better by the shared selector. Prefer the original model only
+    // when it demonstrably recovered an additional ring that the shared model
+    // missed; this keeps the alternate lane deterministic and avoids a broad
+    // topology-specific exception list.
+    let approximate = build_rdkit_parity_ring_model(mol, sssr, budget)?;
+    if shared_model.extra_ring_count() == 0 && approximate.extra_ring_count() > 0 {
+        Ok(approximate)
+    } else {
+        Ok(shared_model)
+    }
 }
 
 /// Bond-index set of a ring given as a cyclic atom sequence (consecutive

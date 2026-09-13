@@ -11,6 +11,30 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 No unreleased changes.
 
+## [1.0.14] - 2026-09-13
+
+- Reduced false `RingModelAmbiguous` refusals in opt-in RDKit-parity SMARTS
+  matching by keeping `[R0]` ring-membership negation outside the positive
+  ring-count model; the 5,021-molecule × 31-pattern gate now records 18
+  explicit refusals and 155,618/155,651 parity matches (99.9788%), with zero
+  regressions or worsened cells.
+- Added a diagnostic potential-stereocenter parity gate against RDKit's
+  `CalcNumAtomStereoCenters`; it compares 5,000/5,000 rows and records five
+  explicit residuals after narrow aromatic-sulfur and deeper-branch fixes,
+  without promoting the profile to compatibility status.
+- Fixed a panic in `depict_data_with_coords` when callers provide fewer
+  coordinates than atoms; missing positions now follow the documented
+  `(0, 0)` fallback and have regression coverage.
+- Stopped silently replacing MMFF94 charge-calculation failures with zero
+  charges. Energy, torsion-scan, and minimization APIs now return a typed
+  `MinimizerError::ChargeCalculation` instead.
+- Refactored Python bulk descriptor output into a dedicated row type and NumPy
+  materialization helper without changing the public result schema.
+- Centralized the `pipeline_v2` ring-torsion applicability predicate so
+  diagnostic evidence and fail-closed policy checks cannot diverge.
+- Removed redundant descriptor-selection conditions and revalidated the
+  affected Rust, Python, depiction, and 3D paths.
+
 ## [1.0.13] - 2026-09-11
 
 - Rejected multiple top-level elements in the opt-in strict CML parser while
@@ -444,7 +468,8 @@ The authoritative list of published tags and release artifacts is the
 historical implementation notes remain available in the archived detailed
 history and Git history.
 
-[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.13...HEAD
+[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.14...HEAD
+[1.0.14]: https://github.com/kent-tokyo/chematic/compare/v1.0.13...v1.0.14
 [1.0.13]: https://github.com/kent-tokyo/chematic/compare/v1.0.12...v1.0.13
 [1.0.12]: https://github.com/kent-tokyo/chematic/compare/v1.0.11...v1.0.12
 [1.0.11]: https://github.com/kent-tokyo/chematic/compare/v1.0.10...v1.0.11

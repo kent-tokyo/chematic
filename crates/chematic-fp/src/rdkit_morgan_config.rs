@@ -369,7 +369,7 @@ mod tests {
     }
 
     #[test]
-    fn preprocessing_failure_is_err_for_every_config() {
+    fn valid_explicit_aromatic_input_is_accepted_for_every_config() {
         let smi = "Cc1cn2c(=O)c3ncn(COCCO)c3nc2n1C";
         let mol = parse(smi).unwrap();
         for radius in [
@@ -386,9 +386,12 @@ mod tests {
                     include_chirality: false,
                 },
             );
+            let result = result.unwrap_or_else(|error| {
+                panic!("valid explicit aromatic input rejected at radius {radius:?}: {error:?}")
+            });
             assert!(
-                matches!(result, Err(RdkitMorganError::Aromaticity(_))),
-                "expected Aromaticity error at radius {radius:?}, got {result:?}"
+                !result.sparse_counts.is_empty(),
+                "valid explicit aromatic input should produce identifiers at radius {radius:?}"
             );
         }
     }

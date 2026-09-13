@@ -482,6 +482,16 @@ mod tests {
         assert!(svg.contains("H2O"), "Single O SVG must show H2O label");
     }
 
+    #[test]
+    fn depict_data_with_coords_pads_missing_positions() {
+        let m = mol("CCO");
+        let data = depict_data_with_coords(&m, &[(1.0, 2.0)]);
+        assert_eq!(data.atoms.len(), 3);
+        assert_eq!(data.atoms[0].pos, Point::new(1.0, 2.0));
+        assert_eq!(data.atoms[1].pos, Point::new(0.0, 0.0));
+        assert_eq!(data.atoms[2].pos, Point::new(0.0, 0.0));
+    }
+
     // -------------------------------------------------------------------
     // render_svg_highlighted — pyridine with N highlighted.
     // -------------------------------------------------------------------

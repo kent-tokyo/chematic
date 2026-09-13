@@ -147,6 +147,16 @@ pub struct ReactionSmartsMatch {
     pub agent_matches: AgentMatches,
     /// Product pattern matches (all patterns must have at least one match for overall match).
     pub product_matches: ProductMatches,
+    /// Whether the reactant component groups were satisfied, including their
+    /// dot-separated injective and pipe-separated alternative semantics.
+    /// This is intentionally stored separately from the flattened detailed
+    /// match list, which cannot recover which alternatives belong to one
+    /// group.
+    pub reactants_satisfied: bool,
+    /// Whether the product component groups were satisfied.
+    pub products_satisfied: bool,
+    /// Whether the agent component groups were satisfied.
+    pub agents_satisfied: bool,
     /// Whether all patterns matched (true if reaction is valid against the query).
     pub is_complete_match: bool,
 }
@@ -154,18 +164,12 @@ pub struct ReactionSmartsMatch {
 impl ReactionSmartsMatch {
     /// Check if all reactant patterns matched.
     pub fn all_reactants_matched(&self) -> bool {
-        self.reactant_matches
-            .pattern_matches
-            .iter()
-            .all(|m| !m.is_empty())
+        self.reactants_satisfied
     }
 
     /// Check if all product patterns matched.
     pub fn all_products_matched(&self) -> bool {
-        self.product_matches
-            .pattern_matches
-            .iter()
-            .all(|m| !m.is_empty())
+        self.products_satisfied
     }
 }
 
@@ -173,12 +177,16 @@ impl MapNumberInfo {
     /// Check if all map numbers are consistent across reactants and products.
     pub fn validate(&self) -> Result<(), String> {
         // All map numbers in reactants must appear in products
-        let missing_in_products: Vec<u16> = self
+        let mut missing_in_products: Vec<u16> = self
             .reactant_maps
             .iter()
             .filter(|&m| !self.product_maps.contains(m))
             .copied()
             .collect();
+        // HashSet iteration is intentionally unordered. Sort diagnostics so
+        // the same malformed query produces the same error in every process
+        // and binding (important for reproducible validation reports).
+        missing_in_products.sort_unstable();
 
         if !missing_in_products.is_empty() {
             return Err(format!(
@@ -188,12 +196,13 @@ impl MapNumberInfo {
         }
 
         // All map numbers in products should be in reactants
-        let undefined_in_reactants: Vec<u16> = self
+        let mut undefined_in_reactants: Vec<u16> = self
             .product_maps
             .iter()
             .filter(|&m| !self.reactant_maps.contains(m))
             .copied()
             .collect();
+        undefined_in_reactants.sort_unstable();
 
         if !undefined_in_reactants.is_empty() {
             return Err(format!(
@@ -549,7 +558,15 @@ fn extract_map_numbers(smarts_str: &str) -> Result<MapNumberInfo, ReactionQueryE
 
     // Validate consistency (map numbers must exist in both reactants and products)
     info.validate().map_err(|msg| {
-        let map_num = info.all_map_numbers.iter().next().copied().unwrap_or(0);
+        // Select the smallest offending map rather than an arbitrary element
+        // of the HashSet. The message already identifies the whole mismatch;
+        // this field must nevertheless be stable for machine consumers.
+        let map_num = info
+            .reactant_maps
+            .symmetric_difference(&info.product_maps)
+            .min()
+            .copied()
+            .unwrap_or(0);
         ReactionQueryError::MapNumberMismatch {
             map_num,
             message: msg,
@@ -697,6 +714,19 @@ fn reaction_match_embedding(
         })
 }
 
+/// Convert an embedding to the public atom-index order promised by
+/// `MoleculeMatch`: query atom 0, query atom 1, and so on.  The embedding is
+/// stored in a hash map because VF2 lookup is keyed by query index; exposing
+/// `.values()` directly would make the result order an implementation detail.
+fn ordered_atom_indices(embedding: &FxHashMap<usize, chematic_core::AtomIdx>) -> Vec<usize> {
+    let mut entries: Vec<_> = embedding.iter().collect();
+    entries.sort_unstable_by_key(|(query_index, _)| **query_index);
+    entries
+        .into_iter()
+        .map(|(_, atom_index)| atom_index.0 as usize)
+        .collect()
+}
+
 /// Match every disconnected component in one alternative to a distinct target
 /// molecule. A single-component group is intentionally equivalent to the
 /// historical per-pattern check.
@@ -784,10 +814,7 @@ pub fn get_reaction_smarts_matches(rxn: &Reaction, query: &ReactionQuery) -> Rea
             let atom_matches = reaction_match_embedding(pattern, mol);
             // Use first match if any exist (we only care that it matched)
             if let Some(first_match) = atom_matches.as_ref() {
-                let atom_indices: Vec<usize> = first_match
-                    .values()
-                    .map(|atom_idx| atom_idx.0 as usize)
-                    .collect();
+                let atom_indices = ordered_atom_indices(first_match);
                 matches_for_pattern.push(MoleculeMatch {
                     molecule_index: mol_idx,
                     pattern_index: pattern_idx,
@@ -805,10 +832,7 @@ pub fn get_reaction_smarts_matches(rxn: &Reaction, query: &ReactionQuery) -> Rea
         let mut matches_for_pattern = Vec::new();
         for (mol_idx, mol) in rxn.agents.iter().enumerate() {
             if let Some(first_match) = reaction_match_embedding(pattern, mol).as_ref() {
-                let atom_indices: Vec<usize> = first_match
-                    .values()
-                    .map(|atom_idx| atom_idx.0 as usize)
-                    .collect();
+                let atom_indices = ordered_atom_indices(first_match);
                 matches_for_pattern.push(MoleculeMatch {
                     molecule_index: mol_idx,
                     pattern_index: pattern_idx,
@@ -827,10 +851,7 @@ pub fn get_reaction_smarts_matches(rxn: &Reaction, query: &ReactionQuery) -> Rea
             let atom_matches = reaction_match_embedding(pattern, mol);
             // Use first match if any exist (we only care that it matched)
             if let Some(first_match) = atom_matches.as_ref() {
-                let atom_indices: Vec<usize> = first_match
-                    .values()
-                    .map(|atom_idx| atom_idx.0 as usize)
-                    .collect();
+                let atom_indices = ordered_atom_indices(first_match);
                 matches_for_pattern.push(MoleculeMatch {
                     molecule_index: mol_idx,
                     pattern_index: pattern_idx,
@@ -861,6 +882,9 @@ pub fn get_reaction_smarts_matches(rxn: &Reaction, query: &ReactionQuery) -> Rea
         product_matches: ProductMatches {
             pattern_matches: product_pattern_matches,
         },
+        reactants_satisfied: all_reactants_matched,
+        products_satisfied: all_products_matched,
+        agents_satisfied: all_agents_matched,
         is_complete_match,
     }
 }
@@ -1315,7 +1339,8 @@ mod tests {
         // Map number :1 in reactants but not in products should fail
         let result = parse_reaction_smarts("[C:1][C:2]>>[C:2]");
         assert!(result.is_err());
-        if let Err(ReactionQueryError::MapNumberMismatch { message, .. }) = result {
+        if let Err(ReactionQueryError::MapNumberMismatch { map_num, message }) = result {
+            assert_eq!(map_num, 1);
             assert!(message.contains("missing from products"));
         } else {
             panic!("expected MapNumberMismatch error");
@@ -1327,7 +1352,8 @@ mod tests {
         // Map number :1 in products but not in reactants should fail
         let result = parse_reaction_smarts("[C:2]>>[C:1][C:2]");
         assert!(result.is_err());
-        if let Err(ReactionQueryError::MapNumberMismatch { message, .. }) = result {
+        if let Err(ReactionQueryError::MapNumberMismatch { map_num, message }) = result {
+            assert_eq!(map_num, 1);
             assert!(message.contains("not found in reactants"));
         } else {
             panic!("expected MapNumberMismatch error");
@@ -1340,6 +1366,23 @@ mod tests {
         let pattern = parse_reaction_smarts("[C:1][C:2][C:3]>>[C:3][C:1][C:2]").unwrap();
         assert_eq!(pattern.map_number_info.reactant_maps.len(), 3);
         assert_eq!(pattern.map_number_info.product_maps.len(), 3);
+    }
+
+    #[test]
+    fn test_map_number_mismatch_diagnostic_uses_smallest_offending_map() {
+        // The source sets are hash-based, so this also protects the error's
+        // machine-readable map_num field from process-dependent ordering.
+        let missing = parse_reaction_smarts("[C:7][C:2][C:9]>>[C:9]");
+        assert!(matches!(
+            missing,
+            Err(ReactionQueryError::MapNumberMismatch { map_num: 2, .. })
+        ));
+
+        let undefined = parse_reaction_smarts("[C:7]>>[C:7][C:9][C:2]");
+        assert!(matches!(
+            undefined,
+            Err(ReactionQueryError::MapNumberMismatch { map_num: 2, .. })
+        ));
     }
 
     #[test]
@@ -1406,6 +1449,26 @@ mod tests {
     }
 
     #[test]
+    fn detailed_match_uses_alternative_group_semantics() {
+        // The flattened detail vectors contain one unmatched alternative,
+        // but the reaction query is satisfied because C|N means either one.
+        // The summary helpers must agree with is_complete_match rather than
+        // treating every flattened alternative as independently required.
+        let reaction = rxn("CC>>CC");
+        let query = parse_reaction_query("[#7]|[#6]>>[#6]").unwrap();
+        let matches = get_reaction_smarts_matches(&reaction, &query);
+
+        assert!(matches.is_complete_match);
+        assert!(matches.all_reactants_matched());
+        assert!(matches.all_products_matched());
+        assert!(matches.reactants_satisfied);
+        assert!(matches.products_satisfied);
+        assert!(matches.agents_satisfied);
+        assert!(matches.reactant_matches.pattern_matches[0].is_empty());
+        assert!(!matches.reactant_matches.pattern_matches[1].is_empty());
+    }
+
+    #[test]
     fn test_get_reaction_smarts_matches_multiple_reactants() {
         // Multiple reactants: C + C >> CC
         let rxn = rxn("C.C>>CC");
@@ -1459,6 +1522,24 @@ mod tests {
         assert_eq!(product_matches.len(), 1);
         assert_eq!(product_matches[0].molecule_index, 0);
         assert!(!product_matches[0].atom_indices.is_empty()); // At least one carbon matched
+    }
+
+    #[test]
+    fn molecule_match_atom_indices_follow_query_order() {
+        let rxn = rxn("CO>>CO");
+        let query = parse_reaction_query("[O:2][C:1]>>[O:2][C:1]").unwrap();
+        let matches = get_reaction_smarts_matches(&rxn, &query);
+
+        // Query atom 0 is oxygen (target index 1), followed by carbon
+        // (target index 0).  This must not depend on hash-map iteration.
+        assert_eq!(
+            matches.reactant_matches.pattern_matches[0][0].atom_indices,
+            vec![1, 0]
+        );
+        assert_eq!(
+            matches.product_matches.pattern_matches[0][0].atom_indices,
+            vec![1, 0]
+        );
     }
 
     #[test]

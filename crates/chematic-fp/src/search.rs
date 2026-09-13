@@ -13,6 +13,12 @@ use crate::bitvec::BitVec2048;
 use crate::ecfp::{EcfpConfig, ecfp};
 use crate::rdkit_morgan_ecfp4::{RdkitMorganError, rdkit_morgan_ecfp4_experimental};
 
+/// Numerical slack used only when deciding whether a computed rational
+/// Tanimoto score is equal to a caller-provided floating-point threshold.
+/// Scores and ordering remain unmodified. This covers one-ulp differences
+/// between language runtimes for values such as 17/42.
+const TANIMOTO_THRESHOLD_EPSILON: f64 = 1e-15;
+
 // ---------------------------------------------------------------------------
 // Fingerprint type selector
 // ---------------------------------------------------------------------------
@@ -172,6 +178,50 @@ impl PreparedFingerprintIndex {
     pub fn search_fp(&self, query_fp: &BitVec2048, k: usize) -> Vec<(usize, f64)> {
         nearest_neighbors_from_prepared_fp(query_fp, &self.fingerprints, &self.popcounts, k)
     }
+
+    /// Search with an inclusive Tanimoto threshold.
+    ///
+    /// Unlike [`Self::search_fp`], a threshold of `0.0` includes zero-score
+    /// candidates. Results are ordered by descending score and then database
+    /// index, matching the top-k search contract.
+    pub fn search_fp_threshold(
+        &self,
+        query_fp: &BitVec2048,
+        threshold: f64,
+        k: usize,
+    ) -> Vec<(usize, f64)> {
+        nearest_neighbors_from_prepared_fp_threshold(
+            query_fp,
+            &self.fingerprints,
+            &self.popcounts,
+            threshold,
+            k,
+        )
+    }
+
+    /// Search the prepared database with an inclusive Tanimoto threshold.
+    pub fn search_threshold(
+        &self,
+        query: &Molecule,
+        threshold: f64,
+        k: usize,
+    ) -> Vec<(usize, f64)> {
+        let query_fp =
+            compute_fp(query, self.fp_type).expect("non-fallible fingerprint profile failed");
+        self.search_fp_threshold(&query_fp, threshold, k)
+    }
+
+    /// Fallible threshold search without switching fingerprint profiles.
+    pub fn try_search_threshold(
+        &self,
+        query: &Molecule,
+        threshold: f64,
+        k: usize,
+    ) -> Result<Vec<(usize, f64)>, PreparedFingerprintError> {
+        let query_fp = compute_fp(query, self.fp_type)
+            .map_err(|source| PreparedFingerprintError::Query { source })?;
+        Ok(self.search_fp_threshold(&query_fp, threshold, k))
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -263,6 +313,36 @@ fn nearest_neighbors_from_prepared_fp(
             )
         })
         .filter(|(_, t)| *t > 0.0)
+        .collect();
+    rank_top_k(&mut scores, k);
+    scores
+}
+
+fn nearest_neighbors_from_prepared_fp_threshold(
+    query_fp: &BitVec2048,
+    db_fps: &[BitVec2048],
+    db_popcounts: &[u32],
+    threshold: f64,
+    k: usize,
+) -> Vec<(usize, f64)> {
+    if k == 0 || db_fps.is_empty() || !threshold.is_finite() || !(0.0..=1.0).contains(&threshold) {
+        return vec![];
+    }
+
+    let query_popcount = query_fp.popcount();
+    let mut scores: Vec<(usize, f64)> = db_fps
+        .iter()
+        .zip(db_popcounts.iter().copied())
+        .enumerate()
+        .map(|(i, (fp, popcount))| {
+            (
+                i,
+                query_fp.tanimoto_with_counts_f64(fp, query_popcount, popcount),
+            )
+        })
+        .filter(|(_, score)| {
+            *score >= threshold || (*score - threshold).abs() <= TANIMOTO_THRESHOLD_EPSILON
+        })
         .collect();
     rank_top_k(&mut scores, k);
     scores
@@ -431,5 +511,33 @@ mod tests {
         let results = index.try_search(&query, 3).unwrap();
         assert_eq!(results[0].0, 1);
         assert!((results[0].1 - 1.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn threshold_search_is_inclusive_and_keeps_zero_scores_at_zero() {
+        let query = benzene();
+        let db = vec![ethane(), benzene(), toluene()];
+        let index = PreparedFingerprintIndex::new(&db, FpType::Ecfp4);
+        let exact = index.search_threshold(&query, 1.0, 10);
+        assert_eq!(exact.len(), 1);
+        assert_eq!(exact[0].0, 1);
+
+        let zero = index.search_threshold(&query, 0.0, 10);
+        assert_eq!(zero.len(), 3);
+        assert_eq!(zero[0].0, 1);
+        assert!(zero[1].1 >= zero[2].1);
+    }
+
+    #[test]
+    fn threshold_search_rejects_invalid_thresholds() {
+        let query = benzene();
+        let index = PreparedFingerprintIndex::new(&[benzene()], FpType::Ecfp4);
+        assert!(index.search_threshold(&query, -f64::EPSILON, 10).is_empty());
+        assert!(
+            index
+                .search_threshold(&query, 1.0 + f64::EPSILON, 10)
+                .is_empty()
+        );
+        assert!(index.search_threshold(&query, f64::NAN, 10).is_empty());
     }
 }

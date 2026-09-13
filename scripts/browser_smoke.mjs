@@ -17,6 +17,8 @@ M  END`;
 const browser = await browsers[browserName].launch({ headless: true });
 try {
   const page = await browser.newPage();
+  // Keep assertions deterministic across hosts whose navigator language differs.
+  await page.addInitScript(() => localStorage.setItem("chematic-lang", "en"));
   const errors = [];
   page.on("pageerror", (error) => errors.push(String(error)));
   page.on("console", (message) => {
@@ -32,6 +34,26 @@ try {
   const hba = page.locator("#desc-tbody tr").filter({ hasText: "HBA" }).locator("td").nth(1);
   await hba.waitFor({ state: "visible" });
   assert.equal(await hba.innerText(), "6");
+
+  // Expose the existing breadth of the demo through task-oriented entry points.
+  await page.locator('[data-workflow="molecule"]').click();
+  await page.locator("#tb-2d").waitFor({ state: "visible" });
+  await page.locator('[data-workflow="similarity"]').click();
+  await page.locator("#tb-sim").waitFor({ state: "visible" });
+  assert.equal(await page.locator("#sim-a").inputValue(), "CC(=O)Oc1ccccc1C(=O)O");
+  await page.locator('[data-workflow="report"]').click();
+  await page.locator("#tb-report").waitFor({ state: "visible" });
+  await page.locator("#report-output").waitFor({ state: "visible" });
+  await page.locator("#btn-report-json").click();
+  await page.locator("#report-json-status").waitFor({ state: "visible" });
+  await page.locator('[data-workflow="reaction"]').click();
+  await page.locator("#tb-rxn").waitFor({ state: "visible" });
+  await page.locator('[data-workflow="formats"]').click();
+  await page.locator("#tb-formats").waitFor({ state: "visible" });
+  await page.locator("#quickstart-guide-summary").click();
+  await page.locator("#quickstart-guide-step3").waitFor({ state: "visible" });
+  await page.locator("#tc-structure").click();
+  await page.locator("#tb-2d").click();
   for (const [nextSmiles, expectedHba] of [
     ["CCO", "1"],
     ["CC(=O)O", "1"],
@@ -161,6 +183,34 @@ try {
   await page.locator("#sdf-grid-output svg").waitFor({ state: "visible" });
   await sdfError.waitFor({ state: "hidden" });
   assert.equal(await sdfHba.innerText(), "0");
+
+  // Sharing uses a bounded URL fragment and restores the molecule after a
+  // fresh page load; the structure itself stays client-side.
+  await page.locator("#tc-structure").click();
+  await page.locator("#tb-2d").click();
+  await page.locator("#smiles-input").fill("CCO");
+  await page.locator("#btn-calc").click();
+  await page.locator("#error-desc").waitFor({ state: "hidden" });
+  await page.locator("#btn-share-molecule").click();
+  await page.waitForFunction(() => location.hash.startsWith("#smiles="));
+  assert.match(page.url(), /#smiles=CCO$/);
+  await page.reload({ waitUntil: "networkidle" });
+  await page.locator("#version-badge").waitFor({ state: "visible" });
+  assert.equal(await page.locator("#smiles-input").inputValue(), "CCO");
+
+  // Malformed or oversized fragments must fail closed to the normal example,
+  // not prevent the WASM app from booting.
+  await page.goto("http://127.0.0.1:8765/index.html#smiles=%E0%A4%A", {
+    waitUntil: "networkidle",
+  });
+  await page.locator("#version-badge").waitFor({ state: "visible" });
+  assert.doesNotMatch(await page.locator("#smiles-input").inputValue(), /%E0|%A4/);
+  await page.goto(`http://127.0.0.1:8765/index.html#smiles=${"C".repeat(20001)}`, {
+    waitUntil: "networkidle",
+  });
+  await page.locator("#version-badge").waitFor({ state: "visible" });
+  assert.ok((await page.locator("#smiles-input").inputValue()).length <= 20000);
+
   await page.getByRole("tab", { name: "Data & Formats", exact: true }).click();
   const formatCases = [
     "Gaussian Cube",
@@ -199,6 +249,44 @@ try {
     await formatOutput.waitFor({ state: "visible" });
     await formatError.waitFor({ state: "hidden" });
   }
+  // The local explorer is a separate entry point but shares the generated
+  // browser artifact. Cover its public workflow and error boundary so the
+  // browser gate does not only exercise the demo tab shell.
+  await page.goto("http://127.0.0.1:8765/explorer/index.html?browser-smoke=0.89", {
+    waitUntil: "networkidle",
+  });
+  await page.locator("#loading-overlay").waitFor({ state: "hidden" });
+  await page.locator("#explorer-btn-sample").click();
+  await page.locator("#explorer-status").filter({ hasText: /loaded/i }).waitFor({ state: "visible" });
+  assert.match(await page.locator("#explorer-result-count").innerText(), /^\d+ of \d+ shown$/);
+  await page.locator("#explorer-paste-textarea").fill("CCO\nC1CC\nCCN");
+  await page.locator("#explorer-btn-parse-paste").click();
+  await page.locator("#explorer-status").filter({ hasText: /failed to parse/i }).waitFor({ state: "visible" });
+  assert.equal(await page.locator("#explorer-result-count").innerText(), "3 of 3 shown");
+  assert.equal(await page.locator("#explorer-tbody tr").count(), 3);
+  const cancellationInput = Array.from({ length: 2000 }, () => "CCO").join("\n");
+  await page.locator("#explorer-paste-textarea").fill(cancellationInput);
+  await page.locator("#explorer-btn-parse-paste").click();
+  await page.locator("#explorer-cancel").waitFor({ state: "visible" });
+  await page.locator("#explorer-cancel").click();
+  await page.locator("#explorer-status").filter({ hasText: /Cancelled after/i }).waitFor({ state: "visible" });
+  assert.match(await page.locator("#explorer-result-count").innerText(), /^\d+ of \d+ shown$/);
+  await page.locator("#explorer-btn-sample").click();
+  await page.locator("#explorer-status").filter({ hasText: /loaded/i }).waitFor({ state: "visible" });
+  await page.locator("#explorer-filter-text").fill("Aspirin");
+  assert.match(await page.locator("#explorer-result-count").innerText(), /^1 of \d+ shown$/);
+  await page.locator("#explorer-reference-smiles").fill("C1CC");
+  await page.locator("#explorer-btn-similarity").click();
+  await page.locator("#explorer-error").waitFor({ state: "visible" });
+  assert.match(await page.locator("#explorer-error").innerText(), /Invalid|SMILES|parse/i);
+  await page.locator("#explorer-reference-smiles").fill("CCO");
+  await page.locator("#explorer-btn-similarity").click();
+  await page.locator("#explorer-status").filter({ hasText: /complete/i }).waitFor({ state: "visible" });
+  await page.locator("#explorer-filter-text").fill("");
+  const exportDownload = page.waitForEvent("download");
+  await page.locator("#explorer-btn-export").click();
+  assert.equal((await exportDownload).suggestedFilename(), "chematic-explorer-export.csv");
+
   assert.deepEqual(errors, []);
 } finally {
   await browser.close();

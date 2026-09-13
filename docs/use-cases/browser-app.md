@@ -6,7 +6,7 @@ You want to ship a chemistry tool to users who won't install anything — a web 
 
 ## Solution
 
-chematic compiles to WebAssembly at **3.93 MB raw / 1.43 MB gzip** (v1.0.12 Node/WASM gate,
+The latest measured chematic WebAssembly artifact is **3.93 MB raw / 1.43 MB gzip** (v1.0.12 Node/WASM gate,
 measured 2026-09-11 with `wasm-pack 0.13.1`, `wasm-bindgen 0.2.121`, and `wasm-opt 130`; see the
 [comparison record](../../benchmarks/2026-09-11-official-rdkit-js-v1.0.12.md)) — roughly 1.8× smaller raw and 1.4× smaller gzip than the
 pinned RDKit.js comparator. No server required: descriptor calculation, fingerprint
@@ -14,7 +14,11 @@ generation, and similarity search run entirely in the browser, offline-capable a
 
 ## Output / What you get
 
-A React component that renders a 2D structure + property card from a SMILES string, entirely client-side.
+The public [Playground](https://kent-tokyo.github.io/chematic/playground/) provides a zero-setup
+reference app: start from a guided workflow, inspect 2D/3D structures and descriptors, compare
+similarity, run reaction examples, or parse materials-science formats. The same WASM boundary
+can be embedded in your own UI as a React component that renders a 2D structure + property card
+from a SMILES string, entirely client-side.
 
 ## Why browser-first matters
 
@@ -137,7 +141,7 @@ document.getElementById("file-input").addEventListener("change", async (e) => {
 |------|--------------|----------|
 | Bundle size | 3.93 MB raw / 1.43 MB gzip | 6.91 MB raw / 2.05 MB gzip |
 
-The current chematic bundle measurement is from the v1.0.12 Node/WASM gate (see the
+The latest chematic bundle measurement is from the v1.0.12 Node/WASM gate (see the
 [artifact record](../../benchmarks/2026-09-11-official-rdkit-js-v1.0.12.md)). Per-operation, in-browser timings
 (SMILES parse, ECFP4, Tanimoto)
 previously listed here were never independently reconfirmed and have been removed rather than

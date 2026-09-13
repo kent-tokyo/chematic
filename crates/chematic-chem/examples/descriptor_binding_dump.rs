@@ -5,7 +5,10 @@
 //! must agree on parse status and the values produced by the same chematic
 //! implementation.
 
-use chematic_chem::{hba_count, hbd_count, heavy_atom_count, molecular_weight, tpsa};
+use chematic_chem::{
+    fsp3, hbd_count, logp_crippen, molar_refractivity, rdkit_aromatic_ring_count, rdkit_hba_count,
+    rdkit_molecular_weight, tpsa,
+};
 use serde_json::json;
 use std::io::{self, BufRead, Write};
 
@@ -24,11 +27,14 @@ fn main() {
                 "smiles": smiles,
                 "status": "ok",
                 "descriptors": {
-                    "mw": molecular_weight(&mol),
+                    "molecular_weight": rdkit_molecular_weight(&mol),
                     "tpsa": tpsa(&mol),
                     "hbd": hbd_count(&mol),
-                    "hba": hba_count(&mol),
-                    "heavy_atoms": heavy_atom_count(&mol),
+                    "hba": rdkit_hba_count(&mol),
+                    "logp": logp_crippen(&mol),
+                    "molar_refractivity": molar_refractivity(&mol),
+                    "fsp3": fsp3(&mol),
+                    "aromatic_ring_count": rdkit_aromatic_ring_count(&mol),
                 }
             }),
             Err(error) => json!({

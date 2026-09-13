@@ -2,6 +2,11 @@
 
 Pure-Rust cheminformatics library for Python — SMILES parsing, 190+ descriptor values (71 functions), fingerprints, pKa prediction, ADMET profiling, and template-based retrosynthesis.
 
+The current 1.0.14 release line also includes bounded batch descriptor
+output through `bulk.descriptors_array(smiles, columns)`. Requested columns
+are computed selectively and returned as typed NumPy arrays; invalid SMILES
+remain excluded as documented.
+
 ## Installation
 
 ```bash

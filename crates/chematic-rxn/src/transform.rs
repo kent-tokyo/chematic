@@ -265,6 +265,44 @@ pub fn apply_reaction_match(
     PreparedReaction::new(smirks)?.apply_match(reactants, m, carry_substituents)
 }
 
+/// Immutable target-side state for repeated prepared-reaction matching.
+///
+/// The context owns a snapshot of the target molecule and its ring index, so
+/// callers can build it once and share it across threads and many query
+/// templates without repeating ring perception.  Owning the snapshot also
+/// prevents a caller from mutating or dropping the target while a batch of
+/// matches is in flight.  Matching semantics and result ordering are the same
+/// as [`PreparedReaction::find_matches_with_rings`].
+#[derive(Clone)]
+pub struct ReactionMatchContext {
+    target: Molecule,
+    rings: RingSet,
+}
+
+impl ReactionMatchContext {
+    /// Build reusable target-side matching state.  Pass a precomputed ring
+    /// set when one is already available; otherwise SSSR perception is done
+    /// exactly once during construction.
+    pub fn new(mol: &Molecule, rings: Option<&RingSet>) -> Self {
+        Self {
+            target: mol.clone(),
+            rings: rings
+                .cloned()
+                .unwrap_or_else(|| chematic_perception::find_sssr(mol)),
+        }
+    }
+
+    /// The immutable target snapshot held by this context.
+    pub fn target(&self) -> &Molecule {
+        &self.target
+    }
+
+    /// The precomputed ring index held by this context.
+    pub fn rings(&self) -> &RingSet {
+        &self.rings
+    }
+}
+
 /// Parsed SMIRKS plus everything derived from it that matching needs —
 /// shared by [`run_reactants_impl`], [`find_reaction_matches`], and
 /// [`apply_reaction_match`] so the three can never compute it
@@ -507,6 +545,29 @@ impl PreparedReaction {
         limits: &ReactionTransformLimits,
     ) -> Result<Vec<ReactionMatch>, TransformError> {
         find_matches_impl(self, reactants, limits, None)
+    }
+
+    /// Enumerate matches against one reusable target-side context.
+    ///
+    /// This is the convenient repeated-query path for single-reactant
+    /// templates. Multi-reactant templates should continue to use
+    /// [`Self::find_matches_with_rings_and_limits`] with one context per
+    /// reactant slot.
+    pub fn find_matches_with_context(
+        &self,
+        context: &ReactionMatchContext,
+    ) -> Result<Vec<ReactionMatch>, TransformError> {
+        self.find_matches_with_context_and_limits(context, &ReactionTransformLimits::default())
+    }
+
+    /// Context-backed matching with an explicit accepted-match limit.
+    pub fn find_matches_with_context_and_limits(
+        &self,
+        context: &ReactionMatchContext,
+        limits: &ReactionTransformLimits,
+    ) -> Result<Vec<ReactionMatch>, TransformError> {
+        let rings = [&context.rings];
+        find_matches_impl(self, &[&context.target], limits, Some(&rings))
     }
 
     /// Apply this compiled template while reusing ring perception already
@@ -1779,6 +1840,7 @@ mod tests {
     fn prepared_reaction_is_send_sync_and_matches_legacy_output() {
         fn assert_send_sync<T: Send + Sync>() {}
         assert_send_sync::<PreparedReaction>();
+        assert_send_sync::<ReactionMatchContext>();
 
         let mol = parse("CCOC(=O)C").unwrap();
         let smirks = "[C:1](=[O:2])[O:3][C:4]>>[C:1](=[O:2])O.[O:3][C:4]";
@@ -1819,6 +1881,13 @@ mod tests {
                 .unwrap(),
             prepared
                 .find_matches_with_rings(&[&mol], &[&rings])
+                .unwrap()
+        );
+        let context = ReactionMatchContext::new(&mol, Some(&rings));
+        assert_eq!(
+            prepared.find_matches_with_context(&context).unwrap(),
+            prepared
+                .find_matches_with_rings(&[context.target()], &[context.rings()])
                 .unwrap()
         );
     }

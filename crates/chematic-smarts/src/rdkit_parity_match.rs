@@ -29,6 +29,7 @@ use crate::match_vf2::{MatchConfig, MatchOutcome};
 use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule};
 use crate::rdkit_ring_model::{
     RdkitParityError, RdkitParityRingModel, RdkitRingModelBudget, build_rdkit_parity_ring_model,
+    build_shared_symmetrized_ring_model,
 };
 
 /// Configuration for [`find_matches_rdkit_parity`] / [`has_match_rdkit_parity_bounded`].
@@ -53,6 +54,11 @@ pub struct RdkitParityConfig {
     /// `Err(RdkitParityError::Aromaticity(..))` — never a silent fallback
     /// to the default Hückel engine's flags.
     pub use_rdkit_parity_aromaticity: bool,
+    /// Use perception's alternate bounded symmetrized-SSSR selector for
+    /// `[RN]` queries. This is an experimental comparison lane; the default
+    /// remains the SMARTS-specific selector because the two models differ on
+    /// bridged-cage fixtures.
+    pub use_shared_symmetrized_sssr: bool,
 }
 
 /// Find all non-overlapping (injective) embeddings of `query` in `mol` using
@@ -86,11 +92,22 @@ pub fn find_matches_rdkit_parity(
 
     let rings = chematic_perception::find_sssr(mol_ref);
     let ring_model = if query_uses_ring_count(query) {
-        Some(build_rdkit_parity_ring_model(
-            mol_ref,
-            &rings,
-            &config.ring_model_budget,
-        )?)
+        let model = if config.use_shared_symmetrized_sssr {
+            build_shared_symmetrized_ring_model(mol_ref, &rings, &config.ring_model_budget)?
+        } else {
+            build_rdkit_parity_ring_model(mol_ref, &rings, &config.ring_model_budget)?
+        };
+        let aromatic_cations = mol_ref
+            .atoms()
+            .filter(|(_, atom)| atom.aromatic && atom.charge > 0)
+            .count();
+        if aromatic_cations >= 2 && model.extra_ring_count() > 0 {
+            return Err(RdkitParityError::RingModelAmbiguous {
+                aromatic_cations,
+                extra_rings: model.extra_ring_count(),
+            });
+        }
+        Some(model)
     } else {
         None
     };
@@ -160,7 +177,10 @@ fn query_uses_ring_count(query: &QueryMolecule) -> bool {
 
 fn atom_query_uses_ring_count(q: &AtomQuery) -> bool {
     match q {
-        AtomQuery::Primitive(AtomPrimitive::RingCount(_)) => true,
+        // `[R0]` is ring-membership negation, not an exact positive ring
+        // count. It is invariant under adding RDKit's extra SSSR rings and
+        // must not trigger the ambiguity gate by itself.
+        AtomQuery::Primitive(AtomPrimitive::RingCount(n)) => *n > 0,
         AtomQuery::Primitive(AtomPrimitive::Recursive(sub)) => query_uses_ring_count(sub),
         AtomQuery::Primitive(_) => false,
         AtomQuery::And(a, b) | AtomQuery::Or(a, b) => {
@@ -644,7 +664,50 @@ mod tests {
         let result = find_matches_rdkit_parity(&query, &mol, &config);
         assert!(matches!(
             result,
-            Err(RdkitParityError::RingModelBudgetExceeded { .. })
+            Err(RdkitParityError::RingModelBudgetExceeded {
+                candidates_examined: 1,
+                cap: 0,
+            })
+        ));
+    }
+
+    #[test]
+    fn shared_ring_model_propagates_measured_budget_exhaustion() {
+        let mol = parse("C12C3C4C1C5C4C3C25").unwrap();
+        let query = parse_smarts("[R3]").unwrap();
+        let config = RdkitParityConfig {
+            use_shared_symmetrized_sssr: true,
+            ring_model_budget: RdkitRingModelBudget { max_candidates: 0 },
+            ..RdkitParityConfig::default()
+        };
+        let result = find_matches_rdkit_parity(&query, &mol, &config);
+        assert!(matches!(
+            result,
+            Err(RdkitParityError::RingModelBudgetExceeded {
+                candidates_examined: 1,
+                cap: 0,
+            })
+        ));
+    }
+
+    #[test]
+    fn ambiguous_aromatic_cation_ring_model_fails_closed() {
+        // This highly charged fused polyaromatic scaffold was the sole
+        // SMARTS parity regression in the 5,021-molecule A4 census: the
+        // generated replacement rings produced many false-positive [R3]
+        // matches where RDKit returned only atoms 3 and 4.  Refuse the
+        // ambiguous model instead of returning a plausible but wrong set.
+        let mol =
+            parse("c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)-c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1")
+                .unwrap();
+        let query = parse_smarts("[R3]").unwrap();
+        let result = find_matches_rdkit_parity(&query, &mol, &RdkitParityConfig::default());
+        assert!(matches!(
+            result,
+            Err(RdkitParityError::RingModelAmbiguous {
+                aromatic_cations: 2..,
+                extra_rings: 1..
+            })
         ));
     }
 

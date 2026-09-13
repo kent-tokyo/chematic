@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "profile": "rdkit_morgan_ecfp4_search_oracle",
+  "chematic_version": "1.0.13",
+  "rdkit_version": "2025.09.3",
+  "corpus": {
+    "path": "scripts/descriptor_census_corpus.smi",
+    "sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c",
+    "library_rows": 4500,
+    "query_rows": 500,
+    "chunk_size": 1000
+  },
+  "configuration": {
+    "radius": 2,
+    "fp_size": 2048,
+    "include_chirality": false,
+    "use_bond_types": true,
+    "k_values": [
+      1,
+      10,
+      100
+    ]
+  },
+  "comparison": {
+    "1": {
+      "cases": 2500,
+      "matches": 2500,
+      "mismatches": 0,
+      "max_score_delta": 0.0,
+      "score_tolerance": 1e-12,
+      "examples": []
+    },
+    "10": {
+      "cases": 2500,
+      "matches": 2500,
+      "mismatches": 0,
+      "max_score_delta": 0.0,
+      "score_tolerance": 1e-12,
+      "examples": []
+    },
+    "100": {
+      "cases": 2500,
+      "matches": 2500,
+      "mismatches": 0,
+      "max_score_delta": 0.0,
+      "score_tolerance": 1e-12,
+      "examples": []
+    }
+  },
+  "gate_passed": true,
+  "boundary": [
+    "RDKit computes the independent fingerprint and exhaustive similarity ordering.",
+    "This does not establish accuracy on an unused corpus; the corpus is a declared regression split."
+  ]
+}

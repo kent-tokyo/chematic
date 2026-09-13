@@ -1,0 +1,8 @@
+[
+  {"id":"carbon_match","reaction":"CCO>>CC=O","query":"[#6]>>[#6]","expected":true},
+  {"id":"nitrogen_negative","reaction":"CCO>>CC=O","query":"[#7]>>[#6]","expected":false},
+  {"id":"two_distinct_reactants","reaction":"C.C>>CC","query":"[#6].[#6]>>[#6]","expected":true},
+  {"id":"missing_distinct_reactant","reaction":"C>>CC","query":"[#6].[#6]>>[#6]","expected":false},
+  {"id":"agent_match","reaction":"CC>[Pd]>CC","query":"[#6]>[Pd]>[#6]","expected":true},
+  {"id":"agent_negative","reaction":"CC>[Ni]>CC","query":"[#6]>[Pd]>[#6]","expected":false}
+]

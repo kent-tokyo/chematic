@@ -947,18 +947,132 @@ pub fn ring_bonds_all_aromatic(mol: &Molecule, ring: &[AtomIdx]) -> bool {
 /// and envelope stripping.  Useful for filtering (e.g. counting only aromatic heterocycles).
 pub fn aromatic_ring_list(mol: &Molecule) -> Vec<Vec<AtomIdx>> {
     let mol_with_arom;
-    let mol = if mol.atoms().any(|(_, a)| a.aromatic) {
-        mol
-    } else {
+    let has_aromatic_atoms = mol.atoms().any(|(_, a)| a.aromatic);
+    let mol = if !has_aromatic_atoms {
         mol_with_arom = apply_aromaticity(mol);
         &mol_with_arom
+    } else {
+        mol
     };
-    all_ring_list_inner(mol)
+    let mut rings = all_ring_list_inner(mol);
+    append_small_chordless_aromatic_cycles(mol, &mut rings);
+    rings
         .into_iter()
         .filter(|ring| {
             ring.iter().all(|&idx| mol.atom(idx).aromatic) && ring_bonds_all_aromatic(mol, ring)
         })
         .collect()
+}
+
+/// Add bounded, chordless aromatic cycles that a minimum cycle basis can omit.
+///
+/// A minimum basis is sufficient for many ring operations, but it can choose a
+/// five-membered cage face instead of a symmetry-equivalent six-membered
+/// aromatic face.  RDKit's aromatic-ring count considers the latter as well.
+/// Enumerating every simple cycle would be unbounded on polycyclic graphs, so
+/// this helper only considers induced aromatic cycles of size 3..=6 and fails
+/// closed when the candidate cap is exceeded.  Atom-set deduplication keeps the
+/// result independent of traversal direction.
+fn append_small_chordless_aromatic_cycles(mol: &Molecule, rings: &mut Vec<Vec<AtomIdx>>) {
+    const MAX_CANDIDATES: usize = 4096;
+    const MAX_SIZE: usize = 6;
+    let mut known: FxHashSet<Vec<u32>> = rings
+        .iter()
+        .filter(|ring| ring.len() <= MAX_SIZE)
+        .map(|ring| {
+            let mut key: Vec<u32> = ring.iter().map(|atom| atom.0).collect();
+            key.sort_unstable();
+            key
+        })
+        .collect();
+    let mut candidates = Vec::new();
+    for start in 0..mol.atom_count() {
+        let start = AtomIdx(start as u32);
+        if !mol.atom(start).aromatic {
+            continue;
+        }
+        let mut search = ChordlessCycleSearch::new(mol, start, MAX_SIZE, MAX_CANDIDATES);
+        search.collect(start);
+        candidates.extend(search.cycles);
+        if candidates.len() > MAX_CANDIDATES {
+            return;
+        }
+    }
+    for ring in candidates {
+        let mut key: Vec<u32> = ring.iter().map(|atom| atom.0).collect();
+        key.sort_unstable();
+        if known.insert(key) {
+            rings.push(ring);
+        }
+    }
+}
+
+struct ChordlessCycleSearch<'a> {
+    mol: &'a Molecule,
+    start: AtomIdx,
+    path: Vec<AtomIdx>,
+    visited: FxHashSet<AtomIdx>,
+    cycles: Vec<Vec<AtomIdx>>,
+    max_size: usize,
+    max_candidates: usize,
+}
+
+impl<'a> ChordlessCycleSearch<'a> {
+    fn new(mol: &'a Molecule, start: AtomIdx, max_size: usize, max_candidates: usize) -> Self {
+        let mut visited = FxHashSet::default();
+        visited.insert(start);
+        Self {
+            mol,
+            start,
+            path: vec![start],
+            visited,
+            cycles: Vec::new(),
+            max_size,
+            max_candidates,
+        }
+    }
+
+    fn collect(&mut self, current: AtomIdx) {
+        if self.cycles.len() > self.max_candidates {
+            return;
+        }
+        for (next, bond) in self.mol.neighbors(current) {
+            if self.mol.bond(bond).order != BondOrder::Aromatic || !self.mol.atom(next).aromatic {
+                continue;
+            }
+            if next == self.start {
+                if (3..=self.max_size).contains(&self.path.len())
+                    && chordless_cycle(self.mol, &self.path)
+                {
+                    self.cycles.push(self.path.clone());
+                }
+                continue;
+            }
+            if next.0 < self.start.0
+                || self.visited.contains(&next)
+                || self.path.len() >= self.max_size
+            {
+                continue;
+            }
+            self.visited.insert(next);
+            self.path.push(next);
+            self.collect(next);
+            self.path.pop();
+            self.visited.remove(&next);
+        }
+    }
+}
+
+fn chordless_cycle(mol: &Molecule, cycle: &[AtomIdx]) -> bool {
+    for i in 0..cycle.len() {
+        for j in (i + 1)..cycle.len() {
+            let adjacent = j == i + 1 || (i == 0 && j + 1 == cycle.len());
+            if !adjacent && mol.bond_between(cycle[i], cycle[j]).is_some() {
+                return false;
+            }
+        }
+    }
+    true
 }
 
 /// Mark which rings in `aromatic` are GF(2) sums (bond-XOR) of 2–4 smaller rings.

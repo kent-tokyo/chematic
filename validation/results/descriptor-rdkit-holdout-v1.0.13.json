@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "profile": "rdkit_compat_v2",
+  "corpus": "validation/descriptor_rdkit_holdout.jsonl",
+  "rows": 12,
+  "passed": 12,
+  "failed": 0,
+  "checks": [
+    {
+      "id": "boron",
+      "category": "atomic_mass_table",
+      "smiles": "B",
+      "rule": "unlabelled molecular weight within 0.01 Da",
+      "passed": true,
+      "chematic": 13.835999999999999,
+      "rdkit": 13.835999999999999,
+      "absolute_error": 0.0
+    },
+    {
+      "id": "sulfur",
+      "category": "atomic_mass_table",
+      "smiles": "CS",
+      "rule": "unlabelled molecular weight within 0.01 Da",
+      "passed": true,
+      "chematic": 48.11000000000001,
+      "rdkit": 48.11000000000001,
+      "absolute_error": 0.0
+    },
+    {
+      "id": "selenium",
+      "category": "atomic_mass_table",
+      "smiles": "[Se]",
+      "rule": "unlabelled molecular weight within 0.01 Da",
+      "passed": true,
+      "chematic": 78.96,
+      "rdkit": 78.96,
+      "absolute_error": 0.0
+    },
+    {
+      "id": "isotope",
+      "category": "isotope_table",
+      "smiles": "[13C]",
+      "rule": "known explicit isotope within 0.01 Da",
+      "passed": true,
+      "chematic": 13.00335483507,
+      "rdkit": 13.00335484,
+      "absolute_error": 4.929999519731609e-09
+    },
+    {
+      "id": "charged_oxygen",
+      "category": "charge_or_valence",
+      "smiles": "C(=O)[O-]",
+      "rule": "unlabelled molecular weight within 0.01 Da",
+      "passed": true,
+      "chematic": 45.017,
+      "rdkit": 45.017,
+      "absolute_error": 0.0
+    },
+    {
+      "id": "charged_nitrogen",
+      "category": "charge_or_valence",
+      "smiles": "C[N+](C)(C)C",
+      "rule": "unlabelled molecular weight within 0.01 Da",
+      "passed": true,
+      "chematic": 74.14699999999999,
+      "rdkit": 74.14699999999999,
+      "absolute_error": 0.0
+    },
+    {
+      "id": "benzene",
+      "category": "aromaticity",
+      "smiles": "c1ccccc1",
+      "rule": "unlabelled molecular weight within 0.01 Da",
+      "passed": true,
+      "chematic": 78.11399999999999,
+      "rdkit": 78.11399999999999,
+      "absolute_error": 0.0
+    },
+    {
+      "id": "naphthalene",
+      "category": "fused_ring",
+      "smiles": "c1ccc2ccccc2c1",
+      "rule": "unlabelled molecular weight within 0.01 Da",
+      "passed": true,
+      "chematic": 128.17399999999995,
+      "rdkit": 128.17399999999995,
+      "absolute_error": 0.0
+    },
+    {
+      "id": "bridged_ring",
+      "category": "bridged_ring",
+      "smiles": "C1CC2CCC1C2",
+      "rule": "unlabelled molecular weight within 0.01 Da",
+      "passed": true,
+      "chematic": 96.173,
+      "rdkit": 96.173,
+      "absolute_error": 0.0
+    },
+    {
+      "id": "macrocycle",
+      "category": "macrocycle",
+      "smiles": "C1CCCCCCCCCCC1",
+      "rule": "unlabelled molecular weight within 0.01 Da",
+      "passed": true,
+      "chematic": 168.32399999999998,
+      "rdkit": 168.32399999999998,
+      "absolute_error": 0.0
+    },
+    {
+      "id": "iron",
+      "category": "metal",
+      "smiles": "[Fe]",
+      "rule": "unlabelled molecular weight within 0.01 Da",
+      "passed": true,
+      "chematic": 55.845,
+      "rdkit": 55.845,
+      "absolute_error": 0.0
+    },
+    {
+      "id": "pyridine",
+      "category": "aromaticity",
+      "smiles": "c1ccncc1",
+      "rule": "unlabelled molecular weight within 0.01 Da",
+      "passed": true,
+      "chematic": 79.10199999999998,
+      "rdkit": 79.10199999999998,
+      "absolute_error": 0.0
+    }
+  ]
+}

@@ -10,14 +10,35 @@ version, commit, corpus, and commands shown here.
 
 ---
 
+## Current RDKit compatibility profile gate (v1.0.14)
+
+The current working-tree source-built remeasurement uses RDKit 2026.03.6 and
+the 5,000-row corpus: all eight core compatibility fields match 5,000/5,000 at
+their strict thresholds, including the known explicit-isotope row. The code
+supports a finite table of common explicit isotopes and rejects unknown isotope
+labels without approximation. Native descriptor behavior remains unchanged and
+the compatibility profile remains opt-in; native-regression and broader
+descriptor-family gates are still separate.
+
+The structural holdout covers charged atoms, a metal, aromatic/fused/bridged
+rings, a macrocycle, an isotope, and unusual atom cases: 12/12 checks passed.
+The scorecards include median, p95, maximum error, published and strict
+agreement, parser counts, and representative first-cause classes.
+
+See [`descriptor-rdkit-diagnostics-v1.0.13.json`](../validation/results/descriptor-rdkit-diagnostics-v1.0.13.json)
+and [`descriptor-rdkit-holdout-v1.0.13.json`](../validation/results/descriptor-rdkit-holdout-v1.0.13.json)
+for the machine-readable evidence.
+
+---
+
 ## Descriptor Accuracy (4,999-molecule ChEMBL subset)
 
 | Descriptor | Agreement | Tolerance | Notes |
 |---|---|---|---|
-| Molecular weight | **99.82%** (4990/4999) | ±0.01 Da | vs `Descriptors.MolWt` |
+| Molecular weight | **100%** (5000/5000) | ±0.01 Da | vs `Descriptors.MolWt`; current source-built v2 gate |
 | Heavy atom count | **100%** (4999/4999) | exact | |
 | H-bond donors (HBD) | **100%** (4999/4999) | exact | |
-| H-bond acceptors (HBA) | **100%** (4999/4999) | exact | |
+| H-bond acceptors (HBA) | **100%** (5000/5000) | exact | current source-built v2 gate |
 | TPSA | **100%** (4999/4999) | ±0.1 Å² | |
 | LogP (Crippen) | **100%** (4999/4999) | exact* | max Δ = 1.10e-13 |
 | MR (molar refractivity) | **100%** (4999/4999) | ±0.01 | |

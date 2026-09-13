@@ -18,6 +18,7 @@ from benchmark_version import workspace_version
 
 ROOT = Path(__file__).resolve().parent.parent
 CONTRACT = ROOT / "validation" / "cross_binding_contract.json"
+ACCURACY_MANIFEST = ROOT / "validation" / "manifests" / "rdkit_accuracy_v2.json"
 DEFAULT_OUTPUT = ROOT / "docs" / "compatibility-dashboard.md"
 
 
@@ -67,7 +68,12 @@ def binding_rows(contract: dict) -> list[tuple[str, int]]:
     return rows
 
 
-def render(contract: dict, streaming: dict, streaming_path: Path) -> str:
+def render(
+    contract: dict,
+    streaming: dict,
+    streaming_path: Path,
+    accuracy_manifest: dict | None = None,
+) -> str:
     contract_path = "validation/cross_binding_contract.json"
     streaming_display_path = streaming_path.relative_to(ROOT).as_posix()
     lines = [
@@ -114,6 +120,34 @@ def render(contract: dict, streaming: dict, streaming_path: Path) -> str:
         "- Regenerate after changing either source manifest and review the resulting digest changes before committing.",
         "",
     ]
+    if accuracy_manifest is not None:
+        comparator = accuracy_manifest.get("comparator", {})
+        operations = accuracy_manifest.get("operations", [])
+        lines += [
+            "## RDKit accuracy profiles",
+            "",
+            "This section is generated from `validation/manifests/rdkit_accuracy_v2.json`. "
+            "It records declared evidence lanes; it does not convert development or exposed data into a sealed evaluation.",
+            "",
+            f"- Manifest status: `{accuracy_manifest.get('status', 'unknown')}`",
+            f"- Comparator: `{comparator.get('engine', 'unknown')} {comparator.get('version', 'unknown')}`",
+            "",
+            "| Operation | Scope | Split | Expected rows | Profile |",
+            "|---|---|---|---:|---|",
+        ]
+        for operation in operations:
+            corpus = operation.get("corpus", {})
+            lines.append(
+                f"| `{operation.get('id', 'unknown')}` | `{operation.get('scope', 'unknown')}` | "
+                f"`{operation.get('split', 'unknown')}` | {corpus.get('expected_rows', '—')} | "
+                f"`{operation.get('profile', 'not_recorded')}` |"
+            )
+        lines += [
+            "",
+            "A missing profile is an explicit contract gap: native, RDKit-compatible, "
+            "and binding-consistency lanes must not be conflated in a scorecard.",
+            "",
+        ]
     return "\n".join(lines)
 
 
@@ -123,7 +157,11 @@ def main() -> int:
     args = parser.parse_args()
     output = args.output if args.output.is_absolute() else ROOT / args.output
     streaming_path = current_streaming_matrix()
-    output.write_text(render(load(CONTRACT), load(streaming_path), streaming_path), encoding="utf-8")
+    accuracy_manifest = load(ACCURACY_MANIFEST) if ACCURACY_MANIFEST.is_file() else None
+    output.write_text(
+        render(load(CONTRACT), load(streaming_path), streaming_path, accuracy_manifest),
+        encoding="utf-8",
+    )
     print(output)
     return 0
 

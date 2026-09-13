@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "profile": "A6-mmff94-atom-type-parity",
+  "comparator": "RDKit MMFF94 atom types",
+  "corpus": "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_{a,b}.json",
+  "corpus_rows": 265,
+  "atom_rows": 6698,
+  "before": {"exact": 6665, "mismatch": 33, "comparable_exact_rate": "99.51%"},
+  "after": {
+    "exact": 6681,
+    "mismatch": 17,
+    "comparable_rows": 6697,
+    "comparable_mismatch": 16,
+    "comparable_exact_rate": "99.76%"
+  },
+  "resolved_mismatch_rows": 16,
+  "resolved_molecules": ["chembl_tier_b_0023", "chembl_tier_b_0028", "chembl_tier_b_0034"],
+  "remaining_comparable_molecules": ["chembl_tier_b_0009", "chembl_tier_b_0029", "chembl_tier_b_0030"],
+  "declared_unsupported": ["force_field_unsupported_probe"],
+  "method": "Current source-built schematic dump joined atom-index-wise to the pinned RDKit oracle; no unsupported row was removed from the raw total.",
+  "regression": "cargo test -p chematic-ff --lib --quiet: 227 passed",
+  "status": "candidate_improvement_not_adopted_release"
+}

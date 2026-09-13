@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "profile": "rdkit_descriptor_baseline_candidate",
+  "status": "not_measured",
+  "comparator": {
+    "engine": "RDKit",
+    "version": "2025.09.3"
+  },
+  "corpus": {
+    "path": "scripts/chembl_accuracy_corpus_4999.smi",
+    "rows": 5000,
+    "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e"
+  },
+  "baseline": {
+    "source": "tag:v1.0.13",
+    "artifact_sha256": "68c3b6ba1af2660edb47112f9e01424fbc6839768414ee27996517d28617fcf0",
+    "status": "not_measured",
+    "reason": "The tagged package does not expose the declared rdkit_compat_v2 fields (for example Mol.rdkit_mw)."
+  },
+  "candidate": {
+    "source": "working-tree-uncommitted",
+    "artifact_sha256": "7bd4f968bc1ec85b294c57ad952fb2d013713d7028df59f14ffd8b9d53d42027",
+    "status": "measured",
+    "rows": 5000,
+    "parsed": 5000,
+    "strict_matches": 5000,
+    "python_extension_sha256": "a1613b920aa364dcc7dda202363a8c0164963e1ee6086156a35e0b2a25d2dfc0"
+  },
+  "gate_passed": false,
+  "decision": "not_measured",
+  "boundary": "Native fields were not substituted for the missing compatibility baseline."
+}

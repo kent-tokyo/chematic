@@ -1,0 +1,140 @@
+{
+  "profile": "A1-stereocenter-potential",
+  "version": "1.0.13",
+  "rdkit_version": "2025.09.3",
+  "chematic_version": "1.0.13",
+  "python_provenance": {
+    "executable": "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3.13",
+    "package_version": "1.0.13",
+    "package_init": "/private/tmp/chematic-wheel-atom-gate/extracted/chematic/__init__.py",
+    "extension": "/private/tmp/chematic-wheel-atom-gate/extracted/chematic/chematic.cpython-313-darwin.so",
+    "extension_sha256": "2d276dd7eb3adee19000a36c15f695ff5a91988cf46979da69dab045f30b9bfa",
+    "pythonpath": [
+      "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts",
+      "/tmp/chematic-wheel-atom-gate/extracted",
+      "/Library/Frameworks/Python.framework/Versions/3.13/lib/python313.zip",
+      "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13",
+      "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/lib-dynload",
+      "/Users/k_tanabe/Library/Python/3.13/lib/python/site-packages",
+      "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/site-packages"
+    ],
+    "workspace_path_visible": false,
+    "import_origin": "temporary_extracted_wheel"
+  },
+  "corpus": "scripts/descriptor_census_corpus.smi",
+  "corpus_sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c",
+  "input_rows": 5000,
+  "compared": 5000,
+  "rdkit_parse_failures": 0,
+  "chematic_failures": 0,
+  "mismatch_count": 3,
+  "mismatch_examples": [
+    {
+      "index": 2757,
+      "smiles": "Cn1cc(C2=NC[C@]3(CN4CC[C@@H]3C4)O2)c2ccccc21",
+      "chematic": 2,
+      "rdkit": 3,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 2960,
+      "smiles": "Cn1cc(C2=NC[C@@]3(C[N@@]4CC[C@@H]3C4)O2)c2ccccc21",
+      "chematic": 2,
+      "rdkit": 3,
+      "assigned_rdkit": 3
+    },
+    {
+      "index": 2961,
+      "smiles": "Cn1cc(C2=NCC3(CCN4CCCC3C4)O2)c2ccccc21",
+      "chematic": 2,
+      "rdkit": 3,
+      "assigned_rdkit": 0
+    }
+  ],
+  "mismatches": [
+    {
+      "index": 2757,
+      "smiles": "Cn1cc(C2=NC[C@]3(CN4CC[C@@H]3C4)O2)c2ccccc21",
+      "chematic": 2,
+      "rdkit": 3,
+      "assigned_rdkit": 2
+    },
+    {
+      "index": 2960,
+      "smiles": "Cn1cc(C2=NC[C@@]3(C[N@@]4CC[C@@H]3C4)O2)c2ccccc21",
+      "chematic": 2,
+      "rdkit": 3,
+      "assigned_rdkit": 3
+    },
+    {
+      "index": 2961,
+      "smiles": "Cn1cc(C2=NCC3(CCN4CCCC3C4)O2)c2ccccc21",
+      "chematic": 2,
+      "rdkit": 3,
+      "assigned_rdkit": 0
+    }
+  ],
+  "mismatch_examples_truncated": false,
+  "atom_false_positive_count": 0,
+  "atom_false_negative_count": 3,
+  "atom_mismatch_examples": [
+    {
+      "index": 2757,
+      "smiles": "Cn1cc(C2=NC[C@]3(CN4CC[C@@H]3C4)O2)c2ccccc21",
+      "chematic_indices": [
+        7,
+        12
+      ],
+      "rdkit_indices": [
+        7,
+        9,
+        12
+      ],
+      "false_positives": [],
+      "false_negatives": [
+        9
+      ]
+    },
+    {
+      "index": 2960,
+      "smiles": "Cn1cc(C2=NC[C@@]3(C[N@@]4CC[C@@H]3C4)O2)c2ccccc21",
+      "chematic_indices": [
+        7,
+        12
+      ],
+      "rdkit_indices": [
+        7,
+        9,
+        12
+      ],
+      "false_positives": [],
+      "false_negatives": [
+        9
+      ]
+    },
+    {
+      "index": 2961,
+      "smiles": "Cn1cc(C2=NCC3(CCN4CCCC3C4)O2)c2ccccc21",
+      "chematic_indices": [
+        7,
+        14
+      ],
+      "rdkit_indices": [
+        7,
+        10,
+        14
+      ],
+      "false_positives": [],
+      "false_negatives": [
+        10
+      ]
+    }
+  ],
+  "atom_mismatch_examples_truncated": false,
+  "error_count": 0,
+  "error_examples": [],
+  "error_examples_truncated": false,
+  "gate_passed": false,
+  "definition": "potential tetrahedral stereocenters; assigned and unspecified centers included",
+  "oracle": "rdMolDescriptors.CalcNumAtomStereoCenters"
+}

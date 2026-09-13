@@ -5,7 +5,9 @@
 
 use std::collections::{HashMap, HashSet, VecDeque};
 
-use chematic_core::{AtomIdx, BondIdx, BondOrder, Chirality, CipCode, Molecule, implicit_hcount};
+use chematic_core::{
+    AtomIdx, BondIdx, BondOrder, Chirality, CipCode, Element, Molecule, implicit_hcount,
+};
 
 /// The result of a CIP stereochemistry assignment run.
 #[derive(Debug)]
@@ -313,7 +315,11 @@ struct ExpandState {
 ///    add a phantom for it but don't expand further.
 fn cip_branch_spheres(mol: &Molecule, center: AtomIdx, start: AtomIdx) -> Vec<SphereLayer> {
     let mut layers: HashMap<usize, Vec<(u8, Option<u16>, f64)>> = HashMap::new();
-    let max_depth = 8usize;
+    // Distinguish remote substituents on long ring/chain paths.  Eight
+    // layers silently classified some otherwise distinct branches as tied;
+    // keep the bound finite for pathological graphs while covering the
+    // longest structures in the descriptor corpus.
+    let max_depth = 16usize;
 
     // The start atom itself is at depth 1.
     let start_key = atom_key(mol, start);
@@ -428,6 +434,31 @@ fn compare_branches(mol: &Molecule, center: AtomIdx, a: AtomIdx, b: AtomIdx) -> 
     Equal
 }
 
+/// True when the bond from `center` to `neighbor` has an alternate path,
+/// i.e. participates in at least one cycle. The bond itself is excluded from
+/// the BFS so the direct edge cannot make the test trivially succeed.
+fn bond_is_in_ring(mol: &Molecule, center: AtomIdx, neighbor: AtomIdx) -> bool {
+    let Some((bond, _)) = mol.bond_between(center, neighbor) else {
+        return false;
+    };
+    let mut visited = HashSet::from([center]);
+    let mut queue = VecDeque::from([center]);
+    while let Some(current) = queue.pop_front() {
+        for (next, edge) in mol.neighbors(current) {
+            if edge == bond {
+                continue;
+            }
+            if next == neighbor {
+                return true;
+            }
+            if visited.insert(next) {
+                queue.push_back(next);
+            }
+        }
+    }
+    false
+}
+
 // ---------------------------------------------------------------------------
 // CIP Rule 5: stereo-descriptor tie-breaking
 // ---------------------------------------------------------------------------
@@ -452,7 +483,7 @@ fn cip_branch_stereo_spheres(
     provisional: &HashMap<AtomIdx, CipCode>,
 ) -> Vec<Vec<u8>> {
     let mut layers: HashMap<usize, Vec<u8>> = HashMap::new();
-    let max_depth = 8usize;
+    let max_depth = 16usize;
 
     layers
         .entry(1)
@@ -530,7 +561,13 @@ pub(crate) fn is_potential_stereocenter_rule5(
     provisional: &HashMap<AtomIdx, CipCode>,
 ) -> bool {
     let atom = mol.atom(idx);
-    if atom.aromatic {
+    // Aromatic atoms are normally planar and cannot be tetrahedral centers.
+    // RDKit's potential-center model is an exception for aromatic sulfur with
+    // an exocyclic substituent (for example `[s+]([O-])`): its aromatic ring
+    // neighbors plus the exocyclic branch form the four-site center counted by
+    // CalcNumAtomStereoCenters. Keep the exception narrow; aromatic C/N/P and
+    // other heteroatoms remain excluded.
+    if atom.aromatic && atom.element.atomic_number() != 16 {
         return false;
     }
     match atom.element.atomic_number() {
@@ -545,6 +582,31 @@ pub(crate) fn is_potential_stereocenter_rule5(
     for _ in 0..h {
         neighbors.push(AtomIdx(u32::MAX));
     }
+    // RDKit's ring-constrained neutral sp3-N rule is narrower than merely
+    // saying "three distinct branches": each of the three neighbors must be
+    // a ring degree-2 atom, so a fused bridgehead topology is required. This
+    // excludes the common fused-ring tertiary amines whose one neighbor is a
+    // degree-3 junction and whose inversion remains freely accessible.
+    if atom.element.atomic_number() == 7
+        && !atom.aromatic
+        && atom.charge == 0
+        && h == 0
+        && neighbors.len() == 3
+        && neighbors.iter().all(|&neighbor| {
+            mol.atom(neighbor).element.atomic_number() != 1
+                && mol.neighbors(neighbor).count() == 2
+                && bond_is_in_ring(mol, idx, neighbor)
+        })
+        && !neighbors.iter().any(|&neighbor| {
+            mol.neighbors(neighbor).any(|(other, bond_idx)| {
+                mol.bond(bond_idx).order == BondOrder::Double
+                    && matches!(mol.atom(other).element.atomic_number(), 8 | 16)
+            })
+        })
+        && accurate_graph_branches_are_distinct(mol, idx, &neighbors)
+    {
+        return true;
+    }
     if neighbors.len() == 3 && h == 0 && matches!(atom.element.atomic_number(), 15 | 16 | 34) {
         neighbors.push(AtomIdx(u32::MAX));
     }
@@ -557,6 +619,15 @@ pub(crate) fn is_potential_stereocenter_rule5(
         let mut r = ranks;
         r.sort_unstable();
         return r.windows(2).all(|w| w[0] != w[1]);
+    }
+
+    // The legacy pooled-sphere comparator can tie distinct carbon branches in
+    // fused/bridged systems because it discards branch provenance. Re-check
+    // only that unresolved carbon case with the provenance-preserving Rules
+    // 1a/1b/2 comparator. This is a classification fallback, not a change to
+    // the public legacy CIP labeler and not a Rule 5 guess.
+    if atom.element == Element::C && accurate_graph_branches_are_distinct(mol, idx, &neighbors) {
+        return true;
     }
 
     // Step 2: graph tie — try Rule 5 with stereo tokens.
@@ -601,6 +672,31 @@ pub(crate) fn is_potential_stereocenter_rule5(
         }
     }
     true
+}
+
+fn accurate_graph_branches_are_distinct(
+    mol: &Molecule,
+    center: AtomIdx,
+    neighbors: &[AtomIdx],
+) -> bool {
+    let mut graph =
+        match chematic_cip::CipDigraph::new(mol, center, chematic_cip::CipBudget::default_budget())
+        {
+            Ok(graph) => graph,
+            Err(_) => return false,
+        };
+    let root_children = match graph.expand_children(graph.root()) {
+        Ok(children) => children,
+        Err(_) => return false,
+    };
+    if root_children.len() != neighbors.len() {
+        return false;
+    }
+    let mut context = chematic_cip::CompareContext::new();
+    match chematic_cip::rank_children(&mut graph, &root_children, &mut context) {
+        Ok(groups) => groups.iter().all(|group| group.len() == 1),
+        Err(_) => false,
+    }
 }
 
 /// Assign CIP priority ranks to `subs` (substituents of `center`).

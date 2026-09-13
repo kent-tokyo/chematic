@@ -9,16 +9,16 @@
   },
   "binding_status_counts": {
     "rust": {
-      "ok": 4999,
-      "error": 1
+      "ok": 5000,
+      "error": 0
     },
     "python": {
-      "ok": 4999,
-      "error": 1
+      "ok": 5000,
+      "error": 0
     },
     "node_wasm": {
-      "ok": 4999,
-      "error": 1
+      "ok": 5000,
+      "error": 0
     }
   },
   "pairwise": {

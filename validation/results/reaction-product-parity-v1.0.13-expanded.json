@@ -1,0 +1,949 @@
+{
+  "agreement": {
+    "matched": 51,
+    "total": 51
+  },
+  "case_file_sha256": "33efa6ae7188d4dc59425596fc85706ddf2624d538443d8e6316f0106cd6bde0",
+  "cases": [
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CC[O-]"
+        ]
+      ],
+      "id": "alcohol_deprotonation",
+      "rdkit": [
+        [
+          "CC[O-]"
+        ]
+      ],
+      "reactants": [
+        "CCO"
+      ],
+      "smirks": "[OH:1]>>[O-:1]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CCO"
+        ]
+      ],
+      "id": "carbonyl_reduction_shape",
+      "rdkit": [
+        [
+          "CCO"
+        ]
+      ],
+      "reactants": [
+        "CC=O"
+      ],
+      "smirks": "[C:1]=[O:2]>>[C:1]-[O:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CC(N)=O"
+        ]
+      ],
+      "id": "amide_formation",
+      "rdkit": [
+        [
+          "CC(N)=O"
+        ]
+      ],
+      "reactants": [
+        "CC(=O)Cl",
+        "N"
+      ],
+      "smirks": "[C:1](=[O:2])Cl.[N:3]>>[C:1](=[O:2])[N:3]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "C",
+          "N"
+        ]
+      ],
+      "id": "mapped_bond_cleavage",
+      "rdkit": [
+        [
+          "C",
+          "N"
+        ]
+      ],
+      "reactants": [
+        "CN"
+      ],
+      "smirks": "[N:1][C:2]>>[N:1].[C:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "C",
+          "O"
+        ]
+      ],
+      "id": "mapped_fragment_split",
+      "rdkit": [
+        [
+          "C",
+          "O"
+        ]
+      ],
+      "reactants": [
+        "CO"
+      ],
+      "smirks": "[C:1]-[O:2]>>[C:1].[O:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CC(=O)[O-]"
+        ]
+      ],
+      "id": "carboxylate_deprotonation",
+      "rdkit": [
+        [
+          "CC(=O)[O-]"
+        ]
+      ],
+      "reactants": [
+        "CC(=O)O"
+      ],
+      "smirks": "[C:1](=[O:2])[O:3]>>[C:1](=[O:2])[O-:3]"
+    },
+    {
+      "agree": true,
+      "chematic": [],
+      "id": "no_match_empty",
+      "rdkit": [],
+      "reactants": [
+        "CC"
+      ],
+      "smirks": "[OH:1]>>[O-:1]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CC(C)[O-]"
+        ]
+      ],
+      "id": "alcohol_deprotonation_isopropanol",
+      "rdkit": [
+        [
+          "CC(C)[O-]"
+        ]
+      ],
+      "reactants": [
+        "CC(C)O"
+      ],
+      "smirks": "[OH:1]>>[O-:1]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "[O-]c1ccccc1"
+        ]
+      ],
+      "id": "alcohol_deprotonation_phenol",
+      "rdkit": [
+        [
+          "[O-]c1ccccc1"
+        ]
+      ],
+      "reactants": [
+        "Oc1ccccc1"
+      ],
+      "smirks": "[OH:1]>>[O-:1]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "[O-]Cc1ccccc1"
+        ]
+      ],
+      "id": "alcohol_deprotonation_benzyl_alcohol",
+      "rdkit": [
+        [
+          "[O-]Cc1ccccc1"
+        ]
+      ],
+      "reactants": [
+        "OCC1=CC=CC=C1"
+      ],
+      "smirks": "[OH:1]>>[O-:1]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CC(C)O"
+        ]
+      ],
+      "id": "carbonyl_reduction_acetone",
+      "rdkit": [
+        [
+          "CC(C)O"
+        ]
+      ],
+      "reactants": [
+        "CC(C)=O"
+      ],
+      "smirks": "[C:1]=[O:2]>>[C:1]-[O:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "OC1CCCCC1"
+        ]
+      ],
+      "id": "carbonyl_reduction_cyclohexanone",
+      "rdkit": [
+        [
+          "OC1CCCCC1"
+        ]
+      ],
+      "reactants": [
+        "O=C1CCCCC1"
+      ],
+      "smirks": "[C:1]=[O:2]>>[C:1]-[O:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "OCc1ccccc1"
+        ]
+      ],
+      "id": "carbonyl_reduction_benzaldehyde",
+      "rdkit": [
+        [
+          "OCc1ccccc1"
+        ]
+      ],
+      "reactants": [
+        "O=Cc1ccccc1"
+      ],
+      "smirks": "[C:1]=[O:2]>>[C:1]-[O:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CCCCO"
+        ]
+      ],
+      "id": "carbonyl_reduction_butanal",
+      "rdkit": [
+        [
+          "CCCCO"
+        ]
+      ],
+      "reactants": [
+        "CCCC=O"
+      ],
+      "smirks": "[C:1]=[O:2]>>[C:1]-[O:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CCCC(=O)[O-]"
+        ]
+      ],
+      "id": "carboxylate_deprotonation_butanoic_acid",
+      "rdkit": [
+        [
+          "CCCC(=O)[O-]"
+        ]
+      ],
+      "reactants": [
+        "CCCC(=O)O"
+      ],
+      "smirks": "[C:1](=[O:2])[O:3]>>[C:1](=[O:2])[O-:3]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "O=C([O-])c1ccccc1"
+        ]
+      ],
+      "id": "carboxylate_deprotonation_benzoic_acid",
+      "rdkit": [
+        [
+          "O=C([O-])c1ccccc1"
+        ]
+      ],
+      "reactants": [
+        "O=C(O)c1ccccc1"
+      ],
+      "smirks": "[C:1](=[O:2])[O:3]>>[C:1](=[O:2])[O-:3]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "NCC(=O)[O-]"
+        ]
+      ],
+      "id": "carboxylate_deprotonation_glycine",
+      "rdkit": [
+        [
+          "NCC(=O)[O-]"
+        ]
+      ],
+      "reactants": [
+        "NCC(=O)O"
+      ],
+      "smirks": "[C:1](=[O:2])[O:3]>>[C:1](=[O:2])[O-:3]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CC(O)C(=O)[O-]"
+        ]
+      ],
+      "id": "carboxylate_deprotonation_lactic_acid",
+      "rdkit": [
+        [
+          "CC(O)C(=O)[O-]"
+        ]
+      ],
+      "reactants": [
+        "CC(O)C(=O)O"
+      ],
+      "smirks": "[C:1](=[O:2])[O:3]>>[C:1](=[O:2])[O-:3]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "Clc1ccccc1"
+        ]
+      ],
+      "id": "aromatic_halogen_exchange_bromobenzene",
+      "rdkit": [
+        [
+          "Clc1ccccc1"
+        ]
+      ],
+      "reactants": [
+        "Brc1ccccc1"
+      ],
+      "smirks": "[c:1][Br]>>[c:1][Cl]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "COc1ccc(Cl)cc1"
+        ]
+      ],
+      "id": "aromatic_halogen_exchange_bromoanisole",
+      "rdkit": [
+        [
+          "COc1ccc(Cl)cc1"
+        ]
+      ],
+      "reactants": [
+        "COc1ccc(Br)cc1"
+      ],
+      "smirks": "[c:1][Br]>>[c:1][Cl]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "Clc1ccccn1"
+        ]
+      ],
+      "id": "aromatic_halogen_exchange_bromopyridine",
+      "rdkit": [
+        [
+          "Clc1ccccn1"
+        ]
+      ],
+      "reactants": [
+        "Brc1ccccn1"
+      ],
+      "smirks": "[c:1][Br]>>[c:1][Cl]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "Clc1ccc2ccccc2c1"
+        ]
+      ],
+      "id": "aromatic_halogen_exchange_bromonaphthalene",
+      "rdkit": [
+        [
+          "Clc1ccc2ccccc2c1"
+        ]
+      ],
+      "reactants": [
+        "Brc1ccc2ccccc2c1"
+      ],
+      "smirks": "[c:1][Br]>>[c:1][Cl]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CCCC"
+        ]
+      ],
+      "id": "alkene_hydrogenation_2_butene",
+      "rdkit": [
+        [
+          "CCCC"
+        ]
+      ],
+      "reactants": [
+        "CC=CC"
+      ],
+      "smirks": "[C:1]=[C:2]>>[C:1][C:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "C1CCCCC1"
+        ]
+      ],
+      "id": "alkene_hydrogenation_cyclohexene",
+      "rdkit": [
+        [
+          "C1CCCCC1"
+        ]
+      ],
+      "reactants": [
+        "C1=CCCCC1"
+      ],
+      "smirks": "[C:1]=[C:2]>>[C:1][C:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CCc1ccccc1"
+        ]
+      ],
+      "id": "alkene_hydrogenation_styrene",
+      "rdkit": [
+        [
+          "CCc1ccccc1"
+        ]
+      ],
+      "reactants": [
+        "C=Cc1ccccc1"
+      ],
+      "smirks": "[C:1]=[C:2]>>[C:1][C:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "C=CCC"
+        ]
+      ],
+      "id": "alkene_hydrogenation_diene",
+      "rdkit": [
+        [
+          "C=CCC"
+        ]
+      ],
+      "reactants": [
+        "C=CC=C"
+      ],
+      "smirks": "[C:1]=[C:2]>>[C:1][C:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "C",
+          "CO"
+        ]
+      ],
+      "id": "mapped_c_o_cleavage_methyl_ether",
+      "rdkit": [
+        [
+          "C",
+          "CO"
+        ]
+      ],
+      "reactants": [
+        "COC"
+      ],
+      "smirks": "[C:1]-[O:2]>>[C:1].[O:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CC",
+          "CCO"
+        ]
+      ],
+      "id": "mapped_c_o_cleavage_ethyl_ether",
+      "rdkit": [
+        [
+          "CC",
+          "CCO"
+        ]
+      ],
+      "reactants": [
+        "CCOCC"
+      ],
+      "smirks": "[C:1]-[O:2]>>[C:1].[O:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CC",
+          "Oc1ccccc1"
+        ]
+      ],
+      "id": "mapped_c_o_cleavage_phenetole",
+      "rdkit": [
+        [
+          "CC",
+          "Oc1ccccc1"
+        ]
+      ],
+      "reactants": [
+        "CCOc1ccccc1"
+      ],
+      "smirks": "[C:1]-[O:2]>>[C:1].[O:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "C=CC",
+          "CCO"
+        ],
+        [
+          "C=CCO",
+          "CC"
+        ]
+      ],
+      "id": "mapped_c_o_cleavage_allyl_ether",
+      "rdkit": [
+        [
+          "C=CC",
+          "CCO"
+        ],
+        [
+          "C=CCO",
+          "CC"
+        ]
+      ],
+      "reactants": [
+        "C=CCOCC"
+      ],
+      "smirks": "[C:1]-[O:2]>>[C:1].[O:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "C",
+          "N"
+        ]
+      ],
+      "id": "mapped_c_n_cleavage_methylamine",
+      "rdkit": [
+        [
+          "C",
+          "N"
+        ]
+      ],
+      "reactants": [
+        "CN"
+      ],
+      "smirks": "[N:1]-[C:2]>>[N:1].[C:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CC",
+          "CCN"
+        ]
+      ],
+      "id": "mapped_c_n_cleavage_diethylamine",
+      "rdkit": [
+        [
+          "CC",
+          "CCN"
+        ]
+      ],
+      "reactants": [
+        "CCNCC"
+      ],
+      "smirks": "[N:1]-[C:2]>>[N:1].[C:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "C",
+          "Nc1ccccc1"
+        ]
+      ],
+      "id": "mapped_c_n_cleavage_aniline",
+      "rdkit": [
+        [
+          "C",
+          "Nc1ccccc1"
+        ]
+      ],
+      "reactants": [
+        "CNc1ccccc1"
+      ],
+      "smirks": "[N:1]-[C:2]>>[N:1].[C:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "C=CC",
+          "N"
+        ]
+      ],
+      "id": "mapped_c_n_cleavage_allylamine",
+      "rdkit": [
+        [
+          "C=CC",
+          "N"
+        ]
+      ],
+      "reactants": [
+        "C=CCN"
+      ],
+      "smirks": "[N:1]-[C:2]>>[N:1].[C:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CNC(C)=O"
+        ]
+      ],
+      "id": "amide_formation_methylamine",
+      "rdkit": [
+        [
+          "CNC(C)=O"
+        ]
+      ],
+      "reactants": [
+        "CC(=O)Cl",
+        "CN"
+      ],
+      "smirks": "[C:1](=[O:2])Cl.[N:3]>>[C:1](=[O:2])[N:3]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CCNC(C)=O"
+        ]
+      ],
+      "id": "amide_formation_ethylamine",
+      "rdkit": [
+        [
+          "CCNC(C)=O"
+        ]
+      ],
+      "reactants": [
+        "CC(=O)Cl",
+        "CCN"
+      ],
+      "smirks": "[C:1](=[O:2])Cl.[N:3]>>[C:1](=[O:2])[N:3]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CC(=O)Nc1ccccc1"
+        ]
+      ],
+      "id": "amide_formation_aniline",
+      "rdkit": [
+        [
+          "CC(=O)Nc1ccccc1"
+        ]
+      ],
+      "reactants": [
+        "CC(=O)Cl",
+        "Nc1ccccc1"
+      ],
+      "smirks": "[C:1](=[O:2])Cl.[N:3]>>[C:1](=[O:2])[N:3]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CNC(=O)c1ccccc1"
+        ]
+      ],
+      "id": "amide_formation_benzoyl_methylamine",
+      "rdkit": [
+        [
+          "CNC(=O)c1ccccc1"
+        ]
+      ],
+      "reactants": [
+        "O=C(Cl)c1ccccc1",
+        "CN"
+      ],
+      "smirks": "[C:1](=[O:2])Cl.[N:3]>>[C:1](=[O:2])[N:3]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CC=O"
+        ]
+      ],
+      "id": "alcohol_oxidation_ethanol",
+      "rdkit": [
+        [
+          "CC=O"
+        ]
+      ],
+      "reactants": [
+        "CCO"
+      ],
+      "smirks": "[CH2:1][OH:2]>>[CH:1]=[O:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CCC=O"
+        ]
+      ],
+      "id": "alcohol_oxidation_1_propanol",
+      "rdkit": [
+        [
+          "CCC=O"
+        ]
+      ],
+      "reactants": [
+        "CCCO"
+      ],
+      "smirks": "[CH2:1][OH:2]>>[CH:1]=[O:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "O=Cc1ccccc1"
+        ]
+      ],
+      "id": "alcohol_oxidation_benzyl_alcohol",
+      "rdkit": [
+        [
+          "O=Cc1ccccc1"
+        ]
+      ],
+      "reactants": [
+        "OCC1=CC=CC=C1"
+      ],
+      "smirks": "[CH2:1][OH:2]>>[CH:1]=[O:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CC(C)C=O"
+        ]
+      ],
+      "id": "alcohol_oxidation_2_methyl_1_propanol",
+      "rdkit": [
+        [
+          "CC(C)C=O"
+        ]
+      ],
+      "reactants": [
+        "CC(C)CO"
+      ],
+      "smirks": "[CH2:1][OH:2]>>[CH:1]=[O:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CNS(C)(=O)=O"
+        ]
+      ],
+      "id": "sulfonamide_formation_methylamine",
+      "rdkit": [
+        [
+          "CNS(C)(=O)=O"
+        ]
+      ],
+      "reactants": [
+        "CS(=O)(=O)Cl",
+        "CN"
+      ],
+      "smirks": "[S:1](=[O:2])(=[O:3])Cl.[N:4]>>[S:1](=[O:2])(=[O:3])[N:4]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CCNS(C)(=O)=O"
+        ]
+      ],
+      "id": "sulfonamide_formation_ethylamine",
+      "rdkit": [
+        [
+          "CCNS(C)(=O)=O"
+        ]
+      ],
+      "reactants": [
+        "CS(=O)(=O)Cl",
+        "CCN"
+      ],
+      "smirks": "[S:1](=[O:2])(=[O:3])Cl.[N:4]>>[S:1](=[O:2])(=[O:3])[N:4]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CS(=O)(=O)Nc1ccccc1"
+        ]
+      ],
+      "id": "sulfonamide_formation_aniline",
+      "rdkit": [
+        [
+          "CS(=O)(=O)Nc1ccccc1"
+        ]
+      ],
+      "reactants": [
+        "CS(=O)(=O)Cl",
+        "Nc1ccccc1"
+      ],
+      "smirks": "[S:1](=[O:2])(=[O:3])Cl.[N:4]>>[S:1](=[O:2])(=[O:3])[N:4]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CNS(=O)(=O)c1ccccc1"
+        ]
+      ],
+      "id": "sulfonamide_formation_benzenesulfonyl",
+      "rdkit": [
+        [
+          "CNS(=O)(=O)c1ccccc1"
+        ]
+      ],
+      "reactants": [
+        "O=S(=O)(Cl)c1ccccc1",
+        "CN"
+      ],
+      "smirks": "[S:1](=[O:2])(=[O:3])Cl.[N:4]>>[S:1](=[O:2])(=[O:3])[N:4]"
+    },
+    {
+      "agree": true,
+      "chematic": [],
+      "id": "no_match_carbonyl_on_alkane",
+      "rdkit": [],
+      "reactants": [
+        "CCCC"
+      ],
+      "smirks": "[C:1]=[O:2]>>[C:1]-[O:2]"
+    },
+    {
+      "agree": true,
+      "chematic": [],
+      "id": "no_match_aromatic_exchange_on_alkane",
+      "rdkit": [],
+      "reactants": [
+        "CCBr"
+      ],
+      "smirks": "[c:1][Br]>>[c:1][Cl]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "C[C@H](N)C(=O)O"
+        ]
+      ],
+      "id": "stereo_identity_l_alanine",
+      "rdkit": [
+        [
+          "C[C@H](N)C(=O)O"
+        ]
+      ],
+      "reactants": [
+        "N[C@@H](C)C(=O)O"
+      ],
+      "smirks": "[N:1][C@@H:2](C)C(=O)O>>[N:1][C@@H:2](C)C(=O)O"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CCCC"
+        ]
+      ],
+      "id": "stereo_e_alkene",
+      "rdkit": [
+        [
+          "CCCC"
+        ]
+      ],
+      "reactants": [
+        "C/C=C/C"
+      ],
+      "smirks": "[C:1]/[C:2]=[C:3]/[C:4]>>[C:1][C:2][C:3][C:4]"
+    },
+    {
+      "agree": true,
+      "chematic": [
+        [
+          "CCCC"
+        ]
+      ],
+      "id": "stereo_z_alkene",
+      "rdkit": [
+        [
+          "CCCC"
+        ]
+      ],
+      "reactants": [
+        "C/C=C\\C"
+      ],
+      "smirks": "[C:1]/[C:2]=[C:3]\\[C:4]>>[C:1][C:2][C:3][C:4]"
+    }
+  ],
+  "not_claimed": [
+    "reaction yield",
+    "selectivity",
+    "broad reaction precision/recall",
+    "Indigo equivalence"
+  ],
+  "profile": "bounded_reaction_product_structure_parity",
+  "rdkit_version": "2025.09.3",
+  "schema_version": 1
+}

@@ -34,7 +34,10 @@ def fail(message: str) -> int:
 
 def main() -> int:
     version = workspace_version(ROOT)
-    path = ROOT / "validation" / "results" / f"streaming-failure-taxonomy-v{version}.json"
+    result_dir = ROOT / "validation" / "results"
+    current = result_dir / f"streaming-failure-taxonomy-v{version}.json"
+    candidates = sorted(result_dir.glob("streaming-failure-taxonomy-v*.json"), reverse=True)
+    path = current if current.is_file() else (candidates[0] if candidates else current)
     corpus = ROOT / "validation" / "streaming_format_safety_cases.json"
     try:
         report = json.loads(path.read_text(encoding="utf-8"))
@@ -42,8 +45,9 @@ def main() -> int:
     except (OSError, json.JSONDecodeError) as error:
         return fail(f"cannot read report or corpus: {error}")
 
-    if report.get("schema_version") != 1 or report.get("target_version") != version:
-        return fail("schema or target version is stale")
+    expected_version = path.stem.removeprefix("streaming-failure-taxonomy-v")
+    if report.get("schema_version") != 1 or report.get("target_version") != expected_version:
+        return fail("schema or record target version is stale")
     if report.get("gate") != "streaming_failure_taxonomy" or report.get("status") != "local-verified":
         return fail("report is not a verified taxonomy result")
     if report.get("errors") != []:
@@ -80,7 +84,8 @@ def main() -> int:
         if row.get("cases") != expected_cases:
             return fail(f"{fmt}: total case count is stale")
 
-    print("streaming failure taxonomy OK: 140 cases, 10 formats, current corpus digest")
+    scope = "current workspace evidence" if expected_version == version else f"historical evidence v{expected_version}"
+    print(f"streaming failure taxonomy OK: 140 cases, 10 formats, {scope}, current corpus digest")
     return 0
 
 

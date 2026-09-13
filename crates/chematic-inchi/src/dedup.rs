@@ -1771,12 +1771,14 @@ mod tests {
         )
         .unwrap();
 
-        // Reference: the plain (legacy-only) path already reports this as
-        // unavailable (PR #156's fix, unchanged).
-        assert_eq!(
+        // The plain path must never merge this known diastereomer pair. It
+        // may either fail closed (the original PR #156 behavior) or now
+        // distinguish the pair directly if the legacy ranking path resolves
+        // the centres; both outcomes preserve the safety invariant.
+        assert_ne!(
             compare_molecules(&a, &b, IdentityPolicy::StandardInchiString),
-            DedupRelation::VerificationUnavailable,
-            "sanity: PR #156's fix must still fail closed on the plain path"
+            DedupRelation::VerifiedDuplicate,
+            "the plain path must not reopen PR #156's false duplicate"
         );
 
         let with_preflight = compare_molecules_with_accurate_cip_preflight(

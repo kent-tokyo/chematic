@@ -1,0 +1,39 @@
+{
+  "status": "candidate_diagnostic",
+  "comparator": "RDKit 2025.09.3",
+  "operation": "rdkit_compat_attributes",
+  "corpus": "validation/rdkit_accuracy_split_v2/exposed_holdout.smi",
+  "rows": 7737,
+  "parsed": 7737,
+  "parse_failures": 0,
+  "unsupported_values": 0,
+  "strict_tolerance": {
+    "molecular_weight": 1e-6,
+    "hba": 0,
+    "hbd": 0,
+    "tpsa": 1e-6,
+    "logp": 1e-6,
+    "molar_refractivity": 1e-6,
+    "fsp3": 1e-6,
+    "aromatic_ring_count": 0
+  },
+  "strict_matches": {
+    "molecular_weight": 7737,
+    "hba": 7737,
+    "hbd": 7737,
+    "tpsa": 7737,
+    "logp": 7737,
+    "molar_refractivity": 7737,
+    "fsp3": 7737,
+    "aromatic_ring_count": 7737
+  },
+  "max_abs_error": {
+    "molecular_weight": 3.989953256677836e-9,
+    "tpsa": 5.684341886080802e-14,
+    "logp": 1.1013412404281553e-13,
+    "molar_refractivity": 2.7284841053187847e-12,
+    "fsp3": 0,
+    "aromatic_ring_count": 0
+  },
+  "caveat": "This is a same-input exposed binding diagnostic, not an independent chemical-correctness adjudication or sealed unused evaluation."
+}

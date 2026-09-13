@@ -1,0 +1,33 @@
+{
+  "issue": 227,
+  "target_version": "1.0.13",
+  "measured_at": "2026-09-13",
+  "tier": "A",
+  "corpus_total": 65,
+  "arm": "chematic_pipeline_v2_mmff94_strict",
+  "harness": "pipeline_v2_vs_rdkit_dump with SCHEMATIC_MMFF94_MAX_ITERATIONS",
+  "production_default_iterations": 200,
+  "sweep": [
+    {
+      "max_iterations": 200,
+      "status_counts": {"success": 65, "timeout": 0},
+      "finite": 65,
+      "sound": 65,
+      "gross_clashes": 0,
+      "converged": 42,
+      "not_converged": 23
+    },
+    {
+      "max_iterations": 500,
+      "status_counts": {"success": 64, "timeout": 1},
+      "finite_success": 64,
+      "sound_success": 64,
+      "gross_clashes_success": 0,
+      "converged_success": 57,
+      "not_converged_success": 7,
+      "timeout_molecules": ["atorvastatin_fragment"]
+    }
+  ],
+  "interpretation": "Raising the diagnostic budget improves convergence among completed rows from 42/65 to 57/64, but introduces a timeout and does not establish production convergence parity. No production default was changed.",
+  "status": "candidate_diagnostic_not_release_gate"
+}

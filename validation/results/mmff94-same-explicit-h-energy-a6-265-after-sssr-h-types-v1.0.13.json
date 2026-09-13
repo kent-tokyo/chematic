@@ -1,0 +1,31 @@
+{
+  "status": "candidate_diagnostic_not_release_gate",
+  "protocol": "mmff94-same-explicit-h-coordinates",
+  "comparator": "RDKit MMFF94",
+  "seed": 20260913,
+  "rows": 265,
+  "status_counts": {
+    "declared_unsupported": 1,
+    "embed_failure": 2,
+    "ok": 262
+  },
+  "comparable_rows": 262,
+  "median_abs_delta_kcal_mol": 0.22566759199074227,
+  "p90_abs_delta_kcal_mol": 1.2189704464828424,
+  "max_abs_delta_kcal_mol": 13.682624624844891,
+  "within_1_kcal_mol": 224,
+  "within_5_kcal_mol": 259,
+  "change_from_previous_candidate": {
+    "previous_artifact": "validation/results/mmff94-same-explicit-h-energy-a6-265-after-vdw-h-types-v1.0.13.json",
+    "fixes": [
+      "compute SymmSSSR on a heavy-atom ring view and map indices back",
+      "ignore explicit-H bonds in SSSR canonical rank and kekulize aromatic matching",
+      "classify delocalized amine N-H as numeric type 28"
+    ],
+    "median_abs_delta_kcal_mol": "0.25008414780406696 -> 0.22566759199074227",
+    "p90_abs_delta_kcal_mol": "9.239644511229784 -> 1.2189704464828424",
+    "max_abs_delta_kcal_mol": "32.6704880864456 -> 13.682624624844891",
+    "within_5_kcal_mol": "213/262 -> 259/262"
+  },
+  "caveat": "RDKit generated the shared explicit-H coordinates; this measures force-field energy parity, not conformer quality or minimization convergence. The artifact is diagnostic evidence, not a release gate."
+}

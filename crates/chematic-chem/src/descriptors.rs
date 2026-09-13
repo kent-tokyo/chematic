@@ -62,27 +62,36 @@ fn is_atom_in_ring(mol: &Molecule, idx: AtomIdx) -> bool {
     false
 }
 
-/// True if `idx` (O atom) is an aromatic oxide bridge: in a ring, bonded to an
-/// aromatic C AND to a sp2 C via a single bond (C=C elsewhere, not C=O).
-/// RDKit perceives such O as aromatic ([o] type). Used for TPSA and LogP.
+/// True if `idx` (O atom) is an aromatic oxide bridge: a neutral O in a
+/// five-membered ring with two carbon neighbors, either both aromatic or with
+/// one aromatic neighbor and a vinylic carbon partner.  The ring-size and
+/// partner checks avoid promoting ordinary six-membered cyclic ethers merely
+/// because one neighbor is aromatic. Used for TPSA and Crippen terms.
 fn is_aromatic_oxide_bridge(mol: &Molecule, idx: AtomIdx) -> bool {
-    let has_aromatic_c_nb = mol.neighbors(idx).any(|(nb, _)| {
-        let a = mol.atom(nb);
-        a.aromatic && a.element.atomic_number() == 6
-    });
-    if !has_aromatic_c_nb {
+    let neighbors: Vec<_> = mol.neighbors(idx).collect();
+    if neighbors.len() != 2
+        || neighbors.iter().any(|(nb, bidx)| {
+            mol.bond(*bidx).order == BondOrder::Double || mol.atom(*nb).element.atomic_number() != 6
+        })
+    {
         return false;
     }
-    let has_vinyl_c_nb = mol.neighbors(idx).any(|(nb, bidx)| {
-        mol.bond(bidx).order != BondOrder::Double
-            && mol.atom(nb).element.atomic_number() == 6
-            && mol.neighbors(nb).any(|(nb2, b2)| {
-                nb2 != idx
-                    && mol.bond(b2).order == BondOrder::Double
-                    && mol.atom(nb2).element.atomic_number() == 6
-            })
+    let aromatic_neighbors = neighbors
+        .iter()
+        .filter(|(nb, _)| mol.atom(*nb).aromatic)
+        .count();
+    let sp2_carbon_neighbor = neighbors.iter().any(|(nb, _)| {
+        mol.neighbors(*nb).any(|(other, bidx)| {
+            other != idx
+                && mol.bond(bidx).order == BondOrder::Double
+                && mol.atom(other).element.atomic_number() == 6
+        })
     });
-    has_vinyl_c_nb && is_atom_in_ring(mol, idx)
+    (aromatic_neighbors == 2 || (aromatic_neighbors == 1 && sp2_carbon_neighbor))
+        && find_sssr(mol)
+            .rings()
+            .iter()
+            .any(|ring| ring.len() == 5 && ring.contains(&idx))
 }
 
 /// Count double bonds from `idx` to neighbors whose atomic number equals `target_an`.
@@ -283,6 +292,47 @@ fn avg_mass(element: Element) -> f64 {
         .unwrap_or(an as f64)
 }
 
+/// Average atomic mass used by the pinned RDKit compatibility profile.
+///
+/// The native table intentionally retains its historical values.  RDKit's
+/// periodic table differs for B, S, and Se, so compatibility callers must opt
+/// into this profile instead of silently changing the native descriptor.
+fn rdkit_avg_mass(element: Element) -> f64 {
+    match element.atomic_number() {
+        5 => 10.812,  // B; RDKit PeriodicTable
+        16 => 32.067, // S; RDKit PeriodicTable
+        34 => 78.960, // Se; RDKit PeriodicTable
+        _ => avg_mass(element),
+    }
+}
+
+/// Explicit isotope masses used by RDKit's average molecular-weight API.
+///
+/// The compatibility profile is intentionally finite: an isotope not in this
+/// table remains fail-closed instead of being approximated by its mass number.
+/// Values are the nuclide masses in daltons; the common labels cover the
+/// isotope-bearing molecules in the current compatibility corpus.
+fn rdkit_isotope_mass(element: Element, isotope: u16) -> Option<f64> {
+    let mass = match (element.atomic_number(), isotope) {
+        (1, 2) => 2.01410177812,
+        (1, 3) => 3.01604928199,
+        (6, 12) => 12.0,
+        (6, 13) => 13.00335483507,
+        (6, 14) => 14.0032419884,
+        (7, 15) => 15.00010889888,
+        (8, 17) => 16.9991317565,
+        (8, 18) => 17.99915961286,
+        (9, 18) => 18.0009373,
+        (15, 32) => 31.973907643,
+        (16, 33) => 32.9714589098,
+        (16, 34) => 33.967867004,
+        (17, 37) => 36.965902602,
+        (35, 81) => 80.9162897,
+        _ => return None,
+    };
+    Some(mass)
+}
+
 /// Monoisotopic (most-abundant-isotope) mass table (Da), indexed the same
 /// way as [`AVG_MASS_TABLE`] -- see its doc comment for provenance, the bug
 /// this replaced, and why the pre-existing ~12 covered elements keep their
@@ -438,14 +488,41 @@ pub fn molecular_weight(mol: &Molecule) -> f64 {
     mw
 }
 
+/// Compute molecular weight with the pinned RDKit average-mass convention.
+///
+/// This is deliberately separate from [`molecular_weight`].  It matches the
+/// RDKit periodic-table values for the supported unlabelled-atom profile while
+/// retaining chematic's native defaults for existing callers.  Explicit
+/// isotope-labelled atoms are not silently approximated by this profile and
+/// Explicit isotopes use the finite RDKit-compatible nuclide table; unknown
+/// isotope labels remain fail-closed rather than being approximated.
+pub fn rdkit_molecular_weight(mol: &Molecule) -> f64 {
+    let mut mw = 0.0f64;
+    for (idx, atom) in mol.atoms() {
+        if atom.wildcard {
+            continue;
+        }
+        mw += match atom.isotope {
+            Some(isotope) => match rdkit_isotope_mass(atom.element, isotope) {
+                Some(mass) => mass,
+                None => return f64::NAN,
+            },
+            None => rdkit_avg_mass(atom.element),
+        };
+        mw += implicit_hcount(mol, idx) as f64 * 1.008;
+    }
+    mw
+}
+
 // ---------------------------------------------------------------------------
 // 2. Exact mass (monoisotopic)
 // ---------------------------------------------------------------------------
 
 /// Compute the monoisotopic (exact) mass (Da).
 ///
-/// Uses the most-abundant isotope for each element, or the atom's explicit
-/// isotope label (as an integer approximation) when set.
+/// Uses the most-abundant isotope for each element, or the explicit nuclide
+/// mass when the atom carries a supported isotope label.  Unknown isotope
+/// labels return `NaN` rather than treating a mass number as a physical mass.
 /// Implicit hydrogens use the ¹H monoisotopic mass (1.00783).
 pub fn exact_mass(mol: &Molecule) -> f64 {
     let mut mass = 0.0f64;
@@ -454,7 +531,10 @@ pub fn exact_mass(mol: &Molecule) -> f64 {
             continue;
         }
         let m = match atom.isotope {
-            Some(iso) => iso as f64,
+            Some(iso) => match rdkit_isotope_mass(atom.element, iso) {
+                Some(mass) => mass,
+                None => return f64::NAN,
+            },
             None => mono_mass(atom.element),
         };
         mass += m;
@@ -509,7 +589,11 @@ pub fn hbd_count(mol: &Molecule) -> usize {
 /// - O with H bonded to a C=O carbon (carboxylic/ester OH).
 /// - O with H bonded to oxidized S with S=O (sulfonic/sulfonamide acid OH).
 /// - Oxidized S (degree > 2 or has S=O bonds): lone pair engaged in S=O resonance.
-fn hba_count_from_set(mol: &Molecule, ring_bonds: &FxHashSet<BondIdx>) -> usize {
+fn hba_count_from_set(
+    mol: &Molecule,
+    ring_bonds: &FxHashSet<BondIdx>,
+    rdkit_aromatic_n: bool,
+) -> usize {
     mol.atoms()
         .filter(|(idx, atom)| {
             let an = atom.element.atomic_number();
@@ -525,12 +609,18 @@ fn hba_count_from_set(mol: &Molecule, ring_bonds: &FxHashSet<BondIdx>) -> usize 
                     //   h > 0 → [nH] pyrrole-type: lone pair participates in the
                     //           aromatic pi system.
                     // Only pyridine-like aromatic nitrogen is an acceptor.
-                    // An aromatic N with an exocyclic substituent (degree 3)
-                    // is an imide/pyrrole-like nitrogen whose lone pair is
-                    // part of the conjugated system.  The older rule treated
-                    // every substituted aromatic [n] as an acceptor, which
-                    // over-counted caffeine (6 instead of RDKit's Ertl HBA=3).
-                    h == 0 && mol.degree(*idx) == 2
+                    // The native profile keeps the conservative degree-2
+                    // restriction.  RDKit's Ertl SMARTS also accepts a
+                    // neutral, substituted aromatic N with no H (for example
+                    // the glycosidic N in purines), so the compatibility
+                    // profile deliberately widens this case.
+                    // Bracket/closure parsing can retain a conservative
+                    // implicit-H estimate for substituted aromatic N.  A
+                    // degree-3 aromatic N cannot carry that H in a valid
+                    // valence state, so the RDKit profile keys this case off
+                    // degree rather than the estimate.
+                    (h == 0 || (rdkit_aromatic_n && mol.degree(*idx) >= 3))
+                        && (mol.degree(*idx) == 2 || rdkit_aromatic_n)
                 } else {
                     // Non-aromatic N: must have formal valence 3 ([N;v3] in SMARTS);
                     // this excludes radical N (C[N]C, valence 2) and unusual species.
@@ -605,7 +695,15 @@ fn hba_count_from_set(mol: &Molecule, ring_bonds: &FxHashSet<BondIdx>) -> usize 
 }
 
 pub fn hba_count(mol: &Molecule) -> usize {
-    hba_count_from_set(mol, &ring_bond_indices(mol))
+    hba_count_from_set(mol, &ring_bond_indices(mol), false)
+}
+
+/// Count hydrogen-bond acceptors using the pinned RDKit compatibility rule.
+/// This remains a named opt-in API even though the current rule is identical
+/// to the native Ertl implementation; the separate name preserves the profile
+/// boundary for future version-pinned changes.
+pub fn rdkit_hba_count(mol: &Molecule) -> usize {
+    hba_count_from_set(mol, &ring_bond_indices(mol), true)
 }
 
 /// True if any heavy-atom neighbor of `idx` itself carries a double bond to
@@ -840,7 +938,9 @@ fn is_carbonyl_hetero_bond(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
                 mol.atom(nb).element.atomic_number() == 6 && has_double_bond_to(mol, nb, 8)
             })
         };
-        return adj_carbonyl(a) && adj_carbonyl(b);
+        return adj_carbonyl(a)
+            && adj_carbonyl(b)
+            && !(is_atom_in_ring(mol, a) && is_atom_in_ring(mol, b));
     }
 
     let c_idx = match (an_a, an_b) {
@@ -911,7 +1011,13 @@ fn tpsa_nitrogen(
                     });
             if has_oxo && has_o_minus {
                 43.14 // nitro: N+(=O)[O-]
-            } else if has_double_bond_to(mol, idx, 7) {
+            } else if has_double_bond_to(mol, idx, 7) && has_o_minus {
+                3.01 // N+–O-–N environment (not the central azide N+ type)
+            } else if has_double_bond_to(mol, idx, 7)
+                && !mol.neighbors(idx).any(|(nb, _)| {
+                    mol.atom(nb).element.atomic_number() == 8 && mol.atom(nb).charge == -1
+                })
+            {
                 14.10 // azide central N+: R-N=[N+]=[N-]
             } else if has_double_bond_to(mol, idx, 6) {
                 3.01 // nitrone: C=N+(R)-O- (exocyclic double bond to C)
@@ -963,7 +1069,8 @@ fn tpsa_nitrogen(
                     ring_nbs.len() == 2 && mol.bond_between(ring_nbs[0], ring_nbs[1]).is_some();
                 let has_external_ps = mol.neighbors(idx).any(|(nb, bidx)| {
                     let an = mol.atom(nb).element.atomic_number();
-                    (an == 15 || an == 16) && !ring_bonds.contains(&bidx)
+                    ((an == 15 || an == 16) || (an == 6 && has_double_bond_to(mol, nb, 16)))
+                        && !ring_bonds.contains(&bidx)
                 });
                 if in_3ring && has_external_ps {
                     3.01
@@ -1012,10 +1119,20 @@ fn tpsa_oxygen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i
             Some((7, _)) => 0.0,
             // Se=O oxygens (seleninic/selenious acid) carry same contribution as C=O
             Some((34, _)) => 17.07,
+            // For P-H phosphonates RDKit assigns P=O to the oxygen side;
+            // the phosphorus atom itself contributes zero.
+            Some((15, _)) => {
+                let p_idx = dbl_nb_pair.unwrap().0;
+                if implicit_hcount(mol, p_idx) > 0 {
+                    17.07
+                } else {
+                    0.0
+                }
+            }
             // S=O: if S also has N=S double bond (sulfonimidyl) → 17.07; else S handles it → 0.0
             Some((16, _)) => {
                 let s_idx = dbl_nb_pair.unwrap().0;
-                if has_double_bond_to(mol, s_idx, 7) {
+                if has_double_bond_to(mol, s_idx, 7) || has_double_bond_to(mol, s_idx, 16) {
                     17.07
                 } else {
                     0.0
@@ -1040,9 +1157,23 @@ fn tpsa_oxygen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i
 }
 
 fn tpsa_sulfur(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i8) -> f64 {
-    // [S+][O-] zwitterionic sulfoxide: RDKit assigns 0 to S+, 23.06 to O-
-    if charge > 0 {
+    // Charged sulfur environments do not contribute to RDKit TPSA.
+    if charge != 0 {
         return 0.0;
+    }
+    // In a P=S group RDKit assigns the combined 41.90 contribution to the
+    // phosphorus-side environment; the sulfur atom itself contributes zero.
+    if has_double_bond_to(mol, idx, 15) {
+        return 0.0;
+    }
+    // Hypervalent S(=O)(=S) environments use a shared RDKit contribution:
+    // the central sulfur is 40.47 and the terminal doubly bonded sulfur is 0.
+    if has_double_bond_to(mol, idx, 16) {
+        return if has_double_bond_to(mol, idx, 8) {
+            40.47
+        } else {
+            0.0
+        };
     }
     if is_aromatic {
         28.24
@@ -1074,7 +1205,13 @@ fn tpsa_sulfur(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i
 
 fn tpsa_phosphorus(mol: &Molecule, idx: AtomIdx, h: u8) -> f64 {
     if has_double_bond_to(mol, idx, 8) {
-        26.88 // phosphate/phosphonate: P=O
+        if h > 0 {
+            23.47 // P-H phosphonate: reduced phosphorus contribution
+        } else {
+            26.88 // phosphate/phosphonate: P=O
+        }
+    } else if has_double_bond_to(mol, idx, 16) {
+        41.90 // phosphorothioate: P=S (S is counted as zero)
     } else if has_double_bond_to(mol, idx, 7) {
         9.81 // phosphazene: P=N (cyclic or linear)
     } else if h > 0 {
@@ -1348,10 +1485,10 @@ pub fn logp_crippen_per_atom(mol: &Molecule) -> Vec<f64> {
                 .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 1)
                 .count() as u8;
             let h_count = h_count_impl + h_count_expl;
-            // Aromatic oxide bridge: O in a ring bonded to aromatic C AND sp2 C (C=C).
+            // Aromatic oxide bridge: use the bounded five-membered-ring rule
+            // above rather than promoting an ordinary cyclic ether.
             // RDKit perceives this as [o] type (logp=0.1552); plain SMARTS gives [O](a) (-0.4195).
             let heavy = if atom.element.atomic_number() == 8
-                && !atom.aromatic
                 && h_count == 0
                 && atom.charge == 0
                 && is_aromatic_oxide_bridge(mol, idx)
@@ -1468,8 +1605,10 @@ pub fn lipinski_passes(mol: &Molecule) -> bool {
 
 /// Fraction of sp3 carbons: sp3_C / total_C.
 ///
-/// sp3 carbon is defined as a non-aromatic carbon that has no double or triple
-/// bond to any neighbour (i.e. hybridisation is effectively sp3).
+/// sp3 carbon is defined as a neutral, non-aromatic carbon with a complete
+/// valence of four and no double or triple bond to any neighbour. The
+/// valence check is important for bracket atoms such as [13C]: RDKit does
+/// not count zero-valence carbon radicals as CSP3.
 /// Returns 0.0 if the molecule contains no carbon atoms.
 pub fn fsp3(mol: &Molecule) -> f64 {
     let c_total = mol
@@ -1482,11 +1621,19 @@ pub fn fsp3(mol: &Molecule) -> f64 {
     let sp3 = mol
         .atoms()
         .filter(|(idx, a)| {
-            a.element.atomic_number() == 6
-                && !a.aromatic
-                && mol.neighbors(*idx).all(|(_, bidx)| {
-                    !matches!(mol.bond(bidx).order, BondOrder::Double | BondOrder::Triple)
-                })
+            if a.element.atomic_number() != 6 || a.aromatic || a.charge != 0 {
+                return false;
+            }
+            if mol.neighbors(*idx).any(|(_, bidx)| {
+                matches!(mol.bond(bidx).order, BondOrder::Double | BondOrder::Triple)
+            }) {
+                return false;
+            }
+            let bond_order_sum: u8 = mol
+                .neighbors(*idx)
+                .map(|(_, bidx)| mol.bond(bidx).order.order_int())
+                .sum();
+            mol.implicit_hydrogen_count(*idx) + bond_order_sum == 4
         })
         .count();
     sp3 as f64 / c_total as f64
@@ -1503,6 +1650,12 @@ pub fn fsp3(mol: &Molecule) -> f64 {
 pub fn aromatic_ring_count(mol: &Molecule) -> usize {
     use chematic_perception::count_aromatic_rings;
     count_aromatic_rings(mol)
+}
+
+/// Count aromatic rings after applying the opt-in RDKit aromaticity model.
+/// Native aromatic flags and native ring counts are left untouched.
+pub fn rdkit_aromatic_ring_count(mol: &Molecule) -> usize {
+    chematic_perception::aromatic_ring_list(mol).len()
 }
 
 // ---------------------------------------------------------------------------
@@ -2001,7 +2154,7 @@ pub fn ring_bundle(mol: &Molecule) -> RingBundle {
     let aromatic_ring_count = aromatic_ring_list(mol).len();
 
     let rotatable_bond_count = rotatable_bond_count_from_set(mol, &ring_bonds);
-    let hba_count = hba_count_from_set(mol, &ring_bonds);
+    let hba_count = hba_count_from_set(mol, &ring_bonds, false);
     let hac = heavy_atom_count(mol);
     let fraction_rotatable_bonds = if hac == 0 {
         0.0
@@ -2065,6 +2218,15 @@ pub fn ring_bundle(mol: &Molecule) -> RingBundle {
 /// for their four substituents are all distinct, regardless of whether @/@@ is
 /// specified in the input SMILES.
 pub fn num_stereocenters(mol: &Molecule) -> usize {
+    potential_stereocenter_indices(mol).len()
+}
+
+/// Return the atom indices of potential tetrahedral stereocenters.
+///
+/// This is the atom-level counterpart of [`num_stereocenters`].  Keeping the
+/// selected atoms available prevents a count-only comparison from hiding a
+/// false positive and false negative that cancel each other out.
+pub fn potential_stereocenter_indices(mol: &Molecule) -> Vec<AtomIdx> {
     use chematic_core::CipCode;
     use std::collections::HashMap;
 
@@ -2078,30 +2240,21 @@ pub fn num_stereocenters(mol: &Molecule) -> usize {
     // Pass 2: count with Rule 5 tie-breaking for graph-tied atoms.
     mol.atoms()
         .filter(|(idx, _)| crate::cip::is_potential_stereocenter_rule5(mol, *idx, &provisional))
-        .count()
+        .map(|(idx, _)| idx)
+        .collect()
 }
 
 /// Number of unspecified (undefined) stereocenters.
 ///
-/// Counts sp3 carbons with exactly 4 substituents whose chirality is not
-/// specified (no @/@@ in the input SMILES).
+/// Counts potential tetrahedral stereocenters whose chirality is not specified
+/// (no @/@@ in the input SMILES). Reuse the same Rule-5-aware potential-center
+/// calculation as [`num_stereocenters`] so ordinary CH2/CH3 atoms with
+/// repeated substituents are not counted as stereocenters.
 pub fn num_unspecified_stereocenters(mol: &Molecule) -> usize {
     use chematic_core::Chirality;
-    mol.atoms()
-        .filter(|(idx, atom)| {
-            if atom.element.atomic_number() != 6 || atom.aromatic {
-                return false;
-            }
-            if atom.chirality != Chirality::None {
-                return false;
-            }
-            let degree = mol.degree(*idx);
-            let total = degree + implicit_hcount(mol, *idx) as usize;
-            total == 4
-                && mol.neighbors(*idx).all(|(_, bidx)| {
-                    !matches!(mol.bond(bidx).order, BondOrder::Double | BondOrder::Triple)
-                })
-        })
+    potential_stereocenter_indices(mol)
+        .into_iter()
+        .filter(|idx| mol.atom(*idx).chirality == Chirality::None)
         .count()
 }
 
@@ -2690,6 +2843,20 @@ fn topo_dist_usize(mol: &Molecule) -> Vec<Vec<usize>> {
         .collect()
 }
 
+/// Atom indices corresponding to the rows/columns returned by
+/// `topological_distance_matrix`.
+///
+/// The distance matrix is indexed by the compact heavy-atom list, not by raw
+/// `AtomIdx`. Keeping this mapping beside the conversion prevents descriptors
+/// from silently reading the wrong atom (or panicking) when explicit H/D/T
+/// atoms are present in the molecule.
+fn distance_heavy_atoms(mol: &Molecule) -> Vec<AtomIdx> {
+    mol.atoms()
+        .filter(|(_, atom)| atom.element != Element::H)
+        .map(|(idx, _)| idx)
+        .collect()
+}
+
 /// Compute AutoCorr2D descriptor (topological distance-based).
 ///
 /// Moreau-Broto self-correlation: for each lag k (1..=7),
@@ -2706,7 +2873,8 @@ pub fn autocorr_2d(mol: &Molecule) -> Vec<f64> {
 }
 
 fn autocorr_2d_with_dist(mol: &Molecule, dist: &[Vec<usize>]) -> Vec<f64> {
-    let n = mol.atom_count();
+    let heavy = distance_heavy_atoms(mol);
+    let n = heavy.len();
     let mut result = vec![0.0; 7];
 
     for lag in 1..=7 {
@@ -2714,8 +2882,8 @@ fn autocorr_2d_with_dist(mol: &Molecule, dist: &[Vec<usize>]) -> Vec<f64> {
         for (i, row) in dist.iter().enumerate().take(n) {
             for (j, &distance) in row.iter().enumerate().take(n).skip(i + 1) {
                 if distance == lag {
-                    let val_i = atomic_valence(mol, AtomIdx(i as u32));
-                    let val_j = atomic_valence(mol, AtomIdx(j as u32));
+                    let val_i = atomic_valence(mol, heavy[i]);
+                    let val_j = atomic_valence(mol, heavy[j]);
                     sum += val_i * val_j;
                 }
             }
@@ -2748,10 +2916,9 @@ pub fn moran_autocorr(mol: &Molecule) -> Vec<f64> {
 }
 
 fn moran_autocorr_with_dist(mol: &Molecule, dist: &[Vec<usize>]) -> Vec<f64> {
-    let n = mol.atom_count();
-    let vals: Vec<f64> = (0..n)
-        .map(|i| atomic_valence(mol, AtomIdx(i as u32)))
-        .collect();
+    let heavy = distance_heavy_atoms(mol);
+    let n = heavy.len();
+    let vals: Vec<f64> = heavy.iter().map(|&idx| atomic_valence(mol, idx)).collect();
     let mean = vals.iter().sum::<f64>() / n as f64;
     let denom: f64 = vals.iter().map(|&v| (v - mean).powi(2)).sum();
     if denom == 0.0 {
@@ -2794,10 +2961,9 @@ pub fn geary_autocorr(mol: &Molecule) -> Vec<f64> {
 }
 
 fn geary_autocorr_with_dist(mol: &Molecule, dist: &[Vec<usize>]) -> Vec<f64> {
-    let n = mol.atom_count();
-    let vals: Vec<f64> = (0..n)
-        .map(|i| atomic_valence(mol, AtomIdx(i as u32)))
-        .collect();
+    let heavy = distance_heavy_atoms(mol);
+    let n = heavy.len();
+    let vals: Vec<f64> = heavy.iter().map(|&idx| atomic_valence(mol, idx)).collect();
     let mean = vals.iter().sum::<f64>() / n as f64;
     let denom: f64 = vals.iter().map(|&v| (v - mean).powi(2)).sum();
     if denom == 0.0 {
@@ -2943,7 +3109,8 @@ fn balaban_distance_sum(adj: &[Vec<(usize, f64)>], start: usize, n: usize) -> f6
 /// Sums the reciprocals of path counts weighted by vertex degrees.
 /// Returns 0.0 for single-atom molecules.
 pub fn ipc(mol: &Molecule) -> f64 {
-    let n = mol.atom_count();
+    let heavy = distance_heavy_atoms(mol);
+    let n = heavy.len();
     if n < 2 {
         return 0.0;
     }
@@ -2955,8 +3122,8 @@ pub fn ipc(mol: &Molecule) -> f64 {
         for (j, &distance) in row.iter().enumerate().take(n).skip(i + 1) {
             let d = distance as f64;
             if d > 0.0 {
-                let deg_i = mol.degree(AtomIdx(i as u32)) as f64;
-                let deg_j = mol.degree(AtomIdx(j as u32)) as f64;
+                let deg_i = mol.degree(heavy[i]) as f64;
+                let deg_j = mol.degree(heavy[j]) as f64;
                 result += (deg_i * deg_j) / (d * d);
             }
         }
@@ -3737,6 +3904,69 @@ mod tests {
         );
     }
 
+    #[test]
+    fn rdkit_mw_uses_rdkit_periodic_table_without_changing_native_mw() {
+        let sulfur = mol("CS");
+        let selenium = mol("[Se]");
+        assert!(
+            approx(rdkit_molecular_weight(&sulfur), 48.110, 1e-12),
+            "rdkit profile = {}",
+            rdkit_molecular_weight(&sulfur)
+        );
+        assert!(
+            approx(molecular_weight(&sulfur), 48.108, 1e-12),
+            "native = {}",
+            molecular_weight(&sulfur)
+        );
+        assert!(approx(rdkit_molecular_weight(&selenium), 78.96, 1e-12));
+        assert!(approx(molecular_weight(&selenium), 78.971, 1e-12));
+    }
+
+    #[test]
+    fn rdkit_mw_supports_common_explicit_isotopes_and_rejects_unknown() {
+        let isotope = mol("[13C]");
+        assert!(approx(rdkit_molecular_weight(&isotope), 13.00335484, 1e-8));
+        let unknown = mol("[99C]");
+        assert!(rdkit_molecular_weight(&unknown).is_nan());
+    }
+
+    #[test]
+    fn rdkit_hba_profile_matches_rdkit_for_substituted_aromatic_n() {
+        let caffeine = mol("Cn1cnc2c1c(=O)n(c(=O)n2C)C");
+        assert_eq!(hba_count(&caffeine), 3);
+        assert_eq!(rdkit_hba_count(&caffeine), 6);
+    }
+
+    #[test]
+    fn rdkit_hba_minimal_reproduction_for_corpus_difference() {
+        let nucleoside = mol("Nc1nc(N)c2ncn(C3CC(O)C(O)C(CO)O3)c2n1");
+        assert_eq!(hba_count(&nucleoside), 9);
+        assert_eq!(rdkit_hba_count(&nucleoside), 10);
+    }
+
+    #[test]
+    fn rdkit_aromatic_ring_profile_uses_rdkit_aromaticity_without_changing_native() {
+        let fused = mol("Cn1c2nc(=O)[nH]c(=O)c-2nc2ccccc21");
+        assert_eq!(aromatic_ring_count(&fused), 3);
+        assert_eq!(rdkit_aromatic_ring_count(&fused), 1);
+    }
+
+    #[test]
+    fn rdkit_aromatic_ring_profile_recovers_cage_face_omitted_by_sssr() {
+        let cage = mol(
+            "COCCOCCOCCN1CC23C4=C5C6=C7c8c9c%10c%11c%12c%13c%14c(c2c2c%15c%16c%17c%18c%19c(c5c5c%20c%21c%22c%23c(c8C%22C65)c%10c5c%11c6c%13c8c(c%15%14)c%16c%10c%18c%11c(c%20%19)c%21c%13c%23c5c5c%13c%11c%10c8c65)C%17C42)C%12C9C73C1COCCOCCOC",
+        );
+        assert_eq!(rdkit_aromatic_ring_count(&cage), 19);
+    }
+
+    #[test]
+    fn unspecified_stereocenters_require_distinct_substituents() {
+        assert_eq!(num_unspecified_stereocenters(&mol("C")), 0);
+        assert_eq!(num_unspecified_stereocenters(&mol("CC")), 0);
+        assert_eq!(num_unspecified_stereocenters(&mol("CC(C)C")), 0);
+        assert_eq!(num_unspecified_stereocenters(&mol("C(F)(Cl)Br")), 1);
+    }
+
     // -- Test 3: ethanol molecular weight -----------------------------------
     #[test]
     fn test_mw_ethanol() {
@@ -3899,6 +4129,50 @@ mod tests {
         assert!(approx(t, 26.02, 5.0), "aniline TPSA = {t}");
     }
 
+    #[test]
+    fn test_tpsa_rdkit_environment_boundaries() {
+        // P=S is a single RDKit include-S/P environment (41.90); sulfur must
+        // not also receive the ordinary thioether contribution.
+        assert!(approx(tpsa(&mol("P(=S)(C)(C)C")), 41.90, 1e-12));
+        let hypervalent_s = tpsa(&mol("S(C)(C)(=O)=S"));
+        assert!(
+            approx(hypervalent_s, 57.54, 1e-12),
+            "S(=O)(=S) TPSA = {hypervalent_s}"
+        );
+        let phosphine_amino = tpsa(&mol("NC(N)=NCCCC(N)[PH](=O)O"));
+        assert!(
+            approx(phosphine_amino, 151.19, 1e-12),
+            "P-H P=O TPSA = {phosphine_amino}"
+        );
+        let phosphine_methyl = tpsa(&mol("CNC(=N)NCCCC(N)[PH](=O)O"));
+        assert!(
+            approx(phosphine_methyl, 134.70, 1e-12),
+            "methyl P-H P=O TPSA = {phosphine_methyl}"
+        );
+        let phosphine_nitro = tpsa(&mol("N/C(=N/CCCC(N)[PH](=O)O)N[N+](=O)[O-]"));
+        assert!(
+            approx(phosphine_nitro, 180.34, 1e-12),
+            "nitro P-H P=O TPSA = {phosphine_nitro}"
+        );
+        let thiol = tpsa(&mol(
+            "COc1cc2nc(N3CCN(/C(S)=N/c4ccc(NC(=S)N5CC5)cc4)CC3)nc(N)c2cc1OC",
+        ));
+        assert!(approx(thiol, 175.03, 1e-12), "C(=N)-SH TPSA = {thiol}");
+        let charged_sulfur = tpsa(&mol("[S-]c1nc2ccccc2c2cccc[n+]12"));
+        assert!(
+            approx(charged_sulfur, 16.99, 1e-12),
+            "charged sulfur TPSA = {charged_sulfur}"
+        );
+        // N+ in N+–O-–N environments is not the central azide N+ type.
+        assert!(approx(tpsa(&mol("C[N+]([O-])=[N+]([O-])C")), 52.14, 1e-12));
+        // An exocyclic C=C must not promote a cyclic ether to RDKit's [o]
+        // Crippen/TPSA type merely because one neighbor is aromatic.
+        let bridged = mol("COc1cc2c(cc1OC)C1C(=O)c3ccc4c(c3OC1CO2)C(C)(C)C=CO4");
+        assert!(approx(tpsa(&bridged), 63.22, 1e-12));
+        assert!(approx(logp_crippen(&bridged), 4.0074, 1e-12));
+        assert!(approx(molar_refractivity(&bridged), 105.7645, 1e-12));
+    }
+
     // -- Test 18: aspirin Lipinski -------------------------------------------
     #[test]
     fn test_lipinski_aspirin() {
@@ -3931,6 +4205,18 @@ mod tests {
         // C2H6O: 2*12 + 6*1.00783 + 15.9949 = 46.0419
         let em = exact_mass(&m);
         assert!(approx(em, 46.042, 0.05), "ethanol exact mass = {em}");
+    }
+
+    #[test]
+    fn exact_mass_uses_nuclide_mass_and_rejects_unknown_isotopes() {
+        let carbon13 = mol("[13C]");
+        assert!(approx(exact_mass(&carbon13), 13.00335483507, 1e-10));
+
+        let deuterium = mol("[2H]");
+        assert!(approx(exact_mass(&deuterium), 2.01410177812, 1e-10));
+
+        let unknown = mol("[99C]");
+        assert!(exact_mass(&unknown).is_nan());
     }
 
     // Aspirin logp and Lipinski components
@@ -4039,6 +4325,12 @@ mod tests {
             (fsp3(&m) - 0.0).abs() < 1e-9,
             "no-carbon mol Fsp3 should be 0"
         );
+    }
+
+    #[test]
+    fn test_fsp3_zero_valence_isotope_carbon_is_not_csp3() {
+        assert_eq!(fsp3(&mol("[13C]")), 0.0);
+        assert_eq!(fsp3(&mol("[13CH4]")), 1.0);
     }
 
     // -- MQN tests ----------------------------------------------------------
@@ -4428,6 +4720,14 @@ mod tests {
     }
 
     #[test]
+    fn test_potential_stereocenter_indices_match_count() {
+        let molecule = mol("N[C@@H](C)C(=O)O");
+        let indices = potential_stereocenter_indices(&molecule);
+        assert_eq!(indices.len(), num_stereocenters(&molecule));
+        assert_eq!(indices, vec![AtomIdx(1)]);
+    }
+
+    #[test]
     fn test_num_stereocenters_achiral_zero() {
         assert_eq!(num_stereocenters(&mol("CC(=O)O")), 0);
     }
@@ -4450,6 +4750,46 @@ mod tests {
             )),
             3
         );
+    }
+
+    #[test]
+    fn test_num_stereocenters_aromatic_sulfur_with_exocyclic_branch() {
+        // RDKit counts the aromatic [s+] center in this zwitterionic ring as
+        // a potential tetrahedral center; aromatic C/N must remain planar.
+        assert_eq!(
+            num_stereocenters(&mol("CN(C)Cc1ccc(CSCCNc2n[s+]([O-])nc2N)[nH]1")),
+            1
+        );
+    }
+
+    #[test]
+    fn test_num_stereocenters_long_substituted_cyclopropane() {
+        // The two ring centers are distinguished only after the short-range
+        // branch walk reaches the remote chain termini.
+        assert_eq!(num_stereocenters(&mol("CCCCCCCCC1CC1CCCCCCCC(=O)O")), 2);
+    }
+
+    #[test]
+    fn test_num_stereocenters_branch_provenance_fallback_cages() {
+        // The legacy pooled-sphere comparator ties two distinct carbon
+        // branches in these fused/bridged cages. The provenance-preserving
+        // fallback must recover the full RDKit potential-center count without
+        // broadening ordinary tertiary-amine handling.
+        assert_eq!(num_stereocenters(&mol("CC12NC(Cc3ccccc31)CC1CCCCC12")), 4);
+        assert_eq!(num_stereocenters(&mol("CN1C2(C)c3ccccc3C1(C)C1CCCCC12")), 4);
+    }
+
+    #[test]
+    fn test_num_stereocenters_ring_constrained_tertiary_nitrogen() {
+        let residuals = [
+            "Cn1cc(C2=NC[C@]3(CN4CC[C@@H]3C4)O2)c2ccccc21",
+            "Cn1cc(C2=NC[C@@]3(C[N@@]4CC[C@@H]3C4)O2)c2ccccc21",
+            "Cn1cc(C2=NCC3(CCN4CCCC3C4)O2)c2ccccc21",
+        ];
+        for smiles in residuals {
+            assert_eq!(num_stereocenters(&mol(smiles)), 3, "{smiles}");
+        }
+        assert_eq!(num_stereocenters(&mol("C1N(C)CCC1")), 0);
     }
 
     // -- BalabanJ tests -------------------------------------------------
@@ -5275,6 +5615,28 @@ mod tests {
             v.iter().all(|x| x.is_finite()),
             "all Geary values must be finite: {v:?}"
         );
+    }
+
+    #[test]
+    fn distance_descriptors_map_compact_heavy_indices_with_explicit_isotopic_h() {
+        // `topological_distance_matrix` uses compact heavy-atom positions,
+        // while this molecule deliberately interleaves explicit deuteriums
+        // before the heavy atoms. The descriptor APIs must map those rows
+        // back to the original AtomIdx values instead of indexing raw atoms
+        // by the compact position.
+        let m = mol("[2H]C([2H])([2H])NC=O");
+        let auto = autocorr_2d(&m);
+        let moran = moran_autocorr(&m);
+        let geary = geary_autocorr(&m);
+        let information = [auto.as_slice(), moran.as_slice(), geary.as_slice()];
+        assert!(
+            information
+                .into_iter()
+                .flatten()
+                .all(|value| value.is_finite()),
+            "explicit isotopic hydrogens must not cause invalid distance descriptors"
+        );
+        assert!(ipc(&m).is_finite());
     }
 
     #[test]
