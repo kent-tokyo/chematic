@@ -12,6 +12,8 @@ permissions:
 jobs:
   publish:
     name: Publish crates to crates.io
+    # Keep prerelease tags out of every registry publication path.
+    if: ${{ !contains(github.ref_name, '-') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

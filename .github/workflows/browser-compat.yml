@@ -2,6 +2,14 @@ name: Browser compatibility smoke
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - 'demo/**'
+      - 'scripts/browser_smoke.mjs'
+      - 'scripts/explorer_browser_smoke.mjs'
+      - 'scripts/explorer_worker_10k_smoke.mjs'
+      - 'scripts/explorer_native_worker_parity.mjs'
+      - '.github/workflows/browser-compat.yml'
   push:
     branches: [main, ci/linux-gates-089]
     paths:
