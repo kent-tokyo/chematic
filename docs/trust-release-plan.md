@@ -328,9 +328,8 @@ UI heartbeat gap p95 ≤100ms、batch working set ≤256MiB
   Linux runnerの`VmHWM` peak RSS記録）。macOSのdiagnostic runはこの環境で
   address-spaceを強制できないため`not_measured`とし、networkもproxy削除を
   network隔離と呼ばない。Linux PR jobは固定runnerを測定前にbuildし、fresh
-  user+network namespace（`unshare --user --map-root-user --net`）で実行して
-  raw JSONをartifactへ残す。runner hostがunprivileged namespaceを拒否した場合は
-  fail-closedとする。
+  network namespace（GitHub hosted runnerの`sudo unshare --net`）で実行して
+  raw JSONをartifactへ残す。namespace境界を作れないrunnerではfail-closedとする。
 - [~] T4.3 入力≤1MiB、1ケース2秒/256MiB、5形式固定corpusを暫定ゲートとする。
   oversizedは事前検出で構造化エラー。重いstress群は別の上限と分母。
   process killは資源制御の証拠であり、parserの正常完了には数えない。

@@ -62,9 +62,9 @@ def test_load_cases_rejects_digest_drift(tmp_path):
         raise AssertionError("digest drift must fail closed")
 
 
-def test_linux_network_isolation_uses_a_fresh_namespace(tmp_path):
+def test_linux_network_isolation_uses_a_privileged_fresh_namespace(tmp_path):
     command = MODULE.isolated_command(["runner"], True, "smiles", tmp_path / "input")
-    assert command[:5] == ["unshare", "--user", "--map-root-user", "--net", "--"]
+    assert command[:5] == ["sudo", "--non-interactive", "unshare", "--net", "--"]
     assert command[5:] == ["runner", "--format", "smiles", "--input", str(tmp_path / "input")]
 
 

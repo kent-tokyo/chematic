@@ -48,12 +48,14 @@ def preexec(memory_bytes: int) -> None:
 def isolated_command(runner: list[str], network_enforced: bool, fmt: str, input_path: Path) -> list[str]:
     """Return the actual child command without treating proxy cleanup as isolation.
 
-    Linux gates create a fresh user and network namespace.  If the runner host
-    disables unprivileged namespaces, `unshare` fails closed and the case is a
-    runner error instead of an untruthful pass.  macOS diagnostics have no
-    equivalent standard primitive here and remain explicitly unmeasured.
+    Linux CI creates a fresh network namespace under the GitHub runner's
+    passwordless `sudo`. This avoids relying on unprivileged user namespaces,
+    which GitHub-hosted kernels can disable. If that boundary cannot be made,
+    the case remains a runner error instead of an untruthful pass. macOS
+    diagnostics have no equivalent standard primitive here and remain
+    explicitly unmeasured.
     """
-    prefix = ["unshare", "--user", "--map-root-user", "--net", "--"] if network_enforced else []
+    prefix = ["sudo", "--non-interactive", "unshare", "--net", "--"] if network_enforced else []
     return [*prefix, *runner, "--format", fmt, "--input", str(input_path)]
 
 
