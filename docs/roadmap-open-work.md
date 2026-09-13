@@ -1,7 +1,7 @@
 # Roadmap open-work disposition
 
 This document is the current disposition of unchecked roadmap items for the
-v1.0.14 release follow-up (updated 2026-09-13). An item is not complete merely
+v1.0.15 release follow-up (updated 2026-09-13). An item is not complete merely
 because a narrower local slice has evidence. Recorded v1.0.13 and earlier
 measurements keep their original scope; they were not rerun for this reorganization.
 

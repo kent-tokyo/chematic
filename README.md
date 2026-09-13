@@ -21,15 +21,14 @@ npm install @kent-tokyo/chematic
 
 Python needs no C/C++ compiler. Rust and WebAssembly builds use the same core.
 
-### v1.0.14 release boundary
+### v1.0.15 release boundary
 
-This release hardens RDKit-parity SMARTS matching, bounded ring exploration,
-incomplete-coordinate depiction, MMFF94 charge-error propagation, and Python
-bulk descriptor materialization. Compatibility remains operation- and corpus-
-scoped; see the [compatibility scope](docs/compatibility-scope.md) and
-[CHANGELOG](CHANGELOG.md). The operation-by-operation status, oracle lanes,
-and measurement boundaries are in the generated
-[Compatibility Contract dashboard](docs/compatibility-dashboard.md).
+This release hardens the Trust Release boundary: prerelease tags cannot publish
+artifacts, parser-security cases run under an enforced Linux gate, and the
+Local Compound Explorer processes bounded batches in a Worker. Chromium,
+Firefox, WebKit, and native scalar/batch/Worker parity are release gates.
+Compatibility remains operation- and corpus-scoped; see the
+[compatibility scope](docs/compatibility-scope.md) and [CHANGELOG](CHANGELOG.md).
 
 ## Python
 
