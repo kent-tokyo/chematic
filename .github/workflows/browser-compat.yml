@@ -71,7 +71,9 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Build native comparison binary
-        run: cargo build --release --offline -p chematic-cli
+        # GitHub-hosted runners start without this workspace's Cargo cache.
+        # Keep dependency resolution pinned while allowing the initial fetch.
+        run: cargo build --release --locked -p chematic-cli
       - name: Serve demo
         run: python3 -m http.server 8765 --directory demo >/tmp/chematic-browser-server.log 2>&1 &
       - name: Compare native scalar, native batch, and Explorer Worker
