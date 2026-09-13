@@ -21,8 +21,12 @@ try {
   await page.locator("#explorer-btn-parse-paste").click();
   await page.locator("#explorer-status").waitFor({ hasText: "10000 molecules loaded." , timeout: 120_000 });
   const resultCount = page.locator("#explorer-result-count");
-  await resultCount.waitFor({ hasText: "250 rendered of 10000 matching (10000 loaded)" });
-  assert.equal(await resultCount.textContent(), "250 rendered of 10000 matching (10000 loaded)");
+  const expectedCount = "250 rendered of 10000 matching (10000 loaded)";
+  await page.waitForFunction(
+    (expected) => document.querySelector("#explorer-result-count")?.textContent === expected,
+    expectedCount,
+  );
+  assert.equal(await resultCount.textContent(), expectedCount);
   assert.deepEqual(errors, []);
 } finally {
   await browser.close();
