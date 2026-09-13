@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "product": "chematic",
   "release": {
     "version": "1.0.14",
@@ -7,6 +7,15 @@
     "commit": null,
     "commit_source": "The attached GitHub Release asset is generated from the exact v1.0.14 tag commit.",
     "released_at": "2026-09-13T00:00:00+09:00"
+  },
+  "evidence_context": {
+    "stable_release": {"version": "1.0.14", "tag": "v1.0.14", "commit": null},
+    "candidate": null,
+    "oracle_lanes": [
+      {"engine": "RDKit", "version": "2025.09.3", "role": "pinned_regression", "status": "active"},
+      {"engine": "RDKit", "version": "2026.03.6", "role": "separate_comparison", "status": "active"}
+    ],
+    "measurement_version_policy": "Measurements retain their recorded source, artifact, corpus, and comparator version; a new release does not relabel earlier evidence."
   },
   "packages": {
     "rust": {"name": "chematic", "version": "1.0.14", "registry_url": "https://crates.io/crates/chematic/1.0.14"},

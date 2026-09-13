@@ -27,7 +27,9 @@ This release hardens RDKit-parity SMARTS matching, bounded ring exploration,
 incomplete-coordinate depiction, MMFF94 charge-error propagation, and Python
 bulk descriptor materialization. Compatibility remains operation- and corpus-
 scoped; see the [compatibility scope](docs/compatibility-scope.md) and
-[CHANGELOG](CHANGELOG.md).
+[CHANGELOG](CHANGELOG.md). The operation-by-operation status, oracle lanes,
+and measurement boundaries are in the generated
+[Compatibility Contract dashboard](docs/compatibility-dashboard.md).
 
 ## Python
 

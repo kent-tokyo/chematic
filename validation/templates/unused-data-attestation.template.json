@@ -1,0 +1,6 @@
+{
+  "attestor": "<maintainer identity>",
+  "attested_at": "<RFC 3339 UTC timestamp>",
+  "statement": "I attest that the source identified by source_sha256 was not used to select, tune, or otherwise develop the candidate identified by the matching candidate tag before this attestation.",
+  "source_sha256": "<exact source SHA-256 from the sealed-cohort preflight>"
+}

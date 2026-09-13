@@ -6,8 +6,11 @@ Release. The schema is versioned at
 [`docs/release-metadata-schema.json`](release-metadata-schema.json).
 
 The document is intended for downstream sites and integrations that should not
-scrape rendered pages. It contains release identity, registry URLs, MCP
-capabilities, WASM size evidence, and links to historical benchmark records.
+scrape rendered pages. It contains the stable release identity, an optional
+candidate identity, version-pinned oracle lanes, a measurement-version policy,
+registry URLs, MCP capabilities, WASM size evidence, and links to historical
+benchmark records. A candidate or planned oracle lane is explicitly not release
+or parity evidence.
 Benchmark entries are explicitly marked `historical`; they are not current
 performance claims and must retain their pinned version, corpus, hardware, and
 source path.
@@ -20,7 +23,12 @@ Validate the checked-in document locally:
 
 ```bash
 python3 scripts/check_release_metadata.py
+python3 scripts/check_release_channel_evidence.py
 ```
+
+The channel record is version-specific. It distinguishes `verified`,
+`mismatch`, `unreachable`, and `not_measured`; a partial record is useful
+evidence, but it is not release-ready.
 
 Operation-level comparison scorecards are separately validated by the
 dependency-free `scripts/validate_scorecard.py`; it rejects stale target

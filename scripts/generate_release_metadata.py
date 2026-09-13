@@ -32,13 +32,26 @@ def main() -> int:
         raise SystemExit("--released-at must be RFC3339 with a timezone")
 
     document = {
-        "schema_version": 1,
+        "schema_version": 2,
         "product": "chematic",
         "release": {
             "version": args.version,
             "tag": f"v{args.version}",
             "commit": args.commit,
             "released_at": args.released_at,
+        },
+        "evidence_context": {
+            "stable_release": {
+                "version": args.version,
+                "tag": f"v{args.version}",
+                "commit": args.commit,
+            },
+            "candidate": None,
+            "oracle_lanes": [],
+            "measurement_version_policy": (
+                "Measurements retain their recorded source, artifact, corpus, and comparator version; "
+                "a new release does not relabel earlier evidence."
+            ),
         },
         "packages": {
             "rust": {

@@ -185,13 +185,10 @@ impl<'a> Parser<'a> {
             return Err(SmartsError::InvalidRingClosure(num));
         }
 
-        // Remaining characters (other than whitespace) are unexpected.
-        if let Some(c) = self.peek()
-            && c != b' '
-            && c != b'\t'
-            && c != b'\n'
-            && c != b'\r'
-        {
+        // A direct SMARTS API is deliberately strict: accepting a valid
+        // prefix followed by whitespace/junk silently changes a query.  UI
+        // callers that want to trim an editor value must do so explicitly.
+        if let Some(c) = self.peek() {
             return Err(SmartsError::UnexpectedChar(c as char, self.pos));
         }
 
@@ -1046,6 +1043,18 @@ mod tests {
             Box::new(AtomQuery::Primitive(AtomPrimitive::Aromatic(false))),
         );
         assert_eq!(mol.atoms[0].query, expected);
+    }
+
+    #[test]
+    fn rejects_valid_prefix_followed_by_whitespace_junk() {
+        assert_eq!(
+            parse_smarts("CC this is junk"),
+            Err(SmartsError::UnexpectedChar(' ', 2))
+        );
+        assert_eq!(
+            parse_smarts("[#6] this is junk"),
+            Err(SmartsError::UnexpectedChar(' ', 4))
+        );
     }
 
     #[test]

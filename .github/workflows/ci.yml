@@ -38,6 +38,13 @@ jobs:
         run: python3 scripts/check_binding_surface.py > /dev/null
       - name: Release documentation consistency
         run: python3 scripts/check_release_docs_consistency.py
+      - name: Compatibility Contract
+        run: |
+          python3 scripts/check_compatibility_profiles.py
+          python3 scripts/generate_compatibility_dashboard.py --output /tmp/compatibility-dashboard.md
+          diff -u docs/compatibility-dashboard.md /tmp/compatibility-dashboard.md
+      - name: Release channel verification record
+        run: python3 scripts/check_release_channel_evidence.py
 
   test-integration:
     name: Integration tests (${{ matrix.package }} / ${{ matrix.target }})
@@ -211,6 +218,8 @@ jobs:
         run: wasm-pack build --target web --out-dir pkg-web --release
       - name: Web-target runtime smoke (via Node initSync)
         run: node crates/chematic-wasm/tests/pipeline_v2_web_target.test.mjs
+      - name: Web-target package smoke (Node byte initialization)
+        run: node scripts/smoke_npm_package.mjs crates/chematic-wasm/pkg-web
 
   clippy:
     name: Clippy

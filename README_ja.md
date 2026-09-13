@@ -28,7 +28,9 @@ Python版はC/C++コンパイラなしで導入できます。
 RDKit-parity SMARTS、環探索の上限契約、不足座標の描画、MMFF94電荷計算
 エラー、Pythonバルク記述子出力を改善しました。互換性は操作・コーパス
 単位のbounded scopeです。詳細は[互換性範囲](docs/compatibility-scope.md)と
-[CHANGELOG](CHANGELOG.md)を参照してください。
+[CHANGELOG](CHANGELOG.md)を参照してください。操作別の対応状態、比較器lane、
+測定境界は生成済みの[Compatibility Contract dashboard](docs/compatibility-dashboard.md)
+にまとめています。
 
 ## Python
 

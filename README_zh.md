@@ -27,7 +27,9 @@ Python 版本无需 C/C++ 编译器。
 
 本版本强化了 RDKit-parity SMARTS、环探索预算、不足坐标绘图、MMFF94 电荷错误
 传播以及 Python 批量描述符输出。兼容性仍按操作和数据集限定，详见
-[兼容性范围](docs/compatibility-scope.md)和[CHANGELOG](CHANGELOG.md)。
+[兼容性范围](docs/compatibility-scope.md)和[CHANGELOG](CHANGELOG.md)。按操作列出的
+支持状态、比较器 lane 和测量边界见生成的
+[Compatibility Contract dashboard](docs/compatibility-dashboard.md)。
 
 ## Python
 

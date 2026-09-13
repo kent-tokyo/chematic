@@ -116,6 +116,14 @@ except chematic.PipelineV2Error as e:
 
 ## RDKit compatibility
 
+The operation/profile boundaries and measured oracle lanes are listed in the
+[Compatibility Contract dashboard](../../docs/compatibility-dashboard.md).
+For persisted fingerprints, saved indices, canonical identity, stereo, and
+browser/Worker migration decisions, read the
+[RDKit migration guide](../../docs/rdkit-migration.md) before changing a
+production workflow. Native ECFP and RDKit-compatible Morgan are separate
+profiles; rebuild stored fingerprints and indices under the chosen profile.
+
 `chematic.rdkit_compat` provides a lightweight RDKit-compatible subset for environments where RDKit is unavailable (WASM, serverless, conda-free CI):
 
 ```python

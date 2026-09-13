@@ -156,9 +156,26 @@ fn parse_v3000_atom_line(
         line,
     })?;
 
-    // Keep the historical V3000 behavior for x/y: malformed values default to 0.0.
-    let x: f64 = tokens[2].parse().unwrap_or(0.0);
-    let y: f64 = tokens[3].parse().unwrap_or(0.0);
+    // Coordinates are part of the serialized graph: malformed or non-finite
+    // values must not silently turn into a different structure.
+    let x: f64 = tokens[2]
+        .parse()
+        .map_err(|_| MolParseError::InvalidAtomLine {
+            line,
+            detail: format!("cannot parse x coordinate from '{}'", tokens[2]),
+        })?;
+    let y: f64 = tokens[3]
+        .parse()
+        .map_err(|_| MolParseError::InvalidAtomLine {
+            line,
+            detail: format!("cannot parse y coordinate from '{}'", tokens[3]),
+        })?;
+    if !x.is_finite() || !y.is_finite() {
+        return Err(MolParseError::InvalidAtomLine {
+            line,
+            detail: "x/y coordinate is not finite (NaN/Infinite)".to_string(),
+        });
+    }
 
     // Unlike x/y, z is retained as 3D input and therefore must be a finite number.
     let z: f64 = tokens[4]
@@ -322,6 +339,29 @@ pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, Mol
     if all_lines.len() < 4 {
         return Err(MolParseError::UnexpectedEnd);
     }
+    let terminal = all_lines
+        .iter()
+        .rev()
+        .find(|(_, line)| !line.trim().is_empty())
+        .ok_or(MolParseError::UnexpectedEnd)?;
+    if terminal.1 != "M  END" {
+        return Err(v3k_err(
+            terminal.0,
+            "V3000 MOL block must terminate with an exact 'M  END' line",
+        ));
+    }
+    for &(line_num, line) in all_lines.iter().skip(4) {
+        if line.trim().is_empty() || line.starts_with(V30_PREFIX) {
+            continue;
+        }
+        if line == "M  END" && line_num == terminal.0 {
+            continue;
+        }
+        return Err(v3k_err(
+            line_num,
+            "expected an 'M  V30 ' record or the terminal 'M  END' line",
+        ));
+    }
 
     // -- Header lines 1–3 ----------------------------------------------------
 
@@ -477,6 +517,11 @@ pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, Mol
                     state = State::InBondBlock;
                 } else if is_marker(&tokens, "END", "CTAB") {
                     state = State::Done;
+                } else {
+                    return Err(v3k_err(
+                        lnum,
+                        "expected BEGIN BOND or END CTAB after END ATOM",
+                    ));
                 }
             }
 
@@ -871,6 +916,15 @@ M  END
         let (mol, _) = parse_mol_v3000(METHANE_V3K).expect("parse methane");
         assert_eq!(mol.atom_count(), 1);
         assert_eq!(mol.bond_count(), 0);
+    }
+
+    #[test]
+    fn rejects_malformed_coordinates_and_records_after_terminator() {
+        assert!(parse_mol_v3000(&METHANE_V3K.replace("0.0 0.0 0.0 0", "nope 0.0 0.0 0")).is_err());
+        assert!(parse_mol_v3000(&(METHANE_V3K.to_owned() + "M  V30 BEGIN CTAB\n")).is_err());
+        assert!(
+            parse_mol_v3000(&METHANE_V3K.replace("M  V30 END ATOM", "M V30 END ATOM")).is_err()
+        );
     }
 
     // -----------------------------------------------------------------------

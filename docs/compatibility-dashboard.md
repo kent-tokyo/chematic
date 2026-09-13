@@ -25,6 +25,7 @@ Operation inventory: `57` currently shared operations; validate with `python3 sc
 ## Streaming record/failure contract
 
 Pinned matrix: 20 repetitions across 10 formats.
+- Matrix status: `historical for target`; matrix target is `1.0.13` and was not remeasured for the current release.
 The engine/process boundaries remain explicit; records and failures are the only cross-engine claims.
 
 | Format | Expected records | Engines with zero failures |
@@ -45,6 +46,23 @@ The engine/process boundaries remain explicit; records and failures are the only
 - A `covered` row means the checked-in assertion and its local consumer tests exist; it does not mean every edge case is supported.
 - Missing optional engines, external review, publication, and broader corpus quality remain separate release gates.
 - Regenerate after changing either source manifest and review the resulting digest changes before committing.
+
+## API profile Compatibility Contract
+
+Each row separates support status, API profile, comparator lane, and measurement coverage. `not_measured` is a visible gap, not zero coverage or a passing result.
+
+| Operation | Support | Profile | Comparator | Coverage |
+|---|---|---|---|---|
+| `smiles_parse_write` | `stable` | `native` | — | not_measured |
+| `canonical_identity` | `experimental` | `native` | RDKit `2025.09.3` | partial |
+| `aromaticity` | `experimental` | `rdkit_compatibility` | RDKit `2025.09.3` | partial |
+| `cip_labels` | `experimental` | `rdkit_compatibility` | RDKit `2025.09.3` | partial |
+| `smarts_substructure` | `experimental` | `rdkit_compatibility` | RDKit `2025.09.3` | 2025.09.3: 155651 cells, 145588 matches, 21 residuals, 10042 oracle parse errors; 2026.03.6 separate lane: 155651 cells, 155629 matches, 22 residuals |
+| `morgan_ecfp` | `experimental` | `rdkit_compatibility` | RDKit `2025.09.3` | partial |
+| `mol_sdf_v2000` | `stable` | `native` | — | not_measured |
+| `mol_sdf_v3000` | `experimental` | `native` | — | partial |
+
+Evidence paths, API names, settings, and exact/numeric/semantic comparison rules live in `validation/compatibility_profiles.json`; validate them with `python3 scripts/check_compatibility_profiles.py`.
 
 ## RDKit accuracy profiles
 

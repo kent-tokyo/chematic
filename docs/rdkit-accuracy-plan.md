@@ -1,11 +1,11 @@
 # RDKit同等精度から、独立検証での優位性へ
 
-更新日: 2026-09-13。対象: chematic 1.0.13からの開発系列。
+更新日: 2026-09-13。対象: chematic v1.0.14公開後の精度改善。
 状態: **一部の既存コーパスは合格、A0–A6の全出口は未達**。
 [ROADMAP](../ROADMAP.md) の実行計画。P0–P6は製品領域、A0–A6は精度の作業単位として維持する。
 短期実行順は[Trust Release計画](trust-release-plan.md)に集約する。
-今回の更新はSMARTS途中集計の訂正、予算契約の監査、互換性・配布・安全性ゲートの優先化を含む。
-リリース判定や独立評価の完了を意味しない。
+旧版の測定値と現行の未達条件を分けて保持する。v1.0.14公開・mainへのマージは
+完了したが、Trust RCや独立評価の条件充足を意味しない。
 
 ## 1. 目標と優先順
 
@@ -33,18 +33,20 @@ A5のデータ設計・評価器はA0と並行し、新しいsilent corruption�
 ## 2. 現在地と証拠の限界
 
 以下は保存済み成果物と検証コードの監査であり、今回再測定した結果ではない。
-確認時HEADは `0d951486493f6baab8f3a645a0665987af335a79`、manifestは1.0.13、
-作業ツリーには既存の未コミット変更がある。結果の版名だけでは現在のソースとの一致を証明できない。
+当初の監査はHEAD `0d951486493f6baab8f3a645a0665987af335a79`、manifest 1.0.13、
+未コミット変更ありの状態で行った。その後の成果は各artifactの出自に従う。
+現在の公開タグv1.0.14は`a259507d`、releaseとCI修正のmain mergeは`286485be`（PR #532）。
+以下の旧版結果をこのタグやmergeの再測定値へ読み替えない。
 
 | 領域 | 保存済み結果 | まだ必要な検証 |
 |---|---|---|
-| A0 | 8記述子の厳密診断、native固定4件、12件MW holdoutが合格。ECFP4 5,000行のRust/source-built Python/Node-WASM binding gateも合格し、Python extension/WASM hashを記録。互換API導入コミット`5aae7b23`と現行candidateの別wheel比較が成立し、schema-v2 raw rowsの再集計もcandidateで合格。予約済み4件unused holdoutも別測定した。既存2コーパスの再現可能なdedup/split準備は2,000件development＋7,737件exposed holdoutを生成するが、sealedではない | 全項目holdout、独立取得した8,000件sealed未使用評価（既存7,737件に263件を追加しても未使用にはならない）、candidate commit/tag freeze、raw/baseline scorecardの自動生成 |
+| A0 | 8記述子の厳密診断、native固定4件、12件全8項目holdout（96/96）が合格。ECFP4 5,000行のRust/source-built Python/Node-WASM binding gateも合格し、Python extension/WASM hashを記録。互換API導入コミット`5aae7b23`と現行candidateの別wheel比較が成立し、schema-v2 raw rowsの再集計もcandidateで合格。予約済み4件unused holdoutも別測定した。既存2コーパスの再現可能なdedup/split準備は2,000件development＋7,737件exposed holdoutを生成するが、sealedではない | 独立取得した8,000件sealed未使用評価（既存7,737件に263件を追加しても未使用にはならない）、candidate commit/tag freeze、raw/baseline scorecardの自動生成 |
 | A1 core | Source-built Python + RDKit 2025.09.3との8項目は各5,000/5,000 strict、未対応0。MW最大差は約4.0e-9 Da。Fsp3のゼロ価数同位体炭素も修正済み。採用ゲートは `adopted_opt_in` | RDKit版を固定した再評価、全bindingでの採用確認、未使用評価 |
 | A1拡張 | Strict rotatable bondsは5,000/5,000。branch provenance fallback後のpotential stereocentersは5,000/5,000。さらに7,737-row exposed holdoutでpotential centers 7,737/7,737、原子別FP=0/FN=0、未解決oracle行0。P=S、N+–O−–N、S(=O)(=S)、芳香族酸素橋の環境境界を追加し、fixes6では8記述子のうち7項目が7,737/7,737 strict、芳香族環数が7,736/7,737。混在芳香族性の広域修正fixes4は29残差へ退行したため採用せず、bounded chordless aromatic cycle候補を固定RDKit 2025.09.3で再測定した結果、8項目すべて7,737/7,737 strict、不一致原因0。promotion gateは`adopted_opt_in`、native defaultは維持。potential centersはfixes3時点の測定 | 未使用/sealed評価、共有認識・全bindingゲートの再検証、他のdescriptor family、独立goldでの確認 |
 | A2 | CIP履歴は4,171/4,186、P系15件は未確定。canonical意味比較200/200に加え、RDKit InChIを独立identity oracleとする5,000分子×4 randomized valid spellingの構造同一性は5,000/5,000、失敗0・oracle-invalid除外0。最新ソースの#503 K=1,024は4/28 divergent components、cross-correspondence failure 0。代表残差の内部診断では、共有carrierを選ぶと相手系の唯一の方向情報を失い、代替carrierはcanonical DFSのring-close側で出力できないため、現行solverは安全にabstainしている | 4残差を安定して解くcarrier/DFS表現、CIP独立ラベル、未使用評価、異性体の誤統合検査 |
 | A3 | Rust/source-built Python/Node-WASMのk=1/10/100が500クエリ×4,500ライブラリで丸め前スコアを含め0不一致。独立RDKit exhaustive oracleも全kで一致。RDKit oracle fixtureは34成功+1 unsupported-bond errorを全bindingで検証。`score >= threshold`の閾値APIと、RDKit由来の直上/同値/直下を含む96ケースのcross-bindingゲートが合格。さらにRDKit-parity芳香族性レーンで、チェックイン済み5,000行のraw Morgan residual 59件をすべて解消し、RDKit 2025.09.3と5,000/5,000 strict一致（前処理エラー0）となった | raw/provenance packetの保存、全binding・検索ゲートの再実行、実際に未使用の評価入力 |
 | A4 | 永続化したChEMBL 5,000行コーパスによるfooter検証済みSMARTS laneは5,021分子×31クエリ、155,651セル。原子index集合でのparity一致145,588、RDKit SMARTS parse error 10,042、残差21、RDKit原子整列失敗0。artifactは`validation/results/rdkit-smarts-direct-chembl-5000-footer-verified-v1.0.13.json`で、入力・dump SHA-256を保持。全embeddingの写像一致ではない。以前のprivate corpusの12残差と12→3誤集計は別母集団として採用しない。ビルド出自を凍結したbaseline/candidate packetは未作成。反応presence 6/6、51ケース/14テンプレートのproduct-set gate 51/51、別のstereo安全拒否1/1、限定V3000往復は維持 | T0で独立baseline/candidateと同条件再測定、21残差の分類、SMARTS対応ポリシー、原子対応match集合、反応生成物、標準化、typed metadataの比較を継続 |
-| A5 | 4件のgold候補、2件のblind欄、manifest構造検査 | 絶対正解、実際の未使用入力、非実装者レビュー、統計評価器。現状は独立評価未実施 |
+| A5 | 4件のgold候補、2件のblind欄、manifest構造検査。paired評価器はカテゴリ会計・cluster bootstrapを実装済み（A5.3） | 絶対正解、実際の未使用入力、非実装者レビュー、凍結protocolに基づく実評価。現状は独立評価未実施 |
 | A6 | MMFF94型IDは6,681/6,698（99.76%相当、unsupported probe 1件を除く比較対象6,697件中16残差）。現行候補のstrict bond+angleは265/265（tier A 65、tier B 200、失敗0）。BCI電荷は6,665/6,698 exact、unsupported probe除外の比較対象で6,665/6,693（99.58%、残差28原子） | 全エネルギー項・勾配・最適化・配座品質。型・電荷の残差解消と、265/265を全力場合格としない |
 
 証拠の参照先:
@@ -69,14 +71,15 @@ canonicalの200件はRDKit 2025.09.3との再canonical化による意味比較�
 native対Morganのtop-10一致は今回の保存値で72.7%だが、これは別定義間の一致率である。
 nativeの定義を変えてこの数字を100%にすることは、互換性・化学精度の改善目標に含めない。
 
-### 完了状態を修正する理由
+### 2026-09-12の状態監査と、その後の修正
 
-- [A0集約ゲート](../scripts/check_rdkit_accuracy_gate.py) は8項目の診断を検査するが、
-  holdoutには正の件数と失敗0しか要求しない。[holdout runner](../scripts/check_descriptor_rdkit_holdout.py)
-  が実測するのはMWの±0.01 Daのみ。全8項目の厳密holdout合格ではない。
-- [立体中心runner](../scripts/descriptor_stereocenter_rdkit_parity.py) の不一致数は最大50例の
-  表示用配列長に依存し、例外も同じ配列に入る。今回の5件は上限未満だが、
-  今後の評価では総数とサンプルを分け、空入力・古いbindingも検出する必要がある。
+- 当初の[A0集約ゲート](../scripts/check_rdkit_accuracy_gate.py) は8項目診断と異なり、
+  holdoutには正の件数と失敗0しか要求せず、[holdout runner](../scripts/check_descriptor_rdkit_holdout.py)
+  もMWの±0.01 Daのみを実測していた。その後A0.2で全8項目へ拡張し96/96合格。
+  この12件を8,000件の封印評価と同一視しない。
+- 当初の[立体中心runner](../scripts/descriptor_stereocenter_rdkit_parity.py) は不一致数が
+  最大50例の表示配列長に依存し、例外も同じ配列に入っていた。A0.3では総数・
+  サンプル・失敗を分離した。今後も空入力・古いbinding・欠測を成功扱いしない。
 - 旧[検索binding runner](../scripts/rdkit_search_cross_binding_parity.py) はk=10固定で、
   スコアを6桁に切り捨てる。現在のfull-precision runnerはk=1/10/100を検証し、
   [閾値ゲート](../scripts/rdkit_search_threshold_gate.py) はRDKit由来96ケースの
@@ -85,16 +88,18 @@ nativeの定義を変えてこの数字を100%にすることは、互換性・�
   不変性・構造保持条件で、独立した絶対ラベルではない。blind欄も公開済み共鳴コーパスを参照し、
   reviewerは未記入。構造検査合格と独立gold合格を分ける。
 
-A0・A3は「既存の限定ゲート合格、全出口は作業中」に戻す。
-既存成果を取り消す変更ではなく、当初の全項目・全k・独立評価要件に状態を合わせる。
+A0・A3は監査時に「既存の限定ゲート合格、全出口は作業中」へ戻した。
+その後の全項目・全k回帰の進捗は維持し、残る未使用入力・出自・採用条件で完了を判定する。
 
 ## 3. 共通の評価契約
 
 ### 3.1 対象・比較器・API
 
-基準比較器は保存済み主系列と同じ **RDKit 2026.03.6** とし、実行時の配布物・版・
-digestを照合して凍結する。2025.09.3、将来版、`@rdkit/rdkit` は別lane。
-基準版の変更はmanifestを改版して両版を再測定し、暗黙に置換しない。
+[T1.5](trust-release-plan.md)に従い、既存の **RDKit 2025.09.3** 回帰laneを維持し、
+2026.03.6は別laneで固定する。保存済み2026.03.6結果も元の出自のまま保持する。
+各実行の配布物・版・digestを照合し、主要oracle版の変更はmanifest改版、
+全対象操作の両版再測定、差分分類後に行う。`@rdkit/rdkit`も別laneとし、
+npm版と同梱RDKit版を分ける。版ラベルを暗黙に置換しない。
 
 初期2D範囲は一般有機分子、塩、荷電・芳香族・縮合/架橋/大環状構造、明示H、
 主要同位体、四面体・二重結合立体とする。具体的な元素/同位体表、電荷・環・分子サイズ境界、
@@ -192,7 +197,7 @@ engine名の盲検化、入力の未使用性、正解の独立レビューは�
   `check_descriptor_raw_accounting.py`はbaseline/candidateのschema-v2 `raw_rows`から
   field別parsed/matches/strict_matches/mismatchesを再計算し、stale summaryとraw hash不一致を拒否する。
   baseline/candidate packet validatorはsource/artifact identityの再利用とcomparator/corpusの
-  不一致を拒否する。現行タグv1.0.13は互換8記述子APIを持たないため、native値をbaselineに
+  不一致を拒否する。baseline候補だったタグv1.0.13は互換8記述子APIを持たないため、native値をbaselineに
   代用せず、互換API導入コミット`5aae7b23`をbaselineとして明示した。baseline/candidateは
   同一corpus・RDKit版で比較し、field別coverage差は未対応を隠さず改善結果として保存する。
   追加した非有限値、raw行欠落、比較器/コーパス不一致、51件超の不一致を含むfocused negative回帰は通過済み。

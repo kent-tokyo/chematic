@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "profile": "release_package_clean_install_v1",
+  "release": "1.0.14",
+  "verified_at": "2026-09-13T06:36:00Z",
+  "lanes": [
+    {
+      "id": "python_wheel",
+      "status": "verified",
+      "source": "PyPI chematic==1.0.14 installed into an empty Python virtual environment",
+      "checks": [
+        "import chematic",
+        "from_smiles('c1ccccc1').formula == 'C6H6'",
+        "mypy scripts/tests/fixtures/pypi_typing_smoke.py",
+        "pyright --level warning scripts/tests/fixtures/pypi_typing_smoke.py"
+      ]
+    },
+    {
+      "id": "npm_wasm",
+      "status": "verified",
+      "source": "npm @kent-tokyo/chematic@1.0.14 installed into an empty temporary directory",
+      "checks": [
+        "Node 24.5.0: explicit byte initialization then benzene formula C6H6 / 6 atoms",
+        "tsc --noEmit --strict with ES2022, DOM, and ESNext.Disposable libraries over scripts/tests/fixtures/npm_typing_smoke.ts"
+      ],
+      "boundary": "The published package is wasm-pack web-target output. Node callers pass adjacent WASM bytes to init; browser callers use await init()."
+    },
+    {
+      "id": "mcp_crate",
+      "status": "verified",
+      "source": "cargo install chematic-mcp@1.0.14 --locked into an isolated root",
+      "checks": [
+        "legacy initialize returns protocolVersion 2024-11-05",
+        "tools/list returns 20 tools"
+      ]
+    },
+    {
+      "id": "rust_public_api",
+      "status": "verified",
+      "source": "empty downstream Cargo binary with schematic = { version = '=1.0.14', features = ['smiles'] }",
+      "checks": [
+        "cargo run creates a lockfile from crates.io",
+        "cargo run --locked compiles and runs chematic::smiles::parse('c1ccccc1')",
+        "parsed molecule atom_count() == 6"
+      ]
+    }
+  ],
+  "overall": "verified_on_recorded_platforms",
+  "boundary": "This record is a clean-install consumer smoke on its recorded macOS/Python/Node/Rust environment, not cross-platform coverage or a substitute for the full Trust RC package gate."
+}

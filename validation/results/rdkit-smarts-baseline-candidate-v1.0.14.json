@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "profile": "rdkit_smarts_baseline_candidate_v1",
+  "status": "adoption_blocked",
+  "comparison_valid": true,
+  "adoption_allowed": false,
+  "adoption_errors": [
+    "candidate residual cells regressed: 21 > 12"
+  ],
+  "comparison": {
+    "corpus": {
+      "path": "scripts/chembl_accuracy_corpus_4999.smi",
+      "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+      "molecules": 5021
+    },
+    "query_set_sha256": "23733c34b24b22b38d614da383eec5e1cc38dcfb80d2c8ca87bea51e60b10af8",
+    "rdkit": {
+      "version": "2025.09.3",
+      "pinned_source": "installed-python-package-2025.09.3"
+    },
+    "total_cells": 155651,
+    "atom_alignment_failures": 0,
+    "residual_cells": {"baseline": 12, "candidate": 21},
+    "rdkit_parse_error_cells": {"baseline": 10042, "candidate": 10042},
+    "candidate_disallowed_buckets": {
+      "parity_regresses": 0,
+      "parity_worsens_agreement": 0,
+      "chematic_parse_error": 0,
+      "chematic_parity_error": 0
+    }
+  },
+  "arms": {
+    "baseline": {
+      "source_commit": "f2302b66689014146dcc3449c531553c969ad607",
+      "source_tree_sha256": "83d02672000dace44d29911e7c7ad5d9698b31eab6996fe13ef77fe4bc5ce095",
+      "binary_sha256": "2d4acdd5db9411f5d63e1d51ddb6512a52f3352ac29c4cc5af0409835e338386",
+      "summary_sha256": "fd441e66a67c7c8d4ef33b403d569adc539e7921c33ac54700238df382518743",
+      "dump_sha256": "32a8831e216ee8bdbc75cbd1310c9157029056b68eeae6c0bdae6c77ac4e3ec6",
+      "footer_origin": "runner_verified"
+    },
+    "candidate": {
+      "source_commit": "a259507dbf6da7823a412dcb198d37b7adf59608",
+      "source_tree_sha256": "e70edbfc6514b0097f3f9305fdca98219895d82713c3ea9b8d03cc43b2ca43cd",
+      "binary_sha256": "b7f078d31de0ef410df5d2386c86e44b8f771827f5e8567581ad668daaf0686f",
+      "summary_sha256": "8ad448b01a237fb35ea03a0bb77692aa54b4e34c60eaf0ebd1d8a6b8dfe26a64",
+      "dump_sha256": "c115f956ce07bea64f029e799be15a99ac678559983d6f4c19b6f1596508e5aa",
+      "footer_origin": "producer"
+    }
+  },
+  "raw_artifacts": {
+    "status": "local_untracked",
+    "note": "Full JSONL dumps are retained outside the repository for this measured run. Their SHA-256 values above are required to identify the run; this compact result does not make them a sealed or independently reviewed evaluation."
+  }
+}
