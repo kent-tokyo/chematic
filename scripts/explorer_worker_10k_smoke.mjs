@@ -20,7 +20,9 @@ try {
   }, records);
   await page.locator("#explorer-btn-parse-paste").click();
   await page.locator("#explorer-status").waitFor({ hasText: "10000 molecules loaded." , timeout: 120_000 });
-  assert.equal(await page.locator("#explorer-result-count").innerText(), "250 rendered of 10000 matching (10000 loaded)");
+  const resultCount = page.locator("#explorer-result-count");
+  await resultCount.waitFor({ hasText: "250 rendered of 10000 matching (10000 loaded)" });
+  assert.equal(await resultCount.textContent(), "250 rendered of 10000 matching (10000 loaded)");
   assert.deepEqual(errors, []);
 } finally {
   await browser.close();
