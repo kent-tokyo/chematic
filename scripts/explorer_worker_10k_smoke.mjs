@@ -13,7 +13,11 @@ try {
   await page.locator("#loading-overlay").waitFor({ state: "hidden" });
   assert.equal(await page.locator("html").getAttribute("data-explorer-analysis"), "worker");
 
-  await page.locator("#explorer-paste-textarea").fill(Array.from({ length: 10_000 }, () => "C").join("\n"));
+  const records = Array.from({ length: 10_000 }, () => "C").join("\n");
+  await page.locator("#explorer-paste-textarea").evaluate((element, value) => {
+    element.value = value;
+    element.dispatchEvent(new Event("input", { bubbles: true }));
+  }, records);
   await page.locator("#explorer-btn-parse-paste").click();
   await page.locator("#explorer-status").waitFor({ hasText: "10000 molecules loaded." , timeout: 120_000 });
   assert.equal(await page.locator("#explorer-result-count").innerText(), "250 rendered of 10000 matching (10000 loaded)");
