@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "profile": "npm_clean_install_smoke_v1",
+  "package": "@kent-tokyo/chematic",
+  "version": "1.0.14",
+  "verified_at": "2026-09-13T06:03:00Z",
+  "environment": {
+    "node": "v24.5.0",
+    "install": "empty temporary directory; npm install @kent-tokyo/chematic@1.0.14 --ignore-scripts"
+  },
+  "artifact": {
+    "tarball": "https://registry.npmjs.org/@kent-tokyo/chematic/-/chematic-1.0.14.tgz",
+    "integrity": "sha512-5Lb4B9LdfbbQJAeBKXEx185UiXiQXL/RG/TCyrKBlcBwtK9+aOrx8zM2ndrpg9k8XU1jsxpBto+uS33U9d2uVA==",
+    "entrypoint": "chematic_wasm.js",
+    "types": "chematic_wasm.d.ts"
+  },
+  "result": {
+    "status": "verified",
+    "initialization": "init({ module_or_path: readFile(wasmPath) })",
+    "smiles": "c1ccccc1",
+    "formula": "C6H6",
+    "atom_count": 6
+  },
+  "boundary": "The default await init() path is browser-oriented and does not work in this Node version because Node fetch does not support the adjacent file: URL. This is not evidence for PyPI, crates.io, TypeScript, Python, Rust, or MCP package installation."
+}

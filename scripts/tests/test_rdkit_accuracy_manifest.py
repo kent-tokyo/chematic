@@ -26,6 +26,7 @@ def make_manifest(tmp_path: Path) -> tuple[Path, Path]:
                 "operations": [
                     {
                         "id": "test",
+                        "profile": "rdkit_compatibility",
                         "corpus": {
                             "path": str(corpus),
                             "sha256": digest(corpus),

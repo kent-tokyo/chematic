@@ -62,18 +62,25 @@ beyond loading its own static assets (WASM binary, CSS, this HTML/JS).
 
 ## Performance / limits
 
-- Practical comfort target: a few hundred records processed smoothly.
-- A client-side **hard display cap of 2,000 records** applies beyond that — a UI-level safety
-  guard, not a WASM API limit. Loading a larger CSV/`.smi` set truncates to the first 2,000 and
-  says so.
-- Processing (SMILES parsing, descriptor computation, similarity search) is chunked in batches
-  of 25 with a yield back to the browser's event loop between chunks, plus a visible progress
-  indicator and a Cancel button, so the main thread is never blocked for long on a large input.
+- Parsing and descriptor analysis run in a dedicated ES-module **Web Worker**.
+  Only DOM rendering and on-demand depiction stay on the main thread. The worker
+  imports the same-origin WASM asset explicitly, so CSP must allow `worker-src
+  'self'` and `script-src 'self'`; initialization failure is surfaced instead
+  of silently falling back to synchronous main-thread processing. Pending work
+  is rejected and the Worker is terminated on `pagehide`.
+- Practical comfort target: a few hundred records processed smoothly. The Trust
+  Release gate is a separate 10,000-record Worker workflow; this demo's current
+  rendering cap remains intentionally lower.
+- A client-side **workflow cap of 10,000 records** applies beyond that — a UI-level safety
+  guard, not a WASM API limit. Loading a larger CSV/`.smi` set truncates to the first 10,000 and
+  says so. All accepted records remain available to filtering, similarity and CSV export; the
+  table deliberately renders at most 250 at a time to keep interaction responsive.
+- Worker parsing/descriptor computation and main-thread similarity search are processed in
+  batches of 25 with a yield back to the browser event loop between chunks, plus a visible
+  progress indicator and a Cancel button.
 - 2D structure thumbnails render lazily (only once a row scrolls into view via
   `IntersectionObserver`), since eagerly depicting hundreds of SVGs on load — not the row count
   itself — is the actual cost driver at this scale.
-- No Web Worker is used. This was deliberately not added preemptively; it's a candidate future
-  improvement only if main-thread blocking is actually measured to be a problem in practice.
 
 ## Known limitations / explicitly out of scope for this version
 

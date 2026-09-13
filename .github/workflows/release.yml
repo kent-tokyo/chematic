@@ -10,6 +10,10 @@ permissions:
 jobs:
   release:
     name: Create GitHub Release
+    # Release candidates are validation-only tags.  The tag glob above cannot
+    # express SemVer prerelease exclusion, so keep the public-release boundary
+    # explicit at the side-effecting job.
+    if: ${{ !contains(github.ref_name, '-') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

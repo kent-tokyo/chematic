@@ -30,6 +30,26 @@ mol = chematic.from_smiles("c1ccccc1")
 print(mol.formula)   # C6H6
 ```
 
+## Node.js / WASM
+
+The npm package is a browser-oriented WASM build. Browser applications call
+`await init()` normally. In Node, pass the adjacent WASM bytes explicitly
+because Node does not fetch `file:` URLs:
+
+```js
+import { readFile } from 'node:fs/promises';
+import init, { parse_smiles } from '@kent-tokyo/chematic';
+
+const wasm = await readFile(new URL(
+  './node_modules/@kent-tokyo/chematic/chematic_wasm_bg.wasm',
+  import.meta.url,
+));
+await init({ module_or_path: wasm });
+const mol = parse_smiles('c1ccccc1');
+console.log(mol.formula()); // C6H6
+mol.free();
+```
+
 ## Optional dependencies
 
 `chematic` itself has no required runtime dependencies beyond Python and numpy.

@@ -3,10 +3,10 @@
   "$id": "https://raw.githubusercontent.com/kent-tokyo/chematic/main/docs/release-metadata-schema.json",
   "title": "chematic release metadata",
   "type": "object",
-  "required": ["schema_version", "product", "release", "packages", "wasm", "mcp", "benchmarks", "generated_at"],
+  "required": ["schema_version", "product", "release", "evidence_context", "packages", "wasm", "mcp", "benchmarks", "generated_at"],
   "additionalProperties": false,
   "properties": {
-    "schema_version": {"type": "integer", "const": 1},
+    "schema_version": {"type": "integer", "const": 2},
     "product": {"type": "string", "const": "chematic"},
     "release": {
       "type": "object",
@@ -18,6 +18,20 @@
         "commit": {"anyOf": [{"type": "string", "pattern": "^[0-9a-f]{40}$"}, {"type": "null"}]},
         "commit_source": {"type": "string"},
         "released_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "evidence_context": {
+      "type": "object",
+      "required": ["stable_release", "candidate", "oracle_lanes", "measurement_version_policy"],
+      "additionalProperties": false,
+      "properties": {
+        "stable_release": {"$ref": "#/$defs/release_identity"},
+        "candidate": {"anyOf": [{"$ref": "#/$defs/candidate_identity"}, {"type": "null"}]},
+        "oracle_lanes": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/oracle_lane"}
+        },
+        "measurement_version_policy": {"type": "string", "minLength": 1}
       }
     },
     "packages": {
@@ -60,6 +74,37 @@
     "generated_at": {"type": "string", "format": "date-time"}
   },
   "$defs": {
+    "release_identity": {
+      "type": "object",
+      "required": ["version", "tag", "commit"],
+      "additionalProperties": false,
+      "properties": {
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "tag": {"type": "string", "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "commit": {"anyOf": [{"type": "string", "pattern": "^[0-9a-f]{40}$"}, {"type": "null"}]}
+      }
+    },
+    "candidate_identity": {
+      "type": "object",
+      "required": ["version", "commit", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "status": {"type": "string", "enum": ["candidate", "frozen", "superseded"]}
+      }
+    },
+    "oracle_lane": {
+      "type": "object",
+      "required": ["engine", "version", "role", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "engine": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1},
+        "role": {"type": "string", "enum": ["pinned_regression", "separate_comparison"]},
+        "status": {"type": "string", "enum": ["active", "planned", "historical"]}
+      }
+    },
     "package": {
       "type": "object",
       "required": ["name", "version", "registry_url"],

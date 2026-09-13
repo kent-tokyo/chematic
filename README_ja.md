@@ -23,12 +23,13 @@ npm install @kent-tokyo/chematic
 
 Python版はC/C++コンパイラなしで導入できます。
 
-### v1.0.14 の対応範囲
+### v1.0.15 の対応範囲
 
-RDKit-parity SMARTS、環探索の上限契約、不足座標の描画、MMFF94電荷計算
-エラー、Pythonバルク記述子出力を改善しました。互換性は操作・コーパス
-単位のbounded scopeです。詳細は[互換性範囲](docs/compatibility-scope.md)と
-[CHANGELOG](CHANGELOG.md)を参照してください。
+Trust Release境界を強化しました。RCタグは公開されず、parser-security corpusは
+Linux上の強制ゲートで実行されます。Local Compound Explorerは上限付きバッチを
+Workerで処理し、Chromium・Firefox・WebKitとnative scalar/batch/Worker parityを
+リリースゲートにしています。互換性は操作・コーパス単位です。詳細は
+[互換性範囲](docs/compatibility-scope.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
 
 ## Python
 

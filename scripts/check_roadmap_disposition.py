@@ -18,7 +18,6 @@ AREA_MARKERS = {
     "equivalent-operation": ("equivalent operations", "P1"),
     "canonical-identity": ("Exact canonical-SMILES", "P2"),
     "v3000-parity": ("Exact canonical-SMILES", "P2"),
-    "performance-stretch": ("1.10x", "Performance stretch target"),
     "force-fields": ("MD/UFF/MMFF94", "P2"),
     "periodic-neighbors": ("periodic neighbor", "P2"),
     "symmetry-search": ("symmetry-heavy", "P2"),
@@ -37,6 +36,11 @@ AREA_MARKERS = {
     "accuracy-3d": ("A6 — 3D accuracy", "A6 / P5"),
 }
 
+# Abandoned work stays discoverable without inflating the active backlog.
+HISTORICAL_MARKERS = {
+    "performance-stretch": ("1.10x", "Performance stretch target"),
+}
+
 
 def main() -> int:
     roadmap = ROADMAP.read_text(encoding="utf-8")
@@ -49,6 +53,14 @@ def main() -> int:
             continue
         if not any(roadmap_marker in line for line in unchecked):
             errors.append(f"{name}: marker is not represented by an unchecked item")
+        if disposition_marker not in disposition:
+            errors.append(f"{name}: disposition marker '{disposition_marker}' is missing")
+
+    for name, (roadmap_marker, disposition_marker) in HISTORICAL_MARKERS.items():
+        if roadmap_marker not in roadmap:
+            errors.append(f"{name}: historical roadmap marker is missing")
+        if any(roadmap_marker in line for line in unchecked):
+            errors.append(f"{name}: historical area must not be an unchecked item")
         if disposition_marker not in disposition:
             errors.append(f"{name}: disposition marker '{disposition_marker}' is missing")
 
@@ -67,7 +79,10 @@ def main() -> int:
         print("roadmap disposition failures:")
         print("\n".join(f"- {error}" for error in errors))
         return 1
-    print(f"Roadmap disposition OK: {len(unchecked)} unchecked areas classified")
+    print(
+        f"Roadmap disposition OK: {len(unchecked)} unchecked areas classified; "
+        f"{len(HISTORICAL_MARKERS)} historical area excluded"
+    )
     return 0
 
 

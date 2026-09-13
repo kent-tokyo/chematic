@@ -3,11 +3,16 @@ import { applyFilters, buildComparator, renderTable } from "./table.js";
 import { exportToCsv, downloadCsv } from "./export.js";
 
 const CHUNK_SIZE = 25; // ponytail: fixed constant, tune only if profiling shows it matters
-const HARD_RECORD_CAP = 2000; // client-side rendering safety cap, not a WASM API limit
+const HARD_RECORD_CAP = 10_000; // workflow contract cap, not a WASM API limit
+const RENDER_PROGRESS_STRIDE = 500;
+const MAX_RENDERED_ROWS = 250;
 
 // --- WASM bindings, populated by initWasm() ---
 let parseSmiles, getDescriptorsJson, painsMatchesJson, sdfToRecordsJson, tanimotoSmiles, depictSvgOpts, DepictOptions;
 let wasmReady = false;
+let analysisWorker = null;
+let nextWorkerRequestId = 1;
+const pendingWorkerRequests = new Map();
 
 const state = {
   records: [], // CompoundRecord[]
@@ -64,33 +69,49 @@ async function initWasm() {
 }
 
 // ---------------------------------------------------------------------------
-// Per-record parsing (WASM call + memory-safety discipline)
+// Worker transport. The main thread owns the display-only WASM module while
+// parsing and descriptor work runs in a separately initialized Worker.
 // ---------------------------------------------------------------------------
 
-function parseOneRecord(raw, index) {
-  let mol = null;
-  const name = raw.name || `Compound ${index + 1}`;
-  try {
-    mol = parseSmiles(raw.smiles);
-    const canonicalSmiles = mol.canonical_smiles();
-    const formula = mol.formula();
-    const descriptors = JSON.parse(getDescriptorsJson(mol));
-    const painsAlerts = JSON.parse(painsMatchesJson(mol));
-    return {
-      index, name, inputSmiles: raw.smiles, status: "ok",
-      canonicalSmiles, formula, descriptors, painsAlerts,
-      similarity: null, errorMessage: null,
-    };
-  } catch (err) {
-    const message = typeof err === "string" ? err : String(err);
-    return {
-      index, name, inputSmiles: raw.smiles, status: "error",
-      canonicalSmiles: null, formula: null, descriptors: null, painsAlerts: [],
-      similarity: null, errorMessage: message,
-    };
-  } finally {
-    if (mol) { try { mol.free(); } catch (_) {} }
-  }
+function workerRequest(type, payload = {}) {
+  const requestId = nextWorkerRequestId++;
+  return new Promise((resolve, reject) => {
+    pendingWorkerRequests.set(requestId, { resolve, reject });
+    analysisWorker.postMessage({ type, requestId, ...payload });
+  });
+}
+
+function closeAnalysisWorker() {
+  if (!analysisWorker) return;
+  const error = new Error("Explorer Worker closed.");
+  for (const { reject } of pendingWorkerRequests.values()) reject(error);
+  pendingWorkerRequests.clear();
+  analysisWorker.terminate();
+  analysisWorker = null;
+}
+
+async function initAnalysisWorker() {
+  if (typeof Worker === "undefined") throw new Error("Web Worker is unavailable in this browser.");
+  analysisWorker = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
+  analysisWorker.onmessage = ({ data }) => {
+    const pending = pendingWorkerRequests.get(data.requestId);
+    if (!pending) return;
+    pendingWorkerRequests.delete(data.requestId);
+    if (data.type === "error") pending.reject(new Error(data.message));
+    else pending.resolve(data);
+  };
+  analysisWorker.onerror = (event) => {
+    const error = new Error(event.message || "Explorer Worker failed.");
+    for (const { reject } of pendingWorkerRequests.values()) reject(error);
+    pendingWorkerRequests.clear();
+  };
+  await workerRequest("init");
+  document.documentElement.dataset.explorerAnalysis = "worker";
+}
+
+async function parseChunkInWorker(records, startIndex) {
+  const response = await workerRequest("parse", { records, startIndex });
+  return response.records;
 }
 
 // ---------------------------------------------------------------------------
@@ -119,12 +140,20 @@ async function processRawRecords(rawRecords) {
       break;
     }
     const chunk = toProcess.slice(start, start + CHUNK_SIZE);
-    for (let i = 0; i < chunk.length; i++) {
-      state.records.push(parseOneRecord(chunk[i], start + i));
+    const records = await parseChunkInWorker(chunk, start);
+    if (controller.signal.aborted) {
+      // Cancellation can arrive while a Worker request is in flight.  Report
+      // the same terminal state as the pre-request cancellation path instead
+      // of silently falling out of the loop.
+      showStatus(`Cancelled after ${processed} of ${toProcess.length} records.`);
+      break;
     }
+    state.records.push(...records);
     processed = Math.min(start + CHUNK_SIZE, toProcess.length);
     if (!truncated) showStatus(`Parsing… ${processed}/${toProcess.length}`);
-    renderAll();
+    // Preserve all completed records for filtering/search/export, but avoid
+    // rebuilding thousands of table rows for every worker reply.
+    if (processed % RENDER_PROGRESS_STRIDE === 0 || processed === toProcess.length) renderAll();
     await new Promise((resolve) => setTimeout(resolve, 0)); // yield to the event loop
   }
 
@@ -232,7 +261,12 @@ function renderAll() {
     .sort(buildComparator(state.sort.key, state.sort.dir));
 
   const countEl = $("explorer-result-count");
-  if (countEl) countEl.textContent = `${visible.length} of ${state.records.length} shown`;
+  if (countEl) {
+    const rendered = Math.min(visible.length, MAX_RENDERED_ROWS);
+    countEl.textContent = rendered === visible.length
+      ? `${visible.length} of ${state.records.length} shown`
+      : `${rendered} rendered of ${visible.length} matching (${state.records.length} loaded)`;
+  }
 
   const emptyEl = $("explorer-empty-filter");
   if (emptyEl) emptyEl.classList.toggle("hidden", visible.length !== 0 || state.records.length === 0);
@@ -241,7 +275,7 @@ function renderAll() {
   if (!tbody) return;
   renderTable(
     tbody,
-    visible,
+    visible.slice(0, MAX_RENDERED_ROWS),
     (canonicalSmiles) => {
       let mol = null;
       try {
@@ -468,6 +502,8 @@ function wireEvents() {
 
 (async () => {
   wireEvents();
-  await initWasm();
+  await Promise.all([initWasm(), initAnalysisWorker()]);
   showStatus("Ready. Load the sample dataset, paste SMILES, or drop a CSV/SDF/.smi file.");
 })();
+
+window.addEventListener("pagehide", closeAnalysisWorker, { once: true });

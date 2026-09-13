@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "target_version": "1.0.14",
+  "operations": [
+    {
+      "id": "smiles_parse_write",
+      "api": "parse SMILES / write SMILES",
+      "bindings": ["rust", "python", "node", "wasm"],
+      "support_status": "stable",
+      "profile": "native",
+      "comparison": "binding contract; RDKit semantic lane not yet declared",
+      "oracle": null,
+      "evidence": ["validation/cross_binding_contract.json"],
+      "coverage": "not_measured"
+    },
+    {
+      "id": "canonical_identity",
+      "api": "canonical SMILES / semantic identity",
+      "bindings": ["rust", "python", "node", "wasm"],
+      "support_status": "experimental",
+      "profile": "native",
+      "comparison": "semantic; graph and string identity remain distinct",
+      "oracle": {"engine": "RDKit", "version": "2025.09.3", "settings": "recorded per artifact"},
+      "evidence": ["validation/results/canonical-cross-engine-a2-v1.0.13.json"],
+      "coverage": "partial"
+    },
+    {
+      "id": "aromaticity",
+      "api": "RDKit-compatible aromaticity / Morgan preprocessing",
+      "bindings": ["rust", "python", "node", "wasm"],
+      "support_status": "experimental",
+      "profile": "rdkit_compatibility",
+      "comparison": "exact raw Morgan identifiers on recorded lane",
+      "oracle": {"engine": "RDKit", "version": "2025.09.3", "settings": "radius 1 raw identifiers"},
+      "evidence": ["validation/results/ecfp-rdkit-raw-identifier-parity-aromaticity-variant-2025.09.3-5000.json"],
+      "coverage": "partial"
+    },
+    {
+      "id": "cip_labels",
+      "api": "CIP labels / stereochemical identity",
+      "bindings": ["rust", "python", "node", "wasm"],
+      "support_status": "experimental",
+      "profile": "rdkit_compatibility",
+      "comparison": "atom- and bond-map semantic label comparison",
+      "oracle": {"engine": "RDKit", "version": "2025.09.3", "settings": "recorded per artifact"},
+      "evidence": ["validation/results/cip-label-parity-a2-v1.0.13.json"],
+      "coverage": "partial"
+    },
+    {
+      "id": "smarts_substructure",
+      "api": "SMARTS parse / substructure target-atom sets",
+      "bindings": ["rust", "python", "node", "wasm"],
+      "support_status": "experimental",
+      "profile": "rdkit_compatibility",
+      "comparison": "exact target-atom sets; mapped embeddings are separate",
+      "oracle": {"engine": "RDKit", "version": "2025.09.3", "settings": "pinned regression lane; uniquify=true; 31 fixed queries; 2026.03.6 is recorded separately"},
+      "evidence": ["validation/results/rdkit-smarts-direct-chembl-5000-footer-verified-v1.0.13.json", "validation/results/rdkit-smarts-baseline-candidate-v1.0.14.json", "validation/results/rdkit-smarts-oracle-lanes-v1.0.14.json"],
+      "coverage": "2025.09.3: 155651 cells, 145588 matches, 21 residuals, 10042 oracle parse errors; 2026.03.6 separate lane: 155651 cells, 155629 matches, 22 residuals"
+    },
+    {
+      "id": "morgan_ecfp",
+      "api": "Morgan/ECFP fingerprint and similarity search",
+      "bindings": ["rust", "python", "node", "wasm"],
+      "support_status": "experimental",
+      "profile": "rdkit_compatibility",
+      "comparison": "exact bits/identifiers and unrounded ordered search results are separate lanes",
+      "oracle": {"engine": "RDKit", "version": "2025.09.3", "settings": "recorded per artifact"},
+      "evidence": ["validation/results/ecfp-rdkit-raw-identifier-parity-aromaticity-variant-2025.09.3-5000.json", "validation/results/rdkit-search-cross-binding-parity-v1.0.13.json"],
+      "coverage": "partial"
+    },
+    {
+      "id": "mol_sdf_v2000",
+      "api": "MOL/SDF V2000 parse/write",
+      "bindings": ["rust", "python", "node", "wasm"],
+      "support_status": "stable",
+      "profile": "native",
+      "comparison": "binding contract; cross-engine semantic parity is not yet declared",
+      "oracle": null,
+      "evidence": ["validation/cross_binding_contract.json"],
+      "coverage": "not_measured"
+    },
+    {
+      "id": "mol_sdf_v3000",
+      "api": "MOL/SDF V3000 parse/write and SGROUP/COLLECTION boundaries",
+      "bindings": ["rust", "python", "node", "wasm"],
+      "support_status": "experimental",
+      "profile": "native",
+      "comparison": "bounded round-trip; typed cross-engine semantics are not yet declared",
+      "oracle": null,
+      "evidence": ["validation/cross_binding_contract.json"],
+      "coverage": "partial"
+    }
+  ]
+}

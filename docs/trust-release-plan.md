@@ -1,12 +1,15 @@
 # chematic 1.x Trust Release — 実行計画
 
 更新日: 2026-09-13。期間: 2026-09-14〜2026-12-06（12週間の作業配分案）。
-対象: v1.0.14公開系列と、その前段であるv1.0.13候補。日付は納期の保証ではなくレビュー時点。
-状態: **計画策定。実装完了・リリース承認ではない**。
+対象: v1.0.14公開後のTrust Release候補。日付は納期の保証ではなくレビュー時点。
+状態: **T0の測定packetとT1.1–T1.4、T2.1を実装済み。Trust RCの全出口は未達**。
+v1.0.14は公開済みで、releaseとCI修正はPR #532でmainへマージ済み。
+公開完了と、この計画の候補条件充足は別に扱う。
 
 2026-09-13の実装進捗: T0のperception予算伝播・実測候補数・fail-closed回帰、
-SMARTS dumpの完了フッター/全行会計、RDKit accuracy profileのdashboard表示を実装した。
-P0–P2全体の完了やsealed評価の成立を意味しない。
+SMARTS dumpの完了フッター/全行会計、独立baseline/candidate packet、API profile
+dashboard、release metadata v2、公開channel実測recordを実装した。candidateは
+残差12→21の退行で採用停止。P0–P2全体の完了やsealed評価の成立を意味しない。
 
 [ROADMAP](../ROADMAP.md) の短期実行順を定める。
 [A0–A6精度計画](rdkit-accuracy-plan.md) の完了条件は維持する。
@@ -38,12 +41,11 @@ T0–T6は今回の作業ID。番号は相互に置き換えない。
   [OpenChemLib](https://github.com/Actelion/openchemlib/releases)。
   提供された個別不具合・CVE・PR日付は、それぞれの一次資料を確認してから
   回帰ケースへ採用する。全件を今週の確定事実として転載しない。
-- 今回の取得では[公式トップ](https://chematic.io/)はv1.0.14、
-  Published 2026-09-11を表示し、[PyPI](https://pypi.org/project/chematic/)とも一致。
-  0.20.1が現在もトップにあるという前提は採用しない。
-  [validationページ](https://chematic.io/validation/)の取得本文だけでは
-  pinned版の整合性を確定できないため、直接HTTP・各言語・配信assetを監査する。
-  検索キャッシュと公開ページの現状は区別する。
+- [公式トップ](https://chematic.io/)、[PyPI](https://pypi.org/project/chematic/)、
+  [validationページ](https://chematic.io/validation/)の版整合性はT2で直接監査する。
+  過去の取得値や検索キャッシュを現在の配信状態として扱わず、公開版・測定版・
+  各言語ページ・配信assetを分けて確認する。v1.0.14の公開workflow成功だけでは
+  全ページの同期完了を証明しない。
 - PyPIのMorgan互換表にはbit-identicalではない旨が残り、
   ローカルにはnative ECFPとRDKit互換APIが別に存在する。
   API名・設定・リリース版単位の対応表が必要。
@@ -110,20 +112,27 @@ baseline/candidateのビルド出自を固定した採用packet、残差分類�
 
 ### T0 — 比較の信頼性を回復する（目安2–4実働日）
 
-- [ ] T0.1 実行開始時にsource commit/diff、binary hash、比較器、入力/query hash、
+- [x] T0.1 実行開始時にsource commit/diff、binary hash、比較器、入力/query hash、
   期待ID・行数・全セル数を固定。入力parse失敗も1行として保持し、
   存在しないcorpusへのhand-only fallbackは正式ゲートでは失敗にする。
-- [ ] T0.2 子processの終了codeを確認してから集計し、完了footerと全件会計が一致した
+- [x] T0.2 子processの終了codeを確認してから集計し、完了footerと全件会計が一致した
   場合だけatomicにfinal artifactへ昇格。途中読込、重複/欠落ID、budget exhaustion、
   match上限到達、stale binary、oracle parse失敗を区別する。
   RDKit側のdefault match上限も固定・検知する。
-- [ ] T0.3 共有探索まで同じ予算を伝播するか、意味が異なる上限を別の型とstatusにする。
+- [x] T0.3 共有探索まで同じ予算を伝播するか、意味が異なる上限を別の型とstatusにする。
   訪問数・候補数を実測し、0/1/小予算/通常予算・中断・巨大環の負例を追加。
   成功結果は予算を変えても同じ、打切り結果は成功扱いしない。
-- [ ] T0.4 独立buildしたbaseline/candidateで全5,021×31を再測定。
+- [x] T0.4 独立buildしたbaseline/candidateで全5,021×31を再測定。
   5残差分子、bicyclo/adamantane、周辺構造、原子/結合順の並べ替えを含める。
   退行なし・対象クラス改善・資源制約合格が揃わなければhybridを昇格しない。
-  改善がない複雑化は除去候補とし、元の12不一致・18拒否を未達として残す。
+  改善がない複雑化は除去候補とする。現行の完了footer付きlaneは21残差・
+  RDKit query parse失敗10,042セルを基準に分類する。旧12不一致・18拒否は
+  別laneの履歴であり、この分母へ混ぜない。
+
+2026-09-13の独立測定では、`f2302b66` baselineは残差12、`a259507d`
+candidateは残差21（いずれも155,651セル、RDKit parse error10,042、整列失敗0）となった。
+比較packetは有効だが、candidateは9残差退行のため**採用不可**。出自とハッシュは
+`validation/results/rdkit-smarts-baseline-candidate-v1.0.14.json`に記録する。
 
 既存作業先: `crates/chematic-smarts/examples/rdkit_parity_dump.rs`、
 `rdkit_ring_model.rs`、`scripts/rdkit_ring_parity_diagnosis.py`。
@@ -132,31 +141,63 @@ baseline/candidateのビルド出自を固定した採用packet、残差分類�
 
 ### T1 — API単位のCompatibility Contract（目安4–7実働日）
 
-- [ ] T1.1 `validation/manifests/rdkit_accuracy_v2.json`と
+- [x] T1.1 `validation/manifests/rdkit_accuracy_v2.json`と
   `validation/cross_binding_contract.json`を参照する操作profile索引を作る。
   SMILES parse/write、canonical string/semantic identity、芳香族性、CIP、
   SMARTS/substructure、ECFP/Morgan、MOL/SDF V2000/V3000を必須行にする。
-- [ ] T1.2 各行へAPI名/各binding、Stable/Experimental/Unsupported、
+- [x] T1.2 各行へAPI名/各binding、Stable/Experimental/Unsupported、
   native/compat profile、oracle版/設定、exact/numeric/semantic、
   全入力/成功/拒否/失敗、許容差、source/binary/corpus hash、
   measured_at、再現コマンド、根拠artifactを格納する。
   要件充足率と化学的正解率を別列にする。
-- [ ] T1.3 `scripts/generate_compatibility_dashboard.py`を拡張し、
+- [x] T1.3 `scripts/generate_compatibility_dashboard.py`を拡張し、
   JSONとMarkdownを同じ入力から決定的に生成。
   opaque属性保持とtyped意味理解、match集合と原子写像、graphと文字列の
   一致を別行にし、欠測値を0や100%へ変換しない。
-- [ ] T1.4 native ECFP、RDKit-compatible Morgan、legacy `rdkit_compat`ラッパーを
+- [x] T1.4 native ECFP、RDKit-compatible Morgan、legacy `rdkit_compat`ラッパーを
   実際の呼出先で分類。radius、nbits、chirality、aromaticity、count/sparse、
   bitInfoごとに保証を書く。nativeの過去recallを互換APIの現状に流用しない。
+
+T1.1–T1.4は`validation/compatibility_profiles.json`と
+`scripts/check_compatibility_profiles.py`で実装し、生成dashboardへ反映済み。
+未測定は`not_measured`、既存結果が限定的な領域は`partial`として残す。
 - [ ] T1.5 2025.09.3の回帰laneを保存し、2026.03.6を別laneで固定する。
   差分分類と全対象操作の再測定後にだけ主要oracle版を変更する。
   RDKit.jsはnpm版と同梱RDKit版を別々に記録する。
+
+SMARTSについては同じv1.0.14 build・5,021分子・31 queryで2026.03.6 laneを
+2026-09-13に追加した。2025.09.3 laneの10,042 oracle parse-error cellsは2026.03.6で
+発生せず、残差は21から22になった。結果は
+`validation/results/rdkit-smarts-oracle-lanes-v1.0.14.json`へ分離して保存し、
+2025.09.3を既定regression oracleのまま維持する。全対象操作の再測定・RDKit.jsの
+同梱版記録は未完了なので、T1.5全体は未完了。
 - [ ] T1.6 新規10,000件の取得版・ライセンス・出自を固定し、
   開発2,000/封印評価8,000へ分割。既存の開発・回帰全群との
   parent/scaffold/同一構造重複を監査し、重複は開発側へ移す。
+  `scripts/generate_rdkit_identity_audit.py` と
+  `scripts/prepare_sealed_accuracy_cohort.py` は、RDKit固定の
+  canonical/parent/Murcko scaffold キー、source hash、candidate freeze、
+  unused-data attestation を必須にする準備器として実装済み。candidate tagは
+  実Git commitと同じobjectへ解決すること、attestationはattestor/timestamp/
+  statement/source hashを持ち対象source hashと一致することを検証する。新規データ
+  の独立取得と attestation は未完了なので、既存 corpus を sealed と
+  表示してはならない。
+  `scripts/fetch_chembl_sealed_candidate.py` は既存の小規模ChEMBL入力と
+  重ならないoffsetから、response hash・取得日時・CC BY-SA 3.0出典を保持する
+  ローカル候補を取得する。取得だけでは未使用性もsealed statusも主張しない。
   公開データでも「本開発で未使用」は成立しうるが、出自と露出履歴が必要。
   実行前にprotocol・seed・候補buildを凍結し、結果閲覧後の再調整は
   新しい候補試験として記録する。既存7,737件は封印群に再分類しない。
+  正式封印時は`validation/templates/unused-data-attestation.template.json`を複製して
+  maintainerが記入し、`--attest-unused --attestation-file`とcandidate commit/tagを
+  同時に渡す。テンプレート自体はattestationではない。
+  2026-09-13のlocal preflightでは、ChEMBL APIの14,543 single-fragment候補
+  （source SHA-256 `f50156bf…d63e61`）からcanonical 1件・scaffold 3,183件を
+  既存scopeとの重複として除外し、11,359件のeligible poolを得た。そこから
+  2,000 development / 8,000 holdout候補を決定的に抽出し、監査ハッシュと件数だけを
+  `validation/results/sealed-cohort-preflight-v1.0.14.json`へ保存した。candidate
+  commit/tagとunused-data attestationをまだ得ていないためstatusは
+  `prepared_not_sealed`であり、評価結果はまだ算出していない。
 
 既存A0 validator・raw-accounting・cross-binding runnersを拡張して使う。
 出口: 全操作の状態を生成でき、互換と宣言した範囲は全件coverageと既定許容差を満たす。
@@ -164,25 +205,65 @@ baseline/candidateのビルド出自を固定した採用packet、残差分類�
 
 ### T2 — release・文書・移行経路（目安3–5実働日）
 
-- [ ] T2.1 `release-metadata/`、`generate_release_metadata.py`、
+- [x] T2.1 `release-metadata/`、`generate_release_metadata.py`、
   `check_release_metadata.py`、`check_release_docs_consistency.py`を拡張する。
   stable release、candidate、各oracle、測定版を別フィールドで管理。
-  ソースtreeが1.0.13でも、その後のdirty実装を1.0.13公開成果として表示しない。
-- [ ] T2.2 GitHub tag/release、PyPI wheel/sdist、crates.io、docs.rs build、
+  manifestの版が公開タグと同じでも、その後の実装を当該タグの公開成果として表示しない。
+
+v2 metadataはstable release、candidate、oracle lanes、measurement-version policyを
+分離する。v1.0.14ではRDKit 2025.09.3をactive regression lane、2026.03.6を
+planned separate laneとして記録し、測定済みとは扱わない。
+- [x] T2.2 GitHub tag/release、PyPI wheel/sdist、crates.io、docs.rs build、
   npm tarball/dist-tag、公式サイトの直接HTTPを照合する。
   offlineはmanifest検証、onlineは公開物実測。未到達を成功にしない。
-- [ ] T2.3 サイト別repoはversion付きmetadataとdigestを検証して取り込む。
+
+2026-09-13のchannel recordではGitHub Release/tag、npm、PyPI、crates.io、docs.rs、
+公式サイトを確認した。PyPIはJSON APIと`pip index`、crates.ioはREST APIの403を
+回避してworkspace外から`cargo info --registry crates-io chematic@1.0.14`を実行し、
+公開crateの取得・解決まで確認した。
+`validation/results/release-channel-verification-v1.0.14.json`は
+`release_ready=true`を記録する。最初のPyPI 404観測は伝播途中の一時値であり、
+現行の公開状態として残さない。
+- [x] T2.3 サイト別repoはversion付きmetadataとdigestを検証して取り込む。
   日本語/英語/中国語、CDN import、canonical URL、cache、構造化データも確認。
   全registryが公開完了するまでcurrentを進めず、失敗はpartial publicationと表示。
   immutable artifactは上書きせず、未完了stepだけを再試行できるようにする。
-- [ ] T2.4 短いREADME各言語から生成dashboardへ誘導し、
+
+公式サイトrepoの中央`site-data.json`をv1.0.14、npm tarballのWASM raw 4,012,715 bytes /
+gzip 1,461,941 bytes、公開済み`chematic-mcp` 1.0.14へ同期した。site dependencyと
+lockfileも`@kent-tokyo/chematic@1.0.14` tarball/integrityへ更新し、site CIと
+Cloudflare Pages deployの成功、英語ホームとvalidation URLのv1.0.14表示を直接確認した。
+- [x] T2.4 短いREADME各言語から生成dashboardへ誘導し、
   `docs/rdkit-migration.md`とPyPI原稿をAPI profileに整合。
   fingerprint再作成、保存indexの互換性、strict/relaxed、stereo未対応、
   molecule解放・Worker利用・エラー処理を実行可能な移行例にする。
   既存PyPI配布物のREADMEは編集できないため修正は次リリースへ含める。
-- [ ] T2.5 release候補のtarball/wheelをclean環境へインストールし、
+
+英日中READMEはdashboardへリンク済みで、RDKit migration guideにはnative/RDKit
+fingerprint profile、保存index再構築、不完全入力のfail-closed境界、stereo/canonical
+identity、WASM handle解放とbrowser/Worker error例への導線を追加した。PyPI source
+READMEも同じdashboard/migration guideへ誘導する。既公開v1.0.14のimmutable PyPI
+READMEは変更せず、次の配布物へ反映する。
+- [x] T2.5 release候補のtarball/wheelをclean環境へインストールし、
   `tsc --noEmit`、mypy/pyright、Rust公開API、MCP schema smokeを通す。
   clone済みworkspaceでの成功だけではpackage利用品質を合格にしない。
+
+公開npm tarballは空の一時directoryへinstallし、Node 24.5.0でWASM byteを明示
+初期化してbenzene (`C6H6`, 6 atoms) を処理できた。再現用の
+`scripts/smoke_npm_package.mjs`をweb-target CIへ追加し、実測recordは
+`validation/results/npm-clean-install-v1.0.14.json`に保存した。これはnpmの
+一経路だけであり、PyPI wheel/sdist、Rust crate、TypeScript typecheck、MCPは未測定のため
+T2.5全体は未完了のまま。
+
+PyPI v1.0.14 wheelも空venvでimport、benzene処理、mypy、pyrightを通過し、
+公開`chematic-mcp` crateは隔離`cargo install --locked`後にlegacy initializeと
+20-tool `tools/list`を返した。npmのTypeScript consumer fixtureも`tsc --noEmit`で
+通過した。全結果は`validation/results/package-clean-install-v1.0.14.json`に固定する。
+隔離downstream Rust consumerも`chematic = '=1.0.14'`をcrates.ioから解決し、
+`chematic::smiles::parse`でbenzeneをcompile/runできた。これでT2.5の指定する
+Python、npm TypeScript、Rust公開API、MCP schema smokeを記録環境で満たした。
+cross-platform coverageは別のT3/T6出口であり、このclean-install smokeの合格範囲へ
+含めない。
 
 出口: 公開channelごとのversion/digest/時刻と実行可能な例。
 historical benchmarkの版は維持し、「全ての数字を最新版にする」同期はしない。
@@ -195,9 +276,17 @@ historical benchmarkの版は維持し、「全ての数字を最新版にする
 - [ ] T3.2 Explorerで1万件をrelease必須、10万件を次段階の容量ゲートにする。
   SDF/CSV/SMIのstreaming、固定batch、backpressure、進捗、cancel、
   部分失敗位置、再試行、exportの順序を検査。
+  Explorerは現在10,000件を保持し、250行だけをvirtual表示するWorker経路へ
+  移行済み。`scripts/explorer_worker_10k_smoke.mjs` がChromiumで全10,000件
+  の解析・状態・DOM上限を確認する。SDF/CSV streaming、partial failure、retry、
+  export順序は未完了。
 - [ ] T3.3 同一input/seed/profileでscalar/batch/Worker/native結果を比較。
   初期化後にネットワークを遮断してローカル機能が動くことを検証する。
   外部取得toolは明示的なonline機能として別扱い。
+  `scripts/explorer_native_worker_parity.mjs` はethanol、ethylamine、不正ring
+  closureをnative scalar CLI・native batch CLI・実module Workerで照合する。
+  canonical SMILES、主要記述子（1e-9以内）、拒否結果を比較し、Chromium local
+  runは通過した。CIにも独立jobを追加した。全browser・network遮断後の動作は未完了。
 - [ ] T3.4 RDKit.jsと同じoperation/inputでraw/gzip、cold init、
   parse/write、ECFP、検索、peak memory、UI応答を測る。
   同一host/browser、cold 20回・warm 5回以上、p50/p95、
@@ -205,6 +294,9 @@ historical benchmarkの版は維持し、「全ての数字を最新版にする
   100万分子換算は実測と別列で、線形外挿の仮定を明記する。
 - [ ] T3.5 MCP全toolのruntime schemaからtool数と入出力例を生成。
   型付き化学エラー、oversized input、中断、structured outputを確認する。
+  `scripts/check_mcp_runtime_inventory.py` は実際の stdio binary から
+  20 tool・input/output schema・代表 structured output を確認する。入力
+  上限と中断のwire-level回帰は追加で必要。
 
 1万件の暫定予算: timeoutを含む全件会計、cancel応答p95 ≤250ms、
 UI heartbeat gap p95 ≤100ms、batch working set ≤256MiB
@@ -218,21 +310,41 @@ UI heartbeat gap p95 ≤100ms、batch working set ≤256MiB
 既存security workflowとcorpusを再利用する。以下100件は出典付きの
 競合回帰laneとして追加するもので、既存ゲートを縮小するものではない。
 
-- [ ] T4.1 まずSMILES/SMARTS/MOL V2000/V3000/SDFの5形式を対象に
+- [~] T4.1 SMILES/SMARTS/MOL V2000/V3000/SDFの5形式を対象に
   少なくとも各20件（合計100件）の出典付き回帰を用意する。
   公開issue/OSS-Fuzz/minimized reproのライセンス、対象版、原因、
   byte hashを記録。CVE番号だけを根拠に形式の異なる入力を流用しない。
+- `validation/parser_security_corpus_v1.json` は各形式1 valid controlと19件の
+  CheMatic作成 boundary mutation（合計100件）を固定し、Open Babel、RDKit、
+  Indigo の公開reproducer URL、原因、対象範囲、各payload hashを記録する。
+  upstream入力のバイト列を再配布したものではないため、`origin` と fixture
+  licenseを明示する。upstreamの修正版・影響版を固定する比較laneは未完了。
 - [ ] T4.2 各engineをnetworkなしの子process/コンテナへ隔離し、
   wall time・peak RSS・exit/signal・panic・結果statusを記録。
   まず修正版の固定releaseを比較し、脆弱版実行を標準CIにしない。
-- [ ] T4.3 入力≤1MiB、1ケース2秒/256MiB、5形式固定corpusを暫定ゲートとする。
+  `scripts/run_isolated_parser_security.py` と
+  `crates/chematic-cli/examples/parser_security_case.rs` はこの実行境界を
+  実装済み（wall-time 2秒、Linuxのaddress-space 256 MiB、exit/signal/status、
+  Linux runnerの`VmHWM` peak RSS記録）。macOSのdiagnostic runはこの環境で
+  address-spaceを強制できないため`not_measured`とし、networkもproxy削除を
+  network隔離と呼ばない。Linux PR jobは固定runnerを測定前にbuildし、fresh
+  network namespace（GitHub hosted runnerの`sudo unshare --net`）で実行して
+  raw JSONをartifactへ残す。namespace境界を作れないrunnerではfail-closedとする。
+- [~] T4.3 入力≤1MiB、1ケース2秒/256MiB、5形式固定corpusを暫定ゲートとする。
   oversizedは事前検出で構造化エラー。重いstress群は別の上限と分母。
   process killは資源制御の証拠であり、parserの正常完了には数えない。
-- [ ] T4.4 PRは固定corpus、nightlyは各target 15分のfuzz、
+  隔離runnerはこの上限を既定値にし、各形式にvalid controlを必須にする。
+  `parser_security_case` は≤1MiBを構造化拒否し、runnerは各形式のvalid
+  controlを要求する。2026-09-13のmacOS functional diagnosticは100/100
+  expectation一致・最遅384.83msだったが、memory/networkを強制していないため
+  release evidenceではない。
+- [~] T4.4 PRは固定corpus、nightlyは各target 15分のfuzz、
   releaseは各target 1時間と固定regressionを実行する配分を準備。
   panic/crash/limit violation=0を要求し、timeoutも失敗として残す。
   sanitizer/Miri・FFI/依存層の検証を既存security workflowへ接続する。
-- [ ] T4.5 valid inputの負例対照も含め、全入力を拒否して安全率を上げない。
+  `security.yml`のLinux PR jobは固定corpus、256MiB address-space、wall-time、
+  per-case RSSを実行してartifactを保存する。nightly/release fuzzの時間割は未完了。
+- [x] T4.5 valid inputの負例対照も含め、全入力を拒否して安全率を上げない。
   外部ライブラリで再現しないケースもunsupported/not_applicableとして記録。
 
 出口: 再配布可能なcorpus、固定版runner、全件会計、CI raw artifact。
@@ -303,9 +415,11 @@ T3の1万件導入ゲート、T4固定corpus、T5既存安全性回帰・公開s
 
 ## 6. 次に着手する具体的な変更
 
-最初の変更はT0.1–T0.3: SMARTS runnerの完了状態・全件会計、
-hybridの実測予算とcap errorを修正する。T0.4で既存/共有/hybridの
-同一入力比較を固定し、採否を決める。
+T0.1–T0.3では完了footer・全行会計・共有探索への予算伝播・実測候補数が実装済み。
+残る出自固定、atomicな成果物昇格、負例と上限検出を検証packetとして揃える。
+続くT0.4ではbaseline/candidateを独立buildし、全5,021×31を同条件で再測定して
+21残差とRDKit query parse失敗10,042セルを分類し、hybridの採否を決める。
 次にT1.1–T1.4とT2.1を実装し、既存の生成物・release metadataを再利用する。
 T4の出典確認とT5の既存残差台帳は並行で準備する。
-本計画では製品コード変更、commit/push、registry公開、サイト配信、第三者への連絡は実行しない。
+計画の更新自体は新たな実装・測定・公開の証拠ではない。各作業の実行状態は
+成果物と検証結果で更新し、未達の出口は残す。

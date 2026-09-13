@@ -42,7 +42,7 @@ def main() -> int:
         return 1
 
     require(schema.get("$schema") == "https://json-schema.org/draft/2020-12/schema", "schema is not draft 2020-12", errors)
-    require(document.get("schema_version") == 1, "schema_version must be 1", errors)
+    require(document.get("schema_version") == 2, "schema_version must be 2", errors)
     require(document.get("product") == "chematic", "product must be chematic", errors)
     release = document.get("release", {})
     version = release.get("version")
@@ -56,6 +56,31 @@ def main() -> int:
     )
     if commit is None:
         require(bool(release.get("commit_source")), "null release commit must document its source", errors)
+    context = document.get("evidence_context")
+    require(isinstance(context, dict), "evidence_context must be an object", errors)
+    if isinstance(context, dict):
+        stable = context.get("stable_release")
+        require(isinstance(stable, dict), "stable_release must be an object", errors)
+        if isinstance(stable, dict):
+            for key in ("version", "tag", "commit"):
+                require(stable.get(key) == release.get(key), f"stable_release.{key} must match release.{key}", errors)
+        candidate = context.get("candidate")
+        require(candidate is None or isinstance(candidate, dict), "candidate must be an object or null", errors)
+        lanes = context.get("oracle_lanes")
+        require(isinstance(lanes, list), "oracle_lanes must be an array", errors)
+        if isinstance(lanes, list):
+            seen_lanes: set[tuple[object, object]] = set()
+            for lane in lanes:
+                require(isinstance(lane, dict), "every oracle lane must be an object", errors)
+                if not isinstance(lane, dict):
+                    continue
+                key = (lane.get("engine"), lane.get("version"))
+                require(key not in seen_lanes, "oracle lanes must not duplicate an engine/version", errors)
+                seen_lanes.add(key)
+                require(bool(lane.get("engine")) and bool(lane.get("version")), "oracle lane engine/version is required", errors)
+                require(lane.get("role") in {"pinned_regression", "separate_comparison"}, "oracle lane role is invalid", errors)
+                require(lane.get("status") in {"active", "planned", "historical"}, "oracle lane status is invalid", errors)
+        require(bool(context.get("measurement_version_policy")), "measurement_version_policy is required", errors)
     for key in ("rust", "python", "npm"):
         package = document.get("packages", {}).get(key, {})
         require(package.get("version") == version, f"{key} package version mismatch", errors)

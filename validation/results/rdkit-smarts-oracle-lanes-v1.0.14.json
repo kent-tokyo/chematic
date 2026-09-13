@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "profile": "rdkit_smarts_oracle_lanes_v1",
+  "status": "separate_oracle_lanes",
+  "source": {
+    "commit": "a259507dbf6da7823a412dcb198d37b7adf59608",
+    "tree_sha256": "e70edbfc6514b0097f3f9305fdca98219895d82713c3ea9b8d03cc43b2ca43cd",
+    "binary_sha256": "b7f078d31de0ef410df5d2386c86e44b8f771827f5e8567581ad668daaf0686f"
+  },
+  "measurement_identity": {
+    "corpus": "scripts/chembl_accuracy_corpus_4999.smi",
+    "corpus_sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+    "molecules": 5021,
+    "query_sha256": "23733c34b24b22b38d614da383eec5e1cc38dcfb80d2c8ca87bea51e60b10af8",
+    "total_cells": 155651,
+    "settings": "uniquify=true; sorted target-atom sets; completed footer required"
+  },
+  "lanes": [
+    {
+      "oracle": "RDKit",
+      "version": "2025.09.3",
+      "source": "installed-python-package-2025.09.3",
+      "summary_sha256": "8ad448b01a237fb35ea03a0bb77692aa54b4e34c60eaf0ebd1d8a6b8dfe26a64",
+      "bucket_counts": {
+        "agree_all": 145433,
+        "both_disagree_same_as_default": 21,
+        "parity_fixes_default": 155,
+        "rdkit_smarts_parse_error": 10042
+      },
+      "alignment_failures": 0
+    },
+    {
+      "oracle": "RDKit",
+      "version": "2026.03.6",
+      "source": "pypi-rdkit-2026.03.6",
+      "summary_sha256": "f51ae3e53b042229d1e4fd89a153a5f2b15895504b644783feea8f3b93630a27",
+      "bucket_counts": {
+        "agree_all": 155474,
+        "both_disagree_same_as_default": 22,
+        "parity_fixes_default": 155
+      },
+      "alignment_failures": 0
+    }
+  ],
+  "interpretation": "The lanes use the same chematic build, corpus, query set, and comparison settings. They are not interchangeable: RDKit 2026.03.6 no longer reports the 10,042 query parse-error cells present in the 2025.09.3 lane, and its residual count is 22 rather than 21. This is an oracle-version difference record, not a compatibility improvement or a reason to change the pinned regression oracle."
+}

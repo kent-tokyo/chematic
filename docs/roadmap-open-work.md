@@ -1,17 +1,15 @@
 # Roadmap open-work disposition
 
-The prepared MMFF94 slice also has an opt-in analytic L-BFGS reduction smoke;
-its boundary is recorded in `validation/results/mmff94-bounded-analytic-lbfgs-v1.0.10.json`.
-The vdW and opt-in electrostatic terms now rebuild coordinate-dependent cutoff
-neighbor lists and match their all-pair cutoff references on fixed fixtures;
-see `validation/results/mmff94-vdw-neighbor-list-v1.0.10.json` and
-`validation/results/mmff94-electrostatic-neighbor-list-v1.0.10.json`.
-The opt-in analytic L-BFGS objective now switches the cutoff energy and gradient
-together; the production-default minimizer remains unchanged.
-
 This document is the current disposition of unchecked roadmap items for the
-v1.0.13 release tree and the planned accuracy follow-up (updated 2026-09-13). An item
-is not complete merely because a narrower local slice has evidence.
+v1.0.15 release follow-up (updated 2026-09-13). An item is not complete merely
+because a narrower local slice has evidence. Recorded v1.0.13 and earlier
+measurements keep their original scope; they were not rerun for this reorganization.
+
+The [active roadmap](../ROADMAP.md) owns execution order and the 18-area open
+backlog. This ledger owns evidence and dependencies, not a second priority list.
+The abandoned speed target is historical and excluded from the open count.
+See the [pre-reorganization snapshot](archive/roadmap-through-2026-09-13.md)
+for the previous long-form roadmap.
 
 ## Accuracy follow-up (A0–A6)
 
@@ -127,12 +125,12 @@ parties or future publication actions.
 
 ## Dependency classification
 
-The remaining unchecked items fall into three explicit classes:
+Active work has three dependency classes; a fourth retains abandoned history:
 
 | Class | Meaning | Current items |
 |---|---|---|
 | `local-open` | Can be implemented and verified in this repository without an external service, reviewer, future release, or user decision | exhaustive malformed/parser-state coverage; full canonical atom-order/E/Z invariance; remaining analytic force terms and electrostatic/full coordinate-dependent neighbor-list integration; broader triclinic periodic cell-list proof; broader stable-operation fixture coverage; broader browser/agent cases when the local runner is available; reaction/SMARTS breadth after the P3 gate |
-| `local-toolchain` | Repository work is local, but proof or generated artifacts require a missing local toolchain or installed package | current Node/WASM artifact regeneration; Python extension pytest lane; browser-memory and cross-platform execution; stable browser runner termination |
+| `local-toolchain` | Repository work is local, but its required runtime or package must be available and verified for that lane | candidate-specific Node/WASM and Python artifact regeneration; browser-memory and cross-platform execution; stable browser runner termination. Prior successful builds do not establish availability or evidence for every future lane |
 | `external` | Requires a non-maintainer review, external audit, future maintenance event, publication, or external coordination | S5 independent review/audit; S6 advisory/backport/publication rehearsal; curated quality reports that require an agreed external/reference corpus |
 | `historical` | Intentionally retained for traceability but abandoned or not a current completion gate | the additional 1.10x SMILES parse-throughput stretch target |
 
@@ -140,6 +138,20 @@ Only `local-open` and `local-toolchain` work is in the autonomous scope. A
 `local-toolchain` item is not complete until the required local toolchain is
 available and its artifact or runtime evidence passes; an `external` item is
 never marked complete by local tests alone.
+
+## Historical implementation notes
+
+The following versioned results explain completed slices and earlier blockers;
+they are not a current toolchain inventory or new v1.0.14 measurements.
+
+The prepared MMFF94 slice also has an opt-in analytic L-BFGS reduction smoke;
+its boundary is recorded in `validation/results/mmff94-bounded-analytic-lbfgs-v1.0.10.json`.
+The vdW and opt-in electrostatic terms rebuild coordinate-dependent cutoff
+neighbor lists and match their all-pair cutoff references on fixed fixtures;
+see `validation/results/mmff94-vdw-neighbor-list-v1.0.10.json` and
+`validation/results/mmff94-electrostatic-neighbor-list-v1.0.10.json`.
+The opt-in analytic L-BFGS objective switches the cutoff energy and gradient
+together; the production-default minimizer remains unchanged.
 
 The current UFF implementation now includes a bounded common-organic torsion
 slice for sp3–sp3, sp2–sp2, and mixed central bonds. The butane energy and
@@ -181,7 +193,7 @@ installation is not treated as workspace evidence. The wheel is a local
 candidate only and is not published or installed into the normal user
 environment. Neither condition is promoted to a completed roadmap item.
 
-The P1 streaming safety runner was also rerun against the current v1.0.13 workspace:
+The P1 streaming safety runner was also rerun against the then-current v1.0.13 workspace:
 800 malformed-input attempts (800 unique payloads; 80 per format), 10
 oversized-input cases, and 20 gzip cases passed with zero
 failures across SDF, MOL, XYZ, Extended XYZ, V3000,

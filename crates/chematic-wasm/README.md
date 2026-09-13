@@ -4,7 +4,7 @@ WebAssembly bindings for [chematic](https://github.com/kent-tokyo/chematic), a p
 
 Published to npm as [`@kent-tokyo/chematic`](https://www.npmjs.com/package/@kent-tokyo/chematic).
 
-The current workspace line is 1.0.14. The binding keeps bounded parsing,
+The current workspace line is 1.0.15. The binding keeps bounded parsing,
 typed failures, and opt-in `embed_pipeline_v2_json`; 3D/MMFF94 behavior remains
 Experimental and is not a claim of full RDKit parity.
 
@@ -93,6 +93,26 @@ const caffeine = parse_smiles('Cn1cnc2c1c(=O)n(c(=O)n2C)C');
 console.log(tanimoto_ecfp4(mol, caffeine));    // ECFP4 Tanimoto
 console.log(tanimoto_atom_pair(mol, caffeine)); // AtomPair Tanimoto
 console.log(tanimoto_torsion(mol, caffeine));   // Torsion Tanimoto
+```
+
+### Node.js
+
+The published package is built with wasm-pack's `web` target. In a browser,
+`await init()` locates the adjacent WASM asset. Node does not fetch `file:`
+URLs, so pass the asset bytes explicitly:
+
+```js
+import { readFile } from 'node:fs/promises';
+import init, { parse_smiles } from '@kent-tokyo/chematic';
+
+const wasm = await readFile(new URL(
+  './node_modules/@kent-tokyo/chematic/chematic_wasm_bg.wasm',
+  import.meta.url,
+));
+await init({ module_or_path: wasm });
+const mol = parse_smiles('c1ccccc1');
+console.log(mol.formula()); // C6H6
+mol.free();
 ```
 
 ```js

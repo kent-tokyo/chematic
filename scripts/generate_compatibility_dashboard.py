@@ -11,20 +11,38 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
-
-from benchmark_version import workspace_version
-
 
 ROOT = Path(__file__).resolve().parent.parent
 CONTRACT = ROOT / "validation" / "cross_binding_contract.json"
 ACCURACY_MANIFEST = ROOT / "validation" / "manifests" / "rdkit_accuracy_v2.json"
+PROFILES = ROOT / "validation" / "compatibility_profiles.json"
 DEFAULT_OUTPUT = ROOT / "docs" / "compatibility-dashboard.md"
 
 
-def current_streaming_matrix() -> Path:
-    """Select the checked-in matrix for the current workspace version."""
-    version = workspace_version(ROOT)
+def version_key(version: str) -> tuple[int, int, int]:
+    match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", version)
+    if match is None:
+        raise ValueError(f"invalid semantic version in streaming matrix path: {version!r}")
+    return tuple(int(value) for value in match.groups())
+
+
+def cargo_workspace_version() -> str:
+    cargo = (ROOT / "Cargo.toml").read_text(encoding="utf-8")
+    match = re.search(r"(?ms)^\[workspace\.package\]\s*$.*?^version\s*=\s*\"([^\"]+)\"\s*$", cargo)
+    if match is None:
+        raise ValueError("Cargo.toml has no [workspace.package] version")
+    return match.group(1)
+
+
+def current_streaming_matrix(version: str) -> tuple[Path, bool]:
+    """Select the current matrix, or an explicitly historical compatible one.
+
+    A release version can advance without rerunning a non-equivalent streaming
+    benchmark.  The dashboard must still generate in that state, while clearly
+    labelling the older matrix rather than silently presenting it as current.
+    """
     # Current matrix refreshes may be stored under validation/results when the
     # record is a machine-readable gate rather than a dated benchmark note.
     # Prefer the canonical validation result, then retain compatibility with
@@ -34,9 +52,21 @@ def current_streaming_matrix() -> Path:
         *sorted(ROOT.glob(f"benchmarks/*-streaming-cross-engine-matrix-v{version}.json")),
     ]
     candidates = [path for path in candidates if path.is_file()]
-    if not candidates:
-        raise FileNotFoundError(f"no streaming matrix for workspace version {version}")
-    return candidates[0]
+    if candidates:
+        return candidates[0], True
+
+    historical: list[tuple[tuple[int, int, int], Path]] = []
+    for path in ROOT.glob("validation/results/cross-engine-matrix-v*.json"):
+        match = re.fullmatch(r"cross-engine-matrix-v(.+)\.json", path.name)
+        if match is None:
+            continue
+        candidate_version = match.group(1)
+        if version_key(candidate_version) <= version_key(version):
+            historical.append((version_key(candidate_version), path))
+    if not historical:
+        raise FileNotFoundError(f"no streaming matrix at or before workspace version {version}")
+    historical.sort()
+    return historical[-1][1], False
 
 
 def load(path: Path) -> dict:
@@ -72,6 +102,9 @@ def render(
     contract: dict,
     streaming: dict,
     streaming_path: Path,
+    streaming_is_current: bool,
+    target_version: str,
+    profiles: dict | None = None,
     accuracy_manifest: dict | None = None,
 ) -> str:
     contract_path = "validation/cross_binding_contract.json"
@@ -82,7 +115,7 @@ def render(
         "Generated from checked-in manifests by `python3 scripts/generate_compatibility_dashboard.py`.",
         "This is a compatibility-contract dashboard, not a universal RDKit parity or speed claim.",
         "",
-        f"- Target version: `{streaming['target_version']}`",
+        f"- Target version: `{target_version}`",
         "- Regeneration: deterministic, offline, clean-checkout compatible",
         f"- Contract manifest: `{contract_path}` (SHA-256 `{digest(CONTRACT)}`)",
         f"- Streaming matrix: `{streaming_display_path}` (SHA-256 `{digest(streaming_path)}`)",
@@ -102,6 +135,8 @@ def render(
         "## Streaming record/failure contract",
         "",
         f"Pinned matrix: {streaming['repeats']} repetitions across {len(streaming['rows'])} formats.",
+        "- Matrix status: `current target`" if streaming_is_current else
+        f"- Matrix status: `historical for target`; matrix target is `{streaming.get('target_version', 'unknown')}` and was not remeasured for the current release.",
         "The engine/process boundaries remain explicit; records and failures are the only cross-engine claims.",
         "",
         "| Format | Expected records | Engines with zero failures |",
@@ -120,6 +155,30 @@ def render(
         "- Regenerate after changing either source manifest and review the resulting digest changes before committing.",
         "",
     ]
+    if profiles is not None:
+        lines += [
+            "## API profile Compatibility Contract",
+            "",
+            "Each row separates support status, API profile, comparator lane, and measurement coverage. "
+            "`not_measured` is a visible gap, not zero coverage or a passing result.",
+            "",
+            "| Operation | Support | Profile | Comparator | Coverage |",
+            "|---|---|---|---|---|",
+        ]
+        for operation in profiles["operations"]:
+            oracle = operation["oracle"]
+            comparator = "—" if oracle is None else f"{oracle['engine']} `{oracle['version']}`"
+            lines.append(
+                f"| `{operation['id']}` | `{operation['support_status']}` | "
+                f"`{operation['profile']}` | {comparator} | {operation['coverage']} |"
+            )
+        lines += [
+            "",
+            "Evidence paths, API names, settings, and exact/numeric/semantic comparison rules live in "
+            "`validation/compatibility_profiles.json`; validate them with "
+            "`python3 scripts/check_compatibility_profiles.py`.",
+            "",
+        ]
     if accuracy_manifest is not None:
         comparator = accuracy_manifest.get("comparator", {})
         operations = accuracy_manifest.get("operations", [])
@@ -156,10 +215,20 @@ def main() -> int:
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     args = parser.parse_args()
     output = args.output if args.output.is_absolute() else ROOT / args.output
-    streaming_path = current_streaming_matrix()
+    target_version = cargo_workspace_version()
+    streaming_path, streaming_is_current = current_streaming_matrix(target_version)
+    profiles = load(PROFILES) if PROFILES.is_file() else None
     accuracy_manifest = load(ACCURACY_MANIFEST) if ACCURACY_MANIFEST.is_file() else None
     output.write_text(
-        render(load(CONTRACT), load(streaming_path), streaming_path, accuracy_manifest),
+        render(
+            load(CONTRACT),
+            load(streaming_path),
+            streaming_path,
+            streaming_is_current,
+            target_version,
+            profiles,
+            accuracy_manifest,
+        ),
         encoding="utf-8",
     )
     print(output)

@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "release": {
+    "version": "1.0.14",
+    "tag": "v1.0.14",
+    "commit": "a259507dbf6da7823a412dcb198d37b7adf59608"
+  },
+  "checked_at": "2026-09-13T06:42:00Z",
+  "release_ready": true,
+  "channels": [
+    {
+      "id": "github_release",
+      "status": "verified",
+      "observed_version": "1.0.14",
+      "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.14",
+      "detail": "Published release asset exists; annotated tag resolves to the recorded release commit."
+    },
+    {
+      "id": "npm",
+      "status": "verified",
+      "observed_version": "1.0.14",
+      "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic",
+      "detail": "Registry metadata reported dist-tag latest=1.0.14."
+    },
+    {
+      "id": "pypi",
+      "status": "verified",
+      "observed_version": "1.0.14",
+      "url": "https://pypi.org/pypi/schematic/json",
+      "detail": "PyPI JSON API and pip index both reported 1.0.14 as the latest available release."
+    },
+    {
+      "id": "crates_io",
+      "status": "verified",
+      "observed_version": "1.0.14",
+      "url": "https://crates.io/api/v1/crates/schematic",
+      "detail": "The REST API returned HTTP 403 from this environment, but cargo info --registry crates-io chematic@1.0.14 downloaded and resolved the published crate from outside the workspace."
+    },
+    {
+      "id": "docs_rs",
+      "status": "verified",
+      "observed_version": "1.0.14",
+      "url": "https://docs.rs/chematic/1.0.14/chematic/",
+      "detail": "HTTP 200 page identified chematic 1.0.14."
+    },
+    {
+      "id": "site",
+      "status": "verified",
+      "observed_version": "1.0.14",
+      "url": "https://kent-tokyo.github.io/chematic/",
+      "detail": "Site data, dependency manifest, and lockfile were synchronized to v1.0.14; site CI and Cloudflare Pages deploy succeeded, and homepage plus /validation/ returned v1.0.14."
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 
 Pure-Rust cheminformatics library for Python — SMILES parsing, 190+ descriptor values (71 functions), fingerprints, pKa prediction, ADMET profiling, and template-based retrosynthesis.
 
-The current 1.0.14 release line also includes bounded batch descriptor
+The current 1.0.15 release line also includes bounded batch descriptor
 output through `bulk.descriptors_array(smiles, columns)`. Requested columns
 are computed selectively and returned as typed NumPy arrays; invalid SMILES
 remain excluded as documented.
@@ -115,6 +115,14 @@ except chematic.PipelineV2Error as e:
 - **Opt-in v2 embedding pipeline**: `mol.embed_pipeline_v2(config)` — torsion-knowledge-aware distance geometry, stereo verify/repair, and policy-gated force field (`PipelineV2Config`), returning full per-stage evidence (embed stats, torsion knowledge/optimization reports, stereo before/after, force-field actual policy and fallback, final geometry validation, stage timings) instead of just coordinates; raises `chematic.PipelineV2Error` with structured `.diagnostics` on failure
 
 ## RDKit compatibility
+
+The operation/profile boundaries and measured oracle lanes are listed in the
+[Compatibility Contract dashboard](../../docs/compatibility-dashboard.md).
+For persisted fingerprints, saved indices, canonical identity, stereo, and
+browser/Worker migration decisions, read the
+[RDKit migration guide](../../docs/rdkit-migration.md) before changing a
+production workflow. Native ECFP and RDKit-compatible Morgan are separate
+profiles; rebuild stored fingerprints and indices under the chosen profile.
 
 `chematic.rdkit_compat` provides a lightweight RDKit-compatible subset for environments where RDKit is unavailable (WASM, serverless, conda-free CI):
 

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "release": {"version": "1.0.15", "tag": "v1.0.15", "commit": null},
+  "checked_at": "2026-09-13T10:10:00Z",
+  "release_ready": false,
+  "channels": [
+    {"id": "github_release", "status": "not_measured", "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.15", "detail": "Pre-publication record; verify after the annotated tag and release asset exist."},
+    {"id": "npm", "status": "not_measured", "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic", "detail": "Pre-publication record; verify the published package after release."},
+    {"id": "pypi", "status": "not_measured", "url": "https://pypi.org/pypi/schematic/json", "detail": "Pre-publication record; verify the published package after release."},
+    {"id": "crates_io", "status": "not_measured", "url": "https://crates.io/api/v1/crates/schematic", "detail": "Pre-publication record; verify the published crate after release."},
+    {"id": "docs_rs", "status": "not_measured", "url": "https://docs.rs/chematic/1.0.15/chematic/", "detail": "Pre-publication record; verify generated documentation after release."},
+    {"id": "site", "status": "not_measured", "url": "https://kent-tokyo.github.io/chematic/", "detail": "Pre-publication record; verify the deployed site after its version data is updated."}
+  ]
+}

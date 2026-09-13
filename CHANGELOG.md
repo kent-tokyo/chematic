@@ -11,6 +11,23 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 No unreleased changes.
 
+## [1.0.15] - 2026-09-13
+
+- Added a release-candidate safety boundary: prerelease tags no longer create
+  GitHub Releases or publish crates.io, PyPI, or npm artifacts.
+- Added a Linux-enforced parser-security corpus gate with bounded execution,
+  memory accounting, and isolated network namespace coverage for malformed
+  SMILES, SMARTS, V2000, V3000, and SDF inputs.
+- Moved Local Compound Explorer parsing and descriptor analysis into a Worker,
+  with a 10,000-record input cap, bounded rendering, deterministic cancellation
+  feedback, and native scalar/batch/Worker parity checks.
+- Added cross-browser Explorer validation for Chromium, Firefox, and WebKit,
+  including the 10,000-record Worker workflow and a fresh-runner native CLI
+  parity build.
+- Added provenance-sealed cohort preparation and attestation checks for the
+  Trust Release evaluation workflow; preparation evidence is kept distinct
+  from a completed external-oracle measurement.
+
 ## [1.0.14] - 2026-09-13
 
 - Reduced false `RingModelAmbiguous` refusals in opt-in RDKit-parity SMARTS
@@ -468,7 +485,8 @@ The authoritative list of published tags and release artifacts is the
 historical implementation notes remain available in the archived detailed
 history and Git history.
 
-[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.14...HEAD
+[Unreleased]: https://github.com/kent-tokyo/chematic/compare/v1.0.15...HEAD
+[1.0.15]: https://github.com/kent-tokyo/chematic/compare/v1.0.14...v1.0.15
 [1.0.14]: https://github.com/kent-tokyo/chematic/compare/v1.0.13...v1.0.14
 [1.0.13]: https://github.com/kent-tokyo/chematic/compare/v1.0.12...v1.0.13
 [1.0.12]: https://github.com/kent-tokyo/chematic/compare/v1.0.11...v1.0.12

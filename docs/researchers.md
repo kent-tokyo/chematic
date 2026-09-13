@@ -11,7 +11,7 @@ and typed failures.
 ```bash
 python -m venv .venv
 . .venv/bin/activate
-pip install chematic==1.0.14
+pip install chematic==1.0.15
 ```
 
 ```python

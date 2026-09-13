@@ -6,6 +6,11 @@ supported**, or **Not currently supported**, names the real chematic API
 alongside RDKit's, and states known residuals — it is not a marketing
 document, and it does not claim general superiority over RDKit.
 
+The machine-readable [Compatibility Contract dashboard](compatibility-dashboard.md)
+is the current operation/profile index. It preserves `not_measured` and
+Experimental boundaries rather than treating this narrative matrix as a global
+parity claim.
+
 See also: [`rdkit_cheatsheet.md`](rdkit_cheatsheet.md) (side-by-side API
 snippets for common tasks) and [`rdkit-comparison.md`](rdkit-comparison.md)
 (prose comparison of chematic vs. RDKit for teams evaluating which library
@@ -341,6 +346,38 @@ Python bindings. Measured 2026-09-11 in the v1.0.12 Node/WASM gate (see the
 See [`format-capabilities.md`](format-capabilities.md)
 for exactly which formats are and are not exposed at the WASM layer (plain
 CIF, notably, is not).
+
+## Moving a persisted workflow safely
+
+1. **Choose and record one fingerprint profile before rebuilding.** Native
+   `ecfp4()` and the RDKit-compatible Morgan entry points are distinct
+   profiles. Recreate fingerprints, similarity scores, and every persisted
+   search index under the selected profile; do not mix their bytes or import
+   an RDKit index as though it had chematic semantics. The exact declared
+   profile and measured boundaries are in the
+   [Compatibility Contract dashboard](compatibility-dashboard.md).
+2. **Keep incomplete-edit input out of normal parsing.** chematic does not
+   offer a global, silent “relaxed” parser mode. Use a format/API-specific
+   bounded or checked entry point where one is documented; ordinary parsing
+   continues to reject malformed structures rather than treating a partial
+   graph as a molecule. Preserve the rejected record and its error for UI
+   editing rather than caching a partial result as valid chemistry.
+3. **Treat stereo and canonical identity as explicit boundaries.** The
+   RDKit-compatible CIP path is Experimental, and canonical SMILES text is
+   not a general dedup key. Preserve original structure text and use
+   `canonical_smiles_stable_key()` only when its fail-closed contract is the
+   desired identity policy; do not replace an unresolved result with a
+   guessed label.
+4. **Release browser handles and isolate bulk work.** `MolHandle` owns WASM
+   memory, so call `.free()` after extracting the data needed by the UI.
+   The [browser app guide](use-cases/browser-app.md) contains runnable
+   parse/error/cleanup, React, SDF-batch, and Worker-ready patterns. Its
+   examples make invalid SMILES an explicit thrown error and keep network
+   access outside the local chemistry path.
+
+These rules are migration boundaries, not claims that a saved RDKit workflow
+has a drop-in binary-compatible replacement. Validate a rebuilt index and its
+ranking on the application’s own held-out inputs before switching production.
 
 ---
 
