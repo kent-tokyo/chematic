@@ -141,7 +141,13 @@ async function processRawRecords(rawRecords) {
     }
     const chunk = toProcess.slice(start, start + CHUNK_SIZE);
     const records = await parseChunkInWorker(chunk, start);
-    if (controller.signal.aborted) break;
+    if (controller.signal.aborted) {
+      // Cancellation can arrive while a Worker request is in flight.  Report
+      // the same terminal state as the pre-request cancellation path instead
+      // of silently falling out of the loop.
+      showStatus(`Cancelled after ${processed} of ${toProcess.length} records.`);
+      break;
+    }
     state.records.push(...records);
     processed = Math.min(start + CHUNK_SIZE, toProcess.length);
     if (!truncated) showStatus(`Parsing… ${processed}/${toProcess.length}`);
