@@ -41,16 +41,22 @@ try {
   await status.waitFor({ hasText: /1 loaded, 0 failed/ });
   assert.equal(await error.isVisible(), false);
 
-      const largeInput = Array.from({ length: 10001 }, () => "CCO").join("\n");
-      await input.fill(largeInput);
-      await page.locator("#explorer-btn-parse-paste").click();
-      await status.waitFor({ hasText: /Showing the first 10000 of 10001 records/ });
-      await page.locator("#explorer-cancel").click();
-      await status.waitFor({ hasText: /Cancelled after/ });
-      await page.locator("#explorer-cancel").waitFor({ state: "hidden" });
-      assert.equal(await page.locator("#explorer-cancel").isVisible(), false);
-      const cancelledCount = Number((await page.locator("#explorer-result-count").innerText()).match(/\d+/)?.[0]);
-      assert.ok(cancelledCount < 10000, `cancel should stop before the workflow cap: ${cancelledCount}`);
+  const largeInput = Array.from({ length: 10001 }, () => "CCO").join("\n");
+  // Playwright's fill protocol transfers a large textarea value character by
+  // character in some engines.  Assign it in one DOM operation so this gate
+  // measures Explorer's cap/cancellation behavior rather than protocol speed.
+  await input.evaluate((element, value) => {
+    element.value = value;
+    element.dispatchEvent(new Event("input", { bubbles: true }));
+  }, largeInput);
+  await page.locator("#explorer-btn-parse-paste").click();
+  await status.waitFor({ hasText: /Showing the first 10000 of 10001 records/ });
+  await page.locator("#explorer-cancel").click();
+  await status.waitFor({ hasText: /Cancelled after/ });
+  await page.locator("#explorer-cancel").waitFor({ state: "hidden" });
+  assert.equal(await page.locator("#explorer-cancel").isVisible(), false);
+  const cancelledCount = Number((await page.locator("#explorer-result-count").innerText()).match(/\d+/)?.[0]);
+  assert.ok(cancelledCount < 10000, `cancel should stop before the workflow cap: ${cancelledCount}`);
   assert.deepEqual(errors, []);
 } finally {
   await browser.close();
