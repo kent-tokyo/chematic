@@ -2107,8 +2107,7 @@ fn mmff94_vdw_radial_derivative(r: f64, r_star: f64, epsilon: f64) -> f64 {
     let second_denominator = r.powi(7) + 0.12 * r_star_7;
     let second = 1.12 * r_star_7 / second_denominator - 2.0;
     let d_first = -7.0 * first / buffered_denominator;
-    let d_second = -7.0 * 1.12 * r_star_7 * r.powi(6)
-        / second_denominator.powi(2);
+    let d_second = -7.0 * 1.12 * r_star_7 * r.powi(6) / second_denominator.powi(2);
     epsilon * (d_first * second + first * d_second)
 }
 
@@ -2767,11 +2766,8 @@ mod tests {
         // RDKit MMFF94 type 37/37 at this shared-coordinate contact reports
         // 4.2464853537 kcal/mol. The former t^7 * (t^7 - 2) shortcut returned
         // 11.9247 and inflated aromatic non-bonded energies.
-        let energy = mmff94_vdw_energy_value(
-            2.7745809246687023,
-            4.193078986609192,
-            0.06779699304291385,
-        );
+        let energy =
+            mmff94_vdw_energy_value(2.7745809246687023, 4.193078986609192, 0.06779699304291385);
         assert!((energy - 4.246485353735497).abs() < 1e-10);
     }
 

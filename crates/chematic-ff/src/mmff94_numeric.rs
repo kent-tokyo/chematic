@@ -1230,15 +1230,19 @@ pub fn compute_mmff94_aromatic_view(
                 && (ring.iter().enumerate().any(|(i, &a)| {
                     let b = ring[(i + 1) % len];
                     !large_ring_bonds.contains(&(a.min(b), a.max(b)))
-                })
-                    || (large_ring_count == 2 && fully_embedded_charged_six_ring_count >= 2)
+                }) || (large_ring_count == 2 && fully_embedded_charged_six_ring_count >= 2)
                     || (fully_embedded_charged_six_ring_count >= 2
-                        && ring.iter().filter(|&&atom_idx| {
-                            let atom = kmol.atom(atom_idx);
-                            atom.element == Element::N && atom.charge > 0
-                        }).all(|&atom_idx| {
-                            bonds_of(&kmol, atom_idx).iter().all(|nb| ring.contains(&nb.neighbor))
-                        })))
+                        && ring
+                            .iter()
+                            .filter(|&&atom_idx| {
+                                let atom = kmol.atom(atom_idx);
+                                atom.element == Element::N && atom.charge > 0
+                            })
+                            .all(|&atom_idx| {
+                                bonds_of(&kmol, atom_idx)
+                                    .iter()
+                                    .all(|nb| ring.contains(&nb.neighbor))
+                            })))
             {
                 // RDKit's MMFF aromaticity boundary treats charged six-rings
                 // embedded in this large macrocycle family as Kekulé. The
@@ -2284,7 +2288,7 @@ fn assign_h_type(mol: &Molecule, idx: AtomIdx) -> Result<u8, NumericTypeError> {
     let nbr_atom = mol.atom(nbrs[0].neighbor);
 
     Ok(match nbr_atom.element {
-        Element::C => 5,  // HC  H on carbon
+        Element::C => 5, // HC  H on carbon
         Element::O => assign_oxygen_bound_h_type(mol, nbrs[0].neighbor),
         Element::S => 71, // HS  H on sulfur
         Element::N => {
@@ -2356,8 +2360,7 @@ fn assign_oxygen_bound_h_type(mol: &Molecule, oxygen_idx: AtomIdx) -> u8 {
 
     let is_carboxylic_acid = heavy_atom.element == Element::C
         && bonds_of(mol, heavy_neighbor).iter().any(|bond| {
-            bond.order == BondOrder::Double
-                && mol.atom(bond.neighbor).element == Element::O
+            bond.order == BondOrder::Double && mol.atom(bond.neighbor).element == Element::O
         });
     if is_carboxylic_acid {
         24 // HOCO, acid hydroxyl

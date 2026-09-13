@@ -71,8 +71,7 @@ fn is_aromatic_oxide_bridge(mol: &Molecule, idx: AtomIdx) -> bool {
     let neighbors: Vec<_> = mol.neighbors(idx).collect();
     if neighbors.len() != 2
         || neighbors.iter().any(|(nb, bidx)| {
-            mol.bond(*bidx).order == BondOrder::Double
-                || mol.atom(*nb).element.atomic_number() != 6
+            mol.bond(*bidx).order == BondOrder::Double || mol.atom(*nb).element.atomic_number() != 6
         })
     {
         return false;
@@ -1070,8 +1069,7 @@ fn tpsa_nitrogen(
                     ring_nbs.len() == 2 && mol.bond_between(ring_nbs[0], ring_nbs[1]).is_some();
                 let has_external_ps = mol.neighbors(idx).any(|(nb, bidx)| {
                     let an = mol.atom(nb).element.atomic_number();
-                    ((an == 15 || an == 16)
-                        || (an == 6 && has_double_bond_to(mol, nb, 16)))
+                    ((an == 15 || an == 16) || (an == 6 && has_double_bond_to(mol, nb, 16)))
                         && !ring_bonds.contains(&bidx)
                 });
                 if in_3ring && has_external_ps {
@@ -1134,9 +1132,7 @@ fn tpsa_oxygen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i
             // S=O: if S also has N=S double bond (sulfonimidyl) → 17.07; else S handles it → 0.0
             Some((16, _)) => {
                 let s_idx = dbl_nb_pair.unwrap().0;
-                if has_double_bond_to(mol, s_idx, 7)
-                    || has_double_bond_to(mol, s_idx, 16)
-                {
+                if has_double_bond_to(mol, s_idx, 7) || has_double_bond_to(mol, s_idx, 16) {
                     17.07
                 } else {
                     0.0
@@ -4139,17 +4135,34 @@ mod tests {
         // not also receive the ordinary thioether contribution.
         assert!(approx(tpsa(&mol("P(=S)(C)(C)C")), 41.90, 1e-12));
         let hypervalent_s = tpsa(&mol("S(C)(C)(=O)=S"));
-        assert!(approx(hypervalent_s, 57.54, 1e-12), "S(=O)(=S) TPSA = {hypervalent_s}");
+        assert!(
+            approx(hypervalent_s, 57.54, 1e-12),
+            "S(=O)(=S) TPSA = {hypervalent_s}"
+        );
         let phosphine_amino = tpsa(&mol("NC(N)=NCCCC(N)[PH](=O)O"));
-        assert!(approx(phosphine_amino, 151.19, 1e-12), "P-H P=O TPSA = {phosphine_amino}");
+        assert!(
+            approx(phosphine_amino, 151.19, 1e-12),
+            "P-H P=O TPSA = {phosphine_amino}"
+        );
         let phosphine_methyl = tpsa(&mol("CNC(=N)NCCCC(N)[PH](=O)O"));
-        assert!(approx(phosphine_methyl, 134.70, 1e-12), "methyl P-H P=O TPSA = {phosphine_methyl}");
+        assert!(
+            approx(phosphine_methyl, 134.70, 1e-12),
+            "methyl P-H P=O TPSA = {phosphine_methyl}"
+        );
         let phosphine_nitro = tpsa(&mol("N/C(=N/CCCC(N)[PH](=O)O)N[N+](=O)[O-]"));
-        assert!(approx(phosphine_nitro, 180.34, 1e-12), "nitro P-H P=O TPSA = {phosphine_nitro}");
-        let thiol = tpsa(&mol("COc1cc2nc(N3CCN(/C(S)=N/c4ccc(NC(=S)N5CC5)cc4)CC3)nc(N)c2cc1OC"));
+        assert!(
+            approx(phosphine_nitro, 180.34, 1e-12),
+            "nitro P-H P=O TPSA = {phosphine_nitro}"
+        );
+        let thiol = tpsa(&mol(
+            "COc1cc2nc(N3CCN(/C(S)=N/c4ccc(NC(=S)N5CC5)cc4)CC3)nc(N)c2cc1OC",
+        ));
         assert!(approx(thiol, 175.03, 1e-12), "C(=N)-SH TPSA = {thiol}");
         let charged_sulfur = tpsa(&mol("[S-]c1nc2ccccc2c2cccc[n+]12"));
-        assert!(approx(charged_sulfur, 16.99, 1e-12), "charged sulfur TPSA = {charged_sulfur}");
+        assert!(
+            approx(charged_sulfur, 16.99, 1e-12),
+            "charged sulfur TPSA = {charged_sulfur}"
+        );
         // N+ in N+–O-–N environments is not the central azide N+ type.
         assert!(approx(tpsa(&mol("C[N+]([O-])=[N+]([O-])C")), 52.14, 1e-12));
         // An exocyclic C=C must not promote a cyclic ether to RDKit's [o]

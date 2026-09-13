@@ -1,6 +1,6 @@
 //! Descriptor/ADMET/pKa/QSAR bindings.
 
-use crate::{json_error, MolHandle, WASM_MAX_ATOMS, WASM_MAX_INPUT_BYTES};
+use crate::{MolHandle, WASM_MAX_ATOMS, WASM_MAX_INPUT_BYTES, json_error};
 use wasm_bindgen::prelude::*;
 
 /// Validate a vendor-neutral NMR spectrum JSON document without parsing a

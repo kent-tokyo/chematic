@@ -609,9 +609,9 @@ pub fn atom_must_be_matched(mol: &Molecule, idx: AtomIdx) -> bool {
         7 | 15
             if atom.charge <= 0
                 && (matches!(atom.hydrogen_count, Some(h) if h > 0)
-                    || mol.neighbors(idx).any(|(neighbor, _)| {
-                        mol.atom(neighbor).element.atomic_number() == 1
-                    })) =>
+                    || mol
+                        .neighbors(idx)
+                        .any(|(neighbor, _)| mol.atom(neighbor).element.atomic_number() == 1)) =>
         {
             false
         }
@@ -624,9 +624,7 @@ pub fn atom_must_be_matched(mol: &Molecule, idx: AtomIdx) -> bool {
         // Charged N/P (pyridinium [n+], N-oxide) must still be matched even with a substituent.
         7 | 15
             if atom.charge == 0
-                && mol
-                    .neighbors(idx)
-                .any(|(neighbor, bidx)| {
+                && mol.neighbors(idx).any(|(neighbor, bidx)| {
                     mol.atom(neighbor).element.atomic_number() != 1
                         && mol.bond(bidx).order != BondOrder::Aromatic
                 }) =>

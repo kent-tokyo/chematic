@@ -2181,7 +2181,11 @@ mod tests {
         }
         for (_, bond) in mol.bonds() {
             builder
-                .add_bond(remap[bond.atom1.0 as usize], remap[bond.atom2.0 as usize], bond.order)
+                .add_bond(
+                    remap[bond.atom1.0 as usize],
+                    remap[bond.atom2.0 as usize],
+                    bond.order,
+                )
                 .unwrap();
         }
         for (idx, atom) in mol.atoms() {
@@ -2190,7 +2194,9 @@ mod tests {
             }
             for _ in 0..implicit_hcount(mol, idx) {
                 let h = builder.add_atom(Atom::new(Element::H));
-                builder.add_bond(remap[idx.0 as usize], h, BondOrder::Single).unwrap();
+                builder
+                    .add_bond(remap[idx.0 as usize], h, BondOrder::Single)
+                    .unwrap();
             }
         }
         builder.build()
