@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "profile": "v3000_rdkit_or_stereo_v1",
+  "rdkit_version": "2025.09.3",
+  "indigo_version": "1.46.0.0-gb36d38f52-aarch64-darwin-appleclang-17000013",
+  "cli_name": "chematic",
+  "cli_sha256": "bedd938be8784675694cb6a891a018156f171cacf6c1a24955e8184530170331",
+  "cli_exit_code": 0,
+  "or_collection_retained": true,
+  "rdkit_expected_groups": [
+    [
+      "STEREO_OR",
+      [
+        1
+      ]
+    ]
+  ],
+  "rdkit_after_groups": [
+    [
+      "STEREO_OR",
+      [
+        1
+      ]
+    ]
+  ],
+  "rdkit_group_equal": true,
+  "indigo_accepted": true,
+  "indigo_error": null,
+  "gate_passed": true,
+  "scope": "one RDKit-generated OR enhanced-stereo group survives chematic V3000 round trip",
+  "not_claimed": [
+    "absolute CIP label equivalence",
+    "OR/AND/relative group editing semantics",
+    "multiple group or bond-member coverage",
+    "Indigo group-type semantic equivalence"
+  ]
+}

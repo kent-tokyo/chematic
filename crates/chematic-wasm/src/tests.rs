@@ -1828,7 +1828,7 @@ fn mol_from_v3000_block_parses_atom_count() {
 fn roundtrip_mol_v3000_block_preserves_sgroup_metadata() {
     let block = "\n\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\n\
 M  V30 BEGIN CTAB\n\
-M  V30 COUNTS 2 1 0 0 0\n\
+M  V30 COUNTS 2 1 1 0 0\n\
 M  V30 BEGIN ATOM\n\
 M  V30 1 C 0 0 0 0\n\
 M  V30 2 C 1 0 0 0\n\
@@ -1843,7 +1843,8 @@ M  V30 BEGIN SGROUP\n\
 M  V30 1 SUP 0 ATOMS=(2 1 2)\n\
 M  V30 END SGROUP\n\
 M  V30 END CTAB\nM  END\n";
-    let rewritten = roundtrip_mol_v3000_block(block).expect("V3000 round trip");
+    let rewritten =
+        crate::mol_io::roundtrip_mol_v3000_block_inner(block).expect("V3000 round trip");
     assert!(rewritten.contains("M  V30 1 SUP 0 ATOMS=(2 1 2)"));
     assert!(rewritten.find("BEGIN SGROUP") < rewritten.find("BEGIN COLLECTION"));
 }
@@ -1852,7 +1853,7 @@ M  V30 END CTAB\nM  END\n";
 fn v3000_sgroups_json_exposes_typed_syntax_without_expansion() {
     let block = "\n\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\n\
 M  V30 BEGIN CTAB\n\
-M  V30 COUNTS 2 1 0 0 0\n\
+M  V30 COUNTS 2 1 1 0 0\n\
 M  V30 BEGIN ATOM\n\
 M  V30 1 C 0 0 0 0\n\
 M  V30 2 C 1 0 0 0\n\
@@ -1864,9 +1865,10 @@ M  V30 BEGIN SGROUP\n\
 M  V30 1 COP 0 ATOMS=(2 1 2) BRKXYZ=(4 1 2 3 4)\n\
 M  V30 END SGROUP\n\
 M  V30 END CTAB\nM  END\n";
-    let value: serde_json::Value =
-        serde_json::from_str(&v3000_sgroups_json(block).expect("typed SGROUP JSON"))
-            .expect("valid JSON");
+    let value: serde_json::Value = serde_json::from_str(
+        &crate::mol_io::v3000_sgroups_json_inner(block).expect("typed SGROUP JSON"),
+    )
+    .expect("valid JSON");
     assert_eq!(value[0]["id"], 1);
     assert_eq!(value[0]["kind"], "cop");
     assert_eq!(value[0]["parentId"], serde_json::Value::Null);
@@ -1878,7 +1880,7 @@ M  V30 END CTAB\nM  END\n";
 fn v3000_sgroups_json_preserves_unknown_kind_and_rejects_bad_atoms() {
     let base = "\n\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\n\
 M  V30 BEGIN CTAB\n\
-M  V30 COUNTS 1 0 0 0 0\n\
+M  V30 COUNTS 1 0 1 0 0\n\
 M  V30 BEGIN ATOM\n\
 M  V30 1 C 0 0 0 0\n\
 M  V30 END ATOM\n\
@@ -1888,9 +1890,10 @@ M  V30 BEGIN SGROUP\n\
 M  V30 1 VENDORX 0 ATOMS=(1 1)\n\
 M  V30 END SGROUP\n\
 M  V30 END CTAB\nM  END\n";
-    let value: serde_json::Value =
-        serde_json::from_str(&v3000_sgroups_json(base).expect("unknown kind is retained"))
-            .expect("valid JSON");
+    let value: serde_json::Value = serde_json::from_str(
+        &crate::mol_io::v3000_sgroups_json_inner(base).expect("unknown kind is retained"),
+    )
+    .expect("valid JSON");
     assert_eq!(value[0]["kind"], "other");
     assert_eq!(value[0]["kindToken"], "VENDORX");
 

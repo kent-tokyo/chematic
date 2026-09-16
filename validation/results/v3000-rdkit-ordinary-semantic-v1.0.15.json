@@ -1,0 +1,2349 @@
+{
+  "schema_version": 1,
+  "profile": "v3000_rdkit_ordinary_semantic_roundtrip_v1",
+  "rdkit_version": "2025.09.3",
+  "cli_name": "chematic",
+  "cli_sha256": "bedd938be8784675694cb6a891a018156f171cacf6c1a24955e8184530170331",
+  "cases": 20,
+  "semantic_equal": 20,
+  "failures": [],
+  "scope": "RDKit-written ordinary V3000: topology, atom number/formal charge/isotope, bond type/direction, and isomeric identity",
+  "not_claimed": [
+    "SGROUP/COLLECTION typed semantic interoperability",
+    "ENDPTS/ATTACH interpretation or haptic chemistry",
+    "Indigo interoperability",
+    "query or polymer expansion semantics"
+  ],
+  "rows": [
+    {
+      "id": "ethanol",
+      "smiles": "CCO",
+      "cli_exit_code": 0,
+      "source_sha256": "1b3fb112093038bb9a9b20a704c068eaf4be85045f2f2386697ea9a72a0c23d6",
+      "output_sha256": "c2aec5bb5b95e1578ec0d6a7cfe426e701c73904008815de8db02ba830a010c1",
+      "before": {
+        "atom_count": 3,
+        "bond_count": 2,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "CCO"
+      },
+      "after": {
+        "atom_count": 3,
+        "bond_count": 2,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "CCO"
+      },
+      "semantic_equal": true
+    },
+    {
+      "id": "benzene",
+      "smiles": "c1ccccc1",
+      "cli_exit_code": 0,
+      "source_sha256": "1bc791706dfc7e2fa222f731eabad39fd38e524d6d1d5b6d82f2995487c52bc2",
+      "output_sha256": "d92c2061900cb12fdd6a4fd9418443d8a10f93fa3b4dec2a6183a03e729cafec",
+      "before": {
+        "atom_count": 6,
+        "bond_count": 6,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            0,
+            5,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            2,
+            3,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            3,
+            4,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            4,
+            5,
+            "AROMATIC",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "c1ccccc1"
+      },
+      "after": {
+        "atom_count": 6,
+        "bond_count": 6,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            0,
+            5,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            2,
+            3,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            3,
+            4,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            4,
+            5,
+            "AROMATIC",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "c1ccccc1"
+      },
+      "semantic_equal": true
+    },
+    {
+      "id": "pyridine",
+      "smiles": "n1ccccc1",
+      "cli_exit_code": 0,
+      "source_sha256": "59a062533b17a1bfc737e5ab57ae93ca25814d91c91ab70289fd3da81a1bdd7b",
+      "output_sha256": "c741f64ee1b2c78269af0abca1e95a0768c83c2f0d98cac24d7a508529410f8f",
+      "before": {
+        "atom_count": 6,
+        "bond_count": 6,
+        "atoms": [
+          [
+            7,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            0,
+            5,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            2,
+            3,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            3,
+            4,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            4,
+            5,
+            "AROMATIC",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "c1ccncc1"
+      },
+      "after": {
+        "atom_count": 6,
+        "bond_count": 6,
+        "atoms": [
+          [
+            7,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            0,
+            5,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            2,
+            3,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            3,
+            4,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            4,
+            5,
+            "AROMATIC",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "c1ccncc1"
+      },
+      "semantic_equal": true
+    },
+    {
+      "id": "acetic_acid",
+      "smiles": "CC(=O)O",
+      "cli_exit_code": 0,
+      "source_sha256": "09bbc06a76fd88a7f8183eb7e0ec4ab0b14f88dba7f937c4472cf755942985cb",
+      "output_sha256": "4f1957a88609ddbde1073a3e6ce9088bd6976b2a710ab0d17f4f3d0061a70d2e",
+      "before": {
+        "atom_count": 4,
+        "bond_count": 3,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "DOUBLE",
+            "NONE"
+          ],
+          [
+            1,
+            3,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "CC(=O)O"
+      },
+      "after": {
+        "atom_count": 4,
+        "bond_count": 3,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "DOUBLE",
+            "NONE"
+          ],
+          [
+            1,
+            3,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "CC(=O)O"
+      },
+      "semantic_equal": true
+    },
+    {
+      "id": "acetate",
+      "smiles": "CC(=O)[O-]",
+      "cli_exit_code": 0,
+      "source_sha256": "8f3123bcc02d003ac1ad304a033ebccf16c01f75ea8de288be0ae05a90272e66",
+      "output_sha256": "44d2295ddecf00ee556cea9d24d6b094a02b135e17f2831431901fb5d7e32be0",
+      "before": {
+        "atom_count": 4,
+        "bond_count": 3,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            8,
+            -1,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "DOUBLE",
+            "NONE"
+          ],
+          [
+            1,
+            3,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "CC(=O)[O-]"
+      },
+      "after": {
+        "atom_count": 4,
+        "bond_count": 3,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            8,
+            -1,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "DOUBLE",
+            "NONE"
+          ],
+          [
+            1,
+            3,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "CC(=O)[O-]"
+      },
+      "semantic_equal": true
+    },
+    {
+      "id": "ammonium",
+      "smiles": "C[NH3+]",
+      "cli_exit_code": 0,
+      "source_sha256": "f4c36b05efc11ff95204a486943cf0ddebe3b9fc6805d91367f047e4a5341d7a",
+      "output_sha256": "760b5e8e32d9ecd3b66a7dac99f222bdb6e0723dffc619a7fdb336a8055c69c5",
+      "before": {
+        "atom_count": 2,
+        "bond_count": 1,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            7,
+            1,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "C[NH3+]"
+      },
+      "after": {
+        "atom_count": 2,
+        "bond_count": 1,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            7,
+            1,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "C[NH3+]"
+      },
+      "semantic_equal": true
+    },
+    {
+      "id": "trimethylammonium",
+      "smiles": "C[N+](C)(C)C",
+      "cli_exit_code": 0,
+      "source_sha256": "6c6f6961e7f9cd1e1d2c5521b2401230c6b669a4a9bb0b40009f85e17b93ea51",
+      "output_sha256": "d6d64c32dc00bd03e981159b367e1205dfbf177edd48b16449f57e3fd7a4fcd6",
+      "before": {
+        "atom_count": 5,
+        "bond_count": 4,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            7,
+            1,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            3,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            4,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "C[N+](C)(C)C"
+      },
+      "after": {
+        "atom_count": 5,
+        "bond_count": 4,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            7,
+            1,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            3,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            4,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "C[N+](C)(C)C"
+      },
+      "semantic_equal": true
+    },
+    {
+      "id": "nitrobenzene",
+      "smiles": "O=[N+]([O-])c1ccccc1",
+      "cli_exit_code": 0,
+      "source_sha256": "af8451634950889348b8a57e625c5b0b3455de704327726f9bb19ee6cb5e0540",
+      "output_sha256": "490143825f0717ec39bebca16889a13c289547ae259364fb6c255812b5b5d259",
+      "before": {
+        "atom_count": 9,
+        "bond_count": 9,
+        "atoms": [
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            7,
+            1,
+            0
+          ],
+          [
+            8,
+            -1,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "DOUBLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            3,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            3,
+            4,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            3,
+            8,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            4,
+            5,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            5,
+            6,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            6,
+            7,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            7,
+            8,
+            "AROMATIC",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "O=[N+]([O-])c1ccccc1"
+      },
+      "after": {
+        "atom_count": 9,
+        "bond_count": 9,
+        "atoms": [
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            7,
+            1,
+            0
+          ],
+          [
+            8,
+            -1,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "DOUBLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            3,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            3,
+            4,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            3,
+            8,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            4,
+            5,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            5,
+            6,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            6,
+            7,
+            "AROMATIC",
+            "NONE"
+          ],
+          [
+            7,
+            8,
+            "AROMATIC",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "O=[N+]([O-])c1ccccc1"
+      },
+      "semantic_equal": true
+    },
+    {
+      "id": "sulfonamide",
+      "smiles": "CS(=O)(=O)N",
+      "cli_exit_code": 0,
+      "source_sha256": "2f1911d901d94dc02c5f6fa65e50600ce330ed57031501d8258dfe8391803940",
+      "output_sha256": "22ea03278f735ed83f72fa3c98928f3ccf2b399350084f7a50477ae8c261c684",
+      "before": {
+        "atom_count": 5,
+        "bond_count": 4,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            16,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            7,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "DOUBLE",
+            "NONE"
+          ],
+          [
+            1,
+            3,
+            "DOUBLE",
+            "NONE"
+          ],
+          [
+            1,
+            4,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "CS(N)(=O)=O"
+      },
+      "after": {
+        "atom_count": 5,
+        "bond_count": 4,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            16,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            7,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "DOUBLE",
+            "NONE"
+          ],
+          [
+            1,
+            3,
+            "DOUBLE",
+            "NONE"
+          ],
+          [
+            1,
+            4,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "CS(N)(=O)=O"
+      },
+      "semantic_equal": true
+    },
+    {
+      "id": "phosphonate",
+      "smiles": "COP(=O)(O)O",
+      "cli_exit_code": 0,
+      "source_sha256": "0794c21774b133ea6c0b276d8aebddd4dd4fd9e8f2b4b3778d5a1abbb95046e5",
+      "output_sha256": "b09b670f78d3dd2aa2dca4d06ddeb39364dbf83aad2ccf3b4fc5b2fa01ad8e8e",
+      "before": {
+        "atom_count": 6,
+        "bond_count": 5,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            15,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            2,
+            3,
+            "DOUBLE",
+            "NONE"
+          ],
+          [
+            2,
+            4,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            2,
+            5,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "COP(=O)(O)O"
+      },
+      "after": {
+        "atom_count": 6,
+        "bond_count": 5,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            15,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            2,
+            3,
+            "DOUBLE",
+            "NONE"
+          ],
+          [
+            2,
+            4,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            2,
+            5,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "COP(=O)(O)O"
+      },
+      "semantic_equal": true
+    },
+    {
+      "id": "chloroethane",
+      "smiles": "CCCl",
+      "cli_exit_code": 0,
+      "source_sha256": "e89ce8e9a9242bb6f0dd5fb43bef231df82a2e570c75f5a3147839bf74d5a9e8",
+      "output_sha256": "a3ef269e2e2e2ed9d80a00e315ee757f0cc35da9ade87615277acee292de474f",
+      "before": {
+        "atom_count": 3,
+        "bond_count": 2,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            17,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "CCCl"
+      },
+      "after": {
+        "atom_count": 3,
+        "bond_count": 2,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            17,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "CCCl"
+      },
+      "semantic_equal": true
+    },
+    {
+      "id": "bromoethane",
+      "smiles": "CCBr",
+      "cli_exit_code": 0,
+      "source_sha256": "8aff00cecc6585585196add75fa392bca0dd756f80e5d35698289ba0be00a2ea",
+      "output_sha256": "ec1925b91ec8107ff64f6b213662be35c51a3c08ba2f89ab338a7a2aafc8e25d",
+      "before": {
+        "atom_count": 3,
+        "bond_count": 2,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            35,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "CCBr"
+      },
+      "after": {
+        "atom_count": 3,
+        "bond_count": 2,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            35,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "CCBr"
+      },
+      "semantic_equal": true
+    },
+    {
+      "id": "iodomethane",
+      "smiles": "CI",
+      "cli_exit_code": 0,
+      "source_sha256": "34b2881c022ef0d00221da8c93ae3ee5894c8c559e8727911a70b1ab9bc8331a",
+      "output_sha256": "c36924f4eb4b85f6f96c2adb61c9d4aa7e1d9615d972d88cd0fe170a958181cc",
+      "before": {
+        "atom_count": 2,
+        "bond_count": 1,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            53,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "CI"
+      },
+      "after": {
+        "atom_count": 2,
+        "bond_count": 1,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            53,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "CI"
+      },
+      "semantic_equal": true
+    },
+    {
+      "id": "deuterated_ethanol",
+      "smiles": "[2H]CO",
+      "cli_exit_code": 0,
+      "source_sha256": "9c02fcfd2c6251791e2a836ac4b13745f6d04f9b5ac13a6bfe157160601ac01a",
+      "output_sha256": "4f386f76d01e4c34c4d334b6612071430570e01a2c32bc7cdab4da29fcb59ce9",
+      "before": {
+        "atom_count": 3,
+        "bond_count": 2,
+        "atoms": [
+          [
+            1,
+            0,
+            2
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "[2H]CO"
+      },
+      "after": {
+        "atom_count": 3,
+        "bond_count": 2,
+        "atoms": [
+          [
+            1,
+            0,
+            2
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "[2H]CO"
+      },
+      "semantic_equal": true
+    },
+    {
+      "id": "carbon13_ethanol",
+      "smiles": "[13CH3]CO",
+      "cli_exit_code": 0,
+      "source_sha256": "5825450827dd1bde08d2f38aff4fbdb0f11bf98526e25d6b651812e786df5ede",
+      "output_sha256": "cdb0af7bee2e2d17ec237a48391b61c328b7c177a9bf8f540894c7a6247353e7",
+      "before": {
+        "atom_count": 3,
+        "bond_count": 2,
+        "atoms": [
+          [
+            6,
+            0,
+            13
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "[13CH3]CO"
+      },
+      "after": {
+        "atom_count": 3,
+        "bond_count": 2,
+        "atoms": [
+          [
+            6,
+            0,
+            13
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "[13CH3]CO"
+      },
+      "semantic_equal": true
+    },
+    {
+      "id": "alanine",
+      "smiles": "N[C@@H](C)C(=O)O",
+      "cli_exit_code": 0,
+      "source_sha256": "8fe206460fb87437d9a367b55f6f14e3570377838a6f4e024be409f46f9d1c03",
+      "output_sha256": "5457b829776296225b5e6b10c3ecc469520578d1aa135eb8d128b27712b8f8d1",
+      "before": {
+        "atom_count": 6,
+        "bond_count": 5,
+        "atoms": [
+          [
+            7,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            3,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            3,
+            4,
+            "DOUBLE",
+            "NONE"
+          ],
+          [
+            3,
+            5,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "C[C@H](N)C(=O)O"
+      },
+      "after": {
+        "atom_count": 6,
+        "bond_count": 5,
+        "atoms": [
+          [
+            7,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            3,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            3,
+            4,
+            "DOUBLE",
+            "NONE"
+          ],
+          [
+            3,
+            5,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "C[C@H](N)C(=O)O"
+      },
+      "semantic_equal": true
+    },
+    {
+      "id": "lactic_acid",
+      "smiles": "C[C@H](O)C(=O)O",
+      "cli_exit_code": 0,
+      "source_sha256": "7bfe754d9c1a339dcb583e33d61151745056ad72b1656cac13ee7198e336b7f6",
+      "output_sha256": "da50ef4cf1157ba92874d3f9eb60671260def93e81f0047bb41e70ec38eb0b8b",
+      "before": {
+        "atom_count": 6,
+        "bond_count": 5,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            3,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            3,
+            4,
+            "DOUBLE",
+            "NONE"
+          ],
+          [
+            3,
+            5,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "C[C@H](O)C(=O)O"
+      },
+      "after": {
+        "atom_count": 6,
+        "bond_count": 5,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            3,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            3,
+            4,
+            "DOUBLE",
+            "NONE"
+          ],
+          [
+            3,
+            5,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "C[C@H](O)C(=O)O"
+      },
+      "semantic_equal": true
+    },
+    {
+      "id": "e_2_butene",
+      "smiles": "C/C=C/C",
+      "cli_exit_code": 0,
+      "source_sha256": "d14f5f27307faf5e8980b5b2f6516b0bc796960a7b92bf0e0f4bf22d3bb570b5",
+      "output_sha256": "2a35b93ec1b551a066e265a7fc91b3427145a21530c5378c76a2e8db6e803ff5",
+      "before": {
+        "atom_count": 4,
+        "bond_count": 3,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "ENDUPRIGHT"
+          ],
+          [
+            1,
+            2,
+            "DOUBLE",
+            "NONE"
+          ],
+          [
+            2,
+            3,
+            "SINGLE",
+            "ENDUPRIGHT"
+          ]
+        ],
+        "canonical_isomeric_smiles": "C/C=C/C"
+      },
+      "after": {
+        "atom_count": 4,
+        "bond_count": 3,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "ENDUPRIGHT"
+          ],
+          [
+            1,
+            2,
+            "DOUBLE",
+            "NONE"
+          ],
+          [
+            2,
+            3,
+            "SINGLE",
+            "ENDUPRIGHT"
+          ]
+        ],
+        "canonical_isomeric_smiles": "C/C=C/C"
+      },
+      "semantic_equal": true
+    },
+    {
+      "id": "z_2_butene",
+      "smiles": "C/C=C\\C",
+      "cli_exit_code": 0,
+      "source_sha256": "16a526d521d20e0f2b8e02219eccf67dcd446dda4a58e1bb46a8c4630005aace",
+      "output_sha256": "db984a3397e7a72402f701aff753ee344cd20f5b5005671ec49a6d930f78d66e",
+      "before": {
+        "atom_count": 4,
+        "bond_count": 3,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "ENDUPRIGHT"
+          ],
+          [
+            1,
+            2,
+            "DOUBLE",
+            "NONE"
+          ],
+          [
+            2,
+            3,
+            "SINGLE",
+            "ENDDOWNRIGHT"
+          ]
+        ],
+        "canonical_isomeric_smiles": "C/C=C\\C"
+      },
+      "after": {
+        "atom_count": 4,
+        "bond_count": 3,
+        "atoms": [
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "ENDUPRIGHT"
+          ],
+          [
+            1,
+            2,
+            "DOUBLE",
+            "NONE"
+          ],
+          [
+            2,
+            3,
+            "SINGLE",
+            "ENDDOWNRIGHT"
+          ]
+        ],
+        "canonical_isomeric_smiles": "C/C=C\\C"
+      },
+      "semantic_equal": true
+    },
+    {
+      "id": "cyclohexanol",
+      "smiles": "OC1CCCCC1",
+      "cli_exit_code": 0,
+      "source_sha256": "f2791dcef2ba296ab58275c5ad63c7dc72ace6f31a55901bebf8c791645b00c5",
+      "output_sha256": "38d941ca0b5d13bcd4a7c368294cc51df8ddf9b9bae836833e69fcc8dd24bcad",
+      "before": {
+        "atom_count": 7,
+        "bond_count": 7,
+        "atoms": [
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            6,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            2,
+            3,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            3,
+            4,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            4,
+            5,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            5,
+            6,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "OC1CCCCC1"
+      },
+      "after": {
+        "atom_count": 7,
+        "bond_count": 7,
+        "atoms": [
+          [
+            8,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ],
+          [
+            6,
+            0,
+            0
+          ]
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            2,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            1,
+            6,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            2,
+            3,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            3,
+            4,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            4,
+            5,
+            "SINGLE",
+            "NONE"
+          ],
+          [
+            5,
+            6,
+            "SINGLE",
+            "NONE"
+          ]
+        ],
+        "canonical_isomeric_smiles": "OC1CCCCC1"
+      },
+      "semantic_equal": true
+    }
+  ]
+}
