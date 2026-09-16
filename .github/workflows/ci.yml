@@ -99,6 +99,7 @@ jobs:
           python3 scripts/build_stereo_torture_suite.py --check
           cargo build --locked -p chematic-cli
           python3 scripts/stereo_torture_suite_gate.py --output /tmp/stereo-torture-suite.json
+          python3 scripts/stereo_spelling_invariance_gate.py --output /tmp/stereo-spelling-invariance.json
 
   test-integration:
     name: Integration tests (${{ matrix.package }} / ${{ matrix.target }})

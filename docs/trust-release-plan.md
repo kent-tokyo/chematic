@@ -394,10 +394,14 @@ unsafe/FFI/依存層とpanic/DoSを含む検証境界を明示する。
   RDKit semantic identityとchematic canonical再parse安定性を検査し、CIで再実行する。
   これは開発回帰だけであり、未使用challenge、事前配分の全カテゴリ、CIP labelの
   絶対正解は未達のまま残す。
-- [ ] T5.2 atom/bond orderとSMILES spellingを固定seedで各32変換。
+- [~] T5.2 atom/bond orderとSMILES spellingを固定seedで各32変換。
   #149/#503の既存K=1,024診断は継続し、32変換へ縮小しない。
   SMILES→MOL/SDF V2000/V3000→再parse、canonical再適用、
   stereoisomer keyの衝突を検査する。
+  固定RDKit 2025.09.3 seedでCIP corpus 155構造のSMILES spellingを各32変換し、
+  元表記を含む5,115入力のsemantic identity、canonical spelling、再parse idempotencyを
+  `stereo_spelling_invariance_gate.py`でCI検査する。atom/bond order 32変換、
+  MOL/SDFの全round-trip、stereoisomer key collisionは未達として残す。
 - [ ] T5.3 assignment、abstention、incorrect label、情報損失、FP/FNを分離。
   atom-map/bond-mapで照合し、canonical文字列一致だけで正解にしない。
   非対応表現がV2000に落ちる場合、保存成功ではなく明示的拒否または診断を要求。
