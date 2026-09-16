@@ -68,6 +68,11 @@ jobs:
       - name: Build MkDocs site
         run: mkdocs build --site-dir _site
 
+      - name: Verify homepage release marker
+        run: |
+          VERSION="$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["workspace"]["package"]["version"])')"
+          grep -F "Current release: <strong>v${VERSION}</strong>" _site/index.html
+
       - name: Merge demo into docs site
         run: |
           cp -r demo/ _site/playground/

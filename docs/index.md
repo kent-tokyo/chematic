@@ -12,6 +12,8 @@ same codebase. No backend required for supported browser workflows.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
+<p class="chm-links-row">Current release: <strong>v1.0.15</strong> · <a href="changelog/">release notes</a></p>
+
 <p class="chm-links-row">
   <a href="https://github.com/kent-tokyo/chematic">View on GitHub</a>
   <a href="use-cases/browser-app/">Read the browser integration guide</a>
