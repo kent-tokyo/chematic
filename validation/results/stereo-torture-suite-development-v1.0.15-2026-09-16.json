@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "suite_sha256": "b7916bca731aede914b1a34935399f4d39ae5cbc9f5f9f292a0366182bb46455",
+  "suite_cases": 300,
+  "rdkit_version": "2025.09.3",
+  "semantic_equal": 300,
+  "canonical_reparse_stable": 300,
+  "failure_count": 0,
+  "failures": [],
+  "gate_passed": true,
+  "scope": "development suite only; RDKit semantic identity and chematic canonical reparse stability",
+  "not_claimed": [
+    "independent accuracy",
+    "CIP label adjudication",
+    "sealed challenge performance"
+  ]
+}

@@ -378,9 +378,15 @@ unsafe/FFI/依存層とpanic/DoSを含む検証境界を明示する。
 
 ### T5 — Stereo Torture Suite（目安8–15実働日、研究残差は別）
 
-- [ ] T5.1 最低300構造をtetrahedral、E/Zと共有carrier、ring/cage、
+- [~] T5.1 最低300構造をtetrahedral、E/Zと共有carrier、ring/cage、
   負電荷共鳴、P/S、同位体、enhanced stereo、未対応立体へ事前配分。
   curated regressionと未使用challenge群を分離し、同じscaffoldで独立性を水増ししない。
+  `stereo_torture_suite_development.jsonl` は既存回帰146件と固定sample154件の
+  300 unique structuresを固定し、RDKit 2025.09.3でAtom_Tetrahedral 277件、
+  Bond_Double 49件を記録する。`stereo_torture_suite_gate.py`は全300件について
+  RDKit semantic identityとchematic canonical再parse安定性を検査し、CIで再実行する。
+  これは開発回帰だけであり、未使用challenge、事前配分の全カテゴリ、CIP labelの
+  絶対正解は未達のまま残す。
 - [ ] T5.2 atom/bond orderとSMILES spellingを固定seedで各32変換。
   #149/#503の既存K=1,024診断は継続し、32変換へ縮小しない。
   SMILES→MOL/SDF V2000/V3000→再parse、canonical再適用、
