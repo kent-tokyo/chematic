@@ -1,9 +1,9 @@
 # chematic 1.x Trust Release — 実行計画
 
-更新日: 2026-09-13。期間: 2026-09-14〜2026-12-06（12週間の作業配分案）。
-対象: v1.0.14公開後のTrust Release候補。日付は納期の保証ではなくレビュー時点。
-状態: **T0の測定packetとT1.1–T1.4、T2.1を実装済み。Trust RCの全出口は未達**。
-v1.0.14は公開済みで、releaseとCI修正はPR #532でmainへマージ済み。
+更新日: 2026-09-16。期間: 2026-09-14〜2026-12-06（12週間の作業配分案）。
+対象: v1.0.15公開後のTrust Release候補。日付は納期の保証ではなくレビュー時点。
+状態: **T0の測定packetとT1.1–T1.4、現行版T2.6、公開artifact T3.4の一部を実装済み。Trust RCの全出口は未達**。
+v1.0.15は公開済みで、releaseとCI修正はPR #533でmainへマージ済み。
 公開完了と、この計画の候補条件充足は別に扱う。
 
 2026-09-13の実装進捗: T0のperception予算伝播・実測候補数・fail-closed回帰、
@@ -15,6 +15,14 @@ dashboard、release metadata v2、公開channel実測recordを実装した。can
 [A0–A6精度計画](rdkit-accuracy-plan.md) の完了条件は維持する。
 優先度P0/P1/P2は緊急度、既存Phase P0–P6は製品領域、A0–A6は精度目標、
 T0–T6は今回の作業ID。番号は相互に置き換えない。
+
+2026-09-16に公開npm artifact と official RDKit.js の固定10k browser
+scorecardをPR #541で公開した。小さいWASM、local no-store ready、parse/writeの
+結果は比較可能だが、parse-inclusive fingerprintではRDKit.jsが速い。local readyは
+CDN/network測定でなく、unique/peak memory・cross-host値は未測定として残す。
+同日にPR #542で`rustls`を0.23.45へ更新し、hosted Security AuditのCargo Auditと
+parser-security corpusは成功した。これらはT1.6のunused-data attestationやTrust RC
+全体の代替条件ではない。
 
 ## 1. 戦略と確認した前提
 
