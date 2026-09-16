@@ -2,14 +2,15 @@
 
 ## Problem
 
-You want to ship a chemistry tool to users who won't install anything — a web app for medicinal chemists, a public screening tool, or an internal dashboard. Server-side chemistry APIs add latency, infrastructure cost, and data-privacy concerns. RDKit's official JavaScript/WASM package (`@rdkit/rdkit`) is a browser comparator; the pinned historical `RDKit_minimal.wasm` measurement is 6.91 MB raw.
+You want to ship a chemistry tool to users who won't install anything — a web app for medicinal chemists, a public screening tool, or an internal dashboard. Server-side chemistry APIs add latency, infrastructure cost, and data-privacy concerns. RDKit's official JavaScript/WASM package (`@rdkit/rdkit`) is the pinned browser comparator.
 
 ## Solution
 
-The latest measured chematic WebAssembly artifact is **3.93 MB raw / 1.43 MB gzip** (v1.0.12 Node/WASM gate,
-measured 2026-09-11 with `wasm-pack 0.13.1`, `wasm-bindgen 0.2.121`, and `wasm-opt 130`; see the
-[comparison record](../../benchmarks/2026-09-11-official-rdkit-js-v1.0.12.md)) — roughly 1.8× smaller raw and 1.4× smaller gzip than the
-pinned RDKit.js comparator. No server required: descriptor calculation, fingerprint
+The published v1.0.15 npm WASM asset is **4,005,280 bytes raw / 1,460,499 bytes
+gzip**, versus **7,333,095 / 2,379,975 bytes** for
+`@rdkit/rdkit@2026.03.6` under the same file-compression method. See the
+[published-package scorecard](../../benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md).
+No server is required: descriptor calculation, fingerprint
 generation, and similarity search run entirely in the browser, offline-capable after first load.
 
 ## Output / What you get
@@ -139,15 +140,14 @@ document.getElementById("file-input").addEventListener("change", async (e) => {
 
 | Task | chematic WASM | RDKit.js |
 |------|--------------|----------|
-| Bundle size | 3.93 MB raw / 1.43 MB gzip | 6.91 MB raw / 2.05 MB gzip |
+| Bundle size | 4.01 MB raw / 1.46 MB gzip | 7.33 MB raw / 2.38 MB gzip |
 
-The latest chematic bundle measurement is from the v1.0.12 Node/WASM gate (see the
-[artifact record](../../benchmarks/2026-09-11-official-rdkit-js-v1.0.12.md)). Per-operation, in-browser timings
-(SMILES parse, ECFP4, Tanimoto)
-previously listed here were never independently reconfirmed and have been removed rather than
-repeated as fact — see [`benchmarks/2026-07-17.md`](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-07-17.md)'s own notes,
-which flag this exact gap. The `python`/Rust-native throughput figures elsewhere in this repo
-(e.g. [`docs/benchmark.md`](../benchmark.md)) are measured and reproducible, but do not
+The table comes from the v1.0.15 published-package scorecard. Gzip is local file
+compression, not observed internet transfer, and the feature surfaces differ.
+Operation timing is reported separately in that scorecard; RDKit.js is faster
+for its parse-inclusive fingerprint lane. The Python/Rust-native throughput
+figures elsewhere in this repository (for example
+[`docs/benchmark.md`](../benchmark.md)) do not
 transfer directly to WASM-in-browser numbers, which have different call overhead.
 
 ## Related APIs

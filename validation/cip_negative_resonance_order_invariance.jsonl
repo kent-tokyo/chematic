@@ -1,4 +1,6 @@
-{"id":"cyclohexadienyl_oxygen","smiles":"[C@@H:1](O)(C)[CH-]2C=CC=C2","center_map":1}
-{"id":"cyclohexadienyl_nitrogen","smiles":"[C@H:1](N)(C)[CH-]2C=CC=C2","center_map":1}
-{"id":"cyclohexadienyl_fluorine","smiles":"[C@@H:1](F)(C)[CH-]2C=CC=C2","center_map":1}
-{"id":"cyclohexadienyl_sulfur","smiles":"[C@H:1](S)(C)[CH-]2C=CC=C2","center_map":1}
+{"id":"phenyl_anion_oxygen","smiles":"C[C@H:1](O)c1cc[c-]cc1","center_map":1}
+{"id":"phenyl_anion_nitrogen","smiles":"C[C@H:1](N)c1cc[c-]cc1","center_map":1}
+{"id":"phenyl_anion_fluorine","smiles":"C[C@H:1](F)c1cc[c-]cc1","center_map":1}
+{"id":"phenyl_anion_sulfur","smiles":"C[C@H:1](S)c1cc[c-]cc1","center_map":1}
+{"id":"phenyl_anion_vs_neutral_aryl_methyl","smiles":"C[C@H:1](c1ccccc1)c1cc[c-]cc1","center_map":1}
+{"id":"phenyl_anion_vs_fluorophenyl_methyl","smiles":"C[C@H:1](c1cc[c-]cc1)c1ccc(F)cc1","center_map":1}

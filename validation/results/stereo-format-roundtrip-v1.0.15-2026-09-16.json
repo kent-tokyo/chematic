@@ -1,0 +1,73 @@
+{
+  "schema_version": 2,
+  "profile": "stereo_mol_format_roundtrip_v1",
+  "rdkit_version": "2025.09.3",
+  "cli": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/chematic",
+  "corpus": {
+    "path": "validation/cip_label_corpus.jsonl",
+    "sha256": "14ce78b96a24bc66b65fd963ffc7e236e1153f72c006933555335d0bdd61730e",
+    "cases": 155
+  },
+  "profiles": {
+    "mol_v2000": {
+      "source_exclusions": 0,
+      "comparable": 155,
+      "semantic_equal": 155,
+      "failures": 0
+    },
+    "mol_v3000": {
+      "source_exclusions": 0,
+      "comparable": 155,
+      "semantic_equal": 155,
+      "failures": 0
+    }
+  },
+  "buckets": {
+    "unbucketed": {
+      "comparable": 86,
+      "semantic_equal": 86,
+      "failures": 0
+    },
+    "aromatic_mancude": {
+      "comparable": 192,
+      "semantic_equal": 192,
+      "failures": 0
+    },
+    "phosphorus": {
+      "comparable": 30,
+      "semantic_equal": 30,
+      "failures": 0
+    },
+    "triple_bond_dup": {
+      "comparable": 2,
+      "semantic_equal": 2,
+      "failures": 0
+    }
+  },
+  "failure_count": 0,
+  "failure_summary": {
+    "unique_source_structures": 0,
+    "unique_source_profiles": 0,
+    "kinds": {},
+    "stereo_difference_classes": {},
+    "topology_aligned_stereo_categories": {
+      "stereo_information_loss": 0,
+      "stereo_descriptor_assignment_mismatch": 0,
+      "spurious_stereo_assignment": 0
+    }
+  },
+  "failures": [],
+  "residual_structures": [],
+  "failure_samples": [],
+  "source_contract_exclusions": [],
+  "gate_passed": true,
+  "scope": "RDKit 2D MOL V2000/V3000 source to chematic reader to SMILES, checked by RDKit semantic identity",
+  "not_claimed": [
+    "byte-identical MOL output",
+    "chematic MOL writer round-trip",
+    "cross-engine canonical string equality",
+    "300-structure Stereo Torture Suite completion",
+    "independent CIP-label correctness",
+    "unbounded graph-isomorphism enumeration"
+  ]
+}

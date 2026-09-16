@@ -90,11 +90,11 @@ states parity. See [`validation.md`](validation.md).
 
 ## WASM artifact size
 
-The latest measured v1.0.12 Node/WASM gate measured chematic at **3.93 MB raw / 1.43 MB gzip**
-and the pinned official RDKit.js comparator at **6.91 MB raw / 2.05 MB gzip**.
-These builds have different feature surfaces, so size is a deployment observation
-rather than a feature-normalized benchmark. See the
-[official comparison record](../benchmarks/2026-09-11-official-rdkit-js-v1.0.12.md).
+The v1.0.15 published-package scorecard measures chematic at **4,005,280 bytes
+raw / 1,460,499 bytes gzip** and `@rdkit/rdkit@2026.03.6` at **7,333,095 /
+2,379,975 bytes**. The packages have different feature surfaces, so size is a
+deployment observation rather than a feature-normalized benchmark. See the
+[published-package scorecard](../benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md).
 
 ## Interpretation rule
 

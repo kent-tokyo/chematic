@@ -1,0 +1,29 @@
+{
+  "schema": "chematic.cargo-audit.v1",
+  "release_baseline": "1.0.15",
+  "checked_at": "2026-09-16",
+  "command": "cargo audit --json",
+  "lockfile_change": {
+    "package": "rustls",
+    "from": "0.23.43",
+    "to": "0.23.45",
+    "reason": "RUSTSEC-2026-0285 requires rustls >=0.23.45"
+  },
+  "advisory_database": {
+    "last_commit": "e2e640471715167f73e22eaf761f2e547adafeec",
+    "last_updated": "2026-09-14T18:06:06+02:00"
+  },
+  "vulnerabilities": {
+    "count": 0,
+    "found": false
+  },
+  "informational_unmaintained": [
+    "RUSTSEC-2026-0206 rustybuzz 0.20.1",
+    "RUSTSEC-2026-0192 ttf-parser 0.25.1"
+  ],
+  "companion_checks": {
+    "cargo_deny": "passed: advisories, bans, licenses, sources",
+    "mcp_tests": "passed: 85 unit plus 21 schema-conformance tests"
+  },
+  "boundary": "This is a local post-fix audit of the current worktree. GitHub Actions Security Audit for a commit containing this lockfile update has not run yet; the earlier 2026-09-16 main run failed before this update."
+}

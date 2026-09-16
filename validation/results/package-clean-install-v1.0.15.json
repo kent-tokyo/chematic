@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "profile": "release_package_clean_install_v1",
+  "release": "1.0.15",
+  "verified_at": "2026-09-16T00:00:00Z",
+  "lanes": [
+    {
+      "id": "npm_wasm",
+      "status": "verified",
+      "source": "npm @kent-tokyo/chematic@1.0.15 installed into an empty temporary directory",
+      "checks": [
+        "Node: explicit WASM byte initialization",
+        "parse_smiles('c1ccccc1').formula() == 'C6H6'",
+        "parse_smiles('c1ccccc1').atom_count() == 6",
+        "published tarball copied to an isolated consumer passes TypeScript 7.0.2 strict/noEmit fixture"
+      ],
+      "boundary": "The published package is wasm-pack web-target output. This covers one strict TypeScript consumer fixture and explicit WASM initialization, not browser asset serving, Worker/CSP, or broader TypeScript API coverage."
+    },
+    {
+      "id": "python_wheel",
+      "status": "verified",
+      "source": "PyPI chematic==1.0.15 installed into an empty macOS arm64 CPython 3.13 virtual environment on 2026-09-16",
+      "checks": [
+        "import chematic",
+        "chematic.__version__ == '1.0.15'",
+        "from_smiles('c1ccccc1').formula == 'C6H6'",
+        "mypy consumer fixture passes",
+        "pyright consumer fixture passes"
+      ],
+      "boundary": "This verifies the published arm64 wheel's basic runtime API and one typing fixture. The sdist, other Python versions, and other platforms remain unmeasured."
+    },
+    {
+      "id": "mcp_crate",
+      "status": "verified",
+      "source": "chematic-mcp@1.0.15 installed with cargo install --locked into an isolated macOS arm64 root on 2026-09-16",
+      "checks": [
+        "newline-delimited legacy JSON-RPC initialize returns protocolVersion '2024-11-05'",
+        "legacy tools/list returns 20 tools",
+        "modern 2026-07-28 server/discover returns the published schematic-mcp 1.0.15 identity, supported version, and public cache contract",
+        "modern tools/list returns 20 uniquely named tools with input and output schemas",
+        "modern canonical_smiles returns structured content; invalid SMILES is a structured INVALID_SMILES domain error; a 100001-byte SMILES is rejected at the transport boundary and the same process recovers"
+      ],
+      "boundary": "This verifies legacy and modern stdio protocol smoke behavior for one isolated macOS arm64 published binary. Concurrent clients, protocol versions beyond the pinned 2026-07-28 contract, all tool semantics, and other platforms remain unmeasured."
+    },
+    {
+      "id": "rust_public_api",
+      "status": "verified",
+      "source": "Empty downstream macOS arm64 Cargo binary resolved schematic = '=1.0.15' with features = ['smiles'] from crates.io on 2026-09-16",
+      "checks": [
+        "initial cargo run generated Cargo.lock from crates.io",
+        "cargo run --locked rebuilt the consumer without resolution drift",
+        "chematic::smiles::parse('c1ccccc1').atom_count() == 6"
+      ],
+      "boundary": "This is a single downstream Rust API consumer on the recorded host, not a feature-matrix or cross-platform compatibility claim."
+    }
+  ],
+  "overall": "partial",
+  "boundary": "This version-specific record deliberately retains unmeasured package lanes. The v1.0.14 record cannot be relabeled as v1.0.15 evidence."
+}

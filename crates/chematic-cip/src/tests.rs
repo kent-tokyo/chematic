@@ -243,16 +243,26 @@ fn test_rule_1a_renumbering_invariance() {
 
 #[test]
 fn negative_charge_resonance_branch_is_renumbering_invariant() {
-    // These anionic cyclohexadienyl branches exercise the charged resonance
-    // neighborhood that can make CIP ranking depend on atom insertion order.
-    // The checked-in corpus keeps the cases reviewable and the map tag identifies
-    // the same tetrahedral center after every permutation. This deliberately checks
-    // chematic's own invariant, not merely agreement with one external spelling.
+    // These RDKit-sanitizable phenyl-anion branches exercise a charged resonance
+    // neighborhood that can make CIP ranking depend on atom insertion order. The
+    // checked-in corpus keeps the cases reviewable, the map tag identifies the same
+    // tetrahedral center after every permutation. The fixed expected labels below were
+    // produced by RDKit 2025.09.3. This checks both a concrete label and the
+    // renumbering invariant; it does not alone cover charged-MANCUDE ligand rankings.
     let mut cases = 0;
     for line in NEGATIVE_RESONANCE_CORPUS.lines() {
         let case: serde_json::Value = serde_json::from_str(line).expect("valid corpus JSON");
         let smiles = case["smiles"].as_str().expect("corpus SMILES");
         let center_map = case["center_map"].as_u64().expect("center map") as u16;
+        let expected = match case["id"].as_str().expect("case id") {
+            "phenyl_anion_oxygen"
+            | "phenyl_anion_nitrogen"
+            | "phenyl_anion_fluorine"
+            | "phenyl_anion_sulfur"
+            | "phenyl_anion_vs_neutral_aryl_methyl" => CipCode::S,
+            "phenyl_anion_vs_fluorophenyl_methyl" => CipCode::R,
+            id => panic!("missing pinned RDKit label for corpus case: {id}"),
+        };
         let mol = parse(smiles).expect("valid resonance case");
         let center = find_atom_by_map(&mol, center_map);
         let baseline = assign_cip_accurate_experimental(&mol, CipBudget::default_budget())
@@ -262,6 +272,10 @@ fn negative_charge_resonance_branch_is_renumbering_invariant() {
             .find(|(idx, _)| *idx == center)
             .map(|(_, code)| code)
             .expect("mapped center must receive a CIP label");
+        assert_eq!(
+            baseline, expected,
+            "accurate CIP must match the pinned RDKit label for {smiles}"
+        );
 
         let n = mol.atom_count();
         let mut permutations = vec![
@@ -307,7 +321,7 @@ fn negative_charge_resonance_branch_is_renumbering_invariant() {
         }
         cases += 1;
     }
-    assert_eq!(cases, 4, "corpus size must remain explicit");
+    assert_eq!(cases, 6, "corpus size must remain explicit");
 }
 
 /// Run an independent, oracle-labelled corpus through generated atom-order
@@ -350,7 +364,12 @@ fn full_oracle_corpus_is_invariant_under_generated_atom_permutations() {
         permutation
     }
 
-    const PERMUTATIONS_PER_CASE: usize = 8;
+    // T5.2's minimum permutation contract is 32 deterministic atom-order
+    // variants per oracle-labelled target.  Keep this separate from the
+    // much smaller, reviewable charged-resonance subset above: this larger
+    // corpus is about insertion-order invariance, not a claim of new gold
+    // coverage.
+    const PERMUTATIONS_PER_CASE: usize = 32;
     let mut seed = 0xD1B54A32D192ED03_u64;
     let mut cases = 0usize;
     let mut checks = 0usize;

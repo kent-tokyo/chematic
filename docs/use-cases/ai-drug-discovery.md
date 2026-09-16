@@ -1,107 +1,94 @@
-# Use case: AI-assisted molecular analysis with MCP
+# AI-assisted molecular analysis with MCP
 
-## Problem
+`chematic-mcp` is a local stdio server that lets an MCP-compatible agent call
+named cheminformatics operations on SMILES. The agent supplies language and
+workflow logic; chematic returns structured chemical results. It is not a
+remote service, a general reaction planner, or a substitute for experimental
+or clinical judgement.
 
-You want an AI agent (Claude, GPT-4, etc.) to reason about molecular structures — but LLMs have no native chemistry tools. You need a bridge that lets the AI call real cheminformatics functions on actual SMILES strings.
+## Start locally
 
-## Solution
-
-chematic ships a built-in MCP server (`chematic-mcp`) that exposes chemistry tools to any MCP-compatible AI agent. Wire it to Claude Desktop once; the AI can then evaluate, search, and synthesise molecules in natural conversation — no Python environment on the client side.
-
-## Setup
+Build the server from this checkout:
 
 ```bash
-# Install chematic Python package (no C/C++ toolchain needed)
-pip install chematic
-
-# Or build the MCP server binary from source
-cargo build -p chematic-mcp --release
+cargo build --release -p chematic-mcp
 ```
 
-Add to `claude_desktop_config.json`:
+Then point the MCP client at the resulting local binary:
 
 ```json
 {
   "mcpServers": {
     "chematic": {
-      "command": "/path/to/chematic-mcp"
+      "command": "/absolute/path/to/target/release/chematic-mcp"
     }
   }
 }
 ```
 
-## What the agent can do
+The server uses newline-delimited JSON-RPC over stdio. It has no HTTP
+endpoint, authentication layer, or hosted SLA. See the
+[`chematic-mcp` README](https://github.com/kent-tokyo/chematic/blob/main/crates/chematic-mcp/README.md) for the legacy
+and modern protocol envelopes.
 
-Once connected, Claude Desktop can call these tools:
+## What an agent can call
 
-| Tool | What it does |
-|------|-------------|
-| `evaluate_molecule` | MW, LogP, TPSA, ADMET, PAINS, Lipinski |
-| `similarity_search` | Find similar structures in a SMILES list |
-| `substructure_search` | SMARTS-based filter across a set |
-| `generate_3d` | ETKDG 3D coordinates + MMFF94 minimization |
-| `retro_disconnect` | Retrosynthesis (60 reaction templates) |
-| `standardize` | Salt stripping, neutralization, tautomer canon. |
+The current server exposes 20 tools. The useful groups are:
 
-## Example conversation
+| Need | Tools |
+| --- | --- |
+| Parse and identify a molecule | `parse_smiles`, `canonical_smiles`, `smiles_to_moljson`, `moljson_to_smiles` |
+| Calculate screening properties | `calc_properties`, `lipinski_check`, `sa_score`, `pains_check`, `brenk_check`, `admet_profile`, `boiled_egg` |
+| Compare structures | `ecfp4`, pairwise `tanimoto`, `smarts_match`, `find_mcs` |
+| Produce bounded follow-up representations | `representation_router`, `molecule_context_pack`, `generate_3d`, `retrosynthesis` |
+| Resolve a public chemical name | `name_to_smiles` |
 
-> **User:** I have a hit compound `CC(=O)Nc1ccc(O)cc1`. Is it drug-like?
+There is no built-in indexed `similarity_search` or `standardize` MCP tool.
+For a caller-owned collection, the agent or application must iterate pairwise
+`tanimoto` calls or use a binding-level index, while retaining input IDs and
+all rejected records. `retrosynthesis` is a bounded one-step BRICS
+disconnection, not a synthetic route recommendation. `generate_3d` and the
+ADMET-related tools have their documented bounded or experimental scope.
 
-```
-chematic evaluates the molecule and returns:
+## Example: inspect one input
 
-Molecular weight 151.2 Da, formula C8H9NO2.
-LogP 0.46 (mildly lipophilic), TPSA 49.3 Å².
-HBD 2, HBA 3, 2 rotatable bonds, 1 aromatic ring.
-Drug-likeness: no Lipinski rule-of-5 violations. Likely orally bioavailable.
-QED 0.67. No structural alerts (PAINS / Brenk clean).
-```
+For a SMILES supplied by the user, an agent can call the property and alert
+tools independently, then cite the returned fields instead of inventing a
+chemical interpretation. A modern `tools/call` request looks like this:
 
-> **User:** Find me 5 analogs from this SMILES list that are most similar.
-
-The agent calls `similarity_search` and returns ranked results with Tanimoto scores.
-
-## Scripting with Python
-
-```python
-import chematic
-
-mol = chematic.from_smiles("CC(=O)Nc1ccc(O)cc1")  # paracetamol
-
-# Natural-language summary (same as what the MCP tool returns)
-print(mol.describe())
-
-# Full ADMET profile
-print(mol.admet())
-
-# Retrosynthesis
-routes = mol.retro_disconnect(max_results=5)
-for r in routes:
-    print(r)
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "_meta": {
+      "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+      "io.modelcontextprotocol/clientInfo": {"name": "my-agent", "version": "1.0"},
+      "io.modelcontextprotocol/clientCapabilities": {}
+    },
+    "name": "calc_properties",
+    "arguments": {"smiles": "CC(=O)Nc1ccc(O)cc1"}
+  }
+}
 ```
 
-## Typical agentic workflow
+Successful modern calls include machine-readable `structuredContent`.
+Invalid chemistry input instead returns a successful RPC with `isError: true`
+and a structured error code such as `INVALID_SMILES`; invalid argument shape
+is JSON-RPC `-32602`. Treat either outcome as data in an agent workflow rather
+than silently retrying with altered structures.
 
-```
-User query
-    ↓
-Claude reads SMILES / name
-    ↓
-chematic MCP: standardize → evaluate → similarity_search
-    ↓
-Claude interprets results and suggests next experiment
-    ↓
-chematic MCP: retro_disconnect (if synthesis needed)
-    ↓
-Claude writes experimental plan
-```
+## Local-data boundary
 
-chematic is the chemistry engine; the AI handles language, reasoning, and decision-making.
-No Python environment is needed on the client — the MCP server binary handles everything.
+Nineteen tools operate locally. `name_to_smiles` is the exception: it sends
+the supplied chemical name to PubChem over HTTPS. Do not use that tool for
+proprietary names. The stdio server currently has bounded request and tool
+inputs, but it does not implement JSON-RPC cancellation; avoid presenting
+long-running work as interruptible. Exact limits and failure behaviour are in
+[Error and resource limits](../error-and-limits.md).
 
-## Related APIs
-
-- [`mol.describe()`](../api/chematic.md) — natural-language property summary (the same text the MCP server returns)
-- [`mol.admet()`](../api/chematic.md) — BBB, Caco-2, hERG, CYP3A4 in one call
-- [`mol.retro_disconnect()`](../api/chematic.md) — retrosynthesis with 60 reaction templates
-- `chematic-mcp` binary — run `cargo build -p chematic-mcp --release`
+For a Python-created comparison prompt, see
+[`examples/ai_agent_demo.py`](https://github.com/kent-tokyo/chematic/blob/main/examples/ai_agent_demo.py). For
+version-pinned chemistry compatibility and validation scope, start with
+[Validation](../validation.md) and the [RDKit migration guide](../rdkit-migration.md).

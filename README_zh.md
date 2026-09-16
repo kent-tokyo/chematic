@@ -23,13 +23,12 @@ npm install @kent-tokyo/chematic
 
 Python 版本无需 C/C++ 编译器。
 
-### v1.0.15 范围
+### v1.0.16 范围
 
-本版本强化 Trust Release 边界：RC 标签不会发布构件，parser-security 语料库在
-Linux 强制门禁中运行，Local Compound Explorer 在 Worker 中处理有上限的批次。
-Chromium、Firefox、WebKit 及 native scalar/batch/Worker parity 均作为发布门禁。
-兼容性仍按操作和数据集限定，详见[兼容性范围](docs/compatibility-scope.md)和
-[CHANGELOG](CHANGELOG.md)。
+本版本增加固定 RDKit/Indigo 版本的 V3000 互操作门禁、开发用立体化学不变性门禁、
+公开 npm 包与 RDKit.js 的比较，以及冻结的 Trust 评估数据划分。配位化学和未完成的
+V3000 语义仍作为类型化不支持边界处理。兼容性仍按操作和数据集限定，详见
+[兼容性范围](docs/compatibility-scope.md)和[CHANGELOG](CHANGELOG.md)。
 
 ## Python
 

@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "profile": "stereo_spelling_invariance_v1",
+  "rdkit_version": "2025.09.3",
+  "cli": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/chematic",
+  "corpus": {
+    "path": "validation/cip_label_corpus.jsonl",
+    "sha256": "14ce78b96a24bc66b65fd963ffc7e236e1153f72c006933555335d0bdd61730e",
+    "cases": 155
+  },
+  "randomized_spellings": {
+    "variants_per_case": 32,
+    "seed": 85912870,
+    "duplicate_spellings": 27,
+    "inputs_including_source": 5115
+  },
+  "first_pass": {
+    "records": 5115,
+    "failures": 0,
+    "failure_samples": []
+  },
+  "canonical_reparse": {
+    "records": 5115,
+    "failures": 0,
+    "failure_samples": []
+  },
+  "gate_passed": true,
+  "scope": "RDKit randomized isomeric SMILES spelling invariance plus chematic canonical reparse idempotency on the fixed CIP oracle inputs",
+  "not_claimed": [
+    "RDKit canonical string equality",
+    "independent CIP-label correctness",
+    "MOL V2000 or V3000 round-trip preservation",
+    "300-structure Stereo Torture Suite completion"
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "profile": "v3000_sgroup_external_reader_v1",
+  "indigo_version": "1.46.0.0-gb36d38f52-aarch64-darwin-appleclang-17000013",
+  "rdkit_version": "2025.09.3",
+  "cli": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/chematic",
+  "cli_exit_code": 0,
+  "indigo_written_source_sha256": "7799486d03c446c7c6c10349c8e2e64a9f63d4d8498d300790f7be041a1cd468",
+  "indigo_written_sgroup_lines": [
+    "M  V30 1 SUP 1 ATOMS=(2 1 2) LABEL=core"
+  ],
+  "source_is_indigo_api_created": true,
+  "source_sgroup_api": {
+    "type": "SUP",
+    "initial_atom_indices": [
+      0
+    ],
+    "final_atom_indices": [
+      0,
+      1
+    ],
+    "name": "core"
+  },
+  "source_edit_reflected": true,
+  "sgroup_line_retained": true,
+  "sgroup_count_synchronized": true,
+  "rdkit_accepted": true,
+  "indigo_accepted": true,
+  "indigo_error": null,
+  "gate_passed": true,
+  "scope": "one Indigo API-created and edited V3000 SUP SGROUP is preserved and accepted by external readers",
+  "not_claimed": [
+    "typed SGROUP semantic equivalence",
+    "SGROUP editing or atom-deletion reference updates",
+    "COLLECTION enhanced-stereo interoperability",
+    "ENDPTS/ATTACH or haptic chemistry semantics"
+  ]
+}

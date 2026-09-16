@@ -77,7 +77,7 @@ def main() -> int:
     bindings = {
         "rust": rust_records(corpus),
         "python": python_records(corpus),
-        "node_wasm": run(["node", "scripts/rdkit_rdk_binding_dump.mjs"], corpus),
+        "node_wasm": run(["node", "scripts/binding_dump.mjs", "rdkit-rdk"], corpus),
     }
     if any(len(rows) != expected_rows for rows in bindings.values()):
         raise RuntimeError({name: len(rows) for name, rows in bindings.items()})

@@ -122,6 +122,9 @@ fn main() {
                         AromaticityError::InternalInvariantViolation { .. },
                     ) => "rdkit_parity_internal_error",
                     RdkitMorganError::UnsupportedBondOrder { .. } => "unsupported_bond_order",
+                    RdkitMorganError::UnsupportedCoordinationSanitization { .. } => {
+                        "unsupported_coordination_sanitization"
+                    }
                     RdkitMorganError::InternalInvariantViolation { .. } => {
                         "internal_invariant_violation"
                     }

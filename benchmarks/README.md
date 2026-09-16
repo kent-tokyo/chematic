@@ -14,14 +14,14 @@ accuracy, or compatibility claims.
 | Reproduce the 1.10x hot-path gate | [`2026-09-05-hotpath-110.md`](2026-09-05-hotpath-110.md) |
 | Check file-streaming contracts | [v1.0.12 validation matrix](../validation/results/cross-engine-matrix-v1.0.12.json) |
 | Check current streaming safety gate | [`2026-09-11-streaming-safety-v1.0.13.json`](2026-09-11-streaming-safety-v1.0.13.json) |
-| Check official RDKit.js comparison gate | [`2026-09-11-official-rdkit-js-v1.0.12.md`](2026-09-11-official-rdkit-js-v1.0.12.md) |
-| Current v1.0.12 official RDKit.js Node rerun | [`../validation/results/competitive-benchmark-rdkitjs-2026-09-11-v1.0.12.json`](../validation/results/competitive-benchmark-rdkitjs-2026-09-11-v1.0.12.json) |
-| Current v1.0.12 official RDKit.js Node report | [`2026-09-11-official-rdkit-js-v1.0.12.md`](2026-09-11-official-rdkit-js-v1.0.12.md) |
+| Check current isolated official RDKit.js browser comparison | [`2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md`](2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md) |
+| Historical v1.0.12 official RDKit.js Node rerun | [`../validation/results/competitive-benchmark-rdkitjs-2026-09-11-v1.0.12.json`](../validation/results/competitive-benchmark-rdkitjs-2026-09-11-v1.0.12.json) |
+| Historical v1.0.12 official RDKit.js Node report | [`2026-09-11-official-rdkit-js-v1.0.12.md`](2026-09-11-official-rdkit-js-v1.0.12.md) |
 | Check official RDKit.js browser gate | [`2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md`](2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md) |
 | Check WASM artifact size | [`2026-09-09-wasm-size-v1.0.10.md`](2026-09-09-wasm-size-v1.0.10.md) |
 | Find older measurements | [Historical snapshots](#historical-snapshots) |
 
-The current release line is v1.0.15. Older records remain versioned historical
+The current release line is v1.0.16. Older records remain versioned historical
 measurements where their headers say so; a release does not imply that an older
 measurement was rerun.
 
@@ -37,7 +37,7 @@ measurement was rerun.
 | [`2026-09-11-similarity-search-v1.0.12.json`](2026-09-11-similarity-search-v1.0.12.json) | Machine-readable v1.0.12 similarity-search gate |
 | [`2026-09-12-similarity-search-a3-v1.0.13.md`](2026-09-12-similarity-search-a3-v1.0.13.md) | A3 rerun after explicit-aromatic recovery; 4,500/500 coverage and exact compatible top-10 gate |
 | [`2026-09-12-similarity-search-a3-v1.0.13.json`](2026-09-12-similarity-search-a3-v1.0.13.json) | Machine-readable A3 rerun |
-| [`rdkit-ecfp4-cross-binding-parity-5000-v1.0.13.json`](../validation/results/rdkit-ecfp4-cross-binding-parity-5000-v1.0.13.json) | Current Rust/Python/Node/WASM ECFP4 cross-binding gate: 5,000/5,000 |
+| [`rdkit-ecfp4-cross-binding-parity-5000-v1.0.13.json`](../validation/results/rdkit-ecfp4-cross-binding-parity-5000-v1.0.13.json) | Historical v1.0.13 Rust/Python/Node/WASM ECFP4 cross-binding gate: 5,000/5,000 |
 | [`rdkit-ecfp4-sparse-cross-binding-parity-5000-v1.0.13.json`](../validation/results/rdkit-ecfp4-sparse-cross-binding-parity-5000-v1.0.13.json) | Raw sparse identifier/count cross-binding gate: 5,000/5,000 |
 | [`rdkit-ecfp4-raw-bitinfo-cross-binding-parity-5000-v1.0.13.json`](../validation/results/rdkit-ecfp4-raw-bitinfo-cross-binding-parity-5000-v1.0.13.json) | Raw identifier bitInfo cross-binding gate: 5,000/5,000 |
 | [`rdkit-ecfp4-bitinfo-cross-binding-parity-5000-v1.0.13.json`](../validation/results/rdkit-ecfp4-bitinfo-cross-binding-parity-5000-v1.0.13.json) | Folded bitInfo cross-binding gate: 5,000/5,000 |
@@ -46,7 +46,7 @@ measurement was rerun.
 | [`descriptor-stereocenter-rdkit-parity-v1.0.13.json`](../validation/results/descriptor-stereocenter-rdkit-parity-v1.0.13.json) | A1 diagnostic potential-stereocenter gate: 5,000/5,000 compared, 4,995 exact; five bridged/ring-tied residuals remain unadopted |
 | [`rdkit-search-cross-binding-parity-v1.0.13.json`](../validation/results/rdkit-search-cross-binding-parity-v1.0.13.json) | Full chunked 500-query/4,500-entry RDKit-compatible top-k search contract across Rust/Python/Node/WASM; independent RDKit oracle is separate |
 | [`descriptor-cross-binding-parity-5000-v1.0.13.json`](../validation/results/descriptor-cross-binding-parity-5000-v1.0.13.json) | Five-field descriptor binding contract: 5,000/5,000 |
-| [`2026-09-11-canonical-orbit-perf-v1.0.13.md`](2026-09-11-canonical-orbit-perf-v1.0.13.md) | Current exact canonical-search/orbit-pruning differential and instrumentation for issue #372 |
+| [`2026-09-11-canonical-orbit-perf-v1.0.13.md`](2026-09-11-canonical-orbit-perf-v1.0.13.md) | Historical v1.0.13 canonical-search/orbit-pruning differential for issue #372 |
 | [`2026-09-09-wasm-rdkit-gate.md`](2026-09-09-wasm-rdkit-gate.md) | Same-corpus Node/WASM comparison with the installed official RDKit.js package |
 | [`2026-09-09-wasm-rdkit-gate.json`](2026-09-09-wasm-rdkit-gate.json) | Machine-readable WASM comparison output and exact fingerprint parity count |
 | [`2026-09-09-wasm-rdkit-paired.md`](2026-09-09-wasm-rdkit-paired.md) | Same-process paired Node/WASM timing follow-up |
@@ -55,6 +55,10 @@ measurement was rerun.
 | [`../validation/results/competitive-benchmark-rdkitjs-2026-09-11-v1.0.12.json`](../validation/results/competitive-benchmark-rdkitjs-2026-09-11-v1.0.12.json) | Machine-readable official RDKit.js comparison result |
 | [`2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md`](2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md) | Real Playwright Chromium comparison against the official package |
 | [`../validation/results/competitive-browser-rdkitjs-2026-09-10-v1.0.11.json`](../validation/results/competitive-browser-rdkitjs-2026-09-10-v1.0.11.json) | Machine-readable browser comparison result |
+| [`2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md`](2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md) | Fresh-browser-process, fixed exposed 10k comparison against `@rdkit/rdkit@2026.03.6`; it records operation-specific results and 9,999/9,999 configured-bit agreement on the declared supported domain across three browsers, plus one typed Fe(II) coordination boundary |
+| [`../validation/results/competitive-browser-rdkitjs-isolated-v1.0.15-2026-09-16.json`](../validation/results/competitive-browser-rdkitjs-isolated-v1.0.15-2026-09-16.json) | Machine-readable isolated browser comparison result |
+| [`../validation/results/competitive-browser-rdkitjs-ecfp4-parity-5k-v1.0.15-2026-09-16.json`](../validation/results/competitive-browser-rdkitjs-ecfp4-parity-5k-v1.0.15-2026-09-16.json) | Direct browser ECFP4/Morgan comparison against `@rdkit/rdkit@2026.03.6`: 5,000/5,000 exact after the large polycyclic-aromatic explicit-aromatic regression fix; this does not generalize to unmeasured corpus or option configurations |
+| [`../validation/results/competitive-browser-rdkitjs-isolated-10k-rss-v1.0.15-2026-09-16.json`](../validation/results/competitive-browser-rdkitjs-isolated-10k-rss-v1.0.15-2026-09-16.json) | Chrome-owned-process 10k memory lane: browser JS heap, chematic linear-memory allocation, and sampled process-tree RSS; summed RSS is not unique physical memory and is not cross-browser evidence |
 | [`2026-09-10-generated-wasm-v3000-gate-v1.0.11.md`](2026-09-10-generated-wasm-v3000-gate-v1.0.11.md) | Generated Web-WASM V3000 metadata preservation gate |
 | [`2026-09-11-v3000-cross-engine-v1.0.12.md`](2026-09-11-v3000-cross-engine-v1.0.12.md) | Bounded V3000 canonical/semantic probe across schematic, RDKit, and Open Babel |
 | [`2026-09-11-v3000-cross-engine-v1.0.12.json`](2026-09-11-v3000-cross-engine-v1.0.12.json) | Machine-readable V3000 cross-engine probe and explicit Indigo availability boundary |
@@ -84,7 +88,7 @@ measurement was rerun.
 | [v1.0.10 RDKit MMFF94 availability oracle](../validation/results/mmff94-rdkit-availability-oracle-v1.0.10.json) | Independent 265-molecule parse, embed, force-field construction, and finite-energy availability boundary |
 | [`2026-09-11-streaming-safety-v1.0.12.md`](2026-09-11-streaming-safety-v1.0.12.md) | Historical v1.0.12 ten-format malformed, oversized, gzip, and generated parser-entry safety gate |
 | [`2026-09-11-streaming-safety-v1.0.12.json`](2026-09-11-streaming-safety-v1.0.12.json) | Machine-readable historical v1.0.12 streaming safety gate evidence |
-| [`2026-09-11-streaming-safety-v1.0.13.json`](2026-09-11-streaming-safety-v1.0.13.json) | Machine-readable current v1.0.13 streaming safety gate evidence |
+| [`2026-09-11-streaming-safety-v1.0.13.json`](2026-09-11-streaming-safety-v1.0.13.json) | Machine-readable historical v1.0.13 streaming safety gate evidence |
 | [v1.0.12 streaming failure taxonomy](../validation/results/streaming-failure-taxonomy-v1.0.12.json) | Machine-readable typed failure taxonomy for the 120-case base plus twenty Extended XYZ, mmCIF, MOL2, CML, and CDXML supplemental cases |
 | [v1.0.10 reaction SMARTS contract](../validation/results/reaction-smarts-bounded-contract-v1.0.10.json) | Bounded 20-case aromatic, bond-order, mapped-agent, agent-OR, disconnected-component assignment/rejection, hydrogen-count, pipe-alternative, and embedding-selection presence contract |
 
@@ -101,9 +105,9 @@ unless the record explicitly says that the APIs and process boundaries match.
 | [`2026-09-08-streaming-matrix-v1.0.9.json`](2026-09-08-streaming-matrix-v1.0.9.json) | Rust-only ten-format matrix, plain/gzip stages, limits, digests, and repetitions |
 | [`2026-09-08-streaming-cross-engine-matrix-v1.0.9.json`](2026-09-08-streaming-cross-engine-matrix-v1.0.9.json) | Same-input ten-format agreement across chematic and installed RDKit/Open Babel lanes |
 | [`2026-09-09-streaming-cross-engine-matrix-v1.0.10.md`](2026-09-09-streaming-cross-engine-matrix-v1.0.10.md) | v1.0.10 same-input contract refresh with explicitly non-ranking throughput context |
-| [`2026-09-09-streaming-cross-engine-matrix-v1.0.10.json`](2026-09-09-streaming-cross-engine-matrix-v1.0.10.json) | Machine-readable current ten-format contract matrix |
+| [`2026-09-09-streaming-cross-engine-matrix-v1.0.10.json`](2026-09-09-streaming-cross-engine-matrix-v1.0.10.json) | Machine-readable historical v1.0.10 ten-format contract matrix |
 | [`2026-09-11-streaming-cross-engine-matrix-v1.0.12.md`](2026-09-11-streaming-cross-engine-matrix-v1.0.12.md) | v1.0.12 same-input contract refresh with explicit parser/process boundaries |
-| [v1.0.12 validation matrix](../validation/results/cross-engine-matrix-v1.0.12.json) | Machine-readable current ten-format contract matrix |
+| [v1.0.12 validation matrix](../validation/results/cross-engine-matrix-v1.0.12.json) | Machine-readable historical ten-format contract matrix |
 | [`2026-09-11-same-process-sdf-contract-v1.0.12.json`](2026-09-11-same-process-sdf-contract-v1.0.12.json) | v1.0.12 same-process SDF semantic contract |
 | [`2026-09-11-same-process-v2000-mol-contract-v1.0.12.json`](2026-09-11-same-process-v2000-mol-contract-v1.0.12.json) | v1.0.12 same-process V2000 MOL semantic contract |
 | [`2026-09-11-same-process-v3000-mol-contract-v1.0.12.json`](2026-09-11-same-process-v3000-mol-contract-v1.0.12.json) | v1.0.12 same-process V3000 MOL structural contract |
@@ -112,7 +116,7 @@ unless the record explicitly says that the APIs and process boundaries match.
 | [`2026-09-11-same-process-extxyz-contract-v1.0.12.json`](2026-09-11-same-process-extxyz-contract-v1.0.12.json) | v1.0.12 same-process Extended XYZ coordinate contract |
 | [`2026-09-11-same-process-pdb-contract-v1.0.12.json`](2026-09-11-same-process-pdb-contract-v1.0.12.json) | v1.0.12 same-process PDB coordinate/signature contract |
 | [`2026-09-11-same-process-cdxml-contract-v1.0.12.json`](2026-09-11-same-process-cdxml-contract-v1.0.12.json) | v1.0.12 same-process CDXML signature contract |
-| [v1.0.10 validation matrix](../validation/results/cross-engine-matrix-v1.0.10.json) | Current 2026-09-10 ten-format matrix used by the fail-closed validator |
+| [v1.0.10 validation matrix](../validation/results/cross-engine-matrix-v1.0.10.json) | Historical 2026-09-10 ten-format matrix used by the fail-closed validator |
 | [`2026-09-09-same-process-sdf-contract-v1.0.10.md`](2026-09-09-same-process-sdf-contract-v1.0.10.md) | Same-process schematic/RDKit SDF semantic contract |
 | [`2026-09-09-same-process-sdf-contract-v1.0.10.json`](2026-09-09-same-process-sdf-contract-v1.0.10.json) | Machine-readable same-process SDF evidence |
 | [`2026-09-09-same-process-v2000-mol-contract-v1.0.10.md`](2026-09-09-same-process-v2000-mol-contract-v1.0.10.md) | Same-process schematic/RDKit V2000 MOL semantic contract |
@@ -127,7 +131,7 @@ unless the record explicitly says that the APIs and process boundaries match.
 | [`2026-09-09-same-process-extxyz-contract-v1.0.10.json`](2026-09-09-same-process-extxyz-contract-v1.0.10.json) | Machine-readable same-process Extended XYZ evidence |
 | [`2026-09-09-same-process-pdb-contract-v1.0.10.md`](2026-09-09-same-process-pdb-contract-v1.0.10.md) | Same-process schematic/RDKit PDB semantic contract |
 | [`2026-09-09-same-process-pdb-contract-v1.0.10.json`](2026-09-09-same-process-pdb-contract-v1.0.10.json) | Machine-readable same-process PDB evidence |
-| [`2026-09-10-same-process-sdf-contract-v1.0.10.json`](2026-09-10-same-process-sdf-contract-v1.0.10.json) | Re-run same-process SDF contract against the current v1.0.10 source extension |
+| [`2026-09-10-same-process-sdf-contract-v1.0.10.json`](2026-09-10-same-process-sdf-contract-v1.0.10.json) | Re-run same-process SDF contract against the recorded v1.0.10 source extension |
 | [`2026-09-10-same-process-v2000-mol-contract-v1.0.10.json`](2026-09-10-same-process-v2000-mol-contract-v1.0.10.json) | Re-run same-process V2000 MOL contract |
 | [`2026-09-10-same-process-v3000-mol-contract-v1.0.10.json`](2026-09-10-same-process-v3000-mol-contract-v1.0.10.json) | Re-run same-process V3000 MOL contract |
 | [`2026-09-10-same-process-mol2-contract-v1.0.10.json`](2026-09-10-same-process-mol2-contract-v1.0.10.json) | Re-run same-process MOL2 contract |
@@ -171,7 +175,7 @@ unless the record explicitly says that the APIs and process boundaries match.
 | Record | Scope |
 |---|---|
 | [`2026-09-07-wasm-size-v1.0.9.md`](2026-09-07-wasm-size-v1.0.9.md) | v1.0.9 candidate WASM raw/gzip size, digest, toolchain, and commands |
-| [`2026-09-09-wasm-size-v1.0.10.md`](2026-09-09-wasm-size-v1.0.10.md) | v1.0.10 current-candidate WASM raw/gzip size, digest, toolchain, and commands |
+| [`2026-09-09-wasm-size-v1.0.10.md`](2026-09-09-wasm-size-v1.0.10.md) | Historical v1.0.10 candidate WASM raw/gzip size, digest, toolchain, and commands |
 | [`2026-09-09-wasm-size-v1.0.10.json`](2026-09-09-wasm-size-v1.0.10.json) | Machine-readable v1.0.10 WASM artifact evidence |
 | [`2026-09-06-wasm-size-v1.0.8.md`](2026-09-06-wasm-size-v1.0.8.md) | v1.0.8 candidate artifact snapshot |
 | [`2026-09-06-wasm-size-v1.0.7.md`](2026-09-06-wasm-size-v1.0.7.md) | v1.0.7 tagged artifact snapshot |
@@ -180,7 +184,7 @@ unless the record explicitly says that the APIs and process boundaries match.
 | [`2026-09-09-clean-install-cold-start-v1.0.10.json`](2026-09-09-clean-install-cold-start-v1.0.10.json) | Machine-readable v1.0.10 Python evidence |
 | [`2026-09-09-ensemble-diversity-v1.0.10.md`](2026-09-09-ensemble-diversity-v1.0.10.md) | Deterministic multi-seed ensemble reproduction and flexible-molecule diversity evidence |
 | [`2026-09-09-ensemble-diversity-v1.0.10.json`](2026-09-09-ensemble-diversity-v1.0.10.json) | Machine-readable deterministic ensemble diversity evidence |
-| [`2026-09-09-streaming-safety-v1.0.10.md`](2026-09-09-streaming-safety-v1.0.10.md) | Current ten-format malformed, oversized, and gzip safety gate |
+| [`2026-09-09-streaming-safety-v1.0.10.md`](2026-09-09-streaming-safety-v1.0.10.md) | Historical ten-format malformed, oversized, and gzip safety gate |
 | [`2026-09-09-streaming-safety-v1.0.10.json`](2026-09-09-streaming-safety-v1.0.10.json) | Machine-readable streaming safety gate evidence |
 | [`2026-09-09-3d-class-failure-rates-v1.0.10.md`](2026-09-09-3d-class-failure-rates-v1.0.10.md) | 3D status-class failure rates for the current 58-molecule gate |
 | [`2026-09-09-3d-class-failure-rates-v1.0.10.json`](2026-09-09-3d-class-failure-rates-v1.0.10.json) | Machine-readable 3D class-level failure evidence |

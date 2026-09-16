@@ -23,13 +23,13 @@ npm install @kent-tokyo/chematic
 
 Python版はC/C++コンパイラなしで導入できます。
 
-### v1.0.15 の対応範囲
+### v1.0.16 の対応範囲
 
-Trust Release境界を強化しました。RCタグは公開されず、parser-security corpusは
-Linux上の強制ゲートで実行されます。Local Compound Explorerは上限付きバッチを
-Workerで処理し、Chromium・Firefox・WebKitとnative scalar/batch/Worker parityを
-リリースゲートにしています。互換性は操作・コーパス単位です。詳細は
-[互換性範囲](docs/compatibility-scope.md)と[CHANGELOG](CHANGELOG.md)を参照してください。
+RDKit/Indigoに固定したV3000相互運用ゲート、開発用立体化学不変性ゲート、
+公開npmパッケージのRDKit.js比較、Trust評価用の凍結splitを追加しました。
+配位化学と不完全なV3000意味論は型付きの非対応境界として維持します。
+互換性は操作・コーパス単位です。詳細は[互換性範囲](docs/compatibility-scope.md)と
+[CHANGELOG](CHANGELOG.md)を参照してください。
 
 ## Python
 

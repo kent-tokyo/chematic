@@ -1299,6 +1299,45 @@
       "payload": "case\n  chematic\n\n  1  0  0  0  0  0            999 V2000\nC\nM  END\n$$$$\ntrailing\n$$$$\n",
       "sha256": "0da3d3170a2d351524f0a5ac8b9542eecae472dbf7dd1cd891f9682f11e8cab6",
       "source_url": "https://raw.githubusercontent.com/openbabel/openbabel/master/test/files/fuzz_regress/inchi-maxval-overflow.sdf"
+    },
+    {
+      "affected_version": "CheMatic v1.0.15 pre-fix",
+      "cause": "V3000 COUNTS bond count was parsed but not checked against the BOND block",
+      "expected_status": "rejected",
+      "format": "mol_v3000",
+      "id": "mol-v3000-20",
+      "license": "CheMatic-authored derived boundary fixture; upstream URL is attribution, not redistributed input bytes",
+      "mutation": "V3000 COUNTS/BOND cardinality mismatch",
+      "origin": "derived_from_public_reproducer",
+      "payload": "case\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 2 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0\nM  V30 2 C 1 0 0 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n",
+      "sha256": "d11882b7c0bf1f7585a628de57dd40eba68fba983f7a9ef42acbc9c226cfc3b1",
+      "source_url": "https://github.com/epam/Indigo/issues/3286"
+    },
+    {
+      "affected_version": "CheMatic v1.0.15 pre-fix",
+      "cause": "V3000 declared bond count could omit the BOND block",
+      "expected_status": "rejected",
+      "format": "mol_v3000",
+      "id": "mol-v3000-21",
+      "license": "CheMatic-authored derived boundary fixture; upstream URL is attribution, not redistributed input bytes",
+      "mutation": "V3000 declared BOND block omission",
+      "origin": "derived_from_public_reproducer",
+      "payload": "case\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0\nM  V30 2 C 1 0 0 0\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "sha256": "19e6d45c934fc10d062a79639fe10ce3dce699f2ad1ed23a94bf98db9b0e0c56",
+      "source_url": "https://github.com/epam/Indigo/issues/3286"
+    },
+    {
+      "affected_version": "CheMatic v1.0.15 pre-fix",
+      "cause": "known V3000 COLLECTION could silently drop an unknown atom reference",
+      "expected_status": "rejected",
+      "format": "mol_v3000",
+      "id": "mol-v3000-22",
+      "license": "CheMatic-authored derived boundary fixture; upstream URL is attribution, not redistributed input bytes",
+      "mutation": "known V3000 COLLECTION unknown atom reference",
+      "origin": "derived_from_public_reproducer",
+      "payload": "case\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0\nM  V30 2 C 1 0 0 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 BEGIN COLLECTION\nM  V30 MDLV30/STEABS ATOMS=(1 99)\nM  V30 END COLLECTION\nM  V30 END CTAB\nM  END\n",
+      "sha256": "f750d82b94dcc20f785e209c760692ea7ce308b08e016892d52e46f74dc0b881",
+      "source_url": "https://github.com/epam/Indigo/issues/3286"
     }
   ],
   "purpose": "fixed sourced parser-security corpus",

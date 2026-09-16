@@ -31,6 +31,15 @@ def digest(payload: str) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+def peak_rss_within_limit(peak_rss_kib: object, memory_mib: int) -> bool:
+    """Return whether a Linux runner supplied a bounded VmHWM value."""
+    return (
+        isinstance(peak_rss_kib, int)
+        and not isinstance(peak_rss_kib, bool)
+        and 0 <= peak_rss_kib <= memory_mib * 1024
+    )
+
+
 def preexec(memory_bytes: int) -> None:
     # macOS does not permit reducing RLIMIT_AS from a child preexec hook.
     # Do not pretend that an unenforced local setting is a memory gate: CI
@@ -132,15 +141,25 @@ def main() -> int:
             except json.JSONDecodeError:
                 output = None
             status = output.get("status") if isinstance(output, dict) else None
-            passed = completed.returncode == 0 and status == case["expected_status"]
             peak_rss_kib = output.get("peak_rss_kib") if isinstance(output, dict) else None
-            results.append({"id": case["id"], "format": case["format"], "status": status or "runner_error", "exit_code": completed.returncode, "signal": -completed.returncode if completed.returncode < 0 else None, "wall_ms": elapsed_ms, "peak_rss_kib": peak_rss_kib if isinstance(peak_rss_kib, int) else None, "passed": passed})
+            peak_rss_valid = peak_rss_within_limit(peak_rss_kib, args.memory_mib)
+            # Linux's runner supplies VmHWM. A missing or over-budget value is
+            # not merely telemetry loss: the bounded gate must fail rather
+            # than treating an unchecked resource result as a successful
+            # parser invocation. macOS diagnostic runs intentionally retain
+            # their `not_measured` resource boundary.
+            passed = (
+                completed.returncode == 0
+                and status == case["expected_status"]
+                and (peak_rss_valid if memory_enforced else True)
+            )
+            results.append({"id": case["id"], "format": case["format"], "status": status or "runner_error", "exit_code": completed.returncode, "signal": -completed.returncode if completed.returncode < 0 else None, "wall_ms": elapsed_ms, "peak_rss_kib": peak_rss_kib if isinstance(peak_rss_kib, int) else None, "peak_rss_within_limit": peak_rss_valid if memory_enforced else None, "passed": passed})
         except subprocess.TimeoutExpired:
             results.append({"id": case["id"], "format": case["format"], "status": "timeout", "exit_code": None, "signal": None, "wall_ms": round((time.monotonic() - started) * 1000, 3), "peak_rss_kib": None, "passed": False})
         finally:
             input_path.unlink(missing_ok=True)
     failures = [row for row in results if not row["passed"]]
-    report = {"schema": "chematic.isolated-parser-security.v1", "execution": {"network": "Linux user+network namespace via unshare" if network_enforced else "not enforced locally; macOS diagnostic subprocess inherits host network policy", "network_enforced": network_enforced, "timeout_seconds": args.timeout_seconds, "memory_mib": args.memory_mib, "memory_enforced": memory_enforced, "peak_rss_kib": "Linux runner self-reports VmHWM; unavailable on macOS"}, "cases": results, "status": "pass" if not failures and memory_enforced and network_enforced else "not_measured" if not failures else "fail", "failure_count": len(failures)}
+    report = {"schema": "chematic.isolated-parser-security.v2", "execution": {"network": "Linux root-owned network namespace via sudo unshare --net" if network_enforced else "not enforced locally; macOS diagnostic subprocess inherits host network policy", "network_enforced": network_enforced, "timeout_seconds": args.timeout_seconds, "memory_mib": args.memory_mib, "memory_enforced": memory_enforced, "peak_rss_kib": "Linux runner self-reports VmHWM and the gate requires every value to be at most memory_mib * 1024; unavailable on macOS"}, "cases": results, "status": "pass" if not failures and memory_enforced and network_enforced else "not_measured" if not failures else "fail", "failure_count": len(failures)}
     rendered = json.dumps(report, indent=2, sort_keys=True) + "\n"
     if args.json_out:
         output = args.json_out if args.json_out.is_absolute() else ROOT / args.json_out

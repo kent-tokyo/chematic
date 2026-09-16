@@ -51,13 +51,10 @@ use crate::rational::AtomicNumberKey;
 /// real replacement for shell-multiset pooling.
 pub struct CipDigraph<'m> {
     mol: &'m Molecule,
-    /// `None` for every existing call site (`Self::new`) -- Milestone 3B-1a's MANCUDE
-    /// fractional-atomic-number treatment is only active via [`Self::new_with_mancude`],
-    /// a separate, not-yet-wired-into-`assign_cip_accurate_experimental` entry point (see
-    /// `crate::mancude`'s module docs). Attaching a `MancudeContext` computed for a
-    /// *different* molecule than `mol` would silently misattribute fractional values --
-    /// callers are responsible for computing it from the exact same (Kekulé-form) `mol`
-    /// passed in here.
+    /// `None` for [`Self::new`]. The accurate-CIP path supplies a context through
+    /// [`Self::new_with_mancude`]. Attaching a `MancudeContext` computed for a *different*
+    /// molecule than `mol` would silently misattribute fractional values -- callers are
+    /// responsible for computing it from the exact same (Kekulé-form) `mol` passed here.
     mancude: Option<&'m MancudeContext>,
     /// `None` for every existing call site (`Self::new`/`Self::new_with_mancude`) --
     /// [`Self::new_with_artificial_ancestor`] is a separate, Milestone 4B-1 entry point

@@ -227,6 +227,7 @@ pub fn build_rdkit_parity_ring_model(
     }
     let mut seen_extra: FxHashSet<Vec<u32>> = FxHashSet::default();
     let mut extra_rings: Vec<Vec<AtomIdx>> = Vec::new();
+    let found_extra = std::cell::Cell::new(false);
     let mut candidates_examined = 0usize;
 
     // RDKit's duplicate-D2 pool is rooted and shortest-ring based. Consume
@@ -261,6 +262,7 @@ pub fn build_rdkit_parity_ring_model(
                 })
             {
                 extra_rings.push(candidate);
+                found_extra.set(true);
                 return true;
             }
         }
@@ -362,6 +364,58 @@ pub fn build_rdkit_parity_ring_model(
             replacement_candidates
                 .into_iter()
                 .any(&mut accept_candidate);
+        }
+
+        // A substituted bridged system can split the D2 components that the
+        // Figueras-style duplicate pass uses for discovery.  The underlying
+        // ring topology is unchanged, but no duplicate group then reaches
+        // the replacement search (for example the corpus_3326 tropane
+        // family). Before declaring that the symmetrized model has no extra
+        // ring at all, complete the same bounded *shortest-ring* search from
+        // the affected ring systems: base rings of equal size that share a
+        // path (three or more atoms). A single shared bond is the usual
+        // fused-ring case and does not need this fallback. This excludes
+        // acyclic substituent atoms, disjoint ring systems, and ordinary
+        // fused systems, so large drug-like molecules do not acquire an
+        // all-atom fallback cost. It is not unrestricted
+        // cycle enumeration: candidates still must pass RDKit's same-size,
+        // shared-bond, and unique-bond-preservation rules in
+        // `accept_candidate`. Restricting it to the no-extra outcome keeps
+        // the existing D2 path authoritative for cages and macrocycles
+        // where it already recovered a replacement.
+        if !found_extra.get() {
+            let mut fallback_roots: Vec<AtomIdx> = base_rings
+                .iter()
+                .enumerate()
+                .filter(|(left_idx, left)| {
+                    base_rings.iter().enumerate().any(|(right_idx, right)| {
+                        left_idx != &right_idx
+                            && left.len() == right.len()
+                            && left.iter().filter(|atom| right.contains(atom)).count() >= 3
+                    })
+                })
+                .flat_map(|(_, ring)| ring.iter().copied())
+                .collect();
+            fallback_roots.sort_unstable_by_key(|atom| atom.0);
+            fallback_roots.dedup();
+            let no_blocked_bonds = FxHashSet::default();
+            for root in fallback_roots {
+                // Use the same one-tree Figueras primitive as RDKit's
+                // replacement phase. Enumerating every shortest path here
+                // can grow exponentially in dense fused systems.
+                for candidate in
+                    find_smallest_rings_bfs_with_rdkit_tree(mol, root, &no_blocked_bonds)
+                {
+                    candidates_examined += 1;
+                    if candidates_examined > budget.max_candidates {
+                        return Err(RdkitParityError::RingModelBudgetExceeded {
+                            candidates_examined,
+                            cap: budget.max_candidates,
+                        });
+                    }
+                    accept_candidate(candidate);
+                }
+            }
         }
     }
 
@@ -556,6 +610,38 @@ mod tests {
             .filter(|&i| model.ring_count(AtomIdx(i as u32)) == 3)
             .count();
         assert_eq!(bridgeheads, 2);
+    }
+
+    #[test]
+    fn tropane_like_bridged_amine_has_three_symmetrized_six_rings() {
+        // RDKit 2025.09.3/2026.03.6 both report three six-membered rings for
+        // this [2.2.2]-style bridged amine: atom ring counts are
+        // [2, 3, 2, 2, 3, 2, 2, 2].  This is the minimal parent topology of
+        // the remaining 21 `[R1]`/`[R2]`/`[R3]` corpus residual cells.
+        let (mol, model) = model_for("C1C2CCN(CC2)C1");
+        assert_eq!(model.extra_ring_count(), 1);
+        let counts: Vec<_> = (0..mol.atom_count())
+            .map(|i| model.ring_count(AtomIdx(i as u32)))
+            .collect();
+        assert_eq!(counts, vec![2, 3, 2, 2, 3, 2, 2, 2]);
+    }
+
+    #[test]
+    fn substituted_tropane_keeps_the_symmetrized_ring_counts() {
+        // A realistic substituted form from corpus_3326. The three fused
+        // phenyl groups and acyclic amine tail must not change the bridged
+        // ring family selected by RDKit's symmetrizeSSSR.
+        let (mol, model) = model_for("c1ccc(CCN[C@H]2C3CCN(CC3)[C@H]2C(c2ccccc2)c2ccccc2)cc1");
+        let counts: Vec<_> = (0..mol.atom_count())
+            .map(|i| model.ring_count(AtomIdx(i as u32)))
+            .collect();
+        assert_eq!(
+            counts,
+            vec![
+                1, 1, 1, 1, 0, 0, 0, 2, 3, 2, 2, 3, 2, 2, 2, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                1, 1
+            ]
+        );
     }
 
     // -- Adversarial highly-symmetric target: dodecahedrane --

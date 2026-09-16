@@ -143,6 +143,12 @@ def main():
     ring_count_bucket_counts = Counter()
     alignment_failures = []
     mismatch_examples = {b: [] for b in EXPECTED_BUCKETS}
+    # Examples are deliberately capped for routine reports, but unresolved
+    # parity cells must remain fully auditable: a truncated sample can make a
+    # single apparent scaffold hide a second mechanism. Keep this inventory
+    # only for cells where both matchers disagree with RDKit; parser errors and
+    # candidate regressions retain their existing separate accounting.
+    unresolved_residuals = []
     n_molecules = 0
     n_alignment_checked = 0
 
@@ -227,6 +233,16 @@ def main():
                         "rdkit": sorted(sorted(s) for s in rdkit_set),
                     }
                 )
+            if bucket == "both_disagree_same_as_default":
+                unresolved_residuals.append(
+                    {
+                        "id": row["id"],
+                        "smiles": smi,
+                        "pattern": pat,
+                        "default": sorted(sorted(s) for s in default_set),
+                        "rdkit": sorted(sorted(s) for s in rdkit_set),
+                    }
+                )
 
     total_cells = sum(bucket_counts.values())
 
@@ -260,6 +276,10 @@ def main():
         "bucket_counts": dict(bucket_counts),
         "ring_count_pattern_bucket_counts": dict(ring_count_bucket_counts),
         "mismatch_examples": mismatch_examples,
+        "unresolved_residuals": sorted(
+            unresolved_residuals,
+            key=lambda row: (row["id"], row["pattern"]),
+        ),
     }
     summary_path.parent.mkdir(parents=True, exist_ok=True)
     # Do not truncate the last good diagnosis if serialization or the process

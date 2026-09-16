@@ -52,7 +52,7 @@ def main() -> int:
     bindings = {
         "rust": run(["cargo", "run", "-p", "chematic-chem", "--release", "--offline", "--example", "rdkit_path_binding_dump"], corpus),
         "python": python_records(corpus),
-        "node_wasm": run(["node", "scripts/rdkit_path_binding_dump.mjs"], corpus),
+        "node_wasm": run(["node", "scripts/binding_dump.mjs", "rdkit-path"], corpus),
     }
     if any(len(rows) != expected_rows for rows in bindings.values()): raise RuntimeError({name: len(rows) for name, rows in bindings.items()})
     pairwise = {"rust_vs_python": compare(bindings["rust"], bindings["python"]), "rust_vs_node_wasm": compare(bindings["rust"], bindings["node_wasm"]), "python_vs_node_wasm": compare(bindings["python"], bindings["node_wasm"])}

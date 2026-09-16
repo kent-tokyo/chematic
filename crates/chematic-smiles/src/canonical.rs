@@ -2034,8 +2034,13 @@ impl<'a> CanonicalWriter<'a> {
             };
         };
 
-        let atom_data = self.mol.atom(atom);
-        let has_h = atom_data.hydrogen_count.is_some_and(|h| h > 0);
+        // A MOL reader records a tetrahedral center's *implicit* H through
+        // valence, not as bracket metadata. The stereo neighbor order still
+        // contains `H_SENTINEL`, so basing this solely on `hydrogen_count`
+        // makes the canonical traversal omit that slot and can invert the
+        // emitted `@`/`@@`. `implicit_hcount` also covers bracket-H SMILES,
+        // keeping both reader paths on one ligand sequence.
+        let has_h = implicit_hcount(self.mol, atom) > 0;
 
         // Build canonical neighbor sequence in SMILES output order:
         // 1. from_atom   (or H_SENTINEL if root and has bracket H)
@@ -2076,7 +2081,6 @@ impl<'a> CanonicalWriter<'a> {
         for child in children {
             canonical.push(child.0);
         }
-
         if canonical.len() != original.len() {
             return if stored.is_tetrahedral() {
                 stored // size mismatch → tetrahedral fallback (unchanged)

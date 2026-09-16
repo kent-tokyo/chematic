@@ -90,7 +90,7 @@ def main() -> int:
             ["cargo", "run", "-p", "chematic-fp", "--release", "--offline", "--example", "rdkit_search_binding_dump"],
             cases,
         ),
-        "node_wasm": run(["node", "scripts/rdkit_search_binding_dump.mjs"], cases),
+        "node_wasm": run(["node", "scripts/binding_dump.mjs", "rdkit-search"], cases),
     }
     import chematic
 

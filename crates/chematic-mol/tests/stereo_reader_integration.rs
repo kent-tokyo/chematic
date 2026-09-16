@@ -12,6 +12,134 @@ use chematic_core::{Atom, AtomIdx, BondOrder, Chirality, Element, MoleculeBuilde
 use chematic_mol::mol2000::{MolMetadata, write_mol_with_coords};
 use chematic_mol::{parse_mol_v3000_with_coords, read_mol_with_diagnostics, write_mol_v3000};
 
+const RDKIT_L_ALANINE_2D_V2000: &str = r#"
+     RDKit          2D
+
+  6  5  0  0  0  0  0  0  0  0999 V2000
+    1.5000   -1.2990    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
+    0.7500    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.5000    1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.7500   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.5000    1.2990    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.5000   -1.2990    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0
+  2  3  1  6
+  2  4  1  0
+  4  5  2  0
+  4  6  1  0
+M  END
+"#;
+
+// RDKit 2025.09.3 2D V2000 output for a four-center bridged-ring example.
+// Keep this format-level fixture separate from its source SMILES: the point
+// is to prove that the wedge on the three-heavy-neighbor center survives the
+// reader, before the SMILES writer's traversal-dependent parity remapping is
+// involved.
+const RDKIT_BRIDGED_RING_2D_V2000: &str = r#"
+     RDKit          2D
+
+ 28 32  0  0  0  0  0  0  0  0999 V2000
+    1.0462   -1.7455    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.0125   -0.6828    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.4621   -1.0683    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -2.5207   -0.0056    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -3.9703   -0.3910    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -5.0290    0.6716    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+   -6.4786    0.2862    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -7.5372    1.3489    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -8.9869    0.9634    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -9.3779   -0.4847    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+   -8.3192   -1.5474    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -6.8696   -1.1620    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -2.1297    1.4426    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.6801    1.8280    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.3785    0.7653    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.8282    1.1508    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+    2.8868    0.0881    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    2.4958   -1.3601    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+    4.3364    0.4735    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    5.3951   -0.5891    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    6.8447   -0.2037    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    7.2357    1.2444    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    6.1771    2.3071    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    4.6186   -0.5877    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    5.0041   -2.0373    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    6.4537   -1.6518    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    3.9454   -0.9746    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    4.7274    1.9217    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  2  0
+  2  3  1  0
+  3  4  2  0
+  4  5  1  0
+  5  6  1  0
+  6  7  1  0
+  7  8  1  0
+  8  9  1  0
+  9 10  1  0
+ 10 11  1  0
+ 11 12  1  0
+  4 13  1  0
+ 13 14  1  0
+ 14 15  2  0
+ 15 16  1  0
+ 16 17  1  0
+ 17 18  2  0
+ 19 17  1  6
+ 19 20  1  0
+ 21 20  1  6
+ 21 22  1  0
+ 23 22  1  6
+ 23 24  1  0
+ 25 24  1  1
+ 25 26  1  0
+ 25 27  1  0
+ 23 28  1  0
+ 15  2  1  0
+ 27 19  1  0
+ 12  7  1  0
+ 28 19  1  0
+ 26 21  1  0
+M  END
+"#;
+
+#[test]
+fn rdkit_v2000_implicit_h_wedge_keeps_semantic_smiles_parity() {
+    // RDKit 2025.09.3 2D output for N[C@@H](C)C(=O)O. Its canonical
+    // isomeric SMILES is C[C@H](N)C(=O)O. Keep the expected form through
+    // chematic's own SMILES parser so this fixture asserts the physical
+    // configuration rather than an arbitrary writer spelling.
+    let read = read_mol_with_diagnostics(RDKIT_L_ALANINE_2D_V2000).expect("RDKit V2000 parses");
+    let expected = chematic_smiles::canonical_smiles(
+        &chematic_smiles::parse("C[C@H](N)C(=O)O").expect("reference SMILES parses"),
+    );
+    assert_eq!(chematic_smiles::canonical_smiles(&read.mol), expected);
+}
+
+#[test]
+fn rdkit_bridged_ring_implicit_h_wedge_is_perceived_before_smiles_writing() {
+    let read = read_mol_with_diagnostics(RDKIT_BRIDGED_RING_2D_V2000)
+        .expect("RDKit bridged-ring V2000 parses");
+    // Atom 21 in the V2000 record is a three-heavy-neighbor carbon with an
+    // implicit H. Its `6` bond stereo flag must produce a local parity, even
+    // though the later canonical SMILES traversal currently has a separate
+    // complex-ring residual to resolve.
+    assert_ne!(
+        read.mol.atom(AtomIdx(20)).chirality,
+        Chirality::None,
+        "implicit H={} diagnostics={:?}",
+        chematic_core::implicit_hcount(&read.mol, AtomIdx(20)),
+        read.stereo_diagnostics
+    );
+    assert!(
+        !read
+            .stereo_diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.atom == AtomIdx(20)),
+        "the T-shaped implicit-H center must not be rejected: {:?}",
+        read.stereo_diagnostics
+    );
+}
+
 /// Asymmetric, non-degenerate 4-position layout (matches
 /// `chematic-perception`'s own `quad_positions()`) so no accidental
 /// coplanarity or symmetry sneaks into these fixtures.

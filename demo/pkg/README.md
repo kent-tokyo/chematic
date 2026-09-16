@@ -4,6 +4,10 @@ WebAssembly bindings for [chematic](https://github.com/kent-tokyo/chematic), a p
 
 Published to npm as [`@kent-tokyo/chematic`](https://www.npmjs.com/package/@kent-tokyo/chematic).
 
+The current workspace line is 1.0.15. The binding keeps bounded parsing,
+typed failures, and opt-in `embed_pipeline_v2_json`; 3D/MMFF94 behavior remains
+Experimental and is not a claim of full RDKit parity.
+
 ## Installation
 
 ```sh
@@ -29,6 +33,9 @@ npm install @kent-tokyo/chematic
   deterministic input indices and partial/complete status; bounded malformed
   XYZ frames are grouped inline as rejected records when a later count-line
   boundary is recoverable (core file-backed readers remain fail-stop)
+- Bounded topology parsing for CML (`mol_from_cml_strict` provides the opt-in
+  non-empty, balanced, single-root boundary), ChemicalJSON (`mol_from_cjson`), MolJSON,
+  CDXML, MOL2, and PDB/mmCIF
 - PDBx/mmCIF, PQR, QCSchema JSON, ORCA input/output, Gaussian Cube, OpenDX,
   and LAMMPS data/dump I/O (JSON-based bindings; see `format_io.rs`)
 - Topological descriptors: Wiener index, Hall-Kier κ, χ connectivity indices, Bertz CT
@@ -73,7 +80,7 @@ console.log(mol.qed());                // drug-likeness score [0, 1]
 console.log(mol.exact_mass());         // ~180.042
 console.log(mol.hbd_count());          // 1
 console.log(mol.hba_count());          // 4
-console.log(mol.rotatable_bond_count()); // 3
+console.log(mol.rotatable_bond_count()); // 2 (RDKit Lipinski definition)
 console.log(mol.aromatic_ring_count()); // 1
 console.log(mol.lipinski_passes());     // true
 console.log(mol.canonical_smiles());    // canonical SMILES string
@@ -88,6 +95,26 @@ console.log(tanimoto_atom_pair(mol, caffeine)); // AtomPair Tanimoto
 console.log(tanimoto_torsion(mol, caffeine));   // Torsion Tanimoto
 ```
 
+### Node.js
+
+The published package is built with wasm-pack's `web` target. In a browser,
+`await init()` locates the adjacent WASM asset. Node does not fetch `file:`
+URLs, so pass the asset bytes explicitly:
+
+```js
+import { readFile } from 'node:fs/promises';
+import init, { parse_smiles } from '@kent-tokyo/chematic';
+
+const wasm = await readFile(new URL(
+  './node_modules/@kent-tokyo/chematic/chematic_wasm_bg.wasm',
+  import.meta.url,
+));
+await init({ module_or_path: wasm });
+const mol = parse_smiles('c1ccccc1');
+console.log(mol.formula()); // C6H6
+mol.free();
+```
+
 ```js
 // Sprint Q: New descriptors (v0.1.15)
 console.log(mol.sa_score());                     // synthetic accessibility [1,10]
@@ -96,6 +123,11 @@ console.log(mol.labute_asa());                   // Labute approx. surface area 
 // Gasteiger partial charges (per heavy atom)
 const charges = JSON.parse(gasteiger_charges_json(mol));
 console.log(charges); // [-0.08, 0.12, -0.43, ...]
+
+// Explicit RDKit-compatibility descriptor profile (kept separate from the
+// historical native get_descriptors_json() profile)
+const rdkitDescriptors = JSON.parse(get_rdkit_descriptors_json(mol));
+console.log(rdkitDescriptors.aromatic_ring_count);
 
 // VSA descriptor bins
 const slogpVsa = JSON.parse(slogp_vsa_json(mol));
@@ -165,11 +197,64 @@ portable across native and `wasm32-unknown-unknown`
 precision across every JS engine, only that the value is finite, non-negative,
 and enforced correctly on all of them.
 
+`nearest_neighbors_json` keeps its historical chematic-native ECFP4 profile.
+For the separately named RDKit-compatible Morgan profile, use
+`rdkit_nearest_neighbors_json(querySmiles, dbSmilesJson, k)`. It returns the
+same `{index, tanimoto}` shape and reports preprocessing failures without
+silently falling back to native ECFP4.
+
+For repeated queries, construct `new RdkitSearchIndex(dbSmilesJson)` once and
+call `index.search_json(querySmiles, k)`. The prepared index is intended for
+chunked libraries up to the WASM batch limit and applies the same fail-closed
+RDKit-compatible profile without rebuilding database fingerprints per query.
+
+## V3000 SGROUP syntax view
+
+`v3000_sgroups_json(block)` exposes bounded, typed SGROUP syntax without
+expanding polymer or Markush semantics. It preserves source order for unknown
+attributes and returns `kindToken` for unknown group kinds. Group IDs, parent
+references, atom references, and grouped-field counts are validated before
+JSON is returned.
+
+```js
+const groups = JSON.parse(v3000_sgroups_json(v3000Block));
+// [{ id, kind, parentId, atomIds, attributes, kindToken? }]
+```
+
+This is a syntax-level API; it does not claim polymer expansion, Markush
+interpretation, or cross-engine semantic compatibility.
+
 ## Bundle Size
 
-The optimized v1.0.9 candidate artifact was measured at **3.73 MB raw / 1.36 MB gzip**. Bundle size depends on features and toolchain; see [`benchmarks/2026-09-07-wasm-size-v1.0.9.md`](../../benchmarks/2026-09-07-wasm-size-v1.0.9.md) for exact tools, digest, and reproduction steps.
+The optimized v1.0.12 artifact was measured at **3.93 MB raw / 1.43 MB gzip**. Bundle size depends on features and toolchain; see [`benchmarks/2026-09-11-official-rdkit-js-v1.0.12.md`](../../benchmarks/2026-09-11-official-rdkit-js-v1.0.12.md) for exact tools, digest, and reproduction steps.
 
 PNG rasterization (`tiny_skia`) is excluded from the WASM build — use SVG output instead. All SVG depiction APIs remain fully available.
+
+## Versioned document binding boundary
+
+The `*_v1` document APIs provide a stable JSON boundary for downstream editors:
+
+```js
+const parsed = JSON.parse(reaction_document_json_v1(JSON.stringify(document)));
+const edited = JSON.parse(edit_reaction_document_json_v1(
+  JSON.stringify(parsed),
+  JSON.stringify({ kind: "set_step_condition", step_id: "step-1", key: "temperature", value: "25 C" }),
+));
+
+const cdxmlEnvelope = JSON.parse(cdxml_document_json_v1(cdxml));
+const cdxmlAgain = cdxml_document_from_json_v1(JSON.stringify(cdxmlEnvelope));
+```
+
+`cdxml_document_json_v1` retains the exact `source` string and returns a
+structural `document` summary with opaque objects and `diagnostics`. Use
+`edit_cdxml_document_json_v1` for bounded page/object edits; it reparses the
+result before returning. Errors are JSON-shaped with stable `code`, `path`, and
+`message` fields (`malformed_input`, `resource_limit`,
+`unsupported_construct`, `lossy_conversion`, or `serialization_error`).
+`reaction_document_to_rxn_v1` and `cdxml_document_projection_json_v1` reject
+lossy legacy projections with `lossy_conversion` diagnostics. These APIs do not claim
+mechanism correctness, product prediction, complete stoichiometry, or full
+ChemDraw/RXN compatibility.
 
 ## Building from source
 

@@ -1,0 +1,51 @@
+{
+  "schema": "chematic.explorer-worker-capacity.v1",
+  "measured_on": "2026-09-16",
+  "source": {
+    "head": "afa61956a568c1e011486cbcd416b65aee193731",
+    "working_tree": "modified; Explorer 100000-record cap and adaptive rendering changes were not committed",
+    "server": "http://127.0.0.1:8765/explorer/index.html"
+  },
+  "environment": {
+    "os": "macOS 26.5.2 (25F84)",
+    "node": "v24.5.0",
+    "playwright": "1.55.0",
+    "browser": "Chromium 140.0.7339.16"
+  },
+  "operation": {
+    "entrypoint": "scripts/explorer_worker_10k_smoke.mjs",
+    "input": "newline-separated repeated C SMILES",
+    "worker_chunk_size": 100,
+    "analysed_record_cap": 100000,
+    "dom_row_cap": 250,
+    "checks": [
+      "Worker initialized",
+      "all records reported loaded",
+      "all records remain filterable",
+      "rendered DOM rows remain capped at 250",
+      "no page or console errors"
+    ]
+  },
+  "runs": [
+    {
+      "records": 10000,
+      "elapsed_ms": 2031,
+      "result": "passed"
+    },
+    {
+      "records": 100000,
+      "elapsed_ms": 28149,
+      "result": "passed"
+    }
+  ],
+  "scope": {
+    "proven": "A local Chromium capacity smoke for repeated one-atom SMILES on the stated source and host.",
+    "not_proven": [
+      "diverse-corpus latency",
+      "memory budget or peak memory",
+      "Firefox or WebKit capacity",
+      "CSV/SDF export or cancellation at 100000 records",
+      "public package or deployed-site behavior"
+    ]
+  }
+}

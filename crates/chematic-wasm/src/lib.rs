@@ -59,6 +59,24 @@ pub fn chematic_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
 }
 
+/// Current WebAssembly linear-memory allocation in bytes.
+///
+/// This is an allocation boundary, not a resident-set or live-object estimate:
+/// freed Rust allocations may remain in the linear-memory reservation. It exists
+/// so browser benchmark harnesses can report that dimension explicitly instead
+/// of inferring it from JavaScript heap snapshots.
+#[wasm_bindgen]
+pub fn wasm_linear_memory_bytes() -> usize {
+    #[cfg(target_arch = "wasm32")]
+    {
+        core::arch::wasm32::memory_size(0) as usize * 65_536
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        0
+    }
+}
+
 // High-level workflow APIs
 pub mod workflow;
 

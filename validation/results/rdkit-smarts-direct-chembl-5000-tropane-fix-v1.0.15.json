@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "profile": "rdkit_smarts_ring_count_tropane_fix",
+  "measured_at": "2026-09-16",
+  "source_state": "working-tree candidate; not an independently built baseline/candidate adoption packet",
+  "rdkit_version": "2025.09.3",
+  "rdkit_pinned_source": "installed-python-package-2025.09.3",
+  "source_corpus_path": "scripts/chembl_accuracy_corpus_4999.smi",
+  "source_corpus_sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+  "source_corpus_rows": 5000,
+  "dump_sha256": "ba3f3b33f3d1d659046d0aa0a5f920df3a376056f693623d2f0a980beb56ca44",
+  "comparison_config": {
+    "match_set": "sorted atom-index sets",
+    "rdkit_uniquify": true,
+    "unsupported_policy": "count and report; never remove from denominator",
+    "requires_completed_footer": true
+  },
+  "dump_footer": {
+    "record_type": "footer",
+    "completed": true,
+    "emitted_molecule_rows": 5021,
+    "hand_corpus_rows": 21,
+    "input_rows": 5000,
+    "parse_failures": 0,
+    "source_path": "scripts/chembl_accuracy_corpus_4999.smi"
+  },
+  "n_rows_in_dump": 5021,
+  "n_molecules_compared": 5021,
+  "n_alignment_checked": 5021,
+  "n_alignment_failures": 0,
+  "total_cells": 155651,
+  "bucket_counts": {
+    "agree_all": 145433,
+    "parity_fixes_default": 176,
+    "rdkit_smarts_parse_error": 10042
+  },
+  "ring_count_pattern_bucket_counts": {
+    "agree_all": 24929,
+    "parity_fixes_default": 176
+  },
+  "candidate_effect": {
+    "previous_parity_fixes_default": 155,
+    "previous_both_disagree_same_as_default": 21,
+    "current_both_disagree_same_as_default": 0,
+    "parity_regresses": 0,
+    "interpretation": "The seven substituted bridged-amine families (21 [R1]/[R2]/[R3] cells) now match the pinned RDKit atom-index sets. RDKit SMARTS parse errors remain outside the implementation numerator."
+  },
+  "boundary": "This is one source-built local candidate run. It does not replace the separately built baseline/candidate adoption packet, expand the 31-pattern scope, or establish full SMARTS compatibility."
+}

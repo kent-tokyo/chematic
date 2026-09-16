@@ -109,6 +109,9 @@ fn main() {
                         RdkitMorganError::UnsupportedBondOrder { .. } => {
                             "error_unsupported_bond_order"
                         }
+                        RdkitMorganError::UnsupportedCoordinationSanitization { .. } => {
+                            "error_unsupported_coordination_sanitization"
+                        }
                         RdkitMorganError::InternalInvariantViolation { .. } => {
                             "error_internal_invariant"
                         }

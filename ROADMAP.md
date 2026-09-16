@@ -1,156 +1,122 @@
 # chematic roadmap
 
-> Updated 2026-09-13. Released: **v1.0.14**. Next delivery theme: **1.x Trust Release**.
-> **Current P0 focus: freeze T1's prepared 10,000-row split with a candidate tag and unused-data attestation; T2 publication, site synchronization, and clean-install smoke are complete.**
+> Updated 2026-09-16. Current release: **v1.0.15**. The next candidate is
+> **v1.0.16**, a Trust/Interoperability maintenance release. This document is
+> the only source for priority order; detailed acceptance criteria live in the
+> linked plans.
 
-## Current status
+## Current position
 
-- v1.0.14 was published from `a259507d`; the release and CI follow-ups reached
-  `main` in [PR #532](https://github.com/kent-tokyo/chematic/pull/532)
-  (`286485be`). The tag retains the published source; the merge includes later
-  formatting, native-InChI regression-test, and binding-inventory corrections.
-- All **seven accuracy packages A0–A6 still have open acceptance work**.
-  Publication does not complete the planned Trust RC or independent accuracy gates.
-- This index tracks **18 open areas**: seven accuracy packages and eleven
-  cross-cutting follow-ups. They overlap; they are not 18 sequential phases.
-  The abandoned 1.10x speed stretch is historical and excluded from that count.
+v1.0.15 is published and verified across GitHub Releases, crates.io, docs.rs,
+PyPI, npm, and GitHub Pages. The release proof also includes binary-only Python
+smoke tests on Linux, macOS, and Windows. Post-release `main` adds:
 
-Detailed measurements retain their original version, source, corpus, and
-comparator. The [2026-09-13 snapshot](docs/archive/roadmap-through-2026-09-13.md)
-preserves the previous long-form status; no chemistry benchmark was rerun for
-this reorganization.
+- a published-package browser comparison against `@rdkit/rdkit@2026.03.6`;
+- version-pinned ordinary-V3000 round trips through RDKit and Indigo;
+- a 300-structure development Stereo Torture Suite and 5,115 SMILES-spelling
+  invariance checks;
+- an annotated candidate freeze and post-freeze unused-data attestation for a
+  2,000-row development / 8,000-row sealed split;
+- dependency and supply-chain updates, including the `rustls` advisory fix.
 
-## Execution order
+The sealed split is ready for evaluation, but **no sealed-holdout score has been
+calculated**. Compatibility remains operation-, version-, and corpus-scoped.
 
-| Order | Priority | Delivery and next output | Product Phase / accuracy |
+## Priority order
+
+| Order | Priority | Next result | Exit condition |
 |---|---|---|---|
-| 1 | P0 | **T0 measured**: baseline/candidate packet complete; hybrid blocked on 12 → 21 residual regression | P0/P2; A0/A4 |
-| 2 | P0 | **T1**: complete the separate RDKit 2026 lane and provenance-sealed 10,000-row split | P0/P2/P3; A0–A4 |
-| 3 | P0 | **T2 completed**: all six public channels, site data/deploy, and recorded clean-install smoke | P0/P6; A0 |
-| 4a | P1 | **T3**: verify WASM/Worker/MCP installation and the 10,000-molecule workflow | P3; A3/A4 |
-| 4b | P1 | **T4**: add sourced malformed-input cases and isolated time/memory gates | P1/P3; A0/A4 |
-| 4c | P1 | **T5**: publish stereo permutation, round-trip, and false-merge regressions | P2/P4; A2/A5 |
-| 5 | P2 | **T6**: independent review, maintenance rehearsal, and existing 3D accuracy gaps | P5/P6; A5/A6 |
+| 1 | P0 | Run the frozen candidate against the sealed 8,000-row holdout | Immutable raw output, complete denominators, hashes, and no post-hoc tuning |
+| 2 | P0 | Publish the operation-level compatibility dashboard | RDKit version, profile, corpus, coverage, refusals, tolerance, and missing dimensions shown together |
+| 3 | P1 | Extend stereo and parser-security challenge gates | Wrong confident labels, crashes, panics, and limit violations remain zero on the declared domain |
+| 4 | P1 | Expand V3000 only where external readers prove semantics | Typed support and opaque retention are reported separately; coordination/ENDPTS boundaries stay explicit |
+| 5 | P2 | Improve browser and agent adoption | Published-package Worker example, cancellation, partial-failure accounting, and reproducible 10k workflow |
+| 6 | P3 | Continue 3D/MMFF94/UFF work as a separate profile | Same-coordinate numerical gates and conformer-quality evidence; no broad parity claim before A6 |
 
-T3/T4/T5 can proceed in parallel once their dependencies pass. Public-channel
-inventory, unused-data acquisition, and A5 gold preparation start alongside T0.
-Confirmed silent corruption, panic, or resource-limit defects take precedence.
+Confirmed silent corruption, panic, or resource-limit defects take precedence
+over this order.
 
-**T1.6 preflight (2026-09-13):** an independently acquired ChEMBL candidate
-has 11,359 non-overlapping eligible rows after canonical/parent/scaffold audit,
-which deterministically yields 2,000 development and 8,000 holdout candidates.
-It is explicitly `prepared_not_sealed`: no candidate commit/tag or unused-data
-attestation exists yet, so it must not be used for model selection or presented
-as a sealed evaluation.
+## Completed foundations
 
-**T0 result (2026-09-13):** independently built baseline/candidate arms completed
-the fixed 5,021-molecule × 31-query lane with complete row accounting and zero
-atom-alignment failures. The candidate regressed from **12 to 21 residual cells**
-(with 10,042 pinned RDKit query-parse-error cells in each arm), so hybrid adoption
-is blocked. The compact provenance record is
-`validation/results/rdkit-smarts-baseline-candidate-v1.0.14.json`; the withdrawn
-12 → 3 claim came from partial output and must not be reused. T0's measurement
-packet is complete, while A4 residual classification and any replacement candidate
-remain open.
-The [Trust execution plan](docs/trust-release-plan.md) owns T0–T6 subtasks,
-dependencies, resource budgets, and review dates.
-
-## Open phase backlog
-
-### Accuracy packages — A0–A6
-
-These are remaining exits, not a list of all work already implemented.
-See the [accuracy plan](docs/rdkit-accuracy-plan.md) for subtask acceptance and
-the [disposition ledger](docs/roadmap-open-work.md) for evidence and dependencies.
-
-- [ ] A0 — Accuracy evidence contract: freeze genuinely unused 8,000-row evaluation inputs and candidate builds; complete the full acceptance packet. The 96/96 all-field holdout and exposed-corpus validators are narrower completed slices.
-- [ ] A1 — Perception and descriptor coverage: complete unused core-eight-field and potential-center evaluation, plus affected workflow/binding acceptance. The opt-in profile has passing exposed-corpus evidence; additional families have separate gates.
-- [ ] A2 — Stereo and identity correctness: resolve the four #503 canonical/E/Z components and phosphorus CIP adjudication; meet permutation, idempotency, information-preservation, and false-merge exits.
-- [ ] A3 — Fingerprint and retrieval fidelity: retain raw/provenance evidence for the new aromaticity lane, rerun affected bindings/search after adoption, and pass unused-input evaluation. Existing k=1/10/100 and threshold evidence remains valid for its recorded builds.
-- [ ] A4 — Workflow accuracy: finish T0 residual classification and adoption, then verify mapped SMARTS embeddings, standardization, reaction products, and typed V3000 semantics across engines.
-- [ ] A5 — Independent accuracy adjudication: obtain absolute gold labels and unused inputs, secure non-maintainer review, and run the implemented paired evaluator against the frozen protocol.
-- [ ] A6 — 3D accuracy extension: resolve remaining MMFF94/UFF term, charge, gradient, convergence, timeout, stereo, and conformer-quality gaps. Bounded typing or energy matches do not complete this package.
-
-### Cross-cutting follow-ups
-
-These extend the same product areas; they do not introduce new Phase numbers.
-
-- [ ] Measure only equivalent operations against fixed RDKit/Open Babel versions on identical inputs; keep subprocess-only lanes separately labeled.
-- [ ] Exact canonical-SMILES and cross-engine V3000 parity: expand semantic-identity and RDKit/Indigo fixtures, including unsupported representation boundaries.
-- [ ] Replace remaining MD/UFF/MMFF94 finite-difference production paths after same-domain analytic energy, gradient, and stereo soundness gates.
-- [ ] Replace remaining periodic neighbor all-pairs paths after exact result-set and cutoff parity.
-- [ ] Optimize symmetry-heavy canonical and SMARTS search after broader exact-output, invariance, and budget-exhaustion gates.
-- [ ] Extend browser and agent adversarial coverage for cancellation, malformed records, limits, stable errors, and supported engines.
-- [ ] Expand reaction/SMARTS/medicinal-chemistry breadth after the shared P0–P3 primitives have current evidence.
-- [ ] Add curated reaction/query precision, recall, invalid-product, timeout, and ambiguity reports with independent oracles.
-- [ ] Close MMFF94/UFF typing, charge, parameter, convergence, and stereo gaps with same-coordinate comparisons.
-- [ ] S5 independent gate: obtain non-maintainer review or external audit of parser, serialization, and binding boundaries.
-- [ ] S6 continuous maintenance: rehearse advisory intake, fixes, backports, publication, and supported-version synchronization.
-
-**Historical / abandoned:** the additional 1.10x SMILES speed stretch remains
-abandoned and non-blocking. It is not an unchecked task and requires an explicit
-maintainer decision to reactivate.
-
-## Next candidate boundary
-
-The next Trust RC requires **T0–T2**, T3's 10,000-row install/Worker gate,
-T4's fixed safety corpus, and T5's public suite plus existing safety regressions.
-It also retains **A0, A1 core-eight-field unused evaluation, affected binding
-regressions, and native-default preservation** as mandatory exits.
-The Week 4 milestone is an audit, not a promised release date; no new version
-number is selected here.
-
-| Claim | Required acceptance |
+| Area | Current evidence |
 |---|---|
-| Declared 2D compatibility | All A0–A4 exits on the frozen support domain |
-| Independent chemical equivalence or superiority | A5 absolute gold, review, and predeclared statistical criteria |
-| 3D parity | A6's separately frozen numerical and conformer-quality gates |
+| Release truth | `validation/results/release-channel-verification-v1.0.15.json` |
+| Public RDKit.js cost comparison | `benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md` |
+| Sealed-evaluation precondition | `validation/results/sealed-cohort-preflight-trust-eval-candidate-20260916.json` |
+| V3000 ordinary interchange | `validation/results/v3000-*-v1.0.15.json` |
+| Stereo development gates | `validation/results/stereo-*-v1.0.15-2026-09-16.json` |
+| Parser-security gate | Linux isolated CI job and `validation/parser_security_corpus_v1.json` |
 
-Core descriptors require full valid-scope coverage and zero strict mismatches
-(integer fields exact; floating fields within 1e-6). Retrieval requires recall
-1.0, identical ordered IDs, and unrounded score error ≤1e-12. Stereo requires
-zero wrong confident labels, information loss, and false merges.
-Independent equivalence requires the whole paired 95% accuracy-difference
-interval inside ±0.1 percentage point; superiority requires a positive lower
-bound plus coverage safeguards. Full definitions live in the accuracy plan.
+These records prove only their declared operation and environment. In
+particular, the local no-store browser startup measurement is not an internet
+or CDN result, and parse-inclusive fingerprint timing currently favors RDKit.js.
 
-Release checks include affected tests, format/diff checks, versioned evidence,
-and support/failure documentation. Candidate readiness and post-publication
-registry/site verification are separate T2 checks.
+## Accuracy packages
 
-## Product Phase numbers
+All packages remain open until their full exit criteria pass. Narrower completed
+gates are retained as evidence, not promoted to package completion.
 
-The **Priority** column above expresses urgency. **Phase P0–P6** names product
-areas, **A0–A6** names accuracy packages, and **T0–T6** names delivery work.
+- [ ] **A0 — Evaluation contract:** execute the frozen sealed split and publish
+  complete provenance, denominators, failures, and paired statistics.
+- [ ] **A1 — Perception and descriptors:** pass the sealed core descriptor and
+  potential-stereocenter lanes without native-profile regression.
+- [ ] **A2 — Stereo and identity:** resolve the remaining canonical E/Z and
+  phosphorus-CIP boundaries; preserve permutation and round-trip invariance.
+- [ ] **A3 — Fingerprints and retrieval:** preserve exact RDKit-compatible
+  fingerprint/search results on the declared profile and sealed inputs.
+- [ ] **A4 — Workflows and interchange:** finish SMARTS, standardization,
+  reaction-product, and typed V3000 semantic gates.
+- [ ] **A5 — Independent adjudication:** obtain non-maintainer review and
+  absolute gold labels before claiming equivalence or superiority.
+- [ ] **A6 — 3D and force fields:** resolve MMFF94/UFF typing, energy, gradient,
+  convergence, timeout, stereo, and conformer-quality gaps separately.
 
-| Phase | Product area | Main active delivery |
+The full protocol and numerical exits are in
+[`docs/rdkit-accuracy-plan.md`](docs/rdkit-accuracy-plan.md).
+
+## Product phases
+
+Priority and phase are different: priority is execution order; P0–P6 are stable
+product areas.
+
+| Phase | Product area | Active focus |
 |---|---|---|
-| P0 | Trust and measurement | T0/T1/T2 |
-| P1 | Interchange throughput and parser safety | T4; A4 |
-| P2 | Identity, descriptors, fingerprints, and search | T0/T1/T5; A1–A3 |
-| P3 | Rust/Python/Node/WASM and agent usability | T3/T4 |
-| P4 | Chemistry workflows | T5; A4 |
-| P5 | 3D and materials | T6; A6 |
-| P6 | Ecosystem maintenance and external validation | T2/T6; A5 |
+| P0 | Trust and measurement | sealed evaluation, compatibility contract, release proof |
+| P1 | Interchange and parser safety | V3000, streaming, malformed-input limits |
+| P2 | Identity, descriptors, fingerprints, search | A1–A3 |
+| P3 | Rust/Python/Node/WASM and agents | install, Worker, MCP, cancellation |
+| P4 | Chemistry workflows | SMARTS, reactions, stereo, standardization |
+| P5 | 3D and materials | A6 |
+| P6 | Maintenance and external validation | advisories, independent review, competitor watch |
 
-## Contracts and reference documents
+## v1.0.16 candidate boundary
 
-The v1 boundaries remain: canonical SMILES is a representation; stable-key APIs
-fail closed. Native ECFP4 and RDKit-compatible Morgan are separate profiles.
-RWMol, CDXML, Markush/polymer, and interchange support have declared bounds.
-3D/MMFF94 remains Experimental; pure-Rust InChI is approximate, while standard
-InChI uses opt-in native FFI. See [compatibility scope](docs/compatibility-scope.md).
+v1.0.16 may ship as a maintenance release without claiming completion of A0–A6.
+It requires:
 
-A package is complete when implementation, tests, documentation, and required
-measurements agree across its declared domain. Safe refusal remains visible in
-coverage. A superiority claim must identify its operation, versions, corpus,
-configuration, hardware, failures, uncertainty, and reproduction command.
+1. synchronized versions and concise release notes;
+2. clean formatting, tests, Clippy, Security Audit, and benchmark-index checks;
+3. package smoke tests for affected Rust, Python, npm/WASM, and MCP surfaces;
+4. explicit documentation that the sealed cohort is prepared but not scored;
+5. post-publication verification of every release channel.
 
-| Document | Responsibility |
-|---|---|
-| [Trust Release execution plan](docs/trust-release-plan.md) | T subtasks, dependencies, budgets, and schedule |
-| [RDKit accuracy plan](docs/rdkit-accuracy-plan.md) | A subtasks, evaluation protocol, and exits |
-| [Open-work disposition](docs/roadmap-open-work.md) | Evidence ledger and local/toolchain/external dependencies |
-| [Validation guide](docs/validation.md) / [benchmark index](benchmarks/README.md) | Reproduction and measurement boundaries |
-| [2026-09-13 snapshot](docs/archive/roadmap-through-2026-09-13.md) | Long-form status before this reorganization |
-| [Archive through 2026-09-12](docs/archive/roadmap-through-2026-09-12.md) | Earlier implementation history |
+The release theme is strengthened trust evidence and interoperability—not full
+RDKit replacement, independent chemical superiority, or complete V3000/3D
+coverage.
+
+## Reference documents
+
+- [Trust Release execution plan](docs/trust-release-plan.md): T0–T6 status and
+  next gates.
+- [RDKit accuracy plan](docs/rdkit-accuracy-plan.md): comparator protocol and
+  A0–A6 exits.
+- [Open-work disposition](docs/roadmap-open-work.md): dependency classes and
+  issue boundaries.
+- [Validation report](docs/validation.md): current evidence summary.
+- [Benchmark index](benchmarks/README.md): dated, version-scoped measurements.
+- [Archived roadmap](docs/archive/roadmap-through-2026-09-13.md): detailed
+  historical status before this consolidation.
+
+Historical measurements retain their original source revision, package version,
+corpus, hardware, and operation boundary. A newer release does not silently
+upgrade an older result.

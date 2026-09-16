@@ -1,0 +1,322 @@
+{
+  "schema_version": 1,
+  "gate": "wasm-vs-official-rdkit-browser-isolated",
+  "configuration": {
+    "engine": "firefox",
+    "browser": null,
+    "rows": 10000,
+    "warmup_rows": 20,
+    "repetitions": 3,
+    "timing": "fresh browser process per arm/repetition; no-store local routes",
+    "operation_contract": "parse; parse+canonical-SMILES write; parse+radius-2/2048-bit fingerprint. This is not prepared-object timing."
+  },
+  "corpus": {
+    "path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+    "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+    "rows": 10000
+  },
+  "artifacts": {
+    "schematic_wasm": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/demo/pkg/chematic_wasm_bg.wasm",
+      "raw_bytes": 4008012,
+      "gzip9_bytes": 1461180,
+      "sha256": "73a2b7102750b654f421d1b29b4a1676d36db5af89b91456a57877b97d649351"
+    },
+    "schematic_js": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/demo/pkg/chematic_wasm.js",
+      "raw_bytes": 270764,
+      "gzip9_bytes": 44774,
+      "sha256": "4173a43d17399ad2d6e1fda3d4a051b740f0401ab032a610c6d5788b010e7ed7"
+    },
+    "rdkit_wasm": {
+      "path": "/private/tmp/chematic-rdkit-2026-3-6/node_modules/@rdkit/rdkit/dist/RDKit_minimal.wasm",
+      "raw_bytes": 7333095,
+      "gzip9_bytes": 2379975,
+      "sha256": "f5981af4cf5bdcef861ffdf7410330bf9887f1195e39fbf9901b3a2f134ace2e"
+    },
+    "rdkit_js": {
+      "path": "/private/tmp/chematic-rdkit-2026-3-6/node_modules/@rdkit/rdkit/dist/RDKit_minimal.js",
+      "raw_bytes": 105843,
+      "gzip9_bytes": 28432,
+      "sha256": "25ea1529b8eeb106ac1f3acb7c5d338a90533248c6223614574fefd14fee772f"
+    },
+    "rdkit_package": {
+      "version": "2026.03.6",
+      "sha256": "bb938eb6b28bf39baa9778f56aefcdea746d28060fe2c542209f877a71468fed",
+      "lock_status": "recorded",
+      "lock_sha256": "56d63aaae0eee657f4708f7e46a0f6d2b2e12af5808e9f8f914a13520d049aad",
+      "resolved": "https://registry.npmjs.org/@rdkit/rdkit/-/rdkit-2026.3.6.tgz",
+      "integrity": "sha512-JkMi2PfVjRFuy3ZCDAoTUJeTGyNsgtmq4hDUduLnnbobxsOfSydfpa6lhZGYYaisfMSEAgE1iAT95W4ZsUCMrA=="
+    }
+  },
+  "raw_runs": {
+    "chematic": [
+      {
+        "arm": "chematic",
+        "init_ms": 196,
+        "operations": {
+          "parse": {
+            "count": 10000,
+            "p50_ms": 0,
+            "p95_ms": 0,
+            "mean_ms": 0.024
+          },
+          "parse_write": {
+            "count": 10000,
+            "p50_ms": 0,
+            "p95_ms": 2,
+            "mean_ms": 0.7684
+          },
+          "parse_fp": {
+            "count": 10000,
+            "p50_ms": 1,
+            "p95_ms": 6,
+            "mean_ms": 1.8291
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "accepted_rows": 10000,
+        "repetition": 0
+      },
+      {
+        "arm": "chematic",
+        "init_ms": 143,
+        "operations": {
+          "parse": {
+            "count": 10000,
+            "p50_ms": 0,
+            "p95_ms": 0,
+            "mean_ms": 0.0183
+          },
+          "parse_write": {
+            "count": 10000,
+            "p50_ms": 0,
+            "p95_ms": 2,
+            "mean_ms": 0.5228
+          },
+          "parse_fp": {
+            "count": 10000,
+            "p50_ms": 1,
+            "p95_ms": 3,
+            "mean_ms": 1.1269
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "accepted_rows": 10000,
+        "repetition": 1
+      },
+      {
+        "arm": "chematic",
+        "init_ms": 96,
+        "operations": {
+          "parse": {
+            "count": 10000,
+            "p50_ms": 0,
+            "p95_ms": 0,
+            "mean_ms": 0.0118
+          },
+          "parse_write": {
+            "count": 10000,
+            "p50_ms": 0,
+            "p95_ms": 2,
+            "mean_ms": 0.4342
+          },
+          "parse_fp": {
+            "count": 10000,
+            "p50_ms": 1,
+            "p95_ms": 3,
+            "mean_ms": 1.0777
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "accepted_rows": 10000,
+        "repetition": 2
+      }
+    ],
+    "rdkit": [
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 350,
+        "operations": {
+          "parse": {
+            "count": 10000,
+            "p50_ms": 1,
+            "p95_ms": 2,
+            "mean_ms": 0.6289
+          },
+          "parse_write": {
+            "count": 10000,
+            "p50_ms": 1,
+            "p95_ms": 2,
+            "mean_ms": 0.8762
+          },
+          "parse_fp": {
+            "count": 10000,
+            "p50_ms": 1,
+            "p95_ms": 2,
+            "mean_ms": 0.7258
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "accepted_rows": 10000,
+        "repetition": 0
+      },
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 336,
+        "operations": {
+          "parse": {
+            "count": 10000,
+            "p50_ms": 0,
+            "p95_ms": 2,
+            "mean_ms": 0.5493
+          },
+          "parse_write": {
+            "count": 10000,
+            "p50_ms": 1,
+            "p95_ms": 2,
+            "mean_ms": 0.7202
+          },
+          "parse_fp": {
+            "count": 10000,
+            "p50_ms": 1,
+            "p95_ms": 2,
+            "mean_ms": 0.6672
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "accepted_rows": 10000,
+        "repetition": 1
+      },
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 197,
+        "operations": {
+          "parse": {
+            "count": 10000,
+            "p50_ms": 0,
+            "p95_ms": 1,
+            "mean_ms": 0.4268
+          },
+          "parse_write": {
+            "count": 10000,
+            "p50_ms": 1,
+            "p95_ms": 2,
+            "mean_ms": 0.5967
+          },
+          "parse_fp": {
+            "count": 10000,
+            "p50_ms": 1,
+            "p95_ms": 1,
+            "mean_ms": 0.5578
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "unavailable"
+          },
+          "after_workload": {
+            "status": "unavailable"
+          }
+        },
+        "accepted_rows": 10000,
+        "repetition": 2
+      }
+    ]
+  },
+  "aggregate": {
+    "chematic": {
+      "runs": 3,
+      "init_ms": {
+        "count": 3,
+        "p50_ms": 143.0,
+        "p95_ms": 190.7,
+        "mean_ms": 145.0
+      },
+      "parse_mean_ms": {
+        "count": 3,
+        "p50_ms": 0.0183,
+        "p95_ms": 0.02343,
+        "mean_ms": 0.018033
+      },
+      "parse_write_mean_ms": {
+        "count": 3,
+        "p50_ms": 0.5228,
+        "p95_ms": 0.74384,
+        "mean_ms": 0.575133
+      },
+      "parse_fp_mean_ms": {
+        "count": 3,
+        "p50_ms": 1.1269,
+        "p95_ms": 1.75888,
+        "mean_ms": 1.344567
+      }
+    },
+    "rdkit": {
+      "runs": 3,
+      "init_ms": {
+        "count": 3,
+        "p50_ms": 336.0,
+        "p95_ms": 348.6,
+        "mean_ms": 294.333333
+      },
+      "parse_mean_ms": {
+        "count": 3,
+        "p50_ms": 0.5493,
+        "p95_ms": 0.62094,
+        "mean_ms": 0.535
+      },
+      "parse_write_mean_ms": {
+        "count": 3,
+        "p50_ms": 0.7202,
+        "p95_ms": 0.8606,
+        "mean_ms": 0.731033
+      },
+      "parse_fp_mean_ms": {
+        "count": 3,
+        "p50_ms": 0.6672,
+        "p95_ms": 0.71994,
+        "mean_ms": 0.650267
+      }
+    }
+  },
+  "boundary": "Both arms receive the same valid SMILES rows. Fingerprint operation configuration is aligned but this artifact does not itself establish bit-identical chemistry; use the separate fingerprint compatibility gate for that claim. JS heap is browser-exposed only; WASM linear memory and process RSS are not measured here."
+}

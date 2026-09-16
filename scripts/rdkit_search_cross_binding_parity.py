@@ -100,7 +100,7 @@ def main() -> int:
         rows = {
             "rust": run(["cargo", "run", "-p", "chematic-fp", "--release", "--offline", "--example", "rdkit_search_binding_dump"], cases),
             "python": python_rows(cases),
-            "node_wasm": run(["node", "scripts/rdkit_search_binding_dump.mjs"], cases),
+            "node_wasm": run(["node", "scripts/binding_dump.mjs", "rdkit-search"], cases),
         }
         merged = {
             name: merge_chunks(value, len(chunks), CASE_COUNT, k) for name, value in rows.items()

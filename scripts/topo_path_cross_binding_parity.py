@@ -50,7 +50,7 @@ def main() -> int:
     bindings = {
         "rust": run(["cargo", "run", "-p", "chematic-chem", "--release", "--offline", "--example", "topo_path_binding_dump"], corpus),
         "python": python_records(corpus),
-        "node_wasm": run(["node", "scripts/topo_path_binding_dump.mjs"], corpus),
+        "node_wasm": run(["node", "scripts/binding_dump.mjs", "topo-path"], corpus),
     }
     if any(len(rows) != expected_rows for rows in bindings.values()):
         raise RuntimeError({name: len(rows) for name, rows in bindings.items()})
