@@ -51,6 +51,19 @@ npm install @kent-tokyo/chematic
 
 ## Usage
 
+The generated handle declarations include `Symbol.dispose` for explicit
+resource release. TypeScript consumers should include `ESNext.Disposable` in
+their `tsconfig.json` `lib` list (in addition to their normal browser or Node
+libraries):
+
+```json
+{
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "ESNext.Disposable"]
+  }
+}
+```
+
 ```js
 import init, {
   parse_smiles,
@@ -224,9 +237,12 @@ const groups = JSON.parse(v3000_sgroups_json(v3000Block));
 This is a syntax-level API; it does not claim polymer expansion, Markush
 interpretation, or cross-engine semantic compatibility.
 
-## Bundle Size
+## Bundle size
 
-The optimized v1.0.12 artifact was measured at **3.93 MB raw / 1.43 MB gzip**. Bundle size depends on features and toolchain; see [`benchmarks/2026-09-11-official-rdkit-js-v1.0.12.md`](../../benchmarks/2026-09-11-official-rdkit-js-v1.0.12.md) for exact tools, digest, and reproduction steps.
+The published v1.0.15 npm WASM asset is **4,005,280 bytes raw / 1,460,499
+bytes gzip**. Bundle size depends on features and toolchain; see the
+[published-package scorecard](../../benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md)
+for package versions, digests, tools, and reproduction steps.
 
 PNG rasterization (`tiny_skia`) is excluded from the WASM build — use SVG output instead. All SVG depiction APIs remain fully available.
 

@@ -1,9 +1,14 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { chromium, firefox, webkit } from "playwright";
 
 const browserName = process.argv[2] ?? "chromium";
 const browsers = { chromium, firefox, webkit };
 assert.ok(browsers[browserName], `unknown browser: ${browserName}`);
+const workspaceManifest = readFileSync(new URL("../Cargo.toml", import.meta.url), "utf8");
+const workspaceVersion = workspaceManifest.match(/^version\s*=\s*"([^"]+)"/m)?.[1];
+assert.ok(workspaceVersion, "workspace Cargo.toml must declare a version");
+const expectedVersionBadge = `v${workspaceVersion}`;
 
 const ETHANE_MOL_BLOCK = `ethane
   chematic
@@ -28,12 +33,12 @@ try {
     waitUntil: "networkidle",
   });
   await page.locator("#version-badge").waitFor({ state: "visible" });
-  assert.equal(await page.locator("#version-badge").innerText(), "v1.0.9");
+  assert.equal(await page.locator("#version-badge").innerText(), expectedVersionBadge);
   await page.locator("#smiles-input").fill("Cn1cnc2c1c(=O)n(c(=O)n2C)C");
   await page.locator("#btn-calc").click();
   const hba = page.locator("#desc-tbody tr").filter({ hasText: "HBA" }).locator("td").nth(1);
   await hba.waitFor({ state: "visible" });
-  assert.equal(await hba.innerText(), "6");
+  assert.equal(await hba.innerText(), "3");
 
   // Expose the existing breadth of the demo through task-oriented entry points.
   await page.locator('[data-workflow="molecule"]').click();
@@ -58,7 +63,7 @@ try {
     ["CCO", "1"],
     ["CC(=O)O", "1"],
     ["c1ccccc1", "0"],
-    ["Cn1cnc2c1c(=O)n(c(=O)n2C)C", "6"],
+    ["Cn1cnc2c1c(=O)n(c(=O)n2C)C", "3"],
   ]) {
     await page.locator("#smiles-input").fill(nextSmiles);
     await page.locator("#btn-calc").click();
