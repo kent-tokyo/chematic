@@ -14,18 +14,26 @@ permissions:
 
 jobs:
   python-wheel-runtime:
-    name: Python wheel runtime (${{ matrix.os }})
+    name: Python wheel runtime (${{ matrix.os }} / ${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          # v1.0.15 publishes Linux wheels for CPython 3.9 only. Keep this
+          # explicit instead of silently permitting a source-build fallback.
+          - os: ubuntu-latest
+            python-version: "3.9"
+          - os: macos-latest
+            python-version: "3.13"
+          - os: windows-latest
+            python-version: "3.13"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6
         with:
-          python-version: "3.13"
+          python-version: ${{ matrix.python-version }}
       - name: Install published wheel
         run: >-
           python -m pip install --disable-pip-version-check --only-binary=:all: "chematic==${{ inputs.version }}"
