@@ -1,0 +1,6 @@
+{
+  "attestor": "kent-tokyo maintainer, recorded by Codex with explicit authorization",
+  "attested_at": "2026-09-16T07:50:30Z",
+  "statement": "I attest that the source identified by source_sha256 was not used to select, tune, or otherwise develop the candidate identified by the matching candidate tag before this attestation.",
+  "source_sha256": "867c6e3f31bcb13deea51f89f49a65d27ec73e2b353c3dc3ddb8ef6a394954af"
+}

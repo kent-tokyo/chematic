@@ -179,7 +179,7 @@ SMARTSについては同じv1.0.14 build・5,021分子・31 queryで2026.03.6 la
 `validation/results/rdkit-smarts-oracle-lanes-v1.0.14.json`へ分離して保存し、
 2025.09.3を既定regression oracleのまま維持する。全対象操作の再測定・RDKit.jsの
 同梱版記録は未完了なので、T1.5全体は未完了。
-- [ ] T1.6 新規10,000件の取得版・ライセンス・出自を固定し、
+- [x] T1.6 新規10,000件の取得版・ライセンス・出自を固定し、
   開発2,000/封印評価8,000へ分割。既存の開発・回帰全群との
   parent/scaffold/同一構造重複を監査し、重複は開発側へ移す。
   `scripts/generate_rdkit_identity_audit.py` と
@@ -188,9 +188,8 @@ SMARTSについては同じv1.0.14 build・5,021分子・31 queryで2026.03.6 la
   unused-data attestation を必須にする準備器として実装済み。candidate tagは
   実Git commitと同じobjectへ解決する**annotated tag**であること、attestationはattestor/
   timestamp/statement/source hashを持ち対象source hashと一致すること、さらにattestation
-  timestampがcandidate tagのtagger timestampより前でないことを検証する。新規データ
-  の独立取得と attestation は未完了なので、既存 corpus を sealed と
-  表示してはならない。
+  timestampがcandidate tagのtagger timestampより前でないことを検証する。旧preflight
+  の既存corpusはsealedと表示してはならない。
   `scripts/fetch_chembl_sealed_candidate.py` は既存の小規模ChEMBL入力と
   重ならないoffsetから、response hash・取得日時・CC BY-SA 3.0出典を保持する
   ローカル候補を取得する。取得だけでは未使用性もsealed statusも主張しない。
@@ -213,6 +212,16 @@ SMARTSについては同じv1.0.14 build・5,021分子・31 queryで2026.03.6 la
   2026-09-16T16:21:12+09:00に凍結した。raw splitを正式にsealedへ移すには、
   このtag時刻以後のmaintainer unused-data attestationを新たに記録して同じ
   protocolを再実行する必要がある。
+- [x] T1.6を2026-09-16に新しい候補後sourceで再実行した。annotated tag
+  `trust-eval-candidate-20260916` は`c2682e3aa75c21566c86ce1ade9cbd052838c694`を
+  凍結し、その後に取得した11,689-row ChEMBL source
+  (`867c6e3f…394954af`)を対象にした。RDKit 2025.09.3 canonical/parent/scaffold
+  auditはdescriptor census、ChEMBL accuracy、browser comparison 10kを参照し、
+  10,239 eligible rowsから2,000 development / 8,000 sealed holdoutを決定した。
+  maintainer unused-data attestation、source/identity/reference/split hashes、response
+  hashesは`validation/results/sealed-cohort-preflight-trust-eval-candidate-20260916.json`
+  と`validation/attestations/unused-data-chembl-20260916.json`に保存する。raw inputは
+  local-onlyで、scoreはまだ計算していない。
 - [x] T1.7 ordinary-V3000 interchange baselineを固定する。PR #544で
   RDKit `2025.09.3` と Indigo `1.46.0` をversion-pinned readerとして、通常V3000の
   semantic round trip、SGROUPの作成・編集後の外部reader受理、relative stereoと
