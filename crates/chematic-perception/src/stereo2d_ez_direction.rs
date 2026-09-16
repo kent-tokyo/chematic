@@ -495,11 +495,43 @@ fn resolve_end(
 
 /// True when `atom` has a `BondOrder::Double` neighbor other than `exclude`
 /// -- i.e. `atom` sits in a cumulated pi system (allene/cumulene).
+/// Return whether a double bond can carry E/Z stereochemistry by topology
+/// alone.  This deliberately excludes coordinate- and input-specific
+/// conditions: callers use it only to decide whether two pi systems can
+/// compete for a textual `/` or `\` carrier.  A carbonyl, terminal alkene,
+/// allene, or locally symmetric alkene cannot do that and therefore must not
+/// cause an otherwise ordinary neighbouring alkene to be rejected.
+fn is_potential_ez_system(
+    mol: &Molecule,
+    bond_idx: BondIdx,
+    aromaticity: &AromaticityModel,
+) -> bool {
+    let bond = mol.bond(bond_idx);
+    if bond.order != BondOrder::Double || aromaticity.is_bond_aromatic(bond_idx) {
+        return false;
+    }
+    if has_other_double_bond(mol, bond.atom1, bond_idx)
+        || has_other_double_bond(mol, bond.atom2, bond_idx)
+    {
+        return false;
+    }
+    let left = substituents(mol, bond.atom1, bond.atom2);
+    let right = substituents(mol, bond.atom2, bond.atom1);
+    if left.is_empty() || right.is_empty() || left.len() > 2 || right.len() > 2 {
+        return false;
+    }
+    !(left.len() == 2
+        && compare_branches(mol, bond.atom1, left[0].0, left[1].0) == std::cmp::Ordering::Equal)
+        && !(right.len() == 2
+            && compare_branches(mol, bond.atom2, right[0].0, right[1].0)
+                == std::cmp::Ordering::Equal)
+}
+
 /// Find every double bond that must be rejected because a branch point (a
 /// 2-substituent alkene end) somewhere in the molecule has a substituent
-/// that is itself an endpoint of a DIFFERENT, genuinely-classifiable
-/// (non-aromatic) double bond -- BOTH the branch point's own double bond
-/// AND that other double bond are poisoned, not just the former.
+/// that is itself an endpoint of a DIFFERENT, potentially stereogenic
+/// double bond -- BOTH the branch point's own bond and that other bond are
+/// poisoned, not just the former.
 ///
 /// Rejecting only the branch point's own double bond is NOT sufficient,
 /// confirmed empirically against a live RDKit oracle (not assumed): a
@@ -522,7 +554,11 @@ fn poisoned_by_branch_ambiguity(
 ) -> HashSet<BondIdx> {
     let mut poisoned = HashSet::new();
     for (bidx, bond) in mol.bonds() {
-        if bond.order != BondOrder::Double || aromaticity.is_bond_aromatic(bidx) {
+        // A non-stereogenic double bond (notably a carbonyl) cannot be an
+        // E/Z system that competes for a `/` or `\` carrier.  Starting the
+        // scan from it would nevertheless find a neighbouring real alkene
+        // and incorrectly poison that alkene in both directions.
+        if bond.order != BondOrder::Double || !is_potential_ez_system(mol, bidx, aromaticity) {
             continue;
         }
         for (end, other_end) in [(bond.atom1, bond.atom2), (bond.atom2, bond.atom1)] {
@@ -531,12 +567,13 @@ fn poisoned_by_branch_ambiguity(
                 continue;
             }
             for &(sub_atom, sub_bond) in &subs {
-                let other_db = mol.neighbors(sub_atom).find(|&(_, nb_bidx)| {
-                    nb_bidx != sub_bond
-                        && mol.bond(nb_bidx).order == BondOrder::Double
-                        && !aromaticity.is_bond_aromatic(nb_bidx)
-                });
-                if let Some((_, other_db)) = other_db {
+                let other_db =
+                    mol.neighbors(sub_atom)
+                        .map(|(_, nb_bidx)| nb_bidx)
+                        .find(|&nb_bidx| {
+                            nb_bidx != sub_bond && is_potential_ez_system(mol, nb_bidx, aromaticity)
+                        });
+                if let Some(other_db) = other_db {
                     poisoned.insert(bidx);
                     poisoned.insert(other_db);
                 }
@@ -552,10 +589,10 @@ fn has_other_double_bond(mol: &Molecule, atom: AtomIdx, exclude: BondIdx) -> boo
 }
 
 /// True when `sub_atom` (reached from an alkene end via `sub_bond`) is
-/// itself an endpoint of a DIFFERENT, genuinely-classifiable (non-aromatic)
-/// double bond -- i.e. `sub_atom` is part of a longer conjugated system
-/// (an azine/hydrazone chain, a polyene, etc.), not a terminal/unrelated
-/// substituent.
+/// itself an endpoint of a DIFFERENT, potentially stereogenic double bond --
+/// i.e. `sub_atom` is part of a longer E/Z-capable conjugated system (an
+/// azine/hydrazone chain, a polyene, etc.), not a carbonyl, terminal, or
+/// otherwise non-stereogenic substituent.
 ///
 /// Used by [`resolve_end`] to REJECT (not choose between) a 2-substituted
 /// end when either candidate has this shape -- a branch point immediately
@@ -595,11 +632,8 @@ fn is_conjugated_to_another_double_bond(
     sub_bond: BondIdx,
     aromaticity: &AromaticityModel,
 ) -> bool {
-    mol.neighbors(sub_atom).any(|(_, bidx)| {
-        bidx != sub_bond
-            && mol.bond(bidx).order == BondOrder::Double
-            && !aromaticity.is_bond_aromatic(bidx)
-    })
+    mol.neighbors(sub_atom)
+        .any(|(_, bidx)| bidx != sub_bond && is_potential_ez_system(mol, bidx, aromaticity))
 }
 
 /// Non-double-bond neighbors of `end`, excluding `other_end` (the double
@@ -1008,6 +1042,46 @@ mod tests {
             mol.bond_direction(br_bond).is_some(),
             "must fall back to the sibling substituent"
         );
+    }
+
+    #[test]
+    fn carbonyl_substituent_does_not_poison_an_adjacent_alkene() {
+        // An enone has a pi bond next to the alkene, but its C=O cannot carry
+        // E/Z.  It must not trigger the shared-carrier quarantine intended
+        // for two *stereogenic* conjugated alkenes.  This is the minimal
+        // topology behind the remaining RDKit MOL round-trip residuals.
+        let mut b = MoleculeBuilder::new();
+        let left = b.add_atom(Atom::new(Element::C));
+        let f = b.add_atom(Atom::new(Element::F));
+        let cl = b.add_atom(Atom::new(Element::CL));
+        let right = b.add_atom(Atom::new(Element::C));
+        let methyl = b.add_atom(Atom::new(Element::C));
+        let carbonyl_c = b.add_atom(Atom::new(Element::C));
+        let oxygen = b.add_atom(Atom::new(Element::O));
+        let db = b.add_bond(left, right, BondOrder::Double).unwrap();
+        b.add_bond(left, f, BondOrder::Single).unwrap();
+        b.add_bond(left, cl, BondOrder::Single).unwrap();
+        b.add_bond(right, methyl, BondOrder::Single).unwrap();
+        b.add_bond(right, carbonyl_c, BondOrder::Single).unwrap();
+        b.add_bond(carbonyl_c, oxygen, BondOrder::Double).unwrap();
+        let mut mol = b.build();
+        let coords = vec![
+            (0.0, 0.0),   // left
+            (-0.8, 0.6),  // F
+            (-0.8, -0.6), // Cl
+            (1.5, 0.0),   // right
+            (2.3, -0.6),  // methyl
+            (2.3, 0.6),   // carbonyl C
+            (3.3, 0.6),   // O
+        ];
+
+        let diagnostics = apply_ez_directions_from_2d_with_diagnostics(&mut mol, &coords);
+        assert!(diagnostics.is_empty(), "{diagnostics:?}");
+        let bond = mol.bond(db);
+        let left_carrier = mol.bond_between(bond.atom1, f).unwrap().0;
+        let right_carrier = mol.bond_between(bond.atom2, methyl).unwrap().0;
+        assert!(mol.bond_direction(left_carrier).is_some());
+        assert!(mol.bond_direction(right_carrier).is_some());
     }
 
     #[test]

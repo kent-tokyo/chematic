@@ -17,6 +17,8 @@ pub enum MolParseError {
     InvalidAtomLine { line: usize, detail: String },
     /// A bond-block line could not be parsed.
     InvalidBondLine { line: usize, detail: String },
+    /// An `M  ...` property line could not be parsed.
+    InvalidPropertyLine { line: usize, detail: String },
     /// The element symbol on an atom line is not recognised.
     UnknownElement { symbol: String, line: usize },
     /// The input ended before the molecule was complete.
@@ -46,6 +48,9 @@ impl std::fmt::Display for MolParseError {
             }
             Self::InvalidBondLine { line, detail } => {
                 write!(f, "invalid bond line at line {line}: {detail}")
+            }
+            Self::InvalidPropertyLine { line, detail } => {
+                write!(f, "invalid property line at line {line}: {detail}")
             }
             Self::UnknownElement { symbol, line } => {
                 write!(f, "unknown element symbol '{symbol}' at line {line}")

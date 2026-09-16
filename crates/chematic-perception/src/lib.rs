@@ -68,8 +68,9 @@ pub use stereo2d_ez_direction::{
     apply_ez_directions_from_2d_ex, apply_ez_directions_from_2d_with_diagnostics,
 };
 pub use stereo2d_local::{
-    StereoDiagnostic, StereoRejectionReason, apply_local_parity_from_wedges,
-    apply_local_parity_from_wedges_with_diagnostics, local_parity_from_wedges,
+    StereoDiagnostic, StereoRejectionReason, apply_ctab_local_parity_from_wedges_with_diagnostics,
+    apply_local_parity_from_wedges, apply_local_parity_from_wedges_with_diagnostics,
+    local_parity_from_wedges,
 };
 
 use chematic_core::{AtomIdx, Molecule};

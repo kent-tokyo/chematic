@@ -32,8 +32,11 @@
 //!   against RDKit's own root-atom SMILES output for the same fixture).
 //!
 //! This module never calls into `cip_priority` and never touches
-//! `Atom.cip_code`. Nothing in the reader crates calls this yet -- integration
-//! is a separate, later step.
+//! `Atom.cip_code`. The MOL V2000/V3000 readers invoke the CTAB-specific
+//! entry point, while MRV and CDXML use the generic public entry points after
+//! constructing the graph and collecting 2D coordinates; format-specific
+//! diagnostics and writer behavior remain the responsibility of those reader
+//! crates.
 
 use chematic_core::{AtomIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL};
 
@@ -41,6 +44,12 @@ use crate::stereo2d::{P3, signed_volume, wedge_z};
 
 /// Tolerance below which a signed volume is treated as coplanar/degenerate.
 const VOLUME_EPS: f64 = 1e-6;
+
+/// Squared sine tolerance for the three-neighbor T-shaped convention. This
+/// mirrors RDKit's pseudo-3D `tShapeTol`: two flat bonds that are effectively
+/// collinear are not enough to form a volume with the drawn wedge, but CT
+/// files in fused-ring collections routinely use that shorthand.
+const T_SHAPE_SINE_SQ_EPS: f64 = 3.1e-4;
 
 /// Why a candidate stereocenter's wedge/hash drawing was rejected by
 /// [`apply_local_parity_from_wedges_with_diagnostics`] -- never emitted for an
@@ -84,10 +93,18 @@ enum ParityOutcome {
     Rejected(StereoRejectionReason),
 }
 
-/// True when `center` has at least one incident wedge/hash bond.
-fn has_wedge_or_hash(mol: &Molecule, center: AtomIdx) -> bool {
-    mol.neighbors(center)
-        .any(|(_, bidx)| matches!(mol.bond(bidx).order, BondOrder::Up | BondOrder::Down))
+/// True when `center` owns at least one wedge/hash bond.
+///
+/// In CTAB notation the wedge is directional: it assigns stereochemistry to
+/// bond atom 1 (the wedge point), not its atom-2 endpoint. Treating an
+/// incoming wedge as a second center's descriptor can manufacture a tag in a
+/// fused system, or make the two centers invert one another.
+fn has_wedge_or_hash(mol: &Molecule, center: AtomIdx, ctab_atom1_only: bool) -> bool {
+    mol.neighbors(center).any(|(_, bidx)| {
+        let bond = mol.bond(bidx);
+        matches!(bond.order, BondOrder::Up | BondOrder::Down)
+            && (!ctab_atom1_only || bond.atom1 == center)
+    })
 }
 
 /// Classify `center`'s local parity. See [`ParityOutcome`] for the three
@@ -103,10 +120,15 @@ fn has_wedge_or_hash(mol: &Molecule, center: AtomIdx) -> bool {
 /// otherwise a plain substituent atom that merely touches someone else's
 /// wedge bond would spuriously get its own `UnsupportedCoordination`
 /// diagnostic.
-fn classify_local_parity(mol: &Molecule, coords: &[(f64, f64)], center: AtomIdx) -> ParityOutcome {
+fn classify_local_parity(
+    mol: &Molecule,
+    coords: &[(f64, f64)],
+    center: AtomIdx,
+    ctab_atom1_only: bool,
+) -> ParityOutcome {
     let nbs: Vec<AtomIdx> = mol.neighbors(center).map(|(nb, _)| nb).collect();
 
-    if !(3..=4).contains(&nbs.len()) || !has_wedge_or_hash(mol, center) {
+    if !(3..=4).contains(&nbs.len()) || !has_wedge_or_hash(mol, center, ctab_atom1_only) {
         return ParityOutcome::NotRequested;
     }
 
@@ -150,7 +172,7 @@ pub fn local_parity_from_wedges(
     coords: &[(f64, f64)],
     center: AtomIdx,
 ) -> Option<(Chirality, Vec<u32>)> {
-    match classify_local_parity(mol, coords, center) {
+    match classify_local_parity(mol, coords, center, false) {
         ParityOutcome::Assigned(chirality, order) => Some((chirality, order)),
         ParityOutcome::NotRequested | ParityOutcome::Rejected(_) => None,
     }
@@ -300,8 +322,46 @@ fn tetrahedral_3_implicit_h(
     }
 
     // No synthetic position for the implicit H: the triple product of the
-    // three real bond vectors from `center` already carries full parity.
-    let vol = signed_volume(pts[0], pts[1], pts[2], center_pt);
+    // three real bond vectors from `center` normally carries full parity.
+    //
+    // A narrow exception is needed for the common CT-file T-shaped shorthand:
+    // one wedge/hash plus two *flat*, effectively collinear bonds. It does
+    // not have a nonzero geometric volume as drawn, yet it explicitly encodes
+    // the two flat bonds as lying behind the wedge (the convention RDKit uses
+    // for this fused-ring representation). Apply that rule only when there is
+    // exactly one wedge/hash; contradictory or multi-wedge drawings retain
+    // the fail-closed path above.
+    let mut adjusted = pts.clone();
+    let wedged: Vec<usize> = adjusted
+        .iter()
+        .enumerate()
+        .filter_map(|(index, point)| (point.z != 0.0).then_some(index))
+        .collect();
+    if wedged.len() == 1 {
+        let wedge = wedged[0];
+        let flat: Vec<usize> = (0..adjusted.len())
+            .filter(|&index| index != wedge)
+            .collect();
+        let first = adjusted[flat[0]];
+        let second = adjusted[flat[1]];
+        let first_dx = first.x - center_pt.x;
+        let first_dy = first.y - center_pt.y;
+        let second_dx = second.x - center_pt.x;
+        let second_dy = second.y - center_pt.y;
+        let first_len_sq = first_dx.mul_add(first_dx, first_dy * first_dy);
+        let second_len_sq = second_dx.mul_add(second_dx, second_dy * second_dy);
+        let cross = first_dx.mul_add(second_dy, -(first_dy * second_dx));
+        if first_len_sq > VOLUME_EPS
+            && second_len_sq > VOLUME_EPS
+            && cross * cross <= T_SHAPE_SINE_SQ_EPS * first_len_sq * second_len_sq
+        {
+            let opposite_z = -adjusted[wedge].z;
+            adjusted[flat[0]].z = opposite_z;
+            adjusted[flat[1]].z = opposite_z;
+        }
+    }
+
+    let vol = signed_volume(adjusted[0], adjusted[1], adjusted[2], center_pt);
     if vol.abs() < VOLUME_EPS {
         return Err(StereoRejectionReason::DegenerateGeometry);
     }
@@ -318,8 +378,9 @@ fn tetrahedral_3_implicit_h(
 /// Apply [`local_parity_from_wedges`] to every eligible atom in `mol`,
 /// writing `Atom.chirality` and `stereo_neighbor_order` in-place.
 ///
-/// Does not touch `Atom.cip_code`. Not called by any reader yet -- callers
-/// opt in explicitly.
+/// Does not touch `Atom.cip_code`. MRV and CDXML readers call this generic
+/// pathway after their format-specific graph and coordinate parsing; MOL
+/// V2000/V3000 use the CTAB-specific variant below.
 pub fn apply_local_parity_from_wedges(mol: &mut Molecule, coords: &[(f64, f64)]) {
     let atom_indices: Vec<AtomIdx> = mol.atoms().map(|(idx, _)| idx).collect();
     for idx in atom_indices {
@@ -346,13 +407,40 @@ pub fn apply_local_parity_from_wedges_with_diagnostics(
     let atom_indices: Vec<AtomIdx> = mol.atoms().map(|(idx, _)| idx).collect();
     let mut diagnostics = Vec::new();
     for idx in atom_indices {
-        match classify_local_parity(mol, coords, idx) {
+        match classify_local_parity(mol, coords, idx, false) {
             ParityOutcome::Assigned(chirality, order) => {
                 mol.set_chirality(idx, chirality);
                 mol.set_stereo_neighbor_order(idx, order);
             }
             ParityOutcome::Rejected(reason) => {
                 diagnostics.push(StereoDiagnostic { atom: idx, reason });
+            }
+            ParityOutcome::NotRequested => {}
+        }
+    }
+    diagnostics
+}
+
+/// CTAB-specific variant of [`apply_local_parity_from_wedges_with_diagnostics`].
+///
+/// MOL V2000/V3000 wedge/hash fields are directional: only bond atom 1 owns
+/// the stereo marker. Other diagram formats can intentionally represent
+/// non-directional wedge glyphs, so they must keep using the generic entry
+/// point above rather than inheriting this CTAB rule.
+pub fn apply_ctab_local_parity_from_wedges_with_diagnostics(
+    mol: &mut Molecule,
+    coords: &[(f64, f64)],
+) -> Vec<StereoDiagnostic> {
+    let atom_indices: Vec<AtomIdx> = mol.atoms().map(|(idx, _)| idx).collect();
+    let mut diagnostics = Vec::new();
+    for idx in atom_indices {
+        match classify_local_parity(mol, coords, idx, true) {
+            ParityOutcome::Assigned(chirality, order) => {
+                mol.set_chirality(idx, chirality);
+                mol.set_stereo_neighbor_order(idx, order);
+            }
+            ParityOutcome::Rejected(reason) => {
+                diagnostics.push(StereoDiagnostic { atom: idx, reason })
             }
             ParityOutcome::NotRequested => {}
         }
@@ -450,6 +538,27 @@ mod tests {
         let (hash_chirality, _) = local_parity_from_wedges(&mol_hash, &coords, c2).unwrap();
 
         assert_ne!(wedge_chirality, hash_chirality);
+    }
+
+    #[test]
+    fn incoming_wedge_never_assigns_the_atom2_endpoint() {
+        // CTAB bond atom 1 owns wedge/hash stereo. The center below has three
+        // heavy neighbours and an implicit H, but only receives a wedge from
+        // the adjacent atom: it must remain unspecified rather than acquiring
+        // a mirrored duplicate of the neighbour's descriptor.
+        let mut b = MoleculeBuilder::new();
+        let source = b.add_atom(Atom::new(Element::C));
+        let center = b.add_atom(Atom::new(Element::C));
+        let left = b.add_atom(Atom::new(Element::F));
+        let right = b.add_atom(Atom::new(Element::CL));
+        b.add_bond(source, center, BondOrder::Up).unwrap();
+        b.add_bond(center, left, BondOrder::Single).unwrap();
+        b.add_bond(center, right, BondOrder::Single).unwrap();
+        let mol = b.build();
+        let coords = vec![(0.0, 0.0), (1.0, 0.0), (2.0, 0.8), (2.0, -0.8)];
+        let mut mol = mol;
+        apply_ctab_local_parity_from_wedges_with_diagnostics(&mut mol, &coords);
+        assert_eq!(mol.atom(center).chirality, Chirality::None);
     }
 
     #[test]

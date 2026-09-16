@@ -407,16 +407,22 @@ pub fn to_mol_v3000_block(mol: &MolHandle) -> String {
 /// [`v3000_sgroups_json`].
 #[wasm_bindgen]
 pub fn roundtrip_mol_v3000_block(block: &str) -> Result<String, JsValue> {
+    roundtrip_mol_v3000_block_inner(block).map_err(|message| JsValue::from_str(&message))
+}
+
+/// Host-testable implementation behind [`roundtrip_mol_v3000_block`].
+///
+/// Keeping parsing and metadata preservation outside the `wasm_bindgen`
+/// boundary lets native `cargo test --workspace` exercise the same behavior
+/// without constructing a `JsValue`, which aborts on non-wasm targets.
+pub(crate) fn roundtrip_mol_v3000_block_inner(block: &str) -> Result<String, String> {
     if block.len() > WASM_MAX_INPUT_BYTES {
-        return Err(JsValue::from_str("V3000 block too large"));
+        return Err("V3000 block too large".to_string());
     }
-    let (mol, metadata, coords) = chematic_mol::parse_mol_v3000_with_coords(block)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let (mol, metadata, coords) =
+        chematic_mol::parse_mol_v3000_with_coords(block).map_err(|e| e.to_string())?;
     if mol.atom_count() > WASM_MAX_ATOMS {
-        return Err(JsValue::from_str(&format!(
-            "molecule too large (max {} atoms)",
-            WASM_MAX_ATOMS
-        )));
+        return Err(format!("molecule too large (max {WASM_MAX_ATOMS} atoms)"));
     }
     Ok(chematic_mol::write_mol_v3000(&mol, &metadata, &coords))
 }

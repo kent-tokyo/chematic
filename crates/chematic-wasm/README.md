@@ -51,6 +51,19 @@ npm install @kent-tokyo/chematic
 
 ## Usage
 
+The generated handle declarations include `Symbol.dispose` for explicit
+resource release. TypeScript consumers should include `ESNext.Disposable` in
+their `tsconfig.json` `lib` list (in addition to their normal browser or Node
+libraries):
+
+```json
+{
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "ESNext.Disposable"]
+  }
+}
+```
+
 ```js
 import init, {
   parse_smiles,

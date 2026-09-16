@@ -11,7 +11,7 @@ const block = `
 
   0  0  0  0  0  0  0  0  0  0999 V3000
 M  V30 BEGIN CTAB
-M  V30 COUNTS 2 1 0 0 0
+M  V30 COUNTS 2 1 1 0 0
 M  V30 BEGIN ATOM
 M  V30 1 C 0 0 0 0
 M  V30 2 C 1 0 0 0

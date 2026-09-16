@@ -14,8 +14,8 @@ use chematic_core::{
     Point3, STEREO_H_SENTINEL, SquarePlanarPermutation, StereoGeometry,
 };
 use chematic_perception::{
-    EzDirectionDiagnostic, StereoDiagnostic, apply_ez_directions_from_2d_ex,
-    apply_local_parity_from_wedges_with_diagnostics,
+    EzDirectionDiagnostic, StereoDiagnostic, apply_ctab_local_parity_from_wedges_with_diagnostics,
+    apply_ez_directions_from_2d_ex,
 };
 
 use crate::error::MolParseError;
@@ -39,10 +39,16 @@ pub struct MolMetadata {
     /// representation.
     pub v3000_sgroups: Vec<String>,
     /// Opaque V3000 bond-line attributes such as `ENDPTS=` and `ATTACH=`,
-    /// keyed by the file's 1-based bond id. Rich query/coordination semantics
-    /// are not interpreted by the core bond model, but are retained for a
-    /// lossless parse/write round trip.
+    /// keyed by the writer's 1-based bond order. Rich query/coordination
+    /// semantics are not interpreted by the core bond model, but are retained
+    /// when a non-contiguous source V3000 id is normalized to writer order.
     pub v3000_bond_properties: Vec<(u32, String)>,
+    /// Opaque V3000 atom-line attributes that the core atom model does not
+    /// interpret. This currently preserves atom `CFG` parity emitted by
+    /// third-party writers, so a V3000 parse/write round trip does not make a
+    /// stereochemical CTAB invalid for its original writer. Keys use the
+    /// writer's 1-based atom order, not the source V3000 atom id.
+    pub v3000_atom_properties: Vec<(u32, String)>,
 }
 
 impl MolMetadata {
@@ -761,6 +767,7 @@ fn read_mol_internal(
         comment,
         v3000_sgroups: Vec::new(),
         v3000_bond_properties: Vec::new(),
+        v3000_atom_properties: Vec::new(),
     };
 
     // -- Counts line (line 4) -----------------------------------------------
@@ -1026,13 +1033,69 @@ fn read_mol_internal(
         }
     }
 
-    // The graph-only supplier does not consume MOL property lines and has
-    // historically accepted EOF without `M  END`. Return immediately after
-    // the declared atom/bond blocks instead of scanning the remainder a
-    // second time; SDF field extraction already locates `M  END` separately.
+    // Read property lines until `M  END` (or EOF if absent). Even the graph-only
+    // supplier must consume `M  CHG`: RDKit uses it for valid formal charges
+    // that are not encoded in V2000's fixed-width atom charge field.
+    let mut property_charges = Vec::new();
+    for (line_number, line) in lines.by_ref() {
+        let fields: Vec<&str> = line.split_whitespace().collect();
+        if fields.len() >= 2 && fields[0] == "M" && fields[1] == "CHG" {
+            let count = fields
+                .get(2)
+                .and_then(|value| value.parse::<usize>().ok())
+                .ok_or_else(|| MolParseError::InvalidPropertyLine {
+                    line: line_number,
+                    detail: "M CHG lacks a valid entry count".to_string(),
+                })?;
+            let expected_fields = 3usize.checked_add(count.saturating_mul(2)).ok_or_else(|| {
+                MolParseError::InvalidPropertyLine {
+                    line: line_number,
+                    detail: "M CHG entry count overflows".to_string(),
+                }
+            })?;
+            if fields.len() != expected_fields {
+                return Err(MolParseError::InvalidPropertyLine {
+                    line: line_number,
+                    detail: format!(
+                        "M CHG declares {count} entries but has {} values",
+                        fields.len().saturating_sub(3)
+                    ),
+                });
+            }
+            // The exact field-count check above guarantees pairs; use the
+            // MSRV-compatible iterator rather than a newer slice API.
+            for pair in fields[3..].chunks(2) {
+                let atom_id = pair[0]
+                    .parse::<usize>()
+                    .ok()
+                    .filter(|id| *id > 0 && *id <= natoms)
+                    .ok_or_else(|| MolParseError::InvalidPropertyLine {
+                        line: line_number,
+                        detail: format!("M CHG atom id '{}' is outside 1..={natoms}", pair[0]),
+                    })?;
+                let charge =
+                    pair[1]
+                        .parse::<i8>()
+                        .map_err(|_| MolParseError::InvalidPropertyLine {
+                            line: line_number,
+                            detail: format!("M CHG charge '{}' is not an i8", pair[1]),
+                        })?;
+                property_charges.push((AtomIdx((atom_id - 1) as u32), charge));
+            }
+        }
+        if line.trim_start().starts_with("M  END") {
+            break;
+        }
+    }
+
+    let mut mol = builder.build();
+    for (atom, charge) in property_charges {
+        mol.set_charge(atom, charge);
+    }
+
     if !include_diagnostics {
         return Ok(MolReadReport {
-            mol: builder.build(),
+            mol,
             metadata,
             coords,
             stereo_diagnostics: Vec::new(),
@@ -1045,21 +1108,13 @@ fn read_mol_internal(
         });
     }
 
-    // Skip property lines until "M  END" (or EOF if absent).
-    for (_, l) in lines.by_ref() {
-        if l.trim_start().starts_with("M  END") {
-            break;
-        }
-    }
-
-    let mut mol = builder.build();
-
     // Tetrahedral parity first (raw wedge/hash still fully intact on
     // `bond.order`), THEN E/Z direction -- the E/Z stage only ever writes to
     // the separate `bond_direction` side channel, never to `bond.order`, so
     // running it after can never disturb the wedge/hash the tetrahedral
     // stage just read. See `docs/rfcs/stereo2d_reader_integration_rfc.md`.
-    let stereo_diagnostics = apply_local_parity_from_wedges_with_diagnostics(&mut mol, &coords);
+    let stereo_diagnostics =
+        apply_ctab_local_parity_from_wedges_with_diagnostics(&mut mol, &coords);
     let ez_diagnostics =
         apply_ez_directions_from_2d_ex(&mut mol, &coords, &explicitly_unspecified_ez);
 
@@ -2216,6 +2271,30 @@ M  END
 ";
         let (mol, _) = parse_mol(mol_str).expect("parse should succeed");
         assert_eq!(mol.atom(AtomIdx(0)).charge, -1);
+    }
+
+    #[test]
+    fn m_chg_property_overrides_fixed_width_charge_in_all_reader_paths() {
+        // RDKit uses M CHG for valid charge assignments such as S+/O- even
+        // when the V2000 atom charge column is zero. The property-level
+        // formal charge must be visible to both reader modes.
+        let mol_str = "\
+charge_property
+  RDKit          2D
+
+  2  1  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 S   0  0  0  0  0  0  0  0  0  0  0  0
+    1.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0
+M  CHG  2   1   1   2  -1
+M  END
+";
+        let (ordinary, _) = parse_mol(mol_str).expect("ordinary parse");
+        let (fast, _) = parse_mol_fast(mol_str).expect("fast parse");
+        for mol in [&ordinary, &fast] {
+            assert_eq!(mol.atom(AtomIdx(0)).charge, 1);
+            assert_eq!(mol.atom(AtomIdx(1)).charge, -1);
+        }
     }
 
     #[test]

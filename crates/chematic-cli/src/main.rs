@@ -162,6 +162,14 @@ enum Command {
         #[command(flatten)]
         limits: BatchLimits,
     },
+    /// Canonicalize one SMILES per line without calculating descriptors.
+    BatchCanonicalize {
+        /// Read line-delimited SMILES from this file instead of stdin.
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[command(flatten)]
+        limits: BatchLimits,
+    },
     /// Process one SMILES per line and return fingerprint records.
     BatchFingerprints {
         /// Read line-delimited SMILES from this file instead of stdin.
@@ -237,6 +245,23 @@ fn convert_text(text: &str, input_format: &str, output_format: &str) -> Result<S
         .ok_or_else(|| format!("unsupported input format: {input_format}"))?;
     let output = format_name(output_format)
         .ok_or_else(|| format!("unsupported output format: {output_format}"))?;
+
+    // A V3000-to-V3000 conversion is a file-format round trip, not merely a
+    // topology conversion.  The generic path below intentionally discards
+    // layout metadata because most output formats cannot represent it, but
+    // doing that here rewrites every atom at (0, 0, 0) and silently loses
+    // wedge/direction-derived stereochemistry on re-read.  Preserve the
+    // parsed coordinates and V3000 metadata when the target can carry them.
+    if input == "mol_v3000" && output == "mol_v3000" {
+        let (mol, metadata, coords) =
+            chematic_mol::parse_mol_v3000_with_coords(text).map_err(|e| e.to_string())?;
+        if mol.atom_count() > MAX_SMILES_ATOMS {
+            return Err(format!(
+                "molecule exceeds maximum atom count ({MAX_SMILES_ATOMS})"
+            ));
+        }
+        return Ok(chematic_mol::write_mol_v3000(&mol, &metadata, &coords));
+    }
     let mol = match input.as_str() {
         "smiles" => chematic_smiles::parse(text).map_err(|e| e.to_string())?,
         "mol" => chematic_mol::parse_mol(text)
@@ -719,6 +744,46 @@ fn batch_descriptors_json(text: &str, limits: &BatchLimits) -> Result<String, St
     Ok(output.to_string())
 }
 
+/// Canonicalize a bounded line-delimited SMILES batch without descriptor work.
+///
+/// Every accepted or rejected input remains in input order, so callers can use
+/// it for identity and invariance checks without silently dropping an invalid
+/// molecule or paying for unrelated descriptor calculations.
+fn batch_canonicalize_json(text: &str, limits: &BatchLimits) -> Result<String, String> {
+    let smiles = batch_lines(text, limits)?;
+    let canonicalizer = chematic_smiles::SmilesBatchCanonicalizer::default();
+    let mut records = Vec::with_capacity(smiles.len());
+    let mut valid_count = 0usize;
+    for record in canonicalizer.iter(smiles.iter()) {
+        match record.result {
+            chematic_smiles::BatchCanonicalization::Accepted { canonical_smiles } => {
+                valid_count += 1;
+                records.push(serde_json::json!({
+                    "input_index": record.input_index,
+                    "input_smiles": record.input,
+                    "canonical_smiles": canonical_smiles,
+                    "error": null,
+                }));
+            }
+            chematic_smiles::BatchCanonicalization::Rejected { error } => {
+                records.push(serde_json::json!({
+                    "input_index": record.input_index,
+                    "input_smiles": record.input,
+                    "canonical_smiles": null,
+                    "error": error,
+                }));
+            }
+        }
+    }
+    let mut output = serde_json::json!({
+        "records": records,
+        "valid_count": valid_count,
+        "error_count": smiles.len() - valid_count,
+    });
+    add_batch_manifest(&mut output, "canonicalize", limits);
+    Ok(output.to_string())
+}
+
 fn batch_fingerprints_json(
     text: &str,
     algorithm: &str,
@@ -1002,6 +1067,11 @@ fn run(cli: Cli) -> Result<(), String> {
             let json = batch_descriptors_json(&text, &limits)?;
             write_output(None, &format!("{json}\n"))
         }
+        Command::BatchCanonicalize { input, limits } => {
+            let text = read_limited_input(input.as_ref(), limits.max_input_bytes)?;
+            let json = batch_canonicalize_json(&text, &limits)?;
+            write_output(None, &format!("{json}\n"))
+        }
         Command::BatchFingerprints {
             input,
             algorithm,
@@ -1053,11 +1123,12 @@ fn main() {
 mod tests {
     use super::{
         BatchLimits, MAX_OUTPUT_BYTES, MAX_SMILES_ATOMS, MAX_SMILES_INPUT_BYTES,
-        batch_descriptors_json, batch_fingerprints_json, batch_reactions_json, batch_report_json,
-        batch_similarity_json, batch_standardize_json, batch_substructure_json, convert_text,
-        descriptors_json, fingerprint_json, parse_cli_smiles, parse_json, reaction_balance_json,
-        reaction_fingerprint_json, reaction_json, reaction_match_json, reaction_similarity_json,
-        report_json, similarity_json, standardize_json, substructure_json,
+        batch_canonicalize_json, batch_descriptors_json, batch_fingerprints_json,
+        batch_reactions_json, batch_report_json, batch_similarity_json, batch_standardize_json,
+        batch_substructure_json, convert_text, descriptors_json, fingerprint_json,
+        parse_cli_smiles, parse_json, reaction_balance_json, reaction_fingerprint_json,
+        reaction_json, reaction_match_json, reaction_similarity_json, report_json, similarity_json,
+        standardize_json, substructure_json,
     };
 
     fn default_batch_limits() -> BatchLimits {
@@ -1083,6 +1154,16 @@ mod tests {
         assert_eq!(converted.atom_count(), 3);
         assert_eq!(converted.bond_count(), 2);
         assert_eq!(converted.total_formula(), "C2H6O");
+    }
+
+    #[test]
+    fn v3000_to_v3000_keeps_layout_coordinates() {
+        let block = include_str!("../../../benchmarks/fixtures/ethanol.v3000");
+        let rewritten = convert_text(block, "mol_v3000", "mol_v3000").unwrap();
+        assert!(
+            rewritten.contains("M  V30 2 C 1.5000 0.0000 0.0000 0"),
+            "same-format V3000 conversion must not collapse coordinates: {rewritten}"
+        );
     }
 
     #[test]
@@ -1112,6 +1193,23 @@ mod tests {
         assert_eq!(json["atoms"], 2);
         assert_eq!(json["bonds"], 1);
         assert_eq!(json["formal_charge"], 1);
+    }
+
+    #[test]
+    fn batch_canonicalize_retains_input_order_and_rejections_without_descriptors() {
+        let result: serde_json::Value = serde_json::from_str(
+            &batch_canonicalize_json("CCO\nC1CC\nCCN\n", &BatchLimits::default()).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(result["operation"], "canonicalize");
+        assert_eq!(result["valid_count"], 2);
+        assert_eq!(result["error_count"], 1);
+        assert_eq!(result["records"][0]["input_index"], 0);
+        assert_eq!(result["records"][0]["canonical_smiles"], "C(C)O");
+        assert!(result["records"][1]["canonical_smiles"].is_null());
+        assert!(result["records"][1]["error"].as_str().is_some());
+        assert_eq!(result["records"][2]["input_index"], 2);
+        assert_eq!(result["records"][2]["canonical_smiles"], "C(C)N");
     }
 
     #[test]
