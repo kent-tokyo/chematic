@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-09-13. Released: **v1.0.14**. Next delivery theme: **1.x Trust Release**.
+> Updated 2026-09-16. Released: **v1.0.15**. Next delivery theme: **1.x Trust Release**.
 > **Current P0 focus: freeze T1's prepared 10,000-row split with a candidate tag and unused-data attestation; T2 publication, site synchronization, and clean-install smoke are complete.**
 
 ## Current status
@@ -9,6 +9,13 @@
   `main` in [PR #532](https://github.com/kent-tokyo/chematic/pull/532)
   (`286485be`). The tag retains the published source; the merge includes later
   formatting, native-InChI regression-test, and binding-inventory corrections.
+- v1.0.15 was published from `afa61956`. Its six public channels, Pages asset
+  digests, clean-install consumers, modern MCP smoke, and binary-only PyPI
+  runtime smoke are recorded in
+  `validation/results/release-channel-verification-v1.0.15.json` and
+  `validation/results/release-package-smoke-v1.0.15-2026-09-16.json`. The
+  latter verifies Linux CPython 3.9, macOS CPython 3.13, and Windows CPython
+  3.13; Linux 3.9 is the actual published-wheel boundary for this release.
 - All **seven accuracy packages A0–A6 still have open acceptance work**.
   Publication does not complete the planned Trust RC or independent accuracy gates.
 - This index tracks **18 open areas**: seven accuracy packages and eleven
@@ -26,7 +33,7 @@ this reorganization.
 |---|---|---|---|
 | 1 | P0 | **T0 measured**: baseline/candidate packet complete; hybrid blocked on 12 → 21 residual regression | P0/P2; A0/A4 |
 | 2 | P0 | **T1**: complete the separate RDKit 2026 lane and provenance-sealed 10,000-row split | P0/P2/P3; A0–A4 |
-| 3 | P0 | **T2 completed**: all six public channels, site data/deploy, and recorded clean-install smoke | P0/P6; A0 |
+| 3 | P0 | **T2 current-release proof completed**: v1.0.15 has all six public channels, site data/deploy, clean-install consumers, and recorded Linux/macOS/Windows published-wheel smoke. Re-run the record for the next candidate | P0/P6; A0 |
 | 4a | P1 | **T3**: verify WASM/Worker/MCP installation and the 10,000-molecule workflow | P3; A3/A4 |
 | 4b | P1 | **T4**: add sourced malformed-input cases and isolated time/memory gates | P1/P3; A0/A4 |
 | 4c | P1 | **T5**: publish stereo permutation, round-trip, and false-merge regressions | P2/P4; A2/A5 |

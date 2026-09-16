@@ -265,6 +265,14 @@ Python、npm TypeScript、Rust公開API、MCP schema smokeを記録環境で満�
 cross-platform coverageは別のT3/T6出口であり、このclean-install smokeの合格範囲へ
 含めない。
 
+- [x] T2.6 v1.0.15の公開channel・サイト・clean installを再確認する。
+  `validation/results/release-channel-verification-v1.0.15.json`はGitHub Release、npm、
+  PyPI、crates.io、docs.rs、Pagesをverifiedとして`release_ready=true`にした。加えて
+  run `35061960770`はbinary-only PyPI wheelでLinux CPython 3.9、macOS CPython 3.13、
+  Windows CPython 3.13のimport/version/benzene formulaをartifact化した。Linux 3.9は
+  v1.0.15の実配布wheel境界であり、newer Linux Pythonへ一般化しない。次候補では同じ
+  channel recordとruntime smokeを新しいartifactとして再実行する。
+
 出口: 公開channelごとのversion/digest/時刻と実行可能な例。
 historical benchmarkの版は維持し、「全ての数字を最新版にする」同期はしない。
 

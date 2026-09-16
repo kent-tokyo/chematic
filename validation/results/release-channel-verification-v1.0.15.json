@@ -1,14 +1,15 @@
 {
   "schema_version": 1,
-  "release": {"version": "1.0.15", "tag": "v1.0.15", "commit": null},
-  "checked_at": "2026-09-13T10:10:00Z",
-  "release_ready": false,
+  "release": {"version": "1.0.15", "tag": "v1.0.15", "commit": "afa61956a568c1e011486cbcd416b65aee193731"},
+  "checked_at": "2026-09-16T06:03:29Z",
+  "release_ready": true,
   "channels": [
-    {"id": "github_release", "status": "not_measured", "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.15", "detail": "Pre-publication record; verify after the annotated tag and release asset exist."},
-    {"id": "npm", "status": "not_measured", "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic", "detail": "Pre-publication record; verify the published package after release."},
-    {"id": "pypi", "status": "not_measured", "url": "https://pypi.org/pypi/schematic/json", "detail": "Pre-publication record; verify the published package after release."},
-    {"id": "crates_io", "status": "not_measured", "url": "https://crates.io/api/v1/crates/schematic", "detail": "Pre-publication record; verify the published crate after release."},
-    {"id": "docs_rs", "status": "not_measured", "url": "https://docs.rs/chematic/1.0.15/chematic/", "detail": "Pre-publication record; verify generated documentation after release."},
-    {"id": "site", "status": "not_measured", "url": "https://kent-tokyo.github.io/chematic/", "detail": "Pre-publication record; verify the deployed site after its version data is updated."}
-  ]
+    {"id": "github_release", "status": "verified", "observed_version": "1.0.15", "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.15", "detail": "GitHub CLI observed a non-draft, non-prerelease v1.0.15 release published 2026-09-13T10:57:23Z with release metadata asset; local annotated tag resolves to afa61956a568c1e011486cbcd416b65aee193731."},
+    {"id": "npm", "status": "verified", "observed_version": "1.0.15", "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic", "detail": "npm view observed @kent-tokyo/chematic@1.0.15 with integrity sha512-G/5JYq/OrL5xA+RjQwPyjtZLXxuN+zvY+IUH2uCYmKQ+ClnO1uTqNmBsTlILZmq144rZN+HNWObJy8OrZMhkNw==."},
+    {"id": "pypi", "status": "verified", "observed_version": "1.0.15", "url": "https://pypi.org/pypi/chematic/json", "detail": "PyPI JSON observed v1.0.15 with 18 files, including sdist SHA-256 cb8ce2551a11f944a59675e98eb5dda1d7cadebf828d2f9639301b054fc6b839."},
+    {"id": "crates_io", "status": "verified", "observed_version": "1.0.15", "url": "https://crates.io/crates/chematic/1.0.15", "detail": "cargo info --registry crates-io chematic@1.0.15 downloaded and resolved the published crate. Direct crates.io REST access returned HTTP 403 in this environment and is not used as evidence."},
+    {"id": "docs_rs", "status": "verified", "observed_version": "1.0.15", "url": "https://docs.rs/chematic/1.0.15/chematic/", "detail": "Direct HTTPS request returned HTTP 200 at the version-pinned docs.rs URL."},
+    {"id": "site", "status": "verified", "observed_version": "1.0.15", "url": "https://kent-tokyo.github.io/chematic/", "detail": "GitHub Pages deploy run 35057876254 for merge commit 2ca42e075c9af47e9f47601e15c04f6f474d99d1 succeeded. Direct fetched homepage HTML on 2026-09-16 contained Current release: v1.0.15; cookbook_ja route returned HTTP success. Deployed /pkg/chematic_wasm_bg.wasm SHA-256 is 908ef4eba944473456a6c8f5aa47501c1bdf6241b5c954c7d243d0d5a3bae52c and /pkg/chematic_wasm.js SHA-256 is 4173a43d17399ad2d6e1fda3d4a051b740f0401ab032a610c6d5788b010e7ed7, matching the checked public npm package. Historical v1.0.12 benchmark references remain in the page and are not a release-version mismatch. The MkDocs configuration has no separate Chinese route. Public npm and PyPI typing consumers plus the installed MCP modern discovery/list/call/error/recovery smoke are recorded separately."}
+  ],
+  "cross_platform_runtime": {"status": "verified", "url": "https://github.com/kent-tokyo/chematic/actions/runs/35061960770", "detail": "Published package smoke run 35061960770 for main commit 1ffe54b40d1f0fce3811949947eb27e212e4e855 installed binary-only PyPI chematic==1.0.15 and saved per-platform artifacts. Linux CPython 3.9.25 x86_64, macOS CPython 3.13.15 arm64, and Windows CPython 3.13.15 x64 each reported installed_version 1.0.15, import success, and benzene formula C6H6. PyPI v1.0.15 publishes Linux wheels only for CPython 3.9; this is the verified distribution boundary, not a claim for newer Linux Python versions."}
 }
