@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Build the checked-in *development* stereo torture suite.
+"""Build the checked-in development stereo torture suite.
 
-The suite intentionally combines already-exposed regression structures with a
-fixed, RDKit-filtered sample from the committed descriptor census corpus. It
-is not a sealed or independent accuracy evaluation.
+The suite combines exposed regression inputs with a fixed RDKit-filtered sample.
+It is deliberately not a sealed or independent accuracy evaluation.
 """
 
 from __future__ import annotations
@@ -21,13 +20,16 @@ from rdkit import Chem, rdBase
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "validation" / "stereo_torture_suite_development.jsonl"
 SAMPLE_SOURCE = ROOT / "scripts" / "descriptor_census_corpus.smi"
-SOURCES = (
-    ROOT / "validation" / "cip_label_corpus.jsonl",
-    ROOT / "validation" / "cip_residual_classification_corpus.jsonl",
-    ROOT / "validation" / "cip_rule4b_discriminating_corpus.jsonl",
-    ROOT / "validation" / "cip_negative_resonance_order_invariance.jsonl",
-    ROOT / "validation" / "cip_oracle_instability.jsonl",
-    ROOT / "validation" / "canonical_residual_fixtures.jsonl",
+SOURCES = tuple(
+    ROOT / path
+    for path in (
+        "validation/cip_label_corpus.jsonl",
+        "validation/cip_residual_classification_corpus.jsonl",
+        "validation/cip_rule4b_discriminating_corpus.jsonl",
+        "validation/cip_negative_resonance_order_invariance.jsonl",
+        "validation/cip_oracle_instability.jsonl",
+        "validation/canonical_residual_fixtures.jsonl",
+    )
 )
 TARGET_CASES = 300
 SEED = "chematic-stereo-torture-development-v1"
@@ -64,9 +66,7 @@ def known_cases() -> list[dict[str, Any]]:
 
 def stereo_types(smiles: str) -> list[str]:
     molecule = Chem.MolFromSmiles(smiles)
-    if molecule is None:
-        return []
-    return sorted({str(info.type) for info in Chem.FindPotentialStereo(molecule)})
+    return [] if molecule is None else sorted({str(item.type) for item in Chem.FindPotentialStereo(molecule)})
 
 
 def sampled_cases(excluded: set[str], count: int) -> list[dict[str, Any]]:
@@ -81,13 +81,8 @@ def sampled_cases(excluded: set[str], count: int) -> list[dict[str, Any]]:
     if len(candidates) < count:
         raise ValueError(f"need {count} stereo candidates, found {len(candidates)}")
     return [
-        {
-            "smiles": smiles,
-            "source_paths": [SAMPLE_SOURCE.relative_to(ROOT).as_posix()],
-            "sample_line": line_number,
-            "rdkit_stereo_types": types,
-        }
-        for _, line_number, smiles, types in candidates[:count]
+        {"smiles": smiles, "source_paths": [SAMPLE_SOURCE.relative_to(ROOT).as_posix()], "sample_line": line_number, "rdkit_stereo_types": kinds}
+        for _, line_number, smiles, kinds in candidates[:count]
     ]
 
 
@@ -98,8 +93,7 @@ def build() -> list[dict[str, Any]]:
     for index, row in enumerate(known + sampled, start=1):
         metadata = row.pop("metadata", {})
         cases.append({
-            "id": f"stereo-dev-{index:03d}",
-            "smiles": row["smiles"],
+            "id": f"stereo-dev-{index:03d}", "smiles": row["smiles"],
             "tier": "existing_regression" if metadata else "fixed_sampled_development",
             "source_paths": row["source_paths"],
             "source_bucket": metadata.get("bucket") or metadata.get("category") or metadata.get("case"),
@@ -119,13 +113,9 @@ def main() -> int:
     cases = build()
     type_counts = Counter(kind for row in cases for kind in row["rdkit_stereo_types"])
     manifest = {
-        "_manifest": True,
-        "schema_version": 1,
-        "suite": "stereo_torture_development_v1",
+        "_manifest": True, "schema_version": 1, "suite": "stereo_torture_development_v1",
         "scope": "development regression only; not sealed, independent, or an accuracy claim",
-        "rdkit_version": rdBase.rdkitVersion,
-        "seed": SEED,
-        "unique_structures": len(cases),
+        "rdkit_version": rdBase.rdkitVersion, "seed": SEED, "unique_structures": len(cases),
         "existing_regression": sum(row["tier"] == "existing_regression" for row in cases),
         "fixed_sampled_development": sum(row["tier"] == "fixed_sampled_development" for row in cases),
         "rdkit_stereo_type_counts": dict(sorted(type_counts.items())),

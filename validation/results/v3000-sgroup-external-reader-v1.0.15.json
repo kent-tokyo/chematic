@@ -3,9 +3,10 @@
   "profile": "v3000_sgroup_external_reader_v1",
   "indigo_version": "1.46.0.0-gb36d38f52-aarch64-darwin-appleclang-17000013",
   "rdkit_version": "2025.09.3",
-  "cli": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/chematic",
+  "cli_name": "chematic",
+  "cli_sha256": "bedd938be8784675694cb6a891a018156f171cacf6c1a24955e8184530170331",
   "cli_exit_code": 0,
-  "indigo_written_source_sha256": "7799486d03c446c7c6c10349c8e2e64a9f63d4d8498d300790f7be041a1cd468",
+  "indigo_written_source_sha256": "27297ed800d707cb777d238157aa43b77578391e5f511d6ac57302073e1f176d",
   "indigo_written_sgroup_lines": [
     "M  V30 1 SUP 1 ATOMS=(2 1 2) LABEL=core"
   ],

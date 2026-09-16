@@ -1062,7 +1062,9 @@ fn read_mol_internal(
                     ),
                 });
             }
-            for pair in fields[3..].chunks_exact(2) {
+            // The exact field-count check above guarantees pairs; use the
+            // MSRV-compatible iterator rather than a newer slice API.
+            for pair in fields[3..].chunks(2) {
                 let atom_id = pair[0]
                     .parse::<usize>()
                     .ok()

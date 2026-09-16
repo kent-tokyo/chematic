@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "suite_sha256": "210f2d83aea513532c7669d31a52e4f3bd7314b27c5a4d7c13b0a1a6f30623bd",
+  "suite_sha256": "b7916bca731aede914b1a34935399f4d39ae5cbc9f5f9f292a0366182bb46455",
   "suite_cases": 300,
   "rdkit_version": "2025.09.3",
   "semantic_equal": 300,

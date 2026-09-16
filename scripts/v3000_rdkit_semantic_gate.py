@@ -72,6 +72,16 @@ def signature(mol: Chem.Mol) -> dict:
     }
 
 
+def cli_provenance(cli: Path) -> dict[str, str]:
+    """Record a relocatable identity for the tested executable."""
+    with cli.open("rb") as handle:
+        digest = hashlib.file_digest(handle, "sha256").hexdigest()
+    return {
+        "cli_name": cli.name,
+        "cli_sha256": digest,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cli", type=Path, default=DEFAULT_CLI)
@@ -129,7 +139,7 @@ def main() -> int:
         "schema_version": 1,
         "profile": "v3000_rdkit_ordinary_semantic_roundtrip_v1",
         "rdkit_version": Chem.rdBase.rdkitVersion,
-        "cli": str(cli),
+        **cli_provenance(cli),
         "cases": len(rows),
         "semantic_equal": len(rows) - len(failures),
         "failures": failures,

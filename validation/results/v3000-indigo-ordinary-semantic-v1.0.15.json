@@ -3,7 +3,8 @@
   "profile": "v3000_indigo_ordinary_semantic_roundtrip_v1",
   "indigo_version": "1.46.0.0-gb36d38f52-aarch64-darwin-appleclang-17000013",
   "rdkit_version": "2025.09.3",
-  "cli": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/chematic",
+  "cli_name": "chematic",
+  "cli_sha256": "bedd938be8784675694cb6a891a018156f171cacf6c1a24955e8184530170331",
   "cases": 20,
   "comparable_cases": 18,
   "semantic_equal": 18,
@@ -36,7 +37,7 @@
       "id": "ethanol",
       "smiles": "CCO",
       "cli_exit_code": 0,
-      "source_sha256": "27ddf2aaf36a9604321a422cf9f7b3c7861b1b2e88c0cd982aac70a22d047eef",
+      "source_sha256": "6b481e1f304130c9f58e464e6e72e4e30eeb2ecbc79fccf1f10166fb910b3b2f",
       "output_sha256": "35da9ccb3470cddaceb065bd93a2865fac8d2f1f763fd237ad26f6768585b290",
       "rdkit_before": {
         "atom_count": 3,
@@ -119,7 +120,7 @@
       "id": "benzene",
       "smiles": "c1ccccc1",
       "cli_exit_code": 0,
-      "source_sha256": "37035180f8213809530cdd259ec2073534580d80e2a454671327322beaf35741",
+      "source_sha256": "50986b33edf09dc053cdbe7514d1f256714bbe2d437e14b1be84ac72f1748c21",
       "output_sha256": "5bf1cabb9c02474ea5d1e19c6ff0a7639ccd1791e766f15f2d66c37f25ba66d0",
       "rdkit_before": {
         "atom_count": 6,
@@ -280,7 +281,7 @@
       "id": "pyridine",
       "smiles": "n1ccccc1",
       "cli_exit_code": 0,
-      "source_sha256": "d333d77a27a18d32b45e4051d7d4caa4da8873c9f1fe1e9b736c19285f0c15a9",
+      "source_sha256": "0897ba56a3d125bf76d73b253767b3f0731759ec20dc575cff9f736290fbfc54",
       "output_sha256": "d3174179e0e7d4b5cc7b00d05ceb40a42fe35fd3e6ce12957fbd73601c359921",
       "rdkit_before": {
         "atom_count": 6,
@@ -441,7 +442,7 @@
       "id": "acetic_acid",
       "smiles": "CC(=O)O",
       "cli_exit_code": 0,
-      "source_sha256": "92af52c97f485ccbdfd0006e02152be60141e932f52b277a77211fd9170ace89",
+      "source_sha256": "acb56811792b201945fd7e76767f1a4f1a64a2ff36f89b640b11d32151657b92",
       "output_sha256": "b903baefd5812dc62d2b11d667fcbde787d9684f30facdf65c48d15ac3869f06",
       "rdkit_before": {
         "atom_count": 4,
@@ -546,7 +547,7 @@
       "id": "acetate",
       "smiles": "CC(=O)[O-]",
       "cli_exit_code": 0,
-      "source_sha256": "060ffdf77e85e4be9d5ed0f77af54be59e849810926c0e225f068ec1966ca64d",
+      "source_sha256": "0ef07555af97f30ffbba51f0fbfbad25334c406c2249bc2af610cba31891a298",
       "output_sha256": "59f01f372a410b5890536b58454c6f82df56bcf39895f77caa92e0873d41a4aa",
       "rdkit_before": {
         "atom_count": 4,
@@ -651,7 +652,7 @@
       "id": "ammonium",
       "smiles": "C[NH3+]",
       "cli_exit_code": 0,
-      "source_sha256": "9cb685c322568af5d673a1388a13168b5265b13bf63a0ecb921bb33562a0c5e8",
+      "source_sha256": "49a568590e3423b2d0f0da0cc28e34a3647e9b4575f07c35a4413f6fbeca6842",
       "output_sha256": "ac04f2ea5cc1c538b45af9a5594e522e363028e62729565a7b6efaa64b6369cc",
       "rdkit_before": {
         "atom_count": 2,
@@ -712,7 +713,7 @@
       "id": "trimethylammonium",
       "smiles": "C[N+](C)(C)C",
       "cli_exit_code": 0,
-      "source_sha256": "6b33f4189cf950b53ae8f09b92c28c967965b3aa06d9565847730c6e8bc693b2",
+      "source_sha256": "97b1a1501e3b926c0c5dcdcbab0f0ec2e62078b2ca4c8fe244106c5b5f84c6f9",
       "output_sha256": "8c931d758407ad8f1d1083da559645571e35d86d0eff7fc507c04de95b66e1b0",
       "rdkit_before": {
         "atom_count": 5,
@@ -839,7 +840,7 @@
       "id": "nitrobenzene",
       "smiles": "O=[N+]([O-])c1ccccc1",
       "cli_exit_code": 0,
-      "source_sha256": "2efeacc01a09ef2e608ea52617264013631e849358a38ca66b2aded1f1241271",
+      "source_sha256": "2231799d6072426d81b8732456023ae662a11509134e93e9d5b08fa657157db8",
       "output_sha256": "a2d7127f2ce56e77d1098df0b4c75e7ff83e15697caec7afe50c1225381a8684",
       "rdkit_before": {
         "atom_count": 9,
@@ -1066,7 +1067,7 @@
       "id": "sulfonamide",
       "smiles": "CS(=O)(=O)N",
       "cli_exit_code": 0,
-      "source_sha256": "31fc4b3a83fd22dc3b82264ffe237499b62fd990b8207c92abbbf735e5215716",
+      "source_sha256": "50e0901d0eebf7e7aadf68cdccc25a9ab0cd50772757abf7eb2e0580125ae9ed",
       "output_sha256": "a4c2d72afc5859c5c9ea54055804067a70f4a2370e1d2c81ee1c190cde89cff5",
       "rdkit_before": {
         "atom_count": 5,
@@ -1193,7 +1194,7 @@
       "id": "phosphonate",
       "smiles": "COP(=O)(O)O",
       "cli_exit_code": 0,
-      "source_sha256": "f684952ab00a66de63ee335f93e5b9e2dd5f0398b40cd38d6fa64592f82dfe37",
+      "source_sha256": "805458fb7cf33585320509e543b493331ceb3d918fd9eeaf66aef9f44a19b365",
       "output_sha256": "8c88ba1b4159582706c1e89cf5ea15ee5cba6baf5a99a4c73ede0623ef61d72e",
       "rdkit_before": {
         "atom_count": 6,
@@ -1342,7 +1343,7 @@
       "id": "chloroethane",
       "smiles": "CCCl",
       "cli_exit_code": 0,
-      "source_sha256": "5c8d393ce64e2a5b3aa0cb3166920893853e114dabd9c8948c0e2f075eb18c55",
+      "source_sha256": "c1f2a5c28d7dd5ae132064caa154814cc825c72ab6cb96a465d283169bbea37d",
       "output_sha256": "de6e44ca15aea7ca87be048e1e2508c24633964f9f18ac7d2fa50f9544c2857a",
       "rdkit_before": {
         "atom_count": 3,
@@ -1425,7 +1426,7 @@
       "id": "bromoethane",
       "smiles": "CCBr",
       "cli_exit_code": 0,
-      "source_sha256": "e261de76534883d4b3f43ed1fe74768ffeb87f24321041357714d4b6a257f9ad",
+      "source_sha256": "1b1a7b37a9ff3be70b47201e6ca0e8a0364adbae85df0ac3392a68dc066efa21",
       "output_sha256": "e545222fab249667228254642f050a45191b0dc8f568b79f6d2f65e9ac2d0f8f",
       "rdkit_before": {
         "atom_count": 3,
@@ -1508,7 +1509,7 @@
       "id": "iodomethane",
       "smiles": "CI",
       "cli_exit_code": 0,
-      "source_sha256": "1f506947131d454c6798e9e0d346950197c66b00d1381be568193c0b8eca03f4",
+      "source_sha256": "c0bd6588a1973a161bb0b502e7fff865a91c5a059ddc48717aed99b972414d10",
       "output_sha256": "a0e54cbfa4c4258ad57b91c69835841ae5b8e89459531b510898d5bf7dddb7a6",
       "rdkit_before": {
         "atom_count": 2,
@@ -1569,7 +1570,7 @@
       "id": "deuterated_ethanol",
       "smiles": "[2H]CO",
       "cli_exit_code": 0,
-      "source_sha256": "79a133533096e8498ee42eb3ce4d717c6feea116bd26a4d3018c342a2b2247a8",
+      "source_sha256": "03f84b86d0714e47c1972276a6e397884c756072c1a1750cb60f00ffaff7be89",
       "output_sha256": "5e8329c83f787084b9eb5724b666902ad97265eb964ae6996abe772ca8662f2e",
       "rdkit_before": {
         "atom_count": 3,
@@ -1652,7 +1653,7 @@
       "id": "carbon13_ethanol",
       "smiles": "[13CH3]CO",
       "cli_exit_code": 0,
-      "source_sha256": "58f99dadfbb52bfe151cf02d6b7b2115e5a82a40834330fae47f80de3e0de4b5",
+      "source_sha256": "06e6a9011e29c0046cbe3c0d490b8ccaea39d0316ac3590a4bdcef4c41cc0cf6",
       "output_sha256": "3275660c405527cbcb9d696b46dde17447bfb3de132310f7990d2b86816689ee",
       "rdkit_before": {
         "atom_count": 3,
@@ -1749,7 +1750,7 @@
       "id": "e_2_butene",
       "smiles": "C/C=C/C",
       "cli_exit_code": 0,
-      "source_sha256": "e5da13e2c2a3fcc818911afe00c5239e9cfbd4a232b8c28d3ec53954de8fc51a",
+      "source_sha256": "eb8f3abdf6bf7410f8fe2f7831d91d138556151ce985a536770fb54dd83832d0",
       "output_sha256": "e41fd96d3951f19fdf50bc7061b36f36cd1c40d4f55dcec9bb897057440862e8",
       "rdkit_before": {
         "atom_count": 4,
@@ -1854,7 +1855,7 @@
       "id": "z_2_butene",
       "smiles": "C/C=C\\C",
       "cli_exit_code": 0,
-      "source_sha256": "e5da13e2c2a3fcc818911afe00c5239e9cfbd4a232b8c28d3ec53954de8fc51a",
+      "source_sha256": "eb8f3abdf6bf7410f8fe2f7831d91d138556151ce985a536770fb54dd83832d0",
       "output_sha256": "e41fd96d3951f19fdf50bc7061b36f36cd1c40d4f55dcec9bb897057440862e8",
       "rdkit_before": {
         "atom_count": 4,
@@ -1959,7 +1960,7 @@
       "id": "cyclohexanol",
       "smiles": "OC1CCCCC1",
       "cli_exit_code": 0,
-      "source_sha256": "3e3da3188b27a18702963d51370a8f8ddbc88ccf0144e2d6f76f8775e45a9704",
+      "source_sha256": "a9292eae8ee115b554d6086d771092b7d3e9bebccad229ffbbaece0dc09dd7de",
       "output_sha256": "a3d01f9d093679066694ef702709538c55292b4fe3504a4cdaaa059c71e3d075",
       "rdkit_before": {
         "atom_count": 7,

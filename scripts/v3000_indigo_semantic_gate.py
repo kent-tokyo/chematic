@@ -19,7 +19,7 @@ from pathlib import Path
 from indigo import Indigo
 from rdkit import Chem
 
-from v3000_rdkit_semantic_gate import CASES, signature
+from v3000_rdkit_semantic_gate import CASES, cli_provenance, signature
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -139,7 +139,7 @@ def main() -> int:
         "profile": "v3000_indigo_ordinary_semantic_roundtrip_v1",
         "indigo_version": indigo_version,
         "rdkit_version": Chem.rdBase.rdkitVersion,
-        "cli": str(cli),
+        **cli_provenance(cli),
         "cases": len(rows),
         "comparable_cases": len(comparable_rows),
         "semantic_equal": len(comparable_rows) - len(failures),

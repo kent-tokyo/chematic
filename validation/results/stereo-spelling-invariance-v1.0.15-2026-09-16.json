@@ -2,7 +2,7 @@
   "schema_version": 1,
   "profile": "stereo_spelling_invariance_v1",
   "rdkit_version": "2025.09.3",
-  "cli": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/chematic",
+  "cli": "chematic",
   "corpus": {
     "path": "validation/cip_label_corpus.jsonl",
     "sha256": "14ce78b96a24bc66b65fd963ffc7e236e1153f72c006933555335d0bdd61730e",
@@ -25,7 +25,7 @@
     "failure_samples": []
   },
   "gate_passed": true,
-  "scope": "RDKit randomized isomeric SMILES spelling invariance plus chematic canonical reparse idempotency on the fixed CIP oracle inputs",
+  "scope": "RDKit randomized isomeric SMILES spelling invariance plus chematic canonical reparse idempotency on fixed CIP oracle inputs",
   "not_claimed": [
     "RDKit canonical string equality",
     "independent CIP-label correctness",

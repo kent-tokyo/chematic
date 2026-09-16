@@ -2,35 +2,11 @@
   "schema_version": 1,
   "gate": "published_python_package_runtime_smoke",
   "release": "1.0.15",
-  "workflow_run": {
-    "id": 35061960770,
-    "url": "https://github.com/kent-tokyo/chematic/actions/runs/35061960770",
-    "commit": "1ffe54b40d1f0fce3811949947eb27e212e4e855",
-    "conclusion": "success"
-  },
+  "workflow_run": {"id": 35061960770, "url": "https://github.com/kent-tokyo/chematic/actions/runs/35061960770", "commit": "1ffe54b40d1f0fce3811949947eb27e212e4e855", "conclusion": "success"},
   "lanes": [
-    {
-      "runner": "ubuntu-latest",
-      "python_version": "3.9.25",
-      "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
-      "installed_version": "1.0.15",
-      "checks": {"import_schematic": true, "benzene_formula": "C6H6"},
-      "boundary": "The v1.0.15 PyPI release has a Linux binary wheel for CPython 3.9. Newer Linux Python versions are not covered by this lane."
-    },
-    {
-      "runner": "macos-latest",
-      "python_version": "3.13.15",
-      "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
-      "installed_version": "1.0.15",
-      "checks": {"import_schematic": true, "benzene_formula": "C6H6"}
-    },
-    {
-      "runner": "windows-latest",
-      "python_version": "3.13.15",
-      "platform": "Windows-2025Server-10.0.26100-SP0",
-      "installed_version": "1.0.15",
-      "checks": {"import_schematic": true, "benzene_formula": "C6H6"}
-    }
+    {"runner": "ubuntu-latest", "python_version": "3.9.25", "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39", "installed_version": "1.0.15", "checks": {"import_schematic": true, "benzene_formula": "C6H6"}, "boundary": "The v1.0.15 PyPI release has a Linux binary wheel for CPython 3.9. Newer Linux Python versions are not covered by this lane."},
+    {"runner": "macos-latest", "python_version": "3.13.15", "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O", "installed_version": "1.0.15", "checks": {"import_schematic": true, "benzene_formula": "C6H6"}},
+    {"runner": "windows-latest", "python_version": "3.13.15", "platform": "Windows-2025Server-10.0.26100-SP0", "installed_version": "1.0.15", "checks": {"import_schematic": true, "benzene_formula": "C6H6"}}
   ],
   "boundary": "Each lane verifies the binary-only published wheel's import, version, and one basic SMILES operation. It does not establish typing, all APIs, performance, or support outside the listed OS/Python wheel tags."
 }

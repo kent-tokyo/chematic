@@ -48,6 +48,10 @@ def main() -> int:
         if molecule is None:
             parser.error(f"source row {index}: RDKit cannot parse {smiles!r}")
         parent = rdMolStandardize.FragmentParent(molecule)
+        # FragmentParent can yield an otherwise valid molecule whose ring cache
+        # has not been initialized. MurckoScaffold requires that cache and
+        # otherwise raises a precondition violation on valid benchmark inputs.
+        Chem.GetSymmSSSR(parent)
         scaffold = MurckoScaffold.MurckoScaffoldSmiles(mol=parent)
         rendered.append(json.dumps({
             "input_smiles": smiles,

@@ -18,6 +18,8 @@ from pathlib import Path
 from indigo import Indigo
 from rdkit import Chem
 
+from v3000_rdkit_semantic_gate import cli_provenance
+
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CLI = ROOT / "target" / "debug" / "chematic"
@@ -86,7 +88,7 @@ def main() -> int:
         "profile": "v3000_rdkit_or_stereo_v1",
         "rdkit_version": Chem.rdBase.rdkitVersion,
         "indigo_version": indigo.version(),
-        "cli": str(cli),
+        **cli_provenance(cli),
         "cli_exit_code": run.returncode,
         "or_collection_retained": "MDLV30/STEREL1" in written,
         "rdkit_expected_groups": expected_groups,

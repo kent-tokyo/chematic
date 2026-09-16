@@ -1,0 +1,134 @@
+{
+  "candidate_freeze": {
+    "candidate_commit": "c2682e3aa75c21566c86ce1ade9cbd052838c694",
+    "candidate_tag": "trust-eval-candidate-20260916",
+    "candidate_tagged_at": "2026-09-16T16:21:12+09:00"
+  },
+  "deduplication": {
+    "against_references": [
+      "canonical_smiles",
+      "parent_smiles",
+      "scaffold_smiles"
+    ],
+    "excluded_rows": {
+      "duplicate_canonical": 2,
+      "reference_canonical": 10,
+      "reference_parent": 0,
+      "reference_scaffold": 1438
+    },
+    "internal": "canonical_smiles"
+  },
+  "identity_audit": {
+    "keys": [
+      "input_smiles",
+      "canonical_smiles",
+      "parent_smiles",
+      "scaffold_smiles"
+    ],
+    "oracle": {
+      "engine": "RDKit",
+      "version": "2025.09.3"
+    },
+    "reference_audit_sha256": [
+      "ccf2fb7c4e4f68988d164cbd830c39f4f124dfd5a8c66c5fc69301285a30ef7f",
+      "11cbd0e1929e25f54cee199d37866095c7dbc46acc1f81b58443669c06ac105e",
+      "d6a528cdd074e9d7413219d84c9fa9535e4468946ed009cb916a6dfac768a3a4"
+    ],
+    "sha256": "9ac37f8d2ee4c043fe7cb3f84e4cbb7327dea08caa3446a96fe881736b9a23ef"
+  },
+  "raw_input": "local-only; not committed",
+  "reason": "maintainer attestation and candidate freeze recorded",
+  "schema": "chematic.sealed-cohort-preflight-evidence.v1",
+  "sealed": true,
+  "source": {
+    "acquired_at": "2026-09-16T07:50:17+00:00",
+    "input_rows": 11689,
+    "license": "ChEMBL data: CC BY-SA 3.0",
+    "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
+    "release": "ChEMBL REST API multi-chunk snapshot; every response URL/hash retained",
+    "response_hashes": [
+      {
+        "records": 1000,
+        "sha256": "494e1db639efe72f974f934745f505f4d0ab6ede76e2165dc553ab7b67d8c2f5",
+        "url": "https://www.ebi.ac.uk/chembl/api/data/molecule.json?limit=1000&offset=300000"
+      },
+      {
+        "records": 1000,
+        "sha256": "48a03ba4f59b0370c32bba55ea502d1704628ca055a4964be615f201bce68ae8",
+        "url": "https://www.ebi.ac.uk/chembl/api/data/molecule.json?limit=1000&offset=301000"
+      },
+      {
+        "records": 1000,
+        "sha256": "d4b49ee711c16672e6306602448f0181b4be6a4fce5783c917a492eb299fa71f",
+        "url": "https://www.ebi.ac.uk/chembl/api/data/molecule.json?limit=1000&offset=302000"
+      },
+      {
+        "records": 1000,
+        "sha256": "25a8e7c1a207934240e67d39b2a904f73d2e5b666174444f185ecd1acfac3013",
+        "url": "https://www.ebi.ac.uk/chembl/api/data/molecule.json?limit=1000&offset=303000"
+      },
+      {
+        "records": 1000,
+        "sha256": "fe715fd68ff82a638a590d4b5e32bc8b71137c444b07cea97e34eb62d67da640",
+        "url": "https://www.ebi.ac.uk/chembl/api/data/molecule.json?limit=1000&offset=304000"
+      },
+      {
+        "records": 1000,
+        "sha256": "176526c2e9bd234ea2fb61f43da648074877a66dac5cdea0115086583efe4660",
+        "url": "https://www.ebi.ac.uk/chembl/api/data/molecule.json?limit=1000&offset=305000"
+      },
+      {
+        "records": 1000,
+        "sha256": "42f49b7c03dba670c279eca2db73894e67e4c48500c14722adceee9cd334d220",
+        "url": "https://www.ebi.ac.uk/chembl/api/data/molecule.json?limit=1000&offset=306000"
+      },
+      {
+        "records": 1000,
+        "sha256": "25186d9e823fe7998b6462c4ddeb4fa1f44963b5434a95c136544665833c122a",
+        "url": "https://www.ebi.ac.uk/chembl/api/data/molecule.json?limit=1000&offset=307000"
+      },
+      {
+        "records": 1000,
+        "sha256": "a3f5e3a1f9918944bf1bcfabd70548472213fb975228f31cbe107e90aff7003c",
+        "url": "https://www.ebi.ac.uk/chembl/api/data/molecule.json?limit=1000&offset=308000"
+      },
+      {
+        "records": 1000,
+        "sha256": "08187b0c4873985104801d8953dfc86e3229375e493856faba5c2be5ba0a54c8",
+        "url": "https://www.ebi.ac.uk/chembl/api/data/molecule.json?limit=1000&offset=309000"
+      },
+      {
+        "records": 1000,
+        "sha256": "d289ff67fa23e8783040b54576825e2c115b9e0eb5a490dabf0e03815df9f065",
+        "url": "https://www.ebi.ac.uk/chembl/api/data/molecule.json?limit=1000&offset=310000"
+      },
+      {
+        "records": 1000,
+        "sha256": "5a2b355d223d3f0f0fc9fdd0f5c58566281e1d3844633483dd4afc390b01fa1a",
+        "url": "https://www.ebi.ac.uk/chembl/api/data/molecule.json?limit=1000&offset=311000"
+      }
+    ],
+    "source_sha256": "867c6e3f31bcb13deea51f89f49a65d27ec73e2b353c3dc3ddb8ef6a394954af",
+    "url": "https://www.ebi.ac.uk/chembl/api/data/molecule.json"
+  },
+  "splits": {
+    "development": {
+      "path": "/private/tmp/chematic-sealed-cohort-20260916-sealed-unique/development.smi",
+      "rows": 2000,
+      "sha256": "6f0abfbc3383fccfb38d556fa949329ae2ca5634ffd1968bd2ec2ec8f336795a"
+    },
+    "sealed_holdout": {
+      "path": "/private/tmp/chematic-sealed-cohort-20260916-sealed-unique/sealed_holdout.smi",
+      "rows": 8000,
+      "sha256": "6ded3953ef0dd28e21521504b81bf1cf64068d0b1eb608987475ae4d4cce5017"
+    }
+  },
+  "status": "sealed",
+  "unused_data_attestation": {
+    "attested_at": "2026-09-16T07:50:30Z",
+    "attestor": "kent-tokyo maintainer, recorded by Codex with explicit authorization",
+    "sha256": "9be9ade934f0c4ff853950cf3b1ed451876dac85e48340f0bea4904a27ab79ba",
+    "source_sha256": "867c6e3f31bcb13deea51f89f49a65d27ec73e2b353c3dc3ddb8ef6a394954af",
+    "statement": "I attest that the source identified by source_sha256 was not used to select, tune, or otherwise develop the candidate identified by the matching candidate tag before this attestation."
+  }
+}

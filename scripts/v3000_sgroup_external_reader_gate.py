@@ -22,6 +22,8 @@ from pathlib import Path
 from indigo import Indigo
 from rdkit import Chem
 
+from v3000_rdkit_semantic_gate import cli_provenance
+
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CLI = ROOT / "target" / "debug" / "chematic"
@@ -97,7 +99,7 @@ def main() -> int:
         "profile": "v3000_sgroup_external_reader_v1",
         "indigo_version": indigo.version(),
         "rdkit_version": Chem.rdBase.rdkitVersion,
-        "cli": str(cli),
+        **cli_provenance(cli),
         "cli_exit_code": run.returncode,
         "indigo_written_source_sha256": hashlib.sha256(
             indigo_written_source.encode("utf-8")

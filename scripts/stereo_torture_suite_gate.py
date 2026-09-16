@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check semantic preservation and canonical reparse stability for T5.1's development suite."""
+"""Check semantic preservation and canonical reparse stability for T5.1."""
 
 from __future__ import annotations
 
@@ -26,14 +26,8 @@ def identity(smiles: str) -> str | None:
 def run(cli: Path, smiles: list[str], directory: Path) -> list[dict[str, object]]:
     input_path = directory / "input.smi"
     input_path.write_text("\n".join(smiles) + "\n", encoding="utf-8")
-    completed = subprocess.run(
-        [str(cli), "batch-canonicalize", "--input", str(input_path)],
-        cwd=ROOT,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
-    if completed.returncode != 0:
+    completed = subprocess.run([str(cli), "batch-canonicalize", "--input", str(input_path)], cwd=ROOT, text=True, capture_output=True)
+    if completed.returncode:
         raise RuntimeError(completed.stderr.strip() or "batch-canonicalize failed")
     return json.loads(completed.stdout)["records"]
 
@@ -44,17 +38,14 @@ def main() -> int:
     parser.add_argument("--suite", type=Path, default=SUITE)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    cli = args.cli.resolve()
-    suite = args.suite.resolve()
+    cli, suite = args.cli.resolve(), args.suite.resolve()
     rows = [json.loads(line) for line in suite.read_text(encoding="utf-8").splitlines()]
     manifest, cases = rows[0], rows[1:]
     if not manifest.get("_manifest") or len(cases) != 300:
         raise ValueError("expected a 300-case suite with a manifest")
-    inputs = [row["smiles"] for row in cases]
     with tempfile.TemporaryDirectory(prefix="chematic-stereo-suite-") as directory:
-        first = run(cli, inputs, Path(directory))
-        canonical = [str(row.get("canonical_smiles", "")) for row in first]
-        second = run(cli, canonical, Path(directory))
+        first = run(cli, [row["smiles"] for row in cases], Path(directory))
+        second = run(cli, [str(row.get("canonical_smiles", "")) for row in first], Path(directory))
     failures = []
     for case, output, reparsed in zip(cases, first, second, strict=True):
         expected = identity(case["smiles"])
@@ -63,15 +54,11 @@ def main() -> int:
         if expected != actual or not stable:
             failures.append({"id": case["id"], "semantic_equal": expected == actual, "canonical_reparse_stable": stable, "error": output.get("error") or reparsed.get("error")})
     result = {
-        "schema_version": 1,
-        "suite_sha256": hashlib.sha256(suite.read_bytes()).hexdigest(),
-        "suite_cases": len(cases),
-        "rdkit_version": rdBase.rdkitVersion,
-        "semantic_equal": len(cases) - sum(not item["semantic_equal"] for item in failures),
-        "canonical_reparse_stable": len(cases) - sum(not item["canonical_reparse_stable"] for item in failures),
-        "failure_count": len(failures),
-        "failures": failures,
-        "gate_passed": not failures,
+        "schema_version": 1, "suite_sha256": hashlib.sha256(suite.read_bytes()).hexdigest(),
+        "suite_cases": len(cases), "rdkit_version": rdBase.rdkitVersion,
+        "semantic_equal": len(cases) - sum(not row["semantic_equal"] for row in failures),
+        "canonical_reparse_stable": len(cases) - sum(not row["canonical_reparse_stable"] for row in failures),
+        "failure_count": len(failures), "failures": failures, "gate_passed": not failures,
         "scope": "development suite only; RDKit semantic identity and chematic canonical reparse stability",
         "not_claimed": ["independent accuracy", "CIP label adjudication", "sealed challenge performance"],
     }
