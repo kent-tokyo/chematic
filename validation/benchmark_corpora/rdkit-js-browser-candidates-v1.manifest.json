@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "id": "rdkit-js-browser-10k-v1",
+  "purpose": "Fixed candidate input for browser compatibility qualification; not the final common-parse comparison population.",
+  "status": "exposed_not_sealed",
+  "not_for": "accuracy tuning, model selection, or a claim of independent generalization",
+  "deduplication": "exact input SMILES, first occurrence wins in declared source order",
+  "candidate_rows": 12000,
+  "sources": [
+    {
+      "path": "scripts/descriptor_census_corpus.smi",
+      "sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c",
+      "description": "ChEMBL-derived descriptor census; CC BY-SA 3.0 provenance is documented in docs/rfcs/descriptor_census_rfc.md.",
+      "input_rows": 5000,
+      "selected_unique_rows": 5000
+    },
+    {
+      "path": "scripts/nci_first_5k_smiles_only.smi",
+      "sha256": "1d9fa413f33c4d2e2f2da9742cdbd7ce8f39d33b0b9fd78ce012a0b7f24e031d",
+      "description": "RDKit bundled NCI Diversity Set first_5K regression input; it is existing, exposed project data.",
+      "input_rows": 4999,
+      "selected_unique_rows": 4897
+    },
+    {
+      "path": "scripts/chembl_accuracy_corpus_4999.smi",
+      "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+      "description": "Existing ChEMBL-derived accuracy corpus; CC BY-SA 3.0 provenance is recorded in validation/manifests/dataset_provenance.json.",
+      "input_rows": 5000,
+      "selected_unique_rows": 2103
+    }
+  ],
+  "output": {
+    "path": "validation/benchmark_corpora/rdkit-js-browser-candidates-v1.smi",
+    "rows": 12000,
+    "sha256": "1bd06bd8a095c816697e84e82a857ec37bed9e93b8e01fbd06f9fa724c5dc98c"
+  }
+}

@@ -14,7 +14,7 @@ accuracy, or compatibility claims.
 | Reproduce the 1.10x hot-path gate | [`2026-09-05-hotpath-110.md`](2026-09-05-hotpath-110.md) |
 | Check file-streaming contracts | [v1.0.12 validation matrix](../validation/results/cross-engine-matrix-v1.0.12.json) |
 | Check current streaming safety gate | [`2026-09-11-streaming-safety-v1.0.13.json`](2026-09-11-streaming-safety-v1.0.13.json) |
-| Check official RDKit.js comparison gate | [`2026-09-11-official-rdkit-js-v1.0.12.md`](2026-09-11-official-rdkit-js-v1.0.12.md) |
+| Check current isolated official RDKit.js browser comparison | [`2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md`](2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md) |
 | Current v1.0.12 official RDKit.js Node rerun | [`../validation/results/competitive-benchmark-rdkitjs-2026-09-11-v1.0.12.json`](../validation/results/competitive-benchmark-rdkitjs-2026-09-11-v1.0.12.json) |
 | Current v1.0.12 official RDKit.js Node report | [`2026-09-11-official-rdkit-js-v1.0.12.md`](2026-09-11-official-rdkit-js-v1.0.12.md) |
 | Check official RDKit.js browser gate | [`2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md`](2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md) |
@@ -55,6 +55,10 @@ measurement was rerun.
 | [`../validation/results/competitive-benchmark-rdkitjs-2026-09-11-v1.0.12.json`](../validation/results/competitive-benchmark-rdkitjs-2026-09-11-v1.0.12.json) | Machine-readable official RDKit.js comparison result |
 | [`2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md`](2026-09-10-official-rdkit-js-browser-gate-v1.0.11.md) | Real Playwright Chromium comparison against the official package |
 | [`../validation/results/competitive-browser-rdkitjs-2026-09-10-v1.0.11.json`](../validation/results/competitive-browser-rdkitjs-2026-09-10-v1.0.11.json) | Machine-readable browser comparison result |
+| [`2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md`](2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md) | Fresh-browser-process, fixed exposed 10k comparison against `@rdkit/rdkit@2026.03.6`; it records operation-specific results and 9,999/9,999 configured-bit agreement on the declared supported domain across three browsers, plus one typed Fe(II) coordination boundary |
+| [`../validation/results/competitive-browser-rdkitjs-isolated-v1.0.15-2026-09-16.json`](../validation/results/competitive-browser-rdkitjs-isolated-v1.0.15-2026-09-16.json) | Machine-readable isolated browser comparison result |
+| [`../validation/results/competitive-browser-rdkitjs-ecfp4-parity-5k-v1.0.15-2026-09-16.json`](../validation/results/competitive-browser-rdkitjs-ecfp4-parity-5k-v1.0.15-2026-09-16.json) | Direct browser ECFP4/Morgan comparison against `@rdkit/rdkit@2026.03.6`: 5,000/5,000 exact after the large polycyclic-aromatic explicit-aromatic regression fix; this does not generalize to unmeasured corpus or option configurations |
+| [`../validation/results/competitive-browser-rdkitjs-isolated-10k-rss-v1.0.15-2026-09-16.json`](../validation/results/competitive-browser-rdkitjs-isolated-10k-rss-v1.0.15-2026-09-16.json) | Chrome-owned-process 10k memory lane: browser JS heap, chematic linear-memory allocation, and sampled process-tree RSS; summed RSS is not unique physical memory and is not cross-browser evidence |
 | [`2026-09-10-generated-wasm-v3000-gate-v1.0.11.md`](2026-09-10-generated-wasm-v3000-gate-v1.0.11.md) | Generated Web-WASM V3000 metadata preservation gate |
 | [`2026-09-11-v3000-cross-engine-v1.0.12.md`](2026-09-11-v3000-cross-engine-v1.0.12.md) | Bounded V3000 canonical/semantic probe across schematic, RDKit, and Open Babel |
 | [`2026-09-11-v3000-cross-engine-v1.0.12.json`](2026-09-11-v3000-cross-engine-v1.0.12.json) | Machine-readable V3000 cross-engine probe and explicit Indigo availability boundary |

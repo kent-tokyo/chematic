@@ -1,0 +1,485 @@
+{
+  "schema_version": 1,
+  "gate": "wasm-vs-official-rdkit-browser-isolated",
+  "configuration": {
+    "engine": "chromium",
+    "browser": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "rows": 10000,
+    "warmup_rows": 20,
+    "repetitions": 3,
+    "timing": "fresh browser process per arm/repetition; no-store local routes",
+    "download_to_ready_contract": "navigation start through JavaScript module/script fetch and WebAssembly initialization; excludes the subsequent parse/write/fingerprint workload",
+    "process_rss": "summed fresh Chromium process-tree RSS sampled every 50 ms",
+    "operation_contract": "parse; parse+canonical-SMILES write; parse+radius-2/2048-bit fingerprint. This is not prepared-object timing.",
+    "fingerprint_typed_unsupported_rows": 1,
+    "fingerprint_typed_unsupported_smiles": [
+      "CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10"
+    ]
+  },
+  "corpus": {
+    "path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+    "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+    "rows": 10000
+  },
+  "artifacts": {
+    "schematic_wasm": {
+      "path": "/tmp/chematic-npm-1.0.15/unpacked/package/chematic_wasm_bg.wasm",
+      "raw_bytes": 4009079,
+      "gzip9_bytes": 1461625,
+      "sha256": "908ef4eba944473456a6c8f5aa47501c1bdf6241b5c954c7d243d0d5a3bae52c"
+    },
+    "schematic_js": {
+      "path": "/tmp/chematic-npm-1.0.15/unpacked/package/chematic_wasm.js",
+      "raw_bytes": 270764,
+      "gzip9_bytes": 44774,
+      "sha256": "4173a43d17399ad2d6e1fda3d4a051b740f0401ab032a610c6d5788b010e7ed7"
+    },
+    "schematic_package": {
+      "name": "@kent-tokyo/chematic",
+      "version": "1.0.15",
+      "sha256": "58b43600303fa72f2462612272434c2eb4071d3c501393fb1fc241709a2aa47a",
+      "lock_status": "not_found",
+      "tarball": {
+        "path": "/tmp/chematic-npm-1.0.15/kent-tokyo-chematic-1.0.15.tgz",
+        "raw_bytes": 1554779,
+        "gzip9_bytes": 1552975,
+        "sha256": "ddbe24150f6c4c130bab7c1e1791aea5e2407afda79d60fd432bd7cb07bb3314"
+      }
+    },
+    "rdkit_wasm": {
+      "path": "/private/tmp/chematic-rdkit-2026-3-6/node_modules/@rdkit/rdkit/dist/RDKit_minimal.wasm",
+      "raw_bytes": 7333095,
+      "gzip9_bytes": 2379975,
+      "sha256": "f5981af4cf5bdcef861ffdf7410330bf9887f1195e39fbf9901b3a2f134ace2e"
+    },
+    "rdkit_js": {
+      "path": "/private/tmp/chematic-rdkit-2026-3-6/node_modules/@rdkit/rdkit/dist/RDKit_minimal.js",
+      "raw_bytes": 105843,
+      "gzip9_bytes": 28432,
+      "sha256": "25ea1529b8eeb106ac1f3acb7c5d338a90533248c6223614574fefd14fee772f"
+    },
+    "rdkit_package": {
+      "name": "@rdkit/rdkit",
+      "version": "2026.03.6",
+      "sha256": "bb938eb6b28bf39baa9778f56aefcdea746d28060fe2c542209f877a71468fed",
+      "lock_status": "recorded",
+      "lock_sha256": "56d63aaae0eee657f4708f7e46a0f6d2b2e12af5808e9f8f914a13520d049aad",
+      "resolved": "https://registry.npmjs.org/@rdkit/rdkit/-/rdkit-2026.3.6.tgz",
+      "integrity": "sha512-JkMi2PfVjRFuy3ZCDAoTUJeTGyNsgtmq4hDUduLnnbobxsOfSydfpa6lhZGYYaisfMSEAgE1iAT95W4ZsUCMrA=="
+    }
+  },
+  "raw_runs": {
+    "chematic": [
+      {
+        "arm": "chematic",
+        "init_ms": 21.799999997019768,
+        "download_to_ready_ms": 54.19999998807907,
+        "operations": {
+          "parse": {
+            "count": 10000,
+            "p50_ms": 0,
+            "p95_ms": 0,
+            "mean_ms": 0.003550000002980232,
+            "input_rows": 10000
+          },
+          "parse_write": {
+            "count": 10000,
+            "p50_ms": 0,
+            "p95_ms": 0.29999999701976776,
+            "mean_ms": 0.0872800000011921,
+            "input_rows": 10000
+          },
+          "parse_fp": {
+            "count": 9999,
+            "p50_ms": 0.20000000298023224,
+            "p95_ms": 1,
+            "mean_ms": 0.3412541254143296,
+            "input_rows": 9999
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "measured",
+            "used_js_heap_bytes": 2133100,
+            "total_js_heap_bytes": 2561828,
+            "js_heap_limit_bytes": 4395630592
+          },
+          "after_workload": {
+            "status": "measured",
+            "used_js_heap_bytes": 5331036,
+            "total_js_heap_bytes": 10103876,
+            "js_heap_limit_bytes": 4395630592
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "the selected chematic artifact does not export wasm_linear_memory_bytes"
+        },
+        "accepted_rows": 10000,
+        "process_tree_rss": {
+          "status": "measured",
+          "metric": "summed process-tree RSS; shared pages are not de-duplicated",
+          "ps_rss_unit": "KiB x 1024",
+          "peak_rss_bytes": 2095923200,
+          "peak_processes": 15,
+          "samples": 65
+        },
+        "repetition": 0
+      },
+      {
+        "arm": "chematic",
+        "init_ms": 14.099999994039536,
+        "download_to_ready_ms": 49.5,
+        "operations": {
+          "parse": {
+            "count": 10000,
+            "p50_ms": 0,
+            "p95_ms": 0,
+            "mean_ms": 0.004070000000298024,
+            "input_rows": 10000
+          },
+          "parse_write": {
+            "count": 10000,
+            "p50_ms": 0,
+            "p95_ms": 0.29999999701976776,
+            "mean_ms": 0.09533000000864267,
+            "input_rows": 10000
+          },
+          "parse_fp": {
+            "count": 9999,
+            "p50_ms": 0.20000000298023224,
+            "p95_ms": 1.0999999940395355,
+            "mean_ms": 0.37124712471187515,
+            "input_rows": 9999
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "measured",
+            "used_js_heap_bytes": 2133100,
+            "total_js_heap_bytes": 2561828,
+            "js_heap_limit_bytes": 4395630592
+          },
+          "after_workload": {
+            "status": "measured",
+            "used_js_heap_bytes": 5271584,
+            "total_js_heap_bytes": 10113348,
+            "js_heap_limit_bytes": 4395630592
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "the selected chematic artifact does not export wasm_linear_memory_bytes"
+        },
+        "accepted_rows": 10000,
+        "process_tree_rss": {
+          "status": "measured",
+          "metric": "summed process-tree RSS; shared pages are not de-duplicated",
+          "ps_rss_unit": "KiB x 1024",
+          "peak_rss_bytes": 2189262848,
+          "peak_processes": 15,
+          "samples": 70
+        },
+        "repetition": 1
+      },
+      {
+        "arm": "chematic",
+        "init_ms": 15.599999994039536,
+        "download_to_ready_ms": 51.099999994039536,
+        "operations": {
+          "parse": {
+            "count": 10000,
+            "p50_ms": 0,
+            "p95_ms": 0,
+            "mean_ms": 0.0041,
+            "input_rows": 10000
+          },
+          "parse_write": {
+            "count": 10000,
+            "p50_ms": 0,
+            "p95_ms": 0.29999999701976776,
+            "mean_ms": 0.08836000000089407,
+            "input_rows": 10000
+          },
+          "parse_fp": {
+            "count": 9999,
+            "p50_ms": 0.20000000298023224,
+            "p95_ms": 1,
+            "mean_ms": 0.32449244925028947,
+            "input_rows": 9999
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "measured",
+            "used_js_heap_bytes": 2133100,
+            "total_js_heap_bytes": 2561828,
+            "js_heap_limit_bytes": 4395630592
+          },
+          "after_workload": {
+            "status": "measured",
+            "used_js_heap_bytes": 5241392,
+            "total_js_heap_bytes": 9834308,
+            "js_heap_limit_bytes": 4395630592
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "the selected chematic artifact does not export wasm_linear_memory_bytes"
+        },
+        "accepted_rows": 10000,
+        "process_tree_rss": {
+          "status": "measured",
+          "metric": "summed process-tree RSS; shared pages are not de-duplicated",
+          "ps_rss_unit": "KiB x 1024",
+          "peak_rss_bytes": 2257747968,
+          "peak_processes": 15,
+          "samples": 64
+        },
+        "repetition": 2
+      }
+    ],
+    "rdkit": [
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 62.70000000298023,
+        "download_to_ready_ms": 93.6000000089407,
+        "operations": {
+          "parse": {
+            "count": 10000,
+            "p50_ms": 0.09999999403953552,
+            "p95_ms": 0.29999999701976776,
+            "mean_ms": 0.1106800000026822,
+            "input_rows": 10000
+          },
+          "parse_write": {
+            "count": 10000,
+            "p50_ms": 0.10000000894069672,
+            "p95_ms": 0.30000001192092896,
+            "mean_ms": 0.1548400000065565,
+            "input_rows": 10000
+          },
+          "parse_fp": {
+            "count": 9999,
+            "p50_ms": 0.10000000894069672,
+            "p95_ms": 0.29999999701976776,
+            "mean_ms": 0.12766276627960818,
+            "input_rows": 9999
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "measured",
+            "used_js_heap_bytes": 2353136,
+            "total_js_heap_bytes": 3192004,
+            "js_heap_limit_bytes": 4395630592
+          },
+          "after_workload": {
+            "status": "measured",
+            "used_js_heap_bytes": 25720734,
+            "total_js_heap_bytes": 30207338,
+            "js_heap_limit_bytes": 4395630592
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"
+        },
+        "accepted_rows": 10000,
+        "process_tree_rss": {
+          "status": "measured",
+          "metric": "summed process-tree RSS; shared pages are not de-duplicated",
+          "ps_rss_unit": "KiB x 1024",
+          "peak_rss_bytes": 2272215040,
+          "peak_processes": 15,
+          "samples": 61
+        },
+        "repetition": 0
+      },
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 54.19999998807907,
+        "download_to_ready_ms": 77.79999999701977,
+        "operations": {
+          "parse": {
+            "count": 10000,
+            "p50_ms": 0.09999999403953552,
+            "p95_ms": 0.29999999701976776,
+            "mean_ms": 0.11286999999880791,
+            "input_rows": 10000
+          },
+          "parse_write": {
+            "count": 10000,
+            "p50_ms": 0.10000000894069672,
+            "p95_ms": 0.30000001192092896,
+            "mean_ms": 0.16069000000059605,
+            "input_rows": 10000
+          },
+          "parse_fp": {
+            "count": 9999,
+            "p50_ms": 0.10000000894069672,
+            "p95_ms": 0.29999999701976776,
+            "mean_ms": 0.14590459045815174,
+            "input_rows": 9999
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "measured",
+            "used_js_heap_bytes": 2353136,
+            "total_js_heap_bytes": 3192004,
+            "js_heap_limit_bytes": 4395630592
+          },
+          "after_workload": {
+            "status": "measured",
+            "used_js_heap_bytes": 25646382,
+            "total_js_heap_bytes": 30207338,
+            "js_heap_limit_bytes": 4395630592
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"
+        },
+        "accepted_rows": 10000,
+        "process_tree_rss": {
+          "status": "measured",
+          "metric": "summed process-tree RSS; shared pages are not de-duplicated",
+          "ps_rss_unit": "KiB x 1024",
+          "peak_rss_bytes": 2271821824,
+          "peak_processes": 16,
+          "samples": 64
+        },
+        "repetition": 1
+      },
+      {
+        "arm": "rdkit",
+        "rdkit_version": "2026.03.6",
+        "init_ms": 54.8999999910593,
+        "download_to_ready_ms": 86.3999999910593,
+        "operations": {
+          "parse": {
+            "count": 10000,
+            "p50_ms": 0.09999999403953552,
+            "p95_ms": 0.29999999701976776,
+            "mean_ms": 0.1111,
+            "input_rows": 10000
+          },
+          "parse_write": {
+            "count": 10000,
+            "p50_ms": 0.10000000894069672,
+            "p95_ms": 0.30000001192092896,
+            "mean_ms": 0.15720999999791382,
+            "input_rows": 10000
+          },
+          "parse_fp": {
+            "count": 9999,
+            "p50_ms": 0.10000000894069672,
+            "p95_ms": 0.29999999701976776,
+            "mean_ms": 0.1274527452781041,
+            "input_rows": 9999
+          }
+        },
+        "memory": {
+          "before_load": {
+            "status": "measured",
+            "used_js_heap_bytes": 2353136,
+            "total_js_heap_bytes": 3192004,
+            "js_heap_limit_bytes": 4395630592
+          },
+          "after_workload": {
+            "status": "measured",
+            "used_js_heap_bytes": 25718730,
+            "total_js_heap_bytes": 30207338,
+            "js_heap_limit_bytes": 4395630592
+          }
+        },
+        "wasm_linear_memory": {
+          "status": "unavailable",
+          "reason": "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"
+        },
+        "accepted_rows": 10000,
+        "process_tree_rss": {
+          "status": "measured",
+          "metric": "summed process-tree RSS; shared pages are not de-duplicated",
+          "ps_rss_unit": "KiB x 1024",
+          "peak_rss_bytes": 2302885888,
+          "peak_processes": 15,
+          "samples": 61
+        },
+        "repetition": 2
+      }
+    ]
+  },
+  "aggregate": {
+    "chematic": {
+      "runs": 3,
+      "download_to_ready_ms": {
+        "count": 3,
+        "p50_ms": 51.1,
+        "p95_ms": 53.89,
+        "mean_ms": 51.6
+      },
+      "init_ms": {
+        "count": 3,
+        "p50_ms": 15.6,
+        "p95_ms": 21.18,
+        "mean_ms": 17.166667
+      },
+      "parse_mean_ms": {
+        "count": 3,
+        "p50_ms": 0.00407,
+        "p95_ms": 0.004097,
+        "mean_ms": 0.003907
+      },
+      "parse_write_mean_ms": {
+        "count": 3,
+        "p50_ms": 0.08836,
+        "p95_ms": 0.094633,
+        "mean_ms": 0.090323
+      },
+      "parse_fp_mean_ms": {
+        "count": 3,
+        "p50_ms": 0.341254,
+        "p95_ms": 0.368248,
+        "mean_ms": 0.345665
+      }
+    },
+    "rdkit": {
+      "runs": 3,
+      "download_to_ready_ms": {
+        "count": 3,
+        "p50_ms": 86.4,
+        "p95_ms": 92.88,
+        "mean_ms": 85.933333
+      },
+      "init_ms": {
+        "count": 3,
+        "p50_ms": 54.9,
+        "p95_ms": 61.92,
+        "mean_ms": 57.266667
+      },
+      "parse_mean_ms": {
+        "count": 3,
+        "p50_ms": 0.1111,
+        "p95_ms": 0.112693,
+        "mean_ms": 0.11155
+      },
+      "parse_write_mean_ms": {
+        "count": 3,
+        "p50_ms": 0.15721,
+        "p95_ms": 0.160342,
+        "mean_ms": 0.15758
+      },
+      "parse_fp_mean_ms": {
+        "count": 3,
+        "p50_ms": 0.127663,
+        "p95_ms": 0.14408,
+        "mean_ms": 0.133673
+      }
+    }
+  },
+  "boundary": "Both arms receive the same valid SMILES rows for parse and write. The fingerprint operation excludes only its separately recorded typed RDKit coordination-sanitization refusal from both arms, so its timing denominator is explicit rather than silently filtered. This artifact does not establish bit-identical chemistry; use the separate fingerprint compatibility gate for that claim. JS heap is browser-exposed only. chematic linear memory is measured from the active Wasm memory page count; RDKit.js does not expose that object. When requested on Chromium, RSS is sampled as summed process-tree RSS and may double-count shared pages; otherwise it is not measured."
+}
