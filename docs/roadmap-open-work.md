@@ -5,6 +5,13 @@ v1.0.15 release follow-up (updated 2026-09-13). An item is not complete merely
 because a narrower local slice has evidence. Recorded v1.0.13 and earlier
 measurements keep their original scope; they were not rerun for this reorganization.
 
+2026-09-16 release-proof note: `v1.0.15` now has a complete six-channel record
+and binary-only PyPI runtime artifacts from GitHub Actions run `35061960770`.
+The published wheel imported and returned benzene formula `C6H6` on Linux
+CPython 3.9, macOS CPython 3.13, and Windows CPython 3.13. Linux 3.9 is the
+actual v1.0.15 wheel boundary; this is not a claim for newer Linux Python
+versions. See `validation/results/release-package-smoke-v1.0.15-2026-09-16.json`.
+
 The [active roadmap](../ROADMAP.md) owns execution order and the 18-area open
 backlog. This ledger owns evidence and dependencies, not a second priority list.
 The abandoned speed target is historical and excluded from the open count.
