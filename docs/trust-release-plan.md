@@ -208,6 +208,11 @@ SMARTSについては同じv1.0.14 build・5,021分子・31 queryで2026.03.6 la
   `validation/results/sealed-cohort-preflight-v1.0.14.json`へ保存した。candidate
   commit/tagとunused-data attestationをまだ得ていないためstatusは
   `prepared_not_sealed`であり、評価結果はまだ算出していない。
+  そのpreflight record自体は未更新のまま保持する一方、非release annotated tag
+  `trust-eval-candidate-20260916`で`c2682e3aa75c21566c86ce1ade9cbd052838c694`を
+  2026-09-16T16:21:12+09:00に凍結した。raw splitを正式にsealedへ移すには、
+  このtag時刻以後のmaintainer unused-data attestationを新たに記録して同じ
+  protocolを再実行する必要がある。
 - [x] T1.7 ordinary-V3000 interchange baselineを固定する。PR #544で
   RDKit `2025.09.3` と Indigo `1.46.0` をversion-pinned readerとして、通常V3000の
   semantic round trip、SGROUPの作成・編集後の外部reader受理、relative stereoと
