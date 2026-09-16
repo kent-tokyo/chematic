@@ -81,3 +81,19 @@ def test_attestation_binds_to_the_exact_source_hash(tmp_path):
         assert "does not match" in str(error)
     else:
         raise AssertionError("an attestation for another source must not seal this cohort")
+
+
+def test_attestation_must_follow_the_annotated_candidate_tag():
+    freeze = {
+        "candidate_commit": "0" * 40,
+        "candidate_tag": "candidate",
+        "candidate_tagged_at": "2026-09-13T18:09:19+09:00",
+    }
+    try:
+        MODULE.verify_attestation_timing(freeze, "2026-09-13T16:50:00+09:00")
+    except ValueError as error:
+        assert "predates" in str(error)
+    else:
+        raise AssertionError("an attestation before candidate freeze must not be accepted")
+
+    MODULE.verify_attestation_timing(freeze, "2026-09-13T18:09:19+09:00")

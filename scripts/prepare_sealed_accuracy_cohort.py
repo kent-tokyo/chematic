@@ -84,7 +84,47 @@ def verify_candidate_freeze(candidate_commit: str, candidate_tag: str) -> dict[s
         raise ValueError(
             f"candidate tag {candidate_tag} resolves to {resolved_tag}, not candidate commit {resolved_commit}"
         )
-    return {"candidate_commit": resolved_commit, "candidate_tag": candidate_tag}
+    completed = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(ROOT),
+            "for-each-ref",
+            "--format=%(objecttype)%00%(taggerdate:iso-strict)",
+            f"refs/tags/{candidate_tag}",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    object_type, separator, tagged_at = completed.stdout.strip().partition("\0")
+    if completed.returncode != 0 or object_type != "tag" or not separator or not tagged_at:
+        raise ValueError("candidate freeze requires an annotated candidate tag with a tagger timestamp")
+    parse_rfc3339(tagged_at, "candidate tag timestamp")
+    return {
+        "candidate_commit": resolved_commit,
+        "candidate_tag": candidate_tag,
+        "candidate_tagged_at": tagged_at,
+    }
+
+
+def parse_rfc3339(value: str, field: str) -> datetime:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as error:
+        raise ValueError(f"{field} must be an RFC 3339 timestamp") from error
+    if parsed.tzinfo is None:
+        raise ValueError(f"{field} must include a timezone")
+    return parsed
+
+
+def verify_attestation_timing(candidate_freeze: dict[str, str], attested_at: str) -> None:
+    tagged_at = parse_rfc3339(candidate_freeze["candidate_tagged_at"], "candidate tag timestamp")
+    attested = parse_rfc3339(attested_at, "attestation timestamp")
+    if attested < tagged_at:
+        raise ValueError(
+            "unused-data attestation predates the annotated candidate tag; "
+            "freeze the candidate before attesting"
+        )
 
 
 def read_unused_attestation(path: Path, source_sha256: str) -> dict[str, str]:
@@ -148,6 +188,8 @@ def main() -> int:
         if args.attest_unused
         else None
     )
+    if attestation is not None and candidate_freeze is not None:
+        verify_attestation_timing(candidate_freeze, attestation["attested_at"])
 
     references: list[dict[str, str]] = []
     for path in args.reference_identity_audit:

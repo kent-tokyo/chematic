@@ -1,7 +1,7 @@
 # chematic roadmap
 
 > Updated 2026-09-16. Released: **v1.0.15**. Next delivery theme: **1.x Trust Release**.
-> **Current P0 focus: freeze T1's prepared 10,000-row split with a candidate tag and
+> **Current P0 focus: freeze T1's prepared 10,000-row split with an annotated candidate tag and
 > unused-data attestation; keep the published RDKit.js comparison reproducible; then
 > advance parser/stereo and the remaining V3000 boundaries without widening unsupported
 > semantics.**
@@ -68,7 +68,7 @@ workflows, with a published compatibility contract for every claimed operation.
 
 | Order | Deliverable | Acceptance evidence |
 |---|---|---|
-| 1 | **T1.6 sealed-evaluation precondition** | Frozen candidate and a legitimate unused-data attestation before consuming the prepared 2k/8k split |
+| 1 | **T1.6 sealed-evaluation precondition** | Frozen annotated candidate tag and a legitimate post-freeze unused-data attestation before consuming the prepared 2k/8k split |
 | 2 | **T1.5/T3.4 compatibility and cost scorecard** | Separate RDKit oracle lanes; public-artifact bytes, local-ready, operation timings, coverage/refusals, and all missing dimensions together |
 | 3 | **T4/T5 safety and stereo gates** | Hosted security audit, bounded malformed corpus, permutation/spelling suites, and typed refusal accounting |
 | 4 | **T1.7 interchange contract** | **Baseline complete:** version-pinned RDKit/Indigo ordinary-V3000 round trips, SGROUP edits, COLLECTION ordering, and explicit coordination/ENDPTS exclusions; future work expands only proven boundaries |
@@ -78,7 +78,7 @@ workflows, with a published compatibility contract for every claimed operation.
 
 | Order | Priority | Delivery and next output | Product Phase / accuracy |
 |---|---|---|---|
-| 1 | P0 | **T1.6 sealed-evaluation precondition**: freeze the candidate build and obtain legitimate unused-data attestation before consuming the prepared 2k/8k split. The exposed SMARTS packet is not sealed evidence | P0/P2; A0–A4 |
+| 1 | P0 | **T1.6 sealed-evaluation precondition**: freeze the candidate build with an annotated tag, then obtain a legitimate unused-data attestation after that freeze before consuming the prepared 2k/8k split. The exposed SMARTS packet is not sealed evidence | P0/P2; A0–A4 |
 | 2 | P0 | **T1.5/T3.4 public compatibility-cost contract**: retain the merged v1.0.15 browser scorecard and add only equivalent, pinned RDKit lanes; do not relabel local no-store timing as internet startup | P0/P3; A3 |
 | 3 | P1 | **T4/T5 safety and stereo gates**: retain hosted parser and Cargo Audit success; expand bounded malformed-input, permutation, round-trip, and refusal accounting | P1/P2/P4; A2/A4/A5 |
 | 4 | P1 | **T1.7 interchange contract**: retain the merged ordinary-V3000 baseline; next, expand only actual Indigo typed-SGROUP creation/editing and declared coordination/ENDPTS refusal boundaries without treating opaque retention as editable semantics | P1/P4; A4 |
