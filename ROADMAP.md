@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-09-16. Released: **v1.0.15**. Next delivery theme: **1.x Trust Release**.
+> Updated 2026-09-16. Released: **v1.0.16**. Next delivery theme: **1.x Trust Release**.
 > **Current P0 focus: freeze T1's prepared 10,000-row split with an annotated candidate tag and
 > unused-data attestation; keep the published RDKit.js comparison reproducible; then
 > advance parser/stereo and the remaining V3000 boundaries without widening unsupported
@@ -8,6 +8,9 @@
 
 ## Current status
 
+- v1.0.16 packages the completed Trust/interoperability maintenance work on the
+  latest dependency baseline. Its release boundary is recorded in
+  `CHANGELOG.md`; the sealed-holdout score remains deliberately unrun.
 - v1.0.14 was published from `a259507d`; the release and CI follow-ups reached
   `main` in [PR #532](https://github.com/kent-tokyo/chematic/pull/532)
   (`286485be`). The tag retains the published source; the merge includes later
@@ -74,7 +77,7 @@ workflows, with a published compatibility contract for every claimed operation.
 | 4 | **T1.7 interchange contract** | **Baseline complete:** version-pinned RDKit/Indigo ordinary-V3000 round trips, SGROUP edits, COLLECTION ordering, and explicit coordination/ENDPTS exclusions; future work expands only proven boundaries |
 | 5 | **T3 adoption and version truth** | `npm install` to typed Worker/free, failed-row-preserving 10k Explorer flow, and one current-version source across public surfaces |
 
-## Execution order
+## Priority order
 
 | Order | Priority | Delivery and next output | Product Phase / accuracy |
 |---|---|---|---|
@@ -118,13 +121,13 @@ These are remaining exits, not a list of all work already implemented.
 See the [accuracy plan](docs/rdkit-accuracy-plan.md) for subtask acceptance and
 the [disposition ledger](docs/roadmap-open-work.md) for evidence and dependencies.
 
-- [ ] A0 — Accuracy evidence contract: freeze genuinely unused 8,000-row evaluation inputs and candidate builds; complete the full acceptance packet. The 96/96 all-field holdout and exposed-corpus validators are narrower completed slices.
-- [ ] A1 — Perception and descriptor coverage: complete unused core-eight-field and potential-center evaluation, plus affected workflow/binding acceptance. The opt-in profile has passing exposed-corpus evidence; additional families have separate gates.
-- [ ] A2 — Stereo and identity correctness: resolve the four #503 canonical/E/Z components and phosphorus CIP adjudication; meet permutation, idempotency, information-preservation, and false-merge exits.
-- [ ] A3 — Fingerprint and retrieval fidelity: retain raw/provenance evidence for the new aromaticity lane, rerun affected bindings/search after adoption, and pass unused-input evaluation. Existing k=1/10/100 and threshold evidence remains valid for its recorded builds.
-- [ ] A4 — Workflow accuracy: finish T0 residual classification and adoption, then verify mapped SMARTS embeddings, standardization, reaction products, and typed V3000 semantics across engines.
-- [ ] A5 — Independent accuracy adjudication: obtain absolute gold labels and unused inputs, secure non-maintainer review, and run the implemented paired evaluator against the frozen protocol.
-- [ ] A6 — 3D accuracy extension: resolve remaining MMFF94/UFF term, charge, gradient, convergence, timeout, stereo, and conformer-quality gaps. Bounded typing or energy matches do not complete this package.
+- [ ] **A0 — Evaluation contract:** freeze genuinely unused 8,000-row evaluation inputs and candidate builds; complete the full acceptance packet. The 96/96 all-field holdout and exposed-corpus validators are narrower completed slices.
+- [ ] **A1 — Perception and descriptors:** complete unused core-eight-field and potential-center evaluation, plus affected workflow/binding acceptance. The opt-in profile has passing exposed-corpus evidence; additional families have separate gates.
+- [ ] **A2 — Stereo and identity:** resolve the four #503 canonical/E/Z components and phosphorus CIP adjudication; meet permutation, idempotency, information-preservation, and false-merge exits.
+- [ ] **A3 — Fingerprints and retrieval:** retain raw/provenance evidence for the new aromaticity lane, rerun affected bindings/search after adoption, and pass unused-input evaluation. Existing k=1/10/100 and threshold evidence remains valid for its recorded builds.
+- [ ] **A4 — Workflows and interchange:** finish T0 residual classification and adoption, then verify mapped SMARTS embeddings, standardization, reaction products, and typed V3000 semantics across engines.
+- [ ] **A5 — Independent adjudication:** obtain absolute gold labels and unused inputs, secure non-maintainer review, and run the implemented paired evaluator against the frozen protocol.
+- [ ] **A6 — 3D and force fields:** resolve remaining MMFF94/UFF term, charge, gradient, convergence, timeout, stereo, and conformer-quality gaps. Bounded typing or energy matches do not complete this package.
 
 ### Cross-cutting follow-ups
 
@@ -146,7 +149,7 @@ These extend the same product areas; they do not introduce new Phase numbers.
 abandoned and non-blocking. It is not an unchecked task and requires an explicit
 maintainer decision to reactivate.
 
-## Next candidate boundary
+## v1.0.16 candidate boundary
 
 The next Trust RC requires **T0–T2**, T3's 10,000-row install/Worker gate,
 T4's fixed safety corpus, and T5's public suite plus existing safety regressions.
@@ -173,7 +176,7 @@ Release checks include affected tests, format/diff checks, versioned evidence,
 and support/failure documentation. Candidate readiness and post-publication
 registry/site verification are separate T2 checks.
 
-## Product Phase numbers
+## Product phases
 
 The **Priority** column above expresses urgency. **Phase P0–P6** names product
 areas, **A0–A6** names accuracy packages, and **T0–T6** names delivery work.

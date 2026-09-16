@@ -279,14 +279,12 @@ fn documented_divergence_from_the_oracle_on_a_fused_case() {
     let _ = kekule_mol;
 }
 
-/// Charged atoms that would otherwise seed a MANCUDE type must not crash and must
-/// gracefully fail to type (`component_id = None`) -- Milestone 3B-1a implements only the
-/// two neutral seed types (checked: 0/98 corpus cases need a charged one). Whatever the
-/// rest of the ring does under a broken resonance chain is not asserted here (that's an
-/// artifact of RelaxTypes' demotion cascade, not this test's point) -- only that the
-/// charged atom itself never produces a fractional value.
+/// A charged atom with an RDKit MANCUDE seed type must join the ring component. This
+/// pyridinium case has no negative-charge relocation pass, so its local average reduces
+/// to 6/1; the point is that the charged `Nv4D3Plus` seed survives ring-only relaxation
+/// rather than falling through as an untyped atom.
 #[test]
-fn charged_aromatic_atom_does_not_crash_and_does_not_type() {
+fn charged_aromatic_atom_is_typed_in_its_ring_component() {
     // N-methylpyridinium: an aromatic ring nitrogen with formal charge +1.
     let mol = chematic_smiles::parse("c1cc[n+](C)cc1").unwrap();
     let (kekule_mol, ctx) = prepare_kekule_form(&mol).unwrap();
@@ -296,11 +294,33 @@ fn charged_aromatic_atom_does_not_crash_and_does_not_type() {
         .find(|&idx| kekule_mol.atom(idx).charge != 0)
         .expect("N-methylpyridinium must have exactly one charged atom");
     assert_eq!(kekule_mol.atom(charged_n).charge, 1);
-    assert_eq!(
-        ctx.fractional_atomic_number(charged_n),
-        None,
-        "a charged seed type is not implemented this round -- must fall back to None, \
-         never a silently wrong average"
-    );
-    assert_eq!(ctx.component_id(charged_n), None);
+    let fraction = ctx
+        .fractional_atomic_number(charged_n)
+        .expect("Nv4D3Plus must remain in the MANCUDE component");
+    assert_eq!((fraction.numerator(), fraction.denominator()), (6, 1));
+    assert!(ctx.component_id(charged_n).is_some());
+}
+
+/// Regression for RDKit #9561: every atom in a negative-charge MANCUDE component
+/// receives one completed fraction, independent of the atom enumeration used to build
+/// the molecular graph. The fixture has no stereocenter; this checks the precursor
+/// fractional-number invariant directly instead of accepting an empty CIP-label list.
+#[test]
+fn charged_mancude_component_fraction_is_renumbering_invariant() {
+    let mol = chematic_smiles::parse("[CH-]1C=CC=C1").unwrap();
+    let (kekule_mol, ctx) = prepare_kekule_form(&mol).unwrap();
+    let permutation: Vec<usize> = (0..kekule_mol.atom_count()).rev().collect();
+    let (renumbered, old_to_new) = renumber_molecule(&kekule_mol, &permutation);
+    let renumbered_ctx = MancudeContext::compute(&renumbered);
+
+    for (old, new) in old_to_new.into_iter().enumerate() {
+        let original = ctx
+            .fractional_atomic_number(AtomIdx(old as u32))
+            .expect("every cyclopentadienyl atom is typed");
+        let reordered = renumbered_ctx
+            .fractional_atomic_number(AtomIdx(new))
+            .expect("every renumbered cyclopentadienyl atom is typed");
+        assert_eq!((original.numerator(), original.denominator()), (24, 5));
+        assert_eq!(original, reordered, "atom {old} -> {new}");
+    }
 }

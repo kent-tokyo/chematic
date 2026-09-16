@@ -9,7 +9,38 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-No unreleased changes.
+## [1.0.16] - 2026-09-16
+
+- Updated the transitive `rustls` dependency to 0.23.45, addressing
+  RUSTSEC-2026-0285. The patched lockfile has passed local `cargo audit`; the
+  hosted Security Audit rerun remains required before a release claim.
+- Preserved the typed `UnsupportedCoordinationSanitization` outcome in both
+  RDKit Morgan/ECFP4 evidence-dump examples instead of failing their complete
+  corpus runs on that documented unsupported boundary.
+- Made native `chematic-wasm` V3000 tests exercise their fallible internal
+  helpers rather than aborting through `wasm-bindgen` host conversions, and
+  corrected the fixtures' SGROUP counts.
+- Added a published-npm, 10,000-row, 20-repetition Chromium cold local
+  download-to-ready record against official RDKit.js. It records the complete
+  JS/WASM asset path separately from workload timing and does not claim
+  internet or cross-host startup performance.
+- Added a dispatchable Linux/macOS/Windows PyPI-wheel runtime smoke that saves
+  version and basic SMILES-operation evidence as per-platform artifacts.
+- Added a separate public-npm Chromium process-tree RSS record, explicitly
+  preserving its shared-page double-counting limitation.
+- Added version-pinned RDKit and Indigo V3000 semantic round-trip gates,
+  including SGROUP ordering/edit preservation and explicit unsupported
+  coordination/ENDPTS boundaries.
+- Added a 300-structure Stereo Torture Suite and a 5,115-input SMILES-spelling
+  invariance gate for the development corpus.
+- Froze an annotated Trust evaluation candidate and created a post-freeze,
+  attested 2,000-row development / 8,000-row sealed split. No sealed-holdout
+  accuracy result has been calculated yet.
+- Updated maintenance dependencies, including `ureq` 3.4.1, `jsonschema`
+  0.56.0, and provenance action 4.2.2.
+- Consolidated duplicated Node/WASM cross-binding dump scripts into one
+  mode-driven entry point and simplified the active roadmap and validation
+  documents.
 
 ## [1.0.15] - 2026-09-13
 

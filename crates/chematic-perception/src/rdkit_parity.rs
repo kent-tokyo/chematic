@@ -400,8 +400,15 @@ pub(crate) fn apply_huckel(
     }
 }
 
-/// One connected group of candidate rings, adjacent when they share ≥1 bond
-/// (RDKit's `makeRingNeighborMap`).
+/// RDKit's default cap for rings considered in a fused-aromatic subsystem.
+/// `makeRingNeighborMap()` keeps larger rings as isolated candidates.
+const MAX_FUSED_AROMATIC_RING_SIZE: usize = 24;
+
+/// One connected group of candidate rings, adjacent only when they share
+/// exactly one bond and both rings fit RDKit's fused-aromatic size bound.
+/// This is the `maxSize=24, maxOverlapSize=1` call to RDKit's
+/// `makeRingNeighborMap`, not a generic "shares any bond" relation: rings
+/// with a two-bond overlap must remain independent candidates.
 fn fused_ring_groups(ring_bond_ids: &[Vec<BondIdx>]) -> Vec<Vec<usize>> {
     let n = ring_bond_ids.len();
     let mut parent: Vec<usize> = (0..n).collect();
@@ -413,9 +420,13 @@ fn fused_ring_groups(ring_bond_ids: &[Vec<BondIdx>]) -> Vec<Vec<usize>> {
     }
     for i in 0..n {
         for j in (i + 1)..n {
-            if ring_bond_ids[i]
+            let overlap = ring_bond_ids[i]
                 .iter()
-                .any(|b| ring_bond_ids[j].contains(b))
+                .filter(|b| ring_bond_ids[j].contains(b))
+                .count();
+            if ring_bond_ids[i].len() <= MAX_FUSED_AROMATIC_RING_SIZE
+                && ring_bond_ids[j].len() <= MAX_FUSED_AROMATIC_RING_SIZE
+                && overlap == 1
             {
                 let (pi, pj) = (find(&mut parent, i), find(&mut parent, j));
                 if pi != pj {
@@ -743,17 +754,22 @@ fn model_from_explicit_aromaticity(mol: &Molecule) -> AromaticityModel {
     )
 }
 
-/// Normalize `mol` to pure Kekulé form (this engine's preferred path): clear
-/// stale aromatic flags, then kekulize. If the graph came from a self-
-/// consistent explicit aromatic representation that has no matching Kekulé
-/// form, preserve that representation instead. Otherwise return an explicit
-/// error and never leave a partially-rewritten molecule behind.
+/// Normalize `mol` for RDKit-parity aromaticity. A self-consistent explicit
+/// aromatic graph is already the representation RDKit's SMILES parser gives
+/// its downstream fingerprint code, so preserve it before attempting a
+/// Kekulé/re-perceive round trip. This matters for large fused systems where
+/// a valid alternate Kekulé assignment can otherwise change the aromatic
+/// partition. For non-explicit input, clear stale flags and kekulize. A
+/// non-representable graph returns an explicit error; no partial rewrite is
+/// exposed.
 fn kekulize_for_rdkit_parity(mol: &Molecule) -> Result<Molecule, AromaticityError> {
+    if let Some(explicit) = preserve_explicit_aromaticity(mol) {
+        return Ok(explicit);
+    }
     let cleared = clear_aromatic_flags(mol);
     match chematic_core::kekulize(&cleared) {
         Ok(k) => Ok(chematic_core::apply_kekule(&cleared, &k)),
-        Err(e) => preserve_explicit_aromaticity(mol)
-            .ok_or(AromaticityError::KekulizationFailed { reason: e.detail }),
+        Err(e) => Err(AromaticityError::KekulizationFailed { reason: e.detail }),
     }
 }
 
@@ -992,6 +1008,31 @@ mod tests {
             a,
             vec![0, 1, 2, 3, 4, 5, 6, 7, 8],
             "purine: should match RDKit (all 9 atoms aromatic)"
+        );
+    }
+
+    #[test]
+    fn porphyrin_like_fused_system_matches_rdkit_aromatic_atom_set() {
+        // RDKit 2025.09.3 and the official RDKit.js 2026.03.6 package agree
+        // that the two exocyclic vinyl branches are not aromatic. This is one
+        // of the retained fixed-10k Morgan residuals; retain the atom-level
+        // oracle here so an eventual fingerprint fix cannot mask a wrong
+        // aromaticity partition behind folded-bit collisions.
+        let smi =
+            "CC1=C2NC(=C1CCC(O)=O)C=C3N=C(C=C4NC(=CC5=NC(=C2)C(=C5C)C=C)C(=C4C)C=C)C(=C3CCC(O)=O)C";
+        let parsed = chematic_smiles::parse(smi).expect("valid porphyrin-like SMILES");
+        let applied =
+            apply_aromaticity_rdkit_parity_experimental(&parsed).expect("aromaticity perception");
+        let aromatic: Vec<u32> = applied
+            .atoms()
+            .filter_map(|(idx, atom)| atom.aromatic.then_some(idx.0))
+            .collect();
+        assert_eq!(
+            aromatic,
+            vec![
+                1, 2, 3, 4, 5, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 29, 30,
+            ],
+            "must retain RDKit's aromatic partition before Morgan expansion"
         );
     }
 

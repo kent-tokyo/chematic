@@ -71,3 +71,11 @@ def test_linux_network_isolation_uses_a_privileged_fresh_namespace(tmp_path):
 def test_diagnostic_command_does_not_claim_network_isolation(tmp_path):
     command = MODULE.isolated_command(["runner"], False, "smiles", tmp_path / "input")
     assert command == ["runner", "--format", "smiles", "--input", str(tmp_path / "input")]
+
+
+def test_peak_rss_gate_rejects_missing_boolean_and_over_budget_values():
+    assert MODULE.peak_rss_within_limit(256 * 1024, 256)
+    assert MODULE.peak_rss_within_limit(0, 256)
+    assert not MODULE.peak_rss_within_limit(None, 256)
+    assert not MODULE.peak_rss_within_limit(True, 256)
+    assert not MODULE.peak_rss_within_limit(256 * 1024 + 1, 256)

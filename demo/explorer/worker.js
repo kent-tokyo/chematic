@@ -7,6 +7,7 @@
 let parseSmiles;
 let getDescriptorsJson;
 let painsMatchesJson;
+let sdfRecordsBatchJson;
 
 async function initialize() {
   const mod = await import("../pkg/chematic_wasm.js");
@@ -15,15 +16,31 @@ async function initialize() {
   parseSmiles = mod.parse_smiles;
   getDescriptorsJson = mod.get_descriptors_json;
   painsMatchesJson = mod.pains_matches_json;
+  sdfRecordsBatchJson = mod.sdf_records_batch_json;
 }
 
 function parseRecord(raw, index) {
   let mol = null;
-  const name = raw.name || `Compound ${index + 1}`;
+  const inputIndex = Number.isInteger(raw.index) ? raw.index : index;
+  const name = raw.name || `Compound ${inputIndex + 1}`;
+  if (raw.sourceError) {
+    return {
+      index: inputIndex,
+      name,
+      inputSmiles: raw.smiles || "",
+      status: "error",
+      canonicalSmiles: null,
+      formula: null,
+      descriptors: null,
+      painsAlerts: [],
+      similarity: null,
+      errorMessage: raw.sourceError,
+    };
+  }
   try {
     mol = parseSmiles(raw.smiles);
     return {
-      index,
+      index: inputIndex,
       name,
       inputSmiles: raw.smiles,
       status: "ok",
@@ -36,7 +53,7 @@ function parseRecord(raw, index) {
     };
   } catch (error) {
     return {
-      index,
+      index: inputIndex,
       name,
       inputSmiles: raw.smiles,
       status: "error",
@@ -64,6 +81,11 @@ self.onmessage = async ({ data }) => {
     if (data.type === "parse") {
       const records = data.records.map((raw, offset) => parseRecord(raw, data.startIndex + offset));
       self.postMessage({ type: "parsed", requestId: data.requestId, records });
+      return;
+    }
+    if (data.type === "sdf-batch") {
+      const batch = JSON.parse(sdfRecordsBatchJson(data.sdf, data.offset, data.batchSize));
+      self.postMessage({ type: "sdf-batch", requestId: data.requestId, batch });
       return;
     }
     throw new Error(`Unsupported explorer worker request: ${data.type}`);

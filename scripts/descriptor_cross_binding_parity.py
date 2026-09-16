@@ -97,7 +97,7 @@ def main() -> int:
     corpus_lines = [line for line in corpus.splitlines() if line.strip()]
     corpus_sha256 = hashlib.sha256(corpus_path.read_bytes()).hexdigest()
     rust = run_jsonl(["cargo", "run", "-p", "chematic-chem", "--release", "--offline", "--example", "descriptor_binding_dump"], corpus)
-    node = run_jsonl(["node", "scripts/descriptor_binding_dump.mjs"], corpus)
+    node = run_jsonl(["node", "scripts/binding_dump.mjs", "descriptor"], corpus)
     python = python_records(corpus)
     bindings = {"rust": rust, "python": python, "node_wasm": node}
     expected_rows = len(corpus_lines)

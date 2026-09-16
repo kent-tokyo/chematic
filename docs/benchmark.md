@@ -7,11 +7,10 @@ counted as wins. Dated raw records are indexed in
 
 ## Current status
 
-The current release line is **v1.0.15**. The newest checked-in performance
-records include the v1.0.13 A3 similarity-search rerun and the v1.0.12
-three-lane gate; older operation
-timing and published-size rows remain explicitly pinned to their recorded
-source/release-line versions.
+The current release line is **v1.0.16**. The newest public-package performance
+record is the 2026-09-16 isolated browser comparison against
+`@rdkit/rdkit@2026.03.6`. Older similarity, streaming, and operation timing
+records remain pinned to their recorded source/release versions.
 
 The current records cover four separate evidence types:
 
@@ -75,11 +74,11 @@ for the fail-closed matrix check.
 
 ## Artifact size
 
-The latest measured Node artifact is **3.93 MB raw / 1.43 MB gzip** (v1.0.12 artifact)
-with `wasm-pack 0.13.1`, `wasm-bindgen 0.2.121`, and `wasm-opt 130`. This is a
-dated artifact measurement, not a permanent release bundle-size guarantee.
-Exact hashes and commands are in the
-[official RDKit.js comparison record](../benchmarks/2026-09-11-official-rdkit-js-v1.0.12.md).
+The published v1.0.15 npm WASM asset is **4,005,280 bytes raw / 1,460,499
+bytes gzip**. Official RDKit.js 2026.03.6 is **7,333,095 / 2,379,975 bytes**
+under the same local file-compression method. This is an artifact measurement,
+not an internet-transfer or full application-size claim. Exact hashes and
+commands are in the [isolated browser comparison](../benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md).
 
 ## Reproduction entry points
 
@@ -92,7 +91,7 @@ Exact hashes and commands are in the
 | File streaming | [`2026-09-04-streaming-formats.md`](../benchmarks/2026-09-04-streaming-formats.md) |
 | Cross-engine contracts | [`benchmarks/README.md`](../benchmarks/README.md#streaming-and-cross-engine-contracts) |
 | WASM artifact and official RDKit.js gate | [`2026-09-11-official-rdkit-js-v1.0.12.md`](../benchmarks/2026-09-11-official-rdkit-js-v1.0.12.md) |
-| Official RDKit.js browser gate | Historical v1.0.11 record; current browser rerun remains open |
+| Official RDKit.js browser gate | [`2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md`](../benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md) |
 | Full inventory | [`benchmarks/README.md`](../benchmarks/README.md) |
 
 ## Hardware and interpretation

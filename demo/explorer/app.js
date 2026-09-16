@@ -1,14 +1,23 @@
-import { parseCsvText, detectColumns, csvRowsToRawRecords, parseSmiFileText } from "./parser.js";
+import { CsvStreamParser, parseCsvText, detectColumns, csvRowsToRawRecords, parseSmiFileText } from "./parser.js";
 import { applyFilters, buildComparator, renderTable } from "./table.js";
 import { exportToCsv, downloadCsv } from "./export.js";
 
-const CHUNK_SIZE = 25; // ponytail: fixed constant, tune only if profiling shows it matters
-const HARD_RECORD_CAP = 10_000; // workflow contract cap, not a WASM API limit
-const RENDER_PROGRESS_STRIDE = 500;
+// 100 records keeps the Worker message overhead bounded at the workflow
+// cap while still yielding to the event loop between batches. Individual
+// records are small, bounded WASM operations; this is not a hidden unbounded
+// batch size.
+const CHUNK_SIZE = 100;
+const SDF_BATCH_SIZE = 64;
+// Keep the complete analysed record set available for filtering, search, and
+// export, while MAX_RENDERED_ROWS bounds the DOM. This is a product workflow
+// bound, separate from the much smaller per-call WASM API bounds.
+const HARD_RECORD_CAP = 100_000;
+const SMALL_INPUT_RENDER_PROGRESS_STRIDE = 500;
+const LARGE_INPUT_RENDER_PROGRESS_STRIDE = 5_000;
 const MAX_RENDERED_ROWS = 250;
 
 // --- WASM bindings, populated by initWasm() ---
-let parseSmiles, getDescriptorsJson, painsMatchesJson, sdfToRecordsJson, tanimotoSmiles, depictSvgOpts, DepictOptions;
+let parseSmiles, getDescriptorsJson, painsMatchesJson, tanimotoSmiles, depictSvgOpts, DepictOptions;
 let wasmReady = false;
 let analysisWorker = null;
 let nextWorkerRequestId = 1;
@@ -25,6 +34,12 @@ const state = {
 let currentAbortController = null;
 
 function $(id) { return document.getElementById(id); }
+
+function renderProgressStride(totalRecords) {
+  return totalRecords > 10_000
+    ? LARGE_INPUT_RENDER_PROGRESS_STRIDE
+    : SMALL_INPUT_RENDER_PROGRESS_STRIDE;
+}
 
 function showStatus(message) {
   const el = $("explorer-status");
@@ -51,7 +66,6 @@ async function initWasm() {
     parseSmiles = mod.parse_smiles;
     getDescriptorsJson = mod.get_descriptors_json;
     painsMatchesJson = mod.pains_matches_json;
-    sdfToRecordsJson = mod.sdf_to_records_json;
     tanimotoSmiles = mod.tanimoto_smiles;
     depictSvgOpts = (mol, opts) => (opts ? mol.depict_svg_opts(opts) : mol.depict_svg());
     DepictOptions = mod.DepictOptions;
@@ -114,6 +128,11 @@ async function parseChunkInWorker(records, startIndex) {
   return response.records;
 }
 
+async function readSdfBatchInWorker(sdf, offset) {
+  const response = await workerRequest("sdf-batch", { sdf, offset, batchSize: SDF_BATCH_SIZE });
+  return response.batch;
+}
+
 // ---------------------------------------------------------------------------
 // Chunked processing driver (progress + cancel, never blocks the main thread)
 // ---------------------------------------------------------------------------
@@ -126,6 +145,7 @@ async function processRawRecords(rawRecords) {
 
   const truncated = rawRecords.length > HARD_RECORD_CAP;
   const toProcess = truncated ? rawRecords.slice(0, HARD_RECORD_CAP) : rawRecords;
+  const progressStride = renderProgressStride(toProcess.length);
   if (truncated) {
     showStatus(`Showing the first ${HARD_RECORD_CAP} of ${rawRecords.length} records (client-side display cap).`);
   }
@@ -153,7 +173,7 @@ async function processRawRecords(rawRecords) {
     if (!truncated) showStatus(`Parsing… ${processed}/${toProcess.length}`);
     // Preserve all completed records for filtering/search/export, but avoid
     // rebuilding thousands of table rows for every worker reply.
-    if (processed % RENDER_PROGRESS_STRIDE === 0 || processed === toProcess.length) renderAll();
+    if (processed % progressStride === 0 || processed === toProcess.length) renderAll();
     await new Promise((resolve) => setTimeout(resolve, 0)); // yield to the event loop
   }
 
@@ -223,6 +243,67 @@ async function runSimilaritySearch(referenceSmiles) {
   $("explorer-cancel")?.classList.add("hidden");
 }
 
+// Re-run parse/descriptor work for failed SMILES without discarding their
+// original order, names, or source text. This is useful after a transient
+// Worker failure; malformed SDF source records intentionally remain evidence
+// rows and are not offered for retry because they have no SMILES payload.
+async function retryFailedSmiles() {
+  const retryable = state.records.filter(
+    (record) => record.status === "error" && Boolean(record.inputSmiles?.trim())
+  );
+  if (retryable.length === 0) {
+    showStatus("No failed SMILES rows can be retried. SDF source rejections are preserved as evidence.");
+    return;
+  }
+
+  clearError();
+  if (currentAbortController) currentAbortController.abort();
+  const controller = new AbortController();
+  currentAbortController = controller;
+  const positions = new Map(state.records.map((record, position) => [record.index, position]));
+  let completed = 0;
+  let recovered = 0;
+
+  state.referenceSmiles = null;
+  state.similarityHasRun = false;
+  const similarityOption = $("explorer-sort-key")?.querySelector('option[value="similarity"]');
+  if (similarityOption) similarityOption.disabled = true;
+  const similarityFilter = $("explorer-filter-similarity-row");
+  if (similarityFilter) similarityFilter.style.display = "none";
+  $("explorer-cancel")?.classList.remove("hidden");
+
+  try {
+    for (let start = 0; start < retryable.length; start += CHUNK_SIZE) {
+      if (controller.signal.aborted) break;
+      const chunk = retryable.slice(start, start + CHUNK_SIZE).map((record) => ({
+        index: record.index,
+        name: record.name,
+        smiles: record.inputSmiles,
+      }));
+      const replacements = await parseChunkInWorker(chunk, 0);
+      if (controller.signal.aborted) break;
+      for (const replacement of replacements) {
+        const position = positions.get(replacement.index);
+        if (position === undefined) continue;
+        if (replacement.status === "ok") recovered += 1;
+        state.records[position] = replacement;
+      }
+      completed += replacements.length;
+      showStatus(`Retrying failed SMILES… ${completed}/${retryable.length}`);
+      renderAll();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    if (!controller.signal.aborted) {
+      const stillFailed = retryable.length - recovered;
+      showStatus(`Retry complete: ${recovered} recovered; ${stillFailed} still failed.`);
+    } else {
+      showStatus(`Retry cancelled after ${completed}/${retryable.length} failed SMILES rows.`);
+    }
+  } finally {
+    if (controller === currentAbortController) $("explorer-cancel")?.classList.add("hidden");
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Rendering
 // ---------------------------------------------------------------------------
@@ -266,6 +347,14 @@ function renderAll() {
     countEl.textContent = rendered === visible.length
       ? `${visible.length} of ${state.records.length} shown`
       : `${rendered} rendered of ${visible.length} matching (${state.records.length} loaded)`;
+  }
+
+  const retryButton = $("explorer-btn-retry-failed");
+  if (retryButton) {
+    const retryable = state.records.some(
+      (record) => record.status === "error" && Boolean(record.inputSmiles?.trim())
+    );
+    retryButton.classList.toggle("hidden", !retryable);
   }
 
   const emptyEl = $("explorer-empty-filter");
@@ -374,6 +463,114 @@ function loadCsvText(text) {
   processRawRecords(csvRowsToRawRecords(rows, smilesCol, nameCol));
 }
 
+async function loadCsvFile(file) {
+  // The normal auto-detected CSV path is streaming: rows are sent to the Worker
+  // in bounded chunks and the whole input is never copied into one JS string.
+  // A file with an unknown SMILES column deliberately falls back to the existing
+  // manual-picker path, where retaining rows is necessary for the user to choose.
+  if (typeof file.stream !== "function") {
+    // Older browsers keep the historical, bounded-by-workflow fallback instead
+    // of failing an otherwise valid local CSV import.
+    loadCsvText(await file.text());
+    return;
+  }
+  const reader = file.stream().getReader();
+  const decoder = new TextDecoder();
+  const csv = new CsvStreamParser();
+  let header = null;
+  let smilesCol = null;
+  let nameCol = null;
+  let pending = [];
+  let processed = 0;
+  let sawDataRow = false;
+  let truncated = false;
+  let controller = null;
+
+  const start = () => {
+    if (currentAbortController) currentAbortController.abort();
+    controller = new AbortController();
+    currentAbortController = controller;
+    state.records = [];
+    clearError();
+    $("explorer-cancel")?.classList.remove("hidden");
+  };
+  const flush = async () => {
+    if (!controller || controller.signal.aborted || pending.length === 0) return;
+    const chunk = pending;
+    pending = [];
+    const records = await parseChunkInWorker(chunk, processed);
+    if (controller.signal.aborted) return;
+    state.records.push(...records);
+    processed += records.length;
+    showStatus(`Reading CSV… ${processed} molecule${processed === 1 ? "" : "s"} analysed.`);
+    if (processed % renderProgressStride(processed) === 0) renderAll();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  };
+  const consumeRows = async (rows) => {
+    for (const row of rows) {
+      if (header === null) {
+        header = row;
+        ({ smilesCol, nameCol } = detectColumns(header));
+        if (smilesCol === null) return false;
+        start();
+        continue;
+      }
+      if (row.length === 0 || (row.length === 1 && row[0].trim() === "")) continue;
+      sawDataRow = true;
+      const smiles = (row[smilesCol] ?? "").trim();
+      if (!smiles) continue;
+      if (processed + pending.length >= HARD_RECORD_CAP) {
+        truncated = true;
+        return true;
+      }
+      pending.push({ name: nameCol !== null ? (row[nameCol] ?? "").trim() : "", smiles });
+      if (pending.length >= CHUNK_SIZE) await flush();
+      if (controller?.signal.aborted) return true;
+    }
+    return true;
+  };
+
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      const text = value ? decoder.decode(value, { stream: !done }) : "";
+      const accepted = await consumeRows(csv.push(text));
+      if (header !== null && smilesCol === null) {
+        await reader.cancel();
+        // Preserve the manual-column-picker behavior only when auto-detection
+        // cannot decide the schema. It is intentionally not the large-file path.
+        loadCsvText(await file.text());
+        return;
+      }
+      if (!accepted || truncated || controller?.signal.aborted || done) break;
+    }
+    if (!truncated && !controller?.signal.aborted) await consumeRows(csv.finish());
+    if (header === null || !sawDataRow) {
+      showError("Empty CSV file.");
+      return;
+    }
+    if (controller?.signal.aborted) {
+      showStatus(`Cancelled after ${processed} CSV records.`);
+      return;
+    }
+    await flush();
+    renderAll();
+    const failures = state.records.filter((record) => record.status !== "ok").length;
+    const base = failures === 0
+      ? `${processed} molecule${processed === 1 ? "" : "s"} loaded.`
+      : `${processed - failures} loaded, ${failures} failed to parse.`;
+    showStatus(truncated ? `${base} Showing the first ${HARD_RECORD_CAP} records (client-side display cap).` : base);
+  } catch (error) {
+    if (!controller?.signal.aborted) {
+      state.records = [];
+      renderAll();
+      showError("Failed to read CSV: " + (typeof error === "string" ? error : String(error)));
+    }
+  } finally {
+    if (controller === currentAbortController) $("explorer-cancel")?.classList.add("hidden");
+  }
+}
+
 function showColumnPicker(rows) {
   const picker = $("explorer-column-picker");
   if (!picker) { showError("Could not detect a SMILES column, and no column picker is available."); return; }
@@ -390,39 +587,81 @@ function showColumnPicker(rows) {
   picker._rows = rows;
 }
 
-function loadSdfText(text) {
-  let parsed;
+async function loadSdfText(text) {
+  clearError();
+  if (currentAbortController) currentAbortController.abort();
+  const controller = new AbortController();
+  currentAbortController = controller;
+  state.records = [];
+  $("explorer-cancel")?.classList.remove("hidden");
+
+  let offset = 0;
+  let accepted = 0;
+  let rejected = 0;
   try {
-    parsed = JSON.parse(sdfToRecordsJson(text));
-  } catch (e) {
-    showError("Failed to parse SDF: " + String(e));
-    return;
+    for (;;) {
+      if (controller.signal.aborted) {
+        showStatus(`Cancelled after SDF record ${offset}. ${accepted} loaded, ${rejected} rejected.`);
+        break;
+      }
+      const batch = await readSdfBatchInWorker(text, offset);
+      if (!batch || !Array.isArray(batch.records) || !Number.isInteger(batch.next_offset)) {
+        throw new Error("SDF batch returned an invalid manifest.");
+      }
+      if (batch.offset !== offset || batch.next_offset < offset) {
+        throw new Error("SDF batch did not advance deterministically.");
+      }
+      const rawRecords = batch.records.map((entry) => {
+        const inputIndex = entry.input_index;
+        if (entry.status === "accepted" && entry.record) {
+          return { index: inputIndex, name: entry.record.name, smiles: entry.record.smiles };
+        }
+        rejected += 1;
+        return {
+          index: inputIndex,
+          name: `SDF record ${inputIndex + 1}`,
+          smiles: "",
+          sourceError: "SDF record was rejected before descriptor analysis.",
+        };
+      });
+      const records = await parseChunkInWorker(rawRecords, offset);
+      if (controller.signal.aborted) {
+        showStatus(`Cancelled after SDF record ${offset}. ${accepted} loaded, ${rejected} rejected.`);
+        break;
+      }
+      state.records.push(...records);
+      accepted += records.filter((record) => record.status === "ok").length;
+      offset = batch.next_offset;
+      showStatus(`Reading SDF… ${offset} records inspected; ${accepted} loaded, ${rejected} rejected.`);
+      if (offset % renderProgressStride(offset) === 0 || batch.status === "complete") renderAll();
+      if (batch.status === "complete") break;
+      if (batch.status !== "partial" || batch.next_offset === batch.offset) {
+        throw new Error("SDF batch did not provide a resumable continuation.");
+      }
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    if (!controller.signal.aborted) {
+      showStatus(`${accepted} loaded, ${rejected} rejected from ${offset} SDF records.`);
+    }
+  } catch (error) {
+    state.records = [];
+    renderAll();
+    showError("Failed to read SDF: " + (typeof error === "string" ? error : String(error)));
+  } finally {
+    $("explorer-cancel")?.classList.add("hidden");
   }
-  if (parsed.length === 1 && parsed[0] && parsed[0].error) {
-    showError(parsed[0].error);
-    return;
-  }
-  if (parsed.length === 1024) {
-    showStatus("SDF reader capped at 1,024 records or ~1 MB input, whichever came first — some records may be missing.");
-  }
-  const rawRecords = parsed
-    .filter((r) => r !== null)
-    .map((r) => ({ name: r.name, smiles: r.smiles }));
-  const failedCount = parsed.length - rawRecords.length;
-  if (failedCount > 0) {
-    showStatus(`${failedCount} SDF record(s) failed to parse and were skipped.`);
-  }
-  processRawRecords(rawRecords);
 }
 
-function loadFile(file) {
+async function loadFile(file) {
   const name = file.name.toLowerCase();
-  file.text().then((text) => {
-    if (name.endsWith(".sdf") || name.endsWith(".mol")) loadSdfText(text);
-    else if (name.endsWith(".csv")) loadCsvText(text);
-    else if (name.endsWith(".smi") || name.endsWith(".txt")) loadPastedSmiles(text);
-    else loadCsvText(text); // best-effort default
-  });
+  if (name.endsWith(".csv")) {
+    await loadCsvFile(file);
+    return;
+  }
+  const text = await file.text();
+  if (name.endsWith(".sdf") || name.endsWith(".mol")) void loadSdfText(text);
+  else if (name.endsWith(".smi") || name.endsWith(".txt")) loadPastedSmiles(text);
+  else loadCsvText(text); // best-effort default
 }
 
 // ---------------------------------------------------------------------------
@@ -439,7 +678,7 @@ function wireEvents() {
   const fileInput = $("explorer-file-input");
   $("explorer-btn-browse")?.addEventListener("click", () => fileInput.click());
   fileInput?.addEventListener("change", () => {
-    if (fileInput.files[0]) loadFile(fileInput.files[0]);
+    if (fileInput.files[0]) void loadFile(fileInput.files[0]);
     fileInput.value = "";
   });
 
@@ -450,7 +689,7 @@ function wireEvents() {
     e.preventDefault();
     dropzone.classList.remove("drag-over");
     const file = e.dataTransfer.files[0];
-    if (file) loadFile(file);
+    if (file) void loadFile(file);
   });
 
   $("explorer-column-picker-confirm")?.addEventListener("click", () => {
@@ -489,6 +728,10 @@ function wireEvents() {
       .slice()
       .sort(buildComparator(state.sort.key, state.sort.dir));
     downloadCsv("chematic-explorer-export.csv", exportToCsv(visible));
+  });
+
+  $("explorer-btn-retry-failed")?.addEventListener("click", () => {
+    void retryFailedSmiles();
   });
 
   $("explorer-cancel")?.addEventListener("click", () => {

@@ -82,7 +82,7 @@ def main() -> int:
     bindings = {
         "rust": run(["cargo", "run", "-p", "chematic-chem", "--release", "--offline", "--example", "rdkit_ecfp4_binding_dump"], corpus),
         "python": python_records(corpus),
-        "node_wasm": run(["node", "scripts/rdkit_ecfp4_binding_dump.mjs"], corpus),
+        "node_wasm": run(["node", "scripts/binding_dump.mjs", "rdkit-ecfp4"], corpus),
     }
     if any(len(rows) != expected_rows for rows in bindings.values()):
         raise RuntimeError({name: len(rows) for name, rows in bindings.items()})
@@ -99,7 +99,7 @@ def main() -> int:
         "binding_status_counts": {name: {status: sum(row["status"] == status for row in rows) for status in ("ok", "error")} for name, rows in bindings.items()},
         "python_provenance": python_provenance(),
         "wasm_provenance": {
-            "entrypoint": str((ROOT / "scripts" / "rdkit_ecfp4_binding_dump.mjs").relative_to(ROOT)),
+            "entrypoint": "scripts/binding_dump.mjs rdkit-ecfp4",
             "artifact_js": str((ROOT / "crates" / "chematic-wasm" / "pkg-node" / "chematic_wasm.js").relative_to(ROOT)),
             "artifact_wasm_sha256": hashlib.sha256((ROOT / "crates" / "chematic-wasm" / "pkg-node" / "chematic_wasm_bg.wasm").read_bytes()).hexdigest(),
         },

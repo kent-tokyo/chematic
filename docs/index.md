@@ -12,7 +12,7 @@ same codebase. No backend required for supported browser workflows.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
-<p class="chm-links-row">Current release: <strong>v1.0.15</strong> · <a href="changelog/">release notes</a></p>
+<p class="chm-links-row">Current release: <strong>v1.0.16</strong> · <a href="changelog/">release notes</a></p>
 
 <p class="chm-links-row">
   <a href="https://github.com/kent-tokyo/chematic">View on GitHub</a>
@@ -40,10 +40,11 @@ no backend of their own. (This describes chematic's own browser tools; if you bu
 on top of chematic-wasm that calls other network APIs, that's your own code's choice, not
 something chematic does on your behalf.)
 
-**Lightweight deployment.** The latest measured Node/WASM bundle is **3.93 MB raw / 1.43 MB gzip** (v1.0.12 artifact, measured
-2026-09-11 with `wasm-pack 0.13.1`, `wasm-bindgen 0.2.121`, and `wasm-opt 130` — see the
-[official RDKit.js comparison](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-11-official-rdkit-js-v1.0.12.md)
-for the digest and reproduction commands.
+**Lightweight deployment.** The published v1.0.15 npm package measures
+**4,005,280 bytes raw / 1,460,499 bytes gzip** for its WASM asset. The fixed
+comparison against official `@rdkit/rdkit@2026.03.6` records package digests,
+toolchain, browser engines, and operation boundaries in the
+[published-package scorecard](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md).
 
 **One Rust core, multiple interfaces.** The same `chematic-*` Rust crates back the native Rust
 API, the Python bindings (`pip install chematic`), and the WASM/JavaScript bindings
@@ -132,7 +133,7 @@ API, the Python bindings (`pip install chematic`), and the WASM/JavaScript bindi
 | Scenario | How chematic helps |
 |---|---|
 | **Local compound triage** | [Local Compound Explorer](https://kent-tokyo.github.io/chematic/explorer/) — load a CSV/SDF, filter, sort, and export, entirely client-side |
-| **Browser app** | 1.36 MB gzip WASM bundle, zero backend required, React/Vue/Svelte ready |
+| **Browser app** | 1.46 MB gzip v1.0.15 WASM asset, zero backend required for supported local workflows |
 | **Drug screening** | 190+ descriptor values, ADMET, PAINS/Brenk, QED — batch over thousands of compounds |
 | **AI agent / MCP** | Built-in MCP server — Claude Desktop can call chemistry tools directly |
 | **Batch analysis** | Rayon-parallel descriptor/fingerprint/3D pipelines; SDF/CSV in, CSV out |
@@ -148,32 +149,32 @@ Full worked examples → [Use cases](use-cases/)
 |---|---|---|---|
 | Install | `pip install chematic` | `pip install rdkit` (official prebuilt wheels) or conda | `npm install @rdkit/rdkit`, no Python bindings |
 | C/C++ toolchain | Not required, even building from source | Not required for the prebuilt wheel; required building from source | Not required by consumers of the published package |
-| Browser / WASM | Yes — 3.93 MB raw / 1.43 MB gzip (v1.0.12 Node gate) | Not applicable (Python/C++ library) | Yes — 6.91 MB raw / 2.05 MB gzip (same-condition Node gate) |
+| Browser / WASM | Yes — 4.01 MB raw / 1.46 MB gzip (published v1.0.15 package) | Not applicable (Python/C++ library) | Yes — 7.33 MB raw / 2.38 MB gzip (`@rdkit/rdkit@2026.03.6`, same scorecard) |
 | pKa / ADMET prediction | Built-in, rule-based screening — not for clinical use | External tool required | External tool required |
 | AI agent / MCP integration | Built-in, 20 tools (stdio only) | — | — |
 | Ecosystem maturity | Growing (2024–) | Established (2006–) | Established; official JavaScript/WASM distribution path |
 
-The chematic bundle was measured in the v1.0.12 Node/WASM gate on 2026-09-11;
-the older v1.0.10 size record remains available as historical evidence. RDKit.js is a
-pinned historical raw-size comparator because its gzip-over-the-wire size was not independently
-measured. Full detail, including where chematic is weaker: [Detailed RDKit comparison](rdkit-comparison.md).
+Both WASM assets above were measured from the pinned published packages; gzip
+means local file compression, not observed internet transfer. Full detail,
+including the RDKit-faster parse-inclusive fingerprint lane and unmeasured
+dimensions: [published-package scorecard](../benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md).
 
 ---
 
 ## Validation
 
-Descriptor accuracy is measured against RDKit on a 4,999-molecule ChEMBL-derived corpus.
-Molecular weight reaches 99.82% within ±0.01 Da; HBA, HBD, TPSA, LogP
-(Crippen), molar refractivity, Fsp3, and the documented ring metrics reach
-100% at their stated tolerances. Stereocenter agreement depends on the selected
-oracle. Full breakdown, known residuals, and reproduction commands:
+Descriptor accuracy is measured against pinned RDKit APIs on exposed,
+versioned corpora. The current records include exact or tolerance-matched lanes
+for the core descriptor set, while stereocenter agreement depends on the chosen
+oracle. The prepared 8,000-row sealed holdout has not yet been scored. Full
+breakdown, known residuals, and reproduction commands:
 [Validation report](validation.md).
 
 ---
 
 ## When to use chematic
 
-- You want chemistry in the browser (WASM, 1.36 MB gzip, no server required)
+- You want chemistry in the browser (v1.0.15 WASM: 1.46 MB gzip, no server required for supported local workflows)
 - You need a pure Rust stack with no C++ toolchain dependencies
 - You deploy to environments where installing RDKit is impractical (Cloudflare Workers, Lambda, embedded)
 - You build AI agents and want native MCP tool integration

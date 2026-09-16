@@ -132,6 +132,15 @@ descriptor record for each valid SMILES, with per-record errors and aggregate
 valid/error counts. It accepts the same stdin or `--input FILE` line contract
 as `batch-report`.
 
+`batch-canonicalize` is the lighter identity-only path. It returns one
+input-order record per accepted or rejected SMILES with either
+`canonical_smiles` or an error, and does not calculate descriptors or
+fingerprints. It uses the same batch size and input-byte limits.
+
+```sh
+printf 'CCO\nC1CC\nCCN\n' | chematic batch-canonicalize
+```
+
 ```sh
 printf 'CCO\nC1CC\nCCN\n' | chematic batch-descriptors
 ```

@@ -51,6 +51,17 @@ impl RationalAtomicNumber {
         Self::reduced(sum, values.len() as u64)
     }
 
+    /// Construct an exact atomic-number ratio. This is used by the MANCUDE
+    /// negative-charge component pass, which totals a complete component before
+    /// assigning its common value to every member.
+    pub(crate) fn from_ratio(numerator: u64, denominator: u64) -> Self {
+        assert!(
+            denominator != 0,
+            "RationalAtomicNumber::from_ratio denominator is zero"
+        );
+        Self::reduced(numerator, denominator)
+    }
+
     fn reduced(numerator: u64, denominator: u64) -> Self {
         debug_assert!(denominator != 0, "RationalAtomicNumber: zero denominator");
         let g = gcd(numerator, denominator);

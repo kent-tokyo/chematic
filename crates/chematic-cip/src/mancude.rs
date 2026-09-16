@@ -52,12 +52,12 @@
 //! silently breaking ordinary, non-resonance-related ranking).
 //!
 //! Charged seed types (`Nv4D3Plus`, `Nv2D2Minus`, `Cv3D3Minus`, `Ov3D2Plus` in RDKit's
-//! naming, plus a secondary charge-relocation fraction pass) are **not implemented** --
-//! checked directly against the frozen corpus (`validation/cip_label_corpus.jsonl`): 0 of
-//! the 98 MANCUDE-scope cases contain a charged aromatic ring atom. A charged atom that
-//! would otherwise seed simply never types, falling back to today's existing (already
-//! correct for non-resonant atoms) integer atomic number -- a visible, safe fallback, not
-//! a silent wrong average.
+//! naming) are included. For a component containing `Nv2D2Minus` or `Cv3D3Minus`, the
+//! second RDKit pass totals all higher-order same-part bonds and gives *every* member the
+//! completed component average. Assigning prefix totals while walking atom order was the
+//! atom-number-dependent bug fixed in RDKit #9561; this implementation always totals first
+//! and distributes second. The frozen corpus has no such charged ring atom, so the focused
+//! cyclopentadienyl-anion regression is retained alongside the corpus gates.
 //!
 //! # Reference model (test-only): [`enumerate_kekule_matchings`] / [`effective_atomic_number`]
 //!
@@ -133,22 +133,31 @@ impl MancudeContext {
     /// as a self-check; a full 98-case corpus sweep (`tests/mancude_context.rs`) falsified
     /// it on real molecules, so the check was removed, not the typing. What that sweep
     /// establishes is narrower than "this is correct": the typing is **invariant** (both
-    /// Kekulé-form and renumbering sweeps stayed 98/98 clean) and **inert this round** (no
-    /// comparator reads this field yet) -- it does not establish that typing these
-    /// non-aromatic atoms is *label*-correct, only that doing so structurally mirrors
-    /// RDKit's real algorithm shape. That remaining question is Milestone 3B-1b's
-    /// corpus-agreement gate to answer, not this round's -- watch specifically for a
+    /// Kekulé-form and renumbering sweeps stayed 98/98 clean), but it does not establish
+    /// that typing these non-aromatic atoms is *label*-correct. The accurate CIP entry
+    /// point now supplies this context to its Kekulé-form digraph. Charged seeds and the
+    /// component relocation pass are covered by focused regressions; an independent
+    /// chiral corpus-agreement gate remains necessary. Watch specifically for a
     /// non-aromatic typed atom with a *heteroatom* same-part neighbor, since a pure-carbon
     /// one is a no-op today (`Rational(6/1)` compares equal to `Integral(6)`).
     pub fn compute(kekule_mol: &Molecule) -> Self {
         let ring_bonds = ring_bond_set(kekule_mol);
         let mut types = seed_types(kekule_mol, &ring_bonds);
-        relax_types(kekule_mol, &mut types);
+        relax_types(kekule_mol, &mut types, &ring_bonds);
 
         let parts = visit_parts(kekule_mol, &types, &ring_bonds);
         let n = kekule_mol.atom_count();
         let mut fractional_atomic_numbers = vec![None; n];
         let mut component_ids = vec![None; n];
+        let mut charged_parts = vec![false; parts.iter().copied().max().unwrap_or(0) as usize + 1];
+        for (idx, _) in kekule_mol.atoms() {
+            let i = idx.0 as usize;
+            let part = parts[i] as usize;
+            if part != 0 && matches!(types[i], SeedType::Cv3D3Minus | SeedType::Nv2D2Minus) {
+                charged_parts[part] = true;
+            }
+        }
+
         for (idx, _) in kekule_mol.atoms() {
             let i = idx.0 as usize;
             if parts[i] == 0 {
@@ -169,6 +178,47 @@ impl MancudeContext {
             }
             component_ids[i] = Some(MancudeComponentId(parts[i]));
             fractional_atomic_numbers[i] = Some(RationalAtomicNumber::mean(&same_part_neighbors));
+        }
+
+        // RDKit's charged-resonance pass is deliberately component-wide: first accumulate
+        // all higher-order same-part bonds, then assign the *same final ratio* to every
+        // member. Updating a ratio per atom during traversal would leak atom ordering into
+        // CIP ranking (RDKit #9561).
+        let mut numerators = vec![0u64; charged_parts.len()];
+        let mut denominators = vec![0u64; charged_parts.len()];
+        for (idx, _) in kekule_mol.atoms() {
+            let i = idx.0 as usize;
+            let part = parts[i] as usize;
+            if part == 0 || !charged_parts[part] {
+                continue;
+            }
+            denominators[part] += 1;
+            for (neighbor, bond_idx) in kekule_mol.neighbors(idx) {
+                if parts[neighbor.0 as usize] != parts[i] {
+                    continue;
+                }
+                let order = match kekule_mol.bond(bond_idx).order {
+                    BondOrder::Single => 1u64,
+                    BondOrder::Double => 2u64,
+                    BondOrder::Triple => 3u64,
+                    BondOrder::Quadruple => 4u64,
+                    _ => 0u64,
+                };
+                if order > 1 {
+                    numerators[part] +=
+                        (order - 1) * u64::from(kekule_mol.atom(neighbor).element.atomic_number());
+                }
+            }
+        }
+        for (idx, _) in kekule_mol.atoms() {
+            let i = idx.0 as usize;
+            let part = parts[i] as usize;
+            if part != 0 && charged_parts[part] && denominators[part] != 0 {
+                fractional_atomic_numbers[i] = Some(RationalAtomicNumber::from_ratio(
+                    numerators[part],
+                    denominators[part],
+                ));
+            }
         }
 
         Self {
@@ -196,13 +246,11 @@ impl MancudeContext {
 /// every stereocenter's [`crate::digraph::CipDigraph::new_with_mancude`] call, never
 /// recomputed per atom or per subtree expansion.
 ///
-/// **Not yet called by [`crate::assign_cip_accurate_experimental`]** (see this module's
-/// docs on why switching that entry point's digraph input from aromatic to Kekulé form is
-/// deferred to Milestone 3B-1b, alongside comparator wiring: doing so here, before the
-/// comparator knows how to weigh the fractional values, would silently change which
-/// `MultipleBondDuplicate` nodes exist for *every* aromatic-adjacent stereocenter -- far
-/// more than the 98 MANCUDE-labeled corpus cases -- an uncontrolled behavior change this
-/// milestone's "byte-identical corpus report" gate forbids).
+/// [`crate::assign_cip_accurate_experimental`] prepares this pair once and passes it to
+/// every accurate-CIP digraph. If Kekulization fails, that caller deliberately falls back
+/// to the original molecule without a MANCUDE context. Charged MANCUDE components use
+/// the same context once Kekulization succeeds; broader chiral compatibility remains a
+/// separate audit.
 pub fn prepare_kekule_form(
     mol: &Molecule,
 ) -> Result<(Molecule, MancudeContext), chematic_core::kekulization::KekuleError> {
@@ -216,6 +264,10 @@ pub fn prepare_kekule_form(
 enum SeedType {
     Cv4D3,
     Nv3D2,
+    Nv4D3Plus,
+    Nv2D2Minus,
+    Cv3D3Minus,
+    Ov3D2Plus,
     Other,
 }
 
@@ -340,8 +392,7 @@ fn is_ring_bond(ring_bonds: &HashSet<(u32, u32)>, a: AtomIdx, b: AtomIdx) -> boo
     ring_bonds.contains(&(a.0.min(b.0), a.0.max(b.0)))
 }
 
-/// Direct port of RDKit's `Mancude.cpp` `SeedTypes` (neutral types only -- see module
-/// docs' charged-types non-goal). Classifies each ring atom by element, formal charge,
+/// Direct port of RDKit's `Mancude.cpp` `SeedTypes`. Classifies each ring atom by element, formal charge,
 /// and its bond-order pattern (single/double/other counts, seeded from
 /// `implicit_hcount` exactly like RDKit's `getTotalNumHs()`-seeded `btypes`, then
 /// accumulated over *every* bond, ring and non-ring alike -- an ipso carbon's exocyclic
@@ -375,8 +426,20 @@ fn seed_types(mol: &Molecule, ring_bonds: &HashSet<(u32, u32)>) -> Vec<SeedType>
             6 | 14 | 32 if q == 0 && doubles == 1 && singles == 2 => {
                 types[idx.0 as usize] = SeedType::Cv4D3;
             }
+            6 | 14 | 32 if q == -1 && doubles == 0 && singles == 3 => {
+                types[idx.0 as usize] = SeedType::Cv3D3Minus;
+            }
             7 | 15 | 33 if q == 0 && doubles == 1 && singles == 1 => {
                 types[idx.0 as usize] = SeedType::Nv3D2;
+            }
+            7 | 15 | 33 if q == -1 && doubles == 0 && singles == 2 => {
+                types[idx.0 as usize] = SeedType::Nv2D2Minus;
+            }
+            7 | 15 | 33 if q == 1 && doubles == 1 && singles == 2 => {
+                types[idx.0 as usize] = SeedType::Nv4D3Plus;
+            }
+            8 if q == 1 && doubles == 1 && singles == 1 => {
+                types[idx.0 as usize] = SeedType::Ov3D2Plus;
             }
             _ => {}
         }
@@ -385,22 +448,20 @@ fn seed_types(mol: &Molecule, ring_bonds: &HashSet<(u32, u32)>) -> Vec<SeedType>
 }
 
 /// Direct port of RDKit's `RelaxTypes`: iterative demotion of any typed atom with fewer
-/// than 2 typed neighbors (resonance needs connectivity), cascading -- demoting one atom
-/// can push a now-under-connected neighbor below the threshold too. Deliberately
-/// unfiltered by ring-bond membership here, matching RDKit's own `RelaxTypes` exactly
-/// (only `VisitPart`'s flood-fill filters by ring bond -- see module docs).
-fn relax_types(mol: &Molecule, types: &mut [SeedType]) {
+/// than 2 typed *ring-bond* neighbors (resonance needs ring connectivity), cascading --
+/// demoting one atom can push a now-under-connected neighbor below the threshold too.
+fn relax_types(mol: &Molecule, types: &mut [SeedType], ring_bonds: &HashSet<(u32, u32)>) {
     let n = types.len();
     let mut counts = vec![0i32; n];
     let mut queue: Vec<AtomIdx> = Vec::new();
     for (idx, _) in mol.atoms() {
         let i = idx.0 as usize;
         for (nb, _) in mol.neighbors(idx) {
-            if types[nb.0 as usize] != SeedType::Other {
+            if is_ring_bond(ring_bonds, idx, nb) && types[nb.0 as usize] != SeedType::Other {
                 counts[i] += 1;
             }
         }
-        if counts[i] == 1 {
+        if counts[i] <= 1 {
             queue.push(idx);
         }
     }
@@ -412,6 +473,9 @@ fn relax_types(mol: &Molecule, types: &mut [SeedType]) {
         if types[i] != SeedType::Other {
             types[i] = SeedType::Other;
             for (nb, _) in mol.neighbors(idx) {
+                if !is_ring_bond(ring_bonds, idx, nb) {
+                    continue;
+                }
                 let j = nb.0 as usize;
                 counts[j] -= 1;
                 if counts[j] == 1 {
@@ -883,6 +947,44 @@ mod tests {
             let f = ctx.fractional_atomic_number(AtomIdx(i as u32)).unwrap();
             assert_eq!((f.numerator(), f.denominator()), (6, 1), "atom {i}");
         }
+    }
+
+    /// RDKit #9561's regression molecule. The negative charge makes this a charged
+    /// MANCUDE part: every one of its five members must receive the *completed*
+    /// component average, 24/5. A prefix total (the historical RDKit bug) would give
+    /// different values to different atom indices and make CIP order-dependent.
+    #[test]
+    fn context_cyclopentadienyl_anion_distributes_one_shared_component_fraction() {
+        let kmol = kekule_clone("[CH-]1C=CC=C1");
+        let ctx = MancudeContext::compute(&kmol);
+        let expected = (24, 5);
+        let first_component = ctx.component_id(AtomIdx(0)).expect("charged ring is typed");
+        for index in 0..kmol.atom_count() {
+            let atom = AtomIdx(index as u32);
+            let fraction = ctx
+                .fractional_atomic_number(atom)
+                .expect("all ring atoms are typed");
+            assert_eq!(
+                (fraction.numerator(), fraction.denominator()),
+                expected,
+                "atom {index} must receive the completed component average"
+            );
+            assert_eq!(ctx.component_id(atom), Some(first_component));
+        }
+    }
+
+    /// `RelaxTypes` must remove a charged seed with no typed ring neighbors. RDKit uses
+    /// `<= 1` here; accepting only `== 1` leaves a zero-neighbor singleton behind.
+    #[test]
+    fn context_demotes_an_isolated_charged_ring_seed() {
+        let kmol = kekule_clone("C1CC[CH-]C1");
+        let charged = (0..kmol.atom_count())
+            .map(|index| AtomIdx(index as u32))
+            .find(|&index| kmol.atom(index).charge == -1)
+            .expect("fixture has a charged carbon");
+        let ctx = MancudeContext::compute(&kmol);
+        assert_eq!(ctx.fractional_atomic_number(charged), None);
+        assert_eq!(ctx.component_id(charged), None);
     }
 
     #[test]

@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const { parseCsvText, detectColumns, csvRowsToRawRecords, parseSmiFileText } =
+const { CsvStreamParser, parseCsvText, detectColumns, csvRowsToRawRecords, parseSmiFileText } =
   await import(path.join(__dirname, "..", "parser.js"));
 const { applyFilters, buildComparator, matchesFreeText } =
   await import(path.join(__dirname, "..", "table.js"));
@@ -60,6 +60,23 @@ console.log("=== parseCsvText ===");
   // BOM stripped
   const rows = parseCsvText("﻿a,b\n1,2\n");
   assert.deepEqual(rows, [["a", "b"], ["1", "2"]]);
+}
+{
+  // Every structurally meaningful boundary may split across stream chunks.
+  const parser = new CsvStreamParser();
+  const rows = [
+    ...parser.push("﻿name,notes\r"),
+    ...parser.push('\n"a,'),
+    ...parser.push(' b","line1\nli'),
+    ...parser.push('ne2 with ""quote"""\r'),
+    ...parser.push("\nsecond,plain"),
+    ...parser.finish(),
+  ];
+  assert.deepEqual(rows, [
+    ["name", "notes"],
+    ["a, b", 'line1\nline2 with "quote"'],
+    ["second", "plain"],
+  ]);
 }
 console.log("parseCsvText: all assertions passed");
 

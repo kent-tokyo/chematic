@@ -30,7 +30,9 @@ use chematic_core::{AtomIdx, BondIdx, Molecule};
 use rustc_hash::FxHashMap;
 
 use crate::bitvec::BitVecN;
-use crate::rdkit_morgan_ecfp4::RdkitMorganError;
+use crate::rdkit_morgan_ecfp4::{
+    RdkitMorganError, reject_known_rdkit_coordination_sanitization_gap,
+};
 use crate::rdkit_morgan_hash::{checked_bond_invariant, expand_one_pass_with_chirality};
 
 /// Morgan/ECFP radius, restricted to the four values independently re-verified
@@ -140,6 +142,7 @@ pub fn rdkit_morgan_fingerprint(
     mol: &Molecule,
     config: &RdkitMorganConfig,
 ) -> Result<RdkitMorganFingerprint, RdkitMorganError> {
+    reject_known_rdkit_coordination_sanitization_gap(mol)?;
     let aromatized = chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol)?;
 
     let fp_size = config.fp_size.bits();
@@ -255,6 +258,20 @@ mod tests {
                 "folded_bit_info mismatch for {smi}"
             );
         }
+    }
+
+    #[test]
+    fn measured_feii_coordination_gap_uses_the_shared_typed_refusal() {
+        let mol = parse("CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10")
+            .expect("ferrocene-like SMILES parses");
+        assert!(matches!(
+            rdkit_morgan_fingerprint(&mol, &RdkitMorganConfig::default()),
+            Err(RdkitMorganError::UnsupportedCoordinationSanitization {
+                atomic_number: 26,
+                degree: 10,
+                ..
+            })
+        ));
     }
 
     #[test]

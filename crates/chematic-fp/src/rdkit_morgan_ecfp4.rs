@@ -22,7 +22,7 @@
 //! is not a Hückel fallback: no aromaticity is inferred, and self-inconsistent input remains a
 //! hard error.
 
-use chematic_core::{BondIdx, BondOrder, Molecule};
+use chematic_core::{AtomIdx, BondIdx, BondOrder, Element, Molecule};
 use chematic_perception::AromaticityError;
 use rustc_hash::FxHashMap;
 
@@ -31,6 +31,7 @@ use crate::rdkit_morgan_hash::{checked_bond_invariant, expand_one_pass};
 
 const ECFP4_RADIUS: u32 = 2;
 const ECFP4_FP_SIZE: usize = 2048;
+type HypervalentHalogenOxoacidNormalization = (AtomIdx, i8, Vec<(BondIdx, AtomIdx)>);
 
 /// Every RDKit-hash-exact ECFP4 view of a molecule, computed from one shared expansion pass
 /// (RDKit's `includeRedundantEnvironments = false` lifecycle) — not independently recomputed
@@ -63,6 +64,15 @@ pub enum RdkitMorganError {
     /// SMARTS-query-only `BondOrder` variants — cannot occur for a SMILES-parsed molecule, but
     /// is checked explicitly rather than assumed unreachable).
     UnsupportedBondOrder { bond_idx: BondIdx, order: BondOrder },
+    /// The measured Fe(II) coordination graph whose RDKit sanitization rewrites
+    /// covalent input into directed coordination bonds. The compatibility
+    /// profile does not model that rewrite, so returning a numeric fingerprint
+    /// would falsely imply bit exactness.
+    UnsupportedCoordinationSanitization {
+        atom_idx: AtomIdx,
+        atomic_number: u8,
+        degree: usize,
+    },
     /// A post-computation sanity check failed that should never happen for chemically valid
     /// input — surfaced as an error rather than a panic or a silently wrong fingerprint.
     InternalInvariantViolation { reason: String },
@@ -75,6 +85,14 @@ impl std::fmt::Display for RdkitMorganError {
             RdkitMorganError::UnsupportedBondOrder { bond_idx, order } => write!(
                 f,
                 "rdkit-exact ecfp4: bond {bond_idx:?} has no RDKit BondType counterpart: {order:?}"
+            ),
+            RdkitMorganError::UnsupportedCoordinationSanitization {
+                atom_idx,
+                atomic_number,
+                degree,
+            } => write!(
+                f,
+                "rdkit-exact ecfp4: unsupported RDKit coordination sanitization at {atom_idx:?} (Z={atomic_number}, degree={degree})"
             ),
             RdkitMorganError::InternalInvariantViolation { reason } => {
                 write!(
@@ -103,7 +121,15 @@ impl From<AromaticityError> for RdkitMorganError {
 pub fn rdkit_morgan_ecfp4_experimental(
     mol: &Molecule,
 ) -> Result<RdkitMorganEcfp4, RdkitMorganError> {
-    let aromatized = chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol)?;
+    // RDKit sanitizes neutral hypervalent halogen oxoacids while parsing (for
+    // example `OCl(=O)(=O)=O` becomes `[O-][Cl+3]([O-])([O-])O`). The core
+    // SMILES model intentionally preserves the user spelling, so apply this
+    // narrow, profile-specific graph normalization only here: Morgan atom and
+    // bond invariants must observe the same graph RDKit fingerprints observe.
+    let rdkit_input = normalize_rdkit_hypervalent_halogen_oxoacids(mol);
+    reject_known_rdkit_coordination_sanitization_gap(&rdkit_input)?;
+    let aromatized =
+        chematic_perception::apply_aromaticity_rdkit_parity_experimental(&rdkit_input)?;
 
     let mut result = RdkitMorganEcfp4::default();
     if aromatized.atom_count() == 0 {
@@ -140,6 +166,89 @@ pub fn rdkit_morgan_ecfp4_experimental(
     }
 
     Ok(result)
+}
+
+/// Return a typed refusal for the one measured RDKit coordination-sanitization
+/// gap: Fe(II), degree 10, with at least two directly bonded anionic carbons.
+///
+/// This deliberately does *not* reject generic high-coordinate metals (or
+/// neutral ferrocene). Those inputs remain within the profile unless a
+/// reproducible RDKit mismatch establishes a narrower additional boundary.
+pub(crate) fn reject_known_rdkit_coordination_sanitization_gap(
+    mol: &Molecule,
+) -> Result<(), RdkitMorganError> {
+    for (atom_idx, atom) in mol.atoms() {
+        let atomic_number = atom.element.atomic_number();
+        let degree = mol.degree(atom_idx);
+        let anionic_carbon_neighbors = mol
+            .neighbors(atom_idx)
+            .filter(|(neighbor, _)| {
+                let neighbor_atom = mol.atom(*neighbor);
+                neighbor_atom.element.atomic_number() == 6 && neighbor_atom.charge < 0
+            })
+            .count();
+        if atomic_number == 26 && atom.charge == 2 && degree == 10 && anionic_carbon_neighbors >= 2
+        {
+            return Err(RdkitMorganError::UnsupportedCoordinationSanitization {
+                atom_idx,
+                atomic_number,
+                degree,
+            });
+        }
+    }
+    Ok(())
+}
+
+/// Mirror RDKit's parsed representation for neutral chloric/bromic/iodic
+/// oxoacids written with one single-bonded oxygen and one or more terminal
+/// neutral double-bonded oxygens. Every converted double O becomes `[O-]` and
+/// the central halogen obtains the balancing positive charge. The explicit
+/// one-single-O requirement keeps ordinary halogen oxides and unrelated
+/// hypervalent graphs out of this compatibility-only conversion.
+fn normalize_rdkit_hypervalent_halogen_oxoacids(mol: &Molecule) -> Molecule {
+    let mut normalizations: Vec<HypervalentHalogenOxoacidNormalization> = Vec::new();
+    for (center, atom) in mol.atoms() {
+        if !matches!(atom.element, Element::CL | Element::BR | Element::I) || atom.charge != 0 {
+            continue;
+        }
+        let mut single_oxygens = 0usize;
+        let mut double_oxygens = Vec::new();
+        let mut eligible = true;
+        for (neighbor, bond_idx) in mol.neighbors(center) {
+            let neighbor_atom = mol.atom(neighbor);
+            if neighbor_atom.element != Element::O
+                || neighbor_atom.charge != 0
+                || mol.neighbors(neighbor).count() != 1
+            {
+                eligible = false;
+                break;
+            }
+            match mol.bond(bond_idx).order {
+                BondOrder::Single => single_oxygens += 1,
+                BondOrder::Double => double_oxygens.push((bond_idx, neighbor)),
+                _ => {
+                    eligible = false;
+                    break;
+                }
+            }
+        }
+        if eligible && single_oxygens == 1 && !double_oxygens.is_empty() {
+            normalizations.push((center, double_oxygens.len() as i8, double_oxygens));
+        }
+    }
+
+    if normalizations.is_empty() {
+        return mol.clone();
+    }
+    let mut normalized = mol.clone();
+    for (center, charge, oxygens) in normalizations {
+        normalized.set_charge(center, charge);
+        for (bond_idx, oxygen) in oxygens {
+            normalized.set_bond_order(bond_idx, BondOrder::Single);
+            normalized.set_charge(oxygen, -1);
+        }
+    }
+    normalized
 }
 
 #[cfg(test)]
@@ -208,6 +317,102 @@ mod tests {
         let mol = parse(smi).unwrap();
         let result = rdkit_morgan_ecfp4_experimental(&mol).expect("valid explicit aromatic input");
         assert!(!result.sparse_counts.is_empty());
+    }
+
+    #[test]
+    fn large_explicit_polycyclic_aromatic_matches_pinned_rdkit_bits() {
+        // RDKit 2025.09.3 and the official RDKit.js 2026.03.6 package agree
+        // on this 59-bit set. Re-perceiving an otherwise self-consistent
+        // explicit aromatic graph used to change its partition and produce
+        // 18 differing folded bits, so retain the source fixture rather than
+        // relying on a browser-only comparison for this regression.
+        let smi = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../validation/rdkit_issues/fingerprints/large_polycyclic_aromatic.smi"
+        ))
+        .trim();
+        let mol = parse(smi).expect("large explicit aromatic SMILES parses");
+        let result = rdkit_morgan_ecfp4_experimental(&mol).expect("parity preprocessing");
+        let actual: Vec<usize> = (0..ECFP4_FP_SIZE)
+            .filter(|&bit| result.fingerprint.get(bit))
+            .collect();
+        let expected = vec![
+            13, 54, 58, 61, 80, 149, 182, 236, 264, 290, 383, 434, 451, 486, 567, 602, 617, 653,
+            691, 695, 719, 822, 841, 883, 893, 926, 935, 949, 1005, 1019, 1039, 1056, 1057, 1060,
+            1063, 1096, 1136, 1145, 1151, 1181, 1337, 1364, 1380, 1438, 1453, 1562, 1576, 1582,
+            1594, 1648, 1649, 1693, 1706, 1747, 1950, 1984, 1992, 2022, 2027,
+        ];
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn porphyrin_like_fused_system_matches_pinned_rdkit_bits() {
+        // RDKit 2025.09.3 and the official RDKit.js 2026.03.6 package agree.
+        // This guards the fused-ring neighbour condition used by RDKit
+        // aromaticity: rings sharing two bonds are independent candidates,
+        // rather than one larger aromatic subsystem.
+        let smi =
+            "CC1=C2NC(=C1CCC(O)=O)C=C3N=C(C=C4NC(=CC5=NC(=C2)C(=C5C)C=C)C(=C4C)C=C)C(=C3CCC(O)=O)C";
+        let mol = parse(smi).expect("porphyrin-like SMILES parses");
+        let result = rdkit_morgan_ecfp4_experimental(&mol).expect("parity preprocessing");
+        let actual: Vec<usize> = (0..ECFP4_FP_SIZE)
+            .filter(|&bit| result.fingerprint.get(bit))
+            .collect();
+        assert_eq!(
+            actual,
+            vec![
+                8, 46, 80, 119, 204, 227, 252, 294, 350, 378, 389, 562, 578, 591, 644, 650, 694,
+                807, 857, 875, 911, 980, 988, 1057, 1093, 1114, 1115, 1132, 1243, 1257, 1287, 1299,
+                1336, 1352, 1366, 1375, 1380, 1470, 1564, 1621, 1626, 1645, 1722, 1734, 1737, 1745,
+                1801, 1855, 1873, 1898, 1917, 2034,
+            ]
+        );
+    }
+
+    #[test]
+    fn measured_feii_coordination_gap_is_a_typed_refusal() {
+        let mol = parse("CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10")
+            .expect("ferrocene-like SMILES parses");
+        assert!(matches!(
+            rdkit_morgan_ecfp4_experimental(&mol),
+            Err(RdkitMorganError::UnsupportedCoordinationSanitization {
+                atomic_number: 26,
+                degree: 10,
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn neutral_high_coordinate_iron_remains_supported() {
+        let mol = parse("C12C3=C4C5=C1[Fe]23456789C%10C6=C7C8=C9%10")
+            .expect("neutral ferrocene SMILES parses");
+        assert!(rdkit_morgan_ecfp4_experimental(&mol).is_ok());
+    }
+
+    #[test]
+    fn normalizes_neutral_perchloric_acid_for_rdkit_morgan_invariants() {
+        let input = parse("OCl(=O)(=O)=O").unwrap();
+        let normalized = normalize_rdkit_hypervalent_halogen_oxoacids(&input);
+        let chlorine = normalized
+            .atoms()
+            .find_map(|(idx, atom)| (atom.element == Element::CL).then_some(idx))
+            .unwrap();
+        assert_eq!(normalized.atom(chlorine).charge, 3);
+        let mut negative_oxygens = 0;
+        for (neighbor, bond) in normalized.neighbors(chlorine) {
+            assert_eq!(normalized.bond(bond).order, BondOrder::Single);
+            negative_oxygens += (normalized.atom(neighbor).charge == -1) as usize;
+        }
+        assert_eq!(negative_oxygens, 3);
+        let fingerprint = rdkit_morgan_ecfp4_experimental(&input).unwrap();
+        let actual: Vec<usize> = (0..ECFP4_FP_SIZE)
+            .filter(|&bit| fingerprint.fingerprint.get(bit))
+            .collect();
+        // Generated by RDKit 2026.03.6 Morgan radius=2 / 2048 bits for the
+        // original neutral input spelling. This is intentionally a profile
+        // regression: general SMILES parsing remains lossless.
+        assert_eq!(actual, vec![187, 222, 669, 715, 807, 2000]);
     }
 
     #[test]

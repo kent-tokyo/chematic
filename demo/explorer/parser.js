@@ -5,54 +5,86 @@ const SMILES_COLUMN_CANDIDATES = ['smiles', 'SMILES', 'canonical_smiles', 'struc
 const NAME_COLUMN_CANDIDATES = ['name', 'Name', 'compound', 'id', 'ID'];
 
 /**
- * RFC4180-ish CSV tokenizer: quoted fields may contain commas, embedded
- * newlines, and escaped ("") double quotes. Returns an array of rows, each
- * an array of field strings. Handles CRLF/LF/bare-CR line endings and a
- * missing trailing newline.
+ * Incremental RFC4180-ish tokenizer. `push()` may end in the middle of an
+ * escaped quote, CRLF, or quoted newline; completed rows are returned without
+ * retaining preceding input. This lets the Explorer process large CSV files
+ * through a `File.stream()` reader rather than first materializing the file.
  */
+export class CsvStreamParser {
+  constructor() {
+    this.row = [];
+    this.field = '';
+    this.state = 'FIELD_START'; // FIELD_START | IN_UNQUOTED | IN_QUOTED | QUOTE_IN_QUOTED
+    this.firstChunk = true;
+    this.skipLfAfterCr = false;
+  }
+
+  _endField() {
+    this.row.push(this.field);
+    this.field = '';
+  }
+
+  _endRow(rows) {
+    this._endField();
+    rows.push(this.row);
+    this.row = [];
+  }
+
+  push(text) {
+    const rows = [];
+    let start = 0;
+    if (this.firstChunk) {
+      this.firstChunk = false;
+      if (text.charCodeAt(0) === 0xfeff) start = 1; // strip a UTF-8 BOM once
+    }
+    for (let i = start; i < text.length; i++) {
+      const c = text[i];
+      if (this.skipLfAfterCr) {
+        this.skipLfAfterCr = false;
+        if (c === '\n') continue;
+      }
+      if (this.state === 'QUOTE_IN_QUOTED') {
+        if (c === '"') { this.field += '"'; this.state = 'IN_QUOTED'; continue; }
+        this.state = 'IN_UNQUOTED'; // reprocess the delimiter/newline below
+      }
+      if (this.state === 'IN_QUOTED') {
+        if (c === '"') this.state = 'QUOTE_IN_QUOTED';
+        else this.field += c;
+        continue;
+      }
+      if (c === '"' && this.state === 'FIELD_START') { this.state = 'IN_QUOTED'; continue; }
+      if (c === ',') { this._endField(); this.state = 'FIELD_START'; continue; }
+      if (c === '\r') {
+        this._endRow(rows);
+        this.state = 'FIELD_START';
+        this.skipLfAfterCr = true;
+        continue;
+      }
+      if (c === '\n') { this._endRow(rows); this.state = 'FIELD_START'; continue; }
+      this.field += c;
+      this.state = 'IN_UNQUOTED';
+    }
+    return rows;
+  }
+
+  finish() {
+    const rows = [];
+    // A closing quote is valid at EOF; an unclosed quote is retained as field
+    // content, matching the historical best-effort parser rather than guessing
+    // a different row boundary.
+    if (this.field !== '' || this.row.length > 0 || this.state !== 'FIELD_START') {
+      this._endRow(rows);
+    }
+    this.state = 'FIELD_START';
+    this.skipLfAfterCr = false;
+    return rows;
+  }
+}
+
+/** Parse a complete CSV string through the same incremental tokenizer. */
 export function parseCsvText(text) {
-  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1); // strip BOM
-
-  const rows = [];
-  let row = [];
-  let field = '';
-  let state = 'FIELD_START'; // FIELD_START | IN_UNQUOTED | IN_QUOTED | QUOTE_IN_QUOTED
-
-  const endField = () => { row.push(field); field = ''; };
-  const endRow = () => { endField(); rows.push(row); row = []; };
-
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-
-    if (state === 'QUOTE_IN_QUOTED') {
-      if (c === '"') { field += '"'; state = 'IN_QUOTED'; continue; }
-      state = 'IN_UNQUOTED'; // the quoted field just closed; reprocess c below
-    }
-
-    if (state === 'IN_QUOTED') {
-      if (c === '"') { state = 'QUOTE_IN_QUOTED'; }
-      else { field += c; }
-      continue;
-    }
-
-    // FIELD_START or IN_UNQUOTED
-    if (c === '"' && state === 'FIELD_START') { state = 'IN_QUOTED'; continue; }
-    if (c === ',') { endField(); state = 'FIELD_START'; continue; }
-    if (c === '\r') {
-      if (text[i + 1] === '\n') i++;
-      endRow(); state = 'FIELD_START'; continue;
-    }
-    if (c === '\n') { endRow(); state = 'FIELD_START'; continue; }
-    field += c;
-    state = 'IN_UNQUOTED';
-  }
-
-  // flush trailing field/row (handles input with no final newline)
-  if (field !== '' || row.length > 0 || state !== 'FIELD_START') {
-    endRow();
-  }
-
-  return rows;
+  const parser = new CsvStreamParser();
+  return [...parser.push(text), ...parser.finish()];
 }
 
 /**

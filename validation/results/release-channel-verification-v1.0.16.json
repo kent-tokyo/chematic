@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "release": {
+    "version": "1.0.16",
+    "tag": "v1.0.16",
+    "commit": "ceac4abfa53acc61167bae6c7ecc834f284e2220"
+  },
+  "checked_at": "2026-09-16T11:57:28Z",
+  "release_ready": false,
+  "channels": [
+    {
+      "id": "github_release",
+      "status": "verified",
+      "observed_version": "1.0.16",
+      "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.16",
+      "detail": "GitHub CLI observed a non-draft, non-prerelease v1.0.16 release with its release metadata asset. The annotated tag resolves to ceac4abfa53acc61167bae6c7ecc834f284e2220."
+    },
+    {
+      "id": "npm",
+      "status": "verified",
+      "observed_version": "1.0.16",
+      "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic",
+      "detail": "npm view observed @kent-tokyo/chematic@1.0.16, integrity sha512-MEi5egAd8J/OmyZ2ldxhc5s1AqHBmYiTSMbNPTbgIw0NZnDzEdXur8nX5wSX1oAjTAy4KsmPkLtwLxFVfvOWjA==, and the versioned tarball URL."
+    },
+    {
+      "id": "pypi",
+      "status": "verified",
+      "observed_version": "1.0.16",
+      "url": "https://pypi.org/pypi/chematic/1.0.16/json",
+      "detail": "PyPI JSON observed v1.0.16 with 18 files, including sdist SHA-256 36568dcd917e0dc46a8c584eea774db3956b7a37582ed9c63451cdbd06a3f1d4."
+    },
+    {
+      "id": "crates_io",
+      "status": "verified",
+      "observed_version": "1.0.16",
+      "url": "https://crates.io/crates/chematic/1.0.16",
+      "detail": "cargo info --registry crates-io chematic@1.0.16 downloaded and resolved the published crate."
+    },
+    {
+      "id": "docs_rs",
+      "status": "verified",
+      "observed_version": "1.0.16",
+      "url": "https://docs.rs/chematic/1.0.16/chematic/",
+      "detail": "A direct HTTPS request returned HTTP 200 for the version-pinned docs.rs URL."
+    },
+    {
+      "id": "site",
+      "status": "not_measured",
+      "url": "https://kent-tokyo.github.io/chematic/",
+      "detail": "The checked page still showed v1.0.15 before the v1.0.16 release PR is merged to main and its Pages deployment completes. This is intentionally recorded as pending, not verified."
+    }
+  ]
+}

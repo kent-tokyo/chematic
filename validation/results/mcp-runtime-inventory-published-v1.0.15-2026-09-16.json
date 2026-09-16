@@ -1,0 +1,144 @@
+{
+  "discovery": {
+    "cache_scope": "public",
+    "protocol_version": "2026-07-28",
+    "result_type": "complete",
+    "server_info": {
+      "name": "chematic-mcp",
+      "version": "1.0.15"
+    },
+    "ttl_ms": 86400000
+  },
+  "error_contracts": {
+    "invalid_smiles": {
+      "input": "C1CC",
+      "structured_error_code": "INVALID_SMILES",
+      "tool": "canonical_smiles",
+      "transport_error": false
+    },
+    "oversized_smiles": {
+      "input_bytes": 100001,
+      "message_contains": "maxLength 100000",
+      "tool": "canonical_smiles",
+      "transport_error_code": -32602
+    },
+    "recovery": {
+      "canonical": "C(C)N",
+      "input": "CCN",
+      "tool": "canonical_smiles"
+    }
+  },
+  "execution_boundary": "MCP JSON-RPC stdio subprocess",
+  "representative_call": {
+    "input": "OCC",
+    "structured_output": {
+      "canonical": "C(C)O"
+    },
+    "tool": "canonical_smiles"
+  },
+  "schema": "chematic.mcp-runtime-inventory.v3",
+  "status": "pass",
+  "tool_count": 20,
+  "tools": [
+    {
+      "has_input_schema": true,
+      "has_output_schema": true,
+      "name": "parse_smiles"
+    },
+    {
+      "has_input_schema": true,
+      "has_output_schema": true,
+      "name": "calc_properties"
+    },
+    {
+      "has_input_schema": true,
+      "has_output_schema": true,
+      "name": "ecfp4"
+    },
+    {
+      "has_input_schema": true,
+      "has_output_schema": true,
+      "name": "tanimoto"
+    },
+    {
+      "has_input_schema": true,
+      "has_output_schema": true,
+      "name": "smarts_match"
+    },
+    {
+      "has_input_schema": true,
+      "has_output_schema": true,
+      "name": "canonical_smiles"
+    },
+    {
+      "has_input_schema": true,
+      "has_output_schema": true,
+      "name": "find_mcs"
+    },
+    {
+      "has_input_schema": true,
+      "has_output_schema": true,
+      "name": "generate_3d"
+    },
+    {
+      "has_input_schema": true,
+      "has_output_schema": true,
+      "name": "pains_check"
+    },
+    {
+      "has_input_schema": true,
+      "has_output_schema": true,
+      "name": "brenk_check"
+    },
+    {
+      "has_input_schema": true,
+      "has_output_schema": true,
+      "name": "sa_score"
+    },
+    {
+      "has_input_schema": true,
+      "has_output_schema": true,
+      "name": "admet_profile"
+    },
+    {
+      "has_input_schema": true,
+      "has_output_schema": true,
+      "name": "boiled_egg"
+    },
+    {
+      "has_input_schema": true,
+      "has_output_schema": true,
+      "name": "lipinski_check"
+    },
+    {
+      "has_input_schema": true,
+      "has_output_schema": true,
+      "name": "name_to_smiles"
+    },
+    {
+      "has_input_schema": true,
+      "has_output_schema": true,
+      "name": "retrosynthesis"
+    },
+    {
+      "has_input_schema": true,
+      "has_output_schema": true,
+      "name": "smiles_to_moljson"
+    },
+    {
+      "has_input_schema": true,
+      "has_output_schema": true,
+      "name": "moljson_to_smiles"
+    },
+    {
+      "has_input_schema": true,
+      "has_output_schema": true,
+      "name": "representation_router"
+    },
+    {
+      "has_input_schema": true,
+      "has_output_schema": true,
+      "name": "molecule_context_pack"
+    }
+  ]
+}

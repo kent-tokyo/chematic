@@ -60,7 +60,7 @@ def main() -> int:
     bindings = {
         "rust": run(["cargo", "run", "-p", "chematic-chem", "--release", "--offline", "--example", "ecfp4_binding_dump"], corpus),
         "python": python_records(corpus),
-        "node_wasm": run(["node", "scripts/ecfp4_binding_dump.mjs"], corpus),
+        "node_wasm": run(["node", "scripts/binding_dump.mjs", "ecfp4"], corpus),
     }
     for name, rows in bindings.items():
         if len(rows) != expected_rows:

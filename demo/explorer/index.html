@@ -42,9 +42,9 @@
     </ol>
     <p class="explorer-limits">
       Supported formats: CSV (auto-detects a SMILES/name column), SDF (single or multi-record,
-      capped at 1,024 records or ~1&nbsp;MB, whichever comes first), <code>.smi</code>/newline-separated
-      SMILES, or pasted text. Comfortable up to a few hundred records; a hard display cap of 2,000
-      applies beyond that.
+      capped at ~1&nbsp;MB and read in resumable Worker batches), <code>.smi</code>/newline-separated
+      SMILES, or pasted text. The Explorer keeps at most 100,000 analysed records locally and renders
+      at most 250 rows at once; large inputs remain entirely in your browser.
     </p>
   </section>
 
@@ -126,7 +126,10 @@
   <section id="explorer-results" aria-label="Results">
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <span id="explorer-result-count"></span>
-      <button id="explorer-btn-export" class="btn">Export CSV</button>
+      <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
+        <button id="explorer-btn-retry-failed" class="btn-outline hidden">Retry failed SMILES</button>
+        <button id="explorer-btn-export" class="btn">Export CSV</button>
+      </div>
     </div>
     <p id="explorer-empty-filter" class="explorer-banner hidden">No molecules match the current filters.</p>
     <div class="explorer-table-wrap">

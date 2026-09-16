@@ -14,6 +14,9 @@ versions. See `validation/results/release-package-smoke-v1.0.15-2026-09-16.json`
 
 The [active roadmap](../ROADMAP.md) owns execution order and the 18-area open
 backlog. This ledger owns evidence and dependencies, not a second priority list.
+
+Dependency classes used below: `local-open`, `toolchain-open`, `data-sealed`,
+`external-open`, and `historical`.
 The abandoned speed target is historical and excluded from the open count.
 See the [pre-reorganization snapshot](archive/roadmap-through-2026-09-13.md)
 for the previous long-form roadmap.

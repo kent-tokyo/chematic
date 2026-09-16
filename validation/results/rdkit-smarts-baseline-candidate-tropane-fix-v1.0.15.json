@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "profile": "rdkit_smarts_baseline_candidate_v1",
+  "measured_at": "2026-09-16",
+  "status": "adoption_allowed",
+  "comparison_valid": true,
+  "adoption_allowed": true,
+  "adoption_errors": [],
+  "comparison": {
+    "corpus_sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+    "query_sha256": "23733c34b24b22b38d614da383eec5e1cc38dcfb80d2c8ca87bea51e60b10af8",
+    "rdkit_version": "2025.09.3",
+    "rdkit_pinned_source": "installed-python-package-2025.09.3",
+    "total_cells": 155651,
+    "residual_cells": { "baseline": 12, "candidate": 0 },
+    "rdkit_parse_error_cells": { "baseline": 10042, "candidate": 10042 },
+    "candidate_disallowed_buckets": {
+      "parity_regresses": 0,
+      "parity_worsens_agreement": 0,
+      "chematic_parse_error": 0,
+      "chematic_parity_error": 0
+    }
+  },
+  "arms": {
+    "baseline": {
+      "source_commit": "f2302b66689014146dcc3449c531553c969ad607",
+      "source_tree_sha256": "83d02672000dace44d29911e7c7ad5d9698b31eab6996fe13ef77fe4bc5ce095",
+      "binary_sha256": "2d4acdd5db9411f5d63e1d51ddb6512a52f3352ac29c4cc5af0409835e338386",
+      "dump_sha256": "b4281fc6439e31f3071fbb5d30fe016775929df363608450952d0cb1cfb35549",
+      "molecules": 5021,
+      "alignment_failures": 0,
+      "bucket_counts": {
+        "agree_all": 145433,
+        "both_disagree_same_as_default": 12,
+        "parity_fixes_default": 164,
+        "rdkit_smarts_parse_error": 10042
+      }
+    },
+    "candidate": {
+      "source_commit": "7eb027f8d7a2504f20f649d7539ea3fff9ac0598",
+      "source_tree_sha256": "8f4fbe3a19447db1b3e32e4afa458b2b655d02117e2f4059cc2bdce96e1d1405",
+      "binary_sha256": "c53ff57575b702d25a8aa2f754a8543d06fa74fb16497e65668674df6433c53b",
+      "dump_sha256": "e6ea58634f9d9f363fd31753fb52a318b6f07602d7ae84160fb27e4d3787634e",
+      "molecules": 5021,
+      "alignment_failures": 0,
+      "bucket_counts": {
+        "agree_all": 145433,
+        "parity_fixes_default": 176,
+        "rdkit_smarts_parse_error": 10042
+      }
+    }
+  },
+  "boundary": "Both arms were separately built clean worktrees. This establishes the declared exposed-corpus SMARTS candidate comparison only; it does not establish an unused/sealed evaluation, full SMARTS compatibility, or cross-version RDKit parity."
+}

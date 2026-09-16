@@ -6,9 +6,12 @@
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { chromium } from "playwright";
+import { chromium, firefox, webkit } from "playwright";
 
 const cli = process.env.CHEMATIC_CLI ?? "target/release/chematic";
+const browserName = process.argv[2] ?? "chromium";
+const browsers = { chromium, firefox, webkit };
+assert.ok(browsers[browserName], `unknown browser: ${browserName}`);
 const records = [
   { name: "ethanol", smiles: "CCO" },
   { name: "invalid", smiles: "C1CC" },
@@ -45,9 +48,10 @@ const batch = jsonCommand(["batch-descriptors"], records.map((record) => record.
 assert.equal(batch.status, "complete");
 assert.equal(batch.records.length, records.length);
 
-const browser = await chromium.launch({ headless: true });
+const browser = await browsers[browserName].launch({ headless: true });
 try {
-  const page = await browser.newPage();
+  const context = await browser.newContext();
+  const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (error) => errors.push(String(error)));
   page.on("console", (message) => {
@@ -57,7 +61,11 @@ try {
     waitUntil: "networkidle",
   });
   await page.locator("#loading-overlay").waitFor({ state: "hidden" });
-  const workerRecords = await page.evaluate(async (workerInput) => {
+  assert.equal(await page.locator("html").getAttribute("data-explorer-analysis"), "worker");
+  // This is a second real Worker, so initialize it before switching offline.
+  // WebKit correctly treats a new module Worker as an asset load; the product
+  // contract only promises local work after page and Worker initialization.
+  await page.evaluate(async () => {
     const worker = new Worker("./worker.js", { type: "module" });
     let nextId = 1;
     const request = (type, payload = {}) => new Promise((resolve, reject) => {
@@ -72,11 +80,20 @@ try {
       });
       worker.postMessage({ type, requestId, ...payload });
     });
+    await request("init");
+    window.__chematicParityWorker = { worker, request };
+  });
+  // Both the Explorer Worker and the comparison Worker have initialized their
+  // WASM modules. Parsing below must not need the network.
+  await context.setOffline(true);
+  const workerRecords = await page.evaluate(async (workerInput) => {
+    const bridge = window.__chematicParityWorker;
+    if (!bridge) throw new Error("parity Worker was not initialized");
     try {
-      await request("init");
-      return (await request("parse", { records: workerInput, startIndex: 0 })).records;
+      return (await bridge.request("parse", { records: workerInput, startIndex: 0 })).records;
     } finally {
-      worker.terminate();
+      bridge.worker.terminate();
+      delete window.__chematicParityWorker;
     }
   }, records);
 
@@ -100,8 +117,9 @@ try {
     }
   }
   assert.deepEqual(errors, []);
+  await context.close();
 } finally {
   await browser.close();
 }
 
-console.log("Explorer native scalar/batch/Worker parity passed");
+console.log(`${browserName}: Explorer native scalar/batch/Worker offline parity passed`);

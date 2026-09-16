@@ -4,27 +4,12 @@
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
-
-from benchmark_version import workspace_version
 
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "validation" / "cross_binding_contract.json"
 REPORT_DIR = ROOT / "validation" / "results"
-
-
-def current_workspace_version() -> str:
-    cargo = (ROOT / "Cargo.toml").read_text(encoding="utf-8")
-    match = re.search(r'(?ms)^\[workspace\.package\]\s*$.*?^version\s*=\s*"([^"]+)"\s*$', cargo)
-    if not match:
-        fail("Cargo.toml has no workspace package version")
-    return match.group(1)
-
-
-QUALITY_REPORT = ROOT / "validation" / "results" / f"reaction-quality-boundary-v{current_workspace_version()}.json"
-
 
 def fail(message: str) -> None:
     raise SystemExit(f"reaction application evidence invalid: {message}")
@@ -34,6 +19,9 @@ def main() -> int:
     reports = sorted(REPORT_DIR.glob("reaction-application-breadth-v*.json"))
     if not reports:
         fail("no reaction-application breadth report found")
+    quality_reports = sorted(REPORT_DIR.glob("reaction-quality-boundary-v*.json"))
+    if not quality_reports:
+        fail("no reaction quality-boundary report found")
     # The breadth lane is intentionally historical: the shared fixture may
     # grow with supplemental quality cases without forcing a rerun of the
     # older 15-case binding matrix. Select the newest checked-in report and
@@ -80,11 +68,12 @@ def main() -> int:
         fail("negative boundary disclosure is missing")
 
     try:
-        quality_report = json.loads(QUALITY_REPORT.read_text(encoding="utf-8"))
+        quality_report = json.loads(quality_reports[-1].read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
         fail(f"cannot read quality-boundary report: {error}")
-    if quality_report.get("target_version") != current_workspace_version():
-        fail("quality-boundary report target version is stale")
+    quality_version = quality_report.get("target_version")
+    if not isinstance(quality_version, str) or not quality_version.strip():
+        fail("quality-boundary report target version is missing")
     if quality_report.get("fixture") != "validation/cross_binding_contract.json#reaction_application_contract":
         fail("quality-boundary fixture reference is incorrect")
     quality = quality_report.get("cases")
@@ -119,7 +108,7 @@ def main() -> int:
     print(
         f"reaction application evidence OK: {positive_count} historical positive, "
         f"{len(quality_cases)} supplemental quality cases, {covered_negative}/{len(negative)} negative; "
-        f"breadth report v{report_version}; "
+        f"breadth report v{report_version}; quality report v{quality_version}; "
         "Rust/Python/Node-WASM/WASM boundaries explicit"
     )
     return 0

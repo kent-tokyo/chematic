@@ -1,142 +1,79 @@
-# Validation Report
+# Validation report
 
-Summary of descriptor accuracy against RDKit on a ChEMBL-derived corpus.
+Updated 2026-09-16. Current public release: **v1.0.16**. Results below keep the
+version, comparator, corpus, and operation written in each artifact; they are not
+silently upgraded to the current source revision.
 
-The figures below are a dated measurement snapshot, not a claim that every
-current workspace revision has been re-measured. Reproduce them with the
-version, commit, corpus, and commands shown here.
+## Current trust evidence
 
-**Environment:** Python 3.13.6, Apple M4, chematic v0.18.0 (commit `24a9239`), RDKit 2026.03.4, measured 2026-08-23T00:20:36Z
-
----
-
-## Current RDKit compatibility profile gate (v1.0.14)
-
-The current working-tree source-built remeasurement uses RDKit 2026.03.6 and
-the 5,000-row corpus: all eight core compatibility fields match 5,000/5,000 at
-their strict thresholds, including the known explicit-isotope row. The code
-supports a finite table of common explicit isotopes and rejects unknown isotope
-labels without approximation. Native descriptor behavior remains unchanged and
-the compatibility profile remains opt-in; native-regression and broader
-descriptor-family gates are still separate.
-
-The structural holdout covers charged atoms, a metal, aromatic/fused/bridged
-rings, a macrocycle, an isotope, and unusual atom cases: 12/12 checks passed.
-The scorecards include median, p95, maximum error, published and strict
-agreement, parser counts, and representative first-cause classes.
-
-See [`descriptor-rdkit-diagnostics-v1.0.13.json`](../validation/results/descriptor-rdkit-diagnostics-v1.0.13.json)
-and [`descriptor-rdkit-holdout-v1.0.13.json`](../validation/results/descriptor-rdkit-holdout-v1.0.13.json)
-for the machine-readable evidence.
-
----
-
-## Descriptor Accuracy (4,999-molecule ChEMBL subset)
-
-| Descriptor | Agreement | Tolerance | Notes |
-|---|---|---|---|
-| Molecular weight | **100%** (5000/5000) | ±0.01 Da | vs `Descriptors.MolWt`; current source-built v2 gate |
-| Heavy atom count | **100%** (4999/4999) | exact | |
-| H-bond donors (HBD) | **100%** (4999/4999) | exact | |
-| H-bond acceptors (HBA) | **100%** (5000/5000) | exact | current source-built v2 gate |
-| TPSA | **100%** (4999/4999) | ±0.1 Å² | |
-| LogP (Crippen) | **100%** (4999/4999) | exact* | max Δ = 1.10e-13 |
-| MR (molar refractivity) | **100%** (4999/4999) | ±0.01 | |
-| Fsp3 | **100%** (4999/4999) | ±0.001 | |
-| Aromatic ring count | **100%** (4999/4999) | exact | |
-| Aliphatic ring count | **100%** (4999/4999) | exact | |
-| Saturated ring count | **100%** (4999/4999) | exact | |
-| Rotatable bonds | **100%** (4999/4999) | exact | |
-| Num heteroatoms | **100%** (4999/4999) | exact | |
-| Num spiro atoms | **100%** (4999/4999) | exact | |
-| Num bridgehead atoms | **100%** (4999/4999) | exact | bond-intersection algorithm |
-| Num amide bonds | **100%** (4999/4999) | exact | |
-| Arom./aliph. heterocycles | **100%** (4999/4999) | exact | |
-| [nH] SMARTS match | **100%** (4999/4999) | precision & recall | TP=467 TN=4532 FP=0 FN=0 |
-| Num stereocenters (legacy)  | **99.96%** (4997/4999) | exact† | vs `CalcNumAtomStereoCenters` |
-| Num stereocenters (new CIP) | 98.6% (4929/4999) | exact† | vs `FindPotentialStereo` |
-
-20 of 20 tested metrics reach ≥98.6% on the 4,999-molecule ChEMBL corpus.
-chematic stereocenters is calibrated between legacy (99.96%) and new-CIP (98.6%) oracles.
-
----
-
-## Stereocenters — Oracle Calibration
-
-chematic's stereocenter count is calibrated between two RDKit oracles:
-
-| Oracle | Agreement | Count | Notes |
-|---|---|---|---|
-| Legacy `CalcNumAtomStereoCenters` | **99.96%** (4997/4999) | 4997/4999 | 68 molecule where chematic is more accurate (legacy under-counts) |
-| New CIP `FindPotentialStereo` | 98.6% (4929/4999) | 4929/4999 | 0 molecules where chematic correctly agrees with legacy (new CIP over-counts cage systems) |
-| Consensus (all three agree) | 98.6% (4929/4999) | 4929/4999 | molecules where legacy, new CIP, and chematic all agree |
-
-**Oracle disagreements:** 68 molecules where legacy ≠ new CIP.
-- 68 where legacy under-counts a pseudoasymmetric polyester (chematic and new CIP both correctly return 4; legacy returns 2)
-- 0 where new CIP over-counts cage/adamantane-like systems (chematic and legacy correctly agree on fewer stereocenters)
-
----
-
-## CIP R/S/E/Z Label Agreement
-
-A distinct metric from stereocenter *count* agreement above: given a stereocenter
-both chematic and RDKit agree exists, does chematic assign the same R/S/E/Z label?
-Measured via `chematic-cip`'s `corpus_snapshot` example
-(`assign_cip_accurate_experimental`, the production-path engine) against the same
-4,999-molecule corpus, cross-checked against a freshly regenerated `rdCIPLabeler`
-oracle by `scripts/cip_accurate_full_corpus_report.py`:
-
-| Oracle | Agreement | Count |
+| Area | Evidence | Boundary |
 |---|---|---|
-| Modern `rdCIPLabeler` | **99.64%** | 4171/4186; 15 phosphorus rows fail closed as representation-unstable |
+| Release channels | `validation/results/release-channel-verification-v1.0.15.json` | GitHub, crates.io, docs.rs, PyPI, npm, Pages; platform smoke uses the actually published wheels |
+| RDKit.js browser comparison | `benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md` | Fixed exposed 10k corpus and local no-store assets; not internet/CDN latency |
+| Parser security | `validation/parser_security_corpus_v1.json` plus hosted Linux gate | Fixed five-format corpus with process/time/memory boundaries |
+| V3000 interchange | `validation/results/v3000-*-v1.0.15.json` | Ordinary structures and declared SGROUP/stereo contracts; no coordination/haptic/polymer semantic claim |
+| Stereo development | `validation/results/stereo-*-v1.0.15-2026-09-16.json` | 300 development structures and 5,115 spelling variants; not independent gold |
+| Sealed evaluation | `validation/results/sealed-cohort-preflight-trust-eval-candidate-20260916.json` | Candidate, attestation, and 2k/8k split are sealed; no score has been calculated |
 
-A supplementary spot-check against RDKit's older `AssignStereochemistry`/`_CIPCode`
-algorithm (R/S atom stereocenters only, not the E/Z bond stereocenters `rdCIPLabeler`
-also covers above) gives a consistent **99.78%** (4150/4159), confirming the two
-RDKit-side oracles agree with each other and with chematic to within a similar
-margin. Both figures are a substantial improvement over a prior snapshot's
-96.30%/96.83%, reflecting CIP-engine fixes landed in the interim releases.
+## Accuracy snapshots
+
+The exposed 4,999/5,000-molecule ChEMBL-derived lanes report exact or
+tolerance-matched results for molecular weight, HBA/HBD, TPSA, LogP, molar
+refractivity, Fsp3, ring families, rotatable bonds, and related descriptors.
+These are regression and compatibility evidence for their recorded versions,
+not results from the sealed 8,000-row holdout.
+
+The modern CIP snapshot reports 4,171/4,186 resolved labels agreeing with the
+pinned RDKit labeler; 15 phosphorus rows fail closed as representation-unstable.
+Safe abstention is counted separately from a correct assignment.
+
+The RDKit-compatible Morgan/search profile has exact exposed-corpus lanes for
+configured folded bits, sparse counts, bit information, and top-k retrieval.
+Native ECFP4 uses a different definition; cross-profile recall is diagnostic and
+is not a compatibility percentage.
+
+## Browser comparison summary
+
+The published-package Chromium local no-store download-to-ready p95 is 51.62 ms
+for chematic and 98.495 ms for RDKit.js in the recorded environment. chematic's
+raw/gzip WASM assets are smaller and its parse/write lane is faster there;
+RDKit.js is faster for the parse-inclusive fingerprint operation. One Fe(II)
+coordination input is a typed fingerprint refusal, leaving 9,999 supported rows.
+
+These numbers do not establish internet download latency, unique process memory,
+all-browser performance superiority, or unmeasured fingerprint configurations.
+
+## Reproduction entry points
 
 ```bash
-cargo run -p chematic-cip --release --example corpus_snapshot -- \
-    --candidate scripts/chembl_accuracy_corpus_4999.smi /tmp/candidate.tsv
-.venv/bin/python scripts/cip_accurate_full_corpus_report.py \
-    /tmp/candidate.tsv /tmp/candidate.tsv scripts/chembl_accuracy_corpus_4999.smi
+# Core workspace checks
+cargo test --workspace --all-targets --locked
+cargo clippy --workspace --all-targets --locked -- -D warnings
+
+# Documentation and evidence consistency
+python3 scripts/check_release_docs_consistency.py
+python3 scripts/check_benchmark_index.py
+python3 scripts/check_compatibility_profiles.py
+
+# Development accuracy snapshot (requires the pinned RDKit environment)
+python3 scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi
 ```
 
-(Passing the same file as both `baseline` and `candidate` reports zero
-regressions trivially and surfaces the direct oracle-agreement percentage in the
-`candidate_correct` line -- this script's real purpose is comparing two engine
-variants, reused here for a single-engine accuracy figure.)
+Use the exact command and environment recorded by an artifact for formal
+reproduction. The commands above are entry points, not substitutes for its
+pinned metadata.
 
----
+## Known limits
 
-## Reproduce
+- Canonical SMILES is not always a safe identity key; use
+  `canonical_smiles_stable_key()` where fail-closed behavior is required.
+- Coupled aromatic E/Z and phosphorus-CIP cases retain explicit residuals.
+- Coordination/haptic V3000 semantics, broad polymer expansion, and full CDXML
+  editing are outside the stable contract.
+- Pure-Rust InChI is approximate; standard InChI requires the optional native
+  feature.
+- 3D/MMFF94/UFF remains experimental until the separate A6 gates pass.
 
-```bash
-# Requires RDKit; corpus is committed at scripts/chembl_accuracy_corpus_4999.smi
-.venv/bin/python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi
-.venv/bin/python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --detail
-.venv/bin/python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --json validation/results/bench5k_latest.json
-python3 scripts/gen_validation_report.py validation/results/bench5k_latest.json
-```
-
-Reference TSV files: `scripts/rdkit_reference_*.tsv` (generated by `scripts/gen_rdkit_reference.py`).
-
----
-
-*\* LogP max |Δ| = 1.10e-13 — within float64 rounding error. bench5k.py uses ±0.01 as the test threshold.*
-
-*† Stereocenters: see Oracle Calibration section above.*
-
----
-
-## Known Limitations
-
-- **Kekulization**: 1 of 5,000 tested molecules — `[H][H]` (no heavy atoms; IUPAC InChI library constraint). Returns `KekuleError` explicitly.
-- **Aromaticity model**: Hückel 4n+2 per SSSR ring; RDKit uses fused-ring delocalization. Visible in pyridone, quinolone, indolizine.
-- **InChI**: Pure-Rust implementation is approximate. Use `native-inchi` feature for standard-compliant InChI/InChIKey.
-
----
-
-*Validation corpus: ChEMBL-derived 4,999-molecule SMILES set (`scripts/chembl_accuracy_corpus_4999.smi`, 5,000 raw lines; `csv.DictReader` treats the first line as a header, so 4,999 molecules are actually evaluated -- see the Reproduce section). Details: [`benchmark.md`](benchmark.md) · [`rdkit-comparison.md`](rdkit-comparison.md)*
+See [compatibility scope](compatibility-scope.md),
+[RDKit migration](rdkit-migration.md), [accuracy plan](rdkit-accuracy-plan.md),
+and the [benchmark index](../benchmarks/README.md) for exact boundaries.

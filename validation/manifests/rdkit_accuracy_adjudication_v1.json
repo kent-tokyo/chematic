@@ -18,19 +18,37 @@
   "gold_cases": [
     {
       "id": "negative_resonance_oxygen",
-      "input_ref": "validation/cip_negative_resonance_order_invariance.jsonl#cyclohexadienyl_oxygen",
+      "input_ref": "validation/cip_negative_resonance_order_invariance.jsonl#phenyl_anion_oxygen",
       "atom_mapping": {"center_map": 1},
-      "expected": {"label_invariant_under_atom_permutation": true},
-      "rationale": "CIP label must follow the mapped stereocenter, not input atom order.",
+      "expected": {"label_invariant_under_atom_permutation": true, "pinned_rdkit_2025_09_3_label": "S"},
+      "rationale": "A RDKit-sanitizable anionic resonance branch must retain the mapped stereocenter's pinned label under atom-order changes; an independent reviewer still adjudicates chemical truth.",
       "reviewer": null,
       "unresolved_reason": null
     },
     {
       "id": "negative_resonance_nitrogen",
-      "input_ref": "validation/cip_negative_resonance_order_invariance.jsonl#cyclohexadienyl_nitrogen",
+      "input_ref": "validation/cip_negative_resonance_order_invariance.jsonl#phenyl_anion_nitrogen",
       "atom_mapping": {"center_map": 1},
-      "expected": {"label_invariant_under_atom_permutation": true},
-      "rationale": "An anionic resonance branch must not make the assigned label depend on serialization order.",
+      "expected": {"label_invariant_under_atom_permutation": true, "pinned_rdkit_2025_09_3_label": "S"},
+      "rationale": "A RDKit-sanitizable anionic resonance branch must not make the mapped stereocenter's pinned label depend on serialization order.",
+      "reviewer": null,
+      "unresolved_reason": null
+    },
+    {
+      "id": "negative_resonance_aryl_ligand_ranking",
+      "input_ref": "validation/cip_negative_resonance_order_invariance.jsonl#phenyl_anion_vs_neutral_aryl_methyl",
+      "atom_mapping": {"center_map": 1},
+      "expected": {"label_invariant_under_atom_permutation": true, "pinned_rdkit_2025_09_3_label": "S"},
+      "rationale": "The anionic aryl ligand must be ranked consistently against a neutral aryl ligand at the same mapped tetrahedral center; an independent reviewer still adjudicates chemical truth.",
+      "reviewer": null,
+      "unresolved_reason": null
+    },
+    {
+      "id": "negative_resonance_fluorophenyl_ligand_ranking",
+      "input_ref": "validation/cip_negative_resonance_order_invariance.jsonl#phenyl_anion_vs_fluorophenyl_methyl",
+      "atom_mapping": {"center_map": 1},
+      "expected": {"label_invariant_under_atom_permutation": true, "pinned_rdkit_2025_09_3_label": "R"},
+      "rationale": "A charged aryl branch and a fluorophenyl branch create a nontrivial ligand-order comparison that must not change with serialization order.",
       "reviewer": null,
       "unresolved_reason": null
     },
@@ -56,8 +74,8 @@
   "blind_cases": [
     {
       "id": "blind-cip-001",
-      "input_ref": "validation/cip_negative_resonance_order_invariance.jsonl#cyclohexadienyl_fluorine",
-      "input_digest": "sha256:7d33ede134541e49e21026e97e5be89af7475bd36bf4635c3057d7aa6a43d643",
+      "input_ref": "validation/cip_negative_resonance_order_invariance.jsonl#phenyl_anion_fluorine",
+      "input_digest": "sha256:2584811810b162f16fe24963b622a0198471064f65c41e00692743425a37c70f",
       "expected": null,
       "rationale": null,
       "reviewer": null,
@@ -65,8 +83,8 @@
     },
     {
       "id": "blind-structure-001",
-      "input_ref": "validation/cip_negative_resonance_order_invariance.jsonl#cyclohexadienyl_sulfur",
-      "input_digest": "sha256:07b76c180f433aef8b7075d9e115c7889792f9d88002a88ac952e3bc3bd3a136",
+      "input_ref": "validation/cip_negative_resonance_order_invariance.jsonl#phenyl_anion_sulfur",
+      "input_digest": "sha256:31b48d6e5cbb54c39e4f09f4c1307a2e4327501bf5fd3c778b822aaf1642a219",
       "expected": null,
       "rationale": null,
       "reviewer": null,

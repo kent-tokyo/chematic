@@ -57,7 +57,7 @@ def main() -> int:
     # three identical O(N * key-set) traversals.
     jobs = {
         "rust": (["cargo", "run", "-p", "chematic-chem", "--release", "--offline", "--example", "maccs_binding_dump"],),
-        "node_wasm": (["node", "scripts/maccs_binding_dump.mjs"],),
+        "node_wasm": (["node", "scripts/binding_dump.mjs", "maccs"],),
     }
     with ThreadPoolExecutor(max_workers=3) as executor:
         futures = {

@@ -134,14 +134,11 @@ extrapolate to other batch sizes or fingerprint types not in that table.
 | All at once | manual loop over `Descriptors._descList` | `mol.descriptors()` — dict of 70+ descriptor *functions* in one call (190+ individual *values*, since a few functions such as MQN/BCUT2D/autocorr2d return multi-value arrays — see `docs/rdkit-comparison.md`'s descriptor accuracy caveat) |
 | Bulk / DataFrame | manual loop + `pd.DataFrame(...)` | `chematic.bulk.descriptors(smiles_list)` / `chematic.descriptors_df(smiles_list)` (Rayon-parallel, returns a list of dicts / DataFrame directly) |
 
-Accuracy vs. RDKit, per `docs/benchmark.md` and README's badge comment
-(4,999-mol ChEMBL subset, chematic v0.18.0 vs. RDKit 2026.03.4, measured
-2026-08-23): HBA/HBD/ARC **100%**, MW **99.82%** (±0.01 Da — a genuine
-corpus-wide check, added this release), TPSA **100% within ±0.1 Å²**
-(README's "TPSA edge cases" bullet notes a residual 0.3%/16-molecule gap in
-exotic phosphazene/S=N=P chemistry), LogP (Crippen) **100%*** (max Δ =
-1.1×10⁻¹³). These are the only descriptor-accuracy figures this page
-cites, and only because README/CHANGELOG already document them.
+The current source-built descriptor gate records 5,000/5,000 MW and HBA rows
+matching the pinned RDKit profile, while the broader 4,999-row historical
+snapshot records exact or tolerance-matched results for HBD, TPSA, LogP,
+molar refractivity, Fsp3, and documented ring metrics. These are exposed-corpus
+regressions, not the prepared 8,000-row sealed evaluation.
 
 ## Aromaticity
 
@@ -339,10 +336,11 @@ formats" claim.
 **Not applicable to RDKit's core Python package** — browser consumers use
 RDKit's official JavaScript/WASM distribution path, `@rdkit/rdkit`.
 chematic ships `chematic-wasm` directly from the same Rust source as the
-Python bindings. Measured 2026-09-11 in the v1.0.12 Node/WASM gate (see the
-[artifact record](../benchmarks/2026-09-11-official-rdkit-js-v1.0.12.md)): chematic's WASM bundle is
-**3.93 MB raw / 1.43 MB gzip**, versus RDKit.js at
-**6.91 MB raw / 2.05 MB gzip** — about 1.8× smaller raw and 1.4× smaller gzip.
+Python bindings. In the v1.0.15 published-package scorecard, chematic's WASM
+asset is **4,005,280 bytes raw / 1,460,499 bytes gzip**, versus
+**7,333,095 / 2,379,975 bytes** for `@rdkit/rdkit@2026.03.6` under the same
+local file-compression method. See the
+[scorecard](../benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md).
 See [`format-capabilities.md`](format-capabilities.md)
 for exactly which formats are and are not exposed at the WASM layer (plain
 CIF, notably, is not).
