@@ -88,15 +88,15 @@ T3/T4/T5 can proceed in parallel once their dependencies pass. Public-channel
 inventory, unused-data acquisition, and A5 gold preparation start alongside T0.
 Confirmed silent corruption, panic, or resource-limit defects take precedence.
 
-**T1.6 preflight (2026-09-13):** an independently acquired ChEMBL candidate
-has 11,359 non-overlapping eligible rows after canonical/parent/scaffold audit,
-which deterministically yields 2,000 development and 8,000 holdout candidates.
-The recorded preflight remains explicitly `prepared_not_sealed`: its local
-manifest predates the candidate freeze and must not be used for model selection
-or presented as a sealed evaluation. The non-release annotated tag
-`trust-eval-candidate-20260916` now freezes `c2682e3aa75c21566c86ce1ade9cbd052838c694`
-(tagged 2026-09-16T16:21:12+09:00); a new legitimate attestation after that
-timestamp is still required before the raw split can be sealed.
+**T1.6 sealed cohort (2026-09-16):** the non-release annotated tag
+`trust-eval-candidate-20260916` freezes `c2682e3aa75c21566c86ce1ade9cbd052838c694`
+(tagged 2026-09-16T16:21:12+09:00). A ChEMBL source acquired after that freeze,
+its maintainer attestation, and canonical/parent/scaffold audits against the
+descriptor census, ChEMBL accuracy, and exposed browser-10k inputs are recorded
+in `validation/results/sealed-cohort-preflight-trust-eval-candidate-20260916.json`.
+The local-only raw input yields 2,000 development and 8,000 sealed holdout rows
+from 10,239 eligible structures. No evaluation result has been calculated; the
+older 2026-09-13 preflight remains historical `prepared_not_sealed` evidence.
 
 **T0 result (2026-09-13):** independently built baseline/candidate arms completed
 the fixed 5,021-molecule × 31-query lane with complete row accounting and zero
