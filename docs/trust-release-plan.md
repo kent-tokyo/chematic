@@ -206,6 +206,15 @@ SMARTSについては同じv1.0.14 build・5,021分子・31 queryで2026.03.6 la
   `validation/results/sealed-cohort-preflight-v1.0.14.json`へ保存した。candidate
   commit/tagとunused-data attestationをまだ得ていないためstatusは
   `prepared_not_sealed`であり、評価結果はまだ算出していない。
+- [x] T1.7 ordinary-V3000 interchange baselineを固定する。PR #544で
+  RDKit `2025.09.3` と Indigo `1.46.0` をversion-pinned readerとして、通常V3000の
+  semantic round trip、SGROUPの作成・編集後の外部reader受理、relative stereoと
+  COLLECTION順序を検証した。結果は
+  `validation/results/v3000-{rdkit,indigo,sgroup-external-reader,rdkit-relative-stereo}-v1.0.15.json`
+  に保存する。WASMはSGROUP構文をbounded typed inspectionとして公開する。
+  coordination chemistry、haptic bond、polymer expansion、ENDPTS/ATTACHの意味解釈、
+  typed SGROUPの化学的編集は明示的に対象外であり、opaque retentionを編集可能性や
+  相互運用完全性として扱わない。今後の拡張はこの境界ごとに外部reader gateを追加する。
 
 既存A0 validator・raw-accounting・cross-binding runnersを拡張して使う。
 出口: 全操作の状態を生成でき、互換と宣言した範囲は全件coverageと既定許容差を満たす。
