@@ -186,8 +186,9 @@ SMARTSについては同じv1.0.14 build・5,021分子・31 queryで2026.03.6 la
   `scripts/prepare_sealed_accuracy_cohort.py` は、RDKit固定の
   canonical/parent/Murcko scaffold キー、source hash、candidate freeze、
   unused-data attestation を必須にする準備器として実装済み。candidate tagは
-  実Git commitと同じobjectへ解決すること、attestationはattestor/timestamp/
-  statement/source hashを持ち対象source hashと一致することを検証する。新規データ
+  実Git commitと同じobjectへ解決する**annotated tag**であること、attestationはattestor/
+  timestamp/statement/source hashを持ち対象source hashと一致すること、さらにattestation
+  timestampがcandidate tagのtagger timestampより前でないことを検証する。新規データ
   の独立取得と attestation は未完了なので、既存 corpus を sealed と
   表示してはならない。
   `scripts/fetch_chembl_sealed_candidate.py` は既存の小規模ChEMBL入力と
@@ -197,8 +198,9 @@ SMARTSについては同じv1.0.14 build・5,021分子・31 queryで2026.03.6 la
   実行前にprotocol・seed・候補buildを凍結し、結果閲覧後の再調整は
   新しい候補試験として記録する。既存7,737件は封印群に再分類しない。
   正式封印時は`validation/templates/unused-data-attestation.template.json`を複製して
-  maintainerが記入し、`--attest-unused --attestation-file`とcandidate commit/tagを
-  同時に渡す。テンプレート自体はattestationではない。
+  maintainerが候補のannotated tagを先に作成してから記入し、
+  `--attest-unused --attestation-file`とcandidate commit/tagを同時に渡す。
+  テンプレート自体はattestationではない。
   2026-09-13のlocal preflightでは、ChEMBL APIの14,543 single-fragment候補
   （source SHA-256 `f50156bf…d63e61`）からcanonical 1件・scaffold 3,183件を
   既存scopeとの重複として除外し、11,359件のeligible poolを得た。そこから
