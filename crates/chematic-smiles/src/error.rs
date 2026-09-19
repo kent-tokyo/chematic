@@ -17,12 +17,18 @@ pub enum SmilesError {
     UnknownElement { symbol: String, pos: usize },
     /// A ring-closure digit was opened but never closed (or vice-versa).
     UnmatchedRingClosure { ring_num: u8, pos: usize },
+    /// An extended SMILES+ `%(n)` ring closure above the legacy `u8` range
+    /// was opened but never closed (or vice-versa).
+    UnmatchedExtendedRingClosure { ring_num: u32, pos: usize },
     /// Mismatched parentheses.
     MismatchedParentheses { pos: usize },
     /// A bracket atom `[...]` could not be parsed.
     InvalidBracketAtom { detail: String, pos: usize },
     /// Conflicting bond types at both ends of a ring closure.
     ConflictingRingBond { ring_num: u8, pos: usize },
+    /// An extended SMILES+ `%(n)` ring closure above the legacy `u8` range
+    /// declared conflicting bond types at its two ends.
+    ConflictingExtendedRingBond { ring_num: u32, pos: usize },
     /// Empty SMILES string.
     EmptyInput,
     /// Branch nesting exceeded the safe recursion limit.
@@ -52,6 +58,12 @@ impl fmt::Display for SmilesError {
             Self::UnmatchedRingClosure { ring_num, pos } => {
                 write!(f, "unmatched ring closure {ring_num} at position {pos}")
             }
+            Self::UnmatchedExtendedRingClosure { ring_num, pos } => {
+                write!(
+                    f,
+                    "unmatched extended ring closure {ring_num} at position {pos}"
+                )
+            }
             Self::MismatchedParentheses { pos } => {
                 write!(f, "mismatched parenthesis at position {pos}")
             }
@@ -61,6 +73,10 @@ impl fmt::Display for SmilesError {
             Self::ConflictingRingBond { ring_num, pos } => write!(
                 f,
                 "conflicting bond types for ring closure {ring_num} at position {pos}"
+            ),
+            Self::ConflictingExtendedRingBond { ring_num, pos } => write!(
+                f,
+                "conflicting bond types for extended ring closure {ring_num} at position {pos}"
             ),
             Self::EmptyInput => write!(f, "SMILES input is empty"),
             Self::NestingTooDeep { pos } => write!(f, "branch nesting too deep at position {pos}"),

@@ -5,8 +5,8 @@
     "tag": "v1.0.16",
     "commit": "ceac4abfa53acc61167bae6c7ecc834f284e2220"
   },
-  "checked_at": "2026-09-16T11:57:28Z",
-  "release_ready": false,
+  "checked_at": "2026-09-16T12:10:00Z",
+  "release_ready": true,
   "channels": [
     {
       "id": "github_release",
@@ -45,9 +45,10 @@
     },
     {
       "id": "site",
-      "status": "not_measured",
+      "status": "verified",
+      "observed_version": "1.0.16",
       "url": "https://kent-tokyo.github.io/chematic/",
-      "detail": "The checked page still showed v1.0.15 before the v1.0.16 release PR is merged to main and its Pages deployment completes. This is intentionally recorded as pending, not verified."
+      "detail": "GitHub Pages deploy run 35093880732 for main merge commit a7ac951d6b77d04e61ce819d81a2fcfd7a634524 succeeded. A direct homepage fetch then contained Current release: v1.0.16, and /playground/ returned HTTP 200."
     }
   ]
 }

@@ -1,7 +1,7 @@
 # Roadmap open-work disposition
 
 This document is the current disposition of unchecked roadmap items for the
-v1.0.15 release follow-up (updated 2026-09-13). An item is not complete merely
+v1.0.16 release follow-up (updated 2026-09-19). An item is not complete merely
 because a narrower local slice has evidence. Recorded v1.0.13 and earlier
 measurements keep their original scope; they were not rerun for this reorganization.
 
@@ -20,6 +20,26 @@ Dependency classes used below: `local-open`, `toolchain-open`, `data-sealed`,
 The abandoned speed target is historical and excluded from the open count.
 See the [pre-reorganization snapshot](archive/roadmap-through-2026-09-13.md)
 for the previous long-form roadmap.
+
+## Current delta over the historical evidence below
+
+The long A0–A6 measurement rows below retain their September 13 provenance.
+Their pending-state wording is superseded by these narrower completion records;
+none completes an entire A package:
+
+| Area | Completed slice | Remaining disposition |
+|---|---|---|
+| T0 / A4 | Independent baseline/candidate packet; 12 → 21 residuals, candidate rejected | `local-open`: classify residuals and evaluate a replacement; do not repeat the withdrawn 12 → 3 claim |
+| T1.6 / A0 | September 16 annotated candidate freeze, post-freeze source attestation, overlap audit and 2k/8k split; preflight record below | `data-sealed`: verify local raw hashes/exposure/protocol and run the frozen candidate. Missing local artifacts are a blocker, not a passed evaluation |
+| T1.7 / A4 | Ordinary V3000, external RDKit/Indigo readers and SGROUP/COLLECTION baseline (PR #544) | `local-open`: typed chemistry/edit semantics and declared refusal boundaries; general CX label retention does not complete T1.8 attachment identity/collapse |
+| T1.8 / A4 | September 19: complete positive `_AP<n>` syntax parser and degree-one-wildcard identity API, with invalid/non-dummy/multi-degree rejection | `local-open`: external RDKit round-trip and any collapse semantics; identity is deliberately not collapse eligibility |
+| T3.4 / A3/A4 | Public 1.0.15 vs official RDKit npm 10k, three browsers, 20 repetitions; separate three-run RSS diagnostic | `local-open` / `toolchain-open`: public 1.0.16 and candidate lanes, equivalent search, resource definitions; unavailable remote host/measurement stays explicit |
+| T4.6 / A2/A4 | September 19 core fix: parser/writer use bounded `%(n)` labels ≥100; malformed/overflow legacy ambiguity rejects; a 121-closure graph round-trips (227 `chematic-smiles` tests) | `local-open`: binding, canonical-writer, atom-order and resource-limit coverage remain; core writer/parser safety is complete |
+| T5.6 / A2 | Upstream CIP/atrop changes identified; existing development suite is not their acceptance | `local-open`: selection/isotope/atrop/permutation regressions; independent gold is `external-open` |
+
+The [Trust execution packet](trust-release-plan.md#6-次に着手する具体的な変更)
+owns the new subtask exits. These are subdivisions of the existing 18 open areas,
+not additional phases or a reason to mark A0–A6 complete.
 
 ## Accuracy follow-up (A0–A6)
 
@@ -60,10 +80,11 @@ Evidence: `validation/results/mmff94-macrocycle-boundary-experiment-a6-2026-09-1
 | A5 / P0/P6 | A5.1–A5.3: absolute gold, genuinely unused data, sample-size/protocol and statistical evaluator; A5.4–A5.5: independent review and formal comparison | Preparation is `local-open`; non-maintainer adjudication is `external`. The four gold candidates and two blind placeholders still reference exposed inputs and lack absolute labels/review. `scripts/evaluate_a5_paired.py` now provides fail-closed category accounting and cluster bootstrap with unresolved rows retained; it is evaluator infrastructure, not independent accuracy evidence. Manifest integrity is not independent accuracy evidence |
 | A6 / P5 | A6.1–A6.5: representative rings, typing/charge/all terms/gradients, soundness, stereo and conformer-quality non-inferiority | `local-open` / `local-toolchain`; experimental references/review may be `external`. Current-source MMFF94 type IDs match 6,681/6,698 (99.76%); excluding the declared unsupported probe, 16 comparable residual atoms remain. Current BCI charge comparison matches 6,665/6,693 (99.58%) on comparable rows, with 28 residual atoms across three macrocycles. Bounded bond+angle success is 265/265, but this is not full force-field parity. The row-isolated hard-timeout rerun covers all 265 rows with 215 successes and 50 explicit timeouts; all successes are finite/sound with zero gross clashes, while convergence is 54/215 successes at 200 steps (Tier A 42/64 and Tier B 12/151). Same-heavy-coordinate RDKit diagnostic over 215 successes reports median absolute energy delta 29.93 kcal/mol, p90 55.89, max 920.36. The fixed-H/same-coordinate diagnostic corrected the buffered 14-7 formula, explicit O-H numeric typing, explicit-H SymmSSSR representation dependence, and delocalized amine N-H typing. A narrow macrocycle-boundary candidate reduces the maximum comparable energy delta to 8.7467 kcal/mol and raises within-5 to 260/262; 0009 is exact in the macrocycle type audit, while 0029/0030 remain residuals. The latest 262/265 run reports median absolute energy delta 0.226 kcal/mol, p90 1.219, max 8.75, 224/262 within 1 kcal/mol, and 260/262 within 5 kcal/mol. Remaining macrocycle/drug-like term residuals and convergence/gradient/stereo exits remain open. Evidence: `validation/results/mmff94-hard-timeout-pipeline-a6-v1.0.13.json`, `validation/results/mmff94-rdkit-same-heavy-energy-a6-215-v1.0.13.json`, and `validation/results/mmff94-same-explicit-h-energy-a6-265-after-refined-macrocycle-boundary-v1.0.13.json`. Itemized energy and term-gradient diagnostics expose cancellation and high bond/nonbonded residuals in remaining stress cases |
 
-Execution order is now T0 evidence/budget repair → T1 Compatibility Contract
+The original dependency chain is T0 evidence/budget repair → T1 Compatibility Contract
 → T2 release/docs synchronization → T3 WASM/T4 parser safety/T5 stereo → T6
 independent review, maintenance and existing 3D gaps. The
-[Trust Release plan](trust-release-plan.md) defines subtasks and review dates.
+[Trust Release plan](trust-release-plan.md) defines subtasks and review dates;
+the active roadmap now orders work by the remaining exits, not completed stages.
 All A0–A6 exits remain open where stated; A0 unused-data work and A5 local
 preparation start in parallel. No new 3D feature race is required, but known
 3D incorrectness is not waived.
@@ -82,11 +103,14 @@ A confirmed silent-corruption regression takes precedence in any area.
 These are planning dispositions, not assertions that a tool or credential is
 currently missing. Assess each dependency when executing the corresponding task.
 
-The initial new-data design is 10,000 general molecules split into 2,000
-development and 8,000 sealed evaluation inputs, plus at least 300 challenge
-cases. Acquisition, licensing, scaffold/parent de-duplication and freezing are
-still tasks, not completed evidence. Previously exposed fixtures remain
-regression data.
+The September 16 preflight records a post-freeze 10,000-molecule cohort split
+into 2,000 development and 8,000 sealed evaluation inputs:
+`validation/results/sealed-cohort-preflight-trust-eval-candidate-20260916.json`.
+Its annotated tag is `trust-eval-candidate-20260916`; the raw inputs are local-only
+and scores remain unrun. Acquisition/attestation/overlap auditing and that
+candidate freeze are complete, not the full acceptance packet. Newer builds need
+their own freeze/exposure audit. The 300-case development stereo suite is not
+the separate unused challenge or independent gold set.
 
 Declared compatibility requires zero mismatches and 100% coverage on the
 frozen valid scope. Independent equivalence requires a reviewed gold set and

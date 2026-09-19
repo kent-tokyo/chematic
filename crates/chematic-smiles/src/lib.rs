@@ -52,7 +52,7 @@ pub use canonical_search::{
     CanonicalSearchStats, CanonicalizationError, CanonicalizationLimits,
     canonical_smiles_with_limits, reset_search_stats, search_stats_snapshot,
 };
-pub use cx::{CxAtomProp, CxSmiles, parse_cxsmiles, write_cxsmiles};
+pub use cx::{CxAtomProp, CxSmiles, attachment_point_label_number, parse_cxsmiles, write_cxsmiles};
 pub use error::SmilesError;
 pub use parser::{SmilesParseLimits, parse, parse_with_limits};
 pub use random_smiles::{random_smiles, random_smiles_vect};

@@ -344,12 +344,12 @@ impl<'a> SmilesWriter<'a> {
                     self.out
                         .push_str(bond_token_from(self.mol, bidx, bond_order, atom));
                 }
-                // Ring number: single digit for 1-9, `%NN` form for 10-99, `%NNN` for 100+.
+                // Ring number: single digit for 1-9, `%NN` form for 10-99,
+                // and SMILES+ `%(n)` for 100+.
                 if rn >= 100 {
-                    self.out.push('%');
-                    for ch in rn.to_string().chars() {
-                        self.out.push(ch);
-                    }
+                    self.out.push_str("%(");
+                    self.out.push_str(&rn.to_string());
+                    self.out.push(')');
                 } else if rn >= 10 {
                     self.out.push('%');
                     self.out
@@ -476,6 +476,7 @@ impl<'a> SmilesWriter<'a> {
 mod tests {
     use super::*;
     use crate::parser::parse;
+    use chematic_core::{Atom, Element, MoleculeBuilder};
 
     /// Parse → write → re-parse → verify atom/bond counts are preserved.
     fn roundtrip(smiles: &str) {
@@ -510,6 +511,39 @@ mod tests {
     #[test]
     fn test_write_ethane() {
         assert_eq!(write(&parse("CC").unwrap()), "CC");
+    }
+
+    #[test]
+    fn writer_uses_extended_ring_labels_without_losing_closures() {
+        // A 12×12 grid has cycle rank 121, forcing the DFS writer to allocate
+        // labels beyond 99. It is intentionally a graph-built fixture because
+        // legacy OpenSMILES cannot express the input without extended labels.
+        let width = 12;
+        let mut builder = MoleculeBuilder::with_capacity(width * width, 264);
+        let atoms: Vec<_> = (0..width * width)
+            .map(|_| builder.add_atom(Atom::new(Element::C)))
+            .collect();
+        for row in 0..width {
+            for column in 0..width {
+                let idx = row * width + column;
+                if column + 1 < width {
+                    builder
+                        .add_bond(atoms[idx], atoms[idx + 1], BondOrder::Single)
+                        .unwrap();
+                }
+                if row + 1 < width {
+                    builder
+                        .add_bond(atoms[idx], atoms[idx + width], BondOrder::Single)
+                        .unwrap();
+                }
+            }
+        }
+        let mol = builder.build();
+        let smiles = write(&mol);
+        assert!(smiles.contains("%(100)"), "{smiles}");
+        let reparsed = parse(&smiles).expect("extended ring labels must parse");
+        assert_eq!(reparsed.atom_count(), mol.atom_count());
+        assert_eq!(reparsed.bond_count(), mol.bond_count());
     }
 
     #[test]
@@ -578,8 +612,6 @@ mod tests {
     // their implicit hydrogens written — regression tests for the bracket-H bug found
     // via MRV oracle validation (isotope_0/2/3, charge_0/3, atom_map_0/1/2, disconnected_3
     // in validation/mrv_io_parity_summary.json).
-    use chematic_core::{Atom, Element, MoleculeBuilder};
-
     #[test]
     fn test_bracket_implicit_h_ammonium_charge_only() {
         let mut b = MoleculeBuilder::new();

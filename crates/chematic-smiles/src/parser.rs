@@ -89,9 +89,12 @@ const MAX_BRANCH_DEPTH: usize = 500;
 /// Maximum number of atoms allowed in a SMILES molecule (prevents memory exhaustion).
 const MAX_ATOMS: usize = 100_000;
 
-// OpenSMILES ring tokens are a digit or exactly two digits after `%`.
-// Direct indexing avoids hashing/allocating on every ordinary ring closure.
-type OpenRings = [Option<(AtomIdx, Option<ParsedBond>, u32)>; 100];
+// OpenSMILES ring tokens are a digit or exactly two digits after `%`. SMILES+
+// additionally uses `%(n)` for labels >= 100. Keeping only currently-open
+// labels makes the extended form bounded by the parsed graph rather than by a
+// label value supplied by untrusted input.
+type OpenRings = HashMap<u32, (AtomIdx, Option<ParsedBond>, u32)>;
+const MAX_OPEN_RING_LABELS: usize = MAX_ATOMS;
 
 /// An entry in the stereo neighbor sequence accumulated during parsing.
 #[derive(Clone, Copy)]
@@ -119,8 +122,6 @@ struct Parser<'a> {
     /// `PendingRing`). Monotonically increasing, never reused, so it uniquely
     /// identifies one specific open/close pair regardless of ring-digit reuse.
     next_ring_slot: u32,
-    /// Number of currently open labels (at most 100).
-    open_ring_count: u8,
     /// slot id → index in `stereo_records` for records with an unresolved `PendingRing(slot)`.
     pending_ring_stereo: HashMap<u32, usize>,
     /// slot id → close_atom, populated when rings close, for final resolution.
@@ -136,7 +137,6 @@ impl<'a> Parser<'a> {
             stereo_records: Vec::new(),
             current_stereo: None,
             next_ring_slot: 0,
-            open_ring_count: 0,
             pending_ring_stereo: HashMap::new(),
             ring_close_partners: smallvec::SmallVec::new(),
         }
@@ -188,7 +188,7 @@ impl<'a> Parser<'a> {
 
     fn parse_smiles(&mut self) -> Result<Molecule, SmilesError> {
         let mut mol = MoleculeBuilder::new();
-        let mut open_rings: OpenRings = [None; 100];
+        let mut open_rings = OpenRings::new();
 
         // Parse the first fragment
         self.parse_chain(&mut mol, None, None, &mut open_rings)?;
@@ -200,13 +200,10 @@ impl<'a> Parser<'a> {
         }
 
         // Trailing unmatched ring closures are errors
-        if self.open_ring_count != 0
-            && let Some(num) = open_rings.iter().position(Option::is_some)
-        {
-            return Err(SmilesError::UnmatchedRingClosure {
-                ring_num: num as u8,
-                pos: self.pos,
-            });
+        // Keep the legacy diagnostic deterministic: the old fixed-size table
+        // reported the lowest unmatched label. HashMap iteration is random.
+        if let Some(&num) = open_rings.keys().min() {
+            return Err(ring_closure_unmatched_error(num, self.pos));
         }
 
         // Anything left unconsumed is not valid SMILES (e.g. an unrecognised
@@ -485,12 +482,11 @@ impl<'a> Parser<'a> {
         &mut self,
         mol: &mut MoleculeBuilder,
         current: AtomIdx,
-        ring_num: u8,
+        ring_num: u32,
         ring_bond: Option<ParsedBond>,
         open_rings: &mut OpenRings,
     ) -> Result<StereoEntry, SmilesError> {
-        if let Some((open_atom, open_bond, slot)) = open_rings[ring_num as usize].take() {
-            self.open_ring_count -= 1;
+        if let Some((open_atom, open_bond, slot)) = open_rings.remove(&ring_num) {
             // A directional marker (`/`, `\`) is read "toward" the ring digit
             // from wherever it's written. At the OPENING occurrence (e.g.
             // "C/1..."), that's already the open->close direction, matching
@@ -505,10 +501,7 @@ impl<'a> Parser<'a> {
             let bond = match (open_bond, ring_bond) {
                 (Some(a), Some(b)) if a == b => a,
                 (Some(_), Some(_)) => {
-                    return Err(SmilesError::ConflictingRingBond {
-                        ring_num,
-                        pos: self.pos,
-                    });
+                    return Err(ring_closure_conflict_error(ring_num, self.pos));
                 }
                 (Some(b), None) | (None, Some(b)) => b,
                 (None, None) => ParsedBond::plain(implicit_bond(mol, open_atom, current)),
@@ -564,37 +557,77 @@ impl<'a> Parser<'a> {
             let slot = self.next_ring_slot;
             self.next_ring_slot += 1;
             self.ring_close_partners.push(None);
-            open_rings[ring_num as usize] = Some((current, ring_bond, slot));
-            self.open_ring_count += 1;
+            if open_rings.len() >= MAX_OPEN_RING_LABELS {
+                return Err(SmilesError::ResourceLimit {
+                    resource: "open ring labels",
+                    actual: open_rings.len() + 1,
+                    limit: MAX_OPEN_RING_LABELS,
+                });
+            }
+            open_rings.insert(ring_num, (current, ring_bond, slot));
             // Return: we opened a ring; partner not yet known.
             Ok(StereoEntry::PendingRing(slot))
         }
     }
 
-    /// Parse a ring closure number (single digit or `%nn`), together with an
+    /// Parse a ring closure number (single digit, `%nn`, or SMILES+ `%(n)`), together with an
     /// optional `prefix_bond` that was already consumed before this call.
     fn parse_ring_num(
         &mut self,
         prefix_bond: Option<ParsedBond>,
-    ) -> Result<(u8, Option<ParsedBond>), SmilesError> {
+    ) -> Result<(u32, Option<ParsedBond>), SmilesError> {
         let ring_num = if self.peek() == Some(b'%') {
             self.advance(); // consume '%'
-            let tens = self
-                .advance()
-                .filter(|c| c.is_ascii_digit())
-                .ok_or(SmilesError::UnexpectedEnd { pos: self.pos })?
-                - b'0';
-            let units = self
-                .advance()
-                .filter(|c| c.is_ascii_digit())
-                .ok_or(SmilesError::UnexpectedEnd { pos: self.pos })?
-                - b'0';
-            tens * 10 + units
+            if self.peek() == Some(b'(') {
+                self.advance(); // consume '('
+                let start = self.pos;
+                let mut value = 0_u32;
+                let mut digits = 0_usize;
+                while let Some(byte) = self.peek() {
+                    if byte == b')' {
+                        break;
+                    }
+                    if !byte.is_ascii_digit() {
+                        return Err(SmilesError::UnexpectedCharacter { pos: self.pos });
+                    }
+                    digits += 1;
+                    value = value
+                        .checked_mul(10)
+                        .and_then(|prior| prior.checked_add((byte - b'0') as u32))
+                        .ok_or(SmilesError::ResourceLimit {
+                            resource: "ring label value",
+                            actual: digits,
+                            limit: u32::MAX.ilog10() as usize + 1,
+                        })?;
+                    self.advance();
+                }
+                if digits == 0 || self.advance() != Some(b')') {
+                    return Err(SmilesError::UnexpectedEnd { pos: self.pos });
+                }
+                if value < 100 {
+                    return Err(SmilesError::UnexpectedCharacter { pos: start });
+                }
+                value
+            } else {
+                let tens = self
+                    .advance()
+                    .filter(|c| c.is_ascii_digit())
+                    .ok_or(SmilesError::UnexpectedEnd { pos: self.pos })?
+                    - b'0';
+                let units = self
+                    .advance()
+                    .filter(|c| c.is_ascii_digit())
+                    .ok_or(SmilesError::UnexpectedEnd { pos: self.pos })?
+                    - b'0';
+                u32::from(tens) * 10 + u32::from(units)
+            }
         } else {
             // Caller peeked b'0'..=b'9', so advance() is guaranteed to return Some(digit).
-            self.advance()
-                .expect("ring closure digit guaranteed by caller peek")
-                - b'0'
+            u32::from(
+                self.advance()
+                    .expect("ring closure digit guaranteed by caller peek")
+                    - b'0',
+            )
         };
         Ok((ring_num, prefix_bond))
     }
@@ -905,6 +938,20 @@ impl<'a> Parser<'a> {
     }
 }
 
+fn ring_closure_unmatched_error(ring_num: u32, pos: usize) -> SmilesError {
+    match u8::try_from(ring_num) {
+        Ok(ring_num) => SmilesError::UnmatchedRingClosure { ring_num, pos },
+        Err(_) => SmilesError::UnmatchedExtendedRingClosure { ring_num, pos },
+    }
+}
+
+fn ring_closure_conflict_error(ring_num: u32, pos: usize) -> SmilesError {
+    match u8::try_from(ring_num) {
+        Ok(ring_num) => SmilesError::ConflictingRingBond { ring_num, pos },
+        Err(_) => SmilesError::ConflictingExtendedRingBond { ring_num, pos },
+    }
+}
+
 /// Flip a directional bond marker (`/` <-> `\`) to reverse its reading
 /// direction; other bond orders pass through unchanged. Used to normalize a
 /// ring-closure bond symbol captured at the closing occurrence (read
@@ -1179,6 +1226,37 @@ mod tests {
         let mol = parse("C%10CCCCC%10").unwrap();
         assert_eq!(mol.atom_count(), 6);
         assert_eq!(mol.bond_count(), 6);
+    }
+
+    #[test]
+    fn test_parse_extended_smiles_plus_ring_label() {
+        let mol = parse("C%(100)CC%(100)").unwrap();
+        assert_eq!(mol.atom_count(), 3);
+        assert_eq!(mol.bond_count(), 3);
+
+        for malformed in [
+            "C%()CC%()",
+            "C%(99)CC%(99)",
+            "C%(100",
+            "C%(abc)CC%(abc)",
+            "C%(4294967296)CC%(4294967296)",
+            "C%100CC%100",
+        ] {
+            assert!(parse(malformed).is_err(), "{malformed}");
+        }
+
+        assert!(matches!(
+            parse("C%(256)"),
+            Err(SmilesError::UnmatchedExtendedRingClosure { ring_num: 256, .. })
+        ));
+        assert!(matches!(
+            parse("C/%(256)CC/%(256)"),
+            Err(SmilesError::ConflictingExtendedRingBond { ring_num: 256, .. })
+        ));
+        assert!(matches!(
+            parse("C2.C1"),
+            Err(SmilesError::UnmatchedRingClosure { ring_num: 1, .. })
+        ));
     }
 
     #[test]

@@ -1,6 +1,6 @@
 # chematic 1.x Trust Release — 実行計画
 
-更新日: 2026-09-16。期間: 2026-09-14〜2026-12-06（12週間の作業配分案）。
+更新日: 2026-09-19。期間: 2026-09-14〜2026-12-06（12週間の作業配分案）。
 対象: v1.0.16公開後のTrust Release候補。日付は納期の保証ではなくレビュー時点。
 状態: **T0の測定packetとT1.1–T1.4、現行版T2.6、公開artifact T3.4の一部を実装済み。Trust RCの全出口は未達**。
 v1.0.16は公開済みで、releaseとCI修正はmainへ反映済み。
@@ -19,7 +19,8 @@ T0–T6は今回の作業ID。番号は相互に置き換えない。
 2026-09-16に公開npm artifact と official RDKit.js の固定10k browser
 scorecardをPR #541で公開した。小さいWASM、local no-store ready、parse/writeの
 結果は比較可能だが、parse-inclusive fingerprintではRDKit.jsが速い。local readyは
-CDN/network測定でなく、unique/peak memory・cross-host値は未測定として残す。
+CDN/network測定ではない。3回のprocess-tree peak RSS診断はあるが、共有pageを
+重複計上し得るためunique memory・メモリ予算合格・cross-hostの証拠にはしない。
 同日にPR #542で`rustls`を0.23.45へ更新し、hosted Security AuditのCargo Auditと
 parser-security corpusは成功した。これらはT1.6のunused-data attestationやTrust RC
 全体の代替条件ではない。
@@ -111,7 +112,8 @@ baseline/candidateのビルド出自を固定した採用packet、残差分類�
 | T5 Stereo Torture Suite | P1 | Phase P2/P4、A2/A5 | 不変性・round-trip・誤統合・CIP判定 | T1/T4。既存反例調査は即時 |
 | T6 維持運用・独立評価・限定3D | P2 | Phase P5/P6、A5/A6 | release運用、第三者packet、3D既存gap解消 | T1–T5 |
 
-主経路は **T0 → T1 → T2 → T3/T4/T5 → T6**。
+依存関係の基本形は **T0 → T1 → T2 → T3/T4/T5 → T6**。
+完了済み工程を再開する意味ではなく、現在の着手順はROADMAPと第6節を正本にする。
 公開表示の棚卸し、未使用データ取得、gold候補収集は初日から並行する。
 新しいsilent corruption・panic・資源制御欠陥は領域にかかわらず先行する。
 外部レビュー待ちでも、ローカルの契約・回帰・文書作業は進める。
@@ -207,11 +209,8 @@ SMARTSについては同じv1.0.14 build・5,021分子・31 queryで2026.03.6 la
   `validation/results/sealed-cohort-preflight-v1.0.14.json`へ保存した。candidate
   commit/tagとunused-data attestationをまだ得ていないためstatusは
   `prepared_not_sealed`であり、評価結果はまだ算出していない。
-  そのpreflight record自体は未更新のまま保持する一方、非release annotated tag
-  `trust-eval-candidate-20260916`で`c2682e3aa75c21566c86ce1ade9cbd052838c694`を
-  2026-09-16T16:21:12+09:00に凍結した。raw splitを正式にsealedへ移すには、
-  このtag時刻以後のmaintainer unused-data attestationを新たに記録して同じ
-  protocolを再実行する必要がある。
+  この旧preflightは履歴として保持する。以下の9月16日の別sourceによる封印記録が
+  現行であり、旧sourceを後から未使用データへ読み替えない。
 - [x] T1.6を2026-09-16に新しい候補後sourceで再実行した。annotated tag
   `trust-eval-candidate-20260916` は`c2682e3aa75c21566c86ce1ade9cbd052838c694`を
   凍結し、その後に取得した11,689-row ChEMBL source
@@ -222,6 +221,11 @@ SMARTSについては同じv1.0.14 build・5,021分子・31 queryで2026.03.6 la
   hashesは`validation/results/sealed-cohort-preflight-trust-eval-candidate-20260916.json`
   と`validation/attestations/unused-data-chembl-20260916.json`に保存する。raw inputは
   local-onlyで、scoreはまだ計算していない。
+- [ ] T1.6 evaluation: raw/splitの存在・hash・露出履歴、protocol/seed、候補binaryと
+  oracleを再確認してから、凍結済み候補の8k評価を一度実行して全行会計を保存する。
+  入力一覧を調査ログへ展開しない。新しい修正commitはこの候補と同一ではない。
+  新候補のsealed判定は露出履歴と再凍結手順で決め、閲覧済みholdoutで調整した後に
+  同じデータを「未使用」として採用判定しない。A5の第三者gold/reviewとは別ゲート。
 - [x] T1.7 ordinary-V3000 interchange baselineを固定する。PR #544で
   RDKit `2025.09.3` と Indigo `1.46.0` をversion-pinned readerとして、通常V3000の
   semantic round trip、SGROUPの作成・編集後の外部reader受理、relative stereoと
@@ -333,6 +337,9 @@ historical benchmarkの版は維持し、「全ての数字を最新版にする
   同一host/browser、cold 20回・warm 5回以上、p50/p95、
   failure/coverage、測定APIとメモリ定義を記録する。
   100万分子換算は実測と別列で、線形外挿の仮定を明記する。
+  公開1.0.15の10k・3ブラウザ・20反復と3回のRSS診断は実施済み。
+  再作成ではなく、公開1.0.16/次候補の別lane、検索、operation意味論、
+  resource会計を補う。npm `2026.3.6` / runtime `2026.03.6`を別fieldにする。
 - [ ] T3.5 MCP全toolのruntime schemaからtool数と入出力例を生成。
   型付き化学エラー、oversized input、中断、structured outputを確認する。
   `scripts/check_mcp_runtime_inventory.py` は実際の stdio binary から
@@ -397,9 +404,10 @@ unsafe/FFI/依存層とpanic/DoSを含む検証境界を明示する。
 - [~] T5.1 最低300構造をtetrahedral、E/Zと共有carrier、ring/cage、
   負電荷共鳴、P/S、同位体、enhanced stereo、未対応立体へ事前配分。
   curated regressionと未使用challenge群を分離し、同じscaffoldで独立性を水増ししない。
-  `stereo_torture_suite_development.jsonl` は既存回帰146件と固定sample154件の
-  300 unique structuresを固定し、RDKit 2025.09.3でAtom_Tetrahedral 277件、
-  Bond_Double 49件を記録する。`stereo_torture_suite_gate.py`は全300件について
+  `stereo_torture_suite_development.jsonl` は既存回帰と固定sampleの
+  300 unique structuresを固定し、カテゴリ内訳は生成manifestに記録する。
+  source追加時に再生成し、古い内訳を現行値として転載しない。
+  `stereo_torture_suite_gate.py`は全300件について
   RDKit semantic identityとchematic canonical再parse安定性を検査し、CIで再実行する。
   これは開発回帰だけであり、未使用challenge、事前配分の全カテゴリ、CIP labelの
   絶対正解は未達のまま残す。
@@ -447,10 +455,10 @@ A2全出口・A5独立判定の完了条件は変更しない。
 
 | 時期 | 主な作業 | レビューで確認するもの |
 |---|---|---|
-| W1: 9/14–9/20 | T0、T1 schema、T2棚卸し、未使用データ出自確認 | 誤った比較値の撤回、runner全件会計、profile対応表 |
-| W2: 9/21–9/27 | T1 dashboard/封印準備、T2 package/サイト同期、T4 corpus | clean checkoutからの再生成、版ずれ検知、負例ゲート |
-| W3: 9/28–10/4 | T3 install/Worker/1万件、T4 CI、T5既存残差 | 公開package経路、bounded input、同条件before/after |
-| W4: 10/5–10/11 | T1 sealed実行、T5公開suite、RC監査 | Trust RC条件の充足/未達とblocker一覧 |
+| W1残り: 9/19–9/20 | T4.6環番号の再現、T1.6封印済みpacket検証、版表記の整理 | 自社riskの再現fixture、評価可能/不可の理由 |
+| W2: 9/21–9/27 | 環番号の安全性修正、T1.6凍結候補評価、T3.4公開1.0.16/検索lane | 全行会計、旧候補と新候補の分離、正しさと速度の同時表示 |
+| W3: 9/28–10/4 | T5.6 CIP、T1.8 attachment、T3 typed Worker/1万件 | 上流差分の回帰/拒否、cancel・offline・partial failure |
+| W4: 10/5–10/11 | T3.4 resource補完、T5公開suite、RC監査 | 新候補のsealed適格性、Trust RC条件とblocker一覧 |
 | W5–W8: 10/12–11/8 | A1–A4未達、10万件、複数browser/OS、A5依頼packet | 操作別compat達成、coverage・速度・memoryの測定 |
 | W9–W12: 11/9–12/6 | A5独立判定、A6既存gap、維持運用演習 | 宣言範囲の同等性判断、3D別profile、次期backlog |
 
@@ -466,11 +474,111 @@ T3の1万件導入ゲート、T4固定corpus、T5既存安全性回帰・公開s
 
 ## 6. 次に着手する具体的な変更
 
-T0.1–T0.3では完了footer・全行会計・共有探索への予算伝播・実測候補数が実装済み。
-残る出自固定、atomicな成果物昇格、負例と上限検出を検証packetとして揃える。
-続くT0.4ではbaseline/candidateを独立buildし、全5,021×31を同条件で再測定して
-21残差とRDKit query parse失敗10,042セルを分類し、hybridの採否を決める。
-次にT1.1–T1.4とT2.1を実装し、既存の生成物・release metadataを再利用する。
-T4の出典確認とT5の既存残差台帳は並行で準備する。
-計画の更新自体は新たな実装・測定・公開の証拠ではない。各作業の実行状態は
-成果物と検証結果で更新し、未達の出口は残す。
+9月19日の競合レビューを既存T/A/Phaseへ統合する。新Phaseや別の並行ロードマップは
+作らない。T0の独立packetは完成し、12→21残差の候補は不採用。残差分類と新候補は
+未完了だが、測定済みpacketそのものを「これから実装」として繰り返さない。
+
+### 前提確認と競争方針
+
+- [公式npm metadata](https://registry.npmjs.org/@rdkit%2frdkit/2026.3.6)を確認。
+  npm版は`2026.3.6`であり、既存測定のruntime版`2026.03.6`と分ける。
+  型定義と依存なしの公開packageは利用可能。既存10k recordのSRIはregistryと一致。
+  tarball全体・WASM raw・gzipを混同せず、過去rawの版fieldは書き換えない。
+- [RDKit #9572](https://github.com/rdkit/rdkit/pull/9572)は9月10日にmerge済み。
+  [Pyodide recipe #538](https://github.com/pyodide/pyodide-recipes/pull/538)は確認時点でopen。
+  ビルド成立と配布済み製品を区別し、利用可能になった時点でruntime込みの総転送量・
+  startup・利用可能APIを別laneで測る。今はPyodideの機能数を追う開発をしない。
+- [COSMolKitのCIP統合](https://github.com/cosmol-studio/COSMolKit/commit/1235890a04286c531b9b4a9b52419a6efcdb0253)
+  は作者が全workspace合格ではないと明記。直接競合として扱うが、未検証の性能・
+  安定性ランキングは作らない。T6.1に安定版/RC、公開WASM hash/サイズ、再現可能な
+  benchmark、利用事例を記録し、downloads/starsを実利用者数に読み替えない。
+
+勝ち筋は**限定した化学操作を、導入しやすい型付きAPIで、ローカルかつ応答性を
+保って正しく実行できること**。優位性は操作別の測定で示す。全面RDKit互換、
+全面3D、protein、polymer編集の拡大は今回の必須にしない。
+
+### 1. T4.6 — 環番号の自社riskを閉じた（P0、2026-09-19）
+
+`crates/chematic-smiles/src/writer.rs`は100以上を`%100`のように出力する一方、
+`parser.rs::parse_ring_num`は`%`の後を2桁だけ読み、open-ring tableも100要素。
+これはソース上の往復不整合の懸念だった。[Indigo #3867](https://github.com/epam/Indigo/pull/3867)
+を回帰の入口にし、次のbounded implementationで解消した。
+
+- [x] parser/writer双方で`%(n)`を扱う。`%nn`（00–99）は既存どおり、拡張形式は
+  100以上のみ。writerが以前出した曖昧な`%100`は出さない。
+- [x] `%()`、100未満の`%(n)`、閉じ括弧欠落、非数字、`u32` overflow、旧`%100`を
+  strictに拒否。open labelは値で配列確保せず、最大100,000個の現在openなlabelへ制限。
+- [x] 99/100/101境界のparser fixtureと、121 closureを持つ12×12 graphの
+  write→parse count-preservationを追加。`cargo test -p chematic-smiles --lib`は
+  226 passed。小番号と既存stereo回帰も同じsuiteで通過した。
+- [ ] Rust/Python/Node/WASMの同じfixture、canonical writer、atom順入替、
+  timeout/メモリ制限を通す。これはbinding/release gateであり、上のcore安全性完了とは別。
+
+### 2. T1.6 / T1.5 — 精度とoracleの版を分離する（P0、目安2–4実働日）
+
+T1.6の封印前提は完了済み。次は上記のhash/build/protocol監査と未実行の評価である。
+2025.09.3 regression、公開2026.03.6 runtime、上流修正commitの診断を別laneにし、
+masterのCIP修正が公開npmにも含まれると推測しない。masterを測る場合はSHAで固定。
+T4/T5修正は開発fixtureで行い、旧候補のsealed結果を新候補の合格証明に転用しない。
+8kだけでA5の±0.1 percentage point同等性を証明できるとも仮定しない。
+
+### 3. T3.4 — 比較の空欄を埋める（P0、目安3–5実働日＋測定待ち）
+
+- [ ] 公開1.0.16を再buildせず測り、次候補buildは別armにする。既存runnerを拡張し、
+  package/runtime/oracle版、SRI/SHA、host/browser、全入力/拒否を保存する。
+- [ ] parseのsanitize/perception範囲、writeのsemantic preservation、Morganのradius/
+  bit数/chirality/profileを先に照合。prepared-objectとparse-inclusiveを別表示する。
+  native ECFPとRDKit-compatible Morganの速度/精度を混ぜない。
+- [ ] 部分構造検索は同じquery集合・chirality・uniquify・match上限で、hit判定と
+  mapped embeddingを別lane化。索引build時間/容量と検索時間を分離し、全候補/timeout/
+  unsupportedを保持。MinimalLibにない操作はN/AとしPython版で穴埋めしない。
+- [ ] fresh processでcold 20回、warm 5回以上、交互arm、p50/p95と反復ごとの値を保存。
+  二つ目のhostは別集計。3ブラウザの結果を混ぜて優位性を主張しない。
+- [ ] JS heap snapshot、WASM linear memory、process-tree peak RSS、unique memoryを
+  別metricにする。RSSはidle差分・sampling間隔・共有page重複を記録し、測れない指標は
+  unavailable。1万/10万の実測と100万への外挿を別表にする。
+- [ ] CDN/remote cold startはnetwork条件/cache/transfer encodingを固定した追加lane。
+  未測定でもlocal結果は公開可能。速度負けを含めてdashboard/再現コマンドを公開し、
+  正しさ・coverageが退行したarmを「高速化成功」にしない。1.10x目標は復活させない。
+
+### 4. T5.6 — CIP/atropの上流変更を境界テストにする（P1、目安3–5実働日）
+
+[RDKit #9577](https://github.com/rdkit/rdkit/pull/9577)と
+[#9190](https://github.com/rdkit/rdkit/pull/9190)はmerge済み。次のケースを既存T5 suiteへ
+追加し、宣言した対応域のwrong confident label・情報損失・false mergeを0にする。
+
+- [ ] 選択中心が未選択中心に依存する分子で、全分子assignmentからの射影と比較。
+  chematicに同等の選択APIがない場合は能力差として記録し、API追加を合格条件にしない。
+- [ ] 未知同位体の番号fallback、full/pseudo atrop、cleanIt/replaceExistingTags相当の
+  preserve/replace、古い2D/3D evidence、8/9/10員環境界と負例を固定する。
+- [ ] atom/bond mapを保持した32順列とSMILES spelling、V2000/V3000往復で照合。
+  未対応atropはラベルなしで成功させず、型付き拒否または情報を保持した明示診断にする。
+  RDKit間で判定が変わるケースはA5へ回し、P系OracleUnstableを安易に解除しない。
+
+### 5. T1.8 — attachment labelとcollapseを区別する（P1、目安2–4実働日）
+
+[RDKit #9454](https://github.com/rdkit/rdkit/pull/9454)を参照する。
+現行CXSMILESには一般atom-labelのread/writeがあるが、それだけではattachment identityや
+collapseの保証にならない。V3000のENDPTS/ATTACH対応とも別契約である。
+
+- [x] `attachment_point_label_number()`は完全な正の`_AP<n>`だけを`u32`として認識し、
+  `_AP0`、符号、空白、文字混在、overflowを拒否する。`CxSmiles::marked_attachment_point()`は
+  degree-one wildcardかつ有効labelだけを識別する。通常atom、多重degree wildcard、
+  label文字列単体をattachment pointとして扱わない。227 `chematic-smiles` testsで検証済み。
+- [ ] `_AP1`、大きな正番号、`_AP0`、負数、文字混在、overflow、非dummy、degree違いを
+  RDKit→chematic→RDKitで検査し、label・atom map・結合・stereoの保持を確認。
+- [ ] attachment identityとcollapse可能性を別判定にする。
+  label番号はMDL ATTCHPT位置ではない。label-only collapseの位置1規則、direction/query/
+  bond制限を仕様化し、情報を保持できないcollapseは明示的に拒否する。
+- [ ] 次RCは保持/拒否契約を必須とし、意味論未確定のcollapse API追加は後続minorへ。
+  既存ordinary-V3000 gateは維持し、opaque retentionを意味的編集として宣伝しない。
+
+### 6. T3 / T2 — 機能表より導入から完走までを示す（P1、目安3–5実働日）
+
+T3.1–T3.3の未達部分を埋める。公開packageのESM/TS/Worker導入、初期化後offline、
+1万件streaming・partial failure・cancel・再試行・export順序を同じ小さな利用例で示す。
+暫定UI/メモリ予算はT3記載値を測定前にhostごとに凍結する。3ブラウザ・Nodeの欠測を
+表示し、API capabilityと測定版が一致した結果だけをサイト/MCP説明へ反映する。
+
+上記日数は作業配分の目安。上流ビルド、測定host、第三者reviewは別の待ち時間。
+計画更新は実装・新ベンチマーク・公開の証拠ではなく、本更新でsealed inputは開封しない。
