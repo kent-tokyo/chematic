@@ -1859,14 +1859,12 @@ impl<'a> CanonicalWriter<'a> {
                     self.out
                         .push_str(bond_token_from(self.mol, bidx, bond_order, atom));
                 }
-                // SMILES ring-closure numbers are limited to 1–99.
-                // Molecules needing ≥ 100 simultaneous open ring closures are
-                // exotic beyond any known organic chemistry; skip extras rather
-                // than panic from `char::from_digit` overflow.
-                if rn > 99 {
-                    continue;
-                }
-                if rn >= 10 {
+                // SMILES+ uses `%(n)` for ring-closure numbers >= 100.
+                if rn >= 100 {
+                    self.out.push_str("%(");
+                    self.out.push_str(&rn.to_string());
+                    self.out.push(')');
+                } else if rn >= 10 {
                     self.out.push('%');
                     self.out.push(char::from_digit(rn / 10, 10).unwrap());
                     self.out.push(char::from_digit(rn % 10, 10).unwrap());
@@ -2599,6 +2597,40 @@ mod tests {
         let mol_a = parse(a).expect(a);
         let mol_b = parse(b).expect(b);
         canonical_smiles(&mol_a) == canonical_smiles(&mol_b)
+    }
+
+    fn high_cycle_fan() -> Molecule {
+        // 103 atoms and 204 bonds give a cycle rank of 102, requiring extended
+        // ring labels. Unique isotopes keep this a deterministic writer test
+        // instead of a symmetry-search stress test.
+        let mut builder = chematic_core::MoleculeBuilder::with_capacity(103, 204);
+        let center = builder.add_atom(chematic_core::Atom::new(chematic_core::Element::C));
+        let mut rim = Vec::with_capacity(102);
+        for isotope in 1..=102 {
+            let mut atom = chematic_core::Atom::new(chematic_core::Element::C);
+            atom.isotope = Some(isotope);
+            rim.push(builder.add_atom(atom));
+        }
+        for &atom in &rim {
+            builder.add_bond(center, atom, BondOrder::Single).unwrap();
+        }
+        for edge in rim.windows(2) {
+            builder
+                .add_bond(edge[0], edge[1], BondOrder::Single)
+                .unwrap();
+        }
+        builder.build()
+    }
+
+    #[test]
+    fn canonical_writer_round_trips_extended_ring_labels() {
+        let mol = high_cycle_fan();
+        let canonical = canonical_smiles(&mol);
+        assert!(canonical.contains("%(100)"), "{canonical}");
+        let reparsed = parse(&canonical).expect("canonical extended labels must parse");
+        assert_eq!(reparsed.atom_count(), mol.atom_count());
+        assert_eq!(reparsed.bond_count(), mol.bond_count());
+        assert_eq!(canonical_smiles(&reparsed), canonical);
     }
 
     #[test]

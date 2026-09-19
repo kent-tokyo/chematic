@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "release": {
+    "version": "1.0.17",
+    "tag": "v1.0.17",
+    "commit": "bb054867"
+  },
+  "checked_at": "2026-09-20T00:00:00Z",
+  "release_ready": false,
+  "channels": [
+    {
+      "id": "github_release",
+      "status": "not_measured",
+      "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.0.17",
+      "detail": "Pre-release record. Verify the published GitHub Release and attached metadata after the v1.0.17 tag workflow completes."
+    },
+    {
+      "id": "npm",
+      "status": "not_measured",
+      "url": "https://registry.npmjs.org/%40kent-tokyo%2Fchematic",
+      "detail": "Pre-release record. Verify @kent-tokyo/chematic@1.0.17 after the tag-triggered npm publication completes."
+    },
+    {
+      "id": "pypi",
+      "status": "not_measured",
+      "url": "https://pypi.org/pypi/chematic/1.0.17/json",
+      "detail": "Pre-release record. Verify the v1.0.17 wheels and source distribution after the tag-triggered PyPI publication completes."
+    },
+    {
+      "id": "crates_io",
+      "status": "not_measured",
+      "url": "https://crates.io/crates/chematic/1.0.17",
+      "detail": "Pre-release record. Verify the root crate and workspace publication graph after the tag-triggered crates.io publication completes."
+    },
+    {
+      "id": "docs_rs",
+      "status": "not_measured",
+      "url": "https://docs.rs/chematic/1.0.17/chematic/",
+      "detail": "Pre-release record. Verify version-pinned docs.rs availability after crates.io indexing completes."
+    },
+    {
+      "id": "site",
+      "status": "not_measured",
+      "url": "https://kent-tokyo.github.io/chematic/",
+      "detail": "Pre-release record. Verify the Pages deployment displays v1.0.17 after the release branch is merged to main."
+    }
+  ]
+}

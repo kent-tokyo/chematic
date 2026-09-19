@@ -23,11 +23,11 @@ npm install @kent-tokyo/chematic
 
 Python 版本无需 C/C++ 编译器。
 
-### v1.0.16 范围
+### v1.0.17 范围
 
-本版本增加固定 RDKit/Indigo 版本的 V3000 互操作门禁、开发用立体化学不变性门禁、
-公开 npm 包与 RDKit.js 的比较，以及冻结的 Trust 评估数据划分。配位化学和未完成的
-V3000 语义仍作为类型化不支持边界处理。兼容性仍按操作和数据集限定，详见
+本版本增加对 100 及以上 SMILES+ 环闭合编号的有界读写，并提供类型化的
+CXSMILES attachment label 检查。MDL attachment collapse 与 V3000 的
+`ENDPTS`/`ATTACH` 语义仍明确不支持。兼容性仍按操作和数据集限定，详见
 [兼容性范围](docs/compatibility-scope.md)和[CHANGELOG](CHANGELOG.md)。
 
 ## Python

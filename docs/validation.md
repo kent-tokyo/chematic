@@ -1,8 +1,8 @@
 # Validation report
 
-Updated 2026-09-16. Current public release: **v1.0.16**. Results below keep the
-version, comparator, corpus, and operation written in each artifact; they are not
-silently upgraded to the current source revision.
+Updated 2026-09-20. The current release is **v1.0.17**. Each result keeps its
+recorded version, comparator, corpus, and operation; no result is silently
+upgraded to the current source revision.
 
 ## Current trust evidence
 

@@ -9,6 +9,21 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.17] - 2026-09-20
+
+- Added bounded SMILES+ extended ring-closure support: `%nn` remains the
+  legacy two-digit form and `%(n)` is accepted and emitted for labels of 100
+  or greater. Invalid, overflow, and ambiguous legacy `%100` forms reject
+  rather than changing the molecular graph.
+- Preserved the existing `u8` SMILES error variants for legacy labels and
+  added distinct extended-label errors only above that range, avoiding a
+  breaking public error-field change.
+- Added a 102-cycle canonical-SMILES round-trip regression and a 121-cycle
+  non-canonical writer/parser regression.
+- Added explicit CXSMILES `_AP<n>` parsing and degree-one wildcard attachment
+  identity inspection. This does not claim MDL attachment-point collapse or
+  V3000 `ENDPTS`/`ATTACH` semantic support.
+
 ## [1.0.16] - 2026-09-16
 
 - Updated the transitive `rustls` dependency to 0.23.45, addressing

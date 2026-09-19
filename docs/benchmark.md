@@ -7,7 +7,7 @@ counted as wins. Dated raw records are indexed in
 
 ## Current status
 
-The current release line is **v1.0.16**. The newest public-package performance
+The current release line is **v1.0.17**. The newest public-package performance
 record is the 2026-09-16 isolated browser comparison against
 `@rdkit/rdkit@2026.03.6`. Older similarity, streaming, and operation timing
 records remain pinned to their recorded source/release versions.

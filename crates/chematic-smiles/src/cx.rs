@@ -49,6 +49,36 @@ impl CxSmiles {
             wavy_bonds: Vec::new(),
         }
     }
+
+    /// Return the `_AP<n>` identifier for a degree-one wildcard atom.
+    ///
+    /// This identifies a marked attachment point; it deliberately does not
+    /// claim that the point can be collapsed into an MDL attachment position.
+    /// In particular, the numeric suffix is an application identifier, not an
+    /// `ATTCHPT` position.
+    pub fn marked_attachment_point(&self, atom: AtomIdx) -> Option<u32> {
+        let atom_index = atom.0 as usize;
+        let label = self.atom_labels.get(atom_index)?.as_deref()?;
+        if !self.mol.atom(atom).wildcard || self.mol.neighbors(atom).count() != 1 {
+            return None;
+        }
+        attachment_point_label_number(label)
+    }
+}
+
+/// Parse a complete positive `_AP<n>` attachment-point label.
+///
+/// A label with a missing suffix, zero, sign, whitespace, non-digit content, or
+/// a value outside `u32` is not an attachment-point identifier. This is only a
+/// syntactic identity helper; it does not decide whether an atom is eligible
+/// for a lossy collapse operation.
+pub fn attachment_point_label_number(label: &str) -> Option<u32> {
+    let suffix = label.strip_prefix("_AP")?;
+    if suffix.is_empty() || !suffix.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
+    }
+    let number = suffix.parse::<u32>().ok()?;
+    (number > 0).then_some(number)
 }
 
 /// Parse a CXSMILES string.
@@ -393,6 +423,37 @@ mod tests {
         assert_eq!(cx.atom_props.len(), 2);
         assert_eq!(cx.atom_props[0].key, "p1");
         assert_eq!(cx.atom_props[0].value, "5");
+    }
+
+    #[test]
+    fn attachment_point_labels_are_complete_and_marked_points_are_wildcards() {
+        assert_eq!(attachment_point_label_number("_AP1"), Some(1));
+        assert_eq!(
+            attachment_point_label_number("_AP4294967295"),
+            Some(u32::MAX)
+        );
+        for invalid in [
+            "",
+            "_AP",
+            "_AP0",
+            "_AP-1",
+            "_AP1x",
+            "_AP 1",
+            "_AP4294967296",
+        ] {
+            assert_eq!(attachment_point_label_number(invalid), None, "{invalid}");
+        }
+
+        let cx = parse_cxsmiles("[*]C |$_AP100;$|").unwrap();
+        assert_eq!(cx.marked_attachment_point(AtomIdx(0)), Some(100));
+        assert_eq!(cx.marked_attachment_point(AtomIdx(1)), None);
+
+        let non_dummy = parse_cxsmiles("CC |$_AP1;$|").unwrap();
+        assert_eq!(non_dummy.marked_attachment_point(AtomIdx(0)), None);
+        let multi_degree = parse_cxsmiles("C([*])[*] |$;_AP1;_AP2$|").unwrap();
+        assert_eq!(multi_degree.marked_attachment_point(AtomIdx(0)), None);
+        assert_eq!(multi_degree.marked_attachment_point(AtomIdx(1)), Some(1));
+        assert_eq!(multi_degree.marked_attachment_point(AtomIdx(2)), Some(2));
     }
 
     #[test]

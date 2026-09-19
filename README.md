@@ -21,14 +21,13 @@ npm install @kent-tokyo/chematic
 
 Python needs no C/C++ compiler. Rust and WebAssembly builds use the same core.
 
-### v1.0.16 release boundary
+### v1.0.17 release boundary
 
-This release adds version-pinned V3000 interchange gates, development stereo
-invariance gates, a public-package RDKit.js browser scorecard, and a frozen
-Trust evaluation split. It also keeps coordination and incomplete V3000
-semantics as typed unsupported boundaries. Compatibility remains operation- and
-corpus-scoped; see the [compatibility scope](docs/compatibility-scope.md) and
-[CHANGELOG](CHANGELOG.md).
+This release adds bounded SMILES+ extended ring-closure parsing and writing,
+plus typed CXSMILES attachment-label inspection. Legacy error variants remain
+stable; MDL attachment collapse and V3000 `ENDPTS`/`ATTACH` semantics remain
+explicitly unsupported. Compatibility is operation- and corpus-scoped; see the
+[compatibility scope](docs/compatibility-scope.md) and [CHANGELOG](CHANGELOG.md).
 
 ## Python
 

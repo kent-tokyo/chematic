@@ -23,12 +23,12 @@ npm install @kent-tokyo/chematic
 
 Python版はC/C++コンパイラなしで導入できます。
 
-### v1.0.16 の対応範囲
+### v1.0.17 の対応範囲
 
-RDKit/Indigoに固定したV3000相互運用ゲート、開発用立体化学不変性ゲート、
-公開npmパッケージのRDKit.js比較、Trust評価用の凍結splitを追加しました。
-配位化学と不完全なV3000意味論は型付きの非対応境界として維持します。
-互換性は操作・コーパス単位です。詳細は[互換性範囲](docs/compatibility-scope.md)と
+このリリースでは、SMILES+の100以上の環閉鎖番号を上限付きで読み書きできます。
+CXSMILESのattachment labelも型付きで検査できます。MDL attachment collapseと
+V3000の`ENDPTS`/`ATTACH`意味論は明示的に非対応のままです。互換性は操作・
+コーパス単位です。詳細は[互換性範囲](docs/compatibility-scope.md)と
 [CHANGELOG](CHANGELOG.md)を参照してください。
 
 ## Python

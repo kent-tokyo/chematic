@@ -1,10 +1,11 @@
 # chematic roadmap
 
-> Updated 2026-09-16. Released: **v1.0.16**. Next delivery theme: **1.x Trust Release**.
-> **Current P0 focus: freeze T1's prepared 10,000-row split with an annotated candidate tag and
-> unused-data attestation; keep the published RDKit.js comparison reproducible; then
-> advance parser/stereo and the remaining V3000 boundaries without widening unsupported
-> semantics.**
+> Updated 2026-09-19. Released: **v1.0.16**. Next delivery theme: **1.x Trust Release**.
+> **Current P0 focus: complete the frozen evaluation packet; extend the existing
+> public-package comparison with
+> operation-correctness, search, and resource evidence.** Candidate/data freezing
+> and large-ring SMILES safety were completed on September 16 and 19 respectively;
+> sealed scores remain unrun.
 
 ## Current status
 
@@ -25,10 +26,11 @@
 - The published-package browser scorecard is now in `main` via
   [PR #541](https://github.com/kent-tokyo/chematic/pull/541) (`8ce8026`). It
   compares `@kent-tokyo/chematic@1.0.15` with official
-  `@rdkit/rdkit@2026.03.6` on a fixed exposed 10k corpus. It records a smaller
+  `@rdkit/rdkit@2026.3.6` (runtime `2026.03.6`) on a fixed exposed 10k corpus. It records a smaller
   WASM artifact, lower local no-store ready and parse/write timings, a
   RDKit-faster parse-inclusive fingerprint lane, one typed Fe(II)
-  coordination refusal, and every unmeasured network/unique-memory dimension.
+  coordination refusal, and a three-run process-tree RSS diagnostic. Unique-memory,
+  remote-network, and cross-host acceptance remain unmeasured.
   The local-ready measurement is not a CDN or cross-host claim.
 - [PR #542](https://github.com/kent-tokyo/chematic/pull/542) (`3d61132`)
   updates the locked `rustls` dependency to 0.23.45. Its hosted Security Audit
@@ -67,28 +69,26 @@ workflows, with a published compatibility contract for every claimed operation.
 | Open Babel parser hardening raises the security bar | Publish fixed malformed-input corpus accounting with time/memory limits and refusal reasons | Treat Rust's memory model alone as parser-security proof |
 | Other Pure-Rust parity libraries compete for the same headline | Differentiate through reproducible cross-binding contracts, browser Worker UX, and release evidence | Chase broad 3D, protein, polymer, or format breadth without a validated workflow |
 
-### Competitive deliverables
-
-| Order | Deliverable | Acceptance evidence |
-|---|---|---|
-| 1 | **T1.6 sealed-evaluation precondition** | Frozen annotated candidate tag and a legitimate post-freeze unused-data attestation before consuming the prepared 2k/8k split |
-| 2 | **T1.5/T3.4 compatibility and cost scorecard** | Separate RDKit oracle lanes; public-artifact bytes, local-ready, operation timings, coverage/refusals, and all missing dimensions together |
-| 3 | **T4/T5 safety and stereo gates** | Hosted security audit, bounded malformed corpus, permutation/spelling suites, and typed refusal accounting |
-| 4 | **T1.7 interchange contract** | **Baseline complete:** version-pinned RDKit/Indigo ordinary-V3000 round trips, SGROUP edits, COLLECTION ordering, and explicit coordination/ENDPTS exclusions; future work expands only proven boundaries |
-| 5 | **T3 adoption and version truth** | `npm install` to typed Worker/free, failed-row-preserving 10k Explorer flow, and one current-version source across public surfaces |
+The September 19 review turns upstream changes into scoped regression work,
+not an automatic promise of new chemistry support. The
+[current execution packet](docs/trust-release-plan.md#6-次に着手する具体的な変更)
+records primary sources, implementation gaps, dependencies, and acceptance.
+Existing published 1.0.15 measurements stay historical; new 1.0.16/candidate
+measurements must identify their actual package/source hashes.
 
 ## Priority order
 
 | Order | Priority | Delivery and next output | Product Phase / accuracy |
 |---|---|---|---|
-| 1 | P0 | **T1.6 sealed-evaluation precondition**: freeze the candidate build with an annotated tag, then obtain a legitimate unused-data attestation after that freeze before consuming the prepared 2k/8k split. The exposed SMARTS packet is not sealed evidence | P0/P2; A0–A4 |
-| 2 | P0 | **T1.5/T3.4 public compatibility-cost contract**: retain the merged v1.0.15 browser scorecard and add only equivalent, pinned RDKit lanes; do not relabel local no-store timing as internet startup | P0/P3; A3 |
-| 3 | P1 | **T4/T5 safety and stereo gates**: retain hosted parser and Cargo Audit success; expand bounded malformed-input, permutation, round-trip, and refusal accounting | P1/P2/P4; A2/A4/A5 |
-| 4 | P1 | **T1.7 interchange contract**: retain the merged ordinary-V3000 baseline; next, expand only actual Indigo typed-SGROUP creation/editing and declared coordination/ENDPTS refusal boundaries without treating opaque retention as editable semantics | P1/P4; A4 |
-| 5 | P2 | **T3.1–T3.6/T2.6 adoption and version truth**: published-package install examples, diverse 10k Explorer workflow, current-version synchronization, bounded pilot evidence, independent review, and existing 3D gaps | P3/P5/P6; A5/A6 |
+| 1 | **Done (2026-09-19)** | **T4.6 large-ring safety**: writer/parser now use bounded SMILES+ `%(n)` labels ≥100; malformed/overflow labels reject, and a 121-closure graph round-trips | P1/P2; A2/A4 |
+| 2 | P0 | **T1.6 evaluation execution**: verify the existing frozen tag/split/protocol/build packet before scoring the 8k holdout; distinguish that historical candidate from later fixes. Do not tune on sealed outcomes | P0/P2; A0–A4 |
+| 3 | P0 | **T1.5/T3.4 public compatibility-cost contract**: separate npm/runtime/oracle versions; refresh public 1.0.16 and candidate lanes; add equivalent substructure search, operation semantics, and memory accounting to the existing 10k benchmark | P0/P3; A3/A4 |
+| 4 | P1 | **T5.6 upstream stereo regressions**: selective CIP dependencies, unknown isotopes, full/pseudo atrop and 8/9-member boundaries; mapped permutations and explicit unsupported results, without widening experimental claims | P2/P4; A2/A5 |
+| 5 | **Partial (2026-09-19)** | **T1.8 attachment-point contract**: CXSMILES now exposes complete positive `_AP<n>` parsing and degree-one wildcard identity; RDKit round-trip/collapse semantics remain open | P1/P4; A4 |
+| 6 | P1 | **T3/T2 adoption evidence**: clean-install typed Worker, 10k streaming/cancellation/offline/result parity, and current-version dashboard. Independent review, competitor tracking and bounded existing 3D gaps continue under T6 (P2) | P3/P5/P6; A5/A6 |
 
 T3/T4/T5 can proceed in parallel once their dependencies pass. Public-channel
-inventory, unused-data acquisition, and A5 gold preparation start alongside T0.
+inventory and A5 gold preparation continue alongside frozen-packet verification.
 Confirmed silent corruption, panic, or resource-limit defects take precedence.
 
 **T1.6 sealed cohort (2026-09-16):** the non-release annotated tag
@@ -121,7 +121,7 @@ These are remaining exits, not a list of all work already implemented.
 See the [accuracy plan](docs/rdkit-accuracy-plan.md) for subtask acceptance and
 the [disposition ledger](docs/roadmap-open-work.md) for evidence and dependencies.
 
-- [ ] **A0 — Evaluation contract:** freeze genuinely unused 8,000-row evaluation inputs and candidate builds; complete the full acceptance packet. The 96/96 all-field holdout and exposed-corpus validators are narrower completed slices.
+- [ ] **A0 — Evaluation contract:** complete the full acceptance packet and score the September 16 frozen 8,000-row evaluation with its recorded candidate; re-audit exposure/freeze for any later candidate. The 96/96 all-field holdout and exposed-corpus validators are narrower completed slices.
 - [ ] **A1 — Perception and descriptors:** complete unused core-eight-field and potential-center evaluation, plus affected workflow/binding acceptance. The opt-in profile has passing exposed-corpus evidence; additional families have separate gates.
 - [ ] **A2 — Stereo and identity:** resolve the four #503 canonical/E/Z components and phosphorus CIP adjudication; meet permutation, idempotency, information-preservation, and false-merge exits.
 - [ ] **A3 — Fingerprints and retrieval:** retain raw/provenance evidence for the new aromaticity lane, rerun affected bindings/search after adoption, and pass unused-input evaluation. Existing k=1/10/100 and threshold evidence remains valid for its recorded builds.
@@ -151,12 +151,22 @@ maintainer decision to reactivate.
 
 ## v1.0.16 candidate boundary
 
+This retained heading records the baseline planning boundary; v1.0.16 is already
+released. The following requirements apply to the **next Trust RC**, not a
+claim that publishing v1.0.16 completed them.
+
 The next Trust RC requires **T0–T2**, T3's 10,000-row install/Worker gate,
 T4's fixed safety corpus, and T5's public suite plus existing safety regressions.
 It also retains **A0, A1 core-eight-field unused evaluation, affected binding
 regressions, and native-default preservation** as mandatory exits.
 The Week 4 milestone is an audit, not a promised release date; no new version
 number is selected here.
+
+The new upstream packet requires a large-ring round-trip/refusal regression and
+explicit stereo/attachment capability accounting. Unsupported atrop or collapse
+semantics need not become new APIs to ship, but must not silently lose information.
+No performance claim is promoted without its matching correctness and coverage
+gate; no remote-startup or unique-memory claim is required without measurement.
 
 | Claim | Required acceptance |
 |---|---|
