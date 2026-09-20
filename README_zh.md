@@ -23,11 +23,12 @@ npm install @kent-tokyo/chematic
 
 Python 版本无需 C/C++ 编译器。
 
-### v1.0.17 范围
+### v1.0.18 范围
 
-本版本增加对 100 及以上 SMILES+ 环闭合编号的有界读写，并提供类型化的
-CXSMILES attachment label 检查。MDL attachment collapse 与 V3000 的
-`ENDPTS`/`ATTACH` 语义仍明确不支持。兼容性仍按操作和数据集限定，详见
+本版本为 Rust、Python 与 WASM/Node 提供了统一的未知长度 SMILES 流计数契约。
+正常 EOF 会处理已观察的全部行；取消、时间/资源限制、producer 失败和 consumer
+关闭会保留已处理前缀，不会伪造成功或跳过结果。Worker/MCP adapter 与实测运行时
+资源限制仍是独立的未完成工作。兼容性仍按操作和数据集限定，详见
 [兼容性范围](docs/compatibility-scope.md)和[CHANGELOG](CHANGELOG.md)。
 
 ## Python

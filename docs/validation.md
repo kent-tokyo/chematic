@@ -1,6 +1,6 @@
 # Validation report
 
-Updated 2026-09-20. The current release is **v1.0.17**. Each result keeps its
+Updated 2026-09-21. The current release is **v1.0.18**. Each result keeps its
 recorded version, comparator, corpus, and operation; no result is silently
 upgraded to the current source revision.
 

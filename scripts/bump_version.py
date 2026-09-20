@@ -105,6 +105,15 @@ def main() -> None:
         (ROOT / "demo" / "pkg" / "package.json", [
             re.compile(r'"version":\s*"' + re.escape(old) + r'"'),
         ]),
+        (ROOT / "crates" / "chematic-mcp" / "README.md", [
+            re.compile(r'chematic-mcp = \{ version = "' + re.escape(old) + r'"'),
+        ]),
+        (ROOT / "crates" / "chematic-inchi" / "README.md", [
+            re.compile(r'chematic-inchi\s*=\s*\{\s*version\s*=\s*"' + re.escape(old) + r'"'),
+        ]),
+        (ROOT / "docs" / "use-cases" / "rust-server.md", [
+            re.compile(r'chematic\s*=\s*\{\s*version\s*=\s*"' + re.escape(old) + r'"'),
+        ]),
     ]
 
     # Intra-workspace path-dependency version pins — key order varies between
