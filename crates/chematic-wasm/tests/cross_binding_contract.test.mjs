@@ -334,9 +334,24 @@ assert.equal(batchManifest.schema_version, 1);
 assert.equal(batchManifest.operation, "canonicalize_smiles");
 assert.equal(batchManifest.status, "complete");
 assert.equal(batchManifest.record_count, fixture.batch_canonicalization_contract.expected.length);
+assert.equal(batchManifest.input_count, fixture.batch_canonicalization_contract.expected.length);
+assert.equal(batchManifest.accepted_count, 2);
+assert.equal(batchManifest.rejected_count, 1);
+assert.equal(batchManifest.refused_count, 0);
+assert.equal(batchManifest.skipped_count, 0);
+assert.equal(batchManifest.all_succeeded, false);
 const batchActual = batchManifest.records;
 assert.deepEqual(
-  batchActual.map(({ error, ...record }) => record),
+  batchActual.map(({ error, error_stage: errorStage, ...record }) => {
+    if (record.status === "accepted") {
+      assert.equal(error, null);
+      assert.equal(errorStage, null);
+    } else {
+      assert.equal(typeof error, "string");
+      assert.equal(errorStage, "parse");
+    }
+    return record;
+  }),
   fixture.batch_canonicalization_contract.expected,
 );
 
@@ -348,6 +363,12 @@ const malformedBatch = JSON.parse(
 );
 assert.equal(malformedBatch.status, "complete");
 assert.equal(malformedBatch.record_count, 3);
+assert.equal(malformedBatch.input_count, 3);
+assert.equal(malformedBatch.accepted_count, 2);
+assert.equal(malformedBatch.rejected_count, 1);
+assert.equal(malformedBatch.refused_count, 0);
+assert.equal(malformedBatch.skipped_count, 0);
+assert.equal(malformedBatch.all_succeeded, false);
 assert.deepEqual(
   malformedBatch.records.map(({ input_index: inputIndex, status }) => ({ inputIndex, status })),
   [
@@ -357,6 +378,7 @@ assert.deepEqual(
   ],
 );
 assert.equal(typeof malformedBatch.records[1].error, "string");
+assert.equal(malformedBatch.records[1].error_stage, "parse");
 assert.throws(() => wasm.canonicalize_smiles_batch_json("CC", ""));
 assert.throws(() => wasm.canonicalize_smiles_batch_json("CC\n".repeat(1024), "\n"));
 assert.throws(() => wasm.canonicalize_smiles_batch_json("C".repeat(1_000_001), "\n"));

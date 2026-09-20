@@ -39,8 +39,8 @@ pub mod smi_file;
 pub mod writer;
 
 pub use batch::{
-    BatchCanonicalRecord, BatchCanonicalization, IdentityIndexBuild, SmilesBatchCanonicalizer,
-    SmilesBatchReader, SmilesIdentityIndex,
+    BatchCanonicalRecord, BatchCanonicalResult, BatchCanonicalization, IdentityIndexBuild,
+    SmilesBatchCanonicalizer, SmilesBatchReader, SmilesIdentityIndex,
 };
 pub use canonical::are_atoms_equivalent;
 pub use canonical::{

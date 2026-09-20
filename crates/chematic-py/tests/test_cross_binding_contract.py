@@ -500,6 +500,12 @@ def test_python_binding_matches_shared_batch_canonicalization_contract():
     assert actual["operation"] == "canonicalize_smiles"
     assert actual["status"] == "complete"
     assert actual["record_count"] == len(contract["expected"])
+    assert actual["input_count"] == len(contract["expected"])
+    assert actual["accepted_count"] == 2
+    assert actual["rejected_count"] == 1
+    assert actual["refused_count"] == 0
+    assert actual["skipped_count"] == 0
+    assert actual["all_succeeded"] is False
     observed = []
     for record in actual["records"]:
         result = {
@@ -509,6 +515,11 @@ def test_python_binding_matches_shared_batch_canonicalization_contract():
         }
         if record["status"] == "accepted":
             result["canonical_smiles"] = record["canonical_smiles"]
+            assert record["error"] is None
+            assert record["error_stage"] is None
+        else:
+            assert isinstance(record["error"], str)
+            assert record["error_stage"] == "parse"
         observed.append(result)
     assert observed == contract["expected"]
 
