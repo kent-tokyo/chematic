@@ -626,6 +626,13 @@ pub(crate) struct CanonicalWriter<'a> {
     /// re-orientation this early corrupts E/Z groups spanning bonds visited
     /// in different directions (issue #390).
     atom_ring_nums: Vec<Vec<(u32, bool, AtomIdx, BondIdx)>>,
+    /// Test-only switch for the #503 design probe.  Production always emits
+    /// a directional ring bond at its opening occurrence; the probe also
+    /// permits a selected E/Z carrier to be emitted at its closing occurrence
+    /// so we can distinguish a missing serialization degree of freedom from a
+    /// genuinely unsatisfiable local carrier plan.
+    #[cfg(test)]
+    ring_marker_on_close: HashSet<BondIdx>,
     next_ring: u32,
     out: String,
     /// Union-find groups of directional (`/`/`\`) bonds that jointly encode
@@ -681,6 +688,8 @@ impl<'a> CanonicalWriter<'a> {
             written: vec![false; n],
             ring_bonds: vec![false; mol.bond_count()],
             atom_ring_nums: vec![Vec::new(); n],
+            #[cfg(test)]
+            ring_marker_on_close: HashSet::new(),
             next_ring: 1,
             out: String::with_capacity(n.saturating_mul(4) + mol.bond_count().saturating_mul(2)),
             ez_group: HashMap::new(),
@@ -790,7 +799,7 @@ impl<'a> CanonicalWriter<'a> {
     /// one of them size exactly 2, 0 cycles. (An independent run against
     /// the larger, non-committed ChEMBL corpus used for this crate's own
     /// full-corpus residual measurements — see
-    /// `docs/rfcs/canonical_smiles_residual_rfc.md` — found the same: every
+    /// `docs/canonical-ez-plan.md` — found the same: every
     /// component observed has been size exactly 2.) Every node has at most
     /// 2 candidate substituent bonds, so every component is a simple path
     /// or cycle, never a general graph. This cap gives an 8x margin over
@@ -1287,7 +1296,9 @@ impl<'a> CanonicalWriter<'a> {
             // the remote endpoint (which is not adjacent to this alkene),
             // and a re-parser would silently lose this stereochemistry.
             let chosen_bidx = subs[i][choice[i]].1;
-            if self.ring_closure_is_close_side(chosen_bidx, end) {
+            if self.ring_closure_is_close_side(chosen_bidx, end)
+                && !self.ring_marker_is_permitted_on_close(chosen_bidx)
+            {
                 return None;
             }
             // A carrier election is not geometry-neutral when the losing
@@ -1322,6 +1333,22 @@ impl<'a> CanonicalWriter<'a> {
         self.atom_ring_nums[end.0 as usize]
             .iter()
             .any(|&(_, is_open, _, ring_bidx)| ring_bidx == bidx && !is_open)
+    }
+
+    /// Production deliberately keeps directional ring markers at the opening
+    /// occurrence.  Unit tests can opt into the parser-supported closing-side
+    /// spelling to measure whether that serialization freedom would solve a
+    /// residual before changing the public canonicalization contract.
+    fn ring_marker_is_permitted_on_close(&self, bidx: BondIdx) -> bool {
+        #[cfg(test)]
+        {
+            self.ring_marker_on_close.contains(&bidx)
+        }
+        #[cfg(not(test))]
+        {
+            let _ = bidx;
+            false
+        }
     }
 
     /// True if `bidx` (one of `owning_end`'s own two candidate substituent
@@ -1830,7 +1857,12 @@ impl<'a> CanonicalWriter<'a> {
                 // former order_at_open/order_at_close split exactly, just
                 // computed now instead of at discovery time (see
                 // `normalize_ez`'s doc comment for why).
-                let bond_order = if is_open {
+                let emit_direction_here = if is_open {
+                    !self.ring_marker_is_permitted_on_close(bidx)
+                } else {
+                    self.ring_marker_is_permitted_on_close(bidx)
+                };
+                let bond_order = if emit_direction_here {
                     let normalized = self.normalize_ez(bidx, atom);
                     Self::reorient_for_write(self.raw_direction_anchor(bidx), atom, normalized)
                 } else {
@@ -3639,8 +3671,8 @@ mod tests {
     // sides). *Which* substituent gets the mark used to be whatever the
     // parser happened to read, so two RDKit-valid respellings of the same
     // molecule that mark different substituents produced two different
-    // canonical outputs (docs/rfcs/canonical_smiles_residual_rfc.md, Root cause
-    // 1). `resolve_ez_markers` picks the marker carrier deterministically
+    // canonical outputs; the current evidence is recorded in
+    // docs/canonical-ez-plan.md. `resolve_ez_markers` picks the marker carrier deterministically
     // from canonical rank instead. Every case below is a real molecule from
     // the residual corpus (`validation/results/
     // canonical_residual_diagnosis_summary.json`'s `permutation_invariance_
@@ -4113,7 +4145,7 @@ mod tests {
                 let (ranks, _) = winning_individualized_ranks(&mol);
                 let mut outputs = HashSet::new();
                 for mask in 0usize..(1usize << component_bonds.len()) {
-                    let preferences = component_bonds
+                    let preferences: HashMap<BondIdx, bool> = component_bonds
                         .iter()
                         .enumerate()
                         .map(|(index, &bond)| (bond, (mask & (1 << index)) != 0))
@@ -4138,6 +4170,89 @@ mod tests {
                 common.is_empty(),
                 "{input}: candidate-bond DFS priorities unexpectedly found a common output; \
                  update the complete-plan boundary before relying on it"
+            );
+        }
+    }
+
+    /// The closing side of a ring digit is syntactically capable of carrying
+    /// its directional token (the parser applies the required orientation
+    /// flip).  Exhaust the two remaining *local* writer freedoms together:
+    /// every candidate-bond DFS priority and every candidate ring-marker
+    /// side.  A positive result would identify an admissible bounded plan;
+    /// a negative result proves that neither independent local preference nor
+    /// their combination can close #503.
+    #[test]
+    fn issue503_local_traversal_and_ring_marker_side_have_no_common_output() {
+        let observed_pairs = [
+            (
+                r"c/3(c(/c(c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+                r"c3(c(c(/c3=N/CC)=N\[C@@H](Cc1ccc(NC(c2c(Cl)cncc2Cl)=O)cc1)C(O)=O)O)O",
+            ),
+            (
+                r"c/1(c(/c(c1=N\[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+                r"c1(c(c(/c1=N/[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+            ),
+            (
+                r"c/1(O)c(O)/c(=N\[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)c1=N\CCOC",
+                r"c1(O)c(O)c(=N/[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)\c1=N\CCOC",
+            ),
+        ];
+
+        for (&input, &(observed_a, observed_b)) in EZ_SHARED_CARRIER_HELD_OUT_RESIDUALS
+            .iter()
+            .zip(observed_pairs.iter())
+        {
+            let mut per_spelling = Vec::new();
+            for spelling in [input, observed_a, observed_b] {
+                let mol = parse(spelling).unwrap();
+                let geometry = geometry_fingerprint(&mol);
+                let ends = CanonicalWriter::compute_stereo_alkene_ends(&mol);
+                let mut component_bonds: Vec<_> = CanonicalWriter::coupling_components(&mol, &ends)
+                    .into_iter()
+                    .flatten()
+                    .flat_map(|end| CanonicalWriter::substituents(&mol, end))
+                    .map(|(_, bond)| bond)
+                    .collect();
+                component_bonds.sort_unstable_by_key(|bond| bond.0);
+                component_bonds.dedup();
+                assert!(component_bonds.len() <= 8, "diagnostic bound exceeded");
+                let (ranks, _) = winning_individualized_ranks(&mol);
+                let mut outputs = HashSet::new();
+                for traversal_mask in 0usize..(1usize << component_bonds.len()) {
+                    let preferences: HashMap<BondIdx, bool> = component_bonds
+                        .iter()
+                        .enumerate()
+                        .map(|(index, &bond)| (bond, (traversal_mask & (1 << index)) != 0))
+                        .collect();
+                    for close_mask in 0usize..(1usize << component_bonds.len()) {
+                        let mut writer = CanonicalWriter::new(&mol, &ranks);
+                        writer.traversal_bond_preference = Some(preferences.clone());
+                        writer.ring_marker_on_close = component_bonds
+                            .iter()
+                            .enumerate()
+                            .filter_map(|(index, &bond)| {
+                                ((close_mask & (1 << index)) != 0).then_some(bond)
+                            })
+                            .collect();
+                        let output = writer.write_all();
+                        let reparsed = parse(&output).unwrap_or_else(|e| {
+                            panic!("{spelling}: local-plan candidate did not parse: {e}: {output}")
+                        });
+                        if geometry_fingerprint(&reparsed) == geometry {
+                            outputs.insert(output);
+                        }
+                    }
+                }
+                per_spelling.push(outputs);
+            }
+            let common = per_spelling
+                .into_iter()
+                .reduce(|left, right| left.intersection(&right).cloned().collect())
+                .unwrap();
+            assert!(
+                common.is_empty(),
+                "{input}: local writer plan unexpectedly found {common:?}; \
+                 promote it from a probe only after its full contract is verified"
             );
         }
     }
