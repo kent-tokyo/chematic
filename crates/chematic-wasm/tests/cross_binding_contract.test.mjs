@@ -14,10 +14,10 @@ const wasm = await import(path.join(repoRoot, "crates/chematic-wasm/pkg-node/che
 
 assert.equal(fixture.schema_version, 1);
 assert.equal(fixture.fixtures.length, 4);
-assert.equal(fixture.operation_manifest.operations.length, 57);
+assert.equal(fixture.operation_manifest.operations.length, 58);
 assert.equal(
   new Set(fixture.operation_manifest.operations.map(({ id }) => id)).size,
-  57,
+  58,
 );
 
 const orcaOutput = fixture.orca_output_contract;
@@ -382,6 +382,44 @@ assert.equal(malformedBatch.records[1].error_stage, "parse");
 assert.throws(() => wasm.canonicalize_smiles_batch_json("CC", ""));
 assert.throws(() => wasm.canonicalize_smiles_batch_json("CC\n".repeat(1024), "\n"));
 assert.throws(() => wasm.canonicalize_smiles_batch_json("C".repeat(1_000_001), "\n"));
+
+const streamContract = fixture.stream_batch_canonicalization_contract;
+{
+  const stream = new wasm.SmilesBatchStreamHandle();
+  streamContract.inputs.forEach((smiles, index) => {
+    assert.equal(stream.observe(smiles), index);
+  });
+  for (let index = 0; index < streamContract.processed_before_stop; index += 1) {
+    assert.equal(JSON.parse(stream.process_next_json()).status, "accepted");
+  }
+  const actual = JSON.parse(stream.stop_json(streamContract.terminal_reason));
+  assert.equal(actual.schema_version, 1);
+  assert.equal(actual.operation, "canonicalize_smiles_stream");
+  assert.equal(actual.input_kind, "unknown_length_stream");
+  assert.equal(actual.terminal_reason, streamContract.terminal_reason);
+  for (const [key, value] of Object.entries(streamContract.expected_incomplete)) {
+    assert.deepEqual(actual[key], value, key);
+  }
+  assert.throws(() => stream.observe("CO"), /already terminal/);
+  stream.free();
+}
+{
+  const stream = new wasm.SmilesBatchStreamHandle();
+  stream.observe("CCO");
+  assert.throws(() => stream.stop_json("cancelled_by_user"), /terminal_reason must be one of/);
+  assert.equal(JSON.parse(stream.finish_json()).status, "complete");
+  stream.free();
+}
+{
+  const stream = new wasm.SmilesBatchStreamHandle();
+  streamContract.finish_inputs.forEach((smiles) => stream.observe(smiles));
+  const actual = JSON.parse(stream.finish_json());
+  for (const [key, value] of Object.entries(streamContract.expected_complete)) {
+    assert.deepEqual(actual[key], value, key);
+  }
+  assert.equal(actual.terminal_reason, null);
+  stream.free();
+}
 
 const sdfInput = readFileSync(path.join(repoRoot, "benchmarks/fixtures/streaming.sdf"), "utf8");
 const sdfPage = JSON.parse(wasm.sdf_records_batch_json(sdfInput, 0, 1));

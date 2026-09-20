@@ -1849,6 +1849,33 @@ class Mol:
 # Module-level functions
 # ---------------------------------------------------------------------------
 
+class SmilesBatchStream:
+    """Stateful accounting for an unknown-length SMILES input source.
+
+    Observe rows as a producer yields them, process rows independently, then
+    finish at EOF or stop with a typed terminal reason.  The JSON manifest
+    keeps observed-but-unprocessed rows separate from an unread unknown suffix.
+    """
+
+    def __init__(self) -> None: ...
+    def observe(self, smiles: str) -> int: ...
+    def process_next_json(self) -> str:
+        """Process one observed row, or return ``"null"`` if none are pending."""
+        ...
+    def finish_json(self) -> str:
+        """Mark normal EOF and return a complete accounting manifest."""
+        ...
+    def stop_json(self, terminal_reason: str) -> str:
+        """Stop with ``cancelled``, ``time_limit``, ``resource_limit``,
+        ``producer_error``, or ``consumer_closed`` and return an incomplete
+        manifest with ``unread_input="unknown"``.
+        """
+        ...
+
+def canonicalize_smiles_batch_json(smiles: list[str]) -> str:
+    """Canonicalize a known-length batch with one terminal record per input."""
+    ...
+
 def tanimoto_erg(mol1: Mol, mol2: Mol) -> float:
     """Tanimoto similarity between two molecules using ERG fingerprints.
 

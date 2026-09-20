@@ -25,6 +25,7 @@ CONTRACT_SECTIONS = {
     "mol_v3000_contract",
     "xyz_contract",
     "batch_canonicalization_contract",
+    "stream_batch_canonicalization_contract",
     "smiles_validity_contract",
     "inchi_contract",
     "fragment_parent_contract",

@@ -16,7 +16,7 @@ def test_shared_fixture_schema_is_stable():
     assert _DOCUMENT["schema_version"] == 1
     assert len(_DOCUMENT["fixtures"]) == 4
     operations = _DOCUMENT["operation_manifest"]["operations"]
-    assert len(operations) == 57
+    assert len(operations) == 58
     assert len({operation["id"] for operation in operations}) == len(operations)
     assert all(len(operation["bindings"]) == 4 for operation in operations)
     assert all(operation["test_anchors"] for operation in operations)
@@ -522,6 +522,45 @@ def test_python_binding_matches_shared_batch_canonicalization_contract():
             assert record["error_stage"] == "parse"
         observed.append(result)
     assert observed == contract["expected"]
+
+
+def test_python_stream_batch_preserves_incomplete_observed_prefix():
+    contract = _DOCUMENT["stream_batch_canonicalization_contract"]
+    stream = chematic.SmilesBatchStream()
+    for index, smiles in enumerate(contract["inputs"]):
+        assert stream.observe(smiles) == index
+    for _ in range(contract["processed_before_stop"]):
+        assert json.loads(stream.process_next_json())["status"] == "accepted"
+
+    stopped = json.loads(stream.stop_json(contract["terminal_reason"]))
+    expected = contract["expected_incomplete"]
+    assert stopped["schema_version"] == 1
+    assert stopped["operation"] == "canonicalize_smiles_stream"
+    assert stopped["input_kind"] == "unknown_length_stream"
+    assert stopped["terminal_reason"] == contract["terminal_reason"]
+    for key, value in expected.items():
+        assert stopped[key] == value
+    with pytest.raises(ValueError, match="already terminal"):
+        stream.observe("CO")
+
+
+def test_python_stream_batch_rejects_unknown_terminal_reason_without_consuming_stream():
+    stream = chematic.SmilesBatchStream()
+    stream.observe("CCO")
+    with pytest.raises(ValueError, match="terminal_reason must be one of"):
+        stream.stop_json("cancelled_by_user")
+    assert json.loads(stream.finish_json())["status"] == "complete"
+
+
+def test_python_stream_batch_finish_processes_observed_pending_rows():
+    contract = _DOCUMENT["stream_batch_canonicalization_contract"]
+    stream = chematic.SmilesBatchStream()
+    for smiles in contract["finish_inputs"]:
+        stream.observe(smiles)
+    finished = json.loads(stream.finish_json())
+    for key, value in contract["expected_complete"].items():
+        assert finished[key] == value
+    assert finished["terminal_reason"] is None
 
 
 @pytest.mark.parametrize("format_name", ["xyz", "extxyz"])

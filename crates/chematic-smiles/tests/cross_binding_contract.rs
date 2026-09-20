@@ -20,7 +20,7 @@ fn shared_parse_and_canonical_contract_matches() {
     let operations = document["operation_manifest"]["operations"]
         .as_array()
         .expect("operation manifest operations");
-    assert_eq!(operations.len(), 57);
+    assert_eq!(operations.len(), 58);
     let mut operation_ids = std::collections::HashSet::new();
     for operation in operations {
         let id = operation["id"].as_str().expect("operation id");
@@ -93,6 +93,90 @@ fn shared_batch_canonicalization_contract_matches() {
             (result, status) => panic!("unexpected batch result {result:?} for {status}"),
         }
     }
+}
+
+#[test]
+fn shared_stream_batch_canonicalization_contract_matches() {
+    let document: Value = serde_json::from_str(FIXTURE).expect("fixture JSON must parse");
+    let contract = &document["stream_batch_canonicalization_contract"];
+    assert_eq!(contract["schema_version"], 1);
+
+    let mut stream = chematic_smiles::SmilesBatchCanonicalizer::default().stream();
+    for input in contract["inputs"].as_array().expect("stream inputs") {
+        stream.observe(input.as_str().expect("stream input"));
+    }
+    for _ in 0..contract["processed_before_stop"].as_u64().unwrap() {
+        stream.process_next().expect("observed row to process");
+    }
+    let terminal_reason = contract["terminal_reason"]
+        .as_str()
+        .unwrap()
+        .parse()
+        .expect("fixture terminal reason must be declared");
+    let stopped = stream.stop(terminal_reason);
+    let expected = &contract["expected_incomplete"];
+    assert!(!stopped.stream_complete);
+    assert_eq!(
+        stopped.terminal_reason.map(|reason| reason.as_str()),
+        contract["terminal_reason"].as_str()
+    );
+    assert_eq!(
+        stopped.observed_input_count,
+        expected["observed_input_count"].as_u64().unwrap() as usize
+    );
+    assert_eq!(
+        stopped.records.len(),
+        expected["completed_count"].as_u64().unwrap() as usize
+    );
+    assert_eq!(
+        stopped.accepted_count,
+        expected["accepted_count"].as_u64().unwrap() as usize
+    );
+    assert_eq!(
+        stopped.rejected_count,
+        expected["rejected_count"].as_u64().unwrap() as usize
+    );
+    assert_eq!(
+        stopped.unprocessed_observed_count,
+        expected["unprocessed_observed_count"].as_u64().unwrap() as usize
+    );
+    assert_eq!(
+        stopped.all_succeeded(),
+        expected["all_succeeded"].as_bool().unwrap()
+    );
+
+    let mut stream = chematic_smiles::SmilesBatchCanonicalizer::default().stream();
+    for input in contract["finish_inputs"].as_array().expect("finish inputs") {
+        stream.observe(input.as_str().expect("finish input"));
+    }
+    let finished = stream.finish();
+    let expected = &contract["expected_complete"];
+    assert!(finished.stream_complete);
+    assert_eq!(finished.terminal_reason, None);
+    assert_eq!(
+        finished.observed_input_count,
+        expected["observed_input_count"].as_u64().unwrap() as usize
+    );
+    assert_eq!(
+        finished.records.len(),
+        expected["completed_count"].as_u64().unwrap() as usize
+    );
+    assert_eq!(
+        finished.accepted_count,
+        expected["accepted_count"].as_u64().unwrap() as usize
+    );
+    assert_eq!(
+        finished.rejected_count,
+        expected["rejected_count"].as_u64().unwrap() as usize
+    );
+    assert_eq!(
+        finished.unprocessed_observed_count,
+        expected["unprocessed_observed_count"].as_u64().unwrap() as usize
+    );
+    assert_eq!(
+        finished.all_succeeded(),
+        expected["all_succeeded"].as_bool().unwrap()
+    );
 }
 
 #[test]

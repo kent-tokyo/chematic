@@ -212,7 +212,7 @@ the [disposition ledger](docs/roadmap-open-work.md) for evidence and dependencie
 These extend the same product areas; they do not introduce new Phase numbers.
 
 - [ ] T3.6/T1.5: maintain the merged browser Parse + Morgan win, audit remaining statistical/resource conditions, verify the published package and rebaseline the next available RDKit artifacts; retain separate native ECFP and T3.4 search lanes.
-- [ ] Make the BatchResult contract the cross-binding batch product boundary: known-length input accounting must remain exact; cancellation, unknown-length streams, retries, Worker/MCP adapters, and export must expose their unprocessed range rather than manufacture success or skipped rows.
+- [ ] Make the BatchResult contract the cross-binding batch product boundary: known-length input accounting remains exact, and the public Rust/Python/WASM/Node stream schema distinguishes normal EOF from typed cancellation/time/resource/producer/consumer stops, observed-but-unprocessed rows, and an unread unknown suffix. Add retry, Worker/MCP adapters, export, clean-install, and resource proof without manufacturing success or skipped rows.
 - [ ] Exact canonical-SMILES and cross-engine V3000 parity: expand semantic-identity and RDKit/Indigo fixtures beyond the completed T5.7 identity-renumber and T1.9 query-semantics gates; retain unsupported representation boundaries.
 - [ ] Replace remaining MD/UFF/MMFF94 finite-difference production paths after same-domain analytic energy, gradient, and stereo soundness gates.
 - [ ] Replace remaining periodic neighbor all-pairs paths after exact result-set and cutoff parity.
