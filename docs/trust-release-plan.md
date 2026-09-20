@@ -728,6 +728,10 @@ rejectionは文字列、envelopeの`complete`は処理完了を表す。これ�
 - [ ] cancel、未知長stream、retry、chunk境界、Worker/MCP adapter、export stageと
   resource/time limitを同じ会計契約へ接続する。cancel後の未読範囲を架空の`skipped`に
   せず、`complete=false`と未読範囲を明示する。
+- [x] PR #580でLocal Compound Explorerの既知長importにこの境界を適用した。record capと
+  cancelでは`unprocessed`とterminal reasonを表示し、古いWorker応答が後続importの状態を
+  上書きしないgeneration guardを追加した。Chromium/Firefox/WebKitのsmokeで確認済み。
+  これはExplorerのUI経路だけであり、下記の全binding/10k Worker出口の代替にはしない。
 - [ ] known-length batchでは全bindingで `input_count = success + failed + refused + skipped`
   を維持し、unknown-length streamでは確定済みprefix、未読範囲、terminal reasonを別に
   表す。`failed()==0`だけから全入力成功を推論できないことを型・JSON schema・利用例で
