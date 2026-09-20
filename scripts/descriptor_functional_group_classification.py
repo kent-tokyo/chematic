@@ -51,6 +51,16 @@ FIELDS = {
         "tolerance": 0.01,
         "comparison": "numeric_rdkit_mass_profile",
     },
+    "exact_mass": {
+        "rdkit": lambda mol, modules: modules["Descriptors"].ExactMolWt(mol),
+        "tolerance": 1e-6,
+        "comparison": "numeric_exact_mass",
+    },
+    "heavy_atoms": {
+        "rdkit": lambda mol, modules: mol.GetNumHeavyAtoms(),
+        "tolerance": 0.0,
+        "comparison": "integer",
+    },
     "logp": {
         "rdkit": lambda mol, modules: modules["Crippen"].MolLogP(mol),
         "tolerance": 1e-2,
@@ -87,6 +97,11 @@ FIELDS = {
         "rdkit": lambda mol, modules: modules["rdMolDescriptors"].CalcNumAromaticRings(mol),
         "tolerance": 0.0,
         "comparison": "integer",
+    },
+    "rotatable_bonds": {
+        "rdkit": lambda mol, modules: modules["rdMolDescriptors"].CalcNumRotatableBonds(mol),
+        "tolerance": 0.0,
+        "comparison": "integer_rdkit_default",
     },
 }
 

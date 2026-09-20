@@ -12,7 +12,7 @@
     "engine": "chematic",
     "operation": "CLI descriptors <SMILES> JSON tpsa",
     "cli_name": "chematic",
-    "cli_sha256": "0b6da3617acab822925e8e665f9c118a2e9a648eeb82b2b63405256859850672"
+    "cli_sha256": "5b72e2a53fc1e7e9bfe2876dc7fd5ec7a3724baaaa693c569958a548825f642e"
   },
   "rows": 51,
   "strict_tolerance": 1e-06,
