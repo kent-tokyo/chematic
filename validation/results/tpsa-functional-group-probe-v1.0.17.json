@@ -1,0 +1,391 @@
+{
+  "schema_version": 1,
+  "profile": "tpsa_public_functional_group_probe_v1",
+  "status": "development_regression",
+  "scope": "Public, non-sealed functional-group probe; not an unused evaluation cohort or adoption decision.",
+  "oracle": {
+    "engine": "RDKit",
+    "version": "2025.09.3",
+    "operation": "rdMolDescriptors.CalcTPSA(includeSandP=True)"
+  },
+  "implementation": {
+    "engine": "chematic",
+    "operation": "CLI descriptors <SMILES> JSON tpsa",
+    "cli_name": "chematic",
+    "cli_sha256": "781acc99abdd5f37f026acbd2340019eec0938ebd1dd82206cdc05ed5eb81a6b"
+  },
+  "rows": 46,
+  "strict_tolerance": 1e-06,
+  "strict_matches": 46,
+  "failures": [],
+  "cases": [
+    {
+      "id": "water",
+      "smiles": "O",
+      "rdkit_tpsa": 31.5,
+      "chematic_tpsa": 31.5,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "alcohol",
+      "smiles": "CCO",
+      "rdkit_tpsa": 20.23,
+      "chematic_tpsa": 20.23,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "phenol",
+      "smiles": "Oc1ccccc1",
+      "rdkit_tpsa": 20.23,
+      "chematic_tpsa": 20.23,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "ether",
+      "smiles": "COC",
+      "rdkit_tpsa": 9.23,
+      "chematic_tpsa": 9.23,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "epoxide",
+      "smiles": "C1CO1",
+      "rdkit_tpsa": 12.53,
+      "chematic_tpsa": 12.53,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "carbonyl",
+      "smiles": "CC=O",
+      "rdkit_tpsa": 17.07,
+      "chematic_tpsa": 17.07,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "carboxylic_acid",
+      "smiles": "CC(=O)O",
+      "rdkit_tpsa": 37.3,
+      "chematic_tpsa": 37.3,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "carboxylate",
+      "smiles": "CC(=O)[O-]",
+      "rdkit_tpsa": 40.129999999999995,
+      "chematic_tpsa": 40.129999999999995,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "ester",
+      "smiles": "CC(=O)OC",
+      "rdkit_tpsa": 26.3,
+      "chematic_tpsa": 26.3,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "amide",
+      "smiles": "CC(=O)N",
+      "rdkit_tpsa": 43.09,
+      "chematic_tpsa": 43.09,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "primary_amine",
+      "smiles": "CCN",
+      "rdkit_tpsa": 26.02,
+      "chematic_tpsa": 26.02,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "tertiary_amine",
+      "smiles": "CN(C)C",
+      "rdkit_tpsa": 3.24,
+      "chematic_tpsa": 3.24,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "quaternary_ammonium",
+      "smiles": "C[N+](C)(C)C",
+      "rdkit_tpsa": 0.0,
+      "chematic_tpsa": 0.0,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "nitrile",
+      "smiles": "CC#N",
+      "rdkit_tpsa": 23.79,
+      "chematic_tpsa": 23.79,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "imine",
+      "smiles": "CC=N",
+      "rdkit_tpsa": 23.85,
+      "chematic_tpsa": 23.85,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "azo",
+      "smiles": "CN=NC",
+      "rdkit_tpsa": 24.72,
+      "chematic_tpsa": 24.72,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "nitro",
+      "smiles": "C[N+](=O)[O-]",
+      "rdkit_tpsa": 43.14,
+      "chematic_tpsa": 43.14,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "nitroso",
+      "smiles": "CN=O",
+      "rdkit_tpsa": 29.43,
+      "chematic_tpsa": 29.43,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "n_oxide",
+      "smiles": "C[n+]1ccccc1[O-]",
+      "rdkit_tpsa": 26.939999999999998,
+      "chematic_tpsa": 26.939999999999998,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "azide",
+      "smiles": "CN=[N+]=[N-]",
+      "rdkit_tpsa": 48.760000000000005,
+      "chematic_tpsa": 48.760000000000005,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "pyridine",
+      "smiles": "n1ccccc1",
+      "rdkit_tpsa": 12.89,
+      "chematic_tpsa": 12.89,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "pyrrole",
+      "smiles": "c1cc[nH]c1",
+      "rdkit_tpsa": 15.79,
+      "chematic_tpsa": 15.79,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "imidazole",
+      "smiles": "c1ncc[nH]1",
+      "rdkit_tpsa": 28.68,
+      "chematic_tpsa": 28.68,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "sulfide",
+      "smiles": "CSC",
+      "rdkit_tpsa": 25.3,
+      "chematic_tpsa": 25.3,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "thiol",
+      "smiles": "CS",
+      "rdkit_tpsa": 38.8,
+      "chematic_tpsa": 38.8,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "sulfoxide",
+      "smiles": "CS(=O)C",
+      "rdkit_tpsa": 36.28,
+      "chematic_tpsa": 36.28,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "sulfone",
+      "smiles": "CS(=O)(=O)C",
+      "rdkit_tpsa": 42.52,
+      "chematic_tpsa": 42.52,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "sulfonamide",
+      "smiles": "CS(=O)(=O)N",
+      "rdkit_tpsa": 68.54,
+      "chematic_tpsa": 68.54,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "sulfonate",
+      "smiles": "CS(=O)(=O)[O-]",
+      "rdkit_tpsa": 65.58,
+      "chematic_tpsa": 65.58,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "thiophene",
+      "smiles": "c1ccsc1",
+      "rdkit_tpsa": 28.24,
+      "chematic_tpsa": 28.24,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "phosphate",
+      "smiles": "COP(=O)(O)O",
+      "rdkit_tpsa": 76.57000000000001,
+      "chematic_tpsa": 76.57000000000001,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "phosphonate",
+      "smiles": "CP(=O)(O)O",
+      "rdkit_tpsa": 67.34,
+      "chematic_tpsa": 67.34,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "phosphorothioate",
+      "smiles": "COP(=S)(O)O",
+      "rdkit_tpsa": 91.59,
+      "chematic_tpsa": 91.59,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "phosphine",
+      "smiles": "CP(C)C",
+      "rdkit_tpsa": 13.59,
+      "chematic_tpsa": 13.59,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "phosphazene_implicit_h",
+      "smiles": "CP(=N)C",
+      "rdkit_tpsa": 47.32,
+      "chematic_tpsa": 47.32,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "phosphazene_fully_substituted",
+      "smiles": "CP(=N)(C)C",
+      "rdkit_tpsa": 33.660000000000004,
+      "chematic_tpsa": 33.660000000000004,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "phosphazene_explicit_h",
+      "smiles": "[PH](=N)C",
+      "rdkit_tpsa": 23.85,
+      "chematic_tpsa": 23.85,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "phosphazene_amine",
+      "smiles": "CP(=N)N",
+      "rdkit_tpsa": 73.34,
+      "chematic_tpsa": 73.34,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "seleninic_acid",
+      "smiles": "C[Se](=O)O",
+      "rdkit_tpsa": 37.3,
+      "chematic_tpsa": 37.3,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "boronic_acid",
+      "smiles": "B(O)O",
+      "rdkit_tpsa": 40.46,
+      "chematic_tpsa": 40.46,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "hydrazine",
+      "smiles": "CNN",
+      "rdkit_tpsa": 38.05,
+      "chematic_tpsa": 38.05,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "guanidine",
+      "smiles": "NC(=N)N",
+      "rdkit_tpsa": 75.89,
+      "chematic_tpsa": 75.89,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "urea",
+      "smiles": "NC(=O)N",
+      "rdkit_tpsa": 69.11,
+      "chematic_tpsa": 69.11,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "isocyanate",
+      "smiles": "CN=C=O",
+      "rdkit_tpsa": 29.43,
+      "chematic_tpsa": 29.43,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "isothiocyanate",
+      "smiles": "CN=C=S",
+      "rdkit_tpsa": 44.45,
+      "chematic_tpsa": 44.45,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "triazine",
+      "smiles": "n1cncnc1",
+      "rdkit_tpsa": 38.67,
+      "chematic_tpsa": 38.67,
+      "absolute_error": 0.0,
+      "strict_match": true
+    }
+  ]
+}
