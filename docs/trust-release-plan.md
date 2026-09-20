@@ -711,9 +711,10 @@ CheMaticの不具合や優位性が確定したことにはならない。
   開発gateへ輸入したもので、RDKitの同一不具合を再現したという主張ではない。
 - [x] **T1.9 の保存/拒否境界:** PR #558はV3000→V3000でopaque query属性を保持し、
   unmodelled V3000 query constraintを通常分子形式へ平坦化する変換を拒否する。
-- [ ] **残るT5.7:** `C1CCN2CCCC2C1`と近傍負例について、32固定seed順列、clone/reparse、
-  ring情報の初期化/再計算、descriptor呼出し順を比較する。atom/bond mapでpotential-center
-  集合・CIP・E/Zを照合し、countやcanonical spellingだけで不変としない。
+- [x] **T5.7 の順列/状態ゲート:** `C1CCN2CCCC2C1`と通常の第三級アミン負例を、32固定
+  seed順列、clone/reparse、ring情報の初期化順、descriptor/CIP呼出し順で比較する。atom mapで
+  potential-center集合・CIPを、map endpointでbond骨格を照合し、countやcanonical spellingだけで
+  不変としない。入力はstereo未指定のためCIP/E/Z assignmentが空であることも固定する。
 - [~] **T1.9 query semantics の最初の観測:** RDKit 2025.09.3が生成した対称2-buteneと
   置換基が異なるchloro/bromo alkeneのE/Z V3000 query/targetを4×4で比較し、CheMatic往復前後でRDKitのisomeric identityに加え、
   `HasSubstructMatch(..., useChirality=True)`の真理値表も保存されることを確認した。
