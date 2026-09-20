@@ -308,12 +308,12 @@ fn rdkit_avg_mass(element: Element) -> f64 {
 
 /// Explicit isotope masses used by RDKit's average molecular-weight API.
 ///
-/// The compatibility profile is intentionally finite: an isotope not in this
-/// table remains fail-closed instead of being approximated by its mass number.
-/// Values are the nuclide masses in daltons; the common labels cover the
-/// isotope-bearing molecules in the current compatibility corpus.
-fn rdkit_isotope_mass(element: Element, isotope: u16) -> Option<f64> {
-    let mass = match (element.atomic_number(), isotope) {
+/// Values are the nuclide masses in daltons.  RDKit's periodic table falls
+/// back to the isotope mass number for a syntactically valid label that has no
+/// nuclide entry; retain that behavior rather than returning an ambiguous
+/// unsupported value.
+fn rdkit_isotope_mass(element: Element, isotope: u16) -> f64 {
+    match (element.atomic_number(), isotope) {
         (1, 2) => 2.01410177812,
         (1, 3) => 3.01604928199,
         (6, 12) => 12.0,
@@ -328,9 +328,8 @@ fn rdkit_isotope_mass(element: Element, isotope: u16) -> Option<f64> {
         (16, 34) => 33.967867004,
         (17, 37) => 36.965902602,
         (35, 81) => 80.9162897,
-        _ => return None,
-    };
-    Some(mass)
+        _ => isotope as f64,
+    }
 }
 
 /// Monoisotopic (most-abundant-isotope) mass table (Da), indexed the same
@@ -492,10 +491,9 @@ pub fn molecular_weight(mol: &Molecule) -> f64 {
 ///
 /// This is deliberately separate from [`molecular_weight`].  It matches the
 /// RDKit periodic-table values for the supported unlabelled-atom profile while
-/// retaining chematic's native defaults for existing callers.  Explicit
-/// isotope-labelled atoms are not silently approximated by this profile and
-/// Explicit isotopes use the finite RDKit-compatible nuclide table; unknown
-/// isotope labels remain fail-closed rather than being approximated.
+/// retaining chematic's native defaults for existing callers. Explicit
+/// isotope-labelled atoms use RDKit's nuclide masses where present and its
+/// mass-number fallback otherwise.
 pub fn rdkit_molecular_weight(mol: &Molecule) -> f64 {
     let mut mw = 0.0f64;
     for (idx, atom) in mol.atoms() {
@@ -503,10 +501,7 @@ pub fn rdkit_molecular_weight(mol: &Molecule) -> f64 {
             continue;
         }
         mw += match atom.isotope {
-            Some(isotope) => match rdkit_isotope_mass(atom.element, isotope) {
-                Some(mass) => mass,
-                None => return f64::NAN,
-            },
+            Some(isotope) => rdkit_isotope_mass(atom.element, isotope),
             None => rdkit_avg_mass(atom.element),
         };
         mw += implicit_hcount(mol, idx) as f64 * 1.008;
@@ -521,9 +516,9 @@ pub fn rdkit_molecular_weight(mol: &Molecule) -> f64 {
 /// Compute the monoisotopic (exact) mass (Da).
 ///
 /// Uses the most-abundant isotope for each element, or the explicit nuclide
-/// mass when the atom carries a supported isotope label.  Unknown isotope
-/// labels return `NaN` rather than treating a mass number as a physical mass.
-/// Implicit hydrogens use the ¹H monoisotopic mass (1.00783).
+/// mass when the atom carries a known isotope label. Unknown isotope labels
+/// use RDKit's mass-number fallback. Implicit hydrogens use the ¹H monoisotopic
+/// mass (1.00783).
 pub fn exact_mass(mol: &Molecule) -> f64 {
     let mut mass = 0.0f64;
     for (idx, atom) in mol.atoms() {
@@ -531,10 +526,7 @@ pub fn exact_mass(mol: &Molecule) -> f64 {
             continue;
         }
         let m = match atom.isotope {
-            Some(iso) => match rdkit_isotope_mass(atom.element, iso) {
-                Some(mass) => mass,
-                None => return f64::NAN,
-            },
+            Some(iso) => rdkit_isotope_mass(atom.element, iso),
             None => mono_mass(atom.element),
         };
         mass += m;
@@ -3923,11 +3915,12 @@ mod tests {
     }
 
     #[test]
-    fn rdkit_mw_supports_common_explicit_isotopes_and_rejects_unknown() {
+    fn rdkit_mw_uses_nuclide_masses_and_mass_number_fallback() {
         let isotope = mol("[13C]");
         assert!(approx(rdkit_molecular_weight(&isotope), 13.00335484, 1e-8));
         let unknown = mol("[99C]");
-        assert!(rdkit_molecular_weight(&unknown).is_nan());
+        assert!(approx(rdkit_molecular_weight(&unknown), 99.0, 1e-12));
+        assert!(approx(exact_mass(&unknown), 99.0, 1e-12));
     }
 
     #[test]
