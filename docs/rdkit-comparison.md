@@ -32,6 +32,7 @@ The following are dated macOS arm64 medians, not cross-platform guarantees:
 | SDF graph/property read | 9.48 µs/mol | 99.96 µs/mol | 365 records; chematic graph-only path |
 | SDF serialization-only write | 7.62 µs/mol | 79.54 µs/mol | same corpus; 2D layout disabled |
 | ECFP4 batch | 54.7 µs/mol | 94.3 µs/mol | historical v0.18.0, 5,000 molecules |
+| Parse + compatible Morgan | 3.11–3.67x faster (95% lower bound) | baseline | merged source `7d98dcd3`, official RDKit.js, fixed 10k, GitHub-hosted Chromium/Firefox/WebKit; excludes startup and unsupported Fe(II) row |
 
 The SDF operations are intentionally narrow and do not establish a lead for
 layout-enabled writing or every supplier option. Canonical output was produced
