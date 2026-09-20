@@ -40,7 +40,7 @@ pub mod writer;
 
 pub use batch::{
     BatchCanonicalRecord, BatchCanonicalResult, BatchCanonicalization, IdentityIndexBuild,
-    SmilesBatchCanonicalizer, SmilesBatchReader, SmilesIdentityIndex,
+    SmilesBatchCanonicalizer, SmilesBatchReader, SmilesBatchReaderError, SmilesIdentityIndex,
 };
 pub use canonical::are_atoms_equivalent;
 pub use canonical::{

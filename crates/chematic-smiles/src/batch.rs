@@ -118,6 +118,7 @@ impl SmilesBatchCanonicalizer {
             canonicalizer: *self,
             next_index: 0,
             line: String::new(),
+            terminated: false,
         }
     }
 
@@ -269,12 +270,46 @@ pub struct SmilesBatchReader<R> {
     canonicalizer: SmilesBatchCanonicalizer,
     next_index: usize,
     line: String,
+    terminated: bool,
+}
+
+/// Terminal I/O failure from [`SmilesBatchReader`].
+///
+/// Records with indices below [`Self::next_unprocessed_index`] were emitted
+/// before the failure. The failing line and every later input are unprocessed:
+/// because a stream has no known total length, callers must not turn that
+/// unknown suffix into successful or skipped records.
+#[derive(Debug)]
+pub struct SmilesBatchReaderError {
+    /// First input index for which no terminal record was emitted.
+    pub next_unprocessed_index: usize,
+    /// Underlying I/O failure.
+    pub source: std::io::Error,
+}
+
+impl std::fmt::Display for SmilesBatchReaderError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "SMILES batch stream failed before input index {}: {}",
+            self.next_unprocessed_index, self.source
+        )
+    }
+}
+
+impl std::error::Error for SmilesBatchReaderError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(&self.source)
+    }
 }
 
 impl<R: BufRead> Iterator for SmilesBatchReader<R> {
-    type Item = std::io::Result<BatchCanonicalRecord>;
+    type Item = Result<BatchCanonicalRecord, SmilesBatchReaderError>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.terminated {
+            return None;
+        }
         self.line.clear();
         match self.reader.read_line(&mut self.line) {
             Ok(0) => None,
@@ -293,7 +328,13 @@ impl<R: BufRead> Iterator for SmilesBatchReader<R> {
                     result: result.result,
                 }))
             }
-            Err(error) => Some(Err(error)),
+            Err(source) => {
+                self.terminated = true;
+                Some(Err(SmilesBatchReaderError {
+                    next_unprocessed_index: self.next_index,
+                    source,
+                }))
+            }
         }
     }
 }
@@ -301,6 +342,61 @@ impl<R: BufRead> Iterator for SmilesBatchReader<R> {
 #[cfg(test)]
 mod tests {
     use super::{BatchCanonicalization, SmilesBatchCanonicalizer};
+    use std::io::{self, BufRead, Read};
+
+    struct FailingReader;
+
+    impl Read for FailingReader {
+        fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
+            Err(io::Error::other("synthetic read failure"))
+        }
+    }
+
+    impl BufRead for FailingReader {
+        fn fill_buf(&mut self) -> io::Result<&[u8]> {
+            Err(io::Error::other("synthetic read failure"))
+        }
+
+        fn consume(&mut self, _amount: usize) {}
+    }
+
+    struct OneLineThenFail {
+        data: &'static [u8],
+        position: usize,
+    }
+
+    impl OneLineThenFail {
+        fn new() -> Self {
+            Self {
+                data: b"CCO\n",
+                position: 0,
+            }
+        }
+    }
+
+    impl Read for OneLineThenFail {
+        fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+            let available = self.fill_buf()?;
+            let count = available.len().min(buf.len());
+            buf[..count].copy_from_slice(&available[..count]);
+            self.consume(count);
+            Ok(count)
+        }
+    }
+
+    impl BufRead for OneLineThenFail {
+        fn fill_buf(&mut self) -> io::Result<&[u8]> {
+            if self.position == self.data.len() {
+                Err(io::Error::other("synthetic read failure"))
+            } else {
+                Ok(&self.data[self.position..])
+            }
+        }
+
+        fn consume(&mut self, amount: usize) {
+            self.position = (self.position + amount).min(self.data.len());
+        }
+    }
 
     #[test]
     fn preserves_input_order_and_partial_errors() {
@@ -400,6 +496,43 @@ mod tests {
             records[2].result,
             BatchCanonicalization::Accepted { .. }
         ));
+    }
+
+    #[test]
+    fn reader_io_error_is_terminal_and_exposes_unprocessed_boundary() {
+        let mut reader = SmilesBatchCanonicalizer::default().reader(FailingReader);
+        let error = reader
+            .next()
+            .expect("I/O failure must be surfaced")
+            .expect_err("synthetic reader must fail");
+
+        assert_eq!(error.next_unprocessed_index, 0);
+        assert_eq!(error.source.kind(), io::ErrorKind::Other);
+        assert!(
+            reader.next().is_none(),
+            "stream must fail closed after I/O error"
+        );
+    }
+
+    #[test]
+    fn reader_io_error_keeps_the_next_index_after_completed_records() {
+        let mut reader = SmilesBatchCanonicalizer::default().reader(OneLineThenFail::new());
+        let record = reader
+            .next()
+            .expect("first record must be emitted")
+            .expect("first record must succeed");
+        assert_eq!(record.input_index, 0);
+        assert!(matches!(
+            record.result,
+            BatchCanonicalization::Accepted { .. }
+        ));
+
+        let error = reader
+            .next()
+            .expect("I/O failure must be surfaced")
+            .expect_err("reader must fail after the first line");
+        assert_eq!(error.next_unprocessed_index, 1);
+        assert!(reader.next().is_none(), "stream must remain terminal");
     }
 
     #[test]
