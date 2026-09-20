@@ -3,6 +3,7 @@ name: Parse + Morgan RDKit.js Gate
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - 'crates/chematic-fp/**'
       - 'crates/chematic-perception/**'
