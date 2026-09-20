@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "policy": {
     "baseline_lanes_are_immutable": true,
     "next_stable_lane": "unavailable_until_artifact_metadata_is_verified",
@@ -20,6 +20,16 @@
       "rdkit_version": "2025.09.3",
       "wrapper_backend": "record_per_artifact",
       "corpus_policy": "recorded_per_artifact",
+      "artifact_provenance": {
+        "status": "partial_historical",
+        "artifact": "source-built chematic Python extension; historic result artifacts",
+        "runtime": "RDKit 2025.09.3 Python/native lane",
+        "backend": "record_per_artifact",
+        "configuration": "operation-specific; not uniformly preserved by historic artifacts",
+        "corpus": "recorded by each referenced evidence artifact",
+        "toolchain": "not uniformly preserved by historic artifacts",
+        "missing_dimensions": ["artifact_hash", "configuration", "toolchain"]
+      },
       "operation_evidence": {
         "smiles_parse_write": [],
         "cip": ["validation/results/cip-label-parity-a2-v1.0.13.json"],
@@ -35,6 +45,16 @@
       "rdkit_version": "2026.03.6",
       "wrapper_backend": "record_per_artifact",
       "corpus_policy": "same_exposed_smarts_corpus_as_2025.09.3_lane",
+      "artifact_provenance": {
+        "status": "partial_historical",
+        "artifact": "historic Python/native SMARTS oracle lane",
+        "runtime": "RDKit 2026.03.6 Python/native lane",
+        "backend": "record_per_artifact",
+        "configuration": "SMARTS evidence records its comparison configuration; full artifact metadata is absent",
+        "corpus": "same exposed SMARTS corpus as the 2025.09.3 lane",
+        "toolchain": "not uniformly preserved by historic artifacts",
+        "missing_dimensions": ["artifact_hash", "toolchain"]
+      },
       "operation_evidence": {
         "smiles_parse_write": [],
         "cip": [],
@@ -50,6 +70,16 @@
       "rdkit_version": "2026.03.6",
       "wrapper_backend": "official_rdkit_js",
       "corpus_policy": "fixed_exposed_10k_with_typed_feii_refusal",
+      "artifact_provenance": {
+        "status": "partial_historical",
+        "artifact": "official @rdkit/rdkit npm package recorded by browser evidence",
+        "runtime": "RDKit.js runtime 2026.03.6",
+        "backend": "official_rdkit_js",
+        "configuration": "browser evidence records operation configuration; full host/toolchain metadata is incomplete",
+        "corpus": "fixed exposed 10k corpus with typed Fe(II) refusal",
+        "toolchain": "not uniformly preserved by historic artifacts",
+        "missing_dimensions": ["artifact_hash", "toolchain"]
+      },
       "operation_evidence": {
         "smiles_parse_write": ["validation/results/competitive-browser-rdkitjs-published-npm-10k-chromium-20rep-v1.0.15-2026-09-16.json"],
         "cip": [],
@@ -65,6 +95,16 @@
       "rdkit_version": null,
       "wrapper_backend": null,
       "corpus_policy": "reuse_only_exposed_corpora; never reuse_the_rejected_sealed_8k",
+      "artifact_provenance": {
+        "status": "unavailable",
+        "artifact": null,
+        "runtime": null,
+        "backend": null,
+        "configuration": null,
+        "corpus": null,
+        "toolchain": null,
+        "missing_dimensions": ["artifact", "runtime", "backend", "configuration", "corpus", "toolchain"]
+      },
       "operation_evidence": {
         "smiles_parse_write": [],
         "cip": [],
