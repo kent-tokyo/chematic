@@ -279,7 +279,10 @@ try {
   await page.locator("#explorer-status").filter({ hasText: /cancelled; complete=false/i }).waitFor({ state: "visible" });
   assert.match(await page.locator("#explorer-result-count").innerText(), /^\d+ of \d+ shown$/);
   await page.locator("#explorer-btn-sample").click();
-  await page.locator("#explorer-status").filter({ hasText: /loaded/i }).waitFor({ state: "visible" });
+  // The cancelled batch's final status also contains "loaded". Wait for the
+  // deterministic 16-row sample result rather than treating that stale text
+  // as completion of the new import.
+  await explorerResultCount.filter({ hasText: "16 of 16 shown" }).waitFor({ state: "visible" });
   await page.locator("#explorer-filter-text").fill("Aspirin");
   assert.match(await page.locator("#explorer-result-count").innerText(), /^1 of \d+ shown$/);
   await page.locator("#explorer-reference-smiles").fill("C1CC");
