@@ -39,6 +39,7 @@ measurement was rerun.
 | [`2026-09-12-similarity-search-a3-v1.0.13.md`](2026-09-12-similarity-search-a3-v1.0.13.md) | A3 rerun after explicit-aromatic recovery; 4,500/500 coverage and exact compatible top-10 gate |
 | [`2026-09-12-similarity-search-a3-v1.0.13.json`](2026-09-12-similarity-search-a3-v1.0.13.json) | Machine-readable A3 rerun |
 | [`rdkit-ecfp4-cross-binding-parity-5000-v1.0.13.json`](../validation/results/rdkit-ecfp4-cross-binding-parity-5000-v1.0.13.json) | Current Rust/Python/Node/WASM ECFP4 cross-binding gate: 5,000/5,000 |
+| [`rdkit-ecfp4-cross-binding-parity-5000-parse-morgan-candidate-2026-09-20.json`](../validation/results/rdkit-ecfp4-cross-binding-parity-5000-parse-morgan-candidate-2026-09-20.json) | Frozen Parse + Morgan candidate rebuilt in isolated Python and Node-WASM bindings: every Rust/Python/Node-WASM pair is 5,000/5,000; this is binding parity, not a separate RDKit oracle |
 | [`rdkit-ecfp4-sparse-cross-binding-parity-5000-v1.0.13.json`](../validation/results/rdkit-ecfp4-sparse-cross-binding-parity-5000-v1.0.13.json) | Raw sparse identifier/count cross-binding gate: 5,000/5,000 |
 | [`rdkit-ecfp4-raw-bitinfo-cross-binding-parity-5000-v1.0.13.json`](../validation/results/rdkit-ecfp4-raw-bitinfo-cross-binding-parity-5000-v1.0.13.json) | Raw identifier bitInfo cross-binding gate: 5,000/5,000 |
 | [`rdkit-ecfp4-bitinfo-cross-binding-parity-5000-v1.0.13.json`](../validation/results/rdkit-ecfp4-bitinfo-cross-binding-parity-5000-v1.0.13.json) | Folded bitInfo cross-binding gate: 5,000/5,000 |

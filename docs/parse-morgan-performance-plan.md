@@ -118,10 +118,13 @@ native ECFPはPF1から同時計測するが、別定義の高速nativeへのfal
 この進捗は一台の開発host上のcandidate測定であり、raw artifactは候補commitに記録した。
 `scripts/check_parse_morgan_rdkit_speed_gate.py` は各recordでpaired log-speedupの95%下限を
 算出し、Chrome **2.61x**、Firefox **2.04x**、WebKit **2.86x**、独立ChEMBL **6.09x** と
-いずれも1.0を上回る。`.github/workflows/parse-morgan-rdkitjs-gate.yml` は固定RDKit.js版を
-用いてこの条件をsecond host CIで再実行するが、まだdispatch済みのCI証拠ではない。従って
-「local three-browser candidateではRDKitを上回った」ことは示すが、公開package再測定を
-含むPF5の正式な優位主張ではない。
+いずれも1.0を上回る。GitHub-hosted second hostでも
+[`run 35483926941`](https://github.com/kent-tokyo/chematic/actions/runs/35483926941) が三browserで
+成功し、artifactから再算出した95%下限はChrome **2.90x**、Firefox **2.37x**、WebKit
+**3.65x**だった。候補sourceを隔離PythonとNode-WASMで再ビルドしたcross-binding gateも
+全3組で5,000/5,000一致した。これによりcandidate sourceのPF5再現・binding条件は満たした。
+公開packageを作る場合だけは、publish後のtarballで同じgateを再実行して初めてrelease固有の
+優位主張に更新する。
 
 ### ソースから確認できる最初の候補（効果量は未測定）
 

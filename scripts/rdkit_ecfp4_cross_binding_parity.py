@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import hashlib
+import argparse
 import json
 import subprocess
 import sys
@@ -77,6 +78,10 @@ def compare(left: list[dict], right: list[dict]) -> dict:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--report", type=Path, default=REPORT)
+    parser.add_argument("--target-version", default="1.0.13")
+    args = parser.parse_args()
     corpus = CORPUS.read_text(encoding="utf-8")
     expected_rows = sum(bool(line.strip()) for line in corpus.splitlines())
     bindings = {
@@ -93,7 +98,7 @@ def main() -> int:
     }
     report = {
         "schema_version": 1,
-        "target_version": "1.0.13",
+        "target_version": args.target_version,
         "contract": "same chematic source SMILES, RDKit-compatible ECFP4 2048-bit LSB-first bytes; failures compared by typed status",
         "corpus": {"path": str(CORPUS.relative_to(ROOT)), "rows": expected_rows, "sha256": hashlib.sha256(CORPUS.read_bytes()).hexdigest()},
         "binding_status_counts": {name: {status: sum(row["status"] == status for row in rows) for status in ("ok", "error")} for name, rows in bindings.items()},
@@ -107,8 +112,12 @@ def main() -> int:
         "gate_passed": all(pair["mismatches"] == 0 for pair in pairwise.values()),
         "boundary": ["This is cross-binding parity for chematic's RDKit-compatible implementation, not an independent RDKit oracle run.", "Sparse/count/bitInfo parity remains a separate contract."],
     }
-    REPORT.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps({"report": str(REPORT.relative_to(ROOT)), "rows": expected_rows, "gate_passed": report["gate_passed"]}))
+    args.report.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    try:
+        report_path = str(args.report.relative_to(ROOT))
+    except ValueError:
+        report_path = str(args.report)
+    print(json.dumps({"report": report_path, "rows": expected_rows, "gate_passed": report["gate_passed"]}))
     return 0 if report["gate_passed"] else 1
 
 
