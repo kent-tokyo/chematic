@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "status": "rejected",
+  "reason": "molecular_weight has 2 strict mismatches; a sealed candidate requires every declared field to pass strictly",
+  "candidate": {
+    "commit": "8a0b28aff4cc7e0528f69866243a583fa73434fa",
+    "tag": "trust-eval-candidate-20260920"
+  },
+  "oracle": {
+    "engine": "RDKit",
+    "version": "2025.09.3"
+  },
+  "cohort": {
+    "rows": 8000,
+    "corpus_sha256": "60e5c1574b1a55e02d7f890ea7dc7ef0385e651f33c92dbecac52c89582159e3",
+    "source_sha256": "6899fa12e20c03be2e46e6ed159b700e350192a040784295cbeea24e07f5f015",
+    "raw_rows_sha256": "d4d2e335bf5f88c3b7c3a867236e4410b6846cf5461bd9743d6d4c87d96fecf7",
+    "raw_input": "local-only; not committed; exposed after this evaluation and ineligible for tuning or reuse"
+  },
+  "accounting": {
+    "parsed": 8000,
+    "parse_failures": 0,
+    "unsupported_values": 0
+  },
+  "fields": {
+    "molecular_weight": {"strict_matches": 7998, "mismatches": 2, "max_abs_error": 0.011433599999975286, "mismatch_category": "isotope_table"},
+    "hba": {"strict_matches": 8000, "mismatches": 0},
+    "hbd": {"strict_matches": 8000, "mismatches": 0},
+    "tpsa": {"strict_matches": 8000, "mismatches": 0},
+    "logp": {"strict_matches": 8000, "mismatches": 0},
+    "molar_refractivity": {"strict_matches": 8000, "mismatches": 0},
+    "fsp3": {"strict_matches": 8000, "mismatches": 0},
+    "aromatic_ring_count": {"strict_matches": 8000, "mismatches": 0}
+  }
+}
