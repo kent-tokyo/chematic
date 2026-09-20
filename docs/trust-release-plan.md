@@ -16,7 +16,8 @@ dashboard、release metadata v2、公開channel実測recordを実装した。can
 優先度P0/P1/P2は緊急度、既存Phase P0–P6は製品領域、A0–A6は精度目標、
 T0–T6は今回の作業ID。番号は相互に置き換えない。
 
-9月20日の優先順位更新: **A0 acceptance packetを閉じ、T1.6凍結候補を一度評価する**。
+9月20日の優先順位更新: **A0の三つの不採用packetを保全し、非sealed分類と次freezeの
+前提を閉じる**。T1.6凍結候補は一度ずつ評価済みで、いずれも採用しない。
 T3.6の高速化はPR #555 (`7d98dcd3`)で統合され、対応範囲のbit一致と複数browser/hostの
 速度優位を記録済み。今後は公開package再測定、当初の統計/資源条件との差分確認、回帰維持へ移す。
 [第7節](#7-2026-09-20-trust完了に向けた実行順)が新しい実行packet、ROADMAPが優先順を持つ。
@@ -612,6 +613,21 @@ T3.1–T3.3の未達部分を埋める。公開packageのESM/TS/Worker導入、�
 新しい製品Phaseは増やさない。各項目は計画であり、競合issueの存在だけでは
 CheMaticの不具合や優位性が確定したことにはならない。
 
+### この期間の意思決定ルール
+
+1. **Trust Releaseを先に閉じる。** 新しい競合機能、描画機能、3D embedding
+   optionは、A0/A2/T3.7の受入を遅らせない。競合由来の情報は、まず
+   version-pinned な開発回帰か typed unsupported 境界へ落とす。
+2. **旧sealed入力は最適化データにしない。** 既に不採用となった三候補のraw、
+   個別差分、集計外の派生情報を修正の標的にも次候補の検証にも使わない。
+   A0の分類は公開済みまたは新規の非sealedデータ、仕様、独立生成fixtureだけで行う。
+3. **Browserの価値は制御可能性で測る。** サイズや単発速度は operation/version/
+   host を固定した補助指標である。主張の中心は、local-only execution、typed errors、
+   cancel、resource limits、row accounting、deterministic output の同時成立とする。
+4. **比較は同じ操作だけを順位付けする。** API意味論、拒否条件、prepared state、
+   input/output、測定hostのいずれかが異なるlaneは、比較記録には残すが速度・互換性の
+   勝敗表には入れない。
+
 ### 一次情報を確認して修正した前提
 
 | 出典（9月20日確認） | 確認できた範囲 | 計画への反映 |
@@ -636,7 +652,8 @@ CheMaticの不具合や優位性が確定したことにはならない。
   未使用評価へ流用しない。raw分子一覧を調査ログやrepositoryへ出さない。
 - [ ] **非sealedの開発データだけで** A0の宣言済み範囲を分類する。封印結果から特定入力や
   閾値へ合わせ込まず、独立の既知/生成テストと仕様根拠を使う。修正候補ごとに、影響binding
-  回帰、変更影響表、公開主張への影響を記録する。
+  回帰、変更影響表、公開主張への影響を記録する。descriptorは官能基・電荷・同位体・
+  tautomer/芳香族性の非sealedな層別を先に固定し、全体一致率だけを次freezeの根拠にしない。
 - [ ] 次の採用判断が必要になった時点で、別source・別抽出・重複除外・source hash・
   attestation・annotated tagを新規に固定する。新しいcohortを作るだけでは合格とせず、
   candidate buildとfixed oracleで一度だけ実行する。
@@ -660,6 +677,9 @@ CheMaticの不具合や優位性が確定したことにはならない。
 - [ ] browserは同じpacked output契約で3 enginesを比較し、parse単独、prepared FP、
   parse+FP、search、startup、memoryを個別に記録する。API意味論が揃わないlaneは
   速度順位の対象から外す。sealed精度8kはこの回帰・性能集合へ流用しない。
+- [ ] RDKitの型stub/nanobind移行は、公開artifactで確認できた場合だけ Python laneへ
+  追加する。型注釈の量ではなく、`str | bytes`、path-like、iterable、例外、keyword、
+  scalar/batchの実行時契約をCheMaticのtyped binding contractと並べて記録する。
 - [ ] 差分を自社退行/oracle変更/契約差/未解決へ分類し、goldが必要ならA5へ送る。
   新oracleへ自動追従して既存出力を変更しない。公開dashboardは測定済みの新旧版を併記し、
   移行後も旧raw/再現コマンドをhistoricalとして保存する。
@@ -708,6 +728,10 @@ rejectionは文字列、envelopeの`complete`は処理完了を表す。これ�
 - [ ] cancel、未知長stream、retry、chunk境界、Worker/MCP adapter、export stageと
   resource/time limitを同じ会計契約へ接続する。cancel後の未読範囲を架空の`skipped`に
   せず、`complete=false`と未読範囲を明示する。
+- [ ] known-length batchでは全bindingで `input_count = success + failed + refused + skipped`
+  を維持し、unknown-length streamでは確定済みprefix、未読範囲、terminal reasonを別に
+  表す。`failed()==0`だけから全入力成功を推論できないことを型・JSON schema・利用例で
+  防ぐ。
 - [ ] clean-installで型定義とruntimeを照合し、10k Workerで順序/元index/理由/会計の
   一致、消失0、二重計上0、測定済みの資源上限を確認する。
 
@@ -719,7 +743,9 @@ rejectionは文字列、envelopeの`complete`は処理完了を表す。これ�
 - **A2（P1）:** #503の4 componentを原因・負例・K=1,024 gateごとに分割し、P系CIPは
   A5判定前のabstentionを維持。結合E/Z componentは完全なcarrier割当て以外を選ばず、
   証明できない場合はstable keyをfail-closedのまま残す。T5.6、T1.8、T4.6の残binding/
-  表現境界も同じ受入表へ統合する。
+  表現境界も同じ受入表へ統合する。identity-renumber、SMILES spelling、clone/reparse、
+  V3000 round-tripの各変換で atom/bond correspondence と confident/abstained outcome を
+  比較し、canonical stringやcenter countだけを合格条件にしない。
 - **T3/T2（P1）:** 完了したT3.7契約を使う10k Workerでcancel・backpressure・memory/time limit・
   offline・partial exportを測定。既存のcancel p95≤250ms、heartbeat p95≤100ms、
   working set≤256MiBは測定前にhost条件と固定し、未達を記録する。npm clean-install、
@@ -728,7 +754,9 @@ rejectionは文字列、envelopeの`complete`は処理完了を表す。これ�
   公開tarball再測定の未確認条件を埋める。確認済みbrowser結果をnative/Python全般へ外挿しない。
 - **A6/T6（P2、誤計算はP0）:** benzene等の基本系を含むtyping/charge/term/gradientを
   same-coordinateで切り分け、収束/timeout/立体保持/配座品質を別集計。新embedding option
-  より既存gapを優先する。A5独立reviewは依頼packetまでローカルで進め、第三者判定待ちを明示。
+  より既存gapを優先する。MMFF由来の初期化選択やprotected-atom tautomerのような上流新機能は
+  監視対象に留め、既存の3D pipelineが失敗時に誤った成功を返さないことを先に証明する。
+  A5独立reviewは依頼packetまでローカルで進め、第三者判定待ちを明示。
 
 次Trust RCの必須条件に、T3.7のWorker/stream/cancelを含む宣言batch経路と、
 T5.7/T1.9の保存・拒否回帰を含める。
