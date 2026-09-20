@@ -44,6 +44,12 @@ whole component, or make the residual stable key admissible.  Incomplete or
 unspecified E/Z inputs retain the previous read path so this refactor does not
 silently alter their output contract.
 
+A test-only canonical-DFS inventory now also shows that the three residual
+families expose the same eligible tree and ring-token output slots across
+their equivalent spellings.  This localizes the remaining work to assigning
+the extracted geometry relations to those slots as one component plan; it is
+not a justification to pick a slot by parse order.
+
 ## Required architecture
 
 The implementation must separate chemical geometry from its SMILES spelling.
