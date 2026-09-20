@@ -1040,6 +1040,10 @@ fn tpsa_nitrogen(
             if has_double_bond_to(mol, idx, 6) {
                 // Imine =NH (N=C with H): 23.85 (RDKit calibrated value, not 23.79)
                 23.85
+            } else if has_double_bond_to(mol, idx, 15) {
+                // P=N-H is the corresponding imine-like Ertl type rather than
+                // an ordinary secondary amine.
+                23.85
             } else {
                 12.03
             }
@@ -1221,7 +1225,18 @@ fn tpsa_phosphorus(mol: &Molecule, idx: AtomIdx, h: u8) -> f64 {
     } else if has_double_bond_to(mol, idx, 16) {
         41.90 // phosphorothioate: P=S (S is counted as zero)
     } else if has_double_bond_to(mol, idx, 7) {
-        9.81 // phosphazene: P=N (cyclic or linear)
+        // The Ertl P=N types distinguish the implicit-hydrogen organic-subset
+        // spelling from both the fully substituted and explicitly bracketed
+        // P-H forms. In particular, `CP(=N)C` has the 23.47 P contribution,
+        // `CP(=N)(C)C` has 9.81, and `[PH](=N)C` has none. `h` alone is not
+        // sufficient because bracket atoms retain their explicit H count.
+        if mol.atom(idx).hydrogen_count.is_some() {
+            0.0
+        } else if h > 0 {
+            23.47
+        } else {
+            9.81
+        }
     } else if h > 0 {
         34.14 // phosphine P-H (secondary/primary phosphine)
     } else {
@@ -4206,6 +4221,15 @@ mod tests {
         );
         // N+ in N+–O-–N environments is not the central azide N+ type.
         assert!(approx(tpsa(&mol("C[N+]([O-])=[N+]([O-])C")), 52.14, 1e-12));
+        // P=N TPSA uses three distinct RDKit atom types: implicit-H,
+        // fully-substituted, and explicitly bracketed P-H.
+        let implicit_phosphazene = tpsa(&mol("CP(=N)C"));
+        assert!(
+            approx(implicit_phosphazene, 47.32, 1e-12),
+            "implicit-H phosphazene TPSA = {implicit_phosphazene}"
+        );
+        assert!(approx(tpsa(&mol("CP(=N)(C)C")), 33.66, 1e-12));
+        assert!(approx(tpsa(&mol("[PH](=N)C")), 23.85, 1e-12));
         // An exocyclic C=C must not promote a cyclic ether to RDKit's [o]
         // Crippen/TPSA type merely because one neighbor is aromatic.
         let bridged = mol("COc1cc2c(cc1OC)C1C(=O)c3ccc4c(c3OC1CO2)C(C)(C)C=CO4");
