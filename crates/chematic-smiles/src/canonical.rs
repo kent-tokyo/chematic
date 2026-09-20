@@ -4920,6 +4920,20 @@ mod tests {
                 per_spelling.push(outputs);
                 reranked_per_spelling.push(reranked_outputs);
             }
+            let selected: Vec<_> = per_spelling
+                .iter()
+                .map(|outputs| {
+                    outputs
+                        .iter()
+                        .min()
+                        .cloned()
+                        .expect("each spelling must have a semantic candidate")
+                })
+                .collect();
+            assert!(
+                selected.windows(2).all(|pair| pair[0] == pair[1]),
+                "{input}: independent full-slot minimization diverged: {selected:?}"
+            );
             let common = per_spelling
                 .into_iter()
                 .reduce(|left, right| left.intersection(&right).cloned().collect())
@@ -4927,6 +4941,21 @@ mod tests {
             assert!(
                 !common.is_empty(),
                 "{input}: the complete carrier space unexpectedly has no common output"
+            );
+            let reranked_selected: Vec<_> = reranked_per_spelling
+                .iter()
+                .map(|outputs| {
+                    outputs
+                        .iter()
+                        .min()
+                        .cloned()
+                        .expect("each spelling must have a reranked semantic candidate")
+                })
+                .collect();
+            assert!(
+                reranked_selected.windows(2).all(|pair| pair[0] == pair[1]),
+                "{input}: independent reranked full-slot minimization diverged: \
+                 {reranked_selected:?}"
             );
             let reranked_common = reranked_per_spelling
                 .into_iter()

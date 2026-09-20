@@ -60,10 +60,12 @@ families expose the same eligible tree and ring-token output slots across
 their equivalent spellings.  A full rank-keyed tree/ring signature and the
 canonical text with only `/` and `\\` removed are also invariant.  When raw
 directional carriers are included, complete-slot enumeration finds common
-semantic output; its re-ranked subset does too.  The remaining production work
-is therefore a bounded, rank-keyed complete-slot planner and semantic reparse
-selection—not skeleton replacement.  The fail-closed stable-key boundary
-remains until that planner has the full acceptance proof.
+semantic output; its re-ranked subset does too.  Independently choosing the
+lexicographically smallest semantic candidate yields the same output for every
+spelling in all three families.  The remaining production work is therefore a
+bounded, rank-keyed complete-slot planner and semantic reparse selection—not
+skeleton replacement.  The fail-closed stable-key boundary remains until that
+planner has the full acceptance proof.
 
 ## Required architecture
 
