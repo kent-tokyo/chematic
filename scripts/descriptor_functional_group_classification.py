@@ -29,6 +29,11 @@ FIELDS = {
         "tolerance": 0.01,
         "comparison": "native_mass_vs_rdkit_molwt_contract_difference",
     },
+    "rdkit_molecular_weight": {
+        "rdkit": lambda mol, modules: modules["Descriptors"].MolWt(mol),
+        "tolerance": 0.01,
+        "comparison": "numeric_rdkit_mass_profile",
+    },
     "logp": {
         "rdkit": lambda mol, modules: modules["Crippen"].MolLogP(mol),
         "tolerance": 1e-2,

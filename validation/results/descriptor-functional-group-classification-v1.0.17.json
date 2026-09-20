@@ -11,6 +11,10 @@
         "tolerance": 0.01,
         "comparison": "native_mass_vs_rdkit_molwt_contract_difference"
       },
+      "rdkit_molecular_weight": {
+        "tolerance": 0.01,
+        "comparison": "numeric_rdkit_mass_profile"
+      },
       "logp": {
         "tolerance": 0.01,
         "comparison": "numeric"
@@ -44,7 +48,7 @@
   "implementation": {
     "engine": "CheMatic",
     "operation": "CLI descriptors <SMILES> JSON fields",
-    "cli_sha256": "661364aea3ff0890af07a25b8e96189eb984d77dcefd80acff560beabc4e0278"
+    "cli_sha256": "347c6f846fdcf643ed6acdb9f83a98ca8acd54ec2a1703a20a02d672146cfa58"
   },
   "rows": 46,
   "summary": {
@@ -53,6 +57,10 @@
       "mismatches": [
         "seleninic_acid"
       ]
+    },
+    "rdkit_molecular_weight": {
+      "strict_matches": 46,
+      "mismatches": []
     },
     "logp": {
       "strict_matches": 46,
@@ -89,6 +97,12 @@
       "smiles": "O",
       "descriptors": {
         "molecular_weight": {
+          "rdkit": 18.015,
+          "chematic": 18.015,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
           "rdkit": 18.015,
           "chematic": 18.015,
           "absolute_error": 0.0,
@@ -148,6 +162,12 @@
           "absolute_error": 0.0,
           "strict_match": true
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 46.069,
+          "chematic": 46.069,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": -0.0014000000000000123,
           "chematic": -0.0013999999999999568,
@@ -197,6 +217,12 @@
       "smiles": "Oc1ccccc1",
       "descriptors": {
         "molecular_weight": {
+          "rdkit": 94.11299999999999,
+          "chematic": 94.11299999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
           "rdkit": 94.11299999999999,
           "chematic": 94.11299999999999,
           "absolute_error": 0.0,
@@ -256,6 +282,12 @@
           "absolute_error": 0.0,
           "strict_match": true
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 46.069,
+          "chematic": 46.069,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": 0.26260000000000006,
           "chematic": 0.2626,
@@ -305,6 +337,12 @@
       "smiles": "C1CO1",
       "descriptors": {
         "molecular_weight": {
+          "rdkit": 44.053,
+          "chematic": 44.053,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
           "rdkit": 44.053,
           "chematic": 44.053,
           "absolute_error": 0.0,
@@ -364,6 +402,12 @@
           "absolute_error": 0.0,
           "strict_match": true
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 44.053,
+          "chematic": 44.053,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": 0.2052,
           "chematic": 0.2052,
@@ -413,6 +457,12 @@
       "smiles": "CC(=O)O",
       "descriptors": {
         "molecular_weight": {
+          "rdkit": 60.05200000000001,
+          "chematic": 60.05200000000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
           "rdkit": 60.05200000000001,
           "chematic": 60.05200000000001,
           "absolute_error": 0.0,
@@ -472,6 +522,12 @@
           "absolute_error": 0.0,
           "strict_match": true
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 59.044000000000004,
+          "chematic": 59.044000000000004,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": -1.2438,
           "chematic": -1.2438,
@@ -521,6 +577,12 @@
       "smiles": "CC(=O)OC",
       "descriptors": {
         "molecular_weight": {
+          "rdkit": 74.07900000000001,
+          "chematic": 74.07900000000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
           "rdkit": 74.07900000000001,
           "chematic": 74.07900000000001,
           "absolute_error": 0.0,
@@ -580,6 +642,12 @@
           "absolute_error": 0.0,
           "strict_match": true
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 59.068,
+          "chematic": 59.068,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": -0.5084,
           "chematic": -0.5084,
@@ -629,6 +697,12 @@
       "smiles": "CCN",
       "descriptors": {
         "molecular_weight": {
+          "rdkit": 45.084999999999994,
+          "chematic": 45.084999999999994,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
           "rdkit": 45.084999999999994,
           "chematic": 45.084999999999994,
           "absolute_error": 0.0,
@@ -688,6 +762,12 @@
           "absolute_error": 0.0,
           "strict_match": true
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 59.111999999999995,
+          "chematic": 59.111999999999995,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": 0.17779999999999996,
           "chematic": 0.17780000000000004,
@@ -737,6 +817,12 @@
       "smiles": "C[N+](C)(C)C",
       "descriptors": {
         "molecular_weight": {
+          "rdkit": 74.14699999999999,
+          "chematic": 74.14699999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
           "rdkit": 74.14699999999999,
           "chematic": 74.14699999999999,
           "absolute_error": 0.0,
@@ -796,6 +882,12 @@
           "absolute_error": 0.0,
           "strict_match": true
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 41.053,
+          "chematic": 41.053,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": 0.52988,
           "chematic": 0.52988,
@@ -845,6 +937,12 @@
       "smiles": "CC=N",
       "descriptors": {
         "molecular_weight": {
+          "rdkit": 43.069,
+          "chematic": 43.069,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
           "rdkit": 43.069,
           "chematic": 43.069,
           "absolute_error": 0.0,
@@ -904,6 +1002,12 @@
           "absolute_error": 0.0,
           "strict_match": true
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 58.084,
+          "chematic": 58.084,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": 0.6982,
           "chematic": 0.6982,
@@ -953,6 +1057,12 @@
       "smiles": "C[N+](=O)[O-]",
       "descriptors": {
         "molecular_weight": {
+          "rdkit": 61.040000000000006,
+          "chematic": 61.040000000000006,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
           "rdkit": 61.040000000000006,
           "chematic": 61.040000000000006,
           "absolute_error": 0.0,
@@ -1012,6 +1122,12 @@
           "absolute_error": 0.0,
           "strict_match": true
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 45.041000000000004,
+          "chematic": 45.041000000000004,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": 0.38260000000000005,
           "chematic": 0.38260000000000005,
@@ -1061,6 +1177,12 @@
       "smiles": "C[n+]1ccccc1[O-]",
       "descriptors": {
         "molecular_weight": {
+          "rdkit": 109.12799999999999,
+          "chematic": 109.12799999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
           "rdkit": 109.12799999999999,
           "chematic": 109.12799999999999,
           "absolute_error": 0.0,
@@ -1120,6 +1242,12 @@
           "absolute_error": 0.0,
           "strict_match": true
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 57.056,
+          "chematic": 57.056,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": 0.9265000000000001,
           "chematic": 0.9265000000000001,
@@ -1169,6 +1297,12 @@
       "smiles": "n1ccccc1",
       "descriptors": {
         "molecular_weight": {
+          "rdkit": 79.10199999999999,
+          "chematic": 79.10199999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
           "rdkit": 79.10199999999999,
           "chematic": 79.10199999999999,
           "absolute_error": 0.0,
@@ -1228,6 +1362,12 @@
           "absolute_error": 0.0,
           "strict_match": true
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 67.091,
+          "chematic": 67.091,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": 1.0147,
           "chematic": 1.0147,
@@ -1277,6 +1417,12 @@
       "smiles": "c1ncc[nH]1",
       "descriptors": {
         "molecular_weight": {
+          "rdkit": 68.079,
+          "chematic": 68.079,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
           "rdkit": 68.079,
           "chematic": 68.079,
           "absolute_error": 0.0,
@@ -1336,6 +1482,12 @@
           "absolute_error": 0.0020000000000095497,
           "strict_match": true
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 62.137,
+          "chematic": 62.137,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": 0.9792,
           "chematic": 0.9792,
@@ -1388,6 +1540,12 @@
           "rdkit": 48.11000000000001,
           "chematic": 48.108,
           "absolute_error": 0.0020000000000095497,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 48.11000000000001,
+          "chematic": 48.11000000000001,
+          "absolute_error": 0.0,
           "strict_match": true
         },
         "logp": {
@@ -1444,6 +1602,12 @@
           "absolute_error": 0.0020000000000095497,
           "strict_match": true
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 78.13600000000001,
+          "chematic": 78.13600000000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": -0.005299999999999971,
           "chematic": -0.005299999999999971,
@@ -1496,6 +1660,12 @@
           "rdkit": 94.135,
           "chematic": 94.133,
           "absolute_error": 0.0020000000000095497,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 94.135,
+          "chematic": 94.135,
+          "absolute_error": 0.0,
           "strict_match": true
         },
         "logp": {
@@ -1552,6 +1722,12 @@
           "absolute_error": 0.0020000000000095497,
           "strict_match": true
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 95.12300000000002,
+          "chematic": 95.12300000000002,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": -1.0953,
           "chematic": -1.0953,
@@ -1604,6 +1780,12 @@
           "rdkit": 95.099,
           "chematic": 95.097,
           "absolute_error": 0.0020000000000095497,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 95.099,
+          "chematic": 95.099,
+          "absolute_error": 0.0,
           "strict_match": true
         },
         "logp": {
@@ -1660,6 +1842,12 @@
           "absolute_error": 0.0020000000000095497,
           "strict_match": true
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 84.14299999999999,
+          "chematic": 84.14299999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": 1.7480999999999998,
           "chematic": 1.7481,
@@ -1709,6 +1897,12 @@
       "smiles": "COP(=O)(O)O",
       "descriptors": {
         "molecular_weight": {
+          "rdkit": 112.02099999999997,
+          "chematic": 112.02099999999997,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
           "rdkit": 112.02099999999997,
           "chematic": 112.02099999999997,
           "absolute_error": 0.0,
@@ -1768,6 +1962,12 @@
           "absolute_error": 0.0,
           "strict_match": true
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 96.02199999999999,
+          "chematic": 96.02199999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": -0.20610000000000006,
           "chematic": -0.20609999999999995,
@@ -1822,6 +2022,12 @@
           "absolute_error": 0.001999999999981128,
           "strict_match": true
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 128.08899999999997,
+          "chematic": 128.08899999999997,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": -0.15810000000000002,
           "chematic": -0.1580999999999999,
@@ -1871,6 +2077,12 @@
       "smiles": "CP(C)C",
       "descriptors": {
         "molecular_weight": {
+          "rdkit": 76.079,
+          "chematic": 76.079,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
           "rdkit": 76.079,
           "chematic": 76.079,
           "absolute_error": 0.0,
@@ -1930,6 +2142,12 @@
           "absolute_error": 0.0,
           "strict_match": true
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 77.06700000000001,
+          "chematic": 77.06700000000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": 1.22257,
           "chematic": 1.22257,
@@ -1979,6 +2197,12 @@
       "smiles": "CP(=N)(C)C",
       "descriptors": {
         "molecular_weight": {
+          "rdkit": 91.094,
+          "chematic": 91.094,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
           "rdkit": 91.094,
           "chematic": 91.094,
           "absolute_error": 0.0,
@@ -2038,6 +2262,12 @@
           "absolute_error": 0.0,
           "strict_match": true
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 62.032,
+          "chematic": 62.032,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": 1.05707,
           "chematic": 1.05707,
@@ -2087,6 +2317,12 @@
       "smiles": "CP(=N)N",
       "descriptors": {
         "molecular_weight": {
+          "rdkit": 78.055,
+          "chematic": 78.055,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
           "rdkit": 78.055,
           "chematic": 78.055,
           "absolute_error": 0.0,
@@ -2146,6 +2382,12 @@
           "absolute_error": 0.01100000000000989,
           "strict_match": false
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 127.00099999999998,
+          "chematic": 127.00099999999998,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": -0.47280000000000005,
           "chematic": -0.4728,
@@ -2200,6 +2442,12 @@
           "absolute_error": 0.0010000000000047748,
           "strict_match": true
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 45.834,
+          "chematic": 45.834,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": -1.7625000000000002,
           "chematic": -1.7625,
@@ -2249,6 +2497,12 @@
       "smiles": "CNN",
       "descriptors": {
         "molecular_weight": {
+          "rdkit": 46.073,
+          "chematic": 46.073,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
           "rdkit": 46.073,
           "chematic": 46.073,
           "absolute_error": 0.0,
@@ -2308,6 +2562,12 @@
           "absolute_error": 0.0,
           "strict_match": true
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 59.071999999999996,
+          "chematic": 59.071999999999996,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": -1.1614300000000002,
           "chematic": -1.1614299999999997,
@@ -2357,6 +2617,12 @@
       "smiles": "NC(=O)N",
       "descriptors": {
         "molecular_weight": {
+          "rdkit": 60.056,
+          "chematic": 60.056,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
           "rdkit": 60.056,
           "chematic": 60.056,
           "absolute_error": 0.0,
@@ -2416,6 +2682,12 @@
           "absolute_error": 0.0,
           "strict_match": true
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 57.052,
+          "chematic": 57.052,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": -0.04799999999999999,
           "chematic": -0.04799999999999997,
@@ -2470,6 +2742,12 @@
           "absolute_error": 0.0020000000000095497,
           "strict_match": true
         },
+        "rdkit_molecular_weight": {
+          "rdkit": 73.12,
+          "chematic": 73.12,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": 0.7190000000000001,
           "chematic": 0.7190000000000001,
@@ -2519,6 +2797,12 @@
       "smiles": "n1cncnc1",
       "descriptors": {
         "molecular_weight": {
+          "rdkit": 81.07799999999999,
+          "chematic": 81.07799999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
           "rdkit": 81.07799999999999,
           "chematic": 81.07799999999999,
           "absolute_error": 0.0,
