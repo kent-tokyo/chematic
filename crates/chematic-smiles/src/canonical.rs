@@ -4145,7 +4145,7 @@ mod tests {
                 let (ranks, _) = winning_individualized_ranks(&mol);
                 let mut outputs = HashSet::new();
                 for mask in 0usize..(1usize << component_bonds.len()) {
-                    let preferences = component_bonds
+                    let preferences: HashMap<BondIdx, bool> = component_bonds
                         .iter()
                         .enumerate()
                         .map(|(index, &bond)| (bond, (mask & (1 << index)) != 0))
@@ -4176,12 +4176,13 @@ mod tests {
 
     /// The closing side of a ring digit is syntactically capable of carrying
     /// its directional token (the parser applies the required orientation
-    /// flip).  This probe asks whether merely moving every candidate carrier
-    /// there removes the remaining #503 split.  It is deliberately narrower
-    /// than a production plan: a positive result would only identify a new
-    /// degree of freedom; a negative result rules out the uniform policy.
+    /// flip).  Exhaust the two remaining *local* writer freedoms together:
+    /// every candidate-bond DFS priority and every candidate ring-marker
+    /// side.  A positive result would identify an admissible bounded plan;
+    /// a negative result proves that neither independent local preference nor
+    /// their combination can close #503.
     #[test]
-    fn issue503_uniform_closing_side_markers_have_no_common_output() {
+    fn issue503_local_traversal_and_ring_marker_side_have_no_common_output() {
         let observed_pairs = [
             (
                 r"c/3(c(/c(c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
@@ -4206,32 +4207,51 @@ mod tests {
                 let mol = parse(spelling).unwrap();
                 let geometry = geometry_fingerprint(&mol);
                 let ends = CanonicalWriter::compute_stereo_alkene_ends(&mol);
-                let closing_candidates = CanonicalWriter::coupling_components(&mol, &ends)
+                let mut component_bonds: Vec<_> = CanonicalWriter::coupling_components(&mol, &ends)
                     .into_iter()
                     .flatten()
                     .flat_map(|end| CanonicalWriter::substituents(&mol, end))
                     .map(|(_, bond)| bond)
                     .collect();
+                component_bonds.sort_unstable_by_key(|bond| bond.0);
+                component_bonds.dedup();
+                assert!(component_bonds.len() <= 8, "diagnostic bound exceeded");
                 let (ranks, _) = winning_individualized_ranks(&mol);
-                let mut writer = CanonicalWriter::new(&mol, &ranks);
-                writer.ring_marker_on_close = closing_candidates;
-                let output = writer.write_all();
-                let reparsed = parse(&output).unwrap_or_else(|e| {
-                    panic!("{spelling}: closing-side candidate did not parse: {e}: {output}")
-                });
-                per_spelling.push(if geometry_fingerprint(&reparsed) == geometry {
-                    Some(output)
-                } else {
-                    None
-                });
+                let mut outputs = HashSet::new();
+                for traversal_mask in 0usize..(1usize << component_bonds.len()) {
+                    let preferences: HashMap<BondIdx, bool> = component_bonds
+                        .iter()
+                        .enumerate()
+                        .map(|(index, &bond)| (bond, (traversal_mask & (1 << index)) != 0))
+                        .collect();
+                    for close_mask in 0usize..(1usize << component_bonds.len()) {
+                        let mut writer = CanonicalWriter::new(&mol, &ranks);
+                        writer.traversal_bond_preference = Some(preferences.clone());
+                        writer.ring_marker_on_close = component_bonds
+                            .iter()
+                            .enumerate()
+                            .filter_map(|(index, &bond)| {
+                                ((close_mask & (1 << index)) != 0).then_some(bond)
+                            })
+                            .collect();
+                        let output = writer.write_all();
+                        let reparsed = parse(&output).unwrap_or_else(|e| {
+                            panic!("{spelling}: local-plan candidate did not parse: {e}: {output}")
+                        });
+                        if geometry_fingerprint(&reparsed) == geometry {
+                            outputs.insert(output);
+                        }
+                    }
+                }
+                per_spelling.push(outputs);
             }
             let common = per_spelling
                 .into_iter()
-                .reduce(|left, right| if left == right { left } else { None })
-                .flatten();
+                .reduce(|left, right| left.intersection(&right).cloned().collect())
+                .unwrap();
             assert!(
-                common.is_none(),
-                "{input}: uniform closing-side policy unexpectedly found {common:?}; \
+                common.is_empty(),
+                "{input}: local writer plan unexpectedly found {common:?}; \
                  promote it from a probe only after its full contract is verified"
             );
         }
