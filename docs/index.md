@@ -166,8 +166,9 @@ dimensions: [published-package scorecard](../benchmarks/2026-09-16-official-rdki
 Descriptor accuracy is measured against pinned RDKit APIs on exposed,
 versioned corpora. The current records include exact or tolerance-matched lanes
 for the core descriptor set, while stereocenter agreement depends on the chosen
-oracle. The prepared 8,000-row sealed holdout has not yet been scored. Full
-breakdown, known residuals, and reproduction commands:
+oracle. Three independently frozen 8,000-row candidates were each evaluated
+once and rejected; their inputs are now exposed/local-only and cannot support a
+later adoption claim. Full breakdown, known residuals, and reproduction commands:
 [Validation report](validation.md).
 
 ---
