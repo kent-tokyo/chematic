@@ -2,9 +2,11 @@
 """Generate the RDKit-pinned identity keys required by the sealed cohort gate.
 
 The result is JSONL rather than an opaque cache so the cohort preparer can
-verify one source row against one canonical/parent/scaffold audit row.  Invalid
-SMILES are fatal: silently dropping them would invalidate the source hash and
-row-accounting contract.
+verify one source row against one canonical/parent/scaffold audit row. Invalid
+SMILES are fatal by default: silently dropping them would invalidate the source
+hash and row-accounting contract. A caller that is auditing an already-exposed
+reference corpus may opt into retaining explicit empty-key refusal rows; those
+rows preserve source alignment but never contribute identity keys.
 """
 
 from __future__ import annotations
@@ -19,6 +21,11 @@ def main() -> int:
     parser.add_argument("source", type=Path, help="SMILES-first .smi file")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--jsonl-smiles-key", help="read SMILES from this key instead of a SMILES-first text file")
+    parser.add_argument(
+        "--allow-parse-errors",
+        action="store_true",
+        help="retain unparseable rows with empty identity keys and an explicit parse_error",
+    )
     args = parser.parse_args()
     try:
         from rdkit import Chem, rdBase
@@ -43,10 +50,22 @@ def main() -> int:
     else:
         rows = [line.split(maxsplit=1)[0] for line in lines if line.strip()]
     rendered: list[str] = []
+    parse_errors = 0
     for index, smiles in enumerate(rows, 1):
         molecule = Chem.MolFromSmiles(smiles)
         if molecule is None:
-            parser.error(f"source row {index}: RDKit cannot parse {smiles!r}")
+            if not args.allow_parse_errors:
+                parser.error(f"source row {index}: RDKit cannot parse {smiles!r}")
+            parse_errors += 1
+            rendered.append(json.dumps({
+                "input_smiles": smiles,
+                "canonical_smiles": "",
+                "parent_smiles": "",
+                "scaffold_smiles": "",
+                "parse_error": "RDKit cannot parse input",
+                "oracle": {"engine": "RDKit", "version": rdBase.rdkitVersion},
+            }, sort_keys=True))
+            continue
         parent = rdMolStandardize.FragmentParent(molecule)
         # FragmentParent can yield an otherwise valid molecule whose ring cache
         # has not been initialized. MurckoScaffold requires that cache and
@@ -61,7 +80,7 @@ def main() -> int:
             "oracle": {"engine": "RDKit", "version": rdBase.rdkitVersion},
         }, sort_keys=True))
     args.output.write_text("\n".join(rendered) + "\n", encoding="utf-8")
-    print(json.dumps({"rows": len(rows), "output": str(args.output), "oracle": {"engine": "RDKit", "version": rdBase.rdkitVersion}}, sort_keys=True))
+    print(json.dumps({"rows": len(rows), "parse_errors": parse_errors, "output": str(args.output), "oracle": {"engine": "RDKit", "version": rdBase.rdkitVersion}}, sort_keys=True))
     return 0
 
 
