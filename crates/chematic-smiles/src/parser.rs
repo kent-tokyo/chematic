@@ -747,10 +747,12 @@ impl<'a> Parser<'a> {
             let chirality = self.parse_chirality(true)?;
             let _hcount = self.parse_hcount();
             let _charge = self.parse_charge();
-            if self.peek() == Some(b':') {
+            let atom_map = if self.peek() == Some(b':') {
                 self.advance();
-                let _ = self.parse_leading_digits_u16(); // skip atom map
-            }
+                self.parse_leading_digits_u16()
+            } else {
+                None
+            };
             if self.peek() != Some(b']') {
                 return Err(SmilesError::InvalidBracketAtom {
                     detail: "missing ']'".to_string(),
@@ -760,6 +762,11 @@ impl<'a> Parser<'a> {
             self.advance();
             let mut wc = Atom::wildcard();
             wc.chirality = chirality;
+            // Wildcard atoms participate in atom-mapped reactions and in
+            // RDKit CXSMILES attachment labels (`[*:7] |$_AP1;$|`). Dropping
+            // the map here made the label's atom identity untraceable after a
+            // CheMatic round trip, unlike every non-wildcard bracket atom.
+            wc.atom_map = atom_map;
             return Ok(wc);
         }
 
@@ -1168,6 +1175,13 @@ mod tests {
         let atom = mol.atom(AtomIdx(0));
         assert_eq!(atom.element, Element::O);
         assert_eq!(atom.hydrogen_count, Some(2));
+    }
+
+    #[test]
+    fn test_parse_wildcard_atom_map() {
+        let mol = parse("[*:17]C").unwrap();
+        assert!(mol.atom(AtomIdx(0)).wildcard);
+        assert_eq!(mol.atom(AtomIdx(0)).atom_map, Some(17));
     }
 
     #[test]
