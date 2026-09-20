@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "profile": "v3000_indigo_ez_query_truth_table_v1",
+  "rdkit_version": "2025.09.3",
+  "indigo_version": "1.46.0.0-gb36d38f52-aarch64-darwin-appleclang-17000013",
+  "cli_name": "chematic",
+  "cli_sha256": "be703cb3f1c3cb36dbf95babeab1fba5458f66b298a9e84e79df6a5a590a78fa",
+  "cases": 2,
+  "conversion_failures": [],
+  "rdkit_identity_failures": [],
+  "indigo_table_preservation_failures": [],
+  "indigo_stereo_semantic_loss_queries": [
+    "e",
+    "z"
+  ],
+  "chematic_roundtrip_gate_passed": true,
+  "scope": "Two E/Z queries and two E/Z targets, checked before and after bounded chematic V3000 round trip.",
+  "not_claimed": [
+    "Indigo query E/Z semantic correctness",
+    "typed V3000 query interpretation by chematic",
+    "general V3000 query interoperability"
+  ],
+  "rows": [
+    {
+      "query": "e",
+      "smiles": "C/C=C/C",
+      "cli_exit_code": 0,
+      "source_sha256": "d14f5f27307faf5e8980b5b2f6516b0bc796960a7b92bf0e0f4bf22d3bb570b5",
+      "output_sha256": "2a35b93ec1b551a066e265a7fc91b3427145a21530c5378c76a2e8db6e803ff5",
+      "rdkit_source_identity": "C/C=C/C",
+      "rdkit_output_identity": "C/C=C/C",
+      "rdkit_identity_preserved": true,
+      "expected_stereo_truth_table": {
+        "e": true,
+        "z": false
+      },
+      "indigo_source_truth_table": {
+        "e": true,
+        "z": true
+      },
+      "indigo_output_truth_table": {
+        "e": true,
+        "z": true
+      },
+      "indigo_table_preserved_by_chematic": true,
+      "indigo_matches_expected_stereo": false
+    },
+    {
+      "query": "z",
+      "smiles": "C/C=C\\C",
+      "cli_exit_code": 0,
+      "source_sha256": "16a526d521d20e0f2b8e02219eccf67dcd446dda4a58e1bb46a8c4630005aace",
+      "output_sha256": "db984a3397e7a72402f701aff753ee344cd20f5b5005671ec49a6d930f78d66e",
+      "rdkit_source_identity": "C/C=C\\C",
+      "rdkit_output_identity": "C/C=C\\C",
+      "rdkit_identity_preserved": true,
+      "expected_stereo_truth_table": {
+        "e": false,
+        "z": true
+      },
+      "indigo_source_truth_table": {
+        "e": true,
+        "z": true
+      },
+      "indigo_output_truth_table": {
+        "e": true,
+        "z": true
+      },
+      "indigo_table_preserved_by_chematic": true,
+      "indigo_matches_expected_stereo": false
+    }
+  ]
+}

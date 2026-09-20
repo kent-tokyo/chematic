@@ -677,9 +677,14 @@ CheMaticの不具合や優位性が確定したことにはならない。
 - [ ] **残るT5.7:** `C1CCN2CCCC2C1`と近傍負例について、32固定seed順列、clone/reparse、
   ring情報の初期化/再計算、descriptor呼出し順を比較する。atom/bond mapでpotential-center
   集合・CIP・E/Zを照合し、countやcanonical spellingだけで不変としない。
-- [ ] **残るT1.9 query semantics:** E/Z両query × E/Z両targetの2×2真理値表を、SMILES入力、
-  V3000保存/再読込、cross-engine往復で比較する。stereo match設定を固定し、unspecified
-  stereoとstereo-insensitive設定は別の対照群にする。原子/結合対応、query predicate、
+- [~] **T1.9 query semantics の最初の観測:** RDKit 2025.09.3が生成したE/Z V3000 queryと
+  Indigo 1.46.0のE/Z両targetを2×2で比較し、CheMatic往復前後でRDKitのisomeric identityと
+  Indigoの観測表が変わらないことを確認した。一方Indigoはsource自体で両targetにmatchするため、
+  この4行はquery意味保存の合格ではなく外部semantic-lossの再現記録である。
+  `validation/results/v3000-indigo-ez-query-truth-table-v1.0.17.json`。
+- [ ] **残るT1.9 query semantics:** SMILES入力、V3000保存/再読込、cross-engine往復を
+  報告版・現行pin・他engineへ広げる。stereo match設定を固定し、unspecified stereoと
+  stereo-insensitive設定は別の対照群にする。原子/結合対応、query predicate、
   SGROUP/COLLECTIONを記録し、reader受理や文字列保存をquery意味保存の代替にしない。
 - [ ] RDKit/Indigoの報告版と現行pinを分離して再現を記録する。CheMaticに同じquery APIが
   なければ能力差を明記し、情報を失う経路をtyped unsupportedとして拒否する。
