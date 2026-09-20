@@ -623,24 +623,26 @@ CheMaticの不具合や優位性が確定したことにはならない。
 | [COSMolKit #1](https://github.com/cosmol-studio/COSMolKit/issues/1) | 0.3.0の利用者報告と現sourceのskipped accessor不足。issue自身も公開packageでの独立再現は未実施と明記 | T3.7の自己完結した件数/失敗契約に反映。競合packageの検証済み欠陥とは宣伝しない |
 | [RDKit #9625](https://github.com/rdkit/rdkit/pull/9625) / [#9626](https://github.com/rdkit/rdkit/pull/9626) | protected-atom tautomer / MMFF initial embeddingはいずれもopen PR | T6で監視。今回のTrust RCへ新機能を追加する根拠にはしない |
 
-### 1. T1.6 / A0 — 評価前packetと一度限りの実行（P0、1–3実働日＋評価時間）
+### 1. T1.6 / A0 — 不採用評価の保全と次freezeの準備（P0、1–3実働日＋評価時間）
 
-- [ ] 既存のpreflight/attestation/split記録から、candidate/tag、oracle、protocol、
-  seed、許容差、対応範囲、全行会計、timeout、再実行規則、raw保持先を一つの
-  acceptance manifestへ結び付ける。既存validatorを再利用し、重複runnerを作らない。
-- [ ] rawとsplitの存在/hash、露出履歴、build環境/binary hashを確認する。
-  分子一覧は調査ログへ出さない。欠落を別sourceで埋めたりattestationを生成し直して
-  同じ封印と主張しない。復元不能ならblockerと新しいfreeze/split手順を記録する。
-- [ ] `trust-eval-candidate-20260916` / `c2682e3a…`と当時固定したoracleで実行し、
-  8,000件のsuccess/incorrect/unsupported/error/timeoutを漏れなく保存する。
-  中断時は事前規定どおりのcheckpoint再開か無効試行として記録し、都合のよい再試行をしない。
-- [ ] A0 packetの成立とA1–A4各指標の合否を別判定にする。失敗した場合は結果を固定し、
-  露出済み集合の開発利用を明記。次の独立採用判定には別の未使用集合を用意する。
-  PR #555以降の候補への効果は変更影響表・影響binding回帰で説明し、旧candidateの
-  結果を新candidateの未使用評価として流用しない。A5独立gold/reviewも別条件。
+- [x] `trust-eval-candidate-20260916` と `trust-eval-candidate-20260920` を、
+  tag、oracle、source/split/raw hash、build hash、attestation、全行会計とともに
+  一度だけ評価した。前者は分子量/TPSA、後者は分子量 7,998/8,000 strict（同位体表の
+  残差2件）で不採用。後者の安全な公開summaryは
+  `validation/results/sealed-candidate-trust-eval-20260920-summary.json` に固定した。
+- [x] 両raw/splitはlocal-onlyかつ露出済みとして明記した。再実行・tuning・次candidateの
+  未使用評価へ流用しない。raw分子一覧を調査ログやrepositoryへ出さない。
+- [ ] **非sealedの開発データだけで** A0の宣言済み範囲を分類する。封印結果から特定入力や
+  閾値へ合わせ込まず、独立の既知/生成テストと仕様根拠を使う。修正候補ごとに、影響binding
+  回帰、変更影響表、公開主張への影響を記録する。
+- [ ] 次の採用判断が必要になった時点で、別source・別抽出・重複除外・source hash・
+  attestation・annotated tagを新規に固定する。新しいcohortを作るだけでは合格とせず、
+  candidate buildとfixed oracleで一度だけ実行する。
+- [ ] A0 packetの成立とA1–A4各指標の合否を別判定にする。失敗時は結果を固定し、
+  A5独立gold/reviewを代替条件にしない。
 
-出口: 評価可能/不能の根拠、凍結条件、全行raw、判定が追跡可能。新しい回帰開発は
-別checkoutで進められる。次のRDKit公開をこの評価の待ち条件にしない。
+出口: 両不採用結果の追跡可能な保全、次freeze前の非sealed開発証拠、将来の候補ごとに
+独立した未使用data手順。次のRDKit公開をこの準備の待ち条件にしない。
 
 ### 2. T1.5 / T3.4 — 次期RDKit rebaseline（P0準備、2–4実働日＋公開待ち）
 

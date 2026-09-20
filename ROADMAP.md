@@ -1,8 +1,9 @@
 # chematic roadmap
 
 > Updated 2026-09-20. Released: **v1.0.17**. Next delivery theme: **1.x Trust Release**.
-> **Current P0 focus: close the A0 acceptance packet, then evaluate the frozen
-> T1.6 accuracy candidate once.** Sealed scores remain unrun.
+> **Current P0 focus: recover A0 after two rejected sealed candidates.** Preserve
+> their exposed evidence, classify only declared-scope gaps on non-sealed data,
+> then prepare a genuinely new freeze for a later one-time evaluation.
 > The merged Parse + Morgan browser win moves to maintenance and package verification.
 
 ## Current status
@@ -30,6 +31,12 @@
   ATTACH interpretation; opaque retention is not presented as editable semantics.
 - All **seven accuracy packages A0–A6 still have open acceptance work**.
   Publication does not complete the planned Trust RC or independent accuracy gates.
+- The two T1.6 sealed candidates are historical, exposed evaluation inputs:
+  `trust-eval-candidate-20260916` was rejected for molecular-weight/TPSA
+  failures, and `trust-eval-candidate-20260920` was rejected at 7,998/8,000
+  strict molecular-weight agreement (two isotope-table residuals). Neither may
+  be used for tuning or to validate a later candidate; the latter's public
+  summary deliberately excludes raw molecular input.
 - PR #555 (`7d98dcd3`) merges the Parse + compatible Morgan optimization with
   supported-domain bit agreement and local/hosted browser speed evidence.
   It is a different candidate from the September 16 accuracy freeze. Published
