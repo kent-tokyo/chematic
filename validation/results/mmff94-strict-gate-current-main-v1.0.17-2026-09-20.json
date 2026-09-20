@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "measured_at": "2026-09-20",
+  "source_commit": "60ad1ee8adbf3f31d0a3880477ef23ba36052a50",
+  "issue": 227,
+  "corpus_total": 265,
+  "corpus": "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_{a,b}.json",
+  "harness": "cargo run --release -p chematic-3d --example mmff94_strict_gate_remeasure_227 --offline --quiet",
+  "method": "Production minimize_with_policy(Mmff94BondAngleStrict) over generate_coords output; this is the low-level strict bond+angle boundary, not full pipeline_v2 or all MMFF94 term parity.",
+  "status_counts": {
+    "ok": 265,
+    "missing_parameters": 0,
+    "unsupported_atom_type": 0,
+    "minimization_failed": 0,
+    "parse_or_other": 0
+  },
+  "acceptance_scope": "Issue #227 stated bond+angle strict coverage: benzene and the full 265-row harness pass, materially improving the historical 216/265 unsupported result.",
+  "remaining_scope": "This does not prove complete bonded-term coverage, full pipeline_v2 parity, force-field energy parity, convergence quality, or conformer quality; those remain A6 work."
+}
