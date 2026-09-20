@@ -1,0 +1,64 @@
+{
+  "schema": "chematic.sealed-descriptor-evaluation-summary.v1",
+  "status": "evaluated_not_accepted",
+  "evaluated_at": "2026-09-20",
+  "candidate": {
+    "tag": "trust-eval-candidate-20260916",
+    "commit": "c2682e3aa75c21566c86ce1ade9cbd052838c694",
+    "wheel_version": "1.0.15",
+    "wheel_sha256": "9aa6cb085e3af453da7c58153995522c0f17fbac3eee6fe0f693120c630ab24b"
+  },
+  "comparator": { "engine": "RDKit", "version": "2025.09.3" },
+  "input": {
+    "split": "sealed_holdout",
+    "rows": 8000,
+    "sha256": "6ded3953ef0dd28e21521504b81bf1cf64068d0b1eb608987475ae4d4cce5017",
+    "raw_input": "local-only; not committed"
+  },
+  "operation": {
+    "contract": "rdkit_descriptor_semantics_v1",
+    "profile": "rdkit_compat_v2",
+    "strict_tolerances": {
+      "molecular_weight": 0.000001,
+      "hba": 0.0,
+      "hbd": 0.0,
+      "tpsa": 0.000001,
+      "logp": 0.000001,
+      "molar_refractivity": 0.000001,
+      "fsp3": 0.000001,
+      "aromatic_ring_count": 0.0
+    }
+  },
+  "accounting": {
+    "rows": 8000,
+    "parsed": 8000,
+    "parse_failures": 0,
+    "unsupported_values": 6,
+    "native_default_preserved": true,
+    "all_rows_accounted": true
+  },
+  "field_results": {
+    "molecular_weight": { "strict_matches": 7994, "mismatches": 0, "unsupported": 6, "max_abs_error": 6.999999868639861e-07 },
+    "hba": { "strict_matches": 8000, "mismatches": 0, "unsupported": 0, "max_abs_error": 0.0 },
+    "hbd": { "strict_matches": 8000, "mismatches": 0, "unsupported": 0, "max_abs_error": 0.0 },
+    "tpsa": { "strict_matches": 7954, "mismatches": 46, "unsupported": 0, "max_abs_error": 0.45999999999997954 },
+    "logp": { "strict_matches": 8000, "mismatches": 0, "unsupported": 0, "max_abs_error": 1.1812772982011666e-13 },
+    "molar_refractivity": { "strict_matches": 8000, "mismatches": 0, "unsupported": 0, "max_abs_error": 6.366462912410498e-12 },
+    "fsp3": { "strict_matches": 8000, "mismatches": 0, "unsupported": 0, "max_abs_error": 0.0 },
+    "aromatic_ring_count": { "strict_matches": 8000, "mismatches": 0, "unsupported": 0, "max_abs_error": 0.0 }
+  },
+  "decision": {
+    "accepted": false,
+    "reasons": [
+      "six molecular-weight values are unsupported",
+      "TPSA has 46 strict mismatches"
+    ],
+    "follow_up": "This holdout is now exposed and cannot tune or validate a later candidate as unused data."
+  },
+  "raw_result": {
+    "location": "local-only; not committed",
+    "sha256": "f5d5333f0924f6157e516a947ced5ae145b943db6370f9d9127cae6eb5df88bc",
+    "raw_rows_sha256": "5ba5880a34a4f580bb0fc5a1a225440d1e0a1443a0eb500d534674328b43237e",
+    "contains_sealed_smiles": true
+  }
+}

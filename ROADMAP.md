@@ -1,9 +1,9 @@
 # chematic roadmap
 
 > Updated 2026-09-20. Released: **v1.0.17**. Next delivery theme: **1.x Trust Release**.
-> **Current P0 focus: freeze and independently reproduce the local three-browser
-> Parse + Morgan win over pinned RDKit without losing correctness or coverage (T3.6).**
-> Frozen accuracy evaluation (T1.6) continues separately; sealed scores remain unrun.
+> **Current P0 focus: close the A0 acceptance packet, then evaluate the frozen
+> T1.6 accuracy candidate once.** Sealed scores remain unrun.
+> The merged Parse + Morgan browser win moves to maintenance and package verification.
 
 ## Current status
 
@@ -30,6 +30,11 @@
   ATTACH interpretation; opaque retention is not presented as editable semantics.
 - All **seven accuracy packages A0–A6 still have open acceptance work**.
   Publication does not complete the planned Trust RC or independent accuracy gates.
+- PR #555 (`7d98dcd3`) merges the Parse + compatible Morgan optimization with
+  supported-domain bit agreement and local/hosted browser speed evidence.
+  It is a different candidate from the September 16 accuracy freeze. Published
+  package timing, the original multi-session protocol, and broader runtime
+  resource acceptance still require their own evidence.
 - This index tracks **18 open areas**: seven accuracy packages and eleven
   cross-cutting follow-ups. They overlap; they are not 18 sequential phases.
   The abandoned 1.10x speed stretch is historical and excluded from that count.
@@ -49,30 +54,31 @@ workflows, with a published compatibility contract for every claimed operation.
 
 | Competitor pressure | chematic response | Explicit non-goal for this release theme |
 |---|---|---|
-| Official RDKit npm/WASM reduces installation friction | Compare pinned public artifacts on the same browser operation; publish Worker/cancellation/error contracts and losses as well as wins | Claim broad RDKit replacement or hide the RDKit-faster fingerprint lane |
+| RDKit npm/WASM and Python typing improve usability | Compare pinned public artifacts; publish Worker/cancellation/error contracts and version-specific wins and losses | Infer runtime safety from type annotations or generalize one browser speed win |
 | RDKit CIP and SMILES fixes expose order-sensitive chemistry risk | Treat atom-order and SMILES-spelling permutations as release regressions; retain uncertain cases as typed refusals | Treat agreement for one spelling as stereochemical proof |
 | Indigo advances V3000, coordination, and polymers | Test actual Indigo → chematic → RDKit and reverse round trips; separate opaque retention from editable typed semantics | Start a haptic/polymer feature race before interchange semantics are proven |
 | CDK relaxed parsing helps interactive editors | Keep normal parsing strict; any preview mode must be a separately named incomplete-state API | Silently accept incomplete chemistry in normal APIs |
 | Open Babel parser hardening raises the security bar | Publish fixed malformed-input corpus accounting with time/memory limits and refusal reasons | Treat Rust's memory model alone as parser-security proof |
-| Other Pure-Rust parity libraries compete for the same headline | Differentiate through reproducible cross-binding contracts, browser Worker UX, and release evidence | Chase broad 3D, protein, polymer, or format breadth without a validated workflow |
+| COSMolKit and other Pure-Rust parity libraries compete for the same headline | Preserve every input's index, terminal outcome and error stage across bindings; publish reproducible runtime and release evidence | Infer complete batch success from zero export failures |
 
-The September 19 review turns upstream changes into scoped regression work,
+The September 20 review turns upstream changes into scoped regression work,
 not an automatic promise of new chemistry support. The
-[current execution packet](docs/trust-release-plan.md#6-次に着手する具体的な変更)
+[current execution packet](docs/trust-release-plan.md#7-2026-09-20-trust完了に向けた実行順)
 records primary sources, implementation gaps, dependencies, and acceptance.
-Existing published 1.0.15 measurements stay historical; new 1.0.16/candidate
+Existing published 1.0.15 measurements stay historical; new release/candidate
 measurements must identify their actual package/source hashes.
 
 ## Priority order
 
 | Order | Priority | Delivery and next output | Product Phase / accuracy |
 |---|---|---|---|
-| 1 | P0 | **T3.4/T3.6 PF5**: local equivalent-output win, frozen candidate, raw evidence, paired-CI workflow, and GitHub-hosted three-browser gate are complete; after publication, remeasure the actual package before making a release-specific speed claim | P0/P2/P3; A3 |
-| 2 | P0, parallel | **T1.6 evaluation execution**: verify the frozen tag/split/protocol/build packet before scoring the 8k holdout. Keep historical and performance candidates separate; no sealed-data tuning | P0/P2; A0–A4 |
-| 3 | P0, after PF5 | **T3.6 sustainment**: keep bit-only/byte-output and ring-atom fast path covered by parity/search regressions; refresh the pinned competitor only through the same cross-host acceptance contract. Preserve native ECFP and compatible Morgan as separate profiles | P1/P2/P3; A3 |
-| 4 | P1 | **T1.5/T3.4 remaining comparison**: equivalent substructure search and resource evidence; **T5.6 stereo regressions**: selective CIP, isotopes, atrop and mapped permutations with explicit unsupported results | P0/P2/P3/P4; A2–A5 |
-| 5 | P1, partial | **T1.8 attachment contract**: existing `_AP<n>` syntax/identity is not collapse; complete external round-trip/boundary evidence. **T4.6** core large-ring safety is done; broader binding/resource regressions remain | P1/P4; A2/A4 |
-| 6 | P1 | **T3/T2 adoption evidence**: clean-install typed Worker, 10k streaming/cancellation/offline/result parity and versioned dashboard. T6 independent review and bounded existing 3D gaps continue | P3/P5/P6; A5/A6 |
+| 1 | P0 | **A0 recovery after frozen 8k rejection**: preserve the failed candidate's evidence, classify its declared-scope gaps without reusing the exposed holdout, and prepare a new freeze/unused cohort for a later adoption decision | P0/P2; A0–A4 |
+| 2 | P0 preparation; external execution | **T1.5 rebaseline**: prepare paired old/new RDKit lanes now; run when the actual stable Python/native/npm artifacts exist. Record wrapper backend and API behavior, not just version strings | P0/P2/P3; A1–A4 |
+| 3 | P1; P0 if reproduced corruption | **T5.7 + T1.9**: identity-renumber/ring-state stereo regression and V3000 E/Z query truth tables; preserve typed unsupported boundaries | P1/P2/P4; A2/A4 |
+| 4 | P1 | **T3.7 BatchResult contract**: versioned complete row accounting, original index, stage, reason, explicit completion and all-success semantics across Rust/Python/Node/WASM | P0/P3; A4 |
+| 5 | P1 | **A2 closure**: four #503 canonical/E/Z components and phosphorus adjudication; retain T5.6 selective CIP/isotope/atrop, T1.8 attachment and T4.6 binding regressions | P1/P2/P4; A2/A5 |
+| 6 | P1 | **T3.1–T3.4/T2 runtime and release evidence**: 10k Worker/cancel/offline/limits, typed install examples, current package scorecard and dashboard. T3.6 maintains the scoped speed win and audits remaining protocol conditions | P0/P3/P6; A3/A4 |
+| 7 | P2; P0 for confirmed incorrectness | **T6 / A5–A6**: independent gold/review and existing 3D typing, charge, gradient, convergence, timeout and stereo gaps | P5/P6; A5/A6 |
 
 T3/T4/T5 can proceed in parallel once their dependencies pass. Public-channel
 inventory and A5 gold preparation continue alongside frozen-packet verification.
@@ -87,25 +93,33 @@ goal; the abandoned additional 1.10x SMILES stretch stays abandoned.
 
 Historical public v1.0.15 Chromium Parse + FP took **0.315347 vs 0.134228 ms/mol**
 (CheMatic vs RDKit; medians of process means). That is about **2.35x the time**,
-not a current v1.0.17 measurement. PF0 must also align output representation and
-sanitization semantics before any new speed claim.
+not a current v1.0.17 measurement. The adopted runner records its equivalent
+packed output separately from the historical operation boundary.
 
-Primary success: fixed radius-2/2048-bit compatible Morgan, same input/output,
+Retained acceptance target: fixed radius-2/2048-bit compatible Morgan, same input/output,
 full supported-domain bit agreement and no new refusals; paired speedup 95% CI
 lower bound >1.0 and process-mean p95 no worse than RDKit. Native ECFP speed is
 reported separately, never substituted for Morgan compatibility. Independent
 performance inputs, cross-binding regressions and environment-specific reports
 are mandatory; the sealed accuracy set is not optimization data.
+The source win is recorded in PR #555. New work audits the gap between the
+implemented paired-run t-interval CI and the original 20-pair/three-session
+bootstrap protocol, including p95 and resource gates. Preserve both records;
+do not relabel a shorter run as completion of the stronger protocol.
 
-**T1.6 sealed cohort (2026-09-16):** the non-release annotated tag
+**T1.6 sealed cohort (2026-09-16; evaluated 2026-09-20):** the non-release annotated tag
 `trust-eval-candidate-20260916` freezes `c2682e3aa75c21566c86ce1ade9cbd052838c694`
 (tagged 2026-09-16T16:21:12+09:00). A ChEMBL source acquired after that freeze,
 its maintainer attestation, and canonical/parent/scaffold audits against the
 descriptor census, ChEMBL accuracy, and exposed browser-10k inputs are recorded
 in `validation/results/sealed-cohort-preflight-trust-eval-candidate-20260916.json`.
 The local-only raw input yields 2,000 development and 8,000 sealed holdout rows
-from 10,239 eligible structures. No evaluation result has been calculated; the
-older 2026-09-13 preflight remains historical `prepared_not_sealed` evidence.
+from 10,239 eligible structures. The frozen candidate was evaluated once with
+RDKit 2025.09.3: all 8,000 rows parsed, but six molecular-weight values were
+unsupported and TPSA had 46 strict mismatches. The candidate is rejected and
+this holdout is now exposed; the raw local-only result and a commit-safe summary
+are recorded separately. The older 2026-09-13 preflight remains historical
+`prepared_not_sealed` evidence.
 
 **T0 result (2026-09-13):** independently built baseline/candidate arms completed
 the fixed 5,021-molecule × 31-query lane with complete row accounting and zero
@@ -127,7 +141,7 @@ These are remaining exits, not a list of all work already implemented.
 See the [accuracy plan](docs/rdkit-accuracy-plan.md) for subtask acceptance and
 the [disposition ledger](docs/roadmap-open-work.md) for evidence and dependencies.
 
-- [ ] **A0 — Evaluation contract:** complete the full acceptance packet and score the September 16 frozen 8,000-row evaluation with its recorded candidate; re-audit exposure/freeze for any later candidate. The 96/96 all-field holdout and exposed-corpus validators are narrower completed slices.
+- [ ] **A0 — Evaluation contract:** the September 16 frozen candidate was evaluated and rejected; prepare a new candidate freeze, unused cohort, and complete acceptance packet for any later adoption decision. The 96/96 all-field holdout and exposed-corpus validators are narrower completed slices.
 - [ ] **A1 — Perception and descriptors:** complete unused core-eight-field and potential-center evaluation, plus affected workflow/binding acceptance. The opt-in profile has passing exposed-corpus evidence; additional families have separate gates.
 - [ ] **A2 — Stereo and identity:** resolve the four #503 canonical/E/Z components and phosphorus CIP adjudication; meet permutation, idempotency, information-preservation, and false-merge exits.
 - [ ] **A3 — Fingerprints and retrieval:** retain raw/provenance evidence for the new aromaticity lane, rerun affected bindings/search after adoption, and pass unused-input evaluation. Existing k=1/10/100 and threshold evidence remains valid for its recorded builds.
@@ -139,12 +153,12 @@ the [disposition ledger](docs/roadmap-open-work.md) for evidence and dependencie
 
 These extend the same product areas; they do not introduce new Phase numbers.
 
-- [ ] T3.6: beat pinned RDKit for equivalent Parse + Morgan through PF0–PF5, with native ECFP in a separate lane; retain T3.4 fixed-input RDKit/Open Babel comparison and separately labeled subprocess lanes.
-- [ ] Exact canonical-SMILES and cross-engine V3000 parity: expand semantic-identity and RDKit/Indigo fixtures, including unsupported representation boundaries.
+- [ ] T3.6/T1.5: maintain the merged browser Parse + Morgan win, audit remaining statistical/resource conditions, verify the published package and rebaseline the next available RDKit artifacts; retain separate native ECFP and T3.4 search lanes.
+- [ ] Exact canonical-SMILES and cross-engine V3000 parity: expand semantic-identity and RDKit/Indigo fixtures, including T5.7 identity-renumber and T1.9 query-semantics regressions and unsupported representation boundaries.
 - [ ] Replace remaining MD/UFF/MMFF94 finite-difference production paths after same-domain analytic energy, gradient, and stereo soundness gates.
 - [ ] Replace remaining periodic neighbor all-pairs paths after exact result-set and cutoff parity.
 - [ ] Optimize symmetry-heavy canonical and SMARTS search after broader exact-output, invariance, and budget-exhaustion gates.
-- [ ] Extend browser and agent adversarial coverage for cancellation, malformed records, limits, stable errors, and supported engines.
+- [ ] Extend browser and agent adversarial coverage for cancellation, malformed records, limits, stable errors, and supported engines; T3.7 requires complete batch row accounting across bindings and export.
 - [ ] Expand reaction/SMARTS/medicinal-chemistry breadth after the shared P0–P3 primitives have current evidence.
 - [ ] Add curated reaction/query precision, recall, invalid-product, timeout, and ambiguity reports with independent oracles.
 - [ ] Close MMFF94/UFF typing, charge, parameter, convergence, and stereo gaps with same-coordinate comparisons.
@@ -171,6 +185,11 @@ number is selected here.
 The new upstream packet requires a large-ring round-trip/refusal regression and
 explicit stereo/attachment capability accounting. Unsupported atrop or collapse
 semantics need not become new APIs to ship, but must not silently lose information.
+It also requires the T3.7 contract for the declared batch workflow and T5.7/T1.9
+regressions (semantic preservation or explicit unsupported outcome). A historical
+candidate's sealed result does not automatically qualify a later RC: record the
+change impact and affected regression gates; a new unused-data claim needs a new
+freeze/exposure audit. Future RDKit availability does not block the frozen run.
 No performance claim is promoted without its matching correctness and coverage
 gate; no remote-startup or unique-memory claim is required without measurement.
 
