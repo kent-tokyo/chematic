@@ -626,6 +626,13 @@ pub(crate) struct CanonicalWriter<'a> {
     /// re-orientation this early corrupts E/Z groups spanning bonds visited
     /// in different directions (issue #390).
     atom_ring_nums: Vec<Vec<(u32, bool, AtomIdx, BondIdx)>>,
+    /// Test-only switch for the #503 design probe.  Production always emits
+    /// a directional ring bond at its opening occurrence; the probe also
+    /// permits a selected E/Z carrier to be emitted at its closing occurrence
+    /// so we can distinguish a missing serialization degree of freedom from a
+    /// genuinely unsatisfiable local carrier plan.
+    #[cfg(test)]
+    ring_marker_on_close: HashSet<BondIdx>,
     next_ring: u32,
     out: String,
     /// Union-find groups of directional (`/`/`\`) bonds that jointly encode
@@ -681,6 +688,8 @@ impl<'a> CanonicalWriter<'a> {
             written: vec![false; n],
             ring_bonds: vec![false; mol.bond_count()],
             atom_ring_nums: vec![Vec::new(); n],
+            #[cfg(test)]
+            ring_marker_on_close: HashSet::new(),
             next_ring: 1,
             out: String::with_capacity(n.saturating_mul(4) + mol.bond_count().saturating_mul(2)),
             ez_group: HashMap::new(),
@@ -1287,7 +1296,9 @@ impl<'a> CanonicalWriter<'a> {
             // the remote endpoint (which is not adjacent to this alkene),
             // and a re-parser would silently lose this stereochemistry.
             let chosen_bidx = subs[i][choice[i]].1;
-            if self.ring_closure_is_close_side(chosen_bidx, end) {
+            if self.ring_closure_is_close_side(chosen_bidx, end)
+                && !self.ring_marker_is_permitted_on_close(chosen_bidx)
+            {
                 return None;
             }
             // A carrier election is not geometry-neutral when the losing
@@ -1322,6 +1333,22 @@ impl<'a> CanonicalWriter<'a> {
         self.atom_ring_nums[end.0 as usize]
             .iter()
             .any(|&(_, is_open, _, ring_bidx)| ring_bidx == bidx && !is_open)
+    }
+
+    /// Production deliberately keeps directional ring markers at the opening
+    /// occurrence.  Unit tests can opt into the parser-supported closing-side
+    /// spelling to measure whether that serialization freedom would solve a
+    /// residual before changing the public canonicalization contract.
+    fn ring_marker_is_permitted_on_close(&self, bidx: BondIdx) -> bool {
+        #[cfg(test)]
+        {
+            self.ring_marker_on_close.contains(&bidx)
+        }
+        #[cfg(not(test))]
+        {
+            let _ = bidx;
+            false
+        }
     }
 
     /// True if `bidx` (one of `owning_end`'s own two candidate substituent
@@ -1830,7 +1857,12 @@ impl<'a> CanonicalWriter<'a> {
                 // former order_at_open/order_at_close split exactly, just
                 // computed now instead of at discovery time (see
                 // `normalize_ez`'s doc comment for why).
-                let bond_order = if is_open {
+                let emit_direction_here = if is_open {
+                    !self.ring_marker_is_permitted_on_close(bidx)
+                } else {
+                    self.ring_marker_is_permitted_on_close(bidx)
+                };
+                let bond_order = if emit_direction_here {
                     let normalized = self.normalize_ez(bidx, atom);
                     Self::reorient_for_write(self.raw_direction_anchor(bidx), atom, normalized)
                 } else {
@@ -4138,6 +4170,69 @@ mod tests {
                 common.is_empty(),
                 "{input}: candidate-bond DFS priorities unexpectedly found a common output; \
                  update the complete-plan boundary before relying on it"
+            );
+        }
+    }
+
+    /// The closing side of a ring digit is syntactically capable of carrying
+    /// its directional token (the parser applies the required orientation
+    /// flip).  This probe asks whether merely moving every candidate carrier
+    /// there removes the remaining #503 split.  It is deliberately narrower
+    /// than a production plan: a positive result would only identify a new
+    /// degree of freedom; a negative result rules out the uniform policy.
+    #[test]
+    fn issue503_uniform_closing_side_markers_have_no_common_output() {
+        let observed_pairs = [
+            (
+                r"c/3(c(/c(c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+                r"c3(c(c(/c3=N/CC)=N\[C@@H](Cc1ccc(NC(c2c(Cl)cncc2Cl)=O)cc1)C(O)=O)O)O",
+            ),
+            (
+                r"c/1(c(/c(c1=N\[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+                r"c1(c(c(/c1=N/[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+            ),
+            (
+                r"c/1(O)c(O)/c(=N\[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)c1=N\CCOC",
+                r"c1(O)c(O)c(=N/[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)\c1=N\CCOC",
+            ),
+        ];
+
+        for (&input, &(observed_a, observed_b)) in EZ_SHARED_CARRIER_HELD_OUT_RESIDUALS
+            .iter()
+            .zip(observed_pairs.iter())
+        {
+            let mut per_spelling = Vec::new();
+            for spelling in [input, observed_a, observed_b] {
+                let mol = parse(spelling).unwrap();
+                let geometry = geometry_fingerprint(&mol);
+                let ends = CanonicalWriter::compute_stereo_alkene_ends(&mol);
+                let closing_candidates = CanonicalWriter::coupling_components(&mol, &ends)
+                    .into_iter()
+                    .flatten()
+                    .flat_map(|end| CanonicalWriter::substituents(&mol, end))
+                    .map(|(_, bond)| bond)
+                    .collect();
+                let (ranks, _) = winning_individualized_ranks(&mol);
+                let mut writer = CanonicalWriter::new(&mol, &ranks);
+                writer.ring_marker_on_close = closing_candidates;
+                let output = writer.write_all();
+                let reparsed = parse(&output).unwrap_or_else(|e| {
+                    panic!("{spelling}: closing-side candidate did not parse: {e}: {output}")
+                });
+                per_spelling.push(if geometry_fingerprint(&reparsed) == geometry {
+                    Some(output)
+                } else {
+                    None
+                });
+            }
+            let common = per_spelling
+                .into_iter()
+                .reduce(|left, right| if left == right { left } else { None })
+                .flatten();
+            assert!(
+                common.is_none(),
+                "{input}: uniform closing-side policy unexpectedly found {common:?}; \
+                 promote it from a probe only after its full contract is verified"
             );
         }
     }
