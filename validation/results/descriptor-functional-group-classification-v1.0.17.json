@@ -15,6 +15,14 @@
         "tolerance": 0.01,
         "comparison": "numeric_rdkit_mass_profile"
       },
+      "exact_mass": {
+        "tolerance": 1e-06,
+        "comparison": "numeric_exact_mass"
+      },
+      "heavy_atoms": {
+        "tolerance": 0.0,
+        "comparison": "integer"
+      },
       "logp": {
         "tolerance": 0.01,
         "comparison": "numeric"
@@ -42,13 +50,17 @@
       "aromatic_ring_count": {
         "tolerance": 0.0,
         "comparison": "integer"
+      },
+      "rotatable_bonds": {
+        "tolerance": 0.0,
+        "comparison": "integer_rdkit_default"
       }
     }
   },
   "implementation": {
     "engine": "CheMatic",
     "operation": "CLI descriptors <SMILES> JSON fields",
-    "cli_sha256": "0b6da3617acab822925e8e665f9c118a2e9a648eeb82b2b63405256859850672"
+    "cli_sha256": "5b72e2a53fc1e7e9bfe2876dc7fd5ec7a3724baaaa693c569958a548825f642e"
   },
   "rows": 52,
   "summary": {
@@ -62,6 +74,14 @@
       ]
     },
     "rdkit_molecular_weight": {
+      "strict_matches": 52,
+      "mismatches": []
+    },
+    "exact_mass": {
+      "strict_matches": 52,
+      "mismatches": []
+    },
+    "heavy_atoms": {
       "strict_matches": 52,
       "mismatches": []
     },
@@ -98,6 +118,10 @@
     "aromatic_ring_count": {
       "strict_matches": 52,
       "mismatches": []
+    },
+    "rotatable_bonds": {
+      "strict_matches": 52,
+      "mismatches": []
     }
   },
   "cases": [
@@ -117,6 +141,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 18.015,
           "chematic": 18.015,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 18.010564684,
+          "chematic": 18.01056468403,
+          "absolute_error": 3.000266701747023e-11,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 1,
+          "chematic": 1,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -161,6 +197,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -180,6 +222,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 46.069,
           "chematic": 46.069,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 46.041864812,
+          "chematic": 46.04186481295,
+          "absolute_error": 9.500027431386115e-10,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 3,
+          "chematic": 3,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -224,6 +278,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -243,6 +303,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 94.11299999999999,
           "chematic": 94.11299999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 94.041864812,
+          "chematic": 94.04186481295001,
+          "absolute_error": 9.500098485659692e-10,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 7,
+          "chematic": 7,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -287,6 +359,12 @@
           "chematic": 1,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -306,6 +384,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 46.069,
           "chematic": 46.069,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 46.041864812,
+          "chematic": 46.04186481295,
+          "absolute_error": 9.500027431386115e-10,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 3,
+          "chematic": 3,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -350,6 +440,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -369,6 +465,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 44.053,
           "chematic": 44.053,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 44.026214748,
+          "chematic": 44.026214748490005,
+          "absolute_error": 4.900044814348803e-10,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 3,
+          "chematic": 3,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -413,6 +521,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -432,6 +546,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 44.053,
           "chematic": 44.053,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 44.026214748,
+          "chematic": 44.02621474849,
+          "absolute_error": 4.899973760075227e-10,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 3,
+          "chematic": 3,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -476,6 +602,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -495,6 +627,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 60.05200000000001,
           "chematic": 60.05200000000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 60.021129368000004,
+          "chematic": 60.02112936806,
+          "absolute_error": 5.999822860758286e-11,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 4,
+          "chematic": 4,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -539,6 +683,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -558,6 +708,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 59.044000000000004,
           "chematic": 59.044000000000004,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 59.01385291591001,
+          "chematic": 59.013852915739065,
+          "absolute_error": 1.709423713691649e-10,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 4,
+          "chematic": 4,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -602,6 +764,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -621,6 +789,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 74.07900000000001,
           "chematic": 74.07900000000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 74.036779432,
+          "chematic": 74.03677943252,
+          "absolute_error": 5.200035957386717e-10,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 5,
+          "chematic": 5,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -665,6 +845,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -684,6 +870,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 59.068,
           "chematic": 59.068,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 59.03711378,
+          "chematic": 59.03711378515,
+          "absolute_error": 5.149999537934491e-09,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 4,
+          "chematic": 4,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -728,6 +926,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -747,6 +951,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 45.084999999999994,
           "chematic": 45.084999999999994,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 45.057849223999995,
+          "chematic": 45.05784923004,
+          "absolute_error": 6.04000405246552e-09,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 3,
+          "chematic": 3,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -791,6 +1007,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -810,6 +1032,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 59.111999999999995,
           "chematic": 59.111999999999995,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 59.073499288,
+          "chematic": 59.073499294499996,
+          "absolute_error": 6.499995208741893e-09,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 4,
+          "chematic": 4,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -854,6 +1088,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -873,6 +1113,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 74.14699999999999,
           "chematic": 74.14699999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 74.09642580408999,
+          "chematic": 74.09642581128094,
+          "absolute_error": 7.1909482812770875e-09,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 5,
+          "chematic": 5,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -917,6 +1169,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -936,6 +1194,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 41.053,
           "chematic": 41.053,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 41.026549096,
+          "chematic": 41.02654910112,
+          "absolute_error": 5.1200004236306995e-09,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 3,
+          "chematic": 3,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -980,6 +1250,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -999,6 +1275,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 43.069,
           "chematic": 43.069,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 43.042199159999996,
+          "chematic": 43.04219916558,
+          "absolute_error": 5.580005790761788e-09,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 3,
+          "chematic": 3,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -1043,6 +1331,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -1062,6 +1356,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 58.084,
           "chematic": 58.084,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 58.05309819199999,
+          "chematic": 58.053098202239994,
+          "absolute_error": 1.0240000847261399e-08,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 4,
+          "chematic": 4,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -1106,6 +1412,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -1125,6 +1437,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 61.040000000000006,
           "chematic": 61.040000000000006,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 61.016378336,
+          "chematic": 61.01637834025999,
+          "absolute_error": 4.259987917976105e-09,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 4,
+          "chematic": 4,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -1169,6 +1493,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -1188,6 +1518,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 45.041000000000004,
           "chematic": 45.041000000000004,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 45.021463716,
+          "chematic": 45.021463720689994,
+          "absolute_error": 4.689994170803402e-09,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 3,
+          "chematic": 3,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -1232,6 +1574,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -1251,6 +1599,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 109.12799999999999,
           "chematic": 109.12799999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 109.052763844,
+          "chematic": 109.05276384961,
+          "absolute_error": 5.61000490506558e-09,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 8,
+          "chematic": 8,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -1295,6 +1655,12 @@
           "chematic": 1,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -1314,6 +1680,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 57.056,
           "chematic": 57.056,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 57.03269709599999,
+          "chematic": 57.03269710997999,
+          "absolute_error": 1.3979999380353547e-08,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 4,
+          "chematic": 4,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -1358,6 +1736,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -1377,6 +1761,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 79.10199999999999,
           "chematic": 79.10199999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 79.04219916,
+          "chematic": 79.04219916558,
+          "absolute_error": 5.580005790761788e-09,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 6,
+          "chematic": 6,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -1421,6 +1817,12 @@
           "chematic": 1,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -1440,6 +1842,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 67.091,
           "chematic": 67.091,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 67.04219916,
+          "chematic": 67.04219916558002,
+          "absolute_error": 5.5800200016165036e-09,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 5,
+          "chematic": 5,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -1484,6 +1898,12 @@
           "chematic": 1,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -1503,6 +1923,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 68.079,
           "chematic": 68.079,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 68.037448128,
+          "chematic": 68.03744813778,
+          "absolute_error": 9.780009690985025e-09,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 5,
+          "chematic": 5,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -1547,6 +1979,12 @@
           "chematic": 1,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -1566,6 +2004,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 62.137,
           "chematic": 62.137,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 62.019021192,
+          "chematic": 62.01902136778,
+          "absolute_error": 1.7578000210960454e-07,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 3,
+          "chematic": 3,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -1610,6 +2060,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -1629,6 +2085,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 48.11000000000001,
           "chematic": 48.11000000000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 48.003371128,
+          "chematic": 48.00337130332,
+          "absolute_error": 1.753200038479008e-07,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 2,
+          "chematic": 2,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -1673,6 +2141,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -1692,6 +2166,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 78.13600000000001,
           "chematic": 78.13600000000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 78.013935812,
+          "chematic": 78.01393598735001,
+          "absolute_error": 1.7535001006763196e-07,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 4,
+          "chematic": 4,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -1736,6 +2222,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -1755,6 +2247,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 94.135,
           "chematic": 94.135,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 94.008850432,
+          "chematic": 94.00885060692,
+          "absolute_error": 1.7492000381480466e-07,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 5,
+          "chematic": 5,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -1799,6 +2303,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -1818,6 +2328,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 95.12300000000002,
           "chematic": 95.12300000000002,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 95.0040994,
+          "chematic": 95.00409957912001,
+          "absolute_error": 1.791200077150279e-07,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 5,
+          "chematic": 5,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -1862,6 +2384,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -1881,6 +2409,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 95.099,
           "chematic": 95.099,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 94.98083853591001,
+          "chematic": 94.98083870970906,
+          "absolute_error": 1.7379905159486952e-07,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 5,
+          "chematic": 5,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -1925,6 +2465,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -1944,6 +2490,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 84.14299999999999,
           "chematic": 84.14299999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 84.003371128,
+          "chematic": 84.00337130332001,
+          "absolute_error": 1.7532001095332816e-07,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 5,
+          "chematic": 5,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -1988,6 +2546,12 @@
           "chematic": 1,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -2007,6 +2571,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 112.02099999999997,
           "chematic": 112.02099999999997,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 111.99254527000001,
+          "chematic": 111.99254563785,
+          "absolute_error": 3.678499922443734e-07,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 6,
+          "chematic": 6,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -2051,6 +2627,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -2070,6 +2652,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 96.02199999999999,
           "chematic": 96.02199999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 95.99763065,
+          "chematic": 95.99763101827999,
+          "absolute_error": 3.68279984286346e-07,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 5,
+          "chematic": 5,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -2114,6 +2708,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -2133,6 +2733,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 128.08899999999997,
           "chematic": 128.08899999999997,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 127.96970165,
+          "chematic": 127.96970219267999,
+          "absolute_error": 5.42679984505412e-07,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 6,
+          "chematic": 6,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -2177,6 +2789,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -2196,6 +2814,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 76.079,
           "chematic": 76.079,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 76.044186918,
+          "chematic": 76.04418728849,
+          "absolute_error": 3.7048999956823536e-07,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 4,
+          "chematic": 4,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -2240,6 +2870,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -2259,6 +2895,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 77.06700000000001,
           "chematic": 77.06700000000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 77.03943588599999,
+          "chematic": 77.03943626069001,
+          "absolute_error": 3.746900176793133e-07,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 4,
+          "chematic": 4,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -2303,6 +2951,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -2322,6 +2976,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 91.094,
           "chematic": 91.094,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 91.05508594999999,
+          "chematic": 91.05508632515,
+          "absolute_error": 3.751500088355897e-07,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 5,
+          "chematic": 5,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -2366,6 +3032,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -2385,6 +3057,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 62.032,
           "chematic": 62.032,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 62.015960789999994,
+          "chematic": 62.015961164,
+          "absolute_error": 3.740000025231893e-07,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 3,
+          "chematic": 3,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -2429,6 +3113,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -2448,6 +3138,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 78.055,
           "chematic": 78.055,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 78.03468485399999,
+          "chematic": 78.03468523289,
+          "absolute_error": 3.7889000736868184e-07,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 4,
+          "chematic": 4,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -2492,6 +3194,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -2511,6 +3219,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 127.00099999999998,
           "chematic": 127.00099999999998,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 127.937650668,
+          "chematic": 127.93765116805999,
+          "absolute_error": 5.000599827553742e-07,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 4,
+          "chematic": 4,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -2555,6 +3275,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -2574,6 +3300,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 45.834,
           "chematic": 45.834,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 46.02260973599999,
+          "chematic": 46.02260969583,
+          "absolute_error": 4.0169993553718086e-08,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 3,
+          "chematic": 3,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -2618,6 +3356,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -2637,6 +3381,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 46.073,
           "chematic": 46.073,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 46.05309819199999,
+          "chematic": 46.053098202239994,
+          "absolute_error": 1.0240000847261399e-08,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 3,
+          "chematic": 3,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -2681,6 +3437,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -2700,6 +3462,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 59.071999999999996,
           "chematic": 59.071999999999996,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 59.04834715999999,
+          "chematic": 59.048347174439996,
+          "absolute_error": 1.4440004747484636e-08,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 4,
+          "chematic": 4,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -2744,6 +3518,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -2763,6 +3543,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 60.056,
           "chematic": 60.056,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 60.032362748,
+          "chematic": 60.03236275734999,
+          "absolute_error": 9.34999633273037e-09,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 4,
+          "chematic": 4,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -2807,6 +3599,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -2826,6 +3624,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 57.052,
           "chematic": 57.052,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 57.021463716,
+          "chematic": 57.021463720689994,
+          "absolute_error": 4.689994170803402e-09,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 4,
+          "chematic": 4,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -2870,6 +3680,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -2889,6 +3705,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 73.12,
           "chematic": 73.12,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 72.998620096,
+          "chematic": 72.99862027552,
+          "absolute_error": 1.7952000064269669e-07,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 4,
+          "chematic": 4,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -2933,6 +3761,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -2952,6 +3786,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 81.07799999999999,
           "chematic": 81.07799999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 81.03269709599999,
+          "chematic": 81.03269710998,
+          "absolute_error": 1.3980013591208262e-08,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 6,
+          "chematic": 6,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -2996,6 +3842,12 @@
           "chematic": 1,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -3015,6 +3867,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 47.06135484000001,
           "chematic": 47.06135484000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 47.045219652,
+          "chematic": 47.04521964802001,
+          "absolute_error": 3.9799914475224796e-09,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 3,
+          "chematic": 3,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -3055,6 +3919,12 @@
           "strict_match": true
         },
         "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rotatable_bonds": {
           "rdkit": 0,
           "chematic": 0,
           "absolute_error": 0.0,
@@ -3081,6 +3951,18 @@
           "absolute_error": 0.0,
           "strict_match": true
         },
+        "exact_mass": {
+          "rdkit": 45.053298412,
+          "chematic": 45.05329841295,
+          "absolute_error": 9.500027431386115e-10,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 3,
+          "chematic": 3,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
         "logp": {
           "rdkit": -0.0014000000000000123,
           "chematic": -0.0013999999999999568,
@@ -3122,6 +4004,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -3141,6 +4029,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 47.075101778,
           "chematic": 47.075101778,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 47.048141558,
+          "chematic": 47.04814155884,
+          "absolute_error": 8.400036222155904e-10,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 3,
+          "chematic": 3,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -3185,6 +4085,12 @@
           "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -3205,6 +4111,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 95.101,
           "chematic": 95.101,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 95.03711378,
+          "chematic": 95.03711378515001,
+          "absolute_error": 5.150013748789206e-09,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 7,
+          "chematic": 7,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -3249,6 +4167,12 @@
           "chematic": 1,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -3269,6 +4193,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 93.10499999999999,
           "chematic": 93.10499999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 93.03458835991,
+          "chematic": 93.03458836062907,
+          "absolute_error": 7.190692485892214e-10,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 7,
+          "chematic": 7,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -3313,6 +4249,12 @@
           "chematic": 1,
           "absolute_error": 0.0,
           "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
         }
       }
     },
@@ -3333,6 +4275,18 @@
         "rdkit_molecular_weight": {
           "rdkit": 95.101,
           "chematic": 95.101,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "exact_mass": {
+          "rdkit": 95.03711378,
+          "chematic": 95.03711378515001,
+          "absolute_error": 5.150013748789206e-09,
+          "strict_match": true
+        },
+        "heavy_atoms": {
+          "rdkit": 7,
+          "chematic": 7,
           "absolute_error": 0.0,
           "strict_match": true
         },
@@ -3375,6 +4329,12 @@
         "aromatic_ring_count": {
           "rdkit": 1,
           "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rotatable_bonds": {
+          "rdkit": 0,
+          "chematic": 0,
           "absolute_error": 0.0,
           "strict_match": true
         }

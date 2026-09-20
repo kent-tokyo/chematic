@@ -655,7 +655,8 @@ CheMaticの不具合や優位性が確定したことにはならない。
   回帰、変更影響表、公開主張への影響を記録する。descriptorは官能基・電荷・同位体・
   tautomer/芳香族性の非sealedな層別を先に固定し、全体一致率だけを次freezeの根拠にしない。
   公開51官能基/電荷/同位体/tautomer/芳香族性のgreen probeでは、HBA/HBD/TPSA/LogP/MR/
-  Fsp3/芳香族環数と明示的な`rdkit_molecular_weight`は51/51 strictだった。native
+  Fsp3/芳香族環数、`exact_mass`、`heavy_atoms`、`rotatable_bonds`、明示的な
+  `rdkit_molecular_weight`は51/51 strictだった。native
   `molecular_weight`のSeと同位体3件はnative IUPAC mass tableとRDKit mass profileの
   宣言済み差であり、CLIのnative massをRDKit互換値と偽装しない。別の分類専用2-pyridone
   Kekule tautomerはTPSA/LogP/MR残差として保持し、sealed候補との対応付けをしない。結果は

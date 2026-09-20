@@ -323,11 +323,9 @@ fn rdkit_isotope_mass(element: Element, isotope: u16) -> f64 {
         .unwrap_or(isotope as f64)
 }
 
-/// High-precision nuclide masses retained for the pre-existing native exact-
-/// mass API.  This intentionally stays separate from the RDKit descriptor
-/// table above: RDKit exposes its periodic-table values at its own precision,
-/// whereas changing the native exact-mass values would be an unrelated API
-/// behavior change.
+/// High-precision nuclide masses for explicit labels common in descriptor
+/// fixtures. The complete pinned isotope table is used for every other known
+/// label before falling back to its mass number.
 fn exact_mass_isotope(element: Element, isotope: u16) -> f64 {
     match (element.atomic_number(), isotope) {
         (1, 2) => 2.01410177812,
@@ -344,133 +342,133 @@ fn exact_mass_isotope(element: Element, isotope: u16) -> f64 {
         (16, 34) => 33.967867004,
         (17, 37) => 36.965902602,
         (35, 81) => 80.9162897,
-        _ => isotope as f64,
+        _ => rdkit_isotope_mass(element, isotope),
     }
 }
 
 /// Monoisotopic (most-abundant-isotope) mass table (Da), indexed the same
-/// way as [`AVG_MASS_TABLE`] -- see its doc comment for provenance, the bug
-/// this replaced, and why the pre-existing ~12 covered elements keep their
-/// original values rather than being silently re-derived from RDKit.
+/// way as [`AVG_MASS_TABLE`]. Exact mass keeps a separate, high-precision
+/// contract from average molecular weight, so common descriptor elements use
+/// their nuclide masses rather than rounded display values.
 static MONO_MASS_TABLE: [f64; 118] = [
-    1.00783,   // 1 H (pre-existing)
-    4.00260,   // 2 He (RDKit)
-    7.01600,   // 3 Li (RDKit)
-    9.01218,   // 4 Be (RDKit)
-    11.00931,  // 5 B (RDKit)
-    12.00000,  // 6 C (pre-existing)
-    14.00310,  // 7 N (pre-existing)
-    15.99490,  // 8 O (pre-existing)
-    18.99840,  // 9 F (pre-existing)
-    19.99244,  // 10 Ne (RDKit)
-    22.98977,  // 11 Na (RDKit)
-    23.98504,  // 12 Mg (RDKit)
-    26.98154,  // 13 Al (RDKit)
-    27.97690,  // 14 Si (pre-existing)
-    30.97380,  // 15 P (pre-existing)
-    31.97210,  // 16 S (pre-existing)
-    34.96890,  // 17 Cl (pre-existing)
-    39.96238,  // 18 Ar (RDKit)
-    38.96371,  // 19 K (RDKit)
-    39.96259,  // 20 Ca (RDKit)
-    44.95591,  // 21 Sc (RDKit)
-    47.94795,  // 22 Ti (RDKit)
-    50.94396,  // 23 V (RDKit)
-    51.94051,  // 24 Cr (RDKit)
-    54.93805,  // 25 Mn (RDKit)
-    55.93494,  // 26 Fe (RDKit)
-    58.93319,  // 27 Co (RDKit)
-    57.93534,  // 28 Ni (RDKit)
-    62.92960,  // 29 Cu (RDKit)
-    63.92914,  // 30 Zn (RDKit)
-    68.92557,  // 31 Ga (RDKit)
-    73.92118,  // 32 Ge (RDKit)
-    74.92160,  // 33 As (RDKit)
-    79.91650,  // 34 Se (pre-existing)
-    78.91830,  // 35 Br (pre-existing)
-    83.91151,  // 36 Kr (RDKit)
-    84.91179,  // 37 Rb (RDKit)
-    87.90561,  // 38 Sr (RDKit)
-    88.90585,  // 39 Y (RDKit)
-    89.90470,  // 40 Zr (RDKit)
-    92.90638,  // 41 Nb (RDKit)
-    97.90541,  // 42 Mo (RDKit)
-    96.90636,  // 43 Tc (RDKit)
-    101.90435, // 44 Ru (RDKit)
-    102.90550, // 45 Rh (RDKit)
-    105.90349, // 46 Pd (RDKit)
-    106.90510, // 47 Ag (RDKit)
-    113.90336, // 48 Cd (RDKit)
-    114.90388, // 49 In (RDKit)
-    119.90219, // 50 Sn (RDKit)
-    120.90382, // 51 Sb (RDKit)
-    129.90622, // 52 Te (RDKit)
-    126.90450, // 53 I (pre-existing)
-    131.90415, // 54 Xe (RDKit)
-    132.90545, // 55 Cs (RDKit)
-    137.90525, // 56 Ba (RDKit)
-    138.90635, // 57 La (RDKit)
-    139.90544, // 58 Ce (RDKit)
-    140.90765, // 59 Pr (RDKit)
-    141.90772, // 60 Nd (RDKit)
-    144.91275, // 61 Pm (RDKit)
-    151.91973, // 62 Sm (RDKit)
-    152.92123, // 63 Eu (RDKit)
-    157.92410, // 64 Gd (RDKit)
-    158.92535, // 65 Tb (RDKit)
-    163.92917, // 66 Dy (RDKit)
-    164.93032, // 67 Ho (RDKit)
-    165.93029, // 68 Er (RDKit)
-    168.93421, // 69 Tm (RDKit)
-    173.93886, // 70 Yb (RDKit)
-    174.94077, // 71 Lu (RDKit)
-    179.94655, // 72 Hf (RDKit)
-    180.94800, // 73 Ta (RDKit)
-    183.95093, // 74 W (RDKit)
-    186.95575, // 75 Re (RDKit)
-    191.96148, // 76 Os (RDKit)
-    192.96293, // 77 Ir (RDKit)
-    194.96479, // 78 Pt (RDKit)
-    196.96657, // 79 Au (RDKit)
-    201.97064, // 80 Hg (RDKit)
-    204.97443, // 81 Tl (RDKit)
-    207.97665, // 82 Pb (RDKit)
-    208.98040, // 83 Bi (RDKit)
-    208.98243, // 84 Po (RDKit)
-    209.98715, // 85 At (RDKit)
-    222.01757, // 86 Rn (RDKit)
-    223.01974, // 87 Fr (RDKit)
-    226.02540, // 88 Ra (RDKit)
-    227.02775, // 89 Ac (RDKit)
-    232.03806, // 90 Th (RDKit)
-    231.03588, // 91 Pa (RDKit)
-    238.05079, // 92 U (RDKit)
-    236.04657, // 93 Np (RDKit)
-    238.04956, // 94 Pu (RDKit)
-    241.05683, // 95 Am (RDKit)
-    243.06139, // 96 Cm (RDKit)
-    247.07031, // 97 Bk (RDKit)
-    249.07485, // 98 Cf (RDKit)
-    252.08298, // 99 Es (RDKit)
-    257.09510, // 100 Fm (RDKit)
-    258.09843, // 101 Md (RDKit)
-    259.10103, // 102 No (RDKit)
-    262.10963, // 103 Lr (RDKit)
-    267.12153, // 104 Rf (RDKit)
-    268.12545, // 105 Db (RDKit)
-    271.13347, // 106 Sg (RDKit)
-    270.13362, // 107 Bh (RDKit)
-    269.13406, // 108 Hs (RDKit)
-    278.15481, // 109 Mt (RDKit)
-    281.16206, // 110 Ds (RDKit)
-    281.16537, // 111 Rg (RDKit)
-    285.17411, // 112 Cn (RDKit)
-    284.17873, // 113 Nh (RDKit)
-    289.19042, // 114 Fl (RDKit)
-    288.19274, // 115 Mc (RDKit)
-    293.20449, // 116 Lv (RDKit)
-    292.20746, // 117 Ts (RDKit)
-    294.21392, // 118 Og (RDKit)
+    1.00782503223,  // 1 H; 1H nuclide mass
+    4.00260,        // 2 He (RDKit)
+    7.01600,        // 3 Li (RDKit)
+    9.01218,        // 4 Be (RDKit)
+    11.00930536,    // 5 B; 11B nuclide mass
+    12.00000,       // 6 C (pre-existing)
+    14.00307400443, // 7 N; 14N nuclide mass
+    15.99491461957, // 8 O; 16O nuclide mass
+    18.99840,       // 9 F (pre-existing)
+    19.99244,       // 10 Ne (RDKit)
+    22.98977,       // 11 Na (RDKit)
+    23.98504,       // 12 Mg (RDKit)
+    26.98154,       // 13 Al (RDKit)
+    27.97690,       // 14 Si (pre-existing)
+    30.97376199842, // 15 P; 31P nuclide mass
+    31.9720711744,  // 16 S; 32S nuclide mass
+    34.96890,       // 17 Cl (pre-existing)
+    39.96238,       // 18 Ar (RDKit)
+    38.96371,       // 19 K (RDKit)
+    39.96259,       // 20 Ca (RDKit)
+    44.95591,       // 21 Sc (RDKit)
+    47.94795,       // 22 Ti (RDKit)
+    50.94396,       // 23 V (RDKit)
+    51.94051,       // 24 Cr (RDKit)
+    54.93805,       // 25 Mn (RDKit)
+    55.93494,       // 26 Fe (RDKit)
+    58.93319,       // 27 Co (RDKit)
+    57.93534,       // 28 Ni (RDKit)
+    62.92960,       // 29 Cu (RDKit)
+    63.92914,       // 30 Zn (RDKit)
+    68.92557,       // 31 Ga (RDKit)
+    73.92118,       // 32 Ge (RDKit)
+    74.92160,       // 33 As (RDKit)
+    79.9165218,     // 34 Se; 80Se nuclide mass
+    78.91830,       // 35 Br (pre-existing)
+    83.91151,       // 36 Kr (RDKit)
+    84.91179,       // 37 Rb (RDKit)
+    87.90561,       // 38 Sr (RDKit)
+    88.90585,       // 39 Y (RDKit)
+    89.90470,       // 40 Zr (RDKit)
+    92.90638,       // 41 Nb (RDKit)
+    97.90541,       // 42 Mo (RDKit)
+    96.90636,       // 43 Tc (RDKit)
+    101.90435,      // 44 Ru (RDKit)
+    102.90550,      // 45 Rh (RDKit)
+    105.90349,      // 46 Pd (RDKit)
+    106.90510,      // 47 Ag (RDKit)
+    113.90336,      // 48 Cd (RDKit)
+    114.90388,      // 49 In (RDKit)
+    119.90219,      // 50 Sn (RDKit)
+    120.90382,      // 51 Sb (RDKit)
+    129.90622,      // 52 Te (RDKit)
+    126.90450,      // 53 I (pre-existing)
+    131.90415,      // 54 Xe (RDKit)
+    132.90545,      // 55 Cs (RDKit)
+    137.90525,      // 56 Ba (RDKit)
+    138.90635,      // 57 La (RDKit)
+    139.90544,      // 58 Ce (RDKit)
+    140.90765,      // 59 Pr (RDKit)
+    141.90772,      // 60 Nd (RDKit)
+    144.91275,      // 61 Pm (RDKit)
+    151.91973,      // 62 Sm (RDKit)
+    152.92123,      // 63 Eu (RDKit)
+    157.92410,      // 64 Gd (RDKit)
+    158.92535,      // 65 Tb (RDKit)
+    163.92917,      // 66 Dy (RDKit)
+    164.93032,      // 67 Ho (RDKit)
+    165.93029,      // 68 Er (RDKit)
+    168.93421,      // 69 Tm (RDKit)
+    173.93886,      // 70 Yb (RDKit)
+    174.94077,      // 71 Lu (RDKit)
+    179.94655,      // 72 Hf (RDKit)
+    180.94800,      // 73 Ta (RDKit)
+    183.95093,      // 74 W (RDKit)
+    186.95575,      // 75 Re (RDKit)
+    191.96148,      // 76 Os (RDKit)
+    192.96293,      // 77 Ir (RDKit)
+    194.96479,      // 78 Pt (RDKit)
+    196.96657,      // 79 Au (RDKit)
+    201.97064,      // 80 Hg (RDKit)
+    204.97443,      // 81 Tl (RDKit)
+    207.97665,      // 82 Pb (RDKit)
+    208.98040,      // 83 Bi (RDKit)
+    208.98243,      // 84 Po (RDKit)
+    209.98715,      // 85 At (RDKit)
+    222.01757,      // 86 Rn (RDKit)
+    223.01974,      // 87 Fr (RDKit)
+    226.02540,      // 88 Ra (RDKit)
+    227.02775,      // 89 Ac (RDKit)
+    232.03806,      // 90 Th (RDKit)
+    231.03588,      // 91 Pa (RDKit)
+    238.05079,      // 92 U (RDKit)
+    236.04657,      // 93 Np (RDKit)
+    238.04956,      // 94 Pu (RDKit)
+    241.05683,      // 95 Am (RDKit)
+    243.06139,      // 96 Cm (RDKit)
+    247.07031,      // 97 Bk (RDKit)
+    249.07485,      // 98 Cf (RDKit)
+    252.08298,      // 99 Es (RDKit)
+    257.09510,      // 100 Fm (RDKit)
+    258.09843,      // 101 Md (RDKit)
+    259.10103,      // 102 No (RDKit)
+    262.10963,      // 103 Lr (RDKit)
+    267.12153,      // 104 Rf (RDKit)
+    268.12545,      // 105 Db (RDKit)
+    271.13347,      // 106 Sg (RDKit)
+    270.13362,      // 107 Bh (RDKit)
+    269.13406,      // 108 Hs (RDKit)
+    278.15481,      // 109 Mt (RDKit)
+    281.16206,      // 110 Ds (RDKit)
+    281.16537,      // 111 Rg (RDKit)
+    285.17411,      // 112 Cn (RDKit)
+    284.17873,      // 113 Nh (RDKit)
+    289.19042,      // 114 Fl (RDKit)
+    288.19274,      // 115 Mc (RDKit)
+    293.20449,      // 116 Lv (RDKit)
+    292.20746,      // 117 Ts (RDKit)
+    294.21392,      // 118 Og (RDKit)
 ];
 
 /// See [`avg_mass`]'s doc comment for the fallback rationale.
@@ -534,9 +532,12 @@ pub fn rdkit_molecular_weight(mol: &Molecule) -> f64 {
 /// Uses the most-abundant isotope for each element, or the explicit nuclide
 /// mass when the atom carries a known isotope label. Unknown isotope labels
 /// use RDKit's mass-number fallback. Implicit hydrogens use the ¹H monoisotopic
-/// mass (1.00783).
+/// mass. Formal charge adjusts the neutral-atom sum by the electron rest mass,
+/// matching RDKit's `ExactMolWt` convention.
 pub fn exact_mass(mol: &Molecule) -> f64 {
+    const ELECTRON_MASS: f64 = 0.000_548_579_909_065;
     let mut mass = 0.0f64;
+    let mut formal_charge = 0i32;
     for (idx, atom) in mol.atoms() {
         if atom.wildcard {
             continue;
@@ -547,9 +548,10 @@ pub fn exact_mass(mol: &Molecule) -> f64 {
         };
         mass += m;
         let h = implicit_hcount(mol, idx);
-        mass += h as f64 * 1.00783;
+        mass += h as f64 * mono_mass(Element::H);
+        formal_charge += i32::from(atom.charge);
     }
-    mass
+    mass - f64::from(formal_charge) * ELECTRON_MASS
 }
 
 // ---------------------------------------------------------------------------
@@ -4314,11 +4316,28 @@ mod tests {
         let carbon13 = mol("[13C]");
         assert!(approx(exact_mass(&carbon13), 13.00335483507, 1e-10));
 
+        // The complete isotope table also covers nuclides beyond the former
+        // hand-written list. RDKit ExactMolWt([11CH3]CO) = 45.053298412.
+        let carbon11_ethanol = mol("[11CH3]CO");
+        assert!(approx(exact_mass(&carbon11_ethanol), 45.053298412, 1e-9));
+
         let deuterium = mol("[2H]");
         assert!(approx(exact_mass(&deuterium), 2.01410177812, 1e-10));
 
         let unknown = mol("[99C]");
         assert!(approx(exact_mass(&unknown), 99.0, 1e-12));
+    }
+
+    #[test]
+    fn exact_mass_accounts_for_formal_charge_electrons() {
+        // RDKit ExactMolWt adds one electron to a carboxylate and removes one
+        // from a quaternary ammonium relative to neutral-atom masses.
+        assert!(approx(exact_mass(&mol("CC(=O)[O-]")), 59.01385291591, 1e-9));
+        assert!(approx(
+            exact_mass(&mol("C[N+](C)(C)C")),
+            74.09642580409,
+            1e-8
+        ));
     }
 
     // Aspirin logp and Lipinski components
