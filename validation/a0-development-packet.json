@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "profile": "a0_development_classification_packet_v1",
+  "status": "development_packet_not_adoption",
+  "scope": "Public non-sealed descriptor classification and cross-binding impact evidence. This packet is not an unused-data evaluation, release acceptance, or a reason to reuse a rejected cohort.",
+  "sealed_candidates": [
+    {
+      "path": "validation/results/sealed-descriptor-evaluation-trust-eval-candidate-20260916-20260920.json",
+      "sha256": "364bfc430f1fa27a4ecb0d53d8a92bb858349b950c29dbcb42c1e43bb6e57d3e",
+      "expected_status": "evaluated_not_accepted"
+    },
+    {
+      "path": "validation/results/sealed-candidate-trust-eval-20260920-summary.json",
+      "sha256": "7a11f55cc00f1c152be0f2d4401630a688dbdc8363acc65e92e7e92b4e36bcde",
+      "expected_status": "rejected"
+    },
+    {
+      "path": "validation/results/sealed-candidate-trust-eval-20260920c-summary.json",
+      "sha256": "e59af7abed83d9dc89e0edbb7ddccbca7a65ecb90c46d6b52b9eee7cd25fb366",
+      "expected_status": "rejected"
+    }
+  ],
+  "nonsealed_classification": {
+    "path": "validation/results/descriptor-functional-group-classification-current-2026-09-20.json",
+    "sha256": "1237f3792996e0c7f6fb97d74794722d35c6d5581a8175fe26237fa0038f3a5f",
+    "expected_rows": 52,
+    "contract_differences": {
+      "molecular_weight": [
+        "seleninic_acid",
+        "carbon13_ethanol",
+        "carbon11_ethanol",
+        "deuterated_ethanol"
+      ]
+    }
+  },
+  "binding_impact": {
+    "path": "validation/results/descriptor-cross-binding-parity-7737-exposed-v1.0.13.json",
+    "sha256": "6c8ce3ef858362d884e72d9b7755f3422fc35360370d80adc5c7c82e876dd3b8",
+    "expected_rows": 7737,
+    "bindings": ["rust", "python", "node_wasm"]
+  },
+  "prohibited_reuse": [
+    "Do not use any sealed-candidate raw rows, per-row results, or derived mismatch identities for tuning.",
+    "Do not use a rejected candidate as unused validation for a later candidate.",
+    "A new adoption decision requires a separately sourced, overlap-audited, annotated freeze and one-time evaluation."
+  ]
+}
