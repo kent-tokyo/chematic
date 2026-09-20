@@ -71,6 +71,11 @@ enum Command {
         /// SMILES to parse.
         smiles: String,
     },
+    /// Parse and re-serialize supported CXSMILES metadata as an auditable JSON record.
+    Cxsmiles {
+        /// CXSMILES to parse.
+        cxsmiles: String,
+    },
     /// Calculate a compact JSON descriptor record from a SMILES string.
     Descriptors {
         /// SMILES to analyze.
@@ -514,6 +519,49 @@ fn parse_json(smiles: &str) -> Result<String, String> {
         "atoms": mol.atom_count(),
         "bonds": mol.bond_count(),
         "formal_charge": chematic_chem::formal_charge_sum(&mol),
+    })
+    .to_string())
+}
+
+fn cxsmiles_json(cxsmiles: &str) -> Result<String, String> {
+    if cxsmiles.len() > MAX_SMILES_INPUT_BYTES {
+        return Err(format!(
+            "CXSMILES input exceeds {MAX_SMILES_INPUT_BYTES} byte limit ({} bytes)",
+            cxsmiles.len()
+        ));
+    }
+    let cx = chematic_smiles::parse_cxsmiles(cxsmiles).map_err(|e| e.to_string())?;
+    if cx.mol.atom_count() > MAX_SMILES_ATOMS {
+        return Err(format!(
+            "molecule exceeds maximum atom count ({MAX_SMILES_ATOMS})"
+        ));
+    }
+
+    let atom_maps = cx
+        .mol
+        .atoms()
+        .map(|(_, atom)| atom.atom_map)
+        .collect::<Vec<_>>();
+    let marked_attachment_points = (0..cx.mol.atom_count())
+        .filter_map(|index| {
+            let atom = chematic_core::AtomIdx(index as u32);
+            cx.marked_attachment_point(atom).map(|identifier| {
+                serde_json::json!({
+                    "atom_index": index,
+                    "atom_map": cx.mol.atom(atom).atom_map,
+                    "identifier": identifier,
+                })
+            })
+        })
+        .collect::<Vec<_>>();
+    Ok(serde_json::json!({
+        "input_cxsmiles": cxsmiles,
+        "cxsmiles": chematic_smiles::write_cxsmiles(&cx),
+        "atom_count": cx.mol.atom_count(),
+        "bond_count": cx.mol.bond_count(),
+        "atom_maps": atom_maps,
+        "atom_labels": cx.atom_labels,
+        "marked_attachment_points": marked_attachment_points,
     })
     .to_string())
 }
@@ -1076,6 +1124,10 @@ fn run(cli: Cli) -> Result<(), String> {
             let json = parse_json(&smiles)?;
             write_output(None, &format!("{json}\n"))
         }
+        Command::Cxsmiles { cxsmiles } => {
+            let json = cxsmiles_json(&cxsmiles)?;
+            write_output(None, &format!("{json}\n"))
+        }
         Command::Fingerprint { smiles, algorithm } => {
             let json = fingerprint_json(&smiles, &algorithm)?;
             write_output(None, &format!("{json}\n"))
@@ -1200,7 +1252,7 @@ mod tests {
         BatchLimits, MAX_OUTPUT_BYTES, MAX_SMILES_ATOMS, MAX_SMILES_INPUT_BYTES,
         batch_canonicalize_json, batch_descriptors_json, batch_fingerprints_json,
         batch_reactions_json, batch_report_json, batch_similarity_json, batch_standardize_json,
-        batch_substructure_json, convert_text, descriptors_json, fingerprint_json,
+        batch_substructure_json, convert_text, cxsmiles_json, descriptors_json, fingerprint_json,
         parse_cli_smiles, parse_json, reaction_balance_json, reaction_fingerprint_json,
         reaction_json, reaction_match_json, reaction_similarity_json, report_json, similarity_json,
         standardize_json, substructure_json,
@@ -1219,6 +1271,19 @@ mod tests {
         let expected = chematic_smiles::parse("CCO").unwrap();
         assert_eq!(reparsed.atom_count(), expected.atom_count());
         assert_eq!(reparsed.bond_count(), expected.bond_count());
+    }
+
+    #[test]
+    fn cxsmiles_json_preserves_mapped_wildcard_attachment_identity() {
+        let value: serde_json::Value =
+            serde_json::from_str(&cxsmiles_json("[*:11][C:12] |$_AP7;$|").unwrap()).unwrap();
+        assert_eq!(value["atom_maps"], serde_json::json!([11, 12]));
+        assert_eq!(value["atom_labels"], serde_json::json!(["_AP7", null]));
+        assert_eq!(
+            value["marked_attachment_points"],
+            serde_json::json!([{"atom_index": 0, "atom_map": 11, "identifier": 7}])
+        );
+        assert_eq!(value["cxsmiles"], "[*:11][C:12] |$_AP7;$|");
     }
 
     #[test]

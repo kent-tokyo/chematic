@@ -589,10 +589,11 @@ collapseの保証にならない。V3000のENDPTS/ATTACH対応とも別契約で
   `_AP0`、符号、空白、文字混在、overflowを拒否する。`CxSmiles::marked_attachment_point()`は
   degree-one wildcardかつ有効labelだけを識別する。通常atom、多重degree wildcard、
   label文字列単体をattachment pointとして扱わない。`chematic-smiles` test suiteで検証済み。
-- [~] RDKit 2025.09.3 `Chem.MolToCXSmiles`由来fixtureで、`_AP1`、最大`u32`、`_AP0`、
-  負数、文字混在、overflow、non-dummyをCheMatic read/write/readし、labelとatom mapの
-  対応・attachment identityの保持/拒否を固定した。これはCheMatic内の回帰契約であり、
-  RDKitへの再投入、bond/stereoを含む外部semantic round-tripは未測定。
+- [x] version-pinned RDKit 2025.09.3 gateで、RDKitが書いた`_AP1`、最大`u32`、`_AP0`、
+  負数、文字混在、overflow、non-dummy、2つのdegree-one wildcardを
+  RDKit→CheMatic CLI→RDKitで検査する。atom-map keyed label、通常topology、
+  attachment identityの保持/拒否を8/8で要求する。これはMDL collapse、V3000
+  ENDPTS/ATTACH、またはgeneric CX queryの意味論を主張しない。
 - [ ] attachment identityとcollapse可能性を別判定にする。
   label番号はMDL ATTCHPT位置ではない。label-only collapseの位置1規則、direction/query/
   bond制限を仕様化し、情報を保持できないcollapseは明示的に拒否する。

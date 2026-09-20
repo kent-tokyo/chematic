@@ -84,6 +84,15 @@ running the full descriptor or alert workflow.
 chematic parse 'C[NH3+]'
 ```
 
+`cxsmiles <CXSMILES>` emits a JSON inspection record for supported metadata,
+including atom labels, atom maps, and `_AP<n>` identities recognized on
+degree-one wildcard atoms. It does not collapse attachment points or interpret
+MDL `ATTCHPT`, V3000 `ENDPTS`, or `ATTACH` semantics.
+
+```sh
+chematic cxsmiles '[*:11][C:12] |$_AP7;$|'
+```
+
 `reaction-match <REACTION_SMILES> <REACTION_SMARTS>` checks whether all
 reactant and product patterns match. It emits the normalized reaction, the
 original query, and a boolean `matched` field. Invalid reaction input or query
