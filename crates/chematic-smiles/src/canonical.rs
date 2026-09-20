@@ -799,7 +799,7 @@ impl<'a> CanonicalWriter<'a> {
     /// one of them size exactly 2, 0 cycles. (An independent run against
     /// the larger, non-committed ChEMBL corpus used for this crate's own
     /// full-corpus residual measurements — see
-    /// `docs/rfcs/canonical_smiles_residual_rfc.md` — found the same: every
+    /// `docs/canonical-ez-plan.md` — found the same: every
     /// component observed has been size exactly 2.) Every node has at most
     /// 2 candidate substituent bonds, so every component is a simple path
     /// or cycle, never a general graph. This cap gives an 8x margin over
@@ -3671,8 +3671,8 @@ mod tests {
     // sides). *Which* substituent gets the mark used to be whatever the
     // parser happened to read, so two RDKit-valid respellings of the same
     // molecule that mark different substituents produced two different
-    // canonical outputs (docs/rfcs/canonical_smiles_residual_rfc.md, Root cause
-    // 1). `resolve_ez_markers` picks the marker carrier deterministically
+    // canonical outputs; the current evidence is recorded in
+    // docs/canonical-ez-plan.md. `resolve_ez_markers` picks the marker carrier deterministically
     // from canonical rank instead. Every case below is a real molecule from
     // the residual corpus (`validation/results/
     // canonical_residual_diagnosis_summary.json`'s `permutation_invariance_
