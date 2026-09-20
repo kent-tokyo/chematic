@@ -594,6 +594,9 @@ collapseの保証にならない。V3000のENDPTS/ATTACH対応とも別契約で
   RDKit→CheMatic CLI→RDKitで検査する。atom-map keyed label、通常topology、
   attachment identityの保持/拒否を8/8で要求する。これはMDL collapse、V3000
   ENDPTS/ATTACH、またはgeneric CX queryの意味論を主張しない。
+- [x] canonical SMILESでもmapped wildcardを`[*:n]`として再出力し、mapを持つ
+  wildcardのcanonicalize→reparse→canonicalizeでidentityを固定する。これは
+  attachment collapseの可否判定を追加するものではない。
 - [ ] attachment identityとcollapse可能性を別判定にする。
   label番号はMDL ATTCHPT位置ではない。label-only collapseの位置1規則、direction/query/
   bond制限を仕様化し、情報を保持できないcollapseは明示的に拒否する。

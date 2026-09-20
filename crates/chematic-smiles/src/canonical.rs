@@ -1936,7 +1936,12 @@ impl<'a> CanonicalWriter<'a> {
         let atom = self.mol.atom(idx);
 
         if atom.wildcard {
-            self.out.push_str("[*]");
+            self.out.push_str("[*");
+            if let Some(map) = atom.atom_map {
+                self.out.push(':');
+                self.out.push_str(&map.to_string());
+            }
+            self.out.push(']');
             return;
         }
 
@@ -2689,6 +2694,23 @@ mod tests {
         let mol2 = parse(&c).unwrap();
         assert_eq!(mol.atom_count(), mol2.atom_count());
         assert!(is_stable("[*]CC"));
+    }
+
+    #[test]
+    fn canonical_wildcard_preserves_atom_map() {
+        let mol = parse("[*:17]C").unwrap();
+        let canonical = canonical_smiles(&mol);
+        assert!(
+            canonical.contains("[*:17]"),
+            "canonical wildcard output must retain its atom map: {canonical}"
+        );
+        let reparsed = parse(&canonical).unwrap();
+        let wildcard_maps = reparsed
+            .atoms()
+            .filter_map(|(_, atom)| atom.wildcard.then_some(atom.atom_map))
+            .collect::<Vec<_>>();
+        assert_eq!(wildcard_maps, vec![Some(17)]);
+        assert_eq!(canonical_smiles(&reparsed), canonical);
     }
 
     #[test]
