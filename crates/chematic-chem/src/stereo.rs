@@ -612,6 +612,39 @@ mod tests {
             .expect("atom map tag not found")
     }
 
+    fn potential_center_maps(m: &Molecule) -> std::collections::BTreeSet<u16> {
+        crate::potential_stereocenter_indices(m)
+            .into_iter()
+            .map(|idx| {
+                m.atom(idx).atom_map.expect(
+                    "the regression fixture must retain an atom-map identity for every center",
+                )
+            })
+            .collect()
+    }
+
+    #[test]
+    fn potential_stereocenters_are_invariant_to_identity_and_atom_order_renumbering() {
+        // Regression for the atom-order state bug reported as RDKit #9629.
+        // The three SMILES below are RDKit serializations of the same
+        // bicyclic amine after identity, rotation, and reversal permutations.
+        // Atom-map IDs (rather than transient AtomIdx values) make the
+        // assertion about the same chemical atom across each spelling.
+        let spellings = [
+            "[CH2:1]1[CH2:2][CH2:3][N:4]2[CH2:5][CH2:6][CH2:7][CH:8]2[CH2:9]1",
+            "[N:4]12[CH2:5][CH2:6][CH2:7][CH:8]1[CH2:9][CH2:1][CH2:2][CH2:3]2",
+            "[CH2:9]1[CH:8]2[CH2:7][CH2:6][CH2:5][N:4]2[CH2:3][CH2:2][CH2:1]1",
+        ];
+        let baseline = potential_center_maps(&mol(spellings[0]));
+        for spelling in &spellings[1..] {
+            assert_eq!(
+                potential_center_maps(&mol(spelling)),
+                baseline,
+                "potential-center identity must not depend on the SMILES atom order"
+            );
+        }
+    }
+
     #[test]
     fn enumerate_stereoisomers_atom_mapped_cip_survives_canonical_round_trip() {
         // Chemical-identity check per review: don't just compare @/@@

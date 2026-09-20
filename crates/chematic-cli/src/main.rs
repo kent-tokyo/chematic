@@ -267,9 +267,15 @@ fn convert_text(text: &str, input_format: &str, output_format: &str) -> Result<S
         "mol" => chematic_mol::parse_mol(text)
             .map(|(mol, _)| mol)
             .map_err(|e| e.to_string())?,
-        "mol_v3000" => chematic_mol::parse_mol_v3000(text)
-            .map(|(mol, _)| mol)
-            .map_err(|e| e.to_string())?,
+        "mol_v3000" => {
+            let (mol, metadata) = chematic_mol::parse_mol_v3000(text).map_err(|e| e.to_string())?;
+            if v3000_has_unmodeled_query_semantics(&mol, &metadata) {
+                return Err(format!(
+                    "unsupported V3000 query semantics for output format '{output}'; use mol_v3000 for opaque round-trip preservation"
+                ));
+            }
+            mol
+        }
         "mol2" => chematic_mol::parse_mol2(text)
             .map(|(mol, _)| mol)
             .map_err(|e| e.to_string())?,
@@ -303,6 +309,43 @@ fn convert_text(text: &str, input_format: &str, output_format: &str) -> Result<S
         "cdxml" => chematic_mol::write_cdxml(&mol, &[]),
         _ => unreachable!(),
     })
+}
+
+/// True when a V3000 record carries a query constraint outside chematic's
+/// ordinary-molecule model.  The V3000 -> V3000 path retains those attributes
+/// verbatim; conversion into an ordinary molecule format must instead refuse
+/// so callers cannot mistake a weakened query for a concrete structure.
+fn v3000_has_unmodeled_query_semantics(
+    mol: &chematic_core::Molecule,
+    metadata: &chematic_mol::MolMetadata,
+) -> bool {
+    use chematic_core::BondOrder;
+
+    let query_bond = mol.bonds().any(|(_, bond)| {
+        matches!(
+            bond.order,
+            BondOrder::QuerySingleOrDouble
+                | BondOrder::QuerySingleOrAromatic
+                | BondOrder::QueryDoubleOrAromatic
+                | BondOrder::QueryAny
+        )
+    });
+    let query_atom_attribute = metadata
+        .v3000_atom_properties
+        .iter()
+        .any(|(_, properties)| {
+            [
+                "SUBST=",
+                "RBCNT=",
+                "UNSAT=",
+                "RINGBONDCNT=",
+                "ATTCHPT=",
+                "RGROUPS=",
+            ]
+            .iter()
+            .any(|key| properties.contains(key))
+        });
+    query_bond || query_atom_attribute
 }
 
 fn read_limited_input(path: Option<&PathBuf>, max_input_bytes: usize) -> Result<String, String> {
@@ -1164,6 +1207,15 @@ mod tests {
             rewritten.contains("M  V30 2 C 1.5000 0.0000 0.0000 0"),
             "same-format V3000 conversion must not collapse coordinates: {rewritten}"
         );
+    }
+
+    #[test]
+    fn refuses_to_flatten_v3000_query_attributes_into_smiles() {
+        let block = "query\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0 SUBST=3\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n";
+        let error = convert_text(block, "mol_v3000", "smiles").unwrap_err();
+        assert!(error.contains("unsupported V3000 query semantics"));
+        let roundtrip = convert_text(block, "mol_v3000", "mol_v3000").unwrap();
+        assert!(roundtrip.contains("SUBST=3"));
     }
 
     #[test]

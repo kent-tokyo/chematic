@@ -222,11 +222,26 @@ fn parse_v3000_atom_line(
     atom_idx_map.push((v3k_idx, builder_idx));
     coords.push((x, y));
     raw_z.push(z);
-    if let Some(cfg) = parse_kv(kv_tokens, "CFG") {
-        // Writers emit atoms in builder order. Retain opaque metadata under
-        // that output id so a valid non-contiguous source id cannot make CFG
+    // Keep attributes that do not have a lossless core representation opaque.
+    // In particular, V3000 query constraints such as SUBST/RBCNT/UNSAT must
+    // survive a V3000 -> V3000 round trip.  Conversion to a format that has no
+    // matching query contract is rejected by the caller rather than silently
+    // treating such constraints as an ordinary molecule.
+    let opaque_properties = kv_tokens
+        .iter()
+        .filter(|token| {
+            !token.starts_with("CHG=")
+                && !token.starts_with("MASS=")
+                && !token.starts_with("HCOUNT=")
+        })
+        .copied()
+        .collect::<Vec<_>>()
+        .join(" ");
+    if !opaque_properties.is_empty() {
+        // Writers emit atoms in builder order. Retain attributes under that
+        // output id so a valid non-contiguous source id cannot make them
         // silently disappear on the next write.
-        atom_properties.push((builder_idx.0 + 1, format!("CFG={cfg}")));
+        atom_properties.push((builder_idx.0 + 1, opaque_properties));
     }
     Ok(())
 }
