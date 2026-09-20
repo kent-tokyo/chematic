@@ -19,9 +19,26 @@ from pathlib import Path
 
 from tpsa_functional_group_probe import CASES
 
+# This Kekule tautomer is deliberately a classification-only residual.  The
+# pass/fail TPSA atom-type probe above contains only established regressions;
+# keeping a known mismatch here preserves its public evidence without turning
+# the narrow green gate into an aggregate accuracy claim.
+CLASSIFICATION_ONLY_CASES = {
+    "2_pyridone": "O=C1C=CC=CN1",
+}
+
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CLI = ROOT / "target" / "debug" / "chematic"
+
+CASE_STRATA = {
+    "carbon13_ethanol": ["isotope"],
+    "carbon11_ethanol": ["isotope"],
+    "deuterated_ethanol": ["isotope"],
+    "2_hydroxypyridine": ["tautomer", "aromatic"],
+    "2_pyridone": ["tautomer", "kekule"],
+    "phenoxide": ["charge", "aromatic"],
+}
 
 FIELDS = {
     "molecular_weight": {
@@ -102,7 +119,7 @@ def main() -> int:
     }
     rows = []
     summary = {field: {"strict_matches": 0, "mismatches": []} for field in FIELDS}
-    for case_id, smiles in CASES.items():
+    for case_id, smiles in {**CASES, **CLASSIFICATION_ONLY_CASES}.items():
         rd_mol = Chem.MolFromSmiles(smiles)
         if rd_mol is None:
             raise RuntimeError(f"RDKit rejected public probe {case_id}: {smiles}")
@@ -123,7 +140,14 @@ def main() -> int:
                 summary[field]["strict_matches"] += 1
             else:
                 summary[field]["mismatches"].append(case_id)
-        rows.append({"id": case_id, "smiles": smiles, "descriptors": values})
+        rows.append(
+            {
+                "id": case_id,
+                "smiles": smiles,
+                "strata": CASE_STRATA.get(case_id, ["functional_group"]),
+                "descriptors": values,
+            }
+        )
 
     with cli.open("rb") as handle:
         cli_sha256 = hashlib.file_digest(handle, "sha256").hexdigest()

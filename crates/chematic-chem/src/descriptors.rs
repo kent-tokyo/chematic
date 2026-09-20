@@ -567,6 +567,20 @@ pub fn heavy_atom_count(mol: &Molecule) -> usize {
         .count()
 }
 
+/// Number of hydrogens attached to one atom for descriptor atom typing.
+///
+/// `implicit_hcount` already includes bracket H counts (for example `[NH]`),
+/// but an explicit graph atom such as `[2H]O` is a separate neighbour and
+/// therefore must be added here.  Descriptor definitions treat protium and
+/// isotopic hydrogen identically for donor/acceptor and TPSA atom types.
+fn descriptor_attached_hcount(mol: &Molecule, idx: AtomIdx) -> u8 {
+    let explicit_graph_h = mol
+        .neighbors(idx)
+        .filter(|(neighbor, _)| mol.atom(*neighbor).element.atomic_number() == 1)
+        .count() as u8;
+    implicit_hcount(mol, idx).saturating_add(explicit_graph_h)
+}
+
 // ---------------------------------------------------------------------------
 // 4. Hydrogen bond donor count
 // ---------------------------------------------------------------------------
@@ -582,7 +596,9 @@ pub fn hbd_count(mol: &Molecule) -> usize {
     mol.atoms()
         .filter(|(idx, atom)| {
             let an = atom.element.atomic_number();
-            if !(is_nitrogen(an) || is_oxygen(an) || an == 16) || implicit_hcount(mol, *idx) == 0 {
+            if !(is_nitrogen(an) || is_oxygen(an) || an == 16)
+                || descriptor_attached_hcount(mol, *idx) == 0
+            {
                 return false;
             }
             // A bare `O` is water in the SMILES model. Retain donor behavior
@@ -1285,9 +1301,9 @@ pub fn tpsa(mol: &Molecule) -> f64 {
         };
         // H count: for N use original mol (before apply_aromaticity changed valence).
         let h = if an == 7 {
-            implicit_hcount(mol, idx)
+            descriptor_attached_hcount(mol, idx)
         } else {
-            implicit_hcount(&mol_arom, idx)
+            descriptor_attached_hcount(&mol_arom, idx)
         };
         let contribution = match an {
             7 => tpsa_nitrogen(mol, idx, is_aromatic, h, orig_atom.charge, &ring_bonds),
@@ -2602,7 +2618,7 @@ pub fn tpsa_per_atom(mol: &Molecule) -> Vec<f64> {
     let mut out = vec![0.0f64; n];
     for (idx, atom) in mol.atoms() {
         let an = atom.element.atomic_number();
-        let h = implicit_hcount(mol, idx);
+        let h = descriptor_attached_hcount(mol, idx);
         out[idx.0 as usize] = match an {
             7 => tpsa_nitrogen(mol, idx, atom.aromatic, h, atom.charge, &ring_bonds),
             8 => tpsa_oxygen(mol, idx, atom.aromatic, h, atom.charge),
@@ -4186,6 +4202,15 @@ mod tests {
         // H₂O: isolated O with no heavy-atom neighbors → 31.50 (Ertl water type)
         let t = tpsa(&m);
         assert!(approx(t, 31.50, 0.1), "water TPSA = {t}");
+    }
+
+    #[test]
+    fn tpsa_explicit_deuterium_matches_hydroxyl_atom_type() {
+        // Isotopic graph-H and implicit protium represent the same O-H
+        // descriptor atom type. RDKit CalcTPSA is 20.23 for both CCO and
+        // CCO[2H].
+        assert!(approx(tpsa(&mol("CCO[2H]")), 20.23, 1e-6));
+        assert_eq!(hbd_count(&mol("CCO[2H]")), 1);
     }
 
     // -- Test 17: aniline TPSA -----------------------------------------------
