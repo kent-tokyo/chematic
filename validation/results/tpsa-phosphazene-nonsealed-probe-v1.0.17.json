@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "status": "development_regression",
+  "scope": "Public, non-sealed TPSA atom-type probe. This is not a sealed-cohort result or an adoption decision.",
+  "oracle": {
+    "engine": "RDKit",
+    "version": "2025.09.3",
+    "operation": "rdMolDescriptors.CalcTPSA(includeSandP=True)"
+  },
+  "implementation": {
+    "operation": "chematic.from_smiles(smiles).tpsa",
+    "binding": "Python source binding"
+  },
+  "cases": [
+    {
+      "id": "implicit_h_phosphazene",
+      "smiles": "CP(=N)C",
+      "rdkit_tpsa": 47.32,
+      "chematic_tpsa": 47.32
+    },
+    {
+      "id": "fully_substituted_phosphazene",
+      "smiles": "CP(=N)(C)C",
+      "rdkit_tpsa": 33.66,
+      "chematic_tpsa": 33.66
+    },
+    {
+      "id": "explicit_h_phosphazene",
+      "smiles": "[PH](=N)C",
+      "rdkit_tpsa": 23.85,
+      "chematic_tpsa": 23.85
+    },
+    {
+      "id": "implicit_h_phosphazene_with_amine",
+      "smiles": "CP(=N)N",
+      "rdkit_tpsa": 73.34,
+      "chematic_tpsa": 73.34
+    }
+  ],
+  "strict_tolerance": 1e-6,
+  "strict_matches": 4,
+  "rows": 4,
+  "result": "pass"
+}
