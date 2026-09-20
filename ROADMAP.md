@@ -29,6 +29,15 @@
   semantic round trips, SGROUP ordering/edit preservation, and bounded WASM SGROUP
   inspection. Its contract explicitly excludes coordination chemistry and ENDPTS/
   ATTACH interpretation; opaque retention is not presented as editable semantics.
+- The post-release public descriptor probe is 52/52 strict for its declared
+  N/O/S/P, charge, isotope, tautomer, and aromatic-form cases.  This narrows
+  a non-sealed regression boundary (including Kekule 2-pyridone); it neither
+  reuses nor rehabilitates any rejected 8k candidate.
+- The bounded V3000 E/Z query gate preserves RDKit's two-query/two-target
+  `HasSubstructMatch(..., useChirality=True)` table through a CheMatic round
+  trip.  Indigo 1.46.0 matches both targets for both queries in that fixture;
+  record that observed behavior as an external semantic loss, not as CheMatic
+  query compatibility or an Indigo correctness verdict.
 - All **seven accuracy packages A0–A6 still have open acceptance work**.
   Publication does not complete the planned Trust RC or independent accuracy gates.
 - The three T1.6 sealed candidates are historical, exposed evaluation inputs:
@@ -64,7 +73,7 @@ workflows, with a published compatibility contract for every claimed operation.
 |---|---|---|
 | RDKit npm/WASM and Python typing improve usability | Compare pinned public artifacts; publish Worker/cancellation/error contracts and version-specific wins and losses | Compete on installation friction alone, infer runtime safety from type annotations, or generalize one browser speed win |
 | RDKit CIP and SMILES fixes expose order-sensitive chemistry risk | Treat atom-order and SMILES-spelling permutations as release regressions; retain uncertain cases as typed refusals | Treat agreement for one spelling as stereochemical proof |
-| Indigo advances V3000, coordination, and polymers | Test actual Indigo → chematic → RDKit and reverse round trips; separate opaque retention from editable typed semantics | Start a haptic/polymer feature race before interchange semantics are proven |
+| Indigo advances V3000, coordination, and polymers | Keep version-pinned source/output truth tables beside actual Indigo → chematic → RDKit and reverse round trips; separate opaque retention, observed external loss, and editable typed semantics | Start a haptic/polymer feature race or call retained bytes query compatibility before semantics are proven |
 | CDK relaxed parsing helps interactive editors | Keep normal parsing strict; any preview mode must be a separately named incomplete-state API | Silently accept incomplete chemistry in normal APIs |
 | Open Babel parser hardening raises the security bar | Publish fixed malformed-input corpus accounting with time/memory limits and refusal reasons | Treat Rust's memory model alone as parser-security proof |
 | COSMolKit and other Pure-Rust parity libraries compete for the same headline | Preserve every input's index, terminal outcome and error stage across bindings; publish reproducible runtime and release evidence | Infer complete batch success from zero export failures or enter a feature-breadth race |
@@ -82,7 +91,7 @@ measurements must identify their actual package/source hashes.
 |---|---|---|---|
 | 1 | P0 | **A0 recovery after frozen 8k rejection**: preserve the failed candidate's evidence; on non-sealed data, classify every declared descriptor scope and binding impact; only then prepare a genuinely new freeze/unused cohort for a later one-time adoption decision | P0/P2; A0–A4 |
 | 2 | P0 preparation; external execution | **T1.5 rebaseline**: make old/new RDKit lanes executable now; run only for actually published stable Python/native/npm artifacts. Record wrapper backend, type/exception behavior, and operation configuration—not just version strings | P0/P2/P3; A1–A4 |
-| 3 | P1 | **A2 and semantic interchange closure**: resolve the four #503 canonical/E/Z components and phosphorus adjudication before new 3D breadth. Retain T5.6 selective CIP/isotope/atrop and T1.8 attachment boundaries; extend T5.7/T1.9 only as version-pinned development regressions | P1/P2/P4; A2/A5 |
+| 3 | P1 | **A2 and semantic interchange closure**: resolve the four #503 canonical/E/Z components and phosphorus adjudication before new 3D breadth. Retain T5.6 selective CIP/isotope/atrop and T1.8 attachment boundaries; extend T5.7/T1.9 from the current RDKit 2×2 E/Z table to version-pinned multi-engine truth tables, then add typed semantics before making compatibility claims | P1/P2/P4; A2/A5 |
 | 4 | P1 | **T3.7 controlled runtime**: merge and retain the pending Explorer unknown-length CSV cancellation adapter, then extend the completed row-accounting contract through Worker/stream/cancel/export/limits on 10k inputs. Publish typed install examples and a generated package scorecard only after the public binding contract and its resource evidence exist. T3.6 maintains its scoped speed win; it does not substitute for runtime controls | P0/P3/P6; A3/A4 |
 | 5 | P2; P0 for confirmed incorrectness | **T6 / A5–A6**: prepare independent gold/review and close existing 3D typing, charge, gradient, convergence, timeout, and stereo gaps. Do not add embedding breadth before fail-closed correctness evidence | P5/P6; A5/A6 |
 
