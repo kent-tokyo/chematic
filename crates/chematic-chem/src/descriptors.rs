@@ -3945,11 +3945,108 @@ fn jacobi_eigenvalues(mat: &[Vec<f64>]) -> Vec<f64> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chematic_smiles::parse;
+    use chematic_core::MoleculeBuilder;
+    use chematic_smiles::{parse, write};
 
     /// Parse a SMILES string, panicking on failure.
     fn mol(smiles: &str) -> Molecule {
         parse(smiles).unwrap_or_else(|e| panic!("failed to parse {smiles:?}: {e}"))
+    }
+
+    /// Deterministically relabel a graph while preserving original atom
+    /// identity as atom-map metadata. `permutation[new_index] = old_index`.
+    fn mapped_permutation(mol: &Molecule, permutation: &[usize]) -> Molecule {
+        assert_eq!(permutation.len(), mol.atom_count());
+        let mut builder = MoleculeBuilder::new();
+        let mut old_to_new = vec![0u32; mol.atom_count()];
+
+        for (new_index, &old_index) in permutation.iter().enumerate() {
+            let mut atom = mol.atom(AtomIdx(old_index as u32)).clone();
+            atom.atom_map = Some((old_index + 1) as u16);
+            builder.add_atom(atom);
+            old_to_new[old_index] = new_index as u32;
+        }
+
+        for (_, bond) in mol.bonds() {
+            builder
+                .add_bond(
+                    AtomIdx(old_to_new[bond.atom1.0 as usize]),
+                    AtomIdx(old_to_new[bond.atom2.0 as usize]),
+                    bond.order,
+                )
+                .expect("a relabelled simple graph cannot introduce duplicate bonds");
+        }
+        builder.build()
+    }
+
+    fn fixed_permutation(atom_count: usize, seed: u64) -> Vec<usize> {
+        let mut state = seed.wrapping_add(0x9E37_79B9_7F4A_7C15);
+        let mut permutation: Vec<_> = (0..atom_count).collect();
+        for index in (1..atom_count).rev() {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            permutation.swap(index, (state as usize) % (index + 1));
+        }
+        permutation
+    }
+
+    type MappedStereoObservation = (Vec<u16>, Vec<(u16, String)>, Vec<(u16, u16, String)>);
+
+    fn mapped_observation(mol: &Molecule, rings_first: bool) -> MappedStereoObservation {
+        if rings_first {
+            let _ = chematic_perception::find_sssr(mol);
+        }
+        let potential = potential_stereocenter_indices(mol);
+        let assignments = crate::cip::assign_cip(mol);
+        if !rings_first {
+            let _ = chematic_perception::find_sssr(mol);
+        }
+
+        let mut centers: Vec<_> = potential
+            .into_iter()
+            .map(|index| {
+                mol.atom(index)
+                    .atom_map
+                    .expect("test atoms carry original maps")
+            })
+            .collect();
+        centers.sort_unstable();
+
+        let mut cip: Vec<_> = assignments
+            .assignments
+            .into_iter()
+            .map(|(index, code)| {
+                (
+                    mol.atom(index)
+                        .atom_map
+                        .expect("test atoms carry original maps"),
+                    format!("{code:?}"),
+                )
+            })
+            .collect();
+        cip.sort_unstable();
+
+        let mut bonds: Vec<_> = mol
+            .bonds()
+            .map(|(_, bond)| {
+                let first = mol
+                    .atom(bond.atom1)
+                    .atom_map
+                    .expect("test atoms carry original maps");
+                let second = mol
+                    .atom(bond.atom2)
+                    .atom_map
+                    .expect("test atoms carry original maps");
+                (
+                    first.min(second),
+                    first.max(second),
+                    format!("{:?}", bond.order),
+                )
+            })
+            .collect();
+        bonds.sort_unstable();
+        (centers, cip, bonds)
     }
 
     // Tolerance helpers.
@@ -4908,6 +5005,82 @@ mod tests {
         // is not. Keep the chemically-derived count fixed independently of
         // input storage order and ring-cache implementation details.
         assert_eq!(num_stereocenters(&mol("C1CCN2CCCC2C1")), 1);
+    }
+
+    #[test]
+    fn rdkit_9629_class_is_invariant_across_relabel_clone_reparse_and_call_order() {
+        // This imports the *failure class* of RDKit #9629, not a claim that
+        // this molecule reproduces RDKit's historical result. A potential
+        // center must remain attached to the same atom identity across graph
+        // storage permutations, cache initialization order, cloning, and
+        // SMILES serialization. The ordinary saturated tertiary amine is a
+        // necessary negative control: it must not become a center merely by
+        // reordering or by calling ring perception first.
+        let source = mol("C1CCN2CCCC2C1");
+        let baseline = mapped_observation(
+            &mapped_permutation(&source, &(0..source.atom_count()).collect::<Vec<_>>()),
+            true,
+        );
+        assert_eq!(
+            baseline.0.len(),
+            1,
+            "bridgehead is the one potential center"
+        );
+        assert!(
+            baseline.1.is_empty(),
+            "unspecified input has no assigned CIP code"
+        );
+
+        for seed in 0..32u64 {
+            let permuted =
+                mapped_permutation(&source, &fixed_permutation(source.atom_count(), seed));
+            let reparsed = parse(&write(&permuted)).expect("mapped permutation must round-trip");
+            for (label, candidate) in [
+                ("permuted", permuted.clone()),
+                ("cloned", permuted.clone()),
+                ("reparsed", reparsed),
+            ] {
+                for rings_first in [false, true] {
+                    assert_eq!(
+                        mapped_observation(&candidate, rings_first),
+                        baseline,
+                        "seed {seed}, {label}, rings_first={rings_first} changed mapped stereo observation"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn rdkit_9629_class_keeps_ordinary_tertiary_amine_negative_control() {
+        let source = mol("CN(C)CC");
+        let baseline = mapped_observation(
+            &mapped_permutation(&source, &(0..source.atom_count()).collect::<Vec<_>>()),
+            true,
+        );
+        assert!(
+            baseline.0.is_empty(),
+            "ordinary tertiary amine is not a potential center"
+        );
+        assert!(baseline.1.is_empty());
+
+        for seed in 0..32u64 {
+            let permuted =
+                mapped_permutation(&source, &fixed_permutation(source.atom_count(), seed));
+            let reparsed = parse(&write(&permuted)).expect("mapped permutation must round-trip");
+            for candidate in [permuted.clone(), reparsed] {
+                assert_eq!(
+                    mapped_observation(&candidate, false),
+                    baseline,
+                    "seed {seed}"
+                );
+                assert_eq!(
+                    mapped_observation(&candidate, true),
+                    baseline,
+                    "seed {seed}"
+                );
+            }
+        }
     }
 
     #[test]
