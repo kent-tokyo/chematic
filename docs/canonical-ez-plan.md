@@ -25,11 +25,17 @@ Two bounded writer searches are now rejected:
 2. PR #599 additionally exhausts every candidate ring-marker-side assignment
    together with every such DFS priority.  Their geometry-preserving output
    sets still have an empty intersection.
+3. The current branch additionally fixes the canonical DFS skeleton and
+   exhausts every component candidate bond as plain, `/`, or `\\`, together
+   with both legal occurrences of every ring token.  After semantic reparse,
+   the three residual families still have no common output.
 
 These results rule out selecting a raw atom index, a raw bond index, a local
-DFS preference, or one ring-marker-side rule as the canonical tie-breaker.
-They do not prove that SMILES cannot encode the molecules; they bound only the
-current writer's local degrees of freedom.
+DFS preference, one ring-marker-side rule, or an independently assigned
+candidate-slot polarity as the canonical tie-breaker.  They do not prove that
+SMILES cannot encode the molecules, nor that a different canonical skeleton or
+encoding model cannot do so; they bound the current skeleton and every legal
+directional occurrence of its coupled candidate bonds.
 
 ## Current implementation stage
 
@@ -46,9 +52,12 @@ silently alter their output contract.
 
 A test-only canonical-DFS inventory now also shows that the three residual
 families expose the same eligible tree and ring-token output slots across
-their equivalent spellings.  This localizes the remaining work to assigning
-the extracted geometry relations to those slots as one component plan; it is
-not a justification to pick a slot by parse order.
+their equivalent spellings.  The direct full-slot enumeration rejects every
+plain/directional polarity and legal ring occurrence for those slots.  Thus a
+component plan over the current skeleton is not yet an implementation answer;
+the next design must identify a representation-independent skeleton or an
+additional legal encoding degree of freedom, while preserving the fail-closed
+stable-key boundary.
 
 ## Required architecture
 

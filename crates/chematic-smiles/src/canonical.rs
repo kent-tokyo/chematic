@@ -681,6 +681,13 @@ pub(crate) struct CanonicalWriter<'a> {
     /// acceptance rule.
     #[cfg(test)]
     traversal_bond_preference: Option<HashMap<BondIdx, bool>>,
+    /// Test-only complete directional-token assignment.  Unlike
+    /// `ez_marker`, this deliberately bypasses carrier election and the
+    /// component-global normalization anchor so an exhaustive diagnostic can
+    /// ask whether the already-fixed canonical skeleton has *any* semantic
+    /// E/Z encoding.  Production never constructs this map.
+    #[cfg(test)]
+    direct_ez_orders: Option<HashMap<BondIdx, BondOrder>>,
     /// Test-only parent edge for the canonical DFS skeleton.  This exposes
     /// the single write occurrence of each tree edge to the #503 output-slot
     /// diagnostic without changing production serialization.
@@ -733,6 +740,8 @@ impl<'a> CanonicalWriter<'a> {
             #[cfg(test)]
             traversal_bond_preference: None,
             #[cfg(test)]
+            direct_ez_orders: None,
+            #[cfg(test)]
             canonical_tree_parent: vec![None; n],
         }
     }
@@ -775,6 +784,12 @@ impl<'a> CanonicalWriter<'a> {
     /// `order` directly, or the two sites can disagree on which bond a
     /// moved E/Z marker landed on.
     fn effective_order(&self, bidx: BondIdx) -> BondOrder {
+        #[cfg(test)]
+        if let Some(orders) = &self.direct_ez_orders
+            && let Some(&order) = orders.get(&bidx)
+        {
+            return order;
+        }
         if let Some(&resolved) = self.ez_marker.get(&bidx) {
             return resolved;
         }
@@ -1675,6 +1690,11 @@ impl<'a> CanonicalWriter<'a> {
     /// this function's *return value* for its own occurrence -- passing
     /// `from_atom` here does not do that; it only seeds the anchor.
     fn normalize_ez(&mut self, bidx: BondIdx, from_atom: AtomIdx) -> BondOrder {
+        #[cfg(test)]
+        if self.direct_ez_orders.is_some() {
+            let _ = from_atom;
+            return self.effective_order(bidx);
+        }
         let order = self.effective_order(bidx);
         if !matches!(order, BondOrder::Up | BondOrder::Down) {
             return order;
@@ -1782,7 +1802,14 @@ impl<'a> CanonicalWriter<'a> {
         // Avoid scanning for stereo alkene ends and building union-find
         // groups for the common non-stereo case. `normalize_ez` remains safe
         // for ordinary bonds with an empty group map.
-        if self.has_directional_alkene_candidate() {
+        #[cfg(test)]
+        let has_direct_plan = self.direct_ez_orders.is_some();
+        #[cfg(not(test))]
+        let has_direct_plan = false;
+
+        if has_direct_plan {
+            self.ez_geometry_facts = self.extract_ez_geometry_facts();
+        } else if self.has_directional_alkene_candidate() {
             // Pick, for every stereo alkene end, which substituent carries the
             // marker, then group connected E/Z systems.
             self.resolve_ez_markers();
@@ -1793,7 +1820,7 @@ impl<'a> CanonicalWriter<'a> {
         // either global polarity.  Compare both polarities (bounded to eight
         // components) before the normal write so the result does not depend
         // on which physical aromatic edge the input happened to stash.
-        if self.has_aromatic_direction_stash() && !self.ez_group.is_empty() {
+        if !has_direct_plan && self.has_aromatic_direction_stash() && !self.ez_group.is_empty() {
             let roots = self.ez_group.values().copied().collect::<HashSet<_>>();
             if roots.len() <= 8 {
                 let roots = roots.into_iter().collect::<Vec<_>>();
@@ -4548,6 +4575,115 @@ mod tests {
                 common.is_empty(),
                 "{input}: local writer plan unexpectedly found {common:?}; \
                  promote it from a probe only after its full contract is verified"
+            );
+        }
+    }
+
+    /// Local traversal choices cannot solve the #503 residuals.  This probe
+    /// holds the canonical DFS skeleton fixed, then exhausts the remaining
+    /// grammar-level freedom directly: every component candidate bond can be
+    /// plain, `/`, or `\\`, and every ring candidate may print its token at
+    /// either legal digit occurrence.  Candidates are reparsed and retained
+    /// only when their complete E/Z geometry fingerprint agrees with the
+    /// source.  It is intentionally test-only: a future production solver
+    /// must derive a rank-keyed component plan, not adopt a parse-indexed
+    /// enumeration.
+    #[test]
+    fn issue503_full_slot_polarity_space_has_no_common_output() {
+        let observed_pairs = [
+            (
+                r"c/3(c(/c(c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+                r"c3(c(c(/c3=N/CC)=N\[C@@H](Cc1ccc(NC(c2c(Cl)cncc2Cl)=O)cc1)C(O)=O)O)O",
+            ),
+            (
+                r"c/1(c(/c(c1=N\[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+                r"c1(c(c(/c1=N/[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+            ),
+            (
+                r"c/1(O)c(O)/c(=N\[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)c1=N\CCOC",
+                r"c1(O)c(O)c(=N/[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)\c1=N\CCOC",
+            ),
+        ];
+
+        for (&input, &(observed_a, observed_b)) in EZ_SHARED_CARRIER_HELD_OUT_RESIDUALS
+            .iter()
+            .zip(observed_pairs.iter())
+        {
+            let mut per_spelling = Vec::new();
+            for spelling in [input, observed_a, observed_b] {
+                let mol = parse(spelling).unwrap();
+                let geometry = geometry_fingerprint(&mol);
+                let ends = CanonicalWriter::compute_stereo_alkene_ends(&mol);
+                let mut component_bonds: Vec<_> = CanonicalWriter::coupling_components(&mol, &ends)
+                    .into_iter()
+                    .flatten()
+                    .flat_map(|end| CanonicalWriter::substituents(&mol, end))
+                    .map(|(_, bond)| bond)
+                    .collect();
+                component_bonds.sort_unstable_by_key(|bond| bond.0);
+                component_bonds.dedup();
+                assert!(component_bonds.len() <= 8, "diagnostic bound exceeded");
+
+                let (ranks, _) = winning_individualized_ranks(&mol);
+                let mut skeleton = CanonicalWriter::new(&mol, &ranks);
+                skeleton.find_ring_closures(&skeleton.canonical_atom_list());
+                let ring_component_bonds: Vec<_> = component_bonds
+                    .iter()
+                    .copied()
+                    .filter(|bond| skeleton.ring_bonds[bond.0 as usize])
+                    .collect();
+                assert!(
+                    ring_component_bonds.len() <= 8,
+                    "ring-side diagnostic bound exceeded"
+                );
+
+                let mut outputs = HashSet::new();
+                let polarity_plans = 3usize.pow(component_bonds.len() as u32);
+                for polarity_code in 0..polarity_plans {
+                    let mut code = polarity_code;
+                    let orders: HashMap<BondIdx, BondOrder> = component_bonds
+                        .iter()
+                        .map(|&bond| {
+                            let choice = code % 3;
+                            code /= 3;
+                            let order = match choice {
+                                0 => CanonicalWriter::plain_order(mol.bond(bond).order),
+                                1 => BondOrder::Up,
+                                2 => BondOrder::Down,
+                                _ => unreachable!(),
+                            };
+                            (bond, order)
+                        })
+                        .collect();
+                    for close_mask in 0usize..(1usize << ring_component_bonds.len()) {
+                        let mut writer = CanonicalWriter::new(&mol, &ranks);
+                        writer.direct_ez_orders = Some(orders.clone());
+                        writer.ring_marker_on_close = ring_component_bonds
+                            .iter()
+                            .enumerate()
+                            .filter_map(|(index, &bond)| {
+                                ((close_mask & (1 << index)) != 0).then_some(bond)
+                            })
+                            .collect();
+                        let output = writer.write_all();
+                        let reparsed = parse(&output).unwrap_or_else(|e| {
+                            panic!("{spelling}: full-slot candidate did not parse: {e}: {output}")
+                        });
+                        if geometry_fingerprint(&reparsed) == geometry {
+                            outputs.insert(output);
+                        }
+                    }
+                }
+                per_spelling.push(outputs);
+            }
+            let common = per_spelling
+                .into_iter()
+                .reduce(|left, right| left.intersection(&right).cloned().collect())
+                .unwrap();
+            assert!(
+                common.is_empty(),
+                "{input}: full slot/polarity enumeration found {common:?}; \
+                 promote the concrete plan only after its rank-keyed production contract is verified"
             );
         }
     }
