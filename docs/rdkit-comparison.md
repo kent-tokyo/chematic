@@ -47,8 +47,8 @@ The opt-in `Mol.rdkit_mw`, `Mol.rdkit_hba`, and
 changing the native descriptor defaults. In the v1.0.13 source-built gate,
 the current source-built v2 descriptor run matches RDKit for MW and HBA on
 5,000/5,000 rows, including the known explicit-isotope row. The current code
-supports a finite table of common explicit isotopes and rejects unknown labels
-without approximation. The full per-field
+uses RDKit-compatible nuclide masses where available and, for an unlisted but
+syntactically valid isotope label, RDKit's mass-number fallback. The full per-field
 distribution and 12-case structural holdout are recorded in
 [`descriptor-rdkit-diagnostics-v1.0.13.json`](../validation/results/descriptor-rdkit-diagnostics-v1.0.13.json)
 and [`descriptor-rdkit-holdout-v1.0.13.json`](../validation/results/descriptor-rdkit-holdout-v1.0.13.json).
