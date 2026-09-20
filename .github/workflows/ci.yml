@@ -34,6 +34,8 @@ jobs:
         run: cargo test --workspace --lib --quiet
       - name: Shared cross-binding manifest
         run: python3 scripts/check_cross_binding_manifest.py
+      - name: A0 development packet
+        run: python3 scripts/check_a0_development_packet.py
       - name: Static binding surface inventory
         run: python3 scripts/check_binding_surface.py > /dev/null
       - name: Release documentation consistency

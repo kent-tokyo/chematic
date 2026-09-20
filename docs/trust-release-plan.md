@@ -656,7 +656,7 @@ CheMaticの不具合や優位性が確定したことにはならない。
   `validation/results/sealed-candidate-trust-eval-*-summary.json` に固定した。
 - [x] 全raw/splitはlocal-onlyかつ露出済みとして明記した。再実行・tuning・次candidateの
   未使用評価へ流用しない。raw分子一覧を調査ログやrepositoryへ出さない。
-- [ ] **非sealedの開発データだけで** A0の宣言済み範囲を分類する。封印結果から特定入力や
+- [x] **非sealedの開発データだけで** A0の宣言済み範囲を分類する。封印結果から特定入力や
   閾値へ合わせ込まず、独立の既知/生成テストと仕様根拠を使う。修正候補ごとに、影響binding
   回帰、変更影響表、公開主張への影響を記録する。descriptorは官能基・電荷・同位体・
   tautomer/芳香族性の非sealedな層別を先に固定し、全体一致率だけを次freezeの根拠にしない。
@@ -670,7 +670,11 @@ CheMaticの不具合や優位性が確定したことにはならない。
   宣言済み差であり、CLIのnative massをRDKit互換値と偽装しない。結果は
   `validation/results/tpsa-functional-group-probe-current-2026-09-20.json`と
   `validation/results/descriptor-functional-group-classification-current-2026-09-20.json`に
-  固定する。これは公開development分類であり、unused採用評価ではない。
+  固定する。これは公開development分類であり、unused採用評価ではない。三つの却下summary、
+  52-row分類、7,737-row Rust/Python/Node-WASM binding影響を
+  `validation/a0-development-packet.json` と
+  `scripts/check_a0_development_packet.py` がCIでまとめて検証する。packetはraw rowを
+  埋め込まず、候補の採用や次freezeの評価を主張しない。
 - [ ] 次の採用判断が必要になった時点で、別source・別抽出・重複除外・source hash・
   attestation・annotated tagを新規に固定する。新しいcohortを作るだけでは合格とせず、
   candidate buildとfixed oracleで一度だけ実行する。
