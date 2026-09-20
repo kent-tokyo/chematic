@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Record a V3000 E/Z query 2x2 truth table through chematic.
+"""Record a V3000 E/Z query truth table through chematic.
 
 RDKit supplies E and Z V3000 inputs with 2D coordinates.  For each query,
 this runner checks both E and Z targets in Indigo before and after the bounded
@@ -27,7 +27,15 @@ from rdkit import Chem
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CLI = ROOT / "target" / "debug" / "chematic"
-CASES = {"e": "C/C=C/C", "z": "C/C=C\\C"}
+# Keep both the symmetric 2-butene pair and a mixed-substituent pair. The
+# latter prevents a table pass from being an artefact of swapping identical
+# methyl substituents around the double bond.
+CASES = {
+    "e": "C/C=C/C",
+    "z": "C/C=C\\C",
+    "e_mixed": "Cl/C=C/Br",
+    "z_mixed": "Cl/C=C\\Br",
+}
 
 
 def canonical_isomeric(molblock: str) -> str | None:
@@ -136,7 +144,7 @@ def main() -> int:
     indigo_semantic_loss = [row["query"] for row in rows if not row.get("indigo_matches_expected_stereo", False)]
     result = {
         "schema_version": 1,
-        "profile": "v3000_indigo_ez_query_truth_table_v1",
+        "profile": "v3000_indigo_ez_query_truth_table_v2",
         "rdkit_version": Chem.rdBase.rdkitVersion,
         "indigo_version": Indigo().version(),
         "cli_name": cli.name,
@@ -150,7 +158,7 @@ def main() -> int:
         "chematic_roundtrip_gate_passed": not (
             conversion_failures or identity_failures or rdkit_query_failures or table_failures
         ),
-        "scope": "Two E/Z V3000 queries and two E/Z targets, checked before and after bounded chematic V3000 round trip with RDKit and Indigo query predicates.",
+        "scope": "Four E/Z V3000 queries (symmetric 2-butene plus mixed-substituent chloro/bromo alkene) and four E/Z targets, checked before and after bounded chematic V3000 round trip with RDKit and Indigo query predicates.",
         "not_claimed": [
             "Indigo query E/Z semantic correctness",
             "typed V3000 query interpretation by chematic",

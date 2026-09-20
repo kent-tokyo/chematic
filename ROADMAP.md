@@ -33,7 +33,7 @@
   N/O/S/P, charge, isotope, tautomer, and aromatic-form cases.  This narrows
   a non-sealed regression boundary (including Kekule 2-pyridone); it neither
   reuses nor rehabilitates any rejected 8k candidate.
-- The bounded V3000 E/Z query gate preserves RDKit's two-query/two-target
+- The bounded V3000 E/Z query gate preserves RDKit's four-query/four-target
   `HasSubstructMatch(..., useChirality=True)` table through a CheMatic round
   trip.  Indigo 1.46.0 matches both targets for both queries in that fixture;
   record that observed behavior as an external semantic loss, not as CheMatic
@@ -91,7 +91,7 @@ measurements must identify their actual package/source hashes.
 |---|---|---|---|
 | 1 | P0 | **A0 recovery after frozen 8k rejection**: preserve the failed candidate's evidence; on non-sealed data, classify every declared descriptor scope and binding impact; only then prepare a genuinely new freeze/unused cohort for a later one-time adoption decision | P0/P2; A0–A4 |
 | 2 | P0 preparation; external execution | **T1.5 rebaseline**: make old/new RDKit lanes executable now; run only for actually published stable Python/native/npm artifacts. Record wrapper backend, type/exception behavior, and operation configuration—not just version strings | P0/P2/P3; A1–A4 |
-| 3 | P1 | **A2 and semantic interchange closure**: resolve the four #503 canonical/E/Z components and phosphorus adjudication before new 3D breadth. Retain T5.6 selective CIP/isotope/atrop and T1.8 attachment boundaries; extend T5.7/T1.9 from the current RDKit 2×2 E/Z table to version-pinned multi-engine truth tables, then add typed semantics before making compatibility claims | P1/P2/P4; A2/A5 |
+| 3 | P1 | **A2 and semantic interchange closure**: resolve the four #503 canonical/E/Z components and phosphorus adjudication before new 3D breadth. Retain T5.6 selective CIP/isotope/atrop and T1.8 attachment boundaries; extend T5.7/T1.9 from the current RDKit 4×4 E/Z table to version-pinned multi-engine truth tables, then add typed semantics before making compatibility claims | P1/P2/P4; A2/A5 |
 | 4 | P1 | **T3.7 controlled runtime**: merge and retain the pending Explorer unknown-length CSV cancellation adapter, then extend the completed row-accounting contract through Worker/stream/cancel/export/limits on 10k inputs. Publish typed install examples and a generated package scorecard only after the public binding contract and its resource evidence exist. T3.6 maintains its scoped speed win; it does not substitute for runtime controls | P0/P3/P6; A3/A4 |
 | 5 | P2; P0 for confirmed incorrectness | **T6 / A5–A6**: prepare independent gold/review and close existing 3D typing, charge, gradient, convergence, timeout, and stereo gaps. Do not add embedding breadth before fail-closed correctness evidence | P5/P6; A5/A6 |
 
