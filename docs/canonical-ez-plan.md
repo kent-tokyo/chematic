@@ -59,10 +59,14 @@ families expose the same eligible tree and ring-token output slots across
 their equivalent spellings.  The direct full-slot enumeration rejects every
 plain/directional polarity and legal ring occurrence for those slots.  Thus a
 component plan over the current skeleton is not yet an implementation answer.
-Nor is pre-ranking enumeration of the existing carrier spellings.  The next
-design must identify a representation-independent skeleton or an additional
-legal encoding degree of freedom, while preserving the fail-closed stable-key
-boundary.
+Nor is pre-ranking enumeration of the existing carrier spellings.  A full
+rank-keyed tree/ring signature and the canonical text with only `/` and `\\`
+removed are also invariant across the three spellings.  The remaining design
+target is therefore not skeleton selection: it is a canonical-slot direction
+orientation that derives each printed token from the extracted E/Z fact and
+the slot's canonical traversal orientation, never from the parser-side raw
+direction anchor.  The fail-closed stable-key boundary remains until that map
+has a semantic reparse proof.
 
 ## Required architecture
 
@@ -77,10 +81,12 @@ The implementation must separate chemical geometry from its SMILES spelling.
 2. **Build the canonical skeleton.** Determine the canonical atom order, DFS
    tree, branches, ring edges, and ring-digit occurrences without consuming
    directional markers.  Each eligible directional token position is an
-   explicit output slot with its traversal orientation.
+   explicit output slot with its canonical traversal orientation.
 3. **Solve one component plan.** Choose output slots and `/`/`\` polarity for
-   the full coupled component simultaneously.  Constraints must preserve every
-   extracted geometry fact, respect SMILES ring-token syntax, and prevent a
+   the full coupled component simultaneously.  Compute polarity in the slot's
+   canonical orientation from the extracted geometry fact; do not re-orient a
+   newly chosen token through the parser-side raw direction anchor.  Constraints
+   must preserve every fact, respect SMILES ring-token syntax, and prevent a
    shared slot from receiving contradictory assignments.  The solution is
    selected only from canonical-rank and output-slot keys; it must never use
    parse-time atom or bond indices.
