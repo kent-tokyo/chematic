@@ -640,8 +640,10 @@ CheMaticの不具合や優位性が確定したことにはならない。
 
 ### 2. T1.5 / T3.4 — 次期RDKit rebaseline（P0準備、2–4実働日＋公開待ち）
 
-- [ ] 既存oracle 2025.09.3/2026.03.6と次のstableを別laneに固定し、source/package/
-  runtime/wrapper backend、設定、corpus hash、toolchain/OSをmanifestへ記録する。
+- [x] 既存oracle 2025.09.3/2026.03.6と次のstableを別laneに固定する
+  `validation/rdkit_rebaseline_manifest.json` と検証scriptを追加した。
+- [ ] source/package/runtime/wrapper backend、設定、corpus hash、toolchain/OSを
+  実測laneごとにmanifestへ記録する。
   Python/native/npmは個別に入手確認。欠測laneはunavailableとして待機し、先に出た
   Python packageの版から公式RDKit.js公開を推測しない。
 - [ ] 同一の露出済みcorpusでSMILES/CIP/SMARTS/Morganとbindingを比較する。
