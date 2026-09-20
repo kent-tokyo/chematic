@@ -74,11 +74,9 @@ measurements must identify their actual package/source hashes.
 |---|---|---|---|
 | 1 | P0 | **A0 recovery after frozen 8k rejection**: preserve the failed candidate's evidence, classify its declared-scope gaps without reusing the exposed holdout, and prepare a new freeze/unused cohort for a later adoption decision | P0/P2; A0–A4 |
 | 2 | P0 preparation; external execution | **T1.5 rebaseline**: prepare paired old/new RDKit lanes now; run when the actual stable Python/native/npm artifacts exist. Record wrapper backend and API behavior, not just version strings | P0/P2/P3; A1–A4 |
-| 3 | P1; P0 if reproduced corruption | **T5.7 + T1.9**: identity-renumber/ring-state stereo regression and V3000 E/Z query truth tables; preserve typed unsupported boundaries | P1/P2/P4; A2/A4 |
-| 4 | P1 | **T3.7 BatchResult contract**: versioned complete row accounting, original index, stage, reason, explicit completion and all-success semantics across Rust/Python/Node/WASM | P0/P3; A4 |
-| 5 | P1 | **A2 closure**: four #503 canonical/E/Z components and phosphorus adjudication; retain T5.6 selective CIP/isotope/atrop, T1.8 attachment and T4.6 binding regressions | P1/P2/P4; A2/A5 |
-| 6 | P1 | **T3.1–T3.4/T2 runtime and release evidence**: 10k Worker/cancel/offline/limits, typed install examples, current package scorecard and dashboard. T3.6 maintains the scoped speed win and audits remaining protocol conditions | P0/P3/P6; A3/A4 |
-| 7 | P2; P0 for confirmed incorrectness | **T6 / A5–A6**: independent gold/review and existing 3D typing, charge, gradient, convergence, timeout and stereo gaps | P5/P6; A5/A6 |
+| 3 | P1 | **A2 closure**: four #503 canonical/E/Z components and phosphorus adjudication; retain T5.6 selective CIP/isotope/atrop and T1.8 attachment boundaries. T5.7/T1.9 and T4.6 binding regressions are implemented development gates, not a broad interoperability claim | P1/P2/P4; A2/A5 |
+| 4 | P1 | **T3.1–T3.4/T2 runtime and release evidence**: build on the completed T3.7 row-accounting contract with 10k Worker/cancel/offline/limits, typed install examples, current package scorecard and dashboard. T3.6 maintains the scoped speed win and audits remaining protocol conditions | P0/P3/P6; A3/A4 |
+| 5 | P2; P0 for confirmed incorrectness | **T6 / A5–A6**: independent gold/review and existing 3D typing, charge, gradient, convergence, timeout and stereo gaps | P5/P6; A5/A6 |
 
 T3/T4/T5 can proceed in parallel once their dependencies pass. Public-channel
 inventory and A5 gold preparation continue alongside frozen-packet verification.
@@ -158,7 +156,7 @@ These extend the same product areas; they do not introduce new Phase numbers.
 - [ ] Replace remaining MD/UFF/MMFF94 finite-difference production paths after same-domain analytic energy, gradient, and stereo soundness gates.
 - [ ] Replace remaining periodic neighbor all-pairs paths after exact result-set and cutoff parity.
 - [ ] Optimize symmetry-heavy canonical and SMARTS search after broader exact-output, invariance, and budget-exhaustion gates.
-- [ ] Extend browser and agent adversarial coverage for cancellation, malformed records, limits, stable errors, and supported engines; T3.7 requires complete batch row accounting across bindings and export.
+- [ ] Extend browser and agent adversarial coverage for cancellation, malformed records, limits, stable errors, and supported engines. T3.7 row accounting now covers Rust/Python/Node/WASM; Worker, streaming, cancellation, export and resource-budget exits remain.
 - [ ] Expand reaction/SMARTS/medicinal-chemistry breadth after the shared P0–P3 primitives have current evidence.
 - [ ] Add curated reaction/query precision, recall, invalid-product, timeout, and ambiguity reports with independent oracles.
 - [ ] Close MMFF94/UFF typing, charge, parameter, convergence, and stereo gaps with same-coordinate comparisons.

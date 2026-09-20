@@ -358,8 +358,9 @@ historical benchmarkの版は維持し、「全ての数字を最新版にする
   速度gateは統合済み。公開package再測定、当初20対×3セッション/層別bootstrapと
   実施済み10–20対/t区間の差分、p95/resource条件は別途照合して残す。
   native ECFPと互換Morganは別集計、正しさ/coverageの退行は禁止。
-- [ ] T3.7 BatchResultをversionedな製品契約へ拡張する。第7節で件数・状態遷移・
-  中断・stage・original index・全binding受入条件を定義する。
+- [~] T3.7の既知長batch契約はPR #559で全bindingに固定済み。第7節の残作業は
+  中断・stream・Worker/MCP adapter・resource測定であり、基礎会計を未実装として
+  扱わない。
 
 1万件の暫定予算: timeoutを含む全件会計、cancel応答p95 ≤250ms、
 UI heartbeat gap p95 ≤100ms、batch working set ≤256MiB
@@ -470,9 +471,9 @@ A2全出口・A5独立判定の完了条件は変更しない。
 
 | 時期 | 主な作業 | レビューで確認するもの |
 |---|---|---|
-| W1: 9/14–9/20 実績 | T4.6 core、ordinary V3000、開発stereo suite、T3.6 source速度gate | 実装済み境界と残る受入条件。8k scoreは未実行 |
-| W2: 9/21–9/27 | T1.6/A0 packet監査→条件成立時一度評価、T5.7/T1.9再現、T1.5準備 | 全行会計、原子対応/真理値表、rebaseline manifest。sealed不足はblockerとして記録 |
-| W3: 9/28–10/4 | T3.7 batch契約、A2残差、T1.5新artifactがあれば比較 | binding横断の欠落/重複0、旧/新版の差分。未公開artifactは待機 |
+| W1: 9/14–9/20 実績 | T4.6 core＋binding回帰、ordinary V3000、開発stereo suite、T3.6 source速度gate、T3.7既知長batch契約 | 実装済み境界と残る受入条件。8k scoreは一度実行され、候補は不採用 |
+| W2: 9/21–9/27 | A0不採用記録の保全、T5.7/T1.9残回帰、T1.5実測lane準備 | 新freezeを混ぜない全行会計、原子対応/真理値表、artifactごとのprovenance。外部artifact不足はunavailableとして記録 |
+| W3: 9/28–10/4 | A2残差、T3.7のstream/cancel/adapter、T1.5新artifactがあれば比較 | canonical fail-closed境界、binding横断の欠落/重複0、旧/新版の差分。未公開artifactは待機 |
 | W4: 10/5–10/11 | T3 runtime、T2同期、T3.6残条件とRC監査 | 10k cancel/offline/資源、配布候補hash、Trust RC合否とblocker一覧 |
 | W5–W8: 10/12–11/8 | A1–A4残差、10万件容量、複数browser/OS、A5依頼packet | 操作別compat達成、coverage・速度・memoryの測定 |
 | W9–W12: 11/9–12/6 | A5独立判定、A6既存gap、維持運用演習 | 宣言範囲の同等性判断、3D別profile、次期backlog |
@@ -529,8 +530,11 @@ T3の1万件導入ゲート、T4固定corpus、T5既存安全性回帰・公開s
 - [x] 99/100/101境界のparser fixtureと、121 closureを持つ12×12 graphの
   write→parse count-preservationを追加。`cargo test -p chematic-smiles --lib`は
   226 passed。小番号と既存stereo回帰も同じsuiteで通過した。
-- [ ] Rust/Python/Node/WASMの同じfixture、canonical writer、atom順入替、
-  timeout/メモリ制限を通す。これはbinding/release gateであり、上のcore安全性完了とは別。
+- [x] PR #562で同じvalid/invalid fixtureをRust/Python/Node/WASMの共有契約へ追加し、
+  `C%(100)CC%(100)`の受理と、短い括弧形式・閉じ括弧欠落・曖昧な旧`%100`の拒否を
+  binding横断で固定した。
+- [ ] canonical writerのatom順入替とtimeout/メモリ制限を通す。これは残る
+  canonical/resource gateであり、上のparser binding完了とは別。
 
 ### 2. T1.6 / T1.5 — 精度とoracleの版を分離する（P0、目安2–4実働日）
 
@@ -661,11 +665,15 @@ CheMaticの不具合や優位性が確定したことにはならない。
 
 ### 3. T5.7 / T1.9 — 競合報告由来の回帰（P1、2–4実働日）
 
-- [ ] **T5.7 identity renumber:** `C1CCN2CCCC2C1`と近傍負例をdevelopment suiteへ追加。
-  identity/32固定seed順列、clone/reparse、ring情報の初期化/再計算、descriptor呼出し順を
-  比較する。atom/bond mapでpotential-center集合・CIP・E/Zを照合し、countやcanonical
-  spellingだけで不変としない。意味の同じ操作の前後で情報損失/誤確信ラベル0を要求。
-- [ ] **T1.9 query semantics:** E/Z両query × E/Z両targetの2×2真理値表を、SMILES入力、
+- [x] **T5.7 の狭い再現:** PR #558はatom mapを保ったidentity/reordered atom回帰で
+  potential stereocenter集合が不変であることを固定した。これはRDKit #9629の報告クラスを
+  開発gateへ輸入したもので、RDKitの同一不具合を再現したという主張ではない。
+- [x] **T1.9 の保存/拒否境界:** PR #558はV3000→V3000でopaque query属性を保持し、
+  unmodelled V3000 query constraintを通常分子形式へ平坦化する変換を拒否する。
+- [ ] **残るT5.7:** `C1CCN2CCCC2C1`と近傍負例について、32固定seed順列、clone/reparse、
+  ring情報の初期化/再計算、descriptor呼出し順を比較する。atom/bond mapでpotential-center
+  集合・CIP・E/Zを照合し、countやcanonical spellingだけで不変としない。
+- [ ] **残るT1.9 query semantics:** E/Z両query × E/Z両targetの2×2真理値表を、SMILES入力、
   V3000保存/再読込、cross-engine往復で比較する。stereo match設定を固定し、unspecified
   stereoとstereo-insensitive設定は別の対照群にする。原子/結合対応、query predicate、
   SGROUP/COLLECTIONを記録し、reader受理や文字列保存をquery意味保存の代替にしない。
@@ -677,28 +685,22 @@ CheMaticの不具合や優位性が確定したことにはならない。
 新規ケースは開発回帰として出典・入力hash・期待値の根拠を保存し、sealed群には追加しない。
 自社でsilent corruptionを再現した場合はP0へ繰り上げる。
 
-### 4. T3.7 — BatchResultを全bindingの契約にする（P1、3–5実働日）
+### 4. T3.7 — BatchResultの基礎契約を全bindingで固定した（P1、2026-09-20）
 
 現行`SmilesBatchCanonicalizer`は`input_index`とaccepted/rejectedを保持し、WASMの
 `canonicalize_smiles_batch_json`はschema v1の`record_count`/`records`を返す。
 rejectionは文字列、envelopeの`complete`は処理完了を表す。これを土台にし、公開v1の
 意味を破壊せずversioned adapter/opt-in APIとして拡張する。既存binding fixtureを共用する。
 
-- [ ] 排他的な終端区分`success / failed / refused / skipped`を定義し、
-  `input_count = success + failed + refused + skipped`を既知長batchの終了時に保証。
-  parse/export等の実行失敗、非対応/予算拒否、cancel等による未実行を区別する。
-  1入力に複数stage診断があっても最終区分は1つ。retryは同じ入力IDの別attemptとする。
-- [ ] original row index（0-based）、operation/stage、typed reason、upstream診断を
-  success以外にも保持。parse拒否がexportでskippedになった場合は元理由を残す。
-  出力件数はstage単位で明示し、export成功数とparse成功数を混同しない。
-- [ ] `all_succeeded()`は`complete && success == input_count`とする。完了した空batchは
-  trueと明記し、未開始/中断はfalse。未知長streamは`input_count`を終了前に未確定として、
-  `received_count = terminal_count + pending_count`を公開する。cancel後の未読件数を
-  架空のskippedにせず、`complete=false`と未読範囲不明を明示する。
-- [ ] 全valid、全invalid、空、valid2+invalid1、parse拒否+export失敗混在、timeout、
-  cancel、retry、重複入力、chunk境界をRust/Python/Node/WASMで照合。
-  順序/元index/理由/会計の一致、消失0、二重計上0を要求する。MCP/Worker adapterも
-  同契約へ接続し、型定義とruntimeの一致をclean-installで検証する。
+- [x] PR #559で排他的な終端区分`success / failed / refused / skipped`、既知長batchの
+  `input_count = success + failed + refused + skipped`、0-based original row index、
+  parse error stage、`all_succeeded()`をRust/Python/Node/WASMの共通fixtureで固定した。
+  `complete`は処理完了、`all_succeeded()`は完了かつ全入力成功を表す。
+- [ ] cancel、未知長stream、retry、chunk境界、Worker/MCP adapter、export stageと
+  resource/time limitを同じ会計契約へ接続する。cancel後の未読範囲を架空の`skipped`に
+  せず、`complete=false`と未読範囲を明示する。
+- [ ] clean-installで型定義とruntimeを照合し、10k Workerで順序/元index/理由/会計の
+  一致、消失0、二重計上0、測定済みの資源上限を確認する。
 
 出口: 公開契約、versioned schema、shared fixture、全bindingの実測record、移行例。
 追加APIの配布区分はT6.2の互換性方針で決め、先にpatch番号を予約しない。
@@ -706,8 +708,10 @@ rejectionは文字列、envelopeの`complete`は処理完了を表す。これ�
 ### 5. A2 → T3/T2 → A6 — 残りの作業配分
 
 - **A2（P1）:** #503の4 componentを原因・負例・K=1,024 gateごとに分割し、P系CIPは
-  A5判定前のabstentionを維持。T5.6、T1.8、T4.6の残binding/表現境界も同じ受入表へ統合する。
-- **T3/T2（P1）:** T3.7を使う10k Workerでcancel・backpressure・memory/time limit・
+  A5判定前のabstentionを維持。結合E/Z componentは完全なcarrier割当て以外を選ばず、
+  証明できない場合はstable keyをfail-closedのまま残す。T5.6、T1.8、T4.6の残binding/
+  表現境界も同じ受入表へ統合する。
+- **T3/T2（P1）:** 完了したT3.7契約を使う10k Workerでcancel・backpressure・memory/time limit・
   offline・partial exportを測定。既存のcancel p95≤250ms、heartbeat p95≤100ms、
   working set≤256MiBは測定前にhost条件と固定し、未達を記録する。npm clean-install、
   Python型/runtime、3browser+Nodeの欠測を表示し、dashboardはartifactから生成する。
@@ -717,6 +721,7 @@ rejectionは文字列、envelopeの`complete`は処理完了を表す。これ�
   same-coordinateで切り分け、収束/timeout/立体保持/配座品質を別集計。新embedding option
   より既存gapを優先する。A5独立reviewは依頼packetまでローカルで進め、第三者判定待ちを明示。
 
-次Trust RCの必須条件にT3.7の宣言batch経路とT5.7/T1.9の保存・拒否回帰を含める。
+次Trust RCの必須条件に、T3.7のWorker/stream/cancelを含む宣言batch経路と、
+T5.7/T1.9の保存・拒否回帰を含める。
 T1.6旧候補の合格だけで新RCを承認せず、候補差分・影響gate・公開主張の対応表を確認する。
 この計画更新では化学コード、封印入力、ベンチマーク結果、リリース状態は変更しない。
