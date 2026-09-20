@@ -21,6 +21,7 @@
       {"id": "remove_hydrogens", "contract": "hydrogen_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-chem/tests/cross_binding_contract.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
       {"id": "super_parent_report", "contract": "super_parent_report_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-chem/tests/cross_binding_contract.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
       {"id": "canonicalize_smiles_batch", "contract": "batch_canonicalization_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-smiles/tests/cross_binding_contract.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
+      {"id": "canonicalize_smiles_stream", "contract": "stream_batch_canonicalization_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-smiles/tests/cross_binding_contract.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
       {"id": "parse_mol_v2000", "contract": "mol_v2000_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-mol/src/mol2000.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/src/tests.rs", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
       {"id": "mol_v2000_roundtrip", "contract": "mol_v2000_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-mol/src/mol2000.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/src/tests.rs", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
       {"id": "parse_mol_v3000", "contract": "mol_v3000_contract", "bindings": ["rust", "python", "node", "wasm"], "test_anchors": ["crates/chematic-mol/src/mol3000.rs", "crates/chematic-py/tests/test_cross_binding_contract.py", "crates/chematic-wasm/src/tests.rs", "crates/chematic-wasm/tests/cross_binding_contract.test.mjs"]},
@@ -73,6 +74,33 @@
       {"input_index": 1, "input": "C1CC", "status": "rejected"},
       {"input_index": 2, "input": "CCN", "status": "accepted", "canonical_smiles": "C(C)N"}
     ]
+  },
+  "stream_batch_canonicalization_contract": {
+    "schema_version": 1,
+    "inputs": ["CCO", "C1CC", "CCN"],
+    "processed_before_stop": 1,
+    "terminal_reason": "cancelled",
+    "expected_incomplete": {
+      "status": "incomplete",
+      "observed_input_count": 3,
+      "completed_count": 1,
+      "accepted_count": 1,
+      "rejected_count": 0,
+      "unprocessed_observed_count": 2,
+      "unread_input": "unknown",
+      "all_succeeded": false
+    },
+    "finish_inputs": ["CCO", "C1CC"],
+    "expected_complete": {
+      "status": "complete",
+      "observed_input_count": 2,
+      "completed_count": 2,
+      "accepted_count": 1,
+      "rejected_count": 1,
+      "unprocessed_observed_count": 0,
+      "unread_input": 0,
+      "all_succeeded": false
+    }
   },
   "smiles_validity_contract": {
     "schema_version": 1,

@@ -127,6 +127,108 @@ fn canonicalize_smiles_batch_json(smiles: Vec<String>) -> PyResult<String> {
     .map_err(|error| PyValueError::new_err(error.to_string()))
 }
 
+/// Stateful Python adapter for an unknown-length SMILES source.
+///
+/// `observe` records rows received from a producer, while `process_next_json`
+/// gives each observed row a terminal parse result.  `finish_json` is the
+/// normal EOF path.  A cancelled or failed producer calls `stop_json`, which
+/// retains the observed-but-unprocessed prefix and reports the unread suffix
+/// as unknown rather than silently calling it skipped or successful.
+#[pyclass(name = "SmilesBatchStream")]
+struct PySmilesBatchStream {
+    stream: Option<chematic_smiles::SmilesBatchStream>,
+}
+
+fn stream_record_json(record: &chematic_smiles::BatchCanonicalRecord) -> serde_json::Value {
+    match &record.result {
+        chematic_smiles::BatchCanonicalization::Accepted { canonical_smiles } => {
+            serde_json::json!({
+                "input_index": record.input_index,
+                "input": record.input,
+                "status": "accepted",
+                "canonical_smiles": canonical_smiles,
+                "error": null,
+                "error_stage": null,
+            })
+        }
+        chematic_smiles::BatchCanonicalization::Rejected { error } => serde_json::json!({
+            "input_index": record.input_index,
+            "input": record.input,
+            "status": "rejected",
+            "error": error,
+            "error_stage": "parse",
+        }),
+    }
+}
+
+fn stream_manifest_json(result: chematic_smiles::BatchCanonicalStreamResult) -> PyResult<String> {
+    let complete = result.stream_complete;
+    serde_json::to_string(&serde_json::json!({
+        "schema_version": 1,
+        "operation": "canonicalize_smiles_stream",
+        "input_kind": "unknown_length_stream",
+        "status": if complete { "complete" } else { "incomplete" },
+        "observed_input_count": result.observed_input_count,
+        "completed_count": result.records.len(),
+        "accepted_count": result.accepted_count,
+        "rejected_count": result.rejected_count,
+        "refused_count": 0,
+        "skipped_count": 0,
+        "unprocessed_observed_count": result.unprocessed_observed_count,
+        "unread_input": if complete { serde_json::json!(0) } else { serde_json::json!("unknown") },
+        "all_succeeded": result.all_succeeded(),
+        "terminal_reason": result.terminal_reason.map(|reason| reason.as_str()),
+        "records": result.records.iter().map(stream_record_json).collect::<Vec<_>>(),
+    }))
+    .map_err(|error| PyValueError::new_err(error.to_string()))
+}
+
+#[pymethods]
+impl PySmilesBatchStream {
+    #[new]
+    fn new() -> Self {
+        Self {
+            stream: Some(chematic_smiles::SmilesBatchCanonicalizer::default().stream()),
+        }
+    }
+
+    fn observe(&mut self, smiles: String) -> PyResult<usize> {
+        let stream = self
+            .stream
+            .as_mut()
+            .ok_or_else(|| PyValueError::new_err("stream is already terminal"))?;
+        Ok(stream.observe(smiles))
+    }
+
+    fn process_next_json(&mut self) -> PyResult<String> {
+        let stream = self
+            .stream
+            .as_mut()
+            .ok_or_else(|| PyValueError::new_err("stream is already terminal"))?;
+        serde_json::to_string(&stream.process_next().map(stream_record_json))
+            .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
+    fn finish_json(&mut self) -> PyResult<String> {
+        let stream = self
+            .stream
+            .take()
+            .ok_or_else(|| PyValueError::new_err("stream is already terminal"))?;
+        stream_manifest_json(stream.finish())
+    }
+
+    fn stop_json(&mut self, terminal_reason: String) -> PyResult<String> {
+        let terminal_reason = terminal_reason
+            .parse::<chematic_smiles::StreamTerminalReason>()
+            .map_err(PyValueError::new_err)?;
+        let stream = self
+            .stream
+            .take()
+            .ok_or_else(|| PyValueError::new_err("stream is already terminal"))?;
+        stream_manifest_json(stream.stop(terminal_reason))
+    }
+}
+
 /// Parse a CXSMILES string and return the molecule with CX metadata.
 ///
 /// Returns a 2-tuple ``(mol, cx)`` where ``cx`` is a dict with:
@@ -2450,6 +2552,7 @@ fn write_atomic_result(result: &Bound<PyDict>) -> PyResult<String> {
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(from_smiles, m)?)?;
     m.add_function(wrap_pyfunction!(canonicalize_smiles_batch_json, m)?)?;
+    m.add_class::<PySmilesBatchStream>()?;
     m.add_function(wrap_pyfunction!(from_cxsmiles, m)?)?;
     m.add_function(wrap_pyfunction!(from_condensed, m)?)?;
     m.add_function(wrap_pyfunction!(from_mol_block, m)?)?;

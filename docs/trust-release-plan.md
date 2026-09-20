@@ -780,10 +780,12 @@ rejectionは文字列、envelopeの`complete`は処理完了を表す。これ�
   normal CSV import/exportのinput order/statusに加え、10k CSV中断で`complete=false`と
   未読範囲を確認する。これはブラウザUI adapterの検証であり、Rust/Python/Node/WASM public
   batch schemaやMCP streamの契約完了を意味しない。
-- [ ] known-length batchでは全bindingで `input_count = success + failed + refused + skipped`
-  を維持し、unknown-length streamでは確定済みprefix、未読範囲、terminal reasonを別に
-  表す。`failed()==0`だけから全入力成功を推論できないことを型・JSON schema・利用例で
-  防ぐ。
+- [~] 本stream contractはRust/Python/WASM/Nodeの共通fixtureを使い、public
+  opt-in stream APIでunknown-length schema v1を固定する。`finish`は観測済みのpending rowを
+  すべて処理する唯一のEOF経路、`stop`は`cancelled`/`time_limit`/`resource_limit`/
+  `producer_error`/`consumer_closed`の列挙理由と、処理済みprefix・観測済み未処理・
+  `unread_input=unknown`を返す。未知の理由はbinding errorとし、`failed()==0`を全入力成功の
+  根拠にしない。Worker/MCP、retry/export、10kのresource測定は未完了。
 - [ ] clean-installで型定義とruntimeを照合し、10k Workerで順序/元index/理由/会計の
   一致、消失0、二重計上0、測定済みの資源上限を確認する。
 

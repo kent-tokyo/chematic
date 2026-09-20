@@ -228,6 +228,129 @@ pub fn canonicalize_smiles_batch_json(
     Ok(json)
 }
 
+/// Stateful, bounded adapter for an unknown-length SMILES source.
+///
+/// Callers distinguish observation from processing: this lets a Worker report
+/// rows already read but not yet processed when it is cancelled.  `finish_json`
+/// is the only normal EOF path; `stop_json` reports an unknown unread suffix
+/// and never fabricates skipped or successful rows.
+#[wasm_bindgen]
+pub struct SmilesBatchStreamHandle {
+    stream: Option<chematic_smiles::SmilesBatchStream>,
+}
+
+impl Default for SmilesBatchStreamHandle {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+fn stream_record_json(record: &chematic_smiles::BatchCanonicalRecord) -> serde_json::Value {
+    match &record.result {
+        chematic_smiles::BatchCanonicalization::Accepted { canonical_smiles } => {
+            serde_json::json!({
+                "input_index": record.input_index,
+                "input": record.input,
+                "status": "accepted",
+                "canonical_smiles": canonical_smiles,
+                "error": null,
+                "error_stage": null,
+            })
+        }
+        chematic_smiles::BatchCanonicalization::Rejected { error } => serde_json::json!({
+            "input_index": record.input_index,
+            "input": record.input,
+            "status": "rejected",
+            "error": error,
+            "error_stage": "parse",
+        }),
+    }
+}
+
+fn stream_manifest_json(
+    result: chematic_smiles::BatchCanonicalStreamResult,
+) -> Result<String, JsValue> {
+    let complete = result.stream_complete;
+    let manifest = serde_json::json!({
+        "schema_version": 1,
+        "operation": "canonicalize_smiles_stream",
+        "input_kind": "unknown_length_stream",
+        "status": if complete { "complete" } else { "incomplete" },
+        "observed_input_count": result.observed_input_count,
+        "completed_count": result.records.len(),
+        "accepted_count": result.accepted_count,
+        "rejected_count": result.rejected_count,
+        "refused_count": 0,
+        "skipped_count": 0,
+        "unprocessed_observed_count": result.unprocessed_observed_count,
+        "unread_input": if complete { serde_json::json!(0) } else { serde_json::json!("unknown") },
+        "all_succeeded": result.all_succeeded(),
+        "terminal_reason": result.terminal_reason.map(|reason| reason.as_str()),
+        "records": result.records.iter().map(stream_record_json).collect::<Vec<_>>(),
+    });
+    let json = serde_json::to_string(&manifest)
+        .map_err(|error| JsValue::from_str(&format!("JSON serialization failed: {error}")))?;
+    if json.len() > WORKFLOW_MAX_INPUT_BYTES {
+        return Err(JsValue::from_str(
+            "stream batch result exceeds maximum output size",
+        ));
+    }
+    Ok(json)
+}
+
+#[wasm_bindgen]
+impl SmilesBatchStreamHandle {
+    /// Start an unknown-length batch.  A handle is terminal after `finish_json`
+    /// or `stop_json` and cannot be reused for a second source.
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        Self {
+            stream: Some(chematic_smiles::SmilesBatchCanonicalizer::default().stream()),
+        }
+    }
+
+    /// Register one row observed from the source without processing it yet.
+    pub fn observe(&mut self, smiles: &str) -> Result<usize, JsValue> {
+        enforce_input_len("stream smiles", smiles)?;
+        let stream = self
+            .stream
+            .as_mut()
+            .ok_or_else(|| JsValue::from_str("stream is already terminal"))?;
+        Ok(stream.observe(smiles))
+    }
+
+    /// Process one previously observed row, returning `null` when none remain.
+    pub fn process_next_json(&mut self) -> Result<String, JsValue> {
+        let stream = self
+            .stream
+            .as_mut()
+            .ok_or_else(|| JsValue::from_str("stream is already terminal"))?;
+        serde_json::to_string(&stream.process_next().map(stream_record_json))
+            .map_err(|error| JsValue::from_str(&format!("JSON serialization failed: {error}")))
+    }
+
+    /// Mark EOF and process every observed pending row into a complete manifest.
+    pub fn finish_json(&mut self) -> Result<String, JsValue> {
+        let stream = self
+            .stream
+            .take()
+            .ok_or_else(|| JsValue::from_str("stream is already terminal"))?;
+        stream_manifest_json(stream.finish())
+    }
+
+    /// Stop before EOF with a typed reason and an explicitly unknown unread suffix.
+    pub fn stop_json(&mut self, terminal_reason: &str) -> Result<String, JsValue> {
+        let terminal_reason = terminal_reason
+            .parse::<chematic_smiles::StreamTerminalReason>()
+            .map_err(JsValue::from_str)?;
+        let stream = self
+            .stream
+            .take()
+            .ok_or_else(|| JsValue::from_str("stream is already terminal"))?;
+        stream_manifest_json(stream.stop(terminal_reason))
+    }
+}
+
 /// Generate 3D coordinates from SMILES (raw distance geometry, no minimization).
 /// Returns PDB format string with atoms positioned in 3D space.
 ///
@@ -277,7 +400,7 @@ pub fn generate_3d_optimized_pdb(smiles: &str) -> Result<String, JsValue> {
 
 #[cfg(test)]
 mod tests {
-    use super::{WORKFLOW_MAX_ATOMS, enforce_batch_molecule_sizes};
+    use super::{SmilesBatchStreamHandle, WORKFLOW_MAX_ATOMS, enforce_batch_molecule_sizes};
 
     #[test]
     fn workflow_json_serialization_aspirin() {
@@ -324,6 +447,46 @@ mod tests {
         let huge = "C".repeat(WORKFLOW_MAX_ATOMS + 1);
         let err = enforce_batch_molecule_sizes(&[&huge]).unwrap_err();
         assert!(err.contains("maximum atom count"));
+    }
+
+    #[test]
+    fn stream_handle_preserves_observed_prefix_at_cancellation() {
+        let mut stream = SmilesBatchStreamHandle::new();
+        assert_eq!(stream.observe("CCO").unwrap(), 0);
+        assert_eq!(stream.observe("C1CC").unwrap(), 1);
+        assert_eq!(stream.observe("CCN").unwrap(), 2);
+        let processed: serde_json::Value =
+            serde_json::from_str(&stream.process_next_json().unwrap()).unwrap();
+        assert_eq!(processed["input_index"], 0);
+        assert_eq!(processed["status"], "accepted");
+
+        let manifest: serde_json::Value =
+            serde_json::from_str(&stream.stop_json("cancelled").unwrap()).unwrap();
+        assert_eq!(manifest["input_kind"], "unknown_length_stream");
+        assert_eq!(manifest["status"], "incomplete");
+        assert_eq!(manifest["observed_input_count"], 3);
+        assert_eq!(manifest["completed_count"], 1);
+        assert_eq!(manifest["unprocessed_observed_count"], 2);
+        assert_eq!(manifest["unread_input"], "unknown");
+        assert_eq!(manifest["terminal_reason"], "cancelled");
+        assert_eq!(manifest["all_succeeded"], false);
+    }
+
+    #[test]
+    fn stream_handle_finish_processes_pending_rows() {
+        let mut stream = SmilesBatchStreamHandle::new();
+        stream.observe("CCO").unwrap();
+        stream.observe("C1CC").unwrap();
+        let manifest: serde_json::Value =
+            serde_json::from_str(&stream.finish_json().unwrap()).unwrap();
+        assert_eq!(manifest["status"], "complete");
+        assert_eq!(manifest["completed_count"], 2);
+        assert_eq!(manifest["accepted_count"], 1);
+        assert_eq!(manifest["rejected_count"], 1);
+        assert_eq!(manifest["unprocessed_observed_count"], 0);
+        assert_eq!(manifest["unread_input"], 0);
+        assert_eq!(manifest["terminal_reason"], serde_json::Value::Null);
+        assert_eq!(manifest["all_succeeded"], false);
     }
 
     #[test]
