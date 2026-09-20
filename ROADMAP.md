@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-09-20. Released: **v1.0.17**. Next delivery theme: **1.x Trust Release**.
+> Updated 2026-09-21. Released: **v1.0.17**. Next delivery theme: **1.x Trust Release**.
 > **Current P0 focus: recover A0 after three rejected sealed candidates.** Preserve
 > their exposed evidence, classify only declared-scope gaps on non-sealed data,
 > then prepare a genuinely new freeze for a later one-time evaluation.
@@ -85,14 +85,35 @@ records primary sources, implementation gaps, dependencies, and acceptance.
 Existing published 1.0.15 measurements stay historical; new release/candidate
 measurements must identify their actual package/source hashes.
 
+### Trust Release execution sequence (September 21 revision)
+
+The current upstream watch does not open a new feature race. It makes the
+following already-scoped work more urgent. Each stage has a distinct output,
+and later stages must not silently turn a rejected or exposed accuracy cohort
+into fresh validation evidence.
+
+| Stage | Work | Completion evidence | Explicit boundary |
+|---|---|---|---|
+| 0 | Preserve the three rejected A0 candidates and finish the acceptance-packet inventory | Candidate provenance, declared support domain, failures, affected bindings, and an exposure record are linked from the ledger | No descriptor, stereo, or upstream-regression tuning may use the exposed 8k rows as an unused holdout |
+| 1 | Prepare the RDKit rebaseline lanes before a new stable artifact is selected | Version-pinned Python/native/npm inputs, wrapper backend and typed-error probes, fixed operation settings, and reproducible commands | Run and publish a comparison only against an actually released artifact; 2026.03.6 remains historical rather than being relabelled current |
+| 2 | Import narrow upstream failure modes as CheMatic regressions | Atom-order identity-renumber stereo fixture and V3000 E/Z query round-trip truth table pass, or a typed unsupported outcome is documented | A competitor failure is a regression source, not proof that CheMatic is more correct |
+| 3 | Close A2/#503's canonical E/Z work before new 3D breadth | All four components converge under atom-order and spelling permutations, reparse preserves stereo, and stable-key stops only where ambiguity remains real | Never pick a winner by raw atom/bond index; a ring-closure plan must be emit-capable as well as geometry-consistent |
+| 4 | Promote BatchResult accounting from a convention to a cross-binding contract | Rust, Python, Node, and WASM expose input count, original index, stage, terminal outcome, and `all_succeeded`-equivalent behavior; cancellation exposes the unprocessed range | `failed == 0` alone never means every input was exported or processed |
+| 5 | Publish the browser/runtime proof after the contract is complete | Worker, cancellation, memory/time limits, structured errors, local-only behavior, and package scorecard are measured on the declared workload | Artifact size or one cold-start result alone is not a browser-DX or resource-safety claim |
+
+Stages 0–2 may proceed in parallel. Stage 3 is the first local correctness
+implementation priority after immediate regressions; Stage 4 may proceed in
+parallel once its public contract is fixed. Stages 5 and any new Trust RC are
+gated on their preceding evidence rather than on release cadence.
+
 ## Priority order
 
 | Order | Priority | Delivery and next output | Product Phase / accuracy |
 |---|---|---|---|
 | 1 | P0 | **A0 recovery after frozen 8k rejection**: preserve the failed candidate's evidence; on non-sealed data, classify every declared descriptor scope and binding impact; only then prepare a genuinely new freeze/unused cohort for a later one-time adoption decision | P0/P2; A0–A4 |
 | 2 | P0 preparation; external execution | **T1.5 rebaseline**: make old/new RDKit lanes executable now; run only for actually published stable Python/native/npm artifacts. Record wrapper backend, type/exception behavior, and operation configuration—not just version strings | P0/P2/P3; A1–A4 |
-| 3 | P1 | **A2 and semantic interchange closure**: resolve the four #503 canonical/E/Z components and phosphorus adjudication before new 3D breadth. Retain T5.6 selective CIP/isotope/atrop and T1.8 attachment boundaries; extend T5.7/T1.9 from the current RDKit 4×4 E/Z table to version-pinned multi-engine truth tables, then add typed semantics before making compatibility claims | P1/P2/P4; A2/A5 |
-| 4 | P1 | **T3.7 controlled runtime**: merge and retain the pending Explorer unknown-length CSV cancellation adapter, then extend the completed row-accounting contract through Worker/stream/cancel/export/limits on 10k inputs. Publish typed install examples and a generated package scorecard only after the public binding contract and its resource evidence exist. T3.6 maintains its scoped speed win; it does not substitute for runtime controls | P0/P3/P6; A3/A4 |
+| 3 | P1 | **A2 and semantic interchange closure**: resolve the four #503 canonical/E/Z components and phosphorus adjudication before new 3D breadth. Add identity-renumber stereo and V3000 E/Z query-semantic regressions as version-pinned truth tables; retain T5.6 selective CIP/isotope/atrop and T1.8 attachment boundaries, then add typed semantics before making compatibility claims | P1/P2/P4; A2/A5 |
+| 4 | P1 | **T3.7 controlled runtime**: merge and retain the pending Explorer unknown-length CSV cancellation adapter, then extend the completed row-accounting contract through Worker/stream/cancel/export/limits on 10k inputs. Every binding must report original index, stage, terminal outcome, and an all-inputs-succeeded predicate; publish typed install examples and a generated package scorecard only after that contract and its resource evidence exist. T3.6 maintains its scoped speed win; it does not substitute for runtime controls | P0/P3/P6; A3/A4 |
 | 5 | P2; P0 for confirmed incorrectness | **T6 / A5–A6**: prepare independent gold/review and close existing 3D typing, charge, gradient, convergence, timeout, and stereo gaps. Do not add embedding breadth before fail-closed correctness evidence | P5/P6; A5/A6 |
 
 T3/T4/T5 can proceed in parallel once their dependencies pass. Public-channel
