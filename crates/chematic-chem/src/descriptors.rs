@@ -4726,6 +4726,16 @@ mod tests {
     }
 
     #[test]
+    fn test_num_stereocenters_bicyclic_tertiary_amine() {
+        // RDKit #9629: its legacy perception reported a spurious extra
+        // stereocenter after an identity atom renumbering for this cage.
+        // The bridgehead carbon is a potential center; the tertiary nitrogen
+        // is not. Keep the chemically-derived count fixed independently of
+        // input storage order and ring-cache implementation details.
+        assert_eq!(num_stereocenters(&mol("C1CCN2CCCC2C1")), 1);
+    }
+
+    #[test]
     fn test_num_stereocenters_bridgehead_quaternary() {
         // Bicyclic bridgehead: ring-adjacent tie resolved via CIP Rule 5 provisional R/S.
         assert_eq!(
