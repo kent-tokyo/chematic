@@ -660,6 +660,10 @@ pub(crate) struct CanonicalWriter<'a> {
     /// stored here too, pinned to its own plain (non-directional) order, so
     /// a stray parse-time marker on it can't leak through.
     ez_marker: HashMap<BondIdx, BondOrder>,
+    /// Geometry facts captured before E/Z marker carrier resolution.  The
+    /// component solver reads these facts instead of re-reading whichever
+    /// raw marker location happened to occur in the input spelling.
+    ez_geometry_facts: Vec<EzGeometryFact>,
     /// Test-only instrumentation: every alkene end for which
     /// `resolve_ez_marker_for_end` hit the shared-candidate-bond abstain
     /// guard specifically (as opposed to "not ambiguous" or "no direction
@@ -679,6 +683,28 @@ pub(crate) struct CanonicalWriter<'a> {
     traversal_bond_preference: Option<HashMap<BondIdx, bool>>,
 }
 
+/// One input-representation-independent E/Z relation, retained before the
+/// writer decides where `/` or `\\` tokens will appear.  `AtomIdx` and
+/// `BondIdx` locate the fact within the current molecule only; any future
+/// canonical choice must use the rank keys, never those parse-order indices.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct EzGeometryFact {
+    double_bond: BondIdx,
+    double_key: (u64, u64),
+    ends: [EzGeometryEnd; 2],
+    same_side: bool,
+}
+
+/// The fixed, rank-selected reference substituent at one double-bond end and
+/// its encoded side of the alkene axis.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct EzGeometryEnd {
+    atom: AtomIdx,
+    reference_bond: BondIdx,
+    reference_rank: u64,
+    up: bool,
+}
+
 impl<'a> CanonicalWriter<'a> {
     pub(crate) fn new(mol: &'a Molecule, ranks: &'a [u64]) -> Self {
         let n = mol.atom_count();
@@ -696,6 +722,7 @@ impl<'a> CanonicalWriter<'a> {
             ez_flip: HashMap::new(),
             forced_ez_flip: None,
             ez_marker: HashMap::new(),
+            ez_geometry_facts: Vec::new(),
             #[cfg(test)]
             ez_shared_bond_abstains: Vec::new(),
             #[cfg(test)]
@@ -850,6 +877,7 @@ impl<'a> CanonicalWriter<'a> {
         if self.ranks.is_empty() {
             return;
         }
+        self.ez_geometry_facts = self.extract_ez_geometry_facts();
         let stereo_alkene_ends = Self::compute_stereo_alkene_ends(self.mol);
         for component in Self::coupling_components(self.mol, &stereo_alkene_ends) {
             self.resolve_component_jointly(&component);
@@ -1110,7 +1138,7 @@ impl<'a> CanonicalWriter<'a> {
             } else {
                 0
             };
-            let Some(reference_up) = self.reference_up(end, &pair, preferred) else {
+            let Some(reference_up) = self.geometry_reference_up(end, &pair, preferred) else {
                 return;
             };
             for chosen in [preferred, 1 - preferred] {
@@ -1170,7 +1198,7 @@ impl<'a> CanonicalWriter<'a> {
             .iter()
             .zip(subs.iter())
             .zip(pref.iter())
-            .map(|((&end, s), &p)| self.reference_up(end, s, p))
+            .map(|((&end, s), &p)| self.geometry_reference_up(end, s, p))
             .collect();
 
         // Every valid (non-conflicting) global assignment, as its deviation
@@ -1268,6 +1296,108 @@ impl<'a> CanonicalWriter<'a> {
                 alkene_end,
             ))
         }
+    }
+
+    /// Extract the E/Z facts encoded by the input before choosing a canonical
+    /// marker carrier or a DFS/ring representation.  This is deliberately a
+    /// read-only phase: it gives the eventual component-plan solver chemical
+    /// relations to preserve, rather than parse-time marker locations to
+    /// imitate.
+    fn extract_ez_geometry_facts(&self) -> Vec<EzGeometryFact> {
+        let mut facts = Vec::new();
+        for (double_bond, bond) in self.mol.bonds() {
+            if bond.order != BondOrder::Double {
+                continue;
+            }
+            let Some(left) = self.extract_ez_geometry_end(bond.atom1) else {
+                continue;
+            };
+            let Some(right) = self.extract_ez_geometry_end(bond.atom2) else {
+                continue;
+            };
+            let mut double_key = (
+                self.ranks[bond.atom1.0 as usize],
+                self.ranks[bond.atom2.0 as usize],
+            );
+            if double_key.1 < double_key.0 {
+                double_key = (double_key.1, double_key.0);
+            }
+            facts.push(EzGeometryFact {
+                double_bond,
+                double_key,
+                ends: [left, right],
+                same_side: left.up == right.up,
+            });
+        }
+        facts.sort_by_key(|fact| fact.double_key);
+        facts
+    }
+
+    /// Read one rank-fixed reference substituent's side.  A monosubstituted
+    /// end has no carrier freedom; a disubstituted end uses the same
+    /// rank-fixed/sibling-complement rule as [`Self::reference_up`].
+    fn extract_ez_geometry_end(&self, alkene_end: AtomIdx) -> Option<EzGeometryEnd> {
+        let subs = Self::substituents(self.mol, alkene_end);
+        let (reference, up) = match subs.as_slice() {
+            [reference] => {
+                let direction = self.raw_input_direction(reference.1)?;
+                (
+                    *reference,
+                    Self::direction_is_up(
+                        direction,
+                        self.raw_direction_anchor(reference.1),
+                        alkene_end,
+                    ),
+                )
+            }
+            [first, second] => {
+                let pair = [*first, *second];
+                let preferred = usize::from(
+                    self.ranks[pair[1].0.0 as usize] < self.ranks[pair[0].0.0 as usize],
+                );
+                (
+                    pair[preferred],
+                    self.reference_up(alkene_end, &pair, preferred)?,
+                )
+            }
+            _ => return None,
+        };
+        Some(EzGeometryEnd {
+            atom: alkene_end,
+            reference_bond: reference.1,
+            reference_rank: self.ranks[reference.0.0 as usize],
+            up,
+        })
+    }
+
+    /// Return a component end's already-extracted, rank-fixed geometry.  The
+    /// carrier solver may choose a different output bond, but it must not
+    /// derive its chemical side from the raw token on that candidate.
+    fn geometry_reference_up(
+        &self,
+        alkene_end: AtomIdx,
+        subs: &[(AtomIdx, BondIdx); 2],
+        pref_idx: usize,
+    ) -> Option<bool> {
+        let reference_bond = subs[pref_idx].1;
+        self.ez_geometry_facts
+            .iter()
+            .find_map(|fact| {
+                debug_assert!(self.mol.bond(fact.double_bond).order == BondOrder::Double);
+                debug_assert!(fact.double_key.0 <= fact.double_key.1);
+                debug_assert_eq!(fact.same_side, fact.ends[0].up == fact.ends[1].up);
+                fact.ends
+                    .into_iter()
+                    .find(|end| end.atom == alkene_end && end.reference_bond == reference_bond)
+                    .map(|end| {
+                        debug_assert_eq!(
+                            end.reference_rank,
+                            self.ranks[subs[pref_idx].0.0 as usize]
+                        );
+                        end.up
+                    })
+            })
+            .or_else(|| self.reference_up(alkene_end, subs, pref_idx))
     }
 
     /// One candidate global assignment for a coupled component:
@@ -3325,6 +3455,30 @@ mod tests {
             .collect()
     }
 
+    /// A spelling-independent view of the production E/Z geometry extractor.
+    /// The raw atom/bond indices deliberately do not escape this helper;
+    /// rank keys and each double bond's same-side relation are the facts a
+    /// later canonical plan is allowed to compare.
+    type EzGeometrySignature = Vec<((u64, u64), (u64, u64), bool)>;
+
+    fn ez_geometry_signature(mol: &Molecule) -> EzGeometrySignature {
+        let (ranks, _) = winning_individualized_ranks(mol);
+        let writer = CanonicalWriter::new(mol, &ranks);
+        writer
+            .extract_ez_geometry_facts()
+            .into_iter()
+            .map(|fact| {
+                let mut references = [fact.ends[0].reference_rank, fact.ends[1].reference_rank];
+                references.sort_unstable();
+                (
+                    fact.double_key,
+                    (references[0], references[1]),
+                    fact.same_side,
+                )
+            })
+            .collect()
+    }
+
     const EZ_STABLE_CORPUS: &[&str] = &[
         "C/C=C/C",     // (E)-2-butene
         "C/C=C\\C",    // (Z)-2-butene
@@ -4171,6 +4325,46 @@ mod tests {
                 "{input}: candidate-bond DFS priorities unexpectedly found a common output; \
                  update the complete-plan boundary before relying on it"
             );
+        }
+    }
+
+    /// The input spelling variants behind #503 must first reduce to exactly
+    /// the same chemical E/Z facts.  This pins the phase boundary for the
+    /// future full component solver: it may change output token locations,
+    /// but it must preserve these rank-keyed relations.
+    #[test]
+    fn issue503_ez_geometry_facts_are_spelling_invariant() {
+        let observed_pairs = [
+            (
+                r"c/3(c(/c(c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+                r"c3(c(c(/c3=N/CC)=N\[C@@H](Cc1ccc(NC(c2c(Cl)cncc2Cl)=O)cc1)C(O)=O)O)O",
+            ),
+            (
+                r"c/1(c(/c(c1=N\[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+                r"c1(c(c(/c1=N/[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+            ),
+            (
+                r"c/1(O)c(O)/c(=N\[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)c1=N\CCOC",
+                r"c1(O)c(O)c(=N/[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)\c1=N\CCOC",
+            ),
+        ];
+
+        for (&input, &(observed_a, observed_b)) in EZ_SHARED_CARRIER_HELD_OUT_RESIDUALS
+            .iter()
+            .zip(observed_pairs.iter())
+        {
+            let expected = ez_geometry_signature(&parse(input).unwrap());
+            assert!(
+                expected.len() >= 2,
+                "{input}: setup must expose both coupled E/Z facts"
+            );
+            for spelling in [observed_a, observed_b] {
+                assert_eq!(
+                    ez_geometry_signature(&parse(spelling).unwrap()),
+                    expected,
+                    "{input}: spelling '{spelling}' changed the extracted E/Z facts"
+                );
+            }
         }
     }
 
