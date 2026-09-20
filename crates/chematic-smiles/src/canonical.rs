@@ -4610,6 +4610,7 @@ mod tests {
             .zip(observed_pairs.iter())
         {
             let mut per_spelling = Vec::new();
+            let mut reranked_per_spelling = Vec::new();
             for spelling in [input, observed_a, observed_b] {
                 let mol = parse(spelling).unwrap();
                 let geometry = geometry_fingerprint(&mol);
@@ -4638,6 +4639,7 @@ mod tests {
                 );
 
                 let mut outputs = HashSet::new();
+                let mut reranked_outputs = HashSet::new();
                 let polarity_plans = 3usize.pow(component_bonds.len() as u32);
                 for polarity_code in 0..polarity_plans {
                     let mut code = polarity_code;
@@ -4670,11 +4672,21 @@ mod tests {
                             panic!("{spelling}: full-slot candidate did not parse: {e}: {output}")
                         });
                         if geometry_fingerprint(&reparsed) == geometry {
-                            outputs.insert(output);
+                            outputs.insert(output.clone());
+                            let (_, reranked) = winning_individualized_ranks_single(&reparsed);
+                            let reranked_mol = parse(&reranked).unwrap_or_else(|e| {
+                                panic!(
+                                    "{spelling}: reranked carrier candidate did not parse: {e}: {reranked}"
+                                )
+                            });
+                            if geometry_fingerprint(&reranked_mol) == geometry {
+                                reranked_outputs.insert(reranked);
+                            }
                         }
                     }
                 }
                 per_spelling.push(outputs);
+                reranked_per_spelling.push(reranked_outputs);
             }
             let common = per_spelling
                 .into_iter()
@@ -4684,6 +4696,15 @@ mod tests {
                 common.is_empty(),
                 "{input}: full slot/polarity enumeration found {common:?}; \
                  promote the concrete plan only after its rank-keyed production contract is verified"
+            );
+            let reranked_common = reranked_per_spelling
+                .into_iter()
+                .reduce(|left, right| left.intersection(&right).cloned().collect())
+                .unwrap();
+            assert!(
+                reranked_common.is_empty(),
+                "{input}: rank-searching every geometry-preserving carrier representation found \
+                 {reranked_common:?}; promote it only after its production contract is verified"
             );
         }
     }

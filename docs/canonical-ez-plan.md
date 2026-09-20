@@ -29,6 +29,10 @@ Two bounded writer searches are now rejected:
    exhausts every component candidate bond as plain, `/`, or `\\`, together
    with both legal occurrences of every ring token.  After semantic reparse,
    the three residual families still have no common output.
+4. Each geometry-preserving candidate from that full-slot space is then
+   reparsed and sent through a fresh rank search.  This also leaves the three
+   families with no common output, so simply enumerating carrier spellings
+   before the current rank search is not a complete plan.
 
 These results rule out selecting a raw atom index, a raw bond index, a local
 DFS preference, one ring-marker-side rule, or an independently assigned
@@ -54,10 +58,11 @@ A test-only canonical-DFS inventory now also shows that the three residual
 families expose the same eligible tree and ring-token output slots across
 their equivalent spellings.  The direct full-slot enumeration rejects every
 plain/directional polarity and legal ring occurrence for those slots.  Thus a
-component plan over the current skeleton is not yet an implementation answer;
-the next design must identify a representation-independent skeleton or an
-additional legal encoding degree of freedom, while preserving the fail-closed
-stable-key boundary.
+component plan over the current skeleton is not yet an implementation answer.
+Nor is pre-ranking enumeration of the existing carrier spellings.  The next
+design must identify a representation-independent skeleton or an additional
+legal encoding degree of freedom, while preserving the fail-closed stable-key
+boundary.
 
 ## Required architecture
 
