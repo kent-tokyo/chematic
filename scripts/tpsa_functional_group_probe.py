@@ -70,6 +70,7 @@ CASES = {
     "carbon11_ethanol": "[11CH3]CO",
     "deuterated_ethanol": "CCO[2H]",
     "2_hydroxypyridine": "Oc1ccccn1",
+    "2_pyridone_kekule": "O=C1C=CC=CN1",
     "phenoxide": "[O-]c1ccccc1",
 }
 

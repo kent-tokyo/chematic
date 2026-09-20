@@ -654,14 +654,17 @@ CheMaticの不具合や優位性が確定したことにはならない。
   閾値へ合わせ込まず、独立の既知/生成テストと仕様根拠を使う。修正候補ごとに、影響binding
   回帰、変更影響表、公開主張への影響を記録する。descriptorは官能基・電荷・同位体・
   tautomer/芳香族性の非sealedな層別を先に固定し、全体一致率だけを次freezeの根拠にしない。
-  公開51官能基/電荷/同位体/tautomer/芳香族性のgreen probeでは、HBA/HBD/TPSA/LogP/MR/
+  公開52官能基/電荷/同位体/tautomer/芳香族性のgreen probeでは、HBA/HBD/TPSA/LogP/MR/
   Fsp3/芳香族環数、`exact_mass`、`heavy_atoms`、`rotatable_bonds`、明示的な
-  `rdkit_molecular_weight`は51/51 strictだった。native
+  `rdkit_molecular_weight`は52/52 strictだった。Kekulé 2-pyridoneは、単一carbonylに
+  隣接して芳香族化される環内NHをRDKitのaromatic `[nH]` descriptor typeとして扱う公開
+  regressionであり、二つのcarbonylに隣接するphthalimide型imideを同型へ昇格させない。
+  native
   `molecular_weight`のSeと同位体3件はnative IUPAC mass tableとRDKit mass profileの
-  宣言済み差であり、CLIのnative massをRDKit互換値と偽装しない。別の分類専用2-pyridone
-  Kekule tautomerはTPSA/LogP/MR残差として保持し、sealed候補との対応付けをしない。結果は
-  `validation/results/descriptor-functional-group-classification-v1.0.17.json`に固定し、
-  CIで再実行する。これは公開development分類であり、unused採用評価ではない。
+  宣言済み差であり、CLIのnative massをRDKit互換値と偽装しない。結果は
+  `validation/results/tpsa-functional-group-probe-current-2026-09-20.json`と
+  `validation/results/descriptor-functional-group-classification-current-2026-09-20.json`に
+  固定する。これは公開development分類であり、unused採用評価ではない。
 - [ ] 次の採用判断が必要になった時点で、別source・別抽出・重複除外・source hash・
   attestation・annotated tagを新規に固定する。新しいcohortを作るだけでは合格とせず、
   candidate buildとfixed oracleで一度だけ実行する。
