@@ -3566,6 +3566,44 @@ mod tests {
         slots
     }
 
+    /// Full rank-keyed canonical DFS shape, excluding only directional token
+    /// polarity.  Unlike `ez_output_slot_signature`, this records every tree
+    /// parent and every ring-token occurrence so #503 diagnostics can tell a
+    /// skeleton divergence from a stereochemical-token divergence without
+    /// inspecting parse-order atom or bond indices.
+    type CanonicalSkeletonSignature = (Vec<(u64, u64)>, Vec<(u64, u64, u32, bool)>);
+
+    fn canonical_skeleton_signature(mol: &Molecule) -> CanonicalSkeletonSignature {
+        let (ranks, _) = winning_individualized_ranks(mol);
+        let mut writer = CanonicalWriter::new(mol, &ranks);
+        let starts = writer.canonical_atom_list();
+        writer.find_ring_closures(&starts);
+
+        let mut tree = writer
+            .canonical_tree_parent
+            .iter()
+            .enumerate()
+            .filter_map(|(child, parent)| {
+                parent.map(|(parent, _)| (ranks[parent.0 as usize], ranks[child]))
+            })
+            .collect::<Vec<_>>();
+        tree.sort_unstable();
+
+        let mut rings = writer
+            .atom_ring_nums
+            .iter()
+            .enumerate()
+            .flat_map(|(atom, entries)| {
+                let ranks = &ranks;
+                entries.iter().map(move |&(number, is_open, partner, _)| {
+                    (ranks[atom], ranks[partner.0 as usize], number, is_open)
+                })
+            })
+            .collect::<Vec<_>>();
+        rings.sort_unstable();
+        (tree, rings)
+    }
+
     const EZ_STABLE_CORPUS: &[&str] = &[
         "C/C=C/C",     // (E)-2-butene
         "C/C=C\\C",    // (Z)-2-butene
@@ -4496,6 +4534,190 @@ mod tests {
         }
     }
 
+    /// The output-slot gate is intentionally component-local.  Before a new
+    /// #503 design changes canonical traversal, establish whether the *full*
+    /// rank-keyed DFS tree and ring-token layout already agree across the
+    /// equivalent spellings.  A mismatch would put the next investigation in
+    /// traversal/rank construction; agreement leaves only the writer's
+    /// stereochemical token and parity handling.
+    #[test]
+    fn issue503_full_canonical_skeleton_is_spelling_invariant() {
+        let observed_pairs = [
+            (
+                r"c/3(c(/c(c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+                r"c3(c(c(/c3=N/CC)=N\[C@@H](Cc1ccc(NC(c2c(Cl)cncc2Cl)=O)cc1)C(O)=O)O)O",
+            ),
+            (
+                r"c/1(c(/c(c1=N\[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+                r"c1(c(c(/c1=N/[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+            ),
+            (
+                r"c/1(O)c(O)/c(=N\[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)c1=N\CCOC",
+                r"c1(O)c(O)c(=N/[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)\c1=N\CCOC",
+            ),
+        ];
+
+        for (&input, &(observed_a, observed_b)) in EZ_SHARED_CARRIER_HELD_OUT_RESIDUALS
+            .iter()
+            .zip(observed_pairs.iter())
+        {
+            let expected = canonical_skeleton_signature(&parse(input).unwrap());
+            for spelling in [observed_a, observed_b] {
+                assert_eq!(
+                    canonical_skeleton_signature(&parse(spelling).unwrap()),
+                    expected,
+                    "{input}: spelling '{spelling}' changed full canonical DFS skeleton"
+                );
+            }
+        }
+    }
+
+    /// Once all tree and ring occurrences agree, compare the rendered
+    /// canonical strings with only E/Z direction characters removed.  This
+    /// does not validate chemistry; it isolates whether the remaining #503
+    /// divergence is exclusively the placement/polarity of those characters
+    /// rather than atom, branch, ring, or tetrahedral-token serialization.
+    #[test]
+    fn issue503_directionless_canonical_text_is_spelling_invariant() {
+        let observed_pairs = [
+            (
+                r"c/3(c(/c(c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+                r"c3(c(c(/c3=N/CC)=N\[C@@H](Cc1ccc(NC(c2c(Cl)cncc2Cl)=O)cc1)C(O)=O)O)O",
+            ),
+            (
+                r"c/1(c(/c(c1=N\[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+                r"c1(c(c(/c1=N/[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+            ),
+            (
+                r"c/1(O)c(O)/c(=N\[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)c1=N\CCOC",
+                r"c1(O)c(O)c(=N/[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)\c1=N\CCOC",
+            ),
+        ];
+
+        for (&input, &(observed_a, observed_b)) in EZ_SHARED_CARRIER_HELD_OUT_RESIDUALS
+            .iter()
+            .zip(observed_pairs.iter())
+        {
+            let directionless = |smiles: &str| {
+                canonical_smiles(&parse(smiles).unwrap())
+                    .chars()
+                    .filter(|ch| !matches!(ch, '/' | '\\'))
+                    .collect::<String>()
+            };
+            let expected = directionless(input);
+            for spelling in [observed_a, observed_b] {
+                assert_eq!(
+                    directionless(spelling),
+                    expected,
+                    "{input}: spelling '{spelling}' changed canonical text beyond E/Z directions"
+                );
+            }
+        }
+    }
+
+    /// The slot-space probes retain candidates using `geometry_fingerprint`.
+    /// Establish that this older diagnostic has the same spelling-invariant
+    /// precondition as the rank-keyed geometry-fact extractor before using an
+    /// empty output intersection as evidence about the writer.
+    #[test]
+    fn issue503_geometry_fingerprint_is_spelling_invariant() {
+        let observed_pairs = [
+            (
+                r"c/3(c(/c(c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+                r"c3(c(c(/c3=N/CC)=N\[C@@H](Cc1ccc(NC(c2c(Cl)cncc2Cl)=O)cc1)C(O)=O)O)O",
+            ),
+            (
+                r"c/1(c(/c(c1=N\[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+                r"c1(c(c(/c1=N/[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+            ),
+            (
+                r"c/1(O)c(O)/c(=N\[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)c1=N\CCOC",
+                r"c1(O)c(O)c(=N/[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)\c1=N\CCOC",
+            ),
+        ];
+
+        for (&input, &(observed_a, observed_b)) in EZ_SHARED_CARRIER_HELD_OUT_RESIDUALS
+            .iter()
+            .zip(observed_pairs.iter())
+        {
+            let expected = geometry_fingerprint(&parse(input).unwrap());
+            for spelling in [observed_a, observed_b] {
+                assert_eq!(
+                    geometry_fingerprint(&parse(spelling).unwrap()),
+                    expected,
+                    "{input}: spelling '{spelling}' changed the slot-probe geometry fingerprint"
+                );
+            }
+        }
+    }
+
+    /// The complete slot probe includes every actual raw directional carrier,
+    /// not only substituent bonds reached through a coupled component.  The
+    /// latter misses aromatic-stash positions in the #503 canonical output
+    /// and falsely makes the semantic candidate intersection appear empty.
+    #[test]
+    fn issue503_complete_slot_probe_covers_every_canonical_direction_carrier() {
+        let observed_pairs = [
+            (
+                r"c/3(c(/c(c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+                r"c3(c(c(/c3=N/CC)=N\[C@@H](Cc1ccc(NC(c2c(Cl)cncc2Cl)=O)cc1)C(O)=O)O)O",
+            ),
+            (
+                r"c/1(c(/c(c1=N\[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+                r"c1(c(c(/c1=N/[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+            ),
+            (
+                r"c/1(O)c(O)/c(=N\[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)c1=N\CCOC",
+                r"c1(O)c(O)c(=N/[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)\c1=N\CCOC",
+            ),
+        ];
+
+        for (&input, &(observed_a, observed_b)) in EZ_SHARED_CARRIER_HELD_OUT_RESIDUALS
+            .iter()
+            .zip(observed_pairs.iter())
+        {
+            for spelling in [input, observed_a, observed_b] {
+                let output = canonical_smiles(&parse(spelling).unwrap());
+                let mol = parse(&output).unwrap();
+                let ends = CanonicalWriter::compute_stereo_alkene_ends(&mol);
+                let candidates: HashSet<BondIdx> =
+                    CanonicalWriter::coupling_components(&mol, &ends)
+                        .into_iter()
+                        .flatten()
+                        .flat_map(|end| CanonicalWriter::substituents(&mol, end))
+                        .map(|(_, bond)| bond)
+                        .collect();
+                let ranks = morgan_ranks(&mol);
+                let writer = CanonicalWriter::new(&mol, &ranks);
+                let raw_directional: HashSet<BondIdx> = mol
+                    .bonds()
+                    .filter_map(|(bond, _)| {
+                        matches!(
+                            writer.raw_input_direction(bond),
+                            Some(BondOrder::Up | BondOrder::Down)
+                        )
+                        .then_some(bond)
+                    })
+                    .collect();
+                assert!(
+                    raw_directional
+                        .iter()
+                        .any(|bond| !candidates.contains(bond)),
+                    "{spelling}: canonical output '{output}' no longer exercises the known \
+                     component-only slot-universe omission"
+                );
+                let complete_candidates: HashSet<_> =
+                    candidates.union(&raw_directional).copied().collect();
+                assert!(
+                    raw_directional
+                        .iter()
+                        .all(|bond| complete_candidates.contains(bond)),
+                    "{spelling}: complete slot universe omitted a canonical direction carrier"
+                );
+            }
+        }
+    }
+
     /// The closing side of a ring digit is syntactically capable of carrying
     /// its directional token (the parser applies the required orientation
     /// flip).  Exhaust the two remaining *local* writer freedoms together:
@@ -4589,7 +4811,7 @@ mod tests {
     /// must derive a rank-keyed component plan, not adopt a parse-indexed
     /// enumeration.
     #[test]
-    fn issue503_full_slot_polarity_space_has_no_common_output() {
+    fn issue503_full_slot_polarity_space_has_common_output() {
         let observed_pairs = [
             (
                 r"c/3(c(/c(c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
@@ -4621,11 +4843,21 @@ mod tests {
                     .flat_map(|end| CanonicalWriter::substituents(&mol, end))
                     .map(|(_, bond)| bond)
                     .collect();
+                let (ranks, _) = winning_individualized_ranks(&mol);
+                let raw_directional: Vec<_> = (0..mol.bond_count())
+                    .map(|index| BondIdx(index as u32))
+                    .filter(|&bond| {
+                        matches!(
+                            CanonicalWriter::new(&mol, &ranks).raw_input_direction(bond),
+                            Some(BondOrder::Up | BondOrder::Down)
+                        )
+                    })
+                    .collect();
+                component_bonds.extend(raw_directional);
                 component_bonds.sort_unstable_by_key(|bond| bond.0);
                 component_bonds.dedup();
                 assert!(component_bonds.len() <= 8, "diagnostic bound exceeded");
 
-                let (ranks, _) = winning_individualized_ranks(&mol);
                 let mut skeleton = CanonicalWriter::new(&mol, &ranks);
                 skeleton.find_ring_closures(&skeleton.canonical_atom_list());
                 let ring_component_bonds: Vec<_> = component_bonds
@@ -4688,23 +4920,50 @@ mod tests {
                 per_spelling.push(outputs);
                 reranked_per_spelling.push(reranked_outputs);
             }
+            let selected: Vec<_> = per_spelling
+                .iter()
+                .map(|outputs| {
+                    outputs
+                        .iter()
+                        .min()
+                        .cloned()
+                        .expect("each spelling must have a semantic candidate")
+                })
+                .collect();
+            assert!(
+                selected.windows(2).all(|pair| pair[0] == pair[1]),
+                "{input}: independent full-slot minimization diverged: {selected:?}"
+            );
             let common = per_spelling
                 .into_iter()
                 .reduce(|left, right| left.intersection(&right).cloned().collect())
                 .unwrap();
             assert!(
-                common.is_empty(),
-                "{input}: full slot/polarity enumeration found {common:?}; \
-                 promote the concrete plan only after its rank-keyed production contract is verified"
+                !common.is_empty(),
+                "{input}: the complete carrier space unexpectedly has no common output"
+            );
+            let reranked_selected: Vec<_> = reranked_per_spelling
+                .iter()
+                .map(|outputs| {
+                    outputs
+                        .iter()
+                        .min()
+                        .cloned()
+                        .expect("each spelling must have a reranked semantic candidate")
+                })
+                .collect();
+            assert!(
+                reranked_selected.windows(2).all(|pair| pair[0] == pair[1]),
+                "{input}: independent reranked full-slot minimization diverged: \
+                 {reranked_selected:?}"
             );
             let reranked_common = reranked_per_spelling
                 .into_iter()
                 .reduce(|left, right| left.intersection(&right).cloned().collect())
                 .unwrap();
             assert!(
-                reranked_common.is_empty(),
-                "{input}: rank-searching every geometry-preserving carrier representation found \
-                 {reranked_common:?}; promote it only after its production contract is verified"
+                !reranked_common.is_empty(),
+                "{input}: reranking the complete carrier space lost every common output"
             );
         }
     }

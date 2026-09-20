@@ -26,20 +26,21 @@ Two bounded writer searches are now rejected:
    together with every such DFS priority.  Their geometry-preserving output
    sets still have an empty intersection.
 3. The current branch additionally fixes the canonical DFS skeleton and
-   exhausts every component candidate bond as plain, `/`, or `\\`, together
-   with both legal occurrences of every ring token.  After semantic reparse,
-   the three residual families still have no common output.
-4. Each geometry-preserving candidate from that full-slot space is then
-   reparsed and sent through a fresh rank search.  This also leaves the three
-   families with no common output, so simply enumerating carrier spellings
-   before the current rank search is not a complete plan.
+   exhausts every component candidate bond **and every raw directional
+   carrier** as plain, `/`, or `\\`, together with both legal occurrences of
+   every ring token.  Semantic reparse leaves a non-empty common output set
+   for all three residual families.
+4. Each geometry-preserving candidate from that complete slot space is then
+   reparsed and sent through a fresh rank search.  The common output set
+   remains non-empty.  The earlier component-only probe was incomplete: it
+   omitted an aromatic-stash carrier present in canonical output.
 
 These results rule out selecting a raw atom index, a raw bond index, a local
-DFS preference, one ring-marker-side rule, or an independently assigned
-candidate-slot polarity as the canonical tie-breaker.  They do not prove that
-SMILES cannot encode the molecules, nor that a different canonical skeleton or
-encoding model cannot do so; they bound the current skeleton and every legal
-directional occurrence of its coupled candidate bonds.
+DFS preference or one ring-marker-side rule as the canonical tie-breaker.  A
+complete slot universe does have semantic solutions; its membership must not
+be limited to candidate bonds discovered through a coupling component.  The
+remaining task is to select one such solution using canonical rank/slot keys,
+never raw atom or bond indices.
 
 ## Current implementation stage
 
@@ -56,13 +57,15 @@ silently alter their output contract.
 
 A test-only canonical-DFS inventory now also shows that the three residual
 families expose the same eligible tree and ring-token output slots across
-their equivalent spellings.  The direct full-slot enumeration rejects every
-plain/directional polarity and legal ring occurrence for those slots.  Thus a
-component plan over the current skeleton is not yet an implementation answer.
-Nor is pre-ranking enumeration of the existing carrier spellings.  The next
-design must identify a representation-independent skeleton or an additional
-legal encoding degree of freedom, while preserving the fail-closed stable-key
-boundary.
+their equivalent spellings.  A full rank-keyed tree/ring signature and the
+canonical text with only `/` and `\\` removed are also invariant.  When raw
+directional carriers are included, complete-slot enumeration finds common
+semantic output; its re-ranked subset does too.  Independently choosing the
+lexicographically smallest semantic candidate yields the same output for every
+spelling in all three families.  The remaining production work is therefore a
+bounded, rank-keyed complete-slot planner and semantic reparse selection—not
+skeleton replacement.  The fail-closed stable-key boundary remains until that
+planner has the full acceptance proof.
 
 ## Required architecture
 
@@ -77,13 +80,16 @@ The implementation must separate chemical geometry from its SMILES spelling.
 2. **Build the canonical skeleton.** Determine the canonical atom order, DFS
    tree, branches, ring edges, and ring-digit occurrences without consuming
    directional markers.  Each eligible directional token position is an
-   explicit output slot with its traversal orientation.
-3. **Solve one component plan.** Choose output slots and `/`/`\` polarity for
-   the full coupled component simultaneously.  Constraints must preserve every
-   extracted geometry fact, respect SMILES ring-token syntax, and prevent a
-   shared slot from receiving contradictory assignments.  The solution is
-   selected only from canonical-rank and output-slot keys; it must never use
-   parse-time atom or bond indices.
+   explicit output slot with its canonical traversal orientation.
+3. **Solve one component plan.** Build the complete slot universe from all
+   coupled substituent candidates plus every raw directional carrier.  Choose
+   slots and `/`/`\` polarity for the full coupled component simultaneously.
+   Compute polarity in the slot's canonical orientation from the extracted
+   geometry fact; do not re-orient a newly chosen token through a parse-index
+   tie-break.  Constraints must preserve every fact, respect SMILES ring-token
+   syntax, and prevent a shared slot from receiving contradictory assignments.
+   The solution is selected only from canonical-rank and output-slot keys; it
+   must never use parse-time atom or bond indices.
 4. **Validate before adoption.** Reparse every candidate plan and compare the
    extracted geometry facts, not merely text stability.  Choose the
    lexicographically minimal valid canonical serialization only after this
