@@ -421,7 +421,8 @@ impl<'a> SmilesWriter<'a> {
         // An atom needs bracket notation when:
         //  - it has an isotope, charge, explicit H count, atom map, or
         //  - it is not in the organic subset (cannot rely on implicit-H rules).
-        let needs_bracket = atom.isotope.is_some()
+        let needs_bracket = atom.wildcard
+            || atom.isotope.is_some()
             || atom.charge != 0
             || atom.hydrogen_count.is_some()
             || !atom.element.is_organic_subset()
@@ -432,7 +433,9 @@ impl<'a> SmilesWriter<'a> {
             if let Some(iso) = atom.isotope {
                 self.out.push_str(&iso.to_string());
             }
-            let sym = if atom.aromatic {
+            let sym = if atom.wildcard {
+                "*".to_string()
+            } else if atom.aromatic {
                 atom.element.symbol().to_lowercase()
             } else {
                 atom.element.symbol().to_string()
@@ -639,6 +642,15 @@ mod tests {
         let c1 = b.add_atom(Atom::new(Element::C));
         b.add_bond(c0, c1, BondOrder::Single).unwrap();
         assert_eq!(write(&b.build()), "[CH3:7]C");
+    }
+
+    #[test]
+    fn test_wildcard_roundtrip_preserves_atom_and_map() {
+        let plain = parse("[*]C").unwrap();
+        assert_eq!(write(&plain), "[*]C");
+
+        let mapped = parse("[*:17]C").unwrap();
+        assert_eq!(write(&mapped), "[*:17]C");
     }
 
     #[test]

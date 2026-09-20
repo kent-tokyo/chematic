@@ -457,6 +457,62 @@ mod tests {
     }
 
     #[test]
+    fn rdkit_attachment_point_label_fixtures_preserve_atom_map_identity() {
+        // These CXSMILES label placements were emitted by RDKit 2025.09.3
+        // `Chem.MolToCXSmiles`.  `_AP<n>` remains ordinary atom-label
+        // metadata: only a degree-one wildcard has attachment-point identity.
+        // Keep atom maps in the fixture so a future writer traversal cannot
+        // silently move a label to a different atom.
+        let fixtures = [
+            ("[*:11][C:12] |$_AP1;$|", Some(1)),
+            ("[*:11][C:12] |$_AP4294967295;$|", Some(u32::MAX)),
+            ("[*:11][C:12] |$_AP0;$|", None),
+            ("[*:11][C:12] |$_AP-1;$|", None),
+            ("[*:11][C:12] |$_AP1x;$|", None),
+            ("[*:11][C:12] |$_AP4294967296;$|", None),
+        ];
+
+        for (input, expected_attachment_id) in fixtures {
+            let parsed = parse_cxsmiles(input).unwrap();
+            assert_eq!(parsed.mol.atom(AtomIdx(0)).atom_map, Some(11), "{input}");
+            assert_eq!(parsed.mol.atom(AtomIdx(1)).atom_map, Some(12), "{input}");
+            assert_eq!(
+                parsed.marked_attachment_point(AtomIdx(0)),
+                expected_attachment_id,
+                "{input}"
+            );
+
+            let serialized = write_cxsmiles(&parsed);
+            let reparsed = parse_cxsmiles(&serialized).unwrap();
+            assert_eq!(reparsed.mol.atom(AtomIdx(0)).atom_map, Some(11), "{input}");
+            assert_eq!(reparsed.mol.atom(AtomIdx(1)).atom_map, Some(12), "{input}");
+            assert_eq!(
+                reparsed.marked_attachment_point(AtomIdx(0)),
+                expected_attachment_id,
+                "{input}; serialized as {serialized}"
+            );
+        }
+
+        // RDKit also permits `_AP<n>` on non-dummy atoms. It must remain a
+        // preserved label, not become an attachment point merely by spelling.
+        let non_dummy = parse_cxsmiles("[C:1]([*:11])[*:12] |$_AP1;_AP2;$|").unwrap();
+        assert_eq!(non_dummy.mol.atom(AtomIdx(0)).atom_map, Some(1));
+        assert_eq!(non_dummy.marked_attachment_point(AtomIdx(0)), None);
+        assert_eq!(non_dummy.mol.atom(AtomIdx(1)).atom_map, Some(11));
+        assert_eq!(non_dummy.marked_attachment_point(AtomIdx(1)), Some(2));
+        assert_eq!(non_dummy.mol.atom(AtomIdx(2)).atom_map, Some(12));
+        assert_eq!(non_dummy.marked_attachment_point(AtomIdx(2)), None);
+
+        let reparsed = parse_cxsmiles(&write_cxsmiles(&non_dummy)).unwrap();
+        assert_eq!(reparsed.mol.atom(AtomIdx(0)).atom_map, Some(1));
+        assert_eq!(reparsed.marked_attachment_point(AtomIdx(0)), None);
+        assert_eq!(reparsed.mol.atom(AtomIdx(1)).atom_map, Some(11));
+        assert_eq!(reparsed.marked_attachment_point(AtomIdx(1)), Some(2));
+        assert_eq!(reparsed.mol.atom(AtomIdx(2)).atom_map, Some(12));
+        assert_eq!(reparsed.marked_attachment_point(AtomIdx(2)), None);
+    }
+
+    #[test]
     fn parse_cxsmiles_zero_bond() {
         let cx = parse_cxsmiles("C~O |Z:0|").unwrap();
         assert_eq!(cx.mol.bond(BondIdx(0)).order, BondOrder::Zero);
