@@ -25,6 +25,10 @@ Live: <https://kent-tokyo.github.io/chematic/explorer/>
 - **Known-length batch accounting** — every completed record is either loaded or rejected. A
   client display cap or cancellation is reported as `complete=false` with the unprocessed row
   count and terminal reason; those rows are not mislabeled as skipped or successful.
+- **Unknown-length CSV stream accounting** — before EOF the total record count is not known.
+  On cancellation, the Explorer separately reports analysed rows, any already-observed rows
+  still lacking a terminal result, and `unread input=unknown`; it never estimates that suffix
+  or exports it as skipped/successful rows.
 - **`.smi` / newline-separated SMILES / pasted text** — one record per non-blank line, SMILES
   first, an optional whitespace-separated name as the rest of the line.
 - **Built-in sample dataset** (`sample.csv`) — 16 well-known drugs/small molecules, verified
@@ -108,7 +112,8 @@ beyond loading its own static assets (WASM binary, CSS, this HTML/JS).
   progress announcements, and focus-trap modal semantics were **not** attempted in this pass.
 - Browser smoke coverage includes `scripts/explorer_worker_10k_smoke.mjs` and
   `scripts/explorer_worker_10k_smoke.py` for the 10,000-row SMI path. The Python smoke also
-  covers the equivalent CSV-file path, checks Cancel, and disables network access after
+  covers the equivalent CSV-file path, checks both completed import and cancellation accounting,
+  and disables network access after
   page/Worker initialization before exercising those local paths. It downloads the full
   10,000-row CSV export and verifies input order/status rather than accepting the 250-row
   render window as evidence. `scripts/explorer_sdf_worker_smoke.py` covers resumable SDF batches with an
