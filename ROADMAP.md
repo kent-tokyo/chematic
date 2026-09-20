@@ -6,12 +6,12 @@
 > then prepare a genuinely new freeze for a later one-time evaluation.
 > The merged Parse + Morgan browser win moves to maintenance and package verification.
 
-> 2026-09-20 competitor-watch intake changes execution detail, not the product
-> direction: complete the Trust Release packet; stage the next RDKit rebaseline;
-> turn verified upstream failures into narrow regressions; and make batch terminal
-> accounting a binding contract.  Reported upstream changes remain watch inputs
-> until their primary source, released artifact, and affected API surface are
-> recorded.
+> The September 20 competitor-watch intake confirms the direction rather than
+> starting a feature race: complete the Trust Release packet; stage the next
+> RDKit rebaseline; turn *verified* upstream failures into narrow regressions;
+> and make batch terminal accounting a binding contract. Reported upstream
+> changes remain watch inputs until their primary source, released artifact, and
+> affected API surface are recorded.
 
 ## Current status
 
@@ -87,7 +87,7 @@ workflows, with a published compatibility contract for every claimed operation.
 
 The September 20 review turns upstream changes into scoped regression work,
 not an automatic promise of new chemistry support. The
-[current execution packet](docs/trust-release-plan.md#7-2026-09-20-trust完了に向けた実行順)
+[current execution packet](docs/trust-release-plan.md#7-2026-09-21-trust完了に向けた実行順)
 records primary sources, implementation gaps, dependencies, and acceptance.
 Existing published 1.0.15 measurements stay historical; new release/candidate
 measurements must identify their actual package/source hashes.
@@ -101,7 +101,7 @@ into fresh validation evidence.
 
 | Stage | Work | Completion evidence | Explicit boundary |
 |---|---|---|---|
-| 0 | Preserve the three rejected A0 candidates and finish the acceptance-packet inventory | Candidate provenance, declared support domain, failures, affected bindings, and an exposure record are linked from the ledger | `validation/a0-development-packet.json` now CI-checks the three safe rejection summaries, 52-row nonsealed classification, and 7,737-row Rust/Python/Node-WASM impact. No descriptor, stereo, or upstream-regression tuning may use the exposed 8k rows as an unused holdout; a new freeze remains required for adoption. |
+| 0 | Preserve the three rejected A0 candidates and finish the acceptance-packet inventory | Candidate provenance, declared support domain, failures, affected bindings, and an exposure record are linked from the ledger | PR #606 (`fa61eaaa`) CI-checks the three safe rejection summaries, 52-row nonsealed classification, and 7,737-row Rust/Python/Node-WASM impact. No descriptor, stereo, or upstream-regression tuning may use the exposed 8k rows as an unused holdout; a new freeze remains required for adoption. |
 | 1 | Prepare the RDKit rebaseline lanes before a new stable artifact is selected | Version-pinned Python/native/npm inputs, nanobind-wrapper backend and typed-error probes, fixed operation settings, and reproducible commands | Run and publish a comparison only against an actually released artifact; 2026.03.6 remains historical rather than being relabelled current |
 | 2 | Import verified upstream failure modes as CheMatic regressions | Identity-renumber stereo, selected-atom/bond CIP, and V3000 E/Z query-round-trip truth tables pass, or a typed unsupported outcome is documented | A competitor failure is a regression source, not proof that CheMatic is more correct; do not import a report before confirming its reproducer and affected versions |
 | 3 | Close A2/#503's canonical E/Z work before new 3D breadth | Remaining components converge under atom-order and spelling permutations, reparse preserves stereo, and stable-key stops only where ambiguity remains real | Implemented for the three audited aromatic-stash residual families: a bounded complete-slot planner includes raw directional carriers, reparses every candidate against a non-recursive E/Z signature, and selects the lexicographic minimum without raw atom/bond-index tie-breaks. The 256-seed relabeling gate now converges and stable keys are admitted only for this proven aromatic-stash path; other coupled systems remain fail-closed. |
@@ -112,6 +112,21 @@ Stages 0–2 may proceed in parallel. Stage 3 is the first local correctness
 implementation priority after immediate regressions; Stage 4 may proceed in
 parallel once its public contract is fixed. Stages 5 and any new Trust RC are
 gated on their preceding evidence rather than on release cadence.
+
+### Near-term execution contract (September 21)
+
+This is the operational order for the next one to three months. It replaces
+neither the A0–A6 exits nor the T0–T6 plan; it makes their dependencies and
+stop conditions explicit.
+
+| Order | Work package | Concrete next output | Acceptance / stop condition |
+|---:|---|---|---|
+| 1 | **A0 evidence recovery** | Keep the merged development packet current when a declared non-sealed regression or binding surface changes | The three exposed cohorts remain historical. Do not create an allegedly fresh holdout without a new source, overlap audit, attestation, annotated tag, and one-time protocol. |
+| 2 | **T1.5 RDKit rebaseline preparation** | Maintain runnable Python/native/npm lanes with artifact, backend, API-contract, corpus, toolchain, and command provenance | Do not run or label a “next RDKit” comparison until an official released artifact is verified. Historical 2025.09.3/2026.03.6 lanes stay visible. |
+| 3 | **T5.7/T1.9 semantic regressions** | Add source-pinned reproductions for identity-renumber stereo and V3000 E/Z query round trips; include selected atom/bond CIP only after its source fixture is verified | Each fixture must compare atom/bond correspondence and semantic truth tables, or return a typed unsupported result. A competitor defect is never evidence of CheMatic superiority. |
+| 4 | **T3.7 controlled batch runtime** | Specify a versioned unknown-stream envelope for Rust, Python, Node, WASM, Worker, and MCP adapters | Known-length accounting remains exact; unknown streams expose processed prefix, observed-but-unprocessed data, unread range/unknown, terminal reason, and cancellation state. Zero `failed` must not imply success. |
+| 5 | **Browser proof and performance maintenance** | Measure the declared Worker/stream/cancel/export path and rerun the package scorecard only with equivalent operation contracts | Keep parse/write, compatible Morgan, native ECFP, startup, and memory as separate lanes. A local browser result is not a cross-host, CDN, or unique-memory claim. |
+| 6 | **A6 correctness, not 3D breadth** | Close existing typing, charge, gradient, convergence, timeout, stereo, and conformer-quality gaps | Do not add an embedding-option race merely because an upstream engine adds one; confirmed silent wrong results take P0 precedence. |
 
 ## Priority order
 

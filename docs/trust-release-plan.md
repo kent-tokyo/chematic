@@ -1,6 +1,6 @@
 # chematic 1.x Trust Release — 実行計画
 
-更新日: 2026-09-20。期間: 2026-09-14〜2026-12-06（12週間の作業配分案）。
+更新日: 2026-09-21。期間: 2026-09-14〜2026-12-06（12週間の作業配分案）。
 対象: v1.0.17公開後のTrust Release候補。日付は納期の保証ではなくレビュー時点。
 状態: **T0の測定packetとT1.1–T1.4、現行版T2.6、公開artifact T3.4の一部を実装済み。Trust RCの全出口は未達**。
 v1.0.17は公開済み。各版のrelease境界はCHANGELOGを参照する。
@@ -16,11 +16,11 @@ dashboard、release metadata v2、公開channel実測recordを実装した。can
 優先度P0/P1/P2は緊急度、既存Phase P0–P6は製品領域、A0–A6は精度目標、
 T0–T6は今回の作業ID。番号は相互に置き換えない。
 
-9月20日の優先順位更新: **A0の三つの不採用packetを保全し、非sealed分類と次freezeの
+9月21日の優先順位更新: **A0の三つの不採用packetを保全し、非sealed分類と次freezeの
 前提を閉じる**。T1.6凍結候補は一度ずつ評価済みで、いずれも採用しない。
 T3.6の高速化はPR #555 (`7d98dcd3`)で統合され、対応範囲のbit一致と複数browser/hostの
 速度優位を記録済み。今後は公開package再測定、当初の統計/資源条件との差分確認、回帰維持へ移す。
-[第7節](#7-2026-09-20-trust完了に向けた実行順)が新しい実行packet、ROADMAPが優先順を持つ。
+[第7節](#7-2026-09-21-trust完了に向けた実行順)が新しい実行packet、ROADMAPが優先順を持つ。
 新しい競合回帰・BatchResult変更は9月16日の凍結candidateへ混ぜず、別commitで進める。
 
 2026-09-16に公開npm artifact と official RDKit.js の固定10k browser
@@ -613,7 +613,7 @@ T3.1–T3.3の未達部分を埋める。公開packageのESM/TS/Worker導入、�
 上記日数は作業配分の目安。上流ビルド、測定host、第三者reviewは別の待ち時間。
 計画更新は実装・新ベンチマーク・公開の証拠ではなく、本更新でsealed inputは開封しない。
 
-## 7. 2026-09-20 Trust完了に向けた実行順
+## 7. 2026-09-21 Trust完了に向けた実行順
 
 この節は次の1〜3か月の追加・再配置を既存T0–T6/A0–A6に統合する。
 新しい製品Phaseは増やさない。各項目は計画であり、競合issueの存在だけでは
@@ -633,6 +633,25 @@ CheMaticの不具合や優位性が確定したことにはならない。
 4. **比較は同じ操作だけを順位付けする。** API意味論、拒否条件、prepared state、
    input/output、測定hostのいずれかが異なるlaneは、比較記録には残すが速度・互換性の
    勝敗表には入れない。
+
+### 実装順を固定する追加ルール
+
+この週は新機能の数ではなく、証拠と契約を閉じる。各作業の開始条件と出力を次の
+ように固定する。
+
+| 順位 | 実行単位 | 次の成果物 | 開始・停止条件 |
+|---:|---|---|---|
+| P0-1 | A0 evidence recovery | CI検証済みの開発packetを、影響した非sealed分類とbinding会計に追随させる | PR #606で三つの安全な不採用summary、52-row分類、7,737-row binding影響を固定済み。新source、overlap audit、attestation、annotated tagなしに新holdoutを作らない。 |
+| P0-2 | T1.5 rebaseline preparation | Python/native/npmのartifact・backend・型/例外・操作設定を持つ実行可能lane | 次RDKit版は公式release artifactを一次確認してから測る。予定版、issue、PR、stubの量だけではlaneを開始しない。 |
+| P1-1 | T5.7/T1.9 upstream regressions | identity-renumber stereo、V3000 E/Z query、必要なら選択atom/bond CIPのsource-pinned fixture | まず報告版と現行pinでreproducerを確認する。CheMaticが同じAPIを持たない場合はlossless round-tripかtyped refusalを検査し、互換達成とは呼ばない。 |
+| P1-2 | T3.7 controlled batch | unknown-stream schema、Worker/MCP adapter fixture、cancel/export migration example | 既知長と未知長を一つの成功数へ潰さない。全bindingで入力index、stage、終端理由、処理済みprefix、未読状態を表すまでruntime claimを広げない。 |
+| P1-3 | Browser proof maintenance | 同一操作契約のWorker/stream/cancel/resource scorecard | parse/write、compatible Morgan、native ECFP、startup、memoryを別laneとし、package/version/hostを固定する。 |
+| P2 | A6 fail-closed 3D | 既存3D gapのtyped failure/quality evidence | 上流のMMFF/embedding機能はwatch対象。基礎のtyping、charge、gradient、convergence、timeout、stereoが未完のまま広い3D APIを追加しない。 |
+
+競合ウォッチは週次で一次情報・reproducer・release artifact・影響APIを台帳化する。
+それ以外の競合主張は、計画の根拠ではなく未検証のwatch noteに留める。COSMolKitを
+含むPure-Rust競合に対しては機能数を追わず、全入力の終端会計、cross-binding同一性、
+local-only制御、再現可能な比較packetを差別化の受入条件にする。
 
 ### 一次情報を確認して修正した前提
 
