@@ -88,6 +88,7 @@ jobs:
           python3 scripts/v3000_indigo_semantic_gate.py --output /tmp/v3000-indigo-semantic.json
           python3 scripts/v3000_sgroup_external_reader_gate.py --output /tmp/v3000-sgroup-external-reader.json
           python3 scripts/v3000_relative_stereo_gate.py --output /tmp/v3000-relative-stereo.json
+          python3 scripts/v3000_indigo_ez_query_truth_table.py --output /tmp/v3000-indigo-ez-query.json
 
   stereo-torture-suite:
     name: Stereo Torture Suite
