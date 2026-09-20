@@ -41,6 +41,7 @@ jobs:
       - name: Compatibility Contract
         run: |
           python3 scripts/check_compatibility_profiles.py
+          python3 scripts/check_rdkit_rebaseline_manifest.py
           python3 scripts/generate_compatibility_dashboard.py --output /tmp/compatibility-dashboard.md
           diff -u docs/compatibility-dashboard.md /tmp/compatibility-dashboard.md
       - name: Release channel verification record

@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "policy": {
+    "baseline_lanes_are_immutable": true,
+    "next_stable_lane": "unavailable_until_artifact_metadata_is_verified",
+    "prohibited_inference": "A Python or native package release does not prove that an RDKit.js npm artifact exists or has the same runtime version."
+  },
+  "operations": [
+    {"id": "smiles_parse_write", "comparison": "semantic parse/write; canonical spelling is reported separately"},
+    {"id": "cip", "comparison": "atom-map and bond-map labels, including permutation invariance"},
+    {"id": "smarts", "comparison": "target-atom sets with parser failures retained"},
+    {"id": "morgan", "comparison": "raw identifiers/bits and ordered search results"},
+    {"id": "browser_runtime", "comparison": "packed-output-equivalent parse, prepared fingerprint, parse+fingerprint, search, startup, and resource lanes"}
+  ],
+  "lanes": [
+    {
+      "id": "python-2025.09.3-regression",
+      "channel": "python_native",
+      "availability": "measured",
+      "rdkit_version": "2025.09.3",
+      "wrapper_backend": "record_per_artifact",
+      "corpus_policy": "recorded_per_artifact",
+      "operation_evidence": {
+        "smiles_parse_write": [],
+        "cip": ["validation/results/cip-label-parity-a2-v1.0.13.json"],
+        "smarts": ["validation/results/rdkit-smarts-direct-chembl-5000-footer-verified-v1.0.13.json"],
+        "morgan": ["validation/results/ecfp-rdkit-raw-identifier-parity-aromaticity-variant-2025.09.3-5000.json"],
+        "browser_runtime": []
+      }
+    },
+    {
+      "id": "python-2026.03.6-separate-smarts",
+      "channel": "python_native",
+      "availability": "partial",
+      "rdkit_version": "2026.03.6",
+      "wrapper_backend": "record_per_artifact",
+      "corpus_policy": "same_exposed_smarts_corpus_as_2025.09.3_lane",
+      "operation_evidence": {
+        "smiles_parse_write": [],
+        "cip": [],
+        "smarts": ["validation/results/rdkit-smarts-oracle-lanes-v1.0.14.json"],
+        "morgan": [],
+        "browser_runtime": []
+      }
+    },
+    {
+      "id": "npm-2026.3.6-browser",
+      "channel": "npm_wasm",
+      "availability": "measured",
+      "rdkit_version": "2026.03.6",
+      "wrapper_backend": "official_rdkit_js",
+      "corpus_policy": "fixed_exposed_10k_with_typed_feii_refusal",
+      "operation_evidence": {
+        "smiles_parse_write": ["validation/results/competitive-browser-rdkitjs-published-npm-10k-chromium-20rep-v1.0.15-2026-09-16.json"],
+        "cip": [],
+        "smarts": [],
+        "morgan": ["validation/results/competitive-browser-rdkitjs-ecfp4-parity-10k-v1.0.15-2026-09-16.json"],
+        "browser_runtime": ["validation/results/competitive-browser-rdkitjs-published-npm-10k-chromium-20rep-v1.0.15-2026-09-16.json", "validation/results/competitive-browser-rdkitjs-published-npm-10k-chromium-rss-v1.0.15-2026-09-16.json"]
+      }
+    },
+    {
+      "id": "next-stable-pending",
+      "channel": "python_native_and_npm_wasm",
+      "availability": "unavailable",
+      "rdkit_version": null,
+      "wrapper_backend": null,
+      "corpus_policy": "reuse_only_exposed_corpora; never reuse_the_rejected_sealed_8k",
+      "operation_evidence": {
+        "smiles_parse_write": [],
+        "cip": [],
+        "smarts": [],
+        "morgan": [],
+        "browser_runtime": []
+      }
+    }
+  ]
+}
