@@ -493,9 +493,12 @@ fn descriptors_json(smiles: &str) -> Result<String, String> {
         "molecular_weight": chematic_chem::molecular_weight(&mol),
         "exact_mass": chematic_chem::exact_mass(&mol),
         "logp": chematic_chem::logp_crippen(&mol),
+        "molar_refractivity": chematic_chem::molar_refractivity(&mol),
         "tpsa": chematic_chem::tpsa(&mol),
         "hbd": chematic_chem::hbd_count(&mol),
         "hba": chematic_chem::hba_count(&mol),
+        "fsp3": chematic_chem::fsp3(&mol),
+        "aromatic_ring_count": chematic_chem::aromatic_ring_count(&mol),
         "rotatable_bonds": chematic_chem::rotatable_bond_count(&mol),
     })
     .to_string())
@@ -1261,6 +1264,9 @@ mod tests {
             serde_json::from_str(&descriptors_json("CCO").unwrap()).unwrap();
         assert_eq!(json["heavy_atoms"], 3);
         assert!(json["molecular_weight"].as_f64().unwrap() > 40.0);
+        assert!(json["molar_refractivity"].as_f64().unwrap() > 10.0);
+        assert_eq!(json["fsp3"], 1.0);
+        assert_eq!(json["aromatic_ring_count"], 0);
         assert_eq!(json["formula"], "C2H6O");
     }
 

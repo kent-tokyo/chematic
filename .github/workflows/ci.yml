@@ -66,6 +66,9 @@ jobs:
           python3 scripts/tpsa_functional_group_probe.py \
             --cli target/debug/chematic \
             --output /tmp/tpsa-functional-group-probe.json
+          python3 scripts/descriptor_functional_group_classification.py \
+            --cli target/debug/chematic \
+            --output /tmp/descriptor-functional-group-classification.json
 
   v3000-indigo-semantic:
     name: V3000 Indigo semantic round trip

@@ -654,6 +654,11 @@ CheMaticの不具合や優位性が確定したことにはならない。
   閾値へ合わせ込まず、独立の既知/生成テストと仕様根拠を使う。修正候補ごとに、影響binding
   回帰、変更影響表、公開主張への影響を記録する。descriptorは官能基・電荷・同位体・
   tautomer/芳香族性の非sealedな層別を先に固定し、全体一致率だけを次freezeの根拠にしない。
+  公開46官能基の最初の層別では、HBA/HBD/TPSA/LogP/MR/Fsp3/芳香族環数は46/46 strict、
+  分子量は45/46 strictだった。残るSe 1件はnative IUPAC mass tableとRDKit mass profileの
+  宣言済み差であり、CLIのnative massをRDKit互換値と偽装しない。結果は
+  `validation/results/descriptor-functional-group-classification-v1.0.17.json`に固定し、
+  CIで再実行する。これは公開development分類であり、unused採用評価ではない。
 - [ ] 次の採用判断が必要になった時点で、別source・別抽出・重複除外・source hash・
   attestation・annotated tagを新規に固定する。新しいcohortを作るだけでは合格とせず、
   candidate buildとfixed oracleで一度だけ実行する。
