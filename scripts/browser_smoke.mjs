@@ -267,14 +267,16 @@ try {
   await page.locator("#explorer-paste-textarea").fill("CCO\nC1CC\nCCN");
   await page.locator("#explorer-btn-parse-paste").click();
   await page.locator("#explorer-status").filter({ hasText: /failed to parse/i }).waitFor({ state: "visible" });
-  assert.equal(await page.locator("#explorer-result-count").innerText(), "3 of 3 shown");
+  const explorerResultCount = page.locator("#explorer-result-count");
+  await explorerResultCount.filter({ hasText: "3 of 3 shown" }).waitFor({ state: "visible" });
+  assert.equal(await explorerResultCount.innerText(), "3 of 3 shown");
   assert.equal(await page.locator("#explorer-tbody tr").count(), 3);
   const cancellationInput = Array.from({ length: 2000 }, () => "CCO").join("\n");
   await page.locator("#explorer-paste-textarea").fill(cancellationInput);
   await page.locator("#explorer-btn-parse-paste").click();
   await page.locator("#explorer-cancel").waitFor({ state: "visible" });
   await page.locator("#explorer-cancel").click();
-  await page.locator("#explorer-status").filter({ hasText: /Cancelled after/i }).waitFor({ state: "visible" });
+  await page.locator("#explorer-status").filter({ hasText: /cancelled; complete=false/i }).waitFor({ state: "visible" });
   assert.match(await page.locator("#explorer-result-count").innerText(), /^\d+ of \d+ shown$/);
   await page.locator("#explorer-btn-sample").click();
   await page.locator("#explorer-status").filter({ hasText: /loaded/i }).waitFor({ state: "visible" });
