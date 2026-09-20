@@ -313,6 +313,22 @@ fn rdkit_avg_mass(element: Element) -> f64 {
 /// nuclide entry; retain that behavior rather than returning an ambiguous
 /// unsupported value.
 fn rdkit_isotope_mass(element: Element, isotope: u16) -> f64 {
+    use crate::rdkit_isotope_mass_table::RDKIT_ISOTOPE_MASS_TABLE;
+
+    RDKIT_ISOTOPE_MASS_TABLE
+        .binary_search_by_key(&(element.atomic_number(), isotope), |&(z, a, _)| (z, a))
+        .map(|index| RDKIT_ISOTOPE_MASS_TABLE[index].2)
+        // RDKit uses the mass number for a syntactically valid but unknown
+        // isotope label. Preserve this documented compatibility boundary.
+        .unwrap_or(isotope as f64)
+}
+
+/// High-precision nuclide masses retained for the pre-existing native exact-
+/// mass API.  This intentionally stays separate from the RDKit descriptor
+/// table above: RDKit exposes its periodic-table values at its own precision,
+/// whereas changing the native exact-mass values would be an unrelated API
+/// behavior change.
+fn exact_mass_isotope(element: Element, isotope: u16) -> f64 {
     match (element.atomic_number(), isotope) {
         (1, 2) => 2.01410177812,
         (1, 3) => 3.01604928199,
@@ -526,7 +542,7 @@ pub fn exact_mass(mol: &Molecule) -> f64 {
             continue;
         }
         let m = match atom.isotope {
-            Some(iso) => rdkit_isotope_mass(atom.element, iso),
+            Some(iso) => exact_mass_isotope(atom.element, iso),
             None => mono_mass(atom.element),
         };
         mass += m;
@@ -3921,6 +3937,38 @@ mod tests {
         let unknown = mol("[99C]");
         assert!(approx(rdkit_molecular_weight(&unknown), 99.0, 1e-12));
         assert!(approx(exact_mass(&unknown), 99.0, 1e-12));
+    }
+
+    #[test]
+    fn rdkit_mw_uses_complete_generated_isotope_table() {
+        // This representative is deliberately not one of the historical
+        // hand-written entries. RDKit's public PeriodicTable reports
+        // 11.0114336 Da for carbon-11, rather than the label's integer 11.
+        let carbon11 = mol("[11C]");
+        assert!(approx(rdkit_molecular_weight(&carbon11), 11.0114336, 1e-10));
+
+        let table = crate::rdkit_isotope_mass_table::RDKIT_ISOTOPE_MASS_TABLE;
+        assert_eq!(
+            table.len(),
+            3111,
+            "unexpected generated RDKit isotope count"
+        );
+        for pair in table.windows(2) {
+            let (left_z, left_a, _) = pair[0];
+            let (right_z, right_a, _) = pair[1];
+            assert!(
+                (left_z, left_a) < (right_z, right_a),
+                "isotope mass table must be sorted for binary search"
+            );
+        }
+        for &(atomic_number, isotope, expected) in table.iter() {
+            let element = Element::from_atomic_number(atomic_number)
+                .expect("generated table contains a valid element");
+            assert!(
+                approx(rdkit_isotope_mass(element, isotope), expected, 0.0),
+                "isotope mass lookup mismatch for Z={atomic_number}, A={isotope}"
+            );
+        }
     }
 
     #[test]
