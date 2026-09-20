@@ -13,7 +13,7 @@ upgraded to the current source revision.
 | Parser security | `validation/parser_security_corpus_v1.json` plus hosted Linux gate | Fixed five-format corpus with process/time/memory boundaries |
 | V3000 interchange | `validation/results/v3000-*-v1.0.15.json` | Ordinary structures and declared SGROUP/stereo contracts; no coordination/haptic/polymer semantic claim |
 | Stereo development | `validation/results/stereo-*-v1.0.15-2026-09-16.json` | 300 development structures and 5,115 spelling variants; not independent gold |
-| Sealed evaluation | `validation/results/sealed-cohort-preflight-trust-eval-candidate-20260916.json` | Candidate, attestation, and 2k/8k split are sealed; no score has been calculated |
+| Sealed evaluation | `validation/results/sealed-descriptor-evaluation-trust-eval-candidate-20260916-20260920.json` | The frozen 8k candidate was evaluated and rejected: all rows parsed, but six molecular-weight values were unsupported and TPSA had 46 strict mismatches; raw SMILES remain local-only |
 
 ## Accuracy snapshots
 

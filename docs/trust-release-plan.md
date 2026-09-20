@@ -227,11 +227,14 @@ SMARTSについては同じv1.0.14 build・5,021分子・31 queryで2026.03.6 la
   hashesは`validation/results/sealed-cohort-preflight-trust-eval-candidate-20260916.json`
   と`validation/attestations/unused-data-chembl-20260916.json`に保存する。raw inputは
   local-onlyで、scoreはまだ計算していない。
-- [ ] T1.6 evaluation: raw/splitの存在・hash・露出履歴、protocol/seed、候補binaryと
-  oracleを再確認してから、凍結済み候補の8k評価を一度実行して全行会計を保存する。
-  入力一覧を調査ログへ展開しない。新しい修正commitはこの候補と同一ではない。
-  新候補のsealed判定は露出履歴と再凍結手順で決め、閲覧済みholdoutで調整した後に
-  同じデータを「未使用」として採用判定しない。A5の第三者gold/reviewとは別ゲート。
+- [x] T1.6 evaluation: raw/split hashes、露出履歴、candidate tag、source-built wheelと
+  RDKit 2025.09.3を確認してから、凍結候補の8k評価を一度実行した。8,000/8,000件は
+  parseできたが、分子量で6件のunsupported、TPSAで46件のstrict mismatchがあり、
+  A0候補は不採用となった。生SMILESを含むrawはlocal-onlyで、commit/tag/wheel/corpus/raw
+  hashesと全件集計は`validation/results/sealed-descriptor-evaluation-trust-eval-candidate-20260916-20260920.json`
+  に記録する。選別的な再試行はしていない。
+- [x] このholdoutは露出済みであり、後続候補のtuningや未使用評価に再利用しない。
+  新候補のsealed判定は露出履歴と再凍結手順で決める。A5の第三者gold/reviewは別ゲート。
 - [x] T1.7 ordinary-V3000 interchange baselineを固定する。PR #544で
   RDKit `2025.09.3` と Indigo `1.46.0` をversion-pinned readerとして、通常V3000の
   semantic round trip、SGROUPの作成・編集後の外部reader受理、relative stereoと

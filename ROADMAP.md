@@ -72,7 +72,7 @@ measurements must identify their actual package/source hashes.
 
 | Order | Priority | Delivery and next output | Product Phase / accuracy |
 |---|---|---|---|
-| 1 | P0 | **T1.6 / A0 acceptance → one frozen 8k evaluation**: verify input custody, hashes, exposure, protocol, build and oracle; publish complete accounting and acceptance decision | P0/P2; A0–A4 |
+| 1 | P0 | **A0 recovery after frozen 8k rejection**: preserve the failed candidate's evidence, classify its declared-scope gaps without reusing the exposed holdout, and prepare a new freeze/unused cohort for a later adoption decision | P0/P2; A0–A4 |
 | 2 | P0 preparation; external execution | **T1.5 rebaseline**: prepare paired old/new RDKit lanes now; run when the actual stable Python/native/npm artifacts exist. Record wrapper backend and API behavior, not just version strings | P0/P2/P3; A1–A4 |
 | 3 | P1; P0 if reproduced corruption | **T5.7 + T1.9**: identity-renumber/ring-state stereo regression and V3000 E/Z query truth tables; preserve typed unsupported boundaries | P1/P2/P4; A2/A4 |
 | 4 | P1 | **T3.7 BatchResult contract**: versioned complete row accounting, original index, stage, reason, explicit completion and all-success semantics across Rust/Python/Node/WASM | P0/P3; A4 |
@@ -107,15 +107,19 @@ implemented paired-run t-interval CI and the original 20-pair/three-session
 bootstrap protocol, including p95 and resource gates. Preserve both records;
 do not relabel a shorter run as completion of the stronger protocol.
 
-**T1.6 sealed cohort (2026-09-16):** the non-release annotated tag
+**T1.6 sealed cohort (2026-09-16; evaluated 2026-09-20):** the non-release annotated tag
 `trust-eval-candidate-20260916` freezes `c2682e3aa75c21566c86ce1ade9cbd052838c694`
 (tagged 2026-09-16T16:21:12+09:00). A ChEMBL source acquired after that freeze,
 its maintainer attestation, and canonical/parent/scaffold audits against the
 descriptor census, ChEMBL accuracy, and exposed browser-10k inputs are recorded
 in `validation/results/sealed-cohort-preflight-trust-eval-candidate-20260916.json`.
 The local-only raw input yields 2,000 development and 8,000 sealed holdout rows
-from 10,239 eligible structures. No evaluation result has been calculated; the
-older 2026-09-13 preflight remains historical `prepared_not_sealed` evidence.
+from 10,239 eligible structures. The frozen candidate was evaluated once with
+RDKit 2025.09.3: all 8,000 rows parsed, but six molecular-weight values were
+unsupported and TPSA had 46 strict mismatches. The candidate is rejected and
+this holdout is now exposed; the raw local-only result and a commit-safe summary
+are recorded separately. The older 2026-09-13 preflight remains historical
+`prepared_not_sealed` evidence.
 
 **T0 result (2026-09-13):** independently built baseline/candidate arms completed
 the fixed 5,021-molecule × 31-query lane with complete row accounting and zero
@@ -137,7 +141,7 @@ These are remaining exits, not a list of all work already implemented.
 See the [accuracy plan](docs/rdkit-accuracy-plan.md) for subtask acceptance and
 the [disposition ledger](docs/roadmap-open-work.md) for evidence and dependencies.
 
-- [ ] **A0 — Evaluation contract:** complete the full acceptance packet and score the September 16 frozen 8,000-row evaluation with its recorded candidate; re-audit exposure/freeze for any later candidate. The 96/96 all-field holdout and exposed-corpus validators are narrower completed slices.
+- [ ] **A0 — Evaluation contract:** the September 16 frozen candidate was evaluated and rejected; prepare a new candidate freeze, unused cohort, and complete acceptance packet for any later adoption decision. The 96/96 all-field holdout and exposed-corpus validators are narrower completed slices.
 - [ ] **A1 — Perception and descriptors:** complete unused core-eight-field and potential-center evaluation, plus affected workflow/binding acceptance. The opt-in profile has passing exposed-corpus evidence; additional families have separate gates.
 - [ ] **A2 — Stereo and identity:** resolve the four #503 canonical/E/Z components and phosphorus CIP adjudication; meet permutation, idempotency, information-preservation, and false-merge exits.
 - [ ] **A3 — Fingerprints and retrieval:** retain raw/provenance evidence for the new aromaticity lane, rerun affected bindings/search after adoption, and pass unused-input evaluation. Existing k=1/10/100 and threshold evidence remains valid for its recorded builds.
