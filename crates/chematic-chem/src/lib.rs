@@ -38,6 +38,7 @@ pub mod nmr;
 pub mod parent;
 pub mod pka;
 pub mod qed;
+mod rdkit_isotope_mass_table;
 pub mod recap;
 pub mod rgroup;
 pub mod sa_score;
