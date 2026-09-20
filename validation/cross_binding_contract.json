@@ -76,8 +76,8 @@
   },
   "smiles_validity_contract": {
     "schema_version": 1,
-    "accepted": ["CCO", "c1ccccc1", "[Na+].[Cl-]", "C/C=C/C"],
-    "rejected": ["", "C1CC", "[NOSUCHELEMENT]", "XYZ???"]
+    "accepted": ["CCO", "c1ccccc1", "[Na+].[Cl-]", "C/C=C/C", "C%(100)CC%(100)"],
+    "rejected": ["", "C1CC", "[NOSUCHELEMENT]", "XYZ???", "C%(99)CC%(99)", "C%(100", "C%100CC%100"]
   },
   "inchi_contract": {
     "schema_version": 1,

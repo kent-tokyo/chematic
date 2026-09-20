@@ -5,7 +5,7 @@ This is a compatibility-contract dashboard, not a universal RDKit parity or spee
 
 - Target version: `1.0.17`
 - Regeneration: deterministic, offline, clean-checkout compatible
-- Contract manifest: `validation/cross_binding_contract.json` (SHA-256 `633e7a8ecfe2d0595d94d697742e3cbb2cbfaa6d95ad9de81a19a90434cc7930`)
+- Contract manifest: `validation/cross_binding_contract.json` (SHA-256 `5f6394e82696961d5cd35895b6a59d5b4addb649636cc98ee0b6b350dfc6eb99`)
 - Streaming matrix: `validation/results/cross-engine-matrix-v1.0.13.json` (SHA-256 `84870b6ee1b402327fec33df7fc76cb0f36301f595758d575467066818405330`)
 
 ## Shared binding contract
