@@ -2,11 +2,11 @@
 
 ## Scope
 
-This note defines the remaining implementation boundary for canonical SMILES
-Issue #503 and its coupled E/Z predecessor, #149.  It does not claim that
-canonical identity is complete.  Until the acceptance conditions below pass,
-`canonical_smiles_stable_key()` must continue to refuse the affected aromatic
-direction-stash structures.
+This note records the bounded implementation boundary for canonical SMILES
+Issue #503 and its coupled E/Z predecessor, #149. It does not claim that
+canonical identity is complete. The three audited aromatic direction-stash
+families now have a semantic complete-slot planner and may obtain stable keys;
+other coupled E/Z structures remain fail-closed until separately proven.
 
 ## Established evidence
 
@@ -38,9 +38,9 @@ Two bounded writer searches are now rejected:
 These results rule out selecting a raw atom index, a raw bond index, a local
 DFS preference or one ring-marker-side rule as the canonical tie-breaker.  A
 complete slot universe does have semantic solutions; its membership must not
-be limited to candidate bonds discovered through a coupling component.  The
-remaining task is to select one such solution using canonical rank/slot keys,
-never raw atom or bond indices.
+be limited to candidate bonds discovered through a coupling component. The
+implemented selector chooses a lexicographic semantic minimum, never raw atom
+or bond indices.
 
 ## Current implementation stage
 
@@ -62,10 +62,12 @@ canonical text with only `/` and `\\` removed are also invariant.  When raw
 directional carriers are included, complete-slot enumeration finds common
 semantic output; its re-ranked subset does too.  Independently choosing the
 lexicographically smallest semantic candidate yields the same output for every
-spelling in all three families.  The remaining production work is therefore a
-bounded, rank-keyed complete-slot planner and semantic reparse selection—not
-skeleton replacement.  The fail-closed stable-key boundary remains until that
-planner has the full acceptance proof.
+spelling in all three families. The production planner now uses that bounded
+complete-slot search (at most eight slots and 65,536 candidates), validates
+each candidate by a non-recursive Morgan-rank E/Z signature after reparse, and
+returns the lexicographic minimum valid serialization. It is restricted to
+aromatic direction-stash input; over-budget, empty, or semantically invalid
+candidate sets retain the prior fail-closed path.
 
 ## Required architecture
 
@@ -84,12 +86,10 @@ The implementation must separate chemical geometry from its SMILES spelling.
 3. **Solve one component plan.** Build the complete slot universe from all
    coupled substituent candidates plus every raw directional carrier.  Choose
    slots and `/`/`\` polarity for the full coupled component simultaneously.
-   Compute polarity in the slot's canonical orientation from the extracted
-   geometry fact; do not re-orient a newly chosen token through a parse-index
-   tie-break.  Constraints must preserve every fact, respect SMILES ring-token
-   syntax, and prevent a shared slot from receiving contradictory assignments.
-   The solution is selected only from canonical-rank and output-slot keys; it
-   must never use parse-time atom or bond indices.
+   Enumerate bounded polarity and legal ring-side choices, then retain only
+   candidates that preserve every fact and SMILES ring-token syntax. Selection
+   is the lexicographic minimum valid serialization; it must never use a
+   parse-time atom or bond index as a tie-breaker.
 4. **Validate before adoption.** Reparse every candidate plan and compare the
    extracted geometry facts, not merely text stability.  Choose the
    lexicographically minimal valid canonical serialization only after this
@@ -104,8 +104,9 @@ partial marker plan.
 
 - Do not use a CIP label as a substitute for the lower-level E/Z geometry
   fact.  CIP priority remains a separate correctness and adjudication scope.
-- Do not change the public writer merely to make a diagnostic pass.  The
-  stable-key fail-closed boundary is safer than choosing an unproven output.
+- Do not expand this proven aromatic-stash scope merely to make a diagnostic
+  pass. The stable-key fail-closed boundary remains safer than an unproven
+  output for other coupled E/Z systems.
 - Do not expand 3D embedding breadth before this canonical/stereo boundary is
   closed.
 
