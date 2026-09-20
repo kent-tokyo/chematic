@@ -634,7 +634,9 @@ export function canonical_tautomer_with_blocked_atoms_json(mol: MolHandle, block
  *
  * Each result retains its input index and original text. Invalid records are
  * returned inline with `status: "rejected"`; later records are still
- * processed in deterministic input order.
+ * processed in deterministic input order. The manifest includes explicit
+ * outcome accounting so callers do not infer full success from a zero error
+ * list while inputs were skipped elsewhere.
  */
 export function canonicalize_smiles_batch_json(smiles_batch: string, delimiter: string): string;
 
