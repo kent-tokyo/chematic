@@ -19,6 +19,20 @@ The current records cover four separate evidence types:
 3. artifacts: WASM size, wheel installation, and other release-adjacent evidence;
 4. validation: chemistry parity and correctness, which is not interchangeable with speed.
 
+## Current Parse + compatible Morgan gate
+
+Merge commit `7d98dcd3` is faster than pinned `@rdkit/rdkit@2026.3.6` for the
+declared browser operation: SMILES parse + radius-2/2048-bit compatible Morgan
+fingerprint + the same consumed 256-byte packed output. In GitHub-hosted
+Chromium, Firefox, and WebKit, the paired 95% lower speedup bounds are **3.11x,
+2.36x, and 3.67x**, respectively. The fixed corpus is exact on all 9,999
+supported rows; one Fe(II) coordination structure remains an explicit typed
+refusal. A separate ChEMBL 5k Chromium gate is 5,000/5,000 exact.
+
+This is merged-source evidence, not a v1.0.17 package measurement. It excludes
+download/startup, memory, prepared-object reuse, search, and unsupported
+chemistry. See the complete [2026-09-20 record](../benchmarks/2026-09-20-parse-morgan-rdkitjs.md).
+
 ## Published-source timing summary
 
 | Operation | chematic | RDKit | Scope |
@@ -86,6 +100,7 @@ commands are in the [isolated browser comparison](../benchmarks/2026-09-16-offic
 |---|---|
 | Accuracy vs RDKit | `pip install chematic rdkit`; `python scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi --json /tmp/bench5k.json`; `python scripts/gen_validation_report.py /tmp/bench5k.json` |
 | Similarity search | [`2026-09-11-similarity-search-v1.0.12.md`](../benchmarks/2026-09-11-similarity-search-v1.0.12.md) |
+| Parse + compatible Morgan vs official RDKit.js | [`2026-09-20-parse-morgan-rdkitjs.md`](../benchmarks/2026-09-20-parse-morgan-rdkitjs.md) |
 | A3 similarity search rerun | [`2026-09-12-similarity-search-a3-v1.0.13.md`](../benchmarks/2026-09-12-similarity-search-a3-v1.0.13.md) |
 | Hot-path A/B | [`2026-09-05-hotpath-110.md`](../benchmarks/2026-09-05-hotpath-110.md) |
 | File streaming | [`2026-09-04-streaming-formats.md`](../benchmarks/2026-09-04-streaming-formats.md) |
