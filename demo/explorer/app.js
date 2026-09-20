@@ -23,6 +23,10 @@ let wasmReady = false;
 let analysisWorker = null;
 let nextWorkerRequestId = 1;
 const pendingWorkerRequests = new Map();
+// A Worker request cannot be preempted once posted.  This monotonically
+// increasing generation prevents its late response from changing a newer
+// import after cancellation or replacement.
+let activeImportGeneration = 0;
 
 const state = {
   records: [], // CompoundRecord[]
@@ -146,6 +150,7 @@ async function processRawRecords(rawRecords) {
   if (currentAbortController) currentAbortController.abort();
   const controller = new AbortController();
   currentAbortController = controller;
+  const importGeneration = ++activeImportGeneration;
 
   const truncated = rawRecords.length > HARD_RECORD_CAP;
   const toProcess = truncated ? rawRecords.slice(0, HARD_RECORD_CAP) : rawRecords;
@@ -167,7 +172,7 @@ async function processRawRecords(rawRecords) {
     }
     const chunk = toProcess.slice(start, start + CHUNK_SIZE);
     const records = await parseChunkInWorker(chunk, start);
-    if (controller.signal.aborted) {
+    if (controller.signal.aborted || importGeneration !== activeImportGeneration) {
       // Cancellation can arrive while a Worker request is in flight.  Report
       // the same terminal state as the pre-request cancellation path instead
       // of silently falling out of the loop.
@@ -182,6 +187,11 @@ async function processRawRecords(rawRecords) {
     if (processed % progressStride === 0 || processed === toProcess.length) renderAll();
     await new Promise((resolve) => setTimeout(resolve, 0)); // yield to the event loop
   }
+
+  // A later import owns the UI state. Its caller has already initialized a
+  // new accounting result, so an older response must not overwrite records,
+  // status text, or the cancel control.
+  if (importGeneration !== activeImportGeneration) return;
 
   const outcome = summarizeKnownLengthBatch({
     inputCount: rawRecords.length,
