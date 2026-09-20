@@ -1,6 +1,6 @@
 # Parse + ECFP4/Morgan performance plan
 
-更新: 2026-09-20。状態: **計画のみ。現行版の再測定・最適化は未実施**。
+更新: 2026-09-20。状態: **candidate source の PF0–PF5 は完了。公開 package の最終再測定待ち**。
 対象: v1.0.17を基準に、RDKitより速いParse＋fingerprint経路を作る。
 既存T3.4の測定契約を使う **T3.6** の詳細計画であり、新しい製品Phaseではない。
 [ROADMAP](../ROADMAP.md) が優先順、[A3](rdkit-accuracy-plan.md) が互換性の出口を持つ。

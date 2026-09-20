@@ -67,7 +67,7 @@ measurements must identify their actual package/source hashes.
 
 | Order | Priority | Delivery and next output | Product Phase / accuracy |
 |---|---|---|---|
-| 1 | P0 | **T3.4/T3.6 PF5**: local equivalent-output win, frozen candidate, raw evidence, and paired-CI workflow are ready; dispatch the fixed-RDKit.js gate on a second host, then remeasure the published package | P0/P2/P3; A3 |
+| 1 | P0 | **T3.4/T3.6 PF5**: local equivalent-output win, frozen candidate, raw evidence, paired-CI workflow, and GitHub-hosted three-browser gate are complete; after publication, remeasure the actual package before making a release-specific speed claim | P0/P2/P3; A3 |
 | 2 | P0, parallel | **T1.6 evaluation execution**: verify the frozen tag/split/protocol/build packet before scoring the 8k holdout. Keep historical and performance candidates separate; no sealed-data tuning | P0/P2; A0–A4 |
 | 3 | P0, after PF5 | **T3.6 sustainment**: keep bit-only/byte-output and ring-atom fast path covered by parity/search regressions; refresh the pinned competitor only through the same cross-host acceptance contract. Preserve native ECFP and compatible Morgan as separate profiles | P1/P2/P3; A3 |
 | 4 | P1 | **T1.5/T3.4 remaining comparison**: equivalent substructure search and resource evidence; **T5.6 stereo regressions**: selective CIP, isotopes, atrop and mapped permutations with explicit unsupported results | P0/P2/P3/P4; A2–A5 |
