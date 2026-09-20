@@ -681,6 +681,11 @@ pub(crate) struct CanonicalWriter<'a> {
     /// acceptance rule.
     #[cfg(test)]
     traversal_bond_preference: Option<HashMap<BondIdx, bool>>,
+    /// Test-only parent edge for the canonical DFS skeleton.  This exposes
+    /// the single write occurrence of each tree edge to the #503 output-slot
+    /// diagnostic without changing production serialization.
+    #[cfg(test)]
+    canonical_tree_parent: Vec<Option<(AtomIdx, BondIdx)>>,
 }
 
 /// One input-representation-independent E/Z relation, retained before the
@@ -727,6 +732,8 @@ impl<'a> CanonicalWriter<'a> {
             ez_shared_bond_abstains: Vec::new(),
             #[cfg(test)]
             traversal_bond_preference: None,
+            #[cfg(test)]
+            canonical_tree_parent: vec![None; n],
         }
     }
 
@@ -1932,6 +1939,10 @@ impl<'a> CanonicalWriter<'a> {
             }
 
             if !visited[neighbor.0 as usize] {
+                #[cfg(test)]
+                {
+                    self.canonical_tree_parent[neighbor.0 as usize] = Some((atom, bidx));
+                }
                 self.dfs_mark(neighbor, Some(bidx), visited, in_stack);
             } else if in_stack[neighbor.0 as usize] {
                 self.ring_bonds[bidx.0 as usize] = true;
@@ -3479,6 +3490,55 @@ mod tests {
             .collect()
     }
 
+    /// A canonical output occurrence for one candidate E/Z carrier bond.
+    /// `kind` is tree edge, ring opening, or ring closing respectively.  The
+    /// signature contains only canonical ranks, never parse-order indices.
+    type EzOutputSlotSignature = Vec<((u64, u64), u64, u8)>;
+
+    fn ez_output_slot_signature(mol: &Molecule) -> EzOutputSlotSignature {
+        let (ranks, _) = winning_individualized_ranks(mol);
+        let ends = CanonicalWriter::compute_stereo_alkene_ends(mol);
+        let candidates: HashSet<BondIdx> = CanonicalWriter::coupling_components(mol, &ends)
+            .into_iter()
+            .flatten()
+            .flat_map(|end| CanonicalWriter::substituents(mol, end))
+            .map(|(_, bond)| bond)
+            .collect();
+        let mut writer = CanonicalWriter::new(mol, &ranks);
+        let starts = writer.canonical_atom_list();
+        writer.find_ring_closures(&starts);
+
+        let mut slots = Vec::new();
+        for bond in candidates {
+            let bond_ref = mol.bond(bond);
+            let mut edge = (
+                ranks[bond_ref.atom1.0 as usize],
+                ranks[bond_ref.atom2.0 as usize],
+            );
+            if edge.1 < edge.0 {
+                edge = (edge.1, edge.0);
+            }
+            if writer.ring_bonds[bond.0 as usize] {
+                for (atom, rings) in writer.atom_ring_nums.iter().enumerate() {
+                    for &(_, is_open, _, ring_bond) in rings {
+                        if ring_bond == bond {
+                            slots.push((edge, ranks[atom], if is_open { 1 } else { 2 }));
+                        }
+                    }
+                }
+            } else if let Some((parent, _)) = writer
+                .canonical_tree_parent
+                .iter()
+                .flatten()
+                .find(|(_, tree_bond)| *tree_bond == bond)
+            {
+                slots.push((edge, ranks[parent.0 as usize], 0));
+            }
+        }
+        slots.sort_unstable();
+        slots
+    }
+
     const EZ_STABLE_CORPUS: &[&str] = &[
         "C/C=C/C",     // (E)-2-butene
         "C/C=C\\C",    // (Z)-2-butene
@@ -4363,6 +4423,47 @@ mod tests {
                     ez_geometry_signature(&parse(spelling).unwrap()),
                     expected,
                     "{input}: spelling '{spelling}' changed the extracted E/Z facts"
+                );
+            }
+        }
+    }
+
+    /// Before a whole-component E/Z plan can choose token polarity, every
+    /// equivalent spelling must expose the same canonical output occurrences
+    /// for the coupled carrier bonds.  Ring bonds deliberately expose both
+    /// legal digit occurrences; the future solver, not parse order, decides
+    /// which one carries a marker.
+    #[test]
+    fn issue503_ez_output_slots_are_spelling_invariant() {
+        let observed_pairs = [
+            (
+                r"c/3(c(/c(c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+                r"c3(c(c(/c3=N/CC)=N\[C@@H](Cc1ccc(NC(c2c(Cl)cncc2Cl)=O)cc1)C(O)=O)O)O",
+            ),
+            (
+                r"c/1(c(/c(c1=N\[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+                r"c1(c(c(/c1=N/[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+            ),
+            (
+                r"c/1(O)c(O)/c(=N\[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)c1=N\CCOC",
+                r"c1(O)c(O)c(=N/[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)\c1=N\CCOC",
+            ),
+        ];
+
+        for (&input, &(observed_a, observed_b)) in EZ_SHARED_CARRIER_HELD_OUT_RESIDUALS
+            .iter()
+            .zip(observed_pairs.iter())
+        {
+            let expected = ez_output_slot_signature(&parse(input).unwrap());
+            assert!(
+                !expected.is_empty(),
+                "{input}: setup must expose candidate E/Z output slots"
+            );
+            for spelling in [observed_a, observed_b] {
+                assert_eq!(
+                    ez_output_slot_signature(&parse(spelling).unwrap()),
+                    expected,
+                    "{input}: spelling '{spelling}' changed canonical output slots"
                 );
             }
         }
