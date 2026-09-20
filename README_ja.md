@@ -23,11 +23,12 @@ npm install @kent-tokyo/chematic
 
 Python版はC/C++コンパイラなしで導入できます。
 
-### v1.0.17 の対応範囲
+### v1.0.18 の対応範囲
 
-このリリースでは、SMILES+の100以上の環閉鎖番号を上限付きで読み書きできます。
-CXSMILESのattachment labelも型付きで検査できます。MDL attachment collapseと
-V3000の`ENDPTS`/`ATTACH`意味論は明示的に非対応のままです。互換性は操作・
+このリリースでは、未知長SMILESストリームの件数会計をRust、Python、WASM/Nodeで
+共通化しました。EOFでは観測済み行を処理し、中断・時間/資源制限・producer失敗・
+consumer終了では、処理済みprefixと未処理/未読範囲を成功やskipへ偽装せず返します。
+Worker/MCP adapterと実測済みruntime制限は別の未完了項目です。互換性は操作・
 コーパス単位です。詳細は[互換性範囲](docs/compatibility-scope.md)と
 [CHANGELOG](CHANGELOG.md)を参照してください。
 

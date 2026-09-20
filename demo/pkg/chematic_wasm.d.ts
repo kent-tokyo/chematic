@@ -508,6 +508,40 @@ export class RdkitSearchIndex {
 }
 
 /**
+ * Stateful, bounded adapter for an unknown-length SMILES source.
+ *
+ * Callers distinguish observation from processing: this lets a Worker report
+ * rows already read but not yet processed when it is cancelled.  `finish_json`
+ * is the only normal EOF path; `stop_json` reports an unknown unread suffix
+ * and never fabricates skipped or successful rows.
+ */
+export class SmilesBatchStreamHandle {
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * Mark EOF and process every observed pending row into a complete manifest.
+     */
+    finish_json(): string;
+    /**
+     * Start an unknown-length batch.  A handle is terminal after `finish_json`
+     * or `stop_json` and cannot be reused for a second source.
+     */
+    constructor();
+    /**
+     * Register one row observed from the source without processing it yet.
+     */
+    observe(smiles: string): number;
+    /**
+     * Process one previously observed row, returning `null` when none remain.
+     */
+    process_next_json(): string;
+    /**
+     * Stop before EOF with a typed reason and an explicitly unknown unread suffix.
+     */
+    stop_json(terminal_reason: string): string;
+}
+
+/**
  * Return a copy of the molecule with all implicit hydrogens converted to explicit H atoms.
  */
 export function add_hydrogens(mol: MolHandle): MolHandle;
@@ -2930,6 +2964,7 @@ export interface InitOutput {
     readonly __wbg_mhfplshhandle_free: (a: number, b: number) => void;
     readonly __wbg_molhandle_free: (a: number, b: number) => void;
     readonly __wbg_rdkitsearchindex_free: (a: number, b: number) => void;
+    readonly __wbg_smilesbatchstreamhandle_free: (a: number, b: number) => void;
     readonly add_hydrogens: (a: number) => number;
     readonly admet_profile_json: (a: number, b: number) => [number, number];
     readonly atom_pair_bitvec: (a: number) => [number, number];
@@ -3255,6 +3290,11 @@ export interface InitOutput {
     readonly smiles_to_mol2: (a: number, b: number) => [number, number];
     readonly smiles_to_pdbqt: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number];
     readonly smiles_to_svg_highlighted: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number, number, number];
+    readonly smilesbatchstreamhandle_finish_json: (a: number) => [number, number, number, number];
+    readonly smilesbatchstreamhandle_new: () => number;
+    readonly smilesbatchstreamhandle_observe: (a: number, b: number, c: number) => [number, number, number];
+    readonly smilesbatchstreamhandle_process_next_json: (a: number) => [number, number, number, number];
+    readonly smilesbatchstreamhandle_stop_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly smr_vsa_json: (a: number) => [number, number];
     readonly sssr_rings_json: (a: number) => [number, number];
     readonly standardize_smiles: (a: number, b: number) => [number, number];

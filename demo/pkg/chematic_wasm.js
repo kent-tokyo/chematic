@@ -1208,6 +1208,121 @@ export class RdkitSearchIndex {
 if (Symbol.dispose) RdkitSearchIndex.prototype[Symbol.dispose] = RdkitSearchIndex.prototype.free;
 
 /**
+ * Stateful, bounded adapter for an unknown-length SMILES source.
+ *
+ * Callers distinguish observation from processing: this lets a Worker report
+ * rows already read but not yet processed when it is cancelled.  `finish_json`
+ * is the only normal EOF path; `stop_json` reports an unknown unread suffix
+ * and never fabricates skipped or successful rows.
+ */
+export class SmilesBatchStreamHandle {
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+        SmilesBatchStreamHandleFinalization.unregister(this);
+        return ptr;
+    }
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_smilesbatchstreamhandle_free(ptr, 0);
+    }
+    /**
+     * Mark EOF and process every observed pending row into a complete manifest.
+     * @returns {string}
+     */
+    finish_json() {
+        let deferred2_0;
+        let deferred2_1;
+        try {
+            const ret = wasm.smilesbatchstreamhandle_finish_json(this.__wbg_ptr);
+            var ptr1 = ret[0];
+            var len1 = ret[1];
+            if (ret[3]) {
+                ptr1 = 0; len1 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred2_0 = ptr1;
+            deferred2_1 = len1;
+            return getStringFromWasm0(ptr1, len1);
+        } finally {
+            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        }
+    }
+    /**
+     * Start an unknown-length batch.  A handle is terminal after `finish_json`
+     * or `stop_json` and cannot be reused for a second source.
+     */
+    constructor() {
+        const ret = wasm.smilesbatchstreamhandle_new();
+        this.__wbg_ptr = ret;
+        SmilesBatchStreamHandleFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+    /**
+     * Register one row observed from the source without processing it yet.
+     * @param {string} smiles
+     * @returns {number}
+     */
+    observe(smiles) {
+        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.smilesbatchstreamhandle_observe(this.__wbg_ptr, ptr0, len0);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return ret[0] >>> 0;
+    }
+    /**
+     * Process one previously observed row, returning `null` when none remain.
+     * @returns {string}
+     */
+    process_next_json() {
+        let deferred2_0;
+        let deferred2_1;
+        try {
+            const ret = wasm.smilesbatchstreamhandle_process_next_json(this.__wbg_ptr);
+            var ptr1 = ret[0];
+            var len1 = ret[1];
+            if (ret[3]) {
+                ptr1 = 0; len1 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred2_0 = ptr1;
+            deferred2_1 = len1;
+            return getStringFromWasm0(ptr1, len1);
+        } finally {
+            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        }
+    }
+    /**
+     * Stop before EOF with a typed reason and an explicitly unknown unread suffix.
+     * @param {string} terminal_reason
+     * @returns {string}
+     */
+    stop_json(terminal_reason) {
+        let deferred3_0;
+        let deferred3_1;
+        try {
+            const ptr0 = passStringToWasm0(terminal_reason, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            const len0 = WASM_VECTOR_LEN;
+            const ret = wasm.smilesbatchstreamhandle_stop_json(this.__wbg_ptr, ptr0, len0);
+            var ptr2 = ret[0];
+            var len2 = ret[1];
+            if (ret[3]) {
+                ptr2 = 0; len2 = 0;
+                throw takeFromExternrefTable0(ret[2]);
+            }
+            deferred3_0 = ptr2;
+            deferred3_1 = len2;
+            return getStringFromWasm0(ptr2, len2);
+        } finally {
+            wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        }
+    }
+}
+if (Symbol.dispose) SmilesBatchStreamHandle.prototype[Symbol.dispose] = SmilesBatchStreamHandle.prototype.free;
+
+/**
  * Return a copy of the molecule with all implicit hydrogens converted to explicit H atoms.
  * @param {MolHandle} mol
  * @returns {MolHandle}
@@ -7909,6 +8024,9 @@ const MolHandleFinalization = (typeof FinalizationRegistry === 'undefined')
 const RdkitSearchIndexFinalization = (typeof FinalizationRegistry === 'undefined')
     ? { register: () => {}, unregister: () => {} }
     : new FinalizationRegistry(ptr => wasm.__wbg_rdkitsearchindex_free(ptr, 1));
+const SmilesBatchStreamHandleFinalization = (typeof FinalizationRegistry === 'undefined')
+    ? { register: () => {}, unregister: () => {} }
+    : new FinalizationRegistry(ptr => wasm.__wbg_smilesbatchstreamhandle_free(ptr, 1));
 
 function addToExternrefTable0(obj) {
     const idx = wasm.__externref_table_alloc();

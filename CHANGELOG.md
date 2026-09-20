@@ -9,6 +9,22 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.18] - 2026-09-21
+
+- Added a shared Rust/Python/WASM/Node contract for unknown-length SMILES
+  canonicalization streams. Normal EOF processes every observed row; an
+  interrupted source reports the processed prefix, observed-but-unprocessed
+  rows, and an explicitly unknown unread suffix.
+- Added typed stream terminal reasons (`cancelled`, `time_limit`,
+  `resource_limit`, `producer_error`, and `consumer_closed`). Unknown reasons
+  are rejected by Python/WASM bindings instead of causing a panic or inventing
+  successful/skipped rows.
+- Extended the shared binding fixture, manifest validation, and generated
+  compatibility dashboard to cover the 58-operation contract inventory.
+- Documented the remaining T3.7 work explicitly: retry/export semantics,
+  Worker/MCP adapters, clean-install coverage, and measured 10k resource
+  limits remain open.
+
 ## [1.0.17] - 2026-09-20
 
 - Added bounded SMILES+ extended ring-closure support: `%nn` remains the
