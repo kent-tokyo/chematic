@@ -663,6 +663,13 @@ pub(crate) struct CanonicalWriter<'a> {
     /// zero cost/size impact on release builds.
     #[cfg(test)]
     ez_shared_bond_abstains: Vec<AtomIdx>,
+    /// Test-only DFS edge preference used to determine whether the remaining
+    /// issue #503 residual has a geometry-preserving common spelling when a
+    /// whole coupled component is allowed to influence traversal.  Production
+    /// still uses rank-only traversal until this bounded search has a proven
+    /// acceptance rule.
+    #[cfg(test)]
+    traversal_bond_preference: Option<HashMap<BondIdx, bool>>,
 }
 
 impl<'a> CanonicalWriter<'a> {
@@ -682,6 +689,8 @@ impl<'a> CanonicalWriter<'a> {
             ez_marker: HashMap::new(),
             #[cfg(test)]
             ez_shared_bond_abstains: Vec::new(),
+            #[cfg(test)]
+            traversal_bond_preference: None,
         }
     }
 
@@ -1929,7 +1938,19 @@ impl<'a> CanonicalWriter<'a> {
 
     /// Sort a neighbor list in canonical order (for consistent DFS traversal).
     fn sort_neighbors_canonical(&self, neighbors: &mut [(AtomIdx, BondIdx)]) {
-        neighbors.sort_by(|&(a, _), &(b, _)| self.canonical_cmp(b, a)); // descending
+        neighbors.sort_by(|&(a, _a_bond), &(b, _b_bond)| {
+            #[cfg(test)]
+            if let Some(preferences) = &self.traversal_bond_preference {
+                let a_preferred = preferences.get(&_a_bond).copied().unwrap_or(false);
+                let b_preferred = preferences.get(&_b_bond).copied().unwrap_or(false);
+                if a_preferred != b_preferred {
+                    // A preferred edge is traversed first.  This comparator
+                    // is used identically by ring discovery and emission.
+                    return b_preferred.cmp(&a_preferred);
+                }
+            }
+            self.canonical_cmp(b, a) // descending
+        });
     }
 
     fn emit_atom(&mut self, idx: AtomIdx, chirality: Chirality) {
@@ -4043,6 +4064,83 @@ mod tests {
         r"CCCC(C)/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
         r"COCC/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
     ];
+
+    /// Enumerate every DFS priority mask for the candidate bonds of each
+    /// coupled E/Z component. A future production search must not mistake
+    /// this local traversal space for a complete solution: the observed
+    /// spellings expose no common geometry-preserving output here.
+    #[test]
+    fn issue503_component_traversal_only_has_no_common_geometry_preserving_output() {
+        let observed_pairs = [
+            (
+                r"c/3(c(/c(c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+                r"c3(c(c(/c3=N/CC)=N\[C@@H](Cc1ccc(NC(c2c(Cl)cncc2Cl)=O)cc1)C(O)=O)O)O",
+            ),
+            (
+                r"c/1(c(/c(c1=N\[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+                r"c1(c(c(/c1=N/[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+            ),
+            (
+                r"c/1(O)c(O)/c(=N\[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)c1=N\CCOC",
+                r"c1(O)c(O)c(=N/[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)\c1=N\CCOC",
+            ),
+        ];
+
+        for (&input, &(observed_a, observed_b)) in EZ_SHARED_CARRIER_HELD_OUT_RESIDUALS
+            .iter()
+            .zip(observed_pairs.iter())
+        {
+            let mut per_spelling = Vec::new();
+            for spelling in [input, observed_a, observed_b] {
+                let mol = parse(spelling).unwrap();
+                let geometry = geometry_fingerprint(&mol);
+                let ends = CanonicalWriter::compute_stereo_alkene_ends(&mol);
+                let mut component_bonds: Vec<_> = CanonicalWriter::coupling_components(&mol, &ends)
+                    .into_iter()
+                    .filter(|component| component.len() > 1)
+                    .flat_map(|component| {
+                        component.into_iter().flat_map(|end| {
+                            CanonicalWriter::substituents(&mol, end)
+                                .into_iter()
+                                .map(|(_, bond)| bond)
+                        })
+                    })
+                    .collect();
+                component_bonds.sort_unstable_by_key(|bond| bond.0);
+                component_bonds.dedup();
+                assert!(component_bonds.len() <= 8, "diagnostic bound exceeded");
+
+                let (ranks, _) = winning_individualized_ranks(&mol);
+                let mut outputs = HashSet::new();
+                for mask in 0usize..(1usize << component_bonds.len()) {
+                    let preferences = component_bonds
+                        .iter()
+                        .enumerate()
+                        .map(|(index, &bond)| (bond, (mask & (1 << index)) != 0))
+                        .collect();
+                    let mut writer = CanonicalWriter::new(&mol, &ranks);
+                    writer.traversal_bond_preference = Some(preferences);
+                    let output = writer.write_all();
+                    let reparsed = parse(&output).unwrap_or_else(|e| {
+                        panic!("{spelling}: traversal candidate did not parse: {e}: {output}")
+                    });
+                    if geometry_fingerprint(&reparsed) == geometry {
+                        outputs.insert(output);
+                    }
+                }
+                per_spelling.push(outputs);
+            }
+            let common = per_spelling
+                .into_iter()
+                .reduce(|left, right| left.intersection(&right).cloned().collect())
+                .unwrap();
+            assert!(
+                common.is_empty(),
+                "{input}: candidate-bond DFS priorities unexpectedly found a common output; \
+                 update the complete-plan boundary before relying on it"
+            );
+        }
+    }
 
     /// Keep the measured residuals reproducible while the general aromatic
     /// carrier traversal remains open. The stable-key API must reject them;
