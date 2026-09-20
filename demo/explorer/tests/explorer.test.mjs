@@ -16,7 +16,12 @@ const { applyFilters, buildComparator, matchesFreeText } =
   await import(path.join(__dirname, "..", "table.js"));
 const { csvField, exportToCsv, CSV_COLUMNS } =
   await import(path.join(__dirname, "..", "export.js"));
-const { formatBatchOutcome, summarizeKnownLengthBatch } =
+const {
+  formatBatchOutcome,
+  formatStreamingBatchOutcome,
+  summarizeKnownLengthBatch,
+  summarizeStreamingBatch,
+} =
   await import(path.join(__dirname, "..", "batch-accounting.js"));
 
 // ---------------------------------------------------------------------------
@@ -44,6 +49,44 @@ console.log("=== batch accounting ===");
 }
 assert.throws(
   () => summarizeKnownLengthBatch({ inputCount: 3, completedCount: 2 }),
+  /terminal reason/,
+);
+{
+  const outcome = summarizeStreamingBatch({
+    observedInputCount: 3, completedCount: 3, streamComplete: true,
+  });
+  assert.deepEqual(outcome, {
+    inputKind: "unknown_length_stream",
+    observedInputCount: 3,
+    completedCount: 3,
+    unprocessedObservedCount: 0,
+    unreadInput: 0,
+    complete: true,
+    terminalReason: null,
+  });
+  assert.equal(formatStreamingBatchOutcome(outcome, { acceptedCount: 2, rejectedCount: 1 }),
+    "2 loaded, 1 failed to parse.");
+}
+{
+  const outcome = summarizeStreamingBatch({
+    observedInputCount: 1, completedCount: 1, streamComplete: true,
+  });
+  assert.equal(formatStreamingBatchOutcome(outcome, { acceptedCount: 1, rejectedCount: 0 }),
+    "1 molecule loaded.");
+}
+{
+  // One Worker chunk was posted before cancellation. Its rows are observed but
+  // unprocessed; later CSV input is unknown and is never counted as skipped.
+  const outcome = summarizeStreamingBatch({
+    observedInputCount: 100, completedCount: 0, streamComplete: false, terminalReason: "cancelled",
+  });
+  assert.equal(outcome.unprocessedObservedCount, 100);
+  assert.equal(outcome.unreadInput, "unknown");
+  assert.equal(formatStreamingBatchOutcome(outcome, { acceptedCount: 0, rejectedCount: 0 }),
+    "0 loaded, 0 failed to parse; 100 observed rows not processed; unread input=unknown (cancelled; complete=false).");
+}
+assert.throws(
+  () => summarizeStreamingBatch({ observedInputCount: 1, completedCount: 1, streamComplete: false }),
   /terminal reason/,
 );
 console.log("batch accounting: all assertions passed");

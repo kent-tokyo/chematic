@@ -83,7 +83,7 @@ measurements must identify their actual package/source hashes.
 | 1 | P0 | **A0 recovery after frozen 8k rejection**: preserve the failed candidate's evidence; on non-sealed data, classify every declared descriptor scope and binding impact; only then prepare a genuinely new freeze/unused cohort for a later one-time adoption decision | P0/P2; A0–A4 |
 | 2 | P0 preparation; external execution | **T1.5 rebaseline**: make old/new RDKit lanes executable now; run only for actually published stable Python/native/npm artifacts. Record wrapper backend, type/exception behavior, and operation configuration—not just version strings | P0/P2/P3; A1–A4 |
 | 3 | P1 | **A2 and semantic interchange closure**: resolve the four #503 canonical/E/Z components and phosphorus adjudication before new 3D breadth. Retain T5.6 selective CIP/isotope/atrop and T1.8 attachment boundaries; extend T5.7/T1.9 only as version-pinned development regressions | P1/P2/P4; A2/A5 |
-| 4 | P1 | **T3.7 controlled runtime**: extend the completed row-accounting contract through Worker/stream/cancel/export/limits on 10k inputs, then publish typed install examples and a generated package scorecard. T3.6 maintains its scoped speed win; it does not substitute for runtime controls | P0/P3/P6; A3/A4 |
+| 4 | P1 | **T3.7 controlled runtime**: merge and retain the pending Explorer unknown-length CSV cancellation adapter, then extend the completed row-accounting contract through Worker/stream/cancel/export/limits on 10k inputs. Publish typed install examples and a generated package scorecard only after the public binding contract and its resource evidence exist. T3.6 maintains its scoped speed win; it does not substitute for runtime controls | P0/P3/P6; A3/A4 |
 | 5 | P2; P0 for confirmed incorrectness | **T6 / A5–A6**: prepare independent gold/review and close existing 3D typing, charge, gradient, convergence, timeout, and stereo gaps. Do not add embedding breadth before fail-closed correctness evidence | P5/P6; A5/A6 |
 
 T3/T4/T5 can proceed in parallel once their dependencies pass. Public-channel
@@ -165,7 +165,7 @@ These extend the same product areas; they do not introduce new Phase numbers.
 - [ ] Replace remaining MD/UFF/MMFF94 finite-difference production paths after same-domain analytic energy, gradient, and stereo soundness gates.
 - [ ] Replace remaining periodic neighbor all-pairs paths after exact result-set and cutoff parity.
 - [ ] Optimize symmetry-heavy canonical and SMARTS search after broader exact-output, invariance, and budget-exhaustion gates.
-- [ ] Extend browser and agent adversarial coverage for cancellation, malformed records, limits, stable errors, and supported engines. T3.7 row accounting now covers Rust/Python/Node/WASM; Worker, streaming, cancellation, export and resource-budget exits remain.
+- [ ] Extend browser and agent adversarial coverage for cancellation, malformed records, limits, stable errors, and supported engines. T3.7 row accounting covers Rust/Python/Node/WASM; the pending Explorer unknown-length stream adapter is browser-UI evidence only. Worker, cross-binding streaming, cancellation, export, and resource-budget exits remain.
 - [ ] Expand reaction/SMARTS/medicinal-chemistry breadth after the shared P0–P3 primitives have current evidence.
 - [ ] Add curated reaction/query precision, recall, invalid-product, timeout, and ambiguity reports with independent oracles.
 - [ ] Close MMFF94/UFF typing, charge, parameter, convergence, and stereo gaps with same-coordinate comparisons.

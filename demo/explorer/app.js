@@ -1,7 +1,12 @@
 import { CsvStreamParser, parseCsvText, detectColumns, csvRowsToRawRecords, parseSmiFileText } from "./parser.js";
 import { applyFilters, buildComparator, renderTable } from "./table.js";
 import { exportToCsv, downloadCsv } from "./export.js";
-import { formatBatchOutcome, summarizeKnownLengthBatch } from "./batch-accounting.js";
+import {
+  formatBatchOutcome,
+  formatStreamingBatchOutcome,
+  summarizeKnownLengthBatch,
+  summarizeStreamingBatch,
+} from "./batch-accounting.js";
 
 // 100 records keeps the Worker message overhead bounded at the workflow
 // cap while still yielding to the event loop between batches. Individual
@@ -500,8 +505,14 @@ async function loadCsvFile(file) {
   let nameCol = null;
   let pending = [];
   let processed = 0;
+  // Count only rows with an actual SMILES payload: blank CSV rows never enter
+  // the analysis operation. This includes pending/in-flight rows so a cancel
+  // cannot make an observed input disappear from the accounting result.
+  let observedInputCount = 0;
   let sawDataRow = false;
   let truncated = false;
+  let streamComplete = false;
+  let terminalReason = null;
   let controller = null;
 
   const start = () => {
@@ -509,6 +520,7 @@ async function loadCsvFile(file) {
     controller = new AbortController();
     currentAbortController = controller;
     state.records = [];
+    state.batchOutcome = null;
     clearError();
     $("explorer-cancel")?.classList.remove("hidden");
   };
@@ -539,9 +551,11 @@ async function loadCsvFile(file) {
       if (!smiles) continue;
       if (processed + pending.length >= HARD_RECORD_CAP) {
         truncated = true;
+        terminalReason = "client_record_cap";
         return true;
       }
       pending.push({ name: nameCol !== null ? (row[nameCol] ?? "").trim() : "", smiles });
+      observedInputCount += 1;
       if (pending.length >= CHUNK_SIZE) await flush();
       if (controller?.signal.aborted) return true;
     }
@@ -562,22 +576,29 @@ async function loadCsvFile(file) {
       }
       if (!accepted || truncated || controller?.signal.aborted || done) break;
     }
-    if (!truncated && !controller?.signal.aborted) await consumeRows(csv.finish());
+    if (!truncated && !controller?.signal.aborted) {
+      await consumeRows(csv.finish());
+      streamComplete = !truncated && !controller?.signal.aborted;
+    }
     if (header === null || !sawDataRow) {
       showError("Empty CSV file.");
       return;
     }
-    if (controller?.signal.aborted) {
-      showStatus(`Cancelled after ${processed} CSV records.`);
-      return;
-    }
-    await flush();
+    if (!controller?.signal.aborted) await flush();
+    if (controller?.signal.aborted) terminalReason = "cancelled";
     renderAll();
     const failures = state.records.filter((record) => record.status !== "ok").length;
-    const base = failures === 0
-      ? `${processed} molecule${processed === 1 ? "" : "s"} loaded.`
-      : `${processed - failures} loaded, ${failures} failed to parse.`;
-    showStatus(truncated ? `${base} Showing the first ${HARD_RECORD_CAP} records (client-side display cap).` : base);
+    const outcome = summarizeStreamingBatch({
+      observedInputCount,
+      completedCount: state.records.length,
+      streamComplete,
+      terminalReason: streamComplete ? null : terminalReason || "cancelled",
+    });
+    state.batchOutcome = outcome;
+    showStatus(formatStreamingBatchOutcome(outcome, {
+      acceptedCount: state.records.length - failures,
+      rejectedCount: failures,
+    }));
   } catch (error) {
     if (!controller?.signal.aborted) {
       state.records = [];

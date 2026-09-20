@@ -169,7 +169,11 @@ pub fn get_descriptors_json(mol: &MolHandle) -> String {
     format!(
         concat!(
             "{{",
-            "\"mw\":{mw:.4},\"exactMass\":{em:.6},\"tpsa\":{tpsa:.4},",
+            // Exact mass is an oracle-facing value.  Keep the full f64 text
+            // representation here; Explorer formats it only at display time.
+            // Rounding this JSON field made the Worker disagree with the
+            // native CLI and MolHandle::exact_mass after isotope-table fixes.
+            "\"mw\":{mw:.4},\"exactMass\":{em},\"tpsa\":{tpsa:.4},",
             "\"logP\":{logp:.4},\"molarRefractivity\":{mr:.4},",
             "\"hbd\":{hbd},\"hba\":{hba},\"rotatableBonds\":{rb},",
             "\"heavyAtomCount\":{hac},\"ringCount\":{rc},",

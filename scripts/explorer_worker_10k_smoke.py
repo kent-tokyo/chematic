@@ -120,6 +120,30 @@ def main() -> int:
             assert [row["input_index"] for row in rows] == [str(index) for index in range(10_000)]
             assert {row["parse_status"] for row in rows} == {"ok"}
 
+            # CSV is an unknown-length stream. Cancellation must preserve the
+            # observed-but-unprocessed prefix and state that the later suffix
+            # was never read; it must not turn either into skipped/success rows.
+            cancel_csv_text = "smiles,name\n" + "\n".join(
+                f"CC(=O)Oc1ccccc1C(=O)O,cancel-{index}" for index in range(10_000)
+            )
+            page.set_input_files(
+                "#explorer-file-input",
+                {
+                    "name": "cancel-stream.csv",
+                    "mimeType": "text/csv",
+                    "buffer": cancel_csv_text.encode(),
+                },
+            )
+            page.locator("#explorer-cancel").wait_for(state="visible", timeout=30_000)
+            page.locator("#explorer-cancel").dispatch_event("click")
+            page.wait_for_function(
+                'document.querySelector("#explorer-status").textContent.includes("unread input=unknown")',
+                timeout=30_000,
+            )
+            cancelled_status = page.locator("#explorer-status").text_content()
+            assert "complete=false" in cancelled_status
+            assert "skipped" not in cancelled_status.lower()
+
             set_records(page, cancel_records)
             page.locator("#explorer-btn-parse-paste").click()
             page.locator("#explorer-cancel").wait_for(state="visible", timeout=30_000)
