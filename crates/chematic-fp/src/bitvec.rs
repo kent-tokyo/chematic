@@ -209,6 +209,18 @@ impl BitVec2048 {
             bits: 2048,
         }
     }
+
+    /// Return the packed 2048 bits as 256 little-endian bytes.
+    ///
+    /// Bit `n` remains bit `n % 8` of byte `n / 8`, matching the packed byte
+    /// contract of the WASM fingerprint API without allocating a `BitVecN`.
+    pub fn to_le_bytes(&self) -> [u8; 256] {
+        let mut bytes = [0u8; 256];
+        for (word_index, word) in self.words.iter().enumerate() {
+            bytes[word_index * 8..(word_index + 1) * 8].copy_from_slice(&word.to_le_bytes());
+        }
+        bytes
+    }
 }
 
 /// A variable-length bitvector with dynamic bit width.
@@ -458,6 +470,24 @@ mod tests {
 
         let bv2048_back = bvn.to_bitvec2048();
         assert_eq!(bv2048_back, Some(bv2048));
+    }
+
+    #[test]
+    fn bitvec2048_le_bytes_preserve_lsb_bit_positions() {
+        let mut bits = BitVec2048::new();
+        bits.set(0);
+        bits.set(7);
+        bits.set(8);
+        bits.set(63);
+        bits.set(64);
+        bits.set(2047);
+        let packed = bits.to_le_bytes();
+        assert_eq!(packed.len(), 256);
+        assert_eq!(packed[0], 0b1000_0001);
+        assert_eq!(packed[1], 0b0000_0001);
+        assert_eq!(packed[7], 0b1000_0000);
+        assert_eq!(packed[8], 0b0000_0001);
+        assert_eq!(packed[255], 0b1000_0000);
     }
 
     #[test]

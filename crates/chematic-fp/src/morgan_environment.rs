@@ -50,6 +50,7 @@
 
 use chematic_core::{AtomIdx, Molecule};
 use rustc_hash::{FxHashMap, FxHashSet};
+use smallvec::SmallVec;
 
 use crate::bitvec::BitVec2048;
 use crate::ecfp::{
@@ -83,11 +84,14 @@ pub(crate) enum EnvironmentEmissionMode {
 /// independent (RDKit-exact-hash) suppression pass — only the invariant/hash
 /// computation differs between the two modules, not this plumbing.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub(crate) struct BondSet(Vec<u64>);
+pub(crate) struct BondSet(SmallVec<[u64; 4]>);
 
 impl BondSet {
     pub(crate) fn empty(bond_count: usize) -> Self {
-        BondSet(vec![0u64; bond_count.div_ceil(64)])
+        // Four inline words cover up to 256 bonds, avoiding a heap allocation
+        // for the usual small-molecule environment while retaining the exact
+        // dynamic width needed by larger graphs.
+        BondSet(SmallVec::from_elem(0u64, bond_count.div_ceil(64)))
     }
 
     pub(crate) fn set(&mut self, bond: u32) {

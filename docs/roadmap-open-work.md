@@ -1,7 +1,7 @@
 # Roadmap open-work disposition
 
 This document is the current disposition of unchecked roadmap items for the
-v1.0.16 release follow-up (updated 2026-09-19). An item is not complete merely
+v1.0.17 release follow-up (updated 2026-09-20). An item is not complete merely
 because a narrower local slice has evidence. Recorded v1.0.13 and earlier
 measurements keep their original scope; they were not rerun for this reorganization.
 
@@ -17,7 +17,9 @@ backlog. This ledger owns evidence and dependencies, not a second priority list.
 
 Dependency classes used below: `local-open`, `toolchain-open`, `data-sealed`,
 `external-open`, and `historical`.
-The abandoned speed target is historical and excluded from the open count.
+The abandoned additional 1.10x SMILES speed target is historical and excluded
+from the open count. The new T3.6 Parse + Morgan target is part of the existing
+cross-cutting comparison area, not an additional product phase or accuracy package.
 See the [pre-reorganization snapshot](archive/roadmap-through-2026-09-13.md)
 for the previous long-form roadmap.
 
@@ -33,13 +35,18 @@ none completes an entire A package:
 | T1.6 / A0 | September 16 annotated candidate freeze, post-freeze source attestation, overlap audit and 2k/8k split; preflight record below | `data-sealed`: verify local raw hashes/exposure/protocol and run the frozen candidate. Missing local artifacts are a blocker, not a passed evaluation |
 | T1.7 / A4 | Ordinary V3000, external RDKit/Indigo readers and SGROUP/COLLECTION baseline (PR #544) | `local-open`: typed chemistry/edit semantics and declared refusal boundaries; general CX label retention does not complete T1.8 attachment identity/collapse |
 | T1.8 / A4 | September 19: complete positive `_AP<n>` syntax parser and degree-one-wildcard identity API, with invalid/non-dummy/multi-degree rejection | `local-open`: external RDKit round-trip and any collapse semantics; identity is deliberately not collapse eligibility |
-| T3.4 / A3/A4 | Public 1.0.15 vs official RDKit npm 10k, three browsers, 20 repetitions; separate three-run RSS diagnostic | `local-open` / `toolchain-open`: public 1.0.16 and candidate lanes, equivalent search, resource definitions; unavailable remote host/measurement stays explicit |
+| T3.4 / A3/A4 | Public 1.0.15 vs official RDKit npm 10k, three browsers, 20 repetitions; separate three-run RSS diagnostic | `local-open` / `toolchain-open`: public 1.0.17 and candidate lanes, equivalent output/search, resource definitions; unavailable remote host/measurement stays explicit |
+| T3.6 / A3 | Candidate source: exact on all 9,999 supported fixed-corpus rows in Chrome/Firefox/WebKit, exact on 5,000 independent ChEMBL rows in Chrome, and faster than pinned RDKit.js in all local browser lanes (2.06–6.17x paired median). GitHub-hosted three-browser CI also passes the paired-95% gate (lower bounds 2.37–3.65x); Rust/Python/Node-WASM cross-binding is 5,000/5,000 | `external-open`: after publication, remeasure the actual package tarball before a release-specific superiority claim. Keep search regression coverage and native ECFP as separate profiles |
 | T4.6 / A2/A4 | September 19 core fix: parser/writer use bounded `%(n)` labels ≥100; malformed/overflow legacy ambiguity rejects; a 121-closure graph round-trips (227 `chematic-smiles` tests) | `local-open`: binding, canonical-writer, atom-order and resource-limit coverage remain; core writer/parser safety is complete |
 | T5.6 / A2 | Upstream CIP/atrop changes identified; existing development suite is not their acceptance | `local-open`: selection/isotope/atrop/permutation regressions; independent gold is `external-open` |
 
 The [Trust execution packet](trust-release-plan.md#6-次に着手する具体的な変更)
 owns the new subtask exits. These are subdivisions of the existing 18 open areas,
 not additional phases or a reason to mark A0–A6 complete.
+The [performance plan](parse-morgan-performance-plan.md) owns T3.6 / PF0–PF5.
+Historical 1.0.15 timings are not evidence of 1.0.17 performance; speed acceptance
+requires exact supported-domain bits, preserved coverage, and paired uncertainty.
+The sealed accuracy cohort must not be used for performance tuning.
 
 ## Accuracy follow-up (A0–A6)
 

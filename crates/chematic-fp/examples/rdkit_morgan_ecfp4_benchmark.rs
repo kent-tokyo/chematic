@@ -20,15 +20,18 @@
 //! Usage:
 //! ```text
 //! cargo run -p chematic-fp --release --example rdkit_morgan_ecfp4_benchmark \
-//!     -- <SMILES.csv> [--corpus-only=baseline|candidate|preprocessing]
+//!     -- <SMILES.csv> [--corpus-only=baseline|candidate|bit-only|preprocessing|sssr]
 //! ```
 //! (`<SMILES.csv>` is optional -- omit to skip the full-corpus pass and only
 //! run the named/synthetic per-molecule cases. `--corpus-only=...` runs one
 //! side only, for external multi-process median/RSS measurement.)
 
 use chematic_core::Molecule;
-use chematic_fp::{ecfp4_rdkit_environment_experimental, rdkit_morgan_ecfp4_experimental};
-use chematic_perception::apply_aromaticity_rdkit_parity_experimental;
+use chematic_fp::{
+    ecfp4_rdkit_environment_experimental, rdkit_morgan_ecfp4_bitvec,
+    rdkit_morgan_ecfp4_experimental,
+};
+use chematic_perception::{apply_aromaticity_rdkit_parity_experimental, find_sssr};
 use chematic_smiles::parse;
 use std::time::{Duration, Instant};
 
@@ -63,18 +66,36 @@ fn bench_molecule(label: &str, mol: &Molecule, reps: usize) {
         },
         reps,
     );
+    // Time SSSR after aromaticity separately. It is deliberately excluded
+    // from the preprocessing timing above: this tells PF1 whether the second
+    // ring perception in the Morgan path merits a shared-state design.
+    let aromatized = apply_aromaticity_rdkit_parity_experimental(mol).unwrap();
+    let sssr = time_calls(
+        || {
+            let _ = find_sssr(&aromatized);
+        },
+        reps,
+    );
     let candidate = time_calls(
         || {
             let _ = rdkit_morgan_ecfp4_experimental(mol);
         },
         reps,
     );
+    let bit_only = time_calls(
+        || {
+            let _ = rdkit_morgan_ecfp4_bitvec(mol);
+        },
+        reps,
+    );
     let ratio = candidate.as_secs_f64() / baseline.as_secs_f64();
     let preprocessing_share = preprocessing.as_secs_f64() / candidate.as_secs_f64();
     println!(
-        "{label:32} atoms={:5} baseline={baseline:>12?} candidate={candidate:>12?} \
-         ratio={ratio:.3}x preprocessing={preprocessing:>12?} ({:.0}% of candidate)",
+        "{label:32} atoms={:5} baseline={baseline:>12?} detail={candidate:>12?} \
+         bit_only={bit_only:>12?} detail/bit={:.3}x ratio={ratio:.3}x \
+         preprocessing={preprocessing:>12?} ({:.0}% of detail), sssr={sssr:>12?}",
         mol.atom_count(),
+        candidate.as_secs_f64() / bit_only.as_secs_f64(),
         preprocessing_share * 100.0,
     );
 }
@@ -148,12 +169,41 @@ fn main() {
                     mols.len()
                 );
             }
+            Some("bit-only") => {
+                let start = Instant::now();
+                let mut errors = 0usize;
+                for m in &mols {
+                    if rdkit_morgan_ecfp4_bitvec(m).is_err() {
+                        errors += 1;
+                    }
+                }
+                println!(
+                    "bit_only_total={:?} n={} errors={errors}",
+                    start.elapsed(),
+                    mols.len()
+                );
+            }
             Some("preprocessing") => {
                 let start = Instant::now();
                 for m in &mols {
                     let _ = apply_aromaticity_rdkit_parity_experimental(m);
                 }
                 println!("preprocessing_total={:?} n={}", start.elapsed(), mols.len());
+            }
+            Some("sssr") => {
+                let aromatized: Vec<Molecule> = mols
+                    .iter()
+                    .filter_map(|m| apply_aromaticity_rdkit_parity_experimental(m).ok())
+                    .collect();
+                let start = Instant::now();
+                for m in &aromatized {
+                    let _ = find_sssr(m);
+                }
+                println!(
+                    "sssr_total={:?} n={} (post-aromaticity only)",
+                    start.elapsed(),
+                    aromatized.len()
+                );
             }
             _ => {
                 println!(
@@ -181,13 +231,36 @@ fn main() {
                 }
                 let candidate_total = start.elapsed();
 
+                let start = Instant::now();
+                let mut bit_only_errors = 0usize;
+                for m in &mols {
+                    if rdkit_morgan_ecfp4_bitvec(m).is_err() {
+                        bit_only_errors += 1;
+                    }
+                }
+                let bit_only_total = start.elapsed();
+
                 let ratio = candidate_total.as_secs_f64() / baseline_total.as_secs_f64();
                 let preprocessing_share =
                     preprocessing_total.as_secs_f64() / candidate_total.as_secs_f64();
+                let aromatized: Vec<Molecule> = mols
+                    .iter()
+                    .filter_map(|m| apply_aromaticity_rdkit_parity_experimental(m).ok())
+                    .collect();
+                let start = Instant::now();
+                for m in &aromatized {
+                    let _ = find_sssr(m);
+                }
+                let sssr_total = start.elapsed();
                 println!(
-                    "baseline_total={baseline_total:?} candidate_total={candidate_total:?} ratio={ratio:.3}x \
-                     preprocessing_total={preprocessing_total:?} ({:.0}% of candidate) errors={errors}",
+                    "baseline_total={baseline_total:?} detail_total={candidate_total:?} \
+                     bit_only_total={bit_only_total:?} detail/bit={:.3}x ratio={ratio:.3}x \
+                     preprocessing_total={preprocessing_total:?} ({:.0}% of detail) \
+                     sssr_total={sssr_total:?} ({:.0}% of detail) \
+                     detail_errors={errors} bit_only_errors={bit_only_errors}",
+                    candidate_total.as_secs_f64() / bit_only_total.as_secs_f64(),
                     preprocessing_share * 100.0,
+                    sssr_total.as_secs_f64() / candidate_total.as_secs_f64() * 100.0,
                 );
             }
         }

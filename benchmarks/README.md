@@ -10,6 +10,7 @@ accuracy, or compatibility claims.
 | Need | Start with |
 |---|---|
 | Understand the rules and how to report a result | [`docs/benchmark.md`](../docs/benchmark.md) |
+| Review Parse + Morgan candidate evidence and remaining acceptance work | [T3.6 / PF0–PF5 plan](../docs/parse-morgan-performance-plan.md) |
 | Compare current similarity search with RDKit | [`2026-09-12-similarity-search-a3-v1.0.13.md`](2026-09-12-similarity-search-a3-v1.0.13.md) |
 | Reproduce the 1.10x hot-path gate | [`2026-09-05-hotpath-110.md`](2026-09-05-hotpath-110.md) |
 | Check file-streaming contracts | [v1.0.12 validation matrix](../validation/results/cross-engine-matrix-v1.0.12.json) |
@@ -21,7 +22,7 @@ accuracy, or compatibility claims.
 | Check WASM artifact size | [`2026-09-09-wasm-size-v1.0.10.md`](2026-09-09-wasm-size-v1.0.10.md) |
 | Find older measurements | [Historical snapshots](#historical-snapshots) |
 
-The current release line is v1.0.16. Older records remain versioned historical
+The current release line is v1.0.17. Older records remain versioned historical
 measurements where their headers say so; a release does not imply that an older
 measurement was rerun.
 
@@ -38,6 +39,7 @@ measurement was rerun.
 | [`2026-09-12-similarity-search-a3-v1.0.13.md`](2026-09-12-similarity-search-a3-v1.0.13.md) | A3 rerun after explicit-aromatic recovery; 4,500/500 coverage and exact compatible top-10 gate |
 | [`2026-09-12-similarity-search-a3-v1.0.13.json`](2026-09-12-similarity-search-a3-v1.0.13.json) | Machine-readable A3 rerun |
 | [`rdkit-ecfp4-cross-binding-parity-5000-v1.0.13.json`](../validation/results/rdkit-ecfp4-cross-binding-parity-5000-v1.0.13.json) | Current Rust/Python/Node/WASM ECFP4 cross-binding gate: 5,000/5,000 |
+| [`rdkit-ecfp4-cross-binding-parity-5000-parse-morgan-candidate-2026-09-20.json`](../validation/results/rdkit-ecfp4-cross-binding-parity-5000-parse-morgan-candidate-2026-09-20.json) | Frozen Parse + Morgan candidate rebuilt in isolated Python and Node-WASM bindings: every Rust/Python/Node-WASM pair is 5,000/5,000; this is binding parity, not a separate RDKit oracle |
 | [`rdkit-ecfp4-sparse-cross-binding-parity-5000-v1.0.13.json`](../validation/results/rdkit-ecfp4-sparse-cross-binding-parity-5000-v1.0.13.json) | Raw sparse identifier/count cross-binding gate: 5,000/5,000 |
 | [`rdkit-ecfp4-raw-bitinfo-cross-binding-parity-5000-v1.0.13.json`](../validation/results/rdkit-ecfp4-raw-bitinfo-cross-binding-parity-5000-v1.0.13.json) | Raw identifier bitInfo cross-binding gate: 5,000/5,000 |
 | [`rdkit-ecfp4-bitinfo-cross-binding-parity-5000-v1.0.13.json`](../validation/results/rdkit-ecfp4-bitinfo-cross-binding-parity-5000-v1.0.13.json) | Folded bitInfo cross-binding gate: 5,000/5,000 |
@@ -59,6 +61,12 @@ measurement was rerun.
 | [`../validation/results/competitive-browser-rdkitjs-isolated-v1.0.15-2026-09-16.json`](../validation/results/competitive-browser-rdkitjs-isolated-v1.0.15-2026-09-16.json) | Machine-readable isolated browser comparison result |
 | [`../validation/results/competitive-browser-rdkitjs-ecfp4-parity-5k-v1.0.15-2026-09-16.json`](../validation/results/competitive-browser-rdkitjs-ecfp4-parity-5k-v1.0.15-2026-09-16.json) | Direct browser ECFP4/Morgan comparison against `@rdkit/rdkit@2026.03.6`: 5,000/5,000 exact after the large polycyclic-aromatic explicit-aromatic regression fix; this does not generalize to unmeasured corpus or option configurations |
 | [`../validation/results/competitive-browser-rdkitjs-isolated-10k-rss-v1.0.15-2026-09-16.json`](../validation/results/competitive-browser-rdkitjs-isolated-10k-rss-v1.0.15-2026-09-16.json) | Chrome-owned-process 10k memory lane: browser JS heap, chematic linear-memory allocation, and sampled process-tree RSS; summed RSS is not unique physical memory and is not cross-browser evidence |
+| [`../validation/results/parse-morgan-rdkitjs-local-candidate-2026-09-20-chromium-10k.json`](../validation/results/parse-morgan-rdkitjs-local-candidate-2026-09-20-chromium-10k.json) | Unreleased local candidate, Chrome 10k/20-repetition equivalent-output Parse + compatible Morgan comparison: 9,999 supported rows and paired median 2.63x; second-host acceptance remains open |
+| [`../validation/results/parse-morgan-rdkitjs-local-candidate-2026-09-20-firefox-10k.json`](../validation/results/parse-morgan-rdkitjs-local-candidate-2026-09-20-firefox-10k.json) | Unreleased local candidate, Firefox 10k/10-repetition lane: same configured output and paired median 2.06x; browser timer granularity is retained in the raw record |
+| [`../validation/results/parse-morgan-rdkitjs-local-candidate-2026-09-20-webkit-10k.json`](../validation/results/parse-morgan-rdkitjs-local-candidate-2026-09-20-webkit-10k.json) | Unreleased local candidate, WebKit 10k/10-repetition lane: same configured output and paired median 2.96x; this is not a second-host measurement |
+| [`../validation/results/parse-morgan-rdkitjs-local-candidate-2026-09-20-chromium-chembl-5k.json`](../validation/results/parse-morgan-rdkitjs-local-candidate-2026-09-20-chromium-chembl-5k.json) | Unreleased local candidate, independent ChEMBL 5k Chrome/20-repetition lane: 5,000/5,000 exact and paired median 6.17x; source candidate still needs freezing |
+| [`../validation/results/parse-morgan-rdkitjs-local-candidate-2026-09-20-parity-10k-chromium.json`](../validation/results/parse-morgan-rdkitjs-local-candidate-2026-09-20-parity-10k-chromium.json), [`…-firefox.json`](../validation/results/parse-morgan-rdkitjs-local-candidate-2026-09-20-parity-10k-firefox.json), [`…-webkit.json`](../validation/results/parse-morgan-rdkitjs-local-candidate-2026-09-20-parity-10k-webkit.json) | Direct configured-bit gates for the three local browser lanes: each is 9,999/9,999 supported with one unchanged typed Fe(II) refusal |
+| [`../validation/results/parse-morgan-rdkitjs-local-candidate-2026-09-20-parity-chembl-5k-chromium.json`](../validation/results/parse-morgan-rdkitjs-local-candidate-2026-09-20-parity-chembl-5k-chromium.json) | Direct independent ChEMBL configured-bit gate: 5,000/5,000 exact; it proves output equality but not cross-host performance |
 | [`2026-09-10-generated-wasm-v3000-gate-v1.0.11.md`](2026-09-10-generated-wasm-v3000-gate-v1.0.11.md) | Generated Web-WASM V3000 metadata preservation gate |
 | [`2026-09-11-v3000-cross-engine-v1.0.12.md`](2026-09-11-v3000-cross-engine-v1.0.12.md) | Bounded V3000 canonical/semantic probe across schematic, RDKit, and Open Babel |
 | [`2026-09-11-v3000-cross-engine-v1.0.12.json`](2026-09-11-v3000-cross-engine-v1.0.12.json) | Machine-readable V3000 cross-engine probe and explicit Indigo availability boundary |
