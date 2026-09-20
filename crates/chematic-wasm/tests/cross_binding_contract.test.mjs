@@ -342,7 +342,16 @@ assert.equal(batchManifest.skipped_count, 0);
 assert.equal(batchManifest.all_succeeded, false);
 const batchActual = batchManifest.records;
 assert.deepEqual(
-  batchActual.map(({ error, ...record }) => record),
+  batchActual.map(({ error, error_stage: errorStage, ...record }) => {
+    if (record.status === "accepted") {
+      assert.equal(error, null);
+      assert.equal(errorStage, null);
+    } else {
+      assert.equal(typeof error, "string");
+      assert.equal(errorStage, "parse");
+    }
+    return record;
+  }),
   fixture.batch_canonicalization_contract.expected,
 );
 
