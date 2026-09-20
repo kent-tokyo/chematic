@@ -744,8 +744,8 @@ rejectionは文字列、envelopeの`complete`は処理完了を表す。これ�
   cancelでは`unprocessed`とterminal reasonを表示し、古いWorker応答が後続importの状態を
   上書きしないgeneration guardを追加した。Chromium/Firefox/WebKitのsmokeで確認済み。
   これはExplorerのUI経路だけであり、下記の全binding/10k Worker出口の代替にはしない。
-- [~] PR #584はExplorerのauto-detected CSV `File.stream()`へunknown-length adapterを
-  提案し、CI通過・merge待ちである。EOF前の件数を推測せず、cancel時は完了済み、観測済み
+- [x] PR #584（`5678360b`）はExplorerのauto-detected CSV `File.stream()`へunknown-length
+  adapterを統合した。EOF前の件数を推測せず、cancel時は完了済み、観測済み
   未終端、`unread input=unknown`、terminal reasonを別々に示す。10k Chromium smokeは
   normal CSV import/exportのinput order/statusに加え、10k CSV中断で`complete=false`と
   未読範囲を確認する。これはブラウザUI adapterの検証であり、Rust/Python/Node/WASM public
