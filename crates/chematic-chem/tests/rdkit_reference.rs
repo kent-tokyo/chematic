@@ -380,6 +380,16 @@ fn hbd_paracetamol() {
     assert_eq!(hbd_count(&mol("CC(=O)Nc1ccc(O)cc1")), 2);
 }
 
+#[test]
+fn hbd_standalone_water_is_not_a_lipinski_donor() {
+    // RDKit Lipinski.NumHDonors / CalcNumHBD both return 0 for `O`.
+    // Hydroxyl donors with a heavy-atom neighbour remain counted (and
+    // hydroxylamine has one donor at each N and O).
+    assert_eq!(hbd_count(&mol("O")), 0);
+    assert_eq!(hbd_count(&mol("CO")), 1);
+    assert_eq!(hbd_count(&mol("NO")), 2);
+}
+
 // ── Lipinski ─────────────────────────────────────────────────────────────────
 
 #[test]

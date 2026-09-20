@@ -571,15 +571,27 @@ pub fn heavy_atom_count(mol: &Molecule) -> usize {
 // 4. Hydrogen bond donor count
 // ---------------------------------------------------------------------------
 
-/// Count hydrogen bond donors (N-H or O-H groups).
+/// Count Lipinski hydrogen bond donors (N-H, O-H, or S-H groups).
 ///
 /// Each heavy atom with element N or O that has at least one attached H
-/// counts as one donor (not per H — donors are counted per heavy atom).
+/// counts as one donor (not per H — donors are counted per heavy atom). An
+/// isolated implicit-water oxygen is not a Lipinski donor: RDKit's
+/// `CalcNumHBD` and `Lipinski.NumHDonors` both return zero for the standalone
+/// SMILES `O`, while ordinary hydroxyl groups remain donors.
 pub fn hbd_count(mol: &Molecule) -> usize {
     mol.atoms()
         .filter(|(idx, atom)| {
             let an = atom.element.atomic_number();
-            (is_nitrogen(an) || is_oxygen(an) || an == 16) && implicit_hcount(mol, *idx) > 0
+            if !(is_nitrogen(an) || is_oxygen(an) || an == 16) || implicit_hcount(mol, *idx) == 0 {
+                return false;
+            }
+            // A bare `O` is water in the SMILES model. Retain donor behavior
+            // for O-H attached to any heavy atom (alcohols, acids, hydroxylamine,
+            // and related functional groups).
+            an != 8
+                || mol
+                    .neighbors(*idx)
+                    .any(|(neighbor, _)| mol.atom(neighbor).element.atomic_number() != 1)
         })
         .count()
 }
