@@ -1274,6 +1274,28 @@ fn tpsa_phosphorus(mol: &Molecule, idx: AtomIdx, h: u8) -> f64 {
     }
 }
 
+/// Whether a Kekulé-spelled ring NH has the RDKit pyridone aromatic-N atom type.
+///
+/// `apply_aromaticity` is intentionally not sufficient on its own: it also
+/// promotes imide nitrogens such as phthalimide, whose TPSA atom type remains
+/// the non-aromatic amide type.  The pyridone boundary is a neutral ring NH
+/// with exactly one directly bonded carbonyl carbon that becomes aromatic after
+/// perception.  This is deliberately narrower than tautomer canonicalization;
+/// it only selects the descriptor atom type for an already parsed graph.
+fn is_kekule_pyridone_n(mol: &Molecule, mol_arom: &Molecule, idx: AtomIdx, h: u8) -> bool {
+    !mol.atom(idx).aromatic
+        && mol_arom.atom(idx).aromatic
+        && h > 0
+        && mol
+            .neighbors(idx)
+            .filter(|(neighbor, _)| {
+                mol.atom(*neighbor).element.atomic_number() == 6
+                    && has_double_bond_to(mol, *neighbor, 8)
+            })
+            .count()
+            == 1
+}
+
 /// Topological Polar Surface Area (Ertl 2000).
 ///
 /// Sum of Ertl atom-type contributions for N, O, S, and P atoms.
@@ -1285,9 +1307,10 @@ fn tpsa_phosphorus(mol: &Molecule, idx: AtomIdx, h: u8) -> f64 {
 /// `Descriptors.TPSA(mol)` excludes S and P; results will differ for molecules
 /// containing these elements.
 pub fn tpsa(mol: &Molecule) -> f64 {
-    // Apply aromaticity for Kekulé-form input. For TPSA, nitrogen aromaticity uses
-    // the ORIGINAL mol's flag: apply_aromaticity can false-promote phthalimide N
-    // (making it give 12.89 instead of 12.03). Other elements use mol_arom.
+    // Apply aromaticity for Kekulé-form input. Nitrogen normally keeps the input
+    // aromaticity flag because perception can false-promote imide N (for example
+    // phthalimide). A narrow single-carbonyl pyridone exception restores RDKit's
+    // aromatic-[nH] atom type without changing the imide boundary.
     let mol_arom = chematic_perception::apply_aromaticity(mol);
     let ring_bonds = ring_bond_indices(&mol_arom);
 
@@ -1295,17 +1318,17 @@ pub fn tpsa(mol: &Molecule) -> f64 {
     for (idx, atom_arom) in mol_arom.atoms() {
         let orig_atom = mol.atom(idx);
         let an = orig_atom.element.atomic_number();
-        // N: prefer SMILES aromatic flag; other elements: use mol_arom flag.
-        let is_aromatic = if an == 7 {
-            orig_atom.aromatic
-        } else {
-            atom_arom.aromatic
-        };
         // H count: for N use original mol (before apply_aromaticity changed valence).
         let h = if an == 7 {
             descriptor_attached_hcount(mol, idx)
         } else {
             descriptor_attached_hcount(&mol_arom, idx)
+        };
+        // N: prefer SMILES aromatic flag; other elements: use mol_arom flag.
+        let is_aromatic = if an == 7 {
+            orig_atom.aromatic || is_kekule_pyridone_n(mol, &mol_arom, idx, h)
+        } else {
+            atom_arom.aromatic
         };
         let contribution = match an {
             7 => tpsa_nitrogen(mol, idx, is_aromatic, h, orig_atom.charge, &ring_bonds),
@@ -1514,9 +1537,13 @@ fn crippen_anchor_sets(mol: &Molecule, queries: &CrippenQueries) -> Vec<FxHashSe
 /// Index matches mol.atoms().
 pub fn logp_crippen_per_atom(mol: &Molecule) -> Vec<f64> {
     let queries = get_crippen_queries();
+    // RDKit assigns Crippen atom types after aromaticity perception. Match on
+    // that representation so an equivalent Kekulé spelling receives the same
+    // aromatic SMARTS type; contributions stay indexed to the caller's graph.
+    let mol_arom = chematic_perception::apply_aromaticity(mol);
     // Pre-compute once per molecule: for each pattern, which atoms satisfy query-atom-0?
     // Previously O(n_atoms × n_patterns × VF2); now O(n_patterns × VF2 + n_atoms × n_patterns).
-    let anchor_sets = crippen_anchor_sets(mol, queries);
+    let anchor_sets = crippen_anchor_sets(&mol_arom, queries);
 
     let h_fallback = CRIPPEN_SMARTS
         .iter()
@@ -1770,7 +1797,8 @@ fn h_mr_for_parent(
 /// H contributions are folded into the attached heavy atom. Index matches mol.atoms().
 pub fn mr_per_atom(mol: &Molecule) -> Vec<f64> {
     let queries = get_crippen_queries();
-    let anchor_sets = crippen_anchor_sets(mol, queries);
+    let mol_arom = chematic_perception::apply_aromaticity(mol);
+    let anchor_sets = crippen_anchor_sets(&mol_arom, queries);
 
     let h_fallback = CRIPPEN_SMARTS
         .iter()
@@ -1835,7 +1863,8 @@ pub fn molar_refractivity(mol: &Molecule) -> f64 {
 /// computation), making it roughly 2× faster when both values are needed.
 pub fn logp_and_mr(mol: &Molecule) -> (f64, f64) {
     let queries = get_crippen_queries();
-    let anchor_sets = crippen_anchor_sets(mol, queries);
+    let mol_arom = chematic_perception::apply_aromaticity(mol);
+    let anchor_sets = crippen_anchor_sets(&mol_arom, queries);
 
     let h_logp_fallback = CRIPPEN_SMARTS
         .iter()
@@ -4215,6 +4244,24 @@ mod tests {
         assert_eq!(hbd_count(&mol("CCO[2H]")), 1);
     }
 
+    #[test]
+    fn kekule_pyridone_uses_aromatic_descriptor_types_without_promoting_imides() {
+        // RDKit sanitizes this Kekulé spelling to O=c1cccc[nH]1. Its ring NH
+        // is consequently an aromatic descriptor atom, unlike a two-carbonyl
+        // imide such as phthalimide.
+        let pyridone = mol("O=C1C=CC=CN1");
+        assert!(approx(tpsa(&pyridone), 32.86, 1e-12));
+        assert!(approx(logp_crippen(&pyridone), 0.3749, 1e-12));
+        assert!(approx(molar_refractivity(&pyridone), 27.0627, 1e-12));
+        assert!(approx(logp_and_mr(&pyridone).0, 0.3749, 1e-12));
+        assert!(approx(logp_and_mr(&pyridone).1, 27.0627, 1e-12));
+
+        let phthalimide = mol("O=C1NC(=O)c2ccccc12");
+        assert!(approx(tpsa(&phthalimide), 46.17, 1e-12));
+        assert!(approx(logp_crippen(&phthalimide), 0.5702, 1e-12));
+        assert!(approx(molar_refractivity(&phthalimide), 38.2387, 1e-12));
+    }
+
     // -- Test 17: aniline TPSA -----------------------------------------------
     #[test]
     fn test_tpsa_aniline() {
@@ -5964,6 +6011,7 @@ mod tests {
             "c1ccc2c(c1)cc1ccc3cccc4ccc2c1c34", // pyrene (PAH)
             "O=C(O)c1ccccc1O",                  // salicylic acid
             "CCO",                              // ethanol
+            "O=C1C=CC=CN1",                     // Kekulé 2-pyridone
             "CC(N)Cc1ccccc1",                   // phenylalanine
         ];
         for smi in smiles {

@@ -19,15 +19,6 @@ from pathlib import Path
 
 from tpsa_functional_group_probe import CASES
 
-# This Kekule tautomer is deliberately a classification-only residual.  The
-# pass/fail TPSA atom-type probe above contains only established regressions;
-# keeping a known mismatch here preserves its public evidence without turning
-# the narrow green gate into an aggregate accuracy claim.
-CLASSIFICATION_ONLY_CASES = {
-    "2_pyridone": "O=C1C=CC=CN1",
-}
-
-
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CLI = ROOT / "target" / "debug" / "chematic"
 
@@ -36,7 +27,7 @@ CASE_STRATA = {
     "carbon11_ethanol": ["isotope"],
     "deuterated_ethanol": ["isotope"],
     "2_hydroxypyridine": ["tautomer", "aromatic"],
-    "2_pyridone": ["tautomer", "kekule"],
+    "2_pyridone_kekule": ["tautomer", "kekule"],
     "phenoxide": ["charge", "aromatic"],
 }
 
@@ -134,7 +125,7 @@ def main() -> int:
     }
     rows = []
     summary = {field: {"strict_matches": 0, "mismatches": []} for field in FIELDS}
-    for case_id, smiles in {**CASES, **CLASSIFICATION_ONLY_CASES}.items():
+    for case_id, smiles in CASES.items():
         rd_mol = Chem.MolFromSmiles(smiles)
         if rd_mol is None:
             raise RuntimeError(f"RDKit rejected public probe {case_id}: {smiles}")
