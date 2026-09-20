@@ -73,7 +73,7 @@
 #![allow(dead_code)] // only reachable via the `diagnostics` feature + this module's own tests
 
 use chematic_core::{AtomIdx, BondIdx, BondOrder, CipCode, Molecule};
-use chematic_perception::RingSet;
+use chematic_perception::ring_atom_flags;
 use rustc_hash::{FxHashMap, FxHashSet};
 use smallvec::SmallVec;
 
@@ -133,7 +133,7 @@ pub(crate) fn hash_vec(values: &[u32]) -> u32 {
 /// `isotope_delta` values are reused verbatim from `ecfp.rs` (already
 /// verified RDKit-equivalent by partition, per `EcfpInvariantMode::RdkitMorgan`'s
 /// own doc comment) — only the assembly and hash function differ here.
-fn connectivity_invariant(mol: &Molecule, idx: AtomIdx, ring_set: &RingSet) -> u32 {
+fn connectivity_invariant(mol: &Molecule, idx: AtomIdx, ring_atoms: &[bool]) -> u32 {
     let atom = mol.atom(idx);
     let mut components: SmallVec<[u32; 6]> = SmallVec::new();
     components.push(atom.element.atomic_number() as u32);
@@ -141,7 +141,7 @@ fn connectivity_invariant(mol: &Molecule, idx: AtomIdx, ring_set: &RingSet) -> u
     components.push(rdkit_total_h_count(mol, idx) as u32);
     components.push((atom.charge as i32) as u32);
     components.push(rdkit_isotope_delta(mol, idx) as u32);
-    if ring_set.contains_atom(idx) {
+    if ring_atoms.get(idx.0 as usize).copied().unwrap_or(false) {
         components.push(1);
     }
     hash_vec(&components)
@@ -240,12 +240,12 @@ pub struct RdkitMorganRawTraceEntry {
 /// differs; see the module docs for why that duplication is deliberate.
 pub(crate) fn expand_one_pass(
     mol: &Molecule,
-    ring_set: &RingSet,
+    ring_atoms: &[bool],
     bond_invariants: &[u32],
     max_radius: u32,
     suppress: bool,
 ) -> FxHashMap<(u32, u32), u32> {
-    expand_one_pass_with_chirality(mol, ring_set, bond_invariants, max_radius, suppress, None)
+    expand_one_pass_with_chirality(mol, ring_atoms, bond_invariants, max_radius, suppress, None)
 }
 
 /// Morgan expansion with RDKit's opt-in tetrahedral chirality re-fold.
@@ -256,25 +256,55 @@ pub(crate) fn expand_one_pass(
 /// invariant hash and is added again by RDKit's per-round loop.
 pub(crate) fn expand_one_pass_with_chirality(
     mol: &Molecule,
-    ring_set: &RingSet,
+    ring_atoms: &[bool],
     bond_invariants: &[u32],
     max_radius: u32,
     suppress: bool,
     cip_codes: Option<&FxHashMap<AtomIdx, CipCode>>,
 ) -> FxHashMap<(u32, u32), u32> {
-    let n = mol.atom_count();
     let mut out: FxHashMap<(u32, u32), u32> = FxHashMap::default();
+    expand_one_pass_with_chirality_into(
+        mol,
+        ring_atoms,
+        bond_invariants,
+        max_radius,
+        suppress,
+        cip_codes,
+        |atom_idx, radius, invariant| {
+            out.insert((atom_idx, radius), invariant);
+        },
+    );
+    out
+}
+
+/// Expand the RDKit Morgan lifecycle and send every raw identifier to `emit`.
+///
+/// The detailed/provenance APIs use this through the map-returning wrapper;
+/// bit-only callers can use it without allocating that output map. Keeping one
+/// lifecycle implementation prevents suppression semantics from diverging.
+pub(crate) fn expand_one_pass_with_chirality_into<F>(
+    mol: &Molecule,
+    ring_atoms: &[bool],
+    bond_invariants: &[u32],
+    max_radius: u32,
+    suppress: bool,
+    cip_codes: Option<&FxHashMap<AtomIdx, CipCode>>,
+    mut emit: F,
+) where
+    F: FnMut(u32, u32, u32),
+{
+    let n = mol.atom_count();
     if n == 0 {
-        return out;
+        return;
     }
     let bond_count = mol.bond_count();
 
     let mut current_invariants: Vec<u32> = Vec::with_capacity(n);
     for i in 0..n {
         let idx = AtomIdx(i as u32);
-        let id = connectivity_invariant(mol, idx, ring_set);
+        let id = connectivity_invariant(mol, idx, ring_atoms);
         current_invariants.push(id);
-        out.insert((i as u32, 0), id);
+        emit(i as u32, 0, id);
     }
 
     let mut dead = vec![false; n];
@@ -284,28 +314,35 @@ pub(crate) fn expand_one_pass_with_chirality(
 
     for layer in 0..max_radius {
         let mut next_invariants = vec![0u32; n];
-        let mut round_atom_neighborhoods = atom_neighborhoods.clone();
+        // Most atoms remain live for early rounds. Cloning the full previous
+        // vector and immediately overwriting every live slot wastes one
+        // BondSet clone per atom per round; construct the next state directly
+        // instead and retain a clone only for already-dead atoms.
+        let mut round_atom_neighborhoods = Vec::with_capacity(n);
         let mut groups: FxHashMap<BondSet, Vec<(u32, u32)>> = FxHashMap::default();
 
         for i in 0..n {
             if dead[i] {
+                round_atom_neighborhoods.push(atom_neighborhoods[i].clone());
                 continue;
             }
             let idx = AtomIdx(i as u32);
-            let neighbors: Vec<(AtomIdx, BondIdx)> = mol.neighbors(idx).collect();
-            if neighbors.is_empty() {
-                dead[i] = true;
-                continue;
-            }
+            let mut has_neighbors = false;
             let mut bond_env = BondSet::empty(bond_count);
             let mut pairs: SmallVec<[(u32, u32); 6]> = SmallVec::new();
-            for (nb_idx, bond_idx) in &neighbors {
+            for (nb_idx, bond_idx) in mol.neighbors(idx) {
+                has_neighbors = true;
                 bond_env.set(bond_idx.0);
                 bond_env.union_with(&atom_neighborhoods[nb_idx.0 as usize]);
                 pairs.push((
                     bond_invariants[bond_idx.0 as usize],
                     current_invariants[nb_idx.0 as usize],
                 ));
+            }
+            if !has_neighbors {
+                dead[i] = true;
+                round_atom_neighborhoods.push(atom_neighborhoods[i].clone());
+                continue;
             }
             pairs.sort_unstable();
 
@@ -333,14 +370,14 @@ pub(crate) fn expand_one_pass_with_chirality(
             }
 
             next_invariants[i] = invar;
-            round_atom_neighborhoods[i] = bond_env.clone();
+            round_atom_neighborhoods.push(bond_env.clone());
             groups.entry(bond_env).or_default().push((invar, i as u32));
         }
 
         for (bond_env, mut members) in groups {
             if !suppress {
                 for &(invariant, atom_idx) in &members {
-                    out.insert((atom_idx, layer + 1), invariant);
+                    emit(atom_idx, layer + 1, invariant);
                 }
             } else if seen.contains(&bond_env) {
                 for &(_, atom_idx) in &members {
@@ -349,7 +386,7 @@ pub(crate) fn expand_one_pass_with_chirality(
             } else {
                 members.sort_unstable();
                 let (winner_invariant, winner_idx) = members[0];
-                out.insert((winner_idx, layer + 1), winner_invariant);
+                emit(winner_idx, layer + 1, winner_invariant);
                 seen.insert(bond_env);
                 for &(_, atom_idx) in &members[1..] {
                     dead[atom_idx as usize] = true;
@@ -360,8 +397,6 @@ pub(crate) fn expand_one_pass_with_chirality(
         current_invariants = next_invariants;
         atom_neighborhoods = round_atom_neighborhoods;
     }
-
-    out
 }
 
 fn chiral_code(code: CipCode) -> u32 {
@@ -382,14 +417,14 @@ pub fn rdkit_morgan_raw_trace(mol: &Molecule, max_radius: u32) -> Vec<RdkitMorga
         return Vec::new();
     }
 
-    let ring_set = chematic_perception::find_sssr(mol);
+    let ring_atoms = ring_atom_flags(mol);
     let bond_count = mol.bond_count();
     let bond_invariants: Vec<u32> = (0..bond_count)
         .map(|b| bond_invariant(mol.bond(BondIdx(b as u32)).order))
         .collect();
 
-    let full = expand_one_pass(mol, &ring_set, &bond_invariants, max_radius, false);
-    let default = expand_one_pass(mol, &ring_set, &bond_invariants, max_radius, true);
+    let full = expand_one_pass(mol, &ring_atoms, &bond_invariants, max_radius, false);
+    let default = expand_one_pass(mol, &ring_atoms, &bond_invariants, max_radius, true);
 
     let mut keys: Vec<(u32, u32)> = full.keys().chain(default.keys()).copied().collect();
     keys.sort_unstable();
@@ -526,9 +561,9 @@ mod rdkit_ground_truth_radius0 {
 
     fn radius0(smi: &str) -> Vec<u32> {
         let mol = parse(smi).unwrap();
-        let ring_set = chematic_perception::find_sssr(&mol);
+        let ring_atoms = ring_atom_flags(&mol);
         (0..mol.atom_count())
-            .map(|i| connectivity_invariant(&mol, AtomIdx(i as u32), &ring_set))
+            .map(|i| connectivity_invariant(&mol, AtomIdx(i as u32), &ring_atoms))
             .collect()
     }
 

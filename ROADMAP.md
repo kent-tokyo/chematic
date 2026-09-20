@@ -1,28 +1,15 @@
 # chematic roadmap
 
-> Updated 2026-09-19. Released: **v1.0.16**. Next delivery theme: **1.x Trust Release**.
-> **Current P0 focus: complete the frozen evaluation packet; extend the existing
-> public-package comparison with
-> operation-correctness, search, and resource evidence.** Candidate/data freezing
-> and large-ring SMILES safety were completed on September 16 and 19 respectively;
-> sealed scores remain unrun.
+> Updated 2026-09-20. Released: **v1.0.17**. Next delivery theme: **1.x Trust Release**.
+> **Current P0 focus: freeze and independently reproduce the local three-browser
+> Parse + Morgan win over pinned RDKit without losing correctness or coverage (T3.6).**
+> Frozen accuracy evaluation (T1.6) continues separately; sealed scores remain unrun.
 
 ## Current status
 
-- v1.0.16 packages the completed Trust/interoperability maintenance work on the
-  latest dependency baseline. Its release boundary is recorded in
-  `CHANGELOG.md`; the sealed-holdout score remains deliberately unrun.
-- v1.0.14 was published from `a259507d`; the release and CI follow-ups reached
-  `main` in [PR #532](https://github.com/kent-tokyo/chematic/pull/532)
-  (`286485be`). The tag retains the published source; the merge includes later
-  formatting, native-InChI regression-test, and binding-inventory corrections.
-- v1.0.15 was published from `afa61956`. Its six public channels, Pages asset
-  digests, clean-install consumers, modern MCP smoke, and binary-only PyPI
-  runtime smoke are recorded in
-  `validation/results/release-channel-verification-v1.0.15.json` and
-  `validation/results/release-package-smoke-v1.0.15-2026-09-16.json`. The
-  latter verifies Linux CPython 3.9, macOS CPython 3.13, and Windows CPython
-  3.13; Linux 3.9 is the actual published-wheel boundary for this release.
+- v1.0.17 adds bounded SMILES+ large-ring labels and typed attachment-label
+  inspection on the Trust/interoperability baseline. Release history belongs
+  in `CHANGELOG.md`; publication does not complete the sealed accuracy gates.
 - The published-package browser scorecard is now in `main` via
   [PR #541](https://github.com/kent-tokyo/chematic/pull/541) (`8ce8026`). It
   compares `@kent-tokyo/chematic@1.0.15` with official
@@ -80,16 +67,35 @@ measurements must identify their actual package/source hashes.
 
 | Order | Priority | Delivery and next output | Product Phase / accuracy |
 |---|---|---|---|
-| 1 | **Done (2026-09-19)** | **T4.6 large-ring safety**: writer/parser now use bounded SMILES+ `%(n)` labels ≥100; malformed/overflow labels reject, and a 121-closure graph round-trips | P1/P2; A2/A4 |
-| 2 | P0 | **T1.6 evaluation execution**: verify the existing frozen tag/split/protocol/build packet before scoring the 8k holdout; distinguish that historical candidate from later fixes. Do not tune on sealed outcomes | P0/P2; A0–A4 |
-| 3 | P0 | **T1.5/T3.4 public compatibility-cost contract**: separate npm/runtime/oracle versions; refresh public 1.0.16 and candidate lanes; add equivalent substructure search, operation semantics, and memory accounting to the existing 10k benchmark | P0/P3; A3/A4 |
-| 4 | P1 | **T5.6 upstream stereo regressions**: selective CIP dependencies, unknown isotopes, full/pseudo atrop and 8/9-member boundaries; mapped permutations and explicit unsupported results, without widening experimental claims | P2/P4; A2/A5 |
-| 5 | **Partial (2026-09-19)** | **T1.8 attachment-point contract**: CXSMILES now exposes complete positive `_AP<n>` parsing and degree-one wildcard identity; RDKit round-trip/collapse semantics remain open | P1/P4; A4 |
-| 6 | P1 | **T3/T2 adoption evidence**: clean-install typed Worker, 10k streaming/cancellation/offline/result parity, and current-version dashboard. Independent review, competitor tracking and bounded existing 3D gaps continue under T6 (P2) | P3/P5/P6; A5/A6 |
+| 1 | P0 | **T3.4/T3.6 PF5**: local equivalent-output win is measured on three browsers plus independent ChEMBL input; freeze candidate, record raw evidence, then reproduce on a second host and enforce the paired gate | P0/P2/P3; A3 |
+| 2 | P0, parallel | **T1.6 evaluation execution**: verify the frozen tag/split/protocol/build packet before scoring the 8k holdout. Keep historical and performance candidates separate; no sealed-data tuning | P0/P2; A0–A4 |
+| 3 | P0, after PF5 | **T3.6 sustainment**: keep bit-only/byte-output and ring-atom fast path covered by parity/search regressions; refresh the pinned competitor only through the same cross-host acceptance contract. Preserve native ECFP and compatible Morgan as separate profiles | P1/P2/P3; A3 |
+| 4 | P1 | **T1.5/T3.4 remaining comparison**: equivalent substructure search and resource evidence; **T5.6 stereo regressions**: selective CIP, isotopes, atrop and mapped permutations with explicit unsupported results | P0/P2/P3/P4; A2–A5 |
+| 5 | P1, partial | **T1.8 attachment contract**: existing `_AP<n>` syntax/identity is not collapse; complete external round-trip/boundary evidence. **T4.6** core large-ring safety is done; broader binding/resource regressions remain | P1/P4; A2/A4 |
+| 6 | P1 | **T3/T2 adoption evidence**: clean-install typed Worker, 10k streaming/cancellation/offline/result parity and versioned dashboard. T6 independent review and bounded existing 3D gaps continue | P3/P5/P6; A5/A6 |
 
 T3/T4/T5 can proceed in parallel once their dependencies pass. Public-channel
 inventory and A5 gold preparation continue alongside frozen-packet verification.
 Confirmed silent corruption, panic, or resource-limit defects take precedence.
+
+### Parse + ECFP4/Morgan performance workstream
+
+The [detailed T3.6 plan](docs/parse-morgan-performance-plan.md) owns the contract,
+profiling hypotheses, six steps **PF0 → PF1 → PF2 → PF3 → PF4 → PF5**, and adoption gates.
+PF IDs are subtasks, not new P7+ product phases. This is a new explicit performance
+goal; the abandoned additional 1.10x SMILES stretch stays abandoned.
+
+Historical public v1.0.15 Chromium Parse + FP took **0.315347 vs 0.134228 ms/mol**
+(CheMatic vs RDKit; medians of process means). That is about **2.35x the time**,
+not a current v1.0.17 measurement. PF0 must also align output representation and
+sanitization semantics before any new speed claim.
+
+Primary success: fixed radius-2/2048-bit compatible Morgan, same input/output,
+full supported-domain bit agreement and no new refusals; paired speedup 95% CI
+lower bound >1.0 and process-mean p95 no worse than RDKit. Native ECFP speed is
+reported separately, never substituted for Morgan compatibility. Independent
+performance inputs, cross-binding regressions and environment-specific reports
+are mandatory; the sealed accuracy set is not optimization data.
 
 **T1.6 sealed cohort (2026-09-16):** the non-release annotated tag
 `trust-eval-candidate-20260916` freezes `c2682e3aa75c21566c86ce1ade9cbd052838c694`
@@ -133,7 +139,7 @@ the [disposition ledger](docs/roadmap-open-work.md) for evidence and dependencie
 
 These extend the same product areas; they do not introduce new Phase numbers.
 
-- [ ] Measure only equivalent operations against fixed RDKit/Open Babel versions on identical inputs; keep subprocess-only lanes separately labeled.
+- [ ] T3.6: beat pinned RDKit for equivalent Parse + Morgan through PF0–PF5, with native ECFP in a separate lane; retain T3.4 fixed-input RDKit/Open Babel comparison and separately labeled subprocess lanes.
 - [ ] Exact canonical-SMILES and cross-engine V3000 parity: expand semantic-identity and RDKit/Indigo fixtures, including unsupported representation boundaries.
 - [ ] Replace remaining MD/UFF/MMFF94 finite-difference production paths after same-domain analytic energy, gradient, and stereo soundness gates.
 - [ ] Replace remaining periodic neighbor all-pairs paths after exact result-set and cutoff parity.
@@ -217,6 +223,7 @@ configuration, hardware, failures, uncertainty, and reproduction command.
 | Document | Responsibility |
 |---|---|
 | [Trust Release execution plan](docs/trust-release-plan.md) | T subtasks, dependencies, budgets, and schedule |
+| [Parse + Morgan performance plan](docs/parse-morgan-performance-plan.md) | T3.6 / PF0–PF5, equivalent-operation speed targets and correctness gates |
 | [RDKit accuracy plan](docs/rdkit-accuracy-plan.md) | A subtasks, evaluation protocol, and exits |
 | [Open-work disposition](docs/roadmap-open-work.md) | Evidence ledger and local/toolchain/external dependencies |
 | [Validation guide](docs/validation.md) / [benchmark index](benchmarks/README.md) | Reproduction and measurement boundaries |

@@ -1,9 +1,9 @@
 # chematic 1.x Trust Release — 実行計画
 
-更新日: 2026-09-19。期間: 2026-09-14〜2026-12-06（12週間の作業配分案）。
-対象: v1.0.16公開後のTrust Release候補。日付は納期の保証ではなくレビュー時点。
+更新日: 2026-09-20。期間: 2026-09-14〜2026-12-06（12週間の作業配分案）。
+対象: v1.0.17公開後のTrust Release候補。日付は納期の保証ではなくレビュー時点。
 状態: **T0の測定packetとT1.1–T1.4、現行版T2.6、公開artifact T3.4の一部を実装済み。Trust RCの全出口は未達**。
-v1.0.16は公開済みで、releaseとCI修正はmainへ反映済み。
+v1.0.17は公開済み。各版のrelease境界はCHANGELOGを参照する。
 公開完了と、この計画の候補条件充足は別に扱う。
 
 2026-09-13の実装進捗: T0のperception予算伝播・実測候補数・fail-closed回帰、
@@ -15,6 +15,12 @@ dashboard、release metadata v2、公開channel実測recordを実装した。can
 [A0–A6精度計画](rdkit-accuracy-plan.md) の完了条件は維持する。
 優先度P0/P1/P2は緊急度、既存Phase P0–P6は製品領域、A0–A6は精度目標、
 T0–T6は今回の作業ID。番号は相互に置き換えない。
+
+9月20日の優先順位更新: **T3.6 Parse＋Morgan性能計画のPF0→PF1を先行し、
+測定根拠に従ってPF2–PF5へ進む**。T1.6凍結精度packetは独立して並行維持する。
+週次配分も更新し、番号付きpacketは元の配置を残す。現在の実行順はROADMAPを正とする。
+[詳細計画](parse-morgan-performance-plan.md) に同条件比較、native/互換profile分離、
+bit-only化、前処理/展開最適化、採用条件をまとめた。最適化や速度達成は未実施。
 
 2026-09-16に公開npm artifact と official RDKit.js の固定10k browser
 scorecardをPR #541で公開した。小さいWASM、local no-store ready、parse/writeの
@@ -338,13 +344,18 @@ historical benchmarkの版は維持し、「全ての数字を最新版にする
   failure/coverage、測定APIとメモリ定義を記録する。
   100万分子換算は実測と別列で、線形外挿の仮定を明記する。
   公開1.0.15の10k・3ブラウザ・20反復と3回のRSS診断は実施済み。
-  再作成ではなく、公開1.0.16/次候補の別lane、検索、operation意味論、
+  再作成ではなく、公開1.0.17/次候補の別lane、検索、operation意味論、
   resource会計を補う。npm `2026.3.6` / runtime `2026.03.6`を別fieldにする。
 - [ ] T3.5 MCP全toolのruntime schemaからtool数と入出力例を生成。
   型付き化学エラー、oversized input、中断、structured outputを確認する。
   `scripts/check_mcp_runtime_inventory.py` は実際の stdio binary から
   20 tool・input/output schema・代表 structured output を確認する。入力
   上限と中断のwire-level回帰は追加で必要。
+- [ ] T3.6 Parse＋ECFP4/Morgan高速化: [PF0–PF5](parse-morgan-performance-plan.md)
+  の順に測定契約→profile→bit-only→前処理共有→kernel/binding→採用を進める。
+  T3.4のrunnerを共有し、同じpacked出力で互換Morganのpaired speedup 95% CI下限>1.0を
+  目指す。nativeとは別集計、正しさ/coverageの退行は禁止。性能laneは詳細計画の
+  20対×3セッションを使い、上記の一般比較の最低反復数で代用しない。
 
 1万件の暫定予算: timeoutを含む全件会計、cancel応答p95 ≤250ms、
 UI heartbeat gap p95 ≤100ms、batch working set ≤256MiB
@@ -456,9 +467,9 @@ A2全出口・A5独立判定の完了条件は変更しない。
 | 時期 | 主な作業 | レビューで確認するもの |
 |---|---|---|
 | W1残り: 9/19–9/20 | T4.6環番号の再現、T1.6封印済みpacket検証、版表記の整理 | 自社riskの再現fixture、評価可能/不可の理由 |
-| W2: 9/21–9/27 | 環番号の安全性修正、T1.6凍結候補評価、T3.4公開1.0.16/検索lane | 全行会計、旧候補と新候補の分離、正しさと速度の同時表示 |
-| W3: 9/28–10/4 | T5.6 CIP、T1.8 attachment、T3 typed Worker/1万件 | 上流差分の回帰/拒否、cancel・offline・partial failure |
-| W4: 10/5–10/11 | T3.4 resource補完、T5公開suite、RC監査 | 新候補のsealed適格性、Trust RC条件とblocker一覧 |
+| W2: 9/21–9/27 | T3.6 PF0–PF2、T1.6凍結packetを並行 | 1.0.17の同一出力baseline、hotspot、bit-only差分。旧候補と新候補の分離 |
+| W3: 9/28–10/4 | T3.6 PF3–PF4、T5.6/T1.8の安全性回帰 | 前処理/kernelの実測改善と不変条件。Worker等は残余枠で継続 |
+| W4: 10/5–10/11 | T3.6 PF5、T3.4 resource補完、RC監査 | 速度達成/未達と欠測の報告、Trust RC条件とblocker一覧 |
 | W5–W8: 10/12–11/8 | A1–A4未達、10万件、複数browser/OS、A5依頼packet | 操作別compat達成、coverage・速度・memoryの測定 |
 | W9–W12: 11/9–12/6 | A5独立判定、A6既存gap、維持運用演習 | 宣言範囲の同等性判断、3D別profile、次期backlog |
 
@@ -473,6 +484,10 @@ T3の1万件導入ゲート、T4固定corpus、T5既存安全性回帰・公開s
 公開後のchannel同期はT2のrelease完了条件であり、配布前のRC監査と区別する。
 
 ## 6. 次に着手する具体的な変更
+
+以下は9月19日のpacket。9月20日からはT3.4の同条件Parse＋FP契約と
+T3.6 PF0–PF5を性能作業の最優先にする（詳細は上記リンク）。T1.6評価と安全性対応は
+並行し、既存の正しさ条件は速度目標のために緩めない。
 
 9月19日の競合レビューを既存T/A/Phaseへ統合する。新Phaseや別の並行ロードマップは
 作らない。T0の独立packetは完成し、12→21残差の候補は不採用。残差分類と新候補は
@@ -524,7 +539,7 @@ T4/T5修正は開発fixtureで行い、旧候補のsealed結果を新候補の�
 
 ### 3. T3.4 — 比較の空欄を埋める（P0、目安3–5実働日＋測定待ち）
 
-- [ ] 公開1.0.16を再buildせず測り、次候補buildは別armにする。既存runnerを拡張し、
+- [ ] 公開1.0.17を再buildせず測り、次候補buildは別armにする。既存runnerを拡張し、
   package/runtime/oracle版、SRI/SHA、host/browser、全入力/拒否を保存する。
 - [ ] parseのsanitize/perception範囲、writeのsemantic preservation、Morganのradius/
   bit数/chirality/profileを先に照合。prepared-objectとparse-inclusiveを別表示する。
@@ -539,7 +554,8 @@ T4/T5修正は開発fixtureで行い、旧候補のsealed結果を新候補の�
   unavailable。1万/10万の実測と100万への外挿を別表にする。
 - [ ] CDN/remote cold startはnetwork条件/cache/transfer encodingを固定した追加lane。
   未測定でもlocal結果は公開可能。速度負けを含めてdashboard/再現コマンドを公開し、
-  正しさ・coverageが退行したarmを「高速化成功」にしない。1.10x目標は復活させない。
+  正しさ・coverageが退行したarmを「高速化成功」にしない。旧追加1.10x SMILES目標は
+  復活させない。新しいParse＋Morgan目標はT3.6の別契約で評価する。
 
 ### 4. T5.6 — CIP/atropの上流変更を境界テストにする（P1、目安3–5実働日）
 

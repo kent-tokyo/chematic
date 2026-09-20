@@ -222,6 +222,44 @@ const time = (fn, values = config.smiles) => {{
   for (const value of values) {{ const start = performance.now(); fn(value); samples.push(performance.now() - start); }}
   return {{...summarize(samples), input_rows: values.length}};
 }};
+const MORGAN_OPTIONS = JSON.stringify({{radius: 2, nBits: 2048}});
+const FP_BYTES = 256;
+const fnv1a32 = (hash, bytes) => {{
+  for (const byte of bytes) {{ hash ^= byte; hash = Math.imul(hash, 0x01000193); }}
+  return hash >>> 0;
+}};
+const requirePackedFp = (bytes) => {{
+  if (!(bytes instanceof Uint8Array) || bytes.length !== FP_BYTES) {{
+    throw new Error(`expected packed ${{FP_BYTES}}-byte Morgan fingerprint`);
+  }}
+  return bytes;
+}};
+const rdkitBitsToPacked = (bits) => {{
+  if (typeof bits !== "string" || bits.length !== FP_BYTES * 8) {{
+    throw new Error(`RDKit returned ${{typeof bits}} length ${{bits?.length}}, expected ${{FP_BYTES * 8}} bits`);
+  }}
+  const packed = new Uint8Array(FP_BYTES);
+  for (let bit = 0; bit < bits.length; bit += 1) {{
+    const value = bits.charCodeAt(bit) - 48;
+    if (value !== 0 && value !== 1) throw new Error(`RDKit fingerprint has non-bit at ${{bit}}`);
+    packed[bit >> 3] |= value << (bit & 7);
+  }}
+  return packed;
+}};
+const timeFingerprint = (fn, values) => {{
+  for (const value of values.slice(0, config.warmup)) requirePackedFp(fn(value));
+  let digest = 0x811c9dc5;
+  let setBits = 0;
+  const samples = [];
+  for (const value of values) {{
+    const start = performance.now();
+    const packed = requirePackedFp(fn(value));
+    samples.push(performance.now() - start);
+    digest = fnv1a32(digest, packed);
+    for (const byte of packed) setBits += byte.toString(2).split("1").length - 1;
+  }}
+  return {{...summarize(samples), input_rows: values.length, output: {{format: "packed-lsb-first-2048-bit", bytes_per_row: FP_BYTES, fnv1a32: digest.toString(16).padStart(8, "0"), set_bits: setBits}}}};
+}};
 const withTimeout = (promise, label) => Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error(label + " timed out")), 30000))]);
 const run = async () => {{
   const before = memory();
@@ -240,7 +278,7 @@ const run = async () => {{
     const linearMemoryAfterInit = hasLinearMemoryMetric ? mod.wasm_linear_memory_bytes() : null;
     const parse = time((value) => {{ const mol = mod.parse_smiles(value); mol.free(); }});
     const parse_write = time((value) => {{ const mol = mod.parse_smiles(value); mol.canonical_smiles(); mol.free(); }});
-    const parse_fp = time((value) => {{ const mol = mod.parse_smiles(value); mod.rdkit_ecfp4_bitvec(mol); mol.free(); }}, fingerprintRows);
+    const parse_fp = timeFingerprint((value) => {{ const mol = mod.parse_smiles(value); try {{ return mod.rdkit_ecfp4_bitvec(mol); }} finally {{ mol.free(); }} }}, fingerprintRows);
     document.querySelector("#result").textContent = JSON.stringify({{arm: config.arm, init_ms, download_to_ready_ms, operations: {{parse, parse_write, parse_fp}}, memory: {{before_load: before, after_workload: memory()}}, wasm_linear_memory: hasLinearMemoryMetric ? {{status: "measured", after_init_bytes: linearMemoryAfterInit, after_workload_bytes: mod.wasm_linear_memory_bytes()}} : {{status: "unavailable", reason: "the selected chematic artifact does not export wasm_linear_memory_bytes"}}, accepted_rows: config.smiles.length}});
     return;
   }}
@@ -251,7 +289,7 @@ const run = async () => {{
   const getMol = (value) => {{ const mol = rdkit.get_mol(value); if (!mol) throw new Error("RDKit rejected input"); return mol; }};
   const parse = time((value) => getMol(value).delete());
   const parse_write = time((value) => {{ const mol = getMol(value); mol.get_smiles(); mol.delete(); }});
-  const parse_fp = time((value) => {{ const mol = getMol(value); mol.get_morgan_fp(JSON.stringify({{radius: 2, nBits: 2048}})); mol.delete(); }}, fingerprintRows);
+  const parse_fp = timeFingerprint((value) => {{ const mol = getMol(value); try {{ return rdkitBitsToPacked(mol.get_morgan_fp(MORGAN_OPTIONS)); }} finally {{ mol.delete(); }} }}, fingerprintRows);
   document.querySelector("#result").textContent = JSON.stringify({{arm: config.arm, rdkit_version: rdkit.version(), init_ms, download_to_ready_ms, operations: {{parse, parse_write, parse_fp}}, memory: {{before_load: before, after_workload: memory()}}, wasm_linear_memory: {{status: "unavailable", reason: "RDKit.js MinimalLib does not expose its WebAssembly.Memory object"}}, accepted_rows: config.smiles.length}});
 }};
 run().catch((error) => {{ document.querySelector("#result").textContent = JSON.stringify({{error: String(error), stack: error.stack}}); }});
@@ -400,6 +438,29 @@ def main() -> int:
         server.shutdown()
         thread.join()
 
+    # The timed path deliberately materializes the same packed representation in
+    # both arms. Reject a run if its aggregate output disagrees before emitting a
+    # timing artifact: a fast no-op, a changed bit order, or a comparator option
+    # drift must not become a performance result. The separate parity gate still
+    # provides the row-level diagnostic for any failure here.
+    by_repetition = {
+        arm: {int(run["repetition"]): run for run in arm_runs}
+        for arm, arm_runs in results.items()
+    }
+    for repetition in range(args.repetitions):
+        left = by_repetition["chematic"].get(repetition)
+        right = by_repetition["rdkit"].get(repetition)
+        if left is None or right is None:
+            raise RuntimeError(f"missing arm result for repetition {repetition}")
+        left_output = left["operations"]["parse_fp"]["output"]
+        right_output = right["operations"]["parse_fp"]["output"]
+        if left_output != right_output:
+            raise RuntimeError(
+                "fingerprint output contract failed for repetition "
+                f"{repetition}: chematic={left_output}, rdkit={right_output}; "
+                "run the row-level browser parity gate for diagnostics"
+            )
+
     def aggregate(arm: str) -> dict[str, object]:
         runs = results[arm]
         return {
@@ -412,7 +473,7 @@ def main() -> int:
         }
 
     document = {
-        "schema_version": 1,
+        "schema_version": 2,
         "gate": "wasm-vs-official-rdkit-browser-isolated",
         "configuration": {
             "engine": args.engine, "browser": str(args.browser) if args.browser else None, "rows": args.rows, "warmup_rows": args.warmup,
@@ -421,6 +482,7 @@ def main() -> int:
             "download_to_ready_contract": "navigation start through JavaScript module/script fetch and WebAssembly initialization; excludes the subsequent parse/write/fingerprint workload",
             "process_rss": "summed fresh Chromium process-tree RSS sampled every 50 ms" if args.measure_process_rss else "not_measured",
             "operation_contract": "parse; parse+canonical-SMILES write; parse+radius-2/2048-bit fingerprint. This is not prepared-object timing.",
+            "fingerprint_output_contract": "both arms produce and consume a 256-byte LSB-first packed radius-2/2048-bit fingerprint; RDKit's bit string is packed inside the timed operation; a per-run FNV-1a checksum and total set-bit count are retained",
             "fingerprint_typed_unsupported_rows": len(Handler.fingerprint_excluded_smiles),
             "fingerprint_typed_unsupported_smiles": sorted(Handler.fingerprint_excluded_smiles),
         },
@@ -454,7 +516,7 @@ def main() -> int:
         },
         "raw_runs": results,
         "aggregate": {"chematic": aggregate("chematic"), "rdkit": aggregate("rdkit")},
-        "boundary": "Both arms receive the same valid SMILES rows for parse and write. The fingerprint operation excludes only its separately recorded typed RDKit coordination-sanitization refusal from both arms, so its timing denominator is explicit rather than silently filtered. This artifact does not establish bit-identical chemistry; use the separate fingerprint compatibility gate for that claim. JS heap is browser-exposed only. chematic linear memory is measured from the active Wasm memory page count; RDKit.js does not expose that object. When requested on Chromium, RSS is sampled as summed process-tree RSS and may double-count shared pages; otherwise it is not measured.",
+        "boundary": "Both arms receive the same valid SMILES rows for parse and write. The fingerprint operation excludes only its separately recorded typed RDKit coordination-sanitization refusal from both arms, so its timing denominator is explicit rather than silently filtered. Both timed fingerprint paths materialize and consume the same packed-byte representation, but this artifact alone does not establish bit-identical chemistry; use the separate fingerprint compatibility gate for that claim. JS heap is browser-exposed only. chematic linear memory is measured from the active Wasm memory page count; RDKit.js does not expose that object. When requested on Chromium, RSS is sampled as summed process-tree RSS and may double-count shared pages; otherwise it is not measured.",
     }
     args.output.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(document["aggregate"], indent=2))

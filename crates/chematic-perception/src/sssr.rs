@@ -257,6 +257,93 @@ pub fn find_sssr(mol: &Molecule) -> RingSet {
     RingSet::from_rings(selected_atoms, v)
 }
 
+/// Return one flag per atom indicating whether it belongs to any eligible
+/// cycle, without constructing an SSSR.
+///
+/// Morgan connectivity invariants need only RDKit's `isRingAtom` predicate,
+/// not the selected rings themselves. An eligible bond is in a cycle exactly
+/// when it is not a bridge; therefore both endpoints of every non-bridge bond
+/// are ring atoms. This is equivalent to [`find_sssr`]'s atom membership:
+/// a cycle basis must contain every non-bridge edge in at least one selected
+/// cycle, while bridge edges cannot occur in any cycle.
+///
+/// The DFS is iterative so a malformed or deliberately very long acyclic
+/// graph cannot exhaust the Rust call stack merely while determining that it
+/// has no ring atoms.
+pub fn ring_atom_flags(mol: &Molecule) -> Vec<bool> {
+    let atom_count = mol.atom_count();
+    let mut flags = vec![false; atom_count];
+    if atom_count == 0 {
+        return flags;
+    }
+
+    let mut adjacency: Vec<Vec<(usize, BondIdx)>> = vec![Vec::new(); atom_count];
+    for (bond_idx, bond) in mol.bonds() {
+        if !is_ring_eligible(bond.order) {
+            continue;
+        }
+        let left = bond.atom1.0 as usize;
+        let right = bond.atom2.0 as usize;
+        adjacency[left].push((right, bond_idx));
+        adjacency[right].push((left, bond_idx));
+    }
+
+    let mut discovery = vec![usize::MAX; atom_count];
+    let mut low = vec![usize::MAX; atom_count];
+    let mut bridges = vec![false; mol.bond_count()];
+    let mut time = 0usize;
+
+    // `(atom, parent edge, next adjacent-edge offset)` frames.
+    for root in 0..atom_count {
+        if discovery[root] != usize::MAX {
+            continue;
+        }
+        discovery[root] = time;
+        low[root] = time;
+        time += 1;
+        let mut stack = vec![(root, None, 0usize)];
+
+        while let Some((atom, parent_bond, next_neighbor)) = stack.pop() {
+            if next_neighbor < adjacency[atom].len() {
+                let (neighbor, bond_idx) = adjacency[atom][next_neighbor];
+                stack.push((atom, parent_bond, next_neighbor + 1));
+                if Some(bond_idx) == parent_bond {
+                    continue;
+                }
+                if discovery[neighbor] == usize::MAX {
+                    discovery[neighbor] = time;
+                    low[neighbor] = time;
+                    time += 1;
+                    stack.push((neighbor, Some(bond_idx), 0));
+                } else {
+                    low[atom] = low[atom].min(discovery[neighbor]);
+                }
+                continue;
+            }
+
+            if let Some(parent_bond) = parent_bond {
+                // Its parent is the preceding stack frame: this DFS only
+                // pushes a child immediately after its parent frame.
+                let (parent, _, _) = *stack
+                    .last()
+                    .expect("non-root DFS frame must retain its parent");
+                low[parent] = low[parent].min(low[atom]);
+                if low[atom] > discovery[parent] {
+                    bridges[parent_bond.0 as usize] = true;
+                }
+            }
+        }
+    }
+
+    for (bond_idx, bond) in mol.bonds() {
+        if is_ring_eligible(bond.order) && !bridges[bond_idx.0 as usize] {
+            flags[bond.atom1.0 as usize] = true;
+            flags[bond.atom2.0 as usize] = true;
+        }
+    }
+    flags
+}
+
 fn single_cycle_sssr(mol: &Molecule) -> RingSet {
     let n = mol.atom_count();
     let mut degree = vec![0usize; n];
@@ -1569,6 +1656,25 @@ mod tests {
                 .unwrap();
         }
         b.build()
+    }
+
+    #[test]
+    fn ring_atom_flags_match_sssr_membership_on_representative_topologies() {
+        let cases = [
+            cyclohexane(),
+            naphthalene(),
+            adamantane(),
+            chematic_smiles::parse("C12C3C4C1C5C4C3C25").expect("cubane SMILES"),
+            spiro_nonane(),
+            disconnected_rings(),
+            MoleculeBuilder::new().build(),
+        ];
+        for mol in cases {
+            let expected: Vec<bool> = (0..mol.atom_count())
+                .map(|idx| find_sssr(&mol).contains_atom(AtomIdx(idx as u32)))
+                .collect();
+            assert_eq!(ring_atom_flags(&mol), expected);
+        }
     }
 
     // Build naphthalene: 10 atoms, 11 bonds (two fused 6-membered rings).

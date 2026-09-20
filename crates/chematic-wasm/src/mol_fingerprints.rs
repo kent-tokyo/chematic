@@ -911,9 +911,9 @@ pub fn tanimoto_row_json(query_smi: &str, db_smiles_json: &str) -> String {
 /// while actually returning the wrong hash. See `docs/rfcs/ecfp4_bitexact_api_rfc.md`.
 #[wasm_bindgen]
 pub fn rdkit_ecfp4_bitvec(mol: &MolHandle) -> Result<Vec<u8>, JsValue> {
-    let result = chematic_fp::rdkit_morgan_ecfp4_experimental(&mol.inner)
+    let fingerprint = chematic_fp::rdkit_morgan_ecfp4_bitvec(&mol.inner)
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
-    Ok(bitvecn_to_bytes(&result.fingerprint.to_bitvecn()))
+    Ok(fingerprint.to_le_bytes().to_vec())
 }
 
 /// Same fingerprint as `rdkit_ecfp4_bitvec`, plus the raw (unfolded) data behind it, as

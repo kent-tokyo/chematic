@@ -157,7 +157,7 @@ pub fn rdkit_morgan_fingerprint(
         return Ok(result);
     }
 
-    let ring_set = chematic_perception::find_sssr(&aromatized);
+    let ring_atoms = chematic_perception::ring_atom_flags(&aromatized);
     let bond_count = aromatized.bond_count();
     let mut bond_invariants = Vec::with_capacity(bond_count);
     for b in 0..bond_count {
@@ -190,7 +190,7 @@ pub fn rdkit_morgan_fingerprint(
     };
     let emitted = expand_one_pass_with_chirality(
         &aromatized,
-        &ring_set,
+        &ring_atoms,
         &bond_invariants,
         config.radius.as_u32(),
         true,
@@ -228,6 +228,20 @@ mod tests {
     /// promotion didn't fork the math into two subtly-different implementations.
     #[test]
     fn default_config_matches_frozen_rdkit_morgan_ecfp4() {
+        // `raw_bit_info` is a provenance multimap, not an ordered trace. The
+        // generalized path collects through a hash map while the optimized
+        // bit-oriented path emits directly, so compare its semantic contents.
+        fn sorted_bit_info<K>(map: &FxHashMap<K, Vec<(u32, u32)>>) -> FxHashMap<K, Vec<(u32, u32)>>
+        where
+            K: Clone + Eq + std::hash::Hash,
+        {
+            let mut sorted = map.clone();
+            for environments in sorted.values_mut() {
+                environments.sort_unstable();
+            }
+            sorted
+        }
+
         for smi in [
             "c1ccncc1",
             "CC(=O)[O-]",
@@ -250,11 +264,13 @@ mod tests {
                 "sparse_counts mismatch for {smi}"
             );
             assert_eq!(
-                fixed.raw_bit_info, general.raw_bit_info,
+                sorted_bit_info(&fixed.raw_bit_info),
+                sorted_bit_info(&general.raw_bit_info),
                 "raw_bit_info mismatch for {smi}"
             );
             assert_eq!(
-                fixed.folded_bit_info, general.folded_bit_info,
+                sorted_bit_info(&fixed.folded_bit_info),
+                sorted_bit_info(&general.folded_bit_info),
                 "folded_bit_info mismatch for {smi}"
             );
         }

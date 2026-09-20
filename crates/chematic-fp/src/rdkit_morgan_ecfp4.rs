@@ -27,7 +27,7 @@ use chematic_perception::AromaticityError;
 use rustc_hash::FxHashMap;
 
 use crate::bitvec::BitVec2048;
-use crate::rdkit_morgan_hash::{checked_bond_invariant, expand_one_pass};
+use crate::rdkit_morgan_hash::{checked_bond_invariant, expand_one_pass_with_chirality_into};
 
 const ECFP4_RADIUS: u32 = 2;
 const ECFP4_FP_SIZE: usize = 2048;
@@ -121,35 +121,8 @@ impl From<AromaticityError> for RdkitMorganError {
 pub fn rdkit_morgan_ecfp4_experimental(
     mol: &Molecule,
 ) -> Result<RdkitMorganEcfp4, RdkitMorganError> {
-    // RDKit sanitizes neutral hypervalent halogen oxoacids while parsing (for
-    // example `OCl(=O)(=O)=O` becomes `[O-][Cl+3]([O-])([O-])O`). The core
-    // SMILES model intentionally preserves the user spelling, so apply this
-    // narrow, profile-specific graph normalization only here: Morgan atom and
-    // bond invariants must observe the same graph RDKit fingerprints observe.
-    let rdkit_input = normalize_rdkit_hypervalent_halogen_oxoacids(mol);
-    reject_known_rdkit_coordination_sanitization_gap(&rdkit_input)?;
-    let aromatized =
-        chematic_perception::apply_aromaticity_rdkit_parity_experimental(&rdkit_input)?;
-
     let mut result = RdkitMorganEcfp4::default();
-    if aromatized.atom_count() == 0 {
-        return Ok(result);
-    }
-
-    let ring_set = chematic_perception::find_sssr(&aromatized);
-    let bond_count = aromatized.bond_count();
-    let mut bond_invariants = Vec::with_capacity(bond_count);
-    for b in 0..bond_count {
-        let bond_idx = BondIdx(b as u32);
-        let order = aromatized.bond(bond_idx).order;
-        let invariant = checked_bond_invariant(order)
-            .ok_or(RdkitMorganError::UnsupportedBondOrder { bond_idx, order })?;
-        bond_invariants.push(invariant);
-    }
-
-    let emitted = expand_one_pass(&aromatized, &ring_set, &bond_invariants, ECFP4_RADIUS, true);
-
-    for ((atom_idx, radius), raw_id) in emitted {
+    rdkit_morgan_ecfp4_for_each_emission(mol, |atom_idx, radius, raw_id| {
         let folded = (raw_id as usize) % ECFP4_FP_SIZE;
         result.fingerprint.set(folded);
         *result.sparse_counts.entry(raw_id).or_insert(0) += 1;
@@ -163,9 +136,70 @@ pub fn rdkit_morgan_ecfp4_experimental(
             .entry(folded)
             .or_default()
             .push((atom_idx, radius));
-    }
+    })?;
 
     Ok(result)
+}
+
+/// RDKit-bit-exact ECFP4 folded bits without explanation materialization.
+///
+/// This uses precisely the same normalization, aromaticity, SSSR, bond-invariant,
+/// and suppressed-environment lifecycle as [`rdkit_morgan_ecfp4_experimental`].
+/// It only omits the sparse-count and bitInfo maps that the detailed result exposes.
+/// Callers that need provenance must use the detailed API instead of reconstructing
+/// it from these bits.
+pub fn rdkit_morgan_ecfp4_bitvec(mol: &Molecule) -> Result<BitVec2048, RdkitMorganError> {
+    let mut fingerprint = BitVec2048::new();
+    rdkit_morgan_ecfp4_for_each_emission(mol, |_, _, raw_id| {
+        fingerprint.set((raw_id as usize) % ECFP4_FP_SIZE);
+    })?;
+    Ok(fingerprint)
+}
+
+/// Execute the shared RDKit-compatible preprocessing and Morgan expansion once.
+///
+/// Keeping this below the public result views prevents bit-only and detailed paths
+/// from slowly diverging in their compatibility boundary while still allowing the
+/// bit-only caller to avoid explanation-map allocation.
+fn rdkit_morgan_ecfp4_for_each_emission<F>(mol: &Molecule, emit: F) -> Result<(), RdkitMorganError>
+where
+    F: FnMut(u32, u32, u32),
+{
+    // RDKit sanitizes neutral hypervalent halogen oxoacids while parsing (for
+    // example `OCl(=O)(=O)=O` becomes `[O-][Cl+3]([O-])([O-])O`). The core
+    // SMILES model intentionally preserves the user spelling, so apply this
+    // narrow, profile-specific graph normalization only here: Morgan atom and
+    // bond invariants must observe the same graph RDKit fingerprints observe.
+    let normalized = normalize_rdkit_hypervalent_halogen_oxoacids(mol);
+    let rdkit_input = normalized.as_ref().unwrap_or(mol);
+    reject_known_rdkit_coordination_sanitization_gap(rdkit_input)?;
+    let aromatized = chematic_perception::apply_aromaticity_rdkit_parity_experimental(rdkit_input)?;
+
+    if aromatized.atom_count() == 0 {
+        return Ok(());
+    }
+
+    let ring_atoms = chematic_perception::ring_atom_flags(&aromatized);
+    let bond_count = aromatized.bond_count();
+    let mut bond_invariants = Vec::with_capacity(bond_count);
+    for b in 0..bond_count {
+        let bond_idx = BondIdx(b as u32);
+        let order = aromatized.bond(bond_idx).order;
+        let invariant = checked_bond_invariant(order)
+            .ok_or(RdkitMorganError::UnsupportedBondOrder { bond_idx, order })?;
+        bond_invariants.push(invariant);
+    }
+
+    expand_one_pass_with_chirality_into(
+        &aromatized,
+        &ring_atoms,
+        &bond_invariants,
+        ECFP4_RADIUS,
+        true,
+        None,
+        emit,
+    );
+    Ok(())
 }
 
 /// Return a typed refusal for the one measured RDKit coordination-sanitization
@@ -205,7 +239,7 @@ pub(crate) fn reject_known_rdkit_coordination_sanitization_gap(
 /// the central halogen obtains the balancing positive charge. The explicit
 /// one-single-O requirement keeps ordinary halogen oxides and unrelated
 /// hypervalent graphs out of this compatibility-only conversion.
-fn normalize_rdkit_hypervalent_halogen_oxoacids(mol: &Molecule) -> Molecule {
+fn normalize_rdkit_hypervalent_halogen_oxoacids(mol: &Molecule) -> Option<Molecule> {
     let mut normalizations: Vec<HypervalentHalogenOxoacidNormalization> = Vec::new();
     for (center, atom) in mol.atoms() {
         if !matches!(atom.element, Element::CL | Element::BR | Element::I) || atom.charge != 0 {
@@ -238,7 +272,7 @@ fn normalize_rdkit_hypervalent_halogen_oxoacids(mol: &Molecule) -> Molecule {
     }
 
     if normalizations.is_empty() {
-        return mol.clone();
+        return None;
     }
     let mut normalized = mol.clone();
     for (center, charge, oxygens) in normalizations {
@@ -248,7 +282,7 @@ fn normalize_rdkit_hypervalent_halogen_oxoacids(mol: &Molecule) -> Molecule {
             normalized.set_charge(oxygen, -1);
         }
     }
-    normalized
+    Some(normalized)
 }
 
 #[cfg(test)]
@@ -393,7 +427,8 @@ mod tests {
     #[test]
     fn normalizes_neutral_perchloric_acid_for_rdkit_morgan_invariants() {
         let input = parse("OCl(=O)(=O)=O").unwrap();
-        let normalized = normalize_rdkit_hypervalent_halogen_oxoacids(&input);
+        let normalized = normalize_rdkit_hypervalent_halogen_oxoacids(&input)
+            .expect("perchloric acid must use the profile-specific normalization");
         let chlorine = normalized
             .atoms()
             .find_map(|(idx, atom)| (atom.element == Element::CL).then_some(idx))
@@ -432,6 +467,33 @@ mod tests {
         let mol = MoleculeBuilder::new().build();
         let result = rdkit_morgan_ecfp4_experimental(&mol).unwrap();
         assert_eq!(result, RdkitMorganEcfp4::default());
+        assert_eq!(rdkit_morgan_ecfp4_bitvec(&mol).unwrap(), BitVec2048::new());
+    }
+
+    #[test]
+    fn bit_only_path_matches_detailed_bits_and_refusals() {
+        for smi in [
+            "C",
+            "c1ccccc1",
+            "C[C@H](N)C(=O)O",
+            "OCl(=O)(=O)=O",
+            "Cc1cn2c(=O)c3ncn(COCCO)c3nc2n1C",
+        ] {
+            let mol = parse(smi).unwrap();
+            let detailed = rdkit_morgan_ecfp4_experimental(&mol).unwrap();
+            assert_eq!(
+                rdkit_morgan_ecfp4_bitvec(&mol).unwrap(),
+                detailed.fingerprint,
+                "bit-only result diverged for {smi}"
+            );
+        }
+
+        let unsupported =
+            parse("CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10").unwrap();
+        assert_eq!(
+            rdkit_morgan_ecfp4_bitvec(&unsupported),
+            rdkit_morgan_ecfp4_experimental(&unsupported).map(|result| result.fingerprint)
+        );
     }
 
     /// `BondOrder::Query*` has no real RDKit `Bond::BondType` counterpart (see
