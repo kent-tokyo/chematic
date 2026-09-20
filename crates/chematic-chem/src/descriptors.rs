@@ -4201,7 +4201,7 @@ mod tests {
     }
 
     #[test]
-    fn exact_mass_uses_nuclide_mass_and_rejects_unknown_isotopes() {
+    fn exact_mass_uses_nuclide_mass_and_rdkit_mass_number_fallback() {
         let carbon13 = mol("[13C]");
         assert!(approx(exact_mass(&carbon13), 13.00335483507, 1e-10));
 
@@ -4209,7 +4209,7 @@ mod tests {
         assert!(approx(exact_mass(&deuterium), 2.01410177812, 1e-10));
 
         let unknown = mol("[99C]");
-        assert!(exact_mass(&unknown).is_nan());
+        assert!(approx(exact_mass(&unknown), 99.0, 1e-12));
     }
 
     // Aspirin logp and Lipinski components
