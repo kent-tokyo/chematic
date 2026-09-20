@@ -1,9 +1,13 @@
 # Parse + ECFP4/Morgan performance plan
 
-更新: 2026-09-20。状態: **candidate source の PF0–PF5 は完了。公開 package の最終再測定待ち**。
+更新: 2026-09-20。状態: **source最適化と複数browser/hostの速度gateは統合済み。
+当初の全統計/資源条件の照合と公開package再測定は未完了**。
 対象: v1.0.17を基準に、RDKitより速いParse＋fingerprint経路を作る。
 既存T3.4の測定契約を使う **T3.6** の詳細計画であり、新しい製品Phaseではない。
 [ROADMAP](../ROADMAP.md) が優先順、[A3](rdkit-accuracy-plan.md) が互換性の出口を持つ。
+
+9月20日のTrust計画更新で、本workstreamは回帰維持・不足証跡の補完へ移す。
+次のP0はT1.6/A0 acceptance。性能作業にsealed精度入力を使わない。
 
 ## 1. 目標と現状
 
@@ -89,7 +93,7 @@ PF1で根拠が出た場合にPF3/PF4の内部順を変える。改善の小さ�
 profileと投資対効果を再確認する。実測改善がない変更は採用せず、失敗実験も記録する。
 native ECFPはPF1から同時計測するが、別定義の高速nativeへのfallbackで主目標を達成しない。
 
-### 2026-09-20 開発時点の進捗（採用判定前）
+### 2026-09-20 source統合時点の記録（PR #555）
 
 - **PF0:** runnerをschema 2へ更新し、両armが256 byte・LSB-firstの2048 bit出力を
   timed operation内で生成・消費する契約にした。固定10,000行でChrome、Firefox、WebKit
@@ -122,11 +126,12 @@ native ECFPはPF1から同時計測するが、別定義の高速nativeへのfal
 [`run 35483926941`](https://github.com/kent-tokyo/chematic/actions/runs/35483926941) が三browserで
 成功し、artifactから再算出した95%下限はChrome **2.90x**、Firefox **2.37x**、WebKit
 **3.65x**だった。候補sourceを隔離PythonとNode-WASMで再ビルドしたcross-binding gateも
-全3組で5,000/5,000一致した。これによりcandidate sourceのPF5再現・binding条件は満たした。
+全3組で5,000/5,000一致した。これは実施したPF5 browser再現・binding条件の証拠である。
+当初の20対×3セッション・層別bootstrap・p95・資源の全条件まで成立したとは扱わない。
 公開packageを作る場合だけは、publish後のtarballで同じgateを再実行して初めてrelease固有の
 優位主張に更新する。
 
-### ソースから確認できる最初の候補（効果量は未測定）
+### 最適化前の仮説（履歴、現行ソースの説明ではない）
 
 - `crates/chematic-wasm/src/mol_fingerprints.rs::rdkit_ecfp4_bitvec` は
   `rdkit_morgan_ecfp4_experimental` の全detail結果を作り、fingerprintだけを返す。
@@ -179,6 +184,18 @@ PF5のCI gateは [`scripts/check_parse_morgan_rdkit_speed_gate.py`](../scripts/c
 recordをartifactとして保持し、speedupの点推定ではなくpaired log-speedupの95%下限が1.0を
 厳密に上回ることを要求する。
 
+### 残る受入条件の照合
+
+| 条件 | 確認済み範囲 | 次に必要な証跡 |
+|---|---|---|
+| 対応範囲の同一bit/拒否とsource速度 | 固定10kの対応9,999件、独立ChEMBL 5k、3browserのlocal/hosted run | 変更時のbit/検索/binding回帰 |
+| 統計 | local 10–20対、hosted 10対。checkerはpaired log-speedupのt区間 | 当初20対×3セッションの層別bootstrapとprocess-mean p95。既存t区間と区別して保存 |
+| 初期化/資源/クラス別退行 | 旧版の別記録があり、現candidateの全条件達成は未確認 | 同candidate/baselineでraw/gzip/startup/測定可能memory、クラス別p95、native/detail回帰 |
+| 配布物 | PR #555のsource統合 | 公開tarballのhash/設定を固定した再測定。公開されるまではsource claimを維持 |
+
+チェック済み部分の効果は維持する。追加測定前にprotocol・反復数・欠測時の判定を凍結し、
+後から短いrunを強い計画条件の達成へ読み替えない。共有CIの成功はそのhost/runに限る。
+
 旧「さらに1.10x SMILES」目標は引き続き中止。この計画は2026-09-20の明示的な
 Parse＋FP競争目標であり、その旧目標や全面的なRDKit精度優位を復活・達成したものではない。
 速度未達でも正しさの改善は別途採用可能だが、性能目標はopenのままにする。
@@ -198,6 +215,6 @@ runnerを増殖させず、次を拡張する。新しいCLI flagや合格artifa
   `benchmarks/` に再現コマンドと判定、benchmark indexにリンク。
   旧recordは上書きせず、最速runのみの抜粋をしない。
 
-まずPF0→PF1を最優先の性能作業にする。T1.6凍結精度packetは候補とデータを分離して
-並行維持する。silent corruption・panic・資源上限違反は常に優先修正。
-他の大型機能・3D拡張よりPF2–PF5を優先するが、既存Trust RCの精度/安全性条件は免除しない。
+次は上の残条件をmanifestへ対応付け、T1.5の新旧RDKit laneとT3.4の配布物測定で再利用する。
+PF0/PF1や採用済み最適化を再実装せず、T1.6/A0とTrust RCの残作業を先行させる。
+silent corruption・panic・資源上限違反は常に優先修正する。

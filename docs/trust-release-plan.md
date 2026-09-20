@@ -16,11 +16,11 @@ dashboard、release metadata v2、公開channel実測recordを実装した。can
 優先度P0/P1/P2は緊急度、既存Phase P0–P6は製品領域、A0–A6は精度目標、
 T0–T6は今回の作業ID。番号は相互に置き換えない。
 
-9月20日の優先順位更新: **T3.6 Parse＋Morgan性能計画のPF0→PF1を先行し、
-測定根拠に従ってPF2–PF5へ進む**。T1.6凍結精度packetは独立して並行維持する。
-週次配分も更新し、番号付きpacketは元の配置を残す。現在の実行順はROADMAPを正とする。
-[詳細計画](parse-morgan-performance-plan.md) に同条件比較、native/互換profile分離、
-bit-only化、前処理/展開最適化、採用条件をまとめた。最適化や速度達成は未実施。
+9月20日の優先順位更新: **A0 acceptance packetを閉じ、T1.6凍結候補を一度評価する**。
+T3.6の高速化はPR #555 (`7d98dcd3`)で統合され、対応範囲のbit一致と複数browser/hostの
+速度優位を記録済み。今後は公開package再測定、当初の統計/資源条件との差分確認、回帰維持へ移す。
+[第7節](#7-2026-09-20-trust完了に向けた実行順)が新しい実行packet、ROADMAPが優先順を持つ。
+新しい競合回帰・BatchResult変更は9月16日の凍結candidateへ混ぜず、別commitで進める。
 
 2026-09-16に公開npm artifact と official RDKit.js の固定10k browser
 scorecardをPR #541で公開した。小さいWASM、local no-store ready、parse/writeの
@@ -351,11 +351,12 @@ historical benchmarkの版は維持し、「全ての数字を最新版にする
   `scripts/check_mcp_runtime_inventory.py` は実際の stdio binary から
   20 tool・input/output schema・代表 structured output を確認する。入力
   上限と中断のwire-level回帰は追加で必要。
-- [ ] T3.6 Parse＋ECFP4/Morgan高速化: [PF0–PF5](parse-morgan-performance-plan.md)
-  の順に測定契約→profile→bit-only→前処理共有→kernel/binding→採用を進める。
-  T3.4のrunnerを共有し、同じpacked出力で互換Morganのpaired speedup 95% CI下限>1.0を
-  目指す。nativeとは別集計、正しさ/coverageの退行は禁止。性能laneは詳細計画の
-  20対×3セッションを使い、上記の一般比較の最低反復数で代用しない。
+- [~] T3.6 [PF0–PF5](parse-morgan-performance-plan.md)のsource最適化と複数browser/hostの
+  速度gateは統合済み。公開package再測定、当初20対×3セッション/層別bootstrapと
+  実施済み10–20対/t区間の差分、p95/resource条件は別途照合して残す。
+  native ECFPと互換Morganは別集計、正しさ/coverageの退行は禁止。
+- [ ] T3.7 BatchResultをversionedな製品契約へ拡張する。第7節で件数・状態遷移・
+  中断・stage・original index・全binding受入条件を定義する。
 
 1万件の暫定予算: timeoutを含む全件会計、cancel応答p95 ≤250ms、
 UI heartbeat gap p95 ≤100ms、batch working set ≤256MiB
@@ -466,11 +467,11 @@ A2全出口・A5独立判定の完了条件は変更しない。
 
 | 時期 | 主な作業 | レビューで確認するもの |
 |---|---|---|
-| W1残り: 9/19–9/20 | T4.6環番号の再現、T1.6封印済みpacket検証、版表記の整理 | 自社riskの再現fixture、評価可能/不可の理由 |
-| W2: 9/21–9/27 | T3.6 PF0–PF2、T1.6凍結packetを並行 | 1.0.17の同一出力baseline、hotspot、bit-only差分。旧候補と新候補の分離 |
-| W3: 9/28–10/4 | T3.6 PF3–PF4、T5.6/T1.8の安全性回帰 | 前処理/kernelの実測改善と不変条件。Worker等は残余枠で継続 |
-| W4: 10/5–10/11 | T3.6 PF5、T3.4 resource補完、RC監査 | 速度達成/未達と欠測の報告、Trust RC条件とblocker一覧 |
-| W5–W8: 10/12–11/8 | A1–A4未達、10万件、複数browser/OS、A5依頼packet | 操作別compat達成、coverage・速度・memoryの測定 |
+| W1: 9/14–9/20 実績 | T4.6 core、ordinary V3000、開発stereo suite、T3.6 source速度gate | 実装済み境界と残る受入条件。8k scoreは未実行 |
+| W2: 9/21–9/27 | T1.6/A0 packet監査→条件成立時一度評価、T5.7/T1.9再現、T1.5準備 | 全行会計、原子対応/真理値表、rebaseline manifest。sealed不足はblockerとして記録 |
+| W3: 9/28–10/4 | T3.7 batch契約、A2残差、T1.5新artifactがあれば比較 | binding横断の欠落/重複0、旧/新版の差分。未公開artifactは待機 |
+| W4: 10/5–10/11 | T3 runtime、T2同期、T3.6残条件とRC監査 | 10k cancel/offline/資源、配布候補hash、Trust RC合否とblocker一覧 |
+| W5–W8: 10/12–11/8 | A1–A4残差、10万件容量、複数browser/OS、A5依頼packet | 操作別compat達成、coverage・速度・memoryの測定 |
 | W9–W12: 11/9–12/6 | A5独立判定、A6既存gap、維持運用演習 | 宣言範囲の同等性判断、3D別profile、次期backlog |
 
 工数は各laneの概算で並行分を含む。単独作業で直列化する場合や化学的残差が難航する場合、
@@ -485,9 +486,8 @@ T3の1万件導入ゲート、T4固定corpus、T5既存安全性回帰・公開s
 
 ## 6. 次に着手する具体的な変更
 
-以下は9月19日のpacket。9月20日からはT3.4の同条件Parse＋FP契約と
-T3.6 PF0–PF5を性能作業の最優先にする（詳細は上記リンク）。T1.6評価と安全性対応は
-並行し、既存の正しさ条件は速度目標のために緩めない。
+以下は9月19日から継続する技術packet。9月20日以降の優先順と追加の受入条件は
+第7節を参照する。T3.6のsource速度gateは統合済みで、再実装を計画しない。
 
 9月19日の競合レビューを既存T/A/Phaseへ統合する。新Phaseや別の並行ロードマップは
 作らない。T0の独立packetは完成し、12→21残差の候補は不採用。残差分類と新候補は
@@ -598,3 +598,120 @@ T3.1–T3.3の未達部分を埋める。公開packageのESM/TS/Worker導入、�
 
 上記日数は作業配分の目安。上流ビルド、測定host、第三者reviewは別の待ち時間。
 計画更新は実装・新ベンチマーク・公開の証拠ではなく、本更新でsealed inputは開封しない。
+
+## 7. 2026-09-20 Trust完了に向けた実行順
+
+この節は次の1〜3か月の追加・再配置を既存T0–T6/A0–A6に統合する。
+新しい製品Phaseは増やさない。各項目は計画であり、競合issueの存在だけでは
+CheMaticの不具合や優位性が確定したことにはならない。
+
+### 一次情報を確認して修正した前提
+
+| 出典（9月20日確認） | 確認できた範囲 | 計画への反映 |
+|---|---|---|
+| [RDKit #9601](https://github.com/rdkit/rdkit/issues/9601) | nanobindの型・例外・引数・lazy inputを整理するopen tracking issue。[stub PR #9613](https://github.com/rdkit/rdkit/pull/9613)はclosed/unmerged | T1.5は配布artifactの実際のwrapper backend/型/例外を検査。nanobind移行完了や次版収録を前提にしない |
+| [RDKit latest release](https://github.com/rdkit/rdkit/releases/latest) | 確認時点はRelease_2026_03_6 | 2026.09.1は予定する再比較先。公開日・Python/native/npm同時提供は仮定しない |
+| [RDKit #9629](https://github.com/rdkit/rdkit/issues/9629) | 2025.09.4のbicyclic amineでidentity renumber後にstereocenter countが変わるというopen報告 | T5.7でring/cache/state依存を検査。2026.03.6で再現済みとは記載しない |
+| [Indigo #3914](https://github.com/epam/Indigo/issues/3914) | 1.48.0rc1のV3000 queryが反対E/Zにもmatchするというopen報告 | T1.9でquery truth tableを検査。既存1.46.0 ordinary-MOL gateと区別 |
+| [COSMolKit #1](https://github.com/cosmol-studio/COSMolKit/issues/1) | 0.3.0の利用者報告と現sourceのskipped accessor不足。issue自身も公開packageでの独立再現は未実施と明記 | T3.7の自己完結した件数/失敗契約に反映。競合packageの検証済み欠陥とは宣伝しない |
+| [RDKit #9625](https://github.com/rdkit/rdkit/pull/9625) / [#9626](https://github.com/rdkit/rdkit/pull/9626) | protected-atom tautomer / MMFF initial embeddingはいずれもopen PR | T6で監視。今回のTrust RCへ新機能を追加する根拠にはしない |
+
+### 1. T1.6 / A0 — 評価前packetと一度限りの実行（P0、1–3実働日＋評価時間）
+
+- [ ] 既存のpreflight/attestation/split記録から、candidate/tag、oracle、protocol、
+  seed、許容差、対応範囲、全行会計、timeout、再実行規則、raw保持先を一つの
+  acceptance manifestへ結び付ける。既存validatorを再利用し、重複runnerを作らない。
+- [ ] rawとsplitの存在/hash、露出履歴、build環境/binary hashを確認する。
+  分子一覧は調査ログへ出さない。欠落を別sourceで埋めたりattestationを生成し直して
+  同じ封印と主張しない。復元不能ならblockerと新しいfreeze/split手順を記録する。
+- [ ] `trust-eval-candidate-20260916` / `c2682e3a…`と当時固定したoracleで実行し、
+  8,000件のsuccess/incorrect/unsupported/error/timeoutを漏れなく保存する。
+  中断時は事前規定どおりのcheckpoint再開か無効試行として記録し、都合のよい再試行をしない。
+- [ ] A0 packetの成立とA1–A4各指標の合否を別判定にする。失敗した場合は結果を固定し、
+  露出済み集合の開発利用を明記。次の独立採用判定には別の未使用集合を用意する。
+  PR #555以降の候補への効果は変更影響表・影響binding回帰で説明し、旧candidateの
+  結果を新candidateの未使用評価として流用しない。A5独立gold/reviewも別条件。
+
+出口: 評価可能/不能の根拠、凍結条件、全行raw、判定が追跡可能。新しい回帰開発は
+別checkoutで進められる。次のRDKit公開をこの評価の待ち条件にしない。
+
+### 2. T1.5 / T3.4 — 次期RDKit rebaseline（P0準備、2–4実働日＋公開待ち）
+
+- [ ] 既存oracle 2025.09.3/2026.03.6と次のstableを別laneに固定し、source/package/
+  runtime/wrapper backend、設定、corpus hash、toolchain/OSをmanifestへ記録する。
+  Python/native/npmは個別に入手確認。欠測laneはunavailableとして待機し、先に出た
+  Python packageの版から公式RDKit.js公開を推測しない。
+- [ ] 同一の露出済みcorpusでSMILES/CIP/SMARTS/Morganとbindingを比較する。
+  Pythonではscalar/batch、入力型・例外・keywordとcall overheadを同じAPI境界で測る。
+  Boost/nanobindは配布物の実体を特定し、別backendの結果を統合しない。
+- [ ] browserは同じpacked output契約で3 enginesを比較し、parse単独、prepared FP、
+  parse+FP、search、startup、memoryを個別に記録する。API意味論が揃わないlaneは
+  速度順位の対象から外す。sealed精度8kはこの回帰・性能集合へ流用しない。
+- [ ] 差分を自社退行/oracle変更/契約差/未解決へ分類し、goldが必要ならA5へ送る。
+  新oracleへ自動追従して既存出力を変更しない。公開dashboardは測定済みの新旧版を併記し、
+  移行後も旧raw/再現コマンドをhistoricalとして保存する。
+
+出口: 利用可能なlaneの全行差分、失敗/拒否、速度区間、API変更の移行表。
+再比較先の公開遅延は、現行pinでのTrust RC候補監査を停止させない。
+
+### 3. T5.7 / T1.9 — 競合報告由来の回帰（P1、2–4実働日）
+
+- [ ] **T5.7 identity renumber:** `C1CCN2CCCC2C1`と近傍負例をdevelopment suiteへ追加。
+  identity/32固定seed順列、clone/reparse、ring情報の初期化/再計算、descriptor呼出し順を
+  比較する。atom/bond mapでpotential-center集合・CIP・E/Zを照合し、countやcanonical
+  spellingだけで不変としない。意味の同じ操作の前後で情報損失/誤確信ラベル0を要求。
+- [ ] **T1.9 query semantics:** E/Z両query × E/Z両targetの2×2真理値表を、SMILES入力、
+  V3000保存/再読込、cross-engine往復で比較する。stereo match設定を固定し、unspecified
+  stereoとstereo-insensitive設定は別の対照群にする。原子/結合対応、query predicate、
+  SGROUP/COLLECTIONを記録し、reader受理や文字列保存をquery意味保存の代替にしない。
+- [ ] RDKit/Indigoの報告版と現行pinを分離して再現を記録する。CheMaticに同じquery APIが
+  なければ能力差を明記し、情報を失う経路をtyped unsupportedとして拒否する。
+  unsupportedでの安全性合格とquery互換性達成は分ける。
+
+既存`stereo_torture_suite_gate.py`と`v3000_*_semantic_gate.py`を拡張する。
+新規ケースは開発回帰として出典・入力hash・期待値の根拠を保存し、sealed群には追加しない。
+自社でsilent corruptionを再現した場合はP0へ繰り上げる。
+
+### 4. T3.7 — BatchResultを全bindingの契約にする（P1、3–5実働日）
+
+現行`SmilesBatchCanonicalizer`は`input_index`とaccepted/rejectedを保持し、WASMの
+`canonicalize_smiles_batch_json`はschema v1の`record_count`/`records`を返す。
+rejectionは文字列、envelopeの`complete`は処理完了を表す。これを土台にし、公開v1の
+意味を破壊せずversioned adapter/opt-in APIとして拡張する。既存binding fixtureを共用する。
+
+- [ ] 排他的な終端区分`success / failed / refused / skipped`を定義し、
+  `input_count = success + failed + refused + skipped`を既知長batchの終了時に保証。
+  parse/export等の実行失敗、非対応/予算拒否、cancel等による未実行を区別する。
+  1入力に複数stage診断があっても最終区分は1つ。retryは同じ入力IDの別attemptとする。
+- [ ] original row index（0-based）、operation/stage、typed reason、upstream診断を
+  success以外にも保持。parse拒否がexportでskippedになった場合は元理由を残す。
+  出力件数はstage単位で明示し、export成功数とparse成功数を混同しない。
+- [ ] `all_succeeded()`は`complete && success == input_count`とする。完了した空batchは
+  trueと明記し、未開始/中断はfalse。未知長streamは`input_count`を終了前に未確定として、
+  `received_count = terminal_count + pending_count`を公開する。cancel後の未読件数を
+  架空のskippedにせず、`complete=false`と未読範囲不明を明示する。
+- [ ] 全valid、全invalid、空、valid2+invalid1、parse拒否+export失敗混在、timeout、
+  cancel、retry、重複入力、chunk境界をRust/Python/Node/WASMで照合。
+  順序/元index/理由/会計の一致、消失0、二重計上0を要求する。MCP/Worker adapterも
+  同契約へ接続し、型定義とruntimeの一致をclean-installで検証する。
+
+出口: 公開契約、versioned schema、shared fixture、全bindingの実測record、移行例。
+追加APIの配布区分はT6.2の互換性方針で決め、先にpatch番号を予約しない。
+
+### 5. A2 → T3/T2 → A6 — 残りの作業配分
+
+- **A2（P1）:** #503の4 componentを原因・負例・K=1,024 gateごとに分割し、P系CIPは
+  A5判定前のabstentionを維持。T5.6、T1.8、T4.6の残binding/表現境界も同じ受入表へ統合する。
+- **T3/T2（P1）:** T3.7を使う10k Workerでcancel・backpressure・memory/time limit・
+  offline・partial exportを測定。既存のcancel p95≤250ms、heartbeat p95≤100ms、
+  working set≤256MiBは測定前にhost条件と固定し、未達を記録する。npm clean-install、
+  Python型/runtime、3browser+Nodeの欠測を表示し、dashboardはartifactから生成する。
+- **T3.6（維持）:** 既存速度の根拠を保ち、20対×3セッション/層別bootstrap、p95、資源、
+  公開tarball再測定の未確認条件を埋める。確認済みbrowser結果をnative/Python全般へ外挿しない。
+- **A6/T6（P2、誤計算はP0）:** benzene等の基本系を含むtyping/charge/term/gradientを
+  same-coordinateで切り分け、収束/timeout/立体保持/配座品質を別集計。新embedding option
+  より既存gapを優先する。A5独立reviewは依頼packetまでローカルで進め、第三者判定待ちを明示。
+
+次Trust RCの必須条件にT3.7の宣言batch経路とT5.7/T1.9の保存・拒否回帰を含める。
+T1.6旧候補の合格だけで新RCを承認せず、候補差分・影響gate・公開主張の対応表を確認する。
+この計画更新では化学コード、封印入力、ベンチマーク結果、リリース状態は変更しない。
