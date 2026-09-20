@@ -706,10 +706,11 @@ CheMaticの不具合や優位性が確定したことにはならない。
   ring情報の初期化/再計算、descriptor呼出し順を比較する。atom/bond mapでpotential-center
   集合・CIP・E/Zを照合し、countやcanonical spellingだけで不変としない。
 - [~] **T1.9 query semantics の最初の観測:** RDKit 2025.09.3が生成したE/Z V3000 queryと
-  Indigo 1.46.0のE/Z両targetを2×2で比較し、CheMatic往復前後でRDKitのisomeric identityと
-  Indigoの観測表が変わらないことを確認した。一方Indigoはsource自体で両targetにmatchするため、
-  この4行はquery意味保存の合格ではなく外部semantic-lossの再現記録である。
-  `validation/results/v3000-indigo-ez-query-truth-table-v1.0.17.json`。
+  E/Z両targetを2×2で比較し、CheMatic往復前後でRDKitのisomeric identityに加え、
+  `HasSubstructMatch(..., useChirality=True)`の真理値表も保存されることを確認した。
+  Indigo 1.46.0の観測表も変わらない。一方Indigoはsource自体で両targetにmatchするため、
+  Indigoの4行はquery意味保存の合格ではなく外部semantic-lossの再現記録である。
+  `validation/results/v3000-indigo-ez-query-truth-table-current-2026-09-20.json`。
 - [ ] **残るT1.9 query semantics:** SMILES入力、V3000保存/再読込、cross-engine往復を
   報告版・現行pin・他engineへ広げる。stereo match設定を固定し、unspecified stereoと
   stereo-insensitive設定は別の対照群にする。原子/結合対応、query predicate、

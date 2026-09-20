@@ -37,6 +37,17 @@ def canonical_isomeric(molblock: str) -> str | None:
     return Chem.MolToSmiles(mol, canonical=True, isomericSmiles=True)
 
 
+def rdkit_truth_table(query_molblock: str) -> dict[str, bool]:
+    """Check RDKit's chiral substructure predicate for the V3000 query itself."""
+    query = Chem.MolFromMolBlock(query_molblock, sanitize=True, removeHs=False)
+    if query is None:
+        raise RuntimeError("RDKit rejected V3000 query payload")
+    return {
+        target_id: Chem.MolFromSmiles(target).HasSubstructMatch(query, useChirality=True)
+        for target_id, target in CASES.items()
+    }
+
+
 def indigo_truth_table(query_molblock: str) -> dict[str, bool]:
     indigo = Indigo()
     query = indigo.loadQueryMolecule(query_molblock)
@@ -87,6 +98,8 @@ def main() -> int:
             written = output_path.read_text(encoding="utf-8")
             source_identity = canonical_isomeric(source)
             output_identity = canonical_isomeric(written)
+            rdkit_source_table = rdkit_truth_table(source)
+            rdkit_output_table = rdkit_truth_table(written)
             source_table = indigo_truth_table(source)
             output_table = indigo_truth_table(written)
             expected = {target_id: target_id == query_id for target_id in CASES}
@@ -98,6 +111,11 @@ def main() -> int:
                     "rdkit_output_identity": output_identity,
                     "rdkit_identity_preserved": source_identity == output_identity,
                     "expected_stereo_truth_table": expected,
+                    "rdkit_source_truth_table": rdkit_source_table,
+                    "rdkit_output_truth_table": rdkit_output_table,
+                    "rdkit_table_preserved_by_chematic": rdkit_source_table
+                    == rdkit_output_table,
+                    "rdkit_matches_expected_stereo": rdkit_source_table == expected,
                     "indigo_source_truth_table": source_table,
                     "indigo_output_truth_table": output_table,
                     "indigo_table_preserved_by_chematic": source_table == output_table,
@@ -108,6 +126,12 @@ def main() -> int:
 
     conversion_failures = [row["query"] for row in rows if row.get("cli_exit_code") != 0]
     identity_failures = [row["query"] for row in rows if not row.get("rdkit_identity_preserved", False)]
+    rdkit_query_failures = [
+        row["query"]
+        for row in rows
+        if not row.get("rdkit_table_preserved_by_chematic", False)
+        or not row.get("rdkit_matches_expected_stereo", False)
+    ]
     table_failures = [row["query"] for row in rows if not row.get("indigo_table_preserved_by_chematic", False)]
     indigo_semantic_loss = [row["query"] for row in rows if not row.get("indigo_matches_expected_stereo", False)]
     result = {
@@ -120,10 +144,13 @@ def main() -> int:
         "cases": len(rows),
         "conversion_failures": conversion_failures,
         "rdkit_identity_failures": identity_failures,
+        "rdkit_query_truth_table_failures": rdkit_query_failures,
         "indigo_table_preservation_failures": table_failures,
         "indigo_stereo_semantic_loss_queries": indigo_semantic_loss,
-        "chematic_roundtrip_gate_passed": not (conversion_failures or identity_failures or table_failures),
-        "scope": "Two E/Z queries and two E/Z targets, checked before and after bounded chematic V3000 round trip.",
+        "chematic_roundtrip_gate_passed": not (
+            conversion_failures or identity_failures or rdkit_query_failures or table_failures
+        ),
+        "scope": "Two E/Z V3000 queries and two E/Z targets, checked before and after bounded chematic V3000 round trip with RDKit and Indigo query predicates.",
         "not_claimed": [
             "Indigo query E/Z semantic correctness",
             "typed V3000 query interpretation by chematic",
@@ -135,6 +162,7 @@ def main() -> int:
     args.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({key: result[key] for key in (
         "cases", "conversion_failures", "rdkit_identity_failures",
+        "rdkit_query_truth_table_failures",
         "indigo_table_preservation_failures", "indigo_stereo_semantic_loss_queries",
         "chematic_roundtrip_gate_passed",
     )}))
