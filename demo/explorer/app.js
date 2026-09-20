@@ -1,6 +1,7 @@
 import { CsvStreamParser, parseCsvText, detectColumns, csvRowsToRawRecords, parseSmiFileText } from "./parser.js";
 import { applyFilters, buildComparator, renderTable } from "./table.js";
 import { exportToCsv, downloadCsv } from "./export.js";
+import { formatBatchOutcome, summarizeKnownLengthBatch } from "./batch-accounting.js";
 
 // 100 records keeps the Worker message overhead bounded at the workflow
 // cap while still yielding to the event loop between batches. Individual
@@ -22,6 +23,10 @@ let wasmReady = false;
 let analysisWorker = null;
 let nextWorkerRequestId = 1;
 const pendingWorkerRequests = new Map();
+// A Worker request cannot be preempted once posted.  This monotonically
+// increasing generation prevents its late response from changing a newer
+// import after cancellation or replacement.
+let activeImportGeneration = 0;
 
 const state = {
   records: [], // CompoundRecord[]
@@ -29,6 +34,9 @@ const state = {
   sort: { key: "inputOrder", dir: "asc" },
   referenceSmiles: null,
   similarityHasRun: false,
+  // Last known-length import outcome.  Incomplete work retains its unprocessed
+  // range instead of manufacturing skipped records or a successful summary.
+  batchOutcome: null,
 };
 
 let currentAbortController = null;
@@ -142,6 +150,7 @@ async function processRawRecords(rawRecords) {
   if (currentAbortController) currentAbortController.abort();
   const controller = new AbortController();
   currentAbortController = controller;
+  const importGeneration = ++activeImportGeneration;
 
   const truncated = rawRecords.length > HARD_RECORD_CAP;
   const toProcess = truncated ? rawRecords.slice(0, HARD_RECORD_CAP) : rawRecords;
@@ -151,21 +160,23 @@ async function processRawRecords(rawRecords) {
   }
 
   state.records = [];
+  state.batchOutcome = null;
   $("explorer-cancel")?.classList.remove("hidden");
 
   let processed = 0;
+  let terminalReason = truncated ? "client_record_cap" : null;
   for (let start = 0; start < toProcess.length; start += CHUNK_SIZE) {
     if (controller.signal.aborted) {
-      showStatus(`Cancelled after ${processed} of ${toProcess.length} records.`);
+      terminalReason = "cancelled";
       break;
     }
     const chunk = toProcess.slice(start, start + CHUNK_SIZE);
     const records = await parseChunkInWorker(chunk, start);
-    if (controller.signal.aborted) {
+    if (controller.signal.aborted || importGeneration !== activeImportGeneration) {
       // Cancellation can arrive while a Worker request is in flight.  Report
       // the same terminal state as the pre-request cancellation path instead
       // of silently falling out of the loop.
-      showStatus(`Cancelled after ${processed} of ${toProcess.length} records.`);
+      terminalReason = "cancelled";
       break;
     }
     state.records.push(...records);
@@ -177,15 +188,22 @@ async function processRawRecords(rawRecords) {
     await new Promise((resolve) => setTimeout(resolve, 0)); // yield to the event loop
   }
 
-  if (!controller.signal.aborted) {
-    const okCount = state.records.filter((r) => r.status === "ok").length;
-    const failCount = state.records.length - okCount;
-    showStatus(
-      failCount === 0
-        ? `${okCount} molecule${okCount === 1 ? "" : "s"} loaded.`
-        : `${okCount} loaded, ${failCount} failed to parse.`
-    );
-  }
+  // A later import owns the UI state. Its caller has already initialized a
+  // new accounting result, so an older response must not overwrite records,
+  // status text, or the cancel control.
+  if (importGeneration !== activeImportGeneration) return;
+
+  const outcome = summarizeKnownLengthBatch({
+    inputCount: rawRecords.length,
+    completedCount: state.records.length,
+    terminalReason: processed === rawRecords.length ? null : terminalReason || "cancelled",
+  });
+  state.batchOutcome = outcome;
+  const okCount = state.records.filter((r) => r.status === "ok").length;
+  showStatus(formatBatchOutcome(outcome, {
+    acceptedCount: okCount,
+    rejectedCount: state.records.length - okCount,
+  }));
   $("explorer-cancel")?.classList.add("hidden");
 }
 
