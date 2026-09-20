@@ -4651,6 +4651,73 @@ mod tests {
         }
     }
 
+    /// The complete slot probe includes every actual raw directional carrier,
+    /// not only substituent bonds reached through a coupled component.  The
+    /// latter misses aromatic-stash positions in the #503 canonical output
+    /// and falsely makes the semantic candidate intersection appear empty.
+    #[test]
+    fn issue503_complete_slot_probe_covers_every_canonical_direction_carrier() {
+        let observed_pairs = [
+            (
+                r"c/3(c(/c(c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
+                r"c3(c(c(/c3=N/CC)=N\[C@@H](Cc1ccc(NC(c2c(Cl)cncc2Cl)=O)cc1)C(O)=O)O)O",
+            ),
+            (
+                r"c/1(c(/c(c1=N\[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+                r"c1(c(c(/c1=N/[C@H](C(O)=O)Cc2ccc(NC(c3c(Cl)cncc3Cl)=O)cc2)=N\C(C)CCC)O)O",
+            ),
+            (
+                r"c/1(O)c(O)/c(=N\[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)c1=N\CCOC",
+                r"c1(O)c(O)c(=N/[C@@H](Cc3ccc(cc3)NC(=O)c2c(Cl)cncc2Cl)C(=O)O)\c1=N\CCOC",
+            ),
+        ];
+
+        for (&input, &(observed_a, observed_b)) in EZ_SHARED_CARRIER_HELD_OUT_RESIDUALS
+            .iter()
+            .zip(observed_pairs.iter())
+        {
+            for spelling in [input, observed_a, observed_b] {
+                let output = canonical_smiles(&parse(spelling).unwrap());
+                let mol = parse(&output).unwrap();
+                let ends = CanonicalWriter::compute_stereo_alkene_ends(&mol);
+                let candidates: HashSet<BondIdx> =
+                    CanonicalWriter::coupling_components(&mol, &ends)
+                        .into_iter()
+                        .flatten()
+                        .flat_map(|end| CanonicalWriter::substituents(&mol, end))
+                        .map(|(_, bond)| bond)
+                        .collect();
+                let ranks = morgan_ranks(&mol);
+                let writer = CanonicalWriter::new(&mol, &ranks);
+                let raw_directional: HashSet<BondIdx> = mol
+                    .bonds()
+                    .filter_map(|(bond, _)| {
+                        matches!(
+                            writer.raw_input_direction(bond),
+                            Some(BondOrder::Up | BondOrder::Down)
+                        )
+                        .then_some(bond)
+                    })
+                    .collect();
+                assert!(
+                    raw_directional
+                        .iter()
+                        .any(|bond| !candidates.contains(bond)),
+                    "{spelling}: canonical output '{output}' no longer exercises the known \
+                     component-only slot-universe omission"
+                );
+                let complete_candidates: HashSet<_> =
+                    candidates.union(&raw_directional).copied().collect();
+                assert!(
+                    raw_directional
+                        .iter()
+                        .all(|bond| complete_candidates.contains(bond)),
+                    "{spelling}: complete slot universe omitted a canonical direction carrier"
+                );
+            }
+        }
+    }
+
     /// The closing side of a ring digit is syntactically capable of carrying
     /// its directional token (the parser applies the required orientation
     /// flip).  Exhaust the two remaining *local* writer freedoms together:
@@ -4744,7 +4811,7 @@ mod tests {
     /// must derive a rank-keyed component plan, not adopt a parse-indexed
     /// enumeration.
     #[test]
-    fn issue503_full_slot_polarity_space_has_no_common_output() {
+    fn issue503_full_slot_polarity_space_has_common_output() {
         let observed_pairs = [
             (
                 r"c/3(c(/c(c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
@@ -4776,11 +4843,21 @@ mod tests {
                     .flat_map(|end| CanonicalWriter::substituents(&mol, end))
                     .map(|(_, bond)| bond)
                     .collect();
+                let (ranks, _) = winning_individualized_ranks(&mol);
+                let raw_directional: Vec<_> = (0..mol.bond_count())
+                    .map(|index| BondIdx(index as u32))
+                    .filter(|&bond| {
+                        matches!(
+                            CanonicalWriter::new(&mol, &ranks).raw_input_direction(bond),
+                            Some(BondOrder::Up | BondOrder::Down)
+                        )
+                    })
+                    .collect();
+                component_bonds.extend(raw_directional);
                 component_bonds.sort_unstable_by_key(|bond| bond.0);
                 component_bonds.dedup();
                 assert!(component_bonds.len() <= 8, "diagnostic bound exceeded");
 
-                let (ranks, _) = winning_individualized_ranks(&mol);
                 let mut skeleton = CanonicalWriter::new(&mol, &ranks);
                 skeleton.find_ring_closures(&skeleton.canonical_atom_list());
                 let ring_component_bonds: Vec<_> = component_bonds
@@ -4848,18 +4925,16 @@ mod tests {
                 .reduce(|left, right| left.intersection(&right).cloned().collect())
                 .unwrap();
             assert!(
-                common.is_empty(),
-                "{input}: full slot/polarity enumeration found {common:?}; \
-                 promote the concrete plan only after its rank-keyed production contract is verified"
+                !common.is_empty(),
+                "{input}: the complete carrier space unexpectedly has no common output"
             );
             let reranked_common = reranked_per_spelling
                 .into_iter()
                 .reduce(|left, right| left.intersection(&right).cloned().collect())
                 .unwrap();
             assert!(
-                reranked_common.is_empty(),
-                "{input}: rank-searching every geometry-preserving carrier representation found \
-                 {reranked_common:?}; promote it only after its production contract is verified"
+                !reranked_common.is_empty(),
+                "{input}: reranking the complete carrier space lost every common output"
             );
         }
     }
