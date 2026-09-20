@@ -31,6 +31,19 @@ DFS preference, or one ring-marker-side rule as the canonical tie-breaker.
 They do not prove that SMILES cannot encode the molecules; they bound only the
 current writer's local degrees of freedom.
 
+## Current implementation stage
+
+`CanonicalWriter` now captures rank-fixed E/Z geometry facts before marker
+carrier resolution.  When a complete two-ended fact exists, the existing
+component solver consumes that extracted relation rather than re-reading a raw
+marker from the candidate it is considering.  The spelling-invariance gate
+proves this extraction agrees across the three current residual families.
+
+This is only the first stage.  It does not yet construct output slots, solve a
+whole component, or make the residual stable key admissible.  Incomplete or
+unspecified E/Z inputs retain the previous read path so this refactor does not
+silently alter their output contract.
+
 ## Required architecture
 
 The implementation must separate chemical geometry from its SMILES spelling.
