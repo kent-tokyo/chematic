@@ -22,6 +22,9 @@ Live: <https://kent-tokyo.github.io/chematic/explorer/>
   silently dropped nor counted as a successfully analysed molecule. Cancelling stops before the
   next batch, leaving completed rows available for filtering and export; loading the file again
   starts the deterministic sequence from record zero.
+- **Known-length batch accounting** — every completed record is either loaded or rejected. A
+  client display cap or cancellation is reported as `complete=false` with the unprocessed row
+  count and terminal reason; those rows are not mislabeled as skipped or successful.
 - **`.smi` / newline-separated SMILES / pasted text** — one record per non-blank line, SMILES
   first, an optional whitespace-separated name as the rest of the line.
 - **Built-in sample dataset** (`sample.csv`) — 16 well-known drugs/small molecules, verified

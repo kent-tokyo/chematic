@@ -16,6 +16,37 @@ const { applyFilters, buildComparator, matchesFreeText } =
   await import(path.join(__dirname, "..", "table.js"));
 const { csvField, exportToCsv, CSV_COLUMNS } =
   await import(path.join(__dirname, "..", "export.js"));
+const { formatBatchOutcome, summarizeKnownLengthBatch } =
+  await import(path.join(__dirname, "..", "batch-accounting.js"));
+
+// ---------------------------------------------------------------------------
+// batch-accounting.js: explicit incomplete input accounting
+// ---------------------------------------------------------------------------
+
+console.log("=== batch accounting ===");
+{
+  const outcome = summarizeKnownLengthBatch({ inputCount: 3, completedCount: 3 });
+  assert.deepEqual(outcome, {
+    inputCount: 3, completedCount: 3, unprocessedCount: 0,
+    complete: true, terminalReason: null,
+  });
+  assert.equal(formatBatchOutcome(outcome, { acceptedCount: 2, rejectedCount: 1 }),
+    "2 loaded, 1 failed to parse.");
+}
+{
+  const outcome = summarizeKnownLengthBatch({
+    inputCount: 100_001, completedCount: 100_000, terminalReason: "client_record_cap",
+  });
+  assert.equal(outcome.unprocessedCount, 1);
+  assert.equal(outcome.complete, false);
+  assert.equal(formatBatchOutcome(outcome, { acceptedCount: 100_000, rejectedCount: 0 }),
+    "100000 loaded, 0 failed to parse; 1 not processed (client_record_cap; complete=false).");
+}
+assert.throws(
+  () => summarizeKnownLengthBatch({ inputCount: 3, completedCount: 2 }),
+  /terminal reason/,
+);
+console.log("batch accounting: all assertions passed");
 
 // ---------------------------------------------------------------------------
 // parser.js: parseCsvText

@@ -1,6 +1,7 @@
 import { CsvStreamParser, parseCsvText, detectColumns, csvRowsToRawRecords, parseSmiFileText } from "./parser.js";
 import { applyFilters, buildComparator, renderTable } from "./table.js";
 import { exportToCsv, downloadCsv } from "./export.js";
+import { formatBatchOutcome, summarizeKnownLengthBatch } from "./batch-accounting.js";
 
 // 100 records keeps the Worker message overhead bounded at the workflow
 // cap while still yielding to the event loop between batches. Individual
@@ -29,6 +30,9 @@ const state = {
   sort: { key: "inputOrder", dir: "asc" },
   referenceSmiles: null,
   similarityHasRun: false,
+  // Last known-length import outcome.  Incomplete work retains its unprocessed
+  // range instead of manufacturing skipped records or a successful summary.
+  batchOutcome: null,
 };
 
 let currentAbortController = null;
@@ -151,12 +155,14 @@ async function processRawRecords(rawRecords) {
   }
 
   state.records = [];
+  state.batchOutcome = null;
   $("explorer-cancel")?.classList.remove("hidden");
 
   let processed = 0;
+  let terminalReason = truncated ? "client_record_cap" : null;
   for (let start = 0; start < toProcess.length; start += CHUNK_SIZE) {
     if (controller.signal.aborted) {
-      showStatus(`Cancelled after ${processed} of ${toProcess.length} records.`);
+      terminalReason = "cancelled";
       break;
     }
     const chunk = toProcess.slice(start, start + CHUNK_SIZE);
@@ -165,7 +171,7 @@ async function processRawRecords(rawRecords) {
       // Cancellation can arrive while a Worker request is in flight.  Report
       // the same terminal state as the pre-request cancellation path instead
       // of silently falling out of the loop.
-      showStatus(`Cancelled after ${processed} of ${toProcess.length} records.`);
+      terminalReason = "cancelled";
       break;
     }
     state.records.push(...records);
@@ -177,15 +183,17 @@ async function processRawRecords(rawRecords) {
     await new Promise((resolve) => setTimeout(resolve, 0)); // yield to the event loop
   }
 
-  if (!controller.signal.aborted) {
-    const okCount = state.records.filter((r) => r.status === "ok").length;
-    const failCount = state.records.length - okCount;
-    showStatus(
-      failCount === 0
-        ? `${okCount} molecule${okCount === 1 ? "" : "s"} loaded.`
-        : `${okCount} loaded, ${failCount} failed to parse.`
-    );
-  }
+  const outcome = summarizeKnownLengthBatch({
+    inputCount: rawRecords.length,
+    completedCount: state.records.length,
+    terminalReason: processed === rawRecords.length ? null : terminalReason || "cancelled",
+  });
+  state.batchOutcome = outcome;
+  const okCount = state.records.filter((r) => r.status === "ok").length;
+  showStatus(formatBatchOutcome(outcome, {
+    acceptedCount: okCount,
+    rejectedCount: state.records.length - okCount,
+  }));
   $("explorer-cancel")?.classList.add("hidden");
 }
 
