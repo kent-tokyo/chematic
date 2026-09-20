@@ -12,11 +12,11 @@
     "engine": "chematic",
     "operation": "CLI descriptors <SMILES> JSON tpsa",
     "cli_name": "chematic",
-    "cli_sha256": "781acc99abdd5f37f026acbd2340019eec0938ebd1dd82206cdc05ed5eb81a6b"
+    "cli_sha256": "0b6da3617acab822925e8e665f9c118a2e9a648eeb82b2b63405256859850672"
   },
-  "rows": 46,
+  "rows": 51,
   "strict_tolerance": 1e-06,
-  "strict_matches": 46,
+  "strict_matches": 51,
   "failures": [],
   "cases": [
     {
@@ -384,6 +384,46 @@
       "smiles": "n1cncnc1",
       "rdkit_tpsa": 38.67,
       "chematic_tpsa": 38.67,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "carbon13_ethanol",
+      "smiles": "[13CH3]CO",
+      "rdkit_tpsa": 20.23,
+      "chematic_tpsa": 20.23,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "carbon11_ethanol",
+      "smiles": "[11CH3]CO",
+      "rdkit_tpsa": 20.23,
+      "chematic_tpsa": 20.23,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "deuterated_ethanol",
+      "smiles": "CCO[2H]",
+      "rdkit_tpsa": 20.23,
+      "chematic_tpsa": 20.23,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "2_hydroxypyridine",
+      "smiles": "Oc1ccccn1",
+      "rdkit_tpsa": 33.120000000000005,
+      "chematic_tpsa": 33.120000000000005,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "phenoxide",
+      "smiles": "[O-]c1ccccc1",
+      "rdkit_tpsa": 23.06,
+      "chematic_tpsa": 23.06,
       "absolute_error": 0.0,
       "strict_match": true
     }

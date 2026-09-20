@@ -63,6 +63,14 @@ CASES = {
     "isocyanate": "CN=C=O",
     "isothiocyanate": "CN=C=S",
     "triazine": "n1cncnc1",
+    # Non-sealed representation strata: isotope labels, tautomer spellings,
+    # and an anionic aromatic oxygen. These are public, hand-auditable inputs
+    # rather than any row or derivative from a sealed candidate.
+    "carbon13_ethanol": "[13CH3]CO",
+    "carbon11_ethanol": "[11CH3]CO",
+    "deuterated_ethanol": "CCO[2H]",
+    "2_hydroxypyridine": "Oc1ccccn1",
+    "phenoxide": "[O-]c1ccccc1",
 }
 
 ROOT = Path(__file__).resolve().parents[1]

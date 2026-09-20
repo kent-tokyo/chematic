@@ -654,6 +654,13 @@ CheMaticの不具合や優位性が確定したことにはならない。
   閾値へ合わせ込まず、独立の既知/生成テストと仕様根拠を使う。修正候補ごとに、影響binding
   回帰、変更影響表、公開主張への影響を記録する。descriptorは官能基・電荷・同位体・
   tautomer/芳香族性の非sealedな層別を先に固定し、全体一致率だけを次freezeの根拠にしない。
+  公開51官能基/電荷/同位体/tautomer/芳香族性のgreen probeでは、HBA/HBD/TPSA/LogP/MR/
+  Fsp3/芳香族環数と明示的な`rdkit_molecular_weight`は51/51 strictだった。native
+  `molecular_weight`のSeと同位体3件はnative IUPAC mass tableとRDKit mass profileの
+  宣言済み差であり、CLIのnative massをRDKit互換値と偽装しない。別の分類専用2-pyridone
+  Kekule tautomerはTPSA/LogP/MR残差として保持し、sealed候補との対応付けをしない。結果は
+  `validation/results/descriptor-functional-group-classification-v1.0.17.json`に固定し、
+  CIで再実行する。これは公開development分類であり、unused採用評価ではない。
 - [ ] 次の採用判断が必要になった時点で、別source・別抽出・重複除外・source hash・
   attestation・annotated tagを新規に固定する。新しいcohortを作るだけでは合格とせず、
   candidate buildとfixed oracleで一度だけ実行する。
@@ -728,6 +735,10 @@ rejectionは文字列、envelopeの`complete`は処理完了を表す。これ�
 - [ ] cancel、未知長stream、retry、chunk境界、Worker/MCP adapter、export stageと
   resource/time limitを同じ会計契約へ接続する。cancel後の未読範囲を架空の`skipped`に
   せず、`complete=false`と未読範囲を明示する。
+- [x] PR #580でLocal Compound Explorerの既知長importにこの境界を適用した。record capと
+  cancelでは`unprocessed`とterminal reasonを表示し、古いWorker応答が後続importの状態を
+  上書きしないgeneration guardを追加した。Chromium/Firefox/WebKitのsmokeで確認済み。
+  これはExplorerのUI経路だけであり、下記の全binding/10k Worker出口の代替にはしない。
 - [ ] known-length batchでは全bindingで `input_count = success + failed + refused + skipped`
   を維持し、unknown-length streamでは確定済みprefix、未読範囲、terminal reasonを別に
   表す。`failed()==0`だけから全入力成功を推論できないことを型・JSON schema・利用例で

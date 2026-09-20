@@ -1,0 +1,3384 @@
+{
+  "schema_version": 1,
+  "profile": "descriptor_public_functional_group_classification_v1",
+  "status": "development_classification",
+  "scope": "Public, non-sealed functional-group classification; not an unused evaluation cohort or adoption decision.",
+  "oracle": {
+    "engine": "RDKit",
+    "version": "2025.09.3",
+    "operations": {
+      "molecular_weight": {
+        "tolerance": 0.01,
+        "comparison": "native_mass_vs_rdkit_molwt_contract_difference"
+      },
+      "rdkit_molecular_weight": {
+        "tolerance": 0.01,
+        "comparison": "numeric_rdkit_mass_profile"
+      },
+      "logp": {
+        "tolerance": 0.01,
+        "comparison": "numeric"
+      },
+      "molar_refractivity": {
+        "tolerance": 0.01,
+        "comparison": "numeric"
+      },
+      "tpsa": {
+        "tolerance": 1e-06,
+        "comparison": "numeric"
+      },
+      "hbd": {
+        "tolerance": 0.0,
+        "comparison": "integer"
+      },
+      "hba": {
+        "tolerance": 0.0,
+        "comparison": "integer"
+      },
+      "fsp3": {
+        "tolerance": 1e-12,
+        "comparison": "numeric"
+      },
+      "aromatic_ring_count": {
+        "tolerance": 0.0,
+        "comparison": "integer"
+      }
+    }
+  },
+  "implementation": {
+    "engine": "CheMatic",
+    "operation": "CLI descriptors <SMILES> JSON fields",
+    "cli_sha256": "0b6da3617acab822925e8e665f9c118a2e9a648eeb82b2b63405256859850672"
+  },
+  "rows": 52,
+  "summary": {
+    "molecular_weight": {
+      "strict_matches": 48,
+      "mismatches": [
+        "seleninic_acid",
+        "carbon13_ethanol",
+        "carbon11_ethanol",
+        "deuterated_ethanol"
+      ]
+    },
+    "rdkit_molecular_weight": {
+      "strict_matches": 52,
+      "mismatches": []
+    },
+    "logp": {
+      "strict_matches": 51,
+      "mismatches": [
+        "2_pyridone"
+      ]
+    },
+    "molar_refractivity": {
+      "strict_matches": 51,
+      "mismatches": [
+        "2_pyridone"
+      ]
+    },
+    "tpsa": {
+      "strict_matches": 51,
+      "mismatches": [
+        "2_pyridone"
+      ]
+    },
+    "hbd": {
+      "strict_matches": 52,
+      "mismatches": []
+    },
+    "hba": {
+      "strict_matches": 52,
+      "mismatches": []
+    },
+    "fsp3": {
+      "strict_matches": 52,
+      "mismatches": []
+    },
+    "aromatic_ring_count": {
+      "strict_matches": 52,
+      "mismatches": []
+    }
+  },
+  "cases": [
+    {
+      "id": "water",
+      "smiles": "O",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 18.015,
+          "chematic": 18.015,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 18.015,
+          "chematic": 18.015,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -0.8247,
+          "chematic": -0.8247,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 3.6138,
+          "chematic": 3.6138,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 31.5,
+          "chematic": 31.5,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 0.0,
+          "chematic": 0.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "alcohol",
+      "smiles": "CCO",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 46.069,
+          "chematic": 46.069,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 46.069,
+          "chematic": 46.069,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -0.0014000000000000123,
+          "chematic": -0.0013999999999999568,
+          "absolute_error": 5.551115123125783e-17,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 12.759800000000002,
+          "chematic": 12.7598,
+          "absolute_error": 1.7763568394002505e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 20.23,
+          "chematic": 20.23,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "phenol",
+      "smiles": "Oc1ccccc1",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 94.11299999999999,
+          "chematic": 94.11299999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 94.11299999999999,
+          "chematic": 94.11299999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 1.3921999999999999,
+          "chematic": 1.3921999999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 28.106799999999993,
+          "chematic": 28.1068,
+          "absolute_error": 7.105427357601002e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 20.23,
+          "chematic": 20.23,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 0.0,
+          "chematic": 0.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "ether",
+      "smiles": "COC",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 46.069,
+          "chematic": 46.069,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 46.069,
+          "chematic": 46.069,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 0.26260000000000006,
+          "chematic": 0.2626,
+          "absolute_error": 5.551115123125783e-17,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 12.933000000000002,
+          "chematic": 12.933,
+          "absolute_error": 1.7763568394002505e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 9.23,
+          "chematic": 9.23,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "epoxide",
+      "smiles": "C1CO1",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 44.053,
+          "chematic": 44.053,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 44.053,
+          "chematic": 44.053,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 0.016600000000000004,
+          "chematic": 0.016600000000000018,
+          "absolute_error": 1.3877787807814457e-17,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 10.819,
+          "chematic": 10.818999999999999,
+          "absolute_error": 1.7763568394002505e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 12.53,
+          "chematic": 12.53,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "carbonyl",
+      "smiles": "CC=O",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 44.053,
+          "chematic": 44.053,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 44.053,
+          "chematic": 44.053,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 0.2052,
+          "chematic": 0.2052,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 11.738000000000001,
+          "chematic": 11.738,
+          "absolute_error": 1.7763568394002505e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 17.07,
+          "chematic": 17.07,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 0.5,
+          "chematic": 0.5,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "carboxylic_acid",
+      "smiles": "CC(=O)O",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 60.05200000000001,
+          "chematic": 60.05200000000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 60.05200000000001,
+          "chematic": 60.05200000000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 0.09089999999999993,
+          "chematic": 0.09089999999999998,
+          "absolute_error": 5.551115123125783e-17,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 13.309800000000001,
+          "chematic": 13.3098,
+          "absolute_error": 1.7763568394002505e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 37.3,
+          "chematic": 37.3,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 0.5,
+          "chematic": 0.5,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "carboxylate",
+      "smiles": "CC(=O)[O-]",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 59.044000000000004,
+          "chematic": 59.044000000000004,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 59.044000000000004,
+          "chematic": 59.044000000000004,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -1.2438,
+          "chematic": -1.2438,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 10.681000000000001,
+          "chematic": 10.681,
+          "absolute_error": 1.7763568394002505e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 40.129999999999995,
+          "chematic": 40.129999999999995,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 2,
+          "chematic": 2,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 0.5,
+          "chematic": 0.5,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "ester",
+      "smiles": "CC(=O)OC",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 74.07900000000001,
+          "chematic": 74.07900000000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 74.07900000000001,
+          "chematic": 74.07900000000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 0.17930000000000001,
+          "chematic": 0.17930000000000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 17.689999999999998,
+          "chematic": 17.689999999999998,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 26.3,
+          "chematic": 26.3,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 2,
+          "chematic": 2,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 0.6666666666666666,
+          "chematic": 0.6666666666666666,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "amide",
+      "smiles": "CC(=O)N",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 59.068,
+          "chematic": 59.068,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 59.068,
+          "chematic": 59.068,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -0.5084,
+          "chematic": -0.5084,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 14.868400000000001,
+          "chematic": 14.8684,
+          "absolute_error": 1.7763568394002505e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 43.09,
+          "chematic": 43.09,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 0.5,
+          "chematic": 0.5,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "primary_amine",
+      "smiles": "CCN",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 45.084999999999994,
+          "chematic": 45.084999999999994,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 45.084999999999994,
+          "chematic": 45.084999999999994,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -0.03499999999999981,
+          "chematic": -0.03499999999999992,
+          "absolute_error": 1.1102230246251565e-16,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 14.728400000000002,
+          "chematic": 14.7284,
+          "absolute_error": 1.7763568394002505e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 26.02,
+          "chematic": 26.02,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "tertiary_amine",
+      "smiles": "CN(C)C",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 59.111999999999995,
+          "chematic": 59.111999999999995,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 59.111999999999995,
+          "chematic": 59.111999999999995,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 0.17779999999999996,
+          "chematic": 0.17780000000000004,
+          "absolute_error": 8.326672684688674e-17,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 19.610999999999997,
+          "chematic": 19.610999999999997,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 3.24,
+          "chematic": 3.24,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "quaternary_ammonium",
+      "smiles": "C[N+](C)(C)C",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 74.14699999999999,
+          "chematic": 74.14699999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 74.14699999999999,
+          "chematic": 74.14699999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 0.3224,
+          "chematic": 0.3224,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 23.95639999999999,
+          "chematic": 23.9564,
+          "absolute_error": 7.105427357601002e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 0.0,
+          "chematic": 0.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "nitrile",
+      "smiles": "CC#N",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 41.053,
+          "chematic": 41.053,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 41.053,
+          "chematic": 41.053,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 0.52988,
+          "chematic": 0.52988,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 11.287,
+          "chematic": 11.286999999999999,
+          "absolute_error": 1.7763568394002505e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 23.79,
+          "chematic": 23.79,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 0.5,
+          "chematic": 0.5,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "imine",
+      "smiles": "CC=N",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 43.069,
+          "chematic": 43.069,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 43.069,
+          "chematic": 43.069,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 0.65587,
+          "chematic": 0.65587,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 14.4577,
+          "chematic": 14.457699999999999,
+          "absolute_error": 1.7763568394002505e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 23.85,
+          "chematic": 23.85,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 0.5,
+          "chematic": 0.5,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "azo",
+      "smiles": "CN=NC",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 58.084,
+          "chematic": 58.084,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 58.084,
+          "chematic": 58.084,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 0.6982,
+          "chematic": 0.6982,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 16.704,
+          "chematic": 16.704,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 24.72,
+          "chematic": 24.72,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 2,
+          "chematic": 2,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "nitro",
+      "smiles": "C[N+](=O)[O-]",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 61.040000000000006,
+          "chematic": 61.040000000000006,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 61.040000000000006,
+          "chematic": 61.040000000000006,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -0.10710000000000008,
+          "chematic": -0.1071,
+          "absolute_error": 8.326672684688674e-17,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 12.9184,
+          "chematic": 12.918399999999998,
+          "absolute_error": 1.7763568394002505e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 43.14,
+          "chematic": 43.14,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 2,
+          "chematic": 2,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "nitroso",
+      "smiles": "CN=O",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 45.041000000000004,
+          "chematic": 45.041000000000004,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 45.041000000000004,
+          "chematic": 45.041000000000004,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 0.38260000000000005,
+          "chematic": 0.38260000000000005,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 11.719000000000001,
+          "chematic": 11.719000000000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 29.43,
+          "chematic": 29.43,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 2,
+          "chematic": 2,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "n_oxide",
+      "smiles": "C[n+]1ccccc1[O-]",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 109.12799999999999,
+          "chematic": 109.12799999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 109.12799999999999,
+          "chematic": 109.12799999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -0.4153000000000002,
+          "chematic": -0.4153,
+          "absolute_error": 2.220446049250313e-16,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 27.06399999999999,
+          "chematic": 27.064000000000004,
+          "absolute_error": 1.4210854715202004e-14,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 26.939999999999998,
+          "chematic": 26.939999999999998,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 0.16666666666666666,
+          "chematic": 0.16666666666666666,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "azide",
+      "smiles": "CN=[N+]=[N-]",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 57.056,
+          "chematic": 57.056,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 57.056,
+          "chematic": 57.056,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 0.9265000000000001,
+          "chematic": 0.9265000000000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 15.07,
+          "chematic": 15.07,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 48.760000000000005,
+          "chematic": 48.760000000000005,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "pyridine",
+      "smiles": "n1ccccc1",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 79.10199999999999,
+          "chematic": 79.10199999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 79.10199999999999,
+          "chematic": 79.10199999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 1.0816,
+          "chematic": 1.0816000000000001,
+          "absolute_error": 2.220446049250313e-16,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 24.23699999999999,
+          "chematic": 24.237,
+          "absolute_error": 7.105427357601002e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 12.89,
+          "chematic": 12.89,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 0.0,
+          "chematic": 0.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "pyrrole",
+      "smiles": "c1cc[nH]c1",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 67.091,
+          "chematic": 67.091,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 67.091,
+          "chematic": 67.091,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 1.0147,
+          "chematic": 1.0147,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 20.792699999999996,
+          "chematic": 20.7927,
+          "absolute_error": 3.552713678800501e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 15.79,
+          "chematic": 15.79,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 0.0,
+          "chematic": 0.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "imidazole",
+      "smiles": "c1ncc[nH]1",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 68.079,
+          "chematic": 68.079,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 68.079,
+          "chematic": 68.079,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 0.40969999999999995,
+          "chematic": 0.40970000000000006,
+          "absolute_error": 1.1102230246251565e-16,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 18.587699999999998,
+          "chematic": 18.587699999999998,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 28.68,
+          "chematic": 28.68,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 0.0,
+          "chematic": 0.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "sulfide",
+      "smiles": "CSC",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 62.137,
+          "chematic": 62.13499999999999,
+          "absolute_error": 0.0020000000000095497,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 62.137,
+          "chematic": 62.137,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 0.9792,
+          "chematic": 0.9792,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 19.438999999999997,
+          "chematic": 19.439,
+          "absolute_error": 3.552713678800501e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 25.3,
+          "chematic": 25.3,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "thiol",
+      "smiles": "CS",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 48.11000000000001,
+          "chematic": 48.108,
+          "absolute_error": 0.0020000000000095497,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 48.11000000000001,
+          "chematic": 48.11000000000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 0.546,
+          "chematic": 0.546,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 14.910000000000002,
+          "chematic": 14.91,
+          "absolute_error": 1.7763568394002505e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 38.8,
+          "chematic": 38.8,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "sulfoxide",
+      "smiles": "CS(=O)C",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 78.13600000000001,
+          "chematic": 78.134,
+          "absolute_error": 0.0020000000000095497,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 78.13600000000001,
+          "chematic": 78.13600000000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -0.005299999999999971,
+          "chematic": -0.005299999999999971,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 19.990399999999998,
+          "chematic": 19.9904,
+          "absolute_error": 3.552713678800501e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 36.28,
+          "chematic": 36.28,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "sulfone",
+      "smiles": "CS(=O)(=O)C",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 94.135,
+          "chematic": 94.133,
+          "absolute_error": 0.0020000000000095497,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 94.135,
+          "chematic": 94.135,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -0.33919999999999995,
+          "chematic": -0.33919999999999995,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 20.767799999999994,
+          "chematic": 20.7678,
+          "absolute_error": 7.105427357601002e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 42.52,
+          "chematic": 42.52,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 2,
+          "chematic": 2,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "sulfonamide",
+      "smiles": "CS(=O)(=O)N",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 95.12300000000002,
+          "chematic": 95.12100000000001,
+          "absolute_error": 0.0020000000000095497,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 95.12300000000002,
+          "chematic": 95.12300000000002,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -1.0953,
+          "chematic": -1.0953,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 19.031200000000002,
+          "chematic": 19.0312,
+          "absolute_error": 3.552713678800501e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 68.54,
+          "chematic": 68.54,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 2,
+          "chematic": 2,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "sulfonate",
+      "smiles": "CS(=O)(=O)[O-]",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 95.099,
+          "chematic": 95.097,
+          "absolute_error": 0.0020000000000095497,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 95.099,
+          "chematic": 95.099,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -0.8385999999999998,
+          "chematic": -0.8385999999999999,
+          "absolute_error": 1.1102230246251565e-16,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 15.621200000000002,
+          "chematic": 15.6212,
+          "absolute_error": 1.7763568394002505e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 65.58,
+          "chematic": 65.58,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 3,
+          "chematic": 3,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "thiophene",
+      "smiles": "c1ccsc1",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 84.14299999999999,
+          "chematic": 84.14099999999998,
+          "absolute_error": 0.0020000000000095497,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 84.14299999999999,
+          "chematic": 84.14299999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 1.7480999999999998,
+          "chematic": 1.7481,
+          "absolute_error": 2.220446049250313e-16,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 24.318999999999996,
+          "chematic": 24.319,
+          "absolute_error": 3.552713678800501e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 28.24,
+          "chematic": 28.24,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 0.0,
+          "chematic": 0.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "phosphate",
+      "smiles": "COP(=O)(O)O",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 112.02099999999997,
+          "chematic": 112.02099999999997,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 112.02099999999997,
+          "chematic": 112.02099999999997,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -0.2745000000000001,
+          "chematic": -0.27449999999999997,
+          "absolute_error": 1.1102230246251565e-16,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 19.0531,
+          "chematic": 19.0531,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 76.57000000000001,
+          "chematic": 76.57000000000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 2,
+          "chematic": 2,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 2,
+          "chematic": 2,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "phosphonate",
+      "smiles": "CP(=O)(O)O",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 96.02199999999999,
+          "chematic": 96.02199999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 96.02199999999999,
+          "chematic": 96.02199999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -0.20610000000000006,
+          "chematic": -0.20609999999999995,
+          "absolute_error": 1.1102230246251565e-16,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 17.968100000000003,
+          "chematic": 17.9681,
+          "absolute_error": 3.552713678800501e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 67.34,
+          "chematic": 67.34,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 2,
+          "chematic": 2,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "phosphorothioate",
+      "smiles": "COP(=S)(O)O",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 128.08899999999997,
+          "chematic": 128.087,
+          "absolute_error": 0.001999999999981128,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 128.08899999999997,
+          "chematic": 128.08899999999997,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -0.15810000000000002,
+          "chematic": -0.1580999999999999,
+          "absolute_error": 1.1102230246251565e-16,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 25.73159999999999,
+          "chematic": 25.7316,
+          "absolute_error": 1.0658141036401503e-14,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 91.59,
+          "chematic": 91.59,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 2,
+          "chematic": 2,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 2,
+          "chematic": 2,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "phosphine",
+      "smiles": "CP(C)C",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 76.079,
+          "chematic": 76.079,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 76.079,
+          "chematic": 76.079,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 1.3577,
+          "chematic": 1.3577,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 24.69199999999999,
+          "chematic": 24.692,
+          "absolute_error": 1.0658141036401503e-14,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 13.59,
+          "chematic": 13.59,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "phosphazene_implicit_h",
+      "smiles": "CP(=N)C",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 77.06700000000001,
+          "chematic": 77.06700000000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 77.06700000000001,
+          "chematic": 77.06700000000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 1.22257,
+          "chematic": 1.22257,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 22.882699999999996,
+          "chematic": 22.8827,
+          "absolute_error": 3.552713678800501e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 47.32,
+          "chematic": 47.32,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "phosphazene_fully_substituted",
+      "smiles": "CP(=N)(C)C",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 91.094,
+          "chematic": 91.094,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 91.094,
+          "chematic": 91.094,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 1.65577,
+          "chematic": 1.65577,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 27.41169999999999,
+          "chematic": 27.411699999999996,
+          "absolute_error": 7.105427357601002e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 33.660000000000004,
+          "chematic": 33.660000000000004,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "phosphazene_explicit_h",
+      "smiles": "[PH](=N)C",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 62.032,
+          "chematic": 62.032,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 62.032,
+          "chematic": 62.032,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 1.05707,
+          "chematic": 1.05707,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 16.9587,
+          "chematic": 16.9587,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 23.85,
+          "chematic": 23.85,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "phosphazene_amine",
+      "smiles": "CP(=N)N",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 78.055,
+          "chematic": 78.055,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 78.055,
+          "chematic": 78.055,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 0.46647000000000005,
+          "chematic": 0.46647000000000005,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 21.146100000000004,
+          "chematic": 21.1461,
+          "absolute_error": 3.552713678800501e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 73.34,
+          "chematic": 73.34,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 2,
+          "chematic": 2,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "seleninic_acid",
+      "smiles": "C[Se](=O)O",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 127.00099999999998,
+          "chematic": 127.01199999999999,
+          "absolute_error": 0.01100000000000989,
+          "strict_match": false
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 127.00099999999998,
+          "chematic": 127.00099999999998,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -0.47280000000000005,
+          "chematic": -0.4728,
+          "absolute_error": 5.551115123125783e-17,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 14.5233,
+          "chematic": 14.523299999999999,
+          "absolute_error": 1.7763568394002505e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 37.3,
+          "chematic": 37.3,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "boronic_acid",
+      "smiles": "B(O)O",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 45.834,
+          "chematic": 45.833,
+          "absolute_error": 0.0010000000000047748,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 45.834,
+          "chematic": 45.834,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -1.7625000000000002,
+          "chematic": -1.7625,
+          "absolute_error": 2.220446049250313e-16,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 11.586599999999999,
+          "chematic": 11.586599999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 40.46,
+          "chematic": 40.46,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 2,
+          "chematic": 2,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 2,
+          "chematic": 2,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 0.0,
+          "chematic": 0.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "hydrazine",
+      "smiles": "CNN",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 46.073,
+          "chematic": 46.073,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 46.073,
+          "chematic": 46.073,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -0.9205000000000001,
+          "chematic": -0.9204999999999999,
+          "absolute_error": 2.220446049250313e-16,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 13.247100000000001,
+          "chematic": 13.2471,
+          "absolute_error": 1.7763568394002505e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 38.05,
+          "chematic": 38.05,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 2,
+          "chematic": 2,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 2,
+          "chematic": 2,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "guanidine",
+      "smiles": "NC(=N)N",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 59.071999999999996,
+          "chematic": 59.071999999999996,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 59.071999999999996,
+          "chematic": 59.071999999999996,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -1.1614300000000002,
+          "chematic": -1.1614299999999997,
+          "absolute_error": 4.440892098500626e-16,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 16.1015,
+          "chematic": 16.1015,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 75.89,
+          "chematic": 75.89,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 3,
+          "chematic": 3,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 0.0,
+          "chematic": 0.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "urea",
+      "smiles": "NC(=O)N",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 60.056,
+          "chematic": 60.056,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 60.056,
+          "chematic": 60.056,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -0.9762,
+          "chematic": -0.9761999999999997,
+          "absolute_error": 2.220446049250313e-16,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 13.7708,
+          "chematic": 13.7708,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 69.11,
+          "chematic": 69.11,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 2,
+          "chematic": 2,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 0.0,
+          "chematic": 0.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "isocyanate",
+      "smiles": "CN=C=O",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 57.052,
+          "chematic": 57.052,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 57.052,
+          "chematic": 57.052,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -0.04799999999999999,
+          "chematic": -0.04799999999999997,
+          "absolute_error": 1.3877787807814457e-17,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 14.0455,
+          "chematic": 14.0455,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 29.43,
+          "chematic": 29.43,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 2,
+          "chematic": 2,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 0.5,
+          "chematic": 0.5,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "isothiocyanate",
+      "smiles": "CN=C=S",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 73.12,
+          "chematic": 73.118,
+          "absolute_error": 0.0020000000000095497,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 73.12,
+          "chematic": 73.12,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 0.7190000000000001,
+          "chematic": 0.7190000000000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 20.949999999999996,
+          "chematic": 20.95,
+          "absolute_error": 3.552713678800501e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 44.45,
+          "chematic": 44.45,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 2,
+          "chematic": 2,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 0.5,
+          "chematic": 0.5,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "triazine",
+      "smiles": "n1cncnc1",
+      "strata": [
+        "functional_group"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 81.07799999999999,
+          "chematic": 81.07799999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 81.07799999999999,
+          "chematic": 81.07799999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -0.12839999999999996,
+          "chematic": -0.12840000000000001,
+          "absolute_error": 5.551115123125783e-17,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 19.826999999999995,
+          "chematic": 19.826999999999998,
+          "absolute_error": 3.552713678800501e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 38.67,
+          "chematic": 38.67,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 3,
+          "chematic": 3,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 0.0,
+          "chematic": 0.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "carbon13_ethanol",
+      "smiles": "[13CH3]CO",
+      "strata": [
+        "isotope"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 47.06135484000001,
+          "chematic": 46.069,
+          "absolute_error": 0.9923548400000044,
+          "strict_match": false
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 47.06135484000001,
+          "chematic": 47.06135484000001,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -0.0014000000000000123,
+          "chematic": -0.0013999999999999568,
+          "absolute_error": 5.551115123125783e-17,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 12.759800000000002,
+          "chematic": 12.7598,
+          "absolute_error": 1.7763568394002505e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 20.23,
+          "chematic": 20.23,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "carbon11_ethanol",
+      "smiles": "[11CH3]CO",
+      "strata": [
+        "isotope"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 45.0694336,
+          "chematic": 46.069,
+          "absolute_error": 0.9995663999999991,
+          "strict_match": false
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 45.0694336,
+          "chematic": 45.0694336,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -0.0014000000000000123,
+          "chematic": -0.0013999999999999568,
+          "absolute_error": 5.551115123125783e-17,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 12.759800000000002,
+          "chematic": 12.7598,
+          "absolute_error": 1.7763568394002505e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 20.23,
+          "chematic": 20.23,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "deuterated_ethanol",
+      "smiles": "CCO[2H]",
+      "strata": [
+        "isotope"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 47.075101778,
+          "chematic": 46.069,
+          "absolute_error": 1.0061017779999943,
+          "strict_match": false
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 47.075101778,
+          "chematic": 47.075101778,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": -0.0014000000000000679,
+          "chematic": -0.0013999999999999568,
+          "absolute_error": 1.1102230246251565e-16,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 12.759800000000002,
+          "chematic": 12.7598,
+          "absolute_error": 1.7763568394002505e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 20.23,
+          "chematic": 20.23,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 1.0,
+          "chematic": 1.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "2_hydroxypyridine",
+      "smiles": "Oc1ccccn1",
+      "strata": [
+        "tautomer",
+        "aromatic"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 95.101,
+          "chematic": 95.101,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 95.101,
+          "chematic": 95.101,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 0.7871999999999999,
+          "chematic": 0.7871999999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 25.90179999999999,
+          "chematic": 25.9018,
+          "absolute_error": 1.0658141036401503e-14,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 33.120000000000005,
+          "chematic": 33.120000000000005,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 2,
+          "chematic": 2,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 0.0,
+          "chematic": 0.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "phenoxide",
+      "smiles": "[O-]c1ccccc1",
+      "strata": [
+        "charge",
+        "aromatic"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 93.10499999999999,
+          "chematic": 93.10499999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 93.10499999999999,
+          "chematic": 93.10499999999999,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 0.7601999999999999,
+          "chematic": 0.7602,
+          "absolute_error": 1.1102230246251565e-16,
+          "strict_match": true
+        },
+        "molar_refractivity": {
+          "rdkit": 25.887999999999995,
+          "chematic": 25.887999999999998,
+          "absolute_error": 3.552713678800501e-15,
+          "strict_match": true
+        },
+        "tpsa": {
+          "rdkit": 23.06,
+          "chematic": 23.06,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hbd": {
+          "rdkit": 0,
+          "chematic": 0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 0.0,
+          "chematic": 0.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    },
+    {
+      "id": "2_pyridone",
+      "smiles": "O=C1C=CC=CN1",
+      "strata": [
+        "tautomer",
+        "kekule"
+      ],
+      "descriptors": {
+        "molecular_weight": {
+          "rdkit": 95.101,
+          "chematic": 95.101,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "rdkit_molecular_weight": {
+          "rdkit": 95.101,
+          "chematic": 95.101,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "logp": {
+          "rdkit": 0.37489999999999996,
+          "chematic": 0.1861,
+          "absolute_error": 0.18879999999999997,
+          "strict_match": false
+        },
+        "molar_refractivity": {
+          "rdkit": 27.062699999999996,
+          "chematic": 26.4227,
+          "absolute_error": 0.639999999999997,
+          "strict_match": false
+        },
+        "tpsa": {
+          "rdkit": 32.86,
+          "chematic": 29.1,
+          "absolute_error": 3.759999999999998,
+          "strict_match": false
+        },
+        "hbd": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "hba": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "fsp3": {
+          "rdkit": 0.0,
+          "chematic": 0.0,
+          "absolute_error": 0.0,
+          "strict_match": true
+        },
+        "aromatic_ring_count": {
+          "rdkit": 1,
+          "chematic": 1,
+          "absolute_error": 0.0,
+          "strict_match": true
+        }
+      }
+    }
+  ]
+}

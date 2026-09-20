@@ -138,7 +138,7 @@ The current source-built descriptor gate records 5,000/5,000 MW and HBA rows
 matching the pinned RDKit profile, while the broader 4,999-row historical
 snapshot records exact or tolerance-matched results for HBD, TPSA, LogP,
 molar refractivity, Fsp3, and documented ring metrics. These are exposed-corpus
-regressions, not the prepared 8,000-row sealed evaluation.
+regressions, not the separately frozen 8,000-row sealed-candidate evaluations.
 
 ## Aromaticity
 

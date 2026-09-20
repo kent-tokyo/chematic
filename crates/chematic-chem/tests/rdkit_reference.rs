@@ -387,6 +387,7 @@ fn hbd_standalone_water_is_not_a_lipinski_donor() {
     // hydroxylamine has one donor at each N and O).
     assert_eq!(hbd_count(&mol("O")), 0);
     assert_eq!(hbd_count(&mol("CO")), 1);
+    assert_eq!(hbd_count(&mol("CO[2H]")), 1);
     assert_eq!(hbd_count(&mol("NO")), 2);
 }
 
