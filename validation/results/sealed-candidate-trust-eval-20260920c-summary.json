@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "status": "rejected",
+  "scope": "One-time unused A0 descriptor evaluation. Raw input and per-row output remain local-only, exposed after this evaluation, and ineligible for future candidate tuning or validation.",
+  "reason": "TPSA has 23 strict mismatches; a sealed candidate requires every declared field to pass strictly.",
+  "candidate": {
+    "commit": "ba67b112b57152350ce4a03199c3cb8910962e39",
+    "tag": "trust-eval-candidate-20260920c"
+  },
+  "oracle": {
+    "engine": "RDKit",
+    "version": "2025.09.3"
+  },
+  "source": {
+    "input_rows": 14449,
+    "source_sha256": "87cce7f078006d8a96f959700d4c5cd4bdd249d4083a52c131914d8b71c6c9e3",
+    "identity_audit_sha256": "944a7cb01d46d830ed421d090f476bc92d142fa99d221d9e2b2491f5e19214b9",
+    "eligible_rows": 13017,
+    "excluded_rows": {
+      "duplicate_canonical": 0,
+      "reference_canonical": 2,
+      "reference_parent": 0,
+      "reference_scaffold": 1430
+    }
+  },
+  "cohort": {
+    "development_rows": 2000,
+    "development_sha256": "6d89a921d639f536991f7758d0b57f5a50609685a5c16f548a9c6245a03d6c63",
+    "sealed_rows": 8000,
+    "sealed_sha256": "50a9a8a1ab2971f3d503300d726034d556eac339f10f618b22c34d36a441e1f2"
+  },
+  "provenance": {
+    "unused_data_attestation_sha256": "8c1215e08dab942533d26e6d2f45c607e579338597d38de9db030539bbdaa7fd",
+    "raw_result_sha256": "7595fc7f4d6b25c6c6b7d44d9a120805534cf2a0f07213ad7253a1a3b911b410",
+    "raw_rows_sha256": "3a770dac17cd64a5584ab05c77cba441a44261f5f79e65391cac360067d31d2f"
+  },
+  "accounting": {
+    "parsed": 8000,
+    "parse_failures": 0,
+    "unsupported_values": 0
+  },
+  "fields": {
+    "molecular_weight": { "strict_matches": 8000, "mismatches": 0 },
+    "hba": { "strict_matches": 8000, "mismatches": 0 },
+    "hbd": { "strict_matches": 8000, "mismatches": 0 },
+    "tpsa": { "strict_matches": 7977, "mismatches": 23, "max_abs_error": 25.3 },
+    "logp": { "strict_matches": 8000, "mismatches": 0 },
+    "molar_refractivity": { "strict_matches": 8000, "mismatches": 0 },
+    "fsp3": { "strict_matches": 8000, "mismatches": 0 },
+    "aromatic_ring_count": { "strict_matches": 8000, "mismatches": 0 }
+  }
+}

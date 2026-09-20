@@ -625,12 +625,14 @@ CheMaticの不具合や優位性が確定したことにはならない。
 
 ### 1. T1.6 / A0 — 不採用評価の保全と次freezeの準備（P0、1–3実働日＋評価時間）
 
-- [x] `trust-eval-candidate-20260916` と `trust-eval-candidate-20260920` を、
+- [x] `trust-eval-candidate-20260916`、`trust-eval-candidate-20260920`、
+  `trust-eval-candidate-20260920c` を、
   tag、oracle、source/split/raw hash、build hash、attestation、全行会計とともに
   一度だけ評価した。前者は分子量/TPSA、後者は分子量 7,998/8,000 strict（同位体表の
-  残差2件）で不採用。後者の安全な公開summaryは
-  `validation/results/sealed-candidate-trust-eval-20260920-summary.json` に固定した。
-- [x] 両raw/splitはlocal-onlyかつ露出済みとして明記した。再実行・tuning・次candidateの
+  残差2件）で不採用。第三候補は7項目が8,000/8,000 strictだったが、TPSAが
+  7,977/8,000 strict（23件不一致）で不採用。安全な公開summaryは各候補の
+  `validation/results/sealed-candidate-trust-eval-*-summary.json` に固定した。
+- [x] 全raw/splitはlocal-onlyかつ露出済みとして明記した。再実行・tuning・次candidateの
   未使用評価へ流用しない。raw分子一覧を調査ログやrepositoryへ出さない。
 - [ ] **非sealedの開発データだけで** A0の宣言済み範囲を分類する。封印結果から特定入力や
   閾値へ合わせ込まず、独立の既知/生成テストと仕様根拠を使う。修正候補ごとに、影響binding
