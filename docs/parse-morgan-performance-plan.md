@@ -115,9 +115,13 @@ native ECFPはPF1から同時計測するが、別定義の高速nativeへのfal
   10,000行で **0.144554 ms/mol**となり悪化したため、実装を戻した。profileで支配的だった
   ring-membershipだけを最適化し、SSSRの意味論を近似する変更は採用していない。
 
-この進捗は一台の開発host上のcandidate測定であり、raw artifactはまだリポジトリへ採用して
-いない。従って「local three-browser candidateではRDKitを上回った」ことは示すが、第二host、
-候補commit固定、CIのpaired判定、公開package再測定を満たすPF5の正式な優位主張ではない。
+この進捗は一台の開発host上のcandidate測定であり、raw artifactは候補commitに記録した。
+`scripts/check_parse_morgan_rdkit_speed_gate.py` は各recordでpaired log-speedupの95%下限を
+算出し、Chrome **2.61x**、Firefox **2.04x**、WebKit **2.86x**、独立ChEMBL **6.09x** と
+いずれも1.0を上回る。`.github/workflows/parse-morgan-rdkitjs-gate.yml` は固定RDKit.js版を
+用いてこの条件をsecond host CIで再実行するが、まだdispatch済みのCI証拠ではない。従って
+「local three-browser candidateではRDKitを上回った」ことは示すが、公開package再測定を
+含むPF5の正式な優位主張ではない。
 
 ### ソースから確認できる最初の候補（効果量は未測定）
 
@@ -165,6 +169,12 @@ native ECFPはPF1から同時計測するが、別定義の高速nativeへのfal
   Python laneは両方のPython API、native laneは両方のnative kernelを比較する。
 - CIは通常PRでdeterministic correctness、固定専用runnerで性能回帰を判定する。
   共有CIの時間は参考値。公開packageの最終再測定前は「candidate結果」と明記する。
+
+PF5のCI gateは [`scripts/check_parse_morgan_rdkit_speed_gate.py`](../scripts/check_parse_morgan_rdkit_speed_gate.py)
+と [`parse-morgan-rdkitjs-gate.yml`](../.github/workflows/parse-morgan-rdkitjs-gate.yml) に固定する。
+後者はPRでは`performance`ラベル時、またはmanual dispatch時だけ走らせる。各browserのraw
+recordをartifactとして保持し、speedupの点推定ではなくpaired log-speedupの95%下限が1.0を
+厳密に上回ることを要求する。
 
 旧「さらに1.10x SMILES」目標は引き続き中止。この計画は2026-09-20の明示的な
 Parse＋FP競争目標であり、その旧目標や全面的なRDKit精度優位を復活・達成したものではない。
