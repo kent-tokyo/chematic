@@ -2378,6 +2378,19 @@ fn get_descriptors_json_keys() {
 }
 
 #[test]
+fn get_descriptors_json_keeps_exact_mass_at_binding_precision() {
+    let mol = parse("CCO");
+    let value: serde_json::Value =
+        serde_json::from_str(&get_descriptors_json(&mol)).expect("valid descriptor JSON");
+    let from_json = value["exactMass"].as_f64().expect("numeric exactMass");
+    assert!(
+        (from_json - mol.exact_mass()).abs() <= f64::EPSILON,
+        "descriptor JSON must preserve MolHandle exact mass: {from_json} != {}",
+        mol.exact_mass()
+    );
+}
+
+#[test]
 fn get_rdkit_descriptors_json_keeps_compatibility_profile_separate() {
     let mol = parse("c1ccccc1");
     let value: serde_json::Value =
