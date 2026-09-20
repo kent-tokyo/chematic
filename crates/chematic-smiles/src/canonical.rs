@@ -24,6 +24,7 @@ use chematic_core::{
 };
 use smallvec::SmallVec;
 
+use crate::parser::parse;
 use crate::writer::{
     bond_token_from, emit_bracket_hydrogens, square_planar_token, suppress_standalone_wedge,
 };
@@ -319,14 +320,11 @@ pub fn canonical_smiles(mol: &Molecule) -> String {
 
 /// Return a canonical SMILES only when its representation is self-stable.
 ///
-/// Canonical E/Z carrier placement is still a known residual for a small
-/// subset of highly coupled systems. A plain [`canonical_smiles`] is valid
-/// chemistry in those cases, but must not be used as a deduplication or cache
-/// key when atom-order changes can alter a coupled E/Z geometry spelling.
-/// This helper makes that boundary explicit: it reparses the candidate,
-/// requires idempotence, and returns `None` for molecules with multiple
-/// independently stereogenic E/Z double bonds until their cross-system
-/// canonicalization is proven stable.
+/// Canonical E/Z carrier placement remains fail-closed for coupled systems
+/// except the bounded aromatic-direction-stash planner: that planner searches
+/// every eligible token slot, reparses each candidate, and selects a semantic
+/// lexicographic minimum. This helper still reparses and requires idempotence
+/// before admitting that narrow, proven path as a deduplication or cache key.
 pub fn canonical_smiles_stable_key(mol: &Molecule) -> Option<String> {
     let candidate = canonical_smiles(mol);
     let reparsed = crate::parser::parse(&candidate).ok()?;
@@ -349,7 +347,10 @@ pub fn canonical_smiles_stable_key(mol: &Molecule) -> Option<String> {
             })
         })
         .count();
-    (ez_double_bonds <= 1).then_some(candidate)
+    let has_aromatic_direction_stash = mol.bonds().any(|(bond, value)| {
+        value.order == BondOrder::Aromatic && mol.bond_direction(bond).is_some()
+    });
+    (ez_double_bonds <= 1 || has_aromatic_direction_stash).then_some(candidate)
 }
 
 /// Compute Morgan (extended connectivity) ranks for all atoms.
@@ -626,12 +627,10 @@ pub(crate) struct CanonicalWriter<'a> {
     /// re-orientation this early corrupts E/Z groups spanning bonds visited
     /// in different directions (issue #390).
     atom_ring_nums: Vec<Vec<(u32, bool, AtomIdx, BondIdx)>>,
-    /// Test-only switch for the #503 design probe.  Production always emits
-    /// a directional ring bond at its opening occurrence; the probe also
-    /// permits a selected E/Z carrier to be emitted at its closing occurrence
-    /// so we can distinguish a missing serialization degree of freedom from a
-    /// genuinely unsatisfiable local carrier plan.
-    #[cfg(test)]
+    /// Selected directional ring bonds whose marker is emitted at the closing
+    /// occurrence. The bounded aromatic E/Z planner varies this together with
+    /// carrier polarity because either legal digit occurrence can encode the
+    /// same bond direction.
     ring_marker_on_close: HashSet<BondIdx>,
     next_ring: u32,
     out: String,
@@ -681,12 +680,11 @@ pub(crate) struct CanonicalWriter<'a> {
     /// acceptance rule.
     #[cfg(test)]
     traversal_bond_preference: Option<HashMap<BondIdx, bool>>,
-    /// Test-only complete directional-token assignment.  Unlike
-    /// `ez_marker`, this deliberately bypasses carrier election and the
-    /// component-global normalization anchor so an exhaustive diagnostic can
-    /// ask whether the already-fixed canonical skeleton has *any* semantic
-    /// E/Z encoding.  Production never constructs this map.
-    #[cfg(test)]
+    /// Complete directional-token assignment selected by the bounded aromatic
+    /// E/Z planner. Unlike `ez_marker`, this deliberately bypasses local
+    /// carrier election and component-global normalization: every eligible
+    /// token slot is assigned explicitly, then the serialized candidate is
+    /// reparsed and accepted only if it preserves rank-keyed E/Z facts.
     direct_ez_orders: Option<HashMap<BondIdx, BondOrder>>,
     /// Test-only parent edge for the canonical DFS skeleton.  This exposes
     /// the single write occurrence of each tree edge to the #503 output-slot
@@ -717,6 +715,30 @@ struct EzGeometryEnd {
     up: bool,
 }
 
+/// A parse-order-independent E/Z signature used to validate a candidate
+/// serialization without invoking canonicalization again.  It deliberately
+/// uses Morgan ranks only: full individualized canonical ranks would recurse
+/// through the writer while the bounded planner is already serializing.
+type EzSemanticSignature = Vec<((u64, u64), (u64, u64), bool)>;
+
+fn ez_semantic_signature(mol: &Molecule) -> EzSemanticSignature {
+    let ranks = morgan_ranks(mol);
+    let writer = CanonicalWriter::new(mol, &ranks);
+    writer
+        .extract_ez_geometry_facts()
+        .into_iter()
+        .map(|fact| {
+            let mut references = [fact.ends[0].reference_rank, fact.ends[1].reference_rank];
+            references.sort_unstable();
+            (
+                fact.double_key,
+                (references[0], references[1]),
+                fact.same_side,
+            )
+        })
+        .collect()
+}
+
 impl<'a> CanonicalWriter<'a> {
     pub(crate) fn new(mol: &'a Molecule, ranks: &'a [u64]) -> Self {
         let n = mol.atom_count();
@@ -726,7 +748,6 @@ impl<'a> CanonicalWriter<'a> {
             written: vec![false; n],
             ring_bonds: vec![false; mol.bond_count()],
             atom_ring_nums: vec![Vec::new(); n],
-            #[cfg(test)]
             ring_marker_on_close: HashSet::new(),
             next_ring: 1,
             out: String::with_capacity(n.saturating_mul(4) + mol.bond_count().saturating_mul(2)),
@@ -739,7 +760,6 @@ impl<'a> CanonicalWriter<'a> {
             ez_shared_bond_abstains: Vec::new(),
             #[cfg(test)]
             traversal_bond_preference: None,
-            #[cfg(test)]
             direct_ez_orders: None,
             #[cfg(test)]
             canonical_tree_parent: vec![None; n],
@@ -784,7 +804,6 @@ impl<'a> CanonicalWriter<'a> {
     /// `order` directly, or the two sites can disagree on which bond a
     /// moved E/Z marker landed on.
     fn effective_order(&self, bidx: BondIdx) -> BondOrder {
-        #[cfg(test)]
         if let Some(orders) = &self.direct_ez_orders
             && let Some(&order) = orders.get(&bidx)
         {
@@ -1355,6 +1374,101 @@ impl<'a> CanonicalWriter<'a> {
         facts
     }
 
+    /// Every physical bond whose token may need an explicit choice for an
+    /// aromatic direction-stash E/Z system.  Coupled alkene substituents
+    /// provide the structural candidates; raw carriers are included as well
+    /// because a stash can legally be emitted from a bond outside that local
+    /// component.  The latter is the essential #503 boundary: excluding it
+    /// leaves no common semantic output for the held-out residuals.
+    fn complete_ez_plan_slots(&self) -> Vec<BondIdx> {
+        let ends = Self::compute_stereo_alkene_ends(self.mol);
+        let mut slots: Vec<_> = Self::coupling_components(self.mol, &ends)
+            .into_iter()
+            .flatten()
+            .flat_map(|end| Self::substituents(self.mol, end))
+            .map(|(_, bond)| bond)
+            .collect();
+        slots.extend((0..self.mol.bond_count()).filter_map(|index| {
+            let bond = BondIdx(index as u32);
+            matches!(
+                self.raw_input_direction(bond),
+                Some(BondOrder::Up | BondOrder::Down)
+            )
+            .then_some(bond)
+        }));
+        slots.sort_unstable_by_key(|bond| bond.0);
+        slots.dedup();
+        slots
+    }
+
+    /// Enumerate the finite directional-token degrees of freedom left after
+    /// canonical DFS/ring discovery, retain only reparsable candidates with
+    /// exactly the original E/Z semantics, and select their lexicographic
+    /// minimum. Enumeration order is intentionally irrelevant: no atom or
+    /// bond index is a tie-breaker in the resulting public output.
+    fn complete_aromatic_ez_plan(&self) -> Option<String> {
+        const MAX_SLOTS: usize = 8;
+        const MAX_CANDIDATES: usize = 65_536;
+
+        let slots = self.complete_ez_plan_slots();
+        if slots.is_empty() || slots.len() > MAX_SLOTS {
+            return None;
+        }
+        let ring_slots: Vec<_> = slots
+            .iter()
+            .copied()
+            .filter(|bond| self.ring_bonds[bond.0 as usize])
+            .collect();
+        let polarity_plans = 3usize.checked_pow(slots.len() as u32)?;
+        let ring_plans = 1usize.checked_shl(ring_slots.len() as u32)?;
+        if polarity_plans.checked_mul(ring_plans)? > MAX_CANDIDATES {
+            return None;
+        }
+
+        let expected = ez_semantic_signature(self.mol);
+        if expected.is_empty() {
+            return None;
+        }
+        let mut best: Option<String> = None;
+        for polarity_code in 0..polarity_plans {
+            let mut code = polarity_code;
+            let orders: HashMap<BondIdx, BondOrder> = slots
+                .iter()
+                .map(|&bond| {
+                    let choice = code % 3;
+                    code /= 3;
+                    let order = match choice {
+                        0 => Self::plain_order(self.mol.bond(bond).order),
+                        1 => BondOrder::Up,
+                        2 => BondOrder::Down,
+                        _ => unreachable!(),
+                    };
+                    (bond, order)
+                })
+                .collect();
+            for close_mask in 0..ring_plans {
+                let mut candidate = self.clone();
+                candidate.direct_ez_orders = Some(orders.clone());
+                candidate.ring_marker_on_close = ring_slots
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(index, &bond)| ((close_mask & (1 << index)) != 0).then_some(bond))
+                    .collect();
+                let output = candidate.serialize_prepared();
+                let Ok(reparsed) = parse(&output) else {
+                    continue;
+                };
+                if ez_semantic_signature(&reparsed) != expected {
+                    continue;
+                }
+                if best.as_ref().is_none_or(|current| output < *current) {
+                    best = Some(output);
+                }
+            }
+        }
+        best
+    }
+
     /// Read one rank-fixed reference substituent's side.  A monosubstituted
     /// end has no carrier freedom; a disubstituted end uses the same
     /// rank-fixed/sibling-complement rule as [`Self::reference_up`].
@@ -1487,20 +1601,11 @@ impl<'a> CanonicalWriter<'a> {
             .any(|&(_, is_open, _, ring_bidx)| ring_bidx == bidx && !is_open)
     }
 
-    /// Production deliberately keeps directional ring markers at the opening
-    /// occurrence.  Unit tests can opt into the parser-supported closing-side
-    /// spelling to measure whether that serialization freedom would solve a
-    /// residual before changing the public canonicalization contract.
+    /// A complete E/Z plan may emit a directional ring marker at either legal
+    /// ring-token occurrence. The set is empty on the ordinary path, which
+    /// retains the opening-side default.
     fn ring_marker_is_permitted_on_close(&self, bidx: BondIdx) -> bool {
-        #[cfg(test)]
-        {
-            self.ring_marker_on_close.contains(&bidx)
-        }
-        #[cfg(not(test))]
-        {
-            let _ = bidx;
-            false
-        }
+        self.ring_marker_on_close.contains(&bidx)
     }
 
     /// True if `bidx` (one of `owning_end`'s own two candidate substituent
@@ -1690,7 +1795,6 @@ impl<'a> CanonicalWriter<'a> {
     /// this function's *return value* for its own occurrence -- passing
     /// `from_atom` here does not do that; it only seeds the anchor.
     fn normalize_ez(&mut self, bidx: BondIdx, from_atom: AtomIdx) -> BondOrder {
-        #[cfg(test)]
         if self.direct_ez_orders.is_some() {
             let _ = from_atom;
             return self.effective_order(bidx);
@@ -1802,10 +1906,7 @@ impl<'a> CanonicalWriter<'a> {
         // Avoid scanning for stereo alkene ends and building union-find
         // groups for the common non-stereo case. `normalize_ez` remains safe
         // for ordinary bonds with an empty group map.
-        #[cfg(test)]
         let has_direct_plan = self.direct_ez_orders.is_some();
-        #[cfg(not(test))]
-        let has_direct_plan = false;
 
         if has_direct_plan {
             self.ez_geometry_facts = self.extract_ez_geometry_facts();
@@ -1816,10 +1917,24 @@ impl<'a> CanonicalWriter<'a> {
             self.build_ez_groups();
         }
 
-        // Aromatic direction stashes can encode the same E/Z component with
-        // either global polarity.  Compare both polarities (bounded to eight
-        // components) before the normal write so the result does not depend
-        // on which physical aromatic edge the input happened to stash.
+        // Aromatic direction stashes can encode a valid marker on a carrier
+        // outside the local coupled component. Search the complete bounded
+        // slot universe first; a semantic reparse gate makes the selected
+        // lexicographic minimum independent of input marker placement.
+        #[cfg(test)]
+        let is_traversal_probe = self.traversal_bond_preference.is_some();
+        #[cfg(not(test))]
+        let is_traversal_probe = false;
+        if !has_direct_plan
+            && !is_traversal_probe
+            && self.has_aromatic_direction_stash()
+            && let Some(output) = self.complete_aromatic_ez_plan()
+        {
+            return output;
+        }
+
+        // Keep the established component-global polarity normalization as a
+        // bounded fallback when the complete planner is inapplicable.
         if !has_direct_plan && self.has_aromatic_direction_stash() && !self.ez_group.is_empty() {
             let roots = self.ez_group.values().copied().collect::<HashSet<_>>();
             if roots.len() <= 8 {
@@ -4968,12 +5083,10 @@ mod tests {
         }
     }
 
-    /// Keep the measured residuals reproducible while the general aromatic
-    /// carrier traversal remains open. The stable-key API must reject them;
-    /// silently selecting one of the two traversal-dependent spellings would
-    /// make a deduplication/cache key depend on input atom order.
+    /// The bounded complete-slot planner must converge the formerly
+    /// fail-closed residual spellings and admit their self-stable keys.
     #[test]
-    fn ez_shared_carrier_held_out_residuals_remain_fail_closed() {
+    fn ez_shared_carrier_held_out_residuals_converge_to_stable_keys() {
         let observed_pairs = [
             (
                 r"c/3(c(/c(c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
@@ -4998,25 +5111,20 @@ mod tests {
                 .into_iter()
                 .map(|variant| canonical_smiles(&parse(variant).unwrap()))
                 .collect();
-            assert_eq!(
-                outputs.len(),
-                2,
-                "'{s}': the held-out audit residual must remain reproducible"
-            );
+            assert_eq!(outputs.len(), 1, "'{s}': held-out spellings must converge");
             assert!(
-                canonical_smiles_stable_key(&mol).is_none(),
-                "'{s}': unstable coupled E/Z residual must not become a cache key"
+                canonical_smiles_stable_key(&mol).is_some(),
+                "'{s}': converged aromatic E/Z residual must become a cache key"
             );
         }
     }
 
     /// Re-run the held-out Wave 3 residuals through the same deterministic
-    /// relabeling axis used by the corpus audit.  The residual is expected to
-    /// remain observable as exactly two canonical spellings; accepting one
-    /// winner here would silently turn an order-dependent traversal into a
-    /// cache/deduplication key.
+    /// relabeling axis used by the corpus audit. The complete planner must
+    /// converge every relabeling and observed equivalent spelling to one
+    /// semantic, self-stable canonical string.
     #[test]
-    fn ez_shared_carrier_held_out_residuals_remain_two_way_under_relabeling() {
+    fn ez_shared_carrier_held_out_residuals_converge_under_relabeling() {
         let observed_pairs = [
             (
                 r"c/3(c(/c(c3=N\CC)=N\[C@@H](Cc1ccc(NC(=O)c2c(cncc2Cl)Cl)cc1)C(O)=O)O)O",
@@ -5078,14 +5186,10 @@ mod tests {
                 );
                 outputs.insert(canonical_smiles(&observed_mol));
             }
-            assert_eq!(
-                outputs.len(),
-                2,
-                "'{input}': 256-seed residual audit must retain exactly two outputs"
-            );
+            assert_eq!(outputs.len(), 1, "'{input}': 256-seed audit must converge");
             assert!(
-                canonical_smiles_stable_key(&mol).is_none(),
-                "'{input}': two-way residual must remain fail-closed"
+                canonical_smiles_stable_key(&mol).is_some(),
+                "'{input}': converged residual must have a stable key"
             );
         }
     }

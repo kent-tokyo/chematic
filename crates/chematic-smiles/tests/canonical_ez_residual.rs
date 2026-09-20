@@ -28,19 +28,7 @@ fn stable_key_fails_closed_for_coupled_ez_systems() {
 }
 
 #[test]
-fn stable_key_fails_closed_for_aromatic_stash_residuals() {
-    for input in [
-        r"CC/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
-        r"CCCC(C)/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
-        r"COCC/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
-    ] {
-        let mol = parse(input).expect("fixture parses");
-        assert_eq!(canonical_smiles_stable_key(&mol), None, "{input}");
-    }
-}
-
-#[test]
-fn aromatic_stash_residual_outputs_are_fail_closed_variants() {
+fn aromatic_stash_residuals_converge_to_stable_keys() {
     let fixtures = [
         (
             r"CC/N=c1\c(O)c(O)\c1=N/[C@@H](Cc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1)C(=O)O",
@@ -65,18 +53,23 @@ fn aromatic_stash_residual_outputs_are_fail_closed_variants() {
         ),
     ];
 
-    for (input, expected_variants) in fixtures {
+    for (input, spelling_variants) in fixtures {
         let mol = parse(input).expect("fixture parses");
         let output = canonical_smiles(&mol);
-        assert!(
-            expected_variants.contains(&output.as_str()),
-            "unexpected residual output: {output}"
-        );
         assert_eq!(
             canonical_smiles_stable_key(&mol),
-            None,
-            "residual must stay fail-closed: {input}"
+            Some(output.clone()),
+            "complete planner must admit the stable key: {input}"
         );
+        for spelling in spelling_variants {
+            let variant = parse(spelling).expect("equivalent spelling parses");
+            assert_eq!(
+                canonical_smiles(&variant),
+                output,
+                "complete planner must converge every spelling: {spelling}"
+            );
+            assert_eq!(canonical_smiles_stable_key(&variant), Some(output.clone()));
+        }
     }
 }
 
