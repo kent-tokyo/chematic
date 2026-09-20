@@ -30,6 +30,52 @@ pub struct BatchCanonicalRecord {
     pub result: BatchCanonicalization,
 }
 
+/// Complete, auditable result for an eager canonicalization batch.
+///
+/// Every supplied input has exactly one record. This operation has no skip or
+/// policy-refusal path, so `skipped_count` and `refused_count` are always zero;
+/// they remain explicit so callers can use the same accounting equation as
+/// other bounded batch operations:
+/// `input_count = accepted_count + rejected_count + refused_count + skipped_count`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BatchCanonicalResult {
+    /// One input-order record for every supplied input.
+    pub records: Vec<BatchCanonicalRecord>,
+    /// Number of supplied inputs.
+    pub input_count: usize,
+    /// Records canonicalized successfully.
+    pub accepted_count: usize,
+    /// Records rejected by parsing or a configured resource limit.
+    pub rejected_count: usize,
+    /// Records refused by an operation policy (always zero for this operation).
+    pub refused_count: usize,
+    /// Records skipped without an attempted result (always zero for this operation).
+    pub skipped_count: usize,
+}
+
+impl BatchCanonicalResult {
+    fn from_records(records: Vec<BatchCanonicalRecord>) -> Self {
+        let input_count = records.len();
+        let accepted_count = records
+            .iter()
+            .filter(|record| matches!(record.result, BatchCanonicalization::Accepted { .. }))
+            .count();
+        Self {
+            records,
+            input_count,
+            accepted_count,
+            rejected_count: input_count - accepted_count,
+            refused_count: 0,
+            skipped_count: 0,
+        }
+    }
+
+    /// True only if every input produced an accepted canonical result.
+    pub const fn all_succeeded(&self) -> bool {
+        self.accepted_count == self.input_count
+    }
+}
+
 /// Reusable parsing/canonicalization policy for large SMILES batches.
 ///
 /// The context is intentionally lightweight: parser state is created per
@@ -117,6 +163,19 @@ impl SmilesBatchCanonicalizer {
         S: AsRef<str>,
     {
         self.iter(records).collect()
+    }
+
+    /// Eagerly canonicalize records with complete outcome accounting.
+    ///
+    /// This is the audited alternative to [`Self::canonicalize`] for callers
+    /// that need to retain the input/result conservation invariant alongside
+    /// the per-record results.
+    pub fn canonicalize_with_result<I, S>(&self, records: I) -> BatchCanonicalResult
+    where
+        I: IntoIterator<Item = S>,
+        S: AsRef<str>,
+    {
+        BatchCanonicalResult::from_records(self.canonicalize(records))
     }
 
     /// Build a deterministic exact-identity index from input records.
@@ -277,6 +336,26 @@ mod tests {
             records[3].result,
             BatchCanonicalization::Accepted { .. }
         ));
+    }
+
+    #[test]
+    fn eager_result_has_complete_terminal_outcome_accounting() {
+        let result =
+            SmilesBatchCanonicalizer::default().canonicalize_with_result(["OCC", "C1CC", "CCN"]);
+        assert_eq!(result.input_count, 3);
+        assert_eq!(result.records.len(), result.input_count);
+        assert_eq!(result.accepted_count, 2);
+        assert_eq!(result.rejected_count, 1);
+        assert_eq!(result.refused_count, 0);
+        assert_eq!(result.skipped_count, 0);
+        assert_eq!(
+            result.input_count,
+            result.accepted_count
+                + result.rejected_count
+                + result.refused_count
+                + result.skipped_count
+        );
+        assert!(!result.all_succeeded());
     }
 
     #[test]

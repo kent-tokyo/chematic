@@ -170,7 +170,9 @@ pub fn screen_smiles_json(smiles_batch: &str, delimiter: &str) -> String {
 ///
 /// Each result retains its input index and original text. Invalid records are
 /// returned inline with `status: "rejected"`; later records are still
-/// processed in deterministic input order.
+/// processed in deterministic input order. The manifest includes explicit
+/// outcome accounting so callers do not infer full success from a zero error
+/// list while inputs were skipped elsewhere.
 #[wasm_bindgen]
 pub fn canonicalize_smiles_batch_json(
     smiles_batch: &str,
@@ -178,8 +180,11 @@ pub fn canonicalize_smiles_batch_json(
 ) -> Result<String, JsValue> {
     let smiles_vec = split_bounded_batch(smiles_batch, delimiter, "smiles_batch")?;
     let canonicalizer = chematic_smiles::SmilesBatchCanonicalizer::default();
-    let output: Vec<serde_json::Value> = canonicalizer
-        .iter(smiles_vec)
+    let result = canonicalizer.canonicalize_with_result(smiles_vec);
+    let all_succeeded = result.all_succeeded();
+    let output: Vec<serde_json::Value> = result
+        .records
+        .into_iter()
         .map(|record| match record.result {
             chematic_smiles::BatchCanonicalization::Accepted { canonical_smiles } => {
                 serde_json::json!({
@@ -187,6 +192,8 @@ pub fn canonicalize_smiles_batch_json(
                     "input": record.input,
                     "status": "accepted",
                     "canonical_smiles": canonical_smiles,
+                    "error": null,
+                    "error_stage": null,
                 })
             }
             chematic_smiles::BatchCanonicalization::Rejected { error } => serde_json::json!({
@@ -194,6 +201,7 @@ pub fn canonicalize_smiles_batch_json(
                 "input": record.input,
                 "status": "rejected",
                 "error": error,
+                "error_stage": "parse",
             }),
         })
         .collect();
@@ -202,6 +210,12 @@ pub fn canonicalize_smiles_batch_json(
         "operation": "canonicalize_smiles",
         "status": "complete",
         "record_count": output.len(),
+        "input_count": result.input_count,
+        "accepted_count": result.accepted_count,
+        "rejected_count": result.rejected_count,
+        "refused_count": result.refused_count,
+        "skipped_count": result.skipped_count,
+        "all_succeeded": all_succeeded,
         "records": output,
     });
     let json = serde_json::to_string(&manifest)

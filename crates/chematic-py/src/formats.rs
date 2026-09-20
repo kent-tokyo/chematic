@@ -79,14 +79,18 @@ fn from_smiles(smiles: &str) -> PyResult<Mol> {
 
 /// Canonicalize a list of SMILES without aborting on an invalid record.
 ///
-/// Returns a JSON array containing `input_index`, `input`, `status`, and
-/// either `canonical_smiles` or `error` for each record. The Rust batch API
-/// remains the source of truth for ordering and parser limits.
+/// Returns a complete JSON manifest containing one terminal record per input,
+/// its original index, and explicit accepted/rejected/refused/skipped
+/// accounting. The Rust batch API remains the source of truth for ordering
+/// and parser limits.
 #[pyfunction]
 fn canonicalize_smiles_batch_json(smiles: Vec<String>) -> PyResult<String> {
     let canonicalizer = chematic_smiles::SmilesBatchCanonicalizer::default();
-    let records = canonicalizer
-        .iter(smiles.iter())
+    let result = canonicalizer.canonicalize_with_result(smiles.iter());
+    let all_succeeded = result.all_succeeded();
+    let records = result
+        .records
+        .into_iter()
         .map(|record| match record.result {
             chematic_smiles::BatchCanonicalization::Accepted { canonical_smiles } => {
                 serde_json::json!({
@@ -94,6 +98,8 @@ fn canonicalize_smiles_batch_json(smiles: Vec<String>) -> PyResult<String> {
                     "input": record.input,
                     "status": "accepted",
                     "canonical_smiles": canonical_smiles,
+                    "error": null,
+                    "error_stage": null,
                 })
             }
             chematic_smiles::BatchCanonicalization::Rejected { error } => serde_json::json!({
@@ -101,6 +107,7 @@ fn canonicalize_smiles_batch_json(smiles: Vec<String>) -> PyResult<String> {
                 "input": record.input,
                 "status": "rejected",
                 "error": error,
+                "error_stage": "parse",
             }),
         });
     let records = records.collect::<Vec<_>>();
@@ -109,6 +116,12 @@ fn canonicalize_smiles_batch_json(smiles: Vec<String>) -> PyResult<String> {
         "operation": "canonicalize_smiles",
         "status": "complete",
         "record_count": records.len(),
+        "input_count": result.input_count,
+        "accepted_count": result.accepted_count,
+        "rejected_count": result.rejected_count,
+        "refused_count": result.refused_count,
+        "skipped_count": result.skipped_count,
+        "all_succeeded": all_succeeded,
         "records": records,
     }))
     .map_err(|error| PyValueError::new_err(error.to_string()))

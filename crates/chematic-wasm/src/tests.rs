@@ -17,6 +17,23 @@ fn parse_benzene_atom_count() {
 }
 
 #[test]
+fn canonical_batch_manifest_has_complete_outcome_accounting() {
+    let manifest: serde_json::Value = serde_json::from_str(
+        &workflow::canonicalize_smiles_batch_json("CCO\nC1CC\nCCN", "\n").unwrap(),
+    )
+    .unwrap();
+    assert_eq!(manifest["input_count"], 3);
+    assert_eq!(manifest["accepted_count"], 2);
+    assert_eq!(manifest["rejected_count"], 1);
+    assert_eq!(manifest["refused_count"], 0);
+    assert_eq!(manifest["skipped_count"], 0);
+    assert_eq!(manifest["all_succeeded"], false);
+    assert_eq!(manifest["records"][1]["input_index"], 1);
+    assert_eq!(manifest["records"][1]["status"], "rejected");
+    assert_eq!(manifest["records"][1]["error_stage"], "parse");
+}
+
+#[test]
 fn rdkit_search_precise_json_preserves_fractional_score() {
     let index = RdkitSearchIndex::new(r#"["CCO","CCN"]"#).expect("search index");
     assert_eq!(index.len(), 2);

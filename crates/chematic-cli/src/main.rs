@@ -397,8 +397,33 @@ fn add_batch_manifest(value: &mut serde_json::Value, operation: &str, limits: &B
             "max_line_bytes": limits.max_line_bytes,
         }),
     );
-    if let Some(records) = object.get("records").and_then(serde_json::Value::as_array) {
-        object.insert("record_count".to_string(), serde_json::json!(records.len()));
+    if let Some(record_count) = object
+        .get("records")
+        .and_then(serde_json::Value::as_array)
+        .map(Vec::len)
+    {
+        object.insert("record_count".to_string(), serde_json::json!(record_count));
+        object.insert("input_count".to_string(), serde_json::json!(record_count));
+    }
+    // Keep the original valid_count/error_count fields for compatibility,
+    // while exposing the shared BatchResult accounting names for callers that
+    // need to prove every input has a terminal outcome.
+    if let (Some(accepted), Some(rejected)) = (
+        object
+            .get("valid_count")
+            .and_then(serde_json::Value::as_u64),
+        object
+            .get("error_count")
+            .and_then(serde_json::Value::as_u64),
+    ) {
+        object.insert("accepted_count".to_string(), serde_json::json!(accepted));
+        object.insert("rejected_count".to_string(), serde_json::json!(rejected));
+        object.insert("refused_count".to_string(), serde_json::json!(0));
+        object.insert("skipped_count".to_string(), serde_json::json!(0));
+        object.insert(
+            "all_succeeded".to_string(),
+            serde_json::json!(rejected == 0),
+        );
     }
 }
 
@@ -752,33 +777,36 @@ fn batch_descriptors_json(text: &str, limits: &BatchLimits) -> Result<String, St
 fn batch_canonicalize_json(text: &str, limits: &BatchLimits) -> Result<String, String> {
     let smiles = batch_lines(text, limits)?;
     let canonicalizer = chematic_smiles::SmilesBatchCanonicalizer::default();
-    let mut records = Vec::with_capacity(smiles.len());
-    let mut valid_count = 0usize;
-    for record in canonicalizer.iter(smiles.iter()) {
+    let result = canonicalizer.canonicalize_with_result(smiles.iter());
+    let mut records = Vec::with_capacity(result.input_count);
+    for record in result.records {
         match record.result {
             chematic_smiles::BatchCanonicalization::Accepted { canonical_smiles } => {
-                valid_count += 1;
                 records.push(serde_json::json!({
                     "input_index": record.input_index,
                     "input_smiles": record.input,
+                    "status": "accepted",
                     "canonical_smiles": canonical_smiles,
                     "error": null,
+                    "error_stage": null,
                 }));
             }
             chematic_smiles::BatchCanonicalization::Rejected { error } => {
                 records.push(serde_json::json!({
                     "input_index": record.input_index,
                     "input_smiles": record.input,
+                    "status": "rejected",
                     "canonical_smiles": null,
                     "error": error,
+                    "error_stage": "parse",
                 }));
             }
         }
     }
     let mut output = serde_json::json!({
         "records": records,
-        "valid_count": valid_count,
-        "error_count": smiles.len() - valid_count,
+        "valid_count": result.accepted_count,
+        "error_count": result.rejected_count,
     });
     add_batch_manifest(&mut output, "canonicalize", limits);
     Ok(output.to_string())
@@ -1204,9 +1232,18 @@ mod tests {
         assert_eq!(result["operation"], "canonicalize");
         assert_eq!(result["valid_count"], 2);
         assert_eq!(result["error_count"], 1);
+        assert_eq!(result["input_count"], 3);
+        assert_eq!(result["accepted_count"], 2);
+        assert_eq!(result["rejected_count"], 1);
+        assert_eq!(result["refused_count"], 0);
+        assert_eq!(result["skipped_count"], 0);
+        assert_eq!(result["all_succeeded"], false);
         assert_eq!(result["records"][0]["input_index"], 0);
+        assert_eq!(result["records"][0]["status"], "accepted");
         assert_eq!(result["records"][0]["canonical_smiles"], "C(C)O");
         assert!(result["records"][1]["canonical_smiles"].is_null());
+        assert_eq!(result["records"][1]["status"], "rejected");
+        assert_eq!(result["records"][1]["error_stage"], "parse");
         assert!(result["records"][1]["error"].as_str().is_some());
         assert_eq!(result["records"][2]["input_index"], 2);
         assert_eq!(result["records"][2]["canonical_smiles"], "C(C)N");
