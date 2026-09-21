@@ -16,7 +16,7 @@ import subprocess
 from pathlib import Path
 
 
-CASES = {
+DESCRIPTOR_CASES = {
     "water": "O",
     "alcohol": "CCO",
     "phenol": "Oc1ccccc1",
@@ -73,6 +73,22 @@ CASES = {
     "2_pyridone_kekule": "O=C1C=CC=CN1",
     "phenoxide": "[O-]c1ccccc1",
 }
+
+TPSA_EDGE_CASES = {
+    "secondary_aziridine": "C1CN1",
+    "tertiary_aziridine": "CN1CC1",
+    "primary_ammonium": "C[NH3+]",
+    "protonated_primary_imine": "C=[NH2+]",
+    "protonated_secondary_imine": "C=[NH+]C",
+    "cyclic_secondary_ammonium": "[NH2+]1CC1",
+    "nitrilium": "C[N+]#C",
+    "pyridine_kekule": "N1=CC=CC=C1",
+    "pyridinium": "[nH+]1ccccc1",
+    "n_methyl_2_pyridone_kekule": "O=C1C=CC=CN1C",
+    "phthalimide_kekule_boundary": "O=C1NC(=O)c2ccccc12",
+}
+
+CASES = {**DESCRIPTOR_CASES, **TPSA_EDGE_CASES}
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CLI = ROOT / "target" / "debug" / "chematic"

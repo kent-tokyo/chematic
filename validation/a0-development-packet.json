@@ -22,7 +22,7 @@
   ],
   "nonsealed_classification": {
     "path": "validation/results/descriptor-functional-group-classification-current-2026-09-20.json",
-    "sha256": "1237f3792996e0c7f6fb97d74794722d35c6d5581a8175fe26237fa0038f3a5f",
+    "sha256": "4a2adba7c2d38df6820f81fb55f9d0b83a3811041753cd21a672aba6200eb5f5",
     "expected_rows": 52,
     "contract_differences": {
       "molecular_weight": [
@@ -32,6 +32,28 @@
         "deuterated_ethanol"
       ]
     }
+  },
+  "tpsa_atom_type_probe": {
+    "path": "validation/results/tpsa-functional-group-probe-current-2026-09-20.json",
+    "sha256": "2d91db097b3aede2fdc2c56346646f68d7ee3746c5b34fb5d8fc6f49e4714569",
+    "expected_rows": 63,
+    "expected_strict_matches": 63,
+    "strict_tolerance": 1e-6
+  },
+  "tpsa_public_corpus_parity": {
+    "path": "validation/results/tpsa-public-corpus-parity-current-2026-09-21.json",
+    "sha256": "ffcf50264c21997b412acb05bb0f0f08cb973f343bf6d72aaa9dbb9bacf78a6e",
+    "expected_rows": 10000,
+    "expected_strict_matches": 10000,
+    "strict_tolerance": 1e-6
+  },
+  "sealed_tpsa_resolution": {
+    "path": "validation/results/sealed-tpsa-evaluation-trust-eval-candidate-20260921-20260922.json",
+    "sha256": "350bc68a477ea9b6130c87ed9f2547d86c5a484e79b532a0635ade7931ce7b7d",
+    "candidate_tag": "trust-eval-candidate-20260921",
+    "expected_rows": 8000,
+    "expected_strict_matches": 8000,
+    "strict_tolerance": 1e-6
   },
   "binding_impact": {
     "path": "validation/results/descriptor-cross-binding-parity-7737-exposed-v1.0.13.json",

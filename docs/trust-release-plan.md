@@ -679,21 +679,32 @@ local-only制御、再現可能な比較packetを差別化の受入条件にす�
   閾値へ合わせ込まず、独立の既知/生成テストと仕様根拠を使う。修正候補ごとに、影響binding
   回帰、変更影響表、公開主張への影響を記録する。descriptorは官能基・電荷・同位体・
   tautomer/芳香族性の非sealedな層別を先に固定し、全体一致率だけを次freezeの根拠にしない。
-  公開52官能基/電荷/同位体/tautomer/芳香族性のgreen probeでは、HBA/HBD/TPSA/LogP/MR/
+  公開52官能基/電荷/同位体/tautomer/芳香族性のdescriptor分類では、HBA/HBD/TPSA/LogP/MR/
   Fsp3/芳香族環数、`exact_mass`、`heavy_atoms`、`rotatable_bonds`、明示的な
   `rdkit_molecular_weight`は52/52 strictだった。Kekulé 2-pyridoneは、単一carbonylに
   隣接して芳香族化される環内NHをRDKitのaromatic `[nH]` descriptor typeとして扱う公開
   regressionであり、二つのcarbonylに隣接するphthalimide型imideを同型へ昇格させない。
+  TPSA専用の原子型probeは63/63 strictで、三員環N、protonated imine/ammonium、nitrilium、
+  aromatic cation N、Kekulé Nを追加している。公開済みの二つの5,000-row corpusでも
+  TPSAは合計10,000/10,000 strictであり、いずれもdevelopment evidenceとして扱う。
   native
   `molecular_weight`のSeと同位体3件はnative IUPAC mass tableとRDKit mass profileの
   宣言済み差であり、CLIのnative massをRDKit互換値と偽装しない。結果は
   `validation/results/tpsa-functional-group-probe-current-2026-09-20.json`と
   `validation/results/descriptor-functional-group-classification-current-2026-09-20.json`に
   固定する。これは公開development分類であり、unused採用評価ではない。三つの却下summary、
-  52-row分類、7,737-row Rust/Python/Node-WASM binding影響を
+  52-row分類、63-row TPSA原子型probe、7,737-row Rust/Python/Node-WASM binding影響を
   `validation/a0-development-packet.json` と
   `scripts/check_a0_development_packet.py` がCIでまとめて検証する。packetはraw rowを
   埋め込まず、候補の採用や次freezeの評価を主張しない。
+  その後、候補`bac7ae44`をannotated tag `trust-eval-candidate-20260921`で先に固定し、
+  別offsetから取得した14,764-row ChEMBL sourceを既存20,000-rowのcanonical/parent/
+  Murcko scaffold identityと監査した。2,000-row developmentはTPSA 2,000/2,000、
+  one-time sealed 8,000-rowはTPSA 8,000/8,000 strict、最大絶対誤差0.0だった。
+  集計とprovenanceは
+  `validation/results/sealed-tpsa-evaluation-trust-eval-candidate-20260921-20260922.json`
+  に保存する。これはTPSA residualの解決証拠であり、他のdescriptorを同じ新規holdoutで
+  再評価していないためmulti-field A0全体の採用完了とはしない。
 - [ ] 次の採用判断が必要になった時点で、別source・別抽出・重複除外・source hash・
   attestation・annotated tagを新規に固定する。新しいcohortを作るだけでは合格とせず、
   candidate buildとfixed oracleで一度だけ実行する。

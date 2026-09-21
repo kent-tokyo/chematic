@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "profile": "tpsa_frozen_candidate_evaluation_v1",
+  "status": "passed",
+  "scope": "One-time sealed TPSA evaluation; raw input and per-row output remain local-only and exposed.",
+  "evaluated_at": "2026-09-21T21:23:06+00:00",
+  "candidate": {
+    "commit": "bac7ae4413ca3e6c7c9f7829fce76a565f1f8a30",
+    "tag": "trust-eval-candidate-20260921"
+  },
+  "oracle": {
+    "engine": "RDKit",
+    "version": "2025.09.3",
+    "operation": "rdMolDescriptors.CalcTPSA(includeSandP=True)"
+  },
+  "cohort": {
+    "split": "sealed_holdout",
+    "rows": 8000,
+    "sha256": "2ebcb743d64f790cdd6894670b36c274f6319e94092ed81b898924642c62b7d6",
+    "manifest_sha256": "e18315a1be66da2eda77e366fd9dd589db952ef128f849bfded056eb8aee02a0",
+    "source_sha256": "f244e037a747bc4e09675fb5f7c02418a48bce08d5e7e32949031166e1bb211b"
+  },
+  "provenance": {
+    "candidate_binary_sha256": "50ca04669de45f8e667970f22e0c52cfa7e8ec8515edceb74f6bbc8bbb9ef8f1",
+    "unused_data_attestation_sha256": "f74e96b84550989ecfc9698a8c03aab7cf3f962910a855d23214f0ce45c435f3",
+    "raw_result_sha256": "a1fafe1b7775f7cd88629d1fd53e43277547b11ad80ffc68453c4e3d5ca6d2ca"
+  },
+  "accounting": {
+    "parsed": 8000,
+    "parse_failures": 0
+  },
+  "tpsa": {
+    "strict_tolerance": 1e-06,
+    "strict_matches": 8000,
+    "mismatches": 0,
+    "max_abs_error": 0.0
+  }
+}

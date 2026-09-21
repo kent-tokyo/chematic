@@ -13,11 +13,13 @@ import argparse
 import hashlib
 import json
 import ssl
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 
 API = "https://www.ebi.ac.uk/chembl/api/data/molecule.json"
@@ -44,19 +46,58 @@ def main() -> int:
     parser.add_argument("--source-rows", type=int, default=15_000, help="request this many API records before filtering")
     parser.add_argument("--page-size", type=int, default=100)
     parser.add_argument("--delay-seconds", type=float, default=0.25)
+    parser.add_argument("--max-attempts", type=int, default=5)
+    parser.add_argument("--retry-delay-seconds", type=float, default=2.0)
+    parser.add_argument("--timeout-seconds", type=float, default=60.0)
     args = parser.parse_args()
-    if args.offset < 0 or args.source_rows < 100 or args.page_size <= 0:
-        parser.error("offset >= 0, source-rows >= 100 and positive page-size are required")
+    if (
+        args.offset < 0
+        or args.source_rows < 100
+        or args.page_size <= 0
+        or args.max_attempts <= 0
+        or args.retry_delay_seconds < 0
+        or args.timeout_seconds <= 0
+    ):
+        parser.error(
+            "offset >= 0, source-rows >= 100, positive page-size/max-attempts, "
+            "positive timeout-seconds, and non-negative retry-delay-seconds are required"
+        )
     output = args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=True)
+    response_cache = output / "response-cache"
+    response_cache.mkdir(parents=True, exist_ok=True)
     tls_context = verified_tls_context()
     rows: list[str] = []
     responses: list[dict[str, object]] = []
     for page_offset in range(args.offset, args.offset + args.source_rows, args.page_size):
         params = urlencode({"limit": args.page_size, "offset": page_offset})
         url = f"{API}?{params}"
-        with urlopen(url, timeout=60, context=tls_context) as response:  # nosec B310: fixed HTTPS endpoint
-            body = response.read()
+        request = Request(
+            url,
+            headers={"Accept": "application/json", "User-Agent": "CheMatic-validation/1.0"},
+        )
+        cache_path = response_cache / f"limit-{args.page_size}-offset-{page_offset}.json"
+        if cache_path.is_file():
+            body = cache_path.read_bytes()
+        else:
+            for attempt in range(1, args.max_attempts + 1):
+                try:
+                    with urlopen(  # nosec B310: fixed HTTPS endpoint
+                        request, timeout=args.timeout_seconds, context=tls_context
+                    ) as response:
+                        body = response.read()
+                    temporary = cache_path.with_suffix(".tmp")
+                    temporary.write_bytes(body)
+                    temporary.replace(cache_path)
+                    break
+                except (HTTPError, URLError, TimeoutError) as error:
+                    print(
+                        f"retry {attempt}/{args.max_attempts} for {url}: {error}",
+                        file=sys.stderr,
+                    )
+                    if attempt == args.max_attempts:
+                        raise
+                    time.sleep(args.retry_delay_seconds * attempt)
         data = json.loads(body)
         molecules = data.get("molecules")
         if not isinstance(molecules, list):

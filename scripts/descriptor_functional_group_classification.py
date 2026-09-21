@@ -17,7 +17,7 @@ import json
 import subprocess
 from pathlib import Path
 
-from tpsa_functional_group_probe import CASES
+from tpsa_functional_group_probe import DESCRIPTOR_CASES as CASES
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CLI = ROOT / "target" / "debug" / "chematic"

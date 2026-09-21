@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "profile": "tpsa_exposed_public_corpus_parity_v1",
+  "status": "development_regression",
+  "scope": "Exposed public corpora; not sealed, unused-data evidence, or an adoption decision.",
+  "oracle": {
+    "engine": "RDKit",
+    "version": "2025.09.3",
+    "operation": "rdMolDescriptors.CalcTPSA(includeSandP=True)"
+  },
+  "implementation": {
+    "engine": "CheMatic Rust source",
+    "operation": "descriptor_binding_dump tpsa",
+    "binary_sha256": "0092c2f636553ac7c8450f2a0aae8faf0cdf5855913e5737aeaa00da0036ee0c"
+  },
+  "strict_tolerance": 1e-06,
+  "rows": 10000,
+  "strict_matches": 10000,
+  "mismatches": 0,
+  "corpora": [
+    {
+      "path": "scripts/chembl_accuracy_corpus_4999.smi",
+      "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+      "rows": 5000,
+      "parse_failures": 0,
+      "strict_matches": 5000,
+      "mismatches": 0,
+      "mismatch_examples": []
+    },
+    {
+      "path": "scripts/descriptor_census_corpus.smi",
+      "sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c",
+      "rows": 5000,
+      "parse_failures": 0,
+      "strict_matches": 5000,
+      "mismatches": 0,
+      "mismatch_examples": []
+    }
+  ]
+}
