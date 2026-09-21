@@ -43,6 +43,12 @@
   public 5k corpora are 10,000/10,000 strict for TPSA. These are non-sealed
   development regressions; they neither reuse nor rehabilitate any rejected
   8k candidate.
+- The replacement TPSA candidate is frozen at commit `bac7ae44` by the annotated
+  tag `trust-eval-candidate-20260921`, before acquisition of any replacement
+  holdout. A new one-time result still requires a complete independently acquired
+  source, overlap audit, and maintainer unused-data attestation. ChEMBL REST was
+  returning HTTP 500 even for `limit=1&offset=0` on 2026-09-21, so no partial
+  acquisition is being promoted to sealed evidence.
 - The bounded V3000 E/Z query gate preserves RDKit's four-query/four-target
   `HasSubstructMatch(..., useChirality=True)` table through a CheMatic round
   trip.  Indigo 1.46.0 matches both targets for both queries in that fixture;
