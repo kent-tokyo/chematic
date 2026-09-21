@@ -9,6 +9,22 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.19] - 2026-09-22
+
+- Replaced ad hoc TPSA functional-group exceptions with the complete RDKit
+  2025.09.3 Ertl N/O/S/P environment table and one shared total/per-atom
+  contribution path.
+- Added rare atom-type regressions covering 63/63 public cases and
+  10,000/10,000 rows across two exposed public corpora.
+- Froze the replacement candidate before source acquisition, audited a new
+  14,764-row ChEMBL source against 20,000 exposed rows, and recorded TPSA
+  agreement on 2,000/2,000 development rows plus a one-time 8,000/8,000 sealed
+  holdout at `1e-6` tolerance with maximum absolute error `0.0`.
+- Made sealed-cohort acquisition resumable with bounded retries and response
+  caching, and added a provenance-bound frozen-candidate evaluator.
+- This closes the known TPSA residual only. The complete multi-field A0 gate
+  remains open, and the exposed sealed rows cannot validate later candidates.
+
 ## [1.0.18] - 2026-09-21
 
 - Added a shared Rust/Python/WASM/Node contract for unknown-length SMILES

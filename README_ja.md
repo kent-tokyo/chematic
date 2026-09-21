@@ -23,13 +23,14 @@ npm install @kent-tokyo/chematic
 
 Python版はC/C++コンパイラなしで導入できます。
 
-### v1.0.18 の対応範囲
+### v1.0.19 の対応範囲
 
-このリリースでは、未知長SMILESストリームの件数会計をRust、Python、WASM/Nodeで
-共通化しました。EOFでは観測済み行を処理し、中断・時間/資源制限・producer失敗・
-consumer終了では、処理済みprefixと未処理/未読範囲を成功やskipへ偽装せず返します。
-Worker/MCP adapterと実測済みruntime制限は別の未完了項目です。互換性は操作・
-コーパス単位です。詳細は[互換性範囲](docs/compatibility-scope.md)と
+このリリースでは、RDKit 2025.09.3のErtl N/O/S/P環境表に合わせてTPSA原子型付けを
+更新し、合計値と原子別寄与を同じ計算経路へ統一しました。公開development検証は
+原子型63/63件とコーパス10,000/10,000件、新規sourceを重複監査したone-time sealed
+holdoutは`1e-6`許容差で8,000/8,000件、最大絶対誤差`0.0`です。完了したのはTPSA残差
+のみで、複数descriptorを対象とするA0全体は未完了です。詳細は
+[検証報告](docs/validation.md)、[互換性範囲](docs/compatibility-scope.md)、
 [CHANGELOG](CHANGELOG.md)を参照してください。
 
 ## Python

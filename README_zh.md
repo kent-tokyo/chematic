@@ -23,12 +23,13 @@ npm install @kent-tokyo/chematic
 
 Python 版本无需 C/C++ 编译器。
 
-### v1.0.18 范围
+### v1.0.19 范围
 
-本版本为 Rust、Python 与 WASM/Node 提供了统一的未知长度 SMILES 流计数契约。
-正常 EOF 会处理已观察的全部行；取消、时间/资源限制、producer 失败和 consumer
-关闭会保留已处理前缀，不会伪造成功或跳过结果。Worker/MCP adapter 与实测运行时
-资源限制仍是独立的未完成工作。兼容性仍按操作和数据集限定，详见
+本版本按照 RDKit 2025.09.3 的完整 Ertl N/O/S/P 环境表更新 TPSA 原子类型，
+并让总值与逐原子贡献共用同一计算路径。公开开发验证通过 63/63 个原子类型用例和
+10,000/10,000 条语料；另行获取并完成重叠审计的一次性 sealed holdout 在 `1e-6`
+容差下通过 8,000/8,000 条，最大绝对误差为 `0.0`。本次仅关闭 TPSA 残差，
+多描述符 A0 gate 仍未完成。详见[验证报告](docs/validation.md)、
 [兼容性范围](docs/compatibility-scope.md)和[CHANGELOG](CHANGELOG.md)。
 
 ## Python

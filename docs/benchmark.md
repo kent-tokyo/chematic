@@ -7,7 +7,7 @@ counted as wins. Dated raw records are indexed in
 
 ## Current status
 
-The current release line is **v1.0.18**. The newest public-package performance
+The current release line is **v1.0.19**. The newest public-package performance
 record is the 2026-09-16 isolated browser comparison against
 `@rdkit/rdkit@2026.03.6`. Older similarity, streaming, and operation timing
 records remain pinned to their recorded source/release versions.
@@ -29,7 +29,7 @@ Chromium, Firefox, and WebKit, the paired 95% lower speedup bounds are **3.11x,
 supported rows; one Fe(II) coordination structure remains an explicit typed
 refusal. A separate ChEMBL 5k Chromium gate is 5,000/5,000 exact.
 
-This is merged-source evidence, not a v1.0.18 package measurement. It excludes
+This is merged-source evidence, not a v1.0.19 package measurement. It excludes
 download/startup, memory, prepared-object reuse, search, and unsupported
 chemistry. See the complete [2026-09-20 record](../benchmarks/2026-09-20-parse-morgan-rdkitjs.md).
 
