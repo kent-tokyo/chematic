@@ -51,3 +51,13 @@ def test_a0_development_packet_rejects_incomplete_tpsa_public_corpus(tmp_path):
     result = run(path)
     assert result.returncode != 0
     assert "TPSA public-corpus parity is not strict-green" in result.stdout
+
+
+def test_a0_development_packet_rejects_incomplete_sealed_tpsa(tmp_path):
+    packet = json.loads(PACKET.read_text(encoding="utf-8"))
+    packet["sealed_tpsa_resolution"]["expected_strict_matches"] -= 1
+    path = tmp_path / "packet.json"
+    path.write_text(json.dumps(packet), encoding="utf-8")
+    result = run(path)
+    assert result.returncode != 0
+    assert "sealed TPSA is not strict-green" in result.stdout

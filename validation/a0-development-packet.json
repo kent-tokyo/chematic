@@ -47,6 +47,14 @@
     "expected_strict_matches": 10000,
     "strict_tolerance": 1e-6
   },
+  "sealed_tpsa_resolution": {
+    "path": "validation/results/sealed-tpsa-evaluation-trust-eval-candidate-20260921-20260922.json",
+    "sha256": "350bc68a477ea9b6130c87ed9f2547d86c5a484e79b532a0635ade7931ce7b7d",
+    "candidate_tag": "trust-eval-candidate-20260921",
+    "expected_rows": 8000,
+    "expected_strict_matches": 8000,
+    "strict_tolerance": 1e-6
+  },
   "binding_impact": {
     "path": "validation/results/descriptor-cross-binding-parity-7737-exposed-v1.0.13.json",
     "sha256": "6c8ce3ef858362d884e72d9b7755f3422fc35360370d80adc5c7c82e876dd3b8",

@@ -128,6 +128,35 @@ def validate(packet_path: Path) -> list[str]:
         except (ValueError, OSError, json.JSONDecodeError) as error:
             errors.append(f"cannot validate TPSA public-corpus parity: {error}")
 
+    sealed_tpsa = packet.get("sealed_tpsa_resolution")
+    if not isinstance(sealed_tpsa, dict):
+        errors.append("sealed TPSA resolution is missing")
+    else:
+        try:
+            path = relative_file(sealed_tpsa.get("path"))
+            report = load(path)
+            if digest(path) != sealed_tpsa.get("sha256"):
+                errors.append("sealed TPSA resolution digest changed")
+            if not isinstance(report, dict) or report.get("status") != "passed":
+                errors.append("sealed TPSA resolution is not passed")
+            if report.get("candidate", {}).get("tag") != sealed_tpsa.get("candidate_tag"):
+                errors.append("sealed TPSA candidate tag changed")
+            if report.get("cohort", {}).get("rows") != sealed_tpsa.get("expected_rows"):
+                errors.append("sealed TPSA row count changed")
+            if report.get("accounting") != {"parsed": sealed_tpsa.get("expected_rows"), "parse_failures": 0}:
+                errors.append("sealed TPSA accounting is incomplete")
+            tpsa = report.get("tpsa", {})
+            if tpsa.get("strict_matches") != sealed_tpsa.get("expected_strict_matches"):
+                errors.append("sealed TPSA is not strict-green")
+            if tpsa.get("strict_tolerance") != sealed_tpsa.get("strict_tolerance"):
+                errors.append("sealed TPSA tolerance changed")
+            if tpsa.get("mismatches") != 0:
+                errors.append("sealed TPSA contains mismatches")
+            if "raw_rows" in report or "cases" in report:
+                errors.append("sealed TPSA summary must not embed raw rows")
+        except (ValueError, OSError, json.JSONDecodeError) as error:
+            errors.append(f"cannot validate sealed TPSA resolution: {error}")
+
     binding = packet.get("binding_impact")
     if not isinstance(binding, dict):
         errors.append("binding impact is missing")
@@ -157,7 +186,7 @@ def main() -> int:
         print("A0 development packet: BLOCKED")
         print("\n".join(f"- {error}" for error in errors))
         return 1
-    print("A0 development packet: PASS (three rejected sealed summaries, 52-row descriptor classification, 63-row TPSA atom-type probe, 10,000-row TPSA public-corpus parity, 7,737-row cross-binding impact)")
+    print("A0 development packet: PASS (three rejected sealed summaries, sealed TPSA 8,000/8,000, 52-row descriptor classification, 63-row TPSA atom-type probe, 10,000-row TPSA public-corpus parity, 7,737-row cross-binding impact)")
     return 0
 
 

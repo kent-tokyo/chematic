@@ -30,6 +30,13 @@ def read_smiles(path: Path) -> list[str]:
     ]
 
 
+def report_path(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
 def evaluate(path: Path, binary: Path, rdkit_modules: dict[str, object]) -> dict[str, object]:
     smiles = read_smiles(path)
     run = subprocess.run(
@@ -60,7 +67,7 @@ def evaluate(path: Path, binary: Path, rdkit_modules: dict[str, object]) -> dict
                 {"smiles": source, "chematic": actual, "rdkit": expected, "absolute_error": delta}
             )
     return {
-        "path": str(path.relative_to(ROOT)),
+        "path": report_path(path),
         "sha256": sha256(path),
         "rows": len(smiles),
         "parse_failures": parse_failures,

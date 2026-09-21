@@ -697,6 +697,14 @@ local-only制御、再現可能な比較packetを差別化の受入条件にす�
   `validation/a0-development-packet.json` と
   `scripts/check_a0_development_packet.py` がCIでまとめて検証する。packetはraw rowを
   埋め込まず、候補の採用や次freezeの評価を主張しない。
+  その後、候補`bac7ae44`をannotated tag `trust-eval-candidate-20260921`で先に固定し、
+  別offsetから取得した14,764-row ChEMBL sourceを既存20,000-rowのcanonical/parent/
+  Murcko scaffold identityと監査した。2,000-row developmentはTPSA 2,000/2,000、
+  one-time sealed 8,000-rowはTPSA 8,000/8,000 strict、最大絶対誤差0.0だった。
+  集計とprovenanceは
+  `validation/results/sealed-tpsa-evaluation-trust-eval-candidate-20260921-20260922.json`
+  に保存する。これはTPSA residualの解決証拠であり、他のdescriptorを同じ新規holdoutで
+  再評価していないためmulti-field A0全体の採用完了とはしない。
 - [ ] 次の採用判断が必要になった時点で、別source・別抽出・重複除外・source hash・
   attestation・annotated tagを新規に固定する。新しいcohortを作るだけでは合格とせず、
   candidate buildとfixed oracleで一度だけ実行する。
