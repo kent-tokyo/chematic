@@ -21,15 +21,16 @@ npm install @kent-tokyo/chematic
 
 Python needs no C/C++ compiler. Rust and WebAssembly builds use the same core.
 
-### v1.0.18 release boundary
+### v1.0.19 release boundary
 
-This release adds explicitly accounted unknown-length SMILES streams across
-Rust, Python, and WASM/Node. Normal EOF processes observed rows; cancellation,
-time/resource limits, producer failure, and consumer closure preserve the
-processed prefix instead of inventing skipped or successful rows. Worker/MCP
-adapters and measured runtime limits remain separate work. Compatibility is
-operation- and corpus-scoped; see the [compatibility scope](docs/compatibility-scope.md)
-and [CHANGELOG](CHANGELOG.md).
+This release aligns TPSA atom typing with RDKit 2025.09.3 using the complete
+Ertl N/O/S/P environment table and one shared total/per-atom contribution path.
+Public development evidence passes 63/63 atom-type cases and 10,000/10,000
+corpus rows. A separately sourced, overlap-audited one-time holdout passes
+8,000/8,000 at `1e-6` tolerance with maximum absolute error `0.0`. This closes
+the TPSA residual only; the multi-field A0 gate remains open. Compatibility is
+operation- and corpus-scoped; see the [validation report](docs/validation.md),
+[compatibility scope](docs/compatibility-scope.md), and [CHANGELOG](CHANGELOG.md).
 
 ## Python
 

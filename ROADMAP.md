@@ -1,9 +1,9 @@
 # chematic roadmap
 
-> Updated 2026-09-21. Released: **v1.0.18**. Next delivery theme: **1.x Trust Release**.
-> **Current P0 focus: recover A0 after three rejected sealed candidates.** Preserve
-> their exposed evidence, classify only declared-scope gaps on non-sealed data,
-> then prepare a genuinely new freeze for a later one-time evaluation.
+> Updated 2026-09-22. Released: **v1.0.18**. Next candidate: **v1.0.19**.
+> **Current P0 focus: close the remaining multi-field A0 acceptance work.** The
+> replacement one-time TPSA holdout passed; preserve its exposed evidence and
+> do not reuse it to tune or validate later candidates.
 > The merged Parse + Morgan browser win moves to maintenance and package verification.
 
 > The September 20 competitor-watch intake confirms the direction rather than
@@ -15,9 +15,11 @@
 
 ## Current status
 
-- v1.0.18 adds deterministic unknown-length stream accounting and keeps the
-  v1.0.17 SMILES+/attachment-label interoperability baseline. Release history belongs
-  in `CHANGELOG.md`; publication does not complete the sealed accuracy gates.
+- The v1.0.19 candidate aligns TPSA atom typing with RDKit 2025.09.3 and closes
+  the known 23-row TPSA residual with a separately sourced one-time sealed
+  holdout. v1.0.18 remains the latest published release until all channels are
+  independently verified. Release history belongs in `CHANGELOG.md`;
+  publication does not complete the remaining multi-field A0 gate.
 - The published-package browser scorecard is now in `main` via
   [PR #541](https://github.com/kent-tokyo/chematic/pull/541) (`8ce8026`). It
   compares `@kent-tokyo/chematic@1.0.15` with official

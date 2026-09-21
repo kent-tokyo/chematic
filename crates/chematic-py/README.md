@@ -2,9 +2,10 @@
 
 Pure-Rust cheminformatics library for Python — SMILES parsing, 190+ descriptor values (71 functions), fingerprints, pKa prediction, ADMET profiling, and template-based retrosynthesis.
 
-The current 1.0.18 release line adds `SmilesBatchStream` for explicitly
-accounted unknown-length SMILES input. Normal EOF processes observed rows;
-typed terminal reasons preserve incomplete prefixes without inventing success.
+The current 1.0.19 release line aligns TPSA atom typing with RDKit 2025.09.3.
+Public development evidence passes 10,000/10,000 rows, and a separately
+sourced one-time holdout passes 8,000/8,000 at `1e-6` tolerance. This result is
+TPSA-specific and does not complete the multi-field A0 gate.
 
 ## Installation
 

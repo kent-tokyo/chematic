@@ -1,6 +1,6 @@
 # Validation report
 
-Updated 2026-09-21. The current release is **v1.0.18**. Each result keeps its
+Updated 2026-09-22. The current release is **v1.0.19**. Each result keeps its
 recorded version, comparator, corpus, and operation; no result is silently
 upgraded to the current source revision.
 
@@ -13,7 +13,7 @@ upgraded to the current source revision.
 | Parser security | `validation/parser_security_corpus_v1.json` plus hosted Linux gate | Fixed five-format corpus with process/time/memory boundaries |
 | V3000 interchange | `validation/results/v3000-*-v1.0.15.json` | Ordinary structures and declared SGROUP/stereo contracts; no coordination/haptic/polymer semantic claim |
 | Stereo development | `validation/results/stereo-*-v1.0.15-2026-09-16.json` | 300 development structures and 5,115 spelling variants; not independent gold |
-| Sealed evaluation | `validation/results/sealed-candidate-trust-eval-*-summary.json` | Three separately frozen 8k candidates were each evaluated once and rejected. The first had six unsupported molecular-weight values and 46 TPSA mismatches; the second had two molecular-weight mismatches; the third had 23 TPSA mismatches. Raw SMILES remain local-only and all three cohorts are exposed/ineligible for later tuning or unused-data claims. |
+| Sealed evaluation | `validation/results/sealed-candidate-trust-eval-*-summary.json` and `validation/results/sealed-tpsa-evaluation-trust-eval-candidate-20260921-20260922.json` | Three earlier 8k candidates remain rejected. A replacement TPSA-only candidate was frozen before source acquisition and passed a new one-time 8k holdout. All raw sealed rows remain local-only and exposed/ineligible for later candidates. |
 
 ## Accuracy snapshots
 
@@ -22,6 +22,14 @@ tolerance-matched results for molecular weight, HBA/HBD, TPSA, LogP, molar
 refractivity, Fsp3, ring families, rotatable bonds, and related descriptors.
 These are regression and compatibility evidence for their recorded versions,
 not results from the sealed 8,000-row holdout.
+
+For v1.0.19, the replacement candidate `bac7ae44` was frozen as
+`trust-eval-candidate-20260921` before a new 14,764-row ChEMBL source was
+acquired. Canonical/parent/scaffold overlap was audited against 20,000 exposed
+rows, leaving 12,345 eligible rows. TPSA then passed 2,000/2,000 development
+rows and the one-time sealed holdout at 8,000/8,000 with `1e-6` tolerance and
+maximum absolute error `0.0`. Only TPSA was measured in that sealed run; the
+complete multi-field A0 adoption gate remains open.
 
 The modern CIP snapshot reports 4,171/4,186 resolved labels agreeing with the
 pinned RDKit labeler; 15 phosphorus rows fail closed as representation-unstable.
