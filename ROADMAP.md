@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-09-21. Released: **v1.0.17**. Next delivery theme: **1.x Trust Release**.
+> Updated 2026-09-21. Released: **v1.0.18**. Next delivery theme: **1.x Trust Release**.
 > **Current P0 focus: recover A0 after three rejected sealed candidates.** Preserve
 > their exposed evidence, classify only declared-scope gaps on non-sealed data,
 > then prepare a genuinely new freeze for a later one-time evaluation.
@@ -15,8 +15,8 @@
 
 ## Current status
 
-- v1.0.17 adds bounded SMILES+ large-ring labels and typed attachment-label
-  inspection on the Trust/interoperability baseline. Release history belongs
+- v1.0.18 adds deterministic unknown-length stream accounting and keeps the
+  v1.0.17 SMILES+/attachment-label interoperability baseline. Release history belongs
   in `CHANGELOG.md`; publication does not complete the sealed accuracy gates.
 - The published-package browser scorecard is now in `main` via
   [PR #541](https://github.com/kent-tokyo/chematic/pull/541) (`8ce8026`). It
@@ -36,10 +36,13 @@
   semantic round trips, SGROUP ordering/edit preservation, and bounded WASM SGROUP
   inspection. Its contract explicitly excludes coordination chemistry and ENDPTS/
   ATTACH interpretation; opaque retention is not presented as editable semantics.
-- The post-release public descriptor probe is 52/52 strict for its declared
-  N/O/S/P, charge, isotope, tautomer, and aromatic-form cases.  This narrows
-  a non-sealed regression boundary (including Kekule 2-pyridone); it neither
-  reuses nor rehabilitates any rejected 8k candidate.
+- The public descriptor classification remains 52/52 strict for TPSA and its
+  declared cross-descriptor fields. A separate TPSA atom-type probe is now
+  63/63 strict and covers RDKit's rare three-membered-ring, protonated imine,
+  ammonium, nitrilium, aromatic-cation, and Kekulé-N boundaries. Two exposed
+  public 5k corpora are 10,000/10,000 strict for TPSA. These are non-sealed
+  development regressions; they neither reuse nor rehabilitate any rejected
+  8k candidate.
 - The bounded V3000 E/Z query gate preserves RDKit's four-query/four-target
   `HasSubstructMatch(..., useChirality=True)` table through a CheMatic round
   trip.  Indigo 1.46.0 matches both targets for both queries in that fixture;
@@ -101,7 +104,7 @@ into fresh validation evidence.
 
 | Stage | Work | Completion evidence | Explicit boundary |
 |---|---|---|---|
-| 0 | Preserve the three rejected A0 candidates and finish the acceptance-packet inventory | Candidate provenance, declared support domain, failures, affected bindings, and an exposure record are linked from the ledger | PR #606 (`fa61eaaa`) CI-checks the three safe rejection summaries, 52-row nonsealed classification, and 7,737-row Rust/Python/Node-WASM impact. No descriptor, stereo, or upstream-regression tuning may use the exposed 8k rows as an unused holdout; a new freeze remains required for adoption. |
+| 0 | Preserve the three rejected A0 candidates and finish the acceptance-packet inventory | Candidate provenance, declared support domain, failures, affected bindings, and an exposure record are linked from the ledger | PR #606 (`fa61eaaa`) established the packet. The current packet checks the three safe rejection summaries, 52-row descriptor classification, 63-row TPSA atom-type probe, and 7,737-row Rust/Python/Node-WASM impact. No descriptor, stereo, or upstream-regression tuning may use the exposed 8k rows as an unused holdout; a new freeze remains required for adoption. |
 | 1 | Prepare the RDKit rebaseline lanes before a new stable artifact is selected | Version-pinned Python/native/npm inputs, nanobind-wrapper backend and typed-error probes, fixed operation settings, and reproducible commands | Run and publish a comparison only against an actually released artifact; 2026.03.6 remains historical rather than being relabelled current |
 | 2 | Import verified upstream failure modes as CheMatic regressions | Identity-renumber stereo, selected-atom/bond CIP, and V3000 E/Z query-round-trip truth tables pass, or a typed unsupported outcome is documented | A competitor failure is a regression source, not proof that CheMatic is more correct; do not import a report before confirming its reproducer and affected versions |
 | 3 | Close A2/#503's canonical E/Z work before new 3D breadth | Remaining components converge under atom-order and spelling permutations, reparse preserves stereo, and stable-key stops only where ambiguity remains real | Implemented for the three audited aromatic-stash residual families: a bounded complete-slot planner includes raw directional carriers, reparses every candidate against a non-recursive E/Z signature, and selects the lexicographic minimum without raw atom/bond-index tie-breaks. The 256-seed relabeling gate now converges and stable keys are admitted only for this proven aromatic-stash path; other coupled systems remain fail-closed. |

@@ -11,12 +11,12 @@
   "implementation": {
     "engine": "chematic",
     "operation": "CLI descriptors <SMILES> JSON tpsa",
-    "cli_name": "chematic-a0-cli",
-    "cli_sha256": "63893d40b068d872bb4f2f28e293f6b899155c5746d65f90a81abdbe0b31fa6f"
+    "cli_name": "chematic",
+    "cli_sha256": "6146159805458bfc6e454715dd588f159da801b0cc818c6c9c0dcc57ce0ce3f1"
   },
-  "rows": 52,
+  "rows": 63,
   "strict_tolerance": 1e-06,
-  "strict_matches": 52,
+  "strict_matches": 63,
   "failures": [],
   "cases": [
     {
@@ -432,6 +432,94 @@
       "smiles": "[O-]c1ccccc1",
       "rdkit_tpsa": 23.06,
       "chematic_tpsa": 23.06,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "secondary_aziridine",
+      "smiles": "C1CN1",
+      "rdkit_tpsa": 21.94,
+      "chematic_tpsa": 21.94,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "tertiary_aziridine",
+      "smiles": "CN1CC1",
+      "rdkit_tpsa": 3.01,
+      "chematic_tpsa": 3.01,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "primary_ammonium",
+      "smiles": "C[NH3+]",
+      "rdkit_tpsa": 27.64,
+      "chematic_tpsa": 27.64,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "protonated_primary_imine",
+      "smiles": "C=[NH2+]",
+      "rdkit_tpsa": 25.59,
+      "chematic_tpsa": 25.59,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "protonated_secondary_imine",
+      "smiles": "C=[NH+]C",
+      "rdkit_tpsa": 13.97,
+      "chematic_tpsa": 13.97,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "cyclic_secondary_ammonium",
+      "smiles": "[NH2+]1CC1",
+      "rdkit_tpsa": 16.61,
+      "chematic_tpsa": 16.61,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "nitrilium",
+      "smiles": "C[N+]#C",
+      "rdkit_tpsa": 4.36,
+      "chematic_tpsa": 4.36,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "pyridine_kekule",
+      "smiles": "N1=CC=CC=C1",
+      "rdkit_tpsa": 12.89,
+      "chematic_tpsa": 12.89,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "pyridinium",
+      "smiles": "[nH+]1ccccc1",
+      "rdkit_tpsa": 14.14,
+      "chematic_tpsa": 14.14,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "n_methyl_2_pyridone_kekule",
+      "smiles": "O=C1C=CC=CN1C",
+      "rdkit_tpsa": 22.0,
+      "chematic_tpsa": 22.0,
+      "absolute_error": 0.0,
+      "strict_match": true
+    },
+    {
+      "id": "phthalimide_kekule_boundary",
+      "smiles": "O=C1NC(=O)c2ccccc12",
+      "rdkit_tpsa": 46.17,
+      "chematic_tpsa": 46.17,
       "absolute_error": 0.0,
       "strict_match": true
     }

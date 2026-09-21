@@ -60,7 +60,7 @@
   "implementation": {
     "engine": "CheMatic",
     "operation": "CLI descriptors <SMILES> JSON fields",
-    "cli_sha256": "63893d40b068d872bb4f2f28e293f6b899155c5746d65f90a81abdbe0b31fa6f"
+    "cli_sha256": "6146159805458bfc6e454715dd588f159da801b0cc818c6c9c0dcc57ce0ce3f1"
   },
   "rows": 52,
   "summary": {

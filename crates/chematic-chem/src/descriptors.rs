@@ -94,16 +94,6 @@ fn is_aromatic_oxide_bridge(mol: &Molecule, idx: AtomIdx) -> bool {
             .any(|ring| ring.len() == 5 && ring.contains(&idx))
 }
 
-/// Count double bonds from `idx` to neighbors whose atomic number equals `target_an`.
-fn count_double_bonds_to(mol: &Molecule, idx: AtomIdx, target_an: u8) -> usize {
-    mol.neighbors(idx)
-        .filter(|&(nb, bidx)| {
-            mol.bond(bidx).order == BondOrder::Double
-                && mol.atom(nb).element.atomic_number() == target_an
-        })
-        .count()
-}
-
 // --- Element Detection Helpers ---
 // Consolidate atomic number matching to eliminate 50+ hardcoded checks throughout the file.
 
@@ -1005,295 +995,189 @@ fn is_carbonyl_hetero_bond(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> bool {
 /// Compute the topological polar surface area (Å²) using the Ertl (2000) table.
 ///
 /// Reference: P. Ertl, B. Rohde, P. Selzer, J. Med. Chem. 2000, 43, 3714-3717.
-fn tpsa_nitrogen(
-    mol: &Molecule,
-    idx: AtomIdx,
-    is_aromatic: bool,
-    h: u8,
+#[derive(Clone, Copy, Debug, Default)]
+struct TpsaEnvironment {
+    neighbors: u8,
+    single: u8,
+    double: u8,
+    triple: u8,
+    aromatic: u8,
+    hydrogens: u8,
     charge: i8,
-    ring_bonds: &FxHashSet<BondIdx>,
-) -> f64 {
-    if is_aromatic {
-        let degree = mol.degree(idx);
+    in_three_membered_ring: bool,
+}
 
-        if h > 0 {
-            15.79
-        } else if degree >= 3 {
-            // Distinguish true ring-junction N (all bonds Aromatic, e.g. bridgehead in
-            // imidazo[1,2-a]pyridine or phthalazinone) from N-substituted (has at least
-            // one non-Aromatic bond — methyl, phenyl via explicit single, etc.).
-            // Ring-junction: 4.41 (neutral) / 4.10 (cationic).
-            // N-substituted:  4.93 (neutral) / 3.88 (cationic). — calibrated from RDKit.
-            let is_ring_junction = mol
-                .neighbors(idx)
-                .all(|(_, bidx)| mol.bond(bidx).order == BondOrder::Aromatic);
-            if charge > 0 {
-                if is_ring_junction { 4.10 } else { 3.88 }
-            } else {
-                if is_ring_junction { 4.41 } else { 4.93 }
-            }
-        } else {
-            12.89
+fn tpsa_environment(mol: &Molecule, idx: AtomIdx, hydrogens: u8) -> TpsaEnvironment {
+    let mut environment = TpsaEnvironment {
+        hydrogens,
+        charge: mol.atom(idx).charge,
+        ..TpsaEnvironment::default()
+    };
+    let mut heavy_neighbors = Vec::new();
+    for (neighbor, bond_idx) in mol.neighbors(idx) {
+        if mol.atom(neighbor).element.atomic_number() == 1 {
+            continue;
         }
-    } else {
-        if charge == 1 {
-            let (has_oxo, has_o_minus) =
-                mol.neighbors(idx)
-                    .fold((false, false), |(oxo, om), (nb, bidx)| {
-                        let nb_atom = mol.atom(nb);
-                        let is_o = nb_atom.element.atomic_number() == 8;
-                        (
-                            oxo || (is_o && mol.bond(bidx).order == BondOrder::Double),
-                            om || (is_o && nb_atom.charge == -1),
-                        )
-                    });
-            if has_oxo && has_o_minus {
-                43.14 // nitro: N+(=O)[O-]
-            } else if has_double_bond_to(mol, idx, 7) && has_o_minus {
-                3.01 // N+–O-–N environment (not the central azide N+ type)
-            } else if has_double_bond_to(mol, idx, 7)
-                && !mol.neighbors(idx).any(|(nb, _)| {
-                    mol.atom(nb).element.atomic_number() == 8 && mol.atom(nb).charge == -1
-                })
-            {
-                14.10 // azide central N+: R-N=[N+]=[N-]
-            } else if has_double_bond_to(mol, idx, 6) {
-                3.01 // nitrone: C=N+(R)-O- (exocyclic double bond to C)
-            } else {
-                // Quaternary ammonium N+ (no lone pair) and ionic N-oxide [N+][O-]
-                // have no polar surface contribution (Ertl 2000).
-                0.00
+        environment.neighbors = environment.neighbors.saturating_add(1);
+        heavy_neighbors.push(neighbor);
+        match mol.bond(bond_idx).order {
+            BondOrder::Single | BondOrder::Up | BondOrder::Down => {
+                environment.single = environment.single.saturating_add(1);
             }
-        } else if h >= 2 {
-            26.02
-        } else if h == 1 {
-            if has_double_bond_to(mol, idx, 6) {
-                // Imine =NH (N=C with H): 23.85 (RDKit calibrated value, not 23.79)
-                23.85
-            } else if has_double_bond_to(mol, idx, 15) {
-                // P=N-H is the corresponding imine-like Ertl type rather than
-                // an ordinary secondary amine.
-                23.85
-            } else {
-                12.03
+            BondOrder::Double => environment.double = environment.double.saturating_add(1),
+            BondOrder::Triple => environment.triple = environment.triple.saturating_add(1),
+            BondOrder::Aromatic => {
+                environment.aromatic = environment.aromatic.saturating_add(1);
             }
-        } else if charge < 0 {
-            // N- anion: azide terminal R-N=[N+]=[N-] → 22.30; others use azo/amine fallback
-            if has_double_bond_to(mol, idx, 7) {
-                22.30
-            } else {
-                12.36
-            }
-        } else {
-            // h == 0, charge 0: nitrile, imine/nitroso/azo/P=N, amine
-            let has_triple_to_c = mol.neighbors(idx).any(|(nb, bidx)| {
-                mol.bond(bidx).order == BondOrder::Triple
-                    && mol.atom(nb).element.atomic_number() == 6
-            });
-            if has_triple_to_c {
-                23.79 // nitrile N≡C
-            } else if has_double_bond_to(mol, idx, 6)
-                || has_double_bond_to(mol, idx, 8)
-                || has_double_bond_to(mol, idx, 7)
-                || has_double_bond_to(mol, idx, 15)
-                || has_double_bond_to(mol, idx, 16)
-            {
-                12.36 // imine N=C, nitroso N=O, azo N=N, phosphazene P=N, sulfonimidyl N=S
-            } else {
-                // Aziridine (3-membered ring) N bonded to external P or S → 3.01.
-                // Larger ring N bonded to external P, or acyclic N → 3.24.
-                let ring_nbs: Vec<_> = mol
-                    .neighbors(idx)
-                    .filter(|(_, b)| ring_bonds.contains(b))
-                    .map(|(nb, _)| nb)
-                    .collect();
-                let in_3ring =
-                    ring_nbs.len() == 2 && mol.bond_between(ring_nbs[0], ring_nbs[1]).is_some();
-                let has_external_ps = mol.neighbors(idx).any(|(nb, bidx)| {
-                    let an = mol.atom(nb).element.atomic_number();
-                    ((an == 15 || an == 16) || (an == 6 && has_double_bond_to(mol, nb, 16)))
-                        && !ring_bonds.contains(&bidx)
-                });
-                if in_3ring && has_external_ps {
-                    3.01
-                } else {
-                    3.24
-                }
-            }
+            _ => {}
         }
+    }
+    environment.in_three_membered_ring = heavy_neighbors.iter().enumerate().any(|(i, &left)| {
+        heavy_neighbors[i + 1..]
+            .iter()
+            .any(|&right| mol.bond_between(left, right).is_some())
+    });
+    environment
+}
+
+fn tpsa_nitrogen(environment: TpsaEnvironment) -> f64 {
+    let e = environment;
+    let contribution = match e.neighbors {
+        1 if e.hydrogens == 0 && e.charge == 0 && e.triple == 1 => Some(23.79),
+        1 if e.hydrogens == 1 && e.charge == 0 && e.double == 1 => Some(23.85),
+        1 if e.hydrogens == 2 && e.charge == 0 && e.single == 1 => Some(26.02),
+        1 if e.hydrogens == 2 && e.charge == 1 && e.double == 1 => Some(25.59),
+        1 if e.hydrogens == 3 && e.charge == 1 && e.single == 1 => Some(27.64),
+        2 if e.hydrogens == 0 && e.charge == 0 && e.single == 1 && e.double == 1 => Some(12.36),
+        2 if e.hydrogens == 0 && e.charge == 0 && e.triple == 1 && e.double == 1 => Some(13.60),
+        2 if e.hydrogens == 1 && e.charge == 0 && e.single == 2 && e.in_three_membered_ring => {
+            Some(21.94)
+        }
+        2 if e.hydrogens == 1 && e.charge == 0 && e.single == 2 && !e.in_three_membered_ring => {
+            Some(12.03)
+        }
+        2 if e.hydrogens == 0 && e.charge == 1 && e.triple == 1 && e.single == 1 => Some(4.36),
+        2 if e.hydrogens == 1 && e.charge == 1 && e.double == 1 && e.single == 1 => Some(13.97),
+        2 if e.hydrogens == 2 && e.charge == 1 && e.single == 2 => Some(16.61),
+        2 if e.hydrogens == 0 && e.charge == 0 && e.aromatic == 2 => Some(12.89),
+        2 if e.hydrogens == 1 && e.charge == 0 && e.aromatic == 2 => Some(15.79),
+        2 if e.hydrogens == 1 && e.charge == 1 && e.aromatic == 2 => Some(14.14),
+        3 if e.hydrogens == 0 && e.charge == 0 && e.single == 3 && e.in_three_membered_ring => {
+            Some(3.01)
+        }
+        3 if e.hydrogens == 0 && e.charge == 0 && e.single == 3 && !e.in_three_membered_ring => {
+            Some(3.24)
+        }
+        3 if e.hydrogens == 0 && e.charge == 0 && e.single == 1 && e.double == 2 => Some(11.68),
+        3 if e.hydrogens == 0 && e.charge == 1 && e.single == 2 && e.double == 1 => Some(3.01),
+        3 if e.hydrogens == 1 && e.charge == 1 && e.single == 3 => Some(4.44),
+        3 if e.hydrogens == 0 && e.charge == 0 && e.aromatic == 3 => Some(4.41),
+        3 if e.hydrogens == 0 && e.charge == 0 && e.single == 1 && e.aromatic == 2 => Some(4.93),
+        3 if e.hydrogens == 0 && e.charge == 0 && e.double == 1 && e.aromatic == 2 => Some(8.39),
+        3 if e.hydrogens == 0 && e.charge == 1 && e.aromatic == 3 => Some(4.10),
+        3 if e.hydrogens == 0 && e.charge == 1 && e.single == 1 && e.aromatic == 2 => Some(3.88),
+        4 if e.hydrogens == 0 && e.charge == 1 && e.single == 4 => Some(0.0),
+        _ => None,
+    };
+    contribution.unwrap_or_else(|| {
+        (30.5 - f64::from(e.neighbors) * 8.2 + f64::from(e.hydrogens) * 1.5).max(0.0)
+    })
+}
+
+fn tpsa_oxygen(environment: TpsaEnvironment) -> f64 {
+    let e = environment;
+    let contribution = match e.neighbors {
+        1 if e.hydrogens == 0 && e.charge == 0 && e.double == 1 => Some(17.07),
+        1 if e.hydrogens == 1 && e.charge == 0 && e.single == 1 => Some(20.23),
+        1 if e.hydrogens == 0 && e.charge == -1 && e.single == 1 => Some(23.06),
+        2 if e.hydrogens == 0 && e.charge == 0 && e.single == 2 && e.in_three_membered_ring => {
+            Some(12.53)
+        }
+        2 if e.hydrogens == 0 && e.charge == 0 && e.single == 2 && !e.in_three_membered_ring => {
+            Some(9.23)
+        }
+        2 if e.hydrogens == 0 && e.charge == 0 && e.aromatic == 2 => Some(13.14),
+        _ => None,
+    };
+    contribution.unwrap_or_else(|| {
+        (28.5 - f64::from(e.neighbors) * 8.6 + f64::from(e.hydrogens) * 1.5).max(0.0)
+    })
+}
+
+fn tpsa_phosphorus(environment: TpsaEnvironment) -> f64 {
+    let e = environment;
+    match e.neighbors {
+        2 if e.hydrogens == 0 && e.charge == 0 && e.single == 1 && e.double == 1 => 34.14,
+        3 if e.hydrogens == 0 && e.charge == 0 && e.single == 3 => 13.59,
+        3 if e.hydrogens == 1 && e.charge == 0 && e.single == 2 && e.double == 1 => 23.47,
+        4 if e.hydrogens == 0 && e.charge == 0 && e.single == 3 && e.double == 1 => 9.81,
+        _ => 0.0,
     }
 }
 
-fn tpsa_oxygen(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i8) -> f64 {
-    if is_aromatic {
-        13.14
-    } else if h > 0 {
-        // Water (H₂O): isolated O with no heavy-atom neighbors → 31.50
-        // Hydroxyl (–OH): O with one heavy-atom neighbor → 20.23
-        if mol.neighbors(idx).count() == 0 {
-            31.50
-        } else {
-            20.23
-        }
-    } else {
-        // O with charge == -1: true nitro O- (N+ that also has =O) → 0.0; N-oxide/other O- → 23.06
-        if charge == -1 {
-            let is_nitro_o_minus = mol.neighbors(idx).any(|(nb, _)| {
-                let n = mol.atom(nb);
-                n.element.atomic_number() == 7
-                    && n.charge == 1
-                    && mol.neighbors(nb).any(|(nb2, bidx2)| {
-                        mol.atom(nb2).element.atomic_number() == 8
-                            && mol.bond(bidx2).order == BondOrder::Double
-                    })
-            });
-            return if is_nitro_o_minus { 0.0 } else { 23.06 };
-        }
-        let dbl_nb_pair = mol
-            .neighbors(idx)
-            .find(|&(_, bidx)| mol.bond(bidx).order == BondOrder::Double);
-        let dbl_nb = dbl_nb_pair
-            .map(|(nei, _)| (mol.atom(nei).element.atomic_number(), mol.atom(nei).charge));
-        match dbl_nb {
-            Some((6, _)) => 17.07,
-            // nitroso N=O: neutral N → 17.07; nitro [N+](=O)[O-]: charged N → 0.0
-            Some((7, 0)) => 17.07,
-            Some((7, _)) => 0.0,
-            // Se=O oxygens (seleninic/selenious acid) carry same contribution as C=O
-            Some((34, _)) => 17.07,
-            // For P-H phosphonates RDKit assigns P=O to the oxygen side;
-            // the phosphorus atom itself contributes zero.
-            Some((15, _)) => {
-                let p_idx = dbl_nb_pair.unwrap().0;
-                if implicit_hcount(mol, p_idx) > 0 {
-                    17.07
-                } else {
-                    0.0
-                }
-            }
-            // S=O: if S also has N=S double bond (sulfonimidyl) → 17.07; else S handles it → 0.0
-            Some((16, _)) => {
-                let s_idx = dbl_nb_pair.unwrap().0;
-                if has_double_bond_to(mol, s_idx, 7) || has_double_bond_to(mol, s_idx, 16) {
-                    17.07
-                } else {
-                    0.0
-                }
-            }
-            Some(_) => 0.0,
-            None => {
-                if is_aromatic_oxide_bridge(mol, idx) {
-                    13.14
-                } else {
-                    // Epoxide O (3-membered ring) → 12.53; ether/ring O → 9.23
-                    let nbs: Vec<AtomIdx> = mol.neighbors(idx).map(|(nb, _)| nb).collect();
-                    if nbs.len() == 2 && mol.bond_between(nbs[0], nbs[1]).is_some() {
-                        12.53
-                    } else {
-                        9.23
-                    }
-                }
-            }
-        }
+fn tpsa_sulfur(environment: TpsaEnvironment) -> f64 {
+    let e = environment;
+    match e.neighbors {
+        1 if e.hydrogens == 0 && e.charge == 0 && e.double == 1 => 32.09,
+        1 if e.hydrogens == 1 && e.charge == 0 && e.single == 1 => 38.80,
+        2 if e.hydrogens == 0 && e.charge == 0 && e.single == 2 => 25.30,
+        2 if e.hydrogens == 0 && e.charge == 0 && e.aromatic == 2 => 28.24,
+        3 if e.hydrogens == 0 && e.charge == 0 && e.aromatic == 2 && e.double == 1 => 21.70,
+        3 if e.hydrogens == 0 && e.charge == 0 && e.single == 2 && e.double == 1 => 19.21,
+        4 if e.hydrogens == 0 && e.charge == 0 && e.single == 2 && e.double == 2 => 8.38,
+        _ => 0.0,
     }
 }
 
-fn tpsa_sulfur(mol: &Molecule, idx: AtomIdx, is_aromatic: bool, h: u8, charge: i8) -> f64 {
-    // Charged sulfur environments do not contribute to RDKit TPSA.
-    if charge != 0 {
-        return 0.0;
+/// Select perceived aromatic bonds for a Kekulé nitrogen unless perception
+/// promoted an imide nitrogen between two carbonyls. RDKit sanitization makes
+/// pyridine/pyridone-like nitrogens aromatic, while phthalimide retains the
+/// non-aromatic amide atom type.
+fn use_perceived_nitrogen_environment(mol: &Molecule, mol_arom: &Molecule, idx: AtomIdx) -> bool {
+    if mol.atom(idx).aromatic || !mol_arom.atom(idx).aromatic {
+        return false;
     }
-    // In a P=S group RDKit assigns the combined 41.90 contribution to the
-    // phosphorus-side environment; the sulfur atom itself contributes zero.
-    if has_double_bond_to(mol, idx, 15) {
-        return 0.0;
-    }
-    // Hypervalent S(=O)(=S) environments use a shared RDKit contribution:
-    // the central sulfur is 40.47 and the terminal doubly bonded sulfur is 0.
-    if has_double_bond_to(mol, idx, 16) {
-        return if has_double_bond_to(mol, idx, 8) {
-            40.47
-        } else {
-            0.0
+    let carbonyl_neighbors = mol
+        .neighbors(idx)
+        .filter(|(neighbor, _)| {
+            mol.atom(*neighbor).element.atomic_number() == 6
+                && has_double_bond_to(mol, *neighbor, 8)
+        })
+        .count();
+    carbonyl_neighbors == 1 || (carbonyl_neighbors == 0 && mol.degree(idx) == 2)
+}
+
+fn tpsa_contributions(mol: &Molecule) -> Vec<f64> {
+    let mol_arom = chematic_perception::apply_aromaticity(mol);
+    let mut contributions = vec![0.0; mol.atom_count()];
+    for (idx, original_atom) in mol.atoms() {
+        let atomic_number = original_atom.element.atomic_number();
+        contributions[idx.0 as usize] = match atomic_number {
+            7 => {
+                let hydrogens = descriptor_attached_hcount(mol, idx);
+                let environment_mol = if use_perceived_nitrogen_environment(mol, &mol_arom, idx) {
+                    &mol_arom
+                } else {
+                    mol
+                };
+                tpsa_nitrogen(tpsa_environment(environment_mol, idx, hydrogens))
+            }
+            8 => {
+                let hydrogens = descriptor_attached_hcount(&mol_arom, idx);
+                tpsa_oxygen(tpsa_environment(&mol_arom, idx, hydrogens))
+            }
+            15 => {
+                let hydrogens = descriptor_attached_hcount(&mol_arom, idx);
+                tpsa_phosphorus(tpsa_environment(&mol_arom, idx, hydrogens))
+            }
+            16 => {
+                let hydrogens = descriptor_attached_hcount(&mol_arom, idx);
+                tpsa_sulfur(tpsa_environment(&mol_arom, idx, hydrogens))
+            }
+            _ => 0.0,
         };
     }
-    if is_aromatic {
-        28.24
-    } else if h > 0 {
-        38.80
-    } else {
-        match count_double_bonds_to(mol, idx, 8) {
-            0 => {
-                if has_double_bond_to(mol, idx, 6) {
-                    32.09 // thioxo C=S
-                } else if has_double_bond_to(mol, idx, 7) && is_atom_in_ring(mol, idx) {
-                    19.21 // cyclic sulfamidate N=S (sulfoxide-like contribution)
-                } else {
-                    25.30 // thioether
-                }
-            }
-            1 => {
-                // sulfonimidyl N=S(=O): treated as sulfonyl-like by RDKit → 8.38
-                if has_double_bond_to(mol, idx, 7) {
-                    8.38
-                } else {
-                    36.28
-                }
-            }
-            _ => 42.52,
-        }
-    }
-}
-
-fn tpsa_phosphorus(mol: &Molecule, idx: AtomIdx, h: u8) -> f64 {
-    if has_double_bond_to(mol, idx, 8) {
-        if h > 0 {
-            23.47 // P-H phosphonate: reduced phosphorus contribution
-        } else {
-            26.88 // phosphate/phosphonate: P=O
-        }
-    } else if has_double_bond_to(mol, idx, 16) {
-        41.90 // phosphorothioate: P=S (S is counted as zero)
-    } else if has_double_bond_to(mol, idx, 7) {
-        // The Ertl P=N types distinguish the implicit-hydrogen organic-subset
-        // spelling from both the fully substituted and explicitly bracketed
-        // P-H forms. In particular, `CP(=N)C` has the 23.47 P contribution,
-        // `CP(=N)(C)C` has 9.81, and `[PH](=N)C` has none. `h` alone is not
-        // sufficient because bracket atoms retain their explicit H count.
-        if mol.atom(idx).hydrogen_count.is_some() {
-            0.0
-        } else if h > 0 {
-            23.47
-        } else {
-            9.81
-        }
-    } else if h > 0 {
-        34.14 // phosphine P-H (secondary/primary phosphine)
-    } else {
-        13.59 // phosphite/trivalent P, no H (RDKit-calibrated)
-    }
-}
-
-/// Whether a Kekulé-spelled ring NH has the RDKit pyridone aromatic-N atom type.
-///
-/// `apply_aromaticity` is intentionally not sufficient on its own: it also
-/// promotes imide nitrogens such as phthalimide, whose TPSA atom type remains
-/// the non-aromatic amide type.  The pyridone boundary is a neutral ring NH
-/// with exactly one directly bonded carbonyl carbon that becomes aromatic after
-/// perception.  This is deliberately narrower than tautomer canonicalization;
-/// it only selects the descriptor atom type for an already parsed graph.
-fn is_kekule_pyridone_n(mol: &Molecule, mol_arom: &Molecule, idx: AtomIdx, h: u8) -> bool {
-    !mol.atom(idx).aromatic
-        && mol_arom.atom(idx).aromatic
-        && h > 0
-        && mol
-            .neighbors(idx)
-            .filter(|(neighbor, _)| {
-                mol.atom(*neighbor).element.atomic_number() == 6
-                    && has_double_bond_to(mol, *neighbor, 8)
-            })
-            .count()
-            == 1
+    contributions
 }
 
 /// Topological Polar Surface Area (Ertl 2000).
@@ -1307,39 +1191,7 @@ fn is_kekule_pyridone_n(mol: &Molecule, mol_arom: &Molecule, idx: AtomIdx, h: u8
 /// `Descriptors.TPSA(mol)` excludes S and P; results will differ for molecules
 /// containing these elements.
 pub fn tpsa(mol: &Molecule) -> f64 {
-    // Apply aromaticity for Kekulé-form input. Nitrogen normally keeps the input
-    // aromaticity flag because perception can false-promote imide N (for example
-    // phthalimide). A narrow single-carbonyl pyridone exception restores RDKit's
-    // aromatic-[nH] atom type without changing the imide boundary.
-    let mol_arom = chematic_perception::apply_aromaticity(mol);
-    let ring_bonds = ring_bond_indices(&mol_arom);
-
-    let mut psa = 0.0f64;
-    for (idx, atom_arom) in mol_arom.atoms() {
-        let orig_atom = mol.atom(idx);
-        let an = orig_atom.element.atomic_number();
-        // H count: for N use original mol (before apply_aromaticity changed valence).
-        let h = if an == 7 {
-            descriptor_attached_hcount(mol, idx)
-        } else {
-            descriptor_attached_hcount(&mol_arom, idx)
-        };
-        // N: prefer SMILES aromatic flag; other elements: use mol_arom flag.
-        let is_aromatic = if an == 7 {
-            orig_atom.aromatic || is_kekule_pyridone_n(mol, &mol_arom, idx, h)
-        } else {
-            atom_arom.aromatic
-        };
-        let contribution = match an {
-            7 => tpsa_nitrogen(mol, idx, is_aromatic, h, orig_atom.charge, &ring_bonds),
-            8 => tpsa_oxygen(&mol_arom, idx, is_aromatic, h, atom_arom.charge),
-            16 => tpsa_sulfur(&mol_arom, idx, is_aromatic, h, atom_arom.charge),
-            15 if !is_aromatic => tpsa_phosphorus(&mol_arom, idx, h),
-            _ => 0.0,
-        };
-        psa += contribution;
-    }
-    psa
+    tpsa_contributions(mol).into_iter().sum()
 }
 
 // ---------------------------------------------------------------------------
@@ -2641,24 +2493,7 @@ pub fn implicit_hcount_per_atom(mol: &Molecule) -> Vec<u8> {
 ///
 /// Mirrors the pattern of [`logp_crippen_per_atom`].
 pub fn tpsa_per_atom(mol: &Molecule) -> Vec<f64> {
-    // Apply aromaticity for consistent results with tpsa() (Kekulé-form parity).
-    let mol_arom = chematic_perception::apply_aromaticity(mol);
-    let mol = &mol_arom;
-    let ring_bonds = ring_bond_indices(mol);
-    let n = mol.atom_count();
-    let mut out = vec![0.0f64; n];
-    for (idx, atom) in mol.atoms() {
-        let an = atom.element.atomic_number();
-        let h = descriptor_attached_hcount(mol, idx);
-        out[idx.0 as usize] = match an {
-            7 => tpsa_nitrogen(mol, idx, atom.aromatic, h, atom.charge, &ring_bonds),
-            8 => tpsa_oxygen(mol, idx, atom.aromatic, h, atom.charge),
-            16 => tpsa_sulfur(mol, idx, atom.aromatic, h, atom.charge),
-            15 if !atom.aromatic => tpsa_phosphorus(mol, idx, h),
-            _ => 0.0,
-        };
-    }
-    out
+    tpsa_contributions(mol)
 }
 
 // ---------------------------------------------------------------------------
@@ -4357,6 +4192,42 @@ mod tests {
         assert!(approx(tpsa(&phthalimide), 46.17, 1e-12));
         assert!(approx(logp_crippen(&phthalimide), 0.5702, 1e-12));
         assert!(approx(molar_refractivity(&phthalimide), 38.2387, 1e-12));
+    }
+
+    #[test]
+    fn tpsa_matches_rdkit_nitrogen_atom_type_table_boundaries() {
+        // These public fixtures cover the atom types that are easy to miss when
+        // TPSA is implemented as functional-group special cases. Values are from
+        // RDKit 2025.09.3 CalcTPSA(includeSandP=true).
+        for (smiles, expected) in [
+            ("C1CN1", 21.94),        // secondary aziridine N
+            ("CN1CC1", 3.01),        // tertiary aziridine N
+            ("C[NH3+]", 27.64),      // primary ammonium
+            ("C=[NH2+]", 25.59),     // protonated imine, degree one
+            ("C=[NH+]C", 13.97),     // protonated imine, degree two
+            ("[NH2+]1CC1", 16.61),   // cyclic secondary ammonium
+            ("C[N+]#C", 4.36),       // nitrilium
+            ("[nH+]1ccccc1", 14.14), // aromatic protonated N
+        ] {
+            let observed = tpsa(&mol(smiles));
+            assert!(
+                approx(observed, expected, 1e-12),
+                "{smiles}: TPSA {observed}, expected {expected}"
+            );
+        }
+    }
+
+    #[test]
+    fn tpsa_kekule_nitrogen_uses_sanitized_aromatic_environment() {
+        assert!(approx(tpsa(&mol("N1=CC=CC=C1")), 12.89, 1e-12));
+        assert!(approx(tpsa(&mol("O=C1C=CC=CN1C")), 22.00, 1e-12));
+        // The shared contribution path guarantees that the public total and
+        // per-atom API cannot silently use different atom typing rules.
+        for smiles in ["N1=CC=CC=C1", "O=C1C=CC=CN1C", "O=C1NC(=O)c2ccccc12"] {
+            let molecule = mol(smiles);
+            let sum: f64 = tpsa_per_atom(&molecule).into_iter().sum();
+            assert!(approx(sum, tpsa(&molecule), 1e-12), "{smiles}");
+        }
     }
 
     // -- Test 17: aniline TPSA -----------------------------------------------
