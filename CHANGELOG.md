@@ -9,6 +9,14 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+- Completed the process-level Criterion gate calibration from issue #70. A
+  hosted +10% regression was blocked, and a +5% regression was detected in
+  8/10 independent hosted runs without weakening the predeclared sign test.
+- Made the independent-build null control actionable at the configured 95%
+  Wilson/0.2 boundary by increasing it from seven to ten blocks. A 1.04
+  practical-effect floor prevents small build/codegen differences from
+  contaminating a run, while a hosted one-sided-bias calibration now downgrades
+  an otherwise clear Stage 2 failure to environment-inconclusive.
 - Kept tetrahedral chirality and 2D wedge/hash depiction synchronized when
   `invert_stereocenter` is called, including the existing WASM-facing API.
 - Canonical-SMILES validation now includes the exact RENKIN issue #128 target

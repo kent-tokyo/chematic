@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "issue": 70,
+  "recorded_at": "2026-09-22",
+  "production_candidate_commit": "5d02f4807fe9f0a9fb023da2462a53fae4d987ce",
+  "baseline_main_commit": "ceabbeca9a3b5f6f02fa493b05fe0290791ae1d5",
+  "thresholds": {
+    "stage1_route_ratio": 1.04,
+    "stage2_fail_ratio": 1.04,
+    "null_contamination_ratio": 1.04,
+    "stage2_blocks": 10,
+    "null_blocks": 10
+  },
+  "plus10": {
+    "temporary_injection_commit": "d8fdae596aae6a6d13940f9116cd0620c129b55c",
+    "run_id": 35694419945,
+    "run_url": "https://github.com/kent-tokyo/chematic/actions/runs/35694419945",
+    "stage1_median_ratio": 1.147572468651569,
+    "stage2_median_ratio": 1.1252639133281883,
+    "stage2_verdict": "fail",
+    "stage2_baseline_wins": 10,
+    "stage2_candidate_wins": 0,
+    "null_median_ratio": 0.9990876512858123,
+    "null_verdict": "inconclusive",
+    "workflow_conclusion": "failure",
+    "expected_outcome": "blocked_regression",
+    "accepted": true
+  },
+  "plus5": {
+    "temporary_injection_commit": "e52a80757498c3ed091af3ce0d03e3d8ec9a361d",
+    "required_detection": "strict_majority_of_at_least_10_runs",
+    "detected_runs": 8,
+    "total_runs": 10,
+    "accepted": true,
+    "runs": [
+      {"index": 1, "run_id": 35696274696, "stage1_median_ratio": 1.0971406321014876, "stage2_median_ratio": 1.1086988601298255, "stage2_baseline_wins": 10, "stage2_candidate_wins": 0, "stage2_verdict": "fail", "null_median_ratio": 1.0037494352812044, "null_verdict": "inconclusive", "detected": true},
+      {"index": 2, "run_id": 35696278053, "stage1_median_ratio": 1.0816517526177523, "stage2_median_ratio": 1.067336967875246, "stage2_baseline_wins": 9, "stage2_candidate_wins": 1, "stage2_verdict": "inconclusive", "null_median_ratio": 1.036131271087471, "null_verdict": "inconclusive", "detected": false},
+      {"index": 3, "run_id": 35696280564, "stage1_median_ratio": 1.0647707803857602, "stage2_median_ratio": 1.051434895443092, "stage2_baseline_wins": 10, "stage2_candidate_wins": 0, "stage2_verdict": "fail", "null_median_ratio": 1.0157069818365956, "null_verdict": "inconclusive", "detected": true},
+      {"index": 4, "run_id": 35696284129, "stage1_median_ratio": 1.1146776363456048, "stage2_median_ratio": 1.0803751711514866, "stage2_baseline_wins": 10, "stage2_candidate_wins": 0, "stage2_verdict": "fail", "null_median_ratio": 1.049520172237979, "null_verdict": "inconclusive", "detected": true},
+      {"index": 5, "run_id": 35696286638, "stage1_median_ratio": 1.0653375885034055, "stage2_median_ratio": 1.0498144659086033, "stage2_baseline_wins": 10, "stage2_candidate_wins": 0, "stage2_verdict": "fail", "null_median_ratio": 0.99116063253246, "null_verdict": "inconclusive", "detected": true},
+      {"index": 6, "run_id": 35696291214, "stage1_median_ratio": 1.064535051197241, "stage2_median_ratio": 1.0611609582819104, "stage2_baseline_wins": 10, "stage2_candidate_wins": 0, "stage2_verdict": "fail", "null_median_ratio": 1.025171850629519, "null_verdict": "inconclusive", "detected": true},
+      {"index": 7, "run_id": 35696294733, "stage1_median_ratio": 1.0910990302640275, "stage2_median_ratio": 1.0768177929120801, "stage2_baseline_wins": 10, "stage2_candidate_wins": 0, "stage2_verdict": "fail", "null_median_ratio": 1.0255432884764957, "null_verdict": "inconclusive", "detected": true},
+      {"index": 8, "run_id": 35696297723, "stage1_median_ratio": 1.112458005711524, "stage2_median_ratio": 1.0535954411406743, "stage2_baseline_wins": 9, "stage2_candidate_wins": 1, "stage2_verdict": "inconclusive", "null_median_ratio": 0.9429984783121808, "null_verdict": "inconclusive", "detected": false},
+      {"index": 9, "run_id": 35696300307, "stage1_median_ratio": 1.0817230735131669, "stage2_median_ratio": 1.0778940429572952, "stage2_baseline_wins": 10, "stage2_candidate_wins": 0, "stage2_verdict": "fail", "null_median_ratio": 1.0263735290166587, "null_verdict": "inconclusive", "detected": true},
+      {"index": 10, "run_id": 35696303072, "stage1_median_ratio": 1.1047846791948361, "stage2_median_ratio": 1.0676843195181376, "stage2_baseline_wins": 10, "stage2_candidate_wins": 0, "stage2_verdict": "fail", "null_median_ratio": 1.0038894861374514, "null_verdict": "inconclusive", "detected": true}
+    ]
+  },
+  "one_sided_contamination": {
+    "temporary_injection_commit": "4ab3b4a7772f8d1cffc7f6db3e3669c07c46712a",
+    "run_id": 35698945312,
+    "run_url": "https://github.com/kent-tokyo/chematic/actions/runs/35698945312",
+    "stage1_median_ratio": 2.035038710770002,
+    "stage2_median_ratio": 2.0041237154350506,
+    "stage2_verdict": "fail",
+    "stage2_baseline_wins": 10,
+    "stage2_candidate_wins": 0,
+    "null_median_ratio": 2.0898367468832006,
+    "null_verdict": "fail",
+    "null_baseline_wins": 10,
+    "null_candidate_wins": 0,
+    "environment_contaminated": true,
+    "reported_outcome": "environment-inconclusive",
+    "workflow_conclusion": "success",
+    "accepted": true
+  },
+  "temporary_injection_policy": "calibration commits and branches are evidence fixtures only and must never be merged",
+  "overall_accepted": true
+}
