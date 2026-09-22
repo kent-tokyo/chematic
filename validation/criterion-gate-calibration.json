@@ -1,12 +1,14 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "purpose": "Synthetic calibration contract for issue #70 Criterion routing.",
   "scope": "Arithmetic and routing fixtures only; this is not hosted CI execution evidence.",
   "thresholds": {
     "stage1_route_ratio": 1.04,
     "stage2_fail_ratio": 1.04,
+    "null_contamination_ratio": 1.04,
     "stage1_blocks": 3,
-    "stage2_blocks": 10
+    "stage2_blocks": 10,
+    "null_blocks": 10
   },
   "cases": [
     {
@@ -60,6 +62,20 @@
       "sign_test": "fail",
       "environment_contaminated": true,
       "expected_gate": "inconclusive"
+    },
+    {
+      "id": "null_small_build_noise",
+      "stage": "null",
+      "median_ratio": 1.022,
+      "sign_test": "fail",
+      "expected_environment_contaminated": false
+    },
+    {
+      "id": "null_one_sided_contamination",
+      "stage": "null",
+      "median_ratio": 1.5,
+      "sign_test": "fail",
+      "expected_environment_contaminated": true
     }
   ]
 }

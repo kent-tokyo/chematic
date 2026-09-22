@@ -15,6 +15,13 @@
 
 ## Current status
 
+- Issue #70's process-level Criterion gate is calibrated and complete. Hosted
+  evidence blocks the +10% fixture, detects the +5% fixture in 8/10 independent
+  runs, and turns a material one-sided runner bias into
+  `environment-inconclusive` rather than a bare regression failure. The null
+  control now uses ten blocks (seven cannot cross the configured Wilson
+  boundary) plus a 1.04 practical-effect floor. Evidence:
+  `validation/results/criterion-gate-hosted-calibration-2026-09-22.json`.
 - Issue #149 is complete for the measured shared-carrier canonical E/Z scope.
   On clean `main` commit `2fe0cdd7`, all 28 coupled components converge across
   1,024 seeded atom relabelings each, with zero canonical divergence and zero

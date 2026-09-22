@@ -290,8 +290,12 @@ jobs:
       # this build/codegen noise floor directly.
       #
       # A two-build null control (main vs independently compiled main-null,
-      # run through the exact same pipeline) runs once per gate run. If it
-      # shows a biased verdict,
+      # run through the exact same pipeline) runs once per gate run. It uses
+      # 10 blocks because a 7/0 Wilson interval cannot cross the configured
+      # 0.2 fail boundary even under perfect one-sided contamination. As with
+      # Stage 2, a directional fail must also clear a 1.04 practical-effect
+      # floor so tiny independent-build/codegen differences do not mark the
+      # whole environment contaminated. If it shows a material biased verdict,
       # the whole run's environment is suspect -- every real "fail" that
       # stage is downgraded to `environment-inconclusive` and never blocks,
       # rather than trusting any individual benchmark's verdict.
@@ -377,10 +381,14 @@ jobs:
           # scripts/test_criterion_gate.sh to guard against a future edit
           # silently reintroducing magnitude-blind failing.
           STAGE2_FAIL_THRESHOLD=1.04
+          NULL_CONTAMINATION_THRESHOLD=1.04
+          NULL_CONTROL_BLOCKS=10
           pr/scripts/criterion_gate.sh check-threshold "$STAGE1_ROUTE_THRESHOLD" \
             || { echo "::error::invalid STAGE1_ROUTE_THRESHOLD -- infrastructure failure, not a silent skip"; exit 1; }
           pr/scripts/criterion_gate.sh check-threshold "$STAGE2_FAIL_THRESHOLD" \
             || { echo "::error::invalid STAGE2_FAIL_THRESHOLD -- infrastructure failure, not a silent skip"; exit 1; }
+          pr/scripts/criterion_gate.sh check-threshold "$NULL_CONTAMINATION_THRESHOLD" \
+            || { echo "::error::invalid NULL_CONTAMINATION_THRESHOLD -- infrastructure failure, not a silent skip"; exit 1; }
 
           # Stage 1: cheap screen across every benchmark first, so the (rare)
           # same-binary null-control fail check below reflects this run's
@@ -424,13 +432,25 @@ jobs:
           done
 
           # Null control, this run's actual environment.
-          run_null_control 7 abba artifacts/null_control.jsonl
+          run_null_control "$NULL_CONTROL_BLOCKS" abba artifacts/null_control.jsonl
           null_code=$?
           echo "=== null control: exit $null_code ==="
+          null_decision=$(pr/scripts/criterion_gate.sh contamination-check \
+            "$null_code" artifacts/null_control.jsonl "$NULL_CONTROL_BLOCKS" \
+            "$NULL_CONTAMINATION_THRESHOLD")
+          decision_code=$?
+          if [ "$decision_code" -ne 0 ]; then
+            echo "::error::null-control decision validation failed (exit $decision_code) -- infrastructure failure"
+            exit 1
+          fi
+          null_median=$(pr/scripts/criterion_gate.sh ratio-summary \
+            artifacts/null_control.jsonl "$NULL_CONTROL_BLOCKS")
           environment_contaminated=0
-          if [ "$null_code" -eq 1 ] || [ "$null_code" -eq 3 ]; then
-            echo "::error::two-build null control (main vs independently compiled main-null) shows a biased verdict -- this run's build/environment noise floor is too high. No individual benchmark fail is trustworthy this run."
+          if [ "$null_decision" = "contaminated" ]; then
+            echo "::error::two-build null control shows a material biased verdict (median ${null_median} >= ${NULL_CONTAMINATION_THRESHOLD}) -- this run's build/environment noise floor is too high. No individual benchmark fail is trustworthy this run."
             environment_contaminated=1
+          elif [ "$null_code" -eq 1 ] || [ "$null_code" -eq 3 ]; then
+            echo "::notice::two-build null control had a directional fail but median ${null_median} is below the practical-effect threshold ${NULL_CONTAMINATION_THRESHOLD}; treating it as small build/codegen noise"
           fi
 
           # Stage 2: confirmation only for benchmarks Stage 1 routed, reversed

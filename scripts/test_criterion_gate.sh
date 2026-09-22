@@ -13,7 +13,7 @@ cd "$(dirname "$0")/.."
 # experiments remain a separate evidence gate; this only prevents fixture
 # drift from making the local arithmetic tests document-only.
 calibration_manifest="validation/criterion-gate-calibration.json"
-jq -e '.schema_version == 1 and (.cases | length) == 7' "$calibration_manifest" >/dev/null
+jq -e '.schema_version == 2 and (.cases | length) == 9' "$calibration_manifest" >/dev/null
 
 # Stub out run_point_estimate with fixed values keyed by binary path, so
 # cmd_run_blocks's block-assembly logic runs unmodified against known inputs.
@@ -63,10 +63,10 @@ echo "baab record: $record_baab"
 rm -f "$out"
 
 # --- Shared ratio-summary/check-threshold/route-check (issue #70 follow-up) ---
-# route-check calls check-threshold and ratio-summary by name, so extract all
-# three together.
+# route-check and contamination-check call check-threshold and ratio-summary by
+# name, so extract all four together.
 extracted_shared=$(mktemp)
-sed -n '/^cmd_ratio_summary/,/^}/p;/^cmd_check_threshold/,/^}/p;/^cmd_route_check/,/^}/p' \
+sed -n '/^cmd_ratio_summary/,/^}/p;/^cmd_check_threshold/,/^}/p;/^cmd_route_check/,/^}/p;/^cmd_contamination_check/,/^}/p' \
   scripts/criterion_gate.sh > "$extracted_shared"
 source "$extracted_shared"
 rm -f "$extracted_shared"
@@ -229,6 +229,27 @@ awk -v m="$real_median" 'BEGIN { exit !(m >= 1.04) }' \
   || { echo "FAIL: expected median ~1.06 (>= 1.04 threshold) for the real-effect fixture, got $real_median"; exit 1; }
 rm -f "$fixture_stage2_real"
 
+# The independent-build null control needs enough blocks to make a directional
+# fail possible, plus a magnitude floor to avoid turning the known ~2.2%
+# codegen incident into an environment-contamination false positive.
+null_small_noise=$(mktemp)
+for i in 1 2 3 4 5 6 7 8 9 10; do
+  printf '{"id":"%d","baseline":-10000.0,"candidate":-10220.0}\n' "$i" >> "$null_small_noise"
+done
+[ "$(cmd_contamination_check 1 "$null_small_noise" 10 1.04)" = "clean" ] \
+  || { echo "FAIL: unanimous ~2.2% null difference must remain clean"; exit 1; }
+rm -f "$null_small_noise"
+
+null_material_bias=$(mktemp)
+for i in 1 2 3 4 5 6 7 8 9 10; do
+  printf '{"id":"%d","baseline":-10000.0,"candidate":-15000.0}\n' "$i" >> "$null_material_bias"
+done
+[ "$(cmd_contamination_check 1 "$null_material_bias" 10 1.04)" = "contaminated" ] \
+  || { echo "FAIL: material one-sided null bias must mark the environment contaminated"; exit 1; }
+[ "$(cmd_contamination_check 2 "$null_material_bias" 10 1.04)" = "clean" ] \
+  || { echo "FAIL: an inconclusive null verdict must not invent contamination"; exit 1; }
+rm -f "$null_material_bias"
+
 # Stage-2 strict validation, same shape as Stage 1's: exactly 10 records
 # required, not 9 or 11.
 stage2_too_few=$(mktemp)
@@ -251,6 +272,12 @@ grep -Fq 'null_control_bin_b=$(bin_path main-null' "$workflow" \
   || { echo "FAIL: Criterion workflow does not resolve the independent null binary"; exit 1; }
 grep -Fq '"$null_control_bin_a" "$null_control_bin_b" "parse_smiles_10mol"' "$workflow" \
   || { echo "FAIL: Criterion workflow null control is not a two-build comparison"; exit 1; }
+grep -Fq 'NULL_CONTROL_BLOCKS=10' "$workflow" \
+  || { echo "FAIL: null control needs 10 blocks for the configured Wilson boundary"; exit 1; }
+grep -Fq 'NULL_CONTAMINATION_THRESHOLD=1.04' "$workflow" \
+  || { echo "FAIL: null control practical-effect threshold is missing"; exit 1; }
+grep -Fq 'contamination-check' "$workflow" \
+  || { echo "FAIL: workflow does not combine null direction and magnitude"; exit 1; }
 
 # Note: this script unit-tests cmd_ratio_summary/cmd_check_threshold/
 # cmd_route_check's pure logic, including the exact incident data. The
