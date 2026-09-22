@@ -1,0 +1,88 @@
+{
+  "collected_at_utc": "2026-09-22T14:35:24.867195+00:00",
+  "host": {
+    "cargo": "cargo 1.97.0 (c980f4866 2026-06-30)",
+    "machine": "arm64",
+    "node": "v24.5.0",
+    "npm": "11.5.1",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "python_executable": "/private/tmp/chematic-a66-venv/bin/python",
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)"
+  },
+  "inputs": {
+    "corpora": [
+      {
+        "bytes": 429750,
+        "path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+        "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f"
+      }
+    ],
+    "operation_configurations": [
+      {
+        "bytes": 5217,
+        "path": "validation/rdkit_rebaseline_execution.json",
+        "sha256": "f204f07c411c354684c5a161f59c445f1981ada425e20cd606c7031a94996d2e"
+      }
+    ],
+    "sealed_accuracy_cohort_reused": false
+  },
+  "lanes": [
+    {
+      "availability": "measured",
+      "channel": "python_native",
+      "missing_dimensions": [],
+      "package": {
+        "artifact": {
+          "bytes": 30280927,
+          "path": "/private/tmp/chematic-a66-wheels/rdkit-2026.3.6-cp313-cp313-macosx_11_0_arm64.whl",
+          "sha256": "e16c467cb254a223e59a0cf81358c6b39da15a99d2909170d693e95778fddb41"
+        },
+        "artifact_archive_sha256": "e16c467cb254a223e59a0cf81358c6b39da15a99d2909170d693e95778fddb41",
+        "direct_url_archive_sha256": null,
+        "installed_metadata": [
+          {
+            "bytes": 3794,
+            "name": "METADATA",
+            "sha256": "80d457cad3c9d1b8a5775cf0408c0537c4739b34d5025eaae99e1c16ffc0e268"
+          },
+          {
+            "bytes": 136,
+            "name": "WHEEL",
+            "sha256": "084040e348e05a9d3c1ae698c449e900ba8e08108a4ef49cb118677c5360a0bc"
+          },
+          {
+            "bytes": 106798,
+            "name": "RECORD",
+            "sha256": "0534b0027519426d628e76ec94177a66f3ba6cc6e520f31c9815376c6b1a4b3d"
+          }
+        ],
+        "name": "rdkit",
+        "version": "2026.3.6"
+      },
+      "runtime": {
+        "error": null,
+        "module_path": "/private/tmp/chematic-a66-venv/lib/python3.13/site-packages/rdkit/__init__.py",
+        "version": "2026.03.6"
+      },
+      "wrapper_backend": {
+        "evidence": "runtime callable type=Boost.Python.function",
+        "status": "declared",
+        "value": "boost_python"
+      }
+    }
+  ],
+  "profile": "rdkit_rebaseline_provenance_v1",
+  "schema_version": 1,
+  "source": {
+    "dirty_worktree": true,
+    "lockfile_sha256": "39697714823fecacc7235aa7abccbd4e06dd8a23c5651e92be2d13854a31f073",
+    "machine": "arm64",
+    "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+    "python_executable": "/private/tmp/chematic-a66-venv/bin/python",
+    "source_commit": "6a41f2ecffdec984346c27eb9001547176063546",
+    "tracked_diff_sha256": "fbb4add7ff239affe81a22853efc2a6215a5574a743f6e14eeea38183b5b758c",
+    "untracked_source_files": 7,
+    "untracked_source_sha256": "4a059b6f728b8caae7047225c91902f8ab2a88f2b965f2b95ca4232fbee06251"
+  }
+}

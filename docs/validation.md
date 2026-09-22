@@ -9,7 +9,8 @@ upgraded to the current source revision.
 | Area | Evidence | Boundary |
 |---|---|---|
 | Release channels | `validation/results/release-channel-verification-v1.0.15.json` | GitHub, crates.io, docs.rs, PyPI, npm, Pages; platform smoke uses the actually published wheels |
-| RDKit.js browser comparison | `benchmarks/2026-09-22-public-package-fingerprint-3d.md` | Published v1.0.19 baseline and a separately identified source candidate on the fixed exposed 10k corpus; not internet/CDN latency |
+| RDKit.js browser comparison | `benchmarks/2026-09-22-public-package-fingerprint-3d.md` | Published v1.0.19 baseline and separately identified PR #630 source evidence on the fixed exposed 10k corpus; not a registry rerun or internet/CDN latency |
+| RDKit 2026.03.6 rebaseline | `validation/results/rdkit-rebaseline-*-v1.0.19-vs-2026.03.6-2026-09-22.*` | Exact Python/npm artifacts and 10,000 complete exposed rows; historical compatibility diagnostics, not oracle adoption |
 | Parser security | `validation/parser_security_corpus_v1.json` plus hosted Linux gate | Fixed five-format corpus with process/time/memory boundaries |
 | V3000 interchange | `validation/results/v3000-*-v1.0.15.json` | Ordinary structures and declared SGROUP/stereo contracts; no coordination/haptic/polymer semantic claim |
 | Stereo development | `validation/results/stereo-*-v1.0.15-2026-09-16.json` | 300 development structures and 5,115 spelling variants; not independent gold |
@@ -56,8 +57,8 @@ is not a compatibility percentage.
 
 The 2026-09-22 published v1.0.19 Chromium record passes the parse-inclusive
 compatible-Morgan speed gate at 2.658x geometrically (95% lower bound 2.617x),
-but its prepared fingerprint path is slower than RDKit.js at 0.687x. A separate
-local source candidate adds immutable RDKit-compatible preparation and passes
+but its prepared fingerprint path is slower than RDKit.js at 0.687x. PR #630's
+merged source adds immutable RDKit-compatible preparation and passes
 both lanes: 1.397x parse-inclusive and 3.551x prepared, with 95% lower bounds
 1.333x and 3.384x. It is not yet a registry-package claim. Both paths preserve
 9,999/9,999 configured-bit agreement; one Fe(II) coordination input remains a
@@ -77,6 +78,8 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 python3 scripts/check_release_docs_consistency.py
 python3 scripts/check_benchmark_index.py
 python3 scripts/check_compatibility_profiles.py
+python3 scripts/check_rdkit_rebaseline_execution.py
+python3 scripts/check_rdkit_rebaseline_evidence.py
 
 # Development accuracy snapshot (requires the pinned RDKit environment)
 python3 scripts/bench5k.py scripts/chembl_accuracy_corpus_4999.smi

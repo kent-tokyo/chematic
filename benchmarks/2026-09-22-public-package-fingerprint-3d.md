@@ -3,6 +3,10 @@
 This record separates released artifacts from local source candidates. It does
 not establish that chematic is universally faster than RDKit.
 
+Post-measurement status: PR #630 merged these candidate changes into `main` on
+2026-09-22. “Source candidate” below continues to identify the measured build;
+it is still not evidence from a newly published npm or PyPI package.
+
 ## Environment and fixed inputs
 
 - Host: macOS 26.5.2, arm64; browser lane uses Google Chrome/Chromium.
@@ -70,6 +74,6 @@ Evidence:
 The source candidate demonstrates a scoped RDKit.js speed win for both
 parse-inclusive and correctly prepared compatible Morgan, and a scoped 3D UFF
 best-of-10 speed/coverage win. General 3D superiority is not established.
-Before publication: run full workspace/clippy gates, merge the candidate, then
-install the new npm/PyPI artifacts from registries and repeat these exact
-measurements.
+Before a release claim: install the next npm/PyPI artifacts from registries and
+repeat these exact measurements. A merge alone does not convert source evidence
+into public-package evidence.

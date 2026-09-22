@@ -51,6 +51,33 @@ def test_python_lane_keeps_runtime_and_backend_evidence_separate():
     assert lane["missing_dimensions"] == []
 
 
+def test_python_lane_hashes_the_exact_supplied_artifact(tmp_path: Path):
+    artifact = tmp_path / "rdkit-2026.3.6.whl"
+    artifact.write_bytes(b"wheel bytes")
+
+    def importer(name: str) -> object:
+        if name == "rdkit":
+            return SimpleNamespace(__file__="/tmp/rdkit/__init__.py")
+        if name == "rdkit.rdBase":
+            return SimpleNamespace(rdkitVersion="2026.03.6")
+        raise ImportError(name)
+
+    lane = collect_python_lane(
+        "boost_python",
+        "runtime type(Chem.MolFromSmiles)=Boost.Python.function",
+        artifact,
+        distribution_lookup=lambda _name: FakeDistribution(),
+        module_import=importer,
+    )
+
+    assert lane["package"]["artifact"]["sha256"] == hashlib.sha256(
+        b"wheel bytes"
+    ).hexdigest()
+    assert lane["package"]["artifact_archive_sha256"] == lane["package"][
+        "artifact"
+    ]["sha256"]
+
+
 def test_python_lane_does_not_promote_installed_record_to_archive_hash():
     distribution = FakeDistribution()
     distribution.read_text = lambda name: (
@@ -91,12 +118,17 @@ def test_npm_lane_records_lock_integrity_assets_and_explicit_runtime(tmp_path: P
     }
     lock_path = node_modules / ".package-lock.json"
     lock_path.write_text(json.dumps(lock), encoding="utf-8")
+    artifact = tmp_path / "rdkit-2026.3.6.tgz"
+    artifact.write_bytes(b"npm tarball")
 
-    lane = collect_npm_lane(package_dir, "2026.03.6")
+    lane = collect_npm_lane(package_dir, "2026.03.6", artifact)
 
     assert lane["availability"] == "measured"
     assert lane["runtime"] == {"version": "2026.03.6", "status": "measured"}
     assert lane["package"]["registry"]["integrity"] == "sha512-example"
+    assert lane["package"]["artifact_archive_sha256"] == hashlib.sha256(
+        b"npm tarball"
+    ).hexdigest()
     assert lane["package"]["assets"] == [
         {
             "path": "dist/RDKit_minimal.wasm",

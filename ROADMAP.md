@@ -4,8 +4,8 @@
 > **A0 core-eight multi-field acceptance is complete.** Preserve every exposed
 > cohort and move the active correctness focus to A2 stereo/identity and the
 > next version-pinned RDKit rebaseline.
-> Published v1.0.19 Parse + Morgan is verified; the prepared-Morgan and 3D UFF
-> improvements remain source candidates pending merge and registry reruns.
+> Published v1.0.19 Parse + Morgan is verified. PR #630 merged the prepared-Morgan
+> and bounded 3D UFF improvements into `main`; registry-package reruns remain.
 
 > The September 20 competitor-watch intake confirms the direction rather than
 > starting a feature race: complete the Trust Release packet; stage the next
@@ -33,6 +33,13 @@
   `R1..R9999`; unsupported labels reject instead of becoming placeholder
   carbon, and WASM exposes index-aligned inspection plus immutable edits.
   This is interchange metadata, not full Markush expansion semantics.
+- T1.5 now has an executable and CI-checked historical RDKit 2026.03.6 packet.
+  Exact Python wheel and official npm tarball hashes, the measured Boost.Python
+  backend, binding behavior, commands, host/toolchain, and all 10,000 exposed
+  rows are retained. Public CheMatic 1.0.19 is Morgan-exact on 9,999/10,000,
+  CIP-exact on 9,880/10,000, and has 14,306 differing SMARTS cells out of
+  310,000. These are compatibility diagnostics, not a new-oracle adoption or
+  a complete-parity claim; unresolved rows stay unresolved.
 - The post-v1.0.19 candidate `5e9211a6`, frozen as annotated tag
   `trust-eval-candidate-a0-multifield-r3-20260922`, completes the A0 core-eight
   gate against RDKit 2025.09.3. A separately acquired source was overlap-audited
@@ -132,7 +139,7 @@ into fresh validation evidence.
 | Stage | Work | Completion evidence | Explicit boundary |
 |---|---|---|---|
 | 0 | Preserve rejected A0 candidates and close the core-eight acceptance packet | Candidate provenance, declared support domain, failures, affected bindings, and the accepted one-time result are linked from the ledger | Complete. Candidate `5e9211a6` passed all eight fields on 8,000/8,000 sealed rows after a new freeze, post-freeze acquisition, and overlap audit. `scripts/check_a0_core_eight_sealed.py` validates the commit-safe summary; all raw cohorts are exposed and prohibited from reuse. |
-| 1 | Prepare the RDKit rebaseline lanes before a new stable artifact is selected | Version-pinned Python/native/npm inputs, nanobind-wrapper backend and typed-error probes, fixed operation settings, and reproducible commands | Run and publish a comparison only against an actually released artifact; 2026.03.6 remains historical rather than being relabelled current |
+| 1 | Prepare the RDKit rebaseline lanes before a new stable artifact is selected | Historical 2026.03.6 Python/npm artifacts, the measured Boost.Python backend, typed-error probes, fixed operation settings, complete rows, and reproducible commands are committed and CI-checked | Keep 2026.03.6 historical. Run an old/new comparison only after the next official artifact is released; do not infer nanobind or npm availability from upstream work |
 | 2 | Import verified upstream failure modes as CheMatic regressions | Identity-renumber stereo, selected-atom/bond CIP, and V3000 E/Z query-round-trip truth tables pass, or a typed unsupported outcome is documented | A competitor failure is a regression source, not proof that CheMatic is more correct; do not import a report before confirming its reproducer and affected versions |
 | 3 | Close A2/#503's canonical E/Z work before new 3D breadth | Remaining components converge under atom-order and spelling permutations, reparse preserves stereo, and stable-key stops only where ambiguity remains real | Issue #149's measured residual is complete. The bounded complete-slot planner includes raw directional carriers, reparses every candidate against a non-recursive E/Z signature, and selects the lexicographic minimum without raw atom/bond-index tie-breaks. A clean-main audit now passes all 28 coupled components across 1,024 relabelings each with zero divergence or correspondence failure. Stable keys remain limited to the proven aromatic-stash path; unmeasured coupled systems remain fail-closed. |
 | 4 | Promote BatchResult accounting from a convention to a cross-binding contract | Rust, Python, Node, and WASM expose input count, original index, stage, terminal outcome, skipped/refused accounting, and `all_succeeded`-equivalent behavior; cancellation exposes the unprocessed range | `failed == 0` alone never means every input was exported or processed |
@@ -152,7 +159,7 @@ stop conditions explicit.
 | Order | Work package | Concrete next output | Acceptance / stop condition |
 |---:|---|---|---|
 | 1 | **A0 evidence maintenance** | Keep the accepted core-eight packet and historical rejection ledger immutable | Reopen A0 only when the declared field/profile/oracle changes; any new adoption still requires a new source, overlap audit, annotated freeze, attestation, and one-time protocol. |
-| 2 | **T1.5 RDKit rebaseline preparation** | Maintain runnable Python/native/npm lanes with artifact, backend, API-contract, corpus, toolchain, and command provenance | Do not run or label a “next RDKit” comparison until an official released artifact is verified. Historical 2025.09.3/2026.03.6 lanes stay visible. |
+| 2 | **T1.5 RDKit rebaseline preparation** | Maintain the runnable 2026.03.6 Python/npm packet and add a native lane or explicit unavailable record; retain complete-row difference classes | Do not label a “next RDKit” comparison until its official artifact is verified. Historical 2025.09.3/2026.03.6 lanes stay visible. |
 | 3 | **T5.7/T1.9 semantic regressions** | Add source-pinned reproductions for identity-renumber stereo and V3000 E/Z query round trips; include selected atom/bond CIP only after its source fixture is verified | Each fixture must compare atom/bond correspondence and semantic truth tables, or return a typed unsupported result. A competitor defect is never evidence of CheMatic superiority. |
 | 4 | **T3.7 controlled batch runtime** | Specify a versioned unknown-stream envelope for Rust, Python, Node, WASM, Worker, and MCP adapters | Known-length accounting remains exact; unknown streams expose processed prefix, observed-but-unprocessed data, unread range/unknown, terminal reason, and cancellation state. Zero `failed` must not imply success. |
 | 5 | **Browser proof and performance maintenance** | Measure the declared Worker/stream/cancel/export path and rerun the package scorecard only with equivalent operation contracts | Keep parse/write, compatible Morgan, native ECFP, startup, and memory as separate lanes. A local browser result is not a cross-host, CDN, or unique-memory claim. |
@@ -162,7 +169,7 @@ stop conditions explicit.
 
 | Order | Priority | Delivery and next output | Product Phase / accuracy |
 |---|---|---|---|
-| 1 | P0 preparation; external execution | **T1.5 rebaseline**: make old/new RDKit lanes executable now; run only for actually published stable Python/native/npm artifacts. Record wrapper backend, typing/exception behavior, and operation configuration—not just version strings. Re-measure Python call overhead separately from kernel work after a binding change | P0/P2/P3; A1–A4 |
+| 1 | P0 preparation; external execution | **T1.5 rebaseline**: preserve the completed 2026.03.6 Python/npm execution packet, classify its 120 CIP, 18 SMILES-semantic, 14,306 SMARTS-cell, and one Morgan residual without changing product behavior, and prepare the same commands for the next published stable artifacts. Re-measure Python boundary overhead after an actual backend change | P0/P2/P3; A1–A4 |
 | 2 | P1 | **A2 and semantic interchange closure**: retain the deployed #503 aromatic-stash planner and the completed #149 28-component × 1,024-relabeling gate; expand acceptance only with new bounded semantic-reparse evidence. Resolve phosphorus adjudication before new 3D breadth. Retain the completed T5.7 identity-renumber gate and T1.9 V3000 E/Z query truth table; after primary-source verification add selected-atom/bond CIP and identity-renumber stereo cases, keep T5.6 selective CIP/isotope/atrop and T1.8 attachment boundaries, then add typed semantics before making compatibility claims | P1/P2/P4; A2/A5 |
 | 3 | P1 | **T3.7 controlled runtime**: retain the merged Explorer unknown-length CSV cancellation adapter, then extend the completed row-accounting contract through Worker/stream/cancel/export/limits on 10k inputs. Every binding must report original index, stage, success/failed/refused/skipped terminal outcome, unprocessed cancellation range, and an all-inputs-succeeded predicate; publish typed install examples and a generated package scorecard only after that contract and its resource evidence exist. T3.6 maintains its scoped speed win; it does not substitute for runtime controls | P0/P3/P6; A3/A4 |
 | 4 | P2; P0 for confirmed incorrectness | **T6 / A5–A6**: prepare independent gold/review and close existing 3D typing, charge, gradient, convergence, timeout, and stereo gaps. Do not add embedding breadth before fail-closed correctness evidence | P5/P6; A5/A6 |
@@ -180,10 +187,10 @@ goal; the abandoned additional 1.10x SMILES stretch stays abandoned.
 
 The 2026-09-22 public v1.0.19 Chromium run passes parse-inclusive compatible
 Morgan at **2.658x** geometric speedup (95% lower bound **2.617x**) but loses the
-old prepared lane at **0.687x**. The current source candidate passes both the
+old prepared lane at **0.687x**. PR #630's merged source passes both the
 parse-inclusive (**1.397x**, lower bound **1.333x**) and correctly prepared
 (**3.551x**, lower bound **3.384x**) lanes with 9,999/9,999 supported rows exact.
-It remains candidate evidence until merge and registry-package rerun.
+It remains source evidence—not a published-package result—until a later registry rerun.
 
 Retained acceptance target: fixed radius-2/2048-bit compatible Morgan, same input/output,
 full supported-domain bit agreement and no new refusals; paired speedup 95% CI
@@ -236,13 +243,13 @@ the [disposition ledger](docs/roadmap-open-work.md) for evidence and dependencie
 - [ ] **A3 — Fingerprints and retrieval:** retain raw/provenance evidence for the new aromaticity lane, rerun affected bindings/search after adoption, and pass unused-input evaluation. Existing k=1/10/100 and threshold evidence remains valid for its recorded builds.
 - [ ] **A4 — Workflows and interchange:** finish T0 residual classification and adoption, then verify mapped SMARTS embeddings, standardization, reaction products, and typed V3000 semantics across engines.
 - [ ] **A5 — Independent adjudication:** obtain absolute gold labels and unused inputs, secure non-maintainer review, and run the implemented paired evaluator against the frozen protocol.
-- [ ] **A6 — 3D and force fields:** issue #337's six MMFF94 pyridinium/macrocycle typing and charge residuals are resolved on the pinned 265-molecule gate. Published v1.0.19 UFF is faster but has lower usable coverage; the source-candidate best-of-10 UFF lane is 265/265 usable versus RDKit 264/265 and 2.327x faster geometrically (95% lower bound 2.168x). Merge and package-rerun that bounded fix, then resolve single-conformer UFF residuals and MMFF94 term, gradient, convergence, timeout, stereo, quality, and speed gaps. This does not complete A6.
+- [ ] **A6 — 3D and force fields:** issue #337's six MMFF94 pyridinium/macrocycle typing and charge residuals are resolved on the pinned 265-molecule gate. Published v1.0.19 UFF is faster but has lower usable coverage; PR #630's merged-source best-of-10 UFF lane is 265/265 usable versus RDKit 264/265 and 2.327x faster geometrically (95% lower bound 2.168x). Package-rerun that bounded fix, then resolve single-conformer UFF residuals and MMFF94 term, gradient, convergence, timeout, stereo, quality, and speed gaps. This does not complete A6.
 
 ### Cross-cutting follow-ups
 
 These extend the same product areas; they do not introduce new Phase numbers.
 
-- [ ] T3.6/T1.5: merge the exact prepared-Morgan candidate, rerun both lanes from the next published npm package, then complete multi-browser/host, resource, and next-RDKit rebaseline evidence. Keep native ECFP and T3.4 search separate.
+- [~] T3.6/T1.5: PR #630 merged the exact prepared-Morgan and bounded UFF source candidates. Rerun both lanes from the next published npm package, then complete multi-browser/host, resource, native-lane, residual-classification, and next-RDKit evidence. Keep native ECFP and T3.4 search separate.
 - [ ] Make the BatchResult contract the cross-binding batch product boundary: known-length input accounting remains exact, and the public Rust/Python/WASM/Node stream schema distinguishes normal EOF from typed cancellation/time/resource/producer/consumer stops, observed-but-unprocessed rows, and an unread unknown suffix. Add retry, Worker/MCP adapters, export, clean-install, and resource proof without manufacturing success or skipped rows.
 - [ ] Exact canonical-SMILES and cross-engine V3000 parity: expand semantic-identity and RDKit/Indigo fixtures beyond the completed T5.7 identity-renumber and T1.9 query-semantics gates; retain unsupported representation boundaries.
 - [ ] Replace remaining MD/UFF/MMFF94 finite-difference production paths after same-domain analytic energy, gradient, and stereo soundness gates.

@@ -32,10 +32,10 @@ refusal. A separate ChEMBL 5k Chromium gate is 5,000/5,000 exact.
 The published v1.0.19 npm package was subsequently measured on the same fixed
 10k corpus. Its parse-inclusive compatible-Morgan lane is 2.658x faster
 geometrically (95% lower bound 2.617x), while its old prepared lane is only
-0.687x and therefore loses. A local source candidate with explicit immutable
+0.687x and therefore loses. PR #630's merged source with explicit immutable
 preparation passes both lanes: 1.397x parse-inclusive (lower bound 1.333x) and
 3.551x prepared (lower bound 3.384x), with 9,999/9,999 supported rows exact.
-That candidate is not yet a published-package claim. See the complete
+That result is still not a published-package claim. See the complete
 [2026-09-22 record](../benchmarks/2026-09-22-public-package-fingerprint-3d.md).
 
 ## Published-source timing summary

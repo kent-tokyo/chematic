@@ -93,6 +93,7 @@ def direct_url_archive_hash(distribution: object) -> str | None:
 def collect_python_lane(
     wrapper_backend: str,
     backend_evidence: str | None,
+    artifact_path: Path | None = None,
     *,
     distribution_lookup: Callable[[str], object] = importlib.metadata.distribution,
     module_import: Callable[[str], object] = importlib.import_module,
@@ -120,7 +121,11 @@ def collect_python_lane(
         for name in ("METADATA", "WHEEL", "RECORD", "direct_url.json")
         if (record := distribution_text_record(distribution, name)) is not None
     ]
-    archive_sha256 = direct_url_archive_hash(distribution)
+    direct_url_sha256 = direct_url_archive_hash(distribution)
+    artifact = file_record(artifact_path, ROOT) if artifact_path is not None else None
+    archive_sha256 = (
+        str(artifact["sha256"]) if artifact is not None else direct_url_sha256
+    )
 
     runtime_version: str | None = None
     runtime_error: str | None = None
@@ -150,7 +155,9 @@ def collect_python_lane(
             "name": package_name,
             "version": package_version,
             "installed_metadata": metadata_records,
+            "artifact": artifact,
             "artifact_archive_sha256": archive_sha256,
+            "direct_url_archive_sha256": direct_url_sha256,
         },
         "runtime": {
             "version": runtime_version,
@@ -174,7 +181,9 @@ def find_node_modules(path: Path) -> Path | None:
 
 
 def collect_npm_lane(
-    package_dir: Path, runtime_version: str | None
+    package_dir: Path,
+    runtime_version: str | None,
+    artifact_path: Path | None = None,
 ) -> dict[str, object]:
     package_dir = package_dir.resolve()
     package_json = package_dir / "package.json"
@@ -216,7 +225,10 @@ def collect_npm_lane(
         for path in sorted(package_dir.rglob("*"))
         if path.is_file() and path.suffix in {".wasm", ".js", ".mjs", ".ts"}
     ]
+    artifact = file_record(artifact_path, ROOT) if artifact_path is not None else None
     missing_dimensions: list[str] = []
+    if artifact is None:
+        missing_dimensions.append("artifact_archive_sha256")
     if lock_record.get("integrity") is None:
         missing_dimensions.append("registry_integrity")
     if runtime_version is None:
@@ -231,6 +243,10 @@ def collect_npm_lane(
             "name": package_name,
             "version": package_version,
             "package_json": file_record(package_json, package_dir),
+            "artifact": artifact,
+            "artifact_archive_sha256": (
+                artifact["sha256"] if artifact is not None else None
+            ),
             "registry": lock_record,
             "assets": assets,
         },
@@ -257,11 +273,19 @@ def build_record(args: argparse.Namespace) -> dict[str, object]:
     if args.python:
         lanes.append(
             collect_python_lane(
-                args.python_wrapper_backend, args.python_backend_evidence
+                args.python_wrapper_backend,
+                args.python_backend_evidence,
+                args.python_artifact,
             )
         )
     if args.npm_package is not None:
-        lanes.append(collect_npm_lane(args.npm_package, args.npm_runtime_version))
+        lanes.append(
+            collect_npm_lane(
+                args.npm_package,
+                args.npm_runtime_version,
+                args.npm_artifact,
+            )
+        )
     return {
         "schema_version": 1,
         "profile": "rdkit_rebaseline_provenance_v1",
@@ -298,11 +322,21 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--python-backend-evidence")
     parser.add_argument(
+        "--python-artifact",
+        type=Path,
+        help="exact installed wheel/archive; hashed directly rather than inferred",
+    )
+    parser.add_argument(
         "--npm-package", type=Path, help="installed @rdkit/rdkit package directory"
     )
     parser.add_argument(
         "--npm-runtime-version",
         help="version returned by executing rdkit.version(); never inferred",
+    )
+    parser.add_argument(
+        "--npm-artifact",
+        type=Path,
+        help="exact installed npm tarball; hashed directly rather than inferred",
     )
     parser.add_argument("--corpus", type=Path, action="append", default=[])
     parser.add_argument("--operation-config", type=Path, action="append", default=[])
@@ -316,6 +350,12 @@ def parse_args() -> argparse.Namespace:
         parser.error(
             "--python-backend-evidence is required for a declared wrapper backend"
         )
+    if args.python_artifact is not None and not args.python_artifact.is_file():
+        parser.error(f"Python artifact not found: {args.python_artifact}")
+    if args.npm_artifact is not None and not args.npm_artifact.is_file():
+        parser.error(f"npm artifact not found: {args.npm_artifact}")
+    if args.npm_artifact is not None and args.npm_package is None:
+        parser.error("--npm-artifact requires --npm-package")
     return args
 
 

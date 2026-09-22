@@ -1,0 +1,701 @@
+{
+  "chematic_version": "1.0.19",
+  "corpus": {
+    "path": "/private/tmp/chematic-t15-runnable/validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+    "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f"
+  },
+  "counts": {
+    "cip_difference": 120,
+    "cip_exact": 9880,
+    "completed": 10000,
+    "difference_rows": 9936,
+    "exact_rows": 64,
+    "morgan_difference": 1,
+    "morgan_exact": 9999,
+    "smarts_cells": 310000,
+    "smarts_differences": 14306,
+    "smiles_exact": 64,
+    "smiles_semantic_difference": 18,
+    "smiles_spelling_difference": 9936
+  },
+  "difference_classification": {
+    "allowed": [
+      "chematic_regression",
+      "oracle_change",
+      "contract_difference",
+      "unresolved"
+    ],
+    "default_for_unadjudicated_rows": "unresolved"
+  },
+  "difference_examples": [
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 0,
+      "smiles": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccccc1Cl",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 1,
+      "smiles": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccc(C#N)cc1",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 2,
+      "smiles": "Cc1cc(-n2ncc(=O)[nH]c2=O)cc(C)c1C(O)c1ccc(Cl)cc1",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 3,
+      "smiles": "Cc1ccc(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2)cc1",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 4,
+      "smiles": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccc(Cl)cc1",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 5,
+      "smiles": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccccc1",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 6,
+      "smiles": "Cc1cc(Br)ccc1C(=O)c1ccc(-n2ncc(=O)[nH]c2=O)cc1Cl",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 7,
+      "smiles": "O=C(c1ccc(Cl)cc1Cl)c1ccc(-n2ncc(=O)[nH]c2=O)cc1Cl",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 8,
+      "smiles": "CS(=O)(=O)c1ccc(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2Cl)cc1",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        },
+        {
+          "classification": "unresolved",
+          "detail": "one or more target-atom-set cells differ",
+          "operation": "smarts"
+        }
+      ],
+      "input_index": 9,
+      "smiles": "c1cc2cc(c1)-c1cccc(c1)C[n+]1ccc(c3ccccc31)NCCCCCCCCCCNc1cc[n+](c3ccccc13)C2",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 10,
+      "smiles": "CSc1ccc(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2Cl)cc1",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 11,
+      "smiles": "O=C(c1ccc(Cl)cc1)c1ccc(-n2ncc(=O)[nH]c2=O)cc1Cl",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 12,
+      "smiles": "O=C1O/C(=C/Br)CCC1c1cccc2ccccc12",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 13,
+      "smiles": "O=C1O/C(=C/I)CCC1c1cccc2ccccc12",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 14,
+      "smiles": "C#C/C=C1\\CCC(c2cccc3ccccc23)C(=O)O1",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 15,
+      "smiles": "O=C1O/C(=C\\I)CCC1c1cccc2ccccc12",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 16,
+      "smiles": "O=C(c1ccccc1)c1ccc(-n2ncc(=O)[nH]c2=O)cc1",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 17,
+      "smiles": "O=c1cnn(-c2ccc(C(O)c3ccc(Cl)cc3)c(Cl)c2)c(=O)[nH]1",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 18,
+      "smiles": "O=C(c1ccccc1)c1cc(-n2ncc(=O)[nH]c2=O)ccc1Cl",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 19,
+      "smiles": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(O)c1ccccc1",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 20,
+      "smiles": "COc1cc2nc(N3CCN(C(=O)C4CC4c4ccccc4)CC3)nc(N)c2cc1OC",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 21,
+      "smiles": "COc1ccc(C(=O)c2ccc(-n3ncc(=O)[nH]c3=O)cc2)cc1",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 22,
+      "smiles": "COc1cc2nc(N3CCN(S(=O)(=O)c4cccs4)CC3)nc(N)c2cc1OC",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        },
+        {
+          "classification": "unresolved",
+          "detail": "one or more target-atom-set cells differ",
+          "operation": "smarts"
+        }
+      ],
+      "input_index": 23,
+      "smiles": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)-c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 24,
+      "smiles": "Nc1cc[n+](Cc2cccc(-c3cccc(C[n+]4ccc(N)c5ccccc54)c3)c2)c2ccccc12",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 25,
+      "smiles": "Nc1cc[n+](Cc2ccc(CCc3ccc(C[n+]4ccc(N)c5ccccc54)cc3)cc2)c2ccccc12",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 26,
+      "smiles": "Nc1cc[n+](Cc2ccc(/C=C\\c3ccc(C[n+]4ccc(N)c5ccccc54)cc3)cc2)c2ccccc12",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 27,
+      "smiles": "c1ccc(C[n+]2ccc(NCCCCCCCCCCNc3cc[n+](Cc4ccccc4)c4ccccc34)c3ccccc32)cc1",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        },
+        {
+          "classification": "unresolved",
+          "detail": "one or more target-atom-set cells differ",
+          "operation": "smarts"
+        }
+      ],
+      "input_index": 28,
+      "smiles": "C1=C\\c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCNc2cc[n+](c3ccccc23)Cc2ccc/1cc2",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        },
+        {
+          "classification": "unresolved",
+          "detail": "one or more target-atom-set cells differ",
+          "operation": "smarts"
+        }
+      ],
+      "input_index": 29,
+      "smiles": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)CCc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        },
+        {
+          "classification": "unresolved",
+          "detail": "one or more target-atom-set cells differ",
+          "operation": "smarts"
+        }
+      ],
+      "input_index": 30,
+      "smiles": "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)Cc2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 31,
+      "smiles": "Nc1cc[n+](Cc2ccc3c(c2)Cc2cc(C[n+]4ccc(N)c5ccccc54)ccc2-3)c2ccccc12",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 32,
+      "smiles": "Nc1cc[n+](Cc2ccc(-c3ccc(C[n+]4ccc(N)c5ccccc54)cc3)cc2)c2ccccc12",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 33,
+      "smiles": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccc(Cl)cc1Cl",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        },
+        {
+          "classification": "unresolved",
+          "detail": "one or more target-atom-set cells differ",
+          "operation": "smarts"
+        }
+      ],
+      "input_index": 34,
+      "smiles": "c1ccc2c(c1)c1cc[n+]2Cc2ccc3c(c2)Cc2cc(ccc2-3)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 35,
+      "smiles": "Nc1cc[n+](Cc2ccc(Cc3ccc(C[n+]4ccc(N)c5ccccc54)cc3)cc2)c2ccccc12",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 36,
+      "smiles": "COC(=O)/C=C/C(=O)Nc1ccc(CCCCC(=O)N2CCN(c3nc(N)c4cc(OC)c(OC)cc4n3)CC2)cc1",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 37,
+      "smiles": "COc1cc2nc(N3CCN(C(=O)CCc4ccccc4)CC3)nc(N)c2cc1OC",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 38,
+      "smiles": "COc1ccc(/C=C/C(=O)N2CCN(c3nc(N)c4cc(OC)c(OC)cc4n3)CC2)cc1",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 39,
+      "smiles": "COc1cc2nc(N3CCN(C(=O)/C=C/c4cccc(F)c4)CC3)nc(N)c2cc1OC",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 40,
+      "smiles": "COc1cc2nc(N3CCN(C(=O)C4CC5C=CC4C5)CC3)nc(N)c2cc1OC",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 41,
+      "smiles": "C/C=C/C=C/C(=O)N1CCN(c2nc(N)c3cc(OC)c(OC)cc3n2)CC1",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 42,
+      "smiles": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccccc4)CC3)nc(N)c2cc1OC",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 43,
+      "smiles": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(F)cc4)CC3)nc(N)c2cc1OC",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 44,
+      "smiles": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(Cl)cc4)CC3)nc(N)c2cc1OC",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        },
+        {
+          "classification": "unresolved",
+          "detail": "atom or bond label map differs",
+          "operation": "cip"
+        }
+      ],
+      "input_index": 45,
+      "smiles": "COc1cc2nc(N3CCN(C(=O)/C(F)=C/c4ccccc4)CC3)nc(N)c2cc1OC",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 46,
+      "smiles": "COc1cc2nc(N3CCN(C(=O)Nc4ccccc4)CC3)nc(N)c2cc1OC",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        }
+      ],
+      "input_index": 47,
+      "smiles": "COC(=O)/C=C/C(=O)Nc1ccc(/C=C/C(=O)N2CCN(c3nc(N)c4cc(OC)c(OC)cc4n3)CC2)cc1",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        },
+        {
+          "classification": "unresolved",
+          "detail": "atom or bond label map differs",
+          "operation": "cip"
+        }
+      ],
+      "input_index": 48,
+      "smiles": "COc1cc2nc(N3CCN(/C(S)=N/C4CCCCC4)CC3)nc(N)c2cc1OC",
+      "status": "completed"
+    },
+    {
+      "differences": [
+        {
+          "classification": "contract_difference",
+          "detail": "canonical spelling differs while RDKit semantic identity is preserved",
+          "operation": "smiles_parse_write"
+        },
+        {
+          "classification": "unresolved",
+          "detail": "one or more target-atom-set cells differ",
+          "operation": "smarts"
+        }
+      ],
+      "input_index": 49,
+      "smiles": "COc1cc2nc(N3CCN(C(=O)C4=CC5C=CC4CC5)CC3)nc(N)c2cc1OC",
+      "status": "completed"
+    }
+  ],
+  "gate": {
+    "row_accounting_complete": true,
+    "rows_hash_recorded": true,
+    "runtime_matches": true
+  },
+  "gate_passed": true,
+  "profile": "rdkit_python_chemistry_rebaseline_v1",
+  "queries": {
+    "count": 31,
+    "path": "/private/tmp/chematic-t15-runnable/validation/rdkit_rebaseline_smarts_queries.json",
+    "sha256": "250a241a8905d013eb58fff0ccfb1e0dbe3e97c08ff56e021828fbfec957b341"
+  },
+  "rdkit_version": "2026.03.6",
+  "row_accounting": {
+    "completed_count": 10000,
+    "input_count": 10000,
+    "parse_failure_count": 0
+  },
+  "rows": {
+    "path": "/private/tmp/rdkit-rebaseline-2026.03.6/python-chemistry-rows.jsonl",
+    "sha256": "83f21ec616e90b00c9143e75d4dfc77ecdc0b610e37869cb26f4c57991e6e374"
+  },
+  "schema_version": 1,
+  "sealed_accuracy_cohort_reused": false
+}
