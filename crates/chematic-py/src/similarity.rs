@@ -1,8 +1,24 @@
 //! Similarity/fingerprint comparison bindings (Tanimoto/Dice/Tversky variants, clustering, alignment).
 
 use crate::Mol;
+use crate::fingerprint_similarity::{popcount, tanimoto_bytes, tanimoto_bytes_with_counts};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+
+fn parse_indexed_smiles(smiles: &[String]) -> (Vec<usize>, Vec<chematic_core::Molecule>) {
+    smiles
+        .iter()
+        .enumerate()
+        .filter_map(|(index, smiles)| chematic_smiles::parse(smiles).ok().map(|mol| (index, mol)))
+        .unzip()
+}
+
+fn remap_scores<T>(scores: Vec<(usize, T)>, original_indices: &[usize]) -> Vec<(usize, T)> {
+    scores
+        .into_iter()
+        .map(|(parsed_index, score)| (original_indices[parsed_index], score))
+        .collect()
+}
 
 /// Tanimoto similarity between two fingerprint byte arrays.
 ///
@@ -11,45 +27,26 @@ use pyo3::prelude::*;
 ///     sim = chematic.tanimoto(mol1.ecfp4(), mol2.ecfp4())
 #[pyfunction]
 fn tanimoto(a: &[u8], b: &[u8]) -> PyResult<f64> {
-    if a.len() != b.len() {
-        return Err(PyValueError::new_err(format!(
-            "fingerprints must be the same length ({} vs {})",
-            a.len(),
-            b.len()
-        )));
-    }
-    let and_bits: u32 = a
-        .iter()
-        .zip(b.iter())
-        .map(|(x, y)| (x & y).count_ones())
-        .sum();
-    let or_bits: u32 = a
-        .iter()
-        .zip(b.iter())
-        .map(|(x, y)| (x | y).count_ones())
-        .sum();
-    if or_bits == 0 {
-        return Ok(0.0);
-    }
-    Ok(and_bits as f64 / or_bits as f64)
+    tanimoto_bytes(a, b).map_err(|error| PyValueError::new_err(error.to_string()))
 }
 
 /// Screen a SMILES library by 3D shape similarity to a query molecule.
 ///
 /// Returns ``[(index, similarity), ...]`` sorted by decreasing similarity.
 /// 3D coordinates are auto-generated via distance geometry for each molecule.
+/// Invalid SMILES are skipped; returned indices always refer to ``smiles_list``.
 ///
 ///     hits = chematic.shape_screen(query, smiles_list)
 ///     for idx, sim in hits[:10]:
 ///         print(f"{smiles_list[idx]}  sim={sim:.3f}")
 #[pyfunction]
 fn shape_screen(query: &Mol, smiles_list: Vec<String>) -> Vec<(usize, f64)> {
-    let mols: Vec<chematic_core::Molecule> = smiles_list
-        .iter()
-        .filter_map(|s| chematic_smiles::parse(s).ok())
-        .collect();
+    let (original_indices, mols) = parse_indexed_smiles(&smiles_list);
     let refs: Vec<&chematic_core::Molecule> = mols.iter().collect();
-    chematic_3d::shape_screen(&query.inner, &refs)
+    remap_scores(
+        chematic_3d::shape_screen(&query.inner, &refs),
+        &original_indices,
+    )
 }
 
 /// Estimate MAP4 Tanimoto similarity between two MAP4 fingerprints.
@@ -67,6 +64,7 @@ fn tanimoto_map4(a: Vec<u32>, b: Vec<u32>) -> f64 {
 ///
 /// Returns a list of clusters; each cluster is a list of SMILES indices (centroid first).
 /// Clusters are sorted by size (largest first).
+/// Invalid SMILES are skipped without renumbering the remaining entries.
 ///
 /// Args:
 ///     smiles: list of SMILES strings.
@@ -78,27 +76,33 @@ fn tanimoto_map4(a: Vec<u32>, b: Vec<u32>) -> f64 {
 #[pyfunction]
 #[pyo3(signature = (smiles, cutoff = 0.65))]
 fn butina_cluster(smiles: Vec<String>, cutoff: f64) -> Vec<Vec<usize>> {
-    let mols: Vec<chematic_core::Molecule> = smiles
-        .iter()
-        .filter_map(|s| chematic_smiles::parse(s).ok())
-        .collect();
+    let (original_indices, mols) = parse_indexed_smiles(&smiles);
     chematic_chem::butina_cluster(&mols, cutoff, chematic_fp::tanimoto_ecfp4)
+        .into_iter()
+        .map(|cluster| {
+            cluster
+                .into_iter()
+                .map(|parsed_index| original_indices[parsed_index])
+                .collect()
+        })
+        .collect()
 }
 
 /// MaxMin diversity picking — select `n` maximally diverse molecules.
 ///
 /// Returns a list of indices into the ``smiles`` list, in selection order.
 /// Uses ECFP4 Tanimoto distance.
+/// Invalid SMILES are skipped without renumbering the remaining entries.
 ///
 ///     picks = chematic.maxmin_picks(smiles, 100)
 ///     diverse_set = [smiles[i] for i in picks]
 #[pyfunction]
 fn maxmin_picks(smiles: Vec<String>, n: usize) -> Vec<usize> {
-    let mols: Vec<chematic_core::Molecule> = smiles
-        .iter()
-        .filter_map(|s| chematic_smiles::parse(s).ok())
-        .collect();
+    let (original_indices, mols) = parse_indexed_smiles(&smiles);
     chematic_chem::maxmin_picks(&mols, n, chematic_fp::tanimoto_ecfp4)
+        .into_iter()
+        .map(|parsed_index| original_indices[parsed_index])
+        .collect()
 }
 
 /// Cosine similarity between two ERG feature vectors.
@@ -158,6 +162,9 @@ fn tanimoto_erg_vec(a: Vec<f64>, b: Vec<f64>) -> PyResult<f64> {
 ///     results = chematic.top_k_similar_fp("c1ccccc1", smiles_list, k=5, fp="maccs")
 ///     for idx, score in results:
 ///         print(smiles_list[idx], score)
+///
+/// Invalid SMILES are skipped; returned indices refer to ``smiles_list``.
+/// An unsupported ``fp`` value raises ``ValueError``.
 #[pyfunction]
 #[pyo3(signature = (query, smiles, k=10, fp=None))]
 fn top_k_similar_fp(
@@ -167,22 +174,26 @@ fn top_k_similar_fp(
     fp: Option<&str>,
 ) -> PyResult<Vec<(usize, f64)>> {
     use chematic_fp::search::FpType;
-    let fp_type = match fp.unwrap_or("ecfp4") {
+    let fp_name = fp.unwrap_or("ecfp4");
+    let fp_type = match fp_name {
+        "ecfp4" => FpType::Ecfp4,
         "ecfp6" => FpType::Ecfp6,
         "ecfp4_chiral" => FpType::Ecfp4Chiral,
         "fcfp4" => FpType::Fcfp4,
         "maccs" => FpType::Maccs,
         "topo_path" => FpType::TopoPath,
-        _ => FpType::Ecfp4,
+        _ => {
+            return Err(PyValueError::new_err(format!(
+                "unsupported fingerprint type {fp_name:?}; expected one of: ecfp4, ecfp6, ecfp4_chiral, fcfp4, maccs, topo_path"
+            )));
+        }
     };
     let query_mol =
         chematic_smiles::parse(query).map_err(|e| PyValueError::new_err(e.to_string()))?;
-    let db: Vec<chematic_core::Molecule> = smiles
-        .iter()
-        .filter_map(|s| chematic_smiles::parse(s).ok())
-        .collect();
-    Ok(chematic_fp::search::nearest_neighbors(
-        &query_mol, &db, k, fp_type,
+    let (original_indices, db) = parse_indexed_smiles(&smiles);
+    Ok(remap_scores(
+        chematic_fp::search::nearest_neighbors(&query_mol, &db, k, fp_type),
+        &original_indices,
     ))
 }
 
@@ -201,12 +212,12 @@ fn top_k_similar(query: &str, smiles: Vec<String>, k: usize) -> PyResult<Vec<(us
     let query_mol =
         chematic_smiles::parse(query).map_err(|e| PyValueError::new_err(e.to_string()))?;
     let query_fp = chematic_fp::ecfp4(&query_mol);
-    let db_fps: Vec<chematic_fp::bitvec::BitVec2048> = smiles
-        .iter()
-        .filter_map(|s| chematic_smiles::parse(s).ok())
-        .map(|m| chematic_fp::ecfp4(&m))
-        .collect();
-    Ok(chematic_fp::top_k_similar(&query_fp, &db_fps, k))
+    let (original_indices, db) = parse_indexed_smiles(&smiles);
+    let db_fps: Vec<chematic_fp::bitvec::BitVec2048> = db.iter().map(chematic_fp::ecfp4).collect();
+    Ok(remap_scores(
+        chematic_fp::top_k_similar(&query_fp, &db_fps, k),
+        &original_indices,
+    ))
 }
 
 /// Dice similarity between two fingerprint byte arrays.
@@ -328,6 +339,8 @@ fn tanimoto_erg(mol1: &Mol, mol2: &Mol) -> f64 {
 /// Returns a list of M rows, each row containing N Tanimoto scores:
 /// ``result[i][j] = Tanimoto(fps_a[i], fps_b[j])``.
 /// All fingerprints must have the same byte length (e.g., all from :meth:`Mol.ecfp4`).
+/// A length mismatch raises ``ValueError``. Two all-zero fingerprints have
+/// similarity 1.0, matching the Rust API's empty-set convention.
 ///
 ///     matrix = chematic.tanimoto_matrix(
 ///         [m.ecfp4() for m in queries],
@@ -335,29 +348,25 @@ fn tanimoto_erg(mol1: &Mol, mol2: &Mol) -> f64 {
 ///     )
 ///     # matrix[i][j] = similarity of query i against library compound j
 #[pyfunction]
-fn tanimoto_matrix(fps_a: Vec<Vec<u8>>, fps_b: Vec<Vec<u8>>) -> Vec<Vec<f32>> {
-    let db_counts: Vec<u32> = fps_b
-        .iter()
-        .map(|fp| fp.iter().map(|b| b.count_ones()).sum())
-        .collect();
+fn tanimoto_matrix(fps_a: Vec<Vec<u8>>, fps_b: Vec<Vec<u8>>) -> PyResult<Vec<Vec<f32>>> {
+    let db_counts: Vec<u64> = fps_b.iter().map(|fp| popcount(fp)).collect();
     fps_a
         .iter()
-        .map(|qa| {
-            let qa_count: u32 = qa.iter().map(|b| b.count_ones()).sum();
+        .enumerate()
+        .map(|(query_index, qa)| {
+            let qa_count = popcount(qa);
             fps_b
                 .iter()
                 .zip(db_counts.iter())
-                .map(|(qb, &db_cnt)| {
-                    if qa.len() != qb.len() {
-                        return 0.0;
-                    }
-                    let and: u32 = qa
-                        .iter()
-                        .zip(qb.iter())
-                        .map(|(a, b)| (a & b).count_ones())
-                        .sum();
-                    let or = qa_count + db_cnt - and;
-                    if or == 0 { 0.0 } else { and as f32 / or as f32 }
+                .enumerate()
+                .map(|(db_index, (qb, &db_count))| {
+                    tanimoto_bytes_with_counts(qa, qb, qa_count, db_count)
+                        .map(|score| score as f32)
+                        .map_err(|error| {
+                            PyValueError::new_err(format!(
+                                "fingerprint length mismatch at fps_a[{query_index}] and fps_b[{db_index}]: {error}"
+                            ))
+                        })
                 })
                 .collect()
         })
@@ -367,27 +376,26 @@ fn tanimoto_matrix(fps_a: Vec<Vec<u8>>, fps_b: Vec<Vec<u8>>) -> Vec<Vec<f32>> {
 /// Compute Tanimoto similarity of one fingerprint against a list of fingerprints.
 ///
 /// All byte arrays must be the same length (e.g., all from :meth:`Mol.ecfp4`).
+/// A length mismatch raises ``ValueError``. Two all-zero fingerprints have
+/// similarity 1.0, matching the Rust API's empty-set convention.
 /// More efficient than repeated :func:`tanimoto` calls for virtual screening.
 ///
 ///     db_fps = [mol.ecfp4() for mol in library]
 ///     scores = chematic.tanimoto_slice(query.ecfp4(), db_fps)
 ///     top = sorted(enumerate(scores), key=lambda x: -x[1])[:10]
 #[pyfunction]
-fn tanimoto_slice(query: &[u8], db: Vec<Vec<u8>>) -> Vec<f32> {
-    let qa: u32 = query.iter().map(|b| b.count_ones()).sum();
+fn tanimoto_slice(query: &[u8], db: Vec<Vec<u8>>) -> PyResult<Vec<f32>> {
+    let query_popcount = popcount(query);
     db.iter()
-        .map(|fp| {
-            if fp.len() != query.len() {
-                return 0.0;
-            }
-            let and: u32 = query
-                .iter()
-                .zip(fp.iter())
-                .map(|(a, b)| (a & b).count_ones())
-                .sum();
-            let db_a: u32 = fp.iter().map(|b| b.count_ones()).sum();
-            let or = qa + db_a - and;
-            if or == 0 { 0.0 } else { and as f32 / or as f32 }
+        .enumerate()
+        .map(|(db_index, fp)| {
+            tanimoto_bytes_with_counts(query, fp, query_popcount, popcount(fp))
+                .map(|score| score as f32)
+                .map_err(|error| {
+                    PyValueError::new_err(format!(
+                        "fingerprint length mismatch at db[{db_index}]: {error}"
+                    ))
+                })
         })
         .collect()
 }
@@ -402,27 +410,7 @@ fn tanimoto_slice(query: &[u8], db: Vec<Vec<u8>>) -> Vec<f32> {
 ///     sim = chematic.tanimoto_pharmacophore_3d(fp1, fp2)
 #[pyfunction]
 fn tanimoto_pharmacophore_3d(a: &[u8], b: &[u8]) -> PyResult<f64> {
-    if a.len() != b.len() {
-        return Err(PyValueError::new_err(format!(
-            "fingerprints must be the same length ({} vs {})",
-            a.len(),
-            b.len()
-        )));
-    }
-    let and_bits: u32 = a
-        .iter()
-        .zip(b.iter())
-        .map(|(x, y)| (x & y).count_ones())
-        .sum();
-    let or_bits: u32 = a
-        .iter()
-        .zip(b.iter())
-        .map(|(x, y)| (x | y).count_ones())
-        .sum();
-    if or_bits == 0 {
-        return Ok(0.0);
-    }
-    Ok(and_bits as f64 / or_bits as f64)
+    tanimoto_bytes(a, b).map_err(|error| PyValueError::new_err(error.to_string()))
 }
 
 /// `(pairs, aligned_coords2, rmsd, score)` — see [`o3a_align`].

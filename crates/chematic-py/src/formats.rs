@@ -1372,6 +1372,8 @@ fn to_rxn_document_json(document_json: &str) -> PyResult<String> {
 ///
 /// More efficient than :func:`top_k_similar_fp` when the same ``db_fps`` list is
 /// reused across multiple queries (fingerprints computed only once).
+/// A fingerprint length mismatch raises ``ValueError``. Two all-zero
+/// fingerprints compare as identical (1.0), matching the Rust API.
 ///
 ///     db_fps = [mol.ecfp4() for mol in library]   # compute once
 ///     for query in queries:
@@ -1380,31 +1382,38 @@ fn to_rxn_document_json(document_json: &str) -> PyResult<String> {
 ///             print(library_smiles[idx], score)
 #[pyfunction]
 #[pyo3(signature = (query_fp, db_fps, k = 10))]
-fn nearest_neighbors_from_fp(query_fp: &[u8], db_fps: Vec<Vec<u8>>, k: usize) -> Vec<(usize, f64)> {
-    let qa: u32 = query_fp.iter().map(|b| b.count_ones()).sum();
+fn nearest_neighbors_from_fp(
+    query_fp: &[u8],
+    db_fps: Vec<Vec<u8>>,
+    k: usize,
+) -> PyResult<Vec<(usize, f64)>> {
+    if k == 0 || db_fps.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let query_popcount = crate::fingerprint_similarity::popcount(query_fp);
     let mut scores: Vec<(usize, f64)> = db_fps
         .iter()
         .enumerate()
-        .filter_map(|(i, fp)| {
-            if fp.len() != query_fp.len() {
-                return None;
-            }
-            let and: u32 = query_fp
-                .iter()
-                .zip(fp.iter())
-                .map(|(a, b)| (a & b).count_ones())
-                .sum();
-            let db_cnt: u32 = fp.iter().map(|b| b.count_ones()).sum();
-            let or = qa + db_cnt - and;
-            if or == 0 {
-                return None;
-            }
-            Some((i, and as f64 / or as f64))
+        .map(|(index, fp)| {
+            crate::fingerprint_similarity::tanimoto_bytes_with_counts(
+                query_fp,
+                fp,
+                query_popcount,
+                crate::fingerprint_similarity::popcount(fp),
+            )
+            .map(|score| (index, score))
+            .map_err(|error| {
+                PyValueError::new_err(format!(
+                    "fingerprint length mismatch at db_fps[{index}]: {error}"
+                ))
+            })
         })
-        .collect();
-    scores.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+        .collect::<PyResult<_>>()?;
+    scores.retain(|(_, score)| *score > 0.0);
+    scores.sort_unstable_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
     scores.truncate(k);
-    scores
+    Ok(scores)
 }
 
 /// Parse a ``.smi`` file (tab/space-separated SMILES + name) into (Mol, name) pairs.

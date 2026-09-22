@@ -14,7 +14,7 @@ Quick start::
 
 from __future__ import annotations
 
-from typing import Any, Iterable, Iterator, Optional
+from typing import Any, Iterable, Iterator, Optional, Union
 
 import numpy as np
 from numpy import ndarray
@@ -1892,6 +1892,10 @@ def tanimoto_matrix(fps_a: list[bytes], fps_b: list[bytes]) -> list[list[float]]
 
     Returns M rows, each of length N: ``result[i][j] = Tanimoto(fps_a[i], fps_b[j])``.
     All fingerprints must have the same byte length.
+    Two all-zero fingerprints have similarity 1.0.
+
+    Raises:
+        ValueError: if a compared fingerprint pair has different lengths.
 
     Example::
 
@@ -1913,6 +1917,10 @@ def nearest_neighbors_from_fp(
     across multiple queries (fingerprints computed only once).
 
     Returns list of ``(index, tanimoto_score)`` tuples, descending by score.
+    Two all-zero fingerprints have similarity 1.0.
+
+    Raises:
+        ValueError: if a database fingerprint length differs from ``query_fp``.
 
     Example::
 
@@ -1926,6 +1934,10 @@ def tanimoto_slice(query: bytes, db: list[bytes]) -> list[float]:
 
     All byte arrays must be the same length (e.g., all from :meth:`Mol.ecfp4`).
     More efficient than repeated :func:`tanimoto` calls for virtual screening.
+    Two all-zero fingerprints have similarity 1.0.
+
+    Raises:
+        ValueError: if a database fingerprint length differs from ``query``.
 
     Example::
 
@@ -2280,7 +2292,8 @@ def tanimoto(a: bytes, b: bytes) -> float:
     """Tanimoto similarity between two fingerprint byte arrays.
 
     Works with any equal-length ``bytes`` objects (ECFP4, ECFP6, MACCS, …).
-    Returns a value in [0.0, 1.0].
+    Returns a value in [0.0, 1.0]. Two all-zero fingerprints have
+    similarity 1.0.
 
     Raises:
         ValueError: if ``a`` and ``b`` have different lengths.
@@ -2612,11 +2625,31 @@ def tanimoto_map4(a: list[int], b: list[int]) -> float:
     """
     ...
 
+def shape_screen(query: Mol, smiles_list: list[str]) -> list[tuple[int, float]]:
+    """Screen a SMILES library by 3D shape similarity.
+
+    Invalid SMILES are skipped. Returned indices always refer to the original
+    ``smiles_list`` positions.
+    """
+    ...
+
+def top_k_similar(query: str, smiles: list[str], k: int = 10) -> list[tuple[int, float]]:
+    """Find the top-K ECFP4 matches for a query SMILES.
+
+    Invalid SMILES are skipped. Returned indices always refer to the original
+    ``smiles`` positions.
+
+    Raises:
+        ValueError: if ``query`` is invalid.
+    """
+    ...
+
 def butina_cluster(smiles: list[str], cutoff: float = 0.65) -> list[list[int]]:
     """Butina clustering — group molecules by ECFP4 Tanimoto similarity.
 
     Returns a list of clusters; each cluster is a list of SMILES indices (centroid first).
-    Clusters are sorted by size (largest first). Invalid SMILES are silently skipped.
+    Clusters are sorted by size (largest first). Invalid SMILES are silently
+    skipped without renumbering valid entries.
 
     Args:
         smiles: list of SMILES strings.
@@ -2634,7 +2667,8 @@ def maxmin_picks(smiles: list[str], n: int) -> list[int]:
     """MaxMin diversity picking — select ``n`` maximally diverse molecules.
 
     Returns a list of indices into ``smiles``, in selection order.
-    Uses ECFP4 Tanimoto distance. Invalid SMILES are silently skipped.
+    Uses ECFP4 Tanimoto distance. Invalid SMILES are silently skipped without
+    renumbering valid entries.
 
     Example::
 
@@ -2858,7 +2892,11 @@ def top_k_similar_fp(
             ``"ecfp4_chiral"``, ``"fcfp4"``, ``"maccs"``, ``"topo_path"``.
 
     Returns:
-        List of ``(index, tanimoto_score)`` tuples, descending by score.
+        List of ``(index, tanimoto_score)`` tuples, descending by score. Invalid
+        SMILES are skipped and indices refer to the original ``smiles`` list.
+
+    Raises:
+        ValueError: if ``query`` is invalid or ``fp`` is unsupported.
 
     Example::
 
@@ -2932,7 +2970,10 @@ def tanimoto_pharmacophore_3d(a: bytes, b: bytes) -> float:
     """Tanimoto similarity between two 3D pharmacophore fingerprints.
 
     Both ``a`` and ``b`` must be byte arrays from :meth:`Mol.pharmacophore_fp_3d`.
-    Returns a value in [0, 1].
+    Returns a value in [0, 1]. Two all-zero fingerprints have similarity 1.0.
+
+    Raises:
+        ValueError: if ``a`` and ``b`` have different lengths.
 
     Example::
 
