@@ -630,6 +630,29 @@ fn logp_dichloromethane() {
     assert_approx("LogP DCM", logp_crippen(&mol("ClCCl")), 1.4215, 0.02);
 }
 
+#[test]
+fn mixed_aromatic_opioid_bridge_oxygen_matches_rdkit() {
+    let cases = [
+        ("morphine", "Oc1ccc2CC3N(CCC4=C3c2c1O4)C", 2.2235, 36.61),
+        ("codeine", "COc1ccc2CC3N(CCC4=C3c2c1O4)C", 2.5265, 25.61),
+    ];
+    for (name, smiles, expected_logp, expected_tpsa) in cases {
+        let molecule = mol(smiles);
+        assert_approx(
+            &format!("LogP {name}"),
+            logp_crippen(&molecule),
+            expected_logp,
+            1e-4,
+        );
+        assert_approx(
+            &format!("TPSA {name}"),
+            tpsa(&molecule),
+            expected_tpsa,
+            1e-6,
+        );
+    }
+}
+
 // ── v0.1.3 LogP regression tests (5 new atom-type fixes) ─────────────────────
 
 #[test]

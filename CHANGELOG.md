@@ -16,6 +16,9 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Replaced broad descriptor aromaticity promotion with the bounded RDKit-parity
   model, preserved authoritative zero-aromatic results, and removed a
   shape-based cyclic-ether Crippen shortcut that misclassified one fused system.
+- Fixed mixed aromatic/Kekulé perception so RDKit-parity descriptors promote
+  morphine/codeine's aromatic bridge oxygen without changing the established
+  aromatic partition of large fused cages or unrelated cyclic ethers.
 - Added post-freeze acquisition attestation, strict eight-field evaluation,
   commit-safe provenance summaries, and a fail-closed checked-in A0 validator.
 

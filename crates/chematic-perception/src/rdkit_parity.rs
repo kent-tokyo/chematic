@@ -8,7 +8,8 @@
 //!
 //! `AromaticityAlgorithm::RdkitLike` now routes through this engine when the
 //! input can be kekulized; explicit, self-consistent aromatic input is preserved
-//! when no matching Kekulé assignment exists. The historical per-ring
+//! unless re-perception strictly extends it without removing any supplied
+//! aromatic atom or bond. The historical per-ring
 //! implementation remains an infallible fallback for inputs that cannot satisfy
 //! either representation. `Huckel` remains the default and is unchanged. This module
 //! also backs a separate, explicitly opt-in, fallible production API:
@@ -754,22 +755,47 @@ fn model_from_explicit_aromaticity(mol: &Molecule) -> AromaticityModel {
     )
 }
 
-/// Normalize `mol` for RDKit-parity aromaticity. A self-consistent explicit
-/// aromatic graph is already the representation RDKit's SMILES parser gives
-/// its downstream fingerprint code, so preserve it before attempting a
-/// Kekulé/re-perceive round trip. This matters for large fused systems where
-/// a valid alternate Kekulé assignment can otherwise change the aromatic
-/// partition. For non-explicit input, clear stale flags and kekulize. A
-/// non-representable graph returns an explicit error; no partial rewrite is
-/// exposed.
+/// Normalize `mol` for RDKit-parity aromaticity. A mixed aromatic/Kekulé
+/// input can contain additional atoms that RDKit's sanitizer promotes into
+/// the final aromatic system. Accept that re-perception only when it strictly
+/// extends the supplied aromatic atom/bond sets without removing anything;
+/// otherwise preserve the explicit representation. The latter matters for
+/// large fused cages where a valid alternate Kekulé assignment can change
+/// the aromatic partition. A non-representable graph without an explicit
+/// fallback returns an error; no partial rewrite is exposed.
 fn kekulize_for_rdkit_parity(mol: &Molecule) -> Result<Molecule, AromaticityError> {
-    if let Some(explicit) = preserve_explicit_aromaticity(mol) {
-        return Ok(explicit);
-    }
+    let explicit_fallback = preserve_explicit_aromaticity(mol);
     let cleared = clear_aromatic_flags(mol);
     match chematic_core::kekulize(&cleared) {
-        Ok(k) => Ok(chematic_core::apply_kekule(&cleared, &k)),
-        Err(e) => Err(AromaticityError::KekulizationFailed { reason: e.detail }),
+        Ok(k) => {
+            let kekulized = chematic_core::apply_kekule(&cleared, &k);
+            let Some(explicit) = explicit_fallback else {
+                return Ok(kekulized);
+            };
+
+            let explicit_atoms: FxHashSet<AtomIdx> = explicit
+                .atoms()
+                .filter_map(|(idx, atom)| atom.aromatic.then_some(idx))
+                .collect();
+            let explicit_bonds: FxHashSet<BondIdx> = explicit
+                .bonds()
+                .filter_map(|(idx, bond)| (bond.order == BondOrder::Aromatic).then_some(idx))
+                .collect();
+            let (candidate_atoms, candidate_bonds) = rdkit_parity_aromaticity(&kekulized);
+            let preserves_explicit = candidate_atoms.is_superset(&explicit_atoms)
+                && candidate_bonds.is_superset(&explicit_bonds);
+            let strictly_extends = candidate_atoms.len() > explicit_atoms.len()
+                || candidate_bonds.len() > explicit_bonds.len();
+
+            if preserves_explicit && strictly_extends {
+                Ok(kekulized)
+            } else {
+                Ok(explicit)
+            }
+        }
+        Err(e) => {
+            explicit_fallback.ok_or(AromaticityError::KekulizationFailed { reason: e.detail })
+        }
     }
 }
 
@@ -1064,6 +1090,46 @@ mod tests {
         for (_, bond) in applied.bonds() {
             assert_eq!(bond.order, BondOrder::Aromatic);
         }
+    }
+
+    #[test]
+    fn mixed_aromatic_morphine_promotes_bridge_oxygen_like_rdkit() {
+        // RDKit canonicalizes this mixed aromatic/Kekule spelling to
+        // `CN1CCc2oc3c(O)ccc4c3c2C1C4`: the degree-two bridge oxygen is
+        // aromatic. Preserving only the parser-supplied `c1ccc...` subgraph
+        // missed that promotion and shifted both TPSA and Crippen LogP.
+        let mol =
+            chematic_smiles::parse("Oc1ccc2CC3N(CCC4=C3c2c1O4)C").expect("valid morphine SMILES");
+        let applied =
+            apply_aromaticity_rdkit_parity_experimental(&mol).expect("morphine kekulizes");
+        let aromatic_oxygen_count = applied
+            .atoms()
+            .filter(|(idx, atom)| {
+                atom.element.atomic_number() == 8 && atom.aromatic && applied.degree(*idx) == 2
+            })
+            .count();
+        assert_eq!(
+            aromatic_oxygen_count, 1,
+            "RDKit marks exactly the bridge oxygen aromatic"
+        );
+    }
+
+    #[test]
+    fn mixed_fused_cyclic_ether_does_not_promote_oxygen() {
+        // Negative control for the morphine regression: an aromatic neighbour
+        // plus a vinylic neighbour is not sufficient to make a cyclic ether
+        // oxygen aromatic.
+        let mol = chematic_smiles::parse("CC(=O)c1c(O)c(C)c(O)c2c1OC1=Cc3c(c(C)nn3C)C(=O)C12C")
+            .expect("valid fused cyclic ether SMILES");
+        let applied = apply_aromaticity_rdkit_parity_experimental(&mol)
+            .expect("fused cyclic ether kekulizes");
+        assert!(
+            applied
+                .atoms()
+                .filter(|(_, atom)| atom.element.atomic_number() == 8)
+                .all(|(_, atom)| !atom.aromatic),
+            "RDKit keeps every oxygen in this fused cyclic ether non-aromatic"
+        );
     }
 
     #[test]
