@@ -159,6 +159,13 @@ export class MolHandle {
      */
     atom_count(): number;
     /**
+     * Index-aligned pseudoatom labels as stable JSON.
+     *
+     * Real atoms are `null`; wildcard entries are objects with `kind`,
+     * `label`, and nullable `r_group_number` fields.
+     */
+    atom_pseudo_labels_json(): string;
+    /**
      * Returns true when TPSA < 90 Å², MW < 400, HBD ≤ 3.
      */
     bbb_passes(): boolean;
@@ -464,6 +471,22 @@ export class MolHandle {
      * Zagreb index M1: Σ d_i² over all heavy atoms.
      */
     zagreb_index_m1(): number;
+}
+
+/**
+ * Immutable RDKit-compatible ECFP4 preprocessing cache.
+ *
+ * Create it with [`prepare_rdkit_ecfp4`], then call [`bitvec`](Self::bitvec)
+ * repeatedly without repeating aromaticity and ring perception.
+ */
+export class PreparedRdkitEcfp4Handle {
+    private constructor();
+    free(): void;
+    [Symbol.dispose](): void;
+    /**
+     * Compute the cached radius-2, 2048-bit fingerprint as 256 packed bytes.
+     */
+    bitvec(): Uint8Array;
 }
 
 /**
@@ -1331,9 +1354,10 @@ export function inchi_from_smiles(smiles: string): string;
 export function inchikey_from_smiles(smiles: string): string;
 
 /**
- * Invert the stereochemistry of a tetrahedral stereocenter (U/D wedge bonds).
+ * Invert a tetrahedral stereocenter and synchronize incident U/D wedge bonds.
  *
- * If the atom has no wedge/dash bonds, returns an unchanged copy.
+ * Recorded chirality is inverted even without a wedge; when a wedge/hash is
+ * present its depiction marker is inverted too.
  * Returns error if atom_idx is invalid.
  */
 export function invert_stereocenter_at(mol: MolHandle, atom_idx: number): MolHandle;
@@ -1902,6 +1926,11 @@ export function mol_with_atom_charge(mol: MolHandle, idx: number, charge: number
 export function mol_with_atom_element(mol: MolHandle, idx: number, element_symbol: string): MolHandle;
 
 /**
+ * Return a molecule with atom `idx` changed to `*`, `R`, or `R<n>`.
+ */
+export function mol_with_atom_pseudo_label(mol: MolHandle, idx: number, label: string): MolHandle;
+
+/**
  * Return a new `MolHandle` with atom `idx` and all its bonds removed.
  *
  * Atom indices above `idx` shift down by 1.  Returns a JS error if `idx`
@@ -2172,6 +2201,15 @@ export function predict_pka_json(smiles: string): string;
  * The input is capped at the same 1 MiB/10,000-atom limits as other WASM APIs.
  */
 export function preflight_smiles_json(smiles: string, width: number, height: number): string;
+
+/**
+ * Perform RDKit-compatible aromaticity/ring preprocessing once.
+ *
+ * This is the prepared-molecule counterpart to RDKit's sanitized molecule
+ * object. Preparation errors remain typed JS errors and are never replaced by
+ * a non-compatible fallback fingerprint.
+ */
+export function prepare_rdkit_ecfp4(mol: MolHandle): PreparedRdkitEcfp4Handle;
 
 /**
  * Coordinates (Å) plus molecular charge/multiplicity from a QCSchema
@@ -2963,6 +3001,7 @@ export interface InitOutput {
     readonly __wbg_depictoptions_free: (a: number, b: number) => void;
     readonly __wbg_mhfplshhandle_free: (a: number, b: number) => void;
     readonly __wbg_molhandle_free: (a: number, b: number) => void;
+    readonly __wbg_preparedrdkitecfp4handle_free: (a: number, b: number) => void;
     readonly __wbg_rdkitsearchindex_free: (a: number, b: number) => void;
     readonly __wbg_smilesbatchstreamhandle_free: (a: number, b: number) => void;
     readonly add_hydrogens: (a: number) => number;
@@ -3134,12 +3173,14 @@ export interface InitOutput {
     readonly mol_with_atom_added: (a: number, b: number, c: number) => [number, number, number];
     readonly mol_with_atom_charge: (a: number, b: number, c: number) => [number, number, number];
     readonly mol_with_atom_element: (a: number, b: number, c: number, d: number) => [number, number, number];
+    readonly mol_with_atom_pseudo_label: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly mol_with_atom_removed: (a: number, b: number) => [number, number, number];
     readonly mol_with_bond_added: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly mol_with_bond_removed: (a: number, b: number) => [number, number, number];
     readonly molecule_report_json: (a: number, b: number) => [number, number, number, number];
     readonly molhandle_aromatic_ring_count: (a: number) => number;
     readonly molhandle_assign_cip_json: (a: number) => [number, number];
+    readonly molhandle_atom_pseudo_labels_json: (a: number) => [number, number];
     readonly molhandle_bbb_passes: (a: number) => number;
     readonly molhandle_bbb_score: (a: number) => number;
     readonly molhandle_bertz_ct: (a: number) => number;
@@ -3240,6 +3281,8 @@ export interface InitOutput {
     readonly pqr_to_json: (a: number, b: number) => [number, number, number, number];
     readonly predict_pka_json: (a: number, b: number) => [number, number];
     readonly preflight_smiles_json: (a: number, b: number, c: number, d: number) => [number, number];
+    readonly prepare_rdkit_ecfp4: (a: number) => [number, number, number];
+    readonly preparedrdkitecfp4handle_bitvec: (a: number) => [number, number];
     readonly qcschema_molecule_coords_json: (a: number, b: number) => [number, number, number, number];
     readonly qcschema_validate_atomic_input: (a: number, b: number) => [number, number, number, number];
     readonly qcschema_validate_atomic_result: (a: number, b: number) => [number, number, number, number];

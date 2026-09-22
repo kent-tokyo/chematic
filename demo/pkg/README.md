@@ -36,6 +36,10 @@ npm install @kent-tokyo/chematic
 - Bounded topology parsing for CML (`mol_from_cml_strict` provides the opt-in
   non-empty, balanced, single-root boundary), ChemicalJSON (`mol_from_cjson`), MolJSON,
   CDXML, MOL2, and PDB/mmCIF
+- Index-aligned wildcard/R-group inspection with
+  `MolHandle.atom_pseudo_labels_json()` and immutable edits through
+  `mol_with_atom_pseudo_label`; labels are bounded to `*`, `R`, and
+  `R1..R9999`
 - PDBx/mmCIF, PQR, QCSchema JSON, ORCA input/output, Gaussian Cube, OpenDX,
   and LAMMPS data/dump I/O (JSON-based bindings; see `format_io.rs`)
 - Topological descriptors: Wiener index, Hall-Kier κ, χ connectivity indices, Bertz CT
